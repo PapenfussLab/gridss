@@ -1,0 +1,225 @@
+#!/usr/bin/env python
+
+import os, sys, argparse, subprocess
+
+def get_filenames( input_bam_file ):
+    data_dir, filename = os.path.split( input_bam_file )
+    stem, ext = os.path.splitext( filename )
+    suffix = '_long_sc_l%d_q%d_m%d_i%d' % ( args.long_sc_len, args.base_quality, args.min_mapq, args.percent_id )
+
+    long_sc_fq = stem+suffix+'.fastq.gz'
+    long_sc_bam = stem+suffix+'.bam'
+    short_sc_bam = stem+'_short_sc.bam'
+    metrics = filename + '.metrics'
+
+    return long_sc_fq, long_sc_bam, short_sc_bam, metrics 
+
+def run_all(args):
+    data_dir, filename = os.path.split( args.input_file )
+    stem, ext = os.path.splitext( filename )
+    suffix = '_long_sc_l%d_q%d_m%d_i%d' % ( args.long_sc_len, args.base_quality, args.min_mapq, args.percent_id )
+
+    long_sc_fq = stem+suffix+'.fastq.gz'
+    long_sc_bam = stem+suffix+'.bam'
+    short_sc_bam = stem+'_short_sc.bam'
+    metrics = filename + '.metrics'
+
+    run_preprocess(args, args.input_file)
+    run_process_bam(args, long_sc_fq, long_sc_bam)
+    run_predict(args, long_sc_bam, short_sc_bam, metrics)
+    if args.normal or args.repeatmask:
+        run_annotate(args)
+
+def run_preprocess(args, input_file):
+    cmd = os.path.join( os.path.realpath( os.curdir ), 'bin' )
+    cmd = os.path.join( cmd, 'PreprocessBAM' )
+    opts = [ '-l %d' % args.long_sc_len, '-q %d' % args.min_mapq, '-b %d' % args.base_quality, \
+             '-p %d' % args.percent_id, '-t %d' % args.threads ]
+
+    if args.keep_duplicate:
+        opts.append( '--keep-duplicate' )
+    if args.verbose:
+        opts.append('--verbose')
+
+    cmd = cmd + ' ' + ' '.join(opts) + ' ' + input_file
+    print cmd
+    proc = subprocess.Popen( cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    print proc.communicate()[0]
+
+def run_process_bam(args, input_file, output_file):
+    # do alignment first
+    bt2 = None
+    if input_file.endswith('.fastq.gz'):
+        print >> sys.stderr, '\nBowtie2 alignment, DB='+args.bowtie2_db
+        cmd = 'bowtie2'
+        opts = ['-p %d' % args.threads, '--local', '-x %s' % args.bowtie2_db, '-U %s' % input_file]
+        cmd = cmd + ' ' + ' '.join(opts)
+        print cmd
+        bt2 = subprocess.Popen( cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+
+        input_chanel = '-'
+        input_pipe = bt2.stdout
+    else:
+        input_chanel = input_file
+        input_pipe = None
+
+    cmd_socrates = os.path.join( os.path.realpath( os.curdir ), 'bin' )
+    cmd_socrates = os.path.join( cmd_socrates, 'ProcessRealignmentBAM' )
+    cmd_socrates = cmd_socrates + ' ' + input_chanel + ' ' + output_file
+    print cmd_socrates
+    proc_socrates = subprocess.Popen( cmd_socrates, shell=True, stdin=input_pipe, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+    if bt2:
+        input_pipe.close()
+        for line in bt2.stderr:
+            sys.stderr.write( line )
+
+    print proc_socrates.communicate()[0]
+
+def run_predict(args, long_sc_bam, short_sc_bam, metrics_file):
+    cmd = os.path.join( os.path.realpath( os.curdir ), 'bin' )
+    cmd = os.path.join( cmd, 'PredictRearrangements' )
+    opts = ['--long-sc-len %d'%args.long_sc_len, '--min-mapq %d'%args.min_mapq, '--percent-id %d'%args.percent_id, \
+            '--threads %d'%args.threads, '--flank %d'%args.flank, '--promiscuity %d'%args.promiscuity]
+    if args.no_short_sc_cluster:
+        opts.append('--no-short-sc-cluster')
+    else:
+        opts.append('--max-support %d'%args.max_support)
+    if args.ideal_only:
+        opts.append('--ideal-only')
+    if args.verbose:
+        opts.append('--verbose')
+
+    cmd = cmd + ' ' + ' '.join(opts) + ' ' + long_sc_bam + ' ' + short_sc_bam + ' ' + metrics_file
+    if args.block_size is not None: cmd = cmd + ' %d'%args.block_size
+    print cmd
+    proc = subprocess.Popen( cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+    print proc.communicate()[0]
+
+def run_annotate(args):
+    cmd = os.path.join( os.path.realpath( os.curdir ), 'bin' )
+    cmd = os.path.join( cmd, 'AnnotateRearrangements' )
+    if args.normal:
+        cmd = cmd + '--normal ' + args.normal
+    if args.repeatmask:
+        cmd = cmd + '--repeatmask ' + args.repeatmask
+    if args.verbose:
+        cmd = cmd + '--verbose'
+    print cmd
+    proc = subprocess.Popen( cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+    print proc.communicate()[0]
+
+
+
+
+if __name__=='__main__':
+    parser = argparse.ArgumentParser()
+
+    ###################### set up parsers #############
+    subparsers = parser.add_subparsers(dest='mode')
+    parser_all        = subparsers.add_parser('all', help='Run all steps of Socrates')
+    parser_preprocess = subparsers.add_parser('preprocess', help='Extract soft clip reads from BAM file')
+    parser_realign    = subparsers.add_parser('realignment', help='Create re-alignment BAM file')
+    parser_predict    = subparsers.add_parser('predict', help='Predict breakpoints with Socrates')
+    parser_annotate   = subparsers.add_parser('annotate', help='Annotate Socrates results with germline breakpoints and repeat mask.')
+
+    ###################### PreprocessBAM ###############
+    parser_preprocess.add_argument('-l', "--long-sc-len", help="Length threshold of long soft-clip [default: 25 (nt)]",\
+                                    type=int, default=25)
+    parser_preprocess.add_argument('-b', "--base-quality", help="Minimum average base quality score of  soft clipped sequence [default: 5]",\
+                                    type=int, default=5)
+    parser_preprocess.add_argument('-p', "--percent-id", help="Minimum alignment percent identity to reference [default: 95 (%%)]",\
+                                    type=int, default=95)
+    parser_preprocess.add_argument('-q', "--min-mapq", help="Minimum alignments mapq [default: 5]",\
+                                    type=int, default=5)
+    parser_preprocess.add_argument('-t', "--threads", help="Number of threads [default: 1]",\
+                                    type=int, default=1)
+    parser_preprocess.add_argument("--keep-duplicate", help="Keep duplicate reads", action='store_true')
+    parser_preprocess.add_argument("--verbose", help="be verbose of progress", action='store_true')
+    parser_preprocess.add_argument("input_file", help="Alignment BAM file")
+
+    ###################### ProcessBAM #################
+    parser_realign.add_argument("input_file", help="Re-alignment BAM file from short read alginer")
+    parser_realign.add_argument("output_file", help="Re-alignment BAM file with anchor info in tags")
+
+    ###################### PredictRearrangements #########
+    parser_predict.add_argument('-l',"--long-sc-len", help="Length threshold of long soft-clip [default: 25 (nt)]",\
+                                 type=int, default=25)
+    parser_predict.add_argument('-q',"--min-mapq", help="Minimum alignments mapq [default: 5]",\
+                                 type=int, default=5)
+    parser_predict.add_argument('-p',"--percent-id", help="Minimum alignment percent identity to reference [default: 95 (%%)]",\
+                                 type=int, default=95)
+    parser_predict.add_argument('-t', "--threads", help="Number of threads [default: 1]",\
+                                 type=int, default=1)
+    parser_predict.add_argument('-f', "--flank", help="Size of flank for promiscuity filter [default: 50 (nt)]",\
+                                 type=int, default=50)
+    parser_predict.add_argument('--promiscuity', help="Exclude cluster if more than PROMISCUITY clusters within FLANK(nt) of a breakpoint [default: 5]", type=int, default=5)
+
+    parser_predict.add_argument("--no-short-sc-cluster", help="Disable search for short soft clip cluster support for unpaired clusters.",\
+                                 action='store_true')
+    parser_predict.add_argument("--max-support", help="Maximum realignment support to search for short SC cluster [default: 30]. --no-short-sc-cluster option cannot be used.",\
+                                 type=int, default=30)
+
+    parser_predict.add_argument("--ideal-only", help="Use only proper pair 5' SC and anomalous pair 3' SC", action='store_true')
+    parser_predict.add_argument("--verbose", help="be verbose of progress", action='store_true')
+
+    parser_predict.add_argument("long_sc_bam", help="Re-alignment BAM file with anchor info in tags")
+    parser_predict.add_argument("short_sc_bam", help="Short soft clipped alignments extracted from PreprocessBAM")
+    parser_predict.add_argument("metrics_file", help="Data metrics produced by PreprocessBAM")
+    parser_predict.add_argument("block_size", help="Size of a block for a single Socrates thread to search for breakpoints", \
+                                 nargs='?', type=int, default=None)
+
+    ###################### AnnotateRearrangements ##########
+    parser_annotate.add_argument("--normal", help="Socrates paired breakpoint calls for normal sample [default=None]", type=str, default=None)
+    parser_annotate.add_argument("--repeatmask", help="UCSC repeat masker track file in Tabix form [default=None]", type=str, default=None)
+    parser_annotate.add_argument("--verbose", help="be verbose of progress", action='store_true')
+    parser_annotate.add_argument("input_file", help="Results from PredictRearrangements")
+
+    ###################### do all ##########
+    parser_all.add_argument('-l', "--long-sc-len", help="Length threshold of long soft-clip [default: 25 (nt)]",\
+                                    type=int, default=25)
+    parser_all.add_argument('-b', "--base-quality", help="Minimum average base quality score of  soft clipped sequence [default: 5]",\
+                                    type=int, default=5)
+    parser_all.add_argument('-p', "--percent-id", help="Minimum alignment percent identity to reference [default: 95 (%%)]",\
+                                    type=int, default=95)
+    parser_all.add_argument('-q', "--min-mapq", help="Minimum alignments mapq [default: 5]",\
+                                    type=int, default=5)
+    parser_all.add_argument('-t', "--threads", help="Number of threads [default: 1]",\
+                                    type=int, default=1)
+    parser_all.add_argument("--keep-duplicate", help="Keep duplicate reads", action='store_true')
+
+    parser_all.add_argument('-f', "--flank", help="Size of flank for promiscuity filter [default: 50 (nt)]",\
+                                 type=int, default=50)
+    parser_all.add_argument('--promiscuity', help="Exclude cluster if more than PROMISCUITY clusters within FLANK(nt) of a breakpoint [default: 5]",\
+                                 type=int, default=5)
+
+    parser_all.add_argument("--no-short-sc-cluster", help="Disable search for short soft clip cluster support for unpaired clusters.",\
+                                 action='store_true')
+    parser_all.add_argument("--max-support", help="Maximum realignment support to search for short SC cluster [default: 30]. --no-short-sc-cluster option cannot be used.",\
+                                 type=int, default=30)
+
+    parser_all.add_argument("--ideal-only", help="Use only proper pair 5' SC and anomalous pair 3' SC", action='store_true')
+
+    parser_all.add_argument("--normal", help="Socrates paired breakpoint calls for normal sample [default=None]", type=str, default=None)
+    parser_all.add_argument("--repeatmask", help="UCSC repeat masker track file in Tabix form [default=None]", type=str, default=None)
+
+    parser_all.add_argument("--verbose", help="be verbose of progress", action='store_true')
+
+    parser_all.add_argument("input_file", help="Alignment BAM file")
+    parser_all.add_argument("bowtie2_db", help="Prefix of Bowtie2 indexed database for sample")
+    parser_all.add_argument("block_size", help="Size of a block for a single Socrates thread to search for breakpoints", \
+                                 nargs='?', type=int, default=None)
+
+
+    ##### parse args ########
+    args = parser.parse_args()
+
+    if args.mode=='all':
+        run_all(args)
+    elif args.mode=='preprocess':
+        run_preprocess(args, args.input_file)
+    elif args.mode=='realignment':
+        run_process_bam(args, args.input_file, args.output_file)
+    elif args.mode=='predict':
+        run_predict(args, args.long_sc_bam, short_sc_bam, metrics_file)
+    elif args.mode=='annotate':
+        run_annotate(args)
