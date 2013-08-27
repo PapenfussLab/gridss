@@ -220,6 +220,6 @@ if __name__=='__main__':
     elif args.mode=='realignment':
         run_process_bam(args, args.input_file, args.output_file)
     elif args.mode=='predict':
-        run_predict(args, args.long_sc_bam, short_sc_bam, metrics_file)
+        run_predict(args, args.long_sc_bam, args.short_sc_bam, args.metrics_file)
     elif args.mode=='annotate':
         run_annotate(args)
