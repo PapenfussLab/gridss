@@ -98,6 +98,7 @@ public class BAMStratifier {
 
 		// metrics file
 		SAMFileReader reader = new SAMFileReader( sourceBAMFile );
+		reader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
 		sourceBAMInfo = new SAMFileInfo(reader);
 		File sourceBAMInfoFile = new File(sourceFilename+".metrics");
 		if (!sourceBAMInfoFile.exists()) {
@@ -259,6 +260,7 @@ public class BAMStratifier {
 			seqName = seq;
 			// create new file reader
 			sourceBAM = new SAMFileReader( sourceBAMFile );
+			sourceBAM.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
 			this.iterator = sourceBAM.query(seq, start, end, false);
 		}
 		
@@ -525,6 +527,7 @@ public class BAMStratifier {
 						if (indexFile.exists()) indexFile.delete();
 						if (!sources[i].exists()) continue;
 						readers[i] = new SAMFileReader(sources[i]);
+						readers[i].setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
 						iters.add( (CloseableIterator<SAMRecord>)(readers[i].iterator()) );
 					}
 					MergingIterator<SAMRecord> iter = new MergingIterator<SAMRecord>(new SAMRecordCoordinateComparator(), iters); 

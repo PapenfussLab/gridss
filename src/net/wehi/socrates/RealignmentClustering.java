@@ -303,6 +303,8 @@ public class RealignmentClustering {
 
 			realignReader = new SAMFileReader( realignedScBAMMemoryStream, realignedScIndexMemoryStream, false );
 			shortScReader = new SAMFileReader( shortScBAMMemoryStream, shortScIndexMemoryStream, false ); 
+			realignReader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
+			shortScReader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
 			
 			// build clusters
 			clusters = buildCluster(realignReader, gi1, lflank1, rflank1, gi2, lflank2, rflank2);

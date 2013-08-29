@@ -35,7 +35,7 @@ public class RealignmentBAM {
 	
 	public static void makeRealignmentBAM(String inputBAMFilename, String outputBamFilename) {
 		final SAMFileReader sam = (inputBAMFilename.equals("-")) ? new SAMFileReader( System.in ) : new SAMFileReader( new File(inputBAMFilename) );
-
+		sam.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
 		
 		ProgressVerbose p = new ProgressVerbose("Sorting alignments", 1000000, SOCRATES.verbose);
 		try {
