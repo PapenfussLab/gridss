@@ -488,6 +488,7 @@ public class RealignmentClustering {
 			// find clusters that can be paired
 			int p=0;
 			HashSet<RealignmentCluster> paired = new HashSet<RealignmentCluster>();
+			ArrayList<RealignmentCluster> redundant = new ArrayList<RealignmentCluster>();
 			for (RealignmentCluster cluster1 : clusters) {
 				if (paired.contains(cluster1)) continue;
 				RealignmentCluster lower = new RealignmentCluster(cluster1, -50), upper = new RealignmentCluster(cluster1, 50);
@@ -495,8 +496,10 @@ public class RealignmentClustering {
 				NavigableSet<RealignmentCluster> sub = clusters.subSet(lower, true, upper, true);
 				for (RealignmentCluster cluster2 : sub) {
 					if (cluster1==cluster2) continue;
-					if (paired.contains(cluster2)) continue;
-					
+					if (paired.contains(cluster2)) {
+						redundant.add(cluster1);
+						continue;
+					}
 					if (cluster1.reciprocalNearTo(cluster2, 10)) {
 						paired.add(cluster1); paired.add(cluster2);
 						cluster1.pairedCluster = cluster2;
@@ -506,6 +509,11 @@ public class RealignmentClustering {
 						p++;
 					}
 				}
+			}
+
+			//permanently remove redundant clusters from output
+			for (RealignmentCluster redundant_call : redundant) {
+				clusters.remove(redundant_call);
 			}
 
 			// add short read support to paired clusters
