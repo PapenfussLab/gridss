@@ -17,9 +17,9 @@ is included to, is included to execute the programs.
 
 To use Socrates without the driver script, Java class path needs to be set:
 
-socrates=`dirname $0`/
+`socrates=\`dirname $0\`/
 libs=${socrates}lib/sam-1.77.jar:${socrates}lib/commons-lang3-3.1.jar:${socrates}lib/commons-cli-1.2.jar:${socrates}lib/picard-1.85.jar:${socrates}lib/snappy-java-1.0.3-rc3.jar
-java -Xmx4g -cp ${socrates}bin:$libs net.wehi.socrates.[PROG] [OPTIONS]
+java -Xmx4g -cp ${socrates}bin:$libs net.wehi.socrates.[PROG] [OPTIONS]`
 
 where PROG is one of BamStratifier, RealignmentBAM, RealignmentClustering and AnnotatePairedClusters.
 
@@ -69,12 +69,13 @@ from further analysis for Bowtie2 and BWA aligned reads.
 
 
 1.2. Process the re-alignment BAM file
+
 usage: Socrates realignment [options] input_bam output_bam
 input_bam 	Re-aligned soft clip BAM file. Use “-” to accept input from stdin
 output_bam 	Output re-alignment BAM with anchor info merged
 anchor_info	Anchor info file produced by BAMStratifier
 
- This program merges soft clip re-alignment BAM file with anchor alignment
+This program merges soft clip re-alignment BAM file with anchor alignment
 information. The program has built-in sorting mechanism and therefore can take
 unsorted, raw re- alignment output from aligner. While the program accepts
 input BAM file from standard input channel, this requires more system memory
@@ -82,6 +83,7 @@ for buffering.
 
 
 1.3. Predict rearrangements
+
 usage: Socrates predict [options] realigned_sc_bam short_sc_bam metrics_file
 -f,	--flank <flank> 		Size of flank for promiscuity filter [default: 50 (bp)]
 -h,	--help 				print this message 
@@ -97,6 +99,7 @@ usage: Socrates predict [options] realigned_sc_bam short_sc_bam metrics_file
      
   
 1.4. Annotating rearrangements
+
 usage: Socrates annotate [options] socrates_paired_cluster_output
 -n,	--normal <normal>	Socrates paired breakpoint calls for normal sample 
 -r,	--repeatmask <file>	UCSC repeat masker track file in BED format, Tabix indexed.
