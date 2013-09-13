@@ -3,26 +3,29 @@ Authors: Arthur Hsu, Jan Schroeder, Anthony T Papenfuss
 Date: 27/3/2013
 
 A driver script (developed in Python2.7) - Socrates, can be found in this directory.
-For a test example run with the script, download the test data from http://bioinf.wehi.edu.au/socrates/test_data.tar.gz, extract in the script directory and execute:
-./Socrates all test_data/data/random_ecoli_63_s.bam test_data/data/bowtie2_db/ecoli1665_bt2
+For a test example run with the script, download the test data from 
+http://bioinf.wehi.edu.au/socrates/test_data.tar.gz, extract in the script directory and execute:
+./Socrates all --botie2_db test_data/data/bowtie2_db/ecoli1665_bt2 test_data/data/random_ecoli_63_s.bam
 
 Additional documentation is currently being developed. 
 
 The Socrates package contains several Java programs (developed in JDK1.6).
 Each program is designed to process data for a specific stages of analysis.
-Below is a list of the included programs and each of them will be elaborated
-latter.
 
-1) PreprocessBAM
-2) ProcessRealignmentBAM
-3) PredictRearrangements
-4) AnnotateRearrangements
+A Python driver script - "Socrates", for retaining cross-platform compatibility of Java,
+is included to, is included to execute the programs. 
 
-These are simple wrapper scripts that sets library and execution path to run
-Socrates programs under Linux and Mac.
+To use Socrates without the driver script, Java class path needs to be set:
+
+socrates=`dirname $0`/
+libs=${socrates}lib/sam-1.77.jar:${socrates}lib/commons-lang3-3.1.jar:${socrates}lib/commons-cli-1.2.jar:${socrates}lib/picard-1.85.jar:${socrates}lib/snappy-java-1.0.3-rc3.jar
+java -Xmx4g -cp ${socrates}bin:$libs net.wehi.socrates.[PROG] [OPTIONS]
+
+where PROG is one of BamStratifier, RealignmentBAM, RealignmentClustering and AnnotatePairedClusters.
+
 While default values have worked satisfactorily in our simulated and real
 cancer genome sequencing datasets, users should set program parameters in the
-driver scripts appropri- ately for their own data. Full lists of program
+driver scripts appropriately for their own data. Full lists of program
 parameters are provided in the following sections, together with a discussion
 on the impact of changing them where applicable.
 
@@ -30,7 +33,7 @@ on the impact of changing them where applicable.
 1.1. Preprocess BAM File 
 Stratifies the original BAM file into...
 
-usage: PreprocessBAM [options] alignment bam
+usage: Socrates preprocess [options] alignment bam
 -b,	--base-quality <score>	Minimum average base quality score of soft clipped sequence  [default: 5] 
 -h,	--help 			print this message 
 -k,	--keep-duplicate	keep duplicate reads [default: false]
@@ -66,7 +69,7 @@ from further analysis for Bowtie2 and BWA aligned reads.
 
 
 1.2. Process the re-alignment BAM file
-usage: ProcessRealignmentBAM input_bam output_bam anchor_info
+usage: Socrates realignment [options] input_bam output_bam
 input_bam 	Re-aligned soft clip BAM file. Use “-” to accept input from stdin
 output_bam 	Output re-alignment BAM with anchor info merged
 anchor_info	Anchor info file produced by BAMStratifier
@@ -79,7 +82,7 @@ for buffering.
 
 
 1.3. Predict rearrangements
-usage: PredictRearrangements [options] realigned_sc_bam short_sc_bam metrics_file
+usage: Socrates predict [options] realigned_sc_bam short_sc_bam metrics_file
 -f,	--flank <flank> 		Size of flank for promiscuity filter [default: 50 (bp)]
 -h,	--help 				print this message 
 -i,	--ideal-only 			Use only proper pair 5’ SC and anomalous pair 3’ SC [default: false]
@@ -94,7 +97,7 @@ usage: PredictRearrangements [options] realigned_sc_bam short_sc_bam metrics_fil
      
   
 1.4. Annotating rearrangements
-usage: AnnotateRearrangements [options] socrates_paired_cluster_output
+usage: Socrates annotate [options] socrates_paired_cluster_output
 -n,	--normal <normal>	Socrates paired breakpoint calls for normal sample 
 -r,	--repeatmask <file>	UCSC repeat masker track file in BED format, Tabix indexed.
 

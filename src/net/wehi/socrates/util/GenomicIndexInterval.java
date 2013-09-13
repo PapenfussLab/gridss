@@ -220,7 +220,7 @@ public class GenomicIndexInterval implements Serializable, Comparable<GenomicInd
 	/**
 	 * Parse a string of genomic coordinate into usable form.
 	 * @param region String in the format of, e.g., "chr1:1000000-1001000".
-	 * @return Converted to GenomicIndexInterval form
+	 * @return Unstranded GenomicIndexInterval
 	 */
 	public static GenomicIndexInterval parse(String region, SAMFileInfo header) {
 		// strip all "," in numeral coordinate
@@ -245,10 +245,10 @@ public class GenomicIndexInterval implements Serializable, Comparable<GenomicInd
 			seq = new String(tokens[0]);
 			String[] posToken = tokens[1].split("-");
 			if (posToken.length==2) {
-				start = Integer.parseInt(posToken[0]);
-				end = Integer.parseInt(posToken[1]);
+				start = Math.max(1,Integer.parseInt(posToken[0]));
+				end = Math.min(header.sequenceLengths.get(seq),Integer.parseInt(posToken[1]));
 			} else if (posToken.length==1){
-				start = Integer.parseInt(posToken[0]);
+				start = Math.max(1,Integer.parseInt(posToken[0]));;
 			} else {
 				System.err.println("Invalid region format.");
 				System.exit(1);

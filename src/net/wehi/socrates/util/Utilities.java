@@ -27,6 +27,19 @@ public class Utilities {
 		return f;
 	}
 	
+	/**
+	 * Deletes BAM file and its index file if exists.
+	 * @param bamFile
+	 */
+	public static void deleteBAM(File bamFile) {
+		String fn = bamFile.getAbsolutePath();
+		File indexFile = new File( fn.substring(0,fn.lastIndexOf('.'))+".bai" );
+		if (indexFile.exists()) indexFile.delete();
+		indexFile = new File( fn+".bai" );
+		if (indexFile.exists()) indexFile.delete();
+		if (bamFile.exists()) bamFile.delete();
+	}
+	
 	
 	public static char nucleotideComplement(char n) {
 		switch (n) {

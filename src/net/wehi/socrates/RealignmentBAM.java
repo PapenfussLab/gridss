@@ -10,13 +10,13 @@ import java.io.File;
 //import java.util.zip.GZIPInputStream;
 //import java.util.HashMap;
 
+
 import net.sf.samtools.SAMFileHeader.SortOrder;
 import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMFileWriter;
 import net.sf.samtools.SAMFileWriterFactory;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
-
 import net.sf.samtools.BAMRecordCodec;
 import net.sf.samtools.SAMRecordCoordinateComparator;
 import net.sf.samtools.util.SortingCollection;
@@ -35,7 +35,7 @@ public class RealignmentBAM {
 	
 	public static void makeRealignmentBAM(String inputBAMFilename, String outputBamFilename) {
 		final SAMFileReader sam = (inputBAMFilename.equals("-")) ? new SAMFileReader( System.in ) : new SAMFileReader( new File(inputBAMFilename) );
-		sam.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
+		SAMFileReader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
 		
 		ProgressVerbose p = new ProgressVerbose("Sorting alignments", 1000000, SOCRATES.verbose);
 		try {
@@ -45,9 +45,13 @@ public class RealignmentBAM {
 			SAMRecordIterator iter = sam.iterator();
 			while (iter.hasNext()) {
 				SAMRecord aln = iter.next();
+				
+				if (aln.getNotPrimaryAlignmentFlag()) continue;
+				
 				p.stepProgress(" alignments added to sorting collection");
 				String readName = aln.getReadName();
 				String[] tokens = readName.split("&");
+				assert tokens.length == 5;
 				
 				aln.setReadName( tokens[0] );
 				aln.setFirstOfPairFlag(true);
@@ -102,20 +106,24 @@ public class RealignmentBAM {
 	}
 
     public static void printHelp() {
-        System.out.println("usage: RealignmentBAM input_bam output_bam");
-        System.out.println(" set input_bam to \"-\" to accept input from stdin");
+        System.err.println("usage: RealignmentBAM input_bam output_bam");
+        System.err.println(" set input_bam to \"-\" to accept input from stdin");
     }
 
 	
 	public static void main(String[] args) {
 		if (args.length==2) {
             SOCRATES.verbose = false;
-            System.out.println("\nAdd anchor information into re-alignment BAM file");
-            System.out.println("  output BAM file: " + args[1] );
+            System.err.println("\nAdd anchor information into re-alignment BAM file");
+            System.err.println("  input BAM file:\t" + args[0] );
+            System.err.println("  output BAM file:\t" + args[1] );
 			makeRealignmentBAM(args[0], args[1]);
 		}
 		else {
+			for (int i=0; i<args.length; i++)
+				System.err.println(args[i]);
             printHelp();
+            System.exit(1);
 		}
 	}
 }

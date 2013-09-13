@@ -1,8 +1,33 @@
 #!/usr/bin/env python
 
-import os, sys, argparse, subprocess
+import os, sys, math, argparse, subprocess
 
-def get_filenames( input_bam_file ):
+LIBRARIES=['sam-1.77.jar','commons-lang3-3.1.jar','commons-cli-1.2.jar','picard-1.85.jar','snappy-java-1.0.3-rc3.jar']
+
+def convert_memory(java_mem):
+    if java_mem[-1].upper()=='G':
+        mem = int(java_mem[:-1]) * 1024L*1024L*1024L
+    elif java_mem[-1].upper()=='M':
+        mem = int(java_mem[:-1]) * 1024L*1024L
+    else:
+        print >> sys.stderr, 'Invalid JVM memory specification: %s. Use either "g" or "m" as units.' % (java_mem)
+        sys.exit(1)
+    return mem
+
+def find_bam_index(bam_file):
+    if not os.path.exists( bam_file ):
+        print >> sys.stderr, 'Required BAM file not found: %s' % bam_file
+        sys.exit(1)
+
+    bam_index = bam_file + '.bai'
+    if os.path.exists( bam_index ): return bam_index
+    bam_index = os.path.splitext(bam_file)[0] + '.bai'
+    print bam_index
+    if os.path.exists( bam_index ): return bam_index
+    print >> sys.stderr, 'BAM index missing.'
+    return None
+
+def get_output_filenames( input_bam_file ):
     data_dir, filename = os.path.split( input_bam_file )
     stem, ext = os.path.splitext( filename )
     suffix = '_long_sc_l%d_q%d_m%d_i%d' % ( args.long_sc_len, args.base_quality, args.min_mapq, args.percent_id )
@@ -14,15 +39,37 @@ def get_filenames( input_bam_file ):
 
     return long_sc_fq, long_sc_bam, short_sc_bam, metrics 
 
-def run_all(args):
-    data_dir, filename = os.path.split( args.input_file )
-    stem, ext = os.path.splitext( filename )
-    suffix = '_long_sc_l%d_q%d_m%d_i%d' % ( args.long_sc_len, args.base_quality, args.min_mapq, args.percent_id )
+def make_java_cmd( mode, java_mem ):
+    if mode=='preprocess':
+        binary = 'BAMStratifier'
+    elif mode=='process_bam':
+        binary = 'RealignmentBAM'
+    elif mode=='predict':
+        binary = 'RealignmentClustering'
+    elif mode=='annotate':
+        binary = 'AnnotatePairedClusters'
+    else:
+        print >> sys.stderr, 'Invalid mode'
+        sys.exit(1)
 
-    long_sc_fq = stem+suffix+'.fastq.gz'
-    long_sc_bam = stem+suffix+'.bam'
-    short_sc_bam = stem+'_short_sc.bam'
-    metrics = filename + '.metrics'
+    convert_memory( java_mem )
+
+    prog_path = os.path.dirname( os.path.realpath(__file__) )
+    library_path = os.path.join( prog_path, 'lib' )
+    binary_path = os.path.join( prog_path, 'bin' )
+    libs = [binary_path]
+    for lib in LIBRARIES:
+        libs.append( os.path.join( library_path, lib ) )
+    class_path = ':'.join(libs)
+    cmd = os.path.join( 'java -Xmx%s -cp %s net.wehi.socrates.%s ' % (java_mem, class_path, binary) )
+    return cmd
+
+
+#===================================================================================================
+ 
+
+def run_all(args):
+    long_sc_fq, long_sc_bam, short_sc_bam, metrics = get_output_filenames( args.input_file )
 
     run_preprocess(args, args.input_file)
     run_process_bam(args, long_sc_fq, long_sc_bam)
@@ -31,8 +78,7 @@ def run_all(args):
         run_annotate(args)
 
 def run_preprocess(args, input_file):
-    cmd = os.path.join( os.path.realpath( os.curdir ), 'bin' )
-    cmd = os.path.join( cmd, 'PreprocessBAM' )
+    cmd = make_java_cmd('preprocess', args.jvm_memory)
     opts = [ '-l %d' % args.long_sc_len, '-q %d' % args.min_mapq, '-b %d' % args.base_quality, \
              '-p %d' % args.percent_id, '-t %d' % args.threads ]
 
@@ -42,42 +88,69 @@ def run_preprocess(args, input_file):
         opts.append('--verbose')
 
     cmd = cmd + ' ' + ' '.join(opts) + ' ' + input_file
-    print cmd
-    proc = subprocess.Popen( cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    print proc.communicate()[0]
+    proc = subprocess.Popen( cmd, shell=True )
+    proc.communicate()[0]
 
 def run_process_bam(args, input_file, output_file):
-    # do alignment first
-    bt2 = None
+    java_cmd = make_java_cmd('process_bam', args.jvm_memory)
+
     if input_file.endswith('.fastq.gz'):
+        if args.bowtie2_db is None:
+            print >> sys.stderr, 'Bowtie2 DB is required to perform alignment of FASTQ file.'
+            sys.exit(1)
         print >> sys.stderr, '\nBowtie2 alignment, DB='+args.bowtie2_db
-        cmd = 'bowtie2'
-        opts = ['-p %d' % args.threads, '--local', '-x %s' % args.bowtie2_db, '-U %s' % input_file]
-        cmd = cmd + ' ' + ' '.join(opts)
-        print cmd
-        bt2 = subprocess.Popen( cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
+        bt2_cmd = 'bowtie2 -p %d --local -x %s -U %s' % (args.bowtie2_threads, args.bowtie2_db, input_file)
+        socrates_cmd = java_cmd + " - %s " % output_file
 
-        input_chanel = '-'
-        input_pipe = bt2.stdout
+        proc = subprocess.Popen( bt2_cmd + ' | ' + socrates_cmd, shell=True )
+        proc.communicate()[0]
     else:
-        input_chanel = input_file
-        input_pipe = None
+        socrates_cmd = java_cmd + " %s %s " % (input_file, output_file)
 
-    cmd_socrates = os.path.join( os.path.realpath( os.curdir ), 'bin' )
-    cmd_socrates = os.path.join( cmd_socrates, 'ProcessRealignmentBAM' )
-    cmd_socrates = cmd_socrates + ' ' + input_chanel + ' ' + output_file
-    print cmd_socrates
-    proc_socrates = subprocess.Popen( cmd_socrates, shell=True, stdin=input_pipe, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
-    if bt2:
-        input_pipe.close()
-        for line in bt2.stderr:
-            sys.stderr.write( line )
-
-    print proc_socrates.communicate()[0]
+        proc = subprocess.Popen( socrates_cmd, shell=True )
+        proc.communicate()[0]
 
 def run_predict(args, long_sc_bam, short_sc_bam, metrics_file):
-    cmd = os.path.join( os.path.realpath( os.curdir ), 'bin' )
-    cmd = os.path.join( cmd, 'PredictRearrangements' )
+    java_cmd = make_java_cmd('predict', args.jvm_memory)
+
+    # check memory to satisfy (at least) memory mapped BAM files
+    allocated_mem = convert_memory( args.jvm_memory )
+    memory_map_mem = 0
+    long_sc_bam_index = find_bam_index( long_sc_bam )
+    short_sc_bam_index = find_bam_index( short_sc_bam )
+    if long_sc_bam_index:
+        memory_map_mem += os.stat( long_sc_bam_index ).st_size
+    else:
+        print >> sys.stderr, 'WARNING: BAM index for %s does not exist. Memory check not reliable.' % long_sc_bam
+    if short_sc_bam_index:
+        memory_map_mem += os.stat( short_sc_bam_index ).st_size
+    else:
+        print >> sys.stderr, 'WARNING: BAM index for %s does not exist. Memory check not reliable.' % short_sc_bam
+    memory_map_mem += os.stat( long_sc_bam ).st_size + os.stat( short_sc_bam ).st_size
+
+    if allocated_mem < memory_map_mem:
+        print >> sys.stderr, 'ERROR: Minimum JVM memory is %d Mb'% ( math.ceil((1.5*memory_map_mem)/float(1024*1024)) )
+        print >> sys.stderr, '[ Use --jvm_memory option to increase memory allocation ]'
+        sys.exit(1)
+
+    # my gut-feeling guess is minimum memory requirement is 2.5 x file size.... 
+    factor = 2.0
+    if allocated_mem < factor*memory_map_mem:
+        print >> sys.stderr, 'WARNING: Recommended memory setting for the given data is %d Mb'% ( math.ceil((factor*memory_map_mem)/float(1024*1024)) )
+        print >> sys.stderr, 'Do you wish to continue? (y/n)'
+        while True:
+            choice = sys.stdin.readline().strip().upper()
+            if choice=='Y':
+                yes=True
+                break
+            elif choice=='N':
+                yes=False
+                break
+            else:
+                print >> sys.stderr, 'Invalid choice: enter either "y" or "n"'
+        if not yes: sys.exit(1)
+
+
     opts = ['--long-sc-len %d'%args.long_sc_len, '--min-mapq %d'%args.min_mapq, '--percent-id %d'%args.percent_id, \
             '--threads %d'%args.threads, '--flank %d'%args.flank, '--promiscuity %d'%args.promiscuity]
     if args.no_short_sc_cluster:
@@ -89,30 +162,27 @@ def run_predict(args, long_sc_bam, short_sc_bam, metrics_file):
     if args.verbose:
         opts.append('--verbose')
 
-    cmd = cmd + ' ' + ' '.join(opts) + ' ' + long_sc_bam + ' ' + short_sc_bam + ' ' + metrics_file
+    cmd = java_cmd + ' ' + ' '.join(opts) + ' ' + long_sc_bam + ' ' + short_sc_bam + ' ' + metrics_file
     if args.block_size is not None: cmd = cmd + ' %d'%args.block_size
-    print cmd
-    proc = subprocess.Popen( cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
-    print proc.communicate()[0]
+
+    proc = subprocess.Popen( cmd, shell=True )
+    proc.communicate()[0]
 
 def run_annotate(args):
-    cmd = os.path.join( os.path.realpath( os.curdir ), 'bin' )
-    cmd = os.path.join( cmd, 'AnnotateRearrangements' )
+    cmd = make_java_cmd('annotate', args.jvm_memory)
     if args.normal:
         cmd = cmd + '--normal ' + args.normal
     if args.repeatmask:
         cmd = cmd + '--repeatmask ' + args.repeatmask
     if args.verbose:
         cmd = cmd + '--verbose'
-    print cmd
-    proc = subprocess.Popen( cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE )
-    print proc.communicate()[0]
-
+    proc = subprocess.Popen( cmd, shell=True )
+    proc.communicate()[0]
 
 
 
 if __name__=='__main__':
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     ###################### set up parsers #############
     subparsers = parser.add_subparsers(dest='mode')
@@ -133,12 +203,19 @@ if __name__=='__main__':
                                     type=int, default=5)
     parser_preprocess.add_argument('-t', "--threads", help="Number of threads [default: 1]",\
                                     type=int, default=1)
+    parser_preprocess.add_argument('--jvm_memory', help="set Java Virtual Machine maximum memory size (e.g. 1g, 512m)",\
+                                    type=str, default='2g')
+
     parser_preprocess.add_argument("--keep-duplicate", help="Keep duplicate reads", action='store_true')
     parser_preprocess.add_argument("--verbose", help="be verbose of progress", action='store_true')
     parser_preprocess.add_argument("input_file", help="Alignment BAM file")
 
     ###################### ProcessBAM #################
-    parser_realign.add_argument("input_file", help="Re-alignment BAM file from short read alginer")
+    parser_realign.add_argument('--jvm_memory', help="set Java Virtual Machine maximum memory size (e.g. 1g, 512m)",\
+                                    type=str, default='2g')
+    parser_realign.add_argument("--bowtie2_db", type=str, default=None, help="Prefix of Bowtie2 indexed database for sample")
+    parser_realign.add_argument("--bowtie2_threads", type=int, default=1, help="Prefix of Bowtie2 indexed database for sample")
+    parser_realign.add_argument("input_file", help="Re-alignment BAM file from short read alginer OR long SC FASTQ from 'Socrates preprocess'")
     parser_realign.add_argument("output_file", help="Re-alignment BAM file with anchor info in tags")
 
     ###################### PredictRearrangements #########
@@ -161,6 +238,8 @@ if __name__=='__main__':
 
     parser_predict.add_argument("--ideal-only", help="Use only proper pair 5' SC and anomalous pair 3' SC", action='store_true')
     parser_predict.add_argument("--verbose", help="be verbose of progress", action='store_true')
+    parser_predict.add_argument('--jvm_memory', help="set Java Virtual Machine maximum memory size (e.g. 1g, 512m)",\
+                                    type=str, default='2g')
 
     parser_predict.add_argument("long_sc_bam", help="Re-alignment BAM file with anchor info in tags")
     parser_predict.add_argument("short_sc_bam", help="Short soft clipped alignments extracted from PreprocessBAM")
@@ -172,6 +251,8 @@ if __name__=='__main__':
     parser_annotate.add_argument("--normal", help="Socrates paired breakpoint calls for normal sample [default=None]", type=str, default=None)
     parser_annotate.add_argument("--repeatmask", help="UCSC repeat masker track file in Tabix form [default=None]", type=str, default=None)
     parser_annotate.add_argument("--verbose", help="be verbose of progress", action='store_true')
+    parser_annotate.add_argument('--jvm_memory', help="set Java Virtual Machine maximum memory size (e.g. 1g, 512m)",\
+                                    type=str, default='2g')
     parser_annotate.add_argument("input_file", help="Results from PredictRearrangements")
 
     ###################### do all ##########
@@ -185,27 +266,36 @@ if __name__=='__main__':
                                     type=int, default=5)
     parser_all.add_argument('-t', "--threads", help="Number of threads [default: 1]",\
                                     type=int, default=1)
-    parser_all.add_argument("--keep-duplicate", help="Keep duplicate reads", action='store_true')
+    parser_all.add_argument("--keep-duplicate", help="Keep duplicate reads", \
+                                    action='store_true')
+
+    parser_all.add_argument("--bowtie2_threads", type=int, default=1, help="Prefix of Bowtie2 indexed database for sample")
+    parser_all.add_argument("--bowtie2_db", type=str, default=None, help="Prefix of Bowtie2 indexed database for sample")
 
     parser_all.add_argument('-f', "--flank", help="Size of flank for promiscuity filter [default: 50 (nt)]",\
-                                 type=int, default=50)
+                                    type=int, default=50)
     parser_all.add_argument('--promiscuity', help="Exclude cluster if more than PROMISCUITY clusters within FLANK(nt) of a breakpoint [default: 5]",\
-                                 type=int, default=5)
+                                    type=int, default=5)
 
     parser_all.add_argument("--no-short-sc-cluster", help="Disable search for short soft clip cluster support for unpaired clusters.",\
-                                 action='store_true')
-    parser_all.add_argument("--max-support", help="Maximum realignment support to search for short SC cluster [default: 30]. --no-short-sc-cluster option cannot be used.",\
-                                 type=int, default=30)
+                                    action='store_true')
+    parser_all.add_argument("--max-support", help="Maximum realignment support to search for short SC cluster [default: 30]. "
+                                                  "--no-short-sc-cluster option cannot be used.", type=int, default=30)
 
-    parser_all.add_argument("--ideal-only", help="Use only proper pair 5' SC and anomalous pair 3' SC", action='store_true')
+    parser_all.add_argument("--ideal-only", help="Use only proper pair 5' SC and anomalous pair 3' SC", \
+                                    action='store_true')
 
-    parser_all.add_argument("--normal", help="Socrates paired breakpoint calls for normal sample [default=None]", type=str, default=None)
-    parser_all.add_argument("--repeatmask", help="UCSC repeat masker track file in Tabix form [default=None]", type=str, default=None)
+    parser_all.add_argument("--normal", help="Socrates paired breakpoint calls for normal sample [default=None]", \
+                                    type=str, default=None)
+    parser_all.add_argument("--repeatmask", help="UCSC repeat masker track file in Tabix form [default=None]", \
+                                    type=str, default=None)
 
-    parser_all.add_argument("--verbose", help="be verbose of progress", action='store_true')
+    parser_all.add_argument("--verbose", help="be verbose of progress", \
+                                    action='store_true')
+    parser_all.add_argument('--jvm_memory', help="set Java Virtual Machine maximum memory size (e.g. 1g, 512m)",\
+                                    type=str, default='2g')
 
     parser_all.add_argument("input_file", help="Alignment BAM file")
-    parser_all.add_argument("bowtie2_db", help="Prefix of Bowtie2 indexed database for sample")
     parser_all.add_argument("block_size", help="Size of a block for a single Socrates thread to search for breakpoints", \
                                  nargs='?', type=int, default=None)
 

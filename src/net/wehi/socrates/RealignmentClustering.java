@@ -70,6 +70,12 @@ public class RealignmentClustering {
 //	private ConcurrentHashMap<Integer,ConcurrentSkipListMap<Integer, AtomicInteger>> promiscuityAnchor;
 //	private ConcurrentHashMap<Integer,ConcurrentSkipListMap<Integer, AtomicInteger>> promiscuityRealign;
 //	private ConcurrentSkipListSet<>
+	
+	private static final long MEGABYTE = 1024L * 1024L;
+
+	public static long bytesToMegabytes(long bytes) {
+		return bytes / MEGABYTE;
+	}
 
 	private boolean idealOnly;
 	private boolean find_short_sc_cluster=true;
@@ -79,8 +85,12 @@ public class RealignmentClustering {
 								 String metricsFilename,
 								 int threads,
 								 int minMapq, int scLenThreshold, int maxSupport, int pidthresh, int pthresh, int pflank, boolean ideal, boolean short_sc_cluster) {
-		this.minMapq = minMapq; this.scLenThreshold = scLenThreshold; this.promiscuityThreshold = pthresh; this.promiscuityFlank = pflank;
-		this.maxLongSupport = maxSupport; this.percentIdentityThreshold = (float)pidthresh/100f;
+		this.minMapq = minMapq; 
+		this.scLenThreshold = scLenThreshold; 
+		this.promiscuityThreshold = pthresh; 
+		this.promiscuityFlank = pflank;
+		this.maxLongSupport = maxSupport; 
+		this.percentIdentityThreshold = (float)pidthresh/100f;
 		this.idealOnly = ideal;
 		this.find_short_sc_cluster = short_sc_cluster;
 		this.threads = threads;
@@ -118,7 +128,7 @@ public class RealignmentClustering {
 			index = new File( bamFilename.substring(0, bamFilename.lastIndexOf("."))+".bai" );
 			if (!index.exists()) {
 				System.err.println("BAM index file does not exist for " + bamFilename + ".");
-				System.err.println("Socrates is creating one for you as: " + index);
+				System.err.println("Socrates is creating one for you.");
 				BuildBamIndex.createIndex(new SAMFileReader(new File(bamFilename)), index);
 			}
 		}
@@ -195,6 +205,7 @@ public class RealignmentClustering {
 	
 	private void runClustering(ArrayList< Callable<ResultCounter> > tasks) {
 		ExecutorService pool = null;
+		ArrayList<ResultCounter> all_results = new ArrayList<ResultCounter>();
 		try {
 			// start thread service
 			pool = Executors.newFixedThreadPool(threads);
@@ -211,68 +222,67 @@ public class RealignmentClustering {
 			int pairedLongLong=0, pairedLongShort=0, unpaired=0;
 			int finished = 0;
 
-			if (tasks.size()>1) {
-				PrintWriter pairResult = null;
-				pairResult = new PrintWriter(pairOut);
-				pairResult.println("#C1_realign\tC1_realign_dir\tC1_realign_consensus\tC1_anchor\tC1_anchor_dir\tC1_anchor_consensus\tC1_long_support\tC1_long_support_bases\tC1_short_support\tC1_short_support_bases\tC1_short_support_max_len\tC1_avg_realign_mapq\t" +
-									   "C2_realign\tC2_realign_dir\tC2_realign_consensus\tC2_anchor\tC2_anchor_dir\tC2_anchor_consensus\tC2_long_support\tC2_long_support_bases\tC2_short_support\tC2_short_support_bases\tC2_short_support_max_len\tC2_avg_realign_mapq");
-				PrintWriter unpairResult = new PrintWriter(unpairOut);
-				
-				for (int i=0; i<tasks.size(); i++) {
-					Future<ResultCounter> future = results.get(i);
-					ResultCounter result = future.get();
-					if (future.isDone()) finished++;
-					pairedLongLong += result.pairedClusters;
-					pairedLongShort += result.longShortPair;
-					unpaired += result.unpaired;
-					String l = null;
-					BufferedReader reader = null;
-					if (result.pairResult.exists()) {
-						reader = result.getPairResultReader();
-						while ((l=reader.readLine())!=null) {
-							pairResult.println(l);
-						}
-						reader.close();
-						result.pairResult.delete();
-					}
-					
-					if (result.unpairResult.exists()) {
-						reader = result.getUnpairResultReader();
-						while ((l=reader.readLine())!=null) {
-							unpairResult.println(l);
-						}
-						reader.close();
-						result.unpairResult.delete();
-					}
-				}
-				pairResult.close();
-				unpairResult.close();
-			} else if (tasks.size()==1) {
-				Future<ResultCounter> future = results.get(0);
+			// merge cluster pairing results
+			PrintWriter pairResult = null;
+			pairResult = new PrintWriter(pairOut);
+			pairResult.println("#C1_realign\tC1_realign_dir\tC1_realign_consensus\tC1_anchor\tC1_anchor_dir\tC1_anchor_consensus\tC1_long_support\tC1_long_support_bases\tC1_short_support\tC1_short_support_bases\tC1_short_support_max_len\tC1_avg_realign_mapq\t" +
+							    "C2_realign\tC2_realign_dir\tC2_realign_consensus\tC2_anchor\tC2_anchor_dir\tC2_anchor_consensus\tC2_long_support\tC2_long_support_bases\tC2_short_support\tC2_short_support_bases\tC2_short_support_max_len\tC2_avg_realign_mapq");
+			PrintWriter unpairResult = new PrintWriter(unpairOut);
+			
+			for (int i=0; i<tasks.size(); i++) {
+				Future<ResultCounter> future = results.get(i);
 				ResultCounter result = future.get();
+				all_results.add( result );
 				if (future.isDone()) finished++;
 				pairedLongLong += result.pairedClusters;
 				pairedLongShort += result.longShortPair;
 				unpaired += result.unpaired;
+				String l = null;
+				BufferedReader reader = null;
+				if (result.pairResult.exists()) {
+					reader = result.getPairResultReader();
+					while ((l=reader.readLine())!=null) {
+						pairResult.println(l);
+					}
+					reader.close();
+					result.pairResult.delete();
+				}
 				
-				result.pairResult.renameTo(pairOut);
-				result.unpairResult.renameTo(unpairOut);
+				if (result.unpairResult.exists()) {
+					reader = result.getUnpairResultReader();
+					while ((l=reader.readLine())!=null) {
+						unpairResult.println(l);
+					}
+					reader.close();
+					result.unpairResult.delete();
+				}
 			}
+			pairResult.close();
+			unpairResult.close();
 			
 			if (SOCRATES.verbose) {
-				System.out.println(finished + " tasks finished");
+				System.err.println(finished + " tasks finished");
 			}
-			System.out.println(pairedLongLong + " clusters paired - long SC to long SC");
-			System.out.println(pairedLongShort + " clusters paired - long SC to short SC");
-			System.out.println(unpaired + " clusters unpaired");
+			System.err.println(pairedLongLong + " clusters paired - long SC to long SC");
+			System.err.println(pairedLongShort + " clusters paired - long SC to short SC");
+			System.err.println(unpaired + " clusters unpaired");
 	    } catch (InterruptedException ie) {
 			ie.printStackTrace();
 		} catch (ExecutionException ee) {
 			ee.printStackTrace();
 		} catch (Exception e) {
+			e.printStackTrace();
 		} finally {
 			// terminate thread service
 			pool.shutdown();
+			// clean up temp files
+			for (ResultCounter result : all_results) {
+				if (result.pairResult.exists()) result.pairResult.delete();
+				if (result.unpairResult.exists()) result.unpairResult.delete();
+			}
+			Runtime runtime = Runtime.getRuntime();
+			long memory = runtime.totalMemory() - runtime.freeMemory();
+			System.out.println("Used memory is: "+ bytesToMegabytes(memory) + "MB");
 		}
 	}
 	
@@ -299,7 +309,7 @@ public class RealignmentClustering {
 			SAMFileReader realignReader = null;
 			SAMFileReader shortScReader = null;
 
-			if (threadVerbose) System.out.println("Starting clustering in: " + gi1.toString(fileInfo) + " ---> " + gi2.toString(fileInfo));
+			if (threadVerbose) System.err.println("Starting clustering in: " + gi1.toString(fileInfo) + " ---> " + gi2.toString(fileInfo));
 
 			realignReader = new SAMFileReader( realignedScBAMMemoryStream, realignedScIndexMemoryStream, false );
 			shortScReader = new SAMFileReader( shortScBAMMemoryStream, shortScIndexMemoryStream, false ); 
@@ -391,10 +401,10 @@ public class RealignmentClustering {
 			jobsCompleted.incrementAndGet();
             String msg = "";
 			if (SOCRATES.verbose) {
-                msg += "Thread task: " + gi1.toString(fileInfo) + " ---> " + gi2.toString(fileInfo);
+                msg += "Thread task: " + gi1.toString(fileInfo) + " ---> " + gi2.toString(fileInfo) + "\n\t";
 			}
             msg += "Task completed ( " + jobsCompleted.get() + " / " + jobsTotal + " )";
-            System.out.println( msg );
+            System.err.println( msg );
 			
 			return counter;
 		}
@@ -404,7 +414,7 @@ public class RealignmentClustering {
 				GenomicIndexInterval anchorLocus /*anchor locus*/, int anchorLeftFlank, int anchorRightFlank) throws Exception {
 			TreeSet<RealignmentCluster> clusters = new TreeSet<RealignmentCluster>();
 
-			if (threadVerbose) System.out.println("Building long SC clusters in " + gi1.toString(fileInfo) + " ---> " + gi2.toString(fileInfo));
+			if (threadVerbose) System.err.println("Building long SC clusters in " + gi1.toString(fileInfo) + " ---> " + gi2.toString(fileInfo));
 				
 			SAMRecordIterator iter = reader.query(fileInfo.getSequenceName(realignLocus.chromIdx), realignLocus.start, realignLocus.end, false);
 			while (iter.hasNext()) {
@@ -483,7 +493,7 @@ public class RealignmentClustering {
 		}
 		
 		private int pairLongSCClusters(SAMFileReader reader, TreeSet<RealignmentCluster> clusters) throws Exception {
-			if (threadVerbose) System.out.println("Pairing long SC clusters in " + gi1.toString(fileInfo) + " ---> " + gi2.toString(fileInfo));
+			if (threadVerbose) System.err.println("Pairing long SC clusters in " + gi1.toString(fileInfo) + " ---> " + gi2.toString(fileInfo));
 			
 			// find clusters that can be paired
 			int p=0;
@@ -512,9 +522,9 @@ public class RealignmentClustering {
 			}
 
 			//permanently remove redundant clusters from output
-			for (RealignmentCluster redundant_call : redundant) {
-				clusters.remove(redundant_call);
-			}
+//			for (RealignmentCluster redundant_call : redundant) {
+//				if(redundant_call.pairedCluster == null) clusters.remove(redundant_call);
+//			}
 
 			// add short read support to paired clusters
 			for (RealignmentCluster cluster : paired) {
@@ -548,7 +558,7 @@ public class RealignmentClustering {
 		}
 		
 		private int pairLongWithShortClusters(SAMFileReader reader, TreeSet<RealignmentCluster> clusters) throws Exception {
-			if (threadVerbose) System.out.println("Pairing long SC clusters with short SC clusters in " + gi1.toString(fileInfo) + " ---> " + gi2.toString(fileInfo));
+			if (threadVerbose) System.err.println("Pairing long SC clusters with short SC clusters in " + gi1.toString(fileInfo) + " ---> " + gi2.toString(fileInfo));
 			
 			int p=0;
 			TreeSet<RealignmentCluster> shortScClusters = new TreeSet<RealignmentCluster>();
@@ -669,8 +679,10 @@ public class RealignmentClustering {
 		public ResultCounter() throws Exception {
 			File dir = new File(System.getProperty("user.dir"));
 			pairResult = File.createTempFile("Socrates_paired_"+realignScStem, ".tmp", dir);
+			pairResult.deleteOnExit();
 			pairResultWriter = new PrintWriter(pairResult);
 			unpairResult = File.createTempFile("Socrates_unpaired_"+realignScStem, ".tmp", dir);
+			unpairResult.deleteOnExit();
 			unpairResultWriter = new PrintWriter(unpairResult);
 		}
 		
@@ -703,7 +715,7 @@ public class RealignmentClustering {
 										.withType( Number.class )
 										.withLongOpt( "threads" )
 										.create( 't' );
-		Option ideal = new Option( "i", "ideal-only", false, "Use only proper pair 5' SC and anomalous pair 3' SC [default: false]");
+		Option ideal = new Option( "i", "ideal-only", false, "FOR PAIRED-END DATA ONLY. Use only proper pair 5' SC and anomalous pair 3' SC [default: false]");
 		Option mapq = OptionBuilder.withArgName( "min-mapq" )
 				.hasArg()
 				.withDescription("Minimum realignments mapq [default: 2]")
@@ -778,7 +790,7 @@ public class RealignmentClustering {
 			int max_support = cmd.hasOption("max_support") ? ((Number)cmd.getParsedOptionValue("max_support")).intValue() : 30;
 			boolean short_sc_cluster = cmd.hasOption("no-short-sc-cluster") ? false : true;
 			int min_percent_id = cmd.hasOption("percent-id") ? ((Number)cmd.getParsedOptionValue("percent-id")).intValue() : 95;
-			int promiscuity = cmd.hasOption("promiscuity") ? ((Number)cmd.getParsedOptionValue("promiscuity")).intValue() : 95;
+			int promiscuity = cmd.hasOption("promiscuity") ? ((Number)cmd.getParsedOptionValue("promiscuity")).intValue() : 5;
 			int pflank = cmd.hasOption("flank") ? ((Number)cmd.getParsedOptionValue("flank")).intValue() : 50;
 			SOCRATES.verbose = cmd.hasOption("verbose");
 			
@@ -792,17 +804,17 @@ public class RealignmentClustering {
 			String metrics = remainingArgs[2];
 			String region = remainingArgs.length>=4 ? remainingArgs[3] : null;
 
-            System.out.println( "\nClustering re-alignments." );
-            System.out.println( "  search for short soft clip cluster: " + short_sc_cluster );
+            System.err.println( "\nClustering re-alignments." );
+            System.err.println( "  search for short soft clip cluster: " + short_sc_cluster );
             if (short_sc_cluster)
-            	System.out.println( "    maximum long re-alignment support for unpaired cluster to search for short soft clip cluster: " + max_support);
-            System.out.println( "  ideal evidence only: " + ideal );
-            System.out.println( "  parallel threads: " + threads);
-            System.out.println( "  minimum mapq of re-alignment: " + min_mapq );
-            System.out.println( "  minimum \"long\" soft clip length: " + max_long_sc );
-            System.out.println( "  minimum percent identity of realignment: " + min_percent_id );
-            System.out.println( "  minimum number of clusters in a region to be promiscuous region: " + promiscuity );
-            System.out.println( "    size of region: " + pflank );
+            	System.err.println( "  maximum long re-alignment support for unpaired cluster to search for short soft clip cluster: " + max_support);
+            System.err.println( "  ideal evidence only: " + ideal );
+            System.err.println( "  parallel threads: " + threads);
+            System.err.println( "  minimum mapq of re-alignment: " + min_mapq );
+            System.err.println( "  minimum \"long\" soft clip length: " + max_long_sc );
+            System.err.println( "  minimum percent identity of realignment: " + min_percent_id );
+            System.err.println( "  minimum number of clusters in a region to be promiscuous region: " + promiscuity );
+            System.err.println( "  size of region: " + pflank +"bp" );
 			
 			RealignmentClustering r = new RealignmentClustering(
 					realignedSc, 
@@ -820,12 +832,12 @@ public class RealignmentClustering {
 
 			if (region!=null && region.length()>=1 && region.matches("[0-9]+")) {
 				int rsize = Integer.parseInt(region);
-                System.out.println( "  using bucket size: " + rsize );
+                System.err.println( "  using bucket size: " + rsize );
 				if (rsize>0) r.clusterRealignedSC(Integer.parseInt(region));
 				else r.clusterRealignedSC(null);
 			}
 			else {
-                r.clusterRealignedSC(region);
+                r.clusterRealignedSC(null);
             }
 		} catch( ParseException exp ) {
 	        System.err.println( exp.getMessage() );

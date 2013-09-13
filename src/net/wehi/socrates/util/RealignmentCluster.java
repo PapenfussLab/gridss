@@ -125,6 +125,14 @@ public class RealignmentCluster implements Comparable<RealignmentCluster> {
 	public boolean matchConsensus(RealignmentRecordSummary realignment, float similarity) {
 		return true;
 	}
+
+	public boolean nearTo(RealignmentCluster realignment, int flank) {
+		if (realignChr != realignment.realignChr || anchorChr != realignment.anchorChr) return false;
+		if (realignForward != realignment.realignForward || anchorForward != realignment.anchorForward) return false;
+		if ( Math.abs(realignPos - realignment.realignPos) > flank ) return false;
+		if ( Math.abs(anchorPos - realignment.anchorPos) > flank ) return false;
+		return true;
+	}
 	
 	public boolean reciprocalNearTo(RealignmentCluster other, int flank) {
 		if (realignChr != other.anchorChr || anchorChr != other.realignChr) return false;
