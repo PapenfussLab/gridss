@@ -23,23 +23,23 @@ public class ProgressVerbose {
 	public void stepProgress(String suffixMessage) {
 		progress++;
 		if (this.verbose && progress % interval == 0) {
-			System.out.println( progress + " " + suffixMessage);
+			System.err.println( progress + " " + suffixMessage);
 		}
 	}
 	
 	public void end(String suffixMessage) {
-		if (this.verbose) System.out.println( progress + " " + suffixMessage);
+		if (this.verbose) System.err.println( progress + " " + suffixMessage);
 	}
 	
 	public void stepProgress(String prefixMessage, String suffixMessage) {
 		progress++;
 		if (this.verbose && progress % interval == 0) {
-			System.out.println( prefixMessage + " " + progress + " " + suffixMessage);
+			System.err.println( prefixMessage + " " + progress + " " + suffixMessage);
 		}
 	}
 	
 	public void end(String prefixMessage, String suffixMessage) {
-		if (this.verbose) System.out.println( prefixMessage + " " + progress + " " + suffixMessage);
+		if (this.verbose) System.err.println( prefixMessage + " " + progress + " " + suffixMessage);
 	}
 
 }

@@ -58,10 +58,17 @@ public class RealignmentRecordSummary {
 		anchorIsIdeal = !(realign.getMateUnmappedFlag());
 	}
 	
-	public static String makeFastqHeader(SAMRecord aln, SAMRecordSummary summary, int bpChr, int bpPos, boolean isIdeal, String alignSeq) {
-		StringBuilder name = new StringBuilder(aln.getReadName() + (aln.getFirstOfPairFlag()?"/1":"/2"));
+	public static String makeFastqHeader(SAMRecord aln, SAMRecordSummary summary, 
+			int bpChr, int bpPos, boolean isIdeal, String alignSeq, char clipStrand) {
+		StringBuilder name;
+		if (aln.getReadPairedFlag())
+			name = new StringBuilder(aln.getReadName() + (aln.getFirstOfPairFlag()?"/1":"/2"));
+		else
+			name = new StringBuilder(aln.getReadName());
+		
         name.append( "&" + bpChr + "&" + bpPos );
-        name.append( "&" + (summary.isHeadClipped() ? "-" : "+") );
+//        name.append( "&" + (summary.isHeadClipped() ? "-" : "+") );
+        name.append( "&" + clipStrand );
         name.append( "&" + (isIdeal?1:0) );
         name.append( "&" + alignSeq );
         return name.toString();

@@ -6,7 +6,6 @@ package net.wehi.socrates;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
-
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
@@ -32,21 +31,21 @@ import java.io.PrintWriter;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.awt.Point;
-
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-//import net.sf.samtools.SAMFileHeader;
+import net.sf.samtools.BAMRecordCodec;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordCoordinateComparator;
 import net.sf.samtools.SAMRecordIterator;
 import net.sf.samtools.SAMFileReader;
+import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMFileWriter;
 import net.sf.samtools.SAMFileWriterFactory;
 //import net.sf.samtools.BAMFileWriter;
-import net.sf.samtools.util.CloseableIterator;
-import net.sf.picard.util.MergingIterator;
 
+import net.sf.samtools.util.CloseableIterator;
+import net.sf.samtools.util.SortingCollection;
 import net.wehi.socrates.util.GenomicIndexInterval;
 import net.wehi.socrates.util.SAMFileInfo;
 import net.wehi.socrates.util.SAMRecordSummary;
@@ -85,27 +84,36 @@ public class BAMStratifier {
 	 * _long_sc_l<length>_q<quality>_anchor.txt.gz for information on unclipped part of soft-clipped alignments
 	 * _one_end_anchor.fastq.gz for one-end-anchored sequences.
 	 * @param sourceFilename source BAM file
-	 * @param scLengthThreshold 
-	 * @param scQualityThreshold
-	 * @param rmdup
+	 * @param number of parallel threads to run
+	 * @param scLengthThreshold - minimum length of soft-clipped part
+	 * @param scQualityThreshold - minimum average quality of bases of soft-clipped part
+	 * @param minMapq - minimum mapping quality of a read to process
+	 * @param rmdup - remove duplicated (by alignment position) reads
+	 * @param noAllSc - disable outputting of *all_sc.bam files, which are only used for visualization
 	 */
-	public BAMStratifier(String sourceFilename, int threads, int scLengthThreshold, int scQualityThreshold, int minMapq, int minPercentIdentity, boolean rmdup, boolean noAllSc) {
+	public BAMStratifier(String sourceFilename, int threads, 
+						 int scLengthThreshold, int scQualityThreshold, int minMapq, int minPercentIdentity, 
+						 boolean rmdup, boolean noAllSc) {
+		
 		this.threads = threads;
 		disableAllSc = noAllSc;
 		// template file
 		sourceBAMFile = Utilities.assertExists(sourceFilename);
 		sourceBAMStem = sourceBAMFile.getName().substring( 0, sourceBAMFile.getName().lastIndexOf('.') );
 
-		// metrics file
+		// open BAM reader
 		SAMFileReader reader = new SAMFileReader( sourceBAMFile );
 		reader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
 		sourceBAMInfo = new SAMFileInfo(reader);
+		// metrics file
 		File sourceBAMInfoFile = new File(sourceFilename+".metrics");
+		// create metrics file in current directory if one is not found
 		if (!sourceBAMInfoFile.exists()) {
 			sourceBAMInfoFile = new File(sourceBAMFile.getName()+".metrics");
 			if (!sourceBAMInfoFile.exists()) SAMFileInfo.writeBAMMetrics(reader, sourceBAMInfo.libraries, sourceBAMInfoFile.getAbsolutePath(), 10000);
 
 		}
+		
 		HashMap<String,Integer> readLengths = SAMFileInfo.getLibraryReadLengths(sourceBAMInfoFile.getAbsolutePath());
 		int maxReadLength = 0;
 		for (Integer length : readLengths.values()) {
@@ -178,6 +186,13 @@ public class BAMStratifier {
 		}
 	}
 	
+	/**
+	 * Invokes multi-threaded execution of tasks.
+	 * This is done as a two-step process.
+	 * Step 1. stratifies alignments and extract usable SC by reference sequence (StratifyWorker)
+	 * Step 2. merge multiple reference sequence BAM files into a single one (MergeWorker)
+	 * @param tasks A list of workers to execute in parallel
+	 */
 	private void runStratify(ArrayList<Callable<OutputFiles>> tasks) {
 		ExecutorService pool = null;
 		try {
@@ -189,29 +204,51 @@ public class BAMStratifier {
 			
 			int finished = 0;
 			int t = tasks.size();
-			File[] anomalous = new File[t], allSc = new File[t], shortSc = new File[t];
-			File[] longSc = new File[t], oneEndAnchor = new File[t];
+			ArrayList<File> anomalous = new ArrayList<File>(), allSc = new ArrayList<File>(), shortSc = new ArrayList<File>();
+			ArrayList<File> longSc = new ArrayList<File>(), oneEndAnchor = new ArrayList<File>();
 			File anomalousBAM = new File(sourceBAMStem+"_anomalous.bam"),
 				 allScBAM = new File(sourceBAMStem+"_all_sc.bam"),
 				 shortScBAM = new File(sourceBAMStem+"_short_sc.bam"),
 				 longScFq = new File(sourceBAMStem+"_long_sc_l"+scLengthThreshold+"_q"+scQualityThreshold+"_m"+minMapq+"_i"+pcId+".fastq.gz"),
 				 oeaFq = new File(sourceBAMStem+"_one_end_anchor.fastq.gz");
+			
+			int totAnomalous = 0, totAllSc = 0, totShortSc = 0, totLongSc = 0, totOEA = 0;
+			// fetch results from concurrent futures
 			for (int i=0; i<t; i++) {
 				Future<OutputFiles> future = results.get(i);
 				if (future.isDone()) finished++;
 				
 				OutputFiles outputs = future.get();
-				anomalous[i] = outputs.anomalous;
-				allSc[i] = outputs.allSc;
-				shortSc[i] = outputs.shortSc;
-				longSc[i] = outputs.longSc;
-				oneEndAnchor[i] = outputs.oneEndAnchor;
-				outputs.clean(); // clean up empty files
+				if (outputs.anomalous != null) {
+					anomalous.add( outputs.anomalous );
+					totAnomalous += outputs.counterAnomalous;
+				}
+				if (outputs.allSc != null) {
+					allSc.add( outputs.allSc );
+					totAllSc += outputs.counterAllSc;
+				}
+				if (outputs.shortSc != null) {
+					shortSc.add( outputs.shortSc );
+					totShortSc += outputs.counterShortSc;
+				}
+				if (outputs.longSc != null) {
+					longSc.add( outputs.longSc );
+					totLongSc += outputs.counterLongSc;
+				}
+				if (outputs.oneEndAnchor != null) {
+					oneEndAnchor.add( outputs.oneEndAnchor );
+					totOEA += outputs.counterOneEndAnchor;
+				}
 			}
 			
 			if (SOCRATES.verbose) {
-				System.out.println(counter.get() + " reads processed");
-				System.out.println(finished + " straytify tasks finished");
+				System.err.println(counter.get() + " reads processed");
+				System.err.println(totShortSc + " short SC reads");
+				System.err.println(totLongSc + " long SC reads");
+				System.err.println(totAllSc + " all SC reads");
+				System.err.println(totAnomalous + " anomalous reads");
+				System.err.println(totOEA + " one-end-anchor reads");
+				System.err.println(finished + " straytify tasks finished");
 			}
 			
 			// merge result files
@@ -226,18 +263,19 @@ public class BAMStratifier {
 			// executing concurrent tasks
 			java.util.List< Future<File> > mergeResults = pool.invokeAll(mergeTasks);
 			finished = 0;
-			for (int i=0; i<t; i++) {
+			for (int i=0; i<mergeTasks.size(); i++) {
 				Future<File> future = mergeResults.get(i);
 				if (future.isDone()) finished++;
 			}
 			if (SOCRATES.verbose) {
-				System.out.println(finished + " merge tasks finished");
+				System.err.println(finished + " merge tasks finished");
 			}
 		} catch (InterruptedException ie) {
 			ie.printStackTrace();
 		} catch (ExecutionException ee) {
 			ee.printStackTrace();
 		} catch (Exception e) {
+			e.printStackTrace();
 		} finally {
 			// terminate thread service
 			pool.shutdown();
@@ -265,21 +303,8 @@ public class BAMStratifier {
 		}
 		
 		public OutputFiles call() throws Exception {
-			SAMFileWriterFactory factory = new SAMFileWriterFactory();
-			SAMFileWriterFactory.setDefaultCreateIndexWhileWriting(true);
-			factory.setCreateIndex(true);
-			
-			SAMFileWriter allScBAM=null, shortScBAM, anomalousBAM;
-			OutputStreamWriter longScFASTQ, oneEndAnchoredFASTQ;
 			// prepare output files
-			outputs = new OutputFiles(seqName);
-			// all SC BAM
-			if (!disableAllSc) allScBAM   = factory.makeBAMWriter( sourceBAM.getFileHeader(), true, outputs.allSc );
-			// short SC BAM
-			shortScBAM = factory.makeBAMWriter( sourceBAM.getFileHeader(), true, outputs.shortSc );
-			anomalousBAM = factory.makeBAMWriter( sourceBAM.getFileHeader(), true, outputs.anomalous );
-			longScFASTQ = new OutputStreamWriter(new GZIPOutputStream( new FileOutputStream(outputs.longSc)) );
-			oneEndAnchoredFASTQ = new OutputStreamWriter(new GZIPOutputStream( new FileOutputStream(outputs.oneEndAnchor) ));
+			outputs = new OutputFiles(seqName, sourceBAM.getFileHeader());
 			
 			int c = 0;
 			while (iterator.hasNext()) {
@@ -287,9 +312,11 @@ public class BAMStratifier {
 				
 				c = counter.incrementAndGet();
 				if (c % 50000000 == 0 && SOCRATES.verbose) {
-					System.out.println(c + " reads processed");
+					System.err.println(c + " reads processed");
 				}
 				
+				// skip secondary alignments (important for BWA-MEM aligned files)
+				if (aln.getNotPrimaryAlignmentFlag()) continue;
 				
 				// skip low mapping quality alignments
 				if (aln.getMappingQuality() < minMapq || aln.getReadFailsVendorQualityCheckFlag())
@@ -299,7 +326,7 @@ public class BAMStratifier {
 
 				// read is NOT mapped, but mate is (One-End-Anchor)
 				if (aln.getReadPairedFlag() && aln.getReadUnmappedFlag() && !aln.getMateUnmappedFlag()) {
-					writeToFastq(oneEndAnchoredFASTQ, aln.getReadName()+"&"+aln.getMateReferenceName()+":"+aln.getMateAlignmentStart(),
+					writeToFastq(outputs.oneEndAnchoredFASTQ, aln.getReadName()+"&"+aln.getMateReferenceName()+":"+aln.getMateAlignmentStart(),
 								 aln.getReadString(), aln.getBaseQualityString());
 					outputs.counterOneEndAnchor++;
 					continue;
@@ -312,11 +339,11 @@ public class BAMStratifier {
 					if (!SAMRecordSummary.isAlignmentSoftClipped(aln)) continue;
 				}
 				
-				addAlignmentToBuffer(aln, allScBAM, shortScBAM, anomalousBAM, longScFASTQ, oneEndAnchoredFASTQ);
+				addAlignmentToBuffer(aln);
 			}
 			
 			iterator.close();
-			close(allScBAM, shortScBAM, anomalousBAM, longScFASTQ, oneEndAnchoredFASTQ);
+			close();
 
 			return outputs;
 		}
@@ -346,8 +373,7 @@ public class BAMStratifier {
 		 * Buffer auto-flushes and write to BAM file periodically.
 		 * @param aln Alignment record to be added to buffer
 		 */
-		private void addAlignmentToBuffer(SAMRecord aln, SAMFileWriter allScBAM, SAMFileWriter shortScBAM, SAMFileWriter anomalousBAM, 
-				OutputStreamWriter longScFASTQ, OutputStreamWriter oneEndAnchoredFASTQ) {
+		private void addAlignmentToBuffer(SAMRecord aln) {
 			AlignmentInfo info = new AlignmentInfo(aln);
 			
 			// check if a new buffer entry is needed
@@ -362,7 +388,7 @@ public class BAMStratifier {
 			
 			// new chromosome, flush buffer and add new entry
 			if ( this.posBuffer.getLast().x != aln.getReferenceIndex() ) {
-				flush(allScBAM, shortScBAM, anomalousBAM, longScFASTQ);
+				flush();
 				this.hashBuffer.addLast( new HashSet<AlignmentInfo>() );
 				this.hashBuffer.getLast().add( info );
 				this.alnBuffer.addLast( new ArrayDeque<SAMRecord>() );
@@ -393,7 +419,7 @@ public class BAMStratifier {
 				this.alnBuffer.addLast( new ArrayDeque<SAMRecord>() );
 				this.alnBuffer.getLast().addLast( aln );
 				this.posBuffer.add( new Point(aln.getReferenceIndex(), aln.getUnclippedStart()) );
-				flush( bufferSize, allScBAM, shortScBAM, anomalousBAM, longScFASTQ);
+				flush( bufferSize );
 			}
 			return;
 		}
@@ -402,17 +428,15 @@ public class BAMStratifier {
 		/**
 		 * Flush all alignments in buffer to file.
 		 */
-		private void flush(SAMFileWriter allScBAM, SAMFileWriter shortScBAM, SAMFileWriter anomalousBAM,
-				OutputStreamWriter longScFASTQ) {
-			flush(0, allScBAM, shortScBAM, anomalousBAM, longScFASTQ);
+		private void flush() {
+			flush(0);
 		}
 		
 		/**
 		 * Flush alignments to file until only "keepInBuffer" alignments are left in buffer.
 		 * @param keepInBuffer
 		 */
-		private void flush(int keepInBuffer, SAMFileWriter allScBAM, SAMFileWriter shortScBAM, SAMFileWriter anomalousBAM,
-				OutputStreamWriter longScFASTQ) {
+		private void flush(int keepInBuffer) {
 			while (this.posBuffer.size() > keepInBuffer) {
 				posBuffer.pollFirst();
 				hashBuffer.pollFirst();
@@ -426,21 +450,21 @@ public class BAMStratifier {
 					if (summary.getAlignedPercentIdentity() < minIdentity) continue;
 					
 					// add to anomalous alignment BAM
-					if (!(aln.getProperPairFlag())) {
-						anomalousBAM.addAlignment(aln);
+					if (aln.getReadPairedFlag() && !(aln.getProperPairFlag())) {
+						outputs.anomalousBAM.addAlignment(aln);
 						outputs.counterAnomalous++;
 					}
 					
 					if (summary.isClipped()) {
-						if (allScBAM!=null) {
-							allScBAM.addAlignment( aln );
+						if (outputs.allScBAM!=null) {
+							outputs.allScBAM.addAlignment( aln );
 							outputs.counterAllSc++;
 						}
 					} else { // read is NOT soft clipped at either end
 						continue;
 					}
 					
-					boolean proper = aln.getProperPairFlag();
+					boolean proper = aln.getReadPairedFlag() ? aln.getProperPairFlag() : false;
 					
 					byte[] head = summary.getHeadClipSequence();
 					if (head.length >= scLengthThreshold && summary.getAvgHeadClipQuality() >= scQualityThreshold) {
@@ -448,10 +472,10 @@ public class BAMStratifier {
 						boolean ideal = ((proper&&!clip3p) || (!proper&&clip3p));
 						
 						String header = RealignmentRecordSummary.makeFastqHeader(aln, summary, aln.getReferenceIndex(), summary.getHeadClipPos(), ideal,
-								Utilities.sequenceByteToString(summary.getHeadClipAlignedSequence(), false));
+								Utilities.sequenceByteToString(summary.getHeadClipAlignedSequence(), false), '-');
 						String clipSeq = Utilities.sequenceByteToString(head, false); // make breakpoint at 3' end
 						String clipQual = Utilities.qualityByteToString(summary.getHeadClipQuality(), false);
-						writeToFastq(longScFASTQ, header, clipSeq, clipQual);
+						writeToFastq(outputs.longScFASTQ, header, clipSeq, clipQual);
 						outputs.counterLongSc++;
 					}
 
@@ -461,15 +485,15 @@ public class BAMStratifier {
 						boolean ideal = ((proper&&!clip3p) || (!proper&&clip3p));
 
 						String header = RealignmentRecordSummary.makeFastqHeader(aln, summary, aln.getReferenceIndex(), summary.getTailClipPos(), ideal,
-								Utilities.sequenceByteToString(summary.getTailClipAlignedSequence(), false));
+								Utilities.sequenceByteToString(summary.getTailClipAlignedSequence(), false), '+');
 						String clipSeq = Utilities.sequenceByteToString(tail, false); // make breakpoint at 3' end
 						String clipQual = Utilities.qualityByteToString(summary.getTailClipQuality(), false);
-						writeToFastq(longScFASTQ, header, clipSeq, clipQual);
+						writeToFastq(outputs.longScFASTQ, header, clipSeq, clipQual);
 						outputs.counterLongSc++;
 					}
 					
 					if ((head.length>0 && head.length<scLengthThreshold) || (tail.length>0 && tail.length<scLengthThreshold)) {
-						shortScBAM.addAlignment(aln);
+						outputs.shortScBAM.addAlignment(aln);
 						outputs.counterShortSc++;
 					}
 				}
@@ -479,130 +503,160 @@ public class BAMStratifier {
 		/**
 		 * Flush all remaining alignments and close all input and output files.
 		 */
-		private void close(SAMFileWriter allScBAM, SAMFileWriter shortScBAM, SAMFileWriter anomalousBAM, 
-				OutputStreamWriter longScFASTQ, OutputStreamWriter oneEndAnchoredFASTQ) {
-			try {
-				this.flush(allScBAM, shortScBAM, anomalousBAM, longScFASTQ);
-				if (allScBAM!=null) allScBAM.close();
-				shortScBAM.close();
-				anomalousBAM.close();
-				longScFASTQ.close();
-				oneEndAnchoredFASTQ.close();
-				this.sourceBAM.close();
-			} catch (Exception e) {
-				e.printStackTrace();
-				System.exit(1);
-			}
+		private void close() {
+			this.flush();
+			this.outputs.close();
+			this.sourceBAM.close();
 		}
 	}
 	
 	class MergeWorker implements Callable<File> {
 		File output;
 		String format;
-		File[] sources;
-		public MergeWorker(File output, String format, File[] sources) {
+		ArrayList<File> sources;
+		public MergeWorker(File output, String format, ArrayList<File> sources) {
 			this.output = output; this.format = format; this.sources = sources;
 		}
 		
 		public File call() throws Exception {
-			if (SOCRATES.verbose) System.out.println("Merging into " + output.getName());
-			if (sources.length==0) return null;
+			if (SOCRATES.verbose) System.err.println("Merging into " + output.getName());
+			if (sources.size()==0) {
+				if (SOCRATES.verbose) System.err.println("Empty " + format + " " + output.getName());
+				return null;
+			}
 
 			if (format.equals("BAM")) {
-				if (sources.length==1) {
-					sources[0].renameTo(output);
-					String fn = sources[0].getAbsolutePath();
+				if (sources.size()==1) {
+					sources.get(0).renameTo(output);
+					String fn = sources.get(0).getAbsolutePath();
 					File indexFile = new File( fn.substring(0,fn.lastIndexOf('.'))+".bai" );
 					if (indexFile.exists()) indexFile.renameTo( new File(output.getAbsolutePath()+".bai") );
 					indexFile = new File( fn+".bai" );
 					if (indexFile.exists()) indexFile.renameTo( new File(output.getAbsolutePath()+".bai") );
 				} else {
-					SAMFileReader[] readers = new SAMFileReader[sources.length];
-					ArrayList<CloseableIterator<SAMRecord>> iters = new ArrayList<CloseableIterator<SAMRecord>>();
-					for (int i=0; i<sources.length; i++) {
-						String fn = sources[i].getAbsolutePath();
-						File indexFile = new File( fn.substring(0,fn.lastIndexOf('.'))+".bai" );
-						if (indexFile.exists()) indexFile.delete();
-						indexFile = new File( fn+".bai" );
-						if (indexFile.exists()) indexFile.delete();
-						if (!sources[i].exists()) continue;
-						readers[i] = new SAMFileReader(sources[i]);
-						readers[i].setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
-						iters.add( (CloseableIterator<SAMRecord>)(readers[i].iterator()) );
-					}
-					MergingIterator<SAMRecord> iter = new MergingIterator<SAMRecord>(new SAMRecordCoordinateComparator(), iters); 
-					
+					SAMFileReader reader = new SAMFileReader( sources.get(0) );
 					SAMFileWriterFactory factory = new SAMFileWriterFactory();
-					SAMFileWriterFactory.setDefaultCreateIndexWhileWriting(true);
-					factory.setCreateIndex(true);
-					SAMFileWriter o = factory.makeBAMWriter( readers[0].getFileHeader(), true, output );
+					// a sorting buffer
+					SortingCollection<SAMRecord> buffer = SortingCollection.newInstance(SAMRecord.class, new BAMRecordCodec(reader.getFileHeader()), 
+																						new SAMRecordCoordinateComparator(), 500000, new File("."));
+					reader.close();
+					// output bam file
+					SAMFileWriter o = factory.makeBAMWriter( reader.getFileHeader(), true, output );
+					for (File srcFile : sources) {
+						SAMFileReader srcReader = new SAMFileReader(srcFile);
+						SAMRecordIterator iter = srcReader.iterator();
+						while (iter.hasNext()) {
+							buffer.add(iter.next());
+						}
+						iter.close();
+						srcReader.close();
+						Utilities.deleteBAM(srcFile);
+					}
 					
-					while (iter.hasNext()) {
-						o.addAlignment( iter.next() );
+					CloseableIterator<SAMRecord> iter2 = buffer.iterator();
+					while (iter2.hasNext()) {
+						SAMRecord aln = iter2.next();
+						o.addAlignment(aln);
 					}
-	
-					for (int i=0; i<iters.size(); i++) {
-						iters.get(i).close();
-						readers[i].close();
-						sources[i].delete();
-					}
+
 					o.close();
 				}
 			} else /*if (format.equals("GZ"))*/ {
-				if (sources.length==1) {
-					sources[0].renameTo(output);
+				if (sources.size()==1) {
+					sources.get(0).renameTo(output);
 				} else {
 					if (output.exists()) output.delete();
 					PrintWriter o = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new GZIPOutputStream( new FileOutputStream(output) ))));
-					for (int i=0; i<sources.length; i++) {
-						if (!sources[i].exists()) continue;
-						
-						BufferedReader r = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(sources[i]))));
+					for (int i=0; i<sources.size(); i++) {
+						File src = sources.get(i);
+						BufferedReader r = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(src))));
 						String x = null;
 						while ((x=r.readLine())!=null) {
 							o.println(x);
 						}
 						r.close();
-						sources[i].delete();
+						sources.get(i).delete();
 					}
 					o.close();
 				}
 			}
 			
-			if (SOCRATES.verbose) System.out.println("Merging into " + output.getName() + " finished");
+			if (SOCRATES.verbose) System.err.println("Merging into " + output.getName() + " finished");
 			return output;
 		}
 	}
 	
 	class OutputFiles {
-		File anomalous, shortSc, allSc, longSc, oneEndAnchor;
+		File anomalous, shortSc, allSc=null, longSc, oneEndAnchor;
+		SAMFileWriter allScBAM=null, shortScBAM, anomalousBAM;
+		OutputStreamWriter longScFASTQ, oneEndAnchoredFASTQ;
+		String seqName;
+
 		int counterAnomalous=0, counterShortSc=0, counterAllSc=0, counterLongSc=0, counterOneEndAnchor=0;
-		public OutputFiles(String seqName) throws Exception {
-			anomalous = new File(sourceBAMStem+"_anomalous_"+seqName+".bam");					//anomalous.deleteOnExit();
-			allSc     = new File(sourceBAMStem+"_all_sc_"+seqName+".bam");						//allSc.deleteOnExit();
-			shortSc   = new File(sourceBAMStem+"_short_sc_"+seqName+".bam");					//shortSc.deleteOnExit();
-			longSc    = new File(sourceBAMStem+"_long_sc_"+seqName+".fastq.gz");				//longSc.deleteOnExit();
-			oneEndAnchor = new File(sourceBAMStem+"_one_end_anchor_"+seqName+".fastq.gz");		//oneEndAnchor.deleteOnExit();
+		
+		public OutputFiles(String seqName, SAMFileHeader header) throws Exception {
+			this.seqName = seqName;
+			this.anomalous = new File(sourceBAMStem+"_anomalous_"+seqName+".bam");					//anomalous.deleteOnExit();
+			if (!disableAllSc) this.allSc     = new File(sourceBAMStem+"_all_sc_"+seqName+".bam");	//allSc.deleteOnExit();
+			this.shortSc   = new File(sourceBAMStem+"_short_sc_"+seqName+".bam");					//shortSc.deleteOnExit();
+			this.longSc    = new File(sourceBAMStem+"_long_sc_"+seqName+".fastq.gz");				//longSc.deleteOnExit();
+			this.oneEndAnchor = new File(sourceBAMStem+"_one_end_anchor_"+seqName+".fastq.gz");		//oneEndAnchor.deleteOnExit();
+
+			SAMFileWriterFactory factory = new SAMFileWriterFactory();
+			// all SC BAM
+			if (!disableAllSc) this.allScBAM   = factory.makeBAMWriter( header, false, allSc );
+			else this.allScBAM = null;
+			// short SC BAM
+			this.shortScBAM = factory.makeBAMWriter( header, false, this.shortSc );
+			// anomalous BAM
+			this.anomalousBAM = factory.makeBAMWriter( header, false, this.anomalous );
+			// long SC FASTQ
+			this.longScFASTQ = new OutputStreamWriter(new GZIPOutputStream( new FileOutputStream(this.longSc)) );
+			// one-end-anchor FASTQ
+			this.oneEndAnchoredFASTQ = new OutputStreamWriter(new GZIPOutputStream( new FileOutputStream(this.oneEndAnchor) ));
 		}
 		
-		public void clean() {
-			if (counterAnomalous==0) deleteBAM(anomalous);
-			if (counterShortSc==0) deleteBAM(shortSc);
-			if (counterAllSc==0) deleteBAM(allSc);
-			if (counterLongSc==0) {
-				longSc.delete();
+		public void close() {
+			try {
+				this.anomalousBAM.close();
+				this.shortScBAM.close();
+				this.longScFASTQ.close();
+				this.oneEndAnchoredFASTQ.close();
+				if (this.allScBAM != null) this.allScBAM.close();
+				delete_empty();
+			} catch (Exception e) {
+				e.printStackTrace();
+				System.exit(1);
 			}
-			if (counterOneEndAnchor==0) oneEndAnchor.delete();
 		}
 		
-		public void deleteBAM(File bamFile) {
-			String fn = bamFile.getAbsolutePath();
-			File indexFile = new File( fn.substring(0,fn.lastIndexOf('.'))+".bai" );
-			if (indexFile.exists()) indexFile.delete();
-			indexFile = new File( fn+".bai" );
-			if (indexFile.exists()) indexFile.delete();
-			if (bamFile.exists()) bamFile.delete();
+		/**
+		 * Clean up all empty BAM files.
+		 */
+		public void delete_empty() {
+			if (this.counterAnomalous==0) {
+				Utilities.deleteBAM(this.anomalous);
+				this.anomalous = null;
+			}
+			if (this.counterShortSc==0) {
+				Utilities.deleteBAM(this.shortSc);
+				this.shortSc = null;
+			}
+			if (this.counterAllSc==0 && this.allSc != null) {
+				Utilities.deleteBAM(this.allSc);
+				this.allSc = null;
+			}
+			if (this.counterLongSc==0) {
+				this.longSc.delete();
+				this.longSc = null;
+			}
+			if (this.counterOneEndAnchor==0) {
+				this.oneEndAnchor.delete();
+				this.oneEndAnchor = null;
+			}
 		}
+		
+
 	}
 
 
@@ -610,18 +664,20 @@ public class BAMStratifier {
 	private class AlignmentInfo {
 		public int refIdx, pos5p, mrefIdx, mpos5p;
 		public String strands;
+		public boolean singleEnd;
 		
 		public AlignmentInfo(SAMRecord aln) {
 			refIdx = aln.getReferenceIndex();
 			pos5p = aln.getReadNegativeStrandFlag() ? aln.getUnclippedEnd() : aln.getUnclippedStart();
 		    String strand = aln.getReadNegativeStrandFlag() ? "-" : "+";
+		    
 			if (aln.getReadPairedFlag()) {
+				singleEnd = true;
 			    mrefIdx = aln.getMateReferenceIndex();
 			    mpos5p = aln.getMateNegativeStrandFlag() ? aln.getMateAlignmentStart()+aln.getReadLength() : aln.getMateAlignmentStart();
-	
-			    String mstrand = aln.getMateNegativeStrandFlag() ? "-" : "+";
-			    strands = strand + mstrand;
+			    strands = strand + (aln.getMateNegativeStrandFlag() ? "-" : "+");
 			} else {
+				singleEnd = false;
 				mrefIdx = -1;
 				mpos5p = -1;
 				strands = strand;
@@ -630,13 +686,21 @@ public class BAMStratifier {
 		
 		@Override
 		public int hashCode() {
-			return new HashCodeBuilder(17,31).
+			if (this.singleEnd) {
+				return new HashCodeBuilder(17,31).
 						append( refIdx ).
 						append( pos5p ).
-						append( mrefIdx ).
-						append( mpos5p ).
 						append( strands ).
 						toHashCode();
+			} else {
+				return new HashCodeBuilder(17,31).
+							append( refIdx ).
+							append( pos5p ).
+							append( mrefIdx ).
+							append( mpos5p ).
+							append( strands ).
+							toHashCode();
+			}
 		}
 		
 		@Override
@@ -645,13 +709,21 @@ public class BAMStratifier {
 			if (other==this) return true;
 			
 			AlignmentInfo oinfo = (AlignmentInfo)other;
-			return new EqualsBuilder().
+			if (singleEnd) {
+				return new EqualsBuilder().
 						append( refIdx, oinfo.refIdx ).
 						append( pos5p, oinfo.pos5p ).
-						append( mrefIdx, oinfo.mrefIdx ).
-						append( mpos5p, oinfo.mpos5p ).
 						append( strands, oinfo.strands ).
 						isEquals();
+			} else {
+				return new EqualsBuilder().
+							append( refIdx, oinfo.refIdx ).
+							append( pos5p, oinfo.pos5p ).
+							append( mrefIdx, oinfo.mrefIdx ).
+							append( mpos5p, oinfo.mpos5p ).
+							append( strands, oinfo.strands ).
+							isEquals();
+			}
 		}
 	}
 
@@ -679,7 +751,7 @@ public class BAMStratifier {
 				.withType( Number.class )
 				.withLongOpt( "long-sc-len" )
 				.create( 'l' );
-		Option keep_duplicate = new Option( "k", "keep-duplicate", false, "keep duplicate reads [default: false]");
+		Option keep_duplicate = new Option( "k", "keep-duplicate", false, "keep reads with same alignment position (including mate position for paired-end data");
 		Option percent_id = OptionBuilder.withArgName( "percent-id" )
 				.hasArg()
 				.withDescription("Minimum alignment percent identity to reference [default: 95 (%)]")
@@ -732,21 +804,18 @@ public class BAMStratifier {
 				System.exit(1);
             }
 
-            File f = new File(remainingArgs[0]);
-            if (! f.exists() ) {
-                System.err.println("File not found: " + remainingArgs[0]);
-                System.exit(1);
-            }
+            String inputBAM = remainingArgs[0];
+            Utilities.assertExists(inputBAM);
 
-            System.out.println("\nStratify BAM file " + remainingArgs[0] + " with options:");
-            System.out.println("  threads: " + threads);
-            System.out.println("  min mapq: " + min_mapq);
-            System.out.println("  min long sc length: " + max_long_sc);
-            System.out.println("  min avg soft clip base quality: " + baseq);
-            System.out.println("  min aligned percent identity: " + min_percent_id);
-            System.out.println("  remove duplicates: " + rmdup);
+            System.err.println("\nStratify BAM file " + inputBAM + " with option values:");
+            System.err.println("  threads = " + threads);
+            System.err.println("  min mapq = " + min_mapq);
+            System.err.println("  min long sc length = " + max_long_sc);
+            System.err.println("  min avg soft clip base quality = " + baseq);
+            System.err.println("  min aligned percent identity = " + min_percent_id);
+            System.err.println("  remove duplicates = " + rmdup);
             
-       		BAMStratifier b = new BAMStratifier(remainingArgs[0], threads, max_long_sc, baseq, min_mapq, min_percent_id, rmdup, noAllSc);
+       		BAMStratifier b = new BAMStratifier(inputBAM, threads, max_long_sc, baseq, min_mapq, min_percent_id, rmdup, noAllSc);
     	    b.stratifyAll();
         } catch( ParseException exp ) {
 	        System.err.println( exp.getMessage() );
