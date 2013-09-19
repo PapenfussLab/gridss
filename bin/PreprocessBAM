@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-socrates=`dirname $0`/../
-libs=${socrates}lib/sam-1.77.jar:${socrates}lib/commons-lang3-3.1.jar:${socrates}lib/commons-cli-1.2.jar:${socrates}lib/picard-1.85.jar:${socrates}lib/snappy-java-1.0.3-rc3.jar
-
-java -Xmx4g -cp ${socrates}bin:$libs net.wehi.socrates.BAMStratifier $*

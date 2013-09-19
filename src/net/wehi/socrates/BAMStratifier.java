@@ -539,9 +539,9 @@ public class BAMStratifier {
 					// a sorting buffer
 					SortingCollection<SAMRecord> buffer = SortingCollection.newInstance(SAMRecord.class, new BAMRecordCodec(reader.getFileHeader()), 
 																						new SAMRecordCoordinateComparator(), 500000, new File("."));
-					reader.close();
 					// output bam file
 					SAMFileWriter o = factory.makeBAMWriter( reader.getFileHeader(), true, output );
+					reader.close();
 					for (File srcFile : sources) {
 						SAMFileReader srcReader = new SAMFileReader(srcFile);
 						SAMRecordIterator iter = srcReader.iterator();

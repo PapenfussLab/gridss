@@ -90,5 +90,7 @@ public class MemoryMappedFile {
 	
 	public String getFilename() { return source.getName(); }
 	
+	public File getFile() { return source; }
+	
 	public long length() { return fileSize; }
 }
