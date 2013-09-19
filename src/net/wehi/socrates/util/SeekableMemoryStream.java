@@ -4,6 +4,7 @@
 package net.wehi.socrates.util;
 
 import java.io.IOException;
+import java.io.File;
 import net.sf.samtools.util.SeekableStream;
 
 
@@ -44,6 +45,8 @@ public class SeekableMemoryStream extends SeekableStream {
 	public String getSource() {
 		return "Memory mapped " + mem.getFilename();
 	}
+	
+	public File getSourceFile() { return mem.getFile(); }
 
 	/* (non-Javadoc)
 	 * @see net.sf.samtools.util.SeekableStream#length()

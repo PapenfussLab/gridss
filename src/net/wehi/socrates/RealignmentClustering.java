@@ -291,8 +291,8 @@ public class RealignmentClustering {
 		private GenomicIndexInterval gi1, gi2;
 		private SeekableStream realignedScBAMMemoryStream;
 		private SeekableStream shortScBAMMemoryStream;
-		private SeekableStream realignedScIndexMemoryStream;
-		private SeekableStream shortScIndexMemoryStream;
+		private SeekableMemoryStream realignedScIndexMemoryStream;
+		private SeekableMemoryStream shortScIndexMemoryStream;
 		
 		ClusteringWorker(int id, GenomicIndexInterval one, GenomicIndexInterval two) {
 			gi1 = one; gi2 = two; threadID = id;

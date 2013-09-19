@@ -71,11 +71,23 @@ def make_java_cmd( mode, java_mem ):
 def run_all(args):
     long_sc_fq, long_sc_bam, short_sc_bam, metrics = get_output_filenames( args.input_file )
 
-    run_preprocess(args, args.input_file)
-    run_process_bam(args, long_sc_fq, long_sc_bam)
-    run_predict(args, long_sc_bam, short_sc_bam, metrics)
+    ret_code = run_preprocess(args, args.input_file)
+    if ret_code!=0:
+        raise Exception("'preprocess' task failed")
+
+    ret_code = run_process_bam(args, long_sc_fq, long_sc_bam)
+    if ret_code!=0:
+        raise Exception("'process_bam' task failed")
+
+    ret_code = run_predict(args, long_sc_bam, short_sc_bam, metrics)
+    if ret_code!=0:
+        raise Exception("'prediction' task failed")
+
     if args.normal or args.repeatmask:
-        run_annotate(args)
+        ret_code = run_annotate(args)
+        if ret_code!=0:
+            raise Exception("'annotate' task failed")
+
 
 def run_preprocess(args, input_file):
     cmd = make_java_cmd('preprocess', args.jvm_memory)
@@ -90,6 +102,7 @@ def run_preprocess(args, input_file):
     cmd = cmd + ' ' + ' '.join(opts) + ' ' + input_file
     proc = subprocess.Popen( cmd, shell=True )
     proc.communicate()[0]
+    return proc.returncode
 
 def run_process_bam(args, input_file, output_file):
     java_cmd = make_java_cmd('process_bam', args.jvm_memory)
@@ -109,6 +122,7 @@ def run_process_bam(args, input_file, output_file):
 
         proc = subprocess.Popen( socrates_cmd, shell=True )
         proc.communicate()[0]
+    return proc.returncode
 
 def run_predict(args, long_sc_bam, short_sc_bam, metrics_file):
     java_cmd = make_java_cmd('predict', args.jvm_memory)
@@ -167,6 +181,7 @@ def run_predict(args, long_sc_bam, short_sc_bam, metrics_file):
 
     proc = subprocess.Popen( cmd, shell=True )
     proc.communicate()[0]
+    return proc.returncode
 
 def run_annotate(args):
     cmd = make_java_cmd('annotate', args.jvm_memory)
@@ -178,7 +193,7 @@ def run_annotate(args):
         cmd = cmd + '--verbose'
     proc = subprocess.Popen( cmd, shell=True )
     proc.communicate()[0]
-
+    return proc.returncode
 
 
 if __name__=='__main__':
