@@ -128,15 +128,31 @@ public class RealignmentClustering {
 			System.err.println("BAM file does not exist : " + bam.getAbsolutePath() + ".");
 			System.exit(1);
 		}
-		File index = new File( bamFilename+".bai" );
-		if (!index.exists()) {
-			index = new File( bamFilename.substring(0, bamFilename.lastIndexOf("."))+".bai" );
-			if (!index.exists()) {
-				System.err.println("BAM index file does not exist for " + bamFilename + ".");
-				System.err.println("Socrates is creating one for you.");
-				BuildBamIndex.createIndex(new SAMFileReader(new File(bamFilename)), index);
-			}
+		File index1 = new File( bamFilename+".bai" );
+		File index2 = new File( bamFilename.substring(0, bamFilename.lastIndexOf("."))+".bai" );
+		File index = null;
+		if (!index1.exists() && !index2.exists()) {
+			System.err.println("BAM index file does not exist for " + bamFilename + ".");
+			System.err.println("Socrates is creating one for you.");
+			BuildBamIndex.createIndex(new SAMFileReader(new File(bamFilename)), index2);
+			index = index2;
+		} else if (index1.exists() && !index2.exists()) {
+			index = index1;
+		} else if (!index1.exists() && index2.exists()) {
+			index = index2;
+		} else {
+			if (index1.lastModified() > index2.lastModified())
+				index = index1;
+			else
+				index = index2;
 		}
+
+		if (index.lastModified() < bam.lastModified()) {
+			System.err.println("BAM index file for " + bamFilename + " is out of date.");
+			System.err.println("Socrates is rebuilding one for you.");
+			BuildBamIndex.createIndex(new SAMFileReader(new File(bamFilename)), index);
+		}
+		
 		return index;
 	}
 	
