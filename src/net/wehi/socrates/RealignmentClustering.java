@@ -794,7 +794,6 @@ public class RealignmentClustering {
 	}
 	
 	public static void main(String[] args) throws IOException {
-		System.out.println( new File(".").getAbsolutePath() );
 		CommandLineParser parser = new GnuParser();
 		try {
 			/* 
