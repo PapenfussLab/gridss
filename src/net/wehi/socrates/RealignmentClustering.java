@@ -123,6 +123,11 @@ public class RealignmentClustering {
 	}
 	
 	private File findIndexFile(String bamFilename) {
+		File bam = new File(bamFilename);
+		if (!bam.exists()) {
+			System.err.println("BAM file does not exist : " + bam.getAbsolutePath() + ".");
+			System.exit(1);
+		}
 		File index = new File( bamFilename+".bai" );
 		if (!index.exists()) {
 			index = new File( bamFilename.substring(0, bamFilename.lastIndexOf("."))+".bai" );
@@ -154,10 +159,14 @@ public class RealignmentClustering {
 			int id=1;
 			for (int i=0; i < fileInfo.sequenceNames.size(); i++) {
 				String s = fileInfo.sequenceNames.get(i);
-				GenomicIndexInterval gi1 = new GenomicIndexInterval(fileInfo.getSequenceIndex(s), 1, lengths.get(s));
+				int chrIdx1 = fileInfo.getSequenceIndex(s);
+				GenomicIndexInterval gi1 = new GenomicIndexInterval(chrIdx1, 1, lengths.get(s));
 				for (int j=i; j<fileInfo.sequenceNames.size(); j++) {
 					String s2 = fileInfo.sequenceNames.get(j);
-					GenomicIndexInterval gi2 = new GenomicIndexInterval(fileInfo.getSequenceIndex(s2), 1, lengths.get(s2));
+					int chrIdx2 = fileInfo.getSequenceIndex(s2);
+					GenomicIndexInterval gi2 = new GenomicIndexInterval(chrIdx2, 1, lengths.get(s2));
+					// TODO: REMOVE ME AFTER DEBUGGING
+//					if (chrIdx1 != 83 && chrIdx2 != 83) continue;
 					tasks.add( new ClusteringWorker(id, gi1, gi2) );
 					id++;
 				}
@@ -309,7 +318,7 @@ public class RealignmentClustering {
 			SAMFileReader realignReader = null;
 			SAMFileReader shortScReader = null;
 
-			if (threadVerbose) System.err.println("Starting clustering in: " + gi1.toString(fileInfo) + " ---> " + gi2.toString(fileInfo));
+			if (SOCRATES.verbose) System.err.println("Starting clustering in: " + gi1.toString(fileInfo) + " ---> " + gi2.toString(fileInfo));
 
 			realignReader = new SAMFileReader( realignedScBAMMemoryStream, realignedScIndexMemoryStream, false );
 			shortScReader = new SAMFileReader( shortScBAMMemoryStream, shortScIndexMemoryStream, false ); 
@@ -582,8 +591,17 @@ public class RealignmentClustering {
 				byte[] consensusSeq = cluster.realignConsensusSCSeq.length==0 ? 
 						cluster.anchorConsensusSeq : Utilities.getReversedComplementArray(cluster.realignConsensusSCSeq);
 				
-				SAMRecordIterator iter = reader.query(fileInfo.getSequenceName(cluster.realignChr), 
-						  cluster.realignConsensusPos-10, cluster.realignConsensusPos+10, false);
+				int begin = Math.max(1, cluster.realignConsensusPos-10);
+				int end = Math.min(fileInfo.getSequenceLength(cluster.realignChr), cluster.realignConsensusPos+10);
+				SAMRecordIterator iter = null;
+//				try {
+				iter = reader.query(fileInfo.getSequenceName(cluster.realignChr), 
+						  begin, end, false);
+//				} catch (Exception e) {
+//					System.err.println( "Chrom\t" + cluster.realignChr + "\t" + fileInfo.getSequenceName(cluster.realignChr) );
+//					System.err.println( "Pos\t" + begin + "\t" + end  + "\tmax=" + fileInfo.getSequenceLength(cluster.realignChr) );
+//					System.exit(1);
+//				}
 				
 				// fetch all short reads
 				while (iter.hasNext()) {
@@ -776,6 +794,7 @@ public class RealignmentClustering {
 	}
 	
 	public static void main(String[] args) throws IOException {
+		System.out.println( new File(".").getAbsolutePath() );
 		CommandLineParser parser = new GnuParser();
 		try {
 			/* 

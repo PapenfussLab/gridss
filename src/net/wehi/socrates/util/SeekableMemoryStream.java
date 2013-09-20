@@ -67,18 +67,28 @@ public class SeekableMemoryStream extends SeekableStream {
 		int startPage = (int)(pos/MemoryMappedFile.PAGE_LIMIT);
 		int endPage = (int)((pos+len)/MemoryMappedFile.PAGE_LIMIT);
 		
-		if (startPage==endPage) {
+		if (startPage==endPage) { // all data on the same page of memory
 			int idx  = (int)(pos%MemoryMappedFile.PAGE_LIMIT);
 			byte[] mappedPage = mem.getMappedPage(startPage);
 			int max = offset+len;
 			for (int p=offset; p<max; p++) {
+//				try {
 				buffer[p] = mappedPage[idx];
+//				} catch (Exception e) {
+//					System.err.println("pages:\t" + mem.getPageCount() );
+//					System.err.println("page:\t" + startPage);
+//					System.err.println("page length:\t" + mappedPage.length );
+//					System.err.println("page index:\t" + idx);
+//					System.err.println("buffer length:\t" + buffer.length );
+//					System.err.println("buffer index:\t" + p);
+//					throw new IOException("ERROR");
+//				}
 				idx++;
 				pos++;
 				read++;
 				if (pos>mem.length()) break; 
 			}
-		} else {
+		} else { // data spans multiple pages of memory
 			int oldPage = -1;
 			byte[] mappedPage = null;
 			for (int p=offset; p<offset+len; p++) {
