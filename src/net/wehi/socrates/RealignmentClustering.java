@@ -147,6 +147,7 @@ public class RealignmentClustering {
 				index = index2;
 		}
 
+		// RESOLVED: when index is older than the BAM file, record seeking can go out of range.
 		if (index.lastModified() < bam.lastModified()) {
 			System.err.println("BAM index file for " + bamFilename + " is out of date.");
 			System.err.println("Socrates is rebuilding one for you.");
