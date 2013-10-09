@@ -92,5 +92,7 @@ public class MemoryMappedFile {
 	
 	public File getFile() { return source; }
 	
+	public int getPageCount() { return eagerData.length; }
+	
 	public long length() { return fileSize; }
 }

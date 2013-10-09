@@ -111,11 +111,21 @@ public class SAMRecordSummary {
 	private float calcAlignedPercentIdentity(SAMRecord aln) {
 		Object nm = aln.getAttribute("NM");
 		if (nm!=null) {
-			return (float)(alignedSeq.length-((Integer)nm).intValue())/(float)(alignedSeq.length);
+			// NM is edit distance, containing INDELs, add INDEL count back to give correct mismatch count.
+			//
+			int indels = 0;
+			for (CigarElement c : aln.getCigar().getCigarElements()) {
+				CigarOperator op = c.getOperator(); 
+				if (op == CigarOperator.INSERTION || op == CigarOperator.DELETION) indels += c.getLength();
+			}
+			return (float)(alignedSeq.length-((Integer)nm).intValue()-indels)/(float)(alignedSeq.length);
 		}
 		
+		// alternatively, generate mismatches from MD tag.
     	Object md = aln.getAttribute("MD");
-    	if (md==null) return 0;
+    	if (md==null) {
+    		return -1;
+    	}
     	
     	String MD = (String)md;
         int mismatch = 0;
