@@ -4,15 +4,33 @@ import os, sys, math, argparse, subprocess
 
 LIBRARIES=['sam-1.77.jar','commons-lang3-3.1.jar','commons-cli-1.2.jar','picard-1.85.jar','snappy-java-1.0.3-rc3.jar']
 
-def convert_memory(java_mem):
+def convert_memory_s2i(java_mem):
     if java_mem[-1].upper()=='G':
         mem = int(java_mem[:-1]) * 1024L*1024L*1024L
     elif java_mem[-1].upper()=='M':
         mem = int(java_mem[:-1]) * 1024L*1024L
     else:
-        print >> sys.stderr, 'Invalid JVM memory specification: %s. Use either "g" or "m" as units.' % (java_mem)
+        print >> sys.stderr, 'Invalid JVM memory specification: %s. Use either "g" or "m" as units, e.g. 2g or 512m' % (java_mem)
         sys.exit(1)
     return mem
+
+def convert_memory_i2s(mem):
+    java_mem_M = mem / float(1024L*1024L)
+    if java_mem_M < 0:
+        return '1m'
+    
+    java_mem_G = mem / float(1024L*1024L*1024L)
+    if java_mem_G < 0:
+        return '%dm'%(math.ceil(java_mem_M))
+
+    return '%dg'%(math.ceil(java_mem_G))
+
+def ensure_xms_smaller(java_mem_max, java_mem_min):
+    xmx = convert_memory_s2i(java_mem_max)
+    xms = convert_memory_s2i(java_mem_min)
+    if xmx < xms:
+        xms = xmx
+    return convert_memory_i2s(xmx), convert_memory_i2s(xms)
 
 def find_bam_index(bam_file):
     if not os.path.exists( bam_file ):
@@ -52,7 +70,8 @@ def make_java_cmd( mode, java_mem ):
         print >> sys.stderr, 'Invalid mode'
         sys.exit(1)
 
-    convert_memory( java_mem )
+    convert_memory_s2i( java_mem ) # xmx JVM option
+    xmx, xms = ensure_xms_smaller(java_mem, '2g')
 
     prog_path = os.path.dirname( os.path.realpath(__file__) )
     library_path = os.path.join( prog_path, 'lib' )
@@ -61,7 +80,7 @@ def make_java_cmd( mode, java_mem ):
     for lib in LIBRARIES:
         libs.append( os.path.join( library_path, lib ) )
     class_path = ':'.join(libs)
-    cmd = os.path.join( 'java -Xmx%s -cp %s net.wehi.socrates.%s ' % (java_mem, class_path, binary) )
+    cmd = os.path.join( 'java -Xmx%s -Xms%s -cp %s net.wehi.socrates.%s ' % (xmx, xms, class_path, binary) )
     return cmd
 
 
@@ -128,7 +147,7 @@ def run_predict(args, long_sc_bam, short_sc_bam, metrics_file):
     java_cmd = make_java_cmd('predict', args.jvm_memory)
 
     # check memory to satisfy (at least) memory mapped BAM files
-    allocated_mem = convert_memory( args.jvm_memory )
+    allocated_mem = convert_memory_s2i( args.jvm_memory )
     memory_map_mem = 0
     long_sc_bam_index = find_bam_index( long_sc_bam )
     short_sc_bam_index = find_bam_index( short_sc_bam )
@@ -142,15 +161,15 @@ def run_predict(args, long_sc_bam, short_sc_bam, metrics_file):
         print >> sys.stderr, 'WARNING: BAM index for %s does not exist. Memory check not reliable.' % short_sc_bam
     memory_map_mem += os.stat( long_sc_bam ).st_size + os.stat( short_sc_bam ).st_size
 
+    # my gut-feeling guess is minimum memory requirement is 1.5 x file size and recommended is 2.0 x file size...
     if allocated_mem < memory_map_mem:
-        print >> sys.stderr, 'ERROR: Minimum JVM memory is %d Mb'% ( math.ceil((1.5*memory_map_mem)/float(1024*1024)) )
+        print >> sys.stderr, 'ERROR: Minimum JVM memory is %s'% ( convert_memory_i2s(1.5*memory_map_mem) )
         print >> sys.stderr, '[ Use --jvm_memory option to increase memory allocation ]'
         sys.exit(1)
 
-    # my gut-feeling guess is minimum memory requirement is 2.5 x file size.... 
     factor = 2.0
     if allocated_mem < factor*memory_map_mem:
-        print >> sys.stderr, 'WARNING: Recommended memory setting for the given data is %d Mb'% ( math.ceil((factor*memory_map_mem)/float(1024*1024)) )
+        print >> sys.stderr, 'WARNING: Recommended memory setting for the given data is %s'% ( convert_memory_i2s(factor*memory_map_mem) )
         print >> sys.stderr, 'Do you wish to continue? (y/n)'
         while True:
             choice = sys.stdin.readline().strip().upper()
@@ -195,31 +214,46 @@ def run_annotate(args):
     proc.communicate()[0]
     return proc.returncode
 
+class SubParser(argparse.ArgumentParser):
+
+    def error(self, message):
+        if message=='too few arguments':
+            print """run: Socrates <task> -h for additional help on each task\n"""
+            self.print_help()
+            self.exit(0)
+        else:
+            sys.stderr.write('error: %s\n' % message)
+            self.exit(1)
 
 if __name__=='__main__':
-    parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = SubParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     ###################### set up parsers #############
-    subparsers = parser.add_subparsers(dest='mode')
-    parser_all        = subparsers.add_parser('all', help='Run all steps of Socrates')
-    parser_preprocess = subparsers.add_parser('preprocess', help='Extract soft clip reads from BAM file')
-    parser_realign    = subparsers.add_parser('realignment', help='Create re-alignment BAM file')
-    parser_predict    = subparsers.add_parser('predict', help='Predict breakpoints with Socrates')
-    parser_annotate   = subparsers.add_parser('annotate', help='Annotate Socrates results with germline breakpoints and repeat mask.')
+    subparsers = parser.add_subparsers(dest='mode',title="task")
+    parser_all        = subparsers.add_parser('all', help='Run all steps of Socrates', 
+                                              formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_preprocess = subparsers.add_parser('preprocess', help='Extract soft clip reads from BAM file',
+                                              formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_realign    = subparsers.add_parser('realignment', help='Create re-alignment BAM file',
+                                              formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_predict    = subparsers.add_parser('predict', help='Predict breakpoints with Socrates',
+                                              formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_annotate   = subparsers.add_parser('annotate', help='Annotate Socrates results with germline breakpoints and repeat mask.',
+                                              formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     ###################### PreprocessBAM ###############
-    parser_preprocess.add_argument('-l', "--long-sc-len", help="Length threshold of long soft-clip [default: 25 (nt)]",\
+    parser_preprocess.add_argument('-l', "--long-sc-len", help="Length threshold of long soft-clip",\
                                     type=int, default=25)
-    parser_preprocess.add_argument('-b', "--base-quality", help="Minimum average base quality score of  soft clipped sequence [default: 5]",\
+    parser_preprocess.add_argument('-b', "--base-quality", help="Minimum average base quality score of  soft clipped sequence",\
                                     type=int, default=5)
-    parser_preprocess.add_argument('-p', "--percent-id", help="Minimum alignment percent identity to reference [default: 95 (%%)]",\
+    parser_preprocess.add_argument('-p', "--percent-id", help="Minimum alignment percent identity to reference",\
                                     type=int, default=95)
-    parser_preprocess.add_argument('-q', "--min-mapq", help="Minimum alignments mapq [default: 5]",\
+    parser_preprocess.add_argument('-q', "--min-mapq", help="Minimum alignments mapq",\
                                     type=int, default=5)
-    parser_preprocess.add_argument('-t', "--threads", help="Number of threads [default: 1]",\
+    parser_preprocess.add_argument('-t', "--threads", help="Number of threads",\
                                     type=int, default=1)
     parser_preprocess.add_argument('--jvm_memory', help="set Java Virtual Machine maximum memory size (e.g. 1g, 512m)",\
-                                    type=str, default='2g')
+                                    type=str, default='8g')
 
     parser_preprocess.add_argument("--keep-duplicate", help="Keep duplicate reads", action='store_true')
     parser_preprocess.add_argument("--verbose", help="be verbose of progress", action='store_true')
@@ -227,34 +261,35 @@ if __name__=='__main__':
 
     ###################### ProcessBAM #################
     parser_realign.add_argument('--jvm_memory', help="set Java Virtual Machine maximum memory size (e.g. 1g, 512m)",\
-                                    type=str, default='2g')
-    parser_realign.add_argument("--bowtie2_db", type=str, default=None, help="Prefix of Bowtie2 indexed database for sample")
+                                    type=str, default='8g')
+    parser_realign.add_argument("--bowtie2_db", type=str, default=None, help="Prefix of Bowtie2 indexed database for sample. [e.g. for bowtie 2 indexes of ecoli_K12_MG1655.fa.*.bt2, the prefix is ecoli_K12_MG1655.fa]")
     parser_realign.add_argument("--bowtie2_threads", type=int, default=1, help="Prefix of Bowtie2 indexed database for sample")
     parser_realign.add_argument("input_file", help="Re-alignment BAM file from short read alginer OR long SC FASTQ from 'Socrates preprocess'")
     parser_realign.add_argument("output_file", help="Re-alignment BAM file with anchor info in tags")
 
     ###################### PredictRearrangements #########
-    parser_predict.add_argument('-l',"--long-sc-len", help="Length threshold of long soft-clip [default: 25 (nt)]",\
+    parser_predict.add_argument('-l',"--long-sc-len", help="Length threshold of long soft-clip",\
                                  type=int, default=25)
-    parser_predict.add_argument('-q',"--min-mapq", help="Minimum alignments mapq [default: 5]",\
+    parser_predict.add_argument('-q',"--min-mapq", help="Minimum alignments mapq",\
                                  type=int, default=5)
-    parser_predict.add_argument('-p',"--percent-id", help="Minimum alignment percent identity to reference [default: 95 (%%)]",\
+    parser_predict.add_argument('-p',"--percent-id", help="Minimum alignment percent identity to reference",\
                                  type=int, default=95)
-    parser_predict.add_argument('-t', "--threads", help="Number of threads [default: 1]",\
+    parser_predict.add_argument('-t', "--threads", help="Number of threads",\
                                  type=int, default=1)
-    parser_predict.add_argument('-f', "--flank", help="Size of flank for promiscuity filter [default: 50 (nt)]",\
+    parser_predict.add_argument('-f', "--flank", help="Size of flank for promiscuity filter",\
                                  type=int, default=50)
-    parser_predict.add_argument('--promiscuity', help="Exclude cluster if more than PROMISCUITY clusters within FLANK(nt) of a breakpoint [default: 5]", type=int, default=5)
+    parser_predict.add_argument('--promiscuity', help="Exclude cluster if more than PROMISCUITY clusters within FLANK(nt) of a breakpoint", type=int, default=5)
 
-    parser_predict.add_argument("--no-short-sc-cluster", help="Disable search for short soft clip cluster support for unpaired clusters.",\
+    group1 = parser_predict.add_mutually_exclusive_group()
+    group1.add_argument("--no-short-sc-cluster", help="Disable search for short soft clip cluster support for unpaired clusters.",\
                                  action='store_true')
-    parser_predict.add_argument("--max-support", help="Maximum realignment support to search for short SC cluster [default: 30]. --no-short-sc-cluster option cannot be used.",\
+    group1.add_argument("--max-support", help="Maximum realignment support to search for short SC cluster.",\
                                  type=int, default=30)
 
     parser_predict.add_argument("--ideal-only", help="Use only proper pair 5' SC and anomalous pair 3' SC", action='store_true')
     parser_predict.add_argument("--verbose", help="be verbose of progress", action='store_true')
     parser_predict.add_argument('--jvm_memory', help="set Java Virtual Machine maximum memory size (e.g. 1g, 512m)",\
-                                    type=str, default='2g')
+                                    type=str, default='8g')
 
     parser_predict.add_argument("long_sc_bam", help="Re-alignment BAM file with anchor info in tags")
     parser_predict.add_argument("short_sc_bam", help="Short soft clipped alignments extracted from PreprocessBAM")
@@ -263,23 +298,23 @@ if __name__=='__main__':
                                  nargs='?', type=int, default=None)
 
     ###################### AnnotateRearrangements ##########
-    parser_annotate.add_argument("--normal", help="Socrates paired breakpoint calls for normal sample [default=None]", type=str, default=None)
-    parser_annotate.add_argument("--repeatmask", help="UCSC repeat masker track file in Tabix form [default=None]", type=str, default=None)
+    parser_annotate.add_argument("--normal", help="Socrates paired breakpoint calls for normal sample", type=str, default=None)
+    parser_annotate.add_argument("--repeatmask", help="UCSC repeat masker track file in Tabix form", type=str, default=None)
     parser_annotate.add_argument("--verbose", help="be verbose of progress", action='store_true')
     parser_annotate.add_argument('--jvm_memory', help="set Java Virtual Machine maximum memory size (e.g. 1g, 512m)",\
-                                    type=str, default='2g')
+                                    type=str, default='8g')
     parser_annotate.add_argument("input_file", help="Results from PredictRearrangements")
 
     ###################### do all ##########
-    parser_all.add_argument('-l', "--long-sc-len", help="Length threshold of long soft-clip [default: 25 (nt)]",\
+    parser_all.add_argument('-l', "--long-sc-len", help="Length threshold of long soft-clip",\
                                     type=int, default=25)
-    parser_all.add_argument('-b', "--base-quality", help="Minimum average base quality score of  soft clipped sequence [default: 5]",\
+    parser_all.add_argument('-b', "--base-quality", help="Minimum average base quality score of  soft clipped sequence",\
                                     type=int, default=5)
-    parser_all.add_argument('-p', "--percent-id", help="Minimum alignment percent identity to reference [default: 95 (%%)]",\
+    parser_all.add_argument('-p', "--percent-id", help="Minimum alignment percent identity to reference",\
                                     type=int, default=95)
-    parser_all.add_argument('-q', "--min-mapq", help="Minimum alignments mapq [default: 5]",\
+    parser_all.add_argument('-q', "--min-mapq", help="Minimum alignments mapq",\
                                     type=int, default=5)
-    parser_all.add_argument('-t', "--threads", help="Number of threads [default: 1]",\
+    parser_all.add_argument('-t', "--threads", help="Number of threads",\
                                     type=int, default=1)
     parser_all.add_argument("--keep-duplicate", help="Keep duplicate reads", \
                                     action='store_true')
@@ -287,28 +322,28 @@ if __name__=='__main__':
     parser_all.add_argument("--bowtie2_threads", type=int, default=1, help="Prefix of Bowtie2 indexed database for sample")
     parser_all.add_argument("--bowtie2_db", type=str, default=None, help="Prefix of Bowtie2 indexed database for sample")
 
-    parser_all.add_argument('-f', "--flank", help="Size of flank for promiscuity filter [default: 50 (nt)]",\
+    parser_all.add_argument('-f', "--flank", help="Size of flank for promiscuity filter",\
                                     type=int, default=50)
-    parser_all.add_argument('--promiscuity', help="Exclude cluster if more than PROMISCUITY clusters within FLANK(nt) of a breakpoint [default: 5]",\
+    parser_all.add_argument('--promiscuity', help="Exclude cluster if more than PROMISCUITY clusters within FLANK(nt) of a breakpoint",\
                                     type=int, default=5)
 
-    parser_all.add_argument("--no-short-sc-cluster", help="Disable search for short soft clip cluster support for unpaired clusters.",\
+    group2 = parser_all.add_mutually_exclusive_group()
+    group2.add_argument("--no-short-sc-cluster", help="Disable search for short soft clip cluster support for unpaired clusters.",\
                                     action='store_true')
-    parser_all.add_argument("--max-support", help="Maximum realignment support to search for short SC cluster [default: 30]. "
-                                                  "--no-short-sc-cluster option cannot be used.", type=int, default=30)
+    group2.add_argument("--max-support", help="Maximum realignment support to search for short SC cluster.", type=int, default=30)
 
     parser_all.add_argument("--ideal-only", help="Use only proper pair 5' SC and anomalous pair 3' SC", \
                                     action='store_true')
 
-    parser_all.add_argument("--normal", help="Socrates paired breakpoint calls for normal sample [default=None]", \
+    parser_all.add_argument("--normal", help="Socrates paired breakpoint calls for normal sample", \
                                     type=str, default=None)
-    parser_all.add_argument("--repeatmask", help="UCSC repeat masker track file in Tabix form [default=None]", \
+    parser_all.add_argument("--repeatmask", help="UCSC repeat masker track file in Tabix form", \
                                     type=str, default=None)
 
     parser_all.add_argument("--verbose", help="be verbose of progress", \
                                     action='store_true')
     parser_all.add_argument('--jvm_memory', help="set Java Virtual Machine maximum memory size (e.g. 1g, 512m)",\
-                                    type=str, default='2g')
+                                    type=str, default='8g')
 
     parser_all.add_argument("input_file", help="Alignment BAM file")
     parser_all.add_argument("block_size", help="Size of a block for a single Socrates thread to search for breakpoints", \
