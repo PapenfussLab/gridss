@@ -471,7 +471,7 @@ public class BAMStratifier {
 						boolean clip3p = (aln.getReadNegativeStrandFlag()) ? true : false;
 						boolean ideal = ((proper&&!clip3p) || (!proper&&clip3p));
 						
-						String header = RealignmentRecordSummary.makeFastqHeader(aln, summary, aln.getReferenceIndex(), summary.getHeadClipPos(), ideal,
+						String header = RealignmentRecordSummary.makeFastqHeader(aln, summary, sourceBAMInfo.getSequenceName(aln.getReferenceIndex()), summary.getHeadClipPos(), ideal,
 								Utilities.sequenceByteToString(summary.getHeadClipAlignedSequence(), false), '-');
 						String clipSeq = Utilities.sequenceByteToString(head, false); // make breakpoint at 3' end
 						String clipQual = Utilities.qualityByteToString(summary.getHeadClipQuality(), false);
@@ -484,7 +484,7 @@ public class BAMStratifier {
 						boolean clip3p = (aln.getReadNegativeStrandFlag()) ? false : true;
 						boolean ideal = ((proper&&!clip3p) || (!proper&&clip3p));
 
-						String header = RealignmentRecordSummary.makeFastqHeader(aln, summary, aln.getReferenceIndex(), summary.getTailClipPos(), ideal,
+						String header = RealignmentRecordSummary.makeFastqHeader(aln, summary, sourceBAMInfo.getSequenceName(aln.getReferenceIndex()), summary.getTailClipPos(), ideal,
 								Utilities.sequenceByteToString(summary.getTailClipAlignedSequence(), false), '+');
 						String clipSeq = Utilities.sequenceByteToString(tail, false); // make breakpoint at 3' end
 						String clipQual = Utilities.qualityByteToString(summary.getTailClipQuality(), false);
@@ -664,7 +664,7 @@ public class BAMStratifier {
 	private class AlignmentInfo {
 		public int refIdx, pos5p, mrefIdx, mpos5p;
 		public String strands;
-		public boolean singleEnd;
+		public boolean paired;
 		
 		public AlignmentInfo(SAMRecord aln) {
 			refIdx = aln.getReferenceIndex();
@@ -672,12 +672,12 @@ public class BAMStratifier {
 		    String strand = aln.getReadNegativeStrandFlag() ? "-" : "+";
 		    
 			if (aln.getReadPairedFlag()) {
-				singleEnd = true;
+				paired = true;
 			    mrefIdx = aln.getMateReferenceIndex();
 			    mpos5p = aln.getMateNegativeStrandFlag() ? aln.getMateAlignmentStart()+aln.getReadLength() : aln.getMateAlignmentStart();
 			    strands = strand + (aln.getMateNegativeStrandFlag() ? "-" : "+");
 			} else {
-				singleEnd = false;
+				paired = false;
 				mrefIdx = -1;
 				mpos5p = -1;
 				strands = strand;
@@ -686,7 +686,7 @@ public class BAMStratifier {
 		
 		@Override
 		public int hashCode() {
-			if (this.singleEnd) {
+			if (! this.paired) {
 				return new HashCodeBuilder(17,31).
 						append( refIdx ).
 						append( pos5p ).
@@ -709,7 +709,7 @@ public class BAMStratifier {
 			if (other==this) return true;
 			
 			AlignmentInfo oinfo = (AlignmentInfo)other;
-			if (singleEnd) {
+			if (!paired) {
 				return new EqualsBuilder().
 						append( refIdx, oinfo.refIdx ).
 						append( pos5p, oinfo.pos5p ).

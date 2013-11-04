@@ -22,6 +22,7 @@ import net.sf.samtools.SAMRecordCoordinateComparator;
 import net.sf.samtools.util.SortingCollection;
 import net.sf.samtools.util.CloseableIterator;
 import net.wehi.socrates.util.ProgressVerbose;
+import net.wehi.socrates.util.SAMFileInfo;
 //import net.wehi.socrates.util.Utilities;
 
 /**
@@ -41,6 +42,7 @@ public class RealignmentBAM {
 		try {
 			SortingCollection<SAMRecord> buffer = SortingCollection.newInstance(SAMRecord.class, new BAMRecordCodec(sam.getFileHeader()), 
 																				new SAMRecordCoordinateComparator(), 500000, new File("."));
+			SAMFileInfo info = new SAMFileInfo(sam);
 			
 			SAMRecordIterator iter = sam.iterator();
 			while (iter.hasNext()) {
@@ -53,11 +55,19 @@ public class RealignmentBAM {
 				String[] tokens = readName.split("&");
 				assert tokens.length == 5;
 				
+				int mateRefId = info.getSequenceIndex(tokens[1]);
+				if (mateRefId < 0) {
+					System.err.println("Read: " + tokens[0]);
+					System.err.println("\tAnchor reference sequence " + tokens[1] + " does not exist in realignment BAM file.");
+					System.err.println("\tSkipped");
+					continue;
+				}
+				
 				aln.setReadName( tokens[0] );
 				aln.setFirstOfPairFlag(true);
 				aln.setProperPairFlag(false);
 				aln.setReadPairedFlag(true);
-				aln.setMateReferenceIndex( Integer.parseInt(tokens[1]) );
+				aln.setMateReferenceIndex( mateRefId );
 				aln.setMateAlignmentStart( Integer.parseInt(tokens[2]) );
 				aln.setMateNegativeStrandFlag( tokens[3].equals("-") );
 				aln.setMateUnmappedFlag( !(tokens[4].equals("1")) );

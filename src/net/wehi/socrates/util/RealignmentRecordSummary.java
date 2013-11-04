@@ -59,7 +59,7 @@ public class RealignmentRecordSummary {
 	}
 	
 	public static String makeFastqHeader(SAMRecord aln, SAMRecordSummary summary, 
-			int bpChr, int bpPos, boolean isIdeal, String alignSeq, char clipStrand) {
+			String bpChr, int bpPos, boolean isIdeal, String alignSeq, char clipStrand) {
 		StringBuilder name;
 		if (aln.getReadPairedFlag())
 			name = new StringBuilder(aln.getReadName() + (aln.getFirstOfPairFlag()?"/1":"/2"));
