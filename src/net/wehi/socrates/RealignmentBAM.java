@@ -39,6 +39,7 @@ public class RealignmentBAM {
 		SAMFileReader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
 		
 		ProgressVerbose p = new ProgressVerbose("Sorting alignments", 1000000, SOCRATES.verbose);
+		long mismatchRef = 0;
 		try {
 			SortingCollection<SAMRecord> buffer = SortingCollection.newInstance(SAMRecord.class, new BAMRecordCodec(sam.getFileHeader()), 
 																				new SAMRecordCoordinateComparator(), 500000, new File("."));
@@ -57,9 +58,10 @@ public class RealignmentBAM {
 				
 				int mateRefId = info.getSequenceIndex(tokens[1]);
 				if (mateRefId < 0) {
-					System.err.println("Read: " + tokens[0]);
-					System.err.println("\tAnchor reference sequence " + tokens[1] + " does not exist in realignment BAM file.");
-					System.err.println("\tSkipped");
+					mismatchRef++;
+				//	System.err.println("Read: " + tokens[0]);
+				//	System.err.println("\tAnchor reference sequence " + tokens[1] + " does not exist in realignment BAM file.");
+				//	System.err.println("\tSkipped");
 					continue;
 				}
 				
@@ -92,6 +94,12 @@ public class RealignmentBAM {
 			p2.end(" alignments written");
 			sam.close();
 			bam.close();
+
+			if (mismatchRef > 0) {
+				System.err.println("WARNING: " + mismatchRef + " alignments with no matching reference chromosome name");
+				System.err.println("in realignment BAM's sequence dictionary. Please ensure the same alignment indexes");
+				System.err.println("are used for both raw read alignment and soft-clip realignment.");
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
