@@ -53,8 +53,7 @@ def get_output_filenames( input_bam_file ):
     long_sc_fq = stem+suffix+'.fastq.gz'
     long_sc_bam = stem+suffix+'.bam'
     short_sc_bam = stem+'_short_sc.bam'
- #   metrics = filename + '.metrics'
-    metrics = input_bam_file + '.metrics'
+    metrics = filename + '.metrics'
 
     return long_sc_fq, long_sc_bam, short_sc_bam, metrics 
 
