@@ -2,6 +2,8 @@ package net.wehi.socrates;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.PrintWriter;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -285,7 +287,11 @@ public class AddFilteringInfo {
 		
 		BufferedReader vars = new BufferedReader(new FileReader(allArgs[1]));
 		String line;
-		
+
+      try{	
+      PrintWriter out = new PrintWriter(new FileOutputStream(new File( allArgs[1]+".filterInfo" ) ) );
+               
+   	
 		while( (line = vars.readLine()) != null) {
                         //System.out.println("*"+line);
 			String[] cols = line.split("\t");
@@ -313,9 +319,11 @@ public class AddFilteringInfo {
 			int spanning = getSpanningCount(bp1chr, bp1start, bp1dir, bp2chr, bp2start, bp2dir, reader, lower, upper,readlen);
 			double[] bp1InsertMeanStd = getAnchorInsertStats(bp1chr, bp1start, bp1dir, reader, lower, upper,readlen);
 			double[] bp2InsertMeanStd = getAnchorInsertStats(bp2chr, bp2start, bp2dir, reader, lower, upper,readlen);
-			System.out.println(line+"\t"+bp1InsertMeanStd[0]+"\t"+bp1InsertMeanStd[1]+"\t"+bp2InsertMeanStd[0]+"\t"+bp2InsertMeanStd[1]+"\t"+spanning);
+			out.println(line+"\t"+bp1InsertMeanStd[0]+"\t"+bp1InsertMeanStd[1]+"\t"+bp2InsertMeanStd[0]+"\t"+bp2InsertMeanStd[1]+"\t"+spanning);
          }
 		}
+      out.close();
+      } catch (Exception e) {e.printStackTrace();}
       }catch(ParseException exp)
       {
          System.err.println(exp.getMessage());
