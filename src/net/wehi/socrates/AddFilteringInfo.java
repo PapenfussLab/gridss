@@ -140,7 +140,7 @@ public class AddFilteringInfo {
 			String chr, int start, String dir, SAMFileReader bamFile, int lowerInsertBound, int upperInsertBound, int readlen) {
       //get reads which  overlap the breakpoint
 
-		SAMRecordIterator iter = bamFile.queryContained(chr, start-readlen+1, end+readlen-1);
+		SAMRecordIterator iter = bamFile.queryContained(chr, start-readlen+1, start+readlen-1);
       //for those which are softclipped check if mate aligns correct
       //side of BP
          //if so store the insert size
@@ -219,12 +219,17 @@ public class AddFilteringInfo {
        //    Point2D.Float i = insertSizes.get(rg);
         //   maxInsertSizes.put( rg, i.x + 3*i.y );
       //}
+	float[] stats = SAMFileInfo.getInsertMeanStdReadlen(bamfile+".metrics");
+	
 		
-      double mean = 451;
-		double std = 57;
+      //double mean = 451;
+	float mean = stats[0];
+		//double std = 57;
+	float std = stats[1];
 		int upper = (int) Math.round(mean + 3*std);
 		int lower = (int) Math.round(mean - 3*std);
-      int readlen = 100;
+      //int readlen = 100;
+	int readlen = (int) stats[2];
 		//System.out.println(bamfilename);	
 		final SAMFileReader reader = new SAMFileReader(bamfile);
 	        reader.setValidationStringency(ValidationStringency.SILENT);	

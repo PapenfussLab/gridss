@@ -16,7 +16,7 @@ import net.wehi.socrates.SOCRATES;
 
 /**
  * @author hsu
- *
+ * @author schroeder
  * Created on Jan 18, 2013
  */
 public class SAMFileInfo {
@@ -128,7 +128,44 @@ public class SAMFileInfo {
 			return null;
 		}
 	}
+
+	public static float[] getInsertMeanStdReadlen(String metricsFile) {
+		try{
+			java.io.BufferedReader reader = new java.io.BufferedReader(new java.io.FileReader(metricsFile));
+			String line;
+			float sumIsize = 0;
+			float sumStd = 0;
+			float sumReadlen = 0;
+			int count = 0;
+                        while ( (line=reader.readLine()) != null ) {
+				String[] tokens = line.split("\t", -1);
+                                String rg = tokens[0];
+
+                                float mean = tokens[1].equals("null") ? Float.NaN : Float.parseFloat(tokens[1]);
+                                float stdev = tokens[2].equals("null") ? Float.NaN : Float.parseFloat(tokens[2]);
+				float readLen = tokens[3].equals("null") ? Float.NaN : Float.parseFloat(tokens[3]);
 	
+				sumIsize += mean;
+				sumStd += stdev;
+				sumReadlen += readLen;
+				count ++;
+	
+				if(! (mean > sumIsize/count - sumStd/count && mean < sumIsize/count + sumStd/count) ) {
+					System.err.println("Read groups do not have homogeneous insert sizes. Filtering could be unreliable with mixed data.	");			
+				}
+				if(  readLen != sumReadlen/count){
+					System.err.println("Read groups have different read lengths. Taking average. Filtering could be unreliable with mixed data");
+				}
+			}
+			reader.close();
+			return new float[] {sumIsize/count, sumStd/count, sumReadlen/count};
+		} catch (Exception e) {
+                        e.printStackTrace();
+                        return null;
+                }
+        }
+
+					
 	public static void writeBAMMetrics(SAMFileReader reader, ArrayList<String> libraries, String outputFile, int sampleSize) {
 		if (SOCRATES.verbose) System.out.println("Writing metrics file");
 		HashMap<String, Point2D.Float> isizeMeanStdev = getInsertSizeMeanStdDev(reader, libraries, sampleSize);
@@ -242,9 +279,11 @@ public class SAMFileInfo {
 	
 	public static void main(String[] args) {
 		if (args.length<1) return;
-		final File bamFile = new File(args[0]);
-		final SAMFileReader reader = new SAMFileReader(bamFile);
-		SAMFileInfo info = new SAMFileInfo(reader);
-		writeBAMMetrics(reader, info.libraries, bamFile.getName()+".metrics", 10000);
+		//final File bamFile = new File(args[0]);
+		//final SAMFileReader reader = new SAMFileReader(bamFile);
+		//SAMFileInfo info = new SAMFileInfo(reader);
+		//writeBAMMetrics(reader, info.libraries, bamFile.getName()+".metrics", 10000);
+		float[] f = getInsertMeanStdReadlen(args[0]);
+		System.out.println(f[0]+"\t"+f[1]+"\t"+f[2]);
 	}
 }
