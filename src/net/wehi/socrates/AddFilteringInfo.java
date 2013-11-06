@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Array;
+import java.lang.Math;
 import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.StringTokenizer;
@@ -98,14 +99,14 @@ public class AddFilteringInfo {
 
 		if(dir.equals("-"))
 		{
-                        end=start+1+(upper-readToBreakpointDist);
+              end=start+1+(upper-readToBreakpointDist);
 		        start=start+1;
-                }
-                else
-                {			
+      }
+      else
+      {			
 		        end=start-1;
-                        start=start-1-(upper-readToBreakpointDist);
-                }
+              start=start-1-(upper-readToBreakpointDist);
+      }
 		if(s.getMateReferenceName().equals(chr) &&
                         s.getMateAlignmentStart()>=start &&
                         (s.getMateAlignmentStart()+100)<=end)
@@ -130,24 +131,72 @@ public class AddFilteringInfo {
 		return false;
 	}
 	
+   private static boolean isValidPair(SAMRecord s, String dir){
+		if (!s.getProperPairFlag())
+			return false;
+		if(!s.getReferenceName().equals(s.getMateReferenceName()) )
+			return false;
+			if(dir.equals("-"))
+         {
+            if(s.getAlignmentStart()<s.getMateAlignmentStart())
+            {
+				   return true;
+            }
+            else
+            {
+               return false;
+            }
+         }
+         else
+         {
+            if(s.getAlignmentStart()>s.getMateAlignmentStart())
+            {
+				   return true;
+            }
+            else
+            {
+               return false;
+            }
+         }
+	}
+	
 	private static boolean isAlignedAcrossBreakpoint(SAMRecord s, int breakpointPosition){
 		if(s.getAlignmentStart() < breakpointPosition-4 && s.getAlignmentEnd() > breakpointPosition+4)
 			return true;
 		return false;
 	}
 	
-   private static int[] getAnchorInsertStats(
+   private static double[] getAnchorInsertStats(
 			String chr, int start, String dir, SAMFileReader bamFile, int lowerInsertBound, int upperInsertBound, int readlen) {
-      //get reads which  overlap the breakpoint
 
+      double insertSize=0;
+      double insertSizeMean=0;
+      double runningMean=0;
+      double insertStd=0;
+      double delta;
+      int count=0;
+      //System.out.println(start);
+      //get reads which  overlap the breakpoint
 		SAMRecordIterator iter = bamFile.queryContained(chr, start-readlen+1, start+readlen-1);
-      //for those which are softclipped check if mate aligns correct
-      //side of BP
-         //if so store the insert size
-      //if no insert sizes (short sc) return 0,0
-      return new int[] {0,0};
-      //compute the mean insert size
-      //compute the std insert size
+		for(SAMRecord s; iter.hasNext();){
+			s = iter.next();
+         //for those which are softclipped check if mate aligns correct
+         //side of BP
+         if(isSoftClip(s)&&isValidPair(s,dir))
+         {
+         //if so add the insert size
+         //System.out.println(s.getAlignmentStart()+"\t"+s.getMateAlignmentStart());
+         count++;
+         insertSize=Math.abs(s.getInferredInsertSize());
+         delta = insertSize - insertSizeMean;
+         insertSizeMean=insertSizeMean+delta/count;
+         runningMean=runningMean+delta*(insertSize-insertSizeMean);
+         }
+		}
+      //System.out.println(count);
+		iter.close();
+      insertStd = Math.sqrt(runningMean/(count - 1));
+      return new double[] {insertSizeMean,insertStd};
    }
 
 
@@ -240,6 +289,8 @@ public class AddFilteringInfo {
 		while( (line = vars.readLine()) != null) {
                         //System.out.println("*"+line);
 			String[] cols = line.split("\t");
+         if(!cols[0].startsWith("#"))
+         {
 			StringTokenizer bp1 = new StringTokenizer(cols[3],":");
 			String bp1dir = cols[4];
 			StringTokenizer bp2 = new StringTokenizer(cols[15],":");
@@ -260,9 +311,10 @@ public class AddFilteringInfo {
 			//System.out.println(bp1chr+":"+bp1start+"\t"+bp1dir+"\t"+bp2chr+":"+bp2start+"\t"+bp2dir);
 			
 			int spanning = getSpanningCount(bp1chr, bp1start, bp1dir, bp2chr, bp2start, bp2dir, reader, lower, upper,readlen);
-			int[] bp1InsertMeanStd = getAnchorInsertStats(bp1chr, bp1start, bp1dir, reader, lower, upper,readlen);
-			int[] bp2InsertMeanStd = getAnchorInsertStats(bp2chr, bp2start, bp2dir, reader, lower, upper,readlen);
-			System.out.println(line+"\t"+resultsToString(bp1InsertMeanStd)+"\t"+resultsToString(bp2InsertMeanStd)+"\t"+spanning);
+			double[] bp1InsertMeanStd = getAnchorInsertStats(bp1chr, bp1start, bp1dir, reader, lower, upper,readlen);
+			double[] bp2InsertMeanStd = getAnchorInsertStats(bp2chr, bp2start, bp2dir, reader, lower, upper,readlen);
+			System.out.println(line+"\t"+bp1InsertMeanStd[0]+"\t"+bp1InsertMeanStd[1]+"\t"+bp2InsertMeanStd[0]+"\t"+bp2InsertMeanStd[1]+"\t"+spanning);
+         }
 		}
       }catch(ParseException exp)
       {
