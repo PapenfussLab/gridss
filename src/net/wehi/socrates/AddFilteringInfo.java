@@ -1,3 +1,5 @@
+package net.wehi.socrates;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -14,9 +16,29 @@ import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
 import net.sf.samtools.SAMFileReader.ValidationStringency;
 
+import net.wehi.socrates.util.SAMFileInfo;
+
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.CommandLineParser;
+import org.apache.commons.cli.GnuParser;
+import org.apache.commons.cli.HelpFormatter;
+import org.apache.commons.cli.Option;
+import org.apache.commons.cli.OptionBuilder;
+import org.apache.commons.cli.Options;
+import org.apache.commons.cli.ParseException;
 
 
-public class AddSupportingSpanningReads {
+
+
+public class AddFilteringInfo {
+
+	private static final Options options = new Options();
+	static {
+		Option help = new Option( "h", "help", false, "print this message" );
+		Option verbose = new Option( "v", "verbose", false, "be verbose of progress" );
+		options.addOption(verbose);
+		options.addOption(help);
+	}
 	
 	private static boolean is5primeSoftClip(SAMRecord s){
 		int sc_start = s.getAlignmentStart() - s.getUnclippedStart();
@@ -70,10 +92,9 @@ public class AddSupportingSpanningReads {
 		return false;
 	}
 	
-        private static boolean mateMatch(SAMRecord s, String chr, int start, String dir, int upper, int readToBreakpointDist){
-		
-		
-                int end;
+    private static boolean mateMatch(SAMRecord s, String chr, int start, String dir, int upper, int readToBreakpointDist)
+    {
+      int end;
 
 		if(dir.equals("-"))
 		{
@@ -115,9 +136,23 @@ public class AddSupportingSpanningReads {
 		return false;
 	}
 	
+   private static int[] getAnchorInsertStats(
+			String chr, int start, String dir, SAMFileReader bamFile, int lowerInsertBound, int upperInsertBound, int readlen) {
+      //get reads which  overlap the breakpoint
 
-	private static int fetchStuff(
-			String bp1chr, int bp1start, String bp1dir, String bp2chr, int bp2start, String bp2dir,SAMFileReader bamFile, int lowerInsertBound, int upperInsertBound) {
+		SAMRecordIterator iter = bamFile.queryContained(chr, start-readlen+1, end+readlen-1);
+      //for those which are softclipped check if mate aligns correct
+      //side of BP
+         //if so store the insert size
+      //if no insert sizes (short sc) return 0,0
+      return new int[] {0,0};
+      //compute the mean insert size
+      //compute the std insert size
+   }
+
+
+	private static int getSpanningCount(
+			String bp1chr, int bp1start, String bp1dir, String bp2chr, int bp2start, String bp2dir,SAMFileReader bamFile, int lowerInsertBound, int upperInsertBound, int readlen) {
 		String chr;
                 int start;
                 int end;
@@ -125,13 +160,13 @@ public class AddSupportingSpanningReads {
 		if(bp1dir.equals("-"))
 		{
 		        start=bp1start+1;
-                        end=bp1start+1+(upperInsertBound-100);
+                        end=bp1start+1+(upperInsertBound-readlen);
                         chr=bp1chr;
                 }
                 else
                 {			
 		        end=bp1start-1;
-                        start=bp1start-1-(upperInsertBound-100);
+                        start=bp1start-1-(upperInsertBound-readlen);
                         chr=bp1chr;
                 }
 
@@ -162,31 +197,39 @@ public class AddSupportingSpanningReads {
 	}
 	
 	private static String resultsToString(int[] result){
-		if (result.length==5)
-			return result[0]+"\t"+result[1]+"\t"+result[2]+"\t"+result[3]+"\t"+result[4];
-		return result[0]+"\t"+result[1]+"\t"+result[2];
+		return result[0]+"\t"+result[1];
 	}
 	
 	public static void main(String[] args) throws IOException {
+	   CommandLineParser parser = new GnuParser();
+      try{
+      CommandLine cmd = parser.parse(options, args);
+      String[] allArgs = cmd.getArgs();
+   	
 		
-		if (args.length < 3) {
-			System.err.println("Usage: <bam file> <mean fragment length> <SD fragment length> <Socrates output>");
-			System.exit(0);
-		}
 		
-		double mean = Double.parseDouble(args[1]);
-		double std = Double.parseDouble(args[2]);
+		
+		String bamfilename = allArgs[0];
+		File bamfile = new File(bamfilename);
+      //SAMFileInfo fileInfo = new SAMFileInfo(bamfilename);
+      //HashMap<String,Point2D.Float> insertSizes = SAMFileInfo.getInsertMeanStdev(bamfile+".metrics");
+      //meanInsertSizes = new HashMap<String, Float>();
+      //for (String rg : insertSizes.keySet()) 
+      //{
+       //    Point2D.Float i = insertSizes.get(rg);
+        //   maxInsertSizes.put( rg, i.x + 3*i.y );
+      //}
+		
+      double mean = 451;
+		double std = 57;
 		int upper = (int) Math.round(mean + 3*std);
 		int lower = (int) Math.round(mean - 3*std);
-		
-		
-		String bamfilename = args[0];
-		File bamfile = new File(bamfilename);
+      int readlen = 100;
 		//System.out.println(bamfilename);	
 		final SAMFileReader reader = new SAMFileReader(bamfile);
 	        reader.setValidationStringency(ValidationStringency.SILENT);	
 		
-		BufferedReader vars = new BufferedReader(new FileReader(args[3]));
+		BufferedReader vars = new BufferedReader(new FileReader(allArgs[1]));
 		String line;
 		
 		while( (line = vars.readLine()) != null) {
@@ -204,11 +247,23 @@ public class AddSupportingSpanningReads {
 			int bp2start = Integer.parseInt(bp2.nextToken());
 			int bp2end = bp1start;
 			
+
+         //get reads overlapping breakpoint1
+         //count up spanning reads
+         //determine mean and std of insert size for anchors
+
 			//System.out.println(bp1chr+":"+bp1start+"\t"+bp1dir+"\t"+bp2chr+":"+bp2start+"\t"+bp2dir);
 			
-			int results = fetchStuff(bp1chr, bp1start, bp1dir, bp2chr, bp2start, bp2dir, reader, lower, upper);
-			System.out.println(line+"\t"+results);
+			int spanning = getSpanningCount(bp1chr, bp1start, bp1dir, bp2chr, bp2start, bp2dir, reader, lower, upper,readlen);
+			int[] bp1InsertMeanStd = getAnchorInsertStats(bp1chr, bp1start, bp1dir, reader, lower, upper,readlen);
+			int[] bp2InsertMeanStd = getAnchorInsertStats(bp2chr, bp2start, bp2dir, reader, lower, upper,readlen);
+			System.out.println(line+"\t"+resultsToString(bp1InsertMeanStd)+"\t"+resultsToString(bp2InsertMeanStd)+"\t"+spanning);
 		}
+      }catch(ParseException exp)
+      {
+         System.err.println(exp.getMessage());
+         System.exit(1);
+      }
 		
 	}
 	
