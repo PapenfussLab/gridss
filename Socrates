@@ -67,7 +67,7 @@ def make_java_cmd( mode, java_mem ):
     elif mode=='annotate':
         binary = 'AnnotatePairedClusters'
     elif mode=='filter':
-        binary = 'AddSupportingSpanningReads'
+        binary = 'AddFilteringInfo'
     else:
         print >> sys.stderr, 'Invalid mode'
         sys.exit(1)
