@@ -66,6 +66,8 @@ def make_java_cmd( mode, java_mem ):
         binary = 'RealignmentClustering'
     elif mode=='annotate':
         binary = 'AnnotatePairedClusters'
+    elif mode=='filter':
+        binary = 'AddSupportingSpanningReads'
     else:
         print >> sys.stderr, 'Invalid mode'
         sys.exit(1)
@@ -210,6 +212,14 @@ def run_annotate(args):
         cmd = cmd + '--repeatmask ' + args.repeatmask
     if args.verbose:
         cmd = cmd + '--verbose'
+    cmd += " " + args.input_file
+    proc = subprocess.Popen( cmd, shell=True )
+    proc.communicate()[0]
+    return proc.returncode
+
+def run_filtering(args):
+    cmd = make_java_cmd('filter', args.jvm_memory)
+    cmd += args.bam_file + " " + args.socrates_file
     proc = subprocess.Popen( cmd, shell=True )
     proc.communicate()[0]
     return proc.returncode
@@ -240,6 +250,8 @@ if __name__=='__main__':
                                               formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser_annotate   = subparsers.add_parser('annotate', help='Annotate Socrates results with germline breakpoints and repeat mask.',
                                               formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser_filter     = subparsers.add_parser('filter', help='Add filtration criteria to the output. WARNING: depending on the number of breakpoints in the output this step can take a while. A subset of prefiltered breakpoints (based on evidence, for example) could be used for ease of convenience', 
+						formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     ###################### PreprocessBAM ###############
     parser_preprocess.add_argument('-l', "--long-sc-len", help="Length threshold of long soft-clip",\
@@ -305,6 +317,11 @@ if __name__=='__main__':
                                     type=str, default='8g')
     parser_annotate.add_argument("input_file", help="Results from PredictRearrangements")
 
+    ###################### Add Filtration Values #############
+    parser_filter.add_argument('--jvm_memory', help="set Java Virtual Machine maximum memory size (e.g. 1g, 512m)",\
+                                    type=str, default='8g')
+    parser_filter.add_argument("bam_file", help="Original Bam file")
+    parser_filter.add_argument("socrates_file", help ="Socrates output")
     ###################### do all ##########
     parser_all.add_argument('-l', "--long-sc-len", help="Length threshold of long soft-clip",\
                                     type=int, default=25)
@@ -352,7 +369,6 @@ if __name__=='__main__':
 
     ##### parse args ########
     args = parser.parse_args()
-
     if args.mode=='all':
         run_all(args)
     elif args.mode=='preprocess':
@@ -363,3 +379,5 @@ if __name__=='__main__':
         run_predict(args, args.long_sc_bam, args.short_sc_bam, args.metrics_file)
     elif args.mode=='annotate':
         run_annotate(args)
+    elif args.mode=='filter':
+        run_filtering(args)
