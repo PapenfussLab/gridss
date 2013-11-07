@@ -68,6 +68,25 @@ public class AddFilteringInfo {
 			return true;
 		return false;
 	}
+	private static boolean isSoftClip(SAMRecord s, String dir, int  pos, int longScLength) {
+		if (dir.equals("+")) {
+			if(s.getAlignmentEnd() <pos - 3 || s.getAlignmentEnd() > pos + 3)
+				//read does not soft clip at the breakpoint site
+				return false;
+			if(s.getUnclippedEnd() - s.getAlignmentEnd() >= longScLength)
+				return true;
+			return false;
+		} else {
+			if(s.getAlignmentStart() < pos - 3 || s.getAlignmentStart() > pos + 3)
+				 //read does not soft clip at the breakpoint site
+                                return false;
+			if(s.getAlignmentStart() - s.getUnclippedStart() >= longScLength)
+				return true;
+			return false;
+		}
+	}
+
+
 	private static boolean isInteresingSoftclip(SAMRecord s, int breakpoint){
 		if(s.getAlignmentStart()-2 <= breakpoint && s.getAlignmentEnd()+2>=breakpoint && (softclipLength3prime(s) > 4 || softclipLength5prime(s) > 4))
 			return true;
@@ -168,8 +187,10 @@ public class AddFilteringInfo {
 		return false;
 	}
 	
+
+
    private static double[] getAnchorInsertStats(
-			String chr, int start, String dir, SAMFileReader bamFile, int lowerInsertBound, int upperInsertBound, int readlen) {
+			String chr, int start, String dir, SAMFileReader bamFile, int lowerInsertBound, int upperInsertBound, int readlen, int minimumMappingQuality, int longScLength) {
 
       double insertSize=0;
       double insertSizeMean=0;
@@ -177,24 +198,48 @@ public class AddFilteringInfo {
       double insertStd=0;
       double delta;
       int count=0;
+      int normalCount = 0;
       //System.out.println(start);
       //get reads which  overlap the breakpoint
 		SAMRecordIterator iter = bamFile.queryContained(chr, start-readlen+1, start+readlen-1);
 		for(SAMRecord s; iter.hasNext();){
 			s = iter.next();
+			if(s.getMappingQuality() < minimumMappingQuality)
+				continue;
+			if( (dir.equals("+")? s.getAlignmentStart() < start - longScLength : s.getAlignmentEnd() > start + longScLength) )
+				//read does not overlap breakpoint enough
+				continue;
+			if(! isValidPair(s,dir) )
+				//mate not aligned on correct side of breakpoint
+				continue;
+			if(isSoftClip(s, dir, start, longScLength) ){
+				//found long softclip -- do the things from below here: add to insert size etc.
+				count ++;
+				insertSize=Math.abs(s.getInferredInsertSize());
+				delta = insertSize - insertSizeMean;
+				insertSizeMean=insertSizeMean+delta/count;
+				runningMean=runningMean+delta*(insertSize-insertSizeMean);
+			} else if (isSoftClip(s)) 
+				//ignore soft clipped reads as evidence for normal
+				continue;
+			//found read supporting the reference allele
+			//count 
+			normalCount ++;
+		}
          //for those which are softclipped check if mate aligns correct
          //side of BP
-         if(isSoftClip(s)&&isValidPair(s,dir))
-         {
+         //if(isSoftClip(s)&&isValidPair(s,dir))
+         //if(isSoftClip(s)&&isValidPair(s,dir))
+         //{
          //if so add the insert size
          //System.out.println(s.getAlignmentStart()+"\t"+s.getMateAlignmentStart());
-         count++;
-         insertSize=Math.abs(s.getInferredInsertSize());
-         delta = insertSize - insertSizeMean;
-         insertSizeMean=insertSizeMean+delta/count;
-         runningMean=runningMean+delta*(insertSize-insertSizeMean);
-         }
-		}
+         //count++;
+         //insertSize=Math.abs(s.getInferredInsertSize());
+         //delta = insertSize - insertSizeMean;
+         //insertSizeMean=insertSizeMean+delta/count;
+         //runningMean=runningMean+delta*(insertSize-insertSizeMean);
+         //}
+	//	}
       //System.out.println(count);
 		iter.close();
       insertStd = Math.sqrt(runningMean/(count - 1));
@@ -315,10 +360,13 @@ public class AddFilteringInfo {
          //determine mean and std of insert size for anchors
 
 			//System.out.println(bp1chr+":"+bp1start+"\t"+bp1dir+"\t"+bp2chr+":"+bp2start+"\t"+bp2dir);
+
+			int minimumMappingQuality = 5;
+			int longScLength = 25;
 			
 			int spanning = getSpanningCount(bp1chr, bp1start, bp1dir, bp2chr, bp2start, bp2dir, reader, lower, upper,readlen);
-			double[] bp1InsertMeanStd = getAnchorInsertStats(bp1chr, bp1start, bp1dir, reader, lower, upper,readlen);
-			double[] bp2InsertMeanStd = getAnchorInsertStats(bp2chr, bp2start, bp2dir, reader, lower, upper,readlen);
+			double[] bp1InsertMeanStd = getAnchorInsertStats(bp1chr, bp1start, bp1dir, reader, lower, upper,readlen, minimumMappingQuality, longScLength);
+			double[] bp2InsertMeanStd = getAnchorInsertStats(bp2chr, bp2start, bp2dir, reader, lower, upper,readlen, minimumMappingQuality, longScLength);
 			out.println(line+"\t"+bp1InsertMeanStd[0]+"\t"+bp1InsertMeanStd[1]+"\t"+bp2InsertMeanStd[0]+"\t"+bp2InsertMeanStd[1]+"\t"+spanning);
          }
 		}
