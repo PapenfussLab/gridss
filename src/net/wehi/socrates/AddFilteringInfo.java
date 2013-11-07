@@ -199,14 +199,15 @@ public class AddFilteringInfo {
       double delta;
       int count=0;
       int normalCount = 0;
-      //System.out.println(start);
+      //System.out.println("**"+start+"\t"+dir);
       //get reads which  overlap the breakpoint
 		SAMRecordIterator iter = bamFile.queryContained(chr, start-readlen+1, start+readlen-1);
 		for(SAMRecord s; iter.hasNext();){
 			s = iter.next();
+         //System.out.println(s.getAlignmentStart()+"\t"+s.getAlignmentEnd()+"\t"+s.getReadNegativeStrandFlag());
 			if(s.getMappingQuality() < minimumMappingQuality)
 				continue;
-			if( (dir.equals("+")? s.getAlignmentStart() < start - longScLength : s.getAlignmentEnd() > start + longScLength) )
+			if( (dir.equals("-")? s.getAlignmentStart() < (start - longScLength) : s.getAlignmentEnd() > (start + longScLength)) )
 				//read does not overlap breakpoint enough
 				continue;
 			if(! isValidPair(s,dir) )
@@ -215,10 +216,18 @@ public class AddFilteringInfo {
 			if(isSoftClip(s, dir, start, longScLength) ){
 				//found long softclip -- do the things from below here: add to insert size etc.
 				count ++;
-				insertSize=Math.abs(s.getInferredInsertSize());
+            if(dir.equals("+"))
+            {
+               insertSize=Math.abs(s.getUnclippedEnd()-s.getMateAlignmentStart());
+            }
+            else
+            {
+				   insertSize=Math.abs((s.getMateAlignmentStart()+readlen)-s.getUnclippedStart());
+            }
 				delta = insertSize - insertSizeMean;
 				insertSizeMean=insertSizeMean+delta/count;
 				runningMean=runningMean+delta*(insertSize-insertSizeMean);
+            //System.out.println("##"+s.getAlignmentStart()+"\t"+s.getAlignmentEnd());
 			} else if (isSoftClip(s)) 
 				//ignore soft clipped reads as evidence for normal
 				continue;
@@ -232,7 +241,6 @@ public class AddFilteringInfo {
          //if(isSoftClip(s)&&isValidPair(s,dir))
          //{
          //if so add the insert size
-         //System.out.println(s.getAlignmentStart()+"\t"+s.getMateAlignmentStart());
          //count++;
          //insertSize=Math.abs(s.getInferredInsertSize());
          //delta = insertSize - insertSizeMean;
@@ -243,7 +251,7 @@ public class AddFilteringInfo {
       //System.out.println(count);
 		iter.close();
       insertStd = Math.sqrt(runningMean/(count - 1));
-      return new double[] {insertSizeMean,insertStd};
+      return new double[] {insertSizeMean,insertStd,1.0*count/normalCount};
    }
 
 
@@ -368,6 +376,7 @@ public class AddFilteringInfo {
 			double[] bp1InsertMeanStd = getAnchorInsertStats(bp1chr, bp1start, bp1dir, reader, lower, upper,readlen, minimumMappingQuality, longScLength);
 			double[] bp2InsertMeanStd = getAnchorInsertStats(bp2chr, bp2start, bp2dir, reader, lower, upper,readlen, minimumMappingQuality, longScLength);
 			out.println(line+"\t"+bp1InsertMeanStd[0]+"\t"+bp1InsertMeanStd[1]+"\t"+bp2InsertMeanStd[0]+"\t"+bp2InsertMeanStd[1]+"\t"+spanning);
+			//System.out.println(line+"\t"+bp1InsertMeanStd[0]+"\t"+bp1InsertMeanStd[1]+"\t"+bp1InsertMeanStd[2]+"\t"+bp2InsertMeanStd[0]+"\t"+bp2InsertMeanStd[1]+"\t"+bp2InsertMeanStd[2]+"\t"+spanning);
          }
 		}
       out.close();
