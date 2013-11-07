@@ -251,7 +251,7 @@ public class AddFilteringInfo {
       //System.out.println(count);
 		iter.close();
       insertStd = Math.sqrt(runningMean/(count - 1));
-      return new double[] {insertSizeMean,insertStd,1.0*count/normalCount};
+      return new double[] {insertSizeMean,insertStd,1.0*count/(count+normalCount)};
    }
 
 
@@ -375,7 +375,7 @@ public class AddFilteringInfo {
 			int spanning = getSpanningCount(bp1chr, bp1start, bp1dir, bp2chr, bp2start, bp2dir, reader, lower, upper,readlen);
 			double[] bp1InsertMeanStd = getAnchorInsertStats(bp1chr, bp1start, bp1dir, reader, lower, upper,readlen, minimumMappingQuality, longScLength);
 			double[] bp2InsertMeanStd = getAnchorInsertStats(bp2chr, bp2start, bp2dir, reader, lower, upper,readlen, minimumMappingQuality, longScLength);
-			out.println(line+"\t"+bp1InsertMeanStd[0]+"\t"+bp1InsertMeanStd[1]+"\t"+bp2InsertMeanStd[0]+"\t"+bp2InsertMeanStd[1]+"\t"+spanning);
+			out.println(line+"\t"+bp1InsertMeanStd[0]+"\t"+bp1InsertMeanStd[1]+"\t"+bp1InsertMeanStd[2]+"\t"+bp2InsertMeanStd[0]+"\t"+bp2InsertMeanStd[1]+"\t"+bp2InsertMeanStd[2]+"\t"+spanning);
 			//System.out.println(line+"\t"+bp1InsertMeanStd[0]+"\t"+bp1InsertMeanStd[1]+"\t"+bp1InsertMeanStd[2]+"\t"+bp2InsertMeanStd[0]+"\t"+bp2InsertMeanStd[1]+"\t"+bp2InsertMeanStd[2]+"\t"+spanning);
          }
 		}
