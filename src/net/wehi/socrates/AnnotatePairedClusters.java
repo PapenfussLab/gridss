@@ -143,6 +143,22 @@ public class AnnotatePairedClusters implements Callable<Integer> {
 		return pb;
 	}
 	
+	private static String extractColumnNames(String filename){
+		try {
+                        BufferedReader breader = new BufferedReader(new FileReader(filename));
+			String line = breader.readLine();
+			if (line.charAt(0)=='#')
+				return line;
+			return null;
+		} catch (Exception e) { e.printStackTrace(); }
+	  	return null;
+	}
+
+	private static String extendColumnNames(String names, String newItem) {
+		if (names==null) return null;
+		return names + "\t" + newItem;
+	}
+	
 	/**
 	 * @param args
 	 */
@@ -172,10 +188,17 @@ public class AnnotatePairedClusters implements Callable<Integer> {
 			}
            
             ArrayList<PairedCluster> clusterPairs = loadBreakpoints( rargs[0] );
-            if (norm != null) annotateNormal( norm, clusterPairs, flank );
-            if (rpt != null)  annotateRepeat( rpt, clusterPairs );
+	    String colNames = extractColumnNames(rargs[0]);
+            if (norm != null) {
+		annotateNormal( norm, clusterPairs, flank );
+		colNames = extendColumnNames(colNames, "normal");
+	    }
+            if (rpt != null) { 
+		annotateRepeat( rpt, clusterPairs );
+		colNames = extendColumnNames(colNames, "repeat");
+	    }
             String out = rargs[0]+".annotated";
-            outputAnnotation( out, clusterPairs );
+            outputAnnotation( out, colNames, clusterPairs );
 		} catch( ParseException exp ) {
 	        System.err.println( exp.getMessage() );
 	        printHelp();
@@ -226,9 +249,11 @@ public class AnnotatePairedClusters implements Callable<Integer> {
 
 	}
 
-    public static void outputAnnotation(String outputFilename, ArrayList<PairedCluster> clusterPairs) {
+    public static void outputAnnotation(String outputFilename, String colNames, ArrayList<PairedCluster> clusterPairs) {
         try { 
             PrintWriter out = new PrintWriter(new FileOutputStream(new File( outputFilename ) ) ); 
+	    if (colNames != null)
+		out.println(colNames);
             for (PairedCluster pc : clusterPairs) {
                 out.println( pc.text );
             }
