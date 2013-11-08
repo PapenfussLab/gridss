@@ -57,19 +57,19 @@ public class AnnotatePairedClusters implements Callable<Integer> {
 										.withType( Number.class )
 										.withLongOpt( "threads" )
 										.create( 't' );*/
-		Option normal = OptionBuilder.withArgName( "normal" )
+		Option normal = OptionBuilder.withArgName("normal")
 				.hasArg()
 				.withDescription("Socrates paired breakpoint calls for normal sample")
 				.withType( String.class )
-				.withLongOpt( "normal" )
-				.create( 'n' );
-		Option flank = OptionBuilder.withArgName( "flank" )
+				.withLongOpt("normal")
+				.create('n');
+		Option flank = OptionBuilder.withArgName("flank")
 				.hasArg()
 				.withDescription("Normal breakpoint within FLANK nt of tumour breakpoint is considered as the same [default=10(nt)]")
 				.withType( Integer.class )
 				.withLongOpt( "flank" )
 				.create( 'f' );
-		Option rmsk = OptionBuilder.withArgName( "repeatmask" )
+		Option rmsk = OptionBuilder.withArgName("repeatmask")
 				.hasArg()
 				.withDescription("UCSC repeat masker track file")
 				.withType( String.class )
@@ -77,9 +77,9 @@ public class AnnotatePairedClusters implements Callable<Integer> {
 				.create( 'r' );
 		
 		//options.addOption( threads );
-		options.addOption( normal );
-		options.addOption( rmsk );
-		options.addOption( flank );
+		options.addOption(normal);
+		options.addOption(rmsk);
+		options.addOption(flank);
 		options.addOption(verbose);
 		options.addOption(help);
 	}
@@ -157,6 +157,7 @@ public class AnnotatePairedClusters implements Callable<Integer> {
             String norm = ((String)cmd.getParsedOptionValue("normal"));
             int flank = cmd.hasOption("flank") ? ((Integer)cmd.getParsedOptionValue("flank")) : 10;
             String rpt = cmd.hasOption("repeatmask") ? ((String)cmd.getParsedOptionValue("repeatmask")) : null;
+            System.out.println(norm+"\t"+rpt);
             if (norm==null && rpt==null) {
             	System.err.println("No annotation specified.");
             	System.err.println("Use --normal and/or --repeatmask options to annotate results.");

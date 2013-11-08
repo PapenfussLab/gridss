@@ -207,7 +207,7 @@ public class AddFilteringInfo {
          //System.out.println(s.getAlignmentStart()+"\t"+s.getAlignmentEnd()+"\t"+s.getReadNegativeStrandFlag());
 			if(s.getMappingQuality() < minimumMappingQuality)
 				continue;
-			if( (dir.equals("-")? s.getAlignmentStart() < (start - longScLength) : s.getAlignmentEnd() > (start + longScLength)) )
+            if( (dir.equals("+")? s.getAlignmentStart() < (start - readlen + longScLength) : s.getAlignmentEnd() > (start +readlen - longScLength)) )
 				//read does not overlap breakpoint enough
 				continue;
 			if(! isValidPair(s,dir) )

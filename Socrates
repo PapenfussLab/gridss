@@ -205,14 +205,19 @@ def run_predict(args, long_sc_bam, short_sc_bam, metrics_file):
     return proc.returncode
 
 def run_annotate(args):
-    cmd = make_java_cmd('annotate', args.jvm_memory)
+    cmd_list = []
+    cmd_list.append(make_java_cmd('annotate', args.jvm_memory))
+    
     if args.normal:
-        cmd = cmd + '--normal ' + args.normal
+        cmd_list.append('--normal') 
+        cmd_list.append(args.normal)
     if args.repeatmask:
-        cmd = cmd + '--repeatmask ' + args.repeatmask
+        cmd_list.append('--repeatmask')
+        cmd_list.append( args.repeatmask)
     if args.verbose:
-        cmd = cmd + '--verbose'
-    cmd += " " + args.input_file
+        cmd_list.append('--verbose')
+    cmd_list.append(args.input_file)
+    cmd = " ".join(cmd_list)
     proc = subprocess.Popen( cmd, shell=True )
     proc.communicate()[0]
     return proc.returncode
