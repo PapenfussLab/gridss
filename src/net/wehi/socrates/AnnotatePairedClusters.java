@@ -173,7 +173,6 @@ public class AnnotatePairedClusters implements Callable<Integer> {
             String norm = ((String)cmd.getParsedOptionValue("normal"));
             int flank = cmd.hasOption("flank") ? ((Integer)cmd.getParsedOptionValue("flank")) : 10;
             String rpt = cmd.hasOption("repeatmask") ? ((String)cmd.getParsedOptionValue("repeatmask")) : null;
-            System.out.println(norm+"\t"+rpt);
             if (norm==null && rpt==null) {
             	System.err.println("No annotation specified.");
             	System.err.println("Use --normal and/or --repeatmask options to annotate results.");
