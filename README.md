@@ -19,7 +19,7 @@ To use Socrates without the driver script, Java class path needs to be set:
 
 socrates=`dirname $0`/
 libs=${socrates}lib/sam-1.77.jar:${socrates}lib/commons-lang3-3.1.jar:${socrates}lib/commons-cli-1.2.jar:${socrates}lib/picard-1.85.jar:${socrates}lib/snappy-java-1.0.3-rc3.jar
-java -Xmx4g -cp ${socrates}bin:$libs net.wehi.socrates.[PROG] [OPTIONS]`
+java -Xmx4g -cp ${socrates}bin:$libs au.edu.wehi.socrates.[PROG] [OPTIONS]`
 
 where PROG is one of BamStratifier, RealignmentBAM, RealignmentClustering and AnnotatePairedClusters.
 
@@ -85,7 +85,7 @@ from further analysis for Bowtie2 and BWA aligned reads.
 
 usage: Socrates realignment [options] input_bam output_bam
 
-input_bam 	Re-aligned soft clip BAM file. Use “-” to accept input from stdin
+input_bam 	Re-aligned soft clip BAM file. Use â€œ-â€� to accept input from stdin
 
 output_bam 	Output re-alignment BAM with anchor info merged
 
@@ -107,7 +107,7 @@ usage: Socrates predict [options] realigned_sc_bam short_sc_bam metrics_file
 
 -h,	--help 				print this message 
 
--i,	--ideal-only 			Use only proper pair 5’ SC and anomalous pair 3’ SC [default: false]
+-i,	--ideal-only 			Use only proper pair 5â€™ SC and anomalous pair 3â€™ SC [default: false]
 
 -l,	--long-sc-len <length> 		Length threshold of long soft-clip [default: 25 (bp)]
 

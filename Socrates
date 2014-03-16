@@ -82,7 +82,7 @@ def make_java_cmd( mode, java_mem ):
     for lib in LIBRARIES:
         libs.append( os.path.join( library_path, lib ) )
     class_path = ':'.join(libs)
-    cmd = os.path.join( 'java -Xmx%s -Xms%s -cp %s net.wehi.socrates.%s ' % (xmx, xms, class_path, binary) )
+    cmd = os.path.join( 'java -Xmx%s -Xms%s -cp %s au.edu.wehi.socrates.%s ' % (xmx, xms, class_path, binary) )
     return cmd
 
 
