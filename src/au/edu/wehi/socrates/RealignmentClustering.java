@@ -39,7 +39,7 @@ import au.edu.wehi.socrates.util.Utilities;
 import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
-import net.sf.samtools.util.SeekableStream;
+import net.sf.samtools.seekablestream.SeekableStream;
 
 //import au.edu.wehi.socrates.util.GenomicIntervalList;
 //import au.edu.wehi.socrates.util.ProgressVerbose;

@@ -5,7 +5,7 @@ package au.edu.wehi.socrates.util;
 
 import java.io.IOException;
 import java.io.File;
-import net.sf.samtools.util.SeekableStream;
+import net.sf.samtools.seekablestream.SeekableStream;
 
 
 
@@ -131,5 +131,8 @@ public class SeekableMemoryStream extends SeekableStream {
 		
 		return ret;
 	}
-
+	@Override
+	public long position() throws IOException {
+		return pos;
+	}
 }
