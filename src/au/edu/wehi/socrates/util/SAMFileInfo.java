@@ -20,6 +20,7 @@ import au.edu.wehi.socrates.SOCRATES;
  * @author schroeder
  * Created on Jan 18, 2013
  */
+@Deprecated() // DC: use net.sf.picard.metrics
 public class SAMFileInfo {
 	public ArrayList<String> libraries = new ArrayList<String>();
 	public ArrayList<String> sequenceNames = new ArrayList<String>();

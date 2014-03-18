@@ -4,7 +4,10 @@
 package au.edu.wehi.socrates.util;
 
 import java.util.Arrays;
+import java.util.List;
 import java.util.Vector;
+
+import net.sf.samtools.Cigar;
 import net.sf.samtools.CigarOperator;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.CigarElement;
@@ -37,8 +40,21 @@ public class SAMRecordSummary {
 	}
 	
 	public static boolean isAlignmentSoftClipped(SAMRecord aln) {
-		java.util.List<CigarElement> cigar = aln.getCigar().getCigarElements();
-		return (cigar.get(0).getOperator()==CigarOperator.SOFT_CLIP || cigar.get(cigar.size()-1).getOperator()==CigarOperator.SOFT_CLIP);
+		Cigar cigar = aln.getCigar();
+		if (cigar == null) return false;
+		List<CigarElement> elements = cigar.getCigarElements();
+		if (elements == null) return false;
+		int i = 0;
+		while (i < elements.size() && (elements.get(i).getOperator() == CigarOperator.HARD_CLIP || elements.get(i).getOperator() == CigarOperator.SOFT_CLIP)) {
+			if (elements.get(i).getOperator() == CigarOperator.SOFT_CLIP) return true;
+			i++;
+		}
+		i = elements.size() - 1;
+		while (i > 0 && (elements.get(i).getOperator() == CigarOperator.HARD_CLIP || elements.get(i).getOperator() == CigarOperator.SOFT_CLIP)) {
+			if (elements.get(i).getOperator() == CigarOperator.SOFT_CLIP) return true;
+			i++;
+		}
+		return false;
 	}
 	
 	private void extractSoftClipInfo(java.util.List<CigarElement> cigar, byte[] sequence, byte[] qual, SAMRecord aln) {
