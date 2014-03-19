@@ -1,7 +1,7 @@
 /**
  * 
  */
-package au.edu.wehi.socrates;
+package net.wehi.socrates;
 
 import java.io.BufferedReader;
 import java.io.File;

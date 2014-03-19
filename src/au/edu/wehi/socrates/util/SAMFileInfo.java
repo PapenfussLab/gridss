@@ -6,6 +6,7 @@ package au.edu.wehi.socrates.util;
 //import net.sf.picard.*;
 
 import net.sf.samtools.*;
+import net.wehi.socrates.SOCRATES;
 
 import java.awt.geom.Point2D;
 import java.io.File;
@@ -13,7 +14,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.ArrayList;
 
-import au.edu.wehi.socrates.SOCRATES;
 
 /**
  * @author hsu

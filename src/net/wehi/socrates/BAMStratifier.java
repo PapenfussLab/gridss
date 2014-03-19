@@ -1,7 +1,7 @@
 /**
  * 
  */
-package au.edu.wehi.socrates;
+package net.wehi.socrates;
 
 
 import org.apache.commons.lang3.builder.EqualsBuilder;

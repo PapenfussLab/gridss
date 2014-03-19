@@ -8,7 +8,8 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.concurrent.atomic.AtomicReferenceArray;
 
-import au.edu.wehi.socrates.SOCRATES;
+import net.wehi.socrates.SOCRATES;
+
 
 
 /**

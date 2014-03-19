@@ -1,4 +1,4 @@
-package au.edu.wehi.socrates;
+package net.wehi.socrates;
 /**
  * 
  */
