@@ -68,6 +68,12 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
     @Override
 	protected int doWork() {
     	return -1;
+    	// option 1:
+    	while (iter.hasNext()) {
+    		process(iter.next());
+    	}
+    	// option 2:
+    	process(iter);
     }
 	public static void main(String[] argv) {
         System.exit(new GenerateDirectedBreakpoints().instanceMain(argv));

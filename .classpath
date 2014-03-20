@@ -10,5 +10,6 @@
 	<classpathentry kind="lib" path="lib/sam-1.109.jar" sourcepath="/picard/src/java"/>
 	<classpathentry kind="lib" path="lib/tribble-1.109.jar"/>
 	<classpathentry kind="lib" path="lib/variant-1.109.jar"/>
+	<classpathentry kind="lib" path="lib/guava-16.0.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
