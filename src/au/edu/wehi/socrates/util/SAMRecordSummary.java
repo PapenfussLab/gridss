@@ -56,6 +56,31 @@ public class SAMRecordSummary {
 		}
 		return false;
 	}
+	/**
+	 * Determines whether this read is part of a non-reference read pair
+	 * @param record SAMRecord to check
+	 * @return true if part of non-reference pair, false otherwise
+	 */
+	public static boolean isPartOfNonReferenceReadPair(SAMRecord record) {
+		return record != null &&
+				record.getReadPairedFlag() &&
+				!record.getProperPairFlag() &&
+				// at least one of the reads should be mapped
+				!(record.getReadUnmappedFlag() && record.getMateUnmappedFlag());
+	}
+	public static boolean isDiscordantPairMember(SAMRecord record) {
+		return record != null &&
+				record.getReadPairedFlag() &&
+				!record.getProperPairFlag() &&
+				!record.getReadUnmappedFlag() &&
+				!record.getMateUnmappedFlag();
+	}
+	public static boolean isAnchoredPairMember(SAMRecord record) {
+		return record != null &&
+				record.getReadPairedFlag() &&
+				// only one read in the pair is mapped
+				(record.getReadUnmappedFlag() ^ record.getMateUnmappedFlag());
+	}
 	
 	private void extractSoftClipInfo(java.util.List<CigarElement> cigar, byte[] sequence, byte[] qual, SAMRecord aln) {
 		// head clip info

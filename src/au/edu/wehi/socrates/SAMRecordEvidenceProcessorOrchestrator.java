@@ -1,50 +1,38 @@
 package au.edu.wehi.socrates;
 
-import java.util.Iterator;
-
 import net.sf.samtools.SAMRecord;
 
 public class SAMRecordEvidenceProcessorOrchestrator {
+	private SequentialSAMRecordBuffer itbuffer;
+	private int maxFragmentSize;
 	public SAMRecordEvidenceProcessorOrchestrator(
-		Iterator<SAMRecord> sc,
-		Iterator<SAMRecord> oea,
-		Iterator<SAMRecord> dp,
-		Iterator<SAMRecord> mate) {
+		SequentialSAMRecordBuffer itbuffer,
+		int maxFragmentSize) {
+		this.itbuffer = itbuffer;
+		this.maxFragmentSize = maxFragmentSize;
 	}
 	public void process() {
-		// genomic position = first
-		// while input reads
-			// flush expired reads from working sets
-			// add reads now in working set
+		int position = 1;
+		while (itbuffer.hasReads()) {
+			// using VCF breakpoint position definition
+			// Forward evidence
+			for (SAMRecord r = itbuffer.getNextEndingSoftClippedRead(position); r != null; r = itbuffer.getNextEndingSoftClippedRead(position)) {
+				// add to forward working set
+			}
+			for (NonReferenceReadPair r = itbuffer.getNextNonReferenceForwardReadPair(position); r != null; r = itbuffer.getNextNonReferenceForwardReadPair(position)) {
+				// add to forward working set
+			}
+			// Backward evidence
+			for (SAMRecord r = itbuffer.getNextStartingSoftClippedRead(position + 1); r != null; r = itbuffer.getNextStartingSoftClippedRead(position + 1)) {
+				// add to backward working set
+			}
+			for (NonReferenceReadPair r = itbuffer.getNextNonReferenceBackwardReadPair(position + maxFragmentSize); r != null; r = itbuffer.getNextNonReferenceBackwardReadPair(position + maxFragmentSize)) {
+				// add to backward working set
+			}
 			// process genomic position
 			// advance genomic position to next callable position
-		// process remaining callable positions
+			position++;
+			// flush expired reads from working sets
+		}
 	}
-	
-	public interface MethodConsumer<T> {
-		T process(SAMRecord r);
-	}
-	public interface IterableConsumer<T> extends Iterable<T> {
-	}
-	
-	// Directed Breakpoint Outputs:
-	public interface DirectedBreakpointCalculator extends Iterable<T> {
-	}
-	
-	
-	// Orchestrator
-	// construct working set
-	// ask calculators to process positions
-	// optimisation: don't ask
-	
-	// calculators need to tell orchestrator:
-	// what reads are included in their working set:
-	// {(Type, min, max)}
-	
-	// each record
-	// - chain through every dirbpcalc
-	//
-	
-	// backward processing:
-	// for each record sorted by end
 }

@@ -3,13 +3,6 @@ package au.edu.wehi.socrates;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.sound.midi.Sequence;
-
-import au.edu.wehi.socrates.FileNamingConvention.IntermediateBamType;
-import au.edu.wehi.socrates.util.SAMFileInfo;
 import au.edu.wehi.socrates.util.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.socrates.util.SAMRecordSummary;
 
@@ -21,16 +14,10 @@ import net.sf.picard.cmdline.CommandLineProgram;
 import net.sf.picard.cmdline.Option;
 import net.sf.picard.cmdline.StandardOptionDefinitions;
 import net.sf.picard.cmdline.Usage;
-import net.sf.picard.filter.AggregateFilter;
-import net.sf.picard.filter.DuplicateReadFilter;
-import net.sf.picard.filter.FailsVendorReadQualityFilter;
-import net.sf.picard.filter.FilteringIterator;
-import net.sf.picard.filter.SamRecordFilter;
 import net.sf.picard.io.IoUtil;
 import net.sf.picard.metrics.MetricsFile;
 import net.sf.picard.util.Log;
 import net.sf.picard.util.ProgressLogger;
-import net.sf.samtools.SAMException;
 import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMFileHeader.SortOrder;
 import net.sf.samtools.BAMRecordCodec;
@@ -39,11 +26,9 @@ import net.sf.samtools.SAMFileWriter;
 import net.sf.samtools.SAMFileWriterFactory;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
-import net.sf.samtools.SAMRecordQueryNameComparator;
 import net.sf.samtools.SAMSequenceDictionary;
 import net.sf.samtools.util.CloseableIterator;
 import net.sf.samtools.util.CollectionUtil;
-import net.sf.samtools.util.IOUtil;
 import net.sf.samtools.util.SortingCollection;
 
 /**
@@ -62,26 +47,16 @@ public class ExtractEvidence extends CommandLineProgram {
     @Usage
     public String USAGE = getStandardUsagePreamble() + "Extract reads supporting structural variation." + PROGRAM_VERSION;
 
-    @Option(doc="The BAM file to process.",
+    @Option(doc="Coordinate-sorted input BAM file.",
     		shortName=StandardOptionDefinitions.INPUT_SHORT_NAME)
     public File INPUT;
-    /*// Output file names determine by @see FileNamingConvention
-    @Option(doc = "Coordinate sorted output file for soft clipped reads",
-            optional = false,
-            shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME)
-    public File SC_OUTPUT;
-    @Option(doc = "Coordinate sorted output file for discordantly paired reads",
-            optional = false,
-            shortName = "DPO")
-    public File DP_OUTPUT = null;
-    @Option(doc = "Coordinate sorted output file for reads pairs with only a single read mapped (open ended anchor)",
-            optional = false,
-            shortName = "OEAO")
-    public File OEA_OUTPUT = null;
-	@Option(doc = "DP and OEA reads sorted by coordinate of mapped mate read.",
-            optional = true,
-            shortName = "MCO")
-    public File MATE_COORDINATE_OUTPUT = null;
+    /*
+    @Option(doc="BAM file containing reads supporting any putative structural variation breakpoint.",
+    		shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME)
+    public File OUTPUT;
+    @Option(doc="Read pairs not mapped concordantly, sorted by mate coordinate.",
+    		shortName="MCO")
+    public File MATE_COORDINATE_OUTPUT;
     */
     @Option(doc = "Extract supporting reads into a separate file for each chromosome.",
             optional = true,
@@ -92,19 +67,6 @@ public class ExtractEvidence extends CommandLineProgram {
             shortName = "BYRG")
     public boolean PER_READ_GROUP = false;
     private Log log = Log.getInstance(ExtractEvidence.class);
-    private SAMFileWriter getCoordinateSortedWriter(SAMFileHeader header, File file) {
-    	SAMFileHeader outputHeader = header.clone();
-    	outputHeader.setSortOrder(SortOrder.coordinate);
-	    final SAMFileWriter writer = new SAMFileWriterFactory()
-	    	.makeBAMWriter(outputHeader, true, file);
-	    return writer;
-    }
-    private SAMFileWriter getMateCoordinateSortedWriter(SAMFileHeader header, File file) {
-    	SAMFileHeader mateHeader = header.clone();
-		mateHeader.setSortOrder(SortOrder.unsorted);
-	    final SAMFileWriter writer = new SAMFileWriterFactory().makeBAMWriter(mateHeader, false, file);
-	    return writer;
-    }
     private void writeToFile(SortingCollection<SAMRecord> sc, SAMFileWriter writer) {
     	sc.doneAdding();
     	final CloseableIterator<SAMRecord> it = sc.iterator();
@@ -116,10 +78,6 @@ public class ExtractEvidence extends CommandLineProgram {
 	protected int doWork() {
     	try {
 	    	IoUtil.assertFileIsWritable(FileNamingConvention.GetMetrics(INPUT));
-	    	IoUtil.assertFileIsWritable(FileNamingConvention.GetIntermediateBam(INPUT, IntermediateBamType.SC));
-	    	IoUtil.assertFileIsWritable(FileNamingConvention.GetIntermediateBam(INPUT, IntermediateBamType.OEA));
-	    	IoUtil.assertFileIsWritable(FileNamingConvention.GetIntermediateBam(INPUT, IntermediateBamType.DP));
-	    	IoUtil.assertFileIsWritable(FileNamingConvention.GetIntermediateBam(INPUT, IntermediateBamType.MATE));
 	    	if (PER_READ_GROUP) {
 	    		throw new RuntimeException("Not Yet Implemented");
 	    	}
@@ -128,46 +86,33 @@ public class ExtractEvidence extends CommandLineProgram {
 	    	final SAMFileReader reader = new SAMFileReader(INPUT);
 	    	final SAMFileHeader header = reader.getFileHeader();
 	    	final SAMSequenceDictionary dictionary = header.getSequenceDictionary();
-	    	final InsertSizeMetricsCollector metrics = new InsertSizeMetricsCollector(
-	    			CollectionUtil.makeSet(MetricAccumulationLevel.ALL_READS, MetricAccumulationLevel.READ_GROUP),
-					header.getReadGroups(),
-					// match CollectInsertSizeMetrics defaults
-					 new CollectInsertSizeMetrics().MINIMUM_PCT,
-					 new CollectInsertSizeMetrics().HISTOGRAM_WIDTH,
-					 new CollectInsertSizeMetrics().DEVIATIONS);
+	    	final InsertSizeMetricsCollector metrics = RelevantMetrics.createCollector(header);
 	    	
-	    	SAMFileWriter[] scwriters = new SAMFileWriter[dictionary.size() + 1];
-	    	SAMFileWriter[] oeawriters = new SAMFileWriter[dictionary.size() + 1];
-	    	SAMFileWriter[] dpwriters = new SAMFileWriter[dictionary.size() + 1];
-	    	SAMFileWriter[] matewriters = new SAMFileWriter[dictionary.size() + 1];
-	    	ArrayList<SortingCollection<SAMRecord>> matecollection = new ArrayList<SortingCollection<SAMRecord>>();
+	    	final SAMFileWriter[] writers = new SAMFileWriter[dictionary.size() + 1];
+	    	final SAMFileWriter[] matewriters = new SAMFileWriter[dictionary.size() + 1];
+	    	final ArrayList<SortingCollection<SAMRecord>> matecollection = new ArrayList<SortingCollection<SAMRecord>>();
+	    	final SAMFileHeader svHeader = header.clone();
+	    	svHeader.setSortOrder(SortOrder.coordinate);
+	    	final SAMFileHeader mateHeader = header.clone();
+	    	mateHeader.setSortOrder(SortOrder.unsorted);
+	    	final SAMFileWriterFactory factory = new SAMFileWriterFactory();
 	    	if (PER_CHR) {
 	    		for (int i = 0; i < dictionary.size(); i++) {
-	    			scwriters[i] = getCoordinateSortedWriter(header, FileNamingConvention.GetIntermediateBamForChr(INPUT, IntermediateBamType.SC, dictionary.getSequence(i).getSequenceName()));
-	    			oeawriters[i] = getCoordinateSortedWriter(header, FileNamingConvention.GetIntermediateBamForChr(INPUT, IntermediateBamType.OEA, dictionary.getSequence(i).getSequenceName()));
-	    			dpwriters[i] = getCoordinateSortedWriter(header, FileNamingConvention.GetIntermediateBamForChr(INPUT, IntermediateBamType.DP, dictionary.getSequence(i).getSequenceName()));
-	    			matewriters[i] = getMateCoordinateSortedWriter(header, FileNamingConvention.GetIntermediateBamForChr(INPUT, IntermediateBamType.MATE, dictionary.getSequence(i).getSequenceName()));
-	    			SAMFileHeader mateHeader = header.clone();
-	    			mateHeader.setSortOrder(SortOrder.unsorted);
+	    			writers[i] = factory.makeBAMWriter(svHeader, true, FileNamingConvention.GetSVBamForChr(INPUT, dictionary.getSequence(i).getSequenceName()));
+	    			matewriters[i] = factory.makeBAMWriter(mateHeader, false, FileNamingConvention.GetMateBamForChr(INPUT, dictionary.getSequence(i).getSequenceName()));
 	    			matecollection.add(SortingCollection.newInstance(SAMRecord.class, new BAMRecordCodec(mateHeader), new SAMRecordMateCoordinateComparator(),
 	    					// TODO: allocate buffers according to sequence lengths instead of equal space to every chr
 	    					MAX_RECORDS_IN_RAM / dictionary.size(),
 	    					TMP_DIR));
 	    		}
-				oeawriters[dictionary.size()] = getCoordinateSortedWriter(header, FileNamingConvention.GetIntermediateBamForChr(INPUT, IntermediateBamType.OEA, "unmapped"));
+				writers[dictionary.size()] = factory.makeBAMWriter(svHeader, true, FileNamingConvention.GetSVBamForChr(INPUT, "unmapped"));
 	    	} else {
 	    		// all writers map to the same one
-	    		scwriters[0] = getCoordinateSortedWriter(header, FileNamingConvention.GetIntermediateBam(INPUT, IntermediateBamType.SC));
-				oeawriters[0] = getCoordinateSortedWriter(header, FileNamingConvention.GetIntermediateBam(INPUT, IntermediateBamType.OEA));
-				dpwriters[0] = getCoordinateSortedWriter(header, FileNamingConvention.GetIntermediateBam(INPUT, IntermediateBamType.DP));
-				matewriters[0] = getMateCoordinateSortedWriter(header, FileNamingConvention.GetIntermediateBam(INPUT, IntermediateBamType.MATE));
-				SAMFileHeader mateHeader = header.clone();
-				mateHeader.setSortOrder(SortOrder.unsorted);
-				matecollection.add(SortingCollection.newInstance(SAMRecord.class, new BAMRecordCodec(mateHeader), new SAMRecordMateCoordinateComparator(), MAX_RECORDS_IN_RAM, TMP_DIR));
+	    		writers[0] = factory.makeBAMWriter(svHeader, true, FileNamingConvention.GetSVBam(INPUT));
+				matewriters[0] = factory.makeBAMWriter(mateHeader, false, FileNamingConvention.GetMateBam(INPUT));
+				matecollection.add(SortingCollection.newInstance(SAMRecord.class, new BAMRecordCodec(matewriters[0].getFileHeader()), new SAMRecordMateCoordinateComparator(), MAX_RECORDS_IN_RAM, TMP_DIR));
 				for (int i = 1; i < dictionary.size() + 1; i++) {
-					scwriters[i] = scwriters[0];
-					oeawriters[i] = oeawriters[0];
-					dpwriters[i] = dpwriters[0];
+					writers[i] = writers[0];
 					matewriters[i] = matewriters[0];
 				}
 	    	}
@@ -178,56 +123,43 @@ public class ExtractEvidence extends CommandLineProgram {
 			while (iter.hasNext()) {
 				SAMRecord record = iter.next();
 				int offset = record.getReadUnmappedFlag() ? dictionary.size() : record.getReferenceIndex();
-				if (SAMRecordSummary.isAlignmentSoftClipped(record)) {
-					// soft clipped
-					scwriters[offset].addAlignment(record);
+				boolean sc = SAMRecordSummary.isAlignmentSoftClipped(record);
+				boolean badpair = SAMRecordSummary.isPartOfNonReferenceReadPair(record);
+				if (sc || badpair) {
+					writers[offset].addAlignment(record);
 				}
-				if (record.getReadPairedFlag()) {
-					if (!record.getProperPairFlag() && !record.getReadUnmappedFlag() && !record.getMateUnmappedFlag()) {
-						// discordant pair
-						dpwriters[offset].addAlignment(record);
-						matecollection.get(record.getMateReferenceIndex()).add(record);
-					}
-					if (record.getReadUnmappedFlag() ^ record.getMateUnmappedFlag()) { // only 1 read of the pair is mapped
-						// OEA
-						oeawriters[offset].addAlignment(record);
-						if (record.getReadUnmappedFlag()) {
-							matecollection.get(record.getMateReferenceIndex()).add(record);
-						}
-					}
+				if (badpair) {
+					matecollection.get(record.getMateReferenceIndex()).add(record);
 				}
 				metrics.acceptRecord(record, null);
 				progress.record(record);
 			}
 			reader.close();
 			metrics.finish();
-			final MetricsFile<InsertSizeMetrics, Integer> serialisedMetrics = getMetricsFile();
-			metrics.addAllLevelsToFile(serialisedMetrics);
-			serialisedMetrics.write(FileNamingConvention.GetMetrics(INPUT));
+			RelevantMetrics.save(metrics, this.<InsertSizeMetrics, Integer>getMetricsFile(), FileNamingConvention.GetMetrics(INPUT));
 			for (int i = 0; i < dictionary.size(); i++) {
-				scwriters[i].close();
-				scwriters[i] = null;
-				dpwriters[i].close();
-				dpwriters[i] = null;
-				oeawriters[i].close();
-				oeawriters[i] = null;
+				if (writers[i] != null) {
+					writers[i].close();
+					writers[i] = null;
+				}
 			}
 			if (PER_CHR) {
 				for (int i = 0; i < dictionary.size(); i++) {
+					// TODO: this can be multi-threaded
 					matewriters[i].setProgressLogger(new ProgressLogger(log));
 					writeToFile(matecollection.get(i), matewriters[i]);
 					matewriters[i].close();
 					matecollection.set(i, null);
 				}
+				
 			} else {
 				matewriters[0].setProgressLogger(new ProgressLogger(log));
 				writeToFile(matecollection.get(0), matewriters[0]);
 				matewriters[0].close();
-				matecollection = null;
 			}
+			matecollection.clear();
     	} catch (IOException e) {
     		throw new RuntimeException(e);
-    		
     	}
         return 0;
     }
