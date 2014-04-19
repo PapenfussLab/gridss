@@ -9,13 +9,17 @@ import java.io.IOException;
  *
  */
 public class FileNamingConvention {
-	private static final String FORMAT_SV_BAM = "%s.sv.bam";
-	private static final String FORMAT_ISV_BAM_PER_CHR = "%s.%s.sv.bam";
-	private static final String FORMAT_MATE_BAM = "%s.svmate.bam";
-	private static final String FORMAT_MATE_BAM_PER_CHR = "%s.%s.svmate.bam";
-	private static final String FORMAT_METRICS = "%s.insertsize.txt";
+	private static final String COMMON_INITIAL_SUFFIX = ".socrates";
+	private static final String FORMAT_SV_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".sv.bam";
+	private static final String FORMAT_ISV_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.sv.bam";
+	private static final String FORMAT_MATE_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".svmate.bam";
+	private static final String FORMAT_MATE_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.svmate.bam";
+	private static final String FORMAT_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".insertsize.txt";
 	private static String GetStem(File input) throws IOException {
 		String full = input.getAbsoluteFile().toString();
+		if (full.contains(COMMON_INITIAL_SUFFIX)) {
+			full = full.substring(0, full.indexOf(COMMON_INITIAL_SUFFIX));
+		}
 		return full;
 	}
 	public static File GetSVBam(File input) throws IOException {

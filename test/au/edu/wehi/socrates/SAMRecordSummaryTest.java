@@ -1,11 +1,12 @@
-package au.edu.wehi.socrates.util;
+package au.edu.wehi.socrates;
 
 import static org.junit.Assert.*;
-
 import net.sf.samtools.SAMRecord;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import au.edu.wehi.socrates.util.SAMRecordSummary;
 
 public class SAMRecordSummaryTest {
 

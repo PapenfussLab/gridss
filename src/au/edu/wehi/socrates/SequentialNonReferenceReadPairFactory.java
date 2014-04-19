@@ -31,7 +31,6 @@ public class SequentialNonReferenceReadPairFactory {
 	public NonReferenceReadPair createNonReferenceReadPair(SAMRecord record) {
 		if (!record.getReadPairedFlag()) return null;
 		if (record.getProperPairFlag()) return null;
-		NonReferenceReadPair pair = null;
 		SAMRecord mate = findMate(record);
 		if (record != null && mate != null) {
 			return new NonReferenceReadPair(record, mate); 

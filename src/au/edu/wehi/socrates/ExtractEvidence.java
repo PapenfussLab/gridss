@@ -62,10 +62,6 @@ public class ExtractEvidence extends CommandLineProgram {
             optional = true,
             shortName = "BYCHR")
     public boolean PER_CHR = true;
-    @Option(doc = "Extract supporting reads into a separate file for each read group.",
-            optional = true,
-            shortName = "BYRG")
-    public boolean PER_READ_GROUP = false;
     private Log log = Log.getInstance(ExtractEvidence.class);
     private void writeToFile(SortingCollection<SAMRecord> sc, SAMFileWriter writer) {
     	sc.doneAdding();
@@ -78,9 +74,6 @@ public class ExtractEvidence extends CommandLineProgram {
 	protected int doWork() {
     	try {
 	    	IoUtil.assertFileIsWritable(FileNamingConvention.GetMetrics(INPUT));
-	    	if (PER_READ_GROUP) {
-	    		throw new RuntimeException("Not Yet Implemented");
-	    	}
 	    	SAMFileReader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
 	    	// SAMFileWriterFactory.setDefaultCreateIndexWhileWriting(CREATE_INDEX); // do we need an index at all? Can we get away with sequential access?
 	    	final SAMFileReader reader = new SAMFileReader(INPUT);

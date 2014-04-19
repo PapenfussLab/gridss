@@ -1,18 +1,24 @@
 package au.edu.wehi.socrates;
 
+/**
+ * Direction of breakpoint on the given chromosome.
+ * <p>The positional relationship between the direct and breakpoint position
+ * matches that used by VCF.</p>
+ * @author Daniel Cameron
+ *
+ */
 public enum BreakpointDirection {
 	/**
-	 * The breakpoint is an adjacency of reference bases immediately before the breakpoint position
-	 * and non-reference sequence after the breakpoint position
+	 * The breakpoint includes bases at and before the breakpoint position
+	 * but not after.
 	 * 
 	 * AAAA]?]
 	 */
 	Forward,
 	/**
-	 * The breakpoint is an adjacency of reference bases immediately after the breakpoint position
-	 * and non-reference sequence before the breakpoint position
+	 * The breakpoint iincludes bases after but not at the breakpoint position.
 	 * 
-	 * [?[AAAA
+	 * N[?[AAAA
 	 */
 	Backward,
 }
