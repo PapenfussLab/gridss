@@ -5,3 +5,4 @@ results_Socrates_*
 sample_*
 do_all.sh
 truth_AML.txt
+*.class
