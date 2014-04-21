@@ -12,6 +12,17 @@ public interface DirectedBreakpoint {
 	 * @return Unique breakpoint identifier string
 	 */
 	String getBreakpointID();
+	/**
+	 * Index of BAM contig this breakpoint is located on.
+	 * @return reference index of breakpoint
+	 */
+	String getChr();
+	/**
+	 * Start of position of breakpoint location
+	 * @return position of breakpoint
+	 */
+	int getStart();
+	int getEnd();
 	BreakpointDirection getBreakpointDirection();
 	byte[] getBreakpointSequence();
 	byte[] getBreakpointQuality();

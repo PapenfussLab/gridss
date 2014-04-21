@@ -47,4 +47,16 @@ public class SoftclippedReadDirectedBreakpointEvidence implements DirectedBreakp
 	public VariantContext getVariantContext() {
 		return null;
 	}
+	@Override
+	public String getChr() {
+		return record.getReferenceName();
+	}
+	@Override
+	public int getStart() {
+		return direction == BreakpointDirection.Forward ? record.getAlignmentEnd() : (record.getAlignmentStart() - 1);
+	}
+	@Override
+	public int getEnd() {
+		return getStart();
+	}
 }

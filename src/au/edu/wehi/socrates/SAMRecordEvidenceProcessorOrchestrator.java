@@ -56,7 +56,7 @@ public class SAMRecordEvidenceProcessorOrchestrator {
 						byte[] sequence = bp.getBreakpointSequence();
 						if (sequence != null) {
 							FastqRecord fq = new FastqRecord(
-									bp.getBreakpointID(),
+									BreakpointFastqIDEncoding.getFastqID(bp),
 									new String(sequence, Charsets.US_ASCII),
 									"",
 									SAMUtils.phredToFastq(bp.getBreakpointQuality()));
