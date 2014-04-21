@@ -103,14 +103,17 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
 	    	
 			final PeekingIterator<SAMRecord> iter = Iterators.peekingIterator(reader.iterator());
 			final PeekingIterator<SAMRecord> mateIter = Iterators.peekingIterator(mateReader.iterator());
+			final SequentialNonReferenceReadPairFactory mateFactory = new SequentialNonReferenceReadPairFactory(mateIter);
 			
 			final FastqWriter fastqWriter = new FastqWriterFactory().newWriter(FASTQ_OUTPUT);
 			final VariantContextWriter vcfWriter = VariantContextWriterFactory.create(VCF_OUTPUT, dictionary);
 			
+			
 	    	for (int i = 0; i < dictionary.size(); i++) {
-	    		final SequentialSAMRecordBuffer buffer = new SequentialSAMRecordBuffer(i, iter, mateIter);
+	    		final SequentialSAMRecordBuffer buffer = new SequentialSAMRecordBuffer(i, iter, mateFactory);
 	    		final List<SequentialDirectedBreakpointEvidenceProcessor> processors = new ArrayList<SequentialDirectedBreakpointEvidenceProcessor>();
 	    		processors.add(new SoftclipReadProcessor(MIN_MAPQ, LONG_SC_LEN, MIN_PERCENT_IDENTITY, MIN_LONG_SC_BASE_QUALITY));
+	    		processors.add(new DeBruijnAssemblyReadProcessor());
 	    		// TODO assembly-based processor	    		
 	    		SAMRecordEvidenceProcessorOrchestrator.process(
 	    				buffer,
@@ -121,6 +124,8 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
 	    	}
 	    	fastqWriter.close();
 	    	vcfWriter.close();
+	    	reader.close();
+	    	mateReader.close();
     	} catch (IOException e) {
     		log.error(e);
     		throw new RuntimeException(e);

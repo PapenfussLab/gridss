@@ -19,4 +19,13 @@ public class VariantContextDirectedBreakpoint extends VariantContext implements 
 	public VariantContext getVariantContext() {
 		throw new RuntimeException("NYI");
 	}
+	@Override
+	public String getBreakpointID() {
+		return getID();
+	}
+	@Override
+	public byte[] getBreakpointQuality() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

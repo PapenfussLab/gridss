@@ -38,23 +38,32 @@ public class SAMRecordSummary {
 		
 		extractAlignedSeqInfo(cigar, sequence, qual, aln);
 	}
-	
 	public static boolean isAlignmentSoftClipped(SAMRecord aln) {
+		return getStartSoftClipLength(aln) > 0 || getEndSoftClipLength(aln) > 0;
+	}
+	public static int getStartSoftClipLength(SAMRecord aln) {
 		Cigar cigar = aln.getCigar();
-		if (cigar == null) return false;
+		if (cigar == null) return 0;
 		List<CigarElement> elements = cigar.getCigarElements();
-		if (elements == null) return false;
+		if (elements == null) return 0;
 		int i = 0;
 		while (i < elements.size() && (elements.get(i).getOperator() == CigarOperator.HARD_CLIP || elements.get(i).getOperator() == CigarOperator.SOFT_CLIP)) {
-			if (elements.get(i).getOperator() == CigarOperator.SOFT_CLIP) return true;
+			if (elements.get(i).getOperator() == CigarOperator.SOFT_CLIP) return elements.get(i).getLength();
 			i++;
 		}
-		i = elements.size() - 1;
+		return 0;
+	}
+	public static int getEndSoftClipLength(SAMRecord aln) {
+		Cigar cigar = aln.getCigar();
+		if (cigar == null) return 0;
+		List<CigarElement> elements = cigar.getCigarElements();
+		if (elements == null) return 0;
+		int i = elements.size() - 1;
 		while (i > 0 && (elements.get(i).getOperator() == CigarOperator.HARD_CLIP || elements.get(i).getOperator() == CigarOperator.SOFT_CLIP)) {
-			if (elements.get(i).getOperator() == CigarOperator.SOFT_CLIP) return true;
+			if (elements.get(i).getOperator() == CigarOperator.SOFT_CLIP) return elements.get(i).getLength();
 			i++;
 		}
-		return false;
+		return 0;
 	}
 	/**
 	 * Determines whether this read is part of a non-reference read pair

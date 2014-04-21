@@ -50,23 +50,28 @@ public class SAMRecordEvidenceProcessorOrchestrator {
 			}
 			// process genomic position
 			for (SequentialDirectedBreakpointEvidenceProcessor processor : processors) {
-				for (DirectedBreakpoint bp : processor.getEvidenceAtPosition(position)) {
-					byte[] sequence = bp.getBreakpointSequence();
-					if (sequence != null) {
-						FastqRecord fq = new FastqRecord(
-								bp.getBreakpointID(),
-								new String(sequence, Charsets.US_ASCII),
-								"",
-								SAMUtils.phredToFastq(bp.getBreakpointQuality()));
-						fastqWriter.write(fq);
-					}
-					VariantContext variant = bp.getVariantContext();
-					if (variant != null) {
-						vcfWriter.add(variant);
+				Iterable<DirectedBreakpoint> breakpoints = processor.getEvidenceAtPosition(position);
+				if (breakpoints != null) {
+					for (DirectedBreakpoint bp : breakpoints) {
+						byte[] sequence = bp.getBreakpointSequence();
+						if (sequence != null) {
+							FastqRecord fq = new FastqRecord(
+									bp.getBreakpointID(),
+									new String(sequence, Charsets.US_ASCII),
+									"",
+									SAMUtils.phredToFastq(bp.getBreakpointQuality()));
+							fastqWriter.write(fq);
+						}
+						VariantContext variant = bp.getVariantContext();
+						if (variant != null) {
+							vcfWriter.add(variant);
+						}
 					}
 				}
 			}
 			// advance genomic position to next callable position
+			// TODO: get the buffer to tell the next position we should try to call 
+			//position = itbuffer.nextPosition(position + 1, maxFragmentSize);
 			position++;
 		}
 	}
