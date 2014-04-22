@@ -17,23 +17,25 @@ import com.google.common.collect.PeekingIterator;
  *
  */
 public class SequentialNonReferenceReadPairFactory {
+	private PeekingIterator<SAMRecord> mates;
 	/**
-	 * <p>read iterator <b>must</b> be coordinate sorted<p>
 	 * <p>mate iterator <b>must</b> be mate-coordinate sorted. @see SAMRecordMateCoordinateComparator<p>
 	 * @param reads
 	 * @param mate
 	 */
 	public SequentialNonReferenceReadPairFactory(
-		Iterator<SAMRecord> mates) {
-		this.mates = Iterators.peekingIterator(mates);
+		PeekingIterator<SAMRecord> mates) {
+		if (mates == null) {
+			mates = Iterators.peekingIterator(Iterators.<SAMRecord>emptyIterator());
+		}
+		this.mates = mates;
 	}
-	private PeekingIterator<SAMRecord> mates;
-	public NonReferenceReadPair createNonReferenceReadPair(SAMRecord record) {
+	public NonReferenceReadPair createNonReferenceReadPair(SAMRecord record, int maxFragmentSize) {
 		if (!record.getReadPairedFlag()) return null;
 		if (record.getProperPairFlag()) return null;
 		SAMRecord mate = findMate(record);
 		if (record != null && mate != null) {
-			return new NonReferenceReadPair(record, mate); 
+			return new NonReferenceReadPair(record, mate, maxFragmentSize); 
 		}
 		return null;
 	}
@@ -53,7 +55,7 @@ public class SequentialNonReferenceReadPairFactory {
 	private List<SAMRecord> currentReads = new ArrayList<SAMRecord>();
 	private void load(int referenceIndex, int alignmentStart) {
 		if (referenceIndex > currentReferenceIndex || (referenceIndex == currentReferenceIndex && currentPosition > alignmentStart)) {
-			throw new RuntimeException(String.format("Sanity check failure: cannot rewind NonReferenceReadPairIterator from %d:%d to %d:%d", currentReferenceIndex, currentPosition, referenceIndex, alignmentStart));
+			throw new RuntimeException(String.format("Sanity check failure: cannot rewind SequentialNonReferenceReadPairFactory source iterator from %d:%d to %d:%d", currentReferenceIndex, currentPosition, referenceIndex, alignmentStart));
 		}
 		if (referenceIndex != currentReferenceIndex || currentPosition != alignmentStart) {
 			currentReads.clear();

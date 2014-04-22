@@ -18,11 +18,10 @@ import com.google.common.collect.PeekingIterator;
  *
  */
 public class SequentialRealignedBreakpointFactory {
-	private final SAMSequenceDictionary dictionary;
 	private final PeekingIterator<SAMRecord> realigned;
+	private final Map<String, SAMRecord> currentReads = new HashMap<String, SAMRecord>();
 	private int currentReferenceIndex = -1; 
 	private long currentPosition = -1;
-	private Map<String, SAMRecord> currentReads = new HashMap<String, SAMRecord>();
 	/**
 	 * <p>read iterator <b>must</b> be coordinate sorted<p>
 	 * <p>mate iterator <b>must</b> be mate-coordinate sorted. @see SAMRecordMateCoordinateComparator<p>
@@ -30,23 +29,24 @@ public class SequentialRealignedBreakpointFactory {
 	 * @param mate
 	 */
 	public SequentialRealignedBreakpointFactory(
-		SAMSequenceDictionary dictionary,
-		Iterator<SAMRecord> realigned) {
-		this.dictionary = dictionary;
-		this.realigned = Iterators.peekingIterator(realigned);
+			PeekingIterator<SAMRecord> realigned) {
+		if (realigned == null) {
+			realigned = Iterators.peekingIterator(Iterators.<SAMRecord>emptyIterator());
+		}
+		this.realigned = realigned;
 	}
 	public SAMRecord findRealignedSAMRecord(DirectedBreakpoint source) {
 		if (source == null) return null;
-		return findRealignedSAMRecord(source.getChr(), source.getStart(), source.getBreakpointID());
+		return findRealignedSAMRecord(source.getReferenceIndex(), source.getWindowStart(), source.getEvidenceID());
 	}
-	private SAMRecord findRealignedSAMRecord(String chr, int position, String id) {
-		load(dictionary.getSequenceIndex(chr), position);
+	private SAMRecord findRealignedSAMRecord(int referenceIndex, long position, String id) {
+		load(referenceIndex, position);
 		if (currentReads.containsKey(id)) {
 			return currentReads.get(id);
 		}
 		return null;
 	}
-	private void load(int referenceIndex, int alignmentStart) {
+	private void load(int referenceIndex, long alignmentStart) {
 		if (referenceIndex == currentReferenceIndex && currentPosition > alignmentStart) {
 			throw new RuntimeException(String.format("Sanity check failure: cannot rewind SequentialRealignedBreakpointFactory source iterator from %d:%d to %d:%d", currentReferenceIndex, currentPosition, referenceIndex, alignmentStart));
 		}
@@ -56,11 +56,11 @@ public class SequentialRealignedBreakpointFactory {
 			currentPosition = alignmentStart;
 			while (realigned.hasNext()) {
 				SAMRecord r = realigned.peek();
-				String sourceID = BreakpointFastqIDEncoding.getID(r.getReadName());
-				int sourceReferenceIndex = dictionary.getSequenceIndex(BreakpointFastqIDEncoding.getChr(r.getReadName()));
-				long sourcePosition = BreakpointFastqIDEncoding.getPosition(r.getReadName());
+				String sourceID = BreakpointFastqEncoding.getID(r.getReadName());
+				int sourceReferenceIndex = BreakpointFastqEncoding.getReferenceIndex(r.getReadName());
+				long sourcePosition = BreakpointFastqEncoding.getPosition(r.getReadName());
 				if (sourceReferenceIndex < currentReferenceIndex) {
-					// skip reads that are before our position
+					// skip reads that are on earlier chromosome
 					realigned.next();
 					continue;
 				} else if (sourceReferenceIndex == currentReferenceIndex) {
@@ -77,7 +77,7 @@ public class SequentialRealignedBreakpointFactory {
 						break;
 					}
 				} else {
-					// stop when we hit a read after our position
+					// stop when we hit a read on a subsequent chromosome
 					break;
 				}
 			}

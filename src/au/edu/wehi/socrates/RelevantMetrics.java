@@ -54,4 +54,11 @@ public class RelevantMetrics {
 	public double getFragmentSizeStdDev() {
 		return 1.4826 * insertSize.MEDIAN_ABSOLUTE_DEVIATION;
 	}
+	/**
+	 * Maximum fragment size to consider discordantly paired reads
+	 * @return Maximum fragment size considered
+	 */
+	public int getMaxFragmentSize() {
+		return (int)Math.ceil(getMedianFragmentSize() + 3 * getFragmentSizeStdDev());
+	}
 }

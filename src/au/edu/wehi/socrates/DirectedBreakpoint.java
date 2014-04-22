@@ -1,30 +1,26 @@
 package au.edu.wehi.socrates;
 
-import org.broadinstitute.variant.variantcontext.VariantContext;
+import net.sf.samtools.SAMRecord;
 
-public interface DirectedBreakpoint {
+public interface DirectedBreakpoint extends DirectedEvidence {
 	/**
-	 * Unique breakpoint identifier.
-	 * This identifier is used as the FASTQ sequence identifier
-	 * when performing realignment and must be a valid FASTQ
-	 * sequence identifier as well as being unique across all
-	 * evidence processors.</p>
-	 * @return Unique breakpoint identifier string
+	 * Gets the breakpoint sequence excluding anchor.
+	 * @return breakpoint sequence
 	 */
-	String getBreakpointID();
-	/**
-	 * Index of BAM contig this breakpoint is located on.
-	 * @return reference index of breakpoint
-	 */
-	String getChr();
-	/**
-	 * Start of position of breakpoint location
-	 * @return position of breakpoint
-	 */
-	int getStart();
-	int getEnd();
-	BreakpointDirection getBreakpointDirection();
 	byte[] getBreakpointSequence();
+	/**
+	 * Gets the breakpoint sequence quality
+	 * @return 0-based phred-like quality scores
+	 */
 	byte[] getBreakpointQuality();
-	VariantContext getVariantContext();
+	/**
+	 * Sets the realigned breakpoint consensus sequence
+	 * @param realigned
+	 */
+	void setRealigned(SAMRecord realigned);
+	/**
+	 * Gets the breakpoint sequence realignment location
+	 * @return 
+	 */
+	SAMRecord getRealigned();
 }

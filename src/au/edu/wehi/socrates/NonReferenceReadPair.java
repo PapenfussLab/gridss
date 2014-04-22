@@ -1,5 +1,7 @@
 package au.edu.wehi.socrates;
 
+import org.junit.experimental.max.MaxCore;
+
 import net.sf.samtools.SAMRecord;
 
 /**
@@ -7,10 +9,11 @@ import net.sf.samtools.SAMRecord;
  * @author Daniel Cameron
  *
  */
-public class NonReferenceReadPair {
+public class NonReferenceReadPair implements DirectedEvidence {
 	private final SAMRecord local;
 	private final SAMRecord remote;
-	public NonReferenceReadPair(SAMRecord local, SAMRecord remote) {
+	private final int fragmentSize;
+	public NonReferenceReadPair(SAMRecord local, SAMRecord remote, int fragmentSize) {
 		assert local != null;
 		assert remote != null;
 		assert (local.getReadName() == null && remote.getReadName() == null) || local.getReadName().equals(remote.getReadName());
@@ -18,6 +21,7 @@ public class NonReferenceReadPair {
 		assert !local.getProperPairFlag();
 		this.local = local;
 		this.remote = remote;
+		this.fragmentSize = fragmentSize;
 	}
 	/**
 	 * Mapped read under consideration
@@ -40,5 +44,21 @@ public class NonReferenceReadPair {
 	 */
 	public BreakpointDirection getBreakpointDirection() {
 		return local.getReadNegativeStrandFlag() ? BreakpointDirection.Backward : BreakpointDirection.Forward;
+	}
+	@Override
+	public String getEvidenceID() {
+		return local.getReadName();
+	}
+	@Override
+	public int getReferenceIndex() {
+		return local.getReferenceIndex();
+	}
+	@Override
+	public long getWindowStart() {
+		return getBreakpointDirection() == BreakpointDirection.Forward ? local.getAlignmentEnd() : local.getAlignmentStart() - fragmentSize;
+	}
+	@Override
+	public long getWindowEnd() {
+		return getBreakpointDirection() == BreakpointDirection.Forward ? local.getAlignmentEnd() + fragmentSize : local.getAlignmentStart();
 	}
 }
