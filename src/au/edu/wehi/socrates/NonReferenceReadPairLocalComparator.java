@@ -1,8 +1,7 @@
-package au.edu.wehi.socrates.util;
+package au.edu.wehi.socrates;
 
 import java.util.Comparator;
 
-import au.edu.wehi.socrates.NonReferenceReadPair;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordCoordinateComparator;
 

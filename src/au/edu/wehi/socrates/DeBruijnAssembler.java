@@ -8,7 +8,7 @@ public class DeBruijnAssembler implements ReadEvidenceAssembler {
 		this.k = kmer;
 	}
 	@Override
-	public Iterable<AssemblyEvidence> addEvidence(DirectedEvidence evidence) {
+	public Iterable<AssemblyEvidence> addEvidence(DirectedBreakpoint evidence) {
 		// TODO Auto-generated method stub
 		return null;
 	}

@@ -13,7 +13,6 @@ import org.broadinstitute.variant.vcf.VCFRecordCodec;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 
-import au.edu.wehi.socrates.util.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.socrates.util.SAMRecordSummary;
 import net.sf.picard.analysis.CollectInsertSizeMetrics;
 import net.sf.picard.analysis.InsertSizeMetrics;

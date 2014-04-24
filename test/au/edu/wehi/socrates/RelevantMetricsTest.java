@@ -14,15 +14,26 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class RelevantMetricsTest {
+public class RelevantMetricsTest extends TestHelper {
 	@Rule
     public TemporaryFolder testFolder = new TemporaryFolder();
 	private InsertSizeMetricsCollector readPair(int start1, int start2, int readLength) {
 		InsertSizeMetricsCollector x = RelevantMetrics.createCollector(null);
 		// create read pair
-		SAMRecord r1, r2;
-		x.acceptRecord(r1, null);
-		x.acceptRecord(r2, null);
+		SAMRecord[] pair = RP(0, start1, start2, readLength);
+		x.acceptRecord(pair[0], null);
+		x.acceptRecord(pair[1], null);
+		x.finish();
+		return x;
+	}
+	private InsertSizeMetricsCollector readCollector(SAMRecord[]... args) {
+		InsertSizeMetricsCollector x = RelevantMetrics.createCollector(null);
+		for (SAMRecord[] ra : args) {
+			for (SAMRecord r : ra) {
+				x.acceptRecord(r, null);
+			}
+		}
+		x.finish();
 		return x;
 	}
 	@Test
@@ -36,17 +47,22 @@ public class RelevantMetricsTest {
 	}
 	@Test
 	public void shouldLoadMetricsFromFile() throws IOException {
+		int readLength = 50;
 		File f = testFolder.newFile();
-		RelevantMetrics.save(readPair(100, 200, 100), new MetricsFile<InsertSizeMetrics, Integer>(), f);
+		RelevantMetrics.save(readPair(100, 200, readLength), new MetricsFile<InsertSizeMetrics, Integer>(), f);
 		RelevantMetrics metrics = new RelevantMetrics(f);
-		assertEquals(300, metrics.getMedianFragmentSize(), 0);
+		assertEquals(150, metrics.getMedianFragmentSize(readLength), 0);
 	}
 	@Test
 	public void shouldUseMADforStdDev() throws IOException {
 		// 3 pairs
 		// (100,300) (100, 250), (100, 350) 
 		File f = testFolder.newFile();
-		RelevantMetrics.save(readPair(), new MetricsFile<InsertSizeMetrics, Integer>(), f);
+		RelevantMetrics.save(readCollector(
+				RP(0, 100, 300, 100),
+				RP(0, 100, 250, 100),
+				RP(0, 100, 350, 100)
+				), new MetricsFile<InsertSizeMetrics, Integer>(), f);
 		RelevantMetrics metrics = new RelevantMetrics(f);
 		assertEquals(1.4826 * 50, metrics.getFragmentSizeStdDev(), 0.001);
 	}

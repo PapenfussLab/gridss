@@ -26,6 +26,14 @@ public class LinearGenomicCoordinateTest {
 		assertEquals(1, c.getLinearCoordinate("contig1",  1));
 		assertEquals(11, c.getLinearCoordinate("contig2",  1));
 	}
+	@Test
+	public void GetStartLinearCoordinate() {
+		SAMSequenceDictionary dict = new SAMSequenceDictionary();
+		dict.addSequence(new SAMSequenceRecord("contig1", 10));
+		dict.addSequence(new SAMSequenceRecord("contig2", 20));
+		LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict);
+		assertEquals(2, c.getStartLinearCoordinate(new BreakpointLocation(0, BreakpointDirection.Forward, 2, 5, 0)));
+	}
 	@SuppressWarnings("deprecation")
 	@Test(expected=IllegalArgumentException.class)
 	public void shouldRequireContigLengths() throws Exception {

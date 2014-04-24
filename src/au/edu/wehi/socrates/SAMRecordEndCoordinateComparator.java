@@ -1,4 +1,4 @@
-package au.edu.wehi.socrates.util;
+package au.edu.wehi.socrates;
 
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordCoordinateComparator;

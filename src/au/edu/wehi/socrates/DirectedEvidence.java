@@ -1,9 +1,13 @@
 package au.edu.wehi.socrates;
 
-import net.sf.samtools.SAMRecord;
-
 public interface DirectedEvidence {
-	BreakpointDirection getBreakpointDirection();
+	/**
+	 * Location of breakpoints consistent with the given evidence.
+	 * If the destination of the breakpoint is known, a @see BreakpointInterval
+	 * should be returned. 
+	 * @return breakpoint locations implied by this evidence
+	 */
+	BreakpointLocation getBreakpointLocation();
 	/**
 	 * Unique breakpoint identifier.
 	 * This identifier is used as the FASTQ sequence identifier
@@ -13,15 +17,4 @@ public interface DirectedEvidence {
 	 * @return Unique breakpoint identifier string
 	 */
 	String getEvidenceID();
-	/**
-	 * Index of BAM contig this breakpoint is located on.
-	 * @return reference index of evidence
-	 */
-	int getReferenceIndex();
-	/**
-	 * Start of position of breakpoint location
-	 * @return position of breakpoint
-	 */
-	long getWindowStart();
-	long getWindowEnd();
 }

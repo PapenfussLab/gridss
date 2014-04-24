@@ -1,6 +1,9 @@
 package au.edu.wehi.socrates;
 
 import java.io.File;
+import java.util.List;
+
+import com.google.common.collect.ImmutableList;
 
 import net.sf.picard.analysis.CollectInsertSizeMetrics;
 import net.sf.picard.analysis.InsertSizeMetrics;
@@ -9,6 +12,7 @@ import net.sf.picard.analysis.directed.InsertSizeMetricsCollector;
 import net.sf.picard.metrics.MetricBase;
 import net.sf.picard.metrics.MetricsFile;
 import net.sf.samtools.SAMFileHeader;
+import net.sf.samtools.SAMReadGroupRecord;
 import net.sf.samtools.util.CollectionUtil;
 
 public class RelevantMetrics {
@@ -20,9 +24,13 @@ public class RelevantMetrics {
 	 */
 	public static InsertSizeMetricsCollector createCollector(
 			SAMFileHeader header) {
+		List<SAMReadGroupRecord> rg = ImmutableList.<SAMReadGroupRecord>of();
+		if (header != null) {
+			rg = header.getReadGroups();
+		}
 		return new InsertSizeMetricsCollector(
     			CollectionUtil.makeSet(MetricAccumulationLevel.ALL_READS, MetricAccumulationLevel.SAMPLE),
-				header.getReadGroups(),
+    			rg,
 				// match CollectInsertSizeMetrics defaults
 				 new CollectInsertSizeMetrics().MINIMUM_PCT,
 				 new CollectInsertSizeMetrics().HISTOGRAM_WIDTH,
@@ -31,7 +39,8 @@ public class RelevantMetrics {
 	public static void save(
 			InsertSizeMetricsCollector metrics,
 			MetricsFile<InsertSizeMetrics, Integer> metricsFile,
-			File file) {		
+			File file) {
+		metrics.finish();
 		metrics.addAllLevelsToFile(metricsFile);
 		metricsFile.write(file);
 	}
@@ -46,19 +55,24 @@ public class RelevantMetrics {
 				}
 			}
 		}
-	}
-	public double getMedianFragmentSize() {
-		// TODO: is this 5' difference or frag size?
-		return insertSize.MEDIAN_INSERT_SIZE;
-	}
-	public double getFragmentSizeStdDev() {
-		return 1.4826 * insertSize.MEDIAN_ABSOLUTE_DEVIATION;
+		if (insertSize == null) {
+			throw new IllegalArgumentException(String.format("%s does not contain the required metrics.", file));
+		}
 	}
 	/**
-	 * Maximum fragment size to consider discordantly paired reads
-	 * @return Maximum fragment size considered
+	 * Gets the median fragment size
+	 * @param readLength length of reads
+	 * @return median fragment size
 	 */
-	public int getMaxFragmentSize() {
-		return (int)Math.ceil(getMedianFragmentSize() + 3 * getFragmentSizeStdDev());
+	public double getMedianFragmentSize(int readLength) {
+		// TODO: is this 5' difference or frag size?
+		return insertSize.MEDIAN_INSERT_SIZE + readLength;
+	}
+	/**
+	 * Gets the standard deviation of the fragment size
+	 * @return fragment size standard deviation
+	 */
+	public double getFragmentSizeStdDev() {
+		return 1.4826 * insertSize.MEDIAN_ABSOLUTE_DEVIATION;
 	}
 }

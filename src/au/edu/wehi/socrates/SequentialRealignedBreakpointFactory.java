@@ -58,7 +58,7 @@ public class SequentialRealignedBreakpointFactory {
 				SAMRecord r = realigned.peek();
 				String sourceID = BreakpointFastqEncoding.getID(r.getReadName());
 				int sourceReferenceIndex = BreakpointFastqEncoding.getReferenceIndex(r.getReadName());
-				long sourcePosition = BreakpointFastqEncoding.getPosition(r.getReadName());
+				long sourcePosition = BreakpointFastqEncoding.getStartPosition(r.getReadName());
 				if (sourceReferenceIndex < currentReferenceIndex) {
 					// skip reads that are on earlier chromosome
 					realigned.next();

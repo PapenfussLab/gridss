@@ -4,7 +4,7 @@ import net.sf.samtools.SAMRecord;
 
 import org.broadinstitute.variant.variantcontext.VariantContext;
 
-public abstract class VariantContextDirectedBreakpoint extends VariantContext implements DirectedBreakpoint {
+public abstract class VariantContextDirectedBreakpoint extends VariantContext implements RealignedDirectedBreakpoint {
 	private final int referenceIndex;
 	private SAMRecord realigned;
 	protected VariantContextDirectedBreakpoint(VariantContext context, int referenceIndex) {

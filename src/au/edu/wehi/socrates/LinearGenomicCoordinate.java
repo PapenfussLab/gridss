@@ -48,4 +48,7 @@ public class LinearGenomicCoordinate {
 	public long getLinearCoordinate(String chr, long pos) {
 		return getLinearCoordinate(dictionary.getSequenceIndex(chr), pos);
 	}
+	public long getStartLinearCoordinate(BreakpointLocation bp) {
+		return getLinearCoordinate(bp.referenceIndex, bp.start);
+	}
 }

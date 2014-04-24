@@ -2,6 +2,11 @@ package au.edu.wehi.socrates;
 
 import net.sf.samtools.SAMRecord;
 
+/**
+ * Breakpoint evidence including at least one base of sequence at the breakpoint location 
+ * @author Daniel Cameron
+ *
+ */
 public interface DirectedBreakpoint extends DirectedEvidence {
 	/**
 	 * Gets the breakpoint sequence excluding anchor.
@@ -13,14 +18,4 @@ public interface DirectedBreakpoint extends DirectedEvidence {
 	 * @return 0-based phred-like quality scores
 	 */
 	byte[] getBreakpointQuality();
-	/**
-	 * Sets the realigned breakpoint consensus sequence
-	 * @param realigned
-	 */
-	void setRealigned(SAMRecord realigned);
-	/**
-	 * Gets the breakpoint sequence realignment location
-	 * @return 
-	 */
-	SAMRecord getRealigned();
 }

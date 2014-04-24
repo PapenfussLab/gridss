@@ -13,12 +13,13 @@ import com.google.common.base.Charsets;
 public class BreakpointFastqEncoding {
 	private BreakpointFastqEncoding() { }
 	public static String getFastqID(DirectedBreakpoint bp) {
-		return String.format("%s#%d#%s", bp.getReferenceIndex(), bp.getWindowStart(), bp.getEvidenceID());
+		BreakpointLocation loc = bp.getBreakpointLocation();
+		return String.format("%s#%d#%s", loc.referenceIndex, loc.start, bp.getEvidenceID());
 	}
 	public static int getReferenceIndex(String fastqid) {
 		return Integer.parseInt(fastqid.split("#")[0]);
 	}
-	public static long getPosition(String fastqid) {
+	public static long getStartPosition(String fastqid) {
 		return Long.parseLong(fastqid.split("#")[1]);
 	}
 	public static String getID(String fastqid) {

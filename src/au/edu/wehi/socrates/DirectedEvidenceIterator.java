@@ -18,8 +18,6 @@ import org.broadinstitute.variant.variantcontext.VariantContext;
 import org.broadinstitute.variant.variantcontext.writer.VariantContextWriter;
 import org.broadinstitute.variant.variantcontext.writer.VariantContextWriterFactory;
 
-import au.edu.wehi.socrates.util.NonReferenceReadPairLocalComparator;
-import au.edu.wehi.socrates.util.SAMRecordEndCoordinateComparator;
 import au.edu.wehi.socrates.util.SAMRecordSummary;
 
 import com.google.common.collect.AbstractIterator;
@@ -65,7 +63,7 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 	@Override
 	protected DirectedEvidence computeNext() {
 		do {
-			if (!calls.isEmpty() && linear.getLinearCoordinate(calls.peek().getReferenceIndex(), calls.peek().getWindowStart()) < currentLinearPosition - maxFragmentSize) {
+			if (!calls.isEmpty() && linear.getStartLinearCoordinate(calls.peek().getBreakpointLocation()) < currentLinearPosition - maxFragmentSize) {
 				DirectedEvidence evidence = calls.poll();
 				// Match realigned at output time since input BAM processing is in order of alignment start,
 				// not putative breakpoint position 

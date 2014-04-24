@@ -3,9 +3,8 @@ package au.edu.wehi.socrates;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import au.edu.wehi.socrates.util.SAMRecordMateCoordinateComparator;
-import au.edu.wehi.socrates.util.SAMRecordSummary;
 
+import au.edu.wehi.socrates.util.SAMRecordSummary;
 import net.sf.picard.analysis.CollectInsertSizeMetrics;
 import net.sf.picard.analysis.InsertSizeMetrics;
 import net.sf.picard.analysis.MetricAccumulationLevel;
