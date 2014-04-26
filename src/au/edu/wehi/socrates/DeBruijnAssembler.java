@@ -8,12 +8,12 @@ public class DeBruijnAssembler implements ReadEvidenceAssembler {
 		this.k = kmer;
 	}
 	@Override
-	public Iterable<AssemblyEvidence> addEvidence(DirectedBreakpoint evidence) {
+	public Iterable<VariantContextEvidence> addEvidence(DirectedBreakpoint evidence) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 	@Override
-	public Iterable<AssemblyEvidence> endOfEvidence() {
+	public Iterable<VariantContextEvidence> endOfEvidence() {
 		// TODO Auto-generated method stub
 		return null;
 	}

@@ -24,14 +24,14 @@ public class BreakpointInterval extends BreakpointLocation {
 	 */
 	public final BreakpointDirection direction2;
 	public BreakpointInterval(int referenceIndex1, BreakpointDirection direction1, long start1, long end1,
-			int referenceIndex2, BreakpointDirection direction2, long start2, long end2, float qual) {
+			int referenceIndex2, BreakpointDirection direction2, long start2, long end2, double qual) {
 		super(referenceIndex1, direction1, start1, end1, qual);
 		this.start2 = start2;
 		this.end2 = end2;
 		this.referenceIndex2 = referenceIndex2;
 		this.direction2 = direction2;
 	}
-	public BreakpointInterval(BreakpointLocation local, BreakpointLocation remote, float qual) {
+	public BreakpointInterval(BreakpointLocation local, BreakpointLocation remote, double qual) {
 		this(local.referenceIndex, local.direction, local.start, local.end,
 				remote.referenceIndex, remote.direction, remote.start, remote.end,
 				qual);

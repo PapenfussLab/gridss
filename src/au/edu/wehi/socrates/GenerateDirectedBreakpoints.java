@@ -142,8 +142,8 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
     	}
         return 0;
     }
-    private void processAssemblyEvidence(Iterable<AssemblyEvidence> evidenceList, FastqWriter fastqWriter, VariantContextWriter vcfWriter) {
-    	for (AssemblyEvidence a : evidenceList) {
+    private void processAssemblyEvidence(Iterable<VariantContextEvidence> evidenceList, FastqWriter fastqWriter, VariantContextWriter vcfWriter) {
+    	for (VariantContextEvidence a : evidenceList) {
     		FastqRecord fastq = BreakpointFastqEncoding.getRealignmentFastq(a);
     		fastqWriter.write(fastq);
     		vcfWriter.add(a);

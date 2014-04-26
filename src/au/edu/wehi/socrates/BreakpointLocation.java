@@ -7,11 +7,11 @@ package au.edu.wehi.socrates;
  */
 public class BreakpointLocation {
 	/**
-	 * First possible position of breakpoint is immediately after this 1-based genomic coordinate
+	 * First possible mapped position adjacent to breakpoint in 1-based genomic coordinate
 	 */
 	public final long start;
 	/**
-	 * Last possible position of breakpoint is immediately after this 1-based genomic coordinate
+	 * Last possible mapped position adjacent to breakpoint in 1-based genomic coordinate
 	 */
 	public final long end;
 	/**
@@ -25,8 +25,8 @@ public class BreakpointLocation {
 	/**
 	 * Phred-like quality score of this evidence
 	 */
-	public final float qual;
-	public BreakpointLocation(int referenceIndex, BreakpointDirection direction, long start, long end, float qual) {
+	public final double qual;
+	public BreakpointLocation(int referenceIndex, BreakpointDirection direction, long start, long end, double qual) {
 		this.referenceIndex = referenceIndex;
 		this.direction = direction;
 		this.start = start;

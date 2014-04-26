@@ -1,7 +1,5 @@
 package au.edu.wehi.socrates;
 
-import org.junit.experimental.max.MaxCore;
-
 import net.sf.samtools.SAMRecord;
 
 /**
@@ -44,12 +42,12 @@ public class NonReferenceReadPair implements DirectedEvidence {
 		int intervalExtendedReadDueToLocalClipping;
 		int intervalReducedDueToRemoteMapping = 1;
 		if (direction == BreakpointDirection.Forward) {
-			intervalDirection = 1;
 			positionClosestToBreakpoint = local.getAlignmentEnd();
+			intervalDirection = 1;
 			intervalExtendedReadDueToLocalClipping = local.getUnclippedEnd() - local.getAlignmentEnd();
 		} else {
+			positionClosestToBreakpoint = local.getAlignmentStart();
 			intervalDirection = -1;
-			positionClosestToBreakpoint = local.getAlignmentStart() - 1;
 			intervalExtendedReadDueToLocalClipping = local.getAlignmentStart() - local.getUnclippedStart();
 		}
 		if (remote != null && !remote.getReadUnmappedFlag()) {

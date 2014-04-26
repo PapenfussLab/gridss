@@ -71,9 +71,9 @@ public class NonReferenceReadPairTest extends TestHelper {
 		// 123456789012345678901234567890
 		//       SSSMM
 		//  *--------* fragment
-		//  |      |   possible breakpoint positions
-		assertEquals(2, loc.start);
-		assertEquals(9, loc.end);
+		//   |      |   possible breakpoint positions
+		assertEquals(3, loc.start);
+		assertEquals(10, loc.end);
 		assertEquals(0, loc.referenceIndex);
 		assertEquals(BreakpointDirection.Backward, loc.direction);
 	}
@@ -128,9 +128,9 @@ public class NonReferenceReadPairTest extends TestHelper {
 		//                         SMMSSS
 		// *----------------------------*	max fragment
 		// SMMMSS
-		//    |                    | 		possible breakpoint positions
+		//     |                    | 		possible breakpoint positions
 		dp_test_both(DP(0, 26, "1S2M3S", false, 1, 100, "1S3M2S", true), 30,
-				4, 25, 0, BreakpointDirection.Backward);
+				5, 26, 0, BreakpointDirection.Backward);
 	}
 	@Test
 	public void getBreakpointLocation_backward_backward_DP_interval_should_allow_breakpoint_in_unsequenced_content() {
@@ -139,9 +139,9 @@ public class NonReferenceReadPairTest extends TestHelper {
 		//                         SMMSSS
 		// *----------------------------*	max fragment
 		// SSMMMS							need to flip the remote cigar since the breakpoint goes the other way
-		//     |                   | 		possible breakpoint positions
+		//      |                   | 		possible breakpoint positions
 		dp_test_both(DP(0, 26, "1S2M3S", false, 1, 100, "1S3M2S", false), 30,
-				5, 25, 0, BreakpointDirection.Backward);
+				6, 26, 0, BreakpointDirection.Backward);
 	}
 	@Test
 	public void getBreakpointLocation_OEA_qual_should_match_mapq() {

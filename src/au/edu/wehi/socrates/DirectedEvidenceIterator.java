@@ -100,7 +100,7 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 		return true;
 	}
 	private void processVariant(VariantContext variant) {
-		AssemblyEvidence evidence = new AssemblyEvidence(variant);
+		VariantContextEvidence evidence = new VariantContextEvidence(variant);
 		if (evidence.isValid()) {
 			calls.add(evidence);
 		}
