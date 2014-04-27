@@ -82,7 +82,7 @@ public class ClusterEvidence extends CommandLineProgram {
     	SAMFileReader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
     	try {
     		if (METRICS == null) {
-    			METRICS = FileNamingConvention.GetMetrics(SV_READ_INPUT1);
+    			METRICS = FileNamingConvention.getMetrics(SV_READ_INPUT1);
     		}
     		IoUtil.assertFileIsReadable(METRICS);
     		IoUtil.assertFileIsReadable(REALIGN_INPUT1);

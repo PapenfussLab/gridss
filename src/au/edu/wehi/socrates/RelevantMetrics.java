@@ -61,12 +61,11 @@ public class RelevantMetrics {
 	}
 	/**
 	 * Gets the median fragment size
-	 * @param readLength length of reads
 	 * @return median fragment size
 	 */
-	public double getMedianFragmentSize(int readLength) {
+	public double getMedianFragmentSize() {
 		// TODO: is this 5' difference or frag size?
-		return insertSize.MEDIAN_INSERT_SIZE + readLength;
+		return insertSize.MEDIAN_INSERT_SIZE;
 	}
 	/**
 	 * Gets the standard deviation of the fragment size
@@ -74,5 +73,13 @@ public class RelevantMetrics {
 	 */
 	public double getFragmentSizeStdDev() {
 		return 1.4826 * insertSize.MEDIAN_ABSOLUTE_DEVIATION;
+	}
+	/**
+	 * Gets the maximum expected fragment size
+	 * @return longest expected fragment size
+	 */
+	public double getMaxFragmentSize() {
+		// TODO: is this 5' difference or frag size?
+		return getMedianFragmentSize() + 3 * getFragmentSizeStdDev();
 	}
 }

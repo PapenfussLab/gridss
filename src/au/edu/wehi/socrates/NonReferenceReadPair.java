@@ -1,5 +1,7 @@
 package au.edu.wehi.socrates;
 
+import org.apache.commons.lang3.StringUtils;
+
 import net.sf.samtools.SAMRecord;
 
 /**
@@ -12,11 +14,12 @@ public class NonReferenceReadPair implements DirectedEvidence {
 	private final SAMRecord remote;
 	private final BreakpointLocation location;
 	public NonReferenceReadPair(SAMRecord local, SAMRecord remote, int maxfragmentSize) {
-		assert local != null;
-		assert remote != null;
-		assert (local.getReadName() == null && remote.getReadName() == null) || local.getReadName().equals(remote.getReadName());
-		assert !local.getReadUnmappedFlag();
-		assert !local.getProperPairFlag();
+		if (local == null) throw new IllegalArgumentException("local is null");
+		if (remote == null) throw new IllegalArgumentException("remote is null");
+		if (!StringUtils.equals(local.getReadName(), remote.getReadName())) throw new IllegalArgumentException(String.format("Read %s and %s do not match", local.getReadName(), remote.getReadName()));
+		if (local.getReadUnmappedFlag()) throw new IllegalArgumentException("local must be mapped");
+		if (local.getProperPairFlag()) throw new IllegalArgumentException(String.format("Read %s is flagged as part of a proper pair", local.getReadName()));
+		if (remote.getProperPairFlag()) throw new IllegalArgumentException(String.format("Read %s is flagged as part of a proper pair", remote.getReadName()));
 		this.local = local;
 		this.remote = remote;
 		this.location = calculateBreakpointLocation(local, remote, maxfragmentSize);

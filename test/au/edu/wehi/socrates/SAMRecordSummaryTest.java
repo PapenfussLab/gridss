@@ -8,12 +8,11 @@ import org.junit.Test;
 
 import au.edu.wehi.socrates.util.SAMRecordSummary;
 
-public class SAMRecordSummaryTest {
+public class SAMRecordSummaryTest extends TestHelper {
 
 	@Before
 	public void setUp() throws Exception {
 	}
-
 	@Test
 	public void isAlignmentSoftClipped_should_handle_hard_clips() {
 		SAMRecord r = new SAMRecord(null);
@@ -37,5 +36,21 @@ public class SAMRecordSummaryTest {
 		SAMRecord r = new SAMRecord(null);
 		r.setCigar(null);
 		assertFalse(SAMRecordSummary.isAlignmentSoftClipped(r));
+	}
+	@Test
+	public void getEndSoftClipLength_should_handle_hard_clips() {
+		assertEquals(5, SAMRecordSummary.getEndSoftClipLength(Read(0, 1, "1H3S10M5S1H")));
+	}
+	@Test
+	public void getStartSoftClipLength_should_handle_hard_clips() {
+		assertEquals(3, SAMRecordSummary.getStartSoftClipLength(Read(0, 1, "1H3S10M5S1H")));
+	}
+	@Test
+	public void getEndSoftClipLength_should_handle_soft_clips() {
+		assertEquals(5, SAMRecordSummary.getEndSoftClipLength(Read(0, 1, "3S10M5S")));
+	}
+	@Test
+	public void getStartSoftClipLength_should_handle_soft_clips() {
+		assertEquals(3, SAMRecordSummary.getStartSoftClipLength(Read(0, 1, "3S10M5S")));
 	}
 }

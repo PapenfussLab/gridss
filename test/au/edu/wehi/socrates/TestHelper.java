@@ -80,6 +80,7 @@ public class TestHelper {
 		record.setReadUnmappedFlag(false);
 		record.setReadPairedFlag(false);
 		record.setReadNegativeStrandFlag(false);
+		record.setCigarString(cigar);
 		clean(record);
 		return record;
 	}
@@ -111,7 +112,7 @@ public class TestHelper {
 		if (record.getReadBases() == null || record.getReadBases().length != targetLength) {
 			record.setReadBases(GetPolyA(targetLength));
 		}
-		if (record.getCigar() == null) {
+		if (record.getCigar() == null || record.getCigarLength() == 0) {
 			record.setCigarString(String.format("%dM", targetLength));
 		}
 		if (!StringUtils.isNotBlank(record.getReadName())) {

@@ -61,7 +61,7 @@ public class SAMRecordSummary {
 		int i = elements.size() - 1;
 		while (i > 0 && (elements.get(i).getOperator() == CigarOperator.HARD_CLIP || elements.get(i).getOperator() == CigarOperator.SOFT_CLIP)) {
 			if (elements.get(i).getOperator() == CigarOperator.SOFT_CLIP) return elements.get(i).getLength();
-			i++;
+			i--;
 		}
 		return 0;
 	}

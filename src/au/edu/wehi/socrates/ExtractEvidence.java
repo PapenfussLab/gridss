@@ -4,22 +4,18 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import au.edu.wehi.socrates.util.SAMRecordSummary;
-import net.sf.picard.analysis.CollectInsertSizeMetrics;
 import net.sf.picard.analysis.InsertSizeMetrics;
-import net.sf.picard.analysis.MetricAccumulationLevel;
 import net.sf.picard.analysis.directed.InsertSizeMetricsCollector;
 import net.sf.picard.cmdline.CommandLineProgram;
 import net.sf.picard.cmdline.Option;
 import net.sf.picard.cmdline.StandardOptionDefinitions;
 import net.sf.picard.cmdline.Usage;
 import net.sf.picard.io.IoUtil;
-import net.sf.picard.metrics.MetricsFile;
 import net.sf.picard.util.Log;
 import net.sf.picard.util.ProgressLogger;
+import net.sf.samtools.BAMRecordCodec;
 import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMFileHeader.SortOrder;
-import net.sf.samtools.BAMRecordCodec;
 import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMFileWriter;
 import net.sf.samtools.SAMFileWriterFactory;
@@ -27,8 +23,8 @@ import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
 import net.sf.samtools.SAMSequenceDictionary;
 import net.sf.samtools.util.CloseableIterator;
-import net.sf.samtools.util.CollectionUtil;
 import net.sf.samtools.util.SortingCollection;
+import au.edu.wehi.socrates.util.SAMRecordSummary;
 
 /**
  * Extracts reads supporting structural variation into intermediate files.
@@ -72,7 +68,7 @@ public class ExtractEvidence extends CommandLineProgram {
     @Override
 	protected int doWork() {
     	try {
-	    	IoUtil.assertFileIsWritable(FileNamingConvention.GetMetrics(INPUT));
+	    	IoUtil.assertFileIsWritable(FileNamingConvention.getMetrics(INPUT));
 	    	SAMFileReader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
 	    	// SAMFileWriterFactory.setDefaultCreateIndexWhileWriting(CREATE_INDEX); // do we need an index at all? Can we get away with sequential access?
 	    	final SAMFileReader reader = new SAMFileReader(INPUT);
@@ -90,18 +86,18 @@ public class ExtractEvidence extends CommandLineProgram {
 	    	final SAMFileWriterFactory factory = new SAMFileWriterFactory();
 	    	if (PER_CHR) {
 	    		for (int i = 0; i < dictionary.size(); i++) {
-	    			writers[i] = factory.makeBAMWriter(svHeader, true, FileNamingConvention.GetSVBamForChr(INPUT, dictionary.getSequence(i).getSequenceName()));
-	    			matewriters[i] = factory.makeBAMWriter(mateHeader, false, FileNamingConvention.GetMateBamForChr(INPUT, dictionary.getSequence(i).getSequenceName()));
+	    			writers[i] = factory.makeSAMWriter(svHeader, true, FileNamingConvention.getSVBamForChr(INPUT, dictionary.getSequence(i).getSequenceName()));
+	    			matewriters[i] = factory.makeSAMWriter(mateHeader, false, FileNamingConvention.getMateBamForChr(INPUT, dictionary.getSequence(i).getSequenceName()));
 	    			matecollection.add(SortingCollection.newInstance(SAMRecord.class, new BAMRecordCodec(mateHeader), new SAMRecordMateCoordinateComparator(),
 	    					// TODO: allocate buffers according to sequence lengths instead of equal space to every chr
 	    					MAX_RECORDS_IN_RAM / dictionary.size(),
 	    					TMP_DIR));
 	    		}
-				writers[dictionary.size()] = factory.makeBAMWriter(svHeader, true, FileNamingConvention.GetSVBamForChr(INPUT, "unmapped"));
+				writers[dictionary.size()] = factory.makeSAMWriter(svHeader, true, FileNamingConvention.getSVBamForChr(INPUT, "unmapped"));
 	    	} else {
 	    		// all writers map to the same one
-	    		writers[0] = factory.makeBAMWriter(svHeader, true, FileNamingConvention.GetSVBam(INPUT));
-				matewriters[0] = factory.makeBAMWriter(mateHeader, false, FileNamingConvention.GetMateBam(INPUT));
+	    		writers[0] = factory.makeSAMWriter(svHeader, true, FileNamingConvention.getSVBam(INPUT));
+				matewriters[0] = factory.makeSAMWriter(mateHeader, false, FileNamingConvention.getMateBam(INPUT));
 				matecollection.add(SortingCollection.newInstance(SAMRecord.class, new BAMRecordCodec(matewriters[0].getFileHeader()), new SAMRecordMateCoordinateComparator(), MAX_RECORDS_IN_RAM, TMP_DIR));
 				for (int i = 1; i < dictionary.size() + 1; i++) {
 					writers[i] = writers[0];
@@ -121,14 +117,16 @@ public class ExtractEvidence extends CommandLineProgram {
 					writers[offset].addAlignment(record);
 				}
 				if (badpair) {
-					matecollection.get(record.getMateReferenceIndex()).add(record);
+					if (!record.getMateUnmappedFlag()) {
+						matecollection.get(record.getMateReferenceIndex()).add(record);
+					}
 				}
 				metrics.acceptRecord(record, null);
 				progress.record(record);
 			}
 			reader.close();
 			metrics.finish();
-			RelevantMetrics.save(metrics, this.<InsertSizeMetrics, Integer>getMetricsFile(), FileNamingConvention.GetMetrics(INPUT));
+			RelevantMetrics.save(metrics, this.<InsertSizeMetrics, Integer>getMetricsFile(), FileNamingConvention.getMetrics(INPUT));
 			for (int i = 0; i < dictionary.size(); i++) {
 				if (writers[i] != null) {
 					writers[i].close();

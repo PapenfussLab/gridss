@@ -1,38 +1,88 @@
 package au.edu.wehi.socrates;
 
 import net.sf.samtools.SAMRecord;
-
 import au.edu.wehi.socrates.util.SAMRecordSummary;
 
 public class SoftClipEvidence implements DirectedBreakpoint {
-	public static final char BREAKPOINT_ID_CHAR = 'r';
-	private BreakpointDirection direction;
-	private SAMRecord record;
-	private SAMRecordSummary summary;
-	private SAMRecord realigned;
-	public SoftClipEvidence(BreakpointDirection direction, SAMRecord record) {
-		this.direction = direction;
+	private final SAMRecord record;
+	private final SAMRecordSummary summary;
+	private final SAMRecord realigned;
+	private final BreakpointLocation location;
+	private SoftClipEvidence(BreakpointDirection direction, SAMRecord record, SAMRecordSummary summary, SAMRecord realigned) {
 		this.record = record;
-		this.summary = new SAMRecordSummary(record);
+		this.summary = summary;
+		this.realigned = realigned;
+		if (realigned == null) {
+			this.location = calculateLocation(direction, record, summary);
+		} else {
+			this.location = calculateInterval(direction, record, summary, realigned);
+		}
+	}
+	public SoftClipEvidence(BreakpointDirection direction, SAMRecord record) {
+		this(direction, record, new SAMRecordSummary(record), null);
+	}
+	public SoftClipEvidence(BreakpointDirection direction, SAMRecord record, SAMRecord realigned) {
+		this(direction, record, new SAMRecordSummary(record), realigned);
+	}
+	public SoftClipEvidence(SoftClipEvidence evidence, SAMRecord realigned) {
+		this(evidence.location.direction, evidence.record, evidence.summary, realigned);
+	}
+	private static double calculateSoftClipQuality(BreakpointDirection direction, SAMRecord record, SAMRecordSummary summary) {
+		// TODO: proper quality metrics!
+		if (direction == BreakpointDirection.Forward) {
+			return summary.getAvgTailClipQuality();
+			//return SAMRecordSummary.getEndSoftClipLength(record);
+		} else {
+			return summary.getAvgHeadClipQuality();
+			//return SAMRecordSummary.getStartSoftClipLength(record);
+		}
+	}
+	private static double calculateSoftClipQuality(BreakpointDirection direction, SAMRecord record, SAMRecordSummary summary, SAMRecord realigned) {
+		// TOOD: proper quality metrics!
+		return Math.min(record.getMappingQuality(), realigned.getMappingQuality());
+	}
+	private static BreakpointLocation calculateLocation(BreakpointDirection direction, SAMRecord record, SAMRecordSummary summary) {
+		int pos = direction == BreakpointDirection.Forward ? record.getAlignmentEnd() : record.getAlignmentStart(); 
+		return new BreakpointLocation(record.getReferenceIndex(), direction, pos, pos, calculateSoftClipQuality(direction, record, summary));
+	}
+	private static BreakpointLocation calculateRealignedLocation(BreakpointDirection direction, SAMRecord realigned) {
+		int targetPosition;
+		BreakpointDirection targetDirection;
+		if ((direction == BreakpointDirection.Forward && realigned.getReadNegativeStrandFlag()) ||
+				(direction == BreakpointDirection.Backward && !realigned.getReadNegativeStrandFlag())) {
+			targetDirection = BreakpointDirection.Forward;
+			targetPosition = realigned.getAlignmentEnd();
+		} else  {
+			targetDirection = BreakpointDirection.Backward;
+			targetPosition = realigned.getAlignmentStart();
+		}
+		return new BreakpointLocation(realigned.getReferenceIndex(), targetDirection, targetPosition, targetPosition, realigned.getMappingQuality());
+	}
+	private static BreakpointLocation calculateInterval(BreakpointDirection direction, SAMRecord record, SAMRecordSummary summary, SAMRecord realigned) {
+		BreakpointLocation location = calculateLocation(direction, record, summary);
+		if (realigned.getReadUnmappedFlag()) return location;
+		return new BreakpointInterval(location, calculateRealignedLocation(direction, realigned),
+				calculateSoftClipQuality(direction, record, summary, realigned));
 	}
 	@Override
 	public String getEvidenceID() {
-		return String.format("%c#%d#%s", BREAKPOINT_ID_CHAR, record.getFirstOfPairFlag(), record.getReadName());
-	}
-	@Override
-	public BreakpointDirection getBreakpointDirection() {
-		return direction;
+		// need read name, breakpoint direction & which read in pair
+		String readNumber = record.getReadPairedFlag() ? record.getFirstOfPairFlag() ? "/1" : "/2" : "";
+		return String.format("%s%s%s", record.getReadName(), readNumber, location.direction == BreakpointDirection.Forward ? "f" : "b");
 	}
 	@Override
 	public byte[] getBreakpointSequence() {
-		return direction == BreakpointDirection.Forward ? summary.getTailClipSequence() : summary.getHeadClipSequence();
+		return location.direction == BreakpointDirection.Forward ? summary.getTailClipSequence() : summary.getHeadClipSequence();
 	}
 	@Override
 	public byte[] getBreakpointQuality() {
-		return direction == BreakpointDirection.Forward ? summary.getTailClipQuality() : summary.getHeadClipQuality();
+		return location.direction == BreakpointDirection.Forward ? summary.getTailClipQuality() : summary.getHeadClipQuality();
 	}
 	public SAMRecord getSAMRecord() {
 		return this.record;
+	}
+	public SAMRecord getSoftClipRealignmentSAMRecord() {
+		return this.realigned;
 	}
 	public int getSoftClipLength() {
 		return getBreakpointSequence().length;
@@ -41,29 +91,10 @@ public class SoftClipEvidence implements DirectedBreakpoint {
 		return summary.getAlignedPercentIdentity();
 	}
 	public float getAverageClipQuality() {
-		return direction == BreakpointDirection.Forward ? summary.getAvgTailClipQuality() : summary.getAvgHeadClipQuality();
+		return location.direction == BreakpointDirection.Forward ? summary.getAvgTailClipQuality() : summary.getAvgHeadClipQuality();
 	}
 	@Override
-	public int getReferenceIndex() {
-		return record.getReferenceIndex();
-	}
-	@Override
-	public long getWindowStart() {
-		return direction == BreakpointDirection.Forward ? record.getAlignmentEnd() : (record.getAlignmentStart() - 1);
-	}
-	@Override
-	public long getWindowEnd() {
-		return getWindowStart();
-	}
-	public int getMappingQuality() {
-		return record.getMappingQuality();
-	}
-	@Override
-	public void setRealigned(SAMRecord realigned) {
-		this.realigned = realigned;
-	}
-	@Override
-	public SAMRecord getRealigned() {
-		return realigned;
+	public BreakpointLocation getBreakpointLocation() {
+		return location;
 	}
 }

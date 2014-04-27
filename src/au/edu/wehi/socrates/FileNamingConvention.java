@@ -11,10 +11,13 @@ import java.io.IOException;
 public class FileNamingConvention {
 	private static final String COMMON_INITIAL_SUFFIX = ".socrates";
 	private static final String FORMAT_SV_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".sv.bam";
-	private static final String FORMAT_ISV_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.sv.bam";
+	private static final String FORMAT_SV_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.sv.bam";
 	private static final String FORMAT_MATE_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".svmate.bam";
 	private static final String FORMAT_MATE_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.svmate.bam";
-	private static final String FORMAT_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".insertsize.txt";
+	private static final String FORMAT_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.txt";
+	private static final String FORMAT_BREAKEND_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".%s.breakend.vcf";
+	private static final String FORMAT_BREAKPOINT_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".%s-%s.breakpoint.vcf";
+	private static final String FORMAT_OUTPUT_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".vcf";
 	private static String GetStem(File input) throws IOException {
 		String full = input.getAbsoluteFile().toString();
 		if (full.contains(COMMON_INITIAL_SUFFIX)) {
@@ -22,19 +25,28 @@ public class FileNamingConvention {
 		}
 		return full;
 	}
-	public static File GetSVBam(File input) throws IOException {
+	public static File getSVBam(File input) throws IOException {
 		return new File(String.format(FORMAT_SV_BAM, GetStem(input)));
 	}
-	public static File GetSVBamForChr(File input, String chromosome) throws IOException {
-		return new File(String.format(FORMAT_ISV_BAM_PER_CHR, GetStem(input), chromosome));
+	public static File getSVBamForChr(File input, String chromosome) throws IOException {
+		return new File(String.format(FORMAT_SV_BAM_PER_CHR, GetStem(input), chromosome));
 	}
-	public static File GetMateBam(File input) throws IOException {
+	public static File getMateBam(File input) throws IOException {
 		return new File(String.format(FORMAT_MATE_BAM, GetStem(input)));
 	}
-	public static File GetMateBamForChr(File input, String chromosome) throws IOException {
+	public static File getMateBamForChr(File input, String chromosome) throws IOException {
 		return new File(String.format(FORMAT_MATE_BAM_PER_CHR, GetStem(input), chromosome));
 	}
-	public static File GetMetrics(File input) throws IOException {
+	public static File getBreakendVcf(File input, String chromosome) throws IOException {
+		return new File(String.format(FORMAT_BREAKEND_VCF, GetStem(input), chromosome));
+	}
+	public static File getBreakpointVcf(File input, String chromosome1, String chromosome2) throws IOException {
+		return new File(String.format(FORMAT_BREAKPOINT_VCF, GetStem(input), chromosome1, chromosome2));
+	}
+	public static File getOutputVcf(File input) throws IOException {
+		return new File(String.format(FORMAT_OUTPUT_VCF, GetStem(input)));
+	}
+	public static File getMetrics(File input) throws IOException {
 		return new File(String.format(FORMAT_METRICS, GetStem(input)));
 	}
 	//public static File getWorkingDirectory(File input) throws IOException {

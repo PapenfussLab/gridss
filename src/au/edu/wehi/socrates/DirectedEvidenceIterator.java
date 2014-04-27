@@ -1,27 +1,15 @@
 package au.edu.wehi.socrates;
 
-import java.io.File;
-import java.util.ArrayDeque;
-import java.util.Collection;
 import java.util.PriorityQueue;
-import java.util.Queue;
 
-import net.sf.picard.fastq.FastqWriter;
-import net.sf.picard.fastq.FastqWriterFactory;
-import net.sf.picard.util.Log;
-import net.sf.samtools.SAMFileHeader;
-import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMSequenceDictionary;
 
 import org.broadinstitute.variant.variantcontext.VariantContext;
-import org.broadinstitute.variant.variantcontext.writer.VariantContextWriter;
-import org.broadinstitute.variant.variantcontext.writer.VariantContextWriterFactory;
 
 import au.edu.wehi.socrates.util.SAMRecordSummary;
 
 import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 
 /**
@@ -31,6 +19,7 @@ import com.google.common.collect.PeekingIterator;
  */
 public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence> {
 	private static final int INITIAL_BUFFER_SIZE = 1024;
+	private final SAMSequenceDictionary dictionary;
 	private final PeekingIterator<SAMRecord> svIterator;
 	private final PeekingIterator<VariantContext> vcfIterator;
 	private final LinearGenomicCoordinate linear;
@@ -54,6 +43,7 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 			SAMSequenceDictionary dictionary,
 			int maxFragmentSize) {
 		this.linear = new LinearGenomicCoordinate(dictionary);
+		this.dictionary = dictionary;
 		this.svIterator = sv;
 		this.vcfIterator = vcf;
 		this.mateFactory = new SequentialNonReferenceReadPairFactory(mate);
@@ -67,9 +57,10 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 				DirectedEvidence evidence = calls.poll();
 				// Match realigned at output time since input BAM processing is in order of alignment start,
 				// not putative breakpoint position 
-				if (evidence.getClass() == DirectedBreakpoint.class) {
-					DirectedBreakpoint bp = (DirectedBreakpoint)evidence;
-					bp.setRealigned(realignFactory.findRealignedSAMRecord(bp));
+				if (evidence instanceof SoftClipEvidence) {
+					evidence = new SoftClipEvidence((SoftClipEvidence)evidence, realignFactory.findRealignedSAMRecord((DirectedBreakpoint)evidence));
+				} else if (evidence instanceof DirectedBreakpointAssembly) {
+					evidence = DirectedBreakpointAssembly.create((DirectedBreakpointAssembly)evidence, realignFactory.findRealignedSAMRecord((DirectedBreakpoint)evidence));
 				}
 				return evidence;
 			}
@@ -100,9 +91,9 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 		return true;
 	}
 	private void processVariant(VariantContext variant) {
-		VariantContextEvidence evidence = new VariantContextEvidence(variant);
-		if (evidence.isValid()) {
-			calls.add(evidence);
+		SocratesVariantContext managedContext = SocratesVariantContext.create(dictionary, variant);
+		if (managedContext instanceof DirectedEvidence) {
+			calls.add((DirectedEvidence)managedContext);
 		}
 	}
 	private void processRead(SAMRecord record) {

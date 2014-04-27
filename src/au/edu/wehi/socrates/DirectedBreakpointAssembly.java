@@ -11,7 +11,7 @@ import org.broadinstitute.variant.variantcontext.VariantContextBuilder;
 
 public class DirectedBreakpointAssembly extends VariantContextDirectedBreakpoint {
 	public static final String SOURCE_NAME = "socrates";
-	public DirectedBreakpointAssembly create(DirectedBreakpointAssembly variant, SAMRecord realignment) {
+	public static DirectedBreakpointAssembly create(DirectedBreakpointAssembly variant, SAMRecord realignment) {
 		throw new IllegalStateException("not yet implemented");
 	}
 	public static DirectedBreakpointAssembly create(

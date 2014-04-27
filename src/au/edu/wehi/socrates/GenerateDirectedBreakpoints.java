@@ -11,6 +11,7 @@ import org.broadinstitute.variant.variantcontext.writer.VariantContextWriterFact
 import org.broadinstitute.variant.vcf.VCFRecordCodec;
 
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.google.common.collect.PeekingIterator;
 
 import au.edu.wehi.socrates.util.SAMRecordSummary;
@@ -52,18 +53,14 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
 
     private static final String PROGRAM_VERSION = "0.1";
 
-    // The following attributes define the command-line arguments
-    @Usage
-    public String USAGE = getStandardUsagePreamble() + "Generated directed breakpoints." + PROGRAM_VERSION;
-
     @Option(doc = "Coordinate sorted input file containing reads supporting putative structural variations",
             optional = false,
-            shortName = StandardOptionDefinitions.INPUT_SHORT_NAME)
-    public File INPUT;
+            shortName = "SV")
+    public File SV_INPUT;
     @Option(doc = "DP and OEA read pairs sorted by coordinate of mapped mate read.",
             optional = false,
             shortName = "MCI")
-    public File MATE_COORDINATE_INPUT = null;    
+    public File MATE_COORDINATE_INPUT = null;
     @Option(doc = "Directed single-ended breakpoints. A placeholder contig is output as the breakpoint partner.",
             optional = false,
             shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME)
@@ -97,14 +94,14 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
     	SAMFileReader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
     	try {
     		if (METRICS == null) {
-    			METRICS = FileNamingConvention.GetMetrics(INPUT);
+    			METRICS = FileNamingConvention.getMetrics(SV_INPUT);
     		}
     		IoUtil.assertFileIsReadable(METRICS);
-    		IoUtil.assertFileIsReadable(INPUT);
+    		IoUtil.assertFileIsReadable(SV_INPUT);
     		IoUtil.assertFileIsReadable(MATE_COORDINATE_INPUT);
     		
     		//final ProgressLogger progress = new ProgressLogger(log);
-	    	final SAMFileReader reader = new SAMFileReader(INPUT);
+	    	final SAMFileReader reader = new SAMFileReader(SV_INPUT);
 	    	final SAMFileReader mateReader = new SAMFileReader(MATE_COORDINATE_INPUT);
 	    	final SAMFileHeader header = reader.getFileHeader();
 	    	final SAMSequenceDictionary dictionary = header.getSequenceDictionary();

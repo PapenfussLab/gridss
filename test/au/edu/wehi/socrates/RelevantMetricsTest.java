@@ -51,7 +51,21 @@ public class RelevantMetricsTest extends TestHelper {
 		File f = testFolder.newFile();
 		RelevantMetrics.save(readPair(100, 200, readLength), new MetricsFile<InsertSizeMetrics, Integer>(), f);
 		RelevantMetrics metrics = new RelevantMetrics(f);
-		assertEquals(150, metrics.getMedianFragmentSize(readLength), 0);
+		assertEquals(150, metrics.getMedianFragmentSize(), 0);
+	}
+	@Test
+	public void getMedianFragmentSize_should_return_median_fragment_size() throws IOException {
+		int readLength = 100;
+		File f = testFolder.newFile();
+		RelevantMetrics.save(readPair(100, 200, readLength), new MetricsFile<InsertSizeMetrics, Integer>(), f);
+		RelevantMetrics metrics = new RelevantMetrics(f);
+		assertEquals(100 + readLength, metrics.getMedianFragmentSize(), 0);
+		
+		readLength = 50;
+		 f = testFolder.newFile();
+		RelevantMetrics.save(readPair(100, 200, readLength), new MetricsFile<InsertSizeMetrics, Integer>(), f);
+		metrics = new RelevantMetrics(f);
+		assertEquals(100 + readLength, metrics.getMedianFragmentSize(), 0);
 	}
 	@Test
 	public void shouldUseMADforStdDev() throws IOException {
