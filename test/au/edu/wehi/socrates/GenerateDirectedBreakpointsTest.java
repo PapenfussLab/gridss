@@ -120,9 +120,14 @@ public class GenerateDirectedBreakpointsTest extends CommandLineTest {
 	}
 	@Test
 	public void debruijn_should_generate_vcf() {
-		createInput(RP(0, 1, 2, 1));
+		// TODO: fix test so we actually assemble something
+		SAMRecord r1 = Read(0, 1, "1M5S");
+		r1.setReadBases(B("AACGT"));
+		SAMRecord r2 = Read(0, 1, "1M6S");
+		r2.setReadBases(B("AACGTG"));
+		createInput(r1, r2);
 		extractEvidence();
-		generateDirectedBreakpoints("polyA", null, null, null, null, null);
+		generateDirectedBreakpoints("polyA", null, null, null, null, 3);
 		assertEquals(1, getVcf(".socrates.polyA.breakend.vcf").size());
 	}
 	@Test

@@ -51,7 +51,7 @@ public class SocratesVariantContextTest extends TestHelper {
 	}
 	@Test
 	public void create_should_make_DirectedBreakpointAssembly() {
-		DirectedBreakpointAssembly vc = DirectedBreakpointAssembly.create(getSequenceDictionary(), SMALL_FA, "test", 0, 1, BreakpointDirection.Forward, B("C"), B("AC"), 0);
+		DirectedBreakpointAssembly vc = DirectedBreakpointAssembly.create(getSequenceDictionary(), SMALL_FA, "test", 0, 1, BreakpointDirection.Forward, B("C"), B("AC"), 1, 0);
 		assertTrue(SocratesVariantContext.create(getSequenceDictionary(), vc) instanceof DirectedBreakpointAssembly);
 	}
 	@Test

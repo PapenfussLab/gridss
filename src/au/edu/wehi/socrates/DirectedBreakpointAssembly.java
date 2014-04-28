@@ -24,7 +24,24 @@ public class DirectedBreakpointAssembly extends VariantContextDirectedBreakpoint
 			int position,
 			BreakpointDirection direction,
 			byte[] breakpointSequence,
+			byte[] breakpointBaseQuality,
 			byte[] fullAssembly,
+			byte[] fullAssemblyBaseQuality,
+			int readCount,
+			double breakpointQuality
+			) {
+		return create(dictionary, reference, assemblerName, referenceIndex, position, direction, breakpointSequence, fullAssembly, readCount, breakpointQuality);
+	}
+	public static DirectedBreakpointAssembly create(
+			SAMSequenceDictionary dictionary,
+			ReferenceSequenceFile reference,
+			String assemblerName,
+			int referenceIndex,
+			int position,
+			BreakpointDirection direction,
+			byte[] breakpointSequence,
+			byte[] fullAssembly,
+			Integer readCount,
 			double breakpointQuality
 			) {
 		String chr = dictionary.getSequence(referenceIndex).getSequenceName();
@@ -37,8 +54,12 @@ public class DirectedBreakpointAssembly extends VariantContextDirectedBreakpoint
 			.log10PError(breakpointQuality)
 			.attributes(null)
 			.attribute(VcfConstants.ASSEMBLY_PROGRAM, assemblerName)
-			.attribute(VcfConstants.ASSEMBLY_CONSENSUS, new String(fullAssembly, StandardCharsets.US_ASCII));
-		String referenceBase = new String(reference.getSubsequenceAt(chr, position, position).getBases(), StandardCharsets.US_ASCII);
+			.attribute(VcfConstants.ASSEMBLY_CONSENSUS, new String(fullAssembly, StandardCharsets.US_ASCII))
+			.attribute(VcfConstants.ASSEMBLY_CONSENSUS_READ_COUNT, readCount);
+		String referenceBase = "N";
+		if (reference != null) {
+			new String(reference.getSubsequenceAt(chr, position, position).getBases(), StandardCharsets.US_ASCII);
+		}
 		String alt;
 		String breakStr = new String(breakpointSequence, StandardCharsets.US_ASCII);
 		// TODO: use reference bases or anchor assembly?

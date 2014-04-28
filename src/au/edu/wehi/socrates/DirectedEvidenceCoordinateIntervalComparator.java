@@ -17,25 +17,20 @@ public class DirectedEvidenceCoordinateIntervalComparator implements Comparator<
 	public int compare(DirectedEvidence arg0, DirectedEvidence arg1) {
 		BreakpointLocation loc0 = arg0.getBreakpointLocation();
 		BreakpointLocation loc1 = arg1.getBreakpointLocation();
-		int cmp = integerCompare(loc0.referenceIndex, loc1.referenceIndex);
-		if (cmp == 0) cmp = integerCompare(loc0.start, loc1.start);
+		int cmp = ComparatorUtil.integerCompare(loc0.referenceIndex, loc1.referenceIndex);
+		if (cmp == 0) cmp = ComparatorUtil.integerCompare(loc0.start, loc1.start);
 		if (cmp == 0 && loc0 instanceof BreakpointInterval && loc1 instanceof BreakpointInterval) {
 			BreakpointInterval bi0 = (BreakpointInterval)loc0;
 			BreakpointInterval bi1 = (BreakpointInterval)loc1;
-			cmp = integerCompare(bi0.referenceIndex2, bi1.referenceIndex2);
-			if (cmp == 0) cmp = integerCompare(bi0.start2, bi1.start2);
+			cmp = ComparatorUtil.integerCompare(bi0.referenceIndex2, bi1.referenceIndex2);
+			if (cmp == 0) cmp = ComparatorUtil.integerCompare(bi0.start2, bi1.start2);
 		}
-		if (cmp == 0) cmp = integerCompare(loc0.end, loc1.end);
+		if (cmp == 0) cmp = ComparatorUtil.integerCompare(loc0.end, loc1.end);
 		if (cmp == 0 && loc0 instanceof BreakpointInterval && loc1 instanceof BreakpointInterval) {
 			BreakpointInterval bi0 = (BreakpointInterval)loc0;
 			BreakpointInterval bi1 = (BreakpointInterval)loc1;
-			cmp = integerCompare(bi0.end2, bi1.end2);
+			cmp = ComparatorUtil.integerCompare(bi0.end2, bi1.end2);
 		}
 		return cmp;
-	}
-	private int integerCompare(int primary0, int primary1) {
-		if (primary0 < primary1) return -1;
-		if (primary0 == primary1) return 0;
-		return 1;
 	}
 }
