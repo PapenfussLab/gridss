@@ -54,6 +54,17 @@ public class RelevantMetricsTest extends TestHelper {
 		assertEquals(150, metrics.getMedianFragmentSize(), 0);
 	}
 	@Test
+	public void shouldLoadMetricsFromFile_with_no_reads() throws IOException {
+		File f = testFolder.newFile();
+		InsertSizeMetricsCollector x = RelevantMetrics.createCollector(null);
+		x.finish();
+		RelevantMetrics.save(x, new MetricsFile<InsertSizeMetrics, Integer>(), f);
+		RelevantMetrics metrics = new RelevantMetrics(f);
+		assertEquals(0, metrics.getMedianFragmentSize(), 0);
+		assertEquals(0, metrics.getFragmentSizeStdDev(), 0);
+		assertEquals(0, metrics.getMaxFragmentSize());
+	}
+	@Test
 	public void getMedianFragmentSize_should_return_median_fragment_size() throws IOException {
 		int readLength = 100;
 		File f = testFolder.newFile();

@@ -11,11 +11,13 @@ import net.sf.picard.analysis.MetricAccumulationLevel;
 import net.sf.picard.analysis.directed.InsertSizeMetricsCollector;
 import net.sf.picard.metrics.MetricBase;
 import net.sf.picard.metrics.MetricsFile;
+import net.sf.picard.util.Log;
 import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMReadGroupRecord;
 import net.sf.samtools.util.CollectionUtil;
 
 public class RelevantMetrics {
+	private Log log = Log.getInstance(RelevantMetrics.class);
 	private InsertSizeMetrics insertSize = null;
 	/**
 	 * Creates a metric collector to record metrics required by Socrates
@@ -56,7 +58,8 @@ public class RelevantMetrics {
 			}
 		}
 		if (insertSize == null) {
-			throw new IllegalArgumentException(String.format("%s does not contain the required metrics.", file));
+			insertSize = new InsertSizeMetrics();
+			log.error(String.format("No pair-end insert size metrics found in %s.", file));
 		}
 	}
 	/**
@@ -78,8 +81,8 @@ public class RelevantMetrics {
 	 * Gets the maximum expected fragment size
 	 * @return longest expected fragment size
 	 */
-	public double getMaxFragmentSize() {
+	public int getMaxFragmentSize() {
 		// TODO: is this 5' difference or frag size?
-		return getMedianFragmentSize() + 3 * getFragmentSizeStdDev();
+		return (int)Math.ceil(getMedianFragmentSize() + 3 * getFragmentSizeStdDev());
 	}
 }

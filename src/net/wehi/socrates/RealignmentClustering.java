@@ -27,15 +27,14 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import au.edu.wehi.socrates.SAMRecordUtil;
 import au.edu.wehi.socrates.util.GenomicIndexInterval;
 import au.edu.wehi.socrates.util.MemoryMappedFile;
 import au.edu.wehi.socrates.util.RealignmentCluster;
 import au.edu.wehi.socrates.util.RealignmentRecordSummary;
 import au.edu.wehi.socrates.util.SAMFileInfo;
-import au.edu.wehi.socrates.util.SAMRecordSummary;
 import au.edu.wehi.socrates.util.SeekableMemoryStream;
 import au.edu.wehi.socrates.util.Utilities;
-
 import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
@@ -565,7 +564,7 @@ public class RealignmentClustering {
 					SAMRecord aln = iter.next();
 					if (aln.getReadUnmappedFlag() || aln.getMappingQuality() < minMapq) continue;
 					
-					SAMRecordSummary summary = new SAMRecordSummary(aln);
+					SAMRecordUtil summary = new SAMRecordUtil(aln);
 					byte[] clipSeq = (cluster.anchorForward) ? summary.getTailClipSequence() : summary.getHeadClipSequence();
 					
 					if (clipSeq.length==0 || clipSeq.length >= scLenThreshold) continue;
@@ -626,7 +625,7 @@ public class RealignmentClustering {
 					SAMRecord aln = iter.next();
 					if (aln.getReadUnmappedFlag() || aln.getMappingQuality() < minMapq) continue;
 					
-					SAMRecordSummary summary = new SAMRecordSummary(aln);
+					SAMRecordUtil summary = new SAMRecordUtil(aln);
 					int offset = (cluster.realignForward) ? summary.getTailClipPos() - cluster.realignConsensusPos : cluster.realignConsensusPos - summary.getHeadClipPos();
 					if (Math.abs(offset)>10) continue;
 					
@@ -684,7 +683,7 @@ public class RealignmentClustering {
 						SAMRecord aln = iter.next();
 						if (aln.getReadUnmappedFlag() || aln.getMappingQuality() < minMapq) continue;
 						
-						SAMRecordSummary summary = new SAMRecordSummary(aln);
+						SAMRecordUtil summary = new SAMRecordUtil(aln);
 						byte[] clipSeq = (cluster.anchorForward) ? summary.getTailClipSequence() : summary.getHeadClipSequence();
 						if (clipSeq.length==0 || clipSeq.length >= scLenThreshold) continue;
 						Utilities.reverseComplement(clipSeq); //rev-comp, since clips seq is breakpoint-at-right

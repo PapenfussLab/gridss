@@ -99,14 +99,15 @@ public class CommandLineTest extends TestHelper {
 			if (minMapq != null) MIN_MAPQ = minMapq;
 			if (longsc != null) LONG_SC_LEN = longsc;
 			if (minId != null) MIN_PERCENT_IDENTITY = minId;
-			if (k != null) MIN_LONG_SC_BASE_QUALITY = minQual;
-			if (minQual != null) KMER = k;
+			if (minQual != null) MIN_LONG_SC_BASE_QUALITY = minQual;
+			if (k != null) KMER = k;
 			TMP_DIR = Lists.newArrayList(testFolder.getRoot());
 			try {
 				SV_INPUT = FileNamingConvention.getSVBamForChr(input, chr);
 				MATE_COORDINATE_INPUT = FileNamingConvention.getMateBamForChr(input, chr);
 				VCF_OUTPUT = FileNamingConvention.getBreakendVcf(input, chr);
 				fastq = new File(FileNamingConvention.getSVBamForChr(input, chr) + ".fastq");
+				FASTQ_OUTPUT = fastq;
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

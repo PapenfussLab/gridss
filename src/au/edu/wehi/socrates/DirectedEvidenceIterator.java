@@ -7,8 +7,6 @@ import net.sf.samtools.SAMSequenceDictionary;
 
 import org.broadinstitute.variant.variantcontext.VariantContext;
 
-import au.edu.wehi.socrates.util.SAMRecordSummary;
-
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.PeekingIterator;
 
@@ -25,7 +23,7 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 	private final LinearGenomicCoordinate linear;
 	private final SequentialNonReferenceReadPairFactory mateFactory;
 	private final SequentialRealignedBreakpointFactory realignFactory;
-	private final PriorityQueue<DirectedEvidence> calls = new PriorityQueue<DirectedEvidence>(INITIAL_BUFFER_SIZE, new DirectedEvidenceStartCoordinateComparator());
+	private final PriorityQueue<DirectedEvidence> calls = new PriorityQueue<DirectedEvidence>(INITIAL_BUFFER_SIZE, new DirectedEvidenceCoordinateIntervalComparator());
 	private final int maxFragmentSize;
 	private long currentLinearPosition = -1;
 	/**
@@ -54,18 +52,27 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 	protected DirectedEvidence computeNext() {
 		do {
 			if (!calls.isEmpty() && linear.getStartLinearCoordinate(calls.peek().getBreakpointLocation()) < currentLinearPosition - maxFragmentSize) {
-				DirectedEvidence evidence = calls.poll();
-				// Match realigned at output time since input BAM processing is in order of alignment start,
-				// not putative breakpoint position 
-				if (evidence instanceof SoftClipEvidence) {
-					evidence = new SoftClipEvidence((SoftClipEvidence)evidence, realignFactory.findRealignedSAMRecord((DirectedBreakpoint)evidence));
-				} else if (evidence instanceof DirectedBreakpointAssembly) {
-					evidence = DirectedBreakpointAssembly.create((DirectedBreakpointAssembly)evidence, realignFactory.findRealignedSAMRecord((DirectedBreakpoint)evidence));
-				}
-				return evidence;
+				return fixCall(calls.poll());
 			}
 		} while (advance());
+		// no more input: flush our buffer
+		while (!calls.isEmpty()) return fixCall(calls.poll());
 		return endOfData();
+	}
+	/**
+	 * Need to match realigned record at output time since input BAM processing is in order of alignment start,
+	 * not putative breakpoint position
+	 * @param evidence call to match realignment record for
+	 * @return call including realignment mapping evidence if applicable
+	 */
+	private DirectedEvidence fixCall(DirectedEvidence evidence) {
+		//  
+		if (evidence instanceof SoftClipEvidence) {
+			evidence = new SoftClipEvidence((SoftClipEvidence)evidence, realignFactory.findRealignedSAMRecord((DirectedBreakpoint)evidence));
+		} else if (evidence instanceof DirectedBreakpointAssembly) {
+			evidence = DirectedBreakpointAssembly.create((DirectedBreakpointAssembly)evidence, realignFactory.findRealignedSAMRecord((DirectedBreakpoint)evidence));
+		}
+		return evidence;
 	}
 	/**
 	 * Advances the input streams to the next
@@ -79,8 +86,7 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 		if (vcfIterator != null && vcfIterator.hasNext()) {
 			nextPos = Math.min(nextPos, linear.getLinearCoordinate(vcfIterator.peek().getChr(), vcfIterator.peek().getStart()));
 		}
-		// no records
-		if (nextPos == Long.MAX_VALUE) return false;
+		if (nextPos == Long.MAX_VALUE) return false; // no records
 		while (svIterator != null && svIterator.hasNext() && linear.getLinearCoordinate(svIterator.peek().getReferenceIndex(), svIterator.peek().getAlignmentStart()) == nextPos) {
 			processRead(svIterator.next());
 		}
@@ -97,13 +103,13 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 		}
 	}
 	private void processRead(SAMRecord record) {
-		if (SAMRecordSummary.getStartSoftClipLength(record) > 0) {
+		if (SAMRecordUtil.getStartSoftClipLength(record) > 0) {
 			calls.add(new SoftClipEvidence(BreakpointDirection.Backward, record));
 		}
-		if (SAMRecordSummary.getEndSoftClipLength(record) > 0) {
+		if (SAMRecordUtil.getEndSoftClipLength(record) > 0) {
 			calls.add(new SoftClipEvidence(BreakpointDirection.Forward, record));
 		}
-		if (SAMRecordSummary.isPartOfNonReferenceReadPair(record)) {
+		if (SAMRecordUtil.isPartOfNonReferenceReadPair(record)) {
 			NonReferenceReadPair pair = mateFactory.createNonReferenceReadPair(record, maxFragmentSize);
 			if (pair != null) {
 				calls.add(pair);

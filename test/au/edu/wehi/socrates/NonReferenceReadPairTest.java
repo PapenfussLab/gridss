@@ -9,23 +9,28 @@ public class NonReferenceReadPairTest extends TestHelper {
 	public NonReferenceReadPair newPair(SAMRecord[] pair, int maxfragmentSize) {
 		return new NonReferenceReadPair(pair[0], pair[1], maxfragmentSize);
 	}
+	@Test(expected=IllegalArgumentException.class)
+	public void should_abort_if_max_frag_size_not_sane() {
+		SAMRecord[] pair = OEA(0, 1, "100M", true);
+		new NonReferenceReadPair(pair[0], pair[1], 99);
+	}
 	@Test
 	public void getLocalledMappedRead_should_return_local() {
 		SAMRecord[] pair = OEA(0, 1, "100M", true);
-		assertEquals(pair[0], newPair(pair, 1).getLocalledMappedRead());
+		assertEquals(pair[0], newPair(pair, 100).getLocalledMappedRead());
 	}
 	@Test
 	public void getRemoteReferenceIndex_should_return_remote() {
 		SAMRecord[] pair = OEA(0, 1, "100M", true);
-		assertEquals(pair[1], newPair(pair, 1).getNonReferenceRead());
+		assertEquals(pair[1], newPair(pair, 100).getNonReferenceRead());
 	}
 	@Test
 	public void getBreakpointLocation_should_return_location_for_OEA() {
-		assertTrue(newPair(OEA(0, 1, "100M", true), 1).getBreakpointLocation().getClass() == BreakpointLocation.class);
+		assertTrue(newPair(OEA(0, 1, "100M", true), 100).getBreakpointLocation().getClass() == BreakpointLocation.class);
 	}
 	@Test
 	public void getBreakpointLocation_should_return_interval_for_DP() {
-		assertTrue(newPair(DP(0, 1, "100M", true, 0, 1, "100M", true), 1).getBreakpointLocation().getClass() == BreakpointInterval.class);
+		assertTrue(newPair(DP(0, 1, "100M", true, 0, 100, "100M", true), 100).getBreakpointLocation().getClass() == BreakpointInterval.class);
 	}
 	@Test
 	public void getBreakpointLocation_forward_OEA_interval_should_allow_breakpoint_anywhere_in_fragment() {
@@ -154,11 +159,11 @@ public class NonReferenceReadPairTest extends TestHelper {
 		SAMRecord[] pair = DP(0, 1, "100M", true, 0, 1, "100M", true);
 		pair[0].setMappingQuality(1);
 		pair[1].setMappingQuality(10);
-		BreakpointInterval loc = (BreakpointInterval)newPair(pair, 1).getBreakpointLocation();
+		BreakpointInterval loc = (BreakpointInterval)newPair(pair, 100).getBreakpointLocation();
 		assertEquals(1, loc.qual, 0);
 		pair[0].setMappingQuality(10);
 		pair[1].setMappingQuality(1);
-		loc = (BreakpointInterval)newPair(pair, 1).getBreakpointLocation();
+		loc = (BreakpointInterval)newPair(pair, 100).getBreakpointLocation();
 		assertEquals(1, loc.qual, 0);
 	}
 	public void getEvidenceID_should_match_read_name() {

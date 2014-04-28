@@ -107,7 +107,7 @@ public class SoftClipEvidenceTest extends TestHelper {
 	@Test
 	public void realigned_constructors_should_be_equivalent() {
 		SAMRecord r = Read(0, 10, "10M5S");
-		SAMRecord realigned = Unmapped(15);
+		SAMRecord realigned = Read(1, 15, "10M");
 		SoftClipEvidence c1 = new SoftClipEvidence(BreakpointDirection.Forward, r, realigned);
 		SoftClipEvidence c2 = new SoftClipEvidence(new SoftClipEvidence(BreakpointDirection.Forward, r), realigned);
 		assertEquals(c1.getSAMRecord(), c2.getSAMRecord());

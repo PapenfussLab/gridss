@@ -19,8 +19,8 @@ public class BreakpointFastqEncoding {
 	public static int getReferenceIndex(String fastqid) {
 		return Integer.parseInt(fastqid.split("#")[0]);
 	}
-	public static long getStartPosition(String fastqid) {
-		return Long.parseLong(fastqid.split("#")[1]);
+	public static int getStartPosition(String fastqid) {
+		return Integer.parseInt(fastqid.split("#")[1]);
 	}
 	public static String getID(String fastqid) {
 		String[] split = fastqid.split("#");

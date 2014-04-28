@@ -4,6 +4,8 @@
 package au.edu.wehi.socrates.util;
 
 import java.util.Arrays;
+
+import au.edu.wehi.socrates.SAMRecordUtil;
 import net.sf.samtools.CigarElement;
 import net.sf.samtools.CigarOperator;
 import net.sf.samtools.SAMRecord;
@@ -58,7 +60,7 @@ public class RealignmentRecordSummary {
 		anchorIsIdeal = !(realign.getMateUnmappedFlag());
 	}
 	
-	public static String makeFastqHeader(SAMRecord aln, SAMRecordSummary summary, 
+	public static String makeFastqHeader(SAMRecord aln, SAMRecordUtil summary, 
 			String bpChr, int bpPos, boolean isIdeal, String alignSeq, char clipStrand) {
 		StringBuilder name;
 		if (aln.getReadPairedFlag())

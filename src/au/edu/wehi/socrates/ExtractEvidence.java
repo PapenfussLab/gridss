@@ -24,7 +24,6 @@ import net.sf.samtools.SAMRecordIterator;
 import net.sf.samtools.SAMSequenceDictionary;
 import net.sf.samtools.util.CloseableIterator;
 import net.sf.samtools.util.SortingCollection;
-import au.edu.wehi.socrates.util.SAMRecordSummary;
 
 /**
  * Extracts reads supporting structural variation into intermediate files.
@@ -111,8 +110,8 @@ public class ExtractEvidence extends CommandLineProgram {
 			while (iter.hasNext()) {
 				SAMRecord record = iter.next();
 				int offset = record.getReadUnmappedFlag() ? dictionary.size() : record.getReferenceIndex();
-				boolean sc = SAMRecordSummary.isAlignmentSoftClipped(record);
-				boolean badpair = SAMRecordSummary.isPartOfNonReferenceReadPair(record);
+				boolean sc = SAMRecordUtil.isAlignmentSoftClipped(record);
+				boolean badpair = SAMRecordUtil.isPartOfNonReferenceReadPair(record);
 				if (sc || badpair) {
 					writers[offset].addAlignment(record);
 				}

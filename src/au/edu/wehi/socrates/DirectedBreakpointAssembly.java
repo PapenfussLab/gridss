@@ -9,6 +9,8 @@ import net.sf.samtools.SAMSequenceDictionary;
 import org.broadinstitute.variant.variantcontext.VariantContext;
 import org.broadinstitute.variant.variantcontext.VariantContextBuilder;
 
+import au.edu.wehi.socrates.vcf.VcfConstants;
+
 public class DirectedBreakpointAssembly extends VariantContextDirectedBreakpoint {
 	public static final String SOURCE_NAME = "socrates";
 	public static DirectedBreakpointAssembly create(DirectedBreakpointAssembly variant, SAMRecord realignment) {

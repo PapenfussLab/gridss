@@ -1,4 +1,4 @@
-package au.edu.wehi.socrates;
+package au.edu.wehi.socrates.vcf;
 
 import org.broadinstitute.variant.vcf.VCFFormatHeaderLine;
 import org.broadinstitute.variant.vcf.VCFHeaderLineCount;

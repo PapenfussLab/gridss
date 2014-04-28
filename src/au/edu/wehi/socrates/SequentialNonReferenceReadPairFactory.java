@@ -16,8 +16,7 @@ import com.google.common.collect.PeekingIterator;
  * @author Daniel Cameron
  *
  */
-public class SequentialNonReferenceReadPairFactory {
-	private PeekingIterator<SAMRecord> mates;
+public class SequentialNonReferenceReadPairFactory extends SequentialSAMRecordFactoryBase<String> {
 	/**
 	 * <p>mate iterator <b>must</b> be mate-coordinate sorted. @see SAMRecordMateCoordinateComparator<p>
 	 * @param reads
@@ -25,10 +24,7 @@ public class SequentialNonReferenceReadPairFactory {
 	 */
 	public SequentialNonReferenceReadPairFactory(
 		PeekingIterator<SAMRecord> mates) {
-		if (mates == null) {
-			mates = Iterators.peekingIterator(Iterators.<SAMRecord>emptyIterator());
-		}
-		this.mates = mates;
+		super(mates);
 	}
 	public NonReferenceReadPair createNonReferenceReadPair(SAMRecord record, int maxFragmentSize) {
 		if (!record.getReadPairedFlag()) return null;
@@ -41,39 +37,19 @@ public class SequentialNonReferenceReadPairFactory {
 	}
 	private SAMRecord findMate(SAMRecord record) {
 		if (record == null) return null;
-		if (record.getMateUnmappedFlag()) return null;
-		load(record.getMateReferenceIndex(), record.getMateAlignmentStart());
-		for (SAMRecord mate : currentReads) {
-			if (mate.getReadName() == record.getReadName() && mate.getFirstOfPairFlag() != record.getFirstOfPairFlag()) {
-				return mate;
-			}
-		}
-		return null;
+		if (record.getReadUnmappedFlag()) return null;
+		return findMatching(record.getReferenceIndex(), record.getAlignmentStart(), record.getReadName() + (record.getFirstOfPairFlag() ? "/1" : "/2"));
 	}
-	private int currentReferenceIndex = -1; 
-	private int currentPosition = -1;
-	private List<SAMRecord> currentReads = new ArrayList<SAMRecord>();
-	private void load(int referenceIndex, int alignmentStart) {
-		if (referenceIndex > currentReferenceIndex || (referenceIndex == currentReferenceIndex && currentPosition > alignmentStart)) {
-			throw new RuntimeException(String.format("Sanity check failure: cannot rewind SequentialNonReferenceReadPairFactory source iterator from %d:%d to %d:%d", currentReferenceIndex, currentPosition, referenceIndex, alignmentStart));
-		}
-		if (referenceIndex != currentReferenceIndex || currentPosition != alignmentStart) {
-			currentReads.clear();
-			currentReferenceIndex = referenceIndex;
-			currentPosition = alignmentStart;
-			// skip reads that are
-			while (mates.hasNext() && (
-					mates.peek().getMateUnmappedFlag() ||
-					mates.peek().getMateReferenceIndex() < currentReferenceIndex ||
-					(mates.peek().getMateReferenceIndex() == currentReferenceIndex && mates.peek().getMateAlignmentStart() == currentPosition))) {
-				mates.next();
-			}
-			while (mates.hasNext() &&
-					!mates.peek().getMateUnmappedFlag() &&
-					mates.peek().getMateReferenceIndex() == currentReferenceIndex &&
-					mates.peek().getMateAlignmentStart() == currentPosition) {
-				currentReads.add(mates.next());
-			}
-		}
+	@Override
+	protected String getMatchingKey(SAMRecord record) {
+		return record.getReadName() + (record.getFirstOfPairFlag() ? "/2" : "/1");
+	}
+	@Override
+	protected int getReferenceIndex(SAMRecord record) {
+		return record.getMateReferenceIndex();
+	}
+	@Override
+	protected int getPosition(SAMRecord record) {
+		return record.getMateAlignmentStart();
 	}
 }

@@ -20,6 +20,7 @@ public class NonReferenceReadPair implements DirectedEvidence {
 		if (local.getReadUnmappedFlag()) throw new IllegalArgumentException("local must be mapped");
 		if (local.getProperPairFlag()) throw new IllegalArgumentException(String.format("Read %s is flagged as part of a proper pair", local.getReadName()));
 		if (remote.getProperPairFlag()) throw new IllegalArgumentException(String.format("Read %s is flagged as part of a proper pair", remote.getReadName()));
+		if (maxfragmentSize < local.getReadLength()) throw new IllegalArgumentException(String.format("Sanity check failure: read pair %s contains read of length %d when maximum fragment size is %d", local.getReadName(), local.getReadLength(), maxfragmentSize));
 		this.local = local;
 		this.remote = remote;
 		this.location = calculateBreakpointLocation(local, remote, maxfragmentSize);

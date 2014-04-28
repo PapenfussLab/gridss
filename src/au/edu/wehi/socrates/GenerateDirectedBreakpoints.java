@@ -8,13 +8,16 @@ import java.util.List;
 import org.apache.commons.cli.OptionBuilder;
 import org.broadinstitute.variant.variantcontext.writer.VariantContextWriter;
 import org.broadinstitute.variant.variantcontext.writer.VariantContextWriterFactory;
+import org.broadinstitute.variant.vcf.VCFHeader;
 import org.broadinstitute.variant.vcf.VCFRecordCodec;
+
+import au.edu.wehi.socrates.vcf.VcfConstants;
+import au.edu.wehi.socrates.vcf.VcfStructuralVariantHeaderLines;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.PeekingIterator;
 
-import au.edu.wehi.socrates.util.SAMRecordSummary;
 import net.sf.picard.analysis.CollectInsertSizeMetrics;
 import net.sf.picard.analysis.InsertSizeMetrics;
 import net.sf.picard.analysis.MetricAccumulationLevel;
@@ -100,6 +103,9 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
     		IoUtil.assertFileIsReadable(SV_INPUT);
     		IoUtil.assertFileIsReadable(MATE_COORDINATE_INPUT);
     		
+    		IoUtil.assertFileIsWritable(VCF_OUTPUT);
+    		IoUtil.assertFileIsWritable(FASTQ_OUTPUT);
+    		
     		//final ProgressLogger progress = new ProgressLogger(log);
 	    	final SAMFileReader reader = new SAMFileReader(SV_INPUT);
 	    	final SAMFileReader mateReader = new SAMFileReader(MATE_COORDINATE_INPUT);
@@ -111,6 +117,9 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
 			final PeekingIterator<SAMRecord> mateIter = Iterators.peekingIterator(mateReader.iterator());
 			final FastqWriter fastqWriter = new FastqWriterFactory().newWriter(FASTQ_OUTPUT);
 			final VariantContextWriter vcfWriter = VariantContextWriterFactory.create(VCF_OUTPUT, dictionary);
+			final VCFHeader vcfHeader = new VCFHeader();
+			VcfConstants.addHeaders(vcfHeader);
+			vcfWriter.writeHeader(vcfHeader);
 			
 			DirectedEvidenceIterator dei = new DirectedEvidenceIterator(iter, mateIter, null, null, dictionary, metrics.getMaxFragmentSize());
 			ReadEvidenceAssembler assembler = new DeBruijnAssembler(KMER);
@@ -139,8 +148,8 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
     	}
         return 0;
     }
-    private void processAssemblyEvidence(Iterable<VariantContextEvidence> evidenceList, FastqWriter fastqWriter, VariantContextWriter vcfWriter) {
-    	for (VariantContextEvidence a : evidenceList) {
+    private void processAssemblyEvidence(Iterable<DirectedBreakpointAssembly> evidenceList, FastqWriter fastqWriter, VariantContextWriter vcfWriter) {
+    	for (DirectedBreakpointAssembly a : evidenceList) {
     		FastqRecord fastq = BreakpointFastqEncoding.getRealignmentFastq(a);
     		fastqWriter.write(fastq);
     		vcfWriter.add(a);

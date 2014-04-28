@@ -1,5 +1,7 @@
 package au.edu.wehi.socrates;
 
+import com.google.common.collect.Lists;
+
 public class DeBruijnAssembler implements ReadEvidenceAssembler {
 	private final int k;
 	private int currentReferenceIndex = -1;
@@ -8,13 +10,11 @@ public class DeBruijnAssembler implements ReadEvidenceAssembler {
 		this.k = kmer;
 	}
 	@Override
-	public Iterable<VariantContextEvidence> addEvidence(DirectedBreakpoint evidence) {
-		// TODO Auto-generated method stub
-		return null;
+	public Iterable<DirectedBreakpointAssembly> addEvidence(DirectedEvidence evidence) {
+		return Lists.newArrayList();
 	}
 	@Override
-	public Iterable<VariantContextEvidence> endOfEvidence() {
-		// TODO Auto-generated method stub
-		return null;
+	public Iterable<DirectedBreakpointAssembly> endOfEvidence() {
+		return Lists.newArrayList();
 	}
 }

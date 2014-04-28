@@ -38,7 +38,7 @@ public class GenerateDirectedBreakpointsTest extends CommandLineTest {
 	}
 	@Test
 	public void should_write_fastq() {
-		createInput();
+		createInput(RP(0, 1, 2, 1));
 		extractEvidence();
 		generateDirectedBreakpoints("polyA");
 		assertTrue(fastq.exists());
@@ -81,7 +81,7 @@ public class GenerateDirectedBreakpointsTest extends CommandLineTest {
 			readBases[i] = 'T';
 		}
 		r.setReadBases(readBases);
-		createInput();
+		createInput(RP(0, 1, 2, 1));
 		extractEvidence();
 		generateDirectedBreakpoints("polyA", null, null, 50f, null, null);
 		assertTrue(fastq.exists());
@@ -120,16 +120,16 @@ public class GenerateDirectedBreakpointsTest extends CommandLineTest {
 	}
 	@Test
 	public void debruijn_should_generate_vcf() {
-		createInput();
+		createInput(RP(0, 1, 2, 1));
 		extractEvidence();
 		generateDirectedBreakpoints("polyA", null, null, null, null, null);
 		assertEquals(1, getVcf(".socrates.polyA.breakend.vcf").size());
 	}
 	@Test
 	public void should_write_vcf() {
-		createInput();
+		createInput(RP(0, 1, 2, 1));
 		extractEvidence();
 		generateDirectedBreakpoints("polyA");
-		shouldExist("input.bam.socrates.breakend.vcf");
+		shouldExist("input.bam.socrates.polyA.breakend.vcf");
 	}
 }

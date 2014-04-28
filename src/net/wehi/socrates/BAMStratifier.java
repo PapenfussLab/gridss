@@ -15,10 +15,10 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 
+import au.edu.wehi.socrates.SAMRecordUtil;
 import au.edu.wehi.socrates.util.GenomicIndexInterval;
 import au.edu.wehi.socrates.util.RealignmentRecordSummary;
 import au.edu.wehi.socrates.util.SAMFileInfo;
-import au.edu.wehi.socrates.util.SAMRecordSummary;
 import au.edu.wehi.socrates.util.Utilities;
 
 import java.util.HashSet;
@@ -334,9 +334,9 @@ public class BAMStratifier {
 				
 				// skip if it's proper and not soft-clipped
 				if (aln.getReadPairedFlag()) { 
-					if (aln.getProperPairFlag() && !SAMRecordSummary.isAlignmentSoftClipped(aln)) continue;
+					if (aln.getProperPairFlag() && !SAMRecordUtil.isAlignmentSoftClipped(aln)) continue;
 				} else {
-					if (!SAMRecordSummary.isAlignmentSoftClipped(aln)) continue;
+					if (!SAMRecordUtil.isAlignmentSoftClipped(aln)) continue;
 				}
 				
 				addAlignmentToBuffer(aln);
@@ -445,7 +445,7 @@ public class BAMStratifier {
 				Iterator<SAMRecord> it = data.iterator();
 				while (it.hasNext()) {
 					SAMRecord aln = it.next();
-					SAMRecordSummary summary = new SAMRecordSummary(aln);
+					SAMRecordUtil summary = new SAMRecordUtil(aln);
 
 					if (summary.getAlignedPercentIdentity() < minIdentity) continue;
 					

@@ -3,7 +3,9 @@ package au.edu.wehi.socrates;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.List;
 
+import net.sf.picard.fastq.FastqRecord;
 import net.sf.picard.reference.ReferenceSequenceFile;
 import net.sf.picard.reference.ReferenceSequenceFileFactory;
 import net.sf.picard.sam.SamPairUtil;
@@ -11,6 +13,7 @@ import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMFileWriter;
 import net.sf.samtools.SAMReadGroupRecord;
 import net.sf.samtools.SAMRecord;
+import net.sf.samtools.SAMRecordCoordinateComparator;
 import net.sf.samtools.SAMSequenceDictionary;
 import net.sf.samtools.SAMTag;
 import net.sf.samtools.util.ProgressLoggerInterface;
@@ -20,6 +23,8 @@ import org.broadinstitute.variant.variantcontext.VariantContext;
 import org.broadinstitute.variant.variantcontext.VariantContextBuilder;
 import org.broadinstitute.variant.variantcontext.writer.VariantContextWriter;
 import org.broadinstitute.variant.vcf.VCFHeader;
+
+import com.google.common.collect.Lists;
 
 public class TestHelper {
 	public static byte[] B(String s) {
@@ -47,6 +52,29 @@ public class TestHelper {
 		for (int i = 0; i < length; i++) b[i] = 'A';
 		return b;
 	}
+	static public <T> List<T> toList(T[]... data) {
+		List<T> list = Lists.newArrayList();
+		for (T[] array: data) {
+			for (T item : array) {
+				list.add(item);
+			}
+		}
+		return list;
+	}
+	static public List<SAMRecord> sorted(List<SAMRecord> list) {
+		List<SAMRecord> out = Lists.newArrayList(list);
+		out.sort(new SAMRecordCoordinateComparator());
+		return out;
+	}
+	static public List<SAMRecord> mateSorted(List<SAMRecord> list) {
+		List<SAMRecord> out = Lists.newArrayList(list);
+		out.sort(new SAMRecordMateCoordinateComparator());
+		return out;
+	}
+	static public <T> List<T> toList(T... data) {
+		List<T> list = Lists.newArrayList(data);
+		return list;
+	}
 	static public SAMRecord[] OEA(int referenceIndex, int pos, String cigar, boolean forward) {
 		SAMRecord mapped = new SAMRecord(getHeader());
 		mapped.setReferenceIndex(referenceIndex);
@@ -59,6 +87,12 @@ public class TestHelper {
 		SAMRecord unmapped = Unmapped(mapped.getReadLength());
 		clean(mapped, unmapped);
 		return new SAMRecord[] { mapped, unmapped };
+	}
+	static public SAMRecord[] withReadName(String name, SAMRecord... data) {
+		for (SAMRecord r : data) {
+			r.setReadName(name);
+		}
+		return data;
 	}
 	static public SAMRecord[] DP(int referenceIndex, int pos, String cigar, boolean forward,
 			int referenceIndex2, int pos2, String cigar2, boolean forward2) {
@@ -206,56 +240,4 @@ public class TestHelper {
 		record.setReadBases(GetPolyA(readLength));
 		return record;
 	}
-	/*
-	static public SAMRecord SC(int position, int softClipSize, boolean forward) {
-		return SC(position, softClipSize, 100, forward);
-	}
-	static public SAMRecord SC(int position, int softClipSize, int readLength, boolean forward) {
-		SAMRecord record = new SAMRecord(getHeader());
-		record.setReadName(String.format("SR%d-%d-rl%d", position, softClipSize, readLength));
-		record.setReferenceName("REF");
-		record.setReferenceIndex(0);
-		record.setAlignmentStart(position);
-		if (forward) record.setCigarString(String.format("%dM%dS", readLength - softClipSize, softClipSize));
-		else record.setCigarString(String.format("%dS%dM", softClipSize, readLength - softClipSize));
-		record.setReadUnmappedFlag(false);
-		record.setReadBases(GetPolyA(readLength));
-		return record;
-	}
-	static public SAMRecord SC2(int position, int startSoftClipSize, int endSoftClipSize, int readLength) {
-		SAMRecord record = new SAMRecord(getHeader());
-		record.setReadName(String.format("SR%d-%d-%d-rl%d", position, startSoftClipSize, endSoftClipSize, readLength));
-		record.setReferenceName("REF");
-		record.setReferenceIndex(0);
-		record.setAlignmentStart(position);
-		record.setCigarString(String.format("%dS%dM%dS", startSoftClipSize, readLength - startSoftClipSize - endSoftClipSize, endSoftClipSize));
-		record.setReadUnmappedFlag(false);
-		record.setReadBases(GetPolyA(readLength));
-		return record;
-	}
-	static public SAMRecord SplitRead(ReferenceSequenceFile ref, int readLength, int mappedBases,
-			String mappedContig, int mappedBreakPosition,
-			BreakpointDirection mappedDirection,
-			String unmappedContig, int unmappedBreakPosition) {
-		int unmappedBases = readLength - mappedBases;
-		ByteBuffer buffer = ByteBuffer.allocate(readLength);
-		SAMRecord record = new SAMRecord(getHeader());
-		record.setReadName(String.format("SR-%s:%d>%s:%d_%d_%d", mappedContig, mappedBreakPosition, unmappedContig, unmappedBreakPosition, readLength, mappedBases));
-		record.setReferenceName(mappedContig);
-		record.setReadUnmappedFlag(false);
-		if (mappedDirection == BreakpointDirection.Forward) {
-			record.setAlignmentStart(mappedBreakPosition - mappedBases + 1);
-			record.setCigarString(String.format("%dM%dS", mappedBases, unmappedBases));
-			buffer.put(ref.getSubsequenceAt(mappedContig, record.getAlignmentStart(), record.getAlignmentStart() + mappedBases - 1).getBases());
-			buffer.put(ref.getSubsequenceAt(unmappedContig, unmappedBreakPosition, unmappedBreakPosition + unmappedBases - 1).getBases());
-		} else {
-			record.setAlignmentStart(mappedBreakPosition);
-			record.setCigarString(String.format("%dS%dM", unmappedBases, mappedBases));
-			buffer.put(ref.getSubsequenceAt(unmappedContig, unmappedBreakPosition - unmappedBases + 1, unmappedBreakPosition).getBases());
-			buffer.put(ref.getSubsequenceAt(mappedContig, record.getAlignmentStart(), record.getAlignmentStart() + mappedBases - 1).getBases());
-		}
-		record.setReadBases(buffer.array());
-		return record;
-	}
-	*/
 }

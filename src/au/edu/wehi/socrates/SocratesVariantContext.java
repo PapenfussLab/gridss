@@ -5,6 +5,8 @@ import net.sf.samtools.SAMSequenceDictionary;
 import org.broadinstitute.variant.variantcontext.VariantContext;
 import org.broadinstitute.variant.variantcontext.VariantContextBuilder;
 
+import au.edu.wehi.socrates.vcf.VcfConstants;
+
 /**
  * Generates variant context records from the underlying @link {@link VariantContext}
  * @author Daniel Cameron
