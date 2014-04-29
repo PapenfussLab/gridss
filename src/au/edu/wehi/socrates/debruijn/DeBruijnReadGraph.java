@@ -187,7 +187,9 @@ public class DeBruijnReadGraph {
 		int softclipSize = 0;
 		for (Long node : path) {
 			bases[offset] = KmerEncodingHelper.lastBaseEncodedToPicardBase(node, k);
-			qual.add(this.kmers.get(node).getWeight());
+			// subtract # reads to adjust for the +1 qual introduced by ReadKmerIterable
+			// to ensure positive node weights
+			qual.add(this.kmers.get(node).getWeight() - this.kmers.get(node).getSupportingReads().size());
 			offset++;
 			if (node == breakpointAnchor) {
 				softclipSize = assemblyLength - offset;
@@ -198,6 +200,8 @@ public class DeBruijnReadGraph {
 			// just grab the the first offset.
 			softclipSize -= startkmers.get(breakpointAnchor).iterator().next();
 		}
+		// pad out qualities to match the path length
+		for (int i = 0; i < k - 1; i++) qual.add(qual.get(qual.size() - 1));
 		byte[] quals = rescaleBaseQualities(qual);
 		if (direction == BreakpointDirection.Backward) {
 			ArrayUtils.reverse(bases);
@@ -213,11 +217,12 @@ public class DeBruijnReadGraph {
 		return reads;
 	}
 	private byte[] rescaleBaseQualities(List<Long> bases) {
-		Long largest = Collections.max(bases);
-		float scaleFactor = Math.min(1, MAX_QUAL_SCORE / (float)largest);
+		//Long largest = Collections.max(bases);
+		//float scaleFactor = Math.min(1, MAX_QUAL_SCORE / (float)largest);
 		byte[] result = new byte[bases.size()];
 		for (int i = 0; i < result.length; i++) {
-			result[i] = (byte)(bases.get(i) * scaleFactor);
+			//result[i] = (byte)(bases.get(i) * scaleFactor);
+			result[i] = (byte)(bases.get(i) > MAX_QUAL_SCORE ? MAX_QUAL_SCORE : bases.get(i));
 		}
 		return result;
 	}
@@ -259,5 +264,40 @@ public class DeBruijnReadGraph {
 			}
 		}
 		return bestNode; 
+	}
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append(String.format("De Bruijn graph: k=%d, %d kmers, %d start kmers\n", k, kmers.size(), startkmers.size()));
+		int max = 10;
+		for (Long x : kmers.keySet()) {
+			sb.append(String.format("%s(%d): %d weight from %d reads %s",
+					KmerEncodingHelper.toString(k, x),
+					x,
+					kmers.get(x).getWeight(),
+					kmers.get(x).getSupportingReads().size(),
+					startkmers.containsKey(x) ? "(start)" : ""
+					));
+			sb.append(" from:{");
+			for (Long y : KmerEncodingHelper.prevStates(x, k)) {
+				DeBruijnNode node = kmers.get(y);
+				if (node != null) {
+					sb.append(KmerEncodingHelper.toString(k, y));
+					sb.append(',');
+				}
+			}
+			sb.append("} to:{");
+			for (Long y : KmerEncodingHelper.nextStates(x, k)) {
+				DeBruijnNode node = kmers.get(y);
+				if (node != null) {
+					sb.append(KmerEncodingHelper.toString(k, y));
+					sb.append(',');
+				}
+			}
+			sb.append("}\n");
+			max--;
+			if (max <= 0) break;
+		}
+		return sb.toString();
 	}
 }

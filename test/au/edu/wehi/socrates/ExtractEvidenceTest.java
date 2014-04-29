@@ -95,4 +95,10 @@ public class ExtractEvidenceTest extends CommandLineTest {
 		extractEvidence();
 		shouldExist("input.bam.socrates.metrics.txt");
 	}
+	@Test
+	public void should_set_NM_tag() {
+		createInput(withSequence("TAAC", Read(0, 1, "1S3M")));
+		extractEvidence();
+		assertEquals(1, (int)getRecords(".socrates.polyA.sv.bam").get(0).getIntegerAttribute("NM"));
+	}
 }

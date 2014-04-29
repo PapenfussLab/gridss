@@ -46,11 +46,11 @@ public class SequentialRealignedBreakpointFactoryTest extends TestHelper {
 	@Test
 	public void should_match_sequential_records() {
 		SequentialRealignedBreakpointFactory factory = getFactory(toList(
-			withReadName("0#1#n1", Read(0, 1, 1)),
-			withReadName("0#1#n2", Read(0, 1, 1)),
-			withReadName("0#1#n3", Read(0, 1, 1)),
-			withReadName("0#2#n4", Read(0, 1, 1)),
-			withReadName("1#1#n5", Read(0, 1, 1))
+			withReadName("0#1#n1", Read(0, 1, "1M")),
+			withReadName("0#1#n2", Read(0, 1, "1M")),
+			withReadName("0#1#n3", Read(0, 1, "1M")),
+			withReadName("0#2#n4", Read(0, 1, "1M")),
+			withReadName("1#1#n5", Read(0, 1, "1M"))
 			));
 		assertNotNull(factory.findRealignedSAMRecord(new TestDirectedBreakpoint(0, 1, "n1")));
 		assertNotNull(factory.findRealignedSAMRecord(new TestDirectedBreakpoint(0, 1, "n3")));

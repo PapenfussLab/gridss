@@ -2,9 +2,9 @@ package au.edu.wehi.socrates;
 
 import static org.junit.Assert.*;
 
-import org.broadinstitute.variant.variantcontext.VariantContext;
-import org.broadinstitute.variant.variantcontext.VariantContextBuilder;
 import org.junit.Test;
+
+import org.broadinstitute.variant.variantcontext.VariantContext;
 
 public class SocratesVariantContextTest extends TestHelper {
 	@Test
@@ -31,32 +31,20 @@ public class SocratesVariantContextTest extends TestHelper {
 		VariantContext vc = minimalVariant()
 			.chr("polyA")
 			.make();
-		assertEquals(0, SocratesVariantContext.create(getSequenceDictionary(), vc).getReferenceIndex());
-	}
-	public class TestVC extends SocratesVariantContext {
-		public TestVC() {
-			super(getSequenceDictionary(), minimalVariant().make());
-		}
-		public int exposedGetReferenceIndex(String contig) {
-			return getReferenceIndex(contig);
-		}
-	}
-	@Test
-	public void getReferenceIndex_should_lookup_dictionary() {
-		assertEquals(0, new TestVC().getReferenceIndex("polyA"));
+		assertEquals(0, SocratesVariantContext.create(getContext(), vc).getReferenceIndex());
 	}
 	@Test
 	public void create_should_default_to_SocratesVariantContext() {
-		assertTrue(SocratesVariantContext.create(getSequenceDictionary(), minimalVariant().make()) instanceof SocratesVariantContext);
+		assertTrue(SocratesVariantContext.create(getContext(), minimalVariant().make()) instanceof SocratesVariantContext);
 	}
 	@Test
 	public void create_should_make_DirectedBreakpointAssembly() {
-		DirectedBreakpointAssembly vc = DirectedBreakpointAssembly.create(getSequenceDictionary(), SMALL_FA, "test", 0, 1, BreakpointDirection.Forward, B("C"), B("AC"), 1, 0);
-		assertTrue(SocratesVariantContext.create(getSequenceDictionary(), vc) instanceof DirectedBreakpointAssembly);
+		DirectedBreakpointAssembly vc = DirectedBreakpointAssembly.create(getContext(), "test", 0, 1, BreakpointDirection.Forward, B("C"), B("AC"), 1, 0);
+		assertTrue(SocratesVariantContext.create(getContext(), vc) instanceof DirectedBreakpointAssembly);
 	}
 	@Test
 	public void create_should_make_VariantContextDirectedBreakpoint() {
 		VariantContext vc = minimalVariant().alleles("A", "A[polyA:1[").make();
-		assertTrue(SocratesVariantContext.create(getSequenceDictionary(), vc) instanceof VariantContextDirectedBreakpoint);
+		assertTrue(SocratesVariantContext.create(getContext(), vc) instanceof VariantContextDirectedBreakpoint);
 	}
 }

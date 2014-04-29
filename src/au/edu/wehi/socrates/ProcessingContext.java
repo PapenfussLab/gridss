@@ -1,0 +1,37 @@
+package au.edu.wehi.socrates;
+
+import net.sf.picard.reference.ReferenceSequenceFile;
+import net.sf.samtools.SAMSequenceDictionary;
+
+/**
+ * Processing context for the given record
+ * @author Daniel Cameron
+ *
+ */
+public class ProcessingContext {
+	private final ReferenceSequenceFile reference;
+	private final SAMSequenceDictionary dictionary;
+	private final LinearGenomicCoordinate linear;
+	private final RelevantMetrics metrics;
+	public ProcessingContext(
+		ReferenceSequenceFile reference,
+		SAMSequenceDictionary dictionary,
+		RelevantMetrics metrics) {
+		this.reference = reference;
+		this.dictionary = dictionary;
+		this.linear = new LinearGenomicCoordinate(dictionary);
+		this.metrics = metrics;
+	}
+	public ReferenceSequenceFile getReference() {
+		return reference;
+	}
+	public SAMSequenceDictionary getDictionary() {
+		return dictionary;
+	}
+	public LinearGenomicCoordinate getLinear() {
+		return linear;
+	}
+	public RelevantMetrics getMetrics() {
+		return metrics;
+	}
+}

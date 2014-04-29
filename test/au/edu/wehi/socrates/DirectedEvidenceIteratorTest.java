@@ -20,7 +20,6 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 	private List<SAMRecord> realigned;	
 	private List<VariantContext> vcf;
 	private List<DirectedEvidence> out;
-	private int maxFragmentSize;
 	@Before
 	public void setup() {
 		sv = Lists.newArrayList();
@@ -28,17 +27,16 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 		realigned = Lists.newArrayList();
 		vcf = Lists.newArrayList();
 		out = Lists.newArrayList();
-		maxFragmentSize = 100;
 	}
 	public void go() {
 		sv = sorted(sv);
 		mate = mateSorted(mate);
 		DirectedEvidenceIterator it = new DirectedEvidenceIterator(
+				getContext(),
 				sv == null ? null : Iterators.peekingIterator(sv.iterator()),
 				mate == null ? null : Iterators.peekingIterator(mate.iterator()),
 				realigned == null ? null : Iterators.peekingIterator(realigned.iterator()),
-				vcf == null ? null : Iterators.peekingIterator(vcf.iterator()),
-				getSequenceDictionary(), maxFragmentSize);
+				vcf == null ? null : Iterators.peekingIterator(vcf.iterator()));
 		while (it.hasNext()) {
 			out.add(it.next());
 		}
@@ -87,7 +85,7 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 	}
 	@Test
 	public void should_return_assembly() {
-		DirectedBreakpointAssembly assembly = DirectedBreakpointAssembly.create(getSequenceDictionary(), SMALL_FA, "test", 0, 1, BreakpointDirection.Backward, B("A"), B("AA"), 5, 7);
+		DirectedBreakpointAssembly assembly = DirectedBreakpointAssembly.create(getContext(), "test", 0, 1, BreakpointDirection.Backward, B("A"), B("AA"), 5, 7);
 		vcf.add(new VariantContextBuilder(assembly).make());
 		go();
 		assertEquals(1, out.size());
@@ -95,7 +93,7 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 	}
 	@Test
 	public void should_match_assembly_with_realign() {
-		DirectedBreakpointAssembly assembly = DirectedBreakpointAssembly.create(getSequenceDictionary(), SMALL_FA, "test", 0, 1, BreakpointDirection.Backward, B("A"), B("AA"), 5, 7);
+		DirectedBreakpointAssembly assembly = DirectedBreakpointAssembly.create(getContext(), "test", 0, 1, BreakpointDirection.Backward, B("A"), B("AA"), 5, 7);
 		vcf.add(new VariantContextBuilder(assembly).make());
 		SAMRecord r = Read(1, 10, "1M");
 		r.setReadName("0#1#test-polyA:1-b");
@@ -129,7 +127,7 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 		sv.add(r);
 		SAMRecord f = withReadName("0#10#fReadName", Read(0, 1, "5M"))[0];
 		SAMRecord b = withReadName("0#1#bReadName", Read(0, 1, "5M"))[0];
-		DirectedBreakpointAssembly assembly = DirectedBreakpointAssembly.create(getSequenceDictionary(), SMALL_FA, "test", 0, 1, BreakpointDirection.Backward, B("A"), B("AA"), 5, 7);
+		DirectedBreakpointAssembly assembly = DirectedBreakpointAssembly.create(getContext(), "test", 0, 1, BreakpointDirection.Backward, B("A"), B("AA"), 5, 7);
 		vcf.add(new VariantContextBuilder(assembly).make());
 		SAMRecord assemblyRealigned = withReadName("0#1#test-polyA:1-b", Read(1, 10, "1M"))[0];
 		realigned.add(b);
@@ -145,10 +143,10 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 	public void should_require_realign_in_call_position_order() {
 		SAMRecord r = withReadName("ReadName", Read(0, 1, "5S10M5S"))[0];
 		sv.add(r);
-		DirectedBreakpointAssembly assembly = DirectedBreakpointAssembly.create(getSequenceDictionary(), SMALL_FA, "test", 0, 2, BreakpointDirection.Backward, B("A"), B("AA"), 5, 7);
+		DirectedBreakpointAssembly assembly = DirectedBreakpointAssembly.create(getContext(), "test", 0, 2, BreakpointDirection.Backward, B("A"), B("AA"), 5, 7);
 		vcf.add(new VariantContextBuilder(assembly).make());
 		realigned.add(withReadName("0#1#bReadName", Read(0, 1, "5M"))[0]);
-		realigned.add(withReadName("0#2#test-polyA:1-b", Read(1, 10, "1M"))[0]);
+		realigned.add(withReadName("0#2#test-polyA:2-b", Read(1, 10, "1M"))[0]);
 		realigned.add(withReadName("0#10#fReadName", Read(0, 1, "5M"))[0]);
 		go();
 		assertEquals(3, out.size());

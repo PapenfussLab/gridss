@@ -11,6 +11,7 @@ import net.sf.picard.cmdline.Option;
 import net.sf.picard.cmdline.StandardOptionDefinitions;
 import net.sf.picard.cmdline.Usage;
 import net.sf.picard.io.IoUtil;
+import net.sf.picard.reference.ReferenceSequenceFileWalker;
 import net.sf.picard.util.Log;
 import net.sf.picard.util.ProgressLogger;
 import net.sf.samtools.BAMRecordCodec;
@@ -44,14 +45,9 @@ public class ExtractEvidence extends CommandLineProgram {
     @Option(doc="Coordinate-sorted input BAM file.",
     		shortName=StandardOptionDefinitions.INPUT_SHORT_NAME)
     public File INPUT;
-    /*
-    @Option(doc="BAM file containing reads supporting any putative structural variation breakpoint.",
-    		shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME)
-    public File OUTPUT;
-    @Option(doc="Read pairs not mapped concordantly, sorted by mate coordinate.",
-    		shortName="MCO")
-    public File MATE_COORDINATE_OUTPUT;
-    */
+    @Option(doc="Reference used for alignment",
+    		shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME)
+    public File REFERENCE;
     @Option(doc = "Extract supporting reads into a separate file for each chromosome.",
             optional = true,
             shortName = "BYCHR")
@@ -73,7 +69,9 @@ public class ExtractEvidence extends CommandLineProgram {
 	    	final SAMFileReader reader = new SAMFileReader(INPUT);
 	    	final SAMFileHeader header = reader.getFileHeader();
 	    	final SAMSequenceDictionary dictionary = header.getSequenceDictionary();
+	    	final ReferenceSequenceFileWalker referenceWalker = new ReferenceSequenceFileWalker(REFERENCE);
 	    	final InsertSizeMetricsCollector metrics = RelevantMetrics.createCollector(header);
+	    	
 	    	
 	    	final SAMFileWriter[] writers = new SAMFileWriter[dictionary.size() + 1];
 	    	final SAMFileWriter[] matewriters = new SAMFileWriter[dictionary.size() + 1];
@@ -113,6 +111,7 @@ public class ExtractEvidence extends CommandLineProgram {
 				boolean sc = SAMRecordUtil.isAlignmentSoftClipped(record);
 				boolean badpair = SAMRecordUtil.isPartOfNonReferenceReadPair(record);
 				if (sc || badpair) {
+					SAMRecordUtil.ensureNmTag(referenceWalker, record);
 					writers[offset].addAlignment(record);
 				}
 				if (badpair) {

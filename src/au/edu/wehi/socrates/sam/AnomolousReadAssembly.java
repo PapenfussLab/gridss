@@ -6,6 +6,15 @@ import au.edu.wehi.socrates.BreakpointDirection;
 import net.sf.samtools.CigarOperator;
 import net.sf.samtools.SAMRecord;
 
+/**
+ * Breakend assembly
+ * 
+ * Assembly information is encoded in SAMRecord to enable easy visualisation and
+ * debugging of the assembly. Note that the genomic position of the assembly is
+ * not encoded in the SAMRecord.
+ * @author Daniel Cameron
+ *
+ */
 public class AnomolousReadAssembly extends SAMRecord {
 	public AnomolousReadAssembly(String assemblerProgram, byte[] assemblyBases, int assemblyAnchorLength, BreakpointDirection direction) {
 		this(assemblerProgram, assemblyBases, null, assemblyAnchorLength, direction, null);

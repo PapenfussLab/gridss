@@ -2,6 +2,7 @@ package au.edu.wehi.socrates;
 
 import java.util.Arrays;
 
+import net.sf.picard.reference.ReferenceSequenceFile;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMTag;
 import net.sf.samtools.util.SequenceUtil;
@@ -9,24 +10,30 @@ import net.sf.samtools.util.SequenceUtil;
 import org.apache.commons.lang3.StringUtils;
 
 public class SoftClipEvidence implements DirectedBreakpoint {
+	private final ProcessingContext processContext;
 	private final SAMRecord record;
 	private final SAMRecord realigned;
 	private /*final*/ BreakpointLocation location;
-	public SoftClipEvidence(BreakpointDirection direction, SAMRecord record, SAMRecord realigned) {
+	public SoftClipEvidence(ProcessingContext processContext, BreakpointDirection direction, SAMRecord record, SAMRecord realigned) {
 		if (record == null) throw new IllegalArgumentException("record is null");
 		if (direction == null) throw new IllegalArgumentException("direction is null");
+		if (record.getReadUnmappedFlag()) throw new IllegalArgumentException(String.format("record %s is unmapped", record.getReadName()));
+		if (record.getReadBases() == null || record.getReadBases() == SAMRecord.NULL_SEQUENCE ) throw new IllegalArgumentException(String.format("record %s missing sequence information", record.getReadName()));
+		this.processContext = processContext;
 		this.record = record;
 		this.realigned = realigned;
 		this.location = calculateLocation(direction);
 		// need to defer quality calculation to here since it depends on location information 
 		setQuality(calculateSoftClipQuality());
-		if (getSoftClipLength() == 0) throw new IllegalArgumentException(String.format("record %s is not %s soft clipped", record.getReadName(), direction));
+		if (getSoftClipLength() == 0) {
+			throw new IllegalArgumentException(String.format("record %s is not %s soft clipped", record.getReadName(), direction));
+		}
 	}
-	public SoftClipEvidence(BreakpointDirection direction, SAMRecord record) {
-		this(direction, record, null);
+	public SoftClipEvidence(ProcessingContext processContext, BreakpointDirection direction, SAMRecord record) {
+		this(processContext, direction, record, null);
 	}
 	public SoftClipEvidence(SoftClipEvidence evidence, SAMRecord realigned) {
-		this(evidence.location.direction, evidence.record, realigned);
+		this(evidence.processContext, evidence.location.direction, evidence.record, realigned);
 	}
 	private double calculateSoftClipQuality() {
 		// TOOD: proper quality metrics!
@@ -122,20 +129,25 @@ public class SoftClipEvidence implements DirectedBreakpoint {
 			return getSoftClipLength();
 		}
 	}
+	/**
+	 * 0-100 scaled percentage identity of mapped read bases.
+	 * @return percentage of reference-aligned bases that match reference 
+	 */
 	public float getAlignedPercentIdentity() {
 		// final byte[] referenceBases = refSeq.get(sequenceDictionary.getSequenceIndex(rec.getReferenceName())).getBases();
         // rec.setAttribute(SAMTag.NM.name(), SequenceUtil.calculateSamNmTag(rec, referenceBases, 0, bisulfiteSequence));
         //if (rec.getBaseQualities() != SAMRecord.NULL_QUALS) {
         // rec.setAttribute(SAMTag.UQ.name(), SequenceUtil.sumQualitiesOfMismatches(rec, referenceBases, 0, bisulfiteSequence));
-		
         Integer nm = record.getIntegerAttribute(SAMTag.NM.name());
 		if (nm != null) {
-			return nm - SequenceUtil.countInsertedBases(record) - SequenceUtil.countDeletedBases(record);
+			int refBasesToConsider = record.getReadLength() - SAMRecordUtil.getStartSoftClipLength(record) - SAMRecordUtil.getEndSoftClipLength(record); 
+			int refBaseMatches = refBasesToConsider - nm + SequenceUtil.countInsertedBases(record) + SequenceUtil.countDeletedBases(record); 
+			return 100.0f * refBaseMatches / (float)refBasesToConsider;
 		}
 		String md = record.getStringAttribute(SAMTag.MD.name());
 		if (StringUtils.isNotEmpty(md)) {
 			// Socrates handles this: should we? Which aligners write MD but not NM?
-			throw new RuntimeException("TODO: Not Yet Implemented: calculate from reads with MD tag but not NM tag as per Socrates implementation. User Workaround: create NM tags for reads.");
+			throw new RuntimeException("Sanity Check Failure: Not Yet Implemented: calculation from reads with MD tag but not NM tag as per Socrates implementation");
 		}
 		throw new IllegalStateException(String.format("Read %s missing NM tag", record.getReadName()));
 	}

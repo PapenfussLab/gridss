@@ -1,6 +1,6 @@
 package au.edu.wehi.socrates.debruijn;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import net.sf.samtools.SAMRecord;
 
 import org.junit.Test;
@@ -152,5 +152,23 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		SAMRecord result = ass.assembleVariant();
 		assertEquals("AAAACGTC", S(result.getReadBases()));
 		assertEquals("2M6S", result.getCigarString());
+	}
+	@Test
+	public void assembly_base_quality_should_be_sum_of_min_read_qualities() {
+		DeBruijnReadGraph ass = new DeBruijnReadGraph(3, BreakpointDirection.Forward);
+		ass.addRead(R(null, "ACGTA", new byte[] { 1,2,3,4,5 }, false, true), true);
+		ass.addRead(R(null, "ACGTA", new byte[] { 3,4,5,6,7 }, false, true), true);
+		SAMRecord result = ass.assembleVariant();
+		// pad out read qualities
+		assertArrayEquals(new byte[] { 4,6,8,8,8 }, result.getBaseQualities());
+	}
+	@Test
+	public void assembly_base_quality_should_pad_to_match_read_length() {
+		DeBruijnReadGraph ass = new DeBruijnReadGraph(3, BreakpointDirection.Forward);
+		ass.addRead(R(null, "ACGTA", new byte[] { 1,2,3,4,5 }, false, true), true);
+		ass.addRead(R(null, "ACGTA", new byte[] { 3,4,5,6,7 }, false, true), true);
+		SAMRecord result = ass.assembleVariant();
+		// pad out read qualities
+		assertEquals(result.getReadBases().length, result.getBaseQualities().length);
 	}
 }

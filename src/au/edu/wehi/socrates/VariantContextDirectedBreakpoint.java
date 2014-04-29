@@ -19,13 +19,14 @@ public class VariantContextDirectedBreakpoint extends SocratesVariantContext imp
 	private BreakpointLocation location;
 	private String breakpointSequence;
 	private String anchorSequence;
-	protected VariantContextDirectedBreakpoint(SAMSequenceDictionary dictionary, VariantContext context) {
-		super(dictionary, context);
+	protected VariantContextDirectedBreakpoint(ProcessingContext processContext, VariantContext context) {
+		super(processContext, context);
 		recalcFields();
 	}
 	private void recalcFields() {
 		location = null;
 		breakpointSequence = null;
+		anchorSequence = null;
 		
 		List<Allele> altList = getAlternateAlleles();
 		if (altList.size() != 1) return;
@@ -34,7 +35,7 @@ public class VariantContextDirectedBreakpoint extends SocratesVariantContext imp
 			// Technically this is valid (eg: {"AAA", "A."} = breakend with deletion), we just can't handle these yet
 			return;
 		}
-		if (alt.length() <= 2) return;
+		if (alt.length() < 2) return;
 		BreakpointDirection direction, remoteDirection = null;
 		String localSequence;
 		String remoteContig = null;
@@ -89,15 +90,16 @@ public class VariantContextDirectedBreakpoint extends SocratesVariantContext imp
 		}
 		if (remoteDirection != null) {
 			location = new BreakpointInterval(getReferenceIndex(), direction, localPosition, localPosition,
-					getReferenceIndex(remoteContig), remoteDirection, remotePosition, remotePosition,
-					getLog10PError());
+					processContext.getDictionary().getSequenceIndex(remoteContig), remoteDirection, remotePosition, remotePosition,
+					getPhredScaledQual());
 		} else {
 			location = new BreakpointLocation(getReferenceIndex(), direction, localPosition, localPosition,
-					getLog10PError());
+					getPhredScaledQual());
 		}
 	}
 	@Override
 	public BreakpointLocation getBreakpointLocation() {
+		if (location == null) throw new IllegalStateException(String.format("%s not a valid breakend", getID()));
 		return location;
 	}
 	@Override
@@ -109,9 +111,11 @@ public class VariantContextDirectedBreakpoint extends SocratesVariantContext imp
 		return breakpointSequence.getBytes(StandardCharsets.US_ASCII);
 	}
 	public String getBreakpointSequenceString() {
+		if (breakpointSequence == null) throw new IllegalStateException(String.format("%s not a valid breakend", getID()));
 		return breakpointSequence;
 	}
 	public String getAnchorSequenceString() {
+		if (anchorSequence == null) throw new IllegalStateException(String.format("%s not a valid breakend", getID()));
 		return anchorSequence;
 	}
 	@Override

@@ -11,6 +11,7 @@ public class VcfConstants {
 	public static final String SOFT_CLIP_READ_COUNT = "SCC";
 	public static final String UNMAPPED_MATE_READ_COUNT = "OEAC";
 	public static final String DISCORDANT_READ_PAIR_COUNT = "DPC";
+	public static final String ASSEMBLY_REALIGNMENT_FAILURE = "REALNFAIL";
 
 	//public static final String GENE_ID = "gene_id";
 	public static final String TRANSCRIPT_ID = "transcript_id";
@@ -32,6 +33,8 @@ public class VcfConstants {
 		header.addMetaDataLine(new VCFInfoHeaderLine(VcfConstants.ASSEMBLY_QUALITY, 1, VCFHeaderLineType.Float, "Anomolous read consensus assembly quality"));
 		header.addMetaDataLine(new VCFInfoHeaderLine(VcfConstants.ASSEMBLY_PROGRAM, 1, VCFHeaderLineType.String, "Anomolous read consensus assembly algorithm"));
 		header.addMetaDataLine(new VCFInfoHeaderLine(VcfConstants.ASSEMBLY_CONSENSUS_READ_COUNT, 1, VCFHeaderLineType.Integer, "Number of anomolous reads contributing to consensus assembly"));
+		header.addMetaDataLine(new VCFInfoHeaderLine(VcfConstants.ASSEMBLY_CONSENSUS_READ_COUNT, 1, VCFHeaderLineType.Integer, "Number of anomolous reads contributing to consensus assembly"));
+		header.addMetaDataLine(new VCFInfoHeaderLine(VcfConstants.ASSEMBLY_REALIGNMENT_FAILURE, 1, VCFHeaderLineType.Flag, "Breakend sequence unable to be realigned to the reference"));
 		
 		// Retrogene headers
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.SV_TYPE);

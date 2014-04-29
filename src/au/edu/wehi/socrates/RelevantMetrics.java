@@ -62,6 +62,9 @@ public class RelevantMetrics {
 			log.error(String.format("No pair-end insert size metrics found in %s.", file));
 		}
 	}
+	protected RelevantMetrics() {
+		insertSize = new InsertSizeMetrics();
+	}
 	/**
 	 * Gets the median fragment size
 	 * @return median fragment size

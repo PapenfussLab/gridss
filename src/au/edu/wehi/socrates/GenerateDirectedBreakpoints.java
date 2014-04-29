@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.apache.commons.cli.OptionBuilder;
 import org.broadinstitute.variant.variantcontext.writer.VariantContextWriter;
+import org.broadinstitute.variant.variantcontext.writer.VariantContextWriterBuilder;
 import org.broadinstitute.variant.variantcontext.writer.VariantContextWriterFactory;
 import org.broadinstitute.variant.vcf.VCFHeader;
 import org.broadinstitute.variant.vcf.VCFRecordCodec;
@@ -79,8 +80,8 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
             optional = true)
     public File METRICS = null;
     @Option(doc = "Reference used for alignment",
-            optional = true)
-    public File REFERENCE = null;
+            optional = false)
+    public File REFERENCE;
     @Option(doc = "Minimum alignment mapq",
     		optional=true)
     public int MIN_MAPQ = 5;
@@ -118,22 +119,22 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
 	    	final SAMFileHeader header = reader.getFileHeader();
 	    	final SAMSequenceDictionary dictionary = header.getSequenceDictionary();
 	    	final RelevantMetrics metrics = new RelevantMetrics(METRICS);
-	    	ReferenceSequenceFile reference = null;
-	    	if (REFERENCE != null) {
-	    		IoUtil.assertFileIsReadable(REFERENCE);
-	    		reference = ReferenceSequenceFileFactory.getReferenceSequenceFile(REFERENCE);
-	    	}
+	    	final ReferenceSequenceFile reference = ReferenceSequenceFileFactory.getReferenceSequenceFile(REFERENCE);
+	    	final ProcessingContext processContext = new ProcessingContext(reference, dictionary, metrics);
 	    	
 			final PeekingIterator<SAMRecord> iter = Iterators.peekingIterator(reader.iterator());
 			final PeekingIterator<SAMRecord> mateIter = Iterators.peekingIterator(mateReader.iterator());
 			final FastqWriter fastqWriter = new FastqWriterFactory().newWriter(FASTQ_OUTPUT);
-			final VariantContextWriter vcfWriter = VariantContextWriterFactory.create(VCF_OUTPUT, dictionary);
+			final VariantContextWriter vcfWriter = new VariantContextWriterBuilder()
+				.setOutputFile(VCF_OUTPUT)
+				.setReferenceDictionary(dictionary)
+				.build();
 			final VCFHeader vcfHeader = new VCFHeader();
 			VcfConstants.addHeaders(vcfHeader);
 			vcfWriter.writeHeader(vcfHeader);
 			
-			DirectedEvidenceIterator dei = new DirectedEvidenceIterator(iter, mateIter, null, null, dictionary, metrics.getMaxFragmentSize());
-			ReadEvidenceAssembler assembler = new DeBruijnAssembler(dictionary, reference, KMER);
+			DirectedEvidenceIterator dei = new DirectedEvidenceIterator(processContext, iter, mateIter, null, null);
+			ReadEvidenceAssembler assembler = new DeBruijnAssembler(processContext, KMER);
 			while (dei.hasNext()) {
 				DirectedEvidence readEvidence = dei.next();
 				if (readEvidence instanceof SoftClipEvidence) {

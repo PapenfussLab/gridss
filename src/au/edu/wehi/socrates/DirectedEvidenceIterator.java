@@ -3,7 +3,6 @@ package au.edu.wehi.socrates;
 import java.util.PriorityQueue;
 
 import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMSequenceDictionary;
 
 import org.broadinstitute.variant.variantcontext.VariantContext;
 
@@ -17,15 +16,14 @@ import com.google.common.collect.PeekingIterator;
  */
 public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence> {
 	private static final int INITIAL_BUFFER_SIZE = 1024;
-	private final SAMSequenceDictionary dictionary;
+	private final ProcessingContext processContext;
 	private final PeekingIterator<SAMRecord> svIterator;
 	private final PeekingIterator<VariantContext> vcfIterator;
-	private final LinearGenomicCoordinate linear;
 	private final SequentialNonReferenceReadPairFactory mateFactory;
 	private final SequentialRealignedBreakpointFactory realignFactory;
 	private final PriorityQueue<DirectedEvidence> calls = new PriorityQueue<DirectedEvidence>(INITIAL_BUFFER_SIZE, new DirectedEvidenceCoordinateIntervalComparator());
-	private final int maxFragmentSize;
 	private long currentLinearPosition = -1;
+	
 	/**
 	 * Iterates over breakpoint evidence
 	 * @param sv structural variation supporting reads. Must be sorted by coordinate
@@ -34,24 +32,21 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 	 * @param vcf Assembly-based @see DirectedBreakpoint. Must be sorted by coordinate
 	 */
 	public DirectedEvidenceIterator(
+			ProcessingContext processContext,
 			PeekingIterator<SAMRecord> sv,
 			PeekingIterator<SAMRecord> mate,
 			PeekingIterator<SAMRecord> realign,
-			PeekingIterator<VariantContext> vcf,
-			SAMSequenceDictionary dictionary,
-			int maxFragmentSize) {
-		this.linear = new LinearGenomicCoordinate(dictionary);
-		this.dictionary = dictionary;
+			PeekingIterator<VariantContext> vcf) {
+		this.processContext = processContext;
 		this.svIterator = sv;
 		this.vcfIterator = vcf;
 		this.mateFactory = new SequentialNonReferenceReadPairFactory(mate);
 		this.realignFactory = new SequentialRealignedBreakpointFactory(realign);
-		this.maxFragmentSize = maxFragmentSize;
 	}
 	@Override
 	protected DirectedEvidence computeNext() {
 		do {
-			if (!calls.isEmpty() && linear.getStartLinearCoordinate(calls.peek().getBreakpointLocation()) < currentLinearPosition - maxFragmentSize) {
+			if (!calls.isEmpty() && processContext.getLinear().getStartLinearCoordinate(calls.peek().getBreakpointLocation()) < currentLinearPosition - processContext.getMetrics().getMaxFragmentSize()) {
 				return fixCall(calls.poll());
 			}
 		} while (advance());
@@ -81,36 +76,36 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 	private boolean advance() {
 		long nextPos = Long.MAX_VALUE;
 		if (svIterator != null && svIterator.hasNext()) {
-			nextPos = Math.min(nextPos, linear.getLinearCoordinate(svIterator.peek().getReferenceIndex(), svIterator.peek().getAlignmentStart()));
+			nextPos = Math.min(nextPos, processContext.getLinear().getLinearCoordinate(svIterator.peek().getReferenceIndex(), svIterator.peek().getAlignmentStart()));
 		}
 		if (vcfIterator != null && vcfIterator.hasNext()) {
-			nextPos = Math.min(nextPos, linear.getLinearCoordinate(vcfIterator.peek().getChr(), vcfIterator.peek().getStart()));
+			nextPos = Math.min(nextPos, processContext.getLinear().getLinearCoordinate(vcfIterator.peek().getChr(), vcfIterator.peek().getStart()));
 		}
 		if (nextPos == Long.MAX_VALUE) return false; // no records
-		while (svIterator != null && svIterator.hasNext() && linear.getLinearCoordinate(svIterator.peek().getReferenceIndex(), svIterator.peek().getAlignmentStart()) == nextPos) {
+		while (svIterator != null && svIterator.hasNext() && processContext.getLinear().getLinearCoordinate(svIterator.peek().getReferenceIndex(), svIterator.peek().getAlignmentStart()) == nextPos) {
 			processRead(svIterator.next());
 		}
-		while (vcfIterator != null && vcfIterator.hasNext() && linear.getLinearCoordinate(vcfIterator.peek().getChr(), vcfIterator.peek().getStart()) == nextPos) {
+		while (vcfIterator != null && vcfIterator.hasNext() && processContext.getLinear().getLinearCoordinate(vcfIterator.peek().getChr(), vcfIterator.peek().getStart()) == nextPos) {
 			processVariant(vcfIterator.next());
 		}
 		currentLinearPosition = nextPos;
 		return true;
 	}
 	private void processVariant(VariantContext variant) {
-		SocratesVariantContext managedContext = SocratesVariantContext.create(dictionary, variant);
+		SocratesVariantContext managedContext = SocratesVariantContext.create(processContext, variant);
 		if (managedContext instanceof DirectedEvidence) {
 			calls.add((DirectedEvidence)managedContext);
 		}
 	}
 	private void processRead(SAMRecord record) {
 		if (SAMRecordUtil.getStartSoftClipLength(record) > 0) {
-			calls.add(new SoftClipEvidence(BreakpointDirection.Backward, record));
+			calls.add(new SoftClipEvidence(processContext, BreakpointDirection.Backward, record));
 		}
 		if (SAMRecordUtil.getEndSoftClipLength(record) > 0) {
-			calls.add(new SoftClipEvidence(BreakpointDirection.Forward, record));
+			calls.add(new SoftClipEvidence(processContext, BreakpointDirection.Forward, record));
 		}
 		if (SAMRecordUtil.isPartOfNonReferenceReadPair(record)) {
-			NonReferenceReadPair pair = mateFactory.createNonReferenceReadPair(record, maxFragmentSize);
+			NonReferenceReadPair pair = mateFactory.createNonReferenceReadPair(record, processContext.getMetrics().getMaxFragmentSize());
 			if (pair != null) {
 				calls.add(pair);
 			}

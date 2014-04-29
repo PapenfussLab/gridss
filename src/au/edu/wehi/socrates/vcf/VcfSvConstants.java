@@ -2,7 +2,7 @@ package au.edu.wehi.socrates.vcf;
 
 import org.broadinstitute.variant.vcf.VCFConstants;
 
-public class VcfSVConstants {
+public class VcfSvConstants {
 	/** Imprecise structural variation */
 	 public static final String IMPRECISE_KEY = "IMPRECISE";
 	 /** Indicates a novel structural variation */

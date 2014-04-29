@@ -40,6 +40,7 @@ public class ReadKmerIterable implements Iterable<ReadKmer> {
 			} else {
 				advance();
 			}
+			// add 1 to qual to ensure it is always positive
 			return new ReadKmer(currentkmer, 1 + (qual == null ? 0 : basequals.firstEntry().getElement()));
 		}
 		private void advance() {

@@ -5,10 +5,19 @@ package au.edu.wehi.socrates;
 
 import java.util.List;
 
+import net.sf.picard.reference.ReferenceSequence;
+import net.sf.picard.reference.ReferenceSequenceFile;
+import net.sf.picard.reference.ReferenceSequenceFileWalker;
+import net.sf.picard.sam.ReservedTagConstants;
+import net.sf.picard.sam.SamToFastq;
 import net.sf.samtools.Cigar;
 import net.sf.samtools.CigarElement;
 import net.sf.samtools.CigarOperator;
 import net.sf.samtools.SAMRecord;
+import net.sf.samtools.SAMTag;
+import net.sf.samtools.SAMValidationError;
+import net.sf.samtools.SAMValidationError.Type;
+import net.sf.samtools.util.SequenceUtil;
 
 /**
  * @author Daniel Cameron
@@ -71,5 +80,14 @@ public class SAMRecordUtil {
 				record.getReadPairedFlag() &&
 				// only one read in the pair is mapped
 				(record.getReadUnmappedFlag() ^ record.getMateUnmappedFlag());
+	}
+	public static void ensureNmTag(ReferenceSequenceFileWalker refFileWalker, SAMRecord record) {
+		if (record == null) return;
+		if (record.getReadBases() == null) return;
+		if (record.getReadBases() == SAMRecord.NULL_SEQUENCE) return;
+		if (record.getIntegerAttribute(SAMTag.NM.name()) != null) return;
+        final ReferenceSequence refSequence = refFileWalker.get(record.getReferenceIndex());
+        final int actualNucleotideDiffs = SequenceUtil.calculateSamNmTag(record, refSequence.getBases(), 0, false);
+        record.setAttribute(SAMTag.NM.name(), actualNucleotideDiffs);
 	}
 }

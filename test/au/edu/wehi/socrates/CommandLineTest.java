@@ -80,6 +80,7 @@ public class CommandLineTest extends TestHelper {
 		}
 		public int go() {
 			TMP_DIR = Lists.newArrayList(testFolder.getRoot());
+			REFERENCE = SMALL_FA_FILE;
 			INPUT = input;
 			return doWork();
 		}
@@ -103,6 +104,7 @@ public class CommandLineTest extends TestHelper {
 			if (k != null) KMER = k;
 			TMP_DIR = Lists.newArrayList(testFolder.getRoot());
 			try {
+				REFERENCE = SMALL_FA_FILE;
 				SV_INPUT = FileNamingConvention.getSVBamForChr(input, chr);
 				MATE_COORDINATE_INPUT = FileNamingConvention.getMateBamForChr(input, chr);
 				VCF_OUTPUT = FileNamingConvention.getBreakendVcf(input, chr);
