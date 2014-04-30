@@ -26,10 +26,10 @@ package org.broadinstitute.variant.variantcontext;
 
 
 
-import net.sf.samtools.util.StringUtil;
-
 import java.util.Arrays;
 import java.util.Collection;
+
+import net.sf.samtools.util.StringUtil;
 
 /**
  * Immutable representation of an allele

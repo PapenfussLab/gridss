@@ -2,30 +2,21 @@ package net.wehi.socrates;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.PrintWriter;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
-import java.lang.reflect.Array;
-import java.lang.Math;
-import java.util.ArrayList;
-import java.util.Hashtable;
+import java.io.PrintWriter;
 import java.util.StringTokenizer;
 
-import javax.swing.text.html.HTMLDocument.HTMLReader.IsindexAction;
-
 import net.sf.samtools.SAMFileReader;
+import net.sf.samtools.SAMFileReader.ValidationStringency;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordIterator;
-import net.sf.samtools.SAMFileReader.ValidationStringency;
-
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
-import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
-import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 

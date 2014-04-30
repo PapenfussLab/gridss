@@ -1,28 +1,10 @@
 package au.edu.wehi.socrates;
 
-import static org.junit.Assert.*;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-
-import net.sf.picard.cmdline.Option;
-import net.sf.samtools.BAMRecordCodec;
-import net.sf.samtools.SAMFileHeader;
-import net.sf.samtools.SAMFileWriter;
-import net.sf.samtools.SAMFileWriterFactory;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMRecordCoordinateComparator;
-import net.sf.samtools.SAMFileHeader.SortOrder;
-import net.sf.samtools.util.SortingCollection;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-
-import com.google.common.collect.Lists;
 
 public class GenerateDirectedBreakpointsTest extends CommandLineTest {
 	public SAMRecord ValidSC() {

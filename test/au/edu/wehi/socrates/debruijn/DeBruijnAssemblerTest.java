@@ -1,21 +1,19 @@
 package au.edu.wehi.socrates.debruijn;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 import java.util.List;
 
 import org.junit.Test;
-
-import net.sf.samtools.SAMRecord;
-
-import com.google.common.collect.Lists;
 
 import au.edu.wehi.socrates.BreakpointDirection;
 import au.edu.wehi.socrates.DirectedBreakpointAssembly;
 import au.edu.wehi.socrates.DirectedEvidence;
 import au.edu.wehi.socrates.SoftClipEvidence;
 import au.edu.wehi.socrates.TestHelper;
-import au.edu.wehi.socrates.sam.AnomolousReadAssembly;
+
+import com.google.common.collect.Lists;
 
 
 public class DeBruijnAssemblerTest extends TestHelper {

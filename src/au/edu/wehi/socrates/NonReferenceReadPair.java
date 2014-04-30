@@ -1,8 +1,8 @@
 package au.edu.wehi.socrates;
 
-import org.apache.commons.lang3.StringUtils;
-
 import net.sf.samtools.SAMRecord;
+
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * A read pair that does not support the reference sequence. This can be an OEA, or DP read pair.

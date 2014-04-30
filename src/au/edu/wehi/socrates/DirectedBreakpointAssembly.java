@@ -2,9 +2,7 @@ package au.edu.wehi.socrates;
 
 import java.nio.charset.StandardCharsets;
 
-import net.sf.picard.reference.ReferenceSequenceFile;
 import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMSequenceDictionary;
 
 import org.broadinstitute.variant.variantcontext.VariantContext;
 import org.broadinstitute.variant.variantcontext.VariantContextBuilder;

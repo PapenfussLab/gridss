@@ -2,12 +2,14 @@ package au.edu.wehi.socrates.debruijn;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import net.sf.samtools.SAMRecord;
+import net.sf.samtools.util.SequenceUtil;
 
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -18,9 +20,6 @@ import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Sets;
-
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.util.SequenceUtil;
 
 public class DeBruijnReadGraph {
 	private static final int MAX_QUAL_SCORE = 128 - 66;

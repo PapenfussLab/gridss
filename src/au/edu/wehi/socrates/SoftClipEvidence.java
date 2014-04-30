@@ -2,7 +2,6 @@ package au.edu.wehi.socrates;
 
 import java.util.Arrays;
 
-import net.sf.picard.reference.ReferenceSequenceFile;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMTag;
 import net.sf.samtools.util.SequenceUtil;

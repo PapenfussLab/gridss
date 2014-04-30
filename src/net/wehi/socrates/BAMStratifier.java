@@ -4,8 +4,40 @@
 package net.wehi.socrates;
 
 
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
+import java.awt.Point;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.zip.GZIPInputStream;
+import java.util.zip.GZIPOutputStream;
+
+import net.sf.samtools.BAMRecordCodec;
+import net.sf.samtools.SAMFileHeader;
+import net.sf.samtools.SAMFileReader;
+import net.sf.samtools.SAMFileWriter;
+import net.sf.samtools.SAMFileWriterFactory;
+import net.sf.samtools.SAMRecord;
+import net.sf.samtools.SAMRecordCoordinateComparator;
+import net.sf.samtools.SAMRecordIterator;
+import net.sf.samtools.util.CloseableIterator;
+import net.sf.samtools.util.SortingCollection;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.GnuParser;
@@ -14,44 +46,15 @@ import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionBuilder;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 import au.edu.wehi.socrates.SAMRecordUtil;
 import au.edu.wehi.socrates.util.GenomicIndexInterval;
 import au.edu.wehi.socrates.util.RealignmentRecordSummary;
 import au.edu.wehi.socrates.util.SAMFileInfo;
 import au.edu.wehi.socrates.util.Utilities;
-
-import java.util.HashSet;
-import java.util.HashMap;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.zip.GZIPInputStream;
-import java.util.zip.GZIPOutputStream;
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.PrintWriter;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.awt.Point;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import net.sf.samtools.BAMRecordCodec;
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMRecordCoordinateComparator;
-import net.sf.samtools.SAMRecordIterator;
-import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMFileHeader;
-import net.sf.samtools.SAMFileWriter;
-import net.sf.samtools.SAMFileWriterFactory;
 //import net.sf.samtools.BAMFileWriter;
-
-import net.sf.samtools.util.CloseableIterator;
-import net.sf.samtools.util.SortingCollection;
 
 /**
  * @author hsu

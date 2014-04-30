@@ -3,8 +3,6 @@ package au.edu.wehi.socrates;
 import java.io.File;
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
-
 import net.sf.picard.analysis.CollectInsertSizeMetrics;
 import net.sf.picard.analysis.InsertSizeMetrics;
 import net.sf.picard.analysis.MetricAccumulationLevel;
@@ -15,6 +13,8 @@ import net.sf.picard.util.Log;
 import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMReadGroupRecord;
 import net.sf.samtools.util.CollectionUtil;
+
+import com.google.common.collect.ImmutableList;
 
 public class RelevantMetrics {
 	private Log log = Log.getInstance(RelevantMetrics.class);

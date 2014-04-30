@@ -8,9 +8,9 @@ import java.util.List;
 import java.util.Vector;
 
 import net.sf.samtools.Cigar;
+import net.sf.samtools.CigarElement;
 import net.sf.samtools.CigarOperator;
 import net.sf.samtools.SAMRecord;
-import net.sf.samtools.CigarElement;
 
 /**
  * @author hsu

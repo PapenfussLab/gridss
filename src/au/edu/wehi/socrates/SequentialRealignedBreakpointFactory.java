@@ -1,13 +1,7 @@
 package au.edu.wehi.socrates;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
 import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMSequenceDictionary;
 
-import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 
 /**

@@ -3,8 +3,6 @@ package au.edu.wehi.socrates;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import net.sf.samtools.SAMSequenceDictionary;
-
 import org.apache.commons.lang3.StringUtils;
 import org.broadinstitute.variant.variantcontext.Allele;
 import org.broadinstitute.variant.variantcontext.VariantContext;

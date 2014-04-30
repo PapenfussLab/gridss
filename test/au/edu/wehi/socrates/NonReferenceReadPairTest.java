@@ -1,9 +1,10 @@
 package au.edu.wehi.socrates;
 
-import org.junit.Test;
-import static org.junit.Assert.*;
-
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import net.sf.samtools.SAMRecord;
+
+import org.junit.Test;
 
 public class NonReferenceReadPairTest extends TestHelper {
 	public NonReferenceReadPair newPair(SAMRecord[] pair, int maxfragmentSize) {

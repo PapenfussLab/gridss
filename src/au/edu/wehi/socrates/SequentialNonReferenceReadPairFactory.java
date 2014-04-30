@@ -1,13 +1,7 @@
 package au.edu.wehi.socrates;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
 import net.sf.samtools.SAMRecord;
 
-import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 
 /**

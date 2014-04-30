@@ -5,14 +5,19 @@ package au.edu.wehi.socrates.util;
 
 //import net.sf.picard.*;
 
-import net.sf.samtools.*;
-import net.wehi.socrates.SOCRATES;
-
 import java.awt.geom.Point2D;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.ArrayList;
+
+import net.sf.samtools.SAMFileHeader;
+import net.sf.samtools.SAMFileReader;
+import net.sf.samtools.SAMReadGroupRecord;
+import net.sf.samtools.SAMRecord;
+import net.sf.samtools.SAMRecordIterator;
+import net.sf.samtools.SAMSequenceRecord;
+import net.wehi.socrates.SOCRATES;
 
 
 /**

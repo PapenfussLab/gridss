@@ -1,10 +1,9 @@
 package au.edu.wehi.socrates;
 
+import static org.junit.Assert.assertEquals;
 import net.sf.picard.fastq.FastqRecord;
 
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 public class BreakpointFastqEncodingTest extends TestHelper {
 	public class StubDirectedBreakpoint implements DirectedBreakpoint {

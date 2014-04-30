@@ -1,19 +1,11 @@
 package au.edu.wehi.socrates.graph;
 
 import java.util.Iterator;
-import java.util.List;
-
-import com.google.common.base.Supplier;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.SortedSetMultimap;
-import com.google.common.collect.TreeMultimap;
 
 import au.edu.wehi.socrates.BreakpointInterval;
-import au.edu.wehi.socrates.DirectedEvidence;
+
+import com.google.common.collect.SortedSetMultimap;
+import com.google.common.collect.TreeMultimap;
 /**
  * Calculates all maximal cliques from breakpoint interval evidence
  * 

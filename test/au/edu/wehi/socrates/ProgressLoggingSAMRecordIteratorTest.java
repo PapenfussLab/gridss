@@ -1,16 +1,16 @@
 package au.edu.wehi.socrates;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.Iterator;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
+import net.sf.samtools.SAMRecord;
+import net.sf.samtools.util.ProgressLoggerInterface;
 
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
-
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.util.ProgressLoggerInterface;
 
 public class ProgressLoggingSAMRecordIteratorTest extends TestHelper {
 	public class StubProgressLoggerInterface implements ProgressLoggerInterface {

@@ -8,18 +8,16 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 
-import net.sf.picard.cmdline.Option;
-import net.sf.picard.cmdline.StandardOptionDefinitions;
 import net.sf.picard.fastq.FastqReader;
 import net.sf.picard.fastq.FastqRecord;
 import net.sf.samtools.BAMRecordCodec;
 import net.sf.samtools.SAMFileHeader;
+import net.sf.samtools.SAMFileHeader.SortOrder;
 import net.sf.samtools.SAMFileReader;
 import net.sf.samtools.SAMFileWriter;
 import net.sf.samtools.SAMFileWriterFactory;
 import net.sf.samtools.SAMRecord;
 import net.sf.samtools.SAMRecordCoordinateComparator;
-import net.sf.samtools.SAMFileHeader.SortOrder;
 import net.sf.samtools.util.SortingCollection;
 
 import org.broadinstitute.variant.variantcontext.VariantContext;

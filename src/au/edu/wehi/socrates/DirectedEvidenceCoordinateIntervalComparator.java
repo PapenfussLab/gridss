@@ -2,10 +2,6 @@ package au.edu.wehi.socrates;
 
 import java.util.Comparator;
 
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMRecordComparator;
-import net.sf.samtools.SAMRecordCoordinateComparator;
-
 /**
  * Orders evidence by start position, then end position
  * If both records are of {@link DirectedBreakpoint}, the ordering sorts on the 

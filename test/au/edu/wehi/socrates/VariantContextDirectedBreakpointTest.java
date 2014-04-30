@@ -1,12 +1,10 @@
 package au.edu.wehi.socrates;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
-import org.broadinstitute.variant.variantcontext.VariantContext;
 import org.junit.Test;
-
-import au.edu.wehi.socrates.vcf.VcfSvConstants;
-import au.edu.wehi.socrates.vcf.VcfStructuralVariantHeaderLines;
 
 public class VariantContextDirectedBreakpointTest extends TestHelper {
 	@Test

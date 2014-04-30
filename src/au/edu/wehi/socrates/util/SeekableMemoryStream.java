@@ -3,8 +3,9 @@
  */
 package au.edu.wehi.socrates.util;
 
-import java.io.IOException;
 import java.io.File;
+import java.io.IOException;
+
 import net.sf.samtools.seekablestream.SeekableStream;
 
 

@@ -1,6 +1,5 @@
 package au.edu.wehi.socrates.debruijn;
 
-import java.math.BigInteger;
 
 public class KmerEncodingHelper {
 	private KmerEncodingHelper() { }

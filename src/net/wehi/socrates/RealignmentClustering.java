@@ -3,6 +3,7 @@
  */
 package net.wehi.socrates;
 
+import java.awt.geom.Point2D;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -11,12 +12,21 @@ import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.NavigableSet;
 import java.util.TreeSet;
-import java.util.HashSet;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.awt.geom.Point2D;
+
+import net.sf.picard.sam.BuildBamIndex;
+import net.sf.samtools.SAMFileReader;
+import net.sf.samtools.SAMRecord;
+import net.sf.samtools.SAMRecordIterator;
+import net.sf.samtools.seekablestream.SeekableStream;
 
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -35,14 +45,8 @@ import au.edu.wehi.socrates.util.RealignmentRecordSummary;
 import au.edu.wehi.socrates.util.SAMFileInfo;
 import au.edu.wehi.socrates.util.SeekableMemoryStream;
 import au.edu.wehi.socrates.util.Utilities;
-import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMRecordIterator;
-import net.sf.samtools.seekablestream.SeekableStream;
-
 //import au.edu.wehi.socrates.util.GenomicIntervalList;
 //import au.edu.wehi.socrates.util.ProgressVerbose;
-import net.sf.picard.sam.BuildBamIndex;
 
 /**
  * @author hsu

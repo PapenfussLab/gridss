@@ -3,7 +3,6 @@ package au.edu.wehi.socrates;
 import java.util.Comparator;
 
 import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMRecordCoordinateComparator;
 
 /**
  * Comparator for sorting NonReferenceReadPairs according to the local read

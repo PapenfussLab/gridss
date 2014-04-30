@@ -5,10 +5,10 @@ package au.edu.wehi.socrates.util;
 
 import java.util.Arrays;
 
-import au.edu.wehi.socrates.SAMRecordUtil;
 import net.sf.samtools.CigarElement;
 import net.sf.samtools.CigarOperator;
 import net.sf.samtools.SAMRecord;
+import au.edu.wehi.socrates.SAMRecordUtil;
 
 /**
  * @author hsu

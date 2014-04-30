@@ -2,59 +2,31 @@ package au.edu.wehi.socrates;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
-import org.apache.commons.cli.OptionBuilder;
-import org.broadinstitute.variant.variantcontext.writer.VariantContextWriter;
-import org.broadinstitute.variant.variantcontext.writer.VariantContextWriterBuilder;
-import org.broadinstitute.variant.variantcontext.writer.VariantContextWriterFactory;
-import org.broadinstitute.variant.vcf.VCFHeader;
-import org.broadinstitute.variant.vcf.VCFRecordCodec;
-
-import au.edu.wehi.socrates.debruijn.DeBruijnAssembler;
-import au.edu.wehi.socrates.vcf.VcfConstants;
-import au.edu.wehi.socrates.vcf.VcfStructuralVariantHeaderLines;
-
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
-import com.google.common.collect.PeekingIterator;
-
-import net.sf.picard.analysis.CollectInsertSizeMetrics;
-import net.sf.picard.analysis.InsertSizeMetrics;
-import net.sf.picard.analysis.MetricAccumulationLevel;
-import net.sf.picard.analysis.directed.InsertSizeMetricsCollector;
 import net.sf.picard.cmdline.CommandLineProgram;
 import net.sf.picard.cmdline.Option;
 import net.sf.picard.cmdline.StandardOptionDefinitions;
-import net.sf.picard.cmdline.Usage;
 import net.sf.picard.fastq.FastqRecord;
 import net.sf.picard.fastq.FastqWriter;
 import net.sf.picard.fastq.FastqWriterFactory;
-import net.sf.picard.filter.AggregateFilter;
-import net.sf.picard.filter.DuplicateReadFilter;
-import net.sf.picard.filter.FailsVendorReadQualityFilter;
-import net.sf.picard.filter.FilteringIterator;
-import net.sf.picard.filter.SamRecordFilter;
 import net.sf.picard.io.IoUtil;
-import net.sf.picard.metrics.MetricsFile;
 import net.sf.picard.reference.ReferenceSequenceFile;
 import net.sf.picard.reference.ReferenceSequenceFileFactory;
 import net.sf.picard.util.Log;
-import net.sf.picard.util.ProgressLogger;
-import net.sf.samtools.BAMRecordCodec;
-import net.sf.samtools.SAMException;
 import net.sf.samtools.SAMFileHeader;
 import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMFileWriter;
-import net.sf.samtools.SAMFileWriterFactory;
 import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMRecordIterator;
 import net.sf.samtools.SAMSequenceDictionary;
-import net.sf.samtools.SAMFileHeader.SortOrder;
-import net.sf.samtools.util.CloseableIterator;
-import net.sf.samtools.util.CollectionUtil;
-import net.sf.samtools.util.SortingCollection;
+
+import org.broadinstitute.variant.variantcontext.writer.VariantContextWriter;
+import org.broadinstitute.variant.variantcontext.writer.VariantContextWriterBuilder;
+import org.broadinstitute.variant.vcf.VCFHeader;
+
+import au.edu.wehi.socrates.debruijn.DeBruijnAssembler;
+import au.edu.wehi.socrates.vcf.VcfConstants;
+
+import com.google.common.collect.Iterators;
+import com.google.common.collect.PeekingIterator;
 
 public class GenerateDirectedBreakpoints extends CommandLineProgram {
 

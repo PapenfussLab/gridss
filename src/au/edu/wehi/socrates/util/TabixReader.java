@@ -29,13 +29,16 @@ SOFTWARE.
 */
 /* Contact: Heng Li <hengli@broadinstitute.org> */
 
-import net.sf.samtools.util.BlockCompressedInputStream;
-
-import java.io.*;
-import java.nio.*;
-import java.util.HashMap;
-//import java.util.ArrayList;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
+import java.util.HashMap;
+
+import net.sf.samtools.util.BlockCompressedInputStream;
+//import java.util.ArrayList;
 //import java.lang.StringBuffer;
 
 public class TabixReader {

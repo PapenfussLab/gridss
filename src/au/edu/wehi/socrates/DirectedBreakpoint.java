@@ -1,6 +1,5 @@
 package au.edu.wehi.socrates;
 
-import net.sf.samtools.SAMRecord;
 
 /**
  * Breakpoint evidence including at least one base of sequence at the breakpoint location 

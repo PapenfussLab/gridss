@@ -2,7 +2,6 @@ package au.edu.wehi.socrates;
 
 import java.util.List;
 
-import jdk.nashorn.internal.runtime.regexp.joni.constants.Arguments;
 import net.sf.samtools.SAMSequenceDictionary;
 import net.sf.samtools.SAMSequenceRecord;
 

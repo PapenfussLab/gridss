@@ -1,18 +1,19 @@
 package au.edu.wehi.socrates;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.util.List;
+
+import net.sf.samtools.SAMRecord;
 
 import org.broadinstitute.variant.variantcontext.VariantContext;
 import org.broadinstitute.variant.variantcontext.VariantContextBuilder;
 import org.junit.Before;
 import org.junit.Test;
 
-import net.sf.samtools.SAMRecord;
-
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
-
-import static org.junit.Assert.*;
 
 public class DirectedEvidenceIteratorTest extends TestHelper {
 	private List<SAMRecord> sv;

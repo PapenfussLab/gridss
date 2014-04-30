@@ -5,6 +5,16 @@ package net.wehi.socrates;
 
 import java.io.File;
 
+import net.sf.samtools.BAMRecordCodec;
+import net.sf.samtools.SAMFileHeader.SortOrder;
+import net.sf.samtools.SAMFileReader;
+import net.sf.samtools.SAMFileWriter;
+import net.sf.samtools.SAMFileWriterFactory;
+import net.sf.samtools.SAMRecord;
+import net.sf.samtools.SAMRecordCoordinateComparator;
+import net.sf.samtools.SAMRecordIterator;
+import net.sf.samtools.util.CloseableIterator;
+import net.sf.samtools.util.SortingCollection;
 import au.edu.wehi.socrates.util.ProgressVerbose;
 import au.edu.wehi.socrates.util.SAMFileInfo;
 //import java.io.FileInputStream;
@@ -12,18 +22,6 @@ import au.edu.wehi.socrates.util.SAMFileInfo;
 //import java.io.InputStreamReader;
 //import java.util.zip.GZIPInputStream;
 //import java.util.HashMap;
-
-
-import net.sf.samtools.SAMFileHeader.SortOrder;
-import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMFileWriter;
-import net.sf.samtools.SAMFileWriterFactory;
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMRecordIterator;
-import net.sf.samtools.BAMRecordCodec;
-import net.sf.samtools.SAMRecordCoordinateComparator;
-import net.sf.samtools.util.SortingCollection;
-import net.sf.samtools.util.CloseableIterator;
 
 /**
  * @author hsu

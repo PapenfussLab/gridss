@@ -1,13 +1,12 @@
 package au.edu.wehi.socrates;
 
+import static org.junit.Assert.assertEquals;
 import net.sf.samtools.SAMRecord;
 
 import org.broadinstitute.variant.variantcontext.VariantContextBuilder;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import au.edu.wehi.socrates.vcf.VcfSvConstants;
-import static org.junit.Assert.*;
 
 public class DirectedBreakpointAssemblyTest extends TestHelper {
 	@Test

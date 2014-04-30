@@ -2,9 +2,9 @@ package au.edu.wehi.socrates.sam;
 
 import java.nio.charset.StandardCharsets;
 
-import au.edu.wehi.socrates.BreakpointDirection;
 import net.sf.samtools.CigarOperator;
 import net.sf.samtools.SAMRecord;
+import au.edu.wehi.socrates.BreakpointDirection;
 
 /**
  * Breakend assembly
