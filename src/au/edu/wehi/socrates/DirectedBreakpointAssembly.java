@@ -13,6 +13,7 @@ import au.edu.wehi.socrates.vcf.VcfSvConstants;
 
 public class DirectedBreakpointAssembly extends VariantContextDirectedBreakpoint {
 	public static final String SOURCE_NAME = "socrates";
+	public final byte[] breakpointBaseQuality;
 	public static DirectedBreakpointAssembly create(DirectedBreakpointAssembly variant, SAMRecord realignment) {
 		if (realignment == null) return variant;
 		VariantContextBuilder builder = new VariantContextBuilder(variant);
@@ -66,19 +67,6 @@ public class DirectedBreakpointAssembly extends VariantContextDirectedBreakpoint
 			int readCount,
 			double breakpointQuality
 			) {
-		return create(processContext, assemblerName, referenceIndex, position, direction, breakpointSequence, fullAssembly, readCount, breakpointQuality);
-	}
-	public static DirectedBreakpointAssembly create(
-			ProcessingContext processContext,
-			String assemblerName,
-			int referenceIndex,
-			int position,
-			BreakpointDirection direction,
-			byte[] breakpointSequence,
-			byte[] fullAssembly,
-			Integer readCount,
-			double breakpointQuality
-			) {
 		String chr = processContext.getDictionary().getSequence(referenceIndex).getSequenceName();
 		VariantContextBuilder builder = new VariantContextBuilder()
 			.source(SOURCE_NAME)
@@ -105,10 +93,31 @@ public class DirectedBreakpointAssembly extends VariantContextDirectedBreakpoint
 			alt = '.' + breakStr + referenceBase;
 		}
 		builder.alleles(referenceBase, alt);
-		return new DirectedBreakpointAssembly(processContext, builder.make());
+		return new DirectedBreakpointAssembly(processContext, builder.make(), breakpointBaseQuality);
 	}
-	protected DirectedBreakpointAssembly(ProcessingContext processContext, VariantContext context) {
-		super(processContext, context);
+	public static DirectedBreakpointAssembly create(
+			ProcessingContext processContext,
+			String assemblerName,
+			int referenceIndex,
+			int position,
+			BreakpointDirection direction,
+			byte[] breakpointSequence,
+			byte[] fullAssembly,
+			Integer readCount,
+			double breakpointQuality
+			) {
+		return create(processContext, assemblerName, referenceIndex, position, direction, breakpointSequence, null, fullAssembly, null, readCount, breakpointQuality);
+	}
+	protected DirectedBreakpointAssembly(ProcessingContext processContext, VariantContext variant) {
+		this(processContext, variant, null);
+	}
+	protected DirectedBreakpointAssembly(ProcessingContext processContext, VariantContext variant, byte[] breakpointSequence) {
+		super(processContext, variant);
+		this.breakpointBaseQuality = breakpointSequence;
+	}
+	@Override
+	public byte[] getBreakpointQuality() {
+		return breakpointBaseQuality;
 	}
 	@Override
 	public boolean isValid() {

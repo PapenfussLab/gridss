@@ -96,7 +96,7 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
 	    	
 			final PeekingIterator<SAMRecord> iter = Iterators.peekingIterator(reader.iterator());
 			final PeekingIterator<SAMRecord> mateIter = Iterators.peekingIterator(mateReader.iterator());
-			final FastqWriter fastqWriter = new FastqWriterFactory().newWriter(FASTQ_OUTPUT);
+			final FastqBreakpointWriter fastqWriter = new FastqBreakpointWriter(new FastqWriterFactory().newWriter(FASTQ_OUTPUT));
 			final VariantContextWriter vcfWriter = new VariantContextWriterBuilder()
 				.setOutputFile(VCF_OUTPUT)
 				.setReferenceDictionary(dictionary)
@@ -109,17 +109,20 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
 			ReadEvidenceAssembler assembler = new DeBruijnAssembler(processContext, KMER);
 			while (dei.hasNext()) {
 				DirectedEvidence readEvidence = dei.next();
+				// Need to process assembly evidence first since assembly calls are made when the
+				// evidence falls out of scope so processing a given position will emit evidence
+				// for a previous position (for it is only at this point we know there is no more
+				// evidence for the previous position).
+				processAssemblyEvidence(assembler.addEvidence(readEvidence), fastqWriter, vcfWriter);
 				if (readEvidence instanceof SoftClipEvidence) {
 					SoftClipEvidence sce = (SoftClipEvidence)readEvidence;
-					if (sce.getMappingQuality() > MIN_MAPQ &&
-							sce.getSoftClipLength() > LONG_SC_LEN &&
-							sce.getAlignedPercentIdentity() > MIN_PERCENT_IDENTITY &&
-							sce.getAverageClipQuality() > MIN_LONG_SC_BASE_QUALITY) {
-						FastqRecord fastq = BreakpointFastqEncoding.getRealignmentFastq(sce);
-						fastqWriter.write(fastq);
+					if (sce.getMappingQuality() >= MIN_MAPQ &&
+							sce.getSoftClipLength() >= LONG_SC_LEN &&
+							sce.getAlignedPercentIdentity() >= MIN_PERCENT_IDENTITY &&
+							sce.getAverageClipQuality() >= MIN_LONG_SC_BASE_QUALITY) {
+						fastqWriter.write(sce);
 					}
 				}
-				processAssemblyEvidence(assembler.addEvidence(readEvidence), fastqWriter, vcfWriter);
 			}
 			processAssemblyEvidence(assembler.endOfEvidence(), fastqWriter, vcfWriter);
 	    	fastqWriter.close();
@@ -132,12 +135,11 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
     	}
         return 0;
     }
-    private void processAssemblyEvidence(Iterable<DirectedBreakpointAssembly> evidenceList, FastqWriter fastqWriter, VariantContextWriter vcfWriter) {
+    private void processAssemblyEvidence(Iterable<DirectedBreakpointAssembly> evidenceList, FastqBreakpointWriter fastqWriter, VariantContextWriter vcfWriter) {
     	if (evidenceList != null) {
 	    	for (DirectedBreakpointAssembly a : evidenceList) {
 	    		if (a != null) {
-		    		FastqRecord fastq = BreakpointFastqEncoding.getRealignmentFastq(a);
-		    		fastqWriter.write(fastq);
+	    			fastqWriter.write(a);
 		    		vcfWriter.add(a);
 	    		}
 	    	}

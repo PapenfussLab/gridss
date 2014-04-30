@@ -1,6 +1,6 @@
 package au.edu.wehi.socrates;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import net.sf.samtools.SAMRecord;
 
 import org.broadinstitute.variant.variantcontext.VariantContextBuilder;
@@ -145,5 +145,10 @@ public class DirectedBreakpointAssemblyTest extends TestHelper {
 			.getAttributeAsString(VcfSvConstants.SV_TYPE_KEY, null));
 		assertEquals("BND", DirectedBreakpointAssembly.create(DirectedBreakpointAssembly.create(getContext(), "test", 0, 1, BreakpointDirection.Forward, B("A"), B("AA"), 1, 0), Read(0, 1, "10M"))
 				.getAttributeAsString(VcfSvConstants.SV_TYPE_KEY, null));
+	}
+	@Test
+	public void should_assembly_base_qualities() {
+		DirectedBreakpointAssembly dba = DirectedBreakpointAssembly.create(getContext(), "test", 0, 1, BreakpointDirection.Forward, B("TTT"), new byte[] { 1,2,3 }, B("ATTT"), new byte[] { 1,2,3,4}, 1, 0);
+		assertArrayEquals(new byte[] {1, 2, 3}, dba.getBreakpointQuality());
 	}
 }

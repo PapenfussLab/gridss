@@ -36,6 +36,7 @@ public class KmerEncodingHelper {
 			result <<= 2;
 			result |= picardBaseToEncoded(bases[i]);
 		}
+		assertValid(k, result);
 		return result;
 	}
 	private static byte encodedToPicardBase(long encoded) {
@@ -53,6 +54,11 @@ public class KmerEncodingHelper {
 	public static byte lastBaseEncodedToPicardBase(long state, int k) {
 		return encodedToPicardBase(state);
 	}
+	public static void assertValid(int k, long encoded) {
+		if (encoded >> (2 * k) != 0) {
+			throw new IllegalArgumentException(String.format("Sanity check failure: state %d is not a %dmer", encoded, k));
+		}
+	}
 	/**
 	 * Converts a 2bit encoded kmer into picard bases  
 	 * @see http://genome.ucsc.edu/FAQ/FAQformat#format7
@@ -60,19 +66,17 @@ public class KmerEncodingHelper {
 	 * @return 2bit
 	 */
 	public static byte[] encodedToPicardBases(long encoded, int length) {
+		assertValid(length, encoded);
 		long state = encoded;
 		byte[] result = new byte[length];
 		for (int i = 0; i < length; i++) {
 			result[length - i - 1] = lastBaseEncodedToPicardBase(state, length);
 			state >>= 2;
 		}
-		if (state != 0) {
-			throw new IllegalArgumentException(String.format("Sanity check failure: %d is not a valid %dmer", encoded, length));
-		}
 		return result;
 	}
 	public static long[] nextStates(long encoded, int length) {
-		long next = clearBase(encoded, length - 1) << 2;
+		long next = clearBase(length - 1, encoded) << 2;
 		return new long[] {
 				next,
 				next | 1,
@@ -90,15 +94,15 @@ public class KmerEncodingHelper {
 		};
 	}
 	public static long nextState(int k, long state, byte picardBase) {
-		long next = clearBase(state, k - 1) << 2;
+		assertValid(k, state);
+		long next = clearBase(k - 1, state) << 2;
 		next = next | picardBaseToEncoded(picardBase);
-		if (next > (1 << (2 * k))) {
-			throw new IllegalArgumentException(String.format("Sanity check failure: calculated state %d is not a %dmer", next, k));
-		}
+		assertValid(k, next);
 		return next;
 	}
-	private static long clearBase(long state, int offset) {
-		return state & ~((1 << (2*offset+1)) | (1 << (2*offset)));
+	private static long clearBase(int k, long state) {
+		long bitsToClear = (1L << ((2*k)+1)) | (1L << (2*k));
+		return state & ~bitsToClear;
 	}
 	public static String toString(int k, long state) {
 		StringBuilder sb = new StringBuilder();

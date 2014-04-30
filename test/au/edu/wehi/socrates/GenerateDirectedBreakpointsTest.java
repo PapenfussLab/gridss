@@ -2,11 +2,21 @@ package au.edu.wehi.socrates;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
+import java.util.List;
+
+import net.sf.picard.fastq.FastqRecord;
 import net.sf.samtools.SAMRecord;
 
 import org.junit.Test;
 
 public class GenerateDirectedBreakpointsTest extends CommandLineTest {
+	public SAMRecord validSC(String seq, int referenceIndex, int position, String cigar) {
+		SAMRecord r = withSequence(seq, Read(referenceIndex, position, cigar))[0];
+		r.setMappingQuality(5);
+		return r;
+	}
+			
 	public SAMRecord ValidSC() {
 		SAMRecord r = Read(0, 1, "25S50M25S");
 		r.setReadName("SC1");
@@ -32,8 +42,8 @@ public class GenerateDirectedBreakpointsTest extends CommandLineTest {
 		generateDirectedBreakpoints("polyA");
 		assertTrue(fastq.exists());
 		assertEquals(2, getFastqRecords().size());
-		assertEquals("fSC1", getFastqRecords().get(0).getReadHeader());
-		assertEquals("bSC1", getFastqRecords().get(1).getReadHeader());
+		assertTrue(getFastqRecords().get(0).getReadHeader().contains("SC1"));
+		assertTrue(getFastqRecords().get(1).getReadHeader().contains("SC1"));
 		assertEquals("AAAAAAAAAAAAAAAAAAAAAAAAA", getFastqRecords().get(0).getReadString());
 		// +33 encoding of mapping quality 5
 		assertEquals("&&&&&&&&&&&&&&&&&&&&&&&&&", getFastqRecords().get(0).getBaseQualityString());
@@ -93,16 +103,18 @@ public class GenerateDirectedBreakpointsTest extends CommandLineTest {
 	}
 	@Test
 	public void debruijn_should_generate_fastq() {
-		createInput();
+		createInput(
+				withSequence("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGA", Read(0, 1, "1M98S")),
+				withSequence("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", Read(0, 1, "1M99S"))
+				);
 		extractEvidence();
 		generateDirectedBreakpoints("polyA", null, null, null, null, null);
 		assertTrue(fastq.exists());
 		assertEquals(1, getFastqRecords().size());
-		assertTrue("TODO: de bruijn graph", false);
+		assertEquals("ATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", getFastqRecords().get(0).getReadString());
 	}
 	@Test
 	public void debruijn_should_generate_vcf() {
-		// TODO: fix test so we actually assemble something
 		SAMRecord r1 = Read(0, 1, "1M5S");
 		r1.setReadBases(B("AACGT"));
 		SAMRecord r2 = Read(0, 1, "1M6S");
@@ -118,5 +130,27 @@ public class GenerateDirectedBreakpointsTest extends CommandLineTest {
 		extractEvidence();
 		generateDirectedBreakpoints("polyA");
 		shouldExist("input.bam.socrates.polyA.breakend.vcf");
+	}
+	@Test
+	public void should_make_calls_in_order() {
+		createInput(
+				// first assembly
+				validSC("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGA", 0, 1, "1M98S"),
+				validSC("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", 0, 1, "1M99S"),
+				// second assembly
+				validSC("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGA", 0, 10, "1M98S"),
+				validSC("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", 0, 10, "1M99S")
+				);
+		extractEvidence();
+		generateDirectedBreakpoints("polyA");
+		assertTrue(fastq.exists());
+		List<FastqRecord> out = getFastqRecords();
+		assertEquals(6, out.size());
+		assertTrue(out.get(0).getReadHeader().startsWith("0#1#"));
+		assertTrue(out.get(1).getReadHeader().startsWith("0#1#"));
+		assertTrue(out.get(2).getReadHeader().startsWith("0#1#"));
+		assertTrue(out.get(3).getReadHeader().startsWith("0#10#"));
+		assertTrue(out.get(4).getReadHeader().startsWith("0#10#"));
+		assertTrue(out.get(5).getReadHeader().startsWith("0#10#"));
 	}
 }

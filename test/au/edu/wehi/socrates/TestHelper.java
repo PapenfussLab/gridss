@@ -3,6 +3,7 @@ package au.edu.wehi.socrates;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import net.sf.picard.reference.ReferenceSequenceFile;
@@ -63,12 +64,12 @@ public class TestHelper {
 	}
 	static public List<SAMRecord> sorted(List<SAMRecord> list) {
 		List<SAMRecord> out = Lists.newArrayList(list);
-		out.sort(new SAMRecordCoordinateComparator());
+		Collections.sort(out, new SAMRecordCoordinateComparator());
 		return out;
 	}
 	static public List<SAMRecord> mateSorted(List<SAMRecord> list) {
 		List<SAMRecord> out = Lists.newArrayList(list);
-		out.sort(new SAMRecordMateCoordinateComparator());
+		Collections.sort(out, new SAMRecordMateCoordinateComparator());
 		return out;
 	}
 	static public <T> List<T> toList(T... data) {
@@ -114,8 +115,11 @@ public class TestHelper {
 		return data;
 	}
 	static public SAMRecord[] withSequence(String seq, SAMRecord... data) {
+		byte[] qual = B(seq);
+		for (int i = 0; i < qual.length; i++) qual[i] = 30;
 		for (SAMRecord r : data) {
 			r.setReadBases(B(seq));
+			r.setBaseQualities(qual);
 		}
 		return data;
 	}

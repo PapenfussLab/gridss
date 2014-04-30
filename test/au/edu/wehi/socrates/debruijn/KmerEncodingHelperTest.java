@@ -17,7 +17,12 @@ public class KmerEncodingHelperTest extends TestHelper {
 	}
 	@Test
 	public void picardBaseToEncoded_should_allow_both_upper_and_lower_case() {
-		assertEquals(0,  KmerEncodingHelper.picardBaseToEncoded(1, new byte[] {'T'}));
+		assertEquals(1,  KmerEncodingHelper.picardBaseToEncoded(1, new byte[] {'C'}));
+		assertEquals(1,  KmerEncodingHelper.picardBaseToEncoded(1, new byte[] {'c'}));
+	}
+	@Test
+	public void picardBaseToEncoded_should_initial_array_bases() {
+		assertEquals(10,  KmerEncodingHelper.picardBaseToEncoded(2, B("AACC")));
 	}
 	@Test
 	public void encoding_should_rountrip() {
@@ -26,6 +31,14 @@ public class KmerEncodingHelperTest extends TestHelper {
 	@Test
 	public void nextState_should_clear_higher_bits() {
 		assertEquals(15, KmerEncodingHelper.nextState(2, 15, (byte)'G'));
+	}
+	@Test
+	public void nextState_should_handle_25mer() {
+		assertEquals(750599937895082L, KmerEncodingHelper.nextState(25, 750599937895082L, (byte)'A'));
+	}
+	@Test
+	public void nextState_should_handle_31mer() {
+		assertEquals(KmerEncodingHelper.picardBaseToEncoded(31, B("TATATATATATATATATATATATATATATAG")), KmerEncodingHelper.nextState(31, KmerEncodingHelper.picardBaseToEncoded(31, B("ATATATATATATATATATATATATATATATA")), (byte)'G'));
 	}
 	@Test
 	public void next_state_should_advance_forward() {
