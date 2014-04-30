@@ -8,9 +8,9 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
 	<classpathentry kind="lib" path="lib/guava-16.0.1.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="/picard/dist/picard-1.112.jar"/>
-	<classpathentry kind="lib" path="/picard/dist/sam-1.112.jar" sourcepath="/picard/src/java"/>
-	<classpathentry kind="lib" path="/picard/dist/tribble-1.112.jar"/>
-	<classpathentry kind="lib" path="/picard/dist/variant-1.112.jar" sourcepath="/picard/src/java"/>
+	<classpathentry kind="lib" path="lib/picard-1.112.jar"/>
+	<classpathentry kind="lib" path="lib/sam-1.112.jar"/>
+	<classpathentry kind="lib" path="lib/tribble-1.112.jar"/>
+	<classpathentry kind="lib" path="lib/variant-1.112.jar" sourcepath="/picard/src/java"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
