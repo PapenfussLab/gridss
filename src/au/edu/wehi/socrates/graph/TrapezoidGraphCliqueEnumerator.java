@@ -11,7 +11,7 @@ import com.google.common.collect.TreeMultimap;
  * 
  * @author Daniel Cameron
  */
-public class BreakpointIntervalOverlapGraph implements Iterable<BreakpointInterval> {
+public class TrapezoidGraphCliqueIterator {
 	private SortedSetMultimap<Long, BreakpointInterval> intervals = TreeMultimap.create(null, null);
 	/**
 	 * Adds a link between the given intervals
@@ -20,6 +20,7 @@ public class BreakpointIntervalOverlapGraph implements Iterable<BreakpointInterv
 	public void add(BreakpointInterval interval) {
 		intervals.put(interval.start1, interval);
 	}
+	
 	@Override
 	public Iterator<BreakpointInterval> iterator() {
 		// Traverse graph and find all maximum cliques
