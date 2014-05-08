@@ -9,11 +9,11 @@ import static org.junit.Assert.*;
 import com.google.common.collect.Lists;
 
 public class TrapezoidGraphTest {
-	private TrapezoidGraphNode N(long start1, long end1, long start2, long end2) {
-		return new TrapezoidGraphNode(start1, end1, start2, end2, 1);
+	private TrapezoidGraphNode N(long startX, long endX, long startY, long endY) {
+		return new TrapezoidGraphNode(startX, endX, startY, endY, 1);
 	}
-	private TrapezoidGraphNode N(long start1, long end1, long start2, long end2, double weight) {
-		return new TrapezoidGraphNode(start1, end1, start2, end2, weight);
+	private TrapezoidGraphNode N(long startX, long endX, long startY, long endY, double weight) {
+		return new TrapezoidGraphNode(startX, endX, startY, endY, weight);
 	}
 	TrapezoidGraph graph; 
 	private TrapezoidGraphNode[] getCliques(TrapezoidGraphNode[] nodes) {
@@ -26,10 +26,10 @@ public class TrapezoidGraphTest {
 	}
 	private void assertContains(TrapezoidGraphNode[] expected, TrapezoidGraphNode test) {
 		for (TrapezoidGraphNode n : expected) {
-			if (test.start1 == n.start1
-					&& test.end1 == n.end1
-					&& test.start2 == n.start2
-					&& test.end2 == n.end2
+			if (test.startX == n.startX
+					&& test.endX == n.endX
+					&& test.startY == n.startY
+					&& test.endY == n.endY
 					&& test.weight == n.weight) {
 				return;
 			}
@@ -39,7 +39,7 @@ public class TrapezoidGraphTest {
 	private TrapezoidGraphNode[] flipXY(TrapezoidGraphNode[] a) {
 		TrapezoidGraphNode[] r = new TrapezoidGraphNode[a.length];
 		for (int i = 0; i < a.length; i++) {
-			r[i] = new TrapezoidGraphNode(a[i].start2, a[i].end2, a[i].start1, a[i].end1, a[i].weight);
+			r[i] = new TrapezoidGraphNode(a[i].startY, a[i].endY, a[i].startX, a[i].endX, a[i].weight);
 		}
 		return r;
 	}
@@ -88,7 +88,7 @@ public class TrapezoidGraphTest {
 	}
 	@Test
 	public void x_start_overlap() {
-		// only need to test first start1 <= second start1 due to symmetry 
+		// only need to test first startX <= second startX due to symmetry 
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,1,1,1)}, N(1,1,1,1,2));
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,1,1,2)}, N(1,1,1,2,2));
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,1,1,3)}, N(1,1,1,3,2));
@@ -135,7 +135,7 @@ public class TrapezoidGraphTest {
 	}
 	@Test
 	public void x_end_overlap() {
-		// first start1 < second start1
+		// first startX < second startX
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(2,3,1,1)}, N(2,3,1,1,2));
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(2,3,1,2)}, N(2,3,1,2,2));
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(2,3,1,3)}, N(2,3,1,3,2));

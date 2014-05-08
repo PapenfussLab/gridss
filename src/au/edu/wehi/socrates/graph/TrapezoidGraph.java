@@ -2,118 +2,144 @@ package au.edu.wehi.socrates.graph;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.NavigableMap;
 import java.util.PriorityQueue;
 import java.util.Queue;
+import java.util.SortedMap;
 import java.util.SortedSet;
-
-import javafx.collections.transformation.SortedList;
-import au.edu.wehi.socrates.BreakpointInterval;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.Queues;
-import com.google.common.collect.SortedSetMultimap;
-import com.google.common.collect.TreeMultimap;
+import com.google.common.collect.Sets;
 /**
  * Trapezoid graph implementation
  * 
  * @author Daniel Cameron
  */
 public class TrapezoidGraph {
-	//private SortedSetMultimap<Long, TrapezoidGraphNode> intervals = TreeMultimap.create(null, null);
-	private SortedSet<TrapezoidGraphNode> nodes; // sorted by (start1, start2)
+	// Need a map since Set is missing a get method in Java and we don't want adding weight to an existing value to be an O(n) operation   
+	private SortedMap<TrapezoidGraphNode, TrapezoidGraphNode> nodes = Maps.newTreeMap(new TrapezoidGraphNodeStartXYComparator()); // sorted by startX, startY, then unimportant (but needed for uniqueness)
 	/**
 	 * Adds the given vertex to the trapezoid graph 
 	 * @param node vertex to add
 	 */
 	public void add(TrapezoidGraphNode node) {
-		if (nodes.contains(node)) {
-			// combine weights
-			throw new RuntimeException("NYI");
-		} else {
-			nodes.add(node);
+		if (nodes.containsKey(node)) {
+			node = new TrapezoidGraphNode(node, nodes.get(node).weight);
 		}
+		nodes.put(node, node);
 	}
-	private class MaximalCliqueEnumerator extends AbstractIterator<TrapezoidGraphNode> {
-		private PeekingIterator<TrapezoidGraphNode> nodeIt;
+	private static class MaximalCliqueEnumerator extends AbstractIterator<TrapezoidGraphNode> {
+		private final PeekingIterator<TrapezoidGraphNode> nodeIt;
 		private final Queue<TrapezoidGraphNode> outputBuffer = Queues.newArrayDeque();
-		PriorityQueue<TrapezoidGraphNode> nodeEnding; // sorted by (end1, start2)
-		//private SortedList<SortedList<TrapezoidGraphNode>> nodeEnding; // sorted by (end1); sorted by (start2)
-		private SortedSet<TrapezoidGraphNode> activeNodes; // sorted by (start2)
+		private final PriorityQueue<TrapezoidGraphNode> activeEndingX = new PriorityQueue<TrapezoidGraphNode>(11, new TrapezoidGraphNodeEndXYComparator()); // sorted by endX
+		private final SortedSet<TrapezoidGraphNode> activeX = Sets.newTreeSet(new TrapezoidGraphNodeStartYXComparator()); // sorted by startY, then unimportant (but needed for uniqueness)
+		public MaximalCliqueEnumerator(Iterator<TrapezoidGraphNode> nodeIt) {
+			this.nodeIt = Iterators.peekingIterator(nodeIt);
+		}
 		/**
 		 * Gets the next unprocessed scanline
 		 * @return next scanline to process
 		 */
-		private long getNextScanline() {
-			if (nodeIt.hasNext() && !nodeEnding.isEmpty()) {
-				return Math.min(nodeIt.peek().start1, nodeEnding.peek().end1);
+		private long getNextX() {
+			if (nodeIt.hasNext() && !activeEndingX.isEmpty()) {
+				return Math.min(nodeIt.peek().startX, activeEndingX.peek().endX);
 			} else if (nodeIt.hasNext()) {
-				return nodeIt.peek().start1;
-			} else if (!nodeEnding.isEmpty()) {
-				return nodeEnding.peek().end1;
+				return nodeIt.peek().startX;
+			} else if (!activeEndingX.isEmpty()) {
+				return activeEndingX.peek().endX;
 			} else {
 				return Long.MAX_VALUE;
 			}
 		}
-		private void addToActive(TrapezoidGraphNode node) {
-			activeNodes.add(node);
-			nodeEnding.add(node);
-		}
 		private void processNextScanline() {
-			long currentLine = getNextScanline();
+			long currentX = getNextX();
 			// add new nodes to working set
-				// nodeEndings += new
-				// activeNodes += new
-			while (nodeIt.hasNext() && nodeIt.peek().start1 == currentLine) {
-				addToActive(nodeIt.next());
-			}			
-			List<TrapezoidGraphNode> endingHere = pollScanlineEnd1(nodeEnding, currentLine);
-			// IntervalSet<Long, Long> callIntervals = getScanlines(endingHere);
-			// for maximal cliques in activeNodes intersect callIntervals
-				//outputBuffer.add(call)
-			
-			// for node in endingHere
-				// remove node from activeNodes
+			while (nodeIt.hasNext() && nodeIt.peek().startX == currentX) {
+				TrapezoidGraphNode startingHere = activeEndingX.poll();
+				activeX.add(startingHere);
+				activeEndingX.add(startingHere);
+			}
+			// process maximal cliques on current scan-line
+			outputBuffer.addAll(maximalCliques(currentX));
+			// remove cliques
+			while (!activeEndingX.isEmpty() && activeEndingX.peek().endX == currentX) {
+				TrapezoidGraphNode endingHere = activeEndingX.poll();
+				activeX.remove(endingHere);
+			}
 		}
 		@Override
 		protected TrapezoidGraphNode computeNext() {
-			while (!outputBuffer.isEmpty()) {
+			while (outputBuffer.isEmpty() && getNextX() != Long.MAX_VALUE) {
 				 processNextScanline();
-			 }
+			}
 			if (outputBuffer.isEmpty()) {
 				return endOfData();
-			} else {
-				return outputBuffer.poll();
 			}
+			return outputBuffer.poll();
+		}
+		private List<TrapezoidGraphNode> maximalCliques(long xend) {
+			List<TrapezoidGraphNode> cliques = Lists.newArrayList();
+			SortedSet<TrapezoidGraphNode> xstart = Sets.newTreeSet(new TrapezoidGraphNodeStartXYComparator()); // sorted by startX, then unimportant (but needed for uniqueness)
+			PriorityQueue<TrapezoidGraphNode> endY = new PriorityQueue<TrapezoidGraphNode>(11, new TrapezoidGraphNodeEndYXComparator()); // sorted by endY
+			long ystart = Long.MIN_VALUE;
+			boolean inMaximal = false;
+			double currentWeight = 0;
+			// TODO: can we move the calling into the endingX loop of processNextScanline?
+			// what data structure would be need? Some sort of hierarchical range interval set
+			PeekingIterator<TrapezoidGraphNode> yit = Iterators.peekingIterator(activeX.iterator());
+			for (long y = getNextY(yit, endY); y != Long.MAX_VALUE; y = getNextY(yit, endY)) {
+				// add starting set
+				while (yit.hasNext() && yit.peek().startY == y) {
+					TrapezoidGraphNode startingHere = yit.next();
+					endY.add(startingHere);
+					xstart.add(startingHere);
+					currentWeight += startingHere.weight;
+					if (startingHere.endX == xend) {
+						// upper x bound of maximal clique must match upper x bound of a clique member
+						// only set maximal if 
+						inMaximal = true;
+						ystart = y;
+					}
+				}
+				if (endY.peek().endY == y) {
+					if (inMaximal) {
+						// we just hit the end of a maximal clique
+						cliques.add(new TrapezoidGraphNode(xstart.first().startX, xend, ystart, y, currentWeight));
+					}
+					// remove all nodes that end here from the active set
+					while (endY.peek().endY == y) {
+						TrapezoidGraphNode endingHere = endY.poll();
+						xstart.remove(endingHere);
+						currentWeight -= endingHere.weight;
+					}
+					inMaximal = false; // no longer maximal
+					ystart = Long.MIN_VALUE;
+				}
+			}
+			return cliques;
+		}
+	}
+	private static long getNextY(PeekingIterator<TrapezoidGraphNode> startIterator, Queue<TrapezoidGraphNode> endCollection) {
+		if (startIterator.hasNext() && !endCollection.isEmpty()) {
+			return Math.min(startIterator.peek().startY, endCollection.peek().endY);
+		} else if (startIterator.hasNext()) {
+			return startIterator.peek().startY;
+		} else if (!endCollection.isEmpty()) {
+			return endCollection.peek().endY;
+		} else {
+			return Long.MAX_VALUE;
 		}
 	}
 	/**
-	 * removes items from the head of the queue whose end1 matches the given value
-	 * @param queue queue to poll
-	 * @param end1 end1 to match 
-	 * @return list of all matches removed from the queue
+	 * Gets all maximal cliques in the graph
+	 * @return maximal cliques
 	 */
-	private static List<TrapezoidGraphNode> pollScanlineEnd1(Queue<TrapezoidGraphNode> queue, long end1) {
-		List<TrapezoidGraphNode> list = Lists.newArrayList();
-		while (queue.peek().end1 == end1) {
-			list.add(queue.poll());
-		}
-		return list;
-	}
 	public Iterator<TrapezoidGraphNode> getAllMaximalCliques() {
-		return new MaximalCliqueEnumerator();
-		// Traverse graph and find all maximum cliques
-		// Boxicity = 2
-		
-		// geometric equivalence:
-				// maximal clique == area (ie all points (p1, p2)) in trapezoid of overlap 
-				// maximal clique equivalent to all reads matching: a given point
-				
-				// OEA evidence interval for fusion requires mate to overlap actual fusion sequence [minFragmentSize, maxFragmentSize]
-				// OEA evidence interval is [0, maxFragmentSize]
+		return new MaximalCliqueEnumerator(nodes.values().iterator());
 	}
 }
  
