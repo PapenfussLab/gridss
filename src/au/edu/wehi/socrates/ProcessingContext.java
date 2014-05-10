@@ -22,6 +22,17 @@ public class ProcessingContext {
 		this.linear = new LinearGenomicCoordinate(dictionary);
 		this.metrics = metrics;
 	}
+	public ProcessingContext(
+			ReferenceSequenceFile reference,
+			RelevantMetrics metrics) {
+			this.reference = reference;
+			this.dictionary = reference.getSequenceDictionary();
+			if (this.dictionary == null) {
+				throw new RuntimeException("Missing sequence dictionary for reference genome. Please create using picard CreateSequenceDictionary.");
+			}
+			this.linear = new LinearGenomicCoordinate(dictionary);
+			this.metrics = metrics;
+		}
 	public ReferenceSequenceFile getReference() {
 		return reference;
 	}

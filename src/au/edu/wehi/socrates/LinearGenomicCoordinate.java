@@ -1,6 +1,9 @@
 package au.edu.wehi.socrates;
 
 import java.util.List;
+import java.util.NavigableMap;
+
+import com.google.common.collect.Maps;
 
 import net.sf.samtools.SAMSequenceDictionary;
 import net.sf.samtools.SAMSequenceRecord;
@@ -12,8 +15,9 @@ import net.sf.samtools.SAMSequenceRecord;
  *
  */
 public class LinearGenomicCoordinate {
-	private SAMSequenceDictionary dictionary;
+	private final SAMSequenceDictionary dictionary;
 	private long[] offset;
+	private NavigableMap<Long, Integer> referenceIndices;
 	/**
 	 * Create a coordinate lookup from the given dictionary
 	 * @param dictionary sequence dictionary
@@ -21,22 +25,28 @@ public class LinearGenomicCoordinate {
 	 */
 	public LinearGenomicCoordinate(SAMSequenceDictionary dictionary, int buffer) {
 		this.dictionary = dictionary;
-		this.offset = generateLookup(dictionary.getSequences(), buffer);
+		generateLookups(dictionary.getSequences(), buffer);
 	}
 	public LinearGenomicCoordinate(SAMSequenceDictionary dictionary) {
 		this(dictionary, 0);
 	}
-	private static long[] generateLookup(List<SAMSequenceRecord> sequences, int buffer) {
-		long[] lookup = new long[sequences.size()];
+	private void generateLookups(List<SAMSequenceRecord> sequences, int buffer) {
+		offset = new long[sequences.size()];
 		long cumsum = buffer;
 		for (int i = 0; i < sequences.size(); i++) {
-			lookup[i] = cumsum;
+			offset[i] = cumsum;
 			cumsum += sequences.get(i).getSequenceLength() + buffer;
 			if (sequences.get(i).getSequenceLength() == 0) {
 				throw new IllegalArgumentException(String.format("Missing length for contig %s", sequences.get(i).getSequenceName()));
 			}
 		}
-		return lookup;
+		referenceIndices = Maps.newTreeMap();
+		for (int i = 0; i < sequences.size(); i++) {
+			referenceIndices.put(offset[i], i);
+		}
+		// add sentinels so lookup always succeeds
+		referenceIndices.put(Long.MIN_VALUE, -1);
+		referenceIndices.put(offset[sequences.size()-1] + sequences.get(sequences.size()-1).getSequenceLength() + buffer, -1);
 	}
 	public long getLinearCoordinate(int referenceIndex, long pos) {
 		if (referenceIndex < 0 || referenceIndex >= offset.length) {
@@ -49,5 +59,13 @@ public class LinearGenomicCoordinate {
 	}
 	public long getStartLinearCoordinate(BreakpointLocation bp) {
 		return getLinearCoordinate(bp.referenceIndex, bp.start);
+	}
+	public int getReferenceIndex(long linearCoordinate) {
+		return referenceIndices.floorEntry(linearCoordinate).getValue();
+	}
+	public int getReferencePosition(long linearCoordinate) {
+		int referenceIndex = getReferenceIndex(linearCoordinate);
+		if (referenceIndex < 0) return -1;
+		return (int)(linearCoordinate - getLinearCoordinate(referenceIndex, 0));
 	}
 }

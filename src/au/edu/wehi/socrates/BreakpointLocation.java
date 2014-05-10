@@ -40,4 +40,15 @@ public class BreakpointLocation {
 		this.end = location.end;
 		this.qual = qual;
 	}
+	protected static String toString(int referenceIndex, int start, int end) {
+		return String.format("%d:%d-%d");
+	}
+	protected static String toString(BreakpointDirection direction, int referenceIndex, int start, int end) {
+		if (direction == BreakpointDirection.Forward) return toString(referenceIndex, start, end) + ">";
+		return "<" + toString(referenceIndex, start, end);
+	}
+	@Override
+	public String toString() {
+		return String.format("%s %.1f", toString(direction, referenceIndex, start, end), qual);
+	}
 }

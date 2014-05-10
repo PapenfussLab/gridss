@@ -1,10 +1,11 @@
 package au.edu.wehi.socrates.graph;
 
+import static org.junit.Assert.*;
+
+import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Test;
-
-import static org.junit.Assert.*;
 
 import com.google.common.collect.Lists;
 
@@ -24,18 +25,6 @@ public class TrapezoidGraphTest {
 		List<TrapezoidGraphNode> result = Lists.newArrayList(graph.getAllMaximalCliques());
 		return result.toArray(new TrapezoidGraphNode[0]);
 	}
-	private void assertContains(TrapezoidGraphNode[] expected, TrapezoidGraphNode test) {
-		for (TrapezoidGraphNode n : expected) {
-			if (test.startX == n.startX
-					&& test.endX == n.endX
-					&& test.startY == n.startY
-					&& test.endY == n.endY
-					&& test.weight == n.weight) {
-				return;
-			}
-		}
-		fail("Unexpected maximal clique call: " + test.toString());
-	}
 	private TrapezoidGraphNode[] flipXY(TrapezoidGraphNode[] a) {
 		TrapezoidGraphNode[] r = new TrapezoidGraphNode[a.length];
 		for (int i = 0; i < a.length; i++) {
@@ -43,11 +32,17 @@ public class TrapezoidGraphTest {
 		}
 		return r;
 	}
-	private void assertMatches(TrapezoidGraphNode[] expected, TrapezoidGraphNode[] actual) {
-		assertEquals("Number of cliques called does not match expected number", expected.length, actual.length);
-		for (TrapezoidGraphNode n : actual) {
-			assertContains(expected, n);
+	private String toString(TrapezoidGraphNode[] nodes) {
+		StringBuilder sb = new StringBuilder();
+		List<TrapezoidGraphNode> x = TrapezoidGraphNode.ByStartXYEndXY.sortedCopy(Arrays.asList(nodes));
+		for (TrapezoidGraphNode n : x) {
+			sb.append(n.toString());
+			sb.append('\n');
 		}
+		return sb.toString();
+	}
+	private void assertMatches(TrapezoidGraphNode[] expected, TrapezoidGraphNode[] actual) {
+		assertEquals(toString(expected), toString(actual));
 	}
 	private void go(TrapezoidGraphNode[] input, TrapezoidGraphNode... expected) {		
 		assertMatches(expected, getCliques(input));
@@ -63,15 +58,30 @@ public class TrapezoidGraphTest {
 	}
 	@Test
 	public void contains() {
-		go(new TrapezoidGraphNode[] {N(1,1,4,4), N(2,2,3,3)}, N(2,2,3,3,2));
+		go(new TrapezoidGraphNode[] {N(1,4,1,4), N(2,2,3,3)}, N(2,2,3,3,2));
+	}
+	@Test
+	public void contains_subsequent() {
+		// smaller
+		go(new TrapezoidGraphNode[] {N(1,6,1,6), N(2,5,2,3), N(3,4,4,5)}, N(2,5,2,3,2), N(3,4,4,5,2));
+		// larger
+		go(new TrapezoidGraphNode[] {N(1,6,1,6), N(2,5,4,5), N(3,4,2,3)}, N(2,5,4,5,2), N(3,4,2,3,2));
+		// overlap
+		go(new TrapezoidGraphNode[] {N(1,6,1,6), N(2,4,4,5), N(3,5,2,3)}, N(2,4,4,5,2), N(3,5,2,3,2));
+		go(new TrapezoidGraphNode[] {N(1,6,1,6), N(3,5,4,5), N(2,4,2,3)}, N(3,5,4,5,2), N(2,4,2,3,2));
+	}
+	@Test
+	public void adjacent_parents() {
+		go(new TrapezoidGraphNode[] {N(1,3,1,5), N(3,5,1,5), N(2,4,1,2), N(2,4,3,4)}, N(3,3,1,2,3), N(3,3,3,4,3));
+		go(new TrapezoidGraphNode[] {N(1,3,1,6), N(4,6,1,6), N(2,5,2,3), N(2,5,4,5)}, N(2,3,2,3,2), N(4,5,2,3,2), N(2,3,4,5,2), N(4,5,4,5,2));
 	}
 	@Test
 	public void partial_overlap() {
-		go(new TrapezoidGraphNode[] {N(1,1,4,4), N(0,2,2,3)}, N(1,2,2,3,2));
-		go(new TrapezoidGraphNode[] {N(1,1,4,4), N(0,2,2,5)}, N(1,2,2,4,2));
-		go(new TrapezoidGraphNode[] {N(1,1,4,4), N(2,3,2,5)}, N(2,3,2,4,2));
-		go(new TrapezoidGraphNode[] {N(1,1,4,4), N(3,5,2,5)}, N(3,4,2,4,2));
-		go(new TrapezoidGraphNode[] {N(1,1,4,4), N(3,5,2,3)}, N(3,4,2,3,2));
+		go(new TrapezoidGraphNode[] {N(1,4,1,4), N(0,2,2,3)}, N(1,2,2,3,2));
+		go(new TrapezoidGraphNode[] {N(1,4,1,4), N(0,2,2,5)}, N(1,2,2,4,2));
+		go(new TrapezoidGraphNode[] {N(1,4,1,4), N(2,3,2,5)}, N(2,3,2,4,2));
+		go(new TrapezoidGraphNode[] {N(1,4,1,4), N(3,5,2,5)}, N(3,4,2,4,2));
+		go(new TrapezoidGraphNode[] {N(1,4,1,4), N(3,5,2,3)}, N(3,4,2,3,2));
 	}
 	@Test
 	public void adjacent() {
@@ -87,7 +97,7 @@ public class TrapezoidGraphTest {
 		go(new TrapezoidGraphNode[] {N(1,4,1,4), N(3,5,5,6)}, N(1,4,1,4), N(3,5,5,6));
 	}
 	@Test
-	public void x_start_overlap() {
+	public void start_overlap() {
 		// only need to test first startX <= second startX due to symmetry 
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,1,1,1)}, N(1,1,1,1,2));
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,1,1,2)}, N(1,1,1,2,2));
@@ -98,7 +108,7 @@ public class TrapezoidGraphTest {
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,1,2,4)}, N(1,1,2,3,2));
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,1,3,3)}, N(1,1,3,3,2));
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,1,3,4)}, N(1,1,3,3,2));
-		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,1,4,4)});
+		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,1,4,4)}, N(1,3,1,3),N(1,1,4,4));
 
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,2,1,1)}, N(1,2,1,1,2));
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,2,1,2)}, N(1,2,1,2,2));
@@ -109,7 +119,7 @@ public class TrapezoidGraphTest {
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,2,2,4)}, N(1,2,2,3,2));
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,2,3,3)}, N(1,2,3,3,2));
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,2,3,4)}, N(1,2,3,3,2));
-		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,2,4,4)});
+		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,2,4,4)}, N(1,3,1,3),N(1,2,4,4));
 		
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,3,1,1)}, N(1,3,1,1,2));
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,3,1,2)}, N(1,3,1,2,2));
@@ -120,7 +130,7 @@ public class TrapezoidGraphTest {
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,3,2,4)}, N(1,3,2,3,2));
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,3,3,3)}, N(1,3,3,3,2));
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,3,3,4)}, N(1,3,3,3,2));
-		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,3,4,4)});
+		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,3,4,4)}, N(1,3,1,3),N(1,3,4,4));
 		
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,4,1,1)}, N(1,3,1,1,2));
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,4,1,2)}, N(1,3,1,2,2));
@@ -131,10 +141,10 @@ public class TrapezoidGraphTest {
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,4,2,4)}, N(1,3,2,3,2));
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,4,3,3)}, N(1,3,3,3,2));
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,4,3,4)}, N(1,3,3,3,2));
-		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,4,4,4)});
+		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(1,4,4,4)}, N(1,3,1,3),N(1,4,4,4));
 	}
 	@Test
-	public void x_end_overlap() {
+	public void end_overlap() {
 		// first startX < second startX
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(2,3,1,1)}, N(2,3,1,1,2));
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(2,3,1,2)}, N(2,3,1,2,2));
@@ -145,7 +155,7 @@ public class TrapezoidGraphTest {
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(2,3,2,4)}, N(2,3,2,3,2));
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(2,3,3,3)}, N(2,3,3,3,2));
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(2,3,3,4)}, N(2,3,3,3,2));
-		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(2,3,4,4)});
+		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(2,3,4,4)}, N(1,3,1,3),N(2,3,4,4));
 		
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(3,3,1,1)}, N(3,3,1,1,2));
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(3,3,1,2)}, N(3,3,1,2,2));
@@ -156,7 +166,7 @@ public class TrapezoidGraphTest {
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(3,3,2,4)}, N(3,3,2,3,2));
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(3,3,3,3)}, N(3,3,3,3,2));
 		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(3,3,3,4)}, N(3,3,3,3,2));
-		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(3,3,4,4)});
+		go(new TrapezoidGraphNode[] {N(1,3,1,3),N(3,3,4,4)}, N(1,3,1,3),N(3,3,4,4));
 	}
 	@Test
 	public void weighted() {
@@ -176,23 +186,24 @@ public class TrapezoidGraphTest {
 		go(new TrapezoidGraphNode[] { N(1,4,2,5), N(2,3,1,4), N(2,5,3,6) },
 				N(2,3,3,4,3));
 	}
-	@Test
-	public void many_cliques_order_n_squared() {
-		// lattice pattern = maximal clique at every intersection
-		//  | | | | | |  
-		// -*-*-*-*-*-*-
-		//  | | | | | |  
-		// -*-*-*-*-*-*-
-		//  | | | | | |  
-		// -*-*-*-*-*-*-
-		//  | | | | | |  
-		// -*-*-*-*-*-*-
-		//  | | | | | |  
-		// -*-*-*-*-*-*-
-		//  | | | | | |  
-		// -*-*-*-*-*-*-
-		//  | | | | | |  
-		int n = 32; // technically n = # vertices = twice this number
+	/**
+	 * lattice pattern = maximal clique at every intersection
+	 *  | | | | | |  
+	 * -*-*-*-*-*-*-
+	 *  | | | | | |  
+	 * -*-*-*-*-*-*-
+	 *  | | | | | |  
+	 * -*-*-*-*-*-*-
+	 *  | | | | | |  
+	 * -*-*-*-*-*-*-
+	 *  | | | | | |  
+	 * -*-*-*-*-*-*-
+	 *  | | | | | |  
+	 * -*-*-*-*-*-*-
+	 *  | | | | | |  
+	 * @param n number of lattice rows and columns
+	 */
+	private void test_lattice(int n) {
 		TrapezoidGraphNode[] expected = new TrapezoidGraphNode[n * n];
 		TrapezoidGraphNode[] nodes = new TrapezoidGraphNode[2 * n];
 		for (int i = 0; i < n; i++) {
@@ -203,5 +214,11 @@ public class TrapezoidGraphTest {
 			}
 		}
 		go(nodes, expected);
+	}
+	@Test
+	public void many_cliques_order_n_squared() {
+		for (int i = 0; i < 8; i++) {
+			test_lattice(1 << i);			
+		}
 	}
 }

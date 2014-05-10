@@ -1,6 +1,9 @@
 package au.edu.wehi.socrates;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 
 import net.sf.picard.cmdline.CommandLineProgram;
@@ -20,13 +23,13 @@ import net.sf.samtools.SAMSequenceDictionary;
 import org.broadinstitute.variant.variantcontext.VariantContext;
 import org.broadinstitute.variant.variantcontext.writer.VariantContextWriter;
 import org.broadinstitute.variant.variantcontext.writer.VariantContextWriterBuilder;
-import org.broadinstitute.variant.variantcontext.writer.VariantContextWriterFactory;
 import org.broadinstitute.variant.vcf.VCFFileReader;
 import org.broadinstitute.variant.vcf.VCFHeader;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 
+import au.edu.wehi.socrates.graph.EvidenceClusterProcessor;
 import au.edu.wehi.socrates.vcf.VcfConstants;
 
 /**
@@ -104,44 +107,45 @@ public class ClusterEvidence extends CommandLineProgram {
     		IoUtil.assertFileIsReadable(VCF_INPUT2);
     		IoUtil.assertFileIsWritable(OUTPUT);
     		
-    		final SAMFileReader svReader1 = new SAMFileReader(SV_READ_INPUT1);
-    		
-    		final SAMFileHeader header = svReader1.getFileHeader();
-	    	final SAMSequenceDictionary dictionary = header.getSequenceDictionary();
 	    	final RelevantMetrics metrics = new RelevantMetrics(METRICS);
 	    	final ReferenceSequenceFile reference = ReferenceSequenceFileFactory.getReferenceSequenceFile(REFERENCE);
-	    	final ProcessingContext processContext = new ProcessingContext(reference, dictionary, metrics);
-    		    		
-	    	final SAMFileReader mateReader1 = new SAMFileReader(MATE_COORDINATE_INPUT1);
-	    	final SAMFileReader realignReader1 = new SAMFileReader(REALIGN_INPUT1);
-	    	final VCFFileReader vcfReader1 = new VCFFileReader(VCF_INPUT1);
-	    	final PeekingIterator<SAMRecord> svIt1 = Iterators.peekingIterator(svReader1.iterator());
-			final PeekingIterator<SAMRecord> mateIt1 = Iterators.peekingIterator(mateReader1.iterator());
-			final PeekingIterator<SAMRecord> realignIt1 = Iterators.peekingIterator(realignReader1.iterator());
-			final PeekingIterator<VariantContext> vcfIt1 = Iterators.peekingIterator(vcfReader1.iterator());
-			final DirectedEvidenceIterator dei1 = new DirectedEvidenceIterator(processContext, svIt1, mateIt1, realignIt1, vcfIt1);
-	    	
-	    	final SAMFileReader svReader2 = new SAMFileReader(SV_READ_INPUT2);
-	    	final SAMFileReader mateReader2 = new SAMFileReader(MATE_COORDINATE_INPUT2);
-	    	final SAMFileReader realignReader2 = new SAMFileReader(REALIGN_INPUT2);
-	    	final VCFFileReader vcfReader2 = new VCFFileReader(VCF_INPUT2);
-	    	final PeekingIterator<SAMRecord> svIt2 = Iterators.peekingIterator(svReader2.iterator());
-			final PeekingIterator<SAMRecord> mateIt2 = Iterators.peekingIterator(mateReader2.iterator());
-			final PeekingIterator<SAMRecord> realignIt2 = Iterators.peekingIterator(realignReader2.iterator());
-			final PeekingIterator<VariantContext> vcfIt2 = Iterators.peekingIterator(vcfReader2.iterator());
-			final DirectedEvidenceIterator dei2 = new DirectedEvidenceIterator(processContext, svIt2, mateIt2, realignIt2, vcfIt2);
+	    	final ProcessingContext processContext = new ProcessingContext(reference, metrics);
 	    	
 	    	final ProgressLogger progress = new ProgressLogger(log);
 	    	final VariantContextWriter vcfWriter = new VariantContextWriterBuilder()
 				.setOutputFile(OUTPUT)
-				.setReferenceDictionary(dictionary)
+				.setReferenceDictionary(processContext.getDictionary())
 				.build();
 			final VCFHeader vcfHeader = new VCFHeader();
 			VcfConstants.addHeaders(vcfHeader);
 			vcfWriter.writeHeader(vcfHeader);
 			
-			callClusters(context, dei1, dei2);
+			// TODO: add filtering parameters so we only process evidence between 1 and 2 
+			// (@see DirectedEvidenceChromosomePairFilter)
+			EvidenceClusterProcessor processor = new EvidenceClusterProcessor(processContext);
 			
+			log.debug("Loading first evidence set");
+			final DirectedEvidenceFileIterator dei1 = new DirectedEvidenceFileIterator(processContext, SV_READ_INPUT1, MATE_COORDINATE_INPUT1, REALIGN_INPUT1, VCF_INPUT1);
+			while (dei1.hasNext()) {
+				processor.addEvidence(dei1.next());
+			}			
+			dei1.close();
+			log.debug("Loading second evidence set");
+			final DirectedEvidenceFileIterator dei2 = new DirectedEvidenceFileIterator(processContext, SV_READ_INPUT2, MATE_COORDINATE_INPUT2, REALIGN_INPUT2, VCF_INPUT2);
+			while (dei2.hasNext()) {
+				processor.addEvidence(dei2.next());
+			}
+			dei2.close();
+			
+			BufferedWriter writer = new BufferedWriter(new FileWriter(OUTPUT));
+			log.debug("Calling maximal cliques");
+			for (BreakpointLocation loc : processor) {
+				// TODO: Rehydrate the calls with metrics from the orginal evidence
+				// TODO: output in a real format
+				writer.append(loc.toString());
+				writer.append('\n');
+			}
+			writer.close();
     	} catch (IOException e) {
     		log.error(e);
     		throw new RuntimeException(e);
