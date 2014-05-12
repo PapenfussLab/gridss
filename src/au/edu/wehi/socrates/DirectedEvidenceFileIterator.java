@@ -71,4 +71,9 @@ public class DirectedEvidenceFileIterator implements CloseableIterator<DirectedE
 	public DirectedEvidence next() {
 		return it.next();
 	}
+	@Deprecated
+	@Override
+	public void remove() {
+		it.remove();
+	}
 }

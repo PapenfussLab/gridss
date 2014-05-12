@@ -29,7 +29,6 @@ import org.broadinstitute.variant.vcf.VCFHeader;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 
-import au.edu.wehi.socrates.graph.EvidenceClusterProcessor;
 import au.edu.wehi.socrates.vcf.VcfConstants;
 
 /**
@@ -128,7 +127,7 @@ public class ClusterEvidence extends CommandLineProgram {
 			final DirectedEvidenceFileIterator dei1 = new DirectedEvidenceFileIterator(processContext, SV_READ_INPUT1, MATE_COORDINATE_INPUT1, REALIGN_INPUT1, VCF_INPUT1);
 			while (dei1.hasNext()) {
 				processor.addEvidence(dei1.next());
-			}			
+			}
 			dei1.close();
 			log.debug("Loading second evidence set");
 			final DirectedEvidenceFileIterator dei2 = new DirectedEvidenceFileIterator(processContext, SV_READ_INPUT2, MATE_COORDINATE_INPUT2, REALIGN_INPUT2, VCF_INPUT2);

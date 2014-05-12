@@ -45,4 +45,34 @@ public class BreakpointInterval extends BreakpointLocation {
 	public String toString() {
 		return String.format("%s %s %.1f", toString(direction, referenceIndex, start, end), toString(direction2, referenceIndex2, start2, end2), qual);
 	}
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = super.hashCode();
+		result = prime * result
+				+ ((direction2 == null) ? 0 : direction2.hashCode());
+		result = prime * result + end2;
+		result = prime * result + referenceIndex2;
+		result = prime * result + start2;
+		return result;
+	}
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (!super.equals(obj))
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		BreakpointInterval other = (BreakpointInterval) obj;
+		if (direction2 != other.direction2)
+			return false;
+		if (end2 != other.end2)
+			return false;
+		if (referenceIndex2 != other.referenceIndex2)
+			return false;
+		if (start2 != other.start2)
+			return false;
+		return true;
+	}
 }

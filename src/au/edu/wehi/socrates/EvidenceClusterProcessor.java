@@ -1,13 +1,9 @@
-package au.edu.wehi.socrates.graph;
+package au.edu.wehi.socrates;
 
 import java.util.Iterator;
 
-import au.edu.wehi.socrates.BreakpointDirection;
-import au.edu.wehi.socrates.BreakpointInterval;
-import au.edu.wehi.socrates.BreakpointLocation;
-import au.edu.wehi.socrates.DirectedEvidence;
-import au.edu.wehi.socrates.ProcessingContext;
-import au.edu.wehi.socrates.SoftClipEvidence;
+import au.edu.wehi.socrates.graph.TrapezoidGraph;
+import au.edu.wehi.socrates.graph.TrapezoidGraphNode;
 
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
@@ -120,6 +116,10 @@ public class EvidenceClusterProcessor implements Iterable<BreakpointLocation> {
 					context.getLinear().getReferencePosition(node.startY),
 					context.getLinear().getReferencePosition(node.endY),
 					node.weight);
+		}
+		@Override
+		public void remove() {
+			it.remove();
 		}
 	}
 }

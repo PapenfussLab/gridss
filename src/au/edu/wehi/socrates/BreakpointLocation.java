@@ -51,4 +51,40 @@ public class BreakpointLocation {
 	public String toString() {
 		return String.format("%s %.1f", toString(direction, referenceIndex, start, end), qual);
 	}
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result
+				+ ((direction == null) ? 0 : direction.hashCode());
+		result = prime * result + end;
+		long temp;
+		temp = Double.doubleToLongBits(qual);
+		result = prime * result + (int) (temp ^ (temp >>> 32));
+		result = prime * result + referenceIndex;
+		result = prime * result + start;
+		return result;
+	}
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		BreakpointLocation other = (BreakpointLocation) obj;
+		if (direction != other.direction)
+			return false;
+		if (end != other.end)
+			return false;
+		if (Double.doubleToLongBits(qual) != Double
+				.doubleToLongBits(other.qual))
+			return false;
+		if (referenceIndex != other.referenceIndex)
+			return false;
+		if (start != other.start)
+			return false;
+		return true;
+	}
 }

@@ -28,6 +28,8 @@ import org.broadinstitute.variant.vcf.VCFHeader;
 import com.google.common.collect.Lists;
 
 public class TestHelper {
+	public static final BreakpointDirection FWD = BreakpointDirection.Forward;
+	public static final BreakpointDirection BWD = BreakpointDirection.Backward;
 	public static byte[] B(String s) {
 		if (s == null) return null;
 		return s.getBytes(StandardCharsets.US_ASCII);
