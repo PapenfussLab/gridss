@@ -1,5 +1,7 @@
 package au.edu.wehi.socrates;
 
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import net.sf.samtools.SAMRecord;
@@ -126,6 +128,19 @@ public class SoftClipEvidence implements DirectedBreakpoint {
 			}
 		} else {
 			return getSoftClipLength();
+		}
+	}
+	/**
+	 * Sequence of untemplated bases
+	 * @return
+	 */
+	public String getUntemplatedSequence() {
+		int untemplatedSequenceLength = getUntemplatedSequenceLength();
+		String s = new String(getBreakpointSequence(), StandardCharsets.US_ASCII);
+		if (getBreakpointLocation().direction == BreakpointDirection.Forward) {
+			return s.substring(0, untemplatedSequenceLength);
+		} else {
+			return s.substring(s.length() - untemplatedSequenceLength);
 		}
 	}
 	/**

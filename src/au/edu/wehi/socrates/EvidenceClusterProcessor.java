@@ -32,6 +32,7 @@ public class EvidenceClusterProcessor implements Iterable<BreakpointLocation> {
 		}
 		if (loc instanceof BreakpointInterval) {
 			BreakpointInterval interval = (BreakpointInterval)loc;
+			if (filterOut(interval)) return;
 			long startX = context.getLinear().getLinearCoordinate(interval.referenceIndex, interval.start);
 			long endX = startX + interval.end - interval.start;
 			long startY = context.getLinear().getLinearCoordinate(interval.referenceIndex2, interval.start2);
@@ -51,21 +52,41 @@ public class EvidenceClusterProcessor implements Iterable<BreakpointLocation> {
 				highDir = tmpDir;
 			}
 			TrapezoidGraphNode node = new TrapezoidGraphNode(startX, endX, startY, endY, loc.qual);
-			if (lowDir == BreakpointDirection.Forward) {
-				if (highDir == BreakpointDirection.Forward) {
-					ff.add(node);
-				} else {
-					fb.add(node);
-				}
+			addNode(lowDir, highDir, node);
+		} else {
+			if (filterOut(loc)) return;
+			// TODO: process evidence such as short SCs and OEAs which do not map to a remote location
+		}
+	}
+	/**
+	 * Determine whether the given evidence should be filtered
+	 * @param loc evidence location to consider filtering
+	 * @return true if the evidence should be filtered out 
+	 */
+	protected boolean filterOut(BreakpointLocation loc) {
+		return false;
+	}
+	/**
+	 * Determine whether the given evidence should be filtered
+	 * @param loc evidence location to consider filtering
+	 * @return true if the evidence should be filtered out 
+	 */
+	protected boolean filterOut(BreakpointInterval loc) {
+		return false;
+	}
+	private void addNode(BreakpointDirection lowDir, BreakpointDirection highDir, TrapezoidGraphNode node) {
+		if (lowDir == BreakpointDirection.Forward) {
+			if (highDir == BreakpointDirection.Forward) {
+				ff.add(node);
 			} else {
-				if (highDir == BreakpointDirection.Forward) {
-					bf.add(node);
-				} else {
-					bb.add(node);
-				}
+				fb.add(node);
 			}
 		} else {
-			// TODO: process evidence such as short SCs and OEAs which do not map to a remote location
+			if (highDir == BreakpointDirection.Forward) {
+				bf.add(node);
+			} else {
+				bb.add(node);
+			}
 		}
 	}
 	@Override

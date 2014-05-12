@@ -105,7 +105,7 @@ public class CommandLineTest extends TestHelper {
 				REFERENCE = SMALL_FA_FILE;
 				SV_INPUT = FileNamingConvention.getSVBamForChr(input, chr);
 				MATE_COORDINATE_INPUT = FileNamingConvention.getMateBamForChr(input, chr);
-				VCF_OUTPUT = FileNamingConvention.getBreakendVcf(input, chr);
+				VCF_OUTPUT = FileNamingConvention.getBreakendVcfForChr(input, chr);
 				fastq = new File(FileNamingConvention.getSVBamForChr(input, chr) + ".fastq");
 				FASTQ_OUTPUT = fastq;
 			} catch (IOException e) {

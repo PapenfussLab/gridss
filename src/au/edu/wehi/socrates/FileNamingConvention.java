@@ -15,7 +15,10 @@ public class FileNamingConvention {
 	private static final String FORMAT_MATE_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".svmate.bam";
 	private static final String FORMAT_MATE_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.svmate.bam";
 	private static final String FORMAT_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.txt";
-	private static final String FORMAT_BREAKEND_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".%s.breakend.vcf";
+	private static final String FORMAT_REALIGN_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".realign.bam";
+	private static final String FORMAT_REALIGN_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign.bam";
+	private static final String FORMAT_BREAKEND_VCF_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.breakend.vcf";
+	private static final String FORMAT_BREAKEND_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".breakend.vcf";
 	private static final String FORMAT_BREAKPOINT_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".%s-%s.breakpoint.vcf";
 	private static final String FORMAT_OUTPUT_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".vcf";
 	private static String GetStem(File input) throws IOException {
@@ -37,8 +40,11 @@ public class FileNamingConvention {
 	public static File getMateBamForChr(File input, String chromosome) throws IOException {
 		return new File(String.format(FORMAT_MATE_BAM_PER_CHR, GetStem(input), chromosome));
 	}
-	public static File getBreakendVcf(File input, String chromosome) throws IOException {
-		return new File(String.format(FORMAT_BREAKEND_VCF, GetStem(input), chromosome));
+	public static File getBreakendVcf(File input) throws IOException {
+		return new File(String.format(FORMAT_BREAKEND_VCF, GetStem(input)));
+	}
+	public static File getBreakendVcfForChr(File input, String chromosome) throws IOException {
+		return new File(String.format(FORMAT_BREAKEND_VCF_PER_CHR, GetStem(input), chromosome));
 	}
 	public static File getBreakpointVcf(File input, String chromosome1, String chromosome2) throws IOException {
 		return new File(String.format(FORMAT_BREAKPOINT_VCF, GetStem(input), chromosome1, chromosome2));
@@ -48,6 +54,12 @@ public class FileNamingConvention {
 	}
 	public static File getMetrics(File input) throws IOException {
 		return new File(String.format(FORMAT_METRICS, GetStem(input)));
+	}
+	public static File getRealignmentBam(File input) throws IOException {
+		return new File(String.format(FORMAT_REALIGN_BAM, GetStem(input)));
+	}
+	public static File getRealignmentBamForChr(File input, String chromosome) throws IOException {
+		return new File(String.format(FORMAT_REALIGN_BAM_PER_CHR, GetStem(input), chromosome));
 	}
 	//public static File getWorkingDirectory(File input) throws IOException {
 	//	return new File(GetStem(input)).getParentFile();

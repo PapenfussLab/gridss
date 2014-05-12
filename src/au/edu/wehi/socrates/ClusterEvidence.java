@@ -44,38 +44,14 @@ public class ClusterEvidence extends CommandLineProgram {
     @Usage
     public String USAGE = getStandardUsagePreamble() + "Calls breakpoints between the two given chromosomes" +
     		"based on the evidence provided" + PROGRAM_VERSION;
-    @Option(doc = "Realigned breakpoint BAM file",
+    @Option(doc = "Input BAM file.",
             optional = false,
-            shortName = "R1")
-    public File REALIGN_INPUT1;
-    @Option(doc = "Coordinate sorted input file containing reads supporting putative structural variations",
-            optional = false,
-            shortName = "SV1")
-    public File SV_READ_INPUT1;
-    @Option(doc = "DP and OEA read pairs sorted by coordinate of mapped mate read.",
-            optional = false,
-            shortName = "MATE1")
-    public File MATE_COORDINATE_INPUT1 = null;
-    @Option(doc = "Directed single-ended breakpoints.",
-            optional = false,
-            shortName= "VCF1")
-    public File VCF_INPUT1;
-    @Option(doc = "Realigned breakpoint BAM file",
-            optional = false,
-            shortName = "R2")
-    public File REALIGN_INPUT2;
-    @Option(doc = "Coordinate sorted input file containing reads supporting putative structural variations",
-            optional = false,
-            shortName = "SV2")
-    public File SV_READ_INPUT2;
-    @Option(doc = "DP and OEA read pairs sorted by coordinate of mapped mate read.",
-            optional = false,
-            shortName = "MATE2")
-    public File MATE_COORDINATE_INPUT2 = null;
-    @Option(doc = "Directed single-ended breakpoints.",
-            optional = false,
-            shortName= "VCF2")
-    public File VCF_INPUT2;
+            shortName = StandardOptionDefinitions.INPUT_SHORT_NAME)
+    public File INPUT;
+    @Option(doc = "Chromosome to process. This argument can be supplied twice to process interchromosomal",
+            optional = true,
+            shortName = "CHR")
+    public String[] CHROMSOME;
     @Option(doc = "Breakpoint calls in VCF format",
             optional = false,
             shortName= StandardOptionDefinitions.OUTPUT_SHORT_NAME)
@@ -92,18 +68,10 @@ public class ClusterEvidence extends CommandLineProgram {
     	SAMFileReader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
     	try {
     		if (METRICS == null) {
-    			METRICS = FileNamingConvention.getMetrics(SV_READ_INPUT1);
+    			METRICS = FileNamingConvention.getMetrics(INPUT);
     		}
     		IoUtil.assertFileIsReadable(REFERENCE);
     		IoUtil.assertFileIsReadable(METRICS);
-    		IoUtil.assertFileIsReadable(REALIGN_INPUT1);
-    		IoUtil.assertFileIsReadable(SV_READ_INPUT1);
-    		IoUtil.assertFileIsReadable(MATE_COORDINATE_INPUT1);
-    		IoUtil.assertFileIsReadable(VCF_INPUT1);
-    		IoUtil.assertFileIsReadable(REALIGN_INPUT2);
-    		IoUtil.assertFileIsReadable(SV_READ_INPUT2);
-    		IoUtil.assertFileIsReadable(MATE_COORDINATE_INPUT2);
-    		IoUtil.assertFileIsReadable(VCF_INPUT2);
     		IoUtil.assertFileIsWritable(OUTPUT);
     		
 	    	final RelevantMetrics metrics = new RelevantMetrics(METRICS);
@@ -111,46 +79,74 @@ public class ClusterEvidence extends CommandLineProgram {
 	    	final ProcessingContext processContext = new ProcessingContext(reference, metrics);
 	    	
 	    	final ProgressLogger progress = new ProgressLogger(log);
-	    	final VariantContextWriter vcfWriter = new VariantContextWriterBuilder()
+			
+			// TODO: add filtering parameters so we only process evidence between 1 and 2 
+			// (@see DirectedEvidenceChromosomePairFilter)
+			EvidenceClusterProcessor processor;
+			log.debug("Loading evidence");
+			if (CHROMSOME.length == 0) {
+				processor = new EvidenceClusterProcessor(processContext);
+				addEvidence(processor, allEvidence(processContext));
+			} else if (CHROMSOME.length == 1) {
+				processor = new EvidenceClusterSubsetProcessor(processContext, processContext.getDictionary().getSequenceIndex(CHROMSOME[0]), processContext.getDictionary().getSequenceIndex(CHROMSOME[0]));
+				addEvidence(processor, evidenceForChr(processContext, CHROMSOME[0]));
+			} else if (CHROMSOME.length == 2) {
+				processor = new EvidenceClusterSubsetProcessor(processContext, processContext.getDictionary().getSequenceIndex(CHROMSOME[0]), processContext.getDictionary().getSequenceIndex(CHROMSOME[1]));
+				addEvidence(processor, evidenceForChr(processContext, CHROMSOME[0]));
+				addEvidence(processor, evidenceForChr(processContext, CHROMSOME[1]));
+			} else {
+				throw new RuntimeException("CHROMSOME argument supplied too many times");
+			}
+			log.debug("Calling maximal cliques");
+			final VariantContextWriter vcfWriter = new VariantContextWriterBuilder()
 				.setOutputFile(OUTPUT)
 				.setReferenceDictionary(processContext.getDictionary())
 				.build();
 			final VCFHeader vcfHeader = new VCFHeader();
 			VcfConstants.addHeaders(vcfHeader);
 			vcfWriter.writeHeader(vcfHeader);
-			
-			// TODO: add filtering parameters so we only process evidence between 1 and 2 
-			// (@see DirectedEvidenceChromosomePairFilter)
-			EvidenceClusterProcessor processor = new EvidenceClusterProcessor(processContext);
-			
-			log.debug("Loading first evidence set");
-			final DirectedEvidenceFileIterator dei1 = new DirectedEvidenceFileIterator(processContext, SV_READ_INPUT1, MATE_COORDINATE_INPUT1, REALIGN_INPUT1, VCF_INPUT1);
-			while (dei1.hasNext()) {
-				processor.addEvidence(dei1.next());
-			}
-			dei1.close();
-			log.debug("Loading second evidence set");
-			final DirectedEvidenceFileIterator dei2 = new DirectedEvidenceFileIterator(processContext, SV_READ_INPUT2, MATE_COORDINATE_INPUT2, REALIGN_INPUT2, VCF_INPUT2);
-			while (dei2.hasNext()) {
-				processor.addEvidence(dei2.next());
-			}
-			dei2.close();
-			
-			BufferedWriter writer = new BufferedWriter(new FileWriter(OUTPUT));
-			log.debug("Calling maximal cliques");
+			int callCount = 1;
 			for (BreakpointLocation loc : processor) {
 				// TODO: Rehydrate the calls with metrics from the orginal evidence
 				// TODO: output in a real format
 				writer.append(loc.toString());
 				writer.append('\n');
 			}
-			writer.close();
+			vcfWriter.close();
     	} catch (IOException e) {
     		log.error(e);
     		throw new RuntimeException(e);
     	}
         return 0;
     }
+    private static void addEvidence(EvidenceClusterProcessor processor, DirectedEvidenceFileIterator evidence) {
+    	while (evidence.hasNext()) {
+			processor.addEvidence(evidence.next());
+		}
+    	evidence.close();
+    }
+    private static File ensureFileExists(final File file) {
+    	if (!file.exists()) {
+    		throw new RuntimeException(String.format("Required file %s is missing. Has ExtractEvidence and GenerateDirectedBreakpoint been run? Have the directed breakpoints been realigned?", file));
+    	}
+    	return file;
+    }
+	private DirectedEvidenceFileIterator evidenceForChr(final ProcessingContext processContext, final String chr) throws IOException {
+		final DirectedEvidenceFileIterator dei1 = new DirectedEvidenceFileIterator(processContext,
+				ensureFileExists(FileNamingConvention.getSVBamForChr(INPUT, chr)),
+				ensureFileExists(FileNamingConvention.getMateBamForChr(INPUT, chr)),
+				ensureFileExists(FileNamingConvention.getRealignmentBamForChr(INPUT, chr)),
+				ensureFileExists(FileNamingConvention.getBreakendVcfForChr(INPUT, chr)));
+		return dei1;
+	}
+	private DirectedEvidenceFileIterator allEvidence(final ProcessingContext processContext) throws IOException {
+		final DirectedEvidenceFileIterator dei1 = new DirectedEvidenceFileIterator(processContext,
+				ensureFileExists(FileNamingConvention.getSVBam(INPUT)),
+				ensureFileExists(FileNamingConvention.getMateBam(INPUT)),
+				ensureFileExists(FileNamingConvention.getRealignmentBam(INPUT)),
+				ensureFileExists(FileNamingConvention.getBreakendVcf(INPUT)));
+		return dei1;
+	}
 	public static void main(String[] argv) {
         System.exit(new GenerateDirectedBreakpoints().instanceMain(argv));
     }
