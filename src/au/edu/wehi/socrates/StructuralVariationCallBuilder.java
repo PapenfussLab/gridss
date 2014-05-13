@@ -2,9 +2,6 @@ package au.edu.wehi.socrates;
 
 import java.util.List;
 
-import org.broadinstitute.variant.variantcontext.VariantContextBuilder;
-
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
 public class StructuralVariationCallBuilder {
@@ -30,25 +27,31 @@ public class StructuralVariationCallBuilder {
 		}
 		return this;
 	}
-	public StructuralVariationCall build() {
-		VariantContextBuilder builder = new VariantContextBuilder();
-		// TODO: what should we call?
-		if (assList.size() == 0) {
-		}
-		// TODO: what metrics should we aggregate? 
+	public StructuralVariationCall make() {
+		VariantContextDirectedBreakpointBuilder builder = createBuilder();
+		builder.id(getID());
+		return new StructuralVariationCall(processContext, builder.make());
 	}
-	private VariantContextBuilder createBuilder() {
+	private String getID() {
+		
+	}
+	private VariantContextDirectedBreakpointBuilder createBuilder() {
+		VariantContextDirectedBreakpointBuilder builder;
 		DirectedBreakpointAssembly ass = bestAssembly();
-		if (ass != null) {
-			return new VariantContextBuilder(ass);
-		}
-		BreakpointLocation loc = call;
-		String untemplatedBases = null;
 		SoftClipEvidence sce = bestSoftclip();
-		if (sce != null) {
-			loc = sce.getBreakpointLocation();
-			untemplatedBases = sce.getBreakpointSequence();
+		if (ass != null) {
+			builder = new VariantContextDirectedBreakpointBuilder(processContext, ass);
+		} else if (sce != null) {
+			builder = new VariantContextDirectedBreakpointBuilder(processContext)
+				.breakpoint(sce);
+			if (sce.getSoftClipRealignmentSAMRecord() != null) {
+				builder.realigned(sce, sce.getSoftClipRealignmentSAMRecord());
+			}
+		} else {
+			builder = new VariantContextDirectedBreakpointBuilder(processContext)
+				.location(call, "");
 		}
+		return builder;
 	}
 	private SoftClipEvidence bestSoftclip() {
 		if (scList.size() == 0) return null;
@@ -72,6 +75,7 @@ public class StructuralVariationCallBuilder {
 				}
 			}
 		}
+		return best;
 	}
 	private DirectedBreakpointAssembly bestAssembly() {
 		if (assList.size() == 0) return null;

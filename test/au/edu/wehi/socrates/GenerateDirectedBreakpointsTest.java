@@ -5,8 +5,8 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 
-import net.sf.picard.fastq.FastqRecord;
-import net.sf.samtools.SAMRecord;
+import htsjdk.samtools.fastq.FastqRecord;
+import htsjdk.samtools.SAMRecord;
 
 import org.junit.Test;
 

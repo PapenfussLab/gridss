@@ -3,16 +3,16 @@ package au.edu.wehi.socrates;
 import java.io.File;
 import java.util.List;
 
-import net.sf.picard.analysis.CollectInsertSizeMetrics;
-import net.sf.picard.analysis.InsertSizeMetrics;
-import net.sf.picard.analysis.MetricAccumulationLevel;
-import net.sf.picard.analysis.directed.InsertSizeMetricsCollector;
-import net.sf.picard.metrics.MetricBase;
-import net.sf.picard.metrics.MetricsFile;
-import net.sf.picard.util.Log;
-import net.sf.samtools.SAMFileHeader;
-import net.sf.samtools.SAMReadGroupRecord;
-import net.sf.samtools.util.CollectionUtil;
+import picard.analysis.CollectInsertSizeMetrics;
+import picard.analysis.InsertSizeMetrics;
+import picard.analysis.MetricAccumulationLevel;
+import picard.analysis.directed.InsertSizeMetricsCollector;
+import htsjdk.samtools.metrics.MetricBase;
+import htsjdk.samtools.metrics.MetricsFile;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMReadGroupRecord;
+import htsjdk.samtools.util.CollectionUtil;
 
 import com.google.common.collect.ImmutableList;
 
@@ -35,7 +35,7 @@ public class RelevantMetrics {
     			rg,
 				// match CollectInsertSizeMetrics defaults
 				 new CollectInsertSizeMetrics().MINIMUM_PCT,
-				 new CollectInsertSizeMetrics().HISTOGRAM_WIDTH,
+				 new CollectInsertSizeMetrics().Histogram_WIDTH,
 				 new CollectInsertSizeMetrics().DEVIATIONS);
 	}
 	public static void save(

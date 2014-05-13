@@ -6,24 +6,24 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import net.sf.picard.reference.ReferenceSequenceFile;
-import net.sf.picard.reference.ReferenceSequenceFileFactory;
-import net.sf.picard.reference.ReferenceSequenceFileWalker;
-import net.sf.samtools.SAMFileHeader;
-import net.sf.samtools.SAMFileWriter;
-import net.sf.samtools.SAMReadGroupRecord;
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMRecordCoordinateComparator;
-import net.sf.samtools.SAMSequenceDictionary;
-import net.sf.samtools.SAMTag;
-import net.sf.samtools.SamPairUtil;
-import net.sf.samtools.util.ProgressLoggerInterface;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileWriter;
+import htsjdk.samtools.SAMReadGroupRecord;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordCoordinateComparator;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMTag;
+import htsjdk.samtools.SamPairUtil;
+import htsjdk.samtools.util.ProgressLoggerInterface;
 
 import org.apache.commons.lang3.StringUtils;
-import org.broadinstitute.variant.variantcontext.VariantContext;
-import org.broadinstitute.variant.variantcontext.VariantContextBuilder;
-import org.broadinstitute.variant.variantcontext.writer.VariantContextWriter;
-import org.broadinstitute.variant.vcf.VCFHeader;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.vcf.VCFHeader;
 
 import com.google.common.collect.Lists;
 

@@ -4,8 +4,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
-import org.broadinstitute.variant.variantcontext.Allele;
-import org.broadinstitute.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.Allele;
+import htsjdk.variant.variantcontext.VariantContext;
 
 /**
  * VCF Breakend record

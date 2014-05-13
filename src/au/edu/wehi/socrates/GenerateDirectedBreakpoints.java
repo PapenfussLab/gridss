@@ -1,27 +1,24 @@
 package au.edu.wehi.socrates;
 
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileReader;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.fastq.FastqWriterFactory;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
+import htsjdk.variant.vcf.VCFHeader;
+
 import java.io.File;
 import java.io.IOException;
 
-import net.sf.picard.cmdline.CommandLineProgram;
-import net.sf.picard.cmdline.Option;
-import net.sf.picard.cmdline.StandardOptionDefinitions;
-import net.sf.picard.fastq.FastqRecord;
-import net.sf.picard.fastq.FastqWriter;
-import net.sf.picard.fastq.FastqWriterFactory;
-import net.sf.picard.io.IoUtil;
-import net.sf.picard.reference.ReferenceSequenceFile;
-import net.sf.picard.reference.ReferenceSequenceFileFactory;
-import net.sf.picard.util.Log;
-import net.sf.samtools.SAMFileHeader;
-import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMSequenceDictionary;
-
-import org.broadinstitute.variant.variantcontext.writer.VariantContextWriter;
-import org.broadinstitute.variant.variantcontext.writer.VariantContextWriterBuilder;
-import org.broadinstitute.variant.vcf.VCFHeader;
-
+import picard.cmdline.CommandLineProgram;
+import picard.cmdline.Option;
+import picard.cmdline.StandardOptionDefinitions;
 import au.edu.wehi.socrates.debruijn.DeBruijnAssembler;
 import au.edu.wehi.socrates.vcf.VcfConstants;
 
@@ -78,12 +75,12 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
     		if (METRICS == null) {
     			METRICS = FileNamingConvention.getMetrics(SV_INPUT);
     		}
-    		IoUtil.assertFileIsReadable(METRICS);
-    		IoUtil.assertFileIsReadable(SV_INPUT);
-    		IoUtil.assertFileIsReadable(MATE_COORDINATE_INPUT);
+    		IOUtil.assertFileIsReadable(METRICS);
+    		IOUtil.assertFileIsReadable(SV_INPUT);
+    		IOUtil.assertFileIsReadable(MATE_COORDINATE_INPUT);
     		
-    		IoUtil.assertFileIsWritable(VCF_OUTPUT);
-    		IoUtil.assertFileIsWritable(FASTQ_OUTPUT);
+    		IOUtil.assertFileIsWritable(VCF_OUTPUT);
+    		IOUtil.assertFileIsWritable(FASTQ_OUTPUT);
     		
     		//final ProgressLogger progress = new ProgressLogger(log);
 	    	final SAMFileReader reader = new SAMFileReader(SV_INPUT);

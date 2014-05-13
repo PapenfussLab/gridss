@@ -4,9 +4,9 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMTag;
-import net.sf.samtools.util.SequenceUtil;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMTag;
+import htsjdk.samtools.util.SequenceUtil;
 
 import org.apache.commons.lang3.StringUtils;
 

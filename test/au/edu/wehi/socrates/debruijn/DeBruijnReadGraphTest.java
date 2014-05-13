@@ -2,7 +2,7 @@ package au.edu.wehi.socrates.debruijn;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import net.sf.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecord;
 
 import org.junit.Test;
 

@@ -5,8 +5,8 @@ import java.util.NavigableMap;
 
 import com.google.common.collect.Maps;
 
-import net.sf.samtools.SAMSequenceDictionary;
-import net.sf.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 
 /**
  * Calculates the coordinate of a genomic position based on the concatenation

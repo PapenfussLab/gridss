@@ -4,7 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.PriorityQueue;
 
-import net.sf.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecord;
 import au.edu.wehi.socrates.BreakpointDirection;
 import au.edu.wehi.socrates.BreakpointLocation;
 import au.edu.wehi.socrates.DirectedBreakpointAssembly;

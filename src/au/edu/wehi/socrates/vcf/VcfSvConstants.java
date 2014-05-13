@@ -1,6 +1,6 @@
 package au.edu.wehi.socrates.vcf;
 
-import org.broadinstitute.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFConstants;
 
 public class VcfSvConstants {
 	/** Imprecise structural variation */

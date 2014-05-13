@@ -1,4 +1,4 @@
-package org.broadinstitute.variant.variantcontext;
+package htsjdk.variant.variantcontext;
 /*
 * Copyright (c) 2012 The Broad Institute
 * 
@@ -29,7 +29,7 @@ package org.broadinstitute.variant.variantcontext;
 import java.util.Arrays;
 import java.util.Collection;
 
-import net.sf.samtools.util.StringUtil;
+import htsjdk.samtools.util.StringUtil;
 
 /**
  * Immutable representation of an allele

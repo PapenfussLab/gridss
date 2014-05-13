@@ -1,7 +1,7 @@
 package au.edu.wehi.socrates;
 
-import net.sf.picard.reference.ReferenceSequenceFile;
-import net.sf.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.SAMSequenceDictionary;
 
 /**
  * Processing context for the given record

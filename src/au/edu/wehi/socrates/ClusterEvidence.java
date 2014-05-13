@@ -6,25 +6,25 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 
-import net.sf.picard.cmdline.CommandLineProgram;
-import net.sf.picard.cmdline.Option;
-import net.sf.picard.cmdline.StandardOptionDefinitions;
-import net.sf.picard.cmdline.Usage;
-import net.sf.picard.io.IoUtil;
-import net.sf.picard.reference.ReferenceSequenceFile;
-import net.sf.picard.reference.ReferenceSequenceFileFactory;
-import net.sf.picard.util.Log;
-import net.sf.picard.util.ProgressLogger;
-import net.sf.samtools.SAMFileHeader;
-import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMSequenceDictionary;
+import picard.cmdline.CommandLineProgram;
+import picard.cmdline.Option;
+import picard.cmdline.StandardOptionDefinitions;
+import picard.cmdline.Usage;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.ProgressLogger;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileReader;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
 
-import org.broadinstitute.variant.variantcontext.VariantContext;
-import org.broadinstitute.variant.variantcontext.writer.VariantContextWriter;
-import org.broadinstitute.variant.variantcontext.writer.VariantContextWriterBuilder;
-import org.broadinstitute.variant.vcf.VCFFileReader;
-import org.broadinstitute.variant.vcf.VCFHeader;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
+import htsjdk.variant.vcf.VCFFileReader;
+import htsjdk.variant.vcf.VCFHeader;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
@@ -70,9 +70,9 @@ public class ClusterEvidence extends CommandLineProgram {
     		if (METRICS == null) {
     			METRICS = FileNamingConvention.getMetrics(INPUT);
     		}
-    		IoUtil.assertFileIsReadable(REFERENCE);
-    		IoUtil.assertFileIsReadable(METRICS);
-    		IoUtil.assertFileIsWritable(OUTPUT);
+    		IOUtil.assertFileIsReadable(REFERENCE);
+    		IOUtil.assertFileIsReadable(METRICS);
+    		IOUtil.assertFileIsWritable(OUTPUT);
     		
 	    	final RelevantMetrics metrics = new RelevantMetrics(METRICS);
 	    	final ReferenceSequenceFile reference = ReferenceSequenceFileFactory.getReferenceSequenceFile(REFERENCE);

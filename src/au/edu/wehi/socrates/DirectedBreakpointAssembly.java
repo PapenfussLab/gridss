@@ -2,10 +2,10 @@ package au.edu.wehi.socrates;
 
 import java.nio.charset.StandardCharsets;
 
-import net.sf.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecord;
 
-import org.broadinstitute.variant.variantcontext.VariantContext;
-import org.broadinstitute.variant.variantcontext.VariantContextBuilder;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 import au.edu.wehi.socrates.vcf.SvType;
 import au.edu.wehi.socrates.vcf.VcfConstants;

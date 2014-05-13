@@ -6,10 +6,10 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.IOException;
 
-import net.sf.picard.analysis.InsertSizeMetrics;
-import net.sf.picard.analysis.directed.InsertSizeMetricsCollector;
-import net.sf.picard.metrics.MetricsFile;
-import net.sf.samtools.SAMRecord;
+import htsjdk.samtools.analysis.InsertSizeMetrics;
+import htsjdk.samtools.analysis.directed.InsertSizeMetricsCollector;
+import htsjdk.samtools.metrics.MetricsFile;
+import htsjdk.samtools.SAMRecord;
 
 import org.junit.Rule;
 import org.junit.Test;

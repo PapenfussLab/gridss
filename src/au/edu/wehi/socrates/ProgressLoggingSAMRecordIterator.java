@@ -2,8 +2,8 @@ package au.edu.wehi.socrates;
 
 import java.util.Iterator;
 
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.util.ProgressLoggerInterface;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.ProgressLoggerInterface;
 
 import com.google.common.collect.AbstractIterator;
 

@@ -2,7 +2,7 @@ package au.edu.wehi.socrates.debruijn;
 
 import java.util.Set;
 
-import net.sf.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecord;
 
 import com.google.common.collect.Sets;
 

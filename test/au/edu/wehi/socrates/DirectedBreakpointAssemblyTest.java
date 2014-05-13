@@ -1,9 +1,9 @@
 package au.edu.wehi.socrates;
 
 import static org.junit.Assert.*;
-import net.sf.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecord;
 
-import org.broadinstitute.variant.variantcontext.VariantContextBuilder;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
 import org.junit.Test;
 
 import au.edu.wehi.socrates.vcf.VcfSvConstants;

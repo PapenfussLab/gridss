@@ -4,13 +4,13 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 
-import net.sf.picard.util.Log;
-import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMRecordIterator;
-import net.sf.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.SAMFileReader;
+import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.util.CloseableIterator;
 
-import org.broadinstitute.variant.variantcontext.VariantContext;
-import org.broadinstitute.variant.vcf.VCFFileReader;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.vcf.VCFFileReader;
 
 import com.google.common.collect.Iterators;
 

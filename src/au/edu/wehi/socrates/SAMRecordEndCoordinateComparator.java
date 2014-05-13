@@ -1,7 +1,7 @@
 package au.edu.wehi.socrates;
 
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMRecordCoordinateComparator;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordCoordinateComparator;
 
 /**
  * Comparator for sorting SAMRecords by alignment coordinate end position

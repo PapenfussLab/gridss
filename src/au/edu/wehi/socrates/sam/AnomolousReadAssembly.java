@@ -2,8 +2,8 @@ package au.edu.wehi.socrates.sam;
 
 import java.nio.charset.StandardCharsets;
 
-import net.sf.samtools.CigarOperator;
-import net.sf.samtools.SAMRecord;
+import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.SAMRecord;
 import au.edu.wehi.socrates.BreakpointDirection;
 
 /**

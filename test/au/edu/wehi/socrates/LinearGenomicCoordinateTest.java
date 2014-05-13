@@ -1,8 +1,8 @@
 package au.edu.wehi.socrates;
 
 import static org.junit.Assert.assertEquals;
-import net.sf.samtools.SAMSequenceDictionary;
-import net.sf.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 
 import org.junit.Test;
 

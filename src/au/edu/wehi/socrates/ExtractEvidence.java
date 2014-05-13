@@ -4,27 +4,27 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 
-import net.sf.picard.analysis.InsertSizeMetrics;
-import net.sf.picard.analysis.directed.InsertSizeMetricsCollector;
-import net.sf.picard.cmdline.CommandLineProgram;
-import net.sf.picard.cmdline.Option;
-import net.sf.picard.cmdline.StandardOptionDefinitions;
-import net.sf.picard.cmdline.Usage;
-import net.sf.picard.io.IoUtil;
-import net.sf.picard.reference.ReferenceSequenceFileWalker;
-import net.sf.picard.util.Log;
-import net.sf.picard.util.ProgressLogger;
-import net.sf.samtools.BAMRecordCodec;
-import net.sf.samtools.SAMFileHeader;
-import net.sf.samtools.SAMFileHeader.SortOrder;
-import net.sf.samtools.SAMFileReader;
-import net.sf.samtools.SAMFileWriter;
-import net.sf.samtools.SAMFileWriterFactory;
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMRecordIterator;
-import net.sf.samtools.SAMSequenceDictionary;
-import net.sf.samtools.util.CloseableIterator;
-import net.sf.samtools.util.SortingCollection;
+import picard.analysis.InsertSizeMetrics;
+import picard.analysis.directed.InsertSizeMetricsCollector;
+import picard.cmdline.CommandLineProgram;
+import picard.cmdline.Option;
+import picard.cmdline.StandardOptionDefinitions;
+import picard.cmdline.Usage;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.ProgressLogger;
+import htsjdk.samtools.BAMRecordCodec;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
+import htsjdk.samtools.SAMFileReader;
+import htsjdk.samtools.SAMFileWriter;
+import htsjdk.samtools.SAMFileWriterFactory;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.SortingCollection;
 
 /**
  * Extracts reads supporting structural variation into intermediate files.
@@ -63,7 +63,7 @@ public class ExtractEvidence extends CommandLineProgram {
     @Override
 	protected int doWork() {
     	try {
-	    	IoUtil.assertFileIsWritable(FileNamingConvention.getMetrics(INPUT));
+	    	IOUtil.assertFileIsWritable(FileNamingConvention.getMetrics(INPUT));
 	    	SAMFileReader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
 	    	// SAMFileWriterFactory.setDefaultCreateIndexWhileWriting(CREATE_INDEX); // do we need an index at all? Can we get away with sequential access?
 	    	final SAMFileReader reader = new SAMFileReader(INPUT);

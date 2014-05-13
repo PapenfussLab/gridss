@@ -1,6 +1,6 @@
 package au.edu.wehi.socrates;
 
-import net.sf.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecord;
 
 import org.apache.commons.lang3.StringUtils;
 

@@ -5,14 +5,14 @@ package au.edu.wehi.socrates;
 
 import java.util.List;
 
-import net.sf.picard.reference.ReferenceSequence;
-import net.sf.picard.reference.ReferenceSequenceFileWalker;
-import net.sf.samtools.Cigar;
-import net.sf.samtools.CigarElement;
-import net.sf.samtools.CigarOperator;
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.SAMTag;
-import net.sf.samtools.util.SequenceUtil;
+import htsjdk.samtools.reference.ReferenceSequence;
+import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMTag;
+import htsjdk.samtools.util.SequenceUtil;
 
 /**
  * @author Daniel Cameron

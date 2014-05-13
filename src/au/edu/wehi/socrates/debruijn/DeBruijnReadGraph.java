@@ -8,8 +8,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.util.SequenceUtil;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
 
 import org.apache.commons.lang3.ArrayUtils;
 

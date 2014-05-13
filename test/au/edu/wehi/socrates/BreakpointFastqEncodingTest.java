@@ -1,7 +1,7 @@
 package au.edu.wehi.socrates;
 
 import static org.junit.Assert.assertEquals;
-import net.sf.picard.fastq.FastqRecord;
+import htsjdk.samtools.fastq.FastqRecord;
 
 import org.junit.Test;
 

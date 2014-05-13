@@ -5,8 +5,8 @@ import static org.junit.Assert.assertEquals;
 import java.util.Iterator;
 import java.util.List;
 
-import net.sf.samtools.SAMRecord;
-import net.sf.samtools.util.ProgressLoggerInterface;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.ProgressLoggerInterface;
 
 import org.junit.Test;
 

@@ -8,8 +8,8 @@ import org.junit.Test;
 
 import com.google.common.collect.Lists;
 
-import net.sf.picard.fastq.FastqRecord;
-import net.sf.picard.fastq.FastqWriter;
+import htsjdk.samtools.fastq.FastqRecord;
+import htsjdk.samtools.fastq.FastqWriter;
 
 public class FastqBreakpointWriterTest extends TestHelper {
 	public class MockWriter implements FastqWriter {

@@ -2,7 +2,7 @@ package au.edu.wehi.socrates;
 
 import java.util.Iterator;
 
-import net.sf.samtools.util.RuntimeEOFException;
+import htsjdk.samtools.util.RuntimeEOFException;
 import au.edu.wehi.socrates.graph.TrapezoidGraph;
 import au.edu.wehi.socrates.graph.TrapezoidGraphNode;
 
@@ -68,7 +68,10 @@ public class EvidenceClusterSubsetProcessor extends EvidenceClusterProcessor {
 			}
 			return loc;
 		}
-		
+		@Override
+		public void remove() {
+			throw new IllegalStateException();
+		}
 	}
 }
  
