@@ -53,7 +53,7 @@ public class ClusterEvidence extends CommandLineProgram {
             shortName = "CHR")
     public String[] CHROMSOME;
     @Option(doc = "Breakpoint calls in VCF format",
-            optional = false,
+            optional = true,
             shortName= StandardOptionDefinitions.OUTPUT_SHORT_NAME)
     public File OUTPUT;
     @Option(doc="Reference used for alignment",
@@ -69,6 +69,9 @@ public class ClusterEvidence extends CommandLineProgram {
     	try {
     		if (METRICS == null) {
     			METRICS = FileNamingConvention.getMetrics(INPUT);
+    		}
+    		if (OUTPUT == null && CHROMSOME.length == 2) {
+    			OUTPUT = FileNamingConvention.getBreakpointVcf(INPUT, CHROMSOME[0], CHROMSOME[1]);
     		}
     		IOUtil.assertFileIsReadable(REFERENCE);
     		IOUtil.assertFileIsReadable(METRICS);
@@ -105,12 +108,15 @@ public class ClusterEvidence extends CommandLineProgram {
 			final VCFHeader vcfHeader = new VCFHeader();
 			VcfConstants.addHeaders(vcfHeader);
 			vcfWriter.writeHeader(vcfHeader);
-			int callCount = 1;
 			for (BreakpointLocation loc : processor) {
-				// TODO: Rehydrate the calls with metrics from the orginal evidence
-				// TODO: output in a real format
-				writer.append(loc.toString());
-				writer.append('\n');
+				// TODO: Rehydrate the calls with metrics from the original evidence
+				StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(processContext, loc);
+				vcfWriter.add(builder.make());
+				if (loc instanceof BreakpointInterval) {
+					// add both sides
+					builder = new StructuralVariationCallBuilder(processContext, new BreakpointInterval(((BreakpointInterval)loc).remoteLocation(), loc, loc.qual));
+					vcfWriter.add(builder.make());
+				}
 			}
 			vcfWriter.close();
     	} catch (IOException e) {

@@ -41,6 +41,9 @@ public class BreakpointInterval extends BreakpointLocation {
 				interval.referenceIndex2, interval.direction2, interval.start2, interval.end2,
 				qual);
 	}
+	public BreakpointLocation remoteLocation() {
+		return new BreakpointLocation(referenceIndex2, direction2, start2, end2, qual);
+	}
 	@Override
 	public String toString() {
 		return String.format("%s %s %.1f", toString(direction, referenceIndex, start, end), toString(direction2, referenceIndex2, start2, end2), qual);
