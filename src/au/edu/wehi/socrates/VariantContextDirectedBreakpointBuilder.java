@@ -2,6 +2,8 @@ package au.edu.wehi.socrates;
 
 import java.nio.charset.StandardCharsets;
 
+import org.apache.commons.lang3.StringUtils;
+
 import htsjdk.samtools.SAMRecord;
 
 import htsjdk.variant.variantcontext.VariantContext;
@@ -88,7 +90,7 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 	 * @return
 	 */
 	private String setVcfLocationAsStartOfInterval(BreakpointLocation loc) {
-		this.chr(processContext.getReference().getSequenceDictionary().getSequence(loc.referenceIndex).getSequenceName());
+		this.chr(processContext.getDictionary().getSequence(loc.referenceIndex).getSequenceName());
 		this.start(loc.start);
 		this.stop(loc.start);
 		if (loc.end != loc.start) {
@@ -96,8 +98,14 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 			this.attribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY, 0);
 			this.attribute(VcfSvConstants.CONFIDENCE_INTERVAL_END_POSITION_KEY, loc.end - loc.start);
 		}
-		String chr = processContext.getReference().getSequenceDictionary().getSequence(loc.referenceIndex).getSequenceName();
-		return new String(processContext.getReference().getSubsequenceAt(chr, loc.start, loc.start).getBases(), StandardCharsets.US_ASCII);
+		String chr = processContext.getDictionary().getSequence(loc.referenceIndex).getSequenceName();
+		String refBases;
+		if (processContext.getReference() == null) {
+			refBases = StringUtils.repeat("N", loc.end - loc.start + 1);
+		} else {
+			refBases = new String(processContext.getReference().getSubsequenceAt(chr, loc.start, loc.start).getBases(), StandardCharsets.US_ASCII);
+		}
+		return refBases; 
 	}
 	public VariantContextDirectedBreakpointBuilder location(BreakpointLocation loc, String untemplatedSequence) {
 		if (loc instanceof BreakpointInterval) {
@@ -112,6 +120,9 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 		}
 		alleles(referenceBase, alt);
 		log10PError(loc.qual / -10);
+		if (loc.end != loc.start) {
+			attribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY, new int[] { 0, loc.end - loc.start });
+		}
 		return this;
 	}
 	public VariantContextDirectedBreakpointBuilder location(BreakpointInterval loc, String untemplatedSequence) {

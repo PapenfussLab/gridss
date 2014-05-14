@@ -78,7 +78,7 @@ public class AnnotateBreakends extends CommandLineProgram {
     		// Sequential processing of variants:
     		// open VCF
     		// (assert sorted?)
-    		if (FileNamingConvention.getBreakpointVcf(INPUT)) {
+    		if (FileNamingConvention.getBreakpointVcf(INPUT).exists()) {
     			// single input file
     		}
     	} catch (IOException e) {
@@ -87,34 +87,6 @@ public class AnnotateBreakends extends CommandLineProgram {
     	}
         return 0;
     }
-    private static void addEvidence(EvidenceClusterProcessor processor, DirectedEvidenceFileIterator evidence) {
-    	while (evidence.hasNext()) {
-			processor.addEvidence(evidence.next());
-		}
-    	evidence.close();
-    }
-    private static File ensureFileExists(final File file) {
-    	if (!file.exists()) {
-    		throw new RuntimeException(String.format("Required file %s is missing. Has ExtractEvidence and GenerateDirectedBreakpoint been run? Have the directed breakpoints been realigned?", file));
-    	}
-    	return file;
-    }
-	private DirectedEvidenceFileIterator evidenceForChr(final ProcessingContext processContext, final String chr) throws IOException {
-		final DirectedEvidenceFileIterator dei1 = new DirectedEvidenceFileIterator(processContext,
-				ensureFileExists(FileNamingConvention.getSVBamForChr(INPUT, chr)),
-				ensureFileExists(FileNamingConvention.getMateBamForChr(INPUT, chr)),
-				ensureFileExists(FileNamingConvention.getRealignmentBamForChr(INPUT, chr)),
-				ensureFileExists(FileNamingConvention.getBreakendVcfForChr(INPUT, chr)));
-		return dei1;
-	}
-	private DirectedEvidenceFileIterator allEvidence(final ProcessingContext processContext) throws IOException {
-		final DirectedEvidenceFileIterator dei1 = new DirectedEvidenceFileIterator(processContext,
-				ensureFileExists(FileNamingConvention.getSVBam(INPUT)),
-				ensureFileExists(FileNamingConvention.getMateBam(INPUT)),
-				ensureFileExists(FileNamingConvention.getRealignmentBam(INPUT)),
-				ensureFileExists(FileNamingConvention.getBreakendVcf(INPUT)));
-		return dei1;
-	}
 	public static void main(String[] argv) {
         System.exit(new GenerateDirectedBreakpoints().instanceMain(argv));
     }

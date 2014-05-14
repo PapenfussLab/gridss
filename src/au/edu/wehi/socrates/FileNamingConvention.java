@@ -19,7 +19,8 @@ public class FileNamingConvention {
 	private static final String FORMAT_REALIGN_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign.bam";
 	private static final String FORMAT_BREAKEND_VCF_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.breakend.vcf";
 	private static final String FORMAT_BREAKEND_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".breakend.vcf";
-	private static final String FORMAT_BREAKPOINT_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".%s-%s.breakpoint.vcf";
+	private static final String FORMAT_BREAKPOINT_VCF_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s-%s.breakpoint.vcf";
+	private static final String FORMAT_BREAKPOINT_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".breakpoint.vcf";
 	private static final String FORMAT_OUTPUT_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".vcf";
 	private static String GetStem(File input) throws IOException {
 		String full = input.getAbsoluteFile().toString();
@@ -46,8 +47,11 @@ public class FileNamingConvention {
 	public static File getBreakendVcfForChr(File input, String chromosome) throws IOException {
 		return new File(String.format(FORMAT_BREAKEND_VCF_PER_CHR, GetStem(input), chromosome));
 	}
+	public static File getBreakpointVcf(File input) throws IOException {
+		return new File(String.format(FORMAT_BREAKPOINT_VCF, GetStem(input)));
+	}
 	public static File getBreakpointVcf(File input, String chromosome1, String chromosome2) throws IOException {
-		return new File(String.format(FORMAT_BREAKPOINT_VCF, GetStem(input), chromosome1, chromosome2));
+		return new File(String.format(FORMAT_BREAKPOINT_VCF_PER_CHR, GetStem(input), chromosome1, chromosome2));
 	}
 	public static File getOutputVcf(File input) throws IOException {
 		return new File(String.format(FORMAT_OUTPUT_VCF, GetStem(input)));

@@ -5,6 +5,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Iterator;
+import java.util.PriorityQueue;
+import java.util.SortedSet;
 
 import picard.cmdline.CommandLineProgram;
 import picard.cmdline.Option;
@@ -28,6 +31,7 @@ import htsjdk.variant.vcf.VCFHeader;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
+import com.google.common.collect.Sets;
 
 import au.edu.wehi.socrates.vcf.VcfConstants;
 
@@ -86,7 +90,7 @@ public class ClusterEvidence extends CommandLineProgram {
 			// TODO: add filtering parameters so we only process evidence between 1 and 2 
 			// (@see DirectedEvidenceChromosomePairFilter)
 			EvidenceClusterProcessor processor;
-			log.debug("Loading evidence");
+			log.debug("Loading minimal evidence set");
 			if (CHROMSOME.length == 0) {
 				processor = new EvidenceClusterProcessor(processContext);
 				addEvidence(processor, allEvidence(processContext));
@@ -101,6 +105,17 @@ public class ClusterEvidence extends CommandLineProgram {
 				throw new RuntimeException("CHROMSOME argument supplied too many times");
 			}
 			log.debug("Calling maximal cliques");
+			PriorityQueue<BreakpointLocation> calls = new PriorityQueue<BreakpointLocation>(1024, BreakpointLocation.ByStartEnd);
+			Iterator<BreakpointLocation> it = processor.iterator();
+			while (it.hasNext()) {
+				BreakpointLocation loc = it.next();
+				calls.add(loc);
+				if (loc instanceof BreakpointInterval) {
+					// add both sides
+					calls.add(new BreakpointInterval(((BreakpointInterval)loc).remoteLocation(), loc, loc.qual));
+				}
+			}
+			log.debug("Annotating calls");
 			final VariantContextWriter vcfWriter = new VariantContextWriterBuilder()
 				.setOutputFile(OUTPUT)
 				.setReferenceDictionary(processContext.getDictionary())
@@ -108,7 +123,8 @@ public class ClusterEvidence extends CommandLineProgram {
 			final VCFHeader vcfHeader = new VCFHeader();
 			VcfConstants.addHeaders(vcfHeader);
 			vcfWriter.writeHeader(vcfHeader);
-			for (BreakpointLocation loc : processor) {
+			
+			for (BreakpointLocation loc : new PriorityQ  processor) {
 				// TODO: Rehydrate the calls with metrics from the original evidence
 				StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(processContext, loc);
 				vcfWriter.add(builder.make());

@@ -4,6 +4,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+
+import au.edu.wehi.socrates.vcf.VcfSvConstants;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
 
@@ -86,12 +88,18 @@ public class VariantContextDirectedBreakpoint extends SocratesVariantContext imp
 			breakpointSequence = localSequence.substring(0, localSequence.length() - refLength);
 			anchorSequence = localSequence.substring(breakpointSequence.length());
 		}
+		int ciStart = 0, ciEnd = 0;
+		if (hasAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_LENGTH_KEY)) {
+			int[] ci = (int[])getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_LENGTH_KEY);
+			ciStart = ci[0];
+			ciEnd = ci[1];
+		}
 		if (remoteDirection != null) {
-			location = new BreakpointInterval(getReferenceIndex(), direction, localPosition, localPosition,
-					processContext.getDictionary().getSequenceIndex(remoteContig), remoteDirection, remotePosition, remotePosition,
+			location = new BreakpointInterval(getReferenceIndex(), direction, localPosition - ciStart, localPosition + ciEnd,
+					processContext.getDictionary().getSequenceIndex(remoteContig), remoteDirection, remotePosition - ciStart, remotePosition + ciEnd,
 					getPhredScaledQual());
 		} else {
-			location = new BreakpointLocation(getReferenceIndex(), direction, localPosition, localPosition,
+			location = new BreakpointLocation(getReferenceIndex(), direction, localPosition - ciStart, localPosition + ciEnd,
 					getPhredScaledQual());
 		}
 	}

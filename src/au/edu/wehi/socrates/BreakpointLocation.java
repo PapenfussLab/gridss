@@ -1,5 +1,10 @@
 package au.edu.wehi.socrates;
 
+import au.edu.wehi.socrates.graph.TrapezoidGraphNode;
+
+import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Ordering;
+
 /**
  * Positional location of a breakpoint that is consistent with the given evidence
  * @author Daniel Cameron
@@ -87,4 +92,13 @@ public class BreakpointLocation {
 			return false;
 		return true;
 	}
+	public static Ordering<BreakpointLocation> ByStartEnd = new Ordering<BreakpointLocation>() {
+		public int compare(BreakpointLocation o1, BreakpointLocation o2) {
+			  return ComparisonChain.start()
+			        .compare(o1.referenceIndex, o2.referenceIndex)
+			        .compare(o1.start, o2.start)
+			        .compare(o1.end, o2.end)
+			        .result();
+		  }
+	};
 }

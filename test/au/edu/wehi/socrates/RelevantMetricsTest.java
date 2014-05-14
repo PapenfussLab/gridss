@@ -6,8 +6,8 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.IOException;
 
-import htsjdk.samtools.analysis.InsertSizeMetrics;
-import htsjdk.samtools.analysis.directed.InsertSizeMetricsCollector;
+import picard.analysis.InsertSizeMetrics;
+import picard.analysis.directed.InsertSizeMetricsCollector;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.SAMRecord;
 
