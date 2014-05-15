@@ -17,13 +17,13 @@ public class SequentialRealignedBreakpointFactoryTest extends TestHelper {
 	}
 	public class TestDirectedBreakpoint implements DirectedBreakpoint {
 		private String id;
-		private BreakpointLocation location;
+		private BreakendSummary location;
 		public TestDirectedBreakpoint(int referenceIndex, int start, String id) {
 			this.id = id;
-			this.location = new BreakpointLocation(referenceIndex, BreakpointDirection.Forward, start, start, 0);
+			this.location = new BreakendSummary(referenceIndex, BreakendDirection.Forward, start, start, 0);
 		}
 		@Override
-		public BreakpointLocation getBreakpointLocation() {
+		public BreakendSummary getBreakendSummary() {
 			return location;
 		}
 		@Override

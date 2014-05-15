@@ -1,16 +1,12 @@
 package au.edu.wehi.socrates.vcf;
 
+import au.edu.wehi.socrates.EvidenceMetrics;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
 
 public class VcfConstants {
-	public static final String REFERENCE_SPANNING_READ_PAIR_COUNT = "RPC";
-	public static final String REFERENCE_READ_COUNT = "RRC";
-	public static final String SOFT_CLIP_READ_COUNT = "SCC";
-	public static final String UNMAPPED_MATE_READ_COUNT = "OEAC";
-	public static final String DISCORDANT_READ_PAIR_COUNT = "DPC";
 	public static final String REALIGNMENT_FAILURE = "REALNFAIL";
 
 	//public static final String GENE_ID = "gene_id";
@@ -24,11 +20,7 @@ public class VcfConstants {
 	//public static final String REALIGNMENT_EXCLUDED_BASES = "remainingSoftClip";
 	public static void addHeaders(VCFHeader header) {
 		// Breakpoint headers
-		header.addMetaDataLine(new VCFInfoHeaderLine(VcfConstants.REFERENCE_SPANNING_READ_PAIR_COUNT, 1, VCFHeaderLineType.Integer, "Count of reference read pairs spanning this breakpoint supporting the reference allele"));
-		header.addMetaDataLine(new VCFInfoHeaderLine(VcfConstants.REFERENCE_READ_COUNT, 1, VCFHeaderLineType.Integer, "Count of reference reads spanning this breakpoint supporting the reference allele"));
-		header.addMetaDataLine(new VCFInfoHeaderLine(VcfConstants.SOFT_CLIP_READ_COUNT, 1, VCFHeaderLineType.Integer, "Count of soft clipped reads supporting this breakpoint"));
-		header.addMetaDataLine(new VCFInfoHeaderLine(VcfConstants.UNMAPPED_MATE_READ_COUNT, 1, VCFHeaderLineType.Integer, "Count of reads with unmapped mates supporting this breakpoint"));
-		header.addMetaDataLine(new VCFInfoHeaderLine(VcfConstants.DISCORDANT_READ_PAIR_COUNT, 1, VCFHeaderLineType.Integer, "Count of discordantly paired reads supporting this breakpoint"));
+		EvidenceAttributes.addMetaDataHeaders(header);
 		header.addMetaDataLine(new VCFInfoHeaderLine(VcfConstants.ASSEMBLY_CONSENSUS, 1, VCFHeaderLineType.String, "Anomolous read consensus assembly sequence"));
 		header.addMetaDataLine(new VCFInfoHeaderLine(VcfConstants.ASSEMBLY_QUALITY, 1, VCFHeaderLineType.Float, "Anomolous read consensus assembly quality"));
 		header.addMetaDataLine(new VCFInfoHeaderLine(VcfConstants.ASSEMBLY_PROGRAM, 1, VCFHeaderLineType.String, "Anomolous read consensus assembly algorithm"));

@@ -28,8 +28,8 @@ import htsjdk.variant.vcf.VCFHeader;
 import com.google.common.collect.Lists;
 
 public class TestHelper {
-	public static final BreakpointDirection FWD = BreakpointDirection.Forward;
-	public static final BreakpointDirection BWD = BreakpointDirection.Backward;
+	public static final BreakendDirection FWD = BreakendDirection.Forward;
+	public static final BreakendDirection BWD = BreakendDirection.Backward;
 	public static byte[] B(String s) {
 		if (s == null) return null;
 		return s.getBytes(StandardCharsets.US_ASCII);
@@ -94,7 +94,7 @@ public class TestHelper {
 	static public NonReferenceReadPair NRRP(SAMRecord... pair) {		
 		return new NonReferenceReadPair(pair[0], pair[1], getContext().getMetrics().getMaxFragmentSize());
 	}
-	static public SoftClipEvidence SCE(BreakpointDirection direction, SAMRecord... pair) {
+	static public SoftClipEvidence SCE(BreakendDirection direction, SAMRecord... pair) {
 		if (pair.length >= 2) {
 			return new SoftClipEvidence(getContext(), direction, pair[0], pair[1]);
 		} else {

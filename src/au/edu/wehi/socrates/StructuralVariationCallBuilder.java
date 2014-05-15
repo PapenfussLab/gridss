@@ -11,13 +11,13 @@ import com.google.common.collect.Lists;
 
 public class StructuralVariationCallBuilder {
 	private final ProcessingContext processContext;
-	private final BreakpointLocation call;
+	private final BreakendSummary call;
 	private final List<SoftClipEvidence> scList = Lists.newArrayList();
 	private final List<NonReferenceReadPair> nrpList = Lists.newArrayList();
 	private final List<DirectedBreakpointAssembly> assList = Lists.newArrayList();
 	private int referenceReadCount = -1;
 	private int referenceSpanningPairCount = -1;
-	public StructuralVariationCallBuilder(ProcessingContext processContext, BreakpointLocation call) {
+	public StructuralVariationCallBuilder(ProcessingContext processContext, BreakendSummary call) {
 		this.processContext = processContext;
 		this.call  = call;
 	}
@@ -34,10 +34,10 @@ public class StructuralVariationCallBuilder {
 		}
 		return this;
 	}
-	public StructuralVariationCall make() {
+	public VariantContextDirectedBreakpoint make() {
 		VariantContextBuilder builder = createBuilder()
 			.id(getID())
-			.log10PError(call.qual / -10); // qual = phred for now
+			.log10PError(call.evidence.getScore() / -10); // qual = phred for now
 		int oea = 0, dp = 0;
 		for (NonReferenceReadPair nrp : nrpList) {
 			if (nrp.getRemoteReferenceIndex() == -1) {
@@ -76,9 +76,9 @@ public class StructuralVariationCallBuilder {
 			sb.append('-');
 			sb.append(call.end);
 		}
-		sb.append(call.direction == BreakpointDirection.Forward ? 'f' : 'b');
-		if (call instanceof BreakpointInterval) {
-			BreakpointInterval loc = (BreakpointInterval)call;
+		sb.append(call.direction == BreakendDirection.Forward ? 'f' : 'b');
+		if (call instanceof BreakpointSummary) {
+			BreakpointSummary loc = (BreakpointSummary)call;
 			sb.append(processContext.getDictionary().getSequence(loc.referenceIndex2).getSequenceName());
 			sb.append(':');
 			sb.append(loc.start2);
@@ -86,7 +86,7 @@ public class StructuralVariationCallBuilder {
 				sb.append('-');
 				sb.append(loc.end2);
 			}
-			sb.append(loc.direction2 == BreakpointDirection.Forward ? 'f' : 'b');
+			sb.append(loc.direction2 == BreakendDirection.Forward ? 'f' : 'b');
 		}
 		return sb.toString();
 	}
@@ -112,18 +112,18 @@ public class StructuralVariationCallBuilder {
 		if (scList.size() == 0) return null;
 		SoftClipEvidence best = scList.get(0);
 		for (SoftClipEvidence sce : scList) {
-			if (sce.getBreakpointLocation() instanceof BreakpointInterval
-					&& !(best.getBreakpointLocation() instanceof BreakpointInterval)) {
+			if (sce.getBreakendSummary() instanceof BreakpointSummary
+					&& !(best.getBreakendSummary() instanceof BreakpointSummary)) {
 				best = sce;
-			} else if (sce.getBreakpointLocation().getClass() == best.getBreakpointLocation().getClass()) {
-				if (sce.getBreakpointLocation() instanceof BreakpointInterval) {
-					// both BreakpointInterval
+			} else if (sce.getBreakendSummary().getClass() == best.getBreakendSummary().getClass()) {
+				if (sce.getBreakendSummary() instanceof BreakpointSummary) {
+					// both BreakpointSummary
 					if (sce.getSoftClipRealignmentSAMRecord().getMappingQuality() > best.getSoftClipRealignmentSAMRecord().getMappingQuality()) {
 						// we have a better soft-clip mapping
 						best = sce;
 					}
 				} else {
-					// both BreakpointLocation
+					// both BreakendSummary
 					if (sce.getSoftClipLength() > best.getSoftClipLength()) {
 						best = sce;
 					}

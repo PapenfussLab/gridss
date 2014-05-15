@@ -3,8 +3,8 @@ package au.edu.wehi.socrates;
 import java.util.Iterator;
 
 import htsjdk.samtools.util.RuntimeEOFException;
-import au.edu.wehi.socrates.graph.TrapezoidGraph;
-import au.edu.wehi.socrates.graph.TrapezoidGraphNode;
+import au.edu.wehi.socrates.graph.MaximalClique;
+import au.edu.wehi.socrates.graph.GraphNode;
 
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
@@ -28,16 +28,16 @@ public class EvidenceClusterSubsetProcessor extends EvidenceClusterProcessor {
 		this.toReferenceIndex = Math.max(fromReferenceIndex, toReferenceIndex);
 	}
 	@Override
-	protected boolean filterOut(BreakpointLocation loc) {
+	protected boolean filterOut(BreakendSummary loc) {
 		return loc.referenceIndex != fromReferenceIndex && loc.referenceIndex != toReferenceIndex;
 	}
 	@Override
-	protected boolean filterOut(BreakpointInterval loc) {
+	protected boolean filterOut(BreakpointSummary loc) {
 		return !(loc.referenceIndex == fromReferenceIndex && loc.referenceIndex2 == toReferenceIndex)
 				|| (loc.referenceIndex == toReferenceIndex && loc.referenceIndex2 == fromReferenceIndex);
 	}
 	@Override
-	public Iterator<BreakpointLocation> iterator() {
+	public Iterator<BreakendSummary> iterator() {
 		return new BoundsAssertionIterator(super.iterator());
 	}
 	/**
@@ -45,9 +45,9 @@ public class EvidenceClusterSubsetProcessor extends EvidenceClusterProcessor {
 	 * @author Daniel Cameron
 	 *
 	 */
-	private class BoundsAssertionIterator implements Iterator<BreakpointLocation> {
-		private final Iterator<BreakpointLocation> it;
-		public BoundsAssertionIterator(Iterator<BreakpointLocation> it) {
+	private class BoundsAssertionIterator implements Iterator<BreakendSummary> {
+		private final Iterator<BreakendSummary> it;
+		public BoundsAssertionIterator(Iterator<BreakendSummary> it) {
 			this.it = it;
 		}
 		@Override
@@ -55,13 +55,13 @@ public class EvidenceClusterSubsetProcessor extends EvidenceClusterProcessor {
 			return it.hasNext();
 		}
 		@Override
-		public BreakpointLocation next() {
-			BreakpointLocation loc = it.next();
+		public BreakendSummary next() {
+			BreakendSummary loc = it.next();
 			if (loc.referenceIndex != fromReferenceIndex && loc.referenceIndex != toReferenceIndex) {
 				throw new RuntimeException(String.format("Sanity check failure: breakpoint %s not on referenceIndex %d or %d.", loc, fromReferenceIndex, toReferenceIndex));
 			}
-			if (loc instanceof BreakpointInterval) {
-				BreakpointInterval interval = (BreakpointInterval)loc;
+			if (loc instanceof BreakpointSummary) {
+				BreakpointSummary interval = (BreakpointSummary)loc;
 				if (interval.referenceIndex2 != fromReferenceIndex && interval.referenceIndex2 != toReferenceIndex) {
 					throw new RuntimeException(String.format("Sanity check failure: breakpoint %s not on referenceIndex %d or %d.", loc, fromReferenceIndex, toReferenceIndex));
 				}

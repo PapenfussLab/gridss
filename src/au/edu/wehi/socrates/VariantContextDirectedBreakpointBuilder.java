@@ -41,35 +41,34 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 	 * @param realignment
 	 * @return
 	 */
-	public VariantContextDirectedBreakpointBuilder realigned(DirectedBreakpoint evidence, SAMRecord realignment) {		
+	public VariantContextDirectedBreakpointBuilder realigned(BreakendSummary localAnchor, SAMRecord realignment) {		
 		if (realignment.getReadUnmappedFlag()) {
 			attribute(VcfConstants.REALIGNMENT_FAILURE, true);
 		} else {
-			BreakpointLocation localAnchor = evidence.getBreakpointLocation();
-			BreakpointLocation remoteAnchor;
+			BreakendSummary remoteAnchor;
 			int untemplatedSequenceLength;
-			if ((localAnchor.direction == BreakpointDirection.Forward && realignment.getReadNegativeStrandFlag()) ||
-					(localAnchor.direction == BreakpointDirection.Backward && !realignment.getReadNegativeStrandFlag())) {
+			if ((localAnchor.direction == BreakendDirection.Forward && realignment.getReadNegativeStrandFlag()) ||
+					(localAnchor.direction == BreakendDirection.Backward && !realignment.getReadNegativeStrandFlag())) {
 				// negative strand template match means we flip the expected direction
 				// since breakend sequence is on the +ve strand,
 				// realigned forward breakends on +ve stand would indicate backward breakend
 				// realigned backward breakends on +ve stand would indicate forward breakend
-				remoteAnchor = new BreakpointLocation(realignment.getReferenceIndex(), BreakpointDirection.Forward,
-						realignment.getAlignmentEnd(), realignment.getAlignmentEnd(), 0);
+				remoteAnchor = new BreakendSummary(realignment.getReferenceIndex(), BreakendDirection.Forward,
+						realignment.getAlignmentEnd(), realignment.getAlignmentEnd(), null);
 				untemplatedSequenceLength = SAMRecordUtil.getEndSoftClipLength(realignment);
 			} else {
 				// ACGT. => CGT breakpoint, -> ACGT.---.CGT
-				remoteAnchor = new BreakpointLocation(realignment.getReferenceIndex(), BreakpointDirection.Backward,
-						realignment.getAlignmentStart(), realignment.getAlignmentStart(), 0);
+				remoteAnchor = new BreakendSummary(realignment.getReferenceIndex(), BreakendDirection.Backward,
+						realignment.getAlignmentStart(), realignment.getAlignmentStart(), null);
 				untemplatedSequenceLength = SAMRecordUtil.getStartSoftClipLength(realignment);
 			}			
 			String untemplatedSequence = new String(evidence.getBreakpointSequence(), StandardCharsets.US_ASCII);
-			if (localAnchor.direction == BreakpointDirection.Forward) {
+			if (localAnchor.direction == BreakendDirection.Forward) {
 				untemplatedSequence = untemplatedSequence.substring(0, untemplatedSequenceLength);
 			} else {
 				untemplatedSequence = untemplatedSequence.substring(untemplatedSequence.length() - untemplatedSequenceLength);
 			}
-			location(new BreakpointInterval(evidence.getBreakpointLocation(), remoteAnchor, localAnchor.qual), untemplatedSequence);
+			location(new BreakpointSummary(localAnchor, remoteAnchor, localAnchor.qual), untemplatedSequence);
 		}
 		return this;
 	}
@@ -78,9 +77,9 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 			DirectedBreakpoint bp = (DirectedBreakpoint)evidence;
 			byte[] seq = bp.getBreakpointSequence();
 			byte[] qual = bp.getBreakpointQuality();
-			location(evidence.getBreakpointLocation(), new String(seq, StandardCharsets.US_ASCII));
+			location(evidence.getBreakendSummary(), new String(seq, StandardCharsets.US_ASCII));
 		} else {
-			location(evidence.getBreakpointLocation(), "");
+			location(evidence.getBreakendSummary(), "");
 		}
 		return this;
 	}
@@ -89,7 +88,7 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 	 * @param loc
 	 * @return
 	 */
-	private String setVcfLocationAsStartOfInterval(BreakpointLocation loc) {
+	private String setVcfLocationAsStartOfInterval(BreakendSummary loc) {
 		this.chr(processContext.getDictionary().getSequence(loc.referenceIndex).getSequenceName());
 		this.start(loc.start);
 		this.stop(loc.start);
@@ -107,13 +106,13 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 		}
 		return refBases; 
 	}
-	public VariantContextDirectedBreakpointBuilder location(BreakpointLocation loc, String untemplatedSequence) {
-		if (loc instanceof BreakpointInterval) {
-			return location((BreakpointInterval)loc, "");
+	public VariantContextDirectedBreakpointBuilder location(BreakendSummary loc, String untemplatedSequence) {
+		if (loc instanceof BreakpointSummary) {
+			return location((BreakpointSummary)loc, "");
 		}
 		String referenceBase = setVcfLocationAsStartOfInterval(loc);
 		String alt;
-		if (loc.direction == BreakpointDirection.Forward) {
+		if (loc.direction == BreakendDirection.Forward) {
 			alt = referenceBase + untemplatedSequence + '.';
 		} else {
 			alt = '.' + untemplatedSequence + referenceBase;
@@ -125,12 +124,12 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 		}
 		return this;
 	}
-	public VariantContextDirectedBreakpointBuilder location(BreakpointInterval loc, String untemplatedSequence) {
+	public VariantContextDirectedBreakpointBuilder location(BreakpointSummary loc, String untemplatedSequence) {
 		setVcfLocationAsStartOfInterval(loc);
 		String referenceBase = setVcfLocationAsStartOfInterval(loc);	
-		char remoteBracket = loc.direction2 == BreakpointDirection.Forward ? ']' : '[';
+		char remoteBracket = loc.direction2 == BreakendDirection.Forward ? ']' : '[';
 		String target = String.format("%s:%d", processContext.getDictionary().getSequence(loc.referenceIndex2).getSequenceName(), loc.start2);
-		if (loc.direction == BreakpointDirection.Forward) {
+		if (loc.direction == BreakendDirection.Forward) {
 			alleles(referenceBase, String.format("%s%s%c%s%c", referenceBase, untemplatedSequence, remoteBracket, target, remoteBracket));
 		} else {
 			alleles(referenceBase, String.format("%c%s%c%s%s", remoteBracket, target, remoteBracket, untemplatedSequence, referenceBase));

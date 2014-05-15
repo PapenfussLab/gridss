@@ -32,7 +32,7 @@ public class LinearGenomicCoordinateTest {
 		dict.addSequence(new SAMSequenceRecord("contig1", 10));
 		dict.addSequence(new SAMSequenceRecord("contig2", 20));
 		LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict);
-		assertEquals(2, c.getStartLinearCoordinate(new BreakpointLocation(0, BreakpointDirection.Forward, 2, 5, 0)));
+		assertEquals(2, c.getStartLinearCoordinate(new BreakendSummary(0, BreakendDirection.Forward, 2, 5, 0)));
 	}
 	@SuppressWarnings("deprecation")
 	@Test(expected=IllegalArgumentException.class)

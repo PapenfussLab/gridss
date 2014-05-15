@@ -6,7 +6,6 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 
-import picard.cmdline.CommandLineProgram;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import picard.cmdline.Usage;
@@ -16,7 +15,6 @@ import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMFileReader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 

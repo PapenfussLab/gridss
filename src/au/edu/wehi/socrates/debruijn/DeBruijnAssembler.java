@@ -5,8 +5,8 @@ import java.util.List;
 import java.util.PriorityQueue;
 
 import htsjdk.samtools.SAMRecord;
-import au.edu.wehi.socrates.BreakpointDirection;
-import au.edu.wehi.socrates.BreakpointLocation;
+import au.edu.wehi.socrates.BreakendDirection;
+import au.edu.wehi.socrates.BreakendSummary;
 import au.edu.wehi.socrates.DirectedBreakpointAssembly;
 import au.edu.wehi.socrates.DirectedEvidence;
 import au.edu.wehi.socrates.DirectedEvidenceEndCoordinateComparator;
@@ -37,10 +37,10 @@ public class DeBruijnAssembler implements ReadEvidenceAssembler {
 			ProcessingContext processContext,
 			int kmer) {
 		this.processContext = processContext;
-		this.graphf = new DeBruijnReadGraph(kmer, BreakpointDirection.Forward);
-		this.graphb = new DeBruijnReadGraph(kmer, BreakpointDirection.Backward);
+		this.graphf = new DeBruijnReadGraph(kmer, BreakendDirection.Forward);
+		this.graphb = new DeBruijnReadGraph(kmer, BreakendDirection.Backward);
 	}
-	private DirectedBreakpointAssembly createDirectedEvidence(DeBruijnReadGraph graph, BreakpointDirection direction) {
+	private DirectedBreakpointAssembly createDirectedEvidence(DeBruijnReadGraph graph, BreakendDirection direction) {
 		// AnomolousReadAssembly contains the assembly information encoded in a SAMRecord
 		AnomolousReadAssembly ara = graph.assembleVariant();
 		if (ara == null) return null;
@@ -48,7 +48,7 @@ public class DeBruijnAssembler implements ReadEvidenceAssembler {
 		if (ara.getReadCount() <= 1) return null; // exclude single soft-clips
 		
 		SoftClipEvidence assembledSC = new SoftClipEvidence(processContext, direction, ara);
-		return DirectedBreakpointAssembly.create(processContext, ASSEMBLER_NAME, currentReferenceIndex, currentPosition, BreakpointDirection.Forward,
+		return DirectedBreakpointAssembly.create(processContext, ASSEMBLER_NAME, currentReferenceIndex, currentPosition, BreakendDirection.Forward,
 				assembledSC.getBreakpointSequence(), assembledSC.getBreakpointQuality(),
 				ara.getReadBases(), ara.getBaseQualities(),
 				ara.getReadCount(), ara.getReadLength());
@@ -56,10 +56,10 @@ public class DeBruijnAssembler implements ReadEvidenceAssembler {
 	@Override
 	public Iterable<DirectedBreakpointAssembly> addEvidence(DirectedEvidence evidence) {
 		if (evidence == null) return Collections.emptyList();
-		BreakpointLocation location = evidence.getBreakpointLocation();
+		BreakendSummary location = evidence.getBreakendSummary();
 		List<DirectedBreakpointAssembly> result = processUpToExcluding(location.referenceIndex, location.start);
 		// add evidence
-		if (location.direction == BreakpointDirection.Forward) {
+		if (location.direction == BreakendDirection.Forward) {
 			addToGraph(graphf, activef, evidence);
 		} else {
 			addToGraph(graphb, activeb, evidence);
@@ -85,8 +85,8 @@ public class DeBruijnAssembler implements ReadEvidenceAssembler {
 	}
 	private static void flushUpToExcluding(DeBruijnReadGraph graph, PriorityQueue<DirectedEvidence> active, int referenceIndex, int position) {
 		while (!active.isEmpty() &&
-				(active.peek().getBreakpointLocation().referenceIndex < referenceIndex || 
-				(active.peek().getBreakpointLocation().referenceIndex == referenceIndex && active.peek().getBreakpointLocation().end < position))) {
+				(active.peek().getBreakendSummary().referenceIndex < referenceIndex || 
+				(active.peek().getBreakendSummary().referenceIndex == referenceIndex && active.peek().getBreakendSummary().end < position))) {
 			DirectedEvidence evidence = active.poll();
 			boolean anchored;
 			SAMRecord read;
@@ -120,11 +120,11 @@ public class DeBruijnAssembler implements ReadEvidenceAssembler {
 				!(currentReferenceIndex == referenceIndex && currentPosition == position)) {
 			DirectedBreakpointAssembly evidence;
 			
-			evidence = createDirectedEvidence(graphf, BreakpointDirection.Forward);
+			evidence = createDirectedEvidence(graphf, BreakendDirection.Forward);
 			if (evidence != null) {
 				result.add(evidence);
 			}
-			evidence = createDirectedEvidence(graphb, BreakpointDirection.Backward);
+			evidence = createDirectedEvidence(graphb, BreakendDirection.Backward);
 			if (evidence != null) {
 				result.add(evidence);
 			}

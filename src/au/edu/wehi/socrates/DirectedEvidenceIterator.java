@@ -46,7 +46,7 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 	@Override
 	protected DirectedEvidence computeNext() {
 		do {
-			if (!calls.isEmpty() && processContext.getLinear().getStartLinearCoordinate(calls.peek().getBreakpointLocation()) < currentLinearPosition - processContext.getMetrics().getMaxFragmentSize()) {
+			if (!calls.isEmpty() && processContext.getLinear().getStartLinearCoordinate(calls.peek().getBreakendSummary()) < currentLinearPosition - processContext.getMetrics().getMaxFragmentSize()) {
 				return fixCall(calls.poll());
 			}
 		} while (advance());
@@ -99,10 +99,10 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 	}
 	private void processRead(SAMRecord record) {
 		if (SAMRecordUtil.getStartSoftClipLength(record) > 0) {
-			calls.add(new SoftClipEvidence(processContext, BreakpointDirection.Backward, record));
+			calls.add(new SoftClipEvidence(processContext, BreakendDirection.Backward, record));
 		}
 		if (SAMRecordUtil.getEndSoftClipLength(record) > 0) {
-			calls.add(new SoftClipEvidence(processContext, BreakpointDirection.Forward, record));
+			calls.add(new SoftClipEvidence(processContext, BreakendDirection.Forward, record));
 		}
 		if (SAMRecordUtil.isPartOfNonReferenceReadPair(record)) {
 			NonReferenceReadPair pair = mateFactory.createNonReferenceReadPair(record, processContext.getMetrics().getMaxFragmentSize());

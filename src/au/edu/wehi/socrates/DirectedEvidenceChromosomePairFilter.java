@@ -23,9 +23,9 @@ public class DirectedEvidenceChromosomePairFilter extends AbstractIterator<Direc
 		this.allowed.add(referenceIndex2);
 	}
 	private boolean filterOut(DirectedEvidence evidence) {
-		BreakpointLocation loc = evidence.getBreakpointLocation();
+		BreakendSummary loc = evidence.getBreakendSummary();
 		if (allowed.contains(loc.referenceIndex)) return false;
-		if (loc instanceof BreakpointInterval && allowed.contains(((BreakpointInterval)loc).referenceIndex2)) return false;
+		if (loc instanceof BreakpointSummary && allowed.contains(((BreakpointSummary)loc).referenceIndex2)) return false;
 		return true;
 	}
 	@Override

@@ -13,7 +13,7 @@ import htsjdk.samtools.util.SequenceUtil;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import au.edu.wehi.socrates.BreakpointDirection;
+import au.edu.wehi.socrates.BreakendDirection;
 import au.edu.wehi.socrates.sam.AnomolousReadAssembly;
 
 import com.google.common.collect.HashMultimap;
@@ -26,8 +26,8 @@ public class DeBruijnReadGraph {
 	private final Map<Long, DeBruijnNode> kmers = Maps.newHashMap();
 	private final Multimap<Long, Integer> startkmers = HashMultimap.<Long, Integer>create();
 	private final int k;
-	private final BreakpointDirection direction;
-	public DeBruijnReadGraph(int k, BreakpointDirection direction) {
+	private final BreakendDirection direction;
+	public DeBruijnReadGraph(int k, BreakendDirection direction) {
 		this.k = k;
 		this.direction = direction;
 	}
@@ -53,7 +53,7 @@ public class DeBruijnReadGraph {
 	}
 	private AnchorOffset getAnchoredBreakpointStartKmer(SAMRecord record, boolean anchored) {
 		if (!anchored) return null;
-		int clippedBases = direction == BreakpointDirection.Forward ?
+		int clippedBases = direction == BreakendDirection.Forward ?
 				record.getUnclippedEnd() - record.getAlignmentEnd() : 
 				record.getAlignmentStart() - record.getUnclippedStart();
 		int anchoredBreakpointStartKmer = record.getReadLength() - k - clippedBases;
@@ -63,7 +63,7 @@ public class DeBruijnReadGraph {
 		return new AnchorOffset(anchoredBreakpointStartKmer);
 	}
 	private boolean shouldReverse(SAMRecord record, boolean anchored) {
-		boolean reverseDirection = direction == BreakpointDirection.Backward;
+		boolean reverseDirection = direction == BreakendDirection.Backward;
 		return reverseDirection ^ reverseComplimentRequiredForPositiveStrandReadout(record, anchored);
 	}
 	private boolean reverseComplimentRequiredForPositiveStrandReadout(SAMRecord record, boolean anchored) {
@@ -202,7 +202,7 @@ public class DeBruijnReadGraph {
 		// pad out qualities to match the path length
 		for (int i = 0; i < k - 1; i++) qual.add(qual.get(qual.size() - 1));
 		byte[] quals = rescaleBaseQualities(qual);
-		if (direction == BreakpointDirection.Backward) {
+		if (direction == BreakendDirection.Backward) {
 			ArrayUtils.reverse(bases);
 			ArrayUtils.reverse(quals);
 		}

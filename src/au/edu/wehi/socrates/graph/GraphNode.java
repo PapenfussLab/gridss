@@ -3,7 +3,8 @@ package au.edu.wehi.socrates.graph;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 
-import au.edu.wehi.socrates.BreakpointInterval;
+import au.edu.wehi.socrates.BreakpointSummary;
+import au.edu.wehi.socrates.EvidenceMetrics;
 
 /**
  * Weighted trapezoid graph vertex.
@@ -11,29 +12,34 @@ import au.edu.wehi.socrates.BreakpointInterval;
  * @author Daniel Cameron
  *
  */
-public class TrapezoidGraphNode {
+public class GraphNode {
 	public final long startX;
 	public final long endX;
 	public final long startY;
 	public final long endY;
-	public final double weight;
-	public TrapezoidGraphNode(TrapezoidGraphNode loc, double additionalWeight) {
+	public final EvidenceMetrics evidence;
+	public GraphNode(GraphNode loc, EvidenceMetrics additionalEvidence) {
 		this.startX = loc.startX;
 		this.endX = loc.endX;
 		this.startY = loc.startY;
 		this.endY = loc.endY;
-		this.weight = loc.weight + additionalWeight;
+		this.evidence = loc.evidence;
+		if (loc.evidence != null) {
+			this.evidence.add(additionalEvidence);
+		} else {
+			this.evidence = additionalEvidence;
+		}
 	}
-	public TrapezoidGraphNode(long startX, long endX, long startY, long endY, double weight) {
+	public GraphNode(long startX, long endX, long startY, long endY, EvidenceMetrics evidence) {
 		this.startX = startX;
 		this.endX = endX;
 		this.startY = startY;
 		this.endY = endY;
-		this.weight = weight;
+		this.evidence = evidence;
 	}
 	@Override
 	public String toString() {
-		return String.format("(x=[%d, %d], y=[%d, %d], weight=%f)", startX, endX, startY, endY, weight);
+		return String.format("(x=[%d, %d], y=[%d, %d], %s)", startX, endX, startY, endY, evidence);
 	}
 	@Override
 	public int hashCode() {
@@ -43,8 +49,8 @@ public class TrapezoidGraphNode {
 		result = prime * result + (int) (endY ^ (endY >>> 32));
 		result = prime * result + (int) (startX ^ (startX >>> 32));
 		result = prime * result + (int) (startY ^ (startY >>> 32));
-		long temp;
-		temp = Double.doubleToLongBits(weight);
+		int temp;
+		temp = evidence.hashCode();
 		result = prime * result + (int) (temp ^ (temp >>> 32));
 		return result;
 	}
@@ -56,7 +62,7 @@ public class TrapezoidGraphNode {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		TrapezoidGraphNode other = (TrapezoidGraphNode) obj;
+		GraphNode other = (GraphNode) obj;
 		if (endX != other.endX)
 			return false;
 		if (endY != other.endY)
@@ -65,12 +71,12 @@ public class TrapezoidGraphNode {
 			return false;
 		if (startY != other.startY)
 			return false;
-		if (Double.doubleToLongBits(weight) != Double.doubleToLongBits(other.weight))
+		if (!evidence.equals(other.evidence))
 			return false;
 		return true;
 	}
-	public static Ordering<TrapezoidGraphNode> ByEndXYStartXY = new Ordering<TrapezoidGraphNode>() {
-		public int compare(TrapezoidGraphNode o1, TrapezoidGraphNode o2) {
+	public static Ordering<GraphNode> ByEndXYStartXY = new Ordering<GraphNode>() {
+		public int compare(GraphNode o1, GraphNode o2) {
 			  return ComparisonChain.start()
 			        .compare(o1.endX, o2.endX)
 			        .compare(o1.endY, o2.endY)
@@ -79,8 +85,8 @@ public class TrapezoidGraphNode {
 			        .result();
 		  }
 	};
-	public static Ordering<TrapezoidGraphNode> ByStartXYEndXY = new Ordering<TrapezoidGraphNode>() {
-		public int compare(TrapezoidGraphNode o1, TrapezoidGraphNode o2) {
+	public static Ordering<GraphNode> ByStartXYEndXY = new Ordering<GraphNode>() {
+		public int compare(GraphNode o1, GraphNode o2) {
 			  return ComparisonChain.start()
 				  	.compare(o1.startX, o2.startX)
 			        .compare(o1.startY, o2.startY)
@@ -90,8 +96,8 @@ public class TrapezoidGraphNode {
 					  
 		  }
 	};
-	public static Ordering<TrapezoidGraphNode> ByEndYXStartYX = new Ordering<TrapezoidGraphNode>() {
-		public int compare(TrapezoidGraphNode o1, TrapezoidGraphNode o2) {
+	public static Ordering<GraphNode> ByEndYXStartYX = new Ordering<GraphNode>() {
+		public int compare(GraphNode o1, GraphNode o2) {
 			  return ComparisonChain.start()
 					 .compare(o1.endY, o2.endY)
 					 .compare(o1.endX, o2.endX)
@@ -100,8 +106,8 @@ public class TrapezoidGraphNode {
 					 .result();
 		  }
 	};
-	public static Ordering<TrapezoidGraphNode> ByStartYXEndYX = new Ordering<TrapezoidGraphNode>() {
-		public int compare(TrapezoidGraphNode o1, TrapezoidGraphNode o2) {
+	public static Ordering<GraphNode> ByStartYXEndYX = new Ordering<GraphNode>() {
+		public int compare(GraphNode o1, GraphNode o2) {
 			return ComparisonChain.start()
 					.compare(o1.startY, o2.startY)
 					.compare(o1.startX, o2.startX)

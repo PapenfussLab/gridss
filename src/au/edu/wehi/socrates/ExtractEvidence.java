@@ -23,6 +23,9 @@ import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.SortingCollection;
 
@@ -64,9 +67,8 @@ public class ExtractEvidence extends CommandLineProgram {
 	protected int doWork() {
     	try {
 	    	IOUtil.assertFileIsWritable(FileNamingConvention.getMetrics(INPUT));
-	    	SAMFileReader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
-	    	// SAMFileWriterFactory.setDefaultCreateIndexWhileWriting(CREATE_INDEX); // do we need an index at all? Can we get away with sequential access?
-	    	final SAMFileReader reader = new SAMFileReader(INPUT);
+	    	final SamReaderFactory samFactory = SamReaderFactory.makeDefault();
+	    	final SamReader reader = samFactory.open(INPUT);
 	    	final SAMFileHeader header = reader.getFileHeader();
 	    	final SAMSequenceDictionary dictionary = header.getSequenceDictionary();
 	    	final ReferenceSequenceFileWalker referenceWalker = new ReferenceSequenceFileWalker(REFERENCE);

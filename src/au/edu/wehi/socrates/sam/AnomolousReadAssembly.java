@@ -4,7 +4,7 @@ import java.nio.charset.StandardCharsets;
 
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
-import au.edu.wehi.socrates.BreakpointDirection;
+import au.edu.wehi.socrates.BreakendDirection;
 
 /**
  * Breakend assembly
@@ -16,17 +16,17 @@ import au.edu.wehi.socrates.BreakpointDirection;
  *
  */
 public class AnomolousReadAssembly extends SAMRecord {
-	public AnomolousReadAssembly(String assemblerProgram, byte[] assemblyBases, int assemblyAnchorLength, BreakpointDirection direction) {
+	public AnomolousReadAssembly(String assemblerProgram, byte[] assemblyBases, int assemblyAnchorLength, BreakendDirection direction) {
 		this(assemblerProgram, assemblyBases, null, assemblyAnchorLength, direction, null);
 	}
-	public AnomolousReadAssembly(String assemblerProgram, byte[] assemblyBases, byte[] assemblyBaseQuality, int assemblyAnchorLength, BreakpointDirection direction, Integer assembledReadCount) {
+	public AnomolousReadAssembly(String assemblerProgram, byte[] assemblyBases, byte[] assemblyBaseQuality, int assemblyAnchorLength, BreakendDirection direction, Integer assembledReadCount) {
 		super(null);
 		setAttribute(SocratesSamTags.ASSEMBLER_PROGRAM, assemblerProgram);
 		if (assembledReadCount != null) setAttribute(SocratesSamTags.ASSEMBLER_READ_COUNT, assembledReadCount);
 		setReadBases(assemblyBases);
 		setBaseQualities(assemblyBaseQuality);
 		int assemblyLength = assemblyBases.length;
-		if (direction == BreakpointDirection.Forward) {
+		if (direction == BreakendDirection.Forward) {
 			setCigarString(String.format("%dM%dS", assemblyAnchorLength, assemblyLength - assemblyAnchorLength));
 		} else {
 			setCigarString(String.format("%dS%dM", assemblyLength - assemblyAnchorLength, assemblyAnchorLength));
@@ -35,21 +35,21 @@ public class AnomolousReadAssembly extends SAMRecord {
 	public String getAssemblerProgram() {
 		return getStringAttribute(SocratesSamTags.ASSEMBLER_PROGRAM);
 	}
-	public BreakpointDirection getDirection() {
-		return getCigar().getCigarElement(0).getOperator() == CigarOperator.S ? BreakpointDirection.Backward : BreakpointDirection.Forward; 
+	public BreakendDirection getDirection() {
+		return getCigar().getCigarElement(0).getOperator() == CigarOperator.S ? BreakendDirection.Backward : BreakendDirection.Forward; 
 	}
 	public String getBreakpointBases() {
-		return new String(getReadBases(), getDirection() == BreakpointDirection.Backward ? 0 : getAnchorLength(), getBreakpointLength(), StandardCharsets.US_ASCII);
+		return new String(getReadBases(), getDirection() == BreakendDirection.Backward ? 0 : getAnchorLength(), getBreakpointLength(), StandardCharsets.US_ASCII);
 	}
 	public String getAnchorBases() {
-		return new String(getReadBases(), getDirection() == BreakpointDirection.Forward ? 0 : getBreakpointLength(), getAnchorLength(), StandardCharsets.US_ASCII);
+		return new String(getReadBases(), getDirection() == BreakendDirection.Forward ? 0 : getBreakpointLength(), getAnchorLength(), StandardCharsets.US_ASCII);
 	}
 	public int getAnchorLength() {
-		if (getDirection() == BreakpointDirection.Forward) return getCigar().getCigarElement(0).getLength();
+		if (getDirection() == BreakendDirection.Forward) return getCigar().getCigarElement(0).getLength();
 		else return getCigar().getCigarElement(1).getLength(); 
 	}
 	public int getBreakpointLength() {
-		if (getDirection() == BreakpointDirection.Forward) return getCigar().getCigarElement(1).getLength();
+		if (getDirection() == BreakendDirection.Forward) return getCigar().getCigarElement(1).getLength();
 		else return getCigar().getCigarElement(0).getLength(); 
 	}
 	public float getAssemblyQuality() {

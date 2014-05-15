@@ -24,7 +24,7 @@ public class DirectedBreakpointAssembly extends VariantContextDirectedBreakpoint
 			String assemblerName,
 			int referenceIndex,
 			int position,
-			BreakpointDirection direction,
+			BreakendDirection direction,
 			byte[] breakpointSequence,
 			byte[] breakpointBaseQuality,
 			byte[] fullAssembly,
@@ -33,12 +33,12 @@ public class DirectedBreakpointAssembly extends VariantContextDirectedBreakpoint
 			double breakpointQuality
 			) {
 		VariantContextBuilder builder = new VariantContextDirectedBreakpointBuilder(processContext)
-			.location(new BreakpointLocation(referenceIndex, direction, position, position, breakpointQuality), new String(breakpointSequence, StandardCharsets.US_ASCII))
+			.location(new BreakendSummary(referenceIndex, direction, position, position, breakpointQuality), new String(breakpointSequence, StandardCharsets.US_ASCII))
 			.id(String.format("%s-%s:%d-%s",
 					assemblerName,
 					processContext.getDictionary().getSequence(referenceIndex).getSequenceName(),
 					position,
-					direction == BreakpointDirection.Forward ? "f" : "b"))
+					direction == BreakendDirection.Forward ? "f" : "b"))
 			.attribute(VcfConstants.ASSEMBLY_PROGRAM, assemblerName)
 			.attribute(VcfConstants.ASSEMBLY_CONSENSUS, new String(fullAssembly, StandardCharsets.US_ASCII))
 			.attribute(VcfConstants.ASSEMBLY_CONSENSUS_READ_COUNT, readCount);
@@ -49,7 +49,7 @@ public class DirectedBreakpointAssembly extends VariantContextDirectedBreakpoint
 			String assemblerName,
 			int referenceIndex,
 			int position,
-			BreakpointDirection direction,
+			BreakendDirection direction,
 			byte[] breakpointSequence,
 			byte[] fullAssembly,
 			Integer readCount,
@@ -76,7 +76,7 @@ public class DirectedBreakpointAssembly extends VariantContextDirectedBreakpoint
 	public String getAssemblyConsensus() { return getAttributeAsString(VcfConstants.ASSEMBLY_CONSENSUS, ""); }
 	public String getAnchorConsensus() {
 		String consensus = getAssemblyConsensus();
-		if (getBreakpointLocation().direction == BreakpointDirection.Forward) {
+		if (getBreakendSummary().direction == BreakendDirection.Forward) {
 			return consensus.substring(0, consensus.length() - getBreakpointSequenceString().length());
 		} else {
 			return consensus.substring(getBreakpointSequenceString().length());

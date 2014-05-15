@@ -16,7 +16,7 @@ import htsjdk.variant.variantcontext.VariantContext;
  *
  */
 public class VariantContextDirectedBreakpoint extends SocratesVariantContext implements DirectedBreakpoint {
-	private BreakpointLocation location;
+	private BreakendSummary location;
 	private String breakpointSequence;
 	private String anchorSequence;
 	protected VariantContextDirectedBreakpoint(ProcessingContext processContext, VariantContext context) {
@@ -36,28 +36,28 @@ public class VariantContextDirectedBreakpoint extends SocratesVariantContext imp
 			return;
 		}
 		if (alt.length() < 2) return;
-		BreakpointDirection direction, remoteDirection = null;
+		BreakendDirection direction, remoteDirection = null;
 		String localSequence;
 		String remoteContig = null;
 		if (alt.charAt(0) == '.') {
 			// .BreakpointReference
-			direction = BreakpointDirection.Backward;
+			direction = BreakendDirection.Backward;
 			localSequence = alt.substring(1);
 		} else if (alt.charAt(alt.length() - 1) == '.') {
 			// ReferenceBreakpoint.
-			direction = BreakpointDirection.Forward;
+			direction = BreakendDirection.Forward;
 			localSequence = alt.substring(0, alt.length() - 1);
 		} else if (alt.charAt(0) == '[' || alt.charAt(0) == ']') {
 			// [Remote[BreakpointReference
-			direction = BreakpointDirection.Backward;
-			remoteDirection = alt.charAt(0) == '[' ? BreakpointDirection.Forward : BreakpointDirection.Backward;
+			direction = BreakendDirection.Backward;
+			remoteDirection = alt.charAt(0) == '[' ? BreakendDirection.Forward : BreakendDirection.Backward;
 			String[] split = alt.split("[\\[\\]]");
 			remoteContig = split[1];
 			localSequence = split[2];
 		} else if (alt.charAt(alt.length() - 1) == '[' || alt.charAt(alt.length() - 1) == ']') {
 			// ReferenceBreakpoint[Remote[
-			direction = BreakpointDirection.Forward;
-			remoteDirection = alt.charAt(alt.length() - 1) == '[' ? BreakpointDirection.Forward : BreakpointDirection.Backward;
+			direction = BreakendDirection.Forward;
+			remoteDirection = alt.charAt(alt.length() - 1) == '[' ? BreakendDirection.Forward : BreakendDirection.Backward;
 			String[] split = alt.split("[\\[\\]]");
 			remoteContig = split[1];
 			localSequence = split[0];
@@ -77,7 +77,7 @@ public class VariantContextDirectedBreakpoint extends SocratesVariantContext imp
 		}
 		int refLength = getReference().length();
 		int localPosition;
-		if (direction == BreakpointDirection.Forward) {
+		if (direction == BreakendDirection.Forward) {
 			localPosition = getEnd();
 			// anchor - breakpoint
 			anchorSequence = localSequence.substring(0, refLength);
@@ -95,16 +95,16 @@ public class VariantContextDirectedBreakpoint extends SocratesVariantContext imp
 			ciEnd = ci[1];
 		}
 		if (remoteDirection != null) {
-			location = new BreakpointInterval(getReferenceIndex(), direction, localPosition - ciStart, localPosition + ciEnd,
+			location = new BreakpointSummary(getReferenceIndex(), direction, localPosition - ciStart, localPosition + ciEnd,
 					processContext.getDictionary().getSequenceIndex(remoteContig), remoteDirection, remotePosition - ciStart, remotePosition + ciEnd,
 					getPhredScaledQual());
 		} else {
-			location = new BreakpointLocation(getReferenceIndex(), direction, localPosition - ciStart, localPosition + ciEnd,
+			location = new BreakendSummary(getReferenceIndex(), direction, localPosition - ciStart, localPosition + ciEnd,
 					getPhredScaledQual());
 		}
 	}
 	@Override
-	public BreakpointLocation getBreakpointLocation() {
+	public BreakendSummary getBreakendSummary() {
 		if (location == null) throw new IllegalStateException(String.format("%s not a valid breakend", getID()));
 		return location;
 	}

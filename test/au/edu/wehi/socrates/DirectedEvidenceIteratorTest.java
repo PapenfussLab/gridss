@@ -43,8 +43,8 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 		}
 		// check output is in order
 		for (int i = 0; i < out.size() - 1; i++) {
-			BreakpointLocation l0 = out.get(i).getBreakpointLocation();
-			BreakpointLocation l1 = out.get(i).getBreakpointLocation();
+			BreakendSummary l0 = out.get(i).getBreakendSummary();
+			BreakendSummary l1 = out.get(i).getBreakendSummary();
 			assertTrue(l0.referenceIndex < l1.referenceIndex || (l0.referenceIndex == l1.referenceIndex && l0.start <= l1.start));
 		}
 	}
@@ -72,7 +72,7 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 		go();
 		assertEquals(2, out.size());
 		assertTrue(out.get(0) instanceof SoftClipEvidence);
-		assertTrue(out.get(0).getBreakpointLocation() instanceof BreakpointInterval);
+		assertTrue(out.get(0).getBreakendSummary() instanceof BreakpointSummary);
 	}
 	@Test
 	public void should_return_sc() {
@@ -86,7 +86,7 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 	}
 	@Test
 	public void should_return_assembly() {
-		DirectedBreakpointAssembly assembly = DirectedBreakpointAssembly.create(getContext(), "test", 0, 1, BreakpointDirection.Backward, B("A"), B("AA"), 5, 7);
+		DirectedBreakpointAssembly assembly = DirectedBreakpointAssembly.create(getContext(), "test", 0, 1, BreakendDirection.Backward, B("A"), B("AA"), 5, 7);
 		vcf.add(new VariantContextBuilder(assembly).make());
 		go();
 		assertEquals(1, out.size());
@@ -94,7 +94,7 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 	}
 	@Test
 	public void should_match_assembly_with_realign() {
-		DirectedBreakpointAssembly assembly = DirectedBreakpointAssembly.create(getContext(), "test", 0, 1, BreakpointDirection.Backward, B("A"), B("AA"), 5, 7);
+		DirectedBreakpointAssembly assembly = DirectedBreakpointAssembly.create(getContext(), "test", 0, 1, BreakendDirection.Backward, B("A"), B("AA"), 5, 7);
 		vcf.add(new VariantContextBuilder(assembly).make());
 		SAMRecord r = Read(1, 10, "1M");
 		r.setReadName("0#1#test-polyA:1-b");
@@ -102,7 +102,7 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 		go();
 		assertEquals(1, out.size());
 		assertTrue(out.get(0) instanceof DirectedBreakpointAssembly);
-		assertTrue(out.get(0).getBreakpointLocation() instanceof BreakpointInterval);
+		assertTrue(out.get(0).getBreakendSummary() instanceof BreakpointSummary);
 	}
 	@Test
 	public void should_ignore_non_sv_reads() {
@@ -128,7 +128,7 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 		sv.add(r);
 		SAMRecord f = withReadName("0#10#fReadName", Read(0, 1, "5M"))[0];
 		SAMRecord b = withReadName("0#1#bReadName", Read(0, 1, "5M"))[0];
-		DirectedBreakpointAssembly assembly = DirectedBreakpointAssembly.create(getContext(), "test", 0, 1, BreakpointDirection.Backward, B("A"), B("AA"), 5, 7);
+		DirectedBreakpointAssembly assembly = DirectedBreakpointAssembly.create(getContext(), "test", 0, 1, BreakendDirection.Backward, B("A"), B("AA"), 5, 7);
 		vcf.add(new VariantContextBuilder(assembly).make());
 		SAMRecord assemblyRealigned = withReadName("0#1#test-polyA:1-b", Read(1, 10, "1M"))[0];
 		realigned.add(b);
@@ -136,15 +136,15 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 		realigned.add(f);
 		go();
 		assertEquals(3, out.size());
-		assertTrue(out.get(0).getBreakpointLocation() instanceof BreakpointInterval);
-		assertTrue(out.get(1).getBreakpointLocation() instanceof BreakpointInterval);
-		assertTrue(out.get(2).getBreakpointLocation() instanceof BreakpointInterval);
+		assertTrue(out.get(0).getBreakendSummary() instanceof BreakpointSummary);
+		assertTrue(out.get(1).getBreakendSummary() instanceof BreakpointSummary);
+		assertTrue(out.get(2).getBreakendSummary() instanceof BreakpointSummary);
 	}
 	@Test
 	public void should_require_realign_in_call_position_order() {
 		SAMRecord r = withReadName("ReadName", Read(0, 1, "5S10M5S"))[0];
 		sv.add(r);
-		DirectedBreakpointAssembly assembly = DirectedBreakpointAssembly.create(getContext(), "test", 0, 2, BreakpointDirection.Backward, B("A"), B("AA"), 5, 7);
+		DirectedBreakpointAssembly assembly = DirectedBreakpointAssembly.create(getContext(), "test", 0, 2, BreakendDirection.Backward, B("A"), B("AA"), 5, 7);
 		vcf.add(new VariantContextBuilder(assembly).make());
 		realigned.add(withReadName("0#1#bReadName", Read(0, 1, "5M"))[0]);
 		realigned.add(withReadName("0#2#test-polyA:2-b", Read(1, 10, "1M"))[0]);
@@ -154,8 +154,8 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 		assertTrue(out.get(0) instanceof SoftClipEvidence); // backward
 		assertTrue(out.get(1) instanceof DirectedBreakpointAssembly);
 		assertTrue(out.get(2) instanceof SoftClipEvidence); // forward
-		assertTrue(out.get(0).getBreakpointLocation() instanceof BreakpointInterval);
-		assertTrue(out.get(1).getBreakpointLocation() instanceof BreakpointInterval);
-		assertTrue(out.get(2).getBreakpointLocation() instanceof BreakpointInterval);
+		assertTrue(out.get(0).getBreakendSummary() instanceof BreakpointSummary);
+		assertTrue(out.get(1).getBreakendSummary() instanceof BreakpointSummary);
+		assertTrue(out.get(2).getBreakendSummary() instanceof BreakpointSummary);
 	}
 }

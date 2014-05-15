@@ -9,7 +9,6 @@ import java.util.Iterator;
 import java.util.PriorityQueue;
 import java.util.SortedSet;
 
-import picard.cmdline.CommandLineProgram;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import picard.cmdline.Usage;
@@ -19,7 +18,6 @@ import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMFileReader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 
@@ -69,7 +67,6 @@ public class ClusterEvidence extends CommandLineProgram {
     private Log log = Log.getInstance(ClusterEvidence.class);
     @Override
 	protected int doWork() {
-    	SAMFileReader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
     	try {
     		if (METRICS == null) {
     			METRICS = FileNamingConvention.getMetrics(INPUT);
@@ -105,14 +102,14 @@ public class ClusterEvidence extends CommandLineProgram {
 				throw new RuntimeException("CHROMSOME argument supplied too many times");
 			}
 			log.debug("Calling maximal cliques");
-			PriorityQueue<BreakpointLocation> calls = new PriorityQueue<BreakpointLocation>(1024, BreakpointLocation.ByStartEnd);
-			Iterator<BreakpointLocation> it = processor.iterator();
+			PriorityQueue<BreakendSummary> calls = new PriorityQueue<BreakendSummary>(1024, BreakendSummary.ByStartEnd);
+			Iterator<BreakendSummary> it = processor.iterator();
 			while (it.hasNext()) {
-				BreakpointLocation loc = it.next();
+				BreakendSummary loc = it.next();
 				calls.add(loc);
-				if (loc instanceof BreakpointInterval) {
+				if (loc instanceof BreakpointSummary) {
 					// add both sides
-					calls.add(new BreakpointInterval(((BreakpointInterval)loc).remoteLocation(), loc, loc.qual));
+					calls.add(new BreakpointSummary(((BreakpointSummary)loc).remoteLocation(), loc, loc.qual));
 				}
 			}
 			log.debug("Annotating calls");
@@ -124,13 +121,13 @@ public class ClusterEvidence extends CommandLineProgram {
 			VcfConstants.addHeaders(vcfHeader);
 			vcfWriter.writeHeader(vcfHeader);
 			
-			for (BreakpointLocation loc : new PriorityQ  processor) {
+			for (BreakendSummary loc : new PriorityQ  processor) {
 				// TODO: Rehydrate the calls with metrics from the original evidence
 				StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(processContext, loc);
 				vcfWriter.add(builder.make());
-				if (loc instanceof BreakpointInterval) {
+				if (loc instanceof BreakpointSummary) {
 					// add both sides
-					builder = new StructuralVariationCallBuilder(processContext, new BreakpointInterval(((BreakpointInterval)loc).remoteLocation(), loc, loc.qual));
+					builder = new StructuralVariationCallBuilder(processContext, new BreakpointSummary(((BreakpointSummary)loc).remoteLocation(), loc, loc.qual));
 					vcfWriter.add(builder.make());
 				}
 			}
@@ -154,7 +151,9 @@ public class ClusterEvidence extends CommandLineProgram {
     	return file;
     }
 	private DirectedEvidenceFileIterator evidenceForChr(final ProcessingContext processContext, final String chr) throws IOException {
-		final DirectedEvidenceFileIterator dei1 = new DirectedEvidenceFileIterator(processContext,
+		final DirectedEvidenceFileIterator dei1 = new DirectedEvidenceFileIterator(
+				processContext,
+				getSamReaderFactory(),
 				ensureFileExists(FileNamingConvention.getSVBamForChr(INPUT, chr)),
 				ensureFileExists(FileNamingConvention.getMateBamForChr(INPUT, chr)),
 				ensureFileExists(FileNamingConvention.getRealignmentBamForChr(INPUT, chr)),
@@ -162,7 +161,9 @@ public class ClusterEvidence extends CommandLineProgram {
 		return dei1;
 	}
 	private DirectedEvidenceFileIterator allEvidence(final ProcessingContext processContext) throws IOException {
-		final DirectedEvidenceFileIterator dei1 = new DirectedEvidenceFileIterator(processContext,
+		final DirectedEvidenceFileIterator dei1 = new DirectedEvidenceFileIterator(
+				processContext,
+				getSamReaderFactory(),
 				ensureFileExists(FileNamingConvention.getSVBam(INPUT)),
 				ensureFileExists(FileNamingConvention.getMateBam(INPUT)),
 				ensureFileExists(FileNamingConvention.getRealignmentBam(INPUT)),

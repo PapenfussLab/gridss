@@ -4,6 +4,8 @@ import htsjdk.samtools.SAMRecord;
 
 import org.apache.commons.lang3.StringUtils;
 
+import au.edu.wehi.socrates.vcf.EvidenceAttributes;
+
 /**
  * A read pair that does not support the reference sequence. This can be an OEA, or DP read pair.
  * @author Daniel Cameron
@@ -12,7 +14,7 @@ import org.apache.commons.lang3.StringUtils;
 public class NonReferenceReadPair implements DirectedEvidence {
 	private final SAMRecord local;
 	private final SAMRecord remote;
-	private final BreakpointLocation location;
+	private final BreakendSummary location;
 	public NonReferenceReadPair(SAMRecord local, SAMRecord remote, int maxfragmentSize) {
 		if (local == null) throw new IllegalArgumentException("local is null");
 		if (remote == null) throw new IllegalArgumentException("remote is null");
@@ -23,29 +25,38 @@ public class NonReferenceReadPair implements DirectedEvidence {
 		if (maxfragmentSize < local.getReadLength()) throw new IllegalArgumentException(String.format("Sanity check failure: read pair %s contains read of length %d when maximum fragment size is %d", local.getReadName(), local.getReadLength(), maxfragmentSize));
 		this.local = local;
 		this.remote = remote;
-		this.location = calculateBreakpointLocation(local, remote, maxfragmentSize);
+		this.location = calculateBreakendSummary(local, remote, maxfragmentSize);
 	}
-	private static float calculateQualityOEA(SAMRecord local, SAMRecord remote) {
-		return local.getMappingQuality();
+	private static EvidenceMetrics calculateOeaMetrics(SAMRecord local, SAMRecord remote) {
+		EvidenceMetrics m = new EvidenceMetrics();
+		m.set(EvidenceAttributes.UNMAPPED_MATE_READ_COUNT, 1);
+		m.set(EvidenceAttributes.UNMAPPED_MATE_MAX_MAPQ, local.getMappingQuality());
+		m.set(EvidenceAttributes.UNMAPPED_MATE_TOTAL_MAPQ, local.getMappingQuality());
+		return m;
 	}
-	private static float calculateQualityDP(SAMRecord local, SAMRecord remote) {
-		return Math.min(local.getMappingQuality(), remote.getMappingQuality());
+	private static EvidenceMetrics calculateDpMetrics(SAMRecord local, SAMRecord remote) {
+		EvidenceMetrics m = new EvidenceMetrics();
+		int mapq = Math.min(local.getMappingQuality(), remote.getMappingQuality());
+		m.set(EvidenceAttributes.DISCORDANT_READ_PAIR_COUNT, 1);
+		m.set(EvidenceAttributes.DISCORDANT_READ_PAIR_MAX_MAPQ, mapq);
+		m.set(EvidenceAttributes.DISCORDANT_READ_PAIR_TOTAL_MAPQ, mapq);
+		return m;
 	}
 	/**
 	 * Calculates the local breakpoint location
 	 * @param local local read
 	 * @param remote remote read
 	 * @param maxfragmentSize maximum fragment size
-	 * @return local {@link BreakpointLocation}, without quality information
+	 * @return local {@link BreakendSummary}, without quality information
 	 */
-	private static BreakpointLocation calculateLocalBreakpointLocation(SAMRecord local, SAMRecord remote, int maxfragmentSize) {
-		BreakpointDirection direction = getBreakpointDirection(local);
+	private static BreakendSummary calculateLocalBreakendSummary(SAMRecord local, SAMRecord remote, int maxfragmentSize) {
+		BreakendDirection direction = getBreakendDirection(local);
 		int positionClosestToBreakpoint;
 		int intervalDirection;
 		// adds back in any soft-clipped bases
 		int intervalExtendedReadDueToLocalClipping;
 		int intervalReducedDueToRemoteMapping = 1;
-		if (direction == BreakpointDirection.Forward) {
+		if (direction == BreakendDirection.Forward) {
 			positionClosestToBreakpoint = local.getAlignmentEnd();
 			intervalDirection = 1;
 			intervalExtendedReadDueToLocalClipping = local.getUnclippedEnd() - local.getAlignmentEnd();
@@ -57,26 +68,26 @@ public class NonReferenceReadPair implements DirectedEvidence {
 		if (remote != null && !remote.getReadUnmappedFlag()) {
 			intervalReducedDueToRemoteMapping = remote.getReadLength();
 			// add back in any soft-clipped bases
-			if (getBreakpointDirection(remote) == BreakpointDirection.Forward) {
+			if (getBreakendDirection(remote) == BreakendDirection.Forward) {
 				intervalReducedDueToRemoteMapping -= remote.getUnclippedEnd() - remote.getAlignmentEnd();
 			} else {
 				intervalReducedDueToRemoteMapping -= remote.getAlignmentStart() - remote.getUnclippedStart();
 			}
 		}
 		int intervalWidth = maxfragmentSize - local.getReadLength() + intervalExtendedReadDueToLocalClipping - intervalReducedDueToRemoteMapping;
-		return new BreakpointLocation(local.getReferenceIndex(), direction,
+		return new BreakendSummary(local.getReferenceIndex(), direction,
 				Math.min(positionClosestToBreakpoint, positionClosestToBreakpoint + intervalWidth * intervalDirection),
 				Math.max(positionClosestToBreakpoint, positionClosestToBreakpoint + intervalWidth * intervalDirection),
-				calculateQualityOEA(local, remote));
+				calculateOeaMetrics(local, remote));
 	}
-	private static BreakpointLocation calculateBreakpointLocation(SAMRecord local, SAMRecord remote, int maxfragmentSize) {
+	private static BreakendSummary calculateBreakendSummary(SAMRecord local, SAMRecord remote, int maxfragmentSize) {
 		if (remote == null || remote.getReadUnmappedFlag()) {
-			return calculateLocalBreakpointLocation(local, remote, maxfragmentSize);
+			return calculateLocalBreakendSummary(local, remote, maxfragmentSize);
 		} else {
-			return new BreakpointInterval(
-					calculateLocalBreakpointLocation(local, remote, maxfragmentSize),
-					calculateLocalBreakpointLocation(remote, local, maxfragmentSize),
-					calculateQualityDP(local, remote));
+			return new BreakpointSummary(
+					calculateLocalBreakendSummary(local, remote, maxfragmentSize),
+					calculateLocalBreakendSummary(remote, local, maxfragmentSize),
+					calculateDpMetrics(local, remote));
 		}
 	}
 	/**
@@ -88,8 +99,8 @@ public class NonReferenceReadPair implements DirectedEvidence {
 	 * <p>This method assumes an Illumina FR read pair library preparation.</p>
 	 * @return breakpoint direction this read supports
 	 */
-	public static BreakpointDirection getBreakpointDirection(SAMRecord read) {
-		return read.getReadNegativeStrandFlag() ? BreakpointDirection.Backward : BreakpointDirection.Forward;
+	public static BreakendDirection getBreakendDirection(SAMRecord read) {
+		return read.getReadNegativeStrandFlag() ? BreakendDirection.Backward : BreakendDirection.Forward;
 	}
 	/**
 	 * Mapped read under consideration
@@ -110,7 +121,7 @@ public class NonReferenceReadPair implements DirectedEvidence {
 		return local.getReadName();
 	}
 	@Override
-	public BreakpointLocation getBreakpointLocation() {
+	public BreakendSummary getBreakendSummary() {
 		return location;
 	}
 }

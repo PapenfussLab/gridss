@@ -7,7 +7,7 @@ package au.edu.wehi.socrates;
  * @author Daniel Cameron
  *
  */
-public enum BreakpointDirection {
+public enum BreakendDirection {
 	/**
 	 * The breakpoint includes bases at and before the breakpoint position
 	 * but not after.

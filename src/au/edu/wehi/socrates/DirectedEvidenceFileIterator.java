@@ -5,19 +5,19 @@ import java.io.File;
 import java.io.IOException;
 
 import htsjdk.samtools.util.Log;
-import htsjdk.samtools.SAMFileReader;
 import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.util.CloseableIterator;
-
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
 
 import com.google.common.collect.Iterators;
 
 public class DirectedEvidenceFileIterator implements CloseableIterator<DirectedEvidence> {
-	private final SAMFileReader svReader;
-	private final SAMFileReader mateReader;
-	private final SAMFileReader realignReader;
+	private final SamReader svReader;
+	private final SamReader mateReader;
+	private final SamReader realignReader;
 	private final VCFFileReader vcfReader;
 	private final SAMRecordIterator svIt;
 	private final SAMRecordIterator mateIt;
@@ -27,13 +27,14 @@ public class DirectedEvidenceFileIterator implements CloseableIterator<DirectedE
 	private final Log log = Log.getInstance(DirectedEvidenceFileIterator.class);
 	public DirectedEvidenceFileIterator(
 			ProcessingContext processContext,
+			SamReaderFactory samFactory,
 			File sv,
 			File mate,
 			File realign,
 			File vcf) {
-		svReader = sv == null ? null : new SAMFileReader(sv);
-		mateReader = mate == null ? null : new SAMFileReader(mate);
-		realignReader = realign == null ? null : new SAMFileReader(sv);
+		svReader = sv == null ? null : samFactory.open(sv);
+		mateReader = mate == null ? null : samFactory.open(mate);
+		realignReader = realign == null ? null : samFactory.open(sv);
 		vcfReader = vcf == null ? null : new VCFFileReader(vcf);;
 		svIt = svReader == null ? null : svReader.iterator();
 		mateIt = mateReader == null ? null : mateReader.iterator();

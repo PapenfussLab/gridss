@@ -11,20 +11,20 @@ import java.util.Comparator;
 public class DirectedEvidenceCoordinateIntervalComparator implements Comparator<DirectedEvidence> {
 	@Override
 	public int compare(DirectedEvidence arg0, DirectedEvidence arg1) {
-		BreakpointLocation loc0 = arg0.getBreakpointLocation();
-		BreakpointLocation loc1 = arg1.getBreakpointLocation();
+		BreakendSummary loc0 = arg0.getBreakendSummary();
+		BreakendSummary loc1 = arg1.getBreakendSummary();
 		int cmp = ComparatorUtil.compare(loc0.referenceIndex, loc1.referenceIndex);
 		if (cmp == 0) cmp = ComparatorUtil.compare(loc0.start, loc1.start);
-		if (cmp == 0 && loc0 instanceof BreakpointInterval && loc1 instanceof BreakpointInterval) {
-			BreakpointInterval bi0 = (BreakpointInterval)loc0;
-			BreakpointInterval bi1 = (BreakpointInterval)loc1;
+		if (cmp == 0 && loc0 instanceof BreakpointSummary && loc1 instanceof BreakpointSummary) {
+			BreakpointSummary bi0 = (BreakpointSummary)loc0;
+			BreakpointSummary bi1 = (BreakpointSummary)loc1;
 			cmp = ComparatorUtil.compare(bi0.referenceIndex2, bi1.referenceIndex2);
 			if (cmp == 0) cmp = ComparatorUtil.compare(bi0.start2, bi1.start2);
 		}
 		if (cmp == 0) cmp = ComparatorUtil.compare(loc0.end, loc1.end);
-		if (cmp == 0 && loc0 instanceof BreakpointInterval && loc1 instanceof BreakpointInterval) {
-			BreakpointInterval bi0 = (BreakpointInterval)loc0;
-			BreakpointInterval bi1 = (BreakpointInterval)loc1;
+		if (cmp == 0 && loc0 instanceof BreakpointSummary && loc1 instanceof BreakpointSummary) {
+			BreakpointSummary bi0 = (BreakpointSummary)loc0;
+			BreakpointSummary bi1 = (BreakpointSummary)loc1;
 			cmp = ComparatorUtil.compare(bi0.end2, bi1.end2);
 		}
 		return cmp;

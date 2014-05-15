@@ -2,8 +2,8 @@ package au.edu.wehi.socrates;
 
 import java.util.Iterator;
 
-import au.edu.wehi.socrates.graph.TrapezoidGraph;
-import au.edu.wehi.socrates.graph.TrapezoidGraphNode;
+import au.edu.wehi.socrates.graph.MaximalClique;
+import au.edu.wehi.socrates.graph.GraphNode;
 
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
@@ -15,30 +15,30 @@ import com.google.common.collect.UnmodifiableIterator;
  * 
  * @author Daniel Cameron
  */
-public class EvidenceClusterProcessor implements Iterable<BreakpointLocation> {
-	private final TrapezoidGraph ff = new TrapezoidGraph();
-	private final TrapezoidGraph fb = new TrapezoidGraph();
-	private final TrapezoidGraph bf = new TrapezoidGraph();
-	private final TrapezoidGraph bb = new TrapezoidGraph();
+public class EvidenceClusterProcessor implements Iterable<BreakendSummary> {
+	private final MaximalClique ff = new MaximalClique();
+	private final MaximalClique fb = new MaximalClique();
+	private final MaximalClique bf = new MaximalClique();
+	private final MaximalClique bb = new MaximalClique();
 	private final ProcessingContext context;
 	public EvidenceClusterProcessor(ProcessingContext context) {
 		this.context = context;
 	}
 	public void addEvidence(DirectedEvidence evidence) {
-		BreakpointLocation loc = evidence.getBreakpointLocation();
+		BreakendSummary loc = evidence.getBreakendSummary();
 		if (evidence instanceof SoftClipEvidence) {
 			// TODO: expand evidence region for soft-clips
 			// Socrates expands by +- 3bp
 		}
-		if (loc instanceof BreakpointInterval) {
-			BreakpointInterval interval = (BreakpointInterval)loc;
+		if (loc instanceof BreakpointSummary) {
+			BreakpointSummary interval = (BreakpointSummary)loc;
 			if (filterOut(interval)) return;
 			long startX = context.getLinear().getLinearCoordinate(interval.referenceIndex, interval.start);
 			long endX = startX + interval.end - interval.start;
 			long startY = context.getLinear().getLinearCoordinate(interval.referenceIndex2, interval.start2);
 			long endY = startY + interval.end2 - interval.start2;
-			BreakpointDirection lowDir = interval.direction;
-			BreakpointDirection highDir = interval.direction2;
+			BreakendDirection lowDir = interval.direction;
+			BreakendDirection highDir = interval.direction2;
 			if (startX > startY) {
 				// reverse evidence: need to flip coordinates
 				long tmp = startX;
@@ -47,11 +47,11 @@ public class EvidenceClusterProcessor implements Iterable<BreakpointLocation> {
 				tmp = endX;
 				endX = endY;
 				endY = tmp;
-				BreakpointDirection tmpDir = lowDir;
+				BreakendDirection tmpDir = lowDir;
 				lowDir = highDir;
 				highDir = tmpDir;
 			}
-			TrapezoidGraphNode node = new TrapezoidGraphNode(startX, endX, startY, endY, loc.qual);
+			GraphNode node = new GraphNode(startX, endX, startY, endY, loc.evidence);
 			addNode(lowDir, highDir, node);
 		} else {
 			if (filterOut(loc)) return;
@@ -63,7 +63,7 @@ public class EvidenceClusterProcessor implements Iterable<BreakpointLocation> {
 	 * @param loc evidence location to consider filtering
 	 * @return true if the evidence should be filtered out 
 	 */
-	protected boolean filterOut(BreakpointLocation loc) {
+	protected boolean filterOut(BreakendSummary loc) {
 		return false;
 	}
 	/**
@@ -71,18 +71,18 @@ public class EvidenceClusterProcessor implements Iterable<BreakpointLocation> {
 	 * @param loc evidence location to consider filtering
 	 * @return true if the evidence should be filtered out 
 	 */
-	protected boolean filterOut(BreakpointInterval loc) {
+	protected boolean filterOut(BreakpointSummary loc) {
 		return false;
 	}
-	private void addNode(BreakpointDirection lowDir, BreakpointDirection highDir, TrapezoidGraphNode node) {
-		if (lowDir == BreakpointDirection.Forward) {
-			if (highDir == BreakpointDirection.Forward) {
+	private void addNode(BreakendDirection lowDir, BreakendDirection highDir, GraphNode node) {
+		if (lowDir == BreakendDirection.Forward) {
+			if (highDir == BreakendDirection.Forward) {
 				ff.add(node);
 			} else {
 				fb.add(node);
 			}
 		} else {
-			if (highDir == BreakpointDirection.Forward) {
+			if (highDir == BreakendDirection.Forward) {
 				bf.add(node);
 			} else {
 				bb.add(node);
@@ -90,14 +90,14 @@ public class EvidenceClusterProcessor implements Iterable<BreakpointLocation> {
 		}
 	}
 	@Override
-	public Iterator<BreakpointLocation> iterator() {
-		UnmodifiableIterator<BreakpointInterval> x = Iterators.mergeSorted(ImmutableList.of(
-				new EvidenceClusterProcessorMaximalCliqueIterator(ff, BreakpointDirection.Forward, BreakpointDirection.Forward),
-				new EvidenceClusterProcessorMaximalCliqueIterator(fb, BreakpointDirection.Forward, BreakpointDirection.Backward),
-				new EvidenceClusterProcessorMaximalCliqueIterator(bf, BreakpointDirection.Backward, BreakpointDirection.Forward),
-				new EvidenceClusterProcessorMaximalCliqueIterator(bb, BreakpointDirection.Backward, BreakpointDirection.Backward)),
-				new Ordering<BreakpointInterval>() {
-					public int compare(BreakpointInterval o1, BreakpointInterval o2) {
+	public Iterator<BreakendSummary> iterator() {
+		UnmodifiableIterator<BreakpointSummary> x = Iterators.mergeSorted(ImmutableList.of(
+				new EvidenceClusterProcessorMaximalCliqueIterator(ff, BreakendDirection.Forward, BreakendDirection.Forward),
+				new EvidenceClusterProcessorMaximalCliqueIterator(fb, BreakendDirection.Forward, BreakendDirection.Backward),
+				new EvidenceClusterProcessorMaximalCliqueIterator(bf, BreakendDirection.Backward, BreakendDirection.Forward),
+				new EvidenceClusterProcessorMaximalCliqueIterator(bb, BreakendDirection.Backward, BreakendDirection.Backward)),
+				new Ordering<BreakpointSummary>() {
+					public int compare(BreakpointSummary o1, BreakpointSummary o2) {
 						// same order as our source iterators
 						return ComparisonChain.start()
 								.compare(o1.end, o2.end)
@@ -105,17 +105,17 @@ public class EvidenceClusterProcessor implements Iterable<BreakpointLocation> {
 								.result();
 					}
 		});
-		// downcast iterator to BreakpointLocation
-		return Iterators.<BreakpointLocation>concat(x);
+		// downcast iterator to BreakendSummary
+		return Iterators.<BreakendSummary>concat(x);
 		// TODO: filtering and processing of the maximal clique
 		// don't call weak evidence
 		// don't call if there is a much stronger call nearby
 	}
-	public class EvidenceClusterProcessorMaximalCliqueIterator implements Iterator<BreakpointInterval> {
-		private final Iterator<TrapezoidGraphNode> it;
-		private final BreakpointDirection lowDir;
-		private final BreakpointDirection highDir;
-		public EvidenceClusterProcessorMaximalCliqueIterator(TrapezoidGraph completeGraph, BreakpointDirection lowDir, BreakpointDirection highDir) {
+	public class EvidenceClusterProcessorMaximalCliqueIterator implements Iterator<BreakpointSummary> {
+		private final Iterator<GraphNode> it;
+		private final BreakendDirection lowDir;
+		private final BreakendDirection highDir;
+		public EvidenceClusterProcessorMaximalCliqueIterator(MaximalClique completeGraph, BreakendDirection lowDir, BreakendDirection highDir) {
 			this.it = completeGraph.getAllMaximalCliques();
 			this.lowDir = lowDir;
 			this.highDir = highDir;
@@ -125,9 +125,9 @@ public class EvidenceClusterProcessor implements Iterable<BreakpointLocation> {
 			return it.hasNext();
 		}
 		@Override
-		public BreakpointInterval next() {
-			TrapezoidGraphNode node = it.next();
-			return new BreakpointInterval(
+		public BreakpointSummary next() {
+			GraphNode node = it.next();
+			return new BreakpointSummary(
 					context.getLinear().getReferenceIndex(node.startX),
 					lowDir,
 					context.getLinear().getReferencePosition(node.startX),
@@ -136,7 +136,7 @@ public class EvidenceClusterProcessor implements Iterable<BreakpointLocation> {
 					highDir,
 					context.getLinear().getReferencePosition(node.startY),
 					context.getLinear().getReferencePosition(node.endY),
-					node.weight);
+					node.evidence);
 		}
 		@Override
 		public void remove() {

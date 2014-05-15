@@ -24,7 +24,7 @@ public class SequentialRealignedBreakpointFactory extends SequentialSAMRecordFac
 	}
 	public SAMRecord findRealignedSAMRecord(DirectedBreakpoint source) {
 		if (source == null) return null;
-		return findMatching(source.getBreakpointLocation().referenceIndex, source.getBreakpointLocation().start, source.getEvidenceID());
+		return findMatching(source.getBreakendSummary().referenceIndex, source.getBreakendSummary().start, source.getEvidenceID());
 	}
 	@Override
 	protected String getMatchingKey(SAMRecord record) {

@@ -8,8 +8,8 @@ import org.junit.Test;
 public class BreakpointFastqEncodingTest extends TestHelper {
 	public class StubDirectedBreakpoint implements DirectedBreakpoint {
 		@Override
-		public BreakpointLocation getBreakpointLocation() {
-			return new BreakpointLocation(1, BreakpointDirection.Forward, 123, 456, 5.678f);
+		public BreakendSummary getBreakendSummary() {
+			return new BreakendSummary(1, BreakendDirection.Forward, 123, 456, 5.678f);
 		}
 		@Override
 		public String getEvidenceID() {

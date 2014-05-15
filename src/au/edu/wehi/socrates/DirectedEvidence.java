@@ -3,11 +3,11 @@ package au.edu.wehi.socrates;
 public interface DirectedEvidence {
 	/**
 	 * Location of breakpoints consistent with the given evidence.
-	 * If the destination of the breakpoint is known, a @see BreakpointInterval
+	 * If the destination of the breakpoint is known, a @see BreakpointSummary
 	 * should be returned. 
 	 * @return breakpoint locations implied by this evidence
 	 */
-	BreakpointLocation getBreakpointLocation();
+	BreakendSummary getBreakendSummary();
 	/**
 	 * Unique breakpoint identifier.
 	 * This identifier is used as the FASTQ sequence identifier

@@ -8,25 +8,25 @@ import org.junit.Test;
 
 public class VariantContextDirectedBreakpointTest extends TestHelper {
 	@Test
-	public void getBreakpointLocation_qual_should_match_vcf_phred_score() {
-		BreakpointLocation loc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().alleles("A", "AC[polyA:1[").log10PError(-1).make()).getBreakpointLocation();
+	public void getBreakendSummary_qual_should_match_vcf_phred_score() {
+		BreakendSummary loc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().alleles("A", "AC[polyA:1[").log10PError(-1).make()).getBreakendSummary();
 		assertEquals(10, loc.qual, 0);
 	}
 	@Test
-	public void getBreakpointLocation_should_handle_f_single_breakend() {
-		BreakpointLocation loc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().alleles("A", "A.").log10PError(-1).make()).getBreakpointLocation();
+	public void getBreakendSummary_should_handle_f_single_breakend() {
+		BreakendSummary loc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().alleles("A", "A.").log10PError(-1).make()).getBreakendSummary();
 		assertEquals(0, loc.referenceIndex);
 		assertEquals(1, loc.start);
 		assertEquals(1, loc.end);
-		assertEquals(BreakpointDirection.Forward, loc.direction);
+		assertEquals(BreakendDirection.Forward, loc.direction);
 	}
 	@Test
-	public void getBreakpointLocation_should_handle_b_single_breakend() {
-		BreakpointLocation loc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().alleles("A", ".A").log10PError(-1).make()).getBreakpointLocation();
+	public void getBreakendSummary_should_handle_b_single_breakend() {
+		BreakendSummary loc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().alleles("A", ".A").log10PError(-1).make()).getBreakendSummary();
 		assertEquals(0, loc.referenceIndex);
 		assertEquals(1, loc.start);
 		assertEquals(1, loc.end);
-		assertEquals(BreakpointDirection.Backward, loc.direction);
+		assertEquals(BreakendDirection.Backward, loc.direction);
 	}
 	@Test
 	public void getEvidenceID_should_match_vcf_name() {
@@ -67,81 +67,81 @@ public class VariantContextDirectedBreakpointTest extends TestHelper {
 		assertEquals("AAAA", vc.getAnchorSequenceString());
 	}
 	@Test
-	public void getBreakpointLocation_should_handle_partner_contig() {
+	public void getBreakendSummary_should_handle_partner_contig() {
 		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().start(1).stop(2).alleles("AA", "AAAAT[polyACGT:5[").id("test").make());
-		BreakpointInterval loc = (BreakpointInterval)vc.getBreakpointLocation();
+		BreakpointSummary loc = (BreakpointSummary)vc.getBreakendSummary();
 		assertEquals(0, loc.referenceIndex);
 		assertEquals(2, loc.start);
 		assertEquals(2, loc.end);
-		assertEquals(BreakpointDirection.Forward, loc.direction);
+		assertEquals(BreakendDirection.Forward, loc.direction);
 		assertEquals(1, loc.referenceIndex2);
 		assertEquals(5, loc.start2);
 		assertEquals(5, loc.end2);
-		assertEquals(BreakpointDirection.Forward, loc.direction2);
+		assertEquals(BreakendDirection.Forward, loc.direction2);
 	}
 	@Test
-	public void getBreakpointLocation_should_handle_nonreference_partner_contig() {
+	public void getBreakendSummary_should_handle_nonreference_partner_contig() {
 		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().start(1).stop(2).alleles("AA", "AAAAT[<contigNotInReference>:1[").id("test").make());
-		BreakpointInterval loc = (BreakpointInterval)vc.getBreakpointLocation();
+		BreakpointSummary loc = (BreakpointSummary)vc.getBreakendSummary();
 		assertEquals(0, loc.referenceIndex);
 		assertEquals(2, loc.start);
 		assertEquals(2, loc.end);
-		assertEquals(BreakpointDirection.Forward, loc.direction);
+		assertEquals(BreakendDirection.Forward, loc.direction);
 		assertEquals(-1, loc.referenceIndex2);
 		assertEquals(1, loc.start2);
 		assertEquals(1, loc.end2);
-		assertEquals(BreakpointDirection.Forward, loc.direction2);
+		assertEquals(BreakendDirection.Forward, loc.direction2);
 	}
 	@Test
-	public void getBreakpointLocation_should_handle_ff_partner() {
+	public void getBreakendSummary_should_handle_ff_partner() {
 		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().start(1).stop(2).alleles("AA", "AAAAT[polyACGT:1234[").id("test").make());
-		BreakpointInterval loc = (BreakpointInterval)vc.getBreakpointLocation();
+		BreakpointSummary loc = (BreakpointSummary)vc.getBreakendSummary();
 		assertEquals(0, loc.referenceIndex);
 		assertEquals(2, loc.start);
 		assertEquals(2, loc.end);
-		assertEquals(BreakpointDirection.Forward, loc.direction);
+		assertEquals(BreakendDirection.Forward, loc.direction);
 		assertEquals(1, loc.referenceIndex2);
 		assertEquals(1234, loc.start2);
 		assertEquals(1234, loc.end2);
-		assertEquals(BreakpointDirection.Forward, loc.direction2);
+		assertEquals(BreakendDirection.Forward, loc.direction2);
 	}
 	@Test
-	public void getBreakpointLocation_should_handle_fb_partner() {
+	public void getBreakendSummary_should_handle_fb_partner() {
 		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().start(1).stop(2).alleles("AA", "AAAAT]polyACGT:1234]").id("test").make());
-		BreakpointInterval loc = (BreakpointInterval)vc.getBreakpointLocation();
+		BreakpointSummary loc = (BreakpointSummary)vc.getBreakendSummary();
 		assertEquals(0, loc.referenceIndex);
 		assertEquals(2, loc.start);
 		assertEquals(2, loc.end);
-		assertEquals(BreakpointDirection.Forward, loc.direction);
+		assertEquals(BreakendDirection.Forward, loc.direction);
 		assertEquals(1, loc.referenceIndex2);
 		assertEquals(1234, loc.start2);
 		assertEquals(1234, loc.end2);
-		assertEquals(BreakpointDirection.Backward, loc.direction2);
+		assertEquals(BreakendDirection.Backward, loc.direction2);
 	}
 	@Test
-	public void getBreakpointLocation_should_handle_bb_partner() {
+	public void getBreakendSummary_should_handle_bb_partner() {
 		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().start(1).stop(2).alleles("AA", "]polyACGT:1234]AAAAT").id("test").make());
-		BreakpointInterval loc = (BreakpointInterval)vc.getBreakpointLocation();
+		BreakpointSummary loc = (BreakpointSummary)vc.getBreakendSummary();
 		assertEquals(0, loc.referenceIndex);
 		assertEquals(1, loc.start);
 		assertEquals(1, loc.end);
-		assertEquals(BreakpointDirection.Backward, loc.direction);
+		assertEquals(BreakendDirection.Backward, loc.direction);
 		assertEquals(1, loc.referenceIndex2);
 		assertEquals(1234, loc.start2);
 		assertEquals(1234, loc.end2);
-		assertEquals(BreakpointDirection.Backward, loc.direction2);
+		assertEquals(BreakendDirection.Backward, loc.direction2);
 	}
 	@Test
-	public void getBreakpointLocation_should_handle_bf_partner() {
+	public void getBreakendSummary_should_handle_bf_partner() {
 		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().start(1).stop(2).alleles("AA", "[polyACGT:1234[AAAAT").id("test").make());
-		BreakpointInterval loc = (BreakpointInterval)vc.getBreakpointLocation();
+		BreakpointSummary loc = (BreakpointSummary)vc.getBreakendSummary();
 		assertEquals(0, loc.referenceIndex);
 		assertEquals(1, loc.start);
 		assertEquals(1, loc.end);
-		assertEquals(BreakpointDirection.Backward, loc.direction);
+		assertEquals(BreakendDirection.Backward, loc.direction);
 		assertEquals(1, loc.referenceIndex2);
 		assertEquals(1234, loc.start2);
 		assertEquals(1234, loc.end2);
-		assertEquals(BreakpointDirection.Forward, loc.direction2);
+		assertEquals(BreakendDirection.Forward, loc.direction2);
 	}
 }

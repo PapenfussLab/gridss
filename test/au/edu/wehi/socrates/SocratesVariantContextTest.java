@@ -40,7 +40,7 @@ public class SocratesVariantContextTest extends TestHelper {
 	}
 	@Test
 	public void create_should_make_DirectedBreakpointAssembly() {
-		DirectedBreakpointAssembly vc = DirectedBreakpointAssembly.create(getContext(), "test", 0, 1, BreakpointDirection.Forward, B("C"), B("AC"), 1, 0);
+		DirectedBreakpointAssembly vc = DirectedBreakpointAssembly.create(getContext(), "test", 0, 1, BreakendDirection.Forward, B("C"), B("AC"), 1, 0);
 		assertTrue(SocratesVariantContext.create(getContext(), vc) instanceof DirectedBreakpointAssembly);
 	}
 	@Test

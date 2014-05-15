@@ -1,9 +1,9 @@
 package au.edu.wehi.socrates;
 
 import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMFileReader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SamReader;
 import htsjdk.samtools.fastq.FastqWriterFactory;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
@@ -16,7 +16,6 @@ import htsjdk.variant.vcf.VCFHeader;
 import java.io.File;
 import java.io.IOException;
 
-import picard.cmdline.CommandLineProgram;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import au.edu.wehi.socrates.debruijn.DeBruijnAssembler;
@@ -70,7 +69,6 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
     private Log log = Log.getInstance(GenerateDirectedBreakpoints.class);
     @Override
 	protected int doWork() {
-    	SAMFileReader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
     	try {
     		if (METRICS == null) {
     			METRICS = FileNamingConvention.getMetrics(SV_INPUT);
@@ -83,8 +81,8 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
     		IOUtil.assertFileIsWritable(FASTQ_OUTPUT);
     		
     		//final ProgressLogger progress = new ProgressLogger(log);
-	    	final SAMFileReader reader = new SAMFileReader(SV_INPUT);
-	    	final SAMFileReader mateReader = new SAMFileReader(MATE_COORDINATE_INPUT);
+	    	final SamReader reader = getSamReaderFactory().open(SV_INPUT);
+	    	final SamReader mateReader = getSamReaderFactory().open(MATE_COORDINATE_INPUT);
 	    	final SAMFileHeader header = reader.getFileHeader();
 	    	final SAMSequenceDictionary dictionary = header.getSequenceDictionary();
 	    	final RelevantMetrics metrics = new RelevantMetrics(METRICS);
