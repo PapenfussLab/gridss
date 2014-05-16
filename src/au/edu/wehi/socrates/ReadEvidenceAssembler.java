@@ -1,6 +1,6 @@
 package au.edu.wehi.socrates;
 
 public interface ReadEvidenceAssembler {
-	Iterable<DirectedBreakpointAssembly> addEvidence(DirectedEvidence evidence);
-	Iterable<DirectedBreakpointAssembly> endOfEvidence();
+	Iterable<VariantContextDirectedBreakpoint> addEvidence(DirectedEvidence evidence);
+	Iterable<VariantContextDirectedBreakpoint> endOfEvidence();
 }

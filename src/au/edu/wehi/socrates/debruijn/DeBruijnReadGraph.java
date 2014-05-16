@@ -179,7 +179,9 @@ public class DeBruijnReadGraph {
 	private AnomolousReadAssembly pathToAnomolousReadAssembly(LinkedList<Long> path, Long breakpointAnchor) {
 		if (path == null || path.size() == 0) throw new IllegalArgumentException("Invalid path");
 		int assemblyLength = path.size() + k - 1;
+		int readBaseCount = 0;
 		byte[] bases = KmerEncodingHelper.encodedToPicardBases(path.get(0), k);
+		Set<SAMRecord> lastNodeSupport = Sets.newHashSet();
 		bases = Arrays.copyOf(bases, assemblyLength);
 		int offset = k - 1;
 		List<Long> qual = new ArrayList<Long>(path.size());
@@ -189,10 +191,19 @@ public class DeBruijnReadGraph {
 			// subtract # reads to adjust for the +1 qual introduced by ReadKmerIterable
 			// to ensure positive node weights
 			qual.add(this.kmers.get(node).getWeight() - this.kmers.get(node).getSupportingReads().size());
+			readBaseCount += this.kmers.get(node).getSupportingReads().size();
 			offset++;
 			if (node == breakpointAnchor) {
 				softclipSize = assemblyLength - offset;
 			}
+			for (SAMRecord read : this.kmers.get(node).getSupportingReads()) {
+				if (lastNodeSupport.contains(read)) {
+					readBaseCount++;
+				} else {
+					readBaseCount += k;
+				}
+			}
+			lastNodeSupport = this.kmers.get(node).getSupportingReads();
 		}
 		if (!startkmers.containsEntry(breakpointAnchor, 0)) {
 			// the breakpoint anchor is actually within the kmer, not at the end
@@ -206,7 +217,7 @@ public class DeBruijnReadGraph {
 			ArrayUtils.reverse(bases);
 			ArrayUtils.reverse(quals);
 		}
-		return new AnomolousReadAssembly("idsvDeBruijn", bases, quals, assemblyLength - softclipSize, direction, getPathSupportingReads(path).size());
+		return new AnomolousReadAssembly("idsvDeBruijn", bases, quals, assemblyLength - softclipSize, direction, getPathSupportingReads(path).size(), readBaseCount);
 	}
 	private Set<SAMRecord> getPathSupportingReads(LinkedList<Long> path) {
 		Set<SAMRecord> reads = Sets.newHashSet();

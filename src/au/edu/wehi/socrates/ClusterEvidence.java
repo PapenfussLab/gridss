@@ -102,17 +102,6 @@ public class ClusterEvidence extends CommandLineProgram {
 				throw new RuntimeException("CHROMSOME argument supplied too many times");
 			}
 			log.debug("Calling maximal cliques");
-			PriorityQueue<BreakendSummary> calls = new PriorityQueue<BreakendSummary>(1024, BreakendSummary.ByStartEnd);
-			Iterator<BreakendSummary> it = processor.iterator();
-			while (it.hasNext()) {
-				BreakendSummary loc = it.next();
-				calls.add(loc);
-				if (loc instanceof BreakpointSummary) {
-					// add both sides
-					calls.add(new BreakpointSummary(((BreakpointSummary)loc).remoteLocation(), loc, loc.qual));
-				}
-			}
-			log.debug("Annotating calls");
 			final VariantContextWriter vcfWriter = new VariantContextWriterBuilder()
 				.setOutputFile(OUTPUT)
 				.setReferenceDictionary(processContext.getDictionary())
@@ -120,16 +109,14 @@ public class ClusterEvidence extends CommandLineProgram {
 			final VCFHeader vcfHeader = new VCFHeader();
 			VcfConstants.addHeaders(vcfHeader);
 			vcfWriter.writeHeader(vcfHeader);
-			
-			for (BreakendSummary loc : new PriorityQ  processor) {
-				// TODO: Rehydrate the calls with metrics from the original evidence
-				StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(processContext, loc);
+			Iterator<BreakendSummary> it = processor.iterator();
+			while (it.hasNext()) {
+				BreakendSummary loc = it.next();
+				VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(processContext)
+					.breakend(loc, null)
+					.evidence(loc.evidence);
+				// Issue: we've lost all our extended info including the untemplated sequence
 				vcfWriter.add(builder.make());
-				if (loc instanceof BreakpointSummary) {
-					// add both sides
-					builder = new StructuralVariationCallBuilder(processContext, new BreakpointSummary(((BreakpointSummary)loc).remoteLocation(), loc, loc.qual));
-					vcfWriter.add(builder.make());
-				}
 			}
 			vcfWriter.close();
     	} catch (IOException e) {

@@ -1,6 +1,7 @@
 package au.edu.wehi.socrates;
 
-import htsjdk.samtools.SAMRecord;
+import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Ordering;
 
 /**
  * Positional locations on source and target chromosomes
@@ -80,4 +81,16 @@ public class BreakpointSummary extends BreakendSummary {
 			return false;
 		return true;
 	}
+	public static Ordering<BreakpointSummary> ByStartStart2EndEnd2 = new Ordering<BreakpointSummary>() {
+		public int compare(BreakpointSummary o1, BreakpointSummary o2) {
+			  return ComparisonChain.start()
+			        .compare(o1.referenceIndex, o2.referenceIndex)
+			        .compare(o1.start, o2.start)
+			        .compare(o1.referenceIndex2, o2.referenceIndex2)
+			        .compare(o1.start2, o2.start2)
+			        .compare(o1.end, o2.end)
+			        .compare(o1.end2, o2.end2)
+			        .result();
+		  }
+	};
 }

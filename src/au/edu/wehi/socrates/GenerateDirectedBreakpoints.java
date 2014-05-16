@@ -130,9 +130,9 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
     	}
         return 0;
     }
-    private void processAssemblyEvidence(Iterable<DirectedBreakpointAssembly> evidenceList, FastqBreakpointWriter fastqWriter, VariantContextWriter vcfWriter) {
+    private void processAssemblyEvidence(Iterable<VariantContextDirectedBreakpoint> evidenceList, FastqBreakpointWriter fastqWriter, VariantContextWriter vcfWriter) {
     	if (evidenceList != null) {
-	    	for (DirectedBreakpointAssembly a : evidenceList) {
+	    	for (VariantContextDirectedBreakpoint a : evidenceList) {
 	    		if (a != null) {
 	    			fastqWriter.write(a);
 		    		vcfWriter.add(a);

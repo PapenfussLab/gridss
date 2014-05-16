@@ -64,8 +64,19 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 		//  
 		if (evidence instanceof SoftClipEvidence) {
 			evidence = new SoftClipEvidence((SoftClipEvidence)evidence, realignFactory.findRealignedSAMRecord((DirectedBreakpoint)evidence));
-		} else if (evidence instanceof DirectedBreakpointAssembly) {
-			evidence = DirectedBreakpointAssembly.create((DirectedBreakpointAssembly)evidence, realignFactory.findRealignedSAMRecord((DirectedBreakpoint)evidence));
+		} else if (evidence instanceof VariantContextDirectedBreakpoint) {
+			VariantContextDirectedBreakpoint assembly = (VariantContextDirectedBreakpoint)evidence;
+			SAMRecord realigned = realignFactory.findRealignedSAMRecord(assembly);
+			if (realigned != null) {
+				VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(processContext, assembly);
+				if (realigned.getReadUnmappedFlag()) {
+					builder.realignmentFailed();
+				} else {
+					RealignedBreakpoint rbp = new RealignedBreakpoint(evidence.getBreakendSummary(), realigned);
+					builder.breakpoint(rbp.getBreakpointSummary(), rbp.getInsertedSequence());
+				}
+				evidence = builder.make();
+			}
 		}
 		return evidence;
 	}

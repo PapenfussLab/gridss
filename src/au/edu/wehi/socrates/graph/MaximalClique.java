@@ -4,7 +4,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.NavigableMap;
-import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.SortedMap;
@@ -32,11 +31,14 @@ public class MaximalClique {
 	 * @param node vertex to add
 	 */
 	public void add(GraphNode node) {
-		if (nodes.containsKey(node)) {
-			node = new GraphNode(node, nodes.get(node).evidence);
-			nodes.remove(node);
+		GraphNode inMap = nodes.get(node);
+		if (inMap == null) {
+			inMap = new GraphNode(node.startX, node.endX, node.startY, node.endY, new EvidenceMetrics());
+			nodes.put(inMap, inMap);
 		}
-		nodes.put(node, node);
+		if (node.evidence != null) {
+			inMap.evidence.add(node.evidence);
+		}
 	}
 	private class MaximalCliqueEnumerator extends AbstractIterator<GraphNode> {
 		private final PeekingIterator<GraphNode> nodeIt;
@@ -62,7 +64,6 @@ public class MaximalClique {
 			}
 		}
 		public class CliqueScanlineActiveSet {
-			private static final double FLOAT_EQUALITY_DELTA = 0.000001;
 			private final NavigableMap<Long, YNode> active = Maps.newTreeMap();
 			public CliqueScanlineActiveSet() {
 				// sentinel node to reduce number of edge cases
@@ -82,15 +83,19 @@ public class MaximalClique {
 				public YNode() {
 					startx = Long.MIN_VALUE;
 					isMaximalClique = false;
-					evidence = null;
+					evidence = new EvidenceMetrics();
 					startHere = 0;
 					endHere = 0;
 				}
 				public long startx;
 				public boolean isMaximalClique;
-				public EvidenceMetrics evidence;
+				public final EvidenceMetrics evidence;
 				public int startHere;
 				public int endHere;
+				@Override
+				public String toString() {
+					return String.format("startx=%d start#=%d end#=%d %s %s", startx, startHere, endHere, isMaximalClique ? "MAXIMAL" : "", evidence);
+				}
 			}
 			/**
 			 * Adds a new node to the active set
@@ -104,7 +109,7 @@ public class MaximalClique {
 				
 				// Update the interval that our new nodes spans
 				for (YNode ynode : active.subMap(node.startY, node.endY + 1).values()) {
-					ynode.evidence = EvidenceMetrics.merge(ynode.evidence, node.evidence);
+					ynode.evidence.add(node.evidence);
 					ynode.startx = node.startX;
 					ynode.isMaximalClique = ynode.startHere > 0 && ynode.endHere > 0;
 				}
@@ -123,12 +128,12 @@ public class MaximalClique {
 					long starty = entry.getKey();
 					YNode ynode = entry.getValue();
 					if (ynode.isMaximalClique) {
-						cliques.add(new GraphNode(ynode.startx, node.endX, starty, it.hasNext() ? it.peek().getKey() - 1 : node.endY, ynode.evidence));
+						cliques.add(new GraphNode(ynode.startx, node.endX, starty, it.hasNext() ? it.peek().getKey() - 1 : node.endY, new EvidenceMetrics(ynode.evidence)));
 					}
 					ynode.startx = Long.MIN_VALUE;
 					ynode.isMaximalClique = false;
 					// remove node contribution
-					ynode.evidence = EvidenceMetrics.remove(ynode.evidence, node.evidence);
+					ynode.evidence.remove(node.evidence);
 				}
 				// Remove and coalese start/end bounds
 				active.get(node.startY).startHere--;
@@ -148,7 +153,7 @@ public class MaximalClique {
 				if (before.endHere != 0 || node.startHere != 0) return; // Can't merge since they are still distinct
 				if (before.isMaximalClique) throw new RuntimeException(String.format("Sanity check failure: partial maximal clique when merging %d", y));
 				if (node.isMaximalClique) throw new RuntimeException(String.format("Sanity check failure: partial maximal clique when merging %d", y));
-				if (!Objects.equals(before.evidence, node.evidence)) throw new RuntimeException(String.format("Sanity check failure: evidence %s and %s do not match", before.evidence, node.evidence));
+				//if (!Objects.equals(before.evidence, node.evidence)) throw new RuntimeException(String.format("Sanity check failure: evidence %s and %s do not match", before.evidence, node.evidence));
 				before.endHere = node.endHere;
 				active.remove(y);
 			}
@@ -157,11 +162,19 @@ public class MaximalClique {
 				if (entry.getKey() == y) return; // Nothing to do - already split
 				YNode before = entry.getValue();
 				YNode node = new YNode();
-				node.evidence = before.evidence;
+				node.evidence.add(before.evidence);
 				node.endHere = before.endHere;
 				before.isMaximalClique = false;
 				before.endHere = 0;
 				active.put(y, node);
+			}
+			@Override
+			public String toString() {
+				StringBuilder sb = new StringBuilder();
+				for (Entry<Long, YNode> entry : active.entrySet()) {
+					sb.append(String.format("(starty=%d, %s)\n", entry.getValue(), entry.getKey()));
+				}
+				return sb.toString();
 			}
 		}
 		/**

@@ -17,12 +17,13 @@ import au.edu.wehi.socrates.BreakendDirection;
  */
 public class AnomolousReadAssembly extends SAMRecord {
 	public AnomolousReadAssembly(String assemblerProgram, byte[] assemblyBases, int assemblyAnchorLength, BreakendDirection direction) {
-		this(assemblerProgram, assemblyBases, null, assemblyAnchorLength, direction, null);
+		this(assemblerProgram, assemblyBases, null, assemblyAnchorLength, direction, null, null);
 	}
-	public AnomolousReadAssembly(String assemblerProgram, byte[] assemblyBases, byte[] assemblyBaseQuality, int assemblyAnchorLength, BreakendDirection direction, Integer assembledReadCount) {
+	public AnomolousReadAssembly(String assemblerProgram, byte[] assemblyBases, byte[] assemblyBaseQuality, int assemblyAnchorLength, BreakendDirection direction, Integer assembledReadCount, Integer assembledReadBaseCount) {
 		super(null);
-		setAttribute(SocratesSamTags.ASSEMBLER_PROGRAM, assemblerProgram);
-		if (assembledReadCount != null) setAttribute(SocratesSamTags.ASSEMBLER_READ_COUNT, assembledReadCount);
+		setAttribute(SamTags.ASSEMBLER_PROGRAM, assemblerProgram);
+		if (assembledReadCount != null) setAttribute(SamTags.ASSEMBLER_READ_COUNT, assembledReadCount);
+		if (assembledReadBaseCount != null) setAttribute(SamTags.ASSEMBLER_READ_BASE_COUNT, assembledReadBaseCount);
 		setReadBases(assemblyBases);
 		setBaseQualities(assemblyBaseQuality);
 		int assemblyLength = assemblyBases.length;
@@ -33,7 +34,7 @@ public class AnomolousReadAssembly extends SAMRecord {
 		}
 	}
 	public String getAssemblerProgram() {
-		return getStringAttribute(SocratesSamTags.ASSEMBLER_PROGRAM);
+		return getStringAttribute(SamTags.ASSEMBLER_PROGRAM);
 	}
 	public BreakendDirection getDirection() {
 		return getCigar().getCigarElement(0).getOperator() == CigarOperator.S ? BreakendDirection.Backward : BreakendDirection.Forward; 
@@ -52,20 +53,25 @@ public class AnomolousReadAssembly extends SAMRecord {
 		if (getDirection() == BreakendDirection.Forward) return getCigar().getCigarElement(1).getLength();
 		else return getCigar().getCigarElement(0).getLength(); 
 	}
-	public float getAssemblyQuality() {
-		int quality = Integer.MAX_VALUE;
-		byte[] qual = getBaseQualities(); 
-		for (int i = 0; qual != null && i < qual.length; i++) {
-			quality = Math.min(quality, qual[i]);
+	public float getAssemblyBreakpointQuality() {
+		byte[] qual = getBaseQualities();
+		int length = getBreakpointLength();
+		if (length == 0) return 0;
+		int start = getDirection() == BreakendDirection.Backward ? 0 : getAnchorLength();  
+		int qualSum = 0;
+		for (int i = 0; i < length; i++) {
+			qualSum += qual[start + i];
 		}
-		if (quality == Integer.MAX_VALUE) return 0;
-		return quality;
+		return qualSum/(float)length;
 	}
 	/**
 	 * Number of reads in assembly
 	 * @return
 	 */
 	public Integer getReadCount() {
-		return (Integer)getAttribute(SocratesSamTags.ASSEMBLER_READ_COUNT);
+		return (Integer)getAttribute(SamTags.ASSEMBLER_READ_COUNT);
+	}
+	public Integer getReadBaseCount() {
+		return (Integer)getAttribute(SamTags.ASSEMBLER_READ_BASE_COUNT);
 	}
 }

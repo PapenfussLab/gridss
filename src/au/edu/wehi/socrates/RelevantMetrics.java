@@ -31,12 +31,11 @@ public class RelevantMetrics {
 			rg = header.getReadGroups();
 		}
 		return new InsertSizeMetricsCollector(
-    			CollectionUtil.makeSet(MetricAccumulationLevel.ALL_READS, MetricAccumulationLevel.SAMPLE),
-    			rg,
+    			CollectionUtil.makeSet(MetricAccumulationLevel.ALL_READS), null, //, MetricAccumulationLevel.SAMPLE), rg,
 				// match CollectInsertSizeMetrics defaults
-				 new CollectInsertSizeMetrics().MINIMUM_PCT,
-				 new CollectInsertSizeMetrics().Histogram_WIDTH,
-				 new CollectInsertSizeMetrics().DEVIATIONS);
+				new CollectInsertSizeMetrics().MINIMUM_PCT,
+				new CollectInsertSizeMetrics().Histogram_WIDTH,
+				new CollectInsertSizeMetrics().DEVIATIONS);
 	}
 	public static void save(
 			InsertSizeMetricsCollector metrics,

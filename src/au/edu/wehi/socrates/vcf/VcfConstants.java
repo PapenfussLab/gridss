@@ -16,7 +16,6 @@ public class VcfConstants {
 	public static final String ASSEMBLY_CONSENSUS = "CONS";
 	public static final String ASSEMBLY_QUALITY = "CONSQUAL";
 	public static final String ASSEMBLY_PROGRAM = "CONSASMBR";
-	public static final String ASSEMBLY_CONSENSUS_READ_COUNT = "CONSRC";
 	//public static final String REALIGNMENT_EXCLUDED_BASES = "remainingSoftClip";
 	public static void addHeaders(VCFHeader header) {
 		// Breakpoint headers
@@ -24,8 +23,6 @@ public class VcfConstants {
 		header.addMetaDataLine(new VCFInfoHeaderLine(VcfConstants.ASSEMBLY_CONSENSUS, 1, VCFHeaderLineType.String, "Anomolous read consensus assembly sequence"));
 		header.addMetaDataLine(new VCFInfoHeaderLine(VcfConstants.ASSEMBLY_QUALITY, 1, VCFHeaderLineType.Float, "Anomolous read consensus assembly quality"));
 		header.addMetaDataLine(new VCFInfoHeaderLine(VcfConstants.ASSEMBLY_PROGRAM, 1, VCFHeaderLineType.String, "Anomolous read consensus assembly algorithm"));
-		header.addMetaDataLine(new VCFInfoHeaderLine(VcfConstants.ASSEMBLY_CONSENSUS_READ_COUNT, 1, VCFHeaderLineType.Integer, "Number of anomolous reads contributing to consensus assembly"));
-		header.addMetaDataLine(new VCFInfoHeaderLine(VcfConstants.ASSEMBLY_CONSENSUS_READ_COUNT, 1, VCFHeaderLineType.Integer, "Number of anomolous reads contributing to consensus assembly"));
 		header.addMetaDataLine(new VCFInfoHeaderLine(VcfConstants.REALIGNMENT_FAILURE, 1, VCFHeaderLineType.Flag, "Breakend sequence unable to be realigned to the reference"));
 		
 		// Retrogene headers

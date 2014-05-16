@@ -14,7 +14,7 @@ public class StructuralVariationCallBuilder {
 	private final BreakendSummary call;
 	private final List<SoftClipEvidence> scList = Lists.newArrayList();
 	private final List<NonReferenceReadPair> nrpList = Lists.newArrayList();
-	private final List<DirectedBreakpointAssembly> assList = Lists.newArrayList();
+	private final List<VariantContextDirectedBreakpoint> assList = Lists.newArrayList();
 	private int referenceReadCount = -1;
 	private int referenceSpanningPairCount = -1;
 	public StructuralVariationCallBuilder(ProcessingContext processContext, BreakendSummary call) {
@@ -25,8 +25,8 @@ public class StructuralVariationCallBuilder {
 		if (evidence == null) throw new NullPointerException();
 		if (evidence instanceof SoftClipEvidence) {
 			scList.add((SoftClipEvidence)evidence);
-		} else if (evidence instanceof DirectedBreakpointAssembly) {
-			assList.add((DirectedBreakpointAssembly)evidence);
+		} else if (evidence instanceof VariantContextDirectedBreakpoint) {
+			assList.add((VariantContextDirectedBreakpoint)evidence);
 		} else if (evidence instanceof NonReferenceReadPair) {
 			nrpList.add((NonReferenceReadPair)evidence);
 		} else {
@@ -92,7 +92,7 @@ public class StructuralVariationCallBuilder {
 	}
 	private VariantContextDirectedBreakpointBuilder createBuilder() {
 		VariantContextDirectedBreakpointBuilder builder;
-		DirectedBreakpointAssembly ass = bestAssembly();
+		VariantContextDirectedBreakpoint ass = bestAssembly();
 		SoftClipEvidence sce = bestSoftclip();
 		if (ass != null) {
 			builder = new VariantContextDirectedBreakpointBuilder(processContext, ass);
@@ -132,10 +132,10 @@ public class StructuralVariationCallBuilder {
 		}
 		return best;
 	}
-	private DirectedBreakpointAssembly bestAssembly() {
+	private VariantContextDirectedBreakpoint bestAssembly() {
 		if (assList.size() == 0) return null;
-		DirectedBreakpointAssembly best = assList.get(0);
-		for (DirectedBreakpointAssembly a : assList) {
+		VariantContextDirectedBreakpoint best = assList.get(0);
+		for (VariantContextDirectedBreakpoint a : assList) {
 			if (a.getPhredScaledQual() > best.getPhredScaledQual()) {
 				best = a;
 			}

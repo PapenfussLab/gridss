@@ -5,6 +5,8 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 
+import au.edu.wehi.socrates.vcf.EvidenceAttributes;
+import au.edu.wehi.socrates.vcf.VcfConstants;
 import au.edu.wehi.socrates.vcf.VcfSvConstants;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -16,26 +18,38 @@ import htsjdk.variant.variantcontext.VariantContext;
  *
  */
 public class VariantContextDirectedBreakpoint extends SocratesVariantContext implements DirectedBreakpoint {
-	private BreakendSummary location;
-	private String breakpointSequence;
-	private String anchorSequence;
-	protected VariantContextDirectedBreakpoint(ProcessingContext processContext, VariantContext context) {
-		super(processContext, context);
-		recalcFields();
+	private final BreakendSummary location;
+	private final String breakpointSequence;
+	private final String anchorSequence;
+	private final byte[] breakpointQual;
+	public VariantContextDirectedBreakpoint(ProcessingContext processContext, VariantContext context) {
+		this(processContext, context, null);
 	}
-	private void recalcFields() {
-		location = null;
-		breakpointSequence = null;
-		anchorSequence = null;
-		
+	public VariantContextDirectedBreakpoint(ProcessingContext processContext, VariantContext context, byte[] breakpointQual) {
+		super(processContext, context);
+		this.breakpointQual = breakpointQual;
+		// calculate fields
 		List<Allele> altList = getAlternateAlleles();
-		if (altList.size() != 1) return;
+		if (altList.size() != 1) {
+			location = null;
+			breakpointSequence = null;
+			anchorSequence = null;
+			return;
+		}
 		String alt = getAlternateAllele(0).getDisplayString();
 		if (getReference().length() >= alt.length()) {
 			// Technically this is valid (eg: {"AAA", "A."} = breakend with deletion), we just can't handle these yet
+			location = null;
+			breakpointSequence = null;
+			anchorSequence = null;
 			return;
 		}
-		if (alt.length() < 2) return;
+		if (alt.length() < 2) {
+			location = null;
+			breakpointSequence = null;
+			anchorSequence = null;
+			return;
+		}
 		BreakendDirection direction, remoteDirection = null;
 		String localSequence;
 		String remoteContig = null;
@@ -63,6 +77,9 @@ public class VariantContextDirectedBreakpoint extends SocratesVariantContext imp
 			localSequence = split[0];
 		} else {
 			// not breakend!
+			location = null;
+			breakpointSequence = null;
+			anchorSequence = null;
 			return;
 		}
 		int remotePosition = 0;
@@ -97,11 +114,18 @@ public class VariantContextDirectedBreakpoint extends SocratesVariantContext imp
 		if (remoteDirection != null) {
 			location = new BreakpointSummary(getReferenceIndex(), direction, localPosition - ciStart, localPosition + ciEnd,
 					processContext.getDictionary().getSequenceIndex(remoteContig), remoteDirection, remotePosition - ciStart, remotePosition + ciEnd,
-					getPhredScaledQual());
+					getEvidence());
 		} else {
 			location = new BreakendSummary(getReferenceIndex(), direction, localPosition - ciStart, localPosition + ciEnd,
-					getPhredScaledQual());
+					getEvidence());
 		}
+	}
+	private EvidenceMetrics getEvidence() {
+		EvidenceMetrics m = new EvidenceMetrics();
+		for (EvidenceAttributes a : EvidenceAttributes.values()) {
+			m.set(a, getAttributeAsInt(a.attribute(), 0));
+		}
+		return m;
 	}
 	@Override
 	public BreakendSummary getBreakendSummary() {
@@ -126,10 +150,13 @@ public class VariantContextDirectedBreakpoint extends SocratesVariantContext imp
 	}
 	@Override
 	public byte[] getBreakpointQuality() {
-		return null;
+		return breakpointQual;
 	}
 	@Override
 	public boolean isValid() {
 		return location != null;
 	}
+	public String getAssemblerProgram() { return getAttributeAsString(VcfConstants.ASSEMBLY_PROGRAM, null); }
+	public String getAssemblyConsensus() { return getAttributeAsString(VcfConstants.ASSEMBLY_CONSENSUS, ""); }
+	public double getAssemblyQuality() { return getAttributeAsDouble(VcfConstants.ASSEMBLY_QUALITY, 0); }
 }

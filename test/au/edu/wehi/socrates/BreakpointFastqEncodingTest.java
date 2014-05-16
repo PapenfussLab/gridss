@@ -9,7 +9,7 @@ public class BreakpointFastqEncodingTest extends TestHelper {
 	public class StubDirectedBreakpoint implements DirectedBreakpoint {
 		@Override
 		public BreakendSummary getBreakendSummary() {
-			return new BreakendSummary(1, BreakendDirection.Forward, 123, 456, 5.678f);
+			return new BreakendSummary(1, BreakendDirection.Forward, 123, 456, null);
 		}
 		@Override
 		public String getEvidenceID() {

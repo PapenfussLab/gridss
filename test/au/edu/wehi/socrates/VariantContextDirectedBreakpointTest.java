@@ -8,11 +8,6 @@ import org.junit.Test;
 
 public class VariantContextDirectedBreakpointTest extends TestHelper {
 	@Test
-	public void getBreakendSummary_qual_should_match_vcf_phred_score() {
-		BreakendSummary loc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().alleles("A", "AC[polyA:1[").log10PError(-1).make()).getBreakendSummary();
-		assertEquals(10, loc.qual, 0);
-	}
-	@Test
 	public void getBreakendSummary_should_handle_f_single_breakend() {
 		BreakendSummary loc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().alleles("A", "A.").log10PError(-1).make()).getBreakendSummary();
 		assertEquals(0, loc.referenceIndex);

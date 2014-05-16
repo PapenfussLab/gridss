@@ -1,20 +1,25 @@
 package au.edu.wehi.socrates.debruijn;
 
+import htsjdk.samtools.SAMRecord;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.PriorityQueue;
 
-import htsjdk.samtools.SAMRecord;
 import au.edu.wehi.socrates.BreakendDirection;
 import au.edu.wehi.socrates.BreakendSummary;
-import au.edu.wehi.socrates.DirectedBreakpointAssembly;
 import au.edu.wehi.socrates.DirectedEvidence;
 import au.edu.wehi.socrates.DirectedEvidenceEndCoordinateComparator;
+import au.edu.wehi.socrates.EvidenceMetrics;
 import au.edu.wehi.socrates.NonReferenceReadPair;
 import au.edu.wehi.socrates.ProcessingContext;
 import au.edu.wehi.socrates.ReadEvidenceAssembler;
+import au.edu.wehi.socrates.ReadEvidenceAssemblerUtil;
 import au.edu.wehi.socrates.SoftClipEvidence;
+import au.edu.wehi.socrates.VariantContextDirectedBreakpoint;
+import au.edu.wehi.socrates.VariantContextDirectedBreakpointBuilder;
 import au.edu.wehi.socrates.sam.AnomolousReadAssembly;
+import au.edu.wehi.socrates.vcf.EvidenceAttributes;
 
 import com.google.common.collect.Lists;
 
@@ -40,7 +45,7 @@ public class DeBruijnAssembler implements ReadEvidenceAssembler {
 		this.graphf = new DeBruijnReadGraph(kmer, BreakendDirection.Forward);
 		this.graphb = new DeBruijnReadGraph(kmer, BreakendDirection.Backward);
 	}
-	private DirectedBreakpointAssembly createDirectedEvidence(DeBruijnReadGraph graph, BreakendDirection direction) {
+	private VariantContextDirectedBreakpoint createAssemblyBreakend(DeBruijnReadGraph graph, BreakendDirection direction) {
 		// AnomolousReadAssembly contains the assembly information encoded in a SAMRecord
 		AnomolousReadAssembly ara = graph.assembleVariant();
 		if (ara == null) return null;
@@ -48,16 +53,26 @@ public class DeBruijnAssembler implements ReadEvidenceAssembler {
 		if (ara.getReadCount() <= 1) return null; // exclude single soft-clips
 		
 		SoftClipEvidence assembledSC = new SoftClipEvidence(processContext, direction, ara);
-		return DirectedBreakpointAssembly.create(processContext, ASSEMBLER_NAME, currentReferenceIndex, currentPosition, BreakendDirection.Forward,
-				assembledSC.getBreakpointSequence(), assembledSC.getBreakpointQuality(),
-				ara.getReadBases(), ara.getBaseQualities(),
-				ara.getReadCount(), ara.getReadLength());
+		
+		return ReadEvidenceAssemblerUtil.create(
+				processContext,
+				ASSEMBLER_NAME,
+				currentReferenceIndex,
+				currentPosition,
+				direction,
+				assembledSC.getBreakpointSequence(),
+				assembledSC.getBreakpointQuality(),
+				ara.getReadBases(),
+				ara.getBaseQualities(),
+				ara.getReadCount(),
+				ara.getReadBaseCount(),
+				ara.getAssemblyBreakpointQuality());
 	}
 	@Override
-	public Iterable<DirectedBreakpointAssembly> addEvidence(DirectedEvidence evidence) {
+	public Iterable<VariantContextDirectedBreakpoint> addEvidence(DirectedEvidence evidence) {
 		if (evidence == null) return Collections.emptyList();
 		BreakendSummary location = evidence.getBreakendSummary();
-		List<DirectedBreakpointAssembly> result = processUpToExcluding(location.referenceIndex, location.start);
+		List<VariantContextDirectedBreakpoint> result = processUpToExcluding(location.referenceIndex, location.start);
 		// add evidence
 		if (location.direction == BreakendDirection.Forward) {
 			addToGraph(graphf, activef, evidence);
@@ -103,7 +118,7 @@ public class DeBruijnAssembler implements ReadEvidenceAssembler {
 		}
 	}
 	@Override
-	public Iterable<DirectedBreakpointAssembly> endOfEvidence() {
+	public Iterable<VariantContextDirectedBreakpoint> endOfEvidence() {
 		return processUpToExcluding(currentReferenceIndex + 1, 0);
 	}
 	/**
@@ -112,21 +127,21 @@ public class DeBruijnAssembler implements ReadEvidenceAssembler {
 	 * @param position position to process until
 	 * @return add assemblies generated up to the given position
 	 */
-	private List<DirectedBreakpointAssembly> processUpToExcluding(int referenceIndex, int position) {
-		List<DirectedBreakpointAssembly> result = Lists.newArrayList();
+	private List<VariantContextDirectedBreakpoint> processUpToExcluding(int referenceIndex, int position) {
+		List<VariantContextDirectedBreakpoint> result = Lists.newArrayList();
 		// keep going till we flush both de bruijn graphs
 		// or we reach the stop position
 		while ((!activef.isEmpty() || !activeb.isEmpty()) &&
 				!(currentReferenceIndex == referenceIndex && currentPosition == position)) {
-			DirectedBreakpointAssembly evidence;
+			VariantContextDirectedBreakpoint assembly;
 			
-			evidence = createDirectedEvidence(graphf, BreakendDirection.Forward);
-			if (evidence != null) {
-				result.add(evidence);
+			assembly = createAssemblyBreakend(graphf, BreakendDirection.Forward);
+			if (assembly != null) {
+				result.add(assembly);
 			}
-			evidence = createDirectedEvidence(graphb, BreakendDirection.Backward);
-			if (evidence != null) {
-				result.add(evidence);
+			assembly = createAssemblyBreakend(graphb, BreakendDirection.Backward);
+			if (assembly != null) {
+				result.add(assembly);
 			}
 			currentPosition++;
 			flushUpToExcluding(graphf, activef, currentReferenceIndex, currentPosition);

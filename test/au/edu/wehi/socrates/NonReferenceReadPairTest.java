@@ -6,6 +6,8 @@ import htsjdk.samtools.SAMRecord;
 
 import org.junit.Test;
 
+import au.edu.wehi.socrates.vcf.EvidenceAttributes;
+
 public class NonReferenceReadPairTest extends TestHelper {
 	public NonReferenceReadPair newPair(SAMRecord[] pair, int maxfragmentSize) {
 		return new NonReferenceReadPair(pair[0], pair[1], maxfragmentSize);
@@ -49,7 +51,6 @@ public class NonReferenceReadPairTest extends TestHelper {
 		SAMRecord[] pair = DP(0, 100, "1S3M1S", true, 1, 200, "5M", false); 
 		BreakpointSummary loc1 = (BreakpointSummary)new NonReferenceReadPair(pair[0], pair[1], 20).getBreakendSummary();
 		BreakpointSummary loc2 = (BreakpointSummary)new NonReferenceReadPair(pair[1], pair[0], 20).getBreakendSummary();
-		assertEquals(loc1.qual, loc2.qual, 0);
 		assertEquals(loc1.referenceIndex, loc2.referenceIndex2);
 		assertEquals(loc1.start, loc2.start2);
 		assertEquals(loc1.end, loc2.end2);
@@ -152,20 +153,22 @@ public class NonReferenceReadPairTest extends TestHelper {
 	@Test
 	public void getBreakendSummary_OEA_qual_should_match_mapq() {
 		BreakendSummary loc = newPair(OEA(0, 1, "2M3S", true), 10).getBreakendSummary();
-		assertEquals(10, loc.qual, 0);
+		assertEquals(1, loc.evidence.get(EvidenceAttributes.UNMAPPED_MATE_READ_COUNT));
+		assertEquals(10, loc.evidence.get(EvidenceAttributes.UNMAPPED_MATE_TOTAL_MAPQ));
 	}
 
 	@Test
-	public void getBreakendSummary_DP_qual_should_match_min_mapq() {
+	public void DP_should_set_dp_evidence() {
 		SAMRecord[] pair = DP(0, 1, "100M", true, 0, 1, "100M", true);
 		pair[0].setMappingQuality(1);
 		pair[1].setMappingQuality(10);
 		BreakpointSummary loc = (BreakpointSummary)newPair(pair, 100).getBreakendSummary();
-		assertEquals(1, loc.qual, 0);
+		assertEquals(1, loc.evidence.get(EvidenceAttributes.DISCORDANT_READ_PAIR_COUNT));
+		assertEquals(1, loc.evidence.get(EvidenceAttributes.DISCORDANT_READ_PAIR_TOTAL_MAPQ));
 		pair[0].setMappingQuality(10);
 		pair[1].setMappingQuality(1);
 		loc = (BreakpointSummary)newPair(pair, 100).getBreakendSummary();
-		assertEquals(1, loc.qual, 0);
+		assertEquals(1, loc.evidence.get(EvidenceAttributes.DISCORDANT_READ_PAIR_TOTAL_MAPQ));
 	}
 	public void getEvidenceID_should_match_read_name() {
 		SAMRecord[] pair = DP(0, 1, "100M", true, 0, 1, "100M", true);

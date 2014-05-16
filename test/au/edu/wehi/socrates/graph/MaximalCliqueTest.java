@@ -1,20 +1,28 @@
 package au.edu.wehi.socrates.graph;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
 import java.util.List;
 
 import org.junit.Test;
 
+import au.edu.wehi.socrates.EvidenceMetrics;
+import au.edu.wehi.socrates.vcf.EvidenceAttributes;
+
 import com.google.common.collect.Lists;
 
 public class MaximalCliqueTest {
 	private GraphNode N(long startX, long endX, long startY, long endY) {
-		return new GraphNode(startX, endX, startY, endY, 1);
+		return new GraphNode(startX, endX, startY, endY, EM(1));
 	}
-	private GraphNode N(long startX, long endX, long startY, long endY, double weight) {
-		return new GraphNode(startX, endX, startY, endY, weight);
+	private GraphNode N(long startX, long endX, long startY, long endY, int weight) {
+		return new GraphNode(startX, endX, startY, endY, EM(weight));
+	}
+	private EvidenceMetrics EM(int weight) {
+		EvidenceMetrics e = new EvidenceMetrics();
+		e.set(EvidenceAttributes.SOFT_CLIP_READ_COUNT, weight);
+		return e;
 	}
 	MaximalClique graph; 
 	private GraphNode[] getCliques(GraphNode[] nodes) {
@@ -28,7 +36,7 @@ public class MaximalCliqueTest {
 	private GraphNode[] flipXY(GraphNode[] a) {
 		GraphNode[] r = new GraphNode[a.length];
 		for (int i = 0; i < a.length; i++) {
-			r[i] = new GraphNode(a[i].startY, a[i].endY, a[i].startX, a[i].endX, a[i].weight);
+			r[i] = new GraphNode(a[i].startY, a[i].endY, a[i].startX, a[i].endX, new EvidenceMetrics(a[i].evidence));
 		}
 		return r;
 	}
@@ -46,11 +54,15 @@ public class MaximalCliqueTest {
 	}
 	private void go(GraphNode[] input, GraphNode... expected) {		
 		assertMatches(expected, getCliques(input));
-		assertMatches(flipXY(expected), flipXY(getCliques(input)));
+		assertMatches(flipXY(expected), getCliques(flipXY(input)));
 	}
 	@Test
 	public void single() {
-		go(new GraphNode[] {N(1,2,3,4)}, N(1,2,3,4));
+		go(new GraphNode[] {N(1,2,3,4,2)}, N(1,2,3,4,2));
+	}
+	@Test
+	public void duplicate() {
+		go(new GraphNode[] {N(1,2,3,4), N(1,2,3,4)}, N(1,2,3,4,2));
 	}
 	@Test
 	public void no_overlap() {
@@ -170,6 +182,7 @@ public class MaximalCliqueTest {
 	}
 	@Test
 	public void weighted() {
+		go(new GraphNode[] {N(4,4,1,1,1), N(4,4,1,1,2)}, N(4,4,1,1,3));
 		go(new GraphNode[] {N(1,1,4,4,1), N(1,1,4,4,2)}, N(1,1,4,4,3));
 	}
 	@Test

@@ -8,6 +8,7 @@ import org.junit.Test;
 
 import au.edu.wehi.socrates.BreakendDirection;
 import au.edu.wehi.socrates.TestHelper;
+import au.edu.wehi.socrates.sam.AnomolousReadAssembly;
 
 public class DeBruijnReadGraphTest extends TestHelper {
 	private static SAMRecord R(String read) {
@@ -171,5 +172,30 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		SAMRecord result = ass.assembleVariant();
 		// pad out read qualities
 		assertEquals(result.getReadBases().length, result.getBaseQualities().length);
+	}
+	@Test
+	public void read_count_should_be_number_of_reads__with_at_least_one_kmer_on_path() {
+		DeBruijnReadGraph ass = new DeBruijnReadGraph(3, BreakendDirection.Forward);
+		ass.addRead(R(null, "ACGTT", new byte[] { 1,2,3,4,5 }, false, true), true);
+		ass.addRead(R(null, "ACGTA", new byte[] { 3,4,5,6,7 }, false, true), true);
+		ass.addRead(R(null, "AAAAA", new byte[] { 1,1,1,1,1 }, false, true), true);
+		ass.addRead(R(null, "ACGAA", new byte[] { 1,1,1,1,1 }, false, true), true);
+		AnomolousReadAssembly result = ass.assembleVariant();
+		
+		assertEquals(3, (int)result.getReadCount());
+	}
+	@Test
+	public void read_base_count_should_be_number_of_read_bases_on_returned_path() {
+		DeBruijnReadGraph ass = new DeBruijnReadGraph(3, BreakendDirection.Forward);
+		ass.addRead(R(null, "ACGTT", new byte[] { 1,2,3,4,5 }, false, true), true); // 4
+		ass.addRead(R(null, "ACGTA", new byte[] { 3,4,5,6,7 }, false, true), true); // 5
+		ass.addRead(R(null, "AAAAA", new byte[] { 1,1,1,1,1 }, false, true), true); // 0 since no kmer on path
+		ass.addRead(R(null, "ACGAA", new byte[] { 1,1,1,1,1 }, false, true), true); // 3
+		ass.addRead(R(null, "TTGTA", new byte[] { 1,1,1,1,1 }, false, true), false); // 3
+		ass.addRead(R(null, "GTACG", new byte[] { 1,1,1,1,1 }, false, true), false); // 4+3 since kmers are disconnected 
+		AnomolousReadAssembly result = ass.assembleVariant();
+		
+		assertEquals("test assumes this contruction - did I get the test case wrong?", "TACGTA", S(result.getReadBases()));
+		assertEquals(4 + 5 + 3 + 3 + 4+3, (int)result.getReadBaseCount());
 	}
 }

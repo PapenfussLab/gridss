@@ -1,6 +1,6 @@
 package au.edu.wehi.socrates;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import org.junit.Test;
 
@@ -8,7 +8,8 @@ import org.junit.Test;
 public class BreakpointSummaryTest {
 	@Test
 	public void BreakpointSummary_explicit_constructor() {
-		BreakpointSummary loc = new BreakpointSummary(1, BreakendDirection.Forward, 2, 3, 4, BreakendDirection.Backward, 5, 6, 7);
+		EvidenceMetrics em = new EvidenceMetrics();
+		BreakpointSummary loc = new BreakpointSummary(1, BreakendDirection.Forward, 2, 3, 4, BreakendDirection.Backward, 5, 6, em);
 		assertEquals(1, loc.referenceIndex);
 		assertEquals(BreakendDirection.Forward, loc.direction);
 		assertEquals(2, loc.start);
@@ -17,14 +18,17 @@ public class BreakpointSummaryTest {
 		assertEquals(BreakendDirection.Backward, loc.direction2);
 		assertEquals(5, loc.start2);
 		assertEquals(6, loc.end2);
-		assertEquals(7, loc.qual, 0);
+		assertSame(em, loc.evidence);
 	}
 	@Test
 	public void BreakpointSummary_BreakendSummary_constructor() {
+		EvidenceMetrics em1 = new EvidenceMetrics();
+		EvidenceMetrics em2 = new EvidenceMetrics();
+		EvidenceMetrics em3 = new EvidenceMetrics();
 		BreakpointSummary loc = new BreakpointSummary(
-				new BreakendSummary(1, BreakendDirection.Forward, 2, 3, 8),
-				new BreakendSummary(4, BreakendDirection.Backward, 5, 6, 9),
-				7);
+				new BreakendSummary(1, BreakendDirection.Forward, 2, 3, em1),
+				new BreakendSummary(4, BreakendDirection.Backward, 5, 6, em2),
+				em3);
 		assertEquals(1, loc.referenceIndex);
 		assertEquals(BreakendDirection.Forward, loc.direction);
 		assertEquals(2, loc.start);
@@ -33,6 +37,6 @@ public class BreakpointSummaryTest {
 		assertEquals(BreakendDirection.Backward, loc.direction2);
 		assertEquals(5, loc.start2);
 		assertEquals(6, loc.end2);
-		assertEquals(7, loc.qual, 0);
+		assertSame(em3, loc.evidence);
 	}
 }

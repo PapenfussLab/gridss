@@ -20,7 +20,7 @@ public class SequentialRealignedBreakpointFactoryTest extends TestHelper {
 		private BreakendSummary location;
 		public TestDirectedBreakpoint(int referenceIndex, int start, String id) {
 			this.id = id;
-			this.location = new BreakendSummary(referenceIndex, BreakendDirection.Forward, start, start, 0);
+			this.location = new BreakendSummary(referenceIndex, BreakendDirection.Forward, start, start, null);
 		}
 		@Override
 		public BreakendSummary getBreakendSummary() {

@@ -60,7 +60,6 @@ public class AnnotateBreakends extends CommandLineProgram {
     private Log log = Log.getInstance(AnnotateBreakends.class);
     @Override
 	protected int doWork() {
-    	SAMFileReader.setDefaultValidationStringency(SAMFileReader.ValidationStringency.SILENT);
     	try {
     		if (METRICS == null) {
     			METRICS = FileNamingConvention.getMetrics(INPUT);
@@ -79,6 +78,14 @@ public class AnnotateBreakends extends CommandLineProgram {
     		if (FileNamingConvention.getBreakpointVcf(INPUT).exists()) {
     			// single input file
     		}
+    		
+    		// For each breakend
+    			// Get all DirectedEvidence for breakend
+    			// Get reference evidence
+    			// annotate call with evidence
+    				// including setting untemplated sequence
+    			// write annotated call
+    		
     	} catch (IOException e) {
     		log.error(e);
     		throw new RuntimeException(e);

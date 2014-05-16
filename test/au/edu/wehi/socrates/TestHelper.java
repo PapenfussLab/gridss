@@ -16,10 +16,12 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMTag;
+import htsjdk.samtools.SAMTagUtil;
 import htsjdk.samtools.SamPairUtil;
 import htsjdk.samtools.util.ProgressLoggerInterface;
 
 import org.apache.commons.lang3.StringUtils;
+
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
@@ -44,7 +46,9 @@ public class TestHelper {
 	static public SAMFileHeader getHeader() {
 		SAMFileHeader header = new SAMFileHeader();
 		header.setSequenceDictionary(getSequenceDictionary());
-		header.addReadGroup(new SAMReadGroupRecord("RG"));
+		SAMReadGroupRecord rg = new SAMReadGroupRecord("RG");
+		rg.setSample("sample");
+		header.addReadGroup(rg);
 		return header;
 	}
 	static public SAMSequenceDictionary getSequenceDictionary() {
@@ -86,12 +90,14 @@ public class TestHelper {
 		mapped.setReadNegativeStrandFlag(!forward);
 		mapped.setReadName(String.format("%s-%d-%d-%s", cigar, referenceIndex, pos, forward));
 		mapped.setMappingQuality(10);
+		mapped.setFirstOfPairFlag(true);
 		clean(mapped);
 		SAMRecord unmapped = Unmapped(mapped.getReadLength());
+		unmapped.setSecondOfPairFlag(true);
 		clean(mapped, unmapped);
 		return new SAMRecord[] { mapped, unmapped };
 	}
-	static public NonReferenceReadPair NRRP(SAMRecord... pair) {		
+	static public NonReferenceReadPair NRRP(SAMRecord... pair) {
 		return new NonReferenceReadPair(pair[0], pair[1], getContext().getMetrics().getMaxFragmentSize());
 	}
 	static public SoftClipEvidence SCE(BreakendDirection direction, SAMRecord... pair) {
@@ -134,6 +140,12 @@ public class TestHelper {
 	static public SAMRecord[] withQual(byte[] seq, SAMRecord... data) {
 		for (SAMRecord r : data) {
 			r.setBaseQualities(seq);
+		}
+		return data;
+	}
+	static public SAMRecord[] withMapq(int mapq, SAMRecord... data) {
+		for (SAMRecord r : data) {
+			r.setMappingQuality(mapq);
 		}
 		return data;
 	}
@@ -208,7 +220,7 @@ public class TestHelper {
 			record.setReadName("placeholderReadName");
 		}
 		if (record.getReadGroup() == null) {
-			record.setAttribute(SAMTag.RG.name(), "RG");
+			record.setAttribute(SAMTag.RG.name(), getHeader().getReadGroups().get(0).getId());
 		}
 		if (record.getReferenceIndex() != null && record.getReferenceIndex() >= 0) {
 			record.setReadUnmappedFlag(false);
@@ -219,6 +231,10 @@ public class TestHelper {
 	public static void clean(SAMRecord r1, SAMRecord r2) {
 		clean(r1);
 		clean(r2);
+		r1.setFirstOfPairFlag(true);
+		r2.setFirstOfPairFlag(false);
+		r1.setSecondOfPairFlag(false);
+		r2.setSecondOfPairFlag(true);
 		r2.setReadName(r1.getReadName());
 		r1.setReadPairedFlag(true);
 		r2.setReadPairedFlag(true);

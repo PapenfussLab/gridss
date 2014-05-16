@@ -1,6 +1,5 @@
 package au.edu.wehi.socrates;
 
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -15,8 +14,8 @@ import au.edu.wehi.socrates.vcf.EvidenceAttributes;
 public class SoftClipEvidence implements DirectedBreakpoint {
 	private final ProcessingContext processContext;
 	private final SAMRecord record;
-	private final SAMRecord realigned;
 	private final BreakendSummary location;
+	private final RealignedBreakpoint realigned;
 	public SoftClipEvidence(ProcessingContext processContext, BreakendDirection direction, SAMRecord record, SAMRecord realigned) {
 		if (record == null) throw new IllegalArgumentException("record is null");
 		if (direction == null) throw new IllegalArgumentException("direction is null");
@@ -24,48 +23,30 @@ public class SoftClipEvidence implements DirectedBreakpoint {
 		if (record.getReadBases() == null || record.getReadBases() == SAMRecord.NULL_SEQUENCE ) throw new IllegalArgumentException(String.format("record %s missing sequence information", record.getReadName()));
 		this.processContext = processContext;
 		this.record = record;
-		this.realigned = realigned;
-		this.location = calculateLocation(direction);
-		addSoftClipMetrics();
+		int pos = direction == BreakendDirection.Forward ? record.getAlignmentEnd() : record.getAlignmentStart();
+		BreakendSummary local = new BreakendSummary(record.getReferenceIndex(), direction, pos, pos, new EvidenceMetrics());		
+		local.evidence.set(EvidenceAttributes.SOFT_CLIP_READ_COUNT, 1);
+		//local.evidence.set(EvidenceAttributes.SOFT_CLIP_MAX_LENGTH, getSoftClipLength());
+		local.evidence.set(EvidenceAttributes.SOFT_CLIP_TOTAL_LENGTH, getSoftClipLength(direction, record));
+		if (realigned != null && !realigned.getReadUnmappedFlag()) {
+			this.realigned = new RealignedBreakpoint(local, realigned);
+			this.location = this.realigned.getBreakpointSummary();
+		} else {
+			this.location = local;
+			this.realigned = null;
+		}
 		if (getSoftClipLength() == 0) {
 			throw new IllegalArgumentException(String.format("record %s is not %s soft clipped", record.getReadName(), direction));
 		}
+	}
+	public static int getSoftClipLength(BreakendDirection direction, SAMRecord record) {
+		return direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipLength(record) : SAMRecordUtil.getStartSoftClipLength(record); 
 	}
 	public SoftClipEvidence(ProcessingContext processContext, BreakendDirection direction, SAMRecord record) {
 		this(processContext, direction, record, null);
 	}
 	public SoftClipEvidence(SoftClipEvidence evidence, SAMRecord realigned) {
 		this(evidence.processContext, evidence.location.direction, evidence.record, realigned);
-	}
-	private void addSoftClipMetrics() {
-		location.evidence.set(EvidenceAttributes.SOFT_CLIP_READ_COUNT, 1);
-		location.evidence.set(EvidenceAttributes.SOFT_CLIP_MAX_LENGTH, getSoftClipLength());
-		location.evidence.set(EvidenceAttributes.SOFT_CLIP_TOTAL_LENGTH, getSoftClipLength());
-		if (realigned != null && !realigned.getReadUnmappedFlag()) {
-			location.evidence.set(EvidenceAttributes.REALIGN_MAX_LENGTH, getSoftClipLength() - getUntemplatedSequenceLength());
-			location.evidence.set(EvidenceAttributes.REALIGN_TOTAL_LENGTH, getSoftClipLength() - getUntemplatedSequenceLength());
-			location.evidence.set(EvidenceAttributes.REALIGN_MAX_MAPQ, realigned.getMappingQuality());
-			location.evidence.set(EvidenceAttributes.REALIGN_TOTAL_MAPQ, realigned.getMappingQuality());
-		}
-	}
-	private BreakendSummary calculateLocation(BreakendDirection direction) {
-		int pos = direction == BreakendDirection.Forward ? record.getAlignmentEnd() : record.getAlignmentStart(); 
-		BreakendSummary location = new BreakendSummary(record.getReferenceIndex(), direction, pos, pos, new EvidenceMetrics());
-		if (realigned != null && !realigned.getReadUnmappedFlag()) {
-			int targetPosition;
-			BreakendDirection targetDirection;
-			if ((direction == BreakendDirection.Forward && realigned.getReadNegativeStrandFlag()) ||
-					(direction == BreakendDirection.Backward && !realigned.getReadNegativeStrandFlag())) {
-				targetDirection = BreakendDirection.Forward;
-				targetPosition = realigned.getAlignmentEnd();
-			} else  {
-				targetDirection = BreakendDirection.Backward;
-				targetPosition = realigned.getAlignmentStart();
-			}
-			BreakendSummary targetLocation = new BreakendSummary(realigned.getReferenceIndex(), targetDirection, targetPosition, targetPosition, null);
-			location = new BreakpointSummary(location, targetLocation, new EvidenceMetrics());
-		}
-		return location;
 	}
 	@Override
 	public String getEvidenceID() {
@@ -103,27 +84,17 @@ public class SoftClipEvidence implements DirectedBreakpoint {
 	public SAMRecord getSAMRecord() {
 		return this.record;
 	}
-	public SAMRecord getSoftClipRealignmentSAMRecord() {
-		return this.realigned;
-	}
 	public int getSoftClipLength() {
 		return getSoftClipLength(location.direction, record); 
 	}
-	public static int getSoftClipLength(BreakendDirection direction, SAMRecord record) {
-		return direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipLength(record) : SAMRecordUtil.getStartSoftClipLength(record); 
-	}
+	
 	/**
 	 * Number of unmapped bases at the breakpoint 
 	 * @return Number of unmapped bases at the breakpoint
 	 */
 	public int getUntemplatedSequenceLength() {
 		if (location instanceof BreakpointSummary) {
-			BreakpointSummary interval = (BreakpointSummary)location;
-			if (interval.direction2 == BreakendDirection.Forward) {
-				return SAMRecordUtil.getEndSoftClipLength(realigned);
-			} else {
-				return SAMRecordUtil.getStartSoftClipLength(realigned);
-			}
+			return realigned.getInsertedSequenceLength();
 		} else {
 			return getSoftClipLength();
 		}
@@ -133,12 +104,10 @@ public class SoftClipEvidence implements DirectedBreakpoint {
 	 * @return
 	 */
 	public String getUntemplatedSequence() {
-		int untemplatedSequenceLength = getUntemplatedSequenceLength();
-		String s = new String(getBreakpointSequence(), StandardCharsets.US_ASCII);
-		if (getBreakendSummary().direction == BreakendDirection.Forward) {
-			return s.substring(0, untemplatedSequenceLength);
+		if (location instanceof BreakpointSummary) {
+			return realigned.getInsertedSequence();
 		} else {
-			return s.substring(s.length() - untemplatedSequenceLength);
+			return new String(getBreakpointSequence(), StandardCharsets.US_ASCII);
 		}
 	}
 	/**

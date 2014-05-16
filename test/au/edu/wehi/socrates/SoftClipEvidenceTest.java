@@ -6,6 +6,8 @@ import htsjdk.samtools.SAMRecord;
 
 import org.junit.Test;
 
+import au.edu.wehi.socrates.vcf.EvidenceAttributes;
+
 public class SoftClipEvidenceTest extends TestHelper {
 	@Test(expected=IllegalArgumentException.class)
 	public void constructor_should_require_soft_clip_b() {
@@ -120,7 +122,6 @@ public class SoftClipEvidenceTest extends TestHelper {
 		SoftClipEvidence c1 = new SoftClipEvidence(getContext(), BreakendDirection.Forward, r, realigned);
 		SoftClipEvidence c2 = new SoftClipEvidence(new SoftClipEvidence(getContext(), BreakendDirection.Forward, r), realigned);
 		assertEquals(c1.getSAMRecord(), c2.getSAMRecord());
-		assertEquals(c1.getSoftClipRealignmentSAMRecord(), c2.getSoftClipRealignmentSAMRecord());
 		assertEquals(c1.getEvidenceID(), c2.getEvidenceID());
 		assertEquals(c1.getBreakendSummary().direction, c2.getBreakendSummary().direction);
 		assertEquals(c1.getBreakendSummary().start, c2.getBreakendSummary().start);
@@ -130,7 +131,6 @@ public class SoftClipEvidenceTest extends TestHelper {
 		assertEquals(((BreakpointSummary)c1.getBreakendSummary()).start2, ((BreakpointSummary)c2.getBreakendSummary()).start2);
 		assertEquals(((BreakpointSummary)c1.getBreakendSummary()).end2, ((BreakpointSummary)c2.getBreakendSummary()).end2);
 		assertEquals(((BreakpointSummary)c1.getBreakendSummary()).referenceIndex2, ((BreakpointSummary)c2.getBreakendSummary()).referenceIndex2);
-		assertEquals(c1.getBreakendSummary().qual, c2.getBreakendSummary().qual, 0);
 	}
 	@Test
 	public void getEvidenceID_paired_should_encode_read_direction_and_pair_info() {
@@ -229,5 +229,11 @@ public class SoftClipEvidenceTest extends TestHelper {
 		assertEquals(2, new SoftClipEvidence(new SoftClipEvidence(getContext(), BreakendDirection.Forward, Read(0, 1, "4M6S")), onNegative(Read(0, 1, "1S3M2S"))[0]).getUntemplatedSequenceLength());
 		assertEquals(2, new SoftClipEvidence(new SoftClipEvidence(getContext(), BreakendDirection.Backward, Read(0, 1, "6S4M")), Read(0, 1, "1S3M2S")).getUntemplatedSequenceLength());
 		assertEquals(1, new SoftClipEvidence(new SoftClipEvidence(getContext(), BreakendDirection.Backward, Read(0, 1, "6S4M")), onNegative(Read(0, 1, "1S3M2S"))[0]).getUntemplatedSequenceLength());
+	}
+	@Test
+	public void should_set_sc_evidence() {
+		EvidenceMetrics e = new SoftClipEvidence(getContext(), BreakendDirection.Backward, Read(0, 1, "3S4M")).getBreakendSummary().evidence;
+		assertEquals(1, e.get(EvidenceAttributes.SOFT_CLIP_READ_COUNT), 1);
+		assertEquals(1, e.get(EvidenceAttributes.SOFT_CLIP_TOTAL_LENGTH), 3);
 	}
 }
