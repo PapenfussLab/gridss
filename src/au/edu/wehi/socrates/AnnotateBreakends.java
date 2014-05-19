@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.Iterator;
 
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
@@ -17,7 +18,6 @@ import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
-
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
@@ -72,13 +72,11 @@ public class AnnotateBreakends extends CommandLineProgram {
     		IOUtil.assertFileIsReadable(METRICS);
     		IOUtil.assertFileIsWritable(OUTPUT);
     		
-    		// Sequential processing of variants:
-    		// open VCF
-    		// (assert sorted?)
-    		if (FileNamingConvention.getBreakpointVcf(INPUT).exists()) {
-    			// single input file
-    		}
     		
+    		SequentialReferenceCoverageLookup referenceLookup = new SequentialReferenceCoverageLookup(windowSize, reads)
+    		final Iterator<SAMRecord> allReads ;
+    		final Iterator<DirectedEvidence> evidenceIt = getAllEvidence();
+    		final Iterator<VariantContextDirectedBreakpoint> toAnnotateIt = getCallsToAnnotate();
     		// For each breakend
     			// Get all DirectedEvidence for breakend
     			// Get reference evidence
@@ -92,6 +90,22 @@ public class AnnotateBreakends extends CommandLineProgram {
     	}
         return 0;
     }
+	private Iterator<VariantContextDirectedBreakpoint> getCallsToAnnotate() throws IOException {
+		// open VCF
+		// (assert sorted?)
+		if (FileNamingConvention.getBreakpointVcf(INPUT).exists()) {
+			log.info("Using single breakpoint vcf call file ", FileNamingConvention.getBreakpointVcf(INPUT));
+			// single input file
+		} else {
+			log.info("Using per chromosome paired breakpoint vcf call file ", FileNamingConvention.getBreakpointVcf(INPUT));
+			
+			log.info("Sorting breakends for chr in memory");
+			// Merge calls for (chrA, chrB) for A<B 
+			
+			// it = Iterators.concat(it, new);
+		}
+		throw new RuntimeException("NYI");
+	}
 	public static void main(String[] argv) {
         System.exit(new GenerateDirectedBreakpoints().instanceMain(argv));
     }

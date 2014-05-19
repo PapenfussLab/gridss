@@ -4,7 +4,7 @@ import htsjdk.samtools.SAMRecord;
 
 import org.apache.commons.lang3.StringUtils;
 
-import au.edu.wehi.socrates.vcf.EvidenceAttributes;
+import au.edu.wehi.socrates.vcf.VcfAttributes;
 
 /**
  * A read pair that does not support the reference sequence. This can be an OEA, or DP read pair.
@@ -29,17 +29,17 @@ public class NonReferenceReadPair implements DirectedEvidence {
 	}
 	private static EvidenceMetrics calculateOeaMetrics(SAMRecord local, SAMRecord remote) {
 		EvidenceMetrics m = new EvidenceMetrics();
-		m.set(EvidenceAttributes.UNMAPPED_MATE_READ_COUNT, 1);
+		m.set(VcfAttributes.UNMAPPED_MATE_READ_COUNT, 1);
 		//m.set(EvidenceAttributes.UNMAPPED_MATE_MAX_MAPQ, local.getMappingQuality());
-		m.set(EvidenceAttributes.UNMAPPED_MATE_TOTAL_MAPQ, local.getMappingQuality());
+		m.set(VcfAttributes.UNMAPPED_MATE_TOTAL_MAPQ, local.getMappingQuality());
 		return m;
 	}
 	private static EvidenceMetrics calculateDpMetrics(SAMRecord local, SAMRecord remote) {
 		EvidenceMetrics m = new EvidenceMetrics();
 		int mapq = Math.min(local.getMappingQuality(), remote.getMappingQuality());
-		m.set(EvidenceAttributes.DISCORDANT_READ_PAIR_COUNT, 1);
+		m.set(VcfAttributes.DISCORDANT_READ_PAIR_COUNT, 1);
 		//m.set(EvidenceAttributes.DISCORDANT_READ_PAIR_MAX_MAPQ, mapq);
-		m.set(EvidenceAttributes.DISCORDANT_READ_PAIR_TOTAL_MAPQ, mapq);
+		m.set(VcfAttributes.DISCORDANT_READ_PAIR_TOTAL_MAPQ, mapq);
 		return m;
 	}
 	/**

@@ -1,11 +1,8 @@
 package au.edu.wehi.socrates;
 
-import htsjdk.variant.variantcontext.VariantContextBuilder;
-
 import java.util.List;
 
-import au.edu.wehi.socrates.vcf.VcfConstants;
-import au.edu.wehi.socrates.vcf.VcfSvConstants;
+import au.edu.wehi.socrates.vcf.VcfAttributes;
 
 import com.google.common.collect.Lists;
 
@@ -35,29 +32,30 @@ public class StructuralVariationCallBuilder {
 		return this;
 	}
 	public VariantContextDirectedBreakpoint make() {
-		VariantContextBuilder builder = createBuilder()
-			.id(getID())
-			.log10PError(call.evidence.getScore() / -10); // qual = phred for now
-		int oea = 0, dp = 0;
-		for (NonReferenceReadPair nrp : nrpList) {
-			if (nrp.getRemoteReferenceIndex() == -1) {
-				oea++;
+		VariantContextDirectedBreakpointBuilder builder = createBuilder();
+		
+		EvidenceMetrics m = new EvidenceMetrics();
+		double oeaMapq = 0, dpMapq = 0;
+		for (NonReferenceReadPair e : nrpList) {
+			m.add(e.getBreakendSummary().evidence);
+			if (e.getRemoteReferenceIndex() == -1) {
+				oeaMapq = Math.max(e.getBreakendSummary().evidence.get(VcfAttributes.UNMAPPED_MATE_TOTAL_MAPQ), oeaMapq);
 			} else {
-				dp++;
+				dpMapq = Math.max(e.getBreakendSummary().evidence.get(VcfAttributes.DISCORDANT_READ_PAIR_TOTAL_MAPQ), dpMapq);
 			}
 		}
+		for (SoftClipEvidence e : scList) {
+			m.add(e.getBreakendSummary().evidence);
+		}
+		for (VariantContextDirectedBreakpoint e : assList) {
+			m.add(e.getBreakendSummary().evidence);
+		}
 		builder
-			.attribute(VcfConstants.SOFT_CLIP_READ_COUNT, scList.size())
-			.attribute(VcfConstants.DISCORDANT_READ_PAIR_COUNT, dp)
-			.attribute(VcfConstants.UNMAPPED_MATE_READ_COUNT, oea);
-		
-		if (referenceReadCount >= 0) {
-			builder.attribute(VcfConstants.REFERENCE_READ_COUNT, referenceReadCount);
-		}
-		if (referenceSpanningPairCount >= 0) {
-			builder.attribute(VcfConstants.REFERENCE_SPANNING_READ_PAIR_COUNT, referenceSpanningPairCount);
-		}
-		return new StructuralVariationCall(processContext, builder.make());
+			.evidence(m)
+			.id(getID())
+			.attribute(VcfAttributes.REFERENCE_READ_COUNT.attribute(), referenceReadCount)
+			.attribute(VcfAttributes.REFERENCE_SPANNING_READ_PAIR_COUNT.attribute(), referenceSpanningPairCount);
+		return new VariantContextDirectedBreakpoint(processContext, builder.make());
 	}
 	public StructuralVariationCallBuilder referenceReads(int count) {
 		referenceReadCount = count;
@@ -98,13 +96,10 @@ public class StructuralVariationCallBuilder {
 			builder = new VariantContextDirectedBreakpointBuilder(processContext, ass);
 		} else if (sce != null) {
 			builder = new VariantContextDirectedBreakpointBuilder(processContext)
-				.breakpoint(sce);
-			if (sce.getSoftClipRealignmentSAMRecord() != null) {
-				builder.realigned(sce, sce.getSoftClipRealignmentSAMRecord());
-			}
+				.breakend(sce.getBreakendSummary(), sce.getUntemplatedSequence());
 		} else {
 			builder = new VariantContextDirectedBreakpointBuilder(processContext)
-				.location(call, "");
+				.breakend(call, "");
 		}
 		return builder;
 	}
@@ -118,8 +113,8 @@ public class StructuralVariationCallBuilder {
 			} else if (sce.getBreakendSummary().getClass() == best.getBreakendSummary().getClass()) {
 				if (sce.getBreakendSummary() instanceof BreakpointSummary) {
 					// both BreakpointSummary
-					if (sce.getSoftClipRealignmentSAMRecord().getMappingQuality() > best.getSoftClipRealignmentSAMRecord().getMappingQuality()) {
-						// we have a better soft-clip mapping
+					if (sce.getSoftClipLength() < best.getSoftClipLength()) {
+						// take the longest soft clip
 						best = sce;
 					}
 				} else {

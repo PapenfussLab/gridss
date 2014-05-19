@@ -98,4 +98,13 @@ public class BreakendSummary {
 			        .result();
 		  }
 	};
+	public static Ordering<BreakendSummary> ByEndStart = new Ordering<BreakendSummary>() {
+		public int compare(BreakendSummary o1, BreakendSummary o2) {
+			  return ComparisonChain.start()
+			        .compare(o1.referenceIndex, o2.referenceIndex)
+			        .compare(o1.end, o2.end)
+			        .compare(o1.start, o2.start)
+			        .result();
+		  }
+	};
 }

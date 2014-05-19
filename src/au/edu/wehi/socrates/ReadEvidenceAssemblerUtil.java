@@ -1,6 +1,6 @@
 package au.edu.wehi.socrates;
 
-import au.edu.wehi.socrates.vcf.EvidenceAttributes;
+import au.edu.wehi.socrates.vcf.VcfAttributes;
 
 public class ReadEvidenceAssemblerUtil {
 	private ReadEvidenceAssemblerUtil() { }
@@ -19,9 +19,9 @@ public class ReadEvidenceAssemblerUtil {
 			double breakpointQuality
 			) {
 		EvidenceMetrics evidence = new EvidenceMetrics();
-		evidence.set(EvidenceAttributes.ASSEMBLY_READS, readCount);
-		evidence.set(EvidenceAttributes.ASSEMBLY_BASES, readBaseCount);
-		evidence.set(EvidenceAttributes.ASSEMBLY_LENGTH, fullAssembly.length);
+		evidence.set(VcfAttributes.ASSEMBLY_READS, readCount);
+		evidence.set(VcfAttributes.ASSEMBLY_BASES, readBaseCount);
+		evidence.set(VcfAttributes.ASSEMBLY_LENGTH, fullAssembly.length);
 		
 		BreakendSummary summary = new BreakendSummary(referenceIndex, direction, position, position, evidence);
 		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(processContext)

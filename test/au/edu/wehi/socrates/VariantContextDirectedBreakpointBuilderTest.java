@@ -10,7 +10,7 @@ import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 import org.junit.Test;
 
-import au.edu.wehi.socrates.vcf.EvidenceAttributes;
+import au.edu.wehi.socrates.vcf.VcfAttributes;
 import au.edu.wehi.socrates.vcf.VcfConstants;
 import au.edu.wehi.socrates.vcf.VcfSvConstants;
 
@@ -109,7 +109,7 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 			.breakend(new BreakendSummary(0, FWD, 1, 1, null), null)
 			.realignmentFailed();
 		VariantContextDirectedBreakpoint bp = builder.make();
-		assertTrue(bp.hasAttribute(VcfConstants.REALIGNMENT_FAILURE));
+		assertTrue(bp.hasAttribute(VcfAttributes.REALIGNMENT_FAILURE.attribute()));
 	}
 	public VariantContextDirectedBreakpoint test_mated_breakend(BreakendDirection direction, boolean realignPositive, String bpString, String realignedCigar, String expectedAllele) {
 		VariantContextDirectedBreakpoint dba = ReadEvidenceAssemblerUtil.create(getContext(), "test", 0, 1, direction, B(bpString), B(bpString), 1, 1, 0);
@@ -178,7 +178,7 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 	}
 	@Test
 	public void evidence_should_round_trip() {
-		for (EvidenceAttributes a : EvidenceAttributes.values()) {
+		for (VcfAttributes a : VcfAttributes.evidenceValues()) {
 			EvidenceMetrics em = new EvidenceMetrics();
 			em.set(a, 1);
 			VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext())

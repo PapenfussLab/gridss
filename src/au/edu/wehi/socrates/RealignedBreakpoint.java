@@ -3,7 +3,7 @@ package au.edu.wehi.socrates;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import au.edu.wehi.socrates.vcf.EvidenceAttributes;
+import au.edu.wehi.socrates.vcf.VcfAttributes;
 import au.edu.wehi.socrates.vcf.VcfConstants;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
@@ -41,10 +41,10 @@ public class RealignedBreakpoint {
 		BreakendSummary remoteLocation = new BreakendSummary(realigned.getReferenceIndex(), remoteDirection, remotePosition, remotePosition, null);
 		summary = new BreakpointSummary(local, remoteLocation, local.evidence == null ? new EvidenceMetrics() : local.evidence);
 		EvidenceMetrics evidence = summary.evidence;
-		evidence.set(EvidenceAttributes.REALIGN_MAX_LENGTH, realigned.getReadLength());
-		evidence.set(EvidenceAttributes.REALIGN_TOTAL_LENGTH, realigned.getReadLength());
+		evidence.set(VcfAttributes.REALIGN_MAX_LENGTH, realigned.getReadLength());
+		evidence.set(VcfAttributes.REALIGN_TOTAL_LENGTH, realigned.getReadLength());
 		//evidence.set(EvidenceAttributes.REALIGN_MAX_MAPQ, realigned.getMappingQuality());
-		evidence.set(EvidenceAttributes.REALIGN_TOTAL_MAPQ, realigned.getMappingQuality());
+		evidence.set(VcfAttributes.REALIGN_TOTAL_MAPQ, realigned.getMappingQuality());
 		if (local instanceof BreakpointSummary) {
 			BreakpointSummary bp = (BreakpointSummary)local;
 			if (BreakpointSummary.ByStartStart2EndEnd2.compare(bp, summary) != 0) {

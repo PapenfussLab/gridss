@@ -7,7 +7,7 @@ import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 import org.junit.Test;
 
-import au.edu.wehi.socrates.vcf.EvidenceAttributes;
+import au.edu.wehi.socrates.vcf.VcfAttributes;
 
 
 public class RealignedBreakpointTest extends TestHelper {
@@ -20,10 +20,10 @@ public class RealignedBreakpointTest extends TestHelper {
 	@Test
 	public void should_set_realign_evidence() {
 		RealignedBreakpoint rbp = new RealignedBreakpoint(new BreakendSummary(0, FWD, 1, 1, null), withMapq(10, Read(0, 1, "5M"))[0]);
-		assertEquals(5, rbp.getBreakpointSummary().evidence.get(EvidenceAttributes.REALIGN_MAX_LENGTH));
-		assertEquals(5, rbp.getBreakpointSummary().evidence.get(EvidenceAttributes.REALIGN_TOTAL_LENGTH));
+		assertEquals(5, rbp.getBreakpointSummary().evidence.get(VcfAttributes.REALIGN_MAX_LENGTH));
+		assertEquals(5, rbp.getBreakpointSummary().evidence.get(VcfAttributes.REALIGN_TOTAL_LENGTH));
 		//assertEquals(10, rbp.getBreakpointSummary().evidence.get(EvidenceAttributes.REALIGN_MAX_MAPQ));
-		assertEquals(10, rbp.getBreakpointSummary().evidence.get(EvidenceAttributes.REALIGN_TOTAL_MAPQ));
+		assertEquals(10, rbp.getBreakpointSummary().evidence.get(VcfAttributes.REALIGN_TOTAL_MAPQ));
 	}
 	public void test_seq(String originalBreakpointSequence, String cigar, BreakendDirection direction, boolean alignNegativeStrand, String expectedUntemplatedSequence) {
 		SAMRecord r = Read(0, 1, cigar);

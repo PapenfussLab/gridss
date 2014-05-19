@@ -8,7 +8,7 @@ import java.util.List;
 import org.junit.Test;
 
 import au.edu.wehi.socrates.EvidenceMetrics;
-import au.edu.wehi.socrates.vcf.EvidenceAttributes;
+import au.edu.wehi.socrates.vcf.VcfAttributes;
 
 import com.google.common.collect.Lists;
 
@@ -21,7 +21,7 @@ public class MaximalCliqueTest {
 	}
 	private EvidenceMetrics EM(int weight) {
 		EvidenceMetrics e = new EvidenceMetrics();
-		e.set(EvidenceAttributes.SOFT_CLIP_READ_COUNT, weight);
+		e.set(VcfAttributes.SOFT_CLIP_READ_COUNT, weight);
 		return e;
 	}
 	MaximalClique graph; 

@@ -6,7 +6,7 @@ import htsjdk.samtools.SAMRecord;
 
 import org.junit.Test;
 
-import au.edu.wehi.socrates.vcf.EvidenceAttributes;
+import au.edu.wehi.socrates.vcf.VcfAttributes;
 
 public class SoftClipEvidenceTest extends TestHelper {
 	@Test(expected=IllegalArgumentException.class)
@@ -233,7 +233,7 @@ public class SoftClipEvidenceTest extends TestHelper {
 	@Test
 	public void should_set_sc_evidence() {
 		EvidenceMetrics e = new SoftClipEvidence(getContext(), BreakendDirection.Backward, Read(0, 1, "3S4M")).getBreakendSummary().evidence;
-		assertEquals(1, e.get(EvidenceAttributes.SOFT_CLIP_READ_COUNT), 1);
-		assertEquals(1, e.get(EvidenceAttributes.SOFT_CLIP_TOTAL_LENGTH), 3);
+		assertEquals(1, e.get(VcfAttributes.SOFT_CLIP_READ_COUNT), 1);
+		assertEquals(1, e.get(VcfAttributes.SOFT_CLIP_TOTAL_LENGTH), 3);
 	}
 }

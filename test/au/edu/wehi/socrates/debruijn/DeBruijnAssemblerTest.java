@@ -12,7 +12,7 @@ import au.edu.wehi.socrates.VariantContextDirectedBreakpoint;
 import au.edu.wehi.socrates.DirectedEvidence;
 import au.edu.wehi.socrates.SoftClipEvidence;
 import au.edu.wehi.socrates.TestHelper;
-import au.edu.wehi.socrates.vcf.EvidenceAttributes;
+import au.edu.wehi.socrates.vcf.VcfAttributes;
 
 import com.google.common.collect.Lists;
 
@@ -77,7 +77,7 @@ public class DeBruijnAssemblerTest extends TestHelper {
 		assertEquals(1, r.size());
 		assertEquals("ACGTGA", r.get(0).getBreakpointSequenceString());
 		assertEquals("A", r.get(0).getAnchorSequenceString());
-		assertEquals(2, r.get(0).getBreakendSummary().evidence.get(EvidenceAttributes.ASSEMBLY_READS));
+		assertEquals(2, r.get(0).getBreakendSummary().evidence.get(VcfAttributes.ASSEMBLY_READS));
 		assertEquals(BreakendDirection.Forward, r.get(0).getBreakendSummary().direction);
 		assertEquals(1, r.get(0).getBreakendSummary().start);
 		assertEquals(1, r.get(0).getBreakendSummary().end);

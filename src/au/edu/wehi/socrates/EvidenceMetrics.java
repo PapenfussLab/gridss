@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 import com.sun.tools.javac.code.Attribute.Array;
 
-import au.edu.wehi.socrates.vcf.EvidenceAttributes;
+import au.edu.wehi.socrates.vcf.VcfAttributes;
 
 /**
  * Metrics associated with breakpoint evidence
@@ -13,10 +13,10 @@ import au.edu.wehi.socrates.vcf.EvidenceAttributes;
  */
 public class EvidenceMetrics {
 	private final int[] v;
-	public int get(EvidenceAttributes evidence) {
+	public int get(VcfAttributes evidence) {
 		return v[evidence.ordinal()];
 	}
-	public void set(EvidenceAttributes evidence, int value) {
+	public void set(VcfAttributes evidence, int value) {
 		v[evidence.ordinal()] = value;
 	}
 	@Override
@@ -27,7 +27,7 @@ public class EvidenceMetrics {
 		v = Arrays.copyOf(evidence.v, evidence.v.length);
 	}
 	public EvidenceMetrics() {
-		 v = new int[EvidenceAttributes.ASSEMBLY_READS.ordinal() + 1];
+		 v = new int[VcfAttributes.ASSEMBLY_READS.ordinal() + 1];
 	}
 	/**
 	 * Adds the given additional support to the current evidence
@@ -53,15 +53,15 @@ public class EvidenceMetrics {
 		}
 	}
 	public double getScore() {
-		return get(EvidenceAttributes.ASSEMBLY_READS)
-				+ get(EvidenceAttributes.DISCORDANT_READ_PAIR_COUNT)
-				+ get(EvidenceAttributes.UNMAPPED_MATE_READ_COUNT)
-				+ get(EvidenceAttributes.SOFT_CLIP_READ_COUNT);
+		return get(VcfAttributes.ASSEMBLY_READS)
+				+ get(VcfAttributes.DISCORDANT_READ_PAIR_COUNT)
+				+ get(VcfAttributes.UNMAPPED_MATE_READ_COUNT)
+				+ get(VcfAttributes.SOFT_CLIP_READ_COUNT);
 	}
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		for (EvidenceAttributes a : EvidenceAttributes.values()) {
+		for (VcfAttributes a : VcfAttributes.evidenceValues()) {
 			if (v[a.ordinal()] != 0) {
 				sb.append(a.attribute());
 				sb.append('=');

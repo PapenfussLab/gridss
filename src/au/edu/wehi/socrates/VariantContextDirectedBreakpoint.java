@@ -5,7 +5,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 
-import au.edu.wehi.socrates.vcf.EvidenceAttributes;
+import au.edu.wehi.socrates.vcf.VcfAttributes;
 import au.edu.wehi.socrates.vcf.VcfConstants;
 import au.edu.wehi.socrates.vcf.VcfSvConstants;
 import htsjdk.variant.variantcontext.Allele;
@@ -122,7 +122,7 @@ public class VariantContextDirectedBreakpoint extends SocratesVariantContext imp
 	}
 	private EvidenceMetrics getEvidence() {
 		EvidenceMetrics m = new EvidenceMetrics();
-		for (EvidenceAttributes a : EvidenceAttributes.values()) {
+		for (VcfAttributes a : VcfAttributes.evidenceValues()) {
 			m.set(a, getAttributeAsInt(a.attribute(), 0));
 		}
 		return m;
@@ -156,7 +156,7 @@ public class VariantContextDirectedBreakpoint extends SocratesVariantContext imp
 	public boolean isValid() {
 		return location != null;
 	}
-	public String getAssemblerProgram() { return getAttributeAsString(VcfConstants.ASSEMBLY_PROGRAM, null); }
-	public String getAssemblyConsensus() { return getAttributeAsString(VcfConstants.ASSEMBLY_CONSENSUS, ""); }
-	public double getAssemblyQuality() { return getAttributeAsDouble(VcfConstants.ASSEMBLY_QUALITY, 0); }
+	public String getAssemblerProgram() { return getAttributeAsString(VcfAttributes.ASSEMBLY_PROGRAM.attribute(), null); }
+	public String getAssemblyConsensus() { return getAttributeAsString(VcfAttributes.ASSEMBLY_CONSENSUS.attribute(), ""); }
+	public double getAssemblyQuality() { return getAttributeAsDouble(VcfAttributes.ASSEMBLY_QUALITY.attribute(), 0); }
 }

@@ -5,7 +5,7 @@ import htsjdk.samtools.SAMRecord;
 
 import org.junit.Test;
 
-import au.edu.wehi.socrates.vcf.EvidenceAttributes;
+import au.edu.wehi.socrates.vcf.VcfAttributes;
 
 
 public class EvidenceMetricsTest extends TestHelper {
@@ -24,58 +24,58 @@ public class EvidenceMetricsTest extends TestHelper {
 		m.add(new SoftClipEvidence(new SoftClipEvidence(getContext(), BreakendDirection.Backward, Read(0, 1, "6S4M")), withMapq(1,Read(0, 1, "1S3M2S"))[0]).getBreakendSummary().evidence);
 		// Assembly
 		m.add(ReadEvidenceAssemblerUtil.create(getContext(), "test", 0, 10, BreakendDirection.Backward, B("AT"), B("ATA"), 1, 1, 1).getBreakendSummary().evidence);
-		for (EvidenceAttributes a : EvidenceAttributes.values()) {
+		for (VcfAttributes a : VcfAttributes.evidenceValues()) {
 			assertNotEquals(a.name(), 0, m.get(a));
 		}
 	}
 	@Test
 	public void add_should_add_evidence() {
 		EvidenceMetrics e = new EvidenceMetrics();
-		e.set(EvidenceAttributes.ASSEMBLY_LENGTH, 5);
+		e.set(VcfAttributes.ASSEMBLY_LENGTH, 5);
 		EvidenceMetrics a = new EvidenceMetrics();
-		a.set(EvidenceAttributes.SOFT_CLIP_READ_COUNT, 2);
-		a.set(EvidenceAttributes.ASSEMBLY_BASES, 1);
+		a.set(VcfAttributes.SOFT_CLIP_READ_COUNT, 2);
+		a.set(VcfAttributes.ASSEMBLY_BASES, 1);
 		e.add(a);
 		e.add(a);
-		assertEquals(4, e.get(EvidenceAttributes.SOFT_CLIP_READ_COUNT));
-		assertEquals(2, e.get(EvidenceAttributes.ASSEMBLY_BASES));
-		assertEquals(5, e.get(EvidenceAttributes.ASSEMBLY_LENGTH));
+		assertEquals(4, e.get(VcfAttributes.SOFT_CLIP_READ_COUNT));
+		assertEquals(2, e.get(VcfAttributes.ASSEMBLY_BASES));
+		assertEquals(5, e.get(VcfAttributes.ASSEMBLY_LENGTH));
 	}
 	@Test
 	public void remove_should_subtract_evidence() {
 		EvidenceMetrics e = new EvidenceMetrics();
-		e.set(EvidenceAttributes.SOFT_CLIP_READ_COUNT, 5);
-		e.set(EvidenceAttributes.ASSEMBLY_BASES, 7);
-		e.set(EvidenceAttributes.ASSEMBLY_LENGTH, 9);
+		e.set(VcfAttributes.SOFT_CLIP_READ_COUNT, 5);
+		e.set(VcfAttributes.ASSEMBLY_BASES, 7);
+		e.set(VcfAttributes.ASSEMBLY_LENGTH, 9);
 		EvidenceMetrics a = new EvidenceMetrics();
-		a.set(EvidenceAttributes.SOFT_CLIP_READ_COUNT, 2);
-		a.set(EvidenceAttributes.ASSEMBLY_BASES, 1);
+		a.set(VcfAttributes.SOFT_CLIP_READ_COUNT, 2);
+		a.set(VcfAttributes.ASSEMBLY_BASES, 1);
 		e.remove(a);
 		e.remove(a);
-		assertEquals(1, e.get(EvidenceAttributes.SOFT_CLIP_READ_COUNT));
-		assertEquals(5, e.get(EvidenceAttributes.ASSEMBLY_BASES));
-		assertEquals(9, e.get(EvidenceAttributes.ASSEMBLY_LENGTH));
+		assertEquals(1, e.get(VcfAttributes.SOFT_CLIP_READ_COUNT));
+		assertEquals(5, e.get(VcfAttributes.ASSEMBLY_BASES));
+		assertEquals(9, e.get(VcfAttributes.ASSEMBLY_LENGTH));
 	}
 	@Test
 	public void constructor_should_deep_copy() {
 		EvidenceMetrics e = new EvidenceMetrics();
-		e.set(EvidenceAttributes.SOFT_CLIP_READ_COUNT, 5);
+		e.set(VcfAttributes.SOFT_CLIP_READ_COUNT, 5);
 		EvidenceMetrics a = new EvidenceMetrics(e);
-		e.set(EvidenceAttributes.SOFT_CLIP_READ_COUNT, 2);
-		a.set(EvidenceAttributes.SOFT_CLIP_READ_COUNT, 3);
+		e.set(VcfAttributes.SOFT_CLIP_READ_COUNT, 2);
+		a.set(VcfAttributes.SOFT_CLIP_READ_COUNT, 3);
 		
-		assertEquals(2, e.get(EvidenceAttributes.SOFT_CLIP_READ_COUNT));
-		assertEquals(3, a.get(EvidenceAttributes.SOFT_CLIP_READ_COUNT));
+		assertEquals(2, e.get(VcfAttributes.SOFT_CLIP_READ_COUNT));
+		assertEquals(3, a.get(VcfAttributes.SOFT_CLIP_READ_COUNT));
 	}
 	@Test
 	public void clone_should_deep_copy() {
 		EvidenceMetrics e = new EvidenceMetrics();
-		e.set(EvidenceAttributes.SOFT_CLIP_READ_COUNT, 5);
+		e.set(VcfAttributes.SOFT_CLIP_READ_COUNT, 5);
 		EvidenceMetrics a = e.clone();
-		e.set(EvidenceAttributes.SOFT_CLIP_READ_COUNT, 2);
-		a.set(EvidenceAttributes.SOFT_CLIP_READ_COUNT, 3);
+		e.set(VcfAttributes.SOFT_CLIP_READ_COUNT, 2);
+		a.set(VcfAttributes.SOFT_CLIP_READ_COUNT, 3);
 		
-		assertEquals(2, e.get(EvidenceAttributes.SOFT_CLIP_READ_COUNT));
-		assertEquals(3, a.get(EvidenceAttributes.SOFT_CLIP_READ_COUNT));
+		assertEquals(2, e.get(VcfAttributes.SOFT_CLIP_READ_COUNT));
+		assertEquals(3, a.get(VcfAttributes.SOFT_CLIP_READ_COUNT));
 	}
 }

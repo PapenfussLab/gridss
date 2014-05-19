@@ -27,7 +27,9 @@ import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFHeader;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.ObjectArrays;
 
 public class TestHelper {
 	public static final BreakendDirection FWD = BreakendDirection.Forward;
@@ -39,6 +41,17 @@ public class TestHelper {
 	public static String S(byte[] b) {
 		if (b == null) return null;
 		return new String(b, StandardCharsets.US_ASCII);
+	}
+	public static <T> List<T> L(T[]... list) {
+		List<T> result = Lists.newArrayList();
+		for (int i = 0; i < list.length; i++) {
+			if (list[i] == null) continue;
+			for (int j = 0; j < list[i].length; j++) {
+				if (list[i][j] == null) continue;
+				result.add(list[i][j]);
+			}
+		}
+		return result;
 	}
 	public VariantContextBuilder minimalVariant() {
 		return new VariantContextBuilder().chr("polyA").start(1).stop(1).alleles("A", "C");
@@ -168,6 +181,8 @@ public class TestHelper {
 				OEA(referenceIndex2, pos2, cigar2, forward2)[0]
 		};
 		clean(dp[0], dp[1]);
+		dp[0].setProperPairFlag(false);
+		dp[1].setProperPairFlag(false);
 		return dp;
 	}
 	static public SAMRecord Read(int referenceIndex, int pos, int length) {
@@ -185,9 +200,24 @@ public class TestHelper {
 		clean(record);
 		return record;
 	}
+	/**
+	 * Read pair supporting the reference
+	 * @param referenceIndex
+	 * @param pos
+	 * @param readLength
+	 * @return
+	 */
 	static public SAMRecord[] RP(int referenceIndex, int pos, int readLength) {
 		return RP(referenceIndex, pos, pos + 2 * readLength, readLength);
 	}
+	/**
+	 * Read pair supporting the reference
+	 * @param referenceIndex
+	 * @param pos start of first
+	 * @param pos2 start of second
+	 * @param readLength read lengths
+	 * @return read pair
+	 */
 	public static SAMRecord[] RP(int referenceIndex, int pos, int pos2, int readLength) {
 		SAMRecord read1 = Read(referenceIndex, pos, readLength);
 		SAMRecord read2 = Read(referenceIndex, pos2, readLength);

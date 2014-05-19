@@ -6,7 +6,7 @@ import htsjdk.samtools.SAMRecord;
 
 import org.junit.Test;
 
-import au.edu.wehi.socrates.vcf.EvidenceAttributes;
+import au.edu.wehi.socrates.vcf.VcfAttributes;
 
 public class NonReferenceReadPairTest extends TestHelper {
 	public NonReferenceReadPair newPair(SAMRecord[] pair, int maxfragmentSize) {
@@ -153,8 +153,8 @@ public class NonReferenceReadPairTest extends TestHelper {
 	@Test
 	public void getBreakendSummary_OEA_qual_should_match_mapq() {
 		BreakendSummary loc = newPair(OEA(0, 1, "2M3S", true), 10).getBreakendSummary();
-		assertEquals(1, loc.evidence.get(EvidenceAttributes.UNMAPPED_MATE_READ_COUNT));
-		assertEquals(10, loc.evidence.get(EvidenceAttributes.UNMAPPED_MATE_TOTAL_MAPQ));
+		assertEquals(1, loc.evidence.get(VcfAttributes.UNMAPPED_MATE_READ_COUNT));
+		assertEquals(10, loc.evidence.get(VcfAttributes.UNMAPPED_MATE_TOTAL_MAPQ));
 	}
 
 	@Test
@@ -163,12 +163,12 @@ public class NonReferenceReadPairTest extends TestHelper {
 		pair[0].setMappingQuality(1);
 		pair[1].setMappingQuality(10);
 		BreakpointSummary loc = (BreakpointSummary)newPair(pair, 100).getBreakendSummary();
-		assertEquals(1, loc.evidence.get(EvidenceAttributes.DISCORDANT_READ_PAIR_COUNT));
-		assertEquals(1, loc.evidence.get(EvidenceAttributes.DISCORDANT_READ_PAIR_TOTAL_MAPQ));
+		assertEquals(1, loc.evidence.get(VcfAttributes.DISCORDANT_READ_PAIR_COUNT));
+		assertEquals(1, loc.evidence.get(VcfAttributes.DISCORDANT_READ_PAIR_TOTAL_MAPQ));
 		pair[0].setMappingQuality(10);
 		pair[1].setMappingQuality(1);
 		loc = (BreakpointSummary)newPair(pair, 100).getBreakendSummary();
-		assertEquals(1, loc.evidence.get(EvidenceAttributes.DISCORDANT_READ_PAIR_TOTAL_MAPQ));
+		assertEquals(1, loc.evidence.get(VcfAttributes.DISCORDANT_READ_PAIR_TOTAL_MAPQ));
 	}
 	public void getEvidenceID_should_match_read_name() {
 		SAMRecord[] pair = DP(0, 1, "100M", true, 0, 1, "100M", true);

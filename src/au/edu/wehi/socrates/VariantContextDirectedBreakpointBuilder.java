@@ -9,7 +9,7 @@ import com.sun.javafx.collections.SetAdapterChange;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
-import au.edu.wehi.socrates.vcf.EvidenceAttributes;
+import au.edu.wehi.socrates.vcf.VcfAttributes;
 import au.edu.wehi.socrates.vcf.SvType;
 import au.edu.wehi.socrates.vcf.VcfConstants;
 import au.edu.wehi.socrates.vcf.VcfStructuralVariantHeaderLines;
@@ -42,7 +42,7 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 	 * @return builder
 	 */
 	public VariantContextDirectedBreakpointBuilder realignmentFailed() {
-		attribute(VcfConstants.REALIGNMENT_FAILURE, true);
+		attribute(VcfAttributes.REALIGNMENT_FAILURE.attribute(), true);
 		return this;
 	}
 	/**
@@ -135,7 +135,7 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 	 */
 	public VariantContextDirectedBreakpointBuilder evidence(EvidenceMetrics e) {
 		if (e != null) {
-			for (EvidenceAttributes a : EvidenceAttributes.values()) {
+			for (VcfAttributes a : VcfAttributes.evidenceValues()) {
 				if (e.get(a) != 0) {
 					// only write if we need to
 					attribute(a.attribute(), e.get(a));
@@ -159,9 +159,9 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 			byte[] sequence,
 			byte[] baseQual,
 			double breakpointQuality) {
-		attribute(VcfConstants.ASSEMBLY_PROGRAM, assemblyProgram);
-		attribute(VcfConstants.ASSEMBLY_CONSENSUS, new String(sequence, StandardCharsets.US_ASCII));
-		attribute(VcfConstants.ASSEMBLY_QUALITY, breakpointQuality);
+		attribute(VcfAttributes.ASSEMBLY_PROGRAM.attribute(), assemblyProgram);
+		attribute(VcfAttributes.ASSEMBLY_CONSENSUS.attribute(), new String(sequence, StandardCharsets.US_ASCII));
+		attribute(VcfAttributes.ASSEMBLY_QUALITY.attribute(), breakpointQuality);
 		return this;
 	}
 	@Override

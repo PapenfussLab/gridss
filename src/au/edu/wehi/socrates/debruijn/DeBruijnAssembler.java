@@ -19,7 +19,7 @@ import au.edu.wehi.socrates.SoftClipEvidence;
 import au.edu.wehi.socrates.VariantContextDirectedBreakpoint;
 import au.edu.wehi.socrates.VariantContextDirectedBreakpointBuilder;
 import au.edu.wehi.socrates.sam.AnomolousReadAssembly;
-import au.edu.wehi.socrates.vcf.EvidenceAttributes;
+import au.edu.wehi.socrates.vcf.VcfAttributes;
 
 import com.google.common.collect.Lists;
 

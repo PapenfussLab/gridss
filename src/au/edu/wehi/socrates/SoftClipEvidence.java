@@ -9,7 +9,7 @@ import htsjdk.samtools.util.SequenceUtil;
 
 import org.apache.commons.lang3.StringUtils;
 
-import au.edu.wehi.socrates.vcf.EvidenceAttributes;
+import au.edu.wehi.socrates.vcf.VcfAttributes;
 
 public class SoftClipEvidence implements DirectedBreakpoint {
 	private final ProcessingContext processContext;
@@ -25,9 +25,9 @@ public class SoftClipEvidence implements DirectedBreakpoint {
 		this.record = record;
 		int pos = direction == BreakendDirection.Forward ? record.getAlignmentEnd() : record.getAlignmentStart();
 		BreakendSummary local = new BreakendSummary(record.getReferenceIndex(), direction, pos, pos, new EvidenceMetrics());		
-		local.evidence.set(EvidenceAttributes.SOFT_CLIP_READ_COUNT, 1);
+		local.evidence.set(VcfAttributes.SOFT_CLIP_READ_COUNT, 1);
 		//local.evidence.set(EvidenceAttributes.SOFT_CLIP_MAX_LENGTH, getSoftClipLength());
-		local.evidence.set(EvidenceAttributes.SOFT_CLIP_TOTAL_LENGTH, getSoftClipLength(direction, record));
+		local.evidence.set(VcfAttributes.SOFT_CLIP_TOTAL_LENGTH, getSoftClipLength(direction, record));
 		if (realigned != null && !realigned.getReadUnmappedFlag()) {
 			this.realigned = new RealignedBreakpoint(local, realigned);
 			this.location = this.realigned.getBreakpointSummary();
