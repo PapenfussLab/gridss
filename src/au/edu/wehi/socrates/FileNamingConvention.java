@@ -47,10 +47,10 @@ public class FileNamingConvention {
 	public static File getBreakendVcfForChr(File input, String chromosome) throws IOException {
 		return new File(String.format(FORMAT_BREAKEND_VCF_PER_CHR, GetStem(input), chromosome));
 	}
-	public static File getBreakpointVcf(File input) throws IOException {
+	public static File getRawCallVcf(File input) throws IOException {
 		return new File(String.format(FORMAT_BREAKPOINT_VCF, GetStem(input)));
 	}
-	public static File getBreakpointVcf(File input, String chromosome1, String chromosome2) throws IOException {
+	public static File getRawCallVcf(File input, String chromosome1, String chromosome2) throws IOException {
 		return new File(String.format(FORMAT_BREAKPOINT_VCF_PER_CHR, GetStem(input), chromosome1, chromosome2));
 	}
 	public static File getOutputVcf(File input) throws IOException {

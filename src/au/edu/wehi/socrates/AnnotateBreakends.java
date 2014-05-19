@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 
 import picard.cmdline.Option;
@@ -13,11 +14,15 @@ import picard.cmdline.Usage;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
@@ -25,7 +30,9 @@ import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFHeader;
 
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.google.common.collect.PeekingIterator;
+import com.sun.tools.javac.util.List;
 
 import au.edu.wehi.socrates.vcf.VcfConstants;
 
@@ -73,9 +80,16 @@ public class AnnotateBreakends extends CommandLineProgram {
     		IOUtil.assertFileIsWritable(OUTPUT);
     		
     		
-    		SequentialReferenceCoverageLookup referenceLookup = new SequentialReferenceCoverageLookup(windowSize, reads)
-    		final Iterator<SAMRecord> allReads ;
-    		final Iterator<DirectedEvidence> evidenceIt = getAllEvidence();
+	    	final RelevantMetrics metrics = new RelevantMetrics(METRICS);
+	    	final ReferenceSequenceFile reference = ReferenceSequenceFileFactory.getReferenceSequenceFile(REFERENCE);
+	    	final SAMSequenceDictionary dictionary = reference.getSequenceDictionary();
+	    	final ProcessingContext processContext = new ProcessingContext(reference, dictionary, metrics);
+    		
+    		final SamReader inputReader = getSamReaderFactory().open(INPUT);
+    		final CloseableIterator<SAMRecord> inputIterator = inputReader.iterator(); 
+    		SequentialReferenceCoverageLookup referenceLookup = new SequentialReferenceCoverageLookup(3 * metrics.getMaxFragmentSize(), inputIterator);
+    		final Iterator<SAMRecord> allReads;
+    		final Iterator<DirectedEvidence> evidenceIt = getAllEvidence(processContext);
     		final Iterator<VariantContextDirectedBreakpoint> toAnnotateIt = getCallsToAnnotate();
     		// For each breakend
     			// Get all DirectedEvidence for breakend
@@ -83,6 +97,7 @@ public class AnnotateBreakends extends CommandLineProgram {
     			// annotate call with evidence
     				// including setting untemplated sequence
     			// write annotated call
+    		inputIterator.close();
     		
     	} catch (IOException e) {
     		log.error(e);
@@ -90,17 +105,49 @@ public class AnnotateBreakends extends CommandLineProgram {
     	}
         return 0;
     }
+	private Iterator<DirectedEvidence> getAllEvidence(final ProcessingContext processContext) throws IOException {
+		if (FileNamingConvention.getSVBam(INPUT).exists()) {
+			log.info("Using combined files for SV evidence");
+			final DirectedEvidenceFileIterator dei = new DirectedEvidenceFileIterator(
+					processContext,
+					getSamReaderFactory(),
+					ensureFileExists(FileNamingConvention.getSVBam(INPUT)),
+					ensureFileExists(FileNamingConvention.getMateBam(INPUT)),
+					ensureFileExists(FileNamingConvention.getRealignmentBam(INPUT)),
+					ensureFileExists(FileNamingConvention.getBreakendVcf(INPUT)));
+			return dei;
+		} else {
+			log.info("Using per chromosome files for SV evidence");
+			ArrayList<Iterator<DirectedEvidence>> itList = new ArrayList<Iterator<DirectedEvidence>>();
+			for (SAMSequenceRecord seq : processContext.getDictionary().getSequences()) {
+				String chr = seq.getSequenceName();
+				itList.add(new DirectedEvidenceFileIterator(
+						processContext,
+						getSamReaderFactory(),
+						ensureFileExists(FileNamingConvention.getSVBamForChr(INPUT, chr)),
+						ensureFileExists(FileNamingConvention.getMateBamForChr(INPUT, chr)),
+						ensureFileExists(FileNamingConvention.getRealignmentBamForChr(INPUT, chr)),
+						ensureFileExists(FileNamingConvention.getBreakendVcfForChr(INPUT, chr))));
+			}
+			return Iterators.concat(itList.iterator());
+		}
+	}
 	private Iterator<VariantContextDirectedBreakpoint> getCallsToAnnotate() throws IOException {
 		// open VCF
 		// (assert sorted?)
-		if (FileNamingConvention.getBreakpointVcf(INPUT).exists()) {
-			log.info("Using single breakpoint vcf call file ", FileNamingConvention.getBreakpointVcf(INPUT));
-			// single input file
+		if (FileNamingConvention.getRawCallVcf(INPUT).exists()) {
+			log.info("Using single breakpoint vcf call file ", FileNamingConvention.getRawCallVcf(INPUT));
+			VCFFileReader reader = new VCFFileReader(FileNamingConvention.getRawCallVcf(INPUT));
+			return reader.iterator();
 		} else {
 			log.info("Using per chromosome paired breakpoint vcf call file ", FileNamingConvention.getBreakpointVcf(INPUT));
+			OUTPUT = FileNamingConvention.getRawCallVcf(INPUT, CHROMSOME[0], CHROMSOME[1]);
+			Iterators.mergeSorted()
 			
 			log.info("Sorting breakends for chr in memory");
-			// Merge calls for (chrA, chrB) for A<B 
+			
+			// Merge calls for (chrA, chrB) for A<B
+			// also need to all B>A
 			
 			// it = Iterators.concat(it, new);
 		}

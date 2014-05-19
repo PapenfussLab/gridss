@@ -39,7 +39,7 @@ public class FileNamingConventionTest {
 	}
 	@Test
 	public void getBreakpointVcf() throws IOException {
-		assertEquals(new File("test.bam.socrates.chr1-chr2.breakpoint.vcf").getAbsolutePath(), FileNamingConvention.getBreakpointVcf(new File("test.bam"), "chr1", "chr2").getAbsolutePath());
+		assertEquals(new File("test.bam.socrates.chr1-chr2.breakpoint.vcf").getAbsolutePath(), FileNamingConvention.getRawCallVcf(new File("test.bam"), "chr1", "chr2").getAbsolutePath());
 	}
 	@Test
 	public void getOutputVcf() throws IOException {

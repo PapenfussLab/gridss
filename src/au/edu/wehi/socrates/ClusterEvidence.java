@@ -1,36 +1,22 @@
 package au.edu.wehi.socrates;
 
-import java.io.BufferedWriter;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.ProgressLogger;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
+import htsjdk.variant.vcf.VCFHeader;
+
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.PriorityQueue;
-import java.util.SortedSet;
 
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import picard.cmdline.Usage;
-import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.reference.ReferenceSequenceFile;
-import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
-import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.ProgressLogger;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceDictionary;
-
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.writer.VariantContextWriter;
-import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
-import htsjdk.variant.vcf.VCFFileReader;
-import htsjdk.variant.vcf.VCFHeader;
-
-import com.google.common.collect.Iterators;
-import com.google.common.collect.PeekingIterator;
-import com.google.common.collect.Sets;
-
 import au.edu.wehi.socrates.vcf.VcfConstants;
 
 /**
@@ -72,7 +58,7 @@ public class ClusterEvidence extends CommandLineProgram {
     			METRICS = FileNamingConvention.getMetrics(INPUT);
     		}
     		if (OUTPUT == null && CHROMSOME.length == 2) {
-    			OUTPUT = FileNamingConvention.getBreakpointVcf(INPUT, CHROMSOME[0], CHROMSOME[1]);
+    			OUTPUT = FileNamingConvention.getRawCallVcf(INPUT, CHROMSOME[0], CHROMSOME[1]);
     		}
     		IOUtil.assertFileIsReadable(REFERENCE);
     		IOUtil.assertFileIsReadable(METRICS);
@@ -109,14 +95,28 @@ public class ClusterEvidence extends CommandLineProgram {
 			final VCFHeader vcfHeader = new VCFHeader();
 			VcfConstants.addHeaders(vcfHeader);
 			vcfWriter.writeHeader(vcfHeader);
+			
+			// Write out both sides of the breakend in order
+			// since the first breakend is always the lower genomic coordinate
+			// this will result in in-order output
+			PriorityQueue<BreakpointSummary> highEnd = new PriorityQueue<BreakpointSummary>(BreakendSummary.ByStartEnd);
 			Iterator<BreakendSummary> it = processor.iterator();
 			while (it.hasNext()) {
 				BreakendSummary loc = it.next();
-				VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(processContext)
-					.breakend(loc, null)
-					.evidence(loc.evidence);
-				// Issue: we've lost all our extended info including the untemplated sequence
-				vcfWriter.add(builder.make());
+				if (loc instanceof BreakpointSummary) {
+					// Add the remote side of the call
+					highEnd.add(((BreakpointSummary)loc).remoteBreakpoint());
+				}
+				while (!highEnd.isEmpty() && BreakendSummary.ByStartEnd.compare(highEnd.peek(), loc) < 0) {
+					// write remote calls that are before here
+					writeCall(processContext, vcfWriter, highEnd.poll());
+				}
+				// write call
+				writeCall(processContext, vcfWriter, loc);
+			}
+			// flush out the remote calls that we haven't written yet
+			while (!highEnd.isEmpty()) {
+				writeCall(processContext, vcfWriter, highEnd.poll());
 			}
 			vcfWriter.close();
     	} catch (IOException e) {
@@ -125,17 +125,19 @@ public class ClusterEvidence extends CommandLineProgram {
     	}
         return 0;
     }
+	private void writeCall(final ProcessingContext processContext,
+			final VariantContextWriter vcfWriter, BreakendSummary loc) {
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(processContext)
+			.breakend(loc, null)
+			.evidence(loc.evidence);
+		// Issue: we've lost all our extended info including the untemplated sequence
+		vcfWriter.add(builder.make());
+	}
     private static void addEvidence(EvidenceClusterProcessor processor, DirectedEvidenceFileIterator evidence) {
     	while (evidence.hasNext()) {
 			processor.addEvidence(evidence.next());
 		}
     	evidence.close();
-    }
-    private static File ensureFileExists(final File file) {
-    	if (!file.exists()) {
-    		throw new RuntimeException(String.format("Required file %s is missing. Has ExtractEvidence and GenerateDirectedBreakpoint been run? Have the directed breakpoints been realigned?", file));
-    	}
-    	return file;
     }
 	private DirectedEvidenceFileIterator evidenceForChr(final ProcessingContext processContext, final String chr) throws IOException {
 		final DirectedEvidenceFileIterator dei1 = new DirectedEvidenceFileIterator(

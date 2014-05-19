@@ -44,8 +44,15 @@ public class BreakpointSummary extends BreakendSummary {
 				interval.referenceIndex2, interval.direction2, interval.start2, interval.end2,
 				evidence);
 	}
-	public BreakendSummary remoteLocation() {
+	public BreakendSummary remoteBreakend() {
 		return new BreakendSummary(referenceIndex2, direction2, start2, end2, evidence);
+	}
+	/**
+	 * Returns the other end of this breakpoint
+	 * @return breakpoint with ends swapped
+	 */
+	public BreakpointSummary remoteBreakpoint() {
+		return new BreakpointSummary(referenceIndex2, direction2, start2, end2, referenceIndex, direction, start, end, evidence);
 	}
 	@Override
 	public String toString() {
