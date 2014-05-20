@@ -9,6 +9,7 @@ import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.VCFHeader;
@@ -53,9 +54,10 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
     @Option(doc = "Minimum alignment mapq",
     		optional=true)
     public int MIN_MAPQ = 5;
-    @Option(doc = "Length threshold of long soft-clip",
-    		optional=true)
-    public int LONG_SC_LEN = 25;
+    @Option(doc = "Minimum length of a breakend to be considered for realignment",
+    		optional=true,
+    		shortName="LEN")
+    public int MIN_BREAKEND_REALIGN_LENGTH = 25;
     @Option(doc = "Minimum alignment percent identity to reference. Takes values in the range 0-100.",
     		optional=true)
     public float MIN_PERCENT_IDENTITY = 95;
@@ -80,7 +82,7 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
     		IOUtil.assertFileIsWritable(VCF_OUTPUT);
     		IOUtil.assertFileIsWritable(FASTQ_OUTPUT);
     		
-    		//final ProgressLogger progress = new ProgressLogger(log);
+    		final ProgressLogger progress = new ProgressLogger(log);
 	    	final SamReader reader = getSamReaderFactory().open(SV_INPUT);
 	    	final SamReader mateReader = getSamReaderFactory().open(MATE_COORDINATE_INPUT);
 	    	final SAMFileHeader header = reader.getFileHeader();
@@ -104,6 +106,7 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
 			ReadEvidenceAssembler assembler = new DeBruijnAssembler(processContext, KMER);
 			while (dei.hasNext()) {
 				DirectedEvidence readEvidence = dei.next();
+				progress.record(reference.getSequenceDictionary().getSequence(readEvidence.getBreakendSummary().referenceIndex).getSequenceName(), readEvidence.getBreakendSummary().start);
 				// Need to process assembly evidence first since assembly calls are made when the
 				// evidence falls out of scope so processing a given position will emit evidence
 				// for a previous position (for it is only at this point we know there is no more
@@ -112,7 +115,7 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
 				if (readEvidence instanceof SoftClipEvidence) {
 					SoftClipEvidence sce = (SoftClipEvidence)readEvidence;
 					if (sce.getMappingQuality() >= MIN_MAPQ &&
-							sce.getSoftClipLength() >= LONG_SC_LEN &&
+							sce.getSoftClipLength() >= MIN_BREAKEND_REALIGN_LENGTH &&
 							sce.getAlignedPercentIdentity() >= MIN_PERCENT_IDENTITY &&
 							sce.getAverageClipQuality() >= MIN_LONG_SC_BASE_QUALITY) {
 						fastqWriter.write(sce);
@@ -134,8 +137,10 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
     	if (evidenceList != null) {
 	    	for (VariantContextDirectedBreakpoint a : evidenceList) {
 	    		if (a != null) {
-	    			fastqWriter.write(a);
-		    		vcfWriter.add(a);
+	    			if (a.getBreakpointSequence().length >= MIN_BREAKEND_REALIGN_LENGTH) {
+		    			fastqWriter.write(a);
+			    		vcfWriter.add(a);
+	    			}
 	    		}
 	    	}
     	}

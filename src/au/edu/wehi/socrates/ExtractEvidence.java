@@ -125,6 +125,7 @@ public class ExtractEvidence extends CommandLineProgram {
 				progress.record(record);
 			}
 			reader.close();
+			log.info("Writing metrics");
 			metrics.finish();
 			RelevantMetrics.save(metrics, this.<InsertSizeMetrics, Integer>getMetricsFile(), FileNamingConvention.getMetrics(INPUT));
 			for (int i = 0; i < dictionary.size(); i++) {
@@ -133,6 +134,7 @@ public class ExtractEvidence extends CommandLineProgram {
 					writers[i] = null;
 				}
 			}
+			log.info("Sorting sv mates");
 			if (PER_CHR) {
 				for (int i = 0; i < dictionary.size(); i++) {
 					// TODO: this can be multi-threaded

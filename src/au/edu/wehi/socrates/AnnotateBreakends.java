@@ -1,40 +1,31 @@
 package au.edu.wehi.socrates;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-
-import picard.cmdline.Option;
-import picard.cmdline.StandardOptionDefinitions;
-import picard.cmdline.Usage;
-import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.reference.ReferenceSequenceFile;
-import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.ProgressLogger;
-import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFHeader;
 
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
-import com.google.common.collect.PeekingIterator;
-import com.sun.tools.javac.util.List;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
+import picard.cmdline.Option;
+import picard.cmdline.StandardOptionDefinitions;
+import picard.cmdline.Usage;
 import au.edu.wehi.socrates.vcf.VcfConstants;
+
+import com.google.common.collect.Iterators;
 
 /**
  * Clusters evidence that supports a common breakpoint together
@@ -87,16 +78,24 @@ public class AnnotateBreakends extends CommandLineProgram {
     		
     		final SamReader inputReader = getSamReaderFactory().open(INPUT);
     		final CloseableIterator<SAMRecord> inputIterator = inputReader.iterator(); 
-    		SequentialReferenceCoverageLookup referenceLookup = new SequentialReferenceCoverageLookup(3 * metrics.getMaxFragmentSize(), inputIterator);
-    		final Iterator<SAMRecord> allReads;
+    		final SequentialReferenceCoverageLookup referenceLookup = new SequentialReferenceCoverageLookup(3 * metrics.getMaxFragmentSize(), inputIterator);
     		final Iterator<DirectedEvidence> evidenceIt = getAllEvidence(processContext);
-    		final Iterator<VariantContextDirectedBreakpoint> toAnnotateIt = getCallsToAnnotate();
-    		// For each breakend
-    			// Get all DirectedEvidence for breakend
-    			// Get reference evidence
-    			// annotate call with evidence
-    				// including setting untemplated sequence
-    			// write annotated call
+    		final Iterator<VariantContextDirectedBreakpoint> toAnnotateIt = getCallsToAnnotate(processContext);
+    		final SequentialBreakendAnnotator annotator = new SequentialBreakendAnnotator(processContext, referenceLookup, Iterators.peekingIterator(evidenceIt));
+    		
+    		final VariantContextWriter vcfWriter = new VariantContextWriterBuilder()
+				.setOutputFile(OUTPUT)
+				.setReferenceDictionary(processContext.getDictionary())
+				.build();
+			final VCFHeader vcfHeader = new VCFHeader();
+			VcfConstants.addHeaders(vcfHeader);
+			vcfWriter.writeHeader(vcfHeader);
+    		
+    		while (toAnnotateIt.hasNext()) {
+    			VariantContextDirectedBreakpoint annotatedVariant = annotator.annotate(toAnnotateIt.next());
+    			vcfWriter.add(annotatedVariant);
+    		}
+    		vcfWriter.close();
     		inputIterator.close();
     		
     	} catch (IOException e) {
@@ -132,26 +131,33 @@ public class AnnotateBreakends extends CommandLineProgram {
 			return Iterators.concat(itList.iterator());
 		}
 	}
-	private Iterator<VariantContextDirectedBreakpoint> getCallsToAnnotate() throws IOException {
+	private Iterator<VariantContextDirectedBreakpoint> getCallsToAnnotate(final ProcessingContext processContext) throws IOException {
 		// open VCF
 		// (assert sorted?)
 		if (FileNamingConvention.getRawCallVcf(INPUT).exists()) {
 			log.info("Using single breakpoint vcf call file ", FileNamingConvention.getRawCallVcf(INPUT));
 			VCFFileReader reader = new VCFFileReader(FileNamingConvention.getRawCallVcf(INPUT));
-			return reader.iterator();
+			return VariantContextDirectedBreakpoint.breakendIterator(processContext, reader.iterator());
 		} else {
-			log.info("Using per chromosome paired breakpoint vcf call file ", FileNamingConvention.getBreakpointVcf(INPUT));
-			OUTPUT = FileNamingConvention.getRawCallVcf(INPUT, CHROMSOME[0], CHROMSOME[1]);
-			Iterators.mergeSorted()
-			
-			log.info("Sorting breakends for chr in memory");
-			
-			// Merge calls for (chrA, chrB) for A<B
-			// also need to all B>A
-			
-			// it = Iterators.concat(it, new);
+			log.info("Using per chromosome paired breakpoint vcf call files");
+			ArrayList<Iterator<VariantContextDirectedBreakpoint>> itList = new ArrayList<Iterator<VariantContextDirectedBreakpoint>>();
+			List<SAMSequenceRecord> seqList = processContext.getDictionary().getSequences();
+			for (int i = 0; i < seqList.size(); i++) {
+				for (int j = i; j < seqList.size(); j++) { // start at i so we don't repeat
+					String chrA = seqList.get(i).getSequenceName();
+					String chrB = seqList.get(j).getSequenceName();
+					File f = FileNamingConvention.getRawCallVcf(INPUT, chrA, chrB);
+					if (!f.exists()) {
+						log.warn("Missing VCF calls from ", chrA, " to ", chrB, " (", f, ")" );
+					} else {
+						log.debug("Loading ", f);
+						VCFFileReader reader = new VCFFileReader(FileNamingConvention.getRawCallVcf(INPUT));
+						itList.add(VariantContextDirectedBreakpoint.breakendIterator(processContext, reader.iterator()));
+					}
+				}
+			}
+			return Iterators.mergeSorted(itList, SocratesVariantContext.ByStartStopReferenceOrder);
 		}
-		throw new RuntimeException("NYI");
 	}
 	public static void main(String[] argv) {
         System.exit(new GenerateDirectedBreakpoints().instanceMain(argv));

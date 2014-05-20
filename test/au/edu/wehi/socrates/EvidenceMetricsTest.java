@@ -1,6 +1,7 @@
 package au.edu.wehi.socrates;
 
 import static org.junit.Assert.*;
+
 import htsjdk.samtools.SAMRecord;
 
 import org.junit.Test;
@@ -25,7 +26,7 @@ public class EvidenceMetricsTest extends TestHelper {
 		// Assembly
 		m.add(ReadEvidenceAssemblerUtil.create(getContext(), "test", 0, 10, BreakendDirection.Backward, B("AT"), B("ATA"), 1, 1, 1).getBreakendSummary().evidence);
 		for (VcfAttributes a : VcfAttributes.evidenceValues()) {
-			assertNotEquals(a.name(), 0, m.get(a));
+			assertFalse(a.name(), m.get(a) == 0);
 		}
 	}
 	@Test

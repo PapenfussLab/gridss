@@ -121,7 +121,7 @@ public class GenerateDirectedBreakpointsTest extends CommandLineTest {
 		r2.setReadBases(B("AACGTG"));
 		createInput(r1, r2);
 		extractEvidence();
-		generateDirectedBreakpoints("polyA", null, null, null, null, 3);
+		generateDirectedBreakpoints("polyA", null, 1, null, null, 3);
 		assertEquals(1, getVcf(".socrates.polyA.breakend.vcf").size());
 	}
 	@Test
@@ -129,7 +129,7 @@ public class GenerateDirectedBreakpointsTest extends CommandLineTest {
 		createInput(RP(0, 1, 2, 1));
 		extractEvidence();
 		generateDirectedBreakpoints("polyA");
-		shouldExist("input.bam.socrates.polyA.breakend.vcf");
+		workingFileShouldExist(".socrates.polyA.breakend.vcf");
 	}
 	@Test
 	public void should_make_calls_in_order() {

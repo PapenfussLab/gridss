@@ -96,7 +96,7 @@ public class CommandLineTest extends TestHelper {
 		}
 		public int go(String chr, Integer minMapq, Integer longsc, Float minId, Float minQual, Integer k) {
 			if (minMapq != null) MIN_MAPQ = minMapq;
-			if (longsc != null) LONG_SC_LEN = longsc;
+			if (longsc != null) MIN_BREAKEND_REALIGN_LENGTH = longsc;
 			if (minId != null) MIN_PERCENT_IDENTITY = minId;
 			if (minQual != null) MIN_LONG_SC_BASE_QUALITY = minQual;
 			if (k != null) KMER = k;
@@ -121,11 +121,11 @@ public class CommandLineTest extends TestHelper {
 	public int generateDirectedBreakpoints(String chr, Integer minMapq, Integer longsc, Float minId, Float minQual, Integer k) {
 		return new TestGenerateDirectedBreakpoints().go(chr, minMapq, longsc, minId, minQual, k);
 	}	
-	public void shouldExist(String file) {
-		assertTrue(Files.exists(Paths.get(testFolder.getRoot().toString() + "/" + file)));
+	public void workingFileShouldExist(String extension) {
+		assertTrue(new File(input.getAbsolutePath() + ".socrates.working", input.getName() + extension).exists());
 	}
 	public List<SAMRecord> getRecords(String extension) {
-		File file = new File(input.toString() + extension);
+		File file = new File(input.getAbsolutePath() + ".socrates.working", input.getName() + extension);
 		assertTrue(file.exists());
 		SAMFileReader reader = new SAMFileReader(file);
 		List<SAMRecord> list = Lists.newArrayList();
@@ -136,7 +136,7 @@ public class CommandLineTest extends TestHelper {
 		return list;
 	}
 	public List<VariantContext> getVcf(String extension) {
-		File file = new File(input.toString() + extension);
+		File file = new File(input.getAbsolutePath() + ".socrates.working", input.getName() + extension);
 		assertTrue(file.exists());
 		VCFFileReader reader = new VCFFileReader(file);
 		List<VariantContext> list = Lists.newArrayList();

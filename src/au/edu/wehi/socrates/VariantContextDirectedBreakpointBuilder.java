@@ -1,18 +1,14 @@
 package au.edu.wehi.socrates;
 
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
+
 import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.sun.javafx.collections.SetAdapterChange;
-
-import htsjdk.samtools.SAMRecord;
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.VariantContextBuilder;
-import au.edu.wehi.socrates.vcf.VcfAttributes;
 import au.edu.wehi.socrates.vcf.SvType;
-import au.edu.wehi.socrates.vcf.VcfConstants;
-import au.edu.wehi.socrates.vcf.VcfStructuralVariantHeaderLines;
+import au.edu.wehi.socrates.vcf.VcfAttributes;
 import au.edu.wehi.socrates.vcf.VcfSvConstants;
 
 /**

@@ -16,15 +16,14 @@ public enum VcfAttributes {
 	REALIGN_MAX_LENGTH ("ALNMAX", 1, VCFHeaderLineType.Integer, "Maximum number of realigned bases supporting this breakpoint"),
 	REALIGN_TOTAL_LENGTH ("ALNB", 1, VCFHeaderLineType.Integer, "Total number of realigned bases supporting this breakpoint"),
 	REALIGN_TOTAL_MAPQ ("ALNTMQ", 1, VCFHeaderLineType.Integer, "Total mapq of reads with realignments supporting this breakpoint"),
-	// --- End of summary evidence attributes ---
+	ASSEMBLY_LENGTH ("ASSLEN", 1, VCFHeaderLineType.Integer, "Length of assembly supporting this breakpoint"),
+	ASSEMBLY_BASES ("ASSB", 1, VCFHeaderLineType.Integer, "Total number of read bases contributing to assembly supporting this breakpoint"),
+	ASSEMBLY_READS ("ASSRC", 1, VCFHeaderLineType.Integer, "Number of reads forming breakpoint assembly"),
+	// --- End of summary evidence attributes *must be kept in sync with .LastEvidenceAttribute * ---
 	UNMAPPED_MATE_MAX_MAPQ ("UMMQ", 1, VCFHeaderLineType.Integer, "Maximum mapq of reads with unmapped mates supporting this breakpoint"),
 	DISCORDANT_READ_PAIR_MAX_MAPQ ("DPMQ", 1, VCFHeaderLineType.Integer, "Maximum (pair minimum) mapq of discordant read pairs supporting this breakpoint"),
 	SOFT_CLIP_MAX_LENGTH ("SCMAX", 1, VCFHeaderLineType.Integer, "Maximum length of soft-clip supporting this breakpoint"),
 	REALIGN_MAX_MAPQ ("ALNMQ", 1, VCFHeaderLineType.Integer, "Maximum mapq of reads with realignments supporting this breakpoint"),
-	
-	ASSEMBLY_LENGTH ("ASSLEN", 1, VCFHeaderLineType.Integer, "Length of assembly supporting this breakpoint"),
-	ASSEMBLY_BASES ("ASSB", 1, VCFHeaderLineType.Integer, "Total number of read bases contributing to assembly supporting this breakpoint"),
-	ASSEMBLY_READS ("ASSRC", 1, VCFHeaderLineType.Integer, "Number of reads forming breakpoint assembly"),
 	
 	REFERENCE_SPANNING_READ_PAIR_COUNT ("RPC", 1, VCFHeaderLineType.Integer, "Count of reference read pairs spanning this breakpoint supporting the reference allele"),
 	REFERENCE_READ_COUNT ("RRC", 1, VCFHeaderLineType.Integer, "Count of reference reads spanning this breakpoint supporting the reference allele"),
@@ -35,7 +34,7 @@ public enum VcfAttributes {
 	
 	REALIGNMENT_FAILURE ("REALGNFAIL", 1, VCFHeaderLineType.Flag, "Breakend sequence unable to be realigned to the reference");
 		
-	private static final VcfAttributes LastEvidenceAttribute = REALIGN_TOTAL_MAPQ;
+	private static final VcfAttributes LastEvidenceAttribute = ASSEMBLY_READS;
     private final VCFInfoHeaderLine header;
 	VcfAttributes(String name, int count, VCFHeaderLineType type, String description) {
 		this.header = new VCFInfoHeaderLine(name, count, type, description);
@@ -52,6 +51,6 @@ public enum VcfAttributes {
 		return attr.ordinal() <= LastEvidenceAttribute.ordinal();
 	}
 	public static VcfAttributes[] evidenceValues() {
-		return Arrays.copyOf(values(), LastEvidenceAttribute.ordinal());
+		return Arrays.copyOf(values(), LastEvidenceAttribute.ordinal() + 1);
 	}
 }

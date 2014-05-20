@@ -99,7 +99,7 @@ public class ClusterEvidence extends CommandLineProgram {
 			// Write out both sides of the breakend in order
 			// since the first breakend is always the lower genomic coordinate
 			// this will result in in-order output
-			PriorityQueue<BreakpointSummary> highEnd = new PriorityQueue<BreakpointSummary>(BreakendSummary.ByStartEnd);
+			PriorityQueue<BreakpointSummary> highEnd = new PriorityQueue<BreakpointSummary>(1024, BreakendSummary.ByStartEnd);
 			Iterator<BreakendSummary> it = processor.iterator();
 			while (it.hasNext()) {
 				BreakendSummary loc = it.next();

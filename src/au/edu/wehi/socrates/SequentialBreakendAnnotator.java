@@ -13,9 +13,9 @@ import com.google.common.collect.PeekingIterator;
  */
 public class SequentialBreakendAnnotator {
 	private final ProcessingContext context;
-	private final PeekingIterator<DirectedBreakpoint> evidence;
+	private final PeekingIterator<DirectedEvidence> evidence;
 	private final SequentialReferenceCoverageLookup reference;
-	private final PriorityQueue<DirectedEvidence> activeEvidence = new PriorityQueue<DirectedEvidence>(new Ordering<DirectedEvidence>() {
+	private final PriorityQueue<DirectedEvidence> activeEvidence = new PriorityQueue<DirectedEvidence>(1024, new Ordering<DirectedEvidence>() {
 		@Override
 		public int compare(DirectedEvidence arg0, DirectedEvidence arg1) {
 			return BreakendSummary.ByEndStart.compare(arg0.getBreakendSummary(), arg1.getBreakendSummary());
@@ -25,7 +25,7 @@ public class SequentialBreakendAnnotator {
 	public SequentialBreakendAnnotator(
 			ProcessingContext context,
 			SequentialReferenceCoverageLookup reference,
-			PeekingIterator<DirectedBreakpoint> evidence) {
+			PeekingIterator<DirectedEvidence> evidence) {
 		this.context = context;
 		this.evidence = evidence;
 		this.reference = reference;

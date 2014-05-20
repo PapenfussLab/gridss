@@ -15,12 +15,12 @@ public class ExtractEvidenceTest extends CommandLineTest {
 	public void should_generate_svbam_per_chr() {
 		createInput();
 		extractEvidence();
-		shouldExist("input.bam.socrates.polyA.sv.bam");
-		shouldExist("input.bam.socrates.polyACGT.sv.bam");
-		shouldExist("input.bam.socrates.random.sv.bam");
-		shouldExist("input.bam.socrates.Npower2.sv.bam");
-		shouldExist("input.bam.socrates.REF.sv.bam");
-		shouldExist("input.bam.socrates.REF2.sv.bam");
+		workingFileShouldExist(".socrates.polyA.sv.bam");
+		workingFileShouldExist(".socrates.polyACGT.sv.bam");
+		workingFileShouldExist(".socrates.random.sv.bam");
+		workingFileShouldExist(".socrates.Npower2.sv.bam");
+		workingFileShouldExist(".socrates.REF.sv.bam");
+		workingFileShouldExist(".socrates.REF2.sv.bam");
 	}
 	@Test
 	public void sc_should_be_located_in_sv_bam_for_chr() {
@@ -93,7 +93,7 @@ public class ExtractEvidenceTest extends CommandLineTest {
 	public void should_create_metrics() {
 		createInput();
 		extractEvidence();
-		shouldExist("input.bam.socrates.metrics.txt");
+		workingFileShouldExist(".socrates.metrics.txt");
 	}
 	@Test
 	public void should_set_NM_tag() {

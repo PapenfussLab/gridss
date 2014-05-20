@@ -1,5 +1,8 @@
 package au.edu.wehi.socrates;
 
+import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Ordering;
+
 import htsjdk.variant.variantcontext.VariantContext;
 
 /**
@@ -33,4 +36,13 @@ public class SocratesVariantContext extends VariantContext {
 	public boolean isValid() {
 		return true;
 	}
+	public static Ordering<? super SocratesVariantContext> ByStartStopReferenceOrder = new Ordering<SocratesVariantContext>() {
+		public int compare(SocratesVariantContext o1, SocratesVariantContext o2) {
+			  return ComparisonChain.start()
+			        .compare(o1.getReferenceIndex(), o2.getReferenceIndex())
+			        .compare(o1.getStart(), o2.getStart())
+			        .compare(o1.getEnd(), o2.getEnd())
+			        .result();
+		  }
+	};
 }

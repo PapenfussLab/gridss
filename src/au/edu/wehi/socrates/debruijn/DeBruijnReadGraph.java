@@ -191,7 +191,6 @@ public class DeBruijnReadGraph {
 			// subtract # reads to adjust for the +1 qual introduced by ReadKmerIterable
 			// to ensure positive node weights
 			qual.add(this.kmers.get(node).getWeight() - this.kmers.get(node).getSupportingReads().size());
-			readBaseCount += this.kmers.get(node).getSupportingReads().size();
 			offset++;
 			if (node == breakpointAnchor) {
 				softclipSize = assemblyLength - offset;
@@ -226,6 +225,11 @@ public class DeBruijnReadGraph {
 		}
 		return reads;
 	}
+	/**
+	 * Adjusts base qualities to be within valid FASTQ encoding range 
+	 * @param bases base qualities to adjust
+	 * @return 0-based phred-encodable base qualities
+	 */
 	private byte[] rescaleBaseQualities(List<Long> bases) {
 		//Long largest = Collections.max(bases);
 		//float scaleFactor = Math.min(1, MAX_QUAL_SCORE / (float)largest);

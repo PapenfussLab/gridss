@@ -86,10 +86,15 @@ public class DeBruijnAssemblerTest extends TestHelper {
 	@Test
 	public void should_call_with_breakpoint_quality() {
 		List<VariantContextDirectedBreakpoint> r = go(3,
-				SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5 }, withSequence("AACGTG", Read(0, 1, "1M5S")))),
-				SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5,5 }, withSequence("AACGTGA", Read(0, 1, "1M6S"))))
-		); 
-		assertArrayEquals(new byte[] { 10,10,10,10,10,5 }, r.get(0).getBreakpointQuality());
+				SCE(BreakendDirection.Forward, withQual(new byte[] { 1,2,3,4,5,6 }, withSequence("AACGTG", Read(0, 2, "1M5S")))),
+				SCE(BreakendDirection.Forward, withQual(new byte[] { 6,7,8,9,10,11,12,13,14 }, withSequence("TAACGTGAT", Read(0, 1, "2M6S"))))
+		);
+		// kmer qual = sum of min base quals
+		// end is padded
+		// first two bases are ignored since they're part of the anchor assembly
+		assertArrayEquals(new byte[] { /*6,1+7,*/2+8,3+9,4+10,11,12,12,12 }, r.get(0).getBreakpointQuality());
+		// TODO: pad both ends so qual is balanced
+		// TODO: better base qual weighting
 	}
 	@Test
 	public void id_should_contain_assembler_name_position_direction() {

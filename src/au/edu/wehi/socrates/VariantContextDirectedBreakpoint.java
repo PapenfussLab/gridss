@@ -1,9 +1,16 @@
 package au.edu.wehi.socrates;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import com.google.common.collect.FluentIterable;
+import com.google.common.collect.Iterators;
 
 import au.edu.wehi.socrates.vcf.VcfAttributes;
 import au.edu.wehi.socrates.vcf.VcfConstants;
@@ -159,4 +166,23 @@ public class VariantContextDirectedBreakpoint extends SocratesVariantContext imp
 	public String getAssemblerProgram() { return getAttributeAsString(VcfAttributes.ASSEMBLY_PROGRAM.attribute(), null); }
 	public String getAssemblyConsensus() { return getAttributeAsString(VcfAttributes.ASSEMBLY_CONSENSUS.attribute(), ""); }
 	public double getAssemblyQuality() { return getAttributeAsDouble(VcfAttributes.ASSEMBLY_QUALITY.attribute(), 0); }
+	/**
+	 * Returns an iterator containing only the breakend variants from the given iterator
+	 * @param context processing context
+	 * @param variants input variants
+	 * @return breakend variants
+	 */
+	public static Iterator<VariantContextDirectedBreakpoint> breakendIterator(final ProcessingContext context, final Iterator<VariantContext> variants) {
+		 Iterator<VariantContextDirectedBreakpoint> it = Iterators.transform(variants, new Function<VariantContext, VariantContextDirectedBreakpoint>() {
+			public VariantContextDirectedBreakpoint apply(VariantContext v) {
+				return new VariantContextDirectedBreakpointBuilder(context, v).make();
+			}
+		});
+		it = Iterators.filter(it, new Predicate<VariantContextDirectedBreakpoint>() {
+			public boolean apply(VariantContextDirectedBreakpoint v) {
+				return v.isValid();
+			}
+		});
+		return it;
+	}
 }

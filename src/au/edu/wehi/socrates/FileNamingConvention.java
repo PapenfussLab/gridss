@@ -10,6 +10,7 @@ import java.io.IOException;
  */
 public class FileNamingConvention {
 	private static final String COMMON_INITIAL_SUFFIX = ".socrates";
+	private static final String WORKING_DIR_SUFFIX = COMMON_INITIAL_SUFFIX + ".working";
 	private static final String FORMAT_SV_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".sv.bam";
 	private static final String FORMAT_SV_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.sv.bam";
 	private static final String FORMAT_MATE_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".svmate.bam";
@@ -22,12 +23,24 @@ public class FileNamingConvention {
 	private static final String FORMAT_BREAKPOINT_VCF_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s-%s.breakpoint.vcf";
 	private static final String FORMAT_BREAKPOINT_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".breakpoint.vcf";
 	private static final String FORMAT_OUTPUT_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".vcf";
-	private static String GetStem(File input) throws IOException {
-		String full = input.getAbsoluteFile().toString();
+	/**
+	 * Gets the working directory stem for the given input
+	 * @param file input bam or socrates intermediate file
+	 * @return working location filename prefix for the input file 
+	 * @throws IOException
+	 */
+	private static String GetStem(File file) throws IOException {
+		String full = file.getAbsolutePath();
 		if (full.contains(COMMON_INITIAL_SUFFIX)) {
 			full = full.substring(0, full.indexOf(COMMON_INITIAL_SUFFIX));
 		}
-		return full;
+		File input = new File(full);
+		File workingDir = new File(input.getParentFile().getAbsolutePath(), input.getName() + WORKING_DIR_SUFFIX);
+		if (!workingDir.exists()) {
+			workingDir.mkdir();
+		}
+		File stem = new File(workingDir, input.getName());
+		return stem.getAbsolutePath();
 	}
 	public static File getSVBam(File input) throws IOException {
 		return new File(String.format(FORMAT_SV_BAM, GetStem(input)));
