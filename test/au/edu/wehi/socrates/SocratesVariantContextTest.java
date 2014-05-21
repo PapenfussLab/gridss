@@ -2,8 +2,8 @@ package au.edu.wehi.socrates;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import htsjdk.variant.variantcontext.VariantContext;
+
 import org.junit.Test;
 
 public class SocratesVariantContextTest extends TestHelper {

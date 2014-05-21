@@ -1,7 +1,7 @@
 package au.edu.wehi.socrates;
 
-import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
 
 /**
  * Processing context for the given record

@@ -2,8 +2,8 @@ package au.edu.wehi.socrates;
 
 import java.util.Iterator;
 
-import au.edu.wehi.socrates.graph.MaximalClique;
 import au.edu.wehi.socrates.graph.GraphNode;
+import au.edu.wehi.socrates.graph.MaximalClique;
 
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;

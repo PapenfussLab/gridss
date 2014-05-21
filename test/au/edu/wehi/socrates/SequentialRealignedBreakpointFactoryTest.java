@@ -2,10 +2,9 @@ package au.edu.wehi.socrates;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import htsjdk.samtools.SAMRecord;
 
 import java.util.List;
-
-import htsjdk.samtools.SAMRecord;
 
 import org.junit.Test;
 
@@ -41,13 +40,13 @@ public class SequentialRealignedBreakpointFactoryTest extends TestHelper {
 	}
 	@Test
 	public void should_match_by_read_name() {
-		SequentialRealignedBreakpointFactory factory = getFactory(toList(withReadName("0#1#n1", Read(0, 1, 1))));
+		SequentialRealignedBreakpointFactory factory = getFactory(L(withReadName("0#1#n1", Read(0, 1, 1))));
 		SAMRecord r = factory.findRealignedSAMRecord(new TestDirectedBreakpoint(0, 1, "n1"));
 		assertNotNull(r);
 	}
 	@Test
 	public void should_match_sequential_records() {
-		SequentialRealignedBreakpointFactory factory = getFactory(toList(
+		SequentialRealignedBreakpointFactory factory = getFactory(L(
 			withReadName("0#1#n1", Read(0, 1, "1M")),
 			withReadName("0#1#n2", Read(0, 1, "1M")),
 			withReadName("0#1#n3", Read(0, 1, "1M")),
@@ -62,7 +61,7 @@ public class SequentialRealignedBreakpointFactoryTest extends TestHelper {
 	}
 	@Test(expected=IllegalStateException.class)
 	public void should_fail_during_non_sequential_traversal() {
-		SequentialRealignedBreakpointFactory factory = getFactory(toList(
+		SequentialRealignedBreakpointFactory factory = getFactory(L(
 				withReadName("0#1#n1", Read(0, 1, 1)),
 				withReadName("1#1#n5", Read(0, 1, 1))
 				));

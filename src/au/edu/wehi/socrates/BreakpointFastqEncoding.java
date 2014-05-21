@@ -1,7 +1,7 @@
 package au.edu.wehi.socrates;
 
-import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.SAMUtils;
+import htsjdk.samtools.fastq.FastqRecord;
 
 import com.google.common.base.Charsets;
 

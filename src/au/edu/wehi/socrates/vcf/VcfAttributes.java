@@ -1,10 +1,10 @@
 package au.edu.wehi.socrates.vcf;
 
-import java.util.Arrays;
-
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
+
+import java.util.Arrays;
 
 public enum VcfAttributes {
 	UNMAPPED_MATE_READ_COUNT ("UMC", 1, VCFHeaderLineType.Integer, "Count of reads with unmapped mates supporting this breakpoint"),

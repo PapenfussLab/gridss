@@ -12,7 +12,10 @@ import htsjdk.variant.vcf.VCFHeader;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.PriorityQueue;
+
+import com.google.common.collect.Lists;
 
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
@@ -39,7 +42,7 @@ public class ClusterEvidence extends CommandLineProgram {
     @Option(doc = "Chromosome to process. This argument can be supplied twice to process interchromosomal",
             optional = true,
             shortName = "CHR")
-    public String[] CHROMSOME;
+    public List<String> CHROMSOME;
     @Option(doc = "Breakpoint calls in VCF format",
             optional = true,
             shortName= StandardOptionDefinitions.OUTPUT_SHORT_NAME)
@@ -57,8 +60,11 @@ public class ClusterEvidence extends CommandLineProgram {
     		if (METRICS == null) {
     			METRICS = FileNamingConvention.getMetrics(INPUT);
     		}
-    		if (OUTPUT == null && CHROMSOME.length == 2) {
-    			OUTPUT = FileNamingConvention.getRawCallVcf(INPUT, CHROMSOME[0], CHROMSOME[1]);
+    		if (CHROMSOME == null) {
+    			CHROMSOME = Lists.newArrayList();
+    		}
+    		if (OUTPUT == null && CHROMSOME.size() == 2) {
+    			OUTPUT = FileNamingConvention.getRawCallVcf(INPUT, CHROMSOME.get(0), CHROMSOME.get(1));
     		}
     		IOUtil.assertFileIsReadable(REFERENCE);
     		IOUtil.assertFileIsReadable(METRICS);
@@ -74,16 +80,16 @@ public class ClusterEvidence extends CommandLineProgram {
 			// (@see DirectedEvidenceChromosomePairFilter)
 			EvidenceClusterProcessor processor;
 			log.debug("Loading minimal evidence set");
-			if (CHROMSOME.length == 0) {
+			if (CHROMSOME.size() == 0) {
 				processor = new EvidenceClusterProcessor(processContext);
 				addEvidence(processor, allEvidence(processContext));
-			} else if (CHROMSOME.length == 1) {
-				processor = new EvidenceClusterSubsetProcessor(processContext, processContext.getDictionary().getSequenceIndex(CHROMSOME[0]), processContext.getDictionary().getSequenceIndex(CHROMSOME[0]));
-				addEvidence(processor, evidenceForChr(processContext, CHROMSOME[0]));
-			} else if (CHROMSOME.length == 2) {
-				processor = new EvidenceClusterSubsetProcessor(processContext, processContext.getDictionary().getSequenceIndex(CHROMSOME[0]), processContext.getDictionary().getSequenceIndex(CHROMSOME[1]));
-				addEvidence(processor, evidenceForChr(processContext, CHROMSOME[0]));
-				addEvidence(processor, evidenceForChr(processContext, CHROMSOME[1]));
+			} else if (CHROMSOME.size() == 1) {
+				processor = new EvidenceClusterSubsetProcessor(processContext, processContext.getDictionary().getSequenceIndex(CHROMSOME.get(0)), processContext.getDictionary().getSequenceIndex(CHROMSOME.get(0)));
+				addEvidence(processor, evidenceForChr(processContext, CHROMSOME.get(0)));
+			} else if (CHROMSOME.size() == 2) {
+				processor = new EvidenceClusterSubsetProcessor(processContext, processContext.getDictionary().getSequenceIndex(CHROMSOME.get(0)), processContext.getDictionary().getSequenceIndex(CHROMSOME.get(1)));
+				addEvidence(processor, evidenceForChr(processContext, CHROMSOME.get(0)));
+				addEvidence(processor, evidenceForChr(processContext, CHROMSOME.get(1)));
 			} else {
 				throw new RuntimeException("CHROMSOME argument supplied too many times");
 			}
@@ -160,6 +166,6 @@ public class ClusterEvidence extends CommandLineProgram {
 		return dei1;
 	}
 	public static void main(String[] argv) {
-        System.exit(new GenerateDirectedBreakpoints().instanceMain(argv));
+        System.exit(new ClusterEvidence().instanceMain(argv));
     }
 }

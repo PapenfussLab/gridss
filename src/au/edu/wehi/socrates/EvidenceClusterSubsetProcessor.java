@@ -1,16 +1,6 @@
 package au.edu.wehi.socrates;
 
 import java.util.Iterator;
-
-import htsjdk.samtools.util.RuntimeEOFException;
-import au.edu.wehi.socrates.graph.MaximalClique;
-import au.edu.wehi.socrates.graph.GraphNode;
-
-import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.UnmodifiableIterator;
 /**
  * Calls breakpoints from the given evidence
  * 

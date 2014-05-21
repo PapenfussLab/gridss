@@ -3,10 +3,9 @@ package au.edu.wehi.socrates;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import htsjdk.samtools.SAMRecord;
 
 import java.util.List;
-
-import htsjdk.samtools.SAMRecord;
 
 import org.junit.Test;
 

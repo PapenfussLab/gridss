@@ -1,5 +1,12 @@
 package au.edu.wehi.socrates;
 
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMReadGroupRecord;
+import htsjdk.samtools.metrics.MetricBase;
+import htsjdk.samtools.metrics.MetricsFile;
+import htsjdk.samtools.util.CollectionUtil;
+import htsjdk.samtools.util.Log;
+
 import java.io.File;
 import java.util.List;
 
@@ -7,12 +14,6 @@ import picard.analysis.CollectInsertSizeMetrics;
 import picard.analysis.InsertSizeMetrics;
 import picard.analysis.MetricAccumulationLevel;
 import picard.analysis.directed.InsertSizeMetricsCollector;
-import htsjdk.samtools.metrics.MetricBase;
-import htsjdk.samtools.metrics.MetricsFile;
-import htsjdk.samtools.util.Log;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMReadGroupRecord;
-import htsjdk.samtools.util.CollectionUtil;
 
 import com.google.common.collect.ImmutableList;
 

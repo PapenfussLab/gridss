@@ -1,27 +1,25 @@
 package au.edu.wehi.socrates;
 
 import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.List;
-
-import htsjdk.samtools.fastq.FastqReader;
-import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.BAMRecordCodec;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMFileReader;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.fastq.FastqReader;
+import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.util.SortingCollection;
-
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -127,12 +125,17 @@ public class CommandLineTest extends TestHelper {
 	public List<SAMRecord> getRecords(String extension) {
 		File file = new File(input.getAbsolutePath() + ".socrates.working", input.getName() + extension);
 		assertTrue(file.exists());
-		SAMFileReader reader = new SAMFileReader(file);
+		SamReader reader = SamReaderFactory.make().open(file);
 		List<SAMRecord> list = Lists.newArrayList();
 		for (SAMRecord r : reader) {
 			list.add(r);
 		}
-		reader.close();
+		try {
+			reader.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 		return list;
 	}
 	public List<VariantContext> getVcf(String extension) {

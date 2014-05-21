@@ -10,16 +10,13 @@ import au.edu.wehi.socrates.BreakendDirection;
 import au.edu.wehi.socrates.BreakendSummary;
 import au.edu.wehi.socrates.DirectedEvidence;
 import au.edu.wehi.socrates.DirectedEvidenceEndCoordinateComparator;
-import au.edu.wehi.socrates.EvidenceMetrics;
 import au.edu.wehi.socrates.NonReferenceReadPair;
 import au.edu.wehi.socrates.ProcessingContext;
 import au.edu.wehi.socrates.ReadEvidenceAssembler;
 import au.edu.wehi.socrates.ReadEvidenceAssemblerUtil;
 import au.edu.wehi.socrates.SoftClipEvidence;
 import au.edu.wehi.socrates.VariantContextDirectedBreakpoint;
-import au.edu.wehi.socrates.VariantContextDirectedBreakpointBuilder;
 import au.edu.wehi.socrates.sam.AnomolousReadAssembly;
-import au.edu.wehi.socrates.vcf.VcfAttributes;
 
 import com.google.common.collect.Lists;
 

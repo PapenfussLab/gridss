@@ -52,8 +52,7 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 		this.stop(loc.start);
 		if (loc.end != loc.start) {
 			// Set confidence interval on the call if we don't have an exact breakpoint position
-			this.attribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY, 0);
-			this.attribute(VcfSvConstants.CONFIDENCE_INTERVAL_END_POSITION_KEY, loc.end - loc.start);
+			this.attribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY, new int[] {0, loc.end - loc.start});
 		}
 		String chr = processContext.getDictionary().getSequence(loc.referenceIndex).getSequenceName();
 		String refBases;

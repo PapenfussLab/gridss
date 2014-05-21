@@ -1,10 +1,9 @@
 package au.edu.wehi.socrates.graph;
 
+import au.edu.wehi.socrates.EvidenceMetrics;
+
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
-
-import au.edu.wehi.socrates.BreakpointSummary;
-import au.edu.wehi.socrates.EvidenceMetrics;
 
 /**
  * Weighted trapezoid graph vertex.

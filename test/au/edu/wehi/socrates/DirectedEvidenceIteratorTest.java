@@ -2,13 +2,12 @@ package au.edu.wehi.socrates;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 import java.util.List;
 
-import htsjdk.samtools.SAMRecord;
-
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.VariantContextBuilder;
 import org.junit.Before;
 import org.junit.Test;
 

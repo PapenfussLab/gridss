@@ -1,8 +1,8 @@
 package au.edu.wehi.socrates.debruijn;
 
-import java.util.Set;
-
 import htsjdk.samtools.SAMRecord;
+
+import java.util.Set;
 
 import com.google.common.collect.Sets;
 

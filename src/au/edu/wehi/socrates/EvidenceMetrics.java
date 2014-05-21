@@ -2,8 +2,6 @@ package au.edu.wehi.socrates;
 
 import java.util.Arrays;
 
-import com.sun.tools.javac.code.Attribute.Array;
-
 import au.edu.wehi.socrates.vcf.VcfAttributes;
 
 /**

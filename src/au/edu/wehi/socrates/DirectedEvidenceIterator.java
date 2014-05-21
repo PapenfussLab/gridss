@@ -1,10 +1,9 @@
 package au.edu.wehi.socrates;
 
-import java.util.PriorityQueue;
-
 import htsjdk.samtools.SAMRecord;
-
 import htsjdk.variant.variantcontext.VariantContext;
+
+import java.util.PriorityQueue;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.PeekingIterator;

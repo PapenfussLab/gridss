@@ -1,9 +1,10 @@
 package au.edu.wehi.socrates.sam;
 
-import java.nio.charset.StandardCharsets;
-
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
+
+import java.nio.charset.StandardCharsets;
+
 import au.edu.wehi.socrates.BreakendDirection;
 
 /**

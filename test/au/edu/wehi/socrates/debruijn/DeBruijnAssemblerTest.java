@@ -8,10 +8,10 @@ import java.util.List;
 import org.junit.Test;
 
 import au.edu.wehi.socrates.BreakendDirection;
-import au.edu.wehi.socrates.VariantContextDirectedBreakpoint;
 import au.edu.wehi.socrates.DirectedEvidence;
 import au.edu.wehi.socrates.SoftClipEvidence;
 import au.edu.wehi.socrates.TestHelper;
+import au.edu.wehi.socrates.VariantContextDirectedBreakpoint;
 import au.edu.wehi.socrates.vcf.VcfAttributes;
 
 import com.google.common.collect.Lists;

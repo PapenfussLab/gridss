@@ -1,12 +1,10 @@
 package au.edu.wehi.socrates;
 
-import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.fastq.FastqWriterFactory;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
-import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
@@ -19,6 +17,7 @@ import java.io.IOException;
 
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
+import picard.cmdline.Usage;
 import au.edu.wehi.socrates.debruijn.DeBruijnAssembler;
 import au.edu.wehi.socrates.vcf.VcfConstants;
 
@@ -28,7 +27,10 @@ import com.google.common.collect.PeekingIterator;
 public class GenerateDirectedBreakpoints extends CommandLineProgram {
 
     private static final String PROGRAM_VERSION = "0.1";
-
+    @Usage
+    public String USAGE = getStandardUsagePreamble() + "Generates putative breakend sequences "
+    		+ PROGRAM_VERSION;
+    
     @Option(doc = "Coordinate sorted input file containing reads supporting putative structural variations",
             optional = false,
             shortName = "SV")
@@ -85,11 +87,9 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
     		final ProgressLogger progress = new ProgressLogger(log);
 	    	final SamReader reader = getSamReaderFactory().open(SV_INPUT);
 	    	final SamReader mateReader = getSamReaderFactory().open(MATE_COORDINATE_INPUT);
-	    	final SAMFileHeader header = reader.getFileHeader();
-	    	final SAMSequenceDictionary dictionary = header.getSequenceDictionary();
-	    	final RelevantMetrics metrics = new RelevantMetrics(METRICS);
-	    	final ReferenceSequenceFile reference = ReferenceSequenceFileFactory.getReferenceSequenceFile(REFERENCE);
-	    	final ProcessingContext processContext = new ProcessingContext(reference, dictionary, metrics);
+	    	final ProcessingContext processContext = getContext(REFERENCE, SV_INPUT);
+	    	final SAMSequenceDictionary dictionary = processContext.getDictionary();
+	    	final ReferenceSequenceFile reference = processContext.getReference();
 	    	
 			final PeekingIterator<SAMRecord> iter = Iterators.peekingIterator(reader.iterator());
 			final PeekingIterator<SAMRecord> mateIter = Iterators.peekingIterator(mateReader.iterator());

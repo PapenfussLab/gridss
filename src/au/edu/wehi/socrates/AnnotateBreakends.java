@@ -160,6 +160,6 @@ public class AnnotateBreakends extends CommandLineProgram {
 		}
 	}
 	public static void main(String[] argv) {
-        System.exit(new GenerateDirectedBreakpoints().instanceMain(argv));
+        System.exit(new AnnotateBreakends().instanceMain(argv));
     }
 }

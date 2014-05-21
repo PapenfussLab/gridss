@@ -2,18 +2,18 @@ package au.edu.wehi.socrates;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.metrics.MetricsFile;
 
 import java.io.File;
 import java.io.IOException;
 
-import picard.analysis.InsertSizeMetrics;
-import picard.analysis.directed.InsertSizeMetricsCollector;
-import htsjdk.samtools.metrics.MetricsFile;
-import htsjdk.samtools.SAMRecord;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
+
+import picard.analysis.InsertSizeMetrics;
+import picard.analysis.directed.InsertSizeMetricsCollector;
 
 public class RelevantMetricsTest extends TestHelper {
 	@Rule

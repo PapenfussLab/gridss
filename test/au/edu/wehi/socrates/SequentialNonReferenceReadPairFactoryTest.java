@@ -3,10 +3,9 @@ package au.edu.wehi.socrates;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import htsjdk.samtools.SAMRecord;
 
 import java.util.List;
-
-import htsjdk.samtools.SAMRecord;
 
 import org.junit.Test;
 
@@ -19,19 +18,19 @@ public class SequentialNonReferenceReadPairFactoryTest extends TestHelper {
 	}
 	@Test
 	public void should_match_by_read_name_and_pair_index() {
-		SequentialNonReferenceReadPairFactory factory = getFactory(toList(OEA(0, 1, "100M", true)[1]));
+		SequentialNonReferenceReadPairFactory factory = getFactory(L(OEA(0, 1, "100M", true)[1]));
 		NonReferenceReadPair rp = factory.createNonReferenceReadPair(OEA(0, 1, "100M", true)[0], 100);
 		assertNotNull(rp);
 	}
 	@Test
 	public void should_not_match_with_read_name_mismatch() {
-		SequentialNonReferenceReadPairFactory factory = getFactory(toList(OEA(0, 1, "100M", true)[1]));
+		SequentialNonReferenceReadPairFactory factory = getFactory(L(OEA(0, 1, "100M", true)[1]));
 		NonReferenceReadPair rp = factory.createNonReferenceReadPair(withReadName("different", OEA(0, 1, "100M", true))[0], 100);
 		assertNull(rp);
 	}
 	@Test
 	public void should_not_match_with_read_pair_index_mismatch() {
-		SequentialNonReferenceReadPairFactory factory = getFactory(toList(OEA(0, 1, "100M", true)[1]));
+		SequentialNonReferenceReadPairFactory factory = getFactory(L(OEA(0, 1, "100M", true)[1]));
 		SAMRecord r = OEA(0, 1, "100M", true)[0];
 		r.setFirstOfPairFlag(!r.getFirstOfPairFlag());
 		NonReferenceReadPair rp = factory.createNonReferenceReadPair(r, 100);
@@ -48,7 +47,7 @@ public class SequentialNonReferenceReadPairFactoryTest extends TestHelper {
 			withReadName("r6", OEA(2, 1, "100M", true))[1], // equivalence class equal pos
 			withReadName("r7", OEA(3, 3, "100M", true))[1], // equivalence class up pos
 		};
-		SequentialNonReferenceReadPairFactory factory = getFactory(toList(mates));
+		SequentialNonReferenceReadPairFactory factory = getFactory(L(mates));
 		assertEquals("r1", factory.createNonReferenceReadPair(withReadName("r1", OEA(0, 1, "100M", true))[0], 100).getEvidenceID());
 		// r2 and r3 should be retrievable since they are 
 		assertEquals("r2", factory.createNonReferenceReadPair(withReadName("r2", OEA(0, 1, "100M", true))[0], 100).getEvidenceID());
@@ -64,7 +63,7 @@ public class SequentialNonReferenceReadPairFactoryTest extends TestHelper {
 			withReadName("r1", OEA(0, 2, "100M", true))[1],
 			withReadName("r2", OEA(0, 1, "100M", true))[1],
 		};
-		SequentialNonReferenceReadPairFactory factory = getFactory(toList(mates));
+		SequentialNonReferenceReadPairFactory factory = getFactory(L(mates));
 		assertEquals("r1", factory.createNonReferenceReadPair(withReadName("r1", OEA(0, 2, "100M", true))[0], 100).getEvidenceID()); 
 		assertNull(factory.createNonReferenceReadPair(withReadName("r2", OEA(0, 1, "100M", true))[0], 100));
 	}

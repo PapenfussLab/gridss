@@ -1,16 +1,16 @@
 package au.edu.wehi.socrates;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
-
-import htsjdk.samtools.util.Log;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
+
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
 
 import com.google.common.collect.Iterators;
 
@@ -35,7 +35,7 @@ public class DirectedEvidenceFileIterator implements CloseableIterator<DirectedE
 		log.debug(String.format("Loading evidence from: sv:%s, mate:%s, realign:%s, assembly:%s", sv, mate, realign, vcf));
 		svReader = sv == null ? null : samFactory.open(sv);
 		mateReader = mate == null ? null : samFactory.open(mate);
-		realignReader = realign == null ? null : samFactory.open(sv);
+		realignReader = realign == null ? null : samFactory.open(realign);
 		vcfReader = vcf == null ? null : new VCFFileReader(vcf);
 		svIt = svReader == null ? null : svReader.iterator();
 		mateIt = mateReader == null ? null : mateReader.iterator();

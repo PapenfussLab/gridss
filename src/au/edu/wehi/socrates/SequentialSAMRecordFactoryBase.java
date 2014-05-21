@@ -1,8 +1,8 @@
 package au.edu.wehi.socrates;
 
-import java.util.Map;
-
 import htsjdk.samtools.SAMRecord;
+
+import java.util.Map;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;

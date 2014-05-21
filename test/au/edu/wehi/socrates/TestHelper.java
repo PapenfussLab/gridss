@@ -1,14 +1,5 @@
 package au.edu.wehi.socrates;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import htsjdk.samtools.reference.ReferenceSequenceFile;
-import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
-import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMReadGroupRecord;
@@ -16,20 +7,25 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMTag;
-import htsjdk.samtools.SAMTagUtil;
 import htsjdk.samtools.SamPairUtil;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 import htsjdk.samtools.util.ProgressLoggerInterface;
-
-import org.apache.commons.lang3.StringUtils;
-
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFHeader;
 
-import com.google.common.collect.Iterables;
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import org.apache.commons.lang3.StringUtils;
+
 import com.google.common.collect.Lists;
-import com.google.common.collect.ObjectArrays;
 
 public class TestHelper {
 	public static final BreakendDirection FWD = BreakendDirection.Forward;
@@ -42,6 +38,7 @@ public class TestHelper {
 		if (b == null) return null;
 		return new String(b, StandardCharsets.US_ASCII);
 	}
+	@SafeVarargs
 	public static <T> List<T> L(T[]... list) {
 		List<T> result = Lists.newArrayList();
 		for (int i = 0; i < list.length; i++) {
@@ -52,6 +49,11 @@ public class TestHelper {
 			}
 		}
 		return result;
+	}
+	@SafeVarargs
+	static public <T> List<T> L(T... data) {
+		List<T> list = Lists.newArrayList(data);
+		return list;
 	}
 	public VariantContextBuilder minimalVariant() {
 		return new VariantContextBuilder().chr("polyA").start(1).stop(1).alleles("A", "C");
@@ -72,15 +74,6 @@ public class TestHelper {
 		for (int i = 0; i < length; i++) b[i] = 'A';
 		return b;
 	}
-	static public <T> List<T> toList(T[]... data) {
-		List<T> list = Lists.newArrayList();
-		for (T[] array: data) {
-			for (T item : array) {
-				list.add(item);
-			}
-		}
-		return list;
-	}
 	static public List<SAMRecord> sorted(List<SAMRecord> list) {
 		List<SAMRecord> out = Lists.newArrayList(list);
 		Collections.sort(out, new SAMRecordCoordinateComparator());
@@ -90,10 +83,6 @@ public class TestHelper {
 		List<SAMRecord> out = Lists.newArrayList(list);
 		Collections.sort(out, new SAMRecordMateCoordinateComparator());
 		return out;
-	}
-	static public <T> List<T> toList(T... data) {
-		List<T> list = Lists.newArrayList(data);
-		return list;
 	}
 	static public SAMRecord[] OEA(int referenceIndex, int pos, String cigar, boolean forward) {
 		SAMRecord mapped = new SAMRecord(getHeader());

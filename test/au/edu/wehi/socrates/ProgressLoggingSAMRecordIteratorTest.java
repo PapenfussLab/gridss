@@ -1,12 +1,11 @@
 package au.edu.wehi.socrates;
 
 import static org.junit.Assert.assertEquals;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.ProgressLoggerInterface;
 
 import java.util.Iterator;
 import java.util.List;
-
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.ProgressLoggerInterface;
 
 import org.junit.Test;
 

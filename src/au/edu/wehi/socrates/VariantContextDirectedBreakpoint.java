@@ -1,22 +1,20 @@
 package au.edu.wehi.socrates;
 
+import htsjdk.variant.variantcontext.Allele;
+import htsjdk.variant.variantcontext.VariantContext;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 
+import au.edu.wehi.socrates.vcf.VcfAttributes;
+import au.edu.wehi.socrates.vcf.VcfSvConstants;
+
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
-import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Iterators;
-
-import au.edu.wehi.socrates.vcf.VcfAttributes;
-import au.edu.wehi.socrates.vcf.VcfConstants;
-import au.edu.wehi.socrates.vcf.VcfSvConstants;
-import htsjdk.variant.variantcontext.Allele;
-import htsjdk.variant.variantcontext.VariantContext;
 
 /**
  * VCF Breakend record
@@ -113,8 +111,8 @@ public class VariantContextDirectedBreakpoint extends SocratesVariantContext imp
 			anchorSequence = localSequence.substring(breakpointSequence.length());
 		}
 		int ciStart = 0, ciEnd = 0;
-		if (hasAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_LENGTH_KEY)) {
-			int[] ci = (int[])getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_LENGTH_KEY);
+		if (hasAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)) {
+			int[] ci = (int[])getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY);
 			ciStart = ci[0];
 			ciEnd = ci[1];
 		}

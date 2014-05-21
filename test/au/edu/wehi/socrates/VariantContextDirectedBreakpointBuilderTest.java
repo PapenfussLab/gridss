@@ -1,9 +1,7 @@
 package au.edu.wehi.socrates;
 
-import static org.junit.Assert.*;
-
-import java.nio.charset.StandardCharsets;
-
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
@@ -11,8 +9,6 @@ import htsjdk.variant.variantcontext.VariantContextBuilder;
 import org.junit.Test;
 
 import au.edu.wehi.socrates.vcf.VcfAttributes;
-import au.edu.wehi.socrates.vcf.VcfConstants;
-import au.edu.wehi.socrates.vcf.VcfSvConstants;
 
 public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 	@Test
@@ -198,5 +194,15 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 			.breakend(new BreakendSummary(0, FWD, 1, 1, null), null)
 			.evidence(m);
 		assertEquals(10, builder.make().getPhredScaledQual(), 0);
+	}
+	@Test
+	public void should_round_trip_inexact_breakend() {
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext());
+		builder.breakend(new BreakendSummary(1, FWD, 2, 4, null), null);
+		VariantContextDirectedBreakpoint v = new VariantContextDirectedBreakpointBuilder(getContext(), builder.make()).make();
+		assertEquals(1, v.getBreakendSummary().referenceIndex);
+		assertEquals(FWD, v.getBreakendSummary().direction);
+		assertEquals(2, v.getBreakendSummary().start);
+		assertEquals(4, v.getBreakendSummary().end);
 	}
 }

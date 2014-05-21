@@ -1,12 +1,12 @@
 package au.edu.wehi.socrates;
 
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import au.edu.wehi.socrates.vcf.VcfAttributes;
-import au.edu.wehi.socrates.vcf.VcfConstants;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.SequenceUtil;
 
 public class RealignedBreakpoint {
 	private final BreakpointSummary summary;

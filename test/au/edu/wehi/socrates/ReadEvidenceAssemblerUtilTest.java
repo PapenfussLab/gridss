@@ -2,7 +2,6 @@ package au.edu.wehi.socrates;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import htsjdk.variant.vcf.VCFHeaderLineType;
 
 import org.junit.Test;
 
