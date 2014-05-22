@@ -18,9 +18,9 @@ public class EvidenceMetricsTest extends TestHelper {
 	public void should_not_have_evidence_attribute_that_is_never_set() {
 		EvidenceMetrics m = new EvidenceMetrics();
 		// DP
-		m.add(new NonReferenceReadPair(DP(0, 1, "100M", true, 0, 1, "100M", true)[0], DP(0, 1, "100M", true, 0, 1, "100M", true)[1], 100).getBreakendSummary().evidence);
+		m.add(new NonReferenceReadPair(DP(0, 1, "100M", true, 1, 1, "100M", true)[0], DP(0, 1, "100M", true, 1, 1, "100M", true)[1], 300).getBreakendSummary().evidence);
 		// OEA
-		m.add(new NonReferenceReadPair(OEA(0, 1, "100M", true)[0], OEA(0, 1, "100M", true)[1], 100).getBreakendSummary().evidence);
+		m.add(new NonReferenceReadPair(OEA(0, 1, "100M", true)[0], OEA(0, 1, "100M", true)[1], 300).getBreakendSummary().evidence);
 		// SC
 		m.add(new SoftClipEvidence(new SoftClipEvidence(getContext(), BreakendDirection.Backward, Read(0, 1, "6S4M")), withMapq(1,Read(0, 1, "1S3M2S"))[0]).getBreakendSummary().evidence);
 		// Assembly

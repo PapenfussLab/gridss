@@ -1,6 +1,5 @@
 package au.edu.wehi.socrates.vcf;
 
-import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
 
@@ -39,14 +38,9 @@ public enum VcfAttributes {
 	VcfAttributes(String name, int count, VCFHeaderLineType type, String description) {
 		this.header = new VCFInfoHeaderLine(name, count, type, description);
 	}
+	public VCFInfoHeaderLine infoHeader() { return header; }
 	public String attribute() { return header != null ? header.getID() : null; }
-	public static void addHeaders(VCFHeader header) {
-		for (VcfAttributes attr : VcfAttributes.values()) {
-			if (attr.header != null) {
-				header.addMetaDataLine(attr.header);
-			}
-		}
-	}
+	
 	public static boolean isEvidenceSummary(VcfAttributes attr) {
 		return attr.ordinal() <= LastEvidenceAttribute.ordinal();
 	}

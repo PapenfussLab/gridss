@@ -10,6 +10,8 @@ import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
@@ -72,7 +74,13 @@ public class ExtractEvidence extends CommandLineProgram {
 	    	final SAMSequenceDictionary dictionary = header.getSequenceDictionary();
 	    	final ReferenceSequenceFileWalker referenceWalker = new ReferenceSequenceFileWalker(REFERENCE);
 	    	final InsertSizeMetricsCollector metrics = RelevantMetrics.createCollector(header);
+	    	final ReferenceSequenceFile reference = ReferenceSequenceFileFactory.getReferenceSequenceFile(REFERENCE);
 	    	
+	    	// Check we aligned to the reference supplied 
+	    	if (reference.getSequenceDictionary() == null) {
+	    		throw new IllegalArgumentException(String.format("Missing .dict file for reference %s. Please create using picard tools CreateSequenceDictionary", REFERENCE));
+	    	}
+	    	dictionary.assertSameDictionary(reference.getSequenceDictionary());
 	    	
 	    	final SAMFileWriter[] writers = new SAMFileWriter[dictionary.size() + 1];
 	    	final SAMFileWriter[] matewriters = new SAMFileWriter[dictionary.size() + 1];
@@ -84,8 +92,8 @@ public class ExtractEvidence extends CommandLineProgram {
 	    	final SAMFileWriterFactory factory = new SAMFileWriterFactory();
 	    	if (PER_CHR) {
 	    		for (int i = 0; i < dictionary.size(); i++) {
-	    			writers[i] = factory.makeSAMWriter(svHeader, true, FileNamingConvention.getSVBamForChr(INPUT, dictionary.getSequence(i).getSequenceName()));
-	    			matewriters[i] = factory.makeSAMWriter(mateHeader, false, FileNamingConvention.getMateBamForChr(INPUT, dictionary.getSequence(i).getSequenceName()));
+	    			writers[i] = factory.makeSAMOrBAMWriter(svHeader, true, FileNamingConvention.getSVBamForChr(INPUT, dictionary.getSequence(i).getSequenceName()));
+	    			matewriters[i] = factory.makeSAMOrBAMWriter(mateHeader, false, FileNamingConvention.getMateBamForChr(INPUT, dictionary.getSequence(i).getSequenceName()));
 	    			matecollection.add(SortingCollection.newInstance(SAMRecord.class, new BAMRecordCodec(mateHeader), new SAMRecordMateCoordinateComparator(),
 	    					// TODO: allocate buffers according to sequence lengths instead of equal space to every chr
 	    					MAX_RECORDS_IN_RAM / dictionary.size(),
@@ -94,8 +102,8 @@ public class ExtractEvidence extends CommandLineProgram {
 				writers[dictionary.size()] = factory.makeSAMWriter(svHeader, true, FileNamingConvention.getSVBamForChr(INPUT, "unmapped"));
 	    	} else {
 	    		// all writers map to the same one
-	    		writers[0] = factory.makeSAMWriter(svHeader, true, FileNamingConvention.getSVBam(INPUT));
-				matewriters[0] = factory.makeSAMWriter(mateHeader, false, FileNamingConvention.getMateBam(INPUT));
+	    		writers[0] = factory.makeSAMOrBAMWriter(svHeader, true, FileNamingConvention.getSVBam(INPUT));
+				matewriters[0] = factory.makeSAMOrBAMWriter(mateHeader, false, FileNamingConvention.getMateBam(INPUT));
 				matecollection.add(SortingCollection.newInstance(SAMRecord.class, new BAMRecordCodec(matewriters[0].getFileHeader()), new SAMRecordMateCoordinateComparator(), MAX_RECORDS_IN_RAM, TMP_DIR));
 				for (int i = 1; i < dictionary.size() + 1; i++) {
 					writers[i] = writers[0];

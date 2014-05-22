@@ -1,7 +1,6 @@
 package au.edu.wehi.socrates;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import htsjdk.samtools.SAMRecord;
 
 import org.junit.Test;
@@ -29,11 +28,11 @@ public class NonReferenceReadPairTest extends TestHelper {
 	}
 	@Test
 	public void getBreakendSummary_should_return_location_for_OEA() {
-		assertTrue(newPair(OEA(0, 1, "100M", true), 100).getBreakendSummary().getClass() == BreakendSummary.class);
+		assertTrue(newPair(OEA(0, 1, "100M", true), 300).getBreakendSummary().getClass() == BreakendSummary.class);
 	}
 	@Test
 	public void getBreakendSummary_should_return_interval_for_DP() {
-		assertTrue(newPair(DP(0, 1, "100M", true, 0, 100, "100M", true), 100).getBreakendSummary().getClass() == BreakpointSummary.class);
+		assertTrue(newPair(DP(0, 1, "100M", true, 0, 100, "100M", true), 300).getBreakendSummary().getClass() == BreakpointSummary.class);
 	}
 	@Test
 	public void getBreakendSummary_forward_OEA_interval_should_allow_breakpoint_anywhere_in_fragment() {
@@ -162,17 +161,62 @@ public class NonReferenceReadPairTest extends TestHelper {
 		SAMRecord[] pair = DP(0, 1, "100M", true, 0, 1, "100M", true);
 		pair[0].setMappingQuality(1);
 		pair[1].setMappingQuality(10);
-		BreakpointSummary loc = (BreakpointSummary)newPair(pair, 100).getBreakendSummary();
+		BreakpointSummary loc = (BreakpointSummary)newPair(pair, 300).getBreakendSummary();
 		assertEquals(1, loc.evidence.get(VcfAttributes.DISCORDANT_READ_PAIR_COUNT));
 		assertEquals(1, loc.evidence.get(VcfAttributes.DISCORDANT_READ_PAIR_TOTAL_MAPQ));
 		pair[0].setMappingQuality(10);
 		pair[1].setMappingQuality(1);
-		loc = (BreakpointSummary)newPair(pair, 100).getBreakendSummary();
+		loc = (BreakpointSummary)newPair(pair, 300).getBreakendSummary();
 		assertEquals(1, loc.evidence.get(VcfAttributes.DISCORDANT_READ_PAIR_TOTAL_MAPQ));
 	}
 	public void getEvidenceID_should_match_read_name() {
 		SAMRecord[] pair = DP(0, 1, "100M", true, 0, 1, "100M", true);
 		pair[0].setReadName("EvidenceID");
 		assertEquals("EvidenceID", newPair(pair, 1).getEvidenceID());
+	}
+	@Test
+	public void getBreakendSummary_DP_should_restrict_to_within_fragment_if_concordant_placement_but_not_length() {
+		NonReferenceReadPair pair = newPair(DP(0, 101, "3M", true, 0, 110, "3M", false), 100);
+		// 1
+		// 0
+		// 012345678901234567890
+		//  ==>      <== only support a BP within this interval
+		//    ^------ forward
+		//     ------^ backward
+		assertEquals(103, pair.getBreakendSummary().start);
+		assertEquals(109, pair.getBreakendSummary().end);
+		assertEquals(104, ((BreakpointSummary)pair.getBreakendSummary()).start2);
+		assertEquals(110, ((BreakpointSummary)pair.getBreakendSummary()).end2);
+	}
+	@Test
+	public void getBreakendSummary_DP_should_not_restrict_on_alt_contigs() {
+		NonReferenceReadPair pair = newPair(DP(0, 101, "3M", true, 1, 110, "3M", false), 100);
+		// 1
+		// 0
+		// 012345678901234567890
+		//  ==>      <== only support a BP within this interval
+		//    ^------ forward
+		//     ------^ backward
+		assertEquals(103, pair.getBreakendSummary().start);
+		assertEquals(103 + (100 - 3 - 3), pair.getBreakendSummary().end);
+		assertEquals(110, ((BreakpointSummary)pair.getBreakendSummary()).end2);
+		assertEquals(110 - (100 - 3 - 3), ((BreakpointSummary)pair.getBreakendSummary()).start2);
+	}
+	@Test
+	public void overlapping_PE_reads_should_provide_no_breakpoint_support() {
+		// 012345678901234567890
+		//  ==>
+		//    <==
+		assertNull(newPair(DP(0, 1, "3M", true, 0, 3, "3M", false), 100).getBreakendSummary());
+		assertNull(newPair(DP(0, 3, "3M", false, 0, 1, "3M", true), 100).getBreakendSummary());
+	}
+	@Test
+	public void overlapping_PE_reads_should_suppress_tandem_duplication_support() {
+		// if we map over the ends of each other, we're not just a short fragment
+		// 012345678901234567890
+		//     =====>
+		//  <=====
+		assertNotNull(newPair(DP(0, 4, "6M", true, 0, 1, "6M", false), 100).getBreakendSummary());
+		assertNotNull(newPair(DP(0, 1, "6M", false, 0, 4, "6M", true), 100).getBreakendSummary());
 	}
 }

@@ -1,9 +1,17 @@
 package au.edu.wehi.socrates;
 
+import java.util.List;
+
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.vcf.VCFConstants;
+
+import au.edu.wehi.socrates.vcf.VcfSvConstants;
 
 import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
+import com.google.common.primitives.Ints;
 
 /**
  * Generates variant context records from the underlying @link {@link VariantContext}
@@ -45,4 +53,25 @@ public class SocratesVariantContext extends VariantContext {
 			        .result();
 		  }
 	};
+	protected List<Integer> parseIntList(String attrName) {
+		Object x = getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY);
+		if ( x == null || x == VCFConstants.MISSING_VALUE_v4 ) return ImmutableList.of();
+		if (x instanceof int[]) {
+			return Ints.asList((int[])getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY));
+		} else if (x instanceof Iterable<?>) {
+			List<Integer> list = Lists.newArrayList();
+			for (Object o : (Iterable<?>)x) {
+				if (o instanceof Integer) {
+					list.add((Integer)o);
+				} else if (o instanceof String) {
+					list.add(Integer.parseInt((String)o));
+				} else {
+					throw new IllegalStateException(String.format("Error parsing attribute %s=%s of %s", VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY, x, super.toString()));
+				}
+			}
+			return list;
+		} else {
+			throw new IllegalStateException(String.format("Error parsing attribute %s=%s of %s", VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY, x, super.toString()));
+		}
+	}
 }

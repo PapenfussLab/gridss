@@ -1,6 +1,7 @@
 package au.edu.wehi.socrates;
 
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 
 /**

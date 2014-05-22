@@ -12,6 +12,7 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.fastq.FastqReader;
 import htsjdk.samtools.fastq.FastqRecord;
+import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.SortingCollection;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
@@ -20,12 +21,14 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
 import com.google.common.collect.Lists;
+import com.google.common.io.Files;
 
 /**
  * Helper class for testing command-line programs
@@ -37,9 +40,19 @@ public class CommandLineTest extends TestHelper {
     public TemporaryFolder testFolder = new TemporaryFolder();
 	public File input;
 	public File fastq;
+	public File reference;
 	@Before
 	public void setup() throws IOException {
+		reference = SMALL_FA_FILE;
 		input = testFolder.newFile("input.bam");
+	}
+	public void setReference(File ref) {
+		reference = ref;
+	}
+	public ProcessingContext getCommandlineContext() {
+		File metricsFile = new File(testFolder.getRoot(), "input.bam.socrates.working/input.bam.socrates.metrics.txt");
+		RelevantMetrics metrics = metricsFile.exists() ? new RelevantMetrics(metricsFile) : null;
+		return new ProcessingContext(ReferenceSequenceFileFactory.getReferenceSequenceFile(reference), metrics);
 	}
 	@After
 	public void cleanup() throws Exception {
@@ -54,6 +67,10 @@ public class CommandLineTest extends TestHelper {
 			}
 		}
 		createInput(list.toArray(new SAMRecord[0]));
+	}
+	public void createInput(File file) throws IOException {
+		if (!file.exists()) throw new IllegalArgumentException(String.format("Missing %s", file));
+		Files.copy(file, input);
 	}
 	public void createInput(SAMRecord... data) {
 		SAMFileHeader header = getHeader();
@@ -74,23 +91,24 @@ public class CommandLineTest extends TestHelper {
 		protected int doWork() {
 			return super.doWork();
 		}
-		public int go() {
+		public int go(boolean perChr) {
 			TMP_DIR = Lists.newArrayList(testFolder.getRoot());
-			REFERENCE = SMALL_FA_FILE;
+			REFERENCE = reference;
 			INPUT = input;
+			PER_CHR = perChr;
 			return doWork();
 		}
 	}
 	public int extractEvidence() {
-		return new TestExtractEvidence().go();
+		return new TestExtractEvidence().go(true);
+	}
+	public int extractEvidence(boolean perChr) {
+		return new TestExtractEvidence().go(perChr);
 	}
 	public class TestGenerateDirectedBreakpoints extends GenerateDirectedBreakpoints {
 		@Override
 		protected int doWork() {
 			return super.doWork();
-		}
-		public int go(String chr) {
-			return go(chr, null, null, null, null, null);
 		}
 		public int go(String chr, Integer minMapq, Integer longsc, Float minId, Float minQual, Integer k) {
 			if (minMapq != null) MIN_MAPQ = minMapq;
@@ -100,11 +118,18 @@ public class CommandLineTest extends TestHelper {
 			if (k != null) KMER = k;
 			TMP_DIR = Lists.newArrayList(testFolder.getRoot());
 			try {
-				REFERENCE = SMALL_FA_FILE;
-				SV_INPUT = FileNamingConvention.getSVBamForChr(input, chr);
-				MATE_COORDINATE_INPUT = FileNamingConvention.getMateBamForChr(input, chr);
-				VCF_OUTPUT = FileNamingConvention.getBreakendVcfForChr(input, chr);
-				fastq = new File(FileNamingConvention.getSVBamForChr(input, chr) + ".fastq");
+				REFERENCE = reference;
+				if (StringUtils.isNotEmpty(chr)) {
+					SV_INPUT = FileNamingConvention.getSVBamForChr(input, chr);
+					MATE_COORDINATE_INPUT = FileNamingConvention.getMateBamForChr(input, chr);
+					VCF_OUTPUT = FileNamingConvention.getBreakendVcfForChr(input, chr);
+					fastq = new File(FileNamingConvention.getSVBamForChr(input, chr) + ".fq");
+				} else {
+					SV_INPUT = FileNamingConvention.getSVBam(input);
+					MATE_COORDINATE_INPUT = FileNamingConvention.getMateBam(input);
+					VCF_OUTPUT = FileNamingConvention.getBreakendVcf(input);
+					fastq = new File(FileNamingConvention.getSVBam(input) + ".fq");
+				}
 				FASTQ_OUTPUT = fastq;
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
@@ -113,14 +138,51 @@ public class CommandLineTest extends TestHelper {
 			return doWork();
 		}
 	}
+	public int generateDirectedBreakpoints() {
+		return new TestGenerateDirectedBreakpoints().go(null, null, null, null, null, null);
+	}
+	public int generateDirectedBreakpoints(Integer minMapq, Integer longsc, Float minId, Float minQual, Integer k) {
+		return new TestGenerateDirectedBreakpoints().go(null, minMapq, longsc, minId, minQual, k);
+	}
 	public int generateDirectedBreakpoints(String chr) {
-		return new TestGenerateDirectedBreakpoints().go(chr);
+		return new TestGenerateDirectedBreakpoints().go(chr, null, null, null, null, null);
 	}
 	public int generateDirectedBreakpoints(String chr, Integer minMapq, Integer longsc, Float minId, Float minQual, Integer k) {
 		return new TestGenerateDirectedBreakpoints().go(chr, minMapq, longsc, minId, minQual, k);
 	}	
 	public void workingFileShouldExist(String extension) {
 		assertTrue(new File(input.getAbsolutePath() + ".socrates.working", input.getName() + extension).exists());
+	}
+	public class TestClusterEvidence extends ClusterEvidence {
+		@Override
+		protected int doWork() {
+			return super.doWork();
+		}
+		public int go(List<String> chr) {
+			INPUT = input;
+			REFERENCE = reference;
+			CHROMSOME = chr;
+			TMP_DIR = Lists.newArrayList(testFolder.getRoot());
+			return doWork();
+		}
+	}
+	public void clusterEvidence() {
+		new TestClusterEvidence().go(Lists.<String>newArrayList());	
+	}
+	public class TestAnnotateBreakends extends AnnotateBreakends {
+		@Override
+		protected int doWork() {
+			return super.doWork();
+		}
+		public int go() {
+			INPUT = input;
+			REFERENCE = reference;
+			TMP_DIR = Lists.newArrayList(testFolder.getRoot());
+			return doWork();
+		}
+	}
+	public void annotateBreakends() {
+		new TestAnnotateBreakends().go();
 	}
 	public List<SAMRecord> getRecords(String extension) {
 		File file = new File(input.getAbsolutePath() + ".socrates.working", input.getName() + extension);
@@ -138,13 +200,27 @@ public class CommandLineTest extends TestHelper {
 		}
 		return list;
 	}
-	public List<VariantContext> getVcf(String extension) {
+	public List<SocratesVariantContext> getVcf(String extension) {
 		File file = new File(input.getAbsolutePath() + ".socrates.working", input.getName() + extension);
 		assertTrue(file.exists());
 		VCFFileReader reader = new VCFFileReader(file);
-		List<VariantContext> list = Lists.newArrayList();
+		List<SocratesVariantContext> list = Lists.newArrayList();
 		for (VariantContext r : reader) {
-			list.add(r);
+			list.add(SocratesVariantContext.create(getCommandlineContext(), r));
+		}
+		reader.close();
+		return list;
+	}
+	public List<VariantContextDirectedBreakpoint> getVcfBreaks(String extension) {
+		File file = new File(input.getAbsolutePath() + ".socrates.working", input.getName() + extension);
+		assertTrue(file.exists());
+		VCFFileReader reader = new VCFFileReader(file);
+		List<VariantContextDirectedBreakpoint> list = Lists.newArrayList();
+		for (VariantContext r : reader) {
+			SocratesVariantContext vc = SocratesVariantContext.create(getCommandlineContext(), r);
+			if (vc instanceof VariantContextDirectedBreakpoint) {
+				list.add((VariantContextDirectedBreakpoint)vc);
+			}
 		}
 		reader.close();
 		return list;

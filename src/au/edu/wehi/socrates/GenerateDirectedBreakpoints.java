@@ -3,6 +3,7 @@ package au.edu.wehi.socrates;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.fastq.FastqWriterFactory;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.IOUtil;
@@ -90,6 +91,11 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
 	    	final ProcessingContext processContext = getContext(REFERENCE, SV_INPUT);
 	    	final SAMSequenceDictionary dictionary = processContext.getDictionary();
 	    	final ReferenceSequenceFile reference = processContext.getReference();
+	    	
+	    	if (processContext.getMetrics().getPairOrientation() != null && processContext.getMetrics().getPairOrientation() != PairOrientation.FR) {
+	    		// TODO: handle reads other than Illumina paired end reads
+	    		throw new IllegalArgumentException(String.format("Read pair %s orientation not yet implemented.", processContext.getMetrics().getPairOrientation()));
+			}
 	    	
 			final PeekingIterator<SAMRecord> iter = Iterators.peekingIterator(reader.iterator());
 			final PeekingIterator<SAMRecord> mateIter = Iterators.peekingIterator(mateReader.iterator());

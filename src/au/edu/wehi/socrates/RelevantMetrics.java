@@ -2,6 +2,7 @@ package au.edu.wehi.socrates;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMReadGroupRecord;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.metrics.MetricBase;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.util.CollectionUtil;
@@ -87,5 +88,9 @@ public class RelevantMetrics {
 	public int getMaxFragmentSize() {
 		// TODO: is this 5' difference or frag size?
 		return (int)Math.ceil(getMedianFragmentSize() + 3 * getFragmentSizeStdDev());
+	}
+	public PairOrientation getPairOrientation() {
+		if (insertSize == null) return null;
+		return insertSize.PAIR_ORIENTATION;
 	}
 }

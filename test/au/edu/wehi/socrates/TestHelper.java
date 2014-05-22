@@ -99,10 +99,10 @@ public class TestHelper {
 		clean(mapped, unmapped);
 		return new SAMRecord[] { mapped, unmapped };
 	}
-	static public NonReferenceReadPair NRRP(SAMRecord... pair) {
+	public static NonReferenceReadPair NRRP(SAMRecord... pair) {
 		return new NonReferenceReadPair(pair[0], pair[1], getContext().getMetrics().getMaxFragmentSize());
 	}
-	static public SoftClipEvidence SCE(BreakendDirection direction, SAMRecord... pair) {
+	public static SoftClipEvidence SCE(BreakendDirection direction, SAMRecord... pair) {
 		if (pair.length >= 2) {
 			return new SoftClipEvidence(getContext(), direction, pair[0], pair[1]);
 		} else {
@@ -112,10 +112,10 @@ public class TestHelper {
 	public static class MockMetrics extends RelevantMetrics {
 		@Override
 		public int getMaxFragmentSize() {
-			return 100;
+			return 300;
 		}
 	}
-	static public ProcessingContext getContext() {
+	public static ProcessingContext getContext() {
 		return new ProcessingContext(SMALL_FA, getSequenceDictionary(), new MockMetrics());
 	}
 	static public SAMRecord[] withReadName(String name, SAMRecord... data) {

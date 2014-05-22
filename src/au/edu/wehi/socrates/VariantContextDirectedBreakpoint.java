@@ -1,9 +1,11 @@
 package au.edu.wehi.socrates;
 
+import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -27,6 +29,7 @@ public class VariantContextDirectedBreakpoint extends SocratesVariantContext imp
 	private final String breakpointSequence;
 	private final String anchorSequence;
 	private final byte[] breakpointQual;
+	private static Log LOG = Log.getInstance(VariantContextDirectedBreakpoint.class);
 	public VariantContextDirectedBreakpoint(ProcessingContext processContext, VariantContext context) {
 		this(processContext, context, null);
 	}
@@ -112,9 +115,13 @@ public class VariantContextDirectedBreakpoint extends SocratesVariantContext imp
 		}
 		int ciStart = 0, ciEnd = 0;
 		if (hasAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)) {
-			int[] ci = (int[])getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY);
-			ciStart = ci[0];
-			ciEnd = ci[1];
+			List<Integer> ci = parseIntList(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY);
+			if (ci.size() == 2) {
+				ciStart = ci.get(0);
+				ciEnd = ci.get(1);
+			} else {
+				throw new IllegalStateException(String.format("Error parsing attribute %s of %s. Expected 2 integer values, found %d", VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY, super.toString(), ci.size()));
+			}
 		}
 		if (remoteDirection != null) {
 			location = new BreakpointSummary(getReferenceIndex(), direction, localPosition - ciStart, localPosition + ciEnd,

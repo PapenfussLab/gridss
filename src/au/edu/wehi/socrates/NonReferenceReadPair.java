@@ -75,15 +75,41 @@ public class NonReferenceReadPair implements DirectedEvidence {
 			}
 		}
 		int intervalWidth = maxfragmentSize - local.getReadLength() + intervalExtendedReadDueToLocalClipping - intervalReducedDueToRemoteMapping;
+		intervalWidth = Math.min(intervalWidth, pairSeparation(local, remote));
+		if (intervalWidth < 0) return null;
 		return new BreakendSummary(local.getReferenceIndex(), direction,
 				Math.min(positionClosestToBreakpoint, positionClosestToBreakpoint + intervalWidth * intervalDirection),
 				Math.max(positionClosestToBreakpoint, positionClosestToBreakpoint + intervalWidth * intervalDirection),
 				calculateOeaMetrics(local, remote));
 	}
+	/**
+	 * Determines the separation between discordant reads
+	 * @param local
+	 * @param remote
+	 * @return number possible breakpoints between the read pair mapped in the expected orientation,
+	 *  or Integer.MAX_VALUE if placement is not as expected
+	 */
+	private static int pairSeparation(SAMRecord local, SAMRecord remote) {
+		if (local.getReadUnmappedFlag() || remote.getReadUnmappedFlag()) return Integer.MAX_VALUE;
+		if (local.getReferenceIndex() != remote.getReferenceIndex()) return Integer.MAX_VALUE;
+		// Assuming FR orientation
+		if (local.getReadNegativeStrandFlag() == remote.getReadNegativeStrandFlag()) return Integer.MAX_VALUE;
+				// <--local
+		if ((local.getReadNegativeStrandFlag() && local.getAlignmentStart() > remote.getAlignmentStart())
+				// local--> 
+				|| (!local.getReadNegativeStrandFlag() && local.getAlignmentStart() < remote.getAlignmentStart())) {
+			// only problem with this pair is the fragment size is unexpected
+			return Math.max(local.getAlignmentStart(), remote.getAlignmentStart()) - Math.min(local.getAlignmentEnd(), remote.getAlignmentEnd()) - 1;
+		}
+		return Integer.MAX_VALUE;
+	}
 	private static BreakendSummary calculateBreakendSummary(SAMRecord local, SAMRecord remote, int maxfragmentSize) {
 		if (remote == null || remote.getReadUnmappedFlag()) {
 			return calculateLocalBreakendSummary(local, remote, maxfragmentSize);
 		} else {
+			// discordant because the pairs overlap = no SV evidence 
+			if (pairSeparation(local, remote) < 0) return null;
+			
 			return new BreakpointSummary(
 					calculateLocalBreakendSummary(local, remote, maxfragmentSize),
 					calculateLocalBreakendSummary(remote, local, maxfragmentSize),
