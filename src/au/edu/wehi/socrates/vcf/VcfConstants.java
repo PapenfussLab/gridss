@@ -25,10 +25,6 @@ public class VcfConstants {
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.SV_TYPE);
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.CONFIDENCE_INTERVAL_START_POSITION);
 		
-		Map<String, String> placeholderContigMap = new HashMap<String, String>();
-		placeholderContigMap.put("ID", "IDSV_PLACEHOLDER"); // TODO: should this have < > ? VCF specs are unclear
-		header.addMetaDataLine(new VCFContigHeaderLine(placeholderContigMap, Integer.MAX_VALUE)); // sorted last
-		
 		// Retrogene headers		
 		//header.addMetaDataLine(new VCFInfoHeaderLine(IdsvConstants.GENE_ID, 1, VCFHeaderLineType.String, "GTF gene_id of gene containing exons"));
 		//header.addMetaDataLine(new VCFInfoHeaderLine(VcfConstants.TRANSCRIPT_ID, VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "GTF transcript_id of gene containing breakpoint exons"));
