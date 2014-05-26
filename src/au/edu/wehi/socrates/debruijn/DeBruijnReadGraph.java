@@ -1,5 +1,6 @@
 package au.edu.wehi.socrates.debruijn;
 
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
 
@@ -216,6 +217,7 @@ public class DeBruijnReadGraph {
 			ArrayUtils.reverse(bases);
 			ArrayUtils.reverse(quals);
 		}
+		
 		return new AnomolousReadAssembly("idsvDeBruijn", bases, quals, assemblyLength - softclipSize, direction, getPathSupportingReads(path).size(), readBaseCount);
 	}
 	private Set<SAMRecord> getPathSupportingReads(LinkedList<Long> path) {

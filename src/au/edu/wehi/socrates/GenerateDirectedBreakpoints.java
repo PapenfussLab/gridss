@@ -105,6 +105,7 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
 				.setReferenceDictionary(dictionary)
 				.build();
 			final VCFHeader vcfHeader = new VCFHeader();
+			vcfHeader.setSequenceDictionary(processContext.getDictionary());
 			VcfConstants.addHeaders(vcfHeader);
 			vcfWriter.writeHeader(vcfHeader);
 			

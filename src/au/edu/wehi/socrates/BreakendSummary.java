@@ -30,6 +30,9 @@ public class BreakendSummary {
 	 */
 	public final EvidenceMetrics evidence;
 	public BreakendSummary(int referenceIndex, BreakendDirection direction, int start, int end, EvidenceMetrics evidence) {
+		if (referenceIndex < 0) {
+			throw new IllegalArgumentException("Reference index must be valid");
+		}
 		this.referenceIndex = referenceIndex;
 		this.direction = direction;
 		this.start = start;

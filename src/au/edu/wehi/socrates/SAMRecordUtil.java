@@ -12,6 +12,7 @@ import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 import htsjdk.samtools.util.SequenceUtil;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -50,6 +51,34 @@ public class SAMRecordUtil {
 			i--;
 		}
 		return 0;
+	}
+	public static byte[] getStartSoftClipBases(SAMRecord record) {
+		byte[] seq = record.getReadBases();
+		if (seq == null) return null;
+		if (seq == SAMRecord.NULL_SEQUENCE) return null;
+		seq = Arrays.copyOfRange(seq, 0, getStartSoftClipLength(record));
+		return seq;
+	}
+	public static byte[] getEndSoftClipBases(SAMRecord record) {
+		byte[] seq = record.getReadBases();
+		if (seq == null) return null;
+		if (seq == SAMRecord.NULL_SEQUENCE) return null;
+		seq = Arrays.copyOfRange(seq, record.getReadLength() - getEndSoftClipLength(record), record.getReadLength());
+		return seq;
+	}
+	public static byte[] getStartSoftClipBaseQualities(SAMRecord record) {
+		byte[] seq = record.getBaseQualities();
+		if (seq == null) return null;
+		if (seq == SAMRecord.NULL_QUALS) return null;
+		seq = Arrays.copyOfRange(seq, 0, getStartSoftClipLength(record));
+		return seq;
+	}
+	public static byte[] getEndSoftClipBaseQualities(SAMRecord record) {
+		byte[] seq = record.getBaseQualities();
+		if (seq == null) return null;
+		if (seq == SAMRecord.NULL_QUALS) return null;
+		seq = Arrays.copyOfRange(seq, record.getReadLength() - getEndSoftClipLength(record), record.getReadLength());
+		return seq;
 	}
 	/**
 	 * Determines whether this read is part of a non-reference read pair

@@ -205,4 +205,33 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 		assertEquals(2, v.getBreakendSummary().start);
 		assertEquals(4, v.getBreakendSummary().end);
 	}
+	@Test
+	public void should_write_breakpoint_in_vcf41_mode() {
+		ProcessingContext context = getContext();
+		context.setVcf41Mode(true);
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(context);
+		builder.breakend(new BreakendSummary(0,  FWD,  1,  1, null), "ACGT");
+		VariantContextDirectedBreakpoint vc = builder.make();
+		assertEquals(-1, vc.getAlternateAlleles().get(0).getDisplayString().indexOf("."));
+	}
+	@Test
+	public void vcf41_breakend_should_round_trip() {
+		ProcessingContext context = getContext();
+		context.setVcf41Mode(true);
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(context);
+		builder.breakend(new BreakendSummary(0,  FWD,  1,  2, null), "ACGT");
+		VariantContextDirectedBreakpoint v = new VariantContextDirectedBreakpointBuilder(context, builder.make()).make();
+		assertEquals(0, v.getBreakendSummary().referenceIndex);
+		assertEquals(FWD, v.getBreakendSummary().direction);
+		assertEquals(1, v.getBreakendSummary().start);
+		assertEquals(2, v.getBreakendSummary().end);
+		
+		builder = new VariantContextDirectedBreakpointBuilder(context);
+		builder.breakend(new BreakendSummary(0,  BWD,  1,  2, null), "ACGT");
+		v = new VariantContextDirectedBreakpointBuilder(context, builder.make()).make();
+		assertEquals(0, v.getBreakendSummary().referenceIndex);
+		assertEquals(BWD, v.getBreakendSummary().direction);
+		assertEquals(1, v.getBreakendSummary().start);
+		assertEquals(2, v.getBreakendSummary().end);
+	}
 }

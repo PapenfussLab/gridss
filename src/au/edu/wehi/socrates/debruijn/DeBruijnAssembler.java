@@ -1,5 +1,6 @@
 package au.edu.wehi.socrates.debruijn;
 
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 
 import java.util.Collections;
@@ -14,6 +15,7 @@ import au.edu.wehi.socrates.NonReferenceReadPair;
 import au.edu.wehi.socrates.ProcessingContext;
 import au.edu.wehi.socrates.ReadEvidenceAssembler;
 import au.edu.wehi.socrates.ReadEvidenceAssemblerUtil;
+import au.edu.wehi.socrates.SAMRecordUtil;
 import au.edu.wehi.socrates.SoftClipEvidence;
 import au.edu.wehi.socrates.VariantContextDirectedBreakpoint;
 import au.edu.wehi.socrates.sam.AnomolousReadAssembly;
@@ -49,16 +51,14 @@ public class DeBruijnAssembler implements ReadEvidenceAssembler {
 		if (ara.getBreakpointLength() == 0) return null; // only assembled anchor bases
 		if (ara.getReadCount() <= 1) return null; // exclude single soft-clips
 		
-		SoftClipEvidence assembledSC = new SoftClipEvidence(processContext, direction, ara);
-		
 		return ReadEvidenceAssemblerUtil.create(
 				processContext,
 				ASSEMBLER_NAME,
 				currentReferenceIndex,
 				currentPosition,
 				direction,
-				assembledSC.getBreakpointSequence(),
-				assembledSC.getBreakpointQuality(),
+				direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipBases(ara) : SAMRecordUtil.getStartSoftClipBases(ara),
+				direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipBaseQualities(ara) : SAMRecordUtil.getStartSoftClipBaseQualities(ara),
 				ara.getReadBases(),
 				ara.getBaseQualities(),
 				ara.getReadCount(),

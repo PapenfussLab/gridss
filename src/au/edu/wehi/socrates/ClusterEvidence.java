@@ -110,6 +110,7 @@ public class ClusterEvidence extends CommandLineProgram {
 				.setReferenceDictionary(processContext.getDictionary())
 				.build();
 			final VCFHeader vcfHeader = new VCFHeader();
+			vcfHeader.setSequenceDictionary(processContext.getDictionary());
 			VcfConstants.addHeaders(vcfHeader);
 			vcfWriter.writeHeader(vcfHeader);
 			

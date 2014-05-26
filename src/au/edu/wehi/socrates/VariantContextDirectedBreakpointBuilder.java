@@ -9,6 +9,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import au.edu.wehi.socrates.vcf.SvType;
 import au.edu.wehi.socrates.vcf.VcfAttributes;
+import au.edu.wehi.socrates.vcf.VcfConstants;
 import au.edu.wehi.socrates.vcf.VcfSvConstants;
 
 /**
@@ -32,6 +33,9 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 		super(parent);
 		this.processContext = processContext;
 		init();
+	}
+	private String getBreakendString() {
+		return processContext.getVcf41Mode() ? VcfConstants.VCF41BREAKEND_REPLACEMENT : VcfConstants.VCF42BREAKEND;
 	}
 	/**
 	 * Indicates that realignment of the breakpoint sequence failed
@@ -78,9 +82,9 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 		String referenceBase = setVcfLocationAsStartOfInterval(loc);
 		String alt;
 		if (loc.direction == BreakendDirection.Forward) {
-			alt = referenceBase + untemplatedSequence + '.';
+			alt = referenceBase + untemplatedSequence + getBreakendString();
 		} else {
-			alt = '.' + untemplatedSequence + referenceBase;
+			alt = getBreakendString() + untemplatedSequence + referenceBase;
 		}
 		alleles(referenceBase, alt);
 		if (loc.end != loc.start) {

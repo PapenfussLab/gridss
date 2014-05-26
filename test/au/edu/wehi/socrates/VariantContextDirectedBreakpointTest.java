@@ -4,6 +4,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class VariantContextDirectedBreakpointTest extends TestHelper {
@@ -46,13 +47,13 @@ public class VariantContextDirectedBreakpointTest extends TestHelper {
 	}
 	@Test
 	public void getBreakpointSequence_should_return_untemplated_sequence_for_partnered_b_breakend() {
-		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().alleles("A", "[<polyA>[CGTA").id("test").make());
+		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().alleles("A", "[polyA[CGTA").id("test").make());
 		assertEquals("CGT", vc.getBreakpointSequenceString());
 		assertArrayEquals(B(vc.getBreakpointSequenceString()), vc.getBreakpointSequence());
 	}
 	@Test
 	public void getBreakpointSequence_should_return_untemplated_sequence_for_partnered_f_breakend() {
-		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().alleles("A", "CGTA[<polyA>[").id("test").make());
+		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().alleles("A", "CGTA[polyA[").id("test").make());
 		assertEquals("GTA", vc.getBreakpointSequenceString());
 		assertArrayEquals(B(vc.getBreakpointSequenceString()), vc.getBreakpointSequence());
 	}
@@ -74,18 +75,20 @@ public class VariantContextDirectedBreakpointTest extends TestHelper {
 		assertEquals(5, loc.end2);
 		assertEquals(BreakendDirection.Forward, loc.direction2);
 	}
+	@Ignore("Named contigs are not yet processed or required by socrates. This test case can be ignored.")
 	@Test
-	public void getBreakendSummary_should_handle_nonreference_partner_contig() {
-		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().start(1).stop(2).alleles("AA", "AAAAT[<contigNotInReference>:1[").id("test").make());
-		BreakpointSummary loc = (BreakpointSummary)vc.getBreakendSummary();
-		assertEquals(0, loc.referenceIndex);
-		assertEquals(2, loc.start);
-		assertEquals(2, loc.end);
-		assertEquals(BreakendDirection.Forward, loc.direction);
-		assertEquals(-1, loc.referenceIndex2);
-		assertEquals(1, loc.start2);
-		assertEquals(1, loc.end2);
-		assertEquals(BreakendDirection.Forward, loc.direction2);
+	public void should_extend_process_context_sequence_dictionary_when_encountering_named_contig() {
+		ProcessingContext pc = getContext();
+		int seqCount = pc.getDictionary().size();
+		new VariantContextDirectedBreakpoint(pc, minimalVariant().chr("<contigNotInReference>").make());
+		assertEquals(seqCount + 1, pc.getDictionary().size());
+	}
+	@Test
+	public void should_extend_process_context_sequence_dictionary_when_encountering_named_contig_partner() {
+		ProcessingContext pc = getContext();
+		int seqCount = pc.getDictionary().size();
+		new VariantContextDirectedBreakpoint(pc, minimalVariant().start(1).stop(2).alleles("AA", "AAAAT[<contigNotInReference>:1[").id("test").make());
+		assertEquals(seqCount + 1, pc.getDictionary().size());
 	}
 	@Test
 	public void getBreakendSummary_should_handle_ff_partner() {
@@ -138,5 +141,11 @@ public class VariantContextDirectedBreakpointTest extends TestHelper {
 		assertEquals(1234, loc.start2);
 		assertEquals(1234, loc.end2);
 		assertEquals(BreakendDirection.Forward, loc.direction2);
+	}
+	@Test
+	public void getBreakendSummary_should_parse_vcf41_compatability_breakpoint_as_breakend() {
+		// even in 4.2 mode, we should happily parse our backward compatible serialisation as a breakend
+		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().start(1).stop(1).alleles("A", "A[<IDSV_PLACEHOLDER>[").id("test").make());
+		assertEquals(vc.getBreakendSummary().getClass(), BreakendSummary.class);
 	}
 }

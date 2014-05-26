@@ -60,26 +60,11 @@ public class SoftClipEvidence implements DirectedBreakpoint {
 	}
 	@Override
 	public byte[] getBreakpointSequence() {
-		byte[] seq = record.getReadBases();
-		if (seq == null) return null;
-		if (location.direction == BreakendDirection.Forward) {
-			seq = Arrays.copyOfRange(seq, record.getReadLength() - getSoftClipLength(), record.getReadLength()); 
-		} else {
-			seq = Arrays.copyOfRange(seq, 0, getSoftClipLength());
-		}
-		return seq;
+		return location.direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipBases(record) : SAMRecordUtil.getStartSoftClipBases(record);
 	}
 	@Override
 	public byte[] getBreakpointQuality() {
-		byte[] seq = record.getBaseQualities();
-		if (seq == null) return null;
-		if (seq == SAMRecord.NULL_QUALS) return null;
-		if (location.direction == BreakendDirection.Forward) {
-			seq = Arrays.copyOfRange(seq, record.getReadLength() - getSoftClipLength(), record.getReadLength()); 
-		} else {
-			seq = Arrays.copyOfRange(seq, 0, getSoftClipLength());
-		}
-		return seq;
+		return location.direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipBaseQualities(record) : SAMRecordUtil.getStartSoftClipBaseQualities(record);
 	}
 	public SAMRecord getSAMRecord() {
 		return this.record;

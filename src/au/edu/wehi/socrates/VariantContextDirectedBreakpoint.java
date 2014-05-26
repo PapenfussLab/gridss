@@ -1,17 +1,16 @@
 package au.edu.wehi.socrates;
 
-import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 
 import au.edu.wehi.socrates.vcf.VcfAttributes;
+import au.edu.wehi.socrates.vcf.VcfConstants;
 import au.edu.wehi.socrates.vcf.VcfSvConstants;
 
 import com.google.common.base.Function;
@@ -29,7 +28,7 @@ public class VariantContextDirectedBreakpoint extends SocratesVariantContext imp
 	private final String breakpointSequence;
 	private final String anchorSequence;
 	private final byte[] breakpointQual;
-	private static Log LOG = Log.getInstance(VariantContextDirectedBreakpoint.class);
+	//private static Log LOG = Log.getInstance(VariantContextDirectedBreakpoint.class);
 	public VariantContextDirectedBreakpoint(ProcessingContext processContext, VariantContext context) {
 		this(processContext, context, null);
 	}
@@ -45,6 +44,7 @@ public class VariantContextDirectedBreakpoint extends SocratesVariantContext imp
 			return;
 		}
 		String alt = getAlternateAllele(0).getDisplayString();
+		alt = alt.replace(VcfConstants.VCF41BREAKEND_REPLACEMENT, VcfConstants.VCF42BREAKEND);
 		if (getReference().length() >= alt.length()) {
 			// Technically this is valid (eg: {"AAA", "A."} = breakend with deletion), we just can't handle these yet
 			location = null;

@@ -29,6 +29,9 @@ public class BreakpointSummary extends BreakendSummary {
 	public BreakpointSummary(int referenceIndex1, BreakendDirection direction1, int start1, int end1,
 			int referenceIndex2, BreakendDirection direction2, int start2, int end2, EvidenceMetrics evidence) {
 		super(referenceIndex1, direction1, start1, end1, evidence);
+		if (referenceIndex2 < 0) {
+			throw new IllegalArgumentException("Reference index must be valid");
+		}
 		this.start2 = start2;
 		this.end2 = end2;
 		this.referenceIndex2 = referenceIndex2;
