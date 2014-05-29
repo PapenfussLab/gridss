@@ -163,6 +163,9 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 		attribute(VcfAttributes.ASSEMBLY_QUALITY.attribute(), breakpointQuality);
 		return this;
 	}
+	public VariantContextBuilder attribute(final VcfAttributes key, final Object value) {
+		return attribute(key.attribute(), value);
+	}
 	@Override
 	public VariantContextDirectedBreakpoint make() {
 		return new VariantContextDirectedBreakpoint(processContext, super.make(), this.breakendBaseQual);

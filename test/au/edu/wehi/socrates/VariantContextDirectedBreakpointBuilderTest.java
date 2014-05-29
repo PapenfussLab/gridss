@@ -234,4 +234,32 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 		assertEquals(1, v.getBreakendSummary().start);
 		assertEquals(2, v.getBreakendSummary().end);
 	}
+	@Test
+	public void matching_breakpoints_should_call_same_evidence() {
+		// 12345678901234567890
+		//         SMMMSS.
+		BreakpointSummary s1 = (BreakpointSummary)new VariantContextDirectedBreakpointBuilder(getContext(),
+				new VariantContextBuilder()
+					.chr("polyA")
+					.start(1)
+					.alleles("A", "A[polyA:10[")
+					.make())
+			.make().getBreakendSummary();
+		BreakpointSummary s2 = (BreakpointSummary)new VariantContextDirectedBreakpointBuilder(getContext(),
+				new VariantContextBuilder()
+					.chr("polyA")
+					.start(10)
+					.alleles("A", "]polyA:1]A")
+					.make())
+			.make().getBreakendSummary();
+		s2 = s2.remoteBreakpoint();
+		assertEquals(s1.direction, s2.direction);
+		assertEquals(s1.start, s2.start);
+		assertEquals(s1.end, s2.end);
+		assertEquals(s1.referenceIndex, s2.referenceIndex);
+		assertEquals(s1.direction2, s2.direction2);
+		assertEquals(s1.start2, s2.start2);
+		assertEquals(s1.end2, s2.end2);
+		assertEquals(s1.referenceIndex2, s2.referenceIndex2);
+	}
 }

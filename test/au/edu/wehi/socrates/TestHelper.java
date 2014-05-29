@@ -25,6 +25,8 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 
+import au.edu.wehi.socrates.vcf.VcfAttributes;
+
 import com.google.common.collect.Lists;
 
 public class TestHelper {
@@ -108,6 +110,34 @@ public class TestHelper {
 		} else {
 			return new SoftClipEvidence(getContext(), direction, pair[0]);
 		}
+	}
+	public static VariantContextDirectedBreakpoint AE(
+			int referenceIndex,
+			int position,
+			BreakendDirection direction,
+			String breakpointSequence,
+			Integer readCount,
+			int readBaseCount,
+			double breakpointQuality) {
+		return ReadEvidenceAssemblerUtil.create(getContext(), "testAssembler", referenceIndex, position, direction, B(breakpointSequence),
+				B(breakpointSequence),
+				readCount,
+				readBaseCount,
+				breakpointQuality);
+	}
+	public static VariantContextDirectedBreakpoint AE(
+			BreakpointSummary summary,
+			Integer readCount,
+			int readBaseCount,
+			double breakpointQuality,
+			String untemplatedSequence) {
+		VariantContextDirectedBreakpointBuilder b = new VariantContextDirectedBreakpointBuilder(getContext());
+		b.breakpoint(summary, untemplatedSequence);
+		b.attribute(VcfAttributes.ASSEMBLY_BASES.attribute(), untemplatedSequence);
+		b.attribute(VcfAttributes.ASSEMBLY_READS.attribute(), readCount);
+		b.attribute(VcfAttributes.ASSEMBLY_CONSENSUS.attribute(), untemplatedSequence);
+		b.attribute(VcfAttributes.ASSEMBLY_QUALITY.attribute(), breakpointQuality);
+		return b.make();
 	}
 	public static class MockMetrics extends RelevantMetrics {
 		@Override

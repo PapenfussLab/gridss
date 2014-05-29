@@ -9,16 +9,18 @@ package au.edu.wehi.socrates;
  */
 public enum BreakendDirection {
 	/**
-	 * The breakpoint includes bases at and before the breakpoint position
+	 * The breakpoint includes reference bases at and before the breakpoint position
 	 * but not after.
 	 * 
-	 * AAAA]?]
+	 * AAAA.
+	 *    ^
 	 */
 	Forward,
 	/**
-	 * The breakpoint iincludes bases after but not at the breakpoint position.
+	 * The breakpoint includes reference bases after but not at the breakpoint position.
 	 * 
-	 * N[?[AAAA
+	 * .AAAA
+	 * ^
 	 */
 	Backward,
 }

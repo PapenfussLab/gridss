@@ -73,7 +73,7 @@ public class VariantContextDirectedBreakpointTest extends TestHelper {
 		assertEquals(1, loc.referenceIndex2);
 		assertEquals(5, loc.start2);
 		assertEquals(5, loc.end2);
-		assertEquals(BreakendDirection.Forward, loc.direction2);
+		assertEquals(BreakendDirection.Backward, loc.direction2);
 	}
 	@Ignore("Named contigs are not yet processed or required by socrates. This test case can be ignored.")
 	@Test
@@ -92,7 +92,7 @@ public class VariantContextDirectedBreakpointTest extends TestHelper {
 	}
 	@Test
 	public void getBreakendSummary_should_handle_ff_partner() {
-		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().start(1).stop(2).alleles("AA", "AAAAT[polyACGT:1234[").id("test").make());
+		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().start(1).stop(2).alleles("AA", "AAAAT]polyACGT:1234]").id("test").make());
 		BreakpointSummary loc = (BreakpointSummary)vc.getBreakendSummary();
 		assertEquals(0, loc.referenceIndex);
 		assertEquals(2, loc.start);
@@ -105,7 +105,7 @@ public class VariantContextDirectedBreakpointTest extends TestHelper {
 	}
 	@Test
 	public void getBreakendSummary_should_handle_fb_partner() {
-		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().start(1).stop(2).alleles("AA", "AAAAT]polyACGT:1234]").id("test").make());
+		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().start(1).stop(2).alleles("AA", "AAAAT[polyACGT:1234[").id("test").make());
 		BreakpointSummary loc = (BreakpointSummary)vc.getBreakendSummary();
 		assertEquals(0, loc.referenceIndex);
 		assertEquals(2, loc.start);
@@ -118,7 +118,7 @@ public class VariantContextDirectedBreakpointTest extends TestHelper {
 	}
 	@Test
 	public void getBreakendSummary_should_handle_bb_partner() {
-		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().start(1).stop(2).alleles("AA", "]polyACGT:1234]AAAAT").id("test").make());
+		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().start(1).stop(2).alleles("AA", "[polyACGT:1234[AAAAT").id("test").make());
 		BreakpointSummary loc = (BreakpointSummary)vc.getBreakendSummary();
 		assertEquals(0, loc.referenceIndex);
 		assertEquals(1, loc.start);
@@ -131,7 +131,7 @@ public class VariantContextDirectedBreakpointTest extends TestHelper {
 	}
 	@Test
 	public void getBreakendSummary_should_handle_bf_partner() {
-		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().start(1).stop(2).alleles("AA", "[polyACGT:1234[AAAAT").id("test").make());
+		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().start(1).stop(2).alleles("AA", "]polyACGT:1234]AAAAT").id("test").make());
 		BreakpointSummary loc = (BreakpointSummary)vc.getBreakendSummary();
 		assertEquals(0, loc.referenceIndex);
 		assertEquals(1, loc.start);

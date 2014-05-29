@@ -42,9 +42,11 @@ public class SequentialBreakendAnnotator {
 		flushBefore(loc.referenceIndex, loc.start);
 		addUntil(loc.referenceIndex, loc.end);
 		
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(context, variant.getBreakendSummary())
-			.referenceReads(reference.readsSupportingNoBreakendAfter(loc.referenceIndex, loc.start + (loc.direction == BreakendDirection.Forward ? 0 : 1)))
-			.referenceSpanningPairs(reference.readPairsSupportingNoBreakendAfter(loc.referenceIndex, loc.start + (loc.direction == BreakendDirection.Forward ? 0 : 1)));
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(context, variant.getBreakendSummary());
+		if (reference != null) {
+			builder.referenceReads(reference.readsSupportingNoBreakendAfter(loc.referenceIndex, loc.start + (loc.direction == BreakendDirection.Forward ? 0 : 1)));
+			builder.referenceSpanningPairs(reference.readPairsSupportingNoBreakendAfter(loc.referenceIndex, loc.start + (loc.direction == BreakendDirection.Forward ? 0 : 1)));
+		}
 		for (DirectedEvidence evidence : activeEvidence) {
 			builder.evidence(evidence);
 		}

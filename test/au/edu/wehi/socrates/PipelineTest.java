@@ -34,5 +34,16 @@ public class PipelineTest extends CommandLineTest {
 		assertTrue(ass.size() > 0);
 		assertEquals(203476, ass.get(0).getBreakendSummary().start);
 		assertEquals(FWD, ass.get(0).getBreakendSummary().direction);
+		
+		assertTrue(Iterators.any(ass.iterator(), new Predicate<VariantContextDirectedBreakpoint>() {
+			public boolean apply(VariantContextDirectedBreakpoint bp) {
+				return bp.getStart() == 203476
+						&& bp.hasAttribute("ASSLEN")
+						&& bp.hasAttribute("ACONS")
+						&& bp.getBreakendSummary().direction == FWD
+						&& (bp.getBreakendSummary() instanceof BreakpointSummary && ((BreakpointSummary)bp.getBreakendSummary()).direction2 == BWD)
+						&& bp.getAlternateAllele(0).getDisplayString().contains("203540");
+			  }
+		}));
 	}
 }

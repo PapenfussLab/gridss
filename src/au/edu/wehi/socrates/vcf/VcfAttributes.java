@@ -10,7 +10,7 @@ public enum VcfAttributes {
 	UNMAPPED_MATE_TOTAL_MAPQ ("UMTMQ", 1, VCFHeaderLineType.Integer, "Combined mapq of reads with unmapped mates supporting this breakpoint"),
 	DISCORDANT_READ_PAIR_COUNT ("DPC", 1, VCFHeaderLineType.Integer, "Count of discordantly paired reads supporting this breakpoint"),
 	DISCORDANT_READ_PAIR_TOTAL_MAPQ ("DPTMQ", 1, VCFHeaderLineType.Integer, "Combined (pair minimum) mapq of discordant read pairs supporting this breakpoint"),
-	SOFT_CLIP_READ_COUNT ("SCS", 1, VCFHeaderLineType.Integer, "Count of soft clipped reads supporting this breakpoint"),
+	SOFT_CLIP_READ_COUNT ("SCC", 1, VCFHeaderLineType.Integer, "Count of soft clipped reads supporting this breakpoint"),
 	SOFT_CLIP_TOTAL_LENGTH ("SCB", 1, VCFHeaderLineType.Integer, "Total number of soft-cliped bases supporting this breakpoint"),
 	REALIGN_MAX_LENGTH ("ALNMAX", 1, VCFHeaderLineType.Integer, "Maximum number of realigned bases supporting this breakpoint"),
 	REALIGN_TOTAL_LENGTH ("ALNB", 1, VCFHeaderLineType.Integer, "Total number of realigned bases supporting this breakpoint"),

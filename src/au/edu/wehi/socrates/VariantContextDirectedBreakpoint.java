@@ -72,14 +72,14 @@ public class VariantContextDirectedBreakpoint extends SocratesVariantContext imp
 		} else if (alt.charAt(0) == '[' || alt.charAt(0) == ']') {
 			// [Remote[BreakpointReference
 			direction = BreakendDirection.Backward;
-			remoteDirection = alt.charAt(0) == '[' ? BreakendDirection.Forward : BreakendDirection.Backward;
+			remoteDirection = alt.charAt(0) == ']' ? BreakendDirection.Forward : BreakendDirection.Backward;
 			String[] split = alt.split("[\\[\\]]");
 			remoteContig = split[1];
 			localSequence = split[2];
 		} else if (alt.charAt(alt.length() - 1) == '[' || alt.charAt(alt.length() - 1) == ']') {
 			// ReferenceBreakpoint[Remote[
 			direction = BreakendDirection.Forward;
-			remoteDirection = alt.charAt(alt.length() - 1) == '[' ? BreakendDirection.Forward : BreakendDirection.Backward;
+			remoteDirection = alt.charAt(alt.length() - 1) == ']' ? BreakendDirection.Forward : BreakendDirection.Backward;
 			String[] split = alt.split("[\\[\\]]");
 			remoteContig = split[1];
 			localSequence = split[0];
