@@ -23,7 +23,7 @@ import com.google.common.collect.Iterators;
  * @author Daniel Cameron
  *
  */
-public class VariantContextDirectedBreakpoint extends SocratesVariantContext implements DirectedBreakpoint {
+public class VariantContextDirectedBreakpoint extends IdsvVariantContext implements DirectedBreakpoint {
 	private final BreakendSummary location;
 	private final String breakpointSequence;
 	private final String anchorSequence;

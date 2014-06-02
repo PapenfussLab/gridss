@@ -34,7 +34,7 @@ import au.edu.wehi.idsv.FileNamingConvention;
 import au.edu.wehi.idsv.GenerateDirectedBreakpoints;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.RelevantMetrics;
-import au.edu.wehi.idsv.SocratesVariantContext;
+import au.edu.wehi.idsv.IdsvVariantContext;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 
 import com.google.common.collect.Lists;
@@ -210,13 +210,13 @@ public class CommandLineTest extends TestHelper {
 		}
 		return list;
 	}
-	public List<SocratesVariantContext> getVcf(String extension) {
+	public List<IdsvVariantContext> getVcf(String extension) {
 		File file = new File(input.getAbsolutePath() + ".idsv.working", input.getName() + extension);
 		assertTrue(file.exists());
 		VCFFileReader reader = new VCFFileReader(file);
-		List<SocratesVariantContext> list = Lists.newArrayList();
+		List<IdsvVariantContext> list = Lists.newArrayList();
 		for (VariantContext r : reader) {
-			list.add(SocratesVariantContext.create(getCommandlineContext(), r));
+			list.add(IdsvVariantContext.create(getCommandlineContext(), r));
 		}
 		reader.close();
 		return list;
@@ -227,7 +227,7 @@ public class CommandLineTest extends TestHelper {
 		VCFFileReader reader = new VCFFileReader(file);
 		List<VariantContextDirectedBreakpoint> list = Lists.newArrayList();
 		for (VariantContext r : reader) {
-			SocratesVariantContext vc = SocratesVariantContext.create(getCommandlineContext(), r);
+			IdsvVariantContext vc = IdsvVariantContext.create(getCommandlineContext(), r);
 			if (vc instanceof VariantContextDirectedBreakpoint) {
 				list.add((VariantContextDirectedBreakpoint)vc);
 			}

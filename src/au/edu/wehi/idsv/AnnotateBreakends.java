@@ -157,7 +157,7 @@ public class AnnotateBreakends extends CommandLineProgram {
 					}
 				}
 			}
-			return Iterators.mergeSorted(itList, SocratesVariantContext.ByStartStopReferenceOrder);
+			return Iterators.mergeSorted(itList, IdsvVariantContext.ByStartStopReferenceOrder);
 		}
 	}
 	public static void main(String[] argv) {

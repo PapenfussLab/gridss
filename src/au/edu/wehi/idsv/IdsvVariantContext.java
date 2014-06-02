@@ -17,9 +17,9 @@ import com.google.common.primitives.Ints;
  * @author Daniel Cameron
  *
  */
-public class SocratesVariantContext extends VariantContext {
+public class IdsvVariantContext extends VariantContext {
 	protected final ProcessingContext processContext;
-	public SocratesVariantContext(ProcessingContext processContext, VariantContext context) {
+	public IdsvVariantContext(ProcessingContext processContext, VariantContext context) {
 		super(context);
 		this.processContext = processContext;
 	}
@@ -34,17 +34,17 @@ public class SocratesVariantContext extends VariantContext {
 	 * @param context variant context
 	 * @return variant context sub-type
 	 */
-	public static SocratesVariantContext create(ProcessingContext processContext, VariantContext context) {
+	public static IdsvVariantContext create(ProcessingContext processContext, VariantContext context) {
 		VariantContextDirectedBreakpoint vcdp = new VariantContextDirectedBreakpoint(processContext, context);
 		if (vcdp.isValid()) return vcdp;
 		// Not a variant generated or handled by us
-		return new SocratesVariantContext(processContext, context);
+		return new IdsvVariantContext(processContext, context);
 	}
 	public boolean isValid() {
 		return true;
 	}
-	public static Ordering<? super SocratesVariantContext> ByStartStopReferenceOrder = new Ordering<SocratesVariantContext>() {
-		public int compare(SocratesVariantContext o1, SocratesVariantContext o2) {
+	public static Ordering<? super IdsvVariantContext> ByStartStopReferenceOrder = new Ordering<IdsvVariantContext>() {
+		public int compare(IdsvVariantContext o1, IdsvVariantContext o2) {
 			  return ComparisonChain.start()
 			        .compare(o1.getReferenceIndex(), o2.getReferenceIndex())
 			        .compare(o1.getStart(), o2.getStart())

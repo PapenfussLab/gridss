@@ -22,7 +22,7 @@ public class RelevantMetrics {
 	private Log log = Log.getInstance(RelevantMetrics.class);
 	private InsertSizeMetrics insertSize = null;
 	/**
-	 * Creates a metric collector to record metrics required by Socrates
+	 * Creates a metric collector to record metrics required by idsv
 	 * @param header SAM header of file to process
 	 * @return metric collector
 	 */

@@ -102,7 +102,7 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 		return true;
 	}
 	private void processVariant(VariantContext variant) {
-		SocratesVariantContext managedContext = SocratesVariantContext.create(processContext, variant);
+		IdsvVariantContext managedContext = IdsvVariantContext.create(processContext, variant);
 		if (managedContext instanceof DirectedEvidence) {
 			calls.add((DirectedEvidence)managedContext);
 		}
