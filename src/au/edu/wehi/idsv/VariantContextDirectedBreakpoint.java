@@ -114,6 +114,7 @@ public class VariantContextDirectedBreakpoint extends IdsvVariantContext impleme
 			anchorSequence = localSequence.substring(breakpointSequence.length());
 		}
 		int ciStart = 0, ciEnd = 0;
+		int rciStart = 0, rciEnd = 0;
 		if (hasAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)) {
 			List<Integer> ci = parseIntList(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY);
 			if (ci.size() == 2) {
@@ -123,12 +124,21 @@ public class VariantContextDirectedBreakpoint extends IdsvVariantContext impleme
 				throw new IllegalStateException(String.format("Error parsing attribute %s of %s. Expected 2 integer values, found %d", VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY, super.toString(), ci.size()));
 			}
 		}
+		if (hasAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())) {
+			List<Integer> rci = parseIntList(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute());
+			if (rci.size() == 2) {
+				rciStart = rci.get(0);
+				rciEnd = rci.get(1);
+			} else {
+				throw new IllegalStateException(String.format("Error parsing attribute %s of %s. Expected 2 integer values, found %d", VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute(), super.toString(), rci.size()));
+			}
+		}
 		if (remoteDirection != null) {
-			location = new BreakpointSummary(getReferenceIndex(), direction, localPosition - ciStart, localPosition + ciEnd,
-					processContext.getDictionary().getSequenceIndex(remoteContig), remoteDirection, remotePosition - ciStart, remotePosition + ciEnd,
+			location = new BreakpointSummary(getReferenceIndex(), direction, localPosition + ciStart, localPosition + ciEnd,
+					processContext.getDictionary().getSequenceIndex(remoteContig), remoteDirection, remotePosition + rciStart, remotePosition + rciEnd,
 					getEvidence());
 		} else {
-			location = new BreakendSummary(getReferenceIndex(), direction, localPosition - ciStart, localPosition + ciEnd,
+			location = new BreakendSummary(getReferenceIndex(), direction, localPosition + ciStart, localPosition + ciEnd,
 					getEvidence());
 		}
 	}

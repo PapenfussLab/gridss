@@ -31,7 +31,9 @@ public enum VcfAttributes {
 	ASSEMBLY_QUALITY ("AQUAL", 1, VCFHeaderLineType.Float, "Anomolous read consensus assembly overall quality"),
 	ASSEMBLY_PROGRAM ("ASMBLR", 1, VCFHeaderLineType.String, "Anomolous read consensus assembly algorithm"),
 	
-	REALIGNMENT_FAILURE ("REALGNFAIL", 1, VCFHeaderLineType.Flag, "Breakend sequence unable to be realigned to the reference");
+	REALIGNMENT_FAILURE ("REALGNFAIL", 1, VCFHeaderLineType.Flag, "Breakend sequence unable to be realigned to the reference"),
+	
+	CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY ("CIRPOS", 2, VCFHeaderLineType.Integer, "Confidence interval around remote breakend POS for imprecise variants");
 		
 	private static final VcfAttributes LastEvidenceAttribute = ASSEMBLY_READS;
     private final VCFInfoHeaderLine header;

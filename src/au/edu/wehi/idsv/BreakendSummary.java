@@ -47,7 +47,7 @@ public class BreakendSummary {
 		this.evidence = evidence;
 	}
 	protected static String toString(int referenceIndex, int start, int end) {
-		return String.format("%d:%d-%d");
+		return String.format("%d:%d-%d", referenceIndex, start, end);
 	}
 	protected static String toString(BreakendDirection direction, int referenceIndex, int start, int end) {
 		if (direction == BreakendDirection.Forward) return toString(referenceIndex, start, end) + ">";
@@ -55,7 +55,7 @@ public class BreakendSummary {
 	}
 	@Override
 	public String toString() {
-		return String.format("%s %.1f", toString(direction, referenceIndex, start, end), evidence);
+		return String.format("%s %s", toString(direction, referenceIndex, start, end), evidence);
 	}
 	@Override
 	public int hashCode() {
@@ -110,4 +110,10 @@ public class BreakendSummary {
 			        .result();
 		  }
 	};
+	public boolean containedBy(BreakendSummary other) {
+		return this.referenceIndex == other.referenceIndex &&
+				this.direction == other.direction &&
+				this.start >= other.start &&
+				this.end <= other.end;
+	}
 }

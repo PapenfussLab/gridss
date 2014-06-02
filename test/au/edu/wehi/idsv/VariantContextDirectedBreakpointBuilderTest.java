@@ -215,6 +215,21 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 		assertEquals(4, v.getBreakendSummary().end);
 	}
 	@Test
+	public void should_round_trip_inexact_breakpoint() {
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext());
+		builder.breakpoint(new BreakpointSummary(1, FWD, 2, 4, 3, BWD, 7, 9, null), null);
+		VariantContextDirectedBreakpoint v = new VariantContextDirectedBreakpointBuilder(getContext(), builder.make()).make();
+		BreakpointSummary bp = (BreakpointSummary)v.getBreakendSummary();
+		assertEquals(1, bp.referenceIndex);
+		assertEquals(FWD, bp.direction);
+		assertEquals(2, bp.start);
+		assertEquals(4, bp.end);
+		assertEquals(3, bp.referenceIndex2);
+		assertEquals(BWD, bp.direction2);
+		assertEquals(7, bp.start2);
+		assertEquals(9, bp.end2);
+	}
+	@Test
 	public void should_write_breakpoint_in_vcf41_mode() {
 		ProcessingContext context = getContext();
 		context.setVcf41Mode(true);
@@ -243,32 +258,12 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 		assertEquals(1, v.getBreakendSummary().start);
 		assertEquals(2, v.getBreakendSummary().end);
 	}
-	@Test
-	public void matching_breakpoints_should_call_same_evidence() {
-		// 12345678901234567890
-		//         SMMMSS.
-		BreakpointSummary s1 = (BreakpointSummary)new VariantContextDirectedBreakpointBuilder(getContext(),
-				new VariantContextBuilder()
-					.chr("polyA")
-					.start(1)
-					.alleles("A", "A[polyA:10[")
-					.make())
-			.make().getBreakendSummary();
-		BreakpointSummary s2 = (BreakpointSummary)new VariantContextDirectedBreakpointBuilder(getContext(),
-				new VariantContextBuilder()
-					.chr("polyA")
-					.start(10)
-					.alleles("A", "]polyA:1]A")
-					.make())
-			.make().getBreakendSummary();
-		s2 = s2.remoteBreakpoint();
-		assertEquals(s1.direction, s2.direction);
-		assertEquals(s1.start, s2.start);
-		assertEquals(s1.end, s2.end);
-		assertEquals(s1.referenceIndex, s2.referenceIndex);
-		assertEquals(s1.direction2, s2.direction2);
-		assertEquals(s1.start2, s2.start2);
-		assertEquals(s1.end2, s2.end2);
-		assertEquals(s1.referenceIndex2, s2.referenceIndex2);
+	@Test(expected=IllegalStateException.class)
+	public void should_require_stop_set() {
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext());
+		builder.chr("polyA")
+			.start(1)
+			.alleles("A", "<INS>")
+			.make();
 	}
 }

@@ -144,10 +144,11 @@ public class TestHelper {
 			String untemplatedSequence) {
 		VariantContextDirectedBreakpointBuilder b = new VariantContextDirectedBreakpointBuilder(getContext());
 		b.breakpoint(summary, untemplatedSequence);
-		b.attribute(VcfAttributes.ASSEMBLY_BASES.attribute(), untemplatedSequence);
+		b.attribute(VcfAttributes.ASSEMBLY_BASES.attribute(), readBaseCount);
 		b.attribute(VcfAttributes.ASSEMBLY_READS.attribute(), readCount);
 		b.attribute(VcfAttributes.ASSEMBLY_CONSENSUS.attribute(), untemplatedSequence);
 		b.attribute(VcfAttributes.ASSEMBLY_QUALITY.attribute(), breakpointQuality);
+		b.attribute(VcfAttributes.REALIGN_TOTAL_LENGTH, untemplatedSequence.length() + 1);
 		return b.make();
 	}
 	public static class MockMetrics extends RelevantMetrics {

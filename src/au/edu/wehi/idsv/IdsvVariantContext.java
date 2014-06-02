@@ -53,10 +53,12 @@ public class IdsvVariantContext extends VariantContext {
 		  }
 	};
 	protected List<Integer> parseIntList(String attrName) {
-		Object x = getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY);
+		Object x = getAttribute(attrName);
 		if ( x == null || x == VCFConstants.MISSING_VALUE_v4 ) return ImmutableList.of();
-		if (x instanceof int[]) {
-			return Ints.asList((int[])getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY));
+		if (x instanceof Integer) {
+			return Ints.asList((Integer)x);
+		} else if (x instanceof int[]) {
+			return Ints.asList((int[])getAttribute(attrName));
 		} else if (x instanceof Iterable<?>) {
 			List<Integer> list = Lists.newArrayList();
 			for (Object o : (Iterable<?>)x) {
@@ -65,12 +67,12 @@ public class IdsvVariantContext extends VariantContext {
 				} else if (o instanceof String) {
 					list.add(Integer.parseInt((String)o));
 				} else {
-					throw new IllegalStateException(String.format("Error parsing attribute %s=%s of %s", VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY, x, super.toString()));
+					throw new IllegalStateException(String.format("Error parsing attribute %s=%s of %s", attrName, x, super.toString()));
 				}
 			}
 			return list;
 		} else {
-			throw new IllegalStateException(String.format("Error parsing attribute %s=%s of %s", VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY, x, super.toString()));
+			throw new IllegalStateException(String.format("Error parsing attribute %s=%s of %s", attrName, x, super.toString()));
 		}
 	}
 }

@@ -46,28 +46,6 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 		return this;
 	}
 	/**
-	 * Sets the VCF attributes for a breakend at the given location
-	 * @param loc
-	 * @return
-	 */
-	private String setVcfLocationAsStartOfInterval(BreakendSummary loc) {
-		this.chr(processContext.getDictionary().getSequence(loc.referenceIndex).getSequenceName());
-		this.start(loc.start);
-		this.stop(loc.start);
-		if (loc.end != loc.start) {
-			// Set confidence interval on the call if we don't have an exact breakpoint position
-			this.attribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY, new int[] {0, loc.end - loc.start});
-		}
-		String chr = processContext.getDictionary().getSequence(loc.referenceIndex).getSequenceName();
-		String refBases;
-		if (processContext.getReference() == null) {
-			refBases = StringUtils.repeat("N", loc.end - loc.start + 1);
-		} else {
-			refBases = new String(processContext.getReference().getSubsequenceAt(chr, loc.start, loc.start).getBases(), StandardCharsets.US_ASCII);
-		}
-		return refBases; 
-	}
-	/**
 	 * Sets the variant to the given breakend.
 	 * Supporting evidence is not set
 	 * @param loc location of breakend
@@ -75,23 +53,7 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 	 * @return builder
 	 */
 	public VariantContextDirectedBreakpointBuilder breakend(BreakendSummary loc, String untemplatedSequence) {
-		if (loc instanceof BreakpointSummary) {
-			return breakpoint((BreakpointSummary)loc, untemplatedSequence);
-		}
-		if (untemplatedSequence == null) untemplatedSequence = "";
-		String referenceBase = setVcfLocationAsStartOfInterval(loc);
-		String alt;
-		if (loc.direction == BreakendDirection.Forward) {
-			alt = referenceBase + untemplatedSequence + getBreakendString();
-		} else {
-			alt = getBreakendString() + untemplatedSequence + referenceBase;
-		}
-		alleles(referenceBase, alt);
-		if (loc.end != loc.start) {
-			attribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY, new int[] { 0, loc.end - loc.start });
-		}
-		attribute(VcfSvConstants.SV_TYPE_KEY, SvType.BND.name());
-		return this;
+		return dobreak(loc, untemplatedSequence);
 	}
 	/**
 	 * Sets the variant to the given breakend.
@@ -102,9 +64,8 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 	 * @return builder
 	 */
 	public VariantContextDirectedBreakpointBuilder breakend(BreakendSummary loc, byte[] untemplatedSequence, byte[] untemplatedBaseQual) {
-		breakend(loc, new String(untemplatedSequence, StandardCharsets.US_ASCII));
 		this.breakendBaseQual = untemplatedBaseQual;
-		return this;
+		return dobreak(loc, new String(untemplatedSequence, StandardCharsets.US_ASCII));
 	}
 	/**
 	 * Sets the variant to the given breakpoint
@@ -114,17 +75,53 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 	 * @return builder
 	 */
 	public VariantContextDirectedBreakpointBuilder breakpoint(BreakpointSummary loc, String untemplatedSequence) {
+		return dobreak(loc, untemplatedSequence);
+	}
+	/**
+	 * Sets the variant to the given breakend or breakpoint
+	 * @param loc location of break
+	 * @param untemplatedSequence untemplated break sequence
+	 * @return builder
+	 */
+	private VariantContextDirectedBreakpointBuilder dobreak(BreakendSummary loc, String untemplatedSequence) {
 		if (untemplatedSequence == null) untemplatedSequence = "";
-		setVcfLocationAsStartOfInterval(loc);
-		String referenceBase = setVcfLocationAsStartOfInterval(loc);	
-		char remoteBracket = loc.direction2 == BreakendDirection.Forward ? ']' : '[';
-		String target = String.format("%s:%d", processContext.getDictionary().getSequence(loc.referenceIndex2).getSequenceName(), loc.start2);
-		if (loc.direction == BreakendDirection.Forward) {
-			alleles(referenceBase, String.format("%s%s%c%s%c", referenceBase, untemplatedSequence, remoteBracket, target, remoteBracket));
+		String chr = processContext.getDictionary().getSequence(loc.referenceIndex).getSequenceName();
+		String ref, alt;
+		if (processContext.getReference() == null) {
+			ref = StringUtils.repeat("N", loc.end - loc.start + 1);
 		} else {
-			alleles(referenceBase, String.format("%c%s%c%s%s", remoteBracket, target, remoteBracket, untemplatedSequence, referenceBase));
+			ref = new String(processContext.getReference().getSubsequenceAt(chr, loc.start, loc.start).getBases(), StandardCharsets.US_ASCII);
 		}
-		attribute(VcfSvConstants.SV_TYPE_KEY, SvType.BND.name());
+		if (loc instanceof BreakpointSummary) {
+			BreakpointSummary bp = (BreakpointSummary)loc;
+			char remoteBracket = bp.direction2 == BreakendDirection.Forward ? ']' : '[';
+			String target = String.format("%s:%d", processContext.getDictionary().getSequence(bp.referenceIndex2).getSequenceName(), bp.start2);
+			if (loc.direction == BreakendDirection.Forward) {
+				alt = String.format("%s%s%c%s%c", ref, untemplatedSequence, remoteBracket, target, remoteBracket);
+			} else {
+				alt = String.format("%c%s%c%s%s", remoteBracket, target, remoteBracket, untemplatedSequence, ref);
+			}
+		} else {
+			if (loc.direction == BreakendDirection.Forward) {
+				alt = ref + untemplatedSequence + getBreakendString();
+			} else {
+				alt = getBreakendString() + untemplatedSequence + ref;
+			}
+		}
+		// populate
+		this.loc(chr, loc.start, loc.start);
+		this.alleles(ref, alt);
+		this.attribute(VcfSvConstants.SV_TYPE_KEY, SvType.BND.name());
+		if (loc.end != loc.start) {
+			// Set confidence interval on the call if we don't have an exact breakpoint position
+			this.attribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY, new int[] {0, loc.end - loc.start});
+		}
+		if (loc instanceof BreakpointSummary) {
+			BreakpointSummary bp = (BreakpointSummary)loc;
+			if (bp.end2 != bp.start2) {
+				this.attribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute(), new int[] { 0, bp.end2 - bp.start2});
+			}
+		}
 		return this;
 	}
 	/**
@@ -168,7 +165,11 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 	}
 	@Override
 	public VariantContextDirectedBreakpoint make() {
-		return new VariantContextDirectedBreakpoint(processContext, super.make(), this.breakendBaseQual);
+        VariantContext underlying = super.make();
+        if (underlying.getEnd() < underlying.getStart() && underlying.getEnd() == -1) {
+        	throw new IllegalStateException(String.format("Sanity check failure: stop not set for %s", underlying)); 
+        }
+		return new VariantContextDirectedBreakpoint(processContext, underlying, this.breakendBaseQual);
 	}
 }
 

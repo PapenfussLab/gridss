@@ -3,6 +3,7 @@ package au.edu.wehi.idsv;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -153,5 +154,103 @@ public class VariantContextDirectedBreakpointTest extends TestHelper {
 		// even in 4.2 mode, we should happily parse our backward compatible serialisation as a breakend
 		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), minimalVariant().start(1).stop(1).alleles("A", "A[<IDSV_PLACEHOLDER>[").id("test").make());
 		assertEquals(vc.getBreakendSummary().getClass(), BreakendSummary.class);
+	}
+	@Test
+	public void matching_breakpoints_should_call_same_evidence() {
+		BreakpointSummary s1 = (BreakpointSummary)new VariantContextDirectedBreakpointBuilder(getContext(),
+				new VariantContextBuilder()
+					.chr("polyA")
+					.start(1)
+					.stop(1)
+					.alleles("A", "A[polyA:10[")
+					.make())
+			.make().getBreakendSummary();
+		BreakpointSummary s2 = (BreakpointSummary)new VariantContextDirectedBreakpointBuilder(getContext(),
+				new VariantContextBuilder()
+					.chr("polyA")
+					.start(10)
+					.stop(10)
+					.alleles("A", "]polyA:1]A")
+					.make())
+			.make().getBreakendSummary();
+		s2 = s2.remoteBreakpoint();
+		assertEquals(s1.direction, s2.direction);
+		assertEquals(s1.start, s2.start);
+		assertEquals(s1.end, s2.end);
+		assertEquals(s1.referenceIndex, s2.referenceIndex);
+		assertEquals(s1.direction2, s2.direction2);
+		assertEquals(s1.start2, s2.start2);
+		assertEquals(s1.end2, s2.end2);
+		assertEquals(s1.referenceIndex2, s2.referenceIndex2);
+	}
+	@Test
+	public void forward_breakend_should_match_vcf_call() {
+		BreakpointSummary s1 = (BreakpointSummary)new VariantContextDirectedBreakpointBuilder(getContext(),
+				new VariantContextBuilder()
+					.chr("polyA")
+					.start(1)
+					.stop(1)
+					.alleles("A", "A[polyA:10[")
+					.make())
+			.make().getBreakendSummary();
+		assertEquals(FWD, s1.direction);
+		assertEquals(1, s1.start);
+		assertEquals(1, s1.end);
+		assertEquals(0, s1.referenceIndex);
+		assertEquals(BWD, s1.direction2);
+		assertEquals(10, s1.start2);
+		assertEquals(10, s1.end2);
+		assertEquals(0, s1.referenceIndex2);
+	}
+	@Test
+	public void backward_breakend_should_match_vcf_call() {
+		BreakpointSummary s1 = (BreakpointSummary)new VariantContextDirectedBreakpointBuilder(getContext(),
+				new VariantContextBuilder()
+					.chr("polyA")
+					.start(10)
+					.stop(10)
+					.alleles("A", "]polyA:1]A")
+					.make())
+			.make().getBreakendSummary();
+		assertEquals(BWD, s1.direction);
+		assertEquals(10, s1.start);
+		assertEquals(10, s1.end);
+		assertEquals(0, s1.referenceIndex);
+		assertEquals(FWD, s1.direction2);
+		assertEquals(1, s1.start2);
+		assertEquals(1, s1.end2);
+		assertEquals(0, s1.referenceIndex2);
+	}
+	@Test
+	public void breakpoint_width_should_be_determined_by_CIPOS() {
+		BreakpointSummary s1 = (BreakpointSummary)new VariantContextDirectedBreakpointBuilder(getContext(),
+				new VariantContextBuilder()
+					.chr("polyA")
+					.start(2)
+					.stop(2)
+					.alleles("A", "A[polyA:10[")
+					.attribute("CIPOS", new int[] { -1, 2 })
+					.make())
+			.make().getBreakendSummary();
+		assertEquals(1, s1.start);
+		assertEquals(4, s1.end);
+		assertEquals(10, s1.start2);
+		assertEquals(10, s1.end2);
+	}
+	@Test
+	public void remote_breakpoint_width_should_be_determined_by_CIRPOS() {
+		BreakpointSummary s1 = (BreakpointSummary)new VariantContextDirectedBreakpointBuilder(getContext(),
+				new VariantContextBuilder()
+					.chr("polyA")
+					.start(2)
+					.stop(2)
+					.alleles("A", "A[polyA:10[")
+					.attribute("CIRPOS", new int[] { -1, 2 })
+					.make())
+			.make().getBreakendSummary();
+		assertEquals(2, s1.start);
+		assertEquals(2, s1.end);
+		assertEquals(9, s1.start2);
+		assertEquals(12, s1.end2);
 	}
 }
