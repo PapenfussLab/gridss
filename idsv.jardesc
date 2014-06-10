@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="WINDOWS-1252" standalone="no"?>
 <jardesc>
-    <jar path="Socrates/dist/idsv.jar"/>
-    <options buildIfNeeded="true" compress="true" descriptionLocation="/Socrates/idsv.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="true" overwrite="true" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
+    <jar path="idsv/dist/idsv.jar"/>
+    <options buildIfNeeded="true" compress="true" descriptionLocation="/idsv/idsv.jardesc" exportErrors="true" exportWarnings="true" includeDirectoryEntries="true" overwrite="true" saveDescription="true" storeRefactorings="false" useSourceFolders="false"/>
     <storedRefactorings deprecationInfo="true" structuralOnly="false"/>
     <selectedProjects/>
     <manifest generateManifest="true" manifestLocation="" manifestVersion="1.0" reuseManifest="false" saveManifest="false" usesManifest="true">
@@ -11,8 +11,18 @@
         </sealing>
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="true" exportOutputFolder="false">
-        <folder path="/Socrates/lib"/>
-        <javaElement handleIdentifier="=Socrates/test"/>
-        <javaElement handleIdentifier="=Socrates/src"/>
+        <file path="/idsv/idsv.jardesc"/>
+        <file path="/idsv/.gitattributes"/>
+        <file path="/idsv/README.md"/>
+        <file path="/idsv/Socrates"/>
+        <file path="/idsv/htsjdk.jardesc"/>
+        <file path="/idsv/.classpath"/>
+        <file path="/idsv/Make.sh"/>
+        <file path="/idsv/.gitignore"/>
+        <file path="/idsv/socrates.codereview.txt"/>
+        <javaElement handleIdentifier="=idsv/src"/>
+        <file path="/idsv/.project"/>
+        <file path="/idsv/picard.jardesc"/>
+        <file path="/idsv/socrates.design.txt"/>
     </selectedElements>
 </jardesc>
