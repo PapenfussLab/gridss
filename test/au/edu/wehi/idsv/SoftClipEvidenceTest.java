@@ -42,6 +42,15 @@ public class SoftClipEvidenceTest extends TestHelper {
 		assertEquals(0, l.referenceIndex);
 	}
 	@Test
+	public void GetBreakendSummary_should_get_b_location() {
+		SAMRecord r = Read(0, 10, "5S10M");
+		BreakendSummary l = new SoftClipEvidence(getContext(), BWD, r).getBreakendSummary();
+		assertEquals(BWD, l.direction);
+		assertEquals(10, l.start);
+		assertEquals(10, l.end);
+		assertEquals(0, l.referenceIndex);
+	}
+	@Test
 	public void GetBreakendSummary_should_get_interval_with_realigned_ff() {
 		// MMMMSSS->
 		//            SSS->  -ve strand flips from expected direction

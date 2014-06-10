@@ -34,4 +34,30 @@ public class BreakendSummaryTest extends TestHelper {
 	public void containedBy_should_require_matching_direction() {
 		assertFalse(new BreakendSummary(0, FWD, 1, 2, null).containedBy(new BreakendSummary(0, BWD, 1, 2, null)));
 	}
+	/**
+	 * Overlaps should be Commutative
+	 * @param a
+	 * @param b
+	 */
+	public void testOverlap(BreakendSummary a, BreakendSummary b, boolean expected) {
+		assertEquals(a.overlaps(b), expected);
+		assertEquals(b.overlaps(a), expected);
+	}
+	@Test
+	public void overlaps_should_require_matching_direction() {
+		testOverlap(new BreakendSummary(0, FWD, 1, 2, null), new BreakendSummary(0, BWD, 1, 2, null), false);
+	}
+	@Test
+	public void overlaps_should_require_matching_contigs() {
+		testOverlap(new BreakendSummary(0, FWD, 1, 2, null), new BreakendSummary(1, FWD, 1, 2, null), false);
+	}
+	@Test
+	public void overlaps_should_require_at_least_one_position_in_common() {
+		testOverlap(new BreakendSummary(0, FWD, 2, 3, null), new BreakendSummary(0, FWD, 1, 4, null), true);
+		testOverlap(new BreakendSummary(0, FWD, 2, 3, null), new BreakendSummary(0, FWD, 2, 3, null), true);
+		testOverlap(new BreakendSummary(0, FWD, 2, 3, null), new BreakendSummary(0, FWD, 3, 4, null), true);
+		testOverlap(new BreakendSummary(0, FWD, 2, 3, null), new BreakendSummary(0, FWD, 1, 2, null), true);
+		testOverlap(new BreakendSummary(0, FWD, 2, 3, null), new BreakendSummary(0, FWD, 1, 1, null), false);
+		testOverlap(new BreakendSummary(0, FWD, 2, 3, null), new BreakendSummary(0, FWD, 4, 4, null), false);
+	}
 }

@@ -48,7 +48,10 @@ public class SequentialBreakendAnnotator {
 			builder.referenceSpanningPairs(reference.readPairsSupportingNoBreakendAfter(loc.referenceIndex, loc.start + (loc.direction == BreakendDirection.Forward ? 0 : 1)));
 		}
 		for (DirectedEvidence evidence : activeEvidence) {
-			builder.evidence(evidence);
+			BreakendSummary evidenceLoc = evidence.getBreakendSummary();
+			if (evidenceLoc.overlaps(loc)) {
+				builder.evidence(evidence);
+			}
 		}
 		return builder.make();
 	}

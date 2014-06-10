@@ -70,4 +70,26 @@ public class SequentialBreakendAnnotatorTest extends TestHelper {
 		assertEquals(1, result.getAttributeAsInt(VcfAttributes.ASSEMBLY_READS.attribute(), 0));
 		assertEquals(3+3+3, result.getAttributeAsInt(VcfAttributes.REALIGN_TOTAL_LENGTH.attribute(), 0));
 	}
+	@Test
+	public void should_not_add_breakend_nonsupporting_evidence() {
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext());
+		builder
+			.loc("polyA", 1, 1)
+			.alleles("A", "A[polyA:10[");
+		VariantContextDirectedBreakpoint result = go(L(
+				(DirectedEvidence)new SoftClipEvidence(getContext(), BWD, Read(0, 1, "3S1M"), Read(0, 10, "3M"))
+			), builder.make());
+		assertEquals(0, result.getAttributeAsInt(VcfAttributes.SOFT_CLIP_READ_COUNT.attribute(), 0));
+	}
+	@Test
+	public void should_not_add_breakpoint_nonsupporting_evidence() {
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext());
+		builder
+			.loc("polyA", 1, 1)
+			.alleles("A", "A[polyA:10[");
+		VariantContextDirectedBreakpoint result = go(L(
+				(DirectedEvidence)new SoftClipEvidence(getContext(), FWD, Read(0, 1, "3S1M3S"), Read(0, 12, "3M"))
+			), builder.make());
+		assertEquals(0, result.getAttributeAsInt(VcfAttributes.SOFT_CLIP_READ_COUNT.attribute(), 0));
+	}
 }

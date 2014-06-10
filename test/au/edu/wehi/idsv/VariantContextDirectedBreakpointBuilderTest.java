@@ -87,10 +87,10 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 		assertEquals("test-polyA:10-b", dba.getID());
 	}
 	@Test
-	public void phred_should_be_breakpoint_quality() {
+	public void phred_should_be_evidence_score() {
 		VariantContextDirectedBreakpoint dba = ReadEvidenceAssemblerUtil.create(getContext(), "test", 0, 10, BreakendDirection.Backward, B("AT"), B("ATA"), 1, 1, 7);
 		dba = new VariantContextDirectedBreakpoint(getContext(), new VariantContextBuilder(dba).make());
-		assertEquals(7, dba.getPhredScaledQual(), 0);
+		assertEquals(dba.getBreakendSummary().evidence.getScore(), dba.getPhredScaledQual(), 0);
 	}
 	@Test
 	public void should_generate_single_breakend_f() {
@@ -249,6 +249,8 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 		assertEquals(FWD, v.getBreakendSummary().direction);
 		assertEquals(1, v.getBreakendSummary().start);
 		assertEquals(2, v.getBreakendSummary().end);
+		assertEquals(1, v.getStart());
+		assertEquals(1, v.getEnd()); // breakend is called at the first position of the interval
 		
 		builder = new VariantContextDirectedBreakpointBuilder(context);
 		builder.breakend(new BreakendSummary(0,  BWD,  1,  2, null), "ACGT");
@@ -257,6 +259,8 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 		assertEquals(BWD, v.getBreakendSummary().direction);
 		assertEquals(1, v.getBreakendSummary().start);
 		assertEquals(2, v.getBreakendSummary().end);
+		assertEquals(1, v.getStart());
+		assertEquals(1, v.getEnd());
 	}
 	@Test(expected=IllegalStateException.class)
 	public void should_require_stop_set() {

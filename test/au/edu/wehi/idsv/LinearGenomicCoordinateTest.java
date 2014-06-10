@@ -75,13 +75,14 @@ public class LinearGenomicCoordinateTest {
 		dict.addSequence(new SAMSequenceRecord("contig1", 10));
 		dict.addSequence(new SAMSequenceRecord("contig2", 20));
 		dict.addSequence(new SAMSequenceRecord("contig3", 30));
-		LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict, 1);
-		
-		assertEquals(1, c.getReferencePosition(c.getLinearCoordinate(0, 1)));
-		assertEquals(2, c.getReferencePosition(c.getLinearCoordinate(1, 2)));
-		assertEquals(3, c.getReferencePosition(c.getLinearCoordinate(0, 3)));
-		assertEquals(4, c.getReferencePosition(c.getLinearCoordinate(1, 4)));
-		assertEquals(5, c.getReferencePosition(c.getLinearCoordinate(2, 5)));
-		assertEquals(6, c.getReferencePosition(c.getLinearCoordinate(1, 6)));
+		for (int bufferSize = 0; bufferSize < 3; bufferSize++) {
+			LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict, bufferSize);
+			assertEquals(1, c.getReferencePosition(c.getLinearCoordinate(0, 1)));
+			assertEquals(2, c.getReferencePosition(c.getLinearCoordinate(1, 2)));
+			assertEquals(3, c.getReferencePosition(c.getLinearCoordinate(0, 3)));
+			assertEquals(4, c.getReferencePosition(c.getLinearCoordinate(1, 4)));
+			assertEquals(5, c.getReferencePosition(c.getLinearCoordinate(2, 5)));
+			assertEquals(6, c.getReferencePosition(c.getLinearCoordinate(1, 6)));
+		}
 	}
 }

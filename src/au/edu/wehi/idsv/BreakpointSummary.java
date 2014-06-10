@@ -59,7 +59,16 @@ public class BreakpointSummary extends BreakendSummary {
 	}
 	@Override
 	public String toString() {
-		return String.format("%s %s %.1f", toString(direction, referenceIndex, start, end), toString(direction2, referenceIndex2, start2, end2), evidence);
+		return String.format("%s %s %s", toString(direction, referenceIndex, start, end), toString(direction2, referenceIndex2, start2, end2), evidence);
+	}
+	/**
+	 * Restricts overlap to require both local and remote breakends to overlap
+	 */
+	@Override
+	public boolean overlaps(BreakendSummary loc) {
+		return super.overlaps(loc) &&
+				(!(loc instanceof BreakpointSummary) ||
+						remoteBreakend().breakendOverlaps(((BreakpointSummary)loc).remoteBreakend()));
 	}
 	@Override
 	public int hashCode() {

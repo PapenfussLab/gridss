@@ -29,7 +29,7 @@ public class StructuralVariationCallBuilder {
 		} else {
 			throw new RuntimeException(String.format("Unknown evidence type %s", evidence.getClass()));
 		}
-		if (!call.containedBy(evidence.getBreakendSummary())) {
+		if (!call.overlaps(evidence.getBreakendSummary())) {
 			throw new IllegalArgumentException(String.format("Sanity check failure: Evidence %s does not provide support for call at %s", evidence.getBreakendSummary(), call));
 		}
 		return this;

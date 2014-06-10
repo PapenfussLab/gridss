@@ -110,10 +110,29 @@ public class BreakendSummary {
 			        .result();
 		  }
 	};
+	/**
+	 * This breakend is fully contained by the given breakend
+	 * @param other
+	 * @return
+	 */
 	public boolean containedBy(BreakendSummary other) {
 		return this.referenceIndex == other.referenceIndex &&
 				this.direction == other.direction &&
 				this.start >= other.start &&
 				this.end <= other.end;
+	}
+	/**
+	 * This breakend shares at least one position with the given breakend
+	 * @param loc
+	 * @return
+	 */
+	public boolean overlaps(BreakendSummary loc) {
+		return breakendOverlaps(loc);
+	}
+	protected boolean breakendOverlaps(BreakendSummary loc) {
+		return this.referenceIndex == loc.referenceIndex &&
+				this.direction == loc.direction &&
+				((this.start <= loc.start && this.end >= loc.start) ||
+				 (this.start >= loc.start && this.start <= loc.end));
 	}
 }
