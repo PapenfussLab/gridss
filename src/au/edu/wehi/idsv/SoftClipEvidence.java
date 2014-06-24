@@ -28,7 +28,7 @@ public class SoftClipEvidence implements DirectedBreakpoint {
 		//local.evidence.set(EvidenceAttributes.SOFT_CLIP_MAX_LENGTH, getSoftClipLength());
 		local.evidence.set(VcfAttributes.SOFT_CLIP_TOTAL_LENGTH, getSoftClipLength(direction, record));
 		if (realigned != null && !realigned.getReadUnmappedFlag()) {
-			this.realigned = new RealignedBreakpoint(local, realigned);
+			this.realigned = new RealignedBreakpoint(processContext, local, record.getReadBases(), realigned);
 			this.location = this.realigned.getBreakpointSummary();
 		} else {
 			this.location = local;

@@ -122,7 +122,7 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 		SAMRecord realigned = Read(1, 10, realignedCigar);
 		realigned.setReadBases(realignPositive ? B(bpString) : B(SequenceUtil.reverseComplement(bpString)));
 		realigned.setReadNegativeStrandFlag(!realignPositive);
-		RealignedBreakpoint rbp = new RealignedBreakpoint(dba.getBreakendSummary(), realigned);
+		RealignedBreakpoint rbp = new RealignedBreakpoint(getContext(), dba.getBreakendSummary(), "", realigned);
 		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext(), dba)
 			.breakend(rbp.getBreakpointSummary(), rbp.getInsertedSequence())
 			.evidence(rbp.getBreakpointSummary().evidence);

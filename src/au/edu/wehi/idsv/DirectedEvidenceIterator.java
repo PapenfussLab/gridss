@@ -71,7 +71,7 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 				if (realigned.getReadUnmappedFlag()) {
 					builder.realignmentFailed();
 				} else {
-					RealignedBreakpoint rbp = new RealignedBreakpoint(evidence.getBreakendSummary(), realigned);
+					RealignedBreakpoint rbp = new RealignedBreakpoint(processContext, evidence.getBreakendSummary(), ((VariantContextDirectedBreakpoint) evidence).getAnchorSequenceString(), realigned);
 					builder.breakpoint(rbp.getBreakpointSummary(), rbp.getInsertedSequence());
 				}
 				evidence = builder.make();

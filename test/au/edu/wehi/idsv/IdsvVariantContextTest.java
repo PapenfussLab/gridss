@@ -2,20 +2,11 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
 import htsjdk.variant.variantcontext.VariantContext;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import java.util.List;
 
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.ReadEvidenceAssemblerUtil;
-import au.edu.wehi.idsv.IdsvVariantContext;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
+import org.junit.Test;
 
 public class IdsvVariantContextTest extends TestHelper {
 	@Test
