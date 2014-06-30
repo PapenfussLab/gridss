@@ -7,24 +7,17 @@ import java.util.List;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.EvidenceMetrics;
 import au.edu.wehi.idsv.graph.GraphNode;
 import au.edu.wehi.idsv.graph.MaximalClique;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
 
 import com.google.common.collect.Lists;
 
 public class MaximalCliqueTest {
 	private GraphNode N(long startX, long endX, long startY, long endY) {
-		return new GraphNode(startX, endX, startY, endY, EM(1));
+		return new GraphNode(startX, endX, startY, endY, 1);
 	}
 	private GraphNode N(long startX, long endX, long startY, long endY, int weight) {
-		return new GraphNode(startX, endX, startY, endY, EM(weight));
-	}
-	private EvidenceMetrics EM(int weight) {
-		EvidenceMetrics e = new EvidenceMetrics();
-		e.set(VcfAttributes.SOFT_CLIP_READ_COUNT, weight);
-		return e;
+		return new GraphNode(startX, endX, startY, endY, weight);
 	}
 	MaximalClique graph; 
 	private GraphNode[] getCliques(GraphNode[] nodes) {
@@ -38,7 +31,7 @@ public class MaximalCliqueTest {
 	private GraphNode[] flipXY(GraphNode[] a) {
 		GraphNode[] r = new GraphNode[a.length];
 		for (int i = 0; i < a.length; i++) {
-			r[i] = new GraphNode(a[i].startY, a[i].endY, a[i].startX, a[i].endX, new EvidenceMetrics(a[i].evidence));
+			r[i] = new GraphNode(a[i].startY, a[i].endY, a[i].startX, a[i].endX, a[i].evidence);
 		}
 		return r;
 	}

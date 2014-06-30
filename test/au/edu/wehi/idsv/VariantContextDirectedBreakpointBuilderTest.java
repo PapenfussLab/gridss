@@ -196,9 +196,7 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 	}
 	@Test
 	public void evidence_score_should_match_vcf_phred_score() {
-		EvidenceMetrics m = new EvidenceMetrics() {
-			public double getScore() { return 10; };
-		};
+		EvidenceMetrics m = new EvidenceMetrics(10);
 		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext())
 			.breakend(new BreakendSummary(0, FWD, 1, 1, null), null)
 			.evidence(m);

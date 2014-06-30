@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv.graph;
 
-import au.edu.wehi.idsv.EvidenceMetrics;
-
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 
@@ -16,8 +14,8 @@ public class GraphNode {
 	public final long endX;
 	public final long startY;
 	public final long endY;
-	public final EvidenceMetrics evidence;
-	public GraphNode(long startX, long endX, long startY, long endY, EvidenceMetrics evidence) {
+	public float evidence;
+	public GraphNode(long startX, long endX, long startY, long endY, float evidence) {
 		this.startX = startX;
 		this.endX = endX;
 		this.startY = startY;
@@ -26,7 +24,7 @@ public class GraphNode {
 	}
 	@Override
 	public String toString() {
-		return String.format("(x=[%d, %d], y=[%d, %d], %s)", startX, endX, startY, endY, evidence);
+		return String.format("(x=[%d, %d], y=[%d, %d], %f)", startX, endX, startY, endY, evidence);
 	}
 	public static Ordering<GraphNode> ByEndXYStartXY = new Ordering<GraphNode>() {
 		public int compare(GraphNode o1, GraphNode o2) {

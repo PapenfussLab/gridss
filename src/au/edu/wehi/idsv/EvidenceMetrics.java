@@ -11,6 +11,7 @@ import au.edu.wehi.idsv.vcf.VcfAttributes;
  */
 public class EvidenceMetrics {
 	private final int[] v;
+	private float baseScore = 0;
 	public int get(VcfAttributes evidence) {
 		return v[evidence.ordinal()];
 	}
@@ -23,6 +24,11 @@ public class EvidenceMetrics {
 	}
 	public EvidenceMetrics(EvidenceMetrics evidence) {
 		v = Arrays.copyOf(evidence.v, evidence.v.length);
+		baseScore = evidence.baseScore;
+	}
+	public EvidenceMetrics(float score) {
+		this();
+		baseScore = score;
 	}
 	public EvidenceMetrics() {
 		 v = new int[VcfAttributes.ASSEMBLY_READS.ordinal() + 1];
@@ -36,6 +42,7 @@ public class EvidenceMetrics {
 		for (int i = 0; i < v.length; i++) {
 			v[i] += evidence.v[i];
 		}
+		baseScore += evidence.baseScore;
 	}
 	/**
 	 * Removes the given evidence from the evidence node
@@ -49,22 +56,24 @@ public class EvidenceMetrics {
 			//	throw new IllegalArgumentException(String.format("Sanity check failure: unable to remove evidence %s from %s.", evidence, this));
 			//}
 		}
+		baseScore -= evidence.baseScore;
 	}
-	public double getScore() {
-		return get(VcfAttributes.ASSEMBLY_READS)
+	public float getScore() {
+		return baseScore
+				+ get(VcfAttributes.ASSEMBLY_READS)
 				+ get(VcfAttributes.DISCORDANT_READ_PAIR_COUNT)
 				+ get(VcfAttributes.UNMAPPED_MATE_READ_COUNT)
 				+ get(VcfAttributes.SOFT_CLIP_READ_COUNT);
 	}
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder("score=" + Float.toString(getScore()));
 		for (VcfAttributes a : VcfAttributes.evidenceValues()) {
 			if (v[a.ordinal()] != 0) {
+				sb.append(' ');
 				sb.append(a.attribute());
 				sb.append('=');
 				sb.append(v[a.ordinal()]);
-				sb.append(' ');
 			}
 		}
 		return sb.toString();

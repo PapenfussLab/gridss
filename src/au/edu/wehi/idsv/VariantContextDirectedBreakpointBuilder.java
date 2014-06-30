@@ -139,7 +139,7 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 					rmAttribute(a.attribute());
 				}
 			}
-			log10PError(e.getScore() / -10);
+			log10PError(((double)e.getScore()) / -10);
 		} else {
 			log10PError(VariantContext.NO_LOG10_PERROR);
 		}

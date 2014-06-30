@@ -8,8 +8,6 @@ import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.SortedMap;
 
-import au.edu.wehi.idsv.EvidenceMetrics;
-
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
@@ -33,12 +31,10 @@ public class MaximalClique {
 	public void add(GraphNode node) {
 		GraphNode inMap = nodes.get(node);
 		if (inMap == null) {
-			inMap = new GraphNode(node.startX, node.endX, node.startY, node.endY, new EvidenceMetrics());
+			inMap = new GraphNode(node.startX, node.endX, node.startY, node.endY, 0);
 			nodes.put(inMap, inMap);
 		}
-		if (node.evidence != null) {
-			inMap.evidence.add(node.evidence);
-		}
+		inMap.evidence += node.evidence;
 	}
 	private class MaximalCliqueEnumerator extends AbstractIterator<GraphNode> {
 		private final PeekingIterator<GraphNode> nodeIt;
@@ -83,18 +79,18 @@ public class MaximalClique {
 				public YNode() {
 					startx = Long.MIN_VALUE;
 					isMaximalClique = false;
-					evidence = new EvidenceMetrics();
+					evidence = 0;
 					startHere = 0;
 					endHere = 0;
 				}
 				public long startx;
 				public boolean isMaximalClique;
-				public final EvidenceMetrics evidence;
+				public float evidence;
 				public int startHere;
 				public int endHere;
 				@Override
 				public String toString() {
-					return String.format("startx=%d start#=%d end#=%d %s %s", startx, startHere, endHere, isMaximalClique ? "MAXIMAL" : "", evidence);
+					return String.format("startx=%d start#=%d end#=%d %s %f", startx, startHere, endHere, isMaximalClique ? "MAXIMAL" : "", evidence);
 				}
 			}
 			/**
@@ -109,7 +105,7 @@ public class MaximalClique {
 				
 				// Update the interval that our new nodes spans
 				for (YNode ynode : active.subMap(node.startY, node.endY + 1).values()) {
-					ynode.evidence.add(node.evidence);
+					ynode.evidence += node.evidence;
 					ynode.startx = node.startX;
 					ynode.isMaximalClique = ynode.startHere > 0 && ynode.endHere > 0;
 				}
@@ -128,12 +124,12 @@ public class MaximalClique {
 					long starty = entry.getKey();
 					YNode ynode = entry.getValue();
 					if (ynode.isMaximalClique) {
-						cliques.add(new GraphNode(ynode.startx, node.endX, starty, it.hasNext() ? it.peek().getKey() - 1 : node.endY, new EvidenceMetrics(ynode.evidence)));
+						cliques.add(new GraphNode(ynode.startx, node.endX, starty, it.hasNext() ? it.peek().getKey() - 1 : node.endY, ynode.evidence));
 					}
 					ynode.startx = Long.MIN_VALUE;
 					ynode.isMaximalClique = false;
 					// remove node contribution
-					ynode.evidence.remove(node.evidence);
+					ynode.evidence -= node.evidence;
 				}
 				// Remove and coalese start/end bounds
 				active.get(node.startY).startHere--;
@@ -162,7 +158,7 @@ public class MaximalClique {
 				if (entry.getKey() == y) return; // Nothing to do - already split
 				YNode before = entry.getValue();
 				YNode node = new YNode();
-				node.evidence.add(before.evidence);
+				node.evidence += before.evidence;
 				node.endHere = before.endHere;
 				before.isMaximalClique = false;
 				before.endHere = 0;
