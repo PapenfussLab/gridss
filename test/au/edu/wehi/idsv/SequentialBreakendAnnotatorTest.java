@@ -88,7 +88,7 @@ public class SequentialBreakendAnnotatorTest extends TestHelper {
 			.loc("polyA", 1, 1)
 			.alleles("A", "A[polyA:10[");
 		VariantContextDirectedBreakpoint result = go(L(
-				(DirectedEvidence)new SoftClipEvidence(getContext(), FWD, Read(0, 1, "3S1M3S"), Read(0, 12, "3M"))
+				(DirectedEvidence)new SoftClipEvidence(getContext(), FWD, withSequence("TTTTTTTT", Read(0, 1, "3S1M3S"))[0], withSequence("TTT", Read(0, 12, "3M"))[0])
 			), builder.make());
 		assertEquals(0, result.getAttributeAsInt(VcfAttributes.SOFT_CLIP_READ_COUNT.attribute(), 0));
 	}

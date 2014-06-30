@@ -12,7 +12,7 @@ public class EvidenceClusterProcessorTest extends TestHelper {
 	@Test
 	public void singleton_should_make_identity_call() {
 		EvidenceClusterProcessor ecp = new EvidenceClusterProcessor(getContext());
-		ecp.addEvidence(SCE(FWD, Read(0, 1, "1M3S"), Read(1, 10, "3M")));
+		ecp.addEvidence(SCE(FWD, withSequence("TTTT", Read(0, 1, "1M3S"))[0], Read(1, 10, "3M")));
 		List<BreakendSummary> result = Lists.newArrayList(ecp.iterator());
 		assertEquals(1, result.size());
 		assertTrue(result.get(0) instanceof BreakpointSummary);

@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.SequenceUtil;
 
 import java.nio.charset.StandardCharsets;
@@ -46,14 +47,14 @@ public class RealignedBreakpoint {
 			// only consider microhomology if there is no inserted sequence
 			microhomologyLength = calculateMicrohomologyLength(context, local.direction, anchoredSequence, realigned.getReferenceIndex(), remoteDirection, remotePosition);
 		}
-		// adjust bounds for microhomologies
+		// adjust bounds for microhomologies (but don't overrun contig bounds)
 		summary = new BreakpointSummary(
 				local.referenceIndex, local.direction,
-				local.direction == BreakendDirection.Backward ? local.start : local.start - microhomologyLength,
-				local.direction == BreakendDirection.Forward ? local.end: local.end + microhomologyLength,
+				local.direction == BreakendDirection.Backward ? local.start : Math.max(local.start - microhomologyLength, 1),
+				local.direction == BreakendDirection.Forward ? local.end: Math.min(local.end + microhomologyLength, context.getDictionary().getSequence(local.referenceIndex).getSequenceLength()),
 				realigned.getReferenceIndex(), remoteDirection,
-				remoteDirection == BreakendDirection.Forward ? remotePosition : remotePosition - microhomologyLength,
-				remoteDirection == BreakendDirection.Backward ? remotePosition: remotePosition + microhomologyLength,
+				remoteDirection == BreakendDirection.Forward ? remotePosition : Math.max(remotePosition - microhomologyLength, 1),
+				remoteDirection == BreakendDirection.Backward ? remotePosition: Math.min(remotePosition + microhomologyLength, context.getDictionary().getSequence(realigned.getReferenceIndex()).getSequenceLength()),
 				new EvidenceMetrics());
 		EvidenceMetrics evidence = summary.evidence;
 		evidence.add(local.evidence);
@@ -88,11 +89,9 @@ public class RealignedBreakpoint {
 		// anchored sequence: TTTAAAAA>
 		// realign reference: GGGAAAAA
 		if (realignReferenceIndex == null || realignReferenceIndex < 0) return 0;
-		byte[] referenceBases = context.getReference()
-			.getSubsequenceAt(context.getDictionary().getSequence(realignReferenceIndex).getSequenceName(),
-				realignDirection == BreakendDirection.Forward ? realignPosition + 1 : realignPosition - 1 - anchoredSequence.length + 1,
-				realignDirection == BreakendDirection.Forward ? realignPosition + 1 + anchoredSequence.length - 1 : realignPosition - 1)
-			.getBases();
+		int windowStart = realignDirection == BreakendDirection.Forward ? realignPosition + 1 : realignPosition - 1 - anchoredSequence.length + 1;
+		int windowEnd = realignDirection == BreakendDirection.Forward ? realignPosition + 1 + anchoredSequence.length - 1 : realignPosition - 1;
+		byte[] referenceBases = getPaddedSubsequenceAt(context, realignReferenceIndex, windowStart, windowEnd);
 		// set up traversal iterators
 		int firstAnchorBase = 0;
 		int anchorInc = 1;
@@ -111,6 +110,33 @@ public class RealignedBreakpoint {
 			i++;
 		}
 		return i;
+	}
+	/**
+	 * Gets the subsequence at the given position, padding with Ns if the contig bounds are overrun
+	 * @param context
+	 * @param realignReferenceIndex
+	 * @param windowStart
+	 * @param windowEnd
+	 * @return
+	 */
+	private static byte[] getPaddedSubsequenceAt(ProcessingContext context, int realignReferenceIndex, int windowStart, int windowEnd) {
+		SAMSequenceRecord contig = context.getDictionary().getSequence(realignReferenceIndex);
+		byte[] bases = context.getReference().getSubsequenceAt(contig.getSequenceName(), Math.max(1, windowStart), Math.min(windowEnd, contig.getSequenceLength())).getBases();
+		if (windowStart < 1) {
+			int toPad = 1 - windowStart;
+			byte[] newBases = new byte[bases.length + toPad];
+			Arrays.fill(newBases, (byte)'N');
+			System.arraycopy(bases, 0, newBases, toPad, bases.length);
+			bases = newBases;
+		}
+		if (windowEnd > contig.getSequenceLength()) {
+			int toPad = windowEnd - contig.getSequenceLength();
+			byte[] newBases = new byte[bases.length + toPad];
+			Arrays.fill(newBases, (byte)'N');
+			System.arraycopy(bases, 0, newBases, 0, bases.length);
+			bases = newBases;
+		}
+		return bases;
 	}
 	private static boolean basesMatch(byte anchor, byte realign) {
 		// require exact base matching (any case)
