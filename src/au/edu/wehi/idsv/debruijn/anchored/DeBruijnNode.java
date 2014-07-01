@@ -1,4 +1,4 @@
-package au.edu.wehi.idsv.debruijn;
+package au.edu.wehi.idsv.debruijn.anchored;
 
 import htsjdk.samtools.SAMRecord;
 

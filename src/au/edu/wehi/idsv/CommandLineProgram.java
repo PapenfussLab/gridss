@@ -9,13 +9,19 @@ import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import java.io.File;
 import java.io.IOException;
 
+import au.edu.wehi.idsv.vcf.VcfConstants;
 import picard.cmdline.Option;
 
 public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgram {
-	@Option(doc = "Breakends are written to VCF files as VCF v4.1 compatible breakpoints to a placeholder named contig.",
+	@Option(doc = "Breakends are written to VCF files as VCF v4.1 compatible breakpoints to a placeholder contig " + VcfConstants.VCF41BREAKEND_REPLACEMENT,
             optional = true,
             shortName = "VCF41")
 	public boolean VCF41_COMPATIBLE = true;
+	@Option(doc = "Minimum length of a soft-clip to be considered for analysis." +
+				"Local aligners tend to produce many reads with very short soft clips.",
+    		optional=true,
+    		shortName="MIN_SC_LEN")
+	public int MIN_SOFT_CLIP_LEN = 4;
 	public SamReaderFactory getSamReaderFactory() {
 		return SamReaderFactory.makeDefault()
 				.validationStringency(ValidationStringency.LENIENT);

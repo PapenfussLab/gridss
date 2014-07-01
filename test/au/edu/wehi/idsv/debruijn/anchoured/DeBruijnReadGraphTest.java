@@ -1,4 +1,4 @@
-package au.edu.wehi.idsv.debruijn;
+package au.edu.wehi.idsv.debruijn.simple;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -7,7 +7,7 @@ import htsjdk.samtools.SAMRecord;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.debruijn.DeBruijnReadGraph;
+import au.edu.wehi.idsv.debruijn.anchoured.DeBruijnReadGraph;
 import au.edu.wehi.idsv.sam.AnomolousReadAssembly;
 import au.edu.wehi.idsv.TestHelper;
 

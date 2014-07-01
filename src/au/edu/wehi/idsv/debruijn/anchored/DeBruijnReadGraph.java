@@ -1,4 +1,4 @@
-package au.edu.wehi.idsv.debruijn;
+package au.edu.wehi.idsv.debruijn.anchored;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
@@ -14,6 +14,9 @@ import java.util.Set;
 import org.apache.commons.lang3.ArrayUtils;
 
 import au.edu.wehi.idsv.BreakendDirection;
+import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
+import au.edu.wehi.idsv.debruijn.ReadKmer;
+import au.edu.wehi.idsv.debruijn.ReadKmerIterable;
 import au.edu.wehi.idsv.sam.AnomolousReadAssembly;
 
 import com.google.common.collect.HashMultimap;

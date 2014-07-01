@@ -1,14 +1,10 @@
 package au.edu.wehi.idsv.vcf;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import htsjdk.variant.vcf.VCFContigHeaderLine;
 import htsjdk.variant.vcf.VCFHeader;
 
 public class VcfConstants {
-	public static String VCF42BREAKEND = ".";
-	public static String VCF41BREAKEND_REPLACEMENT = "[<IDSV_PLACEHOLDER>[";
+	public static final String VCF42BREAKEND = ".";
+	public static final String VCF41BREAKEND_REPLACEMENT = "[<IDSV_PLACEHOLDER>[";
 	//public static final String GENE_ID = "gene_id";
 	//public static final String TRANSCRIPT_ID = "transcript_id";
 	//public static final String REALIGNMENT_SCORE = "REALNNW";

@@ -19,7 +19,7 @@ import java.io.IOException;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import picard.cmdline.Usage;
-import au.edu.wehi.idsv.debruijn.DeBruijnAssembler;
+import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredAssembler;
 import au.edu.wehi.idsv.vcf.VcfConstants;
 
 import com.google.common.collect.Iterators;
@@ -110,7 +110,7 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
 			vcfWriter.writeHeader(vcfHeader);
 			
 			DirectedEvidenceIterator dei = new DirectedEvidenceIterator(processContext, iter, mateIter, null, null);
-			ReadEvidenceAssembler assembler = new DeBruijnAssembler(processContext, KMER);
+			ReadEvidenceAssembler assembler = new DeBruijnAnchoredAssembler(processContext, KMER);
 			while (dei.hasNext()) {
 				DirectedEvidence readEvidence = dei.next();
 				progress.record(reference.getSequenceDictionary().getSequence(readEvidence.getBreakendSummary().referenceIndex).getSequenceName(), readEvidence.getBreakendSummary().start);
