@@ -30,7 +30,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 		final ReferenceSequenceFile ref = ReferenceSequenceFileFactory.getReferenceSequenceFile(reference);
 		final SAMSequenceDictionary dictionary = ref.getSequenceDictionary();
 		if (dictionary == null) {
-			throw new IllegalArgumentException(String.format("Missing .dict for ", reference, ". Creating using picard tools CreateSequenceDictionary."));
+			throw new IllegalArgumentException(String.format("Missing .dict for %s. Creating using picard tools CreateSequenceDictionary.", reference));
 		}
     	final RelevantMetrics metrics = new RelevantMetrics(FileNamingConvention.getMetrics(input));
     	final ProcessingContext processContext = new ProcessingContext(ref, dictionary, metrics);

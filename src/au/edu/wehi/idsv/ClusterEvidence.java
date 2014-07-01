@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.reference.ReferenceSequenceFile;
-import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
@@ -16,12 +14,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
 
-import com.google.common.collect.Lists;
-
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import picard.cmdline.Usage;
 import au.edu.wehi.idsv.vcf.VcfConstants;
+
+import com.google.common.collect.Lists;
 
 /**
  * Clusters evidence that supports a common breakpoint together
@@ -82,9 +80,7 @@ public class ClusterEvidence extends CommandLineProgram {
     		IOUtil.assertFileIsReadable(METRICS);
     		IOUtil.assertFileIsWritable(OUTPUT);
     		
-	    	final RelevantMetrics metrics = new RelevantMetrics(METRICS);
-	    	final ReferenceSequenceFile reference = ReferenceSequenceFileFactory.getReferenceSequenceFile(REFERENCE);
-	    	final ProcessingContext processContext = new ProcessingContext(reference, metrics);
+	    	final ProcessingContext processContext = getContext(REFERENCE, INPUT);
 			
 			// TODO: add filtering parameters so we only process evidence between 1 and 2 
 			// (@see DirectedEvidenceChromosomePairFilter)
