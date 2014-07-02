@@ -113,6 +113,7 @@ public class TestHelper {
 		return new SAMRecord[] { mapped, unmapped };
 	}
 	public static NonReferenceReadPair NRRP(SAMRecord... pair) {
+		pair[1].setReadName(pair[0].getReadName());
 		return new NonReferenceReadPair(pair[0], pair[1], getContext().getMetrics().getMaxFragmentSize());
 	}
 	public static SoftClipEvidence SCE(BreakendDirection direction, SAMRecord... pair) {

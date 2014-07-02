@@ -31,7 +31,9 @@ public class SAMRecordUtil {
 	public static int getStartSoftClipLength(SAMRecord aln) {
 		Cigar cigar = aln.getCigar();
 		if (cigar == null) return 0;
-		List<CigarElement> elements = cigar.getCigarElements();
+		return getStartSoftClipLength(cigar.getCigarElements());
+	}
+	public static int getStartSoftClipLength(List<CigarElement> elements) {
 		if (elements == null) return 0;
 		int i = 0;
 		while (i < elements.size() && (elements.get(i).getOperator() == CigarOperator.HARD_CLIP || elements.get(i).getOperator() == CigarOperator.SOFT_CLIP)) {
@@ -43,7 +45,9 @@ public class SAMRecordUtil {
 	public static int getEndSoftClipLength(SAMRecord aln) {
 		Cigar cigar = aln.getCigar();
 		if (cigar == null) return 0;
-		List<CigarElement> elements = cigar.getCigarElements();
+		return getEndSoftClipLength(cigar.getCigarElements());
+	}
+	public static int getEndSoftClipLength(List<CigarElement> elements) {
 		if (elements == null) return 0;
 		int i = elements.size() - 1;
 		while (i > 0 && (elements.get(i).getOperator() == CigarOperator.HARD_CLIP || elements.get(i).getOperator() == CigarOperator.SOFT_CLIP)) {

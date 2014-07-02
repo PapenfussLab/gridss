@@ -75,4 +75,32 @@ public class KmerEncodingHelperTest extends TestHelper {
 		long state = KmerEncodingHelper.picardBaseToEncoded(4, B("ACTG"));
 		assertEquals((byte)'G', KmerEncodingHelper.lastBaseEncodedToPicardBase(state, 4));
 	}
+	@Test
+	public void reverse_should_change_base_order() {
+		String[] input =    new String[] {"AAAAAAAATTTTTTTTCCCCCCCCGGGGGGGG", "GTACGTACGTACGTACGTACGTACGTACGTAC", "CGCAGCTTATGTTGGGCGAGAACGCTAATTAC", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT", "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG", "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"};
+		for (int i = 0; i < input.length; i++) {
+			for (int k = 1; k < KmerEncodingHelper.MAX_KMER; k++) {
+				assertEquals(new StringBuilder(input[i].substring(0, k)).reverse().toString(), S(KmerEncodingHelper.encodedToPicardBases(KmerEncodingHelper.reverse(k, KmerEncodingHelper.picardBaseToEncoded(k, B(input[i].substring(0, k)))), k)));
+				assertEquals(new StringBuilder(input[i].substring(k)).reverse().toString(), S(KmerEncodingHelper.encodedToPicardBases(KmerEncodingHelper.reverse(KmerEncodingHelper.MAX_KMER-k, KmerEncodingHelper.picardBaseToEncoded(KmerEncodingHelper.MAX_KMER-k, B(input[i].substring(k)))), KmerEncodingHelper.MAX_KMER-k)));
+			}
+		}
+	}
+	@Test
+	public void reverse_should_not_fail_on_sign_bit() {
+		assertEquals(KmerEncodingHelper.picardBaseToEncoded(32, B("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAG")), KmerEncodingHelper.reverse(32, KmerEncodingHelper.picardBaseToEncoded(32, B("GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"))));
+		assertEquals(KmerEncodingHelper.picardBaseToEncoded(32, B("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")), KmerEncodingHelper.reverse(32, KmerEncodingHelper.picardBaseToEncoded(32, B("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"))));
+		assertEquals(KmerEncodingHelper.picardBaseToEncoded(32, B("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAT")), KmerEncodingHelper.reverse(32, KmerEncodingHelper.picardBaseToEncoded(32, B("TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"))));
+		assertEquals(KmerEncodingHelper.picardBaseToEncoded(32, B("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC")), KmerEncodingHelper.reverse(32, KmerEncodingHelper.picardBaseToEncoded(32, B("CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"))));
+	}
+	@Test
+	public void complement_should_change_bases() {
+		String[] input =    new String[] {"CATTAATCGCAAGAGCGGGTTGTATTCGACGC", "GGGGGGGGCCCCCCCCTTTTTTTTAAAAAAAA", "CATGCATGCATGCATGCATGCATGCATGCATG", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT", "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG", "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"};
+		String[] expected = new String[] {"GTAATTAGCGTTCTCGCCCAACATAAGCTGCG", "CCCCCCCCGGGGGGGGAAAAAAAATTTTTTTT", "GTACGTACGTACGTACGTACGTACGTACGTAC", "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC", "GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG"};
+		for (int i = 0; i < input.length; i++) {
+			for (int k = 1; k < KmerEncodingHelper.MAX_KMER; k++) {
+				assertEquals(expected[i].substring(0, k), S(KmerEncodingHelper.encodedToPicardBases(KmerEncodingHelper.complement(k, KmerEncodingHelper.picardBaseToEncoded(k, B(input[i].substring(0, k)))), k)));
+				assertEquals(expected[i].substring(k), S(KmerEncodingHelper.encodedToPicardBases(KmerEncodingHelper.complement(KmerEncodingHelper.MAX_KMER-k, KmerEncodingHelper.picardBaseToEncoded(KmerEncodingHelper.MAX_KMER-k, B(input[i].substring(k)))),KmerEncodingHelper.MAX_KMER-k)));
+			}
+		}
+	}
 }

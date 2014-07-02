@@ -1,4 +1,4 @@
-package au.edu.wehi.idsv.debruijn.simple;
+package au.edu.wehi.idsv.debruijn.anchoured;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -11,7 +11,7 @@ import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
-import au.edu.wehi.idsv.debruijn.anchoured.DeBruijnAnchoredAssembler;
+import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredAssembler;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.TestHelper;
 
@@ -21,7 +21,7 @@ import com.google.common.collect.Lists;
 public class DeBruijnAnchoredAssemblerTest extends TestHelper {
 	public List<VariantContextDirectedBreakpoint> go(int k, DirectedEvidence... evidence) {
 		List<VariantContextDirectedBreakpoint> list = Lists.newArrayList();
-		DeBruijnWindowedAssembler assembler = new DeBruijnWindowedAssembler(getContext(), k);
+		DeBruijnAnchoredAssembler assembler = new DeBruijnAnchoredAssembler(getContext(), k);
 		for (DirectedEvidence e : evidence) {
 			Iterable<VariantContextDirectedBreakpoint> it = assembler.addEvidence(e);
 			if (it != null) {
