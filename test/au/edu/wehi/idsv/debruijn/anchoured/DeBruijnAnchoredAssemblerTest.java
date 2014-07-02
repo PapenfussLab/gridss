@@ -103,6 +103,6 @@ public class DeBruijnAnchoredAssemblerTest extends TestHelper {
 				SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5 }, withSequence("AACGTG", Read(0, 1, "1M5S")))),
 				SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5,5 }, withSequence("AACGTGA", Read(0, 1, "1M6S"))))
 		); 
-		assertEquals("debruijn-polyA:1-f", r.get(0).getEvidenceID());
+		assertEquals("debruijnA-polyA:1-f", r.get(0).getEvidenceID());
 	}
 }

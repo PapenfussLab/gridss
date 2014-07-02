@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 
 import au.edu.wehi.idsv.BreakendDirection;
+import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.SoftClipEvidence;
 
@@ -23,12 +24,18 @@ import com.google.common.collect.Sets;
  */
 public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	public static final int MAX_QUAL_SCORE = 128 - 66;
-	private final Map<Long, T> kmers = Maps.newHashMap();
-	private final int k;
-	private final BreakendDirection direction;
+	protected final Map<Long, T> kmers = Maps.newHashMap();
+	protected final int k;
+	protected final BreakendDirection direction;
 	public DeBruijnGraphBase(int k, BreakendDirection direction) {
 		this.k = k;
 		this.direction = direction;
+	}
+	public int getK() {
+		return k;
+	}
+	public BreakendDirection getDirection() {
+		return direction;
 	}
 	public void addEvidence(NonReferenceReadPair pair) {
 		DeBruijnEvidence graphEvidence = DeBruijnEvidence.createRemoteReadEvidence(direction, k, pair);
@@ -37,6 +44,14 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	public void addEvidence(SoftClipEvidence read) {
 		DeBruijnEvidence graphEvidence = DeBruijnEvidence.createSoftClipEvidence(direction, k, read);
 		addEvidenceKmers(graphEvidence);
+	}
+	public void removeEvidence(NonReferenceReadPair pair) {
+		DeBruijnEvidence graphEvidence = DeBruijnEvidence.createRemoteReadEvidence(direction, k, pair);
+		removeEvidenceKmers(graphEvidence);
+	}
+	public void removeEvidence(SoftClipEvidence read) {
+		DeBruijnEvidence graphEvidence = DeBruijnEvidence.createSoftClipEvidence(direction, k, read);
+		removeEvidenceKmers(graphEvidence);
 	}
 	protected void addEvidenceKmers(DeBruijnEvidence evidence) {
 		int readKmerOffset = 0;

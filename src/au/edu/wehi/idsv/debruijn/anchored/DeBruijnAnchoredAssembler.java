@@ -31,7 +31,7 @@ import com.google.common.collect.Lists;
  *
  */
 public class DeBruijnAnchoredAssembler implements ReadEvidenceAssembler {
-	public static final String ASSEMBLER_NAME = "debruijn";
+	public static final String ASSEMBLER_NAME = "debruijnA";
 	private final ProcessingContext processContext;
 	private final DeBruijnReadGraph graphf;
 	private final DeBruijnReadGraph graphb;
@@ -89,11 +89,11 @@ public class DeBruijnAnchoredAssembler implements ReadEvidenceAssembler {
 	private static void addToGraph(DeBruijnReadGraph graph, PriorityQueue<DirectedEvidence> active, DirectedEvidence evidence) {
 		if (evidence instanceof NonReferenceReadPair) {
 			NonReferenceReadPair nrrp = (NonReferenceReadPair)evidence;
-			graph.addRead(nrrp.getNonReferenceRead(), false);
+			graph.addEvidence(nrrp);
 			active.add(evidence);
 		} else if (evidence instanceof SoftClipEvidence) {
 			SoftClipEvidence sc = (SoftClipEvidence)evidence;
-			graph.addRead(sc.getSAMRecord(), true);
+			graph.addEvidence(sc);
 			active.add(evidence);
 		}
 	}
@@ -102,18 +102,13 @@ public class DeBruijnAnchoredAssembler implements ReadEvidenceAssembler {
 				(active.peek().getBreakendSummary().referenceIndex < referenceIndex || 
 				(active.peek().getBreakendSummary().referenceIndex == referenceIndex && active.peek().getBreakendSummary().end < position))) {
 			DirectedEvidence evidence = active.poll();
-			boolean anchored;
-			SAMRecord read;
 			if (evidence instanceof NonReferenceReadPair) {
-				anchored = false;
-				read = ((NonReferenceReadPair)evidence).getNonReferenceRead();
+				graph.removeEvidence((NonReferenceReadPair)evidence);
 			} else if (evidence instanceof SoftClipEvidence) {
-				anchored = true;
-				read = ((SoftClipEvidence)evidence).getSAMRecord();
+				graph.removeEvidence((SoftClipEvidence)evidence);
 			} else {
 				throw new IllegalStateException(String.format("Sanity check failure: unhandled evidence of type %s present in de bruijn graph", evidence.getClass()));
 			}
-			graph.removeRead(read, anchored);
 		}
 	}
 	@Override

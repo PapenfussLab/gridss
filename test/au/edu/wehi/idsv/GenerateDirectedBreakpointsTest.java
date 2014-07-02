@@ -115,9 +115,9 @@ public class GenerateDirectedBreakpointsTest extends CommandLineTest {
 	@Test
 	public void debruijn_should_generate_vcf() {
 		SAMRecord r1 = Read(0, 1, "1M5S");
-		r1.setReadBases(B("AACGT"));
+		r1.setReadBases(B("CAACGT"));
 		SAMRecord r2 = Read(0, 1, "1M6S");
-		r2.setReadBases(B("AACGTG"));
+		r2.setReadBases(B("CAACGTG"));
 		createInput(r1, r2);
 		extractEvidence();
 		generateDirectedBreakpoints("polyA", null, 1, null, null, 3);
