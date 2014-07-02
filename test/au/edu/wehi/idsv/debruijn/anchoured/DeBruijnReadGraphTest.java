@@ -219,7 +219,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	public SoftClipEvidence HackSCE(String seq, byte[] qual) {
 		SAMRecord read = withQual(qual, withSequence(seq, Read(0, 1, "4M1S")))[0];
 		SoftClipEvidence e = new SoftClipEvidence(getContext(), FWD, read);
-		read.setCigarString("5M");
+		read.setCigarString("5M"); // now we remove the soft clip out from under the SCE since it assumes SAMRecords are immutable 
 		return e;
 	}
 	@Test
