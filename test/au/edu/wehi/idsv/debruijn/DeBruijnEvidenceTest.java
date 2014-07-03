@@ -9,6 +9,8 @@ import au.edu.wehi.idsv.TestHelper;
 
 public class DeBruijnEvidenceTest extends TestHelper {
 	// FSC:
+	// 0        1
+	// 1234567890123456789
 	// SSSSMMMMMMMSSSSSSSS start=4, ref=7, end=8, k=4
 	// SSSS      |       | 0  ignored kmer
 	//  SSSM     |       | 1  ignored kmer
@@ -198,5 +200,55 @@ public class DeBruijnEvidenceTest extends TestHelper {
 		assertEquals(7, rsc.getReferenceStartingPosition(12));
 		assertEquals(6, rsc.getReferenceStartingPosition(13));
 		assertEquals(5, rsc.getReferenceStartingPosition(14));
+	}
+	@Test
+	public void first_last_methods_should_return_zero_based_kmer_index() {
+		assertEquals(0, fsc.firstSkippedKmerOffset());
+		assertEquals(3, fsc.lastSkippedKmerOffset());
+		assertEquals(4, fsc.firstReferenceKmerOffset());
+		assertEquals(7, fsc.lastReferenceKmerOffset());
+		assertEquals(8, fsc.firstVariantKmerOffset());
+		assertEquals(15, fsc.lastVariantKmerOffset());
+		assertEquals(15, fsc.lastKmerOffset());
+		assertEquals(16, fsc.kmerCount());
+		
+		assertEquals(-1, fdp.firstSkippedKmerOffset());
+		assertEquals(-1, fdp.lastSkippedKmerOffset());
+		assertEquals(-1, fdp.firstReferenceKmerOffset());
+		assertEquals(-1, fdp.lastReferenceKmerOffset());
+		assertEquals(0, fdp.firstVariantKmerOffset());
+		assertEquals(15, fdp.lastVariantKmerOffset());
+		assertEquals(15, fdp.lastKmerOffset());
+		assertEquals(16, fdp.kmerCount());
+		
+		assertEquals(0, rsc.firstSkippedKmerOffset());
+		assertEquals(7, rsc.lastSkippedKmerOffset());
+		assertEquals(8, rsc.firstReferenceKmerOffset());
+		assertEquals(11, rsc.lastReferenceKmerOffset());
+		assertEquals(12, rsc.firstVariantKmerOffset());
+		assertEquals(15, rsc.lastVariantKmerOffset());
+		assertEquals(15, rsc.lastKmerOffset());
+		assertEquals(16, rsc.kmerCount());
+		
+		assertEquals(-1, rdp.firstSkippedKmerOffset());
+		assertEquals(-1, rdp.lastSkippedKmerOffset());
+		assertEquals(-1, rdp.firstReferenceKmerOffset());
+		assertEquals(-1, rdp.lastReferenceKmerOffset());
+		assertEquals(0, rdp.firstVariantKmerOffset());
+		assertEquals(15, rdp.lastVariantKmerOffset());
+		assertEquals(15, rdp.lastKmerOffset());
+		assertEquals(16, rdp.kmerCount());
+	}
+	@Test
+	public void getInferredReferencePosition_should_assume_direct_mapping_to_reference() {
+		assertEquals(8, fsc.getInferredReferencePosition(4));
+		assertEquals(9, fsc.getInferredReferencePosition(5));
+		assertEquals(10, fsc.getInferredReferencePosition(6));
+		assertEquals(11, fsc.getInferredReferencePosition(7));
+		
+		assertEquals(8, rsc.getInferredReferencePosition(8));
+		assertEquals(7, rsc.getInferredReferencePosition(9));
+		assertEquals(6, rsc.getInferredReferencePosition(10));
+		assertEquals(5, rsc.getInferredReferencePosition(11));
 	}
 }

@@ -18,12 +18,12 @@ public class ReadKmerIterableTest extends TestHelper {
 		ReadKmerIterable rki = new ReadKmerIterable(4, B("ACGTACGTT"), B("ABCDEAAAA"));
 		Iterator<ReadKmer> i = rki.iterator();
 		ReadKmer k;
-		k = i.next(); assertEquals("ACGT", S(KmerEncodingHelper.encodedToPicardBases(k.kmer, 4)));
-		k = i.next(); assertEquals("CGTA", S(KmerEncodingHelper.encodedToPicardBases(k.kmer, 4)));
-		k = i.next(); assertEquals("GTAC", S(KmerEncodingHelper.encodedToPicardBases(k.kmer, 4)));
-		k = i.next(); assertEquals("TACG", S(KmerEncodingHelper.encodedToPicardBases(k.kmer, 4)));
-		k = i.next(); assertEquals("ACGT", S(KmerEncodingHelper.encodedToPicardBases(k.kmer, 4)));
-		k = i.next(); assertEquals("CGTT", S(KmerEncodingHelper.encodedToPicardBases(k.kmer, 4)));
+		k = i.next(); assertEquals("ACGT", S(KmerEncodingHelper.encodedToPicardBases(4, k.kmer)));
+		k = i.next(); assertEquals("CGTA", S(KmerEncodingHelper.encodedToPicardBases(4, k.kmer)));
+		k = i.next(); assertEquals("GTAC", S(KmerEncodingHelper.encodedToPicardBases(4, k.kmer)));
+		k = i.next(); assertEquals("TACG", S(KmerEncodingHelper.encodedToPicardBases(4, k.kmer)));
+		k = i.next(); assertEquals("ACGT", S(KmerEncodingHelper.encodedToPicardBases(4, k.kmer)));
+		k = i.next(); assertEquals("CGTT", S(KmerEncodingHelper.encodedToPicardBases(4, k.kmer)));
 		assertFalse(i.hasNext());
 	}
 	@Test

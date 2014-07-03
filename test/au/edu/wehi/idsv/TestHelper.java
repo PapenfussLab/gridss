@@ -131,11 +131,11 @@ public class TestHelper {
 			Integer readCount,
 			int readBaseCount,
 			double breakpointQuality) {
-		return ReadEvidenceAssemblerUtil.create(getContext(), "testAssembler", referenceIndex, position, direction, B(breakpointSequence),
+		return ReadEvidenceAssemblerUtil.breakendBuilder(getContext(), "testAssembler", referenceIndex, position, direction, B(breakpointSequence),
 				B(breakpointSequence),
 				readCount,
 				readBaseCount,
-				breakpointQuality);
+				breakpointQuality).make();
 	}
 	public static VariantContextDirectedBreakpoint AE(
 			BreakpointSummary summary,

@@ -1,32 +1,18 @@
 package au.edu.wehi.idsv.debruijn.anchored;
 
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.SequenceUtil;
-
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.debruijn.DeBruijnEvidence;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
-import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
-import au.edu.wehi.idsv.debruijn.ReadKmerIterable;
 import au.edu.wehi.idsv.sam.AnomolousReadAssembly;
 
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
 
 public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNodeBase> {
 	private final Multimap<Long, Integer> startkmers = HashMultimap.<Long, Integer>create();
@@ -38,8 +24,8 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNodeBase> {
 		return new DeBruijnNodeBase();
 	}
 	@Override
-	protected void addKmer(DeBruijnEvidence evidence, int readKmerOffset, ReadKmer kmer) {
-		super.addKmer(evidence, readKmerOffset, kmer);
+	protected DeBruijnNodeBase addKmer(DeBruijnEvidence evidence, int readKmerOffset, ReadKmer kmer) {
+		DeBruijnNodeBase node = super.addKmer(evidence, readKmerOffset, kmer);
 		if (evidence.getReferenceKmerCount() > 0) {
 			// we have a fully reference anchored kmer
 			if (evidence.isReferenceAnchor(readKmerOffset)) {
@@ -52,10 +38,11 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNodeBase> {
 				startkmers.put(kmer.kmer, offset);
 			}
 		}
+		return node;
 	}
 	@Override
-	protected void removeKmer(DeBruijnEvidence evidence, int readKmerOffset, ReadKmer kmer) {
-		super.removeKmer(evidence, readKmerOffset, kmer);
+	protected DeBruijnNodeBase removeKmer(DeBruijnEvidence evidence, int readKmerOffset, ReadKmer kmer) {
+		DeBruijnNodeBase node = super.removeKmer(evidence, readKmerOffset, kmer);
 		if (evidence.getReferenceKmerCount() > 0) {
 			// we have a fully reference anchored kmer
 			if (evidence.isReferenceAnchor(readKmerOffset)) {
@@ -68,6 +55,7 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNodeBase> {
 				startkmers.remove(kmer.kmer, offset);
 			}
 		}
+		return node;
 	}
 	public AnomolousReadAssembly assembleVariant() {
 		// debugPrint();
@@ -101,30 +89,13 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNodeBase> {
 	private AnomolousReadAssembly pathToAnomolousReadAssembly(LinkedList<Long> path, Long breakpointAnchor) {
 		if (path == null || path.size() == 0) throw new IllegalArgumentException("Invalid path");
 		int assemblyLength = path.size() + k - 1;
-		int readBaseCount = 0;
-		byte[] bases = KmerEncodingHelper.encodedToPicardBases(path.get(0), k);
-		Set<SAMRecord> lastNodeSupport = Sets.newHashSet();
-		bases = Arrays.copyOf(bases, assemblyLength);
 		int offset = k - 1;
-		List<Long> qual = new ArrayList<Long>(path.size());
 		int softclipSize = 0;
 		for (Long node : path) {
-			bases[offset] = KmerEncodingHelper.lastBaseEncodedToPicardBase(node, k);
-			// subtract # reads to adjust for the +1 qual introduced by ReadKmerIterable
-			// to ensure positive node weights
-			qual.add(this.kmers.get(node).getWeight() - this.kmers.get(node).getSupportingReads().size());
 			offset++;
 			if (node == breakpointAnchor) {
 				softclipSize = assemblyLength - offset;
 			}
-			for (SAMRecord read : this.kmers.get(node).getSupportingReads()) {
-				if (lastNodeSupport.contains(read)) {
-					readBaseCount++;
-				} else {
-					readBaseCount += k;
-				}
-			}
-			lastNodeSupport = this.kmers.get(node).getSupportingReads();
 		}
 		if (!startkmers.containsEntry(breakpointAnchor, 0)) {
 			// the breakpoint anchor is actually within the kmer, not at the end
@@ -132,26 +103,24 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNodeBase> {
 			int offsetSize = startkmers.get(breakpointAnchor).iterator().next();
 			softclipSize += offsetSize;
 		}
-		// pad out qualities to match the path length
-		for (int i = 0; i < k - 1; i++) qual.add(qual.get(qual.size() - 1));
-		byte[] quals = rescaleBaseQualities(qual);
-		if (direction == BreakendDirection.Backward) {
-			ArrayUtils.reverse(bases);
-			ArrayUtils.reverse(quals);
-		}
-		
-		return new AnomolousReadAssembly("idsvDeBruijn", bases, quals, assemblyLength - softclipSize, direction, getPathSupportingReads(path).size(), readBaseCount);
+		return new AnomolousReadAssembly("idsvDeBruijn",
+				getBaseCalls(path),
+				getBaseQuals(path),
+				assemblyLength - softclipSize,
+				direction,
+				getSupportingSAMRecords(path).size(),
+				getSAMRecordBaseCount(path));
 	}
 	private LinkedList<Long> greedyTraverse(Long start) {
 		LinkedList<Long> path = new LinkedList<Long>();
 		Set<Long> visited = new HashSet<Long>();
 		path.add(start);
 		visited.add(start);
-		for (Long node = greedyPrevState(start, visited); node != null; node = greedyPrevState(node, visited)) {
+		for (Long node = greedyPrevState(start, null, visited); node != null; node = greedyPrevState(node, null, visited)) {
 			path.addFirst(node);
 			visited.add(node);
 		}
-		for (Long node = greedyNextState(start, visited); node != null; node = greedyNextState(node, visited)) {
+		for (Long node = greedyNextState(start, null, visited); node != null; node = greedyNextState(node, null, visited)) {
 			path.addLast(node);
 			visited.add(node);
 		}

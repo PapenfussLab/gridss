@@ -7,7 +7,6 @@ import htsjdk.samtools.SAMRecord;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.debruijn.anchored.DeBruijnReadGraph;
 import au.edu.wehi.idsv.sam.AnomolousReadAssembly;

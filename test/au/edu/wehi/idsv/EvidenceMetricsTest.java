@@ -29,7 +29,7 @@ public class EvidenceMetricsTest extends TestHelper {
 		// SC
 		m.add(new SoftClipEvidence(new SoftClipEvidence(getContext(), BreakendDirection.Backward, Read(0, 1, "6S4M")), withMapq(1,Read(0, 1, "1S3M2S"))[0]).getBreakendSummary().evidence);
 		// Assembly
-		m.add(ReadEvidenceAssemblerUtil.create(getContext(), "test", 0, 10, BreakendDirection.Backward, B("AT"), B("ATA"), 1, 1, 1).getBreakendSummary().evidence);
+		m.add(ReadEvidenceAssemblerUtil.breakendBuilder(getContext(), "test", 0, 10, BreakendDirection.Backward, B("AT"), B("ATA"), 1, 1, 1).make().getBreakendSummary().evidence);
 		for (VcfAttributes a : VcfAttributes.evidenceValues()) {
 			assertFalse(a.name(), m.get(a) == 0);
 		}

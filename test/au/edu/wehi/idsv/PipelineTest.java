@@ -20,7 +20,7 @@ import com.google.common.io.Files;
 public class PipelineTest extends CommandLineTest {
 	@Test
 	public void test_sv_comparision_203541() throws IOException {
-		setReference(new File("W:/refdata/genomes/chr12.fa"));
+		setReference(new File("C:/dev/chr12.fa"));
 		createInput(new File("testdata/203541.bam"));
 		extractEvidence(false);
 		generateDirectedBreakpoints();

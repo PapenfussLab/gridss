@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv.debruijn.anchored;
 
-import htsjdk.samtools.SAMRecord;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -53,7 +51,7 @@ public class DeBruijnAnchoredAssembler implements ReadEvidenceAssembler {
 		if (ara.getBreakpointLength() == 0) return null; // only assembled anchor bases
 		if (ara.getReadCount() <= 1) return null; // exclude single soft-clips
 		
-		return ReadEvidenceAssemblerUtil.create(
+		return ReadEvidenceAssemblerUtil.breakendBuilder(
 				processContext,
 				ASSEMBLER_NAME,
 				currentReferenceIndex,
@@ -65,7 +63,8 @@ public class DeBruijnAnchoredAssembler implements ReadEvidenceAssembler {
 				ara.getBaseQualities(),
 				ara.getReadCount(),
 				ara.getReadBaseCount(),
-				ara.getAssemblyBreakpointQuality());
+				ara.getAssemblyBreakpointQuality())
+			.make();
 	}
 	@Override
 	public Iterable<VariantContextDirectedBreakpoint> addEvidence(DirectedEvidence evidence) {

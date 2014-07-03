@@ -11,6 +11,13 @@ import au.edu.wehi.idsv.SoftClipEvidence;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
 
+/**
+ * Helper wrapper exposing information both the raw evidence read and
+ * kmer-specific information for that read.
+ *   
+ * @author Daniel Cameron
+ *
+ */
 public class DeBruijnEvidence {
 	private static boolean shouldReverse(SAMRecord record, boolean isAnchored, BreakendDirection graphDirection) {
 		boolean reverseDirection = graphDirection == BreakendDirection.Backward;
@@ -37,6 +44,7 @@ public class DeBruijnEvidence {
 	private final int referenceKmerAnchorPosition;
 	private final int mateAnchorPosition;
 	private final int k;
+	private final BreakendDirection direction;
 	
 	public static DeBruijnEvidence createRemoteReadEvidence(BreakendDirection graphDirection, int k, NonReferenceReadPair pair) {
 		if (graphDirection != pair.getBreakendSummary().direction) throw new RuntimeException("Sanity check failure: local read pair evidence direction does not match de bruijn graph direction");
@@ -51,6 +59,7 @@ public class DeBruijnEvidence {
 	 * Creates unanchored De Bruijn graph read evidence
 	 */
 	private DeBruijnEvidence(BreakendDirection graphDirection, int k, SAMRecord record, int mateAnchorPosition) {
+		this.direction = graphDirection;
 		this.k = k;
 		this.record = record;
 		this.isReversed = shouldReverse(record, false, graphDirection);
@@ -64,6 +73,7 @@ public class DeBruijnEvidence {
 	 * Creates anchored De Bruijn graph read evidence
 	 */
 	private DeBruijnEvidence(BreakendDirection graphDirection, int k, SAMRecord record) {
+		this.direction = graphDirection;
 		this.k = k;
 		this.record = record;
 		this.isReversed = shouldReverse(record, true, graphDirection);
@@ -130,6 +140,9 @@ public class DeBruijnEvidence {
 	public SAMRecord getSAMRecord() {
 		return record;
 	}
+	public BreakendDirection getDirection() {
+		return direction;
+	}
 	/**
 	 * Determines whether this is the first kmer of this read to be included in the graph
 	 * @param readKmerOffset kmer index of read
@@ -176,12 +189,23 @@ public class DeBruijnEvidence {
 		return referenceKmerCount == 0 && isFirstKmer(readKmerOffset);
 	}
 	/**
+	 * Genomic anchor position of reference kmer assuming read is directly aligned
+	 * to the reference between the anchor and this position
+	 * @param readKmerOffset kmer index of read
+	 * @return inferred reference anchor of this kmer
+	 */
+	public int getInferredReferencePosition(int readKmerOffset) {
+		if (referenceKmerAnchorPosition == Integer.MIN_VALUE) throw new IllegalStateException(String.format("Not anchored evidence."));
+		int offset = lastReferenceKmerOffset() - readKmerOffset;
+		return referenceKmerAnchorPosition - offset * (direction == BreakendDirection.Forward ? 1 : -1);
+	}
+	/**
 	 * Returns the inferred genomic position of the first base of the kmer.
 	 * @param readKmerOffset kmer index of read
 	 * @return genomic position of first base
 	 */
 	public int getReferenceStartingPosition(int readKmerOffset) {
-		if (basesSupportingReference(readKmerOffset) == 0 && isVariantKmer(readKmerOffset)) throw new IllegalArgumentException("non reference bases in kmer");
+		if (basesSupportingReference(readKmerOffset) == 0 && isVariantKmer(readKmerOffset)) throw new IllegalArgumentException("no reference bases in kmer");
 		int offsetFromAnchor = readKmerOffset - lastReferenceKmerOffset();
 		return referenceKmerAnchorPosition - (offsetFromAnchor - k + 1) * genomicPositionDeltaPerKmer();
 	}
@@ -193,12 +217,17 @@ public class DeBruijnEvidence {
 		if (referenceKmerCount > 0) return isReversed ? 1 : -1;
 		throw new RuntimeException("Unable to determine genomic position delta for unanchored reads");
 	}
-	public int firstSkippedKmerOffset() { return 0; }
+	public int firstSkippedKmerOffset() { return startSkipKmerCount == 0 ? -1 : 0; }
 	public int lastSkippedKmerOffset() { return startSkipKmerCount - 1; }
-	public int firstReferenceKmerOffset() { return startSkipKmerCount; }
-	public int lastReferenceKmerOffset() { return startSkipKmerCount + referenceKmerCount - 1; }
+	public int firstReferenceKmerOffset() { return referenceKmerCount == 0 ? -1 : startSkipKmerCount; }
+	public int lastReferenceKmerOffset() { return referenceKmerCount == 0 ? -1 : (startSkipKmerCount + referenceKmerCount - 1); }
 	public int firstVariantKmerOffset() { return startSkipKmerCount + referenceKmerCount; }
 	public int lastVariantKmerOffset() { return lastKmerOffset(); }
 	public int lastKmerOffset() { return kmerCount() - 1; }
 	public int kmerCount() { return record.getReadLength() - k + 1; }
+	/**
+	 * @return true if this evidence is directly anchored to the reference (ie: direct breakend evidence),
+	 * false if anchored by the mate 
+	 */
+	public boolean isDirectlyAnchoredToReference() { return referenceKmerAnchorPosition != Integer.MIN_VALUE; }
 }

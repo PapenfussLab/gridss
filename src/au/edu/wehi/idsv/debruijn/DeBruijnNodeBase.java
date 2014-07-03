@@ -5,10 +5,9 @@ import htsjdk.samtools.SAMRecord;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
-import com.google.common.collect.SortedMultiset;
 
 public class DeBruijnNodeBase {
-	private long nodeWeight = 0;
+	private int nodeWeight = 0;
 	// technically this is incorrect as we should have a MultiSet since
 	// a record can contain a kmer multiple times but since we only add/remove
 	// entire reads at a time, it works out ok for the current implementation
@@ -32,7 +31,7 @@ public class DeBruijnNodeBase {
 	 * returns the weight of this node
 	 * @return weight of this node
 	 */
-	public long getWeight() {
+	public int getWeight() {
 		return nodeWeight;
 	}
 	/**

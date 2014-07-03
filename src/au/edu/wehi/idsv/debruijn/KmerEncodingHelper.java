@@ -10,7 +10,7 @@ public class KmerEncodingHelper {
 	/**
 	 * Maximum kmer size able to be encoded in a long
 	 */
-	public static final int MAX_KMER = Long.SIZE / 2;
+	public static final int MAX_K = Long.SIZE / 2;
 	/**
 	 * Every high bit of each 2bit base
 	 */
@@ -23,10 +23,10 @@ public class KmerEncodingHelper {
 	 * Bits patterns required to complement an encoded kmer of length k.
 	 * Conveniently, complementing a UCSC 2bit encoded base requires just flipping the high bit.
 	 */
-	private static final long[] complementBits = new long[MAX_KMER + 1];
+	private static final long[] complementBits = new long[MAX_K + 1];
 	static {
 		long pattern = 0;
-		for (int i = 0; i <= MAX_KMER; i++) {
+		for (int i = 0; i <= MAX_K; i++) {
 			complementBits[i] = pattern;
 			pattern <<= 2;
 			pattern |= 2;
@@ -98,10 +98,10 @@ public class KmerEncodingHelper {
 			case 2: return 'A';
 		}
 	}
-	public static byte firstBaseEncodedToPicardBase(long state, int k) {
+	public static byte firstBaseEncodedToPicardBase(int k, long state) {
 		return encodedToPicardBase(state >>> (2 * (k - 1)));
 	}
-	public static byte lastBaseEncodedToPicardBase(long state, int k) {
+	public static byte lastBaseEncodedToPicardBase(int k, long state) {
 		return encodedToPicardBase(state);
 	}
 	public static void assertValid(int k, long encoded) {
@@ -111,22 +111,22 @@ public class KmerEncodingHelper {
 	}
 	/**
 	 * Converts a 2bit encoded kmer into picard bases  
-	 * @see http://genome.ucsc.edu/FAQ/FAQformat#format7
 	 * @param base
+	 * @see http://genome.ucsc.edu/FAQ/FAQformat#format7
 	 * @return 2bit
 	 */
-	public static byte[] encodedToPicardBases(long encoded, int length) {
-		assertValid(length, encoded);
+	public static byte[] encodedToPicardBases(int k, long encoded) {
+		assertValid(k, encoded);
 		long state = encoded;
-		byte[] result = new byte[length];
-		for (int i = 0; i < length; i++) {
-			result[length - i - 1] = lastBaseEncodedToPicardBase(state, length);
+		byte[] result = new byte[k];
+		for (int i = 0; i < k; i++) {
+			result[k - i - 1] = lastBaseEncodedToPicardBase(k, state);
 			state >>>= 2;
 		}
 		return result;
 	}
-	public static long[] nextStates(long encoded, int length) {
-		long next = clearBase(length - 1, encoded) << 2;
+	public static long[] nextStates(int k, long encoded) {
+		long next = clearBase(k - 1, encoded) << 2;
 		return new long[] {
 				next,
 				next | 1,
@@ -134,13 +134,33 @@ public class KmerEncodingHelper {
 				next | 3
 		};
 	}
-	public static long[] prevStates(long encoded, int length) {
+	public static long[] prevStates(int k, long encoded) {
 		long next = encoded >>> 2;
 		return new long[] {
 				next,
-				next | (1 << (2 * length - 2)),
-				next | (2 << (2 * length - 2)),
-				next | (3 << (2 * length - 2))
+				next | (1 << (2 * k - 2)),
+				next | (2 << (2 * k - 2)),
+				next | (3 << (2 * k - 2))
+		};
+	}
+	/**
+	 * returns all kmers adjacent to this kmer
+	 * @param k k
+	 * @param encoded kmer
+	 * @return subsequent kmers, followed by previous kmers
+	 */
+	public static long[] adjacentStates(int k, long encoded) {
+		long next = clearBase(k - 1, encoded) << 2;
+		long prev = encoded >>> 2;
+		return new long[] {
+				next,
+				next | 1,
+				next | 2,
+				next | 3,
+				prev,
+				prev | (1 << (2 * k - 2)),
+				prev | (2 << (2 * k - 2)),
+				prev | (3 << (2 * k - 2))
 		};
 	}
 	public static long nextState(int k, long state, byte picardBase) {
@@ -157,7 +177,7 @@ public class KmerEncodingHelper {
 	public static String toString(int k, long state) {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < k; i++) {
-			sb.append((char)KmerEncodingHelper.lastBaseEncodedToPicardBase(state, 0));
+			sb.append((char)KmerEncodingHelper.lastBaseEncodedToPicardBase(0, state));
 			state >>>=2;
 		}
 		return sb.reverse().toString();
