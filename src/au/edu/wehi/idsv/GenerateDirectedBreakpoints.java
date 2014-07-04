@@ -19,7 +19,6 @@ import java.io.IOException;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import picard.cmdline.Usage;
-import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredAssembler;
 import au.edu.wehi.idsv.vcf.VcfConstants;
 
 import com.google.common.collect.Iterators;

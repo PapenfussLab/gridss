@@ -14,6 +14,7 @@ import au.edu.wehi.idsv.ReadEvidenceAssembler;
 import au.edu.wehi.idsv.ReadEvidenceAssemblerUtil;
 import au.edu.wehi.idsv.SAMRecordUtil;
 import au.edu.wehi.idsv.SoftClipEvidence;
+import au.edu.wehi.idsv.AssemblyBuilder;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.sam.AnomolousReadAssembly;
 
@@ -50,6 +51,10 @@ public class DeBruijnAnchoredAssembler implements ReadEvidenceAssembler {
 		if (ara == null) return null;
 		if (ara.getBreakpointLength() == 0) return null; // only assembled anchor bases
 		if (ara.getReadCount() <= 1) return null; // exclude single soft-clips
+		
+		AssemblyBuilder builder = new AssemblyBuilder(processContext);
+		builder.assembly(ara)
+			.anchor(currentReferenceIndex, currentPosition);
 		
 		return ReadEvidenceAssemblerUtil.breakendBuilder(
 				processContext,

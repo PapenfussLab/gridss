@@ -17,8 +17,9 @@ import org.apache.commons.lang3.ArrayUtils;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.NonReferenceReadPair;
+import au.edu.wehi.idsv.SAMRecordUtil;
 import au.edu.wehi.idsv.SoftClipEvidence;
-import au.edu.wehi.idsv.debruijn.windowed.DeBruijnNode;
+import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnNode;
 import au.edu.wehi.idsv.sam.AnomolousReadAssembly;
 
 import com.google.common.collect.Maps;

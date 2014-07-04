@@ -1,4 +1,4 @@
-package au.edu.wehi.idsv.debruijn.windowed;
+package au.edu.wehi.idsv.debruijn.subgraph;
 
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.debruijn.DeBruijnEvidence;

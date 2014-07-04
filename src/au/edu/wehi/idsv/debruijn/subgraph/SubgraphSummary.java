@@ -1,4 +1,4 @@
-package au.edu.wehi.idsv.debruijn.windowed;
+package au.edu.wehi.idsv.debruijn.subgraph;
 
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;

@@ -30,6 +30,8 @@ public enum VcfAttributes {
 	ASSEMBLY_CONSENSUS ("ACONS", 1, VCFHeaderLineType.String, "Anomolous read consensus assembly sequence"),
 	ASSEMBLY_QUALITY ("AQUAL", 1, VCFHeaderLineType.Float, "Anomolous read consensus assembly overall quality"),
 	ASSEMBLY_PROGRAM ("ASMBLR", 1, VCFHeaderLineType.String, "Anomolous read consensus assembly algorithm"),
+	ASSEMBLY_MAX_READ_SOFT_CLIP ("ASCMAX", 1, VCFHeaderLineType.Integer, "Longest soft clip length of reads contributing to the assembly"),
+	ASSEMBLY_READ_LENGTH ("ARL", 1, VCFHeaderLineType.Integer, "Maximum read length of reads contributing to this assembly"),
 	
 	REALIGNMENT_FAILURE ("REALGNFAIL", 1, VCFHeaderLineType.Flag, "Breakend sequence unable to be realigned to the reference"),
 	

@@ -1,4 +1,4 @@
-package au.edu.wehi.idsv.debruijn.windowed;
+package au.edu.wehi.idsv.debruijn.subgraph;
 
 import static org.junit.Assert.*;
 

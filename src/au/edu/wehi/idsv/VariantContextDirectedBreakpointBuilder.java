@@ -19,7 +19,7 @@ import au.edu.wehi.idsv.vcf.VcfSvConstants;
  */
 public class VariantContextDirectedBreakpointBuilder extends VariantContextBuilder {
 	public static final String SOURCE_NAME = "idsv";
-	private final ProcessingContext processContext;
+	protected final ProcessingContext processContext;
 	private byte[] breakendBaseQual = null;
 	private void init() {
 		attribute(VcfSvConstants.SV_TYPE_KEY, SvType.BND.name());
@@ -143,20 +143,6 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 		} else {
 			log10PError(VariantContext.NO_LOG10_PERROR);
 		}
-		return this;
-	}
-	/**
-	 * Associates the given assembly with the variant
-	 * @return builder
-	 */
-	public VariantContextDirectedBreakpointBuilder assembly(
-			String assemblyProgram,
-			byte[] sequence,
-			byte[] baseQual,
-			double breakpointQuality) {
-		attribute(VcfAttributes.ASSEMBLY_PROGRAM.attribute(), assemblyProgram);
-		attribute(VcfAttributes.ASSEMBLY_CONSENSUS.attribute(), new String(sequence, StandardCharsets.US_ASCII));
-		attribute(VcfAttributes.ASSEMBLY_QUALITY.attribute(), breakpointQuality);
 		return this;
 	}
 	public VariantContextBuilder attribute(final VcfAttributes key, final Object value) {

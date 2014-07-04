@@ -123,6 +123,20 @@ public class TestHelper {
 			return new SoftClipEvidence(getContext(), direction, pair[0]);
 		}
 	}
+	public static VariantContextDirectedBreakpointBuilder AE(
+			ProcessingContext processContext,
+			String assemblerName,
+			int referenceIndex,
+			int position,
+			BreakendDirection direction,
+			byte[] breakpointSequence,
+			byte[] fullAssembly,
+			Integer readCount,
+			int readBaseCount,
+			double breakpointQuality
+			) {
+		return ReadEvidenceAssemblerUtil.breakendBuilder(processContext, assemblerName, referenceIndex, position, direction, breakpointSequence, null, fullAssembly, null, readCount, readBaseCount, breakpointQuality, 0);
+	}
 	public static VariantContextDirectedBreakpoint AE(
 			int referenceIndex,
 			int position,
@@ -131,7 +145,7 @@ public class TestHelper {
 			Integer readCount,
 			int readBaseCount,
 			double breakpointQuality) {
-		return ReadEvidenceAssemblerUtil.breakendBuilder(getContext(), "testAssembler", referenceIndex, position, direction, B(breakpointSequence),
+		return AE(getContext(), "testAssembler", referenceIndex, position, direction, B(breakpointSequence),
 				B(breakpointSequence),
 				readCount,
 				readBaseCount,
