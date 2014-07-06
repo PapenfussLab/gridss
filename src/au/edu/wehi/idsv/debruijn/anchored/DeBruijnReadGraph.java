@@ -4,20 +4,23 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Set;
 
+import au.edu.wehi.idsv.AssemblyBuilder;
 import au.edu.wehi.idsv.BreakendDirection;
+import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.debruijn.DeBruijnEvidence;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
-import au.edu.wehi.idsv.sam.AnomolousReadAssembly;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
 public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNodeBase> {
+	public static final String ASSEMBLER_NAME = "debruijnA";
 	private final Multimap<Long, Integer> startkmers = HashMultimap.<Long, Integer>create();
-	public DeBruijnReadGraph(int k, BreakendDirection direction) {
-		super(k, direction);
+	public DeBruijnReadGraph(ProcessingContext context, int k, BreakendDirection direction) {
+		super(context, k, direction);
 	}
 	@Override
 	protected DeBruijnNodeBase createEmptyNode() {
@@ -57,21 +60,23 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNodeBase> {
 		}
 		return node;
 	}
-	public AnomolousReadAssembly assembleVariant() {
+	public VariantContextDirectedBreakpoint assembleVariant(int referenceIndex, int position) {
 		// debugPrint();
-		return greedyAnchoredTraverse();
+		return greedyAnchoredTraverse(referenceIndex, position);
 	}
 	/**
 	 * Simple greedy traversal starting from the highest weighted starting node
 	 * with no repeated nodes
+	 * @param position 
+	 * @param referenceIndex 
 	 * @return
 	 */
-	private AnomolousReadAssembly greedyAnchoredTraverse() {
+	private VariantContextDirectedBreakpoint greedyAnchoredTraverse(int referenceIndex, int position) {
 		//debugPrint();
 		Long start = bestStartingPosition();
 		if (start == null) return null;
 		LinkedList<Long> path = greedyTraverse(start);
-		AnomolousReadAssembly result = pathToAnomolousReadAssembly(path, start);
+		VariantContextDirectedBreakpoint result = pathToAssembly(path, start, referenceIndex, position);
 		return result;
 	}
 	private Long bestStartingPosition() {
@@ -86,7 +91,7 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNodeBase> {
 		}
 		return best;
 	}
-	private AnomolousReadAssembly pathToAnomolousReadAssembly(LinkedList<Long> path, Long breakpointAnchor) {
+	private VariantContextDirectedBreakpoint pathToAssembly(LinkedList<Long> path, Long breakpointAnchor, int referenceIndex, int position) {
 		if (path == null || path.size() == 0) throw new IllegalArgumentException("Invalid path");
 		int assemblyLength = path.size() + k - 1;
 		int offset = k - 1;
@@ -103,13 +108,13 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNodeBase> {
 			int offsetSize = startkmers.get(breakpointAnchor).iterator().next();
 			softclipSize += offsetSize;
 		}
-		return new AnomolousReadAssembly("idsvDeBruijn",
-				getBaseCalls(path),
-				getBaseQuals(path),
-				assemblyLength - softclipSize,
-				direction,
-				getSupportingSAMRecords(path).size(),
-				getSAMRecordBaseCount(path));
+		int anchorLen = assemblyLength - softclipSize;
+		AssemblyBuilder builder = debruijnContigAssembly(path)
+			.assemblerName(ASSEMBLER_NAME)
+			.referenceAnchor(referenceIndex, position)
+			.anchorLength(anchorLen)
+			.maximumSoftClipLength(getMaxSoftClipLength(path, anchorLen));
+		return builder.makeVariant();
 	}
 	private LinkedList<Long> greedyTraverse(Long start) {
 		LinkedList<Long> path = new LinkedList<Long>();

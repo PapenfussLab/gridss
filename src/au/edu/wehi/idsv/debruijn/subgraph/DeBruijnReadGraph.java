@@ -7,31 +7,27 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.PriorityQueue;
-import java.util.Set;
 import java.util.SortedSet;
 
+import au.edu.wehi.idsv.AssemblyBuilder;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.ReadEvidenceAssemblerUtil;
 import au.edu.wehi.idsv.SAMRecordUtil;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpointBuilder;
 import au.edu.wehi.idsv.debruijn.DeBruijnEvidence;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
-import au.edu.wehi.idsv.sam.AnomolousReadAssembly;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNode> {
-	public static final String ASSEMBLER_NAME = "debruijnW";
+	public static final String ASSEMBLER_NAME = "debruijn-s";
 	/**
 	 * Connected subgraphs
 	 */
 	private final SortedSet<SubgraphSummary> subgraphs;
-	private final ProcessingContext processContext;
 	private final int referenceIndex;
 	/**
 	 * 
@@ -39,8 +35,7 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNode> {
 	 * @param direction
 	 */
 	public DeBruijnReadGraph(ProcessingContext processContext, int referenceIndex, int k, BreakendDirection direction) {
-		super(k, direction);
-		this.processContext = processContext;
+		super(processContext, k, direction);
 		this.referenceIndex = referenceIndex;
 		this.subgraphs = Sets.newTreeSet(SubgraphSummary.ByMaxAnchor);
 	}
@@ -75,6 +70,7 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNode> {
 		if (g == null) {
 			// check if we are connected to a subgraph
 			for (long adjKmer : KmerEncodingHelper.adjacentStates(k, kmer.kmer)) {
+				if (adjKmer == kmer.kmer) continue; // ignore loops back to ourself
 				DeBruijnNode adjNode = kmers.get(adjKmer);
 				if (adjNode != null) {
 					SubgraphSummary gadj = adjNode.getSubgraph();
@@ -104,14 +100,18 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNode> {
 	 */
 	public Iterable<VariantContextDirectedBreakpoint> assembleContigsBefore(int position) {
 		List<VariantContextDirectedBreakpoint> contigs = Lists.newArrayList();
-		while (subgraphs.first().getMaxAnchor() < position) {
-			SubgraphSummary ss = subgraphs.first();
-			SubgraphTraversal subgraph = new SubgraphTraversal(ss.getAnyKmer());
-			for (List<Long> contig : subgraph.assembleContigs()) {
-				VariantContextDirectedBreakpoint variant = toAssemblyEvidence(contig);
-				if (variant) {
-					contigs.add();
+		for (SubgraphSummary ss : subgraphs) {
+			if (ss.getMaxAnchor() < position) {
+				SubgraphTraversal subgraph = new SubgraphTraversal(ss.getAnyKmer());
+				for (List<Long> contig : subgraph.assembleContigs()) {
+					VariantContextDirectedBreakpoint variant = toAssemblyEvidence(contig);
+					if (variant != null) {
+						contigs.add(variant);
+					}
 				}
+			} else {
+				// can break out immediately since subgraphs are sorted by max anchor position
+				break;
 			}
 		}
 		Collections.sort(contigs, VariantContextDirectedBreakpoint.ByLocation);
@@ -122,7 +122,7 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNode> {
 	 * @param position
 	 */
 	public void removeBefore(int position) {
-		while (subgraphs.first().getMaxAnchor() < position) {
+		while (!subgraphs.isEmpty() && subgraphs.first().getMaxAnchor() < position) {
 			SubgraphSummary ss = subgraphs.first();
 			SubgraphTraversal subgraph = new SubgraphTraversal(ss.getAnyKmer());
 			subgraph.remove();
@@ -130,18 +130,12 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNode> {
 		}
 	}
 	private VariantContextDirectedBreakpoint toAssemblyEvidence(List<Long> contigKmers) {
-		Set<SAMRecord> supportingReads = getSupportingSAMRecords(contigKmers); 
-		byte[] bases = getBaseCalls(contigKmers);
-		byte[] quals = getBaseQuals(contigKmers);
-		int readCount = supportingReads.size();
-		int baseCount = getSAMRecordBaseCount(contigKmers);
-		
 		int maxsclen = 0;
-		int longestSupportingRead;
-		
+		int longestSupportingRead = 0;
 		int refCount = 0;
 		int refAnchor = 0;
 		Integer mateAnchor = null;
+		// Iterate over reference anchor
 		for (long kmer : contigKmers) {
 			if (!kmers.get(kmer).isReference()) break;
 			refCount++;
@@ -153,11 +147,15 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNode> {
 				maxsclen = Math.max(maxsclen, direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipLength(r) : SAMRecordUtil.getStartSoftClipLength(r));
 			}
 		}
+		// Iterate over breakpoint kmers
 		for (long kmer : contigKmers) {
 			if (kmers.get(kmer).isReference()) continue;
 			Integer mp = kmers.get(kmer).getMatePosition();
+			for (SAMRecord support : kmers.get(kmer).getSupportingReads()) {
+				longestSupportingRead = Math.max(longestSupportingRead, support.getReadLength());
+			}
 			if (mateAnchor == null) {
-				mp = mateAnchor;
+				mateAnchor = mp;
 			} else {
 				// take closest mate anchor
 				mateAnchor = direction == BreakendDirection.Forward ?
@@ -165,37 +163,18 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNode> {
 						Math.min(mp, mateAnchor);
 			}
 		}
-		AnomolousReadAssembly ara = new AnomolousReadAssembly(ASSEMBLER_NAME, bases, quals, refCount, direction, readCount, baseCount);
-		VariantContextDirectedBreakpointBuilder builder;
+		AssemblyBuilder builder = debruijnContigAssembly(contigKmers)
+				.assemblerName(ASSEMBLER_NAME);
 		if (refCount > 0) {
-			builder = ReadEvidenceAssemblerUtil.breakendBuilder(
-					processContext,
-					ASSEMBLER_NAME,
-					referenceIndex,
-					refAnchor,
-					direction,
-					direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipBases(ara) : SAMRecordUtil.getStartSoftClipBases(ara),
-					direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipBaseQualities(ara) : SAMRecordUtil.getStartSoftClipBaseQualities(ara),
-					ara.getReadBases(),
-					ara.getBaseQualities(),
-					ara.getReadCount(),
-					ara.getReadBaseCount(),
-					ara.getAssemblyBreakpointQuality(),
-					maxsclen);
+			// anchored read
+			builder				
+				.referenceAnchor(referenceIndex, refAnchor)
+				.maximumSoftClipLength(maxsclen);
 		} else if (mateAnchor != null) {
 			// inexact breakend
-			builder = ReadEvidenceAssemblerUtil.mateAnchoredBuilder(
-					processContext,
-					ASSEMBLER_NAME,
-					referenceIndex,
-					mateAnchor,
-					direction,
-					ara.getReadBases(),
-					ara.getBaseQualities(),
-					ara.getReadCount(),
-					ara.getReadBaseCount(),
-					ara.getAssemblyBreakpointQuality(),
-					contigKmers.iterator().next());
+			builder
+				.mateAnchor(referenceIndex, mateAnchor)
+				.longestSupportingRead(longestSupportingRead);
 		} else {
 			// Assembly is neither anchored by breakend nor anchored by mate pair
 			// This occurs when the de bruijn graph has a non-reference kmer fork
@@ -210,8 +189,7 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNode> {
 			//
 			return null;
 		}
-		VariantContextDirectedBreakpoint variant = builder.make();
-		return variant;
+		return builder.makeVariant();
 	}
 	/**
 	 * Traverses a given subgraph and iteratively generates contigs from the
@@ -268,28 +246,22 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNode> {
 		private LinkedList<Long> greedyTraverse(long start) {
 			LinkedList<Long> path = new LinkedList<Long>();
 			path.add(start);
-			for (Long node = greedyNextState(start, remainingCandidateKmers, null); node != null; node = greedyNextState(node, remainingCandidateKmers, null)) {
-				path.addLast(node);
-				if (kmers.get(node).isReference()) {
-					// We've hit a bubble - time to stop 
-					break;
-				}
+			remainingCandidateKmers.remove(start);
+			// assemble back until we hit the reference
+			for (Long node = greedyPrevState(path.getFirst(), remainingCandidateKmers, null); node != null && !kmers.get(node).isReference(); node = greedyPrevState(node, remainingCandidateKmers, null)) {
+				path.addFirst(node);
 				remainingCandidateKmers.remove(node); // no longer available for traversal either for us, or for any other contig
 			}
 			HashSet<Long> referenceVisited = Sets.newHashSet();
-			boolean inReference = false;
-			for (Long node = greedyPrevState(start, remainingCandidateKmers, referenceVisited); node != null; node = greedyPrevState(node, remainingCandidateKmers, referenceVisited)) {
-				boolean isReferenceNode = kmers.get(node).isReference(); 
-				inReference |= isReferenceNode;
-				if (inReference && !isReferenceNode) {
-					// Only assemble back to a reference anchor
-					// IE: don't traverse back away from the reference once we hit it
-					break;
-				}
+			// Extend the contig back along our reference anchor
+			for (Long node = greedyPrevState(path.getFirst(), null, referenceVisited); node != null && kmers.get(node).isReference(); node = greedyPrevState(node, null, referenceVisited)) {
 				path.addFirst(node);
-				if (inReference) {
-					referenceVisited.add(node);
-				}
+				referenceVisited.add(node);
+			}
+			// Then extend forward as far as we can
+			for (Long node = greedyNextState(path.getLast(), remainingCandidateKmers, null); node != null && !kmers.get(node).isReference(); node = greedyNextState(node, remainingCandidateKmers, null)) {
+				path.addLast(node);
+				remainingCandidateKmers.remove(node); // no longer available for traversal either for us, or for any other contig
 			}
 			return path;
 		}

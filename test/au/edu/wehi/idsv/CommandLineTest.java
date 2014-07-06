@@ -127,6 +127,7 @@ public class CommandLineTest extends TestHelper {
 			if (minQual != null) MIN_LONG_SC_BASE_QUALITY = minQual;
 			if (k != null) KMER = k;
 			TMP_DIR = Lists.newArrayList(testFolder.getRoot());
+			ASSEMBLY_METHOD = AssemblyMethod.DEBRUIJN_PER_POSITION;
 			try {
 				REFERENCE = reference;
 				if (StringUtils.isNotEmpty(chr)) {

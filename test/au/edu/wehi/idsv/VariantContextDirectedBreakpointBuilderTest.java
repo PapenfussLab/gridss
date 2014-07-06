@@ -8,15 +8,6 @@ import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.BreakendSummary;
-import au.edu.wehi.idsv.BreakpointSummary;
-import au.edu.wehi.idsv.EvidenceMetrics;
-import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.ReadEvidenceAssemblerUtil;
-import au.edu.wehi.idsv.RealignedBreakpoint;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpointBuilder;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 
 public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
@@ -45,28 +36,28 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_round_trip_AssemblerProgram() {
-		VariantContextDirectedBreakpoint dba = ReadEvidenceAssemblerUtil.breakendBuilder(getContext(), "test", 0, 1, BreakendDirection.Forward, B("A"), B("AA"), 1, 1, 0).make();
-		assertEquals("test", dba.getAssemblerProgram());
+		VariantContextDirectedBreakpoint dba = AE();
+		assertEquals("testAssembler", dba.getAssemblerProgram());
 		dba = new VariantContextDirectedBreakpoint(getContext(), new VariantContextBuilder(dba).make());
-		assertEquals("test", dba.getAssemblerProgram());
+		assertEquals("testAssembler", dba.getAssemblerProgram());
 	}
 	@Test
 	public void should_round_trip_getAssemblyConsensus() {
-		VariantContextDirectedBreakpoint dba = ReadEvidenceAssemblerUtil.breakendBuilder(getContext(), "test", 0, 1, BreakendDirection.Forward, B("A"), B("AA"), 1, 1, 0).make();
-		assertEquals("AA", dba.getAssemblyConsensus());
+		VariantContextDirectedBreakpoint dba = AE();
+		assertEquals("ATT", dba.getAssemblyConsensus());
 		dba = new VariantContextDirectedBreakpoint(getContext(), new VariantContextBuilder(dba).make());
-		assertEquals("AA", dba.getAssemblyConsensus());
+		assertEquals("ATT", dba.getAssemblyConsensus());
 	}
 	@Test
 	public void getBreakpointSequence_should_get_untemplated_sequence() {
-		VariantContextDirectedBreakpoint dba = ReadEvidenceAssemblerUtil.breakendBuilder(getContext(), "test", 0, 1, BreakendDirection.Forward, B("A"), B("AA"), 1, 1, 0).make();
-		assertEquals("A", S(dba.getBreakpointSequence()));
+		VariantContextDirectedBreakpoint dba = AE();
+		assertEquals("TT", S(dba.getBreakpointSequence()));
 		dba = new VariantContextDirectedBreakpoint(getContext(), new VariantContextBuilder(dba).make());
-		assertEquals("A", S(dba.getBreakpointSequence()));
+		assertEquals("TT", S(dba.getBreakpointSequence()));
 	}
 	@Test
 	public void should_match_variant_location_f() {
-		VariantContextDirectedBreakpoint dba = ReadEvidenceAssemblerUtil.breakendBuilder(getContext(), "test", 0, 10, BreakendDirection.Forward, B("AT"), B("ATA"), 1, 1, 0).make();
+		VariantContextDirectedBreakpoint dba = AB().referenceAnchor(0, 10).makeVariant(); 
 		dba = new VariantContextDirectedBreakpoint(getContext(), new VariantContextBuilder(dba).make());
 		assertEquals("polyA", dba.getChr());
 		assertEquals(10, dba.getStart());
@@ -74,7 +65,7 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_match_variant_location_b() {
-		VariantContextDirectedBreakpoint dba = ReadEvidenceAssemblerUtil.breakendBuilder(getContext(), "test", 0, 10, BreakendDirection.Backward, B("AT"), B("ATA"), 1, 1, 0).make();
+		VariantContextDirectedBreakpoint dba = AB().referenceAnchor(0, 10).direction(BWD).makeVariant();
 		dba = new VariantContextDirectedBreakpoint(getContext(), new VariantContextBuilder(dba).make());
 		assertEquals("polyA", dba.getChr());
 		assertEquals(10, dba.getStart());
@@ -82,31 +73,31 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 	}
 	@Test
 	public void id_should_be_based_on_assembler_position_direction() {
-		VariantContextDirectedBreakpoint dba = ReadEvidenceAssemblerUtil.breakendBuilder(getContext(), "test", 0, 10, BreakendDirection.Backward, B("AT"), B("ATA"), 1, 1, 0).make();
+		VariantContextDirectedBreakpoint dba = AE();
 		dba = new VariantContextDirectedBreakpoint(getContext(), new VariantContextBuilder(dba).make());
-		assertEquals("test-polyA:10-b", dba.getID());
+		assertEquals("testAssembler-polyA:1-f", dba.getID());
 	}
 	@Test
 	public void phred_should_be_evidence_score() {
-		VariantContextDirectedBreakpoint dba = ReadEvidenceAssemblerUtil.breakendBuilder(getContext(), "test", 0, 10, BreakendDirection.Backward, B("AT"), B("ATA"), 1, 1, 7).make();
+		VariantContextDirectedBreakpoint dba = AE();
 		dba = new VariantContextDirectedBreakpoint(getContext(), new VariantContextBuilder(dba).make());
 		assertEquals(dba.getBreakendSummary().evidence.getScore(), dba.getPhredScaledQual(), 0);
 	}
 	@Test
 	public void should_generate_single_breakend_f() {
-		VariantContextDirectedBreakpoint dba = ReadEvidenceAssemblerUtil.breakendBuilder(getContext(), "test", 0, 1, BreakendDirection.Forward, B("AT"), B("ATA"), 1, 1, 0).make();
+		VariantContextDirectedBreakpoint dba = AB().assemblyBases(B("NNGT")).anchorLength(2).makeVariant(); 
 		// ref base + breakpoint
-		assertEquals("AAT.", dba.getAlternateAllele(0).getDisplayString());
+		assertEquals("AGT.", dba.getAlternateAllele(0).getDisplayString());
 		dba = new VariantContextDirectedBreakpoint(getContext(), new VariantContextBuilder(dba).make());
-		assertEquals("AAT.", dba.getAlternateAllele(0).getDisplayString());
+		assertEquals("AGT.", dba.getAlternateAllele(0).getDisplayString());
 	}
 	@Test
 	public void should_generate_single_breakend_b() {
 		// ref base + breakpoint
-		VariantContextDirectedBreakpoint dba = ReadEvidenceAssemblerUtil.breakendBuilder(getContext(), "test", 0, 1, BreakendDirection.Backward, B("AT"), B("ATA"), 1, 1, 0).make();
-		assertEquals(".ATA", dba.getAlternateAllele(0).getDisplayString());
+		VariantContextDirectedBreakpoint dba = AB().assemblyBases(B("GTNN")).anchorLength(2).direction(BWD).makeVariant();
+		assertEquals(".GTA", dba.getAlternateAllele(0).getDisplayString());
 		dba = new VariantContextDirectedBreakpoint(getContext(), new VariantContextBuilder(dba).make());
-		assertEquals(".ATA", dba.getAlternateAllele(0).getDisplayString());
+		assertEquals(".GTA", dba.getAlternateAllele(0).getDisplayString());
 	}
 	@Test
 	public void should_set_realignment_failure_flag() {
@@ -116,8 +107,13 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 		VariantContextDirectedBreakpoint bp = builder.make();
 		assertTrue(bp.hasAttribute(VcfAttributes.REALIGNMENT_FAILURE.attribute()));
 	}
+	@Test
+	public void anchor_should_use_reference_base_not_assembly_base() {
+		String alt = AB().assemblyBases(B("TTT")).makeVariant().getAlternateAllele(0).getDisplayString();
+		assertEquals('A', alt.charAt(0));
+	}
 	public VariantContextDirectedBreakpoint test_mated_breakend(BreakendDirection direction, boolean realignPositive, String bpString, String realignedCigar, String expectedAllele) {
-		VariantContextDirectedBreakpoint dba = ReadEvidenceAssemblerUtil.breakendBuilder(getContext(), "test", 0, 1, direction, B(bpString), B(bpString), 1, 1, 0).make();
+		VariantContextDirectedBreakpoint dba = AB().direction(direction).anchorLength(0).assemblyBases(B(bpString)).makeVariant();
 		dba = new VariantContextDirectedBreakpoint(getContext(), new VariantContextBuilder(dba).make());
 		SAMRecord realigned = Read(1, 10, realignedCigar);
 		realigned.setReadBases(realignPositive ? B(bpString) : B(SequenceUtil.reverseComplement(bpString)));
@@ -169,17 +165,6 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 			.breakpoint(new BreakpointSummary(0, BreakendDirection.Forward, 1, 1, 0, BreakendDirection.Forward, 1, 1, null), null);
 		
 		assertEquals("BND", builder.make().getAttributeAsString("SVTYPE", ""));
-	}
-	@Test
-	public void assembly_should_set_assembly_properties() {
-		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext())
-			.breakend(new BreakendSummary(0, FWD, 1, 1, null), null)
-			.assembly("programName", B("ACT"), new byte[] {1,2,3}, 7);
-		VariantContextDirectedBreakpoint dba = builder.make();
-		
-		assertEquals("programName", dba.getAssemblerProgram());
-		assertEquals("ACT", dba.getAssemblyConsensus());
-		assertEquals(7, dba.getAssemblyQuality(), 0);
 	}
 	@Test
 	public void evidence_should_round_trip() {

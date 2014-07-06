@@ -4,8 +4,10 @@ import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import au.edu.wehi.idsv.BreakendDirection;
+import au.edu.wehi.idsv.SAMRecordUtil;
 
 /**
  * Breakend assembly
@@ -40,8 +42,11 @@ public class AnomolousReadAssembly extends SAMRecord {
 	public BreakendDirection getDirection() {
 		return getCigar().getCigarElement(0).getOperator() == CigarOperator.S ? BreakendDirection.Backward : BreakendDirection.Forward; 
 	}
-	public String getBreakpointBases() {
-		return new String(getReadBases(), getDirection() == BreakendDirection.Backward ? 0 : getAnchorLength(), getBreakpointLength(), StandardCharsets.US_ASCII);
+	public byte[] getBreakpointBases() {
+		return getDirection() == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipBases(this) : SAMRecordUtil.getStartSoftClipBases(this);
+	}
+	public byte[] getBreakpointQualities() {
+		return getDirection() == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipBaseQualities(this) : SAMRecordUtil.getStartSoftClipBaseQualities(this);
 	}
 	public String getAnchorBases() {
 		return new String(getReadBases(), getDirection() == BreakendDirection.Forward ? 0 : getBreakpointLength(), getAnchorLength(), StandardCharsets.US_ASCII);
@@ -54,16 +59,18 @@ public class AnomolousReadAssembly extends SAMRecord {
 		if (getDirection() == BreakendDirection.Forward) return getCigar().getCigarElement(1).getLength();
 		else return getCigar().getCigarElement(0).getLength(); 
 	}
-	public float getAssemblyBreakpointQuality() {
-		byte[] qual = getBaseQualities();
-		int length = getBreakpointLength();
-		if (length == 0) return 0;
-		int start = getDirection() == BreakendDirection.Backward ? 0 : getAnchorLength();  
+	/**
+	 * Get average base quality of assembled reads
+	 * @return
+	 */
+	public double getAverageBreakpointQuality() {
+		byte[] quals = getBreakpointQualities();
+		if (quals == null || quals.length == 0) return 0;
 		int qualSum = 0;
-		for (int i = 0; i < length; i++) {
-			qualSum += qual[start + i];
+		for (byte qual : quals) {
+			qualSum += qual;
 		}
-		return qualSum/(float)length;
+		return qualSum / (float)quals.length;
 	}
 	/**
 	 * Number of reads in assembly

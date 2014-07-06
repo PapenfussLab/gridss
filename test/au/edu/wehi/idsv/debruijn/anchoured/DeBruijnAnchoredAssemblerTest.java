@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv.debruijn.anchoured;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import java.util.List;
 
@@ -40,24 +39,26 @@ public class DeBruijnAnchoredAssemblerTest extends TestHelper {
 	}
 	@Test
 	public void should_not_call_if_no_evidence() {
-		List<VariantContextDirectedBreakpoint> r = go(3, new SoftClipEvidence(getContext(), BreakendDirection.Backward, Read(1, 1, "2S5M")));
+		List<VariantContextDirectedBreakpoint> r = go(3);
 		assertEquals(0, r.size());
 	}
 	@Test
-	public void should_not_call_single_soft_clip() {
+	public void should_filter_call_single_soft_clip() {
 		List<VariantContextDirectedBreakpoint> r = go(3,
 				SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5 }, withSequence("AACGTG", Read(0, 1, "1M5S"))))
 		); 
-		assertEquals(0, r.size());
+		assertEquals(1, r.size());
+		assertTrue(r.get(0).isFiltered());
 	}
 	@Test
-	public void should_not_call_if_no_breakpoint_assembly() {
+	public void should_filter_if_no_breakpoint_assembly() {
 		// polyA reads assemble as anchor kmer
 		List<VariantContextDirectedBreakpoint> r = go(3,
 				new SoftClipEvidence(getContext(), BreakendDirection.Backward, Read(0, 1, "2S5M")),
 				new SoftClipEvidence(getContext(), BreakendDirection.Backward, Read(0, 1, "3S5M"))
 		); 
-		assertEquals(0, r.size());
+		assertEquals(1, r.size());
+		assertTrue(r.get(0).isFiltered());
 	}
 	@Test
 	public void should_not_call_unanchored_evidence() {

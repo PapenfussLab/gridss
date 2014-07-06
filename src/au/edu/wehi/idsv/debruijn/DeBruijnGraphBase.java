@@ -4,23 +4,19 @@ import htsjdk.samtools.SAMRecord;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
 
 import org.apache.commons.lang3.ArrayUtils;
 
+import au.edu.wehi.idsv.AssemblyBuilder;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.NonReferenceReadPair;
+import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordUtil;
 import au.edu.wehi.idsv.SoftClipEvidence;
-import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnNode;
-import au.edu.wehi.idsv.sam.AnomolousReadAssembly;
 
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
@@ -38,7 +34,9 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	protected final Map<Long, T> kmers = Maps.newHashMap();
 	protected final int k;
 	protected final BreakendDirection direction;
-	public DeBruijnGraphBase(int k, BreakendDirection direction) {
+	protected final ProcessingContext processContext;
+	public DeBruijnGraphBase(ProcessingContext context, int k, BreakendDirection direction) {
+		this.processContext = context;
 		this.k = k;
 		this.direction = direction;
 	}
@@ -263,6 +261,50 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 		return readBaseCount;
 	}
 	/**
+	 * Gets the length of the longest read in the given contig
+	 * @param supportingReads
+	 * @return length of longest read
+	 */
+	protected int getMaxReadLength(List<Long> path) {
+		int readLength = 0;
+		for (Long kmer : path) {
+			for (SAMRecord r : kmers.get(kmer).getSupportingReads()) {
+				readLength = Math.max(readLength, r.getReadLength());
+			}
+		}
+		return readLength;
+	}
+	/**
+	 * Gets the length of the longest soft clip in the given contig
+	 * @param supportingReads
+	 * @return length of longest read
+	 */
+	protected int getMaxSoftClipLength(List<Long> path, int anchorLength) {
+		int readLength = 0;
+		int offset = 0;
+		for (Long kmer : path) {
+			// don't consider SC length of reference kmers - they may be SC support for a different breakend 
+			if (offset >= anchorLength) {
+				for (SAMRecord r : kmers.get(kmer).getSupportingReads()) {
+					readLength = Math.max(readLength, direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipLength(r) : SAMRecordUtil.getStartSoftClipLength(r));
+				}
+			}
+			offset++;
+		}
+		return readLength;
+	}
+	protected AssemblyBuilder debruijnContigAssembly(List<Long> path) {
+		Set<SAMRecord> support = getSupportingSAMRecords(path);
+		AssemblyBuilder builder = new AssemblyBuilder(processContext)
+			.direction(direction)
+			.assemblyBases(getBaseCalls(path))
+			.assemblyBaseQuality(getBaseQuals(path))
+			.assembledReadCount(support.size())
+			.assembledBaseCount(getSAMRecordBaseCount(path))
+			.longestSupportingRead(getMaxReadLength(path));
+		return builder;
+	}
+	/**
 	 * Ordering of kmers by kmer weight. 
 	 */
 	protected Ordering<Long> ByKmerWeight = new Ordering<Long>() {
@@ -280,13 +322,12 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append(String.format("De Bruijn graph: k=%d, %d kmers\n", k, kmers.size()));
-		int max = 10;
+		int max = 25;
 		for (Long x : kmers.keySet()) {
-			sb.append(String.format("%s(%d): %d weight from %d reads",
+			sb.append(String.format("%s(%d): %s",
 					KmerEncodingHelper.toString(k, x),
 					x,
-					kmers.get(x).getWeight(),
-					kmers.get(x).getSupportingReads().size()
+					kmers.get(x)
 					));
 			sb.append(" from:{");
 			for (Long y : KmerEncodingHelper.prevStates(k, x)) {

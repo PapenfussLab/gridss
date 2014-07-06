@@ -19,6 +19,8 @@ import java.io.IOException;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import picard.cmdline.Usage;
+import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredAssembler;
+import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 import au.edu.wehi.idsv.vcf.VcfConstants;
 
 import com.google.common.collect.Iterators;
@@ -66,6 +68,9 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
     @Option(doc = "Minimum average base quality score of soft clipped sequence",
     		optional=true)
     public float MIN_LONG_SC_BASE_QUALITY = 5;
+    @Option(doc = "Local assembly algorithm used to construct breakend contigs.",
+    		optional=true)
+    public AssemblyMethod ASSEMBLY_METHOD = AssemblyMethod.DEBRUIJN_SUBGRAPH;
     @Option(doc = "k-mer used for de bruijn graph construction",
     		optional=true,
     		shortName="K")
@@ -109,7 +114,7 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
 			vcfWriter.writeHeader(vcfHeader);
 			
 			DirectedEvidenceIterator dei = new DirectedEvidenceIterator(processContext, iter, mateIter, null, null);
-			ReadEvidenceAssembler assembler = new DeBruijnAnchoredAssembler(processContext, KMER);
+			ReadEvidenceAssembler assembler = getAssembler(processContext); 
 			while (dei.hasNext()) {
 				DirectedEvidence readEvidence = dei.next();
 				progress.record(reference.getSequenceDictionary().getSequence(readEvidence.getBreakendSummary().referenceIndex).getSequenceName(), readEvidence.getBreakendSummary().start);
@@ -139,13 +144,25 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
     	}
         return 0;
     }
+    private ReadEvidenceAssembler getAssembler(ProcessingContext processContext) {
+    	switch (ASSEMBLY_METHOD) {
+    	case DEBRUIJN_PER_POSITION:
+    		return new DeBruijnAnchoredAssembler(processContext, KMER);
+    	case DEBRUIJN_SUBGRAPH:
+    		return new DeBruijnSubgraphAssembler(processContext, KMER);
+    	default:
+    		throw new IllegalArgumentException("Unknown assembly method.");
+    	}
+    }
     private void processAssemblyEvidence(Iterable<VariantContextDirectedBreakpoint> evidenceList, FastqBreakpointWriter fastqWriter, VariantContextWriter vcfWriter) {
     	if (evidenceList != null) {
 	    	for (VariantContextDirectedBreakpoint a : evidenceList) {
 	    		if (a != null) {
 	    			if (a.getBreakpointSequence().length >= MIN_BREAKEND_REALIGN_LENGTH) {
-		    			fastqWriter.write(a);
-			    		vcfWriter.add(a);
+	    				vcfWriter.add(a);
+	    				if (!a.isFiltered()) {
+	    					fastqWriter.write(a);
+	    				}
 	    			}
 	    		}
 	    	}

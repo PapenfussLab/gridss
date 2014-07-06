@@ -23,13 +23,11 @@ public class DeBruijnNode extends DeBruijnNodeBase {
 	@Override
 	public void add(DeBruijnEvidence evidence, int readKmerOffset, ReadKmer kmer) {
 		super.add(evidence, readKmerOffset, kmer);
-		if (evidence.getDirection() == BreakendDirection.Forward) {
-			// set to max anchor position
-			if (evidence.isReferenceKmer(readKmerOffset)) {
-				referencePosition = closest(evidence.getDirection(), referencePosition, evidence.getInferredReferencePosition(readKmerOffset));
-			} else if (!evidence.isDirectlyAnchoredToReference()) {
-				matePosition = closest(evidence.getDirection(), matePosition, evidence.getMateAnchorPosition());
-			}
+		// set to max anchor position
+		if (evidence.isReferenceKmer(readKmerOffset)) {
+			referencePosition = closest(evidence.getDirection(), referencePosition, evidence.getInferredReferencePosition(readKmerOffset));
+		} else if (!evidence.isDirectlyAnchoredToReference()) {
+			matePosition = closest(evidence.getDirection(), matePosition, evidence.getMateAnchorPosition());
 		}
 	}
 	private int closest(BreakendDirection direction, Integer current, int update) {
@@ -52,6 +50,7 @@ public class DeBruijnNode extends DeBruijnNodeBase {
 		return referencePosition != null;
 	}
 	public SubgraphSummary getSubgraph() {
+		if (subgraph == null) return null;
 		return subgraph.getRoot();
 	}
 	public void setSubgraph(SubgraphSummary subgraph) {
@@ -68,4 +67,11 @@ public class DeBruijnNode extends DeBruijnNodeBase {
 			  return Ints.compare(o1.getWeight(), o2.getWeight());
 		  }
 	};
+	public String toString() {
+		return String.format("%s%s g=%d,%s",
+				referencePosition == null ? " " : "R",
+				matePosition == null ? " " : "M",
+				subgraph.getAnyKmer(),
+				super.toString());
+	}
 }

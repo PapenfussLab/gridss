@@ -20,6 +20,7 @@ import htsjdk.variant.vcf.VCFHeader;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -29,7 +30,6 @@ import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.ReadEvidenceAssemblerUtil;
 import au.edu.wehi.idsv.RelevantMetrics;
 import au.edu.wehi.idsv.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.SAMRecordUtil;
@@ -123,37 +123,23 @@ public class TestHelper {
 			return new SoftClipEvidence(getContext(), direction, pair[0]);
 		}
 	}
-	public static VariantContextDirectedBreakpointBuilder AE(
-			ProcessingContext processContext,
-			String assemblerName,
-			int referenceIndex,
-			int position,
-			BreakendDirection direction,
-			byte[] breakpointSequence,
-			byte[] fullAssembly,
-			Integer readCount,
-			int readBaseCount,
-			double breakpointQuality
-			) {
-		return ReadEvidenceAssemblerUtil.breakendBuilder(processContext, assemblerName, referenceIndex, position, direction, breakpointSequence, null, fullAssembly, null, readCount, readBaseCount, breakpointQuality, 0);
+	public static VariantContextDirectedBreakpoint AE() {
+		return AB().makeVariant();
 	}
-	public static VariantContextDirectedBreakpoint AE(
-			int referenceIndex,
-			int position,
-			BreakendDirection direction,
-			String breakpointSequence,
-			Integer readCount,
-			int readBaseCount,
-			double breakpointQuality) {
-		return AE(getContext(), "testAssembler", referenceIndex, position, direction, B(breakpointSequence),
-				B(breakpointSequence),
-				readCount,
-				readBaseCount,
-				breakpointQuality).make();
+	public static AssemblyBuilder AB() {
+		return new AssemblyBuilder(getContext())
+		.assemblerName("testAssembler")
+		.direction(FWD)
+		.referenceAnchor(0, 1)
+		.anchorLength(1)
+		.assemblyBases(B("ATT"))
+		.assemblyBaseQuality(new byte[] { 7,7,7})
+		.assembledReadCount(5)
+		.assembledBaseCount(6);
 	}
 	public static VariantContextDirectedBreakpoint AE(
 			BreakpointSummary summary,
-			Integer readCount,
+			int readCount,
 			int readBaseCount,
 			double breakpointQuality,
 			String untemplatedSequence) {
@@ -165,7 +151,7 @@ public class TestHelper {
 		b.attribute(VcfAttributes.ASSEMBLY_QUALITY.attribute(), breakpointQuality);
 		b.attribute(VcfAttributes.REALIGN_TOTAL_LENGTH, untemplatedSequence.length() + 1);
 		return b.make();
-	}
+	}		
 	public static class MockMetrics extends RelevantMetrics {
 		@Override
 		public int getMaxFragmentSize() {

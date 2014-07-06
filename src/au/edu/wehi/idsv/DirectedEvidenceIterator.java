@@ -3,9 +3,13 @@ package au.edu.wehi.idsv;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.variant.variantcontext.VariantContext;
 
+import java.util.Iterator;
 import java.util.PriorityQueue;
 
+import au.edu.wehi.idsv.vcf.PassFiltersIterator;
+
 import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 
 /**
@@ -35,10 +39,10 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 			PeekingIterator<SAMRecord> sv,
 			PeekingIterator<SAMRecord> mate,
 			PeekingIterator<SAMRecord> realign,
-			PeekingIterator<VariantContext> vcf) {
+			Iterator<VariantContext> vcf) {
 		this.processContext = processContext;
 		this.svIterator = sv;
-		this.vcfIterator = vcf;
+		this.vcfIterator = vcf == null ? null : Iterators.peekingIterator(new PassFiltersIterator<VariantContext>(vcf));
 		this.mateFactory = new SequentialNonReferenceReadPairFactory(mate);
 		this.realignFactory = new SequentialRealignedBreakpointFactory(realign);
 	}

@@ -9,7 +9,6 @@ import org.junit.Test;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.EvidenceMetrics;
 import au.edu.wehi.idsv.NonReferenceReadPair;
-import au.edu.wehi.idsv.ReadEvidenceAssemblerUtil;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 
@@ -29,7 +28,14 @@ public class EvidenceMetricsTest extends TestHelper {
 		// SC
 		m.add(new SoftClipEvidence(new SoftClipEvidence(getContext(), BreakendDirection.Backward, Read(0, 1, "6S4M")), withMapq(1,Read(0, 1, "1S3M2S"))[0]).getBreakendSummary().evidence);
 		// Assembly
-		m.add(ReadEvidenceAssemblerUtil.breakendBuilder(getContext(), "test", 0, 10, BreakendDirection.Backward, B("AT"), B("ATA"), 1, 1, 1).make().getBreakendSummary().evidence);
+		m.add(new AssemblyBuilder(getContext())
+			.anchorLength(1)
+			.mateAnchor(0, 1)
+			.direction(BWD)
+			.assembledBaseCount(1)
+			.assembledReadCount(1)
+			.assemblyBases(B("ATA"))
+			.makeVariant().getBreakendSummary().evidence);
 		for (VcfAttributes a : VcfAttributes.evidenceValues()) {
 			assertFalse(a.name(), m.get(a) == 0);
 		}

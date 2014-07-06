@@ -2,6 +2,7 @@ package au.edu.wehi.idsv;
 
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.vcf.VCFHeaderLineType;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
@@ -29,14 +30,14 @@ public class VariantContextDirectedBreakpoint extends IdsvVariantContext impleme
 	private final BreakendSummary location;
 	private final String breakpointSequence;
 	private final String anchorSequence;
-	private final byte[] breakpointQual;
+	private final byte[] breakendBaseQual;
 	//private static Log LOG = Log.getInstance(VariantContextDirectedBreakpoint.class);
 	public VariantContextDirectedBreakpoint(ProcessingContext processContext, VariantContext context) {
 		this(processContext, context, null);
 	}
-	public VariantContextDirectedBreakpoint(ProcessingContext processContext, VariantContext context, byte[] breakpointQual) {
+	public VariantContextDirectedBreakpoint(ProcessingContext processContext, VariantContext context, byte[] breakendBaseQual) {
 		super(processContext, context);
-		this.breakpointQual = breakpointQual;
+		this.breakendBaseQual = breakendBaseQual;
 		// calculate fields
 		List<Allele> altList = getAlternateAlleles();
 		if (altList.size() != 1) {
@@ -174,7 +175,7 @@ public class VariantContextDirectedBreakpoint extends IdsvVariantContext impleme
 	}
 	@Override
 	public byte[] getBreakpointQuality() {
-		return breakpointQual;
+		return breakendBaseQual;
 	}
 	@Override
 	public boolean isValid() {
@@ -183,6 +184,8 @@ public class VariantContextDirectedBreakpoint extends IdsvVariantContext impleme
 	public String getAssemblerProgram() { return getAttributeAsString(VcfAttributes.ASSEMBLY_PROGRAM.attribute(), null); }
 	public String getAssemblyConsensus() { return getAttributeAsString(VcfAttributes.ASSEMBLY_CONSENSUS.attribute(), ""); }
 	public double getAssemblyQuality() { return getAttributeAsDouble(VcfAttributes.ASSEMBLY_QUALITY.attribute(), 0); }
+	public int getAssemblyMaximumSoftClipLength() { return getAttributeAsInt(VcfAttributes.ASSEMBLY_MAX_READ_SOFT_CLIP.attribute(), 0); }
+	public int getAssemblyLongestSupportingRead() { return getAttributeAsInt(VcfAttributes.ASSEMBLY_READ_LENGTH.attribute(), 0); }	
 	/**
 	 * Returns an iterator containing only the breakend variants from the given iterator
 	 * @param context processing context

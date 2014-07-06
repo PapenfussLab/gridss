@@ -17,9 +17,16 @@ public class VcfConstants {
 				header.addMetaDataLine(attr.infoHeader());
 			}
 		}
+		// Filter headers
+		for (VcfFilter filter : VcfFilter.values()) {
+			if (filter.header() != null) {
+				header.addMetaDataLine(filter.header());
+			}
+		}
 		// Standard SV headers we use
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.SV_TYPE);
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.CONFIDENCE_INTERVAL_START_POSITION);
+		header.addMetaDataLine(VcfStructuralVariantHeaderLines.IMPRECISE);
 		
 		// Retrogene headers		
 		//header.addMetaDataLine(new VCFInfoHeaderLine(IdsvConstants.GENE_ID, 1, VCFHeaderLineType.String, "GTF gene_id of gene containing exons"));

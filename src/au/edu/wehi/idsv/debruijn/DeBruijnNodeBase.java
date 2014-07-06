@@ -41,4 +41,8 @@ public class DeBruijnNodeBase {
 	public Set<SAMRecord> getSupportingReads() {
 		return supportSet;
 	}
+	@Override
+	public String toString() {
+		return String.format("w=%d, #reads=%d", nodeWeight, supportSet.size());
+	}
 }

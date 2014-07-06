@@ -142,6 +142,10 @@ public class DeBruijnEvidenceTest extends TestHelper {
 		}
 	}
 	@Test
+	public void isReferenceKmer_should_allow_zero_skipped_bases() {
+		assertTrue(DeBruijnEvidence.createSoftClipEvidence(BWD, 3, SCE(BWD, withSequence("TTATG", Read(0, 10, "2S3M")))).isReferenceKmer(0));
+	}
+	@Test
 	public void isSkippedKmer_should_skip_if_any_SC() {
 		for (int i= 0; i < 19 - 4; i++) {
 			assertEquals(i >= 0 && i <= 3, fsc.isSkippedKmer(i));

@@ -11,7 +11,6 @@ import au.edu.wehi.idsv.DirectedEvidenceEndCoordinateComparator;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.ReadEvidenceAssembler;
-import au.edu.wehi.idsv.ReadEvidenceAssemblerUtil;
 import au.edu.wehi.idsv.SAMRecordUtil;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.AssemblyBuilder;
@@ -30,7 +29,6 @@ import com.google.common.collect.Lists;
  *
  */
 public class DeBruijnAnchoredAssembler implements ReadEvidenceAssembler {
-	public static final String ASSEMBLER_NAME = "debruijnA";
 	private final ProcessingContext processContext;
 	private final DeBruijnReadGraph graphf;
 	private final DeBruijnReadGraph graphb;
@@ -42,34 +40,12 @@ public class DeBruijnAnchoredAssembler implements ReadEvidenceAssembler {
 			ProcessingContext processContext,
 			int kmer) {
 		this.processContext = processContext;
-		this.graphf = new DeBruijnReadGraph(kmer, BreakendDirection.Forward);
-		this.graphb = new DeBruijnReadGraph(kmer, BreakendDirection.Backward);
+		this.graphf = new DeBruijnReadGraph(processContext, kmer, BreakendDirection.Forward);
+		this.graphb = new DeBruijnReadGraph(processContext, kmer, BreakendDirection.Backward);
 	}
 	private VariantContextDirectedBreakpoint createAssemblyBreakend(DeBruijnReadGraph graph, BreakendDirection direction) {
-		// AnomolousReadAssembly contains the assembly information encoded in a SAMRecord
-		AnomolousReadAssembly ara = graph.assembleVariant();
-		if (ara == null) return null;
-		if (ara.getBreakpointLength() == 0) return null; // only assembled anchor bases
-		if (ara.getReadCount() <= 1) return null; // exclude single soft-clips
-		
-		AssemblyBuilder builder = new AssemblyBuilder(processContext);
-		builder.assembly(ara)
-			.anchor(currentReferenceIndex, currentPosition);
-		
-		return ReadEvidenceAssemblerUtil.breakendBuilder(
-				processContext,
-				ASSEMBLER_NAME,
-				currentReferenceIndex,
-				currentPosition,
-				direction,
-				direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipBases(ara) : SAMRecordUtil.getStartSoftClipBases(ara),
-				direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipBaseQualities(ara) : SAMRecordUtil.getStartSoftClipBaseQualities(ara),
-				ara.getReadBases(),
-				ara.getBaseQualities(),
-				ara.getReadCount(),
-				ara.getReadBaseCount(),
-				ara.getAssemblyBreakpointQuality())
-			.make();
+		VariantContextDirectedBreakpoint variant = graph.assembleVariant(currentReferenceIndex, currentPosition);
+		return variant;
 	}
 	@Override
 	public Iterable<VariantContextDirectedBreakpoint> addEvidence(DirectedEvidence evidence) {

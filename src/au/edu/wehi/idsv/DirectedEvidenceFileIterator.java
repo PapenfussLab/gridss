@@ -46,7 +46,7 @@ public class DirectedEvidenceFileIterator implements CloseableIterator<DirectedE
 				Iterators.peekingIterator(svIt),
 				Iterators.peekingIterator(mateIt),
 				Iterators.peekingIterator(realignIt),
-				Iterators.peekingIterator(vcfIt));
+				vcfIt);
 	}
 	@Override
 	public void close() {

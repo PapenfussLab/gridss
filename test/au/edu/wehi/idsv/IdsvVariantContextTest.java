@@ -22,7 +22,7 @@ public class IdsvVariantContextTest extends TestHelper {
 	}
 	@Test
 	public void create_should_make_VariantContextDirectedBreakpoint() {
-		VariantContextDirectedBreakpoint vc = ReadEvidenceAssemblerUtil.breakendBuilder(getContext(), "test", 0, 1, BreakendDirection.Forward, B("C"), B("AC"), 1, 1, 0).make();
+		VariantContextDirectedBreakpoint vc = AE();
 		assertTrue(IdsvVariantContext.create(getContext(), vc) instanceof VariantContextDirectedBreakpoint);
 	}
 	@Test
