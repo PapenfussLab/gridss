@@ -26,7 +26,16 @@ public class SAMRecordUtil {
 	 * @return true if soft-clipped, false otherwise
 	 */
 	public static boolean isAlignmentSoftClipped(SAMRecord aln) {
-		return !aln.getReadUnmappedFlag() && (getStartSoftClipLength(aln) > 0 || getEndSoftClipLength(aln) > 0);
+		return isSoftClipLengthAtLeast(aln, 1);
+	}
+	/**
+	 * Determines whether the given record has a soft clip at least the given length
+	 * @param aln
+	 * @param length minimum length of softclip
+	 * @return true if soft-clipped and at least length
+	 */
+	public static boolean isSoftClipLengthAtLeast(SAMRecord aln, int length) {
+		return !aln.getReadUnmappedFlag() && (getStartSoftClipLength(aln) >= length || getEndSoftClipLength(aln) >= length);
 	}
 	public static int getStartSoftClipLength(SAMRecord aln) {
 		Cigar cigar = aln.getCigar();

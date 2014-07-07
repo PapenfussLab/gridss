@@ -3,6 +3,7 @@ package au.edu.wehi.idsv.debruijn;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
@@ -56,6 +57,14 @@ public class KmerEncodingHelperTest extends TestHelper {
 		assertEquals("CACT", S(KmerEncodingHelper.encodedToPicardBases(4, KmerEncodingHelper.prevStates(4, state)[1])));
 		assertEquals("AACT", S(KmerEncodingHelper.encodedToPicardBases(4, KmerEncodingHelper.prevStates(4, state)[2])));
 		assertEquals("GACT", S(KmerEncodingHelper.encodedToPicardBases(4, KmerEncodingHelper.prevStates(4, state)[3])));
+	}
+	@Test
+	public void prev_state_should_advance_backward_64bit() {
+		long state = KmerEncodingHelper.picardBaseToEncoded(25, B("TACAATTCAGCATGAGCTAAACCCT"));
+		assertEquals("TTACAATTCAGCATGAGCTAAACCC", S(KmerEncodingHelper.encodedToPicardBases(25, KmerEncodingHelper.prevStates(25, state)[0])));
+		assertEquals("CTACAATTCAGCATGAGCTAAACCC", S(KmerEncodingHelper.encodedToPicardBases(25, KmerEncodingHelper.prevStates(25, state)[1])));
+		assertEquals("ATACAATTCAGCATGAGCTAAACCC", S(KmerEncodingHelper.encodedToPicardBases(25, KmerEncodingHelper.prevStates(25, state)[2])));
+		assertEquals("GTACAATTCAGCATGAGCTAAACCC", S(KmerEncodingHelper.encodedToPicardBases(25, KmerEncodingHelper.prevStates(25, state)[3])));
 	}
 	@Test
 	public void prev_state_should_advance_backward_3mer() {
@@ -118,5 +127,58 @@ public class KmerEncodingHelperTest extends TestHelper {
 				assertEquals(expected[i].substring(k), S(KmerEncodingHelper.encodedToPicardBases(KmerEncodingHelper.MAX_K-k,KmerEncodingHelper.complement(KmerEncodingHelper.MAX_K-k, KmerEncodingHelper.picardBaseToEncoded(KmerEncodingHelper.MAX_K-k, B(input[i].substring(k)))))));
 			}
 		}
+	}
+	public void assertBasesMatching(int expectedMismatches, String a, String b) {
+		assertEquals(expectedMismatches, KmerEncodingHelper.basesDifference(a.length(),
+				KmerEncodingHelper.picardBaseToEncoded(a.length(), B(a)),
+				KmerEncodingHelper.picardBaseToEncoded(a.length(), B(b))));
+		assertEquals(a.length() - expectedMismatches, KmerEncodingHelper.basesMatching(a.length(),
+				KmerEncodingHelper.picardBaseToEncoded(a.length(), B(a)),
+				KmerEncodingHelper.picardBaseToEncoded(a.length(), B(b))));
+		assertEquals(expectedMismatches, KmerEncodingHelper.basesDifference(a.length(),
+				KmerEncodingHelper.picardBaseToEncoded(a.length(), B(b)),
+				KmerEncodingHelper.picardBaseToEncoded(a.length(), B(a))));
+		assertEquals(a.length() - expectedMismatches, KmerEncodingHelper.basesMatching(a.length(),
+				KmerEncodingHelper.picardBaseToEncoded(a.length(), B(b)),
+				KmerEncodingHelper.picardBaseToEncoded(a.length(), B(a))));
+	}
+	@Test
+	public void basesDifference_basesMatching_should_work_at_base_level() {
+		assertBasesMatching(0, "A", "A");
+		assertBasesMatching(1, "G", "A");
+		assertBasesMatching(0, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		assertBasesMatching(1, "TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		assertBasesMatching(1, "AAAAAAAAAAAAAAAATAAAAAAAAAAAAAAA", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		assertBasesMatching(1, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAT", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		assertBasesMatching(1, "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		assertBasesMatching(1, "AAAAAAAAAAAAAAAAGAAAAAAAAAAAAAAA", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		assertBasesMatching(1, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAG", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		assertBasesMatching(1, "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		assertBasesMatching(1, "ACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		assertBasesMatching(1, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		
+		assertBasesMatching(0, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		assertBasesMatching(1, "TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		assertBasesMatching(1, "AAAAAAAAAAAAAAAATAAAAAAAAAAAAAA", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		assertBasesMatching(1, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAT", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		assertBasesMatching(1, "GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		assertBasesMatching(1, "AAAAAAAAAAAAAAAAGAAAAAAAAAAAAAA", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		assertBasesMatching(1, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAG", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		assertBasesMatching(1, "CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		assertBasesMatching(1, "ACAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		assertBasesMatching(1, "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAC", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+		
+		assertBasesMatching(31, "AAAAAATAAAAAAAAAAAAAAAAAAAAAAAAA", "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
+		assertBasesMatching(30, "TAAAAATAAAAAAAAAAAAAAAAAAAAAAAAA", "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
+		assertBasesMatching(30, "AAAAAATAAAAAAAAAATAAAAAAAAAAAAAA", "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
+		assertBasesMatching(30, "AAAAAATAAAAAAAAAAAAAAAAAAAAAAAAT", "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
+		assertBasesMatching(31, "GAAAAATAAAAAAAAAAAAAAAAAAAAAAAAA", "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
+		assertBasesMatching(31, "AAAAAATAAAAAAAAAAGAAAAAAAAAAAAAA", "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
+		assertBasesMatching(31, "AAAAAATAAAAAAAAAAAAAAAAAAAAAAAAG", "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
+		assertBasesMatching(31, "CAAAAATAAAAAAAAAAAAAAAAAAAAAAAAA", "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
+		assertBasesMatching(31, "ACAAAATAAAAAAAAAAAAAAAAAAAAAAAAA", "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
+		assertBasesMatching(31, "AAAAAATAAAAAAAAAAAAAAAAAAAAAAAAC", "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
+		
+		assertBasesMatching(12, "GTACGGTACAGTACTGTACC", "GGGGGAAAAATTTTTCCCCC");
 	}
 }

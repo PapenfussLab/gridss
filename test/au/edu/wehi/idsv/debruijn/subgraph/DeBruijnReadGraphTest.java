@@ -178,4 +178,17 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		assertEquals("AGAT", result.get(0).getAssemblyConsensus());
 		assertTrue(result.get(0).getFilters().contains(VcfFilter.ASSEMBLY_TOO_SHORT.name()));
 	}
+	@Test
+	public void debugPrintPaths_should_work() {
+		DeBruijnReadGraph g = new DeBruijnReadGraph(getContext(), 0, 4, FWD);
+		g.addEvidence(SCE(FWD, withSequence("TAAAGTCC", Read(0, 10, "4M4S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAAAGTCCT", Read(0, 10, "4M5S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAAAGTCCT", Read(0, 10, "4M5S"))));
+		g.addEvidence(NRRP(withSequence("GTCCTAGAC", DP(0, 1, "8M", true, 1, 10, "8M", false))));
+		g.addEvidence(NRRP(withSequence("GTCCTAGAC", DP(0, 1, "8M", true, 1, 10, "8M", false))));
+		g.addEvidence(NRRP(withSequence("GTCCTAGAC", DP(0, 1, "8M", true, 1, 10, "8M", false))));
+		g.addEvidence(NRRP(withSequence("GTCCTAGAT", DP(0, 1, "8M", true, 1, 10, "8M", false))));
+		g.addEvidence(NRRP(withSequence("GTCCTAGAT", DP(0, 1, "8M", true, 1, 10, "8M", false))));
+		String s = g.debugPrintPaths();
+	}
 }

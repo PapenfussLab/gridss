@@ -206,6 +206,10 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNode> {
 		 */
 		private HashSet<Long> remainingCandidateKmers = Sets.newHashSet();
 		/**
+		 * Kmers in this subgraph that support the reference allele
+		 */
+		private HashSet<Long> referenceKmers = Sets.newHashSet();
+		/**
 		 * Candidate kmers for starting a SV-supporting contig assembly
 		 */
 		private PriorityQueue<Long> seedCandidates = new PriorityQueue<Long>(256, ByKmerWeight.reverse());
@@ -248,18 +252,18 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNode> {
 			path.add(start);
 			remainingCandidateKmers.remove(start);
 			// assemble back until we hit the reference
-			for (Long node = greedyPrevState(path.getFirst(), remainingCandidateKmers, null); node != null && !kmers.get(node).isReference(); node = greedyPrevState(node, remainingCandidateKmers, null)) {
+			for (Long node = greedyPrevState(path.getFirst(), remainingCandidateKmers, null); node != null; node = greedyPrevState(node, remainingCandidateKmers, null)) {
 				path.addFirst(node);
 				remainingCandidateKmers.remove(node); // no longer available for traversal either for us, or for any other contig
 			}
-			HashSet<Long> referenceVisited = Sets.newHashSet();
+			HashSet<Long> referenceRemaining = Sets.newHashSet(referenceKmers);
 			// Extend the contig back along our reference anchor
-			for (Long node = greedyPrevState(path.getFirst(), null, referenceVisited); node != null && kmers.get(node).isReference(); node = greedyPrevState(node, null, referenceVisited)) {
+			for (Long node = greedyPrevState(path.getFirst(), referenceRemaining, null); node != null; node = greedyPrevState(node, referenceRemaining, null)) {
 				path.addFirst(node);
-				referenceVisited.add(node);
+				referenceRemaining.remove(node);
 			}
 			// Then extend forward as far as we can
-			for (Long node = greedyNextState(path.getLast(), remainingCandidateKmers, null); node != null && !kmers.get(node).isReference(); node = greedyNextState(node, remainingCandidateKmers, null)) {
+			for (Long node = greedyNextState(path.getLast(), remainingCandidateKmers, null); node != null; node = greedyNextState(node, remainingCandidateKmers, null)) {
 				path.addLast(node);
 				remainingCandidateKmers.remove(node); // no longer available for traversal either for us, or for any other contig
 			}
@@ -301,7 +305,6 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNode> {
 		 */
 		private void init() {
 			HashSet<Long> frontier = Sets.newHashSet();
-			HashSet<Long> referenceVisited = Sets.newHashSet();
 			frontier.add(startKmer);
 			while (!frontier.isEmpty()) {
 				long kmer = frontier.iterator().next();
@@ -311,12 +314,12 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNode> {
 					seedCandidates.add(kmer);
 					remainingCandidateKmers.add(kmer);
 				} else {
-					referenceVisited.add(kmer);
+					referenceKmers.add(kmer);
 				}
 				// Add neighbours of this kmer to the frontier
 				for (long adjKmer : KmerEncodingHelper.adjacentStates(k, kmer)) {
 					// needs to be in the de bruijn graph, and not already processed
-					if (kmers.containsKey(adjKmer) && !remainingCandidateKmers.contains(adjKmer) && !referenceVisited.contains(adjKmer)) {
+					if (kmers.containsKey(adjKmer) && !remainingCandidateKmers.contains(adjKmer) && !referenceKmers.contains(adjKmer)) {
 						frontier.add(adjKmer);
 					}
 				}

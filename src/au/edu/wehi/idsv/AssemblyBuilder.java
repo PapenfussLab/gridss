@@ -140,7 +140,7 @@ public class AssemblyBuilder {
 				//builder.filter("SC1"); // assembly length = 1 SC read
 			}
 			if (ara.getBreakpointLength() == 0) {
-				builder.filter(VcfFilter.ASSEMBLY_REF.name());
+				builder.filter(VcfFilter.ASSEMBLY_REF.filter());
 			}
 		} else if (mateAnchorReferenceIndex != -1) {
 			// TODO: improve this by looking at all contributing mate anchor positions and taking a 95% CI
@@ -166,14 +166,14 @@ public class AssemblyBuilder {
 			// apply filter:
 			if (ara.getBreakpointLength() <= longestAssembledRead) {
 				// just assembled a single read - not very exciting
-				builder.filter(VcfFilter.ASSEMBLY_TOO_SHORT.name()); // assembly length = 1 read
+				builder.filter(VcfFilter.ASSEMBLY_TOO_SHORT.filter()); // assembly length = 1 read
 			}
 		} else {
 			throw new IllegalStateException("Assembly not anchored to reference either directly, or through mate reads");
 		}
 		// apply common filter:
 		if (readCount == 1) {
-			builder.filter(VcfFilter.ASSEMBLY_SINGLE_READ.name()); // read count = 1
+			builder.filter(VcfFilter.ASSEMBLY_SINGLE_READ.filter()); // read count = 1
 		}
 		return builder.make();
 	}

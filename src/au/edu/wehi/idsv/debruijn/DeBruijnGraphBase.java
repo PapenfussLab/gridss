@@ -2,8 +2,11 @@ package au.edu.wehi.idsv.debruijn;
 
 import htsjdk.samtools.SAMRecord;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -18,6 +21,7 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordUtil;
 import au.edu.wehi.idsv.SoftClipEvidence;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
@@ -158,19 +162,29 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	 * @return next kmer, null if no valid kmer 
 	 */
 	protected Long greedyNextState(long state, Set<Long> inclusionSet, Set<Long> exclusionSet) {
-		long best = -1;
+		int best = Integer.MIN_VALUE;
 		Long bestNode = null;
-		for (Long next : KmerEncodingHelper.nextStates(k, state)) {
-			DeBruijnNodeBase node = kmers.get(next);
-			if (node != null && node.getWeight() > best) {
-				if ((inclusionSet == null || inclusionSet.contains(next)) && 
-						(exclusionSet == null || !exclusionSet.contains(next))) {
-					bestNode = next;
-					best = node.getWeight();
-				}
+		for (Long next : nextStates(state, inclusionSet, exclusionSet)) {
+			int weight = kmers.get(next).getWeight();
+			if (weight > best) {
+				bestNode = next;
+				best = weight;
 			}
 		}
 		return bestNode; 
+	}
+	protected List<Long> nextStates(long state, Set<Long> inclusionSet, Set<Long> exclusionSet) {
+		List<Long> result = Lists.newArrayListWithCapacity(4);
+		for (Long next : KmerEncodingHelper.nextStates(k, state)) {
+			DeBruijnNodeBase node = kmers.get(next);
+			if (node != null) {
+				if ((inclusionSet == null || inclusionSet.contains(next)) && 
+						(exclusionSet == null || !exclusionSet.contains(next))) {
+					result.add(next);
+				}
+			}
+		}
+		return result; 
 	}
 	/**
 	 * Gets the best kmer preceeding the given kmer
@@ -180,19 +194,29 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	 * @return previous kmer, null if no valid kmer 
 	 */
 	protected Long greedyPrevState(long state, Set<Long> inclusionSet, Set<Long> exclusionSet) {
-		long best = -1;
+		int best = Integer.MIN_VALUE;
 		Long bestNode = null;
-		for (Long next : KmerEncodingHelper.prevStates(k, state)) {
-			DeBruijnNodeBase node = kmers.get(next);
-			if (node != null && node.getWeight() > best) {
-				if ((inclusionSet == null || inclusionSet.contains(next)) && 
-						(exclusionSet == null || !exclusionSet.contains(next))) {
-					bestNode = next;
-					best = node.getWeight();
-				}
+		for (Long prev : prevStates(state, inclusionSet, exclusionSet)) {
+			int weight = kmers.get(prev).getWeight();
+			if (weight > best) {
+				bestNode = prev;
+				best = weight;
 			}
 		}
 		return bestNode; 
+	}
+	protected List<Long> prevStates(long state, Set<Long> inclusionSet, Set<Long> exclusionSet) {
+		List<Long> result = Lists.newArrayListWithCapacity(4);
+		for (Long next : KmerEncodingHelper.prevStates(k, state)) {
+			DeBruijnNodeBase node = kmers.get(next);
+			if (node != null) {
+				if ((inclusionSet == null || inclusionSet.contains(next)) && 
+						(exclusionSet == null || !exclusionSet.contains(next))) {
+					result.add(next);
+				}
+			}
+		}
+		return result; 
 	}
 	/**
 	 * Base calls of contig
@@ -320,35 +344,100 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	};
 	@Override
 	public String toString() {
+		return toString(16);
+	}
+	public String toString(int maxNodesToPrint) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(String.format("De Bruijn graph: k=%d, %d kmers\n", k, kmers.size()));
-		int max = 25;
 		for (Long x : kmers.keySet()) {
-			sb.append(String.format("%s(%d): %s",
-					KmerEncodingHelper.toString(k, x),
-					x,
-					kmers.get(x)
-					));
-			sb.append(" from:{");
-			for (Long y : KmerEncodingHelper.prevStates(k, x)) {
-				DeBruijnNodeBase node = kmers.get(y);
-				if (node != null) {
-					sb.append(KmerEncodingHelper.toString(k, y));
-					sb.append(',');
-				}
-			}
-			sb.append("} to:{");
-			for (Long y : KmerEncodingHelper.nextStates(k, x)) {
-				DeBruijnNodeBase node = kmers.get(y);
-				if (node != null) {
-					sb.append(KmerEncodingHelper.toString(k, y));
-					sb.append(',');
-				}
-			}
-			sb.append("}\n");
-			max--;
-			if (max <= 0) break;
+			sb.append(printKmer(x));
+			maxNodesToPrint--;
+			if (maxNodesToPrint <= 0) break;
 		}
+		return sb.toString();
+	}
+	protected String printKmer(long x) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(String.format("%s(%d): %s",
+				KmerEncodingHelper.toString(k, x),
+				x,
+				kmers.get(x)
+				));
+		sb.append(" from:{");
+		for (Long y : KmerEncodingHelper.prevStates(k, x)) {
+			DeBruijnNodeBase node = kmers.get(y);
+			if (node != null) {
+				sb.append(KmerEncodingHelper.toString(k, y));
+				sb.append(',');
+			}
+		}
+		sb.append("} to:{");
+		for (Long y : KmerEncodingHelper.nextStates(k, x)) {
+			DeBruijnNodeBase node = kmers.get(y);
+			if (node != null) {
+				sb.append(KmerEncodingHelper.toString(k, y));
+				sb.append(',');
+			}
+		}
+		sb.append("}\n");
+		return sb.toString();
+	}
+	public String debugPrintPaths() {
+		Map<Long, Integer> contigLookup = Maps.newHashMap();
+		HashSet<Long> remaining = Sets.newHashSet(kmers.keySet());
+		List<LinkedList<Long>> paths = Lists.newArrayList();
+		int contig = 0;
+		// enumerate the paths
+		while (!remaining.isEmpty()) {
+			contig++;
+			LinkedList<Long> path = new LinkedList<Long>();
+			path.add(remaining.iterator().next());
+			remaining.remove(path.getFirst());
+			contigLookup.put(path.getFirst(), contig);
+			for(List<Long> adj = nextStates(path.getLast(), null, null); adj.size() == 1 && prevStates(adj.get(0), null, null).size() <= 1; adj = nextStates(path.getLast(), null, null)) {
+				contigLookup.put(adj.get(0), contig);
+				path.addLast(adj.get(0));
+				remaining.remove(adj.get(0));
+			}
+			for(List<Long> adj = prevStates(path.getFirst(), null, null); adj.size() == 1 && nextStates(adj.get(0), null, null).size() <= 1; adj = prevStates(path.getFirst(), null, null)) {
+				contigLookup.put(adj.get(0), contig);
+				path.addFirst(adj.get(0));
+				remaining.remove(adj.get(0));
+			}
+			paths.add(path);
+		}
+		return debugPrintPaths(paths, contigLookup);
+	}
+	protected String debugPrintPaths(List<LinkedList<Long>> paths, Map<Long, Integer> contigLookup) {
+		StringBuilder sb = new StringBuilder();
+		for (LinkedList<Long> path : paths) {
+			sb.append(printPath(path, contigLookup));
+		}
+		return sb.toString();
+	}
+	protected String printPathAttributes(LinkedList<Long> path) {
+		return "";
+	}
+	protected String printPath(LinkedList<Long> path, Map<Long, Integer> contigLookup) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(String.format("[%3d]\t", contigLookup.get(path.getFirst())));
+		sb.append(new String(getBaseCalls(path)));
+		int weight = 0;
+		for (Long y : path) weight += kmers.get(y).getWeight();
+		sb.append(String.format(" %d kmers %d weight", path.size(), weight));
+		sb.append(" from:{");
+		for (Long y : prevStates(path.getFirst(), null, null)) {
+			sb.append(contigLookup.get(y));
+			sb.append(',');
+		}
+		sb.append("} to:{");
+		for (Long y : nextStates(path.getLast(), null, null)) {
+			sb.append(contigLookup.get(y));
+			sb.append(',');
+		}
+		sb.append("}");
+		sb.append(printPathAttributes(path));
+		sb.append('\n');
 		return sb.toString();
 	}
 }

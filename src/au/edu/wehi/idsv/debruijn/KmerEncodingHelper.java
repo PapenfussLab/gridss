@@ -24,12 +24,20 @@ public class KmerEncodingHelper {
 	 * Conveniently, complementing a UCSC 2bit encoded base requires just flipping the high bit.
 	 */
 	private static final long[] complementBits = new long[MAX_K + 1];
+	/**
+	 * Bit mask return only bits used by a kmer of length k 
+	 */
+	private static final long[] usedBits = new long[MAX_K + 1];
 	static {
-		long pattern = 0;
+		long usedMask = 0;
+		long complementMask = 0;
 		for (int i = 0; i <= MAX_K; i++) {
-			complementBits[i] = pattern;
-			pattern <<= 2;
-			pattern |= 2;
+			complementBits[i] = complementMask;
+			complementMask <<= 2;
+			complementMask |= 2;
+			usedBits[i] = usedMask;
+			usedMask <<= 2;
+			usedMask |= 3;
 		}
 	}
 	/**
@@ -105,7 +113,7 @@ public class KmerEncodingHelper {
 		return encodedToPicardBase(state);
 	}
 	public static void assertValid(int k, long encoded) {
-		if (k != 32 && encoded >>> (2 * k) != 0) {
+		if ((encoded & ~usedBits[k]) != 0) {
 			throw new IllegalArgumentException(String.format("Sanity check failure: state %d is not a %dmer", encoded, k));
 		}
 	}
@@ -129,18 +137,18 @@ public class KmerEncodingHelper {
 		long next = clearBase(k - 1, encoded) << 2;
 		return new long[] {
 				next,
-				next | 1,
-				next | 2,
-				next | 3
+				next | 1L,
+				next | 2L,
+				next | 3L
 		};
 	}
 	public static long[] prevStates(int k, long encoded) {
 		long next = encoded >>> 2;
 		return new long[] {
 				next,
-				next | (1 << (2 * k - 2)),
-				next | (2 << (2 * k - 2)),
-				next | (3 << (2 * k - 2))
+				next | (1L << (2 * k - 2)),
+				next | (2L << (2 * k - 2)),
+				next | (3L << (2 * k - 2))
 		};
 	}
 	/**
@@ -154,13 +162,13 @@ public class KmerEncodingHelper {
 		long prev = encoded >>> 2;
 		return new long[] {
 				next,
-				next | 1,
-				next | 2,
-				next | 3,
+				next | 1L,
+				next | 2L,
+				next | 3L,
 				prev,
-				prev | (1 << (2 * k - 2)),
-				prev | (2 << (2 * k - 2)),
-				prev | (3 << (2 * k - 2))
+				prev | (1L << (2 * k - 2)),
+				prev | (2L << (2 * k - 2)),
+				prev | (3L << (2 * k - 2))
 		};
 	}
 	public static long nextState(int k, long state, byte picardBase) {
@@ -181,5 +189,28 @@ public class KmerEncodingHelper {
 			state >>>=2;
 		}
 		return sb.reverse().toString();
+	}
+	/**
+	 * Returns the number of bases difference between the two states
+	 * @param k
+	 * @param state1 kmer
+	 * @param state2 kmer
+	 * @return number of mismatching bases
+	 */
+	public static int basesDifference(int k, long state1, long state2) {
+		return k - basesMatching(k, state1, state2);
+	}
+	/**
+	 * Returns the number of bases matching between the two states
+	 * @param state1 kmer
+	 * @param state2 kmer
+	 * @return number of bases identical in both kmers 
+	 */
+	public static int basesMatching(int k, long state1, long state2) {
+		// set lower bit to 1 if both high and low bits match
+		long bitsMatch = ~(state1 ^ state2);
+		long baseMatch = ((bitsMatch & HIGH_BITS) >>> 1) & bitsMatch;
+		int baseCount = Long.bitCount(baseMatch & usedBits[k]); 
+		return baseCount;
 	}
 }

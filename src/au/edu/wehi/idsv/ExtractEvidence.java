@@ -25,8 +25,8 @@ import java.util.ArrayList;
 
 import picard.analysis.InsertSizeMetrics;
 import picard.analysis.directed.InsertSizeMetricsCollector;
-import picard.cmdline.CommandLineProgram;
 import picard.cmdline.Option;
+import picard.cmdline.CommandLineProgram;
 import picard.cmdline.StandardOptionDefinitions;
 import picard.cmdline.Usage;
 
@@ -52,6 +52,11 @@ public class ExtractEvidence extends CommandLineProgram {
     @Option(doc="Reference used for alignment",
     		shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME)
     public File REFERENCE;
+    @Option(doc = "Minimum length of a soft-clip to be considered for analysis." +
+			"Local aligners tend to produce many reads with very short soft clips.",
+		optional=true,
+		shortName="MIN_SC_LEN")
+    public int MIN_SOFT_CLIP_LEN = 4;
     @Option(doc = "Extract supporting reads into a separate file for each chromosome.",
             optional = true,
             shortName = "BYCHR")
@@ -117,7 +122,7 @@ public class ExtractEvidence extends CommandLineProgram {
 			while (iter.hasNext()) {
 				SAMRecord record = iter.next();
 				int offset = record.getReadUnmappedFlag() ? dictionary.size() : record.getReferenceIndex();
-				boolean sc = SAMRecordUtil.isAlignmentSoftClipped(record);
+				boolean sc = SAMRecordUtil.isSoftClipLengthAtLeast(record, MIN_SOFT_CLIP_LEN);
 				boolean badpair = SAMRecordUtil.isPartOfNonReferenceReadPair(record);
 				if (sc || badpair) {
 					SAMRecordUtil.ensureNmTag(referenceWalker, record);

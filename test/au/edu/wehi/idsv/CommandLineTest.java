@@ -120,14 +120,14 @@ public class CommandLineTest extends TestHelper {
 		protected int doWork() {
 			return super.doWork();
 		}
-		public int go(String chr, Integer minMapq, Integer longsc, Float minId, Float minQual, Integer k) {
+		public int go(String chr, Integer minMapq, Integer longsc, Float minId, Float minQual, Integer k, AssemblyMethod method) {		
 			if (minMapq != null) MIN_MAPQ = minMapq;
 			if (longsc != null) MIN_BREAKEND_REALIGN_LENGTH = longsc;
 			if (minId != null) MIN_PERCENT_IDENTITY = minId;
 			if (minQual != null) MIN_LONG_SC_BASE_QUALITY = minQual;
 			if (k != null) KMER = k;
 			TMP_DIR = Lists.newArrayList(testFolder.getRoot());
-			ASSEMBLY_METHOD = AssemblyMethod.DEBRUIJN_PER_POSITION;
+			ASSEMBLY_METHOD = (method == null) ? AssemblyMethod.DEBRUIJN_PER_POSITION : method;
 			try {
 				REFERENCE = reference;
 				if (StringUtils.isNotEmpty(chr)) {
@@ -149,17 +149,20 @@ public class CommandLineTest extends TestHelper {
 			return doWork();
 		}
 	}
+	public int generateDirectedBreakpoints(AssemblyMethod method) {
+		return new TestGenerateDirectedBreakpoints().go(null, null, null, null, null, null, method);
+	}
 	public int generateDirectedBreakpoints() {
-		return new TestGenerateDirectedBreakpoints().go(null, null, null, null, null, null);
+		return new TestGenerateDirectedBreakpoints().go(null, null, null, null, null, null, null);
 	}
 	public int generateDirectedBreakpoints(Integer minMapq, Integer longsc, Float minId, Float minQual, Integer k) {
-		return new TestGenerateDirectedBreakpoints().go(null, minMapq, longsc, minId, minQual, k);
+		return new TestGenerateDirectedBreakpoints().go(null, minMapq, longsc, minId, minQual, k, null);
 	}
 	public int generateDirectedBreakpoints(String chr) {
-		return new TestGenerateDirectedBreakpoints().go(chr, null, null, null, null, null);
+		return new TestGenerateDirectedBreakpoints().go(chr, null, null, null, null, null, null);
 	}
 	public int generateDirectedBreakpoints(String chr, Integer minMapq, Integer longsc, Float minId, Float minQual, Integer k) {
-		return new TestGenerateDirectedBreakpoints().go(chr, minMapq, longsc, minId, minQual, k);
+		return new TestGenerateDirectedBreakpoints().go(chr, minMapq, longsc, minId, minQual, k, null);
 	}	
 	public void workingFileShouldExist(String extension) {
 		assertTrue(new File(input.getAbsolutePath() + ".idsv.working", input.getName() + extension).exists());
