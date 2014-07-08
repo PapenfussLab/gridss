@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv.debruijn;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
@@ -10,6 +9,15 @@ import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.TestHelper;
 
 public class KmerEncodingHelperTest extends TestHelper {
+	public long P2E(String bases) {
+		return KmerEncodingHelper.picardBaseToEncoded(bases.length(), B(bases));
+	}
+	private static final String[] TWOMERS = new String[] {
+		"AA", "AC", "AG", "AT",
+		"CA", "CC", "CG", "CT",
+		"GA", "GC", "GG", "GT",
+		"TA", "TC", "TG", "TT",
+};
 	@Test
 	public void picardBaseToEncoded_should_use_blat_2bit_base_encoding() {
 		assertEquals(0,  KmerEncodingHelper.picardBaseToEncoded(1, new byte[] {'T'}));
@@ -180,5 +188,17 @@ public class KmerEncodingHelperTest extends TestHelper {
 		assertBasesMatching(31, "AAAAAATAAAAAAAAAAAAAAAAAAAAAAAAC", "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT");
 		
 		assertBasesMatching(12, "GTACGGTACAGTACTGTACC", "GGGGGAAAAATTTTTCCCCC");
+	}
+	@Test
+	public void lastBaseMatches_should_match_final_base() {
+		assertTrue(KmerEncodingHelper.lastBaseMatches(32, P2E("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"), P2E("TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTA")));
+		assertTrue(KmerEncodingHelper.lastBaseMatches(31, P2E("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"), P2E("TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTA")));
+		assertFalse(KmerEncodingHelper.lastBaseMatches(32, P2E("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAG"), P2E("TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTA")));
+		assertFalse(KmerEncodingHelper.lastBaseMatches(31, P2E("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAG"), P2E("TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTA")));
+		for (String s1: TWOMERS) {
+			for (String s2: TWOMERS) {
+				assertEquals(s1.charAt(1) == s2.charAt(1), KmerEncodingHelper.lastBaseMatches(2, P2E(s1), P2E(s2)));
+			}
+		}
 	}
 }

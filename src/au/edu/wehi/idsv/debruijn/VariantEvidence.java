@@ -18,7 +18,7 @@ import htsjdk.samtools.SAMRecord;
  * @author Daniel Cameron
  *
  */
-public class DeBruijnEvidence {
+public class VariantEvidence {
 	private static boolean shouldReverse(SAMRecord record, boolean isAnchored, BreakendDirection graphDirection) {
 		boolean reverseDirection = graphDirection == BreakendDirection.Backward;
 		return reverseDirection ^ isReverseComplimentRequiredForPositiveStrandReadout(record, isAnchored);
@@ -46,19 +46,19 @@ public class DeBruijnEvidence {
 	private final int k;
 	private final BreakendDirection direction;
 	
-	public static DeBruijnEvidence createRemoteReadEvidence(BreakendDirection graphDirection, int k, NonReferenceReadPair pair) {
+	public static VariantEvidence createRemoteReadEvidence(BreakendDirection graphDirection, int k, NonReferenceReadPair pair) {
 		if (graphDirection != pair.getBreakendSummary().direction) throw new RuntimeException("Sanity check failure: local read pair evidence direction does not match de bruijn graph direction");
 		int mateAnchorPosition = graphDirection == BreakendDirection.Forward ? pair.getBreakendSummary().start: pair.getBreakendSummary().end;
-		return new DeBruijnEvidence(graphDirection, k, pair.getNonReferenceRead(), mateAnchorPosition);
+		return new VariantEvidence(graphDirection, k, pair.getNonReferenceRead(), mateAnchorPosition);
 	}
-	public static DeBruijnEvidence createSoftClipEvidence(BreakendDirection graphDirection, int k, SoftClipEvidence read) {
+	public static VariantEvidence createSoftClipEvidence(BreakendDirection graphDirection, int k, SoftClipEvidence read) {
 		if (graphDirection != read.getBreakendSummary().direction) throw new RuntimeException("Sanity check failure: soft clip direction does not match de bruijn graph direction");
-		return new DeBruijnEvidence(graphDirection, k, read.getSAMRecord());
+		return new VariantEvidence(graphDirection, k, read.getSAMRecord());
 	}
 	/**
 	 * Creates unanchored De Bruijn graph read evidence
 	 */
-	private DeBruijnEvidence(BreakendDirection graphDirection, int k, SAMRecord record, int mateAnchorPosition) {
+	private VariantEvidence(BreakendDirection graphDirection, int k, SAMRecord record, int mateAnchorPosition) {
 		this.direction = graphDirection;
 		this.k = k;
 		this.record = record;
@@ -72,7 +72,7 @@ public class DeBruijnEvidence {
 	/**
 	 * Creates anchored De Bruijn graph read evidence
 	 */
-	private DeBruijnEvidence(BreakendDirection graphDirection, int k, SAMRecord record) {
+	private VariantEvidence(BreakendDirection graphDirection, int k, SAMRecord record) {
 		this.direction = graphDirection;
 		this.k = k;
 		this.record = record;

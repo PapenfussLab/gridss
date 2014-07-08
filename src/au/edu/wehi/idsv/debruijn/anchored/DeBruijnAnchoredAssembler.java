@@ -11,11 +11,8 @@ import au.edu.wehi.idsv.DirectedEvidenceEndCoordinateComparator;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.ReadEvidenceAssembler;
-import au.edu.wehi.idsv.SAMRecordUtil;
 import au.edu.wehi.idsv.SoftClipEvidence;
-import au.edu.wehi.idsv.AssemblyBuilder;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
-import au.edu.wehi.idsv.sam.AnomolousReadAssembly;
 
 import com.google.common.collect.Lists;
 
@@ -29,21 +26,17 @@ import com.google.common.collect.Lists;
  *
  */
 public class DeBruijnAnchoredAssembler implements ReadEvidenceAssembler {
-	private final ProcessingContext processContext;
-	private final DeBruijnReadGraph graphf;
-	private final DeBruijnReadGraph graphb;
+	private final DeBruijnAnchoredGraph graphf;
+	private final DeBruijnAnchoredGraph graphb;
 	private final PriorityQueue<DirectedEvidence> activef = new PriorityQueue<DirectedEvidence>(1024, new DirectedEvidenceEndCoordinateComparator());
 	private final PriorityQueue<DirectedEvidence> activeb = new PriorityQueue<DirectedEvidence>(1024, new DirectedEvidenceEndCoordinateComparator());
 	private int currentReferenceIndex = -1;
 	private int currentPosition = -1;
-	public DeBruijnAnchoredAssembler(
-			ProcessingContext processContext,
-			int kmer) {
-		this.processContext = processContext;
-		this.graphf = new DeBruijnReadGraph(processContext, kmer, BreakendDirection.Forward);
-		this.graphb = new DeBruijnReadGraph(processContext, kmer, BreakendDirection.Backward);
+	public DeBruijnAnchoredAssembler(ProcessingContext processContext, int kmer) {
+		this.graphf = new DeBruijnAnchoredGraph(processContext, kmer, BreakendDirection.Forward);
+		this.graphb = new DeBruijnAnchoredGraph(processContext, kmer, BreakendDirection.Backward);
 	}
-	private VariantContextDirectedBreakpoint createAssemblyBreakend(DeBruijnReadGraph graph, BreakendDirection direction) {
+	private VariantContextDirectedBreakpoint createAssemblyBreakend(DeBruijnAnchoredGraph graph, BreakendDirection direction) {
 		VariantContextDirectedBreakpoint variant = graph.assembleVariant(currentReferenceIndex, currentPosition);
 		return variant;
 	}
@@ -66,7 +59,7 @@ public class DeBruijnAnchoredAssembler implements ReadEvidenceAssembler {
 	 * @param active reads current active in the given graph
 	 * @param evidence read evidence to add
 	 */
-	private static void addToGraph(DeBruijnReadGraph graph, PriorityQueue<DirectedEvidence> active, DirectedEvidence evidence) {
+	private static void addToGraph(DeBruijnAnchoredGraph graph, PriorityQueue<DirectedEvidence> active, DirectedEvidence evidence) {
 		if (evidence instanceof NonReferenceReadPair) {
 			NonReferenceReadPair nrrp = (NonReferenceReadPair)evidence;
 			graph.addEvidence(nrrp);
@@ -77,7 +70,7 @@ public class DeBruijnAnchoredAssembler implements ReadEvidenceAssembler {
 			active.add(evidence);
 		}
 	}
-	private static void flushUpToExcluding(DeBruijnReadGraph graph, PriorityQueue<DirectedEvidence> active, int referenceIndex, int position) {
+	private static void flushUpToExcluding(DeBruijnAnchoredGraph graph, PriorityQueue<DirectedEvidence> active, int referenceIndex, int position) {
 		while (!active.isEmpty() &&
 				(active.peek().getBreakendSummary().referenceIndex < referenceIndex || 
 				(active.peek().getBreakendSummary().referenceIndex == referenceIndex && active.peek().getBreakendSummary().end < position))) {

@@ -7,7 +7,7 @@ import org.junit.Test;
 import au.edu.wehi.idsv.TestHelper;
 
 
-public class DeBruijnEvidenceTest extends TestHelper {
+public class VariantEvidenceTest extends TestHelper {
 	// FSC:
 	// 0        1
 	// 1234567890123456789
@@ -30,8 +30,8 @@ public class DeBruijnEvidenceTest extends TestHelper {
 	//           |    SSSS 15 branch kmer
 	//           ^
 	//        anchor pos
-	public DeBruijnEvidence fsc = DeBruijnEvidence.createSoftClipEvidence(FWD, 4, SCE(FWD, Read(0, 5, "4S7M8S")));
-	public DeBruijnEvidence fdp = DeBruijnEvidence.createRemoteReadEvidence(FWD, 4, NRRP(DP(0, 1, "2M", true, 1, 5, "4S7M8S", false)));
+	public VariantEvidence fsc = VariantEvidence.createSoftClipEvidence(FWD, 4, SCE(FWD, Read(0, 5, "4S7M8S")));
+	public VariantEvidence fdp = VariantEvidence.createRemoteReadEvidence(FWD, 4, NRRP(DP(0, 1, "2M", true, 1, 5, "4S7M8S", false)));
 	// RSC:
 	// 0        1
 	// 1234567890123456789
@@ -54,8 +54,8 @@ public class DeBruijnEvidenceTest extends TestHelper {
 	//     |          SSSS 0  ignored kmer
 	//     ^
 	//  anchor pos
-	public DeBruijnEvidence rsc = DeBruijnEvidence.createSoftClipEvidence(BWD, 4, SCE(BWD, Read(0, 5, "4S7M8S")));
-	public DeBruijnEvidence rdp = DeBruijnEvidence.createRemoteReadEvidence(BWD, 4, NRRP(DP(0, 1, "2M", false, 1, 5, "4S7M8S", true)));
+	public VariantEvidence rsc = VariantEvidence.createSoftClipEvidence(BWD, 4, SCE(BWD, Read(0, 5, "4S7M8S")));
+	public VariantEvidence rdp = VariantEvidence.createRemoteReadEvidence(BWD, 4, NRRP(DP(0, 1, "2M", false, 1, 5, "4S7M8S", true)));
 	@Test
 	public void shouldReverse_backward_direction_so_all_graph_breakends_are_forward() {
 		assertEquals(false, fsc.isReversed());
@@ -67,23 +67,23 @@ public class DeBruijnEvidenceTest extends TestHelper {
 	public void should_conditionally_reverse__and_complement_remote_reads_so_they_assemble_with_soft_clips() {
 		// In expected orientation => no change
 		// MMMM>    <----
-		assertEquals(false, DeBruijnEvidence.createRemoteReadEvidence(FWD, 4, NRRP(DP(0, 1, "2M", true, 1, 5, "4S7M8S", false))).isReversed());
-		assertEquals(false, DeBruijnEvidence.createRemoteReadEvidence(FWD, 4, NRRP(DP(0, 1, "2M", true, 1, 5, "4S7M8S", false))).isComplemented());
+		assertEquals(false, VariantEvidence.createRemoteReadEvidence(FWD, 4, NRRP(DP(0, 1, "2M", true, 1, 5, "4S7M8S", false))).isReversed());
+		assertEquals(false, VariantEvidence.createRemoteReadEvidence(FWD, 4, NRRP(DP(0, 1, "2M", true, 1, 5, "4S7M8S", false))).isComplemented());
 		
 		// Aligned to wrong strand -> reverse comp
 		// MMMM>    ---->
-		assertEquals(true, DeBruijnEvidence.createRemoteReadEvidence(FWD, 4, NRRP(DP(0, 1, "2M", true, 1, 5, "4S7M8S", true))).isReversed());
-		assertEquals(true, DeBruijnEvidence.createRemoteReadEvidence(FWD, 4, NRRP(DP(0, 1, "2M", true, 1, 5, "4S7M8S", true))).isComplemented());
+		assertEquals(true, VariantEvidence.createRemoteReadEvidence(FWD, 4, NRRP(DP(0, 1, "2M", true, 1, 5, "4S7M8S", true))).isReversed());
+		assertEquals(true, VariantEvidence.createRemoteReadEvidence(FWD, 4, NRRP(DP(0, 1, "2M", true, 1, 5, "4S7M8S", true))).isComplemented());
 		
 		// In expected orientation, but we're going backward = only reverse
 		// ---->    <MMMM
-		assertEquals(true, DeBruijnEvidence.createRemoteReadEvidence(BWD, 4, NRRP(DP(0, 1, "2M", false, 1, 5, "4S7M8S", true))).isReversed());
-		assertEquals(false, DeBruijnEvidence.createRemoteReadEvidence(BWD, 4, NRRP(DP(0, 1, "2M", false, 1, 5, "4S7M8S", true))).isComplemented());
+		assertEquals(true, VariantEvidence.createRemoteReadEvidence(BWD, 4, NRRP(DP(0, 1, "2M", false, 1, 5, "4S7M8S", true))).isReversed());
+		assertEquals(false, VariantEvidence.createRemoteReadEvidence(BWD, 4, NRRP(DP(0, 1, "2M", false, 1, 5, "4S7M8S", true))).isComplemented());
 		
 		// Wrong orientation, and going backward = reverse twice & comp
 		// <----    <MMMM
-		assertEquals(false, DeBruijnEvidence.createRemoteReadEvidence(BWD, 4, NRRP(DP(0, 1, "2M", false, 1, 5, "4S7M8S", false))).isReversed());
-		assertEquals(true, DeBruijnEvidence.createRemoteReadEvidence(BWD, 4, NRRP(DP(0, 1, "2M", false, 1, 5, "4S7M8S", false))).isComplemented());
+		assertEquals(false, VariantEvidence.createRemoteReadEvidence(BWD, 4, NRRP(DP(0, 1, "2M", false, 1, 5, "4S7M8S", false))).isReversed());
+		assertEquals(true, VariantEvidence.createRemoteReadEvidence(BWD, 4, NRRP(DP(0, 1, "2M", false, 1, 5, "4S7M8S", false))).isComplemented());
 	}
 	@Test
 	public void basesSupportingReference_should_count_all_ref_bases() {
@@ -143,7 +143,7 @@ public class DeBruijnEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void isReferenceKmer_should_allow_zero_skipped_bases() {
-		assertTrue(DeBruijnEvidence.createSoftClipEvidence(BWD, 3, SCE(BWD, withSequence("TTATG", Read(0, 10, "2S3M")))).isReferenceKmer(0));
+		assertTrue(VariantEvidence.createSoftClipEvidence(BWD, 3, SCE(BWD, withSequence("TTATG", Read(0, 10, "2S3M")))).isReferenceKmer(0));
 	}
 	@Test
 	public void isSkippedKmer_should_skip_if_any_SC() {

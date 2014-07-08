@@ -178,6 +178,9 @@ public class KmerEncodingHelper {
 		assertValid(k, next);
 		return next;
 	}
+	public static boolean lastBaseMatches(int k, long state1, long state2) {
+		return (state1 & 3L) == (state2 & 3L);
+	}
 	private static long clearBase(int k, long state) {
 		long bitsToClear = (1L << ((2*k)+1)) | (1L << (2*k));
 		return state & ~bitsToClear;

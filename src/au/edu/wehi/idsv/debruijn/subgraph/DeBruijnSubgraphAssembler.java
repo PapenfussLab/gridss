@@ -8,7 +8,6 @@ import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 
 /**
  * Generates local breakpoint read de bruijn graph assemblies of SV-supporting reads

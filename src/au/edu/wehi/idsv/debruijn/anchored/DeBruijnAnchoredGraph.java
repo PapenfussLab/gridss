@@ -1,34 +1,31 @@
 package au.edu.wehi.idsv.debruijn.anchored;
 
-import java.util.HashSet;
 import java.util.LinkedList;
-import java.util.Set;
 
 import au.edu.wehi.idsv.AssemblyBuilder;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
-import au.edu.wehi.idsv.debruijn.DeBruijnEvidence;
-import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
+import au.edu.wehi.idsv.debruijn.DeBruijnVariantGraph;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
+import au.edu.wehi.idsv.debruijn.VariantEvidence;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
 
-public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNodeBase> {
+public class DeBruijnAnchoredGraph extends DeBruijnVariantGraph<DeBruijnNodeBase> {
 	public static final String ASSEMBLER_NAME = "debruijnA";
 	private final Multimap<Long, Integer> startkmers = HashMultimap.<Long, Integer>create();
-	public DeBruijnReadGraph(ProcessingContext context, int k, BreakendDirection direction) {
+	public DeBruijnAnchoredGraph(ProcessingContext context, int k, BreakendDirection direction) {
 		super(context, k, direction);
 	}
 	@Override
-	protected DeBruijnNodeBase createEmptyNode() {
-		return new DeBruijnNodeBase();
+	protected DeBruijnNodeBase createNode(VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) {
+		return new DeBruijnNodeBase(evidence, readKmerOffset, kmer);
 	}
 	@Override
-	protected DeBruijnNodeBase addKmer(DeBruijnEvidence evidence, int readKmerOffset, ReadKmer kmer) {
-		DeBruijnNodeBase node = super.addKmer(evidence, readKmerOffset, kmer);
+	protected void onEvidenceAdded(DeBruijnNodeBase graphNode, DeBruijnNodeBase evidenceNode, VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) {
 		if (evidence.getReferenceKmerCount() > 0) {
 			// we have a fully reference anchored kmer
 			if (evidence.isReferenceAnchor(readKmerOffset)) {
@@ -37,15 +34,13 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNodeBase> {
 		} else {
 			// no kmer is fully anchored, use the first kmer as that has the most anchored bases
 			if (evidence.isFirstKmer(readKmerOffset) && evidence.basesSupportingReference(readKmerOffset) > 0) {
-				int offset = k - evidence.basesSupportingReference(readKmerOffset);
+				int offset = getK() - evidence.basesSupportingReference(readKmerOffset);
 				startkmers.put(kmer.kmer, offset);
 			}
 		}
-		return node;
 	}
 	@Override
-	protected DeBruijnNodeBase removeKmer(DeBruijnEvidence evidence, int readKmerOffset, ReadKmer kmer) {
-		DeBruijnNodeBase node = super.removeKmer(evidence, readKmerOffset, kmer);
+	protected void onEvidenceRemoved(DeBruijnNodeBase graphNode, DeBruijnNodeBase evidenceNode, VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) {
 		if (evidence.getReferenceKmerCount() > 0) {
 			// we have a fully reference anchored kmer
 			if (evidence.isReferenceAnchor(readKmerOffset)) {
@@ -54,11 +49,10 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNodeBase> {
 		} else {
 			// no kmer is fully anchored, use the first kmer as that has the most anchored bases
 			if (evidence.isFirstKmer(readKmerOffset) && evidence.basesSupportingReference(readKmerOffset) > 0) {
-				int offset = k - evidence.basesSupportingReference(readKmerOffset);
+				int offset = getK() - evidence.basesSupportingReference(readKmerOffset);
 				startkmers.remove(kmer.kmer, offset);
 			}
 		}
-		return node;
 	}
 	public VariantContextDirectedBreakpoint assembleVariant(int referenceIndex, int position) {
 		// debugPrint();
@@ -83,7 +77,7 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNodeBase> {
 		Long best = null;
 		long bestScore = -1;
 		for (Long state : startkmers.keySet()) {
-			long weight = kmers.get(state).getWeight();
+			long weight = getKmer(state).getWeight();
 			if (weight > bestScore) {
 				bestScore = weight;
 				best = state;
@@ -93,8 +87,8 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNodeBase> {
 	}
 	private VariantContextDirectedBreakpoint pathToAssembly(LinkedList<Long> path, Long breakpointAnchor, int referenceIndex, int position) {
 		if (path == null || path.size() == 0) throw new IllegalArgumentException("Invalid path");
-		int assemblyLength = path.size() + k - 1;
-		int offset = k - 1;
+		int assemblyLength = path.size() + getK() - 1;
+		int offset = getK() - 1;
 		int softclipSize = 0;
 		for (Long node : path) {
 			offset++;
@@ -116,25 +110,8 @@ public class DeBruijnReadGraph extends DeBruijnGraphBase<DeBruijnNodeBase> {
 			.maximumSoftClipLength(getMaxSoftClipLength(path, anchorLen));
 		return builder.makeVariant();
 	}
-	private LinkedList<Long> greedyTraverse(Long start) {
-		LinkedList<Long> path = new LinkedList<Long>();
-		Set<Long> visited = new HashSet<Long>();
-		path.add(start);
-		visited.add(start);
-		for (Long node = greedyPrevState(start, null, visited); node != null; node = greedyPrevState(node, null, visited)) {
-			path.addFirst(node);
-			visited.add(node);
-		}
-		for (Long node = greedyNextState(start, null, visited); node != null; node = greedyNextState(node, null, visited)) {
-			path.addLast(node);
-			visited.add(node);
-		}
-		return path;
-	}
 	@Override
 	public String toString() {
-		StringBuilder sb = new StringBuilder(super.toString());
-		sb.append(String.format("%d start kmers", startkmers.size()));
-		return sb.toString();
+		return super.toString() + String.format("%d start kmers", startkmers.size());
 	}
 }

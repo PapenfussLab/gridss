@@ -2,7 +2,6 @@ package au.edu.wehi.idsv.debruijn;
 
 import htsjdk.samtools.SAMRecord;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -11,16 +10,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang3.ArrayUtils;
+import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphNode;
 
-import au.edu.wehi.idsv.AssemblyBuilder;
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.NonReferenceReadPair;
-import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.SAMRecordUtil;
-import au.edu.wehi.idsv.SoftClipEvidence;
-
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
@@ -28,123 +21,73 @@ import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
 
 /**
- * Debruijn graph implementation
+ * Basic De Bruijn graph implementation
  * @author Daniel Cameron
  *
  * @param <T>
  */
 public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	public static final int MAX_QUAL_SCORE = 128 - 66;
-	protected final Map<Long, T> kmers = Maps.newHashMap();
-	protected final int k;
-	protected final BreakendDirection direction;
-	protected final ProcessingContext processContext;
-	public DeBruijnGraphBase(ProcessingContext context, int k, BreakendDirection direction) {
-		this.processContext = context;
+	private final Map<Long, T> kmers = Maps.newHashMap();
+	private final int k;	
+	public DeBruijnGraphBase(int k) {
 		this.k = k;
-		this.direction = direction;
 	}
-	public int getK() {
-		return k;
-	}
-	public BreakendDirection getDirection() {
-		return direction;
-	}
-	public void addEvidence(DirectedEvidence evidence) {
-		if (evidence instanceof NonReferenceReadPair) {
-			addEvidence((NonReferenceReadPair)evidence);
-		} else if (evidence instanceof SoftClipEvidence) {
-			addEvidence((SoftClipEvidence)evidence);
+	public int getK() { return k; }
+	public T getKmer(long kmer) { return kmers.get(kmer); }
+	/**
+	 * Merges the given nodes together
+	 * @param node first node to merge
+	 * @param toAdd second node to merge
+	 * @return Merged node. This may be a mutable version of one of the arguments 
+	 */
+	protected abstract T merge(T node, T toAdd);
+	/**
+	 * Removes the given evidence from a node
+	 * @param node node to remove from
+	 * @param toAdd second node to merge
+	 * @return Merged node. As nodes may be mutable, 
+	 */
+	protected abstract T remove(T node, T toRemove);
+	public T add(long kmer, T node) {
+		T existing = kmers.get(kmer);
+		if (existing != null) {
+			node = merge(existing, node);
+			kmers.put(kmer, node);
 		} else {
-			throw new RuntimeException(String.format("NYI: Unable to add %s evidence to de bruijn graph", evidence));
-		}
-	}
-	protected void addEvidence(NonReferenceReadPair pair) {
-		DeBruijnEvidence graphEvidence = DeBruijnEvidence.createRemoteReadEvidence(direction, k, pair);
-		addEvidenceKmers(graphEvidence);
-	}
-	protected void addEvidence(SoftClipEvidence read) {
-		DeBruijnEvidence graphEvidence = DeBruijnEvidence.createSoftClipEvidence(direction, k, read);
-		addEvidenceKmers(graphEvidence);
-	}
-	public void removeEvidence(NonReferenceReadPair pair) {
-		DeBruijnEvidence graphEvidence = DeBruijnEvidence.createRemoteReadEvidence(direction, k, pair);
-		removeEvidenceKmers(graphEvidence);
-	}
-	public void removeEvidence(SoftClipEvidence read) {
-		DeBruijnEvidence graphEvidence = DeBruijnEvidence.createSoftClipEvidence(direction, k, read);
-		removeEvidenceKmers(graphEvidence);
-	}
-	protected void addEvidenceKmers(DeBruijnEvidence evidence) {
-		int readKmerOffset = 0;
-		SAMRecord record = evidence.getSAMRecord();
-		for (ReadKmer kmer : new ReadKmerIterable(k, record.getReadBases(), record.getBaseQualities(), evidence.isReversed(), evidence.isComplemented())) {
-			if (evidence.isSkippedKmer(readKmerOffset)) {
-				// do nothing with skipped kmers
-			} else {
-				addKmer(evidence, readKmerOffset, kmer);
-			}
-			readKmerOffset++;
-		}
-	}
-	protected abstract T createEmptyNode();
-	/**
-	 * Adds the given kmer to the de bruijn graph
-	 * @param evidence source evidence for this kmer
-	 * @param readKmerOffset read offset of this kmer
-	 * @param kmer kmer 
-	 * @return de bruijn graph node for this kmer
-	 */
-	protected T addKmer(DeBruijnEvidence evidence, int readKmerOffset, ReadKmer kmer) {
-		T node = kmers.get(kmer.kmer);
-		boolean newNode = node == null;
-		if (newNode) {
-			node = createEmptyNode();
-			kmers.put(kmer.kmer, node);
-		}
-		node.add(evidence, readKmerOffset, kmer);
-		if (newNode) {
-			kmerAddedToGraph(evidence, readKmerOffset, kmer);
+			kmers.put(kmer, node);
+			onKmerAdded(kmer, node);
 		}
 		return node;
 	}
-	protected void removeEvidenceKmers(DeBruijnEvidence evidence) {
-		int readKmerOffset = 0;
-		SAMRecord record = evidence.getSAMRecord();
-		for (ReadKmer kmer : new ReadKmerIterable(k, record.getReadBases(), record.getBaseQualities(), evidence.isReversed(), evidence.isComplemented())) {
-			if (evidence.isSkippedKmer(readKmerOffset)) {
-				// do nothing with skipped kmers
-			} else {
-				removeKmer(evidence, readKmerOffset, kmer);
-			}
-			readKmerOffset++;
-		}
-	}
 	/**
-	 * Removes the given kmer to the de bruijn graph
-	 * @param evidence source evidence for this kmer
-	 * @param readKmerOffset read offset of this kmer
-	 * @param kmer kmer 
-	 * @return de bruijn graph node for this kmer
+	 * removes the given kmer from the graph
+	 * @param kmer kmer to remove
 	 */
-	protected T removeKmer(DeBruijnEvidence evidence, int readKmerOffset, ReadKmer kmer) {
-		T node = kmers.get(kmer.kmer);
-		if (node != null) {
-			if (node.remove(evidence, readKmerOffset, kmer)) {
-				kmers.remove(node);
-				kmerRemovedFromGraph(evidence, readKmerOffset, kmer);
+	public void remove(long kmer) {
+		kmers.remove(kmer);
+		onKmerRemoved(kmer);
+	}
+	public T remove(long kmer, T node) {
+		T existing = kmers.get(kmer);
+		if (existing != null) {
+			node = remove(existing, node);
+			if (node.getWeight() <= 0) {
+				remove(kmer);
+			} else {
+				kmers.put(kmer, node);
 			}
 		}
-		return node;
+		return existing;
 	}
-	protected void kmerAddedToGraph(DeBruijnEvidence evidence, int readKmerOffset, ReadKmer kmer) { }
-	protected void kmerRemovedFromGraph(DeBruijnEvidence evidence, int readKmerOffset, ReadKmer kmer) { }
+	protected void onKmerAdded(long kmer, T node) { }
+	protected void onKmerRemoved(long kmer) { }
 	/**
 	 * Adjusts base qualities to be within valid FASTQ encoding range 
 	 * @param bases base qualities to adjust
 	 * @return 0-based phred-encodable base qualities
 	 */
-	protected byte[] rescaleBaseQualities(List<Integer> bases) {
+	public byte[] rescaleBaseQualities(List<Integer> bases) {
 		//Long largest = Collections.max(bases);
 		//float scaleFactor = Math.min(1, MAX_QUAL_SCORE / (float)largest);
 		byte[] result = new byte[bases.size()];
@@ -155,13 +98,56 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 		return result;
 	}
 	/**
+	 * Gets the all graph kmer following the given kmer
+	 * @param state kmer
+	 * @param inclusionSet kmers must be in this set. Parameter is ignored if null
+	 * @param exclusionSet kmers must not be in this set. Parameter is ignored if null
+	 * @return next kmers 
+	 */
+	public List<Long> nextStates(long state, Set<Long> inclusionSet, Set<Long> exclusionSet) {
+		List<Long> result = Lists.newArrayListWithCapacity(4);
+		for (Long next : KmerEncodingHelper.nextStates(k, state)) {
+			T node = kmers.get(next);
+			if (node != null) {
+				if ((inclusionSet == null || inclusionSet.contains(next)) && 
+						(exclusionSet == null || !exclusionSet.contains(next))) {
+					result.add(next);
+				}
+			}
+		}
+		return result; 
+	}
+	/**
+	 * Gets the all graph kmer preceeding the given kmer
+	 * @param state kmer
+	 * @param inclusionSet kmers must be in this set. Parameter is ignored if null
+	 * @param exclusionSet kmers must not be in this set. Parameter is ignored if null
+	 * @return previous kmers 
+	 */
+	public List<Long> prevStates(long state, Set<Long> inclusionSet, Set<Long> exclusionSet) {
+		List<Long> result = Lists.newArrayListWithCapacity(4);
+		for (Long next : KmerEncodingHelper.prevStates(k, state)) {
+			T node = kmers.get(next);
+			if (node != null) {
+				if ((inclusionSet == null || inclusionSet.contains(next)) && 
+						(exclusionSet == null || !exclusionSet.contains(next))) {
+					result.add(next);
+				}
+			}
+		}
+		return result; 
+	}
+	public Iterable<Long> adjacentStates(long state, Set<Long> inclusionSet, Set<Long> exclusionSet) {
+		return Iterables.concat(nextStates(state, inclusionSet, exclusionSet), prevStates(state, inclusionSet, exclusionSet));
+	}
+	/**
 	 * Gets the best kmer following the given kmer
 	 * @param state kmer
 	 * @param inclusionSet kmers must be in this set. Parameter is ignored if null
 	 * @param exclusionSet kmers must not be in this set. Parameter is ignored if null
 	 * @return next kmer, null if no valid kmer 
 	 */
-	protected Long greedyNextState(long state, Set<Long> inclusionSet, Set<Long> exclusionSet) {
+	public Long greedyNextState(long state, Set<Long> inclusionSet, Set<Long> exclusionSet) {
 		int best = Integer.MIN_VALUE;
 		Long bestNode = null;
 		for (Long next : nextStates(state, inclusionSet, exclusionSet)) {
@@ -173,19 +159,6 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 		}
 		return bestNode; 
 	}
-	protected List<Long> nextStates(long state, Set<Long> inclusionSet, Set<Long> exclusionSet) {
-		List<Long> result = Lists.newArrayListWithCapacity(4);
-		for (Long next : KmerEncodingHelper.nextStates(k, state)) {
-			DeBruijnNodeBase node = kmers.get(next);
-			if (node != null) {
-				if ((inclusionSet == null || inclusionSet.contains(next)) && 
-						(exclusionSet == null || !exclusionSet.contains(next))) {
-					result.add(next);
-				}
-			}
-		}
-		return result; 
-	}
 	/**
 	 * Gets the best kmer preceeding the given kmer
 	 * @param state kmer
@@ -193,7 +166,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	 * @param exclusionSet kmers must not be in this set. Parameter is ignored if null
 	 * @return previous kmer, null if no valid kmer 
 	 */
-	protected Long greedyPrevState(long state, Set<Long> inclusionSet, Set<Long> exclusionSet) {
+	public Long greedyPrevState(long state, Set<Long> inclusionSet, Set<Long> exclusionSet) {
 		int best = Integer.MIN_VALUE;
 		Long bestNode = null;
 		for (Long prev : prevStates(state, inclusionSet, exclusionSet)) {
@@ -205,25 +178,33 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 		}
 		return bestNode; 
 	}
-	protected List<Long> prevStates(long state, Set<Long> inclusionSet, Set<Long> exclusionSet) {
-		List<Long> result = Lists.newArrayListWithCapacity(4);
-		for (Long next : KmerEncodingHelper.prevStates(k, state)) {
-			DeBruijnNodeBase node = kmers.get(next);
-			if (node != null) {
-				if ((inclusionSet == null || inclusionSet.contains(next)) && 
-						(exclusionSet == null || !exclusionSet.contains(next))) {
-					result.add(next);
-				}
-			}
+	/**
+	 * Finds the simple path inclusive of the given kmer by traversing to 
+	 * the highest weighted adjacent node
+	 * @param start seed kmer
+	 * @return path
+	 */
+	public LinkedList<Long> greedyTraverse(Long start) {
+		LinkedList<Long> path = new LinkedList<Long>();
+		Set<Long> visited = new HashSet<Long>();
+		path.add(start);
+		visited.add(start);
+		for (Long node = greedyPrevState(start, null, visited); node != null; node = greedyPrevState(node, null, visited)) {
+			path.addFirst(node);
+			visited.add(node);
 		}
-		return result; 
+		for (Long node = greedyNextState(start, null, visited); node != null; node = greedyNextState(node, null, visited)) {
+			path.addLast(node);
+			visited.add(node);
+		}
+		return path;
 	}
 	/**
 	 * Base calls of contig
 	 * @param path kmer contig
 	 * @return base calls of a positive strand SAMRecord readout of contig
 	 */
-	protected byte[] getBaseCalls(List<Long> path) {
+	public byte[] getBaseCalls(List<Long> path) {
 		int assemblyLength = path.size() + k - 1;
 		byte[] bases = KmerEncodingHelper.encodedToPicardBases(k, path.get(0));
 		bases = Arrays.copyOf(bases, assemblyLength);
@@ -232,9 +213,6 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 			bases[offset] = KmerEncodingHelper.lastBaseEncodedToPicardBase(k, node);
 			offset++;
 		}
-		if (direction == BreakendDirection.Backward) {
-			ArrayUtils.reverse(bases);
-		}
 		return bases;
 	}
 	/**
@@ -242,7 +220,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	 * @param path kmer contig
 	 * @return base qualities of a positive strand SAMRecord readout of contig
 	 */
-	protected byte[] getBaseQuals(List<Long> path) {
+	public byte[] getBaseQuals(List<Long> path) {
 		List<Integer> qual = new ArrayList<Integer>(path.size());
 		for (Long node : path) {
 			// subtract # reads to adjust for the +1 qual introduced by ReadKmerIterable
@@ -252,12 +230,9 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 		// pad out qualities to match the path length
 		for (int i = 0; i < k - 1; i++) qual.add(qual.get(qual.size() - 1));
 		byte[] quals = rescaleBaseQualities(qual);
-		if (direction == BreakendDirection.Backward) {
-			ArrayUtils.reverse(quals);
-		}
 		return quals;
 	}
-	protected Set<SAMRecord> getSupportingSAMRecords(Iterable<Long> path) {
+	public Set<SAMRecord> getSupportingSAMRecords(Iterable<Long> path) {
 		Set<SAMRecord> reads = Sets.newHashSet();
 		for (Long kmer : path) {
 			reads.addAll(kmers.get(kmer).getSupportingReads());
@@ -269,7 +244,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	 * @param path kmer contig
 	 * @return number of read bases include in at least one kmer on the given kmer contig
 	 */
-	protected int getSAMRecordBaseCount(List<Long> path) {
+	public int getSAMRecordBaseCount(List<Long> path) {
 		int readBaseCount = 0;
 		Set<SAMRecord> lastNodeSupport = Sets.newHashSet();
 		for (Long node : path) {
@@ -289,7 +264,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	 * @param supportingReads
 	 * @return length of longest read
 	 */
-	protected int getMaxReadLength(List<Long> path) {
+	public int getMaxReadLength(List<Long> path) {
 		int readLength = 0;
 		for (Long kmer : path) {
 			for (SAMRecord r : kmers.get(kmer).getSupportingReads()) {
@@ -299,39 +274,30 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 		return readLength;
 	}
 	/**
-	 * Gets the length of the longest soft clip in the given contig
-	 * @param supportingReads
-	 * @return length of longest read
+	 * set of all kmers reachable from the given kmer
+	 * @param seed start kmer
+	 * @return all reachable kmers
 	 */
-	protected int getMaxSoftClipLength(List<Long> path, int anchorLength) {
-		int readLength = 0;
-		int offset = 0;
-		for (Long kmer : path) {
-			// don't consider SC length of reference kmers - they may be SC support for a different breakend 
-			if (offset >= anchorLength) {
-				for (SAMRecord r : kmers.get(kmer).getSupportingReads()) {
-					readLength = Math.max(readLength, direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipLength(r) : SAMRecordUtil.getStartSoftClipLength(r));
-				}
+	public Set<Long> reachableFrom(long seed) {
+		Set<Long> reachable = Sets.newHashSet();
+		Set<Long> frontier = Sets.newHashSet();
+		frontier.add(seed);
+		while (!frontier.isEmpty()) {
+			long kmer = frontier.iterator().next();
+			frontier.remove(kmer);
+			reachable.add(kmer);
+			// Add neighbours of this kmer to the frontier
+			for (long adjKmer : adjacentStates(seed, null, reachable)) {
+				// don't need to check for inclusion since frontier is a set
+				frontier.add(adjKmer);
 			}
-			offset++;
 		}
-		return readLength;
-	}
-	protected AssemblyBuilder debruijnContigAssembly(List<Long> path) {
-		Set<SAMRecord> support = getSupportingSAMRecords(path);
-		AssemblyBuilder builder = new AssemblyBuilder(processContext)
-			.direction(direction)
-			.assemblyBases(getBaseCalls(path))
-			.assemblyBaseQuality(getBaseQuals(path))
-			.assembledReadCount(support.size())
-			.assembledBaseCount(getSAMRecordBaseCount(path))
-			.longestSupportingRead(getMaxReadLength(path));
-		return builder;
+		return reachable;
 	}
 	/**
 	 * Ordering of kmers by kmer weight. 
 	 */
-	protected Ordering<Long> ByKmerWeight = new Ordering<Long>() {
+	public Ordering<Long> ByKmerWeight = new Ordering<Long>() {
 		public int compare(Long kmer1, Long kmer2) {
 			return Ints.compare(getWeight(kmer1), getWeight(kmer2));
 		}
@@ -356,7 +322,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 		}
 		return sb.toString();
 	}
-	protected String printKmer(long x) {
+	public String printKmer(long x) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(String.format("%s(%d): %s",
 				KmerEncodingHelper.toString(k, x),
@@ -365,7 +331,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 				));
 		sb.append(" from:{");
 		for (Long y : KmerEncodingHelper.prevStates(k, x)) {
-			DeBruijnNodeBase node = kmers.get(y);
+			T node = kmers.get(y);
 			if (node != null) {
 				sb.append(KmerEncodingHelper.toString(k, y));
 				sb.append(',');
@@ -373,7 +339,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 		}
 		sb.append("} to:{");
 		for (Long y : KmerEncodingHelper.nextStates(k, x)) {
-			DeBruijnNodeBase node = kmers.get(y);
+			T node = kmers.get(y);
 			if (node != null) {
 				sb.append(KmerEncodingHelper.toString(k, y));
 				sb.append(',');
@@ -408,17 +374,17 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 		}
 		return debugPrintPaths(paths, contigLookup);
 	}
-	protected String debugPrintPaths(List<LinkedList<Long>> paths, Map<Long, Integer> contigLookup) {
+	private String debugPrintPaths(List<LinkedList<Long>> paths, Map<Long, Integer> contigLookup) {
 		StringBuilder sb = new StringBuilder();
 		for (LinkedList<Long> path : paths) {
 			sb.append(printPath(path, contigLookup));
 		}
 		return sb.toString();
 	}
-	protected String printPathAttributes(LinkedList<Long> path) {
+	private String printPathAttributes(LinkedList<Long> path) {
 		return "";
 	}
-	protected String printPath(LinkedList<Long> path, Map<Long, Integer> contigLookup) {
+	private String printPath(LinkedList<Long> path, Map<Long, Integer> contigLookup) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(String.format("[%3d]\t", contigLookup.get(path.getFirst())));
 		sb.append(new String(getBaseCalls(path)));
