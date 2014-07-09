@@ -6,6 +6,8 @@ import java.util.List;
 
 import org.junit.Test;
 
+import au.edu.wehi.idsv.AssemblyMethod;
+import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.SoftClipEvidence;
@@ -19,8 +21,11 @@ import com.google.common.collect.Lists;
 
 public class DeBruijnAnchoredAssemblerTest extends TestHelper {
 	public List<VariantContextDirectedBreakpoint> go(int k, DirectedEvidence... evidence) {
+		AssemblyParameters p = new AssemblyParameters();
+		p.k = k;
+		p.method = AssemblyMethod.DEBRUIJN_PER_POSITION;
 		List<VariantContextDirectedBreakpoint> list = Lists.newArrayList();
-		DeBruijnAnchoredAssembler assembler = new DeBruijnAnchoredAssembler(getContext(), k);
+		DeBruijnAnchoredAssembler assembler = new DeBruijnAnchoredAssembler(getContext(), p);
 		for (DirectedEvidence e : evidence) {
 			Iterable<VariantContextDirectedBreakpoint> it = assembler.addEvidence(e);
 			if (it != null) {

@@ -1,80 +1,108 @@
 package au.edu.wehi.idsv.debruijn;
 
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 
 import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
 public class PathNode<T extends DeBruijnNodeBase> {
-	private LinkedList<Long> path;
-	private List<LinkedList<Long>> children;
+	private List<Long> path;
+	private List<List<Long>> allKmers;
 	private int weight;
 	private int maxKmerWeight;
-	public PathNode(LinkedList<Long> path, DeBruijnGraphBase<T> graph) {
-		this.path = path;
-		this.children = null;
-		this.weight = getPathWeight(path, graph);
-		recalcMaxKmerWeight(graph);
-		recalc(graph);
-	}
-	protected void recalc(DeBruijnGraphBase<T> graph) { }
-	private void recalcMaxKmerWeight(DeBruijnGraphBase<T> graph) {
-		maxKmerWeight = 0;
-		List<Iterator<Long>> itList = Lists.newArrayList();
-		itList.add(path.iterator());
-		if (children != null) {
-			for (LinkedList<Long> alt : children) {
-				itList.add(alt.iterator());
+	/**
+	 * Creates a new path kmer form the given kmer sequence
+	 * @param path kmer sequence
+	 * @param graph parent graph
+	 */
+	public PathNode(Iterable<Long> path, DeBruijnGraphBase<T> graph) {
+		this.path = Lists.newArrayList(path);
+		this.allKmers = Lists.newArrayList(Iterables.transform(path, new Function<Long, List<Long>>() {
+			public List<Long> apply(Long arg) {
+				return Lists.newArrayList(arg);
 			}
+		}));
+		kmersChanged(graph);
+	}
+	/**
+	 * Merges the given path into a single path node
+	 * @param path kmer sequence
+	 * @param graph parent graph
+	 */
+	public PathNode(DeBruijnGraphBase<T> graph, Iterable<? extends PathNode<T>> path) {
+		this.path = Lists.newArrayList(Iterables.concat(Iterables.transform(path, new Function<PathNode<T>, List<Long>>() {
+			public List<Long> apply(PathNode<T> arg) {
+				return arg.path;
+			}
+		})));
+		this.allKmers = Lists.newArrayList(Iterables.concat(Iterables.transform(path, new Function<PathNode<T>, List<List<Long>>>() {
+			public List<List<Long>> apply(PathNode<T> arg) {
+				return arg.allKmers;
+			}
+		})));
+		// Make our own copy of the positional kmer lists
+		for (int i = 0; i < allKmers.size(); i++) {
+			allKmers.set(i, Lists.newArrayList(allKmers.get(i)));
 		}
+		kmersChanged(graph);
+	}
+	/**
+	 * Creates a new path kmer which is a subpath of the given path 
+	 * @param unsplit kmer sequence
+	 * @param startIndex number of starting kmers of unsplit sequence to skip
+	 * @param length length of sequence
+	 * @param graph parent graph
+	 */
+	public PathNode(PathNode<T> unsplit, int startIndex, int length, DeBruijnGraphBase<T> graph) {
+		this.path = Lists.newArrayListWithCapacity(length);
+		this.allKmers = Lists.newArrayListWithCapacity(length);
+		for (int i = startIndex; i < startIndex + length; i++) {
+			this.path.add(unsplit.path.get(i));
+			this.allKmers.add(Lists.newArrayList(unsplit.allKmers.get(i)));
+		}
+		kmersChanged(graph);
+	}
+	private void kmersChanged(DeBruijnGraphBase<T> graph) {
+		maxKmerWeight = 0;
+		weight = 0;
 		for (int i = 0; i < length(); i++) {
 			int kmerWeight = 0;
-			for (Iterator<Long> it : itList) {
-				kmerWeight += graph.getKmer(it.next()).getWeight();
+			for (long kmer : allKmers.get(i)) {
+				kmerWeight += graph.getKmer(kmer).getWeight();
 			}
+			weight += kmerWeight;
 			maxKmerWeight = Math.max(maxKmerWeight, kmerWeight);
 		}
+		onKmersChanged(graph);
 	}
-	private int getPathWeight(LinkedList<Long> path, DeBruijnGraphBase<T> graph) {
-		int weight = 0;
-		for (long kmer : path) {
-			weight += graph.getKmer(kmer).getWeight();
-		}
-		return weight;
-	}
-	public LinkedList<Long> getPath() { return path; }
+	protected void onKmersChanged(DeBruijnGraphBase<T> graph) { }
+	public List<Long> getPath() { return path; }
+	public List<List<Long>> getPathAllKmers() { return allKmers; }
 	/**
 	 * Gets kmer paths that have been merged into this path
 	 * @return
 	 */
-	public long getFirst() { return path.getFirst(); }
-	public long getLast() { return path.getLast(); }
+	public long getFirst() { return path.get(0); }
+	public long getLast() { return path.get(length() - 1); }
 	public int length() { return path.size(); }
 	public int getWeight() { return weight; }
 	public int getMaxKmerWeight() { return maxKmerWeight; }
 	/**
-	 * Kmer paths that have been incorporated into this path
-	 * @return alternate kmers merged into this path
-	 */
-	public List<LinkedList<Long>> getMergedPath() {
-		if (children == null) return ImmutableList.of();
-		return children;
-	}
-	/**
 	 * Merges the kmers on this alternate path into this path
 	 * @param alternatePath alternate path to merge
 	 */
-	public void merge(LinkedList<Long> alternatePath, DeBruijnGraphBase<T> graph) {
-		if (alternatePath.size() != path.size()) throw new IllegalArgumentException("Alternate path must be same length as path");
-		if (children == null) children = Lists.newArrayList();
-		children.add(alternatePath);
-		weight += getPathWeight(alternatePath, graph);
-		recalcMaxKmerWeight(graph);
-		recalc(graph);
+	public void merge(Iterable<? extends PathNode<T>> alternatePath, DeBruijnGraphBase<T> graph) {
+		if (Iterators.size(kmerIterator(alternatePath)) != path.size()) throw new IllegalArgumentException("Alternate path must be same length as path");
+		int i = 0;
+		for (PathNode<T> node : alternatePath) {
+			for (List<Long> nodeKmers : node.getPathAllKmers()) {
+				allKmers.get(i++).addAll(nodeKmers);
+			}
+		}
+		kmersChanged(graph);
 	}
 	public static <T extends DeBruijnNodeBase> Iterator<Long> kmerIterator(Iterable<? extends PathNode<T>> it) {
 		return Iterators.concat(Iterators.transform(it.iterator(), new Function<PathNode<T>, Iterator<Long>>() {
@@ -84,13 +112,13 @@ public class PathNode<T extends DeBruijnNodeBase> {
 				}
 			}));
 	}
-	public boolean contains(long kmer) {
-		if (path.contains(kmer)) return true;
-		if (children != null) {
-			for (LinkedList<Long> alt : children) {
-				if (alt.contains(kmer)) return true;
-			}
+	public int indexOf(long kmer) {
+		for (int i = 0; i < length(); i++) {
+			if (allKmers.get(i).contains(kmer)) return i;
 		}
-		return false;
+		return -1;
+	}
+	public boolean contains(long kmer) {
+		return indexOf(kmer) >= 0;
 	}
 }

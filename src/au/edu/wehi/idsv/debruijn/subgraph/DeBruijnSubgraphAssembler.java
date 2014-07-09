@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
+import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
@@ -21,16 +22,16 @@ import com.google.common.collect.Iterables;
  */
 public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 	private final ProcessingContext processContext;
-	private final int k;
+	private final AssemblyParameters parameters;
 	/**
 	 * Array size is 2: forward then backward graphs
 	 */
 	private DeBruijnReadGraph fgraph;
 	private DeBruijnReadGraph bgraph;
 	private int currentReferenceIndex = -1;
-	public DeBruijnSubgraphAssembler(ProcessingContext processContext, int kmerSize) {
+	public DeBruijnSubgraphAssembler(ProcessingContext processContext, AssemblyParameters parameters) {
 		this.processContext = processContext;
-		this.k = kmerSize;
+		this.parameters = parameters;
 	}
 	@Override
 	public Iterable<VariantContextDirectedBreakpoint> addEvidence(DirectedEvidence evidence) {
@@ -57,8 +58,8 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 	}
 	private void init(int referenceIndex) {
 		currentReferenceIndex = referenceIndex;
-		fgraph = new DeBruijnReadGraph(processContext, referenceIndex, k, BreakendDirection.Forward);
-		bgraph = new DeBruijnReadGraph(processContext, referenceIndex, k, BreakendDirection.Backward);
+		fgraph = new DeBruijnReadGraph(processContext, referenceIndex, BreakendDirection.Forward, parameters);
+		bgraph = new DeBruijnReadGraph(processContext, referenceIndex, BreakendDirection.Backward, parameters);
 	}
 	private Iterable<VariantContextDirectedBreakpoint> assembleAll() {
 		return assembleBefore(Integer.MAX_VALUE);

@@ -10,6 +10,7 @@ import java.util.PriorityQueue;
 import java.util.SortedSet;
 
 import au.edu.wehi.idsv.AssemblyBuilder;
+import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordUtil;
@@ -29,15 +30,18 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	 */
 	private final SortedSet<SubgraphSummary> subgraphs;
 	private final int referenceIndex;
+	private final AssemblyParameters parameters;
 	/**
 	 * 
 	 * @param k
 	 * @param direction
+	 * @param parameters 
 	 */
-	public DeBruijnReadGraph(ProcessingContext processContext, int referenceIndex, int k, BreakendDirection direction) {
-		super(processContext, k, direction);
+	public DeBruijnReadGraph(ProcessingContext processContext, int referenceIndex, BreakendDirection direction, AssemblyParameters parameters) {
+		super(processContext, parameters.k, direction);
 		this.referenceIndex = referenceIndex;
 		this.subgraphs = Sets.newTreeSet(SubgraphSummary.ByMaxAnchor);
+		this.parameters = parameters;
 	}
 	@Override
 	protected DeBruijnSubgraphNode createNode(VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) {
@@ -103,8 +107,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		List<VariantContextDirectedBreakpoint> contigs = Lists.newArrayList();
 		for (SubgraphSummary ss : subgraphs) {
 			if (ss.getMaxAnchor() < position) {
-				SubgraphContigAssembler sca = new GreedySubgraphContigAssembler(this, ss.getAnyKmer());
-				for (List<Long> contig : sca.assembleContigs()) {
+				SubgraphPathContigAssembler sca = new SubgraphPathContigAssembler(this, ss.getAnyKmer());
+				for (List<Long> contig : sca.assembleContigs(parameters)) {
 					VariantContextDirectedBreakpoint variant = toAssemblyEvidence(contig);
 					if (variant != null) {
 						contigs.add(variant);

@@ -145,16 +145,24 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
         return 0;
     }
     private ReadEvidenceAssembler getAssembler(ProcessingContext processContext) {
+    	AssemblyParameters parameters = getAssemblyParameters();
     	switch (ASSEMBLY_METHOD) {
     	case DEBRUIJN_PER_POSITION:
-    		return new DeBruijnAnchoredAssembler(processContext, KMER);
+    		return new DeBruijnAnchoredAssembler(processContext, parameters);
     	case DEBRUIJN_SUBGRAPH:
-    		return new DeBruijnSubgraphAssembler(processContext, KMER);
+    		
+    		return new DeBruijnSubgraphAssembler(processContext, parameters);
     	default:
     		throw new IllegalArgumentException("Unknown assembly method.");
     	}
     }
-    private void processAssemblyEvidence(Iterable<VariantContextDirectedBreakpoint> evidenceList, FastqBreakpointWriter fastqWriter, VariantContextWriter vcfWriter) {
+    private AssemblyParameters getAssemblyParameters() {
+    	AssemblyParameters p = new AssemblyParameters();
+    	p.k = KMER;
+    	p.method = ASSEMBLY_METHOD;
+    	return p;
+	}
+	private void processAssemblyEvidence(Iterable<VariantContextDirectedBreakpoint> evidenceList, FastqBreakpointWriter fastqWriter, VariantContextWriter vcfWriter) {
     	if (evidenceList != null) {
 	    	for (VariantContextDirectedBreakpoint a : evidenceList) {
 	    		if (a != null) {

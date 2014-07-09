@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.PriorityQueue;
 
+import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.DirectedEvidence;
@@ -32,9 +33,9 @@ public class DeBruijnAnchoredAssembler implements ReadEvidenceAssembler {
 	private final PriorityQueue<DirectedEvidence> activeb = new PriorityQueue<DirectedEvidence>(1024, new DirectedEvidenceEndCoordinateComparator());
 	private int currentReferenceIndex = -1;
 	private int currentPosition = -1;
-	public DeBruijnAnchoredAssembler(ProcessingContext processContext, int kmer) {
-		this.graphf = new DeBruijnAnchoredGraph(processContext, kmer, BreakendDirection.Forward);
-		this.graphb = new DeBruijnAnchoredGraph(processContext, kmer, BreakendDirection.Backward);
+	public DeBruijnAnchoredAssembler(ProcessingContext processContext, AssemblyParameters parameters) {
+		this.graphf = new DeBruijnAnchoredGraph(processContext, parameters.k, BreakendDirection.Forward);
+		this.graphb = new DeBruijnAnchoredGraph(processContext, parameters.k, BreakendDirection.Backward);
 	}
 	private VariantContextDirectedBreakpoint createAssemblyBreakend(DeBruijnAnchoredGraph graph, BreakendDirection direction) {
 		VariantContextDirectedBreakpoint variant = graph.assembleVariant(currentReferenceIndex, currentPosition);

@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv.debruijn;
 
-import htsjdk.samtools.util.Log;
-
 import java.util.ArrayDeque;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -11,7 +9,12 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
+import java.util.SortedSet;
 
+import au.edu.wehi.idsv.debruijn.subgraph.SubgraphPathNode;
+
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -25,16 +28,39 @@ import com.google.common.primitives.Ints;
  * @author Daniel Cameron
  *
  */
-public abstract class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T>> {
-	protected abstract PN createPathNode(LinkedList<Long> path, DeBruijnGraphBase<T> graph);
-	protected DeBruijnGraphBase<T> graph;
+public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T>> {
+	protected final PathNodeFactory<T, PN> factory;
+	protected final DeBruijnGraphBase<T> graph;
 	protected Set<PN> paths;
 	protected Map<PN, List<PN>> pathNext;
 	protected Map<PN, List<PN>> pathPrev;
-	private static Log log = Log.getInstance(DeBruijnPathGraph.class);
-	public DeBruijnPathGraph(DeBruijnGraphBase<T> graph, long seed) {
+	/**
+	 * Sanity checking field: total weight of graph should not change
+	 */
+	private int startingWeight;
+	//private static Log log = Log.getInstance(DeBruijnPathGraph.class);
+	public DeBruijnPathGraph(DeBruijnGraphBase<T> graph, long seed, PathNodeFactory<T, PN> factory) {
 		this.graph = graph;
+		this.factory = factory;
 		generatePathGraph(seed);
+	}
+	public boolean sanityCheck() {
+		int weight = 0;
+		assert(pathNext.size() == paths.size());
+		assert(pathPrev.size() == paths.size());
+		for (PN path : paths) {
+			assert(pathNext.containsKey(path));
+			assert(pathPrev.containsKey(path));
+			for (PN n : nextPath(path)) {
+				assert(prevPath(n).contains(path));
+			}
+			for (PN n : prevPath(path)) {
+				assert(nextPath(n).contains(path));
+			}
+			weight += path.getWeight();
+		}
+		assert(weight == startingWeight);
+		return true;
 	}
 	public Set<PN> getPaths() { return paths; }
 	/**
@@ -42,6 +68,7 @@ public abstract class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends P
 	 * @param seed
 	 */
 	private void generatePathGraph(long seed) {
+		startingWeight = 0;
 		Queue<Long> frontier = new ArrayDeque<Long>();
 		frontier.add(seed);
 		Map<Long, PN> pathStart = Maps.newHashMap();
@@ -51,7 +78,7 @@ public abstract class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends P
 			long kmer = frontier.poll();
 			if (pathStart.containsKey(kmer)) continue;
 			if (pathEnd.containsKey(kmer)) continue;
-			PN path = traverseBranchless(kmer);
+			PN path = factory.createPathNode(traverseBranchless(kmer), graph);
 			for (long adj : graph.prevStates(path.getFirst(), null, null)) {
 				frontier.add(adj);
 			}
@@ -77,14 +104,16 @@ public abstract class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends P
 			for (long adj : nextKmers) {
 				next.add(pathStart.get(adj));
 			}
+			startingWeight += path.getWeight();
 		}
+		assert(sanityCheck());
 	}
 	/**
 	 * Returns all paths that follow the given path
 	 * @param path path
 	 * @return successor paths
 	 */
-	public List<PN> nextPath(PathNode path) {
+	public List<PN> nextPath(PN path) {
 		return pathNext.get(path);
 	}
 	/**
@@ -92,7 +121,7 @@ public abstract class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends P
 	 * @param path path
 	 * @return preceeding paths
 	 */
-	public List<PN> prevPath(PathNode path) {
+	public List<PN> prevPath(PN path) {
 		return pathPrev.get(path);
 	}
 	/**
@@ -111,6 +140,115 @@ public abstract class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends P
 		}
 	}
 	/**
+	 * Merges all adjacent paths where no branch to other
+	 * path exists
+	 */
+	public void mergeBranchlessPaths() {
+		// Keep processing until we can't anymore
+		boolean changed = true;
+		while (changed) {
+			changed = false;
+			for (PN start : paths) {
+				// TODO: collapse the path with the weakest support first
+				if (mergeWithNext(start)) {
+					changed = true;
+					break;
+				}
+			}
+		}
+	}
+	/**
+	 * Adds the given node to the graph
+	 * @param node
+	 */
+	protected void addNode(PN node) {
+		assert(!paths.contains(node));
+		paths.add(node);
+		pathNext.put(node, Lists.<PN>newArrayListWithExpectedSize(4));
+		pathPrev.put(node, Lists.<PN>newArrayListWithExpectedSize(4));
+	}
+	/**
+	 * Removes the given node from the graph
+	 * @param node node to remove
+	 */
+	protected void removeNode(PN node) {
+		assert(paths.contains(node));
+		assert(pathNext.containsKey(node));
+		assert(pathPrev.containsKey(node));
+		assert(pathNext.get(node).size() == 0);
+		assert(pathPrev.get(node).size() == 0);
+		paths.remove(node);
+	}
+	/**
+	 * Adds an edge between the two nodes
+	 * @param from source node
+	 * @param to target node
+	 */
+	protected void addEdge(PN from, PN to) {
+		assert(paths.contains(from));
+		assert(paths.contains(to));
+		if (nextPath(from).contains(to)) return; // edge already exists
+		nextPath(from).add(to);
+		prevPath(to).add(from);
+	}
+	/**
+	 * Removes the edge between the two nodes
+	 * @param from source node
+	 * @param to target node
+	 */
+	protected void removeEdge(PN from, PN to) {
+		assert(paths.contains(from));
+		assert(paths.contains(to));
+		assert(nextPath(from).contains(to));
+		assert(prevPath(to).contains(from));
+		nextPath(from).remove(to);
+		prevPath(to).remove(from);
+	}
+	/**
+	 * Replaces edges pointing to the given node with the given node
+	 * @param oldTo node to remove incoming edges from
+	 * @param newTo node to add incoming edges to
+	 */
+	public void replaceIncomingEdges(PN oldTo, PN newTo) {
+		for (PN prev : prevPath(oldTo)) {
+			listReplace(nextPath(prev), oldTo, newTo);
+		}
+		this.listAdd(prevPath(newTo), prevPath(oldTo));
+		prevPath(oldTo).clear();
+	}
+	/**
+	 * Replaces edges pointing from given node with edges from given node
+	 * @param oldFrom node to remove outgoing edges from
+	 * @param newFrom node to add outgoing edges to
+	 */
+	public void replaceOutgoingEdges(PN oldFrom, PN newFrom) {
+		for (PN next : nextPath(oldFrom)) {
+			listReplace(prevPath(next), oldFrom, newFrom);
+		}
+		this.listAdd(nextPath(newFrom), nextPath(oldFrom));
+		this.nextPath(oldFrom).clear();
+	}
+	private boolean mergeWithNext(PN node) {
+		if (nextPath(node).size() != 1) return false;
+		PN next = nextPath(node).get(0); 
+		if (next == node) return false; // don't collapse self
+		if (prevPath(next).size() != 1) return false;
+		if (prevPath(next).get(0) != node) throw new IllegalStateException("Sanity check failure: missing matching prev entry for next node");
+		
+		// create new node
+		PN newNode = factory.createPathNode(graph, ImmutableList.of(node, next));
+		addNode(newNode);
+		// hook up incoming and output
+		replaceIncomingEdges(node, newNode);
+		replaceOutgoingEdges(next, newNode);
+		// remove edge between the two as this is no longer required
+		removeEdge(node, next);
+		removeNode(node);
+		removeNode(next);
+		sanityCheck();
+		return true;
+	}
+	/**
 	 * Collapses all paths that differ by at most maxDifference bases
 	 * into the path with the highest weight.
 	 * @param maxDifference maximum differences along the path. Note that by collapsing
@@ -118,11 +256,14 @@ public abstract class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends P
 	 * from their original due to a differences merging the paths
 	 *       E      F                    E             F
 	 *        \    /                      \           / 
-	 *    G - H - I - J    ->              \         / 
-	 *   /              \                   \       /        
+	 *    G - H - I - J    ->              \    K    / 
+	 *   /              \                   \  / \  /        
 	 *  A  -  B  -  C -  D          A - B1 - B2 - C1 - C2 - D
-	 *  
+	 *         \   /                ^^^^^               ^^^^^   <- branches paths needing merging
+	 *           K
+	 *           
 	 *  E-H-I-J is turned in E-B1-B2-C1-C2-F resulting in a different path
+	 *  
 	 *  @param bubblesOnly only collapse bubbles. No other paths will be affected
 	 */
 	public void collapseSimilarPaths(int maxDifference, boolean bubblesOnly) {
@@ -130,15 +271,21 @@ public abstract class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends P
 		boolean collapsed = true;
 		while (collapsed) {
 			collapsed = false;
-			for (PathNode start : paths) {
+			for (PN start : paths) {
 				// TODO: collapse the path with the weakest support first
-				while (collapsePaths(maxDifference, bubblesOnly, start)) {
+				if (collapsePaths(maxDifference, bubblesOnly, start)) {
 					collapsed = true;
+					// The collapse could have resulted in paths
+					// which are now branchless but contain
+					// multiple nodes: merge those nodes together
+					// (eg: the A-B1 in the example
+					mergeBranchlessPaths();
+					break;
 				}
 			}
 		}
 	}
-	private boolean collapsePaths(int maxDifference, boolean bubblesOnly, PathNode start) {
+	private boolean collapsePaths(int maxDifference, boolean bubblesOnly, PN start) {
 		LinkedList<PN> listA = Lists.newLinkedList();
 		LinkedList<PN> listB = Lists.newLinkedList();
 		List<PN> next = nextPath(start);
@@ -169,16 +316,10 @@ public abstract class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends P
 		
 		if (shareNextPaths(pathA.getLast(), pathB.getLast())) {
 			// only accept base difference, not indels
-			if (pathALength != pathBLength) return false;
-			
+			if (pathALength != pathBLength) return false;			
 			// we have a common path!
-			PN common = pathA.getLast();
-			pathA.removeLast();
-			pathB.removeLast();
 			if (bubblesOnly && (!isBubble(pathA) && !isBubble(pathB))) return false;
-			boolean collapsed = mergePath(pathA, pathB);
-			pathA.addLast(common);
-			pathB.addLast(common);
+			boolean collapsed = mergePaths(pathA, pathB);
 			return collapsed;
 		}
 		// short circuit if only processing bubbles
@@ -188,6 +329,7 @@ public abstract class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends P
 			for (PN next : nextPath(pathA.getLast())) {
 				pathA.addLast(next);
 				if (collapsePaths(differencesAllowed, bubblesOnly, pathA, pathB, pathALength + next.length(), pathBLength)) {
+					pathA.removeLast();
 					return true;
 				}
 				pathA.removeLast();
@@ -196,6 +338,7 @@ public abstract class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends P
 			for (PN next : nextPath(pathB.getLast())) {
 				pathB.addLast(next);
 				if (collapsePaths(differencesAllowed, bubblesOnly, pathA, pathB, pathALength, pathBLength + next.length())) {
+					pathB.removeLast();
 					return true;
 				}
 				pathB.removeLast();
@@ -214,6 +357,8 @@ public abstract class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends P
 	private int basesDifferent(LinkedList<PN> pathA, LinkedList<PN> pathB) {
 		Iterator<Long> itA = PathNode.kmerIterator(pathA);
 		Iterator<Long> itB = PathNode.kmerIterator(pathB);
+		assert(itA.hasNext());
+		assert(itB.hasNext());
 		int differences = KmerEncodingHelper.basesDifference(graph.getK(), itA.next(), itB.next());
 		while (itA.hasNext() && itB.hasNext()) {
 			if (KmerEncodingHelper.lastBaseMatches(graph.getK(), itA.next(), itB.next())) {
@@ -228,67 +373,120 @@ public abstract class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends P
 	 * @param pathB second path to merge
 	 * @return true if a merge could be performed, false otherwise
 	 */
-	public boolean mergePath(LinkedList<PN> pathA, LinkedList<PN> pathB) {
+	public boolean mergePaths(LinkedList<PN> pathA, LinkedList<PN> pathB) {
 		int weightA = getWeight(pathA);
 		int weightB = getWeight(pathB);
-		boolean isBubbleA = isBubble(pathA);
-		boolean isBubbleB = isBubble(pathB);
-		if (isBubbleA && isBubbleB) {
-			if (weightA < weightB) {
-				return mergeBubble(pathA.getFirst(), pathB);
-			} else {
-				return mergeBubble(pathB.getFirst(), pathA);
-			}
-		} else if (isBubbleA) {
-			return mergeBubble(pathA.getFirst(), pathB);
-		} else if (isBubbleB) {
-			return mergeBubble(pathA.getFirst(), pathB);
-		}
-		if (bigBubbleWarned < 3) {
-			log.warn(String.format("Encountered path requiring merge but could not be merged. (This message will not be repeated)"));
-			pathMergingWarned++;
-		}
-		return false;
-	}
-	private static int pathMergingWarned = 0;
-	/**
-	 * Merges the given paths together
-	 * @param pathA first path to merge 
-	 * @param pathB second path to merge
-	 */
-	public boolean mergeBubble(PN bubble, LinkedList<PN> path) {
-		int bubbleWeight = bubble.getWeight();
-		int pathWeight = getWeight(path);
-		if (bubbleWeight > pathWeight) {
-			if (bigBubbleWarned < 3) {
-				log.warn(String.format("Failed to collapse bubble: weight of kmer bubble is greater than the path weight. (This message will not be repeated)"));
-				bigBubbleWarned++;
-			}
-			return false;
-		}
-		// replace edges that point to the bubble to point to the path
-		for (PN prev : prevPath(bubble)) {
-			listReplace(nextPath(prev), bubble, path.getFirst());
-		}
-		for (PN next : nextPath(bubble)) {
-			listReplace(prevPath(next), bubble, path.getLast());
-		}
-		// Remove the bubble path
-		this.pathNext.remove(bubble);
-		this.pathPrev.remove(bubble);
-		this.paths.remove(bubble);
 		
-		// Update kmers in the underlying graph
-		Iterator<Long> itBubble = bubble.getPath().iterator();
-		for (PathNode p : path) {
-			LinkedList<Long> altPath = Lists.newLinkedList();
-			for (int i = 0; i < p.length(); i++) {
-				if (!itBubble.hasNext()) throw new RuntimeException("Sanity check failure: bubble is shorter than path being merged to.");
-				altPath.add(itBubble.next());
-			}
-			p.merge(altPath, graph);
+		List<PN> mainPath = weightA >= weightB ? pathA : pathB;
+		List<PN> altPath = weightA >= weightB ? pathB : pathA;
+		
+		SortedSet<Integer> breaksAt = Sets.newTreeSet();
+		breaksAt.addAll(getBreaks(pathA));
+		breaksAt.addAll(getBreaks(pathB));
+		mainPath = splitPathToEnsureBreaksAt(mainPath, breaksAt);
+		altPath = splitPathToEnsureBreaksAt(altPath, breaksAt);
+		assert(mainPath.size() == altPath.size());
+		for (int i = 0; i < mainPath.size(); i++) {
+			mergePath(altPath.get(i), mainPath.get(i));
 		}
+		assert(sanityCheck());
 		return true;
+	}
+	private SortedSet<Integer> getBreaks(Iterable<PN> path) {
+		SortedSet<Integer> breaksAt = Sets.newTreeSet();
+		int offset = 0;
+		breaksAt.add(0);
+		for (PN n : path) {
+			offset += n.length();
+			breaksAt.add(offset);
+		}
+		return breaksAt;
+	}
+	/**
+	 * Splits nodes on the given path to ensure breaks exist at
+	 * all the given kmer offsets
+	 * @param path kmer path to break
+	 * @param breaksAt kmer offset of breaks required positions 
+	 * @return path including breaks
+	 */
+	private List<PN> splitPathToEnsureBreaksAt(List<PN> path, SortedSet<Integer> breaksAt) {
+		List<PN> result = Lists.newArrayList();
+		int offset = 0;
+		for (PN n : path) {
+			SortedSet<Integer> breaksOffsets = breaksAt.subSet(offset + 1, offset + n.length() - 1);
+			List<Integer> splitLength = Lists.newArrayListWithCapacity(breaksOffsets.size() + 1);
+			int lastBreak = offset;
+			for (int breakPos : breaksOffsets) {
+				splitLength.add(breakPos - lastBreak);
+			}
+			splitLength.add(lastBreak - offset + n.length());
+			result.addAll(split(n, splitLength));
+			offset += n.length();
+		}
+		return result;
+	}
+	/**
+	 * Merges the given path list into the given node
+	 * @param merge path to merge
+	 * @param into path to merge into
+	 */
+	private void mergePath(PN merge, PN into) {
+		if (merge == into) return; // nothing to do
+		assert(merge.length() == into.length());
+		replaceIncomingEdges(merge, into);
+		replaceOutgoingEdges(merge, into);
+		into.merge(ImmutableList.of(merge), graph);
+		removeNode(merge);
+	}
+	/**
+	 * Splits a pathnode at the given offset
+	 * @param node
+	 * @param lengths kmer lengths of nodes to split at
+	 */
+	public List<PN> split(PN node, List<Integer> lengths) {
+		if (lengths.size() != 0) throw new IllegalArgumentException("Split must have at least one length");
+		if (lengths.size() == 1) {
+			assert(lengths.get(0) == node.length());
+			return ImmutableList.of(node);
+		}
+		int sumlength = 0;
+		for (int i = 0; i < lengths.size(); i++) {
+			if (lengths.get(i) <= 0) throw new IllegalArgumentException("kmer path lengths must be greater than zero");
+			sumlength += lengths.get(i);
+		}
+		if (sumlength != node.length()) throw new IllegalArgumentException("kmer path lengths must sum to node path length");
+		// replace the source node with the split ones in the path graph
+		List<PN> result = Lists.newArrayList();
+		int offset = 0;
+		for (int i = 0; i < lengths.size(); i++) {
+			result.add(factory.createPathNode(node, offset, lengths.get(i), graph));
+			offset += lengths.size();
+		}
+		assert(offset == node.length());
+		// now replace the node in the graph with the new nodes
+		for (PN newNode : result) {
+			addNode(newNode);
+		}
+		replaceIncomingEdges(node, result.get(0));
+		for (int i = 0; i < result.size() - 1; i++) {
+			nextPath(result.get(i)).add(result.get(i + 1));
+			prevPath(result.get(i + 1)).add(result.get(i));
+		}
+		replaceOutgoingEdges(node, result.get(result.size() - 1));
+		removeNode(node);
+		return result;
+	}
+	/**
+	 * Adds the given PathNodes to the given list
+	 * @param toAddTo list to add to
+	 * @param toAdd list to add
+	 */
+	private void listAdd(List<PN> toAddTo, List<PN> toAdd) {
+		for (PN node : toAdd) {
+			if (!toAddTo.contains(node)) {
+				toAddTo.add(node);
+			}
+		}
 	}
 	private void listReplace(List<PN> list, PN toReplace, PN replaceWith) {
 		if (list.contains(toReplace)) {
@@ -301,7 +499,6 @@ public abstract class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends P
 			}
 		}
 	}
-	private static int bigBubbleWarned = 0;
 	/**
 	 * Gets the total weight of all kmers on the given path
 	 * @param path path
@@ -309,7 +506,7 @@ public abstract class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends P
 	 */
 	public int getWeight(LinkedList<PN> path) {
 		int weight = 0;
-		for (PathNode n : path) {
+		for (PN n : path) {
 			weight += n.getWeight();
 		}
 		return weight;
@@ -317,22 +514,25 @@ public abstract class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends P
 	/**
 	 * A bubble is a de bruijn graph path diverges from a reference path
 	 * (usually due to a sequencing error), then converges back to the reference
-	 * 
+	 * without any other branches
 	 * 
 	 * @param path path to test
 	 * @return true if the path could be a bubble, false otherwise
 	 */
 	public boolean isBubble(LinkedList<PN> path) {
-		return path.size() == 1
-				&& prevPath(path.getFirst()).size() == 1 
-				&& nextPath(path.getLast()).size() == 1;
+		return Iterables.all(path, new Predicate<PN>() {
+			@Override
+			public boolean apply(PN node) {
+				return prevPath(node).size() == 1 && nextPath(node).size() == 1;
+			}
+		});
 	}
 	/**
-	 * Traverses kmers until a branch is found
+	 * Traverses source graph kmers until a branch is found
 	 * @param seed starting kmer
 	 * @return unique path
 	 */
-	protected PN traverseBranchless(long seed) {
+	private LinkedList<Long> traverseBranchless(long seed) {
 		LinkedList<Long> path = new LinkedList<Long>();
 		Set<Long> visited = Sets.newHashSet();
 		path.add(seed);
@@ -351,18 +551,19 @@ public abstract class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends P
 			path.addFirst(adj.get(0));
 			visited.add(adj.get(0));
 		}
-		return createPathNode(path, graph);
+		return path;
 	}
 	/**
 	 *  Greedily traverse a path based on the given choice ordering
 	 * @param startNode starting position
 	 * @param forwardChoice ordering when traversing forward
 	 * @param backwardChoice ordering when traversing backward 
+	 * @param excluded these paths cannot be traversed
 	 * @return traversal
 	 */
-	public LinkedList<PN> greedyTraverse(PN startNode, Comparator<PN> forwardChoice, Comparator<PN> backwardChoice) {
+	public LinkedList<PN> greedyTraverse(PN startNode, Comparator<PN> forwardChoice, Comparator<PN> backwardChoice, Set<PN> excluded) {
 		LinkedList<PN> path = new LinkedList<PN>();
-		Set<PN> visited = Sets.newHashSet();
+		Set<PN> visited = Sets.newHashSet(excluded);
 		path.add(startNode);
 		visited.add(startNode);
 		// assemble back
