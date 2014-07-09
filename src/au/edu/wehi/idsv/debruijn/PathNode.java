@@ -121,4 +121,12 @@ public class PathNode<T extends DeBruijnNodeBase> {
 	public boolean contains(long kmer) {
 		return indexOf(kmer) >= 0;
 	}
+	private static int nodeCount = 0; // Just used for debugging
+	public final int nodeId = nodeCount++; // Just used for debugging
+	@Override
+	public String toString() {
+		int kmerCount = 0;
+		for (List<Long> x : allKmers) kmerCount += x.size();
+		return String.format("[%5d] l=%d\tn=%d\tw=%d\t%d->%d", nodeId, length(), kmerCount - length(), getWeight(), path.get(0), path.get(length() - 1));
+	}
 }

@@ -99,11 +99,13 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 			for (long adj : prevKmers) {
 				prev.add(pathEnd.get(adj));
 			}
+			pathPrev.put(path, prev);
 			List<Long> nextKmers = graph.nextStates(path.getLast(), null, null);
 			List<PN> next = Lists.newArrayListWithExpectedSize(nextKmers.size());
 			for (long adj : nextKmers) {
 				next.add(pathStart.get(adj));
 			}
+			pathNext.put(path, prev);
 			startingWeight += path.getWeight();
 		}
 		assert(sanityCheck());
@@ -624,4 +626,18 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 			return Ints.compare(o1.getMaxKmerWeight(), o2.getMaxKmerWeight());
 		}
 	}.reverse();
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append(String.format("Path graph: %d node\n", paths.size()));
+		for (PN x : paths) {
+			sb.append(x.toString());
+			sb.append(" <-{");
+			for (PN s : prevPath(x)) sb.append(String.format("%d,", s.nodeId));
+			sb.append("} ->{");
+			for (PN s : nextPath(x)) sb.append(String.format("%d,", s.nodeId));
+			sb.append("}\n");
+		}
+		return sb.toString();
+	}
 }

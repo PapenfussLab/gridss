@@ -35,6 +35,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	}
 	public int getK() { return k; }
 	public T getKmer(long kmer) { return kmers.get(kmer); }
+	public Set<Long> getAllKmers() { return kmers.keySet(); }
 	/**
 	 * Merges the given nodes together
 	 * @param node first node to merge

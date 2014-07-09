@@ -13,9 +13,17 @@ public class DeBruijnNodeBase {
 	// entire reads at a time, it works out ok for the current implementation
 	private Set<SAMRecord> supportSet = Sets.newHashSet();
 	public DeBruijnNodeBase(VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) {
-		if (kmer.weight <= 0) throw new IllegalArgumentException("weight must be positive");
-		this.nodeWeight = kmer.weight;
-		supportSet.add(evidence.getSAMRecord());
+		this(kmer.weight, evidence.getSAMRecord());
+	}
+	/**
+	 * Creates a node from the given read with the given level of support
+	 * @param weight support weight
+	 * @param read source read
+	 */
+	public DeBruijnNodeBase(int weight, SAMRecord read) {
+		if (weight <= 0) throw new IllegalArgumentException("weight must be positive");
+		this.nodeWeight = weight;
+		supportSet.add(read);
 	}
 	/**
 	 * Merges the given node into this one
