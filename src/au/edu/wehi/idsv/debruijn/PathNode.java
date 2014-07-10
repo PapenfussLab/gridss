@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv.debruijn;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.List;
 
@@ -125,8 +126,22 @@ public class PathNode<T extends DeBruijnNodeBase> {
 	public final int nodeId = nodeCount++; // Just used for debugging
 	@Override
 	public String toString() {
+		return toString(null);
+	}
+	public String toString(DeBruijnGraphBase<T> graph) {
 		int kmerCount = 0;
 		for (List<Long> x : allKmers) kmerCount += x.size();
-		return String.format("[%5d] l=%d\tn=%d\tw=%d\t%d->%d", nodeId, length(), kmerCount - length(), getWeight(), path.get(0), path.get(length() - 1));
+		return String.format("[%5d] l=%d\tn=%d\tw=%d\t%s", nodeId, length(), kmerCount - length(), getWeight(), debugPrintPathString(graph));
+	}
+	private String debugPrintPathString(DeBruijnGraphBase<T> graph) {
+		if (graph != null) return new String(graph.getBaseCalls(path), StandardCharsets.US_ASCII);
+		// try to infer k from the states
+		int k = 1;
+		for (long s : getPath()) {
+			while (s >>> (2 * k) > 0) k++;
+		}
+		return String.format("%s->%s",
+				new String(KmerEncodingHelper.encodedToPicardBases(k, getPath().get(0))),
+				new String(KmerEncodingHelper.encodedToPicardBases(k, getPath().get(length()-1))));
 	}
 }

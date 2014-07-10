@@ -28,11 +28,9 @@ public class SubgraphPathContigAssembler {
 		this.pathGraph = new PathGraph(graph, seedKmer);
 	}
 	public List<LinkedList<Long>> assembleContigs(AssemblyParameters parameters) {
-		pathGraph.removeSelfIntersectingPaths();
 		if (parameters.maxBaseMismatchForCollapse > 0) {
 			pathGraph.collapseSimilarPaths(parameters.maxBaseMismatchForCollapse, parameters.collapseBubblesOnly);
 		}
-		pathGraph.removeSelfIntersectingPaths();
 		pathGraph.splitOutReferencePaths();
 		switch (parameters.assemblyOrder) {
 			case GreedyMaxKmer:
