@@ -3,13 +3,12 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.PriorityQueue;
 import java.util.Set;
-import java.util.SortedSet;
 
 import au.edu.wehi.idsv.AssemblyParameters;
 
 import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -42,23 +41,28 @@ public class SubgraphPathContigAssembler {
 		}
 	}	
 	private List<LinkedList<Long>> greedyAssembly(AssemblyParameters parameters) {
-		SortedSet<SubgraphPathNode> seeds = Sets.newTreeSet(pathGraph.ByMaxKmerWeightDesc);
-		// why doesn't Set have addAll(Iterable)? :(
-		seeds.addAll(Lists.newArrayList(Iterables.filter(pathGraph.getPaths(), new Predicate<SubgraphPathNode>() {
+		PriorityQueue<SubgraphPathNode> seeds = new PriorityQueue<SubgraphPathNode>(pathGraph.ByMaxKmerWeightDesc);
+		seeds.addAll(Sets.filter(pathGraph.getPaths(), new Predicate<SubgraphPathNode>() {
 			public boolean apply(SubgraphPathNode arg) {
-				return !arg.containsReferenceKmer();
+				boolean isNonReference = !arg.containsReferenceKmer(); 
+				return isNonReference;
 			}
-		})));
+		}));
 		List<LinkedList<Long>> contigs = Lists.newArrayList();
 		Set<SubgraphPathNode> visited = Sets.newHashSet();
-		while (!seeds.isEmpty() && contigs.size() > parameters.maxContigsPerAssembly) {
-			List<SubgraphPathNode> contig = greedyAssembly(seeds.first(), visited);
+		while (contigs.size() < parameters.maxContigsPerAssembly) {
+			// flush out starting positions we've already visited
+			while (!seeds.isEmpty() && visited.contains(seeds.peek())) seeds.poll();
+			if (seeds.isEmpty()) break; // no more starting position
+			// Found somewhere to start - off we go
+			List<SubgraphPathNode> contig = greedyAssembly(seeds.poll(), visited);
 			for (SubgraphPathNode node : contig) {
-				if (seeds.contains(node)) {
+				if (node.containsNonReferenceKmer()) {
+					// don't revisit non-reference kmers: anchoring two contigs to
+					// nearby reference locations is ok though
 					visited.add(node);
 				}
 			}
-			seeds.removeAll(contig);
 			contigs.add(Lists.newLinkedList(Lists.newArrayList(SubgraphPathNode.kmerIterator(contig))));
 		}
 		return contigs;

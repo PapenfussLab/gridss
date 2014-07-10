@@ -45,8 +45,11 @@ import au.edu.wehi.idsv.debruijn.PathNodeBaseFactory;
 import au.edu.wehi.idsv.debruijn.PathNodeFactory;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.ReadKmerIterable;
+import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Lists;
 
 public class TestHelper {
@@ -383,7 +386,7 @@ public class TestHelper {
 		record.setReadBases(GetPolyA(readLength));
 		return record;
 	}
-	// -------- Path graph helpers
+	// -------- Path graph helpers --------
 	public class BaseGraph extends DeBruijnGraphBase<DeBruijnNodeBase> {
 		public BaseGraph(int k) {
 			super(k);
@@ -417,9 +420,12 @@ public class TestHelper {
 				PathNodeFactory<DeBruijnNodeBase, PathNode<DeBruijnNodeBase>> factory) {
 			super(graph, seed, factory);
 		}
+		public BasePathGraph(BaseGraph g, PathNodeBaseFactory factory) {
+			super(g, factory);
+		}
 		public PathNode<DeBruijnNodeBase> get(String kmer) {
-			assert(kmer.length() == graph.getK());
-			long state = KmerEncodingHelper.picardBaseToEncoded(graph.getK(), B(kmer.substring(0, graph.getK())));
+			assert(kmer.length() == getGraph().getK());
+			long state = KmerEncodingHelper.picardBaseToEncoded(getGraph().getK(), B(kmer.substring(0, getGraph().getK())));
 			for (PathNode<DeBruijnNodeBase> n : getPaths()) {
 				for (List<Long> kmers : n.getPathAllKmers()) {
 					if (kmers.contains(state)) return n;
@@ -431,11 +437,20 @@ public class TestHelper {
 			return addNode(sequence, 1);
 		}
 		public PathNode<DeBruijnNodeBase> addNode(String sequence, int kmerWeight) {
-			((BaseGraph)graph).add(sequence, kmerWeight);
-			PathNode<DeBruijnNodeBase> n = new PathNode<DeBruijnNodeBase>(toKmer(graph, sequence), graph);
+			((BaseGraph)getGraph()).add(sequence, kmerWeight);
+			PathNode<DeBruijnNodeBase> n = new PathNode<DeBruijnNodeBase>(toKmer(getGraph(), sequence), getGraph());
 			super.expectedWeight += n.getWeight();
 			return n;
 		}
+		public String S(PathNode<DeBruijnNodeBase> node) {
+			return new String(getGraph().getBaseCalls(node.getPath()));
+		}
+		public String S(Iterable<PathNode<DeBruijnNodeBase>> nodes) {
+			return new String(getGraph().getBaseCalls(Lists.newArrayList((PathNode.kmerIterator(nodes)))));
+		}
+	}
+	public <T extends DeBruijnNodeBase> String S(DeBruijnGraphBase<T> g, Iterable<Long> path) {
+		return new String(g.getBaseCalls(Lists.newArrayList(path)));
 	}
 	public List<Long> toKmer(DeBruijnGraphBase<DeBruijnNodeBase> graph, String sequence) {
 		assert(sequence.length() >= graph.getK());
@@ -447,13 +462,28 @@ public class TestHelper {
 		}
 		return result;
 	}
+	public <T extends DeBruijnNodeBase, PN extends PathNode<T>> PN PGN(DeBruijnPathGraph<T, PN> pg, String sequence) {
+		assert(sequence.length() == pg.getGraph().getK());
+		long state = KmerEncodingHelper.picardBaseToEncoded(pg.getGraph().getK(), B(sequence));
+		for (PN n : pg.getPaths()) {
+			for (List<Long> kmers : n.getPathAllKmers()) {
+				if (kmers.contains(state)) return n;
+			}
+		}
+		return null;
+	}
 	public BaseGraph G(int k) {
 		return new BaseGraph(k);
 	}
-	public BasePathGraph PG(BaseGraph g, long seed) {
-		return new BasePathGraph(g, seed, new PathNodeBaseFactory());
+	public BasePathGraph PG(BaseGraph g, String seed) {
+		return new BasePathGraph(g, KmerEncodingHelper.picardBaseToEncoded(g.getK(), B(seed)), new PathNodeBaseFactory());
 	}
 	public BasePathGraph PG(BaseGraph g) {
-		return PG(g, g.getAllKmers().iterator().next());
+		return new BasePathGraph(g, new PathNodeBaseFactory());
+	}
+	public DeBruijnReadGraph G(int k, BreakendDirection direction) {
+		AssemblyParameters p = new AssemblyParameters();
+		p.k = k;
+		return new DeBruijnReadGraph(getContext(), 0, direction, p);
 	}
 }

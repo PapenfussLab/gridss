@@ -129,9 +129,12 @@ public class PathNode<T extends DeBruijnNodeBase> {
 		return toString(null);
 	}
 	public String toString(DeBruijnGraphBase<T> graph) {
+		return String.format("[%4d]%s\t%s", nodeId, printAttributes(), debugPrintPathString(graph));
+	}
+	protected String printAttributes() {
 		int kmerCount = 0;
 		for (List<Long> x : allKmers) kmerCount += x.size();
-		return String.format("[%5d] l=%d\tn=%d\tw=%d\t%s", nodeId, length(), kmerCount - length(), getWeight(), debugPrintPathString(graph));
+		return String.format(" l=%d\tn=%d\tw=%d", length(), kmerCount - length(), getWeight());
 	}
 	private String debugPrintPathString(DeBruijnGraphBase<T> graph) {
 		if (graph != null) return new String(graph.getBaseCalls(path), StandardCharsets.US_ASCII);

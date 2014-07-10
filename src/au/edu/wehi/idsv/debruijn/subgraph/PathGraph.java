@@ -8,6 +8,7 @@ import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.sun.corba.se.impl.orbutil.graph.Graph;
 
 public class PathGraph extends DeBruijnPathGraph<DeBruijnSubgraphNode, SubgraphPathNode> {
 	public PathGraph(DeBruijnGraphBase<DeBruijnSubgraphNode> graph, long seed) {
@@ -27,19 +28,29 @@ public class PathGraph extends DeBruijnPathGraph<DeBruijnSubgraphNode, SubgraphP
 			List<Integer> lengths = Lists.newArrayList();
 			List<Long> path = n.getPath();
 			int currentLength = 0;
-			boolean currentIsReference = graph.getKmer(path.get(0)).isReference();
+			boolean currentIsReference = getGraph().getKmer(path.get(0)).isReference();
 			for (long kmer : path) {
-				boolean isRef = graph.getKmer(kmer).isReference();
+				boolean isRef = getGraph().getKmer(kmer).isReference();
 				if (currentIsReference == isRef) {
 					currentLength++;
 				} else {
 					currentIsReference = isRef;
 					lengths.add(currentLength);
-					currentLength = 0;
+					currentLength = 1;
 				}
-				lengths.add(currentLength);
 			}
+			lengths.add(currentLength);
 			split(n, lengths);
 		}
+		assert(assertReferenceKmersSplit());
+	}
+	private boolean assertReferenceKmersSplit() {
+		for (SubgraphPathNode n : getPaths()) {
+			assert(n.containsNonReferenceKmer() != n.containsReferenceKmer());
+			for (long kmer : n.getPath()) {
+				assert(getGraph().getKmer(kmer).isReference() == n.containsReferenceKmer());
+			}
+		}
+		return true;
 	}
 }

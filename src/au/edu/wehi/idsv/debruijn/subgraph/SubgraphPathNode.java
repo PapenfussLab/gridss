@@ -1,15 +1,10 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
-import java.util.List;
-
-import com.google.common.base.Function;
-import com.google.common.collect.Iterables;
-
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.PathNode;
 
 public class SubgraphPathNode extends PathNode<DeBruijnSubgraphNode> {
-	private int refCount = 0;
+	private int refCount;
 	public SubgraphPathNode(Iterable<Long> path, DeBruijnGraphBase<DeBruijnSubgraphNode> graph) {
 		super(path, graph);
 	}
@@ -29,4 +24,8 @@ public class SubgraphPathNode extends PathNode<DeBruijnSubgraphNode> {
 	}
 	public boolean containsReferenceKmer() { return refCount > 0; }
 	public boolean containsNonReferenceKmer() { return refCount < length(); }
+	@Override
+	protected String printAttributes() {
+		return String.format("%s%s", containsReferenceKmer() ? "R" : " ", containsNonReferenceKmer()? "N" : " ") + super.printAttributes();
+	}
 }

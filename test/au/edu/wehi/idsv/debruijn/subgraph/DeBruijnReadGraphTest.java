@@ -201,5 +201,6 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		g.addEvidence(NRRP(withSequence("GTCCTAGAT", DP(0, 1, "8M", true, 1, 10, "8M", false))));
 		g.addEvidence(NRRP(withSequence("GTCCTAGAT", DP(0, 1, "8M", true, 1, 10, "8M", false))));
 		String s = g.debugPrintPaths();
+		assertNotNull(s);
 	}
 }

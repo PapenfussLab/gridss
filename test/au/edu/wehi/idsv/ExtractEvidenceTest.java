@@ -96,8 +96,8 @@ public class ExtractEvidenceTest extends CommandLineTest {
 	}
 	@Test
 	public void should_set_NM_tag() {
-		createInput(withSequence("TAAC", Read(0, 1, "1S3M")));
+		createInput(withSequence(S(POLY_A).substring(0, 100), Read(0, 1, "50M50S")));
 		extractEvidence();
-		assertEquals(1, (int)getRecords(".idsv.polyA.sv.bam").get(0).getIntegerAttribute("NM"));
+		assertEquals(0, (int)getRecords(".idsv.polyA.sv.bam").get(0).getIntegerAttribute("NM"));
 	}
 }

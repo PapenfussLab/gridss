@@ -3,10 +3,7 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 import htsjdk.samtools.SAMRecord;
 
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.PriorityQueue;
 import java.util.SortedSet;
 
 import au.edu.wehi.idsv.AssemblyBuilder;
