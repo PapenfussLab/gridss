@@ -6,12 +6,6 @@ import java.util.List;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.BreakpointSummary;
-import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.SequentialBreakendAnnotator;
-import au.edu.wehi.idsv.SoftClipEvidence;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpointBuilder;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 
 import com.google.common.collect.Iterators;

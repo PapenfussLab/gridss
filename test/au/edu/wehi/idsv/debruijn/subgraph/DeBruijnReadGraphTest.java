@@ -1,21 +1,22 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 
 import org.junit.Test;
 
-import com.google.common.collect.Lists;
-
 import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.AssemblyParameters.ContigAssemblyOrder;
 import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfFilter;
+
+import com.google.common.collect.Lists;
 
 
 public class DeBruijnReadGraphTest extends TestHelper {

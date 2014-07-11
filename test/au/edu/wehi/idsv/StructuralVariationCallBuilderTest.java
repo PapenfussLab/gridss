@@ -1,12 +1,9 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.BreakendSummary;
-import au.edu.wehi.idsv.StructuralVariationCallBuilder;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 
 

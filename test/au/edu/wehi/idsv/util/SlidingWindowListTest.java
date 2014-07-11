@@ -5,8 +5,6 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Before;
 import org.junit.Test;
 
-import au.edu.wehi.idsv.util.SlidingWindowList;
-
 public class SlidingWindowListTest {
 
 	@Before

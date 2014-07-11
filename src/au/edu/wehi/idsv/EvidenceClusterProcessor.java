@@ -15,7 +15,7 @@ import com.google.common.collect.UnmodifiableIterator;
  * 
  * @author Daniel Cameron
  */
-public class EvidenceClusterProcessor implements Iterable<BreakendSummary> {
+public class EvidenceClusterProcessor implements Iterable<BreakpointSummary> {
 	private final MaximalClique ff = new MaximalClique();
 	private final MaximalClique fb = new MaximalClique();
 	private final MaximalClique bf = new MaximalClique();
@@ -90,7 +90,7 @@ public class EvidenceClusterProcessor implements Iterable<BreakendSummary> {
 		}
 	}
 	@Override
-	public Iterator<BreakendSummary> iterator() {
+	public Iterator<BreakpointSummary> iterator() {
 		UnmodifiableIterator<BreakpointSummary> x = Iterators.mergeSorted(ImmutableList.of(
 				new EvidenceClusterProcessorMaximalCliqueIterator(ff, BreakendDirection.Forward, BreakendDirection.Forward),
 				new EvidenceClusterProcessorMaximalCliqueIterator(fb, BreakendDirection.Forward, BreakendDirection.Backward),
@@ -105,8 +105,7 @@ public class EvidenceClusterProcessor implements Iterable<BreakendSummary> {
 								.result();
 					}
 		});
-		// downcast iterator to BreakendSummary
-		return Iterators.<BreakendSummary>concat(x);
+		return x;
 		// TODO: filtering and processing of the maximal clique
 		// don't call weak evidence
 		// don't call if there is a much stronger call nearby

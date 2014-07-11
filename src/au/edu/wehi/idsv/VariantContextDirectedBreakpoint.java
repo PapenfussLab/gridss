@@ -2,7 +2,6 @@ package au.edu.wehi.idsv;
 
 import htsjdk.variant.variantcontext.Allele;
 import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.vcf.VCFHeaderLineType;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;

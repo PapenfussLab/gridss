@@ -8,11 +8,10 @@ import org.junit.Test;
 
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.SoftClipEvidence;
+import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredGraph;
-import au.edu.wehi.idsv.sam.AnomolousReadAssembly;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.TestHelper;
 
 public class DeBruijnReadGraphTest extends TestHelper {
 	private static SAMRecord R(String read) {

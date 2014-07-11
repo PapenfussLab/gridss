@@ -12,8 +12,6 @@ import java.util.List;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import au.edu.wehi.idsv.SequentialReferenceCoverageLookup;
-
 
 public class SequentialReferenceCoverageLookupTest extends TestHelper {
 	public SequentialReferenceCoverageLookup init(List<SAMRecord> reads, int windowSize) {

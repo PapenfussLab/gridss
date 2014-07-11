@@ -8,12 +8,6 @@ import htsjdk.variant.variantcontext.VariantContextBuilder;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.BreakendSummary;
-import au.edu.wehi.idsv.BreakpointSummary;
-import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
-
 public class VariantContextDirectedBreakpointTest extends TestHelper {
 	@Test
 	public void getBreakendSummary_should_handle_f_single_breakend() {

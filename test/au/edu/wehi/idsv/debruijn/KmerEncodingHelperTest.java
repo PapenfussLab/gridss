@@ -1,11 +1,12 @@
 package au.edu.wehi.idsv.debruijn;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 
-import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.TestHelper;
 
 public class KmerEncodingHelperTest extends TestHelper {

@@ -6,10 +6,6 @@ import static org.junit.Assert.fail;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.EvidenceMetrics;
-import au.edu.wehi.idsv.NonReferenceReadPair;
-import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 
 

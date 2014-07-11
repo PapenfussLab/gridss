@@ -1,5 +1,8 @@
 package au.edu.wehi.idsv;
 
+import java.io.Closeable;
+import java.io.IOException;
+
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 
@@ -8,7 +11,7 @@ import htsjdk.samtools.reference.ReferenceSequenceFile;
  * @author Daniel Cameron
  *
  */
-public class ProcessingContext {
+public class ProcessingContext implements Closeable {
 	private final ReferenceSequenceFile reference;
 	private final SAMSequenceDictionary dictionary;
 	private final LinearGenomicCoordinate linear;
@@ -54,5 +57,9 @@ public class ProcessingContext {
 	}
 	public void setVcf41Mode(boolean compatable) {
 		vcf41mode = compatable;
+	}
+	@Override
+	public void close() throws IOException {
+		if (reference != null) reference.close();
 	}
 }

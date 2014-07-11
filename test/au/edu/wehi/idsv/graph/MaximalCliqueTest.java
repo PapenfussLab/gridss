@@ -7,9 +7,6 @@ import java.util.List;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.graph.GraphNode;
-import au.edu.wehi.idsv.graph.MaximalClique;
-
 import com.google.common.collect.Lists;
 
 public class MaximalCliqueTest {

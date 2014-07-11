@@ -1,10 +1,10 @@
 package au.edu.wehi.idsv.vcf;
 
+import htsjdk.variant.variantcontext.VariantContext;
+
 import java.util.Iterator;
 
 import com.google.common.collect.AbstractIterator;
-
-import htsjdk.variant.variantcontext.VariantContext;
 
 /**
  * Removes all variants failing any filter from the sequence

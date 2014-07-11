@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
@@ -9,13 +10,6 @@ import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
-import au.edu.wehi.idsv.BreakendSummary;
-import au.edu.wehi.idsv.BreakpointSummary;
-import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.DirectedEvidenceIterator;
-import au.edu.wehi.idsv.NonReferenceReadPair;
-import au.edu.wehi.idsv.SoftClipEvidence;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;

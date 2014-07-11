@@ -7,9 +7,6 @@ import java.util.Iterator;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
-import au.edu.wehi.idsv.debruijn.ReadKmer;
-import au.edu.wehi.idsv.debruijn.ReadKmerIterable;
 import au.edu.wehi.idsv.TestHelper;
 
 public class ReadKmerIterableTest extends TestHelper {

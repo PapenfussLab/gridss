@@ -9,9 +9,6 @@ import java.util.List;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.NonReferenceReadPair;
-import au.edu.wehi.idsv.SequentialNonReferenceReadPairFactory;
-
 import com.google.common.collect.Iterators;
 
 public class SequentialNonReferenceReadPairFactoryTest extends TestHelper {

@@ -12,7 +12,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import au.edu.wehi.idsv.RelevantMetrics;
 import picard.analysis.InsertSizeMetrics;
 import picard.analysis.directed.InsertSizeMetricsCollector;
 

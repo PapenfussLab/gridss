@@ -5,11 +5,6 @@ import htsjdk.samtools.fastq.FastqRecord;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.BreakendSummary;
-import au.edu.wehi.idsv.BreakpointFastqEncoding;
-import au.edu.wehi.idsv.DirectedBreakpoint;
-
 public class BreakpointFastqEncodingTest extends TestHelper {
 	public class StubDirectedBreakpoint implements DirectedBreakpoint {
 		@Override

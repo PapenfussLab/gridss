@@ -6,10 +6,6 @@ import htsjdk.samtools.SAMSequenceRecord;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.BreakendSummary;
-import au.edu.wehi.idsv.LinearGenomicCoordinate;
-
 
 public class LinearGenomicCoordinateTest {
 	@Test

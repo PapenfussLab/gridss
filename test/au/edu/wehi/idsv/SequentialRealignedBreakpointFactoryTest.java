@@ -8,11 +8,6 @@ import java.util.List;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.BreakendSummary;
-import au.edu.wehi.idsv.DirectedBreakpoint;
-import au.edu.wehi.idsv.SequentialRealignedBreakpointFactory;
-
 import com.google.common.collect.Iterators;
 
 public class SequentialRealignedBreakpointFactoryTest extends TestHelper {

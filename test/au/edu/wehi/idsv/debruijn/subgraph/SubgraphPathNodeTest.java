@@ -1,13 +1,14 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
+
+import com.google.common.collect.ImmutableList;
 
 
 public class SubgraphPathNodeTest extends TestHelper {

@@ -1,22 +1,18 @@
 package au.edu.wehi.idsv.debruijn;
 
-import static org.junit.Assert.*;
-import htsjdk.samtools.SAMRecord;
+import static org.junit.Assert.assertEquals;
 
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.SortedSet;
 
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableCollection;
+import au.edu.wehi.idsv.TestHelper;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Lists;
-
-import au.edu.wehi.idsv.TestHelper;
 
 
 public class DeBruijnPathGraphTest extends TestHelper {

@@ -27,16 +27,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
-import au.edu.wehi.idsv.AnnotateBreakends;
-import au.edu.wehi.idsv.ClusterEvidence;
-import au.edu.wehi.idsv.ExtractEvidence;
-import au.edu.wehi.idsv.FileNamingConvention;
-import au.edu.wehi.idsv.GenerateDirectedBreakpoints;
-import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.RelevantMetrics;
-import au.edu.wehi.idsv.IdsvVariantContext;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
-
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 

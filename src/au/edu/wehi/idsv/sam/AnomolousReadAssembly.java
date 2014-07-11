@@ -4,7 +4,6 @@ import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.SAMRecordUtil;

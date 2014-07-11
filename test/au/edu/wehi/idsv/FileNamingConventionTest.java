@@ -7,8 +7,6 @@ import java.io.IOException;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.FileNamingConvention;
-
 
 public class FileNamingConventionTest {
 	@Test

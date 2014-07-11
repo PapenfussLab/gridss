@@ -1,11 +1,12 @@
 package au.edu.wehi.idsv.debruijn;
 
+import htsjdk.samtools.SAMRecord;
+
 import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import htsjdk.samtools.SAMRecord;
 import au.edu.wehi.idsv.AssemblyBuilder;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;

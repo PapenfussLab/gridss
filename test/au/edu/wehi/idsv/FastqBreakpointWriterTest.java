@@ -9,10 +9,6 @@ import java.util.List;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.FastqBreakpointWriter;
-import au.edu.wehi.idsv.SoftClipEvidence;
-
 import com.google.common.collect.Lists;
 
 public class FastqBreakpointWriterTest extends TestHelper {

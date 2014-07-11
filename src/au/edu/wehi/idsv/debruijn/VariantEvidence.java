@@ -1,15 +1,16 @@
 package au.edu.wehi.idsv.debruijn;
 
-import java.util.List;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.SAMRecord;
 
-import com.google.common.collect.Lists;
+import java.util.List;
 
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.SAMRecordUtil;
 import au.edu.wehi.idsv.SoftClipEvidence;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.SAMRecord;
+
+import com.google.common.collect.Lists;
 
 /**
  * Helper wrapper exposing information both the raw evidence read and

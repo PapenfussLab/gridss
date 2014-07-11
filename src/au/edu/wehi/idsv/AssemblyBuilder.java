@@ -4,7 +4,6 @@ import java.nio.charset.StandardCharsets;
 
 import au.edu.wehi.idsv.sam.AnomolousReadAssembly;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfConstants;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 

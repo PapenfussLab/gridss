@@ -6,11 +6,6 @@ import htsjdk.samtools.SAMRecord;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.BreakendSummary;
-import au.edu.wehi.idsv.BreakpointSummary;
-import au.edu.wehi.idsv.EvidenceMetrics;
-import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 
 public class SoftClipEvidenceTest extends TestHelper {

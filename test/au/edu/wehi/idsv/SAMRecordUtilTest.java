@@ -1,12 +1,14 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 
 import org.junit.Test;
-
-import au.edu.wehi.idsv.SAMRecordUtil;
 
 
 public class SAMRecordUtilTest extends TestHelper {

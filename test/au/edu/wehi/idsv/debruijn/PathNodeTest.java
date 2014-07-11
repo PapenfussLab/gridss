@@ -1,14 +1,14 @@
 package au.edu.wehi.idsv.debruijn;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
+
+import au.edu.wehi.idsv.TestHelper;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-
-import au.edu.wehi.idsv.TestHelper;
 
 
 public class PathNodeTest extends TestHelper {

@@ -7,11 +7,6 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.BreakendSummary;
-import au.edu.wehi.idsv.BreakpointSummary;
-import au.edu.wehi.idsv.EvidenceMetrics;
-
 
 public class BreakpointSummaryTest extends TestHelper {
 	@Test

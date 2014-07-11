@@ -8,7 +8,6 @@ import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.sun.corba.se.impl.orbutil.graph.Graph;
 
 public class PathGraph extends DeBruijnPathGraph<DeBruijnSubgraphNode, SubgraphPathNode> {
 	public PathGraph(DeBruijnGraphBase<DeBruijnSubgraphNode> graph, long seed) {

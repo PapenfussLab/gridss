@@ -9,8 +9,6 @@ import java.util.List;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.ProgressLoggingSAMRecordIterator;
-
 import com.google.common.collect.Lists;
 
 public class ProgressLoggingSAMRecordIteratorTest extends TestHelper {

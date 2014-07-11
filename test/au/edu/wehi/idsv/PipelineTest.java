@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -8,8 +9,6 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
-
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;

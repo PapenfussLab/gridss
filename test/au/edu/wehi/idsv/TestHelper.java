@@ -26,16 +26,6 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.BreakpointSummary;
-import au.edu.wehi.idsv.NonReferenceReadPair;
-import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.RelevantMetrics;
-import au.edu.wehi.idsv.SAMRecordMateCoordinateComparator;
-import au.edu.wehi.idsv.SAMRecordUtil;
-import au.edu.wehi.idsv.SoftClipEvidence;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpointBuilder;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
@@ -48,8 +38,6 @@ import au.edu.wehi.idsv.debruijn.ReadKmerIterable;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Lists;
 
 public class TestHelper {

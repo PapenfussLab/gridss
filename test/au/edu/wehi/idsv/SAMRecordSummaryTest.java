@@ -8,8 +8,6 @@ import htsjdk.samtools.SAMRecord;
 import org.junit.Before;
 import org.junit.Test;
 
-import au.edu.wehi.idsv.SAMRecordUtil;
-
 public class SAMRecordSummaryTest extends TestHelper {
 
 	@Before

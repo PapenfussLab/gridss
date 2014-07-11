@@ -1,10 +1,9 @@
 package au.edu.wehi.idsv;
 
-import java.util.List;
-
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFConstants;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
+
+import java.util.List;
 
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
