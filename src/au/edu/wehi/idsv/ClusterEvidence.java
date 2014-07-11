@@ -8,6 +8,7 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.VCFHeader;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
@@ -56,6 +57,9 @@ public class ClusterEvidence extends CommandLineProgram {
     private Log log = Log.getInstance(ClusterEvidence.class);
     @Override
 	protected int doWork() {
+    	ProcessingContext processContext = null;
+    	VariantContextWriter vcfWriter = null;
+    	List<Closeable> closeList = Lists.newArrayList();
     	try {
     		if (METRICS == null) {
     			METRICS = FileNamingConvention.getMetrics(INPUT);
@@ -74,13 +78,15 @@ public class ClusterEvidence extends CommandLineProgram {
     			case 2:
     				OUTPUT = FileNamingConvention.getRawCallVcf(INPUT, CHROMSOME.get(0), CHROMSOME.get(1));
     				break;
+    			default:
+    				throw new IllegalArgumentException("Chromosome count cannot be greater than 2");
     			}
     		}
     		IOUtil.assertFileIsReadable(REFERENCE);
     		IOUtil.assertFileIsReadable(METRICS);
     		IOUtil.assertFileIsWritable(OUTPUT);
     		
-	    	final ProcessingContext processContext = getContext(REFERENCE, INPUT);
+	    	processContext = getContext(REFERENCE, INPUT);
 			
 			// TODO: add filtering parameters so we only process evidence between 1 and 2 
 			// (@see DirectedEvidenceChromosomePairFilter)
@@ -88,20 +94,28 @@ public class ClusterEvidence extends CommandLineProgram {
 			log.info("Loading minimal evidence set");
 			if (CHROMSOME.size() == 0) {
 				processor = new EvidenceClusterProcessor(processContext);
-				addEvidence(processor, allEvidence(processContext));
+				DirectedEvidenceFileIterator defi = allEvidence(processContext);
+				closeList.add(defi);
+				addEvidence(processor, defi);
 			} else if (CHROMSOME.size() == 1) {
 				processor = new EvidenceClusterSubsetProcessor(processContext, processContext.getDictionary().getSequenceIndex(CHROMSOME.get(0)), processContext.getDictionary().getSequenceIndex(CHROMSOME.get(0)));
-				addEvidence(processor, evidenceForChr(processContext, CHROMSOME.get(0)));
+				DirectedEvidenceFileIterator defi = evidenceForChr(processContext, CHROMSOME.get(0));
+				closeList.add(defi);
+				addEvidence(processor, defi);
 			} else if (CHROMSOME.size() == 2) {
 				processor = new EvidenceClusterSubsetProcessor(processContext, processContext.getDictionary().getSequenceIndex(CHROMSOME.get(0)), processContext.getDictionary().getSequenceIndex(CHROMSOME.get(1)));
-				addEvidence(processor, evidenceForChr(processContext, CHROMSOME.get(0)));
-				addEvidence(processor, evidenceForChr(processContext, CHROMSOME.get(1)));
+				DirectedEvidenceFileIterator defi1 = evidenceForChr(processContext, CHROMSOME.get(0));
+				closeList.add(defi1);
+				addEvidence(processor, defi1);
+				DirectedEvidenceFileIterator defi2 = evidenceForChr(processContext, CHROMSOME.get(1));
+				closeList.add(defi2);
+				addEvidence(processor, defi2);
 			} else {
 				throw new RuntimeException("CHROMSOME argument supplied too many times");
 			}
 			log.info("Calling maximal cliques");
 			final ProgressLogger writeProgress = new ProgressLogger(log);
-			final VariantContextWriter vcfWriter = new VariantContextWriterBuilder()
+			vcfWriter = new VariantContextWriterBuilder()
 				.setOutputFile(OUTPUT)
 				.setReferenceDictionary(processContext.getDictionary())
 				.build();
@@ -114,7 +128,7 @@ public class ClusterEvidence extends CommandLineProgram {
 			// since the first breakend is always the lower genomic coordinate
 			// this will result in in-order output
 			PriorityQueue<BreakpointSummary> highEnd = new PriorityQueue<BreakpointSummary>(1024, BreakendSummary.ByStartEnd);
-			Iterator<BreakendSummary> it = processor.iterator();
+			Iterator<BreakpointSummary> it = processor.iterator();
 			while (it.hasNext()) {
 				BreakendSummary loc = it.next();
 				if (loc instanceof BreakpointSummary) {
@@ -132,10 +146,18 @@ public class ClusterEvidence extends CommandLineProgram {
 			while (!highEnd.isEmpty()) {
 				writeCall(processContext, vcfWriter, highEnd.poll(), writeProgress);
 			}
-			vcfWriter.close();
     	} catch (IOException e) {
     		log.error(e);
     		throw new RuntimeException(e);
+    	} finally {
+    		try {
+    			if (processContext != null) processContext.close();
+    			if (vcfWriter != null) vcfWriter.close();
+    			for (Closeable c : closeList) if (c != null) c.close();
+    		} catch (IOException ee) {
+        		log.error(ee);
+        		throw new RuntimeException(ee);
+    		}
     	}
         return 0;
     }

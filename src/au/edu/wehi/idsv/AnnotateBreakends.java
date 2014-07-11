@@ -98,6 +98,8 @@ public class AnnotateBreakends extends CommandLineProgram {
 		} catch (IOException e) {
 			log.error(e);
 			throw new RuntimeException(e);
+		} finally {
+			exitClose();
 		}
 		return 0;
 	}

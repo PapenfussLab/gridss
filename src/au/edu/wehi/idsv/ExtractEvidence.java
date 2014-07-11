@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import picard.analysis.InsertSizeMetrics;
 import picard.analysis.directed.InsertSizeMetricsCollector;
 import picard.cmdline.Option;
-import picard.cmdline.CommandLineProgram;
 import picard.cmdline.StandardOptionDefinitions;
 import picard.cmdline.Usage;
 
@@ -71,15 +70,21 @@ public class ExtractEvidence extends CommandLineProgram {
     }
     @Override
 	protected int doWork() {
+    	// closeable go here
+    	SamReader reader = null;
+    	ReferenceSequenceFileWalker referenceWalker = null;
+    	ReferenceSequenceFile reference = null;
+    	SAMFileWriter[] writers = null;
+    	SAMFileWriter[] matewriters = null;
     	try {
 	    	IOUtil.assertFileIsWritable(FileNamingConvention.getMetrics(INPUT));
 	    	final SamReaderFactory samFactory = SamReaderFactory.makeDefault();
-	    	final SamReader reader = samFactory.open(INPUT);
+	    	reader = samFactory.open(INPUT);
 	    	final SAMFileHeader header = reader.getFileHeader();
 	    	final SAMSequenceDictionary dictionary = header.getSequenceDictionary();
-	    	final ReferenceSequenceFileWalker referenceWalker = new ReferenceSequenceFileWalker(REFERENCE);
+	    	referenceWalker = new ReferenceSequenceFileWalker(REFERENCE);
 	    	final InsertSizeMetricsCollector metrics = RelevantMetrics.createCollector(header);
-	    	final ReferenceSequenceFile reference = ReferenceSequenceFileFactory.getReferenceSequenceFile(REFERENCE);
+	    	reference = ReferenceSequenceFileFactory.getReferenceSequenceFile(REFERENCE);
 	    	
 	    	// Check we aligned to the reference supplied 
 	    	if (reference.getSequenceDictionary() == null) {
@@ -87,8 +92,8 @@ public class ExtractEvidence extends CommandLineProgram {
 	    	}
 	    	dictionary.assertSameDictionary(reference.getSequenceDictionary());
 	    	
-	    	final SAMFileWriter[] writers = new SAMFileWriter[dictionary.size() + 1];
-	    	final SAMFileWriter[] matewriters = new SAMFileWriter[dictionary.size() + 1];
+	    	writers = new SAMFileWriter[dictionary.size() + 1];
+	    	matewriters = new SAMFileWriter[dictionary.size() + 1];
 	    	final ArrayList<SortingCollection<SAMRecord>> matecollection = new ArrayList<SortingCollection<SAMRecord>>();
 	    	final SAMFileHeader svHeader = header.clone();
 	    	svHeader.setSortOrder(SortOrder.coordinate);
@@ -137,6 +142,7 @@ public class ExtractEvidence extends CommandLineProgram {
 				progress.record(record);
 			}
 			reader.close();
+			reader = null;
 			log.info("Writing metrics");
 			metrics.finish();
 			RelevantMetrics.save(metrics, this.<InsertSizeMetrics, Integer>getMetricsFile(), FileNamingConvention.getMetrics(INPUT));
@@ -160,10 +166,25 @@ public class ExtractEvidence extends CommandLineProgram {
 				matewriters[0].setProgressLogger(new ProgressLogger(log));
 				writeToFile(matecollection.get(0), matewriters[0]);
 				matewriters[0].close();
+				matewriters[0] = null;
 			}
 			matecollection.clear();
     	} catch (IOException e) {
     		throw new RuntimeException(e);
+    	} finally {
+    		try {
+	    		if (reader != null) reader.close();
+	    		if (referenceWalker != null) referenceWalker.close();
+	        	if (reference != null) reference.close();
+	        	if (writers != null) {
+	        		for (SAMFileWriter w : writers) if (w != null) w.close();
+	        	}
+	        	if (matewriters != null) {
+	        		for (SAMFileWriter m : matewriters) if (m != null) m.close();
+	        	}
+        	} catch (IOException e) {
+        		throw new RuntimeException(e);
+        	}
     	}
         return 0;
     }

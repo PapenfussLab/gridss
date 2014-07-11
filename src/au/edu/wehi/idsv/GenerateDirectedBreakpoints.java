@@ -2,8 +2,8 @@ package au.edu.wehi.idsv;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
+import htsjdk.samtools.SamReader;
 import htsjdk.samtools.fastq.FastqWriterFactory;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.IOUtil;
@@ -15,6 +15,7 @@ import htsjdk.variant.vcf.VCFHeader;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
@@ -78,6 +79,11 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
     private Log log = Log.getInstance(GenerateDirectedBreakpoints.class);
     @Override
 	protected int doWork() {
+    	SamReader reader = null;
+    	SamReader mateReader = null;
+    	ProcessingContext processContext = null;
+    	VariantContextWriter vcfWriter = null;
+    	FastqBreakpointWriter fastqWriter = null;
     	try {
     		if (METRICS == null) {
     			METRICS = FileNamingConvention.getMetrics(SV_INPUT);
@@ -88,11 +94,11 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
     		
     		IOUtil.assertFileIsWritable(VCF_OUTPUT);
     		IOUtil.assertFileIsWritable(FASTQ_OUTPUT);
-    		
+
     		final ProgressLogger progress = new ProgressLogger(log);
-	    	final SamReader reader = getSamReaderFactory().open(SV_INPUT);
-	    	final SamReader mateReader = getSamReaderFactory().open(MATE_COORDINATE_INPUT);
-	    	final ProcessingContext processContext = getContext(REFERENCE, SV_INPUT);
+	    	reader = getSamReaderFactory().open(SV_INPUT);
+	    	mateReader = getSamReaderFactory().open(MATE_COORDINATE_INPUT);
+	    	processContext = getContext(REFERENCE, SV_INPUT);
 	    	final SAMSequenceDictionary dictionary = processContext.getDictionary();
 	    	final ReferenceSequenceFile reference = processContext.getReference();
 	    	
@@ -100,11 +106,10 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
 	    		// TODO: handle reads other than Illumina paired end reads
 	    		throw new IllegalArgumentException(String.format("Read pair %s orientation not yet implemented.", processContext.getMetrics().getPairOrientation()));
 			}
-	    	
 			final PeekingIterator<SAMRecord> iter = Iterators.peekingIterator(reader.iterator());
 			final PeekingIterator<SAMRecord> mateIter = Iterators.peekingIterator(mateReader.iterator());
-			final FastqBreakpointWriter fastqWriter = new FastqBreakpointWriter(new FastqWriterFactory().newWriter(FASTQ_OUTPUT));
-			final VariantContextWriter vcfWriter = new VariantContextWriterBuilder()
+			fastqWriter = new FastqBreakpointWriter(new FastqWriterFactory().newWriter(FASTQ_OUTPUT));
+			vcfWriter = new VariantContextWriterBuilder()
 				.setOutputFile(VCF_OUTPUT)
 				.setReferenceDictionary(dictionary)
 				.build();
@@ -141,7 +146,18 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
     	} catch (IOException e) {
     		log.error(e);
     		throw new RuntimeException(e);
-    	}
+    	} finally {
+    		try {
+    			if (reader != null) reader.close();
+    			if (mateReader != null) mateReader.close();
+    			if (processContext != null) processContext.close();
+    			if (vcfWriter != null) vcfWriter.close();
+    			if (fastqWriter != null) fastqWriter.close();
+    		} catch (IOException e) {
+        		log.error(e);
+        		throw new RuntimeException(e);
+        	} 
+		}
         return 0;
     }
     private ReadEvidenceAssembler getAssembler(ProcessingContext processContext) {
