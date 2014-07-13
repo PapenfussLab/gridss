@@ -18,7 +18,7 @@ import com.google.common.collect.PeekingIterator;
  *
  */
 public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence> {
-	private static final int INITIAL_BUFFER_SIZE = 1024;
+	private static final int INITIAL_BUFFER_SIZE = 32;
 	private final ProcessingContext processContext;
 	private final PeekingIterator<SAMRecord> svIterator;
 	private final PeekingIterator<VariantContext> vcfIterator;

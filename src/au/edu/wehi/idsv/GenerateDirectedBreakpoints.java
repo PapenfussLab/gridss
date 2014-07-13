@@ -56,26 +56,7 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
     @Option(doc = "Reference used for alignment",
             optional = false)
     public File REFERENCE;
-    @Option(doc = "Minimum alignment mapq",
-    		optional=true)
-    public int MIN_MAPQ = 5;
-    @Option(doc = "Minimum length of a breakend to be considered for realignment",
-    		optional=true,
-    		shortName="LEN")
-    public int MIN_BREAKEND_REALIGN_LENGTH = 25;
-    @Option(doc = "Minimum alignment percent identity to reference. Takes values in the range 0-100.",
-    		optional=true)
-    public float MIN_PERCENT_IDENTITY = 95;
-    @Option(doc = "Minimum average base quality score of soft clipped sequence",
-    		optional=true)
-    public float MIN_LONG_SC_BASE_QUALITY = 5;
-    @Option(doc = "Local assembly algorithm used to construct breakend contigs.",
-    		optional=true)
-    public AssemblyMethod ASSEMBLY_METHOD = AssemblyMethod.DEBRUIJN_SUBGRAPH;
-    @Option(doc = "k-mer used for de bruijn graph construction",
-    		optional=true,
-    		shortName="K")
-    public int KMER = 25;
+    
     private Log log = Log.getInstance(GenerateDirectedBreakpoints.class);
     @Override
 	protected int doWork() {
