@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv;
 
+import java.io.Closeable;
+
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.fastq.FastqWriter;
 
@@ -8,7 +10,7 @@ import htsjdk.samtools.fastq.FastqWriter;
  * @author Daniel Cameron
  *
  */
-public class FastqBreakpointWriter {
+public class FastqBreakpointWriter implements Closeable {
 	public FastqWriter backing;
 	public FastqBreakpointWriter(FastqWriter writer) {
 		this.backing = writer;

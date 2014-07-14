@@ -33,9 +33,9 @@ public class DeBruijnAnchoredAssembler implements ReadEvidenceAssembler {
 	private final PriorityQueue<DirectedEvidence> activeb = new PriorityQueue<DirectedEvidence>(1024, new DirectedEvidenceEndCoordinateComparator());
 	private int currentReferenceIndex = -1;
 	private int currentPosition = -1;
-	public DeBruijnAnchoredAssembler(ProcessingContext processContext, AssemblyParameters parameters) {
-		this.graphf = new DeBruijnAnchoredGraph(processContext, parameters.k, BreakendDirection.Forward);
-		this.graphb = new DeBruijnAnchoredGraph(processContext, parameters.k, BreakendDirection.Backward);
+	public DeBruijnAnchoredAssembler(ProcessingContext processContext) {
+		this.graphf = new DeBruijnAnchoredGraph(processContext, processContext.getAssemblyParameters().k, BreakendDirection.Forward);
+		this.graphb = new DeBruijnAnchoredGraph(processContext, processContext.getAssemblyParameters().k, BreakendDirection.Backward);
 	}
 	private VariantContextDirectedBreakpoint createAssemblyBreakend(DeBruijnAnchoredGraph graph, BreakendDirection direction) {
 		VariantContextDirectedBreakpoint variant = graph.assembleVariant(currentReferenceIndex, currentPosition);

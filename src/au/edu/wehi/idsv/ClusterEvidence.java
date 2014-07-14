@@ -70,13 +70,13 @@ public class ClusterEvidence extends CommandLineProgram {
     		if (OUTPUT == null) {
     			switch (CHROMSOME.size()) {
     			case 0:
-    				OUTPUT = FileNamingConvention.getRawCallVcf(INPUT);
+    				OUTPUT = FileNamingConvention.getBreakpointVcf(INPUT);
     				break;
     			case 1:
-    				OUTPUT = FileNamingConvention.getRawCallVcf(INPUT, CHROMSOME.get(0), CHROMSOME.get(0));
+    				OUTPUT = FileNamingConvention.getBreakpointlVcf(INPUT, CHROMSOME.get(0), CHROMSOME.get(0));
     				break;
     			case 2:
-    				OUTPUT = FileNamingConvention.getRawCallVcf(INPUT, CHROMSOME.get(0), CHROMSOME.get(1));
+    				OUTPUT = FileNamingConvention.getBreakpointlVcf(INPUT, CHROMSOME.get(0), CHROMSOME.get(1));
     				break;
     			default:
     				throw new IllegalArgumentException("Chromosome count cannot be greater than 2");

@@ -142,11 +142,11 @@ public class AnnotateBreakends extends CommandLineProgram {
 			final ProcessingContext processContext) throws IOException {
 		// open VCF
 		// (assert sorted?)
-		if (FileNamingConvention.getRawCallVcf(INPUT).exists()) {
+		if (FileNamingConvention.getBreakpointVcf(INPUT).exists()) {
 			log.info("Using single breakpoint vcf call file ",
-					FileNamingConvention.getRawCallVcf(INPUT));
+					FileNamingConvention.getBreakpointVcf(INPUT));
 			VCFFileReader reader = new VCFFileReader(
-					FileNamingConvention.getRawCallVcf(INPUT));
+					FileNamingConvention.getBreakpointVcf(INPUT));
 			return VariantContextDirectedBreakpoint.breakendIterator(
 					processContext, reader.iterator());
 		} else {
@@ -159,7 +159,7 @@ public class AnnotateBreakends extends CommandLineProgram {
 															// don't repeat
 					String chrA = seqList.get(i).getSequenceName();
 					String chrB = seqList.get(j).getSequenceName();
-					File f = FileNamingConvention.getRawCallVcf(INPUT, chrA,
+					File f = FileNamingConvention.getBreakpointlVcf(INPUT, chrA,
 							chrB);
 					if (!f.exists()) {
 						log.warn("Missing VCF calls from ", chrA, " to ", chrB,
@@ -167,7 +167,7 @@ public class AnnotateBreakends extends CommandLineProgram {
 					} else {
 						log.debug("Loading ", f);
 						VCFFileReader reader = new VCFFileReader(
-								FileNamingConvention.getRawCallVcf(INPUT));
+								FileNamingConvention.getBreakpointVcf(INPUT));
 						itList.add(VariantContextDirectedBreakpoint
 								.breakendIterator(processContext,
 										reader.iterator()));

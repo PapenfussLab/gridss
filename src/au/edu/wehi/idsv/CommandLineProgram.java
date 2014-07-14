@@ -149,7 +149,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 	private SoftClipParameters getSoftClipParameters() {
 		SoftClipParameters scp = new SoftClipParameters();
 	    scp.minLength = SOFT_CLIP_MIN_LENGTH;
-	    scp.maxMapq = SOFT_CLIP_REALIGNMENT_MIN_MAPQ;
+	    scp.minReadMapq = SOFT_CLIP_REALIGNMENT_MIN_MAPQ;
 	    scp.minAnchorIdentity = SOFT_CLIP_REALIGNMENT_MIN_ANCHOR_PERCENT_IDENTITY;
 	    return scp;
 	}

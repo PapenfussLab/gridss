@@ -26,10 +26,13 @@ public class ExtractAndAssemble extends CommandLineProgram {
 	protected int doWork() {
     	try {
 	    	ensureDictionariesMatch();
+	    	log.info("Extracting evidence");
 	    	for (File f : Iterables.concat(INPUT, INPUT_TUMOUR)) {
-	    		SAMRecordEvidenceFile sref = new SAMRecordEvidenceFile(getContext(), f);
+	    		SAMEvidenceSource sref = new SAMEvidenceSource(getContext(), f);
 	    		sref.ensureEvidenceExtracted();
 	    	}
+	    	log.info("Evidence extraction complete.");
+	    	log.info("Starting assembly");
 	    	throw new RuntimeException("NYI: GenerateDirectedBreakpoints");
     	} catch (IOException e) {
     		log.error(e);

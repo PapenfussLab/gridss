@@ -29,9 +29,9 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 	private DeBruijnReadGraph fgraph;
 	private DeBruijnReadGraph bgraph;
 	private int currentReferenceIndex = -1;
-	public DeBruijnSubgraphAssembler(ProcessingContext processContext, AssemblyParameters parameters) {
+	public DeBruijnSubgraphAssembler(ProcessingContext processContext) {
 		this.processContext = processContext;
-		this.parameters = parameters;
+		this.parameters = processContext.getAssemblyParameters();
 	}
 	@Override
 	public Iterable<VariantContextDirectedBreakpoint> addEvidence(DirectedEvidence evidence) {

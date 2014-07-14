@@ -6,12 +6,17 @@ public class SoftClipParameters {
 	 */
 	public int minLength = 4;
 	/**
-	 * Minimum MAPQ for realignment
+	 * Minimum MAPQ of read to consider for realignment
 	 */
-	public int maxMapq = 5;
+	public int minReadMapq = 5;
 	/**
-	 * Minimum anchor percent identity
+	 * Minimum anchor percent identity to consider for realignment
 	 * 0-100
 	 */
 	public float minAnchorIdentity = 95;
+	public boolean meetsCritera(SoftClipEvidence sce) {
+		return sce.getMappingQuality() >= minReadMapq
+				&& sce.getSoftClipLength() >= minLength
+				&& sce.getAlignedPercentIdentity() >= minAnchorIdentity;
+	}
 }

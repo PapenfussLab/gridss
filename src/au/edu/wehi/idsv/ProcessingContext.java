@@ -12,6 +12,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.SamReaderFactory.Option;
+import htsjdk.samtools.fastq.FastqWriterFactory;
 import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.metrics.MetricBase;
 import htsjdk.samtools.metrics.MetricsFile;
@@ -92,6 +93,11 @@ public class ProcessingContext implements Closeable {
 			.setTempDirectory(fsContext.getTemporaryDirectory())
 			.setUseAsyncIo(true)
 			.setCreateIndex(true);
+	}
+	public FastqWriterFactory getFastqWriterFactory(){
+		FastqWriterFactory factory = new FastqWriterFactory();
+		factory.setUseAsyncIo(true);
+		return factory;
 	}
 	public ReferenceSequenceFile getReference() {
 		return reference;

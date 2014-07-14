@@ -109,7 +109,7 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
 				// for a previous position (for it is only at this point we know there is no more
 				// evidence for the previous position).
 				processAssemblyEvidence(assembler.addEvidence(readEvidence), fastqWriter, vcfWriter);
-				if (readEvidence instanceof SoftClipEvidence) {
+				/*if (readEvidence instanceof SoftClipEvidence) {
 					SoftClipEvidence sce = (SoftClipEvidence)readEvidence;
 					if (sce.getMappingQuality() >= MIN_MAPQ &&
 							sce.getSoftClipLength() >= MIN_BREAKEND_REALIGN_LENGTH &&
@@ -117,7 +117,7 @@ public class GenerateDirectedBreakpoints extends CommandLineProgram {
 							sce.getAverageClipQuality() >= MIN_LONG_SC_BASE_QUALITY) {
 						fastqWriter.write(sce);
 					}
-				}
+				}*/
 			}
 			processAssemblyEvidence(assembler.endOfEvidence(), fastqWriter, vcfWriter);
 	    	fastqWriter.close();

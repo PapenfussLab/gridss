@@ -10,4 +10,8 @@ public class RealignmentParameters {
 	 * Minimum average breakend quality score to be considered for realignment 
 	 */
 	public float minAverageQual = 5;
+	public boolean meetsCritera(SoftClipEvidence sce) {
+		return sce.getSoftClipLength() >= minLength
+				&& sce.getAverageClipQuality() >= minAverageQual;
+	}
 }

@@ -33,8 +33,6 @@ public class FileSystemContext {
 	public int getMaxBufferedRecordsPerFile() {
 		return maxRecordsInRam;
 	}
-	// TODO: common file suffix should be MD5 hash of inputs (& the directory should have file containing the inputs)
-	// maybe directory prefix should match the prefix of the output file itself?
 	private static final String COMMON_INITIAL_SUFFIX = ".idsv";
 	private static final String INTERMEDIATE_DIR_SUFFIX = COMMON_INITIAL_SUFFIX + ".working";
 	private static final String FORMAT_SV_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".sv.bam";
@@ -42,6 +40,8 @@ public class FileSystemContext {
 	private static final String FORMAT_MATE_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".svmate.bam";
 	private static final String FORMAT_MATE_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.svmate.bam";
 	private static final String FORMAT_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.txt";
+	private static final String FORMAT_REALIGN_FASTQ = "%s" + COMMON_INITIAL_SUFFIX + ".realign.fq";
+	private static final String FORMAT_REALIGN_FASTQ_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign.fq";
 	private static final String FORMAT_REALIGN_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".realign.bam";
 	private static final String FORMAT_REALIGN_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign.bam";
 	private static final String FORMAT_BREAKEND_VCF_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.breakend.vcf";
@@ -109,10 +109,10 @@ public class FileSystemContext {
 	public File getBreakendVcfForChr(File input, String chromosome) {
 		return new File(String.format(FORMAT_BREAKEND_VCF_PER_CHR, getStem(input), chromosome));
 	}
-	public File getRawCallVcf(File input) {
+	public File getBreakpointVcf(File input) {
 		return new File(String.format(FORMAT_BREAKPOINT_VCF, getStem(input)));
 	}
-	public File getRawCallVcf(File input, String chromosome1, String chromosome2) {
+	public File getBreakpointVcf(File input, String chromosome1, String chromosome2) {
 		return new File(String.format(FORMAT_BREAKPOINT_VCF_PER_CHR, getStem(input), chromosome1, chromosome2));
 	}
 	public File getMetrics(File input) {
@@ -121,7 +121,13 @@ public class FileSystemContext {
 	public File getRealignmentBam(File input) {
 		return new File(String.format(FORMAT_REALIGN_BAM, getStem(input)));
 	}
+	public File getRealignmentFastq(File input) {
+		return new File(String.format(FORMAT_REALIGN_FASTQ, getStem(input)));
+	}
 	public File getRealignmentBamForChr(File input, String chromosome) {
 		return new File(String.format(FORMAT_REALIGN_BAM_PER_CHR, getStem(input), chromosome));
+	}
+	public File getRealignmentFastqForChr(File input, String chromosome) {
+		return new File(String.format(FORMAT_REALIGN_FASTQ_CHR, getStem(input), chromosome));
 	}
 }
