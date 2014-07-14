@@ -7,6 +7,7 @@ import java.util.List;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.AssemblyParameters;
+import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 
@@ -15,9 +16,10 @@ import com.google.common.collect.Lists;
 
 public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 	private DeBruijnSubgraphAssembler DSA(int k) {
-		AssemblyParameters p = new AssemblyParameters();
+		ProcessingContext pc = getContext();
+		AssemblyParameters p = pc.getAssemblyParameters();
 		p.k = k;
-		return new DeBruijnSubgraphAssembler(getContext(), p);
+		return new DeBruijnSubgraphAssembler(pc, AES());
 	}
 	@Test
 	public void should_assemble_all_contigs() {

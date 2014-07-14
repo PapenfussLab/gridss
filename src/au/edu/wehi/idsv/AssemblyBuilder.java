@@ -8,8 +8,9 @@ import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 public class AssemblyBuilder {
-	public AssemblyBuilder(ProcessingContext processContext) {
+	public AssemblyBuilder(ProcessingContext processContext, EvidenceSource source) {
 		this.processContext = processContext;
+		this.source = source;
 	}
 	/**
 	 * Assembly is anchored to the given genomic position 
@@ -90,6 +91,7 @@ public class AssemblyBuilder {
 		return this;
 	}
 	private ProcessingContext processContext;
+	private EvidenceSource source;
 	private int anchorReferenceIndex = -1;
 	private int anchor;
 	private int mateAnchorReferenceIndex = -1;
@@ -110,7 +112,7 @@ public class AssemblyBuilder {
 	public VariantContextDirectedBreakpoint makeVariant() {
 		if (dir == null) throw new IllegalStateException("direction is required");
 		if (bases == null) throw new IllegalStateException("assembly base sequence is required");
-		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(processContext);
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(processContext, source);
 		AnomolousReadAssembly ara = makeSAMRecord();
 		
 		EvidenceMetrics evidence = new EvidenceMetrics();
@@ -146,7 +148,7 @@ public class AssemblyBuilder {
 			// around the expected window size.
 			// Eg: when we assemble an entire fragment size worth of mate pairs, the expected breakend window
 			// size approaches zero.
-			int breakpointWindow = processContext.getMetrics().getMaxFragmentSize();
+			int breakpointWindow = source.getMetrics().getMaxFragmentSize();
 			BreakendSummary summary = new BreakendSummary(
 					mateAnchorReferenceIndex,
 					dir,

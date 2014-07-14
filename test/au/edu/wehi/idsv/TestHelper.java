@@ -2,12 +2,14 @@ package au.edu.wehi.idsv;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileWriter;
+import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMReadGroupRecord;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SamPairUtil;
+import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
@@ -38,6 +40,7 @@ import au.edu.wehi.idsv.debruijn.ReadKmerIterable;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 public class TestHelper {
@@ -114,20 +117,20 @@ public class TestHelper {
 	}
 	public static NonReferenceReadPair NRRP(SAMRecord... pair) {
 		pair[1].setReadName(pair[0].getReadName());
-		return new NonReferenceReadPair(pair[0], pair[1], getContext().getMetrics().getMaxFragmentSize());
+		return new NonReferenceReadPair(pair[0], pair[1], SES());
 	}
 	public static SoftClipEvidence SCE(BreakendDirection direction, SAMRecord... pair) {
 		if (pair.length >= 2) {
-			return new SoftClipEvidence(getContext(), direction, pair[0], pair[1]);
+			return new SoftClipEvidence(getContext(), SES(), direction, pair[0], pair[1]);
 		} else {
-			return new SoftClipEvidence(getContext(), direction, pair[0]);
+			return new SoftClipEvidence(getContext(), SES(), direction, pair[0]);
 		}
 	}
 	public static VariantContextDirectedBreakpoint AE() {
 		return AB().makeVariant();
 	}
 	public static AssemblyBuilder AB() {
-		return new AssemblyBuilder(getContext())
+		return new AssemblyBuilder(getContext(), AES())
 		.assemblerName("testAssembler")
 		.direction(FWD)
 		.referenceAnchor(0, 1)
@@ -143,7 +146,7 @@ public class TestHelper {
 			int readBaseCount,
 			double breakpointQuality,
 			String untemplatedSequence) {
-		VariantContextDirectedBreakpointBuilder b = new VariantContextDirectedBreakpointBuilder(getContext());
+		VariantContextDirectedBreakpointBuilder b = new VariantContextDirectedBreakpointBuilder(getContext(), AES());
 		b.breakpoint(summary, untemplatedSequence);
 		b.attribute(VcfAttributes.ASSEMBLY_BASES.attribute(), readBaseCount);
 		b.attribute(VcfAttributes.ASSEMBLY_READS.attribute(), readCount);
@@ -152,14 +155,41 @@ public class TestHelper {
 		b.attribute(VcfAttributes.REALIGN_TOTAL_LENGTH, untemplatedSequence.length() + 1);
 		return b.make();
 	}		
-	public static class MockMetrics extends RelevantMetrics {
+	public static class MockMetrics extends PicardMetrics {
+		public int maxFragSize = 300;
 		@Override
-		public int getMaxFragmentSize() {
-			return 300;
+		public int getMaxFragmentSize() { return maxFragSize; } 
+	}
+	public static FileSystemContext getFSContext() {
+		return new FileSystemContext(new File(System.getProperty("java.io.tmpdir")), 500000);
+	}
+	/**
+	 * Sync IO so we don't have hundreds of threads spawning / despawning when running tests
+	 */
+	public static class ProcessingContextSyncIO extends ProcessingContext {
+		public ProcessingContextSyncIO(FileSystemContext fileSystemContext,
+				List<Header> metricsHeaders,
+				SoftClipParameters softClipParameters,
+				AssemblyParameters assemblyParameters,
+				RealignmentParameters realignmentParameters, File ref,
+				boolean perChr, boolean vcf41) {
+			super(fileSystemContext, metricsHeaders, softClipParameters,
+					assemblyParameters, realignmentParameters, ref, perChr, vcf41);
+		}
+		@Override
+		public SAMFileWriterFactory getSamReaderWriterFactory() {
+			return super.getSamReaderWriterFactory()
+					.setUseAsyncIo(false);
 		}
 	}
 	public static ProcessingContext getContext() {
-		return new ProcessingContext(SMALL_FA, getSequenceDictionary(), new MockMetrics());
+		return new ProcessingContextSyncIO(
+				getFSContext(),
+				new ArrayList<Header>(),
+				new SoftClipParameters(),
+				new AssemblyParameters(),
+				new RealignmentParameters(),
+				SMALL_FA_FILE, false, false);
 	}
 	static public SAMRecord[] withReadName(String name, SAMRecord... data) {
 		for (SAMRecord r : data) {
@@ -375,7 +405,7 @@ public class TestHelper {
 		return record;
 	}
 	// -------- Path graph helpers --------
-	public class BaseGraph extends DeBruijnGraphBase<DeBruijnNodeBase> {
+	public static class BaseGraph extends DeBruijnGraphBase<DeBruijnNodeBase> {
 		public BaseGraph(int k) {
 			super(k);
 		}
@@ -401,7 +431,7 @@ public class TestHelper {
 			return new String(getBaseCalls(node.getPath()));
 		}
 	}
-	public class BasePathGraph extends DeBruijnPathGraph<DeBruijnNodeBase, PathNode<DeBruijnNodeBase>> {
+	public static class BasePathGraph extends DeBruijnPathGraph<DeBruijnNodeBase, PathNode<DeBruijnNodeBase>> {
 		public BasePathGraph(
 				BaseGraph graph,
 				long seed,
@@ -437,10 +467,10 @@ public class TestHelper {
 			return new String(getGraph().getBaseCalls(Lists.newArrayList((PathNode.kmerIterator(nodes)))));
 		}
 	}
-	public <T extends DeBruijnNodeBase> String S(DeBruijnGraphBase<T> g, Iterable<Long> path) {
+	public static <T extends DeBruijnNodeBase> String S(DeBruijnGraphBase<T> g, Iterable<Long> path) {
 		return new String(g.getBaseCalls(Lists.newArrayList(path)));
 	}
-	public List<Long> toKmer(DeBruijnGraphBase<DeBruijnNodeBase> graph, String sequence) {
+	public static List<Long> toKmer(DeBruijnGraphBase<DeBruijnNodeBase> graph, String sequence) {
 		assert(sequence.length() >= graph.getK());
 		byte[] qual = new byte[sequence.length()];
 		Arrays.fill(qual, (byte)1);
@@ -450,7 +480,7 @@ public class TestHelper {
 		}
 		return result;
 	}
-	public <T extends DeBruijnNodeBase, PN extends PathNode<T>> PN PGN(DeBruijnPathGraph<T, PN> pg, String sequence) {
+	public static <T extends DeBruijnNodeBase, PN extends PathNode<T>> PN PGN(DeBruijnPathGraph<T, PN> pg, String sequence) {
 		assert(sequence.length() == pg.getGraph().getK());
 		long state = KmerEncodingHelper.picardBaseToEncoded(pg.getGraph().getK(), B(sequence));
 		for (PN n : pg.getPaths()) {
@@ -460,18 +490,40 @@ public class TestHelper {
 		}
 		return null;
 	}
-	public BaseGraph G(int k) {
+	public static BaseGraph G(int k) {
 		return new BaseGraph(k);
 	}
-	public BasePathGraph PG(BaseGraph g, String seed) {
+	public static BasePathGraph PG(BaseGraph g, String seed) {
 		return new BasePathGraph(g, KmerEncodingHelper.picardBaseToEncoded(g.getK(), B(seed)), new PathNodeBaseFactory());
 	}
-	public BasePathGraph PG(BaseGraph g) {
+	public static BasePathGraph PG(BaseGraph g) {
 		return new BasePathGraph(g, new PathNodeBaseFactory());
 	}
-	public DeBruijnReadGraph G(int k, BreakendDirection direction) {
+	public static DeBruijnReadGraph G(int k, BreakendDirection direction) {
 		AssemblyParameters p = new AssemblyParameters();
 		p.k = k;
-		return new DeBruijnReadGraph(getContext(), 0, direction, p);
+		return new DeBruijnReadGraph(getContext(), AES(), 0, direction, p);
+	}
+	public static class MockSAMEvidenceSource extends SAMEvidenceSource {
+		public MockMetrics metrics = new MockMetrics();
+		public boolean isTumour = false;
+		public MockSAMEvidenceSource(ProcessingContext processContext) {
+			super(processContext, new File("test.bam"), false);
+		}
+		@Override
+		public boolean isTumour() { return isTumour; }
+		@Override
+		public MockMetrics getMetrics() { return metrics; }
+	}
+	public static MockSAMEvidenceSource SES() {
+		return new MockSAMEvidenceSource(getContext());
+	}
+	public static MockSAMEvidenceSource SES(int maxFragmentSize) {
+		MockSAMEvidenceSource ses = SES();
+		ses.getMetrics().maxFragSize = maxFragmentSize;
+		return ses;
+	}
+	public static AssemblyEvidenceSource AES() {
+		return new AssemblyEvidenceSource(getContext(), ImmutableList.of((SAMEvidenceSource)SES()), new File("test.bam"));
 	}
 }

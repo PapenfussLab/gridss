@@ -8,6 +8,7 @@ import java.util.Set;
 import org.apache.commons.lang3.ArrayUtils;
 
 import au.edu.wehi.idsv.AssemblyBuilder;
+import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.NonReferenceReadPair;
@@ -18,9 +19,11 @@ import au.edu.wehi.idsv.SoftClipEvidence;
 public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends DeBruijnGraphBase<T> {
 	protected final BreakendDirection direction;
 	protected final ProcessingContext processContext;
-	public DeBruijnVariantGraph(ProcessingContext context, int k, BreakendDirection direction) {
+	protected final AssemblyEvidenceSource source;
+	public DeBruijnVariantGraph(ProcessingContext context, AssemblyEvidenceSource source, int k, BreakendDirection direction) {
 		super(k);
 		this.processContext = context;
+		this.source = source;
 		this.direction = direction;
 	}
 	public BreakendDirection getDirection() {
@@ -145,7 +148,7 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 	}
 	protected AssemblyBuilder debruijnContigAssembly(List<Long> path) {
 		Set<SAMRecord> support = getSupportingSAMRecords(path);
-		AssemblyBuilder builder = new AssemblyBuilder(processContext)
+		AssemblyBuilder builder = new AssemblyBuilder(processContext, source)
 			.direction(direction)
 			.assemblyBases(getBaseCalls(path))
 			.assemblyBaseQuality(getBaseQuals(path))

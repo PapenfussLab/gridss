@@ -8,14 +8,16 @@ import com.google.common.collect.Lists;
 
 public class StructuralVariationCallBuilder {
 	private final ProcessingContext processContext;
+	private final EvidenceSource source;
 	private final BreakendSummary call;
 	private final List<SoftClipEvidence> scList = Lists.newArrayList();
 	private final List<NonReferenceReadPair> nrpList = Lists.newArrayList();
 	private final List<VariantContextDirectedBreakpoint> assList = Lists.newArrayList();
 	private int referenceReadCount = -1;
 	private int referenceSpanningPairCount = -1;
-	public StructuralVariationCallBuilder(ProcessingContext processContext, BreakendSummary call) {
+	public StructuralVariationCallBuilder(ProcessingContext processContext, EvidenceSource source, BreakendSummary call) {
 		this.processContext = processContext;
+		this.source = source;
 		this.call  = call;
 	}
 	public StructuralVariationCallBuilder evidence(DirectedEvidence evidence) {
@@ -58,7 +60,7 @@ public class StructuralVariationCallBuilder {
 			.id(getID())
 			.attribute(VcfAttributes.REFERENCE_READ_COUNT.attribute(), referenceReadCount)
 			.attribute(VcfAttributes.REFERENCE_SPANNING_READ_PAIR_COUNT.attribute(), referenceSpanningPairCount);
-		return new VariantContextDirectedBreakpoint(processContext, builder.make());
+		return new VariantContextDirectedBreakpoint(processContext, source, builder.make());
 	}
 	public StructuralVariationCallBuilder referenceReads(int count) {
 		referenceReadCount = count;
@@ -96,12 +98,12 @@ public class StructuralVariationCallBuilder {
 		VariantContextDirectedBreakpoint ass = bestAssembly();
 		SoftClipEvidence sce = bestSoftclip();
 		if (ass != null) {
-			builder = new VariantContextDirectedBreakpointBuilder(processContext, ass);
+			builder = new VariantContextDirectedBreakpointBuilder(processContext, source, ass);
 		} else if (sce != null) {
-			builder = new VariantContextDirectedBreakpointBuilder(processContext)
+			builder = new VariantContextDirectedBreakpointBuilder(processContext, source)
 				.breakend(sce.getBreakendSummary(), sce.getUntemplatedSequence());
 		} else {
-			builder = new VariantContextDirectedBreakpointBuilder(processContext)
+			builder = new VariantContextDirectedBreakpointBuilder(processContext, source)
 				.breakend(call, "");
 		}
 		return builder;

@@ -59,17 +59,6 @@ public class ProcessingContext implements Closeable {
 		this.linear = new LinearGenomicCoordinate(this.dictionary);
 	}
 	/**
-	 * Determines whether this record comes from a tumour
-	 * @param r record
-	 * @return true if the source a tumour input, false otherwise  
-	 */
-	public boolean isTumour(SAMRecord r) {
-		// wrap the results of SamReaderFactory in our own tracking factory
-		// associate readers back to the source file using a weak reference map 
-		SAMFileSource fs = r.getFileSource();
-		throw new RuntimeException("NYI");
-	}
-	/**
 	 * Creates a new metrics file with appropriate headers for this context 
 	 * @return MetricsFile
 	 */
@@ -85,8 +74,8 @@ public class ProcessingContext implements Closeable {
 	}
 	public SamReaderFactory getSamReaderFactory() {
 		return SamReaderFactory.makeDefault()
-				.validationStringency(ValidationStringency.LENIENT)
-				.enable(Option.INCLUDE_SOURCE_IN_RECORDS);
+				.validationStringency(ValidationStringency.LENIENT);
+				//.enable(Option.INCLUDE_SOURCE_IN_RECORDS); // don't need as we're tracking ourselves using EvidenceSource
 	}
 	public SAMFileWriterFactory getSamReaderWriterFactory() {
 		return new SAMFileWriterFactory()

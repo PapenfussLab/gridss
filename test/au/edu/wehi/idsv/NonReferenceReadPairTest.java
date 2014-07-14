@@ -12,12 +12,12 @@ import au.edu.wehi.idsv.vcf.VcfAttributes;
 
 public class NonReferenceReadPairTest extends TestHelper {
 	public NonReferenceReadPair newPair(SAMRecord[] pair, int maxfragmentSize) {
-		return new NonReferenceReadPair(pair[0], pair[1], maxfragmentSize);
+		return new NonReferenceReadPair(pair[0], pair[1], SES(maxfragmentSize));
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void should_abort_if_max_frag_size_not_sane() {
 		SAMRecord[] pair = OEA(0, 1, "100M", true);
-		new NonReferenceReadPair(pair[0], pair[1], 99);
+		newPair(pair, 99);
 	}
 	@Test
 	public void getLocalledMappedRead_should_return_local() {
@@ -51,8 +51,8 @@ public class NonReferenceReadPairTest extends TestHelper {
 	@Test
 	public void getBreakendSummary_DP_calls_should_be_symmetrical() {
 		SAMRecord[] pair = DP(0, 100, "1S3M1S", true, 1, 200, "5M", false); 
-		BreakpointSummary loc1 = (BreakpointSummary)new NonReferenceReadPair(pair[0], pair[1], 20).getBreakendSummary();
-		BreakpointSummary loc2 = (BreakpointSummary)new NonReferenceReadPair(pair[1], pair[0], 20).getBreakendSummary();
+		BreakpointSummary loc1 = (BreakpointSummary)new NonReferenceReadPair(pair[0], pair[1], SES(20)).getBreakendSummary();
+		BreakpointSummary loc2 = (BreakpointSummary)new NonReferenceReadPair(pair[1], pair[0], SES(20)).getBreakendSummary();
 		assertEquals(loc1.referenceIndex, loc2.referenceIndex2);
 		assertEquals(loc1.start, loc2.start2);
 		assertEquals(loc1.end, loc2.end2);
@@ -88,12 +88,12 @@ public class NonReferenceReadPairTest extends TestHelper {
 	}
 	private void dp_test_both(SAMRecord r1, SAMRecord r2, int maxFragmentSize,
 			int expectedStart, int expectedEnd, int expectedReferenceIndex, BreakendDirection expectedDirection) {
-		BreakendSummary loc = new NonReferenceReadPair(r1, r2, maxFragmentSize).getBreakendSummary();
+		BreakendSummary loc = new NonReferenceReadPair(r1, r2, SES(maxFragmentSize)).getBreakendSummary();
 		assertEquals(expectedStart, loc.start);
 		assertEquals(expectedEnd, loc.end);
 		assertEquals(expectedReferenceIndex, loc.referenceIndex);
 		assertEquals(expectedDirection, loc.direction);
-		BreakpointSummary loc2 = (BreakpointSummary)new NonReferenceReadPair(r2, r1, maxFragmentSize).getBreakendSummary();
+		BreakpointSummary loc2 = (BreakpointSummary)new NonReferenceReadPair(r2, r1, SES(maxFragmentSize)).getBreakendSummary();
 		assertEquals(expectedStart, loc2.start2);
 		assertEquals(expectedEnd, loc2.end2);
 		assertEquals(expectedReferenceIndex, loc2.referenceIndex2);

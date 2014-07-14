@@ -2,7 +2,6 @@ package au.edu.wehi.idsv;
 
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -27,15 +26,15 @@ public class DirectedEvidenceFileIterator implements CloseableIterator<DirectedE
 	private final Log log = Log.getInstance(DirectedEvidenceFileIterator.class);
 	public DirectedEvidenceFileIterator(
 			ProcessingContext processContext,
-			SamReaderFactory samFactory,
+			EvidenceSource source,
 			File sv,
 			File mate,
 			File realign,
 			File vcf) {
 		log.debug(String.format("Loading evidence from: sv:%s, mate:%s, realign:%s, assembly:%s", sv, mate, realign, vcf));
-		svReader = sv == null ? null : samFactory.open(sv);
-		mateReader = mate == null ? null : samFactory.open(mate);
-		realignReader = realign == null ? null : samFactory.open(realign);
+		svReader = sv == null ? null : processContext.getSamReaderFactory().open(sv);
+		mateReader = mate == null ? null : processContext.getSamReaderFactory().open(mate);
+		realignReader = realign == null ? null : processContext.getSamReaderFactory().open(realign);
 		vcfReader = vcf == null ? null : new VCFFileReader(vcf);
 		svIt = svReader == null ? null : svReader.iterator();
 		mateIt = mateReader == null ? null : mateReader.iterator();
@@ -43,6 +42,7 @@ public class DirectedEvidenceFileIterator implements CloseableIterator<DirectedE
 		vcfIt = vcfReader == null ? null : vcfReader.iterator();
 		it = new DirectedEvidenceIterator(
 				processContext,
+				source,
 				Iterators.peekingIterator(svIt),
 				Iterators.peekingIterator(mateIt),
 				Iterators.peekingIterator(realignIt),
@@ -67,7 +67,11 @@ public class DirectedEvidenceFileIterator implements CloseableIterator<DirectedE
 	}
 	@Override
 	public boolean hasNext() {
-		return it.hasNext();
+		boolean result = it.hasNext();
+		if (!result) {
+			close();
+		}
+		return result;
 	}
 	@Override
 	public DirectedEvidence next() {

@@ -15,17 +15,19 @@ public class NonReferenceReadPair implements DirectedEvidence {
 	private final SAMRecord local;
 	private final SAMRecord remote;
 	private final BreakendSummary location;
-	public NonReferenceReadPair(SAMRecord local, SAMRecord remote, int maxfragmentSize) {
+	private final SAMEvidenceSource source;
+	public NonReferenceReadPair(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {
 		if (local == null) throw new IllegalArgumentException("local is null");
 		if (remote == null) throw new IllegalArgumentException("remote is null");
 		if (!StringUtils.equals(local.getReadName(), remote.getReadName())) throw new IllegalArgumentException(String.format("Read %s and %s do not match", local.getReadName(), remote.getReadName()));
 		if (local.getReadUnmappedFlag()) throw new IllegalArgumentException("local must be mapped");
 		if (local.getProperPairFlag()) throw new IllegalArgumentException(String.format("Read %s is flagged as part of a proper pair", local.getReadName()));
 		if (remote.getProperPairFlag()) throw new IllegalArgumentException(String.format("Read %s is flagged as part of a proper pair", remote.getReadName()));
-		if (maxfragmentSize < local.getReadLength()) throw new IllegalArgumentException(String.format("Sanity check failure: read pair %s contains read of length %d when maximum fragment size is %d", local.getReadName(), local.getReadLength(), maxfragmentSize));
+		if (source.getMetrics().getMaxFragmentSize() < local.getReadLength()) throw new IllegalArgumentException(String.format("Sanity check failure: read pair %s contains read of length %d when maximum fragment size is %d", local.getReadName(), local.getReadLength(), source.getMetrics().getMaxFragmentSize()));
 		this.local = local;
 		this.remote = remote;
-		this.location = calculateBreakendSummary(local, remote, maxfragmentSize);
+		this.location = calculateBreakendSummary(local, remote, source.getMetrics().getMaxFragmentSize());
+		this.source = source;
 	}
 	private static EvidenceMetrics calculateOeaMetrics(SAMRecord local, SAMRecord remote) {
 		EvidenceMetrics m = new EvidenceMetrics();
@@ -149,5 +151,9 @@ public class NonReferenceReadPair implements DirectedEvidence {
 	@Override
 	public BreakendSummary getBreakendSummary() {
 		return location;
+	}
+	@Override
+	public EvidenceSource getEvidenceSource() {
+		return source;
 	}
 }

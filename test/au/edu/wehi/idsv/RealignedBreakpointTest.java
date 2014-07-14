@@ -14,7 +14,7 @@ public class RealignedBreakpointTest extends TestHelper {
 	@Test(expected=IllegalArgumentException.class)
 	public void should_throw_if_realigned_unmapped() {
 		VariantContextDirectedBreakpoint dba = AE();
-		dba = new VariantContextDirectedBreakpoint(getContext(), new VariantContextBuilder(dba).make());
+		dba = new VariantContextDirectedBreakpoint(getContext(), AES(), new VariantContextBuilder(dba).make());
 		new RealignedBreakpoint(getContext(), dba.getBreakendSummary(), B("N"), Unmapped(2));
 	}
 	@Test
@@ -104,7 +104,7 @@ public class RealignedBreakpointTest extends TestHelper {
 		r.setReadBases(B("TTTTTAAAAAAAAAT"));
 		SAMRecord realign = Read(0, 100, "5M");
 		realign.setReadBases(B("AAAAT"));
-		SoftClipEvidence sce = new SoftClipEvidence(getContext(), FWD, r);
+		SoftClipEvidence sce = new SoftClipEvidence(getContext(), SES(), FWD, r);
 		RealignedBreakpoint rbp = new RealignedBreakpoint(getContext(), sce.getBreakendSummary(), r.getReadBases(), realign);
 		// breakpoint could be anywhere in the poly A microhomology
 		assertEquals(rbp.getMicroHomologyLength(), rbp.getBreakpointSummary().end - rbp.getBreakpointSummary().start);

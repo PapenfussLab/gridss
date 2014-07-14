@@ -24,6 +24,14 @@ public class AssemblyParameters {
 	 */
 	public int maxContigsPerAssembly = 1024;
 	/**
+	 * Subgraph assembly margin in multiples of max fragment size
+	 * 
+	 * This determines how long to wait before assembling a subgraph 
+	 * Too short and we will assemble a subgraph before all evidence has been added to it
+	 * Too long and we will have a greater misassembly rate in repetitive regions
+	 */
+	public float subgraphAssemblyMargin = 3;
+	/**
 	 * Order in which contigs are 
 	 * @author Daniel Cameron
 	 *

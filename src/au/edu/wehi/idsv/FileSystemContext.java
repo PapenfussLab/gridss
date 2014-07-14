@@ -48,6 +48,7 @@ public class FileSystemContext {
 	private static final String FORMAT_BREAKEND_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".breakend.vcf";
 	private static final String FORMAT_BREAKPOINT_VCF_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s-%s.breakpoint.vcf";
 	private static final String FORMAT_BREAKPOINT_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".breakpoint.vcf";
+	private static final String FORMAT_FLAG_FILE = "%s" + COMMON_INITIAL_SUFFIX + ".%s";
 	/**
 	 * Gets the idsv intermediate working directory for the given input
 	 * @param input
@@ -121,13 +122,16 @@ public class FileSystemContext {
 	public File getRealignmentBam(File input) {
 		return new File(String.format(FORMAT_REALIGN_BAM, getStem(input)));
 	}
-	public File getRealignmentFastq(File input) {
-		return new File(String.format(FORMAT_REALIGN_FASTQ, getStem(input)));
-	}
 	public File getRealignmentBamForChr(File input, String chromosome) {
 		return new File(String.format(FORMAT_REALIGN_BAM_PER_CHR, getStem(input), chromosome));
 	}
+	public File getRealignmentFastq(File input) {
+		return new File(String.format(FORMAT_REALIGN_FASTQ, getStem(input)));
+	}
 	public File getRealignmentFastqForChr(File input, String chromosome) {
 		return new File(String.format(FORMAT_REALIGN_FASTQ_CHR, getStem(input), chromosome));
+	}
+	public File getFlagFile(File input, String flagname) {
+		return new File(String.format(FORMAT_FLAG_FILE, getStem(input), flagname));
 	}
 }

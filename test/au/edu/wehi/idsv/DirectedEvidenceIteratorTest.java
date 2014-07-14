@@ -33,6 +33,7 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 		mate = mateSorted(mate);
 		DirectedEvidenceIterator it = new DirectedEvidenceIterator(
 				getContext(),
+				SES(),
 				sv == null ? null : Iterators.peekingIterator(sv.iterator()),
 				mate == null ? null : Iterators.peekingIterator(mate.iterator()),
 				realigned == null ? null : Iterators.peekingIterator(realigned.iterator()),
@@ -84,7 +85,7 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 		assertTrue(out.get(1) instanceof SoftClipEvidence);
 	}
 	public VariantContextDirectedBreakpoint BE(int position) {
-		return new AssemblyBuilder(getContext())
+		return new AssemblyBuilder(getContext(), AES())
 			.assemblerName("test")
 			.assemblyBases(B("AA"))
 			.anchorLength(1)

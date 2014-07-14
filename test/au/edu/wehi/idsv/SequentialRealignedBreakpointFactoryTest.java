@@ -37,6 +37,10 @@ public class SequentialRealignedBreakpointFactoryTest extends TestHelper {
 		public byte[] getBreakpointQuality() {
 			return null;
 		}
+		@Override
+		public EvidenceSource getEvidenceSource() {
+			return SES();
+		}
 	}
 	@Test
 	public void should_match_by_read_name() {

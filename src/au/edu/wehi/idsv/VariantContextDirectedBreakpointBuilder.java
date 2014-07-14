@@ -20,18 +20,21 @@ import au.edu.wehi.idsv.vcf.VcfSvConstants;
 public class VariantContextDirectedBreakpointBuilder extends VariantContextBuilder {
 	public static final String SOURCE_NAME = "idsv";
 	protected final ProcessingContext processContext;
+	protected final EvidenceSource source;
 	private byte[] breakendBaseQual = null;
 	private void init() {
 		attribute(VcfSvConstants.SV_TYPE_KEY, SvType.BND.name());
 	}
-	public VariantContextDirectedBreakpointBuilder(ProcessingContext processContext) {
+	public VariantContextDirectedBreakpointBuilder(ProcessingContext processContext, EvidenceSource source) {
 		super();
 		this.processContext = processContext;
+		this.source = source;
 		init();
 	}
-	public VariantContextDirectedBreakpointBuilder(ProcessingContext processContext, VariantContext parent) {
+	public VariantContextDirectedBreakpointBuilder(ProcessingContext processContext, EvidenceSource source, VariantContext parent) {
 		super(parent);
 		this.processContext = processContext;
+		this.source = source;
 		init();
 	}
 	private String getBreakendString() {
@@ -154,7 +157,7 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
         if (underlying.getEnd() < underlying.getStart() && underlying.getEnd() == -1) {
         	throw new IllegalStateException(String.format("Sanity check failure: stop not set for %s", underlying)); 
         }
-		return new VariantContextDirectedBreakpoint(processContext, underlying, this.breakendBaseQual);
+		return new VariantContextDirectedBreakpoint(processContext, source, underlying, this.breakendBaseQual);
 	}
 }
 

@@ -23,6 +23,10 @@ public class BreakpointFastqEncodingTest extends TestHelper {
 		public byte[] getBreakpointQuality() {
 			return new byte[] { 1, 2, 3, 4 };
 		}
+		@Override
+		public EvidenceSource getEvidenceSource() {
+			return null;
+		}
 	}
 	@Test
 	public void should_round_trip_ID() {

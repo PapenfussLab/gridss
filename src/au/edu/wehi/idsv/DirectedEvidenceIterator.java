@@ -19,14 +19,20 @@ import com.google.common.collect.PeekingIterator;
  */
 public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence> {
 	private static final int INITIAL_BUFFER_SIZE = 32;
+	/**
+	 * Number of fragment lengths to advance before matching breakend evidence with the realignment SAMRecord.
+	 * This delay is required as the realignments are ordered by breakend position, whereas SAMRecord evidence
+	 * is traversed according to the SAMRecord start coordinate.
+	 */
+	private static final float WINDOW_LAG_FRAG_LENGTHS = 1;
 	private final ProcessingContext processContext;
+	private final EvidenceSource source;
 	private final PeekingIterator<SAMRecord> svIterator;
 	private final PeekingIterator<VariantContext> vcfIterator;
 	private final SequentialNonReferenceReadPairFactory mateFactory;
 	private final SequentialRealignedBreakpointFactory realignFactory;
-	private final PriorityQueue<DirectedEvidence> calls = new PriorityQueue<DirectedEvidence>(INITIAL_BUFFER_SIZE, new DirectedEvidenceCoordinateIntervalComparator());
+	private final PriorityQueue<DirectedEvidence> calls = new PriorityQueue<DirectedEvidence>(INITIAL_BUFFER_SIZE, DirectedEvidenceOrder.ByStartStart2EndEnd2);
 	private long currentLinearPosition = -1;
-	
 	/**
 	 * Iterates over breakpoint evidence
 	 * @param sv structural variation supporting reads. Must be sorted by coordinate
@@ -36,11 +42,13 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 	 */
 	public DirectedEvidenceIterator(
 			ProcessingContext processContext,
+			EvidenceSource source,
 			PeekingIterator<SAMRecord> sv,
 			PeekingIterator<SAMRecord> mate,
 			PeekingIterator<SAMRecord> realign,
 			Iterator<VariantContext> vcf) {
 		this.processContext = processContext;
+		this.source = source;
 		this.svIterator = sv;
 		this.vcfIterator = vcf == null ? null : Iterators.peekingIterator(new PassFiltersIterator<VariantContext>(vcf));
 		this.mateFactory = new SequentialNonReferenceReadPairFactory(mate);
@@ -49,7 +57,7 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 	@Override
 	protected DirectedEvidence computeNext() {
 		do {
-			if (!calls.isEmpty() && processContext.getLinear().getStartLinearCoordinate(calls.peek().getBreakendSummary()) < currentLinearPosition - processContext.getMetrics().getMaxFragmentSize()) {
+			if (!calls.isEmpty() && processContext.getLinear().getStartLinearCoordinate(calls.peek().getBreakendSummary()) < currentLinearPosition - WINDOW_LAG_FRAG_LENGTHS * source.getMetrics().getMaxFragmentSize()) {
 				return fixCall(calls.poll());
 			}
 		} while (advance());
@@ -71,7 +79,7 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 			VariantContextDirectedBreakpoint assembly = (VariantContextDirectedBreakpoint)evidence;
 			SAMRecord realigned = realignFactory.findRealignedSAMRecord(assembly);
 			if (realigned != null) {
-				VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(processContext, assembly);
+				VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(processContext, source, assembly);
 				if (realigned.getReadUnmappedFlag()) {
 					builder.realignmentFailed();
 				} else {
@@ -106,20 +114,20 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 		return true;
 	}
 	private void processVariant(VariantContext variant) {
-		IdsvVariantContext managedContext = IdsvVariantContext.create(processContext, variant);
+		IdsvVariantContext managedContext = IdsvVariantContext.create(processContext, source, variant);
 		if (managedContext instanceof DirectedEvidence) {
 			calls.add((DirectedEvidence)managedContext);
 		}
 	}
 	private void processRead(SAMRecord record) {
 		if (SAMRecordUtil.getStartSoftClipLength(record) > 0) {
-			calls.add(new SoftClipEvidence(processContext, BreakendDirection.Backward, record));
+			calls.add(new SoftClipEvidence(processContext, (SAMEvidenceSource)source, BreakendDirection.Backward, record));
 		}
 		if (SAMRecordUtil.getEndSoftClipLength(record) > 0) {
-			calls.add(new SoftClipEvidence(processContext, BreakendDirection.Forward, record));
+			calls.add(new SoftClipEvidence(processContext, (SAMEvidenceSource)source, BreakendDirection.Forward, record));
 		}
 		if (SAMRecordUtil.isPartOfNonReferenceReadPair(record)) {
-			NonReferenceReadPair pair = mateFactory.createNonReferenceReadPair(record, processContext.getMetrics().getMaxFragmentSize());
+			NonReferenceReadPair pair = mateFactory.createNonReferenceReadPair(record, (SAMEvidenceSource)source);
 			if (pair != null) {
 				calls.add(pair);
 			}

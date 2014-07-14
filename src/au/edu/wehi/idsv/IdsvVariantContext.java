@@ -18,9 +18,11 @@ import com.google.common.primitives.Ints;
  */
 public class IdsvVariantContext extends VariantContext {
 	protected final ProcessingContext processContext;
-	public IdsvVariantContext(ProcessingContext processContext, VariantContext context) {
+	private final EvidenceSource source;
+	public IdsvVariantContext(ProcessingContext processContext, EvidenceSource source, VariantContext context) {
 		super(context);
 		this.processContext = processContext;
+		this.source = source;
 	}
 	/**
      * @return reference index for the given sequence name, or -1 if the variant is not on a reference contig
@@ -33,11 +35,11 @@ public class IdsvVariantContext extends VariantContext {
 	 * @param context variant context
 	 * @return variant context sub-type
 	 */
-	public static IdsvVariantContext create(ProcessingContext processContext, VariantContext context) {
-		VariantContextDirectedBreakpoint vcdp = new VariantContextDirectedBreakpoint(processContext, context);
+	public static IdsvVariantContext create(ProcessingContext processContext, EvidenceSource source, VariantContext context) {
+		VariantContextDirectedBreakpoint vcdp = new VariantContextDirectedBreakpoint(processContext, source, context);
 		if (vcdp.isValid()) return vcdp;
 		// Not a variant generated or handled by us
-		return new IdsvVariantContext(processContext, context);
+		return new IdsvVariantContext(processContext, source, context);
 	}
 	public boolean isValid() {
 		return true;
@@ -73,5 +75,8 @@ public class IdsvVariantContext extends VariantContext {
 		} else {
 			throw new IllegalStateException(String.format("Error parsing attribute %s=%s of %s", attrName, x, super.toString()));
 		}
+	}
+	public EvidenceSource getEvidenceSource() {
+		return source;
 	}
 }

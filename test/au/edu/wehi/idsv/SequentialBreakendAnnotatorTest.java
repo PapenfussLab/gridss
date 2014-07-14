@@ -18,29 +18,29 @@ public class SequentialBreakendAnnotatorTest extends TestHelper {
 	}
 	@Test
 	public void should_add_breakpoint_supporting_evidence() {
-		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext());
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext(), AES());
 		builder
 			.loc("polyA", 1, 1)
 			.alleles("A", "A[polyA:10[");
 		VariantContextDirectedBreakpoint result = go(L(
-				(DirectedEvidence)new SoftClipEvidence(getContext(), FWD, Read(0, 1, "1M3S"), Read(0, 10, "3M"))
+				(DirectedEvidence)new SoftClipEvidence(getContext(), SES(), FWD, Read(0, 1, "1M3S"), Read(0, 10, "3M"))
 			), builder.make());
 		assertEquals(1, result.getAttributeAsInt(VcfAttributes.SOFT_CLIP_READ_COUNT.attribute(), 0));
 	}
 	@Test
 	public void should_add_breakend_supporting_evidence() {
-		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext());
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext(), AES());
 		builder
 			.loc("polyA", 1, 1)
 			.alleles("A", "A[polyA:10[");
 		VariantContextDirectedBreakpoint result = go(L(
-				(DirectedEvidence)new SoftClipEvidence(getContext(), FWD, Read(0, 1, "1M3S"))
+				(DirectedEvidence)new SoftClipEvidence(getContext(), SES(), FWD, Read(0, 1, "1M3S"))
 			), builder.make());
 		assertEquals(1, result.getAttributeAsInt(VcfAttributes.SOFT_CLIP_READ_COUNT.attribute(), 0));
 	}
 	@Test
 	public void should_use_assembly_sequence() {
-		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext());
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext(), AES());
 		builder
 			.loc("polyA", 1, 1)
 			.alleles("A", "A[polyA:10[");
@@ -51,13 +51,13 @@ public class SequentialBreakendAnnotatorTest extends TestHelper {
 	}
 	@Test
 	public void should_merge_supporting_evidence() {
-		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext());
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext(), AES());
 		builder
 			.loc("polyA", 1, 1)
 			.alleles("A", "A[polyA:10[");
 		VariantContextDirectedBreakpoint result = go(L(
-				(DirectedEvidence)new SoftClipEvidence(getContext(), FWD, Read(0, 1, "1M3S"), Read(0, 10, "3M")),
-				(DirectedEvidence)new SoftClipEvidence(getContext(), FWD, Read(0, 1, "1M3S"), Read(0, 10, "3M")),
+				(DirectedEvidence)new SoftClipEvidence(getContext(), SES(), FWD, Read(0, 1, "1M3S"), Read(0, 10, "3M")),
+				(DirectedEvidence)new SoftClipEvidence(getContext(), SES(), FWD, Read(0, 1, "1M3S"), Read(0, 10, "3M")),
 				(DirectedEvidence)AE(new BreakpointSummary(0, FWD, 1, 1, 0, BWD, 10, 10, null), 1, 2, 3, "TT")
 			), builder.make());
 		assertEquals(2, result.getAttributeAsInt(VcfAttributes.SOFT_CLIP_READ_COUNT.attribute(), 0));
@@ -66,23 +66,23 @@ public class SequentialBreakendAnnotatorTest extends TestHelper {
 	}
 	@Test
 	public void should_not_add_breakend_nonsupporting_evidence() {
-		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext());
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext(), AES());
 		builder
 			.loc("polyA", 1, 1)
 			.alleles("A", "A[polyA:10[");
 		VariantContextDirectedBreakpoint result = go(L(
-				(DirectedEvidence)new SoftClipEvidence(getContext(), BWD, Read(0, 1, "3S1M"), Read(0, 10, "3M"))
+				(DirectedEvidence)new SoftClipEvidence(getContext(), SES(), BWD, Read(0, 1, "3S1M"), Read(0, 10, "3M"))
 			), builder.make());
 		assertEquals(0, result.getAttributeAsInt(VcfAttributes.SOFT_CLIP_READ_COUNT.attribute(), 0));
 	}
 	@Test
 	public void should_not_add_breakpoint_nonsupporting_evidence() {
-		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext());
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext(), AES());
 		builder
 			.loc("polyA", 1, 1)
 			.alleles("A", "A[polyA:10[");
 		VariantContextDirectedBreakpoint result = go(L(
-				(DirectedEvidence)new SoftClipEvidence(getContext(), FWD, withSequence("TTTTTTTT", Read(0, 1, "3S1M3S"))[0], withSequence("TTT", Read(0, 12, "3M"))[0])
+				(DirectedEvidence)new SoftClipEvidence(getContext(), SES(), FWD, withSequence("TTTTTTTT", Read(0, 1, "3S1M3S"))[0], withSequence("TTT", Read(0, 12, "3M"))[0])
 			), builder.make());
 		assertEquals(0, result.getAttributeAsInt(VcfAttributes.SOFT_CLIP_READ_COUNT.attribute(), 0));
 	}

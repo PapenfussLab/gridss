@@ -65,21 +65,21 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void should_assemble_single_read() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), 4, BreakendDirection.Forward);
+		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(), 4, BreakendDirection.Forward);
 		addRead(ass, R("AAAACGTC"), true);
 		VariantContextDirectedBreakpoint result = ass.assembleVariant(0, 1);
 		assertEquals("AAAACGTC", result.getAssemblyConsensus());
 	}
 	@Test
 	public void should_assemble_positive_strand_consensus() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), 4, BreakendDirection.Forward);
+		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(), 4, BreakendDirection.Forward);
 		addRead(ass, R(null, "AAAACGTC", null, true, true), true);
 		VariantContextDirectedBreakpoint result = ass.assembleVariant(0, 1);
 		assertEquals("AAAACGTC", result.getAssemblyConsensus());
 	}
 	@Test
 	public void should_assemble_unanchored_reads() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(),3, BreakendDirection.Forward);
+		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, BreakendDirection.Forward);
 		addRead(ass, withSequence("CTAAA", Read(0, 1, "4M1S"))[0], true);
 		addRead(ass, R(null, "AAAGT", null, false, true), false);
 		VariantContextDirectedBreakpoint result = ass.assembleVariant(0, 1);
@@ -88,7 +88,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test(expected = RuntimeException.class)  
 	public void unanchored_reads_should_require_mapped_mate() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(),3, BreakendDirection.Forward);
+		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, BreakendDirection.Forward);
 		addRead(ass, R("CTAAA"), true);
 		SAMRecord unanchored = R(null, "AAAGT", null, false, true);
 		unanchored.setMateUnmappedFlag(true);
@@ -114,7 +114,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		if (direction == BWD) anchor.setCigarString("1S4M");
 		
 		// Assembly should not depend on whether the read is mapped or not 
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(),3, direction);
+		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, direction);
 		addRead(ass, anchor, true);
 		SAMRecord unanchored = R(null, unanchorSeq, null, mappedNegativeStrand, mateNegativeStrand);
 		unanchored.setReadUnmappedFlag(true);
@@ -123,7 +123,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		assertEquals(expectedSeq, result.getAssemblyConsensus());
 		assertEquals(breakendSequence, result.getBreakpointSequenceString());
 		
-		ass = new DeBruijnAnchoredGraph(getContext(),3, direction);
+		ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, direction);
 		addRead(ass, anchor, true);
 		unanchored = R(null, unanchorSeq, null, mappedNegativeStrand, mateNegativeStrand);
 		unanchored.setReadUnmappedFlag(false);
@@ -135,7 +135,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void should_assemble_soft_clipped_read() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), 4, BreakendDirection.Forward);
+		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(), 4, BreakendDirection.Forward);
 		SAMRecord sc = R("AAAACGTC");
 		sc.setCigarString("4M4S");
 		addRead(ass, sc, true);
@@ -145,7 +145,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void should_greedy_traverse_highest_weight_path() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(),2, BreakendDirection.Forward);
+		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),2, BreakendDirection.Forward);
 		SAMRecord sc = R(null, "ACGTACTGAG", new byte[] { 1,2,3,4,5,6,7,8,9,10}, false, true);
 		sc.setCigarString("4M6S");
 		addRead(ass, sc, true);
@@ -154,7 +154,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void should_assemble_backward_breakpoint() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), 4, BreakendDirection.Backward);
+		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(), 4, BreakendDirection.Backward);
 		SAMRecord sc = R("AAAACGTC");
 		sc.setCigarString("4S4M");
 		addRead(ass, sc, true);
@@ -164,7 +164,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void remove_should_exclude_from_graph() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), 4, BreakendDirection.Forward);
+		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(), 4, BreakendDirection.Forward);
 		SAMRecord sc = R("AAAACGTC");
 		sc.setCigarString("4M4S");
 		addRead(ass, sc, true);
@@ -178,7 +178,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void should_use_offset_kmer_if_softclip_longer_than_k() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), 4, BreakendDirection.Forward);
+		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(), 4, BreakendDirection.Forward);
 		SAMRecord sc = R("AAAACGTC");
 		sc.setCigarString("2M6S");
 		addRead(ass, sc, true);
@@ -188,7 +188,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void assembly_base_quality_should_be_sum_of_min_read_qualities() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(),3, BreakendDirection.Forward);
+		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, BreakendDirection.Forward);
 		addRead(ass, R(null, "ACGTA", new byte[] { 1,2,3,4,5 }, false, true), true);
 		addRead(ass, R(null, "ACGTA", new byte[] { 3,4,5,6,7 }, false, true), true);
 		VariantContextDirectedBreakpoint result = ass.assembleVariant(0, 1);
@@ -197,7 +197,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	// @Test // can't see the anchor qualities in the current API
 	public void assembly_base_quality_should_pad_to_match_read_length() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(),3, BreakendDirection.Forward);
+		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, BreakendDirection.Forward);
 		addRead(ass, R(null, "ACGTA", new byte[] { 1,2,3,4,5 }, false, true), true);
 		addRead(ass, R(null, "ACGTA", new byte[] { 3,4,5,6,7 }, false, true), true);
 		VariantContextDirectedBreakpoint result = ass.assembleVariant(0, 1);
@@ -206,7 +206,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void read_count_should_be_number_of_reads__with_at_least_one_kmer_on_path() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(),3, BreakendDirection.Forward);
+		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, BreakendDirection.Forward);
 		addRead(ass, R(null, "ACGTT", new byte[] { 1,2,3,4,5 }, false, true), true);
 		addRead(ass, R(null, "ACGTA", new byte[] { 3,4,5,6,7 }, false, true), true);
 		addRead(ass, R(null, "AAAAA", new byte[] { 1,1,1,1,1 }, false, true), true);
@@ -219,13 +219,13 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	// with 0 length soft clips
 	public SoftClipEvidence HackSCE(String seq, byte[] qual) {
 		SAMRecord read = withQual(qual, withSequence(seq, Read(0, 1, "4M1S")))[0];
-		SoftClipEvidence e = new SoftClipEvidence(getContext(), FWD, read);
+		SoftClipEvidence e = new SoftClipEvidence(getContext(), SES(), FWD, read);
 		read.setCigarString("5M"); // now we remove the soft clip out from under the SCE since it assumes SAMRecords are immutable 
 		return e;
 	}
 	@Test
 	public void read_base_count_should_be_number_of_read_bases_on_returned_path() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(),3, BreakendDirection.Forward);
+		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, BreakendDirection.Forward);
 		ass.addEvidence(HackSCE("ACGTT", new byte[] { 1,2,3,4,5 })); // 4
 		ass.addEvidence(HackSCE("ACGTA", new byte[] { 3,4,5,6,7 })); // 5
 		ass.addEvidence(HackSCE("AAAAA", new byte[] { 1,1,1,1,1 })); // 0 since no kmer on path

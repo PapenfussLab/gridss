@@ -17,4 +17,9 @@ public interface DirectedEvidence {
 	 * @return Unique breakpoint identifier string
 	 */
 	String getEvidenceID();
+	/**
+	 * Source of this evidence
+	 * @return Source providing this evidence
+	 */
+	EvidenceSource getEvidenceSource();
 }

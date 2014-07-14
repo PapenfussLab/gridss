@@ -31,11 +31,11 @@ public class VariantContextDirectedBreakpoint extends IdsvVariantContext impleme
 	private final String anchorSequence;
 	private final byte[] breakendBaseQual;
 	//private static Log LOG = Log.getInstance(VariantContextDirectedBreakpoint.class);
-	public VariantContextDirectedBreakpoint(ProcessingContext processContext, VariantContext context) {
-		this(processContext, context, null);
+	public VariantContextDirectedBreakpoint(ProcessingContext processContext, EvidenceSource source, VariantContext context) {
+		this(processContext, source, context, null);
 	}
-	public VariantContextDirectedBreakpoint(ProcessingContext processContext, VariantContext context, byte[] breakendBaseQual) {
-		super(processContext, context);
+	public VariantContextDirectedBreakpoint(ProcessingContext processContext, EvidenceSource source, VariantContext context, byte[] breakendBaseQual) {
+		super(processContext, source, context);
 		this.breakendBaseQual = breakendBaseQual;
 		// calculate fields
 		List<Allele> altList = getAlternateAlleles();
@@ -191,10 +191,10 @@ public class VariantContextDirectedBreakpoint extends IdsvVariantContext impleme
 	 * @param variants input variants
 	 * @return breakend variants
 	 */
-	public static Iterator<VariantContextDirectedBreakpoint> breakendIterator(final ProcessingContext context, final Iterator<VariantContext> variants) {
+	public static Iterator<VariantContextDirectedBreakpoint> breakendIterator(final ProcessingContext context, final EvidenceSource source, final Iterator<VariantContext> variants) {
 		 Iterator<VariantContextDirectedBreakpoint> it = Iterators.transform(variants, new Function<VariantContext, VariantContextDirectedBreakpoint>() {
 			public VariantContextDirectedBreakpoint apply(VariantContext v) {
-				return new VariantContextDirectedBreakpointBuilder(context, v).make();
+				return new VariantContextDirectedBreakpointBuilder(context, source, v).make();
 			}
 		});
 		it = Iterators.filter(it, new Predicate<VariantContextDirectedBreakpoint>() {

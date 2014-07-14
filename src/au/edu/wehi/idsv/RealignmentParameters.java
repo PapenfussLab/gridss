@@ -10,8 +10,14 @@ public class RealignmentParameters {
 	 * Minimum average breakend quality score to be considered for realignment 
 	 */
 	public float minAverageQual = 5;
-	public boolean meetsCritera(SoftClipEvidence sce) {
-		return sce.getSoftClipLength() >= minLength
-				&& sce.getAverageClipQuality() >= minAverageQual;
+	public boolean shouldRealignBreakend(SoftClipEvidence evidence) {
+		if (evidence.getBreakendSummary() instanceof BreakpointSummary) return false;
+		return evidence.getSoftClipLength() >= minLength
+				&& evidence.getAverageClipQuality() >= minAverageQual;
+	}
+	public boolean shouldRealignBreakend(VariantContextDirectedBreakpoint evidence) {
+		if (evidence.getBreakendSummary() instanceof BreakpointSummary) return false;
+		return evidence.getBreakpointSequence().length >= minLength;
+				//&& evidence.getAssemblyQuality() >= minAverageQual;
 	}
 }

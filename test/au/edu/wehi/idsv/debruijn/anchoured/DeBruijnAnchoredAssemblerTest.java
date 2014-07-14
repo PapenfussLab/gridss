@@ -12,6 +12,7 @@ import au.edu.wehi.idsv.AssemblyMethod;
 import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;
+import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
@@ -23,11 +24,12 @@ import com.google.common.collect.Lists;
 
 public class DeBruijnAnchoredAssemblerTest extends TestHelper {
 	public List<VariantContextDirectedBreakpoint> go(int k, DirectedEvidence... evidence) {
-		AssemblyParameters p = new AssemblyParameters();
+		ProcessingContext pc = getContext();
+		AssemblyParameters p = pc.getAssemblyParameters();
 		p.k = k;
 		p.method = AssemblyMethod.DEBRUIJN_PER_POSITION;
 		List<VariantContextDirectedBreakpoint> list = Lists.newArrayList();
-		DeBruijnAnchoredAssembler assembler = new DeBruijnAnchoredAssembler(getContext(), p);
+		DeBruijnAnchoredAssembler assembler = new DeBruijnAnchoredAssembler(pc, AES());
 		for (DirectedEvidence e : evidence) {
 			Iterable<VariantContextDirectedBreakpoint> it = assembler.addEvidence(e);
 			if (it != null) {
@@ -61,8 +63,8 @@ public class DeBruijnAnchoredAssemblerTest extends TestHelper {
 	public void should_filter_if_no_breakpoint_assembly() {
 		// polyA reads assemble as anchor kmer
 		List<VariantContextDirectedBreakpoint> r = go(3,
-				new SoftClipEvidence(getContext(), BreakendDirection.Backward, Read(0, 1, "2S5M")),
-				new SoftClipEvidence(getContext(), BreakendDirection.Backward, Read(0, 1, "3S5M"))
+				new SoftClipEvidence(getContext(), SES(),BreakendDirection.Backward, Read(0, 1, "2S5M")),
+				new SoftClipEvidence(getContext(), SES(),BreakendDirection.Backward, Read(0, 1, "3S5M"))
 		); 
 		assertEquals(1, r.size());
 		assertTrue(r.get(0).isFiltered());

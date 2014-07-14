@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
+import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;
@@ -22,6 +23,7 @@ import com.google.common.collect.Iterables;
  */
 public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 	private final ProcessingContext processContext;
+	private final AssemblyEvidenceSource source;
 	private final AssemblyParameters parameters;
 	/**
 	 * Array size is 2: forward then backward graphs
@@ -29,8 +31,9 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 	private DeBruijnReadGraph fgraph;
 	private DeBruijnReadGraph bgraph;
 	private int currentReferenceIndex = -1;
-	public DeBruijnSubgraphAssembler(ProcessingContext processContext) {
+	public DeBruijnSubgraphAssembler(ProcessingContext processContext, AssemblyEvidenceSource source) {
 		this.processContext = processContext;
+		this.source = source;
 		this.parameters = processContext.getAssemblyParameters();
 	}
 	@Override
@@ -48,7 +51,7 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 		int startpos = evidence.getBreakendSummary().start;
 		// make sure we have enough margin that we don't assemble a variant before all the
 		// evidence for it is available
-		int shouldBeCompletedPos = startpos - 3 * processContext.getMetrics().getMaxFragmentSize();
+		int shouldBeCompletedPos = (int)(startpos - processContext.getAssemblyParameters().subgraphAssemblyMargin * source.getMetrics().getMaxFragmentSize());
 		it = Iterables.concat(it, assembleBefore(shouldBeCompletedPos));
 		return it;
 	}
@@ -58,8 +61,8 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 	}
 	private void init(int referenceIndex) {
 		currentReferenceIndex = referenceIndex;
-		fgraph = new DeBruijnReadGraph(processContext, referenceIndex, BreakendDirection.Forward, parameters);
-		bgraph = new DeBruijnReadGraph(processContext, referenceIndex, BreakendDirection.Backward, parameters);
+		fgraph = new DeBruijnReadGraph(processContext, source, referenceIndex, BreakendDirection.Forward, parameters);
+		bgraph = new DeBruijnReadGraph(processContext, source, referenceIndex, BreakendDirection.Backward, parameters);
 	}
 	private Iterable<VariantContextDirectedBreakpoint> assembleAll() {
 		return assembleBefore(Integer.MAX_VALUE);

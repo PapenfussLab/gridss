@@ -34,7 +34,7 @@ public class FastqBreakpointWriterTest extends TestHelper {
 	public void should_call_rec() {
 		MockWriter w = new MockWriter();
 		FastqBreakpointWriter fw = new FastqBreakpointWriter(w);
-		fw.write(new SoftClipEvidence(getContext(), BreakendDirection.Forward, Read(0, 1, "1M1S")));
+		fw.write(new SoftClipEvidence(getContext(), SES(), BreakendDirection.Forward, Read(0, 1, "1M1S")));
 		assertEquals(1, w.list.size());
 	}
 }

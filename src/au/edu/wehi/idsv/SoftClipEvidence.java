@@ -12,15 +12,17 @@ import au.edu.wehi.idsv.vcf.VcfAttributes;
 
 public class SoftClipEvidence implements DirectedBreakpoint {
 	private final ProcessingContext processContext;
+	private final SAMEvidenceSource source;
 	private final SAMRecord record;
 	private final BreakendSummary location;
 	private final RealignedBreakpoint realigned;
-	public SoftClipEvidence(ProcessingContext processContext, BreakendDirection direction, SAMRecord record, SAMRecord realigned) {
+	public SoftClipEvidence(ProcessingContext processContext, SAMEvidenceSource source, BreakendDirection direction, SAMRecord record, SAMRecord realigned) {
 		if (record == null) throw new IllegalArgumentException("record is null");
 		if (direction == null) throw new IllegalArgumentException("direction is null");
 		if (record.getReadUnmappedFlag()) throw new IllegalArgumentException(String.format("record %s is unmapped", record.getReadName()));
 		if (record.getReadBases() == null || record.getReadBases() == SAMRecord.NULL_SEQUENCE ) throw new IllegalArgumentException(String.format("record %s missing sequence information", record.getReadName()));
 		this.processContext = processContext;
+		this.source = source;
 		this.record = record;
 		int pos = direction == BreakendDirection.Forward ? record.getAlignmentEnd() : record.getAlignmentStart();
 		BreakendSummary local = new BreakendSummary(record.getReferenceIndex(), direction, pos, pos, new EvidenceMetrics());		
@@ -41,11 +43,11 @@ public class SoftClipEvidence implements DirectedBreakpoint {
 	public static int getSoftClipLength(BreakendDirection direction, SAMRecord record) {
 		return direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipLength(record) : SAMRecordUtil.getStartSoftClipLength(record); 
 	}
-	public SoftClipEvidence(ProcessingContext processContext, BreakendDirection direction, SAMRecord record) {
-		this(processContext, direction, record, null);
+	public SoftClipEvidence(ProcessingContext processContext, SAMEvidenceSource source, BreakendDirection direction, SAMRecord record) {
+		this(processContext, source, direction, record, null);
 	}
 	public SoftClipEvidence(SoftClipEvidence evidence, SAMRecord realigned) {
-		this(evidence.processContext, evidence.location.direction, evidence.record, realigned);
+		this(evidence.processContext, evidence.source, evidence.location.direction, evidence.record, realigned);
 	}
 	@Override
 	public String getEvidenceID() {
@@ -127,5 +129,8 @@ public class SoftClipEvidence implements DirectedBreakpoint {
 	}
 	public int getMappingQuality() {
 		return record.getMappingQuality();
+	}
+	public SAMEvidenceSource getEvidenceSource() {
+		return source;
 	}
 }

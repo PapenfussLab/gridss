@@ -4,11 +4,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.PriorityQueue;
 
-import au.edu.wehi.idsv.AssemblyParameters;
+import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.DirectedEvidenceEndCoordinateComparator;
+import au.edu.wehi.idsv.DirectedEvidenceOrder;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.ReadEvidenceAssembler;
@@ -29,13 +29,13 @@ import com.google.common.collect.Lists;
 public class DeBruijnAnchoredAssembler implements ReadEvidenceAssembler {
 	private final DeBruijnAnchoredGraph graphf;
 	private final DeBruijnAnchoredGraph graphb;
-	private final PriorityQueue<DirectedEvidence> activef = new PriorityQueue<DirectedEvidence>(1024, new DirectedEvidenceEndCoordinateComparator());
-	private final PriorityQueue<DirectedEvidence> activeb = new PriorityQueue<DirectedEvidence>(1024, new DirectedEvidenceEndCoordinateComparator());
+	private final PriorityQueue<DirectedEvidence> activef = new PriorityQueue<DirectedEvidence>(1024, DirectedEvidenceOrder.ByEndStart);
+	private final PriorityQueue<DirectedEvidence> activeb = new PriorityQueue<DirectedEvidence>(1024, DirectedEvidenceOrder.ByEndStart);
 	private int currentReferenceIndex = -1;
 	private int currentPosition = -1;
-	public DeBruijnAnchoredAssembler(ProcessingContext processContext) {
-		this.graphf = new DeBruijnAnchoredGraph(processContext, processContext.getAssemblyParameters().k, BreakendDirection.Forward);
-		this.graphb = new DeBruijnAnchoredGraph(processContext, processContext.getAssemblyParameters().k, BreakendDirection.Backward);
+	public DeBruijnAnchoredAssembler(ProcessingContext processContext, AssemblyEvidenceSource source) {
+		this.graphf = new DeBruijnAnchoredGraph(processContext, source, processContext.getAssemblyParameters().k, BreakendDirection.Forward);
+		this.graphb = new DeBruijnAnchoredGraph(processContext, source, processContext.getAssemblyParameters().k, BreakendDirection.Backward);
 	}
 	private VariantContextDirectedBreakpoint createAssemblyBreakend(DeBruijnAnchoredGraph graph, BreakendDirection direction) {
 		VariantContextDirectedBreakpoint variant = graph.assembleVariant(currentReferenceIndex, currentPosition);

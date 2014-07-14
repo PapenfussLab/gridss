@@ -2,7 +2,11 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
+import java.util.ArrayList;
+
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
@@ -13,7 +17,7 @@ import au.edu.wehi.idsv.vcf.VcfAttributes;
 public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 	@Test
 	public void evidenceID_should_be_ID() {
-		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext())
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext(), AES())
 			.breakend(new BreakendSummary(0, FWD, 1, 1, null), null);
 		builder.id("testID");
 		VariantContextDirectedBreakpoint bp = builder.make();
@@ -22,13 +26,8 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 		assertEquals("testID", bp.getEvidenceID());
 	}
 	@Test
-	public void null_reference_should_result_in_N_ref_call() {
-		assertEquals("N", new VariantContextDirectedBreakpointBuilder(new ProcessingContext(null, getSequenceDictionary(), null))
-			.breakend(new BreakendSummary(0, BreakendDirection.Forward, 1, 1, null), null).make().getReference().getDisplayString());
-	}
-	@Test
 	public void should_lookup_reference_base() {
-		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext());
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext(), AES());
 		builder.breakend(new BreakendSummary(0, BreakendDirection.Forward, 1, 1, null), null);
 		VariantContextDirectedBreakpoint bp = builder.make();
 		
@@ -38,27 +37,27 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 	public void should_round_trip_AssemblerProgram() {
 		VariantContextDirectedBreakpoint dba = AE();
 		assertEquals("testAssembler", dba.getAssemblerProgram());
-		dba = new VariantContextDirectedBreakpoint(getContext(), new VariantContextBuilder(dba).make());
+		dba = new VariantContextDirectedBreakpoint(getContext(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals("testAssembler", dba.getAssemblerProgram());
 	}
 	@Test
 	public void should_round_trip_getAssemblyConsensus() {
 		VariantContextDirectedBreakpoint dba = AE();
 		assertEquals("ATT", dba.getAssemblyConsensus());
-		dba = new VariantContextDirectedBreakpoint(getContext(), new VariantContextBuilder(dba).make());
+		dba = new VariantContextDirectedBreakpoint(getContext(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals("ATT", dba.getAssemblyConsensus());
 	}
 	@Test
 	public void getBreakpointSequence_should_get_untemplated_sequence() {
 		VariantContextDirectedBreakpoint dba = AE();
 		assertEquals("TT", S(dba.getBreakpointSequence()));
-		dba = new VariantContextDirectedBreakpoint(getContext(), new VariantContextBuilder(dba).make());
+		dba = new VariantContextDirectedBreakpoint(getContext(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals("TT", S(dba.getBreakpointSequence()));
 	}
 	@Test
 	public void should_match_variant_location_f() {
 		VariantContextDirectedBreakpoint dba = AB().referenceAnchor(0, 10).makeVariant(); 
-		dba = new VariantContextDirectedBreakpoint(getContext(), new VariantContextBuilder(dba).make());
+		dba = new VariantContextDirectedBreakpoint(getContext(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals("polyA", dba.getChr());
 		assertEquals(10, dba.getStart());
 		assertEquals(10, dba.getEnd());
@@ -66,7 +65,7 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 	@Test
 	public void should_match_variant_location_b() {
 		VariantContextDirectedBreakpoint dba = AB().referenceAnchor(0, 10).direction(BWD).makeVariant();
-		dba = new VariantContextDirectedBreakpoint(getContext(), new VariantContextBuilder(dba).make());
+		dba = new VariantContextDirectedBreakpoint(getContext(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals("polyA", dba.getChr());
 		assertEquals(10, dba.getStart());
 		assertEquals(10, dba.getEnd());
@@ -74,13 +73,13 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 	@Test
 	public void id_should_be_based_on_assembler_position_direction() {
 		VariantContextDirectedBreakpoint dba = AE();
-		dba = new VariantContextDirectedBreakpoint(getContext(), new VariantContextBuilder(dba).make());
+		dba = new VariantContextDirectedBreakpoint(getContext(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals("testAssembler-polyA:1-f", dba.getID());
 	}
 	@Test
 	public void phred_should_be_evidence_score() {
 		VariantContextDirectedBreakpoint dba = AE();
-		dba = new VariantContextDirectedBreakpoint(getContext(), new VariantContextBuilder(dba).make());
+		dba = new VariantContextDirectedBreakpoint(getContext(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals(dba.getBreakendSummary().evidence.getScore(), dba.getPhredScaledQual(), 0);
 	}
 	@Test
@@ -88,7 +87,7 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 		VariantContextDirectedBreakpoint dba = AB().assemblyBases(B("NNGT")).anchorLength(2).makeVariant(); 
 		// ref base + breakpoint
 		assertEquals("AGT.", dba.getAlternateAllele(0).getDisplayString());
-		dba = new VariantContextDirectedBreakpoint(getContext(), new VariantContextBuilder(dba).make());
+		dba = new VariantContextDirectedBreakpoint(getContext(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals("AGT.", dba.getAlternateAllele(0).getDisplayString());
 	}
 	@Test
@@ -96,12 +95,12 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 		// ref base + breakpoint
 		VariantContextDirectedBreakpoint dba = AB().assemblyBases(B("GTNN")).anchorLength(2).direction(BWD).makeVariant();
 		assertEquals(".GTA", dba.getAlternateAllele(0).getDisplayString());
-		dba = new VariantContextDirectedBreakpoint(getContext(), new VariantContextBuilder(dba).make());
+		dba = new VariantContextDirectedBreakpoint(getContext(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals(".GTA", dba.getAlternateAllele(0).getDisplayString());
 	}
 	@Test
 	public void should_set_realignment_failure_flag() {
-		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext())
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext(), AES())
 			.breakend(new BreakendSummary(0, FWD, 1, 1, null), null)
 			.realignmentFailed();
 		VariantContextDirectedBreakpoint bp = builder.make();
@@ -114,12 +113,12 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 	}
 	public VariantContextDirectedBreakpoint test_mated_breakend(BreakendDirection direction, boolean realignPositive, String bpString, String realignedCigar, String expectedAllele) {
 		VariantContextDirectedBreakpoint dba = AB().direction(direction).anchorLength(0).assemblyBases(B(bpString)).makeVariant();
-		dba = new VariantContextDirectedBreakpoint(getContext(), new VariantContextBuilder(dba).make());
+		dba = new VariantContextDirectedBreakpoint(getContext(), AES(), new VariantContextBuilder(dba).make());
 		SAMRecord realigned = Read(1, 10, realignedCigar);
 		realigned.setReadBases(realignPositive ? B(bpString) : B(SequenceUtil.reverseComplement(bpString)));
 		realigned.setReadNegativeStrandFlag(!realignPositive);
 		RealignedBreakpoint rbp = new RealignedBreakpoint(getContext(), dba.getBreakendSummary(), "", realigned);
-		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext(), dba)
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext(), AES(), dba)
 			.breakend(rbp.getBreakpointSummary(), rbp.getInsertedSequence())
 			.evidence(rbp.getBreakpointSummary().evidence);
 		dba = builder.make();
@@ -154,14 +153,14 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 	}
 	@Test
 	public void breakend_should_be_vcf_sv_breakend() {
-		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext())
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext(), AES())
 			.breakend(new BreakendSummary(0, BreakendDirection.Forward, 1, 1, null), null);
 		
 		assertEquals("BND", builder.make().getAttributeAsString("SVTYPE", ""));
 	}
 	@Test
 	public void breakpoint_should_be_vcf_sv_breakend() {
-		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext())
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext(), AES())
 			.breakpoint(new BreakpointSummary(0, BreakendDirection.Forward, 1, 1, 0, BreakendDirection.Forward, 1, 1, null), null);
 		
 		assertEquals("BND", builder.make().getAttributeAsString("SVTYPE", ""));
@@ -171,10 +170,10 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 		for (VcfAttributes a : VcfAttributes.evidenceValues()) {
 			EvidenceMetrics em = new EvidenceMetrics();
 			em.set(a, 1);
-			VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext())
+			VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext(), AES())
 				.breakend(new BreakendSummary(0, FWD, 1, 1, null), null)
 				.evidence(em);
-			builder = new VariantContextDirectedBreakpointBuilder(getContext(), builder.make());
+			builder = new VariantContextDirectedBreakpointBuilder(getContext(), AES(), builder.make());
 			
 			assertEquals(1, builder.make().getBreakendSummary().evidence.get(a));
 		}
@@ -182,16 +181,16 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 	@Test
 	public void evidence_score_should_match_vcf_phred_score() {
 		EvidenceMetrics m = new EvidenceMetrics(10);
-		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext())
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext(), AES())
 			.breakend(new BreakendSummary(0, FWD, 1, 1, null), null)
 			.evidence(m);
 		assertEquals(10, builder.make().getPhredScaledQual(), 0);
 	}
 	@Test
 	public void should_round_trip_inexact_breakend() {
-		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext());
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext(), AES());
 		builder.breakend(new BreakendSummary(1, FWD, 2, 4, null), null);
-		VariantContextDirectedBreakpoint v = new VariantContextDirectedBreakpointBuilder(getContext(), builder.make()).make();
+		VariantContextDirectedBreakpoint v = new VariantContextDirectedBreakpointBuilder(getContext(), AES(), builder.make()).make();
 		assertEquals(1, v.getBreakendSummary().referenceIndex);
 		assertEquals(FWD, v.getBreakendSummary().direction);
 		assertEquals(2, v.getBreakendSummary().start);
@@ -199,9 +198,9 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_round_trip_inexact_breakpoint() {
-		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext());
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext(), AES());
 		builder.breakpoint(new BreakpointSummary(1, FWD, 2, 4, 3, BWD, 7, 9, null), null);
-		VariantContextDirectedBreakpoint v = new VariantContextDirectedBreakpointBuilder(getContext(), builder.make()).make();
+		VariantContextDirectedBreakpoint v = new VariantContextDirectedBreakpointBuilder(getContext(), AES(), builder.make()).make();
 		BreakpointSummary bp = (BreakpointSummary)v.getBreakendSummary();
 		assertEquals(1, bp.referenceIndex);
 		assertEquals(FWD, bp.direction);
@@ -214,20 +213,30 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_write_breakpoint_in_vcf41_mode() {
-		ProcessingContext context = getContext();
-		context.setVcf41Mode(true);
-		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(context);
+		ProcessingContext context = new ProcessingContext(
+				getFSContext(),
+				new ArrayList<Header>(),
+				new SoftClipParameters(),
+				new AssemblyParameters(),
+				new RealignmentParameters(),
+				SMALL_FA_FILE, false, true);
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(context, AES());
 		builder.breakend(new BreakendSummary(0,  FWD,  1,  1, null), "ACGT");
 		VariantContextDirectedBreakpoint vc = builder.make();
 		assertEquals(-1, vc.getAlternateAlleles().get(0).getDisplayString().indexOf("."));
 	}
 	@Test
 	public void vcf41_breakend_should_round_trip() {
-		ProcessingContext context = getContext();
-		context.setVcf41Mode(true);
-		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(context);
+		ProcessingContext context = new ProcessingContext(
+				getFSContext(),
+				new ArrayList<Header>(),
+				new SoftClipParameters(),
+				new AssemblyParameters(),
+				new RealignmentParameters(),
+				SMALL_FA_FILE, false, true);
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(context, AES());
 		builder.breakend(new BreakendSummary(0,  FWD,  1,  2, null), "ACGT");
-		VariantContextDirectedBreakpoint v = new VariantContextDirectedBreakpointBuilder(context, builder.make()).make();
+		VariantContextDirectedBreakpoint v = new VariantContextDirectedBreakpointBuilder(context, AES(), builder.make()).make();
 		assertEquals(0, v.getBreakendSummary().referenceIndex);
 		assertEquals(FWD, v.getBreakendSummary().direction);
 		assertEquals(1, v.getBreakendSummary().start);
@@ -235,9 +244,9 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 		assertEquals(1, v.getStart());
 		assertEquals(1, v.getEnd()); // breakend is called at the first position of the interval
 		
-		builder = new VariantContextDirectedBreakpointBuilder(context);
+		builder = new VariantContextDirectedBreakpointBuilder(context, AES());
 		builder.breakend(new BreakendSummary(0,  BWD,  1,  2, null), "ACGT");
-		v = new VariantContextDirectedBreakpointBuilder(context, builder.make()).make();
+		v = new VariantContextDirectedBreakpointBuilder(context, AES(), builder.make()).make();
 		assertEquals(0, v.getBreakendSummary().referenceIndex);
 		assertEquals(BWD, v.getBreakendSummary().direction);
 		assertEquals(1, v.getBreakendSummary().start);
@@ -247,7 +256,7 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 	}
 	@Test(expected=IllegalStateException.class)
 	public void should_require_stop_set() {
-		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext());
+		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(getContext(), AES());
 		builder.chr("polyA")
 			.start(1)
 			.alleles("A", "<INS>")

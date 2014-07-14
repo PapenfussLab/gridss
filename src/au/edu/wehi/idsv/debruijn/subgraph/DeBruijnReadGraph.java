@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.SortedSet;
 
 import au.edu.wehi.idsv.AssemblyBuilder;
+import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.ProcessingContext;
@@ -34,8 +35,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	 * @param direction
 	 * @param parameters 
 	 */
-	public DeBruijnReadGraph(ProcessingContext processContext, int referenceIndex, BreakendDirection direction, AssemblyParameters parameters) {
-		super(processContext, parameters.k, direction);
+	public DeBruijnReadGraph(ProcessingContext processContext, AssemblyEvidenceSource source, int referenceIndex, BreakendDirection direction, AssemblyParameters parameters) {
+		super(processContext, source, parameters.k, direction);
 		this.referenceIndex = referenceIndex;
 		this.subgraphs = Sets.newTreeSet(SubgraphSummary.ByMaxAnchor);
 		this.parameters = parameters;
@@ -112,7 +113,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 					}
 				}
 			} else {
-				// can break out immediately since subgraphs are sorted by max anchor position
+				// no more subgraphs to process (as subgraphs are sorted by max anchor position)
 				break;
 			}
 		}

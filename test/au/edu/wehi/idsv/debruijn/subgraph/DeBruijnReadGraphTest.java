@@ -25,7 +25,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		p.maxBaseMismatchForCollapse = 0;
 		p.assemblyOrder = ContigAssemblyOrder.GreedyMaxKmer;
 		p.k = k;
-		return new DeBruijnReadGraph(getContext(), referenceIndex, direction, p);
+		return new DeBruijnReadGraph(getContext(), AES(), referenceIndex, direction, p);
 	}
 	@Test
 	public void should_assemble_sc() {

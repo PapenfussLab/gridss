@@ -46,7 +46,7 @@ public class FileSystemContextTest {
 	}
 	@Test
 	public void getBreakpointVcf() {
-		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.chr1-chr2.breakpoint.vcf").getAbsolutePath(), C().getBreakpointlVcf(new File("test.bam"), "chr1", "chr2").getAbsolutePath());
+		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.chr1-chr2.breakpoint.vcf").getAbsolutePath(), C().getBreakpointVcf(new File("test.bam"), "chr1", "chr2").getAbsolutePath());
 	}
 	private void testbamAssertMatch(String expected, File result) {
 		assertEquals(new File("test.bam.idsv.working/" + expected).getAbsolutePath(), result.getAbsolutePath());
@@ -69,7 +69,7 @@ public class FileSystemContextTest {
 		testbamAssertMatch("test.bam.idsv.chr.realign.fq", C().getRealignmentFastqForChr(TEST_BAM, "chr"));
 		testbamAssertMatch("test.bam.idsv.chr.realign.bam", C().getRealignmentBamForChr(TEST_BAM, "chr"));
 		testbamAssertMatch("test.bam.idsv.chr.breakend.vcf", C().getBreakendVcfForChr(TEST_BAM, "chr"));
-		testbamAssertMatch("test.bam.idsv.chr1-chr2.breakpoint.vcf", C().getBreakpointlVcf(TEST_BAM, "chr1", "chr2"));
+		testbamAssertMatch("test.bam.idsv.chr1-chr2.breakpoint.vcf", C().getBreakpointVcf(TEST_BAM, "chr1", "chr2"));
 	}
 	@Test
 	public void should_use_working_directory_if_set() throws IOException {
