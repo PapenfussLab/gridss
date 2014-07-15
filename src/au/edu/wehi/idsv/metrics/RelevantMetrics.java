@@ -1,4 +1,4 @@
-package au.edu.wehi.idsv;
+package au.edu.wehi.idsv.metrics;
 
 import htsjdk.samtools.SamPairUtil.PairOrientation;
 
@@ -21,7 +21,11 @@ public interface RelevantMetrics {
 	 * @return longest expected fragment size
 	 */
 	public abstract int getMaxFragmentSize();
-
+	/**
+	 * Maximum read length
+	 * @return longest read length
+	 */
+	public abstract int getMaxReadLength();
 	public abstract PairOrientation getPairOrientation();
 
 }

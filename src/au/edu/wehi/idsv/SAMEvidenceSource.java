@@ -9,9 +9,9 @@ import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SamReader;
+import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.samtools.util.SortingCollection;
@@ -23,6 +23,10 @@ import java.util.List;
 
 import picard.analysis.InsertSizeMetrics;
 import picard.analysis.directed.InsertSizeMetricsCollector;
+import au.edu.wehi.idsv.metrics.IdsvMetrics;
+import au.edu.wehi.idsv.metrics.IdsvMetricsCollector;
+import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
+import au.edu.wehi.idsv.metrics.RelevantMetrics;
 
 import com.google.common.collect.Lists;
 
@@ -46,6 +50,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	/**
 	 * Ensures that all structural variation evidence has been extracted from the input file 
+	 * @throws IOException 
 	 */
 	public void ensureEvidenceExtracted() {
 		if (!isProcessingComplete()) {
@@ -66,7 +71,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 	protected boolean isProcessingComplete() {
 		boolean done = true;
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		done &= checkIntermediate(fsc.getMetrics(input), input);
+		done &= checkIntermediate(fsc.getInsertSizeMetrics(input), input);
+		done &= checkIntermediate(fsc.getIdsvMetrics(input), input);
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
 				done &= checkIntermediate(fsc.getSVBamForChr(input, seq.getSequenceName()), input);
@@ -84,7 +90,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 	public RelevantMetrics getMetrics() {
 		if (metrics == null) {
 			ensureEvidenceExtracted();
-			metrics = new PicardMetrics(processContext.getFileSystemContext().getMetrics(input));
+			metrics = new IdsvSamFileMetrics(processContext.getFileSystemContext().getInsertSizeMetrics(input), processContext.getFileSystemContext().getIdsvMetrics(input));
 		}
 		return metrics;
 	}
@@ -146,7 +152,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			try {
 				if (toClose != null) toClose.close();
 	    	} catch (IOException e) {
-	    		log.equals(e);
+	    		log.debug(e);
 	    	}
 		}
 		/**
@@ -158,7 +164,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 			close(); // close any file handles that are still around
 			FileSystemContext fsc = processContext.getFileSystemContext();
 			tryDelete(fsc.getFlagFile(input, FLAG_NAME));
-			tryDelete(fsc.getMetrics(input));
+			tryDelete(fsc.getInsertSizeMetrics(input));
+			tryDelete(fsc.getIdsvMetrics(input));
 			tryDelete(fsc.getSVBam(input));
 			tryDelete(fsc.getMateBam(input));
 			tryDelete(fsc.getRealignmentFastq(input));
@@ -188,42 +195,54 @@ public class SAMEvidenceSource extends EvidenceSource {
 			}
 	    }
 		public void extractEvidence() {
+			boolean shouldDelete = true;
 	    	try {
 	    		deleteOutput(); // trash any left-over files
-	    		
-		    	IOUtil.assertFileIsWritable(processContext.getFileSystemContext().getMetrics(input));
-		    	
+	    				    	
 		    	reader = processContext.getSamReaderFactory().open(input);
 		    	final SAMFileHeader header = reader.getFileHeader();
 		    	final SAMSequenceDictionary dictionary = header.getSequenceDictionary();
 		    	referenceWalker = new ReferenceSequenceFileWalker(processContext.getReferenceFile());
-		    	final InsertSizeMetricsCollector metrics = PicardMetrics.createCollector(header);
+		    	final InsertSizeMetricsCollector ismc = IdsvSamFileMetrics.createInsertSizeMetricsCollector(header);
+		    	final IdsvMetricsCollector imc = IdsvSamFileMetrics.createIdsvMetricsCollector();
 		    	
 		    	dictionary.assertSameDictionary(processContext.getReference().getSequenceDictionary());
 		    	
 		    	createOutputWriters(header, dictionary);
 		    	
-		    	processInputRecords(dictionary, metrics);
+		    	processInputRecords(dictionary, ismc, imc);
 		    	
 		    	flush();
 		    	
-		    	writeMetrics(metrics);
+		    	writeMetrics(ismc, imc);
 		    	
 		    	if (!processContext.getFileSystemContext().getFlagFile(input, FLAG_NAME).createNewFile()) {
 		    		log.error("Failed to create flag file ", processContext.getFileSystemContext().getFlagFile(input, FLAG_NAME));
+		    	} else {
+		    		shouldDelete = false;
 		    	}
-	    	} catch (Exception e) {
-	    		log.error(e, "Unable to extract evidence for ", input);
-	    		deleteOutput();
-	    		throw new RuntimeException(e);
-	    	} finally {
+	    	} catch (IOException e) {
+	    		log.error(e);
+				e.printStackTrace();
+				shouldDelete = true;
+				throw new RuntimeException(e);
+			} finally {
 	    		close();
+	    		if (shouldDelete) deleteOutput();
 	    	}
 	    }
-		private void writeMetrics(InsertSizeMetricsCollector metrics) throws IOException {
+		private void writeMetrics(InsertSizeMetricsCollector ismc, IdsvMetricsCollector imc) {
 			log.info("Writing metrics");
-			metrics.finish();
-			PicardMetrics.save(metrics, processContext.<InsertSizeMetrics, Integer>createMetricsFile(), processContext.getFileSystemContext().getMetrics(input));
+			
+			ismc.finish();
+			MetricsFile<InsertSizeMetrics, Integer> ismmf = processContext.<InsertSizeMetrics, Integer>createMetricsFile();
+			ismc.addAllLevelsToFile(ismmf);
+			ismmf.write(processContext.getFileSystemContext().getInsertSizeMetrics(input));
+			
+			imc.finish();
+			MetricsFile<IdsvMetrics, Integer> imcf = processContext.<IdsvMetrics, Integer>createMetricsFile();
+			imc.addAllLevelsToFile(imcf);
+			imcf.write(processContext.getFileSystemContext().getIdsvMetrics(input));
 		}
 		private void flush() throws IOException {
 			reader.close();
@@ -250,7 +269,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			matewriters.clear();
 			mateRecordBuffer.clear();
 		}
-		private void processInputRecords(final SAMSequenceDictionary dictionary, final InsertSizeMetricsCollector metrics) {
+		private void processInputRecords(final SAMSequenceDictionary dictionary, final InsertSizeMetricsCollector ismc, final IdsvMetricsCollector imc) {
 			// output all to a single file, or one per chr + one for unmapped 
 			assert(matewriters.size() == mateRecordBuffer.size());
 			assert(writers.size() == dictionary.getSequences().size() + 1 || writers.size() == 1);
@@ -262,11 +281,32 @@ public class SAMEvidenceSource extends EvidenceSource {
 			final SAMRecordIterator iter = reader.iterator().assertSorted(SortOrder.coordinate);
 			while (iter.hasNext()) {
 				SAMRecord record = iter.next();
+				SAMRecordUtil.ensureNmTag(referenceWalker, record);
 				int offset = record.getReadUnmappedFlag() ? dictionary.size() : record.getReferenceIndex();
-				boolean sc = SAMRecordUtil.isSoftClipLengthAtLeast(record, processContext.getSoftClipParameters().minLength);				
+				SoftClipEvidence startEvidence = null;
+				SoftClipEvidence endEvidence = null;
+				if (SAMRecordUtil.getStartSoftClipLength(record) > 0) {
+					startEvidence = new SoftClipEvidence(processContext, SAMEvidenceSource.this, BreakendDirection.Backward, record);
+					if (processContext.getSoftClipParameters().meetsEvidenceCritera(startEvidence)) {
+						if (processContext.getRealignmentParameters().shouldRealignBreakend(startEvidence)) {
+							realignmentWriters.get(offset % realignmentWriters.size()).write(startEvidence);
+						}
+					} else {
+						startEvidence = null;
+					}
+				}
+				if (SAMRecordUtil.getEndSoftClipLength(record) > 0) {
+					endEvidence = new SoftClipEvidence(processContext, SAMEvidenceSource.this, BreakendDirection.Forward, record);
+					if (processContext.getSoftClipParameters().meetsEvidenceCritera(endEvidence)) {
+						if (processContext.getRealignmentParameters().shouldRealignBreakend(endEvidence)) {
+							realignmentWriters.get(offset % realignmentWriters.size()).write(endEvidence);
+						}
+					} else {
+						endEvidence = null;
+					}
+				}				
 				boolean badpair = SAMRecordUtil.isPartOfNonReferenceReadPair(record);
-				if (sc || badpair) {
-					SAMRecordUtil.ensureNmTag(referenceWalker, record);
+				if (startEvidence != null || endEvidence != null || badpair) {
 					writers.get(offset % writers.size()).addAlignment(record);
 				}
 				if (badpair) {
@@ -274,23 +314,12 @@ public class SAMEvidenceSource extends EvidenceSource {
 						mateRecordBuffer.get(record.getMateReferenceIndex() % mateRecordBuffer.size()).add(record);
 					}
 				}
-				if (SAMRecordUtil.getStartSoftClipLength(record) > 0) {
-					SoftClipEvidence startEvidence = new SoftClipEvidence(processContext, SAMEvidenceSource.this, BreakendDirection.Backward, record);
-					if (processContext.getSoftClipParameters().meetsCritera(startEvidence) && processContext.getRealignmentParameters().shouldRealignBreakend(startEvidence)) {
-						realignmentWriters.get(offset % realignmentWriters.size()).write(startEvidence);
-					}
-				}
-				if (SAMRecordUtil.getEndSoftClipLength(record) > 0) {
-					SoftClipEvidence endEvidence = new SoftClipEvidence(processContext, SAMEvidenceSource.this, BreakendDirection.Forward, record);
-					if (processContext.getSoftClipParameters().meetsCritera(endEvidence) && processContext.getRealignmentParameters().shouldRealignBreakend(endEvidence)) {
-						realignmentWriters.get(offset % realignmentWriters.size()).write(endEvidence);
-					}
-				}
-				metrics.acceptRecord(record, null);
+				ismc.acceptRecord(record, null);
+				imc.acceptRecord(record, null);
 				progress.record(record);
 			}
 		}
-		private void createOutputWriters(final SAMFileHeader header, final SAMSequenceDictionary dictionary) throws IOException {
+		private void createOutputWriters(final SAMFileHeader header, final SAMSequenceDictionary dictionary) {
 			final SAMFileHeader svHeader = header.clone();
 			svHeader.setSortOrder(SortOrder.coordinate);
 			final SAMFileHeader mateHeader = header.clone();
@@ -301,7 +330,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 				createOutputWriterPerGenome(svHeader, mateHeader);
 			}
 		}
-		private void createOutputWriterPerGenome(final SAMFileHeader svHeader, final SAMFileHeader mateHeader) throws IOException {
+		private void createOutputWriterPerGenome(final SAMFileHeader svHeader, final SAMFileHeader mateHeader) {
 			// all writers map to the same one
 			writers.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getSVBam(input)));
 			matewriters.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(mateHeader, false, processContext.getFileSystemContext().getMateBam(input)));
@@ -315,8 +344,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		}
 		private void createOutputWritersPerChromosome(
 				final SAMSequenceDictionary dictionary,
-				final SAMFileHeader svHeader, final SAMFileHeader mateHeader)
-				throws IOException {
+				final SAMFileHeader svHeader, final SAMFileHeader mateHeader) {
 			for (SAMSequenceRecord seq : dictionary.getSequences()) {
 				writers.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getSVBamForChr(input, seq.getSequenceName())));
 				matewriters.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(mateHeader, false, processContext.getFileSystemContext().getMateBamForChr(input, seq.getSequenceName())));

@@ -43,16 +43,16 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 	public DirectedEvidenceIterator(
 			ProcessingContext processContext,
 			EvidenceSource source,
-			PeekingIterator<SAMRecord> sv,
-			PeekingIterator<SAMRecord> mate,
-			PeekingIterator<SAMRecord> realign,
+			Iterator<SAMRecord> sv,
+			Iterator<SAMRecord> mate,
+			Iterator<SAMRecord> realign,
 			Iterator<VariantContext> vcf) {
 		this.processContext = processContext;
 		this.source = source;
-		this.svIterator = sv;
+		this.svIterator = sv == null ? null : Iterators.peekingIterator(sv);
 		this.vcfIterator = vcf == null ? null : Iterators.peekingIterator(new PassFiltersIterator<VariantContext>(vcf));
-		this.mateFactory = new SequentialNonReferenceReadPairFactory(mate);
-		this.realignFactory = new SequentialRealignedBreakpointFactory(realign);
+		this.mateFactory = mate == null ? null : new SequentialNonReferenceReadPairFactory(Iterators.peekingIterator(mate));
+		this.realignFactory = realign == null ? null : new SequentialRealignedBreakpointFactory(Iterators.peekingIterator(realign));
 	}
 	@Override
 	protected DirectedEvidence computeNext() {
@@ -72,7 +72,7 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 	 * @return call including realignment mapping evidence if applicable
 	 */
 	private DirectedEvidence fixCall(DirectedEvidence evidence) {
-		//  
+		if (realignFactory == null) return evidence;
 		if (evidence instanceof SoftClipEvidence) {
 			evidence = new SoftClipEvidence((SoftClipEvidence)evidence, realignFactory.findRealignedSAMRecord((DirectedBreakpoint)evidence));
 		} else if (evidence instanceof VariantContextDirectedBreakpoint) {
@@ -121,14 +121,20 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 	}
 	private void processRead(SAMRecord record) {
 		if (SAMRecordUtil.getStartSoftClipLength(record) > 0) {
-			calls.add(new SoftClipEvidence(processContext, (SAMEvidenceSource)source, BreakendDirection.Backward, record));
+			SoftClipEvidence sce = new SoftClipEvidence(processContext, (SAMEvidenceSource)source, BreakendDirection.Backward, record);
+			if (processContext.getSoftClipParameters().meetsEvidenceCritera(sce)) {
+				calls.add(sce);
+			}
 		}
 		if (SAMRecordUtil.getEndSoftClipLength(record) > 0) {
-			calls.add(new SoftClipEvidence(processContext, (SAMEvidenceSource)source, BreakendDirection.Forward, record));
+			SoftClipEvidence sce = new SoftClipEvidence(processContext, (SAMEvidenceSource)source, BreakendDirection.Forward, record);
+			if (processContext.getSoftClipParameters().meetsEvidenceCritera(sce)) {
+				calls.add(sce);
+			}
 		}
-		if (SAMRecordUtil.isPartOfNonReferenceReadPair(record)) {
+		if (mateFactory != null && SAMRecordUtil.isPartOfNonReferenceReadPair(record)) {
 			NonReferenceReadPair pair = mateFactory.createNonReferenceReadPair(record, (SAMEvidenceSource)source);
-			if (pair != null) {
+			if (pair != null && pair.isValid()) {
 				calls.add(pair);
 			}
 		}

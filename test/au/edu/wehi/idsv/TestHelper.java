@@ -9,10 +9,10 @@ import htsjdk.samtools.SAMRecordCoordinateComparator;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SamPairUtil;
+import htsjdk.samtools.fastq.FastqWriterFactory;
 import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
-import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 import htsjdk.samtools.util.ProgressLoggerInterface;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
@@ -38,6 +38,7 @@ import au.edu.wehi.idsv.debruijn.PathNodeFactory;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.ReadKmerIterable;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
+import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 
 import com.google.common.collect.ImmutableList;
@@ -155,7 +156,7 @@ public class TestHelper {
 		b.attribute(VcfAttributes.REALIGN_TOTAL_LENGTH, untemplatedSequence.length() + 1);
 		return b.make();
 	}		
-	public static class MockMetrics extends PicardMetrics {
+	public static class MockMetrics extends IdsvSamFileMetrics {
 		public int maxFragSize = 300;
 		@Override
 		public int getMaxFragmentSize() { return maxFragSize; } 
@@ -180,6 +181,12 @@ public class TestHelper {
 		public SAMFileWriterFactory getSamReaderWriterFactory() {
 			return super.getSamReaderWriterFactory()
 					.setUseAsyncIo(false);
+		}
+		@Override
+		public FastqWriterFactory getFastqWriterFactory() {
+			FastqWriterFactory f = super.getFastqWriterFactory();
+			f.setUseAsyncIo(false);
+			return f;
 		}
 	}
 	public static ProcessingContext getContext() {
@@ -232,7 +239,8 @@ public class TestHelper {
 	}
 	public static SAMRecord[] withNM(SAMRecord... data) {
 		for (SAMRecord r : data) {
-			SAMRecordUtil.ensureNmTag(new ReferenceSequenceFileWalker(SMALL_FA_FILE), r);
+			r.setAttribute("NM", null);
+			SAMRecordUtil.ensureNmTag(SMALL_FA, r);
 		}
 		return data;
 	}
@@ -259,6 +267,7 @@ public class TestHelper {
 		record.setReadPairedFlag(false);
 		record.setReadNegativeStrandFlag(false);
 		record.setCigarString(cigar);
+		record.setMappingQuality(10);
 		clean(record);
 		return record;
 	}
@@ -305,6 +314,11 @@ public class TestHelper {
 		if (record.getReadBases() == null || record.getReadBases().length != targetLength) {
 			record.setReadBases(GetPolyA(targetLength));
 		}
+		if (record.getBaseQualities() == null || record.getBaseQualities().length != targetLength) {
+			byte[] quals = new byte[targetLength];
+			Arrays.fill(quals, (byte)10);
+			record.setBaseQualities(quals);
+		}
 		if (record.getCigar() == null || record.getCigarLength() == 0) {
 			record.setCigarString(String.format("%dM", targetLength));
 		}
@@ -319,6 +333,8 @@ public class TestHelper {
 		} else {
 			record.setReadUnmappedFlag(true);
 		}
+		record.setAttribute("NM", 0);
+		//if (record.getReadBases().length == targetLength) SAMRecordUtil.ensureNmTag(SMALL_FA, record);
 	}
 	public static void clean(SAMRecord r1, SAMRecord r2) {
 		clean(r1);

@@ -9,6 +9,7 @@ import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.reference.ReferenceSequence;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 import htsjdk.samtools.util.SequenceUtil;
 
@@ -123,7 +124,18 @@ public class SAMRecordUtil {
 		if (record.getReadBases() == null) return;
 		if (record.getReadBases() == SAMRecord.NULL_SEQUENCE) return;
 		if (record.getIntegerAttribute(SAMTag.NM.name()) != null) return;
+		if (record.getReadUnmappedFlag()) return;
         final ReferenceSequence refSequence = refFileWalker.get(record.getReferenceIndex());
+        final int actualNucleotideDiffs = SequenceUtil.calculateSamNmTag(record, refSequence.getBases(), 0, false);
+        record.setAttribute(SAMTag.NM.name(), actualNucleotideDiffs);
+	}
+	public static void ensureNmTag(ReferenceSequenceFile ref, SAMRecord record) {
+		if (record == null) return;
+		if (record.getReadBases() == null) return;
+		if (record.getReadBases() == SAMRecord.NULL_SEQUENCE) return;
+		if (record.getIntegerAttribute(SAMTag.NM.name()) != null) return;
+		if (record.getReadUnmappedFlag()) return;
+        final ReferenceSequence refSequence = ref.getSequence(ref.getSequenceDictionary().getSequence(record.getReferenceIndex()).getSequenceName());
         final int actualNucleotideDiffs = SequenceUtil.calculateSamNmTag(record, refSequence.getBases(), 0, false);
         record.setAttribute(SAMTag.NM.name(), actualNucleotideDiffs);
 	}

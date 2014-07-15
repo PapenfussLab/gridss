@@ -5,9 +5,9 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 
 import java.io.File;
-import java.util.Iterator;
+import java.util.NoSuchElementException;
 
-import sun.misc.Perf.GetPerfAction;
+import au.edu.wehi.idsv.metrics.RelevantMetrics;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
@@ -132,42 +132,49 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 	private class PerChromosomeAggregateIterator implements CloseableIterator<DirectedEvidence> {
 		private int currentReferenceIndex = -1;
 		private CloseableIterator<DirectedEvidence> currentSource = null;
-		private PeekingIterator<DirectedEvidence> it = null;
-		private boolean advanceToNextFile() {
-			closeCurrent();
-			if (currentReferenceIndex >= processContext.getReference().getSequenceDictionary().size()) {
-				// we've consumed everything - we're done
-				return false;
+		private boolean hasMoreContigs() {
+			return currentReferenceIndex < processContext.getReference().getSequenceDictionary().size() - 1;
+		}
+		private boolean currentHasNext() {
+			if (currentSource != null) {
+				if (currentSource.hasNext()) {
+					return true;
+				} else {
+					// close as soon as we know there's no more records left
+					closeCurrent();
+				}
 			}
+			return false;
+		}
+		private boolean advanceContig() {
+			assert(hasMoreContigs());
+			closeCurrent();
 			currentReferenceIndex++;
 			currentSource = perChrIterator(processContext.getReference().getSequenceDictionary().getSequence(currentReferenceIndex).getSequenceName());
-			it = Iterators.peekingIterator(currentSource);
 			return true;
 		}
 		private void closeCurrent() {
-			currentSource.close();
+			if (currentSource != null) {
+				currentSource.close();
+			}
 			currentSource = null;
-			it = null;
 		}
 		@Override
 		public boolean hasNext() {
-			// keep going until we hit a chr that's not emptyy
-			while (it != null && !it.hasNext()) {
-				if (!advanceToNextFile()) {
-					// no more chromosomes - we're done
-					return false;
-				}
+			while (!currentHasNext() && hasMoreContigs()) {
+				advanceContig();
 			}
-			return true;
+			return currentHasNext();
 		}
 		@Override
 		public DirectedEvidence next() {
-			return it.next();
+			if (hasNext()) return currentSource.next();
+			throw new NoSuchElementException();
 		}
 		@Override
 		public void close() {
 			closeCurrent();
-			currentReferenceIndex = Integer.MAX_VALUE;
+			currentReferenceIndex = processContext.getReference().getSequenceDictionary().size();
 		}
 	}
 	/**
@@ -183,6 +190,7 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 		private int referenceIndex;
 		private boolean closed = false;
 		public CloseableChromosomeFilterIterator(CloseableIterator<DirectedEvidence> it, int referenceIndex) {
+			assert(referenceIndex >= 0);
 			this.source = it;
 			this.it = Iterators.peekingIterator(it);
 			this.referenceIndex = referenceIndex;
@@ -190,7 +198,6 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 		@Override
 		public boolean hasNext() {
 			if (closed) return false;
-			if (!it.hasNext()) return false;
 			while (it.hasNext() && it.peek().getBreakendSummary().referenceIndex < referenceIndex) {
 				// fast-forward advance to our chr
 				it.next();
@@ -208,7 +215,8 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 		}
 		@Override
 		public DirectedEvidence next() {
-			return it.next();
+			if (hasNext()) return it.next();
+			throw new NoSuchElementException();
 		}
 		@Override
 		public void close() {

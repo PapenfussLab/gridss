@@ -47,10 +47,10 @@ public class SubgraphPathContigAssemblerTest extends TestHelper {
 		
 		DeBruijnReadGraph g = G(ap.k, FWD);
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
-		g.addEvidence(NRRP(withSequence("GGTTAACC", DP(0, 1, "8M", true, 1, 10, "8M", false))));
-		g.addEvidence(SCE(FWD, withSequence("TTGGT", Read(0, 10, "4M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
+		g.addEvidence(SCE(FWD, withSequence("TTAACCGAGTCCTG", Read(0, 10, "7M7S"))));
 		//     TTAACCGGCCAATT
-		//   GGTTAACC
+		//     TTAACCGAGTCCTG
 		// TTGGT
 		// ^   ^^^^ <- starts of reference kmers
 		// --------^^^^^^^^^^ assembly 1 ('-' positions are trimmed)  
@@ -59,6 +59,6 @@ public class SubgraphPathContigAssemblerTest extends TestHelper {
 		List<LinkedList<Long>> result = spca.assembleContigs(ap);
 		assertEquals(2, result.size());
 		assertEquals("TTAACCGGCCAATT", S(g, result.get(0)));
-		assertEquals("TTGGTTAACCG", S(g, result.get(1)));
+		assertEquals("TTAACCGAGTCCTG", S(g, result.get(1)));
 	}
 }

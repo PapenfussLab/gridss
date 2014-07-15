@@ -194,12 +194,6 @@ public class NonReferenceReadPairTest extends TestHelper {
 	@Test
 	public void getBreakendSummary_DP_should_not_restrict_on_alt_contigs() {
 		NonReferenceReadPair pair = newPair(DP(0, 101, "3M", true, 1, 110, "3M", false), 100);
-		// 1
-		// 0
-		// 012345678901234567890
-		//  ==>      <== only support a BP within this interval
-		//    ^------ forward
-		//     ------^ backward
 		assertEquals(103, pair.getBreakendSummary().start);
 		assertEquals(103 + (100 - 3 - 3), pair.getBreakendSummary().end);
 		assertEquals(110, ((BreakpointSummary)pair.getBreakendSummary()).end2);
@@ -221,5 +215,12 @@ public class NonReferenceReadPairTest extends TestHelper {
 		//  <=====
 		assertNotNull(newPair(DP(0, 4, "6M", true, 0, 1, "6M", false), 100).getBreakendSummary());
 		assertNotNull(newPair(DP(0, 1, "6M", false, 0, 4, "6M", true), 100).getBreakendSummary());
+	}
+	@Test
+	public void should_handle_concordant_position_but_discordant_chr() {
+		newPair(DP(1, 1, "100M", true, 2, 5, "100M", true), 300);
+		newPair(DP(1, 2, "100M", true, 2, 4, "100M", true), 300);
+		newPair(DP(1, 3, "100M", true, 2, 6, "100M", true), 300);
+		newPair(OEA(1, 4, "100M", false), 300);
 	}
 }

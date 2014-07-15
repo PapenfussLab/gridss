@@ -15,6 +15,8 @@ import java.util.List;
 
 import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredAssembler;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
+import au.edu.wehi.idsv.metrics.CompositeMetrics;
+import au.edu.wehi.idsv.metrics.RelevantMetrics;
 import au.edu.wehi.idsv.vcf.VcfConstants;
 
 import com.google.common.base.Function;
@@ -42,28 +44,37 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			}
 		}));
 	}
-	@Override
-	public Iterator<DirectedEvidence> iterator() {
-		ensureAssembled();
-		if (!isAssemblyComplete()) {
-			throw new IllegalStateException(String.format("Missing intermediate files for ", input));
-		} else if (!isRealignmentComplete()) {
-			log.debug("Missing realignment bam. Traversing breakends only.");
-		}
-		throw new RuntimeException("NYI");
-	}
-	@Override
-	public Iterator<DirectedEvidence> iterator(String chr) {
-		throw new RuntimeException("NYI");
-	}
 	public void ensureAssembled() {
-		if (!isAssemblyComplete()) {
+		if (!isProcessingComplete()) {
 			log.info("START evidence assembly ", input);
-			assemble();
+			process();
 			log.info("SUCCESS evidence assembly ", input);
 		}
 	}
-	private boolean isAssemblyComplete() {
+	@Override
+	public RelevantMetrics getMetrics() {
+		return metrics;
+	}
+	@Override
+	protected DirectedEvidenceFileIterator perChrIterator(String chr) {
+		FileSystemContext fsc = processContext.getFileSystemContext();
+		return new DirectedEvidenceFileIterator(processContext, this,
+				null,
+				null,
+				isRealignmentComplete() ? fsc.getRealignmentBamForChr(input, chr) : null,
+				fsc.getBreakendVcfForChr(input, chr));
+	}
+	@Override
+	protected DirectedEvidenceFileIterator singleFileIterator() {
+		FileSystemContext fsc = processContext.getFileSystemContext();
+		return new DirectedEvidenceFileIterator(processContext, this,
+				null,
+				null,
+				isRealignmentComplete() ? fsc.getRealignmentBam(input) : null,
+				fsc.getBreakendVcf(input));
+	}
+	@Override
+	protected boolean isProcessingComplete() {
 		boolean done = true;
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		if (processContext.shouldProcessPerChromosome()) {
@@ -77,7 +88,8 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		}
 		return done;
 	}
-	private void assemble() {
+	@Override
+	protected void process() {
 		List<CloseableIterator<DirectedEvidence>> toClose = Lists.newArrayList();
 		SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
 		try {
@@ -176,8 +188,4 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	    		throw new IllegalArgumentException("Unknown assembly method.");
     	}
     }
-	@Override
-	public RelevantMetrics getMetrics() {
-		return metrics;
-	}
 }

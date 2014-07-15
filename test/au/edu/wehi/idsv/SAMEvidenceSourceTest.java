@@ -4,11 +4,20 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.fastq.FastqRecord;
+import htsjdk.samtools.metrics.MetricsFile;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 import org.junit.Test;
+
+import picard.analysis.InsertSizeMetrics;
+import picard.analysis.directed.InsertSizeMetricsCollector;
+import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
+import au.edu.wehi.idsv.metrics.RelevantMetrics;
 
 import com.google.common.collect.Lists;
 
@@ -18,9 +27,9 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		createInput();
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
 		source.ensureEvidenceExtracted();
-		assertEquals(0, getSV(source));
-		assertEquals(0, getMate(source));
-		assertEquals(0, getFastqRecords(source));
+		assertEquals(0, getSV(source).size());
+		assertEquals(0, getMate(source).size());
+		assertEquals(0, getFastqRecords(source).size());
 	}
 	@Test
 	public void sc_should_be_located_in_sv_bam_for_chr() {
@@ -91,7 +100,6 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		assertEquals(3, rs.get(2).getMateAlignmentStart());
 		assertEquals(4, rs.get(3).getMateAlignmentStart());
 		// random 
-		assertEquals(3, rs.size());
 		assertEquals(4, rs.get(4).getMateAlignmentStart());
 		assertEquals(5, rs.get(5).getMateAlignmentStart());
 		assertEquals(6, rs.get(6).getMateAlignmentStart());
@@ -101,7 +109,19 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		createInput(RP(1, 1, 100, 10));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
 		source.ensureEvidenceExtracted();
-		assertTrue(getCommandlineContext().getFileSystemContext().getMetrics(input).exists());
+		assertTrue(getCommandlineContext().getFileSystemContext().getIdsvMetrics(input).exists());
+		assertTrue(getCommandlineContext().getFileSystemContext().getInsertSizeMetrics(input).exists());
+	}
+	@Test
+	public void should_process_metrics() {
+		createInput(RP(0, 1, 2, 1), RP(0, 1, 7, 5));
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		RelevantMetrics metrics = source.getMetrics();
+		assertEquals(5, metrics.getMaxReadLength());
+		// 12345678901234567890
+		// ----> <----
+		assertEquals(11, metrics.getMaxFragmentSize());
+		assertEquals(PairOrientation.FR, metrics.getPairOrientation());
 	}
 	@Test
 	public void should_set_NM_tag() {
@@ -199,6 +219,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	@Test
 	public void per_chr_iterator_should_return_all_evidence() {
 		createInput(new SAMRecord[] { Read(1, 1, "50M50S") },
+				RP(0, 200, 100), // max frag size
 				DP(1, 1, "100M", true, 2, 5, "100M", true),
 			   DP(1, 2, "100M", true, 2, 4, "100M", true),
 			   DP(1, 3, "100M", true, 2, 6, "100M", true),
@@ -232,13 +253,14 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				Read(4, 1, "50M50S")
 				);
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
-		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator("polyACGT"));
 		assertEquals(1, list.size());
 		assertEquals(1, list.get(0).getBreakendSummary().referenceIndex);
 	}
 	@Test
 	public void iterator_should_return_all_evidence() {
 		createInput(new SAMRecord[] { Read(1, 1, "50M50S") },
+				RP(0, 100, 200, 100),
 				DP(1, 1, "100M", true, 2, 5, "100M", true),
 			   DP(1, 2, "100M", true, 2, 4, "100M", true),
 			   DP(1, 3, "100M", true, 2, 6, "100M", true),
@@ -272,7 +294,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				Read(4, 1, "50M50S")
 				);
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
-		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator("polyACGT"));
 		assertEquals(1, list.size());
 		assertEquals(1, list.get(0).getBreakendSummary().referenceIndex);
 	}
@@ -282,7 +304,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
 		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
 		assertEquals(1, list.size());
-		assertEquals(1, list.get(0).getBreakendSummary().referenceIndex);
+		assertEquals(source, list.get(0).getEvidenceSource());
 	}
 	@Test
 	public void should_default_fragment_size_to_read_length_for_unpaired_reads() {

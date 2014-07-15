@@ -88,9 +88,9 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	@Test
 	public void should_assemble_adjacent_scs() {
 		DeBruijnReadGraph g = G(0, 3, FWD);
-		g.addEvidence(SCE(FWD, withSequence("AAAGTC", Read(0, 10, "3M3S"))));
-		g.addEvidence(SCE(FWD, withSequence("AAAAGTCTT", Read(0, 10, "4M4S"))));
-		g.addEvidence(SCE(FWD, withSequence("AAAAGTCTT", Read(0, 10, "4M4S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAAGTC", Read(0, 10, "3M3S")))); // 12
+		g.addEvidence(SCE(FWD, withSequence("AAAAGTCTT", Read(0, 10, "4M4S")))); // 13
+		g.addEvidence(SCE(FWD, withSequence("AAAAGTCTT", Read(0, 10, "4M4S")))); // 13
 		List<VariantContextDirectedBreakpoint> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		assertEquals(1, result.size());
 		VariantContextDirectedBreakpoint bp = result.get(0);

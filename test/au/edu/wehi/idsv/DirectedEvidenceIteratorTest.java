@@ -189,4 +189,10 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 		go();
 		assertEquals(0, out.size());
 	}
+	@Test
+	public void should_ignore_filtered_softclips() {
+		sv.add(withMapq(0, withReadName("ReadName", Read(0, 1, "5S10M5S")))[0]);
+		go();
+		assertEquals(0, out.size());
+	}
 }

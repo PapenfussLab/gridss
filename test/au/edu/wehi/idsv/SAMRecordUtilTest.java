@@ -93,7 +93,7 @@ public class SAMRecordUtilTest extends TestHelper {
 	public void ensureNmTag_should_not_require_reference_if_tag_set() {
 		SAMRecord r = new SAMRecord(null);
 		r.setAttribute("NM", 1);
-		SAMRecordUtil.ensureNmTag(null, r);
+		SAMRecordUtil.ensureNmTag((ReferenceSequenceFileWalker)null, r);
 	}
 
 	@Test
@@ -101,6 +101,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		// AAAA
 		// ACGT
 		SAMRecord r = Read(1, 1, "4M");
+		r.clearAttributes();
 		SAMRecordUtil.ensureNmTag(new ReferenceSequenceFileWalker(SMALL_FA), r);
 		assertEquals(3, (int)r.getIntegerAttribute("NM"));
 	}

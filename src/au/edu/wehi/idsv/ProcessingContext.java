@@ -1,23 +1,20 @@
 package au.edu.wehi.idsv;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-
-import htsjdk.samtools.SAMFileSource;
 import htsjdk.samtools.SAMFileWriterFactory;
-import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
-import htsjdk.samtools.SamReaderFactory.Option;
 import htsjdk.samtools.fastq.FastqWriterFactory;
 import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.metrics.MetricBase;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
 
 /**
  * Processing context for the given record

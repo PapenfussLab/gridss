@@ -59,7 +59,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		List<DirectedEvidence> list = Lists.newArrayList(aes.iterator());
 		assertEquals(4,  list.size());
 		for (int i = 0; i <= 3; i++) {
-			assertEquals(i, list.get(0).getBreakendSummary().referenceIndex);
+			assertEquals(i, list.get(i).getBreakendSummary().referenceIndex);
 		}
 	}
 	@Test
@@ -90,11 +90,12 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		r2.setReadBases(B("CAACGTG"));
 		createInput(r1, r2);
 		ProcessingContext pc = getCommandlineContext();
+		pc.getAssemblyParameters().k = 3;
 		pc.getAssemblyParameters().method = AssemblyMethod.DEBRUIJN_PER_POSITION;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, false);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
 		aes.ensureAssembled();
-		assertEquals(1, getAssembly(aes, "polyA").size());
+		assertEquals(1, getAssembly(aes).size());
 	}
 	@Test
 	public void should_write_vcf() {
@@ -121,14 +122,10 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, false);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
 		aes.ensureAssembled();
-		assertEquals(0, getAssembly(aes).size());
+		assertEquals(2, getAssembly(aes).size());
 		List<FastqRecord> out = getFastqRecords(aes);
-		assertEquals(6, out.size());
-		assertTrue(out.get(0).getReadHeader().startsWith("0#1#"));
-		assertTrue(out.get(1).getReadHeader().startsWith("0#1#"));
-		assertTrue(out.get(2).getReadHeader().startsWith("0#1#"));
-		assertTrue(out.get(3).getReadHeader().startsWith("0#10#"));
-		assertTrue(out.get(4).getReadHeader().startsWith("0#10#"));
-		assertTrue(out.get(5).getReadHeader().startsWith("0#10#"));
+		assertEquals(2, out.size());
+		assertEquals(1, BreakpointFastqEncoding.getStartPosition(out.get(0).getReadHeader()));
+		assertEquals(10, BreakpointFastqEncoding.getStartPosition(out.get(1).getReadHeader()));
 	}
 }

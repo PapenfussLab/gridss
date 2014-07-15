@@ -14,7 +14,7 @@ public class SoftClipParameters {
 	 * 0-100
 	 */
 	public float minAnchorIdentity = 95;
-	public boolean meetsCritera(SoftClipEvidence sce) {
+	public boolean meetsEvidenceCritera(SoftClipEvidence sce) {
 		return sce.getMappingQuality() >= minReadMapq
 				&& sce.getSoftClipLength() >= minLength
 				&& sce.getAlignedPercentIdentity() >= minAnchorIdentity;

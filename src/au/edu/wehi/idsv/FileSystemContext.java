@@ -39,7 +39,8 @@ public class FileSystemContext {
 	private static final String FORMAT_SV_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.sv.bam";
 	private static final String FORMAT_MATE_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".svmate.bam";
 	private static final String FORMAT_MATE_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.svmate.bam";
-	private static final String FORMAT_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.txt";
+	private static final String FORMAT_INSERT_SIZE_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.insertsize.txt";
+	private static final String FORMAT_IDSV_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.idsv.txt";
 	private static final String FORMAT_REALIGN_FASTQ = "%s" + COMMON_INITIAL_SUFFIX + ".realign.fq";
 	private static final String FORMAT_REALIGN_FASTQ_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign.fq";
 	private static final String FORMAT_REALIGN_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".realign.bam";
@@ -116,8 +117,11 @@ public class FileSystemContext {
 	public File getBreakpointVcf(File input, String chromosome1, String chromosome2) {
 		return new File(String.format(FORMAT_BREAKPOINT_VCF_PER_CHR, getStem(input), chromosome1, chromosome2));
 	}
-	public File getMetrics(File input) {
-		return new File(String.format(FORMAT_METRICS, getStem(input)));
+	public File getInsertSizeMetrics(File input) {
+		return new File(String.format(FORMAT_INSERT_SIZE_METRICS, getStem(input)));
+	}
+	public File getIdsvMetrics(File input) {
+		return new File(String.format(FORMAT_IDSV_METRICS, getStem(input)));
 	}
 	public File getRealignmentBam(File input) {
 		return new File(String.format(FORMAT_REALIGN_BAM, getStem(input)));

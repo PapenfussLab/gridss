@@ -29,6 +29,9 @@ public class NonReferenceReadPair implements DirectedEvidence {
 		this.location = calculateBreakendSummary(local, remote, source.getMetrics().getMaxFragmentSize());
 		this.source = source;
 	}
+	public boolean isValid() {
+		return location != null;
+	}
 	private static EvidenceMetrics calculateOeaMetrics(SAMRecord local, SAMRecord remote) {
 		EvidenceMetrics m = new EvidenceMetrics();
 		m.set(VcfAttributes.UNMAPPED_MATE_READ_COUNT, 1);
@@ -109,13 +112,13 @@ public class NonReferenceReadPair implements DirectedEvidence {
 		if (remote == null || remote.getReadUnmappedFlag()) {
 			return calculateLocalBreakendSummary(local, remote, maxfragmentSize);
 		} else {
-			// discordant because the pairs overlap = no SV evidence 
-			if (pairSeparation(local, remote) < 0) return null;
-			
-			return new BreakpointSummary(
-					calculateLocalBreakendSummary(local, remote, maxfragmentSize),
-					calculateLocalBreakendSummary(remote, local, maxfragmentSize),
-					calculateDpMetrics(local, remote));
+			// Discordant because the pairs overlap = no SV evidence
+			int separation = pairSeparation(local, remote);
+			if (separation < 0) return null;
+			BreakendSummary bsLocal = calculateLocalBreakendSummary(local, remote, maxfragmentSize);
+			BreakendSummary bsRemote = calculateLocalBreakendSummary(remote, local, maxfragmentSize);
+			if (bsLocal == null || bsRemote == null) return null;
+			return new BreakpointSummary(bsLocal, bsRemote, calculateDpMetrics(local, remote));
 		}
 	}
 	/**

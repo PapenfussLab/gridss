@@ -11,8 +11,6 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 
-import com.google.common.collect.Iterators;
-
 public class DirectedEvidenceFileIterator implements CloseableIterator<DirectedEvidence> {
 	private final SamReader svReader;
 	private final SamReader mateReader;
@@ -43,9 +41,9 @@ public class DirectedEvidenceFileIterator implements CloseableIterator<DirectedE
 		it = new DirectedEvidenceIterator(
 				processContext,
 				source,
-				Iterators.peekingIterator(svIt),
-				Iterators.peekingIterator(mateIt),
-				Iterators.peekingIterator(realignIt),
+				svIt,
+				mateIt,
+				realignIt,
 				vcfIt);
 	}
 	@Override
