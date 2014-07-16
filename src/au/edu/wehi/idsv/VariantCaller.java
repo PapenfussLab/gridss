@@ -1,6 +1,12 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordQueryNameComparator;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
+import htsjdk.samtools.filter.AlignedFilter;
+import htsjdk.samtools.filter.FilteringIterator;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
@@ -154,8 +160,22 @@ public class VariantCaller extends EvidenceProcessorBase {
 	}
 	public void annotateBreakpoints() {
 		log.info("Annotating Calls");
-		try (VariantContextWriter vcfWriter = processContext.getVariantContextWriter(output)) {
-			SequentialBreakendAnnotator annotator = new SequentialBreakendAnnotator(processContext, /* TODO */0, getAllEvidence());
+		List<File> normalFiles = Lists.newArrayList();
+		List<File> tumourFiles = Lists.newArrayList();
+		for (EvidenceSource source : evidence) {
+			if (source instanceof SAMEvidenceSource) {
+				SAMEvidenceSource samSource = (SAMEvidenceSource)source;
+				if (samSource.isTumour()) {
+					tumourFiles.add(samSource.getSourceFile());
+				} else {
+					normalFiles.add(samSource.getSourceFile());
+				}
+			}
+		}
+		try (final VariantContextWriter vcfWriter = processContext.getVariantContextWriter(output)) {
+			final SequentialReferenceCoverageLookup normalCoverage = getReferenceLookup(normalFiles);
+			final SequentialReferenceCoverageLookup tumourCoverage = getReferenceLookup(tumourFiles);
+			SequentialBreakendAnnotator annotator = new SequentialBreakendAnnotator(processContext, normalCoverage, tumourCoverage, getAllEvidence());
 			Iterator<IdsvVariantContext> it = getAllCalledVariants();
 			while (it.hasNext()) {
 				IdsvVariantContext rawvariant = it.next();
@@ -167,6 +187,19 @@ public class VariantCaller extends EvidenceProcessorBase {
 		} finally {
 			close();
 		}
+	}
+	public SequentialReferenceCoverageLookup getReferenceLookup(List<File> samFiles) {
+		List<CloseableIterator<SAMRecord>> toMerge = Lists.newArrayList();
+		for (File f : samFiles) {
+			SamReader reader = processContext.getSamReaderFactory().open(f);
+			toClose.add(reader);
+			CloseableIterator<SAMRecord> it = reader.iterator().assertSorted(SortOrder.coordinate);
+			toClose.add(it);
+			it = processContext.applyCommonSAMRecordFilters(it);
+			toMerge.add(it);
+		}
+		Iterator<SAMRecord> merged = Iterators.mergeSorted(toMerge, new SAMRecordQueryNameComparator()); 
+		return new SequentialReferenceCoverageLookup(merged, 1024);
 	}
 	private void writeOutput() {
 		log.info("Outputting calls to ", output);

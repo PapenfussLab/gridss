@@ -1,9 +1,14 @@
 package au.edu.wehi.idsv.util;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
+
+import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 
 public class SlidingWindowListTest {
 
@@ -68,5 +73,30 @@ public class SlidingWindowListTest {
 		list.add(1); 
 		assertEquals(null, list.set(0, 0));
 		assertEquals(null, list.get(0));
+	}
+	@Test
+	public void setWindowSize_should_retain_final_elements() {
+		for (int initialWindowSize = 1; initialWindowSize < 8; initialWindowSize++) {
+			for (int newWindowSize = 1; newWindowSize < 8; newWindowSize++) {
+				for (int elementCount = 0; elementCount < 128; elementCount++) {
+					List<Integer> list = Lists.newArrayList();
+					for (int i = 0; i < elementCount; i++) {
+						list.add(i);
+					}
+					SlidingWindowList<Integer> window = new SlidingWindowList<Integer>(initialWindowSize);
+					window.addAll(list);
+					window.setWindowSize(newWindowSize);
+					assertEquals(window.size(), elementCount);
+					for (int i = 0; i < elementCount; i++) {
+						if (i < elementCount - Math.min(newWindowSize, initialWindowSize)) {
+							assertNull(window.get(i));
+						} else {
+							assertNotNull(window.get(i));
+							assertEquals(i, (int)window.get(i));
+						}
+					}
+				}
+			}
+		}
 	}
 }

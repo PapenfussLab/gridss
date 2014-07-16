@@ -118,7 +118,7 @@ public class VariantContextDirectedBreakpoint extends IdsvVariantContext impleme
 		int ciStart = 0, ciEnd = 0;
 		int rciStart = 0, rciEnd = 0;
 		if (hasAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)) {
-			List<Integer> ci = parseIntList(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY);
+			List<Integer> ci = getAttributeAsIntList(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY);
 			if (ci.size() == 2) {
 				ciStart = ci.get(0);
 				ciEnd = ci.get(1);
@@ -127,7 +127,7 @@ public class VariantContextDirectedBreakpoint extends IdsvVariantContext impleme
 			}
 		}
 		if (hasAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())) {
-			List<Integer> rci = parseIntList(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute());
+			List<Integer> rci = getAttributeAsIntList(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute());
 			if (rci.size() == 2) {
 				rciStart = rci.get(0);
 				rciEnd = rci.get(1);
@@ -184,7 +184,13 @@ public class VariantContextDirectedBreakpoint extends IdsvVariantContext impleme
 	public String getAssemblyConsensus() { return getAttributeAsString(VcfAttributes.ASSEMBLY_CONSENSUS.attribute(), ""); }
 	public double getAssemblyQuality() { return getAttributeAsDouble(VcfAttributes.ASSEMBLY_QUALITY.attribute(), 0); }
 	public int getAssemblyMaximumSoftClipLength() { return getAttributeAsInt(VcfAttributes.ASSEMBLY_MAX_READ_SOFT_CLIP.attribute(), 0); }
-	public int getAssemblyLongestSupportingRead() { return getAttributeAsInt(VcfAttributes.ASSEMBLY_READ_LENGTH.attribute(), 0); }	
+	public int getAssemblyLongestSupportingRead() { return getAttributeAsInt(VcfAttributes.ASSEMBLY_READ_LENGTH.attribute(), 0); }
+	public int getTotalReferenceReadDepth() { return getAttributeAsIntListOffset(VcfAttributes.REFERENCE_READ_COUNT.attribute(), 0, 0); }
+	public int getNormalReferenceReadDepth() { return getAttributeAsIntListOffset(VcfAttributes.REFERENCE_READ_COUNT.attribute(), 1, 0); }
+	public int getTumourReferenceReadDepth() { return getAttributeAsIntListOffset(VcfAttributes.REFERENCE_READ_COUNT.attribute(), 2, 0); }
+	public int getTotalReferenceSpanningPairCount() { return getAttributeAsIntListOffset(VcfAttributes.REFERENCE_SPANNING_READ_PAIR_COUNT.attribute(), 0, 0); }
+	public int getNormalReferenceSpanningPairCount() { return getAttributeAsIntListOffset(VcfAttributes.REFERENCE_SPANNING_READ_PAIR_COUNT.attribute(), 1, 0); }
+	public int getTumourReferenceSpanningPairCount() { return getAttributeAsIntListOffset(VcfAttributes.REFERENCE_SPANNING_READ_PAIR_COUNT.attribute(), 2, 0); }
 	/**
 	 * Returns an iterator containing only the breakend variants from the given iterator
 	 * @param context processing context

@@ -1,15 +1,21 @@
 package au.edu.wehi.idsv;
 
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.filter.AggregateFilter;
 import htsjdk.samtools.filter.AlignedFilter;
+import htsjdk.samtools.filter.DuplicateReadFilter;
 import htsjdk.samtools.filter.FilteringIterator;
 
+import java.io.Closeable;
 import java.util.Iterator;
+import java.util.List;
 import java.util.PriorityQueue;
 
 import au.edu.wehi.idsv.util.SlidingWindowList;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.Queues;
 
@@ -20,14 +26,15 @@ import com.google.common.collect.Queues;
  * @author Daniel Cameron
  *
  */
-public class SequentialReferenceCoverageLookup implements ReferenceCoverageLookup {
+public class SequentialReferenceCoverageLookup implements Closeable {
+	private final List<Closeable> toClose = Lists.newArrayList();
 	private final PeekingIterator<SAMRecord> reads;
-	private final int windowSize;
 	private final PriorityQueue<Integer> currentReferenceRead = Queues.newPriorityQueue();
 	private final PriorityQueue<Integer> currentStartReferencePairs = Queues.newPriorityQueue();;
 	private final PriorityQueue<Integer> currentEndReferencePairs = Queues.newPriorityQueue();;
 	private int currentReferenceIndex;
 	private int currentPosition;
+	private int largestWindow;
 	private SlidingWindowList<Integer> readCounts;
 	private SlidingWindowList<Integer> pairCounts;
 	/**
@@ -36,12 +43,21 @@ public class SequentialReferenceCoverageLookup implements ReferenceCoverageLooku
 	 * @param windowSize window size of out-of-order querying.
 	 * @param reads reads to process. <b>Must</b> be coordinate sorted
 	 */
-	public SequentialReferenceCoverageLookup(
-			int windowSize,
-			Iterator<SAMRecord> reads) {
-		this.reads = Iterators.peekingIterator(new FilteringIterator(reads, new AlignedFilter(true)));
-		this.windowSize = windowSize;
+	public SequentialReferenceCoverageLookup(Iterator<SAMRecord> it, int windowSize) {
+		if (it instanceof Closeable) toClose.add((Closeable)it);
+		this.reads = Iterators.peekingIterator(new FilteringIterator(it, new AggregateFilter(ImmutableList.of(new AlignedFilter(true), new DuplicateReadFilter()))));
+		this.largestWindow = windowSize;
 		jumpTo(0);
+	}
+	public void close() {
+		for (Closeable c : toClose) {
+			try {
+				c.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		toClose.clear();
 	}
 	private int getCount(SlidingWindowList<Integer> counts, int referenceIndex, int position) {
 		if (counts.size() <= position) return 0;
@@ -53,18 +69,22 @@ public class SequentialReferenceCoverageLookup implements ReferenceCoverageLooku
 		if (count == null) return 0;
 		return (int)count;
 	}
-	/* (non-Javadoc)
-	 * @see au.edu.wehi.idsv.ReferenceCoverageLookup#readsSupportingNoBreakendAfter(int, int)
+	/**
+	 * Number of reference reads providing evidence against a breakend immediately after the given base
+	 * @param referenceIndex contig
+	 * @param position position immediate before putative breakend
+	 * @return number of reads spanning the putative breakend
 	 */
-	@Override
 	public int readsSupportingNoBreakendAfter(int referenceIndex, int position) {
 		ensure(referenceIndex, position);
 		return getCount(readCounts, referenceIndex, position);
 	}
-	/* (non-Javadoc)
-	 * @see au.edu.wehi.idsv.ReferenceCoverageLookup#readPairsSupportingNoBreakendAfter(int, int)
+	/**
+	 * Number of read pairs providing evidence against a breakend immediately after the given base
+	 * @param referenceIndex contig
+	 * @param position position immediate before putative breakend
+	 * @return number of read pairs spanning the putative breakend
 	 */
-	@Override
 	public int readPairsSupportingNoBreakendAfter(int referenceIndex, int position) {
 		ensure(referenceIndex, position);
 		return getCount(pairCounts, referenceIndex, position);
@@ -113,7 +133,7 @@ public class SequentialReferenceCoverageLookup implements ReferenceCoverageLooku
 		while (!currentEndReferencePairs.isEmpty() && currentEndReferencePairs.peek() <= currentPosition) currentEndReferencePairs.poll();
 	}
 	/**
-	 * Processes all reads starting at the curren position
+	 * Processes all reads starting at the current position
 	 */
 	private void processCurrentReads() {
 		while (reads.hasNext() && reads.peek().getReferenceIndex() == currentReferenceIndex && reads.peek().getAlignmentStart() == currentPosition) {
@@ -143,8 +163,8 @@ public class SequentialReferenceCoverageLookup implements ReferenceCoverageLooku
 		currentReferenceRead.clear();
 		currentStartReferencePairs.clear();
 		currentEndReferencePairs.clear();
-		readCounts = new SlidingWindowList<Integer>(windowSize);
-		pairCounts = new SlidingWindowList<Integer>(windowSize);
+		readCounts = new SlidingWindowList<Integer>(largestWindow);
+		pairCounts = new SlidingWindowList<Integer>(largestWindow);
 		while (reads.hasNext() && reads.peek().getReferenceIndex() < currentReferenceIndex) reads.next();
 	}
 }

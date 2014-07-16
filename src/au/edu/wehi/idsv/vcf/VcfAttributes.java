@@ -24,8 +24,8 @@ public enum VcfAttributes {
 	SOFT_CLIP_MAX_LENGTH ("SCMAX", 1, VCFHeaderLineType.Integer, "Maximum length of soft-clip supporting this breakpoint"),
 	REALIGN_MAX_MAPQ ("ALNMQ", 1, VCFHeaderLineType.Integer, "Maximum mapq of reads with realignments supporting this breakpoint"),
 	
-	REFERENCE_SPANNING_READ_PAIR_COUNT ("RPC", 1, VCFHeaderLineType.Integer, "Count of reference read pairs spanning this breakpoint supporting the reference allele"),
-	REFERENCE_READ_COUNT ("RRC", 1, VCFHeaderLineType.Integer, "Count of reference reads spanning this breakpoint supporting the reference allele"),
+	REFERENCE_SPANNING_READ_PAIR_COUNT ("RPC", 3, VCFHeaderLineType.Integer, "Count of reference read pairs spanning this breakpoint supporting the reference allele (Total/Normal/Tumour)"),
+	REFERENCE_READ_COUNT ("RRC", 3, VCFHeaderLineType.Integer, "Count of reference reads spanning this breakpoint supporting the reference allele (Total/Normal/Tumour)"),
 	
 	ASSEMBLY_CONSENSUS ("ACONS", 1, VCFHeaderLineType.String, "Anomolous read consensus assembly sequence"),
 	ASSEMBLY_QUALITY ("AQUAL", 1, VCFHeaderLineType.Float, "Anomolous read consensus assembly overall quality"),

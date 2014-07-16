@@ -38,31 +38,31 @@ public class IdsvVariantContextTest extends TestHelper {
 			super(processContext, AES(), context);
 		}
 		@Override
-		public List<Integer> parseIntList(String attrName) {
-			return super.parseIntList(attrName);
+		public List<Integer> getAttributeAsIntList(String attrName) {
+			return super.getAttributeAsIntList(attrName);
 		}
 	}
 	@Test
-	public void parseIntList_should_allow_array() {
+	public void getAttributeAsIntList_should_allow_array() {
 		TestIdsvVariantContext vc = new TestIdsvVariantContext(minimalVariant().attribute("intlist", new int[] { 1, 2}).make());
-		assertEquals(2, vc.parseIntList("intlist").size());
+		assertEquals(2, vc.getAttributeAsIntList("intlist").size());
 	}
 	@Test
-	public void parseIntList_should_allow_int_list() {
+	public void getAttributeAsIntList_should_allow_int_list() {
 		TestIdsvVariantContext vc = new TestIdsvVariantContext(minimalVariant().attribute("intlist", L(1, 2)).make());
-		assertEquals(2, vc.parseIntList("intlist").size());
+		assertEquals(2, vc.getAttributeAsIntList("intlist").size());
 	}
 	@Test
-	public void parseIntList_should_allow_single_int() {
+	public void getAttributeAsIntList_should_allow_single_int() {
 		TestIdsvVariantContext vc = new TestIdsvVariantContext(minimalVariant().attribute("intlist", 1).make());
-		assertEquals(1, vc.parseIntList("intlist").size());
+		assertEquals(1, vc.getAttributeAsIntList("intlist").size());
 	}
 	/**
 	 * Picard parses into ArrayList of String
 	 */
 	@Test
-	public void parseIntList_should_allow_string_list() {
+	public void getAttributeAsIntList_should_allow_string_list() {
 		TestIdsvVariantContext vc = new TestIdsvVariantContext(minimalVariant().attribute("intlist", L("1", "2")).make());
-		assertEquals(2, vc.parseIntList("intlist").size());
+		assertEquals(2, vc.getAttributeAsIntList("intlist").size());
 	}
 }

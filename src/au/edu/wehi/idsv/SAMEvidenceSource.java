@@ -278,45 +278,47 @@ public class SAMEvidenceSource extends EvidenceSource {
 			
 			// Traverse the input file
 			final ProgressLogger progress = new ProgressLogger(log);
-			final SAMRecordIterator iter = reader.iterator().assertSorted(SortOrder.coordinate);
-			while (iter.hasNext()) {
-				SAMRecord record = iter.next();
-				SAMRecordUtil.ensureNmTag(referenceWalker, record);
-				int offset = record.getReadUnmappedFlag() ? dictionary.size() : record.getReferenceIndex();
-				SoftClipEvidence startEvidence = null;
-				SoftClipEvidence endEvidence = null;
-				if (SAMRecordUtil.getStartSoftClipLength(record) > 0) {
-					startEvidence = new SoftClipEvidence(processContext, SAMEvidenceSource.this, BreakendDirection.Backward, record);
-					if (processContext.getSoftClipParameters().meetsEvidenceCritera(startEvidence)) {
-						if (processContext.getRealignmentParameters().shouldRealignBreakend(startEvidence)) {
-							realignmentWriters.get(offset % realignmentWriters.size()).write(startEvidence);
+			try (final SAMRecordIterator rawIterator = reader.iterator()) {
+				final CloseableIterator<SAMRecord> iter = processContext.applyCommonSAMRecordFilters(rawIterator.assertSorted(SortOrder.coordinate));
+				while (iter.hasNext()) {
+					SAMRecord record = iter.next();
+					SAMRecordUtil.ensureNmTag(referenceWalker, record);
+					int offset = record.getReadUnmappedFlag() ? dictionary.size() : record.getReferenceIndex();
+					SoftClipEvidence startEvidence = null;
+					SoftClipEvidence endEvidence = null;
+					if (SAMRecordUtil.getStartSoftClipLength(record) > 0) {
+						startEvidence = new SoftClipEvidence(processContext, SAMEvidenceSource.this, BreakendDirection.Backward, record);
+						if (processContext.getSoftClipParameters().meetsEvidenceCritera(startEvidence)) {
+							if (processContext.getRealignmentParameters().shouldRealignBreakend(startEvidence)) {
+								realignmentWriters.get(offset % realignmentWriters.size()).write(startEvidence);
+							}
+						} else {
+							startEvidence = null;
 						}
-					} else {
-						startEvidence = null;
 					}
-				}
-				if (SAMRecordUtil.getEndSoftClipLength(record) > 0) {
-					endEvidence = new SoftClipEvidence(processContext, SAMEvidenceSource.this, BreakendDirection.Forward, record);
-					if (processContext.getSoftClipParameters().meetsEvidenceCritera(endEvidence)) {
-						if (processContext.getRealignmentParameters().shouldRealignBreakend(endEvidence)) {
-							realignmentWriters.get(offset % realignmentWriters.size()).write(endEvidence);
+					if (SAMRecordUtil.getEndSoftClipLength(record) > 0) {
+						endEvidence = new SoftClipEvidence(processContext, SAMEvidenceSource.this, BreakendDirection.Forward, record);
+						if (processContext.getSoftClipParameters().meetsEvidenceCritera(endEvidence)) {
+							if (processContext.getRealignmentParameters().shouldRealignBreakend(endEvidence)) {
+								realignmentWriters.get(offset % realignmentWriters.size()).write(endEvidence);
+							}
+						} else {
+							endEvidence = null;
 						}
-					} else {
-						endEvidence = null;
+					}				
+					boolean badpair = SAMRecordUtil.isPartOfNonReferenceReadPair(record);
+					if (startEvidence != null || endEvidence != null || badpair) {
+						writers.get(offset % writers.size()).addAlignment(record);
 					}
-				}				
-				boolean badpair = SAMRecordUtil.isPartOfNonReferenceReadPair(record);
-				if (startEvidence != null || endEvidence != null || badpair) {
-					writers.get(offset % writers.size()).addAlignment(record);
-				}
-				if (badpair) {
-					if (!record.getMateUnmappedFlag()) {
-						mateRecordBuffer.get(record.getMateReferenceIndex() % mateRecordBuffer.size()).add(record);
+					if (badpair) {
+						if (!record.getMateUnmappedFlag()) {
+							mateRecordBuffer.get(record.getMateReferenceIndex() % mateRecordBuffer.size()).add(record);
+						}
 					}
+					ismc.acceptRecord(record, null);
+					imc.acceptRecord(record, null);
+					progress.record(record);
 				}
-				ismc.acceptRecord(record, null);
-				imc.acceptRecord(record, null);
-				progress.record(record);
 			}
 		}
 		private void createOutputWriters(final SAMFileHeader header, final SAMSequenceDictionary dictionary) {

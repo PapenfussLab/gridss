@@ -24,11 +24,20 @@ public class SlidingWindowList<E> extends AbstractList<E> implements RandomAcces
 	public int getWindowSize() {
 		return buffer.length;
 	}
-	@SuppressWarnings (value="unchecked")
-	public SlidingWindowList(int windowSize)
-	{
+	@SuppressWarnings("unchecked")
+	public void setWindowSize(int windowSize) {
 		if (windowSize <= 0) throw new IllegalArgumentException("Window size must be positive");
-		buffer = (E[])(new Object[windowSize]);
+		E[] newBuffer = (E[])(new Object[windowSize]);
+		// Copy over as many valid elements as we can
+		for (int i = Math.max(0, headIndex - Math.min(windowSize, buffer.length) + 1); i <= headIndex; i++) {
+			newBuffer[i % newBuffer.length] = buffer[i % buffer.length];
+		}
+		buffer = newBuffer;
+	}
+	@SuppressWarnings (value="unchecked")
+	public SlidingWindowList(int intialWindowSize) {
+		if (intialWindowSize <= 0) throw new IllegalArgumentException("Window size must be positive");
+		buffer = (E[])(new Object[intialWindowSize]);
 		headIndex = -1;
 	}
 	@Override

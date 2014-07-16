@@ -110,9 +110,11 @@ public class TestHelper {
 		mapped.setReadName(String.format("%s-%d-%d-%s", cigar, referenceIndex, pos, forward));
 		mapped.setMappingQuality(10);
 		mapped.setFirstOfPairFlag(true);
+		mapped.setReadUnmappedFlag(false);
 		clean(mapped);
 		SAMRecord unmapped = Unmapped(mapped.getReadLength());
 		unmapped.setSecondOfPairFlag(true);
+		mapped.setReadUnmappedFlag(true);
 		clean(mapped, unmapped);
 		return new SAMRecord[] { mapped, unmapped };
 	}

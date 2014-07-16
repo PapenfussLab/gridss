@@ -186,4 +186,20 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 		}
     	return processContext;
 	}
+	public static String getAlignmentInstructions(Iterable<EvidenceSource> it) {
+    	int realignmentCount = 0;
+    	StringBuilder sb = new StringBuilder("Please realign intermediate fastq files. Suggested command-line for alignment is:\n");
+    	sb.append("########## Start Recommended Aligner Commands ##########\n");
+    	for (EvidenceSource source : it) {
+    		if (!source.isRealignmentComplete()) {
+    			realignmentCount++;
+    			sb.append(source.getRealignmentScript());
+    		}
+    	}
+    	sb.append("########## End Recommended Aligner Commands ##########\n");
+    	if (realignmentCount > 0) {
+    		return sb.toString();
+    	}
+    	return null;
+    }
 }

@@ -15,8 +15,10 @@ public class StructuralVariationCallBuilder {
 	private final List<SoftClipEvidence> scList = Lists.newArrayList();
 	private final List<NonReferenceReadPair> nrpList = Lists.newArrayList();
 	private final List<VariantContextDirectedBreakpoint> assList = Lists.newArrayList();
-	private int referenceReadCount = -1;
-	private int referenceSpanningPairCount = -1;
+	private int referenceNormalReadCount = -1;
+	private int referenceNormalSpanningPairCount = -1;
+	private int referenceTumourReadCount = -1;
+	private int referenceTumourSpanningPairCount = -1;
 	public StructuralVariationCallBuilder(ProcessingContext processContext, BreakendSummary call) {
 		this.processContext = processContext;
 		this.call  = call;
@@ -59,16 +61,18 @@ public class StructuralVariationCallBuilder {
 		builder
 			.evidence(m)
 			.id(getID())
-			.attribute(VcfAttributes.REFERENCE_READ_COUNT.attribute(), referenceReadCount)
-			.attribute(VcfAttributes.REFERENCE_SPANNING_READ_PAIR_COUNT.attribute(), referenceSpanningPairCount);
+			.attribute(VcfAttributes.REFERENCE_READ_COUNT.attribute(), new int[] {referenceNormalReadCount + referenceTumourReadCount,referenceNormalReadCount, referenceTumourReadCount })
+			.attribute(VcfAttributes.REFERENCE_SPANNING_READ_PAIR_COUNT.attribute(), new int[] {referenceNormalSpanningPairCount + referenceTumourSpanningPairCount,referenceNormalSpanningPairCount, referenceTumourSpanningPairCount });
 		return new VariantContextDirectedBreakpoint(processContext, null, builder.make());
 	}
-	public StructuralVariationCallBuilder referenceReads(int count) {
-		referenceReadCount = count;
+	public StructuralVariationCallBuilder referenceReads(int normalCount, int tumourCount) {
+		referenceNormalReadCount = normalCount;
+		referenceTumourReadCount = tumourCount;
 		return this;
 	}
-	public StructuralVariationCallBuilder referenceSpanningPairs(int count) {
-		referenceSpanningPairCount = count;
+	public StructuralVariationCallBuilder referenceSpanningPairs(int normalCount, int tumourCount) {
+		referenceNormalSpanningPairCount = normalCount;
+		referenceTumourSpanningPairCount = tumourCount;
 		return this;
 	}
 	private String getID() {

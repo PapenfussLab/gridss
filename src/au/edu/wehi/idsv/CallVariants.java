@@ -19,37 +19,42 @@ import com.google.common.collect.Lists;
  * @author Daniel Cameron
  *
  */
-public class ExtractAndAssemble extends CommandLineProgram {
+public class CallVariants extends CommandLineProgram {
 	private static final String PROGRAM_VERSION = "0.1";
 
     // The following attributes define the command-line arguments
     @Usage
-    public String USAGE = getStandardUsagePreamble() + "Extracts structural variation evidence and assembles breakend FASTQs requiring realignment back to reference" + PROGRAM_VERSION;
-    private Log log = Log.getInstance(ExtractAndAssemble.class);
+    public String USAGE = getStandardUsagePreamble() + "Calls variants from the extracted and assembled evidence " + PROGRAM_VERSION;
+    private Log log = Log.getInstance(CallVariants.class);
     @Override
 	protected int doWork() {
     	try {
 	    	ensureDictionariesMatch();
-	    	log.info("Extracting evidence");
-	    	List<SAMEvidenceSource> evidence = Lists.newArrayList();
+	    	List<SAMEvidenceSource> samEvidence = Lists.newArrayList();
 	    	for (File f : INPUT) {
 	    		SAMEvidenceSource sref = new SAMEvidenceSource(getContext(), f, false);
 	    		sref.ensureEvidenceExtracted();
-	    		evidence.add(sref);
+	    		samEvidence.add(sref);
 	    	}
 	    	for (File f : INPUT_TUMOUR) {
 	    		SAMEvidenceSource sref = new SAMEvidenceSource(getContext(), f, true);
 	    		sref.ensureEvidenceExtracted();
-	    		evidence.add(sref);
+	    		samEvidence.add(sref);
 	    	}
-	    	log.info("Evidence extraction complete.");
-	    	log.info("Starting assembly");
-	    	AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getContext(), evidence, OUTPUT);
-	    	aes.ensureAssembled();
-	    	log.info("Assembly complete");
-	    	String instructions = getAlignmentInstructions(Iterables.concat(evidence, ImmutableList.of(aes)));
+	    	AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getContext(), samEvidence, OUTPUT);
+	    	List<EvidenceSource> allEvidence = Lists.newArrayList();
+	    	allEvidence.add(aes);
+	    	allEvidence.addAll(samEvidence);
+	    	String instructions = getAlignmentInstructions(allEvidence);
 	    	if (instructions != null) {
-	    		log.warn(instructions);
+	    		log.error("Realignment is required");
+	    		log.error(instructions);
+		    	log.error("Realignment is required");
+		    	return -1;
+	    	}
+	    	try (VariantCaller caller = new VariantCaller(getContext(), OUTPUT, allEvidence)) {
+	    		caller.callBreakends();
+	    		caller.annotateBreakpoints();
 	    	}
     	} catch (IOException e) {
     		log.error(e);
@@ -58,6 +63,6 @@ public class ExtractAndAssemble extends CommandLineProgram {
 		return 0;
     }
 	public static void main(String[] argv) {
-        System.exit(new ExtractAndAssemble().instanceMain(argv));
+        System.exit(new CallVariants().instanceMain(argv));
     }
 }

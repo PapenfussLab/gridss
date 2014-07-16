@@ -1,15 +1,20 @@
 package au.edu.wehi.idsv;
 
 import htsjdk.samtools.SAMFileWriterFactory;
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.fastq.FastqWriterFactory;
+import htsjdk.samtools.filter.AlignedFilter;
+import htsjdk.samtools.filter.DuplicateReadFilter;
+import htsjdk.samtools.filter.FilteringIterator;
 import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.metrics.MetricBase;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
@@ -39,6 +44,7 @@ public class ProcessingContext implements Closeable {
 	private final SoftClipParameters scp;
 	private final RealignmentParameters rp;
 	private final List<Header> metricsHeaders;
+	private boolean filterDuplicates = true;
 	public ProcessingContext(
 			FileSystemContext fileSystemContext,
 			List<Header> metricsHeaders,
@@ -85,6 +91,17 @@ public class ProcessingContext implements Closeable {
 			.setTempDirectory(fsContext.getTemporaryDirectory())
 			.setUseAsyncIo(isUseAsyncIO())
 			.setCreateIndex(true);
+	}
+	/**
+	 * Applies filters such as duplicate removal that apply to all SAMRecord parsing
+	 * @param iterator raw reads
+	 * @return iterator with filtered record excluded
+	 */
+	public CloseableIterator<SAMRecord> applyCommonSAMRecordFilters(CloseableIterator<SAMRecord> iterator) {
+		if (filterDuplicates) {
+			iterator = new FilteringIterator(iterator, new DuplicateReadFilter()); 
+		}
+		return iterator;
 	}
 	public FastqWriterFactory getFastqWriterFactory(){
 		FastqWriterFactory factory = new FastqWriterFactory();
@@ -155,6 +172,12 @@ public class ProcessingContext implements Closeable {
 	}
 	public void setUseAsyncIO(boolean useAsyncIO) {
 		this.useAsyncIO = useAsyncIO;
+	}
+	public boolean isFilterDuplicates() {
+		return filterDuplicates;
+	}
+	public void setFilterDuplicates(boolean filterDuplicates) {
+		this.filterDuplicates = filterDuplicates;
 	}
 	private boolean useAsyncIO = true;
 }

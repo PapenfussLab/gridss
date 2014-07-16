@@ -1,7 +1,9 @@
 package au.edu.wehi.idsv;
 
+import java.util.Iterator;
 import java.util.PriorityQueue;
 
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.PeekingIterator;
 
@@ -14,7 +16,8 @@ import com.google.common.collect.PeekingIterator;
 public class SequentialBreakendAnnotator {
 	private final ProcessingContext context;
 	private final PeekingIterator<DirectedEvidence> evidence;
-	private final ReferenceCoverageLookup reference;
+	private final SequentialReferenceCoverageLookup referenceNormal;
+	private final SequentialReferenceCoverageLookup referenceTumour;
 	private final PriorityQueue<DirectedEvidence> activeEvidence = new PriorityQueue<DirectedEvidence>(1024, new Ordering<DirectedEvidence>() {
 		@Override
 		public int compare(DirectedEvidence arg0, DirectedEvidence arg1) {
@@ -22,13 +25,16 @@ public class SequentialBreakendAnnotator {
 		}
 	});
 	private int currentReferenceIndex = -1;
+	
 	public SequentialBreakendAnnotator(
 			ProcessingContext context,
-			ReferenceCoverageLookup reference,
-			PeekingIterator<DirectedEvidence> evidence) {
+			SequentialReferenceCoverageLookup referenceNormal,
+			SequentialReferenceCoverageLookup referenceTumour,
+			Iterator<DirectedEvidence> iterator) {
 		this.context = context;
-		this.evidence = evidence;
-		this.reference = reference;
+		this.evidence = Iterators.peekingIterator(iterator);
+		this.referenceNormal = referenceNormal;
+		this.referenceTumour = referenceTumour;
 	}
 	public VariantContextDirectedBreakpoint annotate(VariantContextDirectedBreakpoint variant) {
 		BreakendSummary loc = variant.getBreakendSummary();
@@ -43,10 +49,8 @@ public class SequentialBreakendAnnotator {
 		addUntil(loc.referenceIndex, loc.end);
 		
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(context, variant.getBreakendSummary());
-		if (reference != null) {
-			builder.referenceReads(reference.readsSupportingNoBreakendAfter(loc.referenceIndex, loc.start + (loc.direction == BreakendDirection.Forward ? 0 : 1)));
-			builder.referenceSpanningPairs(reference.readPairsSupportingNoBreakendAfter(loc.referenceIndex, loc.start + (loc.direction == BreakendDirection.Forward ? 0 : 1)));
-		}
+		annotateReferenceCounts(builder, loc.referenceIndex, loc.start + (loc.direction == BreakendDirection.Forward ? 0 : 1));
+		
 		for (DirectedEvidence evidence : activeEvidence) {
 			BreakendSummary evidenceLoc = evidence.getBreakendSummary();
 			if (evidenceLoc.overlaps(loc)) {
@@ -54,6 +58,22 @@ public class SequentialBreakendAnnotator {
 			}
 		}
 		return builder.make();
+	}
+	private void annotateReferenceCounts(StructuralVariationCallBuilder builder, int referenceIndex, int positionImmediatelyBeforeBreakend) {
+		int normalReads = 0;
+		int normalSpans = 0;
+		int tumourReads = 0;
+		int tumourSpans = 0;
+		if (referenceNormal != null) {
+			normalReads = referenceNormal.readsSupportingNoBreakendAfter(referenceIndex, positionImmediatelyBeforeBreakend);
+			normalSpans = referenceNormal.readPairsSupportingNoBreakendAfter(referenceIndex, positionImmediatelyBeforeBreakend);
+		}
+		if (referenceTumour != null) {
+			tumourReads = referenceTumour.readsSupportingNoBreakendAfter(referenceIndex, positionImmediatelyBeforeBreakend);
+			tumourSpans = referenceTumour.readPairsSupportingNoBreakendAfter(referenceIndex, positionImmediatelyBeforeBreakend);
+		}
+		builder.referenceReads(normalReads, tumourReads);
+		builder.referenceSpanningPairs(normalSpans, tumourSpans);
 	}
 	private void addUntil(int referenceIndex, int position) {
 		while (evidence.hasNext() && evidence.peek().getBreakendSummary().referenceIndex < referenceIndex) evidence.next();

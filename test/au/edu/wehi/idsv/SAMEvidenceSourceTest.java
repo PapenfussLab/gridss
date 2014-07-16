@@ -6,17 +6,11 @@ import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.fastq.FastqRecord;
-import htsjdk.samtools.metrics.MetricsFile;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.List;
 
 import org.junit.Test;
 
-import picard.analysis.InsertSizeMetrics;
-import picard.analysis.directed.InsertSizeMetricsCollector;
-import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.metrics.RelevantMetrics;
 
 import com.google.common.collect.Lists;

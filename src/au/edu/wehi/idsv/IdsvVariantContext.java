@@ -53,9 +53,18 @@ public class IdsvVariantContext extends VariantContext {
 			        .result();
 		  }
 	};
-	protected List<Integer> parseIntList(String attrName) {
+	protected int getAttributeAsIntListOffset(String attrName, int offset, int defaultValue) {
+		List<Integer> list = getAttributeAsIntList(attrName, ImmutableList.<Integer>of(), false);
+		if (list == null || list.size() <= offset || list.get(offset) == null) return defaultValue;
+		return list.get(offset);
+	}
+	protected List<Integer> getAttributeAsIntList(String attrName) {
+		List<Integer> list = getAttributeAsIntList(attrName, ImmutableList.<Integer>of(), true);
+		return list;
+	}
+	private List<Integer> getAttributeAsIntList(String attrName, List<Integer> defaultValue, boolean throwOnParseError) {
 		Object x = getAttribute(attrName);
-		if ( x == null || x == VCFConstants.MISSING_VALUE_v4 ) return ImmutableList.of();
+		if ( x == null || x == VCFConstants.MISSING_VALUE_v4 ) return defaultValue;
 		if (x instanceof Integer) {
 			return Ints.asList((Integer)x);
 		} else if (x instanceof int[]) {
@@ -68,12 +77,14 @@ public class IdsvVariantContext extends VariantContext {
 				} else if (o instanceof String) {
 					list.add(Integer.parseInt((String)o));
 				} else {
-					throw new IllegalStateException(String.format("Error parsing attribute %s=%s of %s", attrName, x, super.toString()));
+					if (throwOnParseError) throw new IllegalStateException(String.format("Error parsing attribute %s=%s of %s", attrName, x, super.toString()));
+					return defaultValue;
 				}
 			}
 			return list;
 		} else {
-			throw new IllegalStateException(String.format("Error parsing attribute %s=%s of %s", attrName, x, super.toString()));
+			if (throwOnParseError) throw new IllegalStateException(String.format("Error parsing attribute %s=%s of %s", attrName, x, super.toString()));
+			return defaultValue;
 		}
 	}
 	public EvidenceSource getEvidenceSource() {
