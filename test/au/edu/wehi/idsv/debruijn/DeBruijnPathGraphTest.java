@@ -2,6 +2,7 @@ package au.edu.wehi.idsv.debruijn;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -48,7 +49,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 				.add("CGTC", 3)); // = 5
 		List<PathNode<DeBruijnNodeBase>> nodes = Lists.newArrayList(pg.getPaths());
 		assertEquals(3, nodes.size()); // precondition
-		nodes.sort(pg.ByMaxKmerWeightDesc);
+		Collections.sort(nodes, pg.ByMaxKmerWeightDesc);
 		assertEquals(pg.get("TGTC") , nodes.get(0));
 		assertEquals(pg.get("CGTC") , nodes.get(1));
 		assertEquals(pg.get("GTCA") , nodes.get(2));

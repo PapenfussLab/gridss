@@ -591,7 +591,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 		path.add(startNode);
 		visited.add(startNode);
 		// assemble back
-		PriorityQueue<PN> prevCandidates = new PriorityQueue<PN>(backwardChoice);
+		PriorityQueue<PN> prevCandidates = new PriorityQueue<PN>(4, backwardChoice);
 		for (List<PN> nodeList = prevPath(path.getFirst()); ; nodeList = prevPath(path.getFirst())) {
 			prevCandidates.clear();
 			for (PN node : nodeList) {
@@ -603,7 +603,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 			path.addFirst(prevCandidates.poll());
 		}
 		// assemble forward
-		PriorityQueue<PN> nextCandidates = new PriorityQueue<PN>(forwardChoice);
+		PriorityQueue<PN> nextCandidates = new PriorityQueue<PN>(4, forwardChoice);
 		for (List<PN> nodeList = nextPath(path.getLast()); ; nodeList = nextPath(path.getLast())) {
 			nextCandidates.clear();
 			for (PN node : nodeList) {

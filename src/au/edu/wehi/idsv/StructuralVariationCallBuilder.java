@@ -1,23 +1,24 @@
 package au.edu.wehi.idsv;
 
 import java.util.List;
+import java.util.Map;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 public class StructuralVariationCallBuilder {
 	private final ProcessingContext processContext;
-	private final EvidenceSource source;
+	private final Map<EvidenceSource, Integer> sourceWeights = Maps.newHashMap();
 	private final BreakendSummary call;
 	private final List<SoftClipEvidence> scList = Lists.newArrayList();
 	private final List<NonReferenceReadPair> nrpList = Lists.newArrayList();
 	private final List<VariantContextDirectedBreakpoint> assList = Lists.newArrayList();
 	private int referenceReadCount = -1;
 	private int referenceSpanningPairCount = -1;
-	public StructuralVariationCallBuilder(ProcessingContext processContext, EvidenceSource source, BreakendSummary call) {
+	public StructuralVariationCallBuilder(ProcessingContext processContext, BreakendSummary call) {
 		this.processContext = processContext;
-		this.source = source;
 		this.call  = call;
 	}
 	public StructuralVariationCallBuilder evidence(DirectedEvidence evidence) {

@@ -41,7 +41,7 @@ public class SubgraphPathContigAssembler {
 		}
 	}	
 	private List<LinkedList<Long>> greedyAssembly(AssemblyParameters parameters) {
-		PriorityQueue<SubgraphPathNode> seeds = new PriorityQueue<SubgraphPathNode>(pathGraph.ByMaxKmerWeightDesc);
+		PriorityQueue<SubgraphPathNode> seeds = new PriorityQueue<SubgraphPathNode>(16, pathGraph.ByMaxKmerWeightDesc);
 		seeds.addAll(Sets.filter(pathGraph.getPaths(), new Predicate<SubgraphPathNode>() {
 			public boolean apply(SubgraphPathNode arg) {
 				boolean isNonReference = !arg.containsReferenceKmer(); 
