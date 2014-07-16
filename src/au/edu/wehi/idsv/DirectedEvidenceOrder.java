@@ -43,4 +43,8 @@ public abstract class DirectedEvidenceOrder {
 			        .result();
 		}
 	};
+	/**
+	 * Natural (genomic) ordering of directed evidence.  
+	 */
+	public static Ordering<DirectedEvidence> ByNatural = ByStartStart2EndEnd2;
 }

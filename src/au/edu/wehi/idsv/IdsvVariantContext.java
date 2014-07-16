@@ -79,4 +79,13 @@ public class IdsvVariantContext extends VariantContext {
 	public EvidenceSource getEvidenceSource() {
 		return source;
 	}
+	public static Ordering<IdsvVariantContext> ByLocation = new Ordering<IdsvVariantContext>() {
+		public int compare(IdsvVariantContext o1, IdsvVariantContext o2) {
+			return ComparisonChain.start()
+			        .compare(o1.getReferenceIndex(), o2.getReferenceIndex())
+			        .compare(o1.start, o2.start)
+			        .compare(o1.stop, o2.stop)
+			        .result();
+		  }
+	};
 }

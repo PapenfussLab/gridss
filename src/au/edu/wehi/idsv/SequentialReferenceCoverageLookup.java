@@ -20,7 +20,7 @@ import com.google.common.collect.Queues;
  * @author Daniel Cameron
  *
  */
-public class SequentialReferenceCoverageLookup {
+public class SequentialReferenceCoverageLookup implements ReferenceCoverageLookup {
 	private final PeekingIterator<SAMRecord> reads;
 	private final int windowSize;
 	private final PriorityQueue<Integer> currentReferenceRead = Queues.newPriorityQueue();
@@ -53,22 +53,18 @@ public class SequentialReferenceCoverageLookup {
 		if (count == null) return 0;
 		return (int)count;
 	}
-	/**
-	 * Number of reference reads providing evidence against a breakend immediately after the given base
-	 * @param referenceIndex contig
-	 * @param position position immediate before putative breakend
-	 * @return number of reads spanning the putative breakend
+	/* (non-Javadoc)
+	 * @see au.edu.wehi.idsv.ReferenceCoverageLookup#readsSupportingNoBreakendAfter(int, int)
 	 */
+	@Override
 	public int readsSupportingNoBreakendAfter(int referenceIndex, int position) {
 		ensure(referenceIndex, position);
 		return getCount(readCounts, referenceIndex, position);
 	}
-	/**
-	 * Number of read pairs providing evidence against a breakend immediately after the given base
-	 * @param referenceIndex contig
-	 * @param position position immediate before putative breakend
-	 * @return number of read pairs spanning the putative breakend
+	/* (non-Javadoc)
+	 * @see au.edu.wehi.idsv.ReferenceCoverageLookup#readPairsSupportingNoBreakendAfter(int, int)
 	 */
+	@Override
 	public int readPairsSupportingNoBreakendAfter(int referenceIndex, int position) {
 		ensure(referenceIndex, position);
 		return getCount(pairCounts, referenceIndex, position);

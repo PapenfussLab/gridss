@@ -6,8 +6,6 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
-import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
-import htsjdk.variant.vcf.VCFHeader;
 
 import java.io.File;
 import java.util.Iterator;
@@ -17,7 +15,6 @@ import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredAssembler;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 import au.edu.wehi.idsv.metrics.CompositeMetrics;
 import au.edu.wehi.idsv.metrics.RelevantMetrics;
-import au.edu.wehi.idsv.vcf.VcfConstants;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
@@ -102,7 +99,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 						toClose.add(it);
 						toMerge.add(it);
 					}
-					Iterator<DirectedEvidence> merged = Iterators.mergeSorted(toMerge, DirectedEvidenceOrder.ByStartEnd);
+					Iterator<DirectedEvidence> merged = Iterators.mergeSorted(toMerge, DirectedEvidenceOrder.ByNatural);
 					assemble(merged, processContext.getFileSystemContext().getBreakendVcfForChr(input, seq), processContext.getFileSystemContext().getRealignmentFastqForChr(input, seq));
 					for (CloseableIterator<DirectedEvidence> x : toMerge) {
 						x.close();
@@ -115,7 +112,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 					toClose.add(it);
 					toMerge.add(it);
 				}
-				Iterator<DirectedEvidence> merged = Iterators.mergeSorted(toMerge, DirectedEvidenceOrder.ByStartEnd);
+				Iterator<DirectedEvidence> merged = Iterators.mergeSorted(toMerge, DirectedEvidenceOrder.ByNatural);
 				assemble(merged, processContext.getFileSystemContext().getBreakendVcf(input), processContext.getFileSystemContext().getRealignmentFastq(input));
 				for (CloseableIterator<DirectedEvidence> x : toMerge) {
 					x.close();
@@ -131,18 +128,10 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		FastqBreakpointWriter fastqWriter = null;
 		VariantContextWriter vcfWriter = null;
 		try {
-			vcfWriter = new VariantContextWriterBuilder()
-				.setOutputFile(breakendVcf)
-				.setReferenceDictionary(processContext.getReference().getSequenceDictionary())
-				.build();
+			vcfWriter = processContext.getVariantContextWriter(breakendVcf);
 			fastqWriter = new FastqBreakpointWriter(processContext.getFastqWriterFactory().newWriter(realignmentFastq));
-			final VCFHeader vcfHeader = new VCFHeader();
-			vcfHeader.setSequenceDictionary(processContext.getReference().getSequenceDictionary());
-			VcfConstants.addHeaders(vcfHeader);
-			vcfWriter.writeHeader(vcfHeader);
 			
-			ReadEvidenceAssembler assembler = getAssembler();
-			
+			ReadEvidenceAssembler assembler = getAssembler();			
 			final ProgressLogger progress = new ProgressLogger(log);
 			while (it.hasNext()) {
 				DirectedEvidence readEvidence = it.next();

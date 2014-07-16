@@ -10,11 +10,17 @@ import htsjdk.samtools.metrics.MetricBase;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.variant.variantcontext.writer.Options;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
+import htsjdk.variant.vcf.VCFHeader;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+
+import au.edu.wehi.idsv.vcf.VcfConstants;
 
 /**
  * Processing context for the given record
@@ -77,13 +83,38 @@ public class ProcessingContext implements Closeable {
 	public SAMFileWriterFactory getSamReaderWriterFactory() {
 		return new SAMFileWriterFactory()
 			.setTempDirectory(fsContext.getTemporaryDirectory())
-			.setUseAsyncIo(true)
+			.setUseAsyncIo(isUseAsyncIO())
 			.setCreateIndex(true);
 	}
 	public FastqWriterFactory getFastqWriterFactory(){
 		FastqWriterFactory factory = new FastqWriterFactory();
-		factory.setUseAsyncIo(true);
+		factory.setUseAsyncIo(isUseAsyncIO());
 		return factory;
+	}
+	public VariantContextWriterBuilder getVariantContextWriterBuilder(File output) {
+		VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
+			.setOutputFile(output)
+			.setReferenceDictionary(getReference().getSequenceDictionary());
+		if (isUseAsyncIO()) {
+			builder.setOption(Options.USE_ASYNC_IO);
+		}
+		return builder;
+	}
+	/**
+	 * Gets a VCF file ready to write variants to
+	 * A header based on this processing context will have already been written to the returned writer
+	 * It is the responsibility of the caller to close the returned @link {@link VariantContextWriter}
+	 * @param output file
+	 * @return
+	 */
+	public VariantContextWriter getVariantContextWriter(File file) {
+		VariantContextWriterBuilder builder = getVariantContextWriterBuilder(file);
+		VariantContextWriter vcfWriter = builder.build();
+		final VCFHeader vcfHeader = new VCFHeader();
+		VcfConstants.addHeaders(vcfHeader);
+		vcfHeader.setSequenceDictionary(getReference().getSequenceDictionary());
+		vcfWriter.writeHeader(vcfHeader);
+		return vcfWriter;
 	}
 	public ReferenceSequenceFile getReference() {
 		return reference;
@@ -119,4 +150,11 @@ public class ProcessingContext implements Closeable {
 	public RealignmentParameters getRealignmentParameters() {
 		return rp;
 	}
+	public boolean isUseAsyncIO() {
+		return useAsyncIO;
+	}
+	public void setUseAsyncIO(boolean useAsyncIO) {
+		this.useAsyncIO = useAsyncIO;
+	}
+	private boolean useAsyncIO = true;
 }

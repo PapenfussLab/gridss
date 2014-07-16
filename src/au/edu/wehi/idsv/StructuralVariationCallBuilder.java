@@ -61,7 +61,7 @@ public class StructuralVariationCallBuilder {
 			.id(getID())
 			.attribute(VcfAttributes.REFERENCE_READ_COUNT.attribute(), referenceReadCount)
 			.attribute(VcfAttributes.REFERENCE_SPANNING_READ_PAIR_COUNT.attribute(), referenceSpanningPairCount);
-		return new VariantContextDirectedBreakpoint(processContext, source, builder.make());
+		return new VariantContextDirectedBreakpoint(processContext, null, builder.make());
 	}
 	public StructuralVariationCallBuilder referenceReads(int count) {
 		referenceReadCount = count;
@@ -99,12 +99,12 @@ public class StructuralVariationCallBuilder {
 		VariantContextDirectedBreakpoint ass = bestAssembly();
 		SoftClipEvidence sce = bestSoftclip();
 		if (ass != null) {
-			builder = new VariantContextDirectedBreakpointBuilder(processContext, source, ass);
+			builder = new VariantContextDirectedBreakpointBuilder(processContext, null, ass);
 		} else if (sce != null) {
-			builder = new VariantContextDirectedBreakpointBuilder(processContext, source)
+			builder = new VariantContextDirectedBreakpointBuilder(processContext, null)
 				.breakend(sce.getBreakendSummary(), sce.getUntemplatedSequence());
 		} else {
-			builder = new VariantContextDirectedBreakpointBuilder(processContext, source)
+			builder = new VariantContextDirectedBreakpointBuilder(processContext, null)
 				.breakend(call, "");
 		}
 		return builder;

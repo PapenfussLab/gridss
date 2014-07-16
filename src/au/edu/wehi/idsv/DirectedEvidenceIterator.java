@@ -31,7 +31,7 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 	private final PeekingIterator<VariantContext> vcfIterator;
 	private final SequentialNonReferenceReadPairFactory mateFactory;
 	private final SequentialRealignedBreakpointFactory realignFactory;
-	private final PriorityQueue<DirectedEvidence> calls = new PriorityQueue<DirectedEvidence>(INITIAL_BUFFER_SIZE, DirectedEvidenceOrder.ByStartStart2EndEnd2);
+	private final PriorityQueue<DirectedEvidence> calls = new PriorityQueue<DirectedEvidence>(INITIAL_BUFFER_SIZE, DirectedEvidenceOrder.ByNatural);
 	private long currentLinearPosition = -1;
 	/**
 	 * Iterates over breakpoint evidence

@@ -204,15 +204,6 @@ public class VariantContextDirectedBreakpoint extends IdsvVariantContext impleme
 		});
 		return it;
 	}
-	public static Ordering<VariantContextDirectedBreakpoint> ByLocation = new Ordering<VariantContextDirectedBreakpoint>() {
-		public int compare(VariantContextDirectedBreakpoint o1, VariantContextDirectedBreakpoint o2) {
-			return ComparisonChain.start()
-			        .compare(o1.getReferenceIndex(), o2.getReferenceIndex())
-			        .compare(o1.start, o2.start)
-			        .compare(o1.stop, o2.stop)
-			        .result();
-		  }
-	};
 	public static Ordering<VariantContextDirectedBreakpoint> ByBreakendStartEnd = new Ordering<VariantContextDirectedBreakpoint>() {
 		public int compare(VariantContextDirectedBreakpoint o1, VariantContextDirectedBreakpoint o2) {
 			return BreakendSummary.ByStartEnd.compare(o1.getBreakendSummary(), o2.getBreakendSummary());
