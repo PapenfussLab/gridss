@@ -71,20 +71,20 @@ public class SAMEvidenceSource extends EvidenceSource {
 	protected boolean isProcessingComplete() {
 		boolean done = true;
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		done &= checkIntermediate(fsc.getInsertSizeMetrics(input), input);
-		done &= checkIntermediate(fsc.getIdsvMetrics(input), input);
+		done &= IntermediateFileUtil.checkIntermediate(fsc.getInsertSizeMetrics(input), input);
+		done &= IntermediateFileUtil.checkIntermediate(fsc.getIdsvMetrics(input), input);
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				done &= checkIntermediate(fsc.getSVBamForChr(input, seq.getSequenceName()), input);
-				done &= checkIntermediate(fsc.getMateBamForChr(input, seq.getSequenceName()), input);
-				done &= checkIntermediate(fsc.getRealignmentFastqForChr(input, seq.getSequenceName()), input);
+				done &= IntermediateFileUtil.checkIntermediate(fsc.getSVBamForChr(input, seq.getSequenceName()), input);
+				done &= IntermediateFileUtil.checkIntermediate(fsc.getMateBamForChr(input, seq.getSequenceName()), input);
+				done &= IntermediateFileUtil.checkIntermediate(fsc.getRealignmentFastqForChr(input, seq.getSequenceName()), input);
 			}
 		} else {
-			done &= checkIntermediate(fsc.getSVBam(input), input);
-			done &= checkIntermediate(fsc.getMateBam(input), input);
-			done &= checkIntermediate(fsc.getRealignmentFastq(input), input);
+			done &= IntermediateFileUtil.checkIntermediate(fsc.getSVBam(input), input);
+			done &= IntermediateFileUtil.checkIntermediate(fsc.getMateBam(input), input);
+			done &= IntermediateFileUtil.checkIntermediate(fsc.getRealignmentFastq(input), input);
 		}
-		done &= checkIntermediate(fsc.getFlagFile(input, FLAG_NAME), input);
+		done &= IntermediateFileUtil.checkIntermediate(fsc.getFlagFile(input, FLAG_NAME), input);
 		return done;
 	}
 	public RelevantMetrics getMetrics() {

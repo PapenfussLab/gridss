@@ -79,12 +79,12 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				done &= checkIntermediate(fsc.getBreakendVcfForChr(input, seq.getSequenceName()));
-				done &= checkIntermediate(fsc.getRealignmentFastqForChr(input, seq.getSequenceName()));
+				done &= IntermediateFileUtil.checkIntermediate(fsc.getBreakendVcfForChr(input, seq.getSequenceName()));
+				done &= IntermediateFileUtil.checkIntermediate(fsc.getRealignmentFastqForChr(input, seq.getSequenceName()));
 			}
 		} else {
-			done &= checkIntermediate(fsc.getBreakendVcf(input));
-			done &= checkIntermediate(fsc.getRealignmentFastq(input));
+			done &= IntermediateFileUtil.checkIntermediate(fsc.getBreakendVcf(input));
+			done &= IntermediateFileUtil.checkIntermediate(fsc.getRealignmentFastq(input));
 		}
 		return done;
 	}

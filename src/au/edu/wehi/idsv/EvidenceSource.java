@@ -7,6 +7,8 @@ import htsjdk.samtools.util.Log;
 import java.io.File;
 import java.util.NoSuchElementException;
 
+import javax.naming.OperationNotSupportedException;
+
 import au.edu.wehi.idsv.metrics.RelevantMetrics;
 
 import com.google.common.collect.Iterators;
@@ -34,43 +36,6 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 		this.processContext = processContext;
 		this.input = input;
 	}
-	/**
-	 * Checks that the given intermediate file is valid
-	 * @param file file to check
-	 * @param source source file
-	 * @return true if intermediate file appears to be valid
-	 */
-	protected boolean checkIntermediate(File file, File source) {
-		if (!file.exists()) {
-			log.debug("Missing intermediate ", file);
-			return false;
-		}
-		if (source != null && source.exists() && file.lastModified() < source.lastModified()) {
-			log.info(source, " has a more recent timestamp than ", file, ". Considering ", file, " out of date.");
-			return false;
-		}
-		return true;
-	}
-	/**
-	 * Checks that the given intermediate file is valid
-	 * @param file file to check
-	 * @return true if intermediate file appears to be valid
-	 */
-	protected boolean checkIntermediate(File file) {
-		return checkIntermediate(file, null);
-	}
-	public boolean isRealignmentComplete() {
-		boolean done = true;
-		FileSystemContext fsc = processContext.getFileSystemContext();
-		if (processContext.shouldProcessPerChromosome()) {
-			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				done &= checkIntermediate(fsc.getRealignmentBamForChr(input, seq.getSequenceName()), fsc.getSVBamForChr(input, seq.getSequenceName()));
-			}
-		} else {
-			done &= checkIntermediate(fsc.getRealignmentBam(input), fsc.getSVBam(input));
-		}
-		return done;
-	}
 	public String getRealignmentScript() {
 		return getBowtie2Script();
 	}
@@ -91,6 +56,24 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 				processContext.getReferenceFile(),
 				realignFastq,
 				realignBam);
+	}
+	/**
+	 * Checks if realignment is complete for the given source file
+	 * @param processContext
+	 * @param source source
+	 * @return
+	 */
+	protected boolean isRealignmentComplete() {
+		boolean done = true;
+		FileSystemContext fsc = processContext.getFileSystemContext();
+		if (processContext.shouldProcessPerChromosome()) {
+			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
+				done &= IntermediateFileUtil.checkIntermediate(fsc.getRealignmentBamForChr(input, seq.getSequenceName()), fsc.getRealignmentFastqForChr(input, seq.getSequenceName()));
+			}
+		} else {
+			done &= IntermediateFileUtil.checkIntermediate(fsc.getRealignmentBam(input), fsc.getRealignmentFastq(input));
+		}
+		return done;
 	}
 	public CloseableIterator<DirectedEvidence> iterator() {
 		if (!isProcessingComplete()) {
@@ -176,6 +159,10 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 			closeCurrent();
 			currentReferenceIndex = processContext.getReference().getSequenceDictionary().size();
 		}
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
+		}
 	}
 	/**
 	 * Filters the iterable to only results on the given chromsome
@@ -226,6 +213,10 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 				it = null;
 			}
 			closed = true;
+		}
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
 		}
 	}
 }
