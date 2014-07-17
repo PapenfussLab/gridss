@@ -184,6 +184,25 @@ public class AssemblyBuilderTest extends TestHelper {
 		assertEquals(10, bs.end);
 	}
 	@Test
+	public void alt_allele_should_contain_only_breakend() {
+		VariantContextDirectedBreakpoint dba;
+		dba = new AssemblyBuilder(getContext(), AES())
+			.assemblyBases(B("AAAAAAAAAAGTAC"))
+			.referenceAnchor(1, 100)
+			.direction(FWD)
+			.anchorLength(10)
+			.makeVariant();
+		assertEquals("GTAC", dba.getBreakpointSequenceString());
+		
+		dba = new AssemblyBuilder(getContext(), AES())
+			.assemblyBases(B("GTACAAAAAAAAAA"))
+			.referenceAnchor(1, 10)
+			.direction(BWD)
+			.anchorLength(10)
+			.makeVariant();
+		assertEquals("GTAC", dba.getBreakpointSequenceString());
+	}
+	@Test
 	public void should_set_breakend_to_mate_anchor_interval() {
 		VariantContextDirectedBreakpoint dba;
 		BreakendSummary bs;
@@ -213,13 +232,12 @@ public class AssemblyBuilderTest extends TestHelper {
 	public void should_restrict_mate_anchor_interval_based_on_anchor_positions() {
 		// max fragment size = 300
 		VariantContextDirectedBreakpoint dba;
-		BreakendSummary bs;
 		dba = new AssemblyBuilder(getContext(), AES())
 			.assemblyBases(B("AAAAAA"))
 			.mateAnchor(1, 100, 5, 10, 20)
 			.direction(FWD)
 			.makeVariant();
-		bs = dba.getBreakendSummary();
+		dba.getBreakendSummary();
 		fail(); // need to design this properly 
 		//assertEquals(110, bs.start);
 		//assertEquals(120, bs.end);
@@ -228,13 +246,12 @@ public class AssemblyBuilderTest extends TestHelper {
 	public void mate_anchor_should_set_imprecise_header() {
 		// max fragment size = 300
 		VariantContextDirectedBreakpoint dba;
-		BreakendSummary bs;
 		dba = new AssemblyBuilder(getContext(), AES())
 			.assemblyBases(B("AAAAAA"))
 			.mateAnchor(1, 100)
 			.direction(FWD)
 			.makeVariant();
-		bs = dba.getBreakendSummary();
+		dba.getBreakendSummary();
 		assertTrue(dba.hasAttribute(VcfSvConstants.IMPRECISE_KEY));
 	}
 }

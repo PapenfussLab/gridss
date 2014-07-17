@@ -1,9 +1,12 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
+import java.util.NavigableMap;
+
 import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.VariantEvidence;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
 
@@ -13,38 +16,59 @@ public class DeBruijnSubgraphNode extends DeBruijnNodeBase {
 	 * 
 	 * Note: reads with less than k bases mapped to the reference will be considered unanchored 
 	 */
-	private int minReferencePosition = Integer.MAX_VALUE;
-	private int maxReferencePosition = Integer.MIN_VALUE;
+	private NavigableMap<Integer, Integer> referencePosition = Maps.newTreeMap();
 	/**
 	 * Genomic coordinates of closest anchored mate of reads starting with this kmer 
 	 */
-	private int minMatePosition = Integer.MAX_VALUE;
-	private int maxMatePosition = Integer.MIN_VALUE;
+	private NavigableMap<Integer, Integer> matePosition = Maps.newTreeMap();
 	 
 	private SubgraphSummary subgraph;
 	public DeBruijnSubgraphNode(VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) {
 		super(evidence, readKmerOffset, kmer);
 		if (evidence.isReferenceKmer(readKmerOffset)) {
-			maxReferencePosition = minReferencePosition = evidence.getInferredReferencePosition(readKmerOffset);
+			addPosition(referencePosition, evidence.getInferredReferencePosition(readKmerOffset), kmer.weight);
 		} else if (!evidence.isDirectlyAnchoredToReference()) {
-			minMatePosition = maxMatePosition = evidence.getMateAnchorPosition();
+			addPosition(matePosition, evidence.getMateAnchorPosition(), kmer.weight);
 		}
 	}
-	public void add(DeBruijnSubgraphNode node) {
+	private static void addPosition(NavigableMap<Integer, Integer> positionMap, int position, int weight) {
+		Integer existing = positionMap.get(position);
+		if (existing == null) existing = 0;
+		positionMap.put(position, existing + weight);
+	}
+	private static void addPositions(NavigableMap<Integer, Integer> positionMap, NavigableMap<Integer, Integer> toAdd) {
+		for (int key : toAdd.keySet()) {
+			addPosition(positionMap, key, toAdd.get(key));
+		}
+	}
+	private static Integer getBestPosition(NavigableMap<Integer, Integer> positionMap) {
+		int bestWeight = 0;
+		int bestPos = -1;
+		for (int pos : positionMap.keySet()) {
+			int weight = positionMap.get(pos); 
+			if (weight >= bestWeight) {
+				bestPos = pos;
+				bestWeight = weight;
+			}
+		}
+		if (bestWeight > 0) return bestPos;
+		return null;
+	}
+	@Override
+	public void add(DeBruijnNodeBase node) {
+		assert(node instanceof DeBruijnSubgraphNode);
 		super.add(node);
-		minReferencePosition = Math.min(minReferencePosition, node.minReferencePosition);
-		maxReferencePosition = Math.max(maxReferencePosition, node.maxReferencePosition);
-		minMatePosition = Math.min(minMatePosition, node.minMatePosition);
-		maxMatePosition = Math.max(maxMatePosition, node.maxMatePosition);
+		addPositions(referencePosition, ((DeBruijnSubgraphNode)node).referencePosition);
+		addPositions(matePosition, ((DeBruijnSubgraphNode)node).matePosition);
 	}
 	public boolean remove(DeBruijnSubgraphNode node) {
 		throw new UnsupportedOperationException("Unable to remove read support from individual kmers: only most closest anchors are tracked.");
 	}
 	public boolean isReference() {
-		return minReferencePosition != Integer.MAX_VALUE;
+		return !referencePosition.isEmpty();
 	}
 	public boolean isMateAnchored() {
-		return minMatePosition != Integer.MAX_VALUE;
+		return !matePosition.isEmpty();
 	}
 	public SubgraphSummary getSubgraph() {
 		if (subgraph == null) return null;
@@ -54,16 +78,19 @@ public class DeBruijnSubgraphNode extends DeBruijnNodeBase {
 		this.subgraph = subgraph;
 	}
 	public Integer getMinReferencePosition() {
-		return isReference() ? minReferencePosition : null;
+		return isReference() ? referencePosition.firstKey() : null;
 	}
 	public Integer getMaxReferencePosition() {
-		return isReference() ? maxReferencePosition : null;
+		return isReference() ? referencePosition.lastKey() : null;
+	}
+	public Integer getBestReferencePosition() {
+		return getBestPosition(referencePosition);
 	}
 	public Integer getMinMatePosition() {
-		return isMateAnchored() ? minMatePosition : null;
+		return isMateAnchored() ? matePosition.firstKey() : null;
 	}
 	public Integer getMaxMatePosition() {
-		return isMateAnchored() ? maxMatePosition : null; 
+		return isMateAnchored() ? matePosition.lastKey() : null; 
 	}
 	public static Ordering<DeBruijnSubgraphNode> ByWeight = new Ordering<DeBruijnSubgraphNode>() {
 		public int compare(DeBruijnSubgraphNode o1, DeBruijnSubgraphNode o2) {
@@ -72,8 +99,8 @@ public class DeBruijnSubgraphNode extends DeBruijnNodeBase {
 	};
 	public String toString() {
 		return String.format("%s%s g=%d,%s",
-				maxReferencePosition == Integer.MIN_VALUE ? " " : "R",
-				maxMatePosition == Integer.MIN_VALUE ? " " : "M",
+				isReference() ? "R" : " ",
+				isMateAnchored() ? "M" : " ",
 				subgraph.getAnyKmer(),
 				super.toString());
 	}

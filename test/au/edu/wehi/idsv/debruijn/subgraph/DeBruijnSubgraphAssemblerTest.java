@@ -43,4 +43,16 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(2, results.size());
 	}
+	@Test
+	public void should_anchor_at_reference_kmer() {
+		DeBruijnSubgraphAssembler ass = DSA(3);
+		List<VariantContextDirectedBreakpoint> results = Lists.newArrayList();
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(0, 1, "4M3S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(0, 2, "3M4S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("CTGAAAT", Read(0, 10, "3S4M"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("TCTGAAA", Read(0, 10, "4S3M"))))));
+		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(2, results.size());
+		assertEquals(4, results.get(0).getBreakpointSequence().length);
+	}
 }

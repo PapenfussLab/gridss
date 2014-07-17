@@ -144,7 +144,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			if (!getKmer(kmer).isReference()) break;
 			refCount++;
 			// TODO: choose the best anchor
-			refAnchor = getKmer(kmer).getMaxReferencePosition();
+			refAnchor = getKmer(kmer).getBestReferencePosition();
 
 			// want the max sc len of the final reference kmer 
 			maxsclen = 0;
@@ -174,6 +174,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			// anchored read
 			builder				
 				.referenceAnchor(referenceIndex, refAnchor)
+				.anchorLength(refCount)
 				.maximumSoftClipLength(maxsclen);
 		} else if (mateAnchor != null) {
 			// inexact breakend

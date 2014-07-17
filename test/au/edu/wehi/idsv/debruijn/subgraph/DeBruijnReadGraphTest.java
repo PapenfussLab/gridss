@@ -106,9 +106,10 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withSequence("AAAGTC", Read(0, 10, "3M3S"))));
 		g.addEvidence(SCE(FWD, withSequence("AAAGTC", Read(0, 10, "3M3S"))));
 		g.addEvidence(SCE(FWD, withSequence("AAAGTC", Read(0, 10, "3M3S"))));
-		g.addEvidence(SCE(FWD, withSequence("AAAAGTCT", Read(0, 10, "4M3S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAAGTC", Read(0, 11, "3M3S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAAAGTCT", Read(0, 10, "4M4S"))));
 		List<VariantContextDirectedBreakpoint> result = Lists.newArrayList(g.assembleContigsBefore(10000));
-		// we should call to 12 since we have many more reads supporting that assembly
+		// we should call to 12 since we have many reads supporting that assembly
 		assertEquals(12, result.get(0).getBreakendSummary().start);
 	}
 	@Test
