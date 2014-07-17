@@ -7,8 +7,6 @@ import htsjdk.samtools.util.Log;
 import java.io.File;
 import java.util.NoSuchElementException;
 
-import javax.naming.OperationNotSupportedException;
-
 import au.edu.wehi.idsv.metrics.RelevantMetrics;
 
 import com.google.common.collect.Iterators;
@@ -52,7 +50,7 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 		return sb.toString();
 	}
 	private String getBowtie2Script(File realignFastq, File realignBam) {
-		return String.format("bowtie2 --local --mm --reorder -x \"%s\" -U \"%s\" | samtools view -b -o \"%s\" - \n",
+		return String.format("bowtie2 --local --mm --reorder -x \"%s\" -U \"%s\" | samtools view -Sb -o \"%s\" - \n",
 				processContext.getReferenceFile(),
 				realignFastq,
 				realignBam);

@@ -50,13 +50,14 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	/**
 	 * Ensures that all structural variation evidence has been extracted from the input file 
-	 * @throws IOException 
+	 * @return returns whether any processing was performed
 	 */
-	public void ensureEvidenceExtracted() {
+	public boolean ensureEvidenceExtracted() {
 		if (!isProcessingComplete()) {
 			process();
+			return true;
 		} else {
-			log.debug("No extraction required for ", input);
+			return false;
 		}
 	}
 	@Override
@@ -65,6 +66,10 @@ public class SAMEvidenceSource extends EvidenceSource {
 			log.info("START extract evidence for ", input);
 			extract.extractEvidence();
 			log.info("SUCCESS extract evidence for ", input);
+		}
+		catch (Exception e) {
+			log.info("FAILURE extract evidence for ", input);
+			log.error(e);
 		}
 	}
 	@Override

@@ -12,6 +12,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import com.google.common.collect.Lists;
+
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import au.edu.wehi.idsv.vcf.VcfConstants;
@@ -28,14 +30,17 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     public List<File> INPUT;
 	@Option(doc="Coordinate-sorted tumour BAM file.",
 			optional=true,
-    		shortName=StandardOptionDefinitions.INPUT_SHORT_NAME)
-    public List<File> INPUT_TUMOUR;
+    		shortName="T")
+    public List<File> INPUT_TUMOUR = Lists.newArrayList();
 	@Option(doc="VCF structural variation calls.",
     		shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME)
     public File OUTPUT;
     @Option(doc="Reference used for alignment",
     		shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME)
     public File REFERENCE;
+    @Option(doc="File to write recommended realignment script to",
+    		optional=true)
+    public File SCRIPT;
     // --- intermediate file parameters ---
     @Option(doc = "Save intermediate results into separate files for each chromosome.",
             optional = true,
@@ -69,11 +74,11 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     public int ASSEMBLY_DEBRUIJN_KMER = 25;
     @Option(doc = "Maximum of base mismatches for de bruijn kmer paths to be merged",
     		optional=true)
-    public int ASSEMBLY_DEBRUIJN_MAX_PATH_COLLAPSE_BASE_MISMATCHES = 25;
+    public int ASSEMBLY_DEBRUIJN_MAX_PATH_COLLAPSE_BASE_MISMATCHES = 1;
     @Option(doc = "Only consider bubbles for path collapse."
     		+ "Bubbles are kmer paths with a single entry and exit kmer choice",
     		optional=true)
-    public boolean ASSEMBLY_DEBRUIJN_COLLAPSE_BUBBLES_ONLY = true;
+    public boolean ASSEMBLY_DEBRUIJN_COLLAPSE_BUBBLES_ONLY = false;
     @Option(doc = "Allow reuse of reference kmers when assembling subsequent"
     		+ " contigs in an assembly iteration",
     		optional=true)
@@ -186,20 +191,13 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 		}
     	return processContext;
 	}
-	public static String getAlignmentInstructions(Iterable<EvidenceSource> it) {
-    	int realignmentCount = 0;
-    	StringBuilder sb = new StringBuilder("Please realign intermediate fastq files. Suggested command-line for alignment is:\n");
-    	sb.append("########## Start Recommended Aligner Commands ##########\n");
+	public static String getRealignmentScript(Iterable<EvidenceSource> it) {
+    	StringBuilder sb = new StringBuilder();
     	for (EvidenceSource source : it) {
     		if (!source.isRealignmentComplete()) {
-    			realignmentCount++;
     			sb.append(source.getRealignmentScript());
     		}
     	}
-    	sb.append("########## End Recommended Aligner Commands ##########\n");
-    	if (realignmentCount > 0) {
-    		return sb.toString();
-    	}
-    	return null;
+    	return sb.toString();
     }
 }
