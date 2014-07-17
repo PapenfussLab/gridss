@@ -4,6 +4,7 @@ import htsjdk.samtools.SAMRecord;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.SortedSet;
 
 import au.edu.wehi.idsv.AssemblyBuilder;
@@ -132,6 +133,20 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			}
 			subgraphs.remove(ss);
 		}
+	}
+	/**
+	 * Only non-reference reads are considered supporting the breakpoint.
+	 */
+	@Override
+	public Set<SAMRecord> getSupportingSAMRecords(Iterable<Long> path) {
+		Set<SAMRecord> reads = Sets.newHashSet();
+		for (Long kmer : path) {
+			DeBruijnSubgraphNode node = getKmer(kmer);
+			if (!node.isReference()) {
+				reads.addAll(node.getSupportingReads());
+			}
+		}
+		return reads;
 	}
 	private VariantContextDirectedBreakpoint toAssemblyEvidence(List<Long> contigKmers) {
 		int maxsclen = 0;

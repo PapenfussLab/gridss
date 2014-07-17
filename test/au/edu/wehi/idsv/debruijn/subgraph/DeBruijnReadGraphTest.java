@@ -205,4 +205,15 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		String s = g.debugPrintPaths();
 		assertNotNull(s);
 	}
+	@Test
+	public void reference_kmer_support_should_not_be_considered_read_support() {
+		DeBruijnReadGraph g = G(0, 3, FWD);
+		g.addEvidence(SCE(FWD, withSequence("AAAAAAAA", Read(0, 10, "3M5S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAAGTCTA", Read(0, 10, "3M5S"))));
+		List<VariantContextDirectedBreakpoint> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		assertEquals(1, result.size());
+		VariantContextDirectedBreakpoint bp = result.get(0);
+		// CTG becomes unanchored & we can't make a contig out of it
+		assertEquals(1, bp.getBreakendSummary().evidence.get(VcfAttributes.ASSEMBLY_READS));
+	}
 }
