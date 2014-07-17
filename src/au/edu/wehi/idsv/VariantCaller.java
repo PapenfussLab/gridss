@@ -191,11 +191,10 @@ public class VariantCaller extends EvidenceProcessorBase {
 			SequentialBreakendAnnotator annotator = new SequentialBreakendAnnotator(processContext, normalCoverage, tumourCoverage, getAllEvidence());
 			Iterator<IdsvVariantContext> it = getAllCalledVariants();
 			while (it.hasNext()) {
-				IdsvVariantContext rawvariant = it.next();
-				if (rawvariant instanceof VariantContextDirectedBreakpoint && ((VariantContextDirectedBreakpoint)rawvariant).isValid()) {
-					VariantContextDirectedBreakpoint variant = (VariantContextDirectedBreakpoint)rawvariant;
-					annotator.annotate(variant);
-					vcfWriter.add(variant);
+				IdsvVariantContext rawVariant = it.next();
+				if (rawVariant instanceof VariantContextDirectedBreakpoint && ((VariantContextDirectedBreakpoint)rawVariant).isValid()) {
+					VariantContextDirectedBreakpoint annotatedVariant = annotator.annotate((VariantContextDirectedBreakpoint)rawVariant);
+					vcfWriter.add(annotatedVariant);
 				}
 			}
 			vcfWriter.close();

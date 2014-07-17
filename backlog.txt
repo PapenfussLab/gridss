@@ -1,4 +1,3 @@
+Issue: SCs split up well-behaved assembly microhomologies as well
 Sequential naming of variants
 
-Bug: microhomology code is broken
-Bug: annotation code is broken
