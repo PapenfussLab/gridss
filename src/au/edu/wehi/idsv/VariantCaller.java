@@ -1,17 +1,14 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordQueryNameComparator;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.filter.AlignedFilter;
-import htsjdk.samtools.filter.FilteringIterator;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.writer.VCFWriterUnitTest;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFFileReader;
 
@@ -22,12 +19,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
 
-import au.edu.wehi.idsv.metrics.RelevantMetrics;
-
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
-import com.google.common.collect.UnmodifiableIterator;
 
 
 /**
@@ -76,21 +70,17 @@ public class VariantCaller extends EvidenceProcessorBase {
 	private List<Closeable> toClose = Lists.newArrayList();
 	private Iterator<IdsvVariantContext> getAllCalledVariants() {
 		List<Iterator<IdsvVariantContext>> variants = Lists.newArrayList();
-		try {
-			if (processContext.shouldProcessPerChromosome()) {
-				SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
-				for (int i = 0; i < dict.size(); i++) {
-					String chri = dict.getSequence(i).getSequenceName();
-					for (int j = i; j < dict.size(); j++) {
-						String chrj = dict.getSequence(j).getSequenceName();
-						variants.add(getVariants(processContext.getFileSystemContext().getBreakpointVcf(output, chri, chrj)));
-					}
+		if (processContext.shouldProcessPerChromosome()) {
+			SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
+			for (int i = 0; i < dict.size(); i++) {
+				String chri = dict.getSequence(i).getSequenceName();
+				for (int j = i; j < dict.size(); j++) {
+					String chrj = dict.getSequence(j).getSequenceName();
+					variants.add(getVariants(processContext.getFileSystemContext().getBreakpointVcf(output, chri, chrj)));
 				}
-			} else {
-				variants.add(getVariants(processContext.getFileSystemContext().getBreakpointVcf(output)));
 			}
-		} finally {
-			close();
+		} else {
+			variants.add(getVariants(processContext.getFileSystemContext().getBreakpointVcf(output)));
 		}
 		Iterator<IdsvVariantContext> merged = Iterators.mergeSorted(variants, IdsvVariantContext.ByLocation);
 		return merged;
@@ -123,17 +113,17 @@ public class VariantCaller extends EvidenceProcessorBase {
 	}
 	private void writeMaximalCliquesToVcf(EvidenceClusterProcessor processor, File vcf, Iterator<DirectedEvidence> evidenceIt) {
 		final ProgressLogger writeProgress = new ProgressLogger(log);
-		log.debug("Loading minimal evidence set for ", vcf, " into memory.");
+		log.info("Loading minimal evidence set for ", vcf, " into memory.");
 		while (evidenceIt.hasNext()) {
 			processor.addEvidence(evidenceIt.next());
 		}
 		try (VariantContextWriter vcfWriter = processContext.getVariantContextWriter(vcf)) {
-			log.debug("Calling maximal cliques for ", vcf);
+			toClose.add(vcfWriter);
+			log.info("Calling maximal cliques for ", vcf);
 			// Write out both sides of the breakend in order
 			// since the first breakend is always the lower genomic coordinate
 			// this will result in in-order output
 			PriorityQueue<BreakpointSummary> highEnd = new PriorityQueue<BreakpointSummary>(1024, BreakendSummary.ByStartEnd);
-			processor = new EvidenceClusterProcessor(processContext);
 			Iterator<BreakpointSummary> it = processor.iterator();
 			while (it.hasNext()) {
 				BreakendSummary loc = it.next();
@@ -147,6 +137,11 @@ public class VariantCaller extends EvidenceProcessorBase {
 				}
 				// write call
 				writeCall(processContext, vcfWriter, loc, writeProgress);
+			}
+			// Flush remote breakends
+			while (!highEnd.isEmpty()) {
+				// write remote calls that are before here
+				writeCall(processContext, vcfWriter, highEnd.poll(), writeProgress);
 			}
 		}
 	}
@@ -172,9 +167,13 @@ public class VariantCaller extends EvidenceProcessorBase {
 				}
 			}
 		}
-		try (final VariantContextWriter vcfWriter = processContext.getVariantContextWriter(output)) {
+		try {
+			final VariantContextWriter vcfWriter = processContext.getVariantContextWriter(output);
+			toClose.add(vcfWriter);
 			final SequentialReferenceCoverageLookup normalCoverage = getReferenceLookup(normalFiles);
+			toClose.add(normalCoverage);
 			final SequentialReferenceCoverageLookup tumourCoverage = getReferenceLookup(tumourFiles);
+			toClose.add(tumourCoverage);
 			SequentialBreakendAnnotator annotator = new SequentialBreakendAnnotator(processContext, normalCoverage, tumourCoverage, getAllEvidence());
 			Iterator<IdsvVariantContext> it = getAllCalledVariants();
 			while (it.hasNext()) {
@@ -182,8 +181,13 @@ public class VariantCaller extends EvidenceProcessorBase {
 				if (rawvariant instanceof VariantContextDirectedBreakpoint && ((VariantContextDirectedBreakpoint)rawvariant).isValid()) {
 					VariantContextDirectedBreakpoint variant = (VariantContextDirectedBreakpoint)rawvariant;
 					annotator.annotate(variant);
+					vcfWriter.add(variant);
 				}
 			}
+			vcfWriter.close();
+			normalCoverage.close();
+			tumourCoverage.close();
+			log.info("Variant calls written to ", output);
 		} finally {
 			close();
 		}
