@@ -174,7 +174,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			// anchored read
 			builder				
 				.referenceAnchor(referenceIndex, refAnchor)
-				.anchorLength(refCount)
+				.anchorLength(refCount + getK() - 1)
 				.maximumSoftClipLength(maxsclen);
 		} else if (mateAnchor != null) {
 			// inexact breakend

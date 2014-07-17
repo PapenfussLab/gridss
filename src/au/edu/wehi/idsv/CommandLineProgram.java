@@ -74,7 +74,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     public int ASSEMBLY_DEBRUIJN_KMER = 25;
     @Option(doc = "Maximum of base mismatches for de bruijn kmer paths to be merged",
     		optional=true)
-    public int ASSEMBLY_DEBRUIJN_MAX_PATH_COLLAPSE_BASE_MISMATCHES = 1;
+    public int ASSEMBLY_DEBRUIJN_MAX_PATH_COLLAPSE_BASE_MISMATCHES = 2;
     @Option(doc = "Only consider bubbles for path collapse."
     		+ "Bubbles are kmer paths with a single entry and exit kmer choice",
     		optional=true)

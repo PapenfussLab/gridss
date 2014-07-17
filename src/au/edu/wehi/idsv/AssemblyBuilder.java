@@ -129,11 +129,12 @@ public class AssemblyBuilder {
 		if (anchorReferenceIndex != -1) {
 			BreakendSummary summary = new BreakendSummary(anchorReferenceIndex, dir, anchor, anchor, evidence);
 			builder.breakend(summary, ara.getBreakpointBases(), ara.getBreakpointQualities());
-			builder.id(String.format("%s-%s:%d-%s",
+			builder.id(String.format("%s-%s:%d-%s-%d",
 					assembler,
 					processContext.getDictionary().getSequence(anchorReferenceIndex).getSequenceName(),
 					anchor,
-					dir == BreakendDirection.Forward ? "f" : "b"));
+					dir == BreakendDirection.Forward ? "f" : "b",
+					Math.abs(new String(bases, StandardCharsets.US_ASCII).hashCode()) % 10000)); // approximately unique
 			
 			// apply filter:
 			if (ara.getBreakpointLength() <= maxsclen) {
@@ -161,7 +162,7 @@ public class AssemblyBuilder {
 					processContext.getDictionary().getSequence(mateAnchorReferenceIndex).getSequenceName(),
 					mateAnchor,
 					dir == BreakendDirection.Forward ? "f" : "b",
-					new String(bases, StandardCharsets.US_ASCII).hashCode() % 10000 // try to make id unique
+					Math.abs(new String(bases, StandardCharsets.US_ASCII).hashCode()) % 10000
 					));
 			builder.attribute(VcfSvConstants.IMPRECISE_KEY, true);
 			// apply filter:
