@@ -109,7 +109,7 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 		VariantContextDirectedBreakpoint assembly = BE(1);
 		vcf.add(new VariantContextBuilder(assembly).make());
 		SAMRecord r = Read(1, 10, "1M");
-		r.setReadName("0#1#test-polyA:1-b");
+		r.setReadName("0#1#" + vcf.get(0).getID());
 		realigned.add(r);
 		go();
 		assertEquals(1, out.size());
@@ -121,7 +121,7 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 		VariantContextDirectedBreakpoint assembly = BE(1);
 		vcf.add(new VariantContextBuilder(assembly).make());
 		SAMRecord r = Unmapped(1);
-		r.setReadName("0#1#test-polyA:1-b");
+		r.setReadName("0#1#" + vcf.get(0).getID());
 		realigned.add(r);
 		go();
 		assertEquals(1, out.size());
@@ -154,7 +154,7 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 		SAMRecord b = withReadName("0#1#bReadName", Read(0, 1, "5M"))[0];
 		VariantContextDirectedBreakpoint assembly = BE(1);
 		vcf.add(new VariantContextBuilder(assembly).make());
-		SAMRecord assemblyRealigned = withReadName("0#1#test-polyA:1-b", Read(1, 10, "1M"))[0];
+		SAMRecord assemblyRealigned = withReadName("0#1#" + vcf.get(0).getID(), Read(1, 10, "1M"))[0];
 		realigned.add(b);
 		realigned.add(assemblyRealigned);
 		realigned.add(f);
@@ -171,7 +171,7 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 		VariantContextDirectedBreakpoint assembly = BE(2);
 		vcf.add(new VariantContextBuilder(assembly).make());
 		realigned.add(withReadName("0#1#bReadName", Read(0, 1, "5M"))[0]);
-		realigned.add(withReadName("0#2#test-polyA:2-b", Read(1, 10, "1M"))[0]);
+		realigned.add(withReadName("0#2#" + vcf.get(0).getID(), Read(1, 10, "1M"))[0]);
 		realigned.add(withReadName("0#10#fReadName", Read(0, 1, "5M"))[0]);
 		go();
 		assertEquals(3, out.size());

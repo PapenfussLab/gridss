@@ -9,6 +9,9 @@ import java.util.List;
 
 import org.junit.Test;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 
 public class IdsvTest extends IntermediateFilesTest {
@@ -17,15 +20,22 @@ public class IdsvTest extends IntermediateFilesTest {
 		File output = new File(super.testFolder.getRoot(), "203541.vcf");
 		setReference(new File("C:/dev/chr12.fa"));
 		createInput(new File("testdata/203541.bam"));
-		
-		new Idsv().instanceMain(new String[] {
+		String[] args = new String[] {
 				"INPUT=" + input.toString(),
 				"REFERENCE=" + reference.toString(),
 				"OUTPUT=" + output.toString(),
-		});		
+				"PER_CHR=false"
+		};
+		new Idsv().instanceMain(args);		
 		// Should have generated two breakpoints
-		List<VariantContextDirectedBreakpoint> ass = breaks(getVcf(output, null));
-		assertTrue(ass.size() == 2);
+		List<VariantContextDirectedBreakpoint> ass = breaks(getVcf(getCommandlineContext(false).getFileSystemContext().getBreakendVcf(output), null));
+		ass = Lists.newArrayList(Iterables.filter(ass, new Predicate<VariantContextDirectedBreakpoint>() {
+			@Override
+			public boolean apply(VariantContextDirectedBreakpoint arg0) {
+				return arg0.isValid() && !arg0.isFiltered();
+			}
+		}));
+		assertEquals(2, ass.size());
 		assertEquals(203476, ass.get(0).getBreakendSummary().start);
 		assertEquals(FWD, ass.get(0).getBreakendSummary().direction);
 		assertEquals(203540, ass.get(1).getBreakendSummary().start);
@@ -33,13 +43,9 @@ public class IdsvTest extends IntermediateFilesTest {
 		Files.copy(new File("testdata/203541.bam.idsv.realign.bam"), new File(testFolder.getRoot().getAbsolutePath() + "/input.bam.idsv.working", "input.bam.idsv.realign.bam"));
 		Files.copy(new File("testdata/203541.vcf.idsv.realign.bam"), new File(testFolder.getRoot().getAbsolutePath() + "/203541.vcf.idsv.working", "203541.vcf.idsv.realign.bam"));
 		
-		new Idsv().instanceMain(new String[] {
-				"INPUT=" + output.toString(),
-				"REFERENCE=" + reference.toString(),
-		});
-		
+		new Idsv().instanceMain(args);
 		ass = breaks(getVcf(output, null));
-		assertTrue(ass.size() == 2);
+		assertEquals(2, ass.size());
 		assertEquals(203476, ass.get(0).getBreakendSummary().start);
 		assertEquals(FWD, ass.get(0).getBreakendSummary().direction);
 		assertEquals(203540, ass.get(1).getBreakendSummary().start);

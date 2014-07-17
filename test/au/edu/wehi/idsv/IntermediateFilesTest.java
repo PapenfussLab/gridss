@@ -46,7 +46,7 @@ public class IntermediateFilesTest extends TestHelper {
 	@Before
 	public void setup() throws IOException {
 		reference = SMALL_FA_FILE;
-		input = testFolder.newFile("input.sam");
+		input = testFolder.newFile("input.bam");
 	}
 	public void setReference(File ref) {
 		reference = ref;

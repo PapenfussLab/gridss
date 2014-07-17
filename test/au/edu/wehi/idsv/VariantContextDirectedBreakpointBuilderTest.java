@@ -74,7 +74,7 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 	public void id_should_be_based_on_assembler_position_direction() {
 		VariantContextDirectedBreakpoint dba = AE();
 		dba = new VariantContextDirectedBreakpoint(getContext(), AES(), new VariantContextBuilder(dba).make());
-		assertEquals("testAssembler-polyA:1-f", dba.getID());
+		assertTrue(dba.getID().startsWith("testAssembler-polyA:1-f"));
 	}
 	@Test
 	public void phred_should_be_evidence_score() {

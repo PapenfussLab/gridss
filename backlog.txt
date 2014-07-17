@@ -1,4 +1,3 @@
-Write MATEID attribute for breakends
 Sequential naming of variants
 
 Bug: microhomology code is broken

@@ -27,6 +27,7 @@ public class VcfConstants {
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.SV_TYPE);
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.CONFIDENCE_INTERVAL_START_POSITION);
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.IMPRECISE);
+		header.addMetaDataLine(VcfStructuralVariantHeaderLines.MATE_BREAKEND_ID);
 		
 		// Retrogene headers		
 		//header.addMetaDataLine(new VCFInfoHeaderLine(IdsvConstants.GENE_ID, 1, VCFHeaderLineType.String, "GTF gene_id of gene containing exons"));
