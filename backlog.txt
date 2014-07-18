@@ -1,3 +1,15 @@
+Working on: Somatic evidence tracking, More metrics!
+
 Issue: SCs split up well-behaved assembly microhomologies as well
+
+Move ACONS into BREAKPOINT_ID_KEY and separate fa (or fq - need to do at assembly time to retain full assembly base quals)
 Sequential naming of variants
 
+Modelling:
+SV vs Reference hypothesis testing
+
+Need independence of evidence: P(H|E_1)*P(H|E_2) = P(H|{E_1,E_2})
+	or do I want P(H/null|E_1)*P(H/null|E_2) = P(H/null|{E_1,E_2})
+		second option is better as I can just sum logs
+	we want it to be independent of priors as well! I think it might be
+	

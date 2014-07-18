@@ -50,9 +50,9 @@ public class VariantContextDirectedBreakpointBuilderTest extends TestHelper {
 	@Test
 	public void getBreakpointSequence_should_get_untemplated_sequence() {
 		VariantContextDirectedBreakpoint dba = AE();
-		assertEquals("TT", S(dba.getBreakpointSequence()));
+		assertEquals("TT", S(dba.getBreakendSequence()));
 		dba = new VariantContextDirectedBreakpoint(getContext(), AES(), new VariantContextBuilder(dba).make());
-		assertEquals("TT", S(dba.getBreakpointSequence()));
+		assertEquals("TT", S(dba.getBreakendSequence()));
 	}
 	@Test
 	public void should_match_variant_location_f() {

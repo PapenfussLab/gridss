@@ -6,38 +6,55 @@ import htsjdk.variant.vcf.VCFInfoHeaderLine;
 import java.util.Arrays;
 
 public enum VcfAttributes {
-	UNMAPPED_MATE_READ_COUNT ("UMC", 1, VCFHeaderLineType.Integer, "Count of reads with unmapped mates supporting this breakpoint"),
-	UNMAPPED_MATE_TOTAL_MAPQ ("UMTMQ", 1, VCFHeaderLineType.Integer, "Combined mapq of reads with unmapped mates supporting this breakpoint"),
-	DISCORDANT_READ_PAIR_COUNT ("DPC", 1, VCFHeaderLineType.Integer, "Count of discordantly paired reads supporting this breakpoint"),
-	DISCORDANT_READ_PAIR_TOTAL_MAPQ ("DPTMQ", 1, VCFHeaderLineType.Integer, "Combined (pair minimum) mapq of discordant read pairs supporting this breakpoint"),
-	SOFT_CLIP_READ_COUNT ("SCC", 1, VCFHeaderLineType.Integer, "Count of soft clipped reads supporting this breakpoint"),
-	SOFT_CLIP_TOTAL_LENGTH ("SCB", 1, VCFHeaderLineType.Integer, "Total number of soft-cliped bases supporting this breakpoint"),
-	REALIGN_MAX_LENGTH ("ALNMAX", 1, VCFHeaderLineType.Integer, "Maximum number of realigned bases supporting this breakpoint"),
-	REALIGN_TOTAL_LENGTH ("ALNB", 1, VCFHeaderLineType.Integer, "Total number of realigned bases supporting this breakpoint"),
-	REALIGN_TOTAL_MAPQ ("ALNTMQ", 1, VCFHeaderLineType.Integer, "Total mapq of reads with realignments supporting this breakpoint"),
-	ASSEMBLY_LENGTH ("ASSLEN", 1, VCFHeaderLineType.Integer, "Length of assembly supporting this breakpoint"),
-	ASSEMBLY_BASES ("ASSB", 1, VCFHeaderLineType.Integer, "Total number of read bases contributing to assembly supporting this breakpoint"),
-	ASSEMBLY_READS ("ASSRC", 1, VCFHeaderLineType.Integer, "Number of reads forming breakpoint assembly"),
+	EVIDENCE_COUNT ("EC", 3, VCFHeaderLineType.Integer, "Count of  evidence supporting structural variation  (Overall,Normal,Tumour)"),
+	EVIDENCE_COUNT_READPAIR ("ECRP", 3, VCFHeaderLineType.Integer, "Count of read pair evidence supporting structural variation  (Overall,Normal,Tumour)"),
+	EVIDENCE_COUNT_SOFTCLIP ("ECSC", 3, VCFHeaderLineType.Integer, "Count of soft clip evidence supporting structural variation  (Overall,Normal,Tumour)"),
+	EVIDENCE_COUNT_ASSEMBLY ("ECBA", 3, VCFHeaderLineType.Integer, "Count of breakend assembly evidence supporting structural variation  (Overall,Normal,Tumour)"),
+	LOG_LIKELIHOOD_RATIO ("LR", 3, VCFHeaderLineType.Float, "Log-likelihood ratio of  structural variation vs reference (Overall,Normal,Tumour)"),
+	LOG_LIKELIHOOD_RATIO_READPAIR ("LRRP", 3, VCFHeaderLineType.Float, "Log-likelihood ratio of read pair structural variation vs reference (Overall,Normal,Tumour)"),
+	LOG_LIKELIHOOD_RATIO_SOFTCLIP ("LRSC", 3, VCFHeaderLineType.Float, "Log-likelihood ratio of soft clip structural variation vs reference (Overall,Normal,Tumour)"),
+	LOG_LIKELIHOOD_RATIO_ASSEMBLY ("LRBA", 3, VCFHeaderLineType.Float, "Log-likelihood ratio of breakend assembly structural variation vs reference (Overall,Normal,Tumour)"),
+	MAPPED_READPAIR ("RMRP", 3, VCFHeaderLineType.Integer, "Count of read pair evidence that maps to a remote breakend (Overall,Normal,Tumour)"),
+	MAPPED_SOFTCLIP ("RMSC", 3, VCFHeaderLineType.Integer, "Count of soft clip evidence that maps to a remote breakend (Overall,Normal,Tumour)"),
+	MAPPED_ASSEMBLY ("RMBA", 3, VCFHeaderLineType.Integer, "Count of breakend assembly evidence that maps to a remote breakend (Overall,Normal,Tumour)"),
+	MAPQ_READPAIR_LOCAL ("MQRPL", 6, VCFHeaderLineType.Integer, "Local MAPQ of read pair evidence (Overall,Normal,Tumour, totals then maximums)"),
+	MAPQ_SOFTCLIP_LOCAL ("MQSCL", 6, VCFHeaderLineType.Integer, "Local MAPQ of soft clip evidence (Overall,Normal,Tumour, totals then maximums)"),
+	MAPQ_ASSEMBLY_LOCAL ("MQBAL", 6, VCFHeaderLineType.Integer, "Local MAPQ of breakend assembly evidence (Overall,Normal,Tumour, totals then maximums)"),
+	MAPQ_READPAIR_REMOTE ("MQRPR", 6, VCFHeaderLineType.Integer, "Remote MAPQ of read pair evidence (Overall,Normal,Tumour, totals then maximums)"),
+	MAPQ_SOFTCLIP_REMOTE ("MQSCR", 6, VCFHeaderLineType.Integer, "Remote MAPQ of soft clip evidence (Overall,Normal,Tumour, totals then maximums)"),
+	MAPQ_ASSEMBLY_REMOTE ("MQBAR", 6, VCFHeaderLineType.Integer, "Remote MAPQ of breakend assembly evidence (Overall,Normal,Tumour, totals then maximums)"),
+	LENGTH_READPAIR_LOCAL ("BLRPL", 6, VCFHeaderLineType.Integer, "Local length (in bases) of read pair evidence (Overall,Normal,Tumour, totals then maximums)"),
+	LENGTH_SOFTCLIP_LOCAL ("BLSCL", 6, VCFHeaderLineType.Integer, "Local length (in bases) of soft clip evidence (Overall,Normal,Tumour, totals then maximums)"),
+	LENGTH_ASSEMBLY_LOCAL ("BLBAL", 6, VCFHeaderLineType.Integer, "Local length (in bases) of breakend assembly evidence (Overall,Normal,Tumour, totals then maximums)"),
+	LENGTH_READPAIR_REMOTE ("BLRPR", 6, VCFHeaderLineType.Integer, "Remote length (in bases) of read pair evidence (Overall,Normal,Tumour, totals then maximums)"),
+	LENGTH_SOFTCLIP_REMOTE ("BLSCR", 6, VCFHeaderLineType.Integer, "Remote length (in bases) of soft clip evidence (Overall,Normal,Tumour, totals then maximums)"),
+	LENGTH_ASSEMBLY_REMOTE ("BLBAR", 6, VCFHeaderLineType.Integer, "Remote length (in bases) of breakend assembly evidence (Overall,Normal,Tumour, totals then maximums)"),
+	BASE_COUNT_READPAIR_LOCAL ("BCRPL", 6, VCFHeaderLineType.Integer, "Local number of bases read pair evidence (Overall,Normal,Tumour, totals then maximums)"),
+	BASE_COUNT_SOFTCLIP_LOCAL ("BCSCL", 6, VCFHeaderLineType.Integer, "Local number of bases soft clip evidence (Overall,Normal,Tumour, totals then maximums)"),
+	BASE_COUNT_ASSEMBLY_LOCAL ("BCBAL", 6, VCFHeaderLineType.Integer, "Local number of bases breakend assembly evidence (Overall,Normal,Tumour, totals then maximums)"),
+	BASE_COUNT_READPAIR_REMOTE ("BCRPR", 6, VCFHeaderLineType.Integer, "Remote number of bases read pair evidence (Overall,Normal,Tumour, totals then maximums)"),
+	BASE_COUNT_SOFTCLIP_REMOTE ("BCSCR", 6, VCFHeaderLineType.Integer, "Remote number of bases soft clip evidence (Overall,Normal,Tumour, totals then maximums)"),
+	BASE_COUNT_ASSEMBLY_REMOTE ("BCBAR", 6, VCFHeaderLineType.Integer, "Remote number of bases breakend assembly evidence (Overall,Normal,Tumour, totals then maximums)"),
+	BASE_QUAL_READPAIR_LOCAL ("BQRPL", 6, VCFHeaderLineType.Integer, "Local base quality of read pair evidence (Overall,Normal,Tumour, totals then maximums)"),
+	BASE_QUAL_SOFTCLIP_LOCAL ("BQSCL", 6, VCFHeaderLineType.Integer, "Local base quality of soft clip evidence (Overall,Normal,Tumour, totals then maximums)"),
+	BASE_QUAL_ASSEMBLY_LOCAL ("BQBAL", 6, VCFHeaderLineType.Integer, "Local base quality of breakend assembly evidence (Overall,Normal,Tumour, totals then maximums)"),
+	BASE_QUAL_READPAIR_REMOTE ("BQRPR", 6, VCFHeaderLineType.Integer, "Remote base quality of read pair evidence (Overall,Normal,Tumour, totals then maximums)"),
+	BASE_QUAL_SOFTCLIP_REMOTE ("BQSCR", 6, VCFHeaderLineType.Integer, "Remote base quality of soft clip evidence (Overall,Normal,Tumour, totals then maximums)"),
+	BASE_QUAL_ASSEMBLY_REMOTE ("BQBAR", 6, VCFHeaderLineType.Integer, "Remote base quality of breakend assembly evidence (Overall,Normal,Tumour, totals then maximums)"),
+
 	// --- End of summary evidence attributes *must be kept in sync with .LastEvidenceAttribute * ---
-	UNMAPPED_MATE_MAX_MAPQ ("UMMQ", 1, VCFHeaderLineType.Integer, "Maximum mapq of reads with unmapped mates supporting this breakpoint"),
-	DISCORDANT_READ_PAIR_MAX_MAPQ ("DPMQ", 1, VCFHeaderLineType.Integer, "Maximum (pair minimum) mapq of discordant read pairs supporting this breakpoint"),
-	SOFT_CLIP_MAX_LENGTH ("SCMAX", 1, VCFHeaderLineType.Integer, "Maximum length of soft-clip supporting this breakpoint"),
-	REALIGN_MAX_MAPQ ("ALNMQ", 1, VCFHeaderLineType.Integer, "Maximum mapq of reads with realignments supporting this breakpoint"),
 	
-	REFERENCE_SPANNING_READ_PAIR_COUNT ("RPC", 3, VCFHeaderLineType.Integer, "Count of reference read pairs spanning this breakpoint supporting the reference allele (Total/Normal/Tumour)"),
-	REFERENCE_READ_COUNT ("RRC", 3, VCFHeaderLineType.Integer, "Count of reference reads spanning this breakpoint supporting the reference allele (Total/Normal/Tumour)"),
+	REFERENCE_SPANNING_READ_PAIR_COUNT ("RPC", 3, VCFHeaderLineType.Integer, "Count of reference read pairs spanning this breakpoint supporting the reference allele (Overall,Normal,Tumour)"),
+	REFERENCE_READ_COUNT ("RRC", 3, VCFHeaderLineType.Integer, "Count of reference reads spanning this breakpoint supporting the reference allele (Overall,Normal,Tumour)"),
 	
 	ASSEMBLY_CONSENSUS ("ACONS", 1, VCFHeaderLineType.String, "Anomolous read consensus assembly sequence"),
 	ASSEMBLY_QUALITY ("AQUAL", 1, VCFHeaderLineType.Float, "Anomolous read consensus assembly overall quality"),
 	ASSEMBLY_PROGRAM ("ASMBLR", 1, VCFHeaderLineType.String, "Anomolous read consensus assembly algorithm"),
 	ASSEMBLY_MAX_READ_SOFT_CLIP ("ASCMAX", 1, VCFHeaderLineType.Integer, "Longest soft clip length of reads contributing to the assembly"),
-	ASSEMBLY_READ_LENGTH ("ARL", 1, VCFHeaderLineType.Integer, "Maximum read length of reads contributing to this assembly"),
-	
-	REALIGNMENT_FAILURE ("REALGNFAIL", 1, VCFHeaderLineType.Flag, "Breakend sequence unable to be realigned to the reference"),
 	
 	CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY ("CIRPOS", 2, VCFHeaderLineType.Integer, "Confidence interval around remote breakend POS for imprecise variants");
 		
-	private static final VcfAttributes LastEvidenceAttribute = ASSEMBLY_READS;
+	private static final VcfAttributes LastEvidenceAttribute = BASE_QUAL_ASSEMBLY_REMOTE;
     private final VCFInfoHeaderLine header;
 	VcfAttributes(String name, int count, VCFHeaderLineType type, String description) {
 		this.header = new VCFInfoHeaderLine(name, count, type, description);

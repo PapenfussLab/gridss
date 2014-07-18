@@ -28,8 +28,8 @@ public class BreakendSummary {
 	/**
 	 * Phred-like quality score of this evidence
 	 */
-	public final EvidenceMetrics evidence;
-	public BreakendSummary(int referenceIndex, BreakendDirection direction, int start, int end, EvidenceMetrics evidence) {
+	public final float phredLogLikelihoodRatio;
+	public BreakendSummary(int referenceIndex, BreakendDirection direction, int start, int end, float phredLogLikelihoodRatio) {
 		if (referenceIndex < 0) {
 			throw new IllegalArgumentException("Reference index must be valid");
 		}
@@ -37,14 +37,14 @@ public class BreakendSummary {
 		this.direction = direction;
 		this.start = start;
 		this.end = end;
-		this.evidence = evidence;
+		this.phredLogLikelihoodRatio = phredLogLikelihoodRatio;
 	}
-	public BreakendSummary(BreakendSummary location, EvidenceMetrics evidence) {
+	public BreakendSummary(BreakendSummary location, float phredLogLikelihoodRatio) {
 		this.referenceIndex = location.referenceIndex;
 		this.direction = location.direction;
 		this.start = location.start;
 		this.end = location.end;
-		this.evidence = evidence;
+		this.phredLogLikelihoodRatio = phredLogLikelihoodRatio;
 	}
 	protected static String toString(int referenceIndex, int start, int end) {
 		return String.format("%d:%d-%d", referenceIndex, start, end);
@@ -55,7 +55,7 @@ public class BreakendSummary {
 	}
 	@Override
 	public String toString() {
-		return String.format("%s %s", toString(direction, referenceIndex, start, end), evidence);
+		return String.format("%s %s", toString(direction, referenceIndex, start, end), phredLogLikelihoodRatio);
 	}
 	@Override
 	public int hashCode() {
@@ -64,9 +64,7 @@ public class BreakendSummary {
 		result = prime * result
 				+ ((direction == null) ? 0 : direction.hashCode());
 		result = prime * result + end;
-		long temp;
-		temp = evidence.hashCode();
-		result = prime * result + (int) (temp ^ (temp >>> 32));
+		result = prime * result + Float.floatToIntBits(phredLogLikelihoodRatio);
 		result = prime * result + referenceIndex;
 		result = prime * result + start;
 		return result;
@@ -84,7 +82,7 @@ public class BreakendSummary {
 			return false;
 		if (end != other.end)
 			return false;
-		if (!evidence.equals(other.evidence))
+		if (phredLogLikelihoodRatio != phredLogLikelihoodRatio)
 			return false;
 		if (referenceIndex != other.referenceIndex)
 			return false;
@@ -134,5 +132,8 @@ public class BreakendSummary {
 				this.direction == loc.direction &&
 				((this.start <= loc.start && this.end >= loc.start) ||
 				 (this.start >= loc.start && this.start <= loc.end));
+	}
+	public BreakendSummary withPhredLlr(float llr) {
+		return new BreakendSummary(this, llr);
 	}
 }

@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv;
 
+
 public interface DirectedEvidence {
 	/**
 	 * Location of breakpoints consistent with the given evidence.
@@ -22,4 +23,36 @@ public interface DirectedEvidence {
 	 * @return Source providing this evidence
 	 */
 	EvidenceSource getEvidenceSource();
+	
+	/**
+	 * Log-likelihood ratio of existence of a structural variation supporting allele vs all reference alleles
+	 * @return Log-likelihood ratio
+	 */
+	float getPhredLogLikelihoodRatio();
+	/**
+	 * MAPQ of SV-supporting evidence mapped to the reference 
+	 * @return
+	 */
+	int getLocalMapq();
+	/**
+	 * Length of reference mapped sequence
+	 * @return
+	 */
+	int getLocalBaseLength();
+	/**
+	 * Total number of reference mapped bases
+	 * Note: this will match {@link getLocalBaseLength()} for raw reads 
+	 * @return
+	 */
+	int getLocalBaseCount();
+	/**
+	 * Maximum base quality of reference mapped bases
+	 * @return
+	 */
+	int getLocalMaxBaseQual();
+	/**
+	 * Total base quality of reference mapped bases
+	 * @return
+	 */
+	int getLocalTotalBaseQual();
 }

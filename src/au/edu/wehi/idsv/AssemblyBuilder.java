@@ -1,6 +1,9 @@
 package au.edu.wehi.idsv;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
+
+import com.google.common.collect.Sets;
 
 import au.edu.wehi.idsv.sam.AnomolousReadAssembly;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
@@ -8,6 +11,22 @@ import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 public class AssemblyBuilder {
+	private ProcessingContext processContext;
+	private EvidenceSource source;
+	private int anchorReferenceIndex = -1;
+	private int anchor;
+	private int mateAnchorReferenceIndex = -1;
+	private int mateAnchor; 
+	private byte[] bases;
+	private byte[] quals;
+	private int readCount;
+	private int baseCount;
+	private int maxsclen;
+	private int longestAssembledRead;
+	private int anchorLen;	
+	private BreakendDirection dir = null;
+	private String assembler = "";
+	private Set<DirectedEvidence> evidence;
 	public AssemblyBuilder(ProcessingContext processContext, EvidenceSource source) {
 		this.processContext = processContext;
 		this.source = source;
@@ -47,6 +66,10 @@ public class AssemblyBuilder {
 	}
 	public AssemblyBuilder assemblyBaseQuality(byte[] quals) {
 		this.quals = quals;
+		return this;
+	}
+	public AssemblyBuilder contributingEvidence(Set<DirectedEvidence> evidence) {
+		this.evidence = evidence;
 		return this;
 	}
 	public AssemblyBuilder assembledReadCount(int readCount) {
@@ -90,21 +113,6 @@ public class AssemblyBuilder {
 		this.assembler = name;
 		return this;
 	}
-	private ProcessingContext processContext;
-	private EvidenceSource source;
-	private int anchorReferenceIndex = -1;
-	private int anchor;
-	private int mateAnchorReferenceIndex = -1;
-	private int mateAnchor; 
-	private byte[] bases;
-	private byte[] quals;
-	private int readCount;
-	private int baseCount;
-	private int maxsclen;
-	private int longestAssembledRead;
-	private int anchorLen;	
-	private BreakendDirection dir = null;
-	private String assembler = "";
 	/**
 	 * Generates a VCF variant from the assembly
 	 * @return
@@ -115,8 +123,9 @@ public class AssemblyBuilder {
 		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(processContext, source);
 		AnomolousReadAssembly ara = makeSAMRecord();
 		
+		// T, N read counts
 		EvidenceMetrics evidence = new EvidenceMetrics();
-		evidence.set(VcfAttributes.ASSEMBLY_READS, readCount);
+		evidence.set(VcfAttributes. readCount);
 		evidence.set(VcfAttributes.ASSEMBLY_BASES, baseCount);
 		evidence.set(VcfAttributes.ASSEMBLY_LENGTH, bases.length);
 		builder

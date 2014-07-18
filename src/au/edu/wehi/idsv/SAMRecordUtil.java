@@ -142,4 +142,22 @@ public class SAMRecordUtil {
         final int actualNucleotideDiffs = SequenceUtil.calculateSamNmTag(record, refSequence.getBases(), 0, false);
         record.setAttribute(SAMTag.NM.name(), actualNucleotideDiffs);
 	}
+	public static int getMaxReferenceBaseQual(SAMRecord r) {
+		byte[] qual = r.getBaseQualities();
+		if (qual == null || qual == SAMRecord.NULL_QUALS) return 0;
+		int max = 0;
+		for (int i = getStartSoftClipLength(r); i < qual.length - getEndSoftClipLength(r); i++) {
+			max = Math.max(max, qual[i]);
+		}
+		return max;
+	}
+	public static int getTotalReferenceBaseQual(SAMRecord r) {
+		byte[] qual = r.getBaseQualities();
+		if (qual == null || qual == SAMRecord.NULL_QUALS) return 0;
+		int max = 0;
+		for (int i = getStartSoftClipLength(r); i < qual.length - getEndSoftClipLength(r); i++) {
+			max += qual[i];
+		}
+		return max;
+	}
 }

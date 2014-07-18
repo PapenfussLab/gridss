@@ -16,11 +16,11 @@ public class BreakpointFastqEncodingTest extends TestHelper {
 			return "EvidenceID";
 		}
 		@Override
-		public byte[] getBreakpointSequence() {
+		public byte[] getBreakendSequence() {
 			return B("GTAC");
 		}
 		@Override
-		public byte[] getBreakpointQuality() {
+		public byte[] getBreakendQuality() {
 			return new byte[] { 1, 2, 3, 4 };
 		}
 		@Override

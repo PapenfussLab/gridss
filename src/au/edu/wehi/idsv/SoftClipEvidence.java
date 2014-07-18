@@ -60,11 +60,11 @@ public class SoftClipEvidence implements DirectedBreakpoint {
 		return location;
 	}
 	@Override
-	public byte[] getBreakpointSequence() {
+	public byte[] getBreakendSequence() {
 		return location.direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipBases(record) : SAMRecordUtil.getStartSoftClipBases(record);
 	}
 	@Override
-	public byte[] getBreakpointQuality() {
+	public byte[] getBreakendQuality() {
 		return location.direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipBaseQualities(record) : SAMRecordUtil.getStartSoftClipBaseQualities(record);
 	}
 	public SAMRecord getSAMRecord() {
@@ -93,7 +93,7 @@ public class SoftClipEvidence implements DirectedBreakpoint {
 		if (location instanceof BreakpointSummary) {
 			return realigned.getInsertedSequence();
 		} else {
-			return new String(getBreakpointSequence(), StandardCharsets.US_ASCII);
+			return new String(getBreakendSequence(), StandardCharsets.US_ASCII);
 		}
 	}
 	/**
@@ -120,7 +120,7 @@ public class SoftClipEvidence implements DirectedBreakpoint {
 	}
 	public float getAverageClipQuality() {
 		float total = 0;
-		byte[] qual = getBreakpointQuality();
+		byte[] qual = getBreakendQuality();
 		if (qual == null) return 0;
 		for (int i = 0; i < qual.length; i++) {
 			total += qual[i]; 

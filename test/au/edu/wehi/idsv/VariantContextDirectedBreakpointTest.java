@@ -38,25 +38,25 @@ public class VariantContextDirectedBreakpointTest extends TestHelper {
 	public void getBreakpointSequence_should_match_f_single_alt_allele() {
 		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), AES(), minimalVariant().alleles("A", "ACGT.").id("test").make());
 		assertEquals("CGT", vc.getBreakpointSequenceString());
-		assertArrayEquals(B(vc.getBreakpointSequenceString()), vc.getBreakpointSequence());
+		assertArrayEquals(B(vc.getBreakpointSequenceString()), vc.getBreakendSequence());
 	}
 	@Test
 	public void getBreakpointSequence_should_match_b_single_alt_allele() {
 		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), AES(), minimalVariant().alleles("A", ".CGTA").id("test").make());
 		assertEquals("CGT", vc.getBreakpointSequenceString());
-		assertArrayEquals(B(vc.getBreakpointSequenceString()), vc.getBreakpointSequence());
+		assertArrayEquals(B(vc.getBreakpointSequenceString()), vc.getBreakendSequence());
 	}
 	@Test
 	public void getBreakpointSequence_should_return_untemplated_sequence_for_partnered_b_breakend() {
 		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), AES(), minimalVariant().alleles("A", "[polyA[CGTA").id("test").make());
 		assertEquals("CGT", vc.getBreakpointSequenceString());
-		assertArrayEquals(B(vc.getBreakpointSequenceString()), vc.getBreakpointSequence());
+		assertArrayEquals(B(vc.getBreakpointSequenceString()), vc.getBreakendSequence());
 	}
 	@Test
 	public void getBreakpointSequence_should_return_untemplated_sequence_for_partnered_f_breakend() {
 		VariantContextDirectedBreakpoint vc = new VariantContextDirectedBreakpoint(getContext(), AES(), minimalVariant().alleles("A", "CGTA[polyA[").id("test").make());
 		assertEquals("GTA", vc.getBreakpointSequenceString());
-		assertArrayEquals(B(vc.getBreakpointSequenceString()), vc.getBreakpointSequence());
+		assertArrayEquals(B(vc.getBreakpointSequenceString()), vc.getBreakendSequence());
 	}
 	@Test
 	public void getAnchorSequenceString_should_match_bases_corresponding_to_ref_positions() {

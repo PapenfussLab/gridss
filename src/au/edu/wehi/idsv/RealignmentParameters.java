@@ -17,7 +17,7 @@ public class RealignmentParameters {
 	}
 	public boolean shouldRealignBreakend(VariantContextDirectedBreakpoint evidence) {
 		if (evidence.getBreakendSummary() instanceof BreakpointSummary) return false;
-		return evidence.getBreakpointSequence().length >= minLength;
+		return evidence.getBreakendSequence().length >= minLength;
 				//&& evidence.getAssemblyQuality() >= minAverageQual;
 	}
 }

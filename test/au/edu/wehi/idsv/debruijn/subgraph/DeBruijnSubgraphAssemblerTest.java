@@ -53,7 +53,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("TCTGAAA", Read(0, 10, "4S3M"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(2, results.size());
-		assertEquals(4, results.get(0).getBreakpointSequence().length);
+		assertEquals(4, results.get(0).getBreakendSequence().length);
 	}
 	@Test
 	public void should_anchor_at_reference_kmer_large_kmer() {
@@ -61,6 +61,6 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		List<VariantContextDirectedBreakpoint> results = Lists.newArrayList();
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence(S(RANDOM).substring(0, 200), Read(0, 1, "100M100S"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
-		assertEquals(100, results.get(0).getBreakpointSequence().length);
+		assertEquals(100, results.get(0).getBreakendSequence().length);
 	}
 }

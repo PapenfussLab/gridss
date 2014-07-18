@@ -34,7 +34,7 @@ public class MaximalClique {
 			inMap = new GraphNode(node.startX, node.endX, node.startY, node.endY, 0);
 			nodes.put(inMap, inMap);
 		}
-		inMap.evidence += node.evidence;
+		inMap.weight += node.weight;
 	}
 	private class MaximalCliqueEnumerator extends AbstractIterator<GraphNode> {
 		private final PeekingIterator<GraphNode> nodeIt;
@@ -79,18 +79,18 @@ public class MaximalClique {
 				public YNode() {
 					startx = Long.MIN_VALUE;
 					isMaximalClique = false;
-					evidence = 0;
+					weight = 0;
 					startHere = 0;
 					endHere = 0;
 				}
 				public long startx;
 				public boolean isMaximalClique;
-				public float evidence;
+				public float weight;
 				public int startHere;
 				public int endHere;
 				@Override
 				public String toString() {
-					return String.format("startx=%d start#=%d end#=%d %s %f", startx, startHere, endHere, isMaximalClique ? "MAXIMAL" : "", evidence);
+					return String.format("startx=%d start#=%d end#=%d %s %f", startx, startHere, endHere, isMaximalClique ? "MAXIMAL" : "", weight);
 				}
 			}
 			/**
@@ -105,7 +105,7 @@ public class MaximalClique {
 				
 				// Update the interval that our new nodes spans
 				for (YNode ynode : active.subMap(node.startY, node.endY + 1).values()) {
-					ynode.evidence += node.evidence;
+					ynode.weight += node.weight;
 					ynode.startx = node.startX;
 					ynode.isMaximalClique = ynode.startHere > 0 && ynode.endHere > 0;
 				}
@@ -124,12 +124,12 @@ public class MaximalClique {
 					long starty = entry.getKey();
 					YNode ynode = entry.getValue();
 					if (ynode.isMaximalClique) {
-						cliques.add(new GraphNode(ynode.startx, node.endX, starty, it.hasNext() ? it.peek().getKey() - 1 : node.endY, ynode.evidence));
+						cliques.add(new GraphNode(ynode.startx, node.endX, starty, it.hasNext() ? it.peek().getKey() - 1 : node.endY, ynode.weight));
 					}
 					ynode.startx = Long.MIN_VALUE;
 					ynode.isMaximalClique = false;
 					// remove node contribution
-					ynode.evidence -= node.evidence;
+					ynode.weight -= node.weight;
 				}
 				// Remove and coalese start/end bounds
 				active.get(node.startY).startHere--;
@@ -149,7 +149,7 @@ public class MaximalClique {
 				if (before.endHere != 0 || node.startHere != 0) return; // Can't merge since they are still distinct
 				if (before.isMaximalClique) throw new RuntimeException(String.format("Sanity check failure: partial maximal clique when merging %d", y));
 				if (node.isMaximalClique) throw new RuntimeException(String.format("Sanity check failure: partial maximal clique when merging %d", y));
-				//if (!Objects.equals(before.evidence, node.evidence)) throw new RuntimeException(String.format("Sanity check failure: evidence %s and %s do not match", before.evidence, node.evidence));
+				if (before.weight != node.weight) throw new RuntimeException(String.format("Sanity check failure: nodes have different weights"));
 				before.endHere = node.endHere;
 				active.remove(y);
 			}
@@ -158,7 +158,7 @@ public class MaximalClique {
 				if (entry.getKey() == y) return; // Nothing to do - already split
 				YNode before = entry.getValue();
 				YNode node = new YNode();
-				node.evidence += before.evidence;
+				node.weight += before.weight;
 				node.endHere = before.endHere;
 				before.isMaximalClique = false;
 				before.endHere = 0;

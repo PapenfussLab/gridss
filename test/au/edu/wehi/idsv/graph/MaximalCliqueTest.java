@@ -28,7 +28,7 @@ public class MaximalCliqueTest {
 	private GraphNode[] flipXY(GraphNode[] a) {
 		GraphNode[] r = new GraphNode[a.length];
 		for (int i = 0; i < a.length; i++) {
-			r[i] = new GraphNode(a[i].startY, a[i].endY, a[i].startX, a[i].endX, a[i].evidence);
+			r[i] = new GraphNode(a[i].startY, a[i].endY, a[i].startX, a[i].endX, a[i].weight);
 		}
 		return r;
 	}

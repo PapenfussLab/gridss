@@ -161,7 +161,7 @@ public class VariantContextDirectedBreakpoint extends IdsvVariantContext impleme
 		return getID();
 	}
 	@Override
-	public byte[] getBreakpointSequence() {
+	public byte[] getBreakendSequence() {
 		return breakpointSequence.getBytes(StandardCharsets.US_ASCII);
 	}
 	public String getBreakpointSequenceString() {
@@ -173,7 +173,7 @@ public class VariantContextDirectedBreakpoint extends IdsvVariantContext impleme
 		return anchorSequence;
 	}
 	@Override
-	public byte[] getBreakpointQuality() {
+	public byte[] getBreakendQuality() {
 		return breakendBaseQual;
 	}
 	@Override

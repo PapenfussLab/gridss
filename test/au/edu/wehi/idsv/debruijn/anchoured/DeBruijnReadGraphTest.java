@@ -193,7 +193,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		addRead(ass, R(null, "ACGTA", new byte[] { 3,4,5,6,7 }, false, true), true);
 		VariantContextDirectedBreakpoint result = ass.assembleVariant(0, 1);
 		// pad out read qualities
-		assertArrayEquals(new byte[] { /*4,6,8,8,*/8 }, result.getBreakpointQuality());
+		assertArrayEquals(new byte[] { /*4,6,8,8,*/8 }, result.getBreakendQuality());
 	}
 	// @Test // can't see the anchor qualities in the current API
 	public void assembly_base_quality_should_pad_to_match_read_length() {
@@ -202,7 +202,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		addRead(ass, R(null, "ACGTA", new byte[] { 3,4,5,6,7 }, false, true), true);
 		VariantContextDirectedBreakpoint result = ass.assembleVariant(0, 1);
 		// pad out read qualities
-		assertEquals(result.getAssemblyConsensus(), result.getBreakpointQuality());
+		assertEquals(result.getAssemblyConsensus(), result.getBreakendQuality());
 	}
 	@Test
 	public void read_count_should_be_number_of_reads__with_at_least_one_kmer_on_path() {

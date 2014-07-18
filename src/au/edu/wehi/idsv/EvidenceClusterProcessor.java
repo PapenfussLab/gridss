@@ -51,7 +51,7 @@ public class EvidenceClusterProcessor implements Iterable<BreakpointSummary> {
 				lowDir = highDir;
 				highDir = tmpDir;
 			}
-			GraphNode node = new GraphNode(startX, endX, startY, endY, (float)loc.evidence.getScore());
+			GraphNode node = new GraphNode(startX, endX, startY, endY, loc.phredLogLikelihoodRatio);
 			addNode(lowDir, highDir, node);
 		} else {
 			if (filterOut(loc)) return;
@@ -135,7 +135,7 @@ public class EvidenceClusterProcessor implements Iterable<BreakpointSummary> {
 					highDir,
 					context.getLinear().getReferencePosition(node.startY),
 					context.getLinear().getReferencePosition(node.endY),
-					new EvidenceMetrics(node.evidence));
+					node.weight);
 		}
 		@Override
 		public void remove() {

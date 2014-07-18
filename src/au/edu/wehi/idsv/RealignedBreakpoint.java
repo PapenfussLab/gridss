@@ -7,8 +7,6 @@ import htsjdk.samtools.util.SequenceUtil;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import au.edu.wehi.idsv.vcf.VcfAttributes;
-
 public class RealignedBreakpoint {
 	private final BreakpointSummary summary;
 	private final String insertedSequence;
@@ -55,13 +53,7 @@ public class RealignedBreakpoint {
 				realigned.getReferenceIndex(), remoteDirection,
 				remoteDirection == BreakendDirection.Forward ? remotePosition : Math.max(remotePosition - microhomologyLength, 1),
 				remoteDirection == BreakendDirection.Backward ? remotePosition: Math.min(remotePosition + microhomologyLength, context.getDictionary().getSequence(realigned.getReferenceIndex()).getSequenceLength()),
-				new EvidenceMetrics());
-		EvidenceMetrics evidence = summary.evidence;
-		evidence.add(local.evidence);
-		evidence.set(VcfAttributes.REALIGN_MAX_LENGTH, realigned.getReadLength());
-		evidence.set(VcfAttributes.REALIGN_TOTAL_LENGTH, realigned.getReadLength());
-		//evidence.set(EvidenceAttributes.REALIGN_MAX_MAPQ, realigned.getMappingQuality());
-		evidence.set(VcfAttributes.REALIGN_TOTAL_MAPQ, realigned.getMappingQuality());
+				Float.NaN);
 		if (local instanceof BreakpointSummary) {
 			BreakpointSummary bp = (BreakpointSummary)local;
 			if (BreakpointSummary.ByStartStart2EndEnd2.compare(bp, summary) != 0) {

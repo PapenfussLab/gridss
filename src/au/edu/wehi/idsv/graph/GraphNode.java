@@ -14,17 +14,17 @@ public class GraphNode {
 	public final long endX;
 	public final long startY;
 	public final long endY;
-	public float evidence;
-	public GraphNode(long startX, long endX, long startY, long endY, float evidence) {
+	public float weight;
+	public GraphNode(long startX, long endX, long startY, long endY, float weight) {
 		this.startX = startX;
 		this.endX = endX;
 		this.startY = startY;
 		this.endY = endY;
-		this.evidence = evidence;
+		this.weight = weight;
 	}
 	@Override
 	public String toString() {
-		return String.format("(x=[%d, %d], y=[%d, %d], %f)", startX, endX, startY, endY, evidence);
+		return String.format("(x=[%d, %d], y=[%d, %d], %f)", startX, endX, startY, endY, weight);
 	}
 	public static Ordering<GraphNode> ByEndXYStartXY = new Ordering<GraphNode>() {
 		public int compare(GraphNode o1, GraphNode o2) {

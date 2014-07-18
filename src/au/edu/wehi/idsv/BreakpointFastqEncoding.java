@@ -12,7 +12,7 @@ import com.google.common.base.Charsets;
  */
 public class BreakpointFastqEncoding {
 	private BreakpointFastqEncoding() { }
-	public static String getFastqID(DirectedBreakpoint bp) {
+	public static String getFastqID(DirectedEvidence bp) {
 		BreakendSummary loc = bp.getBreakendSummary();
 		return String.format("%s#%d#%s", loc.referenceIndex, loc.start, bp.getEvidenceID());
 	}
@@ -26,15 +26,15 @@ public class BreakpointFastqEncoding {
 		String[] split = fastqid.split("#");
 		return fastqid.substring(split[0].length() + split[1].length() + 2);
 	}
-	public static FastqRecord getRealignmentFastq(DirectedBreakpoint bp) {
-		byte[] sequence = bp.getBreakpointSequence();
+	public static FastqRecord getRealignmentFastq(ExactBreakend bp) {
+		byte[] sequence = bp.getBreakendSequence();
 		FastqRecord fq = null;
 		if (sequence != null) {
 			fq = new FastqRecord(
 				BreakpointFastqEncoding.getFastqID(bp),
 				new String(sequence, Charsets.US_ASCII),
 				"",
-				SAMUtils.phredToFastq(bp.getBreakpointQuality()));
+				SAMUtils.phredToFastq(bp.getBreakendQuality()));
 		}
 		return fq;
 	}

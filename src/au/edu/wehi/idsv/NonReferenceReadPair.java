@@ -4,19 +4,17 @@ import htsjdk.samtools.SAMRecord;
 
 import org.apache.commons.lang3.StringUtils;
 
-import au.edu.wehi.idsv.vcf.VcfAttributes;
-
 /**
  * A read pair that does not support the reference sequence. This can be an OEA, or DP read pair.
  * @author Daniel Cameron
  *
  */
-public class NonReferenceReadPair implements DirectedEvidence {
+public abstract class NonReferenceReadPair implements DirectedEvidence {
 	private final SAMRecord local;
 	private final SAMRecord remote;
-	private final BreakendSummary location;
+	private BreakendSummary location;
 	private final SAMEvidenceSource source;
-	public NonReferenceReadPair(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {
+	protected NonReferenceReadPair(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {
 		if (local == null) throw new IllegalArgumentException("local is null");
 		if (remote == null) throw new IllegalArgumentException("remote is null");
 		if (!StringUtils.equals(local.getReadName(), remote.getReadName())) throw new IllegalArgumentException(String.format("Read %s and %s do not match", local.getReadName(), remote.getReadName()));
@@ -27,25 +25,20 @@ public class NonReferenceReadPair implements DirectedEvidence {
 		this.local = local;
 		this.remote = remote;
 		this.location = calculateBreakendSummary(local, remote, source.getMetrics().getMaxFragmentSize());
+		if (this.location != null) {
+			this.location = this.location.withPhredLlr(getPhredLogLikelihoodRatio());
+		}
 		this.source = source;
+	}
+	public static NonReferenceReadPair create(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {
+		if (remote == null || remote.getReadUnmappedFlag()) {
+			return new UnmappedMateReadPair(local, remote, source);
+		} else {
+			return new DiscordantReadPair(local, remote, source);
+		}
 	}
 	public boolean isValid() {
 		return location != null;
-	}
-	private static EvidenceMetrics calculateOeaMetrics(SAMRecord local, SAMRecord remote) {
-		EvidenceMetrics m = new EvidenceMetrics();
-		m.set(VcfAttributes.UNMAPPED_MATE_READ_COUNT, 1);
-		//m.set(EvidenceAttributes.UNMAPPED_MATE_MAX_MAPQ, local.getMappingQuality());
-		m.set(VcfAttributes.UNMAPPED_MATE_TOTAL_MAPQ, local.getMappingQuality());
-		return m;
-	}
-	private static EvidenceMetrics calculateDpMetrics(SAMRecord local, SAMRecord remote) {
-		EvidenceMetrics m = new EvidenceMetrics();
-		int mapq = Math.min(local.getMappingQuality(), remote.getMappingQuality());
-		m.set(VcfAttributes.DISCORDANT_READ_PAIR_COUNT, 1);
-		//m.set(EvidenceAttributes.DISCORDANT_READ_PAIR_MAX_MAPQ, mapq);
-		m.set(VcfAttributes.DISCORDANT_READ_PAIR_TOTAL_MAPQ, mapq);
-		return m;
 	}
 	/**
 	 * Calculates the local breakpoint location
@@ -85,7 +78,7 @@ public class NonReferenceReadPair implements DirectedEvidence {
 		return new BreakendSummary(local.getReferenceIndex(), direction,
 				Math.min(positionClosestToBreakpoint, positionClosestToBreakpoint + intervalWidth * intervalDirection),
 				Math.max(positionClosestToBreakpoint, positionClosestToBreakpoint + intervalWidth * intervalDirection),
-				calculateOeaMetrics(local, remote));
+				Float.NaN);
 	}
 	/**
 	 * Determines the separation between discordant reads
@@ -118,7 +111,7 @@ public class NonReferenceReadPair implements DirectedEvidence {
 			BreakendSummary bsLocal = calculateLocalBreakendSummary(local, remote, maxfragmentSize);
 			BreakendSummary bsRemote = calculateLocalBreakendSummary(remote, local, maxfragmentSize);
 			if (bsLocal == null || bsRemote == null) return null;
-			return new BreakpointSummary(bsLocal, bsRemote, calculateDpMetrics(local, remote));
+			return new BreakpointSummary(bsLocal, bsRemote, Float.NaN);
 		}
 	}
 	/**
@@ -158,5 +151,25 @@ public class NonReferenceReadPair implements DirectedEvidence {
 	@Override
 	public EvidenceSource getEvidenceSource() {
 		return source;
+	}
+	@Override
+	public int getLocalMapq() {
+		return local.getMappingQuality();
+	}
+	@Override
+	public int getLocalBaseLength() {
+		return local.getReadLength();
+	}
+	@Override
+	public int getLocalBaseCount() {
+		return local.getReadLength();
+	}
+	@Override
+	public int getLocalMaxBaseQual() {
+		return SAMRecordUtil.getMaxReferenceBaseQual(local);
+	}
+	@Override
+	public int getLocalTotalBaseQual() {
+		return SAMRecordUtil.getTotalReferenceBaseQual(local);
 	}
 }

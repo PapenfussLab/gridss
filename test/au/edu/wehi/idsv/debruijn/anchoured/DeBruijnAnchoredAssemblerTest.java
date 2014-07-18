@@ -103,7 +103,7 @@ public class DeBruijnAnchoredAssemblerTest extends TestHelper {
 		// kmer qual = sum of min base quals
 		// end is padded
 		// first two bases are ignored since they're part of the anchor assembly
-		assertArrayEquals(new byte[] { /*6,1+7,*/2+8,3+9,4+10,11,12,12,12 }, r.get(0).getBreakpointQuality());
+		assertArrayEquals(new byte[] { /*6,1+7,*/2+8,3+9,4+10,11,12,12,12 }, r.get(0).getBreakendQuality());
 		// TODO: pad both ends so qual is balanced
 		// TODO: better base qual weighting
 	}

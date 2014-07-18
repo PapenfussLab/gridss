@@ -7,14 +7,10 @@ package au.edu.wehi.idsv;
  *
  */
 public interface DirectedBreakpoint extends DirectedEvidence {
-	/**
-	 * Gets the breakpoint sequence excluding anchor.
-	 * @return breakpoint sequence
-	 */
-	byte[] getBreakpointSequence();
-	/**
-	 * Gets the breakpoint sequence quality
-	 * @return 0-based phred-like quality scores
-	 */
-	byte[] getBreakpointQuality();
+	public BreakpointSummary getBreakendSummary();
+	int getRemoteMapq();
+	int getRemoteBaseLength();
+	int getRemoteBaseCount();
+	int getRemoteMaxBaseQual();
+	int getRemoteTotalBaseQual();
 }

@@ -30,11 +30,11 @@ public class SequentialRealignedBreakpointFactoryTest extends TestHelper {
 			return id;
 		}
 		@Override
-		public byte[] getBreakpointSequence() {
+		public byte[] getBreakendSequence() {
 			return null;
 		}
 		@Override
-		public byte[] getBreakpointQuality() {
+		public byte[] getBreakendQuality() {
 			return null;
 		}
 		@Override

@@ -25,8 +25,8 @@ public class SequentialNonReferenceReadPairFactory extends SequentialSAMRecordFa
 		if (record.getProperPairFlag()) return null;
 		SAMRecord mate = findMate(record);
 		if (record != null && mate != null) {
-			NonReferenceReadPair nrrp = new NonReferenceReadPair(record, mate, source);
-			if (nrrp.getBreakendSummary() == null) return null;
+			NonReferenceReadPair nrrp = NonReferenceReadPair.create(record, mate, source);
+			if (!nrrp.isValid()) return null;
 			return nrrp;
 		}
 		return null;
