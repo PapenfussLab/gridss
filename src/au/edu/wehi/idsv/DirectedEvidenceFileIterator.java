@@ -4,6 +4,7 @@ import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
 
@@ -33,6 +34,13 @@ public class DirectedEvidenceFileIterator implements CloseableIterator<DirectedE
 		svReader = sv == null ? null : processContext.getSamReaderFactory().open(sv);
 		mateReader = mate == null ? null : processContext.getSamReaderFactory().open(mate);
 		realignReader = realign == null ? null : processContext.getSamReaderFactory().open(realign);
+		if (realignReader != null) {
+			SequenceUtil.assertSequenceDictionariesEqual(
+					realignReader.getFileHeader().getSequenceDictionary(),
+					processContext.getReference().getSequenceDictionary(),
+					realign,
+					processContext.getReferenceFile());
+		}
 		vcfReader = vcf == null ? null : new VCFFileReader(vcf);
 		svIt = svReader == null ? null : svReader.iterator();
 		mateIt = mateReader == null ? null : mateReader.iterator();
