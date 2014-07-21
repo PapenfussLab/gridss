@@ -22,7 +22,7 @@ public class SequentialRealignedBreakpointFactory extends SequentialSAMRecordFac
 			PeekingIterator<SAMRecord> realigned) {
 		super(realigned);
 	}
-	public SAMRecord findRealignedSAMRecord(DirectedBreakpoint source) {
+	public SAMRecord findRealignedSAMRecord(DirectedEvidence source) {
 		if (source == null) return null;
 		return findMatching(source.getBreakendSummary().referenceIndex, source.getBreakendSummary().start, source.getEvidenceID());
 	}

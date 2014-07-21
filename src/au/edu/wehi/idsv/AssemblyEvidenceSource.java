@@ -152,14 +152,14 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			if (vcfWriter != null) vcfWriter.close();
 		}
 	}
-	private void processAssembly(Iterable<VariantContextDirectedBreakpoint> evidenceList, FastqBreakpointWriter fastqWriter, VariantContextWriter vcfWriter) {
+	private void processAssembly(Iterable<VariantContextDirectedEvidence> evidenceList, FastqBreakpointWriter fastqWriter, VariantContextWriter vcfWriter) {
     	if (evidenceList != null) {
-	    	for (VariantContextDirectedBreakpoint a : evidenceList) {
+	    	for (VariantContextDirectedEvidence a : evidenceList) {
 	    		processAssembly(a, fastqWriter, vcfWriter);
 	    	}
     	}
     }
-	private void processAssembly(VariantContextDirectedBreakpoint evidence, FastqBreakpointWriter fastqWriter, VariantContextWriter vcfWriter) {
+	private void processAssembly(VariantContextDirectedEvidence evidence, FastqBreakpointWriter fastqWriter, VariantContextWriter vcfWriter) {
 		if (evidence != null) {
 			vcfWriter.add(evidence); // write out failed assemblies as well for debugging purposes
 			if (!evidence.isFiltered() && processContext.getRealignmentParameters().shouldRealignBreakend(evidence)) {

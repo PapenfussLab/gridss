@@ -129,7 +129,7 @@ public class TestHelper {
 			return new SoftClipEvidence(getContext(), SES(), direction, pair[0]);
 		}
 	}
-	public static VariantContextDirectedBreakpoint AE() {
+	public static VariantContextDirectedEvidence AE() {
 		return AB().makeVariant();
 	}
 	public static AssemblyBuilder AB() {
@@ -143,13 +143,13 @@ public class TestHelper {
 		.assembledReadCount(5)
 		.assembledBaseCount(6);
 	}
-	public static VariantContextDirectedBreakpoint AE(
+	public static VariantContextDirectedEvidence AE(
 			BreakpointSummary summary,
 			int readCount,
 			int readBaseCount,
 			double breakpointQuality,
 			String untemplatedSequence) {
-		VariantContextDirectedBreakpointBuilder b = new VariantContextDirectedBreakpointBuilder(getContext(), AES());
+		IdsvVariantContextBuilder b = new IdsvVariantContextBuilder(getContext(), AES());
 		b.breakpoint(summary, untemplatedSequence);
 		b.attribute(VcfAttributes.ASSEMBLY_BASES.attribute(), readBaseCount);
 		b.attribute(VcfAttributes.ASSEMBLY_READS.attribute(), readCount);

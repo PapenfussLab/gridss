@@ -22,13 +22,13 @@ public class IdsvVariantContextTest extends TestHelper {
 	}
 	@Test
 	public void create_should_make_VariantContextDirectedBreakpoint() {
-		VariantContextDirectedBreakpoint vc = AE();
-		assertTrue(IdsvVariantContext.create(getContext(), AES(), vc) instanceof VariantContextDirectedBreakpoint);
+		VariantContextDirectedEvidence vc = AE();
+		assertTrue(IdsvVariantContext.create(getContext(), AES(), vc) instanceof VariantContextDirectedEvidence);
 	}
 	@Test
 	public void create_should_make_VariantContextDirectedBreakpoint_from_breakpoint() {
 		VariantContext vc = minimalVariant().alleles("A", "A[polyA:1[").make();
-		assertTrue(IdsvVariantContext.create(getContext(), AES(), vc) instanceof VariantContextDirectedBreakpoint);
+		assertTrue(IdsvVariantContext.create(getContext(), AES(), vc) instanceof VariantContextDirectedEvidence);
 	}
 	public class TestIdsvVariantContext extends IdsvVariantContext {
 		public TestIdsvVariantContext(VariantContext context) {

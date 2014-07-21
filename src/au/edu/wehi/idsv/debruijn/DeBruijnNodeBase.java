@@ -1,8 +1,8 @@
 package au.edu.wehi.idsv.debruijn;
 
-import htsjdk.samtools.SAMRecord;
-
 import java.util.Set;
+
+import au.edu.wehi.idsv.DirectedEvidence;
 
 import com.google.common.collect.Sets;
 
@@ -11,19 +11,19 @@ public class DeBruijnNodeBase {
 	// technically this is incorrect as we should have a MultiSet since
 	// a record can contain a kmer multiple times but since we only add/remove
 	// entire reads at a time, it works out ok for the current implementation
-	private Set<SAMRecord> supportSet = Sets.newHashSet();
+	private Set<DirectedEvidence> supportSet = Sets.newHashSet();
 	public DeBruijnNodeBase(VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) {
-		this(kmer.weight, evidence.getSAMRecord());
+		this(kmer.weight, evidence.getDirectedEvidence());
 	}
 	/**
 	 * Creates a node from the given read with the given level of support
 	 * @param weight support weight
 	 * @param read source read
 	 */
-	public DeBruijnNodeBase(int weight, SAMRecord read) {
+	public DeBruijnNodeBase(int weight, DirectedEvidence evidence) {
 		if (weight <= 0) throw new IllegalArgumentException("weight must be positive");
 		this.nodeWeight = weight;
-		supportSet.add(read);
+		supportSet.add(evidence);
 	}
 	/**
 	 * Merges the given node into this one
@@ -52,7 +52,7 @@ public class DeBruijnNodeBase {
 	 * Reads supporting this kmer
 	 * @return supporting reads
 	 */
-	public Set<SAMRecord> getSupportingReads() {
+	public Set<DirectedEvidence> getSupportingEvidence() {
 		return supportSet;
 	}
 	@Override

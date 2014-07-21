@@ -13,7 +13,7 @@ import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.ReadEvidenceAssembler;
 import au.edu.wehi.idsv.SoftClipEvidence;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
+import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 
 import com.google.common.collect.Lists;
 
@@ -37,15 +37,15 @@ public class DeBruijnAnchoredAssembler implements ReadEvidenceAssembler {
 		this.graphf = new DeBruijnAnchoredGraph(processContext, source, processContext.getAssemblyParameters().k, BreakendDirection.Forward);
 		this.graphb = new DeBruijnAnchoredGraph(processContext, source, processContext.getAssemblyParameters().k, BreakendDirection.Backward);
 	}
-	private VariantContextDirectedBreakpoint createAssemblyBreakend(DeBruijnAnchoredGraph graph, BreakendDirection direction) {
-		VariantContextDirectedBreakpoint variant = graph.assembleVariant(currentReferenceIndex, currentPosition);
+	private VariantContextDirectedEvidence createAssemblyBreakend(DeBruijnAnchoredGraph graph, BreakendDirection direction) {
+		VariantContextDirectedEvidence variant = graph.assembleVariant(currentReferenceIndex, currentPosition);
 		return variant;
 	}
 	@Override
-	public Iterable<VariantContextDirectedBreakpoint> addEvidence(DirectedEvidence evidence) {
+	public Iterable<VariantContextDirectedEvidence> addEvidence(DirectedEvidence evidence) {
 		if (evidence == null) return Collections.emptyList();
 		BreakendSummary location = evidence.getBreakendSummary();
-		List<VariantContextDirectedBreakpoint> result = processUpToExcluding(location.referenceIndex, location.start);
+		List<VariantContextDirectedEvidence> result = processUpToExcluding(location.referenceIndex, location.start);
 		// add evidence
 		if (location.direction == BreakendDirection.Forward) {
 			addToGraph(graphf, activef, evidence);
@@ -86,7 +86,7 @@ public class DeBruijnAnchoredAssembler implements ReadEvidenceAssembler {
 		}
 	}
 	@Override
-	public Iterable<VariantContextDirectedBreakpoint> endOfEvidence() {
+	public Iterable<VariantContextDirectedEvidence> endOfEvidence() {
 		return processUpToExcluding(currentReferenceIndex + 1, 0);
 	}
 	/**
@@ -95,13 +95,13 @@ public class DeBruijnAnchoredAssembler implements ReadEvidenceAssembler {
 	 * @param position position to process until
 	 * @return add assemblies generated up to the given position
 	 */
-	private List<VariantContextDirectedBreakpoint> processUpToExcluding(int referenceIndex, int position) {
-		List<VariantContextDirectedBreakpoint> result = Lists.newArrayList();
+	private List<VariantContextDirectedEvidence> processUpToExcluding(int referenceIndex, int position) {
+		List<VariantContextDirectedEvidence> result = Lists.newArrayList();
 		// keep going till we flush both de bruijn graphs
 		// or we reach the stop position
 		while ((!activef.isEmpty() || !activeb.isEmpty()) &&
 				!(currentReferenceIndex == referenceIndex && currentPosition == position)) {
-			VariantContextDirectedBreakpoint assembly;
+			VariantContextDirectedEvidence assembly;
 			
 			assembly = createAssemblyBreakend(graphf, BreakendDirection.Forward);
 			if (assembly != null) {

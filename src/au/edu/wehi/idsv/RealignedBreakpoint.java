@@ -52,8 +52,7 @@ public class RealignedBreakpoint {
 				local.direction == BreakendDirection.Forward ? local.end: Math.min(local.end + microhomologyLength, context.getDictionary().getSequence(local.referenceIndex).getSequenceLength()),
 				realigned.getReferenceIndex(), remoteDirection,
 				remoteDirection == BreakendDirection.Forward ? remotePosition : Math.max(remotePosition - microhomologyLength, 1),
-				remoteDirection == BreakendDirection.Backward ? remotePosition: Math.min(remotePosition + microhomologyLength, context.getDictionary().getSequence(realigned.getReferenceIndex()).getSequenceLength()),
-				Float.NaN);
+				remoteDirection == BreakendDirection.Backward ? remotePosition: Math.min(remotePosition + microhomologyLength, context.getDictionary().getSequence(realigned.getReferenceIndex()).getSequenceLength()));
 		if (local instanceof BreakpointSummary) {
 			BreakpointSummary bp = (BreakpointSummary)local;
 			if (BreakpointSummary.ByStartStart2EndEnd2.compare(bp, summary) != 0) {

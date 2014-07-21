@@ -6,7 +6,7 @@ import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.ReadEvidenceAssembler;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
+import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -37,8 +37,8 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 		this.parameters = processContext.getAssemblyParameters();
 	}
 	@Override
-	public Iterable<VariantContextDirectedBreakpoint> addEvidence(DirectedEvidence evidence) {
-		Iterable<VariantContextDirectedBreakpoint> it = ImmutableList.of();
+	public Iterable<VariantContextDirectedEvidence> addEvidence(DirectedEvidence evidence) {
+		Iterable<VariantContextDirectedEvidence> it = ImmutableList.of();
 		if (evidence.getBreakendSummary().referenceIndex != currentReferenceIndex) {
 			it = assembleAll();
 			init(evidence.getBreakendSummary().referenceIndex);
@@ -56,7 +56,7 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 		return it;
 	}
 	@Override
-	public Iterable<VariantContextDirectedBreakpoint> endOfEvidence() {
+	public Iterable<VariantContextDirectedEvidence> endOfEvidence() {
 		return assembleAll();
 	}
 	private void init(int referenceIndex) {
@@ -64,15 +64,15 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 		fgraph = new DeBruijnReadGraph(processContext, source, referenceIndex, BreakendDirection.Forward, parameters);
 		bgraph = new DeBruijnReadGraph(processContext, source, referenceIndex, BreakendDirection.Backward, parameters);
 	}
-	private Iterable<VariantContextDirectedBreakpoint> assembleAll() {
+	private Iterable<VariantContextDirectedEvidence> assembleAll() {
 		return assembleBefore(Integer.MAX_VALUE);
 	}
-	private Iterable<VariantContextDirectedBreakpoint> assembleBefore(int position) {
+	private Iterable<VariantContextDirectedEvidence> assembleBefore(int position) {
 		if (currentReferenceIndex < 0) return ImmutableList.of();
-		Iterable<VariantContextDirectedBreakpoint> it = Iterables.mergeSorted(ImmutableList.of(
+		Iterable<VariantContextDirectedEvidence> it = Iterables.mergeSorted(ImmutableList.of(
 				fgraph.assembleContigsBefore(position),
 				bgraph.assembleContigsBefore(position)),
-				VariantContextDirectedBreakpoint.ByLocation);
+				VariantContextDirectedEvidence.ByLocationStart);
 		fgraph.removeBefore(position);
 		bgraph.removeBefore(position);
 		return it;

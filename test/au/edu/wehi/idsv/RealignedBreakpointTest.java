@@ -13,8 +13,8 @@ import au.edu.wehi.idsv.vcf.VcfAttributes;
 public class RealignedBreakpointTest extends TestHelper {
 	@Test(expected=IllegalArgumentException.class)
 	public void should_throw_if_realigned_unmapped() {
-		VariantContextDirectedBreakpoint dba = AE();
-		dba = new VariantContextDirectedBreakpoint(getContext(), AES(), new VariantContextBuilder(dba).make());
+		VariantContextDirectedEvidence dba = AE();
+		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
 		new RealignedBreakpoint(getContext(), dba.getBreakendSummary(), B("N"), Unmapped(2));
 	}
 	@Test

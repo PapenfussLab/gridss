@@ -27,8 +27,8 @@ public class BreakpointSummary extends BreakendSummary {
 	 */
 	public final BreakendDirection direction2;
 	public BreakpointSummary(int referenceIndex1, BreakendDirection direction1, int start1, int end1,
-			int referenceIndex2, BreakendDirection direction2, int start2, int end2, float phredllr) {
-		super(referenceIndex1, direction1, start1, end1, phredllr);
+			int referenceIndex2, BreakendDirection direction2, int start2, int end2) {
+		super(referenceIndex1, direction1, start1, end1);
 		if (referenceIndex2 < 0) {
 			throw new IllegalArgumentException("Reference index must be valid");
 		}
@@ -37,33 +37,23 @@ public class BreakpointSummary extends BreakendSummary {
 		this.referenceIndex2 = referenceIndex2;
 		this.direction2 = direction2;
 	}
-	public BreakpointSummary(BreakendSummary local, BreakendSummary remote, float phredllr) {
+	public BreakpointSummary(BreakendSummary local, BreakendSummary remote) {
 		this(local.referenceIndex, local.direction, local.start, local.end,
-				remote.referenceIndex, remote.direction, remote.start, remote.end,
-				phredllr);
-	}
-	public BreakpointSummary(BreakpointSummary interval, float phredllr) {
-		this(interval.referenceIndex, interval.direction, interval.start, interval.end,
-				interval.referenceIndex2, interval.direction2, interval.start2, interval.end2,
-				phredllr);
+				remote.referenceIndex, remote.direction, remote.start, remote.end);
 	}
 	public BreakendSummary remoteBreakend() {
-		return new BreakendSummary(referenceIndex2, direction2, start2, end2, phredLogLikelihoodRatio);
+		return new BreakendSummary(referenceIndex2, direction2, start2, end2);
 	}
 	/**
 	 * Returns the other end of this breakpoint
 	 * @return breakpoint with ends swapped
 	 */
 	public BreakpointSummary remoteBreakpoint() {
-		return new BreakpointSummary(referenceIndex2, direction2, start2, end2, referenceIndex, direction, start, end, phredLogLikelihoodRatio);
-	}
-	@Override 
-	public BreakpointSummary withPhredLlr(float llr) {
-		return new BreakpointSummary(this, llr);
+		return new BreakpointSummary(referenceIndex2, direction2, start2, end2, referenceIndex, direction, start, end);
 	}
 	@Override
 	public String toString() {
-		return String.format("%s %s %s", toString(direction, referenceIndex, start, end), toString(direction2, referenceIndex2, start2, end2), phredLogLikelihoodRatio);
+		return String.format("%s %s", toString(direction, referenceIndex, start, end), toString(direction2, referenceIndex2, start2, end2));
 	}
 	/**
 	 * Restricts overlap to require both local and remote breakends to overlap

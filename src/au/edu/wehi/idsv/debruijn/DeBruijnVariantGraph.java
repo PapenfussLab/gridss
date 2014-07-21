@@ -127,34 +127,33 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		}
 		return quals;
 	}
-	/**
-	 * Gets the length of the longest soft clip in the given contig
-	 * @param supportingReads
-	 * @return length of longest read
-	 */
-	protected int getMaxSoftClipLength(List<Long> path, int anchorLength) {
-		int readLength = 0;
-		int offset = 0;
-		for (Long kmer : path) {
-			// don't consider SC length of reference kmers - they may be SC support for a different breakend 
-			if (offset >= anchorLength) {
-				for (SAMRecord r : getKmer(kmer).getSupportingReads()) {
-					readLength = Math.max(readLength, direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipLength(r) : SAMRecordUtil.getStartSoftClipLength(r));
-				}
-			}
-			offset++;
-		}
-		return readLength;
-	}
+//	/**
+//	 * Gets the length of the longest soft clip in the given contig
+//	 * @param supportingReads
+//	 * @return length of longest read
+//	 */
+//	protected int getMaxSoftClipLength(List<Long> path, int anchorLength) {
+//		int readLength = 0;
+//		int offset = 0;
+//		for (Long kmer : path) {
+//			// don't consider SC length of reference kmers - they may be SC support for a different breakend 
+//			if (offset >= anchorLength) {
+//				for (SAMRecord r : getKmer(kmer).getSupportingReads()) {
+//					readLength = Math.max(readLength, direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipLength(r) : SAMRecordUtil.getStartSoftClipLength(r));
+//				}
+//			}
+//			offset++;
+//		}
+//		return readLength;
+//	}
 	protected AssemblyBuilder debruijnContigAssembly(List<Long> path) {
-		Set<SAMRecord> support = getSupportingSAMRecords(path);
+		Set<DirectedEvidence> support = getSupportingEvidence(path);
 		AssemblyBuilder builder = new AssemblyBuilder(processContext, source)
 			.direction(direction)
 			.assemblyBases(getBaseCalls(path))
 			.assemblyBaseQuality(getBaseQuals(path))
-			.assembledReadCount(support.size())
-			.assembledBaseCount(getSAMRecordBaseCount(path))
-			.longestSupportingRead(getMaxReadLength(path));
+			.contributingEvidence(getSupportingEvidence(path))
+			.assembledBaseCount(getSAMRecordBaseCount(path));
 		return builder;
 	}
 }

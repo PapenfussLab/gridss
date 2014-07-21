@@ -6,6 +6,7 @@ import htsjdk.samtools.SAMRecord;
 import java.util.List;
 
 import au.edu.wehi.idsv.BreakendDirection;
+import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.SAMRecordUtil;
 import au.edu.wehi.idsv.SoftClipEvidence;
@@ -46,20 +47,22 @@ public class VariantEvidence {
 	private final int mateAnchorPosition;
 	private final int k;
 	private final BreakendDirection direction;
+	private final DirectedEvidence evidence;
 	
 	public static VariantEvidence createRemoteReadEvidence(BreakendDirection graphDirection, int k, NonReferenceReadPair pair) {
 		if (graphDirection != pair.getBreakendSummary().direction) throw new RuntimeException("Sanity check failure: local read pair evidence direction does not match de bruijn graph direction");
 		int mateAnchorPosition = graphDirection == BreakendDirection.Forward ? pair.getBreakendSummary().start: pair.getBreakendSummary().end;
-		return new VariantEvidence(graphDirection, k, pair.getNonReferenceRead(), mateAnchorPosition);
+		return new VariantEvidence(pair, graphDirection, k, pair.getNonReferenceRead(), mateAnchorPosition);
 	}
 	public static VariantEvidence createSoftClipEvidence(BreakendDirection graphDirection, int k, SoftClipEvidence read) {
 		if (graphDirection != read.getBreakendSummary().direction) throw new RuntimeException("Sanity check failure: soft clip direction does not match de bruijn graph direction");
-		return new VariantEvidence(graphDirection, k, read.getSAMRecord());
+		return new VariantEvidence(read, graphDirection, k, read.getSAMRecord());
 	}
 	/**
 	 * Creates unanchored De Bruijn graph read evidence
 	 */
-	private VariantEvidence(BreakendDirection graphDirection, int k, SAMRecord record, int mateAnchorPosition) {
+	private VariantEvidence(DirectedEvidence evidence, BreakendDirection graphDirection, int k, SAMRecord record, int mateAnchorPosition) {
+		this.evidence = evidence;
 		this.direction = graphDirection;
 		this.k = k;
 		this.record = record;
@@ -73,7 +76,8 @@ public class VariantEvidence {
 	/**
 	 * Creates anchored De Bruijn graph read evidence
 	 */
-	private VariantEvidence(BreakendDirection graphDirection, int k, SAMRecord record) {
+	private VariantEvidence(DirectedEvidence evidence, BreakendDirection graphDirection, int k, SAMRecord record) {
+		this.evidence = evidence;
 		this.direction = graphDirection;
 		this.k = k;
 		this.record = record;
@@ -231,4 +235,11 @@ public class VariantEvidence {
 	 * false if anchored by the mate 
 	 */
 	public boolean isDirectlyAnchoredToReference() { return referenceKmerAnchorPosition != Integer.MIN_VALUE; }
+	/**
+	 * Gets the underlying evidence
+	 * @return evidence
+	 */
+	public DirectedEvidence getDirectedEvidence() {
+		return evidence;
+	}
 }

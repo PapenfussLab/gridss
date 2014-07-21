@@ -36,7 +36,7 @@ public class SequentialBreakendAnnotator {
 		this.referenceNormal = referenceNormal;
 		this.referenceTumour = referenceTumour;
 	}
-	public VariantContextDirectedBreakpoint annotate(VariantContextDirectedBreakpoint variant) {
+	public VariantContextDirectedEvidence annotate(VariantContextDirectedEvidence variant) {
 		BreakendSummary loc = variant.getBreakendSummary();
 		if (currentReferenceIndex != loc.referenceIndex) {
 			activeEvidence.clear();
@@ -54,7 +54,7 @@ public class SequentialBreakendAnnotator {
 		for (DirectedEvidence evidence : activeEvidence) {
 			BreakendSummary evidenceLoc = evidence.getBreakendSummary();
 			if (evidenceLoc.overlaps(loc)) {
-				builder.evidence(evidence);
+				builder.addEvidence(evidence);
 			}
 		}
 		return builder.make();

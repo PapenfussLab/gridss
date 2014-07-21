@@ -15,7 +15,9 @@ public class FastqBreakpointWriter implements Closeable {
 	public FastqBreakpointWriter(FastqWriter writer) {
 		this.backing = writer;
 	}
-	public void write(final DirectedBreakpoint breakpoint) {
+	public void write(final DirectedEvidence breakpoint) {
+		byte[] seq = breakpoint.getBreakendSequence();
+		if (seq == null || seq.length == 0) throw new IllegalArgumentException(String.format("Breakend sequence unknown"));
 		FastqRecord fastq = BreakpointFastqEncoding.getRealignmentFastq(breakpoint);
 		backing.write(fastq);
 	}

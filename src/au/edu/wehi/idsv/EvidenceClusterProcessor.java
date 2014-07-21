@@ -5,17 +5,15 @@ import java.util.Iterator;
 import au.edu.wehi.idsv.graph.GraphNode;
 import au.edu.wehi.idsv.graph.MaximalClique;
 
-import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Ordering;
 import com.google.common.collect.UnmodifiableIterator;
 /**
  * Calls breakpoints from the given evidence
  * 
  * @author Daniel Cameron
  */
-public class EvidenceClusterProcessor implements Iterable<BreakpointSummary> {
+public class EvidenceClusterProcessor implements Iterable<VariantContextDirectedEvidence> {
 	private final MaximalClique ff = new MaximalClique();
 	private final MaximalClique fb = new MaximalClique();
 	private final MaximalClique bf = new MaximalClique();
@@ -51,7 +49,7 @@ public class EvidenceClusterProcessor implements Iterable<BreakpointSummary> {
 				lowDir = highDir;
 				highDir = tmpDir;
 			}
-			GraphNode node = new GraphNode(startX, endX, startY, endY, loc.phredLogLikelihoodRatio);
+			GraphNode node = new GraphNode(startX, endX, startY, endY, PhredLogLikelihoodRatioModel.llr(evidence));
 			addNode(lowDir, highDir, node);
 		} else {
 			if (filterOut(loc)) return;
@@ -90,27 +88,19 @@ public class EvidenceClusterProcessor implements Iterable<BreakpointSummary> {
 		}
 	}
 	@Override
-	public Iterator<BreakpointSummary> iterator() {
-		UnmodifiableIterator<BreakpointSummary> x = Iterators.mergeSorted(ImmutableList.of(
+	public Iterator<VariantContextDirectedEvidence> iterator() {
+		UnmodifiableIterator<VariantContextDirectedEvidence> x = Iterators.mergeSorted(ImmutableList.of(
 				new EvidenceClusterProcessorMaximalCliqueIterator(ff, BreakendDirection.Forward, BreakendDirection.Forward),
 				new EvidenceClusterProcessorMaximalCliqueIterator(fb, BreakendDirection.Forward, BreakendDirection.Backward),
 				new EvidenceClusterProcessorMaximalCliqueIterator(bf, BreakendDirection.Backward, BreakendDirection.Forward),
 				new EvidenceClusterProcessorMaximalCliqueIterator(bb, BreakendDirection.Backward, BreakendDirection.Backward)),
-				new Ordering<BreakpointSummary>() {
-					public int compare(BreakpointSummary o1, BreakpointSummary o2) {
-						// same order as our source iterators
-						return ComparisonChain.start()
-								.compare(o1.end, o2.end)
-								.compare(o1.start2, o2.start2)
-								.result();
-					}
-		});
-		return x;
+			IdsvVariantContext.ByLocationEnd);
 		// TODO: filtering and processing of the maximal clique
 		// don't call weak evidence
 		// don't call if there is a much stronger call nearby
+		return x;
 	}
-	public class EvidenceClusterProcessorMaximalCliqueIterator implements Iterator<BreakpointSummary> {
+	public class EvidenceClusterProcessorMaximalCliqueIterator implements Iterator<VariantContextDirectedEvidence> {
 		private final Iterator<GraphNode> it;
 		private final BreakendDirection lowDir;
 		private final BreakendDirection highDir;
@@ -124,18 +114,21 @@ public class EvidenceClusterProcessor implements Iterable<BreakpointSummary> {
 			return it.hasNext();
 		}
 		@Override
-		public BreakpointSummary next() {
+		public VariantContextDirectedEvidence next() {
 			GraphNode node = it.next();
-			return new BreakpointSummary(
-					context.getLinear().getReferenceIndex(node.startX),
-					lowDir,
-					context.getLinear().getReferencePosition(node.startX),
-					context.getLinear().getReferencePosition(node.endX),
-					context.getLinear().getReferenceIndex(node.startY),
-					highDir,
-					context.getLinear().getReferencePosition(node.startY),
-					context.getLinear().getReferencePosition(node.endY),
-					node.weight);
+			IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
+			builder.breakpoint(new BreakpointSummary(
+						context.getLinear().getReferenceIndex(node.startX),
+						lowDir,
+						context.getLinear().getReferencePosition(node.startX),
+						context.getLinear().getReferencePosition(node.endX),
+						context.getLinear().getReferenceIndex(node.startY),
+						highDir,
+						context.getLinear().getReferencePosition(node.startY),
+						context.getLinear().getReferencePosition(node.endY)),
+					null);
+			builder.phredScore(node.weight);
+			return builder.make();
 		}
 		@Override
 		public void remove() {

@@ -15,7 +15,7 @@ import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
+import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredAssembler;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 
@@ -23,24 +23,24 @@ import com.google.common.collect.Lists;
 
 
 public class DeBruijnAnchoredAssemblerTest extends TestHelper {
-	public List<VariantContextDirectedBreakpoint> go(int k, DirectedEvidence... evidence) {
+	public List<VariantContextDirectedEvidence> go(int k, DirectedEvidence... evidence) {
 		ProcessingContext pc = getContext();
 		AssemblyParameters p = pc.getAssemblyParameters();
 		p.k = k;
 		p.method = AssemblyMethod.DEBRUIJN_PER_POSITION;
-		List<VariantContextDirectedBreakpoint> list = Lists.newArrayList();
+		List<VariantContextDirectedEvidence> list = Lists.newArrayList();
 		DeBruijnAnchoredAssembler assembler = new DeBruijnAnchoredAssembler(pc, AES());
 		for (DirectedEvidence e : evidence) {
-			Iterable<VariantContextDirectedBreakpoint> it = assembler.addEvidence(e);
+			Iterable<VariantContextDirectedEvidence> it = assembler.addEvidence(e);
 			if (it != null) {
-				for (VariantContextDirectedBreakpoint ass : it) {
+				for (VariantContextDirectedEvidence ass : it) {
 					list.add(ass);
 				}
 			}
 		}
-		Iterable<VariantContextDirectedBreakpoint> it = assembler.endOfEvidence();
+		Iterable<VariantContextDirectedEvidence> it = assembler.endOfEvidence();
 		if (it != null) {
-			for (VariantContextDirectedBreakpoint ass : it) {
+			for (VariantContextDirectedEvidence ass : it) {
 				list.add(ass);
 			}
 		}
@@ -48,12 +48,12 @@ public class DeBruijnAnchoredAssemblerTest extends TestHelper {
 	}
 	@Test
 	public void should_not_call_if_no_evidence() {
-		List<VariantContextDirectedBreakpoint> r = go(3);
+		List<VariantContextDirectedEvidence> r = go(3);
 		assertEquals(0, r.size());
 	}
 	@Test
 	public void should_filter_call_single_soft_clip() {
-		List<VariantContextDirectedBreakpoint> r = go(3,
+		List<VariantContextDirectedEvidence> r = go(3,
 				SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5 }, withSequence("AACGTG", Read(0, 1, "1M5S"))))
 		); 
 		assertEquals(1, r.size());
@@ -62,7 +62,7 @@ public class DeBruijnAnchoredAssemblerTest extends TestHelper {
 	@Test
 	public void should_filter_if_no_breakpoint_assembly() {
 		// polyA reads assemble as anchor kmer
-		List<VariantContextDirectedBreakpoint> r = go(3,
+		List<VariantContextDirectedEvidence> r = go(3,
 				new SoftClipEvidence(getContext(), SES(),BreakendDirection.Backward, Read(0, 1, "2S5M")),
 				new SoftClipEvidence(getContext(), SES(),BreakendDirection.Backward, Read(0, 1, "3S5M"))
 		); 
@@ -72,7 +72,7 @@ public class DeBruijnAnchoredAssemblerTest extends TestHelper {
 	@Test
 	public void should_not_call_unanchored_evidence() {
 		// polyA reads assemble as anchor kmer
-		List<VariantContextDirectedBreakpoint> r = go(3,
+		List<VariantContextDirectedEvidence> r = go(3,
 				NRRP(withSequence("CATG", OEA(1, 1, "10M", true))),
 				NRRP(withSequence("CATGAT", OEA(1, 1, "10M", true)))
 		);
@@ -81,7 +81,7 @@ public class DeBruijnAnchoredAssemblerTest extends TestHelper {
 	@Test
 	public void should_call_multiple_soft_clips() {
 		// polyA reads assemble as anchor kmer
-		List<VariantContextDirectedBreakpoint> r = go(3,
+		List<VariantContextDirectedEvidence> r = go(3,
 				SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5 }, withSequence("AACGTG", Read(0, 1, "1M5S")))),
 				SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5,5 }, withSequence("AACGTGA", Read(0, 1, "1M6S"))))
 		); 
@@ -96,7 +96,7 @@ public class DeBruijnAnchoredAssemblerTest extends TestHelper {
 	}
 	@Test
 	public void should_call_with_breakpoint_quality() {
-		List<VariantContextDirectedBreakpoint> r = go(3,
+		List<VariantContextDirectedEvidence> r = go(3,
 				SCE(BreakendDirection.Forward, withQual(new byte[] { 1,2,3,4,5,6 }, withSequence("AACGTG", Read(0, 2, "1M5S")))),
 				SCE(BreakendDirection.Forward, withQual(new byte[] { 6,7,8,9,10,11,12,13,14 }, withSequence("TAACGTGAT", Read(0, 1, "2M6S"))))
 		);
@@ -109,7 +109,7 @@ public class DeBruijnAnchoredAssemblerTest extends TestHelper {
 	}
 	@Test
 	public void id_should_contain_assembler_name_position_direction() {
-		List<VariantContextDirectedBreakpoint> r = go(3,
+		List<VariantContextDirectedEvidence> r = go(3,
 				SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5 }, withSequence("AACGTG", Read(0, 1, "1M5S")))),
 				SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5,5 }, withSequence("AACGTGA", Read(0, 1, "1M6S"))))
 		); 

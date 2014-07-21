@@ -27,15 +27,15 @@ public class EvidenceClusterSubsetProcessor extends EvidenceClusterProcessor {
 				|| (loc.referenceIndex == toReferenceIndex && loc.referenceIndex2 == fromReferenceIndex);
 	}
 	@Override
-	public Iterator<BreakpointSummary> iterator() {
-		return new BoundsAssertionIterator<BreakpointSummary>(super.iterator());
+	public Iterator<VariantContextDirectedEvidence> iterator() {
+		return new BoundsAssertionIterator<VariantContextDirectedEvidence>(super.iterator());
 	}
 	/**
 	 * Checks that results are on the expected chromosomes
 	 * @author Daniel Cameron
 	 *
 	 */
-	private class BoundsAssertionIterator<T extends BreakendSummary> implements Iterator<T> {
+	private class BoundsAssertionIterator<T extends VariantContextDirectedEvidence> implements Iterator<T> {
 		private final Iterator<T> it;
 		public BoundsAssertionIterator(Iterator<T> it) {
 			this.it = it;
@@ -46,7 +46,8 @@ public class EvidenceClusterSubsetProcessor extends EvidenceClusterProcessor {
 		}
 		@Override
 		public T next() {
-			T loc = it.next();
+			T value = it.next(); 
+			BreakendSummary loc = value.getBreakendSummary();
 			if (loc.referenceIndex != fromReferenceIndex && loc.referenceIndex != toReferenceIndex) {
 				throw new RuntimeException(String.format("Sanity check failure: breakpoint %s not on referenceIndex %d or %d.", loc, fromReferenceIndex, toReferenceIndex));
 			}
@@ -56,7 +57,7 @@ public class EvidenceClusterSubsetProcessor extends EvidenceClusterProcessor {
 					throw new RuntimeException(String.format("Sanity check failure: breakpoint %s not on referenceIndex %d or %d.", loc, fromReferenceIndex, toReferenceIndex));
 				}
 			}
-			return loc;
+			return value;
 		}
 		@Override
 		public void remove() {

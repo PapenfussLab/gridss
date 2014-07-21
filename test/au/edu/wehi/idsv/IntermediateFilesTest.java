@@ -131,20 +131,20 @@ public class IntermediateFilesTest extends TestHelper {
 		}
 		return list;
 	}
-	public List<VariantContextDirectedBreakpoint> breaks(List<IdsvVariantContext> vcf) {
-		List<VariantContextDirectedBreakpoint> list = Lists.newArrayList();
+	public List<VariantContextDirectedEvidence> breaks(List<IdsvVariantContext> vcf) {
+		List<VariantContextDirectedEvidence> list = Lists.newArrayList();
 		for (IdsvVariantContext vc : vcf) {
-			if (vc instanceof VariantContextDirectedBreakpoint) {
-				list.add((VariantContextDirectedBreakpoint)vc);
+			if (vc instanceof VariantContextDirectedEvidence) {
+				list.add((VariantContextDirectedEvidence)vc);
 			}
 		}
 		return list;
 	}
-	public List<VariantContextDirectedBreakpoint> breakpoints(final List<IdsvVariantContext> vcf) {
-		List<VariantContextDirectedBreakpoint> list = Lists.newArrayList();
+	public List<VariantContextDirectedEvidence> breakpoints(final List<IdsvVariantContext> vcf) {
+		List<VariantContextDirectedEvidence> list = Lists.newArrayList();
 		for (IdsvVariantContext vc : vcf) {
-			if (vc instanceof VariantContextDirectedBreakpoint) {
-				VariantContextDirectedBreakpoint be = (VariantContextDirectedBreakpoint)vc;
+			if (vc instanceof VariantContextDirectedEvidence) {
+				VariantContextDirectedEvidence be = (VariantContextDirectedEvidence)vc;
 				if (be.getBreakendSummary() instanceof BreakpointSummary) {
 					list.add(be);
 				}

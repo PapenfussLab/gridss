@@ -85,7 +85,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 		} else {
 			variants.add(getVariants(processContext.getFileSystemContext().getBreakpointVcf(output)));
 		}
-		Iterator<IdsvVariantContext> merged = Iterators.mergeSorted(variants, IdsvVariantContext.ByLocation);
+		Iterator<IdsvVariantContext> merged = Iterators.mergeSorted(variants, IdsvVariantContext.ByLocationStart);
 		return merged;
 	}
 	public void close() {
@@ -126,7 +126,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 			// Write out both sides of the breakend in order
 			// since the first breakend is always the lower genomic coordinate
 			// this will result in in-order output
-			PriorityQueue<VariantContextDirectedBreakpoint> variants = new PriorityQueue<VariantContextDirectedBreakpoint>(1024, IdsvVariantContext.ByLocation);
+			PriorityQueue<VariantContextDirectedEvidence> variants = new PriorityQueue<VariantContextDirectedEvidence>(1024, IdsvVariantContext.ByLocationStart);
 			Iterator<BreakpointSummary> it = processor.iterator();
 			while (it.hasNext()) {
 				BreakendSummary loc = it.next();
@@ -148,18 +148,18 @@ public class VariantCaller extends EvidenceProcessorBase {
 			}
 		}
 	}
-	private VariantContextDirectedBreakpoint createBreakend(final ProcessingContext processContext, BreakendSummary loc) {
-		VariantContextDirectedBreakpointBuilder builder = new VariantContextDirectedBreakpointBuilder(processContext, null)
+	private VariantContextDirectedEvidence createBreakend(final ProcessingContext processContext, BreakendSummary loc) {
+		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(processContext, null)
 			.breakend(loc, null)
 			.evidence(loc.evidence);
 		return builder.make();
 	}
 	private static int mateCount = 1;
-	private List<VariantContextDirectedBreakpoint> createBreakpoint(final ProcessingContext processContext, BreakpointSummary loc) {
-		VariantContextDirectedBreakpointBuilder builder1 = new VariantContextDirectedBreakpointBuilder(processContext, null)
+	private List<VariantContextDirectedEvidence> createBreakpoint(final ProcessingContext processContext, BreakpointSummary loc) {
+		IdsvVariantContextBuilder builder1 = new IdsvVariantContextBuilder(processContext, null)
 			.breakpoint(loc, null)
 			.evidence(loc.evidence);
-		VariantContextDirectedBreakpointBuilder builder2 = new VariantContextDirectedBreakpointBuilder(processContext, null)
+		IdsvVariantContextBuilder builder2 = new IdsvVariantContextBuilder(processContext, null)
 			.breakpoint(loc.remoteBreakpoint(), null)
 			.evidence(loc.evidence);
 		String mateId = String.format("idsv%d", mateCount++);
@@ -192,8 +192,8 @@ public class VariantCaller extends EvidenceProcessorBase {
 			Iterator<IdsvVariantContext> it = getAllCalledVariants();
 			while (it.hasNext()) {
 				IdsvVariantContext rawVariant = it.next();
-				if (rawVariant instanceof VariantContextDirectedBreakpoint && ((VariantContextDirectedBreakpoint)rawVariant).isValid()) {
-					VariantContextDirectedBreakpoint annotatedVariant = annotator.annotate((VariantContextDirectedBreakpoint)rawVariant);
+				if (rawVariant instanceof VariantContextDirectedEvidence && ((VariantContextDirectedEvidence)rawVariant).isValid()) {
+					VariantContextDirectedEvidence annotatedVariant = annotator.annotate((VariantContextDirectedEvidence)rawVariant);
 					vcfWriter.add(annotatedVariant);
 				}
 			}

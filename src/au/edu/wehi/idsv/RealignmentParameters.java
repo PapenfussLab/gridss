@@ -15,7 +15,7 @@ public class RealignmentParameters {
 		return evidence.getSoftClipLength() >= minLength
 				&& evidence.getAverageClipQuality() >= minAverageQual;
 	}
-	public boolean shouldRealignBreakend(VariantContextDirectedBreakpoint evidence) {
+	public boolean shouldRealignBreakend(VariantContextDirectedEvidence evidence) {
 		if (evidence.getBreakendSummary() instanceof BreakpointSummary) return false;
 		return evidence.getBreakendSequence().length >= minLength;
 				//&& evidence.getAssemblyQuality() >= minAverageQual;

@@ -6,7 +6,7 @@ import au.edu.wehi.idsv.AssemblyBuilder;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
+import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
 import au.edu.wehi.idsv.debruijn.DeBruijnVariantGraph;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
@@ -55,7 +55,7 @@ public class DeBruijnAnchoredGraph extends DeBruijnVariantGraph<DeBruijnNodeBase
 			}
 		}
 	}
-	public VariantContextDirectedBreakpoint assembleVariant(int referenceIndex, int position) {
+	public VariantContextDirectedEvidence assembleVariant(int referenceIndex, int position) {
 		// debugPrint();
 		return greedyAnchoredTraverse(referenceIndex, position);
 	}
@@ -66,12 +66,12 @@ public class DeBruijnAnchoredGraph extends DeBruijnVariantGraph<DeBruijnNodeBase
 	 * @param referenceIndex 
 	 * @return
 	 */
-	private VariantContextDirectedBreakpoint greedyAnchoredTraverse(int referenceIndex, int position) {
+	private VariantContextDirectedEvidence greedyAnchoredTraverse(int referenceIndex, int position) {
 		//debugPrint();
 		Long start = bestStartingPosition();
 		if (start == null) return null;
 		LinkedList<Long> path = greedyTraverse(start);
-		VariantContextDirectedBreakpoint result = pathToAssembly(path, start, referenceIndex, position);
+		VariantContextDirectedEvidence result = pathToAssembly(path, start, referenceIndex, position);
 		return result;
 	}
 	private Long bestStartingPosition() {
@@ -86,7 +86,7 @@ public class DeBruijnAnchoredGraph extends DeBruijnVariantGraph<DeBruijnNodeBase
 		}
 		return best;
 	}
-	private VariantContextDirectedBreakpoint pathToAssembly(LinkedList<Long> path, Long breakpointAnchor, int referenceIndex, int position) {
+	private VariantContextDirectedEvidence pathToAssembly(LinkedList<Long> path, Long breakpointAnchor, int referenceIndex, int position) {
 		if (path == null || path.size() == 0) throw new IllegalArgumentException("Invalid path");
 		int assemblyLength = path.size() + getK() - 1;
 		int offset = getK() - 1;
@@ -108,7 +108,8 @@ public class DeBruijnAnchoredGraph extends DeBruijnVariantGraph<DeBruijnNodeBase
 			.assemblerName(ASSEMBLER_NAME)
 			.referenceAnchor(referenceIndex, position)
 			.anchorLength(anchorLen)
-			.maximumSoftClipLength(getMaxSoftClipLength(path, anchorLen));
+			.contributingEvidence(getSupportingEvidence(path))
+			.assembledBaseCount(getSAMRecordBaseCount(path));
 		return builder.makeVariant();
 	}
 	@Override

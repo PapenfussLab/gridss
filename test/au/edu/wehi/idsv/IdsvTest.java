@@ -28,10 +28,10 @@ public class IdsvTest extends IntermediateFilesTest {
 		};
 		new Idsv().instanceMain(args);		
 		// Should have generated two breakpoints
-		List<VariantContextDirectedBreakpoint> ass = breaks(getVcf(getCommandlineContext(false).getFileSystemContext().getBreakendVcf(output), null));
-		ass = Lists.newArrayList(Iterables.filter(ass, new Predicate<VariantContextDirectedBreakpoint>() {
+		List<VariantContextDirectedEvidence> ass = breaks(getVcf(getCommandlineContext(false).getFileSystemContext().getBreakendVcf(output), null));
+		ass = Lists.newArrayList(Iterables.filter(ass, new Predicate<VariantContextDirectedEvidence>() {
 			@Override
-			public boolean apply(VariantContextDirectedBreakpoint arg0) {
+			public boolean apply(VariantContextDirectedEvidence arg0) {
 				return arg0.isValid() && !arg0.isFiltered();
 			}
 		}));

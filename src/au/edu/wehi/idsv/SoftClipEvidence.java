@@ -8,46 +8,39 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.lang3.StringUtils;
 
-import au.edu.wehi.idsv.vcf.VcfAttributes;
-
-public class SoftClipEvidence implements DirectedBreakpoint {
+public class SoftClipEvidence implements DirectedEvidence {
 	private final ProcessingContext processContext;
 	private final SAMEvidenceSource source;
 	private final SAMRecord record;
 	private final BreakendSummary location;
-	private final RealignedBreakpoint realigned;
-	public SoftClipEvidence(ProcessingContext processContext, SAMEvidenceSource source, BreakendDirection direction, SAMRecord record, SAMRecord realigned) {
+	public static SoftClipEvidence create(ProcessingContext processContext, SAMEvidenceSource source, BreakendDirection direction, SAMRecord record, SAMRecord realigned) {
 		if (record == null) throw new IllegalArgumentException("record is null");
 		if (direction == null) throw new IllegalArgumentException("direction is null");
 		if (record.getReadUnmappedFlag()) throw new IllegalArgumentException(String.format("record %s is unmapped", record.getReadName()));
 		if (record.getReadBases() == null || record.getReadBases() == SAMRecord.NULL_SEQUENCE ) throw new IllegalArgumentException(String.format("record %s missing sequence information", record.getReadName()));
+		SoftClipEvidence result = null;
+		if (realigned != null && !realigned.getReadUnmappedFlag()) {
+			result = new RealignedSoftClipEvidence(processContext, source, direction, record, realigned);
+		} else {
+			result = new SoftClipEvidence(processContext, source, direction, record);
+		}
+		if (result.getSoftClipLength() == 0) {
+			throw new IllegalArgumentException(String.format("record %s is not %s soft clipped", record.getReadName(), direction));
+		}
+		return result;
+	}
+	public static SoftClipEvidence create(SoftClipEvidence evidence, SAMRecord realigned) {
+		return create(evidence.processContext, evidence.source, evidence.location.direction, evidence.record, realigned);
+	}
+	protected SoftClipEvidence(ProcessingContext processContext, SAMEvidenceSource source, BreakendDirection direction, SAMRecord record) {
 		this.processContext = processContext;
 		this.source = source;
 		this.record = record;
 		int pos = direction == BreakendDirection.Forward ? record.getAlignmentEnd() : record.getAlignmentStart();
-		BreakendSummary local = new BreakendSummary(record.getReferenceIndex(), direction, pos, pos, new EvidenceMetrics());		
-		local.evidence.set(VcfAttributes.SOFT_CLIP_READ_COUNT, 1);
-		//local.evidence.set(EvidenceAttributes.SOFT_CLIP_MAX_LENGTH, getSoftClipLength());
-		local.evidence.set(VcfAttributes.SOFT_CLIP_TOTAL_LENGTH, getSoftClipLength(direction, record));
-		if (realigned != null && !realigned.getReadUnmappedFlag()) {
-			this.realigned = new RealignedBreakpoint(processContext, local, record.getReadBases(), realigned);
-			this.location = this.realigned.getBreakpointSummary();
-		} else {
-			this.location = local;
-			this.realigned = null;
-		}
-		if (getSoftClipLength() == 0) {
-			throw new IllegalArgumentException(String.format("record %s is not %s soft clipped", record.getReadName(), direction));
-		}
+		this.location = new BreakendSummary(record.getReferenceIndex(), direction, pos, pos);
 	}
 	public static int getSoftClipLength(BreakendDirection direction, SAMRecord record) {
 		return direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipLength(record) : SAMRecordUtil.getStartSoftClipLength(record); 
-	}
-	public SoftClipEvidence(ProcessingContext processContext, SAMEvidenceSource source, BreakendDirection direction, SAMRecord record) {
-		this(processContext, source, direction, record, null);
-	}
-	public SoftClipEvidence(SoftClipEvidence evidence, SAMRecord realigned) {
-		this(evidence.processContext, evidence.source, evidence.location.direction, evidence.record, realigned);
 	}
 	@Override
 	public String getEvidenceID() {
@@ -73,28 +66,12 @@ public class SoftClipEvidence implements DirectedBreakpoint {
 	public int getSoftClipLength() {
 		return getSoftClipLength(location.direction, record); 
 	}
-	
-	/**
-	 * Number of unmapped bases at the breakpoint 
-	 * @return Number of unmapped bases at the breakpoint
-	 */
-	public int getUntemplatedSequenceLength() {
-		if (location instanceof BreakpointSummary) {
-			return realigned.getInsertedSequenceLength();
-		} else {
-			return getSoftClipLength();
-		}
-	}
 	/**
 	 * Sequence of untemplated bases
 	 * @return
 	 */
 	public String getUntemplatedSequence() {
-		if (location instanceof BreakpointSummary) {
-			return realigned.getInsertedSequence();
-		} else {
-			return new String(getBreakendSequence(), StandardCharsets.US_ASCII);
-		}
+		return new String(getBreakendSequence(), StandardCharsets.US_ASCII);
 	}
 	/**
 	 * 0-100 scaled percentage identity of mapped read bases.
@@ -132,5 +109,25 @@ public class SoftClipEvidence implements DirectedBreakpoint {
 	}
 	public SAMEvidenceSource getEvidenceSource() {
 		return source;
+	}
+	@Override
+	public int getLocalMapq() {
+		return record.getMappingQuality();
+	}
+	@Override
+	public int getLocalBaseLength() {
+		return record.getReadLength() - SAMRecordUtil.getStartSoftClipLength(record) - SAMRecordUtil.getEndSoftClipLength(record);
+	}
+	@Override
+	public int getLocalBaseCount() {
+		return getLocalBaseLength();
+	}
+	@Override
+	public int getLocalMaxBaseQual() {
+		return SAMRecordUtil.getMaxReferenceBaseQual(record);
+	}
+	@Override
+	public int getLocalTotalBaseQual() {
+		return SAMRecordUtil.getTotalReferenceBaseQual(record);
 	}
 }

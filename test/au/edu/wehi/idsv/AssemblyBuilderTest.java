@@ -79,7 +79,7 @@ public class AssemblyBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_set_assembly_evidence() {
-		VariantContextDirectedBreakpoint dba = new AssemblyBuilder(getContext(), AES())
+		VariantContextDirectedEvidence dba = new AssemblyBuilder(getContext(), AES())
 			.assemblyBases(B("AAAAAA"))
 			.referenceAnchor(0, 1)
 			.direction(BWD)
@@ -92,7 +92,7 @@ public class AssemblyBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_set_assembly_consensus() {
-		VariantContextDirectedBreakpoint dba = new AssemblyBuilder(getContext(), AES())
+		VariantContextDirectedEvidence dba = new AssemblyBuilder(getContext(), AES())
 			.assemblyBases(B("GTAC"))
 			.referenceAnchor(0, 1)
 			.direction(BWD)
@@ -103,7 +103,7 @@ public class AssemblyBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_set_assembler_name() {
-		VariantContextDirectedBreakpoint dba = new AssemblyBuilder(getContext(), AES())
+		VariantContextDirectedEvidence dba = new AssemblyBuilder(getContext(), AES())
 			.assemblyBases(B("AAAAAA"))
 			.referenceAnchor(0, 1)
 			.direction(BWD)
@@ -112,7 +112,7 @@ public class AssemblyBuilderTest extends TestHelper {
 		assertEquals("testAssembler", dba.getAssemblerProgram());
 	}
 	public void should_set_max_soft_clip_length() {
-		VariantContextDirectedBreakpoint dba = new AssemblyBuilder(getContext(), AES())
+		VariantContextDirectedEvidence dba = new AssemblyBuilder(getContext(), AES())
 			.assemblyBases(B("AAAAAA"))
 			.referenceAnchor(0, 1)
 			.direction(BWD)
@@ -121,7 +121,7 @@ public class AssemblyBuilderTest extends TestHelper {
 		assertEquals(12, dba.getAssemblyMaximumSoftClipLength());
 	}
 	public void should_set_longest_read_length() {
-		VariantContextDirectedBreakpoint dba = new AssemblyBuilder(getContext(), AES())
+		VariantContextDirectedEvidence dba = new AssemblyBuilder(getContext(), AES())
 			.assemblyBases(B("AAAAAA"))
 			.mateAnchor(0, 1)
 			.direction(BWD)
@@ -131,7 +131,7 @@ public class AssemblyBuilderTest extends TestHelper {
 	}
 	@Test
 	public void assembly_quality_should_default_to_average_breakend_base_quality() {
-		VariantContextDirectedBreakpoint dba = new AssemblyBuilder(getContext(), AES())
+		VariantContextDirectedEvidence dba = new AssemblyBuilder(getContext(), AES())
 			.assemblyBases(B("AAAAAAAA"))
 			.referenceAnchor(0, 10)
 			.direction(FWD)
@@ -157,7 +157,7 @@ public class AssemblyBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_breakend_to_reference_anchor() {
-		VariantContextDirectedBreakpoint dba;
+		VariantContextDirectedEvidence dba;
 		BreakendSummary bs;
 		dba = new AssemblyBuilder(getContext(), AES())
 			.assemblyBases(B("AAAAAA"))
@@ -185,7 +185,7 @@ public class AssemblyBuilderTest extends TestHelper {
 	}
 	@Test
 	public void alt_allele_should_contain_only_breakend() {
-		VariantContextDirectedBreakpoint dba;
+		VariantContextDirectedEvidence dba;
 		dba = new AssemblyBuilder(getContext(), AES())
 			.assemblyBases(B("AAAAAAAAAAGTAC"))
 			.referenceAnchor(1, 100)
@@ -204,7 +204,7 @@ public class AssemblyBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_set_breakend_to_mate_anchor_interval() {
-		VariantContextDirectedBreakpoint dba;
+		VariantContextDirectedEvidence dba;
 		BreakendSummary bs;
 		dba = new AssemblyBuilder(getContext(), AES())
 			.assemblyBases(B("AAAAAA"))
@@ -231,7 +231,7 @@ public class AssemblyBuilderTest extends TestHelper {
 	@Test
 	public void should_restrict_mate_anchor_interval_based_on_anchor_positions() {
 		// max fragment size = 300
-		VariantContextDirectedBreakpoint dba;
+		VariantContextDirectedEvidence dba;
 		dba = new AssemblyBuilder(getContext(), AES())
 			.assemblyBases(B("AAAAAA"))
 			.mateAnchor(1, 100, 5, 10, 20)
@@ -245,7 +245,7 @@ public class AssemblyBuilderTest extends TestHelper {
 	@Test
 	public void mate_anchor_should_set_imprecise_header() {
 		// max fragment size = 300
-		VariantContextDirectedBreakpoint dba;
+		VariantContextDirectedEvidence dba;
 		dba = new AssemblyBuilder(getContext(), AES())
 			.assemblyBases(B("AAAAAA"))
 			.mateAnchor(1, 100)

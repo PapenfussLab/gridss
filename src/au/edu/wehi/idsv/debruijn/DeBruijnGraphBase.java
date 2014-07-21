@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import au.edu.wehi.idsv.DirectedEvidence;
+
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -223,17 +225,17 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 		for (Long node : path) {
 			// subtract # reads to adjust for the +1 qual introduced by ReadKmerIterable
 			// to ensure positive node weights
-			qual.add(this.kmers.get(node).getWeight() - this.kmers.get(node).getSupportingReads().size());
+			qual.add(this.kmers.get(node).getWeight() - this.kmers.get(node).getSupportingEvidence().size());
 		}
 		// pad out qualities to match the path length
 		for (int i = 0; i < k - 1; i++) qual.add(qual.get(qual.size() - 1));
 		byte[] quals = rescaleBaseQualities(qual);
 		return quals;
 	}
-	public Set<SAMRecord> getSupportingSAMRecords(Iterable<Long> path) {
-		Set<SAMRecord> reads = Sets.newHashSet();
+	public Set<DirectedEvidence> getSupportingEvidence(Iterable<Long> path) {
+		Set<DirectedEvidence> reads = Sets.newHashSet();
 		for (Long kmer : path) {
-			reads.addAll(kmers.get(kmer).getSupportingReads());
+			reads.addAll(kmers.get(kmer).getSupportingEvidence());
 		}
 		return reads;
 	}
@@ -244,32 +246,18 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	 */
 	public int getSAMRecordBaseCount(List<Long> path) {
 		int readBaseCount = 0;
-		Set<SAMRecord> lastNodeSupport = Sets.newHashSet();
+		Set<DirectedEvidence> lastNodeSupport = Sets.newHashSet();
 		for (Long node : path) {
-			for (SAMRecord read : this.kmers.get(node).getSupportingReads()) {
+			for (DirectedEvidence read : this.kmers.get(node).getSupportingEvidence()) {
 				if (lastNodeSupport.contains(read)) {
 					readBaseCount++;
 				} else {
 					readBaseCount += k;
 				}
 			}
-			lastNodeSupport = this.kmers.get(node).getSupportingReads();
+			lastNodeSupport = this.kmers.get(node).getSupportingEvidence();
 		}
 		return readBaseCount;
-	}
-	/**
-	 * Gets the length of the longest read in the given contig
-	 * @param supportingReads
-	 * @return length of longest read
-	 */
-	public int getMaxReadLength(List<Long> path) {
-		int readLength = 0;
-		for (Long kmer : path) {
-			for (SAMRecord r : kmers.get(kmer).getSupportingReads()) {
-				readLength = Math.max(readLength, r.getReadLength());
-			}
-		}
-		return readLength;
 	}
 	/**
 	 * set of all kmers reachable from the given kmer

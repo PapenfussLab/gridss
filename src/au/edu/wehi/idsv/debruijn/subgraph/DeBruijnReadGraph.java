@@ -11,9 +11,10 @@ import au.edu.wehi.idsv.AssemblyBuilder;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.BreakendDirection;
+import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordUtil;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
+import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.debruijn.DeBruijnVariantGraph;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
@@ -102,13 +103,13 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	 * @param position
 	 * @return
 	 */
-	public Iterable<VariantContextDirectedBreakpoint> assembleContigsBefore(int position) {
-		List<VariantContextDirectedBreakpoint> contigs = Lists.newArrayList();
+	public Iterable<VariantContextDirectedEvidence> assembleContigsBefore(int position) {
+		List<VariantContextDirectedEvidence> contigs = Lists.newArrayList();
 		for (SubgraphSummary ss : subgraphs) {
 			if (ss.getMaxAnchor() < position) {
 				SubgraphPathContigAssembler sca = new SubgraphPathContigAssembler(this, ss.getAnyKmer());
 				for (List<Long> contig : sca.assembleContigs(parameters)) {
-					VariantContextDirectedBreakpoint variant = toAssemblyEvidence(contig);
+					VariantContextDirectedEvidence variant = toAssemblyEvidence(contig);
 					if (variant != null) {
 						contigs.add(variant);
 					}
@@ -118,7 +119,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 				break;
 			}
 		}
-		Collections.sort(contigs, VariantContextDirectedBreakpoint.ByLocation);
+		Collections.sort(contigs, VariantContextDirectedEvidence.ByLocationStart);
 		return contigs;
 	}
 	/**
@@ -138,19 +139,17 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	 * Only non-reference reads are considered supporting the breakpoint.
 	 */
 	@Override
-	public Set<SAMRecord> getSupportingSAMRecords(Iterable<Long> path) {
-		Set<SAMRecord> reads = Sets.newHashSet();
+	public Set<DirectedEvidence> getSupportingEvidence(Iterable<Long> path) {
+		Set<DirectedEvidence> reads = Sets.newHashSet();
 		for (Long kmer : path) {
 			DeBruijnSubgraphNode node = getKmer(kmer);
 			if (!node.isReference()) {
-				reads.addAll(node.getSupportingReads());
+				reads.addAll(node.getSupportingEvidence());
 			}
 		}
 		return reads;
 	}
-	private VariantContextDirectedBreakpoint toAssemblyEvidence(List<Long> contigKmers) {
-		int maxsclen = 0;
-		int longestSupportingRead = 0;
+	private VariantContextDirectedEvidence toAssemblyEvidence(List<Long> contigKmers) {
 		int refCount = 0;
 		int refAnchor = 0;
 		Integer mateAnchor = null;
@@ -158,22 +157,12 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		for (long kmer : contigKmers) {
 			if (!getKmer(kmer).isReference()) break;
 			refCount++;
-			// TODO: choose the best anchor
 			refAnchor = getKmer(kmer).getBestReferencePosition();
-
-			// want the max sc len of the final reference kmer 
-			maxsclen = 0;
-			for (SAMRecord r : getKmer(kmer).getSupportingReads()) {
-				maxsclen = Math.max(maxsclen, direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipLength(r) : SAMRecordUtil.getStartSoftClipLength(r));
-			}
 		}
 		// Iterate over breakpoint kmers
 		for (long kmer : contigKmers) {
 			if (getKmer(kmer).isReference()) continue;
 			Integer mp = direction == BreakendDirection.Forward ? getKmer(kmer).getMaxMatePosition() : getKmer(kmer).getMinMatePosition();
-			for (SAMRecord support : getKmer(kmer).getSupportingReads()) {
-				longestSupportingRead = Math.max(longestSupportingRead, support.getReadLength());
-			}
 			if (mateAnchor == null) {
 				mateAnchor = mp;
 			} else {
@@ -187,15 +176,11 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 				.assemblerName(ASSEMBLER_NAME);
 		if (refCount > 0) {
 			// anchored read
-			builder				
-				.referenceAnchor(referenceIndex, refAnchor)
-				.anchorLength(refCount + getK() - 1)
-				.maximumSoftClipLength(maxsclen);
+			builder.referenceAnchor(referenceIndex, refAnchor)
+				.anchorLength(refCount + getK() - 1);
 		} else if (mateAnchor != null) {
 			// inexact breakend
-			builder
-				.mateAnchor(referenceIndex, mateAnchor)
-				.longestSupportingRead(longestSupportingRead);
+			builder.mateAnchor(referenceIndex, mateAnchor);
 		} else {
 			// Assembly is neither anchored by breakend nor anchored by mate pair
 			// This occurs when the de bruijn graph has a non-reference kmer fork

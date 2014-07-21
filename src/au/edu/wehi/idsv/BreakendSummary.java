@@ -25,11 +25,7 @@ public class BreakendSummary {
 	 * Breakpoint is in the given direction
 	 */
 	public final BreakendDirection direction;
-	/**
-	 * Phred-like quality score of this evidence
-	 */
-	public final float phredLogLikelihoodRatio;
-	public BreakendSummary(int referenceIndex, BreakendDirection direction, int start, int end, float phredLogLikelihoodRatio) {
+	public BreakendSummary(int referenceIndex, BreakendDirection direction, int start, int end) {
 		if (referenceIndex < 0) {
 			throw new IllegalArgumentException("Reference index must be valid");
 		}
@@ -37,14 +33,6 @@ public class BreakendSummary {
 		this.direction = direction;
 		this.start = start;
 		this.end = end;
-		this.phredLogLikelihoodRatio = phredLogLikelihoodRatio;
-	}
-	public BreakendSummary(BreakendSummary location, float phredLogLikelihoodRatio) {
-		this.referenceIndex = location.referenceIndex;
-		this.direction = location.direction;
-		this.start = location.start;
-		this.end = location.end;
-		this.phredLogLikelihoodRatio = phredLogLikelihoodRatio;
 	}
 	protected static String toString(int referenceIndex, int start, int end) {
 		return String.format("%d:%d-%d", referenceIndex, start, end);
@@ -55,7 +43,7 @@ public class BreakendSummary {
 	}
 	@Override
 	public String toString() {
-		return String.format("%s %s", toString(direction, referenceIndex, start, end), phredLogLikelihoodRatio);
+		return toString(direction, referenceIndex, start, end);
 	}
 	@Override
 	public int hashCode() {
@@ -64,7 +52,6 @@ public class BreakendSummary {
 		result = prime * result
 				+ ((direction == null) ? 0 : direction.hashCode());
 		result = prime * result + end;
-		result = prime * result + Float.floatToIntBits(phredLogLikelihoodRatio);
 		result = prime * result + referenceIndex;
 		result = prime * result + start;
 		return result;
@@ -81,8 +68,6 @@ public class BreakendSummary {
 		if (direction != other.direction)
 			return false;
 		if (end != other.end)
-			return false;
-		if (phredLogLikelihoodRatio != phredLogLikelihoodRatio)
 			return false;
 		if (referenceIndex != other.referenceIndex)
 			return false;
@@ -132,8 +117,5 @@ public class BreakendSummary {
 				this.direction == loc.direction &&
 				((this.start <= loc.start && this.end >= loc.start) ||
 				 (this.start >= loc.start && this.start <= loc.end));
-	}
-	public BreakendSummary withPhredLlr(float llr) {
-		return new BreakendSummary(this, llr);
 	}
 }

@@ -26,7 +26,7 @@ public class BreakpointFastqEncoding {
 		String[] split = fastqid.split("#");
 		return fastqid.substring(split[0].length() + split[1].length() + 2);
 	}
-	public static FastqRecord getRealignmentFastq(ExactBreakend bp) {
+	public static FastqRecord getRealignmentFastq(DirectedEvidence bp) {
 		byte[] sequence = bp.getBreakendSequence();
 		FastqRecord fq = null;
 		if (sequence != null) {

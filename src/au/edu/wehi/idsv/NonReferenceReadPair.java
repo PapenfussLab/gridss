@@ -12,7 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 public abstract class NonReferenceReadPair implements DirectedEvidence {
 	private final SAMRecord local;
 	private final SAMRecord remote;
-	private BreakendSummary location;
+	private final BreakendSummary location;
 	private final SAMEvidenceSource source;
 	protected NonReferenceReadPair(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {
 		if (local == null) throw new IllegalArgumentException("local is null");
@@ -25,9 +25,6 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		this.local = local;
 		this.remote = remote;
 		this.location = calculateBreakendSummary(local, remote, source.getMetrics().getMaxFragmentSize());
-		if (this.location != null) {
-			this.location = this.location.withPhredLlr(getPhredLogLikelihoodRatio());
-		}
 		this.source = source;
 	}
 	public static NonReferenceReadPair create(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {
@@ -77,8 +74,7 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		if (intervalWidth < 0) return null;
 		return new BreakendSummary(local.getReferenceIndex(), direction,
 				Math.min(positionClosestToBreakpoint, positionClosestToBreakpoint + intervalWidth * intervalDirection),
-				Math.max(positionClosestToBreakpoint, positionClosestToBreakpoint + intervalWidth * intervalDirection),
-				Float.NaN);
+				Math.max(positionClosestToBreakpoint, positionClosestToBreakpoint + intervalWidth * intervalDirection));
 	}
 	/**
 	 * Determines the separation between discordant reads
@@ -111,7 +107,7 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 			BreakendSummary bsLocal = calculateLocalBreakendSummary(local, remote, maxfragmentSize);
 			BreakendSummary bsRemote = calculateLocalBreakendSummary(remote, local, maxfragmentSize);
 			if (bsLocal == null || bsRemote == null) return null;
-			return new BreakpointSummary(bsLocal, bsRemote, Float.NaN);
+			return new BreakpointSummary(bsLocal, bsRemote);
 		}
 	}
 	/**
@@ -171,5 +167,13 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	@Override
 	public int getLocalTotalBaseQual() {
 		return SAMRecordUtil.getTotalReferenceBaseQual(local);
+	}
+	@Override
+	public byte[] getBreakendSequence() {
+		return null;
+	}
+	@Override
+	public byte[] getBreakendQuality() {
+		return null;
 	}
 }

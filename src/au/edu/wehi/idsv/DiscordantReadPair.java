@@ -3,11 +3,6 @@ package au.edu.wehi.idsv;
 import htsjdk.samtools.SAMRecord;
 
 public class DiscordantReadPair extends NonReferenceReadPair implements DirectedBreakpoint {
-	@Override
-	public float getPhredLogLikelihoodRatio() {
-		// TODO: real metrics
-		return Math.min(getLocalMapq(), getRemoteMapq());
-	}
 	protected DiscordantReadPair(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {
 		super(local, remote, source);
 		assert(!remote.getReadUnmappedFlag());

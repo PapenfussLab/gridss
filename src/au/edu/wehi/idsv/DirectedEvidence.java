@@ -10,6 +10,17 @@ public interface DirectedEvidence {
 	 */
 	BreakendSummary getBreakendSummary();
 	/**
+	 * Gets the breakpoint sequence excluding anchor.
+	 * @return breakpoint sequence bases, null if breakend sequence is not known
+	 */
+	public byte[] getBreakendSequence();
+
+	/**
+	 * Gets the breakpoint sequence quality
+	 * @return 0-based phred-like quality scores, null if breakend sequence is not known
+	 */
+	public byte[] getBreakendQuality();
+	/**
 	 * Unique breakpoint identifier.
 	 * This identifier is used as the FASTQ sequence identifier
 	 * when performing realignment and must be a valid FASTQ
@@ -23,12 +34,6 @@ public interface DirectedEvidence {
 	 * @return Source providing this evidence
 	 */
 	EvidenceSource getEvidenceSource();
-	
-	/**
-	 * Log-likelihood ratio of existence of a structural variation supporting allele vs all reference alleles
-	 * @return Log-likelihood ratio
-	 */
-	float getPhredLogLikelihoodRatio();
 	/**
 	 * MAPQ of SV-supporting evidence mapped to the reference 
 	 * @return

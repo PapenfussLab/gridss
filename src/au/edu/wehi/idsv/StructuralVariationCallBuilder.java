@@ -8,27 +8,33 @@ import au.edu.wehi.idsv.vcf.VcfAttributes;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-public class StructuralVariationCallBuilder {
+public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private final ProcessingContext processContext;
 	private final Map<EvidenceSource, Integer> sourceWeights = Maps.newHashMap();
 	private final BreakendSummary call;
 	private final List<SoftClipEvidence> scList = Lists.newArrayList();
 	private final List<NonReferenceReadPair> nrpList = Lists.newArrayList();
-	private final List<VariantContextDirectedBreakpoint> assList = Lists.newArrayList();
+	private final List<VariantContextDirectedEvidence> assList = Lists.newArrayList();
 	private int referenceNormalReadCount = -1;
 	private int referenceNormalSpanningPairCount = -1;
 	private int referenceTumourReadCount = -1;
 	private int referenceTumourSpanningPairCount = -1;
+	public StructuralVariationCallBuilder(ProcessingContext processContext, VariantContextDirectedEvidence parent) {
+		super(processContext, parent);
+		this.processContext = processContext;
+		this.call = parent.getBreakendSummary();
+	}
 	public StructuralVariationCallBuilder(ProcessingContext processContext, BreakendSummary call) {
+		super(processContext);
 		this.processContext = processContext;
 		this.call  = call;
 	}
-	public StructuralVariationCallBuilder evidence(DirectedEvidence evidence) {
+	public StructuralVariationCallBuilder addEvidence(DirectedEvidence evidence) {
 		if (evidence == null) throw new NullPointerException();
 		if (evidence instanceof SoftClipEvidence) {
 			scList.add((SoftClipEvidence)evidence);
-		} else if (evidence instanceof VariantContextDirectedBreakpoint) {
-			assList.add((VariantContextDirectedBreakpoint)evidence);
+		} else if (evidence instanceof VariantContextDirectedEvidence) {
+			assList.add((VariantContextDirectedEvidence)evidence);
 		} else if (evidence instanceof NonReferenceReadPair) {
 			nrpList.add((NonReferenceReadPair)evidence);
 		} else {
@@ -39,8 +45,8 @@ public class StructuralVariationCallBuilder {
 		}
 		return this;
 	}
-	public VariantContextDirectedBreakpoint make() {
-		VariantContextDirectedBreakpointBuilder builder = createBuilder();
+	public VariantContextDirectedEvidence make() {
+		IdsvVariantContextBuilder builder = createBuilder();
 		
 		EvidenceMetrics m = new EvidenceMetrics();
 		double oeaMapq = 0, dpMapq = 0;
@@ -55,7 +61,7 @@ public class StructuralVariationCallBuilder {
 		for (SoftClipEvidence e : scList) {
 			m.add(e.getBreakendSummary().evidence);
 		}
-		for (VariantContextDirectedBreakpoint e : assList) {
+		for (VariantContextDirectedEvidence e : assList) {
 			m.add(e.getBreakendSummary().evidence);
 		}
 		builder
@@ -63,7 +69,7 @@ public class StructuralVariationCallBuilder {
 			.id(getID())
 			.attribute(VcfAttributes.REFERENCE_READ_COUNT.attribute(), new int[] {referenceNormalReadCount + referenceTumourReadCount,referenceNormalReadCount, referenceTumourReadCount })
 			.attribute(VcfAttributes.REFERENCE_SPANNING_READ_PAIR_COUNT.attribute(), new int[] {referenceNormalSpanningPairCount + referenceTumourSpanningPairCount,referenceNormalSpanningPairCount, referenceTumourSpanningPairCount });
-		return new VariantContextDirectedBreakpoint(processContext, null, builder.make());
+		return new VariantContextDirectedEvidence(processContext, null, builder.make());
 	}
 	public StructuralVariationCallBuilder referenceReads(int normalCount, int tumourCount) {
 		referenceNormalReadCount = normalCount;
@@ -98,17 +104,17 @@ public class StructuralVariationCallBuilder {
 		}
 		return sb.toString();
 	}
-	private VariantContextDirectedBreakpointBuilder createBuilder() {
-		VariantContextDirectedBreakpointBuilder builder;
-		VariantContextDirectedBreakpoint ass = bestAssembly();
+	private IdsvVariantContextBuilder createBuilder() {
+		IdsvVariantContextBuilder builder;
+		VariantContextDirectedEvidence ass = bestAssembly();
 		SoftClipEvidence sce = bestSoftclip();
 		if (ass != null) {
-			builder = new VariantContextDirectedBreakpointBuilder(processContext, null, ass);
+			builder = new IdsvVariantContextBuilder(processContext, null, ass);
 		} else if (sce != null) {
-			builder = new VariantContextDirectedBreakpointBuilder(processContext, null)
+			builder = new IdsvVariantContextBuilder(processContext, null)
 				.breakend(sce.getBreakendSummary(), sce.getUntemplatedSequence());
 		} else {
-			builder = new VariantContextDirectedBreakpointBuilder(processContext, null)
+			builder = new IdsvVariantContextBuilder(processContext, null)
 				.breakend(call, "");
 		}
 		return builder;
@@ -137,10 +143,10 @@ public class StructuralVariationCallBuilder {
 		}
 		return best;
 	}
-	private VariantContextDirectedBreakpoint bestAssembly() {
+	private VariantContextDirectedEvidence bestAssembly() {
 		if (assList.size() == 0) return null;
-		VariantContextDirectedBreakpoint best = assList.get(0);
-		for (VariantContextDirectedBreakpoint a : assList) {
+		VariantContextDirectedEvidence best = assList.get(0);
+		for (VariantContextDirectedEvidence a : assList) {
 			if (a.getPhredScaledQual() > best.getPhredScaledQual()) {
 				best = a;
 			}

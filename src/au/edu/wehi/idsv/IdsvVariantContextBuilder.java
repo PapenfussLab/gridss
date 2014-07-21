@@ -4,8 +4,11 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
+
+import com.google.common.collect.Sets;
 
 import au.edu.wehi.idsv.vcf.SvType;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
@@ -17,36 +20,28 @@ import au.edu.wehi.idsv.vcf.VcfSvConstants;
  * @author Daniel Cameron
  *
  */
-public class VariantContextDirectedBreakpointBuilder extends VariantContextBuilder {
+public class IdsvVariantContextBuilder extends VariantContextBuilder {
 	public static final String SOURCE_NAME = "idsv";
 	protected final ProcessingContext processContext;
-	protected final EvidenceSource source;
 	private byte[] breakendBaseQual = null;
-	private void init() {
-		attribute(VcfSvConstants.SV_TYPE_KEY, SvType.BND.name());
-	}
-	public VariantContextDirectedBreakpointBuilder(ProcessingContext processContext, EvidenceSource source) {
+	private final Set<EvidenceSource> sourceSet = Sets.newHashSet();
+	public IdsvVariantContextBuilder(ProcessingContext processContext) {
 		super();
 		this.processContext = processContext;
-		this.source = source;
-		init();
 	}
-	public VariantContextDirectedBreakpointBuilder(ProcessingContext processContext, EvidenceSource source, VariantContext parent) {
+	public IdsvVariantContextBuilder(ProcessingContext processContext, VariantContext parent) {
 		super(parent);
 		this.processContext = processContext;
-		this.source = source;
-		init();
+		if (parent instanceof IdsvVariantContext) {
+			sourceSet.add(((VariantContextDirectedEvidence)parent).getEvidenceSource());
+		}
+	}
+	public IdsvVariantContextBuilder source(EvidenceSource source) {
+		sourceSet.add(source);
+		return this;
 	}
 	private String getBreakendString() {
 		return processContext.getVcf41Mode() ? VcfConstants.VCF41BREAKEND_REPLACEMENT : VcfConstants.VCF42BREAKEND;
-	}
-	/**
-	 * Indicates that realignment of the breakpoint sequence failed
-	 * @return builder
-	 */
-	public VariantContextDirectedBreakpointBuilder realignmentFailed() {
-		attribute(VcfAttributes.REALIGNMENT_FAILURE.attribute(), true);
-		return this;
 	}
 	/**
 	 * Sets the variant to the given breakend.
@@ -55,7 +50,7 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 	 * @param untemplatedSequence untemplated breakend sequence 
 	 * @return builder
 	 */
-	public VariantContextDirectedBreakpointBuilder breakend(BreakendSummary loc, String untemplatedSequence) {
+	public IdsvVariantContextBuilder breakend(BreakendSummary loc, String untemplatedSequence) {
 		return dobreak(loc, untemplatedSequence);
 	}
 	/**
@@ -66,7 +61,7 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 	 * @param  untemplatedBaseQual base qualities of untemplated breakend sequence 
 	 * @return builder
 	 */
-	public VariantContextDirectedBreakpointBuilder breakend(BreakendSummary loc, byte[] untemplatedSequence, byte[] untemplatedBaseQual) {
+	public IdsvVariantContextBuilder breakend(BreakendSummary loc, byte[] untemplatedSequence, byte[] untemplatedBaseQual) {
 		this.breakendBaseQual = untemplatedBaseQual;
 		return dobreak(loc, new String(untemplatedSequence, StandardCharsets.US_ASCII));
 	}
@@ -77,7 +72,7 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 	 * @param untemplatedSequence untemplated breakpoint sequence
 	 * @return builder
 	 */
-	public VariantContextDirectedBreakpointBuilder breakpoint(BreakpointSummary loc, String untemplatedSequence) {
+	public IdsvVariantContextBuilder breakpoint(BreakpointSummary loc, String untemplatedSequence) {
 		return dobreak(loc, untemplatedSequence);
 	}
 	/**
@@ -86,7 +81,7 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 	 * @param untemplatedSequence untemplated break sequence
 	 * @return builder
 	 */
-	private VariantContextDirectedBreakpointBuilder dobreak(BreakendSummary loc, String untemplatedSequence) {
+	private IdsvVariantContextBuilder dobreak(BreakendSummary loc, String untemplatedSequence) {
 		if (untemplatedSequence == null) untemplatedSequence = "";
 		String chr = processContext.getDictionary().getSequence(loc.referenceIndex).getSequenceName();
 		String ref, alt;
@@ -128,23 +123,15 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 		return this;
 	}
 	/**
-	 * Associates the given evidence with the variant
-	 * @param e evidence to associate
-	 * @return builder
+	 * sets the phred-scaled quality score for variant
+	 * @param phred phred-scaled quality score for variant
+	 * @return this
 	 */
-	public VariantContextDirectedBreakpointBuilder evidence(EvidenceMetrics e) {
-		if (e != null) {
-			for (VcfAttributes a : VcfAttributes.evidenceValues()) {
-				if (e.get(a) != 0) {
-					// only write if we need to
-					attribute(a.attribute(), e.get(a));
-				} else {
-					rmAttribute(a.attribute());
-				}
-			}
-			log10PError(((double)e.getScore()) / -10);
-		} else {
+	public IdsvVariantContextBuilder phredScore(double phred) {
+		if (phred < 0 || Double.isInfinite(phred) || Double.isNaN(phred)) {
 			log10PError(VariantContext.NO_LOG10_PERROR);
+		} else {
+			log10PError((phred) / -10);
 		}
 		return this;
 	}
@@ -152,12 +139,12 @@ public class VariantContextDirectedBreakpointBuilder extends VariantContextBuild
 		return attribute(key.attribute(), value);
 	}
 	@Override
-	public VariantContextDirectedBreakpoint make() {
+	public VariantContextDirectedEvidence make() {
         VariantContext underlying = super.make();
         if (underlying.getEnd() < underlying.getStart() && underlying.getEnd() == -1) {
         	throw new IllegalStateException(String.format("Sanity check failure: stop not set for %s", underlying)); 
         }
-		return new VariantContextDirectedBreakpoint(processContext, source, underlying, this.breakendBaseQual);
+		return new VariantContextDirectedEvidence(processContext, sourceSet, underlying, this.breakendBaseQual);
 	}
 }
 
