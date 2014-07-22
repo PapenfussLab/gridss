@@ -19,17 +19,13 @@ public class RealignedBreakpointTest extends TestHelper {
 	}
 	@Test
 	public void should_set_realign_evidence() {
-		RealignedBreakpoint rbp = new RealignedBreakpoint(getContext(), new BreakendSummary(0, FWD, 1, 1, null), B("N"), withMapq(10, Read(0, 1, "5M"))[0]);
-		assertEquals(5, rbp.getBreakpointSummary().evidence.get(VcfAttributes.REALIGN_MAX_LENGTH));
-		assertEquals(5, rbp.getBreakpointSummary().evidence.get(VcfAttributes.REALIGN_TOTAL_LENGTH));
-		//assertEquals(10, rbp.getBreakpointSummary().evidence.get(EvidenceAttributes.REALIGN_MAX_MAPQ));
-		assertEquals(10, rbp.getBreakpointSummary().evidence.get(VcfAttributes.REALIGN_TOTAL_MAPQ));
+		RealignedBreakpoint rbp = new RealignedBreakpoint(getContext(), new BreakendSummary(0, FWD, 1, 1), B("N"), withMapq(10, Read(0, 1, "5M"))[0]);
 	}
 	public RealignedBreakpoint test_seq(String originalBreakpointSequence, String cigar, BreakendDirection direction, boolean alignNegativeStrand, String expectedUntemplatedSequence) {
 		SAMRecord r = Read(0, 1, cigar);
 		r.setReadBases(alignNegativeStrand ? B(SequenceUtil.reverseComplement(originalBreakpointSequence)): B(originalBreakpointSequence));
 		r.setReadNegativeStrandFlag(alignNegativeStrand);
-		RealignedBreakpoint rbp = new RealignedBreakpoint(getContext(), new BreakendSummary(0, direction, 1, 1, null), B("N"), r);
+		RealignedBreakpoint rbp = new RealignedBreakpoint(getContext(), new BreakendSummary(0, direction, 1, 1), B("N"), r);
 		assertEquals(expectedUntemplatedSequence, rbp.getInsertedSequence());
 		return rbp;
 	}
@@ -47,7 +43,7 @@ public class RealignedBreakpointTest extends TestHelper {
 		// ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTA
 		//              |---->                ****<| 
 		SAMRecord realign = Read(1, 40, "2M");
-		RealignedBreakpoint rbp = new RealignedBreakpoint(getContext(), new BreakendSummary(1, FWD, 19, 19, null), "NTACG", realign);
+		RealignedBreakpoint rbp = new RealignedBreakpoint(getContext(), new BreakendSummary(1, FWD, 19, 19), "NTACG", realign);
 		assertEquals(4, rbp.getMicroHomologyLength());
 		assertEquals(15, rbp.getBreakpointSummary().start);
 		assertEquals(19, rbp.getBreakpointSummary().end);
@@ -62,7 +58,7 @@ public class RealignedBreakpointTest extends TestHelper {
 		//              |---->                    |>**** 
 		SAMRecord realign = Read(1, 40, "2M");
 		realign.setReadNegativeStrandFlag(true);
-		RealignedBreakpoint rbp = new RealignedBreakpoint(getContext(), new BreakendSummary(1, FWD, 19, 19, null), "NATGC", realign);
+		RealignedBreakpoint rbp = new RealignedBreakpoint(getContext(), new BreakendSummary(1, FWD, 19, 19), "NATGC", realign);
 		assertEquals(4, rbp.getMicroHomologyLength());
 		assertEquals(15, rbp.getBreakpointSummary().start);
 		assertEquals(19, rbp.getBreakpointSummary().end);
@@ -77,7 +73,7 @@ public class RealignedBreakpointTest extends TestHelper {
 		//      ****<|                  <----|                
 		SAMRecord realign = Read(1, 10, "2M");
 		realign.setReadNegativeStrandFlag(true);
-		RealignedBreakpoint rbp = new RealignedBreakpoint(getContext(), new BreakendSummary(1, BWD, 30, 30, null), "aTgCN", realign);
+		RealignedBreakpoint rbp = new RealignedBreakpoint(getContext(), new BreakendSummary(1, BWD, 30, 30), "aTgCN", realign);
 		assertEquals(4, rbp.getMicroHomologyLength());
 		assertEquals(30, rbp.getBreakpointSummary().start);
 		assertEquals(34, rbp.getBreakpointSummary().end);
@@ -91,7 +87,7 @@ public class RealignedBreakpointTest extends TestHelper {
 		// ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTA
 		//          |>****              <----|                
 		SAMRecord realign = Read(1, 10, "2M");
-		RealignedBreakpoint rbp = new RealignedBreakpoint(getContext(), new BreakendSummary(1, BWD, 30, 30, null), "TACGN", realign);
+		RealignedBreakpoint rbp = new RealignedBreakpoint(getContext(), new BreakendSummary(1, BWD, 30, 30), "TACGN", realign);
 		assertEquals(4, rbp.getMicroHomologyLength());
 		assertEquals(30, rbp.getBreakpointSummary().start);
 		assertEquals(34, rbp.getBreakpointSummary().end);
@@ -112,7 +108,7 @@ public class RealignedBreakpointTest extends TestHelper {
 	}
 	@Test
 	public void microhomology_bases_should_ignore_case() {
-		RealignedBreakpoint rbp = new RealignedBreakpoint(getContext(), new BreakendSummary(0, FWD, 10, 10, null), "aaaa", Read(0, 100, "5M"));
+		RealignedBreakpoint rbp = new RealignedBreakpoint(getContext(), new BreakendSummary(0, FWD, 10, 10), "aaaa", Read(0, 100, "5M"));
 		assertEquals(4, rbp.getMicroHomologyLength());
 	}
 	@Test
@@ -122,10 +118,10 @@ public class RealignedBreakpointTest extends TestHelper {
 		SAMRecord realign = Read(0, 100, "5M");
 		realign.setReadBases(B("AAAAA"));
 		realign.setReadNegativeStrandFlag(true);
-		RealignedBreakpoint rbp = new RealignedBreakpoint(getContext(), new BreakendSummary(0, FWD, 10, 10, null), "AAAA", realign);
+		RealignedBreakpoint rbp = new RealignedBreakpoint(getContext(), new BreakendSummary(0, FWD, 10, 10), "AAAA", realign);
 		assertEquals(4, rbp.getMicroHomologyLength());
 		realign.setReadNegativeStrandFlag(false);
-		rbp = new RealignedBreakpoint(getContext(), new BreakendSummary(0, FWD, 10, 10, null), "AAAA", realign);
+		rbp = new RealignedBreakpoint(getContext(), new BreakendSummary(0, FWD, 10, 10), "AAAA", realign);
 		assertEquals(4, rbp.getMicroHomologyLength());
 	}
 }

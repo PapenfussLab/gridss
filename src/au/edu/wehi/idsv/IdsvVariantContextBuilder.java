@@ -1,19 +1,22 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMUtils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 
-import com.google.common.collect.Sets;
-
 import au.edu.wehi.idsv.vcf.SvType;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfConstants;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
+
+import com.google.common.collect.Sets;
 
 /**
  * Builder for generating VCF structural variation calls with appropriate attributes
@@ -23,7 +26,6 @@ import au.edu.wehi.idsv.vcf.VcfSvConstants;
 public class IdsvVariantContextBuilder extends VariantContextBuilder {
 	public static final String SOURCE_NAME = "idsv";
 	protected final ProcessingContext processContext;
-	private byte[] breakendBaseQual = null;
 	private final Set<EvidenceSource> sourceSet = Sets.newHashSet();
 	public IdsvVariantContextBuilder(ProcessingContext processContext) {
 		super();
@@ -51,7 +53,7 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 	 * @return builder
 	 */
 	public IdsvVariantContextBuilder breakend(BreakendSummary loc, String untemplatedSequence) {
-		return dobreak(loc, untemplatedSequence);
+		return dobreak(loc, untemplatedSequence, null);
 	}
 	/**
 	 * Sets the variant to the given breakend.
@@ -62,8 +64,7 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 	 * @return builder
 	 */
 	public IdsvVariantContextBuilder breakend(BreakendSummary loc, byte[] untemplatedSequence, byte[] untemplatedBaseQual) {
-		this.breakendBaseQual = untemplatedBaseQual;
-		return dobreak(loc, new String(untemplatedSequence, StandardCharsets.US_ASCII));
+		return dobreak(loc, new String(untemplatedSequence, StandardCharsets.US_ASCII), untemplatedBaseQual);
 	}
 	/**
 	 * Sets the variant to the given breakpoint
@@ -73,7 +74,7 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 	 * @return builder
 	 */
 	public IdsvVariantContextBuilder breakpoint(BreakpointSummary loc, String untemplatedSequence) {
-		return dobreak(loc, untemplatedSequence);
+		return dobreak(loc, untemplatedSequence, null);
 	}
 	/**
 	 * Sets the variant to the given breakend or breakpoint
@@ -81,7 +82,7 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 	 * @param untemplatedSequence untemplated break sequence
 	 * @return builder
 	 */
-	private IdsvVariantContextBuilder dobreak(BreakendSummary loc, String untemplatedSequence) {
+	private IdsvVariantContextBuilder dobreak(BreakendSummary loc, String untemplatedSequence, byte[] untemplatedBaseQual) {
 		if (untemplatedSequence == null) untemplatedSequence = "";
 		String chr = processContext.getDictionary().getSequence(loc.referenceIndex).getSequenceName();
 		String ref, alt;
@@ -107,18 +108,31 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 			}
 		}
 		// populate
-		this.loc(chr, loc.start, loc.start);
-		this.alleles(ref, alt);
-		this.attribute(VcfSvConstants.SV_TYPE_KEY, SvType.BND.name());
+		loc(chr, loc.start, loc.start);
+		alleles(ref, alt);
+		attribute(VcfSvConstants.SV_TYPE_KEY, SvType.BND.name());
 		if (loc.end != loc.start) {
 			// Set confidence interval on the call if we don't have an exact breakpoint position
-			this.attribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY, new int[] {0, loc.end - loc.start});
+			attribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY, new int[] {0, loc.end - loc.start});
+		} else {
+			rmAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY);
 		}
 		if (loc instanceof BreakpointSummary) {
 			BreakpointSummary bp = (BreakpointSummary)loc;
 			if (bp.end2 != bp.start2) {
-				this.attribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute(), new int[] { 0, bp.end2 - bp.start2});
+				attribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute(), new int[] { 0, bp.end2 - bp.start2});
+			} else {
+				rmAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute());
 			}
+		}
+		if (untemplatedBaseQual != null && untemplatedBaseQual.length != 0) {
+			try {
+				attribute(VcfAttributes.ASSEMBLY_BREAKEND_QUALS, URLEncoder.encode(SAMUtils.phredToFastq(untemplatedBaseQual), "UTF-8"));
+			} catch (UnsupportedEncodingException e) {
+				throw new RuntimeException(String.format("Sanity check failure: unreachable code"));
+			} 
+		} else {
+			rmAttribute(VcfAttributes.ASSEMBLY_BREAKEND_QUALS.attribute());
 		}
 		return this;
 	}
@@ -139,12 +153,13 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 		return attribute(key.attribute(), value);
 	}
 	@Override
-	public VariantContextDirectedEvidence make() {
+	public IdsvVariantContext make() {
         VariantContext underlying = super.make();
         if (underlying.getEnd() < underlying.getStart() && underlying.getEnd() == -1) {
         	throw new IllegalStateException(String.format("Sanity check failure: stop not set for %s", underlying)); 
         }
-		return new VariantContextDirectedEvidence(processContext, sourceSet, underlying, this.breakendBaseQual);
+        EvidenceSource firstSource = sourceSet.isEmpty() ? null : sourceSet.iterator().next();
+        return IdsvVariantContext.create(processContext, firstSource, underlying);
 	}
 }
 

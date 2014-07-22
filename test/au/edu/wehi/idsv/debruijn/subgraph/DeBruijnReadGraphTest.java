@@ -54,9 +54,8 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		VariantContextDirectedEvidence bp = result.get(0);
 		assertEquals("AAAGTCT", bp.getAssemblyConsensus());
-		assertEquals(4, bp.getAssemblyMaximumSoftClipLength());
+		assertEquals(4, bp.getAssemblySoftClipLengthMax(null));
 		assertEquals("debruijn-s", bp.getAssemblerProgram());
-		assertEquals(4d, bp.getAssemblyQuality(), 0);
 	}
 	@Test
 	public void should_set_assembly_sc_attributes() {
@@ -65,25 +64,16 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withQual(new byte[] { 4,4,4,4,4,4,4}, withSequence("AAAGTCT", Read(0, 10, "3M4S")))));
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		VariantContextDirectedEvidence bp = result.get(0);
-		assertEquals(4, bp.getAssemblyMaximumSoftClipLength());
+		assertEquals(4, bp.getAssemblySoftClipLengthMax(null));
+		assertEquals(7, bp.getAssemblySoftClipLengthTotal(null));
+		assertEquals(2, bp.getAssemblySupportCountSoftClip(null));
 	}
 	public void should_set_assembly_mate_attributes() {
 		DeBruijnReadGraph g = G(0, 3, FWD);
 		g.addEvidence(NRRP(OEA(0, 1, "5M", true)));
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		VariantContextDirectedEvidence bp = result.get(0);
-		assertEquals(5, bp.getAssemblyLongestSupportingRead());
-	}
-	@Test
-	public void should_set_evidence_attributes() {
-		DeBruijnReadGraph g = G(0, 3, FWD);
-		g.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(0, 10, "4M3S"))));
-		g.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(0, 10, "3M4S"))));
-		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
-		VariantContextDirectedEvidence bp = result.get(0);
-		assertEquals(bp.getAssemblyConsensus().length(), bp.getBreakendSummary().evidence.get(VcfAttributes.ASSEMBLY_LENGTH));
-		assertEquals(2, bp.getBreakendSummary().evidence.get(VcfAttributes.ASSEMBLY_READS));
-		assertEquals(14, bp.getBreakendSummary().evidence.get(VcfAttributes.ASSEMBLY_BASES));
+		assertEquals(5, bp.getAssemblyReadPairLengthMax(null));
 	}
 	@Test
 	public void should_assemble_adjacent_scs() {
@@ -214,6 +204,6 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		assertEquals(1, result.size());
 		VariantContextDirectedEvidence bp = result.get(0);
 		// CTG becomes unanchored & we can't make a contig out of it
-		assertEquals(1, bp.getBreakendSummary().evidence.get(VcfAttributes.ASSEMBLY_READS));
+		assertEquals(1, bp.getAssemblySupportCount(null));
 	}
 }

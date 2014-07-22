@@ -1,14 +1,21 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
+
+import java.util.Set;
+
+import htsjdk.samtools.SAMRecord;
+import htsjdk.variant.vcf.VCFHeaderLineCount;
+import htsjdk.variant.vcf.VCFHeaderLineType;
 
 import org.junit.Test;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import au.edu.wehi.idsv.vcf.VcfAttributes.Subset;
 
 
 public class AssemblyBuilderTest extends TestHelper {
@@ -28,7 +35,7 @@ public class AssemblyBuilderTest extends TestHelper {
 			.anchorLength(1)
 			.referenceAnchor(0, 1)
 			.direction(BWD)
-			.assembledReadCount(1);
+			.contributingEvidence(Lists.newArrayList((DirectedEvidence)SCE(FWD, Read(0, 1, "1M2S"))));
 		assertTrue(ab.makeVariant().isFiltered());
 	}
 	@Test
@@ -37,17 +44,7 @@ public class AssemblyBuilderTest extends TestHelper {
 			.assemblyBases(B("AA"))
 			.mateAnchor(0, 1)
 			.direction(BWD)
-			.longestSupportingRead(3);
-		assertTrue(ab.makeVariant().isFiltered());
-	}
-	//@Test // don't filter on assembly size
-	public void should_filter_breakend_assembly_no_longer_than_soft_clip_size() {
-		AssemblyBuilder ab = new AssemblyBuilder(getContext(), AES())
-			.assemblyBases(B("AA"))
-			.anchorLength(1)
-			.referenceAnchor(0, 1)
-			.direction(BWD)
-			.maximumSoftClipLength(1);
+			.contributingEvidence(Lists.newArrayList((DirectedEvidence)NRRP(OEA(0, 1, "3M", false))));
 		assertTrue(ab.makeVariant().isFiltered());
 	}
 	@Test
@@ -57,7 +54,9 @@ public class AssemblyBuilderTest extends TestHelper {
 			.anchorLength(1)
 			.referenceAnchor(0, 1)
 			.direction(BWD)
-			.longestSupportingRead(2);
+			.contributingEvidence(Lists.newArrayList(
+					(DirectedEvidence)NRRP(OEA(0, 1, "3M", false)),
+					(DirectedEvidence)NRRP(OEA(0, 1, "4M", false))));
 		assertFalse(ab.makeVariant().isFiltered());
 	}
 	@Test
@@ -66,7 +65,9 @@ public class AssemblyBuilderTest extends TestHelper {
 			.assemblyBases(B("AA"))
 			.mateAnchor(0, 1)
 			.direction(BWD)
-			.maximumSoftClipLength(1);
+			.contributingEvidence(Lists.newArrayList(
+					(DirectedEvidence)NRRP(OEA(0, 1, "3M", false)),
+					(DirectedEvidence)NRRP(OEA(0, 1, "4M", false))));
 		assertFalse(ab.makeVariant().isFiltered());
 	}
 	@Test
@@ -78,26 +79,12 @@ public class AssemblyBuilderTest extends TestHelper {
 		assertFalse(ab.makeVariant().isFiltered());
 	}
 	@Test
-	public void should_set_assembly_evidence() {
-		VariantContextDirectedEvidence dba = new AssemblyBuilder(getContext(), AES())
-			.assemblyBases(B("AAAAAA"))
-			.referenceAnchor(0, 1)
-			.direction(BWD)
-			.assembledReadCount(4)
-			.assembledBaseCount(5)
-			.makeVariant();
-		assertEquals(4, dba.getBreakendSummary().evidence.get(VcfAttributes.ASSEMBLY_READS));
-		assertEquals(5, dba.getBreakendSummary().evidence.get(VcfAttributes.ASSEMBLY_BASES));
-		assertEquals(6, dba.getBreakendSummary().evidence.get(VcfAttributes.ASSEMBLY_LENGTH));		
-	}
-	@Test
 	public void should_set_assembly_consensus() {
 		VariantContextDirectedEvidence dba = new AssemblyBuilder(getContext(), AES())
 			.assemblyBases(B("GTAC"))
 			.referenceAnchor(0, 1)
 			.direction(BWD)
-			.assembledReadCount(4)
-			.assembledBaseCount(5)
+			.assembledBaseCount(5, 7)
 			.makeVariant();
 		assertEquals("GTAC", dba.getAssemblyConsensus());
 	}
@@ -110,35 +97,6 @@ public class AssemblyBuilderTest extends TestHelper {
 			.assemblerName("testAssembler")
 			.makeVariant();
 		assertEquals("testAssembler", dba.getAssemblerProgram());
-	}
-	public void should_set_max_soft_clip_length() {
-		VariantContextDirectedEvidence dba = new AssemblyBuilder(getContext(), AES())
-			.assemblyBases(B("AAAAAA"))
-			.referenceAnchor(0, 1)
-			.direction(BWD)
-			.maximumSoftClipLength(12)
-			.makeVariant();
-		assertEquals(12, dba.getAssemblyMaximumSoftClipLength());
-	}
-	public void should_set_longest_read_length() {
-		VariantContextDirectedEvidence dba = new AssemblyBuilder(getContext(), AES())
-			.assemblyBases(B("AAAAAA"))
-			.mateAnchor(0, 1)
-			.direction(BWD)
-			.longestSupportingRead(11)
-			.makeVariant();
-		assertEquals(11, dba.getAssemblyLongestSupportingRead());
-	}
-	@Test
-	public void assembly_quality_should_default_to_average_breakend_base_quality() {
-		VariantContextDirectedEvidence dba = new AssemblyBuilder(getContext(), AES())
-			.assemblyBases(B("AAAAAAAA"))
-			.referenceAnchor(0, 10)
-			.direction(FWD)
-			.anchorLength(3)
-			.assemblyBaseQuality(new byte[] { 0,1,2,3,4,5,6,7 })
-			.makeVariant();
-		assertEquals(5d, dba.getAssemblyQuality(), 0);
 	}
 	@Test
 	public void should_set_breakend_sequence() {
@@ -253,5 +211,138 @@ public class AssemblyBuilderTest extends TestHelper {
 			.makeVariant();
 		dba.getBreakendSummary();
 		assertTrue(dba.hasAttribute(VcfSvConstants.IMPRECISE_KEY));
+	}
+	@Test
+	public void should_set_assembly_attribute_ASSEMBLY_EVIDENCE_COUNT() {
+		assertEquals(1, big().getEvidenceCountAssembly());
+	}
+	@Test
+	public void should_set_assembly_attribute_ASSEMBLY_LOG_LIKELIHOOD_RATIO() {
+		assertNotEquals(0d, big().getBreakendLogLikelihoodAssembly());
+	}
+	@Test
+	public void should_set_attribute_LOG_LIKELIHOOD_RATIO() {
+		assertNotEquals(0d, big().getBreakendLogLikelihood(null));
+	}
+	@Test
+	public void should_set_assembly_attribute_ASSEMBLY_MAPPED() {
+		assertEquals(0, big().getMappedEvidenceCountAssembly());
+		assertEquals(1, bigr().getMappedEvidenceCountAssembly());
+	}
+	@Test
+	public void should_set_assembly_attribute_ASSEMBLY_MAPQ_REMOTE_MAX() {
+		assertEquals(0, big().getMapqAssemblyRemoteMax());
+		assertEquals(7, bigr().getMapqAssemblyRemoteMax());
+	}
+	@Test
+	public void should_set_assembly_attribute_ASSEMBLY_MAPQ_REMOTE_TOTAL() {
+		assertEquals(0, big().getMapqAssemblyRemoteTotal());
+		assertEquals(7, bigr().getMapqAssemblyRemoteTotal());
+	}
+	@Test
+	public void should_set_assembly_attribute_ASSEMBLY_LENGTH_LOCAL_MAX() {
+		assertEquals(5, big().getAssemblyAnchorLengthMax());
+		assertEquals(5, bigr().getAssemblyAnchorLengthMax());
+	}
+	@Test
+	public void should_set_assembly_attribute_ASSEMBLY_LENGTH_REMOTE_MAX() {
+		assertEquals(3, big().getAssemblyBreakendLengthMax());
+		assertEquals(3, bigr().getAssemblyBreakendLengthMax());
+	}
+	@Test
+	public void should_set_assembly_attribute_ASSEMBLY_BASE_COUNT() {	
+		assertEquals(513, big().getAssemblyBaseCount(Subset.NORMAL));
+		assertEquals(745, big().getAssemblyBaseCount(Subset.TUMOUR));
+		assertEquals(513, bigr().getAssemblyBaseCount(Subset.NORMAL));
+		assertEquals(745, bigr().getAssemblyBaseCount(Subset.TUMOUR));
+	}
+	@Test
+	public void should_set_assembly_attribute_ASSEMBLY_READPAIR_COUNT() {
+		assertEquals(2, bigr().getAssemblySupportCountReadPair(Subset.NORMAL));
+		assertEquals(4, bigr().getAssemblySupportCountReadPair(Subset.TUMOUR));
+	}
+	@Test
+	public void should_set_assembly_attribute_ASSEMBLY_READPAIR_LENGTH_MAX() {
+		assertEquals(10, bigr().getAssemblyReadPairLengthMax(Subset.NORMAL));
+		assertEquals(5, bigr().getAssemblyReadPairLengthMax(Subset.TUMOUR));
+	}
+	@Test
+	public void should_set_assembly_attribute_ASSEMBLY_SOFTCLIP_COUNT() {
+		assertEquals(1, bigr().getAssemblySupportCountSoftClip(Subset.NORMAL));
+		assertEquals(2, bigr().getAssemblySupportCountSoftClip(Subset.TUMOUR));
+	}
+	@Test
+	public void should_set_assembly_attribute_ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL() {	
+		assertEquals(4, bigr().getAssemblySoftClipLengthTotal(Subset.NORMAL));
+		assertEquals(6, bigr().getAssemblySoftClipLengthTotal(Subset.TUMOUR));
+	}
+	@Test
+	public void should_set_assembly_attribute_ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX() {
+		assertEquals(4, bigr().getAssemblySoftClipLengthMax(Subset.NORMAL));
+		assertEquals(3, bigr().getAssemblySoftClipLengthMax(Subset.TUMOUR));
+	}
+	@Test
+	public void should_set_assembly_attribute_ASSEMBLY_CONSENSUS() {
+		assertEquals("CGTAAAAA", big().getAssemblyConsensus());
+	}
+	@Test
+	public void should_set_assembly_attribute_ASSEMBLY_PROGRAM() {
+		assertEquals("assemblerName", big().getAssemblerProgram());
+	}
+	@Test
+	public void should_set_assembly_attribute_ASSEMBLY_BREAKEND_QUALS() {
+		assertArrayEquals(new byte[] { 0,1,2}, big().getBreakendQuality());
+	}
+	@Test
+	public void should_set_evidence_source() {
+		EvidenceSource es = AES();
+		assertEquals(es, new AssemblyBuilder(getContext(), AES())
+			.direction(FWD)
+			.anchorLength(1)
+			.referenceAnchor(0, 1)
+			.makeVariant().getEvidenceSource());
+	}
+	public VariantContextDirectedEvidence big() {
+		ProcessingContext pc = getContext();
+		MockSAMEvidenceSource nes = new MockSAMEvidenceSource(pc);
+		MockSAMEvidenceSource tes = new MockSAMEvidenceSource(pc);
+		tes.isTumour = true;
+		Set<DirectedEvidence> support = Sets.newHashSet();
+		support.add(SCE(BWD, nes, Read(0, 10, "4S1M")));
+		support.add(SCE(BWD, tes, Read(0, 10, "3S5M")));
+		support.add(SCE(BWD, tes, Read(0, 10, "3S6M")));
+		support.add(NRRP(nes, OEA(0, 15, "5M", false)));
+		support.add(NRRP(tes, OEA(0, 16, "5M", false)));
+		support.add(NRRP(tes, OEA(0, 17, "5M", false)));
+		support.add(NRRP(tes, DP(0, 1, "2M", true, 0, 15, "5M", false)));
+		support.add(NRRP(tes, DP(0, 2, "2M", true, 0, 16, "5M", false)));
+		support.add(NRRP(nes, DP(0, 3, "2M", true, 0, 17, "10M", false)));
+		AssemblyBuilder sb = new AssemblyBuilder(pc, AES())
+			.direction(BWD)
+			.anchorLength(5)
+			.referenceAnchor(0, 10)
+			.assemblerName("assemblerName")
+			.assemblyBases(B("CGTAAAAT"))
+			.assembledBaseCount(513, 745)
+			.contributingEvidence(support)
+			.assemblyBaseQuality(new byte[] { 0,1,2,3,4,5,6,7});
+		return sb.makeVariant();
+	}
+	public VariantContextDirectedEvidence bigr() {
+		SAMRecord ra = Read(1, 100, "1S1M1S");
+		ra.setReadBases(B("CGT"));
+		ra.setMappingQuality(7);
+		ra.setBaseQualities(new byte[] { 0,1,2});
+		return AssemblyBuilder.incorporateRealignment(getContext(), big(), ra);
+	}
+	@Test
+	public void incorporateRealignment_should_convert_to_breakend() {
+		assertTrue(bigr() instanceof VariantContextDirectedBreakpoint);
+		VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)bigr();
+		assertEquals(1, bp.getBreakendSummary().referenceIndex2);
+	}
+	@Test
+	public void getAnchorSequenceString_should_return_entire_assembly_anchor() {
+		assertEquals("AAAAT", big().getAnchorSequenceString());
 	}
 }

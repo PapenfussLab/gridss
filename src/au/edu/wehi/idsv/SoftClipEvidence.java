@@ -13,6 +13,12 @@ public class SoftClipEvidence implements DirectedEvidence {
 	private final SAMEvidenceSource source;
 	private final SAMRecord record;
 	private final BreakendSummary location;
+	public static SoftClipEvidence create(ProcessingContext processContext, SAMEvidenceSource source, BreakendDirection direction, SAMRecord record) {
+		return create(processContext, source, direction, record, null);
+	}
+	public static SoftClipEvidence create(SoftClipEvidence evidence, SAMRecord realigned) {
+		return create(evidence.processContext, evidence.source, evidence.location.direction, evidence.record, realigned);
+	}
 	public static SoftClipEvidence create(ProcessingContext processContext, SAMEvidenceSource source, BreakendDirection direction, SAMRecord record, SAMRecord realigned) {
 		if (record == null) throw new IllegalArgumentException("record is null");
 		if (direction == null) throw new IllegalArgumentException("direction is null");
@@ -28,9 +34,6 @@ public class SoftClipEvidence implements DirectedEvidence {
 			throw new IllegalArgumentException(String.format("record %s is not %s soft clipped", record.getReadName(), direction));
 		}
 		return result;
-	}
-	public static SoftClipEvidence create(SoftClipEvidence evidence, SAMRecord realigned) {
-		return create(evidence.processContext, evidence.source, evidence.location.direction, evidence.record, realigned);
 	}
 	protected SoftClipEvidence(ProcessingContext processContext, SAMEvidenceSource source, BreakendDirection direction, SAMRecord record) {
 		this.processContext = processContext;

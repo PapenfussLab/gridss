@@ -149,4 +149,14 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertNull(SAMRecordUtil.getStartSoftClipBases(withSequence((byte[])null, Read(0, 1, "1S1M2S"))[0]));
 		assertNull(SAMRecordUtil.getStartSoftClipBases(withSequence(SAMRecord.NULL_SEQUENCE, Read(0, 1, "10H2S1M1S"))[0]));
 	}
+	@Test
+	public void getTotalReferenceBaseQual_should_sum_mapped_bases() {
+		byte[] qual = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+		assertEquals(3+4+5+6+7, SAMRecordUtil.getTotalReferenceBaseQual(withQual(qual, Read(0, 1, "3S5M2S"))[0]));
+	}
+	@Test
+	public void getMaxReferenceBaseQual_should_max_mapped_bases() {
+		byte[] qual = { 0, 1, 2, 3, 4, 5, 7, 6, 8, 9 };
+		assertEquals(7, SAMRecordUtil.getMaxReferenceBaseQual(withQual(qual, Read(0, 1, "3S5M2S"))[0]));
+	}
 }

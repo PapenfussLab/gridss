@@ -54,7 +54,7 @@ public class IntermediateFilesTest extends TestHelper {
 	public ProcessingContext getCommandlineContext(boolean perChr) {
 		List<Header> headers = Lists.newArrayList();
 		headers.add(new StringHeader("TestHeader"));
-		ProcessingContext pc = new ProcessingContextSyncIO(
+		ProcessingContext pc = new ProcessingContext(
 				new FileSystemContext(testFolder.getRoot(), 500000),
 				headers,
 				new SoftClipParameters(),
@@ -62,6 +62,7 @@ public class IntermediateFilesTest extends TestHelper {
 				new RealignmentParameters(),
 				reference,
 				perChr, false);
+		pc.setUseAsyncIO(false);
 		return pc;
 	}
 	public ProcessingContext getCommandlineContext() {

@@ -112,13 +112,13 @@ public class DirectedEvidenceIterator extends AbstractIterator<DirectedEvidence>
 	}
 	private void processRead(SAMRecord record) {
 		if (SAMRecordUtil.getStartSoftClipLength(record) > 0) {
-			SoftClipEvidence sce = new SoftClipEvidence(processContext, (SAMEvidenceSource)source, BreakendDirection.Backward, record);
+			SoftClipEvidence sce = SoftClipEvidence.create(processContext, (SAMEvidenceSource)source, BreakendDirection.Backward, record);
 			if (processContext.getSoftClipParameters().meetsEvidenceCritera(sce)) {
 				calls.add(sce);
 			}
 		}
 		if (SAMRecordUtil.getEndSoftClipLength(record) > 0) {
-			SoftClipEvidence sce = new SoftClipEvidence(processContext, (SAMEvidenceSource)source, BreakendDirection.Forward, record);
+			SoftClipEvidence sce = SoftClipEvidence.create(processContext, (SAMEvidenceSource)source, BreakendDirection.Forward, record);
 			if (processContext.getSoftClipParameters().meetsEvidenceCritera(sce)) {
 				calls.add(sce);
 			}

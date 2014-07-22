@@ -6,7 +6,6 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.fastq.FastqWriterFactory;
-import htsjdk.samtools.filter.AlignedFilter;
 import htsjdk.samtools.filter.DuplicateReadFilter;
 import htsjdk.samtools.filter.FilteringIterator;
 import htsjdk.samtools.metrics.Header;
@@ -45,6 +44,7 @@ public class ProcessingContext implements Closeable {
 	private final RealignmentParameters rp;
 	private final List<Header> metricsHeaders;
 	private boolean filterDuplicates = true;
+	private boolean useAsyncIO = true;
 	public ProcessingContext(
 			FileSystemContext fileSystemContext,
 			List<Header> metricsHeaders,
@@ -82,9 +82,10 @@ public class ProcessingContext implements Closeable {
 		return fsContext;
 	}
 	public SamReaderFactory getSamReaderFactory() {
-		return SamReaderFactory.makeDefault()
+		SamReaderFactory factory = SamReaderFactory.makeDefault()
 				.validationStringency(ValidationStringency.LENIENT);
 				//.enable(Option.INCLUDE_SOURCE_IN_RECORDS); // don't need as we're tracking ourselves using EvidenceSource
+		return factory;
 	}
 	public SAMFileWriterFactory getSamReaderWriterFactory() {
 		return new SAMFileWriterFactory()
@@ -179,5 +180,4 @@ public class ProcessingContext implements Closeable {
 	public void setFilterDuplicates(boolean filterDuplicates) {
 		this.filterDuplicates = filterDuplicates;
 	}
-	private boolean useAsyncIO = true;
 }

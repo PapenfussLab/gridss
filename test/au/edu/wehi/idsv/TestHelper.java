@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -43,6 +44,7 @@ import au.edu.wehi.idsv.vcf.VcfAttributes;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 public class TestHelper {
 	public static final BreakendDirection FWD = BreakendDirection.Forward;
@@ -73,7 +75,12 @@ public class TestHelper {
 		return list;
 	}
 	public VariantContextBuilder minimalVariant() {
-		return new VariantContextBuilder().chr("polyA").start(1).stop(1).alleles("A", "C");
+		return new IdsvVariantContextBuilder(getContext()).chr("polyA").start(1).stop(1).alleles("A", "C");
+	}
+	public IdsvVariantContextBuilder minimalBreakend() {
+		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());
+		builder.chr("polyA").start(1).stop(1).alleles("A", "A.");
+		return builder;
 	}
 	static public SAMFileHeader getHeader() {
 		SAMFileHeader header = new SAMFileHeader();
@@ -119,14 +126,20 @@ public class TestHelper {
 		return new SAMRecord[] { mapped, unmapped };
 	}
 	public static NonReferenceReadPair NRRP(SAMRecord... pair) {
+		return NRRP(SES(), pair);
+	}
+	public static NonReferenceReadPair NRRP(SAMEvidenceSource source, SAMRecord... pair) {
 		pair[1].setReadName(pair[0].getReadName());
-		return new NonReferenceReadPair(pair[0], pair[1], SES());
+		return NonReferenceReadPair.create(pair[0], pair[1], source);
 	}
 	public static SoftClipEvidence SCE(BreakendDirection direction, SAMRecord... pair) {
+		return SCE(direction, SES(), pair);
+	}
+	public static SoftClipEvidence SCE(BreakendDirection direction, SAMEvidenceSource source, SAMRecord... pair) {
 		if (pair.length >= 2) {
-			return new SoftClipEvidence(getContext(), SES(), direction, pair[0], pair[1]);
+			return SoftClipEvidence.create(getContext(), source, direction, pair[0], pair[1]);
 		} else {
-			return new SoftClipEvidence(getContext(), SES(), direction, pair[0]);
+			return SoftClipEvidence.create(getContext(), source, direction, pair[0], null);
 		}
 	}
 	public static VariantContextDirectedEvidence AE() {
@@ -140,24 +153,9 @@ public class TestHelper {
 		.anchorLength(1)
 		.assemblyBases(B("ATT"))
 		.assemblyBaseQuality(new byte[] { 7,7,7})
-		.assembledReadCount(5)
-		.assembledBaseCount(6);
+		.contributingEvidence(Sets.newHashSet((DirectedEvidence)SCE(FWD, Read(0, 1, "1M5S"))))
+		.assembledBaseCount(6, 8);
 	}
-	public static VariantContextDirectedEvidence AE(
-			BreakpointSummary summary,
-			int readCount,
-			int readBaseCount,
-			double breakpointQuality,
-			String untemplatedSequence) {
-		IdsvVariantContextBuilder b = new IdsvVariantContextBuilder(getContext(), AES());
-		b.breakpoint(summary, untemplatedSequence);
-		b.attribute(VcfAttributes.ASSEMBLY_BASES.attribute(), readBaseCount);
-		b.attribute(VcfAttributes.ASSEMBLY_READS.attribute(), readCount);
-		b.attribute(VcfAttributes.ASSEMBLY_CONSENSUS.attribute(), untemplatedSequence);
-		b.attribute(VcfAttributes.ASSEMBLY_QUALITY.attribute(), breakpointQuality);
-		b.attribute(VcfAttributes.REALIGN_TOTAL_LENGTH, untemplatedSequence.length() + 1);
-		return b.make();
-	}		
 	public static class MockMetrics extends IdsvSamFileMetrics {
 		public int maxFragSize = 300;
 		@Override
@@ -166,39 +164,16 @@ public class TestHelper {
 	public static FileSystemContext getFSContext() {
 		return new FileSystemContext(new File(System.getProperty("java.io.tmpdir")), 500000);
 	}
-	/**
-	 * Sync IO so we don't have hundreds of threads spawning / despawning when running tests
-	 */
-	public static class ProcessingContextSyncIO extends ProcessingContext {
-		public ProcessingContextSyncIO(FileSystemContext fileSystemContext,
-				List<Header> metricsHeaders,
-				SoftClipParameters softClipParameters,
-				AssemblyParameters assemblyParameters,
-				RealignmentParameters realignmentParameters, File ref,
-				boolean perChr, boolean vcf41) {
-			super(fileSystemContext, metricsHeaders, softClipParameters,
-					assemblyParameters, realignmentParameters, ref, perChr, vcf41);
-		}
-		@Override
-		public SAMFileWriterFactory getSamReaderWriterFactory() {
-			return super.getSamReaderWriterFactory()
-					.setUseAsyncIo(false);
-		}
-		@Override
-		public FastqWriterFactory getFastqWriterFactory() {
-			FastqWriterFactory f = super.getFastqWriterFactory();
-			f.setUseAsyncIo(false);
-			return f;
-		}
-	}
 	public static ProcessingContext getContext() {
-		return new ProcessingContextSyncIO(
+		ProcessingContext pc = new ProcessingContext(
 				getFSContext(),
 				new ArrayList<Header>(),
 				new SoftClipParameters(),
 				new AssemblyParameters(),
 				new RealignmentParameters(),
 				SMALL_FA_FILE, false, false);
+		pc.setUseAsyncIO(false);
+		return pc;
 	}
 	static public SAMRecord[] withReadName(String name, SAMRecord... data) {
 		for (SAMRecord r : data) {
@@ -441,7 +416,7 @@ public class TestHelper {
 		}
 		public BaseGraph add(String sequence, int weight) {
 			for (long kmer : toKmer(this, sequence)) {
-				add(kmer, new DeBruijnNodeBase(weight, new SAMRecord(null)));
+				add(kmer, new DeBruijnNodeBase(weight, NRRP(OEA(0, 1, "100M", true))));
 			}
 			return this;
 		}

@@ -109,7 +109,7 @@ public class DeBruijnAnchoredGraph extends DeBruijnVariantGraph<DeBruijnNodeBase
 			.referenceAnchor(referenceIndex, position)
 			.anchorLength(anchorLen)
 			.contributingEvidence(getSupportingEvidence(path))
-			.assembledBaseCount(getSAMRecordBaseCount(path));
+			.assembledBaseCount(getEvidenceBaseCount(path, false), getEvidenceBaseCount(path, true));
 		return builder.makeVariant();
 	}
 	@Override

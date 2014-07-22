@@ -292,7 +292,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 					SoftClipEvidence startEvidence = null;
 					SoftClipEvidence endEvidence = null;
 					if (SAMRecordUtil.getStartSoftClipLength(record) > 0) {
-						startEvidence = new SoftClipEvidence(processContext, SAMEvidenceSource.this, BreakendDirection.Backward, record);
+						startEvidence = SoftClipEvidence.create(processContext, SAMEvidenceSource.this, BreakendDirection.Backward, record);
 						if (processContext.getSoftClipParameters().meetsEvidenceCritera(startEvidence)) {
 							if (processContext.getRealignmentParameters().shouldRealignBreakend(startEvidence)) {
 								realignmentWriters.get(offset % realignmentWriters.size()).write(startEvidence);
@@ -302,7 +302,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 						}
 					}
 					if (SAMRecordUtil.getEndSoftClipLength(record) > 0) {
-						endEvidence = new SoftClipEvidence(processContext, SAMEvidenceSource.this, BreakendDirection.Forward, record);
+						endEvidence = SoftClipEvidence.create(processContext, SAMEvidenceSource.this, BreakendDirection.Forward, record);
 						if (processContext.getSoftClipParameters().meetsEvidenceCritera(endEvidence)) {
 							if (processContext.getRealignmentParameters().shouldRealignBreakend(endEvidence)) {
 								realignmentWriters.get(offset % realignmentWriters.size()).write(endEvidence);

@@ -17,6 +17,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 public class AssemblyBuilder {
 	private ProcessingContext processContext;
@@ -27,11 +28,12 @@ public class AssemblyBuilder {
 	private int mateAnchor; 
 	private byte[] bases;
 	private byte[] quals;
-	private int baseCount;
+	private int normalBaseCount;
+	private int tumourBaseCount;
 	private int anchorLen;	
 	private BreakendDirection dir = null;
 	private String assembler = "";
-	private Set<DirectedEvidence> evidence;
+	private Set<DirectedEvidence> evidence = Sets.newHashSet();
 	public AssemblyBuilder(ProcessingContext processContext, EvidenceSource source) {
 		this.processContext = processContext;
 		this.source = source;
@@ -81,8 +83,9 @@ public class AssemblyBuilder {
 		this.evidence.add(evidence);
 		return this;
 	}
-	public AssemblyBuilder assembledBaseCount(int baseCount) {
-		this.baseCount = baseCount;
+	public AssemblyBuilder assembledBaseCount(int normalBaseCount, int tumourBaseCount) {
+		this.normalBaseCount = normalBaseCount;
+		this.tumourBaseCount = tumourBaseCount;
 		return this;
 	}
 	/**
@@ -112,7 +115,6 @@ public class AssemblyBuilder {
 	public VariantContextDirectedEvidence makeVariant() {
 		if (dir == null) throw new IllegalStateException("direction is required");
 		if (bases == null) throw new IllegalStateException("assembly base sequence is required");
-		
 		List<NonReferenceReadPair> rp = Lists.newArrayList(Iterables.filter(evidence, NonReferenceReadPair.class));
 		List<SoftClipEvidence> sc = Lists.newArrayList(Iterables.filter(evidence, SoftClipEvidence.class));
 		List<NonReferenceReadPair> rpNormal = Lists.newArrayList(Iterables.filter(rp, new Predicate<NonReferenceReadPair>() { public boolean apply(NonReferenceReadPair e) { return !((SAMEvidenceSource)e.getEvidenceSource()).isTumour(); } }) );
@@ -128,7 +130,7 @@ public class AssemblyBuilder {
 		
 		builder.attribute(VcfAttributes.ASSEMBLY_CONSENSUS, new String(bases, StandardCharsets.US_ASCII));
 		builder.attribute(VcfAttributes.ASSEMBLY_EVIDENCE_COUNT, 1);
-		builder.attribute(VcfAttributes.ASSEMBLY_BASE_COUNT, baseCount);
+		builder.attribute(VcfAttributes.ASSEMBLY_BASE_COUNT, new int[] { normalBaseCount, tumourBaseCount });
 		builder.attribute(VcfAttributes.ASSEMBLY_PROGRAM, assembler);
 		builder.attribute(VcfAttributes.ASSEMBLY_LENGTH_LOCAL_MAX, anchorLen);
 		builder.attribute(VcfAttributes.ASSEMBLY_LENGTH_REMOTE_MAX, bases.length - anchorLen);
@@ -199,17 +201,17 @@ public class AssemblyBuilder {
 			builder.filter(VcfFilter.ASSEMBLY_SINGLE_READ.filter()); // read count = 1
 		}
 		builder.source(source);
-		return recalculatePhredLLR(processContext, builder.make());
+		return (VariantContextDirectedEvidence)recalculatePhredLLR(processContext, (VariantContextDirectedEvidence)builder.make());
 	}
 	private static VariantContextDirectedEvidence recalculatePhredLLR(ProcessingContext processContext, VariantContextDirectedEvidence assembly) {
 		float llr = PhredLogLikelihoodRatioModel.llr(assembly);
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(processContext, assembly);
 		builder.attribute(VcfAttributes.ASSEMBLY_LOG_LIKELIHOOD_RATIO, llr);
 		builder.phredScore(llr);
-		return builder.make();
+		return (VariantContextDirectedEvidence)builder.make();
 	}
 	public AnomolousReadAssembly makeSAMRecord() {
-		return new AnomolousReadAssembly(assembler, bases, quals, anchorLen, dir, evidence.size(), baseCount);
+		return new AnomolousReadAssembly(assembler, bases, quals, anchorLen, dir, evidence.size(), normalBaseCount + tumourBaseCount);
 	}
 	/**
 	 * Updates the given assembly to incorporate the given realignment of the assembly breakend
@@ -228,6 +230,6 @@ public class AssemblyBuilder {
 		builder.attribute(VcfAttributes.ASSEMBLY_MAPQ_REMOTE_TOTAL, realignment.getMappingQuality());
 		RealignedBreakpoint rbp = new RealignedBreakpoint(processContext, assembly.getBreakendSummary(), assembly.getAnchorSequenceString(), realignment);
 		builder.breakpoint(rbp.getBreakpointSummary(), rbp.getInsertedSequence());
-		return recalculatePhredLLR(processContext, builder.make());
+		return recalculatePhredLLR(processContext, (VariantContextDirectedEvidence)builder.make());
 	}
 }

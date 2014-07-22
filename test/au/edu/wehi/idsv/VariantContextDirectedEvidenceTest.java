@@ -8,6 +8,9 @@ import htsjdk.variant.variantcontext.VariantContextBuilder;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfAttributes.Subset;
+
 public class VariantContextDirectedEvidenceTest extends TestHelper {
 	@Test
 	public void getBreakendSummary_should_handle_f_single_breakend() {
@@ -158,22 +161,22 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void matching_breakpoints_should_call_same_evidence() {
-		BreakpointSummary s1 = (BreakpointSummary)new IdsvVariantContextBuilder(getContext(), AES(),
+		BreakpointSummary s1 = ((VariantContextDirectedBreakpoint)new IdsvVariantContextBuilder(getContext(),
 				new VariantContextBuilder()
 					.chr("polyA")
 					.start(1)
 					.stop(1)
 					.alleles("A", "A[polyA:10[")
 					.make())
-			.make().getBreakendSummary();
-		BreakpointSummary s2 = (BreakpointSummary)new IdsvVariantContextBuilder(getContext(), AES(),
+			.make()).getBreakendSummary();
+		BreakpointSummary s2 = ((VariantContextDirectedBreakpoint)new IdsvVariantContextBuilder(getContext(),
 				new VariantContextBuilder()
 					.chr("polyA")
 					.start(10)
 					.stop(10)
 					.alleles("A", "]polyA:1]A")
 					.make())
-			.make().getBreakendSummary();
+			.make()).getBreakendSummary();
 		s2 = s2.remoteBreakpoint();
 		assertEquals(s1.direction, s2.direction);
 		assertEquals(s1.start, s2.start);
@@ -186,14 +189,14 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void forward_breakend_should_match_vcf_call() {
-		BreakpointSummary s1 = (BreakpointSummary)new IdsvVariantContextBuilder(getContext(), AES(),
+		BreakpointSummary s1 = ((VariantContextDirectedBreakpoint)new IdsvVariantContextBuilder(getContext(),
 				new VariantContextBuilder()
 					.chr("polyA")
 					.start(1)
 					.stop(1)
 					.alleles("A", "A[polyA:10[")
 					.make())
-			.make().getBreakendSummary();
+			.make()).getBreakendSummary();
 		assertEquals(FWD, s1.direction);
 		assertEquals(1, s1.start);
 		assertEquals(1, s1.end);
@@ -205,14 +208,14 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void backward_breakend_should_match_vcf_call() {
-		BreakpointSummary s1 = (BreakpointSummary)new IdsvVariantContextBuilder(getContext(), AES(),
+		BreakpointSummary s1 = ((VariantContextDirectedBreakpoint)new IdsvVariantContextBuilder(getContext(),
 				new VariantContextBuilder()
 					.chr("polyA")
 					.start(10)
 					.stop(10)
 					.alleles("A", "]polyA:1]A")
 					.make())
-			.make().getBreakendSummary();
+			.make()).getBreakendSummary();
 		assertEquals(BWD, s1.direction);
 		assertEquals(10, s1.start);
 		assertEquals(10, s1.end);
@@ -224,7 +227,7 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void breakpoint_width_should_be_determined_by_CIPOS() {
-		BreakpointSummary s1 = (BreakpointSummary)new IdsvVariantContextBuilder(getContext(), AES(),
+		BreakpointSummary s1 = ((VariantContextDirectedBreakpoint)new IdsvVariantContextBuilder(getContext(),
 				new VariantContextBuilder()
 					.chr("polyA")
 					.start(2)
@@ -232,7 +235,7 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 					.alleles("A", "A[polyA:10[")
 					.attribute("CIPOS", new int[] { -1, 2 })
 					.make())
-			.make().getBreakendSummary();
+			.make()).getBreakendSummary();
 		assertEquals(1, s1.start);
 		assertEquals(4, s1.end);
 		assertEquals(10, s1.start2);
@@ -240,7 +243,7 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void remote_breakpoint_width_should_be_determined_by_CIRPOS() {
-		BreakpointSummary s1 = (BreakpointSummary)new IdsvVariantContextBuilder(getContext(), AES(),
+		BreakpointSummary s1 = ((VariantContextDirectedBreakpoint)new IdsvVariantContextBuilder(getContext(),
 				new VariantContextBuilder()
 					.chr("polyA")
 					.start(2)
@@ -248,10 +251,31 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 					.alleles("A", "A[polyA:10[")
 					.attribute("CIRPOS", new int[] { -1, 2 })
 					.make())
-			.make().getBreakendSummary();
+			.make()).getBreakendSummary();
 		assertEquals(2, s1.start);
 		assertEquals(2, s1.end);
 		assertEquals(9, s1.start2);
 		assertEquals(12, s1.end2);
+	}
+	@Test
+	public void ALL_subset_should_sum_tumour_normal() {
+		VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)minimalBreakend()
+				.attribute(VcfAttributes.ASSEMBLY_READPAIR_COUNT, new int[] { 1, 2})
+				.make();
+		assertEquals(3, v.getAssemblySupportCountReadPair(Subset.ALL));
+	}
+	@Test
+	public void ALL_subset_should_max_tumour_normal() {
+		VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)minimalBreakend()
+				.attribute(VcfAttributes.ASSEMBLY_READPAIR_LENGTH_MAX, new int[] { 1, 2})
+				.make();
+		assertEquals(2, v.getAssemblyReadPairLengthMax(Subset.ALL));
+	}
+	@Test
+	public void null_should_alias_Subset_ALL() {
+		VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)minimalBreakend()
+				.attribute(VcfAttributes.ASSEMBLY_READPAIR_COUNT, new int[] { 1, 2})
+				.make();
+		assertEquals(3, v.getAssemblySupportCountReadPair(null));
 	}
 }

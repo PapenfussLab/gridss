@@ -63,8 +63,8 @@ public class DeBruijnAnchoredAssemblerTest extends TestHelper {
 	public void should_filter_if_no_breakpoint_assembly() {
 		// polyA reads assemble as anchor kmer
 		List<VariantContextDirectedEvidence> r = go(3,
-				new SoftClipEvidence(getContext(), SES(),BreakendDirection.Backward, Read(0, 1, "2S5M")),
-				new SoftClipEvidence(getContext(), SES(),BreakendDirection.Backward, Read(0, 1, "3S5M"))
+				SoftClipEvidence.create(getContext(), SES(),BreakendDirection.Backward, Read(0, 1, "2S5M")),
+				SoftClipEvidence.create(getContext(), SES(),BreakendDirection.Backward, Read(0, 1, "3S5M"))
 		); 
 		assertEquals(1, r.size());
 		assertTrue(r.get(0).isFiltered());
@@ -88,7 +88,7 @@ public class DeBruijnAnchoredAssemblerTest extends TestHelper {
 		assertEquals(1, r.size());
 		assertEquals("ACGTGA", r.get(0).getBreakpointSequenceString());
 		assertEquals("A", r.get(0).getAnchorSequenceString());
-		assertEquals(2, r.get(0).getBreakendSummary().evidence.get(VcfAttributes.ASSEMBLY_READS));
+		assertEquals(2, r.get(0).getAssemblySupportCount(null));
 		assertEquals(BreakendDirection.Forward, r.get(0).getBreakendSummary().direction);
 		assertEquals(1, r.get(0).getBreakendSummary().start);
 		assertEquals(1, r.get(0).getBreakendSummary().end);

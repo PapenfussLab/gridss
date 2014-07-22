@@ -213,13 +213,13 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		addRead(ass, R(null, "ACGAA", new byte[] { 1,1,1,1,1 }, false, true), true);
 		VariantContextDirectedEvidence result = ass.assembleVariant(0, 1);
 		
-		assertEquals(3, (int)result.getBreakendSummary().evidence.get(VcfAttributes.ASSEMBLY_READS));
+		assertEquals(3, result.getAssemblySupportCount(null));
 	}
 	// hack so we don't have to redo the test case as the test was created
 	// with 0 length soft clips
 	public SoftClipEvidence HackSCE(String seq, byte[] qual) {
 		SAMRecord read = withQual(qual, withSequence(seq, Read(0, 1, "4M1S")))[0];
-		SoftClipEvidence e = new SoftClipEvidence(getContext(), SES(), FWD, read);
+		SoftClipEvidence e = SoftClipEvidence.create(getContext(), SES(), FWD, read);
 		read.setCigarString("5M"); // now we remove the soft clip out from under the SCE since it assumes SAMRecords are immutable 
 		return e;
 	}
@@ -235,6 +235,6 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		VariantContextDirectedEvidence result = ass.assembleVariant(0, 1);
 		
 		assertEquals("test assumes this contruction - did I get the test case wrong?", "TACGTA", result.getAssemblyConsensus());
-		assertEquals(4 + 5 + 3 + 3 + 4+3, (int)result.getBreakendSummary().evidence.get(VcfAttributes.ASSEMBLY_BASES));
+		assertEquals(4 + 5 + 3 + 3 + 4+3, result.getAssemblyBaseCount(null));
 	}
 }

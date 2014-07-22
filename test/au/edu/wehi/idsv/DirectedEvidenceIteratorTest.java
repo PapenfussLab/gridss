@@ -91,8 +91,7 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 			.anchorLength(1)
 			.direction(BWD)
 			.referenceAnchor(0, position)
-			.assembledBaseCount(5)
-			.assembledReadCount(6)
+			.assembledBaseCount(5, 6)
 			.assemblyBaseQuality(new byte[] { 7,7 } )
 			.makeVariant();
 	}
@@ -184,7 +183,9 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 	}
 	@Test
 	public void should_ignore_filtered_variants() {
-		VariantContextDirectedEvidence assembly = AB().assembledReadCount(1).makeVariant();
+		VariantContextDirectedEvidence assembly = AB()
+				.contributingEvidence(Lists.newArrayList((DirectedEvidence)SCE(FWD, Read(0, 1, "1M2S"))))
+				.makeVariant();
 		vcf.add(assembly);
 		go();
 		assertEquals(0, out.size());

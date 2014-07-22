@@ -12,7 +12,7 @@ import au.edu.wehi.idsv.vcf.VcfAttributes;
 
 public class NonReferenceReadPairTest extends TestHelper {
 	public NonReferenceReadPair newPair(SAMRecord[] pair, int maxfragmentSize) {
-		return new NonReferenceReadPair(pair[0], pair[1], SES(maxfragmentSize));
+		return NonReferenceReadPair.create(pair[0], pair[1], SES(maxfragmentSize));
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void should_abort_if_max_frag_size_not_sane() {
@@ -51,8 +51,8 @@ public class NonReferenceReadPairTest extends TestHelper {
 	@Test
 	public void getBreakendSummary_DP_calls_should_be_symmetrical() {
 		SAMRecord[] pair = DP(0, 100, "1S3M1S", true, 1, 200, "5M", false); 
-		BreakpointSummary loc1 = (BreakpointSummary)new NonReferenceReadPair(pair[0], pair[1], SES(20)).getBreakendSummary();
-		BreakpointSummary loc2 = (BreakpointSummary)new NonReferenceReadPair(pair[1], pair[0], SES(20)).getBreakendSummary();
+		BreakpointSummary loc1 = (BreakpointSummary)NonReferenceReadPair.create(pair[0], pair[1], SES(20)).getBreakendSummary();
+		BreakpointSummary loc2 = (BreakpointSummary)NonReferenceReadPair.create(pair[1], pair[0], SES(20)).getBreakendSummary();
 		assertEquals(loc1.referenceIndex, loc2.referenceIndex2);
 		assertEquals(loc1.start, loc2.start2);
 		assertEquals(loc1.end, loc2.end2);
@@ -88,12 +88,12 @@ public class NonReferenceReadPairTest extends TestHelper {
 	}
 	private void dp_test_both(SAMRecord r1, SAMRecord r2, int maxFragmentSize,
 			int expectedStart, int expectedEnd, int expectedReferenceIndex, BreakendDirection expectedDirection) {
-		BreakendSummary loc = new NonReferenceReadPair(r1, r2, SES(maxFragmentSize)).getBreakendSummary();
+		BreakendSummary loc = NonReferenceReadPair.create(r1, r2, SES(maxFragmentSize)).getBreakendSummary();
 		assertEquals(expectedStart, loc.start);
 		assertEquals(expectedEnd, loc.end);
 		assertEquals(expectedReferenceIndex, loc.referenceIndex);
 		assertEquals(expectedDirection, loc.direction);
-		BreakpointSummary loc2 = (BreakpointSummary)new NonReferenceReadPair(r2, r1, SES(maxFragmentSize)).getBreakendSummary();
+		BreakpointSummary loc2 = (BreakpointSummary)NonReferenceReadPair.create(r2, r1, SES(maxFragmentSize)).getBreakendSummary();
 		assertEquals(expectedStart, loc2.start2);
 		assertEquals(expectedEnd, loc2.end2);
 		assertEquals(expectedReferenceIndex, loc2.referenceIndex2);
@@ -155,22 +155,16 @@ public class NonReferenceReadPairTest extends TestHelper {
 	@Test
 	public void getBreakendSummary_OEA_qual_should_match_mapq() {
 		BreakendSummary loc = newPair(OEA(0, 1, "2M3S", true), 10).getBreakendSummary();
-		assertEquals(1, loc.evidence.get(VcfAttributes.UNMAPPED_MATE_READ_COUNT));
-		assertEquals(10, loc.evidence.get(VcfAttributes.UNMAPPED_MATE_TOTAL_MAPQ));
 	}
-
 	@Test
 	public void DP_should_set_dp_evidence() {
 		SAMRecord[] pair = DP(0, 1, "100M", true, 0, 1, "100M", true);
 		pair[0].setMappingQuality(1);
 		pair[1].setMappingQuality(10);
 		BreakpointSummary loc = (BreakpointSummary)newPair(pair, 300).getBreakendSummary();
-		assertEquals(1, loc.evidence.get(VcfAttributes.DISCORDANT_READ_PAIR_COUNT));
-		assertEquals(1, loc.evidence.get(VcfAttributes.DISCORDANT_READ_PAIR_TOTAL_MAPQ));
 		pair[0].setMappingQuality(10);
 		pair[1].setMappingQuality(1);
 		loc = (BreakpointSummary)newPair(pair, 300).getBreakendSummary();
-		assertEquals(1, loc.evidence.get(VcfAttributes.DISCORDANT_READ_PAIR_TOTAL_MAPQ));
 	}
 	public void getEvidenceID_should_match_read_name() {
 		SAMRecord[] pair = DP(0, 1, "100M", true, 0, 1, "100M", true);
@@ -222,5 +216,47 @@ public class NonReferenceReadPairTest extends TestHelper {
 		newPair(DP(1, 2, "100M", true, 2, 4, "100M", true), 300);
 		newPair(DP(1, 3, "100M", true, 2, 6, "100M", true), 300);
 		newPair(OEA(1, 4, "100M", false), 300);
+	}
+	@Test
+	public void create_should_instanciate_derived_classes() {
+		assertTrue(newPair(DP(1, 1, "100M", true, 2, 5, "100M", true), 300) instanceof DiscordantReadPair);
+		assertTrue(newPair(OEA(1, 4, "100M", false), 300) instanceof UnmappedMateReadPair);
+	}
+	@Test
+	public void getLocalMapq_should_be_anchored_mapq() {
+		SAMRecord[] pair = DP(1, 1, "100M", true, 2, 5, "100M", true);
+		pair[0].setMappingQuality(5);
+		pair[1].setMappingQuality(10);
+		assertEquals(5, newPair(pair, 300).getLocalMapq());
+	}
+	@Test
+	public void getLocalBaseLength_should_be_read_length() {
+		assertEquals(100, newPair(OEA(0, 1, "100M", true), 300).getLocalBaseLength());
+	}
+	@Test
+	public void getLocalBaseCount_should_be_read_length() {
+		assertEquals(100, newPair(OEA(0, 1, "100M", true), 300).getLocalBaseCount());
+	}
+	@Test
+	public void getLocalMaxBaseQual_local_mapped_quals() {
+		SAMRecord[] pair = DP(1, 1, "3M1S", true, 2, 5, "1S3M", true);
+		withQual(new byte[] { 1, 2, 3, 4}, pair[0]);
+		withQual(new byte[] { 4, 5, 6, 7}, pair[1]);
+		assertEquals(3, newPair(pair, 300).getLocalMaxBaseQual());
+	}
+	@Test
+	public void getLocalTotalBaseQual_local_mapped_quals() {
+		SAMRecord[] pair = DP(1, 1, "3M1S", true, 2, 5, "1S3M", true);
+		withQual(new byte[] { 1, 2, 3, 4}, pair[0]);
+		withQual(new byte[] { 4, 5, 6, 7}, pair[1]);
+		assertEquals(1+2+3, newPair(pair, 300).getLocalTotalBaseQual());
+	}
+	@Test
+	public void getBreakendSequence_should_be_null() {
+		assertNull(newPair(OEA(0, 1, "100M", true), 300).getBreakendSequence());
+	}
+	@Test
+	public void getBreakendQuality_should_be_null() {
+		assertNull(newPair(OEA(0, 1, "100M", true), 300).getBreakendSequence());
 	}
 }

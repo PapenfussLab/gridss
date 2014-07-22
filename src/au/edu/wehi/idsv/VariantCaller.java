@@ -19,10 +19,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
 
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
-
 import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
@@ -127,45 +124,17 @@ public class VariantCaller extends EvidenceProcessorBase {
 			// since the first breakend is always the lower genomic coordinate
 			// this will result in in-order output
 			PriorityQueue<VariantContextDirectedEvidence> variants = new PriorityQueue<VariantContextDirectedEvidence>(1024, IdsvVariantContext.ByLocationStart);
-			Iterator<BreakpointSummary> it = processor.iterator();
+			Iterator<VariantContextDirectedEvidence> it = processor.iterator();
 			while (it.hasNext()) {
-				BreakendSummary loc = it.next();
-				if (loc instanceof BreakpointSummary) {
-					// Add both breakends
-					variants.addAll(createBreakpoint(processContext, (BreakpointSummary)loc));
-				} else {
-					variants.add(createBreakend(processContext, loc));
-				}
-				while (!variants.isEmpty() && BreakendSummary.ByStartEnd.compare(variants.peek().getBreakendSummary(), loc) < 0) {
-					// write calls before our current position
-					vcfWriter.add(variants.poll());
-				}
-				writeProgress.record(processContext.getDictionary().getSequence(loc.referenceIndex).getSequenceName(), loc.start);
+				VariantContextDirectedEvidence loc = it.next();
+				vcfWriter.add(variants.poll());
+				writeProgress.record(processContext.getDictionary().getSequence(loc.getBreakendSummary().referenceIndex).getSequenceName(), loc.getBreakendSummary().start);
 			}
 			// Flush remaining
 			while (!variants.isEmpty()) {
 				vcfWriter.add(variants.poll());
 			}
 		}
-	}
-	private VariantContextDirectedEvidence createBreakend(final ProcessingContext processContext, BreakendSummary loc) {
-		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(processContext, null)
-			.breakend(loc, null)
-			.evidence(loc.evidence);
-		return builder.make();
-	}
-	private static int mateCount = 1;
-	private List<VariantContextDirectedEvidence> createBreakpoint(final ProcessingContext processContext, BreakpointSummary loc) {
-		IdsvVariantContextBuilder builder1 = new IdsvVariantContextBuilder(processContext, null)
-			.breakpoint(loc, null)
-			.evidence(loc.evidence);
-		IdsvVariantContextBuilder builder2 = new IdsvVariantContextBuilder(processContext, null)
-			.breakpoint(loc.remoteBreakpoint(), null)
-			.evidence(loc.evidence);
-		String mateId = String.format("idsv%d", mateCount++);
-		builder1.attribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, mateId);
-		builder2.attribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, mateId);
-		return ImmutableList.of(builder1.make(), builder2.make());
 	}
 	public void annotateBreakpoints() {
 		log.info("Annotating Calls");

@@ -11,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 import au.edu.wehi.idsv.DirectedEvidence;
+import au.edu.wehi.idsv.SAMEvidenceSource;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -242,13 +243,17 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	/**
 	 * Number of read bases supporting the given path
 	 * @param path kmer contig
+	 * @param countTumour count bases from evidence evidence if true, otherwise count bases from normal evidence
 	 * @return number of read bases include in at least one kmer on the given kmer contig
 	 */
-	public int getSAMRecordBaseCount(List<Long> path) {
+	public int getEvidenceBaseCount(List<Long> path, boolean countTumour) {
 		int readBaseCount = 0;
 		Set<DirectedEvidence> lastNodeSupport = Sets.newHashSet();
 		for (Long node : path) {
 			for (DirectedEvidence read : this.kmers.get(node).getSupportingEvidence()) {
+				SAMEvidenceSource source = (SAMEvidenceSource)read.getEvidenceSource();
+				boolean evidenceIsTumour = source != null && source.isTumour();
+				if (evidenceIsTumour != countTumour) continue; // ignore evidence we're not counting
 				if (lastNodeSupport.contains(read)) {
 					readBaseCount++;
 				} else {

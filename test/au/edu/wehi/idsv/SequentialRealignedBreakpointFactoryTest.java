@@ -14,12 +14,12 @@ public class SequentialRealignedBreakpointFactoryTest extends TestHelper {
 	public SequentialRealignedBreakpointFactory getFactory(List<SAMRecord> data) {
 		return new SequentialRealignedBreakpointFactory(Iterators.peekingIterator(data.iterator()));
 	}
-	public class TestDirectedBreakpoint implements DirectedBreakpoint {
+	public class TestDirectedBreakend implements DirectedEvidence {
 		private String id;
 		private BreakendSummary location;
-		public TestDirectedBreakpoint(int referenceIndex, int start, String id) {
+		public TestDirectedBreakend(int referenceIndex, int start, String id) {
 			this.id = id;
-			this.location = new BreakendSummary(referenceIndex, BreakendDirection.Forward, start, start, null);
+			this.location = new BreakendSummary(referenceIndex, BreakendDirection.Forward, start, start);
 		}
 		@Override
 		public BreakendSummary getBreakendSummary() {
@@ -41,11 +41,36 @@ public class SequentialRealignedBreakpointFactoryTest extends TestHelper {
 		public EvidenceSource getEvidenceSource() {
 			return SES();
 		}
+		@Override
+		public int getLocalMapq() {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+		@Override
+		public int getLocalBaseLength() {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+		@Override
+		public int getLocalBaseCount() {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+		@Override
+		public int getLocalMaxBaseQual() {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+		@Override
+		public int getLocalTotalBaseQual() {
+			// TODO Auto-generated method stub
+			return 0;
+		}
 	}
 	@Test
 	public void should_match_by_read_name() {
 		SequentialRealignedBreakpointFactory factory = getFactory(L(withReadName("0#1#n1", Read(0, 1, 1))));
-		SAMRecord r = factory.findRealignedSAMRecord(new TestDirectedBreakpoint(0, 1, "n1"));
+		SAMRecord r = factory.findRealignedSAMRecord(new TestDirectedBreakend(0, 1, "n1"));
 		assertNotNull(r);
 	}
 	@Test
@@ -57,11 +82,11 @@ public class SequentialRealignedBreakpointFactoryTest extends TestHelper {
 			withReadName("0#2#n4", Read(0, 1, "1M")),
 			withReadName("1#1#n5", Read(0, 1, "1M"))
 			));
-		assertNotNull(factory.findRealignedSAMRecord(new TestDirectedBreakpoint(0, 1, "n1")));
-		assertNotNull(factory.findRealignedSAMRecord(new TestDirectedBreakpoint(0, 1, "n3")));
-		assertNotNull(factory.findRealignedSAMRecord(new TestDirectedBreakpoint(0, 1, "n2")));
-		assertNotNull(factory.findRealignedSAMRecord(new TestDirectedBreakpoint(0, 2, "n4")));
-		assertNotNull(factory.findRealignedSAMRecord(new TestDirectedBreakpoint(1, 1, "n5")));
+		assertNotNull(factory.findRealignedSAMRecord(new TestDirectedBreakend(0, 1, "n1")));
+		assertNotNull(factory.findRealignedSAMRecord(new TestDirectedBreakend(0, 1, "n3")));
+		assertNotNull(factory.findRealignedSAMRecord(new TestDirectedBreakend(0, 1, "n2")));
+		assertNotNull(factory.findRealignedSAMRecord(new TestDirectedBreakend(0, 2, "n4")));
+		assertNotNull(factory.findRealignedSAMRecord(new TestDirectedBreakend(1, 1, "n5")));
 	}
 	@Test(expected=IllegalStateException.class)
 	public void should_fail_during_non_sequential_traversal() {
@@ -69,7 +94,7 @@ public class SequentialRealignedBreakpointFactoryTest extends TestHelper {
 				withReadName("0#1#n1", Read(0, 1, 1)),
 				withReadName("1#1#n5", Read(0, 1, 1))
 				));
-		assertNotNull(factory.findRealignedSAMRecord(new TestDirectedBreakpoint(1, 1, "n5")));
-		assertNull(factory.findRealignedSAMRecord(new TestDirectedBreakpoint(0, 1, "n1")));
+		assertNotNull(factory.findRealignedSAMRecord(new TestDirectedBreakend(1, 1, "n5")));
+		assertNull(factory.findRealignedSAMRecord(new TestDirectedBreakend(0, 1, "n1")));
 	}
 }

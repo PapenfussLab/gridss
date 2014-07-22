@@ -152,8 +152,8 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 			.direction(direction)
 			.assemblyBases(getBaseCalls(path))
 			.assemblyBaseQuality(getBaseQuals(path))
-			.contributingEvidence(getSupportingEvidence(path))
-			.assembledBaseCount(getSAMRecordBaseCount(path));
+			.contributingEvidence(support)
+			.assembledBaseCount(getEvidenceBaseCount(path, false), getEvidenceBaseCount(path, true));
 		return builder;
 	}
 }

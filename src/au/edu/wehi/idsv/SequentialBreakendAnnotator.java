@@ -48,7 +48,7 @@ public class SequentialBreakendAnnotator {
 		flushBefore(loc.referenceIndex, loc.start);
 		addUntil(loc.referenceIndex, loc.end);
 		
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(context, variant.getBreakendSummary());
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(context, variant);
 		annotateReferenceCounts(builder, loc.referenceIndex, loc.start + (loc.direction == BreakendDirection.Forward ? 0 : 1));
 		
 		for (DirectedEvidence evidence : activeEvidence) {

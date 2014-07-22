@@ -1,44 +1,44 @@
 package au.edu.wehi.idsv;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
-import java.util.ArrayList;
-
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
-import org.junit.Test;
+import java.util.ArrayList;
 
-import au.edu.wehi.idsv.vcf.VcfAttributes;
+import org.junit.Test;
 
 public class IdsvVariantContextBuilderTest extends TestHelper {
 	@Test
 	public void evidenceID_should_be_ID() {
-		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext(), AES())
-			.breakend(new BreakendSummary(0, FWD, 1, 1, null), null);
+		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext())
+			.breakend(new BreakendSummary(0, FWD, 1, 1), null);
 		builder.id("testID");
-		VariantContextDirectedEvidence bp = builder.make();
+		VariantContextDirectedEvidence bp = (VariantContextDirectedEvidence)builder.make();
 		
 		assertEquals("testID", bp.getID());
 		assertEquals("testID", bp.getEvidenceID());
 	}
 	@Test
 	public void should_lookup_reference_base() {
-		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext(), AES());
-		builder.breakend(new BreakendSummary(0, BreakendDirection.Forward, 1, 1, null), null);
-		VariantContextDirectedEvidence bp = builder.make();
+		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());
+		builder.breakend(new BreakendSummary(0, BreakendDirection.Forward, 1, 1), null);
+		VariantContextDirectedEvidence bp = (VariantContextDirectedEvidence)builder.make();
 		
 		assertEquals("A", bp.getReference().getDisplayString());
 	}
 	@Test
-	public void should_round_trip_AssemblerProgram() {
-		VariantContextDirectedEvidence dba = AE();
-		assertEquals("testAssembler", dba.getAssemblerProgram());
-		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
-		assertEquals("testAssembler", dba.getAssemblerProgram());
+	public void should_round_trip_breakend_quals() {
+		byte[] quals = new byte[] { 1, 20, 43 };
+		VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)minimalBreakend()
+				.breakend(new BreakendSummary(0, FWD, 1, 1), B("AAA"), quals)
+				.make();
+		v = (VariantContextDirectedEvidence)IdsvVariantContext.create(getContext(), null, v);
+		assertArrayEquals(quals, v.getBreakendQuality());
 	}
 	@Test
 	public void should_round_trip_getAssemblyConsensus() {
@@ -77,10 +77,8 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		assertTrue(dba.getID().startsWith("testAssembler-polyA:1-f"));
 	}
 	@Test
-	public void phred_should_be_evidence_score() {
-		VariantContextDirectedEvidence dba = AE();
-		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
-		assertEquals(dba.getBreakendSummary().evidence.getScore(), dba.getPhredScaledQual(), 0);
+	public void phred_should_be_variant_qual() {
+		assertEquals(7.5, minimalBreakend().phredScore(7.5).make().getPhredScaledQual(), 0);
 	}
 	@Test
 	public void should_generate_single_breakend_f() {
@@ -99,14 +97,6 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		assertEquals(".GTA", dba.getAlternateAllele(0).getDisplayString());
 	}
 	@Test
-	public void should_set_realignment_failure_flag() {
-		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext(), AES())
-			.breakend(new BreakendSummary(0, FWD, 1, 1, null), null)
-			.realignmentFailed();
-		VariantContextDirectedEvidence bp = builder.make();
-		assertTrue(bp.hasAttribute(VcfAttributes.REALIGNMENT_FAILURE.attribute()));
-	}
-	@Test
 	public void anchor_should_use_reference_base_not_assembly_base() {
 		String alt = AB().assemblyBases(B("TTT")).makeVariant().getAlternateAllele(0).getDisplayString();
 		assertEquals('A', alt.charAt(0));
@@ -118,10 +108,9 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		realigned.setReadBases(realignPositive ? B(bpString) : B(SequenceUtil.reverseComplement(bpString)));
 		realigned.setReadNegativeStrandFlag(!realignPositive);
 		RealignedBreakpoint rbp = new RealignedBreakpoint(getContext(), dba.getBreakendSummary(), "", realigned);
-		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext(), AES(), dba)
-			.breakend(rbp.getBreakpointSummary(), rbp.getInsertedSequence())
-			.evidence(rbp.getBreakpointSummary().evidence);
-		dba = builder.make();
+		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext(), dba)
+			.breakend(rbp.getBreakpointSummary(), rbp.getInsertedSequence());
+		dba = (VariantContextDirectedEvidence)builder.make();
 		
 		assertEquals(expectedAllele, dba.getAlternateAllele(0).getDisplayString());
 		return dba;
@@ -153,44 +142,23 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	}
 	@Test
 	public void breakend_should_be_vcf_sv_breakend() {
-		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext(), AES())
-			.breakend(new BreakendSummary(0, BreakendDirection.Forward, 1, 1, null), null);
+		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext())
+			.breakend(new BreakendSummary(0, BreakendDirection.Forward, 1, 1), null);
 		
 		assertEquals("BND", builder.make().getAttributeAsString("SVTYPE", ""));
 	}
 	@Test
 	public void breakpoint_should_be_vcf_sv_breakend() {
-		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext(), AES())
-			.breakpoint(new BreakpointSummary(0, BreakendDirection.Forward, 1, 1, 0, BreakendDirection.Forward, 1, 1, null), null);
+		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext())
+			.breakpoint(new BreakpointSummary(0, BreakendDirection.Forward, 1, 1, 0, BreakendDirection.Forward, 1, 1), null);
 		
 		assertEquals("BND", builder.make().getAttributeAsString("SVTYPE", ""));
 	}
 	@Test
-	public void evidence_should_round_trip() {
-		for (VcfAttributes a : VcfAttributes.evidenceValues()) {
-			EvidenceMetrics em = new EvidenceMetrics();
-			em.set(a, 1);
-			IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext(), AES())
-				.breakend(new BreakendSummary(0, FWD, 1, 1, null), null)
-				.evidence(em);
-			builder = new IdsvVariantContextBuilder(getContext(), AES(), builder.make());
-			
-			assertEquals(1, builder.make().getBreakendSummary().evidence.get(a));
-		}
-	}
-	@Test
-	public void evidence_score_should_match_vcf_phred_score() {
-		EvidenceMetrics m = new EvidenceMetrics(10);
-		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext(), AES())
-			.breakend(new BreakendSummary(0, FWD, 1, 1, null), null)
-			.evidence(m);
-		assertEquals(10, builder.make().getPhredScaledQual(), 0);
-	}
-	@Test
 	public void should_round_trip_inexact_breakend() {
-		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext(), AES());
-		builder.breakend(new BreakendSummary(1, FWD, 2, 4, null), null);
-		VariantContextDirectedEvidence v = new IdsvVariantContextBuilder(getContext(), AES(), builder.make()).make();
+		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());
+		builder.breakend(new BreakendSummary(1, FWD, 2, 4), null);
+		VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext(), builder.make()).make();
 		assertEquals(1, v.getBreakendSummary().referenceIndex);
 		assertEquals(FWD, v.getBreakendSummary().direction);
 		assertEquals(2, v.getBreakendSummary().start);
@@ -198,9 +166,9 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_round_trip_inexact_breakpoint() {
-		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext(), AES());
-		builder.breakpoint(new BreakpointSummary(1, FWD, 2, 4, 3, BWD, 7, 9, null), null);
-		VariantContextDirectedEvidence v = new IdsvVariantContextBuilder(getContext(), AES(), builder.make()).make();
+		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());
+		builder.breakpoint(new BreakpointSummary(1, FWD, 2, 4, 3, BWD, 7, 9), null);
+		VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext(), builder.make()).make();
 		BreakpointSummary bp = (BreakpointSummary)v.getBreakendSummary();
 		assertEquals(1, bp.referenceIndex);
 		assertEquals(FWD, bp.direction);
@@ -212,6 +180,13 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		assertEquals(9, bp.end2);
 	}
 	@Test
+	public void should_expose_evidence_source() {
+		EvidenceSource source = AES();
+		IdsvVariantContextBuilder builder = minimalBreakend();
+		builder.source(source);
+		assertEquals(source, builder.make().getEvidenceSource());
+	}
+	@Test
 	public void should_write_breakpoint_in_vcf41_mode() {
 		ProcessingContext context = new ProcessingContext(
 				getFSContext(),
@@ -220,9 +195,9 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 				new AssemblyParameters(),
 				new RealignmentParameters(),
 				SMALL_FA_FILE, false, true);
-		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context, AES());
-		builder.breakend(new BreakendSummary(0,  FWD,  1,  1, null), "ACGT");
-		VariantContextDirectedEvidence vc = builder.make();
+		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
+		builder.breakend(new BreakendSummary(0,  FWD,  1,  1), "ACGT");
+		VariantContextDirectedEvidence vc = (VariantContextDirectedEvidence)builder.make();
 		assertEquals(-1, vc.getAlternateAlleles().get(0).getDisplayString().indexOf("."));
 	}
 	@Test
@@ -234,9 +209,9 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 				new AssemblyParameters(),
 				new RealignmentParameters(),
 				SMALL_FA_FILE, false, true);
-		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context, AES());
-		builder.breakend(new BreakendSummary(0,  FWD,  1,  2, null), "ACGT");
-		VariantContextDirectedEvidence v = new IdsvVariantContextBuilder(context, AES(), builder.make()).make();
+		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
+		builder.breakend(new BreakendSummary(0,  FWD,  1,  2), "ACGT");
+		VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(context, builder.make()).make();
 		assertEquals(0, v.getBreakendSummary().referenceIndex);
 		assertEquals(FWD, v.getBreakendSummary().direction);
 		assertEquals(1, v.getBreakendSummary().start);
@@ -244,9 +219,9 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		assertEquals(1, v.getStart());
 		assertEquals(1, v.getEnd()); // breakend is called at the first position of the interval
 		
-		builder = new IdsvVariantContextBuilder(context, AES());
-		builder.breakend(new BreakendSummary(0,  BWD,  1,  2, null), "ACGT");
-		v = new IdsvVariantContextBuilder(context, AES(), builder.make()).make();
+		builder = new IdsvVariantContextBuilder(context);
+		builder.breakend(new BreakendSummary(0,  BWD,  1,  2), "ACGT");
+		v = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(context, builder.make()).make();
 		assertEquals(0, v.getBreakendSummary().referenceIndex);
 		assertEquals(BWD, v.getBreakendSummary().direction);
 		assertEquals(1, v.getBreakendSummary().start);
@@ -256,7 +231,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	}
 	@Test(expected=IllegalStateException.class)
 	public void should_require_stop_set() {
-		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext(), AES());
+		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());
 		builder.chr("polyA")
 			.start(1)
 			.alleles("A", "<INS>")
