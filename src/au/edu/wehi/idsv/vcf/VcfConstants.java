@@ -1,6 +1,8 @@
 package au.edu.wehi.idsv.vcf;
 
+import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFStandardHeaderLines;
 
 public class VcfConstants {
 	public static final String VCF42BREAKEND = ".";
@@ -28,6 +30,7 @@ public class VcfConstants {
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.CONFIDENCE_INTERVAL_START_POSITION);
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.IMPRECISE);
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.MATE_BREAKEND_ID);
+		header.addMetaDataLine(VCFStandardHeaderLines.getInfoLine(VCFConstants.SOMATIC_KEY));
 		
 		// Retrogene headers		
 		//header.addMetaDataLine(new VCFInfoHeaderLine(IdsvConstants.GENE_ID, 1, VCFHeaderLineType.String, "GTF gene_id of gene containing exons"));

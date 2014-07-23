@@ -73,18 +73,18 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		double rpllrt = parent.getAttributeAsDoubleListOffset(VcfAttributes.READPAIR_LOG_LIKELIHOOD_RATIO.attribute(), 1, 0d);
 		for (NonReferenceReadPair e : rpList) {
 			if (e.getEvidenceSource().isTumour()) {
-				rpllrt += PhredLogLikelihoodRatioModel.llr(e);
+				rpllrt += Models.llr(e);
 			} else {
-				rpllrn += PhredLogLikelihoodRatioModel.llr(e);
+				rpllrn += Models.llr(e);
 			}
 		}
 		double scllrn = parent.getAttributeAsDoubleListOffset(VcfAttributes.SOFTCLIP_LOG_LIKELIHOOD_RATIO.attribute(), 0, 0d);
 		double scllrt = parent.getAttributeAsDoubleListOffset(VcfAttributes.SOFTCLIP_LOG_LIKELIHOOD_RATIO.attribute(), 1, 0d);
 		for (SoftClipEvidence e : scList) {
 			if (e.getEvidenceSource().isTumour()) {
-				scllrt += PhredLogLikelihoodRatioModel.llr(e);
+				scllrt += Models.llr(e);
 			} else {
-				scllrn += PhredLogLikelihoodRatioModel.llr(e);
+				scllrn += Models.llr(e);
 			}
 		}
 		
@@ -276,7 +276,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		public int compare(SoftClipEvidence o1, SoftClipEvidence o2) {
 			  return ComparisonChain.start()
 			        .compareTrueFirst(o1 instanceof RealignedSoftClipEvidence, o2 instanceof RealignedSoftClipEvidence)
-			        .compare(PhredLogLikelihoodRatioModel.llr(o2), PhredLogLikelihoodRatioModel.llr(o2)) // desc
+			        .compare(Models.llr(o2), Models.llr(o2)) // desc
 			        .result();
 		  }
 	};
@@ -284,7 +284,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		public int compare(VariantContextDirectedEvidence o1, VariantContextDirectedEvidence o2) {
 			  return ComparisonChain.start()
 			        .compareTrueFirst(o1 instanceof VariantContextDirectedBreakpoint, o2 instanceof VariantContextDirectedBreakpoint)
-			        .compare(PhredLogLikelihoodRatioModel.llr(o2), PhredLogLikelihoodRatioModel.llr(o2)) // desc
+			        .compare(Models.llr(o2), Models.llr(o2)) // desc
 			        .result();
 		  }
 	};

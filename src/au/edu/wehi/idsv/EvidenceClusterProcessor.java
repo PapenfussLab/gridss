@@ -53,7 +53,7 @@ public class EvidenceClusterProcessor implements Iterable<VariantContextDirected
 				lowDir = highDir;
 				highDir = tmpDir;
 			}
-			GraphNode node = new GraphNode(startX, endX, startY, endY, (float)PhredLogLikelihoodRatioModel.llr(evidence));
+			GraphNode node = new GraphNode(startX, endX, startY, endY, (float)Models.llr(evidence));
 			addNode(lowDir, highDir, node);
 		} else {
 			if (filterOut(loc)) return;

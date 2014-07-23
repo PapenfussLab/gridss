@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.variant.vcf.VCFConstants;
 
 import java.util.Set;
 
@@ -439,5 +440,40 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 					.make());
 		builder.addEvidence(SCE(FWD, Read(0, 2, "1M5S")));
 		builder.make();
+	}
+	@Test
+	public void should_call_germline_if_evidence_mixed() {
+		VariantContextDirectedEvidence e = b(new sc(1, true), new sc(2, false));
+		assertFalse(e.hasAttribute(VCFConstants.SOMATIC_KEY));
+	}
+	@Test
+	public void should_call_somatic_if_no_normal_evidence() {
+		VariantContextDirectedEvidence e = b(new sc(1, true));
+		assertTrue(e.hasAttribute(VCFConstants.SOMATIC_KEY));
+	}
+	@Test
+	public void should_call_somatic_from_assembly_evidence() {
+		ProcessingContext pc = getContext();
+		MockSAMEvidenceSource tes = new MockSAMEvidenceSource(pc);
+		tes.isTumour = true;
+		Set<DirectedEvidence> support = Sets.newHashSet();
+		support.add(SCE(BWD, tes, Read(0, 10, "3S5M")));
+		support.add(SCE(BWD, tes, Read(0, 10, "3S6M")));
+		support.add(NRRP(tes, OEA(0, 16, "5M", false)));
+		support.add(NRRP(tes, OEA(0, 17, "5M", false)));
+		support.add(NRRP(tes, DP(0, 1, "2M", true, 0, 15, "5M", false)));
+		support.add(NRRP(tes, DP(0, 2, "2M", true, 0, 16, "5M", false)));
+		AssemblyBuilder sb = new AssemblyBuilder(pc, AES())
+			.direction(BWD)
+			.anchorLength(5)
+			.referenceAnchor(0, 10)
+			.assemblerName("assemblerName")
+			.assemblyBases(B("CGTAAAAT"))
+			.assembledBaseCount(13, 45)
+			.contributingEvidence(support)
+			.assemblyBaseQuality(new byte[] { 0,1,2,3,4,5,6,7});
+		VariantContextDirectedEvidence v = sb.makeVariant();
+		VariantContextDirectedEvidence e = b(v);
+		assertTrue(e.hasAttribute(VCFConstants.SOMATIC_KEY));
 	}
 }

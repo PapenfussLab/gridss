@@ -204,7 +204,7 @@ public class AssemblyBuilder {
 		return (VariantContextDirectedEvidence)recalculatePhredLLR(processContext, (VariantContextDirectedEvidence)builder.make());
 	}
 	private static VariantContextDirectedEvidence recalculatePhredLLR(ProcessingContext processContext, VariantContextDirectedEvidence assembly) {
-		double llr = PhredLogLikelihoodRatioModel.llr(assembly);
+		double llr = Models.llr(assembly);
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(processContext, assembly);
 		builder.attribute(VcfAttributes.ASSEMBLY_LOG_LIKELIHOOD_RATIO, llr);
 		builder.attribute(VcfAttributes.LOG_LIKELIHOOD_RATIO, llr);
