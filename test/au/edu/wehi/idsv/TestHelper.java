@@ -511,6 +511,11 @@ public class TestHelper {
 	public static MockSAMEvidenceSource SES() {
 		return new MockSAMEvidenceSource(getContext());
 	}
+	public static MockSAMEvidenceSource SES(boolean isTumour) {
+		MockSAMEvidenceSource e = new MockSAMEvidenceSource(getContext());
+		e.isTumour = isTumour;
+		return e;
+	}
 	public static MockSAMEvidenceSource SES(int maxFragmentSize) {
 		MockSAMEvidenceSource ses = SES();
 		ses.getMetrics().maxFragSize = maxFragmentSize;

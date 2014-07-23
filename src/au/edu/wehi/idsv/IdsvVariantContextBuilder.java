@@ -64,7 +64,7 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 	 * @return builder
 	 */
 	public IdsvVariantContextBuilder breakend(BreakendSummary loc, byte[] untemplatedSequence, byte[] untemplatedBaseQual) {
-		return dobreak(loc, new String(untemplatedSequence, StandardCharsets.US_ASCII), untemplatedBaseQual);
+		return dobreak(loc, untemplatedSequence == null ? "" : new String(untemplatedSequence, StandardCharsets.US_ASCII), untemplatedBaseQual);
 	}
 	/**
 	 * Sets the variant to the given breakpoint
@@ -124,6 +124,8 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 			} else {
 				rmAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute());
 			}
+		} else {
+			rmAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute());
 		}
 		if (untemplatedBaseQual != null && untemplatedBaseQual.length != 0) {
 			try {
@@ -145,7 +147,7 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 		if (phred < 0 || Double.isInfinite(phred) || Double.isNaN(phred)) {
 			log10PError(VariantContext.NO_LOG10_PERROR);
 		} else {
-			log10PError((phred) / -10);
+			log10PError(phred / -10);
 		}
 		return this;
 	}

@@ -17,8 +17,8 @@ public enum VcfAttributes {
 	READPAIR_MAPPED_READPAIR ("RPRM", 2, VCFHeaderLineType.Integer, "Count of read pair evidence that maps to a remote breakend (Normal,Tumour)"),
 	READPAIR_MAPQ_LOCAL_MAX ("RPMQLM", 2, VCFHeaderLineType.Integer, "Local maximum MAPQ of read pair evidence (Normal,Tumour)"),
 	READPAIR_MAPQ_LOCAL_TOTAL ("RPMQLT", 2, VCFHeaderLineType.Integer, "Local total MAPQ of read pair evidence (Normal,Tumour)"),
-	READPAIR_MAPQ_REMOTE_MAX ("RPMQR", 2, VCFHeaderLineType.Integer, "Maxmimum remote MAPQ of read pair evidence (Normal,Tumour)"),
-	READPAIR_MAPQ_REMOTE_TOTAL ("RPMQR", 2, VCFHeaderLineType.Integer, "Total remote MAPQ of read pair evidence (Normal,Tumour)"),
+	READPAIR_MAPQ_REMOTE_MAX ("RPMQRM", 2, VCFHeaderLineType.Integer, "Maxmimum remote MAPQ of read pair evidence (Normal,Tumour)"),
+	READPAIR_MAPQ_REMOTE_TOTAL ("RPMQRT", 2, VCFHeaderLineType.Integer, "Total remote MAPQ of read pair evidence (Normal,Tumour)"),
 	//READPAIR_LENGTH_LOCAL ("RPBLL", 6, VCFHeaderLineType.Integer, AggregationMethod., "Local length (in bases) of read pair evidence (Overall,Normal,Tumour, totals then maximums)"),
 	//READPAIR_LENGTH_REMOTE ("RPBLR", 6, VCFHeaderLineType.Integer, AggregationMethod., "Remote length (in bases) of read pair evidence (Overall,Normal,Tumour, totals then maximums)"),
 	//READPAIR_BASE_COUNT_LOCAL ("RPBCL", 6, VCFHeaderLineType.Integer, AggregationMethod., "Local number of bases read pair evidence (Overall,Normal,Tumour, totals then maximums)"),
@@ -62,7 +62,7 @@ public enum VcfAttributes {
 	ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX ("A_SCCLM", 2, VCFHeaderLineType.Integer, "Maximum soft clip length of assembled reads (Normal,Tumour)"),
 	ASSEMBLY_CONSENSUS ("A_AB", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Anomolous read consensus assembly sequence"),
 	ASSEMBLY_PROGRAM ("A_AP", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Assembly algorithm"),
-	ASSEMBLY_BREAKEND_QUALS ("A_BQ", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Assembly breakend base qualities (URL encoding of fastq phred(+33) base qualities)"),
+	ASSEMBLY_BREAKEND_QUALS ("A_BQ", 1, VCFHeaderLineType.String, "Assembly breakend base qualities (percent encoding of fastq phred(+33) base qualities)"),
 	
 	CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY ("CIRPOS", 2, VCFHeaderLineType.Integer, "Confidence interval around remote breakend POS for imprecise variants");
 	public enum Subset {

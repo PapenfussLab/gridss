@@ -11,7 +11,7 @@ public class PhredLogLikelihoodRatioModel {
 	 * Log-likelihood ratio of existence of a structural variation supporting allele vs all reference alleles
 	 * @return Log-likelihood ratio
 	 */
-	public static float llr(DirectedEvidence e) {
+	public static double llr(DirectedEvidence e) {
 		if (e == null) throw new NullPointerException();
 		if (e instanceof RealignedSoftClipEvidence) {
 			return rsc((RealignedSoftClipEvidence)e);
@@ -26,27 +26,27 @@ public class PhredLogLikelihoodRatioModel {
 			if (vcde.isSimpleAssembly()) {
 				return assembly(vcde);
 			}
-			return llr((VariantContextDirectedEvidence)e);
+			return (double)vcde.getPhredScaledQual();
 		}
 		throw new IllegalArgumentException("Unknown evidence type " + e.getClass().toString());
 	}
-	private static float assembly(VariantContextDirectedEvidence e) {
+	private static double assembly(VariantContextDirectedEvidence e) {
 		if (e.getMappedEvidenceCountAssembly() > 0) {
 			return Math.min(25, e.getMapqAssemblyRemoteMax()) * e.getAssemblySupportCount(null);
 		} else {
 			return 15 * e.getAssemblySupportCountReadPair(null) + 20 * e.getAssemblySupportCountSoftClip(null);
 		}
 	}
-	private static float oea(UnmappedMateReadPair e) {
+	private static double oea(UnmappedMateReadPair e) {
 		return Math.min(15, e.getLocalMapq());
 	}
-	private static float dp(DiscordantReadPair e) {
+	private static double dp(DiscordantReadPair e) {
 		return Math.min(15, Math.min(e.getLocalMapq(), e.getRemoteMapq()));
 	}
-	private static float sc(SoftClipEvidence e) {
+	private static double sc(SoftClipEvidence e) {
 		return Math.min(Math.min(10, e.getSoftClipLength()), e.getLocalMapq());
 	}
-	private static float rsc(RealignedSoftClipEvidence e) {
+	private static double rsc(RealignedSoftClipEvidence e) {
 		return Math.min(20, Math.min(e.getRemoteMapq(), e.getLocalMapq()));
 	}
 }

@@ -278,4 +278,73 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 				.make();
 		assertEquals(3, v.getAssemblySupportCountReadPair(null));
 	}
+	@Test
+	public void getAnchorSequenceString_should_return_entire_assembly_anchor() {
+		assertEquals("GAA", ((VariantContextDirectedEvidence)minimalBreakend()
+				.breakend(new BreakendSummary(0, FWD, 1, 1), "GTAC")
+				.attribute(VcfAttributes.ASSEMBLY_CONSENSUS.attribute(), "GAATT")
+				.attribute(VcfAttributes.ASSEMBLY_LENGTH_LOCAL_MAX.attribute(), 3)
+				.make())
+			.getAnchorSequenceString());
+		assertEquals("ATT", ((VariantContextDirectedEvidence)minimalBreakend()
+				.breakend(new BreakendSummary(0, BWD, 1, 1), "GTAC")
+				.attribute(VcfAttributes.ASSEMBLY_CONSENSUS.attribute(), "GAATT")
+				.attribute(VcfAttributes.ASSEMBLY_LENGTH_LOCAL_MAX.attribute(), 3)
+				.make())
+			.getAnchorSequenceString());
+	}
+	@Test
+	public void percent_encoding_should_round_trip() {
+		byte[] q = new byte[90];
+		byte[] b = new byte[90];
+		for (int i = 0; i < b.length; i++) {
+			q[i] = (byte)i;
+			b[i] = (byte)'A';
+		}
+		VariantContextDirectedEvidence e = new AssemblyBuilder(getContext(), AES())
+			.referenceAnchor(0, 1)
+			.anchorLength(0)
+			.direction(FWD)
+			.assemblyBases(b)
+			.assemblyBaseQuality(q)
+			.makeVariant();
+		e = (VariantContextDirectedEvidence)(IdsvVariantContext.create(getContext(), null, e));
+		e = (VariantContextDirectedEvidence)(IdsvVariantContext.create(getContext(), null, e));
+		assertArrayEquals(q,  e.getBreakendQuality());
+	}
+	@Test
+	public void percent_encoding_should_not_include_VCF_reserved_chars() {
+		byte[] q = new byte[90];
+		byte[] b = new byte[90];
+		for (int i = 0; i < b.length; i++) {
+			q[i] = (byte)i;
+			b[i] = (byte)'A';
+		}
+		VariantContextDirectedEvidence e = new AssemblyBuilder(getContext(), AES())
+			.referenceAnchor(0, 1)
+			.anchorLength(0)
+			.direction(FWD)
+			.assemblyBases(b)
+			.assemblyBaseQuality(q)
+			.makeVariant();
+		for (char c : new char[] { '\t', ' ', '\n', ',', ';', '='}) {
+			assertFalse(e.getAttributeAsString(VcfAttributes.ASSEMBLY_BREAKEND_QUALS.attribute(), null).contains("" + c));
+		}
+	}
+	@Test
+	public void unanchored_read_should_expose_qual_through_getBreakendQuality() {
+		byte[] q = new byte[90];
+		byte[] b = new byte[90];
+		for (int i = 0; i < b.length; i++) {
+			q[i] = (byte)i;
+			b[i] = (byte)'A';
+		}
+		VariantContextDirectedEvidence e = new AssemblyBuilder(getContext(), AES())
+			.mateAnchor(0, 1)
+			.direction(FWD)
+			.assemblyBases(b)
+			.assemblyBaseQuality(q)
+			.makeVariant();
+		assertArrayEquals(q,  e.getBreakendQuality());
+	}
 }

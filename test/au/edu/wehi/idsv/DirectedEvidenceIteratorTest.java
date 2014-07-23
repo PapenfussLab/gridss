@@ -183,9 +183,9 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 	}
 	@Test
 	public void should_ignore_filtered_variants() {
-		VariantContextDirectedEvidence assembly = AB()
-				.contributingEvidence(Lists.newArrayList((DirectedEvidence)SCE(FWD, Read(0, 1, "1M2S"))))
-				.makeVariant();
+		VariantContextDirectedEvidence assembly = (VariantContextDirectedEvidence)minimalBreakend()
+				.filter("FILTERED")
+				.make();
 		vcf.add(assembly);
 		go();
 		assertEquals(0, out.size());

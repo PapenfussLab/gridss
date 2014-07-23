@@ -145,7 +145,7 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		return location;
 	}
 	@Override
-	public EvidenceSource getEvidenceSource() {
+	public SAMEvidenceSource getEvidenceSource() {
 		return source;
 	}
 	@Override

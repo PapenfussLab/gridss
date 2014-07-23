@@ -119,8 +119,8 @@ public class AssemblyBuilder {
 		List<SoftClipEvidence> sc = Lists.newArrayList(Iterables.filter(evidence, SoftClipEvidence.class));
 		List<NonReferenceReadPair> rpNormal = Lists.newArrayList(Iterables.filter(rp, new Predicate<NonReferenceReadPair>() { public boolean apply(NonReferenceReadPair e) { return !((SAMEvidenceSource)e.getEvidenceSource()).isTumour(); } }) );
 		List<NonReferenceReadPair> rpTumour = Lists.newArrayList(Iterables.filter(rp, new Predicate<NonReferenceReadPair>() { public boolean apply(NonReferenceReadPair e) { return ((SAMEvidenceSource)e.getEvidenceSource()).isTumour(); } }) );
-		List<SoftClipEvidence> scNormal = Lists.newArrayList(Iterables.filter(sc, new Predicate<SoftClipEvidence>() { public boolean apply(SoftClipEvidence e) { return ((SAMEvidenceSource)e.getEvidenceSource()).isTumour(); } }) );
-		List<SoftClipEvidence> scTumour = Lists.newArrayList(Iterables.filter(sc, new Predicate<SoftClipEvidence>() { public boolean apply(SoftClipEvidence e) { return !((SAMEvidenceSource)e.getEvidenceSource()).isTumour(); } }) );
+		List<SoftClipEvidence> scNormal = Lists.newArrayList(Iterables.filter(sc, new Predicate<SoftClipEvidence>() { public boolean apply(SoftClipEvidence e) { return !((SAMEvidenceSource)e.getEvidenceSource()).isTumour(); } }) );
+		List<SoftClipEvidence> scTumour = Lists.newArrayList(Iterables.filter(sc, new Predicate<SoftClipEvidence>() { public boolean apply(SoftClipEvidence e) { return ((SAMEvidenceSource)e.getEvidenceSource()).isTumour(); } }) );
 		
 		
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(processContext);
@@ -179,7 +179,7 @@ public class AssemblyBuilder {
 					dir,
 					Math.max(mateAnchor - (dir == BreakendDirection.Backward ? breakpointWindow : 0), 1),
 					Math.min(mateAnchor + (dir == BreakendDirection.Forward ? breakpointWindow : 0), processContext.getDictionary().getSequence(mateAnchorReferenceIndex).getSequenceLength()));
-			builder.breakend(summary, ""); // no untemplated sequence as we don't have an assembly of the breakend itself
+			builder.breakend(summary, null, quals); // no untemplated sequence as we don't have an assembly of the breakend itself
 			builder.id(String.format("%s-%s:%d-%s-%d",
 					assembler,
 					processContext.getDictionary().getSequence(mateAnchorReferenceIndex).getSequenceName(),
@@ -204,9 +204,10 @@ public class AssemblyBuilder {
 		return (VariantContextDirectedEvidence)recalculatePhredLLR(processContext, (VariantContextDirectedEvidence)builder.make());
 	}
 	private static VariantContextDirectedEvidence recalculatePhredLLR(ProcessingContext processContext, VariantContextDirectedEvidence assembly) {
-		float llr = PhredLogLikelihoodRatioModel.llr(assembly);
+		double llr = PhredLogLikelihoodRatioModel.llr(assembly);
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(processContext, assembly);
 		builder.attribute(VcfAttributes.ASSEMBLY_LOG_LIKELIHOOD_RATIO, llr);
+		builder.attribute(VcfAttributes.LOG_LIKELIHOOD_RATIO, llr);
 		builder.phredScore(llr);
 		return (VariantContextDirectedEvidence)builder.make();
 	}
@@ -229,7 +230,7 @@ public class AssemblyBuilder {
 		builder.attribute(VcfAttributes.ASSEMBLY_MAPQ_REMOTE_MAX, realignment.getMappingQuality());
 		builder.attribute(VcfAttributes.ASSEMBLY_MAPQ_REMOTE_TOTAL, realignment.getMappingQuality());
 		RealignedBreakpoint rbp = new RealignedBreakpoint(processContext, assembly.getBreakendSummary(), assembly.getAnchorSequenceString(), realignment);
-		builder.breakpoint(rbp.getBreakpointSummary(), rbp.getInsertedSequence());
+		builder.breakpoint(rbp.getBreakpointSummary(), rbp.getInsertedSequence()); // drop base quals as we can get them from the RealignedBreakpoint if needed
 		return recalculatePhredLLR(processContext, (VariantContextDirectedEvidence)builder.make());
 	}
 }

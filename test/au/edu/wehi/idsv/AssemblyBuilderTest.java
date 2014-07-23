@@ -5,15 +5,13 @@ import static org.junit.Assert.*;
 import java.util.Set;
 
 import htsjdk.samtools.SAMRecord;
-import htsjdk.variant.vcf.VCFHeaderLineCount;
-import htsjdk.variant.vcf.VCFHeaderLineType;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import au.edu.wehi.idsv.vcf.VcfAttributes.Subset;
 
@@ -62,13 +60,14 @@ public class AssemblyBuilderTest extends TestHelper {
 	@Test
 	public void soft_clip_size_filter_should_not_apply_to_unanchored_assembly() {
 		AssemblyBuilder ab = new AssemblyBuilder(getContext(), AES())
-			.assemblyBases(B("AA"))
+			.assemblyBases(B("AAAAAA"))
 			.mateAnchor(0, 1)
 			.direction(BWD)
 			.contributingEvidence(Lists.newArrayList(
 					(DirectedEvidence)NRRP(OEA(0, 1, "3M", false)),
 					(DirectedEvidence)NRRP(OEA(0, 1, "4M", false))));
-		assertFalse(ab.makeVariant().isFiltered());
+		VariantContextDirectedEvidence e = ab.makeVariant();
+		assertFalse(e.isFiltered());
 	}
 	@Test
 	public void should_assembly_base_qualities() {
@@ -283,7 +282,7 @@ public class AssemblyBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_CONSENSUS() {
-		assertEquals("CGTAAAAA", big().getAssemblyConsensus());
+		assertEquals("CGTAAAAT", big().getAssemblyConsensus());
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_PROGRAM() {
@@ -296,10 +295,11 @@ public class AssemblyBuilderTest extends TestHelper {
 	@Test
 	public void should_set_evidence_source() {
 		EvidenceSource es = AES();
-		assertEquals(es, new AssemblyBuilder(getContext(), AES())
+		assertEquals(es, new AssemblyBuilder(getContext(), es)
 			.direction(FWD)
 			.anchorLength(1)
 			.referenceAnchor(0, 1)
+			.assemblyBases(B("AAAA"))
 			.makeVariant().getEvidenceSource());
 	}
 	public VariantContextDirectedEvidence big() {
@@ -344,5 +344,39 @@ public class AssemblyBuilderTest extends TestHelper {
 	@Test
 	public void getAnchorSequenceString_should_return_entire_assembly_anchor() {
 		assertEquals("AAAAT", big().getAnchorSequenceString());
+	}
+	@Ignore("once we're a breakpoint, we don't care about our quality")
+	@Test
+	public void breakpoint_should_retain_base_quals() {
+		ProcessingContext pc = getContext();
+		MockSAMEvidenceSource nes = new MockSAMEvidenceSource(pc);
+		MockSAMEvidenceSource tes = new MockSAMEvidenceSource(pc);
+		tes.isTumour = true;
+		Set<DirectedEvidence> support = Sets.newHashSet();
+		support.add(SCE(BWD, nes, Read(0, 10, "4S1M")));
+		support.add(SCE(BWD, tes, Read(0, 10, "3S5M")));
+		support.add(SCE(BWD, tes, Read(0, 10, "3S6M")));
+		support.add(NRRP(nes, OEA(0, 15, "5M", false)));
+		support.add(NRRP(tes, OEA(0, 16, "5M", false)));
+		support.add(NRRP(tes, OEA(0, 17, "5M", false)));
+		support.add(NRRP(tes, DP(0, 1, "2M", true, 0, 15, "5M", false)));
+		support.add(NRRP(tes, DP(0, 2, "2M", true, 0, 16, "5M", false)));
+		support.add(NRRP(nes, DP(0, 3, "2M", true, 0, 17, "10M", false)));
+		AssemblyBuilder sb = new AssemblyBuilder(pc, AES())
+			.direction(BWD)
+			.anchorLength(5)
+			.referenceAnchor(0, 10)
+			.assemblerName("assemblerName")
+			.assemblyBases(B("GGTAAAAC"))
+			.assembledBaseCount(21, 23)
+			.contributingEvidence(support)
+			.assemblyBaseQuality(new byte[] { 7,6,5,4,3,2,1,0});
+		VariantContextDirectedEvidence v = sb.makeVariant();
+		SAMRecord ra = Read(1, 102, "1S1M1S");
+		ra.setReadBases(B("GGT"));
+		ra.setMappingQuality(7);
+		ra.setBaseQualities(new byte[] { 0,1,2});
+		VariantContextDirectedEvidence v2 = AssemblyBuilder.incorporateRealignment(getContext(), v, ra);
+		assertArrayEquals(new byte[] { 7,6,5,4,3,2,1,0}, v2.getBreakendQuality());
 	}
 }

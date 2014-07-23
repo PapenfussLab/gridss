@@ -66,20 +66,32 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private void setLlr() {
 		double assllr = parent.getAttributeAsDouble(VcfAttributes.ASSEMBLY_LOG_LIKELIHOOD_RATIO.attribute(), 0);
 		for (VariantContextDirectedEvidence e : assList) {
-			assllr += PhredLogLikelihoodRatioModel.llr(e);
+			//assllr += PhredLogLikelihoodRatioModel.llr(e); // no need to recalculate as we already have the result stored
+			assllr += e.getBreakendLogLikelihoodAssembly();
 		}
-		double scllr = parent.getAttributeAsDouble(VcfAttributes.SOFTCLIP_LOG_LIKELIHOOD_RATIO.attribute(), 0);
-		for (SoftClipEvidence e : scList) {
-			scllr += PhredLogLikelihoodRatioModel.llr(e);
-		}
-		double rpllr = parent.getAttributeAsDouble(VcfAttributes.READPAIR_LOG_LIKELIHOOD_RATIO.attribute(), 0);
+		double rpllrn = parent.getAttributeAsDoubleListOffset(VcfAttributes.READPAIR_LOG_LIKELIHOOD_RATIO.attribute(), 0, 0d);
+		double rpllrt = parent.getAttributeAsDoubleListOffset(VcfAttributes.READPAIR_LOG_LIKELIHOOD_RATIO.attribute(), 1, 0d);
 		for (NonReferenceReadPair e : rpList) {
-			assllr += PhredLogLikelihoodRatioModel.llr(e);
+			if (e.getEvidenceSource().isTumour()) {
+				rpllrt += PhredLogLikelihoodRatioModel.llr(e);
+			} else {
+				rpllrn += PhredLogLikelihoodRatioModel.llr(e);
+			}
 		}
+		double scllrn = parent.getAttributeAsDoubleListOffset(VcfAttributes.SOFTCLIP_LOG_LIKELIHOOD_RATIO.attribute(), 0, 0d);
+		double scllrt = parent.getAttributeAsDoubleListOffset(VcfAttributes.SOFTCLIP_LOG_LIKELIHOOD_RATIO.attribute(), 1, 0d);
+		for (SoftClipEvidence e : scList) {
+			if (e.getEvidenceSource().isTumour()) {
+				scllrt += PhredLogLikelihoodRatioModel.llr(e);
+			} else {
+				scllrn += PhredLogLikelihoodRatioModel.llr(e);
+			}
+		}
+		
 		attribute(VcfAttributes.ASSEMBLY_LOG_LIKELIHOOD_RATIO.attribute(), assllr);
-		attribute(VcfAttributes.SOFTCLIP_LOG_LIKELIHOOD_RATIO.attribute(), scllr);
-		attribute(VcfAttributes.READPAIR_LOG_LIKELIHOOD_RATIO.attribute(), rpllr);
-		double llr = assllr + scllr + rpllr;
+		attribute(VcfAttributes.SOFTCLIP_LOG_LIKELIHOOD_RATIO.attribute(), new double[] {scllrn, scllrt });
+		attribute(VcfAttributes.READPAIR_LOG_LIKELIHOOD_RATIO.attribute(), new double[] {rpllrn, rpllrt });
+		double llr = assllr + scllrn + scllrt + rpllrn + rpllrt;
 		attribute(VcfAttributes.LOG_LIKELIHOOD_RATIO.attribute(), llr);
 		phredScore(llr);
 	}
@@ -130,14 +142,18 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		setIntAttributeSumOrMax(list, VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX, true);
 		setStringAttributeConcat(list, VcfAttributes.ASSEMBLY_CONSENSUS);
 		setStringAttributeConcat(list, VcfAttributes.ASSEMBLY_PROGRAM);
-		setStringAttributeConcat(list, VcfAttributes.ASSEMBLY_BREAKEND_QUALS);
+		// setStringAttributeConcat(list, VcfAttributes.ASSEMBLY_BREAKEND_QUALS); // drop base quals
 	}
 	private void aggregateReadPairAttributes() {
-		attribute(VcfAttributes.READPAIR_EVIDENCE_COUNT, rpList.size());
+		attribute(VcfAttributes.READPAIR_EVIDENCE_COUNT, sumOrMax(rpList, new Function<NonReferenceReadPair, Integer>() {
+			@Override
+			public Integer apply(NonReferenceReadPair arg0) {
+				return 1;
+			}}, false));
 		attribute(VcfAttributes.READPAIR_MAPPED_READPAIR, sumOrMax(rpList, new Function<NonReferenceReadPair, Integer>() {
 			@Override
 			public Integer apply(NonReferenceReadPair arg0) {
-				return arg0 instanceof DiscordantReadPair ? 1 : 0;
+				return arg0 instanceof DirectedBreakpoint ? 1 : 0;
 			}}, false));
 		attribute(VcfAttributes.READPAIR_MAPQ_LOCAL_MAX, sumOrMax(rpList, new Function<NonReferenceReadPair, Integer>() {
 			@Override
@@ -152,33 +168,37 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		attribute(VcfAttributes.READPAIR_MAPQ_REMOTE_MAX, sumOrMax(rpList, new Function<NonReferenceReadPair, Integer>() {
 			@Override
 			public Integer apply(NonReferenceReadPair arg0) {
-				if (arg0 instanceof DiscordantReadPair) return ((DiscordantReadPair)arg0).getRemoteMapq();
+				if (arg0 instanceof DirectedBreakpoint) return ((DirectedBreakpoint)arg0).getRemoteMapq();
 				return 0;
 			}}, true));
 		attribute(VcfAttributes.READPAIR_MAPQ_REMOTE_TOTAL, sumOrMax(rpList, new Function<NonReferenceReadPair, Integer>() {
 			@Override
 			public Integer apply(NonReferenceReadPair arg0) {
-				if (arg0 instanceof DiscordantReadPair) return ((DiscordantReadPair)arg0).getRemoteMapq();
+				if (arg0 instanceof DirectedBreakpoint) return ((DirectedBreakpoint)arg0).getRemoteMapq();
 				return 0;
 			}}, false));
 	}
 	private void aggregateSoftClipAttributes() {
-		attribute(VcfAttributes.SOFTCLIP_EVIDENCE_COUNT, scList.size());
+		attribute(VcfAttributes.SOFTCLIP_EVIDENCE_COUNT, sumOrMax(scList, new Function<SoftClipEvidence, Integer>() {
+			@Override
+			public Integer apply(SoftClipEvidence arg0) {
+				return 1;
+			}}, false));
 		attribute(VcfAttributes.SOFTCLIP_MAPPED, sumOrMax(scList, new Function<SoftClipEvidence, Integer>() {
 			@Override
 			public Integer apply(SoftClipEvidence arg0) {
 				return arg0 instanceof RealignedSoftClipEvidence ? 1 : 0;
-			}}, true));
+			}}, false));
 		attribute(VcfAttributes.SOFTCLIP_MAPQ_REMOTE_TOTAL, sumOrMax(scList, new Function<SoftClipEvidence, Integer>() {
 			@Override
 			public Integer apply(SoftClipEvidence arg0) {
-				if (arg0 instanceof RealignedSoftClipEvidence) return ((RealignedSoftClipEvidence)arg0).getRemoteMapq();
+				if (arg0 instanceof DirectedBreakpoint) return ((DirectedBreakpoint)arg0).getRemoteMapq();
 				return 0;
 			}}, false));
 		attribute(VcfAttributes.SOFTCLIP_MAPQ_REMOTE_MAX, sumOrMax(scList, new Function<SoftClipEvidence, Integer>() {
 			@Override
 			public Integer apply(SoftClipEvidence arg0) {
-				if (arg0 instanceof RealignedSoftClipEvidence) return ((RealignedSoftClipEvidence)arg0).getRemoteMapq();
+				if (arg0 instanceof DirectedBreakpoint) return ((DirectedBreakpoint)arg0).getRemoteMapq();
 				return 0;
 			}}, true));
 		attribute(VcfAttributes.SOFTCLIP_LENGTH_REMOTE_TOTAL, sumOrMax(scList, new Function<SoftClipEvidence, Integer>() {
