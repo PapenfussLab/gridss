@@ -120,19 +120,11 @@ public class VariantCaller extends EvidenceProcessorBase {
 		try (VariantContextWriter vcfWriter = processContext.getVariantContextWriter(vcf)) {
 			toClose.add(vcfWriter);
 			log.info("Calling maximal cliques for ", vcf);
-			// Write out both sides of the breakend in order
-			// since the first breakend is always the lower genomic coordinate
-			// this will result in in-order output
-			PriorityQueue<VariantContextDirectedEvidence> variants = new PriorityQueue<VariantContextDirectedEvidence>(1024, IdsvVariantContext.ByLocationStart);
 			Iterator<VariantContextDirectedEvidence> it = processor.iterator();
 			while (it.hasNext()) {
 				VariantContextDirectedEvidence loc = it.next();
-				vcfWriter.add(variants.poll());
+				vcfWriter.add(loc);
 				writeProgress.record(processContext.getDictionary().getSequence(loc.getBreakendSummary().referenceIndex).getSequenceName(), loc.getBreakendSummary().start);
-			}
-			// Flush remaining
-			while (!variants.isEmpty()) {
-				vcfWriter.add(variants.poll());
 			}
 		}
 	}

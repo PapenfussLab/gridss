@@ -138,7 +138,9 @@ public class EvidenceClusterProcessor implements Iterable<VariantContextDirected
 			builder.breakpoint(breakpoint, null);
 			builder.phredScore(node.weight);
 			builder.attribute(VcfAttributes.LOG_LIKELIHOOD_RATIO_BREAKPOINT, node.weight);
-			return (VariantContextDirectedEvidence)builder.make();
+			VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)builder.make();
+			assert(v != null);
+			return v;
 		}
 		@Override
 		protected VariantContextDirectedEvidence computeNext() {

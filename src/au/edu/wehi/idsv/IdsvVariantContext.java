@@ -79,6 +79,8 @@ public class IdsvVariantContext extends VariantContext {
 		if ( x == null || x == VCFConstants.MISSING_VALUE_v4 ) return defaultValue;
 		if (x instanceof Integer) {
 			return Ints.asList((Integer)x);
+		} else if (x instanceof String) {
+			return Lists.newArrayList(Integer.parseInt((String)x));
 		} else if (x instanceof int[]) {
 			return Ints.asList((int[])variant.getAttribute(attrName));
 		} else if (x instanceof Iterable<?>) {
@@ -122,6 +124,8 @@ public class IdsvVariantContext extends VariantContext {
 		if ( x == null || x == VCFConstants.MISSING_VALUE_v4 ) return defaultValue;
 		if (x instanceof Double) {
 			return Doubles.asList((Double)x);
+		} else if (x instanceof String) {
+			return Lists.newArrayList(Double.parseDouble((String)x));
 		} else if (x instanceof double[]) {
 			return Doubles.asList((double[])variant.getAttribute(attrName));
 		} else if (x instanceof Iterable<?>) {
@@ -147,6 +151,8 @@ public class IdsvVariantContext extends VariantContext {
 		if ( x == null || x == VCFConstants.MISSING_VALUE_v4 ) return defaultValue;
 		if (x instanceof Float) {
 			return Floats.asList((Float)x);
+		}  else if (x instanceof String) {
+			return Lists.newArrayList(Float.parseFloat((String)x));
 		} else if (x instanceof float[]) {
 			return Floats.asList((float[])variant.getAttribute(attrName));
 		} else if (x instanceof Iterable<?>) {
