@@ -39,7 +39,7 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 		return CollectionUtil.maxInt(Iterables.transform(list, new Function<Byte, Integer>() {
 			@Override
 			public Integer apply(Byte arg0) {
-				return Byte.toUnsignedInt(arg0);
+				return (Integer)(int)(byte)arg0;
 			}}), 0);
 	}
 	@Override

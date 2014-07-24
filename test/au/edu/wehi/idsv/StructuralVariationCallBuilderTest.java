@@ -1,10 +1,6 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.variant.vcf.VCFConstants;
 
@@ -91,7 +87,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public void should_set_VcfAttribute_LOG_LIKELIHOOD_RATIO() {
 		assertTrue(big().hasAttribute(VcfAttributes.LOG_LIKELIHOOD_RATIO.attribute()));
 		assertNotNull(big().getAttribute(VcfAttributes.LOG_LIKELIHOOD_RATIO.attribute()));
-		assertNotEquals(0d, (double)big().getAttribute(VcfAttributes.LOG_LIKELIHOOD_RATIO.attribute()));
+		assertTrue((double)big().getAttribute(VcfAttributes.LOG_LIKELIHOOD_RATIO.attribute()) > 0d);
 	}
 	@Test
 	public void should_not_set_VcfAttribute_LOG_LIKELIHOOD_RATIO_BREAKPOINT() {
@@ -132,8 +128,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				new um(5, true),
 				new um(6, true),
 				new um(7, false));
-		assertNotEquals(0d, e.getBreakendLogLikelihoodReadPair(Subset.NORMAL));
-		assertNotEquals(0d, e.getBreakendLogLikelihoodReadPair(Subset.TUMOUR));
+		assertTrue(e.getBreakendLogLikelihoodReadPair(Subset.NORMAL) > 0d);
+		assertTrue(e.getBreakendLogLikelihoodReadPair(Subset.TUMOUR) > 0d);
 	}
 	@Test
 	public void should_set_VcfAttribute_READPAIR_MAPPED_READPAIR() {
@@ -231,8 +227,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				new rsc(6, true),
 				new rsc(7, true),
 				new rsc(8, false));
-		assertNotEquals(0d, e.getBreakendLogLikelihoodSoftClip(Subset.NORMAL));
-		assertNotEquals(0d, e.getBreakendLogLikelihoodSoftClip(Subset.TUMOUR));
+		assertTrue(e.getBreakendLogLikelihoodSoftClip(Subset.NORMAL) > 0d);
+		assertTrue(e.getBreakendLogLikelihoodSoftClip(Subset.TUMOUR) > 0d);
 	}
 	@Test
 	public void should_set_VcfAttribute_SOFTCLIP_MAPPED() {

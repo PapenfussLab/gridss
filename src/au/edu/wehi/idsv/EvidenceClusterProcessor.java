@@ -110,7 +110,7 @@ public class EvidenceClusterProcessor implements Iterable<VariantContextDirected
 	 *
 	 */
 	public class EvidenceClusterProcessorMaximalCliqueIterator extends AbstractIterator<VariantContextDirectedEvidence> { 
-		private final PriorityQueue<GraphNode> highBreakend = new PriorityQueue<GraphNode>(GraphNode.ByStartYXEndYX);
+		private final PriorityQueue<GraphNode> highBreakend = new PriorityQueue<GraphNode>(1024, GraphNode.ByStartYXEndYX);
 		private final PeekingIterator<GraphNode> it;
 		private final BreakendDirection lowDir;
 		private final BreakendDirection highDir;

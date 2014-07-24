@@ -217,11 +217,11 @@ public class AssemblyBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_LOG_LIKELIHOOD_RATIO() {
-		assertNotEquals(0d, big().getBreakendLogLikelihoodAssembly());
+		assertTrue(big().getBreakendLogLikelihoodAssembly() > 0d);
 	}
 	@Test
 	public void should_set_attribute_LOG_LIKELIHOOD_RATIO() {
-		assertNotEquals(0d, big().getBreakendLogLikelihood(null));
+		assertTrue(big().getBreakendLogLikelihood(null) > 0d);
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_MAPPED() {
