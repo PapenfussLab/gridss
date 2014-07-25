@@ -63,4 +63,16 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(100, results.get(0).getBreakendSequence().length);
 	}
+	@Test
+	public void soft_clip_assembly_should_anchor_at_reference_kmer() {
+		DeBruijnSubgraphAssembler ass = DSA(4);
+		List<VariantContextDirectedEvidence> results = Lists.newArrayList();
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("TTGCTCAAAA", Read(0, 1, "6S4M"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(withSequence("TGCTG", OEA(0, 4, "5M", false))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(withSequence("TGCTG", OEA(0, 4, "5M", false))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(withSequence("TGCTG", OEA(0, 4, "5M", false))))));
+		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, results.size());
+		assertEquals("AAATGC", results.get(0).getAssemblyConsensus());
+	}
 }

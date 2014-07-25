@@ -8,10 +8,14 @@ import java.util.PriorityQueue;
 import java.util.Set;
 
 import au.edu.wehi.idsv.AssemblyParameters;
+import au.edu.wehi.idsv.AssemblyParameters.ContigAssemblyOrder;
 
+import com.google.common.base.Function;
 import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 
 /**
@@ -33,15 +37,60 @@ public class SubgraphPathContigAssembler {
 			pathGraph.collapseSimilarPaths(parameters.maxBaseMismatchForCollapse, parameters.collapseBubblesOnly);
 		}
 		pathGraph.splitOutReferencePaths();
-		switch (parameters.assemblyOrder) {
-			case GreedyMaxKmer:
-				return greedyAssembly(parameters);
-			case OptimalMaxKmer:
-				throw new IllegalArgumentException("OptimalMaxKmer Not Yet Implemented");
-			default:
-				throw new IllegalArgumentException("Unknown assembly order");
-		}
+		return generateNonOverlapingContig(parameters.assemblyOrder);
+		
 	}	
+	private List<LinkedList<Long>> generateNonOverlapingContigs(ContigAssemblyOrder algorithm) {
+		List<LinkedList<Long>> results = Lists.newArrayList();
+		// split graph into non-reference subgraphs
+		List<Set<SubgraphPathNode>> nonReferenceSubgraphs = getNonReferenceSubgraphs();
+		// TODO: need to get starting node list as well
+		for (Set<SubgraphPathNode> nodeSet : nonReferenceSubgraphs) {
+			// make assembly call
+			List<SubgraphPathNode> contig = assembleSubgraph(nodeSet, algorithm);
+			assert(contig != null);
+			if (contig != null) {
+				results.add(Lists.newLinkedList(Lists.newArrayList(SubgraphPathNode.kmerIterator(contig))));
+			}
+		}
+		return results;
+	}
+	private List<SubgraphPathNode> assembleSubgraph(Set<SubgraphPathNode> nodeSet, ContigAssemblyOrder algorithm) {
+		Function<SubgraphPathNode, Integer> scoringFunction = SCORE_MAX_KMER;
+		List<SubgraphPathNode> best = null;
+		int bestScore = Integer.MIN_VALUE;
+		for (SubgraphPathNode startingNode : getStartingCandidates(nodeSet)) {
+			List<SubgraphPathNode> current;
+			switch (algorithm) {
+				case GreedyMaxKmer:
+					current = greedyAssembly(startingNode, nodeSet, scoringFunction);
+					break;
+				case OptimalMaxKmer:
+					throw new IllegalArgumentException("OptimalMaxKmer Not Yet Implemented");
+				default:
+					throw new IllegalArgumentException("Unknown assembly order");
+			}
+			int currentScore = getScore(current, scoreMaxKmer);
+			if (currentScore >= bestScore) {
+				bestScore = currentScore;
+				best = current;
+				// traverse back to reference from starting node
+			}
+		}
+		return best;
+	}
+	private int getScore(List<SubgraphPathNode> current, Function<SubgraphPathNode, Integer> scoringFunction) {
+		int sum = 0;
+		for (SubgraphPathNode n : current) {
+			sum += scoringFunction.apply(current);
+		}
+		return sum;
+	}
+	private static final Function<SubgraphPathNode, Integer> SCORE_MAX_KMER = new Function<SubgraphPathNode, Integer>() {
+		public Integer apply(SubgraphPathNode arg) {
+			return arg.getMaxKmerWeight();
+		}
+	};
 	private List<LinkedList<Long>> greedyAssembly(AssemblyParameters parameters) {
 		PriorityQueue<SubgraphPathNode> seeds = new PriorityQueue<SubgraphPathNode>(16, pathGraph.ByMaxKmerWeightDesc);
 		seeds.addAll(Sets.filter(pathGraph.getPaths(), new Predicate<SubgraphPathNode>() {
@@ -110,10 +159,12 @@ public class SubgraphPathContigAssembler {
 	 * @param visited 
 	 * @return kmer contig
 	 */
-	public LinkedList<SubgraphPathNode> greedyAssembly(SubgraphPathNode seed, Set<SubgraphPathNode> visited) {
-		LinkedList<SubgraphPathNode> contigKmers = pathGraph.greedyTraverse(seed, pathGraph.ByMaxKmerWeightDesc, pathGraph.ByMaxKmerWeightDesc, visited);
+	public LinkedList<SubgraphPathNode> greedyAssembly(SubgraphPathNode seed, Set<SubgraphPathNode> visited, Ordering<SubgraphPathNode> choice) {
+		LinkedList<SubgraphPathNode> contigKmers = pathGraph.greedyTraverse(seed, choice, choice, visited);
 		trimPath(contigKmers, seed);
 		return contigKmers;
+	}
+	public LinkedList<SubgraphPathNode> memoizedAssembly(SubgraphPathNode seed, Set<SubgraphPathNode> visited) {
 	}
 	/**
 	 * Trims the path such that once the path is anchored to the reference,

@@ -14,6 +14,7 @@ import java.util.SortedSet;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -590,20 +591,6 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 		if (excluded != null) visited.addAll(excluded);
 		path.add(startNode);
 		visited.add(startNode);
-		// assemble back
-		PriorityQueue<PN> prevCandidates = new PriorityQueue<PN>(4, backwardChoice);
-		for (List<PN> nodeList = prevPath(path.getFirst()); ; nodeList = prevPath(path.getFirst())) {
-			prevCandidates.clear();
-			for (PN node : nodeList) {
-				if (visited.contains(node)) continue; // no loops
-				prevCandidates.add(node);
-			}
-			// we're done
-			if (prevCandidates.isEmpty()) break;
-			PN node = prevCandidates.poll();
-			path.addFirst(node);
-			visited.add(node);
-		}
 		// assemble forward
 		PriorityQueue<PN> nextCandidates = new PriorityQueue<PN>(4, forwardChoice);
 		for (List<PN> nodeList = nextPath(path.getLast()); ; nodeList = nextPath(path.getLast())) {
@@ -616,6 +603,20 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 			if (nextCandidates.isEmpty()) break;
 			PN node = nextCandidates.poll();
 			path.addLast(node);
+			visited.add(node);
+		}
+		// assemble back
+		PriorityQueue<PN> prevCandidates = new PriorityQueue<PN>(4, backwardChoice);
+		for (List<PN> nodeList = prevPath(path.getFirst()); ; nodeList = prevPath(path.getFirst())) {
+			prevCandidates.clear();
+			for (PN node : nodeList) {
+				if (visited.contains(node)) continue; // no loops
+				prevCandidates.add(node);
+			}
+			// we're done
+			if (prevCandidates.isEmpty()) break;
+			PN node = prevCandidates.poll();
+			path.addFirst(node);
 			visited.add(node);
 		}
 		return path;

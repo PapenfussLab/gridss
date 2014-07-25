@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
+import static org.junit.Assert.*;
 import static org.junit.Assert.assertEquals;
 
 import java.util.LinkedList;
@@ -80,5 +81,9 @@ public class SubgraphPathContigAssemblerTest extends TestHelper {
 		assertEquals(2, result.size());
 		assertEquals("TTAACCGGCCAATT", S(g, result.get(0)));
 		assertEquals("TTAACCGAGTCCTG", S(g, result.get(1)));
+	}
+	@Test
+	public void should_maximise_non_reference_weight() {
+		fail();
 	}
 }
