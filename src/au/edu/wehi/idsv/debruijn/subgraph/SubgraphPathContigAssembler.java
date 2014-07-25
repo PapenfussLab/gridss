@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
+import java.util.ArrayDeque;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.ListIterator;
@@ -9,6 +10,7 @@ import java.util.Set;
 import au.edu.wehi.idsv.AssemblyParameters;
 
 import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -56,16 +58,51 @@ public class SubgraphPathContigAssembler {
 			if (seeds.isEmpty()) break; // no more starting position
 			// Found somewhere to start - off we go
 			List<SubgraphPathNode> contig = greedyAssembly(seeds.poll(), visited);
-			for (SubgraphPathNode node : contig) {
-				if (node.containsNonReferenceKmer()) {
-					// don't revisit non-reference kmers: anchoring two contigs to
-					// nearby reference locations is ok though
-					visited.add(node);
-				}
-			}
+			addNonReferenceReachable(visited, getFirstNonReference(contig));
+			//addNonReferenceOnPath(visited, contig);
 			contigs.add(Lists.newLinkedList(Lists.newArrayList(SubgraphPathNode.kmerIterator(contig))));
 		}
 		return contigs;
+	}
+	private void addNonReferenceOnPath(Set<SubgraphPathNode> visited, List<SubgraphPathNode> contig) {
+		for (SubgraphPathNode node : contig) {
+			if (node.containsNonReferenceKmer()) {
+				assert(!node.containsReferenceKmer());
+				// don't revisit non-reference kmers: anchoring two contigs to
+				// nearby reference locations is ok
+				visited.add(node);
+			}
+		}
+	}
+	private SubgraphPathNode getFirstNonReference(List<SubgraphPathNode> contig) {
+		for (SubgraphPathNode node : contig) {
+			if (node.containsNonReferenceKmer()) {
+				assert(!node.containsReferenceKmer());
+				return node;
+			}
+		}
+		return null;
+	}
+	/**
+	 * Adds all non-reference paths reachable from the given starting node to the visited set
+	 * <p>Note: does not traverse elements already in the visited set </p> 
+	 * @param visited set of visited nodes
+	 * @param node node to start traversal from
+	 */
+	private void addNonReferenceReachable(Set<SubgraphPathNode> visited, SubgraphPathNode node) {
+		if (node == null) return;
+		ArrayDeque<SubgraphPathNode> frontier = new ArrayDeque<>();
+		frontier.push(node);
+		visited.add(node);
+		while (!frontier.isEmpty()) {
+			SubgraphPathNode n = frontier.poll();
+			for (SubgraphPathNode adj : Iterables.concat(pathGraph.prevPath(n), pathGraph.nextPath(n))) {
+				if (adj.containsReferenceKmer()) continue;
+				if (visited.contains(adj)) continue;
+				frontier.add(adj);
+				visited.add(adj);
+			}
+		}
 	}
 	/**
 	 * Assembles a contig from the remaining kmers in the subgraph

@@ -173,13 +173,15 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		g.addEvidence(NRRP(withSequence("GTCCTAGAT", DP(0, 1, "8M", true, 1, 10, "8M", false))));
 		g.addEvidence(NRRP(withSequence("GTCCTAGAT", DP(0, 1, "8M", true, 1, 10, "8M", false))));
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
-		assertEquals(2, result.size());
-		assertEquals("TAAAAGTCCTAGAC", result.get(1).getAssemblyConsensus());
+		assertEquals(1, result.size()); // Update: we now remove the entire tree when do the first assembly
+		
+		//assertEquals(2, result.size());
+		//assertEquals("TAAAAGTCCTAGAC", result.get(1).getAssemblyConsensus());
 		// AGAT is left over as a seed but since it does not anchor to the reference
 		// As it's shorter than a read assembly, we presume that it is
 		// sequencing noise and abandon it
-		assertEquals("AGAT", result.get(0).getAssemblyConsensus());
-		assertTrue(result.get(0).getFilters().contains(VcfFilter.ASSEMBLY_TOO_SHORT.name()));
+		//assertEquals("AGAT", result.get(0).getAssemblyConsensus());
+		//assertTrue(result.get(0).getFilters().contains(VcfFilter.ASSEMBLY_TOO_SHORT.name()));
 	}
 	@Test
 	public void debugPrintPaths_should_work() {
@@ -205,5 +207,37 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		VariantContextDirectedEvidence bp = result.get(0);
 		// CTG becomes unanchored & we can't make a contig out of it
 		assertEquals(1, bp.getAssemblySupportCount(null));
+	}
+	@Test
+	public void should_exclude_sc_nrrp_without_ref_anchor() {
+		DeBruijnReadGraph g = G(0, 3, FWD);
+		// main assembly
+		g.addEvidence(SCE(FWD, withSequence("AAAAGTCCTAG", Read(0, 10, "4M7S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAAAGTCCTAG", Read(0, 10, "4M7S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAAAGTCCTAG", Read(0, 10, "4M7S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAAAGTCCTAG", Read(0, 10, "4M7S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAAAGTCCTAG", Read(0, 10, "4M7S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAAAGTCCTAG", Read(0, 10, "4M7S"))));
+		// problematic assembly: we have an anchor sequence, but we've used it elsewhere
+		// so we end up unanchored
+		g.addEvidence(SCE(FWD, withSequence("AAAAGTCCTATG", Read(0, 10, "4M7S"))));
+		g.addEvidence(NRRP(withSequence(             "ATGT", DP(0, 1, "8M", true, 1, 10, "8M", false))));
+		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		assertEquals(1, result.size());
+	}
+	@Test
+	public void should_filter_sc_branch() {
+		DeBruijnReadGraph g = G(0, 3, FWD);
+		// main assembly
+		g.addEvidence(SCE(FWD, withSequence("AAAAGTCCTAG", Read(0, 10, "4M7S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAAAGTCCTAG", Read(0, 10, "4M7S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAAAGTCCTAG", Read(0, 10, "4M7S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAAAGTCCTAG", Read(0, 10, "4M7S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAAAGTCCTAG", Read(0, 10, "4M7S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAAAGTCCTAG", Read(0, 10, "4M7S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAAAGTCCTATG", Read(0, 10, "4M7S"))));
+		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		assertEquals(1, result.size());
+		// TATG should not be included as a result 
 	}
 }

@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
-import htsjdk.samtools.SAMRecord;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -13,7 +11,6 @@ import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.SAMRecordUtil;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.debruijn.DeBruijnVariantGraph;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
@@ -166,6 +163,15 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			if (mateAnchor == null) {
 				mateAnchor = mp;
 			} else {
+				if (mp == null) {
+					//         D-E    <-- we are attempting to assemble DE from soft-clips after assembling ABC 
+					//        /
+					//     A-B-C             (this shouldn't happen.)
+					//    /
+					// R-R
+					// 
+					throw new RuntimeException("Sanity check failure: attempted to assemble anchored read as unanchored");
+				}
 				// take closest mate anchor
 				mateAnchor = direction == BreakendDirection.Forward ?
 						Math.max(mp, mateAnchor) :

@@ -134,6 +134,30 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		assertEquals(4, pg.getPaths().size());
 	}
 	@Test
+	public void collapseSimilarPaths_should_collapse_branches() {
+		BasePathGraph pg = PG(G(20)
+				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATC")
+				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACCGATC"));
+				//                                                                                        ^^
+		assertEquals("precondition", 3, pg.getPaths().size());
+		pg.collapseSimilarPaths(1, false);
+		assertEquals(3, pg.getPaths().size());
+		pg.collapseSimilarPaths(2, false);
+		assertEquals(1, pg.getPaths().size());
+	}
+	@Test
+	public void collapseSimilarPaths_should_collapse_branches_of_different_lengths() {
+		BasePathGraph pg = PG(G(20)
+				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATC")
+				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACCGATCGATCA"));
+				//                                                                                        ^^
+		assertEquals("precondition", 3, pg.getPaths().size());
+		pg.collapseSimilarPaths(1, false);
+		assertEquals(3, pg.getPaths().size());
+		pg.collapseSimilarPaths(2, false);
+		assertEquals(1, pg.getPaths().size());
+	}
+	@Test
 	public void mergePaths_should_merge_into_highest_weight_path() {
 		BasePathGraph pg = PG(G(4)
 		//       A(GTC)      
