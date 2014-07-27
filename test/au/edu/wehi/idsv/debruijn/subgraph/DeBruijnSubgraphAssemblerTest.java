@@ -73,6 +73,8 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(withSequence("TGCTG", OEA(0, 4, "5M", false))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, results.size());
-		assertEquals("AAATGC", results.get(0).getAssemblyConsensus());
+		assertEquals("TTGCTCAAAA", results.get(0).getAssemblyConsensus());
+		assertEquals(1, results.get(0).getBreakendSummary().start);
+		assertEquals(4, results.get(0).getAssemblyConsensus().length() - results.get(0).getBreakendSequence().length);
 	}
 }

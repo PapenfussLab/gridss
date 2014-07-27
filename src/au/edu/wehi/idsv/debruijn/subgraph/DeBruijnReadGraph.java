@@ -104,8 +104,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		List<VariantContextDirectedEvidence> contigs = Lists.newArrayList();
 		for (SubgraphSummary ss : subgraphs) {
 			if (ss.getMaxAnchor() < position) {
-				SubgraphPathContigAssembler sca = new SubgraphPathContigAssembler(this, ss.getAnyKmer());
-				for (List<Long> contig : sca.assembleContigs(parameters)) {
+				PathGraphAssembler pga = new PathGraphAssembler(this, this.parameters, ss.getAnyKmer());
+				for (List<Long> contig : pga.assembleContigs()) {
 					VariantContextDirectedEvidence variant = toAssemblyEvidence(contig);
 					if (variant != null) {
 						contigs.add(variant);
@@ -163,7 +163,13 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			if (mateAnchor == null) {
 				mateAnchor = mp;
 			} else {
-				if (mp == null) {
+				if (mp != null) {
+					// take closest mate anchor
+					mateAnchor = direction == BreakendDirection.Forward ?
+							Math.max(mp, mateAnchor) :
+							Math.min(mp, mateAnchor);
+				}
+				if (mp == null && refCount == 0) {
 					//         D-E    <-- we are attempting to assemble DE from soft-clips after assembling ABC 
 					//        /
 					//     A-B-C             (this shouldn't happen.)
@@ -172,10 +178,6 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 					// 
 					throw new RuntimeException("Sanity check failure: attempted to assemble anchored read as unanchored");
 				}
-				// take closest mate anchor
-				mateAnchor = direction == BreakendDirection.Forward ?
-						Math.max(mp, mateAnchor) :
-						Math.min(mp, mateAnchor);
 			}
 		}
 		AssemblyBuilder builder = debruijnContigAssembly(contigKmers)

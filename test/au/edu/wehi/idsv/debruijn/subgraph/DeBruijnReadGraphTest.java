@@ -2,19 +2,15 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 
 import org.junit.Test;
 
 import au.edu.wehi.idsv.AssemblyParameters;
-import au.edu.wehi.idsv.AssemblyParameters.ContigAssemblyOrder;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfFilter;
 
 import com.google.common.collect.Lists;
 
@@ -23,7 +19,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	public DeBruijnReadGraph G(int referenceIndex, int k, BreakendDirection direction) {
 		AssemblyParameters p = new AssemblyParameters();
 		p.maxBaseMismatchForCollapse = 0;
-		p.assemblyOrder = ContigAssemblyOrder.GreedyMaxKmer;
+		p.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
 		p.k = k;
 		return new DeBruijnReadGraph(getContext(), AES(), referenceIndex, direction, p);
 	}

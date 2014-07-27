@@ -133,6 +133,16 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 		return pathPrev.get(path);
 	}
 	/**
+	 * Returns all paths that connect to the given path
+	 * @param path path
+	 * @return adjacent paths
+	 */
+	public List<PN> adjPath(PN path) {
+		List<PN> result = Lists.newArrayList(nextPath(path));
+		result.addAll(prevPath(path));
+		return result;
+	}
+	/**
 	 * Shrinks the graph to its minimal representation by
 	 * - merging adjacent paths containing no other branches 
 	 * - removing self-intersecting edges

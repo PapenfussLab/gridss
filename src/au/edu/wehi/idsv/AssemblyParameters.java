@@ -32,21 +32,8 @@ public class AssemblyParameters {
 	 */
 	public float subgraphAssemblyMargin = 3;
 	/**
-	 * Order in which contigs are 
-	 * @author Daniel Cameron
-	 *
+	 * Maximum number of branches consider at kmer branches.
+	 * A value of 1 indicates a greedy traversal
 	 */
-	public enum ContigAssemblyOrder {
-		/**
-		 * Greedily assemble traversing to each path containing the highest kmer
-		 * 
-		 * Starting kmer is the maximum weight non-reference kmer 
-		 */
-		GreedyMaxKmer,
-		/**
-		 * Single path with maximal kmer weight
-		 */
-		OptimalMaxKmer,
-	}
-	public ContigAssemblyOrder assemblyOrder = ContigAssemblyOrder.GreedyMaxKmer;
+	public int subgraphAssemblyTraversalMaximumBranchingFactor = Integer.MAX_VALUE;
 }
