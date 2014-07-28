@@ -42,6 +42,7 @@ public class ProcessingContext implements Closeable {
 	private final AssemblyParameters ap;
 	private final SoftClipParameters scp;
 	private final RealignmentParameters rp;
+	private final VariantCallingParameters vcp;
 	private final List<Header> metricsHeaders;
 	private boolean filterDuplicates = true;
 	private boolean useAsyncIO = true;
@@ -51,12 +52,14 @@ public class ProcessingContext implements Closeable {
 			SoftClipParameters softClipParameters,
 			AssemblyParameters assemblyParameters,
 			RealignmentParameters realignmentParameters,
+			VariantCallingParameters variantCallingParameters,
 			File ref, boolean perChr, boolean vcf41) {
 		this.fsContext = fileSystemContext;
 		this.metricsHeaders = metricsHeaders;
 		this.scp = softClipParameters;
 		this.ap = assemblyParameters;
 		this.rp = realignmentParameters;
+		this.vcp = variantCallingParameters;
 		this.perChr = perChr;
 		this.vcf41mode = vcf41;
 		this.referenceFile = ref;
@@ -167,6 +170,9 @@ public class ProcessingContext implements Closeable {
 	}
 	public RealignmentParameters getRealignmentParameters() {
 		return rp;
+	}
+	public VariantCallingParameters getVariantCallingParameters() {
+		return vcp;
 	}
 	public boolean isUseAsyncIO() {
 		return useAsyncIO;

@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.variant.vcf.VCFConstants;
+
 import java.util.Collections;
 import java.util.List;
 
@@ -17,10 +19,10 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private final List<SoftClipEvidence> scList = Lists.newArrayList();
 	private final List<NonReferenceReadPair> rpList = Lists.newArrayList();
 	private final List<VariantContextDirectedEvidence> assList = Lists.newArrayList();
-	private int referenceNormalReadCount = -1;
-	private int referenceNormalSpanningPairCount = -1;
-	private int referenceTumourReadCount = -1;
-	private int referenceTumourSpanningPairCount = -1;
+	private int referenceNormalReadCount = 0;
+	private int referenceNormalSpanningPairCount = 0;
+	private int referenceTumourReadCount = 0;
+	private int referenceTumourSpanningPairCount = 0;
 	public StructuralVariationCallBuilder(ProcessingContext processContext, VariantContextDirectedEvidence parent) {
 		super(processContext, parent);
 		this.processContext = processContext;
@@ -61,7 +63,21 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		aggregateSoftClipAttributes();		
 		setLlr();
 		id(getID());
-		return (VariantContextDirectedEvidence)IdsvVariantContext.create(processContext, null, super.make());
+		VariantContextDirectedEvidence variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(processContext, null, super.make());
+		variant = calcSpv(variant);
+		return variant;
+	}
+	private VariantContextDirectedEvidence calcSpv(VariantContextDirectedEvidence variant) {
+		// TODO: somatic p-value should use evidence from both sides of the breakpoint
+		double pvalue = Models.somaticPvalue(processContext, variant);
+		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(processContext, variant);
+		builder.attribute(VcfAttributes.SOMATIC_P_VALUE, pvalue);
+		if (pvalue < processContext.getVariantCallingParameters().somaticPvalueThreshold) {
+			builder.attribute(VCFConstants.SOMATIC_KEY, true);
+		} else {
+			builder.rmAttribute(VCFConstants.SOMATIC_KEY);
+		}
+		return (VariantContextDirectedEvidence)builder.make();
 	}
 	private void setLlr() {
 		double assllr = parent.getAttributeAsDouble(VcfAttributes.ASSEMBLY_LOG_LIKELIHOOD_RATIO.attribute(), 0);

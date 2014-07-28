@@ -9,5 +9,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/htsjdk"/>
 	<classpathentry combineaccessrules="false" kind="src" path="/picard"/>
+	<classpathentry kind="lib" path="lib/commons-math3-3.3.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

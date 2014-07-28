@@ -5,6 +5,7 @@ import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
 
 public enum VcfAttributes {
+	SOMATIC_P_VALUE ("SPV", 1, VCFHeaderLineType.Float, "Somatic p-value"),
 	//EVIDENCE_COUNT ("EC", 2, VCFHeaderLineType.Integer, "Count of  evidence supporting structural variation  (Normal,Tumour)"),
 	LOG_LIKELIHOOD_RATIO ("LR", 2, VCFHeaderLineType.Float, "Log-likelihood ratio of structural variation vs reference (Normal,Tumour)"),
 	LOG_LIKELIHOOD_RATIO_BREAKPOINT ("LRBP", 2, VCFHeaderLineType.Float, "Log-likelihood ratio of structural variation vs reference for entire breakpoint (Normal,Tumour)"),

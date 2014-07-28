@@ -100,6 +100,13 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     @Option(doc = "Minimum average base quality score for realignment of read soft clip",
     		optional=true)
     public float REALIGNMENT_MIN_BASE_QUALITY = 5;
+    // --- Variant calling parameters  ---
+    @Option(doc = "Maximum somatic p-value for a variant to be called somatic",
+    		optional=true)
+    private double SOMATIC_THRESHOLD = 0.001;
+    @Option(doc = "Use only assembled evidence when calling variants",
+    		optional=true)
+	private boolean CALL_ONLY_ASSEMBLIES = false;
     // --- output format parameters ---
 	@Option(doc = "Breakends are written to VCF files as VCF v4.1 compatible breakpoints to a placeholder contig " + VcfConstants.VCF41BREAKEND_REPLACEMENT,
             optional = true,
@@ -172,6 +179,12 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 	private FileSystemContext getFileSystemContext() {
 		return new FileSystemContext(TMP_DIR.get(0), WORKING_DIR, MAX_RECORDS_IN_RAM);
 	}
+	private VariantCallingParameters getVariantCallingParameters() {
+		VariantCallingParameters vcp = new VariantCallingParameters();
+		vcp.somaticPvalueThreshold = SOMATIC_THRESHOLD;
+		vcp.callOnlyAssemblies = CALL_ONLY_ASSEMBLIES;
+		return vcp;
+	}
 	public void close() throws IOException {
 		if (processContext != null) {
 			processContext.close();
@@ -187,6 +200,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 	    			getSoftClipParameters(),
 	    			getAssemblyParameters(),
 	    			getRealignmentParameters(),
+	    			getVariantCallingParameters(),
 	    			REFERENCE, PER_CHR, VCF41_COMPATIBLE);
 		}
     	return processContext;

@@ -194,6 +194,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 				new SoftClipParameters(),
 				new AssemblyParameters(),
 				new RealignmentParameters(),
+				new VariantCallingParameters(),
 				SMALL_FA_FILE, false, true);
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
 		builder.breakend(new BreakendSummary(0,  FWD,  1,  1), "ACGT");
@@ -208,6 +209,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 				new SoftClipParameters(),
 				new AssemblyParameters(),
 				new RealignmentParameters(),
+				new VariantCallingParameters(),
 				SMALL_FA_FILE, false, true);
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
 		builder.breakend(new BreakendSummary(0,  FWD,  1,  2), "ACGT");

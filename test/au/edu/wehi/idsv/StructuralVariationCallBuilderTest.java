@@ -341,13 +341,16 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public void should_drop_base_quals() {
 		assertFalse(big().hasAttribute(VcfAttributes.ASSEMBLY_BREAKEND_QUALS.attribute()));
 	}
-	public VariantContextDirectedEvidence b(DirectedEvidence... evidence) {
-		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)minimalBreakend()
+	public StructuralVariationCallBuilder cb(DirectedEvidence... evidence) {
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)minimalBreakend()
 				.breakend(new BreakendSummary(0, BWD, 1, 10), null).make());
 		for (DirectedEvidence e : evidence) {
-			cb.addEvidence(e);
+			builder.addEvidence(e);
 		}
-		return cb.make();
+		return builder;
+	}
+	public VariantContextDirectedEvidence b(DirectedEvidence... evidence) {
+		return cb(evidence).make();
 	}
 	public VariantContextDirectedEvidence big() {
 		ProcessingContext pc = getContext();
@@ -443,9 +446,24 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		assertFalse(e.hasAttribute(VCFConstants.SOMATIC_KEY));
 	}
 	@Test
-	public void should_call_somatic_if_no_normal_evidence() {
+	public void should_call_germline_if_no_normal_evidence() {
 		VariantContextDirectedEvidence e = b(new sc(1, true));
-		assertTrue(e.hasAttribute(VCFConstants.SOMATIC_KEY));
+		assertFalse(e.hasAttribute(VCFConstants.SOMATIC_KEY));
+	}
+	@Test
+	public void should_somatic_if_tumour_BAF_greater_than_normal() {
+		StructuralVariationCallBuilder cb = cb(
+				new sc(1, true),
+				new sc(2, true),
+				new sc(3, true),
+				new sc(4, true));
+		cb.referenceReads(10, 2);
+		cb.referenceSpanningPairs(10, 2);
+		assertTrue(cb.make().hasAttribute(VCFConstants.SOMATIC_KEY));
+	}
+	@Test
+	public void somatic_p_value_should_be_calculated_from_coverage_at_both_ends_of_the_breakend() {
+		fail();
 	}
 	@Test
 	public void should_call_somatic_from_assembly_evidence() {
@@ -469,7 +487,10 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			.contributingEvidence(support)
 			.assemblyBaseQuality(new byte[] { 0,1,2,3,4,5,6,7});
 		VariantContextDirectedEvidence v = sb.makeVariant();
-		VariantContextDirectedEvidence e = b(v);
+		VariantContextDirectedEvidence e = cb(v)
+			.referenceReads(10, 10)
+			.referenceSpanningPairs(10, 10)
+			.make();
 		assertTrue(e.hasAttribute(VCFConstants.SOMATIC_KEY));
 	}
 }

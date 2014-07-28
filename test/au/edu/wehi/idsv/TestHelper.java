@@ -171,6 +171,7 @@ public class TestHelper {
 				new SoftClipParameters(),
 				new AssemblyParameters(),
 				new RealignmentParameters(),
+				new VariantCallingParameters(),
 				SMALL_FA_FILE, false, false);
 		pc.setUseAsyncIO(false);
 		return pc;

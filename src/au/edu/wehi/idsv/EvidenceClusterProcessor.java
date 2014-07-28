@@ -27,6 +27,12 @@ public class EvidenceClusterProcessor implements Iterable<VariantContextDirected
 		this.context = context;
 	}
 	public void addEvidence(DirectedEvidence evidence) {
+		if (context.getVariantCallingParameters().callOnlyAssemblies) {
+			if (!(evidence instanceof VariantContextDirectedEvidence)) {
+				// Only add assembly evidence
+				return;
+			}
+		}
 		BreakendSummary loc = evidence.getBreakendSummary();
 		if (evidence instanceof SoftClipEvidence) {
 			// TODO: expand evidence region for soft-clips

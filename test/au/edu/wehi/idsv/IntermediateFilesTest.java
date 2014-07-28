@@ -60,6 +60,7 @@ public class IntermediateFilesTest extends TestHelper {
 				new SoftClipParameters(),
 				new AssemblyParameters(),
 				new RealignmentParameters(),
+				new VariantCallingParameters(),
 				reference,
 				perChr, false);
 		pc.setUseAsyncIO(false);
