@@ -134,21 +134,33 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 		}
 	}
 	public void ensureDictionariesMatch() throws IOException {
-		try (ReferenceSequenceFile ref = ReferenceSequenceFileFactory.getReferenceSequenceFile(REFERENCE)) {
+		ReferenceSequenceFile ref = null;
+		try {
+			ref = ReferenceSequenceFileFactory.getReferenceSequenceFile(REFERENCE);
 			SAMSequenceDictionary dictionary = ref.getSequenceDictionary();
 			final SamReaderFactory samFactory = SamReaderFactory.makeDefault();
 			for (File f : INPUT) {
-				try (SamReader reader = samFactory.open(f)) {
+				SamReader reader = null;
+				try {
+					reader = samFactory.open(f);
 					SequenceUtil.assertSequenceDictionariesEqual(reader.getFileHeader().getSequenceDictionary(), dictionary, f, REFERENCE);
+				} finally {
+					if (reader != null) reader.close();
 				}
 			}
 			if (INPUT_TUMOUR != null) {
 				for (File f : INPUT_TUMOUR) {
-					try (SamReader reader = samFactory.open(f)) {
+					SamReader reader = null;
+					try {
+						reader = samFactory.open(f);
 						SequenceUtil.assertSequenceDictionariesEqual(reader.getFileHeader().getSequenceDictionary(), dictionary, f, REFERENCE);
+					} finally {
+						if (reader != null) reader.close();
 					}
 				}
 			}
+		} finally {
+			if (ref != null) ref.close();
 		}
 	}
 	private AssemblyParameters getAssemblyParameters() {

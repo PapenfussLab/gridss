@@ -70,16 +70,24 @@ public class Idsv extends CommandLineProgram {
 	    				"##################################");
 		    	log.error("Please rerun after alignments have been performed.");
 		    	if (SCRIPT != null) {
-		    		try (FileWriter writer = new FileWriter(SCRIPT)) {
+		    		FileWriter writer = null;
+		    		try {
+		    			writer = new FileWriter(SCRIPT);
 		    			writer.write(instructions);
+		    		} finally {
+		    			if (writer != null) writer.close(); 
 		    		}
 		    		log.error("Realignment script has been written to ", SCRIPT);
 		    	}
 		    	return -1;
 	    	}
-	    	try (VariantCaller caller = new VariantCaller(getContext(), OUTPUT, allEvidence)) {
+	    	VariantCaller caller = null;
+	    	try {
+	    		caller = new VariantCaller(getContext(), OUTPUT, allEvidence);
 	    		caller.callBreakends();
 	    		caller.annotateBreakpoints();
+	    	} finally {
+	    		if (caller != null) caller.close();
 	    	}
     	} catch (IOException e) {
     		log.error(e);

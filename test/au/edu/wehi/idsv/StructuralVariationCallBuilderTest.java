@@ -87,7 +87,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public void should_set_VcfAttribute_LOG_LIKELIHOOD_RATIO() {
 		assertTrue(big().hasAttribute(VcfAttributes.LOG_LIKELIHOOD_RATIO.attribute()));
 		assertNotNull(big().getAttribute(VcfAttributes.LOG_LIKELIHOOD_RATIO.attribute()));
-		assertTrue((double)big().getAttribute(VcfAttributes.LOG_LIKELIHOOD_RATIO.attribute()) > 0d);
+		assertTrue((double)(Double)big().getAttribute(VcfAttributes.LOG_LIKELIHOOD_RATIO.attribute()) > 0d);
 	}
 	@Test
 	public void should_not_set_VcfAttribute_LOG_LIKELIHOOD_RATIO_BREAKPOINT() {

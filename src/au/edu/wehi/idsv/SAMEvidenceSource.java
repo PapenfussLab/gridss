@@ -62,7 +62,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	@Override
 	protected void process() {
-		try (ExtractEvidence extract = new ExtractEvidence()) {
+		ExtractEvidence extract = null;
+		try {
+			extract = new ExtractEvidence();
 			log.info("START extract evidence for ", input);
 			extract.extractEvidence();
 			log.info("SUCCESS extract evidence for ", input);
@@ -70,6 +72,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 		catch (Exception e) {
 			log.info("FAILURE extract evidence for ", input);
 			log.error(e);
+		} finally {
+			if (extract != null) extract.close();
 		}
 	}
 	@Override
@@ -283,7 +287,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 			
 			// Traverse the input file
 			final ProgressLogger progress = new ProgressLogger(log);
-			try (final SAMRecordIterator rawIterator = reader.iterator()) {
+			SAMRecordIterator rawIterator = null;
+			try {
+				rawIterator = reader.iterator();
 				final CloseableIterator<SAMRecord> iter = processContext.applyCommonSAMRecordFilters(rawIterator.assertSorted(SortOrder.coordinate));
 				while (iter.hasNext()) {
 					SAMRecord record = iter.next();
@@ -324,6 +330,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 					imc.acceptRecord(record, null);
 					progress.record(record);
 				}
+			} finally {
+				if (rawIterator != null) rawIterator.close();
 			}
 		}
 		private void createOutputWriters(final SAMFileHeader header, final SAMSequenceDictionary dictionary) {

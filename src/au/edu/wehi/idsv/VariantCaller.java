@@ -117,7 +117,9 @@ public class VariantCaller extends EvidenceProcessorBase {
 		while (evidenceIt.hasNext()) {
 			processor.addEvidence(evidenceIt.next());
 		}
-		try (VariantContextWriter vcfWriter = processContext.getVariantContextWriter(vcf)) {
+		VariantContextWriter vcfWriter = null;
+		try {
+			vcfWriter = processContext.getVariantContextWriter(vcf);
 			toClose.add(vcfWriter);
 			log.info("Calling maximal cliques for ", vcf);
 			Iterator<VariantContextDirectedEvidence> it = processor.iterator();
@@ -126,6 +128,8 @@ public class VariantCaller extends EvidenceProcessorBase {
 				vcfWriter.add(loc);
 				writeProgress.record(processContext.getDictionary().getSequence(loc.getBreakendSummary().referenceIndex).getSequenceName(), loc.getBreakendSummary().start);
 			}
+		} finally {
+			if (vcfWriter != null) vcfWriter.close();
 		}
 	}
 	public void annotateBreakpoints() {
