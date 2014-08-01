@@ -1,6 +1,6 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
@@ -17,9 +17,9 @@ public class DirectedEvidenceFileIterator implements CloseableIterator<DirectedE
 	private final SamReader mateReader;
 	private final SamReader realignReader;
 	private final VCFFileReader vcfReader;
-	private final SAMRecordIterator svIt;
-	private final SAMRecordIterator mateIt;
-	private final SAMRecordIterator realignIt;
+	private final CloseableIterator<SAMRecord> svIt;
+	private final CloseableIterator<SAMRecord> mateIt;
+	private final CloseableIterator<SAMRecord> realignIt;
 	private final CloseableIterator<VariantContext> vcfIt;
 	private final DirectedEvidenceIterator it;
 	private final Log log = Log.getInstance(DirectedEvidenceFileIterator.class);
@@ -31,9 +31,9 @@ public class DirectedEvidenceFileIterator implements CloseableIterator<DirectedE
 			File realign,
 			File vcf) {
 		log.debug(String.format("Loading evidence from: sv:%s, mate:%s, realign:%s, assembly:%s", sv, mate, realign, vcf));
-		svReader = sv == null ? null : processContext.getSamReaderFactory().open(sv);
-		mateReader = mate == null ? null : processContext.getSamReaderFactory().open(mate);
-		realignReader = realign == null ? null : processContext.getSamReaderFactory().open(realign);
+		svReader = sv == null ? null : processContext.getSamReader(sv);
+		mateReader = mate == null ? null : processContext.getSamReader(mate);
+		realignReader = realign == null ? null : processContext.getSamReader(realign);
 		if (realignReader != null) {
 			SequenceUtil.assertSequenceDictionariesEqual(
 					realignReader.getFileHeader().getSequenceDictionary(),
@@ -42,9 +42,9 @@ public class DirectedEvidenceFileIterator implements CloseableIterator<DirectedE
 					processContext.getReferenceFile());
 		}
 		vcfReader = vcf == null ? null : new VCFFileReader(vcf);
-		svIt = svReader == null ? null : svReader.iterator();
-		mateIt = mateReader == null ? null : mateReader.iterator();
-		realignIt = realignReader == null ? null : realignReader.iterator();
+		svIt = svReader == null ? null : processContext.getSamReaderIterator(svReader);
+		mateIt = mateReader == null ? null : processContext.getSamReaderIterator(mateReader);
+		realignIt = realignReader == null ? null : processContext.getSamReaderIterator(realignReader);
 		vcfIt = vcfReader == null ? null : vcfReader.iterator();
 		it = new DirectedEvidenceIterator(
 				processContext,

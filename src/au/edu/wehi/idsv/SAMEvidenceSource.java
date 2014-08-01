@@ -5,7 +5,6 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SamReader;
@@ -201,7 +200,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 	    	try {
 	    		deleteOutput(); // trash any left-over files
 	    				    	
-		    	reader = processContext.getSamReaderFactory().open(input);
+		    	reader = processContext.getSamReader(input);
 		    	final SAMFileHeader header = reader.getFileHeader();
 		    	final SAMSequenceDictionary dictionary = header.getSequenceDictionary();
 		    	referenceWalker = new ReferenceSequenceFileWalker(processContext.getReferenceFile());
@@ -268,9 +267,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 			SAMFileWriter writer = null;
 			CloseableIterator<SAMRecord> wit = null;
 			try {
-				reader = processContext.getSamReaderFactory().open(unsorted);
+				reader = processContext.getSamReader(unsorted);
 				SAMFileHeader header = reader.getFileHeader();
-				rit = reader.iterator();
+				rit = processContext.getSamReaderIterator(reader);
 				SortingCollection<SAMRecord> collection = SortingCollection.newInstance(
 						SAMRecord.class,
 						new BAMRecordCodec(header),
@@ -333,10 +332,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 			
 			// Traverse the input file
 			final ProgressLogger progress = new ProgressLogger(log);
-			SAMRecordIterator rawIterator = null;
+			CloseableIterator<SAMRecord> iter = null;
 			try {
-				rawIterator = reader.iterator();
-				final CloseableIterator<SAMRecord> iter = processContext.applyCommonSAMRecordFilters(rawIterator.assertSorted(SortOrder.coordinate));
+				iter = processContext.getSamReaderIterator(reader); 
 				while (iter.hasNext()) {
 					SAMRecord record = iter.next();
 					SAMRecordUtil.ensureNmTag(referenceWalker, record);
@@ -377,7 +375,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 					progress.record(record);
 				}
 			} finally {
-				if (rawIterator != null) rawIterator.close();
+				if (iter != null) iter.close();
 			}
 		}
 		private void createOutputWriters(final SAMFileHeader header, final SAMSequenceDictionary dictionary) {

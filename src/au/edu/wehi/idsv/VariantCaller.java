@@ -17,7 +17,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
-import java.util.PriorityQueue;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
@@ -173,9 +172,9 @@ public class VariantCaller extends EvidenceProcessorBase {
 	public SequentialReferenceCoverageLookup getReferenceLookup(List<File> samFiles) {
 		List<CloseableIterator<SAMRecord>> toMerge = Lists.newArrayList();
 		for (File f : samFiles) {
-			SamReader reader = processContext.getSamReaderFactory().open(f);
+			SamReader reader = processContext.getSamReader(f);
 			toClose.add(reader);
-			CloseableIterator<SAMRecord> it = reader.iterator().assertSorted(SortOrder.coordinate);
+			CloseableIterator<SAMRecord> it = processContext.getSamReaderIterator(reader, SortOrder.coordinate);
 			toClose.add(it);
 			it = processContext.applyCommonSAMRecordFilters(it);
 			toMerge.add(it);

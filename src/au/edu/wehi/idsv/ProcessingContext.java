@@ -1,8 +1,11 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.fastq.FastqWriterFactory;
@@ -24,6 +27,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.vcf.VcfConstants;
 
 /**
@@ -32,6 +36,8 @@ import au.edu.wehi.idsv.vcf.VcfConstants;
  *
  */
 public class ProcessingContext implements Closeable {
+	private static final int READAHEAD_BUFFER_SIZE = 1024;
+	private static final int READAHEAD_BUFFERS = 2;
 	private final ReferenceSequenceFile reference;
 	private final File referenceFile;
 	private final SAMSequenceDictionary dictionary;
@@ -84,11 +90,33 @@ public class ProcessingContext implements Closeable {
 	public FileSystemContext getFileSystemContext() {
 		return fsContext;
 	}
+	/**
+	 * Gets a reader for the given file
+	 * @param file SAM/BAM file
+	 * @return  htsjdk reader
+	 */
+	public SamReader getSamReader(File file) {
+		return getSamReaderFactory().open(file);
+	}
 	public SamReaderFactory getSamReaderFactory() {
 		SamReaderFactory factory = SamReaderFactory.makeDefault()
 				.validationStringency(ValidationStringency.LENIENT);
 				//.enable(Option.INCLUDE_SOURCE_IN_RECORDS); // don't need as we're tracking ourselves using EvidenceSource
 		return factory;
+	}
+	public CloseableIterator<SAMRecord> getSamReaderIterator(SamReader reader) {
+		return getSamReaderIterator(reader, null);
+	}
+	public CloseableIterator<SAMRecord> getSamReaderIterator(SamReader reader, SortOrder expectedOrder) {
+		SAMRecordIterator rawIterator = reader.iterator();
+		if (expectedOrder != null && expectedOrder != SortOrder.unsorted) {
+			rawIterator.assertSorted(expectedOrder);
+		}
+		CloseableIterator<SAMRecord> iterator = applyCommonSAMRecordFilters(rawIterator);
+		if (isUseAsyncIO()) {
+			iterator = new AsyncBufferedIterator<SAMRecord>(iterator, READAHEAD_BUFFERS, READAHEAD_BUFFER_SIZE);
+		}
+		return iterator;
 	}
 	public SAMFileWriterFactory getSamReaderWriterFactory() {
 		return new SAMFileWriterFactory()
