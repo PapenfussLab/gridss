@@ -43,8 +43,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     public File SCRIPT;
     // --- intermediate file parameters ---
     @Option(doc = "Save intermediate results into separate files for each chromosome.",
-            optional = true,
-            shortName = "BYCHR")
+            optional = true)
     public boolean PER_CHR = true;
     @Option(doc = "Directory to place intermediate results directories. Default location is the same directory"
     		+ " as the associated input or output file. Increases the number of intermediate files"

@@ -128,6 +128,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 	 * By sorting DP and OEA read pairs by the coordinate of the mapped mate,
 	 * putative directed breakpoints can be assembled by downstream processes
 	 * in a single pass of the intermediate files.
+	 * 
 	 * @author Daniel Cameron
 	 *
 	 */
@@ -136,7 +137,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		private ReferenceSequenceFileWalker referenceWalker = null;
 		private final List<SAMFileWriter> writers = Lists.newArrayList();
 		private final List<SAMFileWriter> matewriters = Lists.newArrayList();
-		private final List<SortingCollection<SAMRecord>> mateRecordBuffer = Lists.newArrayList();
+		//private final List<SortingCollection<SAMRecord>> mateRecordBuffer = Lists.newArrayList();
 		private final List<FastqBreakpointWriter> realignmentWriters = Lists.newArrayList();
 		public void close() {
 			tryClose(reader);
@@ -151,7 +152,6 @@ public class SAMEvidenceSource extends EvidenceSource {
 				tryClose(w);
 			}
 	    	matewriters.clear();
-	    	mateRecordBuffer.clear();
 	    	for (FastqBreakpointWriter w : realignmentWriters) {
 				tryClose(w);
 			}
@@ -196,13 +196,6 @@ public class SAMEvidenceSource extends EvidenceSource {
 				log.error(e, "Unable to delete intermediate file ", f,  " during rollback.");
 			}
 		}
-	    private void writeToFile(SortingCollection<SAMRecord> sc, SAMFileWriter writer) {
-	    	sc.doneAdding();
-	    	final CloseableIterator<SAMRecord> it = sc.iterator();
-			while (it.hasNext()) {
-				writer.addAlignment(it.next());
-			}
-	    }
 		public void extractEvidence() {
 			boolean shouldDelete = true;
 	    	try {
@@ -225,6 +218,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 		    	
 		    	writeMetrics(ismc, imc);
 		    	
+		    	sortMates();
+		    	
 		    	if (!processContext.getFileSystemContext().getFlagFile(input, FLAG_NAME).createNewFile()) {
 		    		log.error("Failed to create flag file ", processContext.getFileSystemContext().getFlagFile(input, FLAG_NAME));
 		    	} else {
@@ -238,8 +233,69 @@ public class SAMEvidenceSource extends EvidenceSource {
 			} finally {
 	    		close();
 	    		if (shouldDelete) deleteOutput();
+	    		// Remove temp files
+	    		tryDelete(processContext.getFileSystemContext().getMateBamUnsorted(input));
+				for (SAMSequenceRecord seqr : processContext.getReference().getSequenceDictionary().getSequences()) {
+					String seq = seqr.getSequenceName();
+					tryDelete(processContext.getFileSystemContext().getMateBamUnsortedForChr(input, seq));
+				}
 	    	}
 	    }
+		private void sortMates() {
+			log.info("Sorting sv mates");
+			if (processContext.shouldProcessPerChromosome()) {
+				for (SAMSequenceRecord seqr : processContext.getReference().getSequenceDictionary().getSequences()) {
+					String seq = seqr.getSequenceName();
+					sortByMateCoordinate(
+							processContext.getFileSystemContext().getMateBamUnsortedForChr(input, seq),
+							processContext.getFileSystemContext().getMateBamForChr(input, seq));
+				}
+			} else {
+				sortByMateCoordinate(
+						processContext.getFileSystemContext().getMateBamUnsorted(input),
+						processContext.getFileSystemContext().getMateBam(input));
+			}
+		}
+		/**
+		 * Sorts records in the given SAM/BAM file by the mate coordinate of each read 
+		 * @param unsorted
+		 * @param output
+		 */
+		private void sortByMateCoordinate(File unsorted, File output) {
+			log.info("Sorting " + output);
+			SamReader reader = null;
+			CloseableIterator<SAMRecord> rit = null;
+			SAMFileWriter writer = null;
+			CloseableIterator<SAMRecord> wit = null;
+			try {
+				reader = processContext.getSamReaderFactory().open(unsorted);
+				SAMFileHeader header = reader.getFileHeader();
+				rit = reader.iterator();
+				SortingCollection<SAMRecord> collection = SortingCollection.newInstance(
+						SAMRecord.class,
+						new BAMRecordCodec(header),
+						new SAMRecordMateCoordinateComparator(),
+						processContext.getFileSystemContext().getMaxBufferedRecordsPerFile(),
+						processContext.getFileSystemContext().getTemporaryDirectory());
+				while (rit.hasNext()) {
+					collection.add(rit.next());
+				}
+				collection.doneAdding();
+				writer = processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(header, true, output);
+				writer.setProgressLogger(new ProgressLogger(log));
+		    	wit = collection.iterator();
+				while (wit.hasNext()) {
+					writer.addAlignment(wit.next());
+				}
+			} finally {
+				if (writer != null) writer.close();
+				if (wit != null) wit.close();
+				if (rit != null) rit.close();
+				try {
+					if (reader != null) reader.close();
+				} catch (IOException e) { }
+			}
+		}
 		private void writeMetrics(InsertSizeMetricsCollector ismc, IdsvMetricsCollector imc) {
 			log.info("Writing metrics");
 			
@@ -260,27 +316,17 @@ public class SAMEvidenceSource extends EvidenceSource {
 				w.close();
 			}
 			writers.clear();
+			for (SAMFileWriter w : matewriters) {
+				w.close();
+			}
+			matewriters.clear();
 			for (FastqBreakpointWriter w : realignmentWriters) {
 				w.close();
 			}
 			realignmentWriters.clear();
-			log.info("Sorting sv mates");
-			for (int i = 0; i < mateRecordBuffer.size(); i++) {
-				// TODO: multi-thread this?
-				SortingCollection<SAMRecord> buffer = mateRecordBuffer.get(i);
-				SAMFileWriter w = matewriters.get(i);
-				w.setProgressLogger(new ProgressLogger(log));
-				writeToFile(buffer, w);
-				w.close();
-				matewriters.set(i, null);
-				mateRecordBuffer.set(i,  null);
-			}
-			matewriters.clear();
-			mateRecordBuffer.clear();
 		}
 		private void processInputRecords(final SAMSequenceDictionary dictionary, final InsertSizeMetricsCollector ismc, final IdsvMetricsCollector imc) {
 			// output all to a single file, or one per chr + one for unmapped 
-			assert(matewriters.size() == mateRecordBuffer.size());
 			assert(writers.size() == dictionary.getSequences().size() + 1 || writers.size() == 1);
 			assert(matewriters.size() == dictionary.getSequences().size() || matewriters.size() == 1);
 			assert(realignmentWriters.size() == dictionary.getSequences().size() || realignmentWriters.size() == 1);
@@ -323,7 +369,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 					}
 					if (badpair) {
 						if (!record.getMateUnmappedFlag()) {
-							mateRecordBuffer.get(record.getMateReferenceIndex() % mateRecordBuffer.size()).add(record);
+							matewriters.get(record.getMateReferenceIndex() % matewriters.size()).addAlignment(record);
 						}
 					}
 					ismc.acceptRecord(record, null);
@@ -348,13 +394,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		private void createOutputWriterPerGenome(final SAMFileHeader svHeader, final SAMFileHeader mateHeader) {
 			// all writers map to the same one
 			writers.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getSVBam(input)));
-			matewriters.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(mateHeader, false, processContext.getFileSystemContext().getMateBam(input)));
-			mateRecordBuffer.add(SortingCollection.newInstance(
-					SAMRecord.class,
-					new BAMRecordCodec(mateHeader),
-					new SAMRecordMateCoordinateComparator(),
-					processContext.getFileSystemContext().getMaxBufferedRecordsPerFile(),
-					processContext.getFileSystemContext().getTemporaryDirectory()));
+			matewriters.add(processContext.getSamReaderWriterFactory().makeBAMWriter(mateHeader, true, processContext.getFileSystemContext().getMateBamUnsorted(input), 0));
 			realignmentWriters.add(new FastqBreakpointWriter(processContext.getFastqWriterFactory().newWriter(processContext.getFileSystemContext().getRealignmentFastq(input))));
 		}
 		private void createOutputWritersPerChromosome(
@@ -362,13 +402,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 				final SAMFileHeader svHeader, final SAMFileHeader mateHeader) {
 			for (SAMSequenceRecord seq : dictionary.getSequences()) {
 				writers.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getSVBamForChr(input, seq.getSequenceName())));
-				matewriters.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(mateHeader, false, processContext.getFileSystemContext().getMateBamForChr(input, seq.getSequenceName())));
-				mateRecordBuffer.add(SortingCollection.newInstance(
-						SAMRecord.class,
-						new BAMRecordCodec(mateHeader),
-						new SAMRecordMateCoordinateComparator(),
-						processContext.getFileSystemContext().getMaxBufferedRecordsPerFile(),
-						processContext.getFileSystemContext().getTemporaryDirectory()));
+				matewriters.add(processContext.getSamReaderWriterFactory().makeBAMWriter(mateHeader, true, processContext.getFileSystemContext().getMateBamUnsortedForChr(input, seq.getSequenceName()), 0));
 				realignmentWriters.add(new FastqBreakpointWriter(processContext.getFastqWriterFactory().newWriter(processContext.getFileSystemContext().getRealignmentFastqForChr(input, seq.getSequenceName()))));
 			}
 			writers.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getSVBamForChr(input, "unmapped")));

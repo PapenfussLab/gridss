@@ -11,6 +11,18 @@
         </sealing>
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
-        <javaElement handleIdentifier="=htsjdk"/>
+        <file path="/htsjdk/test.vcf"/>
+        <file path="/htsjdk/.project"/>
+        <file path="/htsjdk/.gitignore"/>
+        <file path="/htsjdk/.classpath"/>
+        <file path="/htsjdk/htsjdk.ipr"/>
+        <folder path="/htsjdk/lib"/>
+        <file path="/htsjdk/htsjdk.iml"/>
+        <javaElement handleIdentifier="=htsjdk/src\/java"/>
+        <file path="/htsjdk/README.md"/>
+        <file path="/htsjdk/.travis.yml"/>
+        <folder path="/htsjdk/etc"/>
+        <folder path="/htsjdk/src"/>
+        <file path="/htsjdk/build.xml"/>
     </selectedElements>
 </jardesc>

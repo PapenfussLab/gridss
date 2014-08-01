@@ -11,6 +11,17 @@
         </sealing>
     </manifest>
     <selectedElements exportClassFiles="true" exportJavaFiles="false" exportOutputFolder="false">
-        <javaElement handleIdentifier="=picard"/>
+        <folder path="/picard/lib"/>
+        <file path="/picard/Picard-public.ipr"/>
+        <file path="/picard/.project"/>
+        <file path="/picard/.gitignore"/>
+        <folder path="/picard/etc"/>
+        <file path="/picard/Picard-public.fbp"/>
+        <file path="/picard/README.md"/>
+        <folder path="/picard/src"/>
+        <file path="/picard/Picard-public.iml"/>
+        <javaElement handleIdentifier="=picard/src\/java"/>
+        <file path="/picard/.classpath"/>
+        <file path="/picard/build.xml"/>
     </selectedElements>
 </jardesc>

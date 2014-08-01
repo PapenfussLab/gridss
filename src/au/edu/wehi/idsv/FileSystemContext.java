@@ -39,6 +39,8 @@ public class FileSystemContext {
 	private static final String FORMAT_SV_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.sv.bam";
 	private static final String FORMAT_MATE_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".svmate.bam";
 	private static final String FORMAT_MATE_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.svmate.bam";
+	private static final String FORMAT_MATE_BAM_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".svmate.unsorted.bam";
+	private static final String FORMAT_MATE_BAM_UNSORTED_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.svmate.unsorted.bam";
 	private static final String FORMAT_INSERT_SIZE_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.insertsize.txt";
 	private static final String FORMAT_IDSV_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.idsv.txt";
 	private static final String FORMAT_REALIGN_FASTQ = "%s" + COMMON_INITIAL_SUFFIX + ".realign.fq";
@@ -104,6 +106,12 @@ public class FileSystemContext {
 	}
 	public File getMateBamForChr(File input, String chromosome) {
 		return new File(String.format(FORMAT_MATE_BAM_PER_CHR, getStem(input), chromosome));
+	}
+	public File getMateBamUnsorted(File input) {
+		return new File(String.format(FORMAT_MATE_BAM_UNSORTED, getStem(input)));
+	}
+	public File getMateBamUnsortedForChr(File input, String chromosome) {
+		return new File(String.format(FORMAT_MATE_BAM_UNSORTED_PER_CHR, getStem(input), chromosome));
 	}
 	public File getBreakendVcf(File input) {
 		return new File(String.format(FORMAT_BREAKEND_VCF, getStem(input)));
