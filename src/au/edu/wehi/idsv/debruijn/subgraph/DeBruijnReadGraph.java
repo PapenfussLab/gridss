@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
+import htsjdk.samtools.util.Log;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -21,6 +23,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode> {
+	private final Log log = Log.getInstance(DeBruijnReadGraph.class);
 	public static final String ASSEMBLER_NAME = "debruijn-s";
 	/**
 	 * Connected subgraphs
@@ -101,6 +104,9 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	 * @return
 	 */
 	public Iterable<VariantContextDirectedEvidence> assembleContigsBefore(int position) {
+		if (position % 1000000 == 0) {
+			log.debug(String.format("At %s:%d de Bruijn graph size=%d, subgraphs=%d", processContext.getDictionary().getSequence(this.referenceIndex).getSequenceName(), position, size(), subgraphs.size()));
+		}
 		List<VariantContextDirectedEvidence> contigs = Lists.newArrayList();
 		for (SubgraphSummary ss : subgraphs) {
 			if (ss.getMaxAnchor() < position) {

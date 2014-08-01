@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv.debruijn;
 
-import htsjdk.samtools.SAMRecord;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -36,6 +34,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	public int getK() { return k; }
 	public T getKmer(long kmer) { return kmers.get(kmer); }
 	public Set<Long> getAllKmers() { return kmers.keySet(); }
+	public int size() { return kmers.size(); }
 	/**
 	 * Merges the given nodes together
 	 * @param node first node to merge
@@ -278,7 +277,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 			frontier.remove(kmer);
 			reachable.add(kmer);
 			// Add neighbours of this kmer to the frontier
-			for (long adjKmer : adjacentStates(seed, null, reachable)) {
+			for (long adjKmer : adjacentStates(kmer, null, reachable)) {
 				// don't need to check for inclusion since frontier is a set
 				frontier.add(adjKmer);
 			}
