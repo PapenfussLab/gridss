@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.Log;
 
 import java.io.File;

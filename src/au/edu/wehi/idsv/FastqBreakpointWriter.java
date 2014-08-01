@@ -1,9 +1,9 @@
 package au.edu.wehi.idsv;
 
-import java.io.Closeable;
-
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.fastq.FastqWriter;
+
+import java.io.Closeable;
 
 /**
  * Writes breakpoint realignment records

@@ -13,11 +13,9 @@ import java.util.Queue;
 import java.util.Set;
 
 import au.edu.wehi.idsv.AssemblyParameters;
-import au.edu.wehi.idsv.Idsv;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 
 import com.google.common.base.Function;
-import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;

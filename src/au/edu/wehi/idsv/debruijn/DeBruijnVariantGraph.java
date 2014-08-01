@@ -13,7 +13,6 @@ import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.SAMRecordUtil;
 import au.edu.wehi.idsv.SoftClipEvidence;
 
 public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends DeBruijnGraphBase<T> {

@@ -12,11 +12,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import com.google.common.collect.Lists;
-
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import au.edu.wehi.idsv.vcf.VcfConstants;
+
+import com.google.common.collect.Lists;
 
 /**
  * Unified command line arguments for idsv
