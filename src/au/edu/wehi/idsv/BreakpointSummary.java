@@ -53,7 +53,11 @@ public class BreakpointSummary extends BreakendSummary {
 	}
 	@Override
 	public String toString() {
-		return String.format("%s %s", toString(direction, referenceIndex, start, end), toString(direction2, referenceIndex2, start2, end2));
+		return String.format("%s %s", toString(direction, referenceIndex, start, end, null), toString(direction2, referenceIndex2, start2, end2, null));
+	}
+	@Override
+	public String toString(ProcessingContext processContext) {
+		return String.format("%s %s", toString(direction, referenceIndex, start, end, processContext), toString(direction2, referenceIndex2, start2, end2, processContext));
 	}
 	/**
 	 * Restricts overlap to require both local and remote breakends to overlap

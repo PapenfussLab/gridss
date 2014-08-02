@@ -44,7 +44,12 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 	}
 	@Override
 	public int getRemoteTotalBaseQual() {
-		// TODO Auto-generated method stub
-		return 0;
+		byte[] qual = getBreakendQuality();
+		if (qual == null || qual.length == 0) return 0;
+		int total = 0;
+		for (int i = 0; i < qual.length; i++) {
+			total += qual[i];
+		}
+		return total;
 	}
 }

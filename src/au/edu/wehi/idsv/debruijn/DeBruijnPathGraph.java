@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.debruijn;
 
+import htsjdk.samtools.util.Log;
+
 import java.util.ArrayDeque;
 import java.util.Comparator;
 import java.util.Deque;
@@ -29,6 +31,7 @@ import com.google.common.primitives.Ints;
  *
  */
 public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T>> {
+	private static Log log = Log.getInstance(DeBruijnPathGraph.class);
 	protected final PathNodeFactory<T, PN> factory;
 	private final DeBruijnGraphBase<T> graph;
 	protected final Set<PN> paths = Sets.newHashSet();
@@ -394,6 +397,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 		}
 		return differences;
 	}
+	private static int inconsistentMergePathRemainingCalls = 8;
 	/**
 	 * Merges the given paths together
 	 * @param pathA first path to merge 
@@ -402,6 +406,13 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 */
 	public boolean mergePaths(Iterable<PN> pathA, Iterable<PN> pathB) {
 		if (pathContainsSameNodeAtDifferentPosition(pathA, pathB) != null) {
+			if (log != null && inconsistentMergePathRemainingCalls > 0) {
+				inconsistentMergePathRemainingCalls--;
+				log.debug(String.format("Near %s: found similar but inconsistent paths \"%s\" and \"%s\"",
+					getGraph().getKmer(pathA.iterator().next().getFirst()).getSupportingEvidence().iterator().next().getBreakendSummary().toString(),
+					new String(getGraph().getBaseCalls(Lists.newArrayList(PathNode.kmerIterator(pathA)))),
+					new String(getGraph().getBaseCalls(Lists.newArrayList(PathNode.kmerIterator(pathB))))));
+			}
 			return false;
 		}
 		int weightA = getWeight(pathA);

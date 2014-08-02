@@ -34,16 +34,22 @@ public class BreakendSummary {
 		this.start = start;
 		this.end = end;
 	}
-	protected static String toString(int referenceIndex, int start, int end) {
-		return String.format("%d:%d-%d", referenceIndex, start, end);
+	protected static String toString(int referenceIndex, int start, int end, ProcessingContext processContext) {
+		if (processContext != null && referenceIndex >= 0 && referenceIndex < processContext.getDictionary().size()) {
+			return String.format("%s:%d-%d", processContext.getDictionary().getSequence(referenceIndex).getSequenceName(), start, end);
+		}
+		return String.format("(%d):%d-%d", referenceIndex, start, end);
 	}
-	protected static String toString(BreakendDirection direction, int referenceIndex, int start, int end) {
-		if (direction == BreakendDirection.Forward) return toString(referenceIndex, start, end) + ">";
-		return "<" + toString(referenceIndex, start, end);
+	protected static String toString(BreakendDirection direction, int referenceIndex, int start, int end, ProcessingContext processContext) {
+		if (direction == BreakendDirection.Forward) return toString(referenceIndex, start, end, processContext) + ">";
+		return "<" + toString(referenceIndex, start, end, processContext);
 	}
 	@Override
 	public String toString() {
-		return toString(direction, referenceIndex, start, end);
+		return toString(direction, referenceIndex, start, end, null);
+	}
+	public String toString(ProcessingContext processContext) {
+		return toString(direction, referenceIndex, start, end, processContext);
 	}
 	@Override
 	public int hashCode() {
