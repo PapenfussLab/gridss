@@ -226,6 +226,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 * @param newTo node to add incoming edges to
 	 */
 	public void replaceIncomingEdges(PN oldTo, PN newTo) {
+		assert(oldTo != newTo);
 		for (PN prev : prevPath(oldTo)) {
 			listReplace(nextPath(prev), oldTo, newTo);
 		}
@@ -238,6 +239,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 * @param newFrom node to add outgoing edges to
 	 */
 	public void replaceOutgoingEdges(PN oldFrom, PN newFrom) {
+		assert(oldFrom != newFrom);
 		for (PN next : nextPath(oldFrom)) {
 			listReplace(prevPath(next), oldFrom, newFrom);
 		}
@@ -399,6 +401,9 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 * @return true if a merge could be performed, false otherwise
 	 */
 	public boolean mergePaths(Iterable<PN> pathA, Iterable<PN> pathB) {
+		if (pathContainsSameNodeAtDifferentPosition(pathA, pathB) != null) {
+			return false;
+		}
 		int weightA = getWeight(pathA);
 		int weightB = getWeight(pathB);
 		
@@ -421,6 +426,30 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 		shrink();
 		assert(sanityCheck());
 		return true;
+	}
+	/**
+	 * Checks for a common node that would cause a problematic merge
+	 * 
+	 * @param pathA
+	 * @param pathB
+	 * @return first inconsistent node, null if all nodes are consistent
+	 */
+	private PN pathContainsSameNodeAtDifferentPosition(Iterable<PN> pathA, Iterable<PN> pathB) {
+		Map<PN, Integer> offsetMap = Maps.newHashMap();
+		int offset = 0;
+		for (PN n : pathA) {
+			offsetMap.put(n, offset);
+			offset += n.length();
+		}
+		int bOffset = 0;
+		for (PN b : pathB) {
+			if (offsetMap.containsKey(b)) {
+				int aOffset = offsetMap.get(b);
+				if (aOffset != bOffset) return b;
+			}
+			bOffset += b.length();
+		}
+		return null;
 	}
 	private SortedSet<Integer> getBreaks(Iterable<PN> path) {
 		SortedSet<Integer> breaksAt = Sets.newTreeSet();

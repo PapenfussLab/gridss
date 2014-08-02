@@ -1,6 +1,6 @@
 package au.edu.wehi.idsv.debruijn;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import java.util.Collections;
 import java.util.LinkedList;
@@ -268,5 +268,29 @@ public class DeBruijnPathGraphTest extends TestHelper {
 				);
 		LinkedList<PathNode<DeBruijnNodeBase>> path = pg.greedyTraverse(pg.get("GTAC"), pg.ByPathTotalWeightDesc, pg.ByPathTotalWeightDesc, ImmutableSet.of(pg.get("TACC")));
 		assertEquals("GTACG", pg.S(path));
+	}
+	@Test
+	public void mergePaths_should_not_merge_inconsistent_paths() {
+		BasePathGraph pg = PG(G(1)
+				.add("AAGATACAGTGCGGTCTTCC"));
+		assertFalse(pg.mergePaths(ImmutableList.of(pg.get("A"), pg.get("B")), ImmutableList.of(pg.get("B"), pg.get("A"))));
+	}
+	@Test
+	public void mergePaths_should_compare_path_position_of_nodes_when_checking_for_inconsistent_paths() {
+		//   1 - 1 - B
+		//  /
+		// A             paths are fine to merge since B is at the same position on both paths
+		//  \
+		//   2 - B
+		BasePathGraph pg = PG(G(4)
+				.add("AAAA") // A
+				.add("TTTT") // 1
+				.add("CCCC") // 1
+				.add("GGGGT") // 2
+				.add("GTAC") // B
+				);
+		assertTrue(pg.mergePaths(
+				ImmutableList.of(pg.get("AAAA"), pg.get("TTTT"), pg.get("CCCC"), pg.get("GTAC")),
+				ImmutableList.of(pg.get("AAAA"), pg.get("GGGG"), pg.get("GTAC"))));
 	}
 }

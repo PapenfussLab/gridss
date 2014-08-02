@@ -2,14 +2,12 @@ package au.edu.wehi.idsv;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileWriter;
-import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMReadGroupRecord;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SamPairUtil;
-import htsjdk.samtools.fastq.FastqWriterFactory;
 import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
@@ -25,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -40,7 +37,6 @@ import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.ReadKmerIterable;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;

@@ -253,12 +253,12 @@ public class PathGraphAssembler extends PathGraph {
 		}
 		return head;
 	}
-	private static final Function<SubgraphPathNode, Integer> SCORE_TOTAL_KMER = new Function<SubgraphPathNode, Integer>() {
+	public static final Function<SubgraphPathNode, Integer> SCORE_TOTAL_KMER = new Function<SubgraphPathNode, Integer>() {
 		public Integer apply(SubgraphPathNode arg) {
 			return arg.getWeight();
 		}
 	};
-	private static final Function<SubgraphPathNode, Integer> SCORE_MAX_KMER = new Function<SubgraphPathNode, Integer>() {
+	public static final Function<SubgraphPathNode, Integer> SCORE_MAX_KMER = new Function<SubgraphPathNode, Integer>() {
 		public Integer apply(SubgraphPathNode arg) {
 			return arg.getMaxKmerWeight();
 		}
