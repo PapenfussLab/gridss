@@ -100,6 +100,7 @@ public class SAMRecordUtil {
 	 * @return true if part of non-reference pair, false otherwise
 	 */
 	public static boolean isPartOfNonReferenceReadPair(SAMRecord record) {
+		// FIXME: cannot use proper pair flag as it is not set correctly by bwa
 		return record != null &&
 				record.getReadPairedFlag() &&
 				!record.getProperPairFlag() &&

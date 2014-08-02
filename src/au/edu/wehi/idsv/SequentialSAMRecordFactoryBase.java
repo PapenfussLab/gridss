@@ -18,16 +18,16 @@ import com.google.common.collect.PeekingIterator;
  */
 public abstract class SequentialSAMRecordFactoryBase<T> {
 	private final PeekingIterator<SAMRecord> sequence;
-	private final Map<T, SAMRecord> currentReads = Maps.newHashMap();
+	private final Map<String, SAMRecord> currentReads = Maps.newHashMap();
 	private int currentReferenceIndex = -1; 
 	private long currentPosition = -1;
-	protected SequentialSAMRecordFactoryBase(
-			PeekingIterator<SAMRecord> sequence) {
+	protected SequentialSAMRecordFactoryBase(PeekingIterator<SAMRecord> sequence) {
 		if (sequence == null) {
 			sequence = Iterators.peekingIterator(Iterators.<SAMRecord>emptyIterator());
 		}
 		this.sequence = sequence;
 	}
+	public abstract SAMRecord findAssociatedSAMRecord(T record);
 	/**
 	 * 
 	 * @param referenceIndex expected reference index (according to the non-standard sort order) of matching SAMRecord
@@ -35,7 +35,7 @@ public abstract class SequentialSAMRecordFactoryBase<T> {
 	 * @param key key of matching SAMRecord
 	 * @return matching SAMRecord if it exists, null otherwise
 	 */
-	protected SAMRecord findMatching(int referenceIndex, int position, T key) {
+	protected SAMRecord findMatching(int referenceIndex, int position, String key) {
 		load(referenceIndex, position);
 		if (currentReads.containsKey(key)) {
 			return currentReads.get(key);
@@ -47,7 +47,7 @@ public abstract class SequentialSAMRecordFactoryBase<T> {
 	 * @param record SAMRecord to extract key from
 	 * @return unique matching key for the given SAMRecord
 	 */
-	protected abstract T getMatchingKey(SAMRecord record);
+	protected abstract String getMatchingKey(SAMRecord record);
 	/**
 	 * Non-standard genomic SAM contig index
 	 * @param record

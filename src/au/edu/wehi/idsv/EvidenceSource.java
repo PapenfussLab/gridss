@@ -2,9 +2,11 @@ package au.edu.wehi.idsv;
 
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 
 import java.io.File;
+import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import au.edu.wehi.idsv.metrics.RelevantMetrics;
@@ -15,8 +17,8 @@ import com.google.common.collect.PeekingIterator;
 public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 	protected abstract boolean isProcessingComplete();
 	protected abstract void process();
-	protected abstract CloseableIterator<DirectedEvidence> perChrIterator(String chr);
-	protected abstract CloseableIterator<DirectedEvidence> singleFileIterator();
+	protected abstract Iterator<DirectedEvidence> perChrIterator(String chr);
+	protected abstract Iterator<DirectedEvidence> singleFileIterator();
 	public abstract RelevantMetrics getMetrics();
 	private static final Log log = Log.getInstance(EvidenceSource.class);
 	protected final File input;
@@ -73,7 +75,7 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 		}
 		return done;
 	}
-	public CloseableIterator<DirectedEvidence> iterator() {
+	public Iterator<DirectedEvidence> iterator() {
 		if (!isProcessingComplete()) {
 			process();
 		}
@@ -89,7 +91,7 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 			return singleFileIterator();
 		}
 	}
-	public CloseableIterator<DirectedEvidence> iterator(String chr) {
+	public Iterator<DirectedEvidence> iterator(String chr) {
 		if (!isProcessingComplete()) {
 			process();
 		}
@@ -101,7 +103,7 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 		if (processContext.shouldProcessPerChromosome()) {
 			return perChrIterator(chr);
 		} else {
-			return new CloseableChromosomeFilterIterator(singleFileIterator(), processContext.getDictionary().getSequence(chr).getSequenceIndex());
+			return new ChromosomeFilterIterator(singleFileIterator(), processContext.getDictionary().getSequence(chr).getSequenceIndex());
 		}
 	}
 	/**
@@ -112,7 +114,7 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 	 */
 	private class PerChromosomeAggregateIterator implements CloseableIterator<DirectedEvidence> {
 		private int currentReferenceIndex = -1;
-		private CloseableIterator<DirectedEvidence> currentSource = null;
+		private Iterator<DirectedEvidence> currentSource = null;
 		private boolean hasMoreContigs() {
 			return currentReferenceIndex < processContext.getReference().getSequenceDictionary().size() - 1;
 		}
@@ -136,7 +138,7 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 		}
 		private void closeCurrent() {
 			if (currentSource != null) {
-				currentSource.close();
+				CloserUtil.close(currentSource);
 			}
 			currentSource = null;
 		}
@@ -169,12 +171,12 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 	 * @author Daniel Cameron
 	 *
 	 */
-	private static class CloseableChromosomeFilterIterator implements CloseableIterator<DirectedEvidence> {
-		private CloseableIterator<DirectedEvidence> source;
-		private PeekingIterator<DirectedEvidence> it;
-		private int referenceIndex;
+	private static class ChromosomeFilterIterator implements CloseableIterator<DirectedEvidence> {
+		private final Iterator<DirectedEvidence> source;
+		private final PeekingIterator<DirectedEvidence> it;
+		private final int referenceIndex;
 		private boolean closed = false;
-		public CloseableChromosomeFilterIterator(CloseableIterator<DirectedEvidence> it, int referenceIndex) {
+		public ChromosomeFilterIterator(Iterator<DirectedEvidence> it, int referenceIndex) {
 			assert(referenceIndex >= 0);
 			this.source = it;
 			this.it = Iterators.peekingIterator(it);
@@ -206,9 +208,7 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 		@Override
 		public void close() {
 			if (!closed) {
-				source.close();
-				source = null;
-				it = null;
+				CloserUtil.close(source);
 			}
 			closed = true;
 		}

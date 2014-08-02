@@ -43,27 +43,22 @@ public class SequentialRealignedBreakpointFactoryTest extends TestHelper {
 		}
 		@Override
 		public int getLocalMapq() {
-			// TODO Auto-generated method stub
 			return 0;
 		}
 		@Override
 		public int getLocalBaseLength() {
-			// TODO Auto-generated method stub
 			return 0;
 		}
 		@Override
 		public int getLocalBaseCount() {
-			// TODO Auto-generated method stub
 			return 0;
 		}
 		@Override
 		public int getLocalMaxBaseQual() {
-			// TODO Auto-generated method stub
 			return 0;
 		}
 		@Override
 		public int getLocalTotalBaseQual() {
-			// TODO Auto-generated method stub
 			return 0;
 		}
 	}

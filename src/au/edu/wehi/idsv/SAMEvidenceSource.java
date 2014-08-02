@@ -18,6 +18,7 @@ import htsjdk.samtools.util.SortingCollection;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.Iterator;
 import java.util.List;
 
 import picard.analysis.InsertSizeMetrics;
@@ -26,7 +27,10 @@ import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import au.edu.wehi.idsv.metrics.IdsvMetricsCollector;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.metrics.RelevantMetrics;
+import au.edu.wehi.idsv.util.AutoClosingIterator;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
 /**
@@ -83,12 +87,14 @@ public class SAMEvidenceSource extends EvidenceSource {
 		done &= IntermediateFileUtil.checkIntermediate(fsc.getIdsvMetrics(input), input);
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				done &= IntermediateFileUtil.checkIntermediate(fsc.getSVBamForChr(input, seq.getSequenceName()), input);
+				done &= IntermediateFileUtil.checkIntermediate(fsc.getReadPairBamForChr(input, seq.getSequenceName()), input);
+				done &= IntermediateFileUtil.checkIntermediate(fsc.getSoftClipBamForChr(input, seq.getSequenceName()), input);
 				done &= IntermediateFileUtil.checkIntermediate(fsc.getMateBamForChr(input, seq.getSequenceName()), input);
 				done &= IntermediateFileUtil.checkIntermediate(fsc.getRealignmentFastqForChr(input, seq.getSequenceName()), input);
 			}
 		} else {
-			done &= IntermediateFileUtil.checkIntermediate(fsc.getSVBam(input), input);
+			done &= IntermediateFileUtil.checkIntermediate(fsc.getReadPairBam(input), input);
+			done &= IntermediateFileUtil.checkIntermediate(fsc.getSoftClipBam(input), input);
 			done &= IntermediateFileUtil.checkIntermediate(fsc.getMateBam(input), input);
 			done &= IntermediateFileUtil.checkIntermediate(fsc.getRealignmentFastq(input), input);
 		}
@@ -105,22 +111,42 @@ public class SAMEvidenceSource extends EvidenceSource {
 	public File getSourceFile() { return input; }
 	public boolean isTumour() { return isTumour; }
 	@Override
-	protected DirectedEvidenceFileIterator perChrIterator(String chr) {
+	protected Iterator<DirectedEvidence> perChrIterator(String chr) {
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		return new DirectedEvidenceFileIterator(processContext, this,
-				fsc.getSVBamForChr(input, chr),
+		return iterator(
+				fsc.getReadPairBamForChr(input, chr),
 				fsc.getMateBamForChr(input, chr),
-				isRealignmentComplete() ? fsc.getRealignmentBamForChr(input, chr) : null,
-				null);
+				fsc.getSoftClipBamForChr(input, chr),
+				fsc.getRealignmentBamForChr(input, chr));
 	}
 	@Override
-	protected DirectedEvidenceFileIterator singleFileIterator() {
+	protected Iterator<DirectedEvidence> singleFileIterator() {
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		return new DirectedEvidenceFileIterator(processContext, this,
-				fsc.getSVBam(input),
+		return iterator(
+				fsc.getReadPairBam(input),
 				fsc.getMateBam(input),
-				isRealignmentComplete() ? fsc.getRealignmentBam(input) : null,
-				null);
+				fsc.getSoftClipBam(input),
+				fsc.getRealignmentBam(input));
+	}
+	private Iterator<DirectedEvidence> iterator(File readPair, File pairMate, File softClip, File realigned) {
+		Iterator<NonReferenceReadPair> rpIt = new ReadPairEvidenceIterator(this,
+				processContext.getSamReaderIterator(processContext.getSamReader(readPair)),
+				processContext.getSamReaderIterator(processContext.getSamReader(pairMate)));
+		rpIt = new AutoClosingIterator<NonReferenceReadPair>(rpIt);
+		rpIt = new DirectEvidenceWindowedSortingIterator<NonReferenceReadPair>(processContext, getMetrics().getMaxFragmentSize(), rpIt);
+		Iterator<SoftClipEvidence> scIt = new SoftClipEvidenceIterator(processContext, this,
+				processContext.getSamReaderIterator(processContext.getSamReader(readPair)));
+		scIt = new AutoClosingIterator<SoftClipEvidence>(scIt);
+		scIt = new DirectEvidenceWindowedSortingIterator<SoftClipEvidence>(processContext, getMetrics().getMaxReadLength(), scIt);
+		if (isRealignmentComplete()) {
+			scIt = new RealignedSoftClipEvidenceIterator(scIt,
+				processContext.getSamReaderIterator(processContext.getSamReader(realigned)));
+			scIt = new AutoClosingIterator<SoftClipEvidence>(scIt);
+			scIt = new DirectEvidenceWindowedSortingIterator<SoftClipEvidence>(processContext, getMetrics().getMaxReadLength(), scIt);
+		} else {
+			log.info(String.format("Realignment for %s not completed - soft clip ", softClip));
+		}
+		return Iterators.mergeSorted(ImmutableList.of(rpIt, scIt), DirectedEvidenceOrder.ByNatural);
 	}
 	/**
 	 * Extracts reads supporting structural variation into intermediate files.
@@ -134,7 +160,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 	private class ExtractEvidence implements Closeable {
 		private SamReader reader = null;
 		private ReferenceSequenceFileWalker referenceWalker = null;
-		private final List<SAMFileWriter> writers = Lists.newArrayList();
+		private final List<SAMFileWriter> scwriters = Lists.newArrayList();
+		private final List<SAMFileWriter> rpwriters = Lists.newArrayList();
 		private final List<SAMFileWriter> matewriters = Lists.newArrayList();
 		//private final List<SortingCollection<SAMRecord>> mateRecordBuffer = Lists.newArrayList();
 		private final List<FastqBreakpointWriter> realignmentWriters = Lists.newArrayList();
@@ -143,10 +170,14 @@ public class SAMEvidenceSource extends EvidenceSource {
 			reader = null;
 			tryClose(referenceWalker);
 			referenceWalker = null;
-			for (SAMFileWriter w : writers) {
+			for (SAMFileWriter w : scwriters) {
 				tryClose(w);
 			}
-			writers.clear();
+			scwriters.clear();
+			for (SAMFileWriter w : rpwriters) {
+				tryClose(w);
+			}
+			rpwriters.clear();
 	    	for (SAMFileWriter w : matewriters) {
 				tryClose(w);
 			}
@@ -174,12 +205,14 @@ public class SAMEvidenceSource extends EvidenceSource {
 			tryDelete(fsc.getFlagFile(input, FLAG_NAME));
 			tryDelete(fsc.getInsertSizeMetrics(input));
 			tryDelete(fsc.getIdsvMetrics(input));
-			tryDelete(fsc.getSVBam(input));
+			tryDelete(fsc.getReadPairBam(input));
+			tryDelete(fsc.getSoftClipBam(input));
 			tryDelete(fsc.getMateBam(input));
 			tryDelete(fsc.getRealignmentFastq(input));
 			for (SAMSequenceRecord seqr : processContext.getReference().getSequenceDictionary().getSequences()) {
 				String seq = seqr.getSequenceName();
-				tryDelete(fsc.getSVBamForChr(input, seq));
+				tryDelete(fsc.getReadPairBamForChr(input, seq));
+				tryDelete(fsc.getSoftClipBamForChr(input, seq));
 				tryDelete(fsc.getMateBamForChr(input, seq));
 				tryDelete(fsc.getRealignmentFastqForChr(input, seq));
 			}
@@ -311,10 +344,14 @@ public class SAMEvidenceSource extends EvidenceSource {
 		private void flush() throws IOException {
 			reader.close();
 			reader = null;
-			for (SAMFileWriter w : writers) {
+			for (SAMFileWriter w : scwriters) {
 				w.close();
 			}
-			writers.clear();
+			scwriters.clear();
+			for (SAMFileWriter w : rpwriters) {
+				w.close();
+			}
+			rpwriters.clear();
 			for (SAMFileWriter w : matewriters) {
 				w.close();
 			}
@@ -326,9 +363,12 @@ public class SAMEvidenceSource extends EvidenceSource {
 		}
 		private void processInputRecords(final SAMSequenceDictionary dictionary, final InsertSizeMetricsCollector ismc, final IdsvMetricsCollector imc) {
 			// output all to a single file, or one per chr + one for unmapped 
-			assert(writers.size() == dictionary.getSequences().size() + 1 || writers.size() == 1);
+			assert(scwriters.size() == dictionary.getSequences().size() + 1 || scwriters.size() == 1);
+			assert(rpwriters.size() == dictionary.getSequences().size() + 1 || rpwriters.size() == 1);
 			assert(matewriters.size() == dictionary.getSequences().size() || matewriters.size() == 1);
 			assert(realignmentWriters.size() == dictionary.getSequences().size() || realignmentWriters.size() == 1);
+			
+			// FIXME: split SC and RP evidence into separate files
 			
 			// Traverse the input file
 			final ProgressLogger progress = new ProgressLogger(log);
@@ -360,12 +400,12 @@ public class SAMEvidenceSource extends EvidenceSource {
 						} else {
 							endEvidence = null;
 						}
-					}				
-					boolean badpair = SAMRecordUtil.isPartOfNonReferenceReadPair(record);
-					if (startEvidence != null || endEvidence != null || badpair) {
-						writers.get(offset % writers.size()).addAlignment(record);
 					}
-					if (badpair) {
+					if (startEvidence != null || endEvidence != null) {
+						scwriters.get(offset % scwriters.size()).addAlignment(record);
+					}
+					if (SAMRecordUtil.isPartOfNonReferenceReadPair(record)) {
+						rpwriters.get(offset % rpwriters.size()).addAlignment(record);
 						if (!record.getMateUnmappedFlag()) {
 							matewriters.get(record.getMateReferenceIndex() % matewriters.size()).addAlignment(record);
 						}
@@ -391,7 +431,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 		}
 		private void createOutputWriterPerGenome(final SAMFileHeader svHeader, final SAMFileHeader mateHeader) {
 			// all writers map to the same one
-			writers.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getSVBam(input)));
+			scwriters.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getSoftClipBam(input)));
+			rpwriters.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getReadPairBam(input)));
 			matewriters.add(processContext.getSamReaderWriterFactory().makeBAMWriter(mateHeader, true, processContext.getFileSystemContext().getMateBamUnsorted(input), 0));
 			realignmentWriters.add(new FastqBreakpointWriter(processContext.getFastqWriterFactory().newWriter(processContext.getFileSystemContext().getRealignmentFastq(input))));
 		}
@@ -399,11 +440,12 @@ public class SAMEvidenceSource extends EvidenceSource {
 				final SAMSequenceDictionary dictionary,
 				final SAMFileHeader svHeader, final SAMFileHeader mateHeader) {
 			for (SAMSequenceRecord seq : dictionary.getSequences()) {
-				writers.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getSVBamForChr(input, seq.getSequenceName())));
+				scwriters.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getSoftClipBamForChr(input, seq.getSequenceName())));
+				rpwriters.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getReadPairBamForChr(input, seq.getSequenceName())));
 				matewriters.add(processContext.getSamReaderWriterFactory().makeBAMWriter(mateHeader, true, processContext.getFileSystemContext().getMateBamUnsortedForChr(input, seq.getSequenceName()), 0));
 				realignmentWriters.add(new FastqBreakpointWriter(processContext.getFastqWriterFactory().newWriter(processContext.getFileSystemContext().getRealignmentFastqForChr(input, seq.getSequenceName()))));
 			}
-			writers.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getSVBamForChr(input, "unmapped")));
+			rpwriters.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getReadPairBamForChr(input, "unmapped")));
 		}
 	}
 }

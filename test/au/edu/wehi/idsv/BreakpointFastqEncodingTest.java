@@ -29,27 +29,22 @@ public class BreakpointFastqEncodingTest extends TestHelper {
 		}
 		@Override
 		public int getLocalMapq() {
-			// TODO Auto-generated method stub
 			return 1;
 		}
 		@Override
 		public int getLocalBaseLength() {
-			// TODO Auto-generated method stub
 			return 2;
 		}
 		@Override
 		public int getLocalBaseCount() {
-			// TODO Auto-generated method stub
 			return 3;
 		}
 		@Override
 		public int getLocalMaxBaseQual() {
-			// TODO Auto-generated method stub
 			return 4;
 		}
 		@Override
 		public int getLocalTotalBaseQual() {
-			// TODO Auto-generated method stub
 			return 5;
 		}
 	}

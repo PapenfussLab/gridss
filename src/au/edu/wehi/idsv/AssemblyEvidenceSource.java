@@ -1,13 +1,19 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
+import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.vcf.VCFFileReader;
 
+import java.io.Closeable;
 import java.io.File;
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
@@ -15,8 +21,10 @@ import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredAssembler;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 import au.edu.wehi.idsv.metrics.CompositeMetrics;
 import au.edu.wehi.idsv.metrics.RelevantMetrics;
+import au.edu.wehi.idsv.util.AutoClosingIterator;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
@@ -53,22 +61,31 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		return metrics;
 	}
 	@Override
-	protected DirectedEvidenceFileIterator perChrIterator(String chr) {
+	protected Iterator<DirectedEvidence> perChrIterator(String chr) {
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		return new DirectedEvidenceFileIterator(processContext, this,
-				null,
-				null,
-				isRealignmentComplete() ? fsc.getRealignmentBamForChr(input, chr) : null,
-				fsc.getBreakendVcfForChr(input, chr));
+		return (Iterator<DirectedEvidence>)(Iterator)iterator( // TODO: is there a less dirty way to do this downcast?
+				fsc.getBreakendVcfForChr(input, chr),
+				fsc.getRealignmentBamForChr(input, chr));
 	}
 	@Override
-	protected DirectedEvidenceFileIterator singleFileIterator() {
+	protected Iterator<DirectedEvidence> singleFileIterator() {
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		return new DirectedEvidenceFileIterator(processContext, this,
-				null,
-				null,
-				isRealignmentComplete() ? fsc.getRealignmentBam(input) : null,
-				fsc.getBreakendVcf(input));
+		return (Iterator<DirectedEvidence>)(Iterator)iterator(
+			fsc.getBreakendVcf(input),
+			fsc.getRealignmentBam(input));
+	}
+	private Iterator<VariantContextDirectedEvidence> iterator(File vcf, File realignment) {
+		Iterator<SAMRecord> realignedIt = ImmutableList.<SAMRecord>of().iterator(); 
+		if (isRealignmentComplete()) {
+			realignedIt = new AutoClosingIterator<SAMRecord>(processContext.getSamReaderIterator(processContext.getSamReader(vcf)));
+		}
+		Iterator<VariantContextDirectedEvidence> it = new VariantContextDirectedEvidenceIterator(
+				processContext,
+				this,
+				new AutoClosingIterator<VariantContext>(new VCFFileReader(vcf).iterator()),
+				realignedIt);
+		it = new DirectEvidenceWindowedSortingIterator<VariantContextDirectedEvidence>(processContext, 3 * this.getMetrics().getMaxFragmentSize(), it);
+		return it;
 	}
 	@Override
 	protected boolean isProcessingComplete() {
@@ -87,40 +104,44 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	}
 	@Override
 	protected void process() {
-		List<CloseableIterator<DirectedEvidence>> toClose = Lists.newArrayList();
+		List<Closeable> toClose = Lists.newArrayList();
 		SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
 		try {
 			if (processContext.shouldProcessPerChromosome()) {
 				for (int i = 0; i < dict.size(); i++) {
 					String seq = dict.getSequence(i).getSequenceName();
-					List<CloseableIterator<DirectedEvidence>> toMerge = Lists.newArrayList();
+					List<Iterator<DirectedEvidence>> toMerge = Lists.newArrayList();
 					for (SAMEvidenceSource bam : source) {
-						CloseableIterator<DirectedEvidence> it = bam.iterator(seq);
-						toClose.add(it);
+						Iterator<DirectedEvidence> it = bam.iterator(seq);
+						if (toClose instanceof Closeable) toClose.add((Closeable)it);
 						toMerge.add(it);
 					}
 					Iterator<DirectedEvidence> merged = Iterators.mergeSorted(toMerge, DirectedEvidenceOrder.ByNatural);
 					assemble(merged, processContext.getFileSystemContext().getBreakendVcfForChr(input, seq), processContext.getFileSystemContext().getRealignmentFastqForChr(input, seq));
-					for (CloseableIterator<DirectedEvidence> x : toMerge) {
-						x.close();
+					for (Iterator<DirectedEvidence> x : toMerge) {
+						CloserUtil.close(x);
 					}
 				}
 			} else {
-				List<CloseableIterator<DirectedEvidence>> toMerge = Lists.newArrayList();
+				List<Iterator<DirectedEvidence>> toMerge = Lists.newArrayList();
 				for (SAMEvidenceSource bam : source) {
-					CloseableIterator<DirectedEvidence> it = bam.iterator();
-					toClose.add(it);
+					Iterator<DirectedEvidence> it = bam.iterator();
+					if (toClose instanceof Closeable) toClose.add((Closeable)it);
 					toMerge.add(it);
 				}
 				Iterator<DirectedEvidence> merged = Iterators.mergeSorted(toMerge, DirectedEvidenceOrder.ByNatural);
 				assemble(merged, processContext.getFileSystemContext().getBreakendVcf(input), processContext.getFileSystemContext().getRealignmentFastq(input));
-				for (CloseableIterator<DirectedEvidence> x : toMerge) {
-					x.close();
+				for (Iterator<DirectedEvidence> x : toMerge) {
+					CloserUtil.close(x);
 				}
 			}
 		} finally {
-			for (CloseableIterator<DirectedEvidence> x : toClose) {
-				x.close();
+			for (Closeable x : toClose) {
+				try {
+					x.close();
+				} catch (IOException e) {
+					log.info(e, "Error closing stream");
+				}
 			}
 		}
 	}

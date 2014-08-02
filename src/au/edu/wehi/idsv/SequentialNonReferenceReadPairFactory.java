@@ -10,7 +10,7 @@ import com.google.common.collect.PeekingIterator;
  * @author Daniel Cameron
  *
  */
-public class SequentialNonReferenceReadPairFactory extends SequentialSAMRecordFactoryBase<String> {
+public class SequentialNonReferenceReadPairFactory extends SequentialSAMRecordFactoryBase<SAMRecord> {
 	/**
 	 * <p>mate iterator <b>must</b> be mate-coordinate sorted. @see SAMRecordMateCoordinateComparator<p>
 	 * @param reads
@@ -23,7 +23,7 @@ public class SequentialNonReferenceReadPairFactory extends SequentialSAMRecordFa
 	public NonReferenceReadPair createNonReferenceReadPair(SAMRecord record, SAMEvidenceSource source) {
 		if (!record.getReadPairedFlag()) return null;
 		if (record.getProperPairFlag()) return null;
-		SAMRecord mate = findMate(record);
+		SAMRecord mate = findAssociatedSAMRecord(record);
 		if (record != null && mate != null) {
 			NonReferenceReadPair nrrp = NonReferenceReadPair.create(record, mate, source);
 			if (!nrrp.isValid()) return null;
@@ -31,7 +31,8 @@ public class SequentialNonReferenceReadPairFactory extends SequentialSAMRecordFa
 		}
 		return null;
 	}
-	private SAMRecord findMate(SAMRecord record) {
+	@Override
+	public SAMRecord findAssociatedSAMRecord(SAMRecord record) {
 		if (record == null) return null;
 		if (record.getReadUnmappedFlag()) return null;
 		return findMatching(record.getReferenceIndex(), record.getAlignmentStart(), record.getReadName() + (record.getFirstOfPairFlag() ? "/1" : "/2"));

@@ -11,7 +11,7 @@ import com.google.common.collect.PeekingIterator;
  * @author Daniel Cameron
  *
  */
-public class SequentialRealignedBreakpointFactory extends SequentialSAMRecordFactoryBase<String> {
+public class SequentialRealignedBreakpointFactory extends SequentialSAMRecordFactoryBase<DirectedEvidence> {
 	/**
 	 * <p>read iterator <b>must</b> be coordinate sorted<p>
 	 * <p>mate iterator <b>must</b> be mate-coordinate sorted. @see SAMRecordMateCoordinateComparator<p>
@@ -22,7 +22,7 @@ public class SequentialRealignedBreakpointFactory extends SequentialSAMRecordFac
 			PeekingIterator<SAMRecord> realigned) {
 		super(realigned);
 	}
-	public SAMRecord findRealignedSAMRecord(DirectedEvidence source) {
+	public SAMRecord findAssociatedSAMRecord(DirectedEvidence source) {
 		if (source == null) return null;
 		return findMatching(source.getBreakendSummary().referenceIndex, source.getBreakendSummary().start, source.getEvidenceID());
 	}

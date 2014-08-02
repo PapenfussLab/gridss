@@ -29,20 +29,28 @@ public class FileSystemContextTest {
 		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.metrics.idsv.txt").getAbsolutePath(), C().getIdsvMetrics(new File("test.bam.idsv.working/test.bam.idsv.sv.bam")).getAbsolutePath());
 	}
 	@Test
-	public void getSVBam() {
-		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.sv.bam").getAbsolutePath(), C().getSVBam(new File("test.bam")).getAbsolutePath());
+	public void getReadPairBam() {
+		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.rp.bam").getAbsolutePath(), C().getReadPairBam(new File("test.bam")).getAbsolutePath());
 	}
 	@Test
-	public void getSVBamForChr() {
-		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.chr1.sv.bam").getAbsolutePath(), C().getSVBamForChr(new File("test.bam"), "chr1").getAbsolutePath());
+	public void getReadPairBamForChr() {
+		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.chr1.rp.bam").getAbsolutePath(), C().getReadPairBamForChr(new File("test.bam"), "chr1").getAbsolutePath());
+	}
+	@Test
+	public void getSoftClipBam() {
+		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.sc.bam").getAbsolutePath(), C().getSoftClipBam(new File("test.bam")).getAbsolutePath());
+	}
+	@Test
+	public void getSoftClipBamForChr() {
+		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.chr1.rp.bam").getAbsolutePath(), C().getSoftClipBamForChr(new File("test.bam"), "chr1").getAbsolutePath());
 	}
 	@Test
 	public void getMateBam() {
-		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.svmate.bam").getAbsolutePath(), C().getMateBam(new File("test.bam")).getAbsolutePath());
+		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.rpmate.bam").getAbsolutePath(), C().getMateBam(new File("test.bam")).getAbsolutePath());
 	}
 	@Test
 	public void getMateBamForChr() {
-		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.chr1.svmate.bam").getAbsolutePath(), C().getMateBamForChr(new File("test.bam"), "chr1").getAbsolutePath());
+		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.chr1.rpmate.bam").getAbsolutePath(), C().getMateBamForChr(new File("test.bam"), "chr1").getAbsolutePath());
 	}
 	@Test
 	public void getBreakendVcf() {
@@ -58,8 +66,9 @@ public class FileSystemContextTest {
 	private static final File TEST_BAM = new File("test.bam");
 	@Test
 	public void should_match_constant() {
-		testbamAssertMatch("test.bam.idsv.sv.bam", C().getSVBam(TEST_BAM));
-		testbamAssertMatch("test.bam.idsv.svmate.bam", C().getMateBam(TEST_BAM));
+		testbamAssertMatch("test.bam.idsv.rp.bam", C().getReadPairBam(TEST_BAM));
+		testbamAssertMatch("test.bam.idsv.sc.bam", C().getSoftClipBam(TEST_BAM));
+		testbamAssertMatch("test.bam.idsv.rpmate.bam", C().getMateBam(TEST_BAM));
 		testbamAssertMatch("test.bam.idsv.metrics.idsv.txt", C().getIdsvMetrics(TEST_BAM));
 		testbamAssertMatch("test.bam.idsv.metrics.insertsize.txt", C().getInsertSizeMetrics(TEST_BAM));
 		testbamAssertMatch("test.bam.idsv.realign.fq", C().getRealignmentFastq(TEST_BAM));
@@ -69,8 +78,9 @@ public class FileSystemContextTest {
 	}
 	@Test
 	public void should_match_constant_per_chr() {
-		testbamAssertMatch("test.bam.idsv.chr.sv.bam", C().getSVBamForChr(TEST_BAM, "chr"));
-		testbamAssertMatch("test.bam.idsv.chr.svmate.bam", C().getMateBamForChr(TEST_BAM, "chr"));
+		testbamAssertMatch("test.bam.idsv.chr.sv.bam", C().getReadPairBamForChr(TEST_BAM, "chr"));
+		testbamAssertMatch("test.bam.idsv.chr.sc.bam", C().getSoftClipBamForChr(TEST_BAM, "chr"));
+		testbamAssertMatch("test.bam.idsv.chr.rpmate.bam", C().getMateBamForChr(TEST_BAM, "chr"));
 		testbamAssertMatch("test.bam.idsv.chr.realign.fq", C().getRealignmentFastqForChr(TEST_BAM, "chr"));
 		testbamAssertMatch("test.bam.idsv.chr.realign.bam", C().getRealignmentBamForChr(TEST_BAM, "chr"));
 		testbamAssertMatch("test.bam.idsv.chr.breakend.vcf", C().getBreakendVcfForChr(TEST_BAM, "chr"));
@@ -81,6 +91,6 @@ public class FileSystemContextTest {
 		File working = testFolder.newFolder("working");
 		File f = testFolder.newFile("test.bam");
 		FileSystemContext fsc = new FileSystemContext(testFolder.getRoot(), working, 1);
-		assertTrue(fsc.getSVBam(f).toString().contains("working"));
+		assertTrue(fsc.getReadPairBam(f).toString().contains("working"));
 	}
 }

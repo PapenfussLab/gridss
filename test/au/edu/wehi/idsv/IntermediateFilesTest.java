@@ -195,8 +195,11 @@ public class IntermediateFilesTest extends TestHelper {
 	public List<FastqRecord> getFastqRecords(final EvidenceSource source) {
 		return getFastqRecords(getCommandlineContext().getFileSystemContext().getRealignmentFastq(source.getFileIntermediateDirectoryBasedOn()));
 	}
-	public List<SAMRecord> getSV(final SAMEvidenceSource source) {
-		return getRecords(getCommandlineContext().getFileSystemContext().getSVBam(source.getFileIntermediateDirectoryBasedOn()));
+	public List<SAMRecord> getRP(final SAMEvidenceSource source) {
+		return getRecords(getCommandlineContext().getFileSystemContext().getReadPairBam(source.getFileIntermediateDirectoryBasedOn()));
+	}
+	public List<SAMRecord> getSC(final SAMEvidenceSource source) {
+		return getRecords(getCommandlineContext().getFileSystemContext().getSoftClipBam(source.getFileIntermediateDirectoryBasedOn()));
 	}
 	public List<SAMRecord> getMate(final SAMEvidenceSource source) {
 		return getRecords(getCommandlineContext().getFileSystemContext().getMateBam(source.getFileIntermediateDirectoryBasedOn()));
@@ -224,14 +227,25 @@ public class IntermediateFilesTest extends TestHelper {
 		public List<FastqRecord> getFastqRecords(final EvidenceSource source, final String chr) {
 			return IntermediateFilesTest.this.getFastqRecords(getCommandlineContext().getFileSystemContext().getRealignmentFastqForChr(source.getFileIntermediateDirectoryBasedOn(), chr));
 		}
-		public List<SAMRecord> getSV(final SAMEvidenceSource source, String chr) {
-			return getRecords(getCommandlineContext().getFileSystemContext().getSVBamForChr(source.getFileIntermediateDirectoryBasedOn(), chr));
+		public List<SAMRecord> getRP(final SAMEvidenceSource source, String chr) {
+			return getRecords(getCommandlineContext().getFileSystemContext().getReadPairBamForChr(source.getFileIntermediateDirectoryBasedOn(), chr));
 		}
-		public List<SAMRecord> getSV(final SAMEvidenceSource source) {
+		public List<SAMRecord> getRP(final SAMEvidenceSource source) {
 			return Lists.newArrayList(Iterables.concat(Iterables.transform(getCommandlineContext().getDictionary().getSequences(), new Function<SAMSequenceRecord, Iterable<SAMRecord>>() {
 				@Override
 				public Iterable<SAMRecord> apply(SAMSequenceRecord arg0) {
-					return getRecords(getCommandlineContext().getFileSystemContext().getSVBamForChr(source.getFileIntermediateDirectoryBasedOn(), arg0.getSequenceName()));
+					return getRecords(getCommandlineContext().getFileSystemContext().getReadPairBamForChr(source.getFileIntermediateDirectoryBasedOn(), arg0.getSequenceName()));
+				}
+			})));
+		}
+		public List<SAMRecord> getSC(final SAMEvidenceSource source, String chr) {
+			return getRecords(getCommandlineContext().getFileSystemContext().getSoftClipBamForChr(source.getFileIntermediateDirectoryBasedOn(), chr));
+		}
+		public List<SAMRecord> getSC(final SAMEvidenceSource source) {
+			return Lists.newArrayList(Iterables.concat(Iterables.transform(getCommandlineContext().getDictionary().getSequences(), new Function<SAMSequenceRecord, Iterable<SAMRecord>>() {
+				@Override
+				public Iterable<SAMRecord> apply(SAMSequenceRecord arg0) {
+					return getRecords(getCommandlineContext().getFileSystemContext().getSoftClipBamForChr(source.getFileIntermediateDirectoryBasedOn(), arg0.getSequenceName()));
 				}
 			})));
 		}

@@ -114,7 +114,7 @@ public class SequentialReferenceCoverageLookupTest extends TestHelper {
 			assertEquals(i >= 10 && i < 14 ? 6 : 0, r);
 		}
 	}
-	@Ignore // TODO: fix this
+	@Ignore
 	@Test
 	public void should_consider_CIGAR() {
 		assertTrue("NYI", false);

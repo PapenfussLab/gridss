@@ -17,45 +17,57 @@ import com.google.common.collect.Lists;
 
 public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	@Test
-	public void should_generate_sv_mate_fq_per_chr() {
+	public void should_generate_rp_sc_mate_fq() {
 		createInput();
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
 		source.ensureEvidenceExtracted();
-		assertEquals(0, getSV(source).size());
+		assertEquals(0, getRP(source).size());
+		assertEquals(0, getSC(source).size());
 		assertEquals(0, getMate(source).size());
 		assertEquals(0, getFastqRecords(source).size());
 	}
 	@Test
-	public void sc_should_be_located_in_sv_bam_for_chr() {
+	public void should_generate_rp_sc_mate_fq_per_chr() {
+		createInput();
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
+		source.ensureEvidenceExtracted();
+		assertEquals(0, getRP(source).size());
+		assertEquals(0, getSC(source).size());
+		assertEquals(0, getMate(source).size());
+		assertEquals(0, getFastqRecords(source).size());
+	}
+	@Test
+	public void sc_should_be_located_in_sc_bam_for_chr() {
 		createInput(Read(1, 1, "50M50S"));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
 		source.ensureEvidenceExtracted();
-		assertEquals(1, new PerChr().getSV(source, "polyACGT").size());
+		assertEquals(1, new PerChr().getSC(source, "polyACGT").size());
 	}
 	@Test
-	public void oea_should_be_located_in_sv_bam_for_chr() {
+	public void oea_should_be_located_in_rp_bam_for_chr() {
 		createInput(OEA(1, 1, "100M", true));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
 		source.ensureEvidenceExtracted();
-		assertEquals(1, new PerChr().getSV(source, "polyACGT").size());
+		assertEquals(1, new PerChr().getRP(source, "polyACGT").size());
 	}
 	@Test
-	public void dp_should_be_located_in_sv_bam_for_chr() {
+	public void dp_should_be_located_in_rp_bam_for_chr() {
 		createInput(DP(1, 1, "100M", true, 2, 2, "100M", true));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
 		source.ensureEvidenceExtracted();
-		assertEquals(1, new PerChr().getSV(source, "polyACGT").size());
-		assertEquals(1, new PerChr().getSV(source, "random").size());
+		assertEquals(1, new PerChr().getRP(source, "polyACGT").size());
+		assertEquals(1, new PerChr().getRP(source, "random").size());
 	}
 	@Test
-	public void concordant_read_should_not_be_located_in_sv_bam() {
+	public void concordant_read_should_not_be_located_in_rp_or_scbam() {
 		createInput(Read(1, 1, "100M"));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
 		source.ensureEvidenceExtracted();
-		assertEquals(0, getSV(source).size());
+		assertEquals(0, getRP(source).size());
+		assertEquals(0, getSC(source).size());
 	}
 	@Test
-	public void oea_mate_should_be_located_in_sv_mate_bam_for_chr() {
+	public void oea_mate_should_be_located_in_mate_bam_for_chr() {
 		createInput(OEA(1, 1, "100M", true));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
 		source.ensureEvidenceExtracted();
@@ -67,19 +79,19 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		assertEquals(1, mate.getMateAlignmentStart());
 	}
 	@Test
-	public void dp_mate_should_be_located_in_sv_mate_bam_for_chr() {
+	public void dp_mate_should_be_located_in_mate_bam_for_chr() {
 		createInput(DP(1, 1, "100M", true, 2, 2, "100M", true));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
 		source.ensureEvidenceExtracted();
 		assertEquals(1, new PerChr().getMate(source, "polyACGT").size());
 		assertEquals(1, new PerChr().getMate(source, "random").size());
-		SAMRecord mate = new PerChr().getSV(source, "polyACGT").get(0);
+		SAMRecord mate = new PerChr().getRP(source, "polyACGT").get(0);
 		assertFalse(mate.getReadUnmappedFlag());
 		assertEquals(2, mate.getMateAlignmentStart());
 		assertEquals(2, mate.getMateAlignmentStart());
 	}
 	@Test
-	public void sv_mate_should_be_sorted_by_mate_coordinate() {
+	public void mate_should_be_sorted_by_mate_coordinate() {
 		createInput(DP(1, 1, "100M", true, 2, 5, "100M", true),
 		   DP(1, 2, "100M", true, 2, 4, "100M", true),
 		   DP(1, 3, "100M", true, 2, 6, "100M", true),
@@ -122,7 +134,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		createInput(withSequence(S(POLY_A).substring(0, 100), Read(0, 1, "50M50S")));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
 		source.ensureEvidenceExtracted();
-		assertEquals(0, (int)getSV(source).get(0).getIntegerAttribute("NM"));
+		assertEquals(0, (int)getSC(source).get(0).getIntegerAttribute("NM"));
 	}
 	@Test
 	public void should_write_long_sc_to_fastq() {
@@ -192,7 +204,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		pc.getSoftClipParameters().minLength = 51;
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
 		source.ensureEvidenceExtracted();
-		assertEquals(0, getSV(source).size());
+		assertEquals(0, getSC(source).size());
 	}
 	@Test
 	public void min_qual_should_only_consider_sc_qualities() {

@@ -35,12 +35,14 @@ public class FileSystemContext {
 	}
 	private static final String COMMON_INITIAL_SUFFIX = ".idsv";
 	private static final String INTERMEDIATE_DIR_SUFFIX = COMMON_INITIAL_SUFFIX + ".working";
-	private static final String FORMAT_SV_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".sv.bam";
-	private static final String FORMAT_SV_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.sv.bam";
-	private static final String FORMAT_MATE_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".svmate.bam";
-	private static final String FORMAT_MATE_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.svmate.bam";
-	private static final String FORMAT_MATE_BAM_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".svmate.unsorted.bam";
-	private static final String FORMAT_MATE_BAM_UNSORTED_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.svmate.unsorted.bam";
+	private static final String FORMAT_SC_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".sc.bam";
+	private static final String FORMAT_SC_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.sc.bam";
+	private static final String FORMAT_RP_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".rp.bam";
+	private static final String FORMAT_RP_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.rp.bam";
+	private static final String FORMAT_MATE_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".rpmate.bam";
+	private static final String FORMAT_MATE_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.rpmate.bam";
+	private static final String FORMAT_MATE_BAM_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".rpmate.unsorted.bam";
+	private static final String FORMAT_MATE_BAM_UNSORTED_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.rpmate.unsorted.bam";
 	private static final String FORMAT_INSERT_SIZE_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.insertsize.txt";
 	private static final String FORMAT_IDSV_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.idsv.txt";
 	private static final String FORMAT_REALIGN_FASTQ = "%s" + COMMON_INITIAL_SUFFIX + ".realign.fq";
@@ -95,11 +97,17 @@ public class FileSystemContext {
 		return stem.getAbsolutePath();
 
 	}
-	public File getSVBam(File input) {
-		return new File(String.format(FORMAT_SV_BAM, getStem(input)));
+	public File getReadPairBam(File input) {
+		return new File(String.format(FORMAT_RP_BAM, getStem(input)));
 	}
-	public File getSVBamForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_SV_BAM_PER_CHR, getStem(input), chromosome));
+	public File getReadPairBamForChr(File input, String chromosome) {
+		return new File(String.format(FORMAT_RP_BAM_PER_CHR, getStem(input), chromosome));
+	}
+	public File getSoftClipBam(File input) {
+		return new File(String.format(FORMAT_SC_BAM, getStem(input)));
+	}
+	public File getSoftClipBamForChr(File input, String chromosome) {
+		return new File(String.format(FORMAT_SC_BAM_PER_CHR, getStem(input), chromosome));
 	}
 	public File getMateBam(File input) {
 		return new File(String.format(FORMAT_MATE_BAM, getStem(input)));

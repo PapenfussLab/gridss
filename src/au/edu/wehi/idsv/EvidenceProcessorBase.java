@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 
 import java.io.Closeable;
@@ -20,17 +19,17 @@ public abstract class EvidenceProcessorBase implements Closeable {
 	protected final ProcessingContext processContext;
 	protected final File output;
 	protected final List<EvidenceSource> evidence;
-	private final List<Closeable> toClose = Lists.newArrayList();
+	protected final List<Closeable> toClose = Lists.newArrayList();
 	public EvidenceProcessorBase(ProcessingContext context, File output, List<EvidenceSource> evidence) {
 		this.processContext = context;
 		this.output = output;
 		this.evidence = evidence;
 	}
 	protected Iterator<DirectedEvidence> getAllEvidence() {
-		List<CloseableIterator<DirectedEvidence>> evidenceItList = Lists.newArrayList();
+		List<Iterator<DirectedEvidence>> evidenceItList = Lists.newArrayList();
 		for (EvidenceSource source : evidence) {
-			CloseableIterator<DirectedEvidence> it = source.iterator();
-			toClose.add(it);
+			Iterator<DirectedEvidence> it = source.iterator();
+			if (it instanceof Closeable) toClose.add((Closeable)it);
 			evidenceItList.add(it);
 		}
 		Iterator<DirectedEvidence> evidenceIt = Iterators.mergeSorted(evidenceItList, DirectedEvidenceOrder.ByNatural);
@@ -42,8 +41,8 @@ public abstract class EvidenceProcessorBase implements Closeable {
 		for (EvidenceSource source : evidence) {
 			List<Iterator<DirectedEvidence>> sourceIt = Lists.newArrayList();
 			for (int i : refList) {
-				CloseableIterator<DirectedEvidence> it = source.iterator(processContext.getReference().getSequenceDictionary().getSequence(i).getSequenceName());
-				toClose.add(it);
+				Iterator<DirectedEvidence> it = source.iterator(processContext.getReference().getSequenceDictionary().getSequence(i).getSequenceName());
+				if (it instanceof Closeable) toClose.add((Closeable)it);
 				sourceIt.add(it);
 			}
 			evidenceItList.add(Iterators.concat(sourceIt.iterator()));
