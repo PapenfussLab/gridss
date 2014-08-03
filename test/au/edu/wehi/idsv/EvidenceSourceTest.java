@@ -97,7 +97,7 @@ public class EvidenceSourceTest extends IntermediateFilesTest {
 	@Test
 	public void CloseableChromosomeFilterIterator_should_close_as_soon_as_possible() {
 		TestEvidenceSource es = new TestEvidenceSource(false, input);
-		CloseableIterator<DirectedEvidence> it = es.iterator("polyACGT");
+		Iterator<DirectedEvidence> it = es.iterator("polyACGT");
 		assertEquals(1, it.next().getBreakendSummary().referenceIndex);
 		assertEquals(1, it.next().getBreakendSummary().referenceIndex);
 		assertEquals(1, it.next().getBreakendSummary().referenceIndex);
@@ -114,7 +114,7 @@ public class EvidenceSourceTest extends IntermediateFilesTest {
 	@Test
 	public void PerChromosomeAggregateIterator_should_close_as_soon_as_possible() {
 		TestEvidenceSource es = new TestEvidenceSource(true, input);
-		CloseableIterator<DirectedEvidence> it = es.iterator();
+		Iterator<DirectedEvidence> it = es.iterator();
 		it.next();
 		it.next();
 		it.next();

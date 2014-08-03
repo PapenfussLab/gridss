@@ -42,7 +42,7 @@ public class FileSystemContextTest {
 	}
 	@Test
 	public void getSoftClipBamForChr() {
-		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.chr1.rp.bam").getAbsolutePath(), C().getSoftClipBamForChr(new File("test.bam"), "chr1").getAbsolutePath());
+		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.chr1.sc.bam").getAbsolutePath(), C().getSoftClipBamForChr(new File("test.bam"), "chr1").getAbsolutePath());
 	}
 	@Test
 	public void getMateBam() {
@@ -78,7 +78,7 @@ public class FileSystemContextTest {
 	}
 	@Test
 	public void should_match_constant_per_chr() {
-		testbamAssertMatch("test.bam.idsv.chr.sv.bam", C().getReadPairBamForChr(TEST_BAM, "chr"));
+		testbamAssertMatch("test.bam.idsv.chr.rp.bam", C().getReadPairBamForChr(TEST_BAM, "chr"));
 		testbamAssertMatch("test.bam.idsv.chr.sc.bam", C().getSoftClipBamForChr(TEST_BAM, "chr"));
 		testbamAssertMatch("test.bam.idsv.chr.rpmate.bam", C().getMateBamForChr(TEST_BAM, "chr"));
 		testbamAssertMatch("test.bam.idsv.chr.realign.fq", C().getRealignmentFastqForChr(TEST_BAM, "chr"));

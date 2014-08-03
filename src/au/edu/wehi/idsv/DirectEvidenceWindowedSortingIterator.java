@@ -38,6 +38,7 @@ public class DirectEvidenceWindowedSortingIterator<T extends DirectedEvidence> e
 	@Override
 	protected T computeNext() {
 		advanceUnderlying();
+		if (calls.isEmpty()) return endOfData();
 		T next = calls.poll();
 		long nextPos = processContext.getLinear().getStartLinearCoordinate(next.getBreakendSummary());
 		if (nextPos < lastPosition) {
@@ -47,7 +48,11 @@ public class DirectEvidenceWindowedSortingIterator<T extends DirectedEvidence> e
 	}
 	private void advanceUnderlying() {
 		while (it.hasNext() && (calls.isEmpty() || nextRecordCouldBeAtStartOfWindow())) {
-			calls.add(it.next());
+			T next = it.next();
+			if (next == null) {
+				throw new RuntimeException("Sanity check failure: null evidence");
+			}
+			calls.add(next);
 		}
 	}
 	private boolean nextRecordCouldBeAtStartOfWindow() {

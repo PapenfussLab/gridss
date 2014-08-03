@@ -7,6 +7,7 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.fastq.FastqRecord;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.Test;
@@ -317,5 +318,21 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		createInput(Read(0, 1, "50M50S"));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
 		assertEquals(100, source.getMetrics().getMaxFragmentSize());
+	}
+	@Test
+	public void iterator_evidence_should_be_sorted_by_evidence_natural_ordering() {
+		createInput(new SAMRecord[] { Read(1, 1, "50M50S") },
+				new SAMRecord[] { Read(1, 1, "50S50M") },
+				RP(0, 100, 200, 100),
+				DP(1, 1, "100M", true, 2, 5, "100M", true),
+			   DP(1, 2, "100M", false, 2, 4, "100M", true),
+			   DP(1, 3, "100M", true, 2, 6, "100M", true),
+			   OEA(1, 4, "100M", false),
+			   OEA(1, 4, "100M", true));
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		List<DirectedEvidence> result = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> sorted = Lists.newArrayList(result);
+		Collections.sort(sorted, DirectedEvidenceOrder.ByNatural);
+		assertEquals(sorted, result);
 	}
 }

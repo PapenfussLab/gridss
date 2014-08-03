@@ -128,6 +128,35 @@ public class TestHelper {
 		pair[1].setReadName(pair[0].getReadName());
 		return NonReferenceReadPair.create(pair[0], pair[1], source);
 	}
+	public static class MockDirectedEvidence implements DirectedEvidence {
+		public BreakendSummary breakend;
+		public MockDirectedEvidence(int referenceIndex, int start, BreakendDirection direction) {
+			breakend = new BreakendSummary(referenceIndex, direction, start, start);
+		}
+		@Override
+		public BreakendSummary getBreakendSummary()  { return breakend; }
+		@Override
+		public byte[] getBreakendSequence() { return null; }
+		@Override
+		public byte[] getBreakendQuality()  { return null; }
+		@Override
+		public String getEvidenceID()  { return null; }
+		@Override
+		public EvidenceSource getEvidenceSource()  { return null; }
+		@Override
+		public int getLocalMapq() { return 0; }
+		@Override
+		public int getLocalBaseLength() { return 0; }
+		@Override
+		public int getLocalBaseCount() { return 0; }
+		@Override
+		public int getLocalMaxBaseQual() { return 0; }
+		@Override
+		public int getLocalTotalBaseQual() { return 0; }
+	}
+	public static DirectedEvidence E(int referenceIndex, int start, BreakendDirection direction) {
+		return new MockDirectedEvidence(referenceIndex, start, direction);
+	}
 	public static SoftClipEvidence SCE(BreakendDirection direction, SAMRecord... pair) {
 		return SCE(direction, SES(), pair);
 	}
