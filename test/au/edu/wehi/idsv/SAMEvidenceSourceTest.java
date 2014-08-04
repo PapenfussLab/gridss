@@ -21,7 +21,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	public void should_generate_rp_sc_mate_fq() {
 		createInput();
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
-		source.ensureEvidenceExtracted();
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		assertEquals(0, getRP(source).size());
 		assertEquals(0, getSC(source).size());
 		assertEquals(0, getMate(source).size());
@@ -31,7 +31,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	public void should_generate_rp_sc_mate_fq_per_chr() {
 		createInput();
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
-		source.ensureEvidenceExtracted();
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		assertEquals(0, new PerChr().getRP(source).size());
 		assertEquals(0, new PerChr().getSC(source).size());
 		assertEquals(0, new PerChr().getMate(source).size());
@@ -41,21 +41,21 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	public void sc_should_be_located_in_sc_bam_for_chr() {
 		createInput(Read(1, 1, "50M50S"));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
-		source.ensureEvidenceExtracted();
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		assertEquals(1, new PerChr().getSC(source, "polyACGT").size());
 	}
 	@Test
 	public void oea_should_be_located_in_rp_bam_for_chr() {
 		createInput(OEA(1, 1, "100M", true));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
-		source.ensureEvidenceExtracted();
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		assertEquals(1, new PerChr().getRP(source, "polyACGT").size());
 	}
 	@Test
 	public void dp_should_be_located_in_rp_bam_for_chr() {
 		createInput(DP(1, 1, "100M", true, 2, 2, "100M", true));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
-		source.ensureEvidenceExtracted();
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		assertEquals(1, new PerChr().getRP(source, "polyACGT").size());
 		assertEquals(1, new PerChr().getRP(source, "random").size());
 	}
@@ -63,7 +63,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	public void concordant_read_should_not_be_located_in_rp_or_scbam() {
 		createInput(Read(1, 1, "100M"));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
-		source.ensureEvidenceExtracted();
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		assertEquals(0, getRP(source).size());
 		assertEquals(0, getSC(source).size());
 	}
@@ -71,7 +71,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	public void oea_mate_should_be_located_in_mate_bam_for_chr() {
 		createInput(OEA(1, 1, "100M", true));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
-		source.ensureEvidenceExtracted();
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		List<SAMRecord> rs = new PerChr().getMate(source, "polyACGT");
 		assertEquals(1, rs.size());
 		SAMRecord mate = rs.get(0);
@@ -83,7 +83,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	public void dp_mate_should_be_located_in_mate_bam_for_chr() {
 		createInput(DP(1, 1, "100M", true, 2, 2, "100M", true));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
-		source.ensureEvidenceExtracted();
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		assertEquals(1, new PerChr().getMate(source, "polyACGT").size());
 		assertEquals(1, new PerChr().getMate(source, "random").size());
 		SAMRecord mate = new PerChr().getRP(source, "polyACGT").get(0);
@@ -98,7 +98,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		   DP(1, 3, "100M", true, 2, 6, "100M", true),
 		   OEA(1, 4, "100M", false));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
-		source.ensureEvidenceExtracted();
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		List<SAMRecord> rs =  getMate(source);
 		// polyACGT
 		assertEquals(7, rs.size());
@@ -115,7 +115,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	public void should_create_metrics() {
 		createInput(RP(1, 1, 100, 10));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
-		source.ensureEvidenceExtracted();
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		assertTrue(getCommandlineContext().getFileSystemContext().getIdsvMetrics(input).exists());
 		assertTrue(getCommandlineContext().getFileSystemContext().getInsertSizeMetrics(input).exists());
 	}
@@ -134,14 +134,14 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	public void should_set_NM_tag() {
 		createInput(withSequence(S(POLY_A).substring(0, 100), Read(0, 1, "50M50S")));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
-		source.ensureEvidenceExtracted();
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		assertEquals(0, (int)getSC(source).get(0).getIntegerAttribute("NM"));
 	}
 	@Test
 	public void should_write_long_sc_to_fastq() {
 		createInput(ValidSC());
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
-		source.ensureEvidenceExtracted();
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		
 		List<FastqRecord> fastq = getFastqRecords(source);
 		assertEquals(2, fastq.size());
@@ -157,7 +157,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		ProcessingContext pc = getCommandlineContext();
 		pc.getSoftClipParameters().minReadMapq = 6;
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
-		source.ensureEvidenceExtracted();
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		
 		assertEquals(0, getFastqRecords(source).size());
 	}
@@ -167,7 +167,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		ProcessingContext pc = getCommandlineContext();
 		pc.getRealignmentParameters().minLength = 26;
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
-		source.ensureEvidenceExtracted();
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		
 		assertEquals(0, getFastqRecords(source).size());
 	}
@@ -184,7 +184,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		ProcessingContext pc = getCommandlineContext();
 		pc.getSoftClipParameters().minAnchorIdentity = 50;
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
-		source.ensureEvidenceExtracted();
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		
 		assertEquals(0, getFastqRecords(source).size());
 	}
@@ -194,7 +194,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		ProcessingContext pc = getCommandlineContext();
 		pc.getRealignmentParameters().minAverageQual = 6;
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
-		source.ensureEvidenceExtracted();
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		
 		assertEquals(0, getFastqRecords(source).size());
 	}
@@ -204,7 +204,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		ProcessingContext pc = getCommandlineContext();
 		pc.getSoftClipParameters().minLength = 51;
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
-		source.ensureEvidenceExtracted();
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		assertEquals(0, getSC(source).size());
 	}
 	@Test
@@ -219,7 +219,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		ProcessingContext pc = getCommandlineContext();
 		pc.getRealignmentParameters().minAverageQual = 6;
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
-		source.ensureEvidenceExtracted();
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		
 		assertEquals(0, getFastqRecords(source).size());
 	}
@@ -232,6 +232,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 			   DP(1, 3, "100M", true, 2, 6, "100M", true),
 			   OEA(1, 4, "100M", false));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
 		assertEquals(8, list.size()); // 1 SC + 3 * 2 DP + 1 OEA
 	}
@@ -245,6 +246,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				Read(4, 1, "50M50S")
 				);
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
 		for (int i = 0; i <= 4; i++) {
 			assertEquals(i, list.get(i).getBreakendSummary().referenceIndex);
@@ -260,6 +262,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				Read(4, 1, "50M50S")
 				);
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		List<DirectedEvidence> list = Lists.newArrayList(source.iterator("polyACGT"));
 		assertEquals(1, list.size());
 		assertEquals(1, list.get(0).getBreakendSummary().referenceIndex);
@@ -273,6 +276,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 			   DP(1, 3, "100M", true, 2, 6, "100M", true),
 			   OEA(1, 4, "100M", false));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
 		assertEquals(8, list.size()); // 1 SC + 3 * 2 DP + 1 OEA
 	}
@@ -286,6 +290,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				Read(4, 1, "50M50S")
 				);
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
 		for (int i = 0; i <= 4; i++) {
 			assertEquals(i, list.get(i).getBreakendSummary().referenceIndex);
@@ -301,6 +306,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				Read(4, 1, "50M50S")
 				);
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		List<DirectedEvidence> list = Lists.newArrayList(source.iterator("polyACGT"));
 		assertEquals(1, list.size());
 		assertEquals(1, list.get(0).getBreakendSummary().referenceIndex);
@@ -309,6 +315,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	public void should_set_evidence_source_to_self() {
 		createInput(Read(0, 1, "50M50S"));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
 		assertEquals(1, list.size());
 		assertEquals(source, list.get(0).getEvidenceSource());
@@ -317,6 +324,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	public void should_default_fragment_size_to_read_length_for_unpaired_reads() {
 		createInput(Read(0, 1, "50M50S"));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		assertEquals(100, source.getMetrics().getMaxFragmentSize());
 	}
 	@Test
@@ -330,6 +338,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 			   OEA(1, 4, "100M", false),
 			   OEA(1, 4, "100M", true));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		List<DirectedEvidence> result = Lists.newArrayList(source.iterator());
 		List<DirectedEvidence> sorted = Lists.newArrayList(result);
 		Collections.sort(sorted, DirectedEvidenceOrder.ByNatural);

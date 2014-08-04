@@ -3,7 +3,6 @@ package au.edu.wehi.idsv;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.Log;
 
 import java.io.File;
 import java.util.Iterator;
@@ -15,12 +14,10 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 
 public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
-	protected abstract boolean isProcessingComplete();
 	protected abstract void process();
 	protected abstract Iterator<DirectedEvidence> perChrIterator(String chr);
 	protected abstract Iterator<DirectedEvidence> singleFileIterator();
 	public abstract RelevantMetrics getMetrics();
-	private static final Log log = Log.getInstance(EvidenceSource.class);
 	protected final File input;
 	protected final ProcessingContext processContext;
 	/**
@@ -76,14 +73,6 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 		return done;
 	}
 	public Iterator<DirectedEvidence> iterator() {
-		if (!isProcessingComplete()) {
-			process();
-		}
-		if (!isProcessingComplete()) {
-			throw new IllegalStateException(String.format("Missing intermediate files for ", input));
-		} else if (!isRealignmentComplete()) {
-			log.debug("Missing realignment bam. Traversing breakends only.");
-		}
 		if (processContext.shouldProcessPerChromosome()) {
 			// Lazily iterator over each input
 			return new PerChromosomeAggregateIterator();
@@ -92,14 +81,7 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 		}
 	}
 	public Iterator<DirectedEvidence> iterator(String chr) {
-		if (!isProcessingComplete()) {
-			process();
-		}
-		if (!isProcessingComplete()) {
-			throw new IllegalStateException(String.format("Missing intermediate files for ", input));
-		} else if (!isRealignmentComplete()) {
-			log.debug("Missing realignment bam. Traversing breakends only.");
-		}
+		process();
 		if (processContext.shouldProcessPerChromosome()) {
 			return perChrIterator(chr);
 		} else {

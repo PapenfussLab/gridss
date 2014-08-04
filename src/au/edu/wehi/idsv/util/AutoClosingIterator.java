@@ -4,8 +4,10 @@ import htsjdk.samtools.util.CloserUtil;
 
 import java.io.Closeable;
 import java.util.Iterator;
+import java.util.List;
 
 import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.ImmutableList;
 
 /**
  * Iterator that automatically closes the underlying resources when the end of stream has been reached.
@@ -16,9 +18,17 @@ import com.google.common.collect.AbstractIterator;
  */
 public class AutoClosingIterator<T> extends AbstractIterator<T> implements Closeable {
 	private final Iterator<T> underlying;
+	private final List<Closeable> alsoClose;
 	private boolean closed = false;
+	
 	public AutoClosingIterator(Iterator<T> it) {
 		this.underlying = it;
+		this.alsoClose = ImmutableList.of();
+		if (!underlying.hasNext()) close();
+	}
+	public AutoClosingIterator(Iterator<T> it, Iterable<Closeable> alsoClose) {
+		this.underlying = it;
+		this.alsoClose = ImmutableList.copyOf(alsoClose);
 		if (!underlying.hasNext()) close();
 	}
 	@Override
@@ -34,6 +44,9 @@ public class AutoClosingIterator<T> extends AbstractIterator<T> implements Close
 		if (!closed) {
 			closed = true;
 			CloserUtil.close(underlying);
+			for (Closeable c : alsoClose) {
+				CloserUtil.close(c);
+			}
 		}
 	}
 }

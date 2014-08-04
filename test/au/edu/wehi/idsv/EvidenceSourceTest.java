@@ -46,8 +46,6 @@ public class EvidenceSourceTest extends IntermediateFilesTest {
 		}
 		private boolean processed = false;
 		@Override
-		protected boolean isProcessingComplete() { return processed; }
-		@Override
 		protected void process() { processed = true; }
 		@Override
 		protected CloseableIterator<DirectedEvidence> perChrIterator(String chr) {

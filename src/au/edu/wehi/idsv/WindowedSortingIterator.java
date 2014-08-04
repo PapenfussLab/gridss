@@ -7,7 +7,6 @@ import java.util.PriorityQueue;
 
 import com.google.common.base.Function;
 import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.PeekingIterator;

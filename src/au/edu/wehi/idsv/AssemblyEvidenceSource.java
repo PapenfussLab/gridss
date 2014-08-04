@@ -64,33 +64,40 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	@Override
 	protected Iterator<DirectedEvidence> perChrIterator(String chr) {
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		return (Iterator<DirectedEvidence>)(Iterator)iterator( // TODO: is there a less dirty way to do this downcast?
+		@SuppressWarnings({ "unchecked", "rawtypes" })
+		Iterator<DirectedEvidence> downcast = (Iterator<DirectedEvidence>)(Iterator)iterator( // TODO: is there a less dirty way to do this downcast?
 				fsc.getBreakendVcfForChr(input, chr),
 				fsc.getRealignmentBamForChr(input, chr));
+		return downcast;
 	}
 	@Override
 	protected Iterator<DirectedEvidence> singleFileIterator() {
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		return (Iterator<DirectedEvidence>)(Iterator)iterator(
+		@SuppressWarnings({ "unchecked", "rawtypes" })
+		Iterator<DirectedEvidence> downcast = (Iterator<DirectedEvidence>)(Iterator)iterator(
 			fsc.getBreakendVcf(input),
 			fsc.getRealignmentBam(input));
+		return downcast;
 	}
 	private Iterator<VariantContextDirectedEvidence> iterator(File vcf, File realignment) {
 		Iterator<SAMRecord> realignedIt = ImmutableList.<SAMRecord>of().iterator(); 
 		if (isRealignmentComplete()) {
 			realignedIt = new AutoClosingIterator<SAMRecord>(processContext.getSamReaderIterator(processContext.getSamReader(realignment)));
+		} else {
+			log.info(String.format("Assembly realignment for %s not completed", vcf));
+			realignedIt = ImmutableList.<SAMRecord>of().iterator();
 		}
+		VCFFileReader reader = new VCFFileReader(vcf);
 		Iterator<VariantContextDirectedEvidence> it = new VariantContextDirectedEvidenceIterator(
 				processContext,
 				this,
-				new AutoClosingIterator<VariantContext>(new VCFFileReader(vcf).iterator()),
+				new AutoClosingIterator<VariantContext>(reader.iterator(), ImmutableList.<Closeable>of(reader)),
 				realignedIt);
 		// Change sort order from VCF sorted order to evidence position order
 		it = new DirectEvidenceWindowedSortingIterator<VariantContextDirectedEvidence>(processContext, 3 * this.getMetrics().getMaxFragmentSize(), it);
 		return it;
 	}
-	@Override
-	protected boolean isProcessingComplete() {
+	private boolean isProcessingComplete() {
 		boolean done = true;
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		if (processContext.shouldProcessPerChromosome()) {
