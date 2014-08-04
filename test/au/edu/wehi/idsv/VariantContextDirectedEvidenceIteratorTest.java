@@ -87,10 +87,9 @@ public class VariantContextDirectedEvidenceIteratorTest  extends TestHelper {
 		realigned.add(assemblyRealigned);
 		realigned.add(f);
 		go();
-		assertEquals(3, out.size());
+		assertEquals(1, out.size());
+		assertTrue(out.get(0) instanceof VariantContextDirectedBreakpoint);
 		assertTrue(out.get(0).getBreakendSummary() instanceof BreakpointSummary);
-		assertTrue(out.get(1).getBreakendSummary() instanceof BreakpointSummary);
-		assertTrue(out.get(2).getBreakendSummary() instanceof BreakpointSummary);
 	}
 	@Test
 	public void should_require_realign_in_call_position_order() {
@@ -101,7 +100,7 @@ public class VariantContextDirectedEvidenceIteratorTest  extends TestHelper {
 		realigned.add(withReadName("0#10#fReadName", Read(0, 1, "5M"))[0]);
 		go();
 		assertEquals(1, out.size());
-		assertTrue(out.get(1) instanceof VariantContextDirectedEvidence);
+		assertTrue(out.get(0) instanceof VariantContextDirectedBreakpoint);
 		assertTrue(out.get(0).getBreakendSummary() instanceof BreakpointSummary);
 	}
 	@Test

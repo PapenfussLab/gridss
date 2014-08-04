@@ -29,7 +29,7 @@ public class ReadPairEvidenceIteratorTest extends TestHelper {
 				SES(),
 				sv.iterator(),
 				mate.iterator());
-		List<NonReferenceReadPair> out = Lists.newArrayList(it);
+		out = Lists.newArrayList(it);
 		// check output is in order
 		for (int i = 0; i < out.size() - 1; i++) {
 			BreakendSummary l0 = out.get(i).getBreakendSummary();

@@ -32,10 +32,10 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		createInput();
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
 		source.ensureEvidenceExtracted();
-		assertEquals(0, getRP(source).size());
-		assertEquals(0, getSC(source).size());
-		assertEquals(0, getMate(source).size());
-		assertEquals(0, getFastqRecords(source).size());
+		assertEquals(0, new PerChr().getRP(source).size());
+		assertEquals(0, new PerChr().getSC(source).size());
+		assertEquals(0, new PerChr().getMate(source).size());
+		assertEquals(0, new PerChr().getFastqRecords(source).size());
 	}
 	@Test
 	public void sc_should_be_located_in_sc_bam_for_chr() {

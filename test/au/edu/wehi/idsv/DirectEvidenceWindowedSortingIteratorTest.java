@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 
 import org.junit.Test;
 
@@ -41,6 +42,6 @@ public class DirectEvidenceWindowedSortingIteratorTest extends TestHelper {
 		ArrayList<DirectedEvidence> expected = Lists.newArrayList(list);
 		Collections.sort(expected, DirectedEvidenceOrder.ByNatural);
 		ArrayList<DirectedEvidence> result = Lists.newArrayList(it);
-		assertNotEquals(expected, result);
+		assertFalse(expected.equals(result));
 	}
 }

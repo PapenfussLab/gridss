@@ -33,10 +33,12 @@ public class VariantContextDirectedEvidenceIterator extends AbstractIterator<Var
 			VariantContext variant = it.next();
 			IdsvVariantContext managedContext = IdsvVariantContext.create(processContext, source, variant);
 			if (managedContext instanceof DirectedEvidence) {
-				VariantContextDirectedEvidence assembly = (VariantContextDirectedEvidence)variant;
+				VariantContextDirectedEvidence assembly = (VariantContextDirectedEvidence)managedContext;
 				SAMRecord realigned = factory.findAssociatedSAMRecord(assembly);
 				assembly = AssemblyBuilder.incorporateRealignment(processContext, assembly, realigned);
-				return assembly;
+				if (!assembly.isFiltered()) {
+					return assembly;
+				}
 			}
 		}
 		return endOfData();

@@ -30,7 +30,7 @@ public class ReadPairEvidenceIterator extends AbstractIterator<NonReferenceReadP
 		while (iterator.hasNext()) {
 			SAMRecord record = iterator.next();
 			if (SAMRecordUtil.isPartOfNonReferenceReadPair(record)) {
-				NonReferenceReadPair pair = factory.createNonReferenceReadPair(record, (SAMEvidenceSource)source);
+				NonReferenceReadPair pair = factory.createNonReferenceReadPair(record, source);
 				if (pair != null && pair.isValid()) {
 					return pair;
 				}

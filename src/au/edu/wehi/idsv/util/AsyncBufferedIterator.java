@@ -11,6 +11,8 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 
+import javax.naming.OperationNotSupportedException;
+
 import org.apache.commons.math3.exception.NullArgumentException;
 
 import com.google.common.collect.ImmutableList;
@@ -119,4 +121,8 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
         	}
         }
     }
+	@Override
+	public void remove() {
+		throw new UnsupportedOperationException();
+	}
 }

@@ -133,15 +133,18 @@ public class SAMEvidenceSource extends EvidenceSource {
 				processContext.getSamReaderIterator(processContext.getSamReader(readPair)),
 				processContext.getSamReaderIterator(processContext.getSamReader(pairMate)));
 		rpIt = new AutoClosingIterator<NonReferenceReadPair>(rpIt);
+		// sort as input is ordered by SAMRecord alignment start position (SAM/BAM genomic coordinate sorted)
 		rpIt = new DirectEvidenceWindowedSortingIterator<NonReferenceReadPair>(processContext, getMetrics().getMaxFragmentSize(), rpIt);
 		Iterator<SoftClipEvidence> scIt = new SoftClipEvidenceIterator(processContext, this,
-				processContext.getSamReaderIterator(processContext.getSamReader(readPair)));
+				processContext.getSamReaderIterator(processContext.getSamReader(softClip)));
 		scIt = new AutoClosingIterator<SoftClipEvidence>(scIt);
+		// sort as input is ordered by SAMRecord alignment start position (SAM/BAM genomic coordinate sorted)
 		scIt = new DirectEvidenceWindowedSortingIterator<SoftClipEvidence>(processContext, getMetrics().getMaxReadLength(), scIt);
 		if (isRealignmentComplete()) {
 			scIt = new RealignedSoftClipEvidenceIterator(scIt,
 				processContext.getSamReaderIterator(processContext.getSamReader(realigned)));
 			scIt = new AutoClosingIterator<SoftClipEvidence>(scIt);
+			// need to sort again as microhomology at breakpoints can shift starting position 
 			scIt = new DirectEvidenceWindowedSortingIterator<SoftClipEvidence>(processContext, getMetrics().getMaxReadLength(), scIt);
 		} else {
 			log.info(String.format("Realignment for %s not completed - soft clip ", softClip));
