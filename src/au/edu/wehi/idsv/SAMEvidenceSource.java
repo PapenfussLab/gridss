@@ -138,17 +138,15 @@ public class SAMEvidenceSource extends EvidenceSource {
 		Iterator<SoftClipEvidence> scIt = new SoftClipEvidenceIterator(processContext, this,
 				processContext.getSamReaderIterator(processContext.getSamReader(softClip)));
 		scIt = new AutoClosingIterator<SoftClipEvidence>(scIt);
-		// sort as input is ordered by SAMRecord alignment start position (SAM/BAM genomic coordinate sorted)
-		scIt = new DirectEvidenceWindowedSortingIterator<SoftClipEvidence>(processContext, getMetrics().getMaxReadLength(), scIt);
 		if (isRealignmentComplete()) {
 			scIt = new RealignedSoftClipEvidenceIterator(scIt,
 				processContext.getSamReaderIterator(processContext.getSamReader(realigned)));
 			scIt = new AutoClosingIterator<SoftClipEvidence>(scIt);
-			// need to sort again as microhomology at breakpoints can shift starting position 
-			scIt = new DirectEvidenceWindowedSortingIterator<SoftClipEvidence>(processContext, getMetrics().getMaxReadLength(), scIt);
 		} else {
 			log.info(String.format("Realignment for %s not completed - soft clip ", softClip));
 		}
+		// sort into evidence order
+		scIt = new DirectEvidenceWindowedSortingIterator<SoftClipEvidence>(processContext, getMetrics().getMaxReadLength(), scIt);
 		return Iterators.mergeSorted(ImmutableList.of(rpIt, scIt), DirectedEvidenceOrder.ByNatural);
 	}
 	/**

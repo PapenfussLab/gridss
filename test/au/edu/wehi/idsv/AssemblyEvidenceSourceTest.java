@@ -124,7 +124,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		assertEquals(2, getAssembly(aes).size());
 		List<FastqRecord> out = getFastqRecords(aes);
 		assertEquals(2, out.size());
-		assertEquals(1, BreakpointFastqEncoding.getStartPosition(out.get(0).getReadHeader()));
-		assertEquals(10, BreakpointFastqEncoding.getStartPosition(out.get(1).getReadHeader()));
+		assertEquals(1, BreakpointFastqEncoding.getEncodedStartPosition(out.get(0).getReadHeader()));
+		assertEquals(10, BreakpointFastqEncoding.getEncodedStartPosition(out.get(1).getReadHeader()));
 	}
 }

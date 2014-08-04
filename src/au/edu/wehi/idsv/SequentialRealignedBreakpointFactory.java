@@ -14,7 +14,6 @@ import com.google.common.collect.PeekingIterator;
 public class SequentialRealignedBreakpointFactory extends SequentialSAMRecordFactoryBase<DirectedEvidence> {
 	/**
 	 * <p>read iterator <b>must</b> be coordinate sorted<p>
-	 * <p>mate iterator <b>must</b> be mate-coordinate sorted. @see SAMRecordMateCoordinateComparator<p>
 	 * @param reads
 	 * @param mate
 	 */
@@ -24,18 +23,21 @@ public class SequentialRealignedBreakpointFactory extends SequentialSAMRecordFac
 	}
 	public SAMRecord findAssociatedSAMRecord(DirectedEvidence source) {
 		if (source == null) return null;
-		return findMatching(source.getBreakendSummary().referenceIndex, source.getBreakendSummary().start, source.getEvidenceID());
+		return findMatching(
+				BreakpointFastqEncoding.getReferenceIndex(source),
+				BreakpointFastqEncoding.getStartPosition(source),
+				BreakpointFastqEncoding.getID(source));
 	}
 	@Override
 	protected String getMatchingKey(SAMRecord record) {
-		return BreakpointFastqEncoding.getID(record.getReadName());
+		return BreakpointFastqEncoding.getEncodedID(record.getReadName());
 	}
 	@Override
 	protected int getReferenceIndex(SAMRecord record) {
-		return BreakpointFastqEncoding.getReferenceIndex(record.getReadName());
+		return BreakpointFastqEncoding.getEncodedReferenceIndex(record.getReadName());
 	}
 	@Override
 	protected int getPosition(SAMRecord record) {
-		return BreakpointFastqEncoding.getStartPosition(record.getReadName());
+		return BreakpointFastqEncoding.getEncodedStartPosition(record.getReadName());
 	}
 }

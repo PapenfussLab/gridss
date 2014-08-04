@@ -11,10 +11,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.naming.OperationNotSupportedException;
-
-import org.apache.commons.math3.exception.NullArgumentException;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
@@ -38,7 +34,7 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
     private PeekingIterator<Object> currentBuffer = Iterators.peekingIterator(ImmutableList.<Object>of().iterator());
 	private static final Object eos = new Object(); // End of stream sentinel
 	public AsyncBufferedIterator(Iterator<T> iterator, int bufferCount, int bufferSize) {
-		if (iterator == null) throw new NullArgumentException();
+		if (iterator == null) throw new IllegalArgumentException();
 		if (bufferCount <= 0 || bufferSize <= 0) throw new IllegalArgumentException("Non-zero buffer size required.");
 		this.underlying = iterator;
 		this.buffer = new ArrayBlockingQueue<List<Object>>(bufferCount);

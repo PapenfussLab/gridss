@@ -15,6 +15,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.PriorityQueue;
+import java.util.Queue;
 
 import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredAssembler;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
@@ -76,13 +78,14 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	private Iterator<VariantContextDirectedEvidence> iterator(File vcf, File realignment) {
 		Iterator<SAMRecord> realignedIt = ImmutableList.<SAMRecord>of().iterator(); 
 		if (isRealignmentComplete()) {
-			realignedIt = new AutoClosingIterator<SAMRecord>(processContext.getSamReaderIterator(processContext.getSamReader(vcf)));
+			realignedIt = new AutoClosingIterator<SAMRecord>(processContext.getSamReaderIterator(processContext.getSamReader(realignment)));
 		}
 		Iterator<VariantContextDirectedEvidence> it = new VariantContextDirectedEvidenceIterator(
 				processContext,
 				this,
 				new AutoClosingIterator<VariantContext>(new VCFFileReader(vcf).iterator()),
 				realignedIt);
+		// Change sort order from VCF sorted order to evidence position order
 		it = new DirectEvidenceWindowedSortingIterator<VariantContextDirectedEvidence>(processContext, 3 * this.getMetrics().getMaxFragmentSize(), it);
 		return it;
 	}
@@ -167,26 +170,37 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				processAssembly(assembler.addEvidence(readEvidence), fastqWriter, vcfWriter);
 			}
 			processAssembly(assembler.endOfEvidence(), fastqWriter, vcfWriter);
+			flushWriterQueueBefore(Long.MAX_VALUE, fastqWriter, vcfWriter);
 		} finally {
 			if (fastqWriter != null) fastqWriter.close();
 			if (vcfWriter != null) vcfWriter.close();
 		}
 	}
+	private long maxAssembledPosition = 0;
+	/**
+	 * Internal buffer ensuring assemblies are written in sorted VCF order, not assembly call order 
+	 */
+	private Queue<VariantContextDirectedEvidence> writerQueue = new PriorityQueue<VariantContextDirectedEvidence>(32, IdsvVariantContext.ByLocationStart);
 	private void processAssembly(Iterable<VariantContextDirectedEvidence> evidenceList, FastqBreakpointWriter fastqWriter, VariantContextWriter vcfWriter) {
     	if (evidenceList != null) {
 	    	for (VariantContextDirectedEvidence a : evidenceList) {
-	    		processAssembly(a, fastqWriter, vcfWriter);
+	    		if (a != null) {
+		    		maxAssembledPosition = Math.max(maxAssembledPosition, processContext.getLinear().getLinearCoordinate(a.getReferenceIndex(), a.getStart())); 
+		    		writerQueue.add(a);
+	    		}
 	    	}
     	}
+    	flushWriterQueueBefore(maxAssembledPosition - 3 * getMetrics().getMaxFragmentSize(), fastqWriter, vcfWriter);
     }
-	private void processAssembly(VariantContextDirectedEvidence evidence, FastqBreakpointWriter fastqWriter, VariantContextWriter vcfWriter) {
-		if (evidence != null) {
+	private void flushWriterQueueBefore(long position, FastqBreakpointWriter fastqWriter, VariantContextWriter vcfWriter) {
+		while (!writerQueue.isEmpty() && processContext.getLinear().getLinearCoordinate(writerQueue.peek().getReferenceIndex(), writerQueue.peek().getStart()) < position) {
+			VariantContextDirectedEvidence evidence = writerQueue.poll();
 			vcfWriter.add(evidence); // write out failed assemblies as well for debugging purposes
 			if (!evidence.isFiltered() && processContext.getRealignmentParameters().shouldRealignBreakend(evidence)) {
 				fastqWriter.write(evidence);
 			}
 		}
-    }
+	}
 	private ReadEvidenceAssembler getAssembler() {
     	switch (processContext.getAssemblyParameters().method) {
 	    	case DEBRUIJN_PER_POSITION:

@@ -51,17 +51,17 @@ public class BreakpointFastqEncodingTest extends TestHelper {
 	@Test
 	public void should_round_trip_ID() {
 		FastqRecord fq = BreakpointFastqEncoding.getRealignmentFastq(new StubDirectedBreakend());
-		assertEquals("EvidenceID", BreakpointFastqEncoding.getID(fq.getReadHeader()));
+		assertEquals("EvidenceID", BreakpointFastqEncoding.getEncodedID(fq.getReadHeader()));
 	}
 	@Test
 	public void should_round_trip_StartPosition() {
 		FastqRecord fq = BreakpointFastqEncoding.getRealignmentFastq(new StubDirectedBreakend());
-		assertEquals(123, BreakpointFastqEncoding.getStartPosition(fq.getReadHeader()));
+		assertEquals(123, BreakpointFastqEncoding.getEncodedStartPosition(fq.getReadHeader()));
 	}
 	@Test
 	public void should_round_trip_ReferenceIndex() {
 		FastqRecord fq = BreakpointFastqEncoding.getRealignmentFastq(new StubDirectedBreakend());
-		assertEquals(1, BreakpointFastqEncoding.getReferenceIndex(fq.getReadHeader()));
+		assertEquals(1, BreakpointFastqEncoding.getEncodedReferenceIndex(fq.getReadHeader()));
 	}
 	@Test
 	public void should_use_BreakpointSequence() {
@@ -72,5 +72,17 @@ public class BreakpointFastqEncodingTest extends TestHelper {
 	public void should_use_BreakpointQuality() {
 		FastqRecord fq = BreakpointFastqEncoding.getRealignmentFastq(new StubDirectedBreakend());
 		assertEquals(S(new byte[] { 34, 35, 36, 37}), fq.getBaseQualityString());
+	}
+	@Test
+	public void soft_clip_should_be_sorted_by_sam_coordinate_sort_order() {
+		FastqRecord fq = BreakpointFastqEncoding.getRealignmentFastq(SCE(FWD, Read(1, 2, "5M5S")));
+		assertEquals(1, BreakpointFastqEncoding.getEncodedReferenceIndex(fq.getReadHeader()));
+		assertEquals(2, BreakpointFastqEncoding.getEncodedStartPosition(fq.getReadHeader()));
+	}
+	@Test
+	public void assembly_should_be_sorted_by_vcf_coordinate_sort_order() {
+		FastqRecord fq = BreakpointFastqEncoding.getRealignmentFastq(AB().referenceAnchor(1, 2).makeVariant());
+		assertEquals(1, BreakpointFastqEncoding.getEncodedReferenceIndex(fq.getReadHeader()));
+		assertEquals(2, BreakpointFastqEncoding.getEncodedStartPosition(fq.getReadHeader()));
 	}
 }

@@ -1,13 +1,8 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.util.Log;
-
 import java.util.Iterator;
-import java.util.PriorityQueue;
 
-import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.PeekingIterator;
+import com.google.common.base.Function;
 
 /**
  * Sorts directed evidence within from a sequence where the sequence position of
@@ -22,42 +17,12 @@ import com.google.common.collect.PeekingIterator;
  *
  * @param <T>
  */
-public class DirectEvidenceWindowedSortingIterator<T extends DirectedEvidence> extends AbstractIterator<T> {
-	private static final Log log = Log.getInstance(DirectEvidenceWindowedSortingIterator.class);
-	private static final int INITIAL_BUFFER_SIZE = 32;
-	private final PriorityQueue<T> calls = new PriorityQueue<T>(INITIAL_BUFFER_SIZE, DirectedEvidenceOrder.ByNatural);
-	private final ProcessingContext processContext;
-	private final int windowSize;
-	private final PeekingIterator<T> it;
-	private long lastPosition = Long.MIN_VALUE;
-	public DirectEvidenceWindowedSortingIterator(ProcessingContext processContext, int windowSize, Iterator<T> it) {
-		this.processContext = processContext;
-		this.windowSize = windowSize;
-		this.it = Iterators.peekingIterator(it);
-	}
-	@Override
-	protected T computeNext() {
-		advanceUnderlying();
-		if (calls.isEmpty()) return endOfData();
-		T next = calls.poll();
-		long nextPos = processContext.getLinear().getStartLinearCoordinate(next.getBreakendSummary());
-		if (nextPos < lastPosition) {
-			log.error("Sanity check failure: sorting window size too small: evidence out of order at " + next.getBreakendSummary().toString(processContext));
-		}
-		return next;
-	}
-	private void advanceUnderlying() {
-		while (it.hasNext() && (calls.isEmpty() || nextRecordCouldBeAtStartOfWindow())) {
-			T next = it.next();
-			if (next == null) {
-				throw new RuntimeException("Sanity check failure: null evidence");
+public class DirectEvidenceWindowedSortingIterator<T extends DirectedEvidence> extends WindowedSortingIterator<T> {
+	public DirectEvidenceWindowedSortingIterator(final ProcessingContext processContext, final int windowSize, final Iterator<T> it) {
+		super(it, new Function<T, Long>() {
+			public Long apply(T arg) {
+				return processContext.getLinear().getStartLinearCoordinate(arg.getBreakendSummary());
 			}
-			calls.add(next);
-		}
-	}
-	private boolean nextRecordCouldBeAtStartOfWindow() {
-		long bufferPosition = processContext.getLinear().getStartLinearCoordinate(calls.peek().getBreakendSummary());
-		long nextPosition = processContext.getLinear().getStartLinearCoordinate(it.peek().getBreakendSummary());
-		return nextPosition <= bufferPosition + windowSize;
+		}, windowSize);
 	}
 }
