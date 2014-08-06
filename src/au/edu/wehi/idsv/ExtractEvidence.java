@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.BAMRecordCodec;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
@@ -11,9 +10,9 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
-import htsjdk.samtools.util.SortingCollection;
 
 import java.io.Closeable;
 import java.io.File;
@@ -25,6 +24,9 @@ import picard.analysis.directed.InsertSizeMetricsCollector;
 import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import au.edu.wehi.idsv.metrics.IdsvMetricsCollector;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
+import au.edu.wehi.idsv.sam.SAMFileUtil;
+import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 import com.google.common.collect.Lists;
 /**
@@ -52,33 +54,26 @@ public class ExtractEvidence implements Closeable {
 	private final List<SAMFileWriter> matewriters = Lists.newArrayList();
 	private final List<FastqBreakpointWriter> realignmentWriters = Lists.newArrayList();
 	public void close() {
-		tryClose(reader);
+		CloserUtil.close(reader);
 		reader = null;
-		tryClose(referenceWalker);
+		CloserUtil.close(referenceWalker);
 		referenceWalker = null;
 		for (SAMFileWriter w : scwriters) {
-			tryClose(w);
+			CloserUtil.close(w);
 		}
 		scwriters.clear();
 		for (SAMFileWriter w : rpwriters) {
-			tryClose(w);
+			CloserUtil.close(w);
 		}
 		rpwriters.clear();
     	for (SAMFileWriter w : matewriters) {
-			tryClose(w);
+			CloserUtil.close(w);
 		}
     	matewriters.clear();
     	for (FastqBreakpointWriter w : realignmentWriters) {
-			tryClose(w);
+			CloserUtil.close(w);
 		}
     	realignmentWriters.clear();
-	}
-	private void tryClose(Closeable toClose) {
-		try {
-			if (toClose != null) toClose.close();
-    	} catch (IOException e) {
-    		log.debug(e);
-    	}
 	}
 	/**
 	 * Deletes all output files
@@ -117,7 +112,7 @@ public class ExtractEvidence implements Closeable {
 	public void process() {
 		boolean shouldDelete = true;
     	try {
-    		deleteOutput(); // trash any left-over files
+    		deleteOutput(); // remove any left-over files
     		
 	    	reader = processContext.getSamReader(source.getSourceFile());
 	    	final SAMFileHeader header = reader.getFileHeader();
@@ -164,54 +159,16 @@ public class ExtractEvidence implements Closeable {
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seqr : processContext.getReference().getSequenceDictionary().getSequences()) {
 				String seq = seqr.getSequenceName();
-				sortByMateCoordinate(
+				SAMFileUtil.sort(processContext,
 						processContext.getFileSystemContext().getMateBamUnsortedForChr(source.getSourceFile(), seq),
-						processContext.getFileSystemContext().getMateBamForChr(source.getSourceFile(), seq));
+						processContext.getFileSystemContext().getMateBamForChr(source.getSourceFile(), seq),
+						new SAMRecordMateCoordinateComparator());
 			}
 		} else {
-			sortByMateCoordinate(
+			SAMFileUtil.sort(processContext,
 					processContext.getFileSystemContext().getMateBamUnsorted(source.getSourceFile()),
-					processContext.getFileSystemContext().getMateBam(source.getSourceFile()));
-		}
-	}
-	/**
-	 * Sorts records in the given SAM/BAM file by the mate coordinate of each read 
-	 * @param unsorted
-	 * @param output
-	 */
-	private void sortByMateCoordinate(File unsorted, File output) {
-		log.info("Sorting " + output);
-		SamReader reader = null;
-		CloseableIterator<SAMRecord> rit = null;
-		SAMFileWriter writer = null;
-		CloseableIterator<SAMRecord> wit = null;
-		try {
-			reader = processContext.getSamReader(unsorted);
-			SAMFileHeader header = reader.getFileHeader();
-			rit = processContext.getSamReaderIterator(reader);
-			SortingCollection<SAMRecord> collection = SortingCollection.newInstance(
-					SAMRecord.class,
-					new BAMRecordCodec(header),
-					new SAMRecordMateCoordinateComparator(),
-					processContext.getFileSystemContext().getMaxBufferedRecordsPerFile(),
-					processContext.getFileSystemContext().getTemporaryDirectory());
-			while (rit.hasNext()) {
-				collection.add(rit.next());
-			}
-			collection.doneAdding();
-			writer = processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(header, true, output);
-			writer.setProgressLogger(new ProgressLogger(log));
-	    	wit = collection.iterator();
-			while (wit.hasNext()) {
-				writer.addAlignment(wit.next());
-			}
-		} finally {
-			if (writer != null) writer.close();
-			if (wit != null) wit.close();
-			if (rit != null) rit.close();
-			try {
-				if (reader != null) reader.close();
-			} catch (IOException e) { }
+					processContext.getFileSystemContext().getMateBam(source.getSourceFile()),
+					new SAMRecordMateCoordinateComparator());
 		}
 	}
 	private void writeMetrics(InsertSizeMetricsCollector ismc, IdsvMetricsCollector imc) {
@@ -252,8 +209,6 @@ public class ExtractEvidence implements Closeable {
 		assert(rpwriters.size() == dictionary.getSequences().size() + 1 || rpwriters.size() == 1); // +1 for unmapped 
 		assert(matewriters.size() == dictionary.getSequences().size() || matewriters.size() == 1);
 		assert(realignmentWriters.size() == dictionary.getSequences().size() || realignmentWriters.size() == 1);
-		
-		// FIXME: split SC and RP evidence into separate files
 		
 		// Traverse the source.getSourceFile() file
 		final ProgressLogger progress = new ProgressLogger(log);

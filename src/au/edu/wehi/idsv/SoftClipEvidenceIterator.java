@@ -7,6 +7,8 @@ import htsjdk.samtools.util.CloserUtil;
 import java.util.Iterator;
 import java.util.Queue;
 
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Queues;
 

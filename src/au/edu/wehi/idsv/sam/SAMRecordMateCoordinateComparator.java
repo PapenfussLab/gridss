@@ -1,19 +1,18 @@
-package au.edu.wehi.idsv;
+package au.edu.wehi.idsv.sam;
 
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordComparator;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
 
 /**
  * Comparator for sorting SAMRecords by mate coordinate.
  *
  */
-public class SAMRecordMateCoordinateComparator extends SAMRecordCoordinateComparator {
-    @Override
+public class SAMRecordMateCoordinateComparator implements SAMRecordComparator {
 	public int compare(final SAMRecord samRecord1, final SAMRecord samRecord2) {
 		int cmp = fileOrderCompare(samRecord1, samRecord2);
 		if (cmp != 0) return cmp;
 		// Note: secondary sort order does not match SAMRecordCoordinateComparator
-		cmp = super.fileOrderCompare(samRecord1, samRecord2);
 		if (cmp != 0) return cmp;
 		cmp = samRecord1.getReadName().compareTo(samRecord2.getReadName());
 		if (cmp != 0) return cmp;
@@ -34,7 +33,6 @@ public class SAMRecordMateCoordinateComparator extends SAMRecordCoordinateCompar
     /**
      * @return negative if samRecord1 < samRecord2,  0 if equal, else positive
      */
-    @Override
 	public int fileOrderCompare(final SAMRecord samRecord1, final SAMRecord samRecord2) {
         final int refIndex1 = samRecord1.getMateReferenceIndex();
         final int refIndex2 = samRecord2.getMateReferenceIndex();

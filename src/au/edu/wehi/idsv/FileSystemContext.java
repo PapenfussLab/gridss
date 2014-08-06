@@ -54,6 +54,14 @@ public class FileSystemContext {
 	private static final String FORMAT_BREAKPOINT_VCF_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s-%s.breakpoint.vcf";
 	private static final String FORMAT_BREAKPOINT_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".breakpoint.vcf";
 	private static final String FORMAT_FLAG_FILE = "%s" + COMMON_INITIAL_SUFFIX + ".%s";
+	private static final String FORMAT_SC_REMOTE_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".scremote.bam";
+	private static final String FORMAT_SC_REMOTE_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.scremote.bam";
+	private static final String FORMAT_SC_REMOTE_BAM_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".scremote.unsorted.bam";
+	private static final String FORMAT_SC_REMOTE_BAM_UNSORTED_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.scremote.unsorted.bam";;
+	private static final String FORMAT_REALIGN_REMOTE_BAM_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".realignremote.unsorted.bam";
+	private static final String FORMAT_REALIGN_REMOTE_BAM_PER_CHR_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realignremote.unsorted.bam";
+	private static final String FORMAT_REALIGN_REMOTE_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".realignremote.bam";
+	private static final String FORMAT_REALIGN_REMOTE_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realignremote.bam";
 	/**
 	 * Gets the idsv intermediate working directory for the given input
 	 * @param input
@@ -153,5 +161,30 @@ public class FileSystemContext {
 	}
 	public File getFlagFile(File input, String flagname) {
 		return new File(String.format(FORMAT_FLAG_FILE, getStem(input), flagname));
+	}
+	// Remote sorted
+	public File getSoftClipRemoteBam(File input) {
+		return new File(String.format(FORMAT_SC_REMOTE_BAM, getStem(input)));
+	}
+	public File getSoftClipRemoteBamForChr(File input, String chromosome) {
+		return new File(String.format(FORMAT_SC_REMOTE_BAM_PER_CHR, getStem(input), chromosome));
+	}
+	public File getSoftClipRemoteUnsortedBam(File input) {
+		return new File(String.format(FORMAT_SC_REMOTE_BAM_UNSORTED, getStem(input)));
+	}
+	public File getSoftClipRemoteUnsortedBamForChr(File input, String chromosome) {
+		return new File(String.format(FORMAT_SC_REMOTE_BAM_UNSORTED_PER_CHR, getStem(input), chromosome));
+	}
+	public File getRealignmentRemoteUnsortedBam(File input) {
+		return new File(String.format(FORMAT_REALIGN_REMOTE_BAM_UNSORTED, getStem(input)));
+	}
+	public File getRealignmentRemoteUnsortedBamForChr(File input, String chromosome) {
+		return new File(String.format(FORMAT_REALIGN_REMOTE_BAM_PER_CHR_UNSORTED, getStem(input), chromosome));
+	}
+	public File getRealignmentRemoteBam(File input) {
+		return new File(String.format(FORMAT_REALIGN_REMOTE_BAM, getStem(input)));
+	}
+	public File getRealignmentRemoteBamForChr(File input, String chromosome) {
+		return new File(String.format(FORMAT_REALIGN_REMOTE_BAM_PER_CHR, getStem(input), chromosome));
 	}
 }

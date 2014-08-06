@@ -1,12 +1,12 @@
-package au.edu.wehi.idsv.sam;
+package au.edu.wehi.idsv;
 
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 
 import java.nio.charset.StandardCharsets;
 
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.SamTags;
 
 /**
  * Breakend assembly

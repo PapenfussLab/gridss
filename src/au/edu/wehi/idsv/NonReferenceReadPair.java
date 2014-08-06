@@ -4,6 +4,8 @@ import htsjdk.samtools.SAMRecord;
 
 import org.apache.commons.lang3.StringUtils;
 
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+
 /**
  * A read pair that does not support the reference sequence. This can be an OEA, or DP read pair.
  * @author Daniel Cameron

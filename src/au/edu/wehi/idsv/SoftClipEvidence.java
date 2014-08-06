@@ -8,6 +8,8 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.lang3.StringUtils;
 
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+
 public class SoftClipEvidence implements DirectedEvidence {
 	private final ProcessingContext processContext;
 	private final SAMEvidenceSource source;
@@ -26,7 +28,11 @@ public class SoftClipEvidence implements DirectedEvidence {
 		if (record.getReadBases() == null || record.getReadBases() == SAMRecord.NULL_SEQUENCE ) throw new IllegalArgumentException(String.format("record %s missing sequence information", record.getReadName()));
 		SoftClipEvidence result = null;
 		if (realigned != null && !realigned.getReadUnmappedFlag()) {
-			result = new RealignedSoftClipEvidence(processContext, source, direction, record, realigned);
+			try {
+				result = new RealignedSoftClipEvidence(processContext, source, direction, record, realigned);
+			} catch (CloneNotSupportedException e) {
+				throw new RuntimeException(e);
+			}
 		} else {
 			result = new SoftClipEvidence(processContext, source, direction, record);
 		}
@@ -45,11 +51,14 @@ public class SoftClipEvidence implements DirectedEvidence {
 	public static int getSoftClipLength(BreakendDirection direction, SAMRecord record) {
 		return direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipLength(record) : SAMRecordUtil.getStartSoftClipLength(record); 
 	}
+	public static String getEvidenceID(BreakendDirection direction, SAMRecord softClip) {
+		// need read name, breakpoint direction & which read in pair
+		String readNumber = softClip.getReadPairedFlag() ? softClip.getFirstOfPairFlag() ? "/1" : "/2" : "";
+		return String.format("%s%s%s", direction == BreakendDirection.Forward ? "f" : "b", softClip.getReadName(), readNumber);
+	}
 	@Override
 	public String getEvidenceID() {
-		// need read name, breakpoint direction & which read in pair
-		String readNumber = record.getReadPairedFlag() ? record.getFirstOfPairFlag() ? "/1" : "/2" : "";
-		return String.format("%s%s%s", location.direction == BreakendDirection.Forward ? "f" : "b", record.getReadName(), readNumber);
+		return getEvidenceID(location.direction, record);
 	}
 	@Override
 	public BreakendSummary getBreakendSummary() {
@@ -132,5 +141,9 @@ public class SoftClipEvidence implements DirectedEvidence {
 	@Override
 	public int getLocalTotalBaseQual() {
 		return SAMRecordUtil.getTotalReferenceBaseQual(record);
+	}
+	@Override
+	public String toString() {
+		return "SoftClip len=" + getSoftClipLength() + " " + getBreakendSummary().toString() + " " + getSAMRecord().getReadName();
 	}
 }

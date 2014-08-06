@@ -7,6 +7,8 @@ import htsjdk.samtools.util.SequenceUtil;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+
 public class RealignedBreakpoint {
 	private final BreakpointSummary summary;
 	private final String insertedSequence;

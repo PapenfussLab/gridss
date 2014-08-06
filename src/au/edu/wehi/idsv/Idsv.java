@@ -83,6 +83,14 @@ public class Idsv extends CommandLineProgram {
 		    	}
 		    	return -1;
 	    	}
+	    	for (SAMEvidenceSource sref : samEvidence) {
+	    		SortRealignedSoftClips sortSplitReads = new SortRealignedSoftClips(getContext(), sref);
+	    		if (!sortSplitReads.isComplete()) {
+	    			sortSplitReads.process(false);
+	    		}
+	    	}
+	    	// TODO: remote assemblies
+	    	
 	    	VariantCaller caller = null;
 	    	try {
 	    		caller = new VariantCaller(getContext(), OUTPUT, allEvidence);

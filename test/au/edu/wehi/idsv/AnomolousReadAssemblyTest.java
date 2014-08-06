@@ -1,4 +1,4 @@
-package au.edu.wehi.idsv.sam;
+package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 

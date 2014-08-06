@@ -37,6 +37,8 @@ import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.ReadKmerIterable;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
+import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;

@@ -1,9 +1,9 @@
 package au.edu.wehi.idsv.util;
 
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 
-import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -17,7 +17,7 @@ import com.google.common.collect.PeekingIterator;
 
 /**
  * Wrapper iterator that uses a background thread to read from a given source iterator.
- * Unlike 
+ * 
  * @author Daniel Cameron
  *
  */
@@ -30,15 +30,21 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
     private final Iterator<T> underlying;
 	private final BlockingQueue<List<Object>> buffer;
 	private boolean closeCalled = false;
-	private final int bufferSize;
+	private final int batchSize;
     private PeekingIterator<Object> currentBuffer = Iterators.peekingIterator(ImmutableList.<Object>of().iterator());
 	private static final Object eos = new Object(); // End of stream sentinel
-	public AsyncBufferedIterator(Iterator<T> iterator, int bufferCount, int bufferSize) {
+	/**
+	 * Creates a new iterator that traverses the given iterator on a background thread
+	 * @param iterator iterator to traverse
+	 * @param bufferCount number of read-ahead buffers
+	 * @param batchSize size of each read-ahead buffer
+	 */
+	public AsyncBufferedIterator(Iterator<T> iterator, int bufferCount, int batchSize) {
 		if (iterator == null) throw new IllegalArgumentException();
-		if (bufferCount <= 0 || bufferSize <= 0) throw new IllegalArgumentException("Non-zero buffer size required.");
+		if (bufferCount <= 0 || batchSize <= 0) throw new IllegalArgumentException("Non-zero buffer size required.");
 		this.underlying = iterator;
 		this.buffer = new ArrayBlockingQueue<List<Object>>(bufferCount);
-		this.bufferSize = bufferSize;
+		this.batchSize = batchSize;
         this.readerRunnable = new ReaderRunnable();
         this.reader = new Thread(readerRunnable, getThreadNamePrefix() + threadsCreated++);
         this.reader.setDaemon(true);
@@ -56,13 +62,7 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
 		} catch (InterruptedException ie) { }
 	}
 	private void syncClose() {
-		if (underlying instanceof Closeable) {
-			try {
-				((Closeable)underlying).close();
-			} catch (Exception e) {
-				log.error(e, "Error closing SAMRecord input stream");
-			}
-		}
+		CloserUtil.close(underlying);
 	}
 	@Override
 	public boolean hasNext() {
@@ -99,8 +99,8 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
         public void run() {
         	try {
         		while (underlying.hasNext()) {
-		        	List<Object> readAhead = new ArrayList<Object>(bufferSize + 1);
-		    		for (int i = 0; i < bufferSize; i++) {
+		        	List<Object> readAhead = new ArrayList<Object>(batchSize + 1);
+		    		for (int i = 0; i < batchSize; i++) {
 		    			if (!underlying.hasNext()) break;
 		    			readAhead.add(underlying.next());
 		    		}
@@ -110,6 +110,7 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
 		    		buffer.put(readAhead);
         		}
         	} catch (InterruptedException ie) {
+        		log.debug("Thread interrupt received - closing on background thread.");
         	} catch (Throwable t) {
         		ex.compareAndSet(null, t);
         	} finally {

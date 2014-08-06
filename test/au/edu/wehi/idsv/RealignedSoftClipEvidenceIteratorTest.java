@@ -33,7 +33,7 @@ public class RealignedSoftClipEvidenceIteratorTest extends TestHelper {
 	public void should_allow_realign_in_order_at_same_position() {
 		SAMRecord r = withReadName("ReadName", Read(0, 1, "5S10M5S"))[0];
 		sv.add(r);
-		SAMRecord f = withReadName("0#10#fReadName", Read(0, 1, "5M"))[0];
+		SAMRecord f = withReadName("0#1#fReadName", Read(0, 1, "5M"))[0];
 		SAMRecord b = withReadName("0#1#bReadName", Read(0, 1, "5M"))[0];
 		realigned.add(b);
 		realigned.add(f);
@@ -47,7 +47,7 @@ public class RealignedSoftClipEvidenceIteratorTest extends TestHelper {
 		SAMRecord r = withReadName("ReadName", Read(0, 1, "5S10M5S"))[0];
 		sv.add(r);
 		realigned.add(withReadName("0#1#bReadName", Read(0, 1, "5M"))[0]);
-		realigned.add(withReadName("0#10#fReadName", Read(0, 1, "5M"))[0]);
+		realigned.add(withReadName("0#1#fReadName", Read(0, 1, "5M"))[0]);
 		go();
 		assertEquals(2, out.size());
 		assertTrue(out.get(0) instanceof RealignedSoftClipEvidence); // backward

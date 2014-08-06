@@ -8,8 +8,8 @@ import java.util.List;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.NonReferenceReadPair;
-import au.edu.wehi.idsv.SAMRecordUtil;
 import au.edu.wehi.idsv.SoftClipEvidence;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 import com.google.common.collect.Lists;
 

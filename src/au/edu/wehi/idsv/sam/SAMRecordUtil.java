@@ -1,7 +1,7 @@
 /**
  * 
  */
-package au.edu.wehi.idsv;
+package au.edu.wehi.idsv.sam;
 
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;

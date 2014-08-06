@@ -27,9 +27,16 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		@Override public int getLocalMaxBaseQual() { return 4 + offset; }
 		@Override public int getLocalTotalBaseQual() { return 5 + offset; }
 	}
-	public class rsc extends RealignedSoftClipEvidence {
+	public RSC rsc(int offset, boolean tumour) {
+		try {
+			return new RSC(offset, tumour);
+		} catch (CloneNotSupportedException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	public class RSC extends RealignedSoftClipEvidence {
 		int offset;
-		protected rsc(int offset, boolean tumour) {
+		protected RSC(int offset, boolean tumour) throws CloneNotSupportedException {
 			super(getContext(), SES(tumour), BWD, Read(0, 10, "5S5M"), Read(0, 1, "5M"));
 			this.offset = offset;
 		}
@@ -208,10 +215,10 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				new sc(2, false),
 				new sc(3, false),
 				new sc(4, false),
-				new rsc(5, true),
-				new rsc(6, true),
-				new rsc(7, true),
-				new rsc(8, false));
+				rsc(5, true),
+				rsc(6, true),
+				rsc(7, true),
+				rsc(8, false));
 		assertEquals(4, e.getEvidenceCountSoftClip(Subset.NORMAL));
 		assertEquals(5, e.getEvidenceCountSoftClip(Subset.TUMOUR));
 	}
@@ -223,10 +230,10 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				new sc(2, false),
 				new sc(3, false),
 				new sc(4, false),
-				new rsc(5, true),
-				new rsc(6, true),
-				new rsc(7, true),
-				new rsc(8, false));
+				rsc(5, true),
+				rsc(6, true),
+				rsc(7, true),
+				rsc(8, false));
 		assertTrue(e.getBreakendLogLikelihoodSoftClip(Subset.NORMAL) > 0d);
 		assertTrue(e.getBreakendLogLikelihoodSoftClip(Subset.TUMOUR) > 0d);
 	}
@@ -238,10 +245,10 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				new sc(2, false),
 				new sc(3, false),
 				new sc(4, false),
-				new rsc(5, true),
-				new rsc(6, true),
-				new rsc(7, true),
-				new rsc(8, false));
+				rsc(5, true),
+				rsc(6, true),
+				rsc(7, true),
+				rsc(8, false));
 		assertEquals(1, e.getMappedEvidenceCountSoftClip(Subset.NORMAL));
 		assertEquals(3, e.getMappedEvidenceCountSoftClip(Subset.TUMOUR));
 	}
@@ -253,10 +260,10 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				new sc(2, false),
 				new sc(3, false),
 				new sc(4, false),
-				new rsc(5, true),
-				new rsc(6, true),
-				new rsc(7, true),
-				new rsc(8, false));
+				rsc(5, true),
+				rsc(6, true),
+				rsc(7, true),
+				rsc(8, false));
 		assertEquals(6*1 + 8, e.getMapqSoftClipRemoteTotal(Subset.NORMAL));
 		assertEquals(6*3 + (5+6+7), e.getMapqSoftClipRemoteTotal(Subset.TUMOUR));
 	}
@@ -268,10 +275,10 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				new sc(2, false),
 				new sc(3, false),
 				new sc(4, false),
-				new rsc(5, true),
-				new rsc(6, true),
-				new rsc(7, true),
-				new rsc(8, false));
+				rsc(5, true),
+				rsc(6, true),
+				rsc(7, true),
+				rsc(8, false));
 		assertEquals(6+8, e.getMapqSoftClipRemoteMax(Subset.NORMAL));
 		assertEquals(6+7, e.getMapqSoftClipRemoteMax(Subset.TUMOUR));
 	}

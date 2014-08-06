@@ -104,16 +104,25 @@ public class IntermediateFilesTest extends TestHelper {
 		Files.copy(file, input);
 	}
 	public void createInput(SAMRecord... data) {
+		createBAM(input, SortOrder.coordinate, data);
+	}
+	public void createBAM(File file, SortOrder sortOrder, SAMRecord... data) {
 		SAMFileHeader header = getHeader();
-		header.setSortOrder(SortOrder.coordinate);
-		SAMFileWriter writer =  new SAMFileWriterFactory().makeSAMWriter(header, true, input);
-		SortingCollection<SAMRecord> presort = SortingCollection.newInstance(SAMRecord.class, new BAMRecordCodec(header), new SAMRecordCoordinateComparator(), 100000000, testFolder.getRoot());
-		for (SAMRecord r : data) {
-			presort.add(r);
-		}
-		presort.doneAdding();
-		for (SAMRecord r : presort) {
-			writer.addAlignment(r);
+		header.setSortOrder(sortOrder);
+		SAMFileWriter writer =  new SAMFileWriterFactory().makeSAMWriter(header, true, file);
+		if (sortOrder == SortOrder.coordinate) {
+			SortingCollection<SAMRecord> presort = SortingCollection.newInstance(SAMRecord.class, new BAMRecordCodec(header), new SAMRecordCoordinateComparator(), 100000000, testFolder.getRoot());
+			for (SAMRecord r : data) {
+				presort.add(r);
+			}
+			presort.doneAdding();
+			for (SAMRecord r : presort) {
+				writer.addAlignment(r);
+			}
+		} else {
+			for (SAMRecord r : data) {
+				writer.addAlignment(r);
+			}
 		}
 		writer.close();
 	}
@@ -200,6 +209,12 @@ public class IntermediateFilesTest extends TestHelper {
 	}
 	public List<SAMRecord> getSC(final SAMEvidenceSource source) {
 		return getRecords(getCommandlineContext().getFileSystemContext().getSoftClipBam(source.getFileIntermediateDirectoryBasedOn()));
+	}
+	public List<SAMRecord> getRRR(final SAMEvidenceSource source) {
+		return getRecords(getCommandlineContext().getFileSystemContext().getRealignmentRemoteBam(source.getFileIntermediateDirectoryBasedOn()));
+	}
+	public List<SAMRecord> getRSC(final SAMEvidenceSource source) {
+		return getRecords(getCommandlineContext().getFileSystemContext().getSoftClipRemoteBam(source.getFileIntermediateDirectoryBasedOn()));
 	}
 	public List<SAMRecord> getMate(final SAMEvidenceSource source) {
 		return getRecords(getCommandlineContext().getFileSystemContext().getMateBam(source.getFileIntermediateDirectoryBasedOn()));

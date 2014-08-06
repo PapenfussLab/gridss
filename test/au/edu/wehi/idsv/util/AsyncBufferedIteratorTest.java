@@ -38,7 +38,8 @@ public class AsyncBufferedIteratorTest {
 	@Test
 	public void should_close_underlying() {
 		CIT it = new CIT(5);
-		Lists.newArrayList(new AsyncBufferedIterator<Integer>(it, 1, 1));
+		AsyncBufferedIterator<Integer> abi = new AsyncBufferedIterator<Integer>(it, 1, 1);
+		abi.close();
 		assertTrue(it.isClosed);
 	}
 	@Test

@@ -88,6 +88,17 @@ public class RealignedSoftClipEvidenceTest extends TestHelper {
 		assertEquals(1, l.referenceIndex2);
 	}
 	@Test
+	public void should_set_realignment_attributes() {
+		// MMMMSSS->
+		//            SSS->  -ve strand flips from expected direction
+		SAMRecord r = Read(0, 10, "10M5S");
+		SAMRecord realigned = Read(1, 10, "1S3M2S");
+		realigned.setReadNegativeStrandFlag(true);
+		SoftClipEvidence e = SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Forward, r, realigned);
+		assertEquals(realigned.getReferenceIndex(), e.getSAMRecord().getIntegerAttribute("rr"));
+		assertEquals(realigned.getAlignmentStart(), (int)e.getSAMRecord().getIntegerAttribute("rp"));
+	}
+	@Test
 	public void getRemoteMapq_should_be_realigned_mapq() {
 		assertEquals(5, ((RealignedSoftClipEvidence)SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Forward,
 				Read(0, 1, "4M6S"),

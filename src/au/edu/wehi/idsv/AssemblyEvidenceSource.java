@@ -80,11 +80,12 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		return downcast;
 	}
 	private Iterator<VariantContextDirectedEvidence> iterator(File vcf, File realignment) {
+		ensureAssembled();
 		Iterator<SAMRecord> realignedIt = ImmutableList.<SAMRecord>of().iterator(); 
 		if (isRealignmentComplete()) {
 			realignedIt = new AutoClosingIterator<SAMRecord>(processContext.getSamReaderIterator(processContext.getSamReader(realignment)));
 		} else {
-			log.info(String.format("Assembly realignment for %s not completed", vcf));
+			log.debug(String.format("Assembly realignment for %s not completed", vcf));
 			realignedIt = ImmutableList.<SAMRecord>of().iterator();
 		}
 		VCFFileReader reader = new VCFFileReader(vcf);
