@@ -343,21 +343,25 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 		
 		if (pathALength <= pathBLength) {
 			for (PN nextA : nextPath(pathA.getLast())) {
-				pathA.addLast(nextA);
-				if (collapsePaths(differencesAllowed, bubblesOnly, pathA, pathB, pathALength + nextA.length(), pathBLength)) {
+				if (!pathA.contains(nextA)) {
+					pathA.addLast(nextA);
+					if (collapsePaths(differencesAllowed, bubblesOnly, pathA, pathB, pathALength + nextA.length(), pathBLength)) {
+						pathA.removeLast();
+						return true;
+					}
 					pathA.removeLast();
-					return true;
 				}
-				pathA.removeLast();
 			}
 		} else {
 			for (PN nextB : nextPath(pathB.getLast())) {
-				pathB.addLast(nextB);
-				if (collapsePaths(differencesAllowed, bubblesOnly, pathA, pathB, pathALength, pathBLength + nextB.length())) {
+				if (!pathB.contains(nextB)) {
+					pathB.addLast(nextB);
+					if (collapsePaths(differencesAllowed, bubblesOnly, pathA, pathB, pathALength, pathBLength + nextB.length())) {
+						pathB.removeLast();
+						return true;
+					}
 					pathB.removeLast();
-					return true;
 				}
-				pathB.removeLast();
 			}
 		}
 		return false; 
