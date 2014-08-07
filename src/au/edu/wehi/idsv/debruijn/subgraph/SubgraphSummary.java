@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
+import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
+
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
 
@@ -62,6 +64,21 @@ public class SubgraphSummary {
 	}
 	public void addAnchor(int position) {
 		addAnchor(this, position);
+	}
+	public void addAnchor(Integer position) {
+		if (position != null) {
+			addAnchor(this, position);
+		}
+	}
+	public void addNode(DeBruijnSubgraphNode node) {
+		addAnchor(node.getMinReferencePosition());
+		addAnchor(node.getMaxReferencePosition());
+		addAnchor(node.getMinMatePosition());
+		addAnchor(node.getMaxMatePosition());
+	}
+	@Override
+	public String toString() {
+		return String.format("Subgraph [%d, %d] containing %s", minAnchor, maxAnchor, KmerEncodingHelper.toApproximateString(kmer));
 	}
 	public static Ordering<SubgraphSummary> ByMinAnchor = new Ordering<SubgraphSummary>() {
 		public int compare(SubgraphSummary g1, SubgraphSummary g2) {

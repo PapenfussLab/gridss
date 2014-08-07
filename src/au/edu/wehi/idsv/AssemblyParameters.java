@@ -30,7 +30,7 @@ public class AssemblyParameters {
 	 * Too short and we will assemble a subgraph before all evidence has been added to it
 	 * Too long and we will have a greater misassembly rate in repetitive regions
 	 */
-	public float subgraphAssemblyMargin = 3;
+	public float subgraphAssemblyMargin = 2.5f;
 	/**
 	 * Maximum number of branches consider at kmer branches.
 	 * A value of 1 indicates a greedy traversal

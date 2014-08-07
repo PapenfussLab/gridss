@@ -188,16 +188,20 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				withReadName("r1", Read(0, 1, "15S15M15S")),
 				withReadName("r2", Read(1, 2, "15S15M15S")),
 				withReadName("r3", Read(2, 3, "15S15M15S")));
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		createBAM(getCommandlineContext().getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, 
 				withReadName("0#1#fr1", Read(2, 10, "15M"))[0],
 				withReadName("0#1#br1", Read(1, 15, "15M"))[0],
 				withReadName("1#2#fr2", Read(1, 10, "15M"))[0],
 				withReadName("2#3#fr3", Read(0, 10, "15M"))[0],
 				withReadName("2#3#br3", Read(0, 100, "15M"))[0]);
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
 		source.completeSteps(ProcessStep.ALL_STEPS);
 		
+		List<RealignedRemoteSoftClipEvidence> remote = Lists.newArrayList(Iterators.filter(source.iterator(), RealignedRemoteSoftClipEvidence.class));
+		assertEquals(5, remote.size());
+		
 		List<RealignedSoftClipEvidence> result = Lists.newArrayList(Iterators.filter(source.iterator(), RealignedSoftClipEvidence.class));
-		assertEquals(5, result.size());
+		assertEquals(5, result.size() - remote.size());
 	}
 }

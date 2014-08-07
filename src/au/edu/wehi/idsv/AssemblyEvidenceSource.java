@@ -216,7 +216,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		while (!writerQueue.isEmpty() && processContext.getLinear().getLinearCoordinate(writerQueue.peek().getReferenceIndex(), writerQueue.peek().getStart()) < position) {
 			long pos = processContext.getLinear().getLinearCoordinate(writerQueue.peek().getReferenceIndex(), writerQueue.peek().getStart());
 			VariantContextDirectedEvidence evidence = writerQueue.poll();
-			if (pos >= lastPos) {
+			if (pos < lastPos) {
 				log.error(String.format("Sanity check failure: assembly %s written out of order. ", evidence.getID()));
 			}
 			lastPos = pos;

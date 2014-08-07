@@ -5,7 +5,6 @@ import htsjdk.samtools.util.Log;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.SortedSet;
 
 import au.edu.wehi.idsv.AssemblyBuilder;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
@@ -28,7 +27,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	/**
 	 * Connected subgraphs
 	 */
-	private final SortedSet<SubgraphSummary> subgraphs;
+	private final Set<SubgraphSummary> subgraphs = Sets.newHashSet();
 	private final int referenceIndex;
 	private final AssemblyParameters parameters;
 	/**
@@ -40,7 +39,6 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	public DeBruijnReadGraph(ProcessingContext processContext, AssemblyEvidenceSource source, int referenceIndex, BreakendDirection direction, AssemblyParameters parameters) {
 		super(processContext, source, parameters.k, direction);
 		this.referenceIndex = referenceIndex;
-		this.subgraphs = Sets.newTreeSet(SubgraphSummary.ByMaxAnchor);
 		this.parameters = parameters;
 	}
 	@Override
@@ -64,40 +62,39 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 					g = gadj;
 				} else if (g != gadj) {
 					// this kmer merges two subgraphs
-					subgraphs.remove(g);
-					subgraphs.remove(gadj);
-					g = SubgraphSummary.merge(g, gadj);
-					subgraphs.add(g);
+					SubgraphSummary newg = SubgraphSummary.merge(g, gadj);
+					if (newg == g) {
+						subgraphs.remove(gadj);
+					} else if (newg == gadj) {
+						subgraphs.remove(g);
+					} else {
+						subgraphs.remove(gadj);
+						subgraphs.remove(g);
+						subgraphs.add(newg);
+					}
+					g = newg;
 				}
 			}
 		}
 		if (g == null) {
 			// nothing next to us -> new subgraph
 			g = new SubgraphSummary(kmer);
+			subgraphs.add(g);
 		}
 		node.setSubgraph(g);
 	}
 	/**
-	 * Updates the containing subgraph details
+	 * Updates subgraph aggregates based on the new evidence
 	 */
 	@Override
-	protected void onEvidenceAdded(DeBruijnSubgraphNode graphNode, DeBruijnSubgraphNode evidenceNode, VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) {
-		SubgraphSummary g = graphNode.getSubgraph();
-		int anchorToAdd;
-		if (evidence.isDirectlyAnchoredToReference()) {
-			anchorToAdd = evidence.getReferenceKmerAnchorPosition();
-		} else {
-			anchorToAdd = evidence.getMateAnchorPosition();
-		}
-		if (anchorToAdd < g.getMinAnchor() || anchorToAdd > g.getMaxAnchor()) {
-			// we're (possibly) changing the reference bounds of this subgraph
-			subgraphs.remove(g);
-			g.addAnchor(anchorToAdd);
-			subgraphs.add(g);
-		} else {
-			g.addAnchor(anchorToAdd);
-		}
+	public DeBruijnSubgraphNode add(long kmer, DeBruijnSubgraphNode node) {
+		DeBruijnSubgraphNode result = super.add(kmer, node);
+		// update subgraph bounds
+		result.getSubgraph().addNode(node);
+		sanityCheckSubgraphs();
+		return result;
 	}
+	private int maxSubgraphSize = 4096;
 	/**
 	 * Assembles contigs which do not have any relevance at or after the given position 
 	 * @param position
@@ -111,32 +108,63 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		for (SubgraphSummary ss : subgraphs) {
 			if (ss.getMaxAnchor() < position) {
 				PathGraphAssembler pga = new PathGraphAssembler(this, this.parameters, ss.getAnyKmer());
+				int width = ss.getMaxAnchor() - ss.getMinAnchor();
+				if (width > maxSubgraphSize) {
+					log.debug(String.format("Subgraph %d to %d has %d paths", ss.getMinAnchor(), ss.getMaxAnchor(), pga.getPaths().size()));
+					maxSubgraphSize = width;
+					debugOutputKmerSpread(ss);
+				}
 				for (List<Long> contig : pga.assembleContigs()) {
 					VariantContextDirectedEvidence variant = toAssemblyEvidence(contig);
 					if (variant != null) {
 						contigs.add(variant);
 					}
 				}
-			} else {
-				// no more subgraphs to process (as subgraphs are sorted by max anchor position)
-				break;
 			}
 		}
 		Collections.sort(contigs, VariantContextDirectedEvidence.ByLocationStart);
 		return contigs;
+	}
+	private void debugOutputKmerSpread(SubgraphSummary ss) {
+		long maxKmer = 0;
+		int maxSpread = -1;
+		for (long kmer : reachableFrom(ss.getAnyKmer())) {
+			DeBruijnSubgraphNode node = getKmer(kmer);
+			int refWidth = 0;
+			if (node.getMinReferencePosition() != null) {
+				refWidth = node.getMaxReferencePosition() - node.getMinReferencePosition();
+			}
+			int mateWidth = 0;
+			if (node.getMinMatePosition() != null) {
+				mateWidth = node.getMaxMatePosition() - node.getMinMatePosition();
+			}
+			if (Math.max(mateWidth, refWidth) > maxSpread) {
+				maxSpread = Math.max(mateWidth, refWidth);
+				maxKmer = kmer;
+			}
+		}
+		log.debug(String.format("Max kmer %s ref:[%d,%d] mate:[%d,%d]",
+				KmerEncodingHelper.toString(getK(), maxKmer),
+				getKmer(maxKmer).getMinReferencePosition(),
+				getKmer(maxKmer).getMaxReferencePosition(),
+				getKmer(maxKmer).getMinMatePosition(),
+				getKmer(maxKmer).getMaxMatePosition()));
 	}
 	/**
 	 * Removes all kmers not relevant at or after the given position
 	 * @param position
 	 */
 	public void removeBefore(int position) {
-		while (!subgraphs.isEmpty() && subgraphs.first().getMaxAnchor() < position) {
-			SubgraphSummary ss = subgraphs.first();
-			for (long kmer : reachableFrom(ss.getAnyKmer())) {
-				remove(kmer);
+		List<SubgraphSummary> toRemove = Lists.newArrayList();
+		for (SubgraphSummary ss : subgraphs) {
+			if (ss.getMaxAnchor() < position) {
+				for (long kmer : reachableFrom(ss.getAnyKmer())) {
+					remove(kmer);
+				}
+				toRemove.add(ss);	
 			}
-			subgraphs.remove(ss);
 		}
+		subgraphs.removeAll(toRemove);
 	}
 	/**
 	 * Only non-reference reads are considered supporting the breakpoint.
@@ -210,5 +238,35 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			return null;
 		}
 		return builder.makeVariant();
+	}
+	private static Log expensiveSanityCheckLog = Log.getInstance(DeBruijnReadGraph.class);
+	public boolean sanityCheckSubgraphs() {
+		if (expensiveSanityCheckLog != null) {
+			expensiveSanityCheckLog.warn("Expensive sanity checking is being performed. Performance will be poor");
+			expensiveSanityCheckLog = null;
+		}
+		for (long kmer : getAllKmers()) {
+			DeBruijnSubgraphNode node = getKmer(kmer);
+			assert(subgraphs.contains(node.getSubgraph()));
+			if (node.getMinMatePosition() != null) assert(node.getSubgraph().getMinAnchor() <= node.getMinMatePosition());
+			if (node.getMaxMatePosition() != null) assert(node.getSubgraph().getMaxAnchor() >= node.getMaxMatePosition());
+			if (node.getMinReferencePosition() != null) assert(node.getSubgraph().getMinAnchor() <= node.getMinReferencePosition());
+			if (node.getMaxReferencePosition() != null) assert(node.getSubgraph().getMaxAnchor() >= node.getMaxReferencePosition());
+		}		
+		//int lastMax = Integer.MIN_VALUE;
+		for (SubgraphSummary ss : subgraphs) {
+			//assert(ss.getMaxAnchor() >= lastMax); // sort order
+			//lastMax = ss.getMaxAnchor();
+			assert(ss == ss.getRoot()); // only root subgraphs should be in list
+		}
+		return true;
+	}
+	public boolean sanityCheckSubgraphs(int minExpected, int maxExpected) {
+		sanityCheckSubgraphs();
+		for (SubgraphSummary ss : subgraphs) {
+			assert(ss.getMaxAnchor() >= minExpected);
+			assert(ss.getMaxAnchor() <= maxExpected);
+		}
+		return true;
 	}
 }

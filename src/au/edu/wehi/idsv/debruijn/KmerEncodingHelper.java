@@ -194,6 +194,15 @@ public class KmerEncodingHelper {
 		return sb.reverse().toString();
 	}
 	/**
+	 * Converts the state to the best string with unknown k.
+	 * @param state encoded kmer
+	 * @return base sequence missing leading Ts.
+	 */
+	public static String toApproximateString(long state) {
+		int nonZeroPos = 64 - Long.numberOfLeadingZeros(state);
+		return toString(Math.max((nonZeroPos + 1) / 2, 1), state);
+	}
+	/**
 	 * Returns the number of bases difference between the two states
 	 * @param k
 	 * @param state1 kmer

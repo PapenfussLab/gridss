@@ -43,16 +43,17 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 			it = assembleAll();
 			init(evidence.getBreakendSummary().referenceIndex);
 		}
+		// Assemble old evidence that couldn't have anything to do with us
+		int startpos = evidence.getBreakendSummary().start;
+		int shouldBeCompletedPos = (int)(startpos - processContext.getAssemblyParameters().subgraphAssemblyMargin * source.getMetrics().getMaxFragmentSize());
+		it = Iterables.concat(it, assembleBefore(shouldBeCompletedPos));
+		assert(fgraph.sanityCheckSubgraphs(shouldBeCompletedPos, startpos + source.getMetrics().getMaxFragmentSize()));
+		assert(bgraph.sanityCheckSubgraphs(shouldBeCompletedPos, startpos + source.getMetrics().getMaxFragmentSize()));
 		if (evidence.getBreakendSummary().direction == BreakendDirection.Forward) {
 			fgraph.addEvidence(evidence);
 		} else {
 			bgraph.addEvidence(evidence);
 		}
-		int startpos = evidence.getBreakendSummary().start;
-		// make sure we have enough margin that we don't assemble a variant before all the
-		// evidence for it is available
-		int shouldBeCompletedPos = (int)(startpos - processContext.getAssemblyParameters().subgraphAssemblyMargin * source.getMetrics().getMaxFragmentSize());
-		it = Iterables.concat(it, assembleBefore(shouldBeCompletedPos));
 		return it;
 	}
 	@Override

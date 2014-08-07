@@ -12,6 +12,7 @@ import au.edu.wehi.idsv.DirectedEvidenceOrder;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.ReadEvidenceAssembler;
+import au.edu.wehi.idsv.RealignedRemoteSoftClipEvidence;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 
@@ -61,7 +62,9 @@ public class DeBruijnAnchoredAssembler implements ReadEvidenceAssembler {
 	 * @param evidence read evidence to add
 	 */
 	private static void addToGraph(DeBruijnAnchoredGraph graph, PriorityQueue<DirectedEvidence> active, DirectedEvidence evidence) {
-		if (evidence instanceof NonReferenceReadPair) {
+		if (evidence instanceof RealignedRemoteSoftClipEvidence) {
+			// ignore remote soft clips - they get assembled on the other side
+		} else if (evidence instanceof NonReferenceReadPair) {
 			NonReferenceReadPair nrrp = (NonReferenceReadPair)evidence;
 			graph.addEvidence(nrrp);
 			active.add(evidence);

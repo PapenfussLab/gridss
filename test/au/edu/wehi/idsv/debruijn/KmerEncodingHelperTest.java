@@ -202,4 +202,18 @@ public class KmerEncodingHelperTest extends TestHelper {
 			}
 		}
 	}
+	@Test
+	public void toApproximateString_should_print_with_leading_Ts_missing() {
+		assertEquals("GG", KmerEncodingHelper.toApproximateString(P2E("GG")));
+		assertEquals("A", KmerEncodingHelper.toApproximateString(P2E("TA")));
+		assertEquals("AA", KmerEncodingHelper.toApproximateString(P2E("AA")));
+		assertEquals("CC", KmerEncodingHelper.toApproximateString(P2E("CC")));
+	}
+	@Test
+	public void toApproximateString_should_print_at_least_one_base() {
+		assertEquals("G", KmerEncodingHelper.toApproximateString(P2E("G")));
+		assertEquals("T", KmerEncodingHelper.toApproximateString(P2E("T")));
+		assertEquals("A", KmerEncodingHelper.toApproximateString(P2E("A")));
+		assertEquals("C", KmerEncodingHelper.toApproximateString(P2E("C")));
+	}
 }

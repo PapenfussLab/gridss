@@ -13,6 +13,7 @@ import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.RealignedRemoteSoftClipEvidence;
 import au.edu.wehi.idsv.SoftClipEvidence;
 
 public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends DeBruijnGraphBase<T> {
@@ -29,7 +30,10 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		return direction;
 	}
 	public void addEvidence(DirectedEvidence evidence) {
-		if (evidence instanceof NonReferenceReadPair) {
+		if (evidence instanceof RealignedRemoteSoftClipEvidence) {
+			// TODO: should we assemble these? for now, ignore remote soft clips - as they get assembled on the other side
+			// FIXME: add these in
+		} else if (evidence instanceof NonReferenceReadPair) {
 			addEvidence((NonReferenceReadPair)evidence);
 		} else if (evidence instanceof SoftClipEvidence) {
 			addEvidence((SoftClipEvidence)evidence);
