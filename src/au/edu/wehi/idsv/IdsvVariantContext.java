@@ -194,8 +194,8 @@ public class IdsvVariantContext extends VariantContext {
 		public int compare(IdsvVariantContext o1, IdsvVariantContext o2) {
 			return ComparisonChain.start()
 			        .compare(o1.getReferenceIndex(), o2.getReferenceIndex())
-			        .compare(o1.start, o2.start)
-			        .compare(o1.stop, o2.stop)
+			        .compare(o1.getStart(), o2.getStart())
+			        .compare(o1.getEnd(), o2.getEnd())
 			        .result();
 		  }
 	};
@@ -203,8 +203,8 @@ public class IdsvVariantContext extends VariantContext {
 		public int compare(IdsvVariantContext o1, IdsvVariantContext o2) {
 			return ComparisonChain.start()
 			        .compare(o1.getReferenceIndex(), o2.getReferenceIndex())
-			        .compare(o1.stop, o2.stop)
-			        .compare(o1.start, o2.start)
+			        .compare(o1.getEnd(), o2.getEnd())
+			        .compare(o1.getStart(), o2.getStart())
 			        .result();
 		  }
 	};

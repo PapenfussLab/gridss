@@ -3,6 +3,7 @@ package au.edu.wehi.idsv;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SamReader;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
@@ -81,9 +82,10 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	}
 	private Iterator<VariantContextDirectedEvidence> iterator(File vcf, File realignment) {
 		ensureAssembled();
-		Iterator<SAMRecord> realignedIt = ImmutableList.<SAMRecord>of().iterator(); 
+		Iterator<SAMRecord> realignedIt; 
 		if (isRealignmentComplete()) {
-			realignedIt = new AutoClosingIterator<SAMRecord>(processContext.getSamReaderIterator(processContext.getSamReader(realignment)));
+			SamReader realignedReader = processContext.getSamReader(realignment);
+			realignedIt = new AutoClosingIterator<SAMRecord>(processContext.getSamReaderIterator(realignedReader), ImmutableList.<Closeable>of(realignedReader));
 		} else {
 			log.debug(String.format("Assembly realignment for %s not completed", vcf));
 			realignedIt = ImmutableList.<SAMRecord>of().iterator();
@@ -198,11 +200,26 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	    		}
 	    	}
     	}
-    	flushWriterQueueBefore(maxAssembledPosition - 3 * getMetrics().getMaxFragmentSize(), fastqWriter, vcfWriter);
+    	flushWriterQueueBefore(maxAssembledPosition - Math.max(MAX_ASSEMBLY_OFFSET, 3 * getMetrics().getMaxFragmentSize()), fastqWriter, vcfWriter);
     }
+	/**
+	 * Assemblies from de bruijn graph subset algorithm can be completed at any time.
+	 * This results in a theoretically completely unordered assembly order.
+	 * Instead of a full sort after writing, we just have a large intermediate buffer
+	 * and assume real data won't contain the same kmers every few fragment sizes
+	 * for over a megabase.
+	 * TODO: fix this by writing out of order, then sorting, then writing the breakend fastq 
+	 */
+	private static long MAX_ASSEMBLY_OFFSET = 1024 * 1024;
+	private long lastPos = Long.MIN_VALUE;
 	private void flushWriterQueueBefore(long position, FastqBreakpointWriter fastqWriter, VariantContextWriter vcfWriter) {
 		while (!writerQueue.isEmpty() && processContext.getLinear().getLinearCoordinate(writerQueue.peek().getReferenceIndex(), writerQueue.peek().getStart()) < position) {
+			long pos = processContext.getLinear().getLinearCoordinate(writerQueue.peek().getReferenceIndex(), writerQueue.peek().getStart());
 			VariantContextDirectedEvidence evidence = writerQueue.poll();
+			if (pos >= lastPos) {
+				log.error(String.format("Sanity check failure: assembly %s written out of order. ", evidence.getID()));
+			}
+			lastPos = pos;
 			vcfWriter.add(evidence); // write out failed assemblies as well for debugging purposes
 			if (!evidence.isFiltered() && processContext.getRealignmentParameters().shouldRealignBreakend(evidence)) {
 				fastqWriter.write(evidence);
