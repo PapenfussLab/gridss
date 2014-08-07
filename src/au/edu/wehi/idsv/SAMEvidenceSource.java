@@ -93,6 +93,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			case CALCULATE_METRICS:
 				done &= IntermediateFileUtil.checkIntermediate(fsc.getInsertSizeMetrics(input), input);
 				done &= IntermediateFileUtil.checkIntermediate(fsc.getIdsvMetrics(input), input);
+				break;
 			case EXTRACT_SOFT_CLIPS:
 				if (processContext.shouldProcessPerChromosome()) {
 					for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
@@ -135,9 +136,11 @@ public class SAMEvidenceSource extends EvidenceSource {
 				done = isRealignmentComplete();
 				break;
 			case SORT_REALIGNED_SOFT_CLIPS:
-				done = new SortRealignedSoftClips(processContext, this).isComplete(); 
+				done = new SortRealignedSoftClips(processContext, this).isComplete();
+				break;
 			default:
 				done = false;
+				break;
 		}
 		return done;
 	}
