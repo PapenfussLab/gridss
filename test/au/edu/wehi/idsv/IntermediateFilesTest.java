@@ -58,6 +58,7 @@ public class IntermediateFilesTest extends TestHelper {
 				new FileSystemContext(testFolder.getRoot(), 500000),
 				headers,
 				new SoftClipParameters(),
+				new ReadPairParameters(),
 				new AssemblyParameters(),
 				new RealignmentParameters(),
 				new VariantCallingParameters(),

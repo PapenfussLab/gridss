@@ -26,6 +26,10 @@ public class CompositeMetrics implements RelevantMetrics {
 		throw new IllegalStateException("Cannot determine fragment std dev for composite metrics");
 	}
 	@Override
+	public InsertSizeDistribution getInsertSizeDistribution() {
+		throw new IllegalStateException("Cannot determine insert size distribution for composite metrics");
+	}
+	@Override
 	public int getMaxFragmentSize() {
 		return maxFragmentSize;
 	}

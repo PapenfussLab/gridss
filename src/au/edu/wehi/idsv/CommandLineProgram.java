@@ -55,6 +55,10 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 			" Local aligners tend to produce many reads with very short soft clips.",
 		optional=true)
     public int SOFT_CLIP_MIN_LENGTH = 4;
+    @Option(doc = "Percent of read pairs considered concorant (0-100)."
+    		+ "If this is not set, the SAM proper pair flag is used to determine whether a read is discordantly aligned.",
+		optional=true)
+    public Float READ_PAIR_CONCORDANT_PERCENT = 95f;
     // --- soft clip realignment parameters ---
     @Option(doc = "Minimum read MAPQ for soft clip realignment to be performed",
     		optional=true)
@@ -187,6 +191,14 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 		rp.minAverageQual = REALIGNMENT_MIN_BASE_QUALITY;
 		return rp;
 	}
+	private ReadPairParameters getReadPairParameters() {
+		ReadPairParameters rpp = new ReadPairParameters();
+		rpp.useProperPairFlag = READ_PAIR_CONCORDANT_PERCENT == null;
+		if (READ_PAIR_CONCORDANT_PERCENT != null) {
+			rpp.concordantPercent = READ_PAIR_CONCORDANT_PERCENT;
+		}
+	    return rpp;
+	}
 	private FileSystemContext getFileSystemContext() {
 		return new FileSystemContext(TMP_DIR.get(0), WORKING_DIR, MAX_RECORDS_IN_RAM);
 	}
@@ -209,6 +221,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 	    			getFileSystemContext(),
 	    			getDefaultHeaders(),
 	    			getSoftClipParameters(),
+	    			getReadPairParameters(),
 	    			getAssemblyParameters(),
 	    			getRealignmentParameters(),
 	    			getVariantCallingParameters(),

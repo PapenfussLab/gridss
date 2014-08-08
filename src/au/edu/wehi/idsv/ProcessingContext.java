@@ -47,6 +47,7 @@ public class ProcessingContext implements Closeable {
 	private final boolean perChr;
 	private final AssemblyParameters ap;
 	private final SoftClipParameters scp;
+	private final ReadPairParameters rrp;
 	private final RealignmentParameters rp;
 	private final VariantCallingParameters vcp;
 	private final List<Header> metricsHeaders;
@@ -56,6 +57,7 @@ public class ProcessingContext implements Closeable {
 			FileSystemContext fileSystemContext,
 			List<Header> metricsHeaders,
 			SoftClipParameters softClipParameters,
+			ReadPairParameters readPairParameters,
 			AssemblyParameters assemblyParameters,
 			RealignmentParameters realignmentParameters,
 			VariantCallingParameters variantCallingParameters,
@@ -63,6 +65,7 @@ public class ProcessingContext implements Closeable {
 		this.fsContext = fileSystemContext;
 		this.metricsHeaders = metricsHeaders;
 		this.scp = softClipParameters;
+		this.rrp = readPairParameters;
 		this.ap = assemblyParameters;
 		this.rp = realignmentParameters;
 		this.vcp = variantCallingParameters;
@@ -201,6 +204,9 @@ public class ProcessingContext implements Closeable {
 	}
 	public VariantCallingParameters getVariantCallingParameters() {
 		return vcp;
+	}
+	public ReadPairParameters getReadPairParameters() {
+		return rrp;
 	}
 	public boolean isUseAsyncIO() {
 		return useAsyncIO;

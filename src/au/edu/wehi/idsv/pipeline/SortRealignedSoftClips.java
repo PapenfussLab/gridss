@@ -1,28 +1,36 @@
-package au.edu.wehi.idsv;
+package au.edu.wehi.idsv.pipeline;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 
 import java.io.File;
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 
+import au.edu.wehi.idsv.DirectedEvidence;
+import au.edu.wehi.idsv.FileSystemContext;
+import au.edu.wehi.idsv.ProcessStep;
+import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.RealignedRemoteSoftClipEvidence;
+import au.edu.wehi.idsv.RealignedSoftClipEvidence;
+import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
-public class SortRealignedSoftClips {
+public class SortRealignedSoftClips extends DataTransformStep {
 	private static final Log log = Log.getInstance(SortRealignedSoftClips.class);
-	private final ProcessingContext processContext;
 	private final SAMEvidenceSource source;
 	private final List<SAMFileWriter> scwriters = Lists.newArrayList();
 	private final List<SAMFileWriter> realignmentWriters = Lists.newArrayList();
 	public SortRealignedSoftClips(ProcessingContext processContext, SAMEvidenceSource source) {
-		this.processContext = processContext;
+		super(processContext);
 		this.source = source;
 	}
 	public boolean isComplete() {
@@ -39,64 +47,36 @@ public class SortRealignedSoftClips {
 		}
 		return done;
 	}
-	public void process(boolean force) {
-		if (force) {
-			deleteOutput();
-		}
+	@Override
+	public EnumSet<ProcessStep> process(EnumSet<ProcessStep> steps) {
 		if (isComplete()) {
 			log.debug("SortRealignedSoftClips: no work to do for ", source.getSourceFile());
-			return;
+			return EnumSet.noneOf(ProcessStep.class);
 		}
-		if (!source.isRealignmentComplete()) {
+		if (!canProcess()) {
 			String msg = String.format("Soft clip realignment for %s not completed. Unable to process", source.getSourceFile());
 			log.error(msg);
 			throw new IllegalStateException(msg);
+			// return EnumSet.of(ProcessStep.SORT_REALIGNED_SOFT_CLIPS);
 		}
 		try {
 			log.info("START: sorting mapped soft clips for ", source.getSourceFile());
 			createUnsortedOutputWriters();
 			writeUnsortedOutput();
-			closeUnsortedWriters();
+			close();
 			sort();
-			deleteUnsorted();
+			deleteTemp();
 			log.info("SUCCESS: sorting mapped soft clips for ", source.getSourceFile());
 		} catch (Exception e) {
 			String msg = String.format("Unable to sort mapped soft clips for %s", source.getSourceFile());
 			log.error(e, msg);
-			closeUnsortedWriters();
+			close();
+			deleteTemp();
 			deleteOutput();
 			throw new RuntimeException(msg, e);
+			// return EnumSet.of(ProcessStep.SORT_REALIGNED_SOFT_CLIPS);
 		}
-	}
-	private void deleteOutput() {
-		deleteUnsorted();
-		FileSystemContext fsc = processContext.getFileSystemContext();
-		for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-			tryDelete(fsc.getSoftClipRemoteBamForChr(source.getSourceFile(), seq.getSequenceName()));
-			tryDelete(fsc.getRealignmentRemoteBamForChr(source.getSourceFile(), seq.getSequenceName()));
-		}
-		tryDelete(fsc.getSoftClipRemoteUnsortedBam(source.getSourceFile()));
-		tryDelete(fsc.getRealignmentRemoteUnsortedBam(source.getSourceFile()));
-	}
-	private void deleteUnsorted() {
-		FileSystemContext fsc = processContext.getFileSystemContext();
-		for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-			tryDelete(fsc.getSoftClipRemoteUnsortedBamForChr(source.getSourceFile(), seq.getSequenceName()));
-			tryDelete(fsc.getRealignmentRemoteUnsortedBamForChr(source.getSourceFile(), seq.getSequenceName()));
-		}
-		tryDelete(fsc.getSoftClipRemoteUnsortedBam(source.getSourceFile()));
-		tryDelete(fsc.getRealignmentRemoteUnsortedBam(source.getSourceFile()));
-	}
-	private void tryDelete(File f) {
-		try {
-			if (f.exists()) {
-				if (!f.delete()) {
-					log.error("Unable to delete intermediate file ", f,  " during rollback.");
-				}
-			}
-		} catch (Exception e) {
-			log.error(e, "Unable to delete intermediate file ", f,  " during rollback.");
-		}
+		return EnumSet.noneOf(ProcessStep.class);
 	}
 	private void sort() {
 		FileSystemContext fsc = processContext.getFileSystemContext();
@@ -122,25 +102,20 @@ public class SortRealignedSoftClips {
 					SortOrder.coordinate);
 		}
 	}
-	private void closeUnsortedWriters() {
-		for (SAMFileWriter w : scwriters) {
-			CloserUtil.close(w);
-		}
+	@Override
+	public void close() {
+		super.close();
 		scwriters.clear();
-		for (SAMFileWriter w : realignmentWriters) {
-			CloserUtil.close(w);
-		}
 		realignmentWriters.clear();
 	}
 	private void writeUnsortedOutput() {
-		Iterator<DirectedEvidence> it = source.iterator();
+		Iterator<RealignedSoftClipEvidence> it = Iterators.filter(source.iterator(), RealignedSoftClipEvidence.class);
 		while (it.hasNext()) {
 			DirectedEvidence de = it.next();
-			if (de instanceof RealignedSoftClipEvidence) {
-				RealignedSoftClipEvidence evidence = (RealignedSoftClipEvidence)de;
-				scwriters.get(evidence.getBreakendSummary().referenceIndex2 % scwriters.size()).addAlignment(evidence.getSAMRecord());
-				realignmentWriters.get(evidence.getBreakendSummary().referenceIndex2 % realignmentWriters.size()).addAlignment(evidence.getRealignedSAMRecord());
-			}
+			if (de instanceof RealignedRemoteSoftClipEvidence) continue;
+			RealignedSoftClipEvidence evidence = (RealignedSoftClipEvidence)de;
+			scwriters.get(evidence.getBreakendSummary().referenceIndex2 % scwriters.size()).addAlignment(evidence.getSAMRecord());
+			realignmentWriters.get(evidence.getBreakendSummary().referenceIndex2 % realignmentWriters.size()).addAlignment(evidence.getRealignedSAMRecord());
 		}
 	}
 	private void createUnsortedOutputWriters() {
@@ -150,11 +125,57 @@ public class SortRealignedSoftClips {
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
 				scwriters.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(header, true, fsc.getSoftClipRemoteUnsortedBamForChr(source.getSourceFile(), seq.getSequenceName())));
+				toClose.add(scwriters.get(scwriters.size() - 1));
 				realignmentWriters.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(header, true, fsc.getRealignmentRemoteUnsortedBamForChr(source.getSourceFile(), seq.getSequenceName())));
+				toClose.add(realignmentWriters.get(realignmentWriters.size() - 1));
 			}
 		} else {
 			scwriters.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(header, true, fsc.getSoftClipRemoteUnsortedBam(source.getSourceFile())));
+			toClose.add(scwriters.get(scwriters.size() - 1));
 			realignmentWriters.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(header, true, fsc.getRealignmentRemoteUnsortedBam(source.getSourceFile())));
+			toClose.add(realignmentWriters.get(realignmentWriters.size() - 1));
 		}
+	}
+	@Override
+	protected Log getLog() {
+		return log;
+	}
+	@Override
+	public List<File> getInputs() {
+		return ImmutableList.of();
+	}
+	@Override
+	public boolean canProcess() {
+		return source.isComplete(ProcessStep.REALIGN_SOFT_CLIPS);
+	}
+	@Override
+	public List<File> getOutput() {
+		List<File> outputs = Lists.newArrayList();
+		FileSystemContext fsc = processContext.getFileSystemContext();
+		if (processContext.shouldProcessPerChromosome()) {
+			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
+				outputs.add(fsc.getSoftClipRemoteBamForChr(source.getSourceFile(), seq.getSequenceName()));
+				outputs.add(fsc.getRealignmentRemoteBamForChr(source.getSourceFile(), seq.getSequenceName()));
+			}
+		} else {
+			outputs.add(fsc.getSoftClipRemoteBam(source.getSourceFile()));
+			outputs.add(fsc.getRealignmentRemoteBam(source.getSourceFile()));
+		}
+		return outputs;
+	}
+	@Override
+	public List<File> getTemporary() {
+		List<File> files = Lists.newArrayList();
+		FileSystemContext fsc = processContext.getFileSystemContext();
+		if (processContext.shouldProcessPerChromosome()) {
+			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
+				files.add(fsc.getSoftClipRemoteBamForChr(source.getSourceFile(), seq.getSequenceName()));
+				files.add(fsc.getRealignmentRemoteBamForChr(source.getSourceFile(), seq.getSequenceName()));
+			}
+		} else {
+			files.add(fsc.getSoftClipRemoteUnsortedBam(source.getSourceFile()));
+			files.add(fsc.getRealignmentRemoteUnsortedBam(source.getSourceFile()));
+		}
+		return files;
 	}
 }

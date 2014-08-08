@@ -6,9 +6,11 @@ import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.metrics.MetricBase;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.util.CollectionUtil;
+import htsjdk.samtools.util.Histogram;
 import htsjdk.samtools.util.Log;
 
 import java.io.File;
+import java.io.FileReader;
 import java.util.List;
 
 import picard.analysis.CollectInsertSizeMetrics;
@@ -23,6 +25,7 @@ public class IdsvSamFileMetrics implements RelevantMetrics {
 	private Log log = Log.getInstance(IdsvSamFileMetrics.class);
 	private InsertSizeMetrics insertSize = null;
 	private IdsvMetrics idsvMetrics = null;
+	private InsertSizeDistribution insertDistribution = null;
 	/**
 	 * Creates a metric collector to record metrics required by idsv
 	 * @param header SAM header of file to process
@@ -69,6 +72,7 @@ public class IdsvSamFileMetrics implements RelevantMetrics {
 			idsvMetrics = new IdsvMetrics();
 			log.error(String.format("No idsv metrics found in %s.", idsvMetricsFiles));
 		}
+		insertDistribution = InsertSizeDistribution.create(insertSizeMetricsFile);
 	}
 	public IdsvSamFileMetrics(InsertSizeMetrics insertSizeMetrics, IdsvMetrics idsvMetrics) {
 		if (insertSizeMetrics == null) throw new NullPointerException("insertSize");
@@ -115,5 +119,9 @@ public class IdsvSamFileMetrics implements RelevantMetrics {
 	@Override
 	public int getMaxReadLength() {
 		return idsvMetrics.MAX_READ_LENGTH;
+	}
+	@Override
+	public InsertSizeDistribution getInsertSizeDistribution() {
+		return insertDistribution;
 	}
 }

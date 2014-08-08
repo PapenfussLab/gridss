@@ -1,10 +1,19 @@
-package au.edu.wehi.idsv;
+package au.edu.wehi.idsv.pipeline;
 
 import static org.junit.Assert.*;
+
+import java.util.EnumSet;
+
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
 
 import org.junit.Test;
+
+import au.edu.wehi.idsv.IntermediateFilesTest;
+import au.edu.wehi.idsv.ProcessStep;
+import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.SAMEvidenceSource;
+import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
 
 
 public class SortRealignedSoftClipsTest extends IntermediateFilesTest {
@@ -16,8 +25,8 @@ public class SortRealignedSoftClipsTest extends IntermediateFilesTest {
 		source.completeSteps(ProcessStep.ALL_STEPS);
 		createBAM(processContext.getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, realign);
 		SortRealignedSoftClips srs = new SortRealignedSoftClips(getCommandlineContext(), source);
-		srs.process(false);
-		
+		srs.process(EnumSet.allOf(ProcessStep.class));
+		srs.close();
 	}
 	@Test
 	public void should_sort_by_realignment_position() {
@@ -59,8 +68,8 @@ public class SortRealignedSoftClipsTest extends IntermediateFilesTest {
 		source.completeSteps(ProcessStep.ALL_STEPS);
 		createBAM(processContext.getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, realigned);
 		SortRealignedSoftClips srs = new SortRealignedSoftClips(processContext, source);
-		srs.process(false);
-		
+		srs.process(EnumSet.allOf(ProcessStep.class));
+		srs.close();
 		assertEquals(4, getRSC(source).size());
 	}
 }

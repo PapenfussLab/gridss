@@ -49,8 +49,8 @@ public class FileSystemContext {
 	private static final String FORMAT_REALIGN_FASTQ_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign.fq";
 	private static final String FORMAT_REALIGN_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".realign.bam";
 	private static final String FORMAT_REALIGN_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign.bam";
-	private static final String FORMAT_BREAKEND_VCF_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.breakend.vcf";
-	private static final String FORMAT_BREAKEND_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".breakend.vcf";
+	private static final String FORMAT_ASSEMBLY_VCF_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.breakend.vcf";
+	private static final String FORMAT_ASSEMBLY_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".breakend.vcf";
 	private static final String FORMAT_BREAKPOINT_VCF_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s-%s.breakpoint.vcf";
 	private static final String FORMAT_BREAKPOINT_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".breakpoint.vcf";
 	private static final String FORMAT_FLAG_FILE = "%s" + COMMON_INITIAL_SUFFIX + ".%s";
@@ -130,10 +130,10 @@ public class FileSystemContext {
 		return new File(String.format(FORMAT_MATE_BAM_UNSORTED_PER_CHR, getStem(input), chromosome));
 	}
 	public File getBreakendVcf(File input) {
-		return new File(String.format(FORMAT_BREAKEND_VCF, getStem(input)));
+		return new File(String.format(FORMAT_ASSEMBLY_VCF, getStem(input)));
 	}
 	public File getBreakendVcfForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_BREAKEND_VCF_PER_CHR, getStem(input), chromosome));
+		return new File(String.format(FORMAT_ASSEMBLY_VCF_PER_CHR, getStem(input), chromosome));
 	}
 	public File getBreakpointVcf(File input) {
 		return new File(String.format(FORMAT_BREAKPOINT_VCF, getStem(input)));

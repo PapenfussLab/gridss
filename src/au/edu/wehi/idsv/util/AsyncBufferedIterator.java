@@ -58,6 +58,7 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
 		closeCalled = true;
 		try {
 			reader.interrupt();
+			buffer.clear(); // flush buffer so EOS indicator can be written if writer is blocking
 			reader.join();
 		} catch (InterruptedException ie) { }
 	}
@@ -114,7 +115,12 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
         	} catch (Throwable t) {
         		ex.compareAndSet(null, t);
         	} finally {
-        		syncClose(); 
+        		syncClose();
+        		try {
+					buffer.put(ImmutableList.of(eos));
+				} catch (InterruptedException e) {
+					log.error("Thread interrupt received whilest writing end of stream indicator");
+				}
         	}
         }
     }

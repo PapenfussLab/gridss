@@ -196,6 +196,7 @@ public class TestHelper {
 				getFSContext(),
 				new ArrayList<Header>(),
 				new SoftClipParameters(),
+				new ReadPairParameters(),
 				new AssemblyParameters(),
 				new RealignmentParameters(),
 				new VariantCallingParameters(),

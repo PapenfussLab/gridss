@@ -8,6 +8,8 @@ import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTag;
+import htsjdk.samtools.SamPairUtil;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
@@ -100,7 +102,6 @@ public class SAMRecordUtil {
 	 * @return true if part of non-reference pair, false otherwise
 	 */
 	public static boolean isPartOfNonReferenceReadPair(SAMRecord record) {
-		// FIXME: cannot use proper pair flag as it is not set correctly by bwa
 		return record != null &&
 				record.getReadPairedFlag() &&
 				!record.getProperPairFlag() &&
@@ -158,4 +159,17 @@ public class SAMRecordUtil {
 		}
 		return max;
 	}
+	/**
+	 * Determines whether the given read pair mapping could be a valid fragment
+	 * @param record paired read
+	 * @param expectedOrientation expected orientation
+	 * @return true if the given read pair could come from a reference-supporting fragment 
+	 */
+	public static boolean couldBeProperPair(SAMRecord record, PairOrientation expectedOrientation) {
+		return record.getReadPairedFlag()
+				&& !record.getReadUnmappedFlag()
+				&& !record.getMateUnmappedFlag()
+				&& record.getReferenceIndex() == record.getMateReferenceIndex()
+				&& SamPairUtil.getPairOrientation(record) == expectedOrientation;
+	}	
 }

@@ -1,10 +1,15 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
+
+import java.util.EnumSet;
+
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
 
 import org.junit.Test;
+
+import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
 
 import com.google.common.collect.Iterators;
 
@@ -29,7 +34,8 @@ public class SequentialSoftClipRealignedRemoteBreakpointFactoryTest extends Inte
 		source.completeSteps(ProcessStep.ALL_STEPS);
 		createBAM(processContext.getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, realigned);
 		SortRealignedSoftClips srs = new SortRealignedSoftClips(processContext, source);
-		srs.process(false);
+		srs.process(EnumSet.allOf(ProcessStep.class));
+		srs.close();
 		
 		assertEquals(4, getRSC(source).size());
 		

@@ -13,6 +13,8 @@ import java.util.Iterator;
 
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.metrics.RelevantMetrics;
+import au.edu.wehi.idsv.pipeline.ExtractEvidence;
+import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 
 import com.google.common.collect.ImmutableList;
@@ -52,19 +54,17 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	/**
 	 * Ensures that all structural variation evidence has been extracted from the input file 
-	 * @return returns whether any processing was performed
+	 * @return returns steps that could not be performed
 	 */
 	public EnumSet<ProcessStep> completeSteps(EnumSet<ProcessStep> steps) {
 		ExtractEvidence extract = null;
 		try {
 			if (!isComplete(ProcessStep.CALCULATE_METRICS)
 	    			|| !isComplete(ProcessStep.EXTRACT_SOFT_CLIPS)
-	    			|| !isComplete(ProcessStep.EXTRACT_READ_PAIRS)
-	    			|| !isComplete(ProcessStep.EXTRACT_READ_MATES)
-	    			|| !isComplete(ProcessStep.SORT_READ_MATES)) {
+	    			|| !isComplete(ProcessStep.EXTRACT_READ_PAIRS)) {
 				extract = new ExtractEvidence(processContext, this);
 				log.info("START extract evidence for ", input);
-				extract.process();
+				extract.process(steps);
 				log.info("SUCCESS extract evidence for ", input);
 			}
 		}
@@ -77,8 +77,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 		if (isRealignmentComplete() && steps.contains(ProcessStep.SORT_REALIGNED_SOFT_CLIPS)) {
 			SortRealignedSoftClips srsc = new SortRealignedSoftClips(processContext, this);
 			if (!srsc.isComplete()) {
-				srsc.process(false);
+				srsc.process(steps);
 			}
+			srsc.close();
 		}
 		return steps;
 	}
@@ -107,28 +108,12 @@ public class SAMEvidenceSource extends EvidenceSource {
 				if (processContext.shouldProcessPerChromosome()) {
 					for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
 						done &= IntermediateFileUtil.checkIntermediate(fsc.getReadPairBamForChr(input, seq.getSequenceName()), input);
-					}
-				} else {
-					done &= IntermediateFileUtil.checkIntermediate(fsc.getReadPairBam(input), input);
-				}
-				break;
-			case EXTRACT_READ_MATES:
-				if (processContext.shouldProcessPerChromosome()) {
-					for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-						done &= IntermediateFileUtil.checkIntermediate(fsc.getMateBamUnsortedForChr(input, seq.getSequenceName()), input);
-					}
-				} else {
-					done &= IntermediateFileUtil.checkIntermediate(fsc.getMateBamUnsorted(input), input);
-				}
-				// Unsorted mate files are deleted after SORT_READ_MATES is complete
-				done |= isComplete(ProcessStep.SORT_READ_MATES);
-				break;
-			case SORT_READ_MATES:
-				if (processContext.shouldProcessPerChromosome()) {
-					for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
+						//done &= IntermediateFileUtil.checkIntermediate(fsc.getMateBamUnsortedForChr(input, seq.getSequenceName()), input);
 						done &= IntermediateFileUtil.checkIntermediate(fsc.getMateBamForChr(input, seq.getSequenceName()), input);
 					}
 				} else {
+					done &= IntermediateFileUtil.checkIntermediate(fsc.getReadPairBam(input), input);
+					//done &= IntermediateFileUtil.checkIntermediate(fsc.getMateBamUnsorted(input), input);
 					done &= IntermediateFileUtil.checkIntermediate(fsc.getMateBam(input), input);
 				}
 				break;
@@ -179,9 +164,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	private Iterator<DirectedEvidence> iterator(File readPair, File pairMate, File softClip, File realigned, File remoteSoftClip, File remoteRealigned) {
 		if (!isComplete(ProcessStep.EXTRACT_SOFT_CLIPS) ||
-			!isComplete(ProcessStep.EXTRACT_READ_PAIRS) ||
-			!isComplete(ProcessStep.EXTRACT_READ_MATES) ||
-			!isComplete(ProcessStep.SORT_READ_MATES)) {
+			!isComplete(ProcessStep.EXTRACT_READ_PAIRS)) {
 			throw new IllegalStateException("Cannot traverse evidence before evidence extraction");
 		}
 		SamReader rpReader = processContext.getSamReader(readPair);
@@ -203,7 +186,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 				processContext.getSamReaderIterator(scRealignReader));
 			scIt = new AutoClosingIterator<SoftClipEvidence>(scIt, Lists.<Closeable>newArrayList(scRealignReader));
 		} else {
-			log.info(String.format("Soft clip realignment for %s not completed", softClip));
+			log.info("Realigned soft clip evidence no present due to missing realignment bam ", realigned);
 		}
 		// sort into evidence order
 		scIt = new DirectEvidenceWindowedSortingIterator<SoftClipEvidence>(processContext, getMetrics().getMaxReadLength(), scIt);
@@ -223,6 +206,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 				remoteScIt = new AutoClosingIterator<RealignedRemoteSoftClipEvidence>(remoteScIt, Lists.<Closeable>newArrayList(realignSortedReader, scRealignSorted1, scRealignSorted2));
 				remoteScIt = new DirectEvidenceWindowedSortingIterator<RealignedRemoteSoftClipEvidence>(processContext, getMetrics().getMaxReadLength(), remoteScIt);
 			}
+		} else {
+			log.info("Realigned remote soft clip evidence no present due to missing realignment bam ", realigned);
 		}
 		return Iterators.mergeSorted(ImmutableList.of(rpIt, scIt, remoteScIt), DirectedEvidenceOrder.ByNatural);
 	}

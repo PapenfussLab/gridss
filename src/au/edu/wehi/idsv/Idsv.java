@@ -10,6 +10,7 @@ import java.util.List;
 
 import picard.cmdline.Option;
 import picard.cmdline.Usage;
+import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
 
 import com.google.common.collect.Lists;
 
@@ -38,9 +39,7 @@ public class Idsv extends CommandLineProgram {
 	    		SAMEvidenceSource sref = new SAMEvidenceSource(getContext(), f, false);
 	    		if (!sref.isComplete(ProcessStep.CALCULATE_METRICS)
 	    			|| !sref.isComplete(ProcessStep.EXTRACT_SOFT_CLIPS)
-	    			|| !sref.isComplete(ProcessStep.EXTRACT_READ_PAIRS)
-	    			|| !sref.isComplete(ProcessStep.EXTRACT_READ_MATES)
-	    			|| !sref.isComplete(ProcessStep.SORT_READ_MATES)) {
+	    			|| !sref.isComplete(ProcessStep.EXTRACT_READ_PAIRS)) {
 	    			sref.completeSteps(STEPS);
 	    		}
 	    		samEvidence.add(sref);
@@ -49,9 +48,7 @@ public class Idsv extends CommandLineProgram {
 	    		SAMEvidenceSource sref = new SAMEvidenceSource(getContext(), f, true);
 	    		if (!sref.isComplete(ProcessStep.CALCULATE_METRICS)
 	    			|| !sref.isComplete(ProcessStep.EXTRACT_SOFT_CLIPS)
-	    			|| !sref.isComplete(ProcessStep.EXTRACT_READ_PAIRS)
-	    			|| !sref.isComplete(ProcessStep.EXTRACT_READ_MATES)
-	    			|| !sref.isComplete(ProcessStep.SORT_READ_MATES)) {
+	    			|| !sref.isComplete(ProcessStep.EXTRACT_READ_PAIRS)) {
 	    			sref.completeSteps(STEPS);
 	    		}
 	    		samEvidence.add(sref);
@@ -86,10 +83,26 @@ public class Idsv extends CommandLineProgram {
 	    	for (SAMEvidenceSource sref : samEvidence) {
 	    		SortRealignedSoftClips sortSplitReads = new SortRealignedSoftClips(getContext(), sref);
 	    		if (!sortSplitReads.isComplete()) {
-	    			sortSplitReads.process(false);
+	    			sortSplitReads.process(STEPS);
 	    		}
 	    	}
 	    	// TODO: remote assemblies
+	    	
+	    	// check that all steps have been completed
+	    	for (SAMEvidenceSource sref : samEvidence) {
+	    		if (!sref.isComplete(ProcessStep.CALCULATE_METRICS)
+	    			|| !sref.isComplete(ProcessStep.EXTRACT_SOFT_CLIPS)
+	    			|| !sref.isComplete(ProcessStep.EXTRACT_READ_PAIRS)
+	    			|| !sref.isComplete(ProcessStep.REALIGN_SOFT_CLIPS)
+	    			|| !sref.isComplete(ProcessStep.SORT_REALIGNED_SOFT_CLIPS)) {
+	    			log.error("Unable to call variants: processing and realignment for ", sref.getSourceFile(), " is not complete.");
+	    			return -1;
+	    		}
+	    	}
+	    	if (!aes.isRealignmentComplete()) {
+	    		log.error("Unable to call variants: generation and realignment of assemblies not complete.");
+    			return -1;
+	    	}
 	    	
 	    	VariantCaller caller = null;
 	    	try {

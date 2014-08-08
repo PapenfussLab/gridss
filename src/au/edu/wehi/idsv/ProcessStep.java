@@ -22,14 +22,6 @@ public enum ProcessStep {
 	 */
 	EXTRACT_READ_PAIRS,
 	/**
-	 * Extracts read pair mates from the input SAM/BAM
-	 */
-	EXTRACT_READ_MATES,
-	/**
-	 * Sorts read pair mates according to partner position 
-	 */
-	SORT_READ_MATES,
-	/**
 	 * Generates breakends assemblies from the soft clip and
 	 * read pair evidence
 	 */
