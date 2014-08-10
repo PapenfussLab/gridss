@@ -55,10 +55,10 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 			" Local aligners tend to produce many reads with very short soft clips.",
 		optional=true)
     public int SOFT_CLIP_MIN_LENGTH = 4;
-    @Option(doc = "Percent of read pairs considered concorant (0-100)."
+    @Option(doc = "Percent of read pairs considered concorant (0.0-1.0)."
     		+ "If this is not set, the SAM proper pair flag is used to determine whether a read is discordantly aligned.",
 		optional=true)
-    public Float READ_PAIR_CONCORDANT_PERCENT = 95f;
+    public Float READ_PAIR_CONCORDANT_PERCENT = null;
     // --- soft clip realignment parameters ---
     @Option(doc = "Minimum read MAPQ for soft clip realignment to be performed",
     		optional=true)
