@@ -2,13 +2,21 @@ package au.edu.wehi.idsv.pipeline;
 
 import static org.junit.Assert.*;
 
+import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.List;
 
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceRecord;
 
 import org.junit.Test;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+
+import sun.reflect.ReflectionFactory.GetReflectionFactoryAction;
 import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
@@ -19,12 +27,24 @@ import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
 public class SortRealignedSoftClipsTest extends IntermediateFilesTest {
 	ProcessingContext processContext;
 	SAMEvidenceSource source;
-	public void go(SAMRecord... realign) {
-		processContext = getCommandlineContext(false);
+	public void go(boolean perChr, SAMRecord... realign) {
+		processContext = getCommandlineContext(perChr);
 		source = new SAMEvidenceSource(processContext, input, false);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		createBAM(processContext.getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, realign);
-		SortRealignedSoftClips srs = new SortRealignedSoftClips(getCommandlineContext(), source);
+		if (perChr) {
+			for (final SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
+				List<SAMRecord> forchr = Lists.newArrayList(Iterables.filter(Lists.newArrayList(realign), new Predicate<SAMRecord>() {
+					@Override
+					public boolean apply(SAMRecord arg0) {
+						return Integer.parseInt(arg0.getReadName().split("#")[0]) == seq.getSequenceIndex();
+					}
+				}));
+				createBAM(processContext.getFileSystemContext().getRealignmentBamForChr(input, seq.getSequenceName()), SortOrder.unsorted, forchr.toArray(new SAMRecord[forchr.size()]));
+			}
+		} else {
+			createBAM(processContext.getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, realign);
+		}
+		SortRealignedSoftClips srs = new SortRealignedSoftClips(processContext, source);
 		srs.process(EnumSet.allOf(ProcessStep.class));
 		srs.close();
 	}
@@ -34,7 +54,7 @@ public class SortRealignedSoftClipsTest extends IntermediateFilesTest {
 				withReadName("r1", Read(0, 1, "15M15S")),
 				withReadName("r2", Read(1, 2, "15M15S")),
 				withReadName("r3", Read(2, 3, "15M15S")));
-		go(
+		go(false,
 				withReadName("0#1#fr1", Read(2, 10, "15M"))[0],
 				withReadName("1#2#fr2", Read(1, 10, "15M"))[0],
 				withReadName("2#3#fr3", Read(0, 10, "15M"))[0]
@@ -71,6 +91,27 @@ public class SortRealignedSoftClipsTest extends IntermediateFilesTest {
 		srs.process(EnumSet.allOf(ProcessStep.class));
 		srs.close();
 		assertEquals(4, getRSC(source).size());
+	}
+	@Test
+	public void should_sort_by_realignment_position_per_chr() {
+		createInput(
+				withReadName("r1", Read(0, 1, "15M15S")),
+				withReadName("r2", Read(1, 2, "15M15S")),
+				withReadName("r3", Read(2, 3, "15M15S")));
+		go(true,
+				withReadName("0#1#fr1", Read(2, 10, "15M"))[0],
+				withReadName("1#2#fr2", Read(1, 10, "15M"))[0],
+				withReadName("2#3#fr3", Read(0, 10, "15M"))[0]
+		);
+		assertEquals(3, new PerChr().getRSC(source).size());
+		assertEquals("r3", new PerChr().getRSC(source).get(0).getReadName());
+		assertEquals("r2", new PerChr().getRSC(source).get(1).getReadName());
+		assertEquals("r1", new PerChr().getRSC(source).get(2).getReadName());
+		
+		assertEquals(3, new PerChr().getRRR(source).size());
+		assertEquals("2#3#fr3", new PerChr().getRRR(source).get(0).getReadName());
+		assertEquals("1#2#fr2", new PerChr().getRRR(source).get(1).getReadName());
+		assertEquals("0#1#fr1", new PerChr().getRRR(source).get(2).getReadName());
 	}
 }
 

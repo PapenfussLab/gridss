@@ -169,8 +169,8 @@ public class SortRealignedSoftClips extends DataTransformStep {
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				files.add(fsc.getSoftClipRemoteBamForChr(source.getSourceFile(), seq.getSequenceName()));
-				files.add(fsc.getRealignmentRemoteBamForChr(source.getSourceFile(), seq.getSequenceName()));
+				files.add(fsc.getSoftClipRemoteUnsortedBamForChr(source.getSourceFile(), seq.getSequenceName()));
+				files.add(fsc.getRealignmentRemoteUnsortedBamForChr(source.getSourceFile(), seq.getSequenceName()));
 			}
 		} else {
 			files.add(fsc.getSoftClipRemoteUnsortedBam(source.getSourceFile()));
