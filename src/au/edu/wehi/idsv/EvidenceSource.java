@@ -60,7 +60,7 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 	 * @param source source
 	 * @return
 	 */
-	protected boolean isRealignmentComplete() {
+	public boolean isRealignmentComplete() {
 		boolean done = true;
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		if (processContext.shouldProcessPerChromosome()) {

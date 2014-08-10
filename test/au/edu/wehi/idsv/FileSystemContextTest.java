@@ -54,37 +54,55 @@ public class FileSystemContextTest {
 	}
 	@Test
 	public void getBreakendVcf() {
-		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.chr1.breakend.vcf").getAbsolutePath(), C().getBreakendVcfForChr(new File("test.bam"), "chr1").getAbsolutePath());
+		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.chr1.breakend.vcf").getAbsolutePath(), C().getAssemblyVcfForChr(new File("test.bam"), "chr1").getAbsolutePath());
 	}
 	@Test
 	public void getBreakpointVcf() {
 		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.chr1-chr2.breakpoint.vcf").getAbsolutePath(), C().getBreakpointVcf(new File("test.bam"), "chr1", "chr2").getAbsolutePath());
 	}
-	private void testbamAssertMatch(String expected, File result) {
+	private void testFileAssertMatch(String expected, File result) {
 		assertEquals(new File("test.bam.idsv.working/" + expected).getAbsolutePath(), result.getAbsolutePath());
 	}
 	private static final File TEST_BAM = new File("test.bam");
 	@Test
 	public void should_match_constant() {
-		testbamAssertMatch("test.bam.idsv.rp.bam", C().getReadPairBam(TEST_BAM));
-		testbamAssertMatch("test.bam.idsv.sc.bam", C().getSoftClipBam(TEST_BAM));
-		testbamAssertMatch("test.bam.idsv.rpmate.bam", C().getMateBam(TEST_BAM));
-		testbamAssertMatch("test.bam.idsv.metrics.idsv.txt", C().getIdsvMetrics(TEST_BAM));
-		testbamAssertMatch("test.bam.idsv.metrics.insertsize.txt", C().getInsertSizeMetrics(TEST_BAM));
-		testbamAssertMatch("test.bam.idsv.realign.fq", C().getRealignmentFastq(TEST_BAM));
-		testbamAssertMatch("test.bam.idsv.realign.bam", C().getRealignmentBam(TEST_BAM));
-		testbamAssertMatch("test.bam.idsv.breakend.vcf", C().getBreakendVcf(TEST_BAM));
-		testbamAssertMatch("test.bam.idsv.breakpoint.vcf", C().getBreakpointVcf(TEST_BAM));
+		testFileAssertMatch("test.bam.idsv.rp.bam", C().getReadPairBam(TEST_BAM));
+		testFileAssertMatch("test.bam.idsv.sc.bam", C().getSoftClipBam(TEST_BAM));
+		testFileAssertMatch("test.bam.idsv.rpmate.bam", C().getMateBam(TEST_BAM));
+		testFileAssertMatch("test.bam.idsv.metrics.idsv.txt", C().getIdsvMetrics(TEST_BAM));
+		testFileAssertMatch("test.bam.idsv.metrics.insertsize.txt", C().getInsertSizeMetrics(TEST_BAM));
+		testFileAssertMatch("test.bam.idsv.realign.fq", C().getRealignmentFastq(TEST_BAM));
+		testFileAssertMatch("test.bam.idsv.realign.bam", C().getRealignmentBam(TEST_BAM));
+		testFileAssertMatch("test.bam.idsv.breakend.vcf", C().getAssemblyVcf(TEST_BAM));
+		testFileAssertMatch("test.bam.idsv.breakpoint.vcf", C().getBreakpointVcf(TEST_BAM));
 	}
 	@Test
 	public void should_match_constant_per_chr() {
-		testbamAssertMatch("test.bam.idsv.chr.rp.bam", C().getReadPairBamForChr(TEST_BAM, "chr"));
-		testbamAssertMatch("test.bam.idsv.chr.sc.bam", C().getSoftClipBamForChr(TEST_BAM, "chr"));
-		testbamAssertMatch("test.bam.idsv.chr.rpmate.bam", C().getMateBamForChr(TEST_BAM, "chr"));
-		testbamAssertMatch("test.bam.idsv.chr.realign.fq", C().getRealignmentFastqForChr(TEST_BAM, "chr"));
-		testbamAssertMatch("test.bam.idsv.chr.realign.bam", C().getRealignmentBamForChr(TEST_BAM, "chr"));
-		testbamAssertMatch("test.bam.idsv.chr.breakend.vcf", C().getBreakendVcfForChr(TEST_BAM, "chr"));
-		testbamAssertMatch("test.bam.idsv.chr1-chr2.breakpoint.vcf", C().getBreakpointVcf(TEST_BAM, "chr1", "chr2"));
+		testFileAssertMatch("test.bam.idsv.chr.rp.bam", C().getReadPairBamForChr(TEST_BAM, "chr"));
+		testFileAssertMatch("test.bam.idsv.chr.sc.bam", C().getSoftClipBamForChr(TEST_BAM, "chr"));
+		testFileAssertMatch("test.bam.idsv.chr.rpmate.bam", C().getMateBamForChr(TEST_BAM, "chr"));
+		testFileAssertMatch("test.bam.idsv.chr.realign.fq", C().getRealignmentFastqForChr(TEST_BAM, "chr"));
+		testFileAssertMatch("test.bam.idsv.chr.realign.bam", C().getRealignmentBamForChr(TEST_BAM, "chr"));
+		testFileAssertMatch("test.bam.idsv.chr.breakend.vcf", C().getAssemblyVcfForChr(TEST_BAM, "chr"));
+		testFileAssertMatch("test.bam.idsv.chr1-chr2.breakpoint.vcf", C().getBreakpointVcf(TEST_BAM, "chr1", "chr2"));
+	}
+	@Test
+	public void test_remote() {
+		testFileAssertMatch("test.bam.idsv.assemblyremote.vcf", C().getAssemblyRemoteVcf(TEST_BAM));
+		testFileAssertMatch("test.bam.idsv.assemblyremote.unsorted.vcf", C().getAssemblyRemoteUnsortedVcf(TEST_BAM));
+		testFileAssertMatch("test.bam.idsv.scremote.bam", C().getSoftClipRemoteBam(TEST_BAM));
+		testFileAssertMatch("test.bam.idsv.scremote.unsorted.bam", C().getSoftClipRemoteUnsortedBam(TEST_BAM));
+		testFileAssertMatch("test.bam.idsv.realignremote.bam", C().getRealignmentRemoteBam(TEST_BAM));
+		testFileAssertMatch("test.bam.idsv.realignremote.unsorted.bam", C().getRealignmentRemoteUnsortedBam(TEST_BAM));
+	}
+	@Test
+	public void test_remote_per_chr() {
+		testFileAssertMatch("test.bam.idsv.chr.assemblyremote.vcf", C().getAssemblyRemoteVcfForChr(TEST_BAM, "chr"));
+		testFileAssertMatch("test.bam.idsv.chr.assemblyremote.unsorted.vcf", C().getAssemblyRemoteUnsortedVcfForChr(TEST_BAM, "chr"));
+		testFileAssertMatch("test.bam.idsv.chr.scremote.bam", C().getSoftClipRemoteBamForChr(TEST_BAM, "chr"));
+		testFileAssertMatch("test.bam.idsv.chr.scremote.unsorted.bam", C().getSoftClipRemoteUnsortedBamForChr(TEST_BAM, "chr"));
+		testFileAssertMatch("test.bam.idsv.chr.realignremote.bam", C().getRealignmentRemoteBamForChr(TEST_BAM, "chr"));
+		testFileAssertMatch("test.bam.idsv.chr.realignremote.unsorted.bam", C().getRealignmentRemoteUnsortedBamForChr(TEST_BAM, "chr"));
 	}
 	@Test
 	public void should_use_working_directory_if_set() throws IOException {

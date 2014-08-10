@@ -157,7 +157,7 @@ public class ProcessingContext implements Closeable {
 	 * A header based on this processing context will have already been written to the returned writer
 	 * It is the responsibility of the caller to close the returned @link {@link VariantContextWriter}
 	 * @param output file
-	 * @return
+	 * @return opened output VCF stream
 	 */
 	public VariantContextWriter getVariantContextWriter(File file) {
 		VariantContextWriterBuilder builder = getVariantContextWriterBuilder(file);

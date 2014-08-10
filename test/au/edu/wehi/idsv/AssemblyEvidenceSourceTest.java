@@ -55,6 +55,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, false);
 		ses.process();
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
+		aes.ensureAssembled();
 
 		List<DirectedEvidence> list = Lists.newArrayList(aes.iterator());
 		assertEquals(4,  list.size());

@@ -35,33 +35,38 @@ public class FileSystemContext {
 	}
 	private static final String COMMON_INITIAL_SUFFIX = ".idsv";
 	private static final String INTERMEDIATE_DIR_SUFFIX = COMMON_INITIAL_SUFFIX + ".working";
-	private static final String FORMAT_SC_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".sc.bam";
-	private static final String FORMAT_SC_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.sc.bam";
-	private static final String FORMAT_RP_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".rp.bam";
-	private static final String FORMAT_RP_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.rp.bam";
-	private static final String FORMAT_MATE_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".rpmate.bam";
-	private static final String FORMAT_MATE_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.rpmate.bam";
-	private static final String FORMAT_MATE_BAM_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".rpmate.unsorted.bam";
-	private static final String FORMAT_MATE_BAM_UNSORTED_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.rpmate.unsorted.bam";
+	private static final String FORMAT_SC_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".sc.bam";
+	private static final String FORMAT_SC_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.sc.bam";
+	private static final String FORMAT_RP_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".rp.bam";
+	private static final String FORMAT_RP_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.rp.bam";
+	private static final String FORMAT_MATE_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".rpmate.bam";
+	private static final String FORMAT_MATE_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.rpmate.bam";
+	private static final String FORMAT_MATE_SAM_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".rpmate.unsorted.bam";
+	private static final String FORMAT_MATE_SAM_UNSORTED_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.rpmate.unsorted.bam";
 	private static final String FORMAT_INSERT_SIZE_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.insertsize.txt";
 	private static final String FORMAT_IDSV_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.idsv.txt";
 	private static final String FORMAT_REALIGN_FASTQ = "%s" + COMMON_INITIAL_SUFFIX + ".realign.fq";
 	private static final String FORMAT_REALIGN_FASTQ_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign.fq";
-	private static final String FORMAT_REALIGN_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".realign.bam";
-	private static final String FORMAT_REALIGN_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign.bam";
+	private static final String FORMAT_REALIGN_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".realign.bam";
+	private static final String FORMAT_REALIGN_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign.bam";
 	private static final String FORMAT_ASSEMBLY_VCF_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.breakend.vcf";
 	private static final String FORMAT_ASSEMBLY_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".breakend.vcf";
 	private static final String FORMAT_BREAKPOINT_VCF_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s-%s.breakpoint.vcf";
 	private static final String FORMAT_BREAKPOINT_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".breakpoint.vcf";
 	private static final String FORMAT_FLAG_FILE = "%s" + COMMON_INITIAL_SUFFIX + ".%s";
-	private static final String FORMAT_SC_REMOTE_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".scremote.bam";
-	private static final String FORMAT_SC_REMOTE_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.scremote.bam";
-	private static final String FORMAT_SC_REMOTE_BAM_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".scremote.unsorted.bam";
-	private static final String FORMAT_SC_REMOTE_BAM_UNSORTED_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.scremote.unsorted.bam";;
-	private static final String FORMAT_REALIGN_REMOTE_BAM_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".realignremote.unsorted.bam";
-	private static final String FORMAT_REALIGN_REMOTE_BAM_PER_CHR_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realignremote.unsorted.bam";
-	private static final String FORMAT_REALIGN_REMOTE_BAM = "%s" + COMMON_INITIAL_SUFFIX + ".realignremote.bam";
-	private static final String FORMAT_REALIGN_REMOTE_BAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realignremote.bam";
+	private static final String FORMAT_SC_REMOTE_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".scremote.bam";
+	private static final String FORMAT_SC_REMOTE_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.scremote.bam";
+	private static final String FORMAT_SC_REMOTE_SAM_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".scremote.unsorted.bam";
+	private static final String FORMAT_SC_REMOTE_SAM_UNSORTED_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.scremote.unsorted.bam";;
+	private static final String FORMAT_REALIGN_REMOTE_SAM_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".realignremote.unsorted.bam";
+	private static final String FORMAT_REALIGN_REMOTE_SAM_PER_CHR_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realignremote.unsorted.bam";
+	private static final String FORMAT_REALIGN_REMOTE_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".realignremote.bam";
+	private static final String FORMAT_REALIGN_REMOTE_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realignremote.bam";
+	private static final String FORMAT_ASSEMBLY_REMOTE_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".assemblyremote.vcf";
+	private static final String FORMAT_ASSEMBLY_REMOTE_VCF_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.assemblyremote.vcf";
+	private static final String FORMAT_ASSEMBLY_REMOTE_VCF_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".assemblyremote.unsorted.vcf";
+	private static final String FORMAT_ASSEMBLY_REMOTE_VCF_PER_CHR_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".%s.assemblyremote.unsorted.vcf";
+	
 	/**
 	 * Gets the idsv intermediate working directory for the given input
 	 * @param input
@@ -106,34 +111,46 @@ public class FileSystemContext {
 
 	}
 	public File getReadPairBam(File input) {
-		return new File(String.format(FORMAT_RP_BAM, getStem(input)));
+		return new File(String.format(FORMAT_RP_SAM, getStem(input)));
 	}
 	public File getReadPairBamForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_RP_BAM_PER_CHR, getStem(input), chromosome));
+		return new File(String.format(FORMAT_RP_SAM_PER_CHR, getStem(input), chromosome));
 	}
 	public File getSoftClipBam(File input) {
-		return new File(String.format(FORMAT_SC_BAM, getStem(input)));
+		return new File(String.format(FORMAT_SC_SAM, getStem(input)));
 	}
 	public File getSoftClipBamForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_SC_BAM_PER_CHR, getStem(input), chromosome));
+		return new File(String.format(FORMAT_SC_SAM_PER_CHR, getStem(input), chromosome));
 	}
 	public File getMateBam(File input) {
-		return new File(String.format(FORMAT_MATE_BAM, getStem(input)));
+		return new File(String.format(FORMAT_MATE_SAM, getStem(input)));
 	}
 	public File getMateBamForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_MATE_BAM_PER_CHR, getStem(input), chromosome));
+		return new File(String.format(FORMAT_MATE_SAM_PER_CHR, getStem(input), chromosome));
 	}
 	public File getMateBamUnsorted(File input) {
-		return new File(String.format(FORMAT_MATE_BAM_UNSORTED, getStem(input)));
+		return new File(String.format(FORMAT_MATE_SAM_UNSORTED, getStem(input)));
 	}
 	public File getMateBamUnsortedForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_MATE_BAM_UNSORTED_PER_CHR, getStem(input), chromosome));
+		return new File(String.format(FORMAT_MATE_SAM_UNSORTED_PER_CHR, getStem(input), chromosome));
 	}
-	public File getBreakendVcf(File input) {
+	public File getAssemblyVcf(File input) {
 		return new File(String.format(FORMAT_ASSEMBLY_VCF, getStem(input)));
 	}
-	public File getBreakendVcfForChr(File input, String chromosome) {
+	public File getAssemblyVcfForChr(File input, String chromosome) {
 		return new File(String.format(FORMAT_ASSEMBLY_VCF_PER_CHR, getStem(input), chromosome));
+	}
+	public File getAssemblyRemoteVcf(File input) {
+		return new File(String.format(FORMAT_ASSEMBLY_REMOTE_VCF, getStem(input)));
+	}
+	public File getAssemblyRemoteVcfForChr(File input, String chromosome) {
+		return new File(String.format(FORMAT_ASSEMBLY_REMOTE_VCF_PER_CHR, getStem(input), chromosome));
+	}
+	public File getAssemblyRemoteUnsortedVcf(File input) {
+		return new File(String.format(FORMAT_ASSEMBLY_REMOTE_VCF_UNSORTED, getStem(input)));
+	}
+	public File getAssemblyRemoteUnsortedVcfForChr(File input, String chromosome) {
+		return new File(String.format(FORMAT_ASSEMBLY_REMOTE_VCF_PER_CHR_UNSORTED, getStem(input), chromosome));
 	}
 	public File getBreakpointVcf(File input) {
 		return new File(String.format(FORMAT_BREAKPOINT_VCF, getStem(input)));
@@ -148,10 +165,10 @@ public class FileSystemContext {
 		return new File(String.format(FORMAT_IDSV_METRICS, getStem(input)));
 	}
 	public File getRealignmentBam(File input) {
-		return new File(String.format(FORMAT_REALIGN_BAM, getStem(input)));
+		return new File(String.format(FORMAT_REALIGN_SAM, getStem(input)));
 	}
 	public File getRealignmentBamForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_REALIGN_BAM_PER_CHR, getStem(input), chromosome));
+		return new File(String.format(FORMAT_REALIGN_SAM_PER_CHR, getStem(input), chromosome));
 	}
 	public File getRealignmentFastq(File input) {
 		return new File(String.format(FORMAT_REALIGN_FASTQ, getStem(input)));
@@ -164,27 +181,27 @@ public class FileSystemContext {
 	}
 	// Remote sorted
 	public File getSoftClipRemoteBam(File input) {
-		return new File(String.format(FORMAT_SC_REMOTE_BAM, getStem(input)));
+		return new File(String.format(FORMAT_SC_REMOTE_SAM, getStem(input)));
 	}
 	public File getSoftClipRemoteBamForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_SC_REMOTE_BAM_PER_CHR, getStem(input), chromosome));
+		return new File(String.format(FORMAT_SC_REMOTE_SAM_PER_CHR, getStem(input), chromosome));
 	}
 	public File getSoftClipRemoteUnsortedBam(File input) {
-		return new File(String.format(FORMAT_SC_REMOTE_BAM_UNSORTED, getStem(input)));
+		return new File(String.format(FORMAT_SC_REMOTE_SAM_UNSORTED, getStem(input)));
 	}
 	public File getSoftClipRemoteUnsortedBamForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_SC_REMOTE_BAM_UNSORTED_PER_CHR, getStem(input), chromosome));
+		return new File(String.format(FORMAT_SC_REMOTE_SAM_UNSORTED_PER_CHR, getStem(input), chromosome));
 	}
 	public File getRealignmentRemoteUnsortedBam(File input) {
-		return new File(String.format(FORMAT_REALIGN_REMOTE_BAM_UNSORTED, getStem(input)));
+		return new File(String.format(FORMAT_REALIGN_REMOTE_SAM_UNSORTED, getStem(input)));
 	}
 	public File getRealignmentRemoteUnsortedBamForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_REALIGN_REMOTE_BAM_PER_CHR_UNSORTED, getStem(input), chromosome));
+		return new File(String.format(FORMAT_REALIGN_REMOTE_SAM_PER_CHR_UNSORTED, getStem(input), chromosome));
 	}
 	public File getRealignmentRemoteBam(File input) {
-		return new File(String.format(FORMAT_REALIGN_REMOTE_BAM, getStem(input)));
+		return new File(String.format(FORMAT_REALIGN_REMOTE_SAM, getStem(input)));
 	}
 	public File getRealignmentRemoteBamForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_REALIGN_REMOTE_BAM_PER_CHR, getStem(input), chromosome));
+		return new File(String.format(FORMAT_REALIGN_REMOTE_SAM_PER_CHR, getStem(input), chromosome));
 	}
 }

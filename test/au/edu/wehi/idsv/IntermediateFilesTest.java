@@ -17,6 +17,7 @@ import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.metrics.StringHeader;
 import htsjdk.samtools.util.SortingCollection;
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFFileReader;
 
 import java.io.File;
@@ -42,11 +43,14 @@ public class IntermediateFilesTest extends TestHelper {
 	@Rule
     public TemporaryFolder testFolder = new TemporaryFolder();
 	public File input;
+	public File output;
 	public File reference;
 	@Before
 	public void setup() throws IOException {
 		reference = SMALL_FA_FILE;
 		input = testFolder.newFile("input.bam");
+		output = testFolder.newFile("out.vcf");
+		output.delete();
 	}
 	public void setReference(File ref) {
 		reference = ref;
@@ -127,6 +131,13 @@ public class IntermediateFilesTest extends TestHelper {
 		}
 		writer.close();
 	}
+	public void createVCF(ProcessingContext context, File file, VariantContext... data) {
+		VariantContextWriter writer = context.getVariantContextWriter(file);
+		for (VariantContext vc : data) {
+			writer.add(vc);
+		}
+		writer.close();
+	}
 	public List<SAMRecord> getRecords(String extension) {
 		File file = new File(input.getAbsolutePath() + ".idsv.working", input.getName() + extension);
 		assertTrue(file.exists());
@@ -200,7 +211,7 @@ public class IntermediateFilesTest extends TestHelper {
 		return list;
 	}
 	public List<IdsvVariantContext> getAssembly(final AssemblyEvidenceSource source) {
-		return getVcf(getCommandlineContext().getFileSystemContext().getBreakendVcf(source.getFileIntermediateDirectoryBasedOn()), source);
+		return getVcf(getCommandlineContext().getFileSystemContext().getAssemblyVcf(source.getFileIntermediateDirectoryBasedOn()), source);
 	}
 	public List<FastqRecord> getFastqRecords(final EvidenceSource source) {
 		return getFastqRecords(getCommandlineContext().getFileSystemContext().getRealignmentFastq(source.getFileIntermediateDirectoryBasedOn()));
@@ -217,18 +228,21 @@ public class IntermediateFilesTest extends TestHelper {
 	public List<SAMRecord> getRSC(final SAMEvidenceSource source) {
 		return getRecords(getCommandlineContext().getFileSystemContext().getSoftClipRemoteBam(source.getFileIntermediateDirectoryBasedOn()));
 	}
+	public List<IdsvVariantContext> getRA(final AssemblyEvidenceSource source) {
+		return getVcf(getCommandlineContext().getFileSystemContext().getAssemblyRemoteVcf(source.getFileIntermediateDirectoryBasedOn()), source);
+	}
 	public List<SAMRecord> getMate(final SAMEvidenceSource source) {
 		return getRecords(getCommandlineContext().getFileSystemContext().getMateBam(source.getFileIntermediateDirectoryBasedOn()));
 	}
 	public class PerChr {  
 		public List<IdsvVariantContext> getAssembly(final AssemblyEvidenceSource source, String chr) {
-			return getVcf(getCommandlineContext().getFileSystemContext().getBreakendVcfForChr(source.getFileIntermediateDirectoryBasedOn(), chr), source);
+			return getVcf(getCommandlineContext().getFileSystemContext().getAssemblyVcfForChr(source.getFileIntermediateDirectoryBasedOn(), chr), source);
 		}
 		public List<IdsvVariantContext> getAssembly(final AssemblyEvidenceSource source) {
 			return Lists.newArrayList(Iterables.concat(Iterables.transform(getCommandlineContext().getDictionary().getSequences(), new Function<SAMSequenceRecord, Iterable<IdsvVariantContext>>() {
 				@Override
 				public List<IdsvVariantContext> apply(SAMSequenceRecord arg0) {
-					return getVcf(getCommandlineContext().getFileSystemContext().getBreakendVcfForChr(source.getFileIntermediateDirectoryBasedOn(), arg0.getSequenceName()), source);
+					return getVcf(getCommandlineContext().getFileSystemContext().getAssemblyVcfForChr(source.getFileIntermediateDirectoryBasedOn(), arg0.getSequenceName()), source);
 				}
 			})));
 		}
@@ -273,6 +287,22 @@ public class IntermediateFilesTest extends TestHelper {
 				@Override
 				public Iterable<SAMRecord> apply(SAMSequenceRecord arg0) {
 					return getRecords(getCommandlineContext().getFileSystemContext().getMateBamForChr(source.getFileIntermediateDirectoryBasedOn(), arg0.getSequenceName()));
+				}
+			})));
+		}
+		public List<SAMRecord> getRSC(final SAMEvidenceSource source) {
+			return Lists.newArrayList(Iterables.concat(Iterables.transform(getCommandlineContext().getDictionary().getSequences(), new Function<SAMSequenceRecord, Iterable<SAMRecord>>() {
+				@Override
+				public Iterable<SAMRecord> apply(SAMSequenceRecord arg0) {
+					return getRecords(getCommandlineContext().getFileSystemContext().getSoftClipRemoteBamForChr(source.getFileIntermediateDirectoryBasedOn(), arg0.getSequenceName()));
+				}
+			})));
+		}
+		public List<SAMRecord> getRRR(final SAMEvidenceSource source) {
+			return Lists.newArrayList(Iterables.concat(Iterables.transform(getCommandlineContext().getDictionary().getSequences(), new Function<SAMSequenceRecord, Iterable<SAMRecord>>() {
+				@Override
+				public Iterable<SAMRecord> apply(SAMSequenceRecord arg0) {
+					return getRecords(getCommandlineContext().getFileSystemContext().getRealignmentRemoteBamForChr(source.getFileIntermediateDirectoryBasedOn(), arg0.getSequenceName()));
 				}
 			})));
 		}

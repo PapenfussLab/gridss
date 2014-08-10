@@ -8,7 +8,7 @@ import htsjdk.samtools.SAMRecord;
  * @author Daniel Cameron
  *
  */
-public class RealignedRemoteSoftClipEvidence extends RealignedSoftClipEvidence {
+public class RealignedRemoteSoftClipEvidence extends RealignedSoftClipEvidence implements RemoteEvidence {
 	private final BreakpointSummary location;
 	protected RealignedRemoteSoftClipEvidence(ProcessingContext processContext,
 			SAMEvidenceSource source, BreakendDirection direction,

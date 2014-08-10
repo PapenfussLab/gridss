@@ -10,6 +10,7 @@ import java.util.List;
 
 import picard.cmdline.Option;
 import picard.cmdline.Usage;
+import au.edu.wehi.idsv.pipeline.SortRealignedAssemblies;
 import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
 
 import com.google.common.collect.Lists;
@@ -85,8 +86,13 @@ public class Idsv extends CommandLineProgram {
 	    		if (!sortSplitReads.isComplete()) {
 	    			sortSplitReads.process(STEPS);
 	    		}
+	    		sortSplitReads.close();
 	    	}
-	    	// TODO: remote assemblies
+	    	SortRealignedAssemblies sra = new SortRealignedAssemblies(getContext(), aes);
+    		if (sra.canProcess() && !sra.isComplete()) {
+    			sra.process(STEPS);
+    		}
+    		sra.close();
 	    	
 	    	// check that all steps have been completed
 	    	for (SAMEvidenceSource sref : samEvidence) {

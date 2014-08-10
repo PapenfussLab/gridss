@@ -14,6 +14,7 @@ import htsjdk.variant.vcf.VCFFileReader;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -23,6 +24,7 @@ import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredAssembler;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 import au.edu.wehi.idsv.metrics.CompositeMetrics;
 import au.edu.wehi.idsv.metrics.RelevantMetrics;
+import au.edu.wehi.idsv.pipeline.SortRealignedAssemblies;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 
 import com.google.common.base.Function;
@@ -57,6 +59,11 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			process();
 			log.info("SUCCESS evidence assembly ", input);
 		}
+		if (isRealignmentComplete()) {
+			SortRealignedAssemblies step = new SortRealignedAssemblies(processContext, this);
+			step.process(EnumSet.of(ProcessStep.SORT_REALIGNED_ASSEMBLIES));
+			step.close();
+		}
 	}
 	@Override
 	public RelevantMetrics getMetrics() {
@@ -67,7 +74,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		@SuppressWarnings({ "unchecked", "rawtypes" })
 		Iterator<DirectedEvidence> downcast = (Iterator<DirectedEvidence>)(Iterator)iterator( // TODO: is there a less dirty way to do this downcast?
-				fsc.getBreakendVcfForChr(input, chr),
+				fsc.getAssemblyVcfForChr(input, chr),
 				fsc.getRealignmentBamForChr(input, chr));
 		return downcast;
 	}
@@ -76,12 +83,15 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		@SuppressWarnings({ "unchecked", "rawtypes" })
 		Iterator<DirectedEvidence> downcast = (Iterator<DirectedEvidence>)(Iterator)iterator(
-			fsc.getBreakendVcf(input),
+			fsc.getAssemblyVcf(input),
 			fsc.getRealignmentBam(input));
 		return downcast;
 	}
 	private Iterator<VariantContextDirectedEvidence> iterator(File vcf, File realignment) {
-		ensureAssembled();
+		if (!isProcessingComplete()) {
+			log.error("Assemblies not yet generated.");
+			throw new RuntimeException("Assemblies not yet generated");
+		}
 		Iterator<SAMRecord> realignedIt; 
 		if (isRealignmentComplete()) {
 			SamReader realignedReader = processContext.getSamReader(realignment);
@@ -98,6 +108,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				realignedIt);
 		// Change sort order from VCF sorted order to evidence position order
 		it = new DirectEvidenceWindowedSortingIterator<VariantContextDirectedEvidence>(processContext, 3 * this.getMetrics().getMaxFragmentSize(), it);
+		// FIXME: add remote assemblies to iterator
 		return it;
 	}
 	private boolean isProcessingComplete() {
@@ -105,11 +116,11 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				done &= IntermediateFileUtil.checkIntermediate(fsc.getBreakendVcfForChr(input, seq.getSequenceName()));
+				done &= IntermediateFileUtil.checkIntermediate(fsc.getAssemblyVcfForChr(input, seq.getSequenceName()));
 				done &= IntermediateFileUtil.checkIntermediate(fsc.getRealignmentFastqForChr(input, seq.getSequenceName()));
 			}
 		} else {
-			done &= IntermediateFileUtil.checkIntermediate(fsc.getBreakendVcf(input));
+			done &= IntermediateFileUtil.checkIntermediate(fsc.getAssemblyVcf(input));
 			done &= IntermediateFileUtil.checkIntermediate(fsc.getRealignmentFastq(input));
 		}
 		return done;
@@ -129,7 +140,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 						toMerge.add(it);
 					}
 					Iterator<DirectedEvidence> merged = Iterators.mergeSorted(toMerge, DirectedEvidenceOrder.ByNatural);
-					assemble(merged, processContext.getFileSystemContext().getBreakendVcfForChr(input, seq), processContext.getFileSystemContext().getRealignmentFastqForChr(input, seq));
+					assemble(merged, processContext.getFileSystemContext().getAssemblyVcfForChr(input, seq), processContext.getFileSystemContext().getRealignmentFastqForChr(input, seq));
 					for (Iterator<DirectedEvidence> x : toMerge) {
 						CloserUtil.close(x);
 					}
@@ -142,7 +153,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 					toMerge.add(it);
 				}
 				Iterator<DirectedEvidence> merged = Iterators.mergeSorted(toMerge, DirectedEvidenceOrder.ByNatural);
-				assemble(merged, processContext.getFileSystemContext().getBreakendVcf(input), processContext.getFileSystemContext().getRealignmentFastq(input));
+				assemble(merged, processContext.getFileSystemContext().getAssemblyVcf(input), processContext.getFileSystemContext().getRealignmentFastq(input));
 				for (Iterator<DirectedEvidence> x : toMerge) {
 					CloserUtil.close(x);
 				}
