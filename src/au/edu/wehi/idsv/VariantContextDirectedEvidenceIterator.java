@@ -25,7 +25,7 @@ public class VariantContextDirectedEvidenceIterator extends AbstractIterator<Var
 		this.source = source;
 		this.it = it;
 		this.rit = realignedIt;
-		this.factory = new SequentialRealignedBreakpointFactory(Iterators.peekingIterator(realignedIt));
+		this.factory = realignedIt != null ? new SequentialRealignedBreakpointFactory(Iterators.peekingIterator(this.rit)) : null;
 	}
 	@Override
 	protected VariantContextDirectedEvidence computeNext() {
@@ -34,8 +34,10 @@ public class VariantContextDirectedEvidenceIterator extends AbstractIterator<Var
 			IdsvVariantContext managedContext = IdsvVariantContext.create(processContext, source, variant);
 			if (managedContext instanceof VariantContextDirectedEvidence) {
 				VariantContextDirectedEvidence assembly = (VariantContextDirectedEvidence)managedContext;
-				SAMRecord realigned = factory.findAssociatedSAMRecord(assembly);
-				assembly = AssemblyBuilder.incorporateRealignment(processContext, assembly, realigned);
+				if (factory != null) {
+					SAMRecord realigned = factory.findAssociatedSAMRecord(assembly);
+					assembly = AssemblyBuilder.incorporateRealignment(processContext, assembly, realigned);
+				}
 				if (!assembly.isFiltered()) {
 					return assembly;
 				}

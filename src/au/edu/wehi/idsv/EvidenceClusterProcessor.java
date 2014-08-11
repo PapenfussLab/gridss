@@ -6,6 +6,7 @@ import java.util.PriorityQueue;
 import au.edu.wehi.idsv.graph.GraphNode;
 import au.edu.wehi.idsv.graph.MaximalClique;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
@@ -136,8 +137,11 @@ public class EvidenceClusterProcessor implements Iterable<VariantContextDirected
 					context.getLinear().getReferencePosition(node.startY),
 					context.getLinear().getReferencePosition(node.endY));
 			IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
-			// use a hash of the breakpoint as a (probably) unique identifier 
-			builder.id(String.format("idsv%d", Math.abs(breakpoint.hashCode())));
+			// use a hash of the breakpoint as a (probably) unique identifier
+			String id = String.format("idsv%d", Math.abs(breakpoint.hashCode()));
+			builder.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, id);
+			builder.attribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, id + (isHighBreakend ? "o" : "h"));
+			builder.id(id + (isHighBreakend ? "h" : "o"));
 			if (isHighBreakend) {
 				breakpoint = breakpoint.remoteBreakpoint();
 			}
