@@ -21,6 +21,8 @@ public class InsertSizeDistribution extends EnumeratedIntegerDistribution {
 	 * 
 	 */
 	private static final long serialVersionUID = -2332020573213102253L;
+	private static final int MAX_CACHE_SIZE = 1024 * 1024;
+	private double[] cpcache;
 	private final int total;
 	public int getTotalMappedPairs() {
 		return total;
@@ -62,5 +64,19 @@ public class InsertSizeDistribution extends EnumeratedIntegerDistribution {
 	}
 	public double descendingCumulativeProbability(int x) {
 		return 1.0 - cumulativeProbability(x - 1);
+	}
+	@Override
+	public double cumulativeProbability(int x) {
+		if (cpcache == null) {
+			cpcache = new double[Math.min(MAX_CACHE_SIZE, getSupportUpperBound())];
+			for (int i = 0; i < cpcache.length; i++) {
+				cpcache[i] = super.cumulativeProbability(x);
+			}
+		}
+		if (x >= 0 && x < cpcache.length) {
+			return cpcache[x];
+		} else {
+			return super.cumulativeProbability(x);
+		}
 	}
 }
