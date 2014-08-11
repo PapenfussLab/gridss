@@ -7,6 +7,7 @@ import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.ReadEvidenceAssembler;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
+import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -47,8 +48,10 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 		int startpos = evidence.getBreakendSummary().start;
 		int shouldBeCompletedPos = (int)(startpos - processContext.getAssemblyParameters().subgraphAssemblyMargin * source.getMetrics().getMaxFragmentSize());
 		it = Iterables.concat(it, assembleBefore(shouldBeCompletedPos));
-		assert(fgraph.sanityCheckSubgraphs(shouldBeCompletedPos, startpos + source.getMetrics().getMaxFragmentSize()));
-		assert(bgraph.sanityCheckSubgraphs(shouldBeCompletedPos, startpos + source.getMetrics().getMaxFragmentSize()));
+		if (DeBruijnGraphBase.PERFORM_EXPENSIVE_SANITY_CHECKS) {
+			assert(fgraph.sanityCheckSubgraphs(shouldBeCompletedPos, startpos + source.getMetrics().getMaxFragmentSize()));
+			assert(bgraph.sanityCheckSubgraphs(shouldBeCompletedPos, startpos + source.getMetrics().getMaxFragmentSize()));
+		}
 		if (evidence.getBreakendSummary().direction == BreakendDirection.Forward) {
 			fgraph.addEvidence(evidence);
 		} else {

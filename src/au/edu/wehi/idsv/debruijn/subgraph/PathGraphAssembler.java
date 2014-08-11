@@ -79,7 +79,9 @@ public class PathGraphAssembler extends PathGraph {
 				toProcess.removeAll(subgraphs.get(subgraphs.size() - 1));
 			}
 		}
-		assert(sanityCheckSubgraphs());
+		if (DeBruijnGraphBase.PERFORM_EXPENSIVE_SANITY_CHECKS) {
+			assert(sanityCheckSubgraphs());
+		}
 	}
 	private void newNonreferenceSubgraph(SubgraphPathNode seed) {
 		Set<SubgraphPathNode> nodes = Sets.newHashSet();
