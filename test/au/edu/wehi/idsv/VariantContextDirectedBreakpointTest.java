@@ -4,6 +4,8 @@ import static org.junit.Assert.assertEquals;
 import htsjdk.variant.variantcontext.VariantContext;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.Test;
@@ -45,7 +47,7 @@ public class VariantContextDirectedBreakpointTest extends TestHelper {
 				BP("4", new BreakpointSummary(1, FWD, 10, 10, 0, FWD, 1, 1)),
 				BP("5", new BreakpointSummary(2, FWD, 1, 1, 1, FWD, 2, 2))
 				);
-		list.sort(VariantContextDirectedBreakpoint.ByRemoteBreakendLocationStart);
+		Collections.sort(list, VariantContextDirectedBreakpoint.ByRemoteBreakendLocationStart);
 		List<VariantContextDirectedBreakpoint> result = list;
 		
 		assertEquals(5, result.size());
@@ -64,7 +66,7 @@ public class VariantContextDirectedBreakpointTest extends TestHelper {
 				(VariantContext)BP("4", new BreakpointSummary(1, FWD, 10, 10, 0, FWD, 1, 1)),
 				(VariantContext)BP("5", new BreakpointSummary(2, FWD, 1, 1, 1, FWD, 2, 2))
 				);
-		list.sort(VariantContextDirectedBreakpoint.ByRemoteBreakendLocationStartRaw(getContext()));
+		Collections.sort(list, VariantContextDirectedBreakpoint.ByRemoteBreakendLocationStartRaw(getContext()));
 		List<VariantContext> result = list;
 		
 		assertEquals(5, result.size());
