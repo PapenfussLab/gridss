@@ -53,12 +53,12 @@ public class InsertSizeDistribution extends EnumeratedIntegerDistribution {
 		int i = 0;
 		for (Entry<Integer, Bin> entry : insertSizeHistogram.entrySet()) {
 			insertSize[i] = entry.getKey();
-			count[i] = entry.getValue().getValue() / total;
+			count[i] = entry.getValue().getValue();// / total;
 			i++;
 		}
 		return new InsertSizeDistribution(insertSize, count, (int)total);
 	}
-	private InsertSizeDistribution(int[] singletons, double[] probabilities, int readTotal) {
+	public InsertSizeDistribution(int[] singletons, double[] probabilities, int readTotal) {
 		super(singletons, probabilities);
 		this.total = readTotal;
 	}
@@ -70,7 +70,7 @@ public class InsertSizeDistribution extends EnumeratedIntegerDistribution {
 		if (cpcache == null) {
 			cpcache = new double[Math.min(MAX_CACHE_SIZE, getSupportUpperBound())];
 			for (int i = 0; i < cpcache.length; i++) {
-				cpcache[i] = super.cumulativeProbability(x);
+				cpcache[i] = super.cumulativeProbability(i);
 			}
 		}
 		if (x >= 0 && x < cpcache.length) {

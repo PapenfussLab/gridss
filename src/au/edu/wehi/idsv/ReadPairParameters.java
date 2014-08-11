@@ -8,5 +8,15 @@ public class ReadPairParameters {
 	/**
 	 * Percentage (0.0-1.0) of reads considered concordant and ignored for read pair analysis.
 	 */
-	public float concordantPercent = 0;
+	public double concordantPercent = 0;
+	private double getCordantPercentageBound() {
+		double halfDistributionConcordantPercentage = concordantPercent + (1.0 - concordantPercent) / 2; // 0.95 + (1 - 0.95) / 2 = 0.975
+		return halfDistributionConcordantPercentage;
+	}
+	public double getCordantPercentageUpperBound() {
+		return getCordantPercentageBound();
+	}
+	public double getCordantPercentageLowerBound() {
+		return 1.0 - getCordantPercentageBound();
+	}
 }

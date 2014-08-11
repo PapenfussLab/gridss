@@ -2,9 +2,12 @@ package au.edu.wehi.idsv.metrics;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.File;
+
 import org.junit.Test;
 
 import picard.analysis.InsertSizeMetrics;
+import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.TestHelper;
 
 public class IdsvSamFileMetricsTest extends TestHelper {
@@ -13,7 +16,7 @@ public class IdsvSamFileMetricsTest extends TestHelper {
 		IdsvMetrics im = new IdsvMetrics();
 		InsertSizeMetrics ism = new InsertSizeMetrics();
 		ism.MEDIAN_ABSOLUTE_DEVIATION = 10;
-		RelevantMetrics metrics = new IdsvSamFileMetrics(ism, im);
+		RelevantMetrics metrics = new IdsvSamFileMetrics(getContext(), ism, im, null);
 		assertEquals(10 * 1.4826, metrics.getFragmentSizeStdDev(), 0.0001);
 	}
 	@Test
@@ -21,7 +24,7 @@ public class IdsvSamFileMetricsTest extends TestHelper {
 		IdsvMetrics im = new IdsvMetrics();
 		im.MAX_PROPER_PAIR_FRAGMENT_LENGTH = 10;
 		InsertSizeMetrics ism = new InsertSizeMetrics();
-		RelevantMetrics metrics = new IdsvSamFileMetrics(ism, im);
+		RelevantMetrics metrics = new IdsvSamFileMetrics(getContext(), ism, im, null);
 		assertEquals(10, metrics.getMaxFragmentSize());
 	}
 	@Test
@@ -30,7 +33,26 @@ public class IdsvSamFileMetricsTest extends TestHelper {
 		im.MAX_PROPER_PAIR_FRAGMENT_LENGTH = 10;
 		im.MAX_READ_LENGTH = 50;
 		InsertSizeMetrics ism = new InsertSizeMetrics();
-		IdsvSamFileMetrics metrics = new IdsvSamFileMetrics(ism, im);
+		IdsvSamFileMetrics metrics = new IdsvSamFileMetrics(getContext(), ism, im, null);
 		assertEquals(50, metrics.getMaxFragmentSize());
+	}
+	@Test
+	public void should_use_concordant_percentile_for_max_fragment_size_if_not_using_proper_pair_flag() {
+		ProcessingContext pc = getContext();
+		pc.getReadPairParameters().useProperPairFlag = false;
+		pc.getReadPairParameters().concordantPercent = 0.5;
+		IdsvMetrics im = new IdsvMetrics();
+		im.MAX_PROPER_PAIR_FRAGMENT_LENGTH = 10;
+		im.MAX_READ_LENGTH = 50;
+		InsertSizeMetrics ism = new InsertSizeMetrics();
+		int[] fragSize = new int[1000];
+		double[] probability = new double[1000];
+		for (int i = 0; i < 1000; i++) {
+			fragSize[i] = i;
+			probability[i] = 1d / 1000d;
+		}
+		InsertSizeDistribution isd = new InsertSizeDistribution(fragSize, probability, 10000);
+		IdsvSamFileMetrics metrics = new IdsvSamFileMetrics(pc, ism, im, isd);
+		assertEquals(749, metrics.getMaxFragmentSize());
 	}
 }

@@ -6,7 +6,6 @@ import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.SamPairUtil;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
@@ -131,11 +130,11 @@ public class ExtractEvidence implements Closeable {
 		}
 		doProcess(firstPassSteps);
 		if (processContext.getReadPairParameters().useProperPairFlag &&
-				source.getMetrics().getMaxFragmentSize() > source.getMetrics().getMedianFragmentSize() + 4 * source.getMetrics().getFragmentSizeStdDev()) {
-			log.error("Proper pair flag indicates fragment size of %d is expected!"
-					+ "Use READ_PAIR_CONCORDANT_PERCENT to override discordant pair calculation"
-					+ "or realign with an aligner that consider fragment size when setting the proper pair flag.",
-					source.getMetrics().getMaxFragmentSize());
+				source.getMetrics().getMaxFragmentSize() > 2 * source.getMetrics().getMedianFragmentSize() + 10 * source.getMetrics().getFragmentSizeStdDev()) {
+			log.error(String.format("Proper pair flag indicates fragment size of %d is expected!"
+					+ " Use READ_PAIR_CONCORDANT_PERCENT to override discordant pair calculation"
+					+ " or realign with an aligner that consider fragment size when setting the proper pair flag.",
+					source.getMetrics().getMaxFragmentSize()));
 		}
 		if (!secondPassSteps.isEmpty()) {
 			doProcess(secondPassSteps);
@@ -278,10 +277,9 @@ public class ExtractEvidence implements Closeable {
 						if (concordantPercentage > 0 && isConcordant) {
 							InsertSizeDistribution dist = source.getMetrics().getInsertSizeDistribution();
 							int insertSize = Math.abs(record.getInferredInsertSize());
-							double halfDistributionConcordantPercentage = concordantPercentage + (1.0 -concordantPercentage) / 2; // 0.95 + (1 - 0.95) / 2 = 0.975
 							// restrict to reads that are outside the expected distribution
-							isConcordant &= dist.cumulativeProbability(insertSize) <= halfDistributionConcordantPercentage
-									&& dist.descendingCumulativeProbability(insertSize) <= halfDistributionConcordantPercentage;
+							isConcordant &= dist.cumulativeProbability(insertSize) <= processContext.getReadPairParameters().getCordantPercentageUpperBound()
+									&& dist.descendingCumulativeProbability(insertSize) <= processContext.getReadPairParameters().getCordantPercentageUpperBound();
 						}
 						// TODO: exclude really short fragments with self-overlap - do not provide SV evidence
 						// (making sure we don't incorrectly remove self-overlapping in the incorrect orientation)

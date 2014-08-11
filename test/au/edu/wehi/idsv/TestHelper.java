@@ -26,6 +26,8 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 
+import picard.analysis.InsertSizeMetrics;
+
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
@@ -36,6 +38,7 @@ import au.edu.wehi.idsv.debruijn.PathNodeFactory;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.ReadKmerIterable;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
+import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
@@ -184,6 +187,9 @@ public class TestHelper {
 		.assembledBaseCount(6, 8);
 	}
 	public static class MockMetrics extends IdsvSamFileMetrics {
+		public MockMetrics() {
+			super(getContext(), new InsertSizeMetrics(), new IdsvMetrics(), null); 
+		}
 		public int maxFragSize = 300;
 		@Override
 		public int getMaxFragmentSize() { return maxFragSize; } 

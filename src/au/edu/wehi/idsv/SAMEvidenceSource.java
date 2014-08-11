@@ -134,7 +134,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			if (!isComplete(ProcessStep.CALCULATE_METRICS)) {
 				process();
 			}
-			metrics = new IdsvSamFileMetrics(processContext.getFileSystemContext().getInsertSizeMetrics(input), processContext.getFileSystemContext().getIdsvMetrics(input));
+			metrics = new IdsvSamFileMetrics(processContext, processContext.getFileSystemContext().getInsertSizeMetrics(input), processContext.getFileSystemContext().getIdsvMetrics(input));
 		}
 		return metrics;
 	}
@@ -194,7 +194,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		Iterator<RealignedRemoteSoftClipEvidence> remoteScIt = Iterators.emptyIterator(); 
 		if (isRealignmentComplete()) {
 			if (!isComplete(ProcessStep.SORT_REALIGNED_SOFT_CLIPS)) {
-				log.warn("Realignment resorting not complete for ", input);
+				log.debug("Realignment resorting not complete for ", input);
 			} else {
 				SamReader realignSortedReader = processContext.getSamReader(remoteRealigned);
 				SamReader scRealignSorted1 = processContext.getSamReader(remoteSoftClip);
