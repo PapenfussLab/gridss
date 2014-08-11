@@ -75,8 +75,8 @@ public class TestHelper {
 		List<T> list = Lists.newArrayList(data);
 		return list;
 	}
-	public VariantContextBuilder minimalVariant() {
-		return new IdsvVariantContextBuilder(getContext()).chr("polyA").start(1).stop(1).alleles("A", "C");
+	public IdsvVariantContextBuilder minimalVariant() {
+		return (IdsvVariantContextBuilder)new IdsvVariantContextBuilder(getContext()).chr("polyA").start(1).stop(1).alleles("A", "C");
 	}
 	public IdsvVariantContextBuilder minimalBreakend() {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());

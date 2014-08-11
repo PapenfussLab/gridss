@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv;
 
+import static org.junit.Assert.*;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -11,6 +12,9 @@ import htsjdk.variant.variantcontext.VariantContextBuilder;
 import java.util.ArrayList;
 
 import org.junit.Test;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 public class IdsvVariantContextBuilderTest extends TestHelper {
 	@Test
@@ -240,5 +244,42 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 			.start(1)
 			.alleles("A", "<INS>")
 			.make();
+	}
+	@Test
+	public void should_not_filter_non_idsv_properties() {
+		assertTrue( minimalVariant().attribute("TEST", 0).make().hasAttribute("TEST"));
+	}
+	@Test
+	public void should_not_write_empty_properties() {
+		assertFalse( minimalVariant().attribute("LR", null).make().hasAttribute("LR"));
+		assertFalse( minimalVariant().attribute("LR", "").make().hasAttribute("LR"));
+		assertFalse( minimalVariant().attribute("LR", 0).make().hasAttribute("LR"));
+		assertFalse( minimalVariant().attribute("LR", 0L).make().hasAttribute("LR"));
+		assertFalse( minimalVariant().attribute("LR", 0f).make().hasAttribute("LR"));
+		assertFalse( minimalVariant().attribute("LR", 0d).make().hasAttribute("LR"));
+		assertFalse( minimalVariant().attribute("LR", new int[0]).make().hasAttribute("LR"));
+		assertFalse( minimalVariant().attribute("LR", new float[0]).make().hasAttribute("LR"));
+		assertFalse( minimalVariant().attribute("LR", new double[0]).make().hasAttribute("LR"));
+		assertFalse( minimalVariant().attribute("LR", new String[0]).make().hasAttribute("LR"));
+		assertFalse( minimalVariant().attribute("LR", Lists.newArrayList()).make().hasAttribute("LR"));
+		assertFalse( minimalVariant().attribute("LR", Sets.newHashSet()).make().hasAttribute("LR"));
+		
+		assertTrue( minimalVariant().attribute("LR", "A").make().hasAttribute("LR"));
+		assertTrue( minimalVariant().attribute("LR", new int[] { 1 }).make().hasAttribute("LR"));
+		assertTrue( minimalVariant().attribute("LR", new float[] { 1 }).make().hasAttribute("LR"));
+		assertTrue( minimalVariant().attribute("LR", new double[] { 1 }).make().hasAttribute("LR"));
+		assertTrue( minimalVariant().attribute("LR", new String[] { "s" }).make().hasAttribute("LR"));
+		assertTrue( minimalVariant().attribute("LR", Lists.newArrayList("s")).make().hasAttribute("LR"));
+		assertTrue( minimalVariant().attribute("LR", Sets.newHashSet("s")).make().hasAttribute("LR"));
+	}
+	@Test
+	public void should_not_write_empty_array_properties() {
+		assertFalse( minimalVariant().attribute("LR", new int[] { 0,0 }).make().hasAttribute("LR"));
+		assertFalse( minimalVariant().attribute("LR", new float[] { 0,0 }).make().hasAttribute("LR"));
+		assertFalse( minimalVariant().attribute("LR", new double[] { 0,0 }).make().hasAttribute("LR"));
+		assertFalse( minimalVariant().attribute("LR", new String[] { "", null }).make().hasAttribute("LR"));
+		assertFalse( minimalVariant().attribute("LR", new Object[] { 0, 0f, 0d, "", null }).make().hasAttribute("LR"));
+		assertFalse( minimalVariant().attribute("LR", Lists.newArrayList("")).make().hasAttribute("LR"));
+		assertFalse( minimalVariant().attribute("LR", Lists.<Object>newArrayList(0, 0L, 0f, 0d, "", null)).make().hasAttribute("LR"));
 	}
 }

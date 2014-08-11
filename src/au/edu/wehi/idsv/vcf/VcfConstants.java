@@ -2,6 +2,8 @@ package au.edu.wehi.idsv.vcf;
 
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFHeaderLineType;
+import htsjdk.variant.vcf.VCFInfoHeaderLine;
 import htsjdk.variant.vcf.VCFStandardHeaderLines;
 
 public class VcfConstants {
@@ -30,7 +32,13 @@ public class VcfConstants {
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.CONFIDENCE_INTERVAL_START_POSITION);
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.IMPRECISE);
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.MATE_BREAKEND_ID);
+		header.addMetaDataLine(VcfStructuralVariantHeaderLines.BREAKEND_EVENT_ID);
 		header.addMetaDataLine(VCFStandardHeaderLines.getInfoLine(VCFConstants.SOMATIC_KEY));
+		
+		// indel headers
+		header.addMetaDataLine(VcfStructuralVariantHeaderLines.SV_LENGTH);
+		header.addMetaDataLine(VCFStandardHeaderLines.getInfoLine(VCFConstants.END_KEY));
+		header.addMetaDataLine(new VCFInfoHeaderLine("ALT", 1, VCFHeaderLineType.String, "Temporary indel testing hack. //TODO: //FIXME: remove when testing is complete"));
 		
 		// Retrogene headers		
 		//header.addMetaDataLine(new VCFInfoHeaderLine(IdsvConstants.GENE_ID, 1, VCFHeaderLineType.String, "GTF gene_id of gene containing exons"));

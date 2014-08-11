@@ -89,4 +89,15 @@ public enum VcfAttributes {
 	}
 	public VCFInfoHeaderLine infoHeader() { return header; }
 	public String attribute() { return header != null ? header.getID() : null; }
+	/**
+	 * Gets the attribute for the given key
+	 * @param key VCF info field name
+	 * @return corresponding attribute, null if no idsv-specific attribute with the given name is defined
+	 */
+	public static VcfAttributes getAttributefromKey(String key) {
+		for (VcfAttributes a : values()) {
+			if (a.attribute() == key) return a;
+		}
+		return null;
+	}
 }

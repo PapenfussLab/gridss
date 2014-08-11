@@ -7,6 +7,8 @@ import htsjdk.variant.variantcontext.VariantContextBuilder;
 import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
@@ -151,8 +153,75 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 		}
 		return this;
 	}
-	public VariantContextBuilder attribute(final VcfAttributes key, final Object value) {
+	public IdsvVariantContextBuilder attribute(final VcfAttributes key, final Object value) {
 		return attribute(key.attribute(), value);
+	}
+	 
+	public IdsvVariantContextBuilder attribute(final String key, final Object value) {
+		// don't write Idsv properties unnecessarily
+		if (VcfAttributes.getAttributefromKey(key) != null && isNullEmpty(value)) {
+			rmAttribute(key);
+		} else {
+			super.attribute(key, value);
+		}
+		return this;
+    }
+	/**
+	 * Checks if the given attribute contains non-default information.
+	 * @param value attribute value to check
+	 * @return true if the given value is equivalent the default values for the containing type.  
+	 */
+	@SuppressWarnings("rawtypes")
+	private static boolean isNullEmpty(Object value) {
+		if (value == null) return true;
+		if (value instanceof Integer && ((int)value) == 0) return true;
+		if (value instanceof Long && ((long)value) == 0) return true;
+		if (value instanceof Float && ((float)value) == 0) return true;
+		if (value instanceof Double && ((double)value) == 0) return true;
+		if (value instanceof String && ((String)value).length() == 0) return true;
+		if (value instanceof Collection && ((Collection)value).size() == 0) return true;
+		if (value instanceof Iterable) {
+			for (Object o : (Iterable)value) {
+				if (!isNullEmpty(o)) return false;
+			}
+			return true;
+		} else if (value instanceof Object[]) {
+			for (Object o : (Object[])value) {
+				if (!isNullEmpty(o)) return false;
+			}
+			return true;
+		} else if (value instanceof int[]) {
+			for (int o : (int[])value) {
+				if (!isNullEmpty(o)) return false;
+			}
+			return true;
+		} else if (value instanceof long[]) {
+			for (long o : (long[])value) {
+				if (!isNullEmpty(o)) return false;
+			}
+			return true;
+		} else if (value instanceof float[]) {
+			for (float o : (float[])value) {
+				if (!isNullEmpty(o)) return false;
+			}
+			return true;
+		} else if (value instanceof double[]) {
+			for (double o : (double[])value) {
+				if (!isNullEmpty(o)) return false;
+			}
+			return true;
+		} else if (value instanceof short[]) {
+			for (short o : (short[])value) {
+				if (!isNullEmpty(o)) return false;
+			}
+			return true;
+		} else if (value instanceof byte[]) {
+			for (byte o : (byte[])value) {
+				if (!isNullEmpty(o)) return false;
+			}
+			return true;
+		}
+		return false;
 	}
 	@Override
 	public IdsvVariantContext make() {
