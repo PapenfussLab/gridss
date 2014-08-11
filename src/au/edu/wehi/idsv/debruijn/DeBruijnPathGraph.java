@@ -409,13 +409,15 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 * @return true if a merge could be performed, false otherwise
 	 */
 	public boolean mergePaths(Iterable<PN> pathA, Iterable<PN> pathB) {
-		if (pathContainsSameNodeAtDifferentPosition(pathA, pathB) != null) {
+		PN problematicNode = pathContainsSameNodeAtDifferentPosition(pathA, pathB); 
+		if (problematicNode != null) {
 			if (log != null && inconsistentMergePathRemainingCalls > 0) {
 				inconsistentMergePathRemainingCalls--;
-				log.debug(String.format("Near %s: found similar but inconsistent paths \"%s\" and \"%s\"",
+				log.debug(String.format("Near %s: found similar but inconsistent paths \"%s\" and \"%s\". Both contain \"%s\"",
 					getGraph().getKmer(pathA.iterator().next().getFirst()).getSupportingEvidence().iterator().next().getBreakendSummary().toString(),
 					new String(getGraph().getBaseCalls(Lists.newArrayList(PathNode.kmerIterator(pathA)))),
-					new String(getGraph().getBaseCalls(Lists.newArrayList(PathNode.kmerIterator(pathB))))));
+					new String(getGraph().getBaseCalls(Lists.newArrayList(PathNode.kmerIterator(pathB)))),
+					new String(getGraph().getBaseCalls(Lists.newArrayList(PathNode.kmerIterator(ImmutableList.of(problematicNode)))))));
 			}
 			return false;
 		}

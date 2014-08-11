@@ -91,7 +91,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		DeBruijnSubgraphNode result = super.add(kmer, node);
 		// update subgraph bounds
 		result.getSubgraph().addNode(node);
-		sanityCheckSubgraphs();
+		//sanityCheckSubgraphs();
 		return result;
 	}
 	private int maxSubgraphSize = 4096;
@@ -110,9 +110,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 				PathGraphAssembler pga = new PathGraphAssembler(this, this.parameters, ss.getAnyKmer());
 				int width = ss.getMaxAnchor() - ss.getMinAnchor();
 				if (width > maxSubgraphSize) {
-					log.debug(String.format("Subgraph %d to %d has %d paths", ss.getMinAnchor(), ss.getMaxAnchor(), pga.getPaths().size()));
 					maxSubgraphSize = width;
-					debugOutputKmerSpread(ss);
+					log.debug(String.format("Subgraph width=%s [%d, %d] has %d paths: %s", width, ss.getMinAnchor(), ss.getMaxAnchor(), pga.getPaths().size(), debugOutputKmerSpread(ss)));
 				}
 				for (List<Long> contig : pga.assembleContigs()) {
 					VariantContextDirectedEvidence variant = toAssemblyEvidence(contig);
@@ -125,7 +124,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		Collections.sort(contigs, VariantContextDirectedEvidence.ByLocationStart);
 		return contigs;
 	}
-	private void debugOutputKmerSpread(SubgraphSummary ss) {
+	private String debugOutputKmerSpread(SubgraphSummary ss) {
 		long maxKmer = 0;
 		int maxSpread = -1;
 		for (long kmer : reachableFrom(ss.getAnyKmer())) {
@@ -143,12 +142,12 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 				maxKmer = kmer;
 			}
 		}
-		log.debug(String.format("Max kmer %s ref:[%d,%d] mate:[%d,%d]",
+		return String.format("Max kmer %s ref:[%d,%d] mate:[%d,%d]",
 				KmerEncodingHelper.toString(getK(), maxKmer),
 				getKmer(maxKmer).getMinReferencePosition(),
 				getKmer(maxKmer).getMaxReferencePosition(),
 				getKmer(maxKmer).getMinMatePosition(),
-				getKmer(maxKmer).getMaxMatePosition()));
+				getKmer(maxKmer).getMaxMatePosition());
 	}
 	/**
 	 * Removes all kmers not relevant at or after the given position
