@@ -7,8 +7,6 @@ import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.vcf.VcfAttributes;
-
 
 public class RealignedBreakpointTest extends TestHelper {
 	@Test(expected=IllegalArgumentException.class)

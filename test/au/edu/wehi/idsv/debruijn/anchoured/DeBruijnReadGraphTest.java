@@ -11,7 +11,6 @@ import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredGraph;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
 
 public class DeBruijnReadGraphTest extends TestHelper {
 	private static SAMRecord R(String read) {

@@ -1,10 +1,10 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.List;
 
 import org.junit.Test;
 

@@ -4,8 +4,6 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.TestHelper;
-
 
 public class AnomolousReadAssemblyTest extends TestHelper {
 	@Test

@@ -1,10 +1,7 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMRecord;
-
 import org.apache.commons.math3.distribution.BinomialDistribution;
 
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.vcf.VcfAttributes.Subset;
 
 /**

@@ -17,7 +17,6 @@ import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredAssembler;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
 
 import com.google.common.collect.Lists;
 

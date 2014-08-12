@@ -1,19 +1,22 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import htsjdk.samtools.SAMRecord;
 
 import java.util.Set;
-
-import htsjdk.samtools.SAMRecord;
 
 import org.junit.Ignore;
 import org.junit.Test;
 
+import au.edu.wehi.idsv.vcf.VcfAttributes.Subset;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
-import au.edu.wehi.idsv.vcf.VcfAttributes.Subset;
 
 
 public class AssemblyBuilderTest extends TestHelper {

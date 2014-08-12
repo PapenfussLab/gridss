@@ -1,11 +1,10 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
-
-import java.util.EnumSet;
-
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
+
+import java.util.EnumSet;
 
 import org.junit.Test;
 

@@ -8,7 +8,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
@@ -174,10 +173,10 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 	@SuppressWarnings("rawtypes")
 	private static boolean isNullEmpty(Object value) {
 		if (value == null) return true;
-		if (value instanceof Integer && ((int)value) == 0) return true;
-		if (value instanceof Long && ((long)value) == 0) return true;
-		if (value instanceof Float && ((float)value) == 0) return true;
-		if (value instanceof Double && ((double)value) == 0) return true;
+		if (value instanceof Integer && ((Integer)value) == 0) return true;
+		if (value instanceof Long && ((Long)value) == 0L) return true;
+		if (value instanceof Float && ((Float)value) == 0f) return true;
+		if (value instanceof Double && ((Double)value) == 0d) return true;
 		if (value instanceof String && ((String)value).length() == 0) return true;
 		if (value instanceof Collection && ((Collection)value).size() == 0) return true;
 		if (value instanceof Iterable) {

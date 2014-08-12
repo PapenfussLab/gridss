@@ -8,8 +8,6 @@ import htsjdk.samtools.SAMRecord;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.vcf.VcfAttributes;
-
 public class NonReferenceReadPairTest extends TestHelper {
 	public NonReferenceReadPair newPair(SAMRecord[] pair, int maxfragmentSize) {
 		return NonReferenceReadPair.create(pair[0], pair[1], SES(maxfragmentSize));

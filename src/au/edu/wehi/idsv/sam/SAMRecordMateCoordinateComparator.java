@@ -2,7 +2,6 @@ package au.edu.wehi.idsv.sam;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordComparator;
-import htsjdk.samtools.SAMRecordCoordinateComparator;
 
 /**
  * Comparator for sorting SAMRecords by mate coordinate.

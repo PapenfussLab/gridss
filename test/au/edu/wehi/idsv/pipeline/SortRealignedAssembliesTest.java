@@ -1,6 +1,6 @@
 package au.edu.wehi.idsv.pipeline;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 
 import java.io.IOException;

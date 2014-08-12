@@ -2,8 +2,6 @@ package au.edu.wehi.idsv.metrics;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.File;
-
 import org.junit.Test;
 
 import picard.analysis.InsertSizeMetrics;

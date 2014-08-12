@@ -6,8 +6,6 @@ import htsjdk.samtools.SAMRecord;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.vcf.VcfAttributes;
-
 public class SoftClipEvidenceTest extends TestHelper {
 	@Test(expected=IllegalArgumentException.class)
 	public void constructor_should_require_soft_clip_b() {

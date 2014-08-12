@@ -12,8 +12,6 @@ import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
 
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
-
 
 public class SAMRecordUtilTest extends TestHelper {
 	@Test

@@ -13,7 +13,6 @@ import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.ProgressLoggerInterface;
 import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFHeader;
 
@@ -27,7 +26,6 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 
 import picard.analysis.InsertSizeMetrics;
-
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;

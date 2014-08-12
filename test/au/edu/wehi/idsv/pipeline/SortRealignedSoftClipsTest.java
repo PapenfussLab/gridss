@@ -1,27 +1,23 @@
 package au.edu.wehi.idsv.pipeline;
 
-import static org.junit.Assert.*;
-
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.List;
-
+import static org.junit.Assert.assertEquals;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
 
+import java.util.EnumSet;
+import java.util.List;
+
 import org.junit.Test;
 
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-
-import sun.reflect.ReflectionFactory.GetReflectionFactoryAction;
 import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
-import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
+
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 
 
 public class SortRealignedSoftClipsTest extends IntermediateFilesTest {
