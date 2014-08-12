@@ -73,10 +73,8 @@ public class InsertSizeDistribution extends EnumeratedIntegerDistribution {
 				cpcache[i] = super.cumulativeProbability(i);
 			}
 		}
-		if (x >= 0 && x < cpcache.length) {
-			return cpcache[x];
-		} else {
-			return super.cumulativeProbability(x);
-		}
+		if (x < 0) return 0;
+		if (x >= cpcache.length) return 1;
+		return cpcache[x];
 	}
 }
