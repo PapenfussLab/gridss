@@ -2,6 +2,8 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 
 import static org.junit.Assert.assertEquals;
 
+import htsjdk.samtools.util.SequenceUtil;
+
 import java.util.List;
 
 import org.junit.Test;
@@ -76,5 +78,25 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		assertEquals("TTGCTCAAAA", results.get(0).getAssemblyConsensus());
 		assertEquals(1, results.get(0).getBreakendSummary().start);
 		assertEquals(4, results.get(0).getAssemblyConsensus().length() - results.get(0).getBreakendSequence().length);
+	}
+	@Test
+	public void should_assemble_anchor_shorter_than_kmer() {
+		DeBruijnSubgraphAssembler ass = DSA(5);
+		List<VariantContextDirectedEvidence> results = Lists.newArrayList();
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("ATTAGA", Read(0, 1, "1M5S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("ATTAGA", Read(0, 1, "1M5S"))))));
+		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, results.size());
+	}
+	@Test
+	public void should_assemble_anchor_shorter_than_kmer_with_indel_rp_support() {
+		DeBruijnSubgraphAssembler ass = DSA(5);
+		List<VariantContextDirectedEvidence> results = Lists.newArrayList();
+		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(withSequence("GTCTTA", DP(0, 1, "8M", true, 0, 500, "8M", false))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("CTTAGA", Read(0, 100, "1M5S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("CTTAGA", Read(0, 100, "1M5S"))))));
+		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, results.size());
+		assertEquals(3, results.get(0).getBreakendSummary().start);
 	}
 }

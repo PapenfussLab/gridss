@@ -186,7 +186,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 				processContext.getSamReaderIterator(scRealignReader));
 			scIt = new AutoClosingIterator<SoftClipEvidence>(scIt, Lists.<Closeable>newArrayList(scRealignReader));
 		} else {
-			log.info("Realigned soft clip evidence no present due to missing realignment bam ", realigned);
+			log.info("Realigned soft clip evidence not present due to missing realignment bam ", realigned);
 		}
 		// sort into evidence order
 		scIt = new DirectEvidenceWindowedSortingIterator<SoftClipEvidence>(processContext, getMetrics().getMaxReadLength(), scIt);
@@ -207,7 +207,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 				remoteScIt = new DirectEvidenceWindowedSortingIterator<RealignedRemoteSoftClipEvidence>(processContext, getMetrics().getMaxReadLength(), remoteScIt);
 			}
 		} else {
-			log.info("Realigned remote soft clip evidence no present due to missing realignment bam ", realigned);
+			log.info("Realigned remote soft clip evidence not present due to missing realignment bam ", realigned);
 		}
 		return Iterators.mergeSorted(ImmutableList.of(rpIt, scIt, remoteScIt), DirectedEvidenceOrder.ByNatural);
 	}

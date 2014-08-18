@@ -190,6 +190,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			refAnchor = getKmer(kmer).getBestReferencePosition();
 		}
 		// Iterate over breakpoint kmers
+		boolean messagePrinted = false;
 		for (long kmer : contigKmers) {
 			if (getKmer(kmer).isReference()) continue;
 			Integer mp = direction == BreakendDirection.Forward ? getKmer(kmer).getMaxMatePosition() : getKmer(kmer).getMinMatePosition();
@@ -209,7 +210,18 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 					//    /
 					// R-R
 					// 
-					throw new RuntimeException("Sanity check failure: attempted to assemble anchored read as unanchored");
+					//throw new RuntimeException("Sanity check failure: attempted to assemble anchored read as unanchored");
+					
+					// or we have multiple events at the same loci:
+					//  RP - SC
+					// =====>--------<===C
+					//                 ==CCCCCC
+					// read pair and long soft clip sharing same kmer
+					// soft clip is sufficiently long that no anchor kmer exists
+					if (!messagePrinted) {
+						log.debug("Unsufficiently anchored SC being treated as mate evidence at ", getKmer(kmer).getSupportingEvidence().iterator().next().getBreakendSummary().toString(processContext));
+						messagePrinted = true;
+					}
 				}
 			}
 		}

@@ -55,9 +55,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	}
 	public void ensureAssembled() {
 		if (!isProcessingComplete()) {
-			log.info("START evidence assembly ", input);
 			process();
-			log.info("SUCCESS evidence assembly ", input);
 		}
 		if (isRealignmentComplete()) {
 			SortRealignedAssemblies step = new SortRealignedAssemblies(processContext, this);
@@ -127,6 +125,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	}
 	@Override
 	protected void process() {
+		log.info("START evidence assembly ", input);
 		List<Closeable> toClose = Lists.newArrayList();
 		SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
 		try {
@@ -158,6 +157,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 					CloserUtil.close(x);
 				}
 			}
+			log.info("SUCCESS evidence assembly ", input);
 		} finally {
 			for (Closeable x : toClose) {
 				try {
