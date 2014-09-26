@@ -99,7 +99,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     // --- Realignment parameters ---
     @Option(doc = "Minimum length of a breakend to be considered for realignment",
     		optional=true)
-    public int REALIGNMENT_MIN_BREAKEND_LENGTH = 25;
+    public int REALIGNMENT_MIN_BREAKEND_LENGTH = 20;
     @Option(doc = "Minimum average base quality score for realignment of read soft clip",
     		optional=true)
     public float REALIGNMENT_MIN_BASE_QUALITY = 5;
