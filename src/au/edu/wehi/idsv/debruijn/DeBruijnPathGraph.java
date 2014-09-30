@@ -14,6 +14,8 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.SortedSet;
 
+import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
+
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -32,11 +34,17 @@ import com.google.common.primitives.Ints;
  */
 public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T>> {
 	private static Log log = Log.getInstance(DeBruijnPathGraph.class);
+	/**
+	 * Safety limit to prevent unbounded exponential runtime
+	 * when attempt to path collapse highly collected degenerate subgraphs
+	 */
+	private static final int COLLAPSE_PATH_MAX_TRAVERSAL = 10 * 1024 * 1024;
 	protected final PathNodeFactory<T, PN> factory;
 	private final DeBruijnGraphBase<T> graph;
 	protected final Set<PN> paths = Sets.newHashSet();
 	protected final Map<PN, List<PN>> pathNext = Maps.newHashMap();
 	protected final Map<PN, List<PN>> pathPrev = Maps.newHashMap();
+	private int collapsePathTraversalCount;
 	/**
 	 * Sanity checking field: total weight of graph should not change
 	 */
@@ -288,20 +296,25 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 *  @param bubblesOnly only collapse bubbles. No other paths will be affected
 	 */
 	public void collapseSimilarPaths(int maxDifference, boolean bubblesOnly) {
-		// Keep collapsing until we can't anymore
-		boolean collapsed = true;
-		while (collapsed) {
-			collapsed = false;
-			for (PN start : paths) {
-				// TODO: collapse the path with the weakest support first
-				if (collapsePaths(maxDifference, bubblesOnly, start)) {
-					collapsed = true;
-					break;
+		collapsePathTraversalCount = 0;
+		try {
+			// Keep collapsing until we can't anymore
+			boolean collapsed = true;
+			while (collapsed) {
+				collapsed = false;
+				for (PN start : paths) {
+					// TODO: collapse the path with the weakest support first
+					if (collapsePaths(maxDifference, bubblesOnly, start)) {
+						collapsed = true;
+						break;
+					}
 				}
 			}
+		} catch (AlgorithmRuntimeSafetyLimitExceededException e) {
+			log.error(e);
 		}
 	}
-	private boolean collapsePaths(int maxDifference, boolean bubblesOnly, PN start) {
+	private boolean collapsePaths(int maxDifference, boolean bubblesOnly, PN start) throws AlgorithmRuntimeSafetyLimitExceededException {
 		Deque<PN> listA = Queues.newArrayDeque();
 		Deque<PN> listB = Queues.newArrayDeque();
 		List<PN> next = nextPath(start);
@@ -326,7 +339,14 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 			Deque<PN> pathA,
 			Deque<PN> pathB,
 			int pathALength,
-			int pathBLength) {
+			int pathBLength) throws AlgorithmRuntimeSafetyLimitExceededException {
+		if (++collapsePathTraversalCount >= COLLAPSE_PATH_MAX_TRAVERSAL) {
+			throw new AlgorithmRuntimeSafetyLimitExceededException(String.format(
+					"Path collapse not complete after %d node traversals. Aborting path collapse whilst processing \"%s\" and \"%s\".",
+					collapsePathTraversalCount,
+					new String(getGraph().getBaseCalls(Lists.newArrayList(PathNode.kmerIterator(pathA)))),
+					new String(getGraph().getBaseCalls(Lists.newArrayList(PathNode.kmerIterator(pathB))))));
+		}
 		// paths have diverged too far
 		if (basesDifferent(pathA, pathB) > differencesAllowed) return false;
 		
@@ -345,9 +365,12 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 			for (PN nextA : nextPath(pathA.getLast())) {
 				if (!pathA.contains(nextA)) {
 					pathA.addLast(nextA);
-					if (collapsePaths(differencesAllowed, bubblesOnly, pathA, pathB, pathALength + nextA.length(), pathBLength)) {
-						pathA.removeLast();
-						return true;
+					// don't continue if the node we just added would result in a problematic path merge
+					if (!pathB.contains(nextA) || getNodeAtDifferentPosition(pathA, pathB) == null) {
+						if (collapsePaths(differencesAllowed, bubblesOnly, pathA, pathB, pathALength + nextA.length(), pathBLength)) {
+							pathA.removeLast();
+							return true;
+						}
 					}
 					pathA.removeLast();
 				}
@@ -356,9 +379,11 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 			for (PN nextB : nextPath(pathB.getLast())) {
 				if (!pathB.contains(nextB)) {
 					pathB.addLast(nextB);
-					if (collapsePaths(differencesAllowed, bubblesOnly, pathA, pathB, pathALength, pathBLength + nextB.length())) {
-						pathB.removeLast();
-						return true;
+					if (!pathA.contains(nextB) || getNodeAtDifferentPosition(pathA, pathB) == null) {
+						if (collapsePaths(differencesAllowed, bubblesOnly, pathA, pathB, pathALength, pathBLength + nextB.length())) {
+							pathB.removeLast();
+							return true;
+						}
 					}
 					pathB.removeLast();
 				}
@@ -409,7 +434,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 * @return true if a merge could be performed, false otherwise
 	 */
 	public boolean mergePaths(Iterable<PN> pathA, Iterable<PN> pathB) {
-		PN problematicNode = pathContainsSameNodeAtDifferentPosition(pathA, pathB); 
+		PN problematicNode = getNodeAtDifferentPosition(pathA, pathB); 
 		if (problematicNode != null) {
 			if (log != null && inconsistentMergePathRemainingCalls > 0) {
 				inconsistentMergePathRemainingCalls--;
@@ -445,13 +470,14 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 		return true;
 	}
 	/**
-	 * Checks for a common node that would cause a problematic merge
+	 * Checks for a common node that cannot be collapsed as it occurs
+	 * on both paths at different positions
 	 * 
 	 * @param pathA
 	 * @param pathB
 	 * @return first inconsistent node, null if all nodes are consistent
 	 */
-	private PN pathContainsSameNodeAtDifferentPosition(Iterable<PN> pathA, Iterable<PN> pathB) {
+	private PN getNodeAtDifferentPosition(Iterable<PN> pathA, Iterable<PN> pathB) {
 		Map<PN, Integer> offsetMap = Maps.newHashMap();
 		int offset = 0;
 		for (PN n : pathA) {
