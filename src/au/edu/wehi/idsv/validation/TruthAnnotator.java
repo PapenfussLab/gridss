@@ -2,22 +2,12 @@ package au.edu.wehi.idsv.validation;
 
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.Histogram;
 import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFFileReader;
 
 import java.io.File;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import au.edu.wehi.idsv.BreakendAnnotator;
 import au.edu.wehi.idsv.BreakendDirection;
@@ -27,7 +17,11 @@ import au.edu.wehi.idsv.IdsvVariantContext;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.StructuralVariationCallBuilder;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
+import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 /**
  * Annotates breakends based on a reference truth file
@@ -59,11 +53,11 @@ public class TruthAnnotator implements BreakendAnnotator {
 	}
 	@Override
 	public VariantContextDirectedEvidence annotate(VariantContextDirectedEvidence variant) {
-		BreakendSummary truthBreakend = variant.getBreakendSummary();
-		BreakpointSummary truthBreakpoint = null;
-		if (truthBreakend instanceof BreakpointSummary) {
-			truthBreakpoint = (BreakpointSummary)truthBreakend;
-			truthBreakend = truthBreakpoint.localBreakend();
+		BreakendSummary variantBreakend = variant.getBreakendSummary();
+		BreakpointSummary variantBreakpoint = null;
+		if (variantBreakend instanceof BreakpointSummary) {
+			variantBreakpoint = (BreakpointSummary)variantBreakend;
+			variantBreakend = variantBreakpoint.localBreakend();
 		}
 		HashSet<String> breakpointHits = Sets.newHashSet();
 		HashSet<String> breakendHits = Sets.newHashSet();
@@ -71,14 +65,14 @@ public class TruthAnnotator implements BreakendAnnotator {
 			if ((truthVariant.hasAttribute(VcfSvConstants.SV_TYPE_KEY) && truthVariant.getAttributeAsString(VcfSvConstants.SV_TYPE_KEY, "").equals("INS")) ||
 					(truthVariant.hasAttribute(VcfSvConstants.SV_TYPE_KEY) && truthVariant.getAttributeAsString(VcfSvConstants.SV_TYPE_KEY, "").equals("DEL"))) {
 				// two breakpoints: forward & backward
-				BreakendSummary start = new BreakendSummary(truthVariant.getReferenceIndex(), BreakendDirection.Forward, truthVariant.getStart(), truthVariant.getStart());
-				int endOffset = Math.max(0, truthVariant.getAttributeAsInt(VcfSvConstants.SV_LENGTH_KEY, 0));
+				BreakendSummary truthBreakendStart = new BreakendSummary(truthVariant.getReferenceIndex(), BreakendDirection.Forward, truthVariant.getStart(), truthVariant.getStart());
+				int endOffset = Math.max(0, -truthVariant.getAttributeAsInt(VcfSvConstants.SV_LENGTH_KEY, 0));
 				endOffset = truthVariant.getStart() + endOffset + 1;
-				BreakendSummary end = new BreakendSummary(truthVariant.getReferenceIndex(), BreakendDirection.Backward, endOffset, endOffset);
-				BreakpointSummary bp = new BreakpointSummary(start, end);
-				if (variant.getBreakendSummary().overlaps(bp) || variant.getBreakendSummary().overlaps(bp.remoteBreakpoint())) {
+				BreakendSummary truthBreakendEnd = new BreakendSummary(truthVariant.getReferenceIndex(), BreakendDirection.Backward, endOffset, endOffset);
+				BreakpointSummary truthBreakpoint = new BreakpointSummary(truthBreakendStart, truthBreakendEnd);
+				if (variantBreakpoint.overlaps(truthBreakpoint) || variantBreakpoint.overlaps(truthBreakpoint.remoteBreakpoint())) {
 					breakpointHits.add(truthVariant.getID());
-				} else if (variant.getBreakendSummary().overlaps(bp.localBreakend()) || variant.getBreakendSummary().overlaps(bp.remoteBreakend())) {
+				} else if (variantBreakend.overlaps(truthBreakendStart) || variantBreakend.overlaps(truthBreakendEnd)) {
 					breakendHits.add(truthVariant.getID());
 				}
 			} else {
@@ -87,8 +81,8 @@ public class TruthAnnotator implements BreakendAnnotator {
 		}
 		if (!breakpointHits.isEmpty() || !breakendHits.isEmpty()) {
 			StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(processContext, variant);
-			builder.attribute("REF_MATCHES", Lists.newArrayList(breakpointHits));
-			builder.attribute("REF_MISREALIGN", Lists.newArrayList(breakendHits));
+			builder.attribute(VcfAttributes.TRUTH_MATCHES.attribute(), Lists.newArrayList(breakpointHits));
+			builder.attribute(VcfAttributes.TRUTH_MISREALIGN.attribute(), Lists.newArrayList(breakendHits));
 			return builder.make();
 		}
 		return variant;
