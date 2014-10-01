@@ -41,6 +41,9 @@ public class BreakpointSummary extends BreakendSummary {
 		this(local.referenceIndex, local.direction, local.start, local.end,
 				remote.referenceIndex, remote.direction, remote.start, remote.end);
 	}
+	public BreakendSummary localBreakend() {
+		return new BreakendSummary(referenceIndex, direction, start, end);
+	}
 	public BreakendSummary remoteBreakend() {
 		return new BreakendSummary(referenceIndex2, direction2, start2, end2);
 	}

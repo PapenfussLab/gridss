@@ -121,7 +121,6 @@ public class Idsv extends CommandLineProgram {
 	    		caller = new VariantCaller(getContext(), OUTPUT, allEvidence);
 	    		caller.callBreakends();
 	    		caller.annotateBreakpoints();
-	    		
 	    	} finally {
 	    		if (caller != null) caller.close();
 	    	}
@@ -147,11 +146,10 @@ public class Idsv extends CommandLineProgram {
 					if (loc.start < loc.start2 && loc.direction == BreakendDirection.Forward && loc.direction2 == BreakendDirection.Backward) {
 						// low position of indel
 						indelSize = loc.start - loc.start2;
-						indelSize += bp.getBreakpointSequenceString().length();
 					} else if (loc.start2 < loc.start && loc.direction2 == BreakendDirection.Forward && loc.direction == BreakendDirection.Backward) {
 						indelSize = loc.start2 - loc.start;
-						indelSize += bp.getBreakpointSequenceString().length();
 					}
+					indelSize += bp.getBreakpointSequenceString().length() + 1;
 				}
 				if (indelSize != 0) {
 					builder.attribute(VcfSvConstants.SV_LENGTH_KEY, indelSize);

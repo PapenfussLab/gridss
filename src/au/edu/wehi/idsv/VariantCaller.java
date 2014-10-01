@@ -132,6 +132,9 @@ public class VariantCaller extends EvidenceProcessorBase {
 		}
 	}
 	public void annotateBreakpoints() {
+		annotateBreakpoints(null);
+	}
+	public void annotateBreakpoints(BreakendAnnotator annotator) {
 		log.info("Annotating Calls");
 		List<File> normalFiles = Lists.newArrayList();
 		List<File> tumourFiles = Lists.newArrayList();
@@ -152,12 +155,16 @@ public class VariantCaller extends EvidenceProcessorBase {
 			toClose.add(normalCoverage);
 			final SequentialReferenceCoverageLookup tumourCoverage = getReferenceLookup(tumourFiles);
 			toClose.add(tumourCoverage);
-			SequentialBreakendAnnotator annotator = new SequentialBreakendAnnotator(processContext, normalCoverage, tumourCoverage, getAllEvidence());
+			BreakendAnnotator referenceAnnotator  = new SequentialCoverageAnnotator(processContext, normalCoverage, tumourCoverage);
+			BreakendAnnotator evidenceAnnotator = new SequentialEvidenceAnnotator(processContext, getAllEvidence());
 			Iterator<IdsvVariantContext> it = getAllCalledVariants();
 			while (it.hasNext()) {
 				IdsvVariantContext rawVariant = it.next();
 				if (rawVariant instanceof VariantContextDirectedEvidence && ((VariantContextDirectedEvidence)rawVariant).isValid()) {
-					VariantContextDirectedEvidence annotatedVariant = annotator.annotate((VariantContextDirectedEvidence)rawVariant);
+					VariantContextDirectedEvidence annotatedVariant = evidenceAnnotator.annotate(referenceAnnotator.annotate((VariantContextDirectedEvidence)rawVariant));
+					if (annotator != null) {
+						annotatedVariant = annotator.annotate(annotatedVariant);
+					}
 					vcfWriter.add(annotatedVariant);
 				}
 			}

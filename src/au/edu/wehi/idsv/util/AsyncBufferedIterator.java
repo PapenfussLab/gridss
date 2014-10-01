@@ -37,11 +37,11 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
 	 * Creates a new iterator that traverses the given iterator on a background thread
 	 * @param iterator iterator to traverse
 	 * @param bufferCount number of read-ahead buffers
-	 * @param batchSize size of each read-ahead buffer
+	 * @param batchSize size of each read-ahead buffer. A larger batch size will increase throughput and latency.
 	 */
 	public AsyncBufferedIterator(Iterator<T> iterator, int bufferCount, int batchSize) {
 		if (iterator == null) throw new IllegalArgumentException();
-		if (bufferCount <= 0 || batchSize <= 0) throw new IllegalArgumentException("Non-zero buffer size required.");
+		if (bufferCount <= 0 || batchSize <= 0) throw new IllegalArgumentException("Buffer size must be at least 1.");
 		this.underlying = iterator;
 		this.buffer = new ArrayBlockingQueue<List<Object>>(bufferCount);
 		this.batchSize = batchSize;
@@ -119,7 +119,7 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
         		try {
 					buffer.put(ImmutableList.of(eos));
 				} catch (InterruptedException e) {
-					log.error("Thread interrupt received whilest writing end of stream indicator");
+					log.error("Thread interrupt received whilst writing end of stream indicator");
 				}
         	}
         }
