@@ -38,7 +38,11 @@ public class PathGraphAssembler extends PathGraph {
 	}
 	public List<LinkedList<Long>> assembleContigs() {
 		if (parameters.maxBaseMismatchForCollapse > 0) {
-			collapseSimilarPaths(parameters.maxBaseMismatchForCollapse, parameters.collapseBubblesOnly);
+			// collapsing bubbles first reduces graph size before performing full path collapse
+			collapseSimilarPaths(parameters.maxBaseMismatchForCollapse, true);
+			if (!parameters.collapseBubblesOnly) {
+				collapseSimilarPaths(parameters.maxBaseMismatchForCollapse, false);
+			}
 		}
 		splitOutReferencePaths();
 		calcNonReferenceSubgraphs();
@@ -178,7 +182,9 @@ public class PathGraphAssembler extends PathGraph {
 		pushFronter(frontier, startingNode, startingScore, null);
 		
 		while (!frontier.isEmpty()) {
-			assert(sanityCheckMemoization(bestScore, bestPath, frontier, scoringFunction, referenceTraverse, !referenceTraverse));
+			if (DeBruijnGraphBase.PERFORM_EXPENSIVE_SANITY_CHECKS) {
+				assert(sanityCheckMemoization(bestScore, bestPath, frontier, scoringFunction, referenceTraverse, !referenceTraverse));
+			}
 			SubgraphPathNode node = popFronter(frontier);
 			int score = bestScore.get(node);
 			List<SubgraphPathNode> nodePath = bestPath.get(node);
