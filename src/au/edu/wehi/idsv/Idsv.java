@@ -14,9 +14,11 @@ import java.util.EnumSet;
 import java.util.List;
 
 import picard.cmdline.Option;
+import picard.cmdline.StandardOptionDefinitions;
 import picard.cmdline.Usage;
 import au.edu.wehi.idsv.pipeline.SortRealignedAssemblies;
 import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
+import au.edu.wehi.idsv.validation.TruthAnnotator;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.collect.Lists;
@@ -30,9 +32,10 @@ public class Idsv extends CommandLineProgram {
 	private Log log = Log.getInstance(Idsv.class);
 	private static final String PROGRAM_VERSION = "0.1";
     // The following attributes define the command-line arguments
+	@Option(doc="VCF containing true calls. Called variants will be annotated as true/false positive called based on this truth file.", optional=true)
+    public File TRUTH_VCF = null;
     @Usage
     public String USAGE = getStandardUsagePreamble() + "Calls structural variations from NGS sequencing data. " + PROGRAM_VERSION;
-    
     @Option(doc = "Processing steps to execute",
             optional = true)
 	public EnumSet<ProcessStep> STEPS = ProcessStep.ALL_STEPS;
@@ -120,8 +123,11 @@ public class Idsv extends CommandLineProgram {
 	    	try {
 	    		caller = new VariantCaller(getContext(), OUTPUT, allEvidence);
 	    		caller.callBreakends();
-	    		caller.annotateBreakpoints();
-	    		
+	    		BreakendAnnotator annotator = null;
+	    		if (TRUTH_VCF != null) {
+	    			annotator = new TruthAnnotator(getContext(), TRUTH_VCF);	
+	    		}
+	    		caller.annotateBreakpoints(annotator);
 	    	} finally {
 	    		if (caller != null) caller.close();
 	    	}
@@ -147,11 +153,10 @@ public class Idsv extends CommandLineProgram {
 					if (loc.start < loc.start2 && loc.direction == BreakendDirection.Forward && loc.direction2 == BreakendDirection.Backward) {
 						// low position of indel
 						indelSize = loc.start - loc.start2;
-						indelSize += bp.getBreakpointSequenceString().length();
 					} else if (loc.start2 < loc.start && loc.direction2 == BreakendDirection.Forward && loc.direction == BreakendDirection.Backward) {
 						indelSize = loc.start2 - loc.start;
-						indelSize += bp.getBreakpointSequenceString().length();
 					}
+					indelSize += bp.getBreakpointSequenceString().length() + 1;
 				}
 				if (indelSize != 0) {
 					builder.attribute(VcfSvConstants.SV_LENGTH_KEY, indelSize);

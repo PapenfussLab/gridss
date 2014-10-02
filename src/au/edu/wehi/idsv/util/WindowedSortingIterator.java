@@ -1,4 +1,4 @@
-package au.edu.wehi.idsv;
+package au.edu.wehi.idsv.util;
 
 import htsjdk.samtools.util.Log;
 

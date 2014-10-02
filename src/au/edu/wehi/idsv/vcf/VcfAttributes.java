@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.vcf;
 
+import com.google.common.collect.Lists;
+
 import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
@@ -65,7 +67,11 @@ public enum VcfAttributes {
 	ASSEMBLY_PROGRAM ("A_AP", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Assembly algorithm"),
 	ASSEMBLY_BREAKEND_QUALS ("A_BQ", 1, VCFHeaderLineType.String, "Assembly breakend base qualities (percent encoding of fastq phred(+33) base qualities)"),
 	
-	CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY ("CIRPOS", 2, VCFHeaderLineType.Integer, "Confidence interval around remote breakend POS for imprecise variants");
+	CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY ("CIRPOS", 2, VCFHeaderLineType.Integer, "Confidence interval around remote breakend POS for imprecise variants"),
+	
+	TRUTH_MATCHES ("TRUTH_MATCHES", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Variant ID of all true variants as defined in the supplied truth set"),
+	TRUTH_MISREALIGN ("TRUTH_MISREALIGN", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Variant ID of the true variant for all variants where the remote breakend location does not match the true variant as defined in the supplied truth set");
+
 	public enum Subset {
 		/**
 		 * All evidence

@@ -2,6 +2,8 @@ package au.edu.wehi.idsv;
 
 import java.util.Iterator;
 
+import au.edu.wehi.idsv.util.WindowedSortingIterator;
+
 import com.google.common.base.Function;
 
 /**
