@@ -8,6 +8,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
@@ -148,6 +149,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		assertEquals(1, pg.getPaths().size());
 	}
 	@Test
+	@Ignore("TODO: NYI: Not Yet Implemented")
 	public void collapseSimilarPaths_should_collapse_branches_of_different_lengths() {
 		BasePathGraph pg = PG(G(20)
 				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATC")

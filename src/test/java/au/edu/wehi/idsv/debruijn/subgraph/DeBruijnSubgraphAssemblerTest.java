@@ -1,11 +1,11 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
 import static org.junit.Assert.assertEquals;
-
 import htsjdk.samtools.util.SequenceUtil;
 
 import java.util.List;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.AssemblyParameters;
@@ -80,6 +80,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		assertEquals(4, results.get(0).getAssemblyConsensus().length() - results.get(0).getBreakendSequence().length);
 	}
 	@Test
+	@Ignore("TODO: NYI: Not Yet Implemented")
 	public void should_assemble_anchor_shorter_than_kmer() {
 		DeBruijnSubgraphAssembler ass = DSA(5);
 		List<VariantContextDirectedEvidence> results = Lists.newArrayList();
@@ -89,6 +90,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		assertEquals(1, results.size());
 	}
 	@Test
+	@Ignore("TODO: NYI: Not Yet Implemented")
 	public void should_assemble_anchor_shorter_than_kmer_with_indel_rp_support() {
 		DeBruijnSubgraphAssembler ass = DSA(5);
 		List<VariantContextDirectedEvidence> results = Lists.newArrayList();

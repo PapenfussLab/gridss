@@ -18,7 +18,7 @@ public class IdsvTest extends IntermediateFilesTest {
 	public void test_sv_comparision_203541() throws IOException {
 		File output = new File(super.testFolder.getRoot(), "203541.vcf");
 		setReference(new File("C:/dev/chr12.fa"));
-		createInput(new File("testdata/203541.bam"));
+		createInput(new File("src/test/resources/203541.bam"));
 		String[] args = new String[] {
 				"INPUT=" + input.toString(),
 				"REFERENCE=" + reference.toString(),
@@ -39,8 +39,8 @@ public class IdsvTest extends IntermediateFilesTest {
 		assertEquals(FWD, ass.get(0).getBreakendSummary().direction);
 		assertEquals(203540, ass.get(1).getBreakendSummary().start);
 		assertEquals(BWD, ass.get(1).getBreakendSummary().direction);
-		Files.copy(new File("testdata/203541.bam.idsv.realign.bam"), new File(testFolder.getRoot().getAbsolutePath() + "/input.bam.idsv.working", "input.bam.idsv.realign.bam"));
-		Files.copy(new File("testdata/203541.vcf.idsv.realign.bam"), new File(testFolder.getRoot().getAbsolutePath() + "/203541.vcf.idsv.working", "203541.vcf.idsv.realign.bam"));
+		Files.copy(new File("src/test/resources/203541.bam.idsv.realign.bam"), new File(testFolder.getRoot().getAbsolutePath() + "/input.bam.idsv.working", "input.bam.idsv.realign.bam"));
+		Files.copy(new File("src/test/resources/203541.vcf.idsv.realign.bam"), new File(testFolder.getRoot().getAbsolutePath() + "/203541.vcf.idsv.working", "203541.vcf.idsv.realign.bam"));
 		
 		new Idsv().instanceMain(args);
 		ass = breaks(getVcf(output, null));

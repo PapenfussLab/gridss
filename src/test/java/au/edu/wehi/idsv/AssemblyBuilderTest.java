@@ -189,6 +189,7 @@ public class AssemblyBuilderTest extends TestHelper {
 		assertEquals(1000 + AES().getMetrics().getMaxFragmentSize(), bs.end);
 	}
 	@Test
+	@Ignore("TODO: NYI: Not Yet Implemented")
 	public void should_restrict_mate_anchor_interval_based_on_anchor_positions() {
 		// max fragment size = 300
 		VariantContextDirectedEvidence dba;
