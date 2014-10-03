@@ -1,0 +1,47 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>au.edu.wehi</groupId>
+  <artifactId>gridss</artifactId>
+  <packaging>jar</packaging>
+  <version>1.0-SNAPSHOT</version>
+  <name>gridss</name>
+  <url>http://github.com/d-cameron</url>
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.11</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+    	<groupId>com.google.guava</groupId>
+    	<artifactId>guava</artifactId>
+    	<version>18.0</version>
+    </dependency>
+    <dependency>
+    	<groupId>org.apache.commons</groupId>
+    	<artifactId>commons-lang3</artifactId>
+    	<version>3.3.2</version>
+    </dependency>
+    <dependency>
+    	<groupId>org.apache.commons</groupId>
+    	<artifactId>commons-math3</artifactId>
+    	<version>3.3</version>
+    </dependency>
+    <dependency>
+    	<groupId>org.broadinstitute</groupId>
+    	<artifactId>htsjdk</artifactId>
+    	<version>1.120-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+    	<groupId>org.broadinstitute</groupId>
+    	<artifactId>picard</artifactId>
+    	<version>1.0-SNAPSHOT</version>
+    </dependency>
+  </dependencies>
+  <scm>
+  	<developerConnection>Daniel Cameron</developerConnection>
+  	<url>http://github.com/d-cameron/idsv</url>
+  </scm>
+</project>
