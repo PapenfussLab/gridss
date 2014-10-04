@@ -96,6 +96,9 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     		+ "of no contributing evidence before subgraph assembly.",
     		optional=true)
     public float ASSEMBLY_DEBRUIJN_SUBGRAPH_ASSEMBLY_FRAGMENT_DELAY = 3;
+    @Option(doc = "Location to save assembly graphs to for visualisation and"
+    		+ "debugging purposes.", optional=true)
+    public File DEBUG_ASSEMBLY_VISUALISATION_DIRECTORY = null;
     // --- Realignment parameters ---
     @Option(doc = "Minimum length of a breakend to be considered for realignment",
     		optional=true)
@@ -176,6 +179,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 		ap.maxContigsPerAssembly = ASSEMBLY_DEBRUIJN_MAX_CONTIGS_PER_ITERATION;
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = ASSEMBLY_DEBRUIJN_SUBGRAPH_BRANCHING_FACTOR;
 		ap.subgraphAssemblyMargin = ASSEMBLY_DEBRUIJN_SUBGRAPH_ASSEMBLY_FRAGMENT_DELAY;
+		ap.debruijnGraphVisualisationDirectory = DEBUG_ASSEMBLY_VISUALISATION_DIRECTORY;
 		return ap;
 	}
 	private SoftClipParameters getSoftClipParameters() {

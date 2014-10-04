@@ -63,6 +63,9 @@ public class PathGraphAssembler extends PathGraph {
 						getScore(arg1, scoringFunction, false, true),
 						getScore(arg0, scoringFunction, false, true));
 			}});
+		if (getGraphExporter() != null) {
+			getGraphExporter().contigs(result);
+		}
 		return Lists.newArrayList(Iterables.transform(result, new Function<List<SubgraphPathNode>, LinkedList<Long>>() {
 			@Override
 			public LinkedList<Long> apply(List<SubgraphPathNode> arg0) {
@@ -85,6 +88,10 @@ public class PathGraphAssembler extends PathGraph {
 		}
 		if (DeBruijnGraphBase.PERFORM_EXPENSIVE_SANITY_CHECKS) {
 			assert(sanityCheckSubgraphs());
+		}
+		if (getGraphExporter() != null) {
+			getGraphExporter().annotateSubgraphs(subgraphs);
+			getGraphExporter().annotateStartingPaths(startingPaths);
 		}
 	}
 	private void newNonreferenceSubgraph(SubgraphPathNode seed) {

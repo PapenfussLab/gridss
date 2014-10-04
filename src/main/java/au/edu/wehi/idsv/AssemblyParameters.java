@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv;
 
+import java.io.File;
+
 public class AssemblyParameters {
 	public AssemblyMethod method = AssemblyMethod.DEBRUIJN_SUBGRAPH;
 	/**
@@ -36,4 +38,8 @@ public class AssemblyParameters {
 	 * A value of 1 indicates a greedy traversal
 	 */
 	public int subgraphAssemblyTraversalMaximumBranchingFactor = Integer.MAX_VALUE;
+	/**
+	 * Directory to save debruijn graph visualisation information to.
+	 */
+	public File debruijnGraphVisualisationDirectory = null;
 }

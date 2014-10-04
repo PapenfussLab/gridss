@@ -14,7 +14,6 @@ import java.util.EnumSet;
 import java.util.List;
 
 import picard.cmdline.Option;
-import picard.cmdline.StandardOptionDefinitions;
 import picard.cmdline.Usage;
 import au.edu.wehi.idsv.pipeline.SortRealignedAssemblies;
 import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;

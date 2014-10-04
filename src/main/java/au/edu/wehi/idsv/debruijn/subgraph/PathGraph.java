@@ -41,6 +41,9 @@ public class PathGraph extends DeBruijnPathGraph<DeBruijnSubgraphNode, SubgraphP
 			lengths.add(currentLength);
 			split(n, lengths);
 		}
+		if (getGraphExporter() != null) {
+			getGraphExporter().snapshot(this);
+		}
 		assert(assertReferenceKmersSplit());
 	}
 	private boolean assertReferenceKmersSplit() {

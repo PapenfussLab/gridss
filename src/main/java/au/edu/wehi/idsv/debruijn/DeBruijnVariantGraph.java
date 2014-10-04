@@ -32,7 +32,7 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 	public void addEvidence(DirectedEvidence evidence) {
 		if (evidence instanceof RealignedRemoteSoftClipEvidence) {
 			// TODO: should we assemble these? for now, ignore remote soft clips - as they get assembled on the other side
-			// FIXME: add these in
+			// TODO: FIXME: add these in
 		} else if (evidence instanceof NonReferenceReadPair) {
 			addEvidence((NonReferenceReadPair)evidence);
 		} else if (evidence instanceof SoftClipEvidence) {
@@ -107,8 +107,8 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 	protected void onEvidenceAdded(T graphNode, T evidenceNode, VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) { }
 	/**
 	 * Called whenever evidence has been removed 
-	 * @param graphNode de bruijn graph kmer after evidence has been added
-	 * @param evidenceNode evidence node that has been added
+	 * @param graphNode de bruijn graph kmer after evidence has been removed
+	 * @param evidenceNode evidence that has been removed
 	 * @param evidence evidence details
 	 * @param readKmerOffset kmer offset of this kmer within evidence 
 	 * @param kmer evidence kmer

@@ -10,6 +10,7 @@ import java.util.Set;
 
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.SAMEvidenceSource;
+import au.edu.wehi.idsv.visualisation.DeBruijnGraphExporter;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -28,7 +29,8 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	public static final boolean PERFORM_EXPENSIVE_SANITY_CHECKS = false; 
 	public static final int MAX_QUAL_SCORE = 128 - 66;
 	private final Map<Long, T> kmers = Maps.newHashMap();
-	private final int k;	
+	private final int k;
+	private DeBruijnGraphExporter<T> exporter = null;
 	public DeBruijnGraphBase(int k) {
 		this.k = k;
 	}
@@ -59,6 +61,9 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 			kmers.put(kmer, node);
 			onKmerAdded(kmer, node);
 		}
+		if (getGraphExporter() != null) {
+			getGraphExporter().trackChanges(kmer, node);
+		}
 		return node;
 	}
 	/**
@@ -78,6 +83,9 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 			} else {
 				kmers.put(kmer, node);
 			}
+		}
+		if (getGraphExporter() != null) {
+			getGraphExporter().trackChanges(kmer, node);
 		}
 		return existing;
 	}
@@ -206,6 +214,14 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	 * @return base calls of a positive strand SAMRecord readout of contig
 	 */
 	public byte[] getBaseCalls(List<Long> path) {
+		return getBaseCalls(path, k);
+	}
+	/**
+	 * Base calls of contig
+	 * @param path kmer contig
+	 * @return base calls of a positive strand SAMRecord readout of contig
+	 */
+	public static byte[] getBaseCalls(List<Long> path, int k) {
 		int assemblyLength = path.size() + k - 1;
 		byte[] bases = KmerEncodingHelper.encodedToPicardBases(k, path.get(0));
 		bases = Arrays.copyOf(bases, assemblyLength);
@@ -396,5 +412,19 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 		sb.append(printPathAttributes(path));
 		sb.append('\n');
 		return sb.toString();
+	}
+	/**
+	 * Gets the graph debugging exporter  
+	 * @return
+	 */
+	public DeBruijnGraphExporter<T> getGraphExporter() {
+		return exporter;
+	}
+	/**
+	 * Sets the graph exporter to use for debugging 
+	 * @param gexf
+	 */
+	public void setGraphExporter(DeBruijnGraphExporter<T> exporter) {
+		this.exporter = exporter;
 	}
 }

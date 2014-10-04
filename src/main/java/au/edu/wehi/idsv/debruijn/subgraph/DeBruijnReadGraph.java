@@ -2,6 +2,7 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 
 import htsjdk.samtools.util.Log;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -17,6 +18,7 @@ import au.edu.wehi.idsv.debruijn.DeBruijnVariantGraph;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.VariantEvidence;
+import au.edu.wehi.idsv.visualisation.DeBruijnPathGraphGexfExporter;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -30,11 +32,13 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	private final Set<SubgraphSummary> subgraphs = Sets.newHashSet();
 	private final int referenceIndex;
 	private final AssemblyParameters parameters;
+	private int graphsExported = 0; 
 	/**
 	 * 
 	 * @param k
 	 * @param direction
 	 * @param parameters 
+	 * @param gexf 
 	 */
 	public DeBruijnReadGraph(ProcessingContext processContext, AssemblyEvidenceSource source, int referenceIndex, BreakendDirection direction, AssemblyParameters parameters) {
 		super(processContext, source, parameters.k, direction);
@@ -108,6 +112,9 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		for (SubgraphSummary ss : subgraphs) {
 			if (ss.getMaxAnchor() < position) {
 				PathGraphAssembler pga = new PathGraphAssembler(this, this.parameters, ss.getAnyKmer());
+				if (this.parameters.debruijnGraphVisualisationDirectory != null) {
+					pga.setGraphExporter(new DeBruijnPathGraphGexfExporter(this.parameters.k));
+				}
 				int width = ss.getMaxAnchor() - ss.getMinAnchor();
 				if (width > maxSubgraphSize) {
 					maxSubgraphSize = width;
@@ -118,6 +125,15 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 					if (variant != null) {
 						contigs.add(variant);
 					}
+				}
+				if (this.parameters.debruijnGraphVisualisationDirectory != null) {
+					pga.getGraphExporter().saveTo(new File(this.parameters.debruijnGraphVisualisationDirectory,
+						String.format("debruijn.subgraph.%s_%s_%d-%d_%d.gexf",
+								direction == BreakendDirection.Forward ? "f" : "b",
+								processContext.getDictionary().getSequence(referenceIndex).getSequenceName(),
+								ss.getMinAnchor(),
+								ss.getMaxAnchor(),
+								graphsExported++)));
 				}
 			}
 		}

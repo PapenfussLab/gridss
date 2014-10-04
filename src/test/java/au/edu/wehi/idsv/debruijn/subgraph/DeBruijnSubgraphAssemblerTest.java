@@ -1,12 +1,15 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
 import static org.junit.Assert.assertEquals;
-import htsjdk.samtools.util.SequenceUtil;
+import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.util.List;
 
 import org.junit.Ignore;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.ProcessingContext;
@@ -17,10 +20,13 @@ import com.google.common.collect.Lists;
 
 
 public class DeBruijnSubgraphAssemblerTest extends TestHelper {
+	@Rule
+    public TemporaryFolder testFolder = new TemporaryFolder();
 	private DeBruijnSubgraphAssembler DSA(int k) {
 		ProcessingContext pc = getContext();
 		AssemblyParameters p = pc.getAssemblyParameters();
 		p.k = k;
+		p.debruijnGraphVisualisationDirectory = new File(testFolder.getRoot(), "visualisation");
 		return new DeBruijnSubgraphAssembler(pc, AES());
 	}
 	@Test
@@ -33,6 +39,20 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(1, 2, "3M4S"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(2, results.size());
+	}
+	@Test
+	public void should_export_debruijn_graph() {
+		DeBruijnSubgraphAssembler ass = DSA(3);
+		List<VariantContextDirectedEvidence> results = Lists.newArrayList();
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(0, 1, "4M3S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(0, 2, "3M4S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(1, 1, "4M3S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(1, 2, "3M4S"))))));
+		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertTrue(new File(new File(testFolder.getRoot(), "visualisation"), "debruijn.kmers.forward.polyA.gexf").exists());
+		assertTrue(new File(new File(testFolder.getRoot(), "visualisation"), "debruijn.kmers.backward.polyA.gexf").exists());
+		assertTrue(new File(new File(testFolder.getRoot(), "visualisation"), "debruijn.kmers.forward.polyACGT.gexf").exists());
+		assertTrue(new File(new File(testFolder.getRoot(), "visualisation"), "debruijn.kmers.backward.polyACGT.gexf").exists());
 	}
 	@Test
 	public void should_assemble_both_directions() {
