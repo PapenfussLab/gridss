@@ -66,7 +66,7 @@ public class GexfHelper {
 		return best;
 	}
 	public static void saveTo(Gexf graph, File file) {
-		file.getParentFile().mkdir();
+		file.getAbsoluteFile().getParentFile().mkdir();
 		GexfWriter graphWriter = new StaxGraphWriter();
 		Writer out = null;
 		try {
