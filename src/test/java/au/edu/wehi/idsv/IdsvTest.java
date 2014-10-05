@@ -16,9 +16,9 @@ import com.google.common.io.Files;
 public class IdsvTest extends IntermediateFilesTest {
 	@Test
 	public void test_sv_comparision_203541() throws IOException {
-		File output = new File(super.testFolder.getRoot(), "203541.vcf");
+		File output = new File(super.testFolder.getRoot(), "chr12-244000.vcf");
 		setReference(new File("C:/dev/chr12.fa"));
-		createInput(new File("src/test/resources/203541.bam"));
+		createInput(new File("src/test/resources/chr12-244000.bam"));
 		String[] args = new String[] {
 				"INPUT=" + input.toString(),
 				"REFERENCE=" + reference.toString(),

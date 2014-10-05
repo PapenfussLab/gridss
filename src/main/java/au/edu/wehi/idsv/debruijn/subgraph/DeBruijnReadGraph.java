@@ -18,7 +18,7 @@ import au.edu.wehi.idsv.debruijn.DeBruijnVariantGraph;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.VariantEvidence;
-import au.edu.wehi.idsv.visualisation.DeBruijnPathGraphGexfExporter;
+import au.edu.wehi.idsv.visualisation.DynamicDeBruijnPathGraphGexfExporter;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -113,7 +113,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			if (ss.getMaxAnchor() < position) {
 				PathGraphAssembler pga = new PathGraphAssembler(this, this.parameters, ss.getAnyKmer());
 				if (this.parameters.debruijnGraphVisualisationDirectory != null) {
-					pga.setGraphExporter(new DeBruijnPathGraphGexfExporter(this.parameters.k));
+					pga.setGraphExporter(new DynamicDeBruijnPathGraphGexfExporter(this.parameters.k));
 				}
 				int width = ss.getMaxAnchor() - ss.getMinAnchor();
 				if (width > maxSubgraphSize) {
