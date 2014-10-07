@@ -17,7 +17,6 @@ import it.uniroma1.dis.wsngroup.gexf4j.core.dynamic.TimeFormat;
 import it.uniroma1.dis.wsngroup.gexf4j.core.impl.GexfImpl;
 import it.uniroma1.dis.wsngroup.gexf4j.core.impl.SpellImpl;
 import it.uniroma1.dis.wsngroup.gexf4j.core.impl.data.AttributeListImpl;
-import it.uniroma1.dis.wsngroup.gexf4j.core.impl.writer.SpellsEntityWriter;
 
 import java.io.File;
 import java.util.Date;
@@ -31,13 +30,8 @@ import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphNode;
 import au.edu.wehi.idsv.debruijn.subgraph.SubgraphPathNode;
 
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Multimaps;
-import com.google.common.collect.Multiset;
-import com.google.common.collect.Multisets;
-import com.google.common.collect.Sets;
 
 public class DynamicDeBruijnPathGraphGexfExporter implements DeBruijnPathGraphExporter<DeBruijnSubgraphNode, SubgraphPathNode> {
 	//private static final Log log = Log.getInstance(DeBruijnPathGraphGexfExporter.class);

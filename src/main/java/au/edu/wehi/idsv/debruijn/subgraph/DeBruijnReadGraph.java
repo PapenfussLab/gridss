@@ -18,7 +18,7 @@ import au.edu.wehi.idsv.debruijn.DeBruijnVariantGraph;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.VariantEvidence;
-import au.edu.wehi.idsv.visualisation.DynamicDeBruijnPathGraphGexfExporter;
+import au.edu.wehi.idsv.visualisation.StaticDeBruijnPathGraphGexfExporter;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -112,23 +112,42 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		for (SubgraphSummary ss : subgraphs) {
 			if (ss.getMaxAnchor() < position) {
 				PathGraphAssembler pga = new PathGraphAssembler(this, this.parameters, ss.getAnyKmer());
+				StaticDeBruijnPathGraphGexfExporter graphExporter = null;
 				if (this.parameters.debruijnGraphVisualisationDirectory != null) {
-					pga.setGraphExporter(new DynamicDeBruijnPathGraphGexfExporter(this.parameters.k));
+					graphExporter = new StaticDeBruijnPathGraphGexfExporter(this.parameters.k);
+				}
+				if (parameters.maxBaseMismatchForCollapse > 0) {
+					if (this.parameters.debruijnGraphVisualisationDirectory != null) {
+						graphExporter.snapshot(pga);
+						graphExporter.saveTo(new File(this.parameters.debruijnGraphVisualisationDirectory,
+								String.format("debruijn.subgraph.precollapse.%s_%s_%d-%d_%d.gexf",
+										direction == BreakendDirection.Forward ? "f" : "b",
+										processContext.getDictionary().getSequence(referenceIndex).getSequenceName(),
+										ss.getMinAnchor(),
+										ss.getMaxAnchor(),
+										graphsExported++)));
+						graphExporter = new StaticDeBruijnPathGraphGexfExporter(this.parameters.k);
+					}
+					// collapsing bubbles first reduces graph size before performing full path collapse
+					pga.collapseSimilarPaths(parameters.maxBaseMismatchForCollapse, true);
+					if (!parameters.collapseBubblesOnly) {
+						pga.collapseSimilarPaths(parameters.maxBaseMismatchForCollapse, false);
+					}
 				}
 				int width = ss.getMaxAnchor() - ss.getMinAnchor();
 				if (width > maxSubgraphSize) {
 					maxSubgraphSize = width;
 					log.debug(String.format("Subgraph width=%s [%d, %d] has %d paths: %s", width, ss.getMinAnchor(), ss.getMaxAnchor(), pga.getPaths().size(), debugOutputKmerSpread(ss)));
 				}
-				for (List<Long> contig : pga.assembleContigs()) {
+				for (List<Long> contig : pga.assembleContigs(graphExporter)) {
 					VariantContextDirectedEvidence variant = toAssemblyEvidence(contig);
 					if (variant != null) {
 						contigs.add(variant);
 					}
 				}
-				if (this.parameters.debruijnGraphVisualisationDirectory != null) {
-					pga.getGraphExporter().saveTo(new File(this.parameters.debruijnGraphVisualisationDirectory,
-						String.format("debruijn.subgraph.%s_%s_%d-%d_%d.gexf",
+				if (graphExporter != null) {
+					graphExporter.saveTo(new File(this.parameters.debruijnGraphVisualisationDirectory,
+						String.format("debruijn.subgraph.contigs.%s_%s_%d-%d_%d.gexf",
 								direction == BreakendDirection.Forward ? "f" : "b",
 								processContext.getDictionary().getSequence(referenceIndex).getSequenceName(),
 								ss.getMinAnchor(),

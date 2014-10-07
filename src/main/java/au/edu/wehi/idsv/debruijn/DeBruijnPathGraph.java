@@ -46,7 +46,6 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	protected final Map<PN, List<PN>> pathNext = Maps.newHashMap();
 	protected final Map<PN, List<PN>> pathPrev = Maps.newHashMap();
 	private int collapsePathTraversalCount;
-	private DeBruijnPathGraphExporter<T, PN> exporter = null;
 	/**
 	 * Sanity checking field: total weight of graph should not change
 	 */
@@ -126,9 +125,6 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 			}
 		}
 		assert(sanityCheck());
-		if (exporter != null) {
-			exporter.snapshot(this);
-		}
 		shrink();
 	}
 	/**
@@ -184,9 +180,6 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 			}
 		}
 		if (anyChange) assert(sanityCheck());
-		if (anyChange && exporter != null) {
-			exporter.snapshot(this);
-		}
 		return anyChange;
 	}
 	/**
@@ -314,9 +307,6 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 					// TODO: collapse the path with the weakest support first
 					if (collapsePaths(maxDifference, bubblesOnly, start)) {
 						collapsed = true;
-						if (exporter != null) {
-							exporter.snapshot(this);
-						}
 						break;
 					}
 				}
@@ -758,11 +748,5 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 			sb.append("}\n");
 		}
 		return sb.toString();
-	}
-	public DeBruijnPathGraphExporter<T, PN> getGraphExporter() {
-		return exporter;
-	}
-	public void setGraphExporter(DeBruijnPathGraphExporter<T, PN> exporter) {
-		this.exporter = exporter;
 	}
 }

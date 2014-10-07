@@ -28,7 +28,7 @@ public class IdsvTest extends IntermediateFilesTest {
 				"DEBUG_ASSEMBLY_VISUALISATION_DIRECTORY=" + new File(super.testFolder.getRoot(), "visualisation").toString(),
 				"PER_CHR=false"
 		};
-		new Idsv().instanceMain(args);		
+		new Idsv().instanceMain(args);
 		// Should have generated two breakpoints
 		List<VariantContextDirectedEvidence> ass = breaks(getVcf(getCommandlineContext(false).getFileSystemContext().getAssemblyVcf(output), null));
 		ass = Lists.newArrayList(Iterables.filter(ass, new Predicate<VariantContextDirectedEvidence>() {

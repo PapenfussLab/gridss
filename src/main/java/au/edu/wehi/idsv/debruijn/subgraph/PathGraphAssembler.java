@@ -14,6 +14,7 @@ import java.util.Set;
 
 import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
+import au.edu.wehi.idsv.visualisation.DeBruijnPathGraphExporter;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
@@ -37,18 +38,14 @@ public class PathGraphAssembler extends PathGraph {
 		this.parameters = parameters;
 	}
 	public List<LinkedList<Long>> assembleContigs() {
-		if (parameters.maxBaseMismatchForCollapse > 0) {
-			// collapsing bubbles first reduces graph size before performing full path collapse
-			collapseSimilarPaths(parameters.maxBaseMismatchForCollapse, true);
-			if (!parameters.collapseBubblesOnly) {
-				collapseSimilarPaths(parameters.maxBaseMismatchForCollapse, false);
-			}
-		}
+		return assembleContigs(null);
+	}
+	public List<LinkedList<Long>> assembleContigs(DeBruijnPathGraphExporter<DeBruijnSubgraphNode, SubgraphPathNode> graphExporter) {
 		splitOutReferencePaths();
 		calcNonReferenceSubgraphs();
-		return assemblyNonReferenceContigs();
+		return assemblyNonReferenceContigs(graphExporter);
 	}
-	private List<LinkedList<Long>> assemblyNonReferenceContigs() {
+	private List<LinkedList<Long>> assemblyNonReferenceContigs(DeBruijnPathGraphExporter<DeBruijnSubgraphNode, SubgraphPathNode> graphExporter) {
 		final Function<SubgraphPathNode, Integer> scoringFunction = SCORE_TOTAL_KMER;
 		List<List<SubgraphPathNode>> result = Lists.newArrayList();
 		for (int i = 0; i < subgraphs.size(); i++) {
@@ -63,8 +60,11 @@ public class PathGraphAssembler extends PathGraph {
 						getScore(arg1, scoringFunction, false, true),
 						getScore(arg0, scoringFunction, false, true));
 			}});
-		if (getGraphExporter() != null) {
-			getGraphExporter().contigs(result);
+		if (graphExporter != null) {
+			graphExporter.snapshot(this);
+			graphExporter.annotateSubgraphs(subgraphs);
+			graphExporter.annotateStartingPaths(startingPaths);
+			graphExporter.contigs(result);
 		}
 		return Lists.newArrayList(Iterables.transform(result, new Function<List<SubgraphPathNode>, LinkedList<Long>>() {
 			@Override
@@ -88,10 +88,6 @@ public class PathGraphAssembler extends PathGraph {
 		}
 		if (DeBruijnGraphBase.PERFORM_EXPENSIVE_SANITY_CHECKS) {
 			assert(sanityCheckSubgraphs());
-		}
-		if (getGraphExporter() != null) {
-			getGraphExporter().annotateSubgraphs(subgraphs);
-			getGraphExporter().annotateStartingPaths(startingPaths);
 		}
 	}
 	private void newNonreferenceSubgraph(SubgraphPathNode seed) {

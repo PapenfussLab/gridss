@@ -5,16 +5,13 @@ import it.uniroma1.dis.wsngroup.gexf4j.core.EdgeType;
 import it.uniroma1.dis.wsngroup.gexf4j.core.Gexf;
 import it.uniroma1.dis.wsngroup.gexf4j.core.Graph;
 import it.uniroma1.dis.wsngroup.gexf4j.core.IDType;
-import it.uniroma1.dis.wsngroup.gexf4j.core.IntervalType;
 import it.uniroma1.dis.wsngroup.gexf4j.core.Mode;
 import it.uniroma1.dis.wsngroup.gexf4j.core.Node;
 import it.uniroma1.dis.wsngroup.gexf4j.core.data.Attribute;
 import it.uniroma1.dis.wsngroup.gexf4j.core.data.AttributeClass;
 import it.uniroma1.dis.wsngroup.gexf4j.core.data.AttributeList;
 import it.uniroma1.dis.wsngroup.gexf4j.core.data.AttributeType;
-import it.uniroma1.dis.wsngroup.gexf4j.core.dynamic.Spell;
 import it.uniroma1.dis.wsngroup.gexf4j.core.impl.GexfImpl;
-import it.uniroma1.dis.wsngroup.gexf4j.core.impl.SpellImpl;
 import it.uniroma1.dis.wsngroup.gexf4j.core.impl.data.AttributeListImpl;
 
 import java.io.File;
@@ -47,7 +44,6 @@ public class StaticDeBruijnPathGraphGexfExporter implements DeBruijnPathGraphExp
 	private final Attribute attrContigList;
 	private final Attribute attrSubgraphId;
 	private final Attribute attrStartNode;
-	private int currentTime = 0;
 	public StaticDeBruijnPathGraphGexfExporter(int k) {
 		this.k = k;
 		gexf.getMetadata()
@@ -76,7 +72,6 @@ public class StaticDeBruijnPathGraphGexfExporter implements DeBruijnPathGraphExp
 	@Override
 	public DeBruijnPathGraphExporter<DeBruijnSubgraphNode, SubgraphPathNode> snapshot(DeBruijnPathGraph<DeBruijnSubgraphNode, SubgraphPathNode> pg) {
 		if (lookup.size() != 0) throw new IllegalStateException("Cannot add more than one snapshot");
-		currentTime++;
 		for (SubgraphPathNode pn : pg.getPaths()) {
 			if (!lookup.containsKey(pn)) {
 				// Add node
@@ -92,31 +87,7 @@ public class StaticDeBruijnPathGraphGexfExporter implements DeBruijnPathGraphExp
 		for (SubgraphPathNode pn : pg.getPaths()) {
 			ensureNextEdges(pg, pn);
 		}
-		// set node validity timing
-		for (SubgraphPathNode pn : lookup.keySet()) {
-			ensureNodeState(lookup.get(pn), pg.getPaths().contains(pn));
-		}
 		return this;
-	}
-	private void ensureNodeState(Node node, boolean active) {
-		if (!active) {
-			if (node.getSpells().size() > 0) {
-				Spell lastSpell = node.getSpells().get(node.getSpells().size() - 1);
-				if (!lastSpell.hasEndDate()) {
-					lastSpell.setEndValue(currentTime);
-					lastSpell.setEndIntervalType(IntervalType.OPEN);
-				}
-			}
-		} else {
-			if (node.getSpells().size() > 0 && !node.getSpells().get(node.getSpells().size() - 1).hasEndDate()) {
-				// already active - nothing to do
-			} else {
-				Spell s = new SpellImpl();
-				s.setStartValue(currentTime);
-				s.setStartIntervalType(IntervalType.CLOSE);
-				node.getSpells().add(s);
-			}
-		}
 	}
 	private void ensureNextEdges(DeBruijnPathGraph<DeBruijnSubgraphNode, SubgraphPathNode> pg, SubgraphPathNode pn) {
 		Node node = lookup.get(pn);
@@ -136,7 +107,6 @@ public class StaticDeBruijnPathGraphGexfExporter implements DeBruijnPathGraphExp
 	 */
 	@Override
 	public DeBruijnPathGraphExporter<DeBruijnSubgraphNode, SubgraphPathNode> contigs(List<List<SubgraphPathNode>> assembledContigs) {
-		currentTime++;
 		Multimap<SubgraphPathNode, Integer> mm = ArrayListMultimap.create();
 		int contig = 0;
 		for (List<SubgraphPathNode> assembledContig : assembledContigs) {
@@ -167,7 +137,6 @@ public class StaticDeBruijnPathGraphGexfExporter implements DeBruijnPathGraphExp
 	}
 	@Override
 	public void annotateSubgraphs(List<Set<SubgraphPathNode>> subgraphs) {
-		currentTime++;
 		int i = 0;
 		for (Set<SubgraphPathNode> sg : subgraphs) {
 			for (SubgraphPathNode pn : sg) {
@@ -179,7 +148,6 @@ public class StaticDeBruijnPathGraphGexfExporter implements DeBruijnPathGraphExp
 	}
 	@Override
 	public void annotateStartingPaths(List<Set<SubgraphPathNode>> startingPaths) {
-		currentTime++;
 		for (Set<SubgraphPathNode> sg : startingPaths) {
 			for (SubgraphPathNode pn : sg) {
 				lookup.get(pn).getAttributeValues()
