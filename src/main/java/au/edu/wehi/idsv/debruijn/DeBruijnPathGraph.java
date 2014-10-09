@@ -45,7 +45,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	protected final Set<PN> paths = Sets.newHashSet();
 	protected final Map<PN, List<PN>> pathNext = Maps.newHashMap();
 	protected final Map<PN, List<PN>> pathPrev = Maps.newHashMap();
-	private int collapsePathTraversalCount;
+	private int nodeTaversalCount;
 	/**
 	 * Sanity checking field: total weight of graph should not change
 	 */
@@ -295,9 +295,11 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 *  E-H-I-J is turned in E-B1-B2-C1-C2-F resulting in a different path
 	 *  
 	 *  @param bubblesOnly only collapse bubbles. No other paths will be affected
+	 *  @return number of paths collapsed
 	 */
-	public void collapseSimilarPaths(int maxDifference, boolean bubblesOnly) {
-		collapsePathTraversalCount = 0;
+	public int collapseSimilarPaths(int maxDifference, boolean bubblesOnly) {
+		nodeTaversalCount = 0;
+		int collapseCount = 0;
 		try {
 			// Keep collapsing until we can't anymore
 			boolean collapsed = true;
@@ -306,6 +308,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 				for (PN start : paths) {
 					// TODO: collapse the path with the weakest support first
 					if (collapsePaths(maxDifference, bubblesOnly, start)) {
+						collapseCount++;
 						collapsed = true;
 						break;
 					}
@@ -313,6 +316,58 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 			}
 		} catch (AlgorithmRuntimeSafetyLimitExceededException e) {
 			log.error(e);
+		}
+		return collapseCount;
+	}
+	/**
+	 * Collapses low-weight leaf branches of shorter length into higher weighted paths
+	 * @param maxDifference maximum base pair difference
+	 * @param start starting node
+	 * @return number of leaves collapsed
+	 * @throws AlgorithmRuntimeSafetyLimitExceededException
+	 */
+	public int collapseLeaves(int maxDifference) {
+		nodeTaversalCount = 0;
+		int collapseCount = 0;
+		try {
+			// Keep collapsing until we can't anymore
+			boolean collapsed = true;
+			while (collapsed) {
+				collapsed = false;
+				for (PN start : paths) {
+					if (nextPath(start).size() == 0) {
+						if (collapseForwardLeaf(maxDifference, start)) {
+							collapseCount++;
+							collapsed = true;
+							break;
+						}
+					} else if (prevPath(start).size() == 0) {
+						if (collapseBackwardLeaf(maxDifference, start)) {
+							collapseCount++;
+							collapsed = true;
+							break;
+						}
+					}
+				}
+			}
+		} catch (AlgorithmRuntimeSafetyLimitExceededException e) {
+			log.error(e);
+		}
+		return collapseCount;
+	}
+	private boolean collapseForwardLeaf(int maxDifference, PN leaf) throws AlgorithmRuntimeSafetyLimitExceededException {
+		// out leaves
+		Set<PN> alternateStarts = Sets.newHashSet();
+		for (PN prev : prevPath(leaf)) {
+			for (PN prevnext : nextPath(prev)) {
+				if (prevnext != leaf) {
+					alternateStarts.add(prevnext);
+				}
+			}
+		}
+		for (PN start : alternateStarts) {
+			// traverse paths from start to see if we can collapse
+			// Conditions: target path (restricted to match leave length) must have > weight than leave nodes
 		}
 	}
 	private boolean collapsePaths(int maxDifference, boolean bubblesOnly, PN start) throws AlgorithmRuntimeSafetyLimitExceededException {
@@ -341,10 +396,10 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 			Deque<PN> pathB,
 			int pathALength,
 			int pathBLength) throws AlgorithmRuntimeSafetyLimitExceededException {
-		if (++collapsePathTraversalCount >= COLLAPSE_PATH_MAX_TRAVERSAL) {
+		if (++nodeTaversalCount >= COLLAPSE_PATH_MAX_TRAVERSAL) {
 			throw new AlgorithmRuntimeSafetyLimitExceededException(String.format(
 					"Path collapse not complete after %d node traversals. Aborting path collapse whilst processing \"%s\" and \"%s\".",
-					collapsePathTraversalCount,
+					nodeTaversalCount,
 					new String(getGraph().getBaseCalls(Lists.newArrayList(PathNode.kmerIterator(pathA)))),
 					new String(getGraph().getBaseCalls(Lists.newArrayList(PathNode.kmerIterator(pathB))))));
 		}
@@ -407,6 +462,23 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 		return Iterables.elementsEqual(nextPath(pathA), nextPath(pathB));
 	}
 	/**
+	 * Returns the number of bases difference between the two paths when
+	 * traversing the paths backward.
+	 * Bases are only compared up to the length of the shortest of the
+	 * paths
+	 * @param pathA
+	 * @param pathB
+	 * @return number of bases difference between the two paths
+	 */
+	protected int reverseBasesDifferent(Iterable<PN> pathA, Iterable<PN> pathB) {
+		List<Long> lA = Lists.newArrayList(PathNode.kmerIterator(pathA));
+		List<Long> lB = Lists.newArrayList(PathNode.kmerIterator(pathB));
+		// skip the initial bases of the longer path
+		Iterator<Long> itA = lA.listIterator(Math.max(0, lA.size() - lB.size()));
+		Iterator<Long> itB = lB.listIterator(Math.max(0, lB.size() - lA.size()));
+		return basesDifferent(getGraph().getK(), itA, itB);
+	}
+	/**
 	 * Returns the number of bases difference between the two paths
 	 * Bases are only compared up to the length of the shortest of the
 	 * paths
@@ -417,12 +489,24 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	protected int basesDifferent(Iterable<PN> pathA, Iterable<PN> pathB) {
 		Iterator<Long> itA = PathNode.kmerIterator(pathA);
 		Iterator<Long> itB = PathNode.kmerIterator(pathB);
-		assert(itA.hasNext());
-		assert(itB.hasNext());
-		int differences = KmerEncodingHelper.basesDifference(getGraph().getK(), itA.next(), itB.next());
-		while (itA.hasNext() && itB.hasNext()) {
-			if (!KmerEncodingHelper.lastBaseMatches(getGraph().getK(), itA.next(), itB.next())) {
-				differences++;
+		return basesDifferent(getGraph().getK(), itA, itB);
+	}
+	/**
+	 * Returns the number of bases difference between the two paths
+	 * Bases are only compared up to the length of the shortest of the
+	 * paths
+	 * @param pathA
+	 * @param pathB
+	 * @return number of bases difference between the two paths
+	 */
+	private static int basesDifferent(int k, Iterator<Long> itA, Iterator<Long> itB) {
+		int differences = 0;
+		if (itA.hasNext() && itB.hasNext()) {
+			differences = KmerEncodingHelper.basesDifference(k, itA.next(), itB.next());
+			while (itA.hasNext() && itB.hasNext()) {
+				if (!KmerEncodingHelper.lastBaseMatches(k, itA.next(), itB.next())) {
+					differences++;
+				}
 			}
 		}
 		return differences;

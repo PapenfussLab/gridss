@@ -149,10 +149,10 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		assertEquals(1, pg.getPaths().size());
 	}
 	@Test
-	@Ignore("TODO: NYI: Not Yet Implemented")
 	public void collapseSimilarPaths_should_collapse_branches_of_different_lengths() {
 		BasePathGraph pg = PG(G(20)
 				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATC")
+				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACCGATCGATCA")
 				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACCGATCGATCA"));
 				//                                                                                        ^^
 		assertEquals("precondition", 3, pg.getPaths().size());
@@ -160,6 +160,14 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		assertEquals(3, pg.getPaths().size());
 		pg.collapseSimilarPaths(2, false);
 		assertEquals(1, pg.getPaths().size());
+	}
+	@Test
+	public void collapseLeaves_should_not_collapse_higher_weighted_path() {
+		BasePathGraph pg = PG(G(15)
+				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACAAAAAAAAAATT", 10)
+				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACAAAAAAAAAAAAGCCAAGTCAGCTGAAGACATATCAGAAATGATTGACGTATC")
+				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACCCCCCCCCCCCCGCCAAGTCAGCTGAAGACATATCAGAAATGATTGACGTATC"));
+		assertEqual(0, pg.collapseLeaves(2));
 	}
 	@Test
 	public void mergePaths_should_merge_into_highest_weight_path() {
