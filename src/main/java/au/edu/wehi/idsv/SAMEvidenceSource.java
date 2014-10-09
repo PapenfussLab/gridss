@@ -8,6 +8,7 @@ import htsjdk.samtools.util.Log;
 
 import java.io.Closeable;
 import java.io.File;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
 
@@ -191,7 +192,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		// sort into evidence order
 		scIt = new DirectEvidenceWindowedSortingIterator<SoftClipEvidence>(processContext, getMetrics().getMaxReadLength(), scIt);
 		
-		Iterator<RealignedRemoteSoftClipEvidence> remoteScIt = Iterators.emptyIterator(); 
+		Iterator<RealignedRemoteSoftClipEvidence> remoteScIt = Collections.emptyIterator(); 
 		if (isRealignmentComplete()) {
 			if (!isComplete(ProcessStep.SORT_REALIGNED_SOFT_CLIPS)) {
 				log.debug("Realignment resorting not complete for ", input);
