@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv.vcf;
 
-import com.google.common.collect.Lists;
-
 import htsjdk.variant.vcf.VCFHeaderLineCount;
 import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
@@ -48,7 +46,7 @@ public enum VcfAttributes {
 	// Assembly
 	ASSEMBLY_EVIDENCE_COUNT ("A_EC", 1, VCFHeaderLineType.Integer, "Count of breakend assembly evidence supporting structural variation"),
 	ASSEMBLY_LOG_LIKELIHOOD_RATIO ("A_LR", 1, VCFHeaderLineType.Float, "Log-likelihood ratio of breakend assembly structural variation vs reference"),
-	ASSEMBLY_MAPPED ("A_RM", 2, VCFHeaderLineType.Integer, "Count of breakend assembly evidence that maps to a remote breakend"),
+	ASSEMBLY_MAPPED ("A_RM", 1, VCFHeaderLineType.Integer, "Count of breakend assembly evidence that maps to a remote breakend"),
 	//ASSEMBLY_MAPQ_LOCAL_MAX ("A_MQLM", 2, VCFHeaderLineType.Integer, "Local maximum MAPQ of breakend assembly evidence (Normal,Tumour)"),
 	//ASSEMBLY_MAPQ_LOCAL_TOTAL ("A_MQLT", 2, VCFHeaderLineType.Integer, "Local total MAPQ of breakend assembly evidence (Normal,Tumour)"),
 	ASSEMBLY_MAPQ_REMOTE_MAX ("A_MQRM", 1, VCFHeaderLineType.Integer, "Maxmium MAPQ of realigned breakend assembly evidence"),
