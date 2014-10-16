@@ -90,7 +90,7 @@ public class DynamicDeBruijnPathGraphGexfExporter implements DeBruijnPathGraphEx
 		for (SubgraphPathNode pn : pg.getPaths()) {
 			if (!lookup.containsKey(pn)) {
 				// Add node
-				Node node = graph.createNode(new String(DeBruijnGraphBase.getBaseCalls(pn.getPath(), k)));
+				Node node = graph.createNode(pn.pathKmerString(k));
 				node.getAttributeValues().createValue(attrLength, ((Integer)pn.getPath().size()).toString());
 				node.getAttributeValues().createValue(attrIsReference, ((Boolean)pn.containsReferenceKmer()).toString());
 				node.getAttributeValues().createValue(attrIsNonReference, ((Boolean)pn.containsNonReferenceKmer()).toString());

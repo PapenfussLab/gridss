@@ -137,7 +137,7 @@ public class PathNode<T extends DeBruijnNodeBase> {
 		return String.format(" l=%d\tn=%d\tw=%d", length(), kmerCount - length(), getWeight());
 	}
 	private String debugPrintPathString(DeBruijnGraphBase<T> graph) {
-		if (graph != null) return new String(graph.getBaseCalls(path), StandardCharsets.US_ASCII);
+		if (graph != null) pathKmerString(graph.getK());
 		// try to infer k from the states
 		int k = 1;
 		for (long s : getPath()) {
@@ -146,5 +146,8 @@ public class PathNode<T extends DeBruijnNodeBase> {
 		return String.format("%s->%s",
 				new String(KmerEncodingHelper.encodedToPicardBases(k, getPath().get(0))),
 				new String(KmerEncodingHelper.encodedToPicardBases(k, getPath().get(length()-1))));
+	}
+	public String pathKmerString(int k) {
+		return new String(DeBruijnGraphBase.getBaseCalls(this.getPath(), k), StandardCharsets.US_ASCII);
 	}
 }

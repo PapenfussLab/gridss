@@ -15,7 +15,6 @@ import java.util.Set;
 import java.util.SortedSet;
 
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
-import au.edu.wehi.idsv.visualisation.DeBruijnPathGraphExporter;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
@@ -258,10 +257,15 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 		this.listAdd(nextPath(newFrom), nextPath(oldFrom));
 		this.nextPath(oldFrom).clear();
 	}
+	/**
+	 * Attempts to merge this node with its successor 
+	 * @param node node to merge with successor
+	 * @return true if node could be merged without loss of information, false otherwise
+	 */
 	private boolean mergeWithNext(PN node) {
 		if (nextPath(node).size() != 1) return false;
 		PN next = nextPath(node).get(0); 
-		if (next == node) return false; // don't collapse self
+		if (next == node) return false; // don't collapse on self
 		if (prevPath(next).size() != 1) return false;
 		if (prevPath(next).get(0) != node) throw new IllegalStateException("Sanity check failure: missing matching prev entry for next node");
 		
@@ -275,7 +279,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 		removeEdge(node, next);
 		removeNode(node);
 		removeNode(next);
-		sanityCheck();
+		assert(sanityCheck());
 		return true;
 	}
 	/**
@@ -320,7 +324,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 		return collapseCount;
 	}
 	/**
-	 * Collapses low-weight leaf branches of shorter length into higher weighted paths
+	 * Collapses low-weight leaf branches into higher weighted paths
 	 * @param maxDifference maximum base pair difference
 	 * @param start starting node
 	 * @return number of leaves collapsed
@@ -330,45 +334,106 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 		nodeTaversalCount = 0;
 		int collapseCount = 0;
 		try {
-			// Keep collapsing until we can't anymore
-			boolean collapsed = true;
-			while (collapsed) {
-				collapsed = false;
-				for (PN start : paths) {
-					if (nextPath(start).size() == 0) {
-						if (collapseForwardLeaf(maxDifference, start)) {
+			int collapsedThisRound = 0;
+			do {
+				PriorityQueue<PN> ordering = new PriorityQueue<PN>(paths.size(), ByPathTotalWeightDesc.reverse());
+				ordering.addAll(paths);
+				// unlike collapsing paths, collapsing leaves is a local
+				// change and does not invalidate any other paths
+				for (PN leaf : paths) {
+					List<PN> nextPaths = nextPath(leaf);
+					List<PN> prevPaths = nextPath(leaf);
+					if (nextPaths.size() == 0 && prevPaths.size() == 1) {
+						if (collapseLeaf(maxDifference, leaf, prevPaths.get(0), true)) {
 							collapseCount++;
-							collapsed = true;
-							break;
+							collapsedThisRound++;
 						}
-					} else if (prevPath(start).size() == 0) {
-						if (collapseBackwardLeaf(maxDifference, start)) {
+					} else if (nextPaths.size() == 1 && prevPaths.size() == 0) {
+						if (collapseLeaf(maxDifference, leaf, nextPaths.get(0), false)) {
 							collapseCount++;
-							collapsed = true;
-							break;
+							collapsedThisRound++;
 						}
 					}
 				}
-			}
+				if (collapsedThisRound > 0) {
+					// leaf collapse may have resulted in nodes that can now be merged
+					shrink();
+				}
+				// the shrink process could have made a new leaf that can now be collapsed
+				// so we need to try again
+				// Optimisation: only reprocess shrunk nodes 
+			} while (collapsedThisRound > 0);
 		} catch (AlgorithmRuntimeSafetyLimitExceededException e) {
 			log.error(e);
 		}
 		return collapseCount;
 	}
-	private boolean collapseForwardLeaf(int maxDifference, PN leaf) throws AlgorithmRuntimeSafetyLimitExceededException {
-		// out leaves
-		Set<PN> alternateStarts = Sets.newHashSet();
-		for (PN prev : prevPath(leaf)) {
-			for (PN prevnext : nextPath(prev)) {
-				if (prevnext != leaf) {
-					alternateStarts.add(prevnext);
+	/**
+	 * 
+	 * @param maxDifference maximum bases different
+	 * @param leaf leaf node
+	 * @param anchor anchor to start collapse
+	 * @param forward anchor to leaf is in the direction of kmer traversal 
+	 * @return true if the leaf was collapsed, false if not similar path found
+	 */
+	private boolean collapseLeaf(int maxDifference, PN leaf, PN anchor, boolean forward) {
+		// find path from anchor that is within maxDifference from leaf
+		List<PN> path = findHighestWeightSimilarPath(ImmutableList.<PN>of(), Queues.<PN>newArrayDeque(), 0, 0, maxDifference, leaf, anchor, forward);
+		if (path == null || path.isEmpty()) return false;
+		collapseLeafInto(leaf, path, forward);
+		return true;
+	}
+	/**
+	 * Collapses the given leaf into the given path
+	 * @param toCollapse node to collapse
+	 * @param path path to collapse into
+	 * @param anchoredAtStart if true, path shares starting kmer with leaf, otherwise path shares ending kmer with leaf
+	 */
+	private void collapseLeafInto(PN toCollapse, List<PN> path, boolean anchoredAtStart) {
+	}
+	private List<PN> findHighestWeightSimilarPath(
+			List<PN> bestPath,
+			Deque<PN> currentPath,
+			int currentLength,
+			int currentDifferences,
+			
+			int maxDifference,
+			PN leaf,
+			PN anchor,
+			boolean traverseForward) {
+		if (currentDifferences > maxDifference) {
+			return bestPath;
+		}
+		List<PN> nextList = traverseForward ? nextPath(currentPath.getLast()) : prevPath(currentPath.getFirst());
+		if (currentLength >= leaf.length() || nextList.size() == 0) { // path has reached leaf length or path has ended
+			// TODO: FIXME: weight only the kmers that are involved in the path
+			if (getWeight(currentPath) > getWeight(bestPath)) {
+				return Lists.newArrayList(currentPath);
+			} else {
+				return bestPath;
+			}
+		}
+		for (PN next : nextList) {
+			if (next != leaf && !currentPath.contains(next)) {
+				if (traverseForward) {
+					currentPath.addLast(next);
+				} else {
+					currentPath.addFirst(next);
+				}
+				bestPath = findHighestWeightSimilarPath(
+						bestPath,
+						currentPath,
+						currentLength + next.length(),
+						traverseForward ? basesDifferent(ImmutableList.of(leaf), currentPath) : reverseBasesDifferent(ImmutableList.of(leaf), currentPath),
+						maxDifference, leaf, anchor, traverseForward);
+				if (traverseForward) {
+					currentPath.removeLast();
+				} else {
+					currentPath.removeFirst();
 				}
 			}
 		}
-		for (PN start : alternateStarts) {
-			// traverse paths from start to see if we can collapse
-			// Conditions: target path (restricted to match leave length) must have > weight than leave nodes
-		}
+		return bestPath;
 	}
 	private boolean collapsePaths(int maxDifference, boolean bubblesOnly, PN start) throws AlgorithmRuntimeSafetyLimitExceededException {
 		Deque<PN> listA = Queues.newArrayDeque();
@@ -404,6 +469,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 					new String(getGraph().getBaseCalls(Lists.newArrayList(PathNode.kmerIterator(pathB))))));
 		}
 		// paths have diverged too far
+		// Optimisation: cache bases compared and difference so far so only 2 PNs need to be compared
 		if (basesDifferent(pathA, pathB) > differencesAllowed) return false;
 		
 		if (shareNextPaths(pathA.getLast(), pathB.getLast())) {
@@ -495,6 +561,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 * Returns the number of bases difference between the two paths
 	 * Bases are only compared up to the length of the shortest of the
 	 * paths
+	 * @param k kmer length
 	 * @param pathA
 	 * @param pathB
 	 * @return number of bases difference between the two paths
@@ -679,7 +746,8 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	private void listReplace(List<PN> list, PN toReplace, PN replaceWith) {
 		if (list.contains(toReplace)) {
 			if (list.contains(replaceWith)) {
-				// contains both: just remove
+				// contains both: just remove the element to be replaced as the
+				// target element is already in the list
 				list.remove(toReplace);
 			} else {
 				// only contains toReplace, just overwrite with the new value

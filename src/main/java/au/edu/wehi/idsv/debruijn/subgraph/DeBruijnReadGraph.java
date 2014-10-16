@@ -18,7 +18,7 @@ import au.edu.wehi.idsv.debruijn.DeBruijnVariantGraph;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.VariantEvidence;
-import au.edu.wehi.idsv.visualisation.StaticDeBruijnPathGraphGexfExporter;
+import au.edu.wehi.idsv.visualisation.StaticDeBruijnSubgraphPathGraphGexfExporter;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -112,9 +112,9 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		for (SubgraphSummary ss : subgraphs) {
 			if (ss.getMaxAnchor() < position) {
 				PathGraphAssembler pga = new PathGraphAssembler(this, this.parameters, ss.getAnyKmer());
-				StaticDeBruijnPathGraphGexfExporter graphExporter = null;
+				StaticDeBruijnSubgraphPathGraphGexfExporter graphExporter = null;
 				if (this.parameters.debruijnGraphVisualisationDirectory != null) {
-					graphExporter = new StaticDeBruijnPathGraphGexfExporter(this.parameters.k);
+					graphExporter = new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k);
 				}
 				if (parameters.maxBaseMismatchForCollapse > 0) {
 					if (this.parameters.debruijnGraphVisualisationDirectory != null) {
@@ -126,7 +126,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 										ss.getMinAnchor(),
 										ss.getMaxAnchor(),
 										graphsExported++)));
-						graphExporter = new StaticDeBruijnPathGraphGexfExporter(this.parameters.k);
+						graphExporter = new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k);
 					}
 					// collapsing bubbles first reduces graph size before performing full path collapse
 					pga.collapseSimilarPaths(parameters.maxBaseMismatchForCollapse, true);

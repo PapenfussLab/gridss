@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -12,6 +13,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
+import au.edu.wehi.idsv.visualisation.StaticDeBruijnPathGraphGexfExporter;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -149,25 +151,139 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		assertEquals(1, pg.getPaths().size());
 	}
 	@Test
-	public void collapseSimilarPaths_should_collapse_branches_of_different_lengths() {
+	public void collapseLeaves_should_collapse_branches_of_different_lengths() {
 		BasePathGraph pg = PG(G(20)
 				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATC")
 				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACCGATCGATCA")
 				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACCGATCGATCA"));
 				//                                                                                        ^^
 		assertEquals("precondition", 3, pg.getPaths().size());
-		pg.collapseSimilarPaths(1, false);
+		pg.collapseLeaves(2);
 		assertEquals(3, pg.getPaths().size());
 		pg.collapseSimilarPaths(2, false);
 		assertEquals(1, pg.getPaths().size());
 	}
+	// Collapse Leaf test cases:
+	//      *   Leaf  *
+	//     / \  here / \
+	//  - *   *  -  *   * -
+	//     \ /       \ /
+	//      A         B
+	public BasePathGraph leafpathTestPathGraph(String leaf) {
+		return leafpathTestPathGraph(leaf, 1);
+	}
+	public BasePathGraph leafpathTestPathGraph(String leaf, int leafWeight) {
+		return PG(G(3)
+				.add("AAACGGATCT", 10) // main path
+				.add("AAGG") // A
+				.add("ATTC") // B
+				.add(leaf, leafWeight));
+	}
 	@Test
-	public void collapseLeaves_should_not_collapse_higher_weighted_path() {
-		BasePathGraph pg = PG(G(15)
-				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACAAAAAAAAAATT", 10)
-				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACAAAAAAAAAAAAGCCAAGTCAGCTGAAGACATATCAGAAATGATTGACGTATC")
-				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACCCCCCCCCCCCCGCCAAGTCAGCTGAAGACATATCAGAAATGATTGACGTATC"));
-		assertEqual(0, pg.collapseLeaves(2));
+	public void collapseLeaves_should_collapse_only_leaves() {
+		BasePathGraph pg = leafpathTestPathGraph("AAA");
+		assertEquals(0, pg.collapseLeaves(3));
+	}
+	@Test
+	public void collapseLeaves_should_collapse_to_leaf_to_path() {
+		// forward
+		BasePathGraph pg = leafpathTestPathGraph("GATGT");//"GGGTCA");
+		StaticDeBruijnPathGraphGexfExporter<DeBruijnNodeBase, PathNode<DeBruijnNodeBase>> tmp =
+				new StaticDeBruijnPathGraphGexfExporter<DeBruijnNodeBase, PathNode<DeBruijnNodeBase>>(4);
+		tmp.snapshot(pg);
+		tmp.saveTo(new File("C:/dev/debugGraph.gexf"));
+		assertEquals("test case precondition", 8, pg.paths.size());
+		assertEquals(0, pg.collapseLeaves(0));
+		assertEquals(1, pg.collapseLeaves(1));
+		assertEquals(7, pg.paths.size());
+		// backward
+		pg = leafpathTestPathGraph("GTGAT");
+		assertEquals("test case precondition", 8, pg.paths.size());
+		assertEquals(0, pg.collapseLeaves(1));
+		assertEquals(1, pg.collapseLeaves(2));
+		assertEquals(7, pg.paths.size());
+	}
+	@Test
+	public void collapseLeaves_should_not_collapse_into_lower_weight_path() {
+		// forward
+		BasePathGraph pg = leafpathTestPathGraph("GATGT", 10);
+		assertEquals(0, pg.collapseLeaves(3));
+		// backward
+		pg = leafpathTestPathGraph("GTGAT", 10);
+		assertEquals(0, pg.collapseLeaves(3));
+	}
+	@Test
+	public void collapseLeaves_should_collapse_smaller_to_leaf_to_leaf() {
+		// forward
+		BasePathGraph pg = PG(G(4)
+				.add("AAAAT",2)
+				.add("AAAAC"));
+		assertEquals("test case precondition", 3, pg.paths.size());
+		assertEquals(0, pg.collapseLeaves(2));
+		assertEquals(1, pg.collapseLeaves(1));
+		assertEquals(1, pg.paths.size());
+		// Should merge the path then collapse the two remaining nodes into one
+		assertEquals("AAAAT", pg.paths.iterator().next().pathKmerString(4));
+		// backward
+		pg = PG(G(4)
+				.add("TAAAA",2)
+				.add("CAAAA"));
+		assertEquals("test case precondition", 3, pg.paths.size());
+		assertEquals(0, pg.collapseLeaves(2));
+		assertEquals(1, pg.collapseLeaves(1));
+		assertEquals(1, pg.paths.size());
+		assertEquals("TAAAA", pg.paths.iterator().next().pathKmerString(4));
+	}
+	@Test
+	public void collapseLeaves_leaf_leaf_collapse_should_collapse_based_to_kmer_weight_of_shared_bases() {
+		BasePathGraph pg = PG(G(4)
+				.add("AAAAT",2)
+				.add("AAAAC")
+				.add("AACCC", 3));
+		assertEquals("test case precondition", 3, pg.paths.size());
+		assertEquals(0, pg.collapseLeaves(2));
+		assertEquals(1, pg.collapseLeaves(1));
+		assertEquals(1, pg.paths.size());
+		// take the AAAAT path then extend with the additional bases from the other path
+		assertEquals("AAAATCC", pg.paths.iterator().next().pathKmerString(4));
+		// backward
+		pg = PG(G(4)
+				.add("TAAAA",2)
+				.add("CAAAA")
+				.add("CCCAA", 3));
+		assertEquals("test case precondition", 3, pg.paths.size());
+		assertEquals(0, pg.collapseLeaves(2));
+		assertEquals(1, pg.collapseLeaves(1));
+		assertEquals(1, pg.paths.size());
+		assertEquals("CCTGAAAA", pg.paths.iterator().next().pathKmerString(4));
+	}
+	@Test
+	public void collapseLeaves_should_fix_inconsistent_kmers() {
+		// leaf-leaf collapse results in a main kmer path that doesn't
+		// make sense.
+		// TODO: FIXME: replace the inconsistent kmers with the correct ones.
+		BasePathGraph pg = PG(G(4)
+				.add("AAAAT",2)
+				.add("AAAAC")
+				.add("AACC"));
+		pg.collapseLeaves(1);
+		// if we just merged the kmers then the main path would be inconsistent
+		// as it would go
+		// AAAA -> AAAT -> AACC
+		//              ^     \___ need to change this C to a T
+		//              |
+		//         bad transition
+		PathNode<DeBruijnNodeBase> pn = pg.paths.iterator().next();
+		assertEquals("AATC", S(KmerEncodingHelper.encodedToPicardBases(4, pn.getLast())));
+		
+		// test backwards as well
+		pg = PG(G(4)
+				.add("TAAAA",2)
+				.add("CAAAA")
+				.add("CCAA"));
+		pg.collapseLeaves(1);
+		pn = pg.paths.iterator().next();
+		assertEquals("CTAA", S(KmerEncodingHelper.encodedToPicardBases(4, pn.getFirst())));
 	}
 	@Test
 	public void mergePaths_should_merge_into_highest_weight_path() {
