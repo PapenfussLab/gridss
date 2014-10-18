@@ -334,15 +334,16 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 		nodeTaversalCount = 0;
 		int collapseCount = 0;
 		try {
-			int collapsedThisRound = 0;
+			int collapsedThisRound;
 			do {
+				collapsedThisRound = 0;
 				PriorityQueue<PN> ordering = new PriorityQueue<PN>(paths.size(), ByPathTotalWeightDesc.reverse());
 				ordering.addAll(paths);
 				// unlike collapsing paths, collapsing leaves is a local
 				// change and does not invalidate any other paths
-				for (PN leaf : paths) {
+				for (PN leaf : ordering) {
 					List<PN> nextPaths = nextPath(leaf);
-					List<PN> prevPaths = nextPath(leaf);
+					List<PN> prevPaths = prevPath(leaf);
 					if (nextPaths.size() == 0 && prevPaths.size() == 1) {
 						if (collapseLeaf(maxDifference, leaf, prevPaths.get(0), true)) {
 							collapseCount++;
@@ -375,12 +376,21 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 * @param anchor anchor to start collapse
 	 * @param forward anchor to leaf is in the direction of kmer traversal 
 	 * @return true if the leaf was collapsed, false if not similar path found
+	 * @throws AlgorithmRuntimeSafetyLimitExceededException 
 	 */
-	private boolean collapseLeaf(int maxDifference, PN leaf, PN anchor, boolean forward) {
+	private boolean collapseLeaf(int maxDifference, PN leaf, PN anchor, boolean forward) throws AlgorithmRuntimeSafetyLimitExceededException {
 		// find path from anchor that is within maxDifference from leaf
 		List<PN> path = findHighestWeightSimilarPath(ImmutableList.<PN>of(), Queues.<PN>newArrayDeque(), 0, 0, maxDifference, leaf, anchor, forward);
 		if (path == null || path.isEmpty()) return false;
+		// compare weights of shared kmers
+		int pathLength = PathNode.kmerLength(path);
+		int sharedLength = Math.min(leaf.length(), pathLength);
+		if (PathNode.kmerTotalWeight(ImmutableList.of(leaf), forward ? 0 : leaf.length() - sharedLength, sharedLength, getGraph()) >=
+			PathNode.kmerTotalWeight(path, forward ? 0 : pathLength - sharedLength, sharedLength, getGraph())) {
+			return false;
+		}
 		collapseLeafInto(leaf, path, forward);
+		assert(sanityCheck());
 		return true;
 	}
 	/**
@@ -390,7 +400,84 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 * @param anchoredAtStart if true, path shares starting kmer with leaf, otherwise path shares ending kmer with leaf
 	 */
 	private void collapseLeafInto(PN toCollapse, List<PN> path, boolean anchoredAtStart) {
+		// Work out which kmers go to which path node
+		int leafKmersRemaining = toCollapse.length();
+		Deque<Integer> lengths = Queues.newArrayDeque();
+		if (anchoredAtStart) {
+			lengths.addLast(0); // no starting overhang
+			for(PN node : path) {
+				int nodeLength = Math.min(leafKmersRemaining, node.length());
+				lengths.addLast(nodeLength);
+				leafKmersRemaining -= nodeLength;
+			}
+			lengths.addLast(leafKmersRemaining);
+		} else {
+			// iterate through the other direction when we're going backwards
+			lengths.addFirst(0);
+			for(PN node : Lists.reverse(path)) {
+				int nodeLength = Math.min(leafKmersRemaining, node.length());
+				lengths.addFirst(nodeLength);
+				leafKmersRemaining -= nodeLength;
+			}
+			lengths.addFirst(leafKmersRemaining);
+		}
+		assert(lengths.size() == path.size() + 2); // path is padded by start and end leaf overhangs
+		int startLength = lengths.pollFirst();
+		assert(startLength >= 0);
+		if (startLength != 0) {
+			assert(!anchoredAtStart);
+			// leaf overhangs the start of the path
+			List<PN> splitLeaf = split(toCollapse, ImmutableList.of(startLength, toCollapse.length() - startLength));
+			toCollapse = splitLeaf.get(1);
+			removeEdge(splitLeaf.get(0), toCollapse);
+			addEdge(splitLeaf.get(0), path.get(0));
+			// TODO correct split leaf kmers so the new path has a valid kmer sequence
+		}
+		int endLength = lengths.pollLast();
+		assert(endLength >= 0);
+		if (endLength != 0) {
+			assert(anchoredAtStart);
+			// leaf overhangs the end of the path
+			List<PN> splitLeaf = split(toCollapse, ImmutableList.of(toCollapse.length() - endLength, endLength));
+			toCollapse = splitLeaf.get(0);
+			removeEdge(toCollapse, splitLeaf.get(1));
+			addEdge(path.get(path.size() - 1), splitLeaf.get(1));
+			// TODO correct split leaf kmers so the new path has a valid kmer sequence
+		}
+		if (anchoredAtStart) {
+			removeEdge(prevPath(toCollapse).get(0), toCollapse);
+		} else {
+			removeEdge(toCollapse, nextPath(toCollapse).get(0));
+		}
+		int offset = 0;
+		for (int i = 0; i < path.size(); i++) {
+			PN node = path.get(i);
+			int nodeLength = lengths.pollFirst();
+			assert(nodeLength > 0);
+			node.merge(
+					ImmutableList.of(toCollapse),
+					offset,
+					nodeLength,
+					!anchoredAtStart ? node.length() - nodeLength : 0,
+					graph);
+			offset += nodeLength;
+		}
+		assert(lengths.isEmpty());
+		removeNode(toCollapse);
 	}
+	/**
+	 * Finds all paths similar to the leaf path and returns the highest weighted similar path. 
+	 * @param bestPath best path so far
+	 * @param currentPath current search path
+	 * @param currentLength length of current search path
+	 * @param currentDifferences current number of search path bases different
+	 * @param maxDifference maximum path differences
+	 * @param leaf path to compare to
+	 * @param anchor anchor path that leaf and search paths share
+	 * @param traverseForward direction of traversal
+	 * @return similar path with highest weight
+	 * @throws AlgorithmRuntimeSafetyLimitExceededException thrown when maximum number of search nodes has been exceeded
+	 */
 	private List<PN> findHighestWeightSimilarPath(
 			List<PN> bestPath,
 			Deque<PN> currentPath,
@@ -400,18 +487,39 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 			int maxDifference,
 			PN leaf,
 			PN anchor,
-			boolean traverseForward) {
+			boolean traverseForward) throws AlgorithmRuntimeSafetyLimitExceededException {
+		if (++nodeTaversalCount >= COLLAPSE_PATH_MAX_TRAVERSAL) {
+			throw new AlgorithmRuntimeSafetyLimitExceededException(String.format(
+					"Leaf collapse not complete after %d node traversals. Aborting path collapse whilst processing \"%s\".",
+					nodeTaversalCount,
+					new String(getGraph().getBaseCalls(leaf.getPath()))));
+		}
 		if (currentDifferences > maxDifference) {
 			return bestPath;
 		}
-		List<PN> nextList = traverseForward ? nextPath(currentPath.getLast()) : prevPath(currentPath.getFirst());
-		if (currentLength >= leaf.length() || nextList.size() == 0) { // path has reached leaf length or path has ended
-			// TODO: FIXME: weight only the kmers that are involved in the path
-			if (getWeight(currentPath) > getWeight(bestPath)) {
+		List<PN> nextList = traverseForward ? nextPath((currentPath.isEmpty() ? anchor : currentPath.getLast())) : prevPath((currentPath.isEmpty() ? anchor : currentPath.getFirst()));
+		if (currentLength >= leaf.length()) {
+			assert(currentLength == PathNode.kmerLength(currentPath));
+			int leafLength = leaf.length();
+			int bestLength = PathNode.kmerLength(bestPath);
+			int currentSharedLength = Math.min(currentLength, leafLength);
+			int bestSharedLength = Math.min(bestLength, leafLength);
+			if (PathNode.kmerTotalWeight(currentPath, traverseForward ? 0 : currentLength - currentSharedLength, currentSharedLength, getGraph()) >
+				PathNode.kmerTotalWeight(bestPath, traverseForward ? 0 : bestLength - bestSharedLength, bestSharedLength, getGraph())) {
+				// this path has a higher total weight over the kmers shared with the leaf 
 				return Lists.newArrayList(currentPath);
 			} else {
 				return bestPath;
 			}
+		}
+		if (nextList.size() == 0) {
+			// Don't merge a leaf into shorter paths
+			// Doing so messes up consensus kmer sequence - the primary sequence
+			// would no longer be a valid kmer path. We also can't try to fix the
+			// consensus sequence as the kmer we replace the inconsistent kmers
+			// with could already be part of our graph elsewhere
+			// or, even worse, part of a different subgraph in the kmer graph! 
+			return bestPath;
 		}
 		for (PN next : nextList) {
 			if (next != leaf && !currentPath.contains(next)) {
@@ -598,8 +706,8 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 			}
 			return false;
 		}
-		int weightA = getWeight(pathA);
-		int weightB = getWeight(pathB);
+		int weightA = PathNode.kmerTotalWeight(pathA);
+		int weightB = PathNode.kmerTotalWeight(pathB);
 		
 		Iterable<PN> imainPath = weightA >= weightB ? pathA : pathB;
 		Iterable<PN> ialtPath = weightA >= weightB ? pathB : pathA;
@@ -754,18 +862,6 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 				list.set(list.indexOf(toReplace), replaceWith);
 			}
 		}
-	}
-	/**
-	 * Gets the total weight of all kmers on the given path
-	 * @param path path
-	 * @return total weight
-	 */
-	public int getWeight(Iterable<PN> path) {
-		int weight = 0;
-		for (PN n : path) {
-			weight += n.getWeight();
-		}
-		return weight;
 	}
 	/**
 	 * A bubble is a de bruijn graph path diverges from a reference path

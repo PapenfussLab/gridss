@@ -96,15 +96,64 @@ public class PathNode<T extends DeBruijnNodeBase> {
 	 * @param alternatePath alternate path to merge
 	 */
 	public void merge(Iterable<? extends PathNode<T>> alternatePath, DeBruijnGraphBase<T> graph) {
-		if (Iterators.size(kmerIterator(alternatePath)) != path.size()) throw new IllegalArgumentException("Alternate path must be same length as path");
+		assert(kmerLength(alternatePath) == length());
+		merge(alternatePath, 0, this.length(), 0, graph);
+	}
+	/**
+	 * Merges the kmers on this alternate path into this path
+	 * @param alternatePath alternate path to merge
+	 * @param alternatePathKmerOffset number of initial kmers on alternate path to skip before merging
+	 * @param alternatePathKmers number of kmers on alternate path to merge
+	 * @param kmerOffset position to start merging kmers
+	 * @param length alternatePath alternate path to merge
+	 */
+	public void merge(
+			Iterable<? extends PathNode<T>> alternatePath,
+			int alternatePathKmerOffset,
+			int alternatePathKmers,
+			int kmerOffset,
+			DeBruijnGraphBase<T> graph) {
+		assert(kmerLength(alternatePath) >= alternatePathKmers + alternatePathKmerOffset);
+		if (alternatePathKmers > length() - kmerOffset) throw new IllegalArgumentException("Alternate path is too long.");
+		int i = 0;
+		// process all kmers sets on the alternate path
+		for (List<Long> nodeKmers :
+				Iterables.limit(Iterables.skip(
+					Iterables.concat(Iterables.transform(alternatePath, new Function<PathNode<T>, List<List<Long>>>() {
+						// flatten to just a sequence of kmer alternatives
+						@Override
+						public List<List<Long>> apply(PathNode<T> arg) {
+							return arg.getPathAllKmers();
+						}
+					})),
+				// grab alternatePathKmers kmers after skipping the first alternatePathKmerOffset kmers
+				alternatePathKmerOffset), alternatePathKmers)) { 
+			allKmers.get(kmerOffset + i++).addAll(nodeKmers);
+		}
+		kmersChanged(graph);
+	}
+	/**
+	 * Merges the kmers on this alternate path into this path
+	 * @param alternatePath alternate path to merge
+	 * @param offset number of initial kmers that the alternate path does not contain.
+	 * The first alternate path kmer will be merged into the kmer at offset position.
+	 * @param length 
+	 */
+	public void merge(Iterable<? extends PathNode<T>> alternatePath, int offset, DeBruijnGraphBase<T> graph) {
+		if (kmerLength(alternatePath) + offset > path.size()) throw new IllegalArgumentException("Alternate path is too long.");
 		int i = 0;
 		for (PathNode<T> node : alternatePath) {
 			for (List<Long> nodeKmers : node.getPathAllKmers()) {
-				allKmers.get(i++).addAll(nodeKmers);
+				allKmers.get(offset + i++).addAll(nodeKmers);
 			}
 		}
 		kmersChanged(graph);
 	}
+	/**
+	 * Iterates over each kmer in the given path
+	 * @param it path
+	 * @return sequence of primary kmers along the given path
+	 */
 	public static <T extends DeBruijnNodeBase> Iterator<Long> kmerIterator(Iterable<? extends PathNode<T>> it) {
 		return Iterators.concat(Iterators.transform(it.iterator(), new Function<PathNode<T>, Iterator<Long>>() {
 				@Override
@@ -112,6 +161,57 @@ public class PathNode<T extends DeBruijnNodeBase> {
 					return input.path.iterator();
 				}
 			}));
+	}
+	/**
+	 * Gets the kmer length of the given path
+	 * @param it kmer path
+	 * @return total kmer length
+	 */
+	public static <T extends DeBruijnNodeBase> int kmerLength(Iterable<? extends PathNode<T>> it) {
+		int len = 0;
+		for (PathNode<T> pn : it) {
+			len += pn.length();
+		}
+		return len;
+	}
+	/**
+	 * Gets the total weight of all kmers on the given path
+	 * @param path path
+	 * @return total weight
+	 */
+	public static <T extends DeBruijnNodeBase> int kmerTotalWeight(Iterable<? extends PathNode<T>> it) {
+		int weight = 0;
+		for (PathNode<T> pn : it) {
+			weight += pn.getWeight();
+		}
+		return weight;
+	}
+	/**
+	 * Gets the total weight of all kmers on the given subpath
+	 * @param path path
+	 * @return total weight
+	 */
+	public static <T extends DeBruijnNodeBase> int kmerTotalWeight(Iterable<? extends PathNode<T>> it, int kmersToSkip, int kmers, DeBruijnGraphBase<T> graph) {
+		int weight = 0;
+		for (PathNode<T> pn : it) {
+			if (kmersToSkip == 0 && pn.length() <= kmers) {
+				// take entire node
+				weight += pn.getWeight();
+				kmers -= pn.length();
+			} else {
+				// pro-rata weight according to all the kmers in the positions of interest
+				for (long kmer : Iterables.concat(Iterables.limit(Iterables.skip(pn.getPathAllKmers(), kmersToSkip), kmers))) {
+					weight += graph.getKmer(kmer).getWeight();
+				}
+				int kmersSkipped = Math.min(pn.length(), kmersToSkip);
+				kmersToSkip -= kmersSkipped;
+				int kmersTaken = Math.min(pn.length() - kmersSkipped, kmers);
+				kmers -= kmersTaken;
+			}
+		}
+		if (kmers != 0) throw new IllegalArgumentException("Too many kmers requested");
+		if (kmersToSkip != 0) throw new IllegalArgumentException("Skipping more kmers than exist on path");
+		return weight;
 	}
 	public int indexOf(long kmer) {
 		for (int i = 0; i < length(); i++) {

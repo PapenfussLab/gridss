@@ -154,13 +154,12 @@ public class DeBruijnPathGraphTest extends TestHelper {
 	public void collapseLeaves_should_collapse_branches_of_different_lengths() {
 		BasePathGraph pg = PG(G(20)
 				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATC")
-				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACCGATCGATCA")
-				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACCGATCGATCA"));
+				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACCGATCGATCA", 2));
 				//                                                                                        ^^
 		assertEquals("precondition", 3, pg.getPaths().size());
-		pg.collapseLeaves(2);
-		assertEquals(3, pg.getPaths().size());
 		pg.collapseSimilarPaths(2, false);
+		assertEquals(3, pg.getPaths().size());
+		pg.collapseLeaves(2);
 		assertEquals(1, pg.getPaths().size());
 	}
 	// Collapse Leaf test cases:
@@ -188,25 +187,28 @@ public class DeBruijnPathGraphTest extends TestHelper {
 	public void collapseLeaves_should_collapse_to_leaf_to_path() {
 		// forward
 		BasePathGraph pg = leafpathTestPathGraph("GATGT");//"GGGTCA");
-		StaticDeBruijnPathGraphGexfExporter<DeBruijnNodeBase, PathNode<DeBruijnNodeBase>> tmp =
-				new StaticDeBruijnPathGraphGexfExporter<DeBruijnNodeBase, PathNode<DeBruijnNodeBase>>(4);
-		tmp.snapshot(pg);
-		tmp.saveTo(new File("C:/dev/debugGraph.gexf"));
 		assertEquals("test case precondition", 8, pg.paths.size());
 		assertEquals(0, pg.collapseLeaves(0));
 		assertEquals(1, pg.collapseLeaves(1));
 		assertEquals(7, pg.paths.size());
 		// backward
 		pg = leafpathTestPathGraph("GTGAT");
-		assertEquals("test case precondition", 8, pg.paths.size());
+		assertEquals("test case precondition", 9, pg.paths.size());
 		assertEquals(0, pg.collapseLeaves(1));
 		assertEquals(1, pg.collapseLeaves(2));
 		assertEquals(7, pg.paths.size());
+	}
+	private void debugDumpToCDevDebugGraphGexf(BasePathGraph pg, int k) {
+		StaticDeBruijnPathGraphGexfExporter<DeBruijnNodeBase, PathNode<DeBruijnNodeBase>> tmp =
+				new StaticDeBruijnPathGraphGexfExporter<DeBruijnNodeBase, PathNode<DeBruijnNodeBase>>(k);
+		tmp.snapshot(pg);
+		tmp.saveTo(new File("C:/dev/debugGraph.gexf"));
 	}
 	@Test
 	public void collapseLeaves_should_not_collapse_into_lower_weight_path() {
 		// forward
 		BasePathGraph pg = leafpathTestPathGraph("GATGT", 10);
+		debugDumpToCDevDebugGraphGexf(pg, 3);
 		assertEquals(0, pg.collapseLeaves(3));
 		// backward
 		pg = leafpathTestPathGraph("GTGAT", 10);
@@ -219,7 +221,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 				.add("AAAAT",2)
 				.add("AAAAC"));
 		assertEquals("test case precondition", 3, pg.paths.size());
-		assertEquals(0, pg.collapseLeaves(2));
+		assertEquals(0, pg.collapseLeaves(0));
 		assertEquals(1, pg.collapseLeaves(1));
 		assertEquals(1, pg.paths.size());
 		// Should merge the path then collapse the two remaining nodes into one
@@ -229,11 +231,12 @@ public class DeBruijnPathGraphTest extends TestHelper {
 				.add("TAAAA",2)
 				.add("CAAAA"));
 		assertEquals("test case precondition", 3, pg.paths.size());
-		assertEquals(0, pg.collapseLeaves(2));
+		assertEquals(0, pg.collapseLeaves(0));
 		assertEquals(1, pg.collapseLeaves(1));
 		assertEquals(1, pg.paths.size());
 		assertEquals("TAAAA", pg.paths.iterator().next().pathKmerString(4));
 	}
+	@Ignore("See github issue 12: de Bruijn subgraph contig construction should call highest weighted base")
 	@Test
 	public void collapseLeaves_leaf_leaf_collapse_should_collapse_based_to_kmer_weight_of_shared_bases() {
 		BasePathGraph pg = PG(G(4)
@@ -241,7 +244,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 				.add("AAAAC")
 				.add("AACCC", 3));
 		assertEquals("test case precondition", 3, pg.paths.size());
-		assertEquals(0, pg.collapseLeaves(2));
+		assertEquals(0, pg.collapseLeaves(0));
 		assertEquals(1, pg.collapseLeaves(1));
 		assertEquals(1, pg.paths.size());
 		// take the AAAAT path then extend with the additional bases from the other path
@@ -252,11 +255,31 @@ public class DeBruijnPathGraphTest extends TestHelper {
 				.add("CAAAA")
 				.add("CCCAA", 3));
 		assertEquals("test case precondition", 3, pg.paths.size());
-		assertEquals(0, pg.collapseLeaves(2));
+		assertEquals(0, pg.collapseLeaves(0));
 		assertEquals(1, pg.collapseLeaves(1));
 		assertEquals(1, pg.paths.size());
 		assertEquals("CCTGAAAA", pg.paths.iterator().next().pathKmerString(4));
 	}
+	/**
+	 * See github issue 12: de Bruijn subgraph contig construction should call highest weighted base
+	 * https://github.com/d-cameron/idsv/issues/12
+	 */
+	@Test
+	public void collapseLeaves_should_not_collapse_longer_leaf() {
+		BasePathGraph pg = PG(G(4)
+				.add("AAAAT",2)
+				.add("AAAAC")
+				.add("AACCC", 3));
+		assertEquals("test case precondition", 3, pg.paths.size());
+		assertEquals(0, pg.collapseLeaves(8));
+		pg = PG(G(4)
+				.add("TAAAA",2)
+				.add("CAAAA")
+				.add("CCCAA", 3));
+		assertEquals("test case precondition", 3, pg.paths.size());
+		assertEquals(0, pg.collapseLeaves(8));
+	}
+	@Ignore("See github issue 12: de Bruijn subgraph contig construction should call highest weighted base")
 	@Test
 	public void collapseLeaves_should_fix_inconsistent_kmers() {
 		// leaf-leaf collapse results in a main kmer path that doesn't
