@@ -180,16 +180,22 @@ public class ExtractEvidence implements Closeable {
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seqr : processContext.getReference().getSequenceDictionary().getSequences()) {
 				String seq = seqr.getSequenceName();
-				SAMFileUtil.sort(processContext,
+				sortMates(
 						processContext.getFileSystemContext().getMateBamUnsortedForChr(source.getSourceFile(), seq),
 						processContext.getFileSystemContext().getMateBamForChr(source.getSourceFile(), seq),
-						new SAMRecordMateCoordinateComparator());
+						true);
 			}
-		} else {
-			SAMFileUtil.sort(processContext,
+		} else {  
+			sortMates(
 					processContext.getFileSystemContext().getMateBamUnsorted(source.getSourceFile()),
 					processContext.getFileSystemContext().getMateBam(source.getSourceFile()),
-					new SAMRecordMateCoordinateComparator());
+					true);
+		}
+	}
+	private void sortMates(File input, File output, boolean deleteInputAfterProcessing) {
+		SAMFileUtil.sort(processContext, input, output, new SAMRecordMateCoordinateComparator());
+		if (deleteInputAfterProcessing) {
+			input.delete();
 		}
 	}
 	private void writeMetrics(InsertSizeMetricsCollector ismc, IdsvMetricsCollector imc) {
