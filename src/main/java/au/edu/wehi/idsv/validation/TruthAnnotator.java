@@ -64,15 +64,21 @@ public class TruthAnnotator implements BreakendAnnotator {
 		for (IdsvVariantContext truthVariant : truth) {
 			if ((truthVariant.hasAttribute(VcfSvConstants.SV_TYPE_KEY) && truthVariant.getAttributeAsString(VcfSvConstants.SV_TYPE_KEY, "").equals("INS")) ||
 					(truthVariant.hasAttribute(VcfSvConstants.SV_TYPE_KEY) && truthVariant.getAttributeAsString(VcfSvConstants.SV_TYPE_KEY, "").equals("DEL"))) {
+				int svLen = truthVariant.getAttributeAsInt(VcfSvConstants.SV_LENGTH_KEY, 0);
+				int untemplatedSequence = 0;
+				if (variant instanceof VariantContextDirectedEvidence) {
+					untemplatedSequence = ((VariantContextDirectedEvidence)variant).getBreakendSequence().length;
+				}
 				// two breakpoints: forward & backward
 				BreakendSummary truthBreakendStart = new BreakendSummary(truthVariant.getReferenceIndex(), BreakendDirection.Forward, truthVariant.getStart(), truthVariant.getStart());
 				int endOffset = Math.max(0, -truthVariant.getAttributeAsInt(VcfSvConstants.SV_LENGTH_KEY, 0));
 				endOffset = truthVariant.getStart() + endOffset + 1;
 				BreakendSummary truthBreakendEnd = new BreakendSummary(truthVariant.getReferenceIndex(), BreakendDirection.Backward, endOffset, endOffset);
 				BreakpointSummary truthBreakpoint = new BreakpointSummary(truthBreakendStart, truthBreakendEnd);
-				if (variantBreakpoint.overlaps(truthBreakpoint) || variantBreakpoint.overlaps(truthBreakpoint.remoteBreakpoint())) {
+				
+				if (matches(truthBreakpoint, variantBreakpoint, svLen, untemplatedSequence)) {
 					breakpointHits.add(truthVariant.getID());
-				} else if (variantBreakend.overlaps(truthBreakendStart) || variantBreakend.overlaps(truthBreakendEnd)) {
+				} else if (matches(truthBreakpoint, variantBreakend, svLen, untemplatedSequence)) {
 					breakendHits.add(truthVariant.getID());
 				}
 			} else {
@@ -86,5 +92,20 @@ public class TruthAnnotator implements BreakendAnnotator {
 			return builder.make();
 		}
 		return variant;
+	}
+	public static boolean matches(BreakpointSummary truthBreakpoint, BreakendSummary variantBreakend, int svLen, int untemplatedSequence) {
+		return variantBreakend.overlaps(addMargin(truthBreakpoint.localBreakend(), svLen, untemplatedSequence)) ||
+				variantBreakend.overlaps(addMargin(truthBreakpoint.remoteBreakend(), svLen, untemplatedSequence));
+	}
+	public static boolean matches(BreakpointSummary truthBreakpoint, BreakpointSummary variantBreakpoint, int svLen, int untemplatedSequence) {
+		truthBreakpoint = new BreakpointSummary(addMargin(truthBreakpoint, svLen, untemplatedSequence), addMargin(truthBreakpoint.remoteBreakend(), svLen, untemplatedSequence));
+		return variantBreakpoint.overlaps(truthBreakpoint) || variantBreakpoint.overlaps(truthBreakpoint.remoteBreakpoint());
+	}
+	private static BreakendSummary addMargin(BreakendSummary loc, int svLen, int untemplatedSequence) {
+		int margin = Math.max(0, svLen - untemplatedSequence);
+		margin = Math.min(16, margin); // limit to 16bp
+		return new BreakendSummary(loc.referenceIndex, loc.direction,
+				loc.start - (loc.direction == BreakendDirection.Forward ? 0 : margin),
+				loc.end + (loc.direction == BreakendDirection.Backward ? 0 : margin));
 	}
 }
