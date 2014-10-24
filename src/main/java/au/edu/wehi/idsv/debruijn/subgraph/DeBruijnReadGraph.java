@@ -118,14 +118,19 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 				}
 				if (parameters.maxBaseMismatchForCollapse > 0) {
 					if (this.parameters.debruijnGraphVisualisationDirectory != null) {
+						File directory = new File(new File(
+								this.parameters.debruijnGraphVisualisationDirectory,
+								processContext.getDictionary().getSequence(referenceIndex).getSequenceName()),
+								String.format("%d", ss.getMinAnchor() - ss.getMinAnchor() % 100000));
+						String filename = String.format("%s_%s_%d-%d_%d.precollapse.gexf",
+								direction == BreakendDirection.Forward ? "f" : "b",
+								processContext.getDictionary().getSequence(referenceIndex).getSequenceName(),
+								ss.getMinAnchor(),
+								ss.getMaxAnchor(),
+								graphsExported++); 
 						graphExporter.snapshot(pga);
-						graphExporter.saveTo(new File(this.parameters.debruijnGraphVisualisationDirectory,
-								String.format("debruijn.subgraph.precollapse.%s_%s_%d-%d_%d.gexf",
-										direction == BreakendDirection.Forward ? "f" : "b",
-										processContext.getDictionary().getSequence(referenceIndex).getSequenceName(),
-										ss.getMinAnchor(),
-										ss.getMaxAnchor(),
-										graphsExported++)));
+						directory.mkdirs();
+						graphExporter.saveTo(new File(directory, filename));
 						graphExporter = new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k);
 					}
 					// collapsing bubbles first reduces graph size before performing full path collapse
@@ -149,13 +154,18 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 					}
 				}
 				if (graphExporter != null) {
-					graphExporter.saveTo(new File(this.parameters.debruijnGraphVisualisationDirectory,
-						String.format("debruijn.subgraph.contigs.%s_%s_%d-%d_%d.gexf",
-								direction == BreakendDirection.Forward ? "f" : "b",
-								processContext.getDictionary().getSequence(referenceIndex).getSequenceName(),
-								ss.getMinAnchor(),
-								ss.getMaxAnchor(),
-								graphsExported++)));
+					File directory = new File(new File(
+							this.parameters.debruijnGraphVisualisationDirectory,
+							processContext.getDictionary().getSequence(referenceIndex).getSequenceName()),
+							String.format("%d", ss.getMinAnchor() - ss.getMinAnchor() % 100000));
+					String filename = String.format("%s_%s_%d-%d_%d.subgraph.gexf",
+							direction == BreakendDirection.Forward ? "f" : "b",
+							processContext.getDictionary().getSequence(referenceIndex).getSequenceName(),
+							ss.getMinAnchor(),
+							ss.getMaxAnchor(),
+							graphsExported++);
+					directory.mkdirs();
+					graphExporter.saveTo(new File(directory, filename));
 				}
 			}
 		}

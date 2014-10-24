@@ -75,6 +75,10 @@ public class SubgraphSummary {
 		addAnchor(node.getMaxReferencePosition());
 		addAnchor(node.getMinMatePosition());
 		addAnchor(node.getMaxMatePosition());
+		assert(node.getMinReferencePosition() != null ||
+				node.getMaxReferencePosition() != null ||
+				node.getMinMatePosition() != null || 
+				node.getMaxMatePosition() != null);
 	}
 	@Override
 	public String toString() {
