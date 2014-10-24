@@ -24,8 +24,9 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 		SAMEvidenceSource ses = new SAMEvidenceSource(getCommandlineContext(), input, false);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), output);
 		aes.ensureAssembled();
-		assertTrue(new File(new File(super.testFolder.getRoot(), "visualisation"), "debruijn.subgraph.contigs.f_chr12_244285-244547_1.gexf").exists());
-		assertTrue(new File(new File(super.testFolder.getRoot(), "visualisation"), "debruijn.subgraph.precollapse.f_chr12_244285-244547_0.gexf").exists());
+		File dir = new File(new File(new File(super.testFolder.getRoot(), "visualisation"), "chr12"), "200000");
+		assertTrue(new File(dir, "f_chr12_244285-244547_0.precollapse.gexf").exists());
+		assertTrue(new File(dir, "f_chr12_244285-244547_0.subgraph.gexf").exists());
 	}
 	@Override
 	public ProcessingContext getCommandlineContext(boolean perChr) {

@@ -1,5 +1,9 @@
 package au.edu.wehi.idsv;
 
+import java.util.PriorityQueue;
+
+import com.google.common.collect.Ordering;
+
 
 public interface DirectedEvidence {
 	/**
@@ -60,4 +64,10 @@ public interface DirectedEvidence {
 	 * @return
 	 */
 	int getLocalTotalBaseQual();
+	static final Ordering<DirectedEvidence> ByEndStart = new Ordering<DirectedEvidence>() {
+		@Override
+		public int compare(DirectedEvidence arg0, DirectedEvidence arg1) {
+			return BreakendSummary.ByEndStart.compare(arg0.getBreakendSummary(), arg1.getBreakendSummary());
+		}
+	};
 }

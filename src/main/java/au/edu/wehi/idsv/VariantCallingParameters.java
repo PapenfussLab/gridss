@@ -6,7 +6,11 @@ public class VariantCallingParameters {
 	 */
 	public double somaticPvalueThreshold = 0.001;
 	/**
-	 * 
+	 * Call breakends only on assembled contigs
 	 */
 	public boolean callOnlyAssemblies = false;
+	/**
+	 * Minimum indel size
+	 */
+	public int minIndelSize = 16;
 }

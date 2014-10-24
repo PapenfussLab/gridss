@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.List;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfFilter;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ComparisonChain;
@@ -45,14 +46,17 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		return this;
 	}
 	public VariantContextDirectedEvidence make() {
+		BreakendSummary calledBreakend = parent.getBreakendSummary();
 		Collections.sort(assList, AssemblyByBestDesc);
 		Collections.sort(scList, SoftClipByBestDesc);
 		// override the breakpoint call to ensure untemplated sequence is present in the output 
 		if (assList.size() > 0 && assList.get(0) instanceof VariantContextDirectedBreakpoint) {
 			VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)assList.get(0);
+			calledBreakend = bp.getBreakendSummary();
 			breakpoint(bp.getBreakendSummary(), assList.get(0).getBreakpointSequenceString());
 		} else if (scList.size() > 0 && scList.get(0) instanceof RealignedSoftClipEvidence) {
 			RealignedSoftClipEvidence bp = (RealignedSoftClipEvidence)scList.get(0);
+			calledBreakend = bp.getBreakendSummary();
 			breakpoint(bp.getBreakendSummary(), bp.getUntemplatedSequence());
 		}
 		// Set reference counts
@@ -63,6 +67,20 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		aggregateSoftClipAttributes();		
 		setLlr();
 		id(getID());
+		if (calledBreakend instanceof BreakpointSummary) {
+			BreakpointSummary bp = (BreakpointSummary)calledBreakend;
+			if (bp.referenceIndex == bp.referenceIndex2
+					&& bp.direction != bp.direction2
+					&& bp.end - bp.start == bp.end2 - bp.start2
+					&& Math.abs(bp.start - bp.start2) < processContext.getVariantCallingParameters().minIndelSize
+					) {
+				// highly likely to be an artifact
+				// due to noise/poor alignment (eg bowtie2 2.1.0 would misalign reference reads)
+				// and a nearby (real) indel
+				// causing real indel mates to be assembled with noise read
+				filter(VcfFilter.SMALL_INDEL.filter());
+			}
+		}
 		VariantContextDirectedEvidence variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(processContext, null, super.make());
 		variant = calcSpv(variant);
 		return variant;

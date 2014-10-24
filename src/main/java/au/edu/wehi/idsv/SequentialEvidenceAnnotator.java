@@ -4,7 +4,6 @@ import java.util.Iterator;
 import java.util.PriorityQueue;
 
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Ordering;
 import com.google.common.collect.PeekingIterator;
 
 /**
@@ -16,12 +15,7 @@ import com.google.common.collect.PeekingIterator;
 public class SequentialEvidenceAnnotator implements BreakendAnnotator {
 	private final ProcessingContext context;
 	private final PeekingIterator<DirectedEvidence> evidence;
-	private final PriorityQueue<DirectedEvidence> activeEvidence = new PriorityQueue<DirectedEvidence>(1024, new Ordering<DirectedEvidence>() {
-		@Override
-		public int compare(DirectedEvidence arg0, DirectedEvidence arg1) {
-			return BreakendSummary.ByEndStart.compare(arg0.getBreakendSummary(), arg1.getBreakendSummary());
-		}
-	});
+	private final PriorityQueue<DirectedEvidence> activeEvidence = new PriorityQueue<DirectedEvidence>(1024, DirectedEvidence.ByEndStart);
 	private int currentReferenceIndex = -1;
 	
 	public SequentialEvidenceAnnotator(

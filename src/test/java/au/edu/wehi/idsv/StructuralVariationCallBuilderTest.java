@@ -506,4 +506,15 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			.make();
 		assertTrue(e.hasAttribute(VCFConstants.SOMATIC_KEY));
 	}
+	@Test
+	public void should_filter_small_indels() {
+		assertTrue(new StructuralVariationCallBuilder(getContext(),
+				(VariantContextDirectedEvidence)minimalBreakend()
+					.breakpoint(new BreakpointSummary(new BreakendSummary(0, FWD, 100, 200), new BreakendSummary(0, BWD, 115, 215)), null)
+					.make()).make().isFiltered());
+		assertFalse(new StructuralVariationCallBuilder(getContext(),
+				(VariantContextDirectedEvidence)minimalBreakend()
+					.breakpoint(new BreakpointSummary(new BreakendSummary(0, FWD, 100, 200), new BreakendSummary(0, BWD, 116, 216)), null)
+					.make()).make().isFiltered());
+	}
 }

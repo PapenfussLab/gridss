@@ -127,7 +127,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 								processContext.getDictionary().getSequence(referenceIndex).getSequenceName(),
 								ss.getMinAnchor(),
 								ss.getMaxAnchor(),
-								graphsExported++); 
+								graphsExported); 
 						graphExporter.snapshot(pga);
 						directory.mkdirs();
 						graphExporter.saveTo(new File(directory, filename));

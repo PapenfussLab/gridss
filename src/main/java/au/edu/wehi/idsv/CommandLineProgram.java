@@ -54,7 +54,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     @Option(doc = "Minimum length of a soft-clip to be considered for analysis." +
 			" Local aligners tend to produce many reads with very short soft clips.",
 		optional=true)
-    public int SOFT_CLIP_MIN_LENGTH = 4;
+    public int SOFT_CLIP_MIN_LENGTH = new SoftClipParameters().minLength;
     @Option(doc = "Percent of read pairs considered concorant (0.0-1.0)."
     		+ "If this is not set, the SAM proper pair flag is used to determine whether a read is discordantly aligned.",
 		optional=true)
@@ -62,22 +62,22 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     // --- soft clip realignment parameters ---
     @Option(doc = "Minimum read MAPQ for soft clip realignment to be performed",
     		optional=true)
-    public int SOFT_CLIP_REALIGNMENT_MIN_MAPQ = 5;
+    public int SOFT_CLIP_REALIGNMENT_MIN_MAPQ = new SoftClipParameters().minReadMapq;
     @Option(doc = "Minimum sequence identity to reference. Percentage value taking a value in the range 0-100.",
     		optional=true)
-    public float SOFT_CLIP_REALIGNMENT_MIN_ANCHOR_PERCENT_IDENTITY = 95;
+    public float SOFT_CLIP_REALIGNMENT_MIN_ANCHOR_PERCENT_IDENTITY = new SoftClipParameters().minAnchorIdentity;
     @Option(doc = "Local assembly algorithm used to construct breakend contigs.",
     		optional=true)
     // --- Assembly parameters ---
-    public AssemblyMethod ASSEMBLY_METHOD = AssemblyMethod.DEBRUIJN_SUBGRAPH;
+    public AssemblyMethod ASSEMBLY_METHOD = new AssemblyParameters().method;
     @Option(doc = "k-mer used for de bruijn graph construction",
     		optional=true,
     		shortName="K")
     // --- De Bruijn assembly parameters ---
-    public int ASSEMBLY_DEBRUIJN_KMER = 25;
+    public int ASSEMBLY_DEBRUIJN_KMER = new AssemblyParameters().k;
     @Option(doc = "Maximum of base mismatches for de bruijn kmer paths to be merged",
     		optional=true)
-    public int ASSEMBLY_DEBRUIJN_MAX_PATH_COLLAPSE_BASE_MISMATCHES = 2;
+    public int ASSEMBLY_DEBRUIJN_MAX_PATH_COLLAPSE_BASE_MISMATCHES = new AssemblyParameters().maxBaseMismatchForCollapse;
     @Option(doc = "Only consider bubbles for path collapse."
     		+ "Bubbles are kmer paths with a single entry and exit kmer choice",
     		optional=true)
@@ -85,13 +85,13 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     @Option(doc = "Allow reuse of reference kmers when assembling subsequent"
     		+ " contigs in an assembly iteration",
     		optional=true)
-    public boolean ASSEMBLY_DEBRUIJN_ALLOW_REFERENCE_KMER_RESUSE = true;
+    public boolean ASSEMBLY_DEBRUIJN_ALLOW_REFERENCE_KMER_RESUSE = new AssemblyParameters().allReferenceKmerReuse;
     @Option(doc = "Maximum number of contigs per assembly iteration",
     		optional=true)
     public int ASSEMBLY_DEBRUIJN_MAX_CONTIGS_PER_ITERATION = 8;
     @Option(doc = "Number of branches consider at each kmer branch",
     		optional=true)
-    public int ASSEMBLY_DEBRUIJN_SUBGRAPH_BRANCHING_FACTOR = 16;
+    public int ASSEMBLY_DEBRUIJN_SUBGRAPH_BRANCHING_FACTOR = 16; // new AssemblyParameters().subgraphAssemblyTraversalMaximumBranchingFactor;
     @Option(doc = "Number of bases (in multiples of maximum fragment size)"
     		+ "of no contributing evidence before subgraph assembly.",
     		optional=true)
@@ -109,10 +109,13 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     // --- Variant calling parameters  ---
     @Option(doc = "Maximum somatic p-value for a variant to be called somatic",
     		optional=true)
-    private double SOMATIC_THRESHOLD = 0.001;
+    private double SOMATIC_THRESHOLD = new VariantCallingParameters().somaticPvalueThreshold;
     @Option(doc = "Use only assembled evidence when calling variants",
     		optional=true)
 	private boolean CALL_ONLY_ASSEMBLIES = false;
+    @Option(doc = "Ignore indel variants smaller than this size.",
+    		optional=true)
+	private int MIN_INDEL_SIZE = new VariantCallingParameters().minIndelSize;
     // --- output format parameters ---
 	@Option(doc = "Breakends are written to VCF files as VCF v4.1 compatible breakpoints to a placeholder contig " + VcfConstants.VCF41BREAKEND_REPLACEMENT,
             optional = true,
@@ -210,6 +213,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 		VariantCallingParameters vcp = new VariantCallingParameters();
 		vcp.somaticPvalueThreshold = SOMATIC_THRESHOLD;
 		vcp.callOnlyAssemblies = CALL_ONLY_ASSEMBLIES;
+		vcp.minIndelSize = MIN_INDEL_SIZE;
 		return vcp;
 	}
 	public void close() throws IOException {

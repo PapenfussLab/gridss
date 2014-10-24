@@ -1,0 +1,63 @@
+##fileformat=VCFv4.1
+##FILTER=<ID=ASSEMBLY_REF,Description="Assembly corresponds to reference allele">
+##FILTER=<ID=ASSEMBLY_SINGLE_READ,Description="Only a single read contributes to this assembly.">
+##FILTER=<ID=ASSEMBLY_TOO_SHORT,Description="This assembly is shorter than a read length">
+##INFO=<ID=ALT,Number=1,Type=String,Description="Temporary indel testing hack. //TODO: //FIXME: remove when testing is complete">
+##INFO=<ID=A_AB,Number=.,Type=String,Description="Anomolous read consensus assembly sequence">
+##INFO=<ID=A_AP,Number=.,Type=String,Description="Assembly algorithm">
+##INFO=<ID=A_BCT,Number=2,Type=Integer,Description="Number of bases in assembly by source (Normal,Tumour)">
+##INFO=<ID=A_BLLM,Number=1,Type=Integer,Description="Length (in bases) of breakend assembly mapping to reference at assembly location">
+##INFO=<ID=A_BLRM,Number=1,Type=Integer,Description="Length of breakend in assembly">
+##INFO=<ID=A_BQ,Number=1,Type=String,Description="Assembly breakend base qualities (percent encoding of fastq phred(+33) base qualities)">
+##INFO=<ID=A_EC,Number=1,Type=Integer,Description="Count of breakend assembly evidence supporting structural variation">
+##INFO=<ID=A_LR,Number=1,Type=Float,Description="Log-likelihood ratio of breakend assembly structural variation vs reference">
+##INFO=<ID=A_MQRM,Number=1,Type=Integer,Description="Maxmium MAPQ of realigned breakend assembly evidence">
+##INFO=<ID=A_MQRT,Number=1,Type=Integer,Description="Total MAPQ of realigned breakend assembly evidence">
+##INFO=<ID=A_RM,Number=1,Type=Integer,Description="Count of breakend assembly evidence that maps to a remote breakend">
+##INFO=<ID=A_RP,Number=2,Type=Integer,Description="Number of read pairs contributing to assembly evidence (Normal,Tumour)">
+##INFO=<ID=A_RPBLM,Number=2,Type=Integer,Description="Maxmimum read length of read pairs contributing to assembly (Normal,Tumour)">
+##INFO=<ID=A_SC,Number=2,Type=Integer,Description="Number of soft clips contributing to assembly evidence (Normal,Tumour)">
+##INFO=<ID=A_SCCLM,Number=2,Type=Integer,Description="Maximum soft clip length of assembled reads (Normal,Tumour)">
+##INFO=<ID=A_SCCLT,Number=2,Type=Integer,Description="Total soft clip length of assembled reads (Normal,Tumour)">
+##INFO=<ID=CIPOS,Number=2,Type=Integer,Description="Confidence interval around POS for imprecise variants">
+##INFO=<ID=CIRPOS,Number=2,Type=Integer,Description="Confidence interval around remote breakend POS for imprecise variants">
+##INFO=<ID=END,Number=1,Type=Integer,Description="Stop position of the interval">
+##INFO=<ID=EVENT,Number=1,Type=String,Description="ID of event associated to breakend">
+##INFO=<ID=IMPRECISE,Number=0,Type=Flag,Description="Imprecise structural variation">
+##INFO=<ID=LR,Number=2,Type=Float,Description="Log-likelihood ratio of structural variation vs reference (Normal,Tumour)">
+##INFO=<ID=LRBP,Number=2,Type=Float,Description="Log-likelihood ratio of structural variation vs reference for entire breakpoint (Normal,Tumour)">
+##INFO=<ID=MATEID,Number=.,Type=String,Description="ID of mate breakends">
+##INFO=<ID=PC,Number=2,Type=Integer,Description="Count of reference read pairs spanning this breakpoint supporting the reference allele (Normal,Tumour)">
+##INFO=<ID=RC,Number=2,Type=Integer,Description="Count of reads mapping across this breakend (Normal,Tumour)">
+##INFO=<ID=RPEC,Number=2,Type=Integer,Description="Count of read pair evidence supporting structural variation  (Normal,Tumour)">
+##INFO=<ID=RPLR,Number=2,Type=Float,Description="Log-likelihood ratio of read pair structural variation vs reference (Normal,Tumour)">
+##INFO=<ID=RPMQLM,Number=2,Type=Integer,Description="Local maximum MAPQ of read pair evidence (Normal,Tumour)">
+##INFO=<ID=RPMQLT,Number=2,Type=Integer,Description="Local total MAPQ of read pair evidence (Normal,Tumour)">
+##INFO=<ID=RPMQRM,Number=2,Type=Integer,Description="Maxmimum remote MAPQ of read pair evidence (Normal,Tumour)">
+##INFO=<ID=RPMQRT,Number=2,Type=Integer,Description="Total remote MAPQ of read pair evidence (Normal,Tumour)">
+##INFO=<ID=RPRM,Number=2,Type=Integer,Description="Count of read pair evidence that maps to a remote breakend (Normal,Tumour)">
+##INFO=<ID=SCBLRM,Number=2,Type=Integer,Description="Maximum length (in bases) of realigned soft clips (Normal,Tumour)">
+##INFO=<ID=SCBLRT,Number=2,Type=Integer,Description="Total length (in bases) of realigned soft clips (Normal,Tumour)">
+##INFO=<ID=SCEC,Number=2,Type=Integer,Description="Count of soft clip evidence supporting structural variation  (Normal,Tumour)">
+##INFO=<ID=SCLR,Number=2,Type=Float,Description="Log-likelihood ratio of soft clip structural variation vs reference (Normal,Tumour)">
+##INFO=<ID=SCMQRM,Number=2,Type=Integer,Description="Maximum MAPQ of realigned soft clip (Normal,Tumour)">
+##INFO=<ID=SCMQRT,Number=2,Type=Integer,Description="Total MAPQ of realigned soft clips (Normal,Tumour)">
+##INFO=<ID=SCRM,Number=2,Type=Integer,Description="Count of soft clip evidence that maps to a remote breakend (Normal,Tumour)">
+##INFO=<ID=SOMATIC,Number=0,Type=Flag,Description="Somatic event">
+##INFO=<ID=SPV,Number=1,Type=Float,Description="Somatic p-value">
+##INFO=<ID=SVLEN,Number=.,Type=Integer,Description="Difference in length between REF and ALT alleles">
+##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
+##INFO=<ID=TRUTH_MATCHES,Number=.,Type=String,Description="Variant ID of all true variants as defined in the supplied truth set">
+##INFO=<ID=TRUTH_MISREALIGN,Number=.,Type=String,Description="Variant ID of the true variant for all variants where the remote breakend location does not match the true variant as defined in the supplied truth set">
+##contig=<ID=chr12,length=133851895>
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO
+chr12	867621	debruijn-s-chr12:867621-f-3216	T	tGGAATGTCCTAATGTCGAATCTGTCTGACCATATCTCATGTATTATCTCTGCAGAGTTCGAATTGGTACACCAGCAGCCCCCTCCATTACACTAGTAAAATGGAACGGTCTTGCGAGTAACTCGTGGCCTGCGTGAAGCGTCTGGTAGATGGGAACGATAGGACTACCTATGACGATAGATCCGATGCCAAGTATCTGTTGAATCATAGACGTCATATTACTGCCTCCTTTTCTGTCCCAGGGTCAGTTTGACCCGCGGCTCACTGCAAGCTCCAC[<IDSV_PLACEHOLDER>[	1155	.	A_AB=TTTGCTATAGTTCTTTTTTTTTTTTTTTTTTTTTTTTTGAGACGGAGTCTCGCTCTGTCGCCCAGGCCGGACTGCGGACTGCAGTGGCGCAATCTGGAATGTCCTAATGTCGAATCTGTCTGACCATATCTCATGTATTATCTCTGCAGAGTTCGAATTGGTACACCAGCAGCCCCCTCCATTACACTAGTAAAATGGAACGGTCTTGCGAGTAACTCGTGGCCTGCGTGAAGCGTCTGGTAGATGGGAACGATAGGACTACCTATGACGATAGATCCGATGCCAAGTATCTGTTGAATCATAGACGTCATATTACTGCCTCCTTTTCTGTCCCAGGGTCAGTTTGACCCGCGGCTCACTGCAAGCTCCAC;A_AP=debruijn-s;A_BCT=6842,0;A_BLLM=95;A_BLRM=276;A_BQ=_____________________________________________________________________________________________________________________________________________________________________________________________________________________________________________QQXXXXXXXXXRRR6666666666666666666666666;A_EC=1;A_LR=1155.00;A_RP=49,0;A_RPBLM=100,0;A_SC=21,0;A_SCCLM=74,0;A_SCCLT=834,0;LR=1155.00;SVTYPE=BND
+chr12	867622	debruijn-s-chr12:867622-b-2077	C	[<IDSV_PLACEHOLDER>[TCCTAATGTCGAATCTGTCTGACCATATCTCATGTATTATCTCTGCAGAGTTCGAATTGGTACACCAGCAGCCCCCTCCATTACACTAGTAAAATGGAACGGTCTTGCGAGTAACTCGTGGCCTGCGTGAAGCGTCTGGTAGATGGGAACGATAGGACTACCTATGACGATAGATCCGATGCCAAGTATCTGTTGAATCATAGACGTCATATTACTGCCTCCTTTTCTGTCCCAGGGTCAGTTTGACCCGc	1205	.	A_AB=TCCTAATGTCGAATCTGTCTGACCATATCTCATGTATTATCTCTGCAGAGTTCGAATTGGTACACCAGCAGCCCCCTCCATTACACTAGTAAAATGGAACGGTCTTGCGAGTAACTCGTGGCCTGCGTGAAGCGTCTGGTAGATGGGAACGATAGGACTACCTATGACGATAGATCCGATGCCAAGTATCTGTTGAATCATAGACGTCATATTACTGCCTCCTTTTCTGTCCCAGGGTCAGTTTGACCCGCGGCTCACTGCAAGCTCCACTTCCTGGGTTCACGCCATTCTCCTGCCTCAGCCTCCCGAGTAGCTGGGACTACAGGCGCCCGCCACCGTGCCCG;A_AP=debruijn-s;A_BCT=7177,0;A_BLLM=94;A_BLRM=250;A_BQ=%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3FKL_____________________________________________________________________________________________________________________________________________________________________________________________________________________________;A_EC=1;A_LR=1205.00;A_RP=51,0;A_RPBLM=100,0;A_SC=22,0;A_SCCLM=71,0;A_SCCLT=851,0;LR=1205.00;SVTYPE=BND
+chr12	867840	debruijn-s-chr12:868366-b-2571	C	[<IDSV_PLACEHOLDER>[C	15	ASSEMBLY_SINGLE_READ;ASSEMBLY_TOO_SHORT	A_AB=TGGCAAATTTTTTTCTCTTACCTTTTTTCTGACCCGTAGTAACACAGTCTGAGAAGTAATCTAAAAACCTGGAAAGAGGTTGTTTTTGTGTAAAACAAAC;A_AP=debruijn-s;A_BCT=100,0;A_BLRM=100;A_BQ=%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%40%40%40BBBBBBDDDDDDDDDDDDDDDD.........................%40%40%40%40%40%40%40%40%40%40%40%40%40%40%40%40%40%40%40%40B;A_EC=1;A_LR=15.00;A_RP=1,0;A_RPBLM=100,0;CIPOS=0,526;IMPRECISE;LR=15.00;SVTYPE=BND
+chr12	868010	debruijn-s-chr12:868536-b-2813	T	[<IDSV_PLACEHOLDER>[T	15	ASSEMBLY_SINGLE_READ;ASSEMBLY_TOO_SHORT	A_AB=GTCATTTAAAATTTATCTTATTCCACCAGCAGCTTATCAAAGAATTTCAAAAAATAAAAAATATATGTATATAAATATAAATAAAATTCATCTTAGTTCA;A_AP=debruijn-s;A_BCT=100,0;A_BLRM=100;A_BQ=.........................................%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%23%23%23%23%23%23%23%23%23%23%23%23%23%23%23%23%23%23%23%23%23;A_EC=1;A_LR=15.00;A_RP=1,0;A_RPBLM=100,0;CIPOS=0,526;IMPRECISE;LR=15.00;SVTYPE=BND
+chr12	868062	debruijn-s-chr12:868062-f-1519	C	C[<IDSV_PLACEHOLDER>[	15	ASSEMBLY_SINGLE_READ;ASSEMBLY_TOO_SHORT	A_AB=CATTTCTGAAAATATTTAGCATACTGTGAAATAATTCATAATTACCGTTAGTACACCTTTGCTATACCAGTTCTTTAAATTATATTGATAATTTAAATTA;A_AP=debruijn-s;A_BCT=100,0;A_BLRM=100;A_BQ=%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2C%2C%40%40%40%40%40%40%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3D%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B---------------------------------;A_EC=1;A_LR=15.00;A_RP=1,0;A_RPBLM=100,0;CIPOS=0,526;IMPRECISE;LR=15.00;SVTYPE=BND
+chr12	868159	debruijn-s-chr12:868685-b-3269	G	[<IDSV_PLACEHOLDER>[G	15	ASSEMBLY_SINGLE_READ;ASSEMBLY_TOO_SHORT	A_AB=ATCATCCTAAACCTGTTATTTGGGTTTTCTGGTAGTTTTTACATTTTTTTAGATAAAGCTGTAAAAGCAGCAAGAGTAGCTGTACTCAATTATCATTTCT;A_AP=debruijn-s;A_BCT=100,0;A_BLRM=100;A_BQ=%3C%3C%3C%3C%3C%3C%3C%3C%3C%3C%3C%3C%3C%3C%3C%3C%3C%3C%3C%3C%3C%3C%3C%3C%3C%3C8888888888888888888888888DDD77777777777777%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FEEEEEEE;A_EC=1;A_LR=15.00;A_RP=1,0;A_RPBLM=100,0;CIPOS=0,526;IMPRECISE;LR=15.00;SVTYPE=BND
+chr12	868227	debruijn-s-chr12:868227-f-3690	A	A[<IDSV_PLACEHOLDER>[	15	ASSEMBLY_SINGLE_READ;ASSEMBLY_TOO_SHORT	A_AB=GCCCAGGCTGGAGTACAGTGGCGCGATCTCGGCTCACTGCAACCTCCACCTCCCGGGTTCCAGCAATGCTCCTGCCTCAGCCCCCTGAGTAGCTGGGATT;A_AP=debruijn-s;A_BCT=100,0;A_BLRM=100;A_BQ=EEEEEFFFFFCCCCCCCCCC%3E%3E%3E%3E%3E%3E%3E%3E%3E%3E%3E%3E7777777777777777777777777%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B%3B;A_EC=1;A_LR=15.00;A_RP=1,0;A_RPBLM=100,0;CIPOS=0,526;IMPRECISE;LR=15.00;SVTYPE=BND
+chr12	868306	debruijn-s-chr12:868832-b-9285	A	[<IDSV_PLACEHOLDER>[A	15	ASSEMBLY_SINGLE_READ;ASSEMBLY_TOO_SHORT	A_AB=TGCTATACCAGTTCTTTAAATTATATTGATAATTTAAATTATATATTTAGTAACTTGCATTTTGTTTGAGTTTTTTGTTTTTTTGTTTTTGAGACAGAGT;A_AP=debruijn-s;A_BCT=100,0;A_BLRM=100;A_BQ=%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3F%3FBBBBBBBBBBCCCCCCCCCCCCCDD8888888888888---------------------------------;A_EC=1;A_LR=15.00;A_RP=1,0;A_RPBLM=100,0;CIPOS=0,526;IMPRECISE;LR=15.00;SVTYPE=BND
+chr12	868372	debruijn-s-chr12:868372-f-3343	T	T[<IDSV_PLACEHOLDER>[	15	ASSEMBLY_SINGLE_READ;ASSEMBLY_TOO_SHORT	A_AB=TGGGGTTTCACCATGTTGGCCAGGCTGGTCTTGAACACCTGACCTCGTGATCTGCCCGCCTTGGCCTCCCAAAGTCCTGGGATTGCAGGCTTGAGCCACC;A_AP=debruijn-s;A_BCT=100,0;A_BLRM=100;A_BQ=%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%3B%3B%3BAA9999999999999555555555555555555555555555;A_EC=1;A_LR=15.00;A_RP=1,0;A_RPBLM=100,0;CIPOS=0,526;IMPRECISE;LR=15.00;SVTYPE=BND
+chr12	868524	debruijn-s-chr12:868524-f-750	T	t[<IDSV_PLACEHOLDER>[	15	ASSEMBLY_SINGLE_READ;ASSEMBLY_TOO_SHORT	A_AB=GTGAGACTTAGCATGACCTCAGTTTATGTTTGAAGAGGCCATTTTTCTGCCTTGTAACATAGTAGTTAAGAACTAGATTGCCTGGGCTCAAATCAAGGCT;A_AP=debruijn-s;A_BCT=100,0;A_BLRM=100;A_BQ=%29%29%29%29%29%29%29%29%29%29555%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B%2B-%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F%2F0000000000%2C%2C%2C%2C%2C%2C%2C%2C%2C%2C%2C%2C%2C%2C%2C%2C%2C%2C%2C%2C%2C%2C%2C%2C%2C%2C%2C%2C%2C;A_EC=1;A_LR=15.00;A_RP=1,0;A_RPBLM=100,0;CIPOS=0,526;IMPRECISE;LR=15.00;SVTYPE=BND
