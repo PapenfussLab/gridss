@@ -13,6 +13,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
+import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
 import au.edu.wehi.idsv.visualisation.StaticDeBruijnPathGraphGexfExporter;
 
 import com.google.common.collect.ImmutableList;
@@ -68,7 +69,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		assertEquals("Other test cases rely on all no branches in this contig", 1, pg.getPaths().size());
 	}
 	@Test
-	public void collapseSimilarPaths_should_collapse_resultant_branchless_paths() {
+	public void collapseSimilarPaths_should_collapse_resultant_branchless_paths() throws AlgorithmRuntimeSafetyLimitExceededException {
 		BasePathGraph pg = PG(G(20)
 				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATC")
 				.add("CATTAATCGCAAGAGCGGGTTGTATTGGACGCCAAGTCAGCTGTAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATC"));
@@ -83,7 +84,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		assertEquals(1, pg.getPaths().size());
 	}
 	@Test
-	public void collapseSimilarPaths_should_collapse_only_sufficently_similar_paths() {
+	public void collapseSimilarPaths_should_collapse_only_sufficently_similar_paths() throws AlgorithmRuntimeSafetyLimitExceededException {
 		BasePathGraph pg = PG(G(20)
 				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATC")
 				.add("CATTAATCGCAAGAGCGGGTTGTATTGGACGCCAAGTCAGCTGTAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATC"));
@@ -100,7 +101,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		assertEquals(1, pg.getPaths().size());
 	}
 	@Test
-	public void collapseSimilarPaths_should_merge_dissimilar_nodes() {
+	public void collapseSimilarPaths_should_merge_dissimilar_nodes() throws AlgorithmRuntimeSafetyLimitExceededException {
 		BasePathGraph pg = PG(G(20)
 				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATC")
 				.add("CATTAATCGCAAGAGCGGGTTGTATTGGACGCCATGTCAGCTGTAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATC"));
@@ -111,7 +112,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		assertEquals(1, pg.getPaths().size());
 	}
 	@Test
-	public void collapseSimilarPaths_collapseBubbles_should_not_collapse_non_bubble_branches() {
+	public void collapseSimilarPaths_collapseBubbles_should_not_collapse_non_bubble_branches() throws AlgorithmRuntimeSafetyLimitExceededException {
 		BasePathGraph pg = PG(G(4)
 				.add("TTAAGGCCGTGTTGGAACC")
 				.add("TTAAGGCCGAGTTGGAACC")
@@ -129,7 +130,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		assertEquals(7, pg.getPaths().size());
 	}
 	@Test
-	public void collapseSimilarPaths_should_not_collapse_indels() {
+	public void collapseSimilarPaths_should_not_collapse_indels() throws AlgorithmRuntimeSafetyLimitExceededException {
 		BasePathGraph pg = PG(G(20)
 				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATC")
 				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATC"));
@@ -139,7 +140,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		assertEquals(4, pg.getPaths().size());
 	}
 	@Test
-	public void collapseSimilarPaths_should_collapse_branches() {
+	public void collapseSimilarPaths_should_collapse_branches() throws AlgorithmRuntimeSafetyLimitExceededException {
 		BasePathGraph pg = PG(G(20)
 				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATC")
 				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACCGATC"));
@@ -151,7 +152,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		assertEquals(1, pg.getPaths().size());
 	}
 	@Test
-	public void collapseLeaves_should_collapse_branches_of_different_lengths() {
+	public void collapseLeaves_should_collapse_branches_of_different_lengths() throws AlgorithmRuntimeSafetyLimitExceededException {
 		BasePathGraph pg = PG(G(20)
 				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATC")
 				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACCGATCGATCA", 2));
@@ -179,12 +180,12 @@ public class DeBruijnPathGraphTest extends TestHelper {
 				.add(leaf, leafWeight));
 	}
 	@Test
-	public void collapseLeaves_should_collapse_only_leaves() {
+	public void collapseLeaves_should_collapse_only_leaves() throws AlgorithmRuntimeSafetyLimitExceededException {
 		BasePathGraph pg = leafpathTestPathGraph("AAA");
 		assertEquals(0, pg.collapseLeaves(3));
 	}
 	@Test
-	public void collapseLeaves_should_collapse_to_leaf_to_path() {
+	public void collapseLeaves_should_collapse_to_leaf_to_path() throws AlgorithmRuntimeSafetyLimitExceededException {
 		// forward
 		BasePathGraph pg = leafpathTestPathGraph("GATGT");//"GGGTCA");
 		assertEquals("test case precondition", 8, pg.paths.size());
@@ -205,7 +206,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		tmp.saveTo(new File("C:/dev/debugGraph.gexf"));
 	}
 	@Test
-	public void collapseLeaves_should_not_collapse_into_lower_weight_path() {
+	public void collapseLeaves_should_not_collapse_into_lower_weight_path() throws AlgorithmRuntimeSafetyLimitExceededException {
 		// forward
 		BasePathGraph pg = leafpathTestPathGraph("GATGT", 10);
 		debugDumpToCDevDebugGraphGexf(pg, 3);
@@ -215,7 +216,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		assertEquals(0, pg.collapseLeaves(3));
 	}
 	@Test
-	public void collapseLeaves_should_collapse_smaller_to_leaf_to_leaf() {
+	public void collapseLeaves_should_collapse_smaller_to_leaf_to_leaf() throws AlgorithmRuntimeSafetyLimitExceededException {
 		// forward
 		BasePathGraph pg = PG(G(4)
 				.add("AAAAT",2)
@@ -238,7 +239,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 	}
 	@Ignore("See github issue 12: de Bruijn subgraph contig construction should call highest weighted base")
 	@Test
-	public void collapseLeaves_leaf_leaf_collapse_should_collapse_based_to_kmer_weight_of_shared_bases() {
+	public void collapseLeaves_leaf_leaf_collapse_should_collapse_based_to_kmer_weight_of_shared_bases() throws AlgorithmRuntimeSafetyLimitExceededException {
 		BasePathGraph pg = PG(G(4)
 				.add("AAAAT",2)
 				.add("AAAAC")
@@ -265,7 +266,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 	 * https://github.com/d-cameron/idsv/issues/12
 	 */
 	@Test
-	public void collapseLeaves_should_not_collapse_longer_leaf() {
+	public void collapseLeaves_should_not_collapse_longer_leaf()  throws AlgorithmRuntimeSafetyLimitExceededException{
 		BasePathGraph pg = PG(G(4)
 				.add("AAAAT",2)
 				.add("AAAAC")
@@ -281,7 +282,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 	}
 	@Ignore("See github issue 12: de Bruijn subgraph contig construction should call highest weighted base")
 	@Test
-	public void collapseLeaves_should_fix_inconsistent_kmers() {
+	public void collapseLeaves_should_fix_inconsistent_kmers()  throws AlgorithmRuntimeSafetyLimitExceededException{
 		// leaf-leaf collapse results in a main kmer path that doesn't
 		// make sense.
 		// TODO: FIXME: replace the inconsistent kmers with the correct ones.

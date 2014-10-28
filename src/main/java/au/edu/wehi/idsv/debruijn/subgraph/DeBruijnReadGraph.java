@@ -133,14 +133,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 						graphExporter.saveTo(new File(directory, filename));
 						graphExporter = new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k);
 					}
-					// collapsing bubbles first reduces graph size before performing full path collapse
-					pga.collapseSimilarPaths(parameters.maxBaseMismatchForCollapse, true);
-					if (!parameters.collapseBubblesOnly) {
-						while (pga.collapseLeaves(parameters.maxBaseMismatchForCollapse) + 
-								pga.collapseSimilarPaths(parameters.maxBaseMismatchForCollapse, false) > 0) {
-							// keep collapsing leaves and paths until we have a stable graph
-						}
-					}
+					// collapse graph
+					pga.collapse(parameters.maxBaseMismatchForCollapse, true);
 				}
 				int width = ss.getMaxAnchor() - ss.getMinAnchor();
 				if (width > maxSubgraphSize) {

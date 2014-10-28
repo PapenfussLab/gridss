@@ -301,25 +301,21 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 *  @param bubblesOnly only collapse bubbles. No other paths will be affected
 	 *  @return number of paths collapsed
 	 */
-	public int collapseSimilarPaths(int maxDifference, boolean bubblesOnly) {
+	public int collapseSimilarPaths(int maxDifference, boolean bubblesOnly) throws AlgorithmRuntimeSafetyLimitExceededException {
 		nodeTaversalCount = 0;
 		int collapseCount = 0;
-		try {
-			// Keep collapsing until we can't anymore
-			boolean collapsed = true;
-			while (collapsed) {
-				collapsed = false;
-				for (PN start : paths) {
-					// TODO: collapse the path with the weakest support first
-					if (collapsePaths(maxDifference, bubblesOnly, start)) {
-						collapseCount++;
-						collapsed = true;
-						break;
-					}
+		// Keep collapsing until we can't anymore
+		boolean collapsed = true;
+		while (collapsed) {
+			collapsed = false;
+			for (PN start : paths) {
+				// TODO: collapse the path with the weakest support first
+				if (collapsePaths(maxDifference, bubblesOnly, start)) {
+					collapseCount++;
+					collapsed = true;
+					break;
 				}
 			}
-		} catch (AlgorithmRuntimeSafetyLimitExceededException e) {
-			log.error(e);
 		}
 		return collapseCount;
 	}
@@ -330,40 +326,56 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 * @return number of leaves collapsed
 	 * @throws AlgorithmRuntimeSafetyLimitExceededException
 	 */
-	public int collapseLeaves(int maxDifference) {
+	public int collapseLeaves(int maxDifference) throws AlgorithmRuntimeSafetyLimitExceededException {
 		nodeTaversalCount = 0;
 		int collapseCount = 0;
-		try {
-			int collapsedThisRound;
-			do {
-				collapsedThisRound = 0;
-				PriorityQueue<PN> ordering = new PriorityQueue<PN>(paths.size(), ByPathTotalWeightDesc.reverse());
-				ordering.addAll(paths);
-				// unlike collapsing paths, collapsing leaves is a local
-				// change and does not invalidate any other paths
-				for (PN leaf : ordering) {
-					List<PN> nextPaths = nextPath(leaf);
-					List<PN> prevPaths = prevPath(leaf);
-					if (nextPaths.size() == 0 && prevPaths.size() == 1) {
-						if (collapseLeaf(maxDifference, leaf, prevPaths.get(0), true)) {
-							collapseCount++;
-							collapsedThisRound++;
-						}
-					} else if (nextPaths.size() == 1 && prevPaths.size() == 0) {
-						if (collapseLeaf(maxDifference, leaf, nextPaths.get(0), false)) {
-							collapseCount++;
-							collapsedThisRound++;
-						}
+		int collapsedThisRound;
+		do {
+			collapsedThisRound = 0;
+			PriorityQueue<PN> ordering = new PriorityQueue<PN>(paths.size(), ByPathTotalWeightDesc.reverse());
+			ordering.addAll(paths);
+			// unlike collapsing paths, collapsing leaves is a local
+			// change and does not invalidate any other paths
+			for (PN leaf : ordering) {
+				List<PN> nextPaths = nextPath(leaf);
+				List<PN> prevPaths = prevPath(leaf);
+				if (nextPaths.size() == 0 && prevPaths.size() == 1) {
+					if (collapseLeaf(maxDifference, leaf, prevPaths.get(0), true)) {
+						collapseCount++;
+						collapsedThisRound++;
+					}
+				} else if (nextPaths.size() == 1 && prevPaths.size() == 0) {
+					if (collapseLeaf(maxDifference, leaf, nextPaths.get(0), false)) {
+						collapseCount++;
+						collapsedThisRound++;
 					}
 				}
-				if (collapsedThisRound > 0) {
-					// leaf collapse may have resulted in nodes that can now be merged
-					shrink();
+			}
+			if (collapsedThisRound > 0) {
+				// leaf collapse may have resulted in nodes that can now be merged
+				shrink();
+			}
+			// the shrink process could have made a new leaf that can now be collapsed
+			// so we need to try again
+			// Optimisation: only reprocess shrunk nodes 
+		} while (collapsedThisRound > 0);
+		return collapseCount;
+	}
+	/**
+	 * Collapses similar paths and leaf branches
+	 * @param maxBaseMismatchForCollapse
+	 * @param bubblesOnly collapse bubbles only
+	 */
+	public int collapse(int maxBaseMismatchForCollapse, boolean bubblesOnly) {
+		int collapseCount = 0;
+		try {
+			int leafCount = 0, pathCount = 0;
+			do {
+				if (!bubblesOnly) {
+					leafCount = collapseLeaves(maxBaseMismatchForCollapse);
 				}
-				// the shrink process could have made a new leaf that can now be collapsed
-				// so we need to try again
-				// Optimisation: only reprocess shrunk nodes 
-			} while (collapsedThisRound > 0);
+				pathCount = collapseSimilarPaths(maxBaseMismatchForCollapse, bubblesOnly);
+			} while (leafCount + pathCount > 0);
 		} catch (AlgorithmRuntimeSafetyLimitExceededException e) {
 			log.error(e);
 		}
