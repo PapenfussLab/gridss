@@ -59,13 +59,15 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     		+ "If this is not set, the SAM proper pair flag is used to determine whether a read is discordantly aligned.",
 		optional=true)
     public Float READ_PAIR_CONCORDANT_PERCENT = null;
-    // --- soft clip realignment parameters ---
+    @Option(doc = "Minimum read MAPQ for a read pair to be considerd anchored",
+    		optional=true)
+    public int READ_PAIR_ANCHOR_MIN_MAPQ = new ReadPairParameters().minLocalMapq;
     @Option(doc = "Minimum read MAPQ for soft clip realignment to be performed",
     		optional=true)
-    public int SOFT_CLIP_REALIGNMENT_MIN_MAPQ = new SoftClipParameters().minReadMapq;
+    public int SOFT_CLIP_MIN_MAPQ = new SoftClipParameters().minReadMapq;
     @Option(doc = "Minimum sequence identity to reference. Percentage value taking a value in the range 0-100.",
     		optional=true)
-    public float SOFT_CLIP_REALIGNMENT_MIN_ANCHOR_PERCENT_IDENTITY = new SoftClipParameters().minAnchorIdentity;
+    public float SOFT_CLIP_MIN_ANCHOR_PERCENT_IDENTITY = new SoftClipParameters().minAnchorIdentity;
     @Option(doc = "Local assembly algorithm used to construct breakend contigs.",
     		optional=true)
     // --- Assembly parameters ---
@@ -96,16 +98,16 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     		+ "of no contributing evidence before subgraph assembly.",
     		optional=true)
     public float ASSEMBLY_DEBRUIJN_SUBGRAPH_ASSEMBLY_FRAGMENT_DELAY = 3;
-    @Option(doc = "Location to save assembly graphs to for visualisation and"
-    		+ "debugging purposes.", optional=true)
-    public File DEBUG_ASSEMBLY_VISUALISATION_DIRECTORY = null;
     // --- Realignment parameters ---
     @Option(doc = "Minimum length of a breakend to be considered for realignment",
     		optional=true)
     public int REALIGNMENT_MIN_BREAKEND_LENGTH = 20;
-    @Option(doc = "Minimum average base quality score for realignment of read soft clip",
+    @Option(doc = "Minimum average base quality score for realignment",
     		optional=true)
     public float REALIGNMENT_MIN_BASE_QUALITY = 5;
+    @Option(doc = "Minimum mapq of a realignment to be considered uniquely mapped",
+    		optional=true)
+    public int REALIGNMENT_MAPQ_UNIQUE_THRESHOLD = new RealignmentParameters().mapqUniqueThreshold;
     // --- Variant calling parameters  ---
     @Option(doc = "Maximum somatic p-value for a variant to be called somatic",
     		optional=true)
@@ -182,20 +184,20 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 		ap.maxContigsPerAssembly = ASSEMBLY_DEBRUIJN_MAX_CONTIGS_PER_ITERATION;
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = ASSEMBLY_DEBRUIJN_SUBGRAPH_BRANCHING_FACTOR;
 		ap.subgraphAssemblyMargin = ASSEMBLY_DEBRUIJN_SUBGRAPH_ASSEMBLY_FRAGMENT_DELAY;
-		ap.debruijnGraphVisualisationDirectory = DEBUG_ASSEMBLY_VISUALISATION_DIRECTORY;
 		return ap;
 	}
 	private SoftClipParameters getSoftClipParameters() {
 		SoftClipParameters scp = new SoftClipParameters();
 	    scp.minLength = SOFT_CLIP_MIN_LENGTH;
-	    scp.minReadMapq = SOFT_CLIP_REALIGNMENT_MIN_MAPQ;
-	    scp.minAnchorIdentity = SOFT_CLIP_REALIGNMENT_MIN_ANCHOR_PERCENT_IDENTITY;
+	    scp.minReadMapq = SOFT_CLIP_MIN_MAPQ;
+	    scp.minAnchorIdentity = SOFT_CLIP_MIN_ANCHOR_PERCENT_IDENTITY;
 	    return scp;
 	}
 	private RealignmentParameters getRealignmentParameters() {
 		RealignmentParameters rp = new RealignmentParameters();
 		rp.minLength = REALIGNMENT_MIN_BREAKEND_LENGTH;
 		rp.minAverageQual = REALIGNMENT_MIN_BASE_QUALITY;
+		rp.mapqUniqueThreshold = REALIGNMENT_MAPQ_UNIQUE_THRESHOLD;
 		return rp;
 	}
 	private ReadPairParameters getReadPairParameters() {
@@ -204,6 +206,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 		if (READ_PAIR_CONCORDANT_PERCENT != null) {
 			rpp.concordantPercent = READ_PAIR_CONCORDANT_PERCENT;
 		}
+		rpp.minLocalMapq = READ_PAIR_ANCHOR_MIN_MAPQ;
 	    return rpp;
 	}
 	private FileSystemContext getFileSystemContext() {

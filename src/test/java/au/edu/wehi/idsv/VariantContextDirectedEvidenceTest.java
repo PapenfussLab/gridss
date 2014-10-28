@@ -98,7 +98,7 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 	public void should_not_extend_process_context_sequence_dictionary_when_encountering_vcf41_placeholder() {
 		ProcessingContext pc = getContext();
 		int seqCount = pc.getDictionary().size();
-		new VariantContextDirectedEvidence(pc, AES(), minimalVariant().start(1).stop(2).alleles("AA", "AAAAT[<IDSV_PLACEHOLDER>[").id("test").make());
+		new VariantContextDirectedEvidence(pc, AES(), minimalVariant().start(1).stop(2).alleles("AA", "AAAAT[<unknown>[").id("test").make());
 		assertEquals(seqCount, pc.getDictionary().size());
 	}
 	@Test
@@ -156,7 +156,7 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 	@Test
 	public void getBreakendSummary_should_parse_vcf41_compatability_breakpoint_as_breakend() {
 		// even in 4.2 mode, we should happily parse our backward compatible serialisation as a breakend
-		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext(), AES(), minimalVariant().start(1).stop(1).alleles("A", "A[<IDSV_PLACEHOLDER>[").id("test").make());
+		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext(), AES(), minimalVariant().start(1).stop(1).alleles("A", "A[<unknown>[").id("test").make());
 		assertEquals(vc.getBreakendSummary().getClass(), BreakendSummary.class);
 	}
 	@Test

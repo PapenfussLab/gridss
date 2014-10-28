@@ -170,7 +170,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 		}
 		SamReader rpReader = processContext.getSamReader(readPair);
 		SamReader mateReader = processContext.getSamReader(pairMate);
-		Iterator<NonReferenceReadPair> rpIt = new ReadPairEvidenceIterator(this,
+		Iterator<NonReferenceReadPair> rpIt = new ReadPairEvidenceIterator(
+				processContext,
+				this,
 				processContext.getSamReaderIterator(rpReader),
 				processContext.getSamReaderIterator(mateReader));
 		rpIt = new AutoClosingIterator<NonReferenceReadPair>(rpIt, Lists.<Closeable>newArrayList(rpReader, mateReader));

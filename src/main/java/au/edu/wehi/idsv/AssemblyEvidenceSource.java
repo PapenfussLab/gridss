@@ -206,8 +206,10 @@ public class AssemblyEvidenceSource extends EvidenceSource {
     	if (evidenceList != null) {
 	    	for (VariantContextDirectedEvidence a : evidenceList) {
 	    		if (a != null) {
-		    		maxAssembledPosition = Math.max(maxAssembledPosition, processContext.getLinear().getLinearCoordinate(a.getReferenceIndex(), a.getStart())); 
-		    		writerQueue.add(a);
+		    		maxAssembledPosition = Math.max(maxAssembledPosition, processContext.getLinear().getLinearCoordinate(a.getReferenceIndex(), a.getStart()));
+		    		if (Defaults.WRITE_FILTERED_CALLS || !a.isFiltered()) {
+		    			writerQueue.add(a);
+		    		}
 	    		}
 	    	}
     	}

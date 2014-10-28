@@ -3,8 +3,10 @@ package au.edu.wehi.idsv.visualisation;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 
+import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
@@ -25,8 +27,10 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), output);
 		aes.ensureAssembled();
 		File dir = new File(new File(new File(super.testFolder.getRoot(), "visualisation"), "chr12"), "200000");
-		assertTrue(new File(dir, "f_chr12_244285-244547_0.precollapse.gexf").exists());
-		assertTrue(new File(dir, "f_chr12_244285-244547_0.subgraph.gexf").exists());
+		File[] precollapse = dir.listFiles((FileFilter)new WildcardFileFilter("*.precollapse.gexf"));
+		File[] subgraph = dir.listFiles((FileFilter)new WildcardFileFilter("*.subgraph.gexf"));
+		assertTrue(precollapse.length > 0);
+		assertTrue(subgraph.length > 0);
 	}
 	@Override
 	public ProcessingContext getCommandlineContext(boolean perChr) {

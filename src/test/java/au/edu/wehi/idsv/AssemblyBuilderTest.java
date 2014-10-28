@@ -235,12 +235,12 @@ public class AssemblyBuilderTest extends TestHelper {
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_MAPQ_REMOTE_MAX() {
 		assertEquals(0, big().getMapqAssemblyRemoteMax());
-		assertEquals(7, bigr().getMapqAssemblyRemoteMax());
+		assertEquals(17, bigr().getMapqAssemblyRemoteMax());
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_MAPQ_REMOTE_TOTAL() {
 		assertEquals(0, big().getMapqAssemblyRemoteTotal());
-		assertEquals(7, bigr().getMapqAssemblyRemoteTotal());
+		assertEquals(17, bigr().getMapqAssemblyRemoteTotal());
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_LENGTH_LOCAL_MAX() {
@@ -335,15 +335,24 @@ public class AssemblyBuilderTest extends TestHelper {
 	public VariantContextDirectedEvidence bigr() {
 		SAMRecord ra = Read(1, 100, "1S1M1S");
 		ra.setReadBases(B("CGT"));
-		ra.setMappingQuality(7);
+		ra.setMappingQuality(17);
 		ra.setBaseQualities(new byte[] { 0,1,2});
 		return AssemblyBuilder.incorporateRealignment(getContext(), big(), ra);
 	}
 	@Test
-	public void incorporateRealignment_should_convert_to_breakend() {
+	public void incorporateRealignment_should_convert_to_breakpoint() {
 		assertTrue(bigr() instanceof VariantContextDirectedBreakpoint);
 		VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)bigr();
 		assertEquals(1, bp.getBreakendSummary().referenceIndex2);
+	}
+	@Test
+	public void incorporateRealignment_should_not_convert_poorly_mapped_to_breakpoint() {
+		SAMRecord ra = Read(1, 100, "1S1M1S");
+		ra.setReadBases(B("CGT"));
+		ra.setMappingQuality(1);
+		ra.setBaseQualities(new byte[] { 0,1,2});
+		VariantContextDirectedEvidence be = AssemblyBuilder.incorporateRealignment(getContext(), big(), ra);
+		assertFalse(be instanceof VariantContextDirectedBreakpoint);
 	}
 	@Test
 	public void getAnchorSequenceString_should_return_entire_assembly_anchor() {

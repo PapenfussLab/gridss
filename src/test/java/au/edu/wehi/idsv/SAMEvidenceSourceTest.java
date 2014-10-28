@@ -14,7 +14,6 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
 public class SAMEvidenceSourceTest extends IntermediateFilesTest {
-
 	@Test
 	public void per_chr_iterator_should_return_all_evidence() {
 		createInput(new SAMRecord[] { Read(1, 1, "50M50S") },

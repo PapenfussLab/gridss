@@ -6,11 +6,11 @@ public class SoftClipParameters {
 	 */
 	public int minLength = 4;
 	/**
-	 * Minimum MAPQ of read to consider for realignment
+	 * Minimum MAPQ of read to considered evidence
 	 */
 	public int minReadMapq = 5;
 	/**
-	 * Minimum anchor percent identity to consider for realignment
+	 * Minimum anchor percent identity to considered evidence
 	 * 0-100
 	 */
 	public float minAnchorIdentity = 95;

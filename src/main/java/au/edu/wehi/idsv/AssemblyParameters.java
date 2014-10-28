@@ -41,5 +41,5 @@ public class AssemblyParameters {
 	/**
 	 * Directory to save debruijn graph visualisation information to.
 	 */
-	public File debruijnGraphVisualisationDirectory = null;
+	public File debruijnGraphVisualisationDirectory = Defaults.ASSEMBLY_VISUALISATION_DIRECTORY;
 }

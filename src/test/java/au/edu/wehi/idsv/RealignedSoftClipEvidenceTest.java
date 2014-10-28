@@ -100,23 +100,23 @@ public class RealignedSoftClipEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void getRemoteMapq_should_be_realigned_mapq() {
-		assertEquals(5, ((RealignedSoftClipEvidence)SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Forward,
+		assertEquals(15, ((RealignedSoftClipEvidence)SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Forward,
 				Read(0, 1, "4M6S"),
-				withMapq(5, Read(0, 1, "1S3M2S"))[0]))
+				withMapq(15, Read(0, 1, "1S3M2S"))[0]))
 			.getRemoteMapq());
 	}
 	@Test
 	public void getRemoteBaseLength_should_be_sc_length() {
 		assertEquals(6, ((RealignedSoftClipEvidence)SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Forward,
 				Read(0, 1, "4M6S"),
-				withMapq(5, Read(0, 1, "1S3M2S"))[0]))
+				withMapq(15, Read(0, 1, "1S3M2S"))[0]))
 			.getRemoteBaseLength());
 	}
 	@Test
 	public void getRemoteBaseCount_should_be_sc_length() {
 		assertEquals(6, ((RealignedSoftClipEvidence)SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Forward,
 				Read(0, 1, "4M6S"),
-				withMapq(5, Read(0, 1, "1S3M2S"))[0]))
+				withMapq(15, Read(0, 1, "1S3M2S"))[0]))
 			.getRemoteBaseCount());
 	}
 	@Test

@@ -287,11 +287,14 @@ public class ExtractEvidence implements Closeable {
 							isConcordant &= dist.cumulativeProbability(insertSize) <= processContext.getReadPairParameters().getCordantPercentageUpperBound()
 									&& dist.descendingCumulativeProbability(insertSize) <= processContext.getReadPairParameters().getCordantPercentageUpperBound();
 						}
-						// TODO: exclude really short fragments with self-overlap - do not provide SV evidence
-						// (making sure we don't incorrectly remove self-overlapping in the incorrect orientation)
 						if (!isConcordant) {
-							 rpwriters.get(offset % rpwriters.size()).addAlignment(record);
+							if (processContext.getReadPairParameters().meetsEvidenceCritera(record)) {
+								// don't write this record if we're going to filter
+								// still need to write mate as we don't know if it will pass the filter (eg mapq fail here, pass for mate)
+								rpwriters.get(offset % rpwriters.size()).addAlignment(record);
+							}
 							if (!record.getMateUnmappedFlag()) {
+								// would be nice to know if we actually need to write this but we don't know enough about the mate yet
 								if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) matewriters.get(record.getMateReferenceIndex() % matewriters.size()).addAlignment(record);
 							}
 						}

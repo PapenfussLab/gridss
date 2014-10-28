@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMRecord;
+
 
 public class RealignmentParameters {
 	/**
@@ -10,6 +12,10 @@ public class RealignmentParameters {
 	 * Minimum average breakend quality score to be considered for realignment 
 	 */
 	public float minAverageQual = 5;
+	/**
+	 * Minimum MAPQ of realigned segment to be considered uniquely aligned  
+	 */
+	public int mapqUniqueThreshold = 10;
 	public boolean shouldRealignBreakend(SoftClipEvidence evidence) {
 		if (evidence.getBreakendSummary() instanceof BreakpointSummary) return false;
 		return evidence.getSoftClipLength() >= minLength
@@ -19,5 +25,13 @@ public class RealignmentParameters {
 		if (evidence.getBreakendSummary() instanceof BreakpointSummary) return false;
 		return evidence.getBreakendSequence().length >= minLength;
 				//&& evidence.getAssemblyQuality() >= minAverageQual;
+	}
+	/**
+	 * Determines whether the given realignment is considered uniquely mappable
+	 * @param realignment realignment record
+	 * @return true if the mapping position is unique, false otherwise
+	 */
+	public boolean realignmentPositionUnique(SAMRecord realignment) {
+		return realignment.getMappingQuality() >= mapqUniqueThreshold;
 	}
 }

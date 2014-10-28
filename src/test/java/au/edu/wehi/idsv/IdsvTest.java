@@ -71,7 +71,6 @@ public class IdsvTest extends IntermediateFilesTest {
 				"TMP_DIR=" + target.toString(),
 				"WORKING_DIR=" + target.toString(),
 				"CALL_ONLY_ASSEMBLIES=true",
-				"DEBUG_ASSEMBLY_VISUALISATION_DIRECTORY=" + new File(target, "visualisation").toString(),
 				"PER_CHR=false"
 		};
 		new Idsv().instanceMain(args);

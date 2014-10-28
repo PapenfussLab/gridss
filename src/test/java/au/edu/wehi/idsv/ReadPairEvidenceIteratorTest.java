@@ -26,6 +26,7 @@ public class ReadPairEvidenceIteratorTest extends TestHelper {
 		sv = sorted(sv);
 		mate = mateSorted(mate);
 		ReadPairEvidenceIterator it = new ReadPairEvidenceIterator(
+				getContext(),
 				SES(),
 				sv.iterator(),
 				mate.iterator());
@@ -70,5 +71,39 @@ public class ReadPairEvidenceIteratorTest extends TestHelper {
 		assertEquals(2, out.size());
 		assertTrue(out.get(0) instanceof NonReferenceReadPair);
 		assertTrue(out.get(1) instanceof NonReferenceReadPair);
+	}
+	@Test
+	public void should_filter_if_local_mapq_too_low() {
+		sv.add(withMapq(1, OEA(0, 1, "100M", true))[0]);
+		mate.add(withMapq(44, OEA(1, 1, "100M", true))[1]);
+		go();
+		assertEquals(0, out.size());
+	}
+	@Test
+	public void should_not_filter_on_remote_mapq() {
+		sv.add(withMapq(44, DP(0, 1, "5M", true, 0, 1, "5M", true))[0]);
+		mate.add(withMapq(1, DP(0, 1, "5M", true, 0, 1, "5M", true))[1]);
+		go();
+		assertEquals(1, out.size());
+		assertTrue(out.get(0) instanceof NonReferenceReadPair);
+	}
+	@Test
+	public void should_filter_self_overlap() {
+		// base 5 common to both
+		sv.add(DP(0, 1, "5M", true, 0, 5, "5M", false)[0]);
+		mate.add(DP(0, 1, "5M", true, 0, 5, "5M", false)[1]);
+		// adjacent but not overlapping
+		sv.add(DP(1, 1, "5M", true, 1, 6, "5M", false)[0]);
+		mate.add(DP(1, 1, "5M", true, 1, 6, "5M", false)[1]);
+		go();
+		assertEquals(1, out.size());
+	}
+	@Test
+	public void should_not_filter_self_overlap_in_unexpected_orientation() {
+		// overlapping unexpected orientation
+		sv.add(DP(0, 1, "5M", true, 0, 5, "5M", true)[0]);
+		mate.add(DP(0, 1, "5M", true, 0, 5, "5M", true)[1]);
+		go();
+		assertEquals(1, out.size());
 	}
 }

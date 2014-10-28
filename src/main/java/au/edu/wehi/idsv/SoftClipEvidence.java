@@ -27,7 +27,7 @@ public class SoftClipEvidence implements DirectedEvidence {
 		if (record.getReadUnmappedFlag()) throw new IllegalArgumentException(String.format("record %s is unmapped", record.getReadName()));
 		if (record.getReadBases() == null || record.getReadBases() == SAMRecord.NULL_SEQUENCE ) throw new IllegalArgumentException(String.format("record %s missing sequence information", record.getReadName()));
 		SoftClipEvidence result = null;
-		if (realigned != null && !realigned.getReadUnmappedFlag()) {
+		if (realigned != null && !realigned.getReadUnmappedFlag() && processContext.getRealignmentParameters().realignmentPositionUnique(realigned)) {
 			try {
 				result = new RealignedSoftClipEvidence(processContext, source, direction, record, realigned);
 			} catch (CloneNotSupportedException e) {

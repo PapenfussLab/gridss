@@ -1,6 +1,6 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import htsjdk.samtools.SAMRecord;
 
 import org.junit.Test;
@@ -38,5 +38,12 @@ public class DiscordantReadPairTest extends TestHelper {
 		withQual(new byte[] { 1, 2, 3, 4}, pair[0]);
 		withQual(new byte[] { 4, 5, 6, 7}, pair[1]);
 		assertEquals(5+6+7, newPair(pair, 300).getRemoteTotalBaseQual());
+	}
+	@Test
+	public void fragmentSequencesOverlap() {
+		assertTrue(newPair(DP(1, 1, "5M", true, 1, 5, "5M", false), 300).fragmentSequencesOverlap());
+		assertTrue(newPair(DP(1, 1, "5M", true, 1, 5, "5M", true), 300).fragmentSequencesOverlap());
+		assertFalse(newPair(DP(1, 1, "5M", true, 0, 5, "5M", false), 300).fragmentSequencesOverlap());
+		assertFalse(newPair(DP(1, 1, "5M", true, 1, 6, "5M", true), 300).fragmentSequencesOverlap());
 	}
 }

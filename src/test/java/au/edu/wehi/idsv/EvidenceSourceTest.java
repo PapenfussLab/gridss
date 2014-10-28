@@ -44,7 +44,7 @@ public class EvidenceSourceTest extends IntermediateFilesTest {
 		public TestEvidenceSource(boolean perChr, File input) {
 			super(getCommandlineContext(perChr), input);
 		}
-		private boolean processed = false;
+		protected boolean processed = false;
 		@Override
 		protected void process() { processed = true; }
 		@Override

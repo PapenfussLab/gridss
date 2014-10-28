@@ -48,7 +48,9 @@ public class SequentialEvidenceAnnotator implements BreakendAnnotator {
 				builder.addEvidence(evidence);
 			}
 		}
-		return builder.make();
+		VariantContextDirectedEvidence result = builder.make();
+		assert(result.getBreakendSummary().overlaps(variant.getBreakendSummary()));
+		return result;
 	}
 	private void addUntil(int referenceIndex, int position) {
 		while (evidence.hasNext() && evidence.peek().getBreakendSummary().referenceIndex < referenceIndex) evidence.next();

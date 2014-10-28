@@ -1,9 +1,9 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.*;
 import htsjdk.samtools.SAMRecord;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class SoftClipEvidenceTest extends TestHelper {
@@ -88,16 +88,28 @@ public class SoftClipEvidenceTest extends TestHelper {
 		assertEquals("bReadName", SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Backward, r).getEvidenceID());
 	}
 	@Test
-	public void unrealigned_should_have_decent_quality_metric() {
-		assertFalse("TODO: get a decent quality metric", false);
+	public void realigned_consider_multimapping_realignment_unmapped() {
+		SAMRecord r = Read(0, 10, "10M5S");
+		SAMRecord realigned = Read(1, 15, "10M");
+		realigned.setMappingQuality(1);
+		SoftClipEvidence e = SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Forward, r, realigned);
+		assertFalse(e instanceof RealignedSoftClipEvidence);
+		assertFalse(e.getBreakendSummary() instanceof BreakpointSummary);
 	}
+	@Ignore
+	@Test
+	public void unrealigned_should_have_decent_quality_metric() {
+		assertTrue("TODO: get a decent quality metric", false);
+	}
+	@Ignore
 	@Test
 	public void realigned_should_have_decent_quality_metric() {
-		assertFalse("TODO: get a decent quality metric", false);
+		assertTrue("TODO: get a decent quality metric", false);
 	}
+	@Ignore
 	@Test
 	public void realigned_unmapped_should_have_decent_quality_metric() {
-		assertFalse("TODO: get a decent quality metric", false);
+		assertTrue("TODO: get a decent quality metric", false);
 	}
 	@Test
 	public void getAverageClipQuality_should_average_clip_quality_bases() {

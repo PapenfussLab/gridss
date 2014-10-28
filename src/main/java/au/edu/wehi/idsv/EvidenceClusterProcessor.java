@@ -42,6 +42,10 @@ public class EvidenceClusterProcessor implements Iterable<VariantContextDirected
 		if (loc instanceof BreakpointSummary) {
 			BreakpointSummary interval = (BreakpointSummary)loc;
 			if (filterOut(interval)) return;
+			assert(interval.referenceIndex >= 0);
+			assert(interval.referenceIndex2 >= 0);
+			assert(interval.start >= 1);
+			assert(interval.start2 >= 1);
 			long startX = context.getLinear().getLinearCoordinate(interval.referenceIndex, interval.start);
 			long endX = startX + interval.end - interval.start;
 			long startY = context.getLinear().getLinearCoordinate(interval.referenceIndex2, interval.start2);

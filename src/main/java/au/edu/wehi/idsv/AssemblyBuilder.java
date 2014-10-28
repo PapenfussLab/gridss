@@ -220,7 +220,7 @@ public class AssemblyBuilder {
 	 */
 	public static VariantContextDirectedEvidence incorporateRealignment(ProcessingContext processContext, VariantContextDirectedEvidence assembly, SAMRecord realignment) {
 		if (realignment == null) return assembly;
-		if (realignment.getReadUnmappedFlag()) {
+		if (realignment.getReadUnmappedFlag() || !processContext.getRealignmentParameters().realignmentPositionUnique(realignment)) {
 			// No additional evidence attributes to write since realignment was assumed to have failed for breakends
 			return assembly;
 		}
