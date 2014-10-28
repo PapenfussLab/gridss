@@ -90,7 +90,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     public boolean ASSEMBLY_DEBRUIJN_ALLOW_REFERENCE_KMER_RESUSE = new AssemblyParameters().allReferenceKmerReuse;
     @Option(doc = "Maximum number of contigs per assembly iteration",
     		optional=true)
-    public int ASSEMBLY_DEBRUIJN_MAX_CONTIGS_PER_ITERATION = 8;
+    public int ASSEMBLY_DEBRUIJN_MAX_CONTIGS_PER_ITERATION = new AssemblyParameters().maxContigsPerAssembly;
     @Option(doc = "Number of branches consider at each kmer branch",
     		optional=true)
     public int ASSEMBLY_DEBRUIJN_SUBGRAPH_BRANCHING_FACTOR = 16; // new AssemblyParameters().subgraphAssemblyTraversalMaximumBranchingFactor;
