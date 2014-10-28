@@ -39,6 +39,10 @@ public class AssemblyParameters {
 	 */
 	public int subgraphAssemblyTraversalMaximumBranchingFactor = Integer.MAX_VALUE;
 	/**
+	 * Maximum nodes when finding the best path
+	 */
+	public int maxPathTraversalNodes = Defaults.BEST_PATH_MAX_TRAVERSAL;
+	/**
 	 * Directory to save debruijn graph visualisation information to.
 	 */
 	public File debruijnGraphVisualisationDirectory = Defaults.ASSEMBLY_VISUALISATION_DIRECTORY;

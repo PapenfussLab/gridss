@@ -176,7 +176,7 @@ public class PathGraphAssembler extends PathGraph {
 			final boolean referenceTraverse,
 			final int maxNextStates) {
 		try {
-			if (nodeTraversals < Defaults.BEST_PATH_MAX_TRAVERSAL) {
+			if (nodeTraversals < parameters.maxPathTraversalNodes) {
 				return memoizedTraverse(startingNode, scoringFunction, traverseForward, referenceTraverse, maxNextStates);
 			}
 		} catch (AlgorithmRuntimeSafetyLimitExceededException e) {
@@ -184,7 +184,7 @@ public class PathGraphAssembler extends PathGraph {
 		}
 		return greedyTraverse(startingNode, scoringFunction, traverseForward, referenceTraverse);
 	}
-	private List<SubgraphPathNode> greedyTraverse(
+	protected List<SubgraphPathNode> greedyTraverse(
 			final SubgraphPathNode startingNode,
 			final Function<SubgraphPathNode, Integer> scoringFunction,
 			final boolean traverseForward,
@@ -195,7 +195,7 @@ public class PathGraphAssembler extends PathGraph {
 		SubgraphPathNode node = startingNode;
 		while (node != null) {
 			List<SubgraphPathNode> nextStates = traverseForward ? nextPath(node) : prevPath(node);
-			Collections.max(nextStates, order);
+			Collections.sort(nextStates, order);
 			node = null;
 			for (SubgraphPathNode next : nextStates) {
 				if ((referenceTraverse && !next.containsReferenceKmer()) ||
@@ -215,7 +215,7 @@ public class PathGraphAssembler extends PathGraph {
 		}
 		return contig;
 	}
-	private List<SubgraphPathNode> memoizedTraverse(
+	protected List<SubgraphPathNode> memoizedTraverse(
 			final SubgraphPathNode startingNode,
 			final Function<SubgraphPathNode, Integer> scoringFunction,
 			final boolean traverseForward,
@@ -236,7 +236,7 @@ public class PathGraphAssembler extends PathGraph {
 		
 		while (!frontier.isEmpty()) {
 			nodeTraversals++;
-			if (nodeTraversals > Defaults.BEST_PATH_MAX_TRAVERSAL) {
+			if (nodeTraversals > parameters.maxPathTraversalNodes) {
 				throw new AlgorithmRuntimeSafetyLimitExceededException();
 			}
 			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {

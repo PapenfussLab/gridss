@@ -2,6 +2,7 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 
 import static org.junit.Assert.assertEquals;
 
+import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -10,8 +11,10 @@ import org.junit.Test;
 
 import au.edu.wehi.idsv.AssemblyMethod;
 import au.edu.wehi.idsv.AssemblyParameters;
+import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
+import au.edu.wehi.idsv.visualisation.StaticDeBruijnSubgraphPathGraphGexfExporter;
 
 
 public class PathGraphAssemblerTest extends TestHelper {
@@ -38,7 +41,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		assertEquals("TTAACCGGCCAATT", S(g, result.get(0)));
 	}
 	@Ignore("now removing entire non-reference subgraph after each assembly")
-	@Test
+	//@Test
 	public void should_assemble_excluding_used_non_reference_kmers() {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.k = 4;
@@ -153,5 +156,33 @@ public class PathGraphAssemblerTest extends TestHelper {
 		assertEquals("TTTTCGTTAACC", S(g, result.get(0)));
 		assertEquals("TTTTCGCCGGT", S(g, result.get(1)));
 		assertEquals("TTTTCGAGAT", S(g, result.get(2)));
+	}
+	@Test
+	public void should_fall_back_to_greedy_assemble() {
+		AssemblyParameters ap = new AssemblyParameters();
+		ap.k = 4;
+		ap.method = AssemblyMethod.DEBRUIJN_SUBGRAPH;
+		ap.maxContigsPerAssembly = 1000;
+		ap.maxBaseMismatchForCollapse = 0;
+		ap.maxPathTraversalNodes = 2;
+		DeBruijnReadGraph g = G(ap.k, FWD);
+		g.addEvidence(SCE(FWD, withSequence("AAATGGGGGGGGGGG", Read(0, 10, "6M10S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAATGGGC", Read(0, 10, "6M3S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAATGGGTAA", Read(0, 10, "6M5S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAATGGGTCC", Read(0, 10, "6M5S"))));
+		g.addEvidence(NRRP(withSequence("GGAC", OEA(0, 10, "4M", true)))); // GTCC reverse comp GGAC
+		g.addEvidence(NRRP(withSequence("GGAC", OEA(0, 10, "4M", true))));
+		g.addEvidence(SCE(FWD, withSequence("AAATGGGA", Read(0, 10, "6M3S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAATGGGA", Read(0, 10, "6M3S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAATGGGA", Read(0, 10, "6M3S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAATGGGA", Read(0, 10, "6M3S"))));
+		// greedy traversal
+		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("GGGG")));
+		//new StaticDeBruijnSubgraphPathGraphGexfExporter(ap.k)
+		//	.snapshot(pga)
+		//	.saveTo(new File("C:\\temp\\test.gexf"));
+		List<LinkedList<Long>> result = pga.assembleContigs();
+		assertEquals(1, result.size());
+		assertEquals("AAATGGGGA", S(g, result.get(0)));
 	}
 }
