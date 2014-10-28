@@ -26,7 +26,6 @@ import com.google.common.primitives.Ints;
  * @param <T>
  */
 public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
-	public static final boolean PERFORM_EXPENSIVE_SANITY_CHECKS = false; 
 	public static final int MAX_QUAL_SCORE = 128 - 66;
 	private final Map<Long, T> kmers = Maps.newHashMap();
 	private final int k;

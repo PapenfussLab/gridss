@@ -14,6 +14,7 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.SortedSet;
 
+import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
 
 import com.google.common.base.Predicate;
@@ -34,11 +35,6 @@ import com.google.common.primitives.Ints;
  */
 public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T>> {
 	private static Log log = Log.getInstance(DeBruijnPathGraph.class);
-	/**
-	 * Safety limit to prevent unbounded exponential runtime
-	 * when attempt to path collapse highly collected degenerate subgraphs
-	 */
-	private static final int COLLAPSE_PATH_MAX_TRAVERSAL = 10 * 1024 * 1024;
 	protected final PathNodeFactory<T, PN> factory;
 	private final DeBruijnGraphBase<T> graph;
 	protected final Set<PN> paths = Sets.newHashSet();
@@ -369,6 +365,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	public int collapse(int maxBaseMismatchForCollapse, boolean bubblesOnly) {
 		int collapseCount = 0;
 		try {
+			collapseCount = collapseSimilarPaths(maxBaseMismatchForCollapse, true);
 			int leafCount = 0, pathCount = 0;
 			do {
 				if (!bubblesOnly) {
@@ -500,7 +497,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 			PN leaf,
 			PN anchor,
 			boolean traverseForward) throws AlgorithmRuntimeSafetyLimitExceededException {
-		if (++nodeTaversalCount >= COLLAPSE_PATH_MAX_TRAVERSAL) {
+		if (++nodeTaversalCount >= Defaults.COLLAPSE_PATH_MAX_TRAVERSAL) {
 			throw new AlgorithmRuntimeSafetyLimitExceededException(String.format(
 					"Leaf collapse not complete after %d node traversals. Aborting path collapse whilst processing \"%s\".",
 					nodeTaversalCount,
@@ -581,7 +578,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 			Deque<PN> pathB,
 			int pathALength,
 			int pathBLength) throws AlgorithmRuntimeSafetyLimitExceededException {
-		if (++nodeTaversalCount >= COLLAPSE_PATH_MAX_TRAVERSAL) {
+		if (++nodeTaversalCount >= Defaults.COLLAPSE_PATH_MAX_TRAVERSAL) {
 			throw new AlgorithmRuntimeSafetyLimitExceededException(String.format(
 					"Path collapse not complete after %d node traversals. Aborting path collapse whilst processing \"%s\" and \"%s\".",
 					nodeTaversalCount,

@@ -13,7 +13,9 @@ import java.util.Queue;
 import java.util.Set;
 
 import au.edu.wehi.idsv.AssemblyParameters;
+import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
+import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
 import au.edu.wehi.idsv.visualisation.DeBruijnPathGraphExporter;
 
 import com.google.common.base.Function;
@@ -30,9 +32,11 @@ import com.google.common.primitives.Ints;
  *
  */
 public class PathGraphAssembler extends PathGraph {
+	private final Log log = Log.getInstance(PathGraphAssembler.class);
 	private final AssemblyParameters parameters;
 	private final List<Set<SubgraphPathNode>> subgraphs = Lists.newArrayList();
 	private final List<Set<SubgraphPathNode>> startingPaths = Lists.newArrayList();
+	private int nodeTraversals = 0;
 	public PathGraphAssembler(DeBruijnGraphBase<DeBruijnSubgraphNode> graph, AssemblyParameters parameters, long seed) {
 		super(graph, seed);
 		this.parameters = parameters;
@@ -86,7 +90,7 @@ public class PathGraphAssembler extends PathGraph {
 				toProcess.removeAll(subgraphs.get(subgraphs.size() - 1));
 			}
 		}
-		if (DeBruijnGraphBase.PERFORM_EXPENSIVE_SANITY_CHECKS) {
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
 			assert(sanityCheckSubgraphs());
 		}
 	}
@@ -132,14 +136,14 @@ public class PathGraphAssembler extends PathGraph {
 		List<SubgraphPathNode> best = null;
 		int bestScore = Integer.MIN_VALUE;
 		for (SubgraphPathNode startingNode : startingNodes) {
-			List<SubgraphPathNode> current = memoizedTraverse(startingNode, scoringFunction, true, false, branchingFactor);
+			List<SubgraphPathNode> current = traverse(startingNode, scoringFunction, true, false, branchingFactor);
 			int currentScore = getScore(current, scoringFunction, false, true);
 			if (currentScore >= bestScore) {
 				bestScore = currentScore;
 				best = current;
 			}
 		}
-		List<SubgraphPathNode> anchor = memoizedTraverse(best.get(0), scoringFunction, false, true, branchingFactor);
+		List<SubgraphPathNode> anchor = traverse(best.get(0), scoringFunction, false, true, branchingFactor);
 		anchor.remove(anchor.size() - 1); // don't repeat the non-reference node we used as the anchor
 		return Lists.newArrayList(Iterables.concat(anchor, best));
 	}
@@ -165,12 +169,58 @@ public class PathGraphAssembler extends PathGraph {
 				return Ints.compare(scoringFunction.apply(arg1), scoringFunction.apply(arg0));
 			}};
 	}
-	private List<SubgraphPathNode> memoizedTraverse(
+	private List<SubgraphPathNode> traverse(
 			final SubgraphPathNode startingNode,
 			final Function<SubgraphPathNode, Integer> scoringFunction,
 			final boolean traverseForward,
 			final boolean referenceTraverse,
 			final int maxNextStates) {
+		try {
+			if (nodeTraversals < Defaults.BEST_PATH_MAX_TRAVERSAL) {
+				return memoizedTraverse(startingNode, scoringFunction, traverseForward, referenceTraverse, maxNextStates);
+			}
+		} catch (AlgorithmRuntimeSafetyLimitExceededException e) {
+			log.info(String.format("Reached path traversal timeout traversing subgraph with %d paths. Switching to greedy traversal.", paths.size()));
+		}
+		return greedyTraverse(startingNode, scoringFunction, traverseForward, referenceTraverse);
+	}
+	private List<SubgraphPathNode> greedyTraverse(
+			final SubgraphPathNode startingNode,
+			final Function<SubgraphPathNode, Integer> scoringFunction,
+			final boolean traverseForward,
+			final boolean referenceTraverse) {
+		Ordering<SubgraphPathNode> order = getScoreOrderDesc(scoringFunction);
+		List<SubgraphPathNode> contig = Lists.newArrayList();
+		contig.add(startingNode);
+		SubgraphPathNode node = startingNode;
+		while (node != null) {
+			List<SubgraphPathNode> nextStates = traverseForward ? nextPath(node) : prevPath(node);
+			Collections.max(nextStates, order);
+			node = null;
+			for (SubgraphPathNode next : nextStates) {
+				if ((referenceTraverse && !next.containsReferenceKmer()) ||
+					(!referenceTraverse && !next.containsNonReferenceKmer())) {
+					// skip: don't want to transition between reference and non-reference
+				} else if (contig.contains(next)) {
+					// don't loop back on ourself
+				} else {
+					contig.add(next);
+					node = next;
+					break;
+				}
+			}
+		}
+		if (!traverseForward) {
+			contig = Lists.reverse(contig);
+		}
+		return contig;
+	}
+	private List<SubgraphPathNode> memoizedTraverse(
+			final SubgraphPathNode startingNode,
+			final Function<SubgraphPathNode, Integer> scoringFunction,
+			final boolean traverseForward,
+			final boolean referenceTraverse,
+			final int maxNextStates) throws AlgorithmRuntimeSafetyLimitExceededException {
 		Ordering<SubgraphPathNode> order = getScoreOrderDesc(scoringFunction);
 			
 		Map<SubgraphPathNode, Integer> bestScore = Maps.newHashMap();
@@ -185,7 +235,11 @@ public class PathGraphAssembler extends PathGraph {
 		pushFronter(frontier, startingNode, startingScore, null);
 		
 		while (!frontier.isEmpty()) {
-			if (DeBruijnGraphBase.PERFORM_EXPENSIVE_SANITY_CHECKS) {
+			nodeTraversals++;
+			if (nodeTraversals > Defaults.BEST_PATH_MAX_TRAVERSAL) {
+				throw new AlgorithmRuntimeSafetyLimitExceededException();
+			}
+			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
 				assert(sanityCheckMemoization(bestScore, bestPath, frontier, scoringFunction, referenceTraverse, !referenceTraverse));
 			}
 			SubgraphPathNode node = popFronter(frontier);
