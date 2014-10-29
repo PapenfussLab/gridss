@@ -66,9 +66,11 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
 				done &= IntermediateFileUtil.checkIntermediate(fsc.getRealignmentBamForChr(input, seq.getSequenceName()), fsc.getRealignmentFastqForChr(input, seq.getSequenceName()));
+				if (!done) return false;
 			}
 		} else {
 			done &= IntermediateFileUtil.checkIntermediate(fsc.getRealignmentBam(input), fsc.getRealignmentFastq(input));
+			if (!done) return false;
 		}
 		return done;
 	}

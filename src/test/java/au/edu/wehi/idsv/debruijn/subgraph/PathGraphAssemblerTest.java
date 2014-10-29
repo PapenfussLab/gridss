@@ -2,7 +2,6 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -11,10 +10,8 @@ import org.junit.Test;
 
 import au.edu.wehi.idsv.AssemblyMethod;
 import au.edu.wehi.idsv.AssemblyParameters;
-import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
-import au.edu.wehi.idsv.visualisation.StaticDeBruijnSubgraphPathGraphGexfExporter;
 
 
 public class PathGraphAssemblerTest extends TestHelper {

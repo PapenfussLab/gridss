@@ -115,11 +115,15 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
 				done &= IntermediateFileUtil.checkIntermediate(fsc.getAssemblyVcfForChr(input, seq.getSequenceName()));
+				if (!done) return false;
 				done &= IntermediateFileUtil.checkIntermediate(fsc.getRealignmentFastqForChr(input, seq.getSequenceName()));
+				if (!done) return false;
 			}
 		} else {
 			done &= IntermediateFileUtil.checkIntermediate(fsc.getAssemblyVcf(input));
+			if (!done) return false;
 			done &= IntermediateFileUtil.checkIntermediate(fsc.getRealignmentFastq(input));
+			if (!done) return false;
 		}
 		return done;
 	}

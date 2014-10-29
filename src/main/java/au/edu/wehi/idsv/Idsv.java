@@ -31,7 +31,7 @@ public class Idsv extends CommandLineProgram {
 	private Log log = Log.getInstance(Idsv.class);
 	private static final String PROGRAM_VERSION = "0.1";
     // The following attributes define the command-line arguments
-	@Option(doc="VCF containing true calls. Called variants will be annotated as true/false positive called based on this truth file.", optional=true)
+	@Option(doc="VCF containing true calls. Called variants will be annotated as true/false positive calls based on this truth file.", optional=true)
     public File TRUTH_VCF = null;
     @Usage
     public String USAGE = getStandardUsagePreamble() + "Calls structural variations from NGS sequencing data. " + PROGRAM_VERSION;
@@ -45,6 +45,7 @@ public class Idsv extends CommandLineProgram {
 
 	    	List<SAMEvidenceSource> samEvidence = Lists.newArrayList();
 	    	for (File f : INPUT) {
+	    		log.debug("Processing normal input ", f);
 	    		SAMEvidenceSource sref = new SAMEvidenceSource(getContext(), f, false);
 	    		if (!sref.isComplete(ProcessStep.CALCULATE_METRICS)
 	    			|| !sref.isComplete(ProcessStep.EXTRACT_SOFT_CLIPS)
@@ -54,6 +55,7 @@ public class Idsv extends CommandLineProgram {
 	    		samEvidence.add(sref);
 	    	}
 	    	for (File f : INPUT_TUMOUR) {
+	    		log.debug("Processing tumour input ", f);
 	    		SAMEvidenceSource sref = new SAMEvidenceSource(getContext(), f, true);
 	    		if (!sref.isComplete(ProcessStep.CALCULATE_METRICS)
 	    			|| !sref.isComplete(ProcessStep.EXTRACT_SOFT_CLIPS)

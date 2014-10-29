@@ -94,28 +94,36 @@ public class SAMEvidenceSource extends EvidenceSource {
 		switch (step) {
 			case CALCULATE_METRICS:
 				done &= IntermediateFileUtil.checkIntermediate(fsc.getInsertSizeMetrics(input), input);
+				if (!done) return false;
 				done &= IntermediateFileUtil.checkIntermediate(fsc.getIdsvMetrics(input), input);
+				if (!done) return false;
 				break;
 			case EXTRACT_SOFT_CLIPS:
 				if (processContext.shouldProcessPerChromosome()) {
 					for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
 						done &= IntermediateFileUtil.checkIntermediate(fsc.getSoftClipBamForChr(input, seq.getSequenceName()), input);
+						if (!done) return false;
 					}
 				} else {
 					done &= IntermediateFileUtil.checkIntermediate(fsc.getSoftClipBam(input), input);
+					if (!done) return false;
 				}
 				break;
 			case EXTRACT_READ_PAIRS:
 				if (processContext.shouldProcessPerChromosome()) {
 					for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
 						done &= IntermediateFileUtil.checkIntermediate(fsc.getReadPairBamForChr(input, seq.getSequenceName()), input);
+						if (!done) return false;
 						//done &= IntermediateFileUtil.checkIntermediate(fsc.getMateBamUnsortedForChr(input, seq.getSequenceName()), input);
 						done &= IntermediateFileUtil.checkIntermediate(fsc.getMateBamForChr(input, seq.getSequenceName()), input);
+						if (!done) return false;
 					}
 				} else {
 					done &= IntermediateFileUtil.checkIntermediate(fsc.getReadPairBam(input), input);
+					if (!done) return false;
 					//done &= IntermediateFileUtil.checkIntermediate(fsc.getMateBamUnsorted(input), input);
 					done &= IntermediateFileUtil.checkIntermediate(fsc.getMateBam(input), input);
+					if (!done) return false;
 				}
 				break;
 			case REALIGN_SOFT_CLIPS:
