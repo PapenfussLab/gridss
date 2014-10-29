@@ -48,6 +48,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 					String chri = dict.getSequence(i).getSequenceName();
 					for (int j = i; j < dict.size(); j++) {
 						String chrj = dict.getSequence(j).getSequenceName();
+						log.debug("Identifying Breakpoints between ", chri, " and ", chrj);
 						EvidenceClusterSubsetProcessor processor = new EvidenceClusterSubsetProcessor(processContext, i, j);
 						writeMaximalCliquesToVcf(
 								processor,

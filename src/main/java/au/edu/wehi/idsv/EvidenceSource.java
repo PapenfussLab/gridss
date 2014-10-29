@@ -83,7 +83,6 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 		}
 	}
 	public Iterator<DirectedEvidence> iterator(String chr) {
-		process();
 		if (processContext.shouldProcessPerChromosome()) {
 			return perChrIterator(chr);
 		} else {
