@@ -1,7 +1,10 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
+import java.util.List;
+
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
 
@@ -45,8 +48,25 @@ public class SubgraphSummary {
 	 * @return Containing subgraph
 	 */
 	public SubgraphSummary getRoot() {
-		if (parent == null) return this;
-		return parent.getRoot();
+		if (parent == null) return this; // we are root
+		if (parent.parent != null) collapseToAncestor(this);
+		return parent; // we are a child of the root
+	}
+	/**
+	 * Collapses this and all parents so they are all direct children of the root
+	 * Amortised cost of this operation is O(1) as all future calls to getRoot()
+	 * on all ancestor nodes will immediately return the root
+	 */
+	private static void collapseToAncestor(SubgraphSummary start) {
+		List<SubgraphSummary> children = Lists.newArrayList();
+		SubgraphSummary root = start;
+		while (root.parent != null) {
+			children.add(root);
+			root = root.parent;
+		}
+		for (SubgraphSummary node : children) {
+			node.parent = root;
+		}
 	}
 	public static SubgraphSummary merge(SubgraphSummary graph1, SubgraphSummary graph2) {
 		graph1 = graph1.getRoot();
@@ -58,9 +78,9 @@ public class SubgraphSummary {
 		return graph2;
 	}
 	private static void addAnchor(SubgraphSummary g, int position) {
-		g = g.getRoot();
-		g.maxAnchor = Math.max(g.maxAnchor, position);
-		g.minAnchor = Math.min(g.minAnchor, position);
+		SubgraphSummary rootg = g.getRoot();
+		rootg.maxAnchor = Math.max(rootg.maxAnchor, position);
+		rootg.minAnchor = Math.min(rootg.minAnchor, position);
 	}
 	public void addAnchor(int position) {
 		addAnchor(this, position);
