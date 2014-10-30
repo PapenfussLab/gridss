@@ -105,7 +105,10 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				new AutoClosingIterator<VariantContext>(reader.iterator(), ImmutableList.<Closeable>of(reader)),
 				realignedIt);
 		// Change sort order from VCF sorted order to evidence position order
-		it = new DirectEvidenceWindowedSortingIterator<VariantContextDirectedEvidence>(processContext, 3 * this.getMetrics().getMaxFragmentSize(), it);
+		it = new DirectEvidenceWindowedSortingIterator<VariantContextDirectedEvidence>(
+				processContext,
+				(int)((2 + processContext.getAssemblyParameters().maxSubgraphFragmentWidth + processContext.getAssemblyParameters().subgraphAssemblyMargin) * this.getMetrics().getMaxFragmentSize()),
+				it);
 		// FIXME: add remote assemblies to iterator
 		return it;
 	}
