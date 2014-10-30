@@ -32,6 +32,24 @@ public class KmerEncodingHelperTest extends TestHelper {
 		assertEquals(1,  KmerEncodingHelper.picardBaseToEncoded(1, new byte[] {'c'}));
 	}
 	@Test
+	public void isAmbiguous_should_be_true_except_for_agtc() {
+		assertFalse(KmerEncodingHelper.isAmbiguous((byte)'A'));
+		assertFalse(KmerEncodingHelper.isAmbiguous((byte)'C'));
+		assertFalse(KmerEncodingHelper.isAmbiguous((byte)'G'));
+		assertFalse(KmerEncodingHelper.isAmbiguous((byte)'T'));
+		assertFalse(KmerEncodingHelper.isAmbiguous((byte)'a'));
+		assertFalse(KmerEncodingHelper.isAmbiguous((byte)'c'));
+		assertFalse(KmerEncodingHelper.isAmbiguous((byte)'g'));
+		assertFalse(KmerEncodingHelper.isAmbiguous((byte)'t'));
+		
+		assertTrue(KmerEncodingHelper.isAmbiguous((byte)'n'));
+		assertTrue(KmerEncodingHelper.isAmbiguous((byte)'N'));
+		assertTrue(KmerEncodingHelper.isAmbiguous((byte)'k'));
+		assertTrue(KmerEncodingHelper.isAmbiguous((byte)'K'));
+		assertTrue(KmerEncodingHelper.isAmbiguous((byte)'X'));
+		assertTrue(KmerEncodingHelper.isAmbiguous((byte)'x'));
+	}
+	@Test
 	public void picardBaseToEncoded_should_initial_array_bases() {
 		assertEquals(10,  KmerEncodingHelper.picardBaseToEncoded(2, B("AACC")));
 	}

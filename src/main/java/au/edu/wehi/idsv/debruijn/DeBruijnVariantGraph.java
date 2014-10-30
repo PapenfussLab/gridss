@@ -75,6 +75,8 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 			T node = createNode(evidence, readKmerOffset, kmer);
 			if (evidence.isSkippedKmer(readKmerOffset)) {
 				// do nothing with skipped kmers
+			} else if (kmer.containsAmbiguousBases) {
+				// do nothing if the kmer contains an ambiguous base 
 			} else {
 				T graphNode = add(kmer.kmer, node);
 				onEvidenceAdded(graphNode, node, evidence, readKmerOffset, kmer);

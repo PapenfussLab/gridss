@@ -43,6 +43,7 @@ public class ReadKmerIterable implements Iterable<ReadKmer> {
 		return base;
 	}
 	private class ReadKmerIterator extends AbstractIterator<ReadKmer> {
+		private int lastAmbigiousBaseOffset = Integer.MIN_VALUE;
 		private int offset = Integer.MIN_VALUE;
 		private long currentkmer;
 		private final SortedMultiset<Byte> basequals = TreeMultiset.<Byte>create();
@@ -55,13 +56,16 @@ public class ReadKmerIterable implements Iterable<ReadKmer> {
 				advance();
 			}
 			// add 1 to qual to ensure it is always positive
-			return new ReadKmer(currentkmer, 1 + (qual == null ? 0 : basequals.firstEntry().getElement()));
+			return new ReadKmer(currentkmer, 1 + (qual == null ? 0 : basequals.firstEntry().getElement()), lastAmbigiousBaseOffset >= offset - k);
 		}
 		private void advance() {
 			currentkmer = KmerEncodingHelper.nextState(k, currentkmer, adjustBase(bases.get(offset)));
 			if (qual != null) {
 				basequals.remove(qual.get(offset - k));
 				basequals.add(qual.get(offset));
+			}
+			if (KmerEncodingHelper.isAmbiguous(bases.get(offset))) {
+				lastAmbigiousBaseOffset = offset;
 			}
 			offset++;
 		}
@@ -74,6 +78,11 @@ public class ReadKmerIterable implements Iterable<ReadKmer> {
 				}
 			}
 			offset = k;
+			for (int i = 0; i < k; i++) {
+				if (KmerEncodingHelper.isAmbiguous(bases.get(i))) {
+					lastAmbigiousBaseOffset = i;
+				}
+			}
 		}
 	}
 }

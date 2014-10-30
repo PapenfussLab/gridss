@@ -17,14 +17,14 @@ public class DeBruijnSubgraphNodeTest extends TestHelper {
 	public void should_set_reference_bounds_based_on_evidence() {
 		VariantEvidence e = VariantEvidence.createSoftClipEvidence(FWD, 4, SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
 		for (int i = 0; i < 4; i++) {
-			assertEquals(e.getInferredReferencePosition(i), (int)new DeBruijnSubgraphNode(e, i, new ReadKmer(0, 2)).getMinReferencePosition());
-			assertEquals(e.getInferredReferencePosition(i), (int)new DeBruijnSubgraphNode(e, i, new ReadKmer(0, 2)).getMaxReferencePosition());
-			assertTrue(new DeBruijnSubgraphNode(e, i, new ReadKmer(0, 2)).isReference());
+			assertEquals(e.getInferredReferencePosition(i), (int)new DeBruijnSubgraphNode(e, i, new ReadKmer(0, 2, false)).getMinReferencePosition());
+			assertEquals(e.getInferredReferencePosition(i), (int)new DeBruijnSubgraphNode(e, i, new ReadKmer(0, 2, false)).getMaxReferencePosition());
+			assertTrue(new DeBruijnSubgraphNode(e, i, new ReadKmer(0, 2, false)).isReference());
 		}
 		for (int i = 4; i < 11; i++) {
-			assertNull(new DeBruijnSubgraphNode(e, i, new ReadKmer(0, 2)).getMinReferencePosition());
-			assertNull(new DeBruijnSubgraphNode(e, i, new ReadKmer(0, 2)).getMaxReferencePosition());
-			assertFalse(new DeBruijnSubgraphNode(e, i, new ReadKmer(0, 2)).isReference());
+			assertNull(new DeBruijnSubgraphNode(e, i, new ReadKmer(0, 2, false)).getMinReferencePosition());
+			assertNull(new DeBruijnSubgraphNode(e, i, new ReadKmer(0, 2, false)).getMaxReferencePosition());
+			assertFalse(new DeBruijnSubgraphNode(e, i, new ReadKmer(0, 2, false)).isReference());
 		}
 	}
 	@Test
@@ -32,8 +32,8 @@ public class DeBruijnSubgraphNodeTest extends TestHelper {
 		VariantEvidence e1 = VariantEvidence.createSoftClipEvidence(FWD, 4, SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
 		VariantEvidence e2 = VariantEvidence.createSoftClipEvidence(FWD, 4, SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 11, "7M7S"))));
 		for (int i = 0; i < 4; i++) {
-			DeBruijnSubgraphNode n1 = new DeBruijnSubgraphNode(e1, i, new ReadKmer(0, 2));
-			DeBruijnSubgraphNode n2 = new DeBruijnSubgraphNode(e2, i, new ReadKmer(0, 2));
+			DeBruijnSubgraphNode n1 = new DeBruijnSubgraphNode(e1, i, new ReadKmer(0, 2, false));
+			DeBruijnSubgraphNode n2 = new DeBruijnSubgraphNode(e2, i, new ReadKmer(0, 2, false));
 			n1.add(n2);
 			assertEquals(e1.getInferredReferencePosition(i), (int)n1.getMinReferencePosition());
 			assertEquals(e2.getInferredReferencePosition(i), (int)n1.getMaxReferencePosition());

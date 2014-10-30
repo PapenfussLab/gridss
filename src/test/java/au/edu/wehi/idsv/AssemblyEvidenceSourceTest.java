@@ -79,6 +79,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		pc.getAssemblyParameters().method = AssemblyMethod.DEBRUIJN_PER_POSITION;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, false);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
+		aes.ensureAssembled();
 
 		List<DirectedEvidence> list = Lists.newArrayList(aes.iterator("polyA"));
 		assertEquals(1,  list.size());

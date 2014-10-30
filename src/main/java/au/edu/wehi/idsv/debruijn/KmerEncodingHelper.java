@@ -65,6 +65,21 @@ public class KmerEncodingHelper {
 				return 2;
 		}
 	}
+	public static boolean isAmbiguous(byte base) {
+		switch (base) {
+			case 'G':
+			case 'g':
+			case 'A':
+			case 'a':
+			case 'C':
+			case 'c':
+			case 'T':
+			case 't':
+				return false;
+			default:
+				return true;
+		}
+	}
 	public static long picardBaseToEncoded(int k, List<Byte> bases) {
 		if (bases == null) throw new NullPointerException("bases null");
 		if (k > bases.size()) throw new IllegalArgumentException("fewer bases than k");

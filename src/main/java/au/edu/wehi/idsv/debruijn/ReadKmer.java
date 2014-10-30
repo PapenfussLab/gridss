@@ -1,12 +1,14 @@
 package au.edu.wehi.idsv.debruijn;
 
 public class ReadKmer {
-	public ReadKmer(long kmer, int weight) {
+	public ReadKmer(long kmer, int weight, boolean containsAmbiguousBases) {
 		this.kmer = kmer;
 		this.weight = weight;
+		this.containsAmbiguousBases = containsAmbiguousBases;
 	}
 	public final long kmer;
 	public final int weight;
+	public final boolean containsAmbiguousBases;
 	/**
 	 * Display as much of the kmer as we can
 	 */

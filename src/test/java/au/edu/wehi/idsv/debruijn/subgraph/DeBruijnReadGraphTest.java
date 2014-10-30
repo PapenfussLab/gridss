@@ -24,6 +24,14 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		return new DeBruijnReadGraph(getContext(), AES(), referenceIndex, direction, p);
 	}
 	@Test
+	public void should_excluse_kmers_containing_ambiguous_base() {
+		DeBruijnReadGraph g = G(0, 3, FWD);
+		g.addEvidence(SCE(FWD, withSequence("TANAGTN", Read(0, 10, "4M3S"))));
+		g.addEvidence(SCE(FWD, withSequence( "AANGTCT", Read(0, 11, "3M4S"))));
+		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		assertEquals(0, result.size());
+	}
+	@Test
 	public void should_assemble_sc() {
 		DeBruijnReadGraph g = G(0, 3, FWD);
 		g.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(0, 10, "4M3S"))));
