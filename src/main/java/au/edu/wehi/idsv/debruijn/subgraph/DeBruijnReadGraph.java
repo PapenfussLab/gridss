@@ -113,6 +113,12 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		return result;
 	}
 	private int maxSubgraphSize = 4096;
+	private boolean exceedsTimeout(SubgraphSummary ss) {
+		if (metrics != null) {
+			return ss.getMaxAnchor() - ss.getMinAnchor() > parameters.maxSubgraphFragmentWidth * metrics.getMaxFragmentSize();
+		}
+		return false;
+	}
 	/**
 	 * Assembles contigs which do not have any relevance at or after the given position 
 	 * @param position
@@ -124,15 +130,12 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		}
 		List<VariantContextDirectedEvidence> contigs = Lists.newArrayList();
 		for (SubgraphSummary ss : subgraphs) {
-			boolean timeoutExceeded = false;
-			if (metrics != null) {
-				timeoutExceeded = ss.getMaxAnchor() - ss.getMinAnchor() > parameters.maxSubgraphFragmentWidth * metrics.getMaxFragmentSize();
-				if (timeoutExceeded) {
-					log.warn(String.format("Subgraph at %s:%d-%d exceeded maximum width: calling immediately",
-							processContext.getDictionary().getSequence(this.referenceIndex).getSequenceName(),
-							ss.getMinAnchor(),
-							ss.getMaxAnchor()));
-				}
+			boolean timeoutExceeded = exceedsTimeout(ss);
+			if (timeoutExceeded) {
+				log.warn(String.format("Subgraph at %s:%d-%d exceeded maximum width - calling immediately",
+						processContext.getDictionary().getSequence(this.referenceIndex).getSequenceName(),
+						ss.getMinAnchor(),
+						ss.getMaxAnchor()));
 			}
 			if (ss.getMaxAnchor() < position || timeoutExceeded) {
 				PathGraphAssembler pga = new PathGraphAssembler(this, this.parameters, ss.getAnyKmer());
@@ -226,7 +229,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	public void removeBefore(int position) {
 		List<SubgraphSummary> toRemove = Lists.newArrayList();
 		for (SubgraphSummary ss : subgraphs) {
-			if (ss.getMaxAnchor() < position) {
+			if (ss.getMaxAnchor() < position || exceedsTimeout(ss)) {
 				for (long kmer : reachableFrom(ss.getAnyKmer())) {
 					remove(kmer);
 				}
