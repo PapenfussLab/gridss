@@ -18,6 +18,8 @@ import au.edu.wehi.idsv.debruijn.DeBruijnVariantGraph;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.VariantEvidence;
+import au.edu.wehi.idsv.metrics.RelevantMetrics;
+import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
 import au.edu.wehi.idsv.visualisation.StaticDeBruijnSubgraphPathGraphGexfExporter;
 
 import com.google.common.collect.Lists;
@@ -32,7 +34,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	private final Set<SubgraphSummary> subgraphs = Sets.newHashSet();
 	private final int referenceIndex;
 	private final AssemblyParameters parameters;
-	private int graphsExported = 0; 
+	private final RelevantMetrics metrics;
+	private int graphsExported = 0;
 	/**
 	 * 
 	 * @param k
@@ -41,9 +44,20 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	 * @param gexf 
 	 */
 	public DeBruijnReadGraph(ProcessingContext processContext, AssemblyEvidenceSource source, int referenceIndex, BreakendDirection direction, AssemblyParameters parameters) {
+		this(processContext, source, referenceIndex, direction, parameters, null);
+	}
+	/**
+	 * 
+	 * @param k
+	 * @param direction
+	 * @param parameters 
+	 * @param gexf 
+	 */
+	public DeBruijnReadGraph(ProcessingContext processContext, AssemblyEvidenceSource source, int referenceIndex, BreakendDirection direction, AssemblyParameters parameters, RelevantMetrics metrics) {
 		super(processContext, source, parameters.k, direction);
 		this.referenceIndex = referenceIndex;
 		this.parameters = parameters;
+		this.metrics = metrics;
 	}
 	@Override
 	protected DeBruijnSubgraphNode createNode(VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) {
@@ -110,16 +124,22 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		}
 		List<VariantContextDirectedEvidence> contigs = Lists.newArrayList();
 		for (SubgraphSummary ss : subgraphs) {
-			if (ss.getMaxAnchor() < position) {
-				PathGraphAssembler pga = new PathGraphAssembler(this, this.parameters, ss.getAnyKmer());
-				StaticDeBruijnSubgraphPathGraphGexfExporter graphExporter = null;
-				if (this.parameters.debruijnGraphVisualisationDirectory != null) {
-					graphExporter = new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k);
+			boolean timeoutExceeded = false;
+			if (metrics != null) {
+				timeoutExceeded = ss.getMaxAnchor() - ss.getMinAnchor() > parameters.maxSubgraphFragmentWidth * metrics.getMaxFragmentSize();
+				if (timeoutExceeded) {
+					log.warn(String.format("Subgraph at %s:%d-%d exceeded maximum width: calling immediately",
+							processContext.getDictionary().getSequence(this.referenceIndex).getSequenceName(),
+							ss.getMinAnchor(),
+							ss.getMaxAnchor()));
 				}
+			}
+			if (ss.getMaxAnchor() < position || timeoutExceeded) {
+				PathGraphAssembler pga = new PathGraphAssembler(this, this.parameters, ss.getAnyKmer());
 				if (parameters.maxBaseMismatchForCollapse > 0) {
-					if (this.parameters.debruijnGraphVisualisationDirectory != null) {
+					if (parameters.debruijnGraphVisualisationDirectory != null && (parameters.visualiseAll || (timeoutExceeded && parameters.visualiseTimeouts))) {
 						File directory = new File(new File(
-								this.parameters.debruijnGraphVisualisationDirectory,
+								parameters.debruijnGraphVisualisationDirectory,
 								processContext.getDictionary().getSequence(referenceIndex).getSequenceName()),
 								String.format("%d", ss.getMinAnchor() - ss.getMinAnchor() % 100000));
 						String filename = String.format("%s_%s_%d-%d_%d.precollapse.gexf",
@@ -128,18 +148,26 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 								ss.getMinAnchor(),
 								ss.getMaxAnchor(),
 								graphsExported); 
-						graphExporter.snapshot(pga);
 						directory.mkdirs();
-						graphExporter.saveTo(new File(directory, filename));
-						graphExporter = new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k);
+						new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k)
+							.snapshot(pga)
+							.saveTo(new File(directory, filename));
 					}
 					// simplify graph
-					pga.collapse(parameters.maxBaseMismatchForCollapse, parameters.collapseBubblesOnly);
+					try {
+						pga.collapse(parameters.maxBaseMismatchForCollapse, parameters.collapseBubblesOnly);
+					} catch (AlgorithmRuntimeSafetyLimitExceededException e) {
+						timeoutExceeded = true;
+					}
 				}
 				int width = ss.getMaxAnchor() - ss.getMinAnchor();
 				if (width > maxSubgraphSize) {
 					maxSubgraphSize = width;
 					log.debug(String.format("Subgraph width=%s [%d, %d] has %d paths: %s", width, ss.getMinAnchor(), ss.getMaxAnchor(), pga.getPaths().size(), debugOutputKmerSpread(ss)));
+				}
+				StaticDeBruijnSubgraphPathGraphGexfExporter graphExporter = null;
+				if (parameters.debruijnGraphVisualisationDirectory != null && (parameters.visualiseAll || (timeoutExceeded && parameters.visualiseTimeouts))) {
+					graphExporter = new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k);
 				}
 				for (List<Long> contig : pga.assembleContigs(graphExporter)) {
 					VariantContextDirectedEvidence variant = toAssemblyEvidence(contig);
@@ -149,7 +177,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 				}
 				if (graphExporter != null) {
 					File directory = new File(new File(
-							this.parameters.debruijnGraphVisualisationDirectory,
+							parameters.debruijnGraphVisualisationDirectory,
 							processContext.getDictionary().getSequence(referenceIndex).getSequenceName()),
 							String.format("%d", ss.getMinAnchor() - ss.getMinAnchor() % 100000));
 					String filename = String.format("%s_%s_%d-%d_%d.subgraph.gexf",

@@ -38,6 +38,7 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 		pc.getAssemblyParameters().maxBaseMismatchForCollapse = 1;
 		pc.getAssemblyParameters().collapseBubblesOnly = false;
 		pc.getAssemblyParameters().debruijnGraphVisualisationDirectory = new File(super.testFolder.getRoot(), "visualisation");
+		pc.getAssemblyParameters().visualiseAll = true;
 		return pc;
 	}
 }

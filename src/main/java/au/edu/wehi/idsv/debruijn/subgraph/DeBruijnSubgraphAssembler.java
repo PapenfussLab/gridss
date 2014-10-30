@@ -68,8 +68,8 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 	private void init(int referenceIndex) {
 		processStep = 0;
 		currentReferenceIndex = referenceIndex;
-		fgraph = new DeBruijnReadGraph(processContext, source, referenceIndex, BreakendDirection.Forward, parameters);
-		bgraph = new DeBruijnReadGraph(processContext, source, referenceIndex, BreakendDirection.Backward, parameters);
+		fgraph = new DeBruijnReadGraph(processContext, source, referenceIndex, BreakendDirection.Forward, parameters, source.getMetrics());
+		bgraph = new DeBruijnReadGraph(processContext, source, referenceIndex, BreakendDirection.Backward, parameters, source.getMetrics());
 		if (parameters.debruijnGraphVisualisationDirectory != null) {
 			fgraph.setGraphExporter(new DeBruijnSubgraphGexfExporter(parameters.k));
 			bgraph.setGraphExporter(new DeBruijnSubgraphGexfExporter(parameters.k));

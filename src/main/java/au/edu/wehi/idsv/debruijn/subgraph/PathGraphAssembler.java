@@ -2,6 +2,7 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 
 import htsjdk.samtools.util.Log;
 
+import java.io.File;
 import java.util.ArrayDeque;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -17,6 +18,7 @@ import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
 import au.edu.wehi.idsv.visualisation.DeBruijnPathGraphExporter;
+import au.edu.wehi.idsv.visualisation.StaticDeBruijnSubgraphPathGraphGexfExporter;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
@@ -37,6 +39,7 @@ public class PathGraphAssembler extends PathGraph {
 	private final List<Set<SubgraphPathNode>> subgraphs = Lists.newArrayList();
 	private final List<Set<SubgraphPathNode>> startingPaths = Lists.newArrayList();
 	private int nodeTraversals = 0;
+	private static int timeoutGraphsWritten = 0;
 	public PathGraphAssembler(DeBruijnGraphBase<DeBruijnSubgraphNode> graph, AssemblyParameters parameters, long seed) {
 		super(graph, seed);
 		this.parameters = parameters;
@@ -63,12 +66,22 @@ public class PathGraphAssembler extends PathGraph {
 				return Ints.compare(
 						getScore(arg1, scoringFunction, false, true),
 						getScore(arg0, scoringFunction, false, true));
-			}});
+			}}); 
 		if (graphExporter != null) {
 			graphExporter.snapshot(this);
 			graphExporter.annotateSubgraphs(subgraphs);
 			graphExporter.annotateStartingPaths(startingPaths);
 			graphExporter.contigs(result);
+		} else if (nodeTraversals >= parameters.maxPathTraversalNodes && parameters.debruijnGraphVisualisationDirectory != null) {
+			// weren't planning to export but we timed out
+			parameters.debruijnGraphVisualisationDirectory.mkdirs();
+			graphExporter = new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k);
+			graphExporter.snapshot(this);
+			graphExporter.annotateSubgraphs(subgraphs);
+			graphExporter.annotateStartingPaths(startingPaths);
+			graphExporter.contigs(result);
+			graphExporter.saveTo(new File(parameters.debruijnGraphVisualisationDirectory,
+					String.format("pathTraversalTimeout-%d.subgraph.gexf", ++timeoutGraphsWritten)));
 		}
 		return Lists.newArrayList(Iterables.transform(result, new Function<List<SubgraphPathNode>, LinkedList<Long>>() {
 			@Override

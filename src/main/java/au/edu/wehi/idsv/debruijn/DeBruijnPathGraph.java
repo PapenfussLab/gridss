@@ -362,20 +362,16 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 * @param maxBaseMismatchForCollapse
 	 * @param bubblesOnly collapse bubbles only
 	 */
-	public int collapse(int maxBaseMismatchForCollapse, boolean bubblesOnly) {
+	public int collapse(int maxBaseMismatchForCollapse, boolean bubblesOnly) throws AlgorithmRuntimeSafetyLimitExceededException {
 		int collapseCount = 0;
-		try {
-			collapseCount = collapseSimilarPaths(maxBaseMismatchForCollapse, true);
-			int leafCount = 0, pathCount = 0;
-			do {
-				if (!bubblesOnly) {
-					leafCount = collapseLeaves(maxBaseMismatchForCollapse);
-				}
-				pathCount = collapseSimilarPaths(maxBaseMismatchForCollapse, bubblesOnly);
-			} while (leafCount + pathCount > 0);
-		} catch (AlgorithmRuntimeSafetyLimitExceededException e) {
-			log.error(e);
-		}
+		collapseCount = collapseSimilarPaths(maxBaseMismatchForCollapse, true);
+		int leafCount = 0, pathCount = 0;
+		do {
+			if (!bubblesOnly) {
+				leafCount = collapseLeaves(maxBaseMismatchForCollapse);
+			}
+			pathCount = collapseSimilarPaths(maxBaseMismatchForCollapse, bubblesOnly);
+		} while (leafCount + pathCount > 0);
 		return collapseCount;
 	}
 	/**

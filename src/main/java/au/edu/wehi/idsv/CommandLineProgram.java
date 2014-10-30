@@ -184,6 +184,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 		ap.maxContigsPerAssembly = ASSEMBLY_DEBRUIJN_MAX_CONTIGS_PER_ITERATION;
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = ASSEMBLY_DEBRUIJN_SUBGRAPH_BRANCHING_FACTOR;
 		ap.subgraphAssemblyMargin = ASSEMBLY_DEBRUIJN_SUBGRAPH_ASSEMBLY_FRAGMENT_DELAY;
+		ap.debruijnGraphVisualisationDirectory = WORKING_DIR;
 		return ap;
 	}
 	private SoftClipParameters getSoftClipParameters() {

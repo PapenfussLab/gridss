@@ -43,7 +43,23 @@ public class AssemblyParameters {
 	 */
 	public int maxPathTraversalNodes = Defaults.BEST_PATH_MAX_TRAVERSAL;
 	/**
+	 * Maximum number of nodes to consider when collapsing paths and leaves
+	 */
+	//public int maxCollapseTraversalNodes = Defaults.COLLAPSE_PATH_MAX_TRAVERSAL; // TODO: refactor to pass this in
+	/**
 	 * Directory to save debruijn graph visualisation information to.
 	 */
-	public File debruijnGraphVisualisationDirectory = Defaults.ASSEMBLY_VISUALISATION_DIRECTORY;
+	public File debruijnGraphVisualisationDirectory = null;
+	/**
+	 * Directory to save debruijn graph visualisation information to.
+	 */
+	public boolean visualiseAll = Defaults.VISUALISE_ALL;
+	/**
+	 * Directory to save debruijn graph visualisation information to.
+	 */
+	public boolean visualiseTimeouts = Defaults.VISUALISE_TIMEOUTS;
+	/**
+	 * Maximum width (in multiples of maximum fragment size) of subgraph
+	 */
+	public float maxSubgraphFragmentWidth = Defaults.MAX_SUBGRAPH_WIDTH_IN_FRAGMENT_SIZE_MULTIPLES;
 }

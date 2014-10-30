@@ -2,6 +2,7 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 
 import java.util.List;
 
+import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
 
@@ -41,7 +42,9 @@ public class PathGraph extends DeBruijnPathGraph<DeBruijnSubgraphNode, SubgraphP
 			lengths.add(currentLength);
 			split(n, lengths);
 		}
-		assert(assertReferenceKmersSplit());
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			assert(assertReferenceKmersSplit());
+		}
 	}
 	private boolean assertReferenceKmersSplit() {
 		for (SubgraphPathNode n : getPaths()) {
