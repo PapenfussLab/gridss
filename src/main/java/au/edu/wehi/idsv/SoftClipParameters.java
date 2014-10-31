@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv;
 
+
 public class SoftClipParameters {
 	/**
 	 * Minimum soft clip length to be considered evidence
@@ -14,9 +15,9 @@ public class SoftClipParameters {
 	 * 0-100
 	 */
 	public float minAnchorIdentity = 95;
-	public boolean meetsEvidenceCritera(SoftClipEvidence sce) {
-		return sce.getMappingQuality() >= minReadMapq
-				&& sce.getSoftClipLength() >= minLength
-				&& sce.getAlignedPercentIdentity() >= minAnchorIdentity;
-	}
+	public String[] adapterSequences = new String[] {
+			"AGATCGGAAGAG", // Illumina Universal Adapter
+			"ATGGAATTCTCG", // Illumina Small RNA Adapter
+			"CTGTCTCTTATA", // Nextera Transposase Sequence
+	};
 }

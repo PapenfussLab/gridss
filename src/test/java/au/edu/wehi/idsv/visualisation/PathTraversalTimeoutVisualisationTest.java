@@ -22,6 +22,7 @@ public class PathTraversalTimeoutVisualisationTest extends IntermediateFilesTest
 		setReference(new File("C:/dev/chr12.fa"));
 		createInput(new File("src/test/resources/chr12-244000.bam"));
 		SAMEvidenceSource ses = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		ses.process();
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), output);
 		aes.ensureAssembled();
 		assertTrue(new File(new File(super.testFolder.getRoot(), "visualisation"), "pathTraversalTimeout-1.subgraph.gexf").exists());

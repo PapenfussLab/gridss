@@ -8,7 +8,7 @@ import htsjdk.variant.vcf.VCFStandardHeaderLines;
 
 public class VcfConstants {
 	public static final String VCF42BREAKEND = ".";
-	public static final String VCF41BREAKEND_REPLACEMENT = "[<unknown>[";
+	public static final String VCF41BREAKEND_REPLACEMENT = "[<UNKNOWN>[";
 	//public static final String GENE_ID = "gene_id";
 	//public static final String TRANSCRIPT_ID = "transcript_id";
 	//public static final String REALIGNMENT_SCORE = "REALNNW";

@@ -121,14 +121,11 @@ public class ExtractEvidence implements Closeable {
 	}
 	public void process(final EnumSet<ProcessStep> steps) {
 		deleteOutput(steps);
-		EnumSet<ProcessStep> firstPassSteps = steps.clone();
-		EnumSet<ProcessStep> secondPassSteps = EnumSet.noneOf(ProcessStep.class);
-		if (!source.isComplete(ProcessStep.CALCULATE_METRICS)) {
-			if (firstPassSteps.remove(ProcessStep.EXTRACT_READ_PAIRS)) {
-				secondPassSteps.add(ProcessStep.EXTRACT_READ_PAIRS);
-			}
+		EnumSet<ProcessStep> remainingSteps = steps.clone();
+		if (!source.isComplete(ProcessStep.CALCULATE_METRICS) && steps.contains(ProcessStep.CALCULATE_METRICS)) {
+			gatherMetrics(processContext.getCalculateMetricsRecordCount());
+			remainingSteps.remove(ProcessStep.CALCULATE_METRICS);
 		}
-		doProcess(firstPassSteps);
 		if (processContext.getReadPairParameters().useProperPairFlag &&
 				source.getMetrics().getMaxFragmentSize() > 2 * source.getMetrics().getMedianFragmentSize() + 10 * source.getMetrics().getFragmentSizeStdDev()) {
 			log.error(String.format("Proper pair flag indicates fragment size of %d is expected!"
@@ -136,10 +133,36 @@ public class ExtractEvidence implements Closeable {
 					+ " or realign with an aligner that consider fragment size when setting the proper pair flag.",
 					source.getMetrics().getMaxFragmentSize()));
 		}
-		if (!secondPassSteps.isEmpty()) {
-			doProcess(secondPassSteps);
+		if (!remainingSteps.isEmpty()) {
+			doProcess(remainingSteps);
 		}
     }
+	private void gatherMetrics(long maxRecords) {
+		boolean shouldDelete = true;
+		try {
+			reader = processContext.getSamReader(source.getSourceFile());
+			final SAMFileHeader header = reader.getFileHeader();
+			final InsertSizeMetricsCollector ismc = IdsvSamFileMetrics.createInsertSizeMetricsCollector(header);
+	    	final IdsvMetricsCollector imc = IdsvSamFileMetrics.createIdsvMetricsCollector();
+	    	
+	    	long recordsProcessed = processMetrics(ismc, imc, maxRecords);
+	    	writeMetrics(ismc, imc);
+	    	
+	    	if (recordsProcessed >= maxRecords) {
+	    		log.info(String.format("Library metrics calculated from first %d records", recordsProcessed));
+	    	}
+	    	flush();
+	    	shouldDelete = false;
+    	} catch (IOException e) {
+    		log.error(e);
+			shouldDelete = true;
+			throw new RuntimeException(e);
+		} finally {
+    		close();
+    		if (shouldDelete) deleteOutput(EnumSet.of(ProcessStep.CALCULATE_METRICS));
+    	}
+		
+	}
 	private void doProcess(EnumSet<ProcessStep> steps) {
 		boolean shouldDelete = true;
     	try {
@@ -150,17 +173,11 @@ public class ExtractEvidence implements Closeable {
 	    	
 	    	referenceWalker = new ReferenceSequenceFileWalker(processContext.getReferenceFile());
 	    	
-	    	final InsertSizeMetricsCollector ismc = IdsvSamFileMetrics.createInsertSizeMetricsCollector(header);;
-	    	final IdsvMetricsCollector imc = IdsvSamFileMetrics.createIdsvMetricsCollector();
-	    	
 	    	createOutputWriters(steps, header, dictionary);
 	    	
-	    	processInputRecords(steps, dictionary, ismc, imc);
+	    	processInputRecords(steps, dictionary);
 	    	
 	    	flush();
-	    	if (steps.contains(ProcessStep.CALCULATE_METRICS)) {
-	    		writeMetrics(ismc, imc);
-	    	}
 	    	if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) {
 	    		sortMates();
 	    	}
@@ -231,7 +248,24 @@ public class ExtractEvidence implements Closeable {
 		}
 		realignmentWriters.clear();
 	}
-	private void processInputRecords(final EnumSet<ProcessStep> steps, final SAMSequenceDictionary dictionary, final InsertSizeMetricsCollector ismc, final IdsvMetricsCollector imc) {
+	private long processMetrics(InsertSizeMetricsCollector ismc, IdsvMetricsCollector imc, long maxRecords) {
+		long recordsProcessed = 0;
+		final ProgressLogger progress = new ProgressLogger(log);
+		CloseableIterator<SAMRecord> iter = null;
+		try {
+			iter = processContext.getSamReaderIterator(reader); 
+			while (iter.hasNext() && recordsProcessed++ < maxRecords) {
+				SAMRecord record = iter.next();
+				ismc.acceptRecord(record, null);
+				imc.acceptRecord(record, null);
+				progress.record(record);
+			}
+		} finally {
+			if (iter != null) iter.close();
+		}
+		return recordsProcessed;
+	}
+	private void processInputRecords(final EnumSet<ProcessStep> steps, final SAMSequenceDictionary dictionary) {
 		assert((scwriters.size() == 0 && !steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) || scwriters.size() == dictionary.getSequences().size() || scwriters.size() == 1);
 		assert((realignmentWriters.size() == 0 && !steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) || realignmentWriters.size() == dictionary.getSequences().size() || realignmentWriters.size() == 1);
 		assert((rpwriters.size() == 0 && !steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) || rpwriters.size() == dictionary.getSequences().size() + 1 || rpwriters.size() == 1); // +1 for unmapped 
@@ -251,7 +285,7 @@ public class ExtractEvidence implements Closeable {
 					SoftClipEvidence endEvidence = null;
 					if (SAMRecordUtil.getStartSoftClipLength(record) > 0) {
 						startEvidence = SoftClipEvidence.create(processContext, source, BreakendDirection.Backward, record);
-						if (processContext.getSoftClipParameters().meetsEvidenceCritera(startEvidence)) {
+						if (startEvidence.meetsEvidenceCritera(processContext.getSoftClipParameters())) {
 							if (processContext.getRealignmentParameters().shouldRealignBreakend(startEvidence)) {
 								realignmentWriters.get(offset % realignmentWriters.size()).write(startEvidence);
 							}
@@ -261,7 +295,7 @@ public class ExtractEvidence implements Closeable {
 					}
 					if (SAMRecordUtil.getEndSoftClipLength(record) > 0) {
 						endEvidence = SoftClipEvidence.create(processContext, source, BreakendDirection.Forward, record);
-						if (processContext.getSoftClipParameters().meetsEvidenceCritera(endEvidence)) {
+						if (endEvidence.meetsEvidenceCritera(processContext.getSoftClipParameters())) {
 							if (processContext.getRealignmentParameters().shouldRealignBreakend(endEvidence)) {
 								realignmentWriters.get(offset % realignmentWriters.size()).write(endEvidence);
 							}
@@ -300,10 +334,6 @@ public class ExtractEvidence implements Closeable {
 						}
 					}
 				}
-				if (steps.contains(ProcessStep.CALCULATE_METRICS)) {
-					ismc.acceptRecord(record, null);
-					imc.acceptRecord(record, null);
-				} 
 				progress.record(record);
 			}
 		} finally {

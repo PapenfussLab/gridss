@@ -98,7 +98,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			log.debug(String.format("Assembly realignment for %s not completed", vcf));
 			realignedIt = ImmutableList.<SAMRecord>of().iterator();
 		}
-		VCFFileReader reader = new VCFFileReader(vcf);
+		VCFFileReader reader = new VCFFileReader(vcf, false);
 		Iterator<VariantContextDirectedEvidence> it = new VariantContextDirectedEvidenceIterator(
 				processContext,
 				this,

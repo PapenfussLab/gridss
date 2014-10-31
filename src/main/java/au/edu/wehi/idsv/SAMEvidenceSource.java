@@ -85,7 +85,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		return steps;
 	}
 	@Override
-	protected void process() {
+	public void process() {
 		completeSteps(ProcessStep.ALL_STEPS);
 	}
 	public boolean isComplete(ProcessStep step) {
@@ -141,7 +141,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 	public RelevantMetrics getMetrics() {
 		if (metrics == null) {
 			if (!isComplete(ProcessStep.CALCULATE_METRICS)) {
-				process();
+				throw new IllegalStateException("Metrics not yet calculated");
 			}
 			metrics = new IdsvSamFileMetrics(processContext, processContext.getFileSystemContext().getInsertSizeMetrics(input), processContext.getFileSystemContext().getIdsvMetrics(input));
 		}

@@ -99,7 +99,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 		toClose.clear();
 	}
 	private Iterator<IdsvVariantContext> getVariants(File file) {
-		VCFFileReader vcfReader = new VCFFileReader(file);
+		VCFFileReader vcfReader = new VCFFileReader(file, false);
 		toClose.add(vcfReader);
 		CloseableIterator<VariantContext> it = vcfReader.iterator();
 		toClose.add(it);

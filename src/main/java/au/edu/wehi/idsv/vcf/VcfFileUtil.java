@@ -31,7 +31,7 @@ public class VcfFileUtil {
 		SortingCollection<VariantContext> collection = null;
 		CloseableIterator<VariantContext> wit = null;
 		try {
-			reader = new VCFFileReader(input);
+			reader = new VCFFileReader(input, false);
 			VCFHeader header = reader.getFileHeader();
 			rit = reader.iterator();
 			collection = SortingCollection.newInstance(

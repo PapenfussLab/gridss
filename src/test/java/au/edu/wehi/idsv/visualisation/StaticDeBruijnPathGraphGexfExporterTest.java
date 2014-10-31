@@ -24,6 +24,7 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 		setReference(new File("C:/dev/chr12.fa"));
 		createInput(new File("src/test/resources/chr12-244000.bam"));
 		SAMEvidenceSource ses = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		ses.process();
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), output);
 		aes.ensureAssembled();
 		File dir = new File(new File(new File(super.testFolder.getRoot(), "visualisation"), "chr12"), "200000");

@@ -53,6 +53,7 @@ public class ProcessingContext implements Closeable {
 	private final List<Header> metricsHeaders;
 	private boolean filterDuplicates = true;
 	private boolean useAsyncIO = true;
+	private long calculateMetricsRecordCount = Long.MAX_VALUE; 
 	public ProcessingContext(
 			FileSystemContext fileSystemContext,
 			List<Header> metricsHeaders,
@@ -219,5 +220,11 @@ public class ProcessingContext implements Closeable {
 	}
 	public void setFilterDuplicates(boolean filterDuplicates) {
 		this.filterDuplicates = filterDuplicates;
+	}
+	public long getCalculateMetricsRecordCount() {
+		return calculateMetricsRecordCount;
+	}
+	public void setCalculateMetricsRecordCount(long calculateMetricsRecordCount) {
+		this.calculateMetricsRecordCount = calculateMetricsRecordCount;
 	}
 }

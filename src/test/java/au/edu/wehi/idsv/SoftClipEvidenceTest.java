@@ -1,7 +1,10 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -188,5 +191,105 @@ public class SoftClipEvidenceTest extends TestHelper {
 	@Test
 	public void getLocalTotalBaseQual_should_be_reference_quals() {
 		assertEquals(1+2+3+4, SCE(FWD, withQual(new byte[] {1,2,3,4,5,6}, Read(0, 1, "4M2S"))).getLocalTotalBaseQual());
+	}
+	
+	private void adapter(String seq, int scLen, boolean keep) {
+		SoftClipParameters scp = new SoftClipParameters();
+		scp.minAnchorIdentity = 0;
+		scp.minLength = 1;
+		scp.minReadMapq = 0;
+		SAMRecord r = Read(0, 1000, String.format("%dM%dS", seq.length() - scLen, scLen));
+		r.setReadBases(B(seq));
+		r.setReadNegativeStrandFlag(false);
+		assertEquals(keep, new SoftClipEvidence(getContext(), SES(), FWD, r).meetsEvidenceCritera(scp));
+		// reverse comp
+		r = Read(0, 1000, String.format("%dS%dM", scLen, seq.length() - scLen));
+		r.setReadBases(B(SequenceUtil.reverseComplement(seq)));
+		r.setReadNegativeStrandFlag(true);
+		assertEquals(keep, new SoftClipEvidence(getContext(), SES(), BWD, r).meetsEvidenceCritera(scp));
+	}
+	@Test
+	public void should_filter_adapter_sequence_IlluminaUniversalAdapter_AGATCGGAAGAG() {
+		adapter("TTTTTAGATCGGAAGAG", 12, false);
+		adapter("GTTAATTTAATTTGTATTTTTCCCTGAATTAGGTAGGCTTTTAAATACTTATATTGCAATCTGTATTTCATGTTTGTAGATCGGAAGAGCGTCGTGTAGGG", 24, false);
+		adapter("AAACATTTTGCCATTTTTATGGGCAAAAATGATAATTTCTTGTTAATTTAATTTGTATTTTTCCCTGAATGAGGTAAGCTTTTAAATACTTATATTAGATC", 5, false);
+		// adapter sequence on the wrong end of the read
+		adapter("TCTTCCGATCTTGTTGTTTTCTTAGGGAAAAAATTCTAGCAGTGGTTTTGCTTGAAATAAGAATATGGATCCTGTAGGCTTTTGATACACCTTGCTAAATT", 10, true);
+	}
+	@Test
+	public void should_filter_adapter_sequence_IlluminaSmallRNAAdapter_ATGGAATTCTCG() {
+		adapter("TTTTTATGGAATTCTCG", 12, false);
+	}
+	@Test
+	public void should_filter_adapter_sequence_NexteraTransposaseSequence_CTGTCTCTTATA() {
+		adapter("TTTTTCTGTCTCTTATA", 12, false);
+	}
+	@Test
+	public void should_filter_adapter_short_read_short_sc() {
+		// only 1 BP mapped
+		adapter("TAGATCG", 6, false);
+	}
+	@Test
+	public void should_filter_adapter_short_anchor_long_clip() {
+		// only 1 BP mapped
+		adapter("TAGATCGGAAGAGTATCATCTACTACTATCTACTATCATCTACTATCTA", 48, false);
+		adapter("TTGATCGGAAGAGTATCATCTACTACTATCTACTATCATCTACTATCTA", 48, true);
+	}
+	@Test
+	public void should_filter_adapter_long_anchor_long_sc() {
+		// only 1 BP mapped
+		adapter("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAATAGATCGGAAGAGTATCATCTACTACTATCTACTATCATCTACTATCTA", 48, false);
+		adapter("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAATTGATCGGAAGAGTATCATCTACTACTATCTACTATCATCTACTATCTA", 48, true);
+	}
+	@Test
+	public void should_allow_adapter_reference_microhomology_up_to_6bp() {
+		// adapter bases could be mapped - we need to check upstream
+		adapter("GTTAATTTAATTTGTATTTTTCCCTGAATTAGGTAGGCTTTTAAATACTTATATTGCAATCTGTATTTCATGTTTGTAGATCGGAAGAGCGTCGTGTAGGG", 23, false);
+		adapter("GTTAATTTAATTTGTATTTTTCCCTGAATTAGGTAGGCTTTTAAATACTTATATTGCAATCTGTATTTCATGTTTGTAGATCGGAAGAGCGTCGTGTAGGG", 22, false);
+		adapter("GTTAATTTAATTTGTATTTTTCCCTGAATTAGGTAGGCTTTTAAATACTTATATTGCAATCTGTATTTCATGTTTGTAGATCGGAAGAGCGTCGTGTAGGG", 21, false);
+		adapter("GTTAATTTAATTTGTATTTTTCCCTGAATTAGGTAGGCTTTTAAATACTTATATTGCAATCTGTATTTCATGTTTGTAGATCGGAAGAGCGTCGTGTAGGG", 20, false);
+		adapter("GTTAATTTAATTTGTATTTTTCCCTGAATTAGGTAGGCTTTTAAATACTTATATTGCAATCTGTATTTCATGTTTGTAGATCGGAAGAGCGTCGTGTAGGG", 19, false);
+		adapter("GTTAATTTAATTTGTATTTTTCCCTGAATTAGGTAGGCTTTTAAATACTTATATTGCAATCTGTATTTCATGTTTGTAGATCGGAAGAGCGTCGTGTAGGG", 18, false);
+		adapter("GTTAATTTAATTTGTATTTTTCCCTGAATTAGGTAGGCTTTTAAATACTTATATTGCAATCTGTATTTCATGTTTGTAGATCGGAAGAGCGTCGTGTAGGG", 17, true);
+	}
+	@Test
+	public void n_should_match_adapter_base() {
+		adapter("GTTAATTTAATTTGTATTTTTCCCTGAATTAGGTAGGCTTTTAAATACTTATATTGCAATCTGTATTTCATGTTTGTAGATCNGAAGAGCGTCGTGTAGGG", 24, false);
+		//                                                                                         ^
+	}
+	@Test
+	public void should_filter_dovetailing_reads() {
+		SoftClipParameters scp = new SoftClipParameters();
+		scp.minAnchorIdentity = 0;
+		scp.minLength = 1;
+		scp.minReadMapq = 0;
+		scp.adapterSequences = null;
+		SAMRecord[] rp = RP(0, 100, 100, 20);
+		rp[0].setCigarString("10M10S");
+		rp[1].setCigarString("10S10M");
+		assertFalse(new SoftClipEvidence(getContext(), SES(), FWD, rp[0]).meetsEvidenceCritera(scp));
+		assertFalse(new SoftClipEvidence(getContext(), SES(), BWD, rp[1]).meetsEvidenceCritera(scp));
+		
+		// looks like a dovetail, but is not
+		rp = RP(0, 100, 100, 20);
+		rp[0].setCigarString("10S10M"); // <-- definitely keep this one
+		rp[1].setCigarString("10S10M"); // ideally keep this one too, but we need to know about the mate cigar for that
+		assertTrue(new SoftClipEvidence(getContext(), SES(), BWD, rp[0]).meetsEvidenceCritera(scp));
+		//assertTrue(new SoftClipEvidence(getContext(), SES(), BWD, rp[1]).meetsEvidenceCritera(scp));
+	}
+	@Test
+	public void should_allow_2_bp_dovetail_margin() {
+		SoftClipParameters scp = new SoftClipParameters();
+		scp.minAnchorIdentity = 0;
+		scp.minLength = 1;
+		scp.minReadMapq = 0;
+		scp.adapterSequences = null;
+		for (int i = 97; i <= 103; i++) { // -3bp -> +3bp, only +-3bp pass dovetail filter  
+			SAMRecord[] rp = RP(0, 100, i, 20);
+			rp[0].setCigarString("10M10S");
+			rp[1].setCigarString("10S10M");
+			assertEquals(i == 97 || i == 103, new SoftClipEvidence(getContext(), SES(), FWD, rp[0]).meetsEvidenceCritera(scp));
+			assertEquals(i == 97 || i == 103, new SoftClipEvidence(getContext(), SES(), BWD, rp[1]).meetsEvidenceCritera(scp));
+		}
 	}
 }

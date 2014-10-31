@@ -40,7 +40,7 @@ public class TruthAnnotator implements BreakendAnnotator {
 		VCFFileReader vcfReader = null;
 		CloseableIterator<VariantContext> it = null;
 		try {
-			vcfReader = new VCFFileReader(truthVcf);
+			vcfReader = new VCFFileReader(truthVcf, false);
 			it = vcfReader.iterator();
 			while (it.hasNext()) {
 				truth.add(IdsvVariantContext.create(processContext, null, it.next()));

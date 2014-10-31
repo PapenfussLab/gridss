@@ -32,13 +32,13 @@ public class SoftClipEvidenceIterator extends AbstractIterator<SoftClipEvidence>
 			SAMRecord record = it.next();
 			if (SAMRecordUtil.getStartSoftClipLength(record) > 0) {
 				SoftClipEvidence sce = SoftClipEvidence.create(processContext, source, BreakendDirection.Backward, record);
-				if (processContext.getSoftClipParameters().meetsEvidenceCritera(sce)) {
+				if (sce.meetsEvidenceCritera(processContext.getSoftClipParameters())) {
 					buffer.add(sce);
 				}
 			}
 			if (SAMRecordUtil.getEndSoftClipLength(record) > 0) {
 				SoftClipEvidence sce = SoftClipEvidence.create(processContext, source, BreakendDirection.Forward, record);
-				if (processContext.getSoftClipParameters().meetsEvidenceCritera(sce)) {
+				if (sce.meetsEvidenceCritera(processContext.getSoftClipParameters())) {
 					buffer.add(sce);
 				}
 			}

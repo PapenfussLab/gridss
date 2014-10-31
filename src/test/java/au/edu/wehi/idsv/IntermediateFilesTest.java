@@ -177,7 +177,7 @@ public class IntermediateFilesTest extends TestHelper {
 	}
 	public List<IdsvVariantContext> getVcf(final File file, final EvidenceSource source) {
 		assertTrue(file.exists());
-		VCFFileReader reader = new VCFFileReader(file);
+		VCFFileReader reader = new VCFFileReader(file, false);
 		List<IdsvVariantContext> list = Lists.newArrayList();
 		for (VariantContext r : reader) {
 			list.add(IdsvVariantContext.create(getCommandlineContext(), source == null ? AES() : source, r));

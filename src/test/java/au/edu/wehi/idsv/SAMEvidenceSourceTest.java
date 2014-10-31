@@ -6,6 +6,7 @@ import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
 
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 
 import org.junit.Test;
@@ -26,6 +27,20 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		source.completeSteps(ProcessStep.ALL_STEPS);
 		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
 		assertEquals(8, list.size()); // 1 SC + 3 * 2 DP + 1 OEA
+	}
+	@Test
+	public void should_stop_metric_calculation_after_max_records() {
+		ProcessingContext pc = getCommandlineContext(true);
+		pc.setCalculateMetricsRecordCount(2);
+		createInput(RP(0, 100, 200, 100), RP(0, 400, 600, 100));
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
+		source.completeSteps(EnumSet.of(ProcessStep.CALCULATE_METRICS));
+		assertEquals(200-100+100, source.getMetrics().getMaxFragmentSize());
+		pc.setCalculateMetricsRecordCount(1000);
+		
+		source = new SAMEvidenceSource(pc, input, false);
+		source.completeSteps(EnumSet.of(ProcessStep.CALCULATE_METRICS));
+		assertEquals(600-400+100, source.getMetrics().getMaxFragmentSize());
 	}
 	@Test
 	public void per_chr_iterator_should_iterator_over_chr_in_dictionary_order() {

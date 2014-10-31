@@ -126,6 +126,7 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 	public void should_process_metrics() {
 		createInput(RP(0, 1, 2, 1), RP(0, 1, 7, 5));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		source.completeSteps(EnumSet.of(ProcessStep.CALCULATE_METRICS));
 		RelevantMetrics metrics = source.getMetrics();
 		assertEquals(5, metrics.getMaxReadLength());
 		// 12345678901234567890

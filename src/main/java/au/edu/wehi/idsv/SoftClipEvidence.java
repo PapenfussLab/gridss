@@ -2,6 +2,7 @@ package au.edu.wehi.idsv;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTag;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.util.SequenceUtil;
 
 import java.nio.charset.StandardCharsets;
@@ -11,6 +12,8 @@ import org.apache.commons.lang3.StringUtils;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 public class SoftClipEvidence implements DirectedEvidence {
+	private static final int DOVETAIL_ERROR_MARGIN = 2;
+	private static final int MAX_ADAPTER_MAPPED_BASES = 6;
 	private final ProcessingContext processContext;
 	private final SAMEvidenceSource source;
 	private final SAMRecord record;
@@ -145,5 +148,97 @@ public class SoftClipEvidence implements DirectedEvidence {
 	@Override
 	public String toString() {
 		return "SoftClip len=" + getSoftClipLength() + " " + getBreakendSummary().toString() + " " + getSAMRecord().getReadName();
+	}
+	/**
+	 * Determines whether this evidence provides support for a putative SV
+	 * @param p soft clip parameters
+	 * @param rm metrics
+	 * @return true if the soft clip provides support, false otherwise
+	 */
+	public boolean meetsEvidenceCritera(SoftClipParameters p) {
+		return getMappingQuality() >= p.minReadMapq
+				&& getSoftClipLength() >= p.minLength
+				&& getAlignedPercentIdentity() >= p.minAnchorIdentity
+				&& !isDovetailing()
+				&& !isAdapterSoftClip(p);
+	}
+	/**
+	 * Determine whether this soft clip is cause by read-through into adapter sequence 
+	 * @param p soft clip parameter
+	 * @return true, if the soft clip is due to adapter sequence, false otherwise
+	 */
+	public boolean isAdapterSoftClip(SoftClipParameters p) {
+		if (p.adapterSequences == null) return false;
+		PairOrientation po = source.getMetrics().getPairOrientation();
+		if (po == null || po == PairOrientation.FR) {
+			// not adapter if the soft clip is on the 5' end of the read
+			if (location.direction == BreakendDirection.Forward && record.getReadNegativeStrandFlag()) return false;
+			if (location.direction == BreakendDirection.Backward && !record.getReadNegativeStrandFlag()) return false;
+			for (String adapter : p.adapterSequences) {
+				if (matchesAdapterFR(adapter)) {
+					return true;
+				}
+			}
+			return false;
+		}
+		throw new RuntimeException("Not Yet Implemented: handling of orientations other than Illumina read pair orientation.");
+	}
+	/**
+	 * Checks the soft clip against the given adapter
+	 * @param adapter
+	 * @return
+	 */
+	private boolean matchesAdapterFR(String adapter) {
+		int scLen = getSoftClipLength();
+		if (location.direction == BreakendDirection.Forward) {
+			// match soft clip
+			for (int i = 0; i <= MAX_ADAPTER_MAPPED_BASES; i++) {
+				if (matchesAdapterSequence(adapter, record.getReadBases(), record.getReadLength() - scLen - i, 1, false)) {
+					return true;
+				}
+			}
+		} else {
+			for (int i = 0; i <= MAX_ADAPTER_MAPPED_BASES; i++) {
+				if (matchesAdapterSequence(adapter, record.getReadBases(), scLen + i - 1, -1, true)) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+	private static boolean matchesAdapterSequence(String adapter, byte[] read, int readStartOffset, int readDirection, boolean complementAdapter) {
+		boolean nonzeroSize = false;
+		for (int i = 0; readStartOffset + i * readDirection < read.length && readStartOffset + i * readDirection  >= 0 && i < adapter.length(); i++) {
+			byte readBase = read[readStartOffset + i * readDirection];
+			byte adapterBase = (byte)adapter.charAt(i);
+			if (complementAdapter) adapterBase = SequenceUtil.complement(adapterBase);
+			if (SequenceUtil.isValidBase(readBase) && readBase != adapterBase) {
+				return false;
+			}
+			nonzeroSize = true;
+		}
+		return nonzeroSize; // no bases compared = no adapter match 
+	}
+	/**
+	 * Dovetailing reads do not support SVs, they are caused by fragment size less than read length
+	 * 
+	 *     =======>
+	 *  <=======
+	 * 
+	 * 
+	 * @param expectedOrientation read pair orientation
+	 * @return true if the soft clip is due to a fragment size smaller than the read length
+	 */
+	public boolean isDovetailing() {
+		if (!record.getReadPairedFlag() || record.getMateUnmappedFlag()) return false;
+		PairOrientation po = source.getMetrics().getPairOrientation();
+		if (po == null || po == PairOrientation.FR) {
+			return record.getMateReferenceIndex() == record.getReferenceIndex()
+					&& Math.abs(record.getAlignmentStart() - record.getMateAlignmentStart()) <= DOVETAIL_ERROR_MARGIN
+					// dovetails happen on the 3' end of the read for FR 
+					&& ((location.direction == BreakendDirection.Forward && !record.getReadNegativeStrandFlag())
+						|| (location.direction == BreakendDirection.Backward && record.getReadNegativeStrandFlag()));
+		}
+		throw new RuntimeException("Not Yet Implemented: handling of orientations other than Illumina read pair orientation.");
 	}
 }
