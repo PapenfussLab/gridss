@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv;
 
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.SAMRecord;
 
 public class ReadPairParameters {

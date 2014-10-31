@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
-import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphNode;
 import au.edu.wehi.idsv.debruijn.subgraph.SubgraphPathNode;

@@ -68,9 +68,13 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     @Option(doc = "Minimum sequence identity to reference. Percentage value taking a value in the range 0-100.",
     		optional=true)
     public float SOFT_CLIP_MIN_ANCHOR_PERCENT_IDENTITY = new SoftClipParameters().minAnchorIdentity;
+    @Option(doc = "Adapter sequence to exclude from analysis."
+    		+ "Defaults to Illumina Universal Adapter, Illumina Small RNA Adapter, Nextera Transposase Sequence",
+    		optional=true)
+    public String[] ADAPTER_SEQUENCE = new SoftClipParameters().adapterSequences;
+ // --- Assembly parameters ---
     @Option(doc = "Local assembly algorithm used to construct breakend contigs.",
     		optional=true)
-    // --- Assembly parameters ---
     public AssemblyMethod ASSEMBLY_METHOD = new AssemblyParameters().method;
     @Option(doc = "k-mer used for de bruijn graph construction",
     		optional=true,

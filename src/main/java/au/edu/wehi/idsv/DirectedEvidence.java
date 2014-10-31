@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv;
 
-import java.util.PriorityQueue;
-
 import com.google.common.collect.Ordering;
 
 

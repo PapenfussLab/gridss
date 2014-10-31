@@ -1,10 +1,5 @@
 package au.edu.wehi.idsv.visualisation;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
-
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 import it.uniroma1.dis.wsngroup.gexf4j.core.Gexf;
@@ -15,6 +10,11 @@ import it.uniroma1.dis.wsngroup.gexf4j.core.data.Attribute;
 import it.uniroma1.dis.wsngroup.gexf4j.core.data.AttributeValue;
 import it.uniroma1.dis.wsngroup.gexf4j.core.data.AttributeValueList;
 import it.uniroma1.dis.wsngroup.gexf4j.core.impl.StaxGraphWriter;
+
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
 
 public class GexfHelper {
 	private static final Log log = Log.getInstance(GexfHelper.class);

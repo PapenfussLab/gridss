@@ -251,7 +251,7 @@ public class ExtractEvidence implements Closeable {
 					SoftClipEvidence endEvidence = null;
 					if (SAMRecordUtil.getStartSoftClipLength(record) > 0) {
 						startEvidence = SoftClipEvidence.create(processContext, source, BreakendDirection.Backward, record);
-						if (processContext.getSoftClipParameters().meetsEvidenceCritera(startEvidence)) {
+						if (startEvidence.meetsEvidenceCritera(processContext.getSoftClipParameters())) {
 							if (processContext.getRealignmentParameters().shouldRealignBreakend(startEvidence)) {
 								realignmentWriters.get(offset % realignmentWriters.size()).write(startEvidence);
 							}
@@ -261,7 +261,7 @@ public class ExtractEvidence implements Closeable {
 					}
 					if (SAMRecordUtil.getEndSoftClipLength(record) > 0) {
 						endEvidence = SoftClipEvidence.create(processContext, source, BreakendDirection.Forward, record);
-						if (processContext.getSoftClipParameters().meetsEvidenceCritera(endEvidence)) {
+						if (endEvidence.meetsEvidenceCritera(processContext.getSoftClipParameters())) {
 							if (processContext.getRealignmentParameters().shouldRealignBreakend(endEvidence)) {
 								realignmentWriters.get(offset % realignmentWriters.size()).write(endEvidence);
 							}
