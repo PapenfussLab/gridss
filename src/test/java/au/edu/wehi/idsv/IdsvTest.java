@@ -26,7 +26,6 @@ public class IdsvTest extends IntermediateFilesTest {
 				"OUTPUT=" + output.toString(),
 				"TMP_DIR=" + super.testFolder.getRoot().toString(),
 				"WORKING_DIR=" + super.testFolder.getRoot().toString(),
-				"DEBUG_ASSEMBLY_VISUALISATION_DIRECTORY=" + new File(super.testFolder.getRoot(), "visualisation").toString(),
 				"PER_CHR=false"
 		};
 		new Idsv().instanceMain(args);

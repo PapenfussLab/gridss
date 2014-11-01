@@ -3,11 +3,16 @@ package au.edu.wehi.idsv;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import java.io.File;
+
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
 
 import org.junit.Ignore;
 import org.junit.Test;
+
+import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 
 public class SoftClipEvidenceTest extends TestHelper {
 	@Test(expected=IllegalArgumentException.class)
@@ -291,5 +296,29 @@ public class SoftClipEvidenceTest extends TestHelper {
 			assertEquals(i == 97 || i == 103, new SoftClipEvidence(getContext(), SES(), FWD, rp[0]).meetsEvidenceCritera(scp));
 			assertEquals(i == 97 || i == 103, new SoftClipEvidence(getContext(), SES(), BWD, rp[1]).meetsEvidenceCritera(scp));
 		}
+	}
+	@Test
+	public void should_filter_dovetailing_reads_with_metrics() {
+		MockSAMEvidenceSource ses = SES();
+		ses.metrics = new IdsvSamFileMetrics(getContext(),
+				new File("src/test/resources/testmetrics.metrics.idsv.txt"),
+				new File("src/test/resources/testmetrics.metrics.insertsize.txt"));
+		SoftClipParameters scp = new SoftClipParameters();
+		scp.minAnchorIdentity = 0;
+		scp.minLength = 1;
+		scp.minReadMapq = 0;
+		scp.adapterSequences = null;
+		SAMRecord[] rp = RP(0, 100, 100, 20);
+		rp[0].setCigarString("10M10S");
+		rp[1].setCigarString("10S10M");
+		assertFalse(new SoftClipEvidence(getContext(), ses, FWD, rp[0]).meetsEvidenceCritera(scp));
+		assertFalse(new SoftClipEvidence(getContext(), ses, BWD, rp[1]).meetsEvidenceCritera(scp));
+		
+		// looks like a dovetail, but is not
+		rp = RP(0, 100, 100, 20);
+		rp[0].setCigarString("10S10M"); // <-- definitely keep this one
+		rp[1].setCigarString("10S10M"); // ideally keep this one too, but we need to know about the mate cigar for that
+		assertTrue(new SoftClipEvidence(getContext(), ses, BWD, rp[0]).meetsEvidenceCritera(scp));
+		//assertTrue(new SoftClipEvidence(getContext(), ses, BWD, rp[1]).meetsEvidenceCritera(scp));
 	}
 }

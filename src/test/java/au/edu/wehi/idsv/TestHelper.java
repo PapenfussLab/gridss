@@ -38,6 +38,7 @@ import au.edu.wehi.idsv.debruijn.ReadKmerIterable;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
 import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
+import au.edu.wehi.idsv.metrics.RelevantMetrics;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
@@ -695,20 +696,23 @@ public class TestHelper {
 	}
 
 	public static class MockSAMEvidenceSource extends SAMEvidenceSource {
-		public MockMetrics metrics = new MockMetrics();
+		public RelevantMetrics metrics = new MockMetrics();
 		public boolean isTumour = false;
 
 		public MockSAMEvidenceSource(ProcessingContext processContext) {
 			super(processContext, new File("test.bam"), false);
 		}
-
 		@Override
 		public boolean isTumour() {
 			return isTumour;
 		}
-
 		@Override
-		public MockMetrics getMetrics() {
+		public boolean isComplete(ProcessStep step) {
+			if (step == ProcessStep.CALCULATE_METRICS) return true;
+			return super.isComplete(step);
+		}
+		@Override
+		public RelevantMetrics getMetrics() {
 			return metrics;
 		}
 	}
@@ -725,7 +729,9 @@ public class TestHelper {
 
 	public static MockSAMEvidenceSource SES(int maxFragmentSize) {
 		MockSAMEvidenceSource ses = SES();
-		ses.getMetrics().maxFragSize = maxFragmentSize;
+		MockMetrics mm = new MockMetrics();
+		mm.maxFragSize = maxFragmentSize;
+		ses.metrics = mm;
 		return ses;
 	}
 
