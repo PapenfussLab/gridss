@@ -181,7 +181,7 @@ public class SoftClipEvidence implements DirectedEvidence {
 			}
 			return false;
 		}
-		throw new RuntimeException("Not Yet Implemented: handling of orientations other than Illumina read pair orientation.");
+		throw new RuntimeException(String.format("Not Yet Implemented: handling of %s read pair orientation", po));
 	}
 	/**
 	 * Checks the soft clip against the given adapter
@@ -239,6 +239,6 @@ public class SoftClipEvidence implements DirectedEvidence {
 					&& ((location.direction == BreakendDirection.Forward && !record.getReadNegativeStrandFlag())
 						|| (location.direction == BreakendDirection.Backward && record.getReadNegativeStrandFlag()));
 		}
-		throw new RuntimeException("Not Yet Implemented: handling of orientations other than Illumina read pair orientation.");
+		throw new RuntimeException(String.format("Not Yet Implemented: handling of %s read pair orientation", po));
 	}
 }
