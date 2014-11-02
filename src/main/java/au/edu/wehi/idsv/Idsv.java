@@ -38,13 +38,12 @@ public class Idsv extends CommandLineProgram {
     @Option(doc = "Processing steps to execute",
             optional = true)
 	public EnumSet<ProcessStep> STEPS = ProcessStep.ALL_STEPS;
-    private SAMEvidenceSource constructSamEvidenceSource(File file, int index, boolean isTumour) throws IOException {
-    	List<Float> percentList = isTumour ? INPUT_TUMOUR_READ_PAIR_CONCORDANT_PERCENT : INPUT_READ_PAIR_CONCORDANT_PERCENT; 
+    private SAMEvidenceSource constructSamEvidenceSource(File file, int index, boolean isTumour) throws IOException { 
     	List<Integer> maxFragSizeList = isTumour ? INPUT_TUMOUR_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE : INPUT_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE;
-    	if (percentList != null && percentList.size() > index && percentList.get(index) != null) {
-    		return new SAMEvidenceSource(getContext(), file, isTumour, percentList.get(index));
-    	} else if (maxFragSizeList != null && maxFragSizeList.size() > index && maxFragSizeList.get(index) != null) {
+    	if (maxFragSizeList != null && maxFragSizeList.size() > index && maxFragSizeList.get(index) != null) {
     		return new SAMEvidenceSource(getContext(), file, isTumour, 0, maxFragSizeList.get(index));
+    	} else if (READ_PAIR_CONCORDANT_PERCENT != null) {
+    		return new SAMEvidenceSource(getContext(), file, isTumour, READ_PAIR_CONCORDANT_PERCENT);
     	} else {
     		return new SAMEvidenceSource(getContext(), file, isTumour);
     	}
