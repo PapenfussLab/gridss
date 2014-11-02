@@ -35,12 +35,12 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		createInput(RP(0, 100, 200, 100), RP(0, 400, 600, 100));
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
 		source.completeSteps(EnumSet.of(ProcessStep.CALCULATE_METRICS));
-		assertEquals(200-100+100, source.getMetrics().getMaxFragmentSize());
+		assertEquals(200-100+100, source.getMaxConcordantFragmentSize());
 		pc.setCalculateMetricsRecordCount(1000);
 		
 		source = new SAMEvidenceSource(pc, input, false);
 		source.completeSteps(EnumSet.of(ProcessStep.CALCULATE_METRICS));
-		assertEquals(600-400+100, source.getMetrics().getMaxFragmentSize());
+		assertEquals(600-400+100, source.getMaxConcordantFragmentSize());
 	}
 	@Test
 	public void per_chr_iterator_should_iterator_over_chr_in_dictionary_order() {
@@ -131,7 +131,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		createInput(Read(0, 1, "50M50S"));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		assertEquals(100, source.getMetrics().getMaxFragmentSize());
+		assertEquals(100, source.getMaxConcordantFragmentSize());
 	}
 	@Test
 	public void iterator_evidence_should_be_sorted_by_evidence_natural_ordering() {
@@ -218,5 +218,46 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		
 		List<RealignedSoftClipEvidence> result = Lists.newArrayList(Iterators.filter(source.iterator(), RealignedSoftClipEvidence.class));
 		assertEquals(5, result.size() - remote.size());
+	}
+	@Test
+	public void should_construct_percentage_based_calculator() {
+		createInput(
+				RP(0, 100, 110, 5), // 15
+				RP(0, 100, 111, 5), 
+				RP(0, 100, 112, 5), // --- 17
+				RP(0, 100, 113, 5), // ---
+				RP(0, 100, 114, 5), // --- concordant 
+				RP(0, 100, 115, 5), // --- reads
+				RP(0, 100, 116, 5), // ---
+				RP(0, 100, 117, 5), // --- 22
+				RP(0, 100, 118, 5),
+				RP(0, 100, 119, 5) // 24
+				);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false, 0.59);
+		source.completeSteps(ProcessStep.ALL_STEPS);
+		
+		assertEquals(PercentageReadPairConcordanceCalculator.class, source.getReadPairConcordanceCalculator().getClass());
+		assertEquals(22, source.getMaxConcordantFragmentSize());
+		assertEquals(5, source.getMaxReadLength());
+		
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
+		assertEquals(4 * 2, list.size()); // 4 discordant pairs
+	}
+	@Test
+	public void should_construct_fixed_calculator() {
+		createInput(
+				RP(0, 1, 12, 1), // 12
+				RP(0, 1, 13, 1), // 13 conc
+				RP(0, 1, 14, 1), // 14 conc
+				RP(0, 1, 15, 1), // 15 conc
+				RP(0, 1, 16, 1)); // 16
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false, 13, 15);
+		source.completeSteps(ProcessStep.ALL_STEPS);
+		
+		assertEquals(FixedSizeReadPairConcordanceCalculator.class, source.getReadPairConcordanceCalculator().getClass());
+		assertEquals(15, source.getMaxConcordantFragmentSize());
+		assertEquals(1, source.getMaxReadLength());
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
+		assertEquals(2 * 2, list.size());
 	}
 }

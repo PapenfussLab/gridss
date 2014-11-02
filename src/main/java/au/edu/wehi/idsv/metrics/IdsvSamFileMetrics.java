@@ -2,7 +2,6 @@ package au.edu.wehi.idsv.metrics;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMReadGroupRecord;
-import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.util.CollectionUtil;
 import htsjdk.samtools.util.Log;
@@ -14,18 +13,19 @@ import picard.analysis.CollectInsertSizeMetrics;
 import picard.analysis.InsertSizeMetrics;
 import picard.analysis.MetricAccumulationLevel;
 import picard.analysis.directed.InsertSizeMetricsCollector;
-import au.edu.wehi.idsv.ProcessingContext;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 
-public class IdsvSamFileMetrics implements RelevantMetrics {
+public class IdsvSamFileMetrics {
 	private static final Log log = Log.getInstance(IdsvSamFileMetrics.class);
-	private final ProcessingContext processContext;
 	private InsertSizeMetrics insertSize = null;
 	private IdsvMetrics idsvMetrics = null;
 	private InsertSizeDistribution insertDistribution = null;
+	public IdsvMetrics getIdsvMetrics() { return idsvMetrics; }
+	public InsertSizeMetrics getInsertSizeMetrics() { return insertSize; }
+	
 	/**
 	 * Creates a metric collector to record metrics required by idsv
 	 * @param header SAM header of file to process
@@ -51,8 +51,8 @@ public class IdsvSamFileMetrics implements RelevantMetrics {
 	public static IdsvMetricsCollector createIdsvMetricsCollector() {
 		return new IdsvMetricsCollector();
 	}
-	public IdsvSamFileMetrics(ProcessingContext processContext, File insertSizeMetricsFile, File idsvMetricsFiles) {
-		this(processContext, getInsertSizeMetrics(insertSizeMetricsFile), getIdsvMetrics(idsvMetricsFiles), getInsertSizeDistribution(insertSizeMetricsFile));
+	public IdsvSamFileMetrics(File insertSizeMetricsFile, File idsvMetricsFiles) {
+		this(getInsertSizeMetrics(insertSizeMetricsFile), getIdsvMetrics(idsvMetricsFiles), getInsertSizeDistribution(insertSizeMetricsFile));
 	}
 	private static InsertSizeDistribution getInsertSizeDistribution(File insertSizeMetricsFile) {
 		return InsertSizeDistribution.create(insertSizeMetricsFile);
@@ -78,30 +78,21 @@ public class IdsvSamFileMetrics implements RelevantMetrics {
 		}
 		return insertSize;
 	}
-	public IdsvSamFileMetrics(ProcessingContext processContext, InsertSizeMetrics insertSize, IdsvMetrics idsvMetrics, InsertSizeDistribution insertDistribution) {
-		this.processContext = processContext;
+	public IdsvSamFileMetrics(InsertSizeMetrics insertSize, IdsvMetrics idsvMetrics, InsertSizeDistribution insertDistribution) {
 		this.insertSize = insertSize;
 		this.idsvMetrics = idsvMetrics;
 		this.insertDistribution = insertDistribution;
 	}
-	/* (non-Javadoc)
-	 * @see au.edu.wehi.idsv.RelevantMetrics#getMedianFragmentSize()
-	 */
+	/*
 	@Override
 	public double getMedianFragmentSize() {
 		// TODO: is this 5' difference or frag size?
 		return insertSize.MEDIAN_INSERT_SIZE;
 	}
-	/* (non-Javadoc)
-	 * @see au.edu.wehi.idsv.RelevantMetrics#getFragmentSizeStdDev()
-	 */
 	@Override
 	public double getFragmentSizeStdDev() {
 		return 1.4826 * insertSize.MEDIAN_ABSOLUTE_DEVIATION;
 	}
-	/* (non-Javadoc)
-	 * @see au.edu.wehi.idsv.RelevantMetrics#getMaxFragmentSize()
-	 */
 	@Override
 	public int getMaxFragmentSize() {
 		int fragSize = getMaxReadLength();
@@ -114,9 +105,6 @@ public class IdsvSamFileMetrics implements RelevantMetrics {
 		// return (int)Math.ceil(getMedianFragmentSize() + 3 * getFragmentSizeStdDev());
 		return fragSize;
 	}
-	/* (non-Javadoc)
-	 * @see au.edu.wehi.idsv.RelevantMetrics#getPairOrientation()
-	 */
 	@Override
 	public PairOrientation getPairOrientation() {
 		if (insertSize == null) return null;
@@ -126,7 +114,7 @@ public class IdsvSamFileMetrics implements RelevantMetrics {
 	public int getMaxReadLength() {
 		return idsvMetrics.MAX_READ_LENGTH;
 	}
-	@Override
+	*/
 	public InsertSizeDistribution getInsertSizeDistribution() {
 		return insertDistribution;
 	}

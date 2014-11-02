@@ -172,7 +172,11 @@ public class AssemblyBuilder {
 			// around the expected window size.
 			// Eg: when we assemble an entire fragment size worth of mate pairs, the expected breakend window
 			// size approaches zero.
-			int breakpointWindow = source.getMetrics().getMaxFragmentSize();
+			//int maxFragmentSize = 0;
+			//for (DirectedEvidence e : evidence) {
+			//	maxFragmentSize = Math.max(e.getEvidenceSource().getMaxConcordantFragmentSize(), maxFragmentSize);
+			//}
+			int breakpointWindow = source.getMaxConcordantFragmentSize();
 			BreakendSummary summary = new BreakendSummary(
 					mateAnchorReferenceIndex,
 					dir,

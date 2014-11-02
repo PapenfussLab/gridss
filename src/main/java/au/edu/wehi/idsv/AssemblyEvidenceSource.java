@@ -22,14 +22,10 @@ import java.util.Queue;
 
 import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredAssembler;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
-import au.edu.wehi.idsv.metrics.CompositeMetrics;
-import au.edu.wehi.idsv.metrics.RelevantMetrics;
 import au.edu.wehi.idsv.pipeline.SortRealignedAssemblies;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
@@ -37,7 +33,7 @@ import com.google.common.collect.Lists;
 public class AssemblyEvidenceSource extends EvidenceSource {
 	private static final Log log = Log.getInstance(AssemblyEvidenceSource.class);
 	private final List<SAMEvidenceSource> source;
-	private final RelevantMetrics metrics;
+	private final int maxSourceFragSize;
 	/**
 	 * Generates assembly evidence based on the given evidence
 	 * @param evidence evidence for creating assembly
@@ -46,12 +42,11 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	public AssemblyEvidenceSource(ProcessingContext processContext, List<SAMEvidenceSource> evidence, File intermediateFileLocation) {
 		super(processContext, intermediateFileLocation);
 		this.source = evidence;
-		this.metrics = new CompositeMetrics(Iterables.transform(evidence, new Function<SAMEvidenceSource, RelevantMetrics>() {
-			@Override
-			public RelevantMetrics apply(SAMEvidenceSource arg) {
-				return arg.getMetrics();
-			}
-		}));
+		int max = 0;
+		for (SAMEvidenceSource s : evidence) {
+			max = Math.max(max, s.getMaxConcordantFragmentSize());
+		}
+		maxSourceFragSize = max;
 	}
 	public void ensureAssembled() {
 		if (!isProcessingComplete()) {
@@ -62,10 +57,6 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			step.process(EnumSet.of(ProcessStep.SORT_REALIGNED_ASSEMBLIES));
 			step.close();
 		}
-	}
-	@Override
-	public RelevantMetrics getMetrics() {
-		return metrics;
 	}
 	@Override
 	protected Iterator<DirectedEvidence> perChrIterator(String chr) {
@@ -107,7 +98,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		// Change sort order from VCF sorted order to evidence position order
 		it = new DirectEvidenceWindowedSortingIterator<VariantContextDirectedEvidence>(
 				processContext,
-				(int)((2 + processContext.getAssemblyParameters().maxSubgraphFragmentWidth + processContext.getAssemblyParameters().subgraphAssemblyMargin) * this.getMetrics().getMaxFragmentSize()),
+				(int)((2 + processContext.getAssemblyParameters().maxSubgraphFragmentWidth + processContext.getAssemblyParameters().subgraphAssemblyMargin) * maxSourceFragSize),
 				it);
 		// FIXME: add remote assemblies to iterator
 		return it;
@@ -220,7 +211,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	    		}
 	    	}
     	}
-    	flushWriterQueueBefore(maxAssembledPosition - Math.max(MAX_ASSEMBLY_OFFSET, 3 * getMetrics().getMaxFragmentSize()), fastqWriter, vcfWriter);
+    	flushWriterQueueBefore(maxAssembledPosition - Math.max(MAX_ASSEMBLY_OFFSET, 3 * maxSourceFragSize), fastqWriter, vcfWriter);
     }
 	/**
 	 * Assemblies from de bruijn graph subset algorithm can be completed at any time.
@@ -256,4 +247,8 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	    		throw new IllegalArgumentException("Unknown assembly method.");
     	}
     }
+	@Override
+	public int getMaxConcordantFragmentSize() {
+		return maxSourceFragSize;
+	}
 }

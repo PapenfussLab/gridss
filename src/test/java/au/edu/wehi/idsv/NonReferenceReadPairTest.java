@@ -6,6 +6,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class NonReferenceReadPairTest extends TestHelper {
@@ -256,5 +257,102 @@ public class NonReferenceReadPairTest extends TestHelper {
 	@Test
 	public void getBreakendQuality_should_be_null() {
 		assertNull(newPair(OEA(0, 1, "100M", true), 300).getBreakendSequence());
+	}
+	private void meetsEvidenceCriteria(boolean expected, SAMRecord[] pair) {
+		meetsEvidenceCriteria(expected, pair, 105, 110);
+	}
+	private void meetsEvidenceCriteria(boolean expected, SAMRecord[] pair, int min, int max) {
+		meetsEvidenceCriteria(expected, pair, min, max, true);
+	}
+	private void meetsEvidenceCriteria(boolean expected, SAMRecord[] pair, int min, int max, boolean testSingle) {
+		MockSAMEvidenceSource ses = SES(min, max);
+		NonReferenceReadPair nrrp = NonReferenceReadPair.create(pair[0], pair[1], ses);
+		ReadPairParameters rpp = new ReadPairParameters() {{
+			minLocalMapq = 0;
+		}};
+		assertEquals(expected, nrrp.meetsEvidenceCritera(rpp));
+		if (testSingle) assertEquals(expected, NonReferenceReadPair.meetsLocalEvidenceCritera(rpp, ses, pair[0]));
+		if (testSingle) assertEquals(expected, NonReferenceReadPair.meetsRemoteEvidenceCritera(rpp, ses, pair[1]));
+		if (!pair[1].getReadUnmappedFlag()) {
+			assertEquals(expected, NonReferenceReadPair.create(pair[1], pair[0], ses).meetsEvidenceCritera(rpp));
+			if (testSingle) assertEquals(expected, NonReferenceReadPair.meetsLocalEvidenceCritera(rpp, ses, pair[1]));
+			if (testSingle) assertEquals(expected, NonReferenceReadPair.meetsRemoteEvidenceCritera(rpp, ses, pair[0]));
+		}
+	}
+	@Test
+	public void meetsEvidenceCriteraTest_should_filter_concordant() {
+		meetsEvidenceCriteria(true, RP(0, 1, 12, 1), 13, 15);
+		meetsEvidenceCriteria(false, RP(0, 1, 13, 1), 13, 15);
+		meetsEvidenceCriteria(false, RP(0, 1, 14, 1), 13, 15);
+		meetsEvidenceCriteria(false, RP(0, 1, 15, 1), 13, 15);
+		meetsEvidenceCriteria(true, RP(0, 1, 16, 1), 13, 15);
+		
+		meetsEvidenceCriteria(true, RP(0, 1, 11, 2), 13, 15);
+		meetsEvidenceCriteria(false, RP(0, 1, 12, 2), 13, 15);
+		meetsEvidenceCriteria(false, RP(0, 1, 13, 2), 13, 15);
+		meetsEvidenceCriteria(false, RP(0, 1, 14, 2), 13, 15);
+		meetsEvidenceCriteria(true, RP(0, 1, 15, 2), 13, 15);
+		
+		meetsEvidenceCriteria(true, RP(0, 100, 200, 4));
+		meetsEvidenceCriteria(false, RP(0, 100, 200, 5));
+		meetsEvidenceCriteria(false, RP(0, 100, 201, 4));
+		meetsEvidenceCriteria(false, RP(0, 100, 209, 1));
+		meetsEvidenceCriteria(true, RP(0, 100, 209, 2));
+		meetsEvidenceCriteria(true, RP(0, 100, 210, 1));
+	}
+	@Test
+	@Ignore("Can't filter overlap if we don't have mate cigar")
+	public void filter_overlapping_fragment() {
+		SAMRecord[] rp;
+		// no SV support for overlapping reads
+		rp = RP(0, 100, 109, 10);
+		meetsEvidenceCriteria(false, rp);
+	}
+	@Test
+	public void short_fragment_should_be_filtered() {
+		SAMRecord[] rp;
+		// no SV support for overlapping reads
+		rp = RP(0, 100, 109, 10);
+		meetsEvidenceCriteria(false, rp, 105, 110, false);
+			
+		// dovetail
+		rp = RP(0, 100, 100, 10);
+		rp[0].setCigarString("5M5S");
+		rp[1].setCigarString("5S5M");
+		meetsEvidenceCriteria(false, rp, 105, 110, false);
+		
+		// dovetail with microhomology
+		rp = RP(0, 100, 99, 10);
+		rp[0].setCigarString("5M5S");
+		rp[1].setCigarString("4S6M");
+		meetsEvidenceCriteria(false, rp, 105, 110, false);
+	}
+	@Test
+	public void should_expect_FR() {
+		// expected size
+		SAMRecord[] rp = RP(0, 100, 200, 5);
+		rp[0].setReadNegativeStrandFlag(true);
+		rp[1].setReadNegativeStrandFlag(true);
+		rp[0].setMateNegativeStrandFlag(true);
+		rp[1].setMateNegativeStrandFlag(true);
+		meetsEvidenceCriteria(true, rp);
+		
+		// overlapping
+		rp = RP(0, 100, 109, 10);
+		rp[0].setReadNegativeStrandFlag(true);
+		rp[1].setReadNegativeStrandFlag(true);
+		rp[0].setMateNegativeStrandFlag(true);
+		rp[1].setMateNegativeStrandFlag(true);
+		meetsEvidenceCriteria(true, rp);
+		
+		// dovetailing
+		rp = RP(0, 100, 100, 10);
+		rp[0].setCigarString("5M5S");
+		rp[1].setCigarString("5S5M");
+		rp[0].setReadNegativeStrandFlag(true);
+		rp[1].setReadNegativeStrandFlag(true);
+		rp[0].setMateNegativeStrandFlag(true);
+		rp[1].setMateNegativeStrandFlag(true);
+		meetsEvidenceCriteria(true, rp);
 	}
 }

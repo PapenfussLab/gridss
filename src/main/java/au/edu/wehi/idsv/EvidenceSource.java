@@ -8,8 +8,6 @@ import java.io.File;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import au.edu.wehi.idsv.metrics.RelevantMetrics;
-
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 
@@ -17,7 +15,7 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 	protected abstract void process();
 	protected abstract Iterator<DirectedEvidence> perChrIterator(String chr);
 	protected abstract Iterator<DirectedEvidence> singleFileIterator();
-	public abstract RelevantMetrics getMetrics();
+	public abstract int getMaxConcordantFragmentSize();
 	protected final File input;
 	protected final ProcessingContext processContext;
 	/**

@@ -28,10 +28,19 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 	@Option(doc="Coordinate-sorted input BAM file.",
     		shortName=StandardOptionDefinitions.INPUT_SHORT_NAME)
     public List<File> INPUT;
+	@Option(doc = "Per input percent of read pairs considered concorant (0.0-1.0). If this is not set, the SAM proper pair flag is used to determine whether a read is discordantly aligned.", optional=true)
+    public List<Float> INPUT_READ_PAIR_CONCORDANT_PERCENT;
+    @Option(doc = "Per input maximum concordant read pair size.", optional=true)
+    public List<Integer> INPUT_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE;
+    
 	@Option(doc="Coordinate-sorted tumour BAM file.",
 			optional=true,
     		shortName="T")
     public List<File> INPUT_TUMOUR = Lists.newArrayList();
+	@Option(doc = "Per input percent of read pairs considered concorant (0.0-1.0). If this is not set, the SAM proper pair flag is used to determine whether a read is discordantly aligned.", optional=true)
+    public List<Float> INPUT_TUMOUR_READ_PAIR_CONCORDANT_PERCENT;
+    @Option(doc = "Per input maximum concordant read pair size.", optional=true)
+    public List<Integer> INPUT_TUMOUR_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE;
 	@Option(doc="VCF structural variation calls.",
     		shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME)
     public File OUTPUT;
@@ -55,10 +64,6 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 			" Local aligners tend to produce many reads with very short soft clips.",
 		optional=true)
     public int SOFT_CLIP_MIN_LENGTH = new SoftClipParameters().minLength;
-    @Option(doc = "Percent of read pairs considered concorant (0.0-1.0)."
-    		+ "If this is not set, the SAM proper pair flag is used to determine whether a read is discordantly aligned.",
-		optional=true)
-    public Float READ_PAIR_CONCORDANT_PERCENT = null;
     @Option(doc = "Minimum read MAPQ for a read pair to be considerd anchored",
     		optional=true)
     public int READ_PAIR_ANCHOR_MIN_MAPQ = new ReadPairParameters().minLocalMapq;
@@ -101,7 +106,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     @Option(doc = "Number of bases (in multiples of maximum fragment size)"
     		+ "of no contributing evidence before subgraph assembly.",
     		optional=true)
-    public float ASSEMBLY_DEBRUIJN_SUBGRAPH_ASSEMBLY_FRAGMENT_DELAY = 3;
+    public float ASSEMBLY_DEBRUIJN_SUBGRAPH_ASSEMBLY_FRAGMENT_DELAY = new AssemblyParameters().subgraphAssemblyMargin;
     // --- Realignment parameters ---
     @Option(doc = "Minimum length of a breakend to be considered for realignment",
     		optional=true)
@@ -208,10 +213,6 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 	}
 	private ReadPairParameters getReadPairParameters() {
 		ReadPairParameters rpp = new ReadPairParameters();
-		rpp.useProperPairFlag = READ_PAIR_CONCORDANT_PERCENT == null;
-		if (READ_PAIR_CONCORDANT_PERCENT != null) {
-			rpp.concordantPercent = READ_PAIR_CONCORDANT_PERCENT;
-		}
 		rpp.minLocalMapq = READ_PAIR_ANCHOR_MIN_MAPQ;
 	    return rpp;
 	}

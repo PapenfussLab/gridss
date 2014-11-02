@@ -3,11 +3,10 @@ package au.edu.wehi.idsv;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-
-import java.io.File;
-
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
+
+import java.io.File;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -289,18 +288,18 @@ public class SoftClipEvidenceTest extends TestHelper {
 		scp.minLength = 1;
 		scp.minReadMapq = 0;
 		scp.adapterSequences = null;
-		for (int i = 97; i <= 103; i++) { // -3bp -> +3bp, only +-3bp pass dovetail filter  
+		for (int i = 95 ; i <= 105; i++) { // -3bp -> +3bp, only +-3bp pass dovetail filter  
 			SAMRecord[] rp = RP(0, 100, i, 20);
 			rp[0].setCigarString("10M10S");
 			rp[1].setCigarString("10S10M");
-			assertEquals(i == 97 || i == 103, new SoftClipEvidence(getContext(), SES(), FWD, rp[0]).meetsEvidenceCritera(scp));
-			assertEquals(i == 97 || i == 103, new SoftClipEvidence(getContext(), SES(), BWD, rp[1]).meetsEvidenceCritera(scp));
+			assertEquals(i == 95 || i == 105, new SoftClipEvidence(getContext(), SES(), FWD, rp[0]).meetsEvidenceCritera(scp));
+			assertEquals(i == 95 || i == 105, new SoftClipEvidence(getContext(), SES(), BWD, rp[1]).meetsEvidenceCritera(scp));
 		}
 	}
 	@Test
 	public void should_filter_dovetailing_reads_with_metrics() {
 		MockSAMEvidenceSource ses = SES();
-		ses.metrics = new IdsvSamFileMetrics(getContext(),
+		ses.metrics = new IdsvSamFileMetrics(
 				new File("src/test/resources/testmetrics.metrics.idsv.txt"),
 				new File("src/test/resources/testmetrics.metrics.insertsize.txt"));
 		SoftClipParameters scp = new SoftClipParameters();

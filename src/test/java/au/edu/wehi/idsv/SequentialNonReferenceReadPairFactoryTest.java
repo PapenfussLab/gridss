@@ -37,11 +37,11 @@ public class SequentialNonReferenceReadPairFactoryTest extends TestHelper {
 		assertNull(rp);
 	}
 	@Test
-	public void should_skip_pairs_providing_no_evidence() {
+	public void should_not_skip_pairs_providing_no_evidence() {
 		SAMRecord[] pair = DP(0, 1, "10M", true, 0, 5, "10M", false);
 		SequentialNonReferenceReadPairFactory factory = getFactory(L(pair));
 		NonReferenceReadPair rp = factory.createNonReferenceReadPair(pair[0], SES(300));
-		assertNull(rp);
+		assertNotNull(rp);
 	}
 	@Test
 	public void should_match_sequential_records() {

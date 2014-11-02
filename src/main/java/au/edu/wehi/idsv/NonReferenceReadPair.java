@@ -19,14 +19,14 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	protected NonReferenceReadPair(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {
 		if (local == null) throw new IllegalArgumentException("local is null");
 		if (remote == null) throw new IllegalArgumentException("remote is null");
-		if (!StringUtils.equals(local.getReadName(), remote.getReadName())) throw new IllegalArgumentException(String.format("Read %s and %s do not match", local.getReadName(), remote.getReadName()));
+		if (!StringUtils.equals(local.getReadName(), remote.getReadName())) throw new IllegalArgumentException(String.format("Paired reads %s and %s have differing read names", local.getReadName(), remote.getReadName()));
 		if (local.getReadUnmappedFlag()) throw new IllegalArgumentException("local must be mapped");
-		if (local.getProperPairFlag()) throw new IllegalArgumentException(String.format("Read %s is flagged as part of a proper pair", local.getReadName()));
-		if (remote.getProperPairFlag()) throw new IllegalArgumentException(String.format("Read %s is flagged as part of a proper pair", remote.getReadName()));
-		if (source.getMetrics().getMaxFragmentSize() < local.getReadLength()) throw new IllegalArgumentException(String.format("Sanity check failure: read pair %s contains read of length %d when maximum fragment size is %d", local.getReadName(), local.getReadLength(), source.getMetrics().getMaxFragmentSize()));
+		//if (local.getProperPairFlag()) throw new IllegalArgumentException(String.format("Read %s is flagged as part of a proper pair", local.getReadName()));
+		//if (remote.getProperPairFlag()) throw new IllegalArgumentException(String.format("Read %s is flagged as part of a proper pair", remote.getReadName()));
+		if (source.getMaxConcordantFragmentSize() < local.getReadLength()) throw new IllegalArgumentException(String.format("Sanity check failure: read pair %s contains read of length %d when maximum fragment size is %d", local.getReadName(), local.getReadLength(), source.getMaxConcordantFragmentSize()));
 		this.local = local;
 		this.remote = remote;
-		this.location = calculateBreakendSummary(local, remote, source.getMetrics().getMaxFragmentSize());
+		this.location = calculateBreakendSummary(local, remote, source.getMaxConcordantFragmentSize());
 		this.source = source;
 	}
 	public static NonReferenceReadPair create(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {
@@ -36,8 +36,24 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 			return new DiscordantReadPair(local, remote, source);
 		}
 	}
-	public boolean isValid() {
-		return location != null;
+	public boolean meetsEvidenceCritera(ReadPairParameters rp) {
+		return location != null
+				&& meetsLocalEvidenceCritera(rp, source, local)
+				&& meetsRemoteEvidenceCritera(rp, source, remote)
+				&& !SAMRecordUtil.isDovetailing(local,  remote);
+	}
+	public static boolean meetsLocalEvidenceCritera(ReadPairParameters rp, SAMEvidenceSource source, SAMRecord local) {
+		return !local.getReadUnmappedFlag()
+				&& local.getReadPairedFlag()
+				&& local.getMappingQuality() >= rp.minLocalMapq
+				&& !SAMRecordUtil.estimatedReadsOverlap(local)
+				&& !source.getReadPairConcordanceCalculator().isConcordant(local);
+	}
+	public static boolean meetsRemoteEvidenceCritera(ReadPairParameters rp, SAMEvidenceSource source, SAMRecord remote) {
+		return remote.getReadPairedFlag()
+				&& !remote.getMateUnmappedFlag()
+				&& ((remote.getReadUnmappedFlag() && !remote.getMateUnmappedFlag()) // OEA
+					|| !(source.getReadPairConcordanceCalculator().isConcordant(remote) || SAMRecordUtil.estimatedReadsOverlap(remote))); // DP
 	}
 	/**
 	 * Calculates the local breakpoint location
@@ -80,6 +96,7 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	}
 	/**
 	 * Determines the separation between discordant reads
+	 * Determines the number of unsequenced bases in the fragment
 	 * @param local
 	 * @param remote
 	 * @return number possible breakpoints between the read pair mapped in the expected orientation,
@@ -178,5 +195,4 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	public byte[] getBreakendQuality() {
 		return null;
 	}
-	public abstract boolean fragmentSequencesOverlap();
 }

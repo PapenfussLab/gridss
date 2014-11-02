@@ -11,8 +11,6 @@ import java.util.List;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.metrics.RelevantMetrics;
-
 import com.google.common.collect.Lists;
 
 
@@ -74,8 +72,8 @@ public class EvidenceSourceTest extends IntermediateFilesTest {
 		}
 		public TestCloseableIterator<DirectedEvidence> lastIt = null;
 		@Override
-		public RelevantMetrics getMetrics() {
-			return null;
+		public int getMaxConcordantFragmentSize() {
+			return 300;
 		}
 	}
 	@Test

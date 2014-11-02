@@ -13,7 +13,6 @@ import java.util.EnumSet;
 import java.util.Iterator;
 
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
-import au.edu.wehi.idsv.metrics.RelevantMetrics;
 import au.edu.wehi.idsv.pipeline.ExtractEvidence;
 import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
@@ -32,13 +31,27 @@ public class SAMEvidenceSource extends EvidenceSource {
 	private final ProcessingContext processContext;
 	private final File input;
 	private final boolean isTumour;
-	private RelevantMetrics metrics;
+	private final ReadPairConcordanceMethod rpcMethod;
+	private final Object[] rpcParams;
+	private IdsvSamFileMetrics metrics;
 	private SAMFileHeader header;
+	private ReadPairConcordanceCalculator rpcc;
 	public SAMEvidenceSource(ProcessingContext processContext, File file, boolean isTumour) {
+		this(processContext, file, isTumour, ReadPairConcordanceMethod.SAM_FLAG, null);
+	}
+	public SAMEvidenceSource(ProcessingContext processContext, File file, boolean isTumour, int minFragmentSize, int maxFragmentSize) {
+		this(processContext, file, isTumour, ReadPairConcordanceMethod.FIXED, new Object[] { minFragmentSize, maxFragmentSize });
+	}
+	public SAMEvidenceSource(ProcessingContext processContext, File file, boolean isTumour, double concordantPercentage) {
+		this(processContext, file, isTumour, ReadPairConcordanceMethod.PERCENTAGE, new Object[] { (double)concordantPercentage });
+	}
+	protected SAMEvidenceSource(ProcessingContext processContext, File file, boolean isTumour, ReadPairConcordanceMethod rpcMethod, Object[] rpcParams) {
 		super(processContext, file);
 		this.processContext = processContext;
 		this.input = file;
 		this.isTumour = isTumour;
+		this.rpcMethod = rpcMethod;
+		this.rpcParams = rpcParams;
 	}
 	public SAMFileHeader getHeader() {
 		if (header == null) {
@@ -138,12 +151,12 @@ public class SAMEvidenceSource extends EvidenceSource {
 		}
 		return done;
 	}
-	public RelevantMetrics getMetrics() {
+	protected IdsvSamFileMetrics getMetrics() {
 		if (metrics == null) {
 			if (!isComplete(ProcessStep.CALCULATE_METRICS)) {
-				throw new IllegalStateException("Metrics not yet calculated");
+				completeSteps(EnumSet.of(ProcessStep.CALCULATE_METRICS));
 			}
-			metrics = new IdsvSamFileMetrics(processContext, processContext.getFileSystemContext().getInsertSizeMetrics(input), processContext.getFileSystemContext().getIdsvMetrics(input));
+			metrics = new IdsvSamFileMetrics(processContext.getFileSystemContext().getInsertSizeMetrics(input), processContext.getFileSystemContext().getIdsvMetrics(input));
 		}
 		return metrics;
 	}
@@ -185,7 +198,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 				processContext.getSamReaderIterator(mateReader));
 		rpIt = new AutoClosingIterator<NonReferenceReadPair>(rpIt, Lists.<Closeable>newArrayList(rpReader, mateReader));
 		// sort as input is ordered by SAMRecord alignment start position (SAM/BAM genomic coordinate sorted)
-		rpIt = new DirectEvidenceWindowedSortingIterator<NonReferenceReadPair>(processContext, getMetrics().getMaxFragmentSize(), rpIt);
+		rpIt = new DirectEvidenceWindowedSortingIterator<NonReferenceReadPair>(processContext, getMaxConcordantFragmentSize(), rpIt);
 		SamReader scReader = processContext.getSamReader(softClip);
 		Iterator<SoftClipEvidence> scIt = new SoftClipEvidenceIterator(processContext, this,
 				processContext.getSamReaderIterator(scReader));
@@ -200,7 +213,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			log.info("Realigned soft clip evidence not present due to missing realignment bam ", realigned);
 		}
 		// sort into evidence order
-		scIt = new DirectEvidenceWindowedSortingIterator<SoftClipEvidence>(processContext, getMetrics().getMaxReadLength(), scIt);
+		scIt = new DirectEvidenceWindowedSortingIterator<SoftClipEvidence>(processContext, getMetrics().getIdsvMetrics().MAX_READ_LENGTH, scIt);
 		
 		Iterator<RealignedRemoteSoftClipEvidence> remoteScIt = Collections.emptyIterator(); 
 		if (isRealignmentComplete()) {
@@ -215,11 +228,49 @@ public class SAMEvidenceSource extends EvidenceSource {
 						processContext.getSamReaderIterator(scRealignSorted1),
 						processContext.getSamReaderIterator(scRealignSorted2));
 				remoteScIt = new AutoClosingIterator<RealignedRemoteSoftClipEvidence>(remoteScIt, Lists.<Closeable>newArrayList(realignSortedReader, scRealignSorted1, scRealignSorted2));
-				remoteScIt = new DirectEvidenceWindowedSortingIterator<RealignedRemoteSoftClipEvidence>(processContext, getMetrics().getMaxReadLength(), remoteScIt);
+				remoteScIt = new DirectEvidenceWindowedSortingIterator<RealignedRemoteSoftClipEvidence>(processContext, getMetrics().getIdsvMetrics().MAX_READ_LENGTH, remoteScIt);
 			}
 		} else {
 			log.info("Realigned remote soft clip evidence not present due to missing realignment bam ", realigned);
 		}
 		return Iterators.mergeSorted(ImmutableList.of(rpIt, scIt, remoteScIt), DirectedEvidenceOrder.ByNatural);
+	}
+	public ReadPairConcordanceCalculator getReadPairConcordanceCalculator() {
+		if (rpcc == null) {
+			switch (rpcMethod) {
+				case FIXED:
+					rpcc = new FixedSizeReadPairConcordanceCalculator((int)(Integer)rpcParams[0], (int)(Integer)rpcParams[1]);
+					break;
+				case PERCENTAGE:
+					rpcc = new PercentageReadPairConcordanceCalculator(getMetrics().getInsertSizeDistribution(), (double)(Double)rpcParams[0]);
+					break;
+				default:
+				case SAM_FLAG:
+					rpcc = new SAMFlagReadPairConcordanceCalculator(getMetrics().getIdsvMetrics());
+					// Safety check for BWA which sets proper pair flag based only correct chromosome and orientation 
+					if (getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH >= 100000 &&  
+							getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH >= getMetrics().getInsertSizeMetrics().MAX_INSERT_SIZE / 2 &&
+							getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH >= 10 * getMaxReadLength()) {
+						String msg = String.format("Proper pair flag indicates fragment size of %d is expected!"
+								+ " Realign with an aligner that consider fragment size when setting the proper pair flag or "
+								+ " specify fixed or percentage bounds for read pair concordance for %s."
+								+ " Insert size distribution counts can be found in %s",
+								getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH,
+								input,
+								processContext.getFileSystemContext().getIdsvMetrics(input)); 
+						log.error(msg);
+						throw new IllegalArgumentException(msg);
+					}
+					break;
+			}
+		}
+		return rpcc;
+	}
+	@Override
+	public int getMaxConcordantFragmentSize() {
+		return Math.max(getMetrics().getIdsvMetrics().MAX_READ_LENGTH, getReadPairConcordanceCalculator().maxConcordantFragmentSize());
+	}
+	public int getMaxReadLength() {
+		return getMetrics().getIdsvMetrics().MAX_READ_LENGTH;
 	}
 }

@@ -174,7 +174,7 @@ public class AssemblyBuilderTest extends TestHelper {
 		bs = dba.getBreakendSummary();
 		assertEquals(BWD, bs.direction);
 		assertEquals(1, bs.referenceIndex);
-		assertEquals(1000 - AES().getMetrics().getMaxFragmentSize(), bs.start);
+		assertEquals(1000 - AES().getMaxConcordantFragmentSize() , bs.start);
 		assertEquals(1000, bs.end);
 		
 		dba = new AssemblyBuilder(getContext(), AES())
@@ -186,7 +186,7 @@ public class AssemblyBuilderTest extends TestHelper {
 		assertEquals(FWD, bs.direction);
 		assertEquals(1, bs.referenceIndex);
 		assertEquals(1000, bs.start);
-		assertEquals(1000 + AES().getMetrics().getMaxFragmentSize(), bs.end);
+		assertEquals(1000 + AES().getMaxConcordantFragmentSize(), bs.end);
 	}
 	@Test
 	@Ignore("TODO: NYI: Not Yet Implemented")

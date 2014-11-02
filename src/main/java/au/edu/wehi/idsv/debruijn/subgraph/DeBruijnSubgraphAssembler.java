@@ -3,7 +3,6 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 import java.io.File;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
-import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.DirectedEvidence;
@@ -28,7 +27,6 @@ import com.google.common.collect.Iterables;
 public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 	private final ProcessingContext processContext;
 	private final AssemblyEvidenceSource source;
-	private final AssemblyParameters parameters;
 	private DeBruijnReadGraph fgraph;
 	private DeBruijnReadGraph bgraph;
 	private int currentReferenceIndex = -1;
@@ -36,7 +34,6 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 	public DeBruijnSubgraphAssembler(ProcessingContext processContext, AssemblyEvidenceSource source) {
 		this.processContext = processContext;
 		this.source = source;
-		this.parameters = processContext.getAssemblyParameters();
 	}
 	@Override
 	public Iterable<VariantContextDirectedEvidence> addEvidence(DirectedEvidence evidence) {
@@ -47,11 +44,11 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 		}
 		// Assemble old evidence that couldn't have anything to do with us
 		int startpos = evidence.getBreakendSummary().start;
-		int shouldBeCompletedPos = (int)(startpos - processContext.getAssemblyParameters().subgraphAssemblyMargin * source.getMetrics().getMaxFragmentSize());
+		int shouldBeCompletedPos = (int)(startpos - processContext.getAssemblyParameters().subgraphAssemblyMargin * source.getMaxConcordantFragmentSize());
 		it = Iterables.concat(it, assembleBefore(shouldBeCompletedPos));
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
-			assert(fgraph.sanityCheckSubgraphs(shouldBeCompletedPos, startpos + source.getMetrics().getMaxFragmentSize()));
-			assert(bgraph.sanityCheckSubgraphs(shouldBeCompletedPos, startpos + source.getMetrics().getMaxFragmentSize()));
+			assert(fgraph.sanityCheckSubgraphs(shouldBeCompletedPos, startpos + source.getMaxConcordantFragmentSize()));
+			assert(bgraph.sanityCheckSubgraphs(shouldBeCompletedPos, startpos + source.getMaxConcordantFragmentSize()));
 		}
 		startingNextProcessingStep();
 		if (evidence.getBreakendSummary().direction == BreakendDirection.Forward) {
@@ -68,16 +65,16 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 	private void init(int referenceIndex) {
 		processStep = 0;
 		currentReferenceIndex = referenceIndex;
-		fgraph = new DeBruijnReadGraph(processContext, source, referenceIndex, BreakendDirection.Forward, parameters, source.getMetrics());
-		bgraph = new DeBruijnReadGraph(processContext, source, referenceIndex, BreakendDirection.Backward, parameters, source.getMetrics());
-		if (parameters.debruijnGraphVisualisationDirectory != null) {
-			fgraph.setGraphExporter(new DeBruijnSubgraphGexfExporter(parameters.k));
-			bgraph.setGraphExporter(new DeBruijnSubgraphGexfExporter(parameters.k));
+		fgraph = new DeBruijnReadGraph(processContext, source, referenceIndex, BreakendDirection.Forward, processContext.getAssemblyParameters());
+		bgraph = new DeBruijnReadGraph(processContext, source, referenceIndex, BreakendDirection.Backward, processContext.getAssemblyParameters());
+		if (processContext.getAssemblyParameters().debruijnGraphVisualisationDirectory != null) {
+			fgraph.setGraphExporter(new DeBruijnSubgraphGexfExporter(processContext.getAssemblyParameters().k));
+			bgraph.setGraphExporter(new DeBruijnSubgraphGexfExporter(processContext.getAssemblyParameters().k));
 		}
 	}
 	private Iterable<VariantContextDirectedEvidence> assembleAll() {
 		Iterable<VariantContextDirectedEvidence> assemblies = assembleBefore(Integer.MAX_VALUE);
-		File exportDir = parameters.debruijnGraphVisualisationDirectory;
+		File exportDir = processContext.getAssemblyParameters().debruijnGraphVisualisationDirectory;
 		if (exportDir != null) {
 			exportDir.mkdir();
 			if (fgraph != null) {

@@ -18,7 +18,6 @@ import au.edu.wehi.idsv.debruijn.DeBruijnVariantGraph;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.VariantEvidence;
-import au.edu.wehi.idsv.metrics.RelevantMetrics;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
 import au.edu.wehi.idsv.visualisation.StaticDeBruijnSubgraphPathGraphGexfExporter;
 
@@ -34,7 +33,6 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	private final Set<SubgraphSummary> subgraphs = Sets.newHashSet();
 	private final int referenceIndex;
 	private final AssemblyParameters parameters;
-	private final RelevantMetrics metrics;
 	private int graphsExported = 0;
 	/**
 	 * 
@@ -44,20 +42,9 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	 * @param gexf 
 	 */
 	public DeBruijnReadGraph(ProcessingContext processContext, AssemblyEvidenceSource source, int referenceIndex, BreakendDirection direction, AssemblyParameters parameters) {
-		this(processContext, source, referenceIndex, direction, parameters, null);
-	}
-	/**
-	 * 
-	 * @param k
-	 * @param direction
-	 * @param parameters 
-	 * @param gexf 
-	 */
-	public DeBruijnReadGraph(ProcessingContext processContext, AssemblyEvidenceSource source, int referenceIndex, BreakendDirection direction, AssemblyParameters parameters, RelevantMetrics metrics) {
 		super(processContext, source, parameters.k, direction);
 		this.referenceIndex = referenceIndex;
 		this.parameters = parameters;
-		this.metrics = metrics;
 	}
 	@Override
 	protected DeBruijnSubgraphNode createNode(VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) {
@@ -114,10 +101,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	}
 	private int maxSubgraphSize = 4096;
 	private boolean exceedsTimeout(SubgraphSummary ss) {
-		if (metrics != null) {
-			return ss.getMaxAnchor() - ss.getMinAnchor() > parameters.maxSubgraphFragmentWidth * metrics.getMaxFragmentSize();
-		}
-		return false;
+		return ss.getMaxAnchor() - ss.getMinAnchor() > parameters.maxSubgraphFragmentWidth * source.getMaxConcordantFragmentSize();
 	}
 	/**
 	 * Assembles contigs which do not have any relevance at or after the given position 

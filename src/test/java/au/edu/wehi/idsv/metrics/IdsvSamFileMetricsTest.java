@@ -5,16 +5,26 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
 import picard.analysis.InsertSizeMetrics;
-import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.TestHelper;
 
 public class IdsvSamFileMetricsTest extends TestHelper {
+	@Test
+	public void wrapper_inner_metrics() {
+		IdsvMetrics im = new IdsvMetrics();
+		InsertSizeMetrics ism = new InsertSizeMetrics();
+		InsertSizeDistribution isd = new InsertSizeDistribution(new int[] { 1}, new double[] { 1}, 1);
+		IdsvSamFileMetrics metrics = new IdsvSamFileMetrics(ism, im, isd);
+		assertEquals(im, metrics.getIdsvMetrics());
+		assertEquals(isd, metrics.getInsertSizeDistribution());
+		assertEquals(ism, metrics.getInsertSizeMetrics());
+	}
+	/*
 	@Test
 	public void shouldUseMADforStdDev() {
 		IdsvMetrics im = new IdsvMetrics();
 		InsertSizeMetrics ism = new InsertSizeMetrics();
 		ism.MEDIAN_ABSOLUTE_DEVIATION = 10;
-		RelevantMetrics metrics = new IdsvSamFileMetrics(getContext(), ism, im, null);
+		IdsvSamFileMetrics metrics = new IdsvSamFileMetrics(getContext(), ism, im, null);
 		assertEquals(10 * 1.4826, metrics.getFragmentSizeStdDev(), 0.0001);
 	}
 	@Test
@@ -22,7 +32,7 @@ public class IdsvSamFileMetricsTest extends TestHelper {
 		IdsvMetrics im = new IdsvMetrics();
 		im.MAX_PROPER_PAIR_FRAGMENT_LENGTH = 10;
 		InsertSizeMetrics ism = new InsertSizeMetrics();
-		RelevantMetrics metrics = new IdsvSamFileMetrics(getContext(), ism, im, null);
+		IdsvSamFileMetrics metrics = new IdsvSamFileMetrics(getContext(), ism, im, null);
 		assertEquals(10, metrics.getMaxFragmentSize());
 	}
 	@Test
@@ -53,4 +63,5 @@ public class IdsvSamFileMetricsTest extends TestHelper {
 		IdsvSamFileMetrics metrics = new IdsvSamFileMetrics(pc, ism, im, isd);
 		assertEquals(749, metrics.getMaxFragmentSize());
 	}
+	*/
 }

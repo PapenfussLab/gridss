@@ -2,7 +2,6 @@ package au.edu.wehi.idsv;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTag;
-import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.util.SequenceUtil;
 
 import java.nio.charset.StandardCharsets;
@@ -12,7 +11,6 @@ import org.apache.commons.lang3.StringUtils;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 public class SoftClipEvidence implements DirectedEvidence {
-	private static final int DOVETAIL_ERROR_MARGIN = 2;
 	private static final int MAX_ADAPTER_MAPPED_BASES = 6;
 	private final ProcessingContext processContext;
 	private final SAMEvidenceSource source;
@@ -163,14 +161,39 @@ public class SoftClipEvidence implements DirectedEvidence {
 				&& !isAdapterSoftClip(p);
 	}
 	/**
+	 * Dovetailing reads do not support SVs, they are caused by fragment size
+	 * less than read length
+	 * 
+	 * =======> <=======
+	 * 
+	 * 
+	 * @param expectedOrientation
+	 *            read pair orientation
+	 * @return true if the soft clip is due to a fragment size smaller than the
+	 *         read length
+	 */
+	public boolean isDovetailing() {
+		if (!record.getReadPairedFlag() || record.getMateUnmappedFlag()
+				|| record.getReadUnmappedFlag())
+			return false;
+		return record.getMateReferenceIndex() == record.getReferenceIndex()
+				&& Math.abs(record.getAlignmentStart()
+						- record.getMateAlignmentStart()) <= SAMRecordUtil.DOVETAIL_ERROR_MARGIN
+				// dovetails happen on the 3' end of the read for FR
+				&& ((location.direction == BreakendDirection.Forward && !record
+						.getReadNegativeStrandFlag()) || (location.direction == BreakendDirection.Backward && record
+						.getReadNegativeStrandFlag()));
+	}
+
+	/**
 	 * Determine whether this soft clip is cause by read-through into adapter sequence 
 	 * @param p soft clip parameter
 	 * @return true, if the soft clip is due to adapter sequence, false otherwise
 	 */
 	public boolean isAdapterSoftClip(SoftClipParameters p) {
 		if (p.adapterSequences == null) return false;
-		PairOrientation po = source.getMetrics().getPairOrientation();
-		if (po == null || po == PairOrientation.FR) {
+		//PairOrientation po = source.getMetrics().getPairOrientation();
+		//if (po == null || po == PairOrientation.FR) {
 			// not adapter if the soft clip is on the 5' end of the read
 			if (location.direction == BreakendDirection.Forward && record.getReadNegativeStrandFlag()) return false;
 			if (location.direction == BreakendDirection.Backward && !record.getReadNegativeStrandFlag()) return false;
@@ -180,8 +203,8 @@ public class SoftClipEvidence implements DirectedEvidence {
 				}
 			}
 			return false;
-		}
-		throw new RuntimeException(String.format("Not Yet Implemented: handling of %s read pair orientation", po));
+		//}
+		//throw new RuntimeException(String.format("Not Yet Implemented: handling of %s read pair orientation", po));
 	}
 	/**
 	 * Checks the soft clip against the given adapter
@@ -218,27 +241,5 @@ public class SoftClipEvidence implements DirectedEvidence {
 			nonzeroSize = true;
 		}
 		return nonzeroSize; // no bases compared = no adapter match 
-	}
-	/**
-	 * Dovetailing reads do not support SVs, they are caused by fragment size less than read length
-	 * 
-	 *     =======>
-	 *  <=======
-	 * 
-	 * 
-	 * @param expectedOrientation read pair orientation
-	 * @return true if the soft clip is due to a fragment size smaller than the read length
-	 */
-	public boolean isDovetailing() {
-		if (!record.getReadPairedFlag() || record.getMateUnmappedFlag()) return false;
-		PairOrientation po = source.getMetrics().getPairOrientation();
-		if (po == null || po == PairOrientation.FR) {
-			return record.getMateReferenceIndex() == record.getReferenceIndex()
-					&& Math.abs(record.getAlignmentStart() - record.getMateAlignmentStart()) <= DOVETAIL_ERROR_MARGIN
-					// dovetails happen on the 3' end of the read for FR 
-					&& ((location.direction == BreakendDirection.Forward && !record.getReadNegativeStrandFlag())
-						|| (location.direction == BreakendDirection.Backward && record.getReadNegativeStrandFlag()));
-		}
-		throw new RuntimeException(String.format("Not Yet Implemented: handling of %s read pair orientation", po));
 	}
 }

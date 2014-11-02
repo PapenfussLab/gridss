@@ -25,6 +25,7 @@ import picard.analysis.directed.InsertSizeMetricsCollector;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.FastqBreakpointWriter;
 import au.edu.wehi.idsv.FileSystemContext;
+import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
@@ -32,7 +33,6 @@ import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import au.edu.wehi.idsv.metrics.IdsvMetricsCollector;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
-import au.edu.wehi.idsv.metrics.InsertSizeDistribution;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
@@ -125,13 +125,6 @@ public class ExtractEvidence implements Closeable {
 		if (!source.isComplete(ProcessStep.CALCULATE_METRICS) && steps.contains(ProcessStep.CALCULATE_METRICS)) {
 			gatherMetrics(processContext.getCalculateMetricsRecordCount());
 			remainingSteps.remove(ProcessStep.CALCULATE_METRICS);
-		}
-		if (processContext.getReadPairParameters().useProperPairFlag &&
-				source.getMetrics().getMaxFragmentSize() > 2 * source.getMetrics().getMedianFragmentSize() + 10 * source.getMetrics().getFragmentSizeStdDev()) {
-			log.error(String.format("Proper pair flag indicates fragment size of %d is expected!"
-					+ " Use READ_PAIR_CONCORDANT_PERCENT to override discordant pair calculation"
-					+ " or realign with an aligner that consider fragment size when setting the proper pair flag.",
-					source.getMetrics().getMaxFragmentSize()));
 		}
 		if (!remainingSteps.isEmpty()) {
 			doProcess(remainingSteps);
@@ -309,28 +302,11 @@ public class ExtractEvidence implements Closeable {
 				}
 				if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) {
 					if (record.getReadPairedFlag()) {
-						boolean isConcordant = SAMRecordUtil.couldBeProperPair(record, source.getMetrics().getPairOrientation());
-						if (processContext.getReadPairParameters().useProperPairFlag) {
-							isConcordant &= record.getProperPairFlag();
+						if (NonReferenceReadPair.meetsLocalEvidenceCritera(processContext.getReadPairParameters(), source, record)) {
+							rpwriters.get(offset % rpwriters.size()).addAlignment(record);
 						}
-						double concordantPercentage = processContext.getReadPairParameters().concordantPercent; // 0.95
-						if (concordantPercentage > 0 && isConcordant) {
-							InsertSizeDistribution dist = source.getMetrics().getInsertSizeDistribution();
-							int insertSize = Math.abs(record.getInferredInsertSize());
-							// restrict to reads that are outside the expected distribution
-							isConcordant &= dist.cumulativeProbability(insertSize) <= processContext.getReadPairParameters().getCordantPercentageUpperBound()
-									&& dist.descendingCumulativeProbability(insertSize) <= processContext.getReadPairParameters().getCordantPercentageUpperBound();
-						}
-						if (!isConcordant) {
-							if (processContext.getReadPairParameters().meetsEvidenceCritera(record)) {
-								// don't write this record if we're going to filter
-								// still need to write mate as we don't know if it will pass the filter (eg mapq fail here, pass for mate)
-								rpwriters.get(offset % rpwriters.size()).addAlignment(record);
-							}
-							if (!record.getMateUnmappedFlag()) {
-								// would be nice to know if we actually need to write this but we don't know enough about the mate yet
-								if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) matewriters.get(record.getMateReferenceIndex() % matewriters.size()).addAlignment(record);
-							}
+						if (NonReferenceReadPair.meetsRemoteEvidenceCritera(processContext.getReadPairParameters(), source, record)) {
+							matewriters.get(record.getMateReferenceIndex() % matewriters.size()).addAlignment(record);
 						}
 					}
 				}

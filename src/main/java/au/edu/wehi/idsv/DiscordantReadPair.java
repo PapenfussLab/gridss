@@ -36,9 +36,7 @@ public class DiscordantReadPair extends NonReferenceReadPair implements Directed
 		return SAMRecordUtil.getTotalReferenceBaseQual(getNonReferenceRead());
 	}
 	@Override
-	public boolean fragmentSequencesOverlap() {
-		return getLocalledMappedRead().getReferenceIndex() == getNonReferenceRead().getReferenceIndex()
-			&& ((getLocalledMappedRead().getAlignmentStart() >= getNonReferenceRead().getAlignmentStart() && getLocalledMappedRead().getAlignmentStart() <= getNonReferenceRead().getAlignmentEnd()) ||
-				(getNonReferenceRead().getAlignmentStart() >= getLocalledMappedRead().getAlignmentStart() && getNonReferenceRead().getAlignmentStart() <= getLocalledMappedRead().getAlignmentEnd()));
+	public String toString() {
+		return String.format("RP %s mapq=%d", getBreakendSummary(), getLocalMapq());
 	}
 }

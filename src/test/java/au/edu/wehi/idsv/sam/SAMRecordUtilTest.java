@@ -38,60 +38,6 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertEquals(2, SAMRecordUtil.getEndSoftClipLength(Read(0, 1, "2M2S1H")));
 	}
 	@Test
-	public void isPartOfNonReferenceReadPair() {
-		assertFalse(SAMRecordUtil.isPartOfNonReferenceReadPair(Read(0, 1, "1M")));
-		assertFalse(SAMRecordUtil.isPartOfNonReferenceReadPair(RP(1, 1, 1)[0]));
-		assertFalse(SAMRecordUtil.isPartOfNonReferenceReadPair(RP(1, 1, 1)[1]));
-		assertTrue(SAMRecordUtil.isPartOfNonReferenceReadPair(OEA(1, 1, "1M", true)[0]));
-		assertTrue(SAMRecordUtil.isPartOfNonReferenceReadPair(OEA(1, 1, "1M", false)[0]));
-		assertTrue(SAMRecordUtil.isPartOfNonReferenceReadPair(OEA(1, 1, "1M", true)[1]));
-		assertTrue(SAMRecordUtil.isPartOfNonReferenceReadPair(OEA(1, 1, "1M", false)[1]));
-		assertTrue(SAMRecordUtil.isPartOfNonReferenceReadPair(DP(1, 1, "1M", true, 0, 1, "1M", true)[0]));
-		assertTrue(SAMRecordUtil.isPartOfNonReferenceReadPair(DP(1, 1, "1M", true, 0, 1, "1M", false)[0]));
-		assertTrue(SAMRecordUtil.isPartOfNonReferenceReadPair(DP(1, 1, "1M", false, 0, 1, "1M", true)[0]));
-		assertTrue(SAMRecordUtil.isPartOfNonReferenceReadPair(DP(1, 1, "1M", false, 0, 1, "1M", false)[0]));
-		assertTrue(SAMRecordUtil.isPartOfNonReferenceReadPair(DP(1, 1, "1M", true, 0, 1, "1M", true)[1]));
-		assertTrue(SAMRecordUtil.isPartOfNonReferenceReadPair(DP(1, 1, "1M", true, 0, 1, "1M", false)[1]));
-		assertTrue(SAMRecordUtil.isPartOfNonReferenceReadPair(DP(1, 1, "1M", false, 0, 1, "1M", true)[1]));
-		assertTrue(SAMRecordUtil.isPartOfNonReferenceReadPair(DP(1, 1, "1M", false, 0, 1, "1M", false)[1]));
-	}
-	@Test
-	public void isDiscordantPairMember() {
-		assertFalse(SAMRecordUtil.isDiscordantPairMember(Read(0, 1, "1M")));
-		assertFalse(SAMRecordUtil.isDiscordantPairMember(RP(1, 1, 1)[0]));
-		assertFalse(SAMRecordUtil.isDiscordantPairMember(RP(1, 1, 1)[1]));
-		assertFalse(SAMRecordUtil.isDiscordantPairMember(OEA(1, 1, "1M", true)[0]));
-		assertFalse(SAMRecordUtil.isDiscordantPairMember(OEA(1, 1, "1M", false)[0]));
-		assertFalse(SAMRecordUtil.isDiscordantPairMember(OEA(1, 1, "1M", true)[1]));
-		assertFalse(SAMRecordUtil.isDiscordantPairMember(OEA(1, 1, "1M", false)[1]));
-		assertTrue(SAMRecordUtil.isDiscordantPairMember(DP(1, 1, "1M", true, 0, 1, "1M", true)[0]));
-		assertTrue(SAMRecordUtil.isDiscordantPairMember(DP(1, 1, "1M", true, 0, 1, "1M", false)[0]));
-		assertTrue(SAMRecordUtil.isDiscordantPairMember(DP(1, 1, "1M", false, 0, 1, "1M", true)[0]));
-		assertTrue(SAMRecordUtil.isDiscordantPairMember(DP(1, 1, "1M", false, 0, 1, "1M", false)[0]));
-		assertTrue(SAMRecordUtil.isDiscordantPairMember(DP(1, 1, "1M", true, 0, 1, "1M", true)[1]));
-		assertTrue(SAMRecordUtil.isDiscordantPairMember(DP(1, 1, "1M", true, 0, 1, "1M", false)[1]));
-		assertTrue(SAMRecordUtil.isDiscordantPairMember(DP(1, 1, "1M", false, 0, 1, "1M", true)[1]));
-		assertTrue(SAMRecordUtil.isDiscordantPairMember(DP(1, 1, "1M", false, 0, 1, "1M", false)[1]));
-	}
-	@Test
-	public void isAnchoredPairMember() {
-		assertFalse(SAMRecordUtil.isAnchoredPairMember(Read(0, 1, "1M")));
-		assertFalse(SAMRecordUtil.isAnchoredPairMember(RP(1, 1, 1)[0]));
-		assertFalse(SAMRecordUtil.isAnchoredPairMember(RP(1, 1, 1)[1]));
-		assertTrue(SAMRecordUtil.isAnchoredPairMember(OEA(1, 1, "1M", true)[0]));
-		assertTrue(SAMRecordUtil.isAnchoredPairMember(OEA(1, 1, "1M", false)[0]));
-		assertTrue(SAMRecordUtil.isAnchoredPairMember(OEA(1, 1, "1M", true)[1]));
-		assertTrue(SAMRecordUtil.isAnchoredPairMember(OEA(1, 1, "1M", false)[1]));
-		assertFalse(SAMRecordUtil.isAnchoredPairMember(DP(1, 1, "1M", true, 0, 1, "1M", true)[0]));
-		assertFalse(SAMRecordUtil.isAnchoredPairMember(DP(1, 1, "1M", true, 0, 1, "1M", false)[0]));
-		assertFalse(SAMRecordUtil.isAnchoredPairMember(DP(1, 1, "1M", false, 0, 1, "1M", true)[0]));
-		assertFalse(SAMRecordUtil.isAnchoredPairMember(DP(1, 1, "1M", false, 0, 1, "1M", false)[0]));
-		assertFalse(SAMRecordUtil.isAnchoredPairMember(DP(1, 1, "1M", true, 0, 1, "1M", true)[1]));
-		assertFalse(SAMRecordUtil.isAnchoredPairMember(DP(1, 1, "1M", true, 0, 1, "1M", false)[1]));
-		assertFalse(SAMRecordUtil.isAnchoredPairMember(DP(1, 1, "1M", false, 0, 1, "1M", true)[1]));
-		assertFalse(SAMRecordUtil.isAnchoredPairMember(DP(1, 1, "1M", false, 0, 1, "1M", false)[1]));
-	}
-	@Test
 	public void ensureNmTag_should_not_require_reference_if_tag_set() {
 		SAMRecord r = new SAMRecord(null);
 		r.setAttribute("NM", 1);
@@ -160,5 +106,23 @@ public class SAMRecordUtilTest extends TestHelper {
 	public void getMaxReferenceBaseQual_should_max_mapped_bases() {
 		byte[] qual = { 0, 1, 2, 3, 4, 5, 7, 6, 8, 9 };
 		assertEquals(7, SAMRecordUtil.getMaxReferenceBaseQual(withQual(qual, Read(0, 1, "3S5M2S"))[0]));
+	}
+	@Test
+	public void overlap() {
+		assertTrue(SAMRecordUtil.overlap(DP(1, 1, "5M", true, 1, 5, "5M", false)[0], DP(1, 1, "5M", true, 1, 5, "5M", false)[1]));
+		assertTrue(SAMRecordUtil.overlap(DP(1, 1, "5M", true, 1, 5, "5M", true)[0], DP(1, 1, "5M", true, 1, 5, "5M", true)[1]));
+		assertFalse(SAMRecordUtil.overlap(DP(1, 1, "5M", true, 0, 5, "5M", false)[0], DP(1, 1, "5M", true, 0, 5, "5M", false)[1]));
+		assertFalse(SAMRecordUtil.overlap(DP(1, 1, "5M", true, 1, 6, "5M", true)[0], DP(1, 1, "5M", true, 1, 6, "5M", true)[1]));
+		
+		assertFalse(SAMRecordUtil.overlap(OEA(0, 1, "5M", true)[0], OEA(0, 1, "5M", true)[1]));
+	}
+	@Test
+	public void estimateFragmentSize() {
+		assertEquals(1, SAMRecordUtil.estimateFragmentSize(RP(0, 1, 1, 1)[0]));
+		assertEquals(1, SAMRecordUtil.estimateFragmentSize(RP(0, 1, 1, 1)[1]));
+		assertEquals(2, SAMRecordUtil.estimateFragmentSize(RP(0, 1, 2, 1)[0]));
+		assertEquals(2, SAMRecordUtil.estimateFragmentSize(RP(0, 1, 2, 1)[1]));
+		assertEquals(3, SAMRecordUtil.estimateFragmentSize(RP(0, 1, 2, 2)[0]));
+		assertEquals(3, SAMRecordUtil.estimateFragmentSize(RP(0, 1, 2, 2)[1]));
 	}
 }

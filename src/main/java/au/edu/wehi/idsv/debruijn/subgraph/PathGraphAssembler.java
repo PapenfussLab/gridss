@@ -195,38 +195,12 @@ public class PathGraphAssembler extends PathGraph {
 		} catch (AlgorithmRuntimeSafetyLimitExceededException e) {
 			log.info(String.format("Reached path traversal timeout traversing subgraph with %d paths. Switching to greedy traversal.", paths.size()));
 		}
-		return greedyTraverse(startingNode, scoringFunction, traverseForward, referenceTraverse);
-	}
-	protected List<SubgraphPathNode> greedyTraverse(
-			final SubgraphPathNode startingNode,
-			final Function<SubgraphPathNode, Integer> scoringFunction,
-			final boolean traverseForward,
-			final boolean referenceTraverse) {
-		Ordering<SubgraphPathNode> order = getScoreOrderDesc(scoringFunction);
-		List<SubgraphPathNode> contig = Lists.newArrayList();
-		contig.add(startingNode);
-		SubgraphPathNode node = startingNode;
-		while (node != null) {
-			List<SubgraphPathNode> nextStates = traverseForward ? nextPath(node) : prevPath(node);
-			Collections.sort(nextStates, order);
-			node = null;
-			for (SubgraphPathNode next : nextStates) {
-				if ((referenceTraverse && !next.containsReferenceKmer()) ||
-					(!referenceTraverse && !next.containsNonReferenceKmer())) {
-					// skip: don't want to transition between reference and non-reference
-				} else if (contig.contains(next)) {
-					// don't loop back on ourself
-				} else {
-					contig.add(next);
-					node = next;
-					break;
-				}
-			}
+		try {
+			return memoizedTraverse(startingNode, scoringFunction, traverseForward, referenceTraverse, 1);
+		} catch (AlgorithmRuntimeSafetyLimitExceededException e) {
+			log.error("Sanity check failure: timeout hit again when performing greedy traversal");
+			throw new RuntimeException(e);
 		}
-		if (!traverseForward) {
-			contig = Lists.reverse(contig);
-		}
-		return contig;
 	}
 	protected List<SubgraphPathNode> memoizedTraverse(
 			final SubgraphPathNode startingNode,
@@ -249,7 +223,9 @@ public class PathGraphAssembler extends PathGraph {
 		
 		while (!frontier.isEmpty()) {
 			nodeTraversals++;
-			if (nodeTraversals > parameters.maxPathTraversalNodes) {
+			if (nodeTraversals > parameters.maxPathTraversalNodes && maxNextStates != 1) {
+				// maxNextStates = 1 is a greedy traversal - need need for a timeout as it is n nodes traversed
+				// even in a fully connected graph
 				throw new AlgorithmRuntimeSafetyLimitExceededException();
 			}
 			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {

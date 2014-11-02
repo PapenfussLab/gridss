@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.fastq.FastqRecord;
 
 import java.util.EnumSet;
@@ -16,7 +15,6 @@ import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
-import au.edu.wehi.idsv.metrics.RelevantMetrics;
 
 
 public class ExtractEvidenceTest extends IntermediateFilesTest {
@@ -127,12 +125,11 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 		createInput(RP(0, 1, 2, 1), RP(0, 1, 7, 5));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
 		source.completeSteps(EnumSet.of(ProcessStep.CALCULATE_METRICS));
-		RelevantMetrics metrics = source.getMetrics();
-		assertEquals(5, metrics.getMaxReadLength());
+		assertEquals(5, source.getMaxReadLength());
 		// 12345678901234567890
 		// ----> <----
-		assertEquals(11, metrics.getMaxFragmentSize());
-		assertEquals(PairOrientation.FR, metrics.getPairOrientation());
+		assertEquals(11, source.getMaxConcordantFragmentSize());
+		//assertEquals(PairOrientation.FR, metrics.getPairOrientation());
 	}
 	@Test
 	public void should_set_NM_tag() {

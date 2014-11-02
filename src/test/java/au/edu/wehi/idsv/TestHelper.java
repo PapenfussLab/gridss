@@ -38,7 +38,6 @@ import au.edu.wehi.idsv.debruijn.ReadKmerIterable;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
 import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
-import au.edu.wehi.idsv.metrics.RelevantMetrics;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
@@ -257,15 +256,9 @@ public class TestHelper {
 
 	public static class MockMetrics extends IdsvSamFileMetrics {
 		public MockMetrics() {
-			super(getContext(), new InsertSizeMetrics(), new IdsvMetrics(),
-					null);
-		}
-
-		public int maxFragSize = 300;
-
-		@Override
-		public int getMaxFragmentSize() {
-			return maxFragSize;
+			super(new InsertSizeMetrics(), new IdsvMetrics() {{
+				MAX_PROPER_PAIR_FRAGMENT_LENGTH = 300;
+			}}, null);
 		}
 	}
 
@@ -400,6 +393,9 @@ public class TestHelper {
 		read2.setReadNegativeStrandFlag(true);
 		read1.setProperPairFlag(true);
 		read2.setProperPairFlag(true);
+		read1.setReadName(String.format("RP%d-%d:%d-%d", readLength, referenceIndex, pos, pos2));
+		read1.setFirstOfPairFlag(true);
+		read2.setFirstOfPairFlag(false);
 		clean(read1, read2);
 		return new SAMRecord[] { read1, read2 };
 	}
@@ -696,11 +692,14 @@ public class TestHelper {
 	}
 
 	public static class MockSAMEvidenceSource extends SAMEvidenceSource {
-		public RelevantMetrics metrics = new MockMetrics();
+		public IdsvSamFileMetrics metrics = new MockMetrics();
 		public boolean isTumour = false;
 
 		public MockSAMEvidenceSource(ProcessingContext processContext) {
 			super(processContext, new File("test.bam"), false);
+		}
+		protected MockSAMEvidenceSource(ProcessingContext processContext, int minFragmentSize, int maxFragmentSize) {
+			super(processContext, new File("test.bam"), false, minFragmentSize, maxFragmentSize);
 		}
 		@Override
 		public boolean isTumour() {
@@ -712,8 +711,9 @@ public class TestHelper {
 			return super.isComplete(step);
 		}
 		@Override
-		public RelevantMetrics getMetrics() {
-			return metrics;
+		protected IdsvSamFileMetrics getMetrics() {
+			if (metrics != null) return metrics;
+			return super.getMetrics();
 		}
 	}
 
@@ -726,15 +726,12 @@ public class TestHelper {
 		e.isTumour = isTumour;
 		return e;
 	}
-
 	public static MockSAMEvidenceSource SES(int maxFragmentSize) {
-		MockSAMEvidenceSource ses = SES();
-		MockMetrics mm = new MockMetrics();
-		mm.maxFragSize = maxFragmentSize;
-		ses.metrics = mm;
-		return ses;
+		return (SES(0, maxFragmentSize));
 	}
-
+	public static MockSAMEvidenceSource SES(int minFragmentSize, int maxFragmentSize) {
+		return new MockSAMEvidenceSource(getContext(), minFragmentSize, maxFragmentSize);
+	}
 	public static AssemblyEvidenceSource AES() {
 		return new AssemblyEvidenceSource(getContext(),
 				ImmutableList.of((SAMEvidenceSource) SES()), new File(
