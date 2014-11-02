@@ -27,6 +27,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		AssemblyParameters p = pc.getAssemblyParameters();
 		p.k = k;
 		p.debruijnGraphVisualisationDirectory = new File(testFolder.getRoot(), "visualisation");
+		p.visualiseAll = true;
 		return new DeBruijnSubgraphAssembler(pc, AES());
 	}
 	@Test

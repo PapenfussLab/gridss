@@ -16,12 +16,13 @@ import htsjdk.samtools.util.SequenceUtil;
 import java.util.Arrays;
 import java.util.List;
 
+import au.edu.wehi.idsv.Defaults;
+
 /**
  * @author Daniel Cameron
  *
  */
 public class SAMRecordUtil {
-	public static final int DOVETAIL_ERROR_MARGIN = 4;
 	public static final int MIN_BASES_TO_ALIGN = 18;
 
 	/**
@@ -212,9 +213,9 @@ public class SAMRecordUtil {
 				&& record1.getReferenceIndex() == record2.getReferenceIndex()
 				&& record1.getReadNegativeStrandFlag() != record2.getReadNegativeStrandFlag() // FR
 				&& Math.abs(record1.getAlignmentStart()
-						- record2.getAlignmentStart()) <= DOVETAIL_ERROR_MARGIN
+						- record2.getAlignmentStart()) <= Defaults.READ_PAIR_DOVETAIL_MARGIN
 				&& Math.abs(record1.getAlignmentEnd()
-						- record2.getAlignmentEnd()) <= DOVETAIL_ERROR_MARGIN;
+						- record2.getAlignmentEnd()) <= Defaults.READ_PAIR_DOVETAIL_MARGIN;
 	}
 	public static boolean overlap(SAMRecord r1, SAMRecord r2) {
 		boolean result = r1 != null

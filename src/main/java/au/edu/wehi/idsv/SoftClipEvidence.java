@@ -178,7 +178,7 @@ public class SoftClipEvidence implements DirectedEvidence {
 			return false;
 		return record.getMateReferenceIndex() == record.getReferenceIndex()
 				&& Math.abs(record.getAlignmentStart()
-						- record.getMateAlignmentStart()) <= SAMRecordUtil.DOVETAIL_ERROR_MARGIN
+						- record.getMateAlignmentStart()) <= Defaults.READ_PAIR_DOVETAIL_MARGIN
 				// dovetails happen on the 3' end of the read for FR
 				&& ((location.direction == BreakendDirection.Forward && !record
 						.getReadNegativeStrandFlag()) || (location.direction == BreakendDirection.Backward && record

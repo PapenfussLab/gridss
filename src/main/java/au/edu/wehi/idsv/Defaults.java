@@ -32,6 +32,10 @@ public class Defaults {
 	/**
 	 * Maximum subgraph width
 	 */
+	public static final int READ_PAIR_DOVETAIL_MARGIN;
+	/**
+	 * Maximum subgraph width
+	 */
 	public static final float MAX_SUBGRAPH_WIDTH_IN_FRAGMENT_SIZE_MULTIPLES;
 	static {
 		VISUALISE_ALL = Boolean.valueOf(System.getProperty("gridss.visualisation.saveall", "false"));
@@ -42,5 +46,6 @@ public class Defaults {
 		COLLAPSE_PATH_MAX_TRAVERSAL = Integer.valueOf(System.getProperty("gridss.debruijn.maxCollapseTraversal", "16777216"));
 		BEST_PATH_MAX_TRAVERSAL = Integer.valueOf(System.getProperty("gridss.debruijn.maxPathTraversal", "1048576"));
 		MAX_SUBGRAPH_WIDTH_IN_FRAGMENT_SIZE_MULTIPLES = Float.valueOf(System.getProperty("gridss.debruijn.maxSubgraphFragmentWidth", "32"));
+		READ_PAIR_DOVETAIL_MARGIN = Integer.valueOf(System.getProperty("gridss.readpair.dovetailMargin", "4"));
 	}
 }
