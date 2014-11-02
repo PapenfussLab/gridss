@@ -67,7 +67,7 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 		currentReferenceIndex = referenceIndex;
 		fgraph = new DeBruijnReadGraph(processContext, source, referenceIndex, BreakendDirection.Forward, processContext.getAssemblyParameters());
 		bgraph = new DeBruijnReadGraph(processContext, source, referenceIndex, BreakendDirection.Backward, processContext.getAssemblyParameters());
-		if (processContext.getAssemblyParameters().debruijnGraphVisualisationDirectory != null) {
+		if (processContext.getAssemblyParameters().debruijnGraphVisualisationDirectory != null && processContext.getAssemblyParameters().visualiseAll) {
 			fgraph.setGraphExporter(new DeBruijnSubgraphGexfExporter(processContext.getAssemblyParameters().k));
 			bgraph.setGraphExporter(new DeBruijnSubgraphGexfExporter(processContext.getAssemblyParameters().k));
 		}
@@ -75,7 +75,7 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 	private Iterable<VariantContextDirectedEvidence> assembleAll() {
 		Iterable<VariantContextDirectedEvidence> assemblies = assembleBefore(Integer.MAX_VALUE);
 		File exportDir = processContext.getAssemblyParameters().debruijnGraphVisualisationDirectory;
-		if (exportDir != null) {
+		if (exportDir != null && processContext.getAssemblyParameters().visualiseAll) {
 			exportDir.mkdir();
 			if (fgraph != null) {
 				fgraph.getGraphExporter().saveTo(new File(exportDir, String.format("debruijn.kmers.forward.%s.gexf", processContext.getDictionary().getSequence(currentReferenceIndex).getSequenceName())));
