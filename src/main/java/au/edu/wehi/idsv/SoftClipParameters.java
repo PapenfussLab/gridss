@@ -15,9 +15,9 @@ public class SoftClipParameters {
 	 * 0-100
 	 */
 	public float minAnchorIdentity = 95;
-	public String[] adapterSequences = new String[] {
+	public AdapterHelper adapters = new AdapterHelper(new String[] {
 			"AGATCGGAAGAG", // Illumina Universal Adapter
 			"ATGGAATTCTCG", // Illumina Small RNA Adapter
 			"CTGTCTCTTATA", // Nextera Transposase Sequence
-	};
+	});
 }

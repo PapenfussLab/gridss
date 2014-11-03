@@ -73,7 +73,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     @Option(doc = "Adapter sequence to exclude from analysis."
     		+ "Defaults to Illumina Universal Adapter, Illumina Small RNA Adapter, Nextera Transposase Sequence",
     		optional=true)
-    public List<String> ADAPTER_SEQUENCE = Lists.newArrayList(new SoftClipParameters().adapterSequences);
+    public List<String> ADAPTER_SEQUENCE = Lists.newArrayList(new SoftClipParameters().adapters.getAdapterSequences());
  // --- Assembly parameters ---
     @Option(doc = "Local assembly algorithm used to construct breakend contigs.",
     		optional=true)
@@ -198,7 +198,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 	    scp.minLength = SOFT_CLIP_MIN_LENGTH;
 	    scp.minReadMapq = SOFT_CLIP_MIN_MAPQ;
 	    scp.minAnchorIdentity = SOFT_CLIP_MIN_ANCHOR_PERCENT_IDENTITY;
-	    scp.adapterSequences = (String[])ADAPTER_SEQUENCE.toArray(new String[ADAPTER_SEQUENCE.size()]);
+	    scp.adapters = new AdapterHelper((String[])ADAPTER_SEQUENCE.toArray(new String[ADAPTER_SEQUENCE.size()]));
 	    return scp;
 	}
 	private RealignmentParameters getRealignmentParameters() {
@@ -211,6 +211,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 	private ReadPairParameters getReadPairParameters() {
 		ReadPairParameters rpp = new ReadPairParameters();
 		rpp.minLocalMapq = READ_PAIR_ANCHOR_MIN_MAPQ;
+		rpp.adapters = new AdapterHelper((String[])ADAPTER_SEQUENCE.toArray(new String[ADAPTER_SEQUENCE.size()]));
 	    return rpp;
 	}
 	private FileSystemContext getFileSystemContext() {

@@ -53,7 +53,8 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		return remote.getReadPairedFlag()
 				&& !remote.getMateUnmappedFlag()
 				&& ((remote.getReadUnmappedFlag() && !remote.getMateUnmappedFlag()) // OEA
-					|| !(source.getReadPairConcordanceCalculator().isConcordant(remote) || SAMRecordUtil.estimatedReadsOverlap(remote))); // DP
+					|| !(source.getReadPairConcordanceCalculator().isConcordant(remote) || SAMRecordUtil.estimatedReadsOverlap(remote))) // DP
+				&& !rp.adapters.containsAdapter(remote);
 	}
 	/**
 	 * Calculates the local breakpoint location

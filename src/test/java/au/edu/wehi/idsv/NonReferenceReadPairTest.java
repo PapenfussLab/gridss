@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -354,5 +355,20 @@ public class NonReferenceReadPairTest extends TestHelper {
 		rp[0].setMateNegativeStrandFlag(true);
 		rp[1].setMateNegativeStrandFlag(true);
 		meetsEvidenceCriteria(true, rp);
+	}
+	// Adapters completely mess up the de Bruijn graph
+	@Test
+	public void meetsEvidenceCritera_should_filter_remote_reads_with_adapter_sequence() {
+		MockSAMEvidenceSource ses = SES(500, 500);
+		ReadPairParameters rpp = new ReadPairParameters() {{
+			minLocalMapq = 0;
+		}};
+		SAMRecord[] rp = RP(0, 100, 300, 101);
+		rp[0].setReadBases(B("CTGGGGGGACCTGAACAACTCCAAGGGCCTTGGCTGGCGAGAAAATCCTGCCTCAAAAGGGCGCGTGCTCGGTGGATCCACGGGCTACCGTTCCCTCTTAA"));
+		rp[1].setReadBases(B("CTGGGGGGACCTGAACAACTCCAAGGGCCTTGGCTGGCGAGAAAATCCTGCCTCAAAAGGGCGCGTGCTCGGTGGATCCACGGGCTACCGTTCCCTCTTAA"));
+		assertTrue(NonReferenceReadPair.create(rp[0], rp[1], ses).meetsEvidenceCritera(rpp));
+		
+		rp[1].setReadBases(B("ACCGCTCTTCCGATCTCATGCCTGGCGTCCACTTTCTTGACTATTTCCTGAAGACCAGCGTTTCCCGGGTGGTTTCACAGCTGCGGAAGCTGCCTGTGTCA"));
+		assertFalse(NonReferenceReadPair.create(rp[0], rp[1], ses).meetsEvidenceCritera(rpp));
 	}
 }

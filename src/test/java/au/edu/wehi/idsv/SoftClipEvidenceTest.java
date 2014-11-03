@@ -267,7 +267,7 @@ public class SoftClipEvidenceTest extends TestHelper {
 		scp.minAnchorIdentity = 0;
 		scp.minLength = 1;
 		scp.minReadMapq = 0;
-		scp.adapterSequences = null;
+		scp.adapters = new AdapterHelper(null);
 		SAMRecord[] rp = RP(0, 100, 100, 20);
 		rp[0].setCigarString("10M10S");
 		rp[1].setCigarString("10S10M");
@@ -287,7 +287,7 @@ public class SoftClipEvidenceTest extends TestHelper {
 		scp.minAnchorIdentity = 0;
 		scp.minLength = 1;
 		scp.minReadMapq = 0;
-		scp.adapterSequences = null;
+		scp.adapters = new AdapterHelper(null);
 		for (int i = 95 ; i <= 105; i++) { // -3bp -> +3bp, only +-3bp pass dovetail filter  
 			SAMRecord[] rp = RP(0, 100, i, 20);
 			rp[0].setCigarString("10M10S");
@@ -306,7 +306,7 @@ public class SoftClipEvidenceTest extends TestHelper {
 		scp.minAnchorIdentity = 0;
 		scp.minLength = 1;
 		scp.minReadMapq = 0;
-		scp.adapterSequences = null;
+		scp.adapters = new AdapterHelper(null);
 		SAMRecord[] rp = RP(0, 100, 100, 20);
 		rp[0].setCigarString("10M10S");
 		rp[1].setCigarString("10S10M");

@@ -11,7 +11,6 @@ import org.apache.commons.lang3.StringUtils;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 public class SoftClipEvidence implements DirectedEvidence {
-	private static final int MAX_ADAPTER_MAPPED_BASES = 6;
 	private final ProcessingContext processContext;
 	private final SAMEvidenceSource source;
 	private final SAMRecord record;
@@ -158,7 +157,7 @@ public class SoftClipEvidence implements DirectedEvidence {
 				&& getSoftClipLength() >= p.minLength
 				&& getAlignedPercentIdentity() >= p.minAnchorIdentity
 				&& !isDovetailing()
-				&& !isAdapterSoftClip(p);
+				&& !p.adapters.isAdapterSoftClip(this);
 	}
 	/**
 	 * Dovetailing reads do not support SVs, they are caused by fragment size
@@ -183,63 +182,5 @@ public class SoftClipEvidence implements DirectedEvidence {
 				&& ((location.direction == BreakendDirection.Forward && !record
 						.getReadNegativeStrandFlag()) || (location.direction == BreakendDirection.Backward && record
 						.getReadNegativeStrandFlag()));
-	}
-
-	/**
-	 * Determine whether this soft clip is cause by read-through into adapter sequence 
-	 * @param p soft clip parameter
-	 * @return true, if the soft clip is due to adapter sequence, false otherwise
-	 */
-	public boolean isAdapterSoftClip(SoftClipParameters p) {
-		if (p.adapterSequences == null) return false;
-		//PairOrientation po = source.getMetrics().getPairOrientation();
-		//if (po == null || po == PairOrientation.FR) {
-			// not adapter if the soft clip is on the 5' end of the read
-			if (location.direction == BreakendDirection.Forward && record.getReadNegativeStrandFlag()) return false;
-			if (location.direction == BreakendDirection.Backward && !record.getReadNegativeStrandFlag()) return false;
-			for (String adapter : p.adapterSequences) {
-				if (matchesAdapterFR(adapter)) {
-					return true;
-				}
-			}
-			return false;
-		//}
-		//throw new RuntimeException(String.format("Not Yet Implemented: handling of %s read pair orientation", po));
-	}
-	/**
-	 * Checks the soft clip against the given adapter
-	 * @param adapter
-	 * @return
-	 */
-	private boolean matchesAdapterFR(String adapter) {
-		int scLen = getSoftClipLength();
-		if (location.direction == BreakendDirection.Forward) {
-			// match soft clip
-			for (int i = 0; i <= MAX_ADAPTER_MAPPED_BASES; i++) {
-				if (matchesAdapterSequence(adapter, record.getReadBases(), record.getReadLength() - scLen - i, 1, false)) {
-					return true;
-				}
-			}
-		} else {
-			for (int i = 0; i <= MAX_ADAPTER_MAPPED_BASES; i++) {
-				if (matchesAdapterSequence(adapter, record.getReadBases(), scLen + i - 1, -1, true)) {
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-	private static boolean matchesAdapterSequence(String adapter, byte[] read, int readStartOffset, int readDirection, boolean complementAdapter) {
-		boolean nonzeroSize = false;
-		for (int i = 0; readStartOffset + i * readDirection < read.length && readStartOffset + i * readDirection  >= 0 && i < adapter.length(); i++) {
-			byte readBase = read[readStartOffset + i * readDirection];
-			byte adapterBase = (byte)adapter.charAt(i);
-			if (complementAdapter) adapterBase = SequenceUtil.complement(adapterBase);
-			if (SequenceUtil.isValidBase(readBase) && readBase != adapterBase) {
-				return false;
-			}
-			nonzeroSize = true;
-		}
-		return nonzeroSize; // no bases compared = no adapter match 
 	}
 }
