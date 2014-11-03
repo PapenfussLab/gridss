@@ -97,6 +97,7 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
      * in chunks
      */
     private class ReaderRunnable implements Runnable {
+    	private boolean eosWritten = false;
         public void run() {
         	try {
         		while (underlying.hasNext()) {
@@ -107,19 +108,23 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
 		    		}
 		    		if (!underlying.hasNext()) {
 		    			readAhead.add(eos);
+		    			eosWritten = true;
 		    		}
 		    		buffer.put(readAhead);
         		}
         	} catch (InterruptedException ie) {
-        		log.debug("Thread interrupt received - closing on background thread.");
+        		// log.debug("Thread interrupt received - closing on background thread.");
         	} catch (Throwable t) {
         		ex.compareAndSet(null, t);
         	} finally {
         		syncClose();
+        		Thread.interrupted(); // clear thread interrupt flag so we can write the eos indicator if needed
         		try {
-					buffer.put(ImmutableList.of(eos));
-				} catch (InterruptedException e) {
-					log.error("Thread interrupt received whilst writing end of stream indicator");
+        			if (!eosWritten) {
+        				buffer.put(ImmutableList.of(eos));
+        			}
+				} catch (InterruptedException e2) {
+					log.warn("Thread interrupt received whilst writing end of stream indicator");
 				}
         	}
         }
