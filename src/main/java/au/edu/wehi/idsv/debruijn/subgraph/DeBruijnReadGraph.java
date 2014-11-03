@@ -150,7 +150,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 				int width = ss.getMaxAnchor() - ss.getMinAnchor();
 				if (width > maxSubgraphSize) {
 					maxSubgraphSize = width;
-					log.debug(String.format("Subgraph width=%s [%d, %d] has %d paths: %s", width, ss.getMinAnchor(), ss.getMaxAnchor(), pga.getPaths().size(), debugOutputKmerSpread(ss)));
+					log.debug(String.format("Subgraph width=%s [%d, %d] has %d paths: %s", width, ss.getMinAnchor(), ss.getMaxAnchor(), pga.getPathCount(), debugOutputKmerSpread(ss)));
 				}
 				StaticDeBruijnSubgraphPathGraphGexfExporter graphExporter = null;
 				if (parameters.debruijnGraphVisualisationDirectory != null && (parameters.visualiseAll || (timeoutExceeded && parameters.visualiseTimeouts))) {

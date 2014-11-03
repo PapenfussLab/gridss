@@ -10,6 +10,13 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
 public class PathNode<T extends DeBruijnNodeBase> {
+	public int getNodeId() {
+		return nodeId;
+	}
+	public void setNodeId(int nodeId) {
+		this.nodeId = nodeId;
+	}
+	private int nodeId = -1;
 	private List<Long> path;
 	private List<List<Long>> allKmers;
 	private int weight;
@@ -222,8 +229,6 @@ public class PathNode<T extends DeBruijnNodeBase> {
 	public boolean contains(long kmer) {
 		return indexOf(kmer) >= 0;
 	}
-	private static int nodeCount = 0; // Just used for debugging
-	public final int nodeId = nodeCount++; // Just used for debugging
 	@Override
 	public String toString() {
 		return toString(null);

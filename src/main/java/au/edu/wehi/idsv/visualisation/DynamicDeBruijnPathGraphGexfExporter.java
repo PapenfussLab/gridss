@@ -29,6 +29,7 @@ import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphNode;
 import au.edu.wehi.idsv.debruijn.subgraph.SubgraphPathNode;
 
 import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 
@@ -103,7 +104,7 @@ public class DynamicDeBruijnPathGraphGexfExporter implements DeBruijnPathGraphEx
 		}
 		// set node validity timing
 		for (SubgraphPathNode pn : lookup.keySet()) {
-			ensureNodeState(lookup.get(pn), pg.getPaths().contains(pn));
+			ensureNodeState(lookup.get(pn), pn.getNodeId() >= 0);
 		}
 		return this;
 	}

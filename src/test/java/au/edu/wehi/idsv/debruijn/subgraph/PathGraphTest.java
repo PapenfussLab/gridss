@@ -20,8 +20,8 @@ public class PathGraphTest extends TestHelper {
 		// TTGGT
 		// ^   ^^^^ <- starts of reference kmers
 		PathGraph pg = new PathGraph(g, KmerEncodingHelper.picardBaseToEncoded(4, B("TTAA")));
-		assertEquals("precondition", 1, pg.getPaths().size());
+		assertEquals("precondition", 1, pg.getPathCount());
 		pg.splitOutReferencePaths();
-		assertEquals(4, pg.getPaths().size());
+		assertEquals(4, pg.getPathCount());
 	}
 }

@@ -27,14 +27,14 @@ public class DeBruijnPathGraphTest extends TestHelper {
 	public void constructor_should_compress_graph_at_construction() {
 		BasePathGraph pg = PG(G(4)
 				.add("GTACCTA"));
-		assertEquals(1, pg.getPaths().size());
+		assertEquals(1, pg.getPathCount());
 	}
 	@Test
 	public void constructor_should_not_compress_forks() {
 		BasePathGraph pg = PG(G(4)
 			.add("GTACCTA")
 			.add("GTACCTC"));
-		assertEquals(3, pg.getPaths().size());
+		assertEquals(3, pg.getPathCount());
 	}
 	@Test
 	public void ByMaxKmerWeightDesc_should_sort_by_weight_of_kmer() {
@@ -66,7 +66,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 	@Test
 	public void random_sequence_should_not_have_any_repeated_14mers() {
 		BasePathGraph pg = PG(G(14).add(S(RANDOM)));
-		assertEquals("Other test cases rely on all no branches in this contig", 1, pg.getPaths().size());
+		assertEquals("Other test cases rely on all no branches in this contig", 1, pg.getPathCount());
 	}
 	@Test
 	public void collapseSimilarPaths_should_collapse_resultant_branchless_paths() throws AlgorithmRuntimeSafetyLimitExceededException {
@@ -79,9 +79,9 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		//     *   *        no bubbles
 		//      \ /
 		//       *
-		assertEquals("precondition", 4, pg.getPaths().size());
+		assertEquals("precondition", 4, pg.getPathCount());
 		pg.collapseSimilarPaths(2, false);
-		assertEquals(1, pg.getPaths().size());
+		assertEquals(1, pg.getPathCount());
 	}
 	@Test
 	public void collapseSimilarPaths_should_collapse_only_sufficently_similar_paths() throws AlgorithmRuntimeSafetyLimitExceededException {
@@ -94,11 +94,11 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		//     *   *        
 		//      \ /
 		//       *
-		assertEquals("precondition", 4, pg.getPaths().size());
+		assertEquals("precondition", 4, pg.getPathCount());
 		pg.collapseSimilarPaths(1, false); // two bases difference = don't collapse
-		assertEquals(4, pg.getPaths().size());
+		assertEquals(4, pg.getPathCount());
 		pg.collapseSimilarPaths(2, false); // now we should collapse
-		assertEquals(1, pg.getPaths().size());
+		assertEquals(1, pg.getPathCount());
 	}
 	@Test
 	public void collapseSimilarPaths_should_merge_dissimilar_nodes() throws AlgorithmRuntimeSafetyLimitExceededException {
@@ -109,7 +109,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		pg.splitPathToEnsureBreaksAt(ImmutableList.of(pg.get("GGACGCCATGTCAGCTGTAG")), ImmutableSortedSet.of(1,2,3,5,7));
 		pg.splitPathToEnsureBreaksAt(ImmutableList.of(pg.get("CGACGCCAAGTCAGCTGAAG")), ImmutableSortedSet.of(4,6,8));
 		pg.collapseSimilarPaths(3, false); // now we should collapse
-		assertEquals(1, pg.getPaths().size());
+		assertEquals(1, pg.getPathCount());
 	}
 	@Test
 	public void collapseSimilarPaths_collapseBubbles_should_not_collapse_non_bubble_branches() throws AlgorithmRuntimeSafetyLimitExceededException {
@@ -125,9 +125,9 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		//		  1      4    0    = no bubbles
 		//		    \     \  /
 		//		     6  -  3
-		assertEquals(7, pg.getPaths().size());
+		assertEquals(7, pg.getPathCount());
 		pg.collapseSimilarPaths(10, true);
-		assertEquals(7, pg.getPaths().size());
+		assertEquals(7, pg.getPathCount());
 	}
 	@Test
 	public void collapseSimilarPaths_should_not_collapse_indels() throws AlgorithmRuntimeSafetyLimitExceededException {
@@ -135,9 +135,9 @@ public class DeBruijnPathGraphTest extends TestHelper {
 				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATC")
 				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATC"));
 				//                                              ^ insertion
-		assertEquals("precondition", 4, pg.getPaths().size());
+		assertEquals("precondition", 4, pg.getPathCount());
 		pg.collapseSimilarPaths(10, false);
-		assertEquals(4, pg.getPaths().size());
+		assertEquals(4, pg.getPathCount());
 	}
 	@Test
 	public void collapseSimilarPaths_should_collapse_branches() throws AlgorithmRuntimeSafetyLimitExceededException {
@@ -145,11 +145,11 @@ public class DeBruijnPathGraphTest extends TestHelper {
 				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATC")
 				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACCGATC"));
 				//                                                                                        ^^
-		assertEquals("precondition", 3, pg.getPaths().size());
+		assertEquals("precondition", 3, pg.getPathCount());
 		pg.collapseSimilarPaths(1, false);
-		assertEquals(3, pg.getPaths().size());
+		assertEquals(3, pg.getPathCount());
 		pg.collapseSimilarPaths(2, false);
-		assertEquals(1, pg.getPaths().size());
+		assertEquals(1, pg.getPathCount());
 	}
 	@Test
 	public void collapseLeaves_should_collapse_branches_of_different_lengths() throws AlgorithmRuntimeSafetyLimitExceededException {
@@ -157,11 +157,11 @@ public class DeBruijnPathGraphTest extends TestHelper {
 				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATC")
 				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACCGATCGATCA", 2));
 				//                                                                                        ^^
-		assertEquals("precondition", 3, pg.getPaths().size());
+		assertEquals("precondition", 3, pg.getPathCount());
 		pg.collapseSimilarPaths(2, false);
-		assertEquals(3, pg.getPaths().size());
+		assertEquals(3, pg.getPathCount());
 		pg.collapseLeaves(2);
-		assertEquals(1, pg.getPaths().size());
+		assertEquals(1, pg.getPathCount());
 	}
 	// Collapse Leaf test cases:
 	//      *   Leaf  *
@@ -188,16 +188,16 @@ public class DeBruijnPathGraphTest extends TestHelper {
 	public void collapseLeaves_should_collapse_to_leaf_to_path() throws AlgorithmRuntimeSafetyLimitExceededException {
 		// forward
 		BasePathGraph pg = leafpathTestPathGraph("GATGT");//"GGGTCA");
-		assertEquals("test case precondition", 8, pg.paths.size());
+		assertEquals("test case precondition", 8, pg.getPathCount());
 		assertEquals(0, pg.collapseLeaves(0));
 		assertEquals(1, pg.collapseLeaves(1));
-		assertEquals(7, pg.paths.size());
+		assertEquals(7, pg.getPathCount());
 		// backward
 		pg = leafpathTestPathGraph("GTGAT");
-		assertEquals("test case precondition", 9, pg.paths.size());
+		assertEquals("test case precondition", 9, pg.getPathCount());
 		assertEquals(0, pg.collapseLeaves(1));
 		assertEquals(1, pg.collapseLeaves(2));
-		assertEquals(7, pg.paths.size());
+		assertEquals(7, pg.getPathCount());
 	}
 	private void debugDumpToCDevDebugGraphGexf(BasePathGraph pg, int k) {
 		StaticDeBruijnPathGraphGexfExporter<DeBruijnNodeBase, PathNode<DeBruijnNodeBase>> tmp =
@@ -221,21 +221,21 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		BasePathGraph pg = PG(G(4)
 				.add("AAAAT",2)
 				.add("AAAAC"));
-		assertEquals("test case precondition", 3, pg.paths.size());
+		assertEquals("test case precondition", 3, pg.getPathCount());
 		assertEquals(0, pg.collapseLeaves(0));
 		assertEquals(1, pg.collapseLeaves(1));
-		assertEquals(1, pg.paths.size());
+		assertEquals(1, pg.getPathCount());
 		// Should merge the path then collapse the two remaining nodes into one
-		assertEquals("AAAAT", pg.paths.iterator().next().pathKmerString(4));
+		assertEquals("AAAAT", pg.getPaths().iterator().next().pathKmerString(4));
 		// backward
 		pg = PG(G(4)
 				.add("TAAAA",2)
 				.add("CAAAA"));
-		assertEquals("test case precondition", 3, pg.paths.size());
+		assertEquals("test case precondition", 3, pg.getPathCount());
 		assertEquals(0, pg.collapseLeaves(0));
 		assertEquals(1, pg.collapseLeaves(1));
-		assertEquals(1, pg.paths.size());
-		assertEquals("TAAAA", pg.paths.iterator().next().pathKmerString(4));
+		assertEquals(1, pg.getPathCount());
+		assertEquals("TAAAA", pg.getPaths().iterator().next().pathKmerString(4));
 	}
 	@Ignore("See github issue 12: de Bruijn subgraph contig construction should call highest weighted base")
 	@Test
@@ -244,22 +244,22 @@ public class DeBruijnPathGraphTest extends TestHelper {
 				.add("AAAAT",2)
 				.add("AAAAC")
 				.add("AACCC", 3));
-		assertEquals("test case precondition", 3, pg.paths.size());
+		assertEquals("test case precondition", 3, pg.getPathCount());
 		assertEquals(0, pg.collapseLeaves(0));
 		assertEquals(1, pg.collapseLeaves(1));
-		assertEquals(1, pg.paths.size());
+		assertEquals(1, pg.getPathCount());
 		// take the AAAAT path then extend with the additional bases from the other path
-		assertEquals("AAAATCC", pg.paths.iterator().next().pathKmerString(4));
+		assertEquals("AAAATCC", pg.getPaths().iterator().next().pathKmerString(4));
 		// backward
 		pg = PG(G(4)
 				.add("TAAAA",2)
 				.add("CAAAA")
 				.add("CCCAA", 3));
-		assertEquals("test case precondition", 3, pg.paths.size());
+		assertEquals("test case precondition", 3, pg.getPathCount());
 		assertEquals(0, pg.collapseLeaves(0));
 		assertEquals(1, pg.collapseLeaves(1));
-		assertEquals(1, pg.paths.size());
-		assertEquals("CCTGAAAA", pg.paths.iterator().next().pathKmerString(4));
+		assertEquals(1, pg.getPathCount());
+		assertEquals("CCTGAAAA", pg.getPaths().iterator().next().pathKmerString(4));
 	}
 	/**
 	 * See github issue 12: de Bruijn subgraph contig construction should call highest weighted base
@@ -271,13 +271,13 @@ public class DeBruijnPathGraphTest extends TestHelper {
 				.add("AAAAT",2)
 				.add("AAAAC")
 				.add("AACCC", 3));
-		assertEquals("test case precondition", 3, pg.paths.size());
+		assertEquals("test case precondition", 3, pg.getPathCount());
 		assertEquals(0, pg.collapseLeaves(8));
 		pg = PG(G(4)
 				.add("TAAAA",2)
 				.add("CAAAA")
 				.add("CCCAA", 3));
-		assertEquals("test case precondition", 3, pg.paths.size());
+		assertEquals("test case precondition", 3, pg.getPathCount());
 		assertEquals(0, pg.collapseLeaves(8));
 	}
 	@Ignore("See github issue 12: de Bruijn subgraph contig construction should call highest weighted base")
@@ -297,7 +297,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		//              ^     \___ need to change this C to a T
 		//              |
 		//         bad transition
-		PathNode<DeBruijnNodeBase> pn = pg.paths.iterator().next();
+		PathNode<DeBruijnNodeBase> pn = pg.getPaths().iterator().next();
 		assertEquals("AATC", S(KmerEncodingHelper.encodedToPicardBases(4, pn.getLast())));
 		
 		// test backwards as well
@@ -306,7 +306,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 				.add("CAAAA")
 				.add("CCAA"));
 		pg.collapseLeaves(1);
-		pn = pg.paths.iterator().next();
+		pn = pg.getPaths().iterator().next();
 		assertEquals("CTAA", S(KmerEncodingHelper.encodedToPicardBases(4, pn.getFirst())));
 	}
 	@Test
@@ -364,14 +364,14 @@ public class DeBruijnPathGraphTest extends TestHelper {
 	@Test
 	public void seed_should_restrict_path_graph_to_reachable_subgraph() {
 		String[] s = new String[] { S(RANDOM).substring(0, 100), S(RANDOM).substring(200, 300) };
-		assertEquals(2, PG(G(20).add(s[0]).add(s[1])).getPaths().size());
-		assertEquals(1, PG(G(20).add(s[0]).add(s[1]), s[0].substring(0, 20)).getPaths().size());
+		assertEquals(2, PG(G(20).add(s[0]).add(s[1])).getPathCount());
+		assertEquals(1, PG(G(20).add(s[0]).add(s[1]), s[0].substring(0, 20)).getPathCount());
 	}
 	@Test
 	public void splitPathToEnsureBreaksAt_should_split_at_given_offsets() {
 		BasePathGraph pg = PG(G(4).add("TTAAGGCCGGTTGGAACC"));
 		//                                 123456789012345
-		assertEquals("precondition", 1, pg.getPaths().size());
+		assertEquals("precondition", 1, pg.getPathCount());
 		assertEquals("precondition", 15, pg.get("TTAA").length());
 		List<PathNode<DeBruijnNodeBase>> result = pg.splitPathToEnsureBreaksAt(ImmutableList.of(pg.get("TTAA")), ImmutableSortedSet.of(0, 2, 5, 15));
 		assertEquals(3, result.size());

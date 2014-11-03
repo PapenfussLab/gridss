@@ -193,7 +193,7 @@ public class PathGraphAssembler extends PathGraph {
 				return memoizedTraverse(startingNode, scoringFunction, traverseForward, referenceTraverse, maxNextStates);
 			}
 		} catch (AlgorithmRuntimeSafetyLimitExceededException e) {
-			log.info(String.format("Reached path traversal timeout traversing subgraph with %d paths. Switching to greedy traversal.", paths.size()));
+			log.info(String.format("Reached path traversal timeout traversing subgraph with %d paths. Switching to greedy traversal.", getPathCount()));
 		}
 		try {
 			return memoizedTraverse(startingNode, scoringFunction, traverseForward, referenceTraverse, 1);

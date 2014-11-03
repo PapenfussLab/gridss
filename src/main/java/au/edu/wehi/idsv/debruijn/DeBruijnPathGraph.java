@@ -18,6 +18,7 @@ import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
 
 import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -37,9 +38,10 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	private static Log log = Log.getInstance(DeBruijnPathGraph.class);
 	protected final PathNodeFactory<T, PN> factory;
 	private final DeBruijnGraphBase<T> graph;
-	protected final Set<PN> paths = Sets.newHashSet();
-	protected final Map<PN, List<PN>> pathNext = Maps.newHashMap();
-	protected final Map<PN, List<PN>> pathPrev = Maps.newHashMap();
+	private final List<PN> pathList = Lists.newArrayList();
+	private final List<List<PN>> pathNext = Lists.newArrayList();
+	private final List<List<PN>> pathPrev = Lists.newArrayList();
+	private int pathCount = 0;
 	private int nodeTaversalCount;
 	/**
 	 * Sanity checking field: total weight of graph should not change
@@ -58,32 +60,43 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	}
 	public boolean sanityCheck() {
 		int weight = 0;
-		assert(pathNext.size() == paths.size());
-		assert(pathPrev.size() == paths.size());
-		for (PN path : paths) {
-			assert(pathNext.containsKey(path));
-			assert(pathPrev.containsKey(path));
-			for (PN n : nextPath(path)) {
-				assert(prevPath(n).contains(path));
+		assert(pathNext.size() == pathList.size());
+		assert(pathPrev.size() == pathList.size());
+		int validCount = 0;
+		for (int i = 0; i < pathList.size(); i++) {
+			PN path = pathList.get(i);
+			if (path == null) {
+				assert(pathNext.get(i) == null);
+				assert(pathPrev.get(i) == null);
+			} else {
+				validCount++;
+				assert(path.getNodeId() == i);
+				assert(pathNext.get(i) != null);
+				assert(pathPrev.get(i) != null);
+				for (PN n : nextPath(path)) {
+					assert(prevPath(n).contains(path));
+				}
+				for (PN n : prevPath(path)) {
+					assert(nextPath(n).contains(path));
+				}
+				weight += path.getWeight();
 			}
-			for (PN n : prevPath(path)) {
-				assert(nextPath(n).contains(path));
-			}
-			weight += path.getWeight();
 		}
+		assert(pathCount == validCount);
 		assert(weight == expectedWeight);
 		return true;
 	}
 	public DeBruijnGraphBase<T> getGraph() {
 		return graph;
 	}
-	public Set<PN> getPaths() { return paths; }
+	public int getPathCount() { return pathCount; }
+	public Iterable<PN> getPaths() { return Iterables.filter(pathList, Predicates.notNull()); }
 	/**
 	 * generates a path graph for the subgraph reachable from the given seed kmer
 	 * @param seed
 	 */
 	private void generatePathGraph(Long seed) {
-		paths.clear();
+		pathList.clear();
 		pathNext.clear();
 		pathPrev.clear();
 		expectedWeight = 0;
@@ -111,7 +124,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 			addNode(path);
 			expectedWeight += path.getWeight();
 		}
-		for (PN path : paths) {
+		for (PN path : pathList) {
 			// construct edges
 			List<Long> nextKmers = getGraph().nextStates(path.getLast(), null, null);
 			for (long adj : nextKmers) {
@@ -128,7 +141,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 * @return successor paths
 	 */
 	public List<PN> nextPath(PN path) {
-		return pathNext.get(path);
+		return pathNext.get(path.getNodeId());
 	}
 	/**
 	 * Returns all paths that follow the given path
@@ -136,7 +149,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 * @return preceeding paths
 	 */
 	public List<PN> prevPath(PN path) {
-		return pathPrev.get(path);
+		return pathPrev.get(path.getNodeId());
 	}
 	/**
 	 * Returns all paths that connect to the given path
@@ -160,13 +173,12 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 		boolean changedThisIteration = true;
 		while (changedThisIteration) {
 			changedThisIteration = false;
-			for (PN path : paths) {
+			for (PN path : getPaths()) {
 				if (nextPath(path).contains(path)) {
 					removeEdge(path, path);
 					changedThisIteration = true;
 					break;
 				}
-				// TODO: collapse the path with the weakest support first
 				if (mergeWithNext(path)) {
 					changedThisIteration = true;
 					anyChange = true;
@@ -182,24 +194,30 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 * @param node
 	 */
 	protected void addNode(PN node) {
-		assert(!paths.contains(node));
-		paths.add(node);
-		pathNext.put(node, Lists.<PN>newArrayListWithExpectedSize(4));
-		pathPrev.put(node, Lists.<PN>newArrayListWithExpectedSize(4));
+		assert(node.getNodeId() < 0);
+		node.setNodeId(pathList.size());
+		pathList.add(node);
+		pathNext.add(Lists.<PN>newArrayListWithExpectedSize(4));
+		pathPrev.add(Lists.<PN>newArrayListWithExpectedSize(4));
+		pathCount++;
 	}
 	/**
 	 * Removes the given node from the graph
 	 * @param node node to remove
 	 */
 	protected void removeNode(PN node) {
-		assert(paths.contains(node));
-		assert(pathNext.containsKey(node));
-		assert(pathPrev.containsKey(node));
-		assert(pathNext.get(node).size() == 0);
-		assert(pathPrev.get(node).size() == 0);
-		paths.remove(node);
-		pathNext.remove(node);
-		pathPrev.remove(node);
+		int nodeId = node.getNodeId();
+		assert(nodeId >= 0);
+		assert(pathList.get(nodeId) != null);
+		assert(pathNext.get(nodeId) != null);
+		assert(pathPrev.get(nodeId) != null);
+		assert(pathNext.get(nodeId).size() == 0);
+		assert(pathPrev.get(nodeId).size() == 0);
+		pathList.set(nodeId, null);
+		pathNext.set(nodeId, null);
+		pathPrev.set(nodeId, null);
+		node.setNodeId(-1);
+		pathCount--;
 	}
 	/**
 	 * Adds an edge between the two nodes
@@ -207,8 +225,10 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 * @param to target node
 	 */
 	protected void addEdge(PN from, PN to) {
-		assert(paths.contains(from));
-		assert(paths.contains(to));
+		assert(from.getNodeId() >= 0);
+		assert(to.getNodeId() >= 0);
+		assert(pathList.get(from.getNodeId()) == from);
+		assert(pathList.get(to.getNodeId()) == to);
 		assert(!nextPath(from).contains(to));
 		assert(!prevPath(to).contains(from));
 		nextPath(from).add(to);
@@ -220,8 +240,10 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 * @param to target node
 	 */
 	protected void removeEdge(PN from, PN to) {
-		assert(paths.contains(from));
-		assert(paths.contains(to));
+		assert(from.getNodeId() >= 0);
+		assert(to.getNodeId() >= 0);
+		assert(pathList.get(from.getNodeId()) == from);
+		assert(pathList.get(to.getNodeId()) == to);
 		assert(nextPath(from).contains(to));
 		assert(prevPath(to).contains(from));
 		nextPath(from).remove(to);
@@ -304,7 +326,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 		boolean collapsed = true;
 		while (collapsed) {
 			collapsed = false;
-			for (PN start : paths) {
+			for (PN start : getPaths()) {
 				// TODO: collapse the path with the weakest support first
 				if (collapsePaths(maxDifference, bubblesOnly, start)) {
 					collapseCount++;
@@ -328,8 +350,8 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 		int collapsedThisRound;
 		do {
 			collapsedThisRound = 0;
-			PriorityQueue<PN> ordering = new PriorityQueue<PN>(paths.size(), ByPathTotalWeightDesc.reverse());
-			ordering.addAll(paths);
+			PriorityQueue<PN> ordering = new PriorityQueue<PN>(pathCount, ByPathTotalWeightDesc.reverse());
+			for (PN p : getPaths()) ordering.add(p); //ordering.addAll(getPaths()); // no PriorityQueue.addAll(Iterable) method :(
 			// unlike collapsing paths, collapsing leaves is a local
 			// change and does not invalidate any other paths
 			for (PN leaf : ordering) {
@@ -957,7 +979,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 		return path;
 	}
 	public PN getNodeContaining(long kmer) {
-		for (PN node : paths) {
+		for (PN node : getPaths()) {
 			if (node.contains(kmer)) return node;
 		}
 		return null;
@@ -991,13 +1013,13 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
-		sb.append(String.format("Path graph: %d node\n", paths.size()));
-		for (PN x : paths) {
+		sb.append(String.format("Path graph: %d node\n", pathCount));
+		for (PN x : getPaths()) {
 			sb.append(x.toString(getGraph()));
 			sb.append(" <-{");
-			for (PN s : prevPath(x)) sb.append(String.format("%d,", s.nodeId));
+			for (PN s : prevPath(x)) sb.append(String.format("%d,", s.getNodeId()));
 			sb.append("} ->{");
-			for (PN s : nextPath(x)) sb.append(String.format("%d,", s.nodeId));
+			for (PN s : nextPath(x)) sb.append(String.format("%d,", s.getNodeId()));
 			sb.append("}\n");
 		}
 		return sb.toString();
