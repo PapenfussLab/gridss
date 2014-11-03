@@ -50,8 +50,8 @@ public class BufferedReferenceSequenceFile implements ReferenceSequenceFile {
 	public ReferenceSequence getSubsequenceAt(String contig, long start, long stop) {
         int length = (int)(stop - start + 1);
 		ReferenceSequence fullContig = getSequence(contig);
-		if (stop < 1 || stop > fullContig.length()) {
-			throw new IllegalArgumentException("stop out of contig bounds");
+		if (length > fullContig.length()) {
+			throw new IllegalArgumentException("subsequence out of contig bounds");
 		}
 		if (start > stop + 1) {
 			throw new IllegalArgumentException("start after stop");
