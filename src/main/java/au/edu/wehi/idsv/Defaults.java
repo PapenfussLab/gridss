@@ -18,6 +18,7 @@ public class Defaults {
 	 * Writes calls that do not pass filters to output files anyway 
 	 */
 	public static final boolean WRITE_FILTERED_CALLS;
+	public static final boolean WRITE_FILTERED_ASSEMBLIES;
 	public static final boolean PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS;
 	/**
 	 * Safety limit to prevent unbounded exponential runtime
@@ -42,6 +43,7 @@ public class Defaults {
 		VISUALISE_TIMEOUTS = Boolean.valueOf(System.getProperty("gridss.visualisation.savetimeouts", "false"));
 		//WRITE_FILTERED_EVIDENCE = Boolean.valueOf(System.getProperty("gridss.writeFilteredEvidence", "false"));
 		WRITE_FILTERED_CALLS = Boolean.valueOf(System.getProperty("gridss.writeFilteredCalls", "false"));
+		WRITE_FILTERED_ASSEMBLIES = Boolean.valueOf(System.getProperty("gridss.writeFilteredAssemblies", "false"));
 		PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS = Boolean.valueOf(System.getProperty("gridss.debruijn.expensiveAsserts", "false"));
 		COLLAPSE_PATH_MAX_TRAVERSAL = Integer.valueOf(System.getProperty("gridss.debruijn.maxCollapseTraversal", "16777216"));
 		BEST_PATH_MAX_TRAVERSAL = Integer.valueOf(System.getProperty("gridss.debruijn.maxPathTraversal", "1048576"));

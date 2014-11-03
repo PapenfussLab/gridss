@@ -58,11 +58,16 @@ public class Idsv extends CommandLineProgram {
     	}
 		@Override
 		protected void compute() {
-			if (!source.isComplete(ProcessStep.CALCULATE_METRICS)
-	    			|| !source.isComplete(ProcessStep.EXTRACT_SOFT_CLIPS)
-	    			|| !source.isComplete(ProcessStep.EXTRACT_READ_PAIRS)) {
-				source.completeSteps(EnumSet.of(ProcessStep.CALCULATE_METRICS, ProcessStep.EXTRACT_SOFT_CLIPS, ProcessStep.EXTRACT_READ_PAIRS));
+			try {
+				if (!source.isComplete(ProcessStep.CALCULATE_METRICS)
+		    			|| !source.isComplete(ProcessStep.EXTRACT_SOFT_CLIPS)
+		    			|| !source.isComplete(ProcessStep.EXTRACT_READ_PAIRS)) {
+					source.completeSteps(EnumSet.of(ProcessStep.CALCULATE_METRICS, ProcessStep.EXTRACT_SOFT_CLIPS, ProcessStep.EXTRACT_READ_PAIRS));
 	    		}
+			} catch (Exception e) {
+				log.error(e);
+				throw e;
+			}
 		}
     }
     private class EnsureAssembled extends RecursiveAction {
@@ -72,7 +77,12 @@ public class Idsv extends CommandLineProgram {
     	}
 		@Override
 		protected void compute() {
-			source.ensureAssembled();
+			try {
+				source.ensureAssembled();
+			} catch (Exception e) {
+				log.error(e);
+				throw e;
+			}
 		}
     }
     @Override

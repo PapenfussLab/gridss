@@ -122,4 +122,8 @@ public class DeBruijnAnchoredAssembler implements ReadEvidenceAssembler {
 		currentPosition = position;
 		return result;
 	}
+	@Override
+	public String getStateSummaryMetrics() {
+		return "";
+	}
 }

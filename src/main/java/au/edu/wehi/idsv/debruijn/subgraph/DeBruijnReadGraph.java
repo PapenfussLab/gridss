@@ -109,9 +109,6 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	 * @return
 	 */
 	public Iterable<VariantContextDirectedEvidence> assembleContigsBefore(int position) {
-		if (position % 1000000 == 0) {
-			log.debug(String.format("At %s:%d de Bruijn graph size=%d, subgraphs=%d", processContext.getDictionary().getSequence(this.referenceIndex).getSequenceName(), position, size(), subgraphs.size()));
-		}
 		List<VariantContextDirectedEvidence> contigs = Lists.newArrayList();
 		for (SubgraphSummary ss : subgraphs) {
 			boolean timeoutExceeded = exceedsTimeout(ss);
@@ -336,5 +333,20 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			assert(ss.getMaxAnchor() <= maxExpected);
 		}
 		return true;
+	}
+	public String getStateSummaryMetrics() {
+		String result = String.format("kmers=%d subgraphs=%d", size(), subgraphs.size());
+		if (size() > 0) {
+			int minAnchor = Integer.MAX_VALUE;
+			int maxAnchor = Integer.MIN_VALUE;
+			int maxWidth = 0;
+			for (SubgraphSummary ss : subgraphs) {
+				minAnchor = Math.min(minAnchor, ss.getMinAnchor());
+				maxAnchor = Math.max(maxAnchor, ss.getMaxAnchor());
+				maxWidth = Math.max(maxWidth, ss.getMaxAnchor() - ss.getMinAnchor());
+			}
+			result = result + String.format(" maxWidth=%d anchor=[%d,%d]", maxWidth, minAnchor, maxAnchor);
+		}
+		return result;
 	}
 }

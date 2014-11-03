@@ -107,4 +107,8 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 		if (fgraph != null && fgraph.getGraphExporter() != null) fgraph.getGraphExporter().setTime(processStep);
 		if (bgraph != null && bgraph.getGraphExporter() != null) bgraph.getGraphExporter().setTime(processStep);
 	}
+	@Override
+	public String getStateSummaryMetrics() {
+		return "FWD:{" + fgraph.getStateSummaryMetrics() + "}, BWD:{" + bgraph.getStateSummaryMetrics() + "}";
+	}
 }

@@ -42,7 +42,7 @@ public class BufferedReferenceSequenceFile implements ReferenceSequenceFile {
 	public ReferenceSequence getSequence(String contig) {
 		if (!cache.containsKey(contig)) {
 			cache.put(contig, underlying.getSequence(contig));
-			log.debug("Cached %s from reference genome", contig);
+			log.debug("Cached reference genome contig ", contig);
 		}
 		return cache.get(contig);
 	}

@@ -199,7 +199,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 				processContext.getSamReaderIterator(scReader));
 		scIt = new AutoClosingIterator<SoftClipEvidence>(scIt, Lists.<Closeable>newArrayList(scReader));
 		if (isRealignmentComplete()) {
-			log.debug("Found realignment bam for ", input);
+			log.debug("Realignment is complete for ", input);
 			SamReader scRealignReader = processContext.getSamReader(realigned);
 			scIt = new RealignedSoftClipEvidenceIterator(scIt,
 				processContext.getSamReaderIterator(scRealignReader));

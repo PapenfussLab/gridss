@@ -66,8 +66,8 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	@Override
 	protected Iterator<DirectedEvidence> perChrIterator(String chr) {
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		@SuppressWarnings({ "unchecked", "rawtypes" })
-		Iterator<DirectedEvidence> downcast = (Iterator<DirectedEvidence>)(Iterator)iterator( // TODO: is there a less dirty way to do this downcast?
+		@SuppressWarnings({ "unchecked", "rawtypes" }) // is there a less dirty way to do this downcast?
+		Iterator<DirectedEvidence> downcast = (Iterator<DirectedEvidence>)(Iterator)iterator( 
 				fsc.getAssemblyVcfForChr(input, chr),
 				fsc.getRealignmentBamForChr(input, chr));
 		return downcast;
@@ -105,7 +105,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				processContext,
 				(int)((2 + processContext.getAssemblyParameters().maxSubgraphFragmentWidth + processContext.getAssemblyParameters().subgraphAssemblyMargin) * maxSourceFragSize),
 				it);
-		// FIXME: add remote assemblies to iterator
+		// FIXME: TODO: add remote assemblies to iterator
 		return it;
 	}
 	private boolean isProcessingComplete() {
@@ -145,7 +145,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 								toMerge.add(it);
 							}
 							Iterator<DirectedEvidence> merged = Iterators.mergeSorted(toMerge, DirectedEvidenceOrder.ByNatural);
-							assemble(merged, processContext.getFileSystemContext().getAssemblyVcfForChr(input, seq), processContext.getFileSystemContext().getRealignmentFastqForChr(input, seq));
+							new ContigAssembler(merged, processContext.getFileSystemContext().getAssemblyVcfForChr(input, seq), processContext.getFileSystemContext().getRealignmentFastqForChr(input, seq)).run();
 							for (Iterator<DirectedEvidence> x : toMerge) {
 								CloserUtil.close(x);
 							}
@@ -153,10 +153,10 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 					});
 				}
 				if (ForkJoinTask.inForkJoinPool()) {
-					log.debug("performing parallel assembly");
+					log.info("Performing multithreaded assembly");
 					ForkJoinTask.invokeAll(new ParallelRunnableAction(workers));
 				} else {
-					log.debug("performing serial assembly");
+					log.info("Performing singlethreaded assembly");
 					for (Runnable r : workers) {
 						r.run();
 					}
@@ -169,7 +169,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 					toMerge.add(it);
 				}
 				Iterator<DirectedEvidence> merged = Iterators.mergeSorted(toMerge, DirectedEvidenceOrder.ByNatural);
-				assemble(merged, processContext.getFileSystemContext().getAssemblyVcf(input), processContext.getFileSystemContext().getRealignmentFastq(input));
+				new ContigAssembler(merged, processContext.getFileSystemContext().getAssemblyVcf(input), processContext.getFileSystemContext().getRealignmentFastq(input)).run();
 				for (Iterator<DirectedEvidence> x : toMerge) {
 					CloserUtil.close(x);
 				}
@@ -185,74 +185,95 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			}
 		}
 	}
-	private void assemble(Iterator<DirectedEvidence> it, File breakendVcf, File realignmentFastq) {
-		FastqBreakpointWriter fastqWriter = null;
-		VariantContextWriter vcfWriter = null;
-		try {
-			vcfWriter = processContext.getVariantContextWriter(breakendVcf);
-			fastqWriter = new FastqBreakpointWriter(processContext.getFastqWriterFactory().newWriter(realignmentFastq));
-			
-			ReadEvidenceAssembler assembler = getAssembler();			
-			final ProgressLogger progress = new ProgressLogger(log);
-			while (it.hasNext()) {
-				DirectedEvidence readEvidence = it.next();
-				if (readEvidence instanceof NonReferenceReadPair) {
-					progress.record(((NonReferenceReadPair)readEvidence).getLocalledMappedRead());
-				} else if (readEvidence instanceof SoftClipEvidence) {
-					progress.record(((SoftClipEvidence)readEvidence).getSAMRecord());
-				}
-				// Need to process assembly evidence first since assembly calls are made when the
-				// evidence falls out of scope so processing a given position will emit evidence
-				// for a previous position (for it is only at this point we know there is no more
-				// evidence for the previous position).
-				processAssembly(assembler.addEvidence(readEvidence), fastqWriter, vcfWriter);
-			}
-			processAssembly(assembler.endOfEvidence(), fastqWriter, vcfWriter);
-			flushWriterQueueBefore(Long.MAX_VALUE, fastqWriter, vcfWriter);
-		} finally {
-			if (fastqWriter != null) fastqWriter.close();
-			if (vcfWriter != null) vcfWriter.close();
+	private class ContigAssembler implements Runnable {
+		private Iterator<DirectedEvidence> it;
+		private File breakendVcf;
+		private File realignmentFastq;
+		private FastqBreakpointWriter fastqWriter = null;
+		private VariantContextWriter vcfWriter = null;
+		private Queue<VariantContextDirectedEvidence> resortBuffer = new PriorityQueue<VariantContextDirectedEvidence>(32, IdsvVariantContext.ByLocationStart);
+		private long maxAssembledPosition = Long.MIN_VALUE;
+		private long lastFlushedPosition = Long.MIN_VALUE;
+		private long lastProgress = 0;
+		public ContigAssembler(Iterator<DirectedEvidence> it, File breakendVcf, File realignmentFastq) {
+			this.it = it;
+			this.breakendVcf = breakendVcf;
+			this.realignmentFastq = realignmentFastq;
 		}
-	}
-	private long maxAssembledPosition = 0;
-	/**
-	 * Internal buffer ensuring assemblies are written in sorted VCF order, not assembly call order 
-	 */
-	private Queue<VariantContextDirectedEvidence> writerQueue = new PriorityQueue<VariantContextDirectedEvidence>(32, IdsvVariantContext.ByLocationStart);
-	private void processAssembly(Iterable<VariantContextDirectedEvidence> evidenceList, FastqBreakpointWriter fastqWriter, VariantContextWriter vcfWriter) {
-    	if (evidenceList != null) {
-	    	for (VariantContextDirectedEvidence a : evidenceList) {
-	    		if (a != null) {
-		    		maxAssembledPosition = Math.max(maxAssembledPosition, processContext.getLinear().getLinearCoordinate(a.getReferenceIndex(), a.getStart()));
-		    		if (Defaults.WRITE_FILTERED_CALLS || !a.isFiltered()) {
-		    			writerQueue.add(a);
-		    		}
-	    		}
-	    	}
-    	}
-    	flushWriterQueueBefore(maxAssembledPosition - Math.max(MAX_ASSEMBLY_OFFSET, 3 * maxSourceFragSize), fastqWriter, vcfWriter);
-    }
-	/**
-	 * Assemblies from de bruijn graph subset algorithm can be completed at any time.
-	 * This results in a theoretically completely unordered assembly order.
-	 * Instead of a full sort after writing, we just have a large intermediate buffer
-	 * and assume real data won't contain the same kmers every few fragment sizes
-	 * for over a megabase.
-	 * TODO: fix this by writing out of order, then sorting, then writing the breakend fastq 
-	 */
-	private static long MAX_ASSEMBLY_OFFSET = 1024 * 1024;
-	private long lastPos = Long.MIN_VALUE;
-	private void flushWriterQueueBefore(long position, FastqBreakpointWriter fastqWriter, VariantContextWriter vcfWriter) {
-		while (!writerQueue.isEmpty() && processContext.getLinear().getLinearCoordinate(writerQueue.peek().getReferenceIndex(), writerQueue.peek().getStart()) < position) {
-			long pos = processContext.getLinear().getLinearCoordinate(writerQueue.peek().getReferenceIndex(), writerQueue.peek().getStart());
-			VariantContextDirectedEvidence evidence = writerQueue.poll();
-			if (pos < lastPos) {
-				log.error(String.format("Sanity check failure: assembly %s written out of order. ", evidence.getID()));
+		@Override
+		public void run() {
+			try {
+				vcfWriter = processContext.getVariantContextWriter(breakendVcf);
+				fastqWriter = new FastqBreakpointWriter(processContext.getFastqWriterFactory().newWriter(realignmentFastq));
+				ReadEvidenceAssembler assembler = getAssembler();
+				final ProgressLogger progress = new ProgressLogger(log);
+				while (it.hasNext()) {
+					DirectedEvidence readEvidence = it.next();
+					if (readEvidence instanceof NonReferenceReadPair) {
+						progress.record(((NonReferenceReadPair)readEvidence).getLocalledMappedRead());
+					} else if (readEvidence instanceof SoftClipEvidence) {
+						progress.record(((SoftClipEvidence)readEvidence).getSAMRecord());
+					}
+					// Need to process assembly evidence first since assembly calls are made when the
+					// evidence falls out of scope so processing a given position will emit evidence
+					// for a previous position (for it is only at this point we know there is no more
+					// evidence for the previous position).
+					processAssembly(assembler.addEvidence(readEvidence), resortBuffer, fastqWriter, vcfWriter);
+					
+					if (maxAssembledPosition / 1000000 > lastProgress / 1000000) {
+						lastProgress = maxAssembledPosition;
+						log.info(String.format("Assembly at %s:%d %s",
+								processContext.getDictionary().getSequence(processContext.getLinear().getReferenceIndex(lastProgress)).getSequenceName(),
+								processContext.getLinear().getReferencePosition(lastProgress),
+								assembler.getStateSummaryMetrics()));
+					}
+				}
+				processAssembly(assembler.endOfEvidence(), resortBuffer, fastqWriter, vcfWriter);
+				flushWriterQueueBefore(Long.MAX_VALUE, resortBuffer, fastqWriter, vcfWriter);
+			} finally {
+				if (fastqWriter != null) fastqWriter.close();
+				if (vcfWriter != null) vcfWriter.close();
 			}
-			lastPos = pos;
-			vcfWriter.add(evidence); // write out failed assemblies as well for debugging purposes
-			if (!evidence.isFiltered() && processContext.getRealignmentParameters().shouldRealignBreakend(evidence)) {
-				fastqWriter.write(evidence);
+		}
+		private void processAssembly(
+				Iterable<VariantContextDirectedEvidence> evidenceList,
+				Queue<VariantContextDirectedEvidence> buffer,
+				FastqBreakpointWriter fastqWriter,
+				VariantContextWriter vcfWriter) {
+	    	if (evidenceList != null) {
+		    	for (VariantContextDirectedEvidence a : evidenceList) {
+		    		if (a != null) {
+			    		maxAssembledPosition = Math.max(maxAssembledPosition, processContext.getLinear().getLinearCoordinate(a.getReferenceIndex(), a.getStart()));
+			    		if (Defaults.WRITE_FILTERED_CALLS || !a.isFiltered()) {
+			    			buffer.add(a);
+			    		}
+		    		}
+		    	}
+	    	}
+	    	flushWriterQueueBefore(
+	    			maxAssembledPosition - (long)((processContext.getAssemblyParameters().maxSubgraphFragmentWidth * 2) * getMaxConcordantFragmentSize()),
+	    			buffer,
+	    			fastqWriter,
+	    			vcfWriter);
+	    }
+		private void flushWriterQueueBefore(
+				long flushBefore,
+				Queue<VariantContextDirectedEvidence> buffer,
+				FastqBreakpointWriter fastqWriter,
+				VariantContextWriter vcfWriter) {
+			while (!buffer.isEmpty() && processContext.getLinear().getLinearCoordinate(buffer.peek().getReferenceIndex(), buffer.peek().getStart()) < flushBefore) {
+				long pos = processContext.getLinear().getLinearCoordinate(buffer.peek().getReferenceIndex(), buffer.peek().getStart());
+				VariantContextDirectedEvidence evidence = buffer.poll();
+				if (pos < lastFlushedPosition) {
+					log.error(String.format("Sanity check failure: assembly breakend %s written out of order.", evidence.getID()));
+				}
+				lastFlushedPosition = pos;
+				if (Defaults.WRITE_FILTERED_CALLS || !evidence.isFiltered()) {
+					vcfWriter.add(evidence);
+				}
+				if (!evidence.isFiltered() && processContext.getRealignmentParameters().shouldRealignBreakend(evidence)) {
+					fastqWriter.write(evidence);
+				}
 			}
 		}
 	}
