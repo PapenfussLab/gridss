@@ -25,7 +25,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode> {
-	private final Log log = Log.getInstance(DeBruijnReadGraph.class);
+	private static final Log log = Log.getInstance(DeBruijnReadGraph.class);
 	public static final String ASSEMBLER_NAME = "debruijn-s";
 	/**
 	 * Connected subgraphs

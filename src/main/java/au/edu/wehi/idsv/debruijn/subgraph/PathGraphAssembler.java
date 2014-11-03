@@ -34,7 +34,7 @@ import com.google.common.primitives.Ints;
  *
  */
 public class PathGraphAssembler extends PathGraph {
-	private final Log log = Log.getInstance(PathGraphAssembler.class);
+	private static final Log log = Log.getInstance(PathGraphAssembler.class);
 	private final AssemblyParameters parameters;
 	private final List<Set<SubgraphPathNode>> subgraphs = Lists.newArrayList();
 	private final List<Set<SubgraphPathNode>> startingPaths = Lists.newArrayList();

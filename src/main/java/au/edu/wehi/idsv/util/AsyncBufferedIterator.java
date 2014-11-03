@@ -23,7 +23,7 @@ import com.google.common.collect.PeekingIterator;
  */
 public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
 	private static volatile int threadsCreated = 0;
-	private final Log log = Log.getInstance(AsyncBufferedIterator.class);
+	private static final Log log = Log.getInstance(AsyncBufferedIterator.class);
     private final Thread reader;
     private final ReaderRunnable readerRunnable;
     private final AtomicReference<Throwable> ex = new AtomicReference<Throwable>(null);

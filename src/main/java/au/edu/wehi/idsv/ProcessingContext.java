@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.List;
 
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
+import au.edu.wehi.idsv.util.BufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.vcf.VcfConstants;
 
 /**
@@ -73,7 +74,7 @@ public class ProcessingContext implements Closeable {
 		this.perChr = perChr;
 		this.vcf41mode = vcf41;
 		this.referenceFile = ref;
-		this.reference = ReferenceSequenceFileFactory.getReferenceSequenceFile(this.referenceFile);
+		this.reference = new BufferedReferenceSequenceFile(ReferenceSequenceFileFactory.getReferenceSequenceFile(this.referenceFile));
 		if (this.reference.getSequenceDictionary() == null) {
 			throw new IllegalArgumentException("Missing sequence dictionary for reference genome. Please create using picard CreateSequenceDictionary.");
 		}
