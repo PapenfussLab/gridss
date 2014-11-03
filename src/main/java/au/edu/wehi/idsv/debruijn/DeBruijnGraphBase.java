@@ -1,7 +1,12 @@
 package au.edu.wehi.idsv.debruijn;
 
+import gnu.trove.map.hash.TLongObjectHashMap;
+import gnu.trove.set.TLongSet;
+import gnu.trove.set.hash.TLongHashSet;
+
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -18,6 +23,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 
 /**
  * Basic De Bruijn graph implementation
@@ -27,7 +33,7 @@ import com.google.common.primitives.Ints;
  */
 public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	public static final int MAX_QUAL_SCORE = 128 - 66;
-	private final Map<Long, T> kmers = Maps.newHashMap();
+	private final TLongObjectHashMap<T> kmers = new TLongObjectHashMap<T>();
 	private final int k;
 	private DeBruijnGraphExporter<T> exporter = null;
 	public DeBruijnGraphBase(int k) {
@@ -35,7 +41,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	}
 	public int getK() { return k; }
 	public T getKmer(long kmer) { return kmers.get(kmer); }
-	public Set<Long> getAllKmers() { return kmers.keySet(); }
+	public Collection<Long> getAllKmers() { return Longs.asList(kmers.keys()); }
 	public int size() { return kmers.size(); }
 	/**
 	 * Merges the given nodes together
@@ -321,7 +327,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	public String toString(int maxNodesToPrint) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(String.format("De Bruijn graph: k=%d, %d kmers\n", k, kmers.size()));
-		for (Long x : kmers.keySet()) {
+		for (long x : kmers.keys()) {
 			sb.append(printKmer(x));
 			maxNodesToPrint--;
 			if (maxNodesToPrint <= 0) break;
@@ -356,7 +362,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	}
 	public String debugPrintPaths() {
 		Map<Long, Integer> contigLookup = Maps.newHashMap();
-		HashSet<Long> remaining = Sets.newHashSet(kmers.keySet());
+		TLongSet remaining = new TLongHashSet(kmers.keySet());
 		List<LinkedList<Long>> paths = Lists.newArrayList();
 		int contig = 0;
 		// enumerate the paths
