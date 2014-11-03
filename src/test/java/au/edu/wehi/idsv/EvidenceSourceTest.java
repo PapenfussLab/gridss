@@ -44,8 +44,6 @@ public class EvidenceSourceTest extends IntermediateFilesTest {
 		}
 		protected boolean processed = false;
 		@Override
-		protected void process() { processed = true; }
-		@Override
 		protected CloseableIterator<DirectedEvidence> perChrIterator(String chr) {
 			int index = processContext.getDictionary().getSequence(chr).getSequenceIndex();
 			List<DirectedEvidence> list = Lists.newArrayList();

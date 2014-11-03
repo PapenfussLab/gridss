@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.IntermediateFilesTest;
+import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 
@@ -22,7 +23,7 @@ public class PathTraversalTimeoutVisualisationTest extends IntermediateFilesTest
 		setReference(new File("C:/dev/chr12.fa"));
 		createInput(new File("src/test/resources/chr12-244000.bam"));
 		SAMEvidenceSource ses = new SAMEvidenceSource(getCommandlineContext(), input, false);
-		ses.process();
+		ses.completeSteps(ProcessStep.ALL_STEPS);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), output);
 		aes.ensureAssembled();
 		assertTrue(new File(new File(super.testFolder.getRoot(), "visualisation"), "pathTraversalTimeout-1.subgraph.gexf").exists());

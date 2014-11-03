@@ -29,7 +29,6 @@ import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphNode;
 import au.edu.wehi.idsv.debruijn.subgraph.SubgraphPathNode;
 
 import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 

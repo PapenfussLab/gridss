@@ -34,10 +34,9 @@ public class SortRealignedAssemblies extends DataTransformStep {
 		this.source = source;
 	}
 	@Override
-	public EnumSet<ProcessStep> process(EnumSet<ProcessStep> steps) {
+	public void process(EnumSet<ProcessStep> steps) {
 		if (isComplete() || !steps.contains(ProcessStep.SORT_REALIGNED_ASSEMBLIES)) {
 			log.debug("no work to do");
-			return EnumSet.noneOf(ProcessStep.class);
 		}
 		if (!canProcess()) {
 			String msg = String.format("Assembly realignment not completed. Unable to process");
@@ -60,12 +59,12 @@ public class SortRealignedAssemblies extends DataTransformStep {
 			deleteOutput();
 			throw new RuntimeException(msg, e);
 		}
-		return EnumSet.noneOf(ProcessStep.class);
 	}
 	private void sort() {
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
+				// Parallel opportunity
 				VcfFileUtil.sort(processContext,
 						fsc.getAssemblyRemoteUnsortedVcfForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName()),
 						fsc.getAssemblyRemoteVcfForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName()),

@@ -48,10 +48,9 @@ public class SortRealignedSoftClips extends DataTransformStep {
 		return done;
 	}
 	@Override
-	public EnumSet<ProcessStep> process(EnumSet<ProcessStep> steps) {
+	public void process(EnumSet<ProcessStep> steps) {
 		if (isComplete()) {
 			log.debug("SortRealignedSoftClips: no work to do for ", source.getSourceFile());
-			return EnumSet.noneOf(ProcessStep.class);
 		}
 		if (!canProcess()) {
 			String msg = String.format("Soft clip realignment for %s not completed. Unable to process", source.getSourceFile());
@@ -76,30 +75,34 @@ public class SortRealignedSoftClips extends DataTransformStep {
 			throw new RuntimeException(msg, e);
 			// return EnumSet.of(ProcessStep.SORT_REALIGNED_SOFT_CLIPS);
 		}
-		return EnumSet.noneOf(ProcessStep.class);
 	}
 	private void sort() {
 		FileSystemContext fsc = processContext.getFileSystemContext();
+		List<Runnable> actions = Lists.newArrayList();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				SAMFileUtil.sort(processContext,
+				actions.add(new SAMFileUtil.SortRunnable(processContext,
 						fsc.getSoftClipRemoteUnsortedBamForChr(source.getSourceFile(), seq.getSequenceName()),
 						fsc.getSoftClipRemoteBamForChr(source.getSourceFile(), seq.getSequenceName()),
-						new RealignedSoftClipEvidence.RealignmentCoordinateComparator());
-				SAMFileUtil.sort(processContext,
+						new RealignedSoftClipEvidence.RealignmentCoordinateComparator()));
+				actions.add(new SAMFileUtil.SortRunnable(processContext,
 						fsc.getRealignmentRemoteUnsortedBamForChr(source.getSourceFile(), seq.getSequenceName()),
 						fsc.getRealignmentRemoteBamForChr(source.getSourceFile(), seq.getSequenceName()),
-						SortOrder.coordinate);
+						SortOrder.coordinate));
 			}
 		} else {
-			SAMFileUtil.sort(processContext,
+			actions.add(new SAMFileUtil.SortRunnable(processContext,
 					fsc.getSoftClipRemoteUnsortedBam(source.getSourceFile()),
 					fsc.getSoftClipRemoteBam(source.getSourceFile()),
-					new RealignedSoftClipEvidence.RealignmentCoordinateComparator());
-			SAMFileUtil.sort(processContext,
+					new RealignedSoftClipEvidence.RealignmentCoordinateComparator()));
+			actions.add(new SAMFileUtil.SortRunnable(processContext,
 					fsc.getRealignmentRemoteUnsortedBam(source.getSourceFile()),
 					fsc.getRealignmentRemoteBam(source.getSourceFile()),
-					SortOrder.coordinate);
+					SortOrder.coordinate));
+		}
+		// PARALLEL opportunity - not great candidate due memory usage of sorting
+		for (Runnable r : actions) {
+			r.run();
 		}
 	}
 	@Override

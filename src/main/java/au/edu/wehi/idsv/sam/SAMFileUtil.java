@@ -28,16 +28,7 @@ public class SAMFileUtil {
 	 * @param sortOrder sort order
 	 */
 	public static void sort(ProcessingContext processContext, File unsorted, File output, SortOrder sortOrder) {
-		switch (sortOrder) {
-		case coordinate:
-			sort(processContext, unsorted, output, new SAMRecordCoordinateComparator(), SortOrder.unsorted);
-			break;
-		case queryname:
-			sort(processContext, unsorted, output, new SAMRecordQueryNameComparator(), SortOrder.unsorted);
-			break;
-		default:
-			throw new IllegalArgumentException("Sort order not specified");
-		}
+		new SortRunnable(processContext, unsorted, output, sortOrder).run();
 	}
 	/**
 	 * Sorts records in the given SAM/BAM file by the given comparator 
@@ -46,42 +37,76 @@ public class SAMFileUtil {
 	 * @param sortComparator sort order
 	 */
 	public static void sort(ProcessingContext processContext, File unsorted, File output, SAMRecordComparator sortComparator) {
-		sort(processContext, unsorted, output, sortComparator, SortOrder.unsorted);
+		new SortRunnable(processContext, unsorted, output, sortComparator).run();
 	}
-	private static void sort(ProcessingContext processContext, File unsorted, File output, SAMRecordComparator sortComparator, SortOrder sortOrder) {
-		log.info("Sorting " + output);
-		SamReader reader = null;
-		CloseableIterator<SAMRecord> rit = null;
-		SAMFileWriter writer = null;
-		CloseableIterator<SAMRecord> wit = null;
-		SortingCollection<SAMRecord> collection = null;
-		try {
-			reader = processContext.getSamReader(unsorted);
-			SAMFileHeader header = reader.getFileHeader().clone();
-			header.setSortOrder(sortOrder);
-			rit = processContext.getSamReaderIterator(reader);
-			collection = SortingCollection.newInstance(
-					SAMRecord.class,
-					new BAMRecordCodec(header),
-					sortComparator,
-					processContext.getFileSystemContext().getMaxBufferedRecordsPerFile(),
-					processContext.getFileSystemContext().getTemporaryDirectory());
-			while (rit.hasNext()) {
-				collection.add(rit.next());
+	/**
+	 * Runnable implementation of SAM file sorting
+	 * @author cameron.d
+	 *
+	 */
+	public static class SortRunnable implements Runnable {
+		private final ProcessingContext processContext;
+		private final File unsorted;
+		private final File output;
+		private final SAMRecordComparator sortComparator;
+		private final SortOrder sortOrder;
+		public SortRunnable(ProcessingContext processContext, File unsorted, File output, SortOrder sortOrder) {
+			this(processContext, unsorted, output, sortOrder == SortOrder.coordinate ? new SAMRecordCoordinateComparator() : new SAMRecordQueryNameComparator(), SortOrder.unsorted);
+			switch (sortOrder) {
+			case coordinate:
+			case queryname:
+				break;
+			default:
+				throw new IllegalArgumentException("Sort order not specified");
 			}
-			collection.doneAdding();
-			writer = processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(header, true, output);
-			writer.setProgressLogger(new ProgressLogger(log));
-	    	wit = collection.iterator();
-			while (wit.hasNext()) {
-				writer.addAlignment(wit.next());
-			}
-		} finally {
-			CloserUtil.close(writer);
-			CloserUtil.close(wit);
-			CloserUtil.close(rit);
-			CloserUtil.close(reader);
-			if (collection != null) collection.cleanup();
 		}
+		public SortRunnable(ProcessingContext processContext, File unsorted, File output, SAMRecordComparator sortComparator) {
+			this(processContext, unsorted, output, sortComparator, SortOrder.unsorted);
+		}
+		private SortRunnable(ProcessingContext processContext, File unsorted, File output, SAMRecordComparator sortComparator, SortOrder sortOrder) {
+			this.processContext = processContext;
+			this.unsorted = unsorted;
+			this.output = output;
+			this.sortComparator = sortComparator;
+			this.sortOrder = sortOrder;
+		}
+		@Override
+		public void run() {
+			log.info("Sorting " + output);
+			SamReader reader = null;
+			CloseableIterator<SAMRecord> rit = null;
+			SAMFileWriter writer = null;
+			CloseableIterator<SAMRecord> wit = null;
+			SortingCollection<SAMRecord> collection = null;
+			try {
+				reader = processContext.getSamReader(unsorted);
+				SAMFileHeader header = reader.getFileHeader().clone();
+				header.setSortOrder(sortOrder);
+				rit = processContext.getSamReaderIterator(reader);
+				collection = SortingCollection.newInstance(
+						SAMRecord.class,
+						new BAMRecordCodec(header),
+						sortComparator,
+						processContext.getFileSystemContext().getMaxBufferedRecordsPerFile(),
+						processContext.getFileSystemContext().getTemporaryDirectory());
+				while (rit.hasNext()) {
+					collection.add(rit.next());
+				}
+				collection.doneAdding();
+				writer = processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(header, true, output);
+				writer.setProgressLogger(new ProgressLogger(log));
+		    	wit = collection.iterator();
+				while (wit.hasNext()) {
+					writer.addAlignment(wit.next());
+				}
+			} finally {
+				CloserUtil.close(writer);
+				CloserUtil.close(wit);
+				CloserUtil.close(rit);
+				CloserUtil.close(reader);
+				if (collection != null) collection.cleanup();
+			}
+		}
+		
 	}
 }

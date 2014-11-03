@@ -12,11 +12,14 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.RecursiveAction;
 
 import picard.cmdline.Option;
 import picard.cmdline.Usage;
 import au.edu.wehi.idsv.pipeline.SortRealignedAssemblies;
 import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
+import au.edu.wehi.idsv.util.ParallelAction;
 import au.edu.wehi.idsv.validation.TruthAnnotator;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
@@ -48,37 +51,59 @@ public class Idsv extends CommandLineProgram {
     		return new SAMEvidenceSource(getContext(), file, isTumour);
     	}
     }
+    private class ProcessInput extends RecursiveAction {
+    	private SAMEvidenceSource source;
+		public ProcessInput(SAMEvidenceSource source) {
+    		this.source = source;
+    	}
+		@Override
+		protected void compute() {
+			if (!source.isComplete(ProcessStep.CALCULATE_METRICS)
+	    			|| !source.isComplete(ProcessStep.EXTRACT_SOFT_CLIPS)
+	    			|| !source.isComplete(ProcessStep.EXTRACT_READ_PAIRS)) {
+				source.completeSteps(EnumSet.of(ProcessStep.CALCULATE_METRICS, ProcessStep.EXTRACT_SOFT_CLIPS, ProcessStep.EXTRACT_READ_PAIRS));
+	    		}
+		}
+    }
+    private class EnsureAssembled extends RecursiveAction {
+    	private AssemblyEvidenceSource source;
+		public EnsureAssembled(AssemblyEvidenceSource source) {
+    		this.source = source;
+    	}
+		@Override
+		protected void compute() {
+			source.ensureAssembled();
+		}
+    }
     @Override
 	protected int doWork() {
     	try {
 	    	ensureDictionariesMatch();
+	    	ForkJoinPool pool = new ForkJoinPool();
 
 	    	List<SAMEvidenceSource> samEvidence = Lists.newArrayList();
+	    	List<RecursiveAction> tasks = Lists.newArrayList();
 	    	int i = 0;
 	    	for (File f : INPUT) {
 	    		log.debug("Processing normal input ", f);
 	    		SAMEvidenceSource sref = constructSamEvidenceSource(f, i++, false);
-	    		if (!sref.isComplete(ProcessStep.CALCULATE_METRICS)
-	    			|| !sref.isComplete(ProcessStep.EXTRACT_SOFT_CLIPS)
-	    			|| !sref.isComplete(ProcessStep.EXTRACT_READ_PAIRS)) {
-	    			sref.completeSteps(STEPS);
-	    		}
 	    		samEvidence.add(sref);
+	    		tasks.add(new ProcessInput(sref));
 	    	}
 	    	for (File f : INPUT_TUMOUR) {
 	    		log.debug("Processing tumour input ", f);
 	    		SAMEvidenceSource sref = constructSamEvidenceSource(f, i++, true);
-	    		if (!sref.isComplete(ProcessStep.CALCULATE_METRICS)
-	    			|| !sref.isComplete(ProcessStep.EXTRACT_SOFT_CLIPS)
-	    			|| !sref.isComplete(ProcessStep.EXTRACT_READ_PAIRS)) {
-	    			sref.completeSteps(STEPS);
-	    		}
 	    		samEvidence.add(sref);
+	    		tasks.add(new ProcessInput(sref));
 	    	}
+	    	pool.invoke(new ParallelAction<RecursiveAction>(tasks));
+	    	tasks.clear();
 	    	log.debug("Evidence extraction complete.");
 
 	    	AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getContext(), samEvidence, OUTPUT);
-	    	aes.ensureAssembled();
+	    	tasks.add(new EnsureAssembled(aes));
+	    	pool.invoke(new ParallelAction<RecursiveAction>(tasks));
+	    	
 	    	List<EvidenceSource> allEvidence = Lists.newArrayList();
 	    	allEvidence.add(aes);
 	    	allEvidence.addAll(samEvidence);

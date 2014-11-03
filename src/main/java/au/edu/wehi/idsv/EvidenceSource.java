@@ -12,7 +12,6 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 
 public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
-	protected abstract void process();
 	protected abstract Iterator<DirectedEvidence> perChrIterator(String chr);
 	protected abstract Iterator<DirectedEvidence> singleFileIterator();
 	public abstract int getMaxConcordantFragmentSize();

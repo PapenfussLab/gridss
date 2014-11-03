@@ -90,5 +90,5 @@ public abstract class DataTransformStep implements Closeable {
 		}
 		toClose.clear();
 	}
-	public abstract EnumSet<ProcessStep> process(EnumSet<ProcessStep> steps);
+	public abstract void process(EnumSet<ProcessStep> steps);
 }

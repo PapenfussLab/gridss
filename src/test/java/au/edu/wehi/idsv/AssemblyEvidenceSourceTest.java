@@ -34,7 +34,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		ProcessingContext pc = getCommandlineContext();
 		pc.getAssemblyParameters().method = AssemblyMethod.DEBRUIJN_PER_POSITION;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, false);
-		ses.process();
+		ses.completeSteps(ProcessStep.ALL_STEPS);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
 		aes.ensureAssembled();
 
@@ -56,7 +56,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		ProcessingContext pc = getCommandlineContext();
 		pc.getAssemblyParameters().method = AssemblyMethod.DEBRUIJN_PER_POSITION;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, false);
-		ses.process();
+		ses.completeSteps(ProcessStep.ALL_STEPS);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
 		aes.ensureAssembled();
 
@@ -99,7 +99,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		pc.getAssemblyParameters().k = 3;
 		pc.getAssemblyParameters().method = AssemblyMethod.DEBRUIJN_PER_POSITION;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, false);
-		ses.process();
+		ses.completeSteps(ProcessStep.ALL_STEPS);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
 		aes.ensureAssembled();
 		assertEquals(1, getAssembly(aes).size());

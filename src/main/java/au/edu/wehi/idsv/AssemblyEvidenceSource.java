@@ -14,16 +14,21 @@ import htsjdk.variant.vcf.VCFFileReader;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
+import java.util.concurrent.ForkJoinTask;
 
 import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredAssembler;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 import au.edu.wehi.idsv.pipeline.SortRealignedAssemblies;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
+import au.edu.wehi.idsv.util.ParallelRunnableAction;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
@@ -121,32 +126,46 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		}
 		return done;
 	}
-	@Override
 	protected void process() {
 		log.info("START evidence assembly ", input);
-		List<Closeable> toClose = Lists.newArrayList();
-		SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
+		final Collection<Closeable> toClose = Collections.synchronizedCollection(new ArrayList<Closeable>());
+		final SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
 		try {
 			if (processContext.shouldProcessPerChromosome()) {
+				final List<Runnable> workers = Lists.newArrayList();
 				for (int i = 0; i < dict.size(); i++) {
-					String seq = dict.getSequence(i).getSequenceName();
-					List<Iterator<DirectedEvidence>> toMerge = Lists.newArrayList();
-					for (SAMEvidenceSource bam : source) {
-						Iterator<DirectedEvidence> it = bam.iterator(seq);
-						if (toClose instanceof Closeable) toClose.add((Closeable)it);
-						toMerge.add(it);
-					}
-					Iterator<DirectedEvidence> merged = Iterators.mergeSorted(toMerge, DirectedEvidenceOrder.ByNatural);
-					assemble(merged, processContext.getFileSystemContext().getAssemblyVcfForChr(input, seq), processContext.getFileSystemContext().getRealignmentFastqForChr(input, seq));
-					for (Iterator<DirectedEvidence> x : toMerge) {
-						CloserUtil.close(x);
+					final String seq = dict.getSequence(i).getSequenceName();
+					workers.add(new Runnable() {
+						@Override
+						public void run() {
+							List<Iterator<DirectedEvidence>> toMerge = Lists.newArrayList();
+							for (SAMEvidenceSource bam : source) {
+								Iterator<DirectedEvidence> it = bam.iterator(seq);
+								if (it instanceof Closeable) toClose.add((Closeable)it);
+								toMerge.add(it);
+							}
+							Iterator<DirectedEvidence> merged = Iterators.mergeSorted(toMerge, DirectedEvidenceOrder.ByNatural);
+							assemble(merged, processContext.getFileSystemContext().getAssemblyVcfForChr(input, seq), processContext.getFileSystemContext().getRealignmentFastqForChr(input, seq));
+							for (Iterator<DirectedEvidence> x : toMerge) {
+								CloserUtil.close(x);
+							}
+						}
+					});
+				}
+				if (ForkJoinTask.inForkJoinPool()) {
+					log.debug("performing parallel assembly");
+					ForkJoinTask.invokeAll(new ParallelRunnableAction(workers));
+				} else {
+					log.debug("performing serial assembly");
+					for (Runnable r : workers) {
+						r.run();
 					}
 				}
 			} else {
 				List<Iterator<DirectedEvidence>> toMerge = Lists.newArrayList();
 				for (SAMEvidenceSource bam : source) {
 					Iterator<DirectedEvidence> it = bam.iterator();
-					if (toClose instanceof Closeable) toClose.add((Closeable)it);
+					if (it instanceof Closeable) toClose.add((Closeable)it);
 					toMerge.add(it);
 				}
 				Iterator<DirectedEvidence> merged = Iterators.mergeSorted(toMerge, DirectedEvidenceOrder.ByNatural);

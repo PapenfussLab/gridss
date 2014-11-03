@@ -70,7 +70,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 	 * Ensures that all structural variation evidence has been extracted from the input file 
 	 * @return returns steps that could not be performed
 	 */
-	public EnumSet<ProcessStep> completeSteps(EnumSet<ProcessStep> steps) {
+	public void completeSteps(EnumSet<ProcessStep> steps) {
 		ExtractEvidence extract = null;
 		try {
 			if (!isComplete(ProcessStep.CALCULATE_METRICS)
@@ -95,11 +95,6 @@ public class SAMEvidenceSource extends EvidenceSource {
 			}
 			srsc.close();
 		}
-		return steps;
-	}
-	@Override
-	public void process() {
-		completeSteps(ProcessStep.ALL_STEPS);
 	}
 	public boolean isComplete(ProcessStep step) {
 		FileSystemContext fsc = processContext.getFileSystemContext();

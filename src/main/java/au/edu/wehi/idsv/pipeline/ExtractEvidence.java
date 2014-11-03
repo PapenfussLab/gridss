@@ -119,7 +119,7 @@ public class ExtractEvidence implements Closeable {
 			log.error(e, "Unable to delete intermediate file ", f,  " during rollback.");
 		}
 	}
-	public void process(final EnumSet<ProcessStep> steps) {
+	public void process(EnumSet<ProcessStep> steps) {
 		deleteOutput(steps);
 		EnumSet<ProcessStep> remainingSteps = steps.clone();
 		if (!source.isComplete(ProcessStep.CALCULATE_METRICS) && steps.contains(ProcessStep.CALCULATE_METRICS)) {
@@ -129,7 +129,7 @@ public class ExtractEvidence implements Closeable {
 		if (!remainingSteps.isEmpty()) {
 			doProcess(remainingSteps);
 		}
-    }
+	}
 	private void gatherMetrics(long maxRecords) {
 		boolean shouldDelete = true;
 		try {
@@ -190,6 +190,8 @@ public class ExtractEvidence implements Closeable {
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seqr : processContext.getReference().getSequenceDictionary().getSequences()) {
 				String seq = seqr.getSequenceName();
+				// PARALLEL opportunity - not great candidate due memory usage of and intermediate storage
+				// required for parallel sorts
 				sortMates(
 						processContext.getFileSystemContext().getMateBamUnsortedForChr(source.getSourceFile(), seq),
 						processContext.getFileSystemContext().getMateBamForChr(source.getSourceFile(), seq),
