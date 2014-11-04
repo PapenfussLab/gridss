@@ -13,22 +13,20 @@ import htsjdk.variant.vcf.VCFFileReader;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
-import java.util.concurrent.ForkJoinTask;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredAssembler;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 import au.edu.wehi.idsv.pipeline.SortRealignedAssemblies;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
-import au.edu.wehi.idsv.util.ParallelRunnableAction;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
@@ -54,8 +52,11 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		maxSourceFragSize = max;
 	}
 	public void ensureAssembled() {
+		ensureAssembled(null);
+	}
+	public void ensureAssembled(ExecutorService threadpool) {
 		if (!isProcessingComplete()) {
-			process();
+			process(threadpool);
 		}
 		if (isRealignmentComplete()) {
 			SortRealignedAssemblies step = new SortRealignedAssemblies(processContext, this);
@@ -126,64 +127,80 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		}
 		return done;
 	}
-	protected void process() {
+	protected void process(ExecutorService threadpool) {
 		log.info("START evidence assembly ", input);
-		final Collection<Closeable> toClose = Collections.synchronizedCollection(new ArrayList<Closeable>());
 		final SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
-		try {
-			if (processContext.shouldProcessPerChromosome()) {
-				final List<Runnable> workers = Lists.newArrayList();
-				for (int i = 0; i < dict.size(); i++) {
-					final String seq = dict.getSequence(i).getSequenceName();
-					workers.add(new Runnable() {
-						@Override
-						public void run() {
-							List<Iterator<DirectedEvidence>> toMerge = Lists.newArrayList();
+		if (processContext.shouldProcessPerChromosome()) {
+			final List<Callable<Void>> workers = Lists.newArrayList();
+			for (int i = 0; i < dict.size(); i++) {
+				final String seq = dict.getSequence(i).getSequenceName();
+				workers.add(new Callable<Void>() {
+					@Override
+					public Void call() {
+						log.info("Starting ", seq, " breakend assembly");
+						List<Iterator<DirectedEvidence>> toMerge = Lists.newArrayList();
+						try {
 							for (SAMEvidenceSource bam : source) {
 								Iterator<DirectedEvidence> it = bam.iterator(seq);
-								if (it instanceof Closeable) toClose.add((Closeable)it);
 								toMerge.add(it);
 							}
 							Iterator<DirectedEvidence> merged = Iterators.mergeSorted(toMerge, DirectedEvidenceOrder.ByNatural);
 							new ContigAssembler(merged, processContext.getFileSystemContext().getAssemblyVcfForChr(input, seq), processContext.getFileSystemContext().getRealignmentFastqForChr(input, seq)).run();
+						} catch (Exception e) {
+							log.error(e, "Error performing ", seq, " breakend assembly");
+							throw e;
+						} finally {
 							for (Iterator<DirectedEvidence> x : toMerge) {
 								CloserUtil.close(x);
 							}
 						}
-					});
-				}
-				if (ForkJoinTask.inForkJoinPool()) {
-					log.info("Performing multithreaded assembly");
-					ForkJoinTask.invokeAll(new ParallelRunnableAction(workers));
-				} else {
-					log.info("Performing singlethreaded assembly");
-					for (Runnable r : workers) {
-						r.run();
+						log.info("Completed ", seq, " breakend assembly");
+						return null;
 					}
+				});
+			}
+			if (threadpool != null) {
+				log.info("Performing multithreaded assembly");
+				try {
+					for (Future<Void> future : threadpool.invokeAll(workers)) {
+						// Throws any exceptions back up the call stack
+						try {
+							future.get();
+						} catch (ExecutionException e) {
+							throw new RuntimeException(e);
+						}
+					}
+				} catch (InterruptedException e) {
+					String msg = "Interrupted while assembly in progress";
+					log.error(e, msg);
+					throw new RuntimeException(msg, e);
 				}
 			} else {
-				List<Iterator<DirectedEvidence>> toMerge = Lists.newArrayList();
+				log.info("Performing singlethreaded assembly");
+				for (Callable<Void> c : workers) {
+					try {
+						c.call();
+					} catch (Exception e) {
+						throw new RuntimeException(e);
+					}
+				}
+			}
+		} else {
+			List<Iterator<DirectedEvidence>> toMerge = Lists.newArrayList();
+			try {
 				for (SAMEvidenceSource bam : source) {
 					Iterator<DirectedEvidence> it = bam.iterator();
-					if (it instanceof Closeable) toClose.add((Closeable)it);
 					toMerge.add(it);
 				}
 				Iterator<DirectedEvidence> merged = Iterators.mergeSorted(toMerge, DirectedEvidenceOrder.ByNatural);
 				new ContigAssembler(merged, processContext.getFileSystemContext().getAssemblyVcf(input), processContext.getFileSystemContext().getRealignmentFastq(input)).run();
+			} finally {
 				for (Iterator<DirectedEvidence> x : toMerge) {
 					CloserUtil.close(x);
 				}
 			}
-			log.info("SUCCESS evidence assembly ", input);
-		} finally {
-			for (Closeable x : toClose) {
-				try {
-					x.close();
-				} catch (IOException e) {
-					log.info(e, "Error closing stream");
-				}
-			}
 		}
+		log.info("SUCCESS evidence assembly ", input);
 	}
 	private class ContigAssembler implements Runnable {
 		private Iterator<DirectedEvidence> it;

@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.common.collect.ImmutableList;
@@ -22,7 +23,7 @@ import com.google.common.collect.PeekingIterator;
  *
  */
 public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
-	private static volatile int threadsCreated = 0;
+	private static AtomicInteger threadsCreated = new AtomicInteger(0);
 	private static final Log log = Log.getInstance(AsyncBufferedIterator.class);
     private final Thread reader;
     private final ReaderRunnable readerRunnable;
@@ -46,7 +47,7 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
 		this.buffer = new ArrayBlockingQueue<List<Object>>(bufferCount);
 		this.batchSize = batchSize;
         this.readerRunnable = new ReaderRunnable();
-        this.reader = new Thread(readerRunnable, getThreadNamePrefix() + threadsCreated++);
+        this.reader = new Thread(readerRunnable, getThreadNamePrefix() + threadsCreated.incrementAndGet());
         this.reader.setDaemon(true);
         this.reader.start();
 	}

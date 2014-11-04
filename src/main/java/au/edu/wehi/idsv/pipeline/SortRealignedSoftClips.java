@@ -19,6 +19,7 @@ import au.edu.wehi.idsv.RealignedRemoteSoftClipEvidence;
 import au.edu.wehi.idsv.RealignedSoftClipEvidence;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
+import au.edu.wehi.idsv.sam.SAMFileUtil.SortCallable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
@@ -78,31 +79,31 @@ public class SortRealignedSoftClips extends DataTransformStep {
 	}
 	private void sort() {
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		List<Runnable> actions = Lists.newArrayList();
+		List<SortCallable> actions = Lists.newArrayList();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				actions.add(new SAMFileUtil.SortRunnable(processContext,
+				actions.add(new SAMFileUtil.SortCallable(processContext,
 						fsc.getSoftClipRemoteUnsortedBamForChr(source.getSourceFile(), seq.getSequenceName()),
 						fsc.getSoftClipRemoteBamForChr(source.getSourceFile(), seq.getSequenceName()),
 						new RealignedSoftClipEvidence.RealignmentCoordinateComparator()));
-				actions.add(new SAMFileUtil.SortRunnable(processContext,
+				actions.add(new SAMFileUtil.SortCallable(processContext,
 						fsc.getRealignmentRemoteUnsortedBamForChr(source.getSourceFile(), seq.getSequenceName()),
 						fsc.getRealignmentRemoteBamForChr(source.getSourceFile(), seq.getSequenceName()),
 						SortOrder.coordinate));
 			}
 		} else {
-			actions.add(new SAMFileUtil.SortRunnable(processContext,
+			actions.add(new SAMFileUtil.SortCallable(processContext,
 					fsc.getSoftClipRemoteUnsortedBam(source.getSourceFile()),
 					fsc.getSoftClipRemoteBam(source.getSourceFile()),
 					new RealignedSoftClipEvidence.RealignmentCoordinateComparator()));
-			actions.add(new SAMFileUtil.SortRunnable(processContext,
+			actions.add(new SAMFileUtil.SortCallable(processContext,
 					fsc.getRealignmentRemoteUnsortedBam(source.getSourceFile()),
 					fsc.getRealignmentRemoteBam(source.getSourceFile()),
 					SortOrder.coordinate));
 		}
 		// PARALLEL opportunity - not great candidate due memory usage of sorting
-		for (Runnable r : actions) {
-			r.run();
+		for (SortCallable c : actions) {
+			c.call();
 		}
 	}
 	@Override

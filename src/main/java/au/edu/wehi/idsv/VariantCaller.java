@@ -17,6 +17,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
@@ -35,25 +39,68 @@ public class VariantCaller extends EvidenceProcessorBase {
 	}
 	@Override
 	public void process() {
-		callBreakends();
+		callBreakends(null);
 		annotateBreakpoints();
 		writeOutput();
 	}
-	public void callBreakends() {
+	private class WriteMaximalCliquesForChromosome implements Callable<Void> {
+		private int chri;
+		private int chrj;
+		public WriteMaximalCliquesForChromosome(int chri, int chrj) {
+			this.chri = chri;
+			this.chrj = chrj;
+		}
+		@Override
+		public Void call() {
+			final SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
+			final String iname = dict.getSequence(chri).getSequenceName();
+			final String jname = dict.getSequence(chrj).getSequenceName();
+			String task = "Identifying Breakpoints between "  + iname + " and " + jname;
+			try {
+				log.info("Start " + task);
+				EvidenceClusterSubsetProcessor processor = new EvidenceClusterSubsetProcessor(processContext, chri, chrj);
+				writeMaximalCliquesToVcf(
+						processor,
+						processContext.getFileSystemContext().getBreakpointVcf(output, iname, jname),
+						getEvidenceForChr(chri, chrj));
+				log.info("Complete " + task);
+			} catch (Exception e) {
+				log.error(e, "Error " + task);
+				throw new RuntimeException("Error " + task, e);
+			}
+			return null;
+		}
+		
+	}
+	public void callBreakends(ExecutorService threadpool) {
 		log.info("Identifying Breakpoints");
 		try {
 			if (processContext.shouldProcessPerChromosome()) {
-				SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
-				for (int i = 0; i < dict.size(); i++) {
-					String chri = dict.getSequence(i).getSequenceName();
+				List<WriteMaximalCliquesForChromosome> workers = Lists.newArrayList();
+				final SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
+				for (int i = 0; i < dict.size(); i++) {					
 					for (int j = i; j < dict.size(); j++) {
-						String chrj = dict.getSequence(j).getSequenceName();
-						log.debug("Identifying Breakpoints between ", chri, " and ", chrj);
-						EvidenceClusterSubsetProcessor processor = new EvidenceClusterSubsetProcessor(processContext, i, j);
-						writeMaximalCliquesToVcf(
-								processor,
-								processContext.getFileSystemContext().getBreakpointVcf(output, chri, chrj),
-								getEvidenceForChr(i, j));
+						workers.add(new WriteMaximalCliquesForChromosome(i, j));
+					}
+				}
+				if (threadpool != null) {
+					log.info("Identifying Breakpoints in parallel");
+					try {
+						for (Future<Void> future : threadpool.invokeAll(workers)) {
+							// throw exception from worker thread here
+							future.get();
+						}
+					} catch (InterruptedException e) {
+						log.error(e, "Interrupted Identifying Breakpoints");
+						throw new RuntimeException(e);
+					} catch (ExecutionException e) {
+						log.error(e, "Error Identifying Breakpoints");
+						throw new RuntimeException(e);
+					}
+				} else {
+					log.info("Identifying Breakpoints sequentially");
+					for (WriteMaximalCliquesForChromosome c : workers) {
+						c.call();
 					}
 				}
 			} else {
@@ -73,9 +120,9 @@ public class VariantCaller extends EvidenceProcessorBase {
 		if (processContext.shouldProcessPerChromosome()) {
 			SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
 			for (int i = 0; i < dict.size(); i++) {
-				String chri = dict.getSequence(i).getSequenceName();
+				final String chri = dict.getSequence(i).getSequenceName();
 				for (int j = i; j < dict.size(); j++) {
-					String chrj = dict.getSequence(j).getSequenceName();
+					final String chrj = dict.getSequence(j).getSequenceName();
 					variants.add(getVariants(processContext.getFileSystemContext().getBreakpointVcf(output, chri, chrj)));
 				}
 			}
@@ -121,13 +168,14 @@ public class VariantCaller extends EvidenceProcessorBase {
 		try {
 			vcfWriter = processContext.getVariantContextWriter(vcf);
 			toClose.add(vcfWriter);
-			log.info("Calling maximal cliques for ", vcf);
+			log.info("Start calling maximal cliques for ", vcf);
 			Iterator<VariantContextDirectedEvidence> it = processor.iterator();
 			while (it.hasNext()) {
 				VariantContextDirectedEvidence loc = it.next();
 				vcfWriter.add(loc);
 				writeProgress.record(processContext.getDictionary().getSequence(loc.getBreakendSummary().referenceIndex).getSequenceName(), loc.getBreakendSummary().start);
 			}
+			log.info("Complete calling maximal cliques for ", vcf);
 		} finally {
 			if (vcfWriter != null) vcfWriter.close();
 		}

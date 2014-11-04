@@ -16,6 +16,7 @@ import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.samtools.util.SortingCollection;
 
 import java.io.File;
+import java.util.concurrent.Callable;
 
 import au.edu.wehi.idsv.ProcessingContext;
 
@@ -28,7 +29,7 @@ public class SAMFileUtil {
 	 * @param sortOrder sort order
 	 */
 	public static void sort(ProcessingContext processContext, File unsorted, File output, SortOrder sortOrder) {
-		new SortRunnable(processContext, unsorted, output, sortOrder).run();
+		new SortCallable(processContext, unsorted, output, sortOrder).call();
 	}
 	/**
 	 * Sorts records in the given SAM/BAM file by the given comparator 
@@ -37,20 +38,20 @@ public class SAMFileUtil {
 	 * @param sortComparator sort order
 	 */
 	public static void sort(ProcessingContext processContext, File unsorted, File output, SAMRecordComparator sortComparator) {
-		new SortRunnable(processContext, unsorted, output, sortComparator).run();
+		new SortCallable(processContext, unsorted, output, sortComparator).call();
 	}
 	/**
-	 * Runnable implementation of SAM file sorting
+	 * SAM sorting task
 	 * @author cameron.d
 	 *
 	 */
-	public static class SortRunnable implements Runnable {
+	public static class SortCallable implements Callable<Void> {
 		private final ProcessingContext processContext;
 		private final File unsorted;
 		private final File output;
 		private final SAMRecordComparator sortComparator;
 		private final SortOrder sortOrder;
-		public SortRunnable(ProcessingContext processContext, File unsorted, File output, SortOrder sortOrder) {
+		public SortCallable(ProcessingContext processContext, File unsorted, File output, SortOrder sortOrder) {
 			this(processContext, unsorted, output, sortOrder == SortOrder.coordinate ? new SAMRecordCoordinateComparator() : new SAMRecordQueryNameComparator(), SortOrder.unsorted);
 			switch (sortOrder) {
 			case coordinate:
@@ -60,10 +61,10 @@ public class SAMFileUtil {
 				throw new IllegalArgumentException("Sort order not specified");
 			}
 		}
-		public SortRunnable(ProcessingContext processContext, File unsorted, File output, SAMRecordComparator sortComparator) {
+		public SortCallable(ProcessingContext processContext, File unsorted, File output, SAMRecordComparator sortComparator) {
 			this(processContext, unsorted, output, sortComparator, SortOrder.unsorted);
 		}
-		private SortRunnable(ProcessingContext processContext, File unsorted, File output, SAMRecordComparator sortComparator, SortOrder sortOrder) {
+		private SortCallable(ProcessingContext processContext, File unsorted, File output, SAMRecordComparator sortComparator, SortOrder sortOrder) {
 			this.processContext = processContext;
 			this.unsorted = unsorted;
 			this.output = output;
@@ -71,7 +72,7 @@ public class SAMFileUtil {
 			this.sortOrder = sortOrder;
 		}
 		@Override
-		public void run() {
+		public Void call() {
 			log.info("Sorting " + output);
 			SamReader reader = null;
 			CloseableIterator<SAMRecord> rit = null;
@@ -106,7 +107,7 @@ public class SAMFileUtil {
 				CloserUtil.close(reader);
 				if (collection != null) collection.cleanup();
 			}
+			return null;
 		}
-		
 	}
 }

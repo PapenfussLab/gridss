@@ -12,18 +12,22 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.RecursiveAction;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import picard.cmdline.Option;
 import picard.cmdline.Usage;
 import au.edu.wehi.idsv.pipeline.SortRealignedAssemblies;
 import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
-import au.edu.wehi.idsv.util.ParallelAction;
 import au.edu.wehi.idsv.validation.TruthAnnotator;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
+import com.google.common.base.Function;
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.MoreExecutors;
 
 /**
  * Extracts structural variation evidence and assembles breakends
@@ -33,6 +37,10 @@ import com.google.common.collect.Lists;
 public class Idsv extends CommandLineProgram {
 	private Log log = Log.getInstance(Idsv.class);
 	private static final String PROGRAM_VERSION = "0.1";
+	@Option(doc="Number of worker threads to spawn."
+			+ "CPU usage can be higher than the number of worker thread due to additional I/O threads",
+    		shortName="THREADS")
+    public int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
     // The following attributes define the command-line arguments
 	@Option(doc="VCF containing true calls. Called variants will be annotated as true/false positive calls based on this truth file.", optional=true)
     public File TRUTH_VCF = null;
@@ -51,68 +59,48 @@ public class Idsv extends CommandLineProgram {
     		return new SAMEvidenceSource(getContext(), file, isTumour);
     	}
     }
-    private class ProcessInput extends RecursiveAction {
-    	private SAMEvidenceSource source;
-		public ProcessInput(SAMEvidenceSource source) {
-    		this.source = source;
-    	}
-		@Override
-		protected void compute() {
-			try {
-				if (!source.isComplete(ProcessStep.CALCULATE_METRICS)
-		    			|| !source.isComplete(ProcessStep.EXTRACT_SOFT_CLIPS)
-		    			|| !source.isComplete(ProcessStep.EXTRACT_READ_PAIRS)) {
-					source.completeSteps(EnumSet.of(ProcessStep.CALCULATE_METRICS, ProcessStep.EXTRACT_SOFT_CLIPS, ProcessStep.EXTRACT_READ_PAIRS));
-	    		}
-			} catch (Exception e) {
-				log.error(e);
-				throw e;
-			}
-		}
-    }
-    private class EnsureAssembled extends RecursiveAction {
-    	private AssemblyEvidenceSource source;
-		public EnsureAssembled(AssemblyEvidenceSource source) {
-    		this.source = source;
-    	}
-		@Override
-		protected void compute() {
-			try {
-				source.ensureAssembled();
-			} catch (Exception e) {
-				log.error(e);
-				throw e;
-			}
-		}
-    }
     @Override
 	protected int doWork() {
     	try {
+    		ExecutorService threadpool = Executors.newFixedThreadPool(WORKER_THREADS); 
 	    	ensureDictionariesMatch();
-	    	ForkJoinPool pool = new ForkJoinPool();
 
 	    	List<SAMEvidenceSource> samEvidence = Lists.newArrayList();
-	    	List<RecursiveAction> tasks = Lists.newArrayList();
 	    	int i = 0;
 	    	for (File f : INPUT) {
 	    		log.debug("Processing normal input ", f);
 	    		SAMEvidenceSource sref = constructSamEvidenceSource(f, i++, false);
 	    		samEvidence.add(sref);
-	    		tasks.add(new ProcessInput(sref));
 	    	}
 	    	for (File f : INPUT_TUMOUR) {
 	    		log.debug("Processing tumour input ", f);
 	    		SAMEvidenceSource sref = constructSamEvidenceSource(f, i++, true);
 	    		samEvidence.add(sref);
-	    		tasks.add(new ProcessInput(sref));
 	    	}
-	    	pool.invoke(new ParallelAction<RecursiveAction>(tasks));
-	    	tasks.clear();
+	    	log.debug("Extracting evidence.");
+	    	for (Future<Void> future : threadpool.invokeAll(Lists.transform(samEvidence, new Function<SAMEvidenceSource, Callable<Void>>() {
+					@Override
+					public Callable<Void> apply(final SAMEvidenceSource input) {
+						return new Callable<Void>() {
+							@Override
+							public Void call() throws Exception {
+								try {
+									input.completeSteps(EnumSet.of(ProcessStep.CALCULATE_METRICS, ProcessStep.EXTRACT_SOFT_CLIPS, ProcessStep.EXTRACT_READ_PAIRS));
+								} catch (Exception e) {
+									log.error(e, "Exception thrown by worker thread");
+									throw e;
+								}
+								return null;
+							}
+						};
+					}
+		    	}))) {
+	    		// throw exception from worker thread here
+	    		future.get();
+	    	}
 	    	log.debug("Evidence extraction complete.");
-
 	    	AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getContext(), samEvidence, OUTPUT);
-	    	tasks.add(new EnsureAssembled(aes));
-	    	pool.invoke(new ParallelAction<RecursiveAction>(tasks));
+	    	aes.ensureAssembled(threadpool);
 	    	
 	    	List<EvidenceSource> allEvidence = Lists.newArrayList();
 	    	allEvidence.add(aes);
@@ -137,16 +125,31 @@ public class Idsv extends CommandLineProgram {
 		    	}
 		    	return -1;
 	    	}
-	    	for (SAMEvidenceSource sref : samEvidence) {
-	    		SortRealignedSoftClips sortSplitReads = new SortRealignedSoftClips(getContext(), sref);
-	    		if (!sortSplitReads.isComplete()) {
-	    			sortSplitReads.process(STEPS);
-	    		}
-	    		sortSplitReads.close();
+	    	for (Future<Void> future : threadpool.invokeAll(Lists.transform(samEvidence, new Function<SAMEvidenceSource, Callable<Void>>() {
+				@Override
+				public Callable<Void> apply(final SAMEvidenceSource input) {
+					return new Callable<Void>() {
+						@Override
+						public Void call() throws Exception {
+							try {
+								SortRealignedSoftClips sortSplitReads = new SortRealignedSoftClips(getContext(), input);
+					    		if (!sortSplitReads.isComplete()) {
+					    			sortSplitReads.process(STEPS);
+					    		}
+					    		sortSplitReads.close();
+							} catch (Exception e) {
+								log.error(e, "Exception thrown by worker thread");
+								throw e;
+							}
+							return null;
+						}
+					};}}))) {
+	    		// throw exception from worker thread here
+	    		future.get();
 	    	}
 	    	SortRealignedAssemblies sra = new SortRealignedAssemblies(getContext(), aes);
     		if (sra.canProcess() && !sra.isComplete()) {
-    			sra.process(STEPS);
+    			sra.process(STEPS, threadpool);
     		}
     		sra.close();
 	    	
@@ -169,7 +172,7 @@ public class Idsv extends CommandLineProgram {
 	    	VariantCaller caller = null;
 	    	try {
 	    		caller = new VariantCaller(getContext(), OUTPUT, allEvidence);
-	    		caller.callBreakends();
+	    		caller.callBreakends(threadpool);
 	    		BreakendAnnotator annotator = null;
 	    		if (TRUTH_VCF != null) {
 	    			annotator = new TruthAnnotator(getContext(), TRUTH_VCF);	
@@ -182,7 +185,13 @@ public class Idsv extends CommandLineProgram {
     	} catch (IOException e) {
     		log.error(e);
     		throw new RuntimeException(e);
-    	}
+    	} catch (InterruptedException e) {
+    		log.error("Interrupted waiting for task to complete", e);
+    		throw new RuntimeException(e);
+		} catch (ExecutionException e) {
+			log.error("Exception thrown from background task", e.getCause());
+    		throw new RuntimeException("Exception thrown from background task", e.getCause());
+		}
 		return 0;
     }
 	private void hackOutputIndels() throws IOException {

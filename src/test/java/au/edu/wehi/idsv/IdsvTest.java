@@ -26,11 +26,11 @@ public class IdsvTest extends IntermediateFilesTest {
 				"OUTPUT=" + output.toString(),
 				"TMP_DIR=" + super.testFolder.getRoot().toString(),
 				"WORKING_DIR=" + super.testFolder.getRoot().toString(),
-				"PER_CHR=false"
+				"PER_CHR=true"
 		};
 		new Idsv().instanceMain(args);
 		// Should have generated two breakpoints
-		List<VariantContextDirectedEvidence> ass = breaks(getVcf(getCommandlineContext(false).getFileSystemContext().getAssemblyVcf(output), null));
+		List<VariantContextDirectedEvidence> ass = breaks(getVcf(getCommandlineContext(false).getFileSystemContext().getAssemblyVcfForChr(output, "chr12"), null));
 		ass = Lists.newArrayList(Iterables.filter(ass, new Predicate<VariantContextDirectedEvidence>() {
 			@Override
 			public boolean apply(VariantContextDirectedEvidence arg0) {

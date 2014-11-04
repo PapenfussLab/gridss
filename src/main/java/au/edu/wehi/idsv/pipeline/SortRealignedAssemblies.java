@@ -8,13 +8,16 @@ import java.io.File;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
-import au.edu.wehi.idsv.vcf.VcfFileUtil;
+import au.edu.wehi.idsv.vcf.VcfFileUtil.SortCallable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
@@ -35,6 +38,9 @@ public class SortRealignedAssemblies extends DataTransformStep {
 	}
 	@Override
 	public void process(EnumSet<ProcessStep> steps) {
+		process(steps, null);
+	}
+	public void process(EnumSet<ProcessStep> steps, ExecutorService threadpool) {
 		if (isComplete() || !steps.contains(ProcessStep.SORT_REALIGNED_ASSEMBLIES)) {
 			log.debug("no work to do");
 		}
@@ -48,7 +54,7 @@ public class SortRealignedAssemblies extends DataTransformStep {
 			createUnsortedOutputWriters();
 			writeUnsortedOutput();
 			close();
-			sort();
+			sort(threadpool);
 			deleteTemp();
 			log.info("SUCCESS: assembly remote breakend sorting ");
 		} catch (Exception e) {
@@ -60,21 +66,38 @@ public class SortRealignedAssemblies extends DataTransformStep {
 			throw new RuntimeException(msg, e);
 		}
 	}
-	private void sort() {
+	private void sort(ExecutorService threadpool) {
 		FileSystemContext fsc = processContext.getFileSystemContext();
+		List<SortCallable> tasks = Lists.newArrayList();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				// Parallel opportunity
-				VcfFileUtil.sort(processContext,
+				tasks.add(new SortCallable(processContext,
 						fsc.getAssemblyRemoteUnsortedVcfForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName()),
 						fsc.getAssemblyRemoteVcfForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName()),
-						VariantContextDirectedBreakpoint.ByRemoteBreakendLocationStartRaw(processContext));
+						VariantContextDirectedBreakpoint.ByRemoteBreakendLocationStartRaw(processContext)));
 			}
 		} else {
-			VcfFileUtil.sort(processContext,
+			tasks.add(new SortCallable(processContext,
 					fsc.getAssemblyRemoteUnsortedVcf(source.getFileIntermediateDirectoryBasedOn()),
 					fsc.getAssemblyRemoteVcf(source.getFileIntermediateDirectoryBasedOn()),
-					VariantContextDirectedBreakpoint.ByRemoteBreakendLocationStartRaw(processContext));
+					VariantContextDirectedBreakpoint.ByRemoteBreakendLocationStartRaw(processContext)));
+		}
+		if (threadpool != null) {
+			try {
+				for (Future<Void> future : threadpool.invokeAll(tasks)) {
+					// throw any exception
+					future.get();
+				}
+			} catch (InterruptedException e) {
+				log.error(e);
+				throw new RuntimeException("Interrupted waiting for VCF sort", e);
+			} catch (ExecutionException e) {
+				throw new RuntimeException("Failed to sort VCF", e.getCause());
+			}
+		} else {
+			for (SortCallable c : tasks) {
+				c.call();
+			}
 		}
 	}
 	@Override
