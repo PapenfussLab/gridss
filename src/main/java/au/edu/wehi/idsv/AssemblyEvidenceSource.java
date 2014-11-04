@@ -129,6 +129,12 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	}
 	protected void process(ExecutorService threadpool) {
 		log.info("START evidence assembly ", input);
+		for (SAMEvidenceSource s : source) {
+			if (!s.isComplete(ProcessStep.EXTRACT_READ_PAIRS) ||
+				!s.isComplete(ProcessStep.EXTRACT_SOFT_CLIPS)) {
+				throw new IllegalStateException(String.format("Unable to perform assembly: evidence extraction not complete for %s", s.getSourceFile()));
+			}
+		}
 		final SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
 		if (processContext.shouldProcessPerChromosome()) {
 			final List<Callable<Void>> workers = Lists.newArrayList();

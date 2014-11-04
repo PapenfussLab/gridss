@@ -199,13 +199,13 @@ public class SAMEvidenceSource extends EvidenceSource {
 				processContext.getSamReaderIterator(scReader));
 		scIt = new AutoClosingIterator<SoftClipEvidence>(scIt, Lists.<Closeable>newArrayList(scReader));
 		if (isRealignmentComplete()) {
-			log.debug("Realignment is complete for ", input);
+			//log.debug("Realignment is complete for ", input);
 			SamReader scRealignReader = processContext.getSamReader(realigned);
 			scIt = new RealignedSoftClipEvidenceIterator(scIt,
 				processContext.getSamReaderIterator(scRealignReader));
 			scIt = new AutoClosingIterator<SoftClipEvidence>(scIt, Lists.<Closeable>newArrayList(scRealignReader));
 		} else {
-			log.info("Realigned soft clip evidence not present due to missing realignment bam ", realigned);
+			//log.info("Realigned soft clip evidence not present due to missing realignment bam ", realigned);
 		}
 		// sort into evidence order
 		scIt = new DirectEvidenceWindowedSortingIterator<SoftClipEvidence>(processContext, getMetrics().getIdsvMetrics().MAX_READ_LENGTH, scIt);
@@ -213,7 +213,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		Iterator<RealignedRemoteSoftClipEvidence> remoteScIt = Collections.emptyIterator(); 
 		if (isRealignmentComplete()) {
 			if (!isComplete(ProcessStep.SORT_REALIGNED_SOFT_CLIPS)) {
-				log.debug("Realignment resorting not complete for ", input);
+				//log.debug("Realignment resorting not complete for ", input);
 			} else {
 				SamReader realignSortedReader = processContext.getSamReader(remoteRealigned);
 				SamReader scRealignSorted1 = processContext.getSamReader(remoteSoftClip);
@@ -226,7 +226,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 				remoteScIt = new DirectEvidenceWindowedSortingIterator<RealignedRemoteSoftClipEvidence>(processContext, getMetrics().getIdsvMetrics().MAX_READ_LENGTH, remoteScIt);
 			}
 		} else {
-			log.info("Realigned remote soft clip evidence not present due to missing realignment bam ", realigned);
+			//log.info("Realigned remote soft clip evidence not present due to missing realignment bam ", realigned);
 		}
 		return Iterators.mergeSorted(ImmutableList.of(rpIt, scIt, remoteScIt), DirectedEvidenceOrder.ByNatural);
 	}
