@@ -43,10 +43,11 @@ public class VariantCaller extends EvidenceProcessorBase {
 		annotateBreakpoints();
 		writeOutput();
 	}
-	private class WriteMaximalCliquesForChromosome implements Callable<Void> {
+	private static class WriteMaximalCliquesForChromosome extends EvidenceProcessorBase implements Callable<Void> {
 		private int chri;
 		private int chrj;
-		public WriteMaximalCliquesForChromosome(int chri, int chrj) {
+		public WriteMaximalCliquesForChromosome(ProcessingContext context, File output, List<EvidenceSource> evidence, int chri, int chrj) {
+			super(context, output, evidence);
 			this.chri = chri;
 			this.chrj = chrj;
 		}
@@ -59,7 +60,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 			try {
 				log.info("Start " + task);
 				EvidenceClusterSubsetProcessor processor = new EvidenceClusterSubsetProcessor(processContext, chri, chrj);
-				writeMaximalCliquesToVcf(
+				writeMaximalCliquesToVcf(processContext,
 						processor,
 						processContext.getFileSystemContext().getBreakpointVcf(output, iname, jname),
 						getEvidenceForChr(chri, chrj));
@@ -70,7 +71,10 @@ public class VariantCaller extends EvidenceProcessorBase {
 			}
 			return null;
 		}
-		
+		@Override
+		public void process() {
+			call();
+		}
 	}
 	public void callBreakends(ExecutorService threadpool) {
 		log.info("Identifying Breakpoints");
@@ -80,7 +84,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 				final SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
 				for (int i = 0; i < dict.size(); i++) {					
 					for (int j = i; j < dict.size(); j++) {
-						workers.add(new WriteMaximalCliquesForChromosome(i, j));
+						workers.add(new WriteMaximalCliquesForChromosome(processContext, output, evidence,  i, j));
 					}
 				}
 				if (threadpool != null) {
@@ -106,6 +110,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 			} else {
 				EvidenceClusterProcessor processor = new EvidenceClusterProcessor(processContext);
 				writeMaximalCliquesToVcf(
+						processContext,
 						processor,
 						processContext.getFileSystemContext().getBreakpointVcf(output),
 						getAllEvidence());
@@ -158,7 +163,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 		});
 		return idsvIt;
 	}
-	private void writeMaximalCliquesToVcf(EvidenceClusterProcessor processor, File vcf, Iterator<DirectedEvidence> evidenceIt) {
+	private static void writeMaximalCliquesToVcf(ProcessingContext processContext, EvidenceClusterProcessor processor, File vcf, Iterator<DirectedEvidence> evidenceIt) {
 		final ProgressLogger writeProgress = new ProgressLogger(log);
 		log.info("Loading minimal evidence set for ", vcf, " into memory.");
 		while (evidenceIt.hasNext()) {
@@ -167,7 +172,6 @@ public class VariantCaller extends EvidenceProcessorBase {
 		VariantContextWriter vcfWriter = null;
 		try {
 			vcfWriter = processContext.getVariantContextWriter(vcf);
-			toClose.add(vcfWriter);
 			log.info("Start calling maximal cliques for ", vcf);
 			Iterator<VariantContextDirectedEvidence> it = processor.iterator();
 			while (it.hasNext()) {

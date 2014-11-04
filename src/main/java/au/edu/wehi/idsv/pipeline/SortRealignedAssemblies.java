@@ -43,6 +43,7 @@ public class SortRealignedAssemblies extends DataTransformStep {
 	public void process(EnumSet<ProcessStep> steps, ExecutorService threadpool) {
 		if (isComplete() || !steps.contains(ProcessStep.SORT_REALIGNED_ASSEMBLIES)) {
 			log.debug("no work to do");
+			return;
 		}
 		if (!canProcess()) {
 			String msg = String.format("Assembly realignment not completed. Unable to process");

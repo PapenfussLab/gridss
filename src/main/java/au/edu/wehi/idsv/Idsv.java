@@ -62,7 +62,8 @@ public class Idsv extends CommandLineProgram {
     @Override
 	protected int doWork() {
     	try {
-    		ExecutorService threadpool = Executors.newFixedThreadPool(WORKER_THREADS); 
+    		ExecutorService threadpool = Executors.newFixedThreadPool(WORKER_THREADS);
+    		log.info(String.format("Using %d worker threads", WORKER_THREADS));
 	    	ensureDictionariesMatch();
 
 	    	List<SAMEvidenceSource> samEvidence = Lists.newArrayList();
