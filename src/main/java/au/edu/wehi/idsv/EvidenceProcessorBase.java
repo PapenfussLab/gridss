@@ -25,9 +25,10 @@ public abstract class EvidenceProcessorBase implements Closeable {
 		this.output = output;
 		this.evidence = evidence;
 	}
-	protected Iterator<DirectedEvidence> getAllEvidence() {
+	protected Iterator<DirectedEvidence> getAllEvidence(boolean assemblyOnly) {
 		List<Iterator<DirectedEvidence>> evidenceItList = Lists.newArrayList();
 		for (EvidenceSource source : evidence) {
+			if (assemblyOnly && !(source instanceof AssemblyEvidenceSource)) continue;
 			Iterator<DirectedEvidence> it = source.iterator();
 			if (it instanceof Closeable) toClose.add((Closeable)it);
 			evidenceItList.add(it);
@@ -35,10 +36,11 @@ public abstract class EvidenceProcessorBase implements Closeable {
 		Iterator<DirectedEvidence> evidenceIt = Iterators.mergeSorted(evidenceItList, DirectedEvidenceOrder.ByNatural);
 		return evidenceIt;
 	}
-	protected Iterator<DirectedEvidence> getEvidenceForChr(int... referenceIndex) {
+	protected Iterator<DirectedEvidence> getEvidenceForChr(boolean assemblyOnly, int... referenceIndex) {
 		SortedSet<Integer> refList = Sets.newTreeSet(Ints.asList(referenceIndex));
 		List<Iterator<DirectedEvidence>> evidenceItList = Lists.newArrayList();
 		for (EvidenceSource source : evidence) {
+			if (assemblyOnly && !(source instanceof AssemblyEvidenceSource)) continue;
 			List<Iterator<DirectedEvidence>> sourceIt = Lists.newArrayList();
 			for (int i : refList) {
 				Iterator<DirectedEvidence> it = source.iterator(processContext.getReference().getSequenceDictionary().getSequence(i).getSequenceName());

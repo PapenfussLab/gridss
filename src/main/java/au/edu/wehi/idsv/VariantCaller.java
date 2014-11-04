@@ -63,7 +63,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 				writeMaximalCliquesToVcf(processContext,
 						processor,
 						processContext.getFileSystemContext().getBreakpointVcf(output, iname, jname),
-						getEvidenceForChr(chri, chrj));
+						getEvidenceForChr(processContext.getVariantCallingParameters().callOnlyAssemblies, chri, chrj));
 				log.info("Complete " + task);
 			} catch (Exception e) {
 				log.error(e, "Error " + task);
@@ -113,7 +113,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 						processContext,
 						processor,
 						processContext.getFileSystemContext().getBreakpointVcf(output),
-						getAllEvidence());
+						getAllEvidence(processContext.getVariantCallingParameters().callOnlyAssemblies));
 			}
 		} finally {
 			close();
@@ -209,7 +209,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 			final SequentialReferenceCoverageLookup tumourCoverage = getReferenceLookup(tumourFiles);
 			toClose.add(tumourCoverage);
 			BreakendAnnotator referenceAnnotator  = new SequentialCoverageAnnotator(processContext, normalCoverage, tumourCoverage);
-			BreakendAnnotator evidenceAnnotator = new SequentialEvidenceAnnotator(processContext, getAllEvidence());
+			BreakendAnnotator evidenceAnnotator = new SequentialEvidenceAnnotator(processContext, getAllEvidence(false));
 			Iterator<IdsvVariantContext> it = getAllCalledVariants();
 			while (it.hasNext()) {
 				IdsvVariantContext rawVariant = it.next();
