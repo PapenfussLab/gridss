@@ -6,9 +6,8 @@ import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.Log;
 
 import java.io.IOException;
-import java.util.Map;
 
-import com.google.common.collect.Maps;
+import com.google.common.collect.ImmutableMap;
 
 /**
  * Buffers entire reference to enable efficient random lookup of sequences
@@ -18,7 +17,10 @@ import com.google.common.collect.Maps;
 public class BufferedReferenceSequenceFile implements ReferenceSequenceFile {
 	private static final Log log = Log.getInstance(BufferedReferenceSequenceFile.class);
 	private final ReferenceSequenceFile underlying;
-	private final Map<String, ReferenceSequence> cache = Maps.newHashMap();
+	/**
+	 * Cached contigs
+	 */
+	private volatile ImmutableMap<String, ReferenceSequence> cache = ImmutableMap.of();
 	public BufferedReferenceSequenceFile(ReferenceSequenceFile underlying) {
 		this.underlying = underlying;
 	}
@@ -38,13 +40,32 @@ public class BufferedReferenceSequenceFile implements ReferenceSequenceFile {
 	public boolean isIndexed() {
 		return underlying.isIndexed();
 	}
-	@Override
-	public synchronized ReferenceSequence getSequence(String contig) {
-		if (!cache.containsKey(contig)) {
-			cache.put(contig, underlying.getSequence(contig));
-			log.debug("Cached reference genome contig ", contig);
+	/**
+	 * Updates the cache to include the new contig
+	 * @param contig
+	 */
+	private synchronized ReferenceSequence addToCache(String contig) {
+		ReferenceSequence seq = cache.get(contig);
+		if (seq != null) {
+			// already populated by another thread while we were waiting to enter
+			// this synchronized block
+			return seq;
 		}
-		return cache.get(contig);
+		log.debug("Caching reference genome contig ", contig);
+		seq = underlying.getSequence(contig);
+		cache = ImmutableMap.<String, ReferenceSequence>builder()
+				.putAll(cache)
+				.put(contig, seq)
+				.build();
+		return seq;
+	}
+	@Override
+	public ReferenceSequence getSequence(String contig) {
+		ReferenceSequence seq = cache.get(contig);
+		if (seq == null) {
+			seq = addToCache(contig);
+		}
+		return seq;
 	}
 	@Override
 	public ReferenceSequence getSubsequenceAt(String contig, long start, long stop) {
