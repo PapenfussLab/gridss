@@ -1,8 +1,27 @@
 package au.edu.wehi.idsv.util;
 
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.RecursiveAction;
+
+import com.google.common.collect.ImmutableList;
+
 
 public class ThreadPoolTest {
-	/*
+	public class TestCallable implements Callable<Void> {
+		@Override
+		public Void call() throws InterruptedException {
+			Thread.sleep(500);
+			return null;
+		}
+	}
+	//@Test
+	public void callable_void_should_return() throws InterruptedException {
+		ExecutorService	es = Executors.newFixedThreadPool(2);
+		es.invokeAll(ImmutableList.of(new TestCallable(), new TestCallable(), new TestCallable(), new TestCallable(), new TestCallable(), new TestCallable()));
+	}
 	public class RecursiveTask implements Callable<Integer> {
 		private ExecutorService threadPool;
 		private int depth;
@@ -18,8 +37,7 @@ public class ThreadPoolTest {
 			return depth;
 		}
 	}
-	@Test
-	@Ignore // locks up since the blocking thread is in the thread pool using up the only thread
+	//@Test // locks up since the blocking thread is in the thread pool using up the only thread
 	public void blocking_tasks_cannot_be_submitted_from_a_worker_thread() throws InterruptedException {
 		ExecutorService	es = Executors.newSingleThreadExecutor();
 		es.invokeAll(ImmutableList.of(new RecursiveTask(es, 0)));
@@ -38,11 +56,9 @@ public class ThreadPoolTest {
 			}
 		}
 	}
-	@Test
-	@Ignore // yet breakend assembly deadlocks (maybe a resource threading issue?)
+	//@Test// yet breakend assembly deadlocks (maybe a resource threading issue?)
 	public void blocking_tasks_can_be_submitted_from_a_fork_join_task() throws InterruptedException {
 		ForkJoinPool p = new ForkJoinPool(1);
 		p.invoke(new RecursiveForkJoinAction(0));
 	}
-	*/
 }

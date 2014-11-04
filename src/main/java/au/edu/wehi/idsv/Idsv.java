@@ -17,6 +17,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 
 import picard.cmdline.Option;
 import picard.cmdline.Usage;
@@ -27,7 +29,6 @@ import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.MoreExecutors;
 
 /**
  * Extracts structural variation evidence and assembles breakends
@@ -61,8 +62,16 @@ public class Idsv extends CommandLineProgram {
     }
     @Override
 	protected int doWork() {
+    	ExecutorService threadpool = null;
     	try {
-    		ExecutorService threadpool = Executors.newFixedThreadPool(WORKER_THREADS);
+    		threadpool = Executors.newFixedThreadPool(WORKER_THREADS, new ThreadFactory() {
+    			   @Override
+    			   public Thread newThread(Runnable runnable) {
+    			      Thread thread = Executors.defaultThreadFactory().newThread(runnable);
+    			      thread.setDaemon(true);
+    			      return thread;
+    			   }
+    			});
     		log.info(String.format("Using %d worker threads", WORKER_THREADS));
 	    	ensureDictionariesMatch();
 
@@ -192,6 +201,19 @@ public class Idsv extends CommandLineProgram {
 		} catch (ExecutionException e) {
 			log.error("Exception thrown from background task", e.getCause());
     		throw new RuntimeException("Exception thrown from background task", e.getCause());
+		} finally {
+			if (threadpool != null) {
+				log.debug("Shutting down thread pool.");
+				threadpool.shutdownNow();
+				log.debug("Waiting for thread pool tasks to complete");
+				try {
+					if (!threadpool.awaitTermination(10, TimeUnit.MINUTES)) {
+						log.error("Tasks did not respond to termination request in a timely manner - outstanding tasks will be forcibly terminated without cleanup by the JVM.");
+					}
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+			}
 		}
 		return 0;
     }

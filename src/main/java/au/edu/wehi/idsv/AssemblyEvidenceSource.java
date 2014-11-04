@@ -154,7 +154,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 							new ContigAssembler(merged, processContext.getFileSystemContext().getAssemblyVcfForChr(input, seq), processContext.getFileSystemContext().getRealignmentFastqForChr(input, seq)).run();
 						} catch (Exception e) {
 							log.error(e, "Error performing ", seq, " breakend assembly");
-							throw e;
+							throw new RuntimeException(e);
 						} finally {
 							for (Iterator<DirectedEvidence> x : toMerge) {
 								CloserUtil.close(x);
