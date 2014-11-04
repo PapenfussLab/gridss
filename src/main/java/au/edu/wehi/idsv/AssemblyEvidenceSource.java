@@ -60,7 +60,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		}
 		if (isRealignmentComplete()) {
 			SortRealignedAssemblies step = new SortRealignedAssemblies(processContext, this);
-			step.process(EnumSet.of(ProcessStep.SORT_REALIGNED_ASSEMBLIES));
+			step.process(EnumSet.of(ProcessStep.SORT_REALIGNED_ASSEMBLIES), threadpool);
 			step.close();
 		}
 	}

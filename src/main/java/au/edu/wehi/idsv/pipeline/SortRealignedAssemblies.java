@@ -85,10 +85,12 @@ public class SortRealignedAssemblies extends DataTransformStep {
 		}
 		if (threadpool != null) {
 			try {
+				log.debug("Issuing parallel sort tasks");
 				for (Future<Void> future : threadpool.invokeAll(tasks)) {
 					// throw any exception
 					future.get();
 				}
+				log.debug("Parallel sort tasks complete");
 			} catch (InterruptedException e) {
 				log.error(e);
 				throw new RuntimeException("Interrupted waiting for VCF sort", e);
