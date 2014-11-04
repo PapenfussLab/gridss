@@ -39,7 +39,7 @@ public class BufferedReferenceSequenceFile implements ReferenceSequenceFile {
 		return underlying.isIndexed();
 	}
 	@Override
-	public ReferenceSequence getSequence(String contig) {
+	public synchronized ReferenceSequence getSequence(String contig) {
 		if (!cache.containsKey(contig)) {
 			cache.put(contig, underlying.getSequence(contig));
 			log.debug("Cached reference genome contig ", contig);
