@@ -22,6 +22,9 @@ public class FileSystemContext {
 			int maxRecordsInRam) {
 		this(tempDir, null, maxRecordsInRam);
 	}
+	public static File getWorkingFileFor(File file) {
+		return new File(file.getParent(), "tmp." + file.getName());
+	}
 	public File getTemporaryDirectory() {
 		return tempDir;
 	}

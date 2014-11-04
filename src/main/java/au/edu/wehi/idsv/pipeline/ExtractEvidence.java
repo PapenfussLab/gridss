@@ -38,6 +38,7 @@ import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 import com.google.common.collect.Lists;
+import com.google.common.io.Files;
 /**
  * Extracts reads supporting structural variation into intermediate files.
  * By sorting DP and OEA read pairs by the coordinate of the mapped mate,
@@ -51,9 +52,11 @@ public class ExtractEvidence implements Closeable {
 	private static final Log log = Log.getInstance(ExtractEvidence.class);
 	private final ProcessingContext processContext;
 	private final SAMEvidenceSource source;
+	private final FileSystemContext fsc;
 	public ExtractEvidence(ProcessingContext processContext, SAMEvidenceSource source) {
 		this.processContext = processContext;
 		this.source = source;
+		this.fsc = processContext.getFileSystemContext();
 	}
 	private SamReader reader = null;
 	private ReferenceSequenceFileWalker referenceWalker = null;
@@ -92,18 +95,18 @@ public class ExtractEvidence implements Closeable {
 	private void deleteOutput(EnumSet<ProcessStep> steps) {
 		close(); // close any file handles that are still around
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		if (steps.contains(ProcessStep.CALCULATE_METRICS)) tryDelete(fsc.getInsertSizeMetrics(source.getSourceFile()));
-		if (steps.contains(ProcessStep.CALCULATE_METRICS)) tryDelete(fsc.getIdsvMetrics(source.getSourceFile()));
+		//if (steps.contains(ProcessStep.CALCULATE_METRICS)) tryDelete(fsc.getInsertSizeMetrics(source.getSourceFile()));
+		//if (steps.contains(ProcessStep.CALCULATE_METRICS)) tryDelete(fsc.getIdsvMetrics(source.getSourceFile()));
 		if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) tryDelete(fsc.getReadPairBam(source.getSourceFile()));
 		if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) tryDelete(fsc.getMateBamUnsorted(source.getSourceFile()));
-		if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) tryDelete(fsc.getMateBam(source.getSourceFile()));
+		//if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) tryDelete(fsc.getMateBam(source.getSourceFile()));
 		if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) tryDelete(fsc.getSoftClipBam(source.getSourceFile()));
 		if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) tryDelete(fsc.getRealignmentFastq(source.getSourceFile()));
 		for (SAMSequenceRecord seqr : processContext.getReference().getSequenceDictionary().getSequences()) {
 			String seq = seqr.getSequenceName();
 			if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) tryDelete(fsc.getReadPairBamForChr(source.getSourceFile(), seq));
 			if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) tryDelete(fsc.getMateBamUnsortedForChr(source.getSourceFile(), seq));
-			if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) tryDelete(fsc.getMateBamForChr(source.getSourceFile(), seq));
+			//if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) tryDelete(fsc.getMateBamForChr(source.getSourceFile(), seq));
 			if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) tryDelete(fsc.getSoftClipBamForChr(source.getSourceFile(), seq));
 			if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) tryDelete(fsc.getRealignmentFastqForChr(source.getSourceFile(), seq));
 		}
@@ -210,18 +213,23 @@ public class ExtractEvidence implements Closeable {
 			input.delete();
 		}
 	}
-	private void writeMetrics(InsertSizeMetricsCollector ismc, IdsvMetricsCollector imc) {
+	private void writeMetrics(InsertSizeMetricsCollector ismc, IdsvMetricsCollector imc) throws IOException {
 		log.info("Writing metrics");
 		
 		ismc.finish();
 		MetricsFile<InsertSizeMetrics, Integer> ismmf = processContext.<InsertSizeMetrics, Integer>createMetricsFile();
 		ismc.addAllLevelsToFile(ismmf);
-		ismmf.write(processContext.getFileSystemContext().getInsertSizeMetrics(source.getSourceFile()));
+		File ismOutput = fsc.getInsertSizeMetrics(source.getSourceFile());
+		ismOutput.delete();
+		ismmf.write(FileSystemContext.getWorkingFileFor(ismOutput));
+		Files.move(FileSystemContext.getWorkingFileFor(ismOutput), ismOutput);
 		
 		imc.finish();
 		MetricsFile<IdsvMetrics, Integer> imcf = processContext.<IdsvMetrics, Integer>createMetricsFile();
 		imc.addAllLevelsToFile(imcf);
-		imcf.write(processContext.getFileSystemContext().getIdsvMetrics(source.getSourceFile()));
+		File imOutput = fsc.getIdsvMetrics(source.getSourceFile());
+		imcf.write(FileSystemContext.getWorkingFileFor(imOutput));
+		Files.move(FileSystemContext.getWorkingFileFor(imOutput), imOutput);
 	}
 	private void flush() throws IOException {
 		reader.close();

@@ -7,6 +7,7 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.Log;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
@@ -77,7 +78,7 @@ public class SortRealignedSoftClips extends DataTransformStep {
 			// return EnumSet.of(ProcessStep.SORT_REALIGNED_SOFT_CLIPS);
 		}
 	}
-	private void sort() {
+	private void sort() throws IOException {
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		List<SortCallable> actions = Lists.newArrayList();
 		if (processContext.shouldProcessPerChromosome()) {

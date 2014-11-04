@@ -19,7 +19,7 @@ public abstract class IntermediateFileUtil {
 	 */
 	public static boolean checkIntermediate(File file, File source) {
 		if (!file.exists()) {
-			log.debug("Missing intermediate ", file);
+			//log.debug("Missing intermediate ", file);
 			return false;
 		}
 		if (source != null && source.exists() && file.lastModified() < source.lastModified()) {

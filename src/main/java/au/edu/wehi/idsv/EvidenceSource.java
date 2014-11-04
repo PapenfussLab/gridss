@@ -30,23 +30,24 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 		this.processContext = processContext;
 		this.input = input;
 	}
-	public String getRealignmentScript() {
-		return getBowtie2Script();
+	public String getRealignmentScript(int threads) {
+		return getBowtie2Script(threads);
 	}
-	private String getBowtie2Script() {
+	private String getBowtie2Script(int threads) {
 		StringBuilder sb = new StringBuilder();
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				sb.append(getBowtie2Script(fsc.getRealignmentFastqForChr(input, seq.getSequenceName()), fsc.getRealignmentBamForChr(input, seq.getSequenceName())));
+				sb.append(getBowtie2Script(threads, fsc.getRealignmentFastqForChr(input, seq.getSequenceName()), fsc.getRealignmentBamForChr(input, seq.getSequenceName())));
 			}
 		} else {
-			sb.append(getBowtie2Script(fsc.getRealignmentFastq(input), fsc.getRealignmentBam(input)));
+			sb.append(getBowtie2Script(threads, fsc.getRealignmentFastq(input), fsc.getRealignmentBam(input)));
 		}
 		return sb.toString();
 	}
-	private String getBowtie2Script(File realignFastq, File realignBam) {
-		return String.format("bowtie2 --local --mm --reorder -x \"%s\" -U \"%s\" | samtools view -Sb -o \"%s\" - \n",
+	private String getBowtie2Script(int threads, File realignFastq, File realignBam) {
+		return String.format("bowtie2 --threads %d --local --mm --reorder -x \"%s\" -U \"%s\" | samtools view -Sb -o \"%s\" - \n",
+				threads,
 				processContext.getReferenceFile(),
 				realignFastq,
 				realignBam);

@@ -36,8 +36,10 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
 		source.completeSteps(EnumSet.of(ProcessStep.CALCULATE_METRICS));
 		assertEquals(200-100+100, source.getMaxConcordantFragmentSize());
-		pc.setCalculateMetricsRecordCount(1000);
 		
+		pc.getFileSystemContext().getIdsvMetrics(input).delete();
+		pc.getFileSystemContext().getInsertSizeMetrics(input).delete();
+		pc.setCalculateMetricsRecordCount(1000);
 		source = new SAMEvidenceSource(pc, input, false);
 		source.completeSteps(EnumSet.of(ProcessStep.CALCULATE_METRICS));
 		assertEquals(600-400+100, source.getMaxConcordantFragmentSize());

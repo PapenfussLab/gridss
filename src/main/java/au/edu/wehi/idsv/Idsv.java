@@ -116,7 +116,7 @@ public class Idsv extends CommandLineProgram {
 	    	allEvidence.add(aes);
 	    	allEvidence.addAll(samEvidence);
 	    	
-	    	String instructions = getRealignmentScript(allEvidence);
+	    	String instructions = getRealignmentScript(allEvidence, WORKER_THREADS);
 	    	if (instructions != null && instructions.length() > 0) {
 	    		log.error("Please realign intermediate fastq files. Suggested command-line for alignment is:\n" +
 	    				"##################################\n"+

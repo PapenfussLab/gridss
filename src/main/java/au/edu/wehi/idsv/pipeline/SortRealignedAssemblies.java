@@ -5,6 +5,7 @@ import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
@@ -67,7 +68,7 @@ public class SortRealignedAssemblies extends DataTransformStep {
 			throw new RuntimeException(msg, e);
 		}
 	}
-	private void sort(ExecutorService threadpool) {
+	private void sort(ExecutorService threadpool) throws IOException {
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		List<SortCallable> tasks = Lists.newArrayList();
 		if (processContext.shouldProcessPerChromosome()) {
@@ -83,7 +84,7 @@ public class SortRealignedAssemblies extends DataTransformStep {
 					fsc.getAssemblyRemoteVcf(source.getFileIntermediateDirectoryBasedOn()),
 					VariantContextDirectedBreakpoint.ByRemoteBreakendLocationStartRaw(processContext)));
 		}
-		if (threadpool != null) {
+		if (false/*threadpool != null*/) {
 			try {
 				log.debug("Issuing parallel sort tasks");
 				for (Future<Void> future : threadpool.invokeAll(tasks)) {
@@ -98,6 +99,7 @@ public class SortRealignedAssemblies extends DataTransformStep {
 				throw new RuntimeException("Failed to sort VCF", e.getCause());
 			}
 		} else {
+			log.debug("Serial sort");
 			for (SortCallable c : tasks) {
 				c.call();
 			}
