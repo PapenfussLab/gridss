@@ -81,4 +81,19 @@ public class LinearGenomicCoordinateTest {
 			assertEquals(6, c.getReferencePosition(c.getLinearCoordinate(1, 6)));
 		}
 	}
+	@Test
+	public void getReferencePosition_should_round_trip_all_chr_positions() {
+		SAMSequenceDictionary dict = new SAMSequenceDictionary();
+		dict.addSequence(new SAMSequenceRecord("contig1", 10));
+		dict.addSequence(new SAMSequenceRecord("contig2", 10));
+		dict.addSequence(new SAMSequenceRecord("contig3", 10));
+		for (int bufferSize = 0; bufferSize < 3; bufferSize++) {
+			LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict, bufferSize);
+			for (int i = 1; i <= 10; i++) {
+				assertEquals(i, c.getReferencePosition(c.getLinearCoordinate(0, i)));
+				assertEquals(i, c.getReferencePosition(c.getLinearCoordinate(1, i)));
+				assertEquals(i, c.getReferencePosition(c.getLinearCoordinate(2, i)));
+			}
+		}
+	}
 }

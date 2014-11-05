@@ -61,7 +61,7 @@ public class LinearGenomicCoordinate {
 		return getLinearCoordinate(bp.referenceIndex, bp.start);
 	}
 	public int getReferenceIndex(long linearCoordinate) {
-		return referenceIndices.floorEntry(linearCoordinate).getValue();
+		return referenceIndices.floorEntry(linearCoordinate - 1).getValue();
 	}
 	public int getReferencePosition(long linearCoordinate) {
 		int referenceIndex = getReferenceIndex(linearCoordinate);
