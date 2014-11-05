@@ -119,7 +119,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 			} else {
 				File outfile = processContext.getFileSystemContext().getBreakpointVcf(output);
 				if (outfile.exists()) {
-					log.debug("Skipping breakend identification: output file exists");
+					log.debug("Skipping breakpoint identification: output file exists");
 				} else {
 					EvidenceClusterProcessor processor = new EvidenceClusterProcessor(processContext);
 					writeMaximalCliquesToVcf(

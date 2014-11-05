@@ -24,7 +24,7 @@ public class EvidenceClusterSubsetProcessor extends EvidenceClusterProcessor {
 	@Override
 	protected boolean filterOut(BreakpointSummary loc) {
 		return !(loc.referenceIndex == fromReferenceIndex && loc.referenceIndex2 == toReferenceIndex)
-				|| (loc.referenceIndex == toReferenceIndex && loc.referenceIndex2 == fromReferenceIndex);
+				&& !(loc.referenceIndex == toReferenceIndex && loc.referenceIndex2 == fromReferenceIndex);
 	}
 	@Override
 	public Iterator<VariantContextDirectedEvidence> iterator() {

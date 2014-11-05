@@ -28,12 +28,6 @@ public class EvidenceClusterProcessor implements Iterable<VariantContextDirected
 		this.context = context;
 	}
 	public void addEvidence(DirectedEvidence evidence) {
-		if (context.getVariantCallingParameters().callOnlyAssemblies) {
-			if (!(evidence instanceof VariantContextDirectedEvidence)) {
-				// Only add assembly evidence
-				return;
-			}
-		}
 		BreakendSummary loc = evidence.getBreakendSummary();
 		if (evidence instanceof SoftClipEvidence) {
 			// TODO: expand evidence region for soft-clips
@@ -41,7 +35,9 @@ public class EvidenceClusterProcessor implements Iterable<VariantContextDirected
 		}
 		if (loc instanceof BreakpointSummary) {
 			BreakpointSummary interval = (BreakpointSummary)loc;
-			if (filterOut(interval)) return;
+			if (filterOut(interval)) {
+				return;
+			}
 			assert(interval.referenceIndex >= 0);
 			assert(interval.referenceIndex2 >= 0);
 			assert(interval.start >= 1);
