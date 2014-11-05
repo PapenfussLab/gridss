@@ -6,6 +6,7 @@ import htsjdk.samtools.SAMRecordQueryNameComparator;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -22,6 +23,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 
 import com.google.common.base.Function;
@@ -64,19 +66,23 @@ public class VariantCaller extends EvidenceProcessorBase {
 				log.debug("Skipping " + task + ": output file exists");
 				return null;
 			}
+			CloseableIterator<DirectedEvidence> evidenceIt = null;
 			try {
 				FileSystemContext.getWorkingFileFor(outfile).delete();
 				log.info("Start " + task);
 				EvidenceClusterSubsetProcessor processor = new EvidenceClusterSubsetProcessor(processContext, chri, chrj);
+				evidenceIt = getEvidenceForChr(processContext.getVariantCallingParameters().callOnlyAssemblies, chri, chrj); 
 				writeMaximalCliquesToVcf(processContext,
 						processor,
 						FileSystemContext.getWorkingFileFor(outfile),
-						getEvidenceForChr(processContext.getVariantCallingParameters().callOnlyAssemblies, chri, chrj));
+						evidenceIt);
 				FileHelper.move(FileSystemContext.getWorkingFileFor(outfile), outfile, true);
 				log.info("Complete " + task);
 			} catch (Exception e) {
 				log.error(e, "Error " + task);
 				throw new RuntimeException("Error " + task, e);
+			} finally {
+				CloserUtil.close(evidenceIt);
 			}
 			return null;
 		}
@@ -121,13 +127,19 @@ public class VariantCaller extends EvidenceProcessorBase {
 				if (outfile.exists()) {
 					log.debug("Skipping breakpoint identification: output file exists");
 				} else {
-					EvidenceClusterProcessor processor = new EvidenceClusterProcessor(processContext);
-					writeMaximalCliquesToVcf(
-							processContext,
-							processor,
-							FileSystemContext.getWorkingFileFor(outfile),
-							getAllEvidence(processContext.getVariantCallingParameters().callOnlyAssemblies));
-					FileHelper.move(FileSystemContext.getWorkingFileFor(outfile), outfile, true);
+					CloseableIterator<DirectedEvidence> evidenceIt = null;
+					try {
+						EvidenceClusterProcessor processor = new EvidenceClusterProcessor(processContext);
+						evidenceIt = getAllEvidence(processContext.getVariantCallingParameters().callOnlyAssemblies);
+						writeMaximalCliquesToVcf(
+								processContext,
+								processor,
+								FileSystemContext.getWorkingFileFor(outfile),
+								evidenceIt);
+						FileHelper.move(FileSystemContext.getWorkingFileFor(outfile), outfile, true);
+					} finally {
+						CloserUtil.close(evidenceIt);
+					}
 				}
 			}
 		} catch (IOException e) {
@@ -137,7 +149,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 		}
 	}
 	private List<Closeable> toClose = Lists.newArrayList();
-	private Iterator<IdsvVariantContext> getAllCalledVariants() {
+	private CloseableIterator<IdsvVariantContext> getAllCalledVariants() {
 		List<Iterator<IdsvVariantContext>> variants = Lists.newArrayList();
 		if (processContext.shouldProcessPerChromosome()) {
 			SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
@@ -151,7 +163,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 		} else {
 			variants.add(getVariants(processContext.getFileSystemContext().getBreakpointVcf(output)));
 		}
-		Iterator<IdsvVariantContext> merged = Iterators.mergeSorted(variants, IdsvVariantContext.ByLocationStart);
+		CloseableIterator<IdsvVariantContext> merged = new AutoClosingMergedIterator<IdsvVariantContext>(variants, IdsvVariantContext.ByLocationStart);
 		return merged;
 	}
 	public void close() {
@@ -218,16 +230,19 @@ public class VariantCaller extends EvidenceProcessorBase {
 				}
 			}
 		}
+		VariantContextWriter vcfWriter = null;
+		SequentialReferenceCoverageLookup normalCoverage = null;
+		SequentialReferenceCoverageLookup tumourCoverage = null;
+		CloseableIterator<IdsvVariantContext> it = null;
+		CloseableIterator<DirectedEvidence> evidenceIt = null;
 		try {
-			final VariantContextWriter vcfWriter = processContext.getVariantContextWriter(output);
-			toClose.add(vcfWriter);
-			final SequentialReferenceCoverageLookup normalCoverage = getReferenceLookup(normalFiles);
-			toClose.add(normalCoverage);
-			final SequentialReferenceCoverageLookup tumourCoverage = getReferenceLookup(tumourFiles);
-			toClose.add(tumourCoverage);
+			vcfWriter = processContext.getVariantContextWriter(FileSystemContext.getWorkingFileFor(output));
+			normalCoverage = getReferenceLookup(normalFiles);
+			tumourCoverage = getReferenceLookup(tumourFiles);
 			BreakendAnnotator referenceAnnotator  = new SequentialCoverageAnnotator(processContext, normalCoverage, tumourCoverage);
-			BreakendAnnotator evidenceAnnotator = new SequentialEvidenceAnnotator(processContext, getAllEvidence(false));
-			Iterator<IdsvVariantContext> it = getAllCalledVariants();
+			evidenceIt = getAllEvidence(false);
+			BreakendAnnotator evidenceAnnotator = new SequentialEvidenceAnnotator(processContext, evidenceIt);
+			it = getAllCalledVariants();
 			while (it.hasNext()) {
 				IdsvVariantContext rawVariant = it.next();
 				if (rawVariant instanceof VariantContextDirectedEvidence && ((VariantContextDirectedEvidence)rawVariant).isValid()) {
@@ -238,12 +253,17 @@ public class VariantCaller extends EvidenceProcessorBase {
 					vcfWriter.add(annotatedVariant);
 				}
 			}
-			vcfWriter.close();
-			normalCoverage.close();
-			tumourCoverage.close();
+			CloserUtil.close(vcfWriter);
+			FileHelper.move(FileSystemContext.getWorkingFileFor(output), output, true);
 			log.info("Variant calls written to ", output);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		} finally {
-			close();
+			CloserUtil.close(vcfWriter);
+			CloserUtil.close(normalCoverage);
+			CloserUtil.close(tumourCoverage);
+			CloserUtil.close(it);
+			CloserUtil.close(evidenceIt);
 		}
 	}
 	public SequentialReferenceCoverageLookup getReferenceLookup(List<File> samFiles) {
@@ -256,7 +276,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 			it = processContext.applyCommonSAMRecordFilters(it);
 			toMerge.add(it);
 		}
-		Iterator<SAMRecord> merged = Iterators.mergeSorted(toMerge, new SAMRecordQueryNameComparator()); 
+		CloseableIterator<SAMRecord> merged = new AutoClosingMergedIterator<SAMRecord>(toMerge, new SAMRecordQueryNameComparator()); 
 		return new SequentialReferenceCoverageLookup(merged, 1024);
 	}
 	private void writeOutput() {

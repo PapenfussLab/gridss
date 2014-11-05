@@ -29,7 +29,6 @@ public class ReadPairEvidenceIterator extends AbstractIterator<NonReferenceReadP
 	}
 	@Override
 	protected NonReferenceReadPair computeNext() {
-		
 		while (iterator.hasNext()) {
 			SAMRecord record = iterator.next();
 			if (NonReferenceReadPair.meetsLocalEvidenceCritera(rp, source, record)) {

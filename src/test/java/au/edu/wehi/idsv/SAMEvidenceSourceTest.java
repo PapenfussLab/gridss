@@ -11,6 +11,8 @@ import java.util.List;
 
 import org.junit.Test;
 
+import au.edu.wehi.idsv.util.AsyncBufferedIteratorTest;
+
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
@@ -261,5 +263,13 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		assertEquals(1, source.getMaxReadLength());
 		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
 		assertEquals(2 * 2, list.size());
+	}
+	@Test
+	public void closing_iterator_should_close_underlying_resources() {
+		createInput(RP(0, 1, 12, 1));
+		int pre = AsyncBufferedIteratorTest.getFirstThreadWithNamePrefixCount("AsyncBufferedIterator");
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false, 13, 15);
+		source.completeSteps(ProcessStep.ALL_STEPS);
+		assertEquals(pre, AsyncBufferedIteratorTest.getFirstThreadWithNamePrefixCount("AsyncBufferedIterator"));
 	}
 }

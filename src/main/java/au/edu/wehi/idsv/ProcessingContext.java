@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.util.List;
 
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
+import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.BufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.vcf.VcfConstants;
 
@@ -37,8 +38,8 @@ import au.edu.wehi.idsv.vcf.VcfConstants;
  *
  */
 public class ProcessingContext implements Closeable {
-	private static final int READAHEAD_BUFFER_SIZE = 1024;
-	private static final int READAHEAD_BUFFERS = 2;
+	private static final int READAHEAD_BUFFER_SIZE = 32;
+	private static final int READAHEAD_BUFFERS = 4;
 	private final ReferenceSequenceFile reference;
 	private final File referenceFile;
 	private final SAMSequenceDictionary dictionary;
@@ -121,7 +122,7 @@ public class ProcessingContext implements Closeable {
 		if (isUseAsyncIO()) {
 			iterator = new AsyncBufferedIterator<SAMRecord>(iterator, READAHEAD_BUFFERS, READAHEAD_BUFFER_SIZE);
 		}
-		return iterator;
+		return new AutoClosingIterator<SAMRecord>(iterator);
 	}
 	public SAMFileWriterFactory getSamReaderWriterFactory() {
 		return new SAMFileWriterFactory()

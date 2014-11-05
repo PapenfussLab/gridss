@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv.util;
 
+import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 
 import java.io.Closeable;
@@ -16,12 +17,12 @@ import com.google.common.collect.ImmutableList;
  *
  * @param <T>
  */
-public class AutoClosingIterator<T> extends AbstractIterator<T> implements Closeable {
-	private final Iterator<T> underlying;
+public class AutoClosingIterator<T> extends AbstractIterator<T> implements Closeable, CloseableIterator<T> {
+	private final Iterator<? extends T> underlying;
 	private final List<Closeable> alsoClose;
 	private boolean closed = false;
 	
-	public AutoClosingIterator(Iterator<T> it) {
+	public AutoClosingIterator(Iterator<? extends T> it) {
 		this.underlying = it;
 		this.alsoClose = ImmutableList.of();
 		if (!underlying.hasNext()) close();

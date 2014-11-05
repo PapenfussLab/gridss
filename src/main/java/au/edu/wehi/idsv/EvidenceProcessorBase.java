@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 
 import java.io.Closeable;
@@ -8,6 +9,8 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.SortedSet;
+
+import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
@@ -25,7 +28,7 @@ public abstract class EvidenceProcessorBase implements Closeable {
 		this.output = output;
 		this.evidence = evidence;
 	}
-	protected Iterator<DirectedEvidence> getAllEvidence(boolean assemblyOnly) {
+	protected CloseableIterator<DirectedEvidence> getAllEvidence(boolean assemblyOnly) {
 		List<Iterator<DirectedEvidence>> evidenceItList = Lists.newArrayList();
 		for (EvidenceSource source : evidence) {
 			if (assemblyOnly && !(source instanceof AssemblyEvidenceSource)) continue;
@@ -33,23 +36,23 @@ public abstract class EvidenceProcessorBase implements Closeable {
 			if (it instanceof Closeable) toClose.add((Closeable)it);
 			evidenceItList.add(it);
 		}
-		Iterator<DirectedEvidence> evidenceIt = Iterators.mergeSorted(evidenceItList, DirectedEvidenceOrder.ByNatural);
+		CloseableIterator<DirectedEvidence> evidenceIt = new AutoClosingMergedIterator<DirectedEvidence>(evidenceItList, DirectedEvidenceOrder.ByNatural);
 		return evidenceIt;
 	}
-	protected Iterator<DirectedEvidence> getEvidenceForChr(boolean assemblyOnly, int... referenceIndex) {
+	protected CloseableIterator<DirectedEvidence> getEvidenceForChr(boolean assemblyOnly, int... referenceIndex) {
 		SortedSet<Integer> refList = Sets.newTreeSet(Ints.asList(referenceIndex));
 		List<Iterator<DirectedEvidence>> evidenceItList = Lists.newArrayList();
 		for (EvidenceSource source : evidence) {
 			if (assemblyOnly && !(source instanceof AssemblyEvidenceSource)) continue;
 			List<Iterator<DirectedEvidence>> sourceIt = Lists.newArrayList();
 			for (int i : refList) {
-				Iterator<DirectedEvidence> it = source.iterator(processContext.getReference().getSequenceDictionary().getSequence(i).getSequenceName());
-				if (it instanceof Closeable) toClose.add((Closeable)it);
+				CloseableIterator<DirectedEvidence> it = source.iterator(processContext.getReference().getSequenceDictionary().getSequence(i).getSequenceName());
+				toClose.add(it);
 				sourceIt.add(it);
 			}
 			evidenceItList.add(Iterators.concat(sourceIt.iterator()));
 		}
-		Iterator<DirectedEvidence> evidenceIt = Iterators.mergeSorted(evidenceItList, DirectedEvidenceOrder.ByNatural);
+		CloseableIterator<DirectedEvidence> evidenceIt = new AutoClosingMergedIterator<DirectedEvidence>(evidenceItList, DirectedEvidenceOrder.ByNatural);
 		return evidenceIt;
 	}
 	public void close() {

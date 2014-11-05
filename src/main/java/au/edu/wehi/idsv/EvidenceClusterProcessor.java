@@ -12,7 +12,6 @@ import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
-import com.google.common.collect.UnmodifiableIterator;
 /**
  * Calls breakpoints from the given evidence
  * 
@@ -100,7 +99,7 @@ public class EvidenceClusterProcessor implements Iterable<VariantContextDirected
 	}
 	@Override
 	public Iterator<VariantContextDirectedEvidence> iterator() {
-		UnmodifiableIterator<VariantContextDirectedEvidence> x = Iterators.mergeSorted(ImmutableList.of(
+		Iterator<VariantContextDirectedEvidence> x = Iterators.mergeSorted(ImmutableList.of(
 				new EvidenceClusterProcessorMaximalCliqueIterator(ff, BreakendDirection.Forward, BreakendDirection.Forward),
 				new EvidenceClusterProcessorMaximalCliqueIterator(fb, BreakendDirection.Forward, BreakendDirection.Backward),
 				new EvidenceClusterProcessorMaximalCliqueIterator(bf, BreakendDirection.Backward, BreakendDirection.Forward),

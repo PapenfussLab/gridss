@@ -12,8 +12,8 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 
 public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
-	protected abstract Iterator<DirectedEvidence> perChrIterator(String chr);
-	protected abstract Iterator<DirectedEvidence> singleFileIterator();
+	protected abstract CloseableIterator<DirectedEvidence> perChrIterator(String chr);
+	protected abstract CloseableIterator<DirectedEvidence> singleFileIterator();
 	public abstract int getMaxConcordantFragmentSize();
 	protected final File input;
 	protected final ProcessingContext processContext;
@@ -72,7 +72,7 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 		}
 		return done;
 	}
-	public Iterator<DirectedEvidence> iterator() {
+	public CloseableIterator<DirectedEvidence> iterator() {
 		if (processContext.shouldProcessPerChromosome()) {
 			// Lazily iterator over each input
 			return new PerChromosomeAggregateIterator();
@@ -80,7 +80,7 @@ public abstract class EvidenceSource implements Iterable<DirectedEvidence> {
 			return singleFileIterator();
 		}
 	}
-	public Iterator<DirectedEvidence> iterator(String chr) {
+	public CloseableIterator<DirectedEvidence> iterator(String chr) {
 		if (processContext.shouldProcessPerChromosome()) {
 			return perChrIterator(chr);
 		} else {

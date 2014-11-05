@@ -4,6 +4,7 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SamReader;
+import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
@@ -28,10 +29,10 @@ import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredAssembler;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 import au.edu.wehi.idsv.pipeline.SortRealignedAssemblies;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
+import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
 
@@ -68,50 +69,53 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			step.close();
 		}
 	}
+	@SuppressWarnings("unchecked") // can I do checked covariant iterator casting in java?
 	@Override
-	protected Iterator<DirectedEvidence> perChrIterator(String chr) {
+	protected CloseableIterator<DirectedEvidence> perChrIterator(String chr) {
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		@SuppressWarnings({ "unchecked", "rawtypes" }) // is there a less dirty way to do this downcast?
-		Iterator<DirectedEvidence> downcast = (Iterator<DirectedEvidence>)(Iterator)iterator( 
+		return (CloseableIterator<DirectedEvidence>)(Object)iterator(
 				fsc.getAssemblyVcfForChr(input, chr),
 				fsc.getRealignmentBamForChr(input, chr));
-		return downcast;
 	}
+	@SuppressWarnings("unchecked") // can I do checked covariant iterator casting in java? 
 	@Override
-	protected Iterator<DirectedEvidence> singleFileIterator() {
+	protected CloseableIterator<DirectedEvidence> singleFileIterator() {
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		@SuppressWarnings({ "unchecked", "rawtypes" })
-		Iterator<DirectedEvidence> downcast = (Iterator<DirectedEvidence>)(Iterator)iterator(
+		return (CloseableIterator<DirectedEvidence>)(Object)iterator(
 			fsc.getAssemblyVcf(input),
 			fsc.getRealignmentBam(input));
-		return downcast;
 	}
-	private Iterator<VariantContextDirectedEvidence> iterator(File vcf, File realignment) {
+	private CloseableIterator<VariantContextDirectedEvidence> iterator(File vcf, File realignment) {
 		if (!isProcessingComplete()) {
 			log.error("Assemblies not yet generated.");
 			throw new RuntimeException("Assemblies not yet generated");
 		}
-		Iterator<SAMRecord> realignedIt; 
+		List<Closeable> toClose = Lists.newArrayList();
+		CloseableIterator<SAMRecord> realignedIt; 
 		if (isRealignmentComplete()) {
 			SamReader realignedReader = processContext.getSamReader(realignment);
-			realignedIt = new AutoClosingIterator<SAMRecord>(processContext.getSamReaderIterator(realignedReader), ImmutableList.<Closeable>of(realignedReader));
+			realignedIt = processContext.getSamReaderIterator(realignedReader);
+			toClose.add(realignedReader);
+			toClose.add(realignedIt);
 		} else {
 			log.debug(String.format("Assembly realignment for %s not completed", vcf));
-			realignedIt = ImmutableList.<SAMRecord>of().iterator();
+			realignedIt = new AutoClosingIterator<SAMRecord>(ImmutableList.<SAMRecord>of().iterator());
 		}
 		VCFFileReader reader = new VCFFileReader(vcf, false);
-		Iterator<VariantContextDirectedEvidence> it = new VariantContextDirectedEvidenceIterator(
+		toClose.add(reader);
+		CloseableIterator<VariantContextDirectedEvidence> evidenceIt = new VariantContextDirectedEvidenceIterator(
 				processContext,
 				this,
 				new AutoClosingIterator<VariantContext>(reader.iterator(), ImmutableList.<Closeable>of(reader)),
 				realignedIt);
+		toClose.add(evidenceIt);
 		// Change sort order from VCF sorted order to evidence position order
-		it = new DirectEvidenceWindowedSortingIterator<VariantContextDirectedEvidence>(
+		CloseableIterator<VariantContextDirectedEvidence> sortedIt = new AutoClosingIterator<VariantContextDirectedEvidence>(new DirectEvidenceWindowedSortingIterator<VariantContextDirectedEvidence>(
 				processContext,
 				(int)((2 + processContext.getAssemblyParameters().maxSubgraphFragmentWidth + processContext.getAssemblyParameters().subgraphAssemblyMargin) * maxSourceFragSize),
-				it);
+				evidenceIt), toClose);
 		// FIXME: TODO: add remote assemblies to iterator
-		return it;
+		return sortedIt;
 	}
 	private boolean isProcessingComplete() {
 		boolean done = true;
@@ -153,21 +157,22 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 						@Override
 						public Void call() {
 							log.info("Starting ", seq, " breakend assembly");
-							List<Iterator<DirectedEvidence>> toMerge = Lists.newArrayList();
+							CloseableIterator<DirectedEvidence> merged = null;
+							List<CloseableIterator<DirectedEvidence>> toMerge = Lists.newArrayList();
 							try {
 								for (SAMEvidenceSource bam : source) {
-									Iterator<DirectedEvidence> it = bam.iterator(seq);
+									CloseableIterator<DirectedEvidence> it = bam.iterator(seq);
 									toMerge.add(it);
 								}
-								Iterator<DirectedEvidence> merged = Iterators.mergeSorted(toMerge, DirectedEvidenceOrder.ByNatural);
+								merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);
 								new ContigAssembler(merged, processContext.getFileSystemContext().getAssemblyVcfForChr(input, seq), processContext.getFileSystemContext().getRealignmentFastqForChr(input, seq)).run();
+								merged.close();
 							} catch (Exception e) {
 								log.error(e, "Error performing ", seq, " breakend assembly");
 								throw new RuntimeException(e);
 							} finally {
-								for (Iterator<DirectedEvidence> x : toMerge) {
-									CloserUtil.close(x);
-								}
+								CloserUtil.close(merged);
+								CloserUtil.close(toMerge);
 							}
 							log.info("Completed ", seq, " breakend assembly");
 							return null;
@@ -202,18 +207,19 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				}
 			}
 		} else {
-			List<Iterator<DirectedEvidence>> toMerge = Lists.newArrayList();
+			List<CloseableIterator<DirectedEvidence>> toMerge = Lists.newArrayList();
+			CloseableIterator<DirectedEvidence> merged = null;
 			try {
 				for (SAMEvidenceSource bam : source) {
-					Iterator<DirectedEvidence> it = bam.iterator();
+					CloseableIterator<DirectedEvidence> it = bam.iterator();
 					toMerge.add(it);
 				}
-				Iterator<DirectedEvidence> merged = Iterators.mergeSorted(toMerge, DirectedEvidenceOrder.ByNatural);
+				merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);
 				new ContigAssembler(merged, processContext.getFileSystemContext().getAssemblyVcf(input), processContext.getFileSystemContext().getRealignmentFastq(input)).run();
+				merged.close();
 			} finally {
-				for (Iterator<DirectedEvidence> x : toMerge) {
-					CloserUtil.close(x);
-				}
+				CloserUtil.close(merged);
+				CloserUtil.close(toMerge);
 			}
 		}
 		log.info("SUCCESS evidence assembly ", input);
