@@ -51,11 +51,18 @@ public class PathNode<T extends DeBruijnNodeBase> {
 				return arg.allKmers;
 			}
 		})));
-		// Make our own copy of the positional kmer lists
+		// Make our own copies of the positional kmer lists
 		for (int i = 0; i < allKmers.size(); i++) {
 			allKmers.set(i, Lists.newArrayList(allKmers.get(i)));
 		}
-		kmersChanged(graph);
+		// use already computed stats instead of fully recomputing ourselves
+		weight = 0;
+		maxKmerWeight = 0;
+		for (PathNode<T> pn : path) {
+			weight += pn.weight;
+			maxKmerWeight = Math.max(maxKmerWeight, pn.maxKmerWeight);
+		}
+		onKmersChanged(graph);
 	}
 	/**
 	 * Creates a new path kmer which is a subpath of the given path 
