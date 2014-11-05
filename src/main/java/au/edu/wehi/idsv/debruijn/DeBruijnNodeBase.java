@@ -2,11 +2,8 @@ package au.edu.wehi.idsv.debruijn;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 
 import au.edu.wehi.idsv.DirectedEvidence;
-
-import com.google.common.collect.Sets;
 
 public class DeBruijnNodeBase {
 	private int nodeWeight = 0;
@@ -48,14 +45,14 @@ public class DeBruijnNodeBase {
 		return nodeWeight;
 	}
 	/**
-	 * Reads supporting this kmer
+	 * Reads supporting this kmer. Reads containing this kmer multiple times will have multiple entries
 	 * @return supporting reads
 	 */
-	public Set<DirectedEvidence> getSupportingEvidence() {
-		return Sets.newHashSet(supportList);
+	public List<DirectedEvidence> getSupportingEvidenceList() {
+		return supportList;
 	}
 	@Override
 	public String toString() {
-		return String.format("w=%d, #reads=%d", nodeWeight, getSupportingEvidence().size());
+		return String.format("w=%d, #reads=%d", nodeWeight, getSupportingEvidenceList().size());
 	}
 }

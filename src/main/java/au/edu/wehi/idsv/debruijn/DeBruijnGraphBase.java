@@ -247,7 +247,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 		for (Long node : path) {
 			// subtract # reads to adjust for the +1 qual introduced by ReadKmerIterable
 			// to ensure positive node weights
-			qual.add(this.kmers.get(node).getWeight() - Sets.newHashSet(this.kmers.get(node).getSupportingEvidence()).size());
+			qual.add(this.kmers.get(node).getWeight() - this.kmers.get(node).getSupportingEvidenceList().size());
 		}
 		// pad out qualities to match the path length
 		for (int i = 0; i < k - 1; i++) qual.add(qual.get(qual.size() - 1));
@@ -257,7 +257,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	public Set<DirectedEvidence> getSupportingEvidence(Iterable<Long> path) {
 		Set<DirectedEvidence> reads = Sets.newHashSet();
 		for (Long kmer : path) {
-			reads.addAll(kmers.get(kmer).getSupportingEvidence());
+			reads.addAll(kmers.get(kmer).getSupportingEvidenceList());
 		}
 		return reads;
 	}
@@ -269,21 +269,21 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	 */
 	public int getEvidenceBaseCount(List<Long> path, boolean countTumour) {
 		int readBaseCount = 0;
-		Set<DirectedEvidence> lastNodeSupport = Sets.newHashSet();
+		Set<DirectedEvidence> support = new HashSet<>(2 * path.size());
 		for (Long node : path) {
-			for (DirectedEvidence read : this.kmers.get(node).getSupportingEvidence()) {
-				SAMEvidenceSource source = (SAMEvidenceSource)read.getEvidenceSource();
+			for (DirectedEvidence evidence : this.kmers.get(node).getSupportingEvidenceList()) {
+				SAMEvidenceSource source = (SAMEvidenceSource)evidence.getEvidenceSource();
 				boolean evidenceIsTumour = source != null && source.isTumour();
-				if (evidenceIsTumour != countTumour) continue; // ignore evidence we're not counting
-				if (lastNodeSupport.contains(read)) {
+				if (evidenceIsTumour == countTumour) {
 					readBaseCount++;
+					support.add(evidence);
 				} else {
-					readBaseCount += k;
+					// ignore evidence we're not counting
 				}
 			}
-			lastNodeSupport = this.kmers.get(node).getSupportingEvidence();
 		}
-		return readBaseCount;
+		// Add the additional support bases in: 
+		return readBaseCount + support.size() * (k - 1);
 	}
 	/**
 	 * set of all kmers reachable from the given kmer

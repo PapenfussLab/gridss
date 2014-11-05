@@ -223,17 +223,30 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		return e;
 	}
 	@Test
-	public void read_base_count_should_be_number_of_read_bases_on_returned_path() {
+	public void read_base_count_should_count_misassembled_bases_as_if_correctly_constructed() {
 		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, BreakendDirection.Forward);
 		ass.addEvidence(HackSCE("ACGTT", new byte[] { 1,2,3,4,5 })); // 4
 		ass.addEvidence(HackSCE("ACGTA", new byte[] { 3,4,5,6,7 })); // 5
 		ass.addEvidence(HackSCE("AAAAA", new byte[] { 1,1,1,1,1 })); // 0 since no kmer on path
 		ass.addEvidence(HackSCE("ACGAA", new byte[] { 1,1,1,1,1 })); // 3
 		addRead(ass, R(null, "TTGTA", new byte[] { 1,1,1,1,1 }, false, true), false); // 3
-		addRead(ass, R(null, "GTACG", new byte[] { 1,1,1,1,1 }, false, true), false); // 4+3 since kmers are disconnected 
+		addRead(ass, R(null, "GTACG", new byte[] { 1,1,1,1,1 }, false, true), false); // 5 all bases included (even though they're miassembled)
 		VariantContextDirectedEvidence result = ass.assembleVariant(0, 1);
 		
 		assertEquals("test assumes this contruction - did I get the test case wrong?", "TACGTA", result.getAssemblyConsensus());
-		assertEquals(4 + 5 + 3 + 3 + 4+3, result.getAssemblyBaseCount(null));
+		assertEquals(4 + 5 + 3 + 3 + 5, result.getAssemblyBaseCount(null));
+	}
+	@Test
+	public void read_base_count_should_be_number_of_read_bases() {
+		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, BreakendDirection.Forward);
+		ass.addEvidence(HackSCE("ACGTT", new byte[] { 1,2,3,4,5 })); // 4
+		ass.addEvidence(HackSCE("ACGTA", new byte[] { 3,4,5,6,7 })); // 5
+		ass.addEvidence(HackSCE("AAAAA", new byte[] { 1,1,1,1,1 })); // 0 since no kmer on path
+		ass.addEvidence(HackSCE("ACGAA", new byte[] { 1,1,1,1,1 })); // 3 bases in the middle
+		addRead(ass, R(null, "TTGTA", new byte[] { 1,1,1,1,1 }, false, true), false); // 3
+		VariantContextDirectedEvidence result = ass.assembleVariant(0, 1);
+		
+		assertEquals("test assumes this contruction - did I get the test case wrong?", "ACGTA", result.getAssemblyConsensus());
+		assertEquals(4 + 5 + 3 + 3, result.getAssemblyBaseCount(null));
 	}
 }

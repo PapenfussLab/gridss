@@ -228,7 +228,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		for (Long kmer : path) {
 			DeBruijnSubgraphNode node = getKmer(kmer);
 			if (!node.isReference()) {
-				reads.addAll(node.getSupportingEvidence());
+				reads.addAll(node.getSupportingEvidenceList());
 			}
 		}
 		return reads;
@@ -273,7 +273,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 					// read pair and long soft clip sharing same kmer
 					// soft clip is sufficiently long that no anchor kmer exists
 					if (!messagePrinted) {
-						log.debug("Unsufficiently anchored SC being treated as mate evidence at ", getKmer(kmer).getSupportingEvidence().iterator().next().getBreakendSummary().toString(processContext));
+						log.debug("Unsufficiently anchored SC being treated as mate evidence at ", getKmer(kmer).getSupportingEvidenceList().iterator().next().getBreakendSummary().toString(processContext));
 						messagePrinted = true;
 					}
 				}
