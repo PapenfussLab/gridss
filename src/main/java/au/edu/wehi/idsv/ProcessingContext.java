@@ -27,6 +27,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
+import com.google.common.collect.ImmutableList;
+
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.BufferedReferenceSequenceFile;
@@ -122,7 +124,7 @@ public class ProcessingContext implements Closeable {
 		if (isUseAsyncIO()) {
 			iterator = new AsyncBufferedIterator<SAMRecord>(iterator, READAHEAD_BUFFERS, READAHEAD_BUFFER_SIZE);
 		}
-		return new AutoClosingIterator<SAMRecord>(iterator);
+		return new AutoClosingIterator<SAMRecord>(iterator, ImmutableList.of(rawIterator, reader));
 	}
 	public SAMFileWriterFactory getSamReaderWriterFactory() {
 		return new SAMFileWriterFactory()
@@ -137,7 +139,7 @@ public class ProcessingContext implements Closeable {
 	 */
 	public CloseableIterator<SAMRecord> applyCommonSAMRecordFilters(CloseableIterator<SAMRecord> iterator) {
 		if (filterDuplicates) {
-			iterator = new FilteringIterator(iterator, new DuplicateReadFilter()); 
+			iterator = new AutoClosingIterator<SAMRecord>(new FilteringIterator(iterator, new DuplicateReadFilter()), ImmutableList.<Closeable>of(iterator)); 
 		}
 		return iterator;
 	}

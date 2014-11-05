@@ -103,10 +103,12 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		}
 		VCFFileReader reader = new VCFFileReader(vcf, false);
 		toClose.add(reader);
+		CloseableIterator<VariantContext> rawVcfIt = reader.iterator();
+		toClose.add(rawVcfIt);
 		CloseableIterator<VariantContextDirectedEvidence> evidenceIt = new VariantContextDirectedEvidenceIterator(
 				processContext,
 				this,
-				new AutoClosingIterator<VariantContext>(reader.iterator(), ImmutableList.<Closeable>of(reader)),
+				new AutoClosingIterator<VariantContext>(rawVcfIt, ImmutableList.<Closeable>of(reader)),
 				realignedIt);
 		toClose.add(evidenceIt);
 		// Change sort order from VCF sorted order to evidence position order
