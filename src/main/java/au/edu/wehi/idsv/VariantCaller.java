@@ -22,6 +22,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import au.edu.wehi.idsv.util.FileHelper;
+
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
@@ -56,14 +58,21 @@ public class VariantCaller extends EvidenceProcessorBase {
 			final SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
 			final String iname = dict.getSequence(chri).getSequenceName();
 			final String jname = dict.getSequence(chrj).getSequenceName();
-			String task = "Identifying Breakpoints between "  + iname + " and " + jname;
+			final String task = "Identifying Breakpoints between "  + iname + " and " + jname;
+			final File outfile = processContext.getFileSystemContext().getBreakpointVcf(output, iname, jname);
+			if (outfile.exists()) {
+				log.debug("Skipping " + task + ": output file exists");
+				return null;
+			}
 			try {
+				FileSystemContext.getWorkingFileFor(outfile).delete();
 				log.info("Start " + task);
 				EvidenceClusterSubsetProcessor processor = new EvidenceClusterSubsetProcessor(processContext, chri, chrj);
 				writeMaximalCliquesToVcf(processContext,
 						processor,
-						processContext.getFileSystemContext().getBreakpointVcf(output, iname, jname),
+						FileSystemContext.getWorkingFileFor(outfile),
 						getEvidenceForChr(processContext.getVariantCallingParameters().callOnlyAssemblies, chri, chrj));
+				FileHelper.move(FileSystemContext.getWorkingFileFor(outfile), outfile, true);
 				log.info("Complete " + task);
 			} catch (Exception e) {
 				log.error(e, "Error " + task);
@@ -108,13 +117,21 @@ public class VariantCaller extends EvidenceProcessorBase {
 					}
 				}
 			} else {
-				EvidenceClusterProcessor processor = new EvidenceClusterProcessor(processContext);
-				writeMaximalCliquesToVcf(
-						processContext,
-						processor,
-						processContext.getFileSystemContext().getBreakpointVcf(output),
-						getAllEvidence(processContext.getVariantCallingParameters().callOnlyAssemblies));
+				File outfile = processContext.getFileSystemContext().getBreakpointVcf(output);
+				if (outfile.exists()) {
+					log.debug("Skipping breakend identification: output file exists");
+				} else {
+					EvidenceClusterProcessor processor = new EvidenceClusterProcessor(processContext);
+					writeMaximalCliquesToVcf(
+							processContext,
+							processor,
+							FileSystemContext.getWorkingFileFor(outfile),
+							getAllEvidence(processContext.getVariantCallingParameters().callOnlyAssemblies));
+					FileHelper.move(FileSystemContext.getWorkingFileFor(outfile), outfile, true);
+				}
 			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		} finally {
 			close();
 		}
