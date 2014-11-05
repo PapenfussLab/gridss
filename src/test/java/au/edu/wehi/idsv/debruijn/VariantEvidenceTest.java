@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv.debruijn;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import org.junit.Test;
 
@@ -245,6 +244,13 @@ public class VariantEvidenceTest extends TestHelper {
 		assertEquals(16, rdp.kmerCount());
 	}
 	@Test
+	public void sc_not_dp_should_be_directly_anchored_to_reference() {
+		assertFalse(fdp.isDirectlyAnchoredToReference());
+		assertFalse(rdp.isDirectlyAnchoredToReference());
+		assertTrue(fsc.isDirectlyAnchoredToReference());
+		assertTrue(rsc.isDirectlyAnchoredToReference());
+	}
+	@Test
 	public void getInferredReferencePosition_should_assume_direct_mapping_to_reference() {
 		assertEquals(8, fsc.getInferredReferencePosition(4));
 		assertEquals(9, fsc.getInferredReferencePosition(5));
@@ -255,5 +261,10 @@ public class VariantEvidenceTest extends TestHelper {
 		assertEquals(7, rsc.getInferredReferencePosition(9));
 		assertEquals(6, rsc.getInferredReferencePosition(10));
 		assertEquals(5, rsc.getInferredReferencePosition(11));
+	}
+	@Test
+	public void mMateAnchorPosition_should_be_mapped_position_adjacent_to_breakend() {
+		assertEquals(2, fdp.getMateAnchorPosition());
+		assertEquals(1, rdp.getMateAnchorPosition());
 	}
 }

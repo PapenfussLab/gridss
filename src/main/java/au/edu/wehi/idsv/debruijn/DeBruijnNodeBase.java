@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.debruijn;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 import au.edu.wehi.idsv.DirectedEvidence;
@@ -8,10 +10,7 @@ import com.google.common.collect.Sets;
 
 public class DeBruijnNodeBase {
 	private int nodeWeight = 0;
-	// technically this is incorrect as we should have a MultiSet since
-	// a record can contain a kmer multiple times but since we only add/remove
-	// entire reads at a time, it works out ok for the current implementation
-	private Set<DirectedEvidence> supportSet = Sets.newHashSet();
+	private List<DirectedEvidence> supportList = new ArrayList<>();
 	public DeBruijnNodeBase(VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) {
 		this(kmer.weight, evidence.getDirectedEvidence());
 	}
@@ -23,7 +22,7 @@ public class DeBruijnNodeBase {
 	public DeBruijnNodeBase(int weight, DirectedEvidence evidence) {
 		if (weight <= 0) throw new IllegalArgumentException("weight must be positive");
 		this.nodeWeight = weight;
-		supportSet.add(evidence);
+		supportList.add(evidence);
 	}
 	/**
 	 * Merges the given node into this one
@@ -31,7 +30,7 @@ public class DeBruijnNodeBase {
 	 */
 	public void add(DeBruijnNodeBase node) {
 		this.nodeWeight += node.nodeWeight;
-		this.supportSet.addAll(node.supportSet);
+		this.supportList.addAll(node.supportList);
 	}
 	/**
 	 * Reduces the weighting of this node due to removal of a supporting read
@@ -39,7 +38,7 @@ public class DeBruijnNodeBase {
 	 */
 	public void remove(DeBruijnNodeBase node) {
 		this.nodeWeight -= node.nodeWeight;
-		this.supportSet.remove(node.supportSet);
+		this.supportList.remove(node.supportList);
 	}
 	/**
 	 * returns the weight of this node
@@ -53,10 +52,10 @@ public class DeBruijnNodeBase {
 	 * @return supporting reads
 	 */
 	public Set<DirectedEvidence> getSupportingEvidence() {
-		return supportSet;
+		return Sets.newHashSet(supportList);
 	}
 	@Override
 	public String toString() {
-		return String.format("w=%d, #reads=%d", nodeWeight, supportSet.size());
+		return String.format("w=%d, #reads=%d", nodeWeight, getSupportingEvidence().size());
 	}
 }
