@@ -13,6 +13,7 @@ import htsjdk.variant.vcf.VCFFileReader;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
@@ -27,6 +28,7 @@ import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredAssembler;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 import au.edu.wehi.idsv.pipeline.SortRealignedAssemblies;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
+import au.edu.wehi.idsv.util.FileHelper;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
@@ -37,6 +39,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	private static final Log log = Log.getInstance(AssemblyEvidenceSource.class);
 	private final List<SAMEvidenceSource> source;
 	private final int maxSourceFragSize;
+	private final FileSystemContext fsc;
 	/**
 	 * Generates assembly evidence based on the given evidence
 	 * @param evidence evidence for creating assembly
@@ -44,6 +47,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	 */
 	public AssemblyEvidenceSource(ProcessingContext processContext, List<SAMEvidenceSource> evidence, File intermediateFileLocation) {
 		super(processContext, intermediateFileLocation);
+		this.fsc = processContext.getFileSystemContext();
 		this.source = evidence;
 		int max = 0;
 		for (SAMEvidenceSource s : evidence) {
@@ -111,7 +115,6 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	}
 	private boolean isProcessingComplete() {
 		boolean done = true;
-		FileSystemContext fsc = processContext.getFileSystemContext();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
 				done &= IntermediateFileUtil.checkIntermediate(fsc.getAssemblyVcfForChr(input, seq.getSequenceName()));
@@ -128,6 +131,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		return done;
 	}
 	protected void process(ExecutorService threadpool) {
+		if (isProcessingComplete()) return;
 		log.info("START evidence assembly ", input);
 		for (SAMEvidenceSource s : source) {
 			if (!s.isComplete(ProcessStep.EXTRACT_READ_PAIRS) ||
@@ -140,30 +144,36 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			final List<Callable<Void>> workers = Lists.newArrayList();
 			for (int i = 0; i < dict.size(); i++) {
 				final String seq = dict.getSequence(i).getSequenceName();
-				workers.add(new Callable<Void>() {
-					@Override
-					public Void call() {
-						log.info("Starting ", seq, " breakend assembly");
-						List<Iterator<DirectedEvidence>> toMerge = Lists.newArrayList();
-						try {
-							for (SAMEvidenceSource bam : source) {
-								Iterator<DirectedEvidence> it = bam.iterator(seq);
-								toMerge.add(it);
+				
+				if (IntermediateFileUtil.checkIntermediate(fsc.getAssemblyVcfForChr(input, seq))
+					&& IntermediateFileUtil.checkIntermediate(fsc.getRealignmentFastqForChr(input, seq))) {
+					log.debug("Skipping assembly for ", seq, " as output already exists.");
+				} else {
+					workers.add(new Callable<Void>() {
+						@Override
+						public Void call() {
+							log.info("Starting ", seq, " breakend assembly");
+							List<Iterator<DirectedEvidence>> toMerge = Lists.newArrayList();
+							try {
+								for (SAMEvidenceSource bam : source) {
+									Iterator<DirectedEvidence> it = bam.iterator(seq);
+									toMerge.add(it);
+								}
+								Iterator<DirectedEvidence> merged = Iterators.mergeSorted(toMerge, DirectedEvidenceOrder.ByNatural);
+								new ContigAssembler(merged, processContext.getFileSystemContext().getAssemblyVcfForChr(input, seq), processContext.getFileSystemContext().getRealignmentFastqForChr(input, seq)).run();
+							} catch (Exception e) {
+								log.error(e, "Error performing ", seq, " breakend assembly");
+								throw new RuntimeException(e);
+							} finally {
+								for (Iterator<DirectedEvidence> x : toMerge) {
+									CloserUtil.close(x);
+								}
 							}
-							Iterator<DirectedEvidence> merged = Iterators.mergeSorted(toMerge, DirectedEvidenceOrder.ByNatural);
-							new ContigAssembler(merged, processContext.getFileSystemContext().getAssemblyVcfForChr(input, seq), processContext.getFileSystemContext().getRealignmentFastqForChr(input, seq)).run();
-						} catch (Exception e) {
-							log.error(e, "Error performing ", seq, " breakend assembly");
-							throw new RuntimeException(e);
-						} finally {
-							for (Iterator<DirectedEvidence> x : toMerge) {
-								CloserUtil.close(x);
-							}
+							log.info("Completed ", seq, " breakend assembly");
+							return null;
 						}
-						log.info("Completed ", seq, " breakend assembly");
-						return null;
-					}
-				});
+					});
+				}
 			}
 			if (threadpool != null) {
 				log.info("Performing multithreaded assembly");
@@ -226,8 +236,10 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		@Override
 		public void run() {
 			try {
-				vcfWriter = processContext.getVariantContextWriter(breakendVcf);
-				fastqWriter = new FastqBreakpointWriter(processContext.getFastqWriterFactory().newWriter(realignmentFastq));
+				FileSystemContext.getWorkingFileFor(breakendVcf).delete();
+				FileSystemContext.getWorkingFileFor(realignmentFastq).delete();
+				vcfWriter = processContext.getVariantContextWriter(FileSystemContext.getWorkingFileFor(breakendVcf));
+				fastqWriter = new FastqBreakpointWriter(processContext.getFastqWriterFactory().newWriter(FileSystemContext.getWorkingFileFor(realignmentFastq)));
 				ReadEvidenceAssembler assembler = getAssembler();
 				final ProgressLogger progress = new ProgressLogger(log);
 				while (it.hasNext()) {
@@ -253,6 +265,13 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				}
 				processAssembly(assembler.endOfEvidence(), resortBuffer, fastqWriter, vcfWriter);
 				flushWriterQueueBefore(Long.MAX_VALUE, resortBuffer, fastqWriter, vcfWriter);
+				fastqWriter.close();
+				vcfWriter.close();
+				FileHelper.move(FileSystemContext.getWorkingFileFor(breakendVcf), breakendVcf, true);
+				FileHelper.move(FileSystemContext.getWorkingFileFor(realignmentFastq), realignmentFastq, true);
+			} catch (IOException e) {
+				log.error(e, "Error assembling breakend ", breakendVcf);
+				throw new RuntimeException("Error assembling breakend", e);
 			} finally {
 				if (fastqWriter != null) fastqWriter.close();
 				if (vcfWriter != null) vcfWriter.close();
@@ -274,7 +293,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		    	}
 	    	}
 	    	flushWriterQueueBefore(
-	    			maxAssembledPosition - (long)((processContext.getAssemblyParameters().maxSubgraphFragmentWidth * 2) * getMaxConcordantFragmentSize()),
+	    			maxAssembledPosition - (long)((processContext.getAssemblyParameters().maxSubgraphFragmentWidth + 2) * getMaxConcordantFragmentSize()),
 	    			buffer,
 	    			fastqWriter,
 	    			vcfWriter);

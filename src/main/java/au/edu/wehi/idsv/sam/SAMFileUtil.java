@@ -17,13 +17,12 @@ import htsjdk.samtools.util.SortingCollection;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.concurrent.Callable;
 
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.IntermediateFileUtil;
 import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.util.FileHelper;
 
 public class SAMFileUtil {
 	private static final Log log = Log.getInstance(SAMFileUtil.class);
@@ -124,12 +123,7 @@ public class SAMFileUtil {
 				}
 				writer.close();
 				collection.cleanup();
-				Files.move(FileSystemContext.getWorkingFileFor(output).toPath(), output.toPath(), StandardCopyOption.REPLACE_EXISTING);
-				File tmpIndex = new File(FileSystemContext.getWorkingFileFor(output).getAbsolutePath().substring(0, FileSystemContext.getWorkingFileFor(output).getAbsolutePath().length() - 4) + ".bai");
-				if (tmpIndex.exists()) {
-					File targetIndex = new File(output.getAbsolutePath().substring(0, output.getAbsolutePath().length() - 4) + ".bai");
-					Files.move(tmpIndex.toPath(), targetIndex.toPath(), StandardCopyOption.REPLACE_EXISTING);
-				}
+				FileHelper.move(FileSystemContext.getWorkingFileFor(output), output, true);
 			} finally {
 				CloserUtil.close(writer);
 				CloserUtil.close(wit);

@@ -12,14 +12,13 @@ import htsjdk.variant.vcf.VCFRecordCodec;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 import java.util.Comparator;
 import java.util.concurrent.Callable;
 
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.IntermediateFileUtil;
 import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.util.FileHelper;
 
 public class VcfFileUtil {
 	private static final Log log = Log.getInstance(VcfFileUtil.class);
@@ -87,9 +86,7 @@ public class VcfFileUtil {
 					writer.add(wit.next());
 				}
 				writer.close();
-				java.nio.file.Files.move(FileSystemContext.getWorkingFileFor(output).toPath(), output.toPath(), StandardCopyOption.REPLACE_EXISTING);
-				File index = new File(FileSystemContext.getWorkingFileFor(output).getAbsolutePath() + ".idx");
-				if (index.exists()) Files.move(index.toPath(), new File(output.getAbsolutePath() + ".idx").toPath(), StandardCopyOption.REPLACE_EXISTING);
+				FileHelper.move(FileSystemContext.getWorkingFileFor(output), output, true);
 			} finally {
 				CloserUtil.close(writer);
 				CloserUtil.close(wit);
