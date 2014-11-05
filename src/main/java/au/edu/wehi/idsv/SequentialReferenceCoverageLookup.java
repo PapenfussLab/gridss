@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
 
+import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.SlidingWindowList;
 
 import com.google.common.collect.ImmutableList;
@@ -45,7 +46,10 @@ public class SequentialReferenceCoverageLookup implements Closeable {
 	 */
 	public SequentialReferenceCoverageLookup(Iterator<SAMRecord> it, int windowSize) {
 		if (it instanceof Closeable) toClose.add((Closeable)it);
-		this.reads = Iterators.peekingIterator(new FilteringIterator(it, new AggregateFilter(ImmutableList.of(new AlignedFilter(true), new DuplicateReadFilter()))));
+		this.reads = Iterators.peekingIterator(
+				new AsyncBufferedIterator<SAMRecord>(
+						new FilteringIterator(it, new AggregateFilter(ImmutableList.of(new AlignedFilter(true), new DuplicateReadFilter()))),
+						"reference coverage"));
 		this.largestWindow = windowSize;
 		jumpTo(0);
 	}

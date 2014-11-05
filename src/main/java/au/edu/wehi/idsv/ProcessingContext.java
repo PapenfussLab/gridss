@@ -27,12 +27,11 @@ import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
-
-import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.BufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.vcf.VcfConstants;
+
+import com.google.common.collect.ImmutableList;
 
 /**
  * Processing context for the given record
@@ -40,8 +39,6 @@ import au.edu.wehi.idsv.vcf.VcfConstants;
  *
  */
 public class ProcessingContext implements Closeable {
-	private static final int READAHEAD_BUFFER_SIZE = 32;
-	private static final int READAHEAD_BUFFERS = 4;
 	private final ReferenceSequenceFile reference;
 	private final File referenceFile;
 	private final SAMSequenceDictionary dictionary;
@@ -116,15 +113,25 @@ public class ProcessingContext implements Closeable {
 		return getSamReaderIterator(reader, null);
 	}
 	public CloseableIterator<SAMRecord> getSamReaderIterator(SamReader reader, SortOrder expectedOrder) {
+		return getSamReaderIterator(reader, expectedOrder, null);
+	}
+	public CloseableIterator<SAMRecord> getSamReaderIterator(File reader) {
+		return getSamReaderIterator(reader, null);
+	}
+	public CloseableIterator<SAMRecord> getSamReaderIterator(File file, SortOrder expectedOrder) {
+		return getSamReaderIterator(getSamReader(file), expectedOrder, file);
+	}
+	private CloseableIterator<SAMRecord> getSamReaderIterator(SamReader reader, SortOrder expectedOrder, File file) {
 		SAMRecordIterator rawIterator = reader.iterator();
 		if (expectedOrder != null && expectedOrder != SortOrder.unsorted) {
 			rawIterator.assertSorted(expectedOrder);
 		}
-		CloseableIterator<SAMRecord> iterator = applyCommonSAMRecordFilters(rawIterator);
-		if (isUseAsyncIO()) {
-			iterator = new AsyncBufferedIterator<SAMRecord>(iterator, READAHEAD_BUFFERS, READAHEAD_BUFFER_SIZE);
-		}
-		return new AutoClosingIterator<SAMRecord>(iterator, ImmutableList.of(rawIterator, reader));
+		CloseableIterator<SAMRecord> filterIterator = applyCommonSAMRecordFilters(rawIterator);
+		CloseableIterator<SAMRecord> finalIterator = filterIterator;
+		//if (isUseAsyncIO()) {
+		//	finalIterator = new AsyncBufferedIterator<SAMRecord>(filterIterator, READAHEAD_BUFFERS, READAHEAD_BUFFER_SIZE, file != null ? file.getAbsolutePath() : null);
+		//}
+		return new AutoClosingIterator<SAMRecord>(finalIterator, ImmutableList.of(rawIterator, reader, filterIterator, finalIterator));
 	}
 	public SAMFileWriterFactory getSamReaderWriterFactory() {
 		return new SAMFileWriterFactory()

@@ -4,7 +4,6 @@ import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordQueryNameComparator;
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SamReader;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
@@ -269,9 +268,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 	public SequentialReferenceCoverageLookup getReferenceLookup(List<File> samFiles) {
 		List<CloseableIterator<SAMRecord>> toMerge = new ArrayList<>();
 		for (File f : samFiles) {
-			SamReader reader = processContext.getSamReader(f);
-			toClose.add(reader);
-			CloseableIterator<SAMRecord> it = processContext.getSamReaderIterator(reader, SortOrder.coordinate);
+			CloseableIterator<SAMRecord> it = processContext.getSamReaderIterator(f, SortOrder.coordinate);
 			toClose.add(it);
 			it = processContext.applyCommonSAMRecordFilters(it);
 			toMerge.add(it);

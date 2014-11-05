@@ -37,6 +37,7 @@ import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 
 import com.google.common.io.Files;
 /**
@@ -256,7 +257,7 @@ public class ExtractEvidence implements Closeable {
 		final ProgressLogger progress = new ProgressLogger(log);
 		CloseableIterator<SAMRecord> iter = null;
 		try {
-			iter = processContext.getSamReaderIterator(reader); 
+			iter = new AsyncBufferedIterator<SAMRecord>(processContext.getSamReaderIterator(reader), source.getSourceFile().getName() + " metrics"); 
 			while (iter.hasNext() && recordsProcessed++ < maxRecords) {
 				SAMRecord record = iter.next();
 				ismc.acceptRecord(record, null);
@@ -264,7 +265,7 @@ public class ExtractEvidence implements Closeable {
 				progress.record(record);
 			}
 		} finally {
-			if (iter != null) iter.close();
+			CloserUtil.close(iter);
 		}
 		return recordsProcessed;
 	}
@@ -278,7 +279,7 @@ public class ExtractEvidence implements Closeable {
 		final ProgressLogger progress = new ProgressLogger(log);
 		CloseableIterator<SAMRecord> iter = null;
 		try {
-			iter = processContext.getSamReaderIterator(reader); 
+			iter = new AsyncBufferedIterator<SAMRecord>(processContext.getSamReaderIterator(reader), source.getSourceFile().getName() + " extract");
 			while (iter.hasNext()) {
 				SAMRecord record = iter.next();
 				SAMRecordUtil.ensureNmTag(referenceWalker, record);

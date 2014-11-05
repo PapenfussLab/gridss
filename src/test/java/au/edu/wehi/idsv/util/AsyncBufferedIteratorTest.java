@@ -19,7 +19,7 @@ import com.google.common.primitives.Ints;
 
 
 public class AsyncBufferedIteratorTest {
-	public class CIT extends AbstractIterator<Integer> implements CloseableIterator<Integer> {
+	public static class CIT extends AbstractIterator<Integer> implements CloseableIterator<Integer> {
 		private int count;
 		public volatile boolean isClosed = false;
 		public CIT(int count) { this.count = count; }

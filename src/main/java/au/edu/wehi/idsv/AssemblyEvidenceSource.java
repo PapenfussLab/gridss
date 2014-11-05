@@ -3,7 +3,6 @@ package au.edu.wehi.idsv;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.SamReader;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
@@ -29,6 +28,8 @@ import java.util.concurrent.Future;
 import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredAssembler;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 import au.edu.wehi.idsv.pipeline.SortRealignedAssemblies;
+import au.edu.wehi.idsv.util.AsyncBufferedIterator;
+import au.edu.wehi.idsv.util.AsyncBufferedIteratorTest;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
@@ -75,7 +76,8 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		return (CloseableIterator<DirectedEvidence>)(Object)iterator(
 				fsc.getAssemblyVcfForChr(input, chr),
-				fsc.getRealignmentBamForChr(input, chr));
+				fsc.getRealignmentBamForChr(input, chr),
+				chr);
 	}
 	@SuppressWarnings("unchecked") // can I do checked covariant iterator casting in java? 
 	@Override
@@ -83,9 +85,10 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		return (CloseableIterator<DirectedEvidence>)(Object)iterator(
 			fsc.getAssemblyVcf(input),
-			fsc.getRealignmentBam(input));
+			fsc.getRealignmentBam(input),
+			"");
 	}
-	private CloseableIterator<VariantContextDirectedEvidence> iterator(File vcf, File realignment) {
+	private CloseableIterator<VariantContextDirectedEvidence> iterator(File vcf, File realignment, String chr) {
 		if (!isProcessingComplete()) {
 			log.error("Assemblies not yet generated.");
 			throw new RuntimeException("Assemblies not yet generated");
@@ -93,9 +96,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		List<Closeable> toClose = new ArrayList<>();
 		CloseableIterator<SAMRecord> realignedIt; 
 		if (isRealignmentComplete()) {
-			SamReader realignedReader = processContext.getSamReader(realignment);
-			realignedIt = processContext.getSamReaderIterator(realignedReader);
-			toClose.add(realignedReader);
+			realignedIt = processContext.getSamReaderIterator(realignment);
 			toClose.add(realignedIt);
 		} else {
 			log.debug(String.format("Assembly realignment for %s not completed", vcf));
@@ -117,7 +118,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				(int)((2 + processContext.getAssemblyParameters().maxSubgraphFragmentWidth + processContext.getAssemblyParameters().subgraphAssemblyMargin) * maxSourceFragSize),
 				evidenceIt), toClose);
 		// FIXME: TODO: add remote assemblies to iterator
-		return sortedIt;
+		return new AsyncBufferedIterator<VariantContextDirectedEvidence>(sortedIt, "Assembly " + chr);
 	}
 	private boolean isProcessingComplete() {
 		boolean done = true;

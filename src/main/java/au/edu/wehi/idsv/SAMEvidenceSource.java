@@ -19,6 +19,7 @@ import java.util.List;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.pipeline.ExtractEvidence;
 import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
+import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 
@@ -65,7 +66,6 @@ public class SAMEvidenceSource extends EvidenceSource {
 				header = reader.getFileHeader();
 			} finally {
 				CloserUtil.close(reader);
-				reader = null;
 			}
 		}
 		return header;
@@ -170,7 +170,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 				fsc.getSoftClipBamForChr(input, chr),
 				fsc.getRealignmentBamForChr(input, chr),
 				fsc.getSoftClipRemoteBamForChr(input, chr),
-				fsc.getRealignmentRemoteBamForChr(input, chr));
+				fsc.getRealignmentRemoteBamForChr(input, chr),
+				chr);
 	}
 	@Override
 	protected CloseableIterator<DirectedEvidence> singleFileIterator() {
@@ -181,7 +182,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 				fsc.getSoftClipBam(input),
 				fsc.getRealignmentBam(input),
 				fsc.getSoftClipRemoteBam(input),
-				fsc.getRealignmentRemoteBam(input));
+				fsc.getRealignmentRemoteBam(input),
+				"");
 	}
 	/**
 	 * Iterates over the given evidence in evidence breakend position order 
@@ -193,15 +195,13 @@ public class SAMEvidenceSource extends EvidenceSource {
 	 * @param remoteRealigned
 	 * @return
 	 */
-	private CloseableIterator<DirectedEvidence> iterator(File readPair, File pairMate, File softClip, File realigned, File remoteSoftClip, File remoteRealigned) {
+	private CloseableIterator<DirectedEvidence> iterator(File readPair, File pairMate, File softClip, File realigned, File remoteSoftClip, File remoteRealigned, String chr) {
 		if (!isComplete(ProcessStep.EXTRACT_SOFT_CLIPS) ||
 			!isComplete(ProcessStep.EXTRACT_READ_PAIRS)) {
 			throw new IllegalStateException("Cannot traverse evidence before evidence extraction");
 		}
-		SamReader rpReader = processContext.getSamReader(readPair);
-		SamReader mateReader = processContext.getSamReader(pairMate);
-		CloseableIterator<SAMRecord> rawPairIt = processContext.getSamReaderIterator(rpReader);
-		CloseableIterator<SAMRecord> rawMateIt = processContext.getSamReaderIterator(mateReader);
+		final CloseableIterator<SAMRecord> rawPairIt = processContext.getSamReaderIterator(readPair);
+		final CloseableIterator<SAMRecord> rawMateIt = processContext.getSamReaderIterator(pairMate);
 		final CloseableIterator<NonReferenceReadPair> rawRpIt = new ReadPairEvidenceIterator(
 				processContext,
 				this,
@@ -209,24 +209,19 @@ public class SAMEvidenceSource extends EvidenceSource {
 				rawMateIt);
 		final Iterator<NonReferenceReadPair> sortedRpIt = new DirectEvidenceWindowedSortingIterator<NonReferenceReadPair>(processContext, getMaxConcordantFragmentSize(), rawRpIt);
 		final CloseableIterator<NonReferenceReadPair> finalrpIt = new AutoClosingIterator<NonReferenceReadPair>(sortedRpIt,
-				Lists.<Closeable>newArrayList(rawRpIt, rpReader, mateReader, rawPairIt, rawMateIt));
+				Lists.<Closeable>newArrayList(rawRpIt, rawPairIt, rawMateIt));
 		
-		List<Closeable> scToClose = new ArrayList<>();
-		final SamReader scReader = processContext.getSamReader(softClip);
-		scToClose.add(scReader);
-		CloseableIterator<SAMRecord> rawScIt = processContext.getSamReaderIterator(scReader);
+		final List<Closeable> scToClose = new ArrayList<>();
+		final CloseableIterator<SAMRecord> rawScIt = processContext.getSamReaderIterator(softClip);
 		scToClose.add(rawScIt);
 		CloseableIterator<SoftClipEvidence> scIt = new SoftClipEvidenceIterator(processContext, this,
 				rawScIt);
 		scToClose.add(scIt);
 		if (isRealignmentComplete()) {
 			//log.debug("Realignment is complete for ", input);
-			SamReader scRealignReader = processContext.getSamReader(realigned);
-			scToClose.add(scRealignReader);
-			CloseableIterator<SAMRecord> rawRealignIt = processContext.getSamReaderIterator(scRealignReader);
+			CloseableIterator<SAMRecord> rawRealignIt = processContext.getSamReaderIterator(realigned);
 			scToClose.add(rawRealignIt);
-			scIt = new RealignedSoftClipEvidenceIterator(scIt,
-					rawRealignIt);
+			scIt = new RealignedSoftClipEvidenceIterator(scIt, rawRealignIt);
 			scToClose.add(scIt);
 		} else {
 			//log.info("Realigned soft clip evidence not present due to missing realignment bam ", realigned);
@@ -242,21 +237,19 @@ public class SAMEvidenceSource extends EvidenceSource {
 			if (!isComplete(ProcessStep.SORT_REALIGNED_SOFT_CLIPS)) {
 				//log.debug("Realignment resorting not complete for ", input);
 			} else {
-				SamReader realignSortedReader = processContext.getSamReader(remoteRealigned);
-				SamReader scRealignSortedf = processContext.getSamReader(remoteSoftClip);
-				SamReader scRealignSortedb = processContext.getSamReader(remoteSoftClip);
-				CloseableIterator<SAMRecord> rsrRawIt = processContext.getSamReaderIterator(realignSortedReader);
-				CloseableIterator<SAMRecord> sssRawItf = processContext.getSamReaderIterator(scRealignSortedf);
-				CloseableIterator<SAMRecord> sssRawItb = processContext.getSamReaderIterator(scRealignSortedb);
+				CloseableIterator<SAMRecord> rsrRawIt = processContext.getSamReaderIterator(remoteRealigned);
+				CloseableIterator<SAMRecord> sssRawItf = processContext.getSamReaderIterator(remoteSoftClip);
+				CloseableIterator<SAMRecord> sssRawItb = processContext.getSamReaderIterator(remoteSoftClip);
 				remoteScIt = new RealignedRemoteSoftClipEvidenceIterator(processContext, this,
 						rsrRawIt, sssRawItf, sssRawItb);
 				remoteScIt = new AutoClosingIterator<RealignedRemoteSoftClipEvidence>(new DirectEvidenceWindowedSortingIterator<RealignedRemoteSoftClipEvidence>(processContext, getMetrics().getIdsvMetrics().MAX_READ_LENGTH, remoteScIt),
-						ImmutableList.<Closeable>of(remoteScIt, realignSortedReader, scRealignSortedf, scRealignSortedb, rsrRawIt, sssRawItf, sssRawItb));
+						ImmutableList.<Closeable>of(remoteScIt, rsrRawIt, sssRawItf, sssRawItb));
 			}
 		} else {
 			//log.info("Realigned remote soft clip evidence not present due to missing realignment bam ", realigned);
 		}
-		return new AutoClosingMergedIterator<DirectedEvidence>(ImmutableList.of(finalrpIt, scIt, remoteScIt), DirectedEvidenceOrder.ByNatural);
+		final CloseableIterator<DirectedEvidence> mergedIt = new AutoClosingMergedIterator<DirectedEvidence>(ImmutableList.of(finalrpIt, scIt, remoteScIt), DirectedEvidenceOrder.ByNatural);
+		return new AsyncBufferedIterator<DirectedEvidence>(mergedIt, input.getName() + " " + chr);
 	}
 	public ReadPairConcordanceCalculator getReadPairConcordanceCalculator() {
 		if (rpcc == null) {

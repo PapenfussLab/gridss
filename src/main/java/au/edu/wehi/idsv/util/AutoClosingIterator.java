@@ -21,13 +21,10 @@ public class AutoClosingIterator<T> extends AbstractIterator<T> implements Close
 	private final Iterator<? extends T> underlying;
 	private final List<Closeable> alsoClose;
 	private boolean closed = false;
-	
 	public AutoClosingIterator(Iterator<? extends T> it) {
-		this.underlying = it;
-		this.alsoClose = ImmutableList.of();
-		if (!underlying.hasNext()) close();
+		this(it, ImmutableList.<Closeable>of());
 	}
-	public AutoClosingIterator(Iterator<T> it, Iterable<Closeable> alsoClose) {
+	public AutoClosingIterator(Iterator<? extends T> it, Iterable<Closeable> alsoClose) {
 		this.underlying = it;
 		this.alsoClose = ImmutableList.copyOf(alsoClose);
 		if (!underlying.hasNext()) close();

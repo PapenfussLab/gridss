@@ -61,10 +61,10 @@ public class VcfFileUtil {
 			}
 			log.info("Sorting " + input);
 			VCFFileReader reader = null;
-			CloseableIterator<VariantContext> rit = null;
 			VariantContextWriter writer = null;
-			SortingCollection<VariantContext> collection = null;
+			CloseableIterator<VariantContext> rit = null;
 			CloseableIterator<VariantContext> wit = null;
+			SortingCollection<VariantContext> collection = null;
 			if (FileSystemContext.getWorkingFileFor(output).exists()) FileSystemContext.getWorkingFileFor(output).delete();
 			try {
 				reader = new VCFFileReader(input, false);
@@ -79,13 +79,17 @@ public class VcfFileUtil {
 				while (rit.hasNext()) {
 					collection.add(rit.next());
 				}
+				rit.close();
+				reader.close();
 				collection.doneAdding();
 				writer = processContext.getVariantContextWriter(FileSystemContext.getWorkingFileFor(output));
 		    	wit = collection.iterator();
 				while (wit.hasNext()) {
 					writer.add(wit.next());
 				}
+				wit.close();
 				writer.close();
+				collection.cleanup();
 				FileHelper.move(FileSystemContext.getWorkingFileFor(output), output, true);
 			} finally {
 				CloserUtil.close(writer);
