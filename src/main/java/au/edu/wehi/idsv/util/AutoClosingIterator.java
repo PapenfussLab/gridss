@@ -2,12 +2,12 @@ package au.edu.wehi.idsv.util;
 
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.Log;
 
 import java.io.Closeable;
 import java.util.Iterator;
 import java.util.List;
 
-import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ImmutableList;
 
 /**
@@ -17,9 +17,10 @@ import com.google.common.collect.ImmutableList;
  *
  * @param <T>
  */
-public class AutoClosingIterator<T> extends AbstractIterator<T> implements Closeable, CloseableIterator<T> {
-	private final Iterator<? extends T> underlying;
-	private final List<Closeable> alsoClose;
+public class AutoClosingIterator<T> implements Closeable, CloseableIterator<T> {
+	private static final Log log = Log.getInstance(AutoClosingIterator.class);
+	private Iterator<? extends T> underlying;
+	private List<Closeable> alsoClose;
 	private boolean closed = false;
 	public AutoClosingIterator(Iterator<? extends T> it) {
 		this(it, ImmutableList.<Closeable>of());
@@ -30,21 +31,32 @@ public class AutoClosingIterator<T> extends AbstractIterator<T> implements Close
 		if (!underlying.hasNext()) close();
 	}
 	@Override
-	protected T computeNext() {
-		if (closed || !underlying.hasNext()) {
-			close();
-			return endOfData();
+	public void close() {
+		try {
+			if (!closed) {
+				closed = true;
+				CloserUtil.close(underlying);
+				for (Closeable c : alsoClose) {
+					CloserUtil.close(c);
+				}
+				underlying = null;
+				alsoClose = null;
+			}
+		} catch (Exception e) {
+			log.warn(e, "Error closing resource.");
 		}
+	}
+	@Override
+	public boolean hasNext() {
+		return !closed && underlying != null && underlying.hasNext();
+	}
+	@Override
+	public T next() {
+		if (closed) throw new IllegalStateException("underlying iterator closed");
 		return underlying.next();
 	}
 	@Override
-	public void close() {
-		if (!closed) {
-			closed = true;
-			CloserUtil.close(underlying);
-			for (Closeable c : alsoClose) {
-				CloserUtil.close(c);
-			}
-		}
+	public void remove() {
+		throw new UnsupportedOperationException();
 	}
 }

@@ -8,7 +8,8 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
-import com.google.common.collect.AbstractIterator;
+import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
@@ -19,22 +20,30 @@ import com.google.common.collect.Lists;
  *
  * @param <T>
  */
-public class AutoClosingMergedIterator<T> extends AbstractIterator<T> implements Closeable, CloseableIterator<T> {
-	private List<Iterator<? extends T>> stillOpen;
+public class AutoClosingMergedIterator<T> implements Closeable, CloseableIterator<T> {
+	private List<AutoClosingIterator<T>> stillOpen;
 	private Iterator<? extends T> merged;
+	private boolean closed = false;
 	
 	public AutoClosingMergedIterator(Iterable<? extends Iterator<? extends T>> iterators, Comparator<? super T> comparator) {
-		stillOpen = Lists.newArrayList(iterators);
+		stillOpen = Lists.newArrayList(Iterables.transform(iterators, new Function<Iterator<? extends T>, AutoClosingIterator<T>>() {
+			@Override
+			public AutoClosingIterator<T> apply(Iterator<? extends T> input) {
+				return new AutoClosingIterator<>(input);
+			}
+		}));
 		merged = Iterators.mergeSorted(stillOpen, comparator);
 	}
 	@Override
-	protected T computeNext() {
-		if (merged == null || !merged.hasNext()) {
-			tryclose(true);
-			return endOfData();
-		}
+	public boolean hasNext() {
+		return !closed && merged.hasNext();
+		
+	}
+	@Override
+	public T next() {
+		T n = merged.next();
 		tryclose(false);
-		return merged.next();
+		return n;
 	}
 	@Override
 	public void close() {
@@ -48,7 +57,7 @@ public class AutoClosingMergedIterator<T> extends AbstractIterator<T> implements
 		}
 		if (stillOpen != null) {
 			for (int i = stillOpen.size() - 1; i >= 0 ; i--) {
-				Iterator<? extends T> it = stillOpen.get(i);
+				AutoClosingIterator<T> it = stillOpen.get(i);
 				if (!it.hasNext() || forceClosed) {
 					CloserUtil.close(it);
 					stillOpen.remove(i);
@@ -58,5 +67,9 @@ public class AutoClosingMergedIterator<T> extends AbstractIterator<T> implements
 				stillOpen = null;
 			}
 		}
+	}
+	@Override
+	public void remove() {
+		throw new UnsupportedOperationException();
 	}
 }

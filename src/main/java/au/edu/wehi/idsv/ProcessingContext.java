@@ -126,12 +126,12 @@ public class ProcessingContext implements Closeable {
 		if (expectedOrder != null && expectedOrder != SortOrder.unsorted) {
 			rawIterator.assertSorted(expectedOrder);
 		}
-		CloseableIterator<SAMRecord> filterIterator = applyCommonSAMRecordFilters(rawIterator);
-		CloseableIterator<SAMRecord> finalIterator = filterIterator;
+		// wrap so we're happy to close as many times as we want
+		CloseableIterator<SAMRecord> safeIterator = new AutoClosingIterator<SAMRecord>(rawIterator,  ImmutableList.<Closeable>of(reader));
 		//if (isUseAsyncIO()) {
 		//	finalIterator = new AsyncBufferedIterator<SAMRecord>(filterIterator, READAHEAD_BUFFERS, READAHEAD_BUFFER_SIZE, file != null ? file.getAbsolutePath() : null);
 		//}
-		return new AutoClosingIterator<SAMRecord>(finalIterator, ImmutableList.of(rawIterator, reader, filterIterator, finalIterator));
+		return applyCommonSAMRecordFilters(safeIterator);
 	}
 	public SAMFileWriterFactory getSamReaderWriterFactory() {
 		return new SAMFileWriterFactory()
