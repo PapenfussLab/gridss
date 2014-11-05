@@ -6,6 +6,7 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Before;
@@ -20,9 +21,9 @@ public class VariantContextDirectedEvidenceIteratorTest  extends TestHelper {
 	private List<VariantContextDirectedEvidence> out;
 	@Before
 	public void setup() {
-		realigned = Lists.newArrayList();
-		vcf = Lists.newArrayList();
-		out = Lists.newArrayList();
+		realigned = new ArrayList<>();
+		vcf = new ArrayList<>();
+		out = new ArrayList<>();
 	}
 	public void go() {
 		out = Lists.newArrayList(new VariantContextDirectedEvidenceIterator(getContext(), AES(), vcf.iterator(), realigned.iterator()));

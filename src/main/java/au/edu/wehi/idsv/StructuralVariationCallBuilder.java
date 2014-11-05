@@ -2,6 +2,7 @@ package au.edu.wehi.idsv;
 
 import htsjdk.variant.vcf.VCFConstants;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -17,9 +18,9 @@ import com.google.common.collect.Ordering;
 public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private final ProcessingContext processContext;
 	private final VariantContextDirectedEvidence parent;
-	private final List<SoftClipEvidence> scList = Lists.newArrayList();
-	private final List<NonReferenceReadPair> rpList = Lists.newArrayList();
-	private final List<VariantContextDirectedEvidence> assList = Lists.newArrayList();
+	private final List<SoftClipEvidence> scList = new ArrayList<>();
+	private final List<NonReferenceReadPair> rpList = new ArrayList<>();
+	private final List<VariantContextDirectedEvidence> assList = new ArrayList<>();
 	private int referenceNormalReadCount = 0;
 	private int referenceNormalSpanningPairCount = 0;
 	private int referenceTumourReadCount = 0;
@@ -135,7 +136,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			public List<Integer> apply(VariantContextDirectedEvidence arg0) {
 				return arg0.getAttributeAsIntList(attr.attribute());
 			}});
-		List<Integer> result = Lists.newArrayList();
+		List<Integer> result = new ArrayList<>();
 		for (List<Integer> l : attrs) {
 			while (l.size() > result.size()) result.add(0);
 			for (int i = 0; i < l.size(); i++) {
@@ -248,7 +249,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	}
 	private static <T extends DirectedEvidence> List<Integer> sumOrMax(Iterable<T> it, Function<T, Integer> f, boolean max) {
 		boolean collapse = false;
-		List<Integer> list = Lists.newArrayList();
+		List<Integer> list = new ArrayList<>();
 		list.add(0);
 		list.add(0);
 		for (T t : it) {

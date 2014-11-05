@@ -15,6 +15,7 @@ import htsjdk.variant.vcf.VCFFileReader;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
@@ -33,7 +34,6 @@ import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 
 public class AssemblyEvidenceSource extends EvidenceSource {
@@ -90,7 +90,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			log.error("Assemblies not yet generated.");
 			throw new RuntimeException("Assemblies not yet generated");
 		}
-		List<Closeable> toClose = Lists.newArrayList();
+		List<Closeable> toClose = new ArrayList<>();
 		CloseableIterator<SAMRecord> realignedIt; 
 		if (isRealignmentComplete()) {
 			SamReader realignedReader = processContext.getSamReader(realignment);
@@ -145,7 +145,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		}
 		final SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
 		if (processContext.shouldProcessPerChromosome()) {
-			final List<Callable<Void>> workers = Lists.newArrayList();
+			final List<Callable<Void>> workers = new ArrayList<>();
 			for (int i = 0; i < dict.size(); i++) {
 				final String seq = dict.getSequence(i).getSequenceName();
 				
@@ -158,7 +158,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 						public Void call() {
 							log.info("Starting ", seq, " breakend assembly");
 							CloseableIterator<DirectedEvidence> merged = null;
-							List<CloseableIterator<DirectedEvidence>> toMerge = Lists.newArrayList();
+							List<CloseableIterator<DirectedEvidence>> toMerge = new ArrayList<>();
 							try {
 								for (SAMEvidenceSource bam : source) {
 									CloseableIterator<DirectedEvidence> it = bam.iterator(seq);
@@ -207,7 +207,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				}
 			}
 		} else {
-			List<CloseableIterator<DirectedEvidence>> toMerge = Lists.newArrayList();
+			List<CloseableIterator<DirectedEvidence>> toMerge = new ArrayList<>();
 			CloseableIterator<DirectedEvidence> merged = null;
 			try {
 				for (SAMEvidenceSource bam : source) {

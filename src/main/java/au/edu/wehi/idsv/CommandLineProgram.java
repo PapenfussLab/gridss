@@ -10,6 +10,7 @@ import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import picard.cmdline.Option;
@@ -33,7 +34,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 	@Option(doc="Coordinate-sorted tumour BAM file.",
 			optional=true,
     		shortName="T")
-    public List<File> INPUT_TUMOUR = Lists.newArrayList();
+    public List<File> INPUT_TUMOUR = new ArrayList<>();
 	@Option(doc = "Per input percent of read pairs considered concorant (0.0-1.0). If this is not set, the SAM proper pair flag is used to determine whether a read is discordantly aligned.", optional=true)
     public List<Integer> INPUT_TUMOUR_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE;
 	@Option(doc="VCF structural variation calls.",

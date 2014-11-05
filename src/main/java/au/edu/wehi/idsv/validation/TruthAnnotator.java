@@ -6,6 +6,7 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
@@ -36,7 +37,7 @@ public class TruthAnnotator implements BreakendAnnotator {
 		this.truth = loadTruthVcf(processContext, truthVcf);
 	}
 	private static List<IdsvVariantContext> loadTruthVcf(ProcessingContext processContext, File truthVcf) {
-		List<IdsvVariantContext> truth = Lists.newArrayList();
+		List<IdsvVariantContext> truth = new ArrayList<>();
 		VCFFileReader vcfReader = null;
 		CloseableIterator<VariantContext> it = null;
 		try {

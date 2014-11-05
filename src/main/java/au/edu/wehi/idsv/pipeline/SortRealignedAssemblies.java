@@ -6,6 +6,7 @@ import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
@@ -22,7 +23,6 @@ import au.edu.wehi.idsv.vcf.VcfFileUtil.SortCallable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
 
 /**
  * Sorts assembly breakends by the remote breakend coordinate
@@ -32,7 +32,7 @@ import com.google.common.collect.Lists;
 public class SortRealignedAssemblies extends DataTransformStep {
 	private static final Log log = Log.getInstance(SortRealignedAssemblies.class);
 	private final AssemblyEvidenceSource source;
-	private final List<VariantContextWriter> asswriters = Lists.newArrayList();
+	private final List<VariantContextWriter> asswriters = new ArrayList<>();
 	public SortRealignedAssemblies(ProcessingContext processContext, AssemblyEvidenceSource source) {
 		super(processContext);
 		this.source = source;
@@ -70,7 +70,7 @@ public class SortRealignedAssemblies extends DataTransformStep {
 	}
 	private void sort(ExecutorService threadpool) throws IOException {
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		List<SortCallable> tasks = Lists.newArrayList();
+		List<SortCallable> tasks = new ArrayList<>();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
 				tasks.add(new SortCallable(processContext,
@@ -143,7 +143,7 @@ public class SortRealignedAssemblies extends DataTransformStep {
 	}
 	@Override
 	public List<File> getOutput() {
-		List<File> outputs = Lists.newArrayList();
+		List<File> outputs = new ArrayList<>();
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
@@ -156,7 +156,7 @@ public class SortRealignedAssemblies extends DataTransformStep {
 	}
 	@Override
 	public List<File> getTemporary() {
-		List<File> files = Lists.newArrayList();
+		List<File> files = new ArrayList<>();
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {

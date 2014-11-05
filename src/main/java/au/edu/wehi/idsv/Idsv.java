@@ -9,6 +9,7 @@ import htsjdk.variant.vcf.VCFFileReader;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -75,7 +76,7 @@ public class Idsv extends CommandLineProgram {
     		log.info(String.format("Using %d worker threads", WORKER_THREADS));
 	    	ensureDictionariesMatch();
 
-	    	List<SAMEvidenceSource> samEvidence = Lists.newArrayList();
+	    	List<SAMEvidenceSource> samEvidence = new ArrayList<>();
 	    	int i = 0;
 	    	for (File f : INPUT) {
 	    		log.debug("Processing normal input ", f);
@@ -112,7 +113,7 @@ public class Idsv extends CommandLineProgram {
 	    	AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getContext(), samEvidence, OUTPUT);
 	    	aes.ensureAssembled(threadpool);
 	    	
-	    	List<EvidenceSource> allEvidence = Lists.newArrayList();
+	    	List<EvidenceSource> allEvidence = new ArrayList<>();
 	    	allEvidence.add(aes);
 	    	allEvidence.addAll(samEvidence);
 	    	
@@ -220,7 +221,7 @@ public class Idsv extends CommandLineProgram {
 	private void hackOutputIndels() throws IOException {
 		log.info("DEBUGGING HACK: naive translation to INDEL calls");
 		VariantContextDirectedEvidenceIterator it = new VariantContextDirectedEvidenceIterator(getContext(), null, new VCFFileReader(OUTPUT, false).iterator(), null);
-		List<IdsvVariantContext> out = Lists.newArrayList();
+		List<IdsvVariantContext> out = new ArrayList<>();
 		while (it.hasNext()) {
 			VariantContextDirectedEvidence e = it.next();
 			IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext(), e);

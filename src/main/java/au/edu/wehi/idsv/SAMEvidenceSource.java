@@ -9,6 +9,7 @@ import htsjdk.samtools.util.Log;
 
 import java.io.Closeable;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
@@ -207,7 +208,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		final CloseableIterator<NonReferenceReadPair> finalrpIt = new AutoClosingIterator<NonReferenceReadPair>(sortedRpIt,
 				Lists.<Closeable>newArrayList(rawRpIt, rpReader, mateReader));
 		
-		List<Closeable> scToClose = Lists.newArrayList();
+		List<Closeable> scToClose = new ArrayList<>();
 		final SamReader scReader = processContext.getSamReader(softClip);
 		scToClose.add(scReader);
 		CloseableIterator<SoftClipEvidence> scIt = new SoftClipEvidenceIterator(processContext, this,

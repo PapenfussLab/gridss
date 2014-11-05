@@ -261,7 +261,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		assertFalse( minimalVariant().attribute("LR", new float[0]).make().hasAttribute("LR"));
 		assertFalse( minimalVariant().attribute("LR", new double[0]).make().hasAttribute("LR"));
 		assertFalse( minimalVariant().attribute("LR", new String[0]).make().hasAttribute("LR"));
-		assertFalse( minimalVariant().attribute("LR", Lists.newArrayList()).make().hasAttribute("LR"));
+		assertFalse( minimalVariant().attribute("LR", new ArrayList<>()).make().hasAttribute("LR"));
 		assertFalse( minimalVariant().attribute("LR", Sets.newHashSet()).make().hasAttribute("LR"));
 		
 		assertTrue( minimalVariant().attribute("LR", "A").make().hasAttribute("LR"));

@@ -4,6 +4,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
@@ -18,8 +19,6 @@ import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredAssembler;
 
-import com.google.common.collect.Lists;
-
 
 public class DeBruijnAnchoredAssemblerTest extends TestHelper {
 	public List<VariantContextDirectedEvidence> go(int k, DirectedEvidence... evidence) {
@@ -27,7 +26,7 @@ public class DeBruijnAnchoredAssemblerTest extends TestHelper {
 		AssemblyParameters p = pc.getAssemblyParameters();
 		p.k = k;
 		p.method = AssemblyMethod.DEBRUIJN_PER_POSITION;
-		List<VariantContextDirectedEvidence> list = Lists.newArrayList();
+		List<VariantContextDirectedEvidence> list = new ArrayList<>();
 		DeBruijnAnchoredAssembler assembler = new DeBruijnAnchoredAssembler(pc, AES());
 		for (DirectedEvidence e : evidence) {
 			Iterable<VariantContextDirectedEvidence> it = assembler.addEvidence(e);

@@ -247,7 +247,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 		for (Long node : path) {
 			// subtract # reads to adjust for the +1 qual introduced by ReadKmerIterable
 			// to ensure positive node weights
-			qual.add(this.kmers.get(node).getWeight() - this.kmers.get(node).getSupportingEvidence().size());
+			qual.add(this.kmers.get(node).getWeight() - Sets.newHashSet(this.kmers.get(node).getSupportingEvidence()).size());
 		}
 		// pad out qualities to match the path length
 		for (int i = 0; i < k - 1; i++) qual.add(qual.get(qual.size() - 1));
@@ -363,7 +363,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	public String debugPrintPaths() {
 		Map<Long, Integer> contigLookup = Maps.newHashMap();
 		TLongSet remaining = new TLongHashSet(kmers.keySet());
-		List<LinkedList<Long>> paths = Lists.newArrayList();
+		List<LinkedList<Long>> paths = new ArrayList<>();
 		int contig = 0;
 		// enumerate the paths
 		while (!remaining.isEmpty()) {

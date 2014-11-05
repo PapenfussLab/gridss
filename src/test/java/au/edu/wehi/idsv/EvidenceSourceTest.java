@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.util.CloseableIterator;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -46,7 +47,7 @@ public class EvidenceSourceTest extends IntermediateFilesTest {
 		@Override
 		protected CloseableIterator<DirectedEvidence> perChrIterator(String chr) {
 			int index = processContext.getDictionary().getSequence(chr).getSequenceIndex();
-			List<DirectedEvidence> list = Lists.newArrayList();
+			List<DirectedEvidence> list = new ArrayList<>();
 			list.add(SCE(BWD, Read(index, 1, "50S50M")));
 			list.add(SCE(BWD, Read(index, 2, "50S50M")));
 			list.add(SCE(BWD, Read(index, 3, "50S50M")));
@@ -55,7 +56,7 @@ public class EvidenceSourceTest extends IntermediateFilesTest {
 		}
 		@Override
 		protected CloseableIterator<DirectedEvidence> singleFileIterator() {
-			List<DirectedEvidence> list = Lists.newArrayList();
+			List<DirectedEvidence> list = new ArrayList<>();
 			list.add(SCE(BWD, Read(0, 1, "50S50M")));
 			list.add(SCE(BWD, Read(0, 2, "50S50M")));
 			list.add(SCE(BWD, Read(0, 3, "50S50M")));

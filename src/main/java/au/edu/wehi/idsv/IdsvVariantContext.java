@@ -3,6 +3,7 @@ package au.edu.wehi.idsv;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFConstants;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -81,7 +82,7 @@ public class IdsvVariantContext extends VariantContext {
 		} else if (x instanceof int[]) {
 			return Ints.asList((int[])variant.getAttribute(attrName));
 		} else if (x instanceof Iterable<?>) {
-			List<Integer> list = Lists.newArrayList();
+			List<Integer> list = new ArrayList<>();
 			for (Object o : (Iterable<?>)x) {
 				if (o instanceof Integer) {
 					list.add((Integer)o);
@@ -126,7 +127,7 @@ public class IdsvVariantContext extends VariantContext {
 		} else if (x instanceof double[]) {
 			return Doubles.asList((double[])variant.getAttribute(attrName));
 		} else if (x instanceof Iterable<?>) {
-			List<Double> list = Lists.newArrayList();
+			List<Double> list = new ArrayList<>();
 			for (Object o : (Iterable<?>)x) {
 				if (o instanceof Double) {
 					list.add((Double)o);
@@ -153,7 +154,7 @@ public class IdsvVariantContext extends VariantContext {
 		} else if (x instanceof float[]) {
 			return Floats.asList((float[])variant.getAttribute(attrName));
 		} else if (x instanceof Iterable<?>) {
-			List<Float> list = Lists.newArrayList();
+			List<Float> list = new ArrayList<>();
 			for (Object o : (Iterable<?>)x) {
 				if (o instanceof Float) {
 					list.add((Float)o);
@@ -181,7 +182,7 @@ public class IdsvVariantContext extends VariantContext {
 		} else if (x instanceof String[]) {
 			return Arrays.asList((String[])x);
 		} else if (x instanceof Iterable<?>) {
-			List<String> list = Lists.newArrayList();
+			List<String> list = new ArrayList<>();
 			for (Object o : (Iterable<?>)x) {
 				list.add(o.toString());
 			}

@@ -16,6 +16,7 @@ import htsjdk.variant.vcf.VCFFileReader;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -28,7 +29,6 @@ import au.edu.wehi.idsv.util.FileHelper;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
 
 
 /**
@@ -95,7 +95,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 		log.info("Identifying Breakpoints");
 		try {
 			if (processContext.shouldProcessPerChromosome()) {
-				List<WriteMaximalCliquesForChromosome> workers = Lists.newArrayList();
+				List<WriteMaximalCliquesForChromosome> workers = new ArrayList<>();
 				final SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
 				for (int i = 0; i < dict.size(); i++) {					
 					for (int j = i; j < dict.size(); j++) {
@@ -148,9 +148,9 @@ public class VariantCaller extends EvidenceProcessorBase {
 			close();
 		}
 	}
-	private List<Closeable> toClose = Lists.newArrayList();
+	private List<Closeable> toClose = new ArrayList<>();
 	private CloseableIterator<IdsvVariantContext> getAllCalledVariants() {
-		List<Iterator<IdsvVariantContext>> variants = Lists.newArrayList();
+		List<Iterator<IdsvVariantContext>> variants = new ArrayList<>();
 		if (processContext.shouldProcessPerChromosome()) {
 			SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
 			for (int i = 0; i < dict.size(); i++) {
@@ -218,8 +218,8 @@ public class VariantCaller extends EvidenceProcessorBase {
 	}
 	public void annotateBreakpoints(BreakendAnnotator annotator) {
 		log.info("Annotating Calls");
-		List<File> normalFiles = Lists.newArrayList();
-		List<File> tumourFiles = Lists.newArrayList();
+		List<File> normalFiles = new ArrayList<>();
+		List<File> tumourFiles = new ArrayList<>();
 		for (EvidenceSource source : evidence) {
 			if (source instanceof SAMEvidenceSource) {
 				SAMEvidenceSource samSource = (SAMEvidenceSource)source;
@@ -267,7 +267,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 		}
 	}
 	public SequentialReferenceCoverageLookup getReferenceLookup(List<File> samFiles) {
-		List<CloseableIterator<SAMRecord>> toMerge = Lists.newArrayList();
+		List<CloseableIterator<SAMRecord>> toMerge = new ArrayList<>();
 		for (File f : samFiles) {
 			SamReader reader = processContext.getSamReader(f);
 			toClose.add(reader);

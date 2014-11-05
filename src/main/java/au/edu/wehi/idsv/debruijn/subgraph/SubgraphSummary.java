@@ -1,10 +1,10 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
 
@@ -58,7 +58,7 @@ public class SubgraphSummary {
 	 * on all ancestor nodes will immediately return the root
 	 */
 	private static void collapseToAncestor(SubgraphSummary start) {
-		List<SubgraphSummary> children = Lists.newArrayList();
+		List<SubgraphSummary> children = new ArrayList<>();
 		SubgraphSummary root = start;
 		while (root.parent != null) {
 			children.add(root);

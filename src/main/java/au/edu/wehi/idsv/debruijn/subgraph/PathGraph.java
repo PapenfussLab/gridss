@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import au.edu.wehi.idsv.Defaults;
@@ -25,7 +26,7 @@ public class PathGraph extends DeBruijnPathGraph<DeBruijnSubgraphNode, SubgraphP
 			}
 		}));
 		for (SubgraphPathNode n : toSplit) {
-			List<Integer> lengths = Lists.newArrayList();
+			List<Integer> lengths = new ArrayList<>();
 			List<Long> path = n.getPath();
 			int currentLength = 0;
 			boolean currentIsReference = getGraph().getKmer(path.get(0)).isReference();

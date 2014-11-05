@@ -63,7 +63,7 @@ public class TestHelper {
 
 	@SafeVarargs
 	public static <T> List<T> L(T[]... list) {
-		List<T> result = Lists.newArrayList();
+		List<T> result = new ArrayList<>();
 		for (int i = 0; i < list.length; i++) {
 			if (list[i] == null)
 				continue;
@@ -650,7 +650,7 @@ public class TestHelper {
 		assert (sequence.length() >= graph.getK());
 		byte[] qual = new byte[sequence.length()];
 		Arrays.fill(qual, (byte) 1);
-		List<Long> result = Lists.newArrayList();
+		List<Long> result = new ArrayList<>();
 		for (ReadKmer rk : new ReadKmerIterable(graph.getK(), B(sequence),
 				qual, false, false)) {
 			result.add(rk.kmer);

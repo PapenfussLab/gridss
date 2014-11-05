@@ -3,6 +3,7 @@ package au.edu.wehi.idsv.debruijn;
 import htsjdk.samtools.util.Log;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Deque;
 import java.util.Iterator;
@@ -38,9 +39,9 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	private static Log log = Log.getInstance(DeBruijnPathGraph.class);
 	protected final PathNodeFactory<T, PN> factory;
 	private final DeBruijnGraphBase<T> graph;
-	private final List<PN> pathList = Lists.newArrayList();
-	private final List<List<PN>> pathNext = Lists.newArrayList();
-	private final List<List<PN>> pathPrev = Lists.newArrayList();
+	private final List<PN> pathList = new ArrayList<>();
+	private final List<List<PN>> pathNext = new ArrayList<>();
+	private final List<List<PN>> pathPrev = new ArrayList<>();
 	private int pathCount = 0;
 	private int nodeTaversalCount;
 	/**
@@ -799,7 +800,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 * @return path including breaks
 	 */
 	protected List<PN> splitPathToEnsureBreaksAt(Iterable<PN> path, SortedSet<Integer> breaksAt) {
-		List<PN> result = Lists.newArrayList();
+		List<PN> result = new ArrayList<>();
 		int offset = 0;
 		for (PN n : path) {
 			SortedSet<Integer> breaksOffsets = breaksAt.subSet(offset + 1, offset + n.length());
@@ -846,7 +847,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 		}
 		if (sumlength != node.length()) throw new IllegalArgumentException("kmer path lengths must sum to node path length");
 		// replace the source node with the split ones in the path graph
-		List<PN> result = Lists.newArrayList();
+		List<PN> result = new ArrayList<>();
 		int offset = 0;
 		for (int i = 0; i < lengths.size(); i++) {
 			result.add(factory.createPathNode(node, offset, lengths.get(i), getGraph()));

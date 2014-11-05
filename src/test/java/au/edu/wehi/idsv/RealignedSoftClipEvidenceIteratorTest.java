@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -19,9 +20,9 @@ public class RealignedSoftClipEvidenceIteratorTest extends TestHelper {
 	private List<SoftClipEvidence> out;
 	@Before
 	public void setup() {
-		sv = Lists.newArrayList();
-		realigned = Lists.newArrayList();
-		out = Lists.newArrayList();
+		sv = new ArrayList<>();
+		realigned = new ArrayList<>();
+		out = new ArrayList<>();
 	}
 	public void go() {
 		sv = sorted(sv);
