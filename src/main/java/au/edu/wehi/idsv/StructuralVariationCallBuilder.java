@@ -22,10 +22,12 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private final List<SoftClipEvidence> scList = new ArrayList<>();
 	private final List<NonReferenceReadPair> rpList = new ArrayList<>();
 	private final List<VariantContextDirectedEvidence> assList = new ArrayList<>();
+	private BreakendSummary calledBreakend;
 	public StructuralVariationCallBuilder(ProcessingContext processContext, VariantContextDirectedEvidence parent) {
 		super(processContext, parent);
 		this.processContext = processContext;
 		this.parent = parent;
+		calledBreakend = parent.getBreakendSummary();
 	}
 	public StructuralVariationCallBuilder addEvidence(DirectedEvidence evidence) {
 		if (evidence == null) throw new NullPointerException();
@@ -44,7 +46,6 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		return this;
 	}
 	public VariantContextDirectedEvidence make() {
-		BreakendSummary calledBreakend = parent.getBreakendSummary();
 		Collections.sort(assList, AssemblyByBestDesc);
 		Collections.sort(scList, SoftClipByBestDesc);
 		// override the breakpoint call to ensure untemplated sequence is present in the output 
@@ -155,9 +156,17 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		return result;
 	}
 	private void aggregateAssemblyAttributes() {
-		List<VariantContextDirectedEvidence> list = Lists.newArrayList(assList);
-		list.add(parent);
-		setIntAttributeSumOrMax(list, VcfAttributes.ASSEMBLY_EVIDENCE_COUNT, false);
+		List<VariantContextDirectedEvidence> fullList = Lists.newArrayList(assList);
+		List<VariantContextDirectedEvidence> list = Lists.newArrayList(fullList);
+		if (processContext.getVariantCallingParameters().callOnlyAssemblies) {
+			for (int i = list.size(); i >= 0; i--) {
+				BreakendSummary bs = list.get(i).getBreakendSummary();
+				if (!(bs instanceof BreakpointSummary) || !((BreakpointSummary)bs).overlaps(calledBreakend)) {
+					list.remove(i);
+				}
+			}
+		}
+		setIntAttributeSumOrMax(fullList, VcfAttributes.ASSEMBLY_EVIDENCE_COUNT, false);
 		setIntAttributeSumOrMax(list, VcfAttributes.ASSEMBLY_MAPPED, false);
 		setIntAttributeSumOrMax(list, VcfAttributes.ASSEMBLY_MAPQ_REMOTE_MAX, true);
 		setIntAttributeSumOrMax(list, VcfAttributes.ASSEMBLY_MAPQ_REMOTE_TOTAL, false);
