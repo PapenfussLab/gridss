@@ -270,7 +270,7 @@ public class TestHelper {
 	public static ProcessingContext getContext() {
 		ProcessingContext pc = new ProcessingContext(getFSContext(),
 				new ArrayList<Header>(), new SoftClipParameters(),
-				new ReadPairParameters(), new AssemblyParameters(),
+				new ReadPairParameters(), new AssemblyParameters() {{ minReads = 2; }},
 				new RealignmentParameters(), new VariantCallingParameters(),
 				SMALL_FA_FILE, false, false);
 		pc.setUseAsyncIO(false);

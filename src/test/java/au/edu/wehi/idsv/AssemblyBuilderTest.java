@@ -13,6 +13,8 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes.Subset;
+import au.edu.wehi.idsv.vcf.VcfFileUtil;
+import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.collect.Lists;
@@ -37,7 +39,7 @@ public class AssemblyBuilderTest extends TestHelper {
 			.referenceAnchor(0, 1)
 			.direction(BWD)
 			.contributingEvidence(Lists.newArrayList((DirectedEvidence)SCE(FWD, Read(0, 1, "1M2S"))));
-		assertTrue(ab.makeVariant().isFiltered());
+		assertTrue(ab.makeVariant().getFilters().contains(VcfFilter.ASSEMBLY_TOO_FEW_READ.filter()));
 	}
 	@Test
 	public void should_filter_mate_anchored_assembly_shorter_than_read_length() {
@@ -46,7 +48,7 @@ public class AssemblyBuilderTest extends TestHelper {
 			.mateAnchor(0, 1)
 			.direction(BWD)
 			.contributingEvidence(Lists.newArrayList((DirectedEvidence)NRRP(OEA(0, 1, "3M", false))));
-		assertTrue(ab.makeVariant().isFiltered());
+		assertTrue(ab.makeVariant().getFilters().contains(VcfFilter.ASSEMBLY_TOO_SHORT.filter()));
 	}
 	@Test
 	public void read_length_filter_should_not_apply_to_anchored_breakend_assembly() {
@@ -76,9 +78,11 @@ public class AssemblyBuilderTest extends TestHelper {
 	public void should_assembly_base_qualities() {
 		AssemblyBuilder ab = new AssemblyBuilder(getContext(), AES())
 			.assemblyBases(B("AA"))
+			.assemblyBaseQuality(new byte[] { 1, 2})
 			.referenceAnchor(0, 1)
 			.direction(BWD);
-		assertFalse(ab.makeVariant().isFiltered());
+		assertEquals(1, ab.makeVariant().getBreakendQuality()[0]);
+		assertEquals(2, ab.makeVariant().getBreakendQuality()[1]);
 	}
 	@Test
 	public void should_set_assembly_consensus() {

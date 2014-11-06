@@ -514,7 +514,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 					.make()).make().isFiltered());
 		assertFalse(new StructuralVariationCallBuilder(getContext(),
 				(VariantContextDirectedEvidence)minimalBreakend()
-					.breakpoint(new BreakpointSummary(new BreakendSummary(0, FWD, 100, 200), new BreakendSummary(0, BWD, 116, 216)), null)
+					.breakpoint(new BreakpointSummary(new BreakendSummary(0, FWD, 100, 200), new BreakendSummary(0, BWD, 216, 316)), null)
 					.make()).make().isFiltered());
 	}
 }

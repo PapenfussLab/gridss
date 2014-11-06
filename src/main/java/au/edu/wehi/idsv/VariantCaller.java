@@ -130,7 +130,8 @@ public class VariantCaller extends EvidenceProcessorBase {
 					CloseableIterator<DirectedEvidence> evidenceIt = null;
 					try {
 						EvidenceClusterProcessor processor = new EvidenceClusterProcessor(processContext);
-						evidenceIt = getAllEvidence(processContext.getVariantCallingParameters().callOnlyAssemblies);
+						// TODO: linear pass over breakpoints by including all remote evidence
+						evidenceIt = getAllEvidence(processContext.getVariantCallingParameters().callOnlyAssemblies, false);
 						writeMaximalCliquesToVcf(
 								processContext,
 								processor,
@@ -240,7 +241,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 			normalCoverage = getReferenceLookup(normalFiles);
 			tumourCoverage = getReferenceLookup(tumourFiles);
 			BreakendAnnotator referenceAnnotator  = new SequentialCoverageAnnotator(processContext, normalCoverage, tumourCoverage);
-			evidenceIt = getAllEvidence(false);
+			evidenceIt = getAllEvidence(false, true);
 			BreakendAnnotator evidenceAnnotator = new SequentialEvidenceAnnotator(processContext, evidenceIt);
 			it = getAllCalledVariants();
 			while (it.hasNext()) {

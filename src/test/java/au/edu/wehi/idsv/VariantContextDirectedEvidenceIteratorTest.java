@@ -15,7 +15,7 @@ import org.junit.Test;
 import com.google.common.collect.Lists;
 
 
-public class VariantContextDirectedEvidenceIteratorTest  extends TestHelper {
+public class VariantContextDirectedEvidenceIteratorTest extends TestHelper {
 	private List<SAMRecord> realigned;	
 	private List<VariantContext> vcf;
 	private List<VariantContextDirectedEvidence> out;
@@ -25,7 +25,13 @@ public class VariantContextDirectedEvidenceIteratorTest  extends TestHelper {
 		vcf = new ArrayList<>();
 		out = new ArrayList<>();
 	}
+	public static ProcessingContext getContext() {
+		ProcessingContext pc = TestHelper.getContext();
+		pc.getAssemblyParameters().minReads = 0;
+		return pc;
+	}
 	public void go() {
+		
 		out = Lists.newArrayList(new VariantContextDirectedEvidenceIterator(getContext(), AES(), vcf.iterator(), realigned.iterator()));
 		// check output is in order
 		//for (int i = 0; i < out.size() - 1; i++) {

@@ -15,6 +15,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
@@ -29,7 +30,6 @@ import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredAssembler;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 import au.edu.wehi.idsv.pipeline.SortRealignedAssemblies;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
-import au.edu.wehi.idsv.util.AsyncBufferedIteratorTest;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
@@ -38,10 +38,17 @@ import com.google.common.collect.ImmutableList;
 
 
 public class AssemblyEvidenceSource extends EvidenceSource {
+	public boolean isIncludeRemote() {
+		return includeRemote;
+	}
+	public void setIncludeRemote(boolean includeRemote) {
+		this.includeRemote = includeRemote;
+	}
 	private static final Log log = Log.getInstance(AssemblyEvidenceSource.class);
 	private final List<SAMEvidenceSource> source;
 	private final int maxSourceFragSize;
 	private final FileSystemContext fsc;
+	private boolean includeRemote = false;
 	/**
 	 * Generates assembly evidence based on the given evidence
 	 * @param evidence evidence for creating assembly
@@ -77,6 +84,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		return (CloseableIterator<DirectedEvidence>)(Object)iterator(
 				fsc.getAssemblyVcfForChr(input, chr),
 				fsc.getRealignmentBamForChr(input, chr),
+				fsc.getAssemblyRemoteVcfForChr(input, chr),
 				chr);
 	}
 	@SuppressWarnings("unchecked") // can I do checked covariant iterator casting in java? 
@@ -86,13 +94,33 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		return (CloseableIterator<DirectedEvidence>)(Object)iterator(
 			fsc.getAssemblyVcf(input),
 			fsc.getRealignmentBam(input),
+			fsc.getAssemblyRemoteVcf(input),
 			"");
 	}
-	private CloseableIterator<VariantContextDirectedEvidence> iterator(File vcf, File realignment, String chr) {
+	private CloseableIterator<VariantContextDirectedEvidence> iterator(File vcf, File realignment, File remoteRealigned, String chr) {
 		if (!isProcessingComplete()) {
 			log.error("Assemblies not yet generated.");
 			throw new RuntimeException("Assemblies not yet generated");
 		}
+		CloseableIterator<VariantContextDirectedEvidence> local = localIterator(vcf, realignment);
+		CloseableIterator<VariantContextDirectedEvidence> it = local;
+		if (includeRemote) {
+			@SuppressWarnings("unchecked")
+			CloseableIterator<VariantContextDirectedEvidence> remote = (CloseableIterator<VariantContextDirectedEvidence>)(Object)remoteIterator(remoteRealigned);
+			it = new AutoClosingMergedIterator<>(ImmutableList.of(local, remote), DirectedEvidenceOrder.ByNatural);
+		}
+		return new AsyncBufferedIterator<VariantContextDirectedEvidence>(it, "Assembly " + chr);
+	}
+	private CloseableIterator<VariantContextDirectedBreakpointRemote> remoteIterator(File remoteRealigned) {
+		if (remoteRealigned.exists()) {
+			final VCFFileReader reader = new VCFFileReader(remoteRealigned, false);
+			CloseableIterator<VariantContext> rawVcfIt = reader.iterator();
+			return new VariantContextDirectedBreakpointRemoteIterator(processContext, this,
+					new AutoClosingIterator<>(rawVcfIt, ImmutableList.<Closeable>of(reader)));
+		}
+		return new AutoClosingIterator<>(Collections.<VariantContextDirectedBreakpointRemote>emptyIterator());
+	}
+	private CloseableIterator<VariantContextDirectedEvidence> localIterator(File vcf, File realignment) {
 		List<Closeable> toClose = new ArrayList<>();
 		CloseableIterator<SAMRecord> realignedIt; 
 		if (isRealignmentComplete()) {
@@ -117,8 +145,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				processContext,
 				(int)((2 + processContext.getAssemblyParameters().maxSubgraphFragmentWidth + processContext.getAssemblyParameters().subgraphAssemblyMargin) * maxSourceFragSize),
 				evidenceIt), toClose);
-		// FIXME: TODO: add remote assemblies to iterator
-		return new AsyncBufferedIterator<VariantContextDirectedEvidence>(sortedIt, "Assembly " + chr);
+		return sortedIt;
 	}
 	private boolean isProcessingComplete() {
 		boolean done = true;

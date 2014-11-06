@@ -200,8 +200,8 @@ public class AssemblyBuilder {
 			throw new IllegalStateException("Assembly not anchored to reference either directly, or through mate reads");
 		}
 		// apply common filter:
-		if (evidence.size() == 1) {
-			builder.filter(VcfFilter.ASSEMBLY_SINGLE_READ.filter()); // read count = 1
+		if (evidence.size() < processContext.getAssemblyParameters().minReads) {
+			builder.filter(VcfFilter.ASSEMBLY_TOO_FEW_READ.filter());
 		}
 		builder.source(source);
 		return (VariantContextDirectedEvidence)recalculatePhredLLR(processContext, (VariantContextDirectedEvidence)builder.make());

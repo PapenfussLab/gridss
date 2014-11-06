@@ -28,10 +28,15 @@ public abstract class EvidenceProcessorBase implements Closeable {
 		this.output = output;
 		this.evidence = evidence;
 	}
-	protected CloseableIterator<DirectedEvidence> getAllEvidence(boolean assemblyOnly) {
+	protected CloseableIterator<DirectedEvidence> getAllEvidence(boolean assemblyOnly, boolean includeRemoteAssembly) {
 		List<Iterator<DirectedEvidence>> evidenceItList = new ArrayList<>();
 		for (EvidenceSource source : evidence) {
-			if (assemblyOnly && !(source instanceof AssemblyEvidenceSource)) continue;
+			if (source instanceof AssemblyEvidenceSource) {
+				((AssemblyEvidenceSource)source).setIncludeRemote(includeRemoteAssembly);
+			} else if (assemblyOnly) {
+				// only include assembly evidence if assemblyOnly is set
+				continue;
+			}
 			Iterator<DirectedEvidence> it = source.iterator();
 			if (it instanceof Closeable) toClose.add((Closeable)it);
 			evidenceItList.add(it);
