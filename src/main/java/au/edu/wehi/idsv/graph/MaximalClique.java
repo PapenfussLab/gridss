@@ -47,7 +47,7 @@ public class MaximalClique {
 		/**
 		 * Debugging checks asserting the internal data structures are correct 
 		 */
-		private void assertScanlineInvariants(long x) {
+		private boolean assertScanlineInvariants(long x) {
 			if (nodeIt.hasNext() && nodeIt.peek().startX <= x) throw new RuntimeException(String.format("%s not yet processed by scanline %d", nodeIt.peek(), x));
 			for (GraphNode n : nodes.keySet()) {
 				boolean shouldBeActive = n.startX <= x && n.endX > x;
@@ -58,6 +58,7 @@ public class MaximalClique {
 					active.assertContains(n);
 				}
 			}
+			return true;
 		}
 		public class CliqueScanlineActiveSet {
 			private final NavigableMap<Long, YNode> active = Maps.newTreeMap();
@@ -201,7 +202,7 @@ public class MaximalClique {
 				GraphNode endingHere = activeEndingX.poll();
 				outputBuffer.addAll(active.remove(endingHere));
 			}
-			assertScanlineInvariants(currentX);
+			assert(assertScanlineInvariants(currentX));
 		}
 		@Override
 		protected GraphNode computeNext() {
