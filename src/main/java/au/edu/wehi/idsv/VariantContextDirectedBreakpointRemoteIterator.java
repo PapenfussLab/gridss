@@ -9,12 +9,12 @@ import java.util.Iterator;
 public class VariantContextDirectedBreakpointRemoteIterator implements CloseableIterator<VariantContextDirectedBreakpointRemote> {
 	private final ProcessingContext processContext;
 	private final EvidenceSource source;
-	private final Iterator<VariantContext> it;
+	private final Iterator<? extends VariantContext> it;
 	private boolean closed = false;
 	public VariantContextDirectedBreakpointRemoteIterator(
 			ProcessingContext processContext,
 			EvidenceSource source,
-			Iterator<VariantContext> it) {
+			Iterator<? extends VariantContext> it) {
 		this.processContext = processContext;
 		this.source = source;
 		this.it = it;
@@ -29,7 +29,7 @@ public class VariantContextDirectedBreakpointRemoteIterator implements Closeable
 	}
 	@Override
 	public VariantContextDirectedBreakpointRemote next() {
-		return new VariantContextDirectedBreakpointRemote(processContext, source, next());
+		return new VariantContextDirectedBreakpointRemote(processContext, source, it.next());
 	}
 	@Override
 	public void remove() {
