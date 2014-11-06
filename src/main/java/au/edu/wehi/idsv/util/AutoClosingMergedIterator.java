@@ -58,7 +58,7 @@ public class AutoClosingMergedIterator<T> implements Closeable, CloseableIterato
 		if (stillOpen != null) {
 			for (int i = stillOpen.size() - 1; i >= 0 ; i--) {
 				AutoClosingIterator<T> it = stillOpen.get(i);
-				if (!it.hasNext() || forceClosed) {
+				if (forceClosed || !it.hasNext()) {
 					CloserUtil.close(it);
 					stillOpen.remove(i);
 				}

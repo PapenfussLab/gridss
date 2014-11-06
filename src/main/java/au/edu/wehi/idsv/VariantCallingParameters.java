@@ -12,5 +12,5 @@ public class VariantCallingParameters {
 	/**
 	 * Minimum indel size
 	 */
-	public int minIndelSize = 16;
+	public int minIndelSize = 100; // DREAM challenge SV min size is 100bp //16;
 }

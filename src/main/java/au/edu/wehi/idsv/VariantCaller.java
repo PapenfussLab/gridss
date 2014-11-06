@@ -23,6 +23,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 
@@ -163,7 +164,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 			variants.add(getVariants(processContext.getFileSystemContext().getBreakpointVcf(output)));
 		}
 		CloseableIterator<IdsvVariantContext> merged = new AutoClosingMergedIterator<IdsvVariantContext>(variants, IdsvVariantContext.ByLocationStart);
-		return merged;
+		return new AsyncBufferedIterator<>(merged, "all breakpoints");
 	}
 	public void close() {
 		super.close();
@@ -244,12 +245,18 @@ public class VariantCaller extends EvidenceProcessorBase {
 			it = getAllCalledVariants();
 			while (it.hasNext()) {
 				IdsvVariantContext rawVariant = it.next();
-				if (rawVariant instanceof VariantContextDirectedEvidence && ((VariantContextDirectedEvidence)rawVariant).isValid()) {
-					VariantContextDirectedEvidence annotatedVariant = evidenceAnnotator.annotate(referenceAnnotator.annotate((VariantContextDirectedEvidence)rawVariant));
-					if (annotator != null) {
-						annotatedVariant = annotator.annotate(annotatedVariant);
+				if (rawVariant instanceof VariantContextDirectedEvidence) {
+					VariantContextDirectedEvidence annotatedVariant = (VariantContextDirectedEvidence)rawVariant;
+					if (rawVariant.isValid()) {
+						annotatedVariant = referenceAnnotator.annotate((VariantContextDirectedEvidence)rawVariant);
+						annotatedVariant = evidenceAnnotator.annotate(annotatedVariant);
+						if (annotator != null) {
+							annotatedVariant = annotator.annotate(annotatedVariant);
+						}
+						if (!annotatedVariant.isFiltered() || Defaults.WRITE_FILTERED_CALLS) {
+							vcfWriter.add(annotatedVariant);
+						}
 					}
-					vcfWriter.add(annotatedVariant);
 				}
 			}
 			CloserUtil.close(vcfWriter);
@@ -268,12 +275,13 @@ public class VariantCaller extends EvidenceProcessorBase {
 	public SequentialReferenceCoverageLookup getReferenceLookup(List<File> samFiles) {
 		List<CloseableIterator<SAMRecord>> toMerge = new ArrayList<>();
 		for (File f : samFiles) {
-			CloseableIterator<SAMRecord> it = processContext.getSamReaderIterator(f, SortOrder.coordinate);
+			// one read-ahead thread per input file
+			CloseableIterator<SAMRecord> it = new AsyncBufferedIterator<>(processContext.getSamReaderIterator(f, SortOrder.coordinate), f.getName() + " reference coverage");
 			toClose.add(it);
-			it = processContext.applyCommonSAMRecordFilters(it);
 			toMerge.add(it);
 		}
-		CloseableIterator<SAMRecord> merged = new AutoClosingMergedIterator<SAMRecord>(toMerge, new SAMRecordQueryNameComparator()); 
+		CloseableIterator<SAMRecord> merged = new AutoClosingMergedIterator<SAMRecord>(toMerge, new SAMRecordQueryNameComparator());
+		toClose.add(merged);
 		return new SequentialReferenceCoverageLookup(merged, 1024);
 	}
 	private void writeOutput() {

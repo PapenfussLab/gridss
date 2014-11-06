@@ -11,6 +11,7 @@ import au.edu.wehi.idsv.vcf.VcfFilter;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
@@ -21,10 +22,6 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private final List<SoftClipEvidence> scList = new ArrayList<>();
 	private final List<NonReferenceReadPair> rpList = new ArrayList<>();
 	private final List<VariantContextDirectedEvidence> assList = new ArrayList<>();
-	private int referenceNormalReadCount = 0;
-	private int referenceNormalSpanningPairCount = 0;
-	private int referenceTumourReadCount = 0;
-	private int referenceTumourSpanningPairCount = 0;
 	public StructuralVariationCallBuilder(ProcessingContext processContext, VariantContextDirectedEvidence parent) {
 		super(processContext, parent);
 		this.processContext = processContext;
@@ -60,9 +57,6 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			calledBreakend = bp.getBreakendSummary();
 			breakpoint(bp.getBreakendSummary(), bp.getUntemplatedSequence());
 		}
-		// Set reference counts
-		attribute(VcfAttributes.REFERENCE_COUNT_READ.attribute(), new int[] { referenceNormalReadCount, referenceTumourReadCount });
-		attribute(VcfAttributes.REFERENCE_COUNT_READPAIR.attribute(), new int[] { referenceNormalSpanningPairCount, referenceTumourSpanningPairCount });
 		aggregateAssemblyAttributes();
 		aggregateReadPairAttributes();
 		aggregateSoftClipAttributes();		
@@ -75,7 +69,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 					&& bp.end - bp.start == bp.end2 - bp.start2
 					&& Math.abs(bp.start - bp.start2) < processContext.getVariantCallingParameters().minIndelSize
 					) {
-				// highly likely to be an artifact
+				// likely to be an artifact
 				// due to noise/poor alignment (eg bowtie2 2.1.0 would misalign reference reads)
 				// and a nearby (real) indel
 				// causing real indel mates to be assembled with noise read
@@ -124,8 +118,8 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		}
 		
 		attribute(VcfAttributes.ASSEMBLY_LOG_LIKELIHOOD_RATIO.attribute(), assllr);
-		attribute(VcfAttributes.SOFTCLIP_LOG_LIKELIHOOD_RATIO.attribute(), new double[] {scllrn, scllrt });
-		attribute(VcfAttributes.READPAIR_LOG_LIKELIHOOD_RATIO.attribute(), new double[] {rpllrn, rpllrt });
+		attribute(VcfAttributes.SOFTCLIP_LOG_LIKELIHOOD_RATIO.attribute(), ImmutableList.of(scllrn, scllrt ));
+		attribute(VcfAttributes.READPAIR_LOG_LIKELIHOOD_RATIO.attribute(), ImmutableList.of(rpllrn, rpllrt ));
 		double llr = assllr + scllrn + scllrt + rpllrn + rpllrt;
 		attribute(VcfAttributes.LOG_LIKELIHOOD_RATIO.attribute(), llr);
 		phredScore(llr);
@@ -274,13 +268,11 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		return list;
 	}
 	public StructuralVariationCallBuilder referenceReads(int normalCount, int tumourCount) {
-		referenceNormalReadCount = normalCount;
-		referenceTumourReadCount = tumourCount;
+		attribute(VcfAttributes.REFERENCE_COUNT_READ.attribute(), ImmutableList.of(normalCount, tumourCount ));
 		return this;
 	}
 	public StructuralVariationCallBuilder referenceSpanningPairs(int normalCount, int tumourCount) {
-		referenceNormalSpanningPairCount = normalCount;
-		referenceTumourSpanningPairCount = tumourCount;
+		attribute(VcfAttributes.REFERENCE_COUNT_READPAIR.attribute(), ImmutableList.of(normalCount, tumourCount));
 		return this;
 	}
 	private String getID() {

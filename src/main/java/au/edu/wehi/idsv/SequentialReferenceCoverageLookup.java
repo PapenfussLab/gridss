@@ -46,10 +46,7 @@ public class SequentialReferenceCoverageLookup implements Closeable {
 	 */
 	public SequentialReferenceCoverageLookup(Iterator<SAMRecord> it, int windowSize) {
 		if (it instanceof Closeable) toClose.add((Closeable)it);
-		this.reads = Iterators.peekingIterator(
-				new AsyncBufferedIterator<SAMRecord>(
-						new FilteringIterator(it, new AggregateFilter(ImmutableList.of(new AlignedFilter(true), new DuplicateReadFilter()))),
-						"reference coverage"));
+		this.reads = Iterators.peekingIterator(new FilteringIterator(it, new AggregateFilter(ImmutableList.of(new AlignedFilter(true), new DuplicateReadFilter()))));
 		this.largestWindow = windowSize;
 		jumpTo(0);
 	}
