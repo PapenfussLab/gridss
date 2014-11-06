@@ -5,6 +5,7 @@ import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SortingCollection;
 import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextComparator;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFHeader;
@@ -37,6 +38,14 @@ public class VcfFileUtil {
 			throw new RuntimeException(e);
 		}
 	}
+	public static void sort(ProcessingContext processContext, File input, File output) {
+		try {
+			new SortCallable(processContext, input, output).call();
+		} catch (IOException e) {
+			log.error(log);
+			throw new RuntimeException(e);
+		}
+	}
 	/**
 	 * VCF Sort task
 	 * @author cameron.d
@@ -47,11 +56,20 @@ public class VcfFileUtil {
 		private final File input;
 		private final File output;
 		private final Comparator<VariantContext> sortComparator;
+		private final boolean indexed;
 		public SortCallable(ProcessingContext processContext, File input, File output, Comparator<VariantContext> sortComparator) {
+			this(processContext, input, output, sortComparator, false);
+		}
+		public SortCallable(ProcessingContext processContext, File input, File output) {
+			this(processContext, input, output, new VariantContextComparator(processContext.getDictionary()), true);
+		}
+		private SortCallable(ProcessingContext processContext, File input, File output, Comparator<VariantContext> sortComparator, boolean writeIndex) {
+			
 			this.processContext = processContext;
 			this.input = input;
 			this.output = output;
 			this.sortComparator = sortComparator;
+			this.indexed = writeIndex;
 		}
 		@Override
 		public Void call() throws IOException {
@@ -82,7 +100,7 @@ public class VcfFileUtil {
 				rit.close();
 				reader.close();
 				collection.doneAdding();
-				writer = processContext.getVariantContextWriter(FileSystemContext.getWorkingFileFor(output));
+				writer = processContext.getVariantContextWriter(FileSystemContext.getWorkingFileFor(output), indexed);
 		    	wit = collection.iterator();
 				while (wit.hasNext()) {
 					writer.add(wit.next());

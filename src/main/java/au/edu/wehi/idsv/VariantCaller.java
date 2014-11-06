@@ -199,7 +199,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 		}
 		VariantContextWriter vcfWriter = null;
 		try {
-			vcfWriter = processContext.getVariantContextWriter(vcf);
+			vcfWriter = processContext.getVariantContextWriter(vcf, true);
 			log.info("Start calling maximal cliques for ", vcf);
 			Iterator<VariantContextDirectedEvidence> it = processor.iterator();
 			while (it.hasNext()) {
@@ -235,7 +235,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 		CloseableIterator<IdsvVariantContext> it = null;
 		CloseableIterator<DirectedEvidence> evidenceIt = null;
 		try {
-			vcfWriter = processContext.getVariantContextWriter(FileSystemContext.getWorkingFileFor(output));
+			vcfWriter = processContext.getVariantContextWriter(FileSystemContext.getWorkingFileFor(output), true);
 			normalCoverage = getReferenceLookup(normalFiles);
 			tumourCoverage = getReferenceLookup(tumourFiles);
 			BreakendAnnotator referenceAnnotator  = new SequentialCoverageAnnotator(processContext, normalCoverage, tumourCoverage);

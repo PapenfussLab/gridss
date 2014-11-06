@@ -247,7 +247,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			try {
 				FileSystemContext.getWorkingFileFor(breakendVcf).delete();
 				FileSystemContext.getWorkingFileFor(realignmentFastq).delete();
-				vcfWriter = processContext.getVariantContextWriter(FileSystemContext.getWorkingFileFor(breakendVcf));
+				vcfWriter = processContext.getVariantContextWriter(FileSystemContext.getWorkingFileFor(breakendVcf), true);
 				fastqWriter = new FastqBreakpointWriter(processContext.getFastqWriterFactory().newWriter(FileSystemContext.getWorkingFileFor(realignmentFastq)));
 				ReadEvidenceAssembler assembler = getAssembler();
 				final ProgressLogger progress = new ProgressLogger(log);

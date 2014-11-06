@@ -17,6 +17,7 @@ import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.tribble.index.IndexCreator;
 import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
@@ -155,10 +156,16 @@ public class ProcessingContext implements Closeable {
 		factory.setUseAsyncIo(isUseAsyncIO());
 		return factory;
 	}
-	public VariantContextWriterBuilder getVariantContextWriterBuilder(File output) {
+	public VariantContextWriterBuilder getVariantContextWriterBuilder(File output, boolean createIndex) {
 		VariantContextWriterBuilder builder = new VariantContextWriterBuilder()
 			.setOutputFile(output)
 			.setReferenceDictionary(getReference().getSequenceDictionary());
+		builder.clearOptions();
+		if (createIndex) {
+			builder.setOption(Options.INDEX_ON_THE_FLY);
+		} else {
+			builder.clearIndexCreator();
+		}
 		if (isUseAsyncIO()) {
 			builder.setOption(Options.USE_ASYNC_IO);
 		}
@@ -171,8 +178,8 @@ public class ProcessingContext implements Closeable {
 	 * @param output file
 	 * @return opened output VCF stream
 	 */
-	public VariantContextWriter getVariantContextWriter(File file) {
-		VariantContextWriterBuilder builder = getVariantContextWriterBuilder(file);
+	public VariantContextWriter getVariantContextWriter(File file, boolean createIndex) {
+		VariantContextWriterBuilder builder = getVariantContextWriterBuilder(file, createIndex);
 		VariantContextWriter vcfWriter = builder.build();
 		final VCFHeader vcfHeader = new VCFHeader();
 		VcfConstants.addHeaders(vcfHeader);

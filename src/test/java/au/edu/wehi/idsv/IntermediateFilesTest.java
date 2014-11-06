@@ -133,7 +133,7 @@ public class IntermediateFilesTest extends TestHelper {
 		writer.close();
 	}
 	public void createVCF(ProcessingContext context, File file, VariantContext... data) {
-		VariantContextWriter writer = context.getVariantContextWriter(file);
+		VariantContextWriter writer = context.getVariantContextWriter(file, true);
 		for (VariantContext vc : data) {
 			writer.add(vc);
 		}

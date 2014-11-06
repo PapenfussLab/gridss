@@ -121,11 +121,11 @@ public class SortRealignedAssemblies extends DataTransformStep {
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				asswriters.add(processContext.getVariantContextWriter(fsc.getAssemblyRemoteUnsortedVcfForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName())));
+				asswriters.add(processContext.getVariantContextWriter(fsc.getAssemblyRemoteUnsortedVcfForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName()), false));
 				toClose.add(asswriters.get(asswriters.size() - 1));
 			}
 		} else {
-			asswriters.add(processContext.getVariantContextWriter(fsc.getAssemblyRemoteUnsortedVcf(source.getFileIntermediateDirectoryBasedOn())));
+			asswriters.add(processContext.getVariantContextWriter(fsc.getAssemblyRemoteUnsortedVcf(source.getFileIntermediateDirectoryBasedOn()), false));
 			toClose.add(asswriters.get(asswriters.size() - 1));
 		}
 	}

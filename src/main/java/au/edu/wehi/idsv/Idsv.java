@@ -251,7 +251,7 @@ public class Idsv extends CommandLineProgram {
 			out.add(builder.make());
 		}
 		Collections.sort(out, IdsvVariantContext.ByLocationStart);
-		VariantContextWriter writer = getContext().getVariantContextWriter(new File(OUTPUT.toString() + ".indel.vcf"));
+		VariantContextWriter writer = getContext().getVariantContextWriter(new File(OUTPUT.toString() + ".indel.vcf"), true);
 		for (VariantContext vc : out) {
 			writer.add(vc);
 		}
