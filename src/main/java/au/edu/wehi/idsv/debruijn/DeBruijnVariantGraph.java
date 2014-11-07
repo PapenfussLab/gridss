@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv.debruijn;
 
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.Log;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -20,6 +21,14 @@ import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SoftClipEvidence;
 
 public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends DeBruijnGraphBase<T> {
+	/**
+	 * Once a contig has support from this many distinct evidence sources, the exact values
+	 * are unlikely to matter too much and with 16m support kmers in DREAM data, large support
+	 * sets are quite computationally expensive
+	 */
+	private static final int SUPPORT_SIZE_TO_START_APPROXIMATION = 1024;
+	private static final int SUPPORT_SIZE_HARD_LIMIT = 100000;
+	private static final Log log = Log.getInstance(DeBruijnVariantGraph.class);
 	protected final BreakendDirection direction;
 	protected final ProcessingContext processContext;
 	protected final AssemblyEvidenceSource source;
@@ -169,12 +178,6 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 				.contributingEvidence(support)
 				.assembledBaseCount(getEvidenceBaseCount(breakendPath, false), getEvidenceBaseCount(breakendPath, true));
 	}
-	/**
-	 * Once a contig has support from this many distinct evidence sources, the exact values
-	 * are unlikely to matter too much and with 16m support kmers in DREAM data, large support
-	 * sets are quite computationally expensive
-	 */
-	//private static final int SUPPORT_SIZE_TO_START_APPROXIMATION = 512;
 	private AssemblyBuilder addEvidenceSupportSinglePass(List<Long> path, int referenceKmersAtStartOfPath, AssemblyBuilder builder) {
 		Set<DirectedEvidence> support = new HashSet<>();
 		int tumourBaseCount = 0;
@@ -195,7 +198,26 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 						normalBaseCount++;
 					}
 				}
-				support.addAll(list);
+				if (support.size() < SUPPORT_SIZE_TO_START_APPROXIMATION) {
+					support.addAll(list);
+					if (support.size() > SUPPORT_SIZE_HARD_LIMIT) {
+						log.warn(String.format("Hit support size hard limit of %d - no longer processing additional support", SUPPORT_SIZE_HARD_LIMIT));
+					}
+				} else if (support.size() < SUPPORT_SIZE_HARD_LIMIT){
+					// approximate our level of support
+					if (offset % (getK() / 2) == 0) {
+						// reduce our update frequency to twice per kmer bases
+						// this should still get most reads as soft clips
+						// are added as the first evidence and RPs should
+						// map fully
+						support.addAll(list);
+						if (support.size() > SUPPORT_SIZE_HARD_LIMIT) {
+							log.warn(String.format("Hit support size hard limit of %d - no longer processing additional support", SUPPORT_SIZE_HARD_LIMIT));
+						}
+					}
+				} else {
+					// reached hard limit - we should log this
+				}
 			}
 			offset++;
 		}

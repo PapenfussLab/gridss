@@ -155,12 +155,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 						ss.getMinAnchor(),
 						ss.getMaxAnchor(),
 						getSafetyWidth()));
-				if (shouldVisualise(timeoutExceeded)) {
-					// debugging dump it even though we're not going to process it any further
-					visualisePrecollapsePathGraph(ss, new PathGraphAssembler(this, this.parameters, ss.getAnyKmer()));
-				}
 			}
-			if (ss.getMaxAnchor() < position && !timeoutExceeded) {
+			if (ss.getMaxAnchor() < position || timeoutExceeded) {
 				PathGraphAssembler pga = new PathGraphAssembler(this, this.parameters, ss.getAnyKmer());
 				if (parameters.maxBaseMismatchForCollapse > 0) {
 					if (shouldVisualise(timeoutExceeded)) {
