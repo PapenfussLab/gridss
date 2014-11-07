@@ -104,7 +104,7 @@ public class DeBruijnAnchoredGraph extends DeBruijnVariantGraph<DeBruijnNodeBase
 			softclipSize += offsetSize;
 		}
 		int anchorLen = assemblyLength - softclipSize;
-		AssemblyBuilder builder = debruijnContigAssembly(path)
+		AssemblyBuilder builder = debruijnContigAssembly(path, anchorLen)
 			.assemblerName(ASSEMBLER_NAME)
 			.referenceAnchor(referenceIndex, position)
 			.anchorLength(anchorLen)

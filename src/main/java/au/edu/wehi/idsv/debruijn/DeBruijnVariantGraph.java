@@ -2,6 +2,8 @@ package au.edu.wehi.idsv.debruijn;
 
 import htsjdk.samtools.SAMRecord;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -14,6 +16,7 @@ import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.RealignedRemoteSoftClipEvidence;
+import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SoftClipEvidence;
 
 public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends DeBruijnGraphBase<T> {
@@ -151,14 +154,56 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 //		}
 //		return readLength;
 //	}
-	protected AssemblyBuilder debruijnContigAssembly(List<Long> path) {
-		Set<DirectedEvidence> support = getSupportingEvidence(path);
+	protected AssemblyBuilder debruijnContigAssembly(List<Long> path, int referenceKmersAtStartOfPath) {
 		AssemblyBuilder builder = new AssemblyBuilder(processContext, source)
 			.direction(direction)
-			.assemblyBases(getBaseCalls(path))
-			.assemblyBaseQuality(getBaseQuals(path))
-			.contributingEvidence(support)
-			.assembledBaseCount(getEvidenceBaseCount(path, false), getEvidenceBaseCount(path, true));
+			.assemblyBases(getBaseCalls(path));
+		addEvidenceSupportSinglePass(path, referenceKmersAtStartOfPath, builder);
 		return builder;
+	}
+	private AssemblyBuilder addEvidenceSupportMaintainable(List<Long> path, int referenceKmersAtStartOfPath, AssemblyBuilder builder) {
+		List<Long> breakendPath = path.subList(referenceKmersAtStartOfPath, path.size());
+		Set<DirectedEvidence> support = getSupportingEvidence(breakendPath);
+		return builder
+				.assemblyBaseQuality(getBaseQuals(path))
+				.contributingEvidence(support)
+				.assembledBaseCount(getEvidenceBaseCount(breakendPath, false), getEvidenceBaseCount(breakendPath, true));
+	}
+	/**
+	 * Once a contig has support from this many distinct evidence sources, the exact values
+	 * are unlikely to matter too much and with 16m support kmers in DREAM data, large support
+	 * sets are quite computationally expensive
+	 */
+	//private static final int SUPPORT_SIZE_TO_START_APPROXIMATION = 512;
+	private AssemblyBuilder addEvidenceSupportSinglePass(List<Long> path, int referenceKmersAtStartOfPath, AssemblyBuilder builder) {
+		Set<DirectedEvidence> support = new HashSet<>();
+		int tumourBaseCount = 0;
+		int normalBaseCount = 0;
+		List<Integer> qual = new ArrayList<Integer>(path.size());
+		int offset = 0;
+		for (Long node : path) {
+			T kmer = getKmer(node);
+			List<DirectedEvidence> list = kmer.getSupportingEvidenceList();
+			qual.add(kmer.getWeight() - list.size());
+			if (offset >= referenceKmersAtStartOfPath) {
+				for (DirectedEvidence e : list) {
+					SAMEvidenceSource source = (SAMEvidenceSource)e.getEvidenceSource();
+					boolean evidenceIsTumour = source != null && source.isTumour();
+					if (evidenceIsTumour) {
+						tumourBaseCount++;
+					} else {
+						normalBaseCount++;
+					}
+				}
+				support.addAll(list);
+			}
+			offset++;
+		}
+		// pad out qualities to match the path length
+		for (int i = 0; i < getK() - 1; i++) qual.add(qual.get(qual.size() - 1));
+		byte[] quals = rescaleBaseQualities(qual);
+		return builder.assemblyBaseQuality(quals)
+				.contributingEvidence(support)
+				.assembledBaseCount(normalBaseCount, tumourBaseCount);
 	}
 }

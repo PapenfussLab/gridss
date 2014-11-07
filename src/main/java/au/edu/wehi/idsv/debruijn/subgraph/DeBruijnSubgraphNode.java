@@ -12,6 +12,10 @@ import com.google.common.primitives.Ints;
 
 public class DeBruijnSubgraphNode extends DeBruijnNodeBase {
 	/**
+	 * Safety cut-off to prevent high computational burden for degenerate mapping locations
+	 */
+	private static final int MAX_EVIDENCE_TO_CHECK_FOR_BEST_POSITION = 1024;
+	/**
 	 * Genomic coordinates of positions this kmer is aligned to the reference
 	 * 
 	 * Note: reads with less than k bases mapped to the reference will be considered unanchored 
@@ -53,7 +57,8 @@ public class DeBruijnSubgraphNode extends DeBruijnNodeBase {
 		TIntIntHashMap lookup = new TIntIntHashMap();
 		int bestWeight = 0;
 		int bestPos = -1;
-		for (int i = 0; i < positions.size(); i++) {
+		int stride = Math.max(1, positions.size() / MAX_EVIDENCE_TO_CHECK_FOR_BEST_POSITION);
+		for (int i = 0; i < positions.size(); i += stride) {
 			int added = lookup.adjustOrPutValue(positions.get(i), weights.get(i), weights.get(i));
 			if (added > bestWeight) {
 				bestWeight = added;

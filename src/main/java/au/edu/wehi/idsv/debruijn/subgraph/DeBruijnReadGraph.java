@@ -252,20 +252,20 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		return reads;
 	}
 	private VariantContextDirectedEvidence toAssemblyEvidence(List<Long> contigKmers) {
-		int refCount = 0;
+		int refCount = -1;
 		int refAnchor = 0;
 		Integer mateAnchor = null;
-		// Iterate over reference anchor
-		for (long kmer : contigKmers) {
-			if (!getKmer(kmer).isReference()) break;
-			refCount++;
-			refAnchor = getKmer(kmer).getBestReferencePosition();
+		// Advance to first non-reference kmer
+		while (getKmer(contigKmers.get(++refCount)).isReference());
+		if (refCount > 0) {
+			refAnchor = getKmer(contigKmers.get(refCount - 1)).getBestReferencePosition();
 		}
 		// Iterate over breakpoint kmers
 		boolean messagePrinted = false;
-		for (long kmer : contigKmers) {
-			if (getKmer(kmer).isReference()) continue;
-			Integer mp = direction == BreakendDirection.Forward ? getKmer(kmer).getMaxMatePosition() : getKmer(kmer).getMinMatePosition();
+		for (int i = refCount; i < contigKmers.size(); i++) {
+			DeBruijnSubgraphNode kmer = getKmer(contigKmers.get(i));
+			if (kmer.isReference()) continue;
+			Integer mp = direction == BreakendDirection.Forward ? kmer.getMaxMatePosition() : kmer.getMinMatePosition();
 			if (mateAnchor == null) {
 				mateAnchor = mp;
 			} else {
@@ -291,13 +291,13 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 					// read pair and long soft clip sharing same kmer
 					// soft clip is sufficiently long that no anchor kmer exists
 					if (!messagePrinted) {
-						log.debug("Unsufficiently anchored SC being treated as mate evidence at ", getKmer(kmer).getSupportingEvidenceList().iterator().next().getBreakendSummary().toString(processContext));
+						log.debug("Unsufficiently anchored SC being treated as mate evidence at ", kmer.getSupportingEvidenceList().iterator().next().getBreakendSummary().toString(processContext));
 						messagePrinted = true;
 					}
 				}
 			}
 		}
-		AssemblyBuilder builder = debruijnContigAssembly(contigKmers)
+		AssemblyBuilder builder = debruijnContigAssembly(contigKmers, refCount)
 				.assemblerName(ASSEMBLER_NAME);
 		if (refCount > 0) {
 			// anchored read

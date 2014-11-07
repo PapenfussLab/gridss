@@ -11,6 +11,7 @@ import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
+import au.edu.wehi.idsv.vcf.VcfAttributes.Subset;
 
 import com.google.common.collect.Lists;
 
@@ -256,5 +257,15 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		g.assembleContigsBefore(10000);
 		g.removeBefore(10000);
 		assertEquals(0, g.size());
+	}
+	@Test
+	public void should_count_only_breakend_evidence() {
+		DeBruijnReadGraph g = G(0, 3, FWD);
+		g.addEvidence(SCE(FWD, SES(true),  withSequence("TATG", Read(0, 10, "3M1S"))));
+		g.addEvidence(SCE(FWD, SES(false), withSequence("TATT", Read(0, 10, "3M1S"))));
+		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		assertEquals(2, result.size());
+		assertEquals(1, result.get(0).getEvidenceCount(Subset.ALL));
+		assertEquals(1, result.get(1).getEvidenceCount(Subset.ALL));
 	}
 }
