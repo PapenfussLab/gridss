@@ -29,7 +29,7 @@ public class SubgraphSizeTimeoutVisualisationTest extends IntermediateFilesTest 
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), output);
 		aes.ensureAssembled();
 		File dir = new File(new File(new File(super.testFolder.getRoot(), "visualisation"), "chr12"), "200000");
-		File[] subgraph = dir.listFiles((FileFilter)new WildcardFileFilter("*.subgraph.gexf"));
+		File[] subgraph = dir.listFiles((FileFilter)new WildcardFileFilter("*.precollapse.gexf"));
 		assertTrue(subgraph.length > 0);
 	}
 	@Override

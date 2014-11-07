@@ -101,7 +101,44 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	}
 	private int maxSubgraphSize = 4096;
 	private boolean exceedsTimeout(SubgraphSummary ss) {
-		return ss.getMaxAnchor() - ss.getMinAnchor() > parameters.maxSubgraphFragmentWidth * source.getMaxConcordantFragmentSize();
+		return ss.getMaxAnchor() - ss.getMinAnchor() > getSafetyWidth();
+	}
+	private int getSafetyWidth() {
+		return (int)(parameters.maxSubgraphFragmentWidth * source.getMaxConcordantFragmentSize());
+	}
+	private void visualisePrecollapsePathGraph(SubgraphSummary ss, PathGraphAssembler pga) {
+		File directory = new File(new File(
+				parameters.debruijnGraphVisualisationDirectory,
+				processContext.getDictionary().getSequence(referenceIndex).getSequenceName()),
+				String.format("%d", ss.getMinAnchor() - ss.getMinAnchor() % 100000));
+		String filename = String.format("%s_%s_%d-%d_%d.precollapse.gexf",
+				direction == BreakendDirection.Forward ? "f" : "b",
+				processContext.getDictionary().getSequence(referenceIndex).getSequenceName(),
+				ss.getMinAnchor(),
+				ss.getMaxAnchor(),
+				graphsExported); 
+		directory.mkdirs();
+		new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k)
+			.snapshot(pga)
+			.saveTo(new File(directory, filename));
+	}
+	private void visualisePathGraph(SubgraphSummary ss, StaticDeBruijnSubgraphPathGraphGexfExporter graphExporter) {
+		if (graphExporter == null) return;
+		File directory = new File(new File(
+				parameters.debruijnGraphVisualisationDirectory,
+				processContext.getDictionary().getSequence(referenceIndex).getSequenceName()),
+				String.format("%d", ss.getMinAnchor() - ss.getMinAnchor() % 100000));
+		String filename = String.format("%s_%s_%d-%d_%d.subgraph.gexf",
+				direction == BreakendDirection.Forward ? "f" : "b",
+				processContext.getDictionary().getSequence(referenceIndex).getSequenceName(),
+				ss.getMinAnchor(),
+				ss.getMaxAnchor(),
+				graphsExported++);
+		directory.mkdirs();
+		graphExporter.saveTo(new File(directory, filename));
+	}
+	private boolean shouldVisualise(boolean timeout) {
+		return parameters.debruijnGraphVisualisationDirectory != null && (parameters.visualiseAll || (timeout && parameters.visualiseTimeouts));
 	}
 	/**
 	 * Assembles contigs which do not have any relevance at or after the given position 
@@ -113,32 +150,24 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		for (SubgraphSummary ss : subgraphs) {
 			boolean timeoutExceeded = exceedsTimeout(ss);
 			if (timeoutExceeded) {
-				log.warn(String.format("Subgraph at %s:%d-%d exceeded maximum width - calling immediately",
+				log.warn(String.format("Subgraph at %s:%d-%d exceeded maximum width of %d - skipping.",
 						processContext.getDictionary().getSequence(this.referenceIndex).getSequenceName(),
 						ss.getMinAnchor(),
-						ss.getMaxAnchor()));
+						ss.getMaxAnchor(),
+						getSafetyWidth()));
+				if (shouldVisualise(timeoutExceeded)) {
+					// debugging dump it even though we're not going to process it any further
+					visualisePrecollapsePathGraph(ss, new PathGraphAssembler(this, this.parameters, ss.getAnyKmer()));
+				}
 			}
-			if (ss.getMaxAnchor() < position || timeoutExceeded) {
+			if (ss.getMaxAnchor() < position && !timeoutExceeded) {
 				PathGraphAssembler pga = new PathGraphAssembler(this, this.parameters, ss.getAnyKmer());
 				if (parameters.maxBaseMismatchForCollapse > 0) {
-					if (parameters.debruijnGraphVisualisationDirectory != null && (parameters.visualiseAll || (timeoutExceeded && parameters.visualiseTimeouts))) {
-						File directory = new File(new File(
-								parameters.debruijnGraphVisualisationDirectory,
-								processContext.getDictionary().getSequence(referenceIndex).getSequenceName()),
-								String.format("%d", ss.getMinAnchor() - ss.getMinAnchor() % 100000));
-						String filename = String.format("%s_%s_%d-%d_%d.precollapse.gexf",
-								direction == BreakendDirection.Forward ? "f" : "b",
-								processContext.getDictionary().getSequence(referenceIndex).getSequenceName(),
-								ss.getMinAnchor(),
-								ss.getMaxAnchor(),
-								graphsExported); 
-						directory.mkdirs();
-						new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k)
-							.snapshot(pga)
-							.saveTo(new File(directory, filename));
+					if (shouldVisualise(timeoutExceeded)) {
+						visualisePrecollapsePathGraph(ss, pga);
 					}
-					// simplify graph
 					try {
+						// simplify graph
 						pga.collapse(parameters.maxBaseMismatchForCollapse, parameters.collapseBubblesOnly);
 					} catch (AlgorithmRuntimeSafetyLimitExceededException e) {
 						timeoutExceeded = true;
@@ -150,7 +179,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 					log.debug(String.format("Subgraph width=%s [%d, %d] has %d paths: %s", width, ss.getMinAnchor(), ss.getMaxAnchor(), pga.getPathCount(), debugOutputKmerSpread(ss)));
 				}
 				StaticDeBruijnSubgraphPathGraphGexfExporter graphExporter = null;
-				if (parameters.debruijnGraphVisualisationDirectory != null && (parameters.visualiseAll || (timeoutExceeded && parameters.visualiseTimeouts))) {
+				if (shouldVisualise(timeoutExceeded)) {
 					graphExporter = new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k);
 				}
 				for (List<Long> contig : pga.assembleContigs(graphExporter)) {
@@ -159,19 +188,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 						contigs.add(variant);
 					}
 				}
-				if (graphExporter != null) {
-					File directory = new File(new File(
-							parameters.debruijnGraphVisualisationDirectory,
-							processContext.getDictionary().getSequence(referenceIndex).getSequenceName()),
-							String.format("%d", ss.getMinAnchor() - ss.getMinAnchor() % 100000));
-					String filename = String.format("%s_%s_%d-%d_%d.subgraph.gexf",
-							direction == BreakendDirection.Forward ? "f" : "b",
-							processContext.getDictionary().getSequence(referenceIndex).getSequenceName(),
-							ss.getMinAnchor(),
-							ss.getMaxAnchor(),
-							graphsExported++);
-					directory.mkdirs();
-					graphExporter.saveTo(new File(directory, filename));
+				if (shouldVisualise(timeoutExceeded)) {
+					visualisePathGraph(ss, graphExporter);
 				}
 			}
 		}
