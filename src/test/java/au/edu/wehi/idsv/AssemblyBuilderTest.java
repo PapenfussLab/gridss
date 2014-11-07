@@ -13,7 +13,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes.Subset;
-import au.edu.wehi.idsv.vcf.VcfFileUtil;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 

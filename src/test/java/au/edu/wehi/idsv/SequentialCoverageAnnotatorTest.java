@@ -9,6 +9,7 @@ import java.util.List;
 
 import org.junit.Test;
 
+import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import au.edu.wehi.idsv.vcf.VcfAttributes.Subset;
 
 
@@ -16,7 +17,8 @@ import au.edu.wehi.idsv.vcf.VcfAttributes.Subset;
 public class SequentialCoverageAnnotatorTest extends TestHelper {
 	public VariantContextDirectedEvidence go(List<DirectedEvidence> evidence, List<SAMRecord> ref, VariantContextDirectedEvidence toAnnotate) {
 		Collections.sort(ref, new SAMRecordCoordinateComparator());
-		return new SequentialCoverageAnnotator(getContext(), new SequentialReferenceCoverageLookup(ref.iterator(), 1024), null).annotate(toAnnotate);
+		return new SequentialCoverageAnnotator(getContext(), new SequentialReferenceCoverageLookup(ref.iterator(),
+				new SAMFlagReadPairConcordanceCalculator(new IdsvMetrics()), 1024), null).annotate(toAnnotate);
 	}
 	@Test
 	public void should_add_reference_counts() {

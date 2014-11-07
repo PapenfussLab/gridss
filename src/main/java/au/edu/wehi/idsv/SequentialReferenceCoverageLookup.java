@@ -12,7 +12,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
 
-import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.SlidingWindowList;
 
 import com.google.common.collect.ImmutableList;
@@ -27,9 +26,10 @@ import com.google.common.collect.Queues;
  * @author Daniel Cameron
  *
  */
-public class SequentialReferenceCoverageLookup implements Closeable {
+public class SequentialReferenceCoverageLookup implements Closeable, ReferenceCoverageLookup {
 	private final List<Closeable> toClose = new ArrayList<>();
 	private final PeekingIterator<SAMRecord> reads;
+	private final ReadPairConcordanceCalculator pairing;
 	private final PriorityQueue<Integer> currentReferenceRead = Queues.newPriorityQueue();
 	private final PriorityQueue<Integer> currentStartReferencePairs = Queues.newPriorityQueue();;
 	private final PriorityQueue<Integer> currentEndReferencePairs = Queues.newPriorityQueue();;
@@ -44,7 +44,8 @@ public class SequentialReferenceCoverageLookup implements Closeable {
 	 * @param windowSize window size of out-of-order querying.
 	 * @param reads reads to process. <b>Must</b> be coordinate sorted
 	 */
-	public SequentialReferenceCoverageLookup(Iterator<SAMRecord> it, int windowSize) {
+	public SequentialReferenceCoverageLookup(Iterator<SAMRecord> it, ReadPairConcordanceCalculator pairing, int windowSize) {
+		this.pairing = pairing;
 		if (it instanceof Closeable) toClose.add((Closeable)it);
 		this.reads = Iterators.peekingIterator(new FilteringIterator(it, new AggregateFilter(ImmutableList.of(new AlignedFilter(true), new DuplicateReadFilter()))));
 		this.largestWindow = windowSize;
@@ -70,22 +71,18 @@ public class SequentialReferenceCoverageLookup implements Closeable {
 		if (count == null) return 0;
 		return (int)count;
 	}
-	/**
-	 * Number of reference reads providing evidence against a breakend immediately after the given base
-	 * @param referenceIndex contig
-	 * @param position position immediate before putative breakend
-	 * @return number of reads spanning the putative breakend
+	/* (non-Javadoc)
+	 * @see au.edu.wehi.idsv.ReferenceCoverageLookup#readsSupportingNoBreakendAfter(int, int)
 	 */
+	@Override
 	public int readsSupportingNoBreakendAfter(int referenceIndex, int position) {
 		ensure(referenceIndex, position);
 		return getCount(readCounts, referenceIndex, position);
 	}
-	/**
-	 * Number of read pairs providing evidence against a breakend immediately after the given base
-	 * @param referenceIndex contig
-	 * @param position position immediate before putative breakend
-	 * @return number of read pairs spanning the putative breakend
+	/* (non-Javadoc)
+	 * @see au.edu.wehi.idsv.ReferenceCoverageLookup#readPairsSupportingNoBreakendAfter(int, int)
 	 */
+	@Override
 	public int readPairsSupportingNoBreakendAfter(int referenceIndex, int position) {
 		ensure(referenceIndex, position);
 		return getCount(pairCounts, referenceIndex, position);
@@ -139,20 +136,25 @@ public class SequentialReferenceCoverageLookup implements Closeable {
 	private void processCurrentReads() {
 		while (reads.hasNext() && reads.peek().getReferenceIndex() == currentReferenceIndex && reads.peek().getAlignmentStart() == currentPosition) {
 			SAMRecord read = reads.next();
+			if (read.getReadUnmappedFlag()) continue;
 			// TODO: process CIGAR instead of just taking the whole alignment length as support for the reference
 			currentReferenceRead.add(read.getAlignmentEnd());
-			if (read.getReadPairedFlag()
-					&& !read.getMateUnmappedFlag()
-					&& read.getProperPairFlag()
-					&& read.getMateReferenceIndex() == currentReferenceIndex
-					// only get first of the pair
-					&& (read.getAlignmentStart() < read.getMateAlignmentStart()
-						|| (read.getAlignmentStart() == read.getMateAlignmentStart() && read.getFirstOfPairFlag()))) {
-				// we're a proper pair
+			if (isLowerMappedOfNonOverlappingConcordantPair(read)) {
 				currentStartReferencePairs.add(read.getAlignmentEnd());
 				currentEndReferencePairs.add(read.getMateAlignmentStart());
 			}
 		}
+	}
+	private boolean isLowerMappedOfNonOverlappingConcordantPair(SAMRecord read) {
+		return !read.getReadUnmappedFlag()
+				&& read.getReadPairedFlag()
+				&& !read.getMateUnmappedFlag()
+				&& read.getAlignmentEnd() < read.getMateAlignmentStart()
+				&& read.getReferenceIndex() == read.getMateReferenceIndex()
+				&& (read.getAlignmentStart() < read.getMateAlignmentStart()
+						|| (read.getAlignmentStart() == read.getMateAlignmentStart() && read.getFirstOfPairFlag()))
+				&& pairing.isConcordant(read);
+				
 	}
 	/**
 	 * Stops processing the current reference index and advances to the given index

@@ -9,12 +9,12 @@ package au.edu.wehi.idsv;
  */
 public class SequentialCoverageAnnotator implements BreakendAnnotator {
 	private final ProcessingContext context;
-	private final SequentialReferenceCoverageLookup referenceNormal;
-	private final SequentialReferenceCoverageLookup referenceTumour;
+	private final ReferenceCoverageLookup referenceNormal;
+	private final ReferenceCoverageLookup referenceTumour;
 	public SequentialCoverageAnnotator(
 			ProcessingContext context,
-			SequentialReferenceCoverageLookup referenceNormal,
-			SequentialReferenceCoverageLookup referenceTumour) {
+			ReferenceCoverageLookup referenceNormal,
+			ReferenceCoverageLookup referenceTumour) {
 		this.context = context;
 		this.referenceNormal = referenceNormal;
 		this.referenceTumour = referenceTumour;
