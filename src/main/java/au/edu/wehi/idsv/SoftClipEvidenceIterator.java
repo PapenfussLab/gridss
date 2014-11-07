@@ -13,7 +13,7 @@ import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Queues;
 
 /**
- * Iterators over soft clip evidence
+ * Iterators over soft clip evidence in the same order as the input iterator 
  * @author Daniel Cameron
  *
  */
@@ -30,16 +30,18 @@ public class SoftClipEvidenceIterator extends AbstractIterator<SoftClipEvidence>
 	private void fillBuffer() {
 		while (it.hasNext() && buffer.isEmpty()) {
 			SAMRecord record = it.next();
-			if (SAMRecordUtil.getStartSoftClipLength(record) > 0) {
-				SoftClipEvidence sce = SoftClipEvidence.create(processContext, source, BreakendDirection.Backward, record);
-				if (sce.meetsEvidenceCritera(processContext.getSoftClipParameters())) {
-					buffer.add(sce);
+			if (!record.getReadUnmappedFlag()) {
+				if (SAMRecordUtil.getStartSoftClipLength(record) > 0) {
+					SoftClipEvidence sce = SoftClipEvidence.create(processContext, source, BreakendDirection.Backward, record);
+					if (sce.meetsEvidenceCritera(processContext.getSoftClipParameters())) {
+						buffer.add(sce);
+					}
 				}
-			}
-			if (SAMRecordUtil.getEndSoftClipLength(record) > 0) {
-				SoftClipEvidence sce = SoftClipEvidence.create(processContext, source, BreakendDirection.Forward, record);
-				if (sce.meetsEvidenceCritera(processContext.getSoftClipParameters())) {
-					buffer.add(sce);
+				if (SAMRecordUtil.getEndSoftClipLength(record) > 0) {
+					SoftClipEvidence sce = SoftClipEvidence.create(processContext, source, BreakendDirection.Forward, record);
+					if (sce.meetsEvidenceCritera(processContext.getSoftClipParameters())) {
+						buffer.add(sce);
+					}
 				}
 			}
 		}

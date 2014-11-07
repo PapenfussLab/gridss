@@ -285,30 +285,32 @@ public class ExtractEvidence implements Closeable {
 				SAMRecordUtil.ensureNmTag(referenceWalker, record);
 				int offset = record.getReadUnmappedFlag() ? dictionary.size() : record.getReferenceIndex();
 				if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) {
-					SoftClipEvidence startEvidence = null;
-					SoftClipEvidence endEvidence = null;
-					if (SAMRecordUtil.getStartSoftClipLength(record) > 0) {
-						startEvidence = SoftClipEvidence.create(processContext, source, BreakendDirection.Backward, record);
-						if (startEvidence.meetsEvidenceCritera(processContext.getSoftClipParameters())) {
-							if (processContext.getRealignmentParameters().shouldRealignBreakend(startEvidence)) {
-								realignmentWriters.get(offset % realignmentWriters.size()).write(startEvidence);
+					if (!record.getReadUnmappedFlag()) {
+						SoftClipEvidence startEvidence = null;
+						SoftClipEvidence endEvidence = null;
+						if (SAMRecordUtil.getStartSoftClipLength(record) > 0) {
+							startEvidence = SoftClipEvidence.create(processContext, source, BreakendDirection.Backward, record);
+							if (startEvidence.meetsEvidenceCritera(processContext.getSoftClipParameters())) {
+								if (processContext.getRealignmentParameters().shouldRealignBreakend(startEvidence)) {
+									realignmentWriters.get(offset % realignmentWriters.size()).write(startEvidence);
+								}
+							} else {
+								startEvidence = null;
 							}
-						} else {
-							startEvidence = null;
 						}
-					}
-					if (SAMRecordUtil.getEndSoftClipLength(record) > 0) {
-						endEvidence = SoftClipEvidence.create(processContext, source, BreakendDirection.Forward, record);
-						if (endEvidence.meetsEvidenceCritera(processContext.getSoftClipParameters())) {
-							if (processContext.getRealignmentParameters().shouldRealignBreakend(endEvidence)) {
-								realignmentWriters.get(offset % realignmentWriters.size()).write(endEvidence);
+						if (SAMRecordUtil.getEndSoftClipLength(record) > 0) {
+							endEvidence = SoftClipEvidence.create(processContext, source, BreakendDirection.Forward, record);
+							if (endEvidence.meetsEvidenceCritera(processContext.getSoftClipParameters())) {
+								if (processContext.getRealignmentParameters().shouldRealignBreakend(endEvidence)) {
+									realignmentWriters.get(offset % realignmentWriters.size()).write(endEvidence);
+								}
+							} else {
+								endEvidence = null;
 							}
-						} else {
-							endEvidence = null;
 						}
-					}
-					if (startEvidence != null || endEvidence != null) {
-						scwriters.get(offset % scwriters.size()).addAlignment(record);
+						if (startEvidence != null || endEvidence != null) {
+							scwriters.get(offset % scwriters.size()).addAlignment(record);
+						}
 					}
 				}
 				if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) {

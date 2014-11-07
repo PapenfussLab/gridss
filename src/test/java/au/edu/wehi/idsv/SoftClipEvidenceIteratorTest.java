@@ -47,4 +47,12 @@ public class SoftClipEvidenceIteratorTest extends TestHelper {
 		go();
 		assertEquals(0, out.size());
 	}
+	@Test
+	public void should_ignore_unmapped_softclips() {
+		SAMRecord r = Read(0, 1, "50S50M");
+		r.setReadUnmappedFlag(true);
+		sv.add(r);
+		go();
+		assertEquals(0, out.size());
+	}
 }

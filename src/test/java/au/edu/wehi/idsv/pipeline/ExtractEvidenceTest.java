@@ -224,4 +224,14 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 		
 		assertEquals(0, getFastqRecords(source).size());
 	}
+	@Test
+	public void DREAM_unmapped_softclip_should_be_ignored() {
+		SAMRecord r = Read(1, 1, "50M50S"); 
+		r.setReadUnmappedFlag(true);
+		createInput(r);
+		ProcessingContext pc = getCommandlineContext();
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
+		ExtractEvidence e = new ExtractEvidence(pc, source); e.process(ProcessStep.ALL_STEPS); e.close();
+		assertEquals(0, getSC(source).size());
+	}
 }
