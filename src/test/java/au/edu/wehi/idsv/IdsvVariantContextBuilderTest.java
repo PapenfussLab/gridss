@@ -10,9 +10,11 @@ import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 import java.util.ArrayList;
+import java.util.Collection;
 
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -281,5 +283,11 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		assertFalse( minimalVariant().attribute("LR", new Object[] { 0, 0f, 0d, "", null }).make().hasAttribute("LR"));
 		assertFalse( minimalVariant().attribute("LR", Lists.newArrayList("")).make().hasAttribute("LR"));
 		assertFalse( minimalVariant().attribute("LR", Lists.<Object>newArrayList(0, 0L, 0f, 0d, "", null)).make().hasAttribute("LR"));
+	}
+	@SuppressWarnings("unchecked")
+	@Test
+	public void should_not_trim_array_as_bcf_requires_counts_to_match_header() {
+		Object attr = minimalVariant().attribute("LR", ImmutableList.<Integer>of(1,0)).make().getAttribute("LR");
+		assertEquals(2, ((Collection<Integer>)attr).size());
 	}
 }

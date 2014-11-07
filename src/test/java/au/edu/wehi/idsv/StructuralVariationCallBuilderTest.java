@@ -517,4 +517,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 					.breakpoint(new BreakpointSummary(new BreakendSummary(0, FWD, 100, 200), new BreakendSummary(0, BWD, 216, 316)), null)
 					.make()).make().isFiltered());
 	}
+	@Test
+	public void best_assembly_should_contain_sc() {
+		
+	}
 }

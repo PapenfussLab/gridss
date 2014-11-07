@@ -7,6 +7,7 @@ import java.util.Collections;
 import java.util.List;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfAttributes.Subset;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
 import com.google.common.base.Function;
@@ -47,6 +48,12 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	}
 	public VariantContextDirectedEvidence make() {
 		Collections.sort(assList, AssemblyByBestDesc);
+		for (int i = assList.size() - 1; i > 0; i--) {
+			// Only count unique assemblies
+			if (assList.get(i).getID() != null && assList.get(i).getID().equals(assList.get(i - 1).getID())) {
+				assList.remove(i);
+			}
+		}
 		Collections.sort(scList, SoftClipByBestDesc);
 		// override the breakpoint call to ensure untemplated sequence is present in the output 
 		if (assList.size() > 0 && assList.get(0) instanceof VariantContextDirectedBreakpoint) {
@@ -320,7 +327,8 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		public int compare(VariantContextDirectedEvidence o1, VariantContextDirectedEvidence o2) {
 			  return ComparisonChain.start()
 			        .compareTrueFirst(o1 instanceof VariantContextDirectedBreakpoint, o2 instanceof VariantContextDirectedBreakpoint)
-			        .compare(Models.llr(o2), Models.llr(o2)) // desc
+			        .compareTrueFirst(o1.getAssemblySupportCountSoftClip(Subset.ALL) > 0, o2.getAssemblySupportCountSoftClip(Subset.ALL) > 0)
+			        .compare(Models.llr(o2), Models.llr(o1)) // desc
 			        .result();
 		  }
 	};
