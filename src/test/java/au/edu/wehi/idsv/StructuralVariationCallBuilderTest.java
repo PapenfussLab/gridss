@@ -300,6 +300,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	private VariantContextDirectedEvidence fakeass(int offset) {
 		IdsvVariantContextBuilder x = minimalBreakend()
 				.breakend(new BreakendSummary(0, BWD, 1, 10), null);
+		x.id(Integer.toString(offset));
 		x.attribute(VcfAttributes.ASSEMBLY_EVIDENCE_COUNT.attribute(), offset + 1);
 		x.attribute(VcfAttributes.ASSEMBLY_LOG_LIKELIHOOD_RATIO.attribute(), (double)(offset + 2));
 		x.attribute(VcfAttributes.ASSEMBLY_MAPPED.attribute(), offset + 3);
@@ -343,6 +344,12 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		assertEquals(124, e.getAssemblyReadPairLengthMax(Subset.TUMOUR));
 		assertEquals(115, e.getAssemblySoftClipLengthMax(Subset.NORMAL));
 		assertEquals(125, e.getAssemblySoftClipLengthMax(Subset.TUMOUR));
+	}
+	@Test
+	public void should_merge_same_assembly_by_id() {
+		VariantContextDirectedEvidence v = fakeass(0);
+		VariantContextDirectedEvidence e = b(v, v, v);
+		assertEquals(v.getAssemblySoftClipLengthTotal(Subset.ALL), e.getAssemblySoftClipLengthTotal(Subset.ALL));
 	}
 	@Test
 	public void should_concat_assembly_strings() {

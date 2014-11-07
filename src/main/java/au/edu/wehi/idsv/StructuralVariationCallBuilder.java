@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
+
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfAttributes.Subset;
 import au.edu.wehi.idsv.vcf.VcfFilter;
@@ -50,7 +52,9 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		Collections.sort(assList, AssemblyByBestDesc);
 		for (int i = assList.size() - 1; i > 0; i--) {
 			// Only count unique assemblies
-			if (assList.get(i).getID() != null && assList.get(i).getID().equals(assList.get(i - 1).getID())) {
+			if (StringUtils.isNotEmpty(assList.get(i).getID())
+					&& !assList.get(i).getID().equals(".")
+					&& assList.get(i).getID().equals(assList.get(i - 1).getID())) {
 				assList.remove(i);
 			}
 		}
