@@ -135,6 +135,22 @@ public class PathGraphAssemblerTest extends TestHelper {
 		assertEquals("GGTACCCAAATGGG", S(g, result.get(0)));
 	}
 	@Test
+	public void should_not_assemble_back_into_reference() {
+		AssemblyParameters ap = new AssemblyParameters();
+		ap.k = 3;
+		ap.method = AssemblyMethod.DEBRUIJN_SUBGRAPH;
+		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 16;
+		ap.maxContigsPerAssembly = 1000;
+		ap.maxBaseMismatchForCollapse = 0;
+		DeBruijnReadGraph g = G(ap.k, FWD);
+		g.addEvidence(SCE(FWD, withSequence("ACTGT", Read(0, 10, "3M2S"))));
+		g.addEvidence(SCE(FWD, withSequence("GTCA", Read(0, 10, "3M1S"))));
+		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("ACT")));
+		List<LinkedList<Long>> result = pga.assembleContigs();
+		assertEquals(2, result.size());
+		assertEquals("ACTGT", S(g, result.get(0))); // don't extend into GTC reference kmer
+	}
+	@Test
 	public void should_order_assembly_by_breakend_weight() {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.k = 4;

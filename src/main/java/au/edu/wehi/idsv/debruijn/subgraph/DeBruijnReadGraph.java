@@ -150,7 +150,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		for (SubgraphSummary ss : subgraphs) {
 			boolean timeoutExceeded = exceedsTimeout(ss);
 			if (timeoutExceeded) {
-				log.warn(String.format("Subgraph at %s:%d-%d exceeded maximum width of %d - skipping.",
+				log.warn(String.format("Subgraph at %s:%d-%d exceeded maximum width of %d - calling",
 						processContext.getDictionary().getSequence(this.referenceIndex).getSequenceName(),
 						ss.getMinAnchor(),
 						ss.getMaxAnchor(),
