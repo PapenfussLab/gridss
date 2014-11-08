@@ -142,6 +142,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 					}
 				}
 			}
+			log.info("Identifying Breakpoints complete");
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		} finally {
