@@ -78,4 +78,9 @@ public class ReadKmerIterableTest extends TestHelper {
 		k = i.next(); assertFalse(k.containsAmbiguousBases);
 		assertFalse(i.hasNext());
 	}
+	@Test
+	public void should_return_empty_iterator_if_read_too_short() {
+		ReadKmerIterable rki = new ReadKmerIterable(2, B("A"), B("A"));
+		assertFalse(rki.iterator().hasNext());
+	}
 }

@@ -2,11 +2,13 @@ package au.edu.wehi.idsv.debruijn;
 
 import htsjdk.samtools.util.SequenceUtil;
 
+import java.util.Collections;
 import java.util.Iterator;
 
 import org.apache.commons.lang3.ArrayUtils;
 
 import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.Iterators;
 import com.google.common.primitives.UnsignedBytes;
 
 public class ReadKmerIterable implements Iterable<ReadKmer> {
@@ -20,9 +22,6 @@ public class ReadKmerIterable implements Iterable<ReadKmer> {
 	public ReadKmerIterable(int k, byte[] bases, byte[] qual, boolean reverse, boolean complement) {
 		if (bases == null) {
 			throw new NullPointerException("Missing read base information");
-		}
-		if (bases.length < k) {
-			throw new IllegalArgumentException("read length must be greater than k");
 		}
 		this.complement = complement;
 		this.k = k;
@@ -39,6 +38,7 @@ public class ReadKmerIterable implements Iterable<ReadKmer> {
 	}
 	@Override
 	public Iterator<ReadKmer> iterator() {
+		if (bases.length < k) return Collections.emptyIterator();
 		return new ReadKmerIterator();
 	}
 	private byte adjustBase(byte base) {
