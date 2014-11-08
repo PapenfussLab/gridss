@@ -13,6 +13,7 @@ import au.edu.wehi.idsv.vcf.VcfAttributes.Subset;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -59,11 +60,18 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			}
 		}
 		Collections.sort(scList, SoftClipByBestDesc);
-		// override the breakpoint call to ensure untemplated sequence is present in the output 
-		if (assList.size() > 0 && assList.get(0) instanceof VariantContextDirectedBreakpoint) {
-			VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)assList.get(0);
-			calledBreakend = bp.getBreakendSummary();
-			breakpoint(bp.getBreakendSummary(), assList.get(0).getBreakpointSequenceString());
+		VariantContextDirectedBreakpoint bestAssemblyBreakpoint = (VariantContextDirectedBreakpoint)Iterables.getFirst(Iterables.filter(assList, new Predicate<VariantContextDirectedEvidence>() {
+			@Override
+			public boolean apply(VariantContextDirectedEvidence input) {
+				return input instanceof VariantContextDirectedBreakpoint
+						// don't include remote breakpoints as their info (including coordinate) is of the remote position 
+						&& !(input instanceof VariantContextDirectedBreakpointRemote);
+			}
+		}), null);
+		if (bestAssemblyBreakpoint != null) {
+			// override the breakpoint call to ensure untemplated sequence is present in the output
+			calledBreakend = bestAssemblyBreakpoint.getBreakendSummary();
+			breakpoint(bestAssemblyBreakpoint.getBreakendSummary(), bestAssemblyBreakpoint.getBreakpointSequenceString());
 		} else if (scList.size() > 0 && scList.get(0) instanceof RealignedSoftClipEvidence) {
 			RealignedSoftClipEvidence bp = (RealignedSoftClipEvidence)scList.get(0);
 			calledBreakend = bp.getBreakendSummary();
