@@ -5,7 +5,7 @@ library(VariantAnnotation)
 source("libgridss.R")
 
 args<-commandArgs(trailingOnly=TRUE)
-file <- args[q]
+file <- args[1]
 print(file)
 #vcf <- readVcf("C:\\dev\\idsv\\778.vcf", "hg19_random")
 #vcf <- vcf[fixed(vcf)$FILTER == "."] # nrow(vcf[fixed(vcf)$FILTER != "."])
@@ -13,7 +13,7 @@ print(file)
 
 #file <- "CPCG0100-no-normal-assembly-support.vcf"
 # file <- "W:\\dream\\p23\\gridss.bt2-sorted.bam.bam\\bt2-sorted.bam.bam.vcf"
-# file <- "C:\\dev\\dream\\PCSI0048-novo-2.vcf"
+# file <- "C:\\dev\\dream\\PCSI0023-novo-2.vcf"
 vcf <- readVcf(file, "hg19_random")
 df <- gridss.truthdetails.processvcf.vcftodf(vcf)
 df[is.na(df)] <- 0
@@ -25,9 +25,9 @@ som <- som[(som$A_SCNormal + som$A_RPNormal) / (som$A_SC + som$A_RP) < 0.02,]
 # min coverage in the normal supporting the reference allele
 som <- som[som$RCNormal >= 6,]
 # at least 20% support for variant in the tumour data
-som <- som[som$A_SCTumour / (som$A_SCTumour + som$RCTumour) >= 0.20,]
+som <- som[(som$A_SCTumour + som$A_RPTumour) / (som$A_SCTumour + som$A_RPTumour + som$RCTumour + som$PCTumour) >= 0.20,]
 # assembly support from both sides
-som <- som[som$A_RM >= 2,]
+som <- som[som$A_RM == 2,]
 # found an exact breakpoint on both sides
 som <- som[som$A_SC >= 2,]
 # at least this many read pairs support the variant
@@ -42,5 +42,4 @@ nrow(somvcf)
 #writeVcf(somvcf, paste0(file, "-som.vcf"), nchunk = NA)
 # hack workaround for  VariantAnnotation bug
 writeLines(c(VariantAnnotation:::.makeVcfHeader(somvcf), VariantAnnotation:::.makeVcfMatrix(NULL, somvcf)),  paste0(file, "-som.vcf"))
-
 
