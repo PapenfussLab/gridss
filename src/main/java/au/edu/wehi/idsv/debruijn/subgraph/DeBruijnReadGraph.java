@@ -101,7 +101,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	}
 	private int maxSubgraphSize = 4096;
 	private boolean exceedsTimeout(SubgraphSummary ss) {
-		return ss.getMaxAnchor() - ss.getMinAnchor() > getSafetyWidth();
+		return ss.isAnchored() && ss.getMaxAnchor() - ss.getMinAnchor() > getSafetyWidth();
 	}
 	private int getSafetyWidth() {
 		return (int)(parameters.maxSubgraphFragmentWidth * source.getMaxConcordantFragmentSize());
@@ -156,7 +156,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 						ss.getMaxAnchor(),
 						getSafetyWidth()));
 			}
-			if (ss.getMaxAnchor() < position || timeoutExceeded) {
+			if ((ss.getMaxAnchor() < position || timeoutExceeded) && ss.isAnchored()) {
 				PathGraphAssembler pga = new PathGraphAssembler(this, this.parameters, ss.getAnyKmer());
 				if (parameters.maxBaseMismatchForCollapse > 0) {
 					if (shouldVisualise(timeoutExceeded)) {
