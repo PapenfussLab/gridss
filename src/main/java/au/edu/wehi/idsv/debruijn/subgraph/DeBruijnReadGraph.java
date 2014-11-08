@@ -224,7 +224,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	public void removeBefore(int position) {
 		List<SubgraphSummary> toRemove = new ArrayList<>();
 		for (SubgraphSummary ss : subgraphs) {
-			if (ss.getMaxAnchor() < position || exceedsTimeout(ss)) {
+			if (ss.getMaxAnchor() < position || exceedsTimeout(ss) || !ss.isAnchored()) {
 				for (long kmer : reachableFrom(ss.getAnyKmer())) {
 					remove(kmer);
 				}
@@ -337,6 +337,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			//assert(ss.getMaxAnchor() >= lastMax); // sort order
 			//lastMax = ss.getMaxAnchor();
 			assert(ss == ss.getRoot()); // only root subgraphs should be in list
+			assert(ss.getRoot().getMinAnchor() != Integer.MAX_VALUE);
+			assert(ss.getRoot().getMaxAnchor() != Integer.MIN_VALUE);
 		}
 		return true;
 	}

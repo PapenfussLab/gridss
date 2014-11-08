@@ -43,6 +43,9 @@ public class SubgraphSummary {
 	public int getMinAnchor() {
 		return minAnchor;
 	}
+	public boolean isAnchored() {
+		return minAnchor != Integer.MAX_VALUE;
+	}
 	/**
 	 * Gets the full subgraph containing this partial subgraph
 	 * @return Containing subgraph

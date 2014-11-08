@@ -268,4 +268,16 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		assertEquals(1, result.get(0).getEvidenceCount(Subset.ALL));
 		assertEquals(1, result.get(1).getEvidenceCount(Subset.ALL));
 	}
+	@Test
+	public void subgraphs_must_be_anchored_SC_N_bases() {
+		DeBruijnReadGraph g = G(0, 14, FWD);
+		g.addEvidence(SCE(FWD, SES(true),  withSequence("CATTAATCGCAAGAGCGGGTTGTATTCGACNNNCAAGTCAGCTGAAGCACCATTACCCGATCANAACATATCAGAAATGATTGACGTATCACAAGCCGGA", Read(0, 10, "15M85S"))));
+		g.sanityCheckSubgraphs();
+	}
+	@Test
+	public void subgraphs_must_be_anchored_RP_N_bases() {
+		DeBruijnReadGraph g = G(0, 14, FWD);
+		g.addEvidence(NRRP(withSequence("CATTAATCGCAAGAGCGGGTTGTATTCGACNNNCAAGTCAGCTGAAGCACCATTACCCGATCANAACATATCAGAAATGATTGACGTATCACAAGCCGGA", OEA(0, 1, "100M", true))));
+		g.sanityCheckSubgraphs();
+	}
 }
