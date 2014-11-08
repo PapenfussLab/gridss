@@ -221,7 +221,9 @@ public class VariantCaller extends EvidenceProcessorBase {
 		log.info("Annotating Calls");
 		List<SAMEvidenceSource> normal = new ArrayList<>();
 		List<SAMEvidenceSource> tumour = new ArrayList<>();
+		int maxFragmentSize = 0;
 		for (EvidenceSource source : evidence) {
+			maxFragmentSize = Math.max(source.getMaxConcordantFragmentSize(), maxFragmentSize);
 			if (source instanceof SAMEvidenceSource) {
 				SAMEvidenceSource samSource = (SAMEvidenceSource)source;
 				if (samSource.isTumour()) {
@@ -238,8 +240,8 @@ public class VariantCaller extends EvidenceProcessorBase {
 		CloseableIterator<DirectedEvidence> evidenceIt = null;
 		try {
 			vcfWriter = processContext.getVariantContextWriter(FileSystemContext.getWorkingFileFor(output), true);
-			normalCoverage = getReferenceLookup(normal);
-			tumourCoverage = getReferenceLookup(tumour);
+			normalCoverage = getReferenceLookup(normal, 4 * maxFragmentSize);
+			tumourCoverage = getReferenceLookup(tumour, 4 * maxFragmentSize);
 			BreakendAnnotator referenceAnnotator  = new SequentialCoverageAnnotator(processContext, normalCoverage, tumourCoverage);
 			evidenceIt = getAllEvidence(false, true);
 			BreakendAnnotator evidenceAnnotator = new SequentialEvidenceAnnotator(processContext, evidenceIt);
@@ -273,13 +275,13 @@ public class VariantCaller extends EvidenceProcessorBase {
 			CloserUtil.close(evidenceIt);
 		}
 	}
-	public ReferenceCoverageLookup getReferenceLookup(List<SAMEvidenceSource> samFiles) {
+	public ReferenceCoverageLookup getReferenceLookup(List<SAMEvidenceSource> input, int windowSize) {
 		List<ReferenceCoverageLookup> lookup = new ArrayList<>();
-		for (SAMEvidenceSource s : samFiles) {
+		for (SAMEvidenceSource s : input) {
 			// one read-ahead thread per input file
 			CloseableIterator<SAMRecord> it = new AsyncBufferedIterator<>(processContext.getSamReaderIterator(s.getSourceFile(), SortOrder.coordinate), s.getSourceFile().getName() + " reference coverage");
 			toClose.add(it);
-			lookup.add(new SequentialReferenceCoverageLookup(it, s.getReadPairConcordanceCalculator(), 1024));
+			lookup.add(new SequentialReferenceCoverageLookup(it, s.getReadPairConcordanceCalculator(), windowSize));
 		}
 		return new AggregateReferenceCoverageLookup(lookup);
 	}
