@@ -35,8 +35,8 @@ public class Models {
 		assert(refNormal >= 0);
 		assert(refTumour >= 0);
 		int variantTotal = variantNormal + variantTumour;
-		int refTotal = refNormal + refTumour;
-		int normalTotal = variantNormal + refNormal;
+		//int refTotal = refNormal + refTumour;
+		//int normalTotal = variantNormal + refNormal;
 		int tumourTotal = variantTumour + refTumour;
 		int total = variantNormal + variantTumour + refNormal + refTumour;
 		if (total == 0) return 1.0d; // TODO: calculate p-value from both sides of the breakend

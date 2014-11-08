@@ -8,7 +8,6 @@ import java.util.Iterator;
 import org.apache.commons.lang3.ArrayUtils;
 
 import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.Iterators;
 import com.google.common.primitives.UnsignedBytes;
 
 public class ReadKmerIterable implements Iterable<ReadKmer> {

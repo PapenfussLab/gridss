@@ -2,6 +2,7 @@ package au.edu.wehi.idsv;
 
 import htsjdk.samtools.SAMRecord;
 
+import java.util.Collections;
 import java.util.Map;
 
 import com.google.common.collect.Iterators;
@@ -23,7 +24,7 @@ public abstract class SequentialSAMRecordFactoryBase<T> {
 	private long currentPosition = -1;
 	protected SequentialSAMRecordFactoryBase(PeekingIterator<SAMRecord> sequence) {
 		if (sequence == null) {
-			sequence = Iterators.peekingIterator(Iterators.<SAMRecord>emptyIterator());
+			sequence = Iterators.peekingIterator(Collections.<SAMRecord>emptyIterator());
 		}
 		this.sequence = sequence;
 	}

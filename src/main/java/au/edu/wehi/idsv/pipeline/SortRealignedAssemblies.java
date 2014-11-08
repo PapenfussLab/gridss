@@ -10,9 +10,7 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.FileSystemContext;
@@ -84,26 +82,26 @@ public class SortRealignedAssemblies extends DataTransformStep {
 					fsc.getAssemblyRemoteVcf(source.getFileIntermediateDirectoryBasedOn()),
 					VariantContextDirectedBreakpoint.ByRemoteBreakendLocationStartRaw(processContext)));
 		}
-		if (false/*threadpool != null*/) {
-			try {
-				log.debug("Issuing parallel sort tasks");
-				for (Future<Void> future : threadpool.invokeAll(tasks)) {
-					// throw any exception
-					future.get();
-				}
-				log.debug("Parallel sort tasks complete");
-			} catch (InterruptedException e) {
-				log.error(e);
-				throw new RuntimeException("Interrupted waiting for VCF sort", e);
-			} catch (ExecutionException e) {
-				throw new RuntimeException("Failed to sort VCF", e.getCause());
-			}
-		} else {
+		//if (threadpool != null) {
+		//	try {
+		//		log.debug("Issuing parallel sort tasks");
+		//		for (Future<Void> future : threadpool.invokeAll(tasks)) {
+		//			// throw any exception
+		//			future.get();
+		//		}
+		//		log.debug("Parallel sort tasks complete");
+		//	} catch (InterruptedException e) {
+		//		log.error(e);
+		//		throw new RuntimeException("Interrupted waiting for VCF sort", e);
+		//	} catch (ExecutionException e) {
+		//		throw new RuntimeException("Failed to sort VCF", e.getCause());
+		//	}
+		//} else {
 			log.debug("Serial sort");
 			for (SortCallable c : tasks) {
 				c.call();
 			}
-		}
+		//}
 	}
 	@Override
 	public void close() {

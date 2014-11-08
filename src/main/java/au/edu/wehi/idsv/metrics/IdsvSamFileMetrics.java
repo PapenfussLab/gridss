@@ -1,20 +1,17 @@
 package au.edu.wehi.idsv.metrics;
 
 import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMReadGroupRecord;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.util.CollectionUtil;
 import htsjdk.samtools.util.Log;
 
 import java.io.File;
-import java.util.List;
 
 import picard.analysis.CollectInsertSizeMetrics;
 import picard.analysis.InsertSizeMetrics;
 import picard.analysis.MetricAccumulationLevel;
 import picard.analysis.directed.InsertSizeMetricsCollector;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 
@@ -32,10 +29,10 @@ public class IdsvSamFileMetrics {
 	 * @return metric collector
 	 */
 	public static InsertSizeMetricsCollector createInsertSizeMetricsCollector(SAMFileHeader header) {
-		List<SAMReadGroupRecord> rg = ImmutableList.<SAMReadGroupRecord>of();
-		if (header != null) {
-			rg = header.getReadGroups();
-		}
+		//List<SAMReadGroupRecord> rg = ImmutableList.<SAMReadGroupRecord>of();
+		//if (header != null) {
+		//	rg = header.getReadGroups();
+		//}
 		return new InsertSizeMetricsCollector(
     			CollectionUtil.makeSet(MetricAccumulationLevel.ALL_READS), null, //, MetricAccumulationLevel.SAMPLE), rg,
 				// match CollectInsertSizeMetrics defaults

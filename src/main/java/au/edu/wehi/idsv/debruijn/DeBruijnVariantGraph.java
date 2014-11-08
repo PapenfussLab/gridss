@@ -170,6 +170,7 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		addEvidenceSupportSinglePass(path, referenceKmersAtStartOfPath, builder);
 		return builder;
 	}
+	@SuppressWarnings("unused")
 	private AssemblyBuilder addEvidenceSupportMaintainable(List<Long> path, int referenceKmersAtStartOfPath, AssemblyBuilder builder) {
 		List<Long> breakendPath = path.subList(referenceKmersAtStartOfPath, path.size());
 		Set<DirectedEvidence> support = getSupportingEvidence(breakendPath);

@@ -269,9 +269,10 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		assertEquals(1, result.get(1).getEvidenceCount(Subset.ALL));
 	}
 	@Test
-	public void subgraphs_must_be_anchored_SC_N_bases() {
+	public void removeBefore_should_clear_unanchored_subgraphs_SC_N_bases() {
 		DeBruijnReadGraph g = G(0, 14, FWD);
 		g.addEvidence(SCE(FWD, SES(true),  withSequence("CATTAATCGCAAGAGCGGGTTGTATTCGACNNNCAAGTCAGCTGAAGCACCATTACCCGATCANAACATATCAGAAATGATTGACGTATCACAAGCCGGA", Read(0, 10, "15M85S"))));
+		g.removeBefore(0);
 		g.sanityCheckSubgraphs();
 	}
 	@Test

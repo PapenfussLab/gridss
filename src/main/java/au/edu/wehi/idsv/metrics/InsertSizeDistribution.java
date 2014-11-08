@@ -51,7 +51,7 @@ public class InsertSizeDistribution extends EnumeratedIntegerDistribution {
 		double[] count = new double[insertSizeHistogram.size()];
 		double total = insertSizeHistogram.getSumOfValues();
 		int i = 0;
-		for (Entry<Integer, Bin> entry : insertSizeHistogram.entrySet()) {
+		for (@SuppressWarnings("rawtypes") Entry<Integer, Bin> entry : insertSizeHistogram.entrySet()) {
 			insertSize[i] = entry.getKey();
 			count[i] = entry.getValue().getValue();// / total;
 			i++;

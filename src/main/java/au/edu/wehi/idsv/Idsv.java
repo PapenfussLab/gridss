@@ -220,6 +220,7 @@ public class Idsv extends CommandLineProgram {
     }
 	private void hackOutputIndels() throws IOException {
 		log.info("DEBUGGING HACK: naive translation to INDEL calls");
+		@SuppressWarnings("resource")
 		VariantContextDirectedEvidenceIterator it = new VariantContextDirectedEvidenceIterator(getContext(), null, new VCFFileReader(OUTPUT, false).iterator(), null);
 		List<IdsvVariantContext> out = new ArrayList<>();
 		while (it.hasNext()) {
