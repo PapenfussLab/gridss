@@ -329,7 +329,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		    	}
 	    	}
 	    	flushWriterQueueBefore(
-	    			maxAssembledPosition - (long)((processContext.getAssemblyParameters().maxSubgraphFragmentWidth + 2) * getMaxConcordantFragmentSize()),
+	    			maxAssembledPosition - (long)((processContext.getAssemblyParameters().maxSubgraphFragmentWidth * 2) * getMaxConcordantFragmentSize()),
 	    			buffer,
 	    			fastqWriter,
 	    			vcfWriter);
