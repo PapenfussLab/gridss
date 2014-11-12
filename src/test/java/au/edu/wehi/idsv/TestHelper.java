@@ -40,6 +40,7 @@ import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -597,11 +598,11 @@ public class TestHelper {
 				BaseGraph graph,
 				long seed,
 				PathNodeFactory<DeBruijnNodeBase, PathNode<DeBruijnNodeBase>> factory) {
-			super(graph, seed, factory);
+			super(graph, seed, factory, new NontrackingSubgraphTracker());
 		}
 
 		public BasePathGraph(BaseGraph g, PathNodeBaseFactory factory) {
-			super(g, factory);
+			super(g, factory, new NontrackingSubgraphTracker());
 		}
 
 		public PathNode<DeBruijnNodeBase> get(String kmer) {

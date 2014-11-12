@@ -66,4 +66,8 @@ public class AssemblyParameters {
 	 * Minimum number of reads contributing the the assembly
 	 */
 	public int minReads = 3;
+	/**
+	 * Output internal assembly state information for debugging purposes
+	 */
+	public boolean trackAlgorithmProgress = Defaults.VISUALISE_ASSEMBLY_PROGRESS;
 }

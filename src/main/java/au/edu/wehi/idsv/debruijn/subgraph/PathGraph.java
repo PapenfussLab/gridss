@@ -6,15 +6,18 @@ import java.util.List;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
+import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTracker;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 public class PathGraph extends DeBruijnPathGraph<DeBruijnSubgraphNode, SubgraphPathNode> {
-	public PathGraph(DeBruijnGraphBase<DeBruijnSubgraphNode> graph, long seed) {
-		super(graph, seed, new SubgraphPathNodeFactory());
+	public PathGraph(DeBruijnGraphBase<DeBruijnSubgraphNode> graph, long seed, SubgraphAssemblyAlgorithmTracker tracker) {
+		super(graph, seed, new SubgraphPathNodeFactory(), tracker);
 	}
+	private int referencePathsSplit = 0;
+	public int getReferencePathsSplit() { return referencePathsSplit; }
 	/**
 	 * Breaks paths into paths in which all kmers are either reference or non-reference kmers 
 	 */
@@ -42,6 +45,7 @@ public class PathGraph extends DeBruijnPathGraph<DeBruijnSubgraphNode, SubgraphP
 			}
 			lengths.add(currentLength);
 			split(n, lengths);
+			referencePathsSplit += lengths.size() - 1;
 		}
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
 			assert(assertReferenceKmersSplit());

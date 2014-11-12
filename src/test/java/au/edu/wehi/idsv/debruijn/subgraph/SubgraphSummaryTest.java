@@ -1,6 +1,6 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import org.junit.Test;
 
@@ -12,10 +12,9 @@ public class SubgraphSummaryTest extends TestHelper {
 	public void getRoot_should_not_stack_overflow() {
 		SubgraphSummary first = new SubgraphSummary(0);
 		SubgraphSummary last = null;
-		SubgraphSummary merge = first;
 		for (int i = 1; i < 50000; i++) {
 			last = new SubgraphSummary(i);
-			merge = SubgraphSummary.merge(merge, last);
+			assertTrue(first.add(last));
 		}
 		assertEquals(first.getRoot(), last.getRoot()); 
 	}
@@ -23,8 +22,8 @@ public class SubgraphSummaryTest extends TestHelper {
 	public void merge_should_merge_subgraphs() {
 		SubgraphSummary first = new SubgraphSummary(0);
 		SubgraphSummary last = new SubgraphSummary(1);
-		SubgraphSummary merge = SubgraphSummary.merge(first, last);
-		assertEquals(merge.getRoot(), first.getRoot()); 
-		assertEquals(merge.getRoot(), last.getRoot());
+		assertTrue(first.add(last));
+		assertEquals(first, first.getRoot()); 
+		assertEquals(first, last.getRoot());
 	}
 }

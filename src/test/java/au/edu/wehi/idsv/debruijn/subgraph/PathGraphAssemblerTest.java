@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import au.edu.wehi.idsv.AssemblyMethod;
 import au.edu.wehi.idsv.AssemblyParameters;
+import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 
@@ -32,7 +33,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		//   GGTTAACC
 		// TTGGT
 		// ^   ^^^^ <- starts of reference kmers
-		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("AATT")));
+		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("AATT")), new NontrackingSubgraphTracker());
 		List<LinkedList<Long>> result = pga.assembleContigs();
 		assertEquals(2, result.size());
 		assertEquals("TTAACCGGCCAATT", S(g, result.get(0)));
@@ -53,7 +54,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		g.addEvidence(NRRP(withSequence(           "GCCAATC", OEA(0, 10, "7M", true)))); // not on main patch, but reachable
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGAGTCCTG", Read(0, 10, "7M7S"))));
 		
-		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("AATT")));
+		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("AATT")), new NontrackingSubgraphTracker());
 		List<LinkedList<Long>> result = pga.assembleContigs();
 		assertEquals(3, result.size());
 		assertEquals("TTAACCGGCCAATT", S(g, result.get(0)));
@@ -74,7 +75,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		g.addEvidence(NRRP(withSequence(              "AATC", OEA(0, 10, "7M", true)))); // not on main patch, but reachable
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGAGTCCTG", Read(0, 10, "7M7S"))));
 		
-		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("AATT")));
+		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("AATT")), new NontrackingSubgraphTracker());
 		List<LinkedList<Long>> result = pga.assembleContigs();
 		assertEquals(2, result.size());
 		assertEquals("TTAACCGGCCAATT", S(g, result.get(0)));
@@ -91,7 +92,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withSequence("AAATGGGG", Read(0, 10, "6M3S"))));
 		g.addEvidence(SCE(FWD, withSequence("GTACCCGGGG", Read(0, 10, "9M2S"))));
 		// should take the shorter assembly that has a longer soft clip
-		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("GGGG")));
+		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("GGGG")), new NontrackingSubgraphTracker());
 		List<LinkedList<Long>> result = pga.assembleContigs();
 		assertEquals(1, result.size());
 		assertEquals("AAATGGGG", S(g, result.get(0)));
@@ -114,7 +115,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withSequence("CCAAATGGG", Read(0, 10, "8M1S")))); // worst weight at the immediate next kmer
 		g.addEvidence(SCE(FWD, withSequence("GGTACCCAAATGGG", Read(0, 10, "13M1S")))); // but best overall
 		// should take the shorter assembly that has a longer soft clip
-		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("TGGG")));
+		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("TGGG")), new NontrackingSubgraphTracker());
 		List<LinkedList<Long>> result = pga.assembleContigs();
 		assertEquals(1, result.size());
 		assertEquals("GGTACCCAAATGGG", S(g, result.get(0)));
@@ -129,7 +130,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		ap.maxBaseMismatchForCollapse = 0;
 		DeBruijnReadGraph g = G(ap.k, FWD);
 		g.addEvidence(SCE(FWD, withSequence("GGTACCCAAATGGG", Read(0, 10, "10M4S"))));
-		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("TGGG")));
+		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("TGGG")), new NontrackingSubgraphTracker());
 		List<LinkedList<Long>> result = pga.assembleContigs();
 		assertEquals(1, result.size());
 		assertEquals("GGTACCCAAATGGG", S(g, result.get(0)));
@@ -145,7 +146,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		DeBruijnReadGraph g = G(ap.k, FWD);
 		g.addEvidence(SCE(FWD, withSequence("ACTGT", Read(0, 10, "3M2S"))));
 		g.addEvidence(SCE(FWD, withSequence("GTCA", Read(0, 10, "3M1S"))));
-		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("ACT")));
+		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("ACT")), new NontrackingSubgraphTracker());
 		List<LinkedList<Long>> result = pga.assembleContigs();
 		assertEquals(2, result.size());
 		assertEquals("ACTGT", S(g, result.get(0))); // don't extend into GTC reference kmer
@@ -163,7 +164,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withSequence( "TTTTCGAGAT", Read(0, 10, "8M1S"))));
 		g.addEvidence(SCE(FWD, withSequence( "TTTTCGCCGGT", Read(0, 10, "8M3S"))));
 		g.addEvidence(SCE(FWD, withSequence( "TTTTCGTTAACC", Read(0, 10, "8M6S"))));
-		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("TTTT")));
+		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("TTTT")), new au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker());
 		List<LinkedList<Long>> result = pga.assembleContigs();
 		assertEquals(3, result.size());
 		assertEquals("TTTTCGTTAACC", S(g, result.get(0)));
@@ -190,7 +191,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withSequence("AAATGGGA", Read(0, 10, "6M3S"))));
 		g.addEvidence(SCE(FWD, withSequence("AAATGGGA", Read(0, 10, "6M3S"))));
 		// greedy traversal
-		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("GGGG")));
+		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("GGGG")), new NontrackingSubgraphTracker());
 		//new StaticDeBruijnSubgraphPathGraphGexfExporter(ap.k)
 		//	.snapshot(pga)
 		//	.saveTo(new File("C:\\temp\\test.gexf"));

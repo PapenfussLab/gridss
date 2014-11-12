@@ -5,6 +5,7 @@ import htsjdk.samtools.util.Log;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -20,7 +21,10 @@ import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.VariantEvidence;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
+import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
 import au.edu.wehi.idsv.visualisation.StaticDeBruijnSubgraphPathGraphGexfExporter;
+import au.edu.wehi.idsv.visualisation.SubgraphAlgorithmMetrics;
+import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTracker;
 
 import com.google.common.collect.Sets;
 
@@ -30,7 +34,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	/**
 	 * Connected subgraphs
 	 */
-	private final Set<SubgraphSummary> subgraphs = Sets.newHashSet();
+	private final Set<SubgraphSummary> subgraphs = new HashSet<>();
 	private final int referenceIndex;
 	private final AssemblyParameters parameters;
 	private int graphsExported = 0;
@@ -67,26 +71,32 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 					g = gadj;
 				} else if (g != gadj) {
 					// this kmer merges two subgraphs
-					SubgraphSummary newg = SubgraphSummary.merge(g, gadj);
-					if (newg == g) {
+					if (g.add(gadj)) {
 						subgraphs.remove(gadj);
-					} else if (newg == gadj) {
-						subgraphs.remove(g);
-					} else {
-						subgraphs.remove(gadj);
-						subgraphs.remove(g);
-						subgraphs.add(newg);
 					}
-					g = newg;
 				}
 			}
 		}
 		if (g == null) {
 			// nothing next to us -> new subgraph
-			g = new SubgraphSummary(kmer);
+			g = createSubgraphSummary(kmer);
 			subgraphs.add(g);
+			node.setSubgraph(g);
 		}
-		node.setSubgraph(g);
+	}
+	private SubgraphSummary createSubgraphSummary(long kmer) {
+		if (parameters.trackAlgorithmProgress) {
+			return new TimedSubgraphSummary(kmer);
+		} else {
+			return new SubgraphSummary(kmer);
+		}
+	}
+	private SubgraphAssemblyAlgorithmTracker createSubgraphAssemblyAlgorithmTracker(SubgraphSummary ss) {
+		if (parameters.trackAlgorithmProgress) {
+			return new SubgraphAlgorithmMetrics(processContext, referenceIndex, direction, ((TimedSubgraphSummary)ss).getCreationTime());
+		} else {
+			return new NontrackingSubgraphTracker();
+		}
 	}
 	/**
 	 * Updates subgraph aggregates based on the new evidence
@@ -99,7 +109,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		//sanityCheckSubgraphs();
 		return result;
 	}
-	private int maxSubgraphSize = 4096;
+	private int subgraphMessageStartingSize = 4096;
 	private boolean exceedsTimeout(SubgraphSummary ss) {
 		return ss.isAnchored() && ss.getMaxAnchor() - ss.getMinAnchor() > getSafetyWidth();
 	}
@@ -157,7 +167,10 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 						getSafetyWidth()));
 			}
 			if ((ss.getMaxAnchor() < position || timeoutExceeded) && ss.isAnchored()) {
-				PathGraphAssembler pga = new PathGraphAssembler(this, this.parameters, ss.getAnyKmer());
+				SubgraphAssemblyAlgorithmTracker tracker = createSubgraphAssemblyAlgorithmTracker(ss);
+				tracker.finalAnchors(ss.getMinAnchor(), ss.getMaxAnchor());
+				tracker.assemblyStarted();
+				PathGraphAssembler pga = new PathGraphAssembler(this, this.parameters, ss.getAnyKmer(), tracker);
 				if (parameters.maxBaseMismatchForCollapse > 0) {
 					if (shouldVisualise(timeoutExceeded)) {
 						visualisePrecollapsePathGraph(ss, pga);
@@ -170,8 +183,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 					}
 				}
 				int width = ss.getMaxAnchor() - ss.getMinAnchor();
-				if (width > maxSubgraphSize) {
-					maxSubgraphSize = width;
+				if (width > subgraphMessageStartingSize) {
+					subgraphMessageStartingSize = width;
 					log.debug(String.format("Subgraph width=%s [%d, %d] has %d paths: %s", width, ss.getMinAnchor(), ss.getMaxAnchor(), pga.getPathCount(), debugOutputKmerSpread(ss)));
 				}
 				StaticDeBruijnSubgraphPathGraphGexfExporter graphExporter = null;
@@ -179,11 +192,12 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 					graphExporter = new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k);
 				}
 				for (List<Long> contig : pga.assembleContigs(graphExporter)) {
-					VariantContextDirectedEvidence variant = toAssemblyEvidence(contig);
+					VariantContextDirectedEvidence variant = toAssemblyEvidence(contig, tracker);
 					if (variant != null) {
 						contigs.add(variant);
 					}
 				}
+				tracker.assemblyComplete();
 				if (shouldVisualise(timeoutExceeded)) {
 					visualisePathGraph(ss, graphExporter);
 				}
@@ -247,7 +261,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		}
 		return reads;
 	}
-	private VariantContextDirectedEvidence toAssemblyEvidence(List<Long> contigKmers) {
+	private VariantContextDirectedEvidence toAssemblyEvidence(List<Long> contigKmers, SubgraphAssemblyAlgorithmTracker tracker) {
 		int refCount = -1;
 		int refAnchor = 0;
 		Integer mateAnchor = null;
@@ -316,7 +330,9 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			//
 			return null;
 		}
-		return builder.makeVariant();
+		VariantContextDirectedEvidence variant = builder.makeVariant();
+		tracker.toAssemblyEvidence(variant);
+		return variant;
 	}
 	private static Log expensiveSanityCheckLog = Log.getInstance(DeBruijnReadGraph.class);
 	public boolean sanityCheckSubgraphs() {

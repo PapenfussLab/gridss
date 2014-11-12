@@ -20,6 +20,7 @@ import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
 import au.edu.wehi.idsv.visualisation.DeBruijnPathGraphExporter;
 import au.edu.wehi.idsv.visualisation.StaticDeBruijnSubgraphPathGraphGexfExporter;
+import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTracker;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
@@ -41,8 +42,8 @@ public class PathGraphAssembler extends PathGraph {
 	private final List<Set<SubgraphPathNode>> startingPaths = new ArrayList<>();
 	private int nodeTraversals = 0;
 	private static int timeoutGraphsWritten = 0;
-	public PathGraphAssembler(DeBruijnGraphBase<DeBruijnSubgraphNode> graph, AssemblyParameters parameters, long seed) {
-		super(graph, seed);
+	public PathGraphAssembler(DeBruijnGraphBase<DeBruijnSubgraphNode> graph, AssemblyParameters parameters, long seed, SubgraphAssemblyAlgorithmTracker tracker) {
+		super(graph, seed, tracker);
 		this.parameters = parameters;
 	}
 	public List<LinkedList<Long>> assembleContigs() {
@@ -84,12 +85,14 @@ public class PathGraphAssembler extends PathGraph {
 			graphExporter.saveTo(new File(parameters.debruijnGraphVisualisationDirectory,
 					String.format("pathTraversalTimeout-%d.subgraph.gexf", ++timeoutGraphsWritten)));
 		}
-		return Lists.newArrayList(Iterables.transform(result, new Function<List<SubgraphPathNode>, LinkedList<Long>>() {
+		List<LinkedList<Long>> resultKmers = Lists.newArrayList(Iterables.transform(result, new Function<List<SubgraphPathNode>, LinkedList<Long>>() {
 			@Override
 			public LinkedList<Long> apply(List<SubgraphPathNode> arg0) {
 				return Lists.newLinkedList(Lists.newArrayList(SubgraphPathNode.kmerIterator(arg0)));
 			}
 		}));
+		tracker.assemblyNonReferenceContigs(result, resultKmers, nodeTraversals);
+		return resultKmers;
 	}
 	/**
 	 * Separates non-reference kmers of the subgraph into disjoint non-reference subgraphs 
@@ -107,6 +110,7 @@ public class PathGraphAssembler extends PathGraph {
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
 			assert(sanityCheckSubgraphs());
 		}
+		tracker.calcNonReferenceSubgraphs(subgraphs, startingPaths);
 	}
 	private void newNonreferenceSubgraph(SubgraphPathNode seed) {
 		Set<SubgraphPathNode> nodes = Sets.newHashSet();

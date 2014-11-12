@@ -17,6 +17,7 @@ import java.util.SortedSet;
 
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
+import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTracker;
 
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -38,6 +39,7 @@ import com.google.common.primitives.Ints;
 public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T>> {
 	private static Log log = Log.getInstance(DeBruijnPathGraph.class);
 	protected final PathNodeFactory<T, PN> factory;
+	protected final SubgraphAssemblyAlgorithmTracker tracker;
 	private final DeBruijnGraphBase<T> graph;
 	private final List<PN> pathList = new ArrayList<>();
 	private final List<List<PN>> pathNext = new ArrayList<>();
@@ -49,14 +51,16 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 */
 	protected int expectedWeight;
 	//private static Log log = Log.getInstance(DeBruijnPathGraph.class);
-	public DeBruijnPathGraph(DeBruijnGraphBase<T> graph, long seed, PathNodeFactory<T, PN> factory) {
+	public DeBruijnPathGraph(DeBruijnGraphBase<T> graph, long seed, PathNodeFactory<T, PN> factory, SubgraphAssemblyAlgorithmTracker tracker) {
 		this.graph = graph;
 		this.factory = factory;
+		this.tracker = tracker;
 		generatePathGraph(seed);
 	}
-	public DeBruijnPathGraph(DeBruijnGraphBase<T> graph, PathNodeFactory<T, PN> factory) {
+	public DeBruijnPathGraph(DeBruijnGraphBase<T> graph, PathNodeFactory<T, PN> factory, SubgraphAssemblyAlgorithmTracker tracker) {
 		this.graph = graph;
 		this.factory = factory;
+		this.tracker = tracker;
 		generatePathGraph(null);
 	}
 	public boolean sanityCheck() {
@@ -134,6 +138,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 			}
 		}
 		assert(sanityCheck());
+		tracker.generatePathGraph(pathList.size(), pathNext.size());
 		shrink();
 	}
 	/**
@@ -166,10 +171,11 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 * Shrinks the graph to its minimal representation by
 	 * - merging adjacent paths containing no other branches 
 	 * - removing self-intersecting edges
-	 * @return true if the graph was update, false if no changes were required
+	 * @return reduction in graph size
 	 */
-	public boolean shrink() {
-		boolean anyChange = false;
+	public int shrink() {
+		int edgesRemoved = 0;
+		int nodesCollapsed = 0;
 		// Keep processing until we can't anymore
 		boolean changedThisIteration = true;
 		while (changedThisIteration) {
@@ -178,17 +184,20 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 				if (nextPath(path).contains(path)) {
 					removeEdge(path, path);
 					changedThisIteration = true;
+					edgesRemoved++;
 					break;
 				}
 				if (mergeWithNext(path)) {
 					changedThisIteration = true;
-					anyChange = true;
+					edgesRemoved++;
+					nodesCollapsed++;
 					break;
 				}
 			}
 		}
-		if (anyChange) assert(sanityCheck());
-		return anyChange;
+		if (edgesRemoved > 0) assert(sanityCheck());
+		tracker.shrink(edgesRemoved, nodesCollapsed);
+		return nodesCollapsed;
 	}
 	/**
 	 * Adds the given node to the graph
@@ -384,18 +393,26 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 * Collapses similar paths and leaf branches
 	 * @param maxBaseMismatchForCollapse
 	 * @param bubblesOnly collapse bubbles only
+	 * @return total collapses performed
 	 */
 	public int collapse(int maxBaseMismatchForCollapse, boolean bubblesOnly) throws AlgorithmRuntimeSafetyLimitExceededException {
-		int collapseCount = 0;
-		collapseCount = collapseSimilarPaths(maxBaseMismatchForCollapse, true);
+		int nodesBefore = pathCount;
+		int totalPathsCollapsed = 0;
+		int totalLeavesCollapsed = 0;
+		int collapseIterations = 0;
+		totalPathsCollapsed = collapseSimilarPaths(maxBaseMismatchForCollapse, true);
 		int leafCount = 0, pathCount = 0;
 		do {
+			collapseIterations++;
 			if (!bubblesOnly) {
 				leafCount = collapseLeaves(maxBaseMismatchForCollapse);
+				totalLeavesCollapsed += leafCount;
 			}
 			pathCount = collapseSimilarPaths(maxBaseMismatchForCollapse, bubblesOnly);
+			totalPathsCollapsed += pathCount;
 		} while (leafCount + pathCount > 0);
-		return collapseCount;
+		tracker.collapse(collapseIterations, totalPathsCollapsed, totalLeavesCollapsed, nodeTaversalCount, nodesBefore - pathCount);
+		return totalPathsCollapsed + totalLeavesCollapsed;
 	}
 	/**
 	 * 

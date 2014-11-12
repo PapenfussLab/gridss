@@ -11,6 +11,10 @@ public class Defaults {
 	 */
 	public static final boolean VISUALISE_TIMEOUTS;
 	/**
+	 * Should assembly progress be tracked
+	 */
+	public static final boolean VISUALISE_ASSEMBLY_PROGRESS;
+	/**
 	 * Writes evidence that does not pass filters to intermediate files anyway 
 	 */
 	//public static final boolean WRITE_FILTERED_EVIDENCE;
@@ -43,6 +47,7 @@ public class Defaults {
 	static {
 		VISUALISE_ALL = Boolean.valueOf(System.getProperty("gridss.visualisation.saveall", "false"));
 		VISUALISE_TIMEOUTS = Boolean.valueOf(System.getProperty("gridss.visualisation.savetimeouts", "false"));
+		VISUALISE_ASSEMBLY_PROGRESS = Boolean.valueOf(System.getProperty("gridss.visualisation.trackAssemblyProgress", "false"));
 		//WRITE_FILTERED_EVIDENCE = Boolean.valueOf(System.getProperty("gridss.writeFilteredEvidence", "false"));
 		WRITE_FILTERED_CALLS = Boolean.valueOf(System.getProperty("gridss.writeFilteredCalls", "false"));
 		WRITE_FILTERED_ASSEMBLIES = Boolean.valueOf(System.getProperty("gridss.writeFilteredAssemblies", "false"));

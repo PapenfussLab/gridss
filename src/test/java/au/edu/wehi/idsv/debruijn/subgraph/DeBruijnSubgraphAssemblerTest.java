@@ -29,6 +29,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		p.k = k;
 		p.debruijnGraphVisualisationDirectory = new File(testFolder.getRoot(), "visualisation");
 		p.visualiseAll = true;
+		p.trackAlgorithmProgress = true;
 		return new DeBruijnSubgraphAssembler(pc, AES());
 	}
 	@Test
@@ -55,6 +56,16 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		assertTrue(new File(new File(testFolder.getRoot(), "visualisation"), "debruijn.kmers.backward.polyA.gexf").exists());
 		assertTrue(new File(new File(testFolder.getRoot(), "visualisation"), "debruijn.kmers.forward.polyACGT.gexf").exists());
 		assertTrue(new File(new File(testFolder.getRoot(), "visualisation"), "debruijn.kmers.backward.polyACGT.gexf").exists());
+	}
+	@Test
+	public void should_track_progress() {
+		DeBruijnSubgraphAssembler ass = DSA(5);
+		List<VariantContextDirectedEvidence> results = new ArrayList<>();
+		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(withSequence("GTCTTA", DP(0, 1, "8M", true, 0, 500, "8M", false))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("CTTAGA", Read(0, 100, "1M5S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("CTTAGA", Read(0, 100, "1M5S"))))));
+		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertTrue(new File(new File(testFolder.getRoot(), "visualisation"), "debruijn.assembly.metrics.polyA.bed").exists());
 	}
 	@Test
 	public void should_assemble_both_directions() {

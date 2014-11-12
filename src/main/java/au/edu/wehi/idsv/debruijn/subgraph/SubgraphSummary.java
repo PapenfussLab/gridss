@@ -71,14 +71,20 @@ public class SubgraphSummary {
 			node.parent = root;
 		}
 	}
-	public static SubgraphSummary merge(SubgraphSummary graph1, SubgraphSummary graph2) {
-		graph1 = graph1.getRoot();
-		graph2 = graph2.getRoot();
-		if (graph1 == graph2) return graph1;
-		graph1.parent = graph2;
-		graph2.maxAnchor = Math.max(graph2.maxAnchor, graph1.maxAnchor);
-		graph2.minAnchor = Math.min(graph2.minAnchor, graph1.minAnchor);
-		return graph2;
+	/**
+	 * Merges the given graph into this one
+	 * @param graph graph to merge
+	 * @return true if the given graph was a distinct graph that merged into this one, false if
+	 * both graphs represent the same graph
+	 */
+	public boolean add(SubgraphSummary graph) {
+		SubgraphSummary myRoot = getRoot();
+		SubgraphSummary graphRoot = graph.getRoot();
+		if (myRoot == graphRoot) return false;
+		graphRoot.parent = myRoot;
+		myRoot.maxAnchor = Math.max(myRoot.maxAnchor, graphRoot.maxAnchor);
+		myRoot.minAnchor = Math.min(myRoot.minAnchor, graphRoot.minAnchor);
+		return true;
 	}
 	private static void addAnchor(SubgraphSummary g, int position) {
 		SubgraphSummary rootg = g.getRoot();
