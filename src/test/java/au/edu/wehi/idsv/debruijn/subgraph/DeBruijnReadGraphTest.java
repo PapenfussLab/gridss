@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 import java.util.List;
 
@@ -106,6 +105,27 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		// we should call to 12 since we have many reads supporting that assembly
 		assertEquals(12, result.get(0).getBreakendSummary().start);
+	}
+	@Test
+	public void base_quals_should_match_positive_strand() {
+		DeBruijnReadGraph g = G(0, 3, FWD);
+		g.addEvidence(SCE(BWD, withSequence(  "AAGTCT", Read(0, 10, "5S1M"))));
+		g.addEvidence(SCE(BWD, withSequence( "TAAGTCT", Read(0, 10, "6S1M"))));
+		g.addEvidence(SCE(BWD, withSequence("GTAAGTCT", Read(0, 10, "7S1M"))));
+		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		assertArrayEquals(new byte[] { 10, 20, 30, 30, 30, 30, 30, 30 }, result.get(0).getBreakendQuality());
+		assertEquals("GTAAGTCT", result.get(0).getAssemblyConsensus());
+	}
+	@Test
+	public void assembly_count_should_match_expected() {
+		DeBruijnReadGraph g = G(0, 3, FWD);
+		g.addEvidence(SCE(BWD, withSequence(  "AAGTCT", Read(0, 10, "5S1M"))));
+		g.addEvidence(SCE(BWD, withSequence( "TAAGTCT", Read(0, 10, "6S1M"))));
+		g.addEvidence(SCE(BWD, withSequence("GTAAGTCT", Read(0, 10, "7S1M"))));
+		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		assertEquals(5 + 6 + 7, result.get(0).getAssemblyBaseCount(Subset.ALL));
+		assertEquals(3, result.get(0).getAssemblySupportCountSoftClip(Subset.ALL));
+		assertEquals(1, result.get(0).getAssemblyAnchorLengthMax());
 	}
 	@Test
 	public void should_assemble_sc_and_nrrp_together() {
