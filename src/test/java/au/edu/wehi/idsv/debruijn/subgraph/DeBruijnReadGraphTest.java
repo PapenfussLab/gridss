@@ -8,9 +8,9 @@ import org.junit.Test;
 
 import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.BreakendDirection;
+import au.edu.wehi.idsv.EvidenceSubset;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
-import au.edu.wehi.idsv.vcf.VcfAttributes.Subset;
 
 import com.google.common.collect.Lists;
 
@@ -123,8 +123,8 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		g.addEvidence(SCE(BWD, withSequence( "TAAGTCT", Read(0, 10, "6S1M"))));
 		g.addEvidence(SCE(BWD, withSequence("GTAAGTCT", Read(0, 10, "7S1M"))));
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
-		assertEquals(5 + 6 + 7, result.get(0).getAssemblyBaseCount(Subset.ALL));
-		assertEquals(3, result.get(0).getAssemblySupportCountSoftClip(Subset.ALL));
+		assertEquals(5 + 6 + 7, result.get(0).getAssemblyBaseCount(EvidenceSubset.ALL));
+		assertEquals(3, result.get(0).getAssemblySupportCountSoftClip(EvidenceSubset.ALL));
 		assertEquals(1, result.get(0).getAssemblyAnchorLengthMax());
 	}
 	@Test
@@ -285,8 +285,8 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		g.addEvidence(SCE(FWD, SES(false), withSequence("TATT", Read(0, 10, "3M1S"))));
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		assertEquals(2, result.size());
-		assertEquals(1, result.get(0).getEvidenceCount(Subset.ALL));
-		assertEquals(1, result.get(1).getEvidenceCount(Subset.ALL));
+		assertEquals(1, result.get(0).getEvidenceCount(EvidenceSubset.ALL));
+		assertEquals(1, result.get(1).getEvidenceCount(EvidenceSubset.ALL));
 	}
 	@Test
 	public void removeBefore_should_clear_unanchored_subgraphs_SC_N_bases() {

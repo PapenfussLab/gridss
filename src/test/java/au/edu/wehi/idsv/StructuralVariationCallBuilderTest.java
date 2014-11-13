@@ -14,7 +14,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfAttributes.Subset;
 
 import com.google.common.collect.Sets;
 
@@ -107,13 +106,13 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_set_VcfAttribute_REFERENCE_COUNT_READ() {
-		assertEquals(7, big().getReferenceReadCount(Subset.NORMAL));
-		assertEquals(8, big().getReferenceReadCount(Subset.TUMOUR));
+		assertEquals(7, big().getReferenceReadCount(EvidenceSubset.NORMAL));
+		assertEquals(8, big().getReferenceReadCount(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_set_VcfAttribute_REFERENCE_COUNT_READPAIR() {
-		assertEquals(9, big().getReferenceReadPairCount(Subset.NORMAL));
-		assertEquals(10, big().getReferenceReadPairCount(Subset.TUMOUR));
+		assertEquals(9, big().getReferenceReadPairCount(EvidenceSubset.NORMAL));
+		assertEquals(10, big().getReferenceReadPairCount(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_set_VcfAttribute_READPAIR_EVIDENCE_COUNT() {
@@ -126,8 +125,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			new um(5, true),
 			new um(6, true),
 			new um(7, false));
-		assertEquals(3, e.getEvidenceCountReadPair(Subset.NORMAL));
-		assertEquals(5, e.getEvidenceCountReadPair(Subset.TUMOUR));
+		assertEquals(3, e.getEvidenceCountReadPair(EvidenceSubset.NORMAL));
+		assertEquals(5, e.getEvidenceCountReadPair(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_set_VcfAttribute_READPAIR_LOG_LIKELIHOOD_RATIO() {
@@ -140,8 +139,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				new um(5, true),
 				new um(6, true),
 				new um(7, false));
-		assertTrue(e.getBreakendLogLikelihoodReadPair(Subset.NORMAL) > 0d);
-		assertTrue(e.getBreakendLogLikelihoodReadPair(Subset.TUMOUR) > 0d);
+		assertTrue(e.getBreakendLogLikelihoodReadPair(EvidenceSubset.NORMAL) > 0d);
+		assertTrue(e.getBreakendLogLikelihoodReadPair(EvidenceSubset.TUMOUR) > 0d);
 	}
 	@Test
 	public void should_set_VcfAttribute_READPAIR_MAPPED_READPAIR() {
@@ -153,8 +152,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				new um(5, true),
 				new um(6, true),
 				new um(7, false));
-		assertEquals(1, e.getMappedEvidenceCountReadPair(Subset.NORMAL));
-		assertEquals(2, e.getMappedEvidenceCountReadPair(Subset.TUMOUR));
+		assertEquals(1, e.getMappedEvidenceCountReadPair(EvidenceSubset.NORMAL));
+		assertEquals(2, e.getMappedEvidenceCountReadPair(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_set_VcfAttribute_READPAIR_MAPQ_LOCAL_MAX() {
@@ -167,8 +166,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				new um(5, true),
 				new um(6, true),
 				new um(7, false));
-		assertEquals(7+1, e.getMapqReadPairLocalMax(Subset.NORMAL));
-		assertEquals(6+1, e.getMapqReadPairLocalMax(Subset.TUMOUR));
+		assertEquals(7+1, e.getMapqReadPairLocalMax(EvidenceSubset.NORMAL));
+		assertEquals(6+1, e.getMapqReadPairLocalMax(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_set_VcfAttribute_READPAIR_MAPQ_LOCAL_TOTAL() {
@@ -181,8 +180,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				new um(5, true),
 				new um(6, true),
 				new um(7, false));
-		assertEquals(3*1 + (2+3+7), e.getMapqReadPairLocalTotal(Subset.NORMAL));
-		assertEquals(5*1 + (0+1+4+5+6), e.getMapqReadPairLocalTotal(Subset.TUMOUR));
+		assertEquals(3*1 + (2+3+7), e.getMapqReadPairLocalTotal(EvidenceSubset.NORMAL));
+		assertEquals(5*1 + (0+1+4+5+6), e.getMapqReadPairLocalTotal(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_set_VcfAttribute_READPAIR_MAPQ_REMOTE_MAX() {
@@ -195,8 +194,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				new um(5, true),
 				new um(6, true),
 				new um(7, false));
-		assertEquals(3+6, e.getMapqReadPairRemoteMax(Subset.NORMAL));
-		assertEquals(1+6, e.getMapqReadPairRemoteMax(Subset.TUMOUR));
+		assertEquals(3+6, e.getMapqReadPairRemoteMax(EvidenceSubset.NORMAL));
+		assertEquals(1+6, e.getMapqReadPairRemoteMax(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_set_VcfAttribute_READPAIR_MAPQ_REMOTE_TOTAL() {
@@ -209,8 +208,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				new um(5, true),
 				new um(6, true),
 				new um(7, false));
-		assertEquals(2*6 + (2+3), e.getMapqReadPairRemoteTotal(Subset.NORMAL));
-		assertEquals(2*6 + (0+1), e.getMapqReadPairRemoteTotal(Subset.TUMOUR));
+		assertEquals(2*6 + (2+3), e.getMapqReadPairRemoteTotal(EvidenceSubset.NORMAL));
+		assertEquals(2*6 + (0+1), e.getMapqReadPairRemoteTotal(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_set_VcfAttribute_SOFTCLIP_EVIDENCE_COUNT() {
@@ -224,8 +223,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				rsc(6, true),
 				rsc(7, true),
 				rsc(8, false));
-		assertEquals(4, e.getEvidenceCountSoftClip(Subset.NORMAL));
-		assertEquals(5, e.getEvidenceCountSoftClip(Subset.TUMOUR));
+		assertEquals(4, e.getEvidenceCountSoftClip(EvidenceSubset.NORMAL));
+		assertEquals(5, e.getEvidenceCountSoftClip(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_set_VcfAttribute_SOFTCLIP_LOG_LIKELIHOOD_RATIO() {
@@ -239,8 +238,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				rsc(6, true),
 				rsc(7, true),
 				rsc(8, false));
-		assertTrue(e.getBreakendLogLikelihoodSoftClip(Subset.NORMAL) > 0d);
-		assertTrue(e.getBreakendLogLikelihoodSoftClip(Subset.TUMOUR) > 0d);
+		assertTrue(e.getBreakendLogLikelihoodSoftClip(EvidenceSubset.NORMAL) > 0d);
+		assertTrue(e.getBreakendLogLikelihoodSoftClip(EvidenceSubset.TUMOUR) > 0d);
 	}
 	@Test
 	public void should_set_VcfAttribute_SOFTCLIP_MAPPED() {
@@ -254,8 +253,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				rsc(6, true),
 				rsc(7, true),
 				rsc(8, false));
-		assertEquals(1, e.getMappedEvidenceCountSoftClip(Subset.NORMAL));
-		assertEquals(3, e.getMappedEvidenceCountSoftClip(Subset.TUMOUR));
+		assertEquals(1, e.getMappedEvidenceCountSoftClip(EvidenceSubset.NORMAL));
+		assertEquals(3, e.getMappedEvidenceCountSoftClip(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_set_VcfAttribute_SOFTCLIP_MAPQ_REMOTE_TOTAL() {
@@ -269,8 +268,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				rsc(6, true),
 				rsc(7, true),
 				rsc(8, false));
-		assertEquals(6*1 + 8, e.getMapqSoftClipRemoteTotal(Subset.NORMAL));
-		assertEquals(6*3 + (5+6+7), e.getMapqSoftClipRemoteTotal(Subset.TUMOUR));
+		assertEquals(6*1 + 8, e.getMapqSoftClipRemoteTotal(EvidenceSubset.NORMAL));
+		assertEquals(6*3 + (5+6+7), e.getMapqSoftClipRemoteTotal(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_set_VcfAttribute_SOFTCLIP_MAPQ_REMOTE_MAX() {
@@ -284,18 +283,18 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				rsc(6, true),
 				rsc(7, true),
 				rsc(8, false));
-		assertEquals(6+8, e.getMapqSoftClipRemoteMax(Subset.NORMAL));
-		assertEquals(6+7, e.getMapqSoftClipRemoteMax(Subset.TUMOUR));
+		assertEquals(6+8, e.getMapqSoftClipRemoteMax(EvidenceSubset.NORMAL));
+		assertEquals(6+7, e.getMapqSoftClipRemoteMax(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_set_VcfAttribute_SOFTCLIP_LENGTH_REMOTE_TOTAL() {
-		assertEquals(1, big().getLengthSoftClipTotal(Subset.NORMAL));
-		assertEquals(3+5, big().getLengthSoftClipTotal(Subset.TUMOUR));
+		assertEquals(1, big().getLengthSoftClipTotal(EvidenceSubset.NORMAL));
+		assertEquals(3+5, big().getLengthSoftClipTotal(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_set_VcfAttribute_SOFTCLIP_LENGTH_REMOTE_MAX() {
-		assertEquals(1, big().getLengthSoftClipMax(Subset.NORMAL));
-		assertEquals(5, big().getLengthSoftClipMax(Subset.TUMOUR));
+		assertEquals(1, big().getLengthSoftClipMax(EvidenceSubset.NORMAL));
+		assertEquals(5, big().getLengthSoftClipMax(EvidenceSubset.TUMOUR));
 	}
 	private VariantContextDirectedEvidence fakeass(int offset) {
 		IdsvVariantContextBuilder x = minimalBreakend()
@@ -325,14 +324,14 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		assertEquals(3 + 103, e.getMappedEvidenceCountAssembly());
 		assertEquals(4 + 104, e.getMapqAssemblyRemoteTotal());
 		
-		assertEquals(6 + 106, e.getAssemblyBaseCount(Subset.NORMAL));
-		assertEquals(16 + 116, e.getAssemblyBaseCount(Subset.TUMOUR));
-		assertEquals(7 + 107, e.getAssemblySupportCountReadPair(Subset.NORMAL));
-		assertEquals(17 + 117, e.getAssemblySupportCountReadPair(Subset.TUMOUR));
-		assertEquals(8 + 108, e.getAssemblySupportCountSoftClip(Subset.NORMAL));
-		assertEquals(18 + 118, e.getAssemblySupportCountSoftClip(Subset.TUMOUR));
-		assertEquals(9 + 109, e.getAssemblySoftClipLengthTotal(Subset.NORMAL));
-		assertEquals(19 + 119, e.getAssemblySoftClipLengthTotal(Subset.TUMOUR));
+		assertEquals(6 + 106, e.getAssemblyBaseCount(EvidenceSubset.NORMAL));
+		assertEquals(16 + 116, e.getAssemblyBaseCount(EvidenceSubset.TUMOUR));
+		assertEquals(7 + 107, e.getAssemblySupportCountReadPair(EvidenceSubset.NORMAL));
+		assertEquals(17 + 117, e.getAssemblySupportCountReadPair(EvidenceSubset.TUMOUR));
+		assertEquals(8 + 108, e.getAssemblySupportCountSoftClip(EvidenceSubset.NORMAL));
+		assertEquals(18 + 118, e.getAssemblySupportCountSoftClip(EvidenceSubset.TUMOUR));
+		assertEquals(9 + 109, e.getAssemblySoftClipLengthTotal(EvidenceSubset.NORMAL));
+		assertEquals(19 + 119, e.getAssemblySoftClipLengthTotal(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_max_assembly_VcfAttributes_() {
@@ -340,16 +339,16 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		assertEquals(111, e.getMapqAssemblyRemoteMax());
 		assertEquals(112, e.getAssemblyAnchorLengthMax());
 		assertEquals(113, e.getAssemblyBreakendLengthMax());
-		assertEquals(114, e.getAssemblyReadPairLengthMax(Subset.NORMAL));
-		assertEquals(124, e.getAssemblyReadPairLengthMax(Subset.TUMOUR));
-		assertEquals(115, e.getAssemblySoftClipLengthMax(Subset.NORMAL));
-		assertEquals(125, e.getAssemblySoftClipLengthMax(Subset.TUMOUR));
+		assertEquals(114, e.getAssemblyReadPairLengthMax(EvidenceSubset.NORMAL));
+		assertEquals(124, e.getAssemblyReadPairLengthMax(EvidenceSubset.TUMOUR));
+		assertEquals(115, e.getAssemblySoftClipLengthMax(EvidenceSubset.NORMAL));
+		assertEquals(125, e.getAssemblySoftClipLengthMax(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_merge_same_assembly_by_id() {
 		VariantContextDirectedEvidence v = fakeass(0);
 		VariantContextDirectedEvidence e = b(v, v, v);
-		assertEquals(v.getAssemblySoftClipLengthTotal(Subset.ALL), e.getAssemblySoftClipLengthTotal(Subset.ALL));
+		assertEquals(v.getAssemblySoftClipLengthTotal(EvidenceSubset.ALL), e.getAssemblySoftClipLengthTotal(EvidenceSubset.ALL));
 	}
 	@Test
 	public void should_concat_assembly_strings() {

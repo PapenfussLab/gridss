@@ -10,7 +10,6 @@ import java.util.List;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.metrics.IdsvMetrics;
-import au.edu.wehi.idsv.vcf.VcfAttributes.Subset;
 
 
 
@@ -31,7 +30,7 @@ public class SequentialCoverageAnnotatorTest extends TestHelper {
 			(VariantContextDirectedEvidence)minimalBreakend()
 				.breakpoint(new BreakpointSummary(0, FWD, 10, 10, 1, BWD, 100, 100), "")
 				.make());
-		assertEquals(1, result.getReferenceReadCount(Subset.NORMAL));
-		assertEquals(2, result.getReferenceReadPairCount(Subset.NORMAL));
+		assertEquals(1, result.getReferenceReadCount(EvidenceSubset.NORMAL));
+		assertEquals(2, result.getReferenceReadPairCount(EvidenceSubset.NORMAL));
 	}
 }

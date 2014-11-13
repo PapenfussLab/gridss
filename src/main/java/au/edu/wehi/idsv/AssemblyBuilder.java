@@ -29,7 +29,7 @@ public class AssemblyBuilder {
 	private byte[] quals;
 	private int normalBaseCount;
 	private int tumourBaseCount;
-	private int anchorLen;	
+	private int anchorLen;
 	private BreakendDirection dir = null;
 	private String assembler = "";
 	private Set<DirectedEvidence> evidence = Sets.newHashSet();

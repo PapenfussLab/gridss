@@ -9,14 +9,14 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import au.edu.wehi.idsv.AssemblyBuilder;
+import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
+import au.edu.wehi.idsv.AssemblyFactory;
 import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.debruijn.DeBruijnVariantGraph;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
@@ -25,8 +25,8 @@ import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
 import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
 import au.edu.wehi.idsv.visualisation.StaticDeBruijnSubgraphPathGraphGexfExporter;
 import au.edu.wehi.idsv.visualisation.SubgraphAlgorithmMetrics;
-import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTrackerBEDWriter;
 import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTracker;
+import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTrackerBEDWriter;
 
 import com.google.common.collect.Sets;
 
@@ -171,8 +171,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	 * @param position
 	 * @return
 	 */
-	public Iterable<VariantContextDirectedEvidence> assembleContigsBefore(int position) {
-		List<VariantContextDirectedEvidence> contigs = new ArrayList<>();
+	public Iterable<AssemblyEvidence> assembleContigsBefore(int position) {
+		List<AssemblyEvidence> contigs = new ArrayList<>();
 		for (SubgraphSummary ss : subgraphs) {
 			boolean timeoutExceeded = exceedsTimeout(ss);
 			if (timeoutExceeded) {
@@ -208,7 +208,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 					graphExporter = new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k);
 				}
 				for (List<Long> contig : pga.assembleContigs(graphExporter)) {
-					VariantContextDirectedEvidence variant = toAssemblyEvidence(contig, tracker);
+					AssemblyEvidence variant = toAssemblyEvidence(contig, tracker);
 					if (variant != null) {
 						contigs.add(variant);
 					}
@@ -222,7 +222,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 				}
 			}
 		}
-		Collections.sort(contigs, VariantContextDirectedEvidence.ByLocationStart);
+		Collections.sort(contigs, DirectedEvidence.ByStartEnd);
 		return contigs;
 	}
 	private String debugOutputKmerSpread(SubgraphSummary ss) {
@@ -280,7 +280,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		}
 		return reads;
 	}
-	private VariantContextDirectedEvidence toAssemblyEvidence(List<Long> contigKmers, SubgraphAssemblyAlgorithmTracker tracker) {
+	private AssemblyEvidence toAssemblyEvidence(List<Long> contigKmers, SubgraphAssemblyAlgorithmTracker tracker) {
 		int refCount = -1;
 		int refAnchor = 0;
 		Integer mateAnchor = null;
@@ -326,15 +326,17 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 				}
 			}
 		}
-		AssemblyBuilder builder = debruijnContigAssembly(contigKmers, refCount)
-				.assemblerName(ASSEMBLER_NAME);
+		ContigAssembly ca = debruijnContigAssembly(contigKmers, refCount);
+		AssemblyEvidence evidence = null;
 		if (refCount > 0) {
 			// anchored read
-			builder.referenceAnchor(referenceIndex, refAnchor)
-				.anchorLength(refCount + getK() - 1);
+			evidence = AssemblyFactory.createAnchored(processContext, source, direction, ca.support,
+					referenceIndex, refAnchor, refCount + getK() - 1,
+					ca.baseCalls, ca.baseQuals, ca.normalBaseCount, ca.tumourBaseCount);
 		} else if (mateAnchor != null) {
 			// inexact breakend
-			builder.mateAnchor(referenceIndex, mateAnchor);
+			evidence = AssemblyFactory.createUnanchored(processContext, source, direction, ca.support,
+					ca.baseCalls, ca.baseQuals, ca.normalBaseCount, ca.tumourBaseCount);
 		} else {
 			// Assembly is neither anchored by breakend nor anchored by mate pair
 			// This occurs when the de bruijn graph has a non-reference kmer fork
@@ -349,9 +351,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			//
 			return null;
 		}
-		VariantContextDirectedEvidence variant = builder.makeVariant();
-		tracker.toAssemblyEvidence(variant);
-		return variant;
+		return evidence;
 	}
 	private static Log expensiveSanityCheckLog = Log.getInstance(DeBruijnReadGraph.class);
 	public boolean sanityCheckSubgraphs() {

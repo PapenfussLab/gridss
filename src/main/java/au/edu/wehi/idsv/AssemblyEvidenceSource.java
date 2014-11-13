@@ -81,7 +81,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	@Override
 	protected CloseableIterator<DirectedEvidence> perChrIterator(String chr) {
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		return (CloseableIterator<DirectedEvidence>)(Object)iterator(
+		return (CloseableIterator<DirectedEvidence>)(Object)vcfIterator(
 				fsc.getAssemblyVcfForChr(input, chr),
 				fsc.getRealignmentBamForChr(input, chr),
 				fsc.getAssemblyRemoteVcfForChr(input, chr),
@@ -91,36 +91,36 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	@Override
 	protected CloseableIterator<DirectedEvidence> singleFileIterator() {
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		return (CloseableIterator<DirectedEvidence>)(Object)iterator(
+		return (CloseableIterator<DirectedEvidence>)(Object)vcfIterator(
 			fsc.getAssemblyVcf(input),
 			fsc.getRealignmentBam(input),
 			fsc.getAssemblyRemoteVcf(input),
 			"");
 	}
-	private CloseableIterator<VariantContextDirectedEvidence> iterator(File vcf, File realignment, File remoteRealigned, String chr) {
+	private CloseableIterator<AssemblyEvidence> vcfIterator(File vcf, File realignment, File remoteRealigned, String chr) {
 		if (!isProcessingComplete()) {
 			log.error("Assemblies not yet generated.");
 			throw new RuntimeException("Assemblies not yet generated");
 		}
-		CloseableIterator<VariantContextDirectedEvidence> local = localIterator(vcf, realignment);
-		CloseableIterator<VariantContextDirectedEvidence> it = local;
+		CloseableIterator<AssemblyEvidence> local = localVcfIterator(vcf, realignment);
+		CloseableIterator<AssemblyEvidence> it = local;
 		if (includeRemote) {
 			@SuppressWarnings("unchecked")
-			CloseableIterator<VariantContextDirectedEvidence> remote = (CloseableIterator<VariantContextDirectedEvidence>)(Object)remoteIterator(remoteRealigned);
+			CloseableIterator<AssemblyEvidence> remote = (CloseableIterator<AssemblyEvidence>)(Object)remoteVcfIterator(remoteRealigned);
 			it = new AutoClosingMergedIterator<>(ImmutableList.of(local, remote), DirectedEvidenceOrder.ByNatural);
 		}
-		return new AsyncBufferedIterator<VariantContextDirectedEvidence>(it, "Assembly " + chr);
+		return new AsyncBufferedIterator<AssemblyEvidence>(it, "Assembly " + chr);
 	}
-	private CloseableIterator<VariantContextDirectedBreakpointRemote> remoteIterator(File remoteRealigned) {
+	private CloseableIterator<AssemblyEvidence> remoteVcfIterator(File remoteRealigned) {
 		if (remoteRealigned.exists()) {
 			final VCFFileReader reader = new VCFFileReader(remoteRealigned, false);
 			CloseableIterator<VariantContext> rawVcfIt = reader.iterator();
 			return new VariantContextDirectedBreakpointRemoteIterator(processContext, this,
 					new AutoClosingIterator<>(rawVcfIt, ImmutableList.<Closeable>of(reader)));
 		}
-		return new AutoClosingIterator<>(Collections.<VariantContextDirectedBreakpointRemote>emptyIterator());
+		return new AutoClosingIterator<>(Collections.<AssemblyEvidence>emptyIterator());
 	}
-	private CloseableIterator<VariantContextDirectedEvidence> localIterator(File vcf, File realignment) {
+	private CloseableIterator<VariantContextDirectedEvidence> localVcfIterator(File vcf, File realignment) {
 		List<Closeable> toClose = new ArrayList<>();
 		CloseableIterator<SAMRecord> realignedIt; 
 		if (isRealignmentComplete()) {
@@ -260,7 +260,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		private File realignmentFastq;
 		private FastqBreakpointWriter fastqWriter = null;
 		private VariantContextWriter vcfWriter = null;
-		private Queue<VariantContextDirectedEvidence> resortBuffer = new PriorityQueue<VariantContextDirectedEvidence>(32, IdsvVariantContext.ByLocationStart);
+		private Queue<AssemblyEvidence> resortBuffer = new PriorityQueue<AssemblyEvidence>(32, DirectedEvidence.ByStartEnd);
 		private long maxAssembledPosition = Long.MIN_VALUE;
 		private long lastFlushedPosition = Long.MIN_VALUE;
 		private long lastProgress = 0;
@@ -314,14 +314,14 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			}
 		}
 		private void processAssembly(
-				Iterable<VariantContextDirectedEvidence> evidenceList,
-				Queue<VariantContextDirectedEvidence> buffer,
+				Iterable<AssemblyEvidence> evidenceList,
+				Queue<AssemblyEvidence> buffer,
 				FastqBreakpointWriter fastqWriter,
 				VariantContextWriter vcfWriter) {
 	    	if (evidenceList != null) {
-		    	for (VariantContextDirectedEvidence a : evidenceList) {
+		    	for (AssemblyEvidence a : evidenceList) {
 		    		if (a != null) {
-			    		maxAssembledPosition = Math.max(maxAssembledPosition, processContext.getLinear().getLinearCoordinate(a.getReferenceIndex(), a.getStart()));
+			    		maxAssembledPosition = Math.max(maxAssembledPosition, processContext.getLinear().getStartLinearCoordinate(a.getBreakendSummary()));
 			    		if (Defaults.WRITE_FILTERED_CALLS || !a.isFiltered()) {
 			    			buffer.add(a);
 			    		}
@@ -336,14 +336,14 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	    }
 		private void flushWriterQueueBefore(
 				long flushBefore,
-				Queue<VariantContextDirectedEvidence> buffer,
+				Queue<AssemblyEvidence> buffer,
 				FastqBreakpointWriter fastqWriter,
 				VariantContextWriter vcfWriter) {
-			while (!buffer.isEmpty() && processContext.getLinear().getLinearCoordinate(buffer.peek().getReferenceIndex(), buffer.peek().getStart()) < flushBefore) {
-				long pos = processContext.getLinear().getLinearCoordinate(buffer.peek().getReferenceIndex(), buffer.peek().getStart());
-				VariantContextDirectedEvidence evidence = buffer.poll();
+			while (!buffer.isEmpty() && processContext.getLinear().getStartLinearCoordinate(buffer.peek().getBreakendSummary()) < flushBefore) {
+				long pos = processContext.getLinear().getStartLinearCoordinate(buffer.peek().getBreakendSummary());
+				AssemblyEvidence evidence = buffer.poll();
 				if (pos < lastFlushedPosition) {
-					log.error(String.format("Sanity check failure: assembly breakend %s written out of order.", evidence.getID()));
+					log.error(String.format("Sanity check failure: assembly breakend %s written out of order.", evidence.getEvidenceID()));
 				}
 				lastFlushedPosition = pos;
 				if (Defaults.WRITE_FILTERED_CALLS || !evidence.isFiltered()) {

@@ -9,7 +9,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfAttributes.Subset;
 
 public class VariantContextDirectedEvidenceTest extends TestHelper {
 	@Test
@@ -262,14 +261,14 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 		VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)minimalBreakend()
 				.attribute(VcfAttributes.ASSEMBLY_READPAIR_COUNT, new int[] { 1, 2})
 				.make();
-		assertEquals(3, v.getAssemblySupportCountReadPair(Subset.ALL));
+		assertEquals(3, v.getAssemblySupportCountReadPair(EvidenceSubset.ALL));
 	}
 	@Test
 	public void ALL_subset_should_max_tumour_normal() {
 		VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)minimalBreakend()
 				.attribute(VcfAttributes.ASSEMBLY_READPAIR_LENGTH_MAX, new int[] { 1, 2})
 				.make();
-		assertEquals(2, v.getAssemblyReadPairLengthMax(Subset.ALL));
+		assertEquals(2, v.getAssemblyReadPairLengthMax(EvidenceSubset.ALL));
 	}
 	@Test
 	public void null_should_alias_Subset_ALL() {

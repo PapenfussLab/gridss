@@ -2,8 +2,6 @@ package au.edu.wehi.idsv;
 
 import org.apache.commons.math3.distribution.BinomialDistribution;
 
-import au.edu.wehi.idsv.vcf.VcfAttributes.Subset;
-
 /**
  * variant/reference Log-likelihood statistical model
  * 
@@ -20,15 +18,15 @@ public class Models {
 	 */
 	public static double somaticPvalue(ProcessingContext context, VariantContextDirectedEvidence call) {
 		int variantNormal = 0, variantTumour = 0;
-		int refNormal = call.getReferenceReadCount(Subset.NORMAL) + call.getReferenceReadPairCount(Subset.NORMAL);
-		int refTumour = call.getReferenceReadCount(Subset.TUMOUR) + call.getReferenceReadPairCount(Subset.TUMOUR);
+		int refNormal = call.getReferenceReadCount(EvidenceSubset.NORMAL) + call.getReferenceReadPairCount(EvidenceSubset.NORMAL);
+		int refTumour = call.getReferenceReadCount(EvidenceSubset.TUMOUR) + call.getReferenceReadPairCount(EvidenceSubset.TUMOUR);
 		if (call.getMappedEvidenceCountAssembly() > 0) {
 			// just use the assembled evidence as we know this supports our variant 
-			variantNormal = call.getAssemblySupportCount(Subset.NORMAL);
-			variantTumour = call.getAssemblySupportCount(Subset.TUMOUR);
+			variantNormal = call.getAssemblySupportCount(EvidenceSubset.NORMAL);
+			variantTumour = call.getAssemblySupportCount(EvidenceSubset.TUMOUR);
 		} else {
-			variantNormal = call.getEvidenceCount(Subset.NORMAL);
-			variantTumour = call.getEvidenceCount(Subset.TUMOUR);
+			variantNormal = call.getEvidenceCount(EvidenceSubset.NORMAL);
+			variantTumour = call.getEvidenceCount(EvidenceSubset.TUMOUR);
 		}
 		assert(variantNormal >= 0);
 		assert(variantTumour >= 0);

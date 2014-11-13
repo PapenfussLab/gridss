@@ -9,7 +9,6 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfAttributes.Subset;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
 import com.google.common.base.Function;
@@ -339,7 +338,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		public int compare(VariantContextDirectedEvidence o1, VariantContextDirectedEvidence o2) {
 			  return ComparisonChain.start()
 			        .compareTrueFirst(o1 instanceof VariantContextDirectedBreakpoint, o2 instanceof VariantContextDirectedBreakpoint)
-			        .compareTrueFirst(o1.getAssemblySupportCountSoftClip(Subset.ALL) > 0, o2.getAssemblySupportCountSoftClip(Subset.ALL) > 0)
+			        .compareTrueFirst(o1.getAssemblySupportCountSoftClip(EvidenceSubset.ALL) > 0, o2.getAssemblySupportCountSoftClip(EvidenceSubset.ALL) > 0)
 			        .compare(Models.llr(o2), Models.llr(o1)) // desc
 			        .result();
 		  }

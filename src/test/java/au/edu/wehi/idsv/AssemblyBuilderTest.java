@@ -12,7 +12,6 @@ import java.util.Set;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import au.edu.wehi.idsv.vcf.VcfAttributes.Subset;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
@@ -257,35 +256,35 @@ public class AssemblyBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_BASE_COUNT() {	
-		assertEquals(513, big().getAssemblyBaseCount(Subset.NORMAL));
-		assertEquals(745, big().getAssemblyBaseCount(Subset.TUMOUR));
-		assertEquals(513, bigr().getAssemblyBaseCount(Subset.NORMAL));
-		assertEquals(745, bigr().getAssemblyBaseCount(Subset.TUMOUR));
+		assertEquals(513, big().getAssemblyBaseCount(EvidenceSubset.NORMAL));
+		assertEquals(745, big().getAssemblyBaseCount(EvidenceSubset.TUMOUR));
+		assertEquals(513, bigr().getAssemblyBaseCount(EvidenceSubset.NORMAL));
+		assertEquals(745, bigr().getAssemblyBaseCount(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_READPAIR_COUNT() {
-		assertEquals(2, bigr().getAssemblySupportCountReadPair(Subset.NORMAL));
-		assertEquals(4, bigr().getAssemblySupportCountReadPair(Subset.TUMOUR));
+		assertEquals(2, bigr().getAssemblySupportCountReadPair(EvidenceSubset.NORMAL));
+		assertEquals(4, bigr().getAssemblySupportCountReadPair(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_READPAIR_LENGTH_MAX() {
-		assertEquals(10, bigr().getAssemblyReadPairLengthMax(Subset.NORMAL));
-		assertEquals(5, bigr().getAssemblyReadPairLengthMax(Subset.TUMOUR));
+		assertEquals(10, bigr().getAssemblyReadPairLengthMax(EvidenceSubset.NORMAL));
+		assertEquals(5, bigr().getAssemblyReadPairLengthMax(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_SOFTCLIP_COUNT() {
-		assertEquals(1, bigr().getAssemblySupportCountSoftClip(Subset.NORMAL));
-		assertEquals(2, bigr().getAssemblySupportCountSoftClip(Subset.TUMOUR));
+		assertEquals(1, bigr().getAssemblySupportCountSoftClip(EvidenceSubset.NORMAL));
+		assertEquals(2, bigr().getAssemblySupportCountSoftClip(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL() {	
-		assertEquals(4, bigr().getAssemblySoftClipLengthTotal(Subset.NORMAL));
-		assertEquals(6, bigr().getAssemblySoftClipLengthTotal(Subset.TUMOUR));
+		assertEquals(4, bigr().getAssemblySoftClipLengthTotal(EvidenceSubset.NORMAL));
+		assertEquals(6, bigr().getAssemblySoftClipLengthTotal(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX() {
-		assertEquals(4, bigr().getAssemblySoftClipLengthMax(Subset.NORMAL));
-		assertEquals(3, bigr().getAssemblySoftClipLengthMax(Subset.TUMOUR));
+		assertEquals(4, bigr().getAssemblySoftClipLengthMax(EvidenceSubset.NORMAL));
+		assertEquals(3, bigr().getAssemblySoftClipLengthMax(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_CONSENSUS() {

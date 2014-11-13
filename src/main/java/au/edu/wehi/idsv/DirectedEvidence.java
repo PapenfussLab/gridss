@@ -12,7 +12,7 @@ public interface DirectedEvidence {
 	 */
 	BreakendSummary getBreakendSummary();
 	/**
-	 * Gets the breakpoint sequence excluding anchor.
+	 * Gets the breakpoint sequence excluding anchored based according to the breakend anchor positive strand.   
 	 * @return breakpoint sequence bases, null if breakend sequence is not known
 	 */
 	public byte[] getBreakendSequence();
@@ -37,7 +37,7 @@ public interface DirectedEvidence {
 	 */
 	EvidenceSource getEvidenceSource();
 	/**
-	 * MAPQ of SV-supporting evidence mapped to the reference 
+	 * Maximum MAPQ of SV-supporting evidence mapped to the reference 
 	 * @return
 	 */
 	int getLocalMapq();
@@ -66,6 +66,12 @@ public interface DirectedEvidence {
 		@Override
 		public int compare(DirectedEvidence arg0, DirectedEvidence arg1) {
 			return BreakendSummary.ByEndStart.compare(arg0.getBreakendSummary(), arg1.getBreakendSummary());
+		}
+	};
+	static final Ordering<DirectedEvidence> ByStartEnd = new Ordering<DirectedEvidence>() {
+		@Override
+		public int compare(DirectedEvidence arg0, DirectedEvidence arg1) {
+			return BreakendSummary.ByStartEnd.compare(arg0.getBreakendSummary(), arg1.getBreakendSummary());
 		}
 	};
 }

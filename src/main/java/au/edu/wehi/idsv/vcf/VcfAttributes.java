@@ -70,21 +70,7 @@ public enum VcfAttributes {
 	TRUTH_MATCHES ("TRUTH_MATCHES", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Variant ID of all true variants as defined in the supplied truth set"),
 	TRUTH_MISREALIGN ("TRUTH_MISREALIGN", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Variant ID of the true variant for all variants where the remote breakend location does not match the true variant as defined in the supplied truth set");
 
-	public enum Subset {
-		/**
-		 * All evidence
-		 */
-		ALL,
-		/**
-		 * Only normal evidence
-		 */
-		NORMAL,
-		/**
-		 * Only tumour evidence
-		 */
-		TUMOUR,
-	}
-    private final VCFInfoHeaderLine header;
+	private final VCFInfoHeaderLine header;
 	VcfAttributes(String name, int count, VCFHeaderLineType type, String description) {
 		this.header = new VCFInfoHeaderLine(name, count, type, description);
 	}

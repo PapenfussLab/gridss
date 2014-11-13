@@ -1,7 +1,7 @@
 package au.edu.wehi.idsv;
 
 public interface ReadEvidenceAssembler {
-	Iterable<VariantContextDirectedEvidence> addEvidence(DirectedEvidence evidence);
-	Iterable<VariantContextDirectedEvidence> endOfEvidence();
+	Iterable<AssemblyEvidence> addEvidence(DirectedEvidence evidence);
+	Iterable<AssemblyEvidence> endOfEvidence();
 	String getStateSummaryMetrics();
 }

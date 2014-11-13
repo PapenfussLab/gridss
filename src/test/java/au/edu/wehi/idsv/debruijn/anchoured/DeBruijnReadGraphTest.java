@@ -66,14 +66,14 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	public void should_assemble_single_read() {
 		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(), 4, BreakendDirection.Forward);
 		addRead(ass, R("AAAACGTC"), true);
-		VariantContextDirectedEvidence result = ass.assembleVariant(0, 1);
+		VariantContextDirectedEvidence result = ass.assemble(0, 1);
 		assertEquals("AAAACGTC", result.getAssemblyConsensus());
 	}
 	@Test
 	public void should_assemble_positive_strand_consensus() {
 		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(), 4, BreakendDirection.Forward);
 		addRead(ass, R(null, "AAAACGTC", null, true, true), true);
-		VariantContextDirectedEvidence result = ass.assembleVariant(0, 1);
+		VariantContextDirectedEvidence result = ass.assemble(0, 1);
 		assertEquals("AAAACGTC", result.getAssemblyConsensus());
 	}
 	@Test
@@ -81,7 +81,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, BreakendDirection.Forward);
 		addRead(ass, withSequence("CTAAA", Read(0, 1, "4M1S"))[0], true);
 		addRead(ass, R(null, "AAAGT", null, false, true), false);
-		VariantContextDirectedEvidence result = ass.assembleVariant(0, 1);
+		VariantContextDirectedEvidence result = ass.assemble(0, 1);
 		assertEquals("CTAAAGT", result.getAssemblyConsensus());
 		assertEquals("AGT", result.getBreakpointSequenceString());
 	}
@@ -92,7 +92,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		SAMRecord unanchored = R(null, "AAAGT", null, false, true);
 		unanchored.setMateUnmappedFlag(true);
 		addRead(ass, unanchored, false);
-		VariantContextDirectedEvidence result = ass.assembleVariant(0, 1);
+		VariantContextDirectedEvidence result = ass.assemble(0, 1);
 		assertEquals("CTAAAGT", result.getAssemblyConsensus());
 		assertEquals("AAAGT", result.getBreakpointSequenceString());
 	}
@@ -118,7 +118,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		SAMRecord unanchored = R(null, unanchorSeq, null, mappedNegativeStrand, mateNegativeStrand);
 		unanchored.setReadUnmappedFlag(true);
 		addRead(ass, unanchored, false);
-		VariantContextDirectedEvidence result = ass.assembleVariant(0, 1);
+		VariantContextDirectedEvidence result = ass.assemble(0, 1);
 		assertEquals(expectedSeq, result.getAssemblyConsensus());
 		assertEquals(breakendSequence, result.getBreakpointSequenceString());
 		
@@ -127,7 +127,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		unanchored = R(null, unanchorSeq, null, mappedNegativeStrand, mateNegativeStrand);
 		unanchored.setReadUnmappedFlag(false);
 		addRead(ass, unanchored, false);
-		result = ass.assembleVariant(0, 1);
+		result = ass.assemble(0, 1);
 		assertEquals(expectedSeq, result.getAssemblyConsensus());
 		assertEquals(direction, result.getBreakendSummary().direction);
 		assertEquals(breakendSequence, result.getBreakpointSequenceString());
@@ -138,7 +138,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		SAMRecord sc = R("AAAACGTC");
 		sc.setCigarString("4M4S");
 		addRead(ass, sc, true);
-		VariantContextDirectedEvidence result = ass.assembleVariant(0, 1);
+		VariantContextDirectedEvidence result = ass.assemble(0, 1);
 		assertEquals("AAAACGTC", result.getAssemblyConsensus());
 		assertEquals("CGTC", result.getBreakpointSequenceString());
 	}
@@ -148,7 +148,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		SAMRecord sc = R(null, "ACGTACTGAG", new byte[] { 1,2,3,4,5,6,7,8,9,10}, false, true);
 		sc.setCigarString("4M6S");
 		addRead(ass, sc, true);
-		VariantContextDirectedEvidence result = ass.assembleVariant(0, 1);
+		VariantContextDirectedEvidence result = ass.assemble(0, 1);
 		assertEquals("TACTGAGT", result.getAssemblyConsensus());
 	}
 	@Test
@@ -157,7 +157,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		SAMRecord sc = R("AAAACGTC");
 		sc.setCigarString("4S4M");
 		addRead(ass, sc, true);
-		VariantContextDirectedEvidence result = ass.assembleVariant(0, 1);
+		VariantContextDirectedEvidence result = ass.assemble(0, 1);
 		assertEquals("AAAACGTC", result.getAssemblyConsensus());
 		assertEquals("AAAA", result.getBreakpointSequenceString());
 	}
@@ -169,10 +169,10 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		addRead(ass, sc, true);
 		addRead(ass, R("r1", "AAAATTTT"), false);
 		addRead(ass, R("r2", "AAAATTTT"), false);
-		assertEquals("AAAATTTT", ass.assembleVariant(0, 1).getAssemblyConsensus());
+		assertEquals("AAAATTTT", ass.assemble(0, 1).getAssemblyConsensus());
 		removeRead(ass, R("r1", "AAAATTTT"), false);
 		removeRead(ass, R("r2", "AAAATTTT"), false);
-		VariantContextDirectedEvidence result = ass.assembleVariant(0, 1);
+		VariantContextDirectedEvidence result = ass.assemble(0, 1);
 		assertEquals("AAAACGTC", result.getAssemblyConsensus());
 	}
 	@Test
@@ -181,7 +181,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		SAMRecord sc = R("AAAACGTC");
 		sc.setCigarString("2M6S");
 		addRead(ass, sc, true);
-		VariantContextDirectedEvidence result = ass.assembleVariant(0, 1);
+		VariantContextDirectedEvidence result = ass.assemble(0, 1);
 		assertEquals("AAAACGTC", result.getAssemblyConsensus());
 		assertEquals("AACGTC", result.getBreakpointSequenceString());
 	}
@@ -190,7 +190,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, BreakendDirection.Forward);
 		addRead(ass, R(null, "ACGTA", new byte[] { 1,2,3,4,5 }, false, true), true);
 		addRead(ass, R(null, "ACGTA", new byte[] { 3,4,5,6,7 }, false, true), true);
-		VariantContextDirectedEvidence result = ass.assembleVariant(0, 1);
+		VariantContextDirectedEvidence result = ass.assemble(0, 1);
 		// pad out read qualities
 		assertArrayEquals(new byte[] { /*4,6,8,8,*/8 }, result.getBreakendQuality());
 	}
@@ -199,7 +199,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, BreakendDirection.Forward);
 		addRead(ass, R(null, "ACGTA", new byte[] { 1,2,3,4,5 }, false, true), true);
 		addRead(ass, R(null, "ACGTA", new byte[] { 3,4,5,6,7 }, false, true), true);
-		VariantContextDirectedEvidence result = ass.assembleVariant(0, 1);
+		VariantContextDirectedEvidence result = ass.assemble(0, 1);
 		// pad out read qualities
 		assertEquals(result.getAssemblyConsensus(), result.getBreakendQuality());
 	}
@@ -210,7 +210,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		addRead(ass, R(null, "ACGTA", new byte[] { 3,4,5,6,7 }, false, true), true);
 		addRead(ass, R(null, "AAAAA", new byte[] { 1,1,1,1,1 }, false, true), true);
 		addRead(ass, R(null, "ACGAA", new byte[] { 1,1,1,1,1 }, false, true), true);
-		VariantContextDirectedEvidence result = ass.assembleVariant(0, 1);
+		VariantContextDirectedEvidence result = ass.assemble(0, 1);
 		
 		assertEquals(3, result.getAssemblySupportCount(null));
 	}
@@ -231,7 +231,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		ass.addEvidence(HackSCE("ACGAA", new byte[] { 1,1,1,1,1 })); // 3
 		addRead(ass, R(null, "TTGTA", new byte[] { 1,1,1,1,1 }, false, true), false); // 3
 		addRead(ass, R(null, "GTACG", new byte[] { 1,1,1,1,1 }, false, true), false); // 5 all bases included (even though they're miassembled)
-		VariantContextDirectedEvidence result = ass.assembleVariant(0, 1);
+		VariantContextDirectedEvidence result = ass.assemble(0, 1);
 		
 		assertEquals("test assumes this contruction - did I get the test case wrong?", "TACGTA", result.getAssemblyConsensus());
 		assertEquals(4 + 5 + 3 + 3 + 5, result.getAssemblyBaseCount(null));
@@ -244,7 +244,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		ass.addEvidence(HackSCE("AAAAA", new byte[] { 1,1,1,1,1 })); // 0 since no kmer on path
 		ass.addEvidence(HackSCE("ACGAA", new byte[] { 1,1,1,1,1 })); // 3 bases in the middle
 		addRead(ass, R(null, "TTGTA", new byte[] { 1,1,1,1,1 }, false, true), false); // 3
-		VariantContextDirectedEvidence result = ass.assembleVariant(0, 1);
+		VariantContextDirectedEvidence result = ass.assemble(0, 1);
 		
 		assertEquals("test assumes this contruction - did I get the test case wrong?", "ACGTA", result.getAssemblyConsensus());
 		assertEquals(4 + 5 + 3 + 3, result.getAssemblyBaseCount(null));

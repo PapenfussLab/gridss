@@ -2,13 +2,13 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 
 import java.io.File;
 
+import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.ReadEvidenceAssembler;
-import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.visualisation.DeBruijnSubgraphGexfExporter;
 import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTrackerBEDWriter;
 
@@ -38,8 +38,8 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 		this.source = source;
 	}
 	@Override
-	public Iterable<VariantContextDirectedEvidence> addEvidence(DirectedEvidence evidence) {
-		Iterable<VariantContextDirectedEvidence> it = ImmutableList.of();
+	public Iterable<AssemblyEvidence> addEvidence(DirectedEvidence evidence) {
+		Iterable<AssemblyEvidence> it = ImmutableList.of();
 		if (evidence.getBreakendSummary().referenceIndex != currentReferenceIndex) {
 			it = assembleAll();
 			init(evidence.getBreakendSummary().referenceIndex);
@@ -61,7 +61,7 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 		return it;
 	}
 	@Override
-	public Iterable<VariantContextDirectedEvidence> endOfEvidence() {
+	public Iterable<AssemblyEvidence> endOfEvidence() {
 		return assembleAll();
 	}
 	private void init(int referenceIndex) {
@@ -81,8 +81,8 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 			bgraph.setGraphExporter(new DeBruijnSubgraphGexfExporter(processContext.getAssemblyParameters().k));
 		}
 	}
-	private Iterable<VariantContextDirectedEvidence> assembleAll() {
-		Iterable<VariantContextDirectedEvidence> assemblies = assembleBefore(Integer.MAX_VALUE);
+	private Iterable<AssemblyEvidence> assembleAll() {
+		Iterable<AssemblyEvidence> assemblies = assembleBefore(Integer.MAX_VALUE);
 		File exportDir = processContext.getAssemblyParameters().debruijnGraphVisualisationDirectory;
 		if (exportDir != null && processContext.getAssemblyParameters().visualiseAll) {
 			exportDir.mkdir();
@@ -101,13 +101,13 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 		}
 		return assemblies;
 	}
-	private Iterable<VariantContextDirectedEvidence> assembleBefore(int position) {
+	private Iterable<AssemblyEvidence> assembleBefore(int position) {
 		startingNextProcessingStep();
 		if (currentReferenceIndex < 0) return ImmutableList.of();
-		Iterable<VariantContextDirectedEvidence> it = Iterables.mergeSorted(ImmutableList.of(
+		Iterable<AssemblyEvidence> it = Iterables.mergeSorted(ImmutableList.of(
 				fgraph.assembleContigsBefore(position),
 				bgraph.assembleContigsBefore(position)),
-				VariantContextDirectedEvidence.ByLocationStart);
+				DirectedEvidence.ByStartEnd);
 		fgraph.removeBefore(position);
 		bgraph.removeBefore(position);
 		return it;

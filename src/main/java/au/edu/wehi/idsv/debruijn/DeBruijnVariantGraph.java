@@ -10,7 +10,6 @@ import java.util.Set;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import au.edu.wehi.idsv.AssemblyBuilder;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;
@@ -163,26 +162,33 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 //		}
 //		return readLength;
 //	}
-	protected AssemblyBuilder debruijnContigAssembly(List<Long> path, int referenceKmersAtStartOfPath) {
-		AssemblyBuilder builder = new AssemblyBuilder(processContext, source)
-			.direction(direction)
-			.assemblyBases(getBaseCalls(path));
-		addEvidenceSupportSinglePass(path, referenceKmersAtStartOfPath, builder);
-		return builder;
+	protected class ContigAssembly {
+		public Set<DirectedEvidence> support;
+		public byte[] baseCalls;
+		public byte[] baseQuals;
+		public int normalBaseCount;
+		public int tumourBaseCount;
+	}
+	protected ContigAssembly debruijnContigAssembly(List<Long> path, int referenceKmersAtStartOfPath) {
+		return assembleSinglePass(path, referenceKmersAtStartOfPath);
 	}
 	@SuppressWarnings("unused")
-	private AssemblyBuilder addEvidenceSupportMaintainable(List<Long> path, int referenceKmersAtStartOfPath, AssemblyBuilder builder) {
-		List<Long> breakendPath = path.subList(referenceKmersAtStartOfPath, path.size());
-		Set<DirectedEvidence> support = getSupportingEvidence(breakendPath);
-		return builder
-				.assemblyBaseQuality(getBaseQuals(path))
-				.contributingEvidence(support)
-				.assembledBaseCount(getEvidenceBaseCount(breakendPath, false), getEvidenceBaseCount(breakendPath, true));
+	private ContigAssembly assembleMaintainable(final List<Long> path, final int referenceKmersAtStartOfPath) {
+		final List<Long> breakendPath = path.subList(referenceKmersAtStartOfPath, path.size());
+		return new ContigAssembly() {{
+			support = getSupportingEvidence(breakendPath);
+			baseCalls = getBaseCalls(path);
+			baseQuals = getBaseQuals(path);
+			normalBaseCount = getEvidenceBaseCount(breakendPath, false);
+			tumourBaseCount = getEvidenceBaseCount(breakendPath, true);
+		}};
 	}
-	private AssemblyBuilder addEvidenceSupportSinglePass(List<Long> path, int referenceKmersAtStartOfPath, AssemblyBuilder builder) {
-		Set<DirectedEvidence> support = new HashSet<>();
-		int tumourBaseCount = 0;
-		int normalBaseCount = 0;
+	private ContigAssembly assembleSinglePass(List<Long> path, int referenceKmersAtStartOfPath) {
+		ContigAssembly ca = new ContigAssembly();
+		ca.baseCalls = getBaseCalls(path);
+		ca.support = new HashSet<>();
+		ca.tumourBaseCount = 0;
+		ca.normalBaseCount = 0;
 		List<Integer> qual = new ArrayList<Integer>(path.size());
 		int offset = 0;
 		for (Long node : path) {
@@ -194,25 +200,25 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 					SAMEvidenceSource source = (SAMEvidenceSource)e.getEvidenceSource();
 					boolean evidenceIsTumour = source != null && source.isTumour();
 					if (evidenceIsTumour) {
-						tumourBaseCount++;
+						ca.tumourBaseCount++;
 					} else {
-						normalBaseCount++;
+						ca.normalBaseCount++;
 					}
 				}
-				if (support.size() < SUPPORT_SIZE_TO_START_APPROXIMATION) {
-					support.addAll(list);
-					if (support.size() > SUPPORT_SIZE_HARD_LIMIT) {
+				if (ca.support.size() < SUPPORT_SIZE_TO_START_APPROXIMATION) {
+					ca.support.addAll(list);
+					if (ca.support.size() > SUPPORT_SIZE_HARD_LIMIT) {
 						log.warn(String.format("Hit support size hard limit of %d - no longer processing additional support", SUPPORT_SIZE_HARD_LIMIT));
 					}
-				} else if (support.size() < SUPPORT_SIZE_HARD_LIMIT){
+				} else if (ca.support.size() < SUPPORT_SIZE_HARD_LIMIT){
 					// approximate our level of support
 					if (offset % (getK() / 2) == 0) {
 						// reduce our update frequency to twice per kmer bases
 						// this should still get most reads as soft clips
 						// are added as the first evidence and RPs should
 						// map fully
-						support.addAll(list);
-						if (support.size() > SUPPORT_SIZE_HARD_LIMIT) {
+						ca.support.addAll(list);
+						if (ca.support.size() > SUPPORT_SIZE_HARD_LIMIT) {
 							log.warn(String.format("Hit support size hard limit of %d - no longer processing additional support", SUPPORT_SIZE_HARD_LIMIT));
 						}
 					}
@@ -224,9 +230,10 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		}
 		// pad out qualities to match the path length
 		for (int i = 0; i < getK() - 1; i++) qual.add(qual.get(qual.size() - 1));
-		byte[] quals = rescaleBaseQualities(qual);
-		return builder.assemblyBaseQuality(quals)
-				.contributingEvidence(support)
-				.assembledBaseCount(normalBaseCount, tumourBaseCount);
+		ca.baseQuals = rescaleBaseQualities(qual);
+		if (direction == BreakendDirection.Backward) {
+			ArrayUtils.reverse(ca.baseQuals);
+		}
+		return ca;
 	}
 }
