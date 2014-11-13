@@ -10,6 +10,7 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.ReadEvidenceAssembler;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.visualisation.DeBruijnSubgraphGexfExporter;
+import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTrackerBEDWriter;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -30,6 +31,7 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 	private DeBruijnReadGraph fgraph;
 	private DeBruijnReadGraph bgraph;
 	private int currentReferenceIndex = -1;
+	private SubgraphAssemblyAlgorithmTrackerBEDWriter currentTracker = null;
 	private int processStep = 0;
 	public DeBruijnSubgraphAssembler(ProcessingContext processContext, AssemblyEvidenceSource source) {
 		this.processContext = processContext;
@@ -65,8 +67,15 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 	private void init(int referenceIndex) {
 		processStep = 0;
 		currentReferenceIndex = referenceIndex;
-		fgraph = new DeBruijnReadGraph(processContext, source, referenceIndex, BreakendDirection.Forward, processContext.getAssemblyParameters());
-		bgraph = new DeBruijnReadGraph(processContext, source, referenceIndex, BreakendDirection.Backward, processContext.getAssemblyParameters());
+		if (currentTracker != null) {
+			currentTracker.close();
+		}
+		if (processContext.getAssemblyParameters().trackAlgorithmProgress) {
+			currentTracker = new SubgraphAssemblyAlgorithmTrackerBEDWriter(new File(processContext.getAssemblyParameters().debruijnGraphVisualisationDirectory,
+				String.format("debruijn.assembly.metrics.%s.bed", processContext.getDictionary().getSequence(currentReferenceIndex).getSequenceName())));
+		}
+		fgraph = new DeBruijnReadGraph(processContext, source, referenceIndex, BreakendDirection.Forward, processContext.getAssemblyParameters(), currentTracker);
+		bgraph = new DeBruijnReadGraph(processContext, source, referenceIndex, BreakendDirection.Backward, processContext.getAssemblyParameters(), currentTracker);
 		if (processContext.getAssemblyParameters().debruijnGraphVisualisationDirectory != null && processContext.getAssemblyParameters().visualiseAll) {
 			fgraph.setGraphExporter(new DeBruijnSubgraphGexfExporter(processContext.getAssemblyParameters().k));
 			bgraph.setGraphExporter(new DeBruijnSubgraphGexfExporter(processContext.getAssemblyParameters().k));
@@ -86,6 +95,10 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 		}
 		fgraph = null;
 		bgraph = null;
+		if (currentTracker != null) {
+			currentTracker.close();
+			currentTracker = null;
+		}
 		return assemblies;
 	}
 	private Iterable<VariantContextDirectedEvidence> assembleBefore(int position) {

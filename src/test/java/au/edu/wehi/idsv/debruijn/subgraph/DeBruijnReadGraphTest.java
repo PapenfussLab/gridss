@@ -22,7 +22,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		p.maxBaseMismatchForCollapse = 0;
 		p.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
 		p.k = k;
-		return new DeBruijnReadGraph(getContext(), AES(), referenceIndex, direction, p);
+		return new DeBruijnReadGraph(getContext(), AES(), referenceIndex, direction, p, null);
 	}
 	@Test
 	public void should_excluse_kmers_containing_ambiguous_base() {

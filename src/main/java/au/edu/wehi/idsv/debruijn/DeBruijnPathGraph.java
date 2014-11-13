@@ -101,6 +101,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 	 * @param seed
 	 */
 	private void generatePathGraph(Long seed) {
+		int kmersTraversed = 0;
 		pathList.clear();
 		pathNext.clear();
 		pathPrev.clear();
@@ -117,6 +118,7 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 			long kmer = frontier.poll();
 			if (visited.contains(kmer)) continue;
 			PN path = factory.createPathNode(traverseBranchless(kmer), getGraph());
+			kmersTraversed += path.length();
 			pathStart.put(path.getFirst(), path);
 			visited.addAll(path.getPath());
 			for (long adj : getGraph().prevStates(path.getFirst(), null, null)) {
@@ -129,16 +131,18 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 			addNode(path);
 			expectedWeight += path.getWeight();
 		}
+		int edges = 0;
 		for (PN path : pathList) {
 			// construct edges
 			List<Long> nextKmers = getGraph().nextStates(path.getLast(), null, null);
 			for (long adj : nextKmers) {
 				PN next = pathStart.get(adj);
 				addEdge(path, next);
+				edges++;
 			}
 		}
 		assert(sanityCheck());
-		tracker.generatePathGraph(pathList.size(), pathNext.size());
+		tracker.generatePathGraph(kmersTraversed, pathCount, edges);
 		shrink();
 	}
 	/**
@@ -401,16 +405,16 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 		int totalLeavesCollapsed = 0;
 		int collapseIterations = 0;
 		totalPathsCollapsed = collapseSimilarPaths(maxBaseMismatchForCollapse, true);
-		int leafCount = 0, pathCount = 0;
+		int collapseLeafCount = 0, collapsePathCount = 0;
 		do {
 			collapseIterations++;
 			if (!bubblesOnly) {
-				leafCount = collapseLeaves(maxBaseMismatchForCollapse);
-				totalLeavesCollapsed += leafCount;
+				collapseLeafCount = collapseLeaves(maxBaseMismatchForCollapse);
+				totalLeavesCollapsed += collapseLeafCount;
 			}
-			pathCount = collapseSimilarPaths(maxBaseMismatchForCollapse, bubblesOnly);
-			totalPathsCollapsed += pathCount;
-		} while (leafCount + pathCount > 0);
+			collapsePathCount = collapseSimilarPaths(maxBaseMismatchForCollapse, bubblesOnly);
+			totalPathsCollapsed += collapsePathCount;
+		} while (collapseLeafCount + collapsePathCount > 0);
 		tracker.collapse(collapseIterations, totalPathsCollapsed, totalLeavesCollapsed, nodeTaversalCount, nodesBefore - pathCount);
 		return totalPathsCollapsed + totalLeavesCollapsed;
 	}

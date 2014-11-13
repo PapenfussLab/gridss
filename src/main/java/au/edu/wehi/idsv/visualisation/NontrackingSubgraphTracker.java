@@ -42,12 +42,14 @@ public class NontrackingSubgraphTracker implements SubgraphAssemblyAlgorithmTrac
 	public void assemblyComplete() {
 	}
 	@Override
-	public void generatePathGraph(int nodes, int edges) {
-	}
-	@Override
 	public void collapse(int collapseIterations, int pathsCollapsed,
 			int leavesCollapsed, int nodesTraversed, int nodeCountReducedBy) {
-		// TODO Auto-generated method stub
-		
+	}
+	@Override
+	public String toBed() {
+		return null;
+	}
+	@Override
+	public void generatePathGraph(int kmers, int nodes, int edges) {
 	}
 }

@@ -4,6 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -58,14 +60,25 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		assertTrue(new File(new File(testFolder.getRoot(), "visualisation"), "debruijn.kmers.backward.polyACGT.gexf").exists());
 	}
 	@Test
-	public void should_track_progress() {
+	public void should_track_progress() throws IOException {
 		DeBruijnSubgraphAssembler ass = DSA(5);
 		List<VariantContextDirectedEvidence> results = new ArrayList<>();
 		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(withSequence("GTCTTA", DP(0, 1, "8M", true, 0, 500, "8M", false))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("CTTAGA", Read(0, 100, "1M5S"))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("CTTAGA", Read(0, 100, "1M5S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(0, 1, "4M3S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(0, 2, "3M4S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("TAAAGTCATGTATT", Read(0, 1, "5S9M"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
-		assertTrue(new File(new File(testFolder.getRoot(), "visualisation"), "debruijn.assembly.metrics.polyA.bed").exists());
+		File file = new File(new File(testFolder.getRoot(), "visualisation"), "debruijn.assembly.metrics.polyA.bed");
+		assertTrue(file.exists());
+		String contents = new String(Files.readAllBytes(file.toPath())); 
+		assertTrue(contents.contains("Times"));
+		assertTrue(contents.contains("+"));
+		assertTrue(contents.contains("-"));
+		assertTrue(contents.contains("polyA"));
+		assertTrue(contents.contains("Kmers 10; "));
+		assertTrue(contents.contains("PathNodes \"1 (1 0 0)\"; "));
 	}
 	@Test
 	public void should_assemble_both_directions() {

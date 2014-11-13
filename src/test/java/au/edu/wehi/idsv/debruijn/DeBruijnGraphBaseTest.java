@@ -19,7 +19,7 @@ public class DeBruijnGraphBaseTest extends TestHelper {
 		ap.maxBaseMismatchForCollapse = 0;
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 10;
 		ap.k = 5;
-		DeBruijnReadGraph g = new DeBruijnReadGraph(getContext(), AES(), 0, BreakendDirection.Forward, ap);
+		DeBruijnReadGraph g = new DeBruijnReadGraph(getContext(), AES(), 0, BreakendDirection.Forward, ap, null);
 		g.setGraphExporter(new DeBruijnSubgraphGexfExporter(ap.k));
 		g.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(0, 10, "4M3S"))));
 		g.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(0, 11, "3M4S"))));

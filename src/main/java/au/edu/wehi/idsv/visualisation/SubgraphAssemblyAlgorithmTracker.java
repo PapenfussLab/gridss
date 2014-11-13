@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv.visualisation;
 
 import java.util.LinkedList;
-
 import java.util.List;
 import java.util.Set;
 
@@ -33,5 +32,7 @@ public interface SubgraphAssemblyAlgorithmTracker {
 
 	public abstract void assemblyComplete();
 
-	public abstract void generatePathGraph(int nodes, int edges);
+	public abstract void generatePathGraph(int kmers, int nodes, int edges);
+
+	public abstract String toBed();
 }

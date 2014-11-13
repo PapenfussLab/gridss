@@ -13,6 +13,7 @@ import au.edu.wehi.idsv.AssemblyBuilder;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.BreakendDirection;
+import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
@@ -24,6 +25,7 @@ import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
 import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
 import au.edu.wehi.idsv.visualisation.StaticDeBruijnSubgraphPathGraphGexfExporter;
 import au.edu.wehi.idsv.visualisation.SubgraphAlgorithmMetrics;
+import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTrackerBEDWriter;
 import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTracker;
 
 import com.google.common.collect.Sets;
@@ -31,6 +33,7 @@ import com.google.common.collect.Sets;
 public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode> {
 	private static final Log log = Log.getInstance(DeBruijnReadGraph.class);
 	public static final String ASSEMBLER_NAME = "debruijn-s";
+	private SubgraphAssemblyAlgorithmTrackerBEDWriter trackingWriter;
 	/**
 	 * Connected subgraphs
 	 */
@@ -38,6 +41,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	private final int referenceIndex;
 	private final AssemblyParameters parameters;
 	private int graphsExported = 0;
+	
 	/**
 	 * 
 	 * @param k
@@ -45,10 +49,17 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	 * @param parameters 
 	 * @param gexf 
 	 */
-	public DeBruijnReadGraph(ProcessingContext processContext, AssemblyEvidenceSource source, int referenceIndex, BreakendDirection direction, AssemblyParameters parameters) {
+	public DeBruijnReadGraph(
+			ProcessingContext processContext,
+			AssemblyEvidenceSource source,
+			int referenceIndex,
+			BreakendDirection direction,
+			AssemblyParameters parameters,
+			SubgraphAssemblyAlgorithmTrackerBEDWriter trackingWriter) {
 		super(processContext, source, parameters.k, direction);
 		this.referenceIndex = referenceIndex;
 		this.parameters = parameters;
+		this.trackingWriter = trackingWriter;
 	}
 	@Override
 	protected DeBruijnSubgraphNode createNode(VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) {
@@ -81,7 +92,11 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			// nothing next to us -> new subgraph
 			g = createSubgraphSummary(kmer);
 			subgraphs.add(g);
-			node.setSubgraph(g);
+		}
+		node.setSubgraph(g);
+		g.addNode(node);
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			assert(sanityCheckSubgraphs());
 		}
 	}
 	private SubgraphSummary createSubgraphSummary(long kmer) {
@@ -105,8 +120,9 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	public DeBruijnSubgraphNode add(long kmer, DeBruijnSubgraphNode node) {
 		DeBruijnSubgraphNode result = super.add(kmer, node);
 		// update subgraph bounds
-		result.getSubgraph().addNode(node);
-		//sanityCheckSubgraphs();
+		if (result.getSubgraph() != null) {
+			result.getSubgraph().addNode(node);
+		}
 		return result;
 	}
 	private int subgraphMessageStartingSize = 4096;
@@ -198,6 +214,9 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 					}
 				}
 				tracker.assemblyComplete();
+				if (trackingWriter != null) {
+					trackingWriter.write(tracker);
+				}
 				if (shouldVisualise(timeoutExceeded)) {
 					visualisePathGraph(ss, graphExporter);
 				}
@@ -342,6 +361,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		}
 		for (long kmer : getAllKmers()) {
 			DeBruijnSubgraphNode node = getKmer(kmer);
+			assert(node.getSubgraph() != null);
 			assert(subgraphs.contains(node.getSubgraph()));
 			if (node.getMinMatePosition() != null) assert(node.getSubgraph().getMinAnchor() <= node.getMinMatePosition());
 			if (node.getMaxMatePosition() != null) assert(node.getSubgraph().getMaxAnchor() >= node.getMaxMatePosition());
@@ -353,8 +373,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			//assert(ss.getMaxAnchor() >= lastMax); // sort order
 			//lastMax = ss.getMaxAnchor();
 			assert(ss == ss.getRoot()); // only root subgraphs should be in list
-			assert(ss.getRoot().getMinAnchor() != Integer.MAX_VALUE);
-			assert(ss.getRoot().getMaxAnchor() != Integer.MIN_VALUE);
+			//assert(ss.getRoot().getMinAnchor() != Integer.MAX_VALUE); // Will happen until we anchor long SC & reads split by Ns
+			//assert(ss.getRoot().getMaxAnchor() != Integer.MIN_VALUE); // Will happen until we anchor long SC & reads split by Ns
 		}
 		return true;
 	}

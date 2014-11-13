@@ -47,6 +47,7 @@ public class SubgraphAlgorithmMetrics implements SubgraphAssemblyAlgorithmTracke
 	private int referenceIndex;
 	private long timeToAssemblyEvidenceComplete;
 	private int collapseNodeCountReducedBy;
+	private int pathGraphKmers;
 	public SubgraphAlgorithmMetrics(ProcessingContext processContext, int referenceIndex, BreakendDirection direction) {
 		this(processContext, referenceIndex, direction, System.nanoTime());
 	}
@@ -107,28 +108,51 @@ public class SubgraphAlgorithmMetrics implements SubgraphAssemblyAlgorithmTracke
 	}
 	private String getGffAttributes() {
 		StringBuilder sb = new StringBuilder();
-		sb.append(String.format("Kmers %d; ", pathGraphInitialSize));
-		sb.append(String.format("PathNodes %d; ", pathGraphInitialSize - shrinkNodesCollapsed));
-		sb.append(String.format("Collapses %d;", pathsCollapsed - leavesCollapsed));
-		sb.append(String.format("CollapseIterations %d;", collapseIterations));
-		sb.append(String.format("CollapseNodeTraversals %d;", collapseNodesTraversed));
-		sb.append(String.format("CollapseSizeReduction %d;", collapseNodeCountReducedBy));
-		sb.append(String.format("ReferenceSplitNodes %d;", pathsSplit));
-		sb.append(String.format("Subgraphs %d;", subgraphCount));
-		sb.append(String.format("StartingNodes %d;", startingNodesCounts));
-		sb.append(String.format("NonReferencePaths %d;", nonreferencePaths));
-		sb.append(String.format("AssemblyNodeTraversals %d;", nodesTraversedDuringContigAssembly));
-		sb.append(String.format("Times %d,%d,%d,%d,%d,%d,%d,%d,%d; ",
-				msElapsed(timeKmerConstructionStart, timeAssemblyStart),
-				msElapsed(timeAssemblyStart, timeGeneratePathGraphComplete),
-				msElapsed(timeGeneratePathGraphComplete, timeShrinkComplete),
-				msElapsed(timeShrinkComplete, timeCollapseComplete),
-				msElapsed(timeCollapseComplete, timeSplitOutReferencePathsComplete),
-				msElapsed(timeSplitOutReferencePathsComplete, timeCalcNonReferenceSubgraphsComplete),
-				msElapsed(timeCalcNonReferenceSubgraphsComplete, timeAssemblyNonReferenceContigsComplete),
-				msElapsed(timeAssemblyNonReferenceContigsComplete, timeToAssemblyEvidenceComplete),
-				msElapsed(timeToAssemblyEvidenceComplete, timeAssemblyComplete)));
+		sb.append(String.format("Kmers %d; ", pathGraphKmers));
+		sb.append(String.format("PathNodes \"%d (%d %d %d)\"; ",
+				pathGraphInitialSize - shrinkNodesCollapsed - collapseNodeCountReducedBy + pathsSplit,
+				pathGraphInitialSize - shrinkNodesCollapsed,
+				-collapseNodeCountReducedBy,
+				pathsSplit
+				));
+		sb.append(String.format("Collapses \"%d (%d steps overs %d iteration)\"; ", pathsCollapsed - leavesCollapsed, collapseNodesTraversed, collapseIterations));
+		sb.append(String.format("Subgraphs %d; ", subgraphCount));
+		sb.append(String.format("StartingNodes %d; ", startingNodesCounts));
+		sb.append(String.format("NonReferencePaths %d; ", nonreferencePaths));
+		sb.append(String.format("AssemblyNodeTraversals %d; ", nodesTraversedDuringContigAssembly));
+		sb.append(String.format("Times %s; ", toCommaList(toTimeSequenceMs(
+				timeKmerConstructionStart,
+				timeAssemblyStart,
+				timeGeneratePathGraphComplete,
+				timeShrinkComplete,
+				timeCollapseComplete,
+				timeSplitOutReferencePathsComplete,
+				timeCalcNonReferenceSubgraphsComplete,
+				timeAssemblyNonReferenceContigsComplete,
+				timeToAssemblyEvidenceComplete,
+				timeAssemblyComplete))));
 		return sb.toString();
+	}
+	private String toCommaList(int... values) {
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0; i < values.length; i++) {
+			sb.append(values[i]);
+			if (i < values.length - 1) {
+				sb.append(',');
+			}
+		}
+		return sb.toString();
+	}
+	private int[] toTimeSequenceMs(long... timestamps) {
+		int[] out = new int[timestamps.length - 1];
+		// strip out zero times
+		for (int i = 1; i < timestamps.length; i++) {
+			if (timestamps[i] == 0) {
+				timestamps[i] = timestamps[i - 1];
+			}
+			out[i - 1] = msElapsed(timestamps[i - 1], timestamps[i]);
+		}
+		return out;
 	}
 	private int msElapsed(long start, long stop) {
 		return (int)((stop - start) / 1000000);
@@ -193,8 +217,9 @@ public class SubgraphAlgorithmMetrics implements SubgraphAssemblyAlgorithmTracke
 		this.timeAssemblyComplete = System.nanoTime();
 	}
 	@Override
-	public void generatePathGraph(int nodes, int edges) {
+	public void generatePathGraph(int kmers, int nodes, int edges) {
 		this.timeGeneratePathGraphComplete = System.nanoTime();
+		this.pathGraphKmers = kmers;
 		this.pathGraphInitialSize = nodes;
 		this.pathGraphInitialEdges = edges;
 	}

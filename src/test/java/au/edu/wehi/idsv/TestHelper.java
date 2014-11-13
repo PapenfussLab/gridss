@@ -689,7 +689,7 @@ public class TestHelper {
 	public static DeBruijnReadGraph G(int k, BreakendDirection direction) {
 		AssemblyParameters p = new AssemblyParameters();
 		p.k = k;
-		return new DeBruijnReadGraph(getContext(), AES(), 0, direction, p);
+		return new DeBruijnReadGraph(getContext(), AES(), 0, direction, p, null);
 	}
 
 	public static class MockSAMEvidenceSource extends SAMEvidenceSource {
