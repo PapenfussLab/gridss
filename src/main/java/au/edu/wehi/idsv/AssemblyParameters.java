@@ -1,6 +1,12 @@
 package au.edu.wehi.idsv;
 
 import java.io.File;
+import java.util.List;
+
+import com.google.common.collect.Lists;
+
+import au.edu.wehi.idsv.vcf.VcfFileUtil;
+import au.edu.wehi.idsv.vcf.VcfFilter;
 
 public class AssemblyParameters {
 	public AssemblyMethod method = AssemblyMethod.DEBRUIJN_SUBGRAPH;
@@ -70,4 +76,12 @@ public class AssemblyParameters {
 	 * Output internal assembly state information for debugging purposes
 	 */
 	public boolean trackAlgorithmProgress = Defaults.VISUALISE_ASSEMBLY_PROGRESS;
+	public boolean applyFilters(AssemblyEvidence evidence) {
+		boolean filtered = false;
+		if (evidence.getAssemblySupportCountReadPair(EvidenceSubset.ALL) + evidence.getAssemblySupportCountSoftClip(EvidenceSubset.ALL) < minReads) {
+			evidence.filterAssembly(VcfFilter.ASSEMBLY_TOO_FEW_READ);
+			filtered = true;
+		}
+		return filtered;
+	}
 }

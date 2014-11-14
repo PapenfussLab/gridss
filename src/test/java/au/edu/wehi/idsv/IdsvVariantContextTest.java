@@ -37,9 +37,14 @@ public class IdsvVariantContextTest extends TestHelper {
 		public TestIdsvVariantContext(ProcessingContext processContext, VariantContext context) {
 			super(processContext, AES(), context);
 		}
-		@Override
 		public List<Integer> getAttributeAsIntList(String attrName) {
-			return super.getAttributeAsIntList(attrName);
+			return AttributeConverter.asIntList(getAttribute(attrName));
+		}
+		public List<String> getAttributeAsStringList(String attrName) {
+			return AttributeConverter.asStringList(getAttribute(attrName));
+		}
+		public int getAttributeAsIntListOffset(String attrName, int i, int j) {
+			return AttributeConverter.asIntListOffset(getAttribute(attrName), i, j);
 		}
 	}
 	@Test

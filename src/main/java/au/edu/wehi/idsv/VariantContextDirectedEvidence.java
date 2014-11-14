@@ -9,7 +9,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
 import java.util.List;
 
-import au.edu.wehi.idsv.util.CollectionUtil;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 
 import com.google.common.base.Function;
@@ -23,7 +22,7 @@ import com.google.common.collect.Ordering;
  * @author Daniel Cameron
  *
  */
-public class VariantContextDirectedEvidence extends IdsvVariantContext implements DirectedEvidence, AssemblyEvidence {
+public class VariantContextDirectedEvidence extends IdsvVariantContext implements DirectedEvidence {
 	private final VcfBreakendSummary breakend;
 	//private static Log LOG = Log.getInstance(VariantContextDirectedBreakpoint.class);
 	public VariantContextDirectedEvidence(ProcessingContext processContext, EvidenceSource source, VariantContext context) {
@@ -71,7 +70,7 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 	}
 	@Override
 	public byte[] getBreakendQuality() {
-		List<String> bq = getAttributeAsStringList(VcfAttributes.ASSEMBLY_BREAKEND_QUALS.attribute());
+		List<String> bq = AttributeConverter.asStringList(getAttribute(VcfAttributes.ASSEMBLY_BREAKEND_QUALS.attribute()));
 		if (bq.size() == 0) return null;
 		try {
 			return SAMUtils.fastqToPhred(URLDecoder.decode(bq.get(0), "UTF-8"));
@@ -83,78 +82,43 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 	public boolean isValid() {
 		return breakend.location != null;
 	}
-	protected int getIntAttrSumTN(VcfAttributes attr, EvidenceSubset subset) {
-		if (subset == null) subset = EvidenceSubset.ALL;
-		switch (subset) {
-			case NORMAL:
-				return getAttributeAsIntListOffset(attr.attribute(), 0, 0);
-			case TUMOUR:
-				return getAttributeAsIntListOffset(attr.attribute(), 1, 0);
-			case ALL:
-			default:
-				return CollectionUtil.sumInt(getAttributeAsIntList(attr.attribute()));
-		}
-	}
-	protected int getIntAttrMaxTN(VcfAttributes attr, EvidenceSubset subset) {
-		if (subset == null) subset = EvidenceSubset.ALL;
-		switch (subset) {
-			case NORMAL:
-				return getAttributeAsIntListOffset(attr.attribute(), 0, 0);
-			case TUMOUR:
-				return getAttributeAsIntListOffset(attr.attribute(), 1, 0);
-			case ALL:
-			default:
-				return CollectionUtil.maxInt(getAttributeAsIntList(attr.attribute()), 0);
-		}
-	}
-	protected double getDoubleAttrTN(VcfAttributes attr, EvidenceSubset subset) {
-		if (subset == null) subset = EvidenceSubset.ALL;
-		switch (subset) {
-			case NORMAL:
-				return getAttributeAsDoubleListOffset(attr.attribute(), 0, 0);
-			case TUMOUR:
-				return getAttributeAsDoubleListOffset(attr.attribute(), 1, 0);
-			case ALL:
-			default:
-				return CollectionUtil.sumDouble(getAttributeAsDoubleList(attr.attribute()));
-		}
-	}
 	public int getEvidenceCount(EvidenceSubset subset) {
 		return getEvidenceCountAssembly() +
 				getEvidenceCountReadPair(subset) +
 				getEvidenceCountSoftClip(subset);
 	}
-	public double getBreakendLogLikelihood(EvidenceSubset subset) { return getDoubleAttrTN(VcfAttributes.LOG_LIKELIHOOD_RATIO, subset); }
-	public double getBreakpointLogLikelihood(EvidenceSubset subset) { return getDoubleAttrTN(VcfAttributes.LOG_LIKELIHOOD_RATIO_BREAKPOINT, subset); }
-	public int getReferenceReadCount(EvidenceSubset subset) { return getIntAttrSumTN(VcfAttributes.REFERENCE_COUNT_READ, subset); }
-	public int getReferenceReadPairCount(EvidenceSubset subset) { return getIntAttrSumTN(VcfAttributes.REFERENCE_COUNT_READPAIR, subset); }
-	public int getEvidenceCountReadPair(EvidenceSubset subset) { return getIntAttrSumTN(VcfAttributes.READPAIR_EVIDENCE_COUNT, subset); }
-	public double getBreakendLogLikelihoodReadPair(EvidenceSubset subset) { return getDoubleAttrTN(VcfAttributes.READPAIR_LOG_LIKELIHOOD_RATIO, subset); }
-	public int getMappedEvidenceCountReadPair(EvidenceSubset subset) { return getIntAttrSumTN(VcfAttributes.READPAIR_MAPPED_READPAIR, subset); }
-	public int getMapqReadPairLocalMax(EvidenceSubset subset) { return getIntAttrMaxTN(VcfAttributes.READPAIR_MAPQ_LOCAL_MAX, subset); }
-	public int getMapqReadPairLocalTotal(EvidenceSubset subset) { return getIntAttrSumTN(VcfAttributes.READPAIR_MAPQ_LOCAL_TOTAL, subset); }
-	public int getMapqReadPairRemoteMax(EvidenceSubset subset) { return getIntAttrMaxTN(VcfAttributes.READPAIR_MAPQ_REMOTE_MAX, subset); }
-	public int getMapqReadPairRemoteTotal(EvidenceSubset subset) { return getIntAttrSumTN(VcfAttributes.READPAIR_MAPQ_REMOTE_TOTAL, subset); }
-	public int getEvidenceCountSoftClip(EvidenceSubset subset) { return getIntAttrSumTN(VcfAttributes.SOFTCLIP_EVIDENCE_COUNT, subset); }
-	public double getBreakendLogLikelihoodSoftClip(EvidenceSubset subset) { return getDoubleAttrTN(VcfAttributes.SOFTCLIP_LOG_LIKELIHOOD_RATIO, subset); }
-	public int getMappedEvidenceCountSoftClip(EvidenceSubset subset) { return getIntAttrSumTN(VcfAttributes.SOFTCLIP_MAPPED, subset); }
-	public int getMapqSoftClipRemoteMax(EvidenceSubset subset) { return getIntAttrMaxTN(VcfAttributes.SOFTCLIP_MAPQ_REMOTE_MAX, subset); }
-	public int getMapqSoftClipRemoteTotal(EvidenceSubset subset) { return getIntAttrSumTN(VcfAttributes.SOFTCLIP_MAPQ_REMOTE_TOTAL, subset); }
-	public int getLengthSoftClipTotal(EvidenceSubset subset) { return getIntAttrSumTN(VcfAttributes.SOFTCLIP_LENGTH_REMOTE_TOTAL, subset); }
-	public int getLengthSoftClipMax(EvidenceSubset subset) { return getIntAttrMaxTN(VcfAttributes.SOFTCLIP_LENGTH_REMOTE_MAX, subset); }
-	public int getEvidenceCountAssembly() { return getIntAttrSumTN(VcfAttributes.ASSEMBLY_EVIDENCE_COUNT, EvidenceSubset.ALL); }
-	public double getBreakendLogLikelihoodAssembly() { return getDoubleAttrTN(VcfAttributes.ASSEMBLY_LOG_LIKELIHOOD_RATIO, EvidenceSubset.ALL); }
-	public int getMappedEvidenceCountAssembly() { return getIntAttrSumTN(VcfAttributes.ASSEMBLY_MAPPED, EvidenceSubset.ALL); }
-	public int getMapqAssemblyRemoteMax() { return getIntAttrMaxTN(VcfAttributes.ASSEMBLY_MAPQ_REMOTE_MAX, EvidenceSubset.ALL); }
-	public int getMapqAssemblyRemoteTotal() { return getIntAttrSumTN(VcfAttributes.ASSEMBLY_MAPQ_REMOTE_TOTAL, EvidenceSubset.ALL); }
-	public int getAssemblyAnchorLengthMax() { return getIntAttrMaxTN(VcfAttributes.ASSEMBLY_LENGTH_LOCAL_MAX, EvidenceSubset.ALL); }
-	public int getAssemblyBreakendLengthMax() { return getIntAttrMaxTN(VcfAttributes.ASSEMBLY_LENGTH_REMOTE_MAX, EvidenceSubset.ALL); }
-	public int getAssemblyBaseCount(EvidenceSubset subset) { return getIntAttrSumTN(VcfAttributes.ASSEMBLY_BASE_COUNT, subset); }
-	public int getAssemblySupportCountReadPair(EvidenceSubset subset) { return getIntAttrSumTN(VcfAttributes.ASSEMBLY_READPAIR_COUNT, subset); }
-	public int getAssemblyReadPairLengthMax(EvidenceSubset subset) { return getIntAttrMaxTN(VcfAttributes.ASSEMBLY_READPAIR_LENGTH_MAX, subset); }
-	public int getAssemblySupportCountSoftClip(EvidenceSubset subset) { return getIntAttrSumTN(VcfAttributes.ASSEMBLY_SOFTCLIP_COUNT, subset); }
-	public int getAssemblySoftClipLengthTotal(EvidenceSubset subset) { return getIntAttrSumTN(VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL, subset); }
-	public int getAssemblySoftClipLengthMax(EvidenceSubset subset) { return getIntAttrMaxTN(VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX, subset); }
+	public double getBreakendLogLikelihood(EvidenceSubset subset) { return AttributeConverter.asDoubleSumTN(getAttribute(VcfAttributes.LOG_LIKELIHOOD_RATIO.attribute()), subset); }
+	public double getBreakpointLogLikelihood(EvidenceSubset subset) { return AttributeConverter.asDoubleSumTN(getAttribute(VcfAttributes.LOG_LIKELIHOOD_RATIO_BREAKPOINT.attribute()), subset); }
+	public int getReferenceReadCount(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.REFERENCE_COUNT_READ.attribute()), subset); }
+	public int getReferenceReadPairCount(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.REFERENCE_COUNT_READPAIR.attribute()), subset); }
+	public int getEvidenceCountReadPair(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.READPAIR_EVIDENCE_COUNT.attribute()), subset); }
+	public double getBreakendLogLikelihoodReadPair(EvidenceSubset subset) { return AttributeConverter.asDoubleSumTN(getAttribute(VcfAttributes.READPAIR_LOG_LIKELIHOOD_RATIO.attribute()), subset); }
+	public int getMappedEvidenceCountReadPair(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.READPAIR_MAPPED_READPAIR.attribute()), subset); }
+	public int getMapqReadPairLocalMax(EvidenceSubset subset) { return AttributeConverter.asIntMaxTN(getAttribute(VcfAttributes.READPAIR_MAPQ_LOCAL_MAX.attribute()), subset); }
+	public int getMapqReadPairLocalTotal(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.READPAIR_MAPQ_LOCAL_TOTAL.attribute()), subset); }
+	public int getMapqReadPairRemoteMax(EvidenceSubset subset) { return AttributeConverter.asIntMaxTN(getAttribute(VcfAttributes.READPAIR_MAPQ_REMOTE_MAX.attribute()), subset); }
+	public int getMapqReadPairRemoteTotal(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.READPAIR_MAPQ_REMOTE_TOTAL.attribute()), subset); }
+	public int getEvidenceCountSoftClip(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.SOFTCLIP_EVIDENCE_COUNT.attribute()), subset); }
+	public double getBreakendLogLikelihoodSoftClip(EvidenceSubset subset) { return AttributeConverter.asDoubleSumTN(getAttribute(VcfAttributes.SOFTCLIP_LOG_LIKELIHOOD_RATIO.attribute()), subset); }
+	public int getMappedEvidenceCountSoftClip(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.SOFTCLIP_MAPPED.attribute()), subset); }
+	public int getMapqSoftClipRemoteMax(EvidenceSubset subset) { return AttributeConverter.asIntMaxTN(getAttribute(VcfAttributes.SOFTCLIP_MAPQ_REMOTE_MAX.attribute()), subset); }
+	public int getMapqSoftClipRemoteTotal(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.SOFTCLIP_MAPQ_REMOTE_TOTAL.attribute()), subset); }
+	public int getLengthSoftClipTotal(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.SOFTCLIP_LENGTH_REMOTE_TOTAL.attribute()), subset); }
+	public int getLengthSoftClipMax(EvidenceSubset subset) { return AttributeConverter.asIntMaxTN(getAttribute(VcfAttributes.SOFTCLIP_LENGTH_REMOTE_MAX.attribute()), subset); }
+	public int getEvidenceCountAssembly() { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.ASSEMBLY_EVIDENCE_COUNT.attribute()), EvidenceSubset.ALL); }
+	public double getBreakendLogLikelihoodAssembly() { return AttributeConverter.asDoubleSumTN(getAttribute(VcfAttributes.ASSEMBLY_LOG_LIKELIHOOD_RATIO.attribute()), EvidenceSubset.ALL); }
+	public int getMappedEvidenceCountAssembly() { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.ASSEMBLY_MAPPED.attribute()), EvidenceSubset.ALL); }
+	public int getMapqAssemblyRemoteMax() { return AttributeConverter.asIntMaxTN(getAttribute(VcfAttributes.ASSEMBLY_MAPQ_REMOTE_MAX.attribute()), EvidenceSubset.ALL); }
+	public int getMapqAssemblyRemoteTotal() { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.ASSEMBLY_MAPQ_REMOTE_TOTAL.attribute()), EvidenceSubset.ALL); }
+	public int getAssemblyLocalMapq() { return AttributeConverter.asInt(getAttribute(VcfAttributes.ASSEMBLY_MAPQ_LOCAL_MAX.attribute())); }
+	public int getAssemblyAnchorLengthMax() { return AttributeConverter.asIntMaxTN(getAttribute(VcfAttributes.ASSEMBLY_LENGTH_LOCAL_MAX.attribute()), EvidenceSubset.ALL); }
+	public int getAssemblyBreakendLengthMax() { return AttributeConverter.asIntMaxTN(getAttribute(VcfAttributes.ASSEMBLY_LENGTH_REMOTE_MAX.attribute()), EvidenceSubset.ALL); }
+	public int getAssemblyBaseCount(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.ASSEMBLY_BASE_COUNT.attribute()), subset); }
+	public int getAssemblySupportCountReadPair(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.ASSEMBLY_READPAIR_COUNT.attribute()), subset); }
+	public int getAssemblyReadPairLengthMax(EvidenceSubset subset) { return AttributeConverter.asIntMaxTN(getAttribute(VcfAttributes.ASSEMBLY_READPAIR_LENGTH_MAX.attribute()), subset); }
+	public int getAssemblySupportCountSoftClip(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.ASSEMBLY_SOFTCLIP_COUNT.attribute()), subset); }
+	public int getAssemblySoftClipLengthTotal(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL.attribute()), subset); }
+	public int getAssemblySoftClipLengthMax(EvidenceSubset subset) { return AttributeConverter.asIntMaxTN(getAttribute(VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX.attribute()), subset); }
 	public String getAssemblerProgram() { return getAttributeAsString(VcfAttributes.ASSEMBLY_PROGRAM.attribute(), null); }
 	public String getAssemblyConsensus() { return getAttributeAsString(VcfAttributes.ASSEMBLY_CONSENSUS.attribute(), ""); }
 	public int getAssemblySupportCount(EvidenceSubset subset) { return getAssemblySupportCountReadPair(subset) + getAssemblySupportCountSoftClip(subset); }

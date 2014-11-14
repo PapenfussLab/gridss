@@ -25,7 +25,7 @@ public class AssemblyFactory {
 	 * @param evidence evidence supporting the assembly breakend
 	 * @param anchorReferenceIndex contig of anchored bases 
 	 * @param anchorBreakendPosition genomic position of anchored base closest breakend
-	 * @param anchoredBases number of anchored bases in assembly
+	 * @param anchoredBaseCount number of anchored bases in assembly
 	 * @param baseCalls assembly base sequence as per a positive strand read over the anchor
 	 * @param baseQuals assembly base qualities
 	 * @param normalBaseCount number of assembly bases contributed by normal evidence sources
@@ -35,11 +35,11 @@ public class AssemblyFactory {
 	public static AssemblyEvidence createAnchored(ProcessingContext processContext,
 			AssemblyEvidenceSource source, BreakendDirection direction,
 			Set<DirectedEvidence> evidence,
-			int anchorReferenceIndex, int anchorBreakendPosition, int anchoredBases,
+			int anchorReferenceIndex, int anchorBreakendPosition, int anchoredBaseCount,
 			byte[] baseCalls, byte[] baseQuals,
 			int normalBaseCount, int tumourBaseCount) {
 		BreakendSummary breakend = new BreakendSummary(anchorReferenceIndex, direction, anchorBreakendPosition, anchorBreakendPosition);
-		return new SAMRecordAssemblyEvidence(breakend, source, direction, evidence, anchoredBases, baseCalls, baseQuals, getAttributes(evidence, normalBaseCount, tumourBaseCount));
+		return new SAMRecordAssemblyEvidence(breakend, source, anchoredBaseCount, baseCalls, baseQuals, calculateAssemblyIntAttributes(evidence, normalBaseCount, tumourBaseCount));
 	}
 	/**
 	 * Creates an assembly whose breakpoint cannot be exactly anchored to the reference  
@@ -58,9 +58,11 @@ public class AssemblyFactory {
 			Set<DirectedEvidence> evidence,
 			byte[] baseCalls, byte[] baseQuals,
 			int normalBaseCount, int tumourBaseCount) {
-		return null;
+		
+		BreakendSummary breakend = getBreakendConfidenceInterval(direction, evidence);
+		return new SAMRecordAssemblyEvidence(breakend, source, 0, baseCalls, baseQuals, calculateAssemblyIntAttributes(evidence, normalBaseCount, tumourBaseCount));
 	}
-	private static Map<VcfAttributes, int[]> getAttributes(Set<DirectedEvidence> evidence, int normalBaseCount, int tumourBaseCount) {
+	private static Map<VcfAttributes, int[]> calculateAssemblyIntAttributes(Set<DirectedEvidence> evidence, int normalBaseCount, int tumourBaseCount) {
 		List<NonReferenceReadPair> rp = Lists.newArrayList(Iterables.filter(evidence, NonReferenceReadPair.class));
 		List<SoftClipEvidence> sc = Lists.newArrayList(Iterables.filter(evidence, SoftClipEvidence.class));
 		List<NonReferenceReadPair> rpNormal = Lists.newArrayList(Iterables.filter(rp, new Predicate<NonReferenceReadPair>() { public boolean apply(NonReferenceReadPair e) { return !((SAMEvidenceSource)e.getEvidenceSource()).isTumour(); } }) );
@@ -83,6 +85,12 @@ public class AssemblyFactory {
 		int rpReadLenT = CollectionUtil.maxInt(rpTumour, frpReadLength, 0);
 		//int rpReadLen = Math.max(rpReadLenN, rpReadLenT);
 		attributes.put(VcfAttributes.ASSEMBLY_READPAIR_LENGTH_MAX, new int[] { rpReadLenN, rpReadLenT} );
+		
+		int localMapq = 0;
+		for (DirectedEvidence e : evidence) {
+			localMapq = Math.max(localMapq, e.getLocalMapq());
+		}
+		attributes.put(VcfAttributes.ASSEMBLY_MAPQ_LOCAL_MAX, new int[] { localMapq });
 		return attributes;
 	}
 }

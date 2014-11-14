@@ -210,7 +210,8 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 					if (ca.support.size() > SUPPORT_SIZE_HARD_LIMIT) {
 						log.warn(String.format("Hit support size hard limit of %d - no longer processing additional support", SUPPORT_SIZE_HARD_LIMIT));
 					}
-				} else if (ca.support.size() < SUPPORT_SIZE_HARD_LIMIT){
+				} else if (ca.support.size() < SUPPORT_SIZE_HARD_LIMIT) {
+					// TODO: try a Bloom filter on the support set instead
 					// approximate our level of support
 					if (offset % (getK() / 2) == 0) {
 						// reduce our update frequency to twice per kmer bases

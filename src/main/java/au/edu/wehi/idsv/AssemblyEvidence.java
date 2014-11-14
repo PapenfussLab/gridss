@@ -24,6 +24,5 @@ public interface AssemblyEvidence extends DirectedEvidence {
 	int getAssemblySoftClipLengthTotal(EvidenceSubset subset);
 	int getAssemblySoftClipLengthMax(EvidenceSubset subset);
 	boolean isAssemblyFiltered();
-	List<String> getAssemblyFilters();
 	void filterAssembly(VcfFilter reason);
 }

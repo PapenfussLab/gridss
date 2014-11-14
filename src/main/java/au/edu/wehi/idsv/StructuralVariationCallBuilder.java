@@ -117,8 +117,8 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			//assllr += PhredLogLikelihoodRatioModel.llr(e); // no need to recalculate as we already have the result stored
 			assllr += e.getBreakendLogLikelihoodAssembly();
 		}
-		double rpllrn = parent.getAttributeAsDoubleListOffset(VcfAttributes.READPAIR_LOG_LIKELIHOOD_RATIO.attribute(), 0, 0d);
-		double rpllrt = parent.getAttributeAsDoubleListOffset(VcfAttributes.READPAIR_LOG_LIKELIHOOD_RATIO.attribute(), 1, 0d);
+		double rpllrn = AttributeConverter.asDoubleListOffset(parent.getAttribute(VcfAttributes.READPAIR_LOG_LIKELIHOOD_RATIO.attribute()), 0, 0d);
+		double rpllrt = AttributeConverter.asDoubleListOffset(parent.getAttribute(VcfAttributes.READPAIR_LOG_LIKELIHOOD_RATIO.attribute()), 1, 0d);
 		for (NonReferenceReadPair e : rpList) {
 			if (e.getEvidenceSource().isTumour()) {
 				rpllrt += Models.llr(e);
@@ -126,8 +126,8 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 				rpllrn += Models.llr(e);
 			}
 		}
-		double scllrn = parent.getAttributeAsDoubleListOffset(VcfAttributes.SOFTCLIP_LOG_LIKELIHOOD_RATIO.attribute(), 0, 0d);
-		double scllrt = parent.getAttributeAsDoubleListOffset(VcfAttributes.SOFTCLIP_LOG_LIKELIHOOD_RATIO.attribute(), 1, 0d);
+		double scllrn = AttributeConverter.asDoubleListOffset(parent.getAttribute(VcfAttributes.SOFTCLIP_LOG_LIKELIHOOD_RATIO.attribute()), 0, 0d);
+		double scllrt = AttributeConverter.asDoubleListOffset(parent.getAttribute(VcfAttributes.SOFTCLIP_LOG_LIKELIHOOD_RATIO.attribute()), 1, 0d);
 		for (SoftClipEvidence e : scList) {
 			if (e.getEvidenceSource().isTumour()) {
 				scllrt += Models.llr(e);
@@ -147,7 +147,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		Iterable<List<Integer>> attrs = Iterables.transform(list, new Function<VariantContextDirectedEvidence, List<Integer>>() {
 			@Override
 			public List<Integer> apply(VariantContextDirectedEvidence arg0) {
-				return arg0.getAttributeAsIntList(attr.attribute());
+				return AttributeConverter.asIntList(arg0.getAttribute(attr.attribute()));
 			}});
 		List<Integer> result = new ArrayList<>();
 		for (List<Integer> l : attrs) {
@@ -167,7 +167,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		Iterable<List<String>> attrs = Iterables.transform(list, new Function<VariantContextDirectedEvidence, List<String>>() {
 			@Override
 			public List<String> apply(VariantContextDirectedEvidence arg0) {
-				return arg0.getAttributeAsStringList(attr.attribute());
+				return AttributeConverter.asStringList(arg0.getAttribute(attr.attribute()));
 			}});
 		List<String> result = Lists.newArrayList(Iterables.concat(attrs));
 		attribute(attr.attribute(), result);
@@ -186,6 +186,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		}
 		setIntAttributeSumOrMax(fullList, VcfAttributes.ASSEMBLY_EVIDENCE_COUNT, false);
 		setIntAttributeSumOrMax(list, VcfAttributes.ASSEMBLY_MAPPED, false);
+		setIntAttributeSumOrMax(list, VcfAttributes.ASSEMBLY_MAPQ_LOCAL_MAX, true);
 		setIntAttributeSumOrMax(list, VcfAttributes.ASSEMBLY_MAPQ_REMOTE_MAX, true);
 		setIntAttributeSumOrMax(list, VcfAttributes.ASSEMBLY_MAPQ_REMOTE_TOTAL, false);
 		setIntAttributeSumOrMax(list, VcfAttributes.ASSEMBLY_LENGTH_LOCAL_MAX, true);

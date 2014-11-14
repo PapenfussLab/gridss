@@ -47,7 +47,7 @@ public enum VcfAttributes {
 	ASSEMBLY_EVIDENCE_COUNT ("A_EC", 1, VCFHeaderLineType.Integer, "Count of breakend assembly evidence supporting structural variation"),
 	ASSEMBLY_LOG_LIKELIHOOD_RATIO ("A_LR", 1, VCFHeaderLineType.Float, "Log-likelihood ratio of breakend assembly structural variation vs reference"),
 	ASSEMBLY_MAPPED ("A_RM", 1, VCFHeaderLineType.Integer, "Count of breakend assembly evidence that maps to a remote breakend"),
-	//ASSEMBLY_MAPQ_LOCAL_MAX ("A_MQLM", 2, VCFHeaderLineType.Integer, "Local maximum MAPQ of breakend assembly evidence (Normal,Tumour)"),
+	ASSEMBLY_MAPQ_LOCAL_MAX ("A_MQLM", 1, VCFHeaderLineType.Integer, "Maximum MAPQ of reads anchoring breakend assembly"),
 	//ASSEMBLY_MAPQ_LOCAL_TOTAL ("A_MQLT", 2, VCFHeaderLineType.Integer, "Local total MAPQ of breakend assembly evidence (Normal,Tumour)"),
 	ASSEMBLY_MAPQ_REMOTE_MAX ("A_MQRM", 1, VCFHeaderLineType.Integer, "Maxmium MAPQ of realigned breakend assembly evidence"),
 	ASSEMBLY_MAPQ_REMOTE_TOTAL ("A_MQRT", 1, VCFHeaderLineType.Integer, "Total MAPQ of realigned breakend assembly evidence"),
@@ -55,12 +55,12 @@ public enum VcfAttributes {
 	//ASSEMBLY_LENGTH_LOCAL_TOTAL ("A_BLLT", 2, VCFHeaderLineType.Integer, "Length (in bases) of breakend assembly mapping to reference at assembly location (Normal,Tumour)"),
 	ASSEMBLY_LENGTH_REMOTE_MAX ("A_BLRM", 1, VCFHeaderLineType.Integer, "Length of breakend in assembly"),
 	//ASSEMBLY_LENGTH_REMOTE_TOTAL ("A_BLRT", 2, VCFHeaderLineType.Integer, "Remote length (in bases) of breakend assembly evidence (Overall,Normal,Tumour, totals then maximums)"),
-	ASSEMBLY_BASE_COUNT ("A_BCT", 2, VCFHeaderLineType.Integer, "Number of bases in assembly by source (Normal,Tumour)"),
-	ASSEMBLY_READPAIR_COUNT ("A_RP", 2, VCFHeaderLineType.Integer, "Number of read pairs contributing to assembly evidence (Normal,Tumour)"),
-	ASSEMBLY_READPAIR_LENGTH_MAX ("A_RPBLM", 2, VCFHeaderLineType.Integer, "Maxmimum read length of read pairs contributing to assembly (Normal,Tumour)"),
-	ASSEMBLY_SOFTCLIP_COUNT ("A_SC", 2, VCFHeaderLineType.Integer, "Number of soft clips contributing to assembly evidence (Normal,Tumour)"),
-	ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL ("A_SCCLT", 2, VCFHeaderLineType.Integer, "Total soft clip length of assembled reads (Normal,Tumour)"),
-	ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX ("A_SCCLM", 2, VCFHeaderLineType.Integer, "Maximum soft clip length of assembled reads (Normal,Tumour)"),
+	ASSEMBLY_BASE_COUNT ("A_BCT", "bc", 2, VCFHeaderLineType.Integer, "Number of bases in assembly by source (Normal,Tumour)"),
+	ASSEMBLY_READPAIR_COUNT ("A_RP", "rp", 2, VCFHeaderLineType.Integer, "Number of read pairs contributing to assembly evidence (Normal,Tumour)"),
+	ASSEMBLY_READPAIR_LENGTH_MAX ("A_RPBLM", "rl", 2, VCFHeaderLineType.Integer, "Maxmimum read length of read pairs contributing to assembly (Normal,Tumour)"),
+	ASSEMBLY_SOFTCLIP_COUNT ("A_SC", "sc", 2, VCFHeaderLineType.Integer, "Number of soft clips contributing to assembly evidence (Normal,Tumour)"),
+	ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL ("A_SCCLT", "sm", 2, VCFHeaderLineType.Integer, "Total soft clip length of assembled reads (Normal,Tumour)"),
+	ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX ("A_SCCLM", "sl", 2, VCFHeaderLineType.Integer, "Maximum soft clip length of assembled reads (Normal,Tumour)"),
 	ASSEMBLY_CONSENSUS ("A_AB", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Anomolous read consensus assembly sequence"),
 	ASSEMBLY_PROGRAM ("A_AP", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Assembly algorithm"),
 	ASSEMBLY_BREAKEND_QUALS ("A_BQ", 1, VCFHeaderLineType.String, "Assembly breakend base qualities (percent encoding of fastq phred(+33) base qualities)"),
@@ -71,11 +71,22 @@ public enum VcfAttributes {
 	TRUTH_MISREALIGN ("TRUTH_MISREALIGN", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Variant ID of the true variant for all variants where the remote breakend location does not match the true variant as defined in the supplied truth set");
 
 	private final VCFInfoHeaderLine header;
+	private final String tag;
+	VcfAttributes(String name, String samTag, int count, VCFHeaderLineType type, String description) {
+		this(new VCFInfoHeaderLine(name, count, type, description), samTag);
+	}
+	VcfAttributes(String name, String samTag, VCFHeaderLineCount count, VCFHeaderLineType type, String description) {
+		this(new VCFInfoHeaderLine(name, count, type, description), samTag);
+	}
 	VcfAttributes(String name, int count, VCFHeaderLineType type, String description) {
-		this.header = new VCFInfoHeaderLine(name, count, type, description);
+		this(name, null, count, type, description);
 	}
 	VcfAttributes(String name, VCFHeaderLineCount count, VCFHeaderLineType type, String description) {
-		this.header = new VCFInfoHeaderLine(name, count, type, description);
+		this(name, null, count, type, description);
+	}
+	VcfAttributes(VCFInfoHeaderLine header, String samTag) {
+		this.header = header;
+		this.tag = samTag;
 	}
 	public VCFInfoHeaderLine infoHeader() { return header; }
 	public String attribute() { return header != null ? header.getID() : null; }
@@ -89,5 +100,12 @@ public enum VcfAttributes {
 			if (a.attribute() == key) return a;
 		}
 		return null;
+	}
+	/**
+	 * SAM tag for attribute when persisted to BAM
+	 * @return
+	 */
+	public String samTag() {
+		return tag;
 	}
 }

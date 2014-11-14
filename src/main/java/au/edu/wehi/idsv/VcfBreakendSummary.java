@@ -103,7 +103,7 @@ public class VcfBreakendSummary {
 		int ciStart = 0, ciEnd = 0;
 		int rciStart = 0, rciEnd = 0;
 		if (variant.hasAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)) {
-			List<Integer> ci = IdsvVariantContext.getAttributeAsIntList(variant, VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY, ImmutableList.<Integer>of(), false);
+			List<Integer> ci = AttributeConverter.asIntList(variant.getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)); 
 			if (ci.size() == 2) {
 				ciStart = ci.get(0);
 				ciEnd = ci.get(1);
@@ -112,7 +112,7 @@ public class VcfBreakendSummary {
 			}
 		}
 		if (variant.hasAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())) {
-			List<Integer> rci = IdsvVariantContext.getAttributeAsIntList(variant, VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute(), ImmutableList.<Integer>of(), false);
+			List<Integer> rci = AttributeConverter.asIntList(variant.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())); 
 			if (rci.size() == 2) {
 				rciStart = rci.get(0);
 				rciEnd = rci.get(1);
