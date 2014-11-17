@@ -4,26 +4,44 @@ import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordCoordinateComparator;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.commons.lang3.StringUtils;
 
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Ordering;
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.UnsignedBytes;
 
 public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
-	private SAMRecord record;
-	private AssemblyEvidenceSource source;
-	private BreakendSummary breakend;
+	private final SAMRecord record;
+	private final SAMRecord realignment;
+	private final AssemblyEvidenceSource source;
+	private final BreakendSummary breakend;
+	public SAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecord assembly, SAMRecord realignment) {
+		this.source = source;
+		this.record = assembly;
+		this.breakend = calculateBreakendFromAlignmentCigar(assembly.getReferenceIndex(), assembly.getAlignmentStart(), assembly.getCigar());
+		this.realignment = realignment == null ? getPlaceholderRealignment() : realignment;
+		fixReadPair();
+	}
+	private void fixReadPair() {
+		if (realignment.getReadUnmappedFlag()) {
+			// SAMv1 S2.4
+			realignment.setReferenceIndex(record.getReferenceIndex());
+			realignment.setAlignmentStart(record.getAlignmentStart());
+		}
+		SAMRecordUtil.pairReads(this.record, this.realignment);
+	}
 	public SAMRecordAssemblyEvidence(
 			BreakendSummary breakend,
 			AssemblyEvidenceSource source,
@@ -32,28 +50,74 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 			byte[] baseQuals,
 			Map<VcfAttributes, int[]> intListAttributes
 			) {
+		this(source, createAssemblySAMRecord(source, breakend, anchoredBaseCount, baseCalls, baseQuals, intListAttributes), null);
+	}
+	private SAMRecord getPlaceholderRealignment() {
+		SAMRecord placeholder = new SAMRecord(record.getHeader());
+		placeholder.setReadUnmappedFlag(true);
+		placeholder.setReadBases(getBreakendSequence());
+		placeholder.setBaseQualities(getBreakendQuality());
+		placeholder.setReadNegativeStrandFlag(false);
+		return placeholder;
+	}
+	private static BreakendSummary calculateBreakendFromAlignmentCigar(Integer referenceIndex, int alignmentStart, Cigar cigar) {
+		if (referenceIndex == null) return null;
+		BreakendDirection direction = cigar.getCigarElement(0).getOperator() == CigarOperator.SOFT_CLIP ? BreakendDirection.Backward : BreakendDirection.Forward;
+		int start = alignmentStart;
+		int end = alignmentStart;
+		if (cigar.numCigarElements() > 2) {
+			int paddingNs = cigar.getCigarElement(1).getLength();
+			if (direction == BreakendDirection.Forward) {
+				end += paddingNs;
+				assert(cigar.numCigarElements() == 3);
+				assert(cigar.getCigarElement(0).getOperator() == CigarOperator.X);
+				assert(cigar.getCigarElement(1).getOperator() == CigarOperator.SKIPPED_REGION);
+				assert(cigar.getCigarElement(2).getOperator() == CigarOperator.SOFT_CLIP);
+			} else {
+				start -= paddingNs;
+				assert(cigar.numCigarElements() == 3);
+				assert(cigar.getCigarElement(0).getOperator() == CigarOperator.SOFT_CLIP);
+				assert(cigar.getCigarElement(1).getOperator() == CigarOperator.SKIPPED_REGION);
+				assert(cigar.getCigarElement(2).getOperator() == CigarOperator.X);
+			}
+		} else {
+			if (direction == BreakendDirection.Forward) {
+				assert(cigar.numCigarElements() == 2);
+				assert(cigar.getCigarElement(0).getOperator() == CigarOperator.MATCH_OR_MISMATCH);
+				assert(cigar.getCigarElement(1).getOperator() == CigarOperator.SOFT_CLIP);
+			} else {
+				assert(cigar.numCigarElements() == 2);
+				assert(cigar.getCigarElement(0).getOperator() == CigarOperator.SOFT_CLIP);
+				assert(cigar.getCigarElement(1).getOperator() == CigarOperator.MATCH_OR_MISMATCH);
+			}
+		}
+		return new BreakendSummary(referenceIndex, direction, start, end);
+	}
+	private static SAMRecord createAssemblySAMRecord(
+			AssemblyEvidenceSource source,
+			BreakendSummary breakend,
+			int anchoredBaseCount, byte[] baseCalls, byte[] baseQuals,
+			Map<VcfAttributes, int[]> intListAttributes) {
 		if (breakend instanceof BreakpointSummary) throw new IllegalArgumentException("Breakpoints not supported by this constructor");
-		this.breakend = breakend;
-		this.source = source;
-		this.record = new SAMRecord(null);
-		this.record.setReferenceIndex(breakend.referenceIndex);
-		this.record.setReadName(String.format("assembly_%s_%d_%d_%d",
+		SAMRecord record = new SAMRecord(null);
+		record.setReferenceIndex(breakend.referenceIndex);
+		record.setReadName(String.format("assembly_%s_%d_%d_%d",
 				source.processContext.getDictionary().getSequence(breakend.referenceIndex).getSequenceName(),
 				breakend.start, breakend.end,
 				Math.abs(Arrays.hashCode(baseCalls))));
 		setIntListAttributes(record, intListAttributes);
 		if (anchoredBaseCount > 0) {
-			this.record.setReadBases(baseCalls);
-			this.record.setBaseQualities(baseQuals);
+			record.setReadBases(baseCalls);
+			record.setBaseQualities(baseQuals);
 			if (breakend.start != breakend.end) throw new IllegalArgumentException("Inexact anchored breakends not supported by this constructor");
 			if (breakend.direction == BreakendDirection.Forward) {
-				this.record.setAlignmentStart(breakend.start - anchoredBaseCount - 1);
-				this.record.setCigar(new Cigar(ImmutableList.of(
+				record.setAlignmentStart(breakend.start - anchoredBaseCount - 1);
+				record.setCigar(new Cigar(ImmutableList.of(
 						new CigarElement(anchoredBaseCount, CigarOperator.MATCH_OR_MISMATCH),
 						new CigarElement(baseCalls.length - anchoredBaseCount, CigarOperator.SOFT_CLIP))));
 			} else {
-				this.record.setAlignmentStart(breakend.start);
-				this.record.setCigar(new Cigar(ImmutableList.of(
+				record.setAlignmentStart(breakend.start);
+				record.setCigar(new Cigar(ImmutableList.of(
 						new CigarElement(baseCalls.length - anchoredBaseCount, CigarOperator.SOFT_CLIP),
 						new CigarElement(anchoredBaseCount, CigarOperator.MATCH_OR_MISMATCH))));
 			}
@@ -64,22 +128,23 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 			// and represent the breakend confidence interval with a placeholder
 			// cigar N
 			if (breakend.direction == BreakendDirection.Forward) {
-				this.record.setAlignmentStart(breakend.start);
-				this.record.setCigar(new Cigar(ImmutableList.of(
+				record.setAlignmentStart(breakend.start);
+				record.setCigar(new Cigar(ImmutableList.of(
 						new CigarElement(1, CigarOperator.X),
 						new CigarElement(breakend.end - breakend.start - 1, CigarOperator.SKIPPED_REGION),
 						new CigarElement(baseCalls.length, CigarOperator.SOFT_CLIP))));
-				this.record.setReadBases(Bytes.concat(new byte[] { 'N' }, baseCalls));
-				this.record.setBaseQualities(Bytes.concat(new byte[] { 0 }, baseQuals));
+				record.setReadBases(Bytes.concat(new byte[] { 'N' }, baseCalls));
+				record.setBaseQualities(Bytes.concat(new byte[] { 0 }, baseQuals));
 			}
-			this.record.setAlignmentStart(breakend.end);
-			this.record.setCigar(new Cigar(ImmutableList.of(
+			record.setAlignmentStart(breakend.end);
+			record.setCigar(new Cigar(ImmutableList.of(
 					new CigarElement(baseCalls.length, CigarOperator.SOFT_CLIP),
 					new CigarElement(breakend.end - breakend.start - 1, CigarOperator.SKIPPED_REGION),
 					new CigarElement(1, CigarOperator.X))));
-			this.record.setReadBases(Bytes.concat(baseCalls, new byte[] { 'N' }));
-			this.record.setBaseQualities(Bytes.concat(baseQuals, new byte[] { 0 }));
+			record.setReadBases(Bytes.concat(baseCalls, new byte[] { 'N' }));
+			record.setBaseQualities(Bytes.concat(baseQuals, new byte[] { 0 }));
 		}
+		return record;
 	}
 	private static void setIntListAttributes(SAMRecord record, Map<VcfAttributes, int[]> intListAttributes) {
 		for (Entry<VcfAttributes, int[]> entry : intListAttributes.entrySet()) {
@@ -157,7 +222,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		return record.getReadName();
 	}
 	@Override
-	public EvidenceSource getEvidenceSource() {
+	public AssemblyEvidenceSource getEvidenceSource() {
 		return source;
 	}
 	@Override
@@ -246,4 +311,16 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 			record.setAttribute(SamTags.ASSEMLBY_FILTERS, tag);
 		}
 	}
+	public SAMRecord getSAMRecord() {
+		return record;
+	}
+	public SAMRecord getRemoteSAMRecord() {
+		return realignment;
+	}
+	static final Ordering<SAMRecordAssemblyEvidence> BySAMCoordinate = new Ordering<SAMRecordAssemblyEvidence>() {
+		@Override
+		public int compare(SAMRecordAssemblyEvidence arg0, SAMRecordAssemblyEvidence arg1) {
+			return new SAMRecordCoordinateComparator().compare(arg0.getSAMRecord(), arg1.getSAMRecord());
+		}
+	};
 }

@@ -301,4 +301,27 @@ public class SAMRecordUtil {
 			return record2.getUnclippedEnd() - record1.getUnclippedStart();
 		}
 	}
+	/**
+	 * Updates the two reads to indicate the form a read pair
+	 * @param first first in pair
+	 * @param second second in pair
+	 */
+	public static void pairReads(SAMRecord first, SAMRecord second) {
+		first.setReadPairedFlag(true);
+		first.setFirstOfPairFlag(true);
+		first.setSecondOfPairFlag(false);
+		second.setReadPairedFlag(true);
+		second.setFirstOfPairFlag(true);
+		second.setSecondOfPairFlag(false);
+		first.setMateUnmappedFlag(second.getReadUnmappedFlag());
+		first.setMateReferenceIndex(second.getReferenceIndex());
+		first.setMateAlignmentStart(second.getAlignmentStart());
+		first.setMateNegativeStrandFlag(second.getReadNegativeStrandFlag());
+		second.setMateUnmappedFlag(first.getReadUnmappedFlag());
+		second.setMateReferenceIndex(first.getReferenceIndex());
+		second.setMateAlignmentStart(first.getAlignmentStart());
+		second.setMateNegativeStrandFlag(first.getReadNegativeStrandFlag());
+		second.setMateUnmappedFlag(false);
+		second.setReadName(first.getReadName());
+	}
 }

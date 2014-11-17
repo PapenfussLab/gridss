@@ -114,7 +114,7 @@ public class SortRealignedSoftClips extends DataTransformStep {
 		realignmentWriters.clear();
 	}
 	private void writeUnsortedOutput() {
-		Iterator<RealignedSoftClipEvidence> it = Iterators.filter(source.iterator(), RealignedSoftClipEvidence.class);
+		Iterator<RealignedSoftClipEvidence> it = Iterators.filter(source.iterator(false, true, false), RealignedSoftClipEvidence.class);
 		while (it.hasNext()) {
 			DirectedEvidence de = it.next();
 			if (de instanceof RealignedRemoteSoftClipEvidence) continue;
@@ -129,15 +129,15 @@ public class SortRealignedSoftClips extends DataTransformStep {
 		header.setSortOrder(SortOrder.unsorted);
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				scwriters.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(header, true, fsc.getSoftClipRemoteUnsortedBamForChr(source.getSourceFile(), seq.getSequenceName())));
+				scwriters.add(processContext.getSamFileWriterFactory().makeSAMOrBAMWriter(header, true, fsc.getSoftClipRemoteUnsortedBamForChr(source.getSourceFile(), seq.getSequenceName())));
 				toClose.add(scwriters.get(scwriters.size() - 1));
-				realignmentWriters.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(header, true, fsc.getRealignmentRemoteUnsortedBamForChr(source.getSourceFile(), seq.getSequenceName())));
+				realignmentWriters.add(processContext.getSamFileWriterFactory().makeSAMOrBAMWriter(header, true, fsc.getRealignmentRemoteUnsortedBamForChr(source.getSourceFile(), seq.getSequenceName())));
 				toClose.add(realignmentWriters.get(realignmentWriters.size() - 1));
 			}
 		} else {
-			scwriters.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(header, true, fsc.getSoftClipRemoteUnsortedBam(source.getSourceFile())));
+			scwriters.add(processContext.getSamFileWriterFactory().makeSAMOrBAMWriter(header, true, fsc.getSoftClipRemoteUnsortedBam(source.getSourceFile())));
 			toClose.add(scwriters.get(scwriters.size() - 1));
-			realignmentWriters.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(header, true, fsc.getRealignmentRemoteUnsortedBam(source.getSourceFile())));
+			realignmentWriters.add(processContext.getSamFileWriterFactory().makeSAMOrBAMWriter(header, true, fsc.getRealignmentRemoteUnsortedBam(source.getSourceFile())));
 			toClose.add(realignmentWriters.get(realignmentWriters.size() - 1));
 		}
 	}

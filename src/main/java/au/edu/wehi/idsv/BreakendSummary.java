@@ -124,4 +124,22 @@ public class BreakendSummary {
 				((this.start <= loc.start && this.end >= loc.start) ||
 				 (this.start >= loc.start && this.start <= loc.end));
 	}
+	/**
+	 * Returns the overlap of the given breakends
+	 * @param b1
+	 * @param b2
+	 * @return
+	 */
+	public static BreakendSummary overlapOf(BreakendSummary b1,
+			BreakendSummary b2) {
+		if (b1.referenceIndex != b2.referenceIndex) return null;
+		if (b1.direction != b2.direction) return null;
+		BreakendSummary result = new BreakendSummary(
+			b1.referenceIndex,
+			b1.direction,
+			Math.max(b1.start, b2.start),
+			Math.min(b1.end, b2.end));
+		if (result.start > result.end) return null;
+		return result;
+	}
 }

@@ -2,6 +2,7 @@ package au.edu.wehi.idsv;
 
 import htsjdk.variant.vcf.VCFConstants;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -24,7 +25,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private final VariantContextDirectedEvidence parent;
 	private final List<SoftClipEvidence> scList = new ArrayList<>();
 	private final List<NonReferenceReadPair> rpList = new ArrayList<>();
-	private final List<VariantContextDirectedEvidence> assList = new ArrayList<>();
+	private final List<AssemblyEvidence> assList = new ArrayList<>();
 	private BreakendSummary calledBreakend;
 	public StructuralVariationCallBuilder(ProcessingContext processContext, VariantContextDirectedEvidence parent) {
 		super(processContext, parent);
@@ -36,8 +37,8 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		if (evidence == null) throw new NullPointerException();
 		if (evidence instanceof SoftClipEvidence) {
 			scList.add((SoftClipEvidence)evidence);
-		} else if (evidence instanceof VariantContextDirectedEvidence) {
-			assList.add((VariantContextDirectedEvidence)evidence);
+		} else if (evidence instanceof AssemblyEvidence) {
+			assList.add((AssemblyEvidence)evidence);
 		} else if (evidence instanceof NonReferenceReadPair) {
 			rpList.add((NonReferenceReadPair)evidence);
 		} else {
@@ -52,29 +53,27 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		Collections.sort(assList, AssemblyByBestDesc);
 		for (int i = assList.size() - 1; i > 0; i--) {
 			// Only count unique assemblies
-			if (StringUtils.isNotEmpty(assList.get(i).getID())
-					&& !assList.get(i).getID().equals(".")
-					&& assList.get(i).getID().equals(assList.get(i - 1).getID())) {
+			if (StringUtils.isNotEmpty(assList.get(i).getEvidenceID())
+					&& !assList.get(i).getEvidenceID().equals(".")
+					&& assList.get(i).getEvidenceID().equals(assList.get(i - 1).getEvidenceID())) {
 				assList.remove(i);
 			}
 		}
 		Collections.sort(scList, SoftClipByBestDesc);
-		VariantContextDirectedBreakpoint bestAssemblyBreakpoint = (VariantContextDirectedBreakpoint)Iterables.getFirst(Iterables.filter(assList, new Predicate<VariantContextDirectedEvidence>() {
+		AssemblyEvidence bestAssemblyBreakpoint = Iterables.getFirst(Iterables.filter(assList, new Predicate<AssemblyEvidence>() {
 			@Override
-			public boolean apply(VariantContextDirectedEvidence input) {
-				return input instanceof VariantContextDirectedBreakpoint
-						// don't include remote breakpoints as their info (including coordinate) is of the remote position 
-						&& !(input instanceof VariantContextDirectedBreakpointRemote);
+			public boolean apply(AssemblyEvidence input) {
+				return !(input instanceof RemoteEvidence);
 			}
 		}), null);
-		if (bestAssemblyBreakpoint != null) {
-			// override the breakpoint call to ensure untemplated sequence is present in the output
-			calledBreakend = bestAssemblyBreakpoint.getBreakendSummary();
-			breakpoint(bestAssemblyBreakpoint.getBreakendSummary(), bestAssemblyBreakpoint.getBreakpointSequenceString());
-		} else if (scList.size() > 0 && scList.get(0) instanceof RealignedSoftClipEvidence) {
-			RealignedSoftClipEvidence bp = (RealignedSoftClipEvidence)scList.get(0);
-			calledBreakend = bp.getBreakendSummary();
-			breakpoint(bp.getBreakendSummary(), bp.getUntemplatedSequence());
+		DirectedBreakpoint bestbp = null;
+		if (bestAssemblyBreakpoint instanceof DirectedBreakpoint) {
+			bestbp = (DirectedBreakpoint)bestAssemblyBreakpoint;
+		} else if (scList.size() > 0 && scList.get(0) instanceof DirectedBreakpoint) {
+			bestbp = (RealignedSoftClipEvidence)scList.get(0);
+		}
+		if (bestbp != null) {
+			breakpoint(bestbp.getBreakendSummary(), bestbp.getUntemplatedSequence());
 		}
 		aggregateAssemblyAttributes();
 		aggregateReadPairAttributes();
@@ -83,16 +82,8 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		id(getID());
 		if (calledBreakend instanceof BreakpointSummary) {
 			BreakpointSummary bp = (BreakpointSummary)calledBreakend;
-			if (bp.referenceIndex == bp.referenceIndex2
-					&& bp.direction != bp.direction2
-					&& bp.end - bp.start == bp.end2 - bp.start2
-					&& Math.abs(bp.start - bp.start2) < processContext.getVariantCallingParameters().minIndelSize
-					) {
-				// likely to be an artifact
-				// due to noise/poor alignment (eg bowtie2 2.1.0 would misalign reference reads)
-				// and a nearby (real) indel
-				// causing real indel mates to be assembled with noise read
-				filter(VcfFilter.SMALL_INDEL.filter());
+			for (VcfFilter f : processContext.getVariantCallingParameters().breakpointFilters(bp)) {
+				filter(f.filter());
 			}
 		}
 		VariantContextDirectedEvidence variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(processContext, null, super.make());
@@ -113,9 +104,9 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	}
 	private void setLlr() {
 		double assllr = parent.getAttributeAsDouble(VcfAttributes.ASSEMBLY_LOG_LIKELIHOOD_RATIO.attribute(), 0);
-		for (VariantContextDirectedEvidence e : assList) {
+		for (AssemblyEvidence e : assList) {
 			//assllr += PhredLogLikelihoodRatioModel.llr(e); // no need to recalculate as we already have the result stored
-			assllr += e.getBreakendLogLikelihoodAssembly();
+			assllr += Models.llr(e);
 		}
 		double rpllrn = AttributeConverter.asDoubleListOffset(parent.getAttribute(VcfAttributes.READPAIR_LOG_LIKELIHOOD_RATIO.attribute()), 0, 0d);
 		double rpllrt = AttributeConverter.asDoubleListOffset(parent.getAttribute(VcfAttributes.READPAIR_LOG_LIKELIHOOD_RATIO.attribute()), 1, 0d);
@@ -143,131 +134,154 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		attribute(VcfAttributes.LOG_LIKELIHOOD_RATIO.attribute(), llr);
 		phredScore(llr);
 	}
-	private List<Integer> setIntAttributeSumOrMax(final Iterable<VariantContextDirectedEvidence> list, final VcfAttributes attr, boolean max) {
-		Iterable<List<Integer>> attrs = Iterables.transform(list, new Function<VariantContextDirectedEvidence, List<Integer>>() {
-			@Override
-			public List<Integer> apply(VariantContextDirectedEvidence arg0) {
-				return AttributeConverter.asIntList(arg0.getAttribute(attr.attribute()));
-			}});
-		List<Integer> result = new ArrayList<>();
-		for (List<Integer> l : attrs) {
-			while (l.size() > result.size()) result.add(0);
-			for (int i = 0; i < l.size(); i++) {
-				if (max) {
-					result.set(i, Math.max(result.get(i), l.get(i)));
-				} else {
-					result.set(i, result.get(i) + l.get(i));
-				}
-			}
-		}
-		attribute(attr.attribute(), result);
-		return result;
-	}
-	private List<String> setStringAttributeConcat(final Iterable<VariantContextDirectedEvidence> list, final VcfAttributes attr) {
-		Iterable<List<String>> attrs = Iterables.transform(list, new Function<VariantContextDirectedEvidence, List<String>>() {
-			@Override
-			public List<String> apply(VariantContextDirectedEvidence arg0) {
-				return AttributeConverter.asStringList(arg0.getAttribute(attr.attribute()));
-			}});
-		List<String> result = Lists.newArrayList(Iterables.concat(attrs));
-		attribute(attr.attribute(), result);
-		return result;
-	}
 	private void aggregateAssemblyAttributes() {
-		List<VariantContextDirectedEvidence> fullList = Lists.newArrayList(assList);
-		List<VariantContextDirectedEvidence> list = Lists.newArrayList(fullList);
+		List<AssemblyEvidence> fullList = Lists.newArrayList(assList);
+		List<AssemblyEvidence> supportList = Lists.newArrayList(fullList);
 		if (processContext.getVariantCallingParameters().callOnlyAssemblies) {
-			for (int i = list.size() - 1; i >= 0; i--) {
-				BreakendSummary bs = list.get(i).getBreakendSummary();
+			for (int i = supportList.size() - 1; i >= 0; i--) {
+				BreakendSummary bs = supportList.get(i).getBreakendSummary();
 				if (!(bs instanceof BreakpointSummary) || !((BreakpointSummary)bs).overlaps(calledBreakend)) {
-					list.remove(i);
+					supportList.remove(i);
 				}
 			}
 		}
-		setIntAttributeSumOrMax(fullList, VcfAttributes.ASSEMBLY_EVIDENCE_COUNT, false);
-		setIntAttributeSumOrMax(list, VcfAttributes.ASSEMBLY_MAPPED, false);
-		setIntAttributeSumOrMax(list, VcfAttributes.ASSEMBLY_MAPQ_LOCAL_MAX, true);
-		setIntAttributeSumOrMax(list, VcfAttributes.ASSEMBLY_MAPQ_REMOTE_MAX, true);
-		setIntAttributeSumOrMax(list, VcfAttributes.ASSEMBLY_MAPQ_REMOTE_TOTAL, false);
-		setIntAttributeSumOrMax(list, VcfAttributes.ASSEMBLY_LENGTH_LOCAL_MAX, true);
-		setIntAttributeSumOrMax(list, VcfAttributes.ASSEMBLY_LENGTH_REMOTE_MAX, true);
-		setIntAttributeSumOrMax(list, VcfAttributes.ASSEMBLY_BASE_COUNT, false);
-		setIntAttributeSumOrMax(list, VcfAttributes.ASSEMBLY_READPAIR_COUNT, false);
-		setIntAttributeSumOrMax(list, VcfAttributes.ASSEMBLY_READPAIR_LENGTH_MAX, true);
-		setIntAttributeSumOrMax(list, VcfAttributes.ASSEMBLY_SOFTCLIP_COUNT, false);
-		setIntAttributeSumOrMax(list, VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL, false);
-		setIntAttributeSumOrMax(list, VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX, true);
-		setStringAttributeConcat(list, VcfAttributes.ASSEMBLY_CONSENSUS);
-		setStringAttributeConcat(list, VcfAttributes.ASSEMBLY_PROGRAM);
-		// setStringAttributeConcat(list, VcfAttributes.ASSEMBLY_BREAKEND_QUALS); // drop base quals
+		attribute(VcfAttributes.ASSEMBLY_EVIDENCE_COUNT, fullList.size());
+		attribute(VcfAttributes.ASSEMBLY_MAPPED, sum(supportList, new Function<AssemblyEvidence, Integer>() {
+			@Override
+			public Integer apply(AssemblyEvidence input) {
+				return input instanceof DirectedBreakpoint ? 1 : 0;
+			}
+		}));
+		attribute(VcfAttributes.ASSEMBLY_MAPQ_LOCAL_MAX, max(supportList, new Function<AssemblyEvidence, Integer>() {
+			@Override
+			public Integer apply(AssemblyEvidence arg0) {
+				return arg0.getLocalMapq();
+			}}));
+		attribute(VcfAttributes.ASSEMBLY_MAPQ_REMOTE_MAX, max(supportList, new Function<AssemblyEvidence, Integer>() {
+			@Override
+			public Integer apply(AssemblyEvidence arg0) {
+				if (arg0 instanceof DirectedBreakpoint) return ((DirectedBreakpoint)arg0).getRemoteMapq();
+				return 0;
+			}}));
+		attribute(VcfAttributes.ASSEMBLY_MAPQ_REMOTE_TOTAL, sum(supportList, new Function<AssemblyEvidence, Integer>() {
+			@Override
+			public Integer apply(AssemblyEvidence arg0) {
+				if (arg0 instanceof DirectedBreakpoint) return ((DirectedBreakpoint)arg0).getRemoteMapq();
+				return 0;
+			}}));
+		attribute(VcfAttributes.ASSEMBLY_LENGTH_LOCAL_MAX, max(supportList, new Function<AssemblyEvidence, Integer>() {
+			@Override
+			public Integer apply(AssemblyEvidence arg0) {
+				return arg0.getAssemblyAnchorLength();
+			}}));
+		attribute(VcfAttributes.ASSEMBLY_LENGTH_REMOTE_MAX, max(supportList, new Function<AssemblyEvidence, Integer>() {
+			@Override
+			public Integer apply(AssemblyEvidence arg0) {
+				return arg0.getAssemblySequence().length;
+			}}));
+		int[] basecount = new int[2];
+		int[] rpcount = new int[2];
+		int[] sccount = new int[2];
+		int[] sclen = new int[2];
+		int[] rpmaxlen = new int[2];
+		int[] scmaxlen = new int[2];
+		List<String> consensus = new ArrayList<>();
+		for (AssemblyEvidence e : supportList) {
+			basecount[0] += e.getAssemblyBaseCount(EvidenceSubset.NORMAL);
+			basecount[1] += e.getAssemblyBaseCount(EvidenceSubset.TUMOUR);
+			rpcount[0] += e.getAssemblySupportCountReadPair(EvidenceSubset.NORMAL);
+			rpcount[1] += e.getAssemblySupportCountReadPair(EvidenceSubset.TUMOUR);
+			sccount[0] += e.getAssemblySupportCountSoftClip(EvidenceSubset.NORMAL);
+			sccount[1] += e.getAssemblySupportCountSoftClip(EvidenceSubset.TUMOUR);
+			sclen[0] += e.getAssemblySoftClipLengthTotal(EvidenceSubset.NORMAL);
+			sclen[1] += e.getAssemblySoftClipLengthTotal(EvidenceSubset.TUMOUR);
+			rpmaxlen[0] += Math.max(rpmaxlen[0], e.getAssemblyReadPairLengthMax(EvidenceSubset.NORMAL));
+			rpmaxlen[1] += Math.max(rpmaxlen[1], e.getAssemblyReadPairLengthMax(EvidenceSubset.TUMOUR));
+			scmaxlen[0] += Math.max(scmaxlen[0], e.getAssemblySoftClipLengthMax(EvidenceSubset.NORMAL));
+			scmaxlen[1] += Math.max(scmaxlen[1], e.getAssemblySoftClipLengthMax(EvidenceSubset.TUMOUR));
+			consensus.add(new String(e.getAssemblySequence(), StandardCharsets.US_ASCII));
+		}
+		attribute(VcfAttributes.ASSEMBLY_BASE_COUNT, basecount);
+		attribute(VcfAttributes.ASSEMBLY_READPAIR_COUNT, rpcount);
+		attribute(VcfAttributes.ASSEMBLY_READPAIR_LENGTH_MAX, rpmaxlen);
+		attribute(VcfAttributes.ASSEMBLY_SOFTCLIP_COUNT, sccount);
+		attribute(VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL, sclen);
+		attribute(VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX, scmaxlen);
+		attribute(VcfAttributes.ASSEMBLY_CONSENSUS, consensus);
 	}
 	private void aggregateReadPairAttributes() {
-		attribute(VcfAttributes.READPAIR_EVIDENCE_COUNT, sumOrMax(rpList, new Function<NonReferenceReadPair, Integer>() {
+		attribute(VcfAttributes.READPAIR_EVIDENCE_COUNT, sum(rpList, new Function<NonReferenceReadPair, Integer>() {
 			@Override
 			public Integer apply(NonReferenceReadPair arg0) {
 				return 1;
-			}}, false));
-		attribute(VcfAttributes.READPAIR_MAPPED_READPAIR, sumOrMax(rpList, new Function<NonReferenceReadPair, Integer>() {
+			}}));
+		attribute(VcfAttributes.READPAIR_MAPPED_READPAIR, sum(rpList, new Function<NonReferenceReadPair, Integer>() {
 			@Override
 			public Integer apply(NonReferenceReadPair arg0) {
 				return arg0 instanceof DirectedBreakpoint ? 1 : 0;
-			}}, false));
-		attribute(VcfAttributes.READPAIR_MAPQ_LOCAL_MAX, sumOrMax(rpList, new Function<NonReferenceReadPair, Integer>() {
+			}}));
+		attribute(VcfAttributes.READPAIR_MAPQ_LOCAL_MAX, max(rpList, new Function<NonReferenceReadPair, Integer>() {
 			@Override
 			public Integer apply(NonReferenceReadPair arg0) {
 				return arg0.getLocalMapq();
-			}}, true));
-		attribute(VcfAttributes.READPAIR_MAPQ_LOCAL_TOTAL, sumOrMax(rpList, new Function<NonReferenceReadPair, Integer>() {
+			}}));
+		attribute(VcfAttributes.READPAIR_MAPQ_LOCAL_TOTAL, sum(rpList, new Function<NonReferenceReadPair, Integer>() {
 			@Override
 			public Integer apply(NonReferenceReadPair arg0) {
 				return arg0.getLocalMapq();
-			}}, false));
-		attribute(VcfAttributes.READPAIR_MAPQ_REMOTE_MAX, sumOrMax(rpList, new Function<NonReferenceReadPair, Integer>() {
+			}}));
+		attribute(VcfAttributes.READPAIR_MAPQ_REMOTE_MAX, max(rpList, new Function<NonReferenceReadPair, Integer>() {
 			@Override
 			public Integer apply(NonReferenceReadPair arg0) {
 				if (arg0 instanceof DirectedBreakpoint) return ((DirectedBreakpoint)arg0).getRemoteMapq();
 				return 0;
-			}}, true));
-		attribute(VcfAttributes.READPAIR_MAPQ_REMOTE_TOTAL, sumOrMax(rpList, new Function<NonReferenceReadPair, Integer>() {
+			}}));
+		attribute(VcfAttributes.READPAIR_MAPQ_REMOTE_TOTAL, sum(rpList, new Function<NonReferenceReadPair, Integer>() {
 			@Override
 			public Integer apply(NonReferenceReadPair arg0) {
 				if (arg0 instanceof DirectedBreakpoint) return ((DirectedBreakpoint)arg0).getRemoteMapq();
 				return 0;
-			}}, false));
+			}}));
 	}
 	private void aggregateSoftClipAttributes() {
-		attribute(VcfAttributes.SOFTCLIP_EVIDENCE_COUNT, sumOrMax(scList, new Function<SoftClipEvidence, Integer>() {
+		attribute(VcfAttributes.SOFTCLIP_EVIDENCE_COUNT, sum(scList, new Function<SoftClipEvidence, Integer>() {
 			@Override
 			public Integer apply(SoftClipEvidence arg0) {
 				return 1;
-			}}, false));
-		attribute(VcfAttributes.SOFTCLIP_MAPPED, sumOrMax(scList, new Function<SoftClipEvidence, Integer>() {
+			}}));
+		attribute(VcfAttributes.SOFTCLIP_MAPPED, sum(scList, new Function<SoftClipEvidence, Integer>() {
 			@Override
 			public Integer apply(SoftClipEvidence arg0) {
 				return arg0 instanceof RealignedSoftClipEvidence ? 1 : 0;
-			}}, false));
-		attribute(VcfAttributes.SOFTCLIP_MAPQ_REMOTE_TOTAL, sumOrMax(scList, new Function<SoftClipEvidence, Integer>() {
+			}}));
+		attribute(VcfAttributes.SOFTCLIP_MAPQ_REMOTE_TOTAL, sum(scList, new Function<SoftClipEvidence, Integer>() {
 			@Override
 			public Integer apply(SoftClipEvidence arg0) {
 				if (arg0 instanceof DirectedBreakpoint) return ((DirectedBreakpoint)arg0).getRemoteMapq();
 				return 0;
-			}}, false));
-		attribute(VcfAttributes.SOFTCLIP_MAPQ_REMOTE_MAX, sumOrMax(scList, new Function<SoftClipEvidence, Integer>() {
+			}}));
+		attribute(VcfAttributes.SOFTCLIP_MAPQ_REMOTE_MAX, max(scList, new Function<SoftClipEvidence, Integer>() {
 			@Override
 			public Integer apply(SoftClipEvidence arg0) {
 				if (arg0 instanceof DirectedBreakpoint) return ((DirectedBreakpoint)arg0).getRemoteMapq();
 				return 0;
-			}}, true));
-		attribute(VcfAttributes.SOFTCLIP_LENGTH_REMOTE_TOTAL, sumOrMax(scList, new Function<SoftClipEvidence, Integer>() {
+			}}));
+		attribute(VcfAttributes.SOFTCLIP_LENGTH_REMOTE_TOTAL, sum(scList, new Function<SoftClipEvidence, Integer>() {
 			@Override
 			public Integer apply(SoftClipEvidence arg0) {
 				return arg0.getSoftClipLength();
-			}}, false));
-		attribute(VcfAttributes.SOFTCLIP_LENGTH_REMOTE_MAX, sumOrMax(scList, new Function<SoftClipEvidence, Integer>() {
+			}}));
+		attribute(VcfAttributes.SOFTCLIP_LENGTH_REMOTE_MAX, max(scList, new Function<SoftClipEvidence, Integer>() {
 			@Override
 			public Integer apply(SoftClipEvidence arg0) {
 				return arg0.getSoftClipLength();
-			}}, true));
+			}}));
+	}
+	private static <T extends DirectedEvidence> List<Integer> sum(Iterable<T> it, Function<T, Integer> f) {
+		return sumOrMax(it, f, false);
+	}
+	private static <T extends DirectedEvidence> List<Integer> max(Iterable<T> it, Function<T, Integer> f) {
+		return sumOrMax(it, f, true);
 	}
 	private static <T extends DirectedEvidence> List<Integer> sumOrMax(Iterable<T> it, Function<T, Integer> f, boolean max) {
 		boolean collapse = false;
@@ -335,10 +349,10 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			        .result();
 		  }
 	};
-	private static Ordering<VariantContextDirectedEvidence> AssemblyByBestDesc = new Ordering<VariantContextDirectedEvidence>() {
-		public int compare(VariantContextDirectedEvidence o1, VariantContextDirectedEvidence o2) {
+	private static Ordering<AssemblyEvidence> AssemblyByBestDesc = new Ordering<AssemblyEvidence>() {
+		public int compare(AssemblyEvidence o1, AssemblyEvidence o2) {
 			  return ComparisonChain.start()
-			        .compareTrueFirst(o1 instanceof VariantContextDirectedBreakpoint, o2 instanceof VariantContextDirectedBreakpoint)
+			        .compareTrueFirst(o1.getBreakendSummary() instanceof BreakpointSummary, o2.getBreakendSummary() instanceof BreakpointSummary)
 			        .compareTrueFirst(o1.getAssemblySupportCountSoftClip(EvidenceSubset.ALL) > 0, o2.getAssemblySupportCountSoftClip(EvidenceSubset.ALL) > 0)
 			        .compare(Models.llr(o2), Models.llr(o1)) // desc
 			        .result();

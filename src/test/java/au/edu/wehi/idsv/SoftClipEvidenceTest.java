@@ -164,17 +164,17 @@ public class SoftClipEvidenceTest extends TestHelper {
 	@Test
 	public void getUntemplatedSequenceLength_should_match_soft_clip_with_no_realign() {
 		SoftClipEvidence sc = SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Backward, Read(0, 1, "1S4M"));
-		assertEquals(sc.getSoftClipLength(), sc.getUntemplatedSequence().length());
+		assertEquals(sc.getSoftClipLength(), sc.getBreakendSequence().length);
 		sc = SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Backward, Read(0, 1, "1S4M2S"));
-		assertEquals(sc.getSoftClipLength(), sc.getUntemplatedSequence().length());
+		assertEquals(sc.getSoftClipLength(), sc.getBreakendSequence().length);
 		sc = SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Forward, Read(0, 1, "4M1S"));
-		assertEquals(sc.getSoftClipLength(), sc.getUntemplatedSequence().length());
+		assertEquals(sc.getSoftClipLength(), sc.getBreakendSequence().length);
 		sc = SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Forward, Read(0, 1, "1S4M5S"));
-		assertEquals(sc.getSoftClipLength(), sc.getUntemplatedSequence().length());
+		assertEquals(sc.getSoftClipLength(), sc.getBreakendSequence().length);
 	}
 	@Test
 	public void getUntemplatedSequenceLength_should_match_soft_clip_with_realign_unmapped() {
-		assertEquals(1, SoftClipEvidence.create(SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Backward, Read(0, 1, "1S4M")), Unmapped(1)).getUntemplatedSequence().length());
+		assertEquals(1, SoftClipEvidence.create(SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Backward, Read(0, 1, "1S4M")), Unmapped(1)).getBreakendSequence().length);
 	}
 	@Test
 	public void getLocalMapq_should_be_mapq() {

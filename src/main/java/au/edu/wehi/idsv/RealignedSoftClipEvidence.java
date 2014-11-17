@@ -8,16 +8,14 @@ import au.edu.wehi.idsv.sam.SamTags;
 import com.google.common.collect.ComparisonChain;
 
 public class RealignedSoftClipEvidence extends SoftClipEvidence implements DirectedBreakpoint {
-	private final RealignedBreakpoint realignedBreakpoint;
+	private final RealignedBreakpoint rbp;
 	private final SAMRecord realigned;
-	private BreakpointSummary location;
 	protected RealignedSoftClipEvidence(ProcessingContext processContext, SAMEvidenceSource source, BreakendDirection direction, SAMRecord record, SAMRecord realigned) throws CloneNotSupportedException {
 		super(processContext, source, direction, (SAMRecord)record.clone()); // need a copy since we're changing attributes to different values for the forward and backward records 
 		this.realigned = realigned;
 		int pos = direction == BreakendDirection.Forward ? record.getAlignmentEnd() : record.getAlignmentStart();
 		BreakendSummary local = new BreakendSummary(record.getReferenceIndex(), direction, pos, pos);
-		this.realignedBreakpoint = new RealignedBreakpoint(processContext, local, record.getReadBases(), realigned);
-		this.location = this.realignedBreakpoint.getBreakpointSummary();
+		this.rbp = new RealignedBreakpoint(processContext, local, record.getReadBases(), realigned);
 		setPositionAttributes();
 	}
 	private void setPositionAttributes() {
@@ -38,11 +36,10 @@ public class RealignedSoftClipEvidence extends SoftClipEvidence implements Direc
 	}
 	@Override
 	public BreakpointSummary getBreakendSummary() {
-		return location;
+		return rbp.getBreakpointSummary();
 	}
-	@Override
 	public String getUntemplatedSequence() {
-		return realignedBreakpoint.getInsertedSequence();
+		return rbp.getInsertedSequence();
 	}
 	@Override
 	public int getRemoteMapq() {

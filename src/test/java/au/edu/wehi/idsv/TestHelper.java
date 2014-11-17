@@ -238,21 +238,14 @@ public class TestHelper {
 		}
 	}
 
-	public static VariantContextDirectedEvidence AE() {
-		return AB().makeVariant();
-	}
-
-	public static AssemblyBuilder AB() {
-		return new AssemblyBuilder(getContext(), AES())
-				.assemblerName("testAssembler")
-				.direction(FWD)
-				.referenceAnchor(0, 1)
-				.anchorLength(1)
-				.assemblyBases(B("ATT"))
-				.assemblyBaseQuality(new byte[] { 7, 7, 7 })
-				.contributingEvidence(
-						Sets.newHashSet((DirectedEvidence) SCE(FWD,
-								Read(0, 1, "1M5S")))).assembledBaseCount(6, 8);
+	public static AssemblyEvidence AE() {
+		return AssemblyFactory.createAnchored(getContext(), AES(),
+				FWD,
+				Sets.newHashSet((DirectedEvidence) SCE(FWD,
+						Read(0, 1, "1M5S"))),
+				0, 1,
+				1, B("ATT"), new byte[] { 7, 7, 7 },
+				6, 8);
 	}
 
 	public static class MockMetrics extends IdsvSamFileMetrics {

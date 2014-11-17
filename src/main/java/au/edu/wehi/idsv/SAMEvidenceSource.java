@@ -23,6 +23,7 @@ import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -161,10 +162,29 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	public File getSourceFile() { return input; }
 	public boolean isTumour() { return isTumour; }
-	@Override
-	protected CloseableIterator<DirectedEvidence> perChrIterator(String chr) {
+	public CloseableIterator<DirectedEvidence> iterator(final boolean includeReadPair, final boolean includeSoftClip, final boolean includeSoftClipRemote) {
+		if (processContext.shouldProcessPerChromosome()) {
+			// Lazily iterator over each input
+			return new PerChromosomeAggregateIterator<DirectedEvidence>(processContext.getReference().getSequenceDictionary(), new Function<String, Iterator<DirectedEvidence>>() {
+				@Override
+				public Iterator<DirectedEvidence> apply(String chr) {
+					return perChrIterator(includeReadPair, includeSoftClip, includeSoftClipRemote, chr);
+				}
+			});
+		} else {
+			return singleFileIterator(includeReadPair, includeSoftClip, includeSoftClipRemote);
+		}
+	}
+	public CloseableIterator<DirectedEvidence> iterator(final boolean includeReadPair, final boolean includeSoftClip, final boolean includeSoftClipRemote, final String chr) {
+		if (processContext.shouldProcessPerChromosome()) {
+			return perChrIterator(includeReadPair, includeSoftClip, includeSoftClipRemote, chr);
+		} else {
+			return new ChromosomeFilteringIterator<DirectedEvidence>(singleFileIterator(includeReadPair, includeSoftClip, includeSoftClipRemote), processContext.getDictionary().getSequence(chr).getSequenceIndex(), true);
+		}
+	}
+	protected CloseableIterator<DirectedEvidence> perChrIterator(final boolean includeReadPair, final boolean includeSoftClip, final boolean includeSoftClipRemote, final String chr) {
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		return iterator(
+		return iterator(includeReadPair, includeSoftClip, includeSoftClipRemote,
 				fsc.getReadPairBamForChr(input, chr),
 				fsc.getMateBamForChr(input, chr),
 				fsc.getSoftClipBamForChr(input, chr),
@@ -173,10 +193,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 				fsc.getRealignmentRemoteBamForChr(input, chr),
 				chr);
 	}
-	@Override
-	protected CloseableIterator<DirectedEvidence> singleFileIterator() {
+	protected CloseableIterator<DirectedEvidence> singleFileIterator(final boolean includeReadPair, final boolean includeSoftClip, final boolean includeSoftClipRemote) {
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		return iterator(
+		return iterator(includeReadPair, includeSoftClip, includeSoftClipRemote,
 				fsc.getReadPairBam(input),
 				fsc.getMateBam(input),
 				fsc.getSoftClipBam(input),
@@ -195,60 +214,73 @@ public class SAMEvidenceSource extends EvidenceSource {
 	 * @param remoteRealigned
 	 * @return
 	 */
-	private CloseableIterator<DirectedEvidence> iterator(File readPair, File pairMate, File softClip, File realigned, File remoteSoftClip, File remoteRealigned, String chr) {
+	@SuppressWarnings("unchecked")
+	private CloseableIterator<DirectedEvidence> iterator(
+			final boolean includeReadPair,
+			final boolean includeSoftClip,
+			final boolean includeSoftClipRemote,
+			final File readPair,
+			final File pairMate,
+			final File softClip,
+			final File realigned,
+			final File remoteSoftClip,
+			final File remoteRealigned,
+			final String chr) {
+		List<CloseableIterator<DirectedEvidence>> itList = new ArrayList<>();
 		if (!isComplete(ProcessStep.EXTRACT_SOFT_CLIPS) ||
 			!isComplete(ProcessStep.EXTRACT_READ_PAIRS)) {
 			throw new IllegalStateException("Cannot traverse evidence before evidence extraction");
 		}
-		final CloseableIterator<SAMRecord> rawPairIt = processContext.getSamReaderIterator(readPair);
-		final CloseableIterator<SAMRecord> rawMateIt = processContext.getSamReaderIterator(pairMate);
-		final CloseableIterator<NonReferenceReadPair> rawRpIt = new ReadPairEvidenceIterator(
-				processContext,
-				this,
-				rawPairIt,
-				rawMateIt);
-		final Iterator<NonReferenceReadPair> sortedRpIt = new DirectEvidenceWindowedSortingIterator<NonReferenceReadPair>(processContext, getMaxConcordantFragmentSize(), rawRpIt);
-		final CloseableIterator<NonReferenceReadPair> finalrpIt = new AutoClosingIterator<NonReferenceReadPair>(sortedRpIt,
-				Lists.<Closeable>newArrayList(rawRpIt, rawPairIt, rawMateIt));
-		
-		final List<Closeable> scToClose = new ArrayList<>();
-		final CloseableIterator<SAMRecord> rawScIt = processContext.getSamReaderIterator(softClip);
-		scToClose.add(rawScIt);
-		CloseableIterator<SoftClipEvidence> scIt = new SoftClipEvidenceIterator(processContext, this,
-				rawScIt);
-		scToClose.add(scIt);
-		if (isRealignmentComplete()) {
-			//log.debug("Realignment is complete for ", input);
-			CloseableIterator<SAMRecord> rawRealignIt = processContext.getSamReaderIterator(realigned);
-			scToClose.add(rawRealignIt);
-			scIt = new RealignedSoftClipEvidenceIterator(scIt, rawRealignIt);
+		if (includeReadPair) {
+			final CloseableIterator<SAMRecord> rawPairIt = processContext.getSamReaderIterator(readPair);
+			final CloseableIterator<SAMRecord> rawMateIt = processContext.getSamReaderIterator(pairMate);
+			final CloseableIterator<NonReferenceReadPair> rawRpIt = new ReadPairEvidenceIterator(
+					processContext,
+					this,
+					rawPairIt,
+					rawMateIt);
+			final Iterator<NonReferenceReadPair> sortedRpIt = new DirectEvidenceWindowedSortingIterator<NonReferenceReadPair>(processContext, getMaxConcordantFragmentSize(), rawRpIt);
+			final CloseableIterator<NonReferenceReadPair> finalrpIt = new AutoClosingIterator<NonReferenceReadPair>(sortedRpIt,
+					Lists.<Closeable>newArrayList(rawRpIt, rawPairIt, rawMateIt));
+			itList.add((CloseableIterator<DirectedEvidence>)(Object)finalrpIt);
+		}
+		if (includeSoftClip) {
+			final List<Closeable> scToClose = new ArrayList<>();
+			final CloseableIterator<SAMRecord> rawScIt = processContext.getSamReaderIterator(softClip);
+			scToClose.add(rawScIt);
+			CloseableIterator<SoftClipEvidence> scIt = new SoftClipEvidenceIterator(processContext, this,
+					rawScIt);
 			scToClose.add(scIt);
-		} else {
-			//log.info("Realigned soft clip evidence not present due to missing realignment bam ", realigned);
-		}
-		// sort into evidence order
-		scIt =  new AutoClosingIterator<SoftClipEvidence>(
-					new DirectEvidenceWindowedSortingIterator<SoftClipEvidence>(processContext, getMetrics().getIdsvMetrics().MAX_READ_LENGTH, scIt),
-					scToClose
-				);
-		
-		CloseableIterator<RealignedRemoteSoftClipEvidence> remoteScIt = new AutoClosingIterator<RealignedRemoteSoftClipEvidence>(Collections.<RealignedRemoteSoftClipEvidence>emptyIterator()); 
-		if (isRealignmentComplete()) {
-			if (!isComplete(ProcessStep.SORT_REALIGNED_SOFT_CLIPS)) {
-				//log.debug("Realignment resorting not complete for ", input);
+			if (isRealignmentComplete()) {
+				//log.debug("Realignment is complete for ", input);
+				CloseableIterator<SAMRecord> rawRealignIt = processContext.getSamReaderIterator(realigned);
+				scToClose.add(rawRealignIt);
+				scIt = new RealignedSoftClipEvidenceIterator(scIt, rawRealignIt);
+				scToClose.add(scIt);
 			} else {
-				CloseableIterator<SAMRecord> rsrRawIt = processContext.getSamReaderIterator(remoteRealigned);
-				CloseableIterator<SAMRecord> sssRawItf = processContext.getSamReaderIterator(remoteSoftClip);
-				CloseableIterator<SAMRecord> sssRawItb = processContext.getSamReaderIterator(remoteSoftClip);
-				remoteScIt = new RealignedRemoteSoftClipEvidenceIterator(processContext, this,
-						rsrRawIt, sssRawItf, sssRawItb);
-				remoteScIt = new AutoClosingIterator<RealignedRemoteSoftClipEvidence>(new DirectEvidenceWindowedSortingIterator<RealignedRemoteSoftClipEvidence>(processContext, getMetrics().getIdsvMetrics().MAX_READ_LENGTH, remoteScIt),
-						ImmutableList.<Closeable>of(remoteScIt, rsrRawIt, sssRawItf, sssRawItb));
+				//log.info("Realigned soft clip evidence not present due to missing realignment bam ", realigned);
 			}
-		} else {
-			//log.info("Realigned remote soft clip evidence not present due to missing realignment bam ", realigned);
+			// sort into evidence order
+			scIt =  new AutoClosingIterator<SoftClipEvidence>(
+						new DirectEvidenceWindowedSortingIterator<SoftClipEvidence>(processContext, getMetrics().getIdsvMetrics().MAX_READ_LENGTH, scIt),
+						scToClose
+					);
+			itList.add((CloseableIterator<DirectedEvidence>)(Object)scIt);
 		}
-		final CloseableIterator<DirectedEvidence> mergedIt = new AutoClosingMergedIterator<DirectedEvidence>(ImmutableList.of(finalrpIt, scIt, remoteScIt), DirectedEvidenceOrder.ByNatural);
+		if (includeSoftClipRemote) {
+			if (!isRealignmentComplete()) {
+				throw new IllegalArgumentException(String.format("Realignment resorting not complete for ", input));
+			}
+			CloseableIterator<RealignedRemoteSoftClipEvidence> remoteScIt = new AutoClosingIterator<RealignedRemoteSoftClipEvidence>(Collections.<RealignedRemoteSoftClipEvidence>emptyIterator()); 
+			CloseableIterator<SAMRecord> rsrRawIt = processContext.getSamReaderIterator(remoteRealigned);
+			CloseableIterator<SAMRecord> sssRawItf = processContext.getSamReaderIterator(remoteSoftClip);
+			CloseableIterator<SAMRecord> sssRawItb = processContext.getSamReaderIterator(remoteSoftClip);
+			remoteScIt = new RealignedRemoteSoftClipEvidenceIterator(processContext, this, rsrRawIt, sssRawItf, sssRawItb);
+			remoteScIt = new AutoClosingIterator<RealignedRemoteSoftClipEvidence>(new DirectEvidenceWindowedSortingIterator<RealignedRemoteSoftClipEvidence>(processContext, getMetrics().getIdsvMetrics().MAX_READ_LENGTH, remoteScIt),
+					ImmutableList.<Closeable>of(remoteScIt, rsrRawIt, sssRawItf, sssRawItb));
+			itList.add((CloseableIterator<DirectedEvidence>)(Object)remoteScIt);
+		}
+		final CloseableIterator<DirectedEvidence> mergedIt = new AutoClosingMergedIterator<DirectedEvidence>(itList, DirectedEvidenceOrder.ByNatural);
 		return new AsyncBufferedIterator<DirectedEvidence>(mergedIt, input.getName() + " " + chr);
 	}
 	public ReadPairConcordanceCalculator getReadPairConcordanceCalculator() {

@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 
 import picard.cmdline.Option;
 import picard.cmdline.Usage;
-import au.edu.wehi.idsv.pipeline.SortRealignedAssemblies;
 import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
 import au.edu.wehi.idsv.validation.TruthAnnotator;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
@@ -110,11 +109,11 @@ public class Idsv extends CommandLineProgram {
 	    		future.get();
 	    	}
 	    	log.debug("Evidence extraction complete.");
-	    	AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getContext(), samEvidence, OUTPUT);
-	    	aes.ensureAssembled(threadpool);
+	    	AssemblyEvidenceSource rawAssemblyEvidence = new AssemblyEvidenceSource(getContext(), samEvidence, OUTPUT);
+	    	rawAssemblyEvidence.ensureAssembled(threadpool);
 	    	
 	    	List<EvidenceSource> allEvidence = new ArrayList<>();
-	    	allEvidence.add(aes);
+	    	allEvidence.add(rawAssemblyEvidence);
 	    	allEvidence.addAll(samEvidence);
 	    	
 	    	String instructions = getRealignmentScript(allEvidence, WORKER_THREADS);
@@ -158,11 +157,8 @@ public class Idsv extends CommandLineProgram {
 	    		// throw exception from worker thread here
 	    		future.get();
 	    	}
-	    	SortRealignedAssemblies sra = new SortRealignedAssemblies(getContext(), aes);
-    		if (sra.canProcess() && !sra.isComplete()) {
-    			sra.process(STEPS, threadpool);
-    		}
-    		sra.close();
+	    	AssemblyReadPairEvidenceSource processedAssembly = new AssemblyReadPairEvidenceSource(getContext(), samEvidence, OUTPUT);
+	    	processedAssembly.ensureAssembled();
 	    	
 	    	// check that all steps have been completed
 	    	for (SAMEvidenceSource sref : samEvidence) {
@@ -175,14 +171,14 @@ public class Idsv extends CommandLineProgram {
 	    			return -1;
 	    		}
 	    	}
-	    	if (!aes.isRealignmentComplete()) {
+	    	if (!processedAssembly.isRealignmentComplete()) {
 	    		log.error("Unable to call variants: generation and realignment of assemblies not complete.");
     			return -1;
 	    	}
 	    	
 	    	VariantCaller caller = null;
 	    	try {
-	    		caller = new VariantCaller(getContext(), OUTPUT, allEvidence);
+	    		caller = new VariantCaller(getContext(), OUTPUT, samEvidence, processedAssembly);
 	    		caller.callBreakends(threadpool);
 	    		BreakendAnnotator annotator = null;
 	    		if (TRUTH_VCF != null) {
@@ -220,14 +216,13 @@ public class Idsv extends CommandLineProgram {
     }
 	private void hackOutputIndels() throws IOException {
 		log.info("DEBUGGING HACK: naive translation to INDEL calls");
-		@SuppressWarnings("resource")
-		VariantContextDirectedEvidenceIterator it = new VariantContextDirectedEvidenceIterator(getContext(), null, new VCFFileReader(OUTPUT, false).iterator(), null);
 		List<IdsvVariantContext> out = new ArrayList<>();
-		while (it.hasNext()) {
-			VariantContextDirectedEvidence e = it.next();
-			IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext(), e);
-			if (e instanceof VariantContextDirectedBreakpoint) {
-				VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)e;
+		VCFFileReader reader = new VCFFileReader(OUTPUT, false);
+		for (VariantContext vc : reader) {
+			IdsvVariantContext context = IdsvVariantContext.create(getContext(), null, vc);
+			IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext(), context);
+			if (context instanceof VariantContextDirectedBreakpoint) {
+				VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)context;
 				BreakpointSummary loc = bp.getBreakendSummary();
 				int indelSize = 0;
 				if (loc.referenceIndex == loc.referenceIndex2) {
@@ -251,6 +246,7 @@ public class Idsv extends CommandLineProgram {
 			}
 			out.add(builder.make());
 		}
+		reader.close();
 		Collections.sort(out, IdsvVariantContext.ByLocationStart);
 		VariantContextWriter writer = getContext().getVariantContextWriter(new File(OUTPUT.toString() + ".indel.vcf"), true);
 		for (VariantContext vc : out) {

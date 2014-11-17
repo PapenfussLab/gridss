@@ -54,6 +54,10 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 		}
 		return total;
 	}
+	@Override
+	public String getUntemplatedSequence() {
+		return getBreakpointSequenceString();
+	}
 	public static Ordering<VariantContextDirectedBreakpoint> ByRemoteBreakendLocationStart = new Ordering<VariantContextDirectedBreakpoint>() {
 		public int compare(VariantContextDirectedBreakpoint o1, VariantContextDirectedBreakpoint o2) {
 			BreakpointSummary b1 = o1.getBreakendSummary();

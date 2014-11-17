@@ -17,45 +17,68 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
 
-public abstract class EvidenceProcessorBase implements Closeable {
+public abstract class EvidenceProcessorBase {
 	private static final Log log = Log.getInstance(EvidenceProcessorBase.class);
 	protected final ProcessingContext processContext;
 	protected final File output;
-	protected final List<EvidenceSource> evidence;
+	protected final List<SAMEvidenceSource> samEvidence;
+	protected final AssemblyReadPairEvidenceSource assemblyEvidence;
 	protected final List<Closeable> toClose = new ArrayList<>();
-	public EvidenceProcessorBase(ProcessingContext context, File output, List<EvidenceSource> evidence) {
+	public EvidenceProcessorBase(ProcessingContext context, File output, List<SAMEvidenceSource> samEvidence, AssemblyReadPairEvidenceSource assemblyEvidence) {
 		this.processContext = context;
 		this.output = output;
-		this.evidence = evidence;
+		this.samEvidence = samEvidence;
+		this.assemblyEvidence = assemblyEvidence;
 	}
-	protected CloseableIterator<DirectedEvidence> getAllEvidence(boolean assemblyOnly, boolean includeRemoteAssembly) {
-		List<Iterator<DirectedEvidence>> evidenceItList = new ArrayList<>();
-		for (EvidenceSource source : evidence) {
-			if (source instanceof AssemblyEvidenceSource) {
-				((AssemblyEvidenceSource)source).setIncludeRemote(includeRemoteAssembly);
-			} else if (assemblyOnly) {
-				// only include assembly evidence if assemblyOnly is set
-				continue;
-			}
-			Iterator<DirectedEvidence> it = source.iterator();
-			if (it instanceof Closeable) toClose.add((Closeable)it);
-			evidenceItList.add(it);
+	@SuppressWarnings("unchecked")
+	protected CloseableIterator<DirectedEvidence> getAllEvidence(
+			boolean includeAssembly,
+			boolean includeAssemblyRemote,
+			boolean includeReadPair,
+			boolean includeSoftClip,
+			boolean includeSoftClipRemote) {
+		List<CloseableIterator<DirectedEvidence>> evidenceItList = new ArrayList<>();
+		if (includeAssembly && assemblyEvidence != null) {
+			evidenceItList.add((CloseableIterator<DirectedEvidence>)(Object)assemblyEvidence.iterator(includeAssemblyRemote, false));
 		}
+		if (includeReadPair || includeSoftClip || includeSoftClipRemote) {
+			for (SAMEvidenceSource source : samEvidence) {
+				evidenceItList.add(source.iterator(includeReadPair, includeSoftClip, includeSoftClipRemote));
+			}
+		}
+		toClose.addAll(evidenceItList);
 		CloseableIterator<DirectedEvidence> evidenceIt = new AutoClosingMergedIterator<DirectedEvidence>(evidenceItList, DirectedEvidenceOrder.ByNatural);
 		return evidenceIt;
 	}
-	protected CloseableIterator<DirectedEvidence> getEvidenceForChr(boolean assemblyOnly, int... referenceIndex) {
+	@SuppressWarnings("unchecked")
+	protected CloseableIterator<DirectedEvidence> getEvidenceForChr(
+			boolean includeAssembly,
+			boolean includeAssemblyRemote,
+			boolean includeReadPair,
+			boolean includeSoftClip,
+			boolean includeSoftClipRemote,
+			int... referenceIndex) {
 		SortedSet<Integer> refList = Sets.newTreeSet(Ints.asList(referenceIndex));
 		List<Iterator<DirectedEvidence>> evidenceItList = new ArrayList<>();
-		for (EvidenceSource source : evidence) {
-			if (assemblyOnly && !(source instanceof AssemblyEvidenceSource)) continue;
-			List<Iterator<DirectedEvidence>> sourceIt = new ArrayList<>();
+		if (includeAssembly && assemblyEvidence != null) {
+			List<CloseableIterator<SAMRecordAssemblyEvidence>> itList = new ArrayList<>();
 			for (int i : refList) {
-				CloseableIterator<DirectedEvidence> it = source.iterator(processContext.getReference().getSequenceDictionary().getSequence(i).getSequenceName());
-				toClose.add(it);
-				sourceIt.add(it);
+				String chr = processContext.getReference().getSequenceDictionary().getSequence(i).getSequenceName();
+				CloseableIterator<SAMRecordAssemblyEvidence> assIt = assemblyEvidence.iterator(includeAssemblyRemote, false, chr);
+				toClose.add(assIt);
+				itList.add(assIt);
 			}
-			evidenceItList.add(Iterators.concat(sourceIt.iterator()));
+			evidenceItList.add((Iterator<DirectedEvidence>)(Object)Iterators.concat(itList.iterator()));
+		}
+		if (includeReadPair || includeSoftClip || includeSoftClipRemote) {
+			for (SAMEvidenceSource source : samEvidence) {
+				List<CloseableIterator<DirectedEvidence>> it = new ArrayList<>();
+				for (int i : refList) {
+					String chr = processContext.getReference().getSequenceDictionary().getSequence(i).getSequenceName();
+					CloseableIterator<DirectedEvidence> samIt = source.iterator(includeReadPair, includeSoftClip, includeSoftClipRemote, chr);
+					evidenceItList.add(samIt);
+				}
+			}
 		}
 		CloseableIterator<DirectedEvidence> evidenceIt = new AutoClosingMergedIterator<DirectedEvidence>(evidenceItList, DirectedEvidenceOrder.ByNatural);
 		return evidenceIt;

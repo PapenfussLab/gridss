@@ -342,10 +342,10 @@ public class ExtractEvidence implements Closeable {
 	}
 	private void createOutputWriterPerGenome(final EnumSet<ProcessStep> steps, final SAMFileHeader svHeader, final SAMFileHeader mateHeader) {
 		// all writers map to the same one
-		if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) scwriters.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getSoftClipBam(source.getSourceFile())));
+		if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) scwriters.add(processContext.getSamFileWriterFactory().makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getSoftClipBam(source.getSourceFile())));
 		if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) realignmentWriters.add(new FastqBreakpointWriter(processContext.getFastqWriterFactory().newWriter(processContext.getFileSystemContext().getRealignmentFastq(source.getSourceFile()))));
-		if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) rpwriters.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getReadPairBam(source.getSourceFile())));
-		if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) matewriters.add(processContext.getSamReaderWriterFactory().makeBAMWriter(mateHeader, true, processContext.getFileSystemContext().getMateBamUnsorted(source.getSourceFile()), 0));
+		if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) rpwriters.add(processContext.getSamFileWriterFactory().makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getReadPairBam(source.getSourceFile())));
+		if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) matewriters.add(processContext.getSamFileWriterFactory().makeBAMWriter(mateHeader, true, processContext.getFileSystemContext().getMateBamUnsorted(source.getSourceFile()), 0));
 		
 	}
 	private void createOutputWritersPerChromosome(
@@ -354,12 +354,12 @@ public class ExtractEvidence implements Closeable {
 			final SAMFileHeader svHeader,
 			final SAMFileHeader mateHeader) {
 		for (SAMSequenceRecord seq : dictionary.getSequences()) {
-			if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) scwriters.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getSoftClipBamForChr(source.getSourceFile(), seq.getSequenceName())));
+			if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) scwriters.add(processContext.getSamFileWriterFactory().makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getSoftClipBamForChr(source.getSourceFile(), seq.getSequenceName())));
 			if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) realignmentWriters.add(new FastqBreakpointWriter(processContext.getFastqWriterFactory().newWriter(processContext.getFileSystemContext().getRealignmentFastqForChr(source.getSourceFile(), seq.getSequenceName()))));
-			if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) rpwriters.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getReadPairBamForChr(source.getSourceFile(), seq.getSequenceName())));
-			if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) matewriters.add(processContext.getSamReaderWriterFactory().makeBAMWriter(mateHeader, true, processContext.getFileSystemContext().getMateBamUnsortedForChr(source.getSourceFile(), seq.getSequenceName()), 0));
+			if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) rpwriters.add(processContext.getSamFileWriterFactory().makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getReadPairBamForChr(source.getSourceFile(), seq.getSequenceName())));
+			if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) matewriters.add(processContext.getSamFileWriterFactory().makeBAMWriter(mateHeader, true, processContext.getFileSystemContext().getMateBamUnsortedForChr(source.getSourceFile(), seq.getSequenceName()), 0));
 			
 		}
-		if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) rpwriters.add(processContext.getSamReaderWriterFactory().makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getReadPairBamForChr(source.getSourceFile(), "unmapped")));
+		if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) rpwriters.add(processContext.getSamFileWriterFactory().makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getReadPairBamForChr(source.getSourceFile(), "unmapped")));
 	}
 }

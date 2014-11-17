@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
+import htsjdk.samtools.SAMRecord;
 
 import java.io.File;
 import java.io.IOException;
@@ -30,11 +31,12 @@ public class IdsvTest extends IntermediateFilesTest {
 		};
 		new Idsv().instanceMain(args);
 		// Should have generated two breakpoints
-		List<VariantContextDirectedEvidence> ass = breaks(getVcf(getCommandlineContext(false).getFileSystemContext().getAssemblyVcfForChr(output, "chr12"), null));
-		ass = Lists.newArrayList(Iterables.filter(ass, new Predicate<VariantContextDirectedEvidence>() {
+		List<SAMRecord> ass = getRecords(getCommandlineContext(true).getFileSystemContext().getAssemblyRawBam(output));
+		ass = Lists.newArrayList(Iterables.filter(ass, new Predicate<AssemblyEvidence>() {
 			@Override
-			public boolean apply(VariantContextDirectedEvidence arg0) {
-				return arg0.isValid() && !arg0.isFiltered();
+			public boolean apply(AssemblyEvidence arg0) {
+				
+				return !arg0.isAssemblyFiltered();
 			}
 		}));
 		assertEquals(2, ass.size());

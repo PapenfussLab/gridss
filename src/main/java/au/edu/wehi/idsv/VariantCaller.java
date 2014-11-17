@@ -37,8 +37,8 @@ import com.google.common.collect.Iterators;
  */
 public class VariantCaller extends EvidenceProcessorBase {
 	private static final Log log = Log.getInstance(VariantCaller.class);
-	public VariantCaller(ProcessingContext context, File output, List<EvidenceSource> evidence) {
-		super(context, output, evidence);
+	public VariantCaller(ProcessingContext context, File output, List<SAMEvidenceSource> samEvidence, AssemblyReadPairEvidenceSource assemblyEvidence) {
+		super(context, output, samEvidence, assemblyEvidence);
 	}
 	@Override
 	public void process() {
@@ -49,8 +49,8 @@ public class VariantCaller extends EvidenceProcessorBase {
 	private static class WriteMaximalCliquesForChromosome extends EvidenceProcessorBase implements Callable<Void> {
 		private int chri;
 		private int chrj;
-		public WriteMaximalCliquesForChromosome(ProcessingContext context, File output, List<EvidenceSource> evidence, int chri, int chrj) {
-			super(context, output, evidence);
+		public WriteMaximalCliquesForChromosome(ProcessingContext context, File output, List<SAMEvidenceSource> samEvidence, AssemblyReadPairEvidenceSource assemblyEvidence, int chri, int chrj) {
+			super(context, output, samEvidence, assemblyEvidence);
 			this.chri = chri;
 			this.chrj = chrj;
 		}
@@ -70,7 +70,14 @@ public class VariantCaller extends EvidenceProcessorBase {
 				FileSystemContext.getWorkingFileFor(outfile).delete();
 				log.info("Start " + task);
 				EvidenceClusterSubsetProcessor processor = new EvidenceClusterSubsetProcessor(processContext, chri, chrj);
-				evidenceIt = getEvidenceForChr(processContext.getVariantCallingParameters().callOnlyAssemblies, chri, chrj); 
+				evidenceIt = getEvidenceForChr(
+						processContext.getVariantCallingParameters().callOnlyAssemblies,
+						false,
+						true,
+						true,
+						true,
+						chri,
+						chrj); 
 				writeMaximalCliquesToVcf(processContext,
 						processor,
 						FileSystemContext.getWorkingFileFor(outfile),
@@ -98,7 +105,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 				final SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
 				for (int i = 0; i < dict.size(); i++) {					
 					for (int j = i; j < dict.size(); j++) {
-						workers.add(new WriteMaximalCliquesForChromosome(processContext, output, evidence,  i, j));
+						workers.add(new WriteMaximalCliquesForChromosome(processContext, output, samEvidence, assemblyEvidence, i, j));
 					}
 				}
 				if (threadpool != null) {
@@ -130,7 +137,11 @@ public class VariantCaller extends EvidenceProcessorBase {
 					try {
 						EvidenceClusterProcessor processor = new EvidenceClusterProcessor(processContext);
 						// TODO: linear pass over breakpoints by including all remote evidence
-						evidenceIt = getAllEvidence(processContext.getVariantCallingParameters().callOnlyAssemblies, false);
+						evidenceIt = getAllEvidence(processContext.getVariantCallingParameters().callOnlyAssemblies,
+								false,
+								true,
+								true,
+								true);
 						writeMaximalCliquesToVcf(
 								processContext,
 								processor,
@@ -221,16 +232,14 @@ public class VariantCaller extends EvidenceProcessorBase {
 		log.info("Annotating Calls");
 		List<SAMEvidenceSource> normal = new ArrayList<>();
 		List<SAMEvidenceSource> tumour = new ArrayList<>();
-		int maxFragmentSize = 0;
-		for (EvidenceSource source : evidence) {
+		int maxFragmentSize = assemblyEvidence.getMaxConcordantFragmentSize();
+		for (EvidenceSource source : samEvidence) {
 			maxFragmentSize = Math.max(source.getMaxConcordantFragmentSize(), maxFragmentSize);
-			if (source instanceof SAMEvidenceSource) {
-				SAMEvidenceSource samSource = (SAMEvidenceSource)source;
-				if (samSource.isTumour()) {
-					tumour.add(samSource);
-				} else {
-					normal.add(samSource);
-				}
+			SAMEvidenceSource samSource = (SAMEvidenceSource)source;
+			if (samSource.isTumour()) {
+				tumour.add(samSource);
+			} else {
+				normal.add(samSource);
 			}
 		}
 		VariantContextWriter vcfWriter = null;
@@ -243,7 +252,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 			normalCoverage = getReferenceLookup(normal, 4 * maxFragmentSize);
 			tumourCoverage = getReferenceLookup(tumour, 4 * maxFragmentSize);
 			BreakendAnnotator referenceAnnotator  = new SequentialCoverageAnnotator(processContext, normalCoverage, tumourCoverage);
-			evidenceIt = getAllEvidence(false, true);
+			evidenceIt = getAllEvidence(true, true, true, true, true);
 			BreakendAnnotator evidenceAnnotator = new SequentialEvidenceAnnotator(processContext, evidenceIt);
 			it = getAllCalledVariants();
 			while (it.hasNext()) {

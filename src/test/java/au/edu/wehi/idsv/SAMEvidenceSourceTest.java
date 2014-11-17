@@ -19,7 +19,7 @@ import com.google.common.collect.Lists;
 public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	@Test
 	public void per_chr_iterator_should_return_all_evidence() {
-		createInput(new SAMRecord[] { Read(1, 1, "50M50S") },
+		createInput(new SAMRecord[] {Read(1, 1, "50M50S") },
 				RP(0, 200, 100), // max frag size
 				DP(1, 1, "100M", true, 2, 5, "100M", true),
 			   DP(1, 2, "100M", true, 2, 4, "100M", true),
@@ -27,7 +27,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 			   OEA(1, 4, "100M", false));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(true, true, false));
 		assertEquals(8, list.size()); // 1 SC + 3 * 2 DP + 1 OEA
 	}
 	@Test
@@ -57,7 +57,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				);
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(true, true, false));
 		for (int i = 0; i <= 4; i++) {
 			assertEquals(i, list.get(i).getBreakendSummary().referenceIndex);
 		}
@@ -73,7 +73,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				);
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		List<DirectedEvidence> list = Lists.newArrayList(source.iterator("polyACGT"));
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(true, true, false, "polyACGT"));
 		assertEquals(1, list.size());
 		assertEquals(1, list.get(0).getBreakendSummary().referenceIndex);
 	}
@@ -87,7 +87,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 			   OEA(1, 4, "100M", false));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(true, true, false));
 		assertEquals(8, list.size()); // 1 SC + 3 * 2 DP + 1 OEA
 	}
 	@Test
@@ -101,13 +101,13 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				);
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(true, true, false));
 		for (int i = 0; i <= 4; i++) {
 			assertEquals(i, list.get(i).getBreakendSummary().referenceIndex);
 		}
 	}
 	@Test
-	public void iterator_chr_should_return_only_evidence() {
+	public void iterator_chr_should_return_only_chr_evidence() {
 		createInput(
 				Read(0, 1, "50M50S"),
 				Read(1, 1, "50M50S"),
@@ -117,7 +117,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				);
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		List<DirectedEvidence> list = Lists.newArrayList(source.iterator("polyACGT"));
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(true, true, false, "polyACGT"));
 		assertEquals(1, list.size());
 		assertEquals(1, list.get(0).getBreakendSummary().referenceIndex);
 	}
@@ -126,7 +126,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		createInput(Read(0, 1, "50M50S"));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(true, true, false));
 		assertEquals(1, list.size());
 		assertEquals(source, list.get(0).getEvidenceSource());
 	}
@@ -149,7 +149,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 			   OEA(1, 4, "100M", true));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		List<DirectedEvidence> result = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> result = Lists.newArrayList(source.iterator(true, true, false));
 		List<DirectedEvidence> sorted = Lists.newArrayList(result);
 		Collections.sort(sorted, DirectedEvidenceOrder.ByNatural);
 		assertEquals(sorted, result);
@@ -167,11 +167,30 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				withReadName("1#2#fr2", Read(1, 10, "15M"))[0],
 				withReadName("2#3#fr3", Read(0, 10, "15M"))[0]
 		);
-		List<DirectedEvidence> result = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> result = Lists.newArrayList(source.iterator(true, true, false));
 		assertEquals(3, result.size());
 		assertTrue(result.get(0) instanceof RealignedSoftClipEvidence);
 		assertTrue(result.get(1) instanceof RealignedSoftClipEvidence);
 		assertTrue(result.get(2) instanceof RealignedSoftClipEvidence);
+	}
+	@Test
+	public void iterator_should_return_realigned_soft_clips_soft_clip() {
+		createInput(
+				withReadName("r1", Read(0, 1, "15M15S")),
+				withReadName("r2", Read(1, 2, "15M15S")),
+				withReadName("r3", Read(2, 3, "15M15S")));
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		source.completeSteps(ProcessStep.ALL_STEPS);
+		createBAM(getCommandlineContext().getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, 
+				withReadName("0#1#fr1", Read(2, 10, "15M"))[0],
+				withReadName("1#2#fr2", Read(1, 10, "15M"))[0],
+				withReadName("2#3#fr3", Read(0, 10, "15M"))[0]
+		);
+		List<DirectedEvidence> result = Lists.newArrayList(source.iterator(false, false, true));
+		assertEquals(3, result.size());
+		assertTrue(result.get(0) instanceof RemoteEvidence);
+		assertTrue(result.get(1) instanceof RemoteEvidence);
+		assertTrue(result.get(2) instanceof RemoteEvidence);
 	}
 	@Test
 	public void iterator_should_iterator_over_both_forward_and_backward_soft_clips() {
@@ -179,7 +198,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
 		source.completeSteps(ProcessStep.ALL_STEPS);
 		
-		List<DirectedEvidence> result = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> result = Lists.newArrayList(source.iterator(false, true, false));
 		assertEquals(2, result.size());
 	}
 	@Test
@@ -197,7 +216,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				withReadName("2#3#fr3", Read(0, 10, "15M"))[0],
 				withReadName("2#3#br3", Read(0, 100, "15M"))[0]
 		);
-		List<RealignedSoftClipEvidence> result = Lists.newArrayList(Iterators.filter(source.iterator(), RealignedSoftClipEvidence.class));
+		List<RealignedSoftClipEvidence> result = Lists.newArrayList(Iterators.filter(source.iterator(true, true, false), RealignedSoftClipEvidence.class));
 		
 		assertEquals(5, result.size());
 	}
@@ -217,10 +236,10 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				withReadName("2#3#br3", Read(0, 100, "15M"))[0]);
 		source.completeSteps(ProcessStep.ALL_STEPS);
 		
-		List<RealignedRemoteSoftClipEvidence> remote = Lists.newArrayList(Iterators.filter(source.iterator(), RealignedRemoteSoftClipEvidence.class));
+		List<RealignedRemoteSoftClipEvidence> remote = Lists.newArrayList(Iterators.filter(source.iterator(true, true, true), RealignedRemoteSoftClipEvidence.class));
 		assertEquals(5, remote.size());
 		
-		List<RealignedSoftClipEvidence> result = Lists.newArrayList(Iterators.filter(source.iterator(), RealignedSoftClipEvidence.class));
+		List<RealignedSoftClipEvidence> result = Lists.newArrayList(Iterators.filter(source.iterator(true, true, true), RealignedSoftClipEvidence.class));
 		assertEquals(5, result.size() - remote.size());
 	}
 	@Test
@@ -244,7 +263,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		assertEquals(22, source.getMaxConcordantFragmentSize());
 		assertEquals(5, source.getMaxReadLength());
 		
-		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(true, true, false));
 		assertEquals(4 * 2, list.size()); // 4 discordant pairs
 	}
 	@Test
@@ -261,7 +280,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		assertEquals(FixedSizeReadPairConcordanceCalculator.class, source.getReadPairConcordanceCalculator().getClass());
 		assertEquals(15, source.getMaxConcordantFragmentSize());
 		assertEquals(1, source.getMaxReadLength());
-		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(true, true, false));
 		assertEquals(2 * 2, list.size());
 	}
 	@Test

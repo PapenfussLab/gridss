@@ -13,4 +13,9 @@ public interface DirectedBreakpoint extends DirectedEvidence {
 	int getRemoteBaseCount();
 	int getRemoteMaxBaseQual();
 	int getRemoteTotalBaseQual();
+	/**
+	 * Sequence of known untemplated bases (inserted bases not matching the reference)
+	 * @return known untemplated bases, empty string if no bases can be identified
+	 */
+	String getUntemplatedSequence();
 }

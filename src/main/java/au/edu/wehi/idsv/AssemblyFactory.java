@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
-import java.nio.charset.StandardCharsets;
+import htsjdk.samtools.SAMRecord;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -8,8 +9,6 @@ import java.util.Set;
 
 import au.edu.wehi.idsv.util.CollectionUtil;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfFilter;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
@@ -32,7 +31,7 @@ public class AssemblyFactory {
 	 * @param tumourBaseCount number of assembly bases contributed by tumour evidence sources
 	 * @return assembly evidence for the given assembly
 	 */
-	public static AssemblyEvidence createAnchored(ProcessingContext processContext,
+	public static SAMRecordAssemblyEvidence createAnchored(ProcessingContext processContext,
 			AssemblyEvidenceSource source, BreakendDirection direction,
 			Set<DirectedEvidence> evidence,
 			int anchorReferenceIndex, int anchorBreakendPosition, int anchoredBaseCount,
@@ -53,7 +52,7 @@ public class AssemblyFactory {
 	 * @param tumourBaseCount number of assembly bases contributed by tumour evidence sources
 	 * @return assembly evidence for the given assembly
 	 */
-	public static AssemblyEvidence createUnanchored(ProcessingContext processContext,
+	public static SAMRecordAssemblyEvidence createUnanchored(ProcessingContext processContext,
 			AssemblyEvidenceSource source, BreakendDirection direction,
 			Set<DirectedEvidence> evidence,
 			byte[] baseCalls, byte[] baseQuals,
@@ -61,6 +60,15 @@ public class AssemblyFactory {
 		
 		BreakendSummary breakend = getBreakendConfidenceInterval(direction, evidence);
 		return new SAMRecordAssemblyEvidence(breakend, source, 0, baseCalls, baseQuals, calculateAssemblyIntAttributes(evidence, normalBaseCount, tumourBaseCount));
+	}
+	private static BreakendSummary getBreakendConfidenceInterval(BreakendDirection direction, Set<DirectedEvidence> evidence) {
+		// TODO: proper 95% Confidence Interval instead of hard limits on the bounds 
+		BreakendSummary bs = evidence.iterator().next().getBreakendSummary();
+		for (DirectedEvidence e : evidence) {
+			BreakendSummary b = e.getBreakendSummary();
+			bs = BreakendSummary.overlapOf(bs, b);
+		}
+		return bs;
 	}
 	private static Map<VcfAttributes, int[]> calculateAssemblyIntAttributes(Set<DirectedEvidence> evidence, int normalBaseCount, int tumourBaseCount) {
 		List<NonReferenceReadPair> rp = Lists.newArrayList(Iterables.filter(evidence, NonReferenceReadPair.class));
@@ -92,5 +100,20 @@ public class AssemblyFactory {
 		}
 		attributes.put(VcfAttributes.ASSEMBLY_MAPQ_LOCAL_MAX, new int[] { localMapq });
 		return attributes;
+	}
+	/**
+	 * Updates the given assembly to incorporate the given realignment of the assembly breakend
+	 * @param processContext
+	 * @return
+	 */
+	public static SAMRecordAssemblyEvidence incorporateRealignment(ProcessingContext processContext, SAMRecordAssemblyEvidence assembly, SAMRecord realignment) {
+		if (realignment == null) return assembly;
+		SAMRecordAssemblyEvidence a = (SAMRecordAssemblyEvidence)assembly;
+		if (realignment.getReadUnmappedFlag() || !processContext.getRealignmentParameters().realignmentPositionUnique(realignment)) {
+			// Breakend did not align well enough for us to call a breakpoint
+			return new SAMRecordAssemblyEvidence(a.getEvidenceSource(), a.getSAMRecord(), realignment);
+		} else {
+			return new RealignedSAMRecordAssemblyEvidence(processContext, a.getEvidenceSource(), a.getSAMRecord(), realignment);
+		}
 	}
 }

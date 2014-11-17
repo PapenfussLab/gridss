@@ -133,7 +133,7 @@ public class ProcessingContext implements Closeable {
 		//}
 		return applyCommonSAMRecordFilters(safeIterator);
 	}
-	public SAMFileWriterFactory getSamReaderWriterFactory() {
+	public SAMFileWriterFactory getSamFileWriterFactory() {
 		return new SAMFileWriterFactory()
 			.setTempDirectory(fsContext.getTemporaryDirectory())
 			.setUseAsyncIo(isUseAsyncIO())

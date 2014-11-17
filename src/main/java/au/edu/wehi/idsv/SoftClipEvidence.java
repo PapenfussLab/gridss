@@ -4,8 +4,6 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.util.SequenceUtil;
 
-import java.nio.charset.StandardCharsets;
-
 import org.apache.commons.lang3.StringUtils;
 
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
@@ -77,13 +75,6 @@ public class SoftClipEvidence implements DirectedEvidence {
 	}
 	public int getSoftClipLength() {
 		return getSoftClipLength(location.direction, record); 
-	}
-	/**
-	 * Sequence of untemplated bases
-	 * @return
-	 */
-	public String getUntemplatedSequence() {
-		return new String(getBreakendSequence(), StandardCharsets.US_ASCII);
 	}
 	/**
 	 * 0-100 scaled percentage identity of mapped read bases.

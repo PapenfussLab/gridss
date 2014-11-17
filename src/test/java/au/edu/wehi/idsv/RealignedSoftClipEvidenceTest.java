@@ -9,10 +9,10 @@ import org.junit.Test;
 public class RealignedSoftClipEvidenceTest extends TestHelper {
 	@Test
 	public void getUntemplatedSequenceLength_should_match_realign_soft_clip() {
-		assertEquals(1, SoftClipEvidence.create(SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Forward, Read(0, 1, "4M6S")), Read(0, 1, "1S3M2S")).getUntemplatedSequence().length());
-		assertEquals(2, SoftClipEvidence.create(SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Forward, Read(0, 1, "4M6S")), onNegative(Read(0, 1, "1S3M2S"))[0]).getUntemplatedSequence().length());
-		assertEquals(2, SoftClipEvidence.create(SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Backward, Read(0, 1, "6S4M")), Read(0, 1, "1S3M2S")).getUntemplatedSequence().length());
-		assertEquals(1, SoftClipEvidence.create(SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Backward, Read(0, 1, "6S4M")), onNegative(Read(0, 1, "1S3M2S"))[0]).getUntemplatedSequence().length());
+		assertEquals(1, ((RealignedSoftClipEvidence)SoftClipEvidence.create(SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Forward, Read(0, 1, "4M6S")), Read(0, 1, "1S3M2S"))).getUntemplatedSequence().length());
+		assertEquals(2, ((RealignedSoftClipEvidence)SoftClipEvidence.create(SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Forward, Read(0, 1, "4M6S")), onNegative(Read(0, 1, "1S3M2S"))[0])).getUntemplatedSequence().length());
+		assertEquals(2, ((RealignedSoftClipEvidence)SoftClipEvidence.create(SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Backward, Read(0, 1, "6S4M")), Read(0, 1, "1S3M2S"))).getUntemplatedSequence().length());
+		assertEquals(1, ((RealignedSoftClipEvidence)SoftClipEvidence.create(SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Backward, Read(0, 1, "6S4M")), onNegative(Read(0, 1, "1S3M2S"))[0])).getUntemplatedSequence().length());
 	}
 	@Test
 	public void GetBreakendSummary_should_get_interval_with_realigned_ff() {

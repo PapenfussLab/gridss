@@ -1,5 +1,8 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
+import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
@@ -7,16 +10,11 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.writer.VariantContextWriter;
-import htsjdk.variant.vcf.VCFFileReader;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -28,27 +26,20 @@ import java.util.concurrent.Future;
 
 import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredAssembler;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
-import au.edu.wehi.idsv.pipeline.SortRealignedAssemblies;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 
 
 public class AssemblyEvidenceSource extends EvidenceSource {
-	public boolean isIncludeRemote() {
-		return includeRemote;
-	}
-	public void setIncludeRemote(boolean includeRemote) {
-		this.includeRemote = includeRemote;
-	}
 	private static final Log log = Log.getInstance(AssemblyEvidenceSource.class);
 	private final List<SAMEvidenceSource> source;
 	private final int maxSourceFragSize;
 	private final FileSystemContext fsc;
-	private boolean includeRemote = false;
 	/**
 	 * Generates assembly evidence based on the given evidence
 	 * @param evidence evidence for creating assembly
@@ -71,77 +62,72 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		if (!isProcessingComplete()) {
 			process(threadpool);
 		}
-		if (isRealignmentComplete()) {
-			SortRealignedAssemblies step = new SortRealignedAssemblies(processContext, this);
-			step.process(EnumSet.of(ProcessStep.SORT_REALIGNED_ASSEMBLIES), threadpool);
-			step.close();
+	}
+	public CloseableIterator<SAMRecordAssemblyEvidence> iterator(final boolean includeFiltered) {
+		if (processContext.shouldProcessPerChromosome()) {
+			// Lazily iterator over each input
+			return new PerChromosomeAggregateIterator<SAMRecordAssemblyEvidence>(processContext.getReference().getSequenceDictionary(), new Function<String, Iterator<SAMRecordAssemblyEvidence>>() {
+				@Override
+				public Iterator<SAMRecordAssemblyEvidence> apply(String chr) {
+					return perChrIterator(includeFiltered, chr);
+				}
+			});
+		} else {
+			return singleFileIterator(includeFiltered);
 		}
 	}
-	@SuppressWarnings("unchecked") // can I do checked covariant iterator casting in java?
-	@Override
-	protected CloseableIterator<DirectedEvidence> perChrIterator(String chr) {
+	public CloseableIterator<SAMRecordAssemblyEvidence> iterator(boolean includeFiltered, String chr) {
+		if (processContext.shouldProcessPerChromosome()) {
+			return perChrIterator(includeFiltered, chr);
+		} else {
+			return new ChromosomeFilteringIterator<SAMRecordAssemblyEvidence>(singleFileIterator(includeFiltered), processContext.getDictionary().getSequence(chr).getSequenceIndex(), true);
+		}
+	}
+	protected CloseableIterator<SAMRecordAssemblyEvidence> perChrIterator(boolean includeFiltered, String chr) {
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		return (CloseableIterator<DirectedEvidence>)(Object)vcfIterator(
-				fsc.getAssemblyVcfForChr(input, chr),
+		return samAssemblyRealignIterator(
+				includeFiltered,
+				fsc.getAssemblyRawBamForChr(input, chr),
 				fsc.getRealignmentBamForChr(input, chr),
-				fsc.getAssemblyRemoteVcfForChr(input, chr),
 				chr);
 	}
-	@SuppressWarnings("unchecked") // can I do checked covariant iterator casting in java? 
-	@Override
-	protected CloseableIterator<DirectedEvidence> singleFileIterator() {
+	protected CloseableIterator<SAMRecordAssemblyEvidence> singleFileIterator(boolean includeFiltered) {
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		return (CloseableIterator<DirectedEvidence>)(Object)vcfIterator(
-			fsc.getAssemblyVcf(input),
-			fsc.getRealignmentBam(input),
-			fsc.getAssemblyRemoteVcf(input),
-			"");
+		return samAssemblyRealignIterator(
+				includeFiltered,
+				fsc.getAssemblyRawBam(input),
+				fsc.getRealignmentBam(input),
+				"");
 	}
-	private CloseableIterator<AssemblyEvidence> vcfIterator(File vcf, File realignment, File remoteRealigned, String chr) {
+	private CloseableIterator<SAMRecordAssemblyEvidence> samAssemblyRealignIterator(boolean includeFiltered, File breakend, File realignment, String chr) {
 		if (!isProcessingComplete()) {
 			log.error("Assemblies not yet generated.");
 			throw new RuntimeException("Assemblies not yet generated");
 		}
-		CloseableIterator<AssemblyEvidence> local = localVcfIterator(vcf, realignment);
-		CloseableIterator<AssemblyEvidence> it = local;
-		if (includeRemote) {
-			@SuppressWarnings("unchecked")
-			CloseableIterator<AssemblyEvidence> remote = (CloseableIterator<AssemblyEvidence>)(Object)remoteVcfIterator(remoteRealigned);
-			it = new AutoClosingMergedIterator<>(ImmutableList.of(local, remote), DirectedEvidenceOrder.ByNatural);
-		}
-		return new AsyncBufferedIterator<AssemblyEvidence>(it, "Assembly " + chr);
+		CloseableIterator<SAMRecordAssemblyEvidence> local = localSamIterator(breakend, realignment);
+		CloseableIterator<SAMRecordAssemblyEvidence> it = local;
+		return new AsyncBufferedIterator<SAMRecordAssemblyEvidence>(it, "Assembly " + chr);
 	}
-	private CloseableIterator<AssemblyEvidence> remoteVcfIterator(File remoteRealigned) {
-		if (remoteRealigned.exists()) {
-			final VCFFileReader reader = new VCFFileReader(remoteRealigned, false);
-			CloseableIterator<VariantContext> rawVcfIt = reader.iterator();
-			return new VariantContextDirectedBreakpointRemoteIterator(processContext, this,
-					new AutoClosingIterator<>(rawVcfIt, ImmutableList.<Closeable>of(reader)));
-		}
-		return new AutoClosingIterator<>(Collections.<AssemblyEvidence>emptyIterator());
-	}
-	private CloseableIterator<VariantContextDirectedEvidence> localVcfIterator(File vcf, File realignment) {
+	private CloseableIterator<SAMRecordAssemblyEvidence> localSamIterator(File breakend, File realignment) {
 		List<Closeable> toClose = new ArrayList<>();
 		CloseableIterator<SAMRecord> realignedIt; 
 		if (isRealignmentComplete()) {
 			realignedIt = processContext.getSamReaderIterator(realignment);
 			toClose.add(realignedIt);
 		} else {
-			log.debug(String.format("Assembly realignment for %s not completed", vcf));
+			log.debug(String.format("Assembly realignment for %s not completed", breakend));
 			realignedIt = new AutoClosingIterator<SAMRecord>(ImmutableList.<SAMRecord>of().iterator());
 		}
-		VCFFileReader reader = new VCFFileReader(vcf, false);
-		toClose.add(reader);
-		CloseableIterator<VariantContext> rawVcfIt = reader.iterator();
-		toClose.add(rawVcfIt);
-		CloseableIterator<VariantContextDirectedEvidence> evidenceIt = new VariantContextDirectedEvidenceIterator(
-				processContext,
-				this,
-				new AutoClosingIterator<VariantContext>(rawVcfIt, ImmutableList.<Closeable>of(reader)),
-				realignedIt);
+		CloseableIterator<SAMRecord> rawReaderIt = processContext.getSamReaderIterator(breakend, SortOrder.coordinate);
+		toClose.add(rawReaderIt);
+		CloseableIterator<SAMRecordAssemblyEvidence> evidenceIt = new SAMRecordAssemblyEvidenceIterator(
+				processContext, this,
+				new AutoClosingIterator<SAMRecord>(rawReaderIt, ImmutableList.<Closeable>of(realignedIt)),
+				realignedIt,
+				false);
 		toClose.add(evidenceIt);
-		// Change sort order from VCF sorted order to evidence position order
-		CloseableIterator<VariantContextDirectedEvidence> sortedIt = new AutoClosingIterator<VariantContextDirectedEvidence>(new DirectEvidenceWindowedSortingIterator<VariantContextDirectedEvidence>(
+		// Change sort order to breakend position order
+		CloseableIterator<SAMRecordAssemblyEvidence> sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(new DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence>(
 				processContext,
 				(int)((2 + processContext.getAssemblyParameters().maxSubgraphFragmentWidth + processContext.getAssemblyParameters().subgraphAssemblyMargin) * maxSourceFragSize),
 				evidenceIt), toClose);
@@ -151,13 +137,13 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		boolean done = true;
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				done &= IntermediateFileUtil.checkIntermediate(fsc.getAssemblyVcfForChr(input, seq.getSequenceName()));
+				done &= IntermediateFileUtil.checkIntermediate(fsc.getAssemblyRawBamForChr(input, seq.getSequenceName()));
 				if (!done) return false;
 				done &= IntermediateFileUtil.checkIntermediate(fsc.getRealignmentFastqForChr(input, seq.getSequenceName()));
 				if (!done) return false;
 			}
 		} else {
-			done &= IntermediateFileUtil.checkIntermediate(fsc.getAssemblyVcf(input));
+			done &= IntermediateFileUtil.checkIntermediate(fsc.getAssemblyRawBam(input));
 			if (!done) return false;
 			done &= IntermediateFileUtil.checkIntermediate(fsc.getRealignmentFastq(input));
 			if (!done) return false;
@@ -179,7 +165,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			for (int i = 0; i < dict.size(); i++) {
 				final String seq = dict.getSequence(i).getSequenceName();
 				
-				if (IntermediateFileUtil.checkIntermediate(fsc.getAssemblyVcfForChr(input, seq))
+				if (IntermediateFileUtil.checkIntermediate(fsc.getAssemblyRawBamForChr(input, seq))
 					&& IntermediateFileUtil.checkIntermediate(fsc.getRealignmentFastqForChr(input, seq))) {
 					log.debug("Skipping assembly for ", seq, " as output already exists.");
 				} else {
@@ -191,11 +177,11 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 							List<CloseableIterator<DirectedEvidence>> toMerge = new ArrayList<>();
 							try {
 								for (SAMEvidenceSource bam : source) {
-									CloseableIterator<DirectedEvidence> it = bam.iterator(seq);
+									CloseableIterator<DirectedEvidence> it = bam.iterator(true, true, false, seq);
 									toMerge.add(it);
 								}
 								merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);
-								new ContigAssembler(merged, processContext.getFileSystemContext().getAssemblyVcfForChr(input, seq), processContext.getFileSystemContext().getRealignmentFastqForChr(input, seq)).run();
+								new ContigAssembler(merged, processContext.getFileSystemContext().getAssemblyRawBamForChr(input, seq), processContext.getFileSystemContext().getRealignmentFastqForChr(input, seq)).run();
 								merged.close();
 							} catch (Exception e) {
 								log.error(e, "Error performing ", seq, " breakend assembly");
@@ -241,11 +227,11 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			CloseableIterator<DirectedEvidence> merged = null;
 			try {
 				for (SAMEvidenceSource bam : source) {
-					CloseableIterator<DirectedEvidence> it = bam.iterator();
+					CloseableIterator<DirectedEvidence> it = bam.iterator(true, true, false);
 					toMerge.add(it);
 				}
 				merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);
-				new ContigAssembler(merged, processContext.getFileSystemContext().getAssemblyVcf(input), processContext.getFileSystemContext().getRealignmentFastq(input)).run();
+				new ContigAssembler(merged, processContext.getFileSystemContext().getAssemblyRawBam(input), processContext.getFileSystemContext().getRealignmentFastq(input)).run();
 				merged.close();
 			} finally {
 				CloserUtil.close(merged);
@@ -256,25 +242,31 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	}
 	private class ContigAssembler implements Runnable {
 		private Iterator<DirectedEvidence> it;
-		private File breakendVcf;
+		private File breakendOutput;
 		private File realignmentFastq;
 		private FastqBreakpointWriter fastqWriter = null;
-		private VariantContextWriter vcfWriter = null;
-		private Queue<AssemblyEvidence> resortBuffer = new PriorityQueue<AssemblyEvidence>(32, DirectedEvidence.ByStartEnd);
+		//private VariantContextWriter vcfWriter = null;
+		//private Queue<AssemblyEvidence> resortBuffer = new PriorityQueue<AssemblyEvidence>(32, DirectedEvidence.ByStartEnd);
+		private SAMFileWriter writer = null;
+		private Queue<SAMRecordAssemblyEvidence> resortBuffer = new PriorityQueue<SAMRecordAssemblyEvidence>(32, SAMRecordAssemblyEvidence.BySAMCoordinate);
 		private long maxAssembledPosition = Long.MIN_VALUE;
 		private long lastFlushedPosition = Long.MIN_VALUE;
 		private long lastProgress = 0;
-		public ContigAssembler(Iterator<DirectedEvidence> it, File breakendVcf, File realignmentFastq) {
+		public ContigAssembler(Iterator<DirectedEvidence> it, File breakendOutput, File realignmentFastq) {
 			this.it = it;
-			this.breakendVcf = breakendVcf;
+			this.breakendOutput = breakendOutput;
 			this.realignmentFastq = realignmentFastq;
 		}
 		@Override
 		public void run() {
 			try {
-				FileSystemContext.getWorkingFileFor(breakendVcf).delete();
+				FileSystemContext.getWorkingFileFor(breakendOutput).delete();
 				FileSystemContext.getWorkingFileFor(realignmentFastq).delete();
-				vcfWriter = processContext.getVariantContextWriter(FileSystemContext.getWorkingFileFor(breakendVcf), true);
+				//writer = processContext.getVariantContextWriter(FileSystemContext.getWorkingFileFor(breakendVcf), true); 
+				writer = processContext.getSamFileWriterFactory().makeSAMOrBAMWriter(new SAMFileHeader() {{
+						setSequenceDictionary(processContext.getReference().getSequenceDictionary());
+						setSortOrder(SortOrder.coordinate);
+					}}, true, FileSystemContext.getWorkingFileFor(breakendOutput));
 				fastqWriter = new FastqBreakpointWriter(processContext.getFastqWriterFactory().newWriter(FileSystemContext.getWorkingFileFor(realignmentFastq)));
 				ReadEvidenceAssembler assembler = getAssembler();
 				final ProgressLogger progress = new ProgressLogger(log);
@@ -289,7 +281,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 					// evidence falls out of scope so processing a given position will emit evidence
 					// for a previous position (for it is only at this point we know there is no more
 					// evidence for the previous position).
-					processAssembly(assembler.addEvidence(readEvidence), resortBuffer, fastqWriter, vcfWriter);
+					processAssembly(assembler.addEvidence(readEvidence));
 					
 					if (maxAssembledPosition / 1000000 > lastProgress / 1000000) {
 						lastProgress = maxAssembledPosition;
@@ -299,58 +291,45 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 								assembler.getStateSummaryMetrics()));
 					}
 				}
-				processAssembly(assembler.endOfEvidence(), resortBuffer, fastqWriter, vcfWriter);
-				flushWriterQueueBefore(Long.MAX_VALUE, resortBuffer, fastqWriter, vcfWriter);
+				processAssembly(assembler.endOfEvidence());
+				flushWriterQueueBefore(Long.MAX_VALUE);
 				fastqWriter.close();
-				vcfWriter.close();
-				FileHelper.move(FileSystemContext.getWorkingFileFor(breakendVcf), breakendVcf, true);
+				writer.close();
+				FileHelper.move(FileSystemContext.getWorkingFileFor(breakendOutput), breakendOutput, true);
 				FileHelper.move(FileSystemContext.getWorkingFileFor(realignmentFastq), realignmentFastq, true);
 			} catch (IOException e) {
-				log.error(e, "Error assembling breakend ", breakendVcf);
+				log.error(e, "Error assembling breakend ", breakendOutput);
 				throw new RuntimeException("Error assembling breakend", e);
 			} finally {
 				if (fastqWriter != null) fastqWriter.close();
-				if (vcfWriter != null) vcfWriter.close();
+				if (writer != null) writer.close();
 			}
 		}
-		private void processAssembly(
-				Iterable<AssemblyEvidence> evidenceList,
-				Queue<AssemblyEvidence> buffer,
-				FastqBreakpointWriter fastqWriter,
-				VariantContextWriter vcfWriter) {
+		private void processAssembly(Iterable<AssemblyEvidence> evidenceList) {
 	    	if (evidenceList != null) {
 		    	for (AssemblyEvidence a : evidenceList) {
 		    		if (a != null) {
 			    		maxAssembledPosition = Math.max(maxAssembledPosition, processContext.getLinear().getStartLinearCoordinate(a.getBreakendSummary()));
-			    		if (Defaults.WRITE_FILTERED_CALLS || !a.isFiltered()) {
-			    			buffer.add(a);
-			    		}
+			    		resortBuffer.add((SAMRecordAssemblyEvidence)a);
 		    		}
 		    	}
 	    	}
-	    	flushWriterQueueBefore(
-	    			maxAssembledPosition - (long)((processContext.getAssemblyParameters().maxSubgraphFragmentWidth * 2) * getMaxConcordantFragmentSize()),
-	    			buffer,
-	    			fastqWriter,
-	    			vcfWriter);
+	    	flushWriterQueueBefore(maxAssembledPosition - (long)((processContext.getAssemblyParameters().maxSubgraphFragmentWidth * 2) * getMaxConcordantFragmentSize()));
 	    }
-		private void flushWriterQueueBefore(
-				long flushBefore,
-				Queue<AssemblyEvidence> buffer,
-				FastqBreakpointWriter fastqWriter,
-				VariantContextWriter vcfWriter) {
-			while (!buffer.isEmpty() && processContext.getLinear().getStartLinearCoordinate(buffer.peek().getBreakendSummary()) < flushBefore) {
-				long pos = processContext.getLinear().getStartLinearCoordinate(buffer.peek().getBreakendSummary());
-				AssemblyEvidence evidence = buffer.poll();
+		private void flushWriterQueueBefore(long flushBefore) {
+			while (!resortBuffer.isEmpty() && processContext.getLinear().getStartLinearCoordinate(resortBuffer.peek().getBreakendSummary()) < flushBefore) {
+				long pos = processContext.getLinear().getStartLinearCoordinate(resortBuffer.peek().getBreakendSummary());
+				AssemblyEvidence evidence = resortBuffer.poll();
 				if (pos < lastFlushedPosition) {
 					log.error(String.format("Sanity check failure: assembly breakend %s written out of order.", evidence.getEvidenceID()));
 				}
 				lastFlushedPosition = pos;
-				if (Defaults.WRITE_FILTERED_CALLS || !evidence.isFiltered()) {
-					vcfWriter.add(evidence);
-				}
-				if (!evidence.isFiltered() && processContext.getRealignmentParameters().shouldRealignBreakend(evidence)) {
-					fastqWriter.write(evidence);
+				if (Defaults.WRITE_FILTERED_CALLS || !evidence.isAssemblyFiltered()) {
+					writer.addAlignment(((SAMRecordAssemblyEvidence)evidence).getSAMRecord());
+					//writer.add(evidence);
+					if (processContext.getRealignmentParameters().shouldRealignBreakend(evidence)) {
+						fastqWriter.write(evidence);
+					}
 				}
 			}
 		}

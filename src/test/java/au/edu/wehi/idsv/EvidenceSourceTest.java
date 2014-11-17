@@ -81,26 +81,6 @@ public class EvidenceSourceTest extends IntermediateFilesTest {
 		assertEquals(input, es.getFileIntermediateDirectoryBasedOn());
 	}
 	@Test
-	public void CloseableChromosomeFilterIterator_should_return_correct_chr_records() {
-		TestEvidenceSource es = new TestEvidenceSource(false, input);
-		List<DirectedEvidence> result = Lists.newArrayList(es.iterator("polyACGT"));
-		assertEquals(3, result.size());
-		assertEquals(4, result.get(0).getBreakendSummary().start);
-		assertEquals(5, result.get(1).getBreakendSummary().start);
-		assertEquals(6, result.get(2).getBreakendSummary().start);
-	}
-	@Test
-	public void CloseableChromosomeFilterIterator_should_close_as_soon_as_possible() {
-		TestEvidenceSource es = new TestEvidenceSource(false, input);
-		Iterator<DirectedEvidence> it = es.iterator("polyACGT");
-		assertEquals(1, it.next().getBreakendSummary().referenceIndex);
-		assertEquals(1, it.next().getBreakendSummary().referenceIndex);
-		assertEquals(1, it.next().getBreakendSummary().referenceIndex);
-		assertFalse(es.lastIt.isClosed);
-		it.hasNext();
-		assertTrue(es.lastIt.isClosed);
-	}
-	@Test
 	public void PerChromosomeAggregateIterator_should_return_all_chr() {
 		TestEvidenceSource es = new TestEvidenceSource(true, input);
 		List<DirectedEvidence> result = Lists.newArrayList(es.iterator());

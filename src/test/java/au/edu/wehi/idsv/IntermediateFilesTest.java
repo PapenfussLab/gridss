@@ -139,8 +139,7 @@ public class IntermediateFilesTest extends TestHelper {
 		}
 		writer.close();
 	}
-	public List<SAMRecord> getRecords(String extension) {
-		File file = new File(input.getAbsolutePath() + ".idsv.working", input.getName() + extension);
+	public List<SAMRecord> getRecords(File file) {
 		assertTrue(file.exists());
 		SamReader reader = SamReaderFactory.make().open(file);
 		List<SAMRecord> list = new ArrayList<>();
@@ -154,6 +153,10 @@ public class IntermediateFilesTest extends TestHelper {
 			e.printStackTrace();
 		}
 		return list;
+	}
+	public List<SAMRecord> getRecords(String extension) {
+		File file = new File(input.getAbsolutePath() + ".idsv.working", input.getName() + extension);
+		return getRecords(file);
 	}
 	public List<VariantContextDirectedEvidence> breaks(List<IdsvVariantContext> vcf) {
 		List<VariantContextDirectedEvidence> list = new ArrayList<>();
@@ -196,23 +199,11 @@ public class IntermediateFilesTest extends TestHelper {
 		reader.close();
 		return list;
 	}
-	public List<SAMRecord> getRecords(File file) {
-		assertTrue(file.exists());
-		SamReader reader = SamReaderFactory.make().open(file);
-		List<SAMRecord> list = new ArrayList<>();
-		for (SAMRecord r : reader) {
-			list.add(r);
-		}
-		try {
-			reader.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return list;
+	public List<SAMRecord> getAssembly(final AssemblyEvidenceSource source) {
+		return getRecords(getCommandlineContext().getFileSystemContext().getAssembly(source.getFileIntermediateDirectoryBasedOn()));
 	}
-	public List<IdsvVariantContext> getAssembly(final AssemblyEvidenceSource source) {
-		return getVcf(getCommandlineContext().getFileSystemContext().getAssemblyVcf(source.getFileIntermediateDirectoryBasedOn()), source);
+	public List<SAMRecord> getAssemblyRaw(final AssemblyEvidenceSource source) {
+		return getRecords(getCommandlineContext().getFileSystemContext().getAssemblyRawBam(source.getFileIntermediateDirectoryBasedOn()));
 	}
 	public List<FastqRecord> getFastqRecords(final EvidenceSource source) {
 		return getFastqRecords(getCommandlineContext().getFileSystemContext().getRealignmentFastq(source.getFileIntermediateDirectoryBasedOn()));
@@ -230,20 +221,23 @@ public class IntermediateFilesTest extends TestHelper {
 		return getRecords(getCommandlineContext().getFileSystemContext().getSoftClipRemoteBam(source.getFileIntermediateDirectoryBasedOn()));
 	}
 	public List<IdsvVariantContext> getRA(final AssemblyEvidenceSource source) {
-		return getVcf(getCommandlineContext().getFileSystemContext().getAssemblyRemoteVcf(source.getFileIntermediateDirectoryBasedOn()), source);
+		return getVcf(getCommandlineContext().getFileSystemContext().getAssembly(source.getFileIntermediateDirectoryBasedOn()), source);
 	}
 	public List<SAMRecord> getMate(final SAMEvidenceSource source) {
 		return getRecords(getCommandlineContext().getFileSystemContext().getMateBam(source.getFileIntermediateDirectoryBasedOn()));
 	}
 	public class PerChr {  
-		public List<IdsvVariantContext> getAssembly(final AssemblyEvidenceSource source, String chr) {
-			return getVcf(getCommandlineContext().getFileSystemContext().getAssemblyVcfForChr(source.getFileIntermediateDirectoryBasedOn(), chr), source);
+		public List<SAMRecord> getAssembly(final AssemblyEvidenceSource source, String chr) {
+			return getRecords(getCommandlineContext().getFileSystemContext().getAssemblyForChr(source.getFileIntermediateDirectoryBasedOn(), chr));
 		}
-		public List<IdsvVariantContext> getAssembly(final AssemblyEvidenceSource source) {
-			return Lists.newArrayList(Iterables.concat(Iterables.transform(getCommandlineContext().getDictionary().getSequences(), new Function<SAMSequenceRecord, Iterable<IdsvVariantContext>>() {
+		public List<SAMRecord> getAssemblyRaw(final AssemblyEvidenceSource source, String chr) {
+			return getRecords(getCommandlineContext().getFileSystemContext().getAssemblyRawBamForChr(source.getFileIntermediateDirectoryBasedOn(), chr));
+		}
+		public List<SAMRecord> getAssembly(final AssemblyEvidenceSource source) {
+			return Lists.newArrayList(Iterables.concat(Iterables.transform(getCommandlineContext().getDictionary().getSequences(), new Function<SAMSequenceRecord, Iterable<SAMRecord>>() {
 				@Override
-				public List<IdsvVariantContext> apply(SAMSequenceRecord arg0) {
-					return getVcf(getCommandlineContext().getFileSystemContext().getAssemblyVcfForChr(source.getFileIntermediateDirectoryBasedOn(), arg0.getSequenceName()), source);
+				public List<SAMRecord> apply(SAMSequenceRecord arg0) {
+					return getRecords(getCommandlineContext().getFileSystemContext().getAssemblyForChr(source.getFileIntermediateDirectoryBasedOn(), arg0.getSequenceName()));
 				}
 			})));
 		}

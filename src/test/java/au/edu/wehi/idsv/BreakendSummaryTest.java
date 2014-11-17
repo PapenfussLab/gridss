@@ -35,25 +35,27 @@ public class BreakendSummaryTest extends TestHelper {
 	 * @param a
 	 * @param b
 	 */
-	public void testOverlap(BreakendSummary a, BreakendSummary b, boolean expected) {
-		assertEquals(a.overlaps(b), expected);
-		assertEquals(b.overlaps(a), expected);
+	public void testOverlap(BreakendSummary a, BreakendSummary b, BreakendSummary expected) {
+		assertEquals(a.overlaps(b), expected != null);
+		assertEquals(b.overlaps(a), expected != null);
+		assertEquals(BreakendSummary.overlapOf(a, b), expected);
+		assertEquals(BreakendSummary.overlapOf(b, a), expected);
 	}
 	@Test
 	public void overlaps_should_require_matching_direction() {
-		testOverlap(new BreakendSummary(0, FWD, 1, 2), new BreakendSummary(0, BWD, 1, 2), false);
+		testOverlap(new BreakendSummary(0, FWD, 1, 2), new BreakendSummary(0, BWD, 1, 2), null);
 	}
 	@Test
 	public void overlaps_should_require_matching_contigs() {
-		testOverlap(new BreakendSummary(0, FWD, 1, 2), new BreakendSummary(1, FWD, 1, 2), false);
+		testOverlap(new BreakendSummary(0, FWD, 1, 2), new BreakendSummary(1, FWD, 1, 2), null);
 	}
 	@Test
 	public void overlaps_should_require_at_least_one_position_in_common() {
-		testOverlap(new BreakendSummary(0, FWD, 2, 3), new BreakendSummary(0, FWD, 1, 4), true);
-		testOverlap(new BreakendSummary(0, FWD, 2, 3), new BreakendSummary(0, FWD, 2, 3), true);
-		testOverlap(new BreakendSummary(0, FWD, 2, 3), new BreakendSummary(0, FWD, 3, 4), true);
-		testOverlap(new BreakendSummary(0, FWD, 2, 3), new BreakendSummary(0, FWD, 1, 2), true);
-		testOverlap(new BreakendSummary(0, FWD, 2, 3), new BreakendSummary(0, FWD, 1, 1), false);
-		testOverlap(new BreakendSummary(0, FWD, 2, 3), new BreakendSummary(0, FWD, 4, 4), false);
+		testOverlap(new BreakendSummary(0, FWD, 2, 3), new BreakendSummary(0, FWD, 1, 4), new BreakendSummary(0, FWD, 2, 3));
+		testOverlap(new BreakendSummary(0, FWD, 2, 3), new BreakendSummary(0, FWD, 2, 3), new BreakendSummary(0, FWD, 2, 3));
+		testOverlap(new BreakendSummary(0, FWD, 2, 3), new BreakendSummary(0, FWD, 3, 4), new BreakendSummary(0, FWD, 3, 3));
+		testOverlap(new BreakendSummary(0, FWD, 2, 3), new BreakendSummary(0, FWD, 1, 2), new BreakendSummary(0, FWD, 2, 2));
+		testOverlap(new BreakendSummary(0, FWD, 2, 3), new BreakendSummary(0, FWD, 1, 1), null);
+		testOverlap(new BreakendSummary(0, FWD, 2, 3), new BreakendSummary(0, FWD, 4, 4), null);
 	}
 }

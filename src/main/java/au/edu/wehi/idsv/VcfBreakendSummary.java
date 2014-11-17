@@ -11,8 +11,6 @@ import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfConstants;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
-import com.google.common.collect.ImmutableList;
-
 /**
  * Extracts breakend/breakpoint information from a VCF variant
  * @author cameron.d

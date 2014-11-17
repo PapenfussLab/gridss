@@ -60,20 +60,19 @@ public class Models {
 			return dpLlr((DiscordantReadPair)e);
 		} else if (e instanceof UnmappedMateReadPair) {
 			return oeaLlr((UnmappedMateReadPair)e);
+		} else if (e instanceof AssemblyEvidence) {
+			return assemblyLlr((AssemblyEvidence)e);
 		} else if (e instanceof VariantContextDirectedEvidence) {
-			VariantContextDirectedEvidence vcde = (VariantContextDirectedEvidence)e;
-			if (vcde.isSimpleAssembly()) {
-				return assemblyLlr(vcde);
-			}
-			return (double)vcde.getPhredScaledQual();
+			return ((VariantContextDirectedEvidence)e).getPhredScaledQual();
 		}
 		throw new IllegalArgumentException("Unknown evidence type " + e.getClass().toString());
 	}
-	private static double assemblyLlr(VariantContextDirectedEvidence e) {
-		if (e.getMappedEvidenceCountAssembly() > 0) {
-			return Math.min(25, e.getMapqAssemblyRemoteMax()) * e.getAssemblySupportCount(null);
+	private static double assemblyLlr(AssemblyEvidence e) {
+		int evidenceCount = e.getAssemblySupportCountReadPair(EvidenceSubset.ALL) + e.getAssemblySupportCountSoftClip(EvidenceSubset.ALL);
+		if (e instanceof DirectedBreakpoint) {
+			return ((DirectedBreakpoint)e).getRemoteMapq() * evidenceCount;
 		} else {
-			return 15 * e.getAssemblySupportCountReadPair(null) + 20 * e.getAssemblySupportCountSoftClip(null);
+			return e.getLocalMapq() * evidenceCount;
 		}
 	}
 	private static double oeaLlr(UnmappedMateReadPair e) {

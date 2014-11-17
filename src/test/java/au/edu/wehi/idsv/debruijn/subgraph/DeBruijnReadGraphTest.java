@@ -10,7 +10,7 @@ import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.EvidenceSubset;
 import au.edu.wehi.idsv.TestHelper;
-import au.edu.wehi.idsv.VariantContextDirectedEvidence;
+import au.edu.wehi.idsv.AssemblyEvidence;
 
 import com.google.common.collect.Lists;
 
@@ -28,7 +28,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		DeBruijnReadGraph g = G(0, 3, FWD);
 		g.addEvidence(SCE(FWD, withSequence("TANAGTN", Read(0, 10, "4M3S"))));
 		g.addEvidence(SCE(FWD, withSequence( "AANGTCT", Read(0, 11, "3M4S"))));
-		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		assertEquals(0, result.size());
 	}
 	@Test
@@ -36,38 +36,37 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		DeBruijnReadGraph g = G(0, 3, FWD);
 		g.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(0, 10, "4M3S"))));
 		g.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(0, 11, "3M4S"))));
-		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		assertEquals(1, result.size());
-		VariantContextDirectedEvidence bp = result.get(0);
-		assertEquals("TAAAGTCT", bp.getAssemblyConsensus());
+		AssemblyEvidence bp = result.get(0);
+		assertEquals("TAAAGTCT", (bp.getAssemblySequence()));
 	}
 	@Test
 	public void should_assemble_sc_b() {
 		DeBruijnReadGraph g = G(0, 3, BWD);
 		g.addEvidence(SCE(BWD, withSequence("TATG", Read(0, 10, "1S3M"))));
 		g.addEvidence(SCE(BWD, withSequence("TTATG", Read(0, 10, "2S3M"))));
-		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		assertEquals(1, result.size());
-		VariantContextDirectedEvidence bp = result.get(0);
-		assertEquals("TTATG", bp.getAssemblyConsensus());
+		AssemblyEvidence bp = result.get(0);
+		assertEquals("TTATG", (bp.getAssemblySequence()));
 	}
 	@Test
 	public void should_set_assembly_common_attributes() {
 		DeBruijnReadGraph g = G(0, 3, FWD);
 		g.addEvidence(SCE(FWD, withQual(new byte[] { 4,4,4,4,4,4,4}, withSequence("AAAGTCT", Read(0, 10, "3M4S")))));
-		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
-		VariantContextDirectedEvidence bp = result.get(0);
-		assertEquals("AAAGTCT", bp.getAssemblyConsensus());
+		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		AssemblyEvidence bp = result.get(0);
+		assertEquals("AAAGTCT", (bp.getAssemblySequence()));
 		assertEquals(4, bp.getAssemblySoftClipLengthMax(null));
-		assertEquals("debruijn-s", bp.getAssemblerProgram());
 	}
 	@Test
 	public void should_set_assembly_sc_attributes() {
 		DeBruijnReadGraph g = G(0, 3, FWD);
 		g.addEvidence(SCE(FWD, withQual(new byte[] { 4,4,4,4,4,4,4}, withSequence("TAAAGTC", Read(0, 10, "4M3S")))));
 		g.addEvidence(SCE(FWD, withQual(new byte[] { 4,4,4,4,4,4,4}, withSequence("AAAGTCT", Read(0, 10, "3M4S")))));
-		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
-		VariantContextDirectedEvidence bp = result.get(0);
+		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		AssemblyEvidence bp = result.get(0);
 		assertEquals(4, bp.getAssemblySoftClipLengthMax(null));
 		assertEquals(7, bp.getAssemblySoftClipLengthTotal(null));
 		assertEquals(2, bp.getAssemblySupportCountSoftClip(null));
@@ -75,8 +74,8 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	public void should_set_assembly_mate_attributes() {
 		DeBruijnReadGraph g = G(0, 3, FWD);
 		g.addEvidence(NRRP(OEA(0, 1, "5M", true)));
-		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
-		VariantContextDirectedEvidence bp = result.get(0);
+		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		AssemblyEvidence bp = result.get(0);
 		assertEquals(5, bp.getAssemblyReadPairLengthMax(null));
 	}
 	@Test
@@ -85,10 +84,10 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withSequence("AAAGTC", Read(0, 10, "3M3S")))); // 12
 		g.addEvidence(SCE(FWD, withSequence("AAAAGTCTT", Read(0, 10, "4M4S")))); // 13
 		g.addEvidence(SCE(FWD, withSequence("AAAAGTCTT", Read(0, 10, "4M4S")))); // 13
-		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		assertEquals(1, result.size());
-		VariantContextDirectedEvidence bp = result.get(0);
-		assertEquals("AAAGTCTT", bp.getAssemblyConsensus());
+		AssemblyEvidence bp = result.get(0);
+		assertEquals("AAAGTCTT", (bp.getAssemblySequence()));
 		assertEquals(0, bp.getBreakendSummary().referenceIndex);
 		assertEquals(13, bp.getBreakendSummary().start);
 		assertEquals(13, bp.getBreakendSummary().end);
@@ -102,7 +101,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withSequence("AAAGTC", Read(0, 10, "3M3S"))));
 		g.addEvidence(SCE(FWD, withSequence("AAAGTC", Read(0, 11, "3M3S"))));
 		g.addEvidence(SCE(FWD, withSequence("AAAAGTCT", Read(0, 10, "4M4S"))));
-		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		// we should call to 12 since we have many reads supporting that assembly
 		assertEquals(12, result.get(0).getBreakendSummary().start);
 	}
@@ -112,9 +111,9 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		g.addEvidence(SCE(BWD, withSequence(  "AAGTCT", Read(0, 10, "5S1M"))));
 		g.addEvidence(SCE(BWD, withSequence( "TAAGTCT", Read(0, 10, "6S1M"))));
 		g.addEvidence(SCE(BWD, withSequence("GTAAGTCT", Read(0, 10, "7S1M"))));
-		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		assertArrayEquals(new byte[] { 10, 20, 30, 30, 30, 30, 30, 30 }, result.get(0).getBreakendQuality());
-		assertEquals("GTAAGTCT", result.get(0).getAssemblyConsensus());
+		assertEquals("GTAAGTCT", S(result.get(0).getAssemblySequence()));
 	}
 	@Test
 	public void assembly_count_should_match_expected() {
@@ -122,10 +121,10 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		g.addEvidence(SCE(BWD, withSequence(  "AAGTCT", Read(0, 10, "5S1M"))));
 		g.addEvidence(SCE(BWD, withSequence( "TAAGTCT", Read(0, 10, "6S1M"))));
 		g.addEvidence(SCE(BWD, withSequence("GTAAGTCT", Read(0, 10, "7S1M"))));
-		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		assertEquals(5 + 6 + 7, result.get(0).getAssemblyBaseCount(EvidenceSubset.ALL));
 		assertEquals(3, result.get(0).getAssemblySupportCountSoftClip(EvidenceSubset.ALL));
-		assertEquals(1, result.get(0).getAssemblyAnchorLengthMax());
+		assertEquals(1, result.get(0).getAssemblyAnchorLength());
 	}
 	@Test
 	public void should_assemble_sc_and_nrrp_together() {
@@ -134,9 +133,9 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withSequence("AAAAGTCCT", Read(0, 10, "4M5S"))));
 		g.addEvidence(SCE(FWD, withSequence("AAAAGTCCT", Read(0, 10, "4M5S"))));
 		g.addEvidence(NRRP(withSequence("GTCCTAGAC", DP(0, 1, "8M", true, 1, 10, "8M", false))));
-		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		assertEquals(1, result.size());
-		VariantContextDirectedEvidence bp = result.get(0);
+		AssemblyEvidence bp = result.get(0);
 		//       GTCC <-seed
 		//        TCCT
 		//         CCTA
@@ -148,7 +147,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		//    AAAG 
 		//   AAAA
 		//  TAAA  
-		assertEquals("TAAAAGTCCTAGAC", bp.getAssemblyConsensus());
+		assertEquals("TAAAAGTCCTAGAC", (bp.getAssemblySequence()));
 	}
 	@Test
 	public void should_assemble_nrrp() {
@@ -156,10 +155,10 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		// expect FR orientation so we need to reverse comp the unmapped seq
 		g.addEvidence(NRRP(withSequence("AGAC", OEA(0, 10, "4M", true)))); // revcomp=GTCT
 		g.addEvidence(NRRP(withSequence("CTAG", DP(0, 9, "4M", true, 1, 10, "4M", false))));
-		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		assertEquals(1, result.size());
-		VariantContextDirectedEvidence bp = result.get(0);
-		assertEquals("GTCTAG", bp.getAssemblyConsensus());
+		AssemblyEvidence bp = result.get(0);
+		assertEquals("GTCTAG", (bp.getAssemblySequence()));
 		assertEquals(FWD, bp.getBreakendSummary().direction);
 		assertEquals(0, bp.getBreakendSummary().referenceIndex);
 		assertEquals(13, bp.getBreakendSummary().start);
@@ -171,11 +170,11 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withSequence("AAAGTCTA", Read(0, 10, "3M5S"))));
 		g.addEvidence(SCE(FWD, withSequence("AAAGTCTA", Read(0, 10, "3M5S"))));
 		g.addEvidence(SCE(FWD, withSequence("AAAGTCTG", Read(0, 10, "3M5S"))));
-		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		assertEquals(1, result.size());
-		VariantContextDirectedEvidence bp = result.get(0);
+		AssemblyEvidence bp = result.get(0);
 		// CTG becomes unanchored & we can't make a contig out of it
-		assertEquals("AAAGTCTA", bp.getAssemblyConsensus());
+		assertEquals("AAAGTCTA", S(bp.getAssemblySequence()));
 	}
 	@Test
 	public void should_assemble_when_out_of_scope() {
@@ -197,7 +196,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		g.addEvidence(NRRP(withSequence("GTCCTAGAC", DP(0, 1, "8M", true, 1, 10, "8M", false))));
 		g.addEvidence(NRRP(withSequence("GTCCTAGAT", DP(0, 1, "8M", true, 1, 10, "8M", false))));
 		g.addEvidence(NRRP(withSequence("GTCCTAGAT", DP(0, 1, "8M", true, 1, 10, "8M", false))));
-		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		assertEquals(1, result.size()); // Update: we now remove the entire tree when do the first assembly
 		
 		//assertEquals(2, result.size());
@@ -227,11 +226,11 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		DeBruijnReadGraph g = G(0, 3, FWD);
 		g.addEvidence(SCE(FWD, withSequence("AAAAAAAA", Read(0, 10, "3M5S"))));
 		g.addEvidence(SCE(FWD, withSequence("AAAGTCTA", Read(0, 10, "3M5S"))));
-		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		assertEquals(1, result.size());
-		VariantContextDirectedEvidence bp = result.get(0);
+		AssemblyEvidence bp = result.get(0);
 		// CTG becomes unanchored & we can't make a contig out of it
-		assertEquals(1, bp.getAssemblySupportCount(null));
+		assertEquals(1, bp.getAssemblySupportCountSoftClip(null));
 	}
 	@Test
 	public void should_exclude_sc_nrrp_without_ref_anchor() {
@@ -247,7 +246,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		// so we end up unanchored
 		g.addEvidence(SCE(FWD, withSequence("AAAAGTCCTATG", Read(0, 10, "4M7S"))));
 		g.addEvidence(NRRP(withSequence(             "ATGT", DP(0, 1, "8M", true, 1, 10, "8M", false))));
-		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		assertEquals(1, result.size());
 	}
 	@Test
@@ -261,7 +260,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withSequence("AAAAGTCCTAG", Read(0, 10, "4M7S"))));
 		g.addEvidence(SCE(FWD, withSequence("AAAAGTCCTAG", Read(0, 10, "4M7S"))));
 		g.addEvidence(SCE(FWD, withSequence("AAAAGTCCTATG", Read(0, 10, "4M7S"))));
-		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		assertEquals(1, result.size());
 		// TATG should not be included as a result 
 	}
@@ -283,10 +282,10 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		DeBruijnReadGraph g = G(0, 3, FWD);
 		g.addEvidence(SCE(FWD, SES(true),  withSequence("TATG", Read(0, 10, "3M1S"))));
 		g.addEvidence(SCE(FWD, SES(false), withSequence("TATT", Read(0, 10, "3M1S"))));
-		List<VariantContextDirectedEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		assertEquals(2, result.size());
-		assertEquals(1, result.get(0).getEvidenceCount(EvidenceSubset.ALL));
-		assertEquals(1, result.get(1).getEvidenceCount(EvidenceSubset.ALL));
+		assertEquals(1, result.get(0).getAssemblySupportCountSoftClip(EvidenceSubset.ALL));
+		assertEquals(1, result.get(1).getAssemblySupportCountSoftClip(EvidenceSubset.ALL));
 	}
 	@Test
 	public void removeBefore_should_clear_unanchored_subgraphs_SC_N_bases() {

@@ -17,7 +17,7 @@ import org.junit.rules.TemporaryFolder;
 import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.TestHelper;
-import au.edu.wehi.idsv.VariantContextDirectedEvidence;
+import au.edu.wehi.idsv.AssemblyEvidence;
 
 import com.google.common.collect.Lists;
 
@@ -37,7 +37,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 	@Test
 	public void should_assemble_all_contigs() {
 		DeBruijnSubgraphAssembler ass = DSA(3);
-		List<VariantContextDirectedEvidence> results = new ArrayList<>();
+		List<AssemblyEvidence> results = new ArrayList<>();
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(0, 1, "4M3S"))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(0, 2, "3M4S"))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(1, 1, "4M3S"))))));
@@ -48,7 +48,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 	@Test
 	public void should_export_debruijn_graph() {
 		DeBruijnSubgraphAssembler ass = DSA(3);
-		List<VariantContextDirectedEvidence> results = new ArrayList<>();
+		List<AssemblyEvidence> results = new ArrayList<>();
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(0, 1, "4M3S"))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(0, 2, "3M4S"))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(1, 1, "4M3S"))))));
@@ -62,7 +62,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 	@Test
 	public void should_track_progress() throws IOException {
 		DeBruijnSubgraphAssembler ass = DSA(5);
-		List<VariantContextDirectedEvidence> results = new ArrayList<>();
+		List<AssemblyEvidence> results = new ArrayList<>();
 		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(withSequence("GTCTTA", DP(0, 1, "8M", true, 0, 500, "8M", false))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("CTTAGA", Read(0, 100, "1M5S"))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("CTTAGA", Read(0, 100, "1M5S"))))));
@@ -83,7 +83,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 	@Test
 	public void should_assemble_both_directions() {
 		DeBruijnSubgraphAssembler ass = DSA(3);
-		List<VariantContextDirectedEvidence> results = new ArrayList<>();
+		List<AssemblyEvidence> results = new ArrayList<>();
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(0, 1, "4M3S"))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(0, 2, "3M4S"))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("TATG", Read(0, 10, "1S3M"))))));
@@ -94,7 +94,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 	@Test
 	public void should_anchor_at_reference_kmer() {
 		DeBruijnSubgraphAssembler ass = DSA(3);
-		List<VariantContextDirectedEvidence> results = new ArrayList<>();
+		List<AssemblyEvidence> results = new ArrayList<>();
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(0, 1, "4M3S"))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(0, 2, "3M4S"))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("CTGAAAT", Read(0, 10, "3S4M"))))));
@@ -106,7 +106,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 	@Test
 	public void should_anchor_at_reference_kmer_large_kmer() {
 		DeBruijnSubgraphAssembler ass = DSA(32);
-		List<VariantContextDirectedEvidence> results = new ArrayList<>();
+		List<AssemblyEvidence> results = new ArrayList<>();
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence(S(RANDOM).substring(0, 200), Read(0, 1, "100M100S"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(100, results.get(0).getBreakendSequence().length);
@@ -114,22 +114,22 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 	@Test
 	public void soft_clip_assembly_should_anchor_at_reference_kmer() {
 		DeBruijnSubgraphAssembler ass = DSA(4);
-		List<VariantContextDirectedEvidence> results = new ArrayList<>();
+		List<AssemblyEvidence> results = new ArrayList<>();
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("TTGCTCAAAA", Read(0, 1, "6S4M"))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(withSequence("TGCTG", OEA(0, 4, "5M", false))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(withSequence("TGCTG", OEA(0, 4, "5M", false))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(withSequence("TGCTG", OEA(0, 4, "5M", false))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, results.size());
-		assertEquals("TTGCTCAAAA", results.get(0).getAssemblyConsensus());
+		assertEquals("TTGCTCAAAA", S(results.get(0).getAssemblySequence()));
 		assertEquals(1, results.get(0).getBreakendSummary().start);
-		assertEquals(4, results.get(0).getAssemblyConsensus().length() - results.get(0).getBreakendSequence().length);
+		assertEquals(4, results.get(0).getAssemblySequence().length - results.get(0).getBreakendSequence().length);
 	}
 	@Test
 	@Ignore("TODO: NYI: Not Yet Implemented")
 	public void should_assemble_anchor_shorter_than_kmer() {
 		DeBruijnSubgraphAssembler ass = DSA(5);
-		List<VariantContextDirectedEvidence> results = new ArrayList<>();
+		List<AssemblyEvidence> results = new ArrayList<>();
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("ATTAGA", Read(0, 1, "1M5S"))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("ATTAGA", Read(0, 1, "1M5S"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
@@ -139,7 +139,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 	@Ignore("TODO: NYI: Not Yet Implemented")
 	public void should_assemble_anchor_shorter_than_kmer_with_indel_rp_support() {
 		DeBruijnSubgraphAssembler ass = DSA(5);
-		List<VariantContextDirectedEvidence> results = new ArrayList<>();
+		List<AssemblyEvidence> results = new ArrayList<>();
 		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(withSequence("GTCTTA", DP(0, 1, "8M", true, 0, 500, "8M", false))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("CTTAGA", Read(0, 100, "1M5S"))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("CTTAGA", Read(0, 100, "1M5S"))))));

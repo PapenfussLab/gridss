@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv;
 
-import java.util.List;
-
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
 /**

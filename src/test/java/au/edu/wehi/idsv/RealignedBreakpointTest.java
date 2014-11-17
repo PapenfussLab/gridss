@@ -3,7 +3,6 @@ package au.edu.wehi.idsv;
 import static org.junit.Assert.assertEquals;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
-import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 import org.junit.Test;
 
@@ -11,8 +10,7 @@ import org.junit.Test;
 public class RealignedBreakpointTest extends TestHelper {
 	@Test(expected=IllegalArgumentException.class)
 	public void should_throw_if_realigned_unmapped() {
-		VariantContextDirectedEvidence dba = AE();
-		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
+		AssemblyEvidence dba = AE();
 		new RealignedBreakpoint(getContext(), dba.getBreakendSummary(), B("N"), Unmapped(2));
 	}
 	@Test

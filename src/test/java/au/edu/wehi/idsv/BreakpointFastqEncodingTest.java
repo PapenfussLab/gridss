@@ -80,8 +80,9 @@ public class BreakpointFastqEncodingTest extends TestHelper {
 		assertEquals(2, BreakpointFastqEncoding.getEncodedStartPosition(fq.getReadHeader()));
 	}
 	@Test
-	public void assembly_should_be_sorted_by_vcf_coordinate_sort_order() {
-		FastqRecord fq = BreakpointFastqEncoding.getRealignmentFastq(AB().referenceAnchor(1, 2).makeVariant());
+	public void sam_assembly_should_be_sorted_by_sam_coordinate_sort_order() {
+		FastqRecord fq = BreakpointFastqEncoding.getRealignmentFastq(
+				AssemblyFactory.createAnchored(getContext(), AES(), BWD, null, 1, 4, 3, B("AAAAAA"), B("AAAAAA"), 1, 1));
 		assertEquals(1, BreakpointFastqEncoding.getEncodedReferenceIndex(fq.getReadHeader()));
 		assertEquals(2, BreakpointFastqEncoding.getEncodedStartPosition(fq.getReadHeader()));
 	}

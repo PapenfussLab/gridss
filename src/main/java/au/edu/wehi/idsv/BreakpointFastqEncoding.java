@@ -23,12 +23,16 @@ public class BreakpointFastqEncoding {
 	private static int getStartPosition(SoftClipEvidence evidence) {
 		return getStartPosition(evidence.getSAMRecord());
 	}
+	private static int getStartPosition(SAMRecordAssemblyEvidence evidence) {
+		return getStartPosition(evidence.getSAMRecord());
+	}
 	private static int getStartPosition(VariantContextDirectedEvidence evidence) {
 		return evidence.getStart();
 	}
 	public static int getStartPosition(DirectedEvidence evidence) {
 		// custom start positions are required so our order matches the sorted source SAM/BAM and VCF order 
 		if (evidence instanceof SoftClipEvidence) return getStartPosition((SoftClipEvidence)evidence);
+		if (evidence instanceof SAMRecordAssemblyEvidence) return getStartPosition((SAMRecordAssemblyEvidence)evidence);
 		if (evidence instanceof VariantContextDirectedEvidence) return getStartPosition((VariantContextDirectedEvidence)evidence);
 		return evidence.getBreakendSummary().start;
 	}

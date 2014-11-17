@@ -23,7 +23,10 @@ public class FileSystemContext {
 		this(tempDir, null, maxRecordsInRam);
 	}
 	public static File getWorkingFileFor(File file) {
-		return new File(file.getParent(), "tmp." + file.getName());
+		return getWorkingFileFor(file, "tmp.");
+	}
+	public static File getWorkingFileFor(File file, String workingPrefix) {
+		return new File(file.getParent(), workingPrefix + file.getName());
 	}
 	public File getTemporaryDirectory() {
 		return tempDir;
@@ -52,8 +55,8 @@ public class FileSystemContext {
 	private static final String FORMAT_REALIGN_FASTQ_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign.fq";
 	private static final String FORMAT_REALIGN_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".realign.bam";
 	private static final String FORMAT_REALIGN_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign.bam";
-	private static final String FORMAT_ASSEMBLY_VCF_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.breakend.vcf";
-	private static final String FORMAT_ASSEMBLY_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".breakend.vcf";
+	private static final String FORMAT_ASSEMBLY_RAW = "%s" + COMMON_INITIAL_SUFFIX + ".breakend.bam";
+	private static final String FORMAT_ASSEMBLY_RAW_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.breakend.bam";
 	private static final String FORMAT_BREAKPOINT_VCF_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s-%s.breakpoint.vcf";
 	private static final String FORMAT_BREAKPOINT_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".breakpoint.vcf";
 	private static final String FORMAT_FLAG_FILE = "%s" + COMMON_INITIAL_SUFFIX + ".%s";
@@ -65,10 +68,10 @@ public class FileSystemContext {
 	private static final String FORMAT_REALIGN_REMOTE_SAM_PER_CHR_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realignremote.unsorted.bam";
 	private static final String FORMAT_REALIGN_REMOTE_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".realignremote.bam";
 	private static final String FORMAT_REALIGN_REMOTE_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realignremote.bam";
-	private static final String FORMAT_ASSEMBLY_REMOTE_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".assemblyremote.vcf";
-	private static final String FORMAT_ASSEMBLY_REMOTE_VCF_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.assemblyremote.vcf";
-	private static final String FORMAT_ASSEMBLY_REMOTE_VCF_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".assemblyremote.unsorted.vcf";
-	private static final String FORMAT_ASSEMBLY_REMOTE_VCF_PER_CHR_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".%s.assemblyremote.unsorted.vcf";
+	private static final String FORMAT_ASSEMBLY = "%s" + COMMON_INITIAL_SUFFIX + ".assembly.bam";
+	private static final String FORMAT_ASSEMBLY_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.assembly.bam";
+	private static final String FORMAT_ASSEMBLY_MATE = "%s" + COMMON_INITIAL_SUFFIX + ".assemblymate.bam";
+	private static final String FORMAT_ASSEMBLY_MATE_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.assemblymate.bam";
 	
 	/**
 	 * Gets the idsv intermediate working directory for the given input
@@ -137,23 +140,23 @@ public class FileSystemContext {
 	public File getMateBamUnsortedForChr(File input, String chromosome) {
 		return new File(String.format(FORMAT_MATE_SAM_UNSORTED_PER_CHR, getStem(input), chromosome));
 	}
-	public File getAssemblyVcf(File input) {
-		return new File(String.format(FORMAT_ASSEMBLY_VCF, getStem(input)));
+	public File getAssemblyRawBam(File input) {
+		return new File(String.format(FORMAT_ASSEMBLY_RAW, getStem(input)));
 	}
-	public File getAssemblyVcfForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_ASSEMBLY_VCF_PER_CHR, getStem(input), chromosome));
+	public File getAssemblyRawBamForChr(File input, String chromosome) {
+		return new File(String.format(FORMAT_ASSEMBLY_RAW_PER_CHR, getStem(input), chromosome));
 	}
-	public File getAssemblyRemoteVcf(File input) {
-		return new File(String.format(FORMAT_ASSEMBLY_REMOTE_VCF, getStem(input)));
+	public File getAssembly(File input) {
+		return new File(String.format(FORMAT_ASSEMBLY, getStem(input)));
 	}
-	public File getAssemblyRemoteVcfForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_ASSEMBLY_REMOTE_VCF_PER_CHR, getStem(input), chromosome));
+	public File getAssemblyForChr(File input, String chromosome) {
+		return new File(String.format(FORMAT_ASSEMBLY_PER_CHR, getStem(input), chromosome));
 	}
-	public File getAssemblyRemoteUnsortedVcf(File input) {
-		return new File(String.format(FORMAT_ASSEMBLY_REMOTE_VCF_UNSORTED, getStem(input)));
+	public File getAssemblyMate(File input) {
+		return new File(String.format(FORMAT_ASSEMBLY_MATE, getStem(input)));
 	}
-	public File getAssemblyRemoteUnsortedVcfForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_ASSEMBLY_REMOTE_VCF_PER_CHR_UNSORTED, getStem(input), chromosome));
+	public File getAssemblyMateForChr(File input, String chromosome) {
+		return new File(String.format(FORMAT_ASSEMBLY_MATE_PER_CHR, getStem(input), chromosome));
 	}
 	public File getBreakpointVcf(File input) {
 		return new File(String.format(FORMAT_BREAKPOINT_VCF, getStem(input)));

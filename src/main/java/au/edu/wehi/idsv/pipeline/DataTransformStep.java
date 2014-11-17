@@ -51,11 +51,12 @@ public abstract class DataTransformStep implements Closeable {
 		return allExist(getInputs());
 	}
 	private boolean allExist(Iterable<File> files) {
-		boolean exists = true; 
 		for (File f : files) {
-			exists &= f.exists();
+			if (!f.exists()) {
+				return false;
+			}
 		}
-		return exists;
+		return true;
 	}
 	private void tryDelete(File f) {
 		try {

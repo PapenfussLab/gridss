@@ -1,11 +1,7 @@
 package au.edu.wehi.idsv;
 
 import java.io.File;
-import java.util.List;
 
-import com.google.common.collect.Lists;
-
-import au.edu.wehi.idsv.vcf.VcfFileUtil;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
 public class AssemblyParameters {
@@ -78,8 +74,16 @@ public class AssemblyParameters {
 	public boolean trackAlgorithmProgress = Defaults.VISUALISE_ASSEMBLY_PROGRESS;
 	public boolean applyFilters(AssemblyEvidence evidence) {
 		boolean filtered = false;
+		if (evidence.getBreakendSequence().length == 0) {
+			evidence.filterAssembly(VcfFilter.ASSEMBLY_REF);
+		}
 		if (evidence.getAssemblySupportCountReadPair(EvidenceSubset.ALL) + evidence.getAssemblySupportCountSoftClip(EvidenceSubset.ALL) < minReads) {
 			evidence.filterAssembly(VcfFilter.ASSEMBLY_TOO_FEW_READ);
+			filtered = true;
+		}
+		if (evidence.getAssemblyAnchorLength() == 0 && evidence.getBreakendSequence().length <= evidence.getAssemblyReadPairLengthMax(EvidenceSubset.ALL)) {
+			// just assembled a single read - not very exciting
+			evidence.filterAssembly(VcfFilter.ASSEMBLY_TOO_SHORT); // assembly length = 1 read
 			filtered = true;
 		}
 		return filtered;
