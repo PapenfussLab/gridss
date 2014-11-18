@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
@@ -52,6 +53,7 @@ public class ProcessingContext implements Closeable {
 	private final RealignmentParameters rp;
 	private final VariantCallingParameters vcp;
 	private final List<Header> metricsHeaders;
+	private final SAMFileHeader basicHeader;
 	private boolean filterDuplicates = true;
 	private boolean useAsyncIO = true;
 	private long calculateMetricsRecordCount = Long.MAX_VALUE; 
@@ -80,6 +82,8 @@ public class ProcessingContext implements Closeable {
 		}
 		this.dictionary = new DynamicSAMSequenceDictionary(this.reference.getSequenceDictionary());
 		this.linear = new LinearGenomicCoordinate(this.dictionary);
+		this.basicHeader = new SAMFileHeader();
+		this.basicHeader.setSequenceDictionary(this.reference.getSequenceDictionary());
 	}
 	/**
 	 * Creates a new metrics file with appropriate headers for this context 
@@ -133,11 +137,11 @@ public class ProcessingContext implements Closeable {
 		//}
 		return applyCommonSAMRecordFilters(safeIterator);
 	}
-	public SAMFileWriterFactory getSamFileWriterFactory() {
+	public SAMFileWriterFactory getSamFileWriterFactory(boolean sorted) {
 		return new SAMFileWriterFactory()
 			.setTempDirectory(fsContext.getTemporaryDirectory())
 			.setUseAsyncIo(isUseAsyncIO())
-			.setCreateIndex(true);
+			.setCreateIndex(sorted);
 	}
 	/**
 	 * Applies filters such as duplicate removal that apply to all SAMRecord parsing
@@ -185,6 +189,13 @@ public class ProcessingContext implements Closeable {
 		vcfHeader.setSequenceDictionary(getReference().getSequenceDictionary());
 		vcfWriter.writeHeader(vcfHeader);
 		return vcfWriter;
+	}
+	/**
+	 * Gets a basic minimal SAM file header matching the reference sequence
+	 * @return
+	 */
+	public SAMFileHeader getBasisSamHeader() {
+		return basicHeader;
 	}
 	public ReferenceSequenceFile getReference() {
 		return reference;

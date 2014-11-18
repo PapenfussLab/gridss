@@ -3,12 +3,14 @@ package au.edu.wehi.idsv;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 import org.junit.Ignore;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 public class VariantContextDirectedEvidenceTest extends TestHelper {
 	@Test
@@ -345,5 +347,17 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 			.assemblyBaseQuality(q)
 			.makeVariant();
 		assertArrayEquals(q,  e.getBreakendQuality());
+	}
+	@Test
+	public void mate_anchor_should_set_imprecise_header() {
+		// max fragment size = 300
+		VariantContextDirectedEvidence dba;
+		dba = new AssemblyBuilder(getContext(), AES())
+			.assemblyBases(B("AAAAAA"))
+			.mateAnchor(1, 100)
+			.direction(FWD)
+			.makeVariant();
+		dba.getBreakendSummary();
+		assertTrue(dba.hasAttribute(VcfSvConstants.IMPRECISE_KEY));
 	}
 }

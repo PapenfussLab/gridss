@@ -115,7 +115,7 @@ public class SAMFileUtil {
 					collection.add(rit.next());
 				}
 				collection.doneAdding();
-				writer = processContext.getSamFileWriterFactory().makeSAMOrBAMWriter(header, true, FileSystemContext.getWorkingFileFor(output));
+				writer = processContext.getSamFileWriterFactory(sortOrder == SortOrder.coordinate).makeSAMOrBAMWriter(header, true, FileSystemContext.getWorkingFileFor(output));
 				writer.setProgressLogger(new ProgressLogger(log));
 		    	wit = collection.iterator();
 				while (wit.hasNext()) {

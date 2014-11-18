@@ -1,8 +1,6 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import org.junit.Test;
 
@@ -57,5 +55,12 @@ public class BreakendSummaryTest extends TestHelper {
 		testOverlap(new BreakendSummary(0, FWD, 2, 3), new BreakendSummary(0, FWD, 1, 2), new BreakendSummary(0, FWD, 2, 2));
 		testOverlap(new BreakendSummary(0, FWD, 2, 3), new BreakendSummary(0, FWD, 1, 1), null);
 		testOverlap(new BreakendSummary(0, FWD, 2, 3), new BreakendSummary(0, FWD, 4, 4), null);
+	}
+	@Test
+	public void equals_should_require_full_match() {
+		assertEquals(new BreakendSummary(0, FWD, 1, 2), new BreakendSummary(0, FWD, 1, 2));
+		assertNotEquals(new BreakendSummary(0, FWD, 1, 2), new BreakendSummary(1, FWD, 1, 2));
+		assertNotEquals(new BreakendSummary(0, FWD, 1, 2), new BreakendSummary(0, BWD, 2, 2));
+		assertNotEquals(new BreakendSummary(0, FWD, 1, 2), new BreakendSummary(0, FWD, 1, 3));
 	}
 }

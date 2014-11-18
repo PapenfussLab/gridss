@@ -54,8 +54,10 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 		return alt;
 	}
 	private String anchorFromAssembly() {
-		String aCons = getAssemblyConsensus();
+		List<String> cons = getAssemblyConsensus(); 
 		int anchorLength = getAssemblyAnchorLengthMax();
+		if (cons == null || cons.size() == 0) return "";
+		String aCons = cons.get(0);
 		if (aCons == null || aCons.length() == 0) return "";
 		if (anchorLength > aCons.length()) throw new IllegalStateException(String.format("Sanity check failure: anchor length is longer than assembly consensus"));
 		if (breakend.location.direction == BreakendDirection.Forward) {
@@ -119,9 +121,8 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 	public int getAssemblySupportCountSoftClip(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.ASSEMBLY_SOFTCLIP_COUNT.attribute()), subset); }
 	public int getAssemblySoftClipLengthTotal(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL.attribute()), subset); }
 	public int getAssemblySoftClipLengthMax(EvidenceSubset subset) { return AttributeConverter.asIntMaxTN(getAttribute(VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX.attribute()), subset); }
-	public String getAssemblerProgram() { return getAttributeAsString(VcfAttributes.ASSEMBLY_PROGRAM.attribute(), null); }
-	public String getAssemblyConsensus() { return getAttributeAsString(VcfAttributes.ASSEMBLY_CONSENSUS.attribute(), ""); }
 	public int getAssemblySupportCount(EvidenceSubset subset) { return getAssemblySupportCountReadPair(subset) + getAssemblySupportCountSoftClip(subset); }
+	public List<String> getAssemblyConsensus() { return AttributeConverter.asStringList(VcfAttributes.ASSEMBLY_CONSENSUS.attribute()); }
 	/**
 	 * Returns an iterator containing only the breakend variants from the given iterator
 	 * @param context processing context
@@ -152,10 +153,6 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 	}
 	@Override
 	public int getLocalBaseLength() {
-		throw new IllegalArgumentException("NYI");
-	}
-	@Override
-	public int getLocalBaseCount() {
 		throw new IllegalArgumentException("NYI");
 	}
 	@Override

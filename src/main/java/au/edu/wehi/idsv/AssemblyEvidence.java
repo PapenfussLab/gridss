@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv;
 
+import java.util.List;
+
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
 /**
@@ -22,5 +24,6 @@ public interface AssemblyEvidence extends DirectedEvidence {
 	int getAssemblySoftClipLengthTotal(EvidenceSubset subset);
 	int getAssemblySoftClipLengthMax(EvidenceSubset subset);
 	boolean isAssemblyFiltered();
+	List<VcfFilter> getFilters();
 	void filterAssembly(VcfFilter reason);
 }

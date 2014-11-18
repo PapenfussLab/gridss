@@ -60,7 +60,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
 		aes.ensureAssembled();
 
-		List<DirectedEvidence> list = Lists.newArrayList(aes.iterator());
+		List<SAMRecordAssemblyEvidence> list = Lists.newArrayList(aes.iterator(false));
 		assertEquals(4,  list.size());
 		for (int i = 0; i <= 3; i++) {
 			assertEquals(i, list.get(i).getBreakendSummary().referenceIndex);
@@ -85,7 +85,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
 		aes.ensureAssembled();
 
-		List<DirectedEvidence> list = Lists.newArrayList(aes.iterator("polyA"));
+		List<SAMRecordAssemblyEvidence> list = Lists.newArrayList(aes.iterator(false, "polyA"));
 		assertEquals(1,  list.size());
 	}
 	@Test

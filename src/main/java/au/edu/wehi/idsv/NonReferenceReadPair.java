@@ -177,10 +177,6 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		return local.getReadLength();
 	}
 	@Override
-	public int getLocalBaseCount() {
-		return local.getReadLength();
-	}
-	@Override
 	public int getLocalMaxBaseQual() {
 		return SAMRecordUtil.getMaxReferenceBaseQual(local);
 	}

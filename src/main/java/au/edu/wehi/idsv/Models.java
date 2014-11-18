@@ -1,5 +1,10 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.util.Log;
+
+import java.util.Collections;
+import java.util.List;
+
 import org.apache.commons.math3.distribution.BinomialDistribution;
 
 /**
@@ -9,6 +14,7 @@ import org.apache.commons.math3.distribution.BinomialDistribution;
  *
  */
 public class Models {
+	private static final Log log = Log.getInstance(AssemblyFactory.class);
 	/**
 	 * Calculates a somatic p-value for the given call
 	 * Null hypothesis: germline and somatic BAFs are the same
@@ -86,5 +92,27 @@ public class Models {
 	}
 	private static double rscLlr(RealignedSoftClipEvidence e) {
 		return Math.min(20, Math.min(e.getRemoteMapq(), e.getLocalMapq()));
+	}
+	// TODO: proper 95% Confidence Interval instead of hard limits on the bounds
+	/**
+	 * @param evidence
+	 * @return
+	 */
+	public static BreakendSummary calculateBreakend(List<? extends DirectedEvidence> evidence) {
+		if (evidence == null || evidence.size() == 0) throw new IllegalArgumentException("No evidence supplied");
+		Collections.sort(evidence, DirectedEvidence.ByLlrDesc);
+		// Start with best evidence
+		BreakendSummary bounds = evidence.get(0).getBreakendSummary();
+		bounds = new BreakendSummary(bounds.referenceIndex, bounds.direction, bounds.start, bounds.end);
+		for (DirectedEvidence e : evidence) {
+			// Reduce as we can
+			BreakendSummary newbounds = BreakendSummary.overlapOf(bounds, e.getBreakendSummary());
+			if (newbounds == null) {
+				log.debug("Inconsisent support set");
+			} else {
+				bounds = newbounds;
+			}
+		}
+		return bounds;
 	}
 }

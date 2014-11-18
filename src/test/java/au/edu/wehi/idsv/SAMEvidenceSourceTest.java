@@ -186,6 +186,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				withReadName("1#2#fr2", Read(1, 10, "15M"))[0],
 				withReadName("2#3#fr3", Read(0, 10, "15M"))[0]
 		);
+		source.completeSteps(ProcessStep.ALL_STEPS);
 		List<DirectedEvidence> result = Lists.newArrayList(source.iterator(false, false, true));
 		assertEquals(3, result.size());
 		assertTrue(result.get(0) instanceof RemoteEvidence);

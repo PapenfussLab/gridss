@@ -2,6 +2,7 @@ package au.edu.wehi.idsv;
 
 import htsjdk.samtools.SAMRecord;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +16,8 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
-public class AssemblyFactory {
+public final class AssemblyFactory {
+	private AssemblyFactory() { } 
 	/**
 	 * Creates an assembly 
 	 * @param processContext context
@@ -31,14 +33,15 @@ public class AssemblyFactory {
 	 * @param tumourBaseCount number of assembly bases contributed by tumour evidence sources
 	 * @return assembly evidence for the given assembly
 	 */
-	public static SAMRecordAssemblyEvidence createAnchored(ProcessingContext processContext,
+	public static SAMRecordAssemblyEvidence createAnchored(
+			ProcessingContext processContext,
 			AssemblyEvidenceSource source, BreakendDirection direction,
 			Set<DirectedEvidence> evidence,
 			int anchorReferenceIndex, int anchorBreakendPosition, int anchoredBaseCount,
 			byte[] baseCalls, byte[] baseQuals,
 			int normalBaseCount, int tumourBaseCount) {
 		BreakendSummary breakend = new BreakendSummary(anchorReferenceIndex, direction, anchorBreakendPosition, anchorBreakendPosition);
-		return new SAMRecordAssemblyEvidence(breakend, source, anchoredBaseCount, baseCalls, baseQuals, calculateAssemblyIntAttributes(evidence, normalBaseCount, tumourBaseCount));
+		return new SAMRecordAssemblyEvidence(processContext.getBasisSamHeader(), breakend, source, anchoredBaseCount, baseCalls, baseQuals, calculateAssemblyIntAttributes(evidence, normalBaseCount, tumourBaseCount));
 	}
 	/**
 	 * Creates an assembly whose breakpoint cannot be exactly anchored to the reference  
@@ -52,23 +55,14 @@ public class AssemblyFactory {
 	 * @param tumourBaseCount number of assembly bases contributed by tumour evidence sources
 	 * @return assembly evidence for the given assembly
 	 */
-	public static SAMRecordAssemblyEvidence createUnanchored(ProcessingContext processContext,
-			AssemblyEvidenceSource source, BreakendDirection direction,
+	public static SAMRecordAssemblyEvidence createUnanchored(
+			ProcessingContext processContext,
+			AssemblyEvidenceSource source,
 			Set<DirectedEvidence> evidence,
 			byte[] baseCalls, byte[] baseQuals,
 			int normalBaseCount, int tumourBaseCount) {
-		
-		BreakendSummary breakend = getBreakendConfidenceInterval(direction, evidence);
-		return new SAMRecordAssemblyEvidence(breakend, source, 0, baseCalls, baseQuals, calculateAssemblyIntAttributes(evidence, normalBaseCount, tumourBaseCount));
-	}
-	private static BreakendSummary getBreakendConfidenceInterval(BreakendDirection direction, Set<DirectedEvidence> evidence) {
-		// TODO: proper 95% Confidence Interval instead of hard limits on the bounds 
-		BreakendSummary bs = evidence.iterator().next().getBreakendSummary();
-		for (DirectedEvidence e : evidence) {
-			BreakendSummary b = e.getBreakendSummary();
-			bs = BreakendSummary.overlapOf(bs, b);
-		}
-		return bs;
+		BreakendSummary breakend = Models.calculateBreakend(new ArrayList<>(evidence));
+		return new SAMRecordAssemblyEvidence(processContext.getBasisSamHeader(), breakend, source, 0, baseCalls, baseQuals, calculateAssemblyIntAttributes(evidence, normalBaseCount, tumourBaseCount));
 	}
 	private static Map<VcfAttributes, int[]> calculateAssemblyIntAttributes(Set<DirectedEvidence> evidence, int normalBaseCount, int tumourBaseCount) {
 		List<NonReferenceReadPair> rp = Lists.newArrayList(Iterables.filter(evidence, NonReferenceReadPair.class));

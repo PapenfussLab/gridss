@@ -3,10 +3,13 @@ package au.edu.wehi.idsv;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -43,14 +46,14 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		SAMRecordUtil.pairReads(this.record, this.realignment);
 	}
 	public SAMRecordAssemblyEvidence(
-			BreakendSummary breakend,
+			SAMFileHeader samFileHeader, BreakendSummary breakend,
 			AssemblyEvidenceSource source,
 			int anchoredBaseCount,
 			byte[] baseCalls,
 			byte[] baseQuals,
 			Map<VcfAttributes, int[]> intListAttributes
 			) {
-		this(source, createAssemblySAMRecord(source, breakend, anchoredBaseCount, baseCalls, baseQuals, intListAttributes), null);
+		this(source, createAssemblySAMRecord(samFileHeader, source, breakend, anchoredBaseCount, baseCalls, baseQuals, intListAttributes), null);
 	}
 	private SAMRecord getPlaceholderRealignment() {
 		SAMRecord placeholder = new SAMRecord(record.getHeader());
@@ -94,12 +97,12 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		return new BreakendSummary(referenceIndex, direction, start, end);
 	}
 	private static SAMRecord createAssemblySAMRecord(
-			AssemblyEvidenceSource source,
+			SAMFileHeader samFileHeader, AssemblyEvidenceSource source,
 			BreakendSummary breakend,
 			int anchoredBaseCount, byte[] baseCalls, byte[] baseQuals,
 			Map<VcfAttributes, int[]> intListAttributes) {
 		if (breakend instanceof BreakpointSummary) throw new IllegalArgumentException("Breakpoints not supported by this constructor");
-		SAMRecord record = new SAMRecord(null);
+		SAMRecord record = new SAMRecord(samFileHeader);
 		record.setReferenceIndex(breakend.referenceIndex);
 		record.setReadName(String.format("assembly_%s_%d_%d_%d",
 				source.processContext.getDictionary().getSequence(breakend.referenceIndex).getSequenceName(),
@@ -131,28 +134,33 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 				record.setAlignmentStart(breakend.start);
 				record.setCigar(new Cigar(ImmutableList.of(
 						new CigarElement(1, CigarOperator.X),
-						new CigarElement(breakend.end - breakend.start - 1, CigarOperator.SKIPPED_REGION),
+						new CigarElement(breakend.end - breakend.start, CigarOperator.SKIPPED_REGION),
 						new CigarElement(baseCalls.length, CigarOperator.SOFT_CLIP))));
 				record.setReadBases(Bytes.concat(new byte[] { 'N' }, baseCalls));
 				record.setBaseQualities(Bytes.concat(new byte[] { 0 }, baseQuals));
+			} else {
+				record.setAlignmentStart(breakend.end);
+				record.setCigar(new Cigar(ImmutableList.of(
+						new CigarElement(baseCalls.length, CigarOperator.SOFT_CLIP),
+						new CigarElement(breakend.end - breakend.start, CigarOperator.SKIPPED_REGION),
+						new CigarElement(1, CigarOperator.X))));
+				record.setReadBases(Bytes.concat(baseCalls, new byte[] { 'N' }));
+				record.setBaseQualities(Bytes.concat(baseQuals, new byte[] { 0 }));
 			}
-			record.setAlignmentStart(breakend.end);
-			record.setCigar(new Cigar(ImmutableList.of(
-					new CigarElement(baseCalls.length, CigarOperator.SOFT_CLIP),
-					new CigarElement(breakend.end - breakend.start - 1, CigarOperator.SKIPPED_REGION),
-					new CigarElement(1, CigarOperator.X))));
-			record.setReadBases(Bytes.concat(baseCalls, new byte[] { 'N' }));
-			record.setBaseQualities(Bytes.concat(baseQuals, new byte[] { 0 }));
 		}
 		return record;
 	}
 	private static void setIntListAttributes(SAMRecord record, Map<VcfAttributes, int[]> intListAttributes) {
+		if (intListAttributes == null) throw new IllegalArgumentException("Attribute list not supplied");
+		// Stored in our MAPQ flag
+		record.setMappingQuality(AttributeConverter.asInt(intListAttributes.get(VcfAttributes.ASSEMBLY_MAPQ_LOCAL_MAX), 0));
+		intListAttributes.remove(VcfAttributes.ASSEMBLY_MAPQ_LOCAL_MAX);
 		for (Entry<VcfAttributes, int[]> entry : intListAttributes.entrySet()) {
 			VcfAttributes attr = entry.getKey();
 			int[] value = entry.getValue();
 			String samtag = attr.samTag();
 			if (StringUtils.isBlank(samtag)) {
-				throw new IllegalArgumentException(String.format("Attribute %s does not have a sam tag assigned", samtag));
+				throw new IllegalArgumentException(String.format("Attribute %s does not have a sam tag assigned", attr));
 			}
 			if (attr.infoHeader() != null && attr.infoHeader().isFixedCount() && attr.infoHeader().getCount() != value.length) {
 				throw new IllegalArgumentException(String.format("Attribute %s has %d values - expected %d", attr, value.length, attr.infoHeader().getCount()));
@@ -163,8 +171,6 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 				record.setAttribute(attr.samTag(), value);
 			}
 		}
-		// Stored in our MAPQ flag
-		record.setAttribute(VcfAttributes.ASSEMBLY_MAPQ_LOCAL_MAX.samTag(), AttributeConverter.asInt(intListAttributes.get(VcfAttributes.ASSEMBLY_MAPQ_LOCAL_MAX), 0));
 	}
 	private int getAnchorLength() {
 		CigarElement ce;
@@ -234,14 +240,9 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		return getAnchorLength();
 	}
 	@Override
-	public int getLocalBaseCount() {
-		throw new RuntimeException("NYI");
-		//return getAnchorLength();
-	}
-	@Override
 	public int getLocalMaxBaseQual() {
-		if (getAnchorLength() != 0) return 0;
-		return UnsignedBytes.toInt(UnsignedBytes.max(getAssemblyAnchorSequence()));
+		if (getAnchorLength() == 0) return 0;
+		return UnsignedBytes.toInt(UnsignedBytes.max(getAssemblyAnchorQuals()));
 	}
 	@Override
 	public int getLocalTotalBaseQual() {
@@ -302,14 +303,23 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	@Override
 	public void filterAssembly(VcfFilter reason) {
 		String tag = (String)record.getAttribute(SamTags.ASSEMLBY_FILTERS);
-		if (!tag.contains(reason.filter())) {
-			if (StringUtils.isBlank(tag)) {
-				tag = reason.filter();
-			} else {
-				tag = tag + "," + reason.filter();
-			}
-			record.setAttribute(SamTags.ASSEMLBY_FILTERS, tag);
+		if (StringUtils.isBlank(tag)) {
+			tag = reason.filter();
+		} else if (!tag.contains(reason.filter())) {
+			tag = tag + "," + reason.filter();
 		}
+		record.setAttribute(SamTags.ASSEMLBY_FILTERS, tag);
+	}
+	@Override
+	public List<VcfFilter> getFilters() {
+		List<VcfFilter> list = new ArrayList<>();
+		String filters = (String)record.getAttribute(SamTags.ASSEMLBY_FILTERS);
+		if (!StringUtils.isEmpty(filters)) {
+			for (String s : filters.split(",")) {
+				list.add(VcfFilter.get(s));
+			}
+		}
+		return list;
 	}
 	public SAMRecord getSAMRecord() {
 		return record;

@@ -49,7 +49,7 @@ public class Idsv extends CommandLineProgram {
     public String USAGE = getStandardUsagePreamble() + "Calls structural variations from NGS sequencing data. " + PROGRAM_VERSION;
     @Option(doc = "Processing steps to execute",
             optional = true)
-	public EnumSet<ProcessStep> STEPS = ProcessStep.ALL_STEPS;
+    public EnumSet<ProcessStep> STEPS = ProcessStep.ALL_STEPS;
     private SAMEvidenceSource constructSamEvidenceSource(File file, int index, boolean isTumour) throws IOException { 
     	List<Integer> maxFragSizeList = isTumour ? INPUT_TUMOUR_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE : INPUT_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE;
     	if (maxFragSizeList != null && maxFragSizeList.size() > index && maxFragSizeList.get(index) != null) {
@@ -59,6 +59,21 @@ public class Idsv extends CommandLineProgram {
     	} else {
     		return new SAMEvidenceSource(getContext(), file, isTumour);
     	}
+    }
+    public List<SAMEvidenceSource> createSamEvidenceSources() throws IOException {
+    	int i = 0;
+    	List<SAMEvidenceSource> samEvidence = new ArrayList<>();
+    	for (File f : INPUT) {
+    		log.debug("Processing normal input ", f);
+    		SAMEvidenceSource sref = constructSamEvidenceSource(f, i++, false);
+    		samEvidence.add(sref);
+    	}
+    	for (File f : INPUT_TUMOUR) {
+    		log.debug("Processing tumour input ", f);
+    		SAMEvidenceSource sref = constructSamEvidenceSource(f, i++, true);
+    		samEvidence.add(sref);
+    	}
+    	return samEvidence;
     }
     @Override
 	protected int doWork() {
@@ -74,19 +89,7 @@ public class Idsv extends CommandLineProgram {
     			});
     		log.info(String.format("Using %d worker threads", WORKER_THREADS));
 	    	ensureDictionariesMatch();
-
-	    	List<SAMEvidenceSource> samEvidence = new ArrayList<>();
-	    	int i = 0;
-	    	for (File f : INPUT) {
-	    		log.debug("Processing normal input ", f);
-	    		SAMEvidenceSource sref = constructSamEvidenceSource(f, i++, false);
-	    		samEvidence.add(sref);
-	    	}
-	    	for (File f : INPUT_TUMOUR) {
-	    		log.debug("Processing tumour input ", f);
-	    		SAMEvidenceSource sref = constructSamEvidenceSource(f, i++, true);
-	    		samEvidence.add(sref);
-	    	}
+	    	List<SAMEvidenceSource> samEvidence = createSamEvidenceSources();
 	    	log.debug("Extracting evidence.");
 	    	for (Future<Void> future : threadpool.invokeAll(Lists.transform(samEvidence, new Function<SAMEvidenceSource, Callable<Void>>() {
 					@Override

@@ -157,69 +157,9 @@ public class TestHelper {
 		return NonReferenceReadPair.create(pair[0], pair[1], source);
 	}
 
-	public static class MockDirectedEvidence implements DirectedEvidence {
-		public BreakendSummary breakend;
-
-		public MockDirectedEvidence(int referenceIndex, int start,
-				BreakendDirection direction) {
-			breakend = new BreakendSummary(referenceIndex, direction, start,
-					start);
-		}
-
-		@Override
-		public BreakendSummary getBreakendSummary() {
-			return breakend;
-		}
-
-		@Override
-		public byte[] getBreakendSequence() {
-			return null;
-		}
-
-		@Override
-		public byte[] getBreakendQuality() {
-			return null;
-		}
-
-		@Override
-		public String getEvidenceID() {
-			return null;
-		}
-
-		@Override
-		public EvidenceSource getEvidenceSource() {
-			return null;
-		}
-
-		@Override
-		public int getLocalMapq() {
-			return 0;
-		}
-
-		@Override
-		public int getLocalBaseLength() {
-			return 0;
-		}
-
-		@Override
-		public int getLocalBaseCount() {
-			return 0;
-		}
-
-		@Override
-		public int getLocalMaxBaseQual() {
-			return 0;
-		}
-
-		@Override
-		public int getLocalTotalBaseQual() {
-			return 0;
-		}
-	}
-
 	public static DirectedEvidence E(int referenceIndex, int start,
 			BreakendDirection direction) {
-		return new MockDirectedEvidence(referenceIndex, start, direction);
+		return new MockDirectedEvidence(referenceIndex, direction, start);
 	}
 
 	public static SoftClipEvidence SCE(BreakendDirection direction,
@@ -694,6 +634,8 @@ public class TestHelper {
 		}
 		protected MockSAMEvidenceSource(ProcessingContext processContext, int minFragmentSize, int maxFragmentSize) {
 			super(processContext, new File("test.bam"), false, minFragmentSize, maxFragmentSize);
+			metrics.getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH = maxFragmentSize;
+			metrics.getIdsvMetrics().MAX_READ_LENGTH = maxFragmentSize;
 		}
 		@Override
 		public boolean isTumour() {
@@ -728,7 +670,7 @@ public class TestHelper {
 	}
 	public static AssemblyEvidenceSource AES() {
 		return new AssemblyEvidenceSource(getContext(),
-				ImmutableList.of((SAMEvidenceSource) SES()), new File(
+				ImmutableList.<SAMEvidenceSource>of(SES()), new File(
 						"test.bam"));
 	}
 }

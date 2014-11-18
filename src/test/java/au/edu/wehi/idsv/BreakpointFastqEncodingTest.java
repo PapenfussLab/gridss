@@ -36,10 +36,6 @@ public class BreakpointFastqEncodingTest extends TestHelper {
 			return 2;
 		}
 		@Override
-		public int getLocalBaseCount() {
-			return 3;
-		}
-		@Override
 		public int getLocalMaxBaseQual() {
 			return 4;
 		}

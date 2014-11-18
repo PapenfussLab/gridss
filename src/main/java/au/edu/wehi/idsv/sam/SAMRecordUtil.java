@@ -311,8 +311,8 @@ public class SAMRecordUtil {
 		first.setFirstOfPairFlag(true);
 		first.setSecondOfPairFlag(false);
 		second.setReadPairedFlag(true);
-		second.setFirstOfPairFlag(true);
-		second.setSecondOfPairFlag(false);
+		second.setFirstOfPairFlag(false);
+		second.setSecondOfPairFlag(true);
 		first.setMateUnmappedFlag(second.getReadUnmappedFlag());
 		first.setMateReferenceIndex(second.getReferenceIndex());
 		first.setMateAlignmentStart(second.getAlignmentStart());

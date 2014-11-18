@@ -1,12 +1,14 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
+import htsjdk.samtools.SAMRecord;
 
 import java.util.List;
 
 import org.junit.Test;
 
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Sets;
 
 
 
@@ -38,16 +40,20 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 	}
 	@Test
 	public void should_use_breakpoint_assembly_sequence() {
+		SAMRecordAssemblyEvidence be = AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
+				0, 1, 1, B("TGGAAT"), B("TAAAAT"), 0, 0);
+		// Untemplated sequence
+		SAMRecord r = Read(0, 10, "2S3M");
+		r.setReadBases(B("GGAAT"));
+		RealignedSAMRecordAssemblyEvidence ass = (RealignedSAMRecordAssemblyEvidence) AssemblyFactory.incorporateRealignment(getContext(), be, r);
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());
 		builder
-			.loc("polyA", 1, 1)
+			.loc("polyA", 0, 1)
 			.alleles("A", "A[polyA:10[");
-		IdsvVariantContextBuilder assBuilder = new IdsvVariantContextBuilder(getContext(), AE());
-		assBuilder.breakpoint(new BreakpointSummary(0, FWD, 1, 1, 0, BWD, 10, 10), "TT");
 		VariantContextDirectedEvidence result = go(L(
-				(DirectedEvidence)assBuilder.make()
+				(DirectedEvidence)ass
 			), (VariantContextDirectedEvidence)builder.make());
-		assertEquals("ATT[polyA:10[", result.getAlternateAllele(0).getDisplayString());
+		assertEquals("AGG[polyA:10[", result.getAlternateAllele(0).getDisplayString());
 	}
 	@Test
 	public void should_merge_supporting_evidence() {

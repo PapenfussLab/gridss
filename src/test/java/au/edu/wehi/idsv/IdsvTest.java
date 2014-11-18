@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
-import htsjdk.samtools.SAMRecord;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,9 +28,10 @@ public class IdsvTest extends IntermediateFilesTest {
 				"WORKING_DIR=" + super.testFolder.getRoot().toString(),
 				"PER_CHR=true"
 		};
-		new Idsv().instanceMain(args);
+		Idsv firstPass = new Idsv();
+		firstPass.instanceMain(args);
 		// Should have generated two breakpoints
-		List<SAMRecord> ass = getRecords(getCommandlineContext(true).getFileSystemContext().getAssemblyRawBam(output));
+		List<SAMRecordAssemblyEvidence> ass = Lists.newArrayList(new AssemblyEvidenceSource(firstPass.getContext(), firstPass.createSamEvidenceSources(), firstPass.OUTPUT).iterator(false)); 
 		ass = Lists.newArrayList(Iterables.filter(ass, new Predicate<AssemblyEvidence>() {
 			@Override
 			public boolean apply(AssemblyEvidence arg0) {
@@ -47,8 +47,9 @@ public class IdsvTest extends IntermediateFilesTest {
 		Files.copy(new File("src/test/resources/203541.bam.idsv.realign.bam"), new File(testFolder.getRoot().getAbsolutePath() + "/input.bam.idsv.working", "input.bam.idsv.realign.bam"));
 		Files.copy(new File("src/test/resources/203541.vcf.idsv.realign.bam"), new File(testFolder.getRoot().getAbsolutePath() + "/203541.vcf.idsv.working", "203541.vcf.idsv.realign.bam"));
 		
-		new Idsv().instanceMain(args);
-		ass = breaks(getVcf(output, null));
+		Idsv secondPass = new Idsv();
+		secondPass.instanceMain(args);
+		ass = Lists.newArrayList(new AssemblyReadPairEvidenceSource(secondPass.getContext(), secondPass.createSamEvidenceSources(), secondPass.OUTPUT).iterator(false, false));
 		assertEquals(2, ass.size());
 		assertEquals(203476, ass.get(0).getBreakendSummary().start);
 		assertEquals(FWD, ass.get(0).getBreakendSummary().direction);
@@ -74,8 +75,10 @@ public class IdsvTest extends IntermediateFilesTest {
 				"CALL_ONLY_ASSEMBLIES=true",
 				"PER_CHR=false"
 		};
-		new Idsv().instanceMain(args);
-		List<VariantContextDirectedEvidence> calls = breaks(getVcf(new File(target, "breakend.vcf"), null));
-		assertEquals(0, calls.size());
+		Idsv firstPass = new Idsv();
+		firstPass.instanceMain(args);
+		// Should have generated two breakpoints
+		List<SAMRecordAssemblyEvidence> ass = Lists.newArrayList(new AssemblyEvidenceSource(firstPass.getContext(), firstPass.createSamEvidenceSources(), firstPass.OUTPUT).iterator(false));
+		assertEquals(0, ass.size());
 	}
 }

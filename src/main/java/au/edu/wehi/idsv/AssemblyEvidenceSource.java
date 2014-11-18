@@ -263,7 +263,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				FileSystemContext.getWorkingFileFor(breakendOutput).delete();
 				FileSystemContext.getWorkingFileFor(realignmentFastq).delete();
 				//writer = processContext.getVariantContextWriter(FileSystemContext.getWorkingFileFor(breakendVcf), true); 
-				writer = processContext.getSamFileWriterFactory().makeSAMOrBAMWriter(new SAMFileHeader() {{
+				writer = processContext.getSamFileWriterFactory(true).makeSAMOrBAMWriter(new SAMFileHeader() {{
 						setSequenceDictionary(processContext.getReference().getSequenceDictionary());
 						setSortOrder(SortOrder.coordinate);
 					}}, true, FileSystemContext.getWorkingFileFor(breakendOutput));

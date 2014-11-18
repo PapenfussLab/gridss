@@ -234,10 +234,6 @@ public class NonReferenceReadPairTest extends TestHelper {
 		assertEquals(100, newPair(OEA(0, 1, "100M", true), 300).getLocalBaseLength());
 	}
 	@Test
-	public void getLocalBaseCount_should_be_read_length() {
-		assertEquals(100, newPair(OEA(0, 1, "100M", true), 300).getLocalBaseCount());
-	}
-	@Test
 	public void getLocalMaxBaseQual_local_mapped_quals() {
 		SAMRecord[] pair = DP(1, 1, "3M1S", true, 2, 5, "1S3M", true);
 		withQual(new byte[] { 1, 2, 3, 4}, pair[0]);

@@ -27,4 +27,12 @@ public enum VcfFilter {
 	 * @return
 	 */
 	public VCFFilterHeaderLine header() { return filterheader; }	
+	public static VcfFilter get(String filter) {
+		for (VcfFilter f : values()) {
+			if (f.filter().equals(filter)) {
+				return f;
+			}
+		}
+		throw new IllegalArgumentException(String.format("Filter %s not found.", filter));
+	}
 }

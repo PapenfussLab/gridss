@@ -27,7 +27,6 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		boolean tumour;
 		@Override public int getLocalMapq() { return 1 + offset; }
 		@Override public int getLocalBaseLength() { return 2 + offset; }
-		@Override public int getLocalBaseCount() { return 3 + offset; }
 		@Override public int getLocalMaxBaseQual() { return 4 + offset; }
 		@Override public int getLocalTotalBaseQual() { return 5 + offset; }
 	}
@@ -46,7 +45,6 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		}
 		@Override public int getLocalMapq() { return 1 + offset; }
 		@Override public int getLocalBaseLength() { return 2 + offset; }
-		@Override public int getLocalBaseCount() { return 3 + offset; }
 		@Override public int getLocalMaxBaseQual() { return 4 + offset; }
 		@Override public int getLocalTotalBaseQual() { return 5 + offset; }
 		@Override public int getRemoteMapq() { return 6 + offset; }
@@ -65,7 +63,6 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		}
 		@Override public int getLocalMapq() { return 1 + offset; }
 		@Override public int getLocalBaseLength() { return 2 + offset; }
-		@Override public int getLocalBaseCount() { return 3 + offset; }
 		@Override public int getLocalMaxBaseQual() { return 4 + offset; }
 		@Override public int getLocalTotalBaseQual() { return 5 + offset; }
 	}
@@ -79,7 +76,6 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			}
 		@Override public int getLocalMapq() { return 1 + offset; }
 		@Override public int getLocalBaseLength() { return 2 + offset; }
-		@Override public int getLocalBaseCount() { return 3 + offset; }
 		@Override public int getLocalMaxBaseQual() { return 4 + offset; }
 		@Override public int getLocalTotalBaseQual() { return 5 + offset; }
 		@Override public int getRemoteMapq() { return 6 + offset; }
@@ -352,8 +348,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_concat_assembly_strings() {
-		assertEquals(2, big().getAttributeAsStringList(VcfAttributes.ASSEMBLY_CONSENSUS.attribute()).size());
-		assertEquals(2, big().getAttributeAsStringList(VcfAttributes.ASSEMBLY_PROGRAM.attribute()).size());
+		assertEquals(2, big().getAssemblyConsensus().size());
 	}
 	@Test
 	public void should_drop_base_quals() {
@@ -390,7 +385,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		cb.referenceSpanningPairs(9, 10);
 		return cb.make();
 	}
-	public VariantContextDirectedEvidence ass1() {
+	public SAMRecordAssemblyEvidence ass1() {
 		ProcessingContext pc = getContext();
 		MockSAMEvidenceSource nes = new MockSAMEvidenceSource(pc);
 		MockSAMEvidenceSource tes = new MockSAMEvidenceSource(pc);
@@ -405,19 +400,10 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		support.add(NRRP(tes, DP(0, 1, "2M", true, 0, 15, "5M", false)));
 		support.add(NRRP(tes, DP(0, 2, "2M", true, 0, 16, "5M", false)));
 		support.add(NRRP(nes, DP(0, 3, "2M", true, 0, 17, "10M", false)));
-		AssemblyBuilder sb = new AssemblyBuilder(pc, AES())
-			.direction(BWD)
-			.anchorLength(5)
-			.referenceAnchor(0, 10)
-			.assemblerName("assemblerName")
-			.assemblyBases(B("CGTAAAAT"))
-			.assembledBaseCount(13, 45)
-			.contributingEvidence(support)
-			.assemblyBaseQuality(new byte[] { 0,1,2,3,4,5,6,7});
-		VariantContextDirectedEvidence v = sb.makeVariant();
-		return v;
+		return AssemblyFactory.createAnchored(pc, AES(), BWD,
+				support, 0, 10, 5, B("CGTAAAAT"), new byte[] { 0,1,2,3,4,5,6,7}, 13, 45);
 	}
-	public VariantContextDirectedEvidence ass2() {
+	public RealignedSAMRecordAssemblyEvidence ass2() {
 		ProcessingContext pc = getContext();
 		MockSAMEvidenceSource nes = new MockSAMEvidenceSource(pc);
 		MockSAMEvidenceSource tes = new MockSAMEvidenceSource(pc);
@@ -432,22 +418,13 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		support.add(NRRP(tes, DP(0, 1, "2M", true, 0, 15, "5M", false)));
 		support.add(NRRP(tes, DP(0, 2, "2M", true, 0, 16, "5M", false)));
 		support.add(NRRP(nes, DP(0, 3, "2M", true, 0, 17, "10M", false)));
-		AssemblyBuilder sb = new AssemblyBuilder(pc, AES())
-			.direction(BWD)
-			.anchorLength(5)
-			.referenceAnchor(0, 10)
-			.assemblerName("assemblerName")
-			.assemblyBases(B("GGTAAAAC"))
-			.assembledBaseCount(21, 23)
-			.contributingEvidence(support)
-			.assemblyBaseQuality(new byte[] { 7,6,5,4,3,2,1,0});
-		VariantContextDirectedEvidence v = sb.makeVariant();
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(pc, AES(), BWD,
+				support, 0, 10, 5, B("GGTAAAAC"), new byte[] { 7,6,5,4,3,2,1,0}, 21, 23);
 		SAMRecord ra = Read(1, 102, "1S1M1S");
 		ra.setReadBases(B("GGT"));
-		ra.setMappingQuality(7);
+		ra.setMappingQuality(45);
 		ra.setBaseQualities(new byte[] { 0,1,2});
-		v = AssemblyBuilder.incorporateRealignment(getContext(), v, ra);
-		return v;
+		return (RealignedSAMRecordAssemblyEvidence) AssemblyFactory.incorporateRealignment(getContext(), e, ra);
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void evidence_must_support_call() {
@@ -496,17 +473,9 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		support.add(NRRP(tes, OEA(0, 17, "5M", false)));
 		support.add(NRRP(tes, DP(0, 1, "2M", true, 0, 15, "5M", false)));
 		support.add(NRRP(tes, DP(0, 2, "2M", true, 0, 16, "5M", false)));
-		AssemblyBuilder sb = new AssemblyBuilder(pc, AES())
-			.direction(BWD)
-			.anchorLength(5)
-			.referenceAnchor(0, 10)
-			.assemblerName("assemblerName")
-			.assemblyBases(B("CGTAAAAT"))
-			.assembledBaseCount(13, 45)
-			.contributingEvidence(support)
-			.assemblyBaseQuality(new byte[] { 0,1,2,3,4,5,6,7});
-		VariantContextDirectedEvidence v = sb.makeVariant();
-		VariantContextDirectedEvidence e = cb(v)
+		AssemblyEvidence ass = AssemblyFactory.createAnchored(pc, AES(), BWD,
+				support, 0, 10, 5, B("CGTAAAAT"), new byte[] { 0,1,2,3,4,5,6,7}, 0, 45);
+		VariantContextDirectedEvidence e = cb(ass)
 			.referenceReads(10, 10)
 			.referenceSpanningPairs(10, 10)
 			.make();
@@ -527,4 +496,27 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public void best_assembly_should_contain_sc() {
 		
 	}
+	@Test
+	public void should_set_assembly_attribute_ASSEMBLY_EVIDENCE_COUNT() {
+		assertEquals(1, big().getEvidenceCountAssembly());
+	}
+	@Test
+	public void should_set_assembly_attribute_ASSEMBLY_LOG_LIKELIHOOD_RATIO() {
+		assertTrue(big().getBreakendLogLikelihoodAssembly() > 0d);
+	}
+	@Test
+	public void should_set_attribute_LOG_LIKELIHOOD_RATIO() {
+		assertTrue(big().getBreakendLogLikelihood(null) > 0d);
+	}
+	@Test
+	public void should_set_assembly_attribute_ASSEMBLY_MAPPED() {
+		assertEquals(0, cb(new AssemblyFactoryTest().big()).make().getMappedEvidenceCountAssembly());
+		assertEquals(1, cb(new AssemblyFactoryTest().bigr()).make().getMappedEvidenceCountAssembly());
+		assertEquals(2, cb(new AssemblyFactoryTest().bigr(), new AssemblyFactoryTest().bigr()).make().getMappedEvidenceCountAssembly());
+	}
+	@Test
+	public void should_set_assembly_attribute_ASSEMBLY_MAPQ_REMOTE_TOTAL() {
+		assertEquals(0+ 17 + 17, cb(new AssemblyFactoryTest().big(), new AssemblyFactoryTest().bigr(), new AssemblyFactoryTest().bigr()).make().getMappedEvidenceCountAssembly());
+	}
+
 }

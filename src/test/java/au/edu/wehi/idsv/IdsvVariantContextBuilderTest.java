@@ -9,6 +9,7 @@ import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -19,6 +20,15 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class IdsvVariantContextBuilderTest extends TestHelper {
+	public VariantContextDirectedEvidence Call(DirectedEvidence... evidence) {
+		IdsvVariantContextBuilder vcBuilder = new IdsvVariantContextBuilder(getContext());
+		vcBuilder.breakend(evidence[0].getBreakendSummary(), new String(evidence[0].getBreakendSequence(), StandardCharsets.US_ASCII));
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)vcBuilder.make());
+		for (DirectedEvidence e : evidence) {
+			builder.addEvidence(e);
+		}
+		return builder.make();
+	}
 	@Test
 	public void evidenceID_should_be_ID() {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext())
@@ -48,21 +58,22 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_round_trip_getAssemblyConsensus() {
-		VariantContextDirectedEvidence dba = AE();
+		VariantContextDirectedEvidence dba = Call(AE());
 		assertEquals("ATT", dba.getAssemblyConsensus());
 		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals("ATT", dba.getAssemblyConsensus());
 	}
 	@Test
 	public void getBreakpointSequence_should_get_untemplated_sequence() {
-		VariantContextDirectedEvidence dba = AE();
+		VariantContextDirectedEvidence dba = Call(AE());
 		assertEquals("TT", S(dba.getBreakendSequence()));
 		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals("TT", S(dba.getBreakendSequence()));
 	}
 	@Test
 	public void should_match_variant_location_f() {
-		VariantContextDirectedEvidence dba = AB().referenceAnchor(0, 10).makeVariant(); 
+		VariantContextDirectedEvidence dba = Call(AssemblyFactory.createAnchored(getContext(), AES(), FWD,
+				Sets.<DirectedEvidence>newHashSet(), 0, 10, 1, B("AA"), B("AA"), 0, 0));
 		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals("polyA", dba.getChr());
 		assertEquals(10, dba.getStart());
@@ -70,7 +81,8 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_match_variant_location_b() {
-		VariantContextDirectedEvidence dba = AB().referenceAnchor(0, 10).direction(BWD).makeVariant();
+		VariantContextDirectedEvidence dba = Call(AssemblyFactory.createAnchored(getContext(), AES(), BWD,
+				Sets.<DirectedEvidence>newHashSet(), 0, 10, 1, B("AA"), B("AA"), 0, 0));
 		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals("polyA", dba.getChr());
 		assertEquals(10, dba.getStart());
@@ -78,7 +90,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	}
 	@Test
 	public void id_should_be_based_on_assembler_position_direction() {
-		VariantContextDirectedEvidence dba = AE();
+		VariantContextDirectedEvidence dba = Call(AE());
 		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
 		assertTrue(dba.getID().startsWith("testAssembler-polyA:1-f"));
 	}
@@ -88,7 +100,8 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_generate_single_breakend_f() {
-		VariantContextDirectedEvidence dba = AB().assemblyBases(B("NNGT")).anchorLength(2).makeVariant(); 
+		VariantContextDirectedEvidence dba = Call(AssemblyFactory.createAnchored(getContext(), AES(), FWD,
+				Sets.<DirectedEvidence>newHashSet(), 0, 10, 2, B("NNGT"), B("    "), 0, 0));
 		// ref base + breakpoint
 		assertEquals("AGT.", dba.getAlternateAllele(0).getDisplayString());
 		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
@@ -97,18 +110,25 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	@Test
 	public void should_generate_single_breakend_b() {
 		// ref base + breakpoint
-		VariantContextDirectedEvidence dba = AB().assemblyBases(B("GTNN")).anchorLength(2).direction(BWD).makeVariant();
+		VariantContextDirectedEvidence dba = Call(AssemblyFactory.createAnchored(getContext(), AES(), BWD,
+				Sets.<DirectedEvidence>newHashSet(), 0, 10, 2, B("GTNN"), B("    "), 0, 0));
 		assertEquals(".GTA", dba.getAlternateAllele(0).getDisplayString());
 		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals(".GTA", dba.getAlternateAllele(0).getDisplayString());
 	}
 	@Test
 	public void anchor_should_use_reference_base_not_assembly_base() {
-		String alt = AB().assemblyBases(B("TTT")).makeVariant().getAlternateAllele(0).getDisplayString();
+		String alt = Call(AssemblyFactory.createAnchored(getContext(), AES(), FWD,
+				Sets.<DirectedEvidence>newHashSet(), 0, 10, 1, B("TTT"), B("   "), 0, 0)).getAlternateAllele(0).getDisplayString(); 
 		assertEquals('A', alt.charAt(0));
 	}
 	public VariantContextDirectedEvidence test_mated_breakend(BreakendDirection direction, boolean realignPositive, String bpString, String realignedCigar, String expectedAllele) {
-		VariantContextDirectedEvidence dba = AB().direction(direction).anchorLength(0).assemblyBases(B(bpString)).makeVariant();
+		VariantContextDirectedEvidence dba = Call(AssemblyFactory.createUnanchored(getContext(), AES(),
+				Sets.<DirectedEvidence>newHashSet(
+						NRRP(OEA(0, 1, "1M", direction == FWD))
+						), B(bpString), B(bpString), 0, 0));
+				//AB().direction(direction).anchorLength(0).assemblyBases(B(bpString)).makeVariant();
+		
 		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
 		SAMRecord realigned = Read(1, 10, realignedCigar);
 		realigned.setReadBases(realignPositive ? B(bpString) : B(SequenceUtil.reverseComplement(bpString)));

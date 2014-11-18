@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import com.google.common.collect.Ordering;
+import com.google.common.primitives.Doubles;
 
 
 public interface DirectedEvidence {
@@ -47,12 +48,6 @@ public interface DirectedEvidence {
 	 */
 	int getLocalBaseLength();
 	/**
-	 * Total number of reference mapped bases
-	 * Note: this will match {@link getLocalBaseLength()} for raw reads 
-	 * @return
-	 */
-	int getLocalBaseCount();
-	/**
 	 * Maximum base quality of reference mapped bases
 	 * @return
 	 */
@@ -74,4 +69,11 @@ public interface DirectedEvidence {
 			return BreakendSummary.ByStartEnd.compare(arg0.getBreakendSummary(), arg1.getBreakendSummary());
 		}
 	};
+	static final Ordering<DirectedEvidence> ByLlr = new Ordering<DirectedEvidence>() {
+		@Override
+		public int compare(DirectedEvidence arg0, DirectedEvidence arg1) {
+			return Doubles.compare(Models.llr(arg0), Models.llr(arg1));
+		}
+	};
+	static final Ordering<DirectedEvidence> ByLlrDesc = ByLlr.reverse();
 }

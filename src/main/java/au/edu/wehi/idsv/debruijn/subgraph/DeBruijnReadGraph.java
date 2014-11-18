@@ -335,7 +335,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 					ca.baseCalls, ca.baseQuals, ca.normalBaseCount, ca.tumourBaseCount);
 		} else if (mateAnchor != null) {
 			// inexact breakend
-			evidence = AssemblyFactory.createUnanchored(processContext, source, direction, ca.support,
+			evidence = AssemblyFactory.createUnanchored(processContext, source, ca.support,
 					ca.baseCalls, ca.baseQuals, ca.normalBaseCount, ca.tumourBaseCount);
 		} else {
 			// Assembly is neither anchored by breakend nor anchored by mate pair

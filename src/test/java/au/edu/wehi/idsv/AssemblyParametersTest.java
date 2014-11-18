@@ -1,0 +1,64 @@
+package au.edu.wehi.idsv;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.Test;
+
+import au.edu.wehi.idsv.vcf.VcfFilter;
+
+import com.google.common.collect.Sets;
+
+
+public class AssemblyParametersTest extends TestHelper {
+	@Test
+	public void should_filter_fully_reference_assemblies() {
+		AssemblyEvidence e = AssemblyFactory.createAnchored(
+				getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
+				0, 1, 2, B("AA"), B("AA"), 2, 0);
+		getContext().getAssemblyParameters().applyFilters(e);
+		assertTrue(e.isAssemblyFiltered());
+		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_REF));
+	}
+	@Test
+	public void should_filter_single_read_assemblies() {
+		AssemblyEvidence e = AssemblyFactory.createAnchored(
+				getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(
+					SCE(FWD, Read(0, 1, "1M2S"))),
+				0, 1, 1, B("AA"), B("AA"), 2, 0);
+		getContext().getAssemblyParameters().applyFilters(e);
+		assertTrue(e.isAssemblyFiltered());
+		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_FEW_READ));
+	}
+	@Test
+	public void should_filter_mate_anchored_assembly_shorter_than_read_length() {
+		AssemblyEvidence e = AssemblyFactory.createAnchored(
+				getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(
+					NRRP(OEA(0, 1, "3M", false))),
+				0, 1, 0, B("AAA"), B("AAA"), 2, 0);
+		getContext().getAssemblyParameters().applyFilters(e);
+		assertTrue(e.isAssemblyFiltered());
+		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_SHORT));
+	}
+	@Test
+	public void read_length_filter_should_not_apply_to_anchored_breakend_assembly() {
+		AssemblyEvidence e = AssemblyFactory.createAnchored(
+				getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(
+						SCE(FWD, Read(0, 1, "1M2S")),
+						NRRP(OEA(0, 1, "3M", true)),
+						NRRP(OEA(0, 1, "4M", true))),
+				0, 1, 1, B("AAA"), B("AAA"), 2, 0);
+		getContext().getAssemblyParameters().applyFilters(e);
+		assertTrue(!e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_SHORT));
+	}
+	@Test
+	public void soft_clip_size_filter_should_not_apply_to_unanchored_assembly() {
+		AssemblyEvidence e = AssemblyFactory.createAnchored(
+				getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(
+						NRRP(OEA(0, 1, "3M", false)),
+						NRRP(OEA(0, 1, "4M", false))),
+				0, 1, 0, B("AAAAAA"), B("AAAAAA"), 2, 0);
+		getContext().getAssemblyParameters().applyFilters(e);
+		assertFalse(e.isAssemblyFiltered());
+	}
+}
