@@ -28,6 +28,28 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertPairing(e.getSAMRecord(), e.getRemoteSAMRecord());
 		assertTrue(e.getRemoteSAMRecord().getReadUnmappedFlag());
 	}
+	@Test
+	public void anchor_positions_should_match_genomic() {
+		SAMRecordAssemblyEvidence fwd = AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(), 1, 10, 3, B("GTACCCA"), new byte[] { 1, 2, 3, 4, 4, 8 }, 2, 0);
+		SAMRecordAssemblyEvidence bwd = AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(), 1, 10, 3, B("GTACCCA"), new byte[] { 1, 2, 3, 4, 4, 8 }, 2, 0);
+		assertEquals(1, (int)fwd.getSAMRecord().getReferenceIndex());
+		assertEquals(1, (int)bwd.getSAMRecord().getReferenceIndex());
+		assertEquals(8, fwd.getSAMRecord().getAlignmentStart());
+		assertEquals(10, bwd.getSAMRecord().getAlignmentStart());
+		assertEquals("3M4S", fwd.getSAMRecord().getCigarString());
+		assertEquals("4S3M", bwd.getSAMRecord().getCigarString());
+	}
+	@Test
+	public void unanchor_positions_should_match_genomic() {
+		SAMRecordAssemblyEvidence fwd = AssemblyFactory.createUnanchored(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(new MockDirectedEvidence(new BreakendSummary(1, FWD, 5, 10))), B("AAA"), B("AAA"), 2, 0);
+		SAMRecordAssemblyEvidence bwd = AssemblyFactory.createUnanchored(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(new MockDirectedEvidence(new BreakendSummary(1, BWD, 5, 10))), B("AAA"), B("AAA"), 2, 0);
+		assertEquals(1, (int)fwd.getSAMRecord().getReferenceIndex());
+		assertEquals(1, (int)bwd.getSAMRecord().getReferenceIndex());
+		assertEquals(5, fwd.getSAMRecord().getAlignmentStart());
+		assertEquals(10, bwd.getSAMRecord().getAlignmentStart());
+		assertEquals("1X5N3S", fwd.getSAMRecord().getCigarString());
+		assertEquals("3S5N1X", bwd.getSAMRecord().getCigarString());
+	}
 	private void assertPairing(SAMRecord assembly, SAMRecord realign) {
 		assertNotNull(assembly);
 		assertNotNull(realign);

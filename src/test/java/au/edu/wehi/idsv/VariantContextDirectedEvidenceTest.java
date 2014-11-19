@@ -3,14 +3,12 @@ package au.edu.wehi.idsv;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 import org.junit.Ignore;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 public class VariantContextDirectedEvidenceTest extends TestHelper {
 	@Test
@@ -302,16 +300,11 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 			q[i] = (byte)i;
 			b[i] = (byte)'A';
 		}
-		VariantContextDirectedEvidence e = new AssemblyBuilder(getContext(), AES())
-			.referenceAnchor(0, 1)
-			.anchorLength(0)
-			.direction(FWD)
-			.assemblyBases(b)
-			.assemblyBaseQuality(q)
-			.makeVariant();
+		
+		VariantContextDirectedEvidence e = (VariantContextDirectedEvidence) minimalBreakend()
+			.breakend(new BreakendSummary(0, FWD, 1, 1), b, q).make();
 		e = (VariantContextDirectedEvidence)(IdsvVariantContext.create(getContext(), null, e));
-		e = (VariantContextDirectedEvidence)(IdsvVariantContext.create(getContext(), null, e));
-		assertArrayEquals(q,  e.getBreakendQuality());
+		assertArrayEquals(q, e.getBreakendQuality());
 	}
 	@Test
 	public void percent_encoding_should_not_include_VCF_reserved_chars() {
@@ -321,43 +314,11 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 			q[i] = (byte)i;
 			b[i] = (byte)'A';
 		}
-		VariantContextDirectedEvidence e = new AssemblyBuilder(getContext(), AES())
-			.referenceAnchor(0, 1)
-			.anchorLength(0)
-			.direction(FWD)
-			.assemblyBases(b)
-			.assemblyBaseQuality(q)
-			.makeVariant();
+		VariantContextDirectedEvidence e = (VariantContextDirectedEvidence) minimalBreakend()
+				.breakend(new BreakendSummary(0, FWD, 1, 1), b, q).make();
+		e = (VariantContextDirectedEvidence)(IdsvVariantContext.create(getContext(), null, e));
 		for (char c : new char[] { '\t', ' ', '\n', ',', ';', '='}) {
 			assertFalse(e.getAttributeAsString(VcfAttributes.ASSEMBLY_BREAKEND_QUALS.attribute(), null).contains("" + c));
 		}
-	}
-	@Test
-	public void unanchored_read_should_expose_qual_through_getBreakendQuality() {
-		byte[] q = new byte[90];
-		byte[] b = new byte[90];
-		for (int i = 0; i < b.length; i++) {
-			q[i] = (byte)i;
-			b[i] = (byte)'A';
-		}
-		VariantContextDirectedEvidence e = new AssemblyBuilder(getContext(), AES())
-			.mateAnchor(0, 1)
-			.direction(FWD)
-			.assemblyBases(b)
-			.assemblyBaseQuality(q)
-			.makeVariant();
-		assertArrayEquals(q,  e.getBreakendQuality());
-	}
-	@Test
-	public void mate_anchor_should_set_imprecise_header() {
-		// max fragment size = 300
-		VariantContextDirectedEvidence dba;
-		dba = new AssemblyBuilder(getContext(), AES())
-			.assemblyBases(B("AAAAAA"))
-			.mateAnchor(1, 100)
-			.direction(FWD)
-			.makeVariant();
-		dba.getBreakendSummary();
-		assertTrue(dba.hasAttribute(VcfSvConstants.IMPRECISE_KEY));
 	}
 }

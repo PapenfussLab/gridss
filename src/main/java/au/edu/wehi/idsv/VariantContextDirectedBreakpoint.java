@@ -23,7 +23,7 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 	}
 	@Override
 	public int getRemoteMapq() {
-		return getMapqAssemblyRemoteMax();
+		return getMapqAssemblyMax();
 	}
 	@Override
 	public int getRemoteBaseLength() {

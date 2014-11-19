@@ -7,8 +7,8 @@ import htsjdk.variant.vcf.VCFInfoHeaderLine;
 public enum VcfAttributes {
 	SOMATIC_P_VALUE ("SPV", 1, VCFHeaderLineType.Float, "Somatic p-value"),
 	//EVIDENCE_COUNT ("EC", 2, VCFHeaderLineType.Integer, "Count of  evidence supporting structural variation  (Normal,Tumour)"),
-	LOG_LIKELIHOOD_RATIO ("LR", 2, VCFHeaderLineType.Float, "Log-likelihood ratio of structural variation vs reference (Normal,Tumour)"),
-	LOG_LIKELIHOOD_RATIO_BREAKPOINT ("LRBP", 2, VCFHeaderLineType.Float, "Log-likelihood ratio of structural variation vs reference for entire breakpoint (Normal,Tumour)"),
+	LOG_LIKELIHOOD_RATIO ("LR", 1, VCFHeaderLineType.Float, "Log-likelihood ratio of structural variation vs reference"),
+	LOG_LIKELIHOOD_RATIO_BREAKPOINT ("LRBP", 1, VCFHeaderLineType.Float, "Log-likelihood ratio of structural variation vs reference for entire breakpoint"),
 	REFERENCE_COUNT_READ ("RC", 2, VCFHeaderLineType.Integer, "Count of reads mapping across this breakend (Normal,Tumour)"),
 	REFERENCE_COUNT_READPAIR ("PC", 2, VCFHeaderLineType.Integer, "Count of reference read pairs spanning this breakpoint supporting the reference allele (Normal,Tumour)"),
 	
@@ -48,9 +48,9 @@ public enum VcfAttributes {
 	ASSEMBLY_LOG_LIKELIHOOD_RATIO ("A_LR", 1, VCFHeaderLineType.Float, "Log-likelihood ratio of breakend assembly structural variation vs reference"),
 	ASSEMBLY_MAPPED ("A_RM", 1, VCFHeaderLineType.Integer, "Count of breakend assembly evidence that maps to a remote breakend"),
 	ASSEMBLY_MAPQ_LOCAL_MAX ("A_MQLM", 1, VCFHeaderLineType.Integer, "Maximum MAPQ of reads anchoring breakend assembly"),
-	//ASSEMBLY_MAPQ_LOCAL_TOTAL ("A_MQLT", 2, VCFHeaderLineType.Integer, "Local total MAPQ of breakend assembly evidence (Normal,Tumour)"),
-	ASSEMBLY_MAPQ_REMOTE_MAX ("A_MQRM", 1, VCFHeaderLineType.Integer, "Maxmium MAPQ of realigned breakend assembly evidence"),
-	ASSEMBLY_MAPQ_REMOTE_TOTAL ("A_MQRT", 1, VCFHeaderLineType.Integer, "Total MAPQ of realigned breakend assembly evidence"),
+	//ASSEMBLY_MAPQ_LOCAL_TOTAL ("A_MQLT", 2, VCFHeaderLineType.Integer, "Total MAPQ of reads anchoring breakend assembly (Normal,Tumour)"),
+	ASSEMBLY_MAPQ_MAX ("A_MQM", 1, VCFHeaderLineType.Integer, "Maxmium MAPQ of realigned breakend assembly"),
+	ASSEMBLY_MAPQ_TOTAL ("A_MQT", 1, VCFHeaderLineType.Integer, "Total MAPQ of realigned breakend assembly"),
 	ASSEMBLY_LENGTH_LOCAL_MAX ("A_BLLM", 1, VCFHeaderLineType.Integer, "Length (in bases) of breakend assembly mapping to reference at assembly location"),
 	//ASSEMBLY_LENGTH_LOCAL_TOTAL ("A_BLLT", 2, VCFHeaderLineType.Integer, "Length (in bases) of breakend assembly mapping to reference at assembly location (Normal,Tumour)"),
 	ASSEMBLY_LENGTH_REMOTE_MAX ("A_BLRM", 1, VCFHeaderLineType.Integer, "Length of breakend in assembly"),

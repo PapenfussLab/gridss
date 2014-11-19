@@ -87,10 +87,12 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 		if (untemplatedSequence == null) untemplatedSequence = "";
 		String chr = processContext.getDictionary().getSequence(loc.referenceIndex).getSequenceName();
 		String ref, alt;
-		if (processContext.getReference() == null) {
-			ref = StringUtils.repeat("N", loc.end - loc.start + 1);
-		} else {
+		try {
+			// No reference, breakend outside of reference bounds, break on non-reference contig 
+			// all of which should not happen
 			ref = new String(processContext.getReference().getSubsequenceAt(chr, loc.start, loc.start).getBases(), StandardCharsets.US_ASCII);
+		} catch (Exception ex) {
+			ref = StringUtils.repeat("N", loc.end - loc.start + 1);
 		}
 		if (loc instanceof BreakpointSummary) {
 			BreakpointSummary bp = (BreakpointSummary)loc;

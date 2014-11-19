@@ -152,18 +152,23 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 				return input instanceof DirectedBreakpoint ? 1 : 0;
 			}
 		}));
+		attribute(VcfAttributes.ASSEMBLY_MAPQ_MAX, max(supportList, new Function<AssemblyEvidence, Integer>() {
+			@Override
+			public Integer apply(AssemblyEvidence arg0) {
+				return arg0.getLocalMapq();
+			}}));
 		attribute(VcfAttributes.ASSEMBLY_MAPQ_LOCAL_MAX, max(supportList, new Function<AssemblyEvidence, Integer>() {
 			@Override
 			public Integer apply(AssemblyEvidence arg0) {
 				return arg0.getLocalMapq();
 			}}));
-		attribute(VcfAttributes.ASSEMBLY_MAPQ_REMOTE_MAX, max(supportList, new Function<AssemblyEvidence, Integer>() {
+		attribute(VcfAttributes.ASSEMBLY_MAPQ_MAX, max(supportList, new Function<AssemblyEvidence, Integer>() {
 			@Override
 			public Integer apply(AssemblyEvidence arg0) {
 				if (arg0 instanceof DirectedBreakpoint) return ((DirectedBreakpoint)arg0).getRemoteMapq();
 				return 0;
 			}}));
-		attribute(VcfAttributes.ASSEMBLY_MAPQ_REMOTE_TOTAL, sum(supportList, new Function<AssemblyEvidence, Integer>() {
+		attribute(VcfAttributes.ASSEMBLY_MAPQ_TOTAL, sum(supportList, new Function<AssemblyEvidence, Integer>() {
 			@Override
 			public Integer apply(AssemblyEvidence arg0) {
 				if (arg0 instanceof DirectedBreakpoint) return ((DirectedBreakpoint)arg0).getRemoteMapq();
@@ -177,7 +182,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		attribute(VcfAttributes.ASSEMBLY_LENGTH_REMOTE_MAX, max(supportList, new Function<AssemblyEvidence, Integer>() {
 			@Override
 			public Integer apply(AssemblyEvidence arg0) {
-				return arg0.getAssemblySequence().length;
+				return arg0.getBreakendSequence().length;
 			}}));
 		int[] basecount = new int[2];
 		int[] rpcount = new int[2];
@@ -195,10 +200,10 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			sccount[1] += e.getAssemblySupportCountSoftClip(EvidenceSubset.TUMOUR);
 			sclen[0] += e.getAssemblySoftClipLengthTotal(EvidenceSubset.NORMAL);
 			sclen[1] += e.getAssemblySoftClipLengthTotal(EvidenceSubset.TUMOUR);
-			rpmaxlen[0] += Math.max(rpmaxlen[0], e.getAssemblyReadPairLengthMax(EvidenceSubset.NORMAL));
-			rpmaxlen[1] += Math.max(rpmaxlen[1], e.getAssemblyReadPairLengthMax(EvidenceSubset.TUMOUR));
-			scmaxlen[0] += Math.max(scmaxlen[0], e.getAssemblySoftClipLengthMax(EvidenceSubset.NORMAL));
-			scmaxlen[1] += Math.max(scmaxlen[1], e.getAssemblySoftClipLengthMax(EvidenceSubset.TUMOUR));
+			rpmaxlen[0] = Math.max(rpmaxlen[0], e.getAssemblyReadPairLengthMax(EvidenceSubset.NORMAL));
+			rpmaxlen[1] = Math.max(rpmaxlen[1], e.getAssemblyReadPairLengthMax(EvidenceSubset.TUMOUR));
+			scmaxlen[0] = Math.max(scmaxlen[0], e.getAssemblySoftClipLengthMax(EvidenceSubset.NORMAL));
+			scmaxlen[1] = Math.max(scmaxlen[1], e.getAssemblySoftClipLengthMax(EvidenceSubset.TUMOUR));
 			consensus.add(new String(e.getAssemblySequence(), StandardCharsets.US_ASCII));
 		}
 		attribute(VcfAttributes.ASSEMBLY_BASE_COUNT, basecount);

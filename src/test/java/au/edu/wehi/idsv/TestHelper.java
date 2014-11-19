@@ -673,4 +673,13 @@ public class TestHelper {
 				ImmutableList.<SAMEvidenceSource>of(SES()), new File(
 						"test.bam"));
 	}
+	public VariantContextDirectedEvidence CallSV(DirectedEvidence... evidence) {
+		IdsvVariantContextBuilder vcBuilder = new IdsvVariantContextBuilder(getContext());
+		vcBuilder.breakend(evidence[0].getBreakendSummary(), new String(evidence[0].getBreakendSequence(), StandardCharsets.US_ASCII));
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)vcBuilder.make());
+		for (DirectedEvidence e : evidence) {
+			builder.addEvidence(e);
+		}
+		return builder.make();
+	}
 }

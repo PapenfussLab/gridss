@@ -20,15 +20,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class IdsvVariantContextBuilderTest extends TestHelper {
-	public VariantContextDirectedEvidence Call(DirectedEvidence... evidence) {
-		IdsvVariantContextBuilder vcBuilder = new IdsvVariantContextBuilder(getContext());
-		vcBuilder.breakend(evidence[0].getBreakendSummary(), new String(evidence[0].getBreakendSequence(), StandardCharsets.US_ASCII));
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)vcBuilder.make());
-		for (DirectedEvidence e : evidence) {
-			builder.addEvidence(e);
-		}
-		return builder.make();
-	}
 	@Test
 	public void evidenceID_should_be_ID() {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext())
@@ -58,21 +49,21 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_round_trip_getAssemblyConsensus() {
-		VariantContextDirectedEvidence dba = Call(AE());
-		assertEquals("ATT", dba.getAssemblyConsensus());
+		VariantContextDirectedEvidence dba = CallSV(AE());
+		assertEquals("ATT", dba.getAssemblyConsensus().get(0));
 		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
-		assertEquals("ATT", dba.getAssemblyConsensus());
+		assertEquals("ATT", dba.getAssemblyConsensus().get(0));
 	}
 	@Test
 	public void getBreakpointSequence_should_get_untemplated_sequence() {
-		VariantContextDirectedEvidence dba = Call(AE());
+		VariantContextDirectedEvidence dba = CallSV(AE());
 		assertEquals("TT", S(dba.getBreakendSequence()));
 		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals("TT", S(dba.getBreakendSequence()));
 	}
 	@Test
 	public void should_match_variant_location_f() {
-		VariantContextDirectedEvidence dba = Call(AssemblyFactory.createAnchored(getContext(), AES(), FWD,
+		VariantContextDirectedEvidence dba = CallSV(AssemblyFactory.createAnchored(getContext(), AES(), FWD,
 				Sets.<DirectedEvidence>newHashSet(), 0, 10, 1, B("AA"), B("AA"), 0, 0));
 		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals("polyA", dba.getChr());
@@ -81,7 +72,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_match_variant_location_b() {
-		VariantContextDirectedEvidence dba = Call(AssemblyFactory.createAnchored(getContext(), AES(), BWD,
+		VariantContextDirectedEvidence dba = CallSV(AssemblyFactory.createAnchored(getContext(), AES(), BWD,
 				Sets.<DirectedEvidence>newHashSet(), 0, 10, 1, B("AA"), B("AA"), 0, 0));
 		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals("polyA", dba.getChr());
@@ -90,7 +81,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	}
 	@Test
 	public void id_should_be_based_on_assembler_position_direction() {
-		VariantContextDirectedEvidence dba = Call(AE());
+		VariantContextDirectedEvidence dba = CallSV(AE());
 		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
 		assertTrue(dba.getID().startsWith("testAssembler-polyA:1-f"));
 	}
@@ -100,7 +91,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_generate_single_breakend_f() {
-		VariantContextDirectedEvidence dba = Call(AssemblyFactory.createAnchored(getContext(), AES(), FWD,
+		VariantContextDirectedEvidence dba = CallSV(AssemblyFactory.createAnchored(getContext(), AES(), FWD,
 				Sets.<DirectedEvidence>newHashSet(), 0, 10, 2, B("NNGT"), B("    "), 0, 0));
 		// ref base + breakpoint
 		assertEquals("AGT.", dba.getAlternateAllele(0).getDisplayString());
@@ -110,7 +101,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	@Test
 	public void should_generate_single_breakend_b() {
 		// ref base + breakpoint
-		VariantContextDirectedEvidence dba = Call(AssemblyFactory.createAnchored(getContext(), AES(), BWD,
+		VariantContextDirectedEvidence dba = CallSV(AssemblyFactory.createAnchored(getContext(), AES(), BWD,
 				Sets.<DirectedEvidence>newHashSet(), 0, 10, 2, B("GTNN"), B("    "), 0, 0));
 		assertEquals(".GTA", dba.getAlternateAllele(0).getDisplayString());
 		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
@@ -118,14 +109,14 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	}
 	@Test
 	public void anchor_should_use_reference_base_not_assembly_base() {
-		String alt = Call(AssemblyFactory.createAnchored(getContext(), AES(), FWD,
+		String alt = CallSV(AssemblyFactory.createAnchored(getContext(), AES(), FWD,
 				Sets.<DirectedEvidence>newHashSet(), 0, 10, 1, B("TTT"), B("   "), 0, 0)).getAlternateAllele(0).getDisplayString(); 
 		assertEquals('A', alt.charAt(0));
 	}
 	public VariantContextDirectedEvidence test_mated_breakend(BreakendDirection direction, boolean realignPositive, String bpString, String realignedCigar, String expectedAllele) {
-		VariantContextDirectedEvidence dba = Call(AssemblyFactory.createUnanchored(getContext(), AES(),
+		VariantContextDirectedEvidence dba = CallSV(AssemblyFactory.createUnanchored(getContext(), AES(),
 				Sets.<DirectedEvidence>newHashSet(
-						NRRP(OEA(0, 1, "1M", direction == FWD))
+						NRRP(OEA(0, 100, "1M", direction == FWD))
 						), B(bpString), B(bpString), 0, 0));
 				//AB().direction(direction).anchorLength(0).assemblyBases(B(bpString)).makeVariant();
 		

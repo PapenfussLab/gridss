@@ -110,9 +110,9 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 	public int getEvidenceCountAssembly() { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.ASSEMBLY_EVIDENCE_COUNT.attribute()), EvidenceSubset.ALL); }
 	public double getBreakendLogLikelihoodAssembly() { return AttributeConverter.asDoubleSumTN(getAttribute(VcfAttributes.ASSEMBLY_LOG_LIKELIHOOD_RATIO.attribute()), EvidenceSubset.ALL); }
 	public int getMappedEvidenceCountAssembly() { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.ASSEMBLY_MAPPED.attribute()), EvidenceSubset.ALL); }
-	public int getMapqAssemblyRemoteMax() { return AttributeConverter.asIntMaxTN(getAttribute(VcfAttributes.ASSEMBLY_MAPQ_REMOTE_MAX.attribute()), EvidenceSubset.ALL); }
-	public int getMapqAssemblyRemoteTotal() { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.ASSEMBLY_MAPQ_REMOTE_TOTAL.attribute()), EvidenceSubset.ALL); }
-	public int getAssemblyLocalMapq() { return AttributeConverter.asInt(getAttribute(VcfAttributes.ASSEMBLY_MAPQ_LOCAL_MAX.attribute()), 0); }
+	public int getMapqAssemblyMax() { return AttributeConverter.asInt(getAttribute(VcfAttributes.ASSEMBLY_MAPQ_MAX.attribute()), 0); }
+	public int getMapqAssemblyTotal() { return AttributeConverter.asInt(getAttribute(VcfAttributes.ASSEMBLY_MAPQ_TOTAL.attribute()), 0); }
+	public int getMapqAssemblyEvidenceMax() { return AttributeConverter.asInt(getAttribute(VcfAttributes.ASSEMBLY_MAPQ_LOCAL_MAX.attribute()), 0); }
 	public int getAssemblyAnchorLengthMax() { return AttributeConverter.asIntMaxTN(getAttribute(VcfAttributes.ASSEMBLY_LENGTH_LOCAL_MAX.attribute()), EvidenceSubset.ALL); }
 	public int getAssemblyBreakendLengthMax() { return AttributeConverter.asIntMaxTN(getAttribute(VcfAttributes.ASSEMBLY_LENGTH_REMOTE_MAX.attribute()), EvidenceSubset.ALL); }
 	public int getAssemblyBaseCount(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.ASSEMBLY_BASE_COUNT.attribute()), subset); }
@@ -122,7 +122,7 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 	public int getAssemblySoftClipLengthTotal(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL.attribute()), subset); }
 	public int getAssemblySoftClipLengthMax(EvidenceSubset subset) { return AttributeConverter.asIntMaxTN(getAttribute(VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX.attribute()), subset); }
 	public int getAssemblySupportCount(EvidenceSubset subset) { return getAssemblySupportCountReadPair(subset) + getAssemblySupportCountSoftClip(subset); }
-	public List<String> getAssemblyConsensus() { return AttributeConverter.asStringList(VcfAttributes.ASSEMBLY_CONSENSUS.attribute()); }
+	public List<String> getAssemblyConsensus() { return AttributeConverter.asStringList(getAttribute(VcfAttributes.ASSEMBLY_CONSENSUS.attribute())); }
 	/**
 	 * Returns an iterator containing only the breakend variants from the given iterator
 	 * @param context processing context

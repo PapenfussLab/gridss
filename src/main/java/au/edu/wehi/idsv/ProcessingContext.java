@@ -194,7 +194,7 @@ public class ProcessingContext implements Closeable {
 	 * Gets a basic minimal SAM file header matching the reference sequence
 	 * @return
 	 */
-	public SAMFileHeader getBasisSamHeader() {
+	public SAMFileHeader getBasicSamHeader() {
 		return basicHeader;
 	}
 	public ReferenceSequenceFile getReference() {

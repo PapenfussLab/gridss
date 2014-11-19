@@ -4,16 +4,20 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.variant.vcf.VCFConstants;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.junit.Ignore;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.collect.Sets;
 
@@ -292,34 +296,36 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		assertEquals(1, big().getLengthSoftClipMax(EvidenceSubset.NORMAL));
 		assertEquals(5, big().getLengthSoftClipMax(EvidenceSubset.TUMOUR));
 	}
-	private VariantContextDirectedEvidence fakeass(int offset) {
-		IdsvVariantContextBuilder x = minimalBreakend()
-				.breakend(new BreakendSummary(0, BWD, 1, 10), null);
-		x.id(Integer.toString(offset));
-		x.attribute(VcfAttributes.ASSEMBLY_EVIDENCE_COUNT.attribute(), offset + 1);
-		x.attribute(VcfAttributes.ASSEMBLY_LOG_LIKELIHOOD_RATIO.attribute(), (double)(offset + 2));
-		x.attribute(VcfAttributes.ASSEMBLY_MAPPED.attribute(), offset + 3);
-		x.attribute(VcfAttributes.ASSEMBLY_MAPQ_REMOTE_TOTAL.attribute(), offset + 4);
-		
-		x.attribute(VcfAttributes.ASSEMBLY_BASE_COUNT.attribute(), new int[] { offset + 6, offset + 16});
-		x.attribute(VcfAttributes.ASSEMBLY_READPAIR_COUNT.attribute(), new int[] { offset + 7, offset + 17});
-		x.attribute(VcfAttributes.ASSEMBLY_SOFTCLIP_COUNT.attribute(), new int[] { offset + 8, offset + 18});
-		x.attribute(VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL.attribute(), new int[] { offset + 9, offset + 19});
-		x.attribute(VcfAttributes.ASSEMBLY_MAPQ_REMOTE_MAX.attribute(), offset + 11);
-		x.attribute(VcfAttributes.ASSEMBLY_LENGTH_LOCAL_MAX.attribute(), offset + 12);
-		x.attribute(VcfAttributes.ASSEMBLY_LENGTH_REMOTE_MAX.attribute(), offset + 13);
-		x.attribute(VcfAttributes.ASSEMBLY_READPAIR_LENGTH_MAX.attribute(), new int[] { offset + 14, offset + 24});
-		x.attribute(VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX.attribute(), new int[] { offset + 15, offset + 25});
-		return (VariantContextDirectedEvidence)x.make();
+	private SAMRecordAssemblyEvidence fakeass(int offset) {
+		Map<VcfAttributes, int[]> intListAttributes = new HashMap<VcfAttributes, int[]>();
+		intListAttributes.put(VcfAttributes.ASSEMBLY_BASE_COUNT, new int[] { offset + 6, offset + 16});
+		intListAttributes.put(VcfAttributes.ASSEMBLY_READPAIR_COUNT, new int[] { offset + 7, offset + 17});
+		intListAttributes.put(VcfAttributes.ASSEMBLY_SOFTCLIP_COUNT, new int[] { offset + 8, offset + 18});
+		intListAttributes.put(VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL, new int[] { offset + 9, offset + 19});
+		intListAttributes.put(VcfAttributes.ASSEMBLY_READPAIR_LENGTH_MAX, new int[] { offset + 14, offset + 24});
+		intListAttributes.put(VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX, new int[] { offset + 15, offset + 25});
+		intListAttributes.put(VcfAttributes.ASSEMBLY_MAPQ_LOCAL_MAX, new int[] { offset + 16 });
+		int anchorLen = offset + 12; // ASSEMBLY_LENGTH_LOCAL_MAX
+		int bpLen = offset + 13; // ASSEMBLY_LENGTH_REMOTE_MAX
+		byte[] b = new byte[anchorLen + bpLen];
+		byte[] q = new byte[anchorLen + bpLen];
+		SAMRecordAssemblyEvidence e = new SAMRecordAssemblyEvidence(getContext().getBasicSamHeader(), new BreakendSummary(0, BWD, 10, 10), AES(),
+				anchorLen, b, q, intListAttributes);
+		e.getSAMRecord().setReadName("fakeass"+Integer.toString(offset));
+		SAMRecord r = new SAMRecord(getContext().getBasicSamHeader());
+		r.setReferenceIndex(1);
+		r.setAlignmentStart(1);
+		r.setReadUnmappedFlag(false);
+		r.setMappingQuality(offset + 4); // ASSEMBLY_MAPQ
+		e = new RealignedSAMRecordAssemblyEvidence(getContext(), AES(), e.getSAMRecord(), r);
+		return e;
 	}
 	@Test
-	public void should_sum_assembly_VcfAttributes_() {
+	public void should_sum_assembly_attributes() {
 		VariantContextDirectedEvidence e = b(fakeass(0), fakeass(100));
-		assertEquals(1 + 101, e.getEvidenceCountAssembly());
-		assertEquals((double)2 + 102, e.getBreakendLogLikelihoodAssembly(), 0);
-		assertEquals(3 + 103, e.getMappedEvidenceCountAssembly());
-		assertEquals(4 + 104, e.getMapqAssemblyRemoteTotal());
-		
+		assertEquals(2, e.getEvidenceCountAssembly());
+		assertEquals(2, e.getMappedEvidenceCountAssembly());
+		assertEquals(4 + 104, e.getMapqAssemblyTotal());
 		assertEquals(6 + 106, e.getAssemblyBaseCount(EvidenceSubset.NORMAL));
 		assertEquals(16 + 116, e.getAssemblyBaseCount(EvidenceSubset.TUMOUR));
 		assertEquals(7 + 107, e.getAssemblySupportCountReadPair(EvidenceSubset.NORMAL));
@@ -330,21 +336,30 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		assertEquals(19 + 119, e.getAssemblySoftClipLengthTotal(EvidenceSubset.TUMOUR));
 	}
 	@Test
-	public void should_max_assembly_VcfAttributes_() {
+	public void should_max_assembly_attributes() {
 		VariantContextDirectedEvidence e = b(fakeass(0), fakeass(100));
-		assertEquals(111, e.getMapqAssemblyRemoteMax());
+		assertEquals(104, e.getMapqAssemblyMax());
 		assertEquals(112, e.getAssemblyAnchorLengthMax());
 		assertEquals(113, e.getAssemblyBreakendLengthMax());
 		assertEquals(114, e.getAssemblyReadPairLengthMax(EvidenceSubset.NORMAL));
 		assertEquals(124, e.getAssemblyReadPairLengthMax(EvidenceSubset.TUMOUR));
 		assertEquals(115, e.getAssemblySoftClipLengthMax(EvidenceSubset.NORMAL));
 		assertEquals(125, e.getAssemblySoftClipLengthMax(EvidenceSubset.TUMOUR));
+		assertEquals(116, e.getMapqAssemblyEvidenceMax());
+	}
+	@Test
+	public void should_calculate_component_llrs() {
+		assertNotEquals(0d, big().getPhredScaledQual());
+		assertNotEquals(0d, AttributeConverter.asDoubleList(big().getAttribute(VcfAttributes.LOG_LIKELIHOOD_RATIO.attribute())).get(0));
+		assertNotEquals(0d, AttributeConverter.asDoubleList(big().getAttribute(VcfAttributes.READPAIR_LOG_LIKELIHOOD_RATIO.attribute())).get(0));
+		assertNotEquals(0d, AttributeConverter.asDoubleList(big().getAttribute(VcfAttributes.READPAIR_LOG_LIKELIHOOD_RATIO.attribute())).get(1));
+		assertNotEquals(0d, AttributeConverter.asDoubleList(big().getAttribute(VcfAttributes.SOFTCLIP_LOG_LIKELIHOOD_RATIO.attribute())).get(0));
+		assertNotEquals(0d, AttributeConverter.asDoubleList(big().getAttribute(VcfAttributes.SOFTCLIP_LOG_LIKELIHOOD_RATIO.attribute())).get(1));
+		assertNotEquals(0d, AttributeConverter.asDoubleList(big().getAttribute(VcfAttributes.ASSEMBLY_LOG_LIKELIHOOD_RATIO.attribute())).get(0));
 	}
 	@Test
 	public void should_merge_same_assembly_by_id() {
-		VariantContextDirectedEvidence v = fakeass(0);
-		VariantContextDirectedEvidence e = b(v, v, v);
-		assertEquals(v.getAssemblySoftClipLengthTotal(EvidenceSubset.ALL), e.getAssemblySoftClipLengthTotal(EvidenceSubset.ALL));
+		assertEquals(1, cb(fakeass(0), fakeass(0)).make().getEvidenceCountAssembly());
 	}
 	@Test
 	public void should_concat_assembly_strings() {
@@ -498,7 +513,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_EVIDENCE_COUNT() {
-		assertEquals(1, big().getEvidenceCountAssembly());
+		assertEquals(2, big().getEvidenceCountAssembly());
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_LOG_LIKELIHOOD_RATIO() {
@@ -512,11 +527,16 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public void should_set_assembly_attribute_ASSEMBLY_MAPPED() {
 		assertEquals(0, cb(new AssemblyFactoryTest().big()).make().getMappedEvidenceCountAssembly());
 		assertEquals(1, cb(new AssemblyFactoryTest().bigr()).make().getMappedEvidenceCountAssembly());
-		assertEquals(2, cb(new AssemblyFactoryTest().bigr(), new AssemblyFactoryTest().bigr()).make().getMappedEvidenceCountAssembly());
+		assertEquals(2, cb(new AssemblyFactoryTest().big(), fakeass(1), fakeass(2)).make().getMappedEvidenceCountAssembly());
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_MAPQ_REMOTE_TOTAL() {
-		assertEquals(0+ 17 + 17, cb(new AssemblyFactoryTest().big(), new AssemblyFactoryTest().bigr(), new AssemblyFactoryTest().bigr()).make().getMappedEvidenceCountAssembly());
+		assertEquals(0 + 17, cb(new AssemblyFactoryTest().big(), new AssemblyFactoryTest().bigr()).make().getMapqAssemblyTotal() );
 	}
-
+	@Test
+	public void mate_anchor_should_set_imprecise_header() {
+		// max fragment size = 300
+		VariantContextDirectedEvidence dba = CallSV(AssemblyFactory.createUnanchored(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(new MockDirectedEvidence(new BreakendSummary(0, FWD, 1, 2))), B("A"), B("A"), 0, 0));
+		assertTrue(dba.hasAttribute(VcfSvConstants.IMPRECISE_KEY));
+	}
 }

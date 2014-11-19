@@ -71,23 +71,27 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		if (cigar.numCigarElements() > 2) {
 			int paddingNs = cigar.getCigarElement(1).getLength();
 			if (direction == BreakendDirection.Forward) {
-				end += paddingNs;
 				assert(cigar.numCigarElements() == 3);
 				assert(cigar.getCigarElement(0).getOperator() == CigarOperator.X);
 				assert(cigar.getCigarElement(1).getOperator() == CigarOperator.SKIPPED_REGION);
 				assert(cigar.getCigarElement(2).getOperator() == CigarOperator.SOFT_CLIP);
+				end += paddingNs;
 			} else {
-				start -= paddingNs;
 				assert(cigar.numCigarElements() == 3);
 				assert(cigar.getCigarElement(0).getOperator() == CigarOperator.SOFT_CLIP);
 				assert(cigar.getCigarElement(1).getOperator() == CigarOperator.SKIPPED_REGION);
 				assert(cigar.getCigarElement(2).getOperator() == CigarOperator.X);
+				start -= paddingNs;
 			}
 		} else {
 			if (direction == BreakendDirection.Forward) {
 				assert(cigar.numCigarElements() == 2);
 				assert(cigar.getCigarElement(0).getOperator() == CigarOperator.MATCH_OR_MISMATCH);
 				assert(cigar.getCigarElement(1).getOperator() == CigarOperator.SOFT_CLIP);
+				// breakend is at end of
+				int anchorLength = cigar.getCigarElement(0).getLength(); 
+				start += anchorLength - 1;
+				end += anchorLength - 1;
 			} else {
 				assert(cigar.numCigarElements() == 2);
 				assert(cigar.getCigarElement(0).getOperator() == CigarOperator.SOFT_CLIP);
@@ -112,9 +116,11 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		if (anchoredBaseCount > 0) {
 			record.setReadBases(baseCalls);
 			record.setBaseQualities(baseQuals);
-			if (breakend.start != breakend.end) throw new IllegalArgumentException("Inexact anchored breakends not supported by this constructor");
+			if (breakend.start != breakend.end) {
+				throw new IllegalArgumentException("Imprecisely anchored breakends not supported by this constructor");
+			}
 			if (breakend.direction == BreakendDirection.Forward) {
-				record.setAlignmentStart(breakend.start - anchoredBaseCount - 1);
+				record.setAlignmentStart(breakend.start - anchoredBaseCount + 1);
 				record.setCigar(new Cigar(ImmutableList.of(
 						new CigarElement(anchoredBaseCount, CigarOperator.MATCH_OR_MISMATCH),
 						new CigarElement(baseCalls.length - anchoredBaseCount, CigarOperator.SOFT_CLIP))));
