@@ -77,9 +77,9 @@ public class BreakpointFastqEncodingTest extends TestHelper {
 	}
 	@Test
 	public void sam_assembly_should_be_sorted_by_sam_coordinate_sort_order() {
-		FastqRecord fq = BreakpointFastqEncoding.getRealignmentFastq(
-				AssemblyFactory.createAnchored(getContext(), AES(), BWD, null, 1, 4, 3, B("AAAAAA"), B("AAAAAA"), 1, 1));
+		SAMRecordAssemblyEvidence ass =  AssemblyFactory.createAnchored(getContext(), AES(), BWD, null, 1, 4, 3, B("AAAAAA"), B("AAAAAA"), 1, 1);
+		FastqRecord fq = BreakpointFastqEncoding.getRealignmentFastq(ass);
 		assertEquals(1, BreakpointFastqEncoding.getEncodedReferenceIndex(fq.getReadHeader()));
-		assertEquals(2, BreakpointFastqEncoding.getEncodedStartPosition(fq.getReadHeader()));
+		assertEquals(ass.getSAMRecord().getAlignmentStart(), BreakpointFastqEncoding.getEncodedStartPosition(fq.getReadHeader()));
 	}
 }

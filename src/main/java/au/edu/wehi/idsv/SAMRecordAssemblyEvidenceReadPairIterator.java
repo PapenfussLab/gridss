@@ -35,10 +35,12 @@ public class SAMRecordAssemblyEvidenceReadPairIterator extends AbstractIterator<
 		while (it.hasNext()) {
 			SAMRecord record = it.next();
 			if (record.getFirstOfPairFlag() || includeRemote) {
-				SAMRecordAssemblyEvidence evidence = factory.createAssembly(it.next(), processContext, source);
-				processContext.getAssemblyParameters().applyFilters(evidence);
-				if (evidence != null && (!evidence.isAssemblyFiltered() || includeFiltered)) {
-					return evidence;
+				SAMRecordAssemblyEvidence evidence = factory.createAssembly(record, processContext, source);
+				if (evidence != null) {
+					processContext.getAssemblyParameters().applyFilters(evidence);
+					if (!evidence.isAssemblyFiltered() || includeFiltered) {
+						return evidence;
+					}
 				}
 			}
 		}

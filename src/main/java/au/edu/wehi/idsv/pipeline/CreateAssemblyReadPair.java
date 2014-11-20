@@ -134,7 +134,7 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 		mateWriters.clear();
 	}
 	private void writeUnsortedOutput() {
-		Iterator<SAMRecordAssemblyEvidence> it = source.iterator(Defaults.WRITE_FILTERED_ASSEMBLIES);
+		Iterator<SAMRecordAssemblyEvidence> it = source.iterator(false, processContext.getAssemblyParameters().writeFilteredAssemblies);
 		while (it.hasNext()) {
 			SAMRecordAssemblyEvidence e = it.next();
 			SAMRecord assembly = e.getSAMRecord();

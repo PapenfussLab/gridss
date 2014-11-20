@@ -15,6 +15,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -26,7 +27,7 @@ import java.util.concurrent.Future;
 
 import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredAssembler;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
-import au.edu.wehi.idsv.util.AsyncBufferedIterator;
+import au.edu.wehi.idsv.pipeline.CreateAssemblyReadPair;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
@@ -62,53 +63,92 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		if (!isProcessingComplete()) {
 			process(threadpool);
 		}
+		if (isRealignmentComplete()) {
+			CreateAssemblyReadPair step = new CreateAssemblyReadPair(processContext, this);
+			step.process(EnumSet.of(ProcessStep.SORT_REALIGNED_ASSEMBLIES), threadpool);
+			step.close();
+		}
 	}
-	public CloseableIterator<SAMRecordAssemblyEvidence> iterator(final boolean includeFiltered) {
+	public CloseableIterator<SAMRecordAssemblyEvidence> iterator(final boolean includeRemote, final boolean includeFiltered) {
 		if (processContext.shouldProcessPerChromosome()) {
 			// Lazily iterator over each input
 			return new PerChromosomeAggregateIterator<SAMRecordAssemblyEvidence>(processContext.getReference().getSequenceDictionary(), new Function<String, Iterator<SAMRecordAssemblyEvidence>>() {
 				@Override
 				public Iterator<SAMRecordAssemblyEvidence> apply(String chr) {
-					return perChrIterator(includeFiltered, chr);
+					return perChrIterator(includeRemote, includeFiltered, chr);
 				}
 			});
 		} else {
-			return singleFileIterator(includeFiltered);
+			return singleFileIterator(includeRemote, includeFiltered);
 		}
 	}
-	public CloseableIterator<SAMRecordAssemblyEvidence> iterator(boolean includeFiltered, String chr) {
+	public CloseableIterator<SAMRecordAssemblyEvidence> iterator(boolean includeRemote, boolean includeFiltered, String chr) {
 		if (processContext.shouldProcessPerChromosome()) {
-			return perChrIterator(includeFiltered, chr);
+			return perChrIterator(includeRemote, includeFiltered, chr);
 		} else {
-			return new ChromosomeFilteringIterator<SAMRecordAssemblyEvidence>(singleFileIterator(includeFiltered), processContext.getDictionary().getSequence(chr).getSequenceIndex(), true);
+			return new ChromosomeFilteringIterator<SAMRecordAssemblyEvidence>(singleFileIterator(includeRemote, includeFiltered), processContext.getDictionary().getSequence(chr).getSequenceIndex(), true);
 		}
 	}
-	protected CloseableIterator<SAMRecordAssemblyEvidence> perChrIterator(boolean includeFiltered, String chr) {
+	protected CloseableIterator<SAMRecordAssemblyEvidence> perChrIterator(boolean includeRemote, boolean includeFiltered, String chr) {
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		return samAssemblyRealignIterator(
+		if (!isReadPairingComplete()) {
+			return samAssemblyRealignIterator(
+				includeRemote,
 				includeFiltered,
 				fsc.getAssemblyRawBamForChr(input, chr),
 				fsc.getRealignmentBamForChr(input, chr),
 				chr);
+		} else {
+			return samReadPairIterator(
+					includeRemote,
+					includeFiltered,
+					fsc.getAssemblyForChr(input, chr),
+					fsc.getAssemblyMateForChr(input, chr),
+					chr);
+		}
 	}
-	protected CloseableIterator<SAMRecordAssemblyEvidence> singleFileIterator(boolean includeFiltered) {
+	protected CloseableIterator<SAMRecordAssemblyEvidence> singleFileIterator(boolean includeRemote, boolean includeFiltered) {
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		return samAssemblyRealignIterator(
-				includeFiltered,
-				fsc.getAssemblyRawBam(input),
-				fsc.getRealignmentBam(input),
-				"");
+		if (!isReadPairingComplete()) {
+			return samAssemblyRealignIterator(
+					includeRemote,
+					includeFiltered,
+					fsc.getAssemblyRawBam(input),
+					fsc.getRealignmentBam(input),
+					"");
+		} else {
+			return samReadPairIterator(
+					includeRemote,
+					includeFiltered,
+					fsc.getAssembly(input),
+					fsc.getAssemblyMate(input),
+					"");
+		}
 	}
-	private CloseableIterator<SAMRecordAssemblyEvidence> samAssemblyRealignIterator(boolean includeFiltered, File breakend, File realignment, String chr) {
+	private CloseableIterator<SAMRecordAssemblyEvidence> samReadPairIterator(
+			boolean includeRemote,
+			boolean includeFiltered,
+			File assembly,
+			File mate,
+			String chr) {
+		CloseableIterator<SAMRecord> it = processContext.getSamReaderIterator(assembly);
+		CloseableIterator<SAMRecord> mateIt = processContext.getSamReaderIterator(mate);
+		return new SAMRecordAssemblyEvidenceReadPairIterator(processContext, this, it, mateIt, includeRemote, includeFiltered);
+	}
+	private CloseableIterator<SAMRecordAssemblyEvidence> samAssemblyRealignIterator(
+			boolean includeRemote,
+			boolean includeFiltered,
+			File breakend,
+			File realignment,
+			String chr) {
 		if (!isProcessingComplete()) {
 			log.error("Assemblies not yet generated.");
-			throw new RuntimeException("Assemblies not yet generated");
+			throw new IllegalStateException("Assemblies not yet generated");
 		}
-		CloseableIterator<SAMRecordAssemblyEvidence> local = localSamIterator(breakend, realignment);
-		CloseableIterator<SAMRecordAssemblyEvidence> it = local;
-		return new AsyncBufferedIterator<SAMRecordAssemblyEvidence>(it, "Assembly " + chr);
-	}
-	private CloseableIterator<SAMRecordAssemblyEvidence> localSamIterator(File breakend, File realignment) {
+		if (includeRemote) {
+			log.error("Realignment sorting not complete.");
+			throw new IllegalStateException("Remote assembly iteration requires realignment complete");
+		}
 		List<Closeable> toClose = new ArrayList<>();
 		CloseableIterator<SAMRecord> realignedIt; 
 		if (isRealignmentComplete()) {
@@ -124,7 +164,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				processContext, this,
 				new AutoClosingIterator<SAMRecord>(rawReaderIt, ImmutableList.<Closeable>of(realignedIt)),
 				realignedIt,
-				false);
+				includeFiltered);
 		toClose.add(evidenceIt);
 		// Change sort order to breakend position order
 		CloseableIterator<SAMRecordAssemblyEvidence> sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(new DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence>(
@@ -149,6 +189,18 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			if (!done) return false;
 		}
 		return done;
+	}
+	private boolean isReadPairingComplete() {
+		if (processContext.shouldProcessPerChromosome()) {
+			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
+				if (!IntermediateFileUtil.checkIntermediate(fsc.getAssemblyForChr(input, seq.getSequenceName()))) return false;
+				if (!IntermediateFileUtil.checkIntermediate(fsc.getAssemblyMateForChr(input, seq.getSequenceName()))) return false;
+			}
+		} else {
+			if (!IntermediateFileUtil.checkIntermediate(fsc.getAssembly(input))) return false;
+			if (!IntermediateFileUtil.checkIntermediate(fsc.getAssemblyMate(input))) return false;
+		}
+		return true;
 	}
 	protected void process(ExecutorService threadpool) {
 		if (isProcessingComplete()) return;
@@ -294,7 +346,9 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				processAssembly(assembler.endOfEvidence());
 				flushWriterQueueBefore(Long.MAX_VALUE);
 				fastqWriter.close();
+				fastqWriter = null;
 				writer.close();
+				writer = null;
 				FileHelper.move(FileSystemContext.getWorkingFileFor(breakendOutput), breakendOutput, true);
 				FileHelper.move(FileSystemContext.getWorkingFileFor(realignmentFastq), realignmentFastq, true);
 			} catch (IOException e) {
@@ -309,22 +363,23 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	    	if (evidenceList != null) {
 		    	for (AssemblyEvidence a : evidenceList) {
 		    		if (a != null) {
-			    		maxAssembledPosition = Math.max(maxAssembledPosition, processContext.getLinear().getStartLinearCoordinate(a.getBreakendSummary()));
-			    		resortBuffer.add((SAMRecordAssemblyEvidence)a);
+		    			SAMRecordAssemblyEvidence e = (SAMRecordAssemblyEvidence)a;
+			    		maxAssembledPosition = Math.max(maxAssembledPosition, processContext.getLinear().getStartLinearCoordinate(e.getSAMRecord()));
+			    		resortBuffer.add(e);
 		    		}
 		    	}
 	    	}
 	    	flushWriterQueueBefore(maxAssembledPosition - (long)((processContext.getAssemblyParameters().maxSubgraphFragmentWidth * 2) * getMaxConcordantFragmentSize()));
 	    }
 		private void flushWriterQueueBefore(long flushBefore) {
-			while (!resortBuffer.isEmpty() && processContext.getLinear().getStartLinearCoordinate(resortBuffer.peek().getBreakendSummary()) < flushBefore) {
-				long pos = processContext.getLinear().getStartLinearCoordinate(resortBuffer.peek().getBreakendSummary());
+			while (!resortBuffer.isEmpty() && processContext.getLinear().getStartLinearCoordinate(resortBuffer.peek().getSAMRecord()) < flushBefore) {
+				long pos = processContext.getLinear().getStartLinearCoordinate(resortBuffer.peek().getSAMRecord());
 				AssemblyEvidence evidence = resortBuffer.poll();
 				if (pos < lastFlushedPosition) {
 					log.error(String.format("Sanity check failure: assembly breakend %s written out of order.", evidence.getEvidenceID()));
 				}
 				lastFlushedPosition = pos;
-				if (Defaults.WRITE_FILTERED_CALLS || !evidence.isAssemblyFiltered()) {
+				if (processContext.getAssemblyParameters().writeFilteredAssemblies || !evidence.isAssemblyFiltered()) {
 					writer.addAlignment(((SAMRecordAssemblyEvidence)evidence).getSAMRecord());
 					//writer.add(evidence);
 					if (processContext.getRealignmentParameters().shouldRealignBreakend(evidence)) {
@@ -334,7 +389,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			}
 		}
 	}
-	private ReadEvidenceAssembler getAssembler() {
+	protected ReadEvidenceAssembler getAssembler() {
     	switch (processContext.getAssemblyParameters().method) {
 	    	case DEBRUIJN_PER_POSITION:
 	    		return new DeBruijnAnchoredAssembler(processContext, this);

@@ -72,6 +72,10 @@ public class AssemblyParameters {
 	 * Output internal assembly state information for debugging purposes
 	 */
 	public boolean trackAlgorithmProgress = Defaults.VISUALISE_ASSEMBLY_PROGRESS;
+	/**
+	 * Determines whether filtered assemblies are written to intermediate files
+	 */
+	public boolean writeFilteredAssemblies = Defaults.WRITE_FILTERED_ASSEMBLIES;
 	public boolean applyFilters(AssemblyEvidence evidence) {
 		boolean filtered = false;
 		if (evidence.getBreakendSequence().length == 0) {

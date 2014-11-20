@@ -68,7 +68,7 @@ public class SAMFileUtil {
 		private final SAMRecordComparator sortComparator;
 		private final SortOrder sortOrder;
 		public SortCallable(ProcessingContext processContext, File unsorted, File output, SortOrder sortOrder) {
-			this(processContext, unsorted, output, sortOrder == SortOrder.coordinate ? new SAMRecordCoordinateComparator() : new SAMRecordQueryNameComparator(), SortOrder.unsorted);
+			this(processContext, unsorted, output, sortOrder == SortOrder.coordinate ? new SAMRecordCoordinateComparator() : new SAMRecordQueryNameComparator(), sortOrder);
 			switch (sortOrder) {
 			case coordinate:
 			case queryname:

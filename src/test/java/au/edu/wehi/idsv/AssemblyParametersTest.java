@@ -61,4 +61,45 @@ public class AssemblyParametersTest extends TestHelper {
 		getContext().getAssemblyParameters().applyFilters(e);
 		assertFalse(e.isAssemblyFiltered());
 	}
+	@Test
+	public void should_filter_if_no_breakpoint_assembly() {
+		AssemblyEvidence e = AssemblyFactory.createAnchored(
+				getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(
+						NRRP(OEA(0, 1, "3M", false)),
+						NRRP(OEA(0, 1, "4M", false))),
+				0, 1, 2, B("AA"), B("AA"), 2, 0);
+		assertTrue(getContext().getAssemblyParameters().applyFilters(e));
+		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_REF));
+	}
+	@Test
+	public void should_filter_too_few_reads_default_min_reads_3() {
+		AssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), BWD, null, 0, 1, 5, B("AACGTG"), B("AACGTG"), 2, 0);
+		assertTrue(getContext().getAssemblyParameters().applyFilters(e));
+		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_FEW_READ));
+		
+		e = AssemblyFactory.createAnchored(
+				getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(
+						SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5 }, withSequence("AACGTG", Read(0, 1, "1M5S"))))),
+				0, 1, 5, B("AACGTG"), B("AACGTG"), 2, 0);
+		assertTrue(getContext().getAssemblyParameters().applyFilters(e));
+		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_FEW_READ));
+		
+		e = AssemblyFactory.createAnchored(
+				getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(
+						SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5 }, withSequence("AACGTG", Read(0, 1, "1M5S")))),
+						NRRP(OEA(0, 1, "3M", false)),
+						NRRP(OEA(0, 1, "4M", false))),
+				0, 1, 5, B("AACGTG"), B("AACGTG"), 2, 0);
+		assertTrue(getContext().getAssemblyParameters().applyFilters(e));
+		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_FEW_READ));
+		
+		e = AssemblyFactory.createAnchored(
+				getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(
+						SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5 }, withSequence("AACGTG", Read(0, 1, "1M5S")))),
+						NRRP(OEA(0, 1, "3M", false)),
+						NRRP(OEA(0, 1, "5M", false)),
+						NRRP(OEA(0, 1, "4M", false))),
+				0, 1, 5, B("AACGTG"), B("AACGTG"), 2, 0);
+		assertFalse(e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_FEW_READ));
+	}
 }

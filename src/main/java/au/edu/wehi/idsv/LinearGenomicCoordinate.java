@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 
@@ -59,6 +60,9 @@ public class LinearGenomicCoordinate {
 	}
 	public long getStartLinearCoordinate(BreakendSummary bp) {
 		return getLinearCoordinate(bp.referenceIndex, bp.start);
+	}
+	public long getStartLinearCoordinate(SAMRecord r) {
+		return getLinearCoordinate(r.getReferenceIndex(), r.getAlignmentStart());
 	}
 	public int getReferenceIndex(long linearCoordinate) {
 		return referenceIndices.floorEntry(linearCoordinate - 1).getValue();

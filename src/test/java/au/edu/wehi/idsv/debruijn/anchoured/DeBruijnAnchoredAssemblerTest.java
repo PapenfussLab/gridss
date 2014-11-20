@@ -51,24 +51,6 @@ public class DeBruijnAnchoredAssemblerTest extends TestHelper {
 		assertEquals(0, r.size());
 	}
 	@Test
-	public void should_filter_call_single_soft_clip() {
-		List<AssemblyEvidence> r = go(3,
-				SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5 }, withSequence("AACGTG", Read(0, 1, "1M5S"))))
-		); 
-		assertEquals(1, r.size());
-		assertTrue(r.get(0).isAssemblyFiltered());
-	}
-	@Test
-	public void should_filter_if_no_breakpoint_assembly() {
-		// polyA reads assemble as anchor kmer
-		List<AssemblyEvidence> r = go(3,
-				SoftClipEvidence.create(getContext(), SES(),BreakendDirection.Backward, Read(0, 1, "2S5M")),
-				SoftClipEvidence.create(getContext(), SES(),BreakendDirection.Backward, Read(0, 1, "3S5M"))
-		); 
-		assertEquals(1, r.size());
-		assertTrue(r.get(0).isAssemblyFiltered());
-	}
-	@Test
 	public void should_not_call_unanchored_evidence() {
 		// polyA reads assemble as anchor kmer
 		List<AssemblyEvidence> r = go(3,
@@ -105,13 +87,5 @@ public class DeBruijnAnchoredAssemblerTest extends TestHelper {
 		assertArrayEquals(new byte[] { /*6,1+7,*/2+8,3+9,4+10,11,12,12,12 }, r.get(0).getBreakendQuality());
 		// TODO: pad both ends so qual is balanced
 		// TODO: better base qual weighting
-	}
-	@Test
-	public void id_should_contain_assembler_name_position_direction() {
-		List<AssemblyEvidence> r = go(3,
-				SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5 }, withSequence("AACGTG", Read(0, 1, "1M5S")))),
-				SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5,5 }, withSequence("AACGTGA", Read(0, 1, "1M6S"))))
-		); 
-		assertTrue(r.get(0).getEvidenceID().startsWith("debruijnA-polyA:1-f"));
 	}
 }

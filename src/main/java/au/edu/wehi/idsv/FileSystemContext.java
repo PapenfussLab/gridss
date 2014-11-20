@@ -39,39 +39,40 @@ public class FileSystemContext {
 	public int getMaxBufferedRecordsPerFile() {
 		return maxRecordsInRam;
 	}
+	private static final String SAM_SUFFIX = ".sam";
 	private static final String COMMON_INITIAL_SUFFIX = ".idsv";
 	private static final String INTERMEDIATE_DIR_SUFFIX = COMMON_INITIAL_SUFFIX + ".working";
-	private static final String FORMAT_SC_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".sc.bam";
-	private static final String FORMAT_SC_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.sc.bam";
-	private static final String FORMAT_RP_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".rp.bam";
-	private static final String FORMAT_RP_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.rp.bam";
-	private static final String FORMAT_MATE_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".rpmate.bam";
-	private static final String FORMAT_MATE_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.rpmate.bam";
-	private static final String FORMAT_MATE_SAM_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".rpmate.unsorted.bam";
-	private static final String FORMAT_MATE_SAM_UNSORTED_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.rpmate.unsorted.bam";
+	private static final String FORMAT_SC_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".sc" + SAM_SUFFIX;
+	private static final String FORMAT_SC_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.sc" + SAM_SUFFIX;
+	private static final String FORMAT_RP_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".rp" + SAM_SUFFIX;
+	private static final String FORMAT_RP_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.rp" + SAM_SUFFIX;
+	private static final String FORMAT_MATE_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".rpmate" + SAM_SUFFIX;
+	private static final String FORMAT_MATE_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.rpmate" + SAM_SUFFIX;
+	private static final String FORMAT_MATE_SAM_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".rpmate.unsorted" + SAM_SUFFIX;
+	private static final String FORMAT_MATE_SAM_UNSORTED_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.rpmate.unsorted" + SAM_SUFFIX;
 	private static final String FORMAT_INSERT_SIZE_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.insertsize.txt";
 	private static final String FORMAT_IDSV_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.idsv.txt";
 	private static final String FORMAT_REALIGN_FASTQ = "%s" + COMMON_INITIAL_SUFFIX + ".realign.fq";
 	private static final String FORMAT_REALIGN_FASTQ_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign.fq";
-	private static final String FORMAT_REALIGN_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".realign.bam";
-	private static final String FORMAT_REALIGN_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign.bam";
-	private static final String FORMAT_ASSEMBLY_RAW = "%s" + COMMON_INITIAL_SUFFIX + ".breakend.bam";
-	private static final String FORMAT_ASSEMBLY_RAW_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.breakend.bam";
+	private static final String FORMAT_REALIGN_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".realign" + SAM_SUFFIX;
+	private static final String FORMAT_REALIGN_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign" + SAM_SUFFIX;
+	private static final String FORMAT_ASSEMBLY_RAW = "%s" + COMMON_INITIAL_SUFFIX + ".breakend" + SAM_SUFFIX;
+	private static final String FORMAT_ASSEMBLY_RAW_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.breakend" + SAM_SUFFIX;
 	private static final String FORMAT_BREAKPOINT_VCF_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s-%s.breakpoint.vcf";
 	private static final String FORMAT_BREAKPOINT_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".breakpoint.vcf";
 	private static final String FORMAT_FLAG_FILE = "%s" + COMMON_INITIAL_SUFFIX + ".%s";
-	private static final String FORMAT_SC_REMOTE_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".scremote.bam";
-	private static final String FORMAT_SC_REMOTE_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.scremote.bam";
-	private static final String FORMAT_SC_REMOTE_SAM_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".scremote.unsorted.bam";
-	private static final String FORMAT_SC_REMOTE_SAM_UNSORTED_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.scremote.unsorted.bam";;
-	private static final String FORMAT_REALIGN_REMOTE_SAM_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".realignremote.unsorted.bam";
-	private static final String FORMAT_REALIGN_REMOTE_SAM_PER_CHR_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realignremote.unsorted.bam";
-	private static final String FORMAT_REALIGN_REMOTE_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".realignremote.bam";
-	private static final String FORMAT_REALIGN_REMOTE_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realignremote.bam";
-	private static final String FORMAT_ASSEMBLY = "%s" + COMMON_INITIAL_SUFFIX + ".assembly.bam";
-	private static final String FORMAT_ASSEMBLY_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.assembly.bam";
-	private static final String FORMAT_ASSEMBLY_MATE = "%s" + COMMON_INITIAL_SUFFIX + ".assemblymate.bam";
-	private static final String FORMAT_ASSEMBLY_MATE_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.assemblymate.bam";
+	private static final String FORMAT_SC_REMOTE_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".scremote" + SAM_SUFFIX;
+	private static final String FORMAT_SC_REMOTE_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.scremote" + SAM_SUFFIX;
+	private static final String FORMAT_SC_REMOTE_SAM_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".scremote.unsorted" + SAM_SUFFIX;
+	private static final String FORMAT_SC_REMOTE_SAM_UNSORTED_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.scremote.unsorted" + SAM_SUFFIX;;
+	private static final String FORMAT_REALIGN_REMOTE_SAM_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".realignremote.unsorted" + SAM_SUFFIX;
+	private static final String FORMAT_REALIGN_REMOTE_SAM_PER_CHR_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realignremote.unsorted" + SAM_SUFFIX;
+	private static final String FORMAT_REALIGN_REMOTE_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".realignremote" + SAM_SUFFIX;
+	private static final String FORMAT_REALIGN_REMOTE_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realignremote" + SAM_SUFFIX;
+	private static final String FORMAT_ASSEMBLY = "%s" + COMMON_INITIAL_SUFFIX + ".assembly" + SAM_SUFFIX;
+	private static final String FORMAT_ASSEMBLY_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.assembly" + SAM_SUFFIX;
+	private static final String FORMAT_ASSEMBLY_MATE = "%s" + COMMON_INITIAL_SUFFIX + ".assemblymate" + SAM_SUFFIX;
+	private static final String FORMAT_ASSEMBLY_MATE_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.assemblymate" + SAM_SUFFIX;
 	
 	/**
 	 * Gets the idsv intermediate working directory for the given input

@@ -5,8 +5,11 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Iterator;
+import java.util.List;
 
 import org.junit.Test;
+
+import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.TestHelper;
 
@@ -36,6 +39,11 @@ public class ReadKmerIterableTest extends TestHelper {
 		k = i.next(); assertEquals((byte)'D' + 1, k.weight);
 		k = i.next(); assertEquals((byte)'A' + 1, k.weight);
 		assertFalse(i.hasNext());
+		
+		List<ReadKmer> list = Lists.newArrayList(new ReadKmerIterable(4, B("AAAAAAAAAAA"), new byte[] { 0,1,2,3,4,5,6,7,8,9,10 }).iterator());
+		for (int j = 0; j <= list.size()-(4-1); j++) {
+			assertEquals(j+1, list.get(j).weight);
+		}
 	}
 	@Test
 	public void iterator_should_track_ambiguous_bases() {

@@ -5,6 +5,7 @@ import htsjdk.samtools.util.Log;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -170,18 +171,34 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		public int tumourBaseCount;
 	}
 	protected ContigAssembly debruijnContigAssembly(List<Long> path, int referenceKmersAtStartOfPath) {
+		//return assembleMaintainable(path, referenceKmersAtStartOfPath);
 		return assembleSinglePass(path, referenceKmersAtStartOfPath);
 	}
 	@SuppressWarnings("unused")
 	private ContigAssembly assembleMaintainable(final List<Long> path, final int referenceKmersAtStartOfPath) {
-		final List<Long> breakendPath = path.subList(referenceKmersAtStartOfPath, path.size());
+		final List<Long> breakendPath = path.subList(Math.min(referenceKmersAtStartOfPath, path.size()), path.size());
 		return new ContigAssembly() {{
 			support = getSupportingEvidence(breakendPath);
 			baseCalls = getBaseCalls(path);
 			baseQuals = getBaseQuals(path);
-			normalBaseCount = getEvidenceBaseCount(breakendPath, false);
-			tumourBaseCount = getEvidenceBaseCount(breakendPath, true);
+			normalBaseCount = getEvidenceKmerCount(breakendPath, false);
+			tumourBaseCount = getEvidenceKmerCount(breakendPath, true);
+			if (breakendPath.size() > 0) {
+				// convert kmer counts into base counts
+				// this approximation assumes that read do not deviate then rejoin the assembly path and no misassemblies
+				normalBaseCount += (getK() - 1) * (getSupportCount(support, false) - getSupportCount(getKmer(path.get(0)).getSupportingEvidenceList(), false));
+				tumourBaseCount += (getK() - 1) * (getSupportCount(support, true) - getSupportCount(getKmer(path.get(0)).getSupportingEvidenceList(), true));
+			}
 		}};
+	}
+	private int getSupportCount(Iterable<DirectedEvidence> support, boolean countTumour) {
+		int count = 0;
+		for (DirectedEvidence e : support) {
+			if (((SAMEvidenceSource)e.getEvidenceSource()).isTumour() == countTumour) {
+				count++;
+			}
+		}
+		return count;
 	}
 	private ContigAssembly assembleSinglePass(List<Long> path, int referenceKmersAtStartOfPath) {
 		ContigAssembly ca = new ContigAssembly();
@@ -191,6 +208,8 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		ca.normalBaseCount = 0;
 		List<Integer> qual = new ArrayList<Integer>(path.size());
 		int offset = 0;
+		int nAnchorSupportCount = 0;
+		int tAnchorSupportCount = 0;
 		for (Long node : path) {
 			T kmer = getKmer(node);
 			List<DirectedEvidence> list = kmer.getSupportingEvidenceList();
@@ -226,6 +245,10 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 				} else {
 					// reached hard limit - we should log this
 				}
+				if (offset == referenceKmersAtStartOfPath) {
+					nAnchorSupportCount = ca.normalBaseCount;
+					tAnchorSupportCount = ca.tumourBaseCount;
+				}
 			}
 			offset++;
 		}
@@ -235,6 +258,18 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		if (direction == BreakendDirection.Backward) {
 			ArrayUtils.reverse(ca.baseQuals);
 		}
+		// adjust base counts for non-anchored reads
+		int nSupport = 0;
+		int tSupport = 0;
+		for (DirectedEvidence e : ca.support) {
+			if (((SAMEvidenceSource)e.getEvidenceSource()).isTumour()) {
+				tSupport++;
+			} else {
+				nSupport++;
+			}
+		}
+		ca.normalBaseCount += (getK() - 1) * (nSupport - nAnchorSupportCount);
+		ca.tumourBaseCount += (getK() - 1) * (tSupport - tAnchorSupportCount);
 		return ca;
 	}
 }

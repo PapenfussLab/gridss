@@ -22,9 +22,9 @@ public abstract class EvidenceProcessorBase {
 	protected final ProcessingContext processContext;
 	protected final File output;
 	protected final List<SAMEvidenceSource> samEvidence;
-	protected final AssemblyReadPairEvidenceSource assemblyEvidence;
+	protected final AssemblyEvidenceSource assemblyEvidence;
 	protected final List<Closeable> toClose = new ArrayList<>();
-	public EvidenceProcessorBase(ProcessingContext context, File output, List<SAMEvidenceSource> samEvidence, AssemblyReadPairEvidenceSource assemblyEvidence) {
+	public EvidenceProcessorBase(ProcessingContext context, File output, List<SAMEvidenceSource> samEvidence, AssemblyEvidenceSource assemblyEvidence) {
 		this.processContext = context;
 		this.output = output;
 		this.samEvidence = samEvidence;
@@ -72,7 +72,6 @@ public abstract class EvidenceProcessorBase {
 		}
 		if (includeReadPair || includeSoftClip || includeSoftClipRemote) {
 			for (SAMEvidenceSource source : samEvidence) {
-				List<CloseableIterator<DirectedEvidence>> it = new ArrayList<>();
 				for (int i : refList) {
 					String chr = processContext.getReference().getSequenceDictionary().getSequence(i).getSequenceName();
 					CloseableIterator<DirectedEvidence> samIt = source.iterator(includeReadPair, includeSoftClip, includeSoftClipRemote, chr);

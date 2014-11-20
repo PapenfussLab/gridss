@@ -11,6 +11,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfFilter;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
@@ -50,6 +51,25 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		return this;
 	}
 	public VariantContextDirectedEvidence make() {
+		orderEvidence();
+		setBreakpoint();
+		setImprecise();
+		aggregateAssemblyAttributes();
+		aggregateReadPairAttributes();
+		aggregateSoftClipAttributes();		
+		setLlr();
+		id(getID());
+		if (calledBreakend instanceof BreakpointSummary) {
+			BreakpointSummary bp = (BreakpointSummary)calledBreakend;
+			for (VcfFilter f : processContext.getVariantCallingParameters().breakpointFilters(bp)) {
+				filter(f.filter());
+			}
+		}
+		VariantContextDirectedEvidence variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(processContext, null, super.make());
+		variant = calcSpv(variant);
+		return variant;
+	}
+	private void orderEvidence() {
 		Collections.sort(assList, AssemblyByBestDesc);
 		for (int i = assList.size() - 1; i > 0; i--) {
 			// Only count unique assemblies
@@ -60,6 +80,9 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			}
 		}
 		Collections.sort(scList, SoftClipByBestDesc);
+	}
+	private void setBreakpoint() {
+		// TODO: allow breakends
 		AssemblyEvidence bestAssemblyBreakpoint = Iterables.getFirst(Iterables.filter(assList, new Predicate<AssemblyEvidence>() {
 			@Override
 			public boolean apply(AssemblyEvidence input) {
@@ -75,20 +98,18 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		if (bestbp != null) {
 			breakpoint(bestbp.getBreakendSummary(), bestbp.getUntemplatedSequence());
 		}
-		aggregateAssemblyAttributes();
-		aggregateReadPairAttributes();
-		aggregateSoftClipAttributes();		
-		setLlr();
-		id(getID());
-		if (calledBreakend instanceof BreakpointSummary) {
-			BreakpointSummary bp = (BreakpointSummary)calledBreakend;
-			for (VcfFilter f : processContext.getVariantCallingParameters().breakpointFilters(bp)) {
-				filter(f.filter());
+	}
+	private void setImprecise() {
+		boolean onlyUnanchoredAssemblies = assList.size() > 0;
+		for (AssemblyEvidence e : assList) {
+			if (e.getAssemblyAnchorLength() > 0) {
+				onlyUnanchoredAssemblies = false;
+				break;
 			}
 		}
-		VariantContextDirectedEvidence variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(processContext, null, super.make());
-		variant = calcSpv(variant);
-		return variant;
+		if (onlyUnanchoredAssemblies || assList.size() + scList.size() == 0) {
+			attribute(VcfSvConstants.IMPRECISE_KEY, true);
+		}
 	}
 	private VariantContextDirectedEvidence calcSpv(VariantContextDirectedEvidence variant) {
 		// TODO: somatic p-value should use evidence from both sides of the breakpoint

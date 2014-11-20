@@ -79,6 +79,6 @@ public class IdsvTest extends IntermediateFilesTest {
 		firstPass.instanceMain(args);
 		// Should have generated two breakpoints
 		List<SAMRecordAssemblyEvidence> ass = Lists.newArrayList(new AssemblyEvidenceSource(firstPass.getContext(), firstPass.createSamEvidenceSources(), firstPass.OUTPUT).iterator(false));
-		assertEquals(0, ass.size());
+		assertEquals(2, ass.size());
 	}
 }

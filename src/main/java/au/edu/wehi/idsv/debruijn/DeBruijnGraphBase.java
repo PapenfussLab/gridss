@@ -262,28 +262,25 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 		return reads;
 	}
 	/**
-	 * Number of read bases supporting the given path
+	 * Total kmer support for the given path
 	 * @param path kmer contig
 	 * @param countTumour count bases from evidence evidence if true, otherwise count bases from normal evidence
 	 * @return number of read bases include in at least one kmer on the given kmer contig
 	 */
-	public int getEvidenceBaseCount(List<Long> path, boolean countTumour) {
+	public int getEvidenceKmerCount(List<Long> path, boolean countTumour) {
 		int readBaseCount = 0;
-		Set<DirectedEvidence> support = new HashSet<>(2 * path.size());
 		for (Long node : path) {
 			for (DirectedEvidence evidence : this.kmers.get(node).getSupportingEvidenceList()) {
 				SAMEvidenceSource source = (SAMEvidenceSource)evidence.getEvidenceSource();
 				boolean evidenceIsTumour = source != null && source.isTumour();
 				if (evidenceIsTumour == countTumour) {
 					readBaseCount++;
-					support.add(evidence);
 				} else {
 					// ignore evidence we're not counting
 				}
 			}
 		}
-		// Add the additional support bases in: 
-		return readBaseCount + support.size() * (k - 1);
+		return readBaseCount;
 	}
 	/**
 	 * set of all kmers reachable from the given kmer

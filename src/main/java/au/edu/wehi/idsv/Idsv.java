@@ -112,11 +112,11 @@ public class Idsv extends CommandLineProgram {
 	    		future.get();
 	    	}
 	    	log.debug("Evidence extraction complete.");
-	    	AssemblyEvidenceSource rawAssemblyEvidence = new AssemblyEvidenceSource(getContext(), samEvidence, OUTPUT);
-	    	rawAssemblyEvidence.ensureAssembled(threadpool);
+	    	AssemblyEvidenceSource assemblyEvidence = new AssemblyEvidenceSource(getContext(), samEvidence, OUTPUT);
+	    	assemblyEvidence.ensureAssembled(threadpool);
 	    	
 	    	List<EvidenceSource> allEvidence = new ArrayList<>();
-	    	allEvidence.add(rawAssemblyEvidence);
+	    	allEvidence.add(assemblyEvidence);
 	    	allEvidence.addAll(samEvidence);
 	    	
 	    	String instructions = getRealignmentScript(allEvidence, WORKER_THREADS);
@@ -160,8 +160,6 @@ public class Idsv extends CommandLineProgram {
 	    		// throw exception from worker thread here
 	    		future.get();
 	    	}
-	    	AssemblyReadPairEvidenceSource processedAssembly = new AssemblyReadPairEvidenceSource(getContext(), samEvidence, OUTPUT);
-	    	processedAssembly.ensureAssembled();
 	    	
 	    	// check that all steps have been completed
 	    	for (SAMEvidenceSource sref : samEvidence) {
@@ -174,14 +172,14 @@ public class Idsv extends CommandLineProgram {
 	    			return -1;
 	    		}
 	    	}
-	    	if (!processedAssembly.isRealignmentComplete()) {
-	    		log.error("Unable to call variants: generation and realignment of assemblies not complete.");
+	    	if (!assemblyEvidence.isRealignmentComplete()) {
+	    		log.error("Unable to call variants: generation and breakend alignment of assemblies not complete.");
     			return -1;
 	    	}
 	    	
 	    	VariantCaller caller = null;
 	    	try {
-	    		caller = new VariantCaller(getContext(), OUTPUT, samEvidence, processedAssembly);
+	    		caller = new VariantCaller(getContext(), OUTPUT, samEvidence, assemblyEvidence);
 	    		caller.callBreakends(threadpool);
 	    		BreakendAnnotator annotator = null;
 	    		if (TRUTH_VCF != null) {

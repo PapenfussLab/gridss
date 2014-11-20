@@ -3,6 +3,7 @@ package au.edu.wehi.idsv;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
 
@@ -313,6 +314,33 @@ public class AssemblyFactoryTest extends TestHelper {
 			if (!StringUtils.isBlank(attr.samTag())) {
 				assertTrue(attr.samTag(), map.containsKey(attr));
 			}
+		}
+	}
+	@Test
+	public void id_should_contain_position_direction() {
+		Set<DirectedEvidence> evidence = Sets.<DirectedEvidence>newHashSet(
+				NRRP(DP(0, 123, "2M", true, 0, 345, "2M", false)));
+		AssemblyEvidence e = AssemblyFactory.createUnanchored(
+				getContext(), AES(), evidence,
+				B("AAAAA"), B("AAAAA"), 2, 0);
+		assertTrue(e.getEvidenceID().contains("polyA"));
+		assertTrue(e.getEvidenceID().contains(Integer.toString(e.getBreakendSummary().start)));
+		assertTrue(e.getEvidenceID().contains(Integer.toString(e.getBreakendSummary().end)));
+		assertTrue(e.getEvidenceID().contains("f"));
+	}
+	@Test
+	public void id_be_assembly_unique() {
+		AssemblyEvidence e1a = AssemblyFactory.createAnchored(getContext(), AES(), FWD, null, 0, 1, 1, B("AAAAA"), B("AAAAA"), 0, 0);
+		AssemblyEvidence e1b = AssemblyFactory.createAnchored(getContext(), AES(), FWD, null, 0, 1, 1, B("AAAAA"), B("AAAAA"), 0, 0);
+		assertEquals(e1a.getEvidenceID(), e1b.getEvidenceID());
+		for (AssemblyEvidence e : new AssemblyEvidence[] {
+				AssemblyFactory.createAnchored(getContext(), AES(), BWD, null, 0, 1, 1, B("AAAAA"), B("AAAAA"), 0, 0),
+				AssemblyFactory.createAnchored(getContext(), AES(), FWD, null, 1, 1, 1, B("AAAAA"), B("AAAAA"), 0, 0),
+				AssemblyFactory.createAnchored(getContext(), AES(), FWD, null, 0, 2, 1, B("AAAAA"), B("AAAAA"), 0, 0),
+				AssemblyFactory.createAnchored(getContext(), AES(), FWD, null, 0, 1, 3, B("AAAAA"), B("AAAAA"), 0, 0),
+				AssemblyFactory.createAnchored(getContext(), AES(), FWD, null, 0, 1, 1, B("AAAAT"), B("AAAAA"), 0, 0),
+		}) {
+			assertNotEquals(e1a.getEvidenceID(), e.getEvidenceID());
 		}
 	}
 }

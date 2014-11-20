@@ -39,7 +39,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		assertEquals(1, result.size());
 		AssemblyEvidence bp = result.get(0);
-		assertEquals("TAAAGTCT", (bp.getAssemblySequence()));
+		assertEquals("TAAAGTCT", S(bp.getAssemblySequence()));
 	}
 	@Test
 	public void should_assemble_sc_b() {
@@ -49,7 +49,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		assertEquals(1, result.size());
 		AssemblyEvidence bp = result.get(0);
-		assertEquals("TTATG", (bp.getAssemblySequence()));
+		assertEquals("TTATG", S(bp.getAssemblySequence()));
 	}
 	@Test
 	public void should_set_assembly_common_attributes() {
@@ -57,7 +57,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withQual(new byte[] { 4,4,4,4,4,4,4}, withSequence("AAAGTCT", Read(0, 10, "3M4S")))));
 		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		AssemblyEvidence bp = result.get(0);
-		assertEquals("AAAGTCT", (bp.getAssemblySequence()));
+		assertEquals("AAAGTCT", S(bp.getAssemblySequence()));
 		assertEquals(4, bp.getAssemblySoftClipLengthMax(null));
 	}
 	@Test
@@ -87,7 +87,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		assertEquals(1, result.size());
 		AssemblyEvidence bp = result.get(0);
-		assertEquals("AAAGTCTT", (bp.getAssemblySequence()));
+		assertEquals("AAAGTCTT", S(bp.getAssemblySequence()));
 		assertEquals(0, bp.getBreakendSummary().referenceIndex);
 		assertEquals(13, bp.getBreakendSummary().start);
 		assertEquals(13, bp.getBreakendSummary().end);
@@ -107,24 +107,34 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void base_quals_should_match_positive_strand() {
-		DeBruijnReadGraph g = G(0, 3, FWD);
-		g.addEvidence(SCE(BWD, withSequence(  "AAGTCT", Read(0, 10, "5S1M"))));
-		g.addEvidence(SCE(BWD, withSequence( "TAAGTCT", Read(0, 10, "6S1M"))));
-		g.addEvidence(SCE(BWD, withSequence("GTAAGTCT", Read(0, 10, "7S1M"))));
+		DeBruijnReadGraph g = G(0, 3, BWD);
+		g.addEvidence(SCE(BWD, withSequence(  "AAGTCTTT", new byte[]       { 1, 2, 3, 4, 5, 6, 7, 8}, Read(0, 10, "5S3M"))));
+		g.addEvidence(SCE(BWD, withSequence( "TAAGTCTTT", new byte[]    { 1, 2, 3, 4, 5, 6, 7, 8, 9}, Read(0, 10, "6S3M"))));
+		g.addEvidence(SCE(BWD, withSequence("GTAAGTCTTT", new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, Read(0, 10, "7S3M"))));
 		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
-		assertArrayEquals(new byte[] { 10, 20, 30, 30, 30, 30, 30, 30 }, result.get(0).getBreakendQuality());
-		assertEquals("GTAAGTCT", S(result.get(0).getAssemblySequence()));
+		assertEquals("GTAAGTC", S(result.get(0).getBreakendSequence()));
+		assertEquals("GTAAGTCTTT", S(result.get(0).getAssemblySequence()));
+		assertArrayEquals(new byte[] { 1, 1, 1, 3, 6, 9, 12, }, result.get(0).getBreakendQuality());
+		
+		g = G(0, 3, FWD);
+		g.addEvidence(SCE(FWD, withSequence("TTTCTGAA",  new byte[]      { 8, 7, 6, 5, 4, 3, 2, 1}, Read(0, 10, "3M5S"))));
+		g.addEvidence(SCE(FWD, withSequence("TTTCTGAAT", new byte[]    {9, 8, 7, 6, 5, 4, 3, 2, 1}, Read(0, 10, "3M6S"))));
+		g.addEvidence(SCE(FWD, withSequence("TTTCTGAATG",new byte[] {10,9, 8, 7, 6, 5, 4, 3, 2, 1}, Read(0, 10, "3M7S"))));
+		result = Lists.newArrayList(g.assembleContigsBefore(10000));
+		assertEquals("CTGAATG", S(result.get(0).getBreakendSequence()));
+		assertEquals("TTTCTGAATG", S(result.get(0).getAssemblySequence()));
+		assertArrayEquals(new byte[] { 12, 9, 6, 3, 1, 1, 1 }, result.get(0).getBreakendQuality());
 	}
 	@Test
 	public void assembly_count_should_match_expected() {
-		DeBruijnReadGraph g = G(0, 3, FWD);
-		g.addEvidence(SCE(BWD, withSequence(  "AAGTCT", Read(0, 10, "5S1M"))));
-		g.addEvidence(SCE(BWD, withSequence( "TAAGTCT", Read(0, 10, "6S1M"))));
-		g.addEvidence(SCE(BWD, withSequence("GTAAGTCT", Read(0, 10, "7S1M"))));
+		DeBruijnReadGraph g = G(0, 3, BWD);
+		g.addEvidence(SCE(BWD, withSequence(  "AAGTCTTT", Read(0, 10, "5S3M"))));
+		g.addEvidence(SCE(BWD, withSequence( "TAAGTCTTT", Read(0, 10, "6S3M"))));
+		g.addEvidence(SCE(BWD, withSequence("GTAAGTCTTT", Read(0, 10, "7S3M"))));
 		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		assertEquals(5 + 6 + 7, result.get(0).getAssemblyBaseCount(EvidenceSubset.ALL));
 		assertEquals(3, result.get(0).getAssemblySupportCountSoftClip(EvidenceSubset.ALL));
-		assertEquals(1, result.get(0).getAssemblyAnchorLength());
+		assertEquals(3, result.get(0).getAssemblyAnchorLength());
 	}
 	@Test
 	public void should_assemble_sc_and_nrrp_together() {
@@ -147,7 +157,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		//    AAAG 
 		//   AAAA
 		//  TAAA  
-		assertEquals("TAAAAGTCCTAGAC", (bp.getAssemblySequence()));
+		assertEquals("TAAAAGTCCTAGAC", S(bp.getAssemblySequence()));
 	}
 	@Test
 	public void should_assemble_nrrp() {
@@ -158,11 +168,10 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		assertEquals(1, result.size());
 		AssemblyEvidence bp = result.get(0);
-		assertEquals("GTCTAG", (bp.getAssemblySequence()));
+		assertEquals("GTCTAG", S(bp.getAssemblySequence()));
 		assertEquals(FWD, bp.getBreakendSummary().direction);
 		assertEquals(0, bp.getBreakendSummary().referenceIndex);
 		assertEquals(13, bp.getBreakendSummary().start);
-		assertEquals(313, bp.getBreakendSummary().end);
 	}
 	@Test
 	public void should_assemble_best_contig() {

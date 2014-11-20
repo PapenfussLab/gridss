@@ -37,7 +37,7 @@ import com.google.common.collect.Iterators;
  */
 public class VariantCaller extends EvidenceProcessorBase {
 	private static final Log log = Log.getInstance(VariantCaller.class);
-	public VariantCaller(ProcessingContext context, File output, List<SAMEvidenceSource> samEvidence, AssemblyReadPairEvidenceSource assemblyEvidence) {
+	public VariantCaller(ProcessingContext context, File output, List<SAMEvidenceSource> samEvidence, AssemblyEvidenceSource assemblyEvidence) {
 		super(context, output, samEvidence, assemblyEvidence);
 	}
 	@Override
@@ -49,7 +49,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 	private static class WriteMaximalCliquesForChromosome extends EvidenceProcessorBase implements Callable<Void> {
 		private int chri;
 		private int chrj;
-		public WriteMaximalCliquesForChromosome(ProcessingContext context, File output, List<SAMEvidenceSource> samEvidence, AssemblyReadPairEvidenceSource assemblyEvidence, int chri, int chrj) {
+		public WriteMaximalCliquesForChromosome(ProcessingContext context, File output, List<SAMEvidenceSource> samEvidence, AssemblyEvidenceSource assemblyEvidence, int chri, int chrj) {
 			super(context, output, samEvidence, assemblyEvidence);
 			this.chri = chri;
 			this.chrj = chrj;

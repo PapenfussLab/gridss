@@ -1,17 +1,19 @@
 package au.edu.wehi.idsv.debruijn.anchoured;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
 
 import org.junit.Test;
 
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.EvidenceSubset;
+import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredGraph;
+import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 
 public class DeBruijnReadGraphTest extends TestHelper {
 	private static SAMRecord R(String read) {
@@ -205,49 +207,50 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		assertEquals(S(result.getAssemblySequence()), result.getBreakendQuality());
 	}
 	@Test
-	public void read_count_should_be_number_of_reads__with_at_least_one_kmer_on_path() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, BreakendDirection.Forward);
-		addRead(ass, R(null, "ACGTT", new byte[] { 1,2,3,4,5 }, false, true), true);
-		addRead(ass, R(null, "ACGTA", new byte[] { 3,4,5,6,7 }, false, true), true);
-		addRead(ass, R(null, "AAAAA", new byte[] { 1,1,1,1,1 }, false, true), true);
-		addRead(ass, R(null, "ACGAA", new byte[] { 1,1,1,1,1 }, false, true), true);
-		AssemblyEvidence result = ass.assemble(0, 1);
+	public void read_base_count_should_be_number_of_breakend_read_bases() {
+		ProcessingContext pc = getContext();
+		MockSAMEvidenceSource normal = SES(false);
+		MockSAMEvidenceSource tumour = SES(true);
+		pc.getAssemblyParameters().k = 4;
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(pc, AES());
+		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TTTTA", Read(0, 10, "4M1S")))).iterator().hasNext());
+		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TTTTAA", Read(0, 10, "4M2S")))).iterator().hasNext());
+		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TTTTAAA", Read(0, 10, "4M3S")))).iterator().hasNext());
+		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TTTTAAAC", Read(0, 10, "4M4S")))).iterator().hasNext());
+		assertFalse(ass.addEvidence(SCE(FWD, tumour, withSequence("TTTTAAACG", Read(0, 10, "4M5S")))).iterator().hasNext());
+		assertFalse(ass.addEvidence(SCE(FWD, tumour, withSequence("TTTTAAACGG", Read(0, 10, "4M6S")))).iterator().hasNext());
+		assertFalse(ass.addEvidence(NRRP(withSequence("CGTTT", OEA(0, 5, "5M", true)))).iterator().hasNext());	
+		assertFalse(ass.addEvidence(NRRP(tumour, withSequence("CGTTTG", OEA(0, 5, "5M", true)))).iterator().hasNext());
+		AssemblyEvidence result = ass.endOfEvidence().iterator().next();
 		
-		assertEquals(3, result.getAssemblySupportCountSoftClip(EvidenceSubset.ALL));
-	}
-	// hack so we don't have to redo the test case as the test was created
-	// with 0 length soft clips
-	public SoftClipEvidence HackSCE(String seq, byte[] qual) {
-		SAMRecord read = withQual(qual, withSequence(seq, Read(0, 1, "4M1S")))[0];
-		SoftClipEvidence e = SoftClipEvidence.create(getContext(), SES(), FWD, read);
-		read.setCigarString("5M"); // now we remove the soft clip out from under the SCE since it assumes SAMRecords are immutable 
-		return e;
-	}
-	@Test
-	public void read_base_count_should_count_misassembled_bases_as_if_correctly_constructed() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, BreakendDirection.Forward);
-		ass.addEvidence(HackSCE("ACGTT", new byte[] { 1,2,3,4,5 })); // 4
-		ass.addEvidence(HackSCE("ACGTA", new byte[] { 3,4,5,6,7 })); // 5
-		ass.addEvidence(HackSCE("AAAAA", new byte[] { 1,1,1,1,1 })); // 0 since no kmer on path
-		ass.addEvidence(HackSCE("ACGAA", new byte[] { 1,1,1,1,1 })); // 3
-		addRead(ass, R(null, "TTGTA", new byte[] { 1,1,1,1,1 }, false, true), false); // 3
-		addRead(ass, R(null, "GTACG", new byte[] { 1,1,1,1,1 }, false, true), false); // 5 all bases included (even though they're miassembled)
-		AssemblyEvidence result = ass.assemble(0, 1);
-		
-		assertEquals("test assumes this contruction - did I get the test case wrong?", "TACGTA", S(result.getAssemblySequence()));
-		assertEquals(4 + 5 + 3 + 3 + 5, result.getAssemblyBaseCount(null));
+		assertEquals("test assumes this contruction - did I get the test case wrong?", "TTTTAAACGG", S(result.getAssemblySequence()));
+		assertEquals(5 + 6 + 5, result.getAssemblyBaseCount(EvidenceSubset.TUMOUR));
+		assertEquals(1 + 2 + 3 + 4 + 5, result.getAssemblyBaseCount(EvidenceSubset.NORMAL));
 	}
 	@Test
-	public void read_base_count_should_be_number_of_read_bases() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, BreakendDirection.Forward);
-		ass.addEvidence(HackSCE("ACGTT", new byte[] { 1,2,3,4,5 })); // 4
-		ass.addEvidence(HackSCE("ACGTA", new byte[] { 3,4,5,6,7 })); // 5
-		ass.addEvidence(HackSCE("AAAAA", new byte[] { 1,1,1,1,1 })); // 0 since no kmer on path
-		ass.addEvidence(HackSCE("ACGAA", new byte[] { 1,1,1,1,1 })); // 3 bases in the middle
-		addRead(ass, R(null, "TTGTA", new byte[] { 1,1,1,1,1 }, false, true), false); // 3
-		AssemblyEvidence result = ass.assemble(0, 1);
+	public void read_count_should_be_number_of_breakend_reads() {
+		ProcessingContext pc = getContext();
+		MockSAMEvidenceSource normal = SES(false);
+		MockSAMEvidenceSource tumour = SES(true);
+		pc.getAssemblyParameters().k = 4;
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(pc, AES());
+		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TTCTT", Read(0, 9, "4M1S")))).iterator().hasNext()); // only on ref path
+		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TCTTA", Read(0, 10, "4M1S")))).iterator().hasNext());
+		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TCTTAA", Read(0, 10, "4M2S")))).iterator().hasNext());
+		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TCTTAAA", Read(0, 10, "4M3S")))).iterator().hasNext());
+		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TCTTAAAC", Read(0, 10, "4M4S")))).iterator().hasNext());
+		assertFalse(ass.addEvidence(SCE(FWD, tumour, withSequence("TCTTAAACG", Read(0, 10, "4M5S")))).iterator().hasNext());
+		assertFalse(ass.addEvidence(SCE(FWD, tumour, withSequence("TCTTAAACGG", Read(0, 10, "4M6S")))).iterator().hasNext());
+		assertFalse(ass.addEvidence(NRRP(withSequence(SequenceUtil.reverseComplement("AAACG"), OEA(0, 5, "5M", true)))).iterator().hasNext());	
+		assertFalse(ass.addEvidence(NRRP(tumour, withSequence(SequenceUtil.reverseComplement("CAAACG"), OEA(0, 5, "5M", true)))).iterator().hasNext());
+		AssemblyEvidence result = ass.endOfEvidence().iterator().next();
 		
-		assertEquals("test assumes this contruction - did I get the test case wrong?", "ACGTA", S(result.getAssemblySequence()));
-		assertEquals(4 + 5 + 3 + 3, result.getAssemblyBaseCount(null));
+		assertEquals("test assumes this contruction - did I get the test case wrong?", "TTCTTAAACGG", S(result.getAssemblySequence()));
+		assertEquals(1, result.getAssemblySupportCountReadPair(EvidenceSubset.NORMAL));
+		assertEquals(1, result.getAssemblySupportCountReadPair(EvidenceSubset.TUMOUR));
+		assertEquals(2, result.getAssemblySupportCountReadPair(EvidenceSubset.ALL));
+		assertEquals(4, result.getAssemblySupportCountSoftClip(EvidenceSubset.NORMAL));
+		assertEquals(2, result.getAssemblySupportCountSoftClip(EvidenceSubset.TUMOUR));
+		assertEquals(6, result.getAssemblySupportCountSoftClip(EvidenceSubset.ALL));
 	}
 }

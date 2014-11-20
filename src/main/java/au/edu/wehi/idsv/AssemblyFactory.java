@@ -15,6 +15,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 public final class AssemblyFactory {
 	private AssemblyFactory() { } 
@@ -65,6 +66,9 @@ public final class AssemblyFactory {
 		return new SAMRecordAssemblyEvidence(processContext.getBasicSamHeader(), breakend, source, 0, baseCalls, baseQuals, calculateAssemblyIntAttributes(evidence, normalBaseCount, tumourBaseCount));
 	}
 	protected static Map<VcfAttributes, int[]> calculateAssemblyIntAttributes(Set<DirectedEvidence> evidence, int normalBaseCount, int tumourBaseCount) {
+		if (evidence == null) {
+			evidence = Sets.newHashSet();
+		}
 		List<NonReferenceReadPair> rp = Lists.newArrayList(Iterables.filter(evidence, NonReferenceReadPair.class));
 		List<SoftClipEvidence> sc = Lists.newArrayList(Iterables.filter(evidence, SoftClipEvidence.class));
 		List<NonReferenceReadPair> rpNormal = Lists.newArrayList(Iterables.filter(rp, new Predicate<NonReferenceReadPair>() { public boolean apply(NonReferenceReadPair e) { return !((SAMEvidenceSource)e.getEvidenceSource()).isTumour(); } }) );

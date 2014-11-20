@@ -215,7 +215,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
-	private CloseableIterator<DirectedEvidence> iterator(
+	protected CloseableIterator<DirectedEvidence> iterator(
 			final boolean includeReadPair,
 			final boolean includeSoftClip,
 			final boolean includeSoftClipRemote,

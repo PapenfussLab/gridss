@@ -220,8 +220,12 @@ public class TestHelper {
 
 	static public SAMRecord[] withSequence(String seq, SAMRecord... data) {
 		byte[] qual = B(seq);
-		for (int i = 0; i < qual.length; i++)
+		for (int i = 0; i < qual.length; i++) {
 			qual[i] = 30;
+		}
+		return withSequence(seq, qual, data);
+	}
+	static public SAMRecord[] withSequence(String seq, byte[] qual, SAMRecord... data) {
 		for (SAMRecord r : data) {
 			r.setReadBases(B(seq));
 			r.setBaseQualities(qual);

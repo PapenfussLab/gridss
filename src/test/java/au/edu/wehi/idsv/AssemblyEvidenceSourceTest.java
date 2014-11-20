@@ -21,7 +21,6 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		ses.completeSteps(EnumSet.allOf(ProcessStep.class));
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
 		aes.ensureAssembled();
-		getAssembly(aes);
 		getFastqRecords(aes);
 	}
 	
@@ -102,10 +101,10 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		ses.completeSteps(ProcessStep.ALL_STEPS);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
 		aes.ensureAssembled();
-		assertEquals(1, getAssembly(aes).size());
+		assertEquals(1, getAssemblyRaw(aes).size());
 	}
 	@Test
-	public void should_write_vcf() {
+	public void should_write_raw_bam() {
 		createInput(RP(0, 1, 2, 1));
 		ProcessingContext pc = getCommandlineContext();
 		pc.getAssemblyParameters().method = AssemblyMethod.DEBRUIJN_PER_POSITION;
@@ -113,7 +112,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		ses.completeSteps(EnumSet.allOf(ProcessStep.class));
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
 		aes.ensureAssembled();
-		assertEquals(0, getAssembly(aes).size());
+		assertEquals(0, getAssemblyRaw(aes).size());
 	}
 	@Test
 	public void should_make_calls_in_order() {
@@ -132,7 +131,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		ses.completeSteps(EnumSet.allOf(ProcessStep.class));
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
 		aes.ensureAssembled();
-		assertEquals(2, getAssembly(aes).size());
+		assertEquals(2, getAssemblyRaw(aes).size());
 		List<FastqRecord> out = getFastqRecords(aes);
 		assertEquals(2, out.size());
 		assertEquals(1, BreakpointFastqEncoding.getEncodedStartPosition(out.get(0).getReadHeader()));

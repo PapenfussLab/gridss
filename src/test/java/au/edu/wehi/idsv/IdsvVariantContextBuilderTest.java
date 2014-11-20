@@ -80,12 +80,6 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		assertEquals(10, dba.getEnd());
 	}
 	@Test
-	public void id_should_be_based_on_assembler_position_direction() {
-		VariantContextDirectedEvidence dba = CallSV(AE());
-		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
-		assertTrue(dba.getID().startsWith("testAssembler-polyA:1-f"));
-	}
-	@Test
 	public void phred_should_be_variant_qual() {
 		assertEquals(7.5, minimalBreakend().phredScore(7.5).make().getPhredScaledQual(), 0);
 	}

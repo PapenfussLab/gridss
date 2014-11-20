@@ -108,10 +108,11 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		if (breakend instanceof BreakpointSummary) throw new IllegalArgumentException("Breakpoints not supported by this constructor");
 		SAMRecord record = new SAMRecord(samFileHeader);
 		record.setReferenceIndex(breakend.referenceIndex);
-		record.setReadName(String.format("assembly_%s_%d_%d_%d",
+		record.setReadName(String.format("gridss_%s_%d_%d%s_%d",
 				source.processContext.getDictionary().getSequence(breakend.referenceIndex).getSequenceName(),
 				breakend.start, breakend.end,
-				Math.abs(Arrays.hashCode(baseCalls))));
+				breakend.direction == BreakendDirection.Forward ? "f" : "b",
+				Math.abs(Arrays.hashCode(baseCalls))) + anchoredBaseCount);
 		setIntListAttributes(record, intListAttributes);
 		if (anchoredBaseCount > 0) {
 			record.setReadBases(baseCalls);
@@ -332,6 +333,10 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	}
 	public SAMRecord getRemoteSAMRecord() {
 		return realignment;
+	}
+	@Override
+	public String toString() {
+		return getEvidenceID();
 	}
 	static final Ordering<SAMRecordAssemblyEvidence> BySAMCoordinate = new Ordering<SAMRecordAssemblyEvidence>() {
 		@Override

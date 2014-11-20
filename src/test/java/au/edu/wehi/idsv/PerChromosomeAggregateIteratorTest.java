@@ -68,10 +68,14 @@ public class PerChromosomeAggregateIteratorTest extends TestHelper {
 				return i;
 			}
 		});
-		assertFalse(createdIt.get(0).isClosed);
+		assertEquals(0, createdIt.size()); // No iterator exists yets
+		it.hasNext();
+		assertFalse(createdIt.get(0).isClosed); // first iterator created
 		it.next();
 		assertFalse(createdIt.get(0).isClosed);
 		it.next();
+		// exhausted but we don't know it yet
+		it.hasNext();
 		assertTrue(createdIt.get(0).isClosed);
 		it.close();
 	}

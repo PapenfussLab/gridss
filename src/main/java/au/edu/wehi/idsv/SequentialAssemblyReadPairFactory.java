@@ -29,8 +29,8 @@ public class SequentialAssemblyReadPairFactory extends SequentialSAMRecordFactor
 			assembly = record;
 			realign = mate;
 		} else {
-			assembly = record;
-			realign = mate;
+			assembly = mate;
+			realign = record;
 		}
 		SAMRecordAssemblyEvidence evidence = AssemblyFactory.incorporateRealignment(processContext, new SAMRecordAssemblyEvidence(source, assembly, realign), realign);
 		if (!recordIsAssembly) {
@@ -45,6 +45,8 @@ public class SequentialAssemblyReadPairFactory extends SequentialSAMRecordFactor
 	}
 	@Override
 	public SAMRecord findAssociatedSAMRecord(SAMRecord record) {
+		if (record == null) return null;
+		if (record.getReadUnmappedFlag()) return null;
 		return findMatching(record.getReferenceIndex(), record.getAlignmentStart(), record.getReadName() + (record.getFirstOfPairFlag() ? "/1" : "/2"));
 	}
 	@Override

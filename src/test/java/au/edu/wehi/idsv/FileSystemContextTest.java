@@ -89,8 +89,8 @@ public class FileSystemContextTest {
 	}
 	@Test
 	public void test_remote() {
-		testFileAssertMatch("test.bam.idsv.assemblyremote.bam", C().getAssembly(TEST_BAM));
-		testFileAssertMatch("test.bam.idsv.assemblyremote.unsorted.bam", C().getAssemblyMate(TEST_BAM));
+		testFileAssertMatch("test.bam.idsv.assembly.bam", C().getAssembly(TEST_BAM));
+		testFileAssertMatch("test.bam.idsv.assemblymate.bam", C().getAssemblyMate(TEST_BAM));
 		testFileAssertMatch("test.bam.idsv.scremote.bam", C().getSoftClipRemoteBam(TEST_BAM));
 		testFileAssertMatch("test.bam.idsv.scremote.unsorted.bam", C().getSoftClipRemoteUnsortedBam(TEST_BAM));
 		testFileAssertMatch("test.bam.idsv.realignremote.bam", C().getRealignmentRemoteBam(TEST_BAM));
@@ -98,8 +98,8 @@ public class FileSystemContextTest {
 	}
 	@Test
 	public void test_remote_per_chr() {
-		testFileAssertMatch("test.bam.idsv.chr.assemblyremote.bam", C().getAssemblyForChr(TEST_BAM, "chr"));
-		testFileAssertMatch("test.bam.idsv.chr.assemblyremote.unsorted.bam", C().getAssemblyMateForChr(TEST_BAM, "chr"));
+		testFileAssertMatch("test.bam.idsv.chr.assembly.bam", C().getAssemblyForChr(TEST_BAM, "chr"));
+		testFileAssertMatch("test.bam.idsv.chr.assemblymate.bam", C().getAssemblyMateForChr(TEST_BAM, "chr"));
 		testFileAssertMatch("test.bam.idsv.chr.scremote.bam", C().getSoftClipRemoteBamForChr(TEST_BAM, "chr"));
 		testFileAssertMatch("test.bam.idsv.chr.scremote.unsorted.bam", C().getSoftClipRemoteUnsortedBamForChr(TEST_BAM, "chr"));
 		testFileAssertMatch("test.bam.idsv.chr.realignremote.bam", C().getRealignmentRemoteBamForChr(TEST_BAM, "chr"));
