@@ -29,7 +29,7 @@ public class AutoClosingMergedIterator<T> implements Closeable, CloseableIterato
 		stillOpen = Lists.newArrayList(Iterables.transform(iterators, new Function<Iterator<? extends T>, AutoClosingIterator<T>>() {
 			@Override
 			public AutoClosingIterator<T> apply(Iterator<? extends T> input) {
-				return new AutoClosingIterator<>(input);
+				return new AutoClosingIterator<T>(input);
 			}
 		}));
 		merged = Iterators.mergeSorted(stillOpen, comparator);

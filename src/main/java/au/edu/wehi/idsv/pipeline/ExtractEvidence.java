@@ -17,7 +17,6 @@ import htsjdk.samtools.util.ProgressLogger;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -39,6 +38,7 @@ import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 
+import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 /**
  * Extracts reads supporting structural variation into intermediate files.
@@ -61,10 +61,10 @@ public class ExtractEvidence implements Closeable {
 	}
 	private SamReader reader = null;
 	private ReferenceSequenceFileWalker referenceWalker = null;
-	private final List<SAMFileWriter> scwriters = new ArrayList<>();
-	private final List<SAMFileWriter> rpwriters = new ArrayList<>();
-	private final List<SAMFileWriter> matewriters = new ArrayList<>();
-	private final List<FastqBreakpointWriter> realignmentWriters = new ArrayList<>();
+	private final List<SAMFileWriter> scwriters = Lists.newArrayList();
+	private final List<SAMFileWriter> rpwriters = Lists.newArrayList();
+	private final List<SAMFileWriter> matewriters = Lists.newArrayList();
+	private final List<FastqBreakpointWriter> realignmentWriters = Lists.newArrayList();
 	public void close() {
 		CloserUtil.close(reader);
 		reader = null;

@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv.debruijn.anchored;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -16,6 +15,8 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.ReadEvidenceAssembler;
 import au.edu.wehi.idsv.RealignedRemoteSoftClipEvidence;
 import au.edu.wehi.idsv.SoftClipEvidence;
+
+import com.google.common.collect.Lists;
 
 /**
  * Generates local breakpoint read de bruijn graph assemblies of SV-supporting reads
@@ -98,7 +99,7 @@ public class DeBruijnAnchoredAssembler implements ReadEvidenceAssembler {
 	 * @return add assemblies generated up to the given position
 	 */
 	private List<AssemblyEvidence> processUpToExcluding(int referenceIndex, int position) {
-		List<AssemblyEvidence> result = new ArrayList<>();
+		List<AssemblyEvidence> result = Lists.newArrayList();
 		// keep going till we flush both de bruijn graphs
 		// or we reach the stop position
 		while ((!activef.isEmpty() || !activeb.isEmpty()) &&

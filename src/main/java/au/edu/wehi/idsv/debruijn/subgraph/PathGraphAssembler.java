@@ -4,7 +4,6 @@ import htsjdk.samtools.util.Log;
 
 import java.io.File;
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -38,8 +37,8 @@ import com.google.common.primitives.Ints;
 public class PathGraphAssembler extends PathGraph {
 	private static final Log log = Log.getInstance(PathGraphAssembler.class);
 	private final AssemblyParameters parameters;
-	private final List<Set<SubgraphPathNode>> subgraphs = new ArrayList<>();
-	private final List<Set<SubgraphPathNode>> startingPaths = new ArrayList<>();
+	private final List<Set<SubgraphPathNode>> subgraphs = Lists.newArrayList();
+	private final List<Set<SubgraphPathNode>> startingPaths = Lists.newArrayList();
 	private int nodeTraversals = 0;
 	private static int timeoutGraphsWritten = 0;
 	public PathGraphAssembler(DeBruijnGraphBase<DeBruijnSubgraphNode> graph, AssemblyParameters parameters, long seed, SubgraphAssemblyAlgorithmTracker tracker) {
@@ -56,7 +55,7 @@ public class PathGraphAssembler extends PathGraph {
 	}
 	private List<LinkedList<Long>> assemblyNonReferenceContigs(DeBruijnPathGraphExporter<DeBruijnSubgraphNode, SubgraphPathNode> graphExporter) {
 		final Function<SubgraphPathNode, Integer> scoringFunction = SCORE_TOTAL_KMER;
-		List<List<SubgraphPathNode>> result = new ArrayList<>();
+		List<List<SubgraphPathNode>> result = Lists.newArrayList();
 		for (int i = 0; i < subgraphs.size(); i++) {
 			List<SubgraphPathNode> contig = assembleSubgraph(subgraphs.get(i), startingPaths.get(i), scoringFunction);
 			result.add(contig);

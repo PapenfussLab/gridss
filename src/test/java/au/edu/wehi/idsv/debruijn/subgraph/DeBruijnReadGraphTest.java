@@ -1,16 +1,18 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 import java.util.List;
 
 import org.junit.Test;
 
+import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.EvidenceSubset;
 import au.edu.wehi.idsv.TestHelper;
-import au.edu.wehi.idsv.AssemblyEvidence;
 
 import com.google.common.collect.Lists;
 

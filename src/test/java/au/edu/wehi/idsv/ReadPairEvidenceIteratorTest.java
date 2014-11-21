@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Before;
@@ -19,9 +18,9 @@ public class ReadPairEvidenceIteratorTest extends TestHelper {
 	private List<NonReferenceReadPair> out;
 	@Before
 	public void setup() {
-		sv = new ArrayList<>();
-		mate = new ArrayList<>();
-		out = new ArrayList<>();
+		sv = Lists.newArrayList();
+		mate = Lists.newArrayList();
+		out = Lists.newArrayList();
 	}
 	public void go() {
 		sv = sorted(sv);

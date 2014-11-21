@@ -6,11 +6,9 @@ import htsjdk.samtools.SAMRecord;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.io.filefilter.WildcardFileFilter;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
@@ -20,6 +18,7 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 
 public class SubgraphSizeTimeoutVisualisationTest extends IntermediateFilesTest {
@@ -41,7 +40,7 @@ public class SubgraphSizeTimeoutVisualisationTest extends IntermediateFilesTest 
 	public void should_export_on_path_timeout_gexf() throws IOException {
 		ProcessingContext pc = getCommandlineContext(false);
 		File output = new File(super.testFolder.getRoot(), "test_path_timeout_gexf.vcf");
-		List<SAMRecord> list = new ArrayList<>();
+		List<SAMRecord> list = Lists.newArrayList();
 		for (int i = 1; i < 1000; i++) {
 			SAMRecord r = new SAMRecord(pc.getBasicSamHeader());
 			r.setReferenceIndex(0);

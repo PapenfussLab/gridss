@@ -5,7 +5,6 @@ import htsjdk.samtools.util.Log;
 
 import java.io.Closeable;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -13,10 +12,11 @@ import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 public abstract class DataTransformStep implements Closeable {
 	protected abstract Log getLog();
-	protected final List<Object> toClose = new ArrayList<>();
+	protected final List<Object> toClose = Lists.newArrayList();
 	protected final ProcessingContext processContext;
 	public DataTransformStep(ProcessingContext processContext) {
 		this.processContext = processContext;

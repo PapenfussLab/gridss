@@ -3,7 +3,6 @@ package au.edu.wehi.idsv;
 import htsjdk.variant.vcf.VCFConstants;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -24,9 +23,9 @@ import com.google.common.collect.Ordering;
 public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private final ProcessingContext processContext;
 	private final VariantContextDirectedEvidence parent;
-	private final List<SoftClipEvidence> scList = new ArrayList<>();
-	private final List<NonReferenceReadPair> rpList = new ArrayList<>();
-	private final List<AssemblyEvidence> assList = new ArrayList<>();
+	private final List<SoftClipEvidence> scList = Lists.newArrayList();
+	private final List<NonReferenceReadPair> rpList = Lists.newArrayList();
+	private final List<AssemblyEvidence> assList = Lists.newArrayList();
 	private BreakendSummary calledBreakend;
 	public StructuralVariationCallBuilder(ProcessingContext processContext, VariantContextDirectedEvidence parent) {
 		super(processContext, parent);
@@ -211,7 +210,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		int[] sclen = new int[2];
 		int[] rpmaxlen = new int[2];
 		int[] scmaxlen = new int[2];
-		List<String> consensus = new ArrayList<>();
+		List<String> consensus = Lists.newArrayList();
 		for (AssemblyEvidence e : supportList) {
 			basecount[0] += e.getAssemblyBaseCount(EvidenceSubset.NORMAL);
 			basecount[1] += e.getAssemblyBaseCount(EvidenceSubset.TUMOUR);
@@ -311,7 +310,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	}
 	private static <T extends DirectedEvidence> List<Integer> sumOrMax(Iterable<T> it, Function<T, Integer> f, boolean max) {
 		boolean collapse = false;
-		List<Integer> list = new ArrayList<>();
+		List<Integer> list = Lists.newArrayList();
 		list.add(0);
 		list.add(0);
 		for (T t : it) {

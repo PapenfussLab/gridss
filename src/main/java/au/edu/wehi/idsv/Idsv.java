@@ -9,7 +9,6 @@ import htsjdk.variant.vcf.VCFFileReader;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -62,7 +61,7 @@ public class Idsv extends CommandLineProgram {
     }
     public List<SAMEvidenceSource> createSamEvidenceSources() throws IOException {
     	int i = 0;
-    	List<SAMEvidenceSource> samEvidence = new ArrayList<>();
+    	List<SAMEvidenceSource> samEvidence = Lists.newArrayList();
     	for (File f : INPUT) {
     		log.debug("Processing normal input ", f);
     		SAMEvidenceSource sref = constructSamEvidenceSource(f, i++, false);
@@ -115,7 +114,7 @@ public class Idsv extends CommandLineProgram {
 	    	AssemblyEvidenceSource assemblyEvidence = new AssemblyEvidenceSource(getContext(), samEvidence, OUTPUT);
 	    	assemblyEvidence.ensureAssembled(threadpool);
 	    	
-	    	List<EvidenceSource> allEvidence = new ArrayList<>();
+	    	List<EvidenceSource> allEvidence = Lists.newArrayList();
 	    	allEvidence.add(assemblyEvidence);
 	    	allEvidence.addAll(samEvidence);
 	    	
@@ -217,7 +216,7 @@ public class Idsv extends CommandLineProgram {
     }
 	private void hackOutputIndels() throws IOException {
 		log.info("DEBUGGING HACK: naive translation to INDEL calls");
-		List<IdsvVariantContext> out = new ArrayList<>();
+		List<IdsvVariantContext> out = Lists.newArrayList();
 		VCFFileReader reader = new VCFFileReader(OUTPUT, false);
 		for (VariantContext vc : reader) {
 			IdsvVariantContext context = IdsvVariantContext.create(getContext(), null, vc);

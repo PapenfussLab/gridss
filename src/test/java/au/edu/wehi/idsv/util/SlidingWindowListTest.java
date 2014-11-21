@@ -4,11 +4,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import com.google.common.collect.Lists;
 
 public class SlidingWindowListTest {
 
@@ -79,7 +80,7 @@ public class SlidingWindowListTest {
 		for (int initialWindowSize = 1; initialWindowSize < 8; initialWindowSize++) {
 			for (int newWindowSize = 1; newWindowSize < 8; newWindowSize++) {
 				for (int elementCount = 0; elementCount < 128; elementCount++) {
-					List<Integer> list = new ArrayList<>();
+					List<Integer> list = Lists.newArrayList();
 					for (int i = 0; i < elementCount; i++) {
 						list.add(i);
 					}

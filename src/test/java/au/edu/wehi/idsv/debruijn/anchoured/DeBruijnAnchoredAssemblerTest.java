@@ -2,23 +2,22 @@ package au.edu.wehi.idsv.debruijn.anchoured;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
 
+import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyMethod;
 import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.EvidenceSubset;
 import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
-import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredAssembler;
+
+import com.google.common.collect.Lists;
 
 
 public class DeBruijnAnchoredAssemblerTest extends TestHelper {
@@ -27,7 +26,7 @@ public class DeBruijnAnchoredAssemblerTest extends TestHelper {
 		AssemblyParameters p = pc.getAssemblyParameters();
 		p.k = k;
 		p.method = AssemblyMethod.DEBRUIJN_PER_POSITION;
-		List<AssemblyEvidence> list = new ArrayList<>();
+		List<AssemblyEvidence> list = Lists.newArrayList();
 		DeBruijnAnchoredAssembler assembler = new DeBruijnAnchoredAssembler(pc, AES());
 		for (DirectedEvidence e : evidence) {
 			Iterable<AssemblyEvidence> it = assembler.addEvidence(e);

@@ -10,7 +10,6 @@ import htsjdk.samtools.util.Log;
 
 import java.io.Closeable;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
@@ -226,7 +225,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			final File remoteSoftClip,
 			final File remoteRealigned,
 			final String chr) {
-		List<CloseableIterator<DirectedEvidence>> itList = new ArrayList<>();
+		List<CloseableIterator<DirectedEvidence>> itList = Lists.newArrayList();
 		if (!isComplete(ProcessStep.EXTRACT_SOFT_CLIPS) ||
 			!isComplete(ProcessStep.EXTRACT_READ_PAIRS)) {
 			throw new IllegalStateException("Cannot traverse evidence before evidence extraction");
@@ -245,7 +244,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			itList.add((CloseableIterator<DirectedEvidence>)(Object)finalrpIt);
 		}
 		if (includeSoftClip) {
-			final List<Closeable> scToClose = new ArrayList<>();
+			final List<Closeable> scToClose = Lists.newArrayList();
 			final CloseableIterator<SAMRecord> rawScIt = processContext.getSamReaderIterator(softClip);
 			scToClose.add(rawScIt);
 			CloseableIterator<SoftClipEvidence> scIt = new SoftClipEvidenceIterator(processContext, this,

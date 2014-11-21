@@ -7,7 +7,6 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -17,6 +16,7 @@ import org.junit.Test;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 
@@ -95,7 +95,7 @@ public class AssemblyFactoryTest extends TestHelper {
 		// TODO: what to do when our assembled reads are inconsistent?
 		AssemblyEvidence e = AssemblyFactory.createUnanchored(
 				getContext(), AES(), evidence, B("AAAAA"), B("AAAAA"), 0, 0);
-		assertEquals(Models.calculateBreakend(new ArrayList<>(evidence)), e.getBreakendSummary());
+		assertEquals(Models.calculateBreakend(Lists.newArrayList(evidence)), e.getBreakendSummary());
 	}
 	@Test
 	public void should_restrict_mate_anchor_interval_based_on_dp_interval() {

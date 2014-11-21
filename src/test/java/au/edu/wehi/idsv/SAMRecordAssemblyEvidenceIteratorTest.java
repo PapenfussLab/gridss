@@ -5,7 +5,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Before;
@@ -24,9 +23,9 @@ public class SAMRecordAssemblyEvidenceIteratorTest extends TestHelper {
 	private List<SAMRecordAssemblyEvidence> out;
 	@Before
 	public void setup() {
-		realigned = new ArrayList<>();
-		in = new ArrayList<>();
-		out = new ArrayList<>();
+		realigned = Lists.newArrayList();
+		in = Lists.newArrayList();
+		out = Lists.newArrayList();
 	}
 	public static ProcessingContext getContext() {
 		ProcessingContext pc = TestHelper.getContext();

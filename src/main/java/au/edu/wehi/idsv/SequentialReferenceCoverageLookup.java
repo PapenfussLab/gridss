@@ -7,7 +7,6 @@ import htsjdk.samtools.filter.DuplicateReadFilter;
 import htsjdk.samtools.filter.FilteringIterator;
 
 import java.io.Closeable;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
@@ -16,6 +15,7 @@ import au.edu.wehi.idsv.util.SlidingWindowList;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.Queues;
 
@@ -27,7 +27,7 @@ import com.google.common.collect.Queues;
  *
  */
 public class SequentialReferenceCoverageLookup implements Closeable, ReferenceCoverageLookup {
-	private final List<Closeable> toClose = new ArrayList<>();
+	private final List<Closeable> toClose = Lists.newArrayList();
 	private final PeekingIterator<SAMRecord> reads;
 	private final ReadPairConcordanceCalculator pairing;
 	private final PriorityQueue<Integer> currentReferenceRead = Queues.newPriorityQueue();

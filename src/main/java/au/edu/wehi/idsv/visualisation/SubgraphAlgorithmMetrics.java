@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv.visualisation;
 
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -10,6 +9,8 @@ import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.debruijn.subgraph.SubgraphPathNode;
+
+import com.google.common.collect.Lists;
 
 /**
  * Tracks algorithm metrics for each de Bruijn subgraph assembly 
@@ -29,7 +30,7 @@ public class SubgraphAlgorithmMetrics implements SubgraphAssemblyAlgorithmTracke
 	private long timeAssemblyNonReferenceContigsComplete;
 	private int contigsAssembled;
 	private int nodesTraversedDuringContigAssembly;
-	private List<BreakendSummary> assemblyBreakends = new ArrayList<>();
+	private List<BreakendSummary> assemblyBreakends = Lists.newArrayList();
 	private long timeShrinkComplete;
 	private int shrinkNodesCollapsed;
 	private long timeCollapseComplete;

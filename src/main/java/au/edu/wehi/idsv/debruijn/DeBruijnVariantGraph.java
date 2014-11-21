@@ -4,8 +4,6 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
 
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -19,6 +17,8 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.RealignedRemoteSoftClipEvidence;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SoftClipEvidence;
+
+import com.google.common.collect.Sets;
 
 public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends DeBruijnGraphBase<T> {
 	/**
@@ -203,7 +203,7 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 	private ContigAssembly assembleSinglePass(List<Long> path, int referenceKmersAtStartOfPath) {
 		ContigAssembly ca = new ContigAssembly();
 		ca.baseCalls = getBaseCalls(path);
-		ca.support = new HashSet<>();
+		ca.support = Sets.newHashSet();
 		ca.tumourBaseCount = 0;
 		ca.normalBaseCount = 0;
 		List<Integer> qual = new ArrayList<Integer>(path.size());

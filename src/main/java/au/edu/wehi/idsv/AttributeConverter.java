@@ -3,7 +3,6 @@ package au.edu.wehi.idsv;
 import htsjdk.variant.vcf.VCFConstants;
 
 import java.lang.reflect.Array;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -156,7 +155,7 @@ public class AttributeConverter {
 		} else if (obj instanceof String[]) {
 			return Arrays.asList((String[])obj);
 		} else if (obj instanceof Iterable<?>) {
-			List<String> list = new ArrayList<>();
+			List<String> list = Lists.newArrayList();
 			for (Object o : (Iterable<?>)obj) {
 				list.add(o.toString());
 			}

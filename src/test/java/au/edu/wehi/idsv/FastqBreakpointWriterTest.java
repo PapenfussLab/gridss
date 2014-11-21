@@ -5,15 +5,16 @@ import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.fastq.FastqWriter;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
 
+import com.google.common.collect.Lists;
+
 public class FastqBreakpointWriterTest extends TestHelper {
 	public class MockWriter implements FastqWriter {
 		public boolean closeCalled = false;
-		public List<FastqRecord> list = new ArrayList<>();
+		public List<FastqRecord> list = Lists.newArrayList();
 		@Override
 		public void write(FastqRecord rec) {
 			list.add(rec);

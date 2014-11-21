@@ -1,9 +1,10 @@
 package au.edu.wehi.idsv;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import au.edu.wehi.idsv.vcf.VcfFilter;
+
+import com.google.common.collect.Lists;
 
 public class VariantCallingParameters {
 	/**
@@ -19,7 +20,7 @@ public class VariantCallingParameters {
 	 */
 	public int minIndelSize = 100; // DREAM challenge SV min size is 100bp //16;
 	public List<VcfFilter> breakpointFilters(BreakpointSummary bp) {
-		List<VcfFilter> list = new ArrayList<>();
+		List<VcfFilter> list = Lists.newArrayList();
 		if (bp.referenceIndex == bp.referenceIndex2
 				&& bp.direction != bp.direction2
 				&& bp.end - bp.start == bp.end2 - bp.start2

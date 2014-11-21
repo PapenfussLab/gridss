@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv.graph;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
@@ -11,6 +10,7 @@ import java.util.SortedMap;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.Queues;
@@ -119,7 +119,7 @@ public class MaximalClique {
 			 */
 			public List<GraphNode> remove(GraphNode node) {
 				// call maximal cliques
-				List<GraphNode> cliques = new ArrayList<>();
+				List<GraphNode> cliques = Lists.newArrayList();
 				for (PeekingIterator<Entry<Long, YNode>> it = Iterators.peekingIterator(active.subMap(node.startY, node.endY + 1).entrySet().iterator()); it.hasNext();){
 					Entry<Long, YNode> entry = it.next();
 					long starty = entry.getKey();

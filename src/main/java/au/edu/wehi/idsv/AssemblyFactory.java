@@ -2,7 +2,6 @@ package au.edu.wehi.idsv;
 
 import htsjdk.samtools.SAMRecord;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +14,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 public final class AssemblyFactory {
@@ -62,7 +62,7 @@ public final class AssemblyFactory {
 			Set<DirectedEvidence> evidence,
 			byte[] baseCalls, byte[] baseQuals,
 			int normalBaseCount, int tumourBaseCount) {
-		BreakendSummary breakend = Models.calculateBreakend(new ArrayList<>(evidence));
+		BreakendSummary breakend = Models.calculateBreakend(Lists.newArrayList(evidence));
 		return new SAMRecordAssemblyEvidence(processContext.getBasicSamHeader(), breakend, source, 0, baseCalls, baseQuals, calculateAssemblyIntAttributes(evidence, normalBaseCount, tumourBaseCount));
 	}
 	protected static Map<VcfAttributes, int[]> calculateAssemblyIntAttributes(Set<DirectedEvidence> evidence, int normalBaseCount, int tumourBaseCount) {
@@ -76,7 +76,7 @@ public final class AssemblyFactory {
 		List<SoftClipEvidence> scNormal = Lists.newArrayList(Iterables.filter(sc, new Predicate<SoftClipEvidence>() { public boolean apply(SoftClipEvidence e) { return !((SAMEvidenceSource)e.getEvidenceSource()).isTumour(); } }) );
 		List<SoftClipEvidence> scTumour = Lists.newArrayList(Iterables.filter(sc, new Predicate<SoftClipEvidence>() { public boolean apply(SoftClipEvidence e) { return ((SAMEvidenceSource)e.getEvidenceSource()).isTumour(); } }) );
 		
-		HashMap<VcfAttributes, int[]> attributes = new HashMap<>();
+		HashMap<VcfAttributes, int[]> attributes = Maps.newHashMap();
 		attributes.put(VcfAttributes.ASSEMBLY_BASE_COUNT, new int[] { normalBaseCount, tumourBaseCount });		
 		attributes.put(VcfAttributes.ASSEMBLY_READPAIR_COUNT, new int[] { rpNormal.size(), rpTumour.size() } );
 		attributes.put(VcfAttributes.ASSEMBLY_SOFTCLIP_COUNT, new int[] { scNormal.size(), scTumour.size()} );

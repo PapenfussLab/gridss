@@ -11,7 +11,6 @@ import htsjdk.samtools.util.Log;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
@@ -28,6 +27,7 @@ import au.edu.wehi.idsv.util.FileHelper;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 
 /**
  * Creates read pairs for assembly and realignment
@@ -38,8 +38,8 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 	private static final Log log = Log.getInstance(CreateAssemblyReadPair.class);
 	private static final String UNSORTED_FILE_PREFIX = "unsorted.";
 	private final AssemblyEvidenceSource source;
-	private final List<SAMFileWriter> sortedWriters = new ArrayList<>();
-	private final List<SAMFileWriter> mateWriters = new ArrayList<>();
+	private final List<SAMFileWriter> sortedWriters = Lists.newArrayList();
+	private final List<SAMFileWriter> mateWriters = Lists.newArrayList();
 	private final SAMFileHeader header;
 	public CreateAssemblyReadPair(final ProcessingContext processContext, final AssemblyEvidenceSource source) {
 		super(processContext);
@@ -114,7 +114,7 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 	}
 	private void sort(ExecutorService threadpool) throws IOException {
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		List<SAMFileUtil.SortCallable> tasks = new ArrayList<>();
+		List<SAMFileUtil.SortCallable> tasks = Lists.newArrayList();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
 				tasks.add(new SAMFileUtil.SortCallable(processContext,
@@ -214,7 +214,7 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 	}
 	@Override
 	public List<File> getOutput() {
-		List<File> outputs = new ArrayList<>();
+		List<File> outputs = Lists.newArrayList();
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
@@ -229,7 +229,7 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 	}
 	@Override
 	public List<File> getTemporary() {
-		List<File> files = new ArrayList<>();
+		List<File> files = Lists.newArrayList();
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {

@@ -14,7 +14,6 @@ import htsjdk.variant.vcf.VCFFileReader;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -28,6 +27,7 @@ import au.edu.wehi.idsv.util.FileHelper;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 
 
 /**
@@ -101,7 +101,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 		log.info("Identifying Breakpoints");
 		try {
 			if (processContext.shouldProcessPerChromosome()) {
-				List<WriteMaximalCliquesForChromosome> workers = new ArrayList<>();
+				List<WriteMaximalCliquesForChromosome> workers = Lists.newArrayList();
 				final SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
 				for (int i = 0; i < dict.size(); i++) {					
 					for (int j = i; j < dict.size(); j++) {
@@ -160,9 +160,9 @@ public class VariantCaller extends EvidenceProcessorBase {
 			close();
 		}
 	}
-	private List<Closeable> toClose = new ArrayList<>();
+	private List<Closeable> toClose = Lists.newArrayList();
 	private CloseableIterator<IdsvVariantContext> getAllCalledVariants() {
-		List<Iterator<IdsvVariantContext>> variants = new ArrayList<>();
+		List<Iterator<IdsvVariantContext>> variants = Lists.newArrayList();
 		if (processContext.shouldProcessPerChromosome()) {
 			SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
 			for (int i = 0; i < dict.size(); i++) {
@@ -176,7 +176,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 			variants.add(getVariants(processContext.getFileSystemContext().getBreakpointVcf(output)));
 		}
 		CloseableIterator<IdsvVariantContext> merged = new AutoClosingMergedIterator<IdsvVariantContext>(variants, IdsvVariantContext.ByLocationStart);
-		return new AsyncBufferedIterator<>(merged, "all breakpoints");
+		return new AsyncBufferedIterator<IdsvVariantContext>(merged, "all breakpoints");
 	}
 	public void close() {
 		super.close();
@@ -230,8 +230,8 @@ public class VariantCaller extends EvidenceProcessorBase {
 	}
 	public void annotateBreakpoints(BreakendAnnotator annotator) {
 		log.info("Annotating Calls");
-		List<SAMEvidenceSource> normal = new ArrayList<>();
-		List<SAMEvidenceSource> tumour = new ArrayList<>();
+		List<SAMEvidenceSource> normal = Lists.newArrayList();
+		List<SAMEvidenceSource> tumour = Lists.newArrayList();
 		int maxFragmentSize = assemblyEvidence.getMaxConcordantFragmentSize();
 		for (EvidenceSource source : samEvidence) {
 			maxFragmentSize = Math.max(source.getMaxConcordantFragmentSize(), maxFragmentSize);
@@ -285,10 +285,10 @@ public class VariantCaller extends EvidenceProcessorBase {
 		}
 	}
 	public ReferenceCoverageLookup getReferenceLookup(List<SAMEvidenceSource> input, int windowSize) {
-		List<ReferenceCoverageLookup> lookup = new ArrayList<>();
+		List<ReferenceCoverageLookup> lookup = Lists.newArrayList();
 		for (SAMEvidenceSource s : input) {
 			// one read-ahead thread per input file
-			CloseableIterator<SAMRecord> it = new AsyncBufferedIterator<>(processContext.getSamReaderIterator(s.getSourceFile(), SortOrder.coordinate), s.getSourceFile().getName() + " reference coverage");
+			CloseableIterator<SAMRecord> it = new AsyncBufferedIterator<SAMRecord>(processContext.getSamReaderIterator(s.getSourceFile(), SortOrder.coordinate), s.getSourceFile().getName() + " reference coverage");
 			toClose.add(it);
 			lookup.add(new SequentialReferenceCoverageLookup(it, s.getReadPairConcordanceCalculator(), windowSize));
 		}

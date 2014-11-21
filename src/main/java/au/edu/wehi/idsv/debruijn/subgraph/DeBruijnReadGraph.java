@@ -3,9 +3,7 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 import htsjdk.samtools.util.Log;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -28,6 +26,7 @@ import au.edu.wehi.idsv.visualisation.SubgraphAlgorithmMetrics;
 import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTracker;
 import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTrackerBEDWriter;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode> {
@@ -37,7 +36,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	/**
 	 * Connected subgraphs
 	 */
-	private final Set<SubgraphSummary> subgraphs = new HashSet<>();
+	private final Set<SubgraphSummary> subgraphs = Sets.newHashSet();
 	private final int referenceIndex;
 	private final AssemblyParameters parameters;
 	private int graphsExported = 0;
@@ -172,7 +171,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	 * @return
 	 */
 	public Iterable<AssemblyEvidence> assembleContigsBefore(int position) {
-		List<AssemblyEvidence> contigs = new ArrayList<>();
+		List<AssemblyEvidence> contigs = Lists.newArrayList();
 		for (SubgraphSummary ss : subgraphs) {
 			boolean timeoutExceeded = exceedsTimeout(ss);
 			if (timeoutExceeded) {
@@ -255,7 +254,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	 * @param position
 	 */
 	public void removeBefore(int position) {
-		List<SubgraphSummary> toRemove = new ArrayList<>();
+		List<SubgraphSummary> toRemove = Lists.newArrayList();
 		for (SubgraphSummary ss : subgraphs) {
 			if (ss.getMaxAnchor() < position || exceedsTimeout(ss) || !ss.isAnchored()) {
 				for (long kmer : reachableFrom(ss.getAnyKmer())) {

@@ -1,17 +1,18 @@
 package au.edu.wehi.idsv.debruijn.anchoured;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
 
 import org.junit.Test;
 
+import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.EvidenceSubset;
 import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
-import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredGraph;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 

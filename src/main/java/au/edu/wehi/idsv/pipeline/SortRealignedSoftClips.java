@@ -8,7 +8,6 @@ import htsjdk.samtools.util.Log;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
@@ -25,12 +24,13 @@ import au.edu.wehi.idsv.sam.SAMFileUtil.SortCallable;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 
 public class SortRealignedSoftClips extends DataTransformStep {
 	private static final Log log = Log.getInstance(SortRealignedSoftClips.class);
 	private final SAMEvidenceSource source;
-	private final List<SAMFileWriter> scwriters = new ArrayList<>();
-	private final List<SAMFileWriter> realignmentWriters = new ArrayList<>();
+	private final List<SAMFileWriter> scwriters = Lists.newArrayList();
+	private final List<SAMFileWriter> realignmentWriters = Lists.newArrayList();
 	public SortRealignedSoftClips(ProcessingContext processContext, SAMEvidenceSource source) {
 		super(processContext);
 		this.source = source;
@@ -80,7 +80,7 @@ public class SortRealignedSoftClips extends DataTransformStep {
 	}
 	private void sort() throws IOException {
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		List<SortCallable> actions = new ArrayList<>();
+		List<SortCallable> actions = Lists.newArrayList();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
 				actions.add(new SAMFileUtil.SortCallable(processContext,
@@ -155,7 +155,7 @@ public class SortRealignedSoftClips extends DataTransformStep {
 	}
 	@Override
 	public List<File> getOutput() {
-		List<File> outputs = new ArrayList<>();
+		List<File> outputs = Lists.newArrayList();
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
@@ -170,7 +170,7 @@ public class SortRealignedSoftClips extends DataTransformStep {
 	}
 	@Override
 	public List<File> getTemporary() {
-		List<File> files = new ArrayList<>();
+		List<File> files = Lists.newArrayList();
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {

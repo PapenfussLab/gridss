@@ -360,7 +360,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	public String debugPrintPaths() {
 		Map<Long, Integer> contigLookup = Maps.newHashMap();
 		TLongSet remaining = new TLongHashSet(kmers.keySet());
-		List<LinkedList<Long>> paths = new ArrayList<>();
+		List<LinkedList<Long>> paths = Lists.newArrayList();
 		int contig = 0;
 		// enumerate the paths
 		while (!remaining.isEmpty()) {

@@ -22,7 +22,6 @@ import htsjdk.variant.vcf.VCFFileReader;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.After;
@@ -57,7 +56,7 @@ public class IntermediateFilesTest extends TestHelper {
 		reference = ref;
 	}
 	public ProcessingContext getCommandlineContext(boolean perChr) {
-		List<Header> headers = new ArrayList<>();
+		List<Header> headers = Lists.newArrayList();
 		headers.add(new StringHeader("TestHeader"));
 		ProcessingContext pc = new ProcessingContext(
 				new FileSystemContext(testFolder.getRoot(), 500000),
@@ -142,7 +141,7 @@ public class IntermediateFilesTest extends TestHelper {
 	public List<SAMRecord> getRecords(File file) {
 		assertTrue(file.exists());
 		SamReader reader = SamReaderFactory.make().open(file);
-		List<SAMRecord> list = new ArrayList<>();
+		List<SAMRecord> list = Lists.newArrayList();
 		for (SAMRecord r : reader) {
 			list.add(r);
 		}
@@ -159,7 +158,7 @@ public class IntermediateFilesTest extends TestHelper {
 		return getRecords(file);
 	}
 	public List<VariantContextDirectedEvidence> breaks(List<IdsvVariantContext> vcf) {
-		List<VariantContextDirectedEvidence> list = new ArrayList<>();
+		List<VariantContextDirectedEvidence> list = Lists.newArrayList();
 		for (IdsvVariantContext vc : vcf) {
 			if (vc instanceof VariantContextDirectedEvidence) {
 				list.add((VariantContextDirectedEvidence)vc);
@@ -168,7 +167,7 @@ public class IntermediateFilesTest extends TestHelper {
 		return list;
 	}
 	public List<VariantContextDirectedEvidence> breakpoints(final List<IdsvVariantContext> vcf) {
-		List<VariantContextDirectedEvidence> list = new ArrayList<>();
+		List<VariantContextDirectedEvidence> list = Lists.newArrayList();
 		for (IdsvVariantContext vc : vcf) {
 			if (vc instanceof VariantContextDirectedEvidence) {
 				VariantContextDirectedEvidence be = (VariantContextDirectedEvidence)vc;
@@ -182,7 +181,7 @@ public class IntermediateFilesTest extends TestHelper {
 	public List<IdsvVariantContext> getVcf(final File file, final EvidenceSource source) {
 		assertTrue(file.exists());
 		VCFFileReader reader = new VCFFileReader(file, false);
-		List<IdsvVariantContext> list = new ArrayList<>();
+		List<IdsvVariantContext> list = Lists.newArrayList();
 		for (VariantContext r : reader) {
 			list.add(IdsvVariantContext.create(getCommandlineContext(), source == null ? AES() : source, r));
 		}
@@ -190,7 +189,7 @@ public class IntermediateFilesTest extends TestHelper {
 		return list;
 	}
 	public List<FastqRecord> getFastqRecords(File file) {
-		List<FastqRecord> list = new ArrayList<>();
+		List<FastqRecord> list = Lists.newArrayList();
 		assertTrue(file.exists());
 		FastqReader reader = new FastqReader(file);
 		for (FastqRecord r : reader) {

@@ -1,13 +1,14 @@
 package au.edu.wehi.idsv.debruijn;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import au.edu.wehi.idsv.DirectedEvidence;
 
+import com.google.common.collect.Lists;
+
 public class DeBruijnNodeBase {
 	private int nodeWeight = 0;
-	private List<DirectedEvidence> supportList = new ArrayList<>();
+	private List<DirectedEvidence> supportList = Lists.newArrayList();
 	public DeBruijnNodeBase(VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) {
 		this(kmer.weight, evidence.getDirectedEvidence());
 	}

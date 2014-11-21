@@ -7,7 +7,6 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +20,7 @@ import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.UnsignedBytes;
@@ -319,7 +319,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	}
 	@Override
 	public List<VcfFilter> getFilters() {
-		List<VcfFilter> list = new ArrayList<>();
+		List<VcfFilter> list = Lists.newArrayList();
 		String filters = (String)record.getAttribute(SamTags.ASSEMLBY_FILTERS);
 		if (!StringUtils.isEmpty(filters)) {
 			for (String s : filters.split(",")) {

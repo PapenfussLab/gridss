@@ -6,7 +6,6 @@ import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.util.CloseableIterator;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -59,7 +58,7 @@ public class PerChromosomeAggregateIteratorTest extends TestHelper {
 	@Test
 	public void PerChromosomeAggregateIterator_should_close_as_soon_as_possible() {
 		SAMSequenceDictionary dict = getContext().getDictionary();
-		final List<TestCloseableIterator<String>> createdIt = new ArrayList<>();
+		final List<TestCloseableIterator<String>> createdIt = Lists.newArrayList();
 		PerChromosomeAggregateIterator<String> it = new PerChromosomeAggregateIterator<String>(dict, new Function<String, Iterator<String>>() {
 			@Override
 			public Iterator<String> apply(String input) {

@@ -10,9 +10,9 @@ import org.junit.Test;
 
 import au.edu.wehi.idsv.AssemblyMethod;
 import au.edu.wehi.idsv.AssemblyParameters;
-import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
+import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
 
 
 public class PathGraphAssemblerTest extends TestHelper {

@@ -14,7 +14,6 @@ import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -50,8 +49,8 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	@Before
 	public void setup() throws IOException {
 		super.setup();
-		evidence = new ArrayList<>();
-		realign = new ArrayList<>();
+		evidence = Lists.newArrayList();
+		realign = Lists.newArrayList();
 	}
 	List<SAMRecordAssemblyEvidence> evidence;
 	List<SAMRecord> realign;
@@ -116,7 +115,7 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	public class FixedAssemblyEvidenceSource extends AssemblyEvidenceSource {
 		public FixedAssemblyEvidenceSource(ProcessingContext processContext, List<SAMRecordAssemblyEvidence> assemblyResult, File file) {
 			super(processContext, ImmutableList.<SAMEvidenceSource>of(new CompletedSAMEvidenceSource()), file);
-			this.assemblies = new ArrayList<>();
+			this.assemblies = Lists.newArrayList();
 			if (processContext.shouldProcessPerChromosome()) {
 				// will fail when multithreaded
 				for (final SAMSequenceRecord chr : processContext.getDictionary().getSequences()) {
