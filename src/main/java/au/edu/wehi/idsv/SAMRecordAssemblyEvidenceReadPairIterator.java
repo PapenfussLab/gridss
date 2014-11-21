@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv;
 
+import java.util.Iterator;
+
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
@@ -10,16 +12,16 @@ import com.google.common.collect.Iterators;
 public class SAMRecordAssemblyEvidenceReadPairIterator extends AbstractIterator<SAMRecordAssemblyEvidence> implements CloseableIterator<SAMRecordAssemblyEvidence> {
 	private final ProcessingContext processContext;
 	private final AssemblyEvidenceSource source;
-	private final CloseableIterator<SAMRecord> it;
-	private final CloseableIterator<SAMRecord> rit;
+	private final Iterator<SAMRecord> it;
+	private final Iterator<SAMRecord> rit;
 	private final SequentialAssemblyReadPairFactory factory;
 	private final boolean includeRemote;
 	private final boolean includeFiltered;
 	public SAMRecordAssemblyEvidenceReadPairIterator(
 			ProcessingContext processContext,
 			AssemblyEvidenceSource source,
-			CloseableIterator<SAMRecord> it,
-			CloseableIterator<SAMRecord> mateIt,
+			Iterator<SAMRecord> it,
+			Iterator<SAMRecord> mateIt,
 			boolean includeRemote,
 			boolean includeFiltered) {
 		this.processContext = processContext;

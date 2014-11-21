@@ -28,7 +28,6 @@ public class AutoClosingIterator<T> implements Closeable, CloseableIterator<T> {
 	public AutoClosingIterator(Iterator<? extends T> it, Iterable<Closeable> alsoClose) {
 		this.underlying = it;
 		this.alsoClose = ImmutableList.copyOf(alsoClose);
-		if (!underlying.hasNext()) close();
 	}
 	@Override
 	public void close() {

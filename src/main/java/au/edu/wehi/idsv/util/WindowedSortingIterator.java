@@ -2,6 +2,7 @@ package au.edu.wehi.idsv.util;
 
 import htsjdk.samtools.util.Log;
 
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.PriorityQueue;
 
@@ -24,7 +25,7 @@ import com.google.common.primitives.Longs;
  *
  * @param <T>
  */
-public abstract class WindowedSortingIterator<T> extends AbstractIterator<T> {
+public class WindowedSortingIterator<T> extends AbstractIterator<T> {
 	private static final Log log = Log.getInstance(WindowedSortingIterator.class);
 	private final PriorityQueue<T> calls; 
 	private final long windowSize;
@@ -37,15 +38,18 @@ public abstract class WindowedSortingIterator<T> extends AbstractIterator<T> {
 	 * @param transform Coordinate transform for position of record.
 	 * @param windowSize Maximum coordinate-space length that records can deviate from a sorted sequence 
 	 */
-	public WindowedSortingIterator(Iterator<T> it, Function<T, Long> transform, long windowSize) {
+	public WindowedSortingIterator(final Iterator<T> it, final Function<T, Long> transform, final long windowSize) {
+		this(it, transform, windowSize, new Ordering<T>() {
+			public int compare(T arg0, T arg1) {
+				return Longs.compare(transform.apply(arg0), transform.apply(arg1));
+			  }
+		});
+	}
+	public WindowedSortingIterator(final Iterator<T> it, final Function<T, Long> transform, final long windowSize, final Comparator<T> sortOrder) {
 		this.windowSize = windowSize;
 		this.it = Iterators.peekingIterator(it);
 		this.toCoordinate = transform;
-		this.calls = new PriorityQueue<T>(32, new Ordering<T>() {
-			public int compare(T arg0, T arg1) {
-				return Longs.compare(toCoordinate.apply(arg0), toCoordinate.apply(arg1));
-			  }
-		});
+		this.calls = new PriorityQueue<T>(32, sortOrder);
 	}
 	@Override
 	protected T computeNext() {

@@ -110,7 +110,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	public VariantContextDirectedEvidence test_mated_breakend(BreakendDirection direction, boolean realignPositive, String bpString, String realignedCigar, String expectedAllele) {
 		VariantContextDirectedEvidence dba = CallSV(AssemblyFactory.createUnanchored(getContext(), AES(),
 				Sets.<DirectedEvidence>newHashSet(
-						NRRP(OEA(0, 100, "1M", direction == FWD))
+						NRRP(OEA(0, 1000, "1M", direction == FWD))
 						), B(bpString), B(bpString), 0, 0));
 				//AB().direction(direction).anchorLength(0).assemblyBases(B(bpString)).makeVariant();
 		

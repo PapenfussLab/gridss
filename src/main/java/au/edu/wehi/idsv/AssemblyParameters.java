@@ -80,6 +80,7 @@ public class AssemblyParameters {
 		boolean filtered = false;
 		if (evidence.getBreakendSequence().length == 0) {
 			evidence.filterAssembly(VcfFilter.ASSEMBLY_REF);
+			filtered = true;
 		}
 		if (evidence.getAssemblySupportCountReadPair(EvidenceSubset.ALL) + evidence.getAssemblySupportCountSoftClip(EvidenceSubset.ALL) < minReads) {
 			evidence.filterAssembly(VcfFilter.ASSEMBLY_TOO_FEW_READ);

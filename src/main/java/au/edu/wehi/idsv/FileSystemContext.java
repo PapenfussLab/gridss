@@ -40,6 +40,7 @@ public class FileSystemContext {
 		return maxRecordsInRam;
 	}
 	private static final String SAM_SUFFIX = ".sam";
+	private static final String VCF_SUFFIX = ".vcf";
 	private static final String COMMON_INITIAL_SUFFIX = ".idsv";
 	private static final String INTERMEDIATE_DIR_SUFFIX = COMMON_INITIAL_SUFFIX + ".working";
 	private static final String FORMAT_SC_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".sc" + SAM_SUFFIX;
@@ -58,8 +59,8 @@ public class FileSystemContext {
 	private static final String FORMAT_REALIGN_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign" + SAM_SUFFIX;
 	private static final String FORMAT_ASSEMBLY_RAW = "%s" + COMMON_INITIAL_SUFFIX + ".breakend" + SAM_SUFFIX;
 	private static final String FORMAT_ASSEMBLY_RAW_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.breakend" + SAM_SUFFIX;
-	private static final String FORMAT_BREAKPOINT_VCF_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s-%s.breakpoint.vcf";
-	private static final String FORMAT_BREAKPOINT_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".breakpoint.vcf";
+	private static final String FORMAT_BREAKPOINT_VCF_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s-%s.breakpoint" + VCF_SUFFIX;
+	private static final String FORMAT_BREAKPOINT_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".breakpoint" + VCF_SUFFIX;
 	private static final String FORMAT_FLAG_FILE = "%s" + COMMON_INITIAL_SUFFIX + ".%s";
 	private static final String FORMAT_SC_REMOTE_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".scremote" + SAM_SUFFIX;
 	private static final String FORMAT_SC_REMOTE_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.scremote" + SAM_SUFFIX;

@@ -72,33 +72,33 @@ public class AssemblyParametersTest extends TestHelper {
 		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_REF));
 	}
 	@Test
-	public void should_filter_too_few_reads_default_min_reads_3() {
-		AssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), BWD, null, 0, 1, 5, B("AACGTG"), B("AACGTG"), 2, 0);
-		assertTrue(getContext().getAssemblyParameters().applyFilters(e));
+	public void should_filter_too_few_reads() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().minReads = 3;
+		AssemblyEvidence e = AssemblyFactory.createAnchored(pc, AES(), BWD, null, 0, 1, 5, B("AACGTG"), B("AACGTG"), 2, 0);
+		assertTrue(pc.getAssemblyParameters().applyFilters(e));
 		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_FEW_READ));
 		
 		e = AssemblyFactory.createAnchored(
 				getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(
 						SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5 }, withSequence("AACGTG", Read(0, 1, "1M5S"))))),
 				0, 1, 5, B("AACGTG"), B("AACGTG"), 2, 0);
-		assertTrue(getContext().getAssemblyParameters().applyFilters(e));
+		assertTrue(pc.getAssemblyParameters().applyFilters(e));
 		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_FEW_READ));
 		
 		e = AssemblyFactory.createAnchored(
-				getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(
+				pc, AES(), BWD, Sets.<DirectedEvidence>newHashSet(
 						SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5 }, withSequence("AACGTG", Read(0, 1, "1M5S")))),
-						NRRP(OEA(0, 1, "3M", false)),
 						NRRP(OEA(0, 1, "4M", false))),
 				0, 1, 5, B("AACGTG"), B("AACGTG"), 2, 0);
-		assertTrue(getContext().getAssemblyParameters().applyFilters(e));
+		assertTrue(pc.getAssemblyParameters().applyFilters(e));
 		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_FEW_READ));
 		
 		e = AssemblyFactory.createAnchored(
-				getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(
+				pc, AES(), BWD, Sets.<DirectedEvidence>newHashSet(
 						SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5 }, withSequence("AACGTG", Read(0, 1, "1M5S")))),
 						NRRP(OEA(0, 1, "3M", false)),
-						NRRP(OEA(0, 1, "5M", false)),
-						NRRP(OEA(0, 1, "4M", false))),
+						NRRP(OEA(0, 1, "5M", false))),
 				0, 1, 5, B("AACGTG"), B("AACGTG"), 2, 0);
 		assertFalse(e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_FEW_READ));
 	}

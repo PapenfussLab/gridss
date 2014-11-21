@@ -1,5 +1,8 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMReadGroupRecord;
@@ -156,10 +159,27 @@ public class TestHelper {
 		pair[1].setReadName(pair[0].getReadName());
 		return NonReferenceReadPair.create(pair[0], pair[1], source);
 	}
-
+	public SAMRecordAssemblyEvidence A(BreakpointSummary bs) {
+		// TODO handle more cases
+		assert(bs.start == bs.end);
+		assert(bs.start2 == bs.end2);
+		assert(bs.direction2 == BWD);
+		SAMRecordAssemblyEvidence abe = AssemblyFactory.createAnchored(getContext(), AES(), bs.direction, Sets.<DirectedEvidence>newHashSet(new MockDirectedEvidence(bs)), bs.referenceIndex, bs.start, 1, B("TT"), B("TT"), 0, 0);
+		SAMRecord r = new SAMRecord(getContext().getBasicSamHeader());
+		r.setReferenceIndex(bs.referenceIndex2);
+		r.setAlignmentStart(bs.start2);
+		r.setReadUnmappedFlag(false);
+		r.setCigar(new Cigar(ImmutableList.of(new CigarElement(2, CigarOperator.MATCH_OR_MISMATCH))));
+		r.setMappingQuality(30);
+		return AssemblyFactory.incorporateRealignment(getContext(), abe, r);
+	}
 	public static DirectedEvidence E(int referenceIndex, int start,
 			BreakendDirection direction) {
 		return new MockDirectedEvidence(referenceIndex, direction, start);
+	}
+	public static DirectedEvidence E(int referenceIndex, int start, int end,
+			BreakendDirection direction) {
+		return new MockDirectedEvidence(referenceIndex, direction, start, end);
 	}
 
 	public static SoftClipEvidence SCE(BreakendDirection direction,

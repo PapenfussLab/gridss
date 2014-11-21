@@ -203,7 +203,9 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 		}
 		// Remote realignments exist
 		for (RealignedSAMRecordAssemblyEvidence e : Lists.newArrayList(Iterators.filter(rp.iterator(true, true), RealignedSAMRecordAssemblyEvidence.class))) {
-			assertContains(Lists.newArrayList(rp.iterator(true, true, SMALL_FA.getSequenceDictionary().getSequences().get(e.getBreakendSummary().referenceIndex2).getSequenceName())), e.getBreakendSummary().remoteBreakpoint());
+			BreakendSummary remote = e.getBreakendSummary().remoteBreakpoint();
+			assertContains(Lists.newArrayList(rp.iterator(true, true)), remote);
+			assertContains(Lists.newArrayList(rp.iterator(true, true, SMALL_FA.getSequenceDictionary().getSequences().get(remote.referenceIndex).getSequenceName())), remote);
 			if (e instanceof RemoteEvidence) {
 				assertContains(Lists.newArrayList(aes.iterator(false, true)), e.getBreakendSummary().remoteBreakpoint());
 			}
@@ -275,8 +277,25 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 		go();
 	}
 	@Test
+	public void should_have_realign() {
+		orderedAdd(AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
+				0, 6, 1, B("TT"), B("TT"), 0, 0), 1, 2, false);
+		go();
+	}
+	@Test
 	public void read_pair_should_match_assembly_realign_iterator_simple() {
 		orderedAddNoRealign(AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(), 0, 1, 1, B("AA"), B("AA"), 0, 0));
 		go();
+	}
+	@Test
+	public void assembly_evidence_source_should_resort_to_evidence_order() {
+		orderedAddNoRealign(AssemblyFactory.createAnchored(getContext(), AES(), FWD, null, 0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), 0, 0)); // alignment starts at 5
+		orderedAddNoRealign(AssemblyFactory.createAnchored(getContext(), AES(), BWD, null, 0, 6, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), 0, 0)); // alignment starts at 6
+		go();
+	}
+	@Test
+	public void perChr_should_write_single_file_for_debugging_purposes() {
+		go();
+		assertTrue(getCommandlineContext(true).getFileSystemContext().getAssembly(new File(output + "-readpair-true")).exists());
 	}
 }

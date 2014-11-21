@@ -5,6 +5,8 @@ import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 
 import java.io.File;
@@ -16,13 +18,13 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
-import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
+import au.edu.wehi.idsv.util.FileHelper;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -66,6 +68,10 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 			writeUnsortedOutput();
 			closeUnsortedWriters();
 			sort(threadpool);
+			if (processContext.shouldProcessPerChromosome()) {
+				// write out single file for debugging purposes
+				assemblyPerChrToAssembly();
+			}
 			deleteTemp();
 			log.info("SUCCESS: assembly remote breakend sorting ");
 		} catch (Exception e) {
@@ -75,6 +81,35 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 			deleteTemp();
 			deleteOutput();
 			throw new RuntimeException(msg, e);
+		}
+	}
+	private void assemblyPerChrToAssembly() {
+		FileSystemContext fsc = processContext.getFileSystemContext();
+		File singleFile = fsc.getAssembly(source.getFileIntermediateDirectoryBasedOn());
+		SAMFileHeader header = processContext.getBasicSamHeader();
+		header.setSortOrder(SortOrder.coordinate);
+		SAMFileWriter writer = null;
+		log.debug("Writing assemblies to single file " + singleFile);
+		try {
+			writer = processContext.getSamFileWriterFactory(true).makeSAMOrBAMWriter(header, true, FileSystemContext.getWorkingFileFor(singleFile));
+			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
+				File perChr = fsc.getAssemblyForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName());
+				SamReader reader = null;
+				try {
+					reader = processContext.getSamReader(perChr);
+					for (SAMRecord r : reader) {
+						writer.addAlignment(r);
+					}
+				} finally {
+					CloserUtil.close(reader);
+				}
+			}
+			writer.close();
+			FileHelper.move(FileSystemContext.getWorkingFileFor(singleFile), singleFile, true);
+		} catch (IOException e) {
+			log.debug("Error writing " + singleFile, e);
+		} finally {
+			CloserUtil.close(writer);
 		}
 	}
 	private void sort(ExecutorService threadpool) throws IOException {
@@ -141,8 +176,8 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 			SAMRecord realign = e.getRemoteSAMRecord();
 			sortedWriters.get(assembly.getReferenceIndex() % sortedWriters.size()).addAlignment(assembly);
 			sortedWriters.get(realign.getReferenceIndex() % sortedWriters.size()).addAlignment(realign);
-			mateWriters.get(assembly.getReferenceIndex() % mateWriters.size()).addAlignment(assembly);
-			mateWriters.get(realign.getReferenceIndex() % mateWriters.size()).addAlignment(realign);
+			mateWriters.get(assembly.getMateReferenceIndex() % mateWriters.size()).addAlignment(assembly);
+			mateWriters.get(realign.getMateReferenceIndex() % mateWriters.size()).addAlignment(realign);
 		}
 	}
 	private void createUnsortedOutputWriters() {

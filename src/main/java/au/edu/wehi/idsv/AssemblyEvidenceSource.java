@@ -133,7 +133,12 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			String chr) {
 		CloseableIterator<SAMRecord> it = processContext.getSamReaderIterator(assembly);
 		CloseableIterator<SAMRecord> mateIt = processContext.getSamReaderIterator(mate);
-		return new SAMRecordAssemblyEvidenceReadPairIterator(processContext, this, it, mateIt, includeRemote, includeFiltered);
+		CloseableIterator<SAMRecordAssemblyEvidence> evidenceIt = new SAMRecordAssemblyEvidenceReadPairIterator(processContext, this, it, mateIt, includeRemote, includeFiltered);
+		CloseableIterator<SAMRecordAssemblyEvidence> sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(new DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence>(
+				processContext,
+				(int)((2 + processContext.getAssemblyParameters().maxSubgraphFragmentWidth + processContext.getAssemblyParameters().subgraphAssemblyMargin) * maxSourceFragSize),
+				evidenceIt), ImmutableList.<Closeable>of(it, mateIt));
+		return sortedIt;
 	}
 	private CloseableIterator<SAMRecordAssemblyEvidence> samAssemblyRealignIterator(
 			boolean includeRemote,
@@ -377,6 +382,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				AssemblyEvidence evidence = resortBuffer.poll();
 				if (pos < lastFlushedPosition) {
 					log.error(String.format("Sanity check failure: assembly breakend %s written out of order.", evidence.getEvidenceID()));
+					throw new IllegalStateException();
 				}
 				lastFlushedPosition = pos;
 				if (processContext.getAssemblyParameters().writeFilteredAssemblies || !evidence.isAssemblyFiltered()) {

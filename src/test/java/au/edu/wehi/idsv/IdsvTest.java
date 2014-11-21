@@ -31,7 +31,7 @@ public class IdsvTest extends IntermediateFilesTest {
 		Idsv firstPass = new Idsv();
 		firstPass.instanceMain(args);
 		// Should have generated two breakpoints
-		List<SAMRecordAssemblyEvidence> ass = Lists.newArrayList(new AssemblyEvidenceSource(firstPass.getContext(), firstPass.createSamEvidenceSources(), firstPass.OUTPUT).iterator(false)); 
+		List<SAMRecordAssemblyEvidence> ass = Lists.newArrayList(new AssemblyEvidenceSource(firstPass.getContext(), firstPass.createSamEvidenceSources(), firstPass.OUTPUT).iterator(false, false)); 
 		ass = Lists.newArrayList(Iterables.filter(ass, new Predicate<AssemblyEvidence>() {
 			@Override
 			public boolean apply(AssemblyEvidence arg0) {
@@ -49,7 +49,7 @@ public class IdsvTest extends IntermediateFilesTest {
 		
 		Idsv secondPass = new Idsv();
 		secondPass.instanceMain(args);
-		ass = Lists.newArrayList(new AssemblyReadPairEvidenceSource(secondPass.getContext(), secondPass.createSamEvidenceSources(), secondPass.OUTPUT).iterator(false, false));
+		ass = Lists.newArrayList(new AssemblyEvidenceSource(secondPass.getContext(), secondPass.createSamEvidenceSources(), secondPass.OUTPUT).iterator(false, false));
 		assertEquals(2, ass.size());
 		assertEquals(203476, ass.get(0).getBreakendSummary().start);
 		assertEquals(FWD, ass.get(0).getBreakendSummary().direction);
@@ -78,7 +78,7 @@ public class IdsvTest extends IntermediateFilesTest {
 		Idsv firstPass = new Idsv();
 		firstPass.instanceMain(args);
 		// Should have generated two breakpoints
-		List<SAMRecordAssemblyEvidence> ass = Lists.newArrayList(new AssemblyEvidenceSource(firstPass.getContext(), firstPass.createSamEvidenceSources(), firstPass.OUTPUT).iterator(false));
+		List<SAMRecordAssemblyEvidence> ass = Lists.newArrayList(new AssemblyEvidenceSource(firstPass.getContext(), firstPass.createSamEvidenceSources(), firstPass.OUTPUT).iterator(false, false));
 		assertEquals(2, ass.size());
 	}
 }

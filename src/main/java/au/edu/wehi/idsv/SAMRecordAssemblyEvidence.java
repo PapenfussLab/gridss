@@ -339,9 +339,10 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		return getEvidenceID();
 	}
 	static final Ordering<SAMRecordAssemblyEvidence> BySAMCoordinate = new Ordering<SAMRecordAssemblyEvidence>() {
+		private final SAMRecordCoordinateComparator cmp = new SAMRecordCoordinateComparator();
 		@Override
 		public int compare(SAMRecordAssemblyEvidence arg0, SAMRecordAssemblyEvidence arg1) {
-			return new SAMRecordCoordinateComparator().compare(arg0.getSAMRecord(), arg1.getSAMRecord());
+			return cmp.compare(arg0.getSAMRecord(), arg1.getSAMRecord());
 		}
 	};
 }
