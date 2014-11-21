@@ -39,7 +39,7 @@ public class FileSystemContext {
 	public int getMaxBufferedRecordsPerFile() {
 		return maxRecordsInRam;
 	}
-	private static final String SAM_SUFFIX = ".sam";
+	private static final String SAM_SUFFIX = ".bam";
 	private static final String VCF_SUFFIX = ".vcf";
 	private static final String COMMON_INITIAL_SUFFIX = ".idsv";
 	private static final String INTERMEDIATE_DIR_SUFFIX = COMMON_INITIAL_SUFFIX + ".working";
