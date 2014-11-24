@@ -24,6 +24,7 @@ public class SubgraphAssemblyAlgorithmTrackerBEDWriter implements Closeable {
 	public SubgraphAssemblyAlgorithmTrackerBEDWriter(int maxSubgraphSize, File bedFile) {
 		this.windowSize = 16 * maxSubgraphSize + 1024;
 		try {
+			bedFile.getParentFile().mkdirs();
 			fw = new FileWriter(bedFile.getAbsoluteFile());
 			bw = new BufferedWriter(fw);
 			//bw.append("##");
