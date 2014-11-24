@@ -137,4 +137,17 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		assertEquals(1, BreakpointFastqEncoding.getEncodedStartPosition(out.get(0).getReadHeader()));
 		assertEquals(10, BreakpointFastqEncoding.getEncodedStartPosition(out.get(1).getReadHeader()));
 	}
+	@Test
+	public void should_not_write_filtered_assemblies() {
+		createInput(
+				OEA(0, 1, "100M", true)
+				);
+		ProcessingContext pc = getCommandlineContext();
+		pc.getAssemblyParameters().writeFilteredAssemblies = false;
+		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, false);
+		ses.completeSteps(EnumSet.allOf(ProcessStep.class));
+		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
+		aes.ensureAssembled();
+		assertEquals(0, getAssemblyRaw(aes).size());
+	}
 }

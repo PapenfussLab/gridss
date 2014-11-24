@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
 
 import java.util.List;
+import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -15,6 +16,7 @@ import au.edu.wehi.idsv.vcf.VcfFilter;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 
 public class SAMRecordAssemblyEvidenceIteratorTest extends TestHelper {
@@ -32,8 +34,9 @@ public class SAMRecordAssemblyEvidenceIteratorTest extends TestHelper {
 		pc.getAssemblyParameters().minReads = 0;
 		return pc;
 	}
-	public void go(boolean includeFiltered) {
-		out = Lists.newArrayList(new SAMRecordAssemblyEvidenceIterator(getContext(), AES(),
+	public void go(boolean includeFiltered) { go(getContext(), includeFiltered); }
+	public void go(ProcessingContext pc, boolean includeFiltered) {
+		out = Lists.newArrayList(new SAMRecordAssemblyEvidenceIterator(pc, AES(),
 				Iterators.transform(in.iterator(), new Function<SAMRecordAssemblyEvidence, SAMRecord>() {
 					@Override
 					public SAMRecord apply(SAMRecordAssemblyEvidence input) {
@@ -107,10 +110,30 @@ public class SAMRecordAssemblyEvidenceIteratorTest extends TestHelper {
 		assertTrue(out.get(0).getBreakendSummary() instanceof BreakpointSummary);
 	}
 	@Test
-	public void should_ignore_filtered_variants() {
+	public void should_ignore_filtered_assembly_breakend() {
 		in.add(BE(1));
 		in.get(0).filterAssembly(VcfFilter.ASSEMBLY_REF);
 		go(false);
+		assertEquals(0, out.size());
+	}
+	@Test
+	public void should_filter_reference_breakpoint() {
+		ProcessingContext pc = getContext();
+		Set<DirectedEvidence> evidence = Sets.<DirectedEvidence>newHashSet();
+		evidence.add(SCE(FWD, Read(0, 5, "5M5S")));
+		evidence.add(SCE(FWD, Read(0, 5, "5M6S")));
+		evidence.add(SCE(FWD, Read(0, 5, "5M7S")));
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(pc, AES(), FWD, evidence,
+				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), 5, 6);		
+		SAMRecord r = Read(1, 11, "5M");
+		r.setReadName(BreakpointFastqEncoding.getRealignmentFastq(e).getReadHeader());
+		in.add(e);
+		go(pc, false);
+		assertEquals("precondition - breakend should not be filtered", 1, out.size());
+		setup(); // reset
+		in.add(e);
+		realigned.add(r);
+		go(pc, false);
 		assertEquals(0, out.size());
 	}
 }

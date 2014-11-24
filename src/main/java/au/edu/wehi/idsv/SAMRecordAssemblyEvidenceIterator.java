@@ -6,6 +6,8 @@ import htsjdk.samtools.util.CloserUtil;
 
 import java.util.Iterator;
 
+import au.edu.wehi.idsv.vcf.VcfFilter;
+
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
 
@@ -39,6 +41,11 @@ public class SAMRecordAssemblyEvidenceIterator extends AbstractIterator<SAMRecor
 				evidence = AssemblyFactory.incorporateRealignment(processContext, evidence, realigned);
 			}
 			processContext.getAssemblyParameters().applyFilters(evidence);
+			if (evidence.getBreakendSummary() instanceof BreakpointSummary) {
+				for (VcfFilter breakpointFilter : processContext.getVariantCallingParameters().breakpointFilters((BreakpointSummary)evidence.getBreakendSummary())) {
+					evidence.filterAssembly(breakpointFilter);
+				}
+			}
 			if (!evidence.isAssemblyFiltered() || includeFiltered) {
 				return evidence;
 			}
