@@ -22,7 +22,7 @@ public class SubgraphAssemblyAlgorithmTrackerBEDWriter implements Closeable {
 	private PriorityQueue<SubgraphAssemblyAlgorithmTracker> sortBuffer = new PriorityQueue<SubgraphAssemblyAlgorithmTracker>(32, SubgraphAssemblyAlgorithmTracker.ByGenomicPosition);
 	private int windowSize;
 	public SubgraphAssemblyAlgorithmTrackerBEDWriter(int maxSubgraphSize, File bedFile) {
-		this.windowSize = 2 * maxSubgraphSize + 2;
+		this.windowSize = 16 * maxSubgraphSize + 1024;
 		try {
 			fw = new FileWriter(bedFile.getAbsoluteFile());
 			bw = new BufferedWriter(fw);
