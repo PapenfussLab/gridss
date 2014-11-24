@@ -31,7 +31,6 @@ import com.google.common.collect.Sets;
 
 public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode> {
 	private static final Log log = Log.getInstance(DeBruijnReadGraph.class);
-	public static final String ASSEMBLER_NAME = "debruijn-s";
 	private SubgraphAssemblyAlgorithmTrackerBEDWriter trackingWriter;
 	/**
 	 * Connected subgraphs

@@ -7,6 +7,9 @@ import java.util.Set;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.debruijn.subgraph.SubgraphPathNode;
 
+import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Ordering;
+
 /**
  * Tracks de Bruijn subgraph assembly progress for a single subgraph
  * @author cameron.d
@@ -35,4 +38,21 @@ public interface SubgraphAssemblyAlgorithmTracker {
 	public abstract void generatePathGraph(int kmers, int nodes, int edges);
 
 	public abstract String toBed();
+	
+	public abstract int getReferenceIndex();
+	
+	public abstract long getStartAnchorPosition();
+	
+	public abstract long getEndAnchorPosition();
+	
+	public static Ordering<SubgraphAssemblyAlgorithmTracker> ByGenomicPosition = new Ordering<SubgraphAssemblyAlgorithmTracker>() {
+		@Override
+		public int compare(SubgraphAssemblyAlgorithmTracker left, SubgraphAssemblyAlgorithmTracker right) {
+			return ComparisonChain.start()
+			        .compare(left.getReferenceIndex(), right.getReferenceIndex())
+			        .compare(left.getStartAnchorPosition(), right.getStartAnchorPosition())
+			        .compare(left.getEndAnchorPosition(), right.getEndAnchorPosition())
+			        .result();
+		}
+	};
 }

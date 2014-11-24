@@ -52,4 +52,16 @@ public class NontrackingSubgraphTracker implements SubgraphAssemblyAlgorithmTrac
 	@Override
 	public void generatePathGraph(int kmers, int nodes, int edges) {
 	}
+	@Override
+	public int getReferenceIndex() {
+		return -1;
+	}
+	@Override
+	public long getStartAnchorPosition() {
+		return 0;
+	}
+	@Override
+	public long getEndAnchorPosition() {
+		return 0;
+	}
 }

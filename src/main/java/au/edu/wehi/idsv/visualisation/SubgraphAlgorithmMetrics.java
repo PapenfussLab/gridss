@@ -224,4 +224,16 @@ public class SubgraphAlgorithmMetrics implements SubgraphAssemblyAlgorithmTracke
 		this.pathGraphInitialSize = nodes;
 		this.pathGraphInitialEdges = edges;
 	}
+	@Override
+	public int getReferenceIndex() {
+		return referenceIndex;
+	}
+	@Override
+	public long getStartAnchorPosition() {
+		return minAnchor;
+	}
+	@Override
+	public long getEndAnchorPosition() {
+		return maxAnchor;
+	}
 }

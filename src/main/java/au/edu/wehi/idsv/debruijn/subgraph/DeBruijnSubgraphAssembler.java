@@ -71,8 +71,10 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 			currentTracker.close();
 		}
 		if (processContext.getAssemblyParameters().trackAlgorithmProgress) {
-			currentTracker = new SubgraphAssemblyAlgorithmTrackerBEDWriter(new File(processContext.getAssemblyParameters().debruijnGraphVisualisationDirectory,
-				String.format("debruijn.assembly.metrics.%s.bed", processContext.getDictionary().getSequence(currentReferenceIndex).getSequenceName())));
+			currentTracker = new SubgraphAssemblyAlgorithmTrackerBEDWriter(
+					(int)(processContext.getAssemblyParameters().subgraphAssemblyMargin * source.getMaxConcordantFragmentSize()),
+				new File(processContext.getAssemblyParameters().debruijnGraphVisualisationDirectory,
+					String.format("debruijn.assembly.metrics.%s.bed", processContext.getDictionary().getSequence(currentReferenceIndex).getSequenceName())));
 		}
 		fgraph = new DeBruijnReadGraph(processContext, source, referenceIndex, BreakendDirection.Forward, processContext.getAssemblyParameters(), currentTracker);
 		bgraph = new DeBruijnReadGraph(processContext, source, referenceIndex, BreakendDirection.Backward, processContext.getAssemblyParameters(), currentTracker);
