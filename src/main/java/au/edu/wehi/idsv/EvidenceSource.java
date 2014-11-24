@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMSequenceRecord;
 
 import java.io.File;
@@ -37,11 +38,14 @@ public abstract class EvidenceSource {
 		return sb.toString();
 	}
 	private String getBowtie2Script(int threads, File realignFastq, File realignBam) {
-		return String.format("bowtie2 --threads %d --local --mm --reorder -x \"%s\" -U \"%s\" | samtools view -Sb -o \"%s\" - \n",
-				threads,
-				processContext.getReferenceFile(),
-				realignFastq,
-				realignBam);
+		if (realignFastq.exists() && realignFastq.length() > 0 && (!realignBam.exists() || realignFastq.lastModified() > realignBam.lastModified())) {
+			return String.format("bowtie2 --threads %d --local --mm --reorder -x \"%s\" -U \"%s\" | samtools view -Sb -o \"%s\" - \n",
+					threads,
+					processContext.getReferenceFile(),
+					realignFastq,
+					realignBam);
+		}
+		return "";
 	}
 	/**
 	 * Checks if realignment is complete for the given source file
@@ -50,17 +54,30 @@ public abstract class EvidenceSource {
 	 * @return
 	 */
 	public boolean isRealignmentComplete() {
-		boolean done = true;
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				done &= IntermediateFileUtil.checkIntermediate(fsc.getRealignmentBamForChr(input, seq.getSequenceName()), fsc.getRealignmentFastqForChr(input, seq.getSequenceName()));
-				if (!done) return false;
+				if (!isRealignmentComplete(fsc.getRealignmentBamForChr(input, seq.getSequenceName()), fsc.getRealignmentFastqForChr(input, seq.getSequenceName()))) {
+					return false;
+				}
 			}
 		} else {
-			done &= IntermediateFileUtil.checkIntermediate(fsc.getRealignmentBam(input), fsc.getRealignmentFastq(input));
-			if (!done) return false;
+			if (!isRealignmentComplete(fsc.getRealignmentBam(input), fsc.getRealignmentFastq(input))) {
+				return false;
+			}
 		}
-		return done;
+		return true;
+	}
+	private boolean isRealignmentComplete(File bam, File fastq) {
+		if (fastq.exists() && fastq.length() == 0) {
+			if (!bam.exists() || bam.lastModified() < fastq.lastModified()) {
+				writeEmptyBAM(bam);
+			}
+		}
+		return IntermediateFileUtil.checkIntermediate(bam, fastq);
+	}
+	private void writeEmptyBAM(File sam) {
+		SAMFileWriter w = processContext.getSamFileWriterFactory(false).makeSAMOrBAMWriter(processContext.getBasicSamHeader(), false, sam);
+		w.close();
 	}
 }

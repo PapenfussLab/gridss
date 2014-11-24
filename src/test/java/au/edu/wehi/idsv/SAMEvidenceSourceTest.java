@@ -156,13 +156,15 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	}
 	@Test
 	public void iterator_should_match_soft_clip_realignment_with_soft_clip() {
+		ProcessingContext pc = getCommandlineContext();
+		pc.getSoftClipParameters().minReadMapq = 10;
 		createInput(
 				withReadName("r1", Read(0, 1, "15M15S")),
 				withReadName("r2", Read(1, 2, "15M15S")),
 				withReadName("r3", Read(2, 3, "15M15S")));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		createBAM(getCommandlineContext().getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, 
+		createBAM(pc.getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, 
 				withReadName("0#1#fr1", Read(2, 10, "15M"))[0],
 				withReadName("1#2#fr2", Read(1, 10, "15M"))[0],
 				withReadName("2#3#fr3", Read(0, 10, "15M"))[0]
@@ -175,13 +177,16 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	}
 	@Test
 	public void iterator_should_return_realigned_soft_clips_soft_clip() {
+		ProcessingContext pc = getCommandlineContext();
+		pc.getSoftClipParameters().minReadMapq = 10;
+		pc.getRealignmentParameters().minLength = 15;
 		createInput(
 				withReadName("r1", Read(0, 1, "15M15S")),
 				withReadName("r2", Read(1, 2, "15M15S")),
 				withReadName("r3", Read(2, 3, "15M15S")));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		createBAM(getCommandlineContext().getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, 
+		createBAM(pc.getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, 
 				withReadName("0#1#fr1", Read(2, 10, "15M"))[0],
 				withReadName("1#2#fr2", Read(1, 10, "15M"))[0],
 				withReadName("2#3#fr3", Read(0, 10, "15M"))[0]
@@ -223,13 +228,16 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	}
 	@Test
 	public void iterator_should_include_remote_soft_clips() {
+		ProcessingContext pc = getCommandlineContext();
+		pc.getSoftClipParameters().minReadMapq = 10;
+		pc.getRealignmentParameters().minLength = 15;
 		createInput(
 				withReadName("r1", Read(0, 1, "15S15M15S")),
 				withReadName("r2", Read(1, 2, "15S15M15S")),
 				withReadName("r3", Read(2, 3, "15S15M15S")));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		createBAM(getCommandlineContext().getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, 
+		createBAM(pc.getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, 
 				withReadName("0#1#fr1", Read(2, 10, "15M"))[0],
 				withReadName("0#1#br1", Read(1, 15, "15M"))[0],
 				withReadName("1#2#fr2", Read(1, 10, "15M"))[0],

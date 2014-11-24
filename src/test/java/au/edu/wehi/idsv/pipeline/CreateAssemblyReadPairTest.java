@@ -172,6 +172,10 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	}
 	private void go(ProcessingContext pc) {
 		pc.getAssemblyParameters().writeFilteredAssemblies = true;
+		pc.getAssemblyParameters().minReads = 0;
+		pc.getRealignmentParameters().minLength = 0;
+		pc.getRealignmentParameters().mapqUniqueThreshold = 0;
+		pc.getRealignmentParameters().minAverageQual = 0;
 		File faes = new File(output + "-realign-" + pc.shouldProcessPerChromosome());
 		File frp = new File(output + "-readpair-" + pc.shouldProcessPerChromosome());
 		writeAssemblies(pc, faes);
