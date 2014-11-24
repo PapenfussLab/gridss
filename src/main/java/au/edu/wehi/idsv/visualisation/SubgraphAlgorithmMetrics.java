@@ -74,7 +74,7 @@ public class SubgraphAlgorithmMetrics implements SubgraphAssemblyAlgorithmTracke
 		sb.append(String.format("Name %dms; ", msElapsed(timeKmerConstructionStart, timeAssemblyComplete)));
 		sb.append(getGffAttributes());
 		sb.append('\t');
-		sb.append(Math.log10(msElapsed(timeKmerConstructionStart, timeAssemblyComplete)) * 333); // log duration scaled so 1s = 1000 
+		sb.append(msElapsed(timeKmerConstructionStart, timeAssemblyComplete)); 
 		sb.append('\t');
 		sb.append(direction == BreakendDirection.Forward ? '+' : '-'); // strand
 		sb.append('\t');

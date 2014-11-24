@@ -27,7 +27,7 @@ public class SubgraphAssemblyAlgorithmTrackerBEDWriter implements Closeable {
 			fw = new FileWriter(bedFile.getAbsoluteFile());
 			bw = new BufferedWriter(fw);
 			//bw.append("##");
-			bw.append("track gffTags=on\n");
+			bw.append("track gffTags=on useScore=1 \n");
 		} catch (Exception e) {
 			log.warn(e, "Unable to track progress to " + bedFile.toString());
 			close();
