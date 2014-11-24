@@ -68,7 +68,6 @@ public class IntermediateFilesTest extends TestHelper {
 				new VariantCallingParameters(),
 				reference,
 				perChr, false);
-		pc.setUseAsyncIO(false);
 		return pc;
 	}
 	public ProcessingContext getCommandlineContext() {

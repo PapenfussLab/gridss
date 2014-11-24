@@ -227,7 +227,6 @@ public class TestHelper {
 				new ReadPairParameters(), new AssemblyParameters() {{ minReads = 2; }},
 				new RealignmentParameters(), new VariantCallingParameters(),
 				SMALL_FA_FILE, false, false);
-		pc.setUseAsyncIO(false);
 		return pc;
 	}
 

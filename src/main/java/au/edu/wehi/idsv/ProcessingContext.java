@@ -55,7 +55,6 @@ public class ProcessingContext implements Closeable {
 	private final List<Header> metricsHeaders;
 	private final SAMFileHeader basicHeader;
 	private boolean filterDuplicates = true;
-	private boolean useAsyncIO = true;
 	private long calculateMetricsRecordCount = Long.MAX_VALUE; 
 	public ProcessingContext(
 			FileSystemContext fileSystemContext,
@@ -140,7 +139,6 @@ public class ProcessingContext implements Closeable {
 	public SAMFileWriterFactory getSamFileWriterFactory(boolean sorted) {
 		return new SAMFileWriterFactory()
 			.setTempDirectory(fsContext.getTemporaryDirectory())
-			.setUseAsyncIo(isUseAsyncIO())
 			.setCreateIndex(sorted);
 	}
 	/**
@@ -156,7 +154,6 @@ public class ProcessingContext implements Closeable {
 	}
 	public FastqWriterFactory getFastqWriterFactory(){
 		FastqWriterFactory factory = new FastqWriterFactory();
-		factory.setUseAsyncIo(isUseAsyncIO());
 		return factory;
 	}
 	public VariantContextWriterBuilder getVariantContextWriterBuilder(File output, boolean createIndex) {
@@ -168,9 +165,6 @@ public class ProcessingContext implements Closeable {
 			builder.setOption(Options.INDEX_ON_THE_FLY);
 		} else {
 			builder.clearIndexCreator();
-		}
-		if (isUseAsyncIO()) {
-			builder.setOption(Options.USE_ASYNC_IO);
 		}
 		return builder;
 	}
@@ -236,12 +230,6 @@ public class ProcessingContext implements Closeable {
 	}
 	public ReadPairParameters getReadPairParameters() {
 		return rrp;
-	}
-	public boolean isUseAsyncIO() {
-		return useAsyncIO;
-	}
-	public void setUseAsyncIO(boolean useAsyncIO) {
-		this.useAsyncIO = useAsyncIO;
 	}
 	public boolean isFilterDuplicates() {
 		return filterDuplicates;
