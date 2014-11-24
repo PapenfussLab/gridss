@@ -133,11 +133,12 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			String chr) {
 		CloseableIterator<SAMRecord> it = processContext.getSamReaderIterator(assembly);
 		CloseableIterator<SAMRecord> mateIt = processContext.getSamReaderIterator(mate);
-		CloseableIterator<SAMRecordAssemblyEvidence> evidenceIt = new SAMRecordAssemblyEvidenceReadPairIterator(processContext, this, it, mateIt, includeRemote, includeFiltered);
+		CloseableIterator<SAMRecordAssemblyEvidence> evidenceIt = new SAMRecordAssemblyEvidenceReadPairIterator(processContext, this, it, mateIt, includeRemote);
+		Iterator<SAMRecordAssemblyEvidence> filteredIt = includeFiltered ? new SAMRecordAssemblyEvidenceFilteringIterator(processContext, evidenceIt) : evidenceIt;
 		CloseableIterator<SAMRecordAssemblyEvidence> sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(new DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence>(
 				processContext,
 				(int)((2 + processContext.getAssemblyParameters().maxSubgraphFragmentWidth + processContext.getAssemblyParameters().subgraphAssemblyMargin) * maxSourceFragSize),
-				evidenceIt), ImmutableList.<Closeable>of(it, mateIt));
+				filteredIt), ImmutableList.<Closeable>of(it, mateIt, evidenceIt));
 		return sortedIt;
 	}
 	private CloseableIterator<SAMRecordAssemblyEvidence> samAssemblyRealignIterator(
@@ -168,14 +169,15 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		CloseableIterator<SAMRecordAssemblyEvidence> evidenceIt = new SAMRecordAssemblyEvidenceIterator(
 				processContext, this,
 				new AutoClosingIterator<SAMRecord>(rawReaderIt, ImmutableList.<Closeable>of(realignedIt)),
-				realignedIt,
-				includeFiltered);
+				realignedIt);
 		toClose.add(evidenceIt);
+		Iterator<SAMRecordAssemblyEvidence> filteredIt = includeFiltered ? new SAMRecordAssemblyEvidenceFilteringIterator(processContext, evidenceIt) : evidenceIt;
 		// Change sort order to breakend position order
-		CloseableIterator<SAMRecordAssemblyEvidence> sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(new DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence>(
+		CloseableIterator<SAMRecordAssemblyEvidence> sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(
+				new DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence>(
 				processContext,
 				(int)((2 + processContext.getAssemblyParameters().maxSubgraphFragmentWidth + processContext.getAssemblyParameters().subgraphAssemblyMargin) * maxSourceFragSize),
-				evidenceIt), toClose);
+				filteredIt), toClose);
 		return sortedIt;
 	}
 	private boolean isProcessingComplete() {
@@ -370,7 +372,10 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		    		if (a != null) {
 		    			SAMRecordAssemblyEvidence e = (SAMRecordAssemblyEvidence)a;
 			    		maxAssembledPosition = Math.max(maxAssembledPosition, processContext.getLinear().getStartLinearCoordinate(e.getSAMRecord()));
-			    		resortBuffer.add(e);
+			    		processContext.getAssemblyParameters().applyFilters(e);
+			    		if (processContext.getAssemblyParameters().writeFilteredAssemblies || !e.isAssemblyFiltered()) {
+			    			resortBuffer.add(e);
+			    		}
 		    		}
 		    	}
 	    	}

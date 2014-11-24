@@ -16,20 +16,17 @@ public class SAMRecordAssemblyEvidenceReadPairIterator extends AbstractIterator<
 	private final Iterator<SAMRecord> rit;
 	private final SequentialAssemblyReadPairFactory factory;
 	private final boolean includeRemote;
-	private final boolean includeFiltered;
 	public SAMRecordAssemblyEvidenceReadPairIterator(
 			ProcessingContext processContext,
 			AssemblyEvidenceSource source,
 			Iterator<SAMRecord> it,
 			Iterator<SAMRecord> mateIt,
-			boolean includeRemote,
-			boolean includeFiltered) {
+			boolean includeRemote) {
 		this.processContext = processContext;
 		this.source = source;
 		this.it = it;
 		this.rit = mateIt;
 		this.factory = new SequentialAssemblyReadPairFactory(Iterators.peekingIterator(mateIt));
-		this.includeFiltered = includeFiltered;
 		this.includeRemote = includeRemote;
 	}
 	@Override
@@ -39,10 +36,7 @@ public class SAMRecordAssemblyEvidenceReadPairIterator extends AbstractIterator<
 			if (record.getFirstOfPairFlag() || includeRemote) {
 				SAMRecordAssemblyEvidence evidence = factory.createAssembly(record, processContext, source);
 				if (evidence != null) {
-					processContext.getAssemblyParameters().applyFilters(evidence);
-					if (!evidence.isAssemblyFiltered() || includeFiltered) {
-						return evidence;
-					}
+					return evidence;
 				}
 			}
 		}

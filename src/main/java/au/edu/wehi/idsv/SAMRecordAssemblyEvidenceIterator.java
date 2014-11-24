@@ -6,8 +6,6 @@ import htsjdk.samtools.util.CloserUtil;
 
 import java.util.Iterator;
 
-import au.edu.wehi.idsv.vcf.VcfFilter;
-
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
 
@@ -17,19 +15,16 @@ public class SAMRecordAssemblyEvidenceIterator extends AbstractIterator<SAMRecor
 	private final Iterator<SAMRecord> it;
 	private final Iterator<SAMRecord> rit;
 	private final SequentialRealignedBreakpointFactory factory;
-	private final boolean includeFiltered;
 	public SAMRecordAssemblyEvidenceIterator(
 			ProcessingContext processContext,
 			AssemblyEvidenceSource source,
 			Iterator<SAMRecord> it,
-			Iterator<SAMRecord> realignedIt,
-			boolean includeFiltered) {
+			Iterator<SAMRecord> realignedIt) {
 		this.processContext = processContext;
 		this.source = source;
 		this.it = it;
 		this.rit = realignedIt;
 		this.factory = realignedIt != null ? new SequentialRealignedBreakpointFactory(Iterators.peekingIterator(this.rit)) : null;
-		this.includeFiltered = includeFiltered;
 	}
 	@Override
 	protected SAMRecordAssemblyEvidence computeNext() {
@@ -40,13 +35,7 @@ public class SAMRecordAssemblyEvidenceIterator extends AbstractIterator<SAMRecor
 				SAMRecord realigned = factory.findAssociatedSAMRecord(evidence);
 				evidence = AssemblyFactory.incorporateRealignment(processContext, evidence, realigned);
 			}
-			processContext.getAssemblyParameters().applyFilters(evidence);
-			if (evidence.getBreakendSummary() instanceof BreakpointSummary) {
-				for (VcfFilter breakpointFilter : processContext.getVariantCallingParameters().breakpointFilters((BreakpointSummary)evidence.getBreakendSummary())) {
-					evidence.filterAssembly(breakpointFilter);
-				}
-			}
-			if (!evidence.isAssemblyFiltered() || includeFiltered) {
+			if (evidence != null) {
 				return evidence;
 			}
 		}
