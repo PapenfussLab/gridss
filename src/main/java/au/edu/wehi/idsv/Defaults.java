@@ -56,7 +56,7 @@ public class Defaults {
 		BEST_PATH_MAX_TRAVERSAL = Integer.valueOf(System.getProperty("gridss.debruijn.maxPathTraversal", "65536"));
 		MAX_SUBGRAPH_WIDTH_IN_FRAGMENT_SIZE_MULTIPLES = Float.valueOf(System.getProperty("gridss.debruijn.maxSubgraphFragmentWidth", "32"));
 		READ_PAIR_DOVETAIL_MARGIN = Integer.valueOf(System.getProperty("gridss.readpair.dovetailMargin", "4"));
-		ASYNC_READAHEAD_BUFFERS = Integer.valueOf(System.getProperty("gridss.readahead.buffers", "2"));
-		ASYNC_READAHEAD_BUFFER_SIZE = Integer.valueOf(System.getProperty("gridss.readahead.buffersize", "64"));
+		ASYNC_READAHEAD_BUFFERS = Integer.valueOf(System.getProperty("gridss.readahead.buffers", "4"));
+		ASYNC_READAHEAD_BUFFER_SIZE = Integer.valueOf(System.getProperty("gridss.readahead.buffersize", "1024"));
 	}
 }
