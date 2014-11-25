@@ -134,7 +134,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		CloseableIterator<SAMRecord> it = processContext.getSamReaderIterator(assembly);
 		CloseableIterator<SAMRecord> mateIt = processContext.getSamReaderIterator(mate);
 		CloseableIterator<SAMRecordAssemblyEvidence> evidenceIt = new SAMRecordAssemblyEvidenceReadPairIterator(processContext, this, it, mateIt, includeRemote);
-		Iterator<SAMRecordAssemblyEvidence> filteredIt = includeFiltered ? new SAMRecordAssemblyEvidenceFilteringIterator(processContext, evidenceIt) : evidenceIt;
+		Iterator<SAMRecordAssemblyEvidence> filteredIt = includeFiltered ? evidenceIt : new SAMRecordAssemblyEvidenceFilteringIterator(processContext, evidenceIt);
 		CloseableIterator<SAMRecordAssemblyEvidence> sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(new DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence>(
 				processContext,
 				(int)((2 + processContext.getAssemblyParameters().maxSubgraphFragmentWidth + processContext.getAssemblyParameters().subgraphAssemblyMargin) * maxSourceFragSize),
@@ -171,7 +171,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				new AutoClosingIterator<SAMRecord>(rawReaderIt, ImmutableList.<Closeable>of(realignedIt)),
 				realignedIt);
 		toClose.add(evidenceIt);
-		Iterator<SAMRecordAssemblyEvidence> filteredIt = includeFiltered ? new SAMRecordAssemblyEvidenceFilteringIterator(processContext, evidenceIt) : evidenceIt;
+		Iterator<SAMRecordAssemblyEvidence> filteredIt = includeFiltered ? evidenceIt : new SAMRecordAssemblyEvidenceFilteringIterator(processContext, evidenceIt);
 		// Change sort order to breakend position order
 		CloseableIterator<SAMRecordAssemblyEvidence> sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(
 				new DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence>(

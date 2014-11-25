@@ -72,4 +72,33 @@ public class SAMRecordAssemblyEvidenceFilteringIteratorTest extends TestHelper {
 	public void should_ignore_filtered_assembly_breakend() {
 		assertFalse(new SAMRecordAssemblyEvidenceFilteringIterator(getContext(), Iterators.singletonIterator(new SAMRecordAssemblyEvidenceIteratorTest().BE(1))).hasNext());
 	}
+	@Test
+	public void should_filter_reference_allele() {
+		Set<DirectedEvidence> evidence = Sets.<DirectedEvidence>newHashSet();
+		evidence.add(SCE(FWD, Read(0, 10, "5S5M5S")));
+		evidence.add(SCE(FWD, Read(0, 10, "6S5M6S")));
+		evidence.add(SCE(FWD, Read(0, 10, "7S5M7S")));
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), BWD, evidence,
+				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), 5, 6);		
+		SAMRecord r = Read(0, 5, "5M");
+		r.setReadName(BreakpointFastqEncoding.getRealignmentFastq(e).getReadHeader());
+		in.add(AssemblyFactory.incorporateRealignment(getContext(), e, r));
+		go();
+		assertEquals(0, out.size());
+	}
+	@Test
+	public void should_not_filter_valid_breakpoints() {
+		Set<DirectedEvidence> evidence = Sets.<DirectedEvidence>newHashSet();
+		evidence.add(SCE(FWD, Read(0, 10, "5S5M5S")));
+		evidence.add(SCE(FWD, Read(0, 10, "6S5M6S")));
+		evidence.add(SCE(FWD, Read(0, 10, "7S5M7S")));
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), BWD, evidence,
+				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), 5, 6);		
+		SAMRecord r = Read(0, 105, "5M");
+		r.setReadNegativeStrandFlag(true);
+		r.setReadName(BreakpointFastqEncoding.getRealignmentFastq(e).getReadHeader());
+		in.add(AssemblyFactory.incorporateRealignment(getContext(), e, r));
+		go();
+		assertEquals(1, out.size());
+	}
 }

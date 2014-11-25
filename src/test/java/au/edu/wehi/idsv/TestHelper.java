@@ -164,7 +164,8 @@ public class TestHelper {
 		assert(bs.start == bs.end);
 		assert(bs.start2 == bs.end2);
 		assert(bs.direction2 == BWD);
-		SAMRecordAssemblyEvidence abe = AssemblyFactory.createAnchored(getContext(), AES(), bs.direction, Sets.<DirectedEvidence>newHashSet(new MockDirectedEvidence(bs)), bs.referenceIndex, bs.start, 1, B("TT"), B("TT"), 0, 0);
+		SAMRecordAssemblyEvidence abe = AssemblyFactory.createAnchored(getContext(), AES(), bs.direction, Sets.<DirectedEvidence>newHashSet(
+				SCE(bs)), bs.referenceIndex, bs.start, 1, B("TT"), B("TT"), 0, 0);
 		SAMRecord r = new SAMRecord(getContext().getBasicSamHeader());
 		r.setReferenceIndex(bs.referenceIndex2);
 		r.setAlignmentStart(bs.start2);
@@ -173,6 +174,7 @@ public class TestHelper {
 		r.setMappingQuality(30);
 		return AssemblyFactory.incorporateRealignment(getContext(), abe, r);
 	}
+
 	public static DirectedEvidence E(int referenceIndex, int start,
 			BreakendDirection direction) {
 		return new MockDirectedEvidence(referenceIndex, direction, start);
@@ -185,6 +187,14 @@ public class TestHelper {
 	public static SoftClipEvidence SCE(BreakendDirection direction,
 			SAMRecord... pair) {
 		return SCE(direction, SES(), pair);
+	}
+	private SoftClipEvidence SCE(BreakendSummary bs) {
+		assert(bs.start == bs.end);
+		if (bs.direction == FWD) {
+			return SCE(bs.direction, Read(bs.referenceIndex, bs.start, "1M1S"));
+		} else {
+			return SCE(bs.direction, Read(bs.referenceIndex, bs.start, "1S1M"));
+		}
 	}
 
 	public static SoftClipEvidence SCE(BreakendDirection direction,

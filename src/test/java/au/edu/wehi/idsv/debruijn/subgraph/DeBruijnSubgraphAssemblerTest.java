@@ -2,6 +2,7 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,6 +44,16 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(1, 2, "3M4S"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(2, results.size());
+	}
+	@Test
+	public void should_assemble_RP_with_fake_SC_anchor_as_unanchored() {
+		DeBruijnSubgraphAssembler ass = DSA(3);
+		List<AssemblyEvidence> results = Lists.newArrayList();
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAT", Read(0, 15, "3M1S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(withSequence(SequenceUtil.reverseComplement("TAAAGTC"), OEA(0, 1, "7M", true))))));
+		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, results.size());
+		assertEquals(0, results.get(0).getAssemblyAnchorLength());
 	}
 	@Test
 	public void should_export_debruijn_graph() {

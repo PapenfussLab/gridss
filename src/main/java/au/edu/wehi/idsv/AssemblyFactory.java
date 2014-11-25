@@ -42,7 +42,12 @@ public final class AssemblyFactory {
 			byte[] baseCalls, byte[] baseQuals,
 			int normalBaseCount, int tumourBaseCount) {
 		BreakendSummary breakend = new BreakendSummary(anchorReferenceIndex, direction, anchorBreakendPosition, anchorBreakendPosition);
-		return new SAMRecordAssemblyEvidence(processContext.getBasicSamHeader(), breakend, source, anchoredBaseCount, baseCalls, baseQuals, calculateAssemblyIntAttributes(evidence, normalBaseCount, tumourBaseCount));
+		Map<VcfAttributes, int[]> attr = calculateAssemblyIntAttributes(evidence, normalBaseCount, tumourBaseCount);
+		if (attr.get(VcfAttributes.ASSEMBLY_SOFTCLIP_COUNT)[0] + attr.get(VcfAttributes.ASSEMBLY_SOFTCLIP_COUNT)[1] == 0 &&
+				attr.get(VcfAttributes.ASSEMBLY_READPAIR_COUNT)[0] + attr.get(VcfAttributes.ASSEMBLY_READPAIR_COUNT)[1] > 0) {
+			throw new RuntimeException(String.format("Sanity check failure: anchored assembly at %s created from only unanchored evidence", new BreakendSummary(anchorReferenceIndex, direction, anchorBreakendPosition, anchorBreakendPosition)));
+		}
+		return new SAMRecordAssemblyEvidence(processContext.getBasicSamHeader(), breakend, source, anchoredBaseCount, baseCalls, baseQuals, attr);
 	}
 	/**
 	 * Creates an assembly whose breakpoint cannot be exactly anchored to the reference  
@@ -63,7 +68,8 @@ public final class AssemblyFactory {
 			byte[] baseCalls, byte[] baseQuals,
 			int normalBaseCount, int tumourBaseCount) {
 		BreakendSummary breakend = Models.calculateBreakend(Lists.newArrayList(evidence));
-		return new SAMRecordAssemblyEvidence(processContext.getBasicSamHeader(), breakend, source, 0, baseCalls, baseQuals, calculateAssemblyIntAttributes(evidence, normalBaseCount, tumourBaseCount));
+		Map<VcfAttributes, int[]> attr = calculateAssemblyIntAttributes(evidence, normalBaseCount, tumourBaseCount);
+		return new SAMRecordAssemblyEvidence(processContext.getBasicSamHeader(), breakend, source, 0, baseCalls, baseQuals, attr);
 	}
 	protected static Map<VcfAttributes, int[]> calculateAssemblyIntAttributes(Set<DirectedEvidence> evidence, int normalBaseCount, int tumourBaseCount) {
 		if (evidence == null) {

@@ -170,8 +170,9 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 		go(getCommandlineContext(false));
 		go(getCommandlineContext(true));
 	}
-	private void go(ProcessingContext pc) {
-		pc.getAssemblyParameters().writeFilteredAssemblies = true;
+	private void go(ProcessingContext pc) { go(pc, true); }
+	private void go(ProcessingContext pc, boolean writefiltered) {
+		pc.getAssemblyParameters().writeFilteredAssemblies = writefiltered;
 		pc.getAssemblyParameters().minReads = 0;
 		pc.getRealignmentParameters().minLength = 0;
 		pc.getRealignmentParameters().mapqUniqueThreshold = 0;
@@ -300,5 +301,28 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	public void perChr_should_write_single_file_for_debugging_purposes() {
 		go();
 		assertTrue(getCommandlineContext(true).getFileSystemContext().getAssembly(new File(output + "-readpair-true")).exists());
+	}
+	@Test
+	public void should_filter_breakpoints() {
+		orderedAdd(AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
+				0, 5, 1, B("TT"), B("TT"), 0, 0), 0, 6, false);
+		
+		ProcessingContext pc = getCommandlineContext(false);
+		pc.getAssemblyParameters().writeFilteredAssemblies = false;
+		pc.getAssemblyParameters().minReads = 0;
+		pc.getRealignmentParameters().minLength = 0;
+		pc.getRealignmentParameters().mapqUniqueThreshold = 0;
+		pc.getRealignmentParameters().minAverageQual = 0;
+		File faes = new File(output + "-realign-" + pc.shouldProcessPerChromosome());
+		File frp = new File(output + "-readpair-" + pc.shouldProcessPerChromosome());
+		writeAssemblies(pc, faes);
+		writeAssemblies(pc, frp);
+		writeRealign(pc, faes);
+		writeRealign(pc, frp);
+		AssemblyEvidenceSource ar = new AssemblyEvidenceSource(pc, ImmutableList.<SAMEvidenceSource>of(SES()), faes);
+		AssemblyEvidenceSource rp = new AssemblyEvidenceSource(pc, ImmutableList.<SAMEvidenceSource>of(SES()), frp);
+		rp.ensureAssembled();
+		assertEquals("precondition: breakend and realign should have been written as breakend passes filters", 1, Iterators.size(ar.iterator(false,  true)));
+		assertEquals(0, Iterators.size(rp.iterator(false,  false)));
 	}
 }

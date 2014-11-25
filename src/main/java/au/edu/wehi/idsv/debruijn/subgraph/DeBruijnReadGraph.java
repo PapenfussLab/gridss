@@ -3,6 +3,7 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 import htsjdk.samtools.util.Log;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -327,10 +328,25 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		ContigAssembly ca = debruijnContigAssembly(contigKmers, refCount);
 		AssemblyEvidence evidence = null;
 		if (refCount > 0) {
-			// anchored read
-			evidence = AssemblyFactory.createAnchored(processContext, source, direction, ca.support,
-					referenceIndex, refAnchor, refCount + getK() - 1,
-					ca.baseCalls, ca.baseQuals, ca.normalBaseCount, ca.tumourBaseCount);
+			if (!ca.containsAnchoredSupport()) {
+				// This is a misassembly - we're anchored to a reference kmer
+				// but none of the support.
+				// This usually occurs when a reference-allele assembly (due to assembling reference-supporting reads with large fragment sizes)
+				// overlaps a soft clip. The soft clip reference kmers anchor
+				// the read, but no soft clipped bases provide support for
+				// this particular path.
+				// we'll fall back to an unanchored assembly of only the breakend
+				
+				evidence = AssemblyFactory.createUnanchored(processContext, source, ca.support,
+						Arrays.copyOfRange(ca.baseCalls, refCount, ca.baseCalls.length),
+						Arrays.copyOfRange(ca.baseQuals, refCount, ca.baseQuals.length), 
+						ca.normalBaseCount, ca.tumourBaseCount);
+			} else {
+				// anchored read
+				evidence = AssemblyFactory.createAnchored(processContext, source, direction, ca.support,
+						referenceIndex, refAnchor, refCount + getK() - 1,
+						ca.baseCalls, ca.baseQuals, ca.normalBaseCount, ca.tumourBaseCount);
+			}
 		} else if (mateAnchor != null) {
 			// inexact breakend
 			evidence = AssemblyFactory.createUnanchored(processContext, source, ca.support,

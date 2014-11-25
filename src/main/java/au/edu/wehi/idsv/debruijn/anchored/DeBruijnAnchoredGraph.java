@@ -104,7 +104,7 @@ public class DeBruijnAnchoredGraph extends DeBruijnVariantGraph<DeBruijnNodeBase
 			softclipSize += offsetSize;
 		}
 		int anchorLen = assemblyLength - softclipSize;
-		ContigAssembly ca = debruijnContigAssembly(path, anchorLen);
+		ContigAssembly ca = debruijnContigAssembly(path, path.size() - softclipSize);
 		return AssemblyFactory.createAnchored(processContext, source, direction, ca.support, referenceIndex, position, anchorLen,
 				ca.baseCalls, ca.baseQuals, ca.normalBaseCount, ca.tumourBaseCount);
 	}

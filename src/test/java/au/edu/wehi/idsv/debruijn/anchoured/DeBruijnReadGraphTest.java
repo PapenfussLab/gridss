@@ -81,6 +81,15 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		assertEquals("AAAACGTC", S(result.getAssemblySequence()));
 	}
 	@Test
+	public void should_assemble_short_breakend() {
+		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, BreakendDirection.Forward);
+		addRead(ass, withSequence("CTAAA", Read(0, 1, "4M1S"))[0], true);
+		addRead(ass, withSequence("CTAAA", Read(0, 1, "4M1S"))[0], true);
+		AssemblyEvidence result = ass.assemble(0, 1);
+		assertEquals("CTAAA", S(result.getAssemblySequence()));
+		assertEquals("A", S(result.getBreakendSequence()));
+	}
+	@Test
 	public void should_assemble_unanchored_reads() {
 		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, BreakendDirection.Forward);
 		addRead(ass, withSequence("CTAAA", Read(0, 1, "4M1S"))[0], true);
@@ -171,11 +180,9 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		SAMRecord sc = R("AAAACGTC");
 		sc.setCigarString("4M4S");
 		addRead(ass, sc, true);
-		addRead(ass, R("r1", "AAAATTTT"), false);
-		addRead(ass, R("r2", "AAAATTTT"), false);
-		assertEquals("AAAATTTT", S(ass.assemble(0, 1).getAssemblySequence()));
-		removeRead(ass, R("r1", "AAAATTTT"), false);
-		removeRead(ass, R("r2", "AAAATTTT"), false);
+		addRead(ass, R("r1", "AAAACGTCT"), false);
+		assertEquals("AAAACGTCT", S(ass.assemble(0, 1).getAssemblySequence()));
+		removeRead(ass, R("r1", "AAAACGTCT"), false);
 		AssemblyEvidence result = ass.assemble(0, 1);
 		assertEquals("AAAACGTC", S(result.getAssemblySequence()));
 	}

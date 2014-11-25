@@ -169,6 +169,12 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		public byte[] baseQuals;
 		public int normalBaseCount;
 		public int tumourBaseCount;
+		public boolean containsAnchoredSupport() {
+			for (DirectedEvidence e : support) {
+				if (e instanceof SoftClipEvidence) return true;
+			}
+			return false;
+		}
 	}
 	protected ContigAssembly debruijnContigAssembly(List<Long> path, int referenceKmersAtStartOfPath) {
 		//return assembleMaintainable(path, referenceKmersAtStartOfPath);

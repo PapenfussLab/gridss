@@ -1,6 +1,6 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,9 +17,9 @@ import com.google.common.io.Files;
 public class IdsvTest extends IntermediateFilesTest {
 	@Test
 	public void test_sv_comparision_203541() throws IOException {
-		File output = new File(super.testFolder.getRoot(), "chr12-244000.vcf");
+		File output = new File(super.testFolder.getRoot(), "203541.vcf");
 		setReference(new File("C:/dev/chr12.fa"));
-		createInput(new File("src/test/resources/chr12-244000.bam"));
+		createInput(new File("src/test/resources/203541.bam"));
 		String[] args = new String[] {
 				"INPUT=" + input.toString(),
 				"REFERENCE=" + reference.toString(),
@@ -39,11 +39,20 @@ public class IdsvTest extends IntermediateFilesTest {
 				return !arg0.isAssemblyFiltered();
 			}
 		}));
-		assertEquals(2, ass.size());
-		assertEquals(203476, ass.get(0).getBreakendSummary().start);
-		assertEquals(FWD, ass.get(0).getBreakendSummary().direction);
-		assertEquals(203540, ass.get(1).getBreakendSummary().start);
-		assertEquals(BWD, ass.get(1).getBreakendSummary().direction);
+		assertTrue(Iterables.any(ass, new Predicate<SAMRecordAssemblyEvidence>() {
+			@Override
+			public boolean apply(SAMRecordAssemblyEvidence input) {
+				return input.getBreakendSummary().start == 203476
+						&& input.getBreakendSummary().direction == FWD;
+			}
+		}));
+		assertTrue(Iterables.any(ass, new Predicate<SAMRecordAssemblyEvidence>() {
+			@Override
+			public boolean apply(SAMRecordAssemblyEvidence input) {
+				return input.getBreakendSummary().start == 203540
+						&& input.getBreakendSummary().direction == BWD;
+			}
+		}));
 		Files.copy(new File("src/test/resources/203541.bam.idsv.realign.bam"), new File(testFolder.getRoot().getAbsolutePath() + "/input.bam.idsv.working", "input.bam.idsv.realign.bam"));
 		Files.copy(new File("src/test/resources/203541.vcf.idsv.realign.bam"), new File(testFolder.getRoot().getAbsolutePath() + "/203541.vcf.idsv.working", "203541.vcf.idsv.realign.bam"));
 		

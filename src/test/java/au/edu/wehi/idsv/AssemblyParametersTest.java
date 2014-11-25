@@ -32,10 +32,9 @@ public class AssemblyParametersTest extends TestHelper {
 	}
 	@Test
 	public void should_filter_mate_anchored_assembly_shorter_than_read_length() {
-		AssemblyEvidence e = AssemblyFactory.createAnchored(
-				getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(
-					NRRP(OEA(0, 1, "3M", false))),
-				0, 1, 0, B("AAA"), B("AAA"), 2, 0);
+		AssemblyEvidence e = AssemblyFactory.createUnanchored(
+				getContext(), AES(), Sets.<DirectedEvidence>newHashSet(NRRP(OEA(0, 1, "4M", true))),
+				B("AAA"), B("AAA"), 2, 0);
 		getContext().getAssemblyParameters().applyFilters(e);
 		assertTrue(e.isAssemblyFiltered());
 		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_SHORT));
@@ -53,11 +52,11 @@ public class AssemblyParametersTest extends TestHelper {
 	}
 	@Test
 	public void soft_clip_size_filter_should_not_apply_to_unanchored_assembly() {
-		AssemblyEvidence e = AssemblyFactory.createAnchored(
-				getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(
+		AssemblyEvidence e = AssemblyFactory.createUnanchored(
+				getContext(), AES(), Sets.<DirectedEvidence>newHashSet(
 						NRRP(OEA(0, 1, "3M", false)),
 						NRRP(OEA(0, 1, "4M", false))),
-				0, 1, 0, B("AAAAAA"), B("AAAAAA"), 2, 0);
+				B("AAAAAA"), B("AAAAAA"), 2, 0);
 		getContext().getAssemblyParameters().applyFilters(e);
 		assertFalse(e.isAssemblyFiltered());
 	}
@@ -65,6 +64,7 @@ public class AssemblyParametersTest extends TestHelper {
 	public void should_filter_if_no_breakpoint_assembly() {
 		AssemblyEvidence e = AssemblyFactory.createAnchored(
 				getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(
+						SCE(BWD, Read(0, 1, "1S1M")),
 						NRRP(OEA(0, 1, "3M", false)),
 						NRRP(OEA(0, 1, "4M", false))),
 				0, 1, 2, B("AA"), B("AA"), 2, 0);
