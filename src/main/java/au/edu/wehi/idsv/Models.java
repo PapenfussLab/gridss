@@ -99,7 +99,10 @@ public class Models {
 	 * @return
 	 */
 	public static BreakendSummary calculateBreakend(List<? extends DirectedEvidence> evidence) {
-		if (evidence == null || evidence.size() == 0) throw new IllegalArgumentException("No evidence supplied");
+		if (evidence == null || evidence.size() == 0) {
+			throw new IllegalArgumentException("No evidence supplied");
+		}
+		boolean errorMessagePrinted = false;
 		Collections.sort(evidence, DirectedEvidence.ByLlrDesc);
 		// Start with best evidence
 		BreakendSummary bounds = evidence.get(0).getBreakendSummary();
@@ -108,11 +111,23 @@ public class Models {
 			// Reduce as we can
 			BreakendSummary newbounds = BreakendSummary.overlapOf(bounds, e.getBreakendSummary());
 			if (newbounds == null) {
-				log.debug("Inconsisent support set");
+				if (!errorMessagePrinted) {
+					printInconsisentSupportSetErrorMessage(evidence);
+					errorMessagePrinted = true;
+				}
 			} else {
 				bounds = newbounds;
 			}
 		}
 		return bounds;
+	}
+	private static void printInconsisentSupportSetErrorMessage(List<? extends DirectedEvidence> evidence) {
+		StringBuilder sb = new StringBuilder("Inconsisent support set {");
+		for (DirectedEvidence e : evidence) {
+			sb.append(e.getBreakendSummary().toString());
+			sb.append(", ");
+		}
+		sb.append("}");
+		log.debug(sb.toString());
 	}
 }
