@@ -47,8 +47,8 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals(1, (int)bwd.getSAMRecord().getReferenceIndex());
 		assertEquals(5, fwd.getSAMRecord().getAlignmentStart());
 		assertEquals(10, bwd.getSAMRecord().getAlignmentStart());
-		assertEquals("1X5N3S", fwd.getSAMRecord().getCigarString());
-		assertEquals("3S5N1X", bwd.getSAMRecord().getCigarString());
+		assertEquals("1X4N1X3S", fwd.getSAMRecord().getCigarString());
+		assertEquals("3S1X4N1X", bwd.getSAMRecord().getCigarString());
 	}
 	private void assertPairing(SAMRecord assembly, SAMRecord realign) {
 		assertNotNull(assembly);
@@ -77,11 +77,17 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 				1, 2, 1, B("GTAC"), new byte[] {1,2,3,4}, 1, 2).getSAMRecord().getCigarString());
 	}
 	@Test
-	public void should_use_XNS_for_unanchored_interval_breakend() {
-		assertEquals("1X298N4S", AssemblyFactory.createUnanchored(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(
+	public void should_use_XNXS_for_unanchored_interval_breakend() {
+		assertEquals("1X297N1X4S", AssemblyFactory.createUnanchored(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(
 				NRRP(OEA(0, 1000, "1M", true))), B("GTAC"), new byte[] {1,2,3,4}, 0, 0).getSAMRecord().getCigarString());
-		assertEquals("4S298N1X", AssemblyFactory.createUnanchored(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(
+		assertEquals("4S1X297N1X", AssemblyFactory.createUnanchored(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(
 				NRRP(OEA(0, 1000, "1M", false))), B("GTAC"), new byte[] {1,2,3,4}, 0, 0).getSAMRecord().getCigarString());
+	}
+	@Test
+	public void should_use_minimal_cigar_representation() {
+		assertEquals("1X3S", AssemblyFactory.createUnanchored(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(new MockDirectedEvidence(new BreakendSummary(1, FWD, 5, 5))), B("AAA"), B("AAA"), 2, 0).getSAMRecord().getCigarString());
+		assertEquals("2X3S", AssemblyFactory.createUnanchored(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(new MockDirectedEvidence(new BreakendSummary(1, FWD, 5, 6))), B("AAA"), B("AAA"), 2, 0).getSAMRecord().getCigarString());
+		assertEquals("1X1N1X3S", AssemblyFactory.createUnanchored(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(new MockDirectedEvidence(new BreakendSummary(1, FWD, 5, 7))), B("AAA"), B("AAA"), 2, 0).getSAMRecord().getCigarString());
 	}
 	@Test
 	public void breakend_round_trip_should_be_unchanged() {

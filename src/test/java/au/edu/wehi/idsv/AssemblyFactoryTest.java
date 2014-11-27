@@ -16,6 +16,7 @@ import org.junit.Test;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -84,6 +85,16 @@ public class AssemblyFactoryTest extends TestHelper {
 				getContext(), AES(), evidence,
 				B("AAAAA"), B("AAAAA"), 2, 0);
 		assertEquals(evidence.iterator().next().getBreakendSummary(), e.getBreakendSummary());
+	}
+	@Test
+	public void should_set_breakpoint_unanchored() {
+		for (BreakpointSummary bs : ImmutableList.of(
+				new BreakpointSummary(0, FWD, 1, 2, 3, BWD, 4, 5),
+				new BreakpointSummary(0, BWD, 1, 2, 3, BWD, 4, 5)
+				)) {
+			AssemblyEvidence e = AssemblyFactory.createUnanchored(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(new MockDirectedEvidence(bs)), B("AAAAA"), B("AAAAA"), 2, 0);
+			assertEquals(bs.localBreakend(), e.getBreakendSummary());
+		}
 	}
 	@Test
 	public void should_restrict_mate_anchor_interval_based_on_anchor_positions() {

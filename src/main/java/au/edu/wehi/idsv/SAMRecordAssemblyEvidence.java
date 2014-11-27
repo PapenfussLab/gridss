@@ -8,6 +8,7 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
 
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -65,38 +66,41 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	}
 	private static BreakendSummary calculateBreakendFromAlignmentCigar(Integer referenceIndex, int alignmentStart, Cigar cigar) {
 		if (referenceIndex == null) return null;
-		BreakendDirection direction = cigar.getCigarElement(0).getOperator() == CigarOperator.SOFT_CLIP ? BreakendDirection.Backward : BreakendDirection.Forward;
+		List<CigarElement> ce = cigar.getCigarElements();
+		BreakendDirection direction = ce.get(0).getOperator() == CigarOperator.SOFT_CLIP ? BreakendDirection.Backward : BreakendDirection.Forward;
 		int start = alignmentStart;
 		int end = alignmentStart;
-		if (cigar.numCigarElements() > 2) {
-			int paddingNs = cigar.getCigarElement(1).getLength();
-			if (direction == BreakendDirection.Forward) {
-				assert(cigar.numCigarElements() == 3);
-				assert(cigar.getCigarElement(0).getOperator() == CigarOperator.X);
-				assert(cigar.getCigarElement(1).getOperator() == CigarOperator.SKIPPED_REGION);
-				assert(cigar.getCigarElement(2).getOperator() == CigarOperator.SOFT_CLIP);
-				end += paddingNs;
-			} else {
-				assert(cigar.numCigarElements() == 3);
-				assert(cigar.getCigarElement(0).getOperator() == CigarOperator.SOFT_CLIP);
-				assert(cigar.getCigarElement(1).getOperator() == CigarOperator.SKIPPED_REGION);
-				assert(cigar.getCigarElement(2).getOperator() == CigarOperator.X);
-				start -= paddingNs;
+		int nonSoftClipCigarLength = 0;
+		for (CigarElement e : ce) {
+			if (e.getOperator() != CigarOperator.SOFT_CLIP) {
+				nonSoftClipCigarLength += e.getLength();
 			}
-		} else {
-			if (direction == BreakendDirection.Forward) {
+		}
+		switch (ce.get(direction == BreakendDirection.Forward ? 0 : ce.size() - 1).getOperator()) {
+			case M:
 				assert(cigar.numCigarElements() == 2);
-				assert(cigar.getCigarElement(0).getOperator() == CigarOperator.MATCH_OR_MISMATCH);
-				assert(cigar.getCigarElement(1).getOperator() == CigarOperator.SOFT_CLIP);
-				// breakend is at end of
-				int anchorLength = cigar.getCigarElement(0).getLength(); 
-				start += anchorLength - 1;
-				end += anchorLength - 1;
-			} else {
-				assert(cigar.numCigarElements() == 2);
-				assert(cigar.getCigarElement(0).getOperator() == CigarOperator.SOFT_CLIP);
-				assert(cigar.getCigarElement(1).getOperator() == CigarOperator.MATCH_OR_MISMATCH);
-			}
+				if (direction == BreakendDirection.Forward) {
+					assert(cigar.getCigarElement(0).getOperator() == CigarOperator.MATCH_OR_MISMATCH);
+					assert(cigar.getCigarElement(1).getOperator() == CigarOperator.SOFT_CLIP);
+					// breakend is at end
+					int anchorLength = nonSoftClipCigarLength;
+					start += anchorLength - 1;
+					end += anchorLength - 1;
+				} else {
+					assert(cigar.numCigarElements() == 2);
+					assert(cigar.getCigarElement(0).getOperator() == CigarOperator.SOFT_CLIP);
+					assert(cigar.getCigarElement(1).getOperator() == CigarOperator.MATCH_OR_MISMATCH);
+				}
+				break;
+			case X:
+				if (direction == BreakendDirection.Forward) {
+					end += nonSoftClipCigarLength - 1;
+				} else {
+					start -= nonSoftClipCigarLength - 1;
+				}
+				break;
+			default:
+				throw new IllegalArgumentException(cigar + "is not a valid assembly CIGAR");
 		}
 		return new BreakendSummary(referenceIndex, direction, start, end);
 	}
@@ -135,28 +139,38 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 			// SAM spec requires at least one mapped base
 			// to conform to this, we add a placeholder mismatched base to our read
 			// in the furthest anchor position
-			// and represent the breakend confidence interval with a placeholder
-			// cigar N
+			// and represent the breakend confidence interval as an N
+			// interval anchored by Xs
+			LinkedList<CigarElement> ce = new LinkedList<CigarElement>();
+			int len = breakend.end - breakend.start + 1;
+			int padBases;
+			if (len <= 2) {
+				ce.add(new CigarElement(len, CigarOperator.X));
+				padBases = len;
+			} else {
+				ce.add(new CigarElement(1, CigarOperator.X));
+				ce.add(new CigarElement(len - 2, CigarOperator.N));
+				ce.add(new CigarElement(1, CigarOperator.X));
+				padBases = 2;
+			}
 			if (breakend.direction == BreakendDirection.Forward) {
 				record.setAlignmentStart(breakend.start);
-				record.setCigar(new Cigar(ImmutableList.of(
-						new CigarElement(1, CigarOperator.X),
-						new CigarElement(breakend.end - breakend.start, CigarOperator.SKIPPED_REGION),
-						new CigarElement(baseCalls.length, CigarOperator.SOFT_CLIP))));
-				record.setReadBases(Bytes.concat(new byte[] { 'N' }, baseCalls));
-				record.setBaseQualities(Bytes.concat(new byte[] { 0 }, baseQuals));
+				ce.addLast(new CigarElement(baseCalls.length, CigarOperator.SOFT_CLIP));
+				record.setCigar(new Cigar(ce));
+				record.setReadBases(Bytes.concat(PAD_BASES[padBases], baseCalls));
+				record.setBaseQualities(Bytes.concat(PAD_QUALS[padBases], baseQuals));
 			} else {
 				record.setAlignmentStart(breakend.end);
-				record.setCigar(new Cigar(ImmutableList.of(
-						new CigarElement(baseCalls.length, CigarOperator.SOFT_CLIP),
-						new CigarElement(breakend.end - breakend.start, CigarOperator.SKIPPED_REGION),
-						new CigarElement(1, CigarOperator.X))));
-				record.setReadBases(Bytes.concat(baseCalls, new byte[] { 'N' }));
-				record.setBaseQualities(Bytes.concat(baseQuals, new byte[] { 0 }));
+				ce.addFirst(new CigarElement(baseCalls.length, CigarOperator.SOFT_CLIP));
+				record.setCigar(new Cigar(ce));
+				record.setReadBases(Bytes.concat(baseCalls, PAD_BASES[padBases]));
+				record.setBaseQualities(Bytes.concat(baseQuals, PAD_QUALS[padBases]));
 			}
 		}
 		return record;
 	}
+	private static final byte[][] PAD_BASES = new byte[][] { new byte[] {}, new byte[] { 'N' }, new byte[] { 'N', 'N' } };
+	private static final byte[][] PAD_QUALS = new byte[][] { new byte[] {}, new byte[] { 0 }, new byte[] { 0, 0 } };
 	private static void setIntListAttributes(SAMRecord record, Map<VcfAttributes, int[]> intListAttributes) {
 		if (intListAttributes == null) throw new IllegalArgumentException("Attribute list not supplied");
 		// Stored in our MAPQ flag
