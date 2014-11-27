@@ -16,7 +16,7 @@ public class MockDirectedEvidence extends UnmappedMateReadPair {
 		this(bs, null);
 	}
 	public MockDirectedEvidence(BreakendSummary bs, String id) {
-		super(TestHelper.OEA(0, 1, "1M", true)[0], TestHelper.OEA(0, 1, "1M", true)[1], TestHelper.SES());
+		super(TestHelper.OEA(0, 1, "1M", true)[0], TestHelper.OEA(0, 1, "1M", true)[1], TestHelper.SES(), TestHelper.getContext());
 		this.breakend = bs;
 		if (id != null) {
 			this.id = id;

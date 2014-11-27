@@ -62,7 +62,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		protected um(int offset, boolean tumour) {
 			super(OEA(0, 15, "5M", false)[0],
 				OEA(0, 15, "5M", false)[1],
-				SES(tumour));
+				SES(tumour), getContext());
 			this.offset = offset;
 		}
 		@Override public int getLocalMapq() { return 1 + offset; }
@@ -75,7 +75,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		protected dp(int offset, boolean tumour) {
 			super(DP(0, 12, "6M", false, 1, 10, "7M", false)[0],
 					DP(0, 12, "6M", false, 1, 10, "7M", false)[1],
-					SES(tumour));
+					SES(tumour), getContext());
 				this.offset = offset;
 			}
 		@Override public int getLocalMapq() { return 1 + offset; }

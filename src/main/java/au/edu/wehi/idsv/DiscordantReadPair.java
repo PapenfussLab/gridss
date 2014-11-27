@@ -4,8 +4,8 @@ import htsjdk.samtools.SAMRecord;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 public class DiscordantReadPair extends NonReferenceReadPair implements DirectedBreakpoint {
-	protected DiscordantReadPair(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {
-		super(local, remote, source);
+	protected DiscordantReadPair(SAMRecord local, SAMRecord remote, SAMEvidenceSource source, ProcessingContext processContext) {
+		super(local, remote, source, processContext);
 		assert(!remote.getReadUnmappedFlag());
 	}
 	@Override

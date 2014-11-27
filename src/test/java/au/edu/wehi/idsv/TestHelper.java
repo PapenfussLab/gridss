@@ -157,7 +157,7 @@ public class TestHelper {
 	public static NonReferenceReadPair NRRP(SAMEvidenceSource source,
 			SAMRecord... pair) {
 		pair[1].setReadName(pair[0].getReadName());
-		return NonReferenceReadPair.create(pair[0], pair[1], source);
+		return NonReferenceReadPair.create(pair[0], pair[1], source, getContext());
 	}
 	public SAMRecordAssemblyEvidence A(BreakpointSummary bs) {
 		// TODO handle more cases

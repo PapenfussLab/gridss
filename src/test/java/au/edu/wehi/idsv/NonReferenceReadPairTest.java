@@ -12,7 +12,7 @@ import org.junit.Test;
 
 public class NonReferenceReadPairTest extends TestHelper {
 	public NonReferenceReadPair newPair(SAMRecord[] pair, int maxfragmentSize) {
-		return NonReferenceReadPair.create(pair[0], pair[1], SES(maxfragmentSize));
+		return NonReferenceReadPair.create(pair[0], pair[1], SES(maxfragmentSize), getContext());
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void should_abort_if_max_frag_size_not_sane() {
@@ -51,8 +51,8 @@ public class NonReferenceReadPairTest extends TestHelper {
 	@Test
 	public void getBreakendSummary_DP_calls_should_be_symmetrical() {
 		SAMRecord[] pair = DP(0, 100, "1S3M1S", true, 1, 200, "5M", false); 
-		BreakpointSummary loc1 = (BreakpointSummary)NonReferenceReadPair.create(pair[0], pair[1], SES(20)).getBreakendSummary();
-		BreakpointSummary loc2 = (BreakpointSummary)NonReferenceReadPair.create(pair[1], pair[0], SES(20)).getBreakendSummary();
+		BreakpointSummary loc1 = (BreakpointSummary)NonReferenceReadPair.create(pair[0], pair[1], SES(20), getContext()).getBreakendSummary();
+		BreakpointSummary loc2 = (BreakpointSummary)NonReferenceReadPair.create(pair[1], pair[0], SES(20), getContext()).getBreakendSummary();
 		assertEquals(loc1.referenceIndex, loc2.referenceIndex2);
 		assertEquals(loc1.start, loc2.start2);
 		assertEquals(loc1.end, loc2.end2);
@@ -88,12 +88,12 @@ public class NonReferenceReadPairTest extends TestHelper {
 	}
 	private void dp_test_both(SAMRecord r1, SAMRecord r2, int maxFragmentSize,
 			int expectedStart, int expectedEnd, int expectedReferenceIndex, BreakendDirection expectedDirection) {
-		BreakendSummary loc = NonReferenceReadPair.create(r1, r2, SES(maxFragmentSize)).getBreakendSummary();
+		BreakendSummary loc = NonReferenceReadPair.create(r1, r2, SES(maxFragmentSize), getContext()).getBreakendSummary();
 		assertEquals(expectedStart, loc.start);
 		assertEquals(expectedEnd, loc.end);
 		assertEquals(expectedReferenceIndex, loc.referenceIndex);
 		assertEquals(expectedDirection, loc.direction);
-		BreakpointSummary loc2 = (BreakpointSummary)NonReferenceReadPair.create(r2, r1, SES(maxFragmentSize)).getBreakendSummary();
+		BreakpointSummary loc2 = (BreakpointSummary)NonReferenceReadPair.create(r2, r1, SES(maxFragmentSize), getContext()).getBreakendSummary();
 		assertEquals(expectedStart, loc2.start2);
 		assertEquals(expectedEnd, loc2.end2);
 		assertEquals(expectedReferenceIndex, loc2.referenceIndex2);
@@ -153,18 +153,22 @@ public class NonReferenceReadPairTest extends TestHelper {
 				6, 26, 0, BreakendDirection.Backward);
 	}
 	@Test
-	public void getBreakendSummary_OEA_qual_should_match_mapq() {
-		BreakendSummary loc = newPair(OEA(0, 1, "2M3S", true), 10).getBreakendSummary();
+	public void getBreakendSummary_DP_should_not_extend_outside_sequence_bounds() {
+		assertEquals(new BreakpointSummary(0, BWD, 1, 1, 0, FWD, POLY_A.length, POLY_A.length),
+				newPair(DP(0, 1, "1M", false, 0, POLY_A.length, "1M", true), 300).getBreakendSummary());
+		
+		assertEquals(new BreakpointSummary(0, BWD, 1, 2, 0, FWD, POLY_A.length - 1, POLY_A.length),
+				newPair(DP(0, 2, "1M", false, 0, POLY_A.length - 1, "1M", true), 300).getBreakendSummary());
+		
+		assertEquals(new BreakpointSummary(0, FWD, POLY_A.length - 1, POLY_A.length, 0, BWD, 1, 2),
+				newPair(DP(0, POLY_A.length - 1, "1M", true, 0, 2, "1M", false), 300).getBreakendSummary());
 	}
 	@Test
-	public void DP_should_set_dp_evidence() {
-		SAMRecord[] pair = DP(0, 1, "100M", true, 0, 1, "100M", true);
-		pair[0].setMappingQuality(1);
-		pair[1].setMappingQuality(10);
-		BreakpointSummary loc = (BreakpointSummary)newPair(pair, 300).getBreakendSummary();
-		pair[0].setMappingQuality(10);
-		pair[1].setMappingQuality(1);
-		loc = (BreakpointSummary)newPair(pair, 300).getBreakendSummary();
+	public void getBreakendSummary_OEA_should_not_extend_outside_sequence_bounds() {
+		assertEquals(new BreakendSummary(0, BWD, 1, 1), newPair(OEA(0, 1, "1M", false), 300).getBreakendSummary());
+		assertEquals(new BreakendSummary(0, FWD, POLY_A.length, POLY_A.length), newPair(OEA(0, POLY_A.length, "1M", true), 300).getBreakendSummary());
+		assertEquals(new BreakendSummary(0, BWD, 1, 3), newPair(OEA(0, 3, "1M", false), 300).getBreakendSummary());
+		assertEquals(new BreakendSummary(0, FWD, POLY_A.length - 3, POLY_A.length), newPair(OEA(0, POLY_A.length - 3, "1M", true), 300).getBreakendSummary());
 	}
 	public void getEvidenceID_should_match_read_name() {
 		SAMRecord[] pair = DP(0, 1, "100M", true, 0, 1, "100M", true);
@@ -263,7 +267,7 @@ public class NonReferenceReadPairTest extends TestHelper {
 	}
 	private void meetsEvidenceCriteria(boolean expected, SAMRecord[] pair, int min, int max, boolean testSingle) {
 		MockSAMEvidenceSource ses = SES(min, max);
-		NonReferenceReadPair nrrp = NonReferenceReadPair.create(pair[0], pair[1], ses);
+		NonReferenceReadPair nrrp = NonReferenceReadPair.create(pair[0], pair[1], ses, getContext());
 		ReadPairParameters rpp = new ReadPairParameters() {{
 			minLocalMapq = 0;
 		}};
@@ -271,7 +275,7 @@ public class NonReferenceReadPairTest extends TestHelper {
 		if (testSingle) assertEquals(expected, NonReferenceReadPair.meetsLocalEvidenceCritera(rpp, ses, pair[0]));
 		if (testSingle) assertEquals(expected, NonReferenceReadPair.meetsRemoteEvidenceCritera(rpp, ses, pair[1]));
 		if (!pair[1].getReadUnmappedFlag()) {
-			assertEquals(expected, NonReferenceReadPair.create(pair[1], pair[0], ses).meetsEvidenceCritera(rpp));
+			assertEquals(expected, NonReferenceReadPair.create(pair[1], pair[0], ses, getContext()).meetsEvidenceCritera(rpp));
 			if (testSingle) assertEquals(expected, NonReferenceReadPair.meetsLocalEvidenceCritera(rpp, ses, pair[1]));
 			if (testSingle) assertEquals(expected, NonReferenceReadPair.meetsRemoteEvidenceCritera(rpp, ses, pair[0]));
 		}
@@ -362,9 +366,9 @@ public class NonReferenceReadPairTest extends TestHelper {
 		SAMRecord[] rp = RP(0, 100, 300, 101);
 		rp[0].setReadBases(B("CTGGGGGGACCTGAACAACTCCAAGGGCCTTGGCTGGCGAGAAAATCCTGCCTCAAAAGGGCGCGTGCTCGGTGGATCCACGGGCTACCGTTCCCTCTTAA"));
 		rp[1].setReadBases(B("CTGGGGGGACCTGAACAACTCCAAGGGCCTTGGCTGGCGAGAAAATCCTGCCTCAAAAGGGCGCGTGCTCGGTGGATCCACGGGCTACCGTTCCCTCTTAA"));
-		assertTrue(NonReferenceReadPair.create(rp[0], rp[1], ses).meetsEvidenceCritera(rpp));
+		assertTrue(NonReferenceReadPair.create(rp[0], rp[1], ses, getContext()).meetsEvidenceCritera(rpp));
 		
 		rp[1].setReadBases(B("ACCGCTCTTCCGATCTCATGCCTGGCGTCCACTTTCTTGACTATTTCCTGAAGACCAGCGTTTCCCGGGTGGTTTCACAGCTGCGGAAGCTGCCTGTGTCA"));
-		assertFalse(NonReferenceReadPair.create(rp[0], rp[1], ses).meetsEvidenceCritera(rpp));
+		assertFalse(NonReferenceReadPair.create(rp[0], rp[1], ses, getContext()).meetsEvidenceCritera(rpp));
 	}
 }

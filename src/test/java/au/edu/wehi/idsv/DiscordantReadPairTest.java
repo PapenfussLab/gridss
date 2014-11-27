@@ -8,7 +8,7 @@ import org.junit.Test;
 
 public class DiscordantReadPairTest extends TestHelper {
 	public DiscordantReadPair newPair(SAMRecord[] pair, int maxfragmentSize) {
-		return (DiscordantReadPair)NonReferenceReadPair.create(pair[0], pair[1], SES(maxfragmentSize));
+		return (DiscordantReadPair)NonReferenceReadPair.create(pair[0], pair[1], SES(maxfragmentSize), getContext());
 	}
 	@Test
 	public void getRemoteMapq_should_be_anchored_mapq() {

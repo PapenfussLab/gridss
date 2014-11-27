@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -16,7 +17,7 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	private final SAMRecord remote;
 	private final BreakendSummary location;
 	private final SAMEvidenceSource source;
-	protected NonReferenceReadPair(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {
+	protected NonReferenceReadPair(SAMRecord local, SAMRecord remote, SAMEvidenceSource source, ProcessingContext processContext) {
 		if (local == null) throw new IllegalArgumentException("local is null");
 		if (remote == null) throw new IllegalArgumentException("remote is null");
 		if (!StringUtils.equals(local.getReadName(), remote.getReadName())) throw new IllegalArgumentException(String.format("Paired reads %s and %s have differing read names", local.getReadName(), remote.getReadName()));
@@ -26,14 +27,14 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		if (source.getMaxConcordantFragmentSize() < local.getReadLength()) throw new IllegalArgumentException(String.format("Sanity check failure: read pair %s contains read of length %d when maximum fragment size is %d", local.getReadName(), local.getReadLength(), source.getMaxConcordantFragmentSize()));
 		this.local = local;
 		this.remote = remote;
-		this.location = calculateBreakendSummary(local, remote, source.getMaxConcordantFragmentSize());
+		this.location = calculateBreakendSummary(local, remote, source, processContext);
 		this.source = source;
 	}
-	public static NonReferenceReadPair create(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {
+	public static NonReferenceReadPair create(SAMRecord local, SAMRecord remote, SAMEvidenceSource source, ProcessingContext processContext) {
 		if (remote == null || remote.getReadUnmappedFlag()) {
-			return new UnmappedMateReadPair(local, remote, source);
+			return new UnmappedMateReadPair(local, remote, source, processContext);
 		} else {
-			return new DiscordantReadPair(local, remote, source);
+			return new DiscordantReadPair(local, remote, source, processContext);
 		}
 	}
 	public boolean meetsEvidenceCritera(ReadPairParameters rp) {
@@ -63,7 +64,7 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	 * @param maxfragmentSize maximum fragment size
 	 * @return local {@link BreakendSummary}, without quality information
 	 */
-	private static BreakendSummary calculateLocalBreakendSummary(SAMRecord local, SAMRecord remote, int maxfragmentSize) {
+	private static BreakendSummary calculateLocalBreakendSummary(SAMRecord local, SAMRecord remote, int maxfragmentSize, SAMSequenceDictionary dictionary) {
 		BreakendDirection direction = getBreakendDirection(local);
 		int positionClosestToBreakpoint;
 		int intervalDirection;
@@ -92,8 +93,8 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		intervalWidth = Math.min(intervalWidth, pairSeparation(local, remote));
 		if (intervalWidth < 0) return null;
 		return new BreakendSummary(local.getReferenceIndex(), direction,
-				Math.min(positionClosestToBreakpoint, positionClosestToBreakpoint + intervalWidth * intervalDirection),
-				Math.max(positionClosestToBreakpoint, positionClosestToBreakpoint + intervalWidth * intervalDirection));
+				Math.max(1, Math.min(positionClosestToBreakpoint, positionClosestToBreakpoint + intervalWidth * intervalDirection)),
+				Math.min(dictionary.getSequence(local.getReferenceIndex()).getSequenceLength(), Math.max(positionClosestToBreakpoint, positionClosestToBreakpoint + intervalWidth * intervalDirection)));
 	}
 	/**
 	 * Determines the separation between discordant reads
@@ -117,15 +118,17 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		}
 		return Integer.MAX_VALUE;
 	}
-	private static BreakendSummary calculateBreakendSummary(SAMRecord local, SAMRecord remote, int maxfragmentSize) {
+	private static BreakendSummary calculateBreakendSummary(SAMRecord local, SAMRecord remote, SAMEvidenceSource source, ProcessingContext processContext) {
+		int maxFragmentSize = source.getMaxConcordantFragmentSize();
+		SAMSequenceDictionary dictionary = processContext.getDictionary();
 		if (remote == null || remote.getReadUnmappedFlag()) {
-			return calculateLocalBreakendSummary(local, remote, maxfragmentSize);
+			return calculateLocalBreakendSummary(local, remote, maxFragmentSize, dictionary);
 		} else {
 			// Discordant because the pairs overlap = no SV evidence
 			int separation = pairSeparation(local, remote);
 			if (separation < 0) return null;
-			BreakendSummary bsLocal = calculateLocalBreakendSummary(local, remote, maxfragmentSize);
-			BreakendSummary bsRemote = calculateLocalBreakendSummary(remote, local, maxfragmentSize);
+			BreakendSummary bsLocal = calculateLocalBreakendSummary(local, remote, maxFragmentSize, dictionary);
+			BreakendSummary bsRemote = calculateLocalBreakendSummary(remote, local, maxFragmentSize, dictionary);
 			if (bsLocal == null || bsRemote == null) return null;
 			return new BreakpointSummary(bsLocal, bsRemote);
 		}
