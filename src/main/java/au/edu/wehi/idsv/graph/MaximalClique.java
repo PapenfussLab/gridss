@@ -3,6 +3,7 @@ package au.edu.wehi.idsv.graph;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.ArrayList;
 import java.util.NavigableMap;
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -18,6 +19,19 @@ import com.google.common.collect.Queues;
  * Rectangle graph implementation
  * 
  * D T Lee, Maximum clique problem of rectangle graphs, Advances in Computer Research, 1 (1983), pp. 91-107
+ * 
+ * Greedy Weighted Maximum Clique Cover of a rectangle graph
+ * 
+ * 
+ * Close to my problem:
+ * Greedy is good: An experimental study on minimum clique cover and maximum independent set problems for randomly generated rectangles
+ * - but minimising #cliques is not this problem (or is it?!)
+ *  
+ * A polynomial algorithm for the minimum weighted clique cover problem on claw-free perfect graphs http://www.sciencedirect.com/science/article/pii/0012365X82901698
+ * - but in our case our clique weights are sum vertex weights so all solutions are equal
+ * 
+ * GREEDY MAXIMUM-CLIQUE DECOMPOSITIONS http://faculty.tru.ca/smcguinness/greedymaxclique.pdf
+ * - but we want to decompose by removing vertices, not edges 
  * 
  * @author Daniel Cameron
  */
@@ -220,7 +234,14 @@ public class MaximalClique {
 	 * @return maximal cliques ordered by endX, Y (startY and endY ordering are equivalent as maximal cliques cannot overlap)
 	 */
 	public Iterator<GraphNode> getAllMaximalCliques() {
-		return new MaximalCliqueEnumerator(nodes.values().iterator());
+		//return new MaximalCliqueEnumerator(nodes.values().iterator());
+		List<GraphNode> cliques = new ArrayList<GraphNode>();
+		RectangleGraphMaximalCliqueCalculator calc = new RectangleGraphMaximalCliqueCalculator();
+		for (GraphNode n : nodes.keySet()) {
+			cliques.addAll(calc.next(n));
+		}
+		cliques.addAll(calc.complete());
+		return cliques.iterator();
 	}
 }
  

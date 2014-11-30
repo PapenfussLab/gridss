@@ -1,10 +1,12 @@
 package au.edu.wehi.idsv.graph;
 
+import java.util.Comparator;
+
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 
 /**
- * Weighted trapezoid graph vertex.
+ * Weighted rectangle graph vertex.
  * Start and end positions are both inclusive 
  * @author Daniel Cameron
  *
@@ -44,7 +46,14 @@ public class GraphNode {
 			        .compare(o1.endX, o2.endX)
 			        .compare(o1.endY, o2.endY)
 			        .result();
-					  
+		  }
+	};
+	public static Ordering<GraphNode> ByStartXY = new Ordering<GraphNode>() {
+		public int compare(GraphNode o1, GraphNode o2) {
+			  return ComparisonChain.start()
+				  	.compare(o1.startX, o2.startX)
+			        .compare(o1.startY, o2.startY)
+			        .result();
 		  }
 	};
 	public static Ordering<GraphNode> ByEndYXStartYX = new Ordering<GraphNode>() {
@@ -64,6 +73,22 @@ public class GraphNode {
 					.compare(o1.startX, o2.startX)
 					.compare(o1.endY, o2.endY)
 					.compare(o1.endX, o2.endX)
+					.result();
+		  }
+	};
+	public static Ordering<GraphNode> ByEndXStartYEndY = new Ordering<GraphNode>() {
+		public int compare(GraphNode o1, GraphNode o2) {
+			return ComparisonChain.start()
+					.compare(o1.endX, o2.endX)
+					.compare(o1.startY, o2.startY)
+					.compare(o1.endY, o2.endY)
+					.result();
+		  }
+	};
+	public static Ordering<GraphNode> ByEndY = new Ordering<GraphNode>() {
+		public int compare(GraphNode o1, GraphNode o2) {
+			return ComparisonChain.start()
+					.compare(o1.endY, o2.endY)
 					.result();
 		  }
 	};

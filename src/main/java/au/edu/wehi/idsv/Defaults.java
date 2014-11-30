@@ -24,6 +24,7 @@ public class Defaults {
 	public static final boolean WRITE_FILTERED_CALLS;
 	public static final boolean WRITE_FILTERED_ASSEMBLIES;
 	public static final boolean PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS;
+	public static final boolean PERFORM_EXPENSIVE_CLIQUE_SANITY_CHECKS;
 	/**
 	 * Safety limit to prevent unbounded exponential runtime
 	 * when attempt to path collapse highly collected degenerate subgraphs
@@ -52,6 +53,7 @@ public class Defaults {
 		WRITE_FILTERED_CALLS = Boolean.valueOf(System.getProperty("gridss.writeFilteredCalls", "false"));
 		WRITE_FILTERED_ASSEMBLIES = Boolean.valueOf(System.getProperty("gridss.writeFilteredAssemblies", "false"));
 		PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS = Boolean.valueOf(System.getProperty("gridss.debruijn.expensiveAsserts", "false"));
+		PERFORM_EXPENSIVE_CLIQUE_SANITY_CHECKS = Boolean.valueOf(System.getProperty("gridss.clique.expensiveAsserts", "true"));
 		COLLAPSE_PATH_MAX_TRAVERSAL = Integer.valueOf(System.getProperty("gridss.debruijn.maxCollapseTraversal", "2097152"));
 		BEST_PATH_MAX_TRAVERSAL = Integer.valueOf(System.getProperty("gridss.debruijn.maxPathTraversal", "65536"));
 		MAX_SUBGRAPH_WIDTH_IN_FRAGMENT_SIZE_MULTIPLES = Float.valueOf(System.getProperty("gridss.debruijn.maxSubgraphFragmentWidth", "32"));
