@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv.graph;
 
-import java.util.Comparator;
-
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 
@@ -23,6 +21,19 @@ public class GraphNode {
 		this.startY = startY;
 		this.endY = endY;
 		this.weight = weight;
+	}
+	public boolean isSameCoordinate(GraphNode node) {
+		return startX == node.startX &&
+				endX == node.endX &&
+				startY == node.startY &&
+				endY == node.endY;
+	}
+	/**
+	 * Flips the axes for the given graph node
+	 * @return
+	 */
+	public GraphNode flipAxis() {
+		return new GraphNode(startY, endY, startX, endX, weight);
 	}
 	@Override
 	public String toString() {

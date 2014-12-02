@@ -10,6 +10,7 @@ public class SoftClipParameters {
 	 * Minimum MAPQ of read to considered evidence
 	 */
 	public int minReadMapq = 5;
+	public int breakendMargin = 3;
 	/**
 	 * Minimum anchor percent identity to considered evidence
 	 * 0-100
@@ -20,4 +21,7 @@ public class SoftClipParameters {
 			"ATGGAATTCTCG", // Illumina Small RNA Adapter
 			"CTGTCTCTTATA", // Nextera Transposase Sequence
 	});
+	public BreakendSummary withMargin(ProcessingContext context, BreakendSummary bp) {
+		return bp.expandBounds(breakendMargin, context.getDictionary());
+	}
 }

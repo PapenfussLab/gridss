@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMSequenceDictionary;
+
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 
@@ -33,6 +35,58 @@ public class BreakendSummary {
 		this.direction = direction;
 		this.start = start;
 		this.end = end;
+	}
+	/**
+	 * This breakend is fully contained by the given breakend
+	 * @param other
+	 * @return
+	 */
+	public boolean containedBy(BreakendSummary other) {
+		return this.referenceIndex == other.referenceIndex &&
+				this.direction == other.direction &&
+				this.start >= other.start &&
+				this.end <= other.end;
+	}
+	/**
+	 * This breakend shares at least one position with the given breakend
+	 * @param loc
+	 * @return
+	 */
+	public boolean overlaps(BreakendSummary loc) {
+		return breakendOverlaps(loc);
+	}
+	protected boolean breakendOverlaps(BreakendSummary loc) {
+		return this.referenceIndex == loc.referenceIndex &&
+				this.direction == loc.direction &&
+				((this.start <= loc.start && this.end >= loc.start) ||
+				 (this.start >= loc.start && this.start <= loc.end));
+	}
+	/**
+	 * Returns the overlap of the given breakends
+	 * @param b1
+	 * @param b2
+	 * @return
+	 */
+	public static BreakendSummary overlapOf(BreakendSummary b1,
+			BreakendSummary b2) {
+		if (b1.referenceIndex != b2.referenceIndex) return null;
+		if (b1.direction != b2.direction) return null;
+		BreakendSummary result = new BreakendSummary(
+			b1.referenceIndex,
+			b1.direction,
+			Math.max(b1.start, b2.start),
+			Math.min(b1.end, b2.end));
+		if (result.start > result.end) return null;
+		return result;
+	}
+	/**
+	 * Extends the breakend location interval
+	 * @param expandBy number of bases to extend bounds by
+	 * @param dictionary sequence dictionary
+	 * @return breakend with bounds expanded on both sides
+	 */
+	public BreakendSummary expandBounds(int expandBy, SAMSequenceDictionary dictionary) {
+		return new BreakendSummary(referenceIndex, direction, Math.max(1, start - expandBy), Math.min(dictionary.getSequence(referenceIndex).getSequenceLength(), end + expandBy));
 	}
 	protected static String toString(int referenceIndex, int start, int end, ProcessingContext processContext) {
 		if (processContext != null && referenceIndex >= 0 && referenceIndex < processContext.getDictionary().size()) {
@@ -99,47 +153,4 @@ public class BreakendSummary {
 			        .result();
 		  }
 	};
-	/**
-	 * This breakend is fully contained by the given breakend
-	 * @param other
-	 * @return
-	 */
-	public boolean containedBy(BreakendSummary other) {
-		return this.referenceIndex == other.referenceIndex &&
-				this.direction == other.direction &&
-				this.start >= other.start &&
-				this.end <= other.end;
-	}
-	/**
-	 * This breakend shares at least one position with the given breakend
-	 * @param loc
-	 * @return
-	 */
-	public boolean overlaps(BreakendSummary loc) {
-		return breakendOverlaps(loc);
-	}
-	protected boolean breakendOverlaps(BreakendSummary loc) {
-		return this.referenceIndex == loc.referenceIndex &&
-				this.direction == loc.direction &&
-				((this.start <= loc.start && this.end >= loc.start) ||
-				 (this.start >= loc.start && this.start <= loc.end));
-	}
-	/**
-	 * Returns the overlap of the given breakends
-	 * @param b1
-	 * @param b2
-	 * @return
-	 */
-	public static BreakendSummary overlapOf(BreakendSummary b1,
-			BreakendSummary b2) {
-		if (b1.referenceIndex != b2.referenceIndex) return null;
-		if (b1.direction != b2.direction) return null;
-		BreakendSummary result = new BreakendSummary(
-			b1.referenceIndex,
-			b1.direction,
-			Math.max(b1.start, b2.start),
-			Math.min(b1.end, b2.end));
-		if (result.start > result.end) return null;
-		return result;
-	}
 }

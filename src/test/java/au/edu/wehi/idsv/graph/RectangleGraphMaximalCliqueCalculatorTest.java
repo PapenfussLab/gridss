@@ -9,20 +9,22 @@ import org.junit.Test;
 
 import com.google.common.collect.Lists;
 
-public class MaximalCliqueTest {
+public class RectangleGraphMaximalCliqueCalculatorTest {
 	private GraphNode N(long startX, long endX, long startY, long endY) {
 		return new GraphNode(startX, endX, startY, endY, 1);
 	}
 	private GraphNode N(long startX, long endX, long startY, long endY, int weight) {
 		return new GraphNode(startX, endX, startY, endY, weight);
 	}
-	MaximalClique graph; 
+	RectangleGraphMaximalCliqueCalculator graph; 
 	private GraphNode[] getCliques(GraphNode[] nodes) {
-		graph = new MaximalClique();
-		for (GraphNode n : nodes) {
-			graph.add(n);
+		Arrays.sort(nodes, 0, nodes.length, GraphNode.ByStartXYEndXY);
+		graph = new RectangleGraphMaximalCliqueCalculator();
+		List<GraphNode> result = Lists.newArrayList();
+		for (int i = 0; i < nodes.length; i++) {
+			result.addAll(graph.next(nodes[i]));
 		}
-		List<GraphNode> result = Lists.newArrayList(graph.getAllMaximalCliques());
+		result.addAll(graph.complete());
 		return result.toArray(new GraphNode[0]);
 	}
 	private GraphNode[] flipXY(GraphNode[] a) {

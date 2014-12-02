@@ -9,21 +9,19 @@ import au.edu.wehi.idsv.Defaults;
 import com.google.common.collect.ImmutableList;
 
 /**
- * Greedy is good: An experimental study on minimum clique cover and maximum independent set problems for randomly generated rectangles
+ * Calculates all maximal cliques of a rectangle graph
+ *
+ * Maximum clique problem of rectangle graphs, Advances in Computer Research, D T Lee, 1 (1983), pp. 91-107
  * 
+ * Better implementation would be to partition the rectangle graph (boxicity=2)
+ * into cliques such that each vertex is contained in exactly one clique.
+ * 
+ * Since total vertex weight is fixed, minimising number of cliques is equivalent to maximising average clique weight.
+ * This an NP, see:
+ * Greedy is good: An experimental study on minimum clique cover and maximum independent set problems for randomly generated rectangles
  * Finding the connected components and a maximum clique of an intersection graph of rectangles in the plane, Journal of Algorithms, Volume 4, Issue 4, December 1983, Pages 310–323
  * A note on maximum independent sets in rectangle intersection graphs, Information Processing Letters, Volume 89, Issue 1, 16 January 2004, Pages 19–23
- * 
- * Partitions a rectangle graph (boxicity=2) into cliques such that
- * each vertex is contained in exactly one clique.
- * 
- * Partitioning is performed greedily with nodes iteratively allocated to the
- * maximum clique.
- * 
- * This is similar to the classical maximum clique decomposition problem but
- * instead of removing maximum clique edges, maximum verticies are removed.
- *  
- * This algorithm is optimised for sparse rectangle graphs. 
+ * GREEDY MAXIMUM-CLIQUE DECOMPOSITIONS http://faculty.tru.ca/smcguinness/greedymaxclique.pdf (we want to decompose by removing vertices, not edges) 
  * 
  * @author Daniel Cameron
  */
@@ -177,8 +175,8 @@ public class RectangleGraphMaximalCliqueCalculator {
 	private boolean sanityCheckScanlineActive() {
 		if (!Defaults.PERFORM_EXPENSIVE_CLIQUE_SANITY_CHECKS) return true;
 		assert(sanityCheck());
+		assert(!activeScanlineEndingY.isEmpty());
 		assert(activeScanlineActiveWeight > 0);
-		assert(!activeScanlineEndingY.isEmpty()); 
 		assert(activeScanlineCurrentPosition != null);
 		assert(activeScanlineCurrentPosition.getStartY() < Long.MAX_VALUE - 1);
 		assert(activeScanlineCurrentPosition.getEndY() < Long.MAX_VALUE);

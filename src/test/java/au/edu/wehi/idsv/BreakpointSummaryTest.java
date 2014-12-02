@@ -85,4 +85,8 @@ public class BreakpointSummaryTest extends TestHelper {
 			}
 		}
 	}
+	@Test
+	public void expandBounds_should_expand_both_sides() {
+		assertEquals(new BreakpointSummary(0, FWD, 3, 8, 1, BWD, 9, 12), new BreakpointSummary(0, FWD, 4, 7, 1, BWD, 10, 11).expandBounds(1, SMALL_FA.getSequenceDictionary()));
+	}
 }

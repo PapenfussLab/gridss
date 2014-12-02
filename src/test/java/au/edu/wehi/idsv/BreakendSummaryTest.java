@@ -4,6 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 
 import org.junit.Test;
 
@@ -65,5 +67,17 @@ public class BreakendSummaryTest extends TestHelper {
 		assertNotEquals(new BreakendSummary(0, FWD, 1, 2), new BreakendSummary(1, FWD, 1, 2));
 		assertNotEquals(new BreakendSummary(0, FWD, 1, 2), new BreakendSummary(0, BWD, 2, 2));
 		assertNotEquals(new BreakendSummary(0, FWD, 1, 2), new BreakendSummary(0, FWD, 1, 3));
+	}
+	@Test
+	public void expandBounds_should_extend_both_sides() {
+		assertEquals(new BreakendSummary(0, FWD, 3, 8), new BreakendSummary(0, FWD, 4, 7).expandBounds(1, SMALL_FA.getSequenceDictionary()));
+		assertEquals(new BreakendSummary(0, FWD, 2, 9), new BreakendSummary(0, FWD, 4, 7).expandBounds(2, SMALL_FA.getSequenceDictionary()));
+	}
+	@Test
+	public void expandBounds_should_not_extend_past_bounds() {
+		SAMSequenceDictionary dict = new SAMSequenceDictionary();
+		dict.addSequence(new SAMSequenceRecord("test", 10));
+		assertEquals(new BreakendSummary(0, FWD, 7, 10), new BreakendSummary(0, FWD, 9, 9).expandBounds(2, dict));
+		assertEquals(new BreakendSummary(0, FWD, 1, 3), new BreakendSummary(0, FWD, 1, 1).expandBounds(2, dict));
 	}
 }

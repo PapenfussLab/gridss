@@ -1,180 +1,118 @@
 package au.edu.wehi.idsv;
 
-import java.util.Iterator;
-import java.util.PriorityQueue;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.Log;
 
-import au.edu.wehi.idsv.graph.GraphNode;
-import au.edu.wehi.idsv.graph.MaximalClique;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import java.util.Iterator;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+
+import au.edu.wehi.idsv.util.AutoClosingIterator;
+import au.edu.wehi.idsv.util.DuplicatingIterable;
 
 import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.PeekingIterator;
 /**
  * Calls breakpoints from the given evidence
  * 
  * @author Daniel Cameron
  */
-public class EvidenceClusterProcessor implements Iterable<VariantContextDirectedEvidence> {
-	private final MaximalClique ff = new MaximalClique();
-	private final MaximalClique fb = new MaximalClique();
-	private final MaximalClique bf = new MaximalClique();
-	private final MaximalClique bb = new MaximalClique();
-	private final ProcessingContext context;
-	public EvidenceClusterProcessor(ProcessingContext context) {
-		this.context = context;
-	}
-	public void addEvidence(DirectedEvidence evidence) {
-		BreakendSummary loc = evidence.getBreakendSummary();
-		if (evidence instanceof SoftClipEvidence) {
-			// TODO: expand evidence region for soft-clips
-			// Socrates expands by +- 3bp
-		}
-		if (loc instanceof BreakpointSummary) {
-			BreakpointSummary interval = (BreakpointSummary)loc;
-			if (filterOut(interval)) {
-				return;
-			}
-			assert(interval.referenceIndex >= 0);
-			assert(interval.referenceIndex2 >= 0);
-			assert(interval.start >= 1);
-			assert(interval.start2 >= 1);
-			long startX = context.getLinear().getLinearCoordinate(interval.referenceIndex, interval.start);
-			long endX = startX + interval.end - interval.start;
-			long startY = context.getLinear().getLinearCoordinate(interval.referenceIndex2, interval.start2);
-			long endY = startY + interval.end2 - interval.start2;
-			BreakendDirection lowDir = interval.direction;
-			BreakendDirection highDir = interval.direction2;
-			if (startX > startY) {
-				// reverse evidence: need to flip coordinates
-				long tmp = startX;
-				startX = startY;
-				startY = tmp;
-				tmp = endX;
-				endX = endY;
-				endY = tmp;
-				BreakendDirection tmpDir = lowDir;
-				lowDir = highDir;
-				highDir = tmpDir;
-			}
-			GraphNode node = new GraphNode(startX, endX, startY, endY, (float)Models.llr(evidence));
-			addNode(lowDir, highDir, node);
-		} else {
-			if (filterOut(loc)) return;
-			// TODO: process evidence such as short SCs and OEAs which do not map to a remote location
+public class EvidenceClusterProcessor extends AbstractIterator<VariantContextDirectedEvidence> implements CloseableIterator<VariantContextDirectedEvidence> {
+	private static final Log log = Log.getInstance(EvidenceClusterProcessor.class);
+	private final BlockingQueue<VariantContextDirectedEvidence> callBuffer = new ArrayBlockingQueue<VariantContextDirectedEvidence>(64);
+	private MaximalCliqueIteratorRunnable[] threads;
+	private AutoClosingIterator<DirectedEvidence> underlying;
+	private volatile Throwable uncaught = null;
+	private volatile boolean isClosed = false;
+	private Thread.UncaughtExceptionHandler handler = new Thread.UncaughtExceptionHandler() {
+	    public void uncaughtException(Thread th, Throwable ex) {
+	    	log.error(ex);
+	    	uncaught = ex;
+	    }
+	};
+	public EvidenceClusterProcessor(ProcessingContext context, Iterator<DirectedEvidence> evidence) {
+		this.underlying = new AutoClosingIterator<DirectedEvidence>(evidence);
+		// Start each on their own thread
+		DuplicatingIterable<DirectedEvidence> dib = new DuplicatingIterable<DirectedEvidence>(evidence, 32);
+		this.threads = new MaximalCliqueIteratorRunnable[] {
+			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Forward, BreakendDirection.Forward),
+			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Forward, BreakendDirection.Backward),
+			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Backward, BreakendDirection.Forward),
+			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Backward, BreakendDirection.Backward)
+		};
+		for (MaximalCliqueIteratorRunnable r : threads) {
+			r.setUncaughtExceptionHandler(handler);
+			r.start();
 		}
 	}
-	/**
-	 * Determine whether the given evidence should be filtered
-	 * @param loc evidence location to consider filtering
-	 * @return true if the evidence should be filtered out 
-	 */
-	protected boolean filterOut(BreakendSummary loc) {
-		return false;
-	}
-	/**
-	 * Determine whether the given evidence should be filtered
-	 * @param loc evidence location to consider filtering
-	 * @return true if the evidence should be filtered out 
-	 */
-	protected boolean filterOut(BreakpointSummary loc) {
-		return false;
-	}
-	private void addNode(BreakendDirection lowDir, BreakendDirection highDir, GraphNode node) {
-		if (lowDir == BreakendDirection.Forward) {
-			if (highDir == BreakendDirection.Forward) {
-				ff.add(node);
-			} else {
-				fb.add(node);
+	private class MaximalCliqueIteratorRunnable extends Thread {
+		private final MaximalEvidenceCliqueIterator cliqueIt;
+		public MaximalCliqueIteratorRunnable(ProcessingContext processContext, Iterator<DirectedEvidence> evidenceIt, BreakendDirection lowDir, BreakendDirection highDir) {
+			cliqueIt = new MaximalEvidenceCliqueIterator(processContext, evidenceIt, lowDir, highDir);
+		}
+		@Override
+		public void run() {
+			while (cliqueIt.hasNext() && !isClosed) {
+				callBuffer.add(cliqueIt.next());
 			}
-		} else {
-			if (highDir == BreakendDirection.Forward) {
-				bf.add(node);
-			} else {
-				bb.add(node);
-			}
+		}
+	}
+	private boolean workersDone() {
+		boolean allClosed = true;
+		for (MaximalCliqueIteratorRunnable r : threads) {
+			allClosed &= !r.isAlive();
+		}
+		return allClosed;
+	}
+	private void checkBackgroundThreadSuccess() {
+		if (uncaught != null) {
+			close();
+			throw new RuntimeException(uncaught);
 		}
 	}
 	@Override
-	public Iterator<VariantContextDirectedEvidence> iterator() {
-		Iterator<VariantContextDirectedEvidence> x = Iterators.mergeSorted(ImmutableList.of(
-				new EvidenceClusterProcessorMaximalCliqueIterator(ff, BreakendDirection.Forward, BreakendDirection.Forward),
-				new EvidenceClusterProcessorMaximalCliqueIterator(fb, BreakendDirection.Forward, BreakendDirection.Backward),
-				new EvidenceClusterProcessorMaximalCliqueIterator(bf, BreakendDirection.Backward, BreakendDirection.Forward),
-				new EvidenceClusterProcessorMaximalCliqueIterator(bb, BreakendDirection.Backward, BreakendDirection.Backward)),
-			IdsvVariantContext.ByLocationStart);
-		// TODO: filtering and processing of the maximal clique
-		// don't call weak evidence
-		// don't call if there is a much stronger call nearby
-		return x;
-	}
-	/**
-	 * Maximal clique summary evidence iterator 
-	 * @author Daniel Cameron
-	 *
-	 */
-	public class EvidenceClusterProcessorMaximalCliqueIterator extends AbstractIterator<VariantContextDirectedEvidence> { 
-		private final PriorityQueue<GraphNode> highBreakend = new PriorityQueue<GraphNode>(1024, GraphNode.ByStartYXEndYX);
-		private final PeekingIterator<GraphNode> it;
-		private final BreakendDirection lowDir;
-		private final BreakendDirection highDir;
-		public EvidenceClusterProcessorMaximalCliqueIterator(MaximalClique completeGraph, BreakendDirection lowDir, BreakendDirection highDir) {
-			this.it = Iterators.peekingIterator(completeGraph.getAllMaximalCliques());
-			this.lowDir = lowDir;
-			this.highDir = highDir;
-		}
-		private VariantContextDirectedEvidence toVariant(GraphNode node, boolean isHighBreakend) {
-			BreakpointSummary breakpoint = new BreakpointSummary(
-					context.getLinear().getReferenceIndex(node.startX),
-					lowDir,
-					context.getLinear().getReferencePosition(node.startX),
-					context.getLinear().getReferencePosition(node.endX),
-					context.getLinear().getReferenceIndex(node.startY),
-					highDir,
-					context.getLinear().getReferencePosition(node.startY),
-					context.getLinear().getReferencePosition(node.endY));
-			IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
-			// use a hash of the breakpoint as a (probably) unique identifier
-			String id = String.format("idsv%d", Math.abs(breakpoint.hashCode()));
-			builder.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, id);
-			builder.attribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, id + (isHighBreakend ? "o" : "h"));
-			builder.id(id + (isHighBreakend ? "h" : "o"));
-			if (isHighBreakend) {
-				breakpoint = breakpoint.remoteBreakpoint();
-			}
-			builder.breakpoint(breakpoint, null);
-			builder.phredScore(node.weight);
-			builder.attribute(VcfAttributes.LOG_LIKELIHOOD_RATIO_BREAKPOINT, node.weight);
-			VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)builder.make();
-			assert(v != null);
-			return v;
-		}
-		@Override
-		protected VariantContextDirectedEvidence computeNext() {
-			if (!it.hasNext()) {
-				if (highBreakend.isEmpty()) {
-					return endOfData();
-				} else {
-					return toVariant(highBreakend.poll(), true);
+	protected VariantContextDirectedEvidence computeNext() {
+		checkBackgroundThreadSuccess();
+		if (isClosed) return endOfData();
+		// TODO: improve on busy wait loop
+		while (!workersDone()) {
+			VariantContextDirectedEvidence result;
+			try {
+				result = callBuffer.poll(500, TimeUnit.MILLISECONDS);
+				checkBackgroundThreadSuccess();
+				if (result != null) {
+					return result;
 				}
+			} catch (InterruptedException e) {
+				log.debug("Interrupted waiting for maximal clique call");
+				checkBackgroundThreadSuccess();
 			}
-			// BUG: sort order of output is by location end, not start
-			// calls for breakend mapping to two difference location can be returned
-			// out of order. To fix, we need to know the max call window size (=max frag size)
-			// and buffer the input iterator by that much to swap the sort order
-			// Alteratively, MaximalClique can traverse backwards which would return cliques
-			// in starting order, instead of ending order. Easiest way to do this is to make
-			// all coordinates given to MaximalClique negative
-			if (highBreakend.isEmpty() || highBreakend.peek().startY > it.peek().startX) {
-				// iterator is next
-				GraphNode node = it.next();
-				highBreakend.add(node);
-				return toVariant(node, false);
-			} else {
-				return toVariant(highBreakend.poll(), true);
+		}
+		// flush remaining buffer
+		while (!callBuffer.isEmpty()) return callBuffer.poll();
+		close();
+		return endOfData();
+	}
+	@Override
+	public void close() {	
+		isClosed = true;
+		if (underlying != null) {
+			underlying.close();
+			underlying = null;
+		}
+		callBuffer.clear();
+		if (threads != null) {
+			for (int i = 0; i < threads.length; i++) {
+				try {
+					if (threads[i] != null) {
+						threads[i].join(1000);
+					}
+				} catch (InterruptedException e) {
+					log.warn("Interrupted waiting for child thread to join");
+				}
+				threads[i] = null;
 			}
+			threads = null;
 		}
 	}
 }

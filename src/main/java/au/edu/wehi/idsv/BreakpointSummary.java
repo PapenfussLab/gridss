@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMSequenceDictionary;
+
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 
@@ -70,6 +72,10 @@ public class BreakpointSummary extends BreakendSummary {
 		return super.overlaps(loc) &&
 				(!(loc instanceof BreakpointSummary) ||
 						remoteBreakend().breakendOverlaps(((BreakpointSummary)loc).remoteBreakend()));
+	}
+	@Override
+	public BreakpointSummary expandBounds(int expandBy, SAMSequenceDictionary dictionary) {
+		return new BreakpointSummary(localBreakend().expandBounds(expandBy, dictionary), remoteBreakend().expandBounds(expandBy, dictionary));
 	}
 	@Override
 	public int hashCode() {

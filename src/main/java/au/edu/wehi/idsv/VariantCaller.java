@@ -24,6 +24,7 @@ import java.util.concurrent.Future;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
+import au.edu.wehi.idsv.vcf.VcfFileUtil;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
@@ -65,30 +66,32 @@ public class VariantCaller extends EvidenceProcessorBase {
 				log.debug("Skipping " + task + ": output file exists");
 				return null;
 			}
-			CloseableIterator<DirectedEvidence> evidenceIt = null;
+			log.info("Start " + task);
 			try {
-				FileSystemContext.getWorkingFileFor(outfile).delete();
-				log.info("Start " + task);
-				EvidenceClusterSubsetProcessor processor = new EvidenceClusterSubsetProcessor(processContext, chri, chrj);
-				evidenceIt = getEvidenceForChr(
-						processContext.getVariantCallingParameters().callOnlyAssemblies,
-						false,
-						true,
-						true,
-						true,
-						chri,
-						chrj); 
-				writeMaximalCliquesToVcf(processContext,
-						processor,
-						FileSystemContext.getWorkingFileFor(outfile),
-						evidenceIt);
-				FileHelper.move(FileSystemContext.getWorkingFileFor(outfile), outfile, true);
+				CloseableIterator<DirectedEvidence> evidenceIt = null;
+				File unsorted = FileSystemContext.getWorkingFileFor(outfile);
+				File sorted = FileSystemContext.getWorkingFileFor(outfile, "sorted.");
+				unsorted.delete();
+				sorted.delete();
+				try {
+					EvidenceClusterProcessor processor = new EvidenceClusterSubsetProcessor(processContext, evidenceIt, chri, chrj);
+					// TODO: linear pass over breakpoints by including all remote evidence
+					boolean assemblyOnly = processContext.getVariantCallingParameters().callOnlyAssemblies; 
+					evidenceIt = getEvidenceForChr(true, true, !assemblyOnly, !assemblyOnly, !assemblyOnly,
+							chri, chrj);
+					writeMaximalCliquesToVcf(
+							processContext,
+							new DirectedEvidenceBoundsAssertionIterator<VariantContextDirectedEvidence>(processor, chri, chrj),
+							unsorted);
+				} finally {
+					CloserUtil.close(evidenceIt);
+				}
+				VcfFileUtil.sort(processContext, unsorted, sorted);
+				FileHelper.move(sorted, outfile, true);
 				log.info("Complete " + task);
 			} catch (Exception e) {
 				log.error(e, "Error " + task);
 				throw new RuntimeException("Error " + task, e);
-			} finally {
-				CloserUtil.close(evidenceIt);
 			}
 			return null;
 		}
@@ -134,23 +137,23 @@ public class VariantCaller extends EvidenceProcessorBase {
 					log.debug("Skipping breakpoint identification: output file exists");
 				} else {
 					CloseableIterator<DirectedEvidence> evidenceIt = null;
+					File unsorted = FileSystemContext.getWorkingFileFor(outfile);
+					File sorted = FileSystemContext.getWorkingFileFor(outfile, "sorted.");
+					unsorted.delete();
+					sorted.delete();
 					try {
-						EvidenceClusterProcessor processor = new EvidenceClusterProcessor(processContext);
-						// TODO: linear pass over breakpoints by including all remote evidence
-						evidenceIt = getAllEvidence(processContext.getVariantCallingParameters().callOnlyAssemblies,
-								false,
-								true,
-								true,
-								true);
+						EvidenceClusterProcessor processor = new EvidenceClusterProcessor(processContext, evidenceIt);
+						boolean assemblyOnly = processContext.getVariantCallingParameters().callOnlyAssemblies; 
+						evidenceIt = getAllEvidence(true, true, !assemblyOnly, !assemblyOnly, !assemblyOnly);
 						writeMaximalCliquesToVcf(
 								processContext,
 								processor,
-								FileSystemContext.getWorkingFileFor(outfile),
-								evidenceIt);
-						FileHelper.move(FileSystemContext.getWorkingFileFor(outfile), outfile, true);
+								unsorted);
 					} finally {
 						CloserUtil.close(evidenceIt);
 					}
+					VcfFileUtil.sort(processContext, unsorted, sorted);
+					FileHelper.move(sorted, outfile, true);
 				}
 			}
 			log.info("Identifying Breakpoints complete");
@@ -204,17 +207,13 @@ public class VariantCaller extends EvidenceProcessorBase {
 		});
 		return idsvIt;
 	}
-	private static void writeMaximalCliquesToVcf(ProcessingContext processContext, EvidenceClusterProcessor processor, File vcf, Iterator<DirectedEvidence> evidenceIt) {
+	private static void writeMaximalCliquesToVcf(ProcessingContext processContext, Iterator<VariantContextDirectedEvidence> it, File vcf) {
 		final ProgressLogger writeProgress = new ProgressLogger(log);
 		log.info("Loading minimal evidence set for ", vcf, " into memory.");
-		while (evidenceIt.hasNext()) {
-			processor.addEvidence(evidenceIt.next());
-		}
 		VariantContextWriter vcfWriter = null;
 		try {
-			vcfWriter = processContext.getVariantContextWriter(vcf, true);
+			vcfWriter = processContext.getVariantContextWriter(vcf, false);
 			log.info("Start calling maximal cliques for ", vcf);
-			Iterator<VariantContextDirectedEvidence> it = processor.iterator();
 			while (it.hasNext()) {
 				VariantContextDirectedEvidence loc = it.next();
 				vcfWriter.add(loc);

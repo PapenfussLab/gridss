@@ -1,0 +1,113 @@
+package au.edu.wehi.idsv;
+
+import java.util.Iterator;
+
+import au.edu.wehi.idsv.graph.GraphNode;
+import au.edu.wehi.idsv.graph.GraphNodeMergingIterator;
+import au.edu.wehi.idsv.graph.RectangleGraphMaximalCliqueIterator;
+import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
+
+import com.google.common.collect.AbstractIterator;
+/**
+ * Maximal clique summary evidence iterator 
+ * @author Daniel Cameron
+ *
+ */
+public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantContextDirectedEvidence> {
+	private VariantContextDirectedEvidence lastHigh = null;
+	private final BreakendDirection targetLowDir;
+	private final BreakendDirection targetHighDir;
+	private final RectangleGraphMaximalCliqueIterator calc;
+	private final ProcessingContext context;
+	public MaximalEvidenceCliqueIterator(ProcessingContext processContext, Iterator<DirectedEvidence> evidenceIt, BreakendDirection lowDir, BreakendDirection highDir) {
+		this.context = processContext;
+		this.calc = new RectangleGraphMaximalCliqueIterator(new GraphNodeMergingIterator(new EvidenceToGraphNodeIterator(evidenceIt)));
+		this.targetLowDir = lowDir;
+		this.targetHighDir = highDir;
+	}
+	private class EvidenceToGraphNodeIterator extends AbstractIterator<GraphNode> {
+		private final Iterator<DirectedEvidence> it;
+		public EvidenceToGraphNodeIterator(Iterator<DirectedEvidence> it) {
+			this.it = it;
+		}
+		@Override
+		protected GraphNode computeNext() {
+			while (it.hasNext()) {
+				GraphNode node = toGraphNode(it.next());
+				if (node != null) {
+					return node;
+				}
+			}
+			return endOfData();
+		}
+	}
+	private GraphNode toGraphNode(DirectedEvidence e) {
+		BreakendSummary loc = e.getBreakendSummary();
+		if (e instanceof SoftClipEvidence) {
+			loc = context.getSoftClipParameters().withMargin(context, loc);
+		}
+		if (!(loc instanceof BreakpointSummary)) return null;
+		
+		BreakpointSummary bp = (BreakpointSummary)loc;
+		assert(bp.referenceIndex >= 0);
+		assert(bp.referenceIndex2 >= 0);
+		assert(bp.start >= 1);
+		assert(bp.start2 >= 1);
+		long startX = context.getLinear().getLinearCoordinate(bp.referenceIndex, bp.start);
+		long endX = startX + bp.end - bp.start;
+		long startY = context.getLinear().getLinearCoordinate(bp.referenceIndex2, bp.start2);
+		long endY = startY + bp.end2 - bp.start2;
+		BreakendDirection lowDir = bp.direction;
+		BreakendDirection highDir = bp.direction2;
+		GraphNode node = new GraphNode(startX, endX, startY, endY, (float)Models.llr(e));
+		if (startX > startY) {
+			node = node.flipAxis();
+			lowDir = bp.direction2;
+			highDir = bp.direction;
+		}
+		if (lowDir != targetLowDir || highDir != targetHighDir) return null;
+		return node;
+	}
+	private VariantContextDirectedEvidence toVariant(GraphNode node, boolean isHighBreakend) {
+		BreakpointSummary breakpoint = new BreakpointSummary(
+				context.getLinear().getReferenceIndex(node.startX),
+				targetLowDir,
+				context.getLinear().getReferencePosition(node.startX),
+				context.getLinear().getReferencePosition(node.endX),
+				context.getLinear().getReferenceIndex(node.startY),
+				targetHighDir,
+				context.getLinear().getReferencePosition(node.startY),
+				context.getLinear().getReferencePosition(node.endY));
+		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
+		// use a hash of the breakpoint as a (probably) unique identifier
+		String id = String.format("idsv%d", Math.abs(breakpoint.hashCode()));
+		builder.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, id);
+		builder.attribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, id + (isHighBreakend ? "o" : "h"));
+		builder.id(id + (isHighBreakend ? "h" : "o"));
+		if (isHighBreakend) {
+			breakpoint = breakpoint.remoteBreakpoint();
+		}
+		builder.breakpoint(breakpoint, null);
+		builder.phredScore(node.weight);
+		builder.attribute(VcfAttributes.LOG_LIKELIHOOD_RATIO_BREAKPOINT, node.weight);
+		VariantContextDirectedEvidence v = (VariantContextDirectedBreakpoint)builder.make();
+		assert(v != null);
+		return v;
+	}
+	@Override
+	protected VariantContextDirectedEvidence computeNext() {
+		if (lastHigh != null) {
+			VariantContextDirectedEvidence result = lastHigh;
+			lastHigh = null;
+			return result;
+		}
+		if (calc.hasNext()) {
+			GraphNode node = calc.next();
+			VariantContextDirectedEvidence result = toVariant(node, false); 
+			lastHigh = toVariant(node, true);
+			return result;
+		}
+		return endOfData();
+	}
+}

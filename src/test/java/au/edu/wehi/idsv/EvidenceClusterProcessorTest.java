@@ -3,6 +3,7 @@ package au.edu.wehi.idsv;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
@@ -11,31 +12,52 @@ import com.google.common.collect.Lists;
 
 public class EvidenceClusterProcessorTest extends TestHelper {
 	@Test
+	public void soft_clip_evidence_should_expand_by_margin() {
+		List<DirectedEvidence> list = new ArrayList<DirectedEvidence>();
+		list.add(SCE(FWD, withSequence("TTTT", Read(0, 10, "1M3S"))[0], Read(1, 10, "3M")));
+		EvidenceClusterProcessor ecp = new EvidenceClusterProcessor(getContext(), list.iterator());
+		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp);
+		BreakpointSummary bp = ((VariantContextDirectedBreakpoint)result.get(0)).getBreakendSummary();
+		assertEquals(10-3, bp.start);
+		assertEquals(10+3, bp.end);
+	}
+	@Test
+	public void should_call_maximal_clique() {
+		List<DirectedEvidence> list = new ArrayList<DirectedEvidence>();
+		list.add(new MockDirectedEvidence(new BreakpointSummary(0, FWD, 10, 20, 1, BWD, 30, 40)));
+		list.add(new MockDirectedEvidence(new BreakpointSummary(0, FWD, 15, 25, 1, BWD, 35, 45)));
+		EvidenceClusterProcessor ecp = new EvidenceClusterProcessor(getContext(), list.iterator());
+		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp);
+		assertEquals(2, result.size());
+		assertEquals(new BreakpointSummary(0, FWD, 15, 20, 1, BWD, 35, 40), result.get(0).getBreakendSummary());
+	}
+	@Test
 	public void singleton_should_call_both_breakends() {
-		EvidenceClusterProcessor ecp = new EvidenceClusterProcessor(getContext());
-		ecp.addEvidence(SCE(FWD, withSequence("TTTT", Read(0, 1, "1M3S"))[0], Read(1, 10, "3M")));
-		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp.iterator());
+		List<DirectedEvidence> list = new ArrayList<DirectedEvidence>();
+		list.add(new MockDirectedEvidence(new BreakpointSummary(0, FWD, 10, 20, 1, BWD, 30, 40)));
+		EvidenceClusterProcessor ecp = new EvidenceClusterProcessor(getContext(), list.iterator());
+		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp);
 		assertEquals(2, result.size());
 		assertTrue(result.get(0) instanceof VariantContextDirectedBreakpoint);
-		BreakpointSummary bp = ((VariantContextDirectedBreakpoint)result.get(0)).getBreakendSummary();
-		assertEquals(0, bp.referenceIndex);
-		assertEquals(1, bp.start);
-		assertEquals(1, bp.end);
-		assertEquals(FWD, bp.direction);
-		assertEquals(1, bp.referenceIndex2);
-		assertEquals(10, bp.start2);
-		assertEquals(10, bp.end2);
-		assertEquals(BWD, bp.direction2);
-		
-		assertTrue(result.get(1) instanceof VariantContextDirectedBreakpoint);
-		bp = ((VariantContextDirectedBreakpoint)result.get(1)).getBreakendSummary();
-		assertEquals(0, bp.referenceIndex2);
-		assertEquals(1, bp.start2);
-		assertEquals(1, bp.end2);
-		assertEquals(FWD, bp.direction2);
-		assertEquals(1, bp.referenceIndex);
-		assertEquals(10, bp.start);
-		assertEquals(10, bp.end);
-		assertEquals(BWD, bp.direction);
+		assertEquals(new BreakpointSummary(0, FWD, 10, 20, 1, BWD, 30, 40), result.get(0).getBreakendSummary());
+		assertEquals(new BreakpointSummary(1, BWD, 30, 40, 0, FWD, 10, 20), result.get(1).getBreakendSummary());
+	}
+	@Test(expected=RuntimeException.class)
+	public void should_rethrow_worker_thread_exceptions() {
+		List<DirectedEvidence> list = new ArrayList<DirectedEvidence>();
+		list.add(new MockDirectedEvidence(new BreakpointSummary(0, FWD, -1, -1, 1, BWD, 30, 40)));
+		EvidenceClusterProcessor ecp = new EvidenceClusterProcessor(getContext(), list.iterator());
+		Lists.newArrayList(ecp);
+	}
+	@Test
+	public void should_call_orientations() {
+		List<DirectedEvidence> list = new ArrayList<DirectedEvidence>();
+		list.add(new MockDirectedEvidence(new BreakpointSummary(0, FWD, 10, 20, 1, FWD, 30, 40)));
+		list.add(new MockDirectedEvidence(new BreakpointSummary(0, FWD, 10, 20, 1, BWD, 30, 40)));
+		list.add(new MockDirectedEvidence(new BreakpointSummary(0, BWD, 10, 20, 1, FWD, 30, 40)));
+		list.add(new MockDirectedEvidence(new BreakpointSummary(0, BWD, 10, 20, 1, BWD, 30, 40)));
+		EvidenceClusterProcessor ecp = new EvidenceClusterProcessor(getContext(), list.iterator());
+		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp);
+		assertEquals(4 * 2, result.size());
 	}
 }
