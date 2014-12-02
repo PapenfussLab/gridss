@@ -7,6 +7,7 @@ import htsjdk.variant.vcf.VCFFileReader;
 
 import java.io.File;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 
 import au.edu.wehi.idsv.BreakendAnnotator;
@@ -20,6 +21,7 @@ import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
+import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -28,12 +30,14 @@ import com.google.common.collect.Sets;
  * @author cameron.d
  *
  */
-public class TruthAnnotator implements BreakendAnnotator {
+public class TruthAnnotator extends AbstractIterator<VariantContextDirectedEvidence> implements BreakendAnnotator {
 	private final ProcessingContext processContext;
 	private final List<IdsvVariantContext> truth;
-	public TruthAnnotator(ProcessingContext processContext, File truthVcf) {
+	private final Iterator<VariantContextDirectedEvidence> it;
+	public TruthAnnotator(ProcessingContext processContext, Iterator<VariantContextDirectedEvidence> it, File truthVcf) {
 		this.processContext = processContext;
 		this.truth = loadTruthVcf(processContext, truthVcf);
+		this.it = it;
 	}
 	private static List<IdsvVariantContext> loadTruthVcf(ProcessingContext processContext, File truthVcf) {
 		List<IdsvVariantContext> truth = Lists.newArrayList();
@@ -51,7 +55,6 @@ public class TruthAnnotator implements BreakendAnnotator {
 		}
 		return truth;
 	}
-	@Override
 	public VariantContextDirectedEvidence annotate(VariantContextDirectedEvidence variant) {
 		BreakendSummary variantBreakend = variant.getBreakendSummary();
 		BreakpointSummary variantBreakpoint = null;
@@ -107,5 +110,10 @@ public class TruthAnnotator implements BreakendAnnotator {
 		return new BreakendSummary(loc.referenceIndex, loc.direction,
 				loc.start - (loc.direction == BreakendDirection.Forward ? 0 : margin),
 				loc.end + (loc.direction == BreakendDirection.Backward ? 0 : margin));
+	}
+	@Override
+	protected VariantContextDirectedEvidence computeNext() {
+		if (it.hasNext()) return annotate(it.next());
+		return endOfData();
 	}
 }

@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Sets;
 
@@ -14,7 +15,7 @@ import com.google.common.collect.Sets;
 
 public class SequentialEvidenceAnnotatorTest extends TestHelper {
 	public VariantContextDirectedEvidence go(List<DirectedEvidence> evidence, VariantContextDirectedEvidence toAnnotate) {
-		return new SequentialEvidenceAnnotator(getContext(), Iterators.peekingIterator(evidence.iterator())).annotate(toAnnotate);
+		return new SequentialEvidenceAnnotator(getContext(), ImmutableList.of(toAnnotate).iterator(), Iterators.peekingIterator(evidence.iterator())).annotate(toAnnotate);
 	}
 	@Test
 	public void should_add_breakpoint_supporting_evidence() {

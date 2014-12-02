@@ -1,5 +1,9 @@
 package au.edu.wehi.idsv;
 
+import java.util.Iterator;
+
+import com.google.common.collect.AbstractIterator;
+
 
 /**
  * Annotates breakends with reference allele coverage information
@@ -7,22 +11,21 @@ package au.edu.wehi.idsv;
  * @author Daniel Cameron
  *
  */
-public class SequentialCoverageAnnotator implements BreakendAnnotator {
+public class SequentialCoverageAnnotator extends AbstractIterator<VariantContextDirectedEvidence> implements BreakendAnnotator {
 	private final ProcessingContext context;
 	private final ReferenceCoverageLookup referenceNormal;
 	private final ReferenceCoverageLookup referenceTumour;
+	private final Iterator<VariantContextDirectedEvidence> it;
 	public SequentialCoverageAnnotator(
 			ProcessingContext context,
+			Iterator<VariantContextDirectedEvidence> it,
 			ReferenceCoverageLookup referenceNormal,
 			ReferenceCoverageLookup referenceTumour) {
+		this.it = it;
 		this.context = context;
 		this.referenceNormal = referenceNormal;
 		this.referenceTumour = referenceTumour;
 	}
-	/* (non-Javadoc)
-	 * @see au.edu.wehi.idsv.BreakendAnnotator#annotate(au.edu.wehi.idsv.VariantContextDirectedEvidence)
-	 */
-	@Override
 	public VariantContextDirectedEvidence annotate(VariantContextDirectedEvidence variant) {
 		BreakendSummary loc = variant.getBreakendSummary();
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(context, variant);
@@ -44,5 +47,10 @@ public class SequentialCoverageAnnotator implements BreakendAnnotator {
 		}
 		builder.referenceReads(normalReads, tumourReads);
 		builder.referenceSpanningPairs(normalSpans, tumourSpans);
+	}
+	@Override
+	protected VariantContextDirectedEvidence computeNext() {
+		if (!it.hasNext()) return endOfData();
+		return annotate(it.next());
 	}
 }

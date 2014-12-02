@@ -24,6 +24,7 @@ import java.util.concurrent.Future;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
+import au.edu.wehi.idsv.validation.TruthAnnotator;
 import au.edu.wehi.idsv.vcf.VcfFileUtil;
 
 import com.google.common.base.Function;
@@ -44,7 +45,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 	@Override
 	public void process() {
 		callBreakends(null);
-		annotateBreakpoints();
+		annotateBreakpoints(null);
 		writeOutput();
 	}
 	private static class WriteMaximalCliquesForChromosome extends EvidenceProcessorBase implements Callable<Void> {
@@ -224,10 +225,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 			if (vcfWriter != null) vcfWriter.close();
 		}
 	}
-	public void annotateBreakpoints() {
-		annotateBreakpoints(null);
-	}
-	public void annotateBreakpoints(BreakendAnnotator annotator) {
+	public void annotateBreakpoints(File truthVcf) {
 		log.info("Annotating Calls");
 		List<SAMEvidenceSource> normal = Lists.newArrayList();
 		List<SAMEvidenceSource> tumour = Lists.newArrayList();
@@ -248,26 +246,20 @@ public class VariantCaller extends EvidenceProcessorBase {
 		CloseableIterator<DirectedEvidence> evidenceIt = null;
 		try {
 			vcfWriter = processContext.getVariantContextWriter(FileSystemContext.getWorkingFileFor(output), true);
+			it = getAllCalledVariants();
+			Iterator<VariantContextDirectedEvidence> breakendIt = Iterators.filter(it, VariantContextDirectedEvidence.class);
 			normalCoverage = getReferenceLookup(normal, 4 * maxFragmentSize);
 			tumourCoverage = getReferenceLookup(tumour, 4 * maxFragmentSize);
-			BreakendAnnotator referenceAnnotator  = new SequentialCoverageAnnotator(processContext, normalCoverage, tumourCoverage);
+			breakendIt = new SequentialCoverageAnnotator(processContext, breakendIt, normalCoverage, tumourCoverage);
 			evidenceIt = getAllEvidence(true, true, true, true, true);
-			BreakendAnnotator evidenceAnnotator = new SequentialEvidenceAnnotator(processContext, evidenceIt);
-			it = getAllCalledVariants();
-			while (it.hasNext()) {
-				IdsvVariantContext rawVariant = it.next();
-				if (rawVariant instanceof VariantContextDirectedEvidence) {
-					VariantContextDirectedEvidence annotatedVariant = (VariantContextDirectedEvidence)rawVariant;
-					if (rawVariant.isValid()) {
-						annotatedVariant = referenceAnnotator.annotate((VariantContextDirectedEvidence)rawVariant);
-						annotatedVariant = evidenceAnnotator.annotate(annotatedVariant);
-						if (annotator != null) {
-							annotatedVariant = annotator.annotate(annotatedVariant);
-						}
-						if (!annotatedVariant.isFiltered() || Defaults.WRITE_FILTERED_CALLS) {
-							vcfWriter.add(annotatedVariant);
-						}
-					}
+			breakendIt = new SequentialEvidenceAnnotator(processContext, breakendIt, evidenceIt);
+			if (truthVcf != null) {
+				breakendIt = new TruthAnnotator(processContext, breakendIt, truthVcf);
+			}
+			while (breakendIt.hasNext()) {
+				VariantContextDirectedEvidence variant = breakendIt.next();
+				if (variant.isValid() && !variant.isFiltered() || Defaults.WRITE_FILTERED_CALLS) {
+					vcfWriter.add(variant);
 				}
 			}
 			CloserUtil.close(vcfWriter);

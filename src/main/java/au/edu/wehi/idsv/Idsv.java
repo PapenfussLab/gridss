@@ -23,7 +23,6 @@ import java.util.concurrent.TimeUnit;
 import picard.cmdline.Option;
 import picard.cmdline.Usage;
 import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
-import au.edu.wehi.idsv.validation.TruthAnnotator;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.base.Function;
@@ -180,11 +179,7 @@ public class Idsv extends CommandLineProgram {
 	    	try {
 	    		caller = new VariantCaller(getContext(), OUTPUT, samEvidence, assemblyEvidence);
 	    		caller.callBreakends(threadpool);
-	    		BreakendAnnotator annotator = null;
-	    		if (TRUTH_VCF != null) {
-	    			annotator = new TruthAnnotator(getContext(), TRUTH_VCF);	
-	    		}
-	    		caller.annotateBreakpoints(annotator);
+	    		caller.annotateBreakpoints(TRUTH_VCF);
 	    	} finally {
 	    		if (caller != null) caller.close();
 	    	}
