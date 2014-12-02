@@ -49,6 +49,18 @@ public class MaximalCliqueTest {
 		assertMatches(flipXY(expected), getCliques(flipXY(input)));
 	}
 	@Test
+	public void single_base() {
+		go(new GraphNode[] {N(1,1,1,1,2)}, N(1,1,1,1,2));
+	}
+	@Test
+	public void single_base_adj() {
+		go(new GraphNode[] {N(1,1,1,1), N(1,1,2,2)}, N(1,1,1,1), N(1,1,2,2));
+	}
+	@Test
+	public void single_base_overlap() {
+		go(new GraphNode[] {N(1,1,1,1), N(1,1,1,2)}, N(1,1,1,1,2));
+	}
+	@Test
 	public void single() {
 		go(new GraphNode[] {N(1,2,3,4,2)}, N(1,2,3,4,2));
 	}

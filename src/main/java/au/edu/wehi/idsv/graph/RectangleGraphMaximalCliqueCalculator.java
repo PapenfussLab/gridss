@@ -43,9 +43,17 @@ public class RectangleGraphMaximalCliqueCalculator {
 	public RectangleGraphMaximalCliqueCalculator() {
 		activeScanlineStart = new ScanlineInterval();
 		activeScanlineStart.next = new ScanlineInterval();
-		activeScanlineStart.next.startY = Long.MAX_VALUE;
+		activeScanlineStart.next.startY = Long.MAX_VALUE - 1;
 		activeScanlineCurrentPosition = activeScanlineStart;
+		assert(sanityCheckScanlineComplete());
 	}
+	/**
+	 * Scanline interval of the rectangle graph.
+	 * Scanline coordinates use half-open intervals.
+	 * This differs from GraphNode representation
+	 * @author Daniel Cameron
+	 *
+	 */
 	private class ScanlineInterval implements Cloneable {
 		private ScanlineInterval(
 				long startY,
@@ -62,65 +70,72 @@ public class RectangleGraphMaximalCliqueCalculator {
 			this.next = next;
 		}
 		public ScanlineInterval() {
-			this(Long.MIN_VALUE, Long.MIN_VALUE, 0, 0, 0, null);
+			this(Long.MIN_VALUE, Long.MAX_VALUE, 0, 0, 0, null);
 		}
 		/**
 		 * Splits the given node containing the given y value
 		 * so a node starts at the given position
 		 * @param y start y to ensure
 		 */
-		public void splitStartAt(long y) {
+		public void splitAt(long y) {
 			assert(y >= getStartY());
-			assert(y <= getEndY());
+			assert(y < getEndY());
 			if (y == getStartY()) return;
 			ScanlineInterval newNode = new ScanlineInterval(
 					y,
-					this.startX,
+					Long.MAX_VALUE,
 					this.weight,
 					0,
 					this.endHere,
 					this.next);
 			this.endHere = 0;
 			this.next = newNode;
-			this.couldBeMaximalClique = false;
-		}
-		/**
-		 * Splits the given node containing the given y value
-		 * so a node ends at the given position
-		 * @param y end y to ensure
-		 */
-		public void splitEndAt(long y) {
-			if (getEndY() == y) return;
-			splitStartAt(y + 1);
+			this.startX = Long.MAX_VALUE;
 		}
 		private long startY = Long.MIN_VALUE;
-		private long startX = Long.MIN_VALUE;
+		/**
+		 * Long.MIN_VALUE indicates this interval is not maximal
+		 */
+		private long startX = Long.MAX_VALUE;
 		private float weight = 0;
 		private int startHere = 0;
 		private int endHere = 0;
 		private ScanlineInterval next;
-		private boolean couldBeMaximalClique = false;
+		/**
+		 * Start coordinate of the half-open interval
+		 * @return
+		 */
 		public long getStartY() {
 			return startY;
 		}
+		/**
+		 * End coordinate of the half-open interval
+		 * @return
+		 */
 		public long getEndY() {
 			if (next == null) return Long.MAX_VALUE;
-			return next.startY - 1;
+			return next.startY;
 		}
 		private boolean isMaximalClique() {
-			return startHere > 0 && endHere > 0 && couldBeMaximalClique;
-		}
-		@Override
-		public String toString() {
-			return String.format("x=%d y=%d start#=%d end#=%d %f", startX, startY, startHere, endHere, weight);
+			return startX != Long.MAX_VALUE;
 		}
 		public ScanlineInterval getNext() {
 			return next;
 		}
-		public void mergeWithNext() { 
-			assert(weight == next.weight);
+		public void mergeWithNext() {
 			assert(next != null);
+			assert(next.next != null); // can't merge with the end sentinal
+			assert(weight == next.weight);
+			assert(startX == Long.MAX_VALUE);
+			assert(next.startX == Long.MAX_VALUE);
+			endHere = next.endHere;
 			next = next.next;
+		}
+		@Override
+		public String toString() {
+			String s = String.format("[%d,%d)(w=%f,s=%d,e=%d,x=%d)", getStartY(), getEndY(), weight, startHere, endHere, startX);
+			if (next != null) return s + "\n" + next.toString();
+			return s;
 		}
 	}
 	private List<GraphNode> getCalledCliques() {
@@ -149,8 +164,11 @@ public class RectangleGraphMaximalCliqueCalculator {
 	}
 	private void mergeIntervals() {
 		assert(activeScanlineEndingY.isEmpty()); // can't merge in the middle of processing
-		for (ScanlineInterval si = activeScanlineStart; si != null && si.next != null; si = si.next) {
-			if (si.endHere == 0 && si.next.startHere == 0 && si.next.getStartY() != Long.MAX_VALUE) {
+		// (make sure we don't merge our end sentinal
+		for (ScanlineInterval si = activeScanlineStart; si != null && si.next != null && si.next.next != null; si = si.next) {
+			// merge consecutive nodes
+			while (si.endHere == 0 && si.next.startHere == 0 && si.next.next != null) {
+				assert(si.weight == si.next.weight);
 				// we can merge these together since the separating node is no longer around
 				si.mergeWithNext();
 			}
@@ -158,16 +176,17 @@ public class RectangleGraphMaximalCliqueCalculator {
 	}
 	private boolean sanityCheckScanlineActive() {
 		if (!Defaults.PERFORM_EXPENSIVE_CLIQUE_SANITY_CHECKS) return true;
+		assert(sanityCheck());
 		assert(activeScanlineActiveWeight > 0);
 		assert(!activeScanlineEndingY.isEmpty()); 
 		assert(activeScanlineCurrentPosition != null);
-		assert(activeScanlineCurrentPosition.getStartY() < Long.MAX_VALUE);
+		assert(activeScanlineCurrentPosition.getStartY() < Long.MAX_VALUE - 1);
 		assert(activeScanlineCurrentPosition.getEndY() < Long.MAX_VALUE);
-		assert(sanityCheck());
 		return true;
 	}
 	private boolean sanityCheckScanlineComplete() {
 		if (!Defaults.PERFORM_EXPENSIVE_CLIQUE_SANITY_CHECKS) return true;
+		assert(sanityCheck());
 		assert(activeScanlineCurrentPosition == activeScanlineStart);
 		assert(activeScanlineEndingY.isEmpty());
 		assert(activeScanlineActiveWeight == 0);
@@ -177,10 +196,10 @@ public class RectangleGraphMaximalCliqueCalculator {
 				assert(si.endHere > 0 || si.next.startHere > 0);
 			}
 		}
-		assert(sanityCheck());
 		return true;
 	}
 	private boolean sanityCheck() {
+		if (!Defaults.PERFORM_EXPENSIVE_CLIQUE_SANITY_CHECKS) return true;
 		assert(activeScanlineStart != null);
 		assert(activeScanlineStart.getStartY() == Long.MIN_VALUE);
 		assert(activeScanlineStart.weight == 0);
@@ -188,16 +207,16 @@ public class RectangleGraphMaximalCliqueCalculator {
 		assert(activeScanlineStart.endHere == 0);
 		// check activeScanline is ordered
 		for (ScanlineInterval lastsi = null, si = activeScanlineStart; si != null; lastsi = si, si = si.next) {
-			assert(si.getStartY() <= si.getEndY());
+			assert(si.getStartY() < si.getEndY());
 			if (lastsi != null) {
 				assert(lastsi.getStartY() < si.getStartY());
-				assert(lastsi.getEndY() == si.getStartY() - 1);
+				assert(lastsi.getEndY() == si.getStartY());
 			} else {
 				assert(si.getStartY() == Long.MIN_VALUE);
 			}
 			if (si.next == null) {
 				// sentinel
-				assert(si.getStartY() == Long.MAX_VALUE);
+				assert(si.getStartY() == Long.MAX_VALUE - 1);
 				assert(si.getEndY() == Long.MAX_VALUE);
 				assert(si.weight == 0);
 				assert(si.startHere == 0);
@@ -226,20 +245,19 @@ public class RectangleGraphMaximalCliqueCalculator {
 		long y = node.startY;
 		assert(activeScanlineCurrentPosition.startY <= y);
 		scanlineProcessYEndBefore(y, multiplier);
-		activeScanlineCurrentPosition.splitStartAt(y);
-		scanlineProcessYEndBefore(y, multiplier);
+		if (activeScanlineCurrentPosition.getStartY() != y) {
+			activeScanlineCurrentPosition.splitAt(y);
+			scanlineProcessYEndBefore(y, multiplier);
+		}
 		activeScanlineActiveWeight += node.weight;
 		activeScanlineCurrentPosition.startHere += multiplier;
-		if (multiplier == 1) {
-			activeScanlineCurrentPosition.startX = node.startX;
-		}
 		activeScanlineEndingY.add(node);
 		assert(activeScanlineCurrentPosition.getStartY() == y);
 		assert(activeScanlineEndingY.contains(node));
 		assert(sanityCheckScanlineActive());
 	}
 	/**
-	 * Advances the current scanline position to the given y position.
+	 * Advances the current scanline position to the half-open interval containing the given y position.
 	 * @param endYBefore position to advance to
 	 * @Param multiplier 1 indicates we are incorporating the start of the given GraphNode to the current scanline 
 	 * 0 indicates we are incorporating the end of the given GraphNode to the current scanline
@@ -248,18 +266,21 @@ public class RectangleGraphMaximalCliqueCalculator {
 		assert(multiplier == -1 || multiplier == 1);
 		while (!activeScanlineEndingY.isEmpty() && activeScanlineEndingY.peek().endY < endYBefore) {
 			GraphNode node = activeScanlineEndingY.poll();
-			long y = node.endY;
+			long endYexclusive = node.endY + 1;
 			int yendCount = 1;
 			float yendWeight = node.weight;
-			while (!activeScanlineEndingY.isEmpty() && activeScanlineEndingY.peek().endY == y) {
+			while (!activeScanlineEndingY.isEmpty() && activeScanlineEndingY.peek().endY + 1 == endYexclusive) {
 				node = activeScanlineEndingY.poll();
 				yendCount++;
 				yendWeight += node.weight;
 			}
-			advanceScanlineToIntervalContaining(y, multiplier);
-			activeScanlineCurrentPosition.splitEndAt(y);
+			advanceScanlineToIntervalContaining(endYexclusive - 1, multiplier);
+			if (activeScanlineCurrentPosition.getEndY() > endYexclusive) {
+				activeScanlineCurrentPosition.splitAt(endYexclusive);
+			}
+			// no need to advance here since our current position is correct
 			activeScanlineCurrentPosition.endHere += yendCount * multiplier;
-			advanceScanlineToIntervalContaining(y + 1, multiplier);
+			advanceScanlineToIntervalContaining(endYexclusive, multiplier); // move on past our closing position
 			activeScanlineActiveWeight -= yendWeight;
 		}
 		// advance position to node containing endYBefore
@@ -269,23 +290,25 @@ public class RectangleGraphMaximalCliqueCalculator {
 	 * Advances the current scanline to the interval containing
 	 * This method is responsible for setting activeScanlineCurrentPosition
 	 * This method is responsible for updating scanline weights based on activeScanlineActiveWeight
-	 * @param y
-	 * @return 
+	 * @param y included in half-open interval to advance scanline to  
 	 */
 	private void advanceScanlineToIntervalContaining(long y, int multiplier) {
 		assert(activeScanlineCurrentPosition.getStartY() <= y); // can't advance backwards
-		while (activeScanlineCurrentPosition.getEndY() < y) {
+		while (activeScanlineCurrentPosition.getEndY() <= y) {
 			activeScanlineCurrentPosition.weight += activeScanlineActiveWeight * multiplier;
 			if (activeScanlineActiveWeight != 0) {
 				// could be maximal if we're adding new evidence
 				// if we're removing evidence then we're now definitely not maximal
 				// if we're doing neither then there is no change from the previous scanline
-				activeScanlineCurrentPosition.couldBeMaximalClique = multiplier == 1;
+				activeScanlineCurrentPosition.startX = Long.MAX_VALUE;
+				if (multiplier == 1 && activeScanlineCurrentPosition.startHere > 0 && activeScanlineCurrentPosition.endHere > 0) {
+					activeScanlineCurrentPosition.startX = scanlineX;
+				}
 			}
 			activeScanlineCurrentPosition = activeScanlineCurrentPosition.getNext();
 		}
 		assert(activeScanlineCurrentPosition.getStartY() <= y);
-		assert(activeScanlineCurrentPosition.getEndY() >= y);
+		assert(activeScanlineCurrentPosition.getEndY() > y);
 	}
 	/**
 	 * Calls maximum cliques
@@ -296,34 +319,34 @@ public class RectangleGraphMaximalCliqueCalculator {
 		int index = 0;
 		while (index < endingCurrentScanline.size()) {
 			long startY = endingCurrentScanline.get(index).startY;
-			long endY = endingCurrentScanline.get(index).endY;
+			long endYexclusive = endingCurrentScanline.get(index).endY + 1;
 			index++;
-			while (index + 1 < endingCurrentScanline.size() && endingCurrentScanline.get(index + 1).startY <= endY) {
+			while (index < endingCurrentScanline.size() && endingCurrentScanline.get(index).startY <= endYexclusive) {
 				// expand the current calling interval due to overlap
-				endY = Math.max(endY, endingCurrentScanline.get(index + 1).endY);
+				endYexclusive = Math.max(endYexclusive, endingCurrentScanline.get(index).endY + 1);
 				index++;
 			}
 			// advance to interval
-			while (interval.getEndY() < startY) {
+			while (interval.getEndY() <= startY) {
 				assert(interval.next != null);
 				interval = interval.next;
 			}
 			// call cliques in interval
 			assert(interval.getStartY() == startY);
-			while (interval.getStartY() <= endY) {
+			while (interval.getStartY() < endYexclusive) {
 				if (interval.isMaximalClique()) {
 					outBuffer.add(new GraphNode(
 							interval.startX, scanlineX,
-							interval.getStartY(), interval.getEndY(),
+							interval.getStartY(), interval.getEndY() - 1, // convert back from half-open to close interval
 							interval.weight));
 				}
 				interval = interval.next;
 			}
-			assert(interval.getStartY() == endY + 1);
+			assert(interval.getStartY() == endYexclusive);
 		}
 	}
 	private void scanlineCompleteProcessing(int multiplier) {
-		scanlineProcessYEndBefore(Long.MAX_VALUE, multiplier);
+		scanlineProcessYEndBefore(Long.MAX_VALUE - 1, multiplier);
 		// reset ready for next scanline
 		activeScanlineCurrentPosition = activeScanlineStart;
 		if (multiplier == -1) {
