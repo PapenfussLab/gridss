@@ -64,6 +64,12 @@ public class LinearGenomicCoordinate {
 	public long getStartLinearCoordinate(SAMRecord r) {
 		return getLinearCoordinate(r.getReferenceIndex(), r.getAlignmentStart());
 	}
+	public long getEndLinearCoordinate(BreakendSummary bp) {
+		return getLinearCoordinate(bp.referenceIndex, bp.end);
+	}
+	public long getEndLinearCoordinate(SAMRecord r) {
+		return getLinearCoordinate(r.getReferenceIndex(), r.getAlignmentEnd());
+	}
 	public int getReferenceIndex(long linearCoordinate) {
 		return referenceIndices.floorEntry(linearCoordinate - 1).getValue();
 	}

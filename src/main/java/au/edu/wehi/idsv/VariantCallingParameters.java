@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.variant.variantcontext.VariantContextBuilder;
+
 import java.util.List;
 
 import au.edu.wehi.idsv.vcf.VcfFilter;
@@ -33,5 +35,23 @@ public class VariantCallingParameters {
 			list.add(VcfFilter.SMALL_INDEL);
 		}
 		return list;
+	}
+	public VariantContextDirectedEvidence applyFilters(VariantContextDirectedEvidence call) {
+		List<VcfFilter> filters = Lists.newArrayList();
+		if (call.getBreakendSummary() instanceof BreakpointSummary) {
+			BreakpointSummary bp = (BreakpointSummary)call.getBreakendSummary();
+			filters.addAll(breakpointFilters(bp));
+		}
+		if (call.getEvidenceCount(EvidenceSubset.ALL) == 0) {
+			filters.add(VcfFilter.NO_SUPPORT);
+		}
+		if (!filters.isEmpty()) {
+			VariantContextBuilder builder = new VariantContextBuilder(call);
+			for (VcfFilter f : filters) {
+				builder.filter(f.filter());
+			}
+			call = (VariantContextDirectedEvidence)IdsvVariantContext.create(call.processContext, call.source, builder.make());
+		}
+		return call;
 	}
 }

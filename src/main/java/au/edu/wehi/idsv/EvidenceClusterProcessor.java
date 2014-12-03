@@ -31,9 +31,10 @@ public class EvidenceClusterProcessor extends AbstractIterator<VariantContextDir
 	    }
 	};
 	public EvidenceClusterProcessor(ProcessingContext context, Iterator<DirectedEvidence> evidence) {
+		if (evidence == null) throw new IllegalArgumentException();
 		this.underlying = new AutoClosingIterator<DirectedEvidence>(evidence);
 		// Start each on their own thread
-		DuplicatingIterable<DirectedEvidence> dib = new DuplicatingIterable<DirectedEvidence>(evidence, 32);
+		DuplicatingIterable<DirectedEvidence> dib = new DuplicatingIterable<DirectedEvidence>(this.underlying, 32);
 		this.threads = new MaximalCliqueIteratorRunnable[] {
 			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Forward, BreakendDirection.Forward),
 			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Forward, BreakendDirection.Backward),
@@ -53,7 +54,14 @@ public class EvidenceClusterProcessor extends AbstractIterator<VariantContextDir
 		@Override
 		public void run() {
 			while (cliqueIt.hasNext() && !isClosed) {
-				callBuffer.add(cliqueIt.next());
+				try {
+					callBuffer.put(cliqueIt.next());
+				} catch (InterruptedException e) {
+					if (!isClosed) {
+						log.error("Interrupted waiting on output buffer");
+						throw new RuntimeException(e);
+					}
+				}
 			}
 		}
 	}

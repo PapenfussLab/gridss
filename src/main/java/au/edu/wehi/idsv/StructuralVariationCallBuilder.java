@@ -9,7 +9,6 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.base.Function;
@@ -35,8 +34,10 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	}
 	public StructuralVariationCallBuilder addEvidence(DirectedEvidence evidence) {
 		if (evidence == null) throw new NullPointerException();
+		BreakendSummary bs = evidence.getBreakendSummary();
 		if (evidence instanceof SoftClipEvidence) {
 			scList.add((SoftClipEvidence)evidence);
+			bs = processContext.getSoftClipParameters().withMargin(processContext, bs);
 		} else if (evidence instanceof AssemblyEvidence) {
 			assList.add((AssemblyEvidence)evidence);
 		} else if (evidence instanceof NonReferenceReadPair) {
@@ -44,7 +45,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		} else {
 			throw new RuntimeException(String.format("Unknown evidence type %s", evidence.getClass()));
 		}
-		if (!parent.getBreakendSummary().overlaps(evidence.getBreakendSummary())) {
+		if (!parent.getBreakendSummary().overlaps(bs)) {
 			throw new IllegalArgumentException(String.format("Sanity check failure: Evidence %s does not provide support for call at %s", evidence.getBreakendSummary(), parent.getBreakendSummary()));
 		}
 		return this;
@@ -58,14 +59,9 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		aggregateSoftClipAttributes();		
 		setLlr();
 		id(getID());
-		if (calledBreakend instanceof BreakpointSummary) {
-			BreakpointSummary bp = (BreakpointSummary)calledBreakend;
-			for (VcfFilter f : processContext.getVariantCallingParameters().breakpointFilters(bp)) {
-				filter(f.filter());
-			}
-		}
 		VariantContextDirectedEvidence variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(processContext, null, super.make());
 		variant = calcSpv(variant);
+		variant = processContext.getVariantCallingParameters().applyFilters(variant);
 		return variant;
 	}
 	private void orderEvidence() {

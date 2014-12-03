@@ -17,6 +17,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.collect.Sets;
@@ -447,7 +448,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				(VariantContextDirectedEvidence)minimalBreakend()
 					.breakend(new BreakendSummary(0, FWD, 1, 1), null)
 					.make());
-		builder.addEvidence(SCE(FWD, Read(0, 2, "1M5S")));
+		builder.addEvidence(SCE(FWD, Read(0, 5, "1M5S")));
 		builder.make();
 	}
 	@Test
@@ -501,11 +502,11 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		assertTrue(new StructuralVariationCallBuilder(getContext(),
 				(VariantContextDirectedEvidence)minimalBreakend()
 					.breakpoint(new BreakpointSummary(new BreakendSummary(0, FWD, 100, 200), new BreakendSummary(0, BWD, 115, 215)), null)
-					.make()).make().isFiltered());
+					.make()).make().getFilters().contains(VcfFilter.SMALL_INDEL.filter()));
 		assertFalse(new StructuralVariationCallBuilder(getContext(),
 				(VariantContextDirectedEvidence)minimalBreakend()
 					.breakpoint(new BreakpointSummary(new BreakendSummary(0, FWD, 100, 200), new BreakendSummary(0, BWD, 216, 316)), null)
-					.make()).make().isFiltered());
+					.make()).make().getFilters().contains(VcfFilter.SMALL_INDEL.filter()));
 	}
 	@Test
 	public void best_assembly_should_contain_sc() {

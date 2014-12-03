@@ -35,6 +35,8 @@ public class DuplicatingIterable<T> implements Iterable<T> {
 	 * for other iterators to catch up
 	 */
 	public DuplicatingIterable(Iterator<T> it, int maxIteratorDifference) {
+		if (it == null) throw new IllegalArgumentException();
+		if (maxIteratorDifference <= 0) throw new IllegalArgumentException("buffer size must be greater than zero.");
 		this.it = it;
 		this.bufferSize = maxIteratorDifference;
 	}
@@ -49,7 +51,7 @@ public class DuplicatingIterable<T> implements Iterable<T> {
 	}
 	private synchronized void consumeNext(DuplicatingIterableIterator invokingConsumer) {
 		if (!invokingConsumer.queue.isEmpty()) {
-			// another thread populated our queue while were locked out attempting to do it ourself
+			// another thread populated our queue while we were locked out attempting to do it ourself
 			return;
 		}
 		if (it.hasNext()) {

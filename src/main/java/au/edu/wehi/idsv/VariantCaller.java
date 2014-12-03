@@ -75,11 +75,10 @@ public class VariantCaller extends EvidenceProcessorBase {
 				unsorted.delete();
 				sorted.delete();
 				try {
-					EvidenceClusterProcessor processor = new EvidenceClusterSubsetProcessor(processContext, evidenceIt, chri, chrj);
-					// TODO: linear pass over breakpoints by including all remote evidence
 					boolean assemblyOnly = processContext.getVariantCallingParameters().callOnlyAssemblies; 
 					evidenceIt = getEvidenceForChr(true, true, !assemblyOnly, !assemblyOnly, !assemblyOnly,
 							chri, chrj);
+					EvidenceClusterProcessor processor = new EvidenceClusterSubsetProcessor(processContext, evidenceIt, chri, chrj);
 					writeMaximalCliquesToVcf(
 							processContext,
 							new DirectedEvidenceBoundsAssertionIterator<VariantContextDirectedEvidence>(processor, chri, chrj),
@@ -143,9 +142,9 @@ public class VariantCaller extends EvidenceProcessorBase {
 					unsorted.delete();
 					sorted.delete();
 					try {
-						EvidenceClusterProcessor processor = new EvidenceClusterProcessor(processContext, evidenceIt);
-						boolean assemblyOnly = processContext.getVariantCallingParameters().callOnlyAssemblies; 
+						boolean assemblyOnly = processContext.getVariantCallingParameters().callOnlyAssemblies;
 						evidenceIt = getAllEvidence(true, true, !assemblyOnly, !assemblyOnly, !assemblyOnly);
+						EvidenceClusterProcessor processor = new EvidenceClusterProcessor(processContext, evidenceIt);
 						writeMaximalCliquesToVcf(
 								processContext,
 								processor,
@@ -252,7 +251,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 			tumourCoverage = getReferenceLookup(tumour, 4 * maxFragmentSize);
 			breakendIt = new SequentialCoverageAnnotator(processContext, breakendIt, normalCoverage, tumourCoverage);
 			evidenceIt = getAllEvidence(true, true, true, true, true);
-			breakendIt = new SequentialEvidenceAnnotator(processContext, breakendIt, evidenceIt);
+			breakendIt = new SequentialEvidenceAnnotator(processContext, breakendIt, evidenceIt, maxFragmentSize, true);
 			if (truthVcf != null) {
 				breakendIt = new TruthAnnotator(processContext, breakendIt, truthVcf);
 			}
