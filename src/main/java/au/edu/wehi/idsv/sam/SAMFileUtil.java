@@ -114,6 +114,10 @@ public class SAMFileUtil {
 				while (rit.hasNext()) {
 					collection.add(rit.next());
 				}
+				rit.close();
+				rit = null;
+				reader.close();
+				reader = null;
 				collection.doneAdding();
 				writer = processContext.getSamFileWriterFactory(sortOrder == SortOrder.coordinate).makeSAMOrBAMWriter(header, true, FileSystemContext.getWorkingFileFor(output));
 				writer.setProgressLogger(new ProgressLogger(log));
@@ -121,8 +125,12 @@ public class SAMFileUtil {
 				while (wit.hasNext()) {
 					writer.addAlignment(wit.next());
 				}
+				wit.close();
+				wit = null;
 				writer.close();
+				writer = null;
 				collection.cleanup();
+				collection = null;
 				FileHelper.move(FileSystemContext.getWorkingFileFor(output), output, true);
 			} finally {
 				CloserUtil.close(writer);

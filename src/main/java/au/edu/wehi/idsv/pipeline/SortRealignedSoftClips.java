@@ -109,9 +109,15 @@ public class SortRealignedSoftClips extends DataTransformStep {
 	}
 	@Override
 	public void close() {
-		super.close();
+		for (SAMFileWriter w : scwriters) {
+			w.close();
+		}
 		scwriters.clear();
+		for (SAMFileWriter w : realignmentWriters) {
+			w.close();
+		}
 		realignmentWriters.clear();
+		super.close();
 	}
 	private void writeUnsortedOutput() {
 		Iterator<RealignedSoftClipEvidence> it = Iterators.filter(source.iterator(false, true, false), RealignedSoftClipEvidence.class);
@@ -130,15 +136,11 @@ public class SortRealignedSoftClips extends DataTransformStep {
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
 				scwriters.add(processContext.getSamFileWriterFactory(false).makeSAMOrBAMWriter(header, true, fsc.getSoftClipRemoteUnsortedBamForChr(source.getSourceFile(), seq.getSequenceName())));
-				toClose.add(scwriters.get(scwriters.size() - 1));
 				realignmentWriters.add(processContext.getSamFileWriterFactory(false).makeSAMOrBAMWriter(header, true, fsc.getRealignmentRemoteUnsortedBamForChr(source.getSourceFile(), seq.getSequenceName())));
-				toClose.add(realignmentWriters.get(realignmentWriters.size() - 1));
 			}
 		} else {
 			scwriters.add(processContext.getSamFileWriterFactory(false).makeSAMOrBAMWriter(header, true, fsc.getSoftClipRemoteUnsortedBam(source.getSourceFile())));
-			toClose.add(scwriters.get(scwriters.size() - 1));
 			realignmentWriters.add(processContext.getSamFileWriterFactory(false).makeSAMOrBAMWriter(header, true, fsc.getRealignmentRemoteUnsortedBam(source.getSourceFile())));
-			toClose.add(realignmentWriters.get(realignmentWriters.size() - 1));
 		}
 	}
 	@Override

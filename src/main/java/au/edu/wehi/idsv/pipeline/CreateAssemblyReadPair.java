@@ -102,9 +102,11 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 					}
 				} finally {
 					CloserUtil.close(reader);
+					reader = null;
 				}
 			}
 			writer.close();
+			writer = null;
 			FileHelper.move(FileSystemContext.getWorkingFileFor(singleFile), singleFile, true);
 		} catch (IOException e) {
 			log.debug("Error writing " + singleFile, e);
@@ -159,6 +161,7 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 	}
 	@Override
 	public void close() {
+		closeUnsortedWriters();
 		super.close();
 	}
 	private void closeUnsortedWriters() {
@@ -188,16 +191,12 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 						FileSystemContext.getWorkingFileFor((fsc.getAssemblyForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName())), UNSORTED_FILE_PREFIX)));
 				mateWriters.add(processContext.getSamFileWriterFactory(false).makeSAMOrBAMWriter(header, true,
 						FileSystemContext.getWorkingFileFor((fsc.getAssemblyMateForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName())), UNSORTED_FILE_PREFIX)));
-				toClose.add(sortedWriters.get(sortedWriters.size() - 1));
-				toClose.add(mateWriters.get(mateWriters.size() - 1));
 			}
 		} else {
 			sortedWriters.add(processContext.getSamFileWriterFactory(true).makeSAMOrBAMWriter(header, true,
 					FileSystemContext.getWorkingFileFor((fsc.getAssembly(source.getFileIntermediateDirectoryBasedOn())), UNSORTED_FILE_PREFIX)));
 			mateWriters.add(processContext.getSamFileWriterFactory(false).makeSAMOrBAMWriter(header, true,
 					FileSystemContext.getWorkingFileFor((fsc.getAssemblyMate(source.getFileIntermediateDirectoryBasedOn())), UNSORTED_FILE_PREFIX)));
-			toClose.add(sortedWriters.get(sortedWriters.size() - 1));
-			toClose.add(mateWriters.get(mateWriters.size() - 1));
 		}
 	}
 	@Override

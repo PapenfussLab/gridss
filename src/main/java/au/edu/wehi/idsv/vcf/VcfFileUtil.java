@@ -98,7 +98,9 @@ public class VcfFileUtil {
 					collection.add(rit.next());
 				}
 				rit.close();
+				rit = null;
 				reader.close();
+				reader = null;
 				collection.doneAdding();
 				writer = processContext.getVariantContextWriter(FileSystemContext.getWorkingFileFor(output), indexed);
 		    	wit = collection.iterator();
@@ -106,8 +108,11 @@ public class VcfFileUtil {
 					writer.add(wit.next());
 				}
 				wit.close();
+				wit = null;
 				writer.close();
+				writer = null;
 				collection.cleanup();
+				collection = null;
 				FileHelper.move(FileSystemContext.getWorkingFileFor(output), output, true);
 			} finally {
 				CloserUtil.close(writer);
