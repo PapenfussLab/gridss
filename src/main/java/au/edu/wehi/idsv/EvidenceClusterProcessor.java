@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.DuplicatingIterable;
@@ -19,6 +20,7 @@ import com.google.common.collect.AbstractIterator;
  */
 public class EvidenceClusterProcessor extends AbstractIterator<VariantContextDirectedEvidence> implements CloseableIterator<VariantContextDirectedEvidence> {
 	private static final Log log = Log.getInstance(EvidenceClusterProcessor.class);
+	private static final AtomicInteger threadCount = new AtomicInteger(0);
 	private final BlockingQueue<VariantContextDirectedEvidence> callBuffer = new ArrayBlockingQueue<VariantContextDirectedEvidence>(64);
 	private MaximalCliqueIteratorRunnable[] threads;
 	private AutoClosingIterator<DirectedEvidence> underlying;
@@ -46,10 +48,12 @@ public class EvidenceClusterProcessor extends AbstractIterator<VariantContextDir
 			r.start();
 		}
 	}
+	
 	private class MaximalCliqueIteratorRunnable extends Thread {
 		private final MaximalEvidenceCliqueIterator cliqueIt;
 		public MaximalCliqueIteratorRunnable(ProcessingContext processContext, Iterator<DirectedEvidence> evidenceIt, BreakendDirection lowDir, BreakendDirection highDir) {
 			cliqueIt = new MaximalEvidenceCliqueIterator(processContext, evidenceIt, lowDir, highDir);
+			this.setName(String.format("MaxClique%s%s-%d", lowDir == BreakendDirection.Forward ? "F" : "B", highDir == BreakendDirection.Forward ? "F" : "B", threadCount.incrementAndGet()));
 		}
 		@Override
 		public void run() {

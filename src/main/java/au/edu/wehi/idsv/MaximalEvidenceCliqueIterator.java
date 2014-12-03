@@ -5,9 +5,11 @@ import java.util.Iterator;
 import au.edu.wehi.idsv.graph.GraphNode;
 import au.edu.wehi.idsv.graph.GraphNodeMergingIterator;
 import au.edu.wehi.idsv.graph.RectangleGraphMaximalCliqueIterator;
+import au.edu.wehi.idsv.util.WindowedSortingIterator;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
+import com.google.common.base.Function;
 import com.google.common.collect.AbstractIterator;
 /**
  * Maximal clique summary evidence iterator 
@@ -22,9 +24,24 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 	private final ProcessingContext context;
 	public MaximalEvidenceCliqueIterator(ProcessingContext processContext, Iterator<DirectedEvidence> evidenceIt, BreakendDirection lowDir, BreakendDirection highDir) {
 		this.context = processContext;
-		this.calc = new RectangleGraphMaximalCliqueIterator(new GraphNodeMergingIterator(new EvidenceToGraphNodeIterator(evidenceIt)));
+		this.calc = new RectangleGraphMaximalCliqueIterator(
+						// collapse evidence at the same location to a single node
+						new GraphNodeMergingIterator(GraphNode.ByStartXY,
+							// reorder due to soft clip margin changing record order
+							new GraphNodeWindowedSortingIterator(context, 2 * processContext.getSoftClipParameters().breakendMargin + 1,
+								// convert evidence breakpoints to GraphNodes
+								new EvidenceToGraphNodeIterator(evidenceIt))));
 		this.targetLowDir = lowDir;
 		this.targetHighDir = highDir;
+	}
+	private class GraphNodeWindowedSortingIterator extends WindowedSortingIterator<GraphNode> {
+		public GraphNodeWindowedSortingIterator(final ProcessingContext processContext, final int windowSize, final Iterator<GraphNode> it) {
+			super(it, new Function<GraphNode, Long>() {
+				public Long apply(GraphNode arg) {
+					return arg.startX;
+				}
+			}, windowSize, GraphNode.ByStartXY);
+		}
 	}
 	private class EvidenceToGraphNodeIterator extends AbstractIterator<GraphNode> {
 		private final Iterator<DirectedEvidence> it;
@@ -34,7 +51,8 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		@Override
 		protected GraphNode computeNext() {
 			while (it.hasNext()) {
-				GraphNode node = toGraphNode(it.next());
+				DirectedEvidence evidence = it.next();
+				GraphNode node = toGraphNode(evidence);
 				if (node != null) {
 					return node;
 				}
@@ -62,9 +80,15 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		BreakendDirection highDir = bp.direction2;
 		GraphNode node = new GraphNode(startX, endX, startY, endY, (float)Models.llr(e));
 		if (startX > startY) {
-			node = node.flipAxis();
-			lowDir = bp.direction2;
-			highDir = bp.direction;
+			// only take the lower half of the evidence since both sides of all breakpoints
+			// have evidence
+			// SC -> RemoteRealignedSoftClipEvidence
+			// DP -> other half of the pair
+			// Ass -> RemoteRealignedAssemblyEvidence
+			return null;
+			//node = node.flipAxis();
+			//lowDir = bp.direction2;
+			//highDir = bp.direction;
 		}
 		if (lowDir != targetLowDir || highDir != targetHighDir) return null;
 		return node;

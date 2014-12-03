@@ -147,8 +147,11 @@ public class RectangleGraphMaximalCliqueCalculator {
 	 * @return
 	 */
 	public List<GraphNode> next(GraphNode node) {
-		assert(lastNode == null || GraphNode.ByStartXY.compare(lastNode, node) <= 0);
+		assert(node.startX <= node.endX);
+		assert(node.startY <= node.endY);
+		assert(node.weight > 0);
 		assert(node.startX >= scanlineX);
+		assert(lastNode == null || GraphNode.ByStartXY.compare(lastNode, node) <= 0);
 		lastNode = node;
 		if (node.startX != scanlineX) {
 			scanlineCompleteProcessing(1);

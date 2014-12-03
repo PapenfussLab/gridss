@@ -21,7 +21,8 @@ public class RectangleGraphMaximalCliqueIterator extends AbstractIterator<GraphN
 	@Override
 	protected GraphNode computeNext() {
 		while (buffer.isEmpty() && it.hasNext()) {
-			buffer.addAll(calc.next(it.next()));
+			GraphNode nextEvidence = it.next(); 
+			buffer.addAll(calc.next(nextEvidence));
 		}
 		if (buffer.isEmpty() && calc != null) {
 			buffer.addAll(calc.complete());
