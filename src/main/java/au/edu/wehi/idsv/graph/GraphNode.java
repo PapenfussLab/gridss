@@ -16,6 +16,7 @@ public class GraphNode {
 	public final long endY;
 	public float weight;
 	public GraphNode(long startX, long endX, long startY, long endY, float weight) {
+		assert(weight > 0);
 		this.startX = startX;
 		this.endX = endX;
 		this.startY = startY;

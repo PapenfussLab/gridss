@@ -61,10 +61,6 @@ public class RealignedSoftClipEvidence extends SoftClipEvidence implements Direc
 	public int getRemoteTotalBaseQual() {
 		return SAMRecordUtil.getTotalReferenceBaseQual(realigned);
 	}
-	@Override
-	public String toString() {
-		return "Realigned" + super.toString();
-	}
 	/**
 	 * Comparator for sorting SAMRecords by coordinate of the matched realignment.
 	 *

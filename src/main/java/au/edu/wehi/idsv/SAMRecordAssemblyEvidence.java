@@ -350,7 +350,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	}
 	@Override
 	public String toString() {
-		return getEvidenceID();
+		return String.format("A  %s N=%s", getBreakendSummary(), getEvidenceID());
 	}
 	static final Ordering<SAMRecordAssemblyEvidence> BySAMCoordinate = new Ordering<SAMRecordAssemblyEvidence>() {
 		private final SAMRecordCoordinateComparator cmp = new SAMRecordCoordinateComparator();

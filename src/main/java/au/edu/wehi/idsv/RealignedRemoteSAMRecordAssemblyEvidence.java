@@ -12,4 +12,8 @@ public class RealignedRemoteSAMRecordAssemblyEvidence extends RealignedSAMRecord
 	public BreakpointSummary getBreakendSummary() {
 		return bs;
 	}
+	@Override
+	public String toString() {
+		return "R" + super.toString();
+	}
 }

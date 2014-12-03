@@ -21,18 +21,20 @@ import com.google.common.collect.Lists;
  * @param <T>
  */
 public class AutoClosingMergedIterator<T> implements Closeable, CloseableIterator<T> {
+	private Comparator<? super T> comparator;
 	private List<AutoClosingIterator<T>> stillOpen;
 	private Iterator<? extends T> merged;
 	private boolean closed = false;
-	
+	private T lastEmitted = null;
 	public AutoClosingMergedIterator(Iterable<? extends Iterator<? extends T>> iterators, Comparator<? super T> comparator) {
-		stillOpen = Lists.newArrayList(Iterables.transform(iterators, new Function<Iterator<? extends T>, AutoClosingIterator<T>>() {
+		this.comparator = comparator;
+		this.stillOpen = Lists.newArrayList(Iterables.transform(iterators, new Function<Iterator<? extends T>, AutoClosingIterator<T>>() {
 			@Override
 			public AutoClosingIterator<T> apply(Iterator<? extends T> input) {
 				return new AutoClosingIterator<T>(input);
 			}
 		}));
-		merged = Iterators.mergeSorted(stillOpen, comparator);
+		this.merged = Iterators.mergeSorted(stillOpen, comparator);
 	}
 	@Override
 	public boolean hasNext() {
@@ -43,6 +45,10 @@ public class AutoClosingMergedIterator<T> implements Closeable, CloseableIterato
 	public T next() {
 		T n = merged.next();
 		tryclose(false);
+		if (lastEmitted != null && comparator.compare(lastEmitted, n) > 0) {
+			throw new IllegalStateException(String.format("Unable to merge out of order sequences. %s emitted before %s", lastEmitted, n));
+		}
+		lastEmitted = n;
 		return n;
 	}
 	@Override

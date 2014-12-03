@@ -23,8 +23,7 @@ public class RealignedRemoteSoftClipEvidence extends RealignedSoftClipEvidence i
 	}
 	@Override
 	public String toString() {
-		// TODO Auto-generated method stub
-		return "Remote" + super.toString();
+		return "R" + super.toString();
 	}
 	// TODO: should we flip getLocal*() and getRemote*() so local = here
 	// or leave unchanged so local = read anchor (which in this case is at the remote breakend)

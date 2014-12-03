@@ -7,6 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.AbstractIterator;
 
@@ -25,11 +26,13 @@ import com.google.common.collect.AbstractIterator;
 public class DuplicatingIterable<T> implements Iterable<T> {
 	private static final Log log = Log.getInstance(DuplicatingIterable.class);
 	private static final Object endofstream = new Object();
+	private static final AtomicInteger threadCount = new AtomicInteger(0);
 	private final Iterator<T> it;
 	private final List<DuplicatingIterableIterator> iterators = new ArrayList<DuplicatingIterableIterator>();
 	private final List<BlockingQueue<Object>> queues = new ArrayList<BlockingQueue<Object>>();
 	private int iteratorsRequested = 0;
 	private FeedingThread thread;
+	
 	/**
 	 * Duplicates an iterator
 	 * @param it underlying iterator
@@ -45,6 +48,7 @@ public class DuplicatingIterable<T> implements Iterable<T> {
 			iterators.add(new DuplicatingIterableIterator(queues.get(i)));
 		}
 		this.thread = new FeedingThread();
+		this.thread.setName(String.format("DuplicatingIterable-%d", threadCount.incrementAndGet()));
 		this.thread.start();
 	}
 	/**
