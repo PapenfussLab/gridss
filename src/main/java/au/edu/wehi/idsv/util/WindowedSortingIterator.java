@@ -32,6 +32,8 @@ public class WindowedSortingIterator<T> extends AbstractIterator<T> {
 	private final PeekingIterator<T> it;
 	private final Function<T, Long> toCoordinate;
 	private long lastPosition = Long.MIN_VALUE;
+	private final Comparator<T> sortOrder;
+	private T lastEmitted = null;
 	/**
 	 * Creates a new sorted iterator from a mostly-sorted sequence
 	 * @param it mostly-sorted sequence. Records cannot be out of order by more than windowSize
@@ -50,6 +52,7 @@ public class WindowedSortingIterator<T> extends AbstractIterator<T> {
 		this.it = Iterators.peekingIterator(it);
 		this.toCoordinate = transform;
 		this.calls = new PriorityQueue<T>(32, sortOrder);
+		this.sortOrder = sortOrder;
 	}
 	@Override
 	protected T computeNext() {
@@ -60,6 +63,10 @@ public class WindowedSortingIterator<T> extends AbstractIterator<T> {
 		if (nextPos < lastPosition) {
 			log.error("Sanity check failure: sorting window size too small: evidence out of order at linear coordinate" + nextPos);
 		}
+		if (lastEmitted != null && sortOrder.compare(lastEmitted, next) > 0) {
+			throw new IllegalStateException(String.format("Unable to sort output with window size of %d. %s emitted before %s", windowSize, lastEmitted, next));
+		}
+		lastEmitted = next;
 		return next;
 	}
 	private void advanceUnderlying() {

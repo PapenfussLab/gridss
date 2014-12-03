@@ -238,7 +238,17 @@ public class SAMEvidenceSource extends EvidenceSource {
 					this,
 					rawPairIt,
 					rawMateIt);
-			final Iterator<NonReferenceReadPair> sortedRpIt = new DirectEvidenceWindowedSortingIterator<NonReferenceReadPair>(processContext, getMaxConcordantFragmentSize(), rawRpIt);
+			// worst case scenario is a fully mapped forward read followed by a large soft-clipped backward read at max distance
+			// MMMMMMMMMMMMMMMMMM>
+			// ^--read length --^
+			// ^--------max concordant fragment size-----^
+			//                   |-----breakend call-----|
+			//                   |----------breakend call--------|
+			//                                                   <SSSSSSSSSM
+			//                   ^--------max concordant fragment size-----^
+			// ^ alignment start                                           ^ alignment start
+			int maxAlignmentMargin = getMaxConcordantFragmentSize() + getMaxReadLength() + 1;
+			final Iterator<NonReferenceReadPair> sortedRpIt = new DirectEvidenceWindowedSortingIterator<NonReferenceReadPair>(processContext, maxAlignmentMargin, rawRpIt);
 			final CloseableIterator<NonReferenceReadPair> finalrpIt = new AutoClosingIterator<NonReferenceReadPair>(sortedRpIt,
 					Lists.<Closeable>newArrayList(rawRpIt, rawPairIt, rawMateIt));
 			itList.add((CloseableIterator<DirectedEvidence>)(Object)finalrpIt);

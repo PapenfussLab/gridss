@@ -63,18 +63,6 @@ public class NonReferenceReadPairTest extends TestHelper {
 		assertEquals(loc2.direction, loc1.direction2);
 	}
 	@Test
-	public void getBreakendSummary_foward_OEA_interval_should_allow_breakpoint_anywhere_in_fragment() {
-		BreakendSummary loc = newPair(OEA(0, 1, "2M3S", true), 10).getBreakendSummary();
-		// 123456789012345678901234567890
-		// MMSSS
-		// *--------* fragment
-		//  |      |  possible breakpoint positions
-		assertEquals(2, loc.start);
-		assertEquals(9, loc.end);
-		assertEquals(0, loc.referenceIndex);
-		assertEquals(BreakendDirection.Forward, loc.direction);
-	}
-	@Test
 	public void getBreakendSummary_backward_OEA_interval_should_allow_breakpoint_anywhere_in_fragment() {
 		BreakendSummary loc = newPair(OEA(0, 10, "3S2M", false), 10).getBreakendSummary();
 		// 123456789012345678901234567890

@@ -31,7 +31,7 @@ public class DirectEvidenceWindowedSortingIteratorTest extends TestHelper {
 		ArrayList<DirectedEvidence> result = Lists.newArrayList(it);
 		assertEquals(expected, result);
 	}
-	@Test
+	@Test(expected=IllegalStateException.class)
 	public void should_not_be_able_to_sort_unordered_outside_of_window() {
 		ImmutableList<DirectedEvidence> list = ImmutableList.of(
 				E(0, 10, FWD),
