@@ -209,7 +209,6 @@ public class VariantCaller extends EvidenceProcessorBase {
 	}
 	private static void writeMaximalCliquesToVcf(ProcessingContext processContext, Iterator<VariantContextDirectedEvidence> it, File vcf) {
 		final ProgressLogger writeProgress = new ProgressLogger(log);
-		log.info("Loading minimal evidence set for ", vcf, " into memory.");
 		VariantContextWriter vcfWriter = null;
 		try {
 			vcfWriter = processContext.getVariantContextWriter(vcf, false);

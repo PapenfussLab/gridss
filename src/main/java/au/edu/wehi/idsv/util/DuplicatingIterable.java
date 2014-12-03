@@ -2,7 +2,6 @@ package au.edu.wehi.idsv.util;
 
 import htsjdk.samtools.util.Log;
 
-import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -12,7 +11,7 @@ import java.util.concurrent.BlockingQueue;
 import com.google.common.collect.AbstractIterator;
 
 /**
- * Duplicates the given iterator.
+ * Duplicates the given iterator, feeding internal buffers from a background thread
  * 
  * This wrapper is thread-safe.
  * 
@@ -25,74 +24,83 @@ import com.google.common.collect.AbstractIterator;
  */
 public class DuplicatingIterable<T> implements Iterable<T> {
 	private static final Log log = Log.getInstance(DuplicatingIterable.class);
+	private static final Object endofstream = new Object();
 	private final Iterator<T> it;
-	private final int bufferSize;
 	private final List<DuplicatingIterableIterator> iterators = new ArrayList<DuplicatingIterableIterator>();
+	private final List<BlockingQueue<Object>> queues = new ArrayList<BlockingQueue<Object>>();
+	private int iteratorsRequested = 0;
+	private FeedingThread thread;
 	/**
 	 * Duplicates an iterator
 	 * @param it underlying iterator
 	 * @param maxIteratorDifference maximum number of records an iterator can traverse before blocking to wait
 	 * for other iterators to catch up
 	 */
-	public DuplicatingIterable(Iterator<T> it, int maxIteratorDifference) {
+	public DuplicatingIterable(int nIterators, Iterator<T> it,  int maxIteratorDifference) {
 		if (it == null) throw new IllegalArgumentException();
 		if (maxIteratorDifference <= 0) throw new IllegalArgumentException("buffer size must be greater than zero.");
 		this.it = it;
-		this.bufferSize = maxIteratorDifference;
+		for (int i = 0; i < nIterators; i++) {
+			queues.add(new ArrayBlockingQueue<Object>(maxIteratorDifference));
+			iterators.add(new DuplicatingIterableIterator(queues.get(i)));
+		}
+		this.thread = new FeedingThread();
+		this.thread.start();
 	}
 	/**
 	 * Creates a new iterator from the current position
 	 */
 	@Override
 	public synchronized Iterator<T> iterator() {
-		DuplicatingIterableIterator consumer = new DuplicatingIterableIterator();
-		iterators.add(consumer);
-		return consumer;
+		if (iteratorsRequested >= iterators.size()) throw new IllegalStateException(String.format("Already created %d iterators", iterators.size()));
+		return iterators.get(iteratorsRequested++);
 	}
-	private synchronized void consumeNext(DuplicatingIterableIterator invokingConsumer) {
-		if (!invokingConsumer.queue.isEmpty()) {
-			// another thread populated our queue while we were locked out attempting to do it ourself
-			return;
-		}
-		if (it.hasNext()) {
-			T n = it.next();
-			for (DuplicatingIterableIterator consumer : iterators) {
-				try {
-					consumer.queue.put(n);
-				} catch (InterruptedException e) {
-					log.warn("Interrupted waiting on another iterator", e);
+	private class FeedingThread extends Thread {
+		@Override
+		public void run() {
+			try {
+				while (it.hasNext()) {
+					T n = it.next();
+					for (BlockingQueue<Object> queue : queues) {
+							queue.put(n);
+					}
+				}
+				eos();
+			} catch (InterruptedException e) {
+				log.warn("Interrupted waiting to feed next record - ending stream early");
+				for (BlockingQueue<Object> queue : queues) {
+					queue.clear();
+					try {
+						eos();
+					} catch (InterruptedException e1) {
+						log.error("Sanity check failure: end of stream writing should not have blocked.");
+					}
 				}
 			}
 		}
+		private void eos() throws InterruptedException {
+			for (BlockingQueue<Object> queue : queues) {
+				queue.put(endofstream);
+			}
+		}
 	}
-	private synchronized void removeIterator(DuplicatingIterableIterator consumer) {
-		iterators.remove(consumer);
-	}
-	private class DuplicatingIterableIterator extends AbstractIterator<T> implements Closeable {
-		private BlockingQueue<T> queue = new ArrayBlockingQueue<T>(bufferSize);
-		private boolean isClosed = false;
+	private class DuplicatingIterableIterator extends AbstractIterator<T> {
+		private final BlockingQueue<Object> queue; 
+		public DuplicatingIterableIterator(BlockingQueue<Object> queue) {
+			this.queue = queue;
+		}
+		@SuppressWarnings("unchecked")
 		@Override
 		protected T computeNext() {
-			if (isClosed) {
-				return endOfData();
+			Object o;
+			try {
+				o = queue.take();
+				if (o != endofstream) return (T)o;
+			} catch (InterruptedException e) {
+				log.debug("Interrupted waiting for next record");
+				throw new RuntimeException(e);
 			}
-			T result = queue.poll();
-			if (result != null) {
-				return result;
-			}
-			consumeNext(this);
-			result = queue.poll();
-			if (result != null) {
-				return result;
-			}
-			assert(queue.isEmpty());
-			assert(!it.hasNext());
 			return endOfData();
-		}
-		@Override
-		public void close() {
-			isClosed= true;
-			removeIterator(this);
 		}
 	}
 }

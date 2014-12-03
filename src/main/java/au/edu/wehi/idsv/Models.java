@@ -14,7 +14,7 @@ import org.apache.commons.math3.distribution.BinomialDistribution;
  *
  */
 public class Models {
-	private static final Log log = Log.getInstance(AssemblyFactory.class);
+	private static final Log log = Log.getInstance(Models.class);
 	/**
 	 * Calculates a somatic p-value for the given call
 	 * Null hypothesis: germline and somatic BAFs are the same
@@ -58,20 +58,25 @@ public class Models {
 	 */
 	public static double llr(DirectedEvidence e) {
 		if (e == null) throw new NullPointerException();
+		double llr = -1;
 		if (e instanceof RealignedSoftClipEvidence) {
-			return rscLlr((RealignedSoftClipEvidence)e);
+			llr = rscLlr((RealignedSoftClipEvidence)e);
 		} else if (e instanceof SoftClipEvidence) {
-			return scLlr((SoftClipEvidence)e);
+			llr = scLlr((SoftClipEvidence)e);
 		} else if (e instanceof DiscordantReadPair) {
-			return dpLlr((DiscordantReadPair)e);
+			llr = dpLlr((DiscordantReadPair)e);
 		} else if (e instanceof UnmappedMateReadPair) {
-			return oeaLlr((UnmappedMateReadPair)e);
+			llr = oeaLlr((UnmappedMateReadPair)e);
 		} else if (e instanceof AssemblyEvidence) {
-			return assemblyLlr((AssemblyEvidence)e);
+			llr = assemblyLlr((AssemblyEvidence)e);
 		} else if (e instanceof VariantContextDirectedEvidence) {
-			return ((VariantContextDirectedEvidence)e).getPhredScaledQual();
+			llr = ((VariantContextDirectedEvidence)e).getPhredScaledQual();
+		} else {
+			throw new IllegalArgumentException("Unknown evidence type " + e.getClass().toString());
 		}
-		throw new IllegalArgumentException("Unknown evidence type " + e.getClass().toString());
+		if (llr < 0) throw new RuntimeException("Sanity check failure: negative llr");
+		return llr;
+		
 	}
 	private static double assemblyLlr(AssemblyEvidence e) {
 		int evidenceCount = e.getAssemblySupportCountReadPair(EvidenceSubset.ALL) + e.getAssemblySupportCountSoftClip(EvidenceSubset.ALL);

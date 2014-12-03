@@ -81,6 +81,22 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 		assertEquals(1, result.getEvidenceCountSoftClip(null));
 	}
 	@Test
+	public void should_output_variants_in_order() {
+		List<VariantContextDirectedEvidence> calls = new ArrayList<VariantContextDirectedEvidence>();
+		calls.add((VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+				breakpoint(new BreakpointSummary(0, FWD, 1, 3, 0, BWD, 10, 10), "GTAC");
+				phredScore(10);
+			}}.make());
+		calls.add((VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+				breakpoint(new BreakpointSummary(0, FWD, 2, 4, 0, BWD, 10, 10), "GTAC");
+				phredScore(20);
+			}}.make());
+		List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
+		List<VariantContextDirectedEvidence> result = Lists.newArrayList(new SequentialEvidenceAnnotator(getContext(), calls.iterator(), evidence.iterator(), 300, true));
+		assertEquals(1, result.get(0).getBreakendSummary().start);
+		assertEquals(2, result.get(1).getBreakendSummary().start);
+	}
+	@Test
 	public void should_assign_supporting_evidence_to_a_single_variant() {
 		List<VariantContextDirectedEvidence> calls = new ArrayList<VariantContextDirectedEvidence>();
 		calls.add((VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
