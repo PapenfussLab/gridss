@@ -1,18 +1,20 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 import java.util.ArrayList;
 import java.util.Collection;
 
 import org.junit.Test;
+
+import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfConstants;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -293,5 +295,24 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	public void should_not_trim_array_as_bcf_requires_counts_to_match_header() {
 		Object attr = minimalVariant().attribute("LR", ImmutableList.<Integer>of(1,0)).make().getAttribute("LR");
 		assertEquals(2, ((Collection<Integer>)attr).size());
+	}
+	@Test
+	public void CIPOS_CIRPOS_should_call_first_position_in_lower_mapped_position_and_corresponding_position_on_remote() {
+		// TODO: just call the middle of the interval - that would work very well with SC margins
+		VariantContext vc;
+		vc = new IdsvVariantContextBuilder(getContext())
+			.breakpoint(new BreakpointSummary(0, FWD, 100, 200, 2, BWD, 300, 400), null).make();
+		assertEquals(Lists.newArrayList(0,100), AttributeConverter.asIntList(vc.getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)));
+		assertEquals(Lists.newArrayList(-100,0), AttributeConverter.asIntList(vc.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
+		
+		vc = new IdsvVariantContextBuilder(getContext())
+			.breakpoint(new BreakpointSummary(0, FWD, 100, 200, 2, FWD, 300, 400), null).make();
+		assertEquals(Lists.newArrayList(0,100), AttributeConverter.asIntList(vc.getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)));
+		assertEquals(Lists.newArrayList(0,100), AttributeConverter.asIntList(vc.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
+		
+		vc = new IdsvVariantContextBuilder(getContext())
+			.breakpoint(new BreakpointSummary(2, BWD, 300, 400, 0, FWD, 100, 200), null).make();
+		assertEquals(Lists.newArrayList(-100,0), AttributeConverter.asIntList(vc.getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)));
+		assertEquals(Lists.newArrayList(0, 100), AttributeConverter.asIntList(vc.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
 	}
 }
