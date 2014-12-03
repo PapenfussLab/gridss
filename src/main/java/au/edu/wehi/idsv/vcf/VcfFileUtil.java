@@ -61,7 +61,7 @@ public class VcfFileUtil {
 			this(processContext, input, output, sortComparator, false);
 		}
 		public SortCallable(ProcessingContext processContext, File input, File output) {
-			this(processContext, input, output, new VariantContextComparator(processContext.getDictionary()), true);
+			this(processContext, input, output, new VariantContextComparator(processContext.getDictionary()), false/*true*/);
 		}
 		private SortCallable(ProcessingContext processContext, File input, File output, Comparator<VariantContext> sortComparator, boolean writeIndex) {
 			
