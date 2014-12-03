@@ -15,8 +15,8 @@ import htsjdk.samtools.filter.FilteringIterator;
 import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.metrics.MetricBase;
 import htsjdk.samtools.metrics.MetricsFile;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
-import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
@@ -25,11 +25,11 @@ import htsjdk.variant.vcf.VCFHeader;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 
 import au.edu.wehi.idsv.util.AutoClosingIterator;
-import au.edu.wehi.idsv.util.BufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.vcf.VcfConstants;
 
 import com.google.common.collect.ImmutableList;
@@ -75,7 +75,11 @@ public class ProcessingContext implements Closeable {
 		this.perChr = perChr;
 		this.vcf41mode = vcf41;
 		this.referenceFile = ref;
-		this.reference = new BufferedReferenceSequenceFile(ReferenceSequenceFileFactory.getReferenceSequenceFile(this.referenceFile));
+		try {
+			this.reference = new IndexedFastaSequenceFile(this.referenceFile, true);
+		} catch (FileNotFoundException e) {
+			throw new RuntimeException("Unabled load fasta " + ref, e);
+		}
 		if (this.reference.getSequenceDictionary() == null) {
 			throw new IllegalArgumentException("Missing sequence dictionary for reference genome. Please create using picard CreateSequenceDictionary.");
 		}
