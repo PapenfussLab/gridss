@@ -81,22 +81,22 @@ public class Models {
 	private static double assemblyLlr(AssemblyEvidence e) {
 		int evidenceCount = e.getAssemblySupportCountReadPair(EvidenceSubset.ALL) + e.getAssemblySupportCountSoftClip(EvidenceSubset.ALL);
 		if (e instanceof DirectedBreakpoint) {
-			return ((DirectedBreakpoint)e).getRemoteMapq() * evidenceCount;
+			return Math.max(1, ((DirectedBreakpoint)e).getRemoteMapq()) * evidenceCount;
 		} else {
-			return e.getLocalMapq() * evidenceCount;
+			return Math.max(1, e.getLocalMapq()) * evidenceCount;
 		}
 	}
 	private static double oeaLlr(UnmappedMateReadPair e) {
-		return Math.min(15, e.getLocalMapq());
+		return Math.max(1, Math.min(15, e.getLocalMapq()));
 	}
 	private static double dpLlr(DiscordantReadPair e) {
-		return Math.min(15, Math.min(e.getLocalMapq(), e.getRemoteMapq()));
+		return Math.max(1, Math.min(15, Math.min(e.getLocalMapq(), e.getRemoteMapq())));
 	}
 	private static double scLlr(SoftClipEvidence e) {
-		return Math.min(Math.min(10, e.getSoftClipLength()), e.getLocalMapq());
+		return Math.max(1, Math.min(Math.min(10, e.getSoftClipLength()), e.getLocalMapq()));
 	}
 	private static double rscLlr(RealignedSoftClipEvidence e) {
-		return Math.min(20, Math.min(e.getRemoteMapq(), e.getLocalMapq()));
+		return Math.max(1, Math.min(20, Math.min(e.getRemoteMapq(), e.getLocalMapq())));
 	}
 	// TODO: proper 95% Confidence Interval instead of hard limits on the bounds
 	/**
