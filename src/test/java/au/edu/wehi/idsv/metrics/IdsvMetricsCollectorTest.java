@@ -24,6 +24,14 @@ public class IdsvMetricsCollectorTest extends TestHelper {
 		assertEquals(100, (int)((IdsvMetrics)imcf.getMetrics().get(0)).MAX_READ_LENGTH);
 	}
 	@Test
+	public void should_calc_max_read_mapped_length() {
+		IdsvMetricsCollector c = new IdsvMetricsCollector();
+		c.acceptRecord(Read(0, 1, "5M90D5M100S"), null);
+		MetricsFile<IdsvMetrics, Integer> imcf = new MetricsFile<IdsvMetrics, Integer>();
+		c.addAllLevelsToFile(imcf);
+		assertEquals(100, (int)((IdsvMetrics)imcf.getMetrics().get(0)).MAX_READ_MAPPED_LENGTH);
+	}
+	@Test
 	public void should_calc_max_fragment_size() {
 		IdsvMetricsCollector c = new IdsvMetricsCollector();
 		c.acceptRecord(Read(0, 1, "100M"), null);

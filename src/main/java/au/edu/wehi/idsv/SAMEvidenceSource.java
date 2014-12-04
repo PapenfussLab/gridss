@@ -238,17 +238,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 					this,
 					rawPairIt,
 					rawMateIt);
-			// worst case scenario is a fully mapped forward read followed by a large soft-clipped backward read at max distance
-			// MMMMMMMMMMMMMMMMMM>
-			// ^--read length --^
-			// ^--------max concordant fragment size-----^
-			//                   |-----breakend call-----|
-			//                   |----------breakend call--------|
-			//                                                   <SSSSSSSSSM
-			//                   ^--------max concordant fragment size-----^
-			// ^ alignment start                                           ^ alignment start
-			int maxAlignmentMargin = getMaxConcordantFragmentSize() + getMaxReadLength() + 1;
-			final Iterator<NonReferenceReadPair> sortedRpIt = new DirectEvidenceWindowedSortingIterator<NonReferenceReadPair>(processContext, maxAlignmentMargin, rawRpIt);
+			final Iterator<NonReferenceReadPair> sortedRpIt = new DirectEvidenceWindowedSortingIterator<NonReferenceReadPair>(processContext, getReadPairSortWindowSize(), rawRpIt);
 			final CloseableIterator<NonReferenceReadPair> finalrpIt = new AutoClosingIterator<NonReferenceReadPair>(sortedRpIt,
 					Lists.<Closeable>newArrayList(rawRpIt, rawPairIt, rawMateIt));
 			itList.add((CloseableIterator<DirectedEvidence>)(Object)finalrpIt);
@@ -271,7 +261,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			}
 			// sort into evidence order
 			scIt =  new AutoClosingIterator<SoftClipEvidence>(
-						new DirectEvidenceWindowedSortingIterator<SoftClipEvidence>(processContext, getMetrics().getIdsvMetrics().MAX_READ_LENGTH, scIt),
+						new DirectEvidenceWindowedSortingIterator<SoftClipEvidence>(processContext, getSoftClipSortWindowSize(), scIt),
 						scToClose
 					);
 			itList.add((CloseableIterator<DirectedEvidence>)(Object)scIt);
@@ -285,12 +275,28 @@ public class SAMEvidenceSource extends EvidenceSource {
 			CloseableIterator<SAMRecord> sssRawItf = processContext.getSamReaderIterator(remoteSoftClip);
 			CloseableIterator<SAMRecord> sssRawItb = processContext.getSamReaderIterator(remoteSoftClip);
 			remoteScIt = new RealignedRemoteSoftClipEvidenceIterator(processContext, this, rsrRawIt, sssRawItf, sssRawItb);
-			remoteScIt = new AutoClosingIterator<RealignedRemoteSoftClipEvidence>(new DirectEvidenceWindowedSortingIterator<RealignedRemoteSoftClipEvidence>(processContext, getMetrics().getIdsvMetrics().MAX_READ_LENGTH, remoteScIt),
+			int maxAlignmentMargin = getMetrics().getIdsvMetrics().MAX_READ_MAPPED_LENGTH;
+			remoteScIt = new AutoClosingIterator<RealignedRemoteSoftClipEvidence>(new DirectEvidenceWindowedSortingIterator<RealignedRemoteSoftClipEvidence>(processContext, getSoftClipSortWindowSize(), remoteScIt),
 					ImmutableList.<Closeable>of(remoteScIt, rsrRawIt, sssRawItf, sssRawItb));
 			itList.add((CloseableIterator<DirectedEvidence>)(Object)remoteScIt);
 		}
 		final CloseableIterator<DirectedEvidence> mergedIt = new AutoClosingMergedIterator<DirectedEvidence>(itList, DirectedEvidenceOrder.ByNatural);
 		return new AsyncBufferedIterator<DirectedEvidence>(mergedIt, input.getName() + " " + chr);
+	}
+	private int getSoftClipSortWindowSize() {
+		return getMaxReadMappedLength() + 1;
+	}
+	private int getReadPairSortWindowSize() {
+		// worst case scenario is a fully mapped forward read followed by a large soft-clipped backward read at max distance
+		// MMMMMMMMMMMMMMMMMM>
+		// ^--read length --^
+		// ^--------max concordant fragment size-----^
+		//                   |-----breakend call-----|
+		//                   |----------breakend call--------|
+		//                                                   <SSSSSSSSSM
+		//                   ^--------max concordant fragment size-----^
+		// ^ alignment start                                           ^ alignment start
+		return getMaxConcordantFragmentSize() + getMaxReadMappedLength() + 1;
 	}
 	public ReadPairConcordanceCalculator getReadPairConcordanceCalculator() {
 		if (rpcc == null) {
@@ -325,9 +331,12 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	@Override
 	public int getMaxConcordantFragmentSize() {
-		return Math.max(getMetrics().getIdsvMetrics().MAX_READ_LENGTH, getReadPairConcordanceCalculator().maxConcordantFragmentSize());
+		return Math.max(getMaxReadMappedLength(), Math.max(getMaxReadLength(), getReadPairConcordanceCalculator().maxConcordantFragmentSize()));
 	}
 	public int getMaxReadLength() {
 		return getMetrics().getIdsvMetrics().MAX_READ_LENGTH;
+	}
+	public int getMaxReadMappedLength() {
+		return getMetrics().getIdsvMetrics().MAX_READ_MAPPED_LENGTH;
 	}
 }

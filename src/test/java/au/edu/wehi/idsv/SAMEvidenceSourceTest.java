@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -301,6 +302,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		source.completeSteps(ProcessStep.ALL_STEPS);
 		assertEquals(pre, AsyncBufferedIteratorTest.getFirstThreadWithNamePrefixCount("AsyncBufferedIterator"));
 	}
+
 	@Test
 	public void iterator_should_sort_worst_case_read_pairs() {
 		//          1         2         3         4         5         6         7
@@ -324,5 +326,21 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		List<DirectedEvidence> results = Lists.newArrayList(source.iterator(true, false, false));
 		assertEquals(new BreakendSummary(0, BWD, 17, 58), results.get(0).getBreakendSummary());
 		assertEquals(new BreakendSummary(0, FWD, 18, 42), results.get(1).getBreakendSummary());
+	}
+	@Test
+	public void iterator_should_sort_sc_with_indel() throws IOException {
+		List<SAMRecord> in = new ArrayList<SAMRecord>();
+		for (int i = 1; i <= 100; i++) {
+			in.add(Read(0, 1, String.format("5M%dD5M5S", i)));
+		}
+		in.add(Read(0, 2, "5S10M"));
+		createInput(in.toArray(new SAMRecord[0]));
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false, 0, 15);
+		source.completeSteps(ProcessStep.ALL_STEPS);
+		List<DirectedEvidence> results = Lists.newArrayList(source.iterator(false, true, false));
+		for (int i = 1; i < results.size(); i++) {
+			assertTrue(results.get(i-1).getBreakendSummary().start <= results.get(i).getBreakendSummary().start);
+		}
+		assertEquals(in.size(), results.size());
 	}
 }
