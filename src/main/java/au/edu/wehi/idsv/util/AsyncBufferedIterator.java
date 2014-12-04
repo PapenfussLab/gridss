@@ -80,14 +80,16 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
 	}
 	@Override
 	public boolean hasNext() {
-		if (closeCalled) return false;
 		throwOnCallingThread();
+		if (closeCalled) return false;
 		if (!currentBuffer.hasNext()) {
 			try {
 				currentBuffer = Iterators.peekingIterator(buffer.take().iterator());
 			} catch (InterruptedException e) {
 				throw new RuntimeException(e);
 			}
+			// rethrow any exceptions raised on the background thread while we were blocking on the next record
+			throwOnCallingThread();
 		}
 		return currentBuffer.hasNext() && currentBuffer.peek() != eos;
 	}
@@ -128,7 +130,8 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
         	} catch (InterruptedException ie) {
         		// log.debug("Thread interrupt received - closing on background thread.");
         	} catch (Throwable t) {
-        		ex.compareAndSet(null, t);
+        		ex.set(t);
+        		throw new RuntimeException(t);
         	} finally {
         		syncClose();
         		Thread.interrupted(); // clear thread interrupt flag so we can write the eos indicator if needed
