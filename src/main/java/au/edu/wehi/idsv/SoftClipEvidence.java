@@ -13,6 +13,10 @@ public class SoftClipEvidence implements DirectedEvidence {
 	private final SAMEvidenceSource source;
 	private final SAMRecord record;
 	private final BreakendSummary location;
+	/**
+	 * Lazily computed evidence identifier
+	 */
+	private String evidenceID = null;
 	public static SoftClipEvidence create(ProcessingContext processContext, SAMEvidenceSource source, BreakendDirection direction, SAMRecord record) {
 		return create(processContext, source, direction, record, null);
 	}
@@ -56,7 +60,10 @@ public class SoftClipEvidence implements DirectedEvidence {
 	}
 	@Override
 	public String getEvidenceID() {
-		return getEvidenceID(location.direction, record);
+		if (evidenceID == null) {
+			evidenceID = getEvidenceID(location.direction, record);
+		}
+		return evidenceID;
 	}
 	@Override
 	public BreakendSummary getBreakendSummary() {
