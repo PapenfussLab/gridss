@@ -16,6 +16,7 @@ import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.metrics.MetricBase;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
+import htsjdk.samtools.reference.MappedFastaSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.variant.variantcontext.writer.Options;
@@ -76,7 +77,7 @@ public class ProcessingContext implements Closeable {
 		this.vcf41mode = vcf41;
 		this.referenceFile = ref;
 		try {
-			this.reference = new IndexedFastaSequenceFile(this.referenceFile, true);
+			this.reference = new MappedFastaSequenceFile(this.referenceFile);
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException("Unabled load fasta " + ref, e);
 		}
