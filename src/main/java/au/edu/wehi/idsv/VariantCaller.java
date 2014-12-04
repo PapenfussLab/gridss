@@ -218,7 +218,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 			log.info("Start calling maximal cliques for ", vcf);
 			while (it.hasNext()) {
 				VariantContextDirectedEvidence loc = it.next();
-				if (loc.getPhredScaledQual() < processContext.getVariantCallingParameters().minScore && !Defaults.WRITE_FILTERED_CALLS) {
+				if (loc.getPhredScaledQual() >= processContext.getVariantCallingParameters().minScore && !Defaults.WRITE_FILTERED_CALLS) {
 					// If we're under min score with all possible evidence allocated, we're definitely going to fail
 					// when we restrict evidence to single breakpoint support
 					vcfWriter.add(loc);

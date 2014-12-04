@@ -201,7 +201,7 @@ public class Idsv extends CommandLineProgram {
 				log.debug("Waiting for thread pool tasks to complete");
 				try {
 					if (!threadpool.awaitTermination(10, TimeUnit.MINUTES)) {
-						log.error("Tasks did not respond to termination request in a timely manner - outstanding tasks will be forcibly terminated without cleanup by the JVM.");
+						log.error("Tasks did not respond to termination request in a timely manner - outstanding tasks will be forcibly terminated without cleanup.");
 					}
 				} catch (InterruptedException e) {
 					throw new RuntimeException(e);
