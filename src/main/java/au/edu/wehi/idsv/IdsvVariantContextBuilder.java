@@ -10,8 +10,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
-
 import au.edu.wehi.idsv.vcf.SvType;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfConstants;

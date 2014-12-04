@@ -63,31 +63,33 @@ public class DeBruijnPathGraph<T extends DeBruijnNodeBase, PN extends PathNode<T
 		generatePathGraph(null);
 	}
 	public boolean sanityCheck() {
-		int weight = 0;
 		assert(pathNext.size() == pathList.size());
 		assert(pathPrev.size() == pathList.size());
-		int validCount = 0;
-		for (int i = 0; i < pathList.size(); i++) {
-			PN path = pathList.get(i);
-			if (path == null) {
-				assert(pathNext.get(i) == null);
-				assert(pathPrev.get(i) == null);
-			} else {
-				validCount++;
-				assert(path.getNodeId() == i);
-				assert(pathNext.get(i) != null);
-				assert(pathPrev.get(i) != null);
-				for (PN n : nextPath(path)) {
-					assert(prevPath(n).contains(path));
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			int weight = 0;
+			int validCount = 0;
+			for (int i = 0; i < pathList.size(); i++) {
+				PN path = pathList.get(i);
+				if (path == null) {
+					assert(pathNext.get(i) == null);
+					assert(pathPrev.get(i) == null);
+				} else {
+					validCount++;
+					assert(path.getNodeId() == i);
+					assert(pathNext.get(i) != null);
+					assert(pathPrev.get(i) != null);
+					for (PN n : nextPath(path)) {
+						assert(prevPath(n).contains(path));
+					}
+					for (PN n : prevPath(path)) {
+						assert(nextPath(n).contains(path));
+					}
+					weight += path.getWeight();
 				}
-				for (PN n : prevPath(path)) {
-					assert(nextPath(n).contains(path));
-				}
-				weight += path.getWeight();
 			}
+			assert(pathCount == validCount);
+			assert(weight == expectedWeight);
 		}
-		assert(pathCount == validCount);
-		assert(weight == expectedWeight);
 		return true;
 	}
 	public DeBruijnGraphBase<T> getGraph() {
