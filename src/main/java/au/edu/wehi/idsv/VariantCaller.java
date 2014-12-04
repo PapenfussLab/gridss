@@ -39,8 +39,10 @@ import com.google.common.collect.Lists;
  */
 public class VariantCaller extends EvidenceProcessorBase {
 	private static final Log log = Log.getInstance(VariantCaller.class);
-	public VariantCaller(ProcessingContext context, File output, List<SAMEvidenceSource> samEvidence, AssemblyEvidenceSource assemblyEvidence) {
+	private final boolean perChr;
+	public VariantCaller(ProcessingContext context, File output, List<SAMEvidenceSource> samEvidence, AssemblyEvidenceSource assemblyEvidence, boolean perChr) {
 		super(context, output, samEvidence, assemblyEvidence);
+		this.perChr = perChr;
 	}
 	@Override
 	public void process() {
@@ -103,7 +105,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 	public void callBreakends(ExecutorService threadpool) {
 		log.info("Identifying Breakpoints");
 		try {
-			if (processContext.shouldProcessPerChromosome()) {
+			if (perChr) {
 				List<WriteMaximalCliquesForChromosome> workers = Lists.newArrayList();
 				final SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
 				for (int i = 0; i < dict.size(); i++) {					
@@ -152,6 +154,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 					} finally {
 						CloserUtil.close(evidenceIt);
 					}
+					log.info("Sorting identified breakpoints");
 					VcfFileUtil.sort(processContext, unsorted, sorted);
 					FileHelper.move(sorted, outfile, true);
 				}
@@ -166,7 +169,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 	private List<Closeable> toClose = Lists.newArrayList();
 	private CloseableIterator<IdsvVariantContext> getAllCalledVariants() {
 		List<Iterator<IdsvVariantContext>> variants = Lists.newArrayList();
-		if (processContext.shouldProcessPerChromosome()) {
+		if (perChr) {
 			SAMSequenceDictionary dict = processContext.getReference().getSequenceDictionary();
 			for (int i = 0; i < dict.size(); i++) {
 				final String chri = dict.getSequence(i).getSequenceName();
@@ -215,7 +218,11 @@ public class VariantCaller extends EvidenceProcessorBase {
 			log.info("Start calling maximal cliques for ", vcf);
 			while (it.hasNext()) {
 				VariantContextDirectedEvidence loc = it.next();
-				vcfWriter.add(loc);
+				if (loc.getPhredScaledQual() < processContext.getVariantCallingParameters().minScore && !Defaults.WRITE_FILTERED_CALLS) {
+					// If we're under min score with all possible evidence allocated, we're definitely going to fail
+					// when we restrict evidence to single breakpoint support
+					vcfWriter.add(loc);
+				}
 				writeProgress.record(processContext.getDictionary().getSequence(loc.getBreakendSummary().referenceIndex).getSequenceName(), loc.getBreakendSummary().start);
 			}
 			log.info("Complete calling maximal cliques for ", vcf);

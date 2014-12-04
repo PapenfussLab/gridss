@@ -10,6 +10,10 @@ import com.google.common.collect.Lists;
 
 public class VariantCallingParameters {
 	/**
+	 * Minimum score for variant to be called
+	 */
+	public double minScore = 25;
+	/**
 	 * Maximum somatic p-value for flagging a variant as somatic
 	 */
 	public double somaticPvalueThreshold = 0.001;

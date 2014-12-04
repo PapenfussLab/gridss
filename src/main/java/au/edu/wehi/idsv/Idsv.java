@@ -177,7 +177,8 @@ public class Idsv extends CommandLineProgram {
 	    	
 	    	VariantCaller caller = null;
 	    	try {
-	    		caller = new VariantCaller(getContext(), OUTPUT, samEvidence, assemblyEvidence);
+	    		// Run variant caller single-threaded as we can do streaming calls
+	    		caller = new VariantCaller(getContext(), OUTPUT, samEvidence, assemblyEvidence, false);
 	    		caller.callBreakends(threadpool);
 	    		caller.annotateBreakpoints(TRUTH_VCF);
 	    	} finally {
