@@ -350,7 +350,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void qual_should_be_llr() {
-		assertNotEquals(big().getPhredScaledQual(), AttributeConverter.asDoubleList(big().getAttribute(VcfAttributes.LOG_LIKELIHOOD_RATIO.attribute())).get(0));
+		assertEquals(big().getPhredScaledQual(), (double)AttributeConverter.asDoubleList(big().getAttribute(VcfAttributes.LOG_LIKELIHOOD_RATIO.attribute())).get(0), 0.001);
 	}
 	@Test
 	public void should_calculate_component_llrs() {
