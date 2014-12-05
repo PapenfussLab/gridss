@@ -10,6 +10,7 @@ import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFFileReader;
+import htsjdk.variant.vcf.VCFUtils;
 
 import java.io.Closeable;
 import java.io.File;
@@ -48,7 +49,6 @@ public class VariantCaller extends EvidenceProcessorBase {
 	public void process() {
 		callBreakends(null);
 		annotateBreakpoints(null);
-		writeOutput();
 	}
 	private static class WriteMaximalCliquesForChromosome extends EvidenceProcessorBase implements Callable<Void> {
 		private int chri;
@@ -182,7 +182,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 			variants.add(getVariants(processContext.getFileSystemContext().getBreakpointVcf(output)));
 		}
 		CloseableIterator<IdsvVariantContext> merged = new AutoClosingMergedIterator<IdsvVariantContext>(variants, IdsvVariantContext.ByLocationStart);
-		return new AsyncBufferedIterator<IdsvVariantContext>(merged, "all breakpoints");
+		return new AsyncBufferedIterator<IdsvVariantContext>(merged, "CalledBreakPoints");
 	}
 	public void close() {
 		super.close();
@@ -230,13 +230,22 @@ public class VariantCaller extends EvidenceProcessorBase {
 			if (vcfWriter != null) vcfWriter.close();
 		}
 	}
+	private int getMaxWindowSize() {
+		// TODO: technically we need to know max assembly length as the entire assembly could be a microhomology
+		int maxSize = 0;
+		for (EvidenceSource source : samEvidence) {
+			SAMEvidenceSource samSource = (SAMEvidenceSource)source;
+			maxSize = Math.max(samSource.getMaxConcordantFragmentSize(), Math.max(samSource.getMaxReadLength(), samSource.getMaxReadMappedLength()));
+		}
+		// Err on the safe size
+		return 4 * maxSize;
+	}
 	public void annotateBreakpoints(File truthVcf) {
 		log.info("Annotating Calls");
 		List<SAMEvidenceSource> normal = Lists.newArrayList();
 		List<SAMEvidenceSource> tumour = Lists.newArrayList();
-		int maxFragmentSize = assemblyEvidence.getMaxConcordantFragmentSize();
+		int maxWindowSize = getMaxWindowSize();
 		for (EvidenceSource source : samEvidence) {
-			maxFragmentSize = Math.max(source.getMaxConcordantFragmentSize(), maxFragmentSize);
 			SAMEvidenceSource samSource = (SAMEvidenceSource)source;
 			if (samSource.isTumour()) {
 				tumour.add(samSource);
@@ -250,14 +259,19 @@ public class VariantCaller extends EvidenceProcessorBase {
 		CloseableIterator<IdsvVariantContext> it = null;
 		CloseableIterator<DirectedEvidence> evidenceIt = null;
 		try {
-			vcfWriter = processContext.getVariantContextWriter(FileSystemContext.getWorkingFileFor(output), true);
+			File working = FileSystemContext.getWorkingFileFor(output);
+			vcfWriter = processContext.getVariantContextWriter(working, true);
 			it = getAllCalledVariants();
 			Iterator<VariantContextDirectedEvidence> breakendIt = Iterators.filter(it, VariantContextDirectedEvidence.class);
-			normalCoverage = getReferenceLookup(normal, 4 * maxFragmentSize);
-			tumourCoverage = getReferenceLookup(tumour, 4 * maxFragmentSize);
-			breakendIt = new SequentialCoverageAnnotator(processContext, breakendIt, normalCoverage, tumourCoverage);
+			normalCoverage = getReferenceLookup(normal, maxWindowSize);
+			tumourCoverage = getReferenceLookup(tumour, maxWindowSize);
 			evidenceIt = getAllEvidence(true, true, true, true, true);
-			breakendIt = new SequentialEvidenceAnnotator(processContext, breakendIt, evidenceIt, maxFragmentSize, true);
+			breakendIt = new SequentialEvidenceAnnotator(processContext, breakendIt, evidenceIt, maxWindowSize, true);
+			// Mostly sorted but since breakpoint position is recalculated, there can be some wiggle
+			breakendIt = new DirectEvidenceWindowedSortingIterator<VariantContextDirectedEvidence>(processContext, maxWindowSize, breakendIt);
+			breakendIt = new AsyncBufferedIterator<VariantContextDirectedEvidence>(breakendIt, "Annotator-SV");
+			breakendIt = new SequentialCoverageAnnotator(processContext, breakendIt, normalCoverage, tumourCoverage);
+			breakendIt = new AsyncBufferedIterator<VariantContextDirectedEvidence>(breakendIt, "Annotator-Coverage");
 			if (truthVcf != null) {
 				breakendIt = new TruthAnnotator(processContext, breakendIt, truthVcf);
 			}
@@ -268,7 +282,8 @@ public class VariantCaller extends EvidenceProcessorBase {
 				}
 			}
 			CloserUtil.close(vcfWriter);
-			FileHelper.move(FileSystemContext.getWorkingFileFor(output), output, true);
+			vcfWriter = null;
+			FileHelper.move(working, output, true);
 			log.info("Variant calls written to ", output);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -284,13 +299,10 @@ public class VariantCaller extends EvidenceProcessorBase {
 		List<ReferenceCoverageLookup> lookup = Lists.newArrayList();
 		for (SAMEvidenceSource s : input) {
 			// one read-ahead thread per input file
-			CloseableIterator<SAMRecord> it = new AsyncBufferedIterator<SAMRecord>(processContext.getSamReaderIterator(s.getSourceFile(), SortOrder.coordinate), s.getSourceFile().getName() + " reference coverage");
+			CloseableIterator<SAMRecord> it = new AsyncBufferedIterator<SAMRecord>(processContext.getSamReaderIterator(s.getSourceFile(), SortOrder.coordinate), s.getSourceFile().getName() + "-Coverage");
 			toClose.add(it);
 			lookup.add(new SequentialReferenceCoverageLookup(it, s.getMetrics().getIdsvMetrics(), s.getReadPairConcordanceCalculator(), windowSize));
 		}
 		return new AggregateReferenceCoverageLookup(lookup);
-	}
-	private void writeOutput() {
-		log.info("Outputting calls to ", output);
 	}
 }

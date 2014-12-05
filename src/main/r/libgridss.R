@@ -33,8 +33,8 @@ gridss.truthdetails.processvcf.vcftodf <- function(vcf) {
   df$svlen <- ifelse(is.na(matchLength), mismatchLength, matchLength)
   df$svtype <- i$SVTYPE
   df$call <- ifelse(!is.na(matchLength), "good", ifelse(!is.na(mismatchLength), "misaligned", "bad"))
-  df <- gridss.truthdetails.processvcf.addtn(df, "LR", i$LR)
-  df <- gridss.truthdetails.processvcf.addtn(df, "LRBP", i$LRBP)
+  df$LR <- i$LR
+  df$LRBP <- i$LRBP
   df <- gridss.truthdetails.processvcf.addtn(df, "RC", i$RC)
   df <- gridss.truthdetails.processvcf.addtn(df, "PC", i$PC)
   df <- gridss.truthdetails.processvcf.addtn(df, "A_BCT", i$A_BCT)

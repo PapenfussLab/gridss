@@ -349,8 +349,11 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		assertEquals(116, e.getMapqAssemblyEvidenceMax());
 	}
 	@Test
+	public void qual_should_be_llr() {
+		assertNotEquals(big().getPhredScaledQual(), AttributeConverter.asDoubleList(big().getAttribute(VcfAttributes.LOG_LIKELIHOOD_RATIO.attribute())).get(0));
+	}
+	@Test
 	public void should_calculate_component_llrs() {
-		assertNotEquals(0d, big().getPhredScaledQual());
 		assertNotEquals(0d, AttributeConverter.asDoubleList(big().getAttribute(VcfAttributes.LOG_LIKELIHOOD_RATIO.attribute())).get(0));
 		assertNotEquals(0d, AttributeConverter.asDoubleList(big().getAttribute(VcfAttributes.READPAIR_LOG_LIKELIHOOD_RATIO.attribute())).get(0));
 		assertNotEquals(0d, AttributeConverter.asDoubleList(big().getAttribute(VcfAttributes.READPAIR_LOG_LIKELIHOOD_RATIO.attribute())).get(1));

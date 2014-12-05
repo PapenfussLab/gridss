@@ -35,8 +35,6 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
 	private boolean closeCalled = false;
 	private final int batchSize;
     private PeekingIterator<Object> currentBuffer = Iterators.peekingIterator(ImmutableList.<Object>of().iterator());
-    private String threadName;
-    private String iteratorDescription;
 	private static final Object eos = new Object(); // End of stream sentinel
 	/**
 	 * Creates a new iterator that traverses the given iterator on a background thread
@@ -53,13 +51,11 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
 	public AsyncBufferedIterator(Iterator<T> iterator, int bufferCount, int batchSize, String description) {
 		if (iterator == null) throw new IllegalArgumentException();
 		if (bufferCount <= 0 || batchSize <= 0) throw new IllegalArgumentException("Buffer size must be at least 1.");
-		this.iteratorDescription = description;
 		this.underlying = iterator;
 		this.buffer = new ArrayBlockingQueue<List<Object>>(bufferCount);
 		this.batchSize = batchSize;
         this.readerRunnable = new ReaderRunnable();
-        this.threadName = getThreadNamePrefix() + threadsCreated.incrementAndGet();
-        this.reader = new Thread(readerRunnable, threadName);
+        this.reader = new Thread(readerRunnable, description == null ? getThreadNamePrefix() + threadsCreated.incrementAndGet() : description);
         this.reader.setDaemon(true);
         this.reader.start();
 	}
@@ -150,9 +146,6 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
 		throw new UnsupportedOperationException();
 	}
 	protected String getBackgroundThreadName() {
-		return this.threadName; 
-	}
-	protected String getDescription() {
-		return this.iteratorDescription; 
+		return this.reader.getName();
 	}
 }

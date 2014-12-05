@@ -275,13 +275,12 @@ public class SAMEvidenceSource extends EvidenceSource {
 			CloseableIterator<SAMRecord> sssRawItf = processContext.getSamReaderIterator(remoteSoftClip);
 			CloseableIterator<SAMRecord> sssRawItb = processContext.getSamReaderIterator(remoteSoftClip);
 			remoteScIt = new RealignedRemoteSoftClipEvidenceIterator(processContext, this, rsrRawIt, sssRawItf, sssRawItb);
-			int maxAlignmentMargin = getMetrics().getIdsvMetrics().MAX_READ_MAPPED_LENGTH;
 			remoteScIt = new AutoClosingIterator<RealignedRemoteSoftClipEvidence>(new DirectEvidenceWindowedSortingIterator<RealignedRemoteSoftClipEvidence>(processContext, getSoftClipSortWindowSize(), remoteScIt),
 					ImmutableList.<Closeable>of(remoteScIt, rsrRawIt, sssRawItf, sssRawItb));
 			itList.add((CloseableIterator<DirectedEvidence>)(Object)remoteScIt);
 		}
 		final CloseableIterator<DirectedEvidence> mergedIt = new AutoClosingMergedIterator<DirectedEvidence>(itList, DirectedEvidenceOrder.ByNatural);
-		return new AsyncBufferedIterator<DirectedEvidence>(mergedIt, input.getName() + " " + chr);
+		return new AsyncBufferedIterator<DirectedEvidence>(mergedIt, input.getName() + "-" + chr);
 	}
 	private int getSoftClipSortWindowSize() {
 		return getMaxReadMappedLength() + 1;

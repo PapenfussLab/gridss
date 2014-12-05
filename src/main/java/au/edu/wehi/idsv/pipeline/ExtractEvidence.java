@@ -257,7 +257,7 @@ public class ExtractEvidence implements Closeable {
 		final ProgressLogger progress = new ProgressLogger(log);
 		CloseableIterator<SAMRecord> iter = null;
 		try {
-			iter = new AsyncBufferedIterator<SAMRecord>(processContext.getSamReaderIterator(reader), source.getSourceFile().getName() + " metrics"); 
+			iter = new AsyncBufferedIterator<SAMRecord>(processContext.getSamReaderIterator(reader), source.getSourceFile().getName() + "-Metrics"); 
 			while (iter.hasNext() && recordsProcessed++ < maxRecords) {
 				SAMRecord record = iter.next();
 				ismc.acceptRecord(record, null);
@@ -279,7 +279,7 @@ public class ExtractEvidence implements Closeable {
 		final ProgressLogger progress = new ProgressLogger(log);
 		CloseableIterator<SAMRecord> iter = null;
 		try {
-			iter = new AsyncBufferedIterator<SAMRecord>(processContext.getSamReaderIterator(reader), source.getSourceFile().getName() + " extract");
+			iter = new AsyncBufferedIterator<SAMRecord>(processContext.getSamReaderIterator(reader), source.getSourceFile().getName() + "-Extract");
 			while (iter.hasNext()) {
 				SAMRecord record = iter.next();
 				SAMRecordUtil.ensureNmTag(referenceWalker, record);
