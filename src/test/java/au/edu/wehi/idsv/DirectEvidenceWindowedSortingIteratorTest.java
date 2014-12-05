@@ -23,7 +23,8 @@ public class DirectEvidenceWindowedSortingIteratorTest extends TestHelper {
 				E(0, 7, FWD),
 				E(0, 7, 7, BWD),
 				E(0, 7, 8, BWD),
-				E(0, 7, 6, BWD)
+				E(0, 7, 10, BWD),
+				E(0, 7, 9, BWD)
 				);
 		DirectEvidenceWindowedSortingIterator<DirectedEvidence> it = new DirectEvidenceWindowedSortingIterator<DirectedEvidence>(getContext(), 5, list.iterator());
 		ArrayList<DirectedEvidence> expected = Lists.newArrayList(list);

@@ -80,4 +80,36 @@ public class BreakendSummaryTest extends TestHelper {
 		assertEquals(new BreakendSummary(0, FWD, 7, 10), new BreakendSummary(0, FWD, 9, 9).expandBounds(2, dict));
 		assertEquals(new BreakendSummary(0, FWD, 1, 3), new BreakendSummary(0, FWD, 1, 1).expandBounds(2, dict));
 	}
+	@Test(expected=IllegalArgumentException.class)
+	public void constructor_should_ensure_referenceindex_bounds() {
+		new BreakendSummary(-1, FWD, 1, 1);
+	}
+	@Test(expected=IllegalArgumentException.class)
+	public void constructor_should_ensure_position_bounds() {
+		new BreakendSummary(0, FWD, 0, 1);
+	}
+	@Test(expected=IllegalArgumentException.class)
+	public void constructor_should_ensure_positive_interval() {
+		new BreakendSummary(0, FWD, 2, 1);
+	}
+	@Test
+	public void isValid_should_check_bounds() {
+		SAMSequenceDictionary dict = new SAMSequenceDictionary();
+		dict.addSequence(new SAMSequenceRecord("test", 10));
+		dict.addSequence(new SAMSequenceRecord("test2", 20));
+		assertTrue(new BreakendSummary(0, FWD, 1, 1).isValid(dict));
+		assertTrue(new BreakendSummary(0, FWD, 10, 10).isValid(dict));
+		assertTrue(new BreakendSummary(0, FWD, 1, 10).isValid(dict));
+		assertTrue(new BreakendSummary(1, FWD, 1, 20).isValid(dict));
+		
+		assertFalse(new BreakendSummary(2, FWD, 1, 1).isValid(dict));
+		assertFalse(new BreakendSummary(0, FWD, 1, 11).isValid(dict));
+	}
+	@Test
+	public void isValid_should_check_start_end() {
+		SAMSequenceDictionary dict = new SAMSequenceDictionary();
+		dict.addSequence(new SAMSequenceRecord("test", 10));
+		dict.addSequence(new SAMSequenceRecord("test2", 10));
+		assertTrue(new BreakendSummary(0, FWD, 2, 2).isValid(dict));
+	}
 }

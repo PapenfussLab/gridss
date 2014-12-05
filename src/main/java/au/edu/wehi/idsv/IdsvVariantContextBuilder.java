@@ -15,6 +15,7 @@ import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfConstants;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
 /**
@@ -43,6 +44,14 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 	}
 	private String getBreakendString() {
 		return processContext.getVcf41Mode() ? VcfConstants.VCF41BREAKEND_REPLACEMENT : VcfConstants.VCF42BREAKEND;
+	}
+	public IdsvVariantContextBuilder referenceReads(int normalCount, int tumourCount) {
+		attribute(VcfAttributes.REFERENCE_COUNT_READ.attribute(), ImmutableList.of(normalCount, tumourCount ));
+		return this;
+	}
+	public IdsvVariantContextBuilder referenceSpanningPairs(int normalCount, int tumourCount) {
+		attribute(VcfAttributes.REFERENCE_COUNT_READPAIR.attribute(), ImmutableList.of(normalCount, tumourCount));
+		return this;
 	}
 	/**
 	 * Sets the variant to the given breakend.
@@ -82,16 +91,11 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 	 * @return builder
 	 */
 	private IdsvVariantContextBuilder dobreak(BreakendSummary loc, String untemplatedSequence, byte[] untemplatedBaseQual) {
-		if (untemplatedSequence == null) untemplatedSequence = "";
+		if (!loc.isValid(processContext.getDictionary())) throw new IllegalArgumentException(String.format("%s is not valid", loc));
+		if (untemplatedBaseQual != null && untemplatedSequence != null && untemplatedBaseQual.length != untemplatedSequence.length()) throw new IllegalArgumentException("Untemplated sequence and base qualities have different lengths");
 		String chr = processContext.getDictionary().getSequence(loc.referenceIndex).getSequenceName();
 		String ref, alt;
-		// No reference, breakend outside of reference bounds, break on non-reference contig 
-		// all of which should not happen
 		ref = new String(processContext.getReference().getSubsequenceAt(chr, loc.start, loc.start).getBases(), StandardCharsets.US_ASCII);
-		//try {
-		//} catch (Exception ex) {
-		//	ref = StringUtils.repeat("N", loc.end - loc.start + 1);
-		//}
 		if (loc instanceof BreakpointSummary) {
 			BreakpointSummary bp = (BreakpointSummary)loc;
 			char remoteBracket = bp.direction2 == BreakendDirection.Forward ? ']' : '[';

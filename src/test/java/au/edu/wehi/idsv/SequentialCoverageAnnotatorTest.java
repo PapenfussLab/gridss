@@ -1,9 +1,10 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -14,16 +15,18 @@ import com.google.common.collect.ImmutableList;
 
 
 public class SequentialCoverageAnnotatorTest extends TestHelper {
-	public VariantContextDirectedEvidence go(List<DirectedEvidence> evidence, List<SAMRecord> ref, VariantContextDirectedEvidence toAnnotate) {
+	public VariantContextDirectedEvidence go(List<SAMRecord> ref, VariantContextDirectedEvidence toAnnotate) {
 		Collections.sort(ref, new SAMRecordCoordinateComparator());
-		return new SequentialCoverageAnnotator(getContext(), ImmutableList.of(toAnnotate).iterator(),
-				new SequentialReferenceCoverageLookup(ref.iterator(), IDSV(ref), new SAMFlagReadPairConcordanceCalculator(IDSV(ref)), 1024), null).annotate(toAnnotate);
+		return new SequentialCoverageAnnotator(
+				getContext(),
+				ImmutableList.of(toAnnotate).iterator(),
+				new SequentialReferenceCoverageLookup(ref.iterator(), IDSV(ref), new SAMFlagReadPairConcordanceCalculator(IDSV(ref)), 1024),
+				null)
+			.annotate(toAnnotate);
 	}
 	@Test
 	public void should_add_reference_counts() {
 		VariantContextDirectedEvidence result = go(L(
-				(DirectedEvidence)SoftClipEvidence.create(getContext(), SES(), FWD, withSequence("TTTTTTTT", Read(0, 1, "3S1M3S"))[0], withSequence("TTT", Read(0, 12, "3M"))[0])),
-			L(
 				RP(0, 1, 100, 5),
 				RP(0, 2, 100, 5),
 				RP(0, 9, 100, 10)),
@@ -32,5 +35,46 @@ public class SequentialCoverageAnnotatorTest extends TestHelper {
 				.make());
 		assertEquals(1, result.getReferenceReadCount(EvidenceSubset.NORMAL));
 		assertEquals(2, result.getReferenceReadPairCount(EvidenceSubset.NORMAL));
+	}
+	@Test
+	public void should_count_reference_support_spanning_breakend_position() {
+		VariantContextDirectedEvidence result;
+		for (int i = 1; i < 10; i++) {
+			result = go(L(
+					Read(0, 2, 1)),
+				(VariantContextDirectedEvidence)minimalBreakend()
+					.breakend(new BreakendSummary(0, FWD, i, i), "")
+					.make());
+			assertEquals(0, result.getReferenceReadCount(EvidenceSubset.NORMAL));
+			
+			result = go(L(
+					Read(0, 2, 1)),
+				(VariantContextDirectedEvidence)minimalBreakend()
+					.breakend(new BreakendSummary(0, BWD, i, i), "")
+					.make());
+			assertEquals(0, result.getReferenceReadCount(EvidenceSubset.NORMAL));
+			
+			result = go(L(
+					Read(0, 2, 2)),
+				(VariantContextDirectedEvidence)minimalBreakend()
+					.breakend(new BreakendSummary(0, FWD, i, i), "")
+					.make());
+			assertEquals(i == 2 ? 1 : 0, result.getReferenceReadCount(EvidenceSubset.NORMAL));
+			
+			result = go(L(
+					Read(0, 2, 2)),
+				(VariantContextDirectedEvidence)minimalBreakend()
+					.breakend(new BreakendSummary(0, BWD, i, i), "")
+					.make());
+			assertEquals(Integer.toString(i), i == 3 ? 1 : 0, result.getReferenceReadCount(EvidenceSubset.NORMAL));
+		}
+	}
+	@Test
+	public void should_not_apply_sv_filters() {
+		VariantContextDirectedEvidence result = go(new ArrayList<SAMRecord>(),
+			(VariantContextDirectedEvidence)minimalBreakend()
+				.breakpoint(new BreakpointSummary(0, FWD, 10, 10, 1, BWD, 100, 100), "")
+				.make());
+		assertFalse(result.isFiltered());
 	}
 }

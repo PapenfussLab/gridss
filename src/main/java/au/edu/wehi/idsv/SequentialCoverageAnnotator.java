@@ -28,11 +28,9 @@ public class SequentialCoverageAnnotator extends AbstractIterator<VariantContext
 	}
 	public VariantContextDirectedEvidence annotate(VariantContextDirectedEvidence variant) {
 		BreakendSummary loc = variant.getBreakendSummary();
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(context, variant);
-		annotateReferenceCounts(builder, loc.referenceIndex, loc.start + (loc.direction == BreakendDirection.Forward ? 0 : 1));
-		return builder.make();
-	}
-	private void annotateReferenceCounts(StructuralVariationCallBuilder builder, int referenceIndex, int positionImmediatelyBeforeBreakend) {
+		int referenceIndex = loc.referenceIndex;
+		// TODO: start or end based on call position
+		int positionImmediatelyBeforeBreakend = loc.start - (loc.direction == BreakendDirection.Forward ? 0 : 1);
 		int normalReads = 0;
 		int normalSpans = 0;
 		int tumourReads = 0;
@@ -45,8 +43,10 @@ public class SequentialCoverageAnnotator extends AbstractIterator<VariantContext
 			tumourReads = referenceTumour.readsSupportingNoBreakendAfter(referenceIndex, positionImmediatelyBeforeBreakend);
 			tumourSpans = referenceTumour.readPairsSupportingNoBreakendAfter(referenceIndex, positionImmediatelyBeforeBreakend);
 		}
+		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context, variant);
 		builder.referenceReads(normalReads, tumourReads);
 		builder.referenceSpanningPairs(normalSpans, tumourSpans);
+		return (VariantContextDirectedEvidence)builder.make();
 	}
 	@Override
 	protected VariantContextDirectedEvidence computeNext() {

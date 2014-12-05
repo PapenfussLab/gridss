@@ -221,7 +221,7 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 		}
 	}
 	private void assertSorted(Iterable<SAMRecordAssemblyEvidence> list) {
-		BreakendSummary last = new BreakendSummary(0,  FWD, 0,  0);
+		BreakendSummary last = new BreakendSummary(0,  FWD, 1,  1);
 		for (SAMRecordAssemblyEvidence s : list) {
 			assertTrue(BreakendSummary.ByStartEnd.compare(last, s.getBreakendSummary()) <= 0);
 			last = s.getBreakendSummary();

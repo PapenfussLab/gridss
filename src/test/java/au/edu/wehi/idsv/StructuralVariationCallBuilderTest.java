@@ -491,7 +491,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		support.add(NRRP(tes, DP(0, 2, "2M", true, 0, 16, "5M", false)));
 		AssemblyEvidence ass = AssemblyFactory.createAnchored(pc, AES(), BWD,
 				support, 0, 10, 5, B("CGTAAAAT"), new byte[] { 0,1,2,3,4,5,6,7}, 0, 45);
-		VariantContextDirectedEvidence e = cb(ass)
+		VariantContextDirectedEvidence e = (VariantContextDirectedEvidence)cb(ass)
 			.referenceReads(10, 10)
 			.referenceSpanningPairs(10, 10)
 			.make();

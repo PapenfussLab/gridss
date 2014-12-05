@@ -77,7 +77,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		Collections.sort(scList, SoftClipByBestDesc);
 	}
 	private void setBreakpoint() {
-		// TODO: allow breakends
+		// TODO: take the exact breakend with the most total evidence 
 		AssemblyEvidence bestAssemblyBreakpoint = Iterables.getFirst(Iterables.filter(assList, new Predicate<AssemblyEvidence>() {
 			@Override
 			public boolean apply(AssemblyEvidence input) {
@@ -162,40 +162,40 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			}
 		}
 		attribute(VcfAttributes.ASSEMBLY_EVIDENCE_COUNT, fullList.size());
-		attribute(VcfAttributes.ASSEMBLY_MAPPED, sum(supportList, new Function<AssemblyEvidence, Integer>() {
+		attribute(VcfAttributes.ASSEMBLY_MAPPED, sumTN(supportList, new Function<AssemblyEvidence, Integer>() {
 			@Override
 			public Integer apply(AssemblyEvidence input) {
 				return input instanceof DirectedBreakpoint ? 1 : 0;
 			}
 		}));
-		attribute(VcfAttributes.ASSEMBLY_MAPQ_MAX, max(supportList, new Function<AssemblyEvidence, Integer>() {
+		attribute(VcfAttributes.ASSEMBLY_MAPQ_MAX, maxTN(supportList, new Function<AssemblyEvidence, Integer>() {
 			@Override
 			public Integer apply(AssemblyEvidence arg0) {
 				return arg0.getLocalMapq();
 			}}));
-		attribute(VcfAttributes.ASSEMBLY_MAPQ_LOCAL_MAX, max(supportList, new Function<AssemblyEvidence, Integer>() {
+		attribute(VcfAttributes.ASSEMBLY_MAPQ_LOCAL_MAX, maxTN(supportList, new Function<AssemblyEvidence, Integer>() {
 			@Override
 			public Integer apply(AssemblyEvidence arg0) {
 				return arg0.getLocalMapq();
 			}}));
-		attribute(VcfAttributes.ASSEMBLY_MAPQ_MAX, max(supportList, new Function<AssemblyEvidence, Integer>() {
+		attribute(VcfAttributes.ASSEMBLY_MAPQ_MAX, maxTN(supportList, new Function<AssemblyEvidence, Integer>() {
 			@Override
 			public Integer apply(AssemblyEvidence arg0) {
 				if (arg0 instanceof DirectedBreakpoint) return ((DirectedBreakpoint)arg0).getRemoteMapq();
 				return 0;
 			}}));
-		attribute(VcfAttributes.ASSEMBLY_MAPQ_TOTAL, sum(supportList, new Function<AssemblyEvidence, Integer>() {
+		attribute(VcfAttributes.ASSEMBLY_MAPQ_TOTAL, sumTN(supportList, new Function<AssemblyEvidence, Integer>() {
 			@Override
 			public Integer apply(AssemblyEvidence arg0) {
 				if (arg0 instanceof DirectedBreakpoint) return ((DirectedBreakpoint)arg0).getRemoteMapq();
 				return 0;
 			}}));
-		attribute(VcfAttributes.ASSEMBLY_LENGTH_LOCAL_MAX, max(supportList, new Function<AssemblyEvidence, Integer>() {
+		attribute(VcfAttributes.ASSEMBLY_LENGTH_LOCAL_MAX, maxTN(supportList, new Function<AssemblyEvidence, Integer>() {
 			@Override
 			public Integer apply(AssemblyEvidence arg0) {
 				return arg0.getAssemblyAnchorLength();
 			}}));
-		attribute(VcfAttributes.ASSEMBLY_LENGTH_REMOTE_MAX, max(supportList, new Function<AssemblyEvidence, Integer>() {
+		attribute(VcfAttributes.ASSEMBLY_LENGTH_REMOTE_MAX, maxTN(supportList, new Function<AssemblyEvidence, Integer>() {
 			@Override
 			public Integer apply(AssemblyEvidence arg0) {
 				return arg0.getBreakendSequence().length;
@@ -231,33 +231,33 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		attribute(VcfAttributes.ASSEMBLY_CONSENSUS, consensus);
 	}
 	private void aggregateReadPairAttributes() {
-		attribute(VcfAttributes.READPAIR_EVIDENCE_COUNT, sum(rpList, new Function<NonReferenceReadPair, Integer>() {
+		attribute(VcfAttributes.READPAIR_EVIDENCE_COUNT, sumTN(rpList, new Function<NonReferenceReadPair, Integer>() {
 			@Override
 			public Integer apply(NonReferenceReadPair arg0) {
 				return 1;
 			}}));
-		attribute(VcfAttributes.READPAIR_MAPPED_READPAIR, sum(rpList, new Function<NonReferenceReadPair, Integer>() {
+		attribute(VcfAttributes.READPAIR_MAPPED_READPAIR, sumTN(rpList, new Function<NonReferenceReadPair, Integer>() {
 			@Override
 			public Integer apply(NonReferenceReadPair arg0) {
 				return arg0 instanceof DirectedBreakpoint ? 1 : 0;
 			}}));
-		attribute(VcfAttributes.READPAIR_MAPQ_LOCAL_MAX, max(rpList, new Function<NonReferenceReadPair, Integer>() {
+		attribute(VcfAttributes.READPAIR_MAPQ_LOCAL_MAX, maxTN(rpList, new Function<NonReferenceReadPair, Integer>() {
 			@Override
 			public Integer apply(NonReferenceReadPair arg0) {
 				return arg0.getLocalMapq();
 			}}));
-		attribute(VcfAttributes.READPAIR_MAPQ_LOCAL_TOTAL, sum(rpList, new Function<NonReferenceReadPair, Integer>() {
+		attribute(VcfAttributes.READPAIR_MAPQ_LOCAL_TOTAL, sumTN(rpList, new Function<NonReferenceReadPair, Integer>() {
 			@Override
 			public Integer apply(NonReferenceReadPair arg0) {
 				return arg0.getLocalMapq();
 			}}));
-		attribute(VcfAttributes.READPAIR_MAPQ_REMOTE_MAX, max(rpList, new Function<NonReferenceReadPair, Integer>() {
+		attribute(VcfAttributes.READPAIR_MAPQ_REMOTE_MAX, maxTN(rpList, new Function<NonReferenceReadPair, Integer>() {
 			@Override
 			public Integer apply(NonReferenceReadPair arg0) {
 				if (arg0 instanceof DirectedBreakpoint) return ((DirectedBreakpoint)arg0).getRemoteMapq();
 				return 0;
 			}}));
-		attribute(VcfAttributes.READPAIR_MAPQ_REMOTE_TOTAL, sum(rpList, new Function<NonReferenceReadPair, Integer>() {
+		attribute(VcfAttributes.READPAIR_MAPQ_REMOTE_TOTAL, sumTN(rpList, new Function<NonReferenceReadPair, Integer>() {
 			@Override
 			public Integer apply(NonReferenceReadPair arg0) {
 				if (arg0 instanceof DirectedBreakpoint) return ((DirectedBreakpoint)arg0).getRemoteMapq();
@@ -265,46 +265,46 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			}}));
 	}
 	private void aggregateSoftClipAttributes() {
-		attribute(VcfAttributes.SOFTCLIP_EVIDENCE_COUNT, sum(scList, new Function<SoftClipEvidence, Integer>() {
+		attribute(VcfAttributes.SOFTCLIP_EVIDENCE_COUNT, sumTN(scList, new Function<SoftClipEvidence, Integer>() {
 			@Override
 			public Integer apply(SoftClipEvidence arg0) {
 				return 1;
 			}}));
-		attribute(VcfAttributes.SOFTCLIP_MAPPED, sum(scList, new Function<SoftClipEvidence, Integer>() {
+		attribute(VcfAttributes.SOFTCLIP_MAPPED, sumTN(scList, new Function<SoftClipEvidence, Integer>() {
 			@Override
 			public Integer apply(SoftClipEvidence arg0) {
 				return arg0 instanceof RealignedSoftClipEvidence ? 1 : 0;
 			}}));
-		attribute(VcfAttributes.SOFTCLIP_MAPQ_REMOTE_TOTAL, sum(scList, new Function<SoftClipEvidence, Integer>() {
+		attribute(VcfAttributes.SOFTCLIP_MAPQ_REMOTE_TOTAL, sumTN(scList, new Function<SoftClipEvidence, Integer>() {
 			@Override
 			public Integer apply(SoftClipEvidence arg0) {
 				if (arg0 instanceof DirectedBreakpoint) return ((DirectedBreakpoint)arg0).getRemoteMapq();
 				return 0;
 			}}));
-		attribute(VcfAttributes.SOFTCLIP_MAPQ_REMOTE_MAX, max(scList, new Function<SoftClipEvidence, Integer>() {
+		attribute(VcfAttributes.SOFTCLIP_MAPQ_REMOTE_MAX, maxTN(scList, new Function<SoftClipEvidence, Integer>() {
 			@Override
 			public Integer apply(SoftClipEvidence arg0) {
 				if (arg0 instanceof DirectedBreakpoint) return ((DirectedBreakpoint)arg0).getRemoteMapq();
 				return 0;
 			}}));
-		attribute(VcfAttributes.SOFTCLIP_LENGTH_REMOTE_TOTAL, sum(scList, new Function<SoftClipEvidence, Integer>() {
+		attribute(VcfAttributes.SOFTCLIP_LENGTH_REMOTE_TOTAL, sumTN(scList, new Function<SoftClipEvidence, Integer>() {
 			@Override
 			public Integer apply(SoftClipEvidence arg0) {
 				return arg0.getSoftClipLength();
 			}}));
-		attribute(VcfAttributes.SOFTCLIP_LENGTH_REMOTE_MAX, max(scList, new Function<SoftClipEvidence, Integer>() {
+		attribute(VcfAttributes.SOFTCLIP_LENGTH_REMOTE_MAX, maxTN(scList, new Function<SoftClipEvidence, Integer>() {
 			@Override
 			public Integer apply(SoftClipEvidence arg0) {
 				return arg0.getSoftClipLength();
 			}}));
 	}
-	private static <T extends DirectedEvidence> List<Integer> sum(Iterable<T> it, Function<T, Integer> f) {
-		return sumOrMax(it, f, false);
+	private static <T extends DirectedEvidence> List<Integer> sumTN(Iterable<T> it, Function<T, Integer> f) {
+		return sumOrMaxTN(it, f, false);
 	}
-	private static <T extends DirectedEvidence> List<Integer> max(Iterable<T> it, Function<T, Integer> f) {
-		return sumOrMax(it, f, true);
+	private static <T extends DirectedEvidence> List<Integer> maxTN(Iterable<T> it, Function<T, Integer> f) {
+		return sumOrMaxTN(it, f, true);
 	}
-	private static <T extends DirectedEvidence> List<Integer> sumOrMax(Iterable<T> it, Function<T, Integer> f, boolean max) {
+	private static <T extends DirectedEvidence> List<Integer> sumOrMaxTN(Iterable<T> it, Function<T, Integer> f, boolean max) {
 		boolean collapse = false;
 		List<Integer> list = Lists.newArrayList();
 		list.add(0);
@@ -329,14 +329,6 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			list.remove(1);
 		}
 		return list;
-	}
-	public StructuralVariationCallBuilder referenceReads(int normalCount, int tumourCount) {
-		attribute(VcfAttributes.REFERENCE_COUNT_READ.attribute(), ImmutableList.of(normalCount, tumourCount ));
-		return this;
-	}
-	public StructuralVariationCallBuilder referenceSpanningPairs(int normalCount, int tumourCount) {
-		attribute(VcfAttributes.REFERENCE_COUNT_READPAIR.attribute(), ImmutableList.of(normalCount, tumourCount));
-		return this;
 	}
 	private String getID() {
 		BreakendSummary call = parent.getBreakendSummary();

@@ -263,7 +263,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 			}
 			while (breakendIt.hasNext()) {
 				VariantContextDirectedEvidence variant = breakendIt.next();
-				if (variant.isValid() && !variant.isFiltered() || Defaults.WRITE_FILTERED_CALLS) {
+				if (variant.isValid() && (!variant.isFiltered() || Defaults.WRITE_FILTERED_CALLS)) {
 					vcfWriter.add(variant);
 				}
 			}

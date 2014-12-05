@@ -31,6 +31,12 @@ public class BreakendSummary {
 		if (referenceIndex < 0) {
 			throw new IllegalArgumentException("Reference index must be valid");
 		}
+		if (start <= 0) {
+			throw new IllegalArgumentException("start must be valid");
+		}
+		if (end < start) {
+			throw new IllegalArgumentException("end must be at or after start");
+		}
 		this.referenceIndex = referenceIndex;
 		this.direction = direction;
 		this.start = start;
@@ -71,12 +77,10 @@ public class BreakendSummary {
 			BreakendSummary b2) {
 		if (b1.referenceIndex != b2.referenceIndex) return null;
 		if (b1.direction != b2.direction) return null;
-		BreakendSummary result = new BreakendSummary(
-			b1.referenceIndex,
-			b1.direction,
-			Math.max(b1.start, b2.start),
-			Math.min(b1.end, b2.end));
-		if (result.start > result.end) return null;
+		int start = Math.max(b1.start, b2.start);
+		int end = Math.min(b1.end, b2.end);
+		if (start > end) return null;
+		BreakendSummary result = new BreakendSummary(b1.referenceIndex, b1.direction, start, end);
 		return result;
 	}
 	/**
@@ -97,6 +101,16 @@ public class BreakendSummary {
 	protected static String toString(BreakendDirection direction, int referenceIndex, int start, int end, ProcessingContext processContext) {
 		if (direction == BreakendDirection.Forward) return toString(referenceIndex, start, end, processContext) + ">";
 		return "<" + toString(referenceIndex, start, end, processContext);
+	}
+	/**
+	 * Determines whether this given breakend is valid for the given reference
+	 * @param dictionary
+	 * @return
+	 */
+	public boolean isValid(SAMSequenceDictionary dictionary) {
+		return referenceIndex >= 0 && referenceIndex < dictionary.size()
+				&& start <= end
+				&& start > 0 && end <= dictionary.getSequence(referenceIndex).getSequenceLength();
 	}
 	@Override
 	public String toString() {
