@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv;
 
+import static org.junit.Assert.assertNotNull;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
@@ -12,6 +13,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SamPairUtil;
 import htsjdk.samtools.metrics.Header;
+import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.ProgressLoggerInterface;
@@ -23,6 +25,7 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -40,6 +43,7 @@ import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.ReadKmerIterable;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
 import au.edu.wehi.idsv.metrics.IdsvMetrics;
+import au.edu.wehi.idsv.metrics.IdsvMetricsCollector;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
@@ -714,5 +718,16 @@ public class TestHelper {
 			builder.addEvidence(e);
 		}
 		return builder.make();
+	}
+	public IdsvMetrics IDSV(Collection<SAMRecord> input) {
+		IdsvMetricsCollector c = new IdsvMetricsCollector();
+		for (SAMRecord read : input) {
+			assertNotNull(read);
+			c.acceptRecord(read,  null);
+		}
+		MetricsFile<IdsvMetrics, Integer> mf = new MetricsFile<IdsvMetrics, Integer>();
+		c.addAllLevelsToFile(mf);
+		IdsvMetrics metrics = mf.getMetrics().get(0);
+		return metrics;
 	}
 }

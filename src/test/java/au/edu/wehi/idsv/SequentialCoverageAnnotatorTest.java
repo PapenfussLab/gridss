@@ -11,15 +11,13 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
-import au.edu.wehi.idsv.metrics.IdsvMetrics;
-
 
 
 public class SequentialCoverageAnnotatorTest extends TestHelper {
 	public VariantContextDirectedEvidence go(List<DirectedEvidence> evidence, List<SAMRecord> ref, VariantContextDirectedEvidence toAnnotate) {
 		Collections.sort(ref, new SAMRecordCoordinateComparator());
 		return new SequentialCoverageAnnotator(getContext(), ImmutableList.of(toAnnotate).iterator(),
-				new SequentialReferenceCoverageLookup(ref.iterator(), new SAMFlagReadPairConcordanceCalculator(new IdsvMetrics()), 1024), null).annotate(toAnnotate);
+				new SequentialReferenceCoverageLookup(ref.iterator(), IDSV(ref), new SAMFlagReadPairConcordanceCalculator(IDSV(ref)), 1024), null).annotate(toAnnotate);
 	}
 	@Test
 	public void should_add_reference_counts() {

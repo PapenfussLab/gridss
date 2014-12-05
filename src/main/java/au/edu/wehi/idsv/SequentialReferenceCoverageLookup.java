@@ -11,6 +11,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
 
+import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import au.edu.wehi.idsv.util.SlidingWindowList;
 
 import com.google.common.collect.ImmutableList;
@@ -33,23 +34,32 @@ public class SequentialReferenceCoverageLookup implements Closeable, ReferenceCo
 	private final PriorityQueue<Integer> currentReferenceRead = Queues.newPriorityQueue();
 	private final PriorityQueue<Integer> currentStartReferencePairs = Queues.newPriorityQueue();;
 	private final PriorityQueue<Integer> currentEndReferencePairs = Queues.newPriorityQueue();;
-	private int currentReferenceIndex;
+	/**
+	 * Maximum distance from read alignment start to last concordant support position 
+	 */
+	private final int maxEvidenceWindow;
+	private int currentReferenceIndex = -1;
 	private int currentPosition;
 	private int largestWindow;
 	private SlidingWindowList<Integer> readCounts;
 	private SlidingWindowList<Integer> pairCounts;
 	/**
+	 * Used to check the data is sequential
+	 */
+	private SAMRecord lastRead;
+	/**
 	 * Creates a reference lookup from the given reads
 	 * @param context processing context
 	 * @param windowSize window size of out-of-order querying.
+	 * @param maxFragmentSize maximum fragment
 	 * @param reads reads to process. <b>Must</b> be coordinate sorted
 	 */
-	public SequentialReferenceCoverageLookup(Iterator<SAMRecord> it, ReadPairConcordanceCalculator pairing, int windowSize) {
+	public SequentialReferenceCoverageLookup(Iterator<SAMRecord> it, IdsvMetrics metrics, ReadPairConcordanceCalculator pairing, int windowSize) {
 		this.pairing = pairing;
 		if (it instanceof Closeable) toClose.add((Closeable)it);
 		this.reads = Iterators.peekingIterator(new FilteringIterator(it, new AggregateFilter(ImmutableList.of(new AlignedFilter(true), new DuplicateReadFilter()))));
 		this.largestWindow = windowSize;
-		jumpTo(0);
+		this.maxEvidenceWindow = Math.max(metrics.MAX_READ_LENGTH, Math.max(metrics.MAX_READ_MAPPED_LENGTH, pairing.maxConcordantFragmentSize()));
 	}
 	public void close() {
 		for (Closeable c : toClose) {
@@ -93,33 +103,68 @@ public class SequentialReferenceCoverageLookup implements Closeable, ReferenceCo
 	 * @param position
 	 */
 	private void ensure(int referenceIndex, int position) {
-		if (currentReferenceIndex > referenceIndex) throw new IllegalArgumentException(String.format("Unable to rewind from reference index %d to %d", currentReferenceIndex, referenceIndex));
-		if (referenceIndex > currentReferenceIndex) jumpTo(referenceIndex);
-		while (currentPosition < position && !doneWithContig()) { // continue while we haven't reached our target position
-			// Advance and call the next position
-			currentPosition++;
+		if (currentReferenceIndex == referenceIndex) {
+			if (position < currentPosition - largestWindow) {
+				throw new IllegalArgumentException(String.format("Unable to rewind from position %d to %d", currentPosition, position));
+			}
+			if (position <= currentPosition) {
+				// already processed
+				return;
+			}
+		} else {
+			if (currentReferenceIndex > referenceIndex) throw new IllegalArgumentException(String.format("Unable to rewind from reference index %d to %d", currentReferenceIndex, referenceIndex));
+			currentReferenceIndex = referenceIndex;
+			currentPosition = 0;
+			currentReferenceRead.clear();
+			currentStartReferencePairs.clear();
+			currentEndReferencePairs.clear();
+			readCounts = new SlidingWindowList<Integer>(largestWindow);
+			pairCounts = new SlidingWindowList<Integer>(largestWindow);
+		}
+		// skip until we're close to out window
+		while (reads.hasNext() && reads.peek().getReferenceIndex() < currentReferenceIndex) {
+			checkOrdered(reads.next());
+		}
+		while (reads.hasNext() && reads.peek().getReferenceIndex() == currentReferenceIndex && reads.peek().getAlignmentStart() < position - largestWindow - maxEvidenceWindow) {
+			checkOrdered(reads.next());
+		}
+		// track evidence that could be in our window 
+		while (reads.hasNext() && reads.peek().getReferenceIndex() == currentReferenceIndex && reads.peek().getAlignmentStart() < position - largestWindow) {
+			addRead(checkOrdered(reads.next()));
+		}
+		// Call all position not previously called up to largestWindow bases before our target position
+		for (currentPosition = Math.max(currentPosition + 1, position - largestWindow); currentPosition <= position; currentPosition++) {
+			while (reads.hasNext() && reads.peek().getReferenceIndex() == currentReferenceIndex && reads.peek().getAlignmentStart() == currentPosition) {
+				addRead(checkOrdered(reads.next()));
+			}
 			flushQueues();
-			processCurrentReads();
 			readCounts.set(currentPosition, currentReferenceRead.size());
 			pairCounts.set(currentPosition, currentEndReferencePairs.size() - currentStartReferencePairs.size());
-			if (queuesAreEmpty()) {
-				// short-cut advance to next read as all intervening values are going to be zero
-				currentPosition = nextReadPosition() - 1;
-			}
 		}
+		currentPosition--;
 	}
-	private boolean doneWithContig() {
-		return !haveUnprocessReads() && queuesAreEmpty();
+	private SAMRecord checkOrdered(SAMRecord read) {
+		if (lastRead != null && (read.getReferenceIndex() < lastRead.getReferenceIndex() ||
+				(read.getReferenceIndex() == lastRead.getReferenceIndex() && read.getAlignmentStart() < lastRead.getAlignmentStart()))) {
+			throw new IllegalStateException(String.format("Input is not sorted read %s at %s:%d before read %s at %s:%d",
+					lastRead.getReadName(),
+					lastRead.getReferenceName(),
+					lastRead.getAlignmentStart(),
+					read.getReadName(),
+					read.getReferenceName(),
+					read.getAlignmentStart()));
+		}
+		lastRead = read;
+		return read;
 	}
-	private int nextReadPosition() {
-		if (!haveUnprocessReads()) return Integer.MAX_VALUE;
-		return reads.peek().getAlignmentStart();
-	}
-	private boolean queuesAreEmpty() {
-		return currentReferenceRead.isEmpty() && currentStartReferencePairs.isEmpty() && currentEndReferencePairs.isEmpty();
-	}
-	private boolean haveUnprocessReads() {
-		return reads.hasNext() && reads.peek().getReferenceIndex() == currentReferenceIndex;
+	private void addRead(SAMRecord read) {
+		if (read.getReadUnmappedFlag()) return;
+		// TODO: process CIGAR instead of just taking the whole alignment length as support for the reference
+		currentReferenceRead.add(read.getAlignmentEnd());
+		if (isLowerMappedOfNonOverlappingConcordantPair(read)) {
+			currentStartReferencePairs.add(read.getAlignmentEnd());
+			currentEndReferencePairs.add(read.getMateAlignmentStart());
+		}
 	}
 	/**
 	 * Flushes the queues of all reads that no longer support the reference
@@ -129,21 +174,6 @@ public class SequentialReferenceCoverageLookup implements Closeable, ReferenceCo
 		while (!currentReferenceRead.isEmpty() && currentReferenceRead.peek() <= currentPosition) currentReferenceRead.poll();
 		while (!currentStartReferencePairs.isEmpty() && currentStartReferencePairs.peek() <= currentPosition) currentStartReferencePairs.poll();
 		while (!currentEndReferencePairs.isEmpty() && currentEndReferencePairs.peek() <= currentPosition) currentEndReferencePairs.poll();
-	}
-	/**
-	 * Processes all reads starting at the current position
-	 */
-	private void processCurrentReads() {
-		while (reads.hasNext() && reads.peek().getReferenceIndex() == currentReferenceIndex && reads.peek().getAlignmentStart() == currentPosition) {
-			SAMRecord read = reads.next();
-			if (read.getReadUnmappedFlag()) continue;
-			// TODO: process CIGAR instead of just taking the whole alignment length as support for the reference
-			currentReferenceRead.add(read.getAlignmentEnd());
-			if (isLowerMappedOfNonOverlappingConcordantPair(read)) {
-				currentStartReferencePairs.add(read.getAlignmentEnd());
-				currentEndReferencePairs.add(read.getMateAlignmentStart());
-			}
-		}
 	}
 	private boolean isLowerMappedOfNonOverlappingConcordantPair(SAMRecord read) {
 		return !read.getReadUnmappedFlag()
@@ -155,19 +185,5 @@ public class SequentialReferenceCoverageLookup implements Closeable, ReferenceCo
 						|| (read.getAlignmentStart() == read.getMateAlignmentStart() && read.getFirstOfPairFlag()))
 				&& pairing.isConcordant(read);
 				
-	}
-	/**
-	 * Stops processing the current reference index and advances to the given index
-	 * @param referenceIndex
-	 */
-	private void jumpTo(int referenceIndex) {
-		currentReferenceIndex = referenceIndex;
-		currentPosition = 0;
-		currentReferenceRead.clear();
-		currentStartReferencePairs.clear();
-		currentEndReferencePairs.clear();
-		readCounts = new SlidingWindowList<Integer>(largestWindow);
-		pairCounts = new SlidingWindowList<Integer>(largestWindow);
-		while (reads.hasNext() && reads.peek().getReferenceIndex() < currentReferenceIndex) reads.next();
 	}
 }

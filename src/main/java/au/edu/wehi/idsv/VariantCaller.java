@@ -286,7 +286,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 			// one read-ahead thread per input file
 			CloseableIterator<SAMRecord> it = new AsyncBufferedIterator<SAMRecord>(processContext.getSamReaderIterator(s.getSourceFile(), SortOrder.coordinate), s.getSourceFile().getName() + " reference coverage");
 			toClose.add(it);
-			lookup.add(new SequentialReferenceCoverageLookup(it, s.getReadPairConcordanceCalculator(), windowSize));
+			lookup.add(new SequentialReferenceCoverageLookup(it, s.getMetrics().getIdsvMetrics(), s.getReadPairConcordanceCalculator(), windowSize));
 		}
 		return new AggregateReferenceCoverageLookup(lookup);
 	}
