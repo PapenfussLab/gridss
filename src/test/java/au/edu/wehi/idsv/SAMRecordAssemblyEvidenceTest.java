@@ -152,4 +152,22 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	private SAMRecordAssemblyEvidence big() {
 		return new AssemblyFactoryTest().big();
 	}
+	@Test
+	public void should_track_breakend_evidence() {
+		DirectedEvidence e1 = SCE(BWD, Read(0, 1, "5S5M"));
+		DirectedEvidence e2 = SCE(BWD, Read(0, 1, "6S5M"));
+		DirectedEvidence e3 = NRRP(OEA(0, 1, "1M", false));
+		DirectedEvidence b1 = SCE(BWD, Read(0, 1, "7S5M"));
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(e1, e2, e3),
+			1, 2, 1, B("GTAC"), new byte[] {1,2,3,4}, 1, 2);
+		assertTrue(e.isPartOfAssemblyBreakend(e1));
+		assertTrue(e.isPartOfAssemblyBreakend(e2));
+		assertTrue(e.isPartOfAssemblyBreakend(e3));
+		assertFalse(e.isPartOfAssemblyBreakend(b1));
+		e = new SAMRecordAssemblyEvidence(AES(), e.getSAMRecord(), null);
+		assertTrue(e.isPartOfAssemblyBreakend(e1));
+		assertTrue(e.isPartOfAssemblyBreakend(e2));
+		assertTrue(e.isPartOfAssemblyBreakend(e3));
+		assertFalse(e.isPartOfAssemblyBreakend(b1));
+	}
 }

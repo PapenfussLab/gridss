@@ -13,4 +13,8 @@ public class SamTags {
 	 * Filters applied to assembly
 	 */
 	public static final String ASSEMLBY_FILTERS = "af";
+	/**
+	 * EvidenceID hash
+	 */
+	public static final String ASSEMLBY_EVIDENCE_HASH = "eh";
 }

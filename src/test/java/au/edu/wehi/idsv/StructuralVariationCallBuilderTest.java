@@ -310,7 +310,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		int bpLen = offset + 13; // ASSEMBLY_LENGTH_REMOTE_MAX
 		byte[] b = new byte[anchorLen + bpLen];
 		byte[] q = new byte[anchorLen + bpLen];
-		SAMRecordAssemblyEvidence e = new SAMRecordAssemblyEvidence(getContext().getBasicSamHeader(), new BreakendSummary(0, BWD, 10, 10), AES(),
+		SAMRecordAssemblyEvidence e = new SAMRecordAssemblyEvidence(null, getContext().getBasicSamHeader(), new BreakendSummary(0, BWD, 10, 10), AES(),
 				anchorLen, b, q, intListAttributes);
 		e.getSAMRecord().setReadName("fakeass"+Integer.toString(offset));
 		SAMRecord r = new SAMRecord(getContext().getBasicSamHeader());

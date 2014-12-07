@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv;
 
+import gnu.trove.set.hash.TIntHashSet;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
@@ -8,6 +9,7 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -23,6 +25,8 @@ import au.edu.wehi.idsv.vcf.VcfFilter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hashing;
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.UnsignedBytes;
 
@@ -38,6 +42,46 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		this.realignment = realignment == null ? getPlaceholderRealignment() : realignment;
 		fixReadPair();
 	}
+	/**
+	 * Lazily calculated evidence IDs of the evidence contributing to this breakend
+	 * 
+	 * Hashes of the IDs are stored due to the overhead of storing the full strings
+	 * and the low likelihood and impact of hash collisions
+	 */
+	private TIntHashSet evidenceIdhashSet = null;
+	private static HashFunction evidenceIdHash = Hashing.murmur3_32();
+	private void ensureEvidenceSet() {
+		if (evidenceIdhashSet == null) {
+			Object value = record.getAttribute(SamTags.ASSEMLBY_EVIDENCE_HASH);
+			if (value instanceof int[]) {
+				evidenceIdhashSet = new TIntHashSet((int[])value);
+			}
+		}
+	}
+	private static void setEvidenceSet(SAMRecord r, Collection<DirectedEvidence> evidence) {
+		if (evidence != null && evidence.size() > 0) {
+			int[] hashes = new int[evidence.size()];
+			int i = 0;
+			for (DirectedEvidence e : evidence) {
+				hashes[i++] = evidenceIdHash.hashUnencodedChars(e.getEvidenceID()).asInt();
+			}
+			r.setAttribute(SamTags.ASSEMLBY_EVIDENCE_HASH, hashes);
+		}
+	}
+	/**
+	 * Determines whether the given record is part of the given assembly
+	 *
+	 * This method is a probabilistic method and it is possible for the record to return true
+	 * when the record does not form part of the assembly breakend
+	 *
+	 * @param evidence
+	 * @return true if the record is likely part of the breakend, false if definitely not
+	 */
+	public boolean isPartOfAssemblyBreakend(DirectedEvidence evidence) {
+		ensureEvidenceSet();
+		if (evidenceIdhashSet == null) return false;
+		return evidenceIdhashSet.contains(evidenceIdHash.hashUnencodedChars(evidence.getEvidenceID()).asInt());
+	}
 	private void fixReadPair() {
 		if (realignment.getReadUnmappedFlag()) {
 			// SAMv1 S2.4
@@ -47,6 +91,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		SAMRecordUtil.pairReads(this.record, this.realignment);
 	}
 	public SAMRecordAssemblyEvidence(
+			Collection<DirectedEvidence> evidence,
 			SAMFileHeader samFileHeader, BreakendSummary breakend,
 			AssemblyEvidenceSource source,
 			int anchoredBaseCount,
@@ -54,7 +99,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 			byte[] baseQuals,
 			Map<VcfAttributes, int[]> intListAttributes
 			) {
-		this(source, createAssemblySAMRecord(samFileHeader, source, breakend, anchoredBaseCount, baseCalls, baseQuals, intListAttributes), null);
+		this(source, createAssemblySAMRecord(evidence, samFileHeader, source, breakend, anchoredBaseCount, baseCalls, baseQuals, intListAttributes), null);
 	}
 	private SAMRecord getPlaceholderRealignment() {
 		SAMRecord placeholder = new SAMRecord(record.getHeader());
@@ -105,6 +150,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		return new BreakendSummary(referenceIndex, direction, start, end);
 	}
 	private static SAMRecord createAssemblySAMRecord(
+			Collection<DirectedEvidence> evidence,
 			SAMFileHeader samFileHeader, AssemblyEvidenceSource source,
 			BreakendSummary breakend,
 			int anchoredBaseCount, byte[] baseCalls, byte[] baseQuals,
@@ -167,6 +213,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 				record.setBaseQualities(Bytes.concat(baseQuals, PAD_QUALS[padBases]));
 			}
 		}
+		setEvidenceSet(record, evidence);
 		return record;
 	}
 	private static final byte[][] PAD_BASES = new byte[][] { new byte[] {}, new byte[] { 'N' }, new byte[] { 'N', 'N' } };

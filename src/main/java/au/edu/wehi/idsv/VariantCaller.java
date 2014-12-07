@@ -10,7 +10,6 @@ import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFFileReader;
-import htsjdk.variant.vcf.VCFUtils;
 
 import java.io.Closeable;
 import java.io.File;
@@ -23,6 +22,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
+import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.validation.TruthAnnotator;
@@ -50,7 +50,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 		callBreakends(null);
 		annotateBreakpoints(null);
 	}
-	private static class WriteMaximalCliquesForChromosome extends EvidenceProcessorBase implements Callable<Void> {
+	private class WriteMaximalCliquesForChromosome extends EvidenceProcessorBase implements Callable<Void> {
 		private int chri;
 		private int chrj;
 		public WriteMaximalCliquesForChromosome(ProcessingContext context, File output, List<SAMEvidenceSource> samEvidence, AssemblyEvidenceSource assemblyEvidence, int chri, int chrj) {
@@ -78,8 +78,8 @@ public class VariantCaller extends EvidenceProcessorBase {
 				sorted.delete();
 				try {
 					boolean assemblyOnly = processContext.getVariantCallingParameters().callOnlyAssemblies; 
-					evidenceIt = getEvidenceForChr(true, true, !assemblyOnly, !assemblyOnly, !assemblyOnly,
-							chri, chrj);
+					evidenceIt = getEvidenceForChr(true, true, !assemblyOnly, !assemblyOnly, !assemblyOnly, chri, chrj);
+					evidenceIt = new AutoClosingIterator<DirectedEvidence>(new OrthogonalEvidenceIterator(processContext.getLinear(), evidenceIt, getMaxWindowSize()), Lists.<Closeable>newArrayList(evidenceIt));
 					EvidenceClusterProcessor processor = new EvidenceClusterSubsetProcessor(processContext, evidenceIt, chri, chrj);
 					writeMaximalCliquesToVcf(
 							processContext,
@@ -146,6 +146,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 					try {
 						boolean assemblyOnly = processContext.getVariantCallingParameters().callOnlyAssemblies;
 						evidenceIt = getAllEvidence(true, true, !assemblyOnly, !assemblyOnly, !assemblyOnly);
+						evidenceIt = new AutoClosingIterator<DirectedEvidence>(new OrthogonalEvidenceIterator(processContext.getLinear(), evidenceIt, getMaxWindowSize()), Lists.<Closeable>newArrayList(evidenceIt));
 						EvidenceClusterProcessor processor = new EvidenceClusterProcessor(processContext, evidenceIt);
 						writeMaximalCliquesToVcf(
 								processContext,
@@ -266,6 +267,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 			normalCoverage = getReferenceLookup(normal, maxWindowSize);
 			tumourCoverage = getReferenceLookup(tumour, maxWindowSize);
 			evidenceIt = getAllEvidence(true, true, true, true, true);
+			evidenceIt = new AutoClosingIterator<DirectedEvidence>(new OrthogonalEvidenceIterator(processContext.getLinear(), evidenceIt, getMaxWindowSize()), Lists.<Closeable>newArrayList(evidenceIt));
 			breakendIt = new SequentialEvidenceAnnotator(processContext, breakendIt, evidenceIt, maxWindowSize, true);
 			// Mostly sorted but since breakpoint position is recalculated, there can be some wiggle
 			breakendIt = new DirectEvidenceWindowedSortingIterator<VariantContextDirectedEvidence>(processContext, maxWindowSize, breakendIt);
