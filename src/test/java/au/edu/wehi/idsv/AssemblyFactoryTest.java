@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
+import org.junit.Assert;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes;
@@ -216,6 +217,163 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals(1, bp.getBreakendSummary().referenceIndex2);
 	}
 	@Test
+	public void incorporateRealignment_should_map_anchored_breakend() {
+		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES();
+		Set<DirectedEvidence> support = Sets.newHashSet();
+		
+		assertEquals(new BreakpointSummary(0, FWD, 100, 100, 1, BWD, 200, 200),
+				AssemblyFactory.incorporateRealignment(pc,
+					AssemblyFactory.createAnchored(pc, aes, FWD, support, 0, 100, 1, B("TTT"), B("TTT"), 0, 0),
+					new SAMRecord(pc.getBasicSamHeader()) {{
+						setMappingQuality(40);
+						setReferenceIndex(1);
+						setAlignmentStart(200);
+						setReadNegativeStrandFlag(false);
+						setCigarString("2M");
+					}}).getBreakendSummary());
+		
+		assertEquals(new BreakpointSummary(0, FWD, 100, 100, 1, FWD, 200, 200),
+				AssemblyFactory.incorporateRealignment(pc,
+					AssemblyFactory.createAnchored(pc, aes, FWD, support, 0, 100, 1, B("TTT"), B("TTT"), 0, 0),
+					new SAMRecord(pc.getBasicSamHeader()) {{
+						setMappingQuality(40);
+						setReferenceIndex(1);
+						setAlignmentStart(199);
+						setReadNegativeStrandFlag(true);
+						setCigarString("2M");
+					}}).getBreakendSummary());
+		
+		assertEquals(new BreakpointSummary(0, BWD, 100, 100, 1, FWD, 200, 200),
+				AssemblyFactory.incorporateRealignment(pc,
+					AssemblyFactory.createAnchored(pc, aes, BWD, support, 0, 100, 1, B("TTT"), B("TTT"), 0, 0),
+					new SAMRecord(pc.getBasicSamHeader()) {{
+						setMappingQuality(40);
+						setReferenceIndex(1);
+						setAlignmentStart(199);
+						setReadNegativeStrandFlag(false);
+						setCigarString("2M");
+					}}).getBreakendSummary());
+		
+		assertEquals(new BreakpointSummary(0, BWD, 100, 100, 1, BWD, 200, 200),
+				AssemblyFactory.incorporateRealignment(pc,
+					AssemblyFactory.createAnchored(pc, aes, BWD, support, 0, 100, 1, B("TTT"), B("TTT"), 0, 0),
+					new SAMRecord(pc.getBasicSamHeader()) {{
+						setMappingQuality(40);
+						setReferenceIndex(1);
+						setAlignmentStart(200);
+						setReadNegativeStrandFlag(true);
+						setCigarString("2M");
+					}}).getBreakendSummary());
+	}
+	@Test
+	public void incorporateRealignment_should_map_anchored_breakend_with_soft_clip() {
+		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES();
+		Set<DirectedEvidence> support = Sets.newHashSet();
+		
+		assertEquals(new BreakpointSummary(0, FWD, 100, 100, 1, BWD, 200, 200),
+				AssemblyFactory.incorporateRealignment(pc,
+					AssemblyFactory.createAnchored(pc, aes, FWD, support, 0, 100, 1, B("CCCCC"), B("CCCCC"), 0, 0),
+					new SAMRecord(pc.getBasicSamHeader()) {{
+						setMappingQuality(40);
+						setReferenceIndex(1);
+						setAlignmentStart(200);
+						setReadNegativeStrandFlag(false);
+						setReadBases(B("CCCC"));
+						setCigarString("2S2M");
+					}}).getBreakendSummary());
+		
+		assertEquals(new BreakpointSummary(0, FWD, 100, 100, 1, FWD, 200, 200),
+				AssemblyFactory.incorporateRealignment(pc,
+					AssemblyFactory.createAnchored(pc, aes, FWD, support, 0, 100, 1, B("CCCCC"), B("CCCCC"), 0, 0),
+					new SAMRecord(pc.getBasicSamHeader()) {{
+						setMappingQuality(40);
+						setReferenceIndex(1);
+						setAlignmentStart(199);
+						setReadNegativeStrandFlag(true);
+						setReadBases(B("GGGG"));
+						setCigarString("2M2S");
+					}}).getBreakendSummary());
+		
+		assertEquals(new BreakpointSummary(0, BWD, 100, 100, 1, FWD, 200, 200),
+				AssemblyFactory.incorporateRealignment(pc,
+					AssemblyFactory.createAnchored(pc, aes, BWD, support, 0, 100, 1, B("CCCCC"), B("CCCCC"), 0, 0),
+					new SAMRecord(pc.getBasicSamHeader()) {{
+						setMappingQuality(40);
+						setReferenceIndex(1);
+						setAlignmentStart(199);
+						setReadNegativeStrandFlag(false);
+						setReadBases(B("CCCC"));
+						setReadBases(B("GGGG"));
+						setCigarString("2M2S");
+					}}).getBreakendSummary());
+		
+		assertEquals(new BreakpointSummary(0, BWD, 100, 100, 1, BWD, 200, 200),
+				AssemblyFactory.incorporateRealignment(pc,
+					AssemblyFactory.createAnchored(pc, aes, BWD, support, 0, 100, 1, B("CCCCC"), B("CCCCC"), 0, 0),
+					new SAMRecord(pc.getBasicSamHeader()) {{
+						setMappingQuality(40);
+						setReferenceIndex(1);
+						setAlignmentStart(200);
+						setReadNegativeStrandFlag(true);
+						setCigarString("2S2M");
+						setReadBases(B("GGGG"));
+					}}).getBreakendSummary());
+	}
+	@Test
+	public void incorporateRealignment_should_map_unanchored_breakend() {
+		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES();		
+		assertEquals(new BreakpointSummary(0, FWD, 100, 200, 1, BWD, 400, 500),
+				AssemblyFactory.incorporateRealignment(pc,
+					AssemblyFactory.createUnanchored(pc, aes, Sets.<DirectedEvidence>newHashSet(new MockDirectedEvidence(0, FWD, 100, 200)), B("CCCCC"), B("CCCCC"), 0, 0),
+					new SAMRecord(pc.getBasicSamHeader()) {{
+						setMappingQuality(40);
+						setReferenceIndex(1);
+						setAlignmentStart(500);
+						setReadNegativeStrandFlag(false);
+						setReadBases(B("CCCCC"));
+						setCigarString("5M");
+					}}).getBreakendSummary());
+		
+		assertEquals(new BreakpointSummary(0, FWD, 100, 200, 1, FWD, 400, 500),
+				AssemblyFactory.incorporateRealignment(pc,
+					AssemblyFactory.createUnanchored(pc, aes, Sets.<DirectedEvidence>newHashSet(new MockDirectedEvidence(0, FWD, 100, 200)), B("CCCCC"), B("CCCCC"), 0, 0),
+					new SAMRecord(pc.getBasicSamHeader()) {{
+						setMappingQuality(40);
+						setReferenceIndex(1);
+						setAlignmentStart(395);
+						setReadNegativeStrandFlag(true);
+						setReadBases(B("GGGGG"));
+						setCigarString("5M");
+					}}).getBreakendSummary());
+		
+		assertEquals(new BreakpointSummary(0, BWD, 100, 200, 1, FWD, 400, 500),
+				AssemblyFactory.incorporateRealignment(pc,
+					AssemblyFactory.createUnanchored(pc, aes, Sets.<DirectedEvidence>newHashSet(new MockDirectedEvidence(0, BWD, 100, 200)), B("CCCCC"), B("CCCCC"), 0, 0),
+					new SAMRecord(pc.getBasicSamHeader()) {{
+						setMappingQuality(40);
+						setReferenceIndex(1);
+						setAlignmentStart(500);
+						setReadNegativeStrandFlag(false);
+						setReadBases(B("CCCCC"));
+						setCigarString("5M");
+					}}).getBreakendSummary());
+		
+		assertEquals(new BreakpointSummary(0, BWD, 100, 200, 1, BWD, 400, 500),
+				AssemblyFactory.incorporateRealignment(pc,
+					AssemblyFactory.createUnanchored(pc, aes, Sets.<DirectedEvidence>newHashSet(new MockDirectedEvidence(0, BWD, 100, 200)), B("CCCCC"), B("CCCCC"), 0, 0),
+					new SAMRecord(pc.getBasicSamHeader()) {{
+						setMappingQuality(40);
+						setReferenceIndex(1);
+						setAlignmentStart(395);
+						setReadNegativeStrandFlag(true);
+						setReadBases(B("GGGGG"));
+						setCigarString("5M");
+					}}).getBreakendSummary());
+	}
+	@Test
 	public void incorporateRealignment_should_not_convert_poorly_mapped_to_breakpoint() {
 		SAMRecord ra = Read(1, 100, "1S1M1S");
 		ra.setReadBases(B("CGT"));
@@ -353,5 +511,10 @@ public class AssemblyFactoryTest extends TestHelper {
 		}) {
 			assertNotEquals(e1a.getEvidenceID(), e.getEvidenceID());
 		}
+	}
+	@Test
+	public void should_include_untemplated_sequence_for_imprecise_breakpoint_at_remote_breakend_only() {
+		// untemplated sequence should only be calculated for the remote breakend
+		Assert.fail();
 	}
 }

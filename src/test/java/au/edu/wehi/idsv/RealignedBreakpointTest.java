@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 
@@ -119,5 +120,18 @@ public class RealignedBreakpointTest extends TestHelper {
 		realign.setReadNegativeStrandFlag(false);
 		rbp = new RealignedBreakpoint(getContext(), new BreakendSummary(0, FWD, 10, 10), "AAAA", realign);
 		assertEquals(4, rbp.getMicroHomologyLength());
+	}
+	@Test
+	public void should_calculate_imprecise_breakpoint() {
+		Assert.fail();
+	}
+	@Test
+	public void should_not_calculate_microhomology_for_imprecise_breakpoint() {
+		Assert.fail();
+	}
+	@Test
+	public void should_include_untemplated_sequence_for_imprecise_breakpoint_at_remote_breakend_only() {
+		// untemplated sequence should only be calculated for the remote breakend
+		Assert.fail();
 	}
 }

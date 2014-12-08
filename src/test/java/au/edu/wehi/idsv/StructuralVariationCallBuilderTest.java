@@ -13,6 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -538,9 +539,19 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		assertEquals(0 + 17, cb(new AssemblyFactoryTest().big(), new AssemblyFactoryTest().bigr()).make().getMapqAssemblyTotal() );
 	}
 	@Test
-	public void mate_anchor_should_set_imprecise_header() {
-		// max fragment size = 300
+	public void only_read_pair_should_set_imprecise_header() {
+		assertTrue(CallSV(NRRP(OEA(0, 1, "1M", true))).hasAttribute(VcfSvConstants.IMPRECISE_KEY));
+		// Should still be inexact event if our CI is 1bp because we don't know if there
+		// is any untemplated sequence included in the breakpoint
+		assertTrue(CallSV(NRRP(DP(0, 1, "1M", true, 0, 2, "1M", false))).hasAttribute(VcfSvConstants.IMPRECISE_KEY));
+	}
+	@Test
+	public void unanchored_assembly_should_set_imprecise_header() {
 		VariantContextDirectedEvidence dba = CallSV(AssemblyFactory.createUnanchored(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(new MockDirectedEvidence(new BreakendSummary(0, FWD, 1, 2))), B("A"), B("A"), 0, 0));
 		assertTrue(dba.hasAttribute(VcfSvConstants.IMPRECISE_KEY));
+	}
+	@Test
+	public void should_set_HOMLEN_HOMSEQ_for_microhomology() {
+		Assert.fail();
 	}
 }
