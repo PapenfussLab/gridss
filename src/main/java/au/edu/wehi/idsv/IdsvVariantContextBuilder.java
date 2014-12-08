@@ -91,8 +91,13 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 	 * @return builder
 	 */
 	private IdsvVariantContextBuilder dobreak(BreakendSummary loc, String untemplatedSequence, byte[] untemplatedBaseQual) {
+		if (loc == null) throw new IllegalArgumentException("loc must be specified");
+		if (untemplatedSequence == null) throw new IllegalArgumentException("untemplatedSequence must be specified");
+		if (untemplatedBaseQual != null && untemplatedSequence.length() != untemplatedBaseQual.length) {
+			throw new IllegalArgumentException("untemplatedBaseQual length must match untemplatedSequence length");
+		}
 		if (!loc.isValid(processContext.getDictionary())) throw new IllegalArgumentException(String.format("%s is not valid", loc));
-		if (untemplatedBaseQual != null && untemplatedSequence != null && untemplatedBaseQual.length != untemplatedSequence.length()) throw new IllegalArgumentException("Untemplated sequence and base qualities have different lengths");
+		
 		String chr = processContext.getDictionary().getSequence(loc.referenceIndex).getSequenceName();
 		String ref, alt;
 		ref = new String(processContext.getReference().getSubsequenceAt(chr, loc.start, loc.start).getBases(), StandardCharsets.US_ASCII);

@@ -26,7 +26,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	@Test
 	public void evidenceID_should_be_ID() {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext())
-			.breakend(new BreakendSummary(0, FWD, 1, 1), null);
+			.breakend(new BreakendSummary(0, FWD, 1, 1), "");
 		builder.id("testID");
 		VariantContextDirectedEvidence bp = (VariantContextDirectedEvidence)builder.make();
 		
@@ -36,7 +36,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	@Test
 	public void should_lookup_reference_base() {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());
-		builder.breakend(new BreakendSummary(0, BreakendDirection.Forward, 1, 1), null);
+		builder.breakend(new BreakendSummary(0, BreakendDirection.Forward, 1, 1), "");
 		VariantContextDirectedEvidence bp = (VariantContextDirectedEvidence)builder.make();
 		
 		assertEquals("A", bp.getReference().getDisplayString());
@@ -157,21 +157,21 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	@Test
 	public void breakend_should_be_vcf_sv_breakend() {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext())
-			.breakend(new BreakendSummary(0, BreakendDirection.Forward, 1, 1), null);
+			.breakend(new BreakendSummary(0, BreakendDirection.Forward, 1, 1), "");
 		
 		assertEquals("BND", builder.make().getAttributeAsString("SVTYPE", ""));
 	}
 	@Test
 	public void breakpoint_should_be_vcf_sv_breakend() {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext())
-			.breakpoint(new BreakpointSummary(0, BreakendDirection.Forward, 1, 1, 0, BreakendDirection.Forward, 1, 1), null);
+			.breakpoint(new BreakpointSummary(0, BreakendDirection.Forward, 1, 1, 0, BreakendDirection.Forward, 1, 1), "");
 		
 		assertEquals("BND", builder.make().getAttributeAsString("SVTYPE", ""));
 	}
 	@Test
 	public void should_round_trip_inexact_breakend() {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());
-		builder.breakend(new BreakendSummary(1, FWD, 2, 4), null);
+		builder.breakend(new BreakendSummary(1, FWD, 2, 4), "");
 		VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext(), builder.make()).make();
 		assertEquals(1, v.getBreakendSummary().referenceIndex);
 		assertEquals(FWD, v.getBreakendSummary().direction);
@@ -181,7 +181,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	@Test
 	public void should_round_trip_inexact_breakpoint() {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());
-		builder.breakpoint(new BreakpointSummary(1, FWD, 2, 4, 3, BWD, 7, 9), null);
+		builder.breakpoint(new BreakpointSummary(1, FWD, 2, 4, 3, BWD, 7, 9), "");
 		VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext(), builder.make()).make();
 		BreakpointSummary bp = (BreakpointSummary)v.getBreakendSummary();
 		assertEquals(1, bp.referenceIndex);

@@ -31,7 +31,7 @@ public class VariantContextDirectedBreakpointTest extends TestHelper {
 	}
 	public VariantContextDirectedBreakpoint BP(String id, BreakpointSummary bp) {
 		IdsvVariantContextBuilder builder = minimalBreakend()
-				.breakpoint(bp, null);
+				.breakpoint(bp, "");
 		builder.id(id);
 		return (VariantContextDirectedBreakpoint)builder.make();
 	}

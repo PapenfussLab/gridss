@@ -375,7 +375,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	public StructuralVariationCallBuilder cb(DirectedEvidence... evidence) {
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)minimalBreakend()
-				.breakend(new BreakendSummary(0, BWD, 1, 10), null).make());
+				.breakend(new BreakendSummary(0, BWD, 1, 10), "").make());
 		for (DirectedEvidence e : evidence) {
 			builder.addEvidence(e);
 		}
@@ -390,7 +390,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		MockSAMEvidenceSource tes = new MockSAMEvidenceSource(pc);
 		tes.isTumour = true;
 		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
-				.breakend(new BreakendSummary(0, BWD, 1, 10), null).make());
+				.breakend(new BreakendSummary(0, BWD, 1, 10), "").make());
 		cb.addEvidence(SCE(BWD, nes, Read(0, 5, "1S2M")));
 		cb.addEvidence(SCE(BWD, tes, Read(0, 4, "3S4M")));
 		cb.addEvidence(SCE(BWD, tes, Read(0, 3, "5S6M")));
@@ -504,11 +504,11 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public void should_filter_small_indels() {
 		assertTrue(new StructuralVariationCallBuilder(getContext(),
 				(VariantContextDirectedEvidence)minimalBreakend()
-					.breakpoint(new BreakpointSummary(new BreakendSummary(0, FWD, 100, 200), new BreakendSummary(0, BWD, 115, 215)), null)
+					.breakpoint(new BreakpointSummary(new BreakendSummary(0, FWD, 100, 200), new BreakendSummary(0, BWD, 115, 215)), "")
 					.make()).make().getFilters().contains(VcfFilter.SMALL_INDEL.filter()));
 		assertFalse(new StructuralVariationCallBuilder(getContext(),
 				(VariantContextDirectedEvidence)minimalBreakend()
-					.breakpoint(new BreakpointSummary(new BreakendSummary(0, FWD, 100, 200), new BreakendSummary(0, BWD, 216, 316)), null)
+					.breakpoint(new BreakpointSummary(new BreakendSummary(0, FWD, 100, 200), new BreakendSummary(0, BWD, 216, 316)), "")
 					.make()).make().getFilters().contains(VcfFilter.SMALL_INDEL.filter()));
 	}
 	@Test
