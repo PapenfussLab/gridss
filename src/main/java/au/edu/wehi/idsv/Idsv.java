@@ -158,7 +158,9 @@ public class Idsv extends CommandLineProgram {
 	    		// throw exception from worker thread here
 	    		future.get();
 	    	}
-	    	
+	    	shutdownPool(threadpool);
+			threadpool = null;
+			
 	    	// check that all steps have been completed
 	    	for (SAMEvidenceSource sref : samEvidence) {
 	    		if (!sref.isComplete(ProcessStep.CALCULATE_METRICS)
@@ -174,7 +176,6 @@ public class Idsv extends CommandLineProgram {
 	    		log.error("Unable to call variants: generation and breakend alignment of assemblies not complete.");
     			return -1;
 	    	}
-	    	
 	    	VariantCaller caller = null;
 	    	try {
 	    		// Run variant caller single-threaded as we can do streaming calls
@@ -195,20 +196,24 @@ public class Idsv extends CommandLineProgram {
 			log.error("Exception thrown from background task", e.getCause());
     		throw new RuntimeException("Exception thrown from background task", e.getCause());
 		} finally {
-			if (threadpool != null) {
-				log.debug("Shutting down thread pool.");
-				threadpool.shutdownNow();
-				log.debug("Waiting for thread pool tasks to complete");
-				try {
-					if (!threadpool.awaitTermination(10, TimeUnit.MINUTES)) {
-						log.error("Tasks did not respond to termination request in a timely manner - outstanding tasks will be forcibly terminated without cleanup.");
-					}
-				} catch (InterruptedException e) {
-					throw new RuntimeException(e);
-				}
-			}
+			shutdownPool(threadpool);
+			threadpool = null;
 		}
 		return 0;
+    }
+    private void shutdownPool(ExecutorService threadpool) {
+    	if (threadpool != null) {
+			log.debug("Shutting down thread pool.");
+			threadpool.shutdownNow();
+			log.debug("Waiting for thread pool tasks to complete");
+			try {
+				if (!threadpool.awaitTermination(10, TimeUnit.MINUTES)) {
+					log.error("Tasks did not respond to termination request in a timely manner - outstanding tasks will be forcibly terminated without cleanup.");
+				}
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+		}
     }
 	private void hackOutputIndels() throws IOException {
 		log.info("DEBUGGING HACK: naive translation to INDEL calls");
