@@ -19,38 +19,55 @@ public class OrthogonalEvidenceIterator extends AbstractIterator<DirectedEvidenc
 	private final PriorityQueue<DirectedEvidence> nonAssemblyQueue = new PriorityQueue<DirectedEvidence>(1024, DirectedEvidence.ByStartEnd); 
 	private final PriorityQueue<DirectedEvidence> outputQueue = new PriorityQueue<DirectedEvidence>(1024, DirectedEvidence.ByStartEnd);
 	private long linearPosition;
+	private DirectedEvidence lastEmitted = null;
 	public OrthogonalEvidenceIterator(LinearGenomicCoordinate linear, Iterator<DirectedEvidence> it, int assemblyWindowSize) {
 		this.linear = linear;
 		this.it = it;
 		this.assemblyWindowSize = assemblyWindowSize;
 	}
 	private boolean outputReady() {
-		return !outputQueue.isEmpty() && linear.getStartLinearCoordinate(outputQueue.peek().getBreakendSummary()) < linearPosition - assemblyWindowSize;
+		return !outputQueue.isEmpty() && linear.getStartLinearCoordinate(outputQueue.peek().getBreakendSummary()) < linearPosition - getWindowSize();
+	}
+	private DirectedEvidence emitNext() {
+		DirectedEvidence nextOutput = outputQueue.poll();
+		if (lastEmitted != null && DirectedEvidence.ByStartEnd.compare(lastEmitted, nextOutput) > 0) {
+			throw new IllegalStateException(String.format("Unable to sort output with window size of %d. %s emitted before %s", assemblyWindowSize, lastEmitted, nextOutput));
+		}
+		lastEmitted = nextOutput;
+		return nextOutput;
 	}
 	@Override
 	protected DirectedEvidence computeNext() {
-		if (outputReady()) return outputQueue.poll();
+		if (outputReady()) return emitNext();
 		while (it.hasNext()) {
 			DirectedEvidence e = it.next();
 			add(e);
 			call();
-			if (outputReady()) return outputQueue.poll();
+			if (outputReady()) return emitNext();
 		}
 		// reached end of input - flush remaining
 		linearPosition = Long.MAX_VALUE;
 		call();
-		if (outputReady()) return outputQueue.poll();
+		if (outputReady()) return emitNext();
 		return endOfData();
 	}
+	private int getEvidenceWindowSize() { return assemblyWindowSize; }
+	private int getAssemblyWindowSize() { return 2 * getEvidenceWindowSize() + 1; }
+	private int getWindowSize() { return getAssemblyWindowSize(); }
 	/**
 	 * Call evidence now outside the merge window
 	 */
 	private void call() {
 		// call evidence that we are guaranteed to have the assembly of in our window
-		if (!nonAssemblyQueue.isEmpty() && linear.getStartLinearCoordinate(nonAssemblyQueue.peek().getBreakendSummary()) + assemblyWindowSize < linearPosition) {
+		//  <-----assembly window-----> <-----assembly window----->
+		//                             ^
+		//                           evidence - check if we're part of any of the assemblies within the window either side 
+		//
+		// ^ can remove assemblies before this point
+		while (!nonAssemblyQueue.isEmpty() && linear.getStartLinearCoordinate(nonAssemblyQueue.peek().getBreakendSummary()) + getEvidenceWindowSize() < linearPosition) {
 			outputOrthogonalNonAssembly(nonAssemblyQueue.poll());
 		}
-		if (!assemblyLookup.isEmpty() && linear.getStartLinearCoordinate(assemblyLookup.peek().getBreakendSummary()) + 2 * assemblyWindowSize < linearPosition) {
+		while (!assemblyLookup.isEmpty() && linear.getStartLinearCoordinate(assemblyLookup.peek().getBreakendSummary()) + getAssemblyWindowSize() < linearPosition) {
 			outputOrthogonalAssembly(assemblyLookup.poll());
 		}
 	}
@@ -69,7 +86,13 @@ public class OrthogonalEvidenceIterator extends AbstractIterator<DirectedEvidenc
 	private void add(DirectedEvidence e) {
 		linearPosition = linear.getStartLinearCoordinate(e.getBreakendSummary());
 		if (e instanceof AssemblyEvidence) {
-			assemblyLookup.add((AssemblyEvidence)e);
+			AssemblyEvidence a = (AssemblyEvidence)e;
+			if (!a.isAssemblyFiltered()) {
+				assemblyLookup.add(a);
+			} else {
+				// don't need merge evidence into filtered assemblies 
+				outputOrthogonalAssembly(a);
+			}
 		} else {
 			nonAssemblyQueue.add(e);
 		}

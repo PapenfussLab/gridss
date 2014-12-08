@@ -1,7 +1,9 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
@@ -52,5 +54,20 @@ public class OrthogonalEvidenceIteratorTest extends TestHelper {
 		assertTrue(result.contains(e1));
 		assertTrue(result.contains(e2));
 		assertTrue(result.contains(e3));
+	}
+	@Test
+	public void should_output_sorted() {
+		ProcessingContext pc = getContext();
+		SAMEvidenceSource ses = SES();
+		AssemblyEvidenceSource aes = AES();
+		List<DirectedEvidence> list = new ArrayList<DirectedEvidence>();
+		for (int i = 1; i <= 1000; i++) {
+			list.add(SoftClipEvidence.create(pc, ses, FWD, Read(0, i, "1M10S"), null));
+			list.add(AssemblyFactory.createAnchored(pc, aes, FWD, Sets.<DirectedEvidence>newHashSet(), 0, i, 1, B("TT"), B("TT"), 1, 1));
+		}
+		List<DirectedEvidence> result = Lists.newArrayList(new OrthogonalEvidenceIterator(pc.getLinear(), list.iterator(), 10));
+		for (int i = 1; i < result.size(); i++) {
+			assertTrue(DirectedEvidence.ByStartEnd.compare(result.get(i-1), result.get(i)) <= 0);
+		}
 	}
 }
