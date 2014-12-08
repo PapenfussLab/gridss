@@ -18,6 +18,7 @@ import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.MappedFastaSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
@@ -30,6 +31,7 @@ import java.io.IOException;
 import java.util.List;
 
 import au.edu.wehi.idsv.util.AutoClosingIterator;
+import au.edu.wehi.idsv.util.BufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.vcf.VcfConstants;
 
 import com.google.common.collect.ImmutableList;
@@ -40,6 +42,7 @@ import com.google.common.collect.ImmutableList;
  *
  */
 public class ProcessingContext implements Closeable {
+	private static final Log log = Log.getInstance(ProcessingContext.class);
 	private final ReferenceSequenceFile reference;
 	private final File referenceFile;
 	private final SAMSequenceDictionary dictionary;
@@ -76,7 +79,14 @@ public class ProcessingContext implements Closeable {
 		this.vcf41mode = vcf41;
 		this.referenceFile = ref;
 		try {
-			this.reference = new MappedFastaSequenceFile(this.referenceFile);
+			ReferenceSequenceFile refToUse = new MappedFastaSequenceFile(this.referenceFile);
+			if (this.referenceFile.length() > Runtime.getRuntime().maxMemory() / 2) {
+				log.error("Caching reference fasta in memory would require more than 50% of the memory allocated to the JVM. Reference sequence caching will not be performed. Execution likely to be very slow.");
+				throw new RuntimeException("Not enough memory to cache reference fasta.");
+			} else {
+				refToUse = new BufferedReferenceSequenceFile(refToUse);
+			}
+			this.reference = refToUse;
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException("Unabled load fasta " + ref, e);
 		}
