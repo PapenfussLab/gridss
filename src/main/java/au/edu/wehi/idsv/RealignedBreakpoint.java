@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.SequenceUtil;
 
@@ -12,11 +13,18 @@ import au.edu.wehi.idsv.sam.SAMRecordUtil;
 public class RealignedBreakpoint {
 	private final BreakpointSummary summary;
 	private final String insertedSequence;
+	private final boolean exact;
 	public RealignedBreakpoint(ProcessingContext context, BreakendSummary local, String anchoredSequence, SAMRecord realigned) {
 		this(context, local, anchoredSequence.getBytes(StandardCharsets.US_ASCII), realigned);
 	}
 	public RealignedBreakpoint(ProcessingContext context, BreakendSummary local, byte[] anchoredSequence, SAMRecord realigned) {
 		if (realigned.getReadUnmappedFlag()) throw new IllegalArgumentException("Realigned read is not mapped");
+		exact = anchoredSequence != null && anchoredSequence.length > 0;
+		int ci = local.end - local.start;
+		if (exact && ci != 0) {
+			throw new IllegalArgumentException("Breakend of " + local.toString() + " not possible for exact breakpoint");
+		}
+		SAMSequenceDictionary dict = context.getDictionary();
 		BreakendDirection remoteDirection;
 		int remotePosition;
 		int insertedSequenceLength;
@@ -43,24 +51,29 @@ public class RealignedBreakpoint {
 		}
 		insertedSequence = insSeq;
 		int microhomologyLength = 0;
-		if (insertedSequence.length() == 0) {
+		if (insertedSequence.length() == 0 && exact) {
 			// only consider microhomology if there is no inserted sequence
 			microhomologyLength = calculateMicrohomologyLength(context, local.direction, anchoredSequence, realigned.getReferenceIndex(), remoteDirection, remotePosition);
 		}
 		// adjust bounds for microhomologies (but don't overrun contig bounds)
 		summary = new BreakpointSummary(
 				local.referenceIndex, local.direction,
-				local.direction == BreakendDirection.Backward ? local.start : Math.max(local.start - microhomologyLength, 1),
-				local.direction == BreakendDirection.Forward ? local.end: Math.min(local.end + microhomologyLength, context.getDictionary().getSequence(local.referenceIndex).getSequenceLength()),
+				ensureOnContig(dict, local.referenceIndex, local.direction == BreakendDirection.Backward ? local.start : local.start - microhomologyLength),
+				ensureOnContig(dict, local.referenceIndex, local.direction == BreakendDirection.Forward ? local.end: local.end + microhomologyLength),
 				realigned.getReferenceIndex(), remoteDirection,
-				remoteDirection == BreakendDirection.Forward ? remotePosition : Math.max(remotePosition - microhomologyLength, 1),
-				remoteDirection == BreakendDirection.Backward ? remotePosition: Math.min(remotePosition + microhomologyLength, context.getDictionary().getSequence(realigned.getReferenceIndex()).getSequenceLength()));
+				ensureOnContig(dict, realigned.getReferenceIndex(), remoteDirection == BreakendDirection.Forward ? remotePosition : remotePosition - microhomologyLength - ci),
+				ensureOnContig(dict, realigned.getReferenceIndex(), remoteDirection == BreakendDirection.Backward ? remotePosition : remotePosition + microhomologyLength + ci));
 		if (local instanceof BreakpointSummary) {
 			BreakpointSummary bp = (BreakpointSummary)local;
 			if (BreakpointSummary.ByStartStart2EndEnd2.compare(bp, summary) != 0) {
 				throw new IllegalArgumentException(String.format("realignment to %s does not match existing breakpoint %s", bp, summary));
 			}
 		}
+	}
+	private int ensureOnContig(SAMSequenceDictionary dict, int referenceIndex, int position) {
+		int contigLength = dict.getSequence(referenceIndex).getSequenceLength();
+		int adjustedPosition = Math.min(Math.max(position, 1), contigLength); 
+		return adjustedPosition;
 	}
 	/**
 	 * Determines how many of the anchor bases match the reference at the realignment location
@@ -150,6 +163,9 @@ public class RealignedBreakpoint {
 		return insertedSequence;
 	}
 	public int getMicroHomologyLength() {
-		return summary.end - summary.start;
+		return isExact() ? summary.end - summary.start : 0;
+	}
+	public boolean isExact() {
+		return exact;
 	}
 }

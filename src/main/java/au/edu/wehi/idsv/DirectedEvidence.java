@@ -17,7 +17,6 @@ public interface DirectedEvidence {
 	 * @return breakpoint sequence bases, null if breakend sequence is not known
 	 */
 	public byte[] getBreakendSequence();
-
 	/**
 	 * Gets the breakpoint sequence quality
 	 * @return 0-based phred-like quality scores, null if breakend sequence is not known

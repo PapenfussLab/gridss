@@ -27,4 +27,9 @@ public interface AssemblyEvidence extends DirectedEvidence {
 	List<VcfFilter> getFilters();
 	void filterAssembly(VcfFilter reason);
 	boolean isPartOfAssemblyBreakend(DirectedEvidence evidence);
+	/**
+	 * Indicates whether the breakend sequence is exact
+	 * @return true if the breakend is known exactly, false otherwise
+	 */
+	boolean isBreakendExact();
 }

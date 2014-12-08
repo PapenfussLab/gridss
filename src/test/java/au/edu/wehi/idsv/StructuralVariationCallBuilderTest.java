@@ -554,4 +554,27 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public void should_set_HOMLEN_HOMSEQ_for_microhomology() {
 		Assert.fail();
 	}
+	@Test
+	public void should_use_CILEN_tag_for_total_untemplated_sequence() {
+		Assert.fail();
+	}
+	@Test
+	public void should_use_INS_UNKNOWN_symbolic_allele_for_unknown_untemplated_sequence() {
+		// <INS:UNKNOWN> insertion of unknown sequence and length
+		// CIINSLEN confidence interval around insertion  
+		Assert.fail();
+	}
+	@Test
+	public void should_use_INS_UNKNOWN_when_bases_missing() {
+		// <INS:UNKNOWN> insertion of unknown sequence and length
+		// CIINSLEN confidence interval around insertion  
+		String localKnownBases = "TT";
+		String remoteKnownBases = "CC";
+		//
+		//                   TODO: work out when to reverse/comp remote untemplated bases
+		//                                 vv 
+		String localAlt = "ATT<INS:UNKNOWN>CC[remote:100["; 
+		String remoteAlt = "ACC<INS:UNKNOWN>TT]local:100]";
+		Assert.fail();
+	}
 }

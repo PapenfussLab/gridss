@@ -4,7 +4,6 @@ import static org.junit.Assert.assertEquals;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 
@@ -16,7 +15,7 @@ public class RealignedBreakpointTest extends TestHelper {
 	}
 	@Test
 	public void should_set_realign_evidence() {
-		RealignedBreakpoint rbp = new RealignedBreakpoint(getContext(), new BreakendSummary(0, FWD, 1, 1), B("N"), withMapq(10, Read(0, 1, "5M"))[0]);
+		new RealignedBreakpoint(getContext(), new BreakendSummary(0, FWD, 1, 1), B("N"), withMapq(10, Read(0, 1, "5M"))[0]);
 	}
 	public RealignedBreakpoint test_seq(String originalBreakpointSequence, String cigar, BreakendDirection direction, boolean alignNegativeStrand, String expectedUntemplatedSequence) {
 		SAMRecord r = Read(0, 1, cigar);
@@ -123,15 +122,50 @@ public class RealignedBreakpointTest extends TestHelper {
 	}
 	@Test
 	public void should_calculate_imprecise_breakpoint() {
-		Assert.fail();
+		assertEquals(new BreakpointSummary(0, FWD, 100, 200, 1, BWD, 200, 300),
+				new RealignedBreakpoint(getContext(),
+						new BreakendSummary(0, FWD, 100, 200), "",
+						R(1, 300, "5M", "GTNCA", false)).getBreakpointSummary());
+		
+		assertEquals(new BreakpointSummary(0, FWD, 100, 200, 1, FWD, 304, 404),
+				new RealignedBreakpoint(getContext(),
+						new BreakendSummary(0, FWD, 100, 200), "",
+						R(1, 300, "5M", "GTNCA", true)).getBreakpointSummary());
+		
+		assertEquals(new BreakpointSummary(0, BWD, 100, 200, 1, FWD, 304, 404),
+				new RealignedBreakpoint(getContext(),
+						new BreakendSummary(0, BWD, 100, 200), "",
+						R(1, 300, "5M", "GTNCA", false)).getBreakpointSummary());
+		
+		assertEquals(new BreakpointSummary(0, BWD, 100, 200, 1, BWD, 200, 300),
+				new RealignedBreakpoint(getContext(),
+						new BreakendSummary(0, BWD, 100, 200), "",
+						R(1, 300, "5M", "GTNCA", true)).getBreakpointSummary());
 	}
 	@Test
 	public void should_not_calculate_microhomology_for_imprecise_breakpoint() {
-		Assert.fail();
+		assertEquals(0, new RealignedBreakpoint(getContext(), new BreakendSummary(0, FWD, 100, 200), "", R(0, 100, "5M", "AAAAA", true)).getMicroHomologyLength());
+	}
+	private SAMRecord R(final int referenceIndex, final int alignmentStart, final String cigar, final String bases, final boolean negativeStrand) {
+		return new SAMRecord(getContext().getBasicSamHeader()) {{
+			setReferenceIndex(referenceIndex);
+			setAlignmentStart(alignmentStart);
+			setReadBases(B(bases));
+			setCigarString(cigar);
+			setReadNegativeStrandFlag(negativeStrand);
+		}};
 	}
 	@Test
-	public void should_include_untemplated_sequence_for_imprecise_breakpoint_at_remote_breakend_only() {
-		// untemplated sequence should only be calculated for the remote breakend
-		Assert.fail();
+	public void should_include_untemplated_sequence_for_imprecise_breakpoint() {
+		assertEquals("GT", new RealignedBreakpoint(getContext(), new BreakendSummary(0, FWD, 100, 200), "", R(1, 100, "3M2S", "GTNCA", false)).getInsertedSequence()); 
+		assertEquals("TG", new RealignedBreakpoint(getContext(), new BreakendSummary(0, FWD, 100, 200), "", R(1, 100, "2S3M", "GTNCA", true)).getInsertedSequence());
+		assertEquals("CA", new RealignedBreakpoint(getContext(), new BreakendSummary(0, BWD, 100, 200), "", R(1, 100, "2S3M", "GTNCA", false)).getInsertedSequence()); 
+		assertEquals("AC", new RealignedBreakpoint(getContext(), new BreakendSummary(0, BWD, 100, 200), "", R(1, 100, "3M2S", "GTNCA", true)).getInsertedSequence());
+	}
+	@Test(expected=IllegalArgumentException.class)
+	public void breakpoint_interval_anchor_sequence_should_be_sane() {
+		// Can't have inexact breakpoint with anchored sequence
+		// (RealignedBreakpoint does the microhomology calculation)
+		new RealignedBreakpoint(getContext(), new BreakendSummary(0, FWD, 100, 200), "T", Read(0, 40, "2M"));
 	}
 }

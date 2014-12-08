@@ -299,22 +299,36 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		assertEquals(2, ((Collection<Integer>)attr).size());
 	}
 	@Test
-	public void CIPOS_CIRPOS_should_call_first_position_in_lower_mapped_position_and_corresponding_position_on_remote() {
-		// TODO: just call the middle of the interval - that would work very well with SC margins
+	public void CIPOS_CIRPOS_should_call_centre_position() {
 		VariantContext vc;
 		vc = new IdsvVariantContextBuilder(getContext())
-			.breakpoint(new BreakpointSummary(0, FWD, 100, 200, 2, BWD, 300, 400), null).make();
-		assertEquals(Lists.newArrayList(0,100), AttributeConverter.asIntList(vc.getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)));
-		assertEquals(Lists.newArrayList(-100,0), AttributeConverter.asIntList(vc.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
+			.breakpoint(new BreakpointSummary(0, FWD, 100, 102, 2, BWD, 300, 302), null).make();
+		assertEquals(Lists.newArrayList(-1,1), AttributeConverter.asIntList(vc.getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)));
+		assertEquals(Lists.newArrayList(-1,1), AttributeConverter.asIntList(vc.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
 		
 		vc = new IdsvVariantContextBuilder(getContext())
 			.breakpoint(new BreakpointSummary(0, FWD, 100, 200, 2, FWD, 300, 400), null).make();
-		assertEquals(Lists.newArrayList(0,100), AttributeConverter.asIntList(vc.getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)));
-		assertEquals(Lists.newArrayList(0,100), AttributeConverter.asIntList(vc.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
+		assertEquals(Lists.newArrayList(-50,50), AttributeConverter.asIntList(vc.getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)));
+		assertEquals(Lists.newArrayList(-50,50), AttributeConverter.asIntList(vc.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
 		
 		vc = new IdsvVariantContextBuilder(getContext())
 			.breakpoint(new BreakpointSummary(2, BWD, 300, 400, 0, FWD, 100, 200), null).make();
-		assertEquals(Lists.newArrayList(-100,0), AttributeConverter.asIntList(vc.getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)));
-		assertEquals(Lists.newArrayList(0, 100), AttributeConverter.asIntList(vc.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
+		assertEquals(Lists.newArrayList(-50,50), AttributeConverter.asIntList(vc.getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)));
+		assertEquals(Lists.newArrayList(-50,50), AttributeConverter.asIntList(vc.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
+	}
+	@Test
+	public void centre_position_should_round_down_lower_linear_coordinate() {
+		VariantContext vc;
+		vc = new IdsvVariantContextBuilder(getContext())
+			.breakpoint(new BreakpointSummary(0, FWD, 100, 101, 2, BWD, 300, 301), null).make();
+		assertEquals(Lists.newArrayList(0,1), AttributeConverter.asIntList(vc.getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)));
+		assertEquals(Lists.newArrayList(-1,0), AttributeConverter.asIntList(vc.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
+		assertEquals(100, vc.getStart());
+		
+		vc = new IdsvVariantContextBuilder(getContext())
+			.breakpoint(new BreakpointSummary(1, FWD, 100, 101, 0, BWD, 300, 301), null).make();
+		assertEquals(Lists.newArrayList(-1,0), AttributeConverter.asIntList(vc.getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)));
+		assertEquals(Lists.newArrayList(0, 1), AttributeConverter.asIntList(vc.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
+		assertEquals(101, vc.getStart());
 	}
 }
