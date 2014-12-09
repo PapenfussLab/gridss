@@ -5,6 +5,7 @@ import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 import java.io.UnsupportedEncodingException;
+import java.math.RoundingMode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
@@ -17,6 +18,7 @@ import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
+import com.google.common.math.IntMath;
 
 /**
  * Builder for generating VCF structural variation calls with appropriate attributes
@@ -100,11 +102,22 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 		
 		String chr = processContext.getDictionary().getSequence(loc.referenceIndex).getSequenceName();
 		String ref, alt;
+		// call the middle position of inexact intervals
+		int callPos = IntMath.divide(loc.start + loc.end, 2, RoundingMode.FLOOR);
+		int remoteCallPos = Integer.MIN_VALUE;
 		ref = new String(processContext.getReference().getSubsequenceAt(chr, loc.start, loc.start).getBases(), StandardCharsets.US_ASCII);
 		if (loc instanceof BreakpointSummary) {
 			BreakpointSummary bp = (BreakpointSummary)loc;
+			// round the called position of the lower breakend down
+			if (BreakendSummary.ByStartEnd.compare(bp.localBreakend(), bp.remoteBreakend()) > 0) {
+				callPos = IntMath.divide(loc.start + loc.end, 2, RoundingMode.CEILING);
+				remoteCallPos = IntMath.divide(bp.start2 + bp.end2, 2, RoundingMode.FLOOR);
+			} else {
+				callPos = IntMath.divide(loc.start + loc.end, 2, RoundingMode.FLOOR);
+				remoteCallPos = IntMath.divide(bp.start2 + bp.end2, 2, RoundingMode.CEILING);
+			}
 			char remoteBracket = bp.direction2 == BreakendDirection.Forward ? ']' : '[';
-			String target = String.format("%s:%d", processContext.getDictionary().getSequence(bp.referenceIndex2).getSequenceName(), bp.start2);
+			String target = String.format("%s:%d", processContext.getDictionary().getSequence(bp.referenceIndex2).getSequenceName(), remoteCallPos);
 			if (loc.direction == BreakendDirection.Forward) {
 				alt = String.format("%s%s%c%s%c", ref, untemplatedSequence, remoteBracket, target, remoteBracket);
 			} else {
@@ -118,19 +131,19 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 			}
 		}
 		// populate
-		loc(chr, loc.start, loc.start);
+		loc(chr, callPos, callPos);
 		alleles(ref, alt);
 		attribute(VcfSvConstants.SV_TYPE_KEY, SvType.BND.name());
 		if (loc.end != loc.start) {
 			// Set confidence interval on the call if we don't have an exact breakpoint position
-			attribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY, new int[] {0, loc.end - loc.start});
+			attribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY, new int[] {loc.start - callPos, loc.end - callPos});
 		} else {
 			rmAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY);
 		}
 		if (loc instanceof BreakpointSummary) {
 			BreakpointSummary bp = (BreakpointSummary)loc;
 			if (bp.end2 != bp.start2) {
-				attribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute(), new int[] { 0, bp.end2 - bp.start2});
+				attribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute(), new int[] { bp.start2 - remoteCallPos, bp.end2 - remoteCallPos});
 			} else {
 				rmAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute());
 			}
