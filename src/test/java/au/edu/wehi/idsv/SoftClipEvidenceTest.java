@@ -316,4 +316,8 @@ public class SoftClipEvidenceTest extends TestHelper {
 		assertTrue(new SoftClipEvidence(getContext(), ses, BWD, rp[0]).meetsEvidenceCritera(scp));
 		//assertTrue(new SoftClipEvidence(getContext(), ses, BWD, rp[1]).meetsEvidenceCritera(scp));
 	}
+	@Test
+	public void isNotExact() {
+		assertTrue(SCE(FWD, Read(0, 1, "1M1S")).isBreakendExact());
+	}
 }

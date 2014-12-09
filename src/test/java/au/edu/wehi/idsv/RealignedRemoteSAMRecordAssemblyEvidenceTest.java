@@ -1,16 +1,18 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-
-import org.junit.Test;
 
 
-public class RealignedRemoteSAMRecordAssemblyEvidenceTest extends TestHelper {
-	@Test
-	public void should_swap_breakend_position() {
-		BreakpointSummary bs = new BreakpointSummary(0, FWD, 1, 1, 1, BWD, 3, 3);
-		SAMRecordAssemblyEvidence e = A(bs); 
-		RealignedRemoteSAMRecordAssemblyEvidence r = new RealignedRemoteSAMRecordAssemblyEvidence(getContext(), AES(), e.getSAMRecord(), e.getRemoteSAMRecord());
-		assertEquals(r.getBreakendSummary(), bs.remoteBreakpoint());
+public class RealignedRemoteSAMRecordAssemblyEvidenceTest extends RemoteEvidenceTest {
+	@Override
+	public RemoteEvidence makeRemote(BreakendSummary bs, String allBases, String realignCigar, boolean realignNegativeStrand) {
+		return new RealignedRemoteSAMRecordAssemblyEvidence(getContext(), AES(),
+				AssemblyFactory.createAnchored(getContext(), AES(), bs.direction, null, bs.referenceIndex, bs.start, anchorLength(allBases, realignCigar), B(allBases), B(allBases), 0, 0).getSAMRecord(),
+				realignSAM(bs, allBases, realignCigar, realignNegativeStrand));
+	}
+	@Override
+	public DirectedBreakpoint makeLocal(BreakendSummary bs, String allBases, String realignCigar, boolean realignNegativeStrand) {
+		return new RealignedSAMRecordAssemblyEvidence(getContext(), AES(),
+				AssemblyFactory.createAnchored(getContext(), AES(), bs.direction, null, bs.referenceIndex, bs.start, anchorLength(allBases, realignCigar), B(allBases), B(allBases), 0, 0).getSAMRecord(),
+				realignSAM(bs, allBases, realignCigar, realignNegativeStrand));
 	}
 }

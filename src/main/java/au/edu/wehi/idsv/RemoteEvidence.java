@@ -7,5 +7,5 @@ package au.edu.wehi.idsv;
  * @author Daniel Cameron
  *
  */
-public interface RemoteEvidence {
+public interface RemoteEvidence extends DirectedBreakpoint {
 }

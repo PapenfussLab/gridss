@@ -146,7 +146,7 @@ public class RealignedBreakpointTest extends TestHelper {
 	public void should_not_calculate_microhomology_for_imprecise_breakpoint() {
 		assertEquals(0, new RealignedBreakpoint(getContext(), new BreakendSummary(0, FWD, 100, 200), "", R(0, 100, "5M", "AAAAA", true)).getMicroHomologyLength());
 	}
-	private SAMRecord R(final int referenceIndex, final int alignmentStart, final String cigar, final String bases, final boolean negativeStrand) {
+	public static SAMRecord R(final int referenceIndex, final int alignmentStart, final String cigar, final String bases, final boolean negativeStrand) {
 		return new SAMRecord(getContext().getBasicSamHeader()) {{
 			setReferenceIndex(referenceIndex);
 			setAlignmentStart(alignmentStart);
@@ -157,10 +157,10 @@ public class RealignedBreakpointTest extends TestHelper {
 	}
 	@Test
 	public void should_include_untemplated_sequence_for_imprecise_breakpoint() {
-		assertEquals("GT", new RealignedBreakpoint(getContext(), new BreakendSummary(0, FWD, 100, 200), "", R(1, 100, "3M2S", "GTNCA", false)).getInsertedSequence()); 
-		assertEquals("TG", new RealignedBreakpoint(getContext(), new BreakendSummary(0, FWD, 100, 200), "", R(1, 100, "2S3M", "GTNCA", true)).getInsertedSequence());
-		assertEquals("CA", new RealignedBreakpoint(getContext(), new BreakendSummary(0, BWD, 100, 200), "", R(1, 100, "2S3M", "GTNCA", false)).getInsertedSequence()); 
-		assertEquals("AC", new RealignedBreakpoint(getContext(), new BreakendSummary(0, BWD, 100, 200), "", R(1, 100, "3M2S", "GTNCA", true)).getInsertedSequence());
+		assertEquals("GT", new RealignedBreakpoint(getContext(), new BreakendSummary(0, FWD, 100, 200), "", R(1, 100, "2S3M", "GTNCA", false)).getInsertedSequence()); 
+		assertEquals("GT", new RealignedBreakpoint(getContext(), new BreakendSummary(0, FWD, 100, 200), "", R(1, 100, "3M2S", SequenceUtil.reverseComplement("GTNCA"), true)).getInsertedSequence());
+		assertEquals("CA", new RealignedBreakpoint(getContext(), new BreakendSummary(0, BWD, 100, 200), "", R(1, 100, "3M2S", "GTNCA", false)).getInsertedSequence()); 
+		assertEquals("CA", new RealignedBreakpoint(getContext(), new BreakendSummary(0, BWD, 100, 200), "", R(1, 100, "2S3M", SequenceUtil.reverseComplement("GTNCA"), true)).getInsertedSequence());
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void breakpoint_interval_anchor_sequence_should_be_sane() {

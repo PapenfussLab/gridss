@@ -177,4 +177,8 @@ public class SoftClipEvidence implements DirectedEvidence {
 						.getReadNegativeStrandFlag()) || (location.direction == BreakendDirection.Backward && record
 						.getReadNegativeStrandFlag()));
 	}
+	@Override
+	public boolean isBreakendExact() {
+		return true;
+	}
 }

@@ -710,9 +710,15 @@ public class TestHelper {
 				ImmutableList.<SAMEvidenceSource>of(SES()), new File(
 						"test.bam"));
 	}
+	public static AssemblyEvidenceSource AES(int maxFragmentSize) {
+		return new AssemblyEvidenceSource(getContext(),
+				ImmutableList.<SAMEvidenceSource>of(SES(maxFragmentSize)), new File(
+						"test.bam"));
+	}
 	public VariantContextDirectedEvidence CallSV(DirectedEvidence... evidence) {
 		IdsvVariantContextBuilder vcBuilder = new IdsvVariantContextBuilder(getContext());
-		vcBuilder.breakend(evidence[0].getBreakendSummary(), new String(evidence[0].getBreakendSequence(), StandardCharsets.US_ASCII));
+		byte[] seq = evidence[0].getBreakendSequence();
+		vcBuilder.breakend(evidence[0].getBreakendSummary(), seq == null ? "" : new String(seq, StandardCharsets.US_ASCII));
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)vcBuilder.make());
 		for (DirectedEvidence e : evidence) {
 			builder.addEvidence(e);

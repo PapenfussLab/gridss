@@ -10,6 +10,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
@@ -167,5 +168,9 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 		return getEvidenceCountAssembly() == 1
 				&& getEvidenceCountReadPair(null) == 0
 				&& getEvidenceCountSoftClip(null) == 0;
+	}
+	@Override
+	public boolean isBreakendExact() {
+		return !hasAttribute(VcfSvConstants.IMPRECISE_KEY);
 	}
 }

@@ -195,4 +195,8 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	public byte[] getBreakendQuality() {
 		return null;
 	}
+	@Override
+	public boolean isBreakendExact() {
+		return false;
+	}
 }

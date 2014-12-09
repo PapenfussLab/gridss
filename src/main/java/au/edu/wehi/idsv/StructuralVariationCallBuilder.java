@@ -95,16 +95,15 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		}
 	}
 	private void setImprecise() {
-		boolean onlyUnanchoredAssemblies = assList.size() > 0;
-		for (AssemblyEvidence e : assList) {
-			if (e.getAssemblyAnchorLength() > 0) {
-				onlyUnanchoredAssemblies = false;
+		Boolean imprecise = true;
+		for (DirectedEvidence e : Iterables.concat(assList, scList, rpList)) {
+			if (e instanceof DirectedBreakpoint && e.isBreakendExact()) {
+				// clear flag
+				imprecise = null;
 				break;
 			}
 		}
-		if (onlyUnanchoredAssemblies || assList.size() + scList.size() == 0) {
-			attribute(VcfSvConstants.IMPRECISE_KEY, true);
-		}
+		attribute(VcfSvConstants.IMPRECISE_KEY, imprecise);
 	}
 	private VariantContextDirectedEvidence calcSpv(VariantContextDirectedEvidence variant) {
 		// TODO: somatic p-value should use evidence from both sides of the breakpoint

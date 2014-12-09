@@ -56,6 +56,11 @@ public interface DirectedEvidence {
 	 * @return
 	 */
 	int getLocalTotalBaseQual();
+	/**
+	 * Indicates whether the breakend sequence is exact
+	 * @return true if the breakend is known exactly, false otherwise
+	 */
+	boolean isBreakendExact();
 	static final Ordering<DirectedEvidence> ByEndStart = new Ordering<DirectedEvidence>() {
 		@Override
 		public int compare(DirectedEvidence arg0, DirectedEvidence arg1) {

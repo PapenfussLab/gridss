@@ -359,4 +359,9 @@ public class NonReferenceReadPairTest extends TestHelper {
 		rp[1].setReadBases(B("ACCGCTCTTCCGATCTCATGCCTGGCGTCCACTTTCTTGACTATTTCCTGAAGACCAGCGTTTCCCGGGTGGTTTCACAGCTGCGGAAGCTGCCTGTGTCA"));
 		assertFalse(NonReferenceReadPair.create(rp[0], rp[1], ses, getContext()).meetsEvidenceCritera(rpp));
 	}
+	@Test
+	public void isNotExact() {
+		assertFalse(NRRP(DP(1, 1, "1M", true, 1, 3, "1M", false)).isBreakendExact());
+		assertFalse(NRRP(DP(1, 1, "1M", true, 1, 2, "1M", false)).isBreakendExact());
+	}
 }

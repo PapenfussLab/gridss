@@ -19,9 +19,6 @@ public class RealignedSAMRecordAssemblyEvidence extends SAMRecordAssemblyEvidenc
 	public BreakpointSummary getBreakendSummary() {
 		return rbp.getBreakpointSummary();
 	}
-	public String getUntemplatedSequence() {
-		return rbp.getInsertedSequence();
-	}
 	@Override
 	public int getRemoteMapq() {
 		return getRemoteSAMRecord().getMappingQuality();
@@ -41,5 +38,9 @@ public class RealignedSAMRecordAssemblyEvidence extends SAMRecordAssemblyEvidenc
 	@Override
 	public int getRemoteTotalBaseQual() {
 		return SAMRecordUtil.getTotalReferenceBaseQual(getRemoteSAMRecord());
+	}
+	@Override
+	public String getUntemplatedSequence() {
+		return rbp.getInsertedSequence();
 	}
 }

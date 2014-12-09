@@ -43,6 +43,10 @@ public class BreakpointFastqEncodingTest extends TestHelper {
 		public int getLocalTotalBaseQual() {
 			return 5;
 		}
+		@Override
+		public boolean isBreakendExact() {
+			return false;
+		}
 	}
 	@Test
 	public void should_round_trip_ID() {

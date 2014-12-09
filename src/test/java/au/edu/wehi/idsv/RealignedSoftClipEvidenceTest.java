@@ -2,6 +2,7 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
 
 import org.junit.Test;
 
@@ -13,6 +14,11 @@ public class RealignedSoftClipEvidenceTest extends TestHelper {
 		assertEquals(2, ((RealignedSoftClipEvidence)SoftClipEvidence.create(SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Forward, Read(0, 1, "4M6S")), onNegative(Read(0, 1, "1S3M2S"))[0])).getUntemplatedSequence().length());
 		assertEquals(2, ((RealignedSoftClipEvidence)SoftClipEvidence.create(SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Backward, Read(0, 1, "6S4M")), Read(0, 1, "1S3M2S"))).getUntemplatedSequence().length());
 		assertEquals(1, ((RealignedSoftClipEvidence)SoftClipEvidence.create(SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Backward, Read(0, 1, "6S4M")), onNegative(Read(0, 1, "1S3M2S"))[0])).getUntemplatedSequence().length());
+	}
+	@Test
+	public void getUntemplatedSequence_should_return_soft_clip_realigned_sequence() throws CloneNotSupportedException {
+		assertEquals("GTN", new RealignedSoftClipEvidence(getContext(), SES(), FWD, Read(0, 1, "1M5S"), RealignedBreakpointTest.R(1, 10, "3S2M", "GTNCA", false)).getUntemplatedSequence());
+		assertEquals("GTN", new RealignedSoftClipEvidence(getContext(), SES(), FWD, Read(0, 1, "1M5S"), RealignedBreakpointTest.R(1, 10, "2M3S", SequenceUtil.reverseComplement("GTNCA"), true)).getUntemplatedSequence());
 	}
 	@Test
 	public void GetBreakendSummary_should_get_interval_with_realigned_ff() {

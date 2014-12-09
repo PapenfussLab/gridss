@@ -12,7 +12,6 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
-import org.junit.Assert;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes;
@@ -343,7 +342,7 @@ public class AssemblyFactoryTest extends TestHelper {
 					new SAMRecord(pc.getBasicSamHeader()) {{
 						setMappingQuality(40);
 						setReferenceIndex(1);
-						setAlignmentStart(395);
+						setAlignmentStart(396);
 						setReadNegativeStrandFlag(true);
 						setReadBases(B("GGGGG"));
 						setCigarString("5M");
@@ -355,7 +354,7 @@ public class AssemblyFactoryTest extends TestHelper {
 					new SAMRecord(pc.getBasicSamHeader()) {{
 						setMappingQuality(40);
 						setReferenceIndex(1);
-						setAlignmentStart(500);
+						setAlignmentStart(396);
 						setReadNegativeStrandFlag(false);
 						setReadBases(B("CCCCC"));
 						setCigarString("5M");
@@ -367,7 +366,7 @@ public class AssemblyFactoryTest extends TestHelper {
 					new SAMRecord(pc.getBasicSamHeader()) {{
 						setMappingQuality(40);
 						setReferenceIndex(1);
-						setAlignmentStart(395);
+						setAlignmentStart(500);
 						setReadNegativeStrandFlag(true);
 						setReadBases(B("GGGGG"));
 						setCigarString("5M");
@@ -513,8 +512,25 @@ public class AssemblyFactoryTest extends TestHelper {
 		}
 	}
 	@Test
-	public void should_include_untemplated_sequence_for_imprecise_breakpoint_at_remote_breakend_only() {
-		// untemplated sequence should only be calculated for the remote breakend
-		Assert.fail();
+	public void should_include_untemplated_sequence_for_imprecise_breakpoint() {
+		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES();
+		assertEquals("GT", 
+				((RealignedSAMRecordAssemblyEvidence)AssemblyFactory.incorporateRealignment(pc,
+					AssemblyFactory.createUnanchored(pc, aes, Sets.<DirectedEvidence>newHashSet(new MockDirectedEvidence(0, FWD, 100, 200)), B("GTNAC"), B("CCCCC"), 0, 0),
+					new SAMRecord(pc.getBasicSamHeader()) {{
+						setMappingQuality(40);
+						setReferenceIndex(1);
+						setAlignmentStart(500);
+						setReadNegativeStrandFlag(false);
+						setReadBases(B("GTNAC"));
+						setCigarString("2S3M");
+					}})).getUntemplatedSequence());
+	}
+	@Test
+	public void should_set_breakend_exact() {
+		assertTrue(AssemblyFactory.createAnchored(getContext(), AES(), FWD, null, 0, 1, 1, B("AAAAA"), B("AAAAA"), 0, 0).isBreakendExact());
+		assertFalse(AssemblyFactory.createUnanchored(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(NRRP(DP(0, 10, "2M", true, 0, 10, "2M", false))), B("AAAAA"), B("AAAAA"), 2, 0)
+				.isBreakendExact());
 	}
 }

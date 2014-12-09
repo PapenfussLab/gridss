@@ -35,10 +35,12 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	private final SAMRecord realignment;
 	private final AssemblyEvidenceSource source;
 	private final BreakendSummary breakend;
+	private final boolean isExact;
 	public SAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecord assembly, SAMRecord realignment) {
 		this.source = source;
 		this.record = assembly;
 		this.breakend = calculateBreakendFromAlignmentCigar(assembly.getReferenceIndex(), assembly.getAlignmentStart(), assembly.getCigar());
+		this.isExact = calculateIsBreakendExactFromCigar(assembly.getCigar());
 		this.realignment = realignment == null ? getPlaceholderRealignment() : realignment;
 		fixReadPair();
 	}
@@ -148,6 +150,13 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 				throw new IllegalArgumentException(cigar + "is not a valid assembly CIGAR");
 		}
 		return new BreakendSummary(referenceIndex, direction, start, end);
+	}
+	private boolean calculateIsBreakendExactFromCigar(Cigar cigar) {
+		for (CigarElement ce : cigar.getCigarElements()) {
+			if (ce.getOperator() == CigarOperator.M) return true;
+			if (ce.getOperator() == CigarOperator.X) return false;
+		}
+		throw new IllegalArgumentException("Cannot determine breakend type from cigar " + cigar.toString());
 	}
 	private static SAMRecord createAssemblySAMRecord(
 			Collection<DirectedEvidence> evidence,
@@ -406,4 +415,8 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 			return cmp.compare(arg0.getSAMRecord(), arg1.getSAMRecord());
 		}
 	};
+	@Override
+	public boolean isBreakendExact() {
+		return isExact;
+	}
 }
