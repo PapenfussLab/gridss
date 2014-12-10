@@ -7,9 +7,12 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.variant.vcf.VCFConstants;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -21,6 +24,7 @@ import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class StructuralVariationCallBuilderTest extends TestHelper {
@@ -576,5 +580,59 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		String localAlt = "ATT<INS:UNKNOWN>CC[remote:100["; 
 		String remoteAlt = "ACC<INS:UNKNOWN>TT]local:100]";
 		Assert.fail();
+	}
+	@Test
+	public void should_adjust_call_bounds_based_on_best_assembly() {
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(0, FWD, 12, 14, 1, BWD, 11, 11), "GTAC");
+			phredScore(20);
+		}}.make());
+		List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
+		evidence.add(AssemblyFactory.incorporateRealignment(getContext(),
+				AssemblyFactory.createAnchored(getContext(), AES(), FWD, null, 0, 12, 1, B("NTTTT"), B("NTTTT"), 0, 0),
+				new SAMRecord(getContext().getBasicSamHeader()) {{
+					setReferenceIndex(1);
+					setAlignmentStart(11);
+					setCigarString("4M");
+					setReadNegativeStrandFlag(false);
+					setReadBases(B("TTTT"));
+					setMappingQuality(21);
+					}}));		
+		evidence.add(SoftClipEvidence.create(getContext(), SES(), FWD, Read(0, 12, "1M3S"), Read(1, 11, "3M")));
+		for (DirectedEvidence e : evidence) {
+			builder.addEvidence(e);
+		}
+		VariantContextDirectedEvidence call = builder.make();
+		assertEquals(new BreakpointSummary(0, FWD, 12, 12, 1, BWD, 11, 11), call.getBreakendSummary());
+	}
+	@Test
+	public void should_adjust_call_bounds_based_on_best_soft_clip() {
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(0, FWD, 12, 14, 1, BWD, 11, 11), "GTAC");
+			phredScore(20);
+		}}.make());
+		List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
+		evidence.add(SoftClipEvidence.create(getContext(), SES(), FWD, Read(0, 12, "1M3S"), withMapq(14, Read(1, 11, "3M"))[0]));
+		evidence.add(SoftClipEvidence.create(getContext(), SES(), FWD, Read(0, 13, "1M3S"), withMapq(15, Read(1, 11, "3M"))[0]));
+		for (DirectedEvidence e : evidence) {
+			builder.addEvidence(e);
+		}
+		VariantContextDirectedEvidence call = builder.make();
+		assertEquals(2, call.getEvidenceCountSoftClip(null));
+		assertEquals(new BreakpointSummary(0, FWD, 12, 12, 1, BWD, 11, 11), call.getBreakendSummary());
+	}
+	@Test
+	public void should_set_CALLED_QUAL_to_parent_quality_score() {
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(0, FWD, 12, 14, 1, BWD, 11, 11), "GTAC");
+			phredScore(31);
+		}}.make());
+		List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
+		evidence.add(SoftClipEvidence.create(getContext(), SES(), FWD, Read(0, 12, "1M3S"), withMapq(14, Read(1, 11, "3M"))[0]));
+		for (DirectedEvidence e : evidence) {
+			builder.addEvidence(e);
+		}
+		VariantContextDirectedEvidence call = builder.make();
+		assertEquals(31, AttributeConverter.asDouble(call.getAttribute(VcfAttributes.CALLED_QUAL.attribute()), 0), 0);
 	}
 }

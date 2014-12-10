@@ -26,7 +26,6 @@ public class RealignedRemoteSAMRecordAssemblyEvidence extends RealignedSAMRecord
 	}
 	@Override
 	public byte[] getBreakendSequence() {
-		if (!isBreakendExact()) return null;
 		// breakend sequence from this side is untemplated + anchor
 		byte[] untemplated = getUntemplatedSequence().getBytes(StandardCharsets.US_ASCII);
 		byte[] anchor = getAssemblyAnchorSequence();

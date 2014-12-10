@@ -100,16 +100,16 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 	public void should_assign_supporting_evidence_to_a_single_variant() {
 		List<VariantContextDirectedEvidence> calls = new ArrayList<VariantContextDirectedEvidence>();
 		calls.add((VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-				breakpoint(new BreakpointSummary(0, FWD, 1, 3, 0, BWD, 10, 10), "GTAC");
+				breakpoint(new BreakpointSummary(0, FWD, 11, 13, 0, BWD, 10, 10), "GTAC");
 				phredScore(10);
 			}}.make());
 		calls.add((VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-				breakpoint(new BreakpointSummary(0, FWD, 2, 4, 0, BWD, 10, 10), "GTAC");
+				breakpoint(new BreakpointSummary(0, FWD, 12, 14, 0, BWD, 10, 10), "GTAC");
 				phredScore(20);
 			}}.make());
 		List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
-		evidence.add(SoftClipEvidence.create(getContext(), SES(), FWD, Read(0, 2, "1M3S"), Read(0, 10, "3M")));
-		evidence.add(SoftClipEvidence.create(getContext(), SES(), FWD, Read(0, 2, "1M3S"), Read(0, 10, "3M")));
+		evidence.add(SoftClipEvidence.create(getContext(), SES(), FWD, Read(0, 12, "1M3S"), Read(0, 10, "3M")));
+		evidence.add(SoftClipEvidence.create(getContext(), SES(), FWD, Read(0, 12, "1M3S"), Read(0, 10, "3M")));
 		
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(new SequentialEvidenceAnnotator(getContext(), calls.iterator(), evidence.iterator(), 300, true));
 		assertEquals(0, result.get(0).getEvidenceCountSoftClip(null));

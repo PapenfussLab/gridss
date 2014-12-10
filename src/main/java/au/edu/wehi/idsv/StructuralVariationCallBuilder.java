@@ -12,7 +12,6 @@ import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.base.Function;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -65,45 +64,44 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		return variant;
 	}
 	private void orderEvidence() {
-		Collections.sort(assList, AssemblyByBestDesc);
-		for (int i = assList.size() - 1; i > 0; i--) {
-			// Only count unique assemblies
-			if (StringUtils.isNotEmpty(assList.get(i).getEvidenceID())
-					&& !assList.get(i).getEvidenceID().equals(".")
-					&& assList.get(i).getEvidenceID().equals(assList.get(i - 1).getEvidenceID())) {
-				assList.remove(i);
+		Collections.sort(assList, ByBestDesc);
+		// Only count unique assemblies
+		dedup(assList);
+		Collections.sort(scList, ByBestDesc);
+		Collections.sort(rpList, ByBestDesc);
+	}
+	private void dedup(List<? extends DirectedEvidence> list) {
+		for (int i = list.size() - 1; i > 0; i--) {
+			if (StringUtils.isNotEmpty(list.get(i).getEvidenceID()) && !list.get(i).getEvidenceID().equals(".")) {
+				for (int j = i - 1; j >= 0; j--) {
+					if (list.get(i).getEvidenceID().equals(list.get(j).getEvidenceID())) {
+						list.remove(i);
+						break;
+					}
+				}
 			}
 		}
-		Collections.sort(scList, SoftClipByBestDesc);
 	}
 	private void setBreakpoint() {
-		// TODO: take the exact breakend with the most total evidence 
-		AssemblyEvidence bestAssemblyBreakpoint = Iterables.getFirst(Iterables.filter(assList, new Predicate<AssemblyEvidence>() {
-			@Override
-			public boolean apply(AssemblyEvidence input) {
-				return !(input instanceof RemoteEvidence);
-			}
-		}), null);
 		DirectedBreakpoint bestbp = null;
-		if (bestAssemblyBreakpoint instanceof DirectedBreakpoint) {
-			bestbp = (DirectedBreakpoint)bestAssemblyBreakpoint;
+		if (assList.size() > 0 && assList.get(0) instanceof DirectedBreakpoint) {
+			bestbp = (DirectedBreakpoint)assList.get(0);
 		} else if (scList.size() > 0 && scList.get(0) instanceof DirectedBreakpoint) {
-			bestbp = (RealignedSoftClipEvidence)scList.get(0);
+			bestbp = (DirectedBreakpoint)scList.get(0);
 		}
 		if (bestbp != null) {
 			breakpoint(bestbp.getBreakendSummary(), bestbp.getUntemplatedSequence());
 		}
 	}
 	private void setImprecise() {
-		Boolean imprecise = true;
 		for (DirectedEvidence e : Iterables.concat(assList, scList, rpList)) {
 			if (e instanceof DirectedBreakpoint && e.isBreakendExact()) {
 				// clear flag
-				imprecise = null;
-				break;
+				rmAttribute(VcfSvConstants.IMPRECISE_KEY);
+				return;
 			}
 		}
-		attribute(VcfSvConstants.IMPRECISE_KEY, imprecise);
+		attribute(VcfSvConstants.IMPRECISE_KEY, true);
 	}
 	private VariantContextDirectedEvidence calcSpv(VariantContextDirectedEvidence variant) {
 		// TODO: somatic p-value should use evidence from both sides of the breakpoint
@@ -141,7 +139,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 				scllrn += Models.llr(e);
 			}
 		}
-		
+		attribute(VcfAttributes.CALLED_QUAL.attribute(), parent.getPhredScaledQual());
 		attribute(VcfAttributes.ASSEMBLY_LOG_LIKELIHOOD_RATIO.attribute(), assllr);
 		attribute(VcfAttributes.SOFTCLIP_LOG_LIKELIHOOD_RATIO.attribute(), ImmutableList.of(scllrn, scllrt ));
 		attribute(VcfAttributes.READPAIR_LOG_LIKELIHOOD_RATIO.attribute(), ImmutableList.of(rpllrn, rpllrt ));
@@ -353,19 +351,12 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		}
 		return sb.toString();
 	}
-	private static Ordering<SoftClipEvidence> SoftClipByBestDesc = new Ordering<SoftClipEvidence>() {
-		public int compare(SoftClipEvidence o1, SoftClipEvidence o2) {
+	private static Ordering<DirectedEvidence> ByBestDesc = new Ordering<DirectedEvidence>() {
+		public int compare(DirectedEvidence o1, DirectedEvidence o2) {
 			  return ComparisonChain.start()
-			        .compareTrueFirst(o1 instanceof RealignedSoftClipEvidence, o2 instanceof RealignedSoftClipEvidence)
-			        .compare(Models.llr(o2), Models.llr(o2)) // desc
-			        .result();
-		  }
-	};
-	private static Ordering<AssemblyEvidence> AssemblyByBestDesc = new Ordering<AssemblyEvidence>() {
-		public int compare(AssemblyEvidence o1, AssemblyEvidence o2) {
-			  return ComparisonChain.start()
-			        .compareTrueFirst(o1.getBreakendSummary() instanceof BreakpointSummary, o2.getBreakendSummary() instanceof BreakpointSummary)
-			        .compareTrueFirst(o1.getAssemblySupportCountSoftClip(EvidenceSubset.ALL) > 0, o2.getAssemblySupportCountSoftClip(EvidenceSubset.ALL) > 0)
+			        .compareTrueFirst(o1 instanceof DirectedBreakpoint, o2 instanceof DirectedBreakpoint)
+			        .compareTrueFirst(o1.isBreakendExact(), o2.isBreakendExact())
+			        //.compareFalseFirst(o1 instanceof RemoteEvidence, o2 instanceof RemoteEvidence)
 			        .compare(Models.llr(o2), Models.llr(o1)) // desc
 			        .result();
 		  }

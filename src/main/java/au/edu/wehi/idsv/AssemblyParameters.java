@@ -1,10 +1,13 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.util.Log;
+
 import java.io.File;
 
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
 public class AssemblyParameters {
+	private static final Log log = Log.getInstance(AssemblyParameters.class);
 	public AssemblyMethod method = AssemblyMethod.DEBRUIJN_SUBGRAPH;
 	/**
 	 * De Bruijn graph kmer size
@@ -78,6 +81,9 @@ public class AssemblyParameters {
 	public boolean writeFilteredAssemblies = Defaults.WRITE_FILTERED_ASSEMBLIES;
 	public boolean applyFilters(AssemblyEvidence evidence) {
 		boolean filtered = false;
+		if (evidence.getBreakendSequence() == null) {
+			log.error("Breakpoint sequence missing for assembly " + evidence.toString());
+		}
 		if (evidence.getBreakendSequence().length == 0) {
 			evidence.filterAssembly(VcfFilter.ASSEMBLY_REF);
 			filtered = true;

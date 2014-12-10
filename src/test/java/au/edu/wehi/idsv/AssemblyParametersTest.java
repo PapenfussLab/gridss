@@ -72,6 +72,15 @@ public class AssemblyParametersTest extends TestHelper {
 		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_REF));
 	}
 	@Test
+	public void should_not_apply_breakend_filter_to_unanchored_assembly() {
+		AssemblyEvidence e = AssemblyFactory.createUnanchored(
+				getContext(), AES(), Sets.<DirectedEvidence>newHashSet(
+						NRRP(DP(0, 1, "1M", true, 0, 5, "1M", false))),
+				B("AA"), B("AA"), 2, 0);
+		getContext().getAssemblyParameters().applyFilters(e);
+		assertFalse(e.getFilters().contains(VcfFilter.ASSEMBLY_REF));
+	}
+	@Test
 	public void should_filter_too_few_reads() {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().minReads = 3;
