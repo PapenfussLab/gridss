@@ -2,7 +2,7 @@ library(ggplot2)
 library(RColorBrewer)
 source("libgridss.R")
 
-vcf <- readVcf("W:/778/idsv/778.vcf", "hg19_random")
+vcf <- readVcf("W:/778/idsv/778.in.vcf", "hg19_random")
 df <- gridss.truthdetails.processvcf.vcftodf(vcf)
 
 pp <- df
@@ -16,7 +16,7 @@ ggplot(pp, aes(x=RC+1, y=PC+1, color=log(QUAL))) + geom_smooth() + geom_jitter()
 ggplot(pp, aes(x=A_SC + A_RP, y=RC, color=PC)) + geom_point()
 
 # assembly length vs breakpoint quality
-ggplot(pp, aes(x=A_BLRM, y=A_BLLM, color=A_BLRM)) + geom_point() + scale_y_log10() + scale_colour_gradientn(colours=rainbow(4)) 
+ggplot(pp, aes(x=A_BLRM, y=QUAL)) + geom_point()
 
 # normal coverage
 ggplot(pp, aes(x=RCNormal + SCECNormal)) + geom_histogram()
@@ -34,4 +34,7 @@ ggplot(pp, aes(x=A_EC)) + geom_histogram()
 ggplot(df, aes(x=SCEC+RPEC, y=RC+PC, color=log(QUAL))) + geom_point() + scale_y_log10() + scale_x_log10() + scale_colour_gradientn(colours=rainbow(4)) 
 # normal coverage
 ggplot(df, aes(x=RCNormal + SCECNormal)) + geom_histogram()
+
+# Effect of local breakend evidence
+ggplot(df, aes(x=QUAL, y=CQUAL)) + geom_point() + scale_x_log10() + scale_y_log10()
 
