@@ -44,8 +44,8 @@ gridss.truthdetails.processvcf.vcftodf <- function(vcf) {
   df$assemblyLength <- df$A_BLLM + df$A_BLRM
   df$A_EC <- i$A_EC
   df$A_LR <- i$A_LR
-  df$A_MQRM <- i$A_MQRM
-  df$A_MQRT <- i$A_MQRT
+  df$A_MQM <- i$A_MQM
+  df$A_MQT <- i$A_MQT
   df$A_RM <-i$A_RM
   df <- gridss.truthdetails.processvcf.addtn(df, "A_RP", i$A_RP)
   df <- gridss.truthdetails.processvcf.addtn(df, "A_RPBLM", i$A_RPBLM, max=TRUE)

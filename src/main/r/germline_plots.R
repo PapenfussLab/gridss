@@ -2,7 +2,10 @@ library(ggplot2)
 library(RColorBrewer)
 source("libgridss.R")
 
-vcf <- readVcf("W:/778/idsv/778.in.vcf", "hg19_random")
+# gridss TODO: split out *_RM into mapping to us, and mapping elsewhere
+
+vcf <- readVcf("C:/dev/778.vcf", "hg19_random")
+#vcf <- readVcf("W:/778/idsv/778.in.vcf", "hg19_random")
 df <- gridss.truthdetails.processvcf.vcftodf(vcf)
 
 pp <- df
@@ -35,6 +38,32 @@ ggplot(df, aes(x=SCEC+RPEC, y=RC+PC, color=log(QUAL))) + geom_point() + scale_y_
 # normal coverage
 ggplot(df, aes(x=RCNormal + SCECNormal)) + geom_histogram()
 
-# Effect of local breakend evidence
+# Effect of local breakend evidence & unique evidence assignment
 ggplot(df, aes(x=QUAL, y=CQUAL)) + geom_point() + scale_x_log10() + scale_y_log10()
+
+
+
+
+# QUAL distribution by breakpoint evidence
+# A_EC, A_RP, A_SC
+# A_RM # mapped assembly
+# RPEC # inc OEA
+# RPRM # DP
+# SCEC # inc short SC
+# SCRM # mapped SC
+df$A_RM[is.na(df$A_RM)] <- 0
+# mapped vs unmapped
+ggplot(df, aes(x=log10(RPRM+1), y=log10(RPEC-RPRM+1), color=log10(QUAL+1))) + geom_point()  + geom_jitter(position = position_jitter(width=.1, height=.1)) + scale_colour_gradientn(colours=rainbow(4)) 
+ggplot(df, aes(x=log10(SCRM+1), y=log10(SCEC-SCRM+1), color=log10(QUAL+1))) + geom_point()  + geom_jitter(position = position_jitter(width=.1, height=.1)) + scale_colour_gradientn(colours=rainbow(4)) 
+# mapped evidence level by type
+ggplot(df[df$QUAL>=0,], aes(x=log10(RPRM+1), y=log10(SCRM+1), color=factor(A_RM), size=log10(QUAL+1))) + geom_point() + geom_jitter(position = position_jitter(width=.1, height=.1))
+
+
+# how many assemblies where we have no mapped evidence?
+nrow(df[df$SCRM==0 & df$RPRM==0 & df$A_RM==0,]) # = number of calls in which *ALL* the breakpoint evidence has been removed -> no support for this variant yet we're calling them
+# created breakpoint from assembly
+ggplot(df[df$SCRM==0 & df$RPRM==0,], aes(x=A_MQT)) + geom_histogram()
+# great assemblies in both directions
+head(df[df$SCRM==0 & df$RPRM==0 & df$A_MQT>80,])
+       
 
