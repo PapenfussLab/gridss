@@ -7,7 +7,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.variant.vcf.VCFConstants;
 
 import java.util.ArrayList;
@@ -24,7 +23,6 @@ import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class StructuralVariationCallBuilderTest extends TestHelper {
@@ -634,5 +632,15 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		}
 		VariantContextDirectedEvidence call = builder.make();
 		assertEquals(31, AttributeConverter.asDouble(call.getAttribute(VcfAttributes.CALLED_QUAL.attribute()), 0), 0);
+	}
+	@Test
+	public void should_set_exact_soft_clip_bounds() {
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(0, FWD, 11, 12, 0, BWD, 10, 10), "");
+			phredScore(10);
+		}}.make());
+		builder.addEvidence(SoftClipEvidence.create(getContext(), SES(), FWD, withSequence("NNNN", Read(0, 12, "1M3S"))[0], withSequence("NNN", Read(0, 10, "3M"))[0]));
+		VariantContextDirectedEvidence de = builder.make();
+		assertEquals(new BreakpointSummary(0, FWD, 12, 12, 0, BWD, 10, 10), de.getBreakendSummary());
 	}
 }

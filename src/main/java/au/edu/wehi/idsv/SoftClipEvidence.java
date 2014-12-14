@@ -54,9 +54,21 @@ public class SoftClipEvidence implements DirectedEvidence {
 		return direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipLength(record) : SAMRecordUtil.getStartSoftClipLength(record); 
 	}
 	public static String getEvidenceID(BreakendDirection direction, SAMRecord softClip) {
-		// need read name, breakpoint direction & which read in pair
-		String readNumber = softClip.getReadPairedFlag() ? softClip.getFirstOfPairFlag() ? "/1" : "/2" : "";
-		return String.format("%s%s%s", direction == BreakendDirection.Forward ? "f" : "b", softClip.getReadName(), readNumber);
+		StringBuilder sb = new StringBuilder();
+		if (direction == BreakendDirection.Forward) {
+			sb.append('f');
+		} else {
+			sb.append('b');
+		}
+		sb.append(softClip.getReadName());
+		if (softClip.getReadPairedFlag()) {
+			if (softClip.getFirstOfPairFlag()) {
+				sb.append("/1");
+			} else {
+				sb.append("/2");
+			}
+		}
+		return sb.toString();
 	}
 	@Override
 	public String getEvidenceID() {

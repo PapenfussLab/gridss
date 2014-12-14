@@ -118,7 +118,6 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private void setLlr() {
 		double assllr = parent.getAttributeAsDouble(VcfAttributes.ASSEMBLY_LOG_LIKELIHOOD_RATIO.attribute(), 0);
 		for (AssemblyEvidence e : assList) {
-			//assllr += PhredLogLikelihoodRatioModel.llr(e); // no need to recalculate as we already have the result stored
 			assllr += Models.llr(e);
 		}
 		double rpllrn = AttributeConverter.asDoubleListOffset(parent.getAttribute(VcfAttributes.READPAIR_LOG_LIKELIHOOD_RATIO.attribute()), 0, 0d);
@@ -139,6 +138,17 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 				scllrn += Models.llr(e);
 			}
 		}
+		double beQual = 0;
+		double bpQual = 0;
+		for (DirectedEvidence e : Iterables.concat(assList, rpList, scList)) {
+			if (e instanceof DirectedBreakpoint) {
+				bpQual += Models.llr(e);
+			} else {
+				beQual += Models.llr(e);
+			}
+		}
+		attribute(VcfAttributes.BREAKEND_QUAL.attribute(), beQual);
+		attribute(VcfAttributes.BREAKPOINT_QUAL.attribute(), bpQual);
 		attribute(VcfAttributes.CALLED_QUAL.attribute(), parent.getPhredScaledQual());
 		attribute(VcfAttributes.ASSEMBLY_LOG_LIKELIHOOD_RATIO.attribute(), assllr);
 		attribute(VcfAttributes.SOFTCLIP_LOG_LIKELIHOOD_RATIO.attribute(), ImmutableList.of(scllrn, scllrt ));

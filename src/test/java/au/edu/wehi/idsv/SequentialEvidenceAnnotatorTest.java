@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import htsjdk.samtools.SAMRecord;
 
 import java.util.ArrayList;
@@ -100,22 +101,27 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 	public void should_assign_supporting_evidence_to_a_single_variant() {
 		List<VariantContextDirectedEvidence> calls = new ArrayList<VariantContextDirectedEvidence>();
 		calls.add((VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-				breakpoint(new BreakpointSummary(0, FWD, 11, 13, 0, BWD, 10, 10), "GTAC");
+				breakpoint(new BreakpointSummary(0, FWD, 11, 12, 0, BWD, 10, 10), "");
 				phredScore(10);
 			}}.make());
 		calls.add((VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-				breakpoint(new BreakpointSummary(0, FWD, 12, 14, 0, BWD, 10, 10), "GTAC");
+				breakpoint(new BreakpointSummary(0, FWD, 12, 14, 0, BWD, 10, 10), "");
 				phredScore(20);
 			}}.make());
 		List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
-		evidence.add(SoftClipEvidence.create(getContext(), SES(), FWD, Read(0, 12, "1M3S"), Read(0, 10, "3M")));
-		evidence.add(SoftClipEvidence.create(getContext(), SES(), FWD, Read(0, 12, "1M3S"), Read(0, 10, "3M")));
+		evidence.add(SoftClipEvidence.create(getContext(), SES(), FWD, withSequence("NNNN", Read(0, 12, "1M3S"))[0], withSequence("NNN", Read(0, 10, "3M"))[0]));
+		evidence.add(SoftClipEvidence.create(getContext(), SES(), FWD, withSequence("NNNN", Read(0, 12, "1M3S"))[0], withSequence("NNN", Read(0, 10, "3M"))[0]));
 		
+		BreakpointSummary bp = new BreakpointSummary(0,  FWD, 12, 12, 0, BWD, 10, 10); 
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(new SequentialEvidenceAnnotator(getContext(), calls.iterator(), evidence.iterator(), 300, true));
+		assertNotEquals(bp, result.get(0).getBreakendSummary());
+		assertEquals(bp, result.get(1).getBreakendSummary());
 		assertEquals(0, result.get(0).getEvidenceCountSoftClip(null));
-		assertEquals(2, result.get(1).getEvidenceCountSoftClip(null)); // this is the best one
+		assertEquals(2, result.get(1).getEvidenceCountSoftClip(null));
 		
 		result = Lists.newArrayList(new SequentialEvidenceAnnotator(getContext(), calls.iterator(), evidence.iterator(), 300, false));
+		assertEquals(bp, result.get(0).getBreakendSummary());
+		assertEquals(bp, result.get(1).getBreakendSummary());
 		assertEquals(2, result.get(0).getEvidenceCountSoftClip(null));
 		assertEquals(2, result.get(1).getEvidenceCountSoftClip(null));
 	}

@@ -17,6 +17,7 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	private final SAMRecord remote;
 	private final BreakendSummary location;
 	private final SAMEvidenceSource source;
+	private String evidenceID = null;
 	protected NonReferenceReadPair(SAMRecord local, SAMRecord remote, SAMEvidenceSource source, ProcessingContext processContext) {
 		if (local == null) throw new IllegalArgumentException("local is null");
 		if (remote == null) throw new IllegalArgumentException("remote is null");
@@ -159,9 +160,15 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		if (remote == null || remote.getReadUnmappedFlag()) return -1;
 		return remote.getReferenceIndex();
 	}
+	public static String getEvidenceID(SAMRecord record) {
+		return record.getReadName() + (record.getFirstOfPairFlag() ? "/1" : "/2");
+	}
 	@Override
 	public String getEvidenceID() {
-		return local.getReadName();
+		if (evidenceID == null) {
+			evidenceID = getEvidenceID(local);
+		}
+		return evidenceID;
 	}
 	@Override
 	public BreakendSummary getBreakendSummary() {

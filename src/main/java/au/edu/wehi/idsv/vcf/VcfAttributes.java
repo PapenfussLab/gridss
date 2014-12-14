@@ -7,6 +7,8 @@ import htsjdk.variant.vcf.VCFInfoHeaderLine;
 public enum VcfAttributes {
 	SOMATIC_P_VALUE ("SPV", 1, VCFHeaderLineType.Float, "Somatic p-value"),
 	CALLED_QUAL ("CQUAL", 1, VCFHeaderLineType.Float, "Breakpoint quality score before evidence reallocation"),
+	BREAKPOINT_QUAL ("BPQUAL", 1, VCFHeaderLineType.Float, "Quality score of breakpoint evidence after evidence reallocation"),
+	BREAKEND_QUAL ("BEQUAL", 1, VCFHeaderLineType.Float, "Quality score of breakend evidence after evidence reallocation"),
 	//EVIDENCE_COUNT ("EC", 2, VCFHeaderLineType.Integer, "Count of  evidence supporting structural variation  (Normal,Tumour)"),
 	LOG_LIKELIHOOD_RATIO ("LR", 1, VCFHeaderLineType.Float, "Log-likelihood ratio of structural variation vs reference"),
 	LOG_LIKELIHOOD_RATIO_BREAKPOINT ("LRBP", 1, VCFHeaderLineType.Float, "Log-likelihood ratio of structural variation vs reference for entire breakpoint"),

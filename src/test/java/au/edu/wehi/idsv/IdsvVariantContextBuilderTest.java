@@ -182,18 +182,16 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_round_trip_inexact_breakpoint() {
-		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());
-		builder.breakpoint(new BreakpointSummary(1, FWD, 2, 4, 3, BWD, 7, 9), "");
-		VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext(), builder.make()).make();
-		BreakpointSummary bp = (BreakpointSummary)v.getBreakendSummary();
-		assertEquals(1, bp.referenceIndex);
-		assertEquals(FWD, bp.direction);
-		assertEquals(2, bp.start);
-		assertEquals(4, bp.end);
-		assertEquals(3, bp.referenceIndex2);
-		assertEquals(BWD, bp.direction2);
-		assertEquals(7, bp.start2);
-		assertEquals(9, bp.end2);
+		for (final BreakpointSummary bp : new BreakpointSummary[] {
+			new BreakpointSummary(0, FWD, 11, 12, 0, BWD, 5, 15),
+			new BreakpointSummary(0, FWD, 10, 10, 0, BWD, 10, 15),
+			new BreakpointSummary(0, FWD, 10, 12, 0, BWD, 10, 10),
+			new BreakpointSummary(0, FWD, 11, 12, 0, FWD, 10, 20),
+		}) {
+			assertEquals(bp, ((VariantContextDirectedEvidence)(new IdsvVariantContextBuilder(getContext()) {{
+				breakpoint(bp, "GTAC");
+			}}.make())).getBreakendSummary());
+		}
 	}
 	@Test
 	public void should_expose_evidence_source() {
