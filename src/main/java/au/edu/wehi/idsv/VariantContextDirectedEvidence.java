@@ -124,6 +124,8 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 	public int getAssemblySoftClipLengthMax(EvidenceSubset subset) { return AttributeConverter.asIntMaxTN(getAttribute(VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX.attribute()), subset); }
 	public int getAssemblySupportCount(EvidenceSubset subset) { return getAssemblySupportCountReadPair(subset) + getAssemblySupportCountSoftClip(subset); }
 	public List<String> getAssemblyConsensus() { return AttributeConverter.asStringList(getAttribute(VcfAttributes.ASSEMBLY_CONSENSUS.attribute())); }
+	public int getAssemblySoftClipRemapped(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.ASSEMBLY_SOFTCLIP_REMAPPED.attribute()), subset); }
+	public int getAssemblyReadPairRemapped(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.ASSEMBLY_READPAIR_REMAPPED.attribute()), subset); }
 	/**
 	 * Returns an iterator containing only the breakend variants from the given iterator
 	 * @param context processing context

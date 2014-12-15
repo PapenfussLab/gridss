@@ -164,10 +164,12 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertTrue(e.isPartOfAssemblyBreakend(e2));
 		assertTrue(e.isPartOfAssemblyBreakend(e3));
 		assertFalse(e.isPartOfAssemblyBreakend(b1));
+		assertEquals(3, e.getEvidence().size());
 		e = new SAMRecordAssemblyEvidence(AES(), e.getSAMRecord(), null);
 		assertTrue(e.isPartOfAssemblyBreakend(e1));
 		assertTrue(e.isPartOfAssemblyBreakend(e2));
 		assertTrue(e.isPartOfAssemblyBreakend(e3));
+		assertEquals(3, e.getEvidence().size());
 		assertFalse(e.isPartOfAssemblyBreakend(b1));
 	}
 }

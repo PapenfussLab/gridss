@@ -11,6 +11,7 @@ import htsjdk.variant.vcf.VCFConstants;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -587,7 +588,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		}}.make());
 		List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
 		evidence.add(AssemblyFactory.incorporateRealignment(getContext(),
-				AssemblyFactory.createAnchored(getContext(), AES(), FWD, null, 0, 12, 1, B("NTTTT"), B("NTTTT"), 0, 0),
+				AssemblyFactory.createAnchored(getContext(), AES(), FWD, new HashSet<DirectedEvidence>(), 0, 12, 1, B("NTTTT"), B("NTTTT"), 0, 0),
 				new SAMRecord(getContext().getBasicSamHeader()) {{
 					setReferenceIndex(1);
 					setAlignmentStart(11);
@@ -642,5 +643,27 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		builder.addEvidence(SoftClipEvidence.create(getContext(), SES(), FWD, withSequence("NNNN", Read(0, 12, "1M3S"))[0], withSequence("NNN", Read(0, 10, "3M"))[0]));
 		VariantContextDirectedEvidence de = builder.make();
 		assertEquals(new BreakpointSummary(0, FWD, 12, 12, 0, BWD, 10, 10), de.getBreakendSummary());
+	}
+	@Test
+	public void should_count_enlisted_breakpoint_support() {
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(0, FWD, 20, 20, 0, BWD, 10, 10), "");
+			phredScore(10);
+		}}.make());
+		HashSet<DirectedEvidence> evidence = new HashSet<DirectedEvidence>();
+		evidence.add(SoftClipEvidence.create(getContext(), SES(), FWD, Read(0, 20, "1M3S"), Read(0, 10, "3M")));
+		evidence.add(NRRP(DP(0, 20, "1M", true, 0, 10, "1M", false)));
+		 // not supporting breakpoint
+		evidence.add(SoftClipEvidence.create(getContext(), SES(), FWD, Read(2, 12, "1M3S"), Read(2, 10, "3M")));
+		evidence.add(NRRP(DP(2, 2, "1M", true, 2, 2, "1M", true)));
+		evidence.add(NRRP(DP(2, 2, "1M", true, 3, 3, "1M", true)));
+		 // not breakpoint -> doesn't count
+		evidence.add(NRRP(OEA(2, 2, "1M", true)));
+		evidence.add(SoftClipEvidence.create(getContext(), SES(), FWD, Read(2, 2, "1M3S"), null));
+		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchored(getContext(), AES(), FWD, evidence, 0, 20, 1, B("NN"), B("NN"), 1, 1);
+		builder.addEvidence(ass);
+		VariantContextDirectedEvidence de = builder.make();
+		assertEquals(1, de.getAssemblySoftClipRemapped(EvidenceSubset.ALL));
+		assertEquals(2, de.getAssemblyReadPairRemapped(EvidenceSubset.ALL));
 	}
 }

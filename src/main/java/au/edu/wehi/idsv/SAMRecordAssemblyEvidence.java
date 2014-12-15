@@ -7,7 +7,9 @@ import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
+import htsjdk.samtools.util.Log;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -31,11 +33,13 @@ import com.google.common.primitives.Bytes;
 import com.google.common.primitives.UnsignedBytes;
 
 public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
+	private static final Log log = Log.getInstance(SAMRecordAssemblyEvidence.class);
 	private final SAMRecord record;
 	private final SAMRecord realignment;
 	private final AssemblyEvidenceSource source;
 	private final BreakendSummary breakend;
 	private final boolean isExact;
+	private Collection<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
 	public SAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecord assembly, SAMRecord realignment) {
 		this.source = source;
 		this.record = assembly;
@@ -51,12 +55,18 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 * and the low likelihood and impact of hash collisions
 	 */
 	private TIntHashSet evidenceIdhashSet = null;
+	private int evidenceSetSize = -1;
 	private static HashFunction evidenceIdHash = Hashing.murmur3_32();
 	private void ensureEvidenceSet() {
 		if (evidenceIdhashSet == null) {
 			Object value = record.getAttribute(SamTags.ASSEMLBY_EVIDENCE_HASH);
 			if (value instanceof int[]) {
-				evidenceIdhashSet = new TIntHashSet((int[])value);
+				int[] hashes = (int[])value;
+				evidenceIdhashSet = new TIntHashSet(hashes);
+				if (hashes.length != evidenceIdhashSet.size()) {
+					log.debug("Hash collision when rehydrating evidence set for assembly " + getEvidenceID());
+				}
+				evidenceSetSize = hashes.length;
 			}
 		}
 	}
@@ -79,10 +89,32 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 * @param evidence
 	 * @return true if the record is likely part of the breakend, false if definitely not
 	 */
-	public boolean isPartOfAssemblyBreakend(DirectedEvidence evidence) {
+	public boolean isPartOfAssemblyBreakend(DirectedEvidence e) {
 		ensureEvidenceSet();
 		if (evidenceIdhashSet == null) return false;
-		return evidenceIdhashSet.contains(evidenceIdHash.hashUnencodedChars(evidence.getEvidenceID()).asInt());
+		if (evidenceIdhashSet.contains(evidenceIdHash.hashUnencodedChars(e.getEvidenceID()).asInt())) {
+			evidence.add(e);
+			return true;
+		} else {
+			return false;
+		}
+	}
+	public Collection<DirectedEvidence> getEvidence() {
+		if (evidence == null) {
+			return ImmutableList.of();
+		}
+		ensureEvidenceSet();
+		if (evidenceIdhashSet != null) {
+			if (evidence.size() < evidenceSetSize) {
+				throw new IllegalStateException("Evidence not yet fully rehydrated");
+			}
+			if (evidence.size() > evidenceSetSize) {
+				// Don't throw exception as the user can't actually do anything about this
+				// Just continue with as correct results as we can manage
+				log.warn("Hash collision has resulted in evidence being incorrectly attributed to assembly " + getEvidenceID());
+			}
+		}
+		return evidence;
 	}
 	private void fixReadPair() {
 		if (realignment.getReadUnmappedFlag()) {
@@ -102,6 +134,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 			Map<VcfAttributes, int[]> intListAttributes
 			) {
 		this(source, createAssemblySAMRecord(evidence, samFileHeader, source, breakend, anchoredBaseCount, baseCalls, baseQuals, intListAttributes), null);
+		this.evidence = evidence;
 	}
 	private SAMRecord getPlaceholderRealignment() {
 		SAMRecord placeholder = new SAMRecord(record.getHeader());

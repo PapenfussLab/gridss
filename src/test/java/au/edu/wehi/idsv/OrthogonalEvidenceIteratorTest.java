@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -40,6 +39,20 @@ public class OrthogonalEvidenceIteratorTest extends TestHelper {
 		assertFalse(result.contains(e1));
 		assertFalse(result.contains(e2));
 		assertFalse(result.contains(e3));
+	}
+	@Test
+	public void should_add_component_evidence_to_all_assemblies() {
+		DirectedEvidence e0 = SCE(FWD, Read(0, 1, "1M12S"));
+		DirectedEvidence e1 = SCE(FWD, Read(0, 10, "1M10S"));
+		DirectedEvidence e2 = SCE(FWD, Read(0, 10, "1M11S"));
+		DirectedEvidence e3 = SCE(FWD, Read(0, 10, "1M12S"));
+		DirectedEvidence e4 = SCE(FWD, Read(0, 100, "1M12S"));
+		SAMRecordAssemblyEvidence a1 = AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.newHashSet(e1, e2, e3), 0, 10, 1, B("TT"), B("TT"), 1, 1);
+		List<DirectedEvidence> result = Lists.newArrayList(new OrthogonalEvidenceIterator(getContext().getLinear(), Lists.newArrayList(e0, e1, e2, e3, a1, e4).iterator(), 2));
+		assertFalse(result.contains(e1));
+		assertFalse(result.contains(e2));
+		assertFalse(result.contains(e3));
+		assertEquals(3, a1.getEvidence().size());
 	}
 	@Test
 	public void should_not_remove_component_evidence_of_filtered_assembly() {

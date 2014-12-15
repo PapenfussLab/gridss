@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv;
 
+import java.util.Collection;
 import java.util.List;
 
 import au.edu.wehi.idsv.vcf.VcfFilter;
@@ -27,4 +28,5 @@ public interface AssemblyEvidence extends DirectedEvidence {
 	List<VcfFilter> getFilters();
 	void filterAssembly(VcfFilter reason);
 	boolean isPartOfAssemblyBreakend(DirectedEvidence evidence);
+	Collection<DirectedEvidence> getEvidence();
 }

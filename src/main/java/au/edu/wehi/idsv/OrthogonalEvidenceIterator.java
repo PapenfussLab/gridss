@@ -75,13 +75,15 @@ public class OrthogonalEvidenceIterator extends AbstractIterator<DirectedEvidenc
 		outputQueue.add(e);
 	}
 	private void outputOrthogonalNonAssembly(DirectedEvidence e) {
+		boolean usedInAssembly = false;
 		for (AssemblyEvidence assembly : assemblyLookup) {
 			if (assembly.isPartOfAssemblyBreakend(e)) {
-				// evidence is part of our assembly: no need to output
-				return;
+				usedInAssembly = true;
 			}
 		}
-		outputQueue.add(e);
+		if (!usedInAssembly) {
+			outputQueue.add(e);
+		}
 	}
 	private void add(DirectedEvidence e) {
 		linearPosition = linear.getStartLinearCoordinate(e.getBreakendSummary());

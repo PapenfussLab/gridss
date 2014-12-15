@@ -160,14 +160,6 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private void aggregateAssemblyAttributes() {
 		List<AssemblyEvidence> fullList = Lists.newArrayList(assList);
 		List<AssemblyEvidence> supportList = Lists.newArrayList(fullList);
-		if (processContext.getVariantCallingParameters().callOnlyAssemblies) {
-			for (int i = supportList.size() - 1; i >= 0; i--) {
-				BreakendSummary bs = supportList.get(i).getBreakendSummary();
-				if (!(bs instanceof BreakpointSummary) || !((BreakpointSummary)bs).overlaps(calledBreakend)) {
-					supportList.remove(i);
-				}
-			}
-		}
 		attribute(VcfAttributes.ASSEMBLY_EVIDENCE_COUNT, fullList.size());
 		attribute(VcfAttributes.ASSEMBLY_MAPPED, sumTN(supportList, new Function<AssemblyEvidence, Integer>() {
 			@Override
@@ -236,6 +228,37 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		attribute(VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL, sclen);
 		attribute(VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX, scmaxlen);
 		attribute(VcfAttributes.ASSEMBLY_CONSENSUS, consensus);
+		
+		if (calledBreakend instanceof BreakpointSummary) {
+			int countrpn = 0;
+			int countrpt = 0;
+			int countscn = 0;
+			int countsct = 0;
+			for (AssemblyEvidence ae : supportList) {
+				for (DirectedEvidence e : ae.getEvidence()) {
+					if (e instanceof DirectedBreakpoint) {
+						BreakpointSummary bp = ((DirectedBreakpoint)e).getBreakendSummary();
+						if (!bp.overlaps(calledBreakend)) {
+							if (e instanceof SoftClipEvidence) {
+								if ((((SoftClipEvidence)e).getEvidenceSource()).isTumour()) {
+									countsct++;
+								} else {
+									countscn++;
+								}
+							} else if (e instanceof NonReferenceReadPair) {
+								if ((((NonReferenceReadPair)e).getEvidenceSource()).isTumour()) {
+									countrpt++;
+								} else {
+									countrpn++;
+								}
+							}
+						}
+					}
+				}
+				attribute(VcfAttributes.ASSEMBLY_READPAIR_REMAPPED, new int[] { countrpn, countrpt });
+				attribute(VcfAttributes.ASSEMBLY_SOFTCLIP_REMAPPED, new int[] { countscn, countsct });
+			}
+		}
 	}
 	private void aggregateReadPairAttributes() {
 		attribute(VcfAttributes.READPAIR_EVIDENCE_COUNT, sumTN(rpList, new Function<NonReferenceReadPair, Integer>() {
