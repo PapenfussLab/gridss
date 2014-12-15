@@ -164,12 +164,27 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertTrue(e.isPartOfAssemblyBreakend(e2));
 		assertTrue(e.isPartOfAssemblyBreakend(e3));
 		assertFalse(e.isPartOfAssemblyBreakend(b1));
-		assertEquals(3, e.getEvidence().size());
 		e = new SAMRecordAssemblyEvidence(AES(), e.getSAMRecord(), null);
 		assertTrue(e.isPartOfAssemblyBreakend(e1));
 		assertTrue(e.isPartOfAssemblyBreakend(e2));
 		assertTrue(e.isPartOfAssemblyBreakend(e3));
-		assertEquals(3, e.getEvidence().size());
 		assertFalse(e.isPartOfAssemblyBreakend(b1));
+	}
+	@Test
+	public void should_rehydrate_breakend_evidence() {
+		DirectedEvidence e1 = SCE(BWD, Read(0, 1, "5S5M"));
+		DirectedEvidence e2 = SCE(BWD, Read(0, 1, "6S5M"));
+		DirectedEvidence e3 = NRRP(OEA(0, 1, "1M", false));
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(e1, e2, e3),
+			1, 2, 1, B("GTAC"), new byte[] {1,2,3,4}, 1, 2);
+		e.hydrateEvidenceSet(e1);
+		e.hydrateEvidenceSet(e2);
+		e.hydrateEvidenceSet(e3);
+		assertEquals(3, e.getEvidence().size());
+		e = new SAMRecordAssemblyEvidence(AES(), e.getSAMRecord(), null);
+		e.hydrateEvidenceSet(e1);
+		e.hydrateEvidenceSet(e2);
+		e.hydrateEvidenceSet(e3);
+		assertEquals(3, e.getEvidence().size());
 	}
 }

@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv;
 
-import gnu.trove.set.hash.TIntHashSet;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
@@ -16,6 +15,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -27,8 +27,7 @@ import au.edu.wehi.idsv.vcf.VcfFilter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
-import com.google.common.hash.HashFunction;
-import com.google.common.hash.Hashing;
+import com.google.common.collect.Sets;
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.UnsignedBytes;
 
@@ -42,8 +41,8 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	private Collection<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
 	public SAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecordAssemblyEvidence assembly, SAMRecord realignment) {
 		this(source, assembly.getSAMRecord(), realignment);
+		this.evidenceIds = assembly.evidenceIds;
 		this.evidence = assembly.evidence;
-		this.evidenceIdhashSet = assembly.evidenceIdhashSet;
 	}
 	public SAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecord assembly, SAMRecord realignment) {
 		this.source = source;
@@ -59,30 +58,30 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 * Hashes of the IDs are stored due to the overhead of storing the full strings
 	 * and the low likelihood and impact of hash collisions
 	 */
-	private TIntHashSet evidenceIdhashSet = null;
-	private int evidenceSetSize = -1;
-	private static HashFunction evidenceIdHash = Hashing.murmur3_32();
-	private void ensureEvidenceSet() {
-		if (evidenceIdhashSet == null) {
-			Object value = record.getAttribute(SamTags.ASSEMLBY_EVIDENCE_HASH);
-			if (value instanceof int[]) {
-				int[] hashes = (int[])value;
-				evidenceIdhashSet = new TIntHashSet(hashes);
-				if (hashes.length != evidenceIdhashSet.size()) {
-					log.debug("Hash collision when rehydrating evidence set for assembly " + getEvidenceID());
-				}
-				evidenceSetSize = hashes.length;
+	private Set<String> evidenceIds = null;
+	private void ensureEvidenceIDs() {
+		if (evidenceIds == null) {
+			Object value = record.getAttribute(SamTags.ASSEMLBY_COMPONENT_EVIDENCEID);
+			if (value instanceof String) {
+				String[] ids = ((String)value).split(" ");
+				evidenceIds = Sets.newHashSet(ids);
+			} else {
+				evidenceIds = Sets.newHashSet();
 			}
 		}
 	}
-	private static void setEvidenceSet(SAMRecord r, Collection<DirectedEvidence> evidence) {
+	/*
+	 * Using space as a separator as it is reserved in FASTA so shouldn't be in read names
+	 */
+	private static void setEvidenceIDs(SAMRecord r, Collection<DirectedEvidence> evidence) {
 		if (evidence != null && evidence.size() > 0) {
-			int[] hashes = new int[evidence.size()];
-			int i = 0;
+			StringBuilder sb = new StringBuilder();
 			for (DirectedEvidence e : evidence) {
-				hashes[i++] = evidenceIdHash.hashUnencodedChars(e.getEvidenceID()).asInt();
+				sb.append(e.getEvidenceID());
+				sb.append(' ');
 			}
-			r.setAttribute(SamTags.ASSEMLBY_EVIDENCE_HASH, hashes);
+			sb.deleteCharAt(sb.length() - 1);
+			r.setAttribute(SamTags.ASSEMLBY_COMPONENT_EVIDENCEID, sb.toString());
 		}
 	}
 	/**
@@ -95,25 +94,32 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 * @return true if the record is likely part of the breakend, false if definitely not
 	 */
 	public boolean isPartOfAssemblyBreakend(DirectedEvidence e) {
-		ensureEvidenceSet();
-		if (evidenceIdhashSet == null) return false;
-		if (evidenceIdhashSet.contains(evidenceIdHash.hashUnencodedChars(e.getEvidenceID()).asInt())) {
+		ensureEvidenceIDs();
+		return evidenceIds.contains(e.getEvidenceID());
+	}
+	/**
+	 * Hydrates the given evidence back into the assembly evidence set
+	 * @param e
+	 */
+	public void hydrateEvidenceSet(DirectedEvidence e) {
+		if (isPartOfAssemblyBreakend(e)) {
 			evidence.add(e);
-			return true;
-		} else {
-			return false;
 		}
 	}
 	public Collection<DirectedEvidence> getEvidence() {
 		if (evidence == null) {
 			return ImmutableList.of();
 		}
-		ensureEvidenceSet();
-		if (evidenceIdhashSet != null) {
-			if (evidence.size() < evidenceSetSize) {
-				throw new IllegalStateException("Evidence not yet fully rehydrated");
+		ensureEvidenceIDs();
+		if (evidenceIds != null) {
+			if (evidence.size() < evidenceIds.size()) {
+				if (this instanceof RealignedRemoteSAMRecordAssemblyEvidence) {
+					// We don't expect rehydration of short SC, OEA, or alternatively mapped evidence at remote position 
+				} else {
+					log.debug(String.format("Evidence not yet fully rehydrated. Expected %d, found %d for %s", evidenceIds.size(), evidence.size(), getEvidenceID()));
+				}
 			}
-			if (evidence.size() > evidenceSetSize) {
+			if (evidence.size() > evidenceIds.size()) {
 				// Don't throw exception as the user can't actually do anything about this
 				// Just continue with as correct results as we can manage
 				log.warn("Hash collision has resulted in evidence being incorrectly attributed to assembly " + getEvidenceID());
@@ -260,7 +266,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 				record.setBaseQualities(Bytes.concat(baseQuals, PAD_QUALS[padBases]));
 			}
 		}
-		setEvidenceSet(record, evidence);
+		setEvidenceIDs(record, evidence);
 		return record;
 	}
 	private static final byte[][] PAD_BASES = new byte[][] { new byte[] {}, new byte[] { 'N' }, new byte[] { 'N', 'N' } };

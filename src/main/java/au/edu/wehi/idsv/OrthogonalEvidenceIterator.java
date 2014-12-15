@@ -75,13 +75,16 @@ public class OrthogonalEvidenceIterator extends AbstractIterator<DirectedEvidenc
 		outputQueue.add(e);
 	}
 	private void outputOrthogonalNonAssembly(DirectedEvidence e) {
-		boolean usedInAssembly = false;
+		boolean usedInUnfilteredAssembly = false;
 		for (AssemblyEvidence assembly : assemblyLookup) {
 			if (assembly.isPartOfAssemblyBreakend(e)) {
-				usedInAssembly = true;
+				if (assembly instanceof SAMRecordAssemblyEvidence) {
+					((SAMRecordAssemblyEvidence)assembly).hydrateEvidenceSet(e);
+				}
+				usedInUnfilteredAssembly |= !assembly.isAssemblyFiltered();
 			}
 		}
-		if (!usedInAssembly) {
+		if (!usedInUnfilteredAssembly) {
 			outputQueue.add(e);
 		}
 	}
@@ -89,12 +92,7 @@ public class OrthogonalEvidenceIterator extends AbstractIterator<DirectedEvidenc
 		linearPosition = linear.getStartLinearCoordinate(e.getBreakendSummary());
 		if (e instanceof AssemblyEvidence) {
 			AssemblyEvidence a = (AssemblyEvidence)e;
-			if (!a.isAssemblyFiltered()) {
-				assemblyLookup.add(a);
-			} else {
-				// don't need merge evidence into filtered assemblies 
-				outputOrthogonalAssembly(a);
-			}
+			assemblyLookup.add(a);
 		} else {
 			nonAssemblyQueue.add(e);
 		}

@@ -14,7 +14,7 @@ public class SamTags {
 	 */
 	public static final String ASSEMLBY_FILTERS = "af";
 	/**
-	 * EvidenceID hash
+	 * EvidenceID of assembly components
 	 */
-	public static final String ASSEMLBY_EVIDENCE_HASH = "eh";
+	public static final String ASSEMLBY_COMPONENT_EVIDENCEID = "es";
 }
