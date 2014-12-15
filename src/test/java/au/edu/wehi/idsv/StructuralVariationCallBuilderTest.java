@@ -293,13 +293,25 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_set_VcfAttribute_SOFTCLIP_LENGTH_REMOTE_TOTAL() {
-		assertEquals(1, big().getLengthSoftClipTotal(EvidenceSubset.NORMAL));
-		assertEquals(3+5, big().getLengthSoftClipTotal(EvidenceSubset.TUMOUR));
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)minimalBreakend()
+				.breakend(new BreakendSummary(0, BWD, 1, 10), "").make());
+		cb.addEvidence(SCE(BWD, SES(), Read(0, 5, "1S2M")));
+		cb.addEvidence(SCE(BWD, SES(true), Read(0, 4, "3S4M")));
+		cb.addEvidence(SCE(BWD, SES(true), Read(0, 3, "5S6M")));
+		VariantContextDirectedEvidence e = cb.make();
+		assertEquals(1, e.getLengthSoftClipTotal(EvidenceSubset.NORMAL));
+		assertEquals(3+5, e.getLengthSoftClipTotal(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_set_VcfAttribute_SOFTCLIP_LENGTH_REMOTE_MAX() {
-		assertEquals(1, big().getLengthSoftClipMax(EvidenceSubset.NORMAL));
-		assertEquals(5, big().getLengthSoftClipMax(EvidenceSubset.TUMOUR));
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)minimalBreakend()
+				.breakend(new BreakendSummary(0, BWD, 1, 10), "").make());
+		cb.addEvidence(SCE(BWD, SES(), Read(0, 5, "1S2M")));
+		cb.addEvidence(SCE(BWD, SES(true), Read(0, 4, "3S4M")));
+		cb.addEvidence(SCE(BWD, SES(true), Read(0, 3, "5S6M")));
+		VariantContextDirectedEvidence e = cb.make();
+		assertEquals(1, e.getLengthSoftClipMax(EvidenceSubset.NORMAL));
+		assertEquals(5, e.getLengthSoftClipMax(EvidenceSubset.TUMOUR));
 	}
 	private SAMRecordAssemblyEvidence fakeass(int offset) {
 		Map<VcfAttributes, int[]> intListAttributes = new HashMap<VcfAttributes, int[]>();
@@ -322,7 +334,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		r.setAlignmentStart(1);
 		r.setReadUnmappedFlag(false);
 		r.setMappingQuality(offset + 4); // ASSEMBLY_MAPQ
-		e = new RealignedSAMRecordAssemblyEvidence(getContext(), AES(), e.getSAMRecord(), r);
+		e = new RealignedSAMRecordAssemblyEvidence(getContext(), AES(), e, r);
 		return e;
 	}
 	@Test
@@ -665,5 +677,14 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		VariantContextDirectedEvidence de = builder.make();
 		assertEquals(1, de.getAssemblySoftClipRemapped(EvidenceSubset.ALL));
 		assertEquals(2, de.getAssemblyReadPairRemapped(EvidenceSubset.ALL));
+	}
+	@Test
+	public void should_include_evidence_contributing_to_assembly_in_sc_rp_evidence() {
+		VariantContextDirectedEvidence e = b(
+				new dp(0, true),
+				new sc(0, true),
+				ass1());
+		assertEquals(4, e.getEvidenceCountSoftClip(EvidenceSubset.ALL));
+		assertEquals(7, e.getEvidenceCountReadPair(EvidenceSubset.ALL));
 	}
 }

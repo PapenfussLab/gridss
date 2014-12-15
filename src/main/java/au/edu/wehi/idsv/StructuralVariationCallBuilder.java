@@ -4,6 +4,7 @@ import htsjdk.variant.vcf.VCFConstants;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
@@ -50,6 +51,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		return this;
 	}
 	public VariantContextDirectedEvidence make() {
+		extractAssemblySupport();
 		orderEvidence();
 		setBreakpoint();
 		setImprecise();
@@ -62,6 +64,26 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		variant = calcSpv(variant);
 		variant = processContext.getVariantCallingParameters().applyFilters(variant);
 		return variant;
+	}
+	/**
+	 * Includes the evidence supporting the assembly in the RP and SC totals 
+	 */
+	private void extractAssemblySupport() {
+		HashSet<SoftClipEvidence> asc = new HashSet<SoftClipEvidence>(); 
+		HashSet<NonReferenceReadPair> arp = new HashSet<NonReferenceReadPair>();
+		for (AssemblyEvidence ae : assList) {
+			for (DirectedEvidence e : ae.getEvidence()) {
+				if (e instanceof SoftClipEvidence) {
+					asc.add((SoftClipEvidence) e);
+				} else if (e instanceof NonReferenceReadPair) {
+					arp.add((NonReferenceReadPair) e);
+				}
+			}
+		}
+		asc.removeAll(scList);
+		arp.removeAll(rpList);
+		scList.addAll(asc);
+		rpList.addAll(arp);
 	}
 	private void orderEvidence() {
 		Collections.sort(assList, ByBestDesc);

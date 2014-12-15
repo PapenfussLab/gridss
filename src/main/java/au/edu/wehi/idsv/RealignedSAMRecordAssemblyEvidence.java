@@ -4,16 +4,24 @@ import htsjdk.samtools.SAMRecord;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 public class RealignedSAMRecordAssemblyEvidence extends SAMRecordAssemblyEvidence implements DirectedBreakpoint {
-	private RealignedBreakpoint rbp;
+	private final RealignedBreakpoint rbp;
+	public RealignedSAMRecordAssemblyEvidence(
+			ProcessingContext processContext,
+			AssemblyEvidenceSource source,
+			SAMRecordAssemblyEvidence assembly,
+			SAMRecord realigned) {
+		super(source, assembly, realigned);
+		this.rbp = new RealignedBreakpoint(processContext, super.getBreakendSummary(), super.getAssemblyAnchorSequence(), realigned);
+		SAMRecordUtil.pairReads(getSAMRecord(), getRemoteSAMRecord());
+	}
 	public RealignedSAMRecordAssemblyEvidence(
 			ProcessingContext processContext,
 			AssemblyEvidenceSource source,
 			SAMRecord assembly,
 			SAMRecord realigned) {
 		super(source, assembly, realigned);
-		RealignedBreakpoint rbp = new RealignedBreakpoint(processContext, super.getBreakendSummary(), super.getAssemblyAnchorSequence(), realigned);
-		this.rbp = rbp;
-		SAMRecordUtil.pairReads(assembly, realigned);
+		this.rbp = new RealignedBreakpoint(processContext, super.getBreakendSummary(), super.getAssemblyAnchorSequence(), realigned);
+		SAMRecordUtil.pairReads(getSAMRecord(), getRemoteSAMRecord());
 	}
 	@Override
 	public BreakpointSummary getBreakendSummary() {

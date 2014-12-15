@@ -3,7 +3,7 @@ library(RColorBrewer)
 source("libgridss.R")
 
 # gridss TODO: split out *_RM into mapping to us, and mapping elsewhere
-
+setwd("C:/dev/idsv/src/main/R/")
 vcf <- readVcf("C:/dev/778.vcf", "hg19_random")
 #vcf <- readVcf("W:/778/idsv/778.in.vcf", "hg19_random")
 df <- gridss.truthdetails.processvcf.vcftodf(vcf)
@@ -52,12 +52,19 @@ ggplot(df, aes(x=QUAL, y=CQUAL)) + geom_point() + scale_x_log10() + scale_y_log1
 # SCEC # inc short SC
 # SCRM # mapped SC
 df$A_RM[is.na(df$A_RM)] <- 0
+df$A_EC[is.na(df$A_EC)] <- 0
 # mapped vs unmapped
 ggplot(df, aes(x=log10(RPRM+1), y=log10(RPEC-RPRM+1), color=log10(QUAL+1))) + geom_point()  + geom_jitter(position = position_jitter(width=.1, height=.1)) + scale_colour_gradientn(colours=rainbow(4)) 
 ggplot(df, aes(x=log10(SCRM+1), y=log10(SCEC-SCRM+1), color=log10(QUAL+1))) + geom_point()  + geom_jitter(position = position_jitter(width=.1, height=.1)) + scale_colour_gradientn(colours=rainbow(4)) 
 # mapped evidence level by type
 ggplot(df[df$QUAL>=0,], aes(x=log10(RPRM+1), y=log10(SCRM+1), color=factor(A_RM), size=log10(QUAL+1))) + geom_point() + geom_jitter(position = position_jitter(width=.1, height=.1))
 
+# total evidence distribution
+ggplot(df, aes(x=log10(RPEC+A_RP+1), y=log10(SCEC+A_SC+1), color=factor(A_EC))) + geom_point() + ggtitle("All evidence")
+# non-assembly evidence distribution
+ggplot(df, aes(x=log10(RPEC+1), y=log10(SCEC+1), color=factor(A_EC))) + geom_point() + ggtitle("Non-assembly evidence")
+# distribution of evidence not in assembly
+ggplot(df, aes(x=log10(A_RP+1), y=log10(A_SC+1), color=factor(A_EC))) + geom_point() + ggtitle("Assembly evidence")
 
 # how many assemblies where we have no mapped evidence?
 nrow(df[df$SCRM==0 & df$RPRM==0 & df$A_RM==0,]) # = number of calls in which *ALL* the breakpoint evidence has been removed -> no support for this variant yet we're calling them

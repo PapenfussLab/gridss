@@ -40,11 +40,16 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	private final BreakendSummary breakend;
 	private final boolean isExact;
 	private Collection<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
+	public SAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecordAssemblyEvidence assembly, SAMRecord realignment) {
+		this(source, assembly.getSAMRecord(), realignment);
+		this.evidence = assembly.evidence;
+		this.evidenceIdhashSet = assembly.evidenceIdhashSet;
+	}
 	public SAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecord assembly, SAMRecord realignment) {
 		this.source = source;
 		this.record = assembly;
-		this.breakend = calculateBreakendFromAlignmentCigar(assembly.getReferenceIndex(), assembly.getAlignmentStart(), assembly.getCigar());
-		this.isExact = calculateIsBreakendExactFromCigar(assembly.getCigar());
+		this.breakend = calculateBreakendFromAlignmentCigar(this.record.getReferenceIndex(), this.record.getAlignmentStart(), this.record.getCigar());
+		this.isExact = calculateIsBreakendExactFromCigar(this.record.getCigar());
 		this.realignment = realignment == null ? getPlaceholderRealignment() : realignment;
 		fixReadPair();
 	}

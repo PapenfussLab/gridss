@@ -115,9 +115,9 @@ public final class AssemblyFactory {
 		SAMRecordAssemblyEvidence a = (SAMRecordAssemblyEvidence)assembly;
 		if (realignment.getReadUnmappedFlag() || !processContext.getRealignmentParameters().realignmentPositionUnique(realignment)) {
 			// Breakend did not align well enough for us to call a breakpoint
-			return new SAMRecordAssemblyEvidence(a.getEvidenceSource(), a.getSAMRecord(), realignment);
+			return new SAMRecordAssemblyEvidence(a.getEvidenceSource(), assembly, realignment);
 		} else {
-			return new RealignedSAMRecordAssemblyEvidence(processContext, a.getEvidenceSource(), a.getSAMRecord(), realignment);
+			return new RealignedSAMRecordAssemblyEvidence(processContext, a.getEvidenceSource(), assembly, realignment);
 		}
 	}
 }
