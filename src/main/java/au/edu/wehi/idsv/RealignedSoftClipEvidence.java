@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
@@ -12,19 +11,12 @@ public class RealignedSoftClipEvidence extends SoftClipEvidence implements Direc
 	private final RealignedBreakpoint rbp;
 	private final SAMRecord realigned;
 	protected RealignedSoftClipEvidence(ProcessingContext processContext, SAMEvidenceSource source, BreakendDirection direction, SAMRecord record, SAMRecord realigned) {
-		super(processContext, source, direction, safeClone(record)); // need a copy since we're changing attributes to different values for the forward and backward records 
+		super(processContext, source, direction, SAMRecordUtil.clone(record)); // need a copy since we're changing attributes to different values for the forward and backward records 
 		this.realigned = realigned;
 		int pos = direction == BreakendDirection.Forward ? record.getAlignmentEnd() : record.getAlignmentStart();
 		BreakendSummary local = new BreakendSummary(record.getReferenceIndex(), direction, pos, pos);
 		this.rbp = new RealignedBreakpoint(processContext, local, record.getReadBases(), realigned);
 		setPositionAttributes();
-	}
-	private static SAMRecord safeClone(SAMRecord r) {
-		try {
-			return (SAMRecord)r.clone();
-		} catch (CloneNotSupportedException e) {
-			throw new SAMException(e);
-		}
 	}
 	private void setPositionAttributes() {
 		SAMRecord sc = getSAMRecord();

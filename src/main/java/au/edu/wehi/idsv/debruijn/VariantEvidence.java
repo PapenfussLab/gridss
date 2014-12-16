@@ -8,7 +8,6 @@ import java.util.List;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.NonReferenceReadPair;
-import au.edu.wehi.idsv.RealignedRemoteSoftClipEvidence;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
@@ -57,11 +56,7 @@ public class VariantEvidence {
 	}
 	public static VariantEvidence createSoftClipEvidence(BreakendDirection graphDirection, int k, SoftClipEvidence read) {
 		if (graphDirection != read.getBreakendSummary().direction) throw new RuntimeException("Sanity check failure: soft clip direction does not match de bruijn graph direction");
-		if (read instanceof RealignedRemoteSoftClipEvidence) {
-			return new VariantEvidence(read, graphDirection, k, read.getSAMRecord(), ((RealignedRemoteSoftClipEvidence)read).getRealignedSAMRecord());
-		} else {
-			return new VariantEvidence(read, graphDirection, k, read.getSAMRecord());
-		}
+		return new VariantEvidence(read, graphDirection, k, read.getSAMRecord());
 	}
 	/**
 	 * Creates unanchored De Bruijn graph read evidence
@@ -77,27 +72,6 @@ public class VariantEvidence {
 		this.referenceKmerCount = 0;
 		this.referenceKmerAnchorPosition = Integer.MIN_VALUE;
 		this.mateAnchorPosition = mateAnchorPosition;
-	}
-	/**
-	 * Creates anchored De Bruijn graph read evidence
-	 */
-	private VariantEvidence(DirectedEvidence evidence, BreakendDirection graphDirection, int k, SAMRecord record, SAMRecord realigned) {
-		this.evidence = evidence;
-		this.direction = graphDirection;
-		this.k = k;
-		this.record = record;
-		this.isReversed = shouldReverse(record, true, graphDirection);
-		this.isComplemented = shouldCompliment(record, true) ^ realigned.getReadNegativeStrandFlag();
-		List<CigarElement> elements = isReversed ? Lists.reverse(realigned.getCigar().getCigarElements()) : realigned.getCigar().getCigarElements();
-		int startClipLength = SAMRecordUtil.getStartSoftClipLength(elements);
-		int endClipLength = SAMRecordUtil.getEndSoftClipLength(elements) + record.getReadLength() - realigned.getReadLength();
-		int readLength = record.getReadLength();
-		this.startSkipKmerCount = startClipLength; // ignore the initial kmers that are soft clipped in the incorrect direction
-		int branchKmers = endClipLength;
-		int totalKmers = readLength - k + 1;
-		this.referenceKmerCount = totalKmers - startSkipKmerCount - branchKmers;
-		this.referenceKmerAnchorPosition = isReversed ? record.getAlignmentStart() : record.getAlignmentEnd();
-		this.mateAnchorPosition = Integer.MIN_VALUE;
 	}
 	/**
 	 * Creates anchored De Bruijn graph read evidence

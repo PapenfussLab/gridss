@@ -46,19 +46,11 @@ public class RealignedRemoteSoftClipEvidenceIterator extends AbstractIterator<Re
 			SAMRecord realign = realigned.next();
 			SAMRecord fsc = ffactory.findAssociatedSAMRecord(realign);
 			if (fsc != null) {
-				try {
-					buffer.add(new RealignedRemoteSoftClipEvidence(processContext, source, BreakendDirection.Forward, fsc, realign));
-				} catch (CloneNotSupportedException e) {
-					throw new RuntimeException(e);
-				}
+				buffer.add(new RealignedRemoteSoftClipEvidence(processContext, source, BreakendDirection.Forward, fsc, realign));
 			}
 			SAMRecord bsc = bfactory.findAssociatedSAMRecord(realign);
 			if (bsc != null) {
-				try {
-					buffer.add(new RealignedRemoteSoftClipEvidence(processContext, source, BreakendDirection.Backward, bsc, realign));
-				} catch (CloneNotSupportedException e) {
-					throw new RuntimeException(e);
-				}
+				buffer.add(new RealignedRemoteSoftClipEvidence(processContext, source, BreakendDirection.Backward, bsc, realign));
 			}
 		}
 		if (buffer.isEmpty()) return endOfData();
