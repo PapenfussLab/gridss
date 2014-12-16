@@ -30,11 +30,7 @@ public class SoftClipEvidence implements DirectedEvidence {
 		if (record.getReadBases() == null || record.getReadBases() == SAMRecord.NULL_SEQUENCE ) throw new IllegalArgumentException(String.format("record %s missing sequence information", record.getReadName()));
 		SoftClipEvidence result = null;
 		if (realigned != null && !realigned.getReadUnmappedFlag() && processContext.getRealignmentParameters().realignmentPositionUnique(realigned)) {
-			try {
-				result = new RealignedSoftClipEvidence(processContext, source, direction, record, realigned);
-			} catch (CloneNotSupportedException e) {
-				throw new RuntimeException(e);
-			}
+			result = new RealignedSoftClipEvidence(processContext, source, direction, record, realigned);
 		} else {
 			result = new SoftClipEvidence(processContext, source, direction, record);
 		}

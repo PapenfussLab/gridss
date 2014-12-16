@@ -3,9 +3,12 @@ package au.edu.wehi.idsv.debruijn;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import htsjdk.samtools.SAMRecord;
 
 import org.junit.Test;
 
+import au.edu.wehi.idsv.BreakendDirection;
+import au.edu.wehi.idsv.RealignedRemoteSoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
 
 
@@ -269,4 +272,116 @@ public class VariantEvidenceTest extends TestHelper {
 		assertEquals(2, fdp.getMateAnchorPosition());
 		assertEquals(1, rdp.getMateAnchorPosition());
 	}
+	@Test
+	public void should_consider_remote_soft_clip_to_be_anchored_by_the_realigned_soft_clip() {
+		// Original mapping location not relevant
+		//  1234567890123456789012345678901234567890
+		// <SSSSMMMMMMMMMMSSSSSS
+		//      |        |  **** 0
+		//      |        | **** 1
+		//      |        |**** 2
+		//      |        **** 3
+		//      |       **** 4
+		//      |      **** 5
+		//      |     **** 6
+		//      |    **** 7
+		//      |   **** 8
+		//      |  **** 9
+		//      | **** 10
+		//      |**** 11
+		//      **** 12
+		//     **** 13
+		//    **** 14
+		//   **** 15
+		//  **** 16
+		// **** 17
+		// 
+		VariantEvidence e = VariantEvidence.createSoftClipEvidence(BWD, 4, new RealignedRemoteSoftClipEvidence(getContext(), SES(), FWD, Read(1, 100, "5S10M20S"), Read(0, 5, "4S10M6S")));
+		assertEquals(0, e.basesSupportingReference(0));
+		assertEquals(1, e.basesSupportingReference(3));
+		assertEquals(2, e.basesSupportingReference(4));
+		assertEquals(3, e.basesSupportingReference(5));
+		assertEquals(4, e.basesSupportingReference(6));
+		assertEquals(4, e.basesSupportingReference(7));
+		assertEquals(4, e.basesSupportingReference(12));
+		assertEquals(3, e.basesSupportingReference(14));
+		assertEquals(BWD, e.getDirection());
+		assertEquals(0, e.firstSkippedKmerOffset());
+		assertEquals(6, e.firstReferenceKmerOffset());
+		assertEquals(13, e.firstVariantKmerOffset());
+		assertEquals(5, e.getInferredReferencePosition(12));
+		assertEquals(7, e.getReferenceKmerCount());
+		assertEquals(6, e.getStartSkipKmerCount());
+		assertEquals(5, e.getReferenceKmerAnchorPosition());
+		assertTrue(e.isDirectlyAnchoredToReference());
+		assertEquals(32, e.kmerCount());
+		
+		// Original mapping location not relevant
+				//  1234567890123456789012345678901234567890
+				//  SSSSMMMMMMMMMMSSSSSS>
+				//      |        |  **** 16
+				//      |        | **** 15
+				//      |        |**** 14
+				//      |        **** 13
+				//      |       **** 12
+				//      |      **** 11
+				//      |     **** 10
+				//      |    **** 9
+				//      |   **** 8
+				//      |  **** 7
+				//      | **** 6
+				//      |**** 5
+				//      **** 4
+				//     **** 3
+				//    **** 2
+				//   **** 1
+				//  **** 0
+				// 
+			e = VariantEvidence.createSoftClipEvidence(FWD, 4, new RealignedRemoteSoftClipEvidence(getContext(), SES(), BWD, Read(1, 100, "5S10M20S"), Read(0, 5, "4S10M6S")));
+			assertEquals(0, e.basesSupportingReference(0));
+			assertEquals(1, e.basesSupportingReference(1));
+			assertEquals(2, e.basesSupportingReference(2));
+			assertEquals(3, e.basesSupportingReference(3));
+			assertEquals(4, e.basesSupportingReference(4));
+			assertEquals(4, e.basesSupportingReference(7));
+			assertEquals(4, e.basesSupportingReference(10));
+			assertEquals(3, e.basesSupportingReference(11));
+			assertEquals(FWD, e.getDirection());
+			assertEquals(0, e.firstSkippedKmerOffset());
+			assertEquals(4, e.firstReferenceKmerOffset());
+			assertEquals(11, e.firstVariantKmerOffset());
+			assertEquals(4, e.getInferredReferencePosition(5));
+			assertEquals(7, e.getReferenceKmerCount());
+			assertEquals(6, e.getStartSkipKmerCount());
+			assertEquals(11, e.getReferenceKmerAnchorPosition());
+			assertTrue(e.isDirectlyAnchoredToReference());
+			assertEquals(32, e.kmerCount());
+	}
+	public void expectRC(boolean reverse, boolean comp, BreakendDirection scDir, boolean readPositive, boolean realignPositive, BreakendDirection graphDir) {
+		SAMRecord l = Read(0, 100, "10S10M10S");
+		SAMRecord r = Read(1, 100, "10M");
+		l.setReadNegativeStrandFlag(!readPositive);
+		r.setReadNegativeStrandFlag(!realignPositive);
+		VariantEvidence e = VariantEvidence.createSoftClipEvidence(graphDir, 4, new RealignedRemoteSoftClipEvidence(getContext(), SES(), scDir, l, r));
+		assertEquals(reverse, e.isReversed());
+		assertEquals(comp, e.isComplemented());
+	}
+	@Test
+	public void should_use_bases_from_full_read_for_remote_kmers() {
+		//  L      R
+		//  ***> <+++
+		expectRC(true, false, FWD, true, true, BWD);
+		expectRC(false, false, FWD, true, true, BWD);
+		//  ***>  --->
+		expectRC(true, true, FWD, true, false, FWD);
+		expectRC(false, true, FWD, true, false, FWD);
+		// <***   +++>
+		expectRC(true, false, BWD, true, true, FWD);
+		expectRC(false, false, BWD, true, true, FWD);
+		// <***  <--- 
+		expectRC(true, true, BWD, true, true, BWD);
+		expectRC(false, true, BWD, true, true, BWD);
+	}
 }
+
+
