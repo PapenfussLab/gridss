@@ -26,6 +26,7 @@ import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 /**
@@ -110,32 +111,10 @@ public class Idsv extends CommandLineProgram {
 	    		future.get();
 	    	}
 	    	log.debug("Evidence extraction complete.");
-	    	AssemblyEvidenceSource assemblyEvidence = new AssemblyEvidenceSource(getContext(), samEvidence, OUTPUT);
-	    	assemblyEvidence.ensureAssembled(threadpool);
 	    	
-	    	List<EvidenceSource> allEvidence = Lists.newArrayList();
-	    	allEvidence.add(assemblyEvidence);
-	    	allEvidence.addAll(samEvidence);
-	    	
-	    	String instructions = getRealignmentScript(allEvidence, WORKER_THREADS);
-	    	if (instructions != null && instructions.length() > 0) {
-	    		log.error("Please realign intermediate fastq files. Suggested command-line for alignment is:\n" +
-	    				"##################################\n"+
-	    				instructions +
-	    				"##################################");
-		    	log.error("Please rerun after alignments have been performed.");
-		    	if (SCRIPT != null) {
-		    		FileWriter writer = null;
-		    		try {
-		    			writer = new FileWriter(SCRIPT);
-		    			writer.write(instructions);
-		    		} finally {
-		    			if (writer != null) writer.close(); 
-		    		}
-		    		log.error("Realignment script has been written to ", SCRIPT);
-		    	}
-		    	return -1;
-	    	}
+	    	if (!checkRealignment(samEvidence, WORKER_THREADS)) {
+	    		return -1;
+    		}
 	    	for (Future<Void> future : threadpool.invokeAll(Lists.transform(samEvidence, new Function<SAMEvidenceSource, Callable<Void>>() {
 				@Override
 				public Callable<Void> apply(final SAMEvidenceSource input) {
@@ -158,6 +137,17 @@ public class Idsv extends CommandLineProgram {
 	    		// throw exception from worker thread here
 	    		future.get();
 	    	}
+	    	
+	    	AssemblyEvidenceSource assemblyEvidence = new AssemblyEvidenceSource(getContext(), samEvidence, OUTPUT);
+	    	assemblyEvidence.ensureAssembled(threadpool);
+	    	
+	    	List<EvidenceSource> allEvidence = Lists.newArrayList();
+	    	allEvidence.add(assemblyEvidence);
+	    	allEvidence.addAll(samEvidence);
+	    	
+	    	if (!checkRealignment(ImmutableList.of(assemblyEvidence), WORKER_THREADS)) {
+	    		return -1;
+    		}
 	    	shutdownPool(threadpool);
 			threadpool = null;
 			
@@ -201,7 +191,29 @@ public class Idsv extends CommandLineProgram {
 		}
 		return 0;
     }
-    private void shutdownPool(ExecutorService threadpool) {
+    private boolean checkRealignment(List<? extends EvidenceSource> evidence, int threads) throws IOException {
+    	String instructions = getRealignmentScript(evidence, threads);
+    	if (instructions != null && instructions.length() > 0) {
+    		log.error("Please realign intermediate fastq files. Suggested command-line for alignment is:\n" +
+    				"##################################\n"+
+    				instructions +
+    				"##################################");
+	    	log.error("Please rerun after alignments have been performed.");
+	    	if (SCRIPT != null) {
+	    		FileWriter writer = null;
+	    		try {
+	    			writer = new FileWriter(SCRIPT);
+	    			writer.write(instructions);
+	    		} finally {
+	    			if (writer != null) writer.close(); 
+	    		}
+	    		log.error("Realignment script has been written to ", SCRIPT);
+	    	}
+	    	return false;
+    	}
+    	return true;
+	}
+	private void shutdownPool(ExecutorService threadpool) {
     	if (threadpool != null) {
 			log.debug("Shutting down thread pool.");
 			threadpool.shutdownNow();

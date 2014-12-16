@@ -72,6 +72,18 @@ public class AssemblyParameters {
 	 */
 	public int minReads = 3;
 	/**
+	 * Include soft clipped reads in assembly
+	 */
+	public boolean assemble_soft_clips = true;
+	/**
+	 * Include the mate of reads that map to this location and whose mate is not mapped to the expected location
+	 */
+	public boolean assemble_read_pairs = true;
+	/**
+	 * Include reads with a soft clip that maps to this location
+	 */
+	public boolean assemble_remote_soft_clips = true;
+	/**
 	 * Output internal assembly state information for debugging purposes
 	 */
 	public boolean trackAlgorithmProgress = Defaults.VISUALISE_ASSEMBLY_PROGRESS;

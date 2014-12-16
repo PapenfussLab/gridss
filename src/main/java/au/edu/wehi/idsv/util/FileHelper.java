@@ -19,8 +19,9 @@ public abstract class FileHelper {
 		if (to.exists()) {
 			to.delete();
 		}
-		
-		Files.move(from, to);
+		if (!from.renameTo(to)) {
+			throw new IOException("Could not rename " + from + " to " + to);
+		}
 		moveIndex(from, to, ".bai");
 		moveIndex(from, to, ".idx");
 	}

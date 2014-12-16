@@ -238,7 +238,10 @@ public class TestHelper {
 	public static ProcessingContext getContext() {
 		ProcessingContext pc = new ProcessingContext(getFSContext(),
 				new ArrayList<Header>(), new SoftClipParameters(),
-				new ReadPairParameters(), new AssemblyParameters() {{ minReads = 2; }},
+				new ReadPairParameters(), new AssemblyParameters() {{
+					minReads = 2;
+					assemble_remote_soft_clips = false;
+					}},
 				new RealignmentParameters(), new VariantCallingParameters(),
 				SMALL_FA_FILE, false, false);
 		return pc;

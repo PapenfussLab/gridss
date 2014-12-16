@@ -249,7 +249,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 		}
     	return processContext;
 	}
-	public static String getRealignmentScript(Iterable<EvidenceSource> it, int threads) {
+	public static String getRealignmentScript(Iterable<? extends EvidenceSource> it, int threads) {
     	StringBuilder sb = new StringBuilder();
     	for (EvidenceSource source : it) {
     		if (!source.isRealignmentComplete()) {
