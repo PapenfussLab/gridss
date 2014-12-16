@@ -232,14 +232,14 @@ public class VariantCaller extends EvidenceProcessorBase {
 		}
 	}
 	private int getMaxWindowSize() {
-		// TODO: technically we need to know max assembly length as the entire assembly could be a microhomology
+		// TODO: technically we also need to know max assembly length as the entire assembly could be a microhomology.
 		int maxSize = 0;
 		for (EvidenceSource source : samEvidence) {
 			SAMEvidenceSource samSource = (SAMEvidenceSource)source;
 			maxSize = Math.max(samSource.getMaxConcordantFragmentSize(), Math.max(samSource.getMaxReadLength(), samSource.getMaxReadMappedLength()));
 		}
-		// Err on the safe size
-		return 4 * maxSize;
+		maxSize = Math.max(maxSize, assemblyEvidence.getAssemblyWindowSize());
+		return maxSize + 2;
 	}
 	public void annotateBreakpoints(File truthVcf) {
 		log.info("Annotating Calls");

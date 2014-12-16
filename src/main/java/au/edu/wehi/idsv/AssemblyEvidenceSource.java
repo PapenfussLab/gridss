@@ -137,7 +137,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		Iterator<SAMRecordAssemblyEvidence> filteredIt = includeFiltered ? evidenceIt : new SAMRecordAssemblyEvidenceFilteringIterator(processContext, evidenceIt);
 		CloseableIterator<SAMRecordAssemblyEvidence> sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(new DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence>(
 				processContext,
-				(int)((2 + processContext.getAssemblyParameters().maxSubgraphFragmentWidth + processContext.getAssemblyParameters().subgraphAssemblyMargin) * maxSourceFragSize),
+				getAssemblyWindowSize(),
 				filteredIt), ImmutableList.<Closeable>of(it, mateIt, evidenceIt));
 		return sortedIt;
 	}
@@ -176,7 +176,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		CloseableIterator<SAMRecordAssemblyEvidence> sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(
 				new DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence>(
 				processContext,
-				(int)((2 + processContext.getAssemblyParameters().maxSubgraphFragmentWidth + processContext.getAssemblyParameters().subgraphAssemblyMargin) * maxSourceFragSize),
+				getAssemblyWindowSize(),
 				filteredIt), toClose);
 		return sortedIt;
 	}
@@ -379,7 +379,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		    		}
 		    	}
 	    	}
-	    	flushWriterQueueBefore(maxAssembledPosition - (long)((processContext.getAssemblyParameters().maxSubgraphFragmentWidth * 2) * getMaxConcordantFragmentSize()));
+	    	flushWriterQueueBefore(maxAssembledPosition - getAssemblyWindowSize());
 	    }
 		private void flushWriterQueueBefore(long flushBefore) {
 			while (!resortBuffer.isEmpty() && processContext.getLinear().getStartLinearCoordinate(resortBuffer.peek().getSAMRecord()) < flushBefore) {
@@ -387,7 +387,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				AssemblyEvidence evidence = resortBuffer.poll();
 				if (pos < lastFlushedPosition) {
 					log.error(String.format("Sanity check failure: assembly breakend %s written out of order.", evidence.getEvidenceID()));
-					throw new IllegalStateException();
+					throw new IllegalStateException(String.format("Sanity check failure: assembly breakend %s written out of order.", evidence.getEvidenceID()));
 				}
 				lastFlushedPosition = pos;
 				if (processContext.getAssemblyParameters().writeFilteredAssemblies || !evidence.isAssemblyFiltered()) {
@@ -413,5 +413,8 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	@Override
 	public int getMaxConcordantFragmentSize() {
 		return maxSourceFragSize;
+	}
+	public int getAssemblyWindowSize() {
+		return (int)((2 + processContext.getAssemblyParameters().maxSubgraphFragmentWidth + processContext.getAssemblyParameters().subgraphAssemblyMargin) * maxSourceFragSize);
 	}
 }

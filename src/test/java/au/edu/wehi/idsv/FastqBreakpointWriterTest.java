@@ -36,5 +36,6 @@ public class FastqBreakpointWriterTest extends TestHelper {
 		FastqBreakpointWriter fw = new FastqBreakpointWriter(w);
 		fw.write(new SoftClipEvidence(getContext(), SES(), BreakendDirection.Forward, Read(0, 1, "1M1S")));
 		assertEquals(1, w.list.size());
+		fw.close();
 	}
 }

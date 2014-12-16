@@ -11,6 +11,7 @@ import htsjdk.samtools.util.Log;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -24,9 +25,7 @@ import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
@@ -77,22 +76,15 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 */
 	private static void setEvidenceIDs(SAMRecord r, Collection<DirectedEvidence> evidence) {
 		if (evidence != null && evidence.size() > 0) {
-			Set<String> ids = Sets.newHashSet(Iterables.transform(evidence, new Function<DirectedEvidence, String>() {
-				@Override
-				public String apply(DirectedEvidence input) {
-					return input.getEvidenceID();
-				}
-			}));
-			if (ids.size() != evidence.size()) {
-				log.error("Read names not unique. Assembly evidence tracking will be broken. Error identified tracking support for " + r.getReadName());
-			}
 			StringBuilder sb = new StringBuilder();
-			for (String id : ids) {
+			for (DirectedEvidence e : evidence) {
+				String id = e.getEvidenceID(); 
 				sb.append(id);
 				sb.append(' ');
 			}
 			sb.deleteCharAt(sb.length() - 1);
 			r.setAttribute(SamTags.ASSEMLBY_COMPONENT_EVIDENCEID, sb.toString());
+			assert(ensureUniqueEvidenceID(evidence));
 		}
 	}
 	/**
@@ -127,17 +119,29 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 				if (this instanceof RealignedRemoteSAMRecordAssemblyEvidence) {
 					// We don't expect rehydration of short SC, OEA, or alternatively mapped evidence at remote position 
 				} else {
-					log.debug("Assembly evidence mismatch for " + getEvidenceID() + debugEvidenceMismatch());
+					log.debug(String.format("Expected %d, found %d support for %s %s%s", evidenceIds.size(), evidence.size(), getEvidenceID(), debugEvidenceMismatch(), debugEvidenceIDsMssingFromEvidence()));
 				}
 			}
 			if (evidence.size() > evidenceIds.size()) {
 				// Don't throw exception as the user can't actually do anything about this
 				// Just continue with as correct results as we can manage
-				log.warn("Assembly evidence mismatch for " + getEvidenceID() + debugEvidenceMismatch());
+				log.debug(String.format("Expected %d, found %d support for %s %s%s", evidenceIds.size(), evidence.size(), getEvidenceID(), debugEvidenceMismatch(), debugEvidenceIDsMssingFromEvidence()));
 				//log.warn("Hash collision has resulted in evidence being incorrectly attributed to assembly " + getEvidenceID());
 			}
 		}
 		return evidence;
+	}
+	private static boolean ensureUniqueEvidenceID(Collection<DirectedEvidence> evidence) {
+		boolean isUnique = true;
+		Set<String> map = new HashSet<String>();
+		for (DirectedEvidence e : evidence) {
+			if (map.contains(e.getEvidenceID())) {
+				log.error("Found evidenceID " + e.getEvidenceID() + " multiple times in assembly");
+				isUnique = false;
+			}
+			map.add(e.getEvidenceID());
+		}
+		return isUnique;
 	}
 	private String debugEvidenceMismatch() {
 		StringBuilder sb = new StringBuilder();
