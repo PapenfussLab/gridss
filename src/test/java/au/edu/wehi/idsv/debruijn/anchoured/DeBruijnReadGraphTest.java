@@ -84,7 +84,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	public void should_assemble_short_breakend() {
 		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, BreakendDirection.Forward);
 		addRead(ass, withSequence("CTAAA", Read(0, 1, "4M1S"))[0], true);
-		addRead(ass, withSequence("CTAAA", Read(0, 1, "4M1S"))[0], true);
+		addRead(ass, withSequence("CTAAA", Read(0, 2, "4M1S"))[0], true);
 		AssemblyEvidence result = ass.assemble(0, 1);
 		assertEquals("CTAAA", S(result.getAssemblySequence()));
 		assertEquals("A", S(result.getBreakendSequence()));
@@ -228,7 +228,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		assertFalse(ass.addEvidence(SCE(FWD, tumour, withSequence("TTTTAAACG", Read(0, 10, "4M5S")))).iterator().hasNext());
 		assertFalse(ass.addEvidence(SCE(FWD, tumour, withSequence("TTTTAAACGG", Read(0, 10, "4M6S")))).iterator().hasNext());
 		assertFalse(ass.addEvidence(NRRP(withSequence("CGTTT", OEA(0, 5, "5M", true)))).iterator().hasNext());	
-		assertFalse(ass.addEvidence(NRRP(tumour, withSequence("CGTTTG", OEA(0, 5, "5M", true)))).iterator().hasNext());
+		assertFalse(ass.addEvidence(NRRP(tumour, withSequence("CGTTTG", OEA(0, 6, "5M", true)))).iterator().hasNext());
 		AssemblyEvidence result = ass.endOfEvidence().iterator().next();
 		
 		assertEquals("test assumes this contruction - did I get the test case wrong?", "TTTTAAACGG", S(result.getAssemblySequence()));
@@ -250,7 +250,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		assertFalse(ass.addEvidence(SCE(FWD, tumour, withSequence("TCTTAAACG", Read(0, 10, "4M5S")))).iterator().hasNext());
 		assertFalse(ass.addEvidence(SCE(FWD, tumour, withSequence("TCTTAAACGG", Read(0, 10, "4M6S")))).iterator().hasNext());
 		assertFalse(ass.addEvidence(NRRP(withSequence(SequenceUtil.reverseComplement("AAACG"), OEA(0, 5, "5M", true)))).iterator().hasNext());	
-		assertFalse(ass.addEvidence(NRRP(tumour, withSequence(SequenceUtil.reverseComplement("CAAACG"), OEA(0, 5, "5M", true)))).iterator().hasNext());
+		assertFalse(ass.addEvidence(NRRP(tumour, withSequence(SequenceUtil.reverseComplement("CAAACG"), OEA(0, 6, "5M", true)))).iterator().hasNext());
 		AssemblyEvidence result = ass.endOfEvidence().iterator().next();
 		
 		assertEquals("test assumes this contruction - did I get the test case wrong?", "TTCTTAAACGG", S(result.getAssemblySequence()));

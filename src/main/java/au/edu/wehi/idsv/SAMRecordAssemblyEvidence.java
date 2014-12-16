@@ -24,7 +24,9 @@ import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
@@ -75,9 +77,18 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 */
 	private static void setEvidenceIDs(SAMRecord r, Collection<DirectedEvidence> evidence) {
 		if (evidence != null && evidence.size() > 0) {
+			Set<String> ids = Sets.newHashSet(Iterables.transform(evidence, new Function<DirectedEvidence, String>() {
+				@Override
+				public String apply(DirectedEvidence input) {
+					return input.getEvidenceID();
+				}
+			}));
+			if (ids.size() != evidence.size()) {
+				log.error("Read names not unique. Assembly evidence tracking will be broken. Error identified tracking support for " + r.getReadName());
+			}
 			StringBuilder sb = new StringBuilder();
-			for (DirectedEvidence e : evidence) {
-				sb.append(e.getEvidenceID());
+			for (String id : ids) {
+				sb.append(id);
 				sb.append(' ');
 			}
 			sb.deleteCharAt(sb.length() - 1);
@@ -116,16 +127,61 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 				if (this instanceof RealignedRemoteSAMRecordAssemblyEvidence) {
 					// We don't expect rehydration of short SC, OEA, or alternatively mapped evidence at remote position 
 				} else {
-					log.debug(String.format("Evidence not yet fully rehydrated. Expected %d, found %d for %s", evidenceIds.size(), evidence.size(), getEvidenceID()));
+					log.debug("Assembly evidence mismatch for " + getEvidenceID() + debugEvidenceMismatch());
 				}
 			}
 			if (evidence.size() > evidenceIds.size()) {
 				// Don't throw exception as the user can't actually do anything about this
 				// Just continue with as correct results as we can manage
-				log.warn("Hash collision has resulted in evidence being incorrectly attributed to assembly " + getEvidenceID());
+				log.warn("Assembly evidence mismatch for " + getEvidenceID() + debugEvidenceMismatch());
+				//log.warn("Hash collision has resulted in evidence being incorrectly attributed to assembly " + getEvidenceID());
 			}
 		}
 		return evidence;
+	}
+	private String debugEvidenceMismatch() {
+		StringBuilder sb = new StringBuilder();
+		for (String s : debugEvidenceIDsMssingFromEvidence()) {
+			sb.append(" -");
+			sb.append(s);
+		}
+		for (String s : debugEvidenceNotInAssembly()) {
+			sb.append(" +");
+			sb.append(s);
+		}
+		return sb.toString();
+	}
+	private List<String> debugEvidenceIDsMssingFromEvidence() {
+		List<String> result = new ArrayList<String>();
+		for (String s : evidenceIds) {
+			boolean found = false;
+			for (DirectedEvidence e : evidence) {
+				if (e.getEvidenceID().equals(s)) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				result.add(s);
+			}
+		}
+		return result;
+	}
+	private List<String> debugEvidenceNotInAssembly() {
+		List<String> result = new ArrayList<String>();
+		for (DirectedEvidence e : evidence) {
+			boolean found = false;
+			for (String s : evidenceIds) {
+				if (e.getEvidenceID().equals(s)) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				result.add(e.getEvidenceID());
+			}
+		}
+		return result;
 	}
 	private void fixReadPair() {
 		if (realignment.getReadUnmappedFlag()) {

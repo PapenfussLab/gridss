@@ -286,6 +286,13 @@ public class TestHelper {
 		}
 		return data;
 	}
+	
+	static public SAMRecord[] withName(String readName, SAMRecord... data) {
+		for (SAMRecord r : data) {
+			r.setReadName(readName);
+		}
+		return data;
+	}
 
 	static public SAMRecord[] onNegative(SAMRecord... data) {
 		for (SAMRecord r : data) {
@@ -308,6 +315,8 @@ public class TestHelper {
 		SAMRecord[] dp = new SAMRecord[] {
 				OEA(referenceIndex, pos, cigar, forward)[0],
 				OEA(referenceIndex2, pos2, cigar2, forward2)[0] };
+		dp[0].setReadName(dp[0].getReadName() + "_" + dp[1].getReadName());
+		dp[1].setReadName(dp[0].getReadName() + "_" + dp[1].getReadName());
 		clean(dp[0], dp[1]);
 		dp[0].setProperPairFlag(false);
 		dp[1].setProperPairFlag(false);
