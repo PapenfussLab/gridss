@@ -60,11 +60,15 @@ ggplot(df, aes(x=log10(SCRM+1), y=log10(SCEC-SCRM+1), color=log10(QUAL+1))) + ge
 ggplot(df[df$QUAL>=0,], aes(x=log10(RPRM+1), y=log10(SCRM+1), color=factor(A_RM), size=log10(QUAL+1))) + geom_point() + geom_jitter(position = position_jitter(width=.1, height=.1))
 
 # total evidence distribution
-ggplot(df, aes(x=log10(RPEC+A_RP+1), y=log10(SCEC+A_SC+1), color=factor(A_EC))) + geom_point() + ggtitle("All evidence")
+ggplot(df, aes(x=log10(RPEC+A_RP+1), y=log10(SCEC+A_SC+1), color=factor(A_EC))) + geom_point() + ggtitle("All evidence") + scale_x_continuous(limits=c(0, 3.5)) + scale_y_continuous(limits=c(0, 3.5))
+ggsave("evidence_distribution_all.png")
 # non-assembly evidence distribution
-ggplot(df, aes(x=log10(RPEC+1), y=log10(SCEC+1), color=factor(A_EC))) + geom_point() + ggtitle("Non-assembly evidence")
+ggplot(df, aes(x=log10(RPEC+1), y=log10(SCEC+1), color=factor(A_EC))) + geom_point() + ggtitle("Non-assembly evidence") + scale_x_continuous(limits=c(0, 3.5)) + scale_y_continuous(limits=c(0, 3.5))
+ggsave("evidence_distribution_notassembled.png")
 # distribution of evidence not in assembly
-ggplot(df, aes(x=log10(A_RP+1), y=log10(A_SC+1), color=factor(A_EC))) + geom_point() + ggtitle("Assembly evidence")
+ggplot(df, aes(x=log10(A_RP+1), y=log10(A_SC+1), color=factor(A_EC))) + geom_point() + ggtitle("Assembly evidence") + scale_x_continuous(limits=c(0, 3.5)) + scale_y_continuous(limits=c(0, 3.5))
+ggsave("evidence_distribution_assembled.png")
+
 
 # how many assemblies where we have no mapped evidence?
 nrow(df[df$SCRM==0 & df$RPRM==0 & df$A_RM==0,]) # = number of calls in which *ALL* the breakpoint evidence has been removed -> no support for this variant yet we're calling them

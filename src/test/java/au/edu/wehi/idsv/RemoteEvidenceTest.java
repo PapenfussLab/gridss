@@ -1,6 +1,6 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
 
@@ -68,5 +68,9 @@ public abstract class RemoteEvidenceTest extends TestHelper  {
 		assertEquals(R().getLocalBaseLength(), L().getRemoteBaseLength());
 		assertEquals(R().getLocalMaxBaseQual(), L().getRemoteMaxBaseQual());
 		assertEquals(R().getLocalTotalBaseQual(), L().getRemoteTotalBaseQual());
+	}
+	@Test
+	public void should_have_different_evidenceID() {
+		assertNotEquals(L().getEvidenceID(), R().getEvidenceID());
 	}
 }
