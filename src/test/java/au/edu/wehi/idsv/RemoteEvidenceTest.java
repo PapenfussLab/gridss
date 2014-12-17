@@ -32,26 +32,34 @@ public abstract class RemoteEvidenceTest extends TestHelper  {
 	}
 	public abstract RemoteEvidence makeRemote(BreakendSummary bs, final String allBases, final String realignCigar, final boolean realignNegativeStrand);
 	public abstract DirectedBreakpoint makeLocal(BreakendSummary bs, final String allBases, final String realignCigar, final boolean realignNegativeStrand);
-	private RemoteEvidence R() { return makeRemote(new BreakendSummary(0, FWD, 1, 1), "TTTTTTTTTT", "4M", true); } 
-	private DirectedBreakpoint L() { return makeLocal(new BreakendSummary(0, FWD, 1, 1), "TTTTTTTTTT", "4M", true); }
+	private RemoteEvidence R() { return makeRemote(new BreakendSummary(0, FWD, 100, 100), "GGGGGGGGGG", "4M", true); } 
+	private DirectedBreakpoint L() { return makeLocal(new BreakendSummary(0, FWD, 100, 100), "GGGGGGGGGG", "4M", true); }
 	@Test
-	public void getUntemplatedSequence_should_return_untemplated_sequence_of_local_side_of_breakend() throws CloneNotSupportedException {
-		// which is just whatever the soft clip sequences of the aligned read is (as the mapper handles the reverse complimenting)
-		assertEquals("GTN", makeRemote(new BreakendSummary(0, FWD, 1, 1), "NGTNCA", "3S2M", false).getUntemplatedSequence());
-		assertEquals(SequenceUtil.reverseComplement("GTN"), makeRemote(new BreakendSummary(0, FWD, 1, 1), "NGTNCA", "2M3S", true).getUntemplatedSequence());
-		assertEquals("NCA", makeRemote(new BreakendSummary(0, BWD, 1, 1), "GTNCAN", "2M3S", false).getUntemplatedSequence());
-		assertEquals(SequenceUtil.reverseComplement("NCA"), makeRemote(new BreakendSummary(0, BWD, 1, 1), "GTNCAN", "3S2M", true).getUntemplatedSequence());
+	public void makeRemote_sanityCheck() {
+		assertEquals(new BreakendSummary(0, FWD, 100, 100), R().getBreakendSummary().remoteBreakend());
 	}
 	@Test
-	public void getBreakendSequence_should_return_sequence_of_local_side() throws CloneNotSupportedException {
+	public void makeLocal_sanityCheck() {
+		assertEquals(new BreakendSummary(0, FWD, 100, 100), L().getBreakendSummary().localBreakend());
+	}
+	@Test
+	public void getUntemplatedSequence_should_return_untemplated_sequence_of_remote_side_of_breakend() throws CloneNotSupportedException {
+		// which is just whatever the soft clip sequences of the aligned read is (as the mapper handles the reverse complimenting)
+		assertEquals("GTN", makeRemote(new BreakendSummary(0, FWD, 100, 100), "NGTNCA", "3S2M", false).getUntemplatedSequence());
+		assertEquals(SequenceUtil.reverseComplement("GTN"), makeRemote(new BreakendSummary(0, FWD, 100, 100), "NGTNCA", "2M3S", true).getUntemplatedSequence());
+		assertEquals("NCA", makeRemote(new BreakendSummary(0, BWD, 100, 100), "GTNCAN", "2M3S", false).getUntemplatedSequence());
+		assertEquals(SequenceUtil.reverseComplement("NCA"), makeRemote(new BreakendSummary(0, BWD, 100, 100), "GTNCAN", "3S2M", true).getUntemplatedSequence());
+	}
+	@Test
+	public void getBreakendSequence_should_return_sequence_from_remote_perspective() throws CloneNotSupportedException {
 		// TCGTNCA> <GTNCA
-		assertEquals("TCGTN", S(makeRemote(new BreakendSummary(0, FWD, 1, 1), "TCGTNCA", "3S2M", false).getBreakendSequence()));
+		assertEquals("TCGTN", S(makeRemote(new BreakendSummary(0, FWD, 100, 100), "TCGTNCA", "3S2M", false).getBreakendSequence()));
 		// TCGTNCA>   RC>
-		assertEquals(SequenceUtil.reverseComplement("TCGTN"), S(makeRemote(new BreakendSummary(0, FWD, 1, 1), "TCGTNCA", "2M3S", true).getBreakendSequence()));
+		assertEquals(SequenceUtil.reverseComplement("TCGTN"), S(makeRemote(new BreakendSummary(0, FWD, 100, 100), "TCGTNCA", "2M3S", true).getBreakendSequence()));
 		// TCGTNCA>  <TCGTNCA
-		assertEquals("GTNCA", S(makeRemote(new BreakendSummary(0, BWD, 1, 1), "TCGTNCA", "2M3S", false).getBreakendSequence()));
+		assertEquals("GTNCA", S(makeRemote(new BreakendSummary(0, BWD, 100, 100), "TCGTNCA", "2M3S", false).getBreakendSequence()));
 		
-		assertEquals(SequenceUtil.reverseComplement("GTNCA"), S(makeRemote(new BreakendSummary(0, BWD, 1, 1), "TCGTNCA", "3S2M", true).getBreakendSequence()));
+		assertEquals(SequenceUtil.reverseComplement("GTNCA"), S(makeRemote(new BreakendSummary(0, BWD, 100, 100), "TCGTNCA", "3S2M", true).getBreakendSequence()));
 	}
 	@Test
 	public void should_swap_breakpoint() {
@@ -59,15 +67,17 @@ public abstract class RemoteEvidenceTest extends TestHelper  {
 	}
 	@Test
 	public void should_swap_remote_local_fields() {
-		assertEquals(L().getLocalMapq(), R().getRemoteMapq());
-		assertEquals(L().getLocalBaseLength(), R().getRemoteBaseLength());
-		assertEquals(L().getLocalMaxBaseQual(), R().getRemoteMaxBaseQual());
-		assertEquals(L().getLocalTotalBaseQual(), R().getRemoteTotalBaseQual());
+		DirectedBreakpoint l = L();
+		DirectedBreakpoint r = R();
+		assertEquals(l.getLocalMapq(), r.getRemoteMapq());
+		assertEquals(l.getLocalBaseLength(), r.getRemoteBaseLength());
+		assertEquals(l.getLocalMaxBaseQual(), r.getRemoteMaxBaseQual());
+		assertEquals(l.getLocalTotalBaseQual(), r.getRemoteTotalBaseQual());
 		
-		assertEquals(R().getLocalMapq(), L().getRemoteMapq());
-		assertEquals(R().getLocalBaseLength(), L().getRemoteBaseLength());
-		assertEquals(R().getLocalMaxBaseQual(), L().getRemoteMaxBaseQual());
-		assertEquals(R().getLocalTotalBaseQual(), L().getRemoteTotalBaseQual());
+		assertEquals(r.getLocalMapq(), l.getRemoteMapq());
+		assertEquals(r.getLocalBaseLength(), l.getRemoteBaseLength());
+		assertEquals(r.getLocalMaxBaseQual(), l.getRemoteMaxBaseQual());
+		assertEquals(r.getLocalTotalBaseQual(), l.getRemoteTotalBaseQual());
 	}
 	@Test
 	public void should_have_different_evidenceID() {

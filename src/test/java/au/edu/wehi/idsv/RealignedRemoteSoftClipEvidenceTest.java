@@ -6,19 +6,11 @@ import htsjdk.samtools.SAMRecord;
 public class RealignedRemoteSoftClipEvidenceTest extends RemoteEvidenceTest {
 	@Override
 	public RemoteEvidence makeRemote(BreakendSummary bs, String allBases, String realignCigar, boolean realignNegativeStrand) {
-		try {
-			return new RealignedRemoteSoftClipEvidence(getContext(), SES(), bs.direction, makeSC(bs, allBases, realignCigar), realignSAM(bs, allBases, realignCigar, realignNegativeStrand));
-		} catch (CloneNotSupportedException e) {
-			throw new RuntimeException();
-		}
+		return new RealignedRemoteSoftClipEvidence(getContext(), SES(), bs.direction, makeSC(bs, allBases, realignCigar), realignSAM(bs, allBases, realignCigar, realignNegativeStrand));
 	}
 	@Override
 	public DirectedBreakpoint makeLocal(BreakendSummary bs, String allBases, String realignCigar, boolean realignNegativeStrand) {
-		try {
-			return new RealignedSoftClipEvidence(getContext(), SES(), bs.direction, makeSC(bs, allBases, realignCigar), realignSAM(bs, allBases, realignCigar, realignNegativeStrand));
-		} catch (CloneNotSupportedException e) {
-			throw new RuntimeException();
-		}
+		return new RealignedSoftClipEvidence(getContext(), SES(), bs.direction, makeSC(bs, allBases, realignCigar), realignSAM(bs, allBases, realignCigar, realignNegativeStrand));
 	}
 	private SAMRecord makeSC(final BreakendSummary bs, final String allBases, final String realignCigar) {
 		return new SAMRecord(getContext().getBasicSamHeader()) {{

@@ -35,7 +35,7 @@ public class SortRealignedSoftClips extends DataTransformStep {
 		super(processContext);
 		this.source = source;
 	}
-	public boolean isComplete() {
+	public synchronized boolean isComplete() {
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		boolean done = true;
 		if (processContext.shouldProcessPerChromosome()) {
@@ -50,7 +50,7 @@ public class SortRealignedSoftClips extends DataTransformStep {
 		return done;
 	}
 	@Override
-	public void process(EnumSet<ProcessStep> steps) {
+	public synchronized void process(EnumSet<ProcessStep> steps) {
 		if (isComplete()) {
 			log.debug("SortRealignedSoftClips: no work to do for ", source.getSourceFile());
 		}
@@ -108,7 +108,7 @@ public class SortRealignedSoftClips extends DataTransformStep {
 		}
 	}
 	@Override
-	public void close() {
+	public synchronized void close() {
 		for (SAMFileWriter w : scwriters) {
 			w.close();
 		}

@@ -6,6 +6,7 @@ package au.edu.wehi.idsv.sam;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.reference.ReferenceSequence;
@@ -323,5 +324,17 @@ public class SAMRecordUtil {
 		second.setMateNegativeStrandFlag(first.getReadNegativeStrandFlag());
 		second.setMateUnmappedFlag(false);
 		second.setReadName(first.getReadName());
+	}
+	/**
+	 * Temporary helper clone that doesn't throw CloneNotSupportedException
+	 * @param r record to clone
+	 * @return clone of SAMRecord
+	 */
+	public static SAMRecord clone(SAMRecord r) {
+		try {
+			return (SAMRecord)r.clone();
+		} catch (CloneNotSupportedException e) {
+			throw new SAMException(e);
+		}
 	}
 }

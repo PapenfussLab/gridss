@@ -30,11 +30,7 @@ public class SoftClipEvidence implements DirectedEvidence {
 		if (record.getReadBases() == null || record.getReadBases() == SAMRecord.NULL_SEQUENCE ) throw new IllegalArgumentException(String.format("record %s missing sequence information", record.getReadName()));
 		SoftClipEvidence result = null;
 		if (realigned != null && !realigned.getReadUnmappedFlag() && processContext.getRealignmentParameters().realignmentPositionUnique(realigned)) {
-			try {
-				result = new RealignedSoftClipEvidence(processContext, source, direction, record, realigned);
-			} catch (CloneNotSupportedException e) {
-				throw new RuntimeException(e);
-			}
+			result = new RealignedSoftClipEvidence(processContext, source, direction, record, realigned);
 		} else {
 			result = new SoftClipEvidence(processContext, source, direction, record);
 		}
@@ -53,27 +49,39 @@ public class SoftClipEvidence implements DirectedEvidence {
 	public static int getSoftClipLength(BreakendDirection direction, SAMRecord record) {
 		return direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipLength(record) : SAMRecordUtil.getStartSoftClipLength(record); 
 	}
-	public static String getEvidenceID(BreakendDirection direction, SAMRecord softClip) {
+	/**
+	 * Gets the soft clip evidenceID that would be associated with the given record 
+	 * @param direction
+	 * @param record
+	 * @return evidenceID
+	 */
+	public static String getEvidenceID(BreakendDirection direction, SAMRecord record) {
+		return buildSoftClipEvidenceID(direction, record).toString();
+	}
+	protected static StringBuilder buildSoftClipEvidenceID(BreakendDirection direction, SAMRecord record) {
 		StringBuilder sb = new StringBuilder();
 		if (direction == BreakendDirection.Forward) {
 			sb.append('f');
 		} else {
 			sb.append('b');
 		}
-		sb.append(softClip.getReadName());
-		if (softClip.getReadPairedFlag()) {
-			if (softClip.getFirstOfPairFlag()) {
+		sb.append(record.getReadName());
+		if (record.getReadPairedFlag()) {
+			if (record.getFirstOfPairFlag()) {
 				sb.append("/1");
 			} else {
 				sb.append("/2");
 			}
 		}
-		return sb.toString();
+		return sb;
+	}
+	protected StringBuilder buildEvidenceID() {
+		return buildSoftClipEvidenceID(location.direction, record);
 	}
 	@Override
 	public String getEvidenceID() {
 		if (evidenceID == null) {
-			evidenceID = getEvidenceID(location.direction, record);
+			evidenceID = buildEvidenceID().toString();
 		}
 		return evidenceID;
 	}

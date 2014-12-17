@@ -27,12 +27,16 @@ public class IdsvTest extends IntermediateFilesTest {
 				"OUTPUT=" + output.toString(),
 				"TMP_DIR=" + super.testFolder.getRoot().toString(),
 				"WORKING_DIR=" + super.testFolder.getRoot().toString(),
-				"PER_CHR=true"
+				"PER_CHR=false"
 		};
-		Idsv firstPass = new Idsv();
-		firstPass.instanceMain(args);
+		Idsv pass1 = new Idsv();
+		pass1.instanceMain(args);
+		Files.copy(new File("src/test/resources/203541.bam.idsv.realign.bam"), new File(testFolder.getRoot().getAbsolutePath() + "/input.bam.idsv.working", "input.bam.idsv.realign.bam"));
+		Idsv pass2 = new Idsv();
+		pass2.instanceMain(args);
+		
 		// Should have generated two breakpoints
-		List<SAMRecordAssemblyEvidence> ass = Lists.newArrayList(new AssemblyEvidenceSource(firstPass.getContext(), firstPass.createSamEvidenceSources(), firstPass.OUTPUT).iterator(false, false)); 
+		List<SAMRecordAssemblyEvidence> ass = Lists.newArrayList(new AssemblyEvidenceSource(pass2.getContext(), pass2.createSamEvidenceSources(), pass2.OUTPUT).iterator(false, false)); 
 		ass = Lists.newArrayList(Iterables.filter(ass, new Predicate<AssemblyEvidence>() {
 			@Override
 			public boolean apply(AssemblyEvidence arg0) {
@@ -54,12 +58,11 @@ public class IdsvTest extends IntermediateFilesTest {
 						&& input.getBreakendSummary().direction == BWD;
 			}
 		}));
-		Files.copy(new File("src/test/resources/203541.bam.idsv.realign.bam"), new File(testFolder.getRoot().getAbsolutePath() + "/input.bam.idsv.working", "input.bam.idsv.realign.bam"));
 		Files.copy(new File("src/test/resources/203541.vcf.idsv.realign.bam"), new File(testFolder.getRoot().getAbsolutePath() + "/203541.vcf.idsv.working", "203541.vcf.idsv.realign.bam"));
 		
-		Idsv secondPass = new Idsv();
-		secondPass.instanceMain(args);
-		ass = Lists.newArrayList(new AssemblyEvidenceSource(secondPass.getContext(), secondPass.createSamEvidenceSources(), secondPass.OUTPUT).iterator(false, false));
+		Idsv pass3 = new Idsv();
+		pass3.instanceMain(args);
+		ass = Lists.newArrayList(new AssemblyEvidenceSource(pass3.getContext(), pass3.createSamEvidenceSources(), pass3.OUTPUT).iterator(false, false));
 		assertEquals(2, ass.size());
 		assertEquals(203476, ass.get(0).getBreakendSummary().start);
 		assertEquals(FWD, ass.get(0).getBreakendSummary().direction);

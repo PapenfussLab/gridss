@@ -63,7 +63,10 @@ public class IntermediateFilesTest extends TestHelper {
 				headers,
 				new SoftClipParameters(),
 				new ReadPairParameters(),
-				new AssemblyParameters() {{ minReads = 2; }},
+				new AssemblyParameters() {{
+					minReads = 2;
+					assemble_remote_soft_clips = false;
+					}},
 				new RealignmentParameters(),
 				new VariantCallingParameters(),
 				reference,

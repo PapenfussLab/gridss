@@ -236,7 +236,11 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 							List<CloseableIterator<DirectedEvidence>> toMerge = Lists.newArrayList();
 							try {
 								for (SAMEvidenceSource bam : source) {
-									CloseableIterator<DirectedEvidence> it = bam.iterator(true, true, false, seq);
+									CloseableIterator<DirectedEvidence> it = bam.iterator(
+											processContext.getAssemblyParameters().assemble_read_pairs,
+											processContext.getAssemblyParameters().assemble_soft_clips,
+											processContext.getAssemblyParameters().assemble_remote_soft_clips,
+											seq);
 									toMerge.add(it);
 								}
 								merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);
@@ -286,7 +290,10 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			CloseableIterator<DirectedEvidence> merged = null;
 			try {
 				for (SAMEvidenceSource bam : source) {
-					CloseableIterator<DirectedEvidence> it = bam.iterator(true, true, false);
+					CloseableIterator<DirectedEvidence> it = bam.iterator(
+							processContext.getAssemblyParameters().assemble_read_pairs,
+							processContext.getAssemblyParameters().assemble_soft_clips,
+							processContext.getAssemblyParameters().assemble_remote_soft_clips);
 					toMerge.add(it);
 				}
 				merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);
