@@ -32,14 +32,10 @@ public class IdsvSamFileMetricsCollector {
 	}
     public void acceptRecord(final SAMRecord record, final ReferenceSequence refSeq) {
     	is.acceptRecord(record, refSeq);
-    	idsv.MAX_READ_LENGTH = Math.max(idsv.MAX_READ_LENGTH, record.getReadLength());
-    	if (!record.getReadUnmappedFlag()) {
-    		idsv.MAX_READ_MAPPED_LENGTH = Math.max(idsv.MAX_READ_MAPPED_LENGTH, record.getAlignmentEnd() - record.getAlignmentStart() + 1);
-    	}
-    	if (record.getReadPairedFlag() && record.getProperPairFlag()) {
-    		int fragmentSize = SAMRecordUtil.estimateFragmentSize(record);
-    		idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH = Math.max(idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH, Math.abs(fragmentSize));
-    	}
+    	idsvAcceptRecord(record, refSeq);
+    	scAcceptRecord(record, refSeq);
+    }
+    private void scAcceptRecord(SAMRecord record, ReferenceSequence refSeq) {
     	while (sc.size() < record.getReadLength()) {
     		SoftClipDetailMetrics scNext = new SoftClipDetailMetrics();
     		scNext.LENGTH = sc.size();
@@ -49,8 +45,34 @@ public class IdsvSamFileMetricsCollector {
 	    	sc.get(SAMRecordUtil.getEndSoftClipLength(record)).READCOUNT++;
 	    	sc.get(SAMRecordUtil.getStartSoftClipLength(record)).READCOUNT++;
     	}
-    }
-    public void finish(ProcessingContext processContext, File source) {
+	}
+	private void idsvAcceptRecord(SAMRecord record, ReferenceSequence refSeq) {
+		idsv.MAX_READ_LENGTH = Math.max(idsv.MAX_READ_LENGTH, record.getReadLength());
+    	if (!record.getReadUnmappedFlag()) {
+    		idsv.MAX_READ_MAPPED_LENGTH = Math.max(idsv.MAX_READ_MAPPED_LENGTH, record.getAlignmentEnd() - record.getAlignmentStart() + 1);
+    	}
+    	if (record.getReadPairedFlag()) {
+    		if (record.getProperPairFlag()) {
+	    		int fragmentSize = SAMRecordUtil.estimateFragmentSize(record);
+	    		idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH = Math.max(idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH, Math.abs(fragmentSize));
+    		}
+    		if (record.getFirstOfPairFlag()) {
+    			idsv.READ_PAIRS++;
+    			if (record.getReadUnmappedFlag() && record.getMateUnmappedFlag()) {
+    				idsv.READ_PAIRS_ZERO_MAPPED++;
+    			} else if (!record.getReadUnmappedFlag() && !record.getMateUnmappedFlag()) {
+    				idsv.READ_PAIRS_BOTH_MAPPED++;
+    			} else {
+    				idsv.READ_PAIRS_ONE_MAPPED++;
+    			}
+    		}
+    	}
+    	idsv.READS++;
+    	if (!record.getReadUnmappedFlag()) {
+    		idsv.MAPPED_READS++;
+    	}
+	}
+	public void finish(ProcessingContext processContext, File source) {
 		MetricsFile<InsertSizeMetrics, Integer> isMetricsFile = processContext.<InsertSizeMetrics, Integer>createMetricsFile();
 		MetricsFile<IdsvMetrics, Integer> idsvMetricsFile = processContext.<IdsvMetrics, Integer>createMetricsFile();
 		MetricsFile<SoftClipDetailMetrics, Integer> scMetricsFile = processContext.<SoftClipDetailMetrics, Integer>createMetricsFile();

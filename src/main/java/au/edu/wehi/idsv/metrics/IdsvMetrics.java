@@ -6,23 +6,40 @@ public class IdsvMetrics extends MetricBase {
 	/**
 	 * Length of longest read
 	 */
-	public Integer MAX_READ_LENGTH = 0;
+	public int MAX_READ_LENGTH = 0;
 	/**
 	 * Maximum number of reference bases this read spans.
 	 * 
-	 * This is usually longer than MAX_READ_LENGTH due to the presence of deletions 
+	 * This is usually longer than MAX_READ_LENGTH due to the presence of deletions with a read CIGAR
 	 */
-	public Integer MAX_READ_MAPPED_LENGTH = 0;
+	public int MAX_READ_MAPPED_LENGTH = 0;
 	/**
 	 * Inferred size of largest concordantly mapped fragment including all read bases of both pairs
 	 * Note: This differs from the htsjdk definition of fragment size 
 	 */
-	public Integer MAX_PROPER_PAIR_FRAGMENT_LENGTH = 0;
-	public static IdsvMetrics merge(IdsvMetrics arg0, IdsvMetrics arg1) {
-		IdsvMetrics m = new IdsvMetrics();
-		m.MAX_READ_LENGTH = Math.max(arg0.MAX_READ_LENGTH, arg1.MAX_READ_LENGTH);
-		m.MAX_READ_MAPPED_LENGTH = Math.max(arg0.MAX_READ_MAPPED_LENGTH, arg1.MAX_READ_MAPPED_LENGTH);
-		m.MAX_PROPER_PAIR_FRAGMENT_LENGTH = Math.max(arg0.MAX_PROPER_PAIR_FRAGMENT_LENGTH, arg1.MAX_PROPER_PAIR_FRAGMENT_LENGTH);
-		return m;
-	}
+	public int MAX_PROPER_PAIR_FRAGMENT_LENGTH = 0;
+	/**
+	 * Number of reads
+	 */
+	public int READS = 0;
+	/**
+	 * Number of mapped reads
+	 */
+	public int MAPPED_READS = 0;
+	/**
+	 * Number of paired reads
+	 */
+	public int READ_PAIRS = 0;
+	/**
+	 * Number of paired reads
+	 */
+	public int READ_PAIRS_BOTH_MAPPED = 0;
+	/**
+	 * Number of read pairs where only one read is mapped
+	 */
+	public int READ_PAIRS_ONE_MAPPED = 0;
+	/**
+	 * Number of read pairs where no read is mapped
+	 */
+	public int READ_PAIRS_ZERO_MAPPED = 0;
 }

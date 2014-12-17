@@ -197,11 +197,11 @@ public class SAMRecordUtil {
 	}
 
 	/**
-	 * Dovetailing reads do not support SVs, they are caused by fragment size
-	 * less than read length
+	 * Dovetailing reads either either due to an SV
+	 * or failure to trim adapters from a fragment smaller than the read length
 	 * 
-	 * =======> <=======
-	 * 
+	 *    =======>
+	 * <=======
 	 * 
 	 * @param expectedOrientation
 	 *            read pair orientation
