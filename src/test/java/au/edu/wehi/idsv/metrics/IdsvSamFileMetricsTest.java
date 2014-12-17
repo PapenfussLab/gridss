@@ -2,6 +2,9 @@ package au.edu.wehi.idsv.metrics;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.junit.Test;
 
 import picard.analysis.InsertSizeMetrics;
@@ -12,11 +15,13 @@ public class IdsvSamFileMetricsTest extends TestHelper {
 	public void wrapper_inner_metrics() {
 		IdsvMetrics im = new IdsvMetrics();
 		InsertSizeMetrics ism = new InsertSizeMetrics();
+		List<SoftClipDetailMetrics> sc = new ArrayList<SoftClipDetailMetrics>();
 		InsertSizeDistribution isd = new InsertSizeDistribution(new int[] { 1}, new double[] { 1}, 1);
-		IdsvSamFileMetrics metrics = new IdsvSamFileMetrics(ism, im, isd);
+		IdsvSamFileMetrics metrics = new IdsvSamFileMetrics(ism, im, isd, sc);
 		assertEquals(im, metrics.getIdsvMetrics());
 		assertEquals(isd, metrics.getInsertSizeDistribution());
 		assertEquals(ism, metrics.getInsertSizeMetrics());
+		assertEquals(sc, metrics.getSoftClipDetailMetrics());
 	}
 	/*
 	@Test

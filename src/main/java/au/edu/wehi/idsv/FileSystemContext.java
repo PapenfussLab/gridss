@@ -53,6 +53,7 @@ public class FileSystemContext {
 	private static final String FORMAT_MATE_SAM_UNSORTED_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.rpmate.unsorted" + SAM_SUFFIX;
 	private static final String FORMAT_INSERT_SIZE_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.insertsize.txt";
 	private static final String FORMAT_IDSV_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.idsv.txt";
+	private static final String FORMAT_SOFTLCIP_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.softclip.txt";
 	private static final String FORMAT_REALIGN_FASTQ = "%s" + COMMON_INITIAL_SUFFIX + ".realign.fq";
 	private static final String FORMAT_REALIGN_FASTQ_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign.fq";
 	private static final String FORMAT_REALIGN_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".realign" + SAM_SUFFIX;
@@ -171,6 +172,9 @@ public class FileSystemContext {
 	}
 	public File getIdsvMetrics(File input) {
 		return new File(String.format(FORMAT_IDSV_METRICS, getStem(input)));
+	}
+	public File getSoftClipMetrics(File input) {
+		return new File(String.format(FORMAT_SOFTLCIP_METRICS, getStem(input)));
 	}
 	public File getRealignmentBam(File input) {
 		return new File(String.format(FORMAT_REALIGN_SAM, getStem(input)));

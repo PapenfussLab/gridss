@@ -39,6 +39,10 @@ public class RealignedRemoteSAMRecordAssemblyEvidence extends RealignedSAMRecord
 		}
 	}
 	@Override
+	public String getEvidenceID() {
+		return super.getEvidenceID() + "R";
+	}
+	@Override
 	public String toString() {
 		return "R" + super.toString();
 	}

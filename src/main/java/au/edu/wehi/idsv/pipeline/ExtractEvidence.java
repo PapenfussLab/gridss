@@ -7,7 +7,6 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SamReader;
-import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
@@ -20,8 +19,6 @@ import java.io.IOException;
 import java.util.EnumSet;
 import java.util.List;
 
-import picard.analysis.InsertSizeMetrics;
-import picard.analysis.directed.InsertSizeMetricsCollector;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.FastqBreakpointWriter;
 import au.edu.wehi.idsv.FileSystemContext;
@@ -30,16 +27,13 @@ import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SoftClipEvidence;
-import au.edu.wehi.idsv.metrics.IdsvMetrics;
-import au.edu.wehi.idsv.metrics.IdsvMetricsCollector;
-import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
+import au.edu.wehi.idsv.metrics.IdsvSamFileMetricsCollector;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 
 import com.google.common.collect.Lists;
-import com.google.common.io.Files;
 /**
  * Extracts reads supporting structural variation into intermediate files.
  * By sorting DP and OEA read pairs by the coordinate of the mapped mate,
@@ -53,11 +47,9 @@ public class ExtractEvidence implements Closeable {
 	private static final Log log = Log.getInstance(ExtractEvidence.class);
 	private final ProcessingContext processContext;
 	private final SAMEvidenceSource source;
-	private final FileSystemContext fsc;
 	public ExtractEvidence(ProcessingContext processContext, SAMEvidenceSource source) {
 		this.processContext = processContext;
 		this.source = source;
-		this.fsc = processContext.getFileSystemContext();
 	}
 	private SamReader reader = null;
 	private ReferenceSequenceFileWalker referenceWalker = null;
@@ -139,11 +131,10 @@ public class ExtractEvidence implements Closeable {
 		try {
 			reader = processContext.getSamReader(source.getSourceFile());
 			final SAMFileHeader header = reader.getFileHeader();
-			final InsertSizeMetricsCollector ismc = IdsvSamFileMetrics.createInsertSizeMetricsCollector(header);
-	    	final IdsvMetricsCollector imc = IdsvSamFileMetrics.createIdsvMetricsCollector();
+			final IdsvSamFileMetricsCollector collector = new IdsvSamFileMetricsCollector(header);
 	    	
-	    	long recordsProcessed = processMetrics(ismc, imc, maxRecords);
-	    	writeMetrics(ismc, imc);
+	    	long recordsProcessed = processMetrics(collector, maxRecords);
+	    	writeMetrics(collector);
 	    	
 	    	if (recordsProcessed >= maxRecords) {
 	    		log.info(String.format("Library metrics calculated from first %d records", recordsProcessed));
@@ -214,23 +205,9 @@ public class ExtractEvidence implements Closeable {
 			input.delete();
 		}
 	}
-	private void writeMetrics(InsertSizeMetricsCollector ismc, IdsvMetricsCollector imc) throws IOException {
+	private void writeMetrics(IdsvSamFileMetricsCollector collector) {
 		log.info("Writing metrics");
-		
-		ismc.finish();
-		MetricsFile<InsertSizeMetrics, Integer> ismmf = processContext.<InsertSizeMetrics, Integer>createMetricsFile();
-		ismc.addAllLevelsToFile(ismmf);
-		File ismOutput = fsc.getInsertSizeMetrics(source.getSourceFile());
-		ismOutput.delete();
-		ismmf.write(FileSystemContext.getWorkingFileFor(ismOutput));
-		Files.move(FileSystemContext.getWorkingFileFor(ismOutput), ismOutput);
-		
-		imc.finish();
-		MetricsFile<IdsvMetrics, Integer> imcf = processContext.<IdsvMetrics, Integer>createMetricsFile();
-		imc.addAllLevelsToFile(imcf);
-		File imOutput = fsc.getIdsvMetrics(source.getSourceFile());
-		imcf.write(FileSystemContext.getWorkingFileFor(imOutput));
-		Files.move(FileSystemContext.getWorkingFileFor(imOutput), imOutput);
+		collector.finish(processContext, source.getSourceFile());
 	}
 	private void flush() throws IOException {
 		reader.close();
@@ -252,7 +229,7 @@ public class ExtractEvidence implements Closeable {
 		}
 		realignmentWriters.clear();
 	}
-	private long processMetrics(InsertSizeMetricsCollector ismc, IdsvMetricsCollector imc, long maxRecords) {
+	private long processMetrics(IdsvSamFileMetricsCollector collector, long maxRecords) {
 		long recordsProcessed = 0;
 		final ProgressLogger progress = new ProgressLogger(log);
 		CloseableIterator<SAMRecord> iter = null;
@@ -260,8 +237,7 @@ public class ExtractEvidence implements Closeable {
 			iter = new AsyncBufferedIterator<SAMRecord>(processContext.getSamReaderIterator(reader), source.getSourceFile().getName() + "-Metrics"); 
 			while (iter.hasNext() && recordsProcessed++ < maxRecords) {
 				SAMRecord record = iter.next();
-				ismc.acceptRecord(record, null);
-				imc.acceptRecord(record, null);
+				collector.acceptRecord(record, null);
 				progress.record(record);
 			}
 		} finally {

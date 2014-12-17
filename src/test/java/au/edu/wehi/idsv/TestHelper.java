@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertNotNull;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
@@ -43,8 +42,9 @@ import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.ReadKmerIterable;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
 import au.edu.wehi.idsv.metrics.IdsvMetrics;
-import au.edu.wehi.idsv.metrics.IdsvMetricsCollector;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
+import au.edu.wehi.idsv.metrics.IdsvSamFileMetricsCollector;
+import au.edu.wehi.idsv.metrics.SoftClipDetailMetrics;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
@@ -226,7 +226,7 @@ public class TestHelper {
 		public MockMetrics() {
 			super(new InsertSizeMetrics(), new IdsvMetrics() {{
 				MAX_PROPER_PAIR_FRAGMENT_LENGTH = 300;
-			}}, null);
+			}}, null, new ArrayList<SoftClipDetailMetrics>());
 		}
 	}
 
@@ -738,14 +738,15 @@ public class TestHelper {
 		return builder.make();
 	}
 	public IdsvMetrics IDSV(Collection<SAMRecord> input) {
-		IdsvMetricsCollector c = new IdsvMetricsCollector();
-		for (SAMRecord read : input) {
-			assertNotNull(read);
-			c.acceptRecord(read,  null);
+		IdsvSamFileMetricsCollector c = new IdsvSamFileMetricsCollector(null);
+		for (SAMRecord r : input) {
+			c.acceptRecord(r, null);
 		}
-		MetricsFile<IdsvMetrics, Integer> mf = new MetricsFile<IdsvMetrics, Integer>();
-		c.addAllLevelsToFile(mf);
-		IdsvMetrics metrics = mf.getMetrics().get(0);
+		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
+		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
+		MetricsFile<SoftClipDetailMetrics, Integer> sc = new MetricsFile<SoftClipDetailMetrics, Integer>();
+		c.finish(is, idsv, sc);
+		IdsvMetrics metrics = idsv.getMetrics().get(0);
 		return metrics;
 	}
 }

@@ -297,7 +297,8 @@ public class SoftClipEvidenceTest extends TestHelper {
 		MockSAMEvidenceSource ses = SES();
 		ses.metrics = new IdsvSamFileMetrics(
 				new File("src/test/resources/testmetrics.metrics.idsv.txt"),
-				new File("src/test/resources/testmetrics.metrics.insertsize.txt"));
+				new File("src/test/resources/testmetrics.metrics.insertsize.txt"),
+				new File("src/test/resources/testmetrics.metrics.softclip.txt"));
 		SoftClipParameters scp = new SoftClipParameters();
 		scp.minAnchorIdentity = 0;
 		scp.minLength = 1;

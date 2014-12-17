@@ -1,56 +1,37 @@
 package au.edu.wehi.idsv.metrics;
 
-import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.metrics.MetricsFile;
-import htsjdk.samtools.util.CollectionUtil;
 import htsjdk.samtools.util.Log;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
-import picard.analysis.CollectInsertSizeMetrics;
 import picard.analysis.InsertSizeMetrics;
-import picard.analysis.MetricAccumulationLevel;
-import picard.analysis.directed.InsertSizeMetricsCollector;
+import au.edu.wehi.idsv.ProcessingContext;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Ordering;
+import com.google.common.primitives.Ints;
 
 public class IdsvSamFileMetrics {
 	private static final Log log = Log.getInstance(IdsvSamFileMetrics.class);
+	public IdsvSamFileMetrics(ProcessingContext pc, File source) {
+		this(pc.getFileSystemContext().getInsertSizeMetrics(source), pc.getFileSystemContext().getIdsvMetrics(source), pc.getFileSystemContext().getSoftClipMetrics(source));
+	}
+	public IdsvSamFileMetrics(File insertSizeMetricsFile, File idsvMetricsFile, File softClipMetricsFile) {
+		this(getInsertSizeMetrics(insertSizeMetricsFile), getIdsvMetrics(idsvMetricsFile), getInsertSizeDistribution(insertSizeMetricsFile), getSoftClipMetrics(softClipMetricsFile));
+	}
 	private InsertSizeMetrics insertSize = null;
 	private IdsvMetrics idsvMetrics = null;
 	private InsertSizeDistribution insertDistribution = null;
+	private List<SoftClipDetailMetrics> softClipDetailMetrics = null;
 	public IdsvMetrics getIdsvMetrics() { return idsvMetrics; }
 	public InsertSizeMetrics getInsertSizeMetrics() { return insertSize; }
+	public List<SoftClipDetailMetrics> getSoftClipDetailMetrics() { return softClipDetailMetrics; }
 	
-	/**
-	 * Creates a metric collector to record metrics required by idsv
-	 * @param header SAM header of file to process
-	 * @return metric collector
-	 */
-	public static InsertSizeMetricsCollector createInsertSizeMetricsCollector(SAMFileHeader header) {
-		//List<SAMReadGroupRecord> rg = ImmutableList.<SAMReadGroupRecord>of();
-		//if (header != null) {
-		//	rg = header.getReadGroups();
-		//}
-		return new InsertSizeMetricsCollector(
-    			CollectionUtil.makeSet(MetricAccumulationLevel.ALL_READS), null, //, MetricAccumulationLevel.SAMPLE), rg,
-				// match CollectInsertSizeMetrics defaults
-				new CollectInsertSizeMetrics().MINIMUM_PCT,
-				new CollectInsertSizeMetrics().Histogram_WIDTH,
-				new CollectInsertSizeMetrics().DEVIATIONS);
-	}
-	/**
-	 * Creates a metric collector to record metrics required by idsv
-	 * @param header SAM header of file to process
-	 * @return metric collector
-	 */
-	public static IdsvMetricsCollector createIdsvMetricsCollector() {
-		return new IdsvMetricsCollector();
-	}
-	public IdsvSamFileMetrics(File insertSizeMetricsFile, File idsvMetricsFiles) {
-		this(getInsertSizeMetrics(insertSizeMetricsFile), getIdsvMetrics(idsvMetricsFiles), getInsertSizeDistribution(insertSizeMetricsFile));
-	}
 	private static InsertSizeDistribution getInsertSizeDistribution(File insertSizeMetricsFile) {
 		return InsertSizeDistribution.create(insertSizeMetricsFile);
 	}
@@ -75,44 +56,37 @@ public class IdsvSamFileMetrics {
 		}
 		return insertSize;
 	}
-	public IdsvSamFileMetrics(InsertSizeMetrics insertSize, IdsvMetrics idsvMetrics, InsertSizeDistribution insertDistribution) {
+	public IdsvSamFileMetrics(InsertSizeMetrics insertSize, IdsvMetrics idsvMetrics, InsertSizeDistribution insertDistribution, List<SoftClipDetailMetrics> softClipDetailMetrics) {
 		this.insertSize = insertSize;
 		this.idsvMetrics = idsvMetrics;
 		this.insertDistribution = insertDistribution;
+		this.softClipDetailMetrics = softClipDetailMetrics;
 	}
-	/*
-	@Override
-	public double getMedianFragmentSize() {
-		// TODO: is this 5' difference or frag size?
-		return insertSize.MEDIAN_INSERT_SIZE;
-	}
-	@Override
-	public double getFragmentSizeStdDev() {
-		return 1.4826 * insertSize.MEDIAN_ABSOLUTE_DEVIATION;
-	}
-	@Override
-	public int getMaxFragmentSize() {
-		int fragSize = getMaxReadLength();
-		// TODO: make sure this still works for RF and TANDOM read pairs
-		if (processContext.getReadPairParameters().useProperPairFlag) {
-			fragSize = Math.max(fragSize, idsvMetrics.MAX_PROPER_PAIR_FRAGMENT_LENGTH);
-		} else {
-			fragSize = Math.max(fragSize, insertDistribution.inverseCumulativeProbability(processContext.getReadPairParameters().getCordantPercentageUpperBound()));
+	private static List<SoftClipDetailMetrics> getSoftClipMetrics(File softClipMetricsFile) {
+		List<SoftClipDetailMetrics> sc = new ArrayList<SoftClipDetailMetrics>();
+		for (SoftClipDetailMetrics metric : Iterables.filter(MetricsFile.readBeans(softClipMetricsFile), SoftClipDetailMetrics.class)) {
+			sc.add(metric);
 		}
-		// return (int)Math.ceil(getMedianFragmentSize() + 3 * getFragmentSizeStdDev());
-		return fragSize;
+		Collections.sort(sc, SoftClipDetailMetricsByLength);
+		for (int i = 0; i < sc.size(); i++) {
+			if (sc.get(i).LENGTH != i) {
+				String msg = String.format("%s missing soft clip metric: expected metric for length %d, found %d", softClipMetricsFile, i, sc.get(0).LENGTH);
+				log.error(msg);
+				throw new RuntimeException(msg);
+			}
+		}
+		return sc;
 	}
-	@Override
-	public PairOrientation getPairOrientation() {
-		if (insertSize == null) return null;
-		return insertSize.PAIR_ORIENTATION;
-	}
-	@Override
-	public int getMaxReadLength() {
-		return idsvMetrics.MAX_READ_LENGTH;
-	}
-	*/
 	public InsertSizeDistribution getInsertSizeDistribution() {
 		return insertDistribution;
 	}
+	/**
+	 * Sort order of soft clips by soft clip length
+	 */
+	public static Ordering<SoftClipDetailMetrics> SoftClipDetailMetricsByLength = new Ordering<SoftClipDetailMetrics>() {
+		@Override
+		public int compare(SoftClipDetailMetrics left, SoftClipDetailMetrics right) {
+			return Ints.compare(left.LENGTH, right.LENGTH);
+		}
+	};
 }

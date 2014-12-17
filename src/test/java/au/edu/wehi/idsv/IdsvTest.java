@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.base.Predicate;
@@ -74,6 +75,7 @@ public class IdsvTest extends IntermediateFilesTest {
 	 * location.
 	 */
 	@Test
+	@Ignore("Moved to 3-pass system: need sc realignment bams before assemblies can be created")
 	public void novel_insert_2762cb5d343cd0f882d1d93a743c69a4_chr12_867621() throws IOException {
 		File src = new File("src/test/resources/2762cb5d343cd0f882d1d93a743c69a4_chr12_867621");
 		File target = new File(super.testFolder.getRoot(), "novelinsert");

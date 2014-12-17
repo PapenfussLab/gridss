@@ -109,6 +109,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 				if (!done) return false;
 				done &= IntermediateFileUtil.checkIntermediate(fsc.getIdsvMetrics(input), input);
 				if (!done) return false;
+				done &= IntermediateFileUtil.checkIntermediate(fsc.getSoftClipMetrics(input), input);
+				if (!done) return false;
 				break;
 			case EXTRACT_SOFT_CLIPS:
 				if (processContext.shouldProcessPerChromosome()) {
@@ -155,7 +157,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			if (!isComplete(ProcessStep.CALCULATE_METRICS)) {
 				completeSteps(EnumSet.of(ProcessStep.CALCULATE_METRICS));
 			}
-			metrics = new IdsvSamFileMetrics(processContext.getFileSystemContext().getInsertSizeMetrics(input), processContext.getFileSystemContext().getIdsvMetrics(input));
+			metrics = new IdsvSamFileMetrics(processContext, getSourceFile());
 		}
 		return metrics;
 	}
