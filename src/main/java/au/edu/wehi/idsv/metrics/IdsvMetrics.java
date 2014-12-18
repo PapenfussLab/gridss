@@ -21,25 +21,25 @@ public class IdsvMetrics extends MetricBase {
 	/**
 	 * Number of reads
 	 */
-	public int READS = 0;
+	public long READS = 0;
 	/**
 	 * Number of mapped reads
 	 */
-	public int MAPPED_READS = 0;
+	public long MAPPED_READS = 0;
 	/**
 	 * Number of paired reads
 	 */
-	public int READ_PAIRS = 0;
+	public long READ_PAIRS = 0;
 	/**
 	 * Number of paired reads
 	 */
-	public int READ_PAIRS_BOTH_MAPPED = 0;
+	public long READ_PAIRS_BOTH_MAPPED = 0;
 	/**
 	 * Number of read pairs where only one read is mapped
 	 */
-	public int READ_PAIRS_ONE_MAPPED = 0;
+	public long READ_PAIRS_ONE_MAPPED = 0;
 	/**
 	 * Number of read pairs where no read is mapped
 	 */
-	public int READ_PAIRS_ZERO_MAPPED = 0;
+	public long READ_PAIRS_ZERO_MAPPED = 0;
 }

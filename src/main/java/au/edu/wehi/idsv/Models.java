@@ -59,7 +59,9 @@ public class Models {
 	public static double llr(DirectedEvidence e) {
 		if (e == null) throw new NullPointerException();
 		double llr = -1;
-		if (e instanceof RealignedSoftClipEvidence) {
+		if (e instanceof RealignedRemoteSoftClipEvidence) {
+			llr = rrscLlr((RealignedRemoteSoftClipEvidence)e);
+		} else if (e instanceof RealignedSoftClipEvidence) {
 			llr = rscLlr((RealignedSoftClipEvidence)e);
 		} else if (e instanceof SoftClipEvidence) {
 			llr = scLlr((SoftClipEvidence)e);
@@ -93,10 +95,23 @@ public class Models {
 		return Math.max(1, Math.min(15, Math.min(e.getLocalMapq(), e.getRemoteMapq())));
 	}
 	private static double scLlr(SoftClipEvidence e) {
-		return Math.max(1, Math.min(Math.min(10, e.getSoftClipLength()), e.getLocalMapq()));
+		return scLlr(e.getEvidenceSource(), e.getSoftClipLength(), e.getLocalMapq());
 	}
 	private static double rscLlr(RealignedSoftClipEvidence e) {
-		return Math.max(1, Math.min(20, Math.min(e.getRemoteMapq(), e.getLocalMapq())));
+		return scLlr(e.getEvidenceSource(), e.getSoftClipLength(), e.getLocalMapq(), e.getRemoteMapq());
+	}
+	private static double rrscLlr(RealignedRemoteSoftClipEvidence e) {
+		return scLlr(e.getEvidenceSource(), e.getOriginalSoftClipLength(), e.getRemoteMapq(), e.getLocalMapq());
+	}
+	private static double scLlr(SAMEvidenceSource source, int clipLength, int localMapq) {
+		double score = source.getMetrics().getSoftClipDistribution().getPhred(clipLength);
+		score = Math.min(score, localMapq);
+		return score;
+	}
+	private static double scLlr(SAMEvidenceSource source, int clipLength, int localMapq, int remoteMapq) {
+		double score = scLlr(source, clipLength, localMapq);
+		score = Math.min(score, remoteMapq);
+		return score;
 	}
 	// TODO: proper 95% Confidence Interval instead of hard limits on the bounds
 	/**

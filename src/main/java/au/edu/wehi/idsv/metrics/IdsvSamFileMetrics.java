@@ -14,7 +14,7 @@ import au.edu.wehi.idsv.ProcessingContext;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
-import com.google.common.primitives.Ints;
+import com.google.common.primitives.Longs;
 
 public class IdsvSamFileMetrics {
 	private static final Log log = Log.getInstance(IdsvSamFileMetrics.class);
@@ -28,6 +28,7 @@ public class IdsvSamFileMetrics {
 	private IdsvMetrics idsvMetrics = null;
 	private InsertSizeDistribution insertDistribution = null;
 	private List<SoftClipDetailMetrics> softClipDetailMetrics = null;
+	private SoftClipSizeDistribution softClipDistribution;
 	public IdsvMetrics getIdsvMetrics() { return idsvMetrics; }
 	public InsertSizeMetrics getInsertSizeMetrics() { return insertSize; }
 	public List<SoftClipDetailMetrics> getSoftClipDetailMetrics() { return softClipDetailMetrics; }
@@ -61,6 +62,7 @@ public class IdsvSamFileMetrics {
 		this.idsvMetrics = idsvMetrics;
 		this.insertDistribution = insertDistribution;
 		this.softClipDetailMetrics = softClipDetailMetrics;
+		this.softClipDistribution = new SoftClipSizeDistribution(softClipDetailMetrics);
 	}
 	private static List<SoftClipDetailMetrics> getSoftClipMetrics(File softClipMetricsFile) {
 		List<SoftClipDetailMetrics> sc = new ArrayList<SoftClipDetailMetrics>();
@@ -86,7 +88,10 @@ public class IdsvSamFileMetrics {
 	public static Ordering<SoftClipDetailMetrics> SoftClipDetailMetricsByLength = new Ordering<SoftClipDetailMetrics>() {
 		@Override
 		public int compare(SoftClipDetailMetrics left, SoftClipDetailMetrics right) {
-			return Ints.compare(left.LENGTH, right.LENGTH);
+			return Longs.compare(left.LENGTH, right.LENGTH);
 		}
 	};
+	public SoftClipSizeDistribution getSoftClipDistribution() {
+		return softClipDistribution;
+	}
 }

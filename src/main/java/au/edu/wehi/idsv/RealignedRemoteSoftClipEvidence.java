@@ -20,6 +20,7 @@ import com.google.common.collect.Lists;
  *
  */
 public class RealignedRemoteSoftClipEvidence extends RealignedSoftClipEvidence implements RemoteEvidence {
+	private final int originalClipLength;
 	public RealignedRemoteSoftClipEvidence(ProcessingContext processContext,
 			SAMEvidenceSource source, BreakendDirection direction,
 			SAMRecord record, SAMRecord realigned) {
@@ -29,6 +30,10 @@ public class RealignedRemoteSoftClipEvidence extends RealignedSoftClipEvidence i
 				getRemoteDirection(direction, record, realigned),
 				createLocal(direction, record, realigned),
 				createRemote(direction, record, realigned));
+		this.originalClipLength = direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipLength(record) : SAMRecordUtil.getStartSoftClipLength(record);
+	}
+	public int getOriginalSoftClipLength() {
+		return originalClipLength;
 	}
 	@Override
 	protected StringBuilder buildEvidenceID() {

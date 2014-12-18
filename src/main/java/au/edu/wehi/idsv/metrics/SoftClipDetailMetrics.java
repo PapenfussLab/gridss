@@ -6,13 +6,13 @@ public class SoftClipDetailMetrics extends MetricBase {
 	/**
 	 * Length of soft clip
 	 */
-	public int LENGTH;
+	public long LENGTH;
 	/**
 	 * Number of reads with a soft clip of this length
 	 */
-	public int READCOUNT;
+	public long READCOUNT;
 	/**
 	 * Number of reads with a soft clip that looks like adapter sequence
 	 */
-	//public int ADAPTERCOUNT;
+	//public long ADAPTERCOUNT;
 }
