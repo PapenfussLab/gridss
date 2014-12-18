@@ -206,4 +206,9 @@ public class SoftClipSizeDistributionTest {
 		assertEquals(48.5349559686103, d.getPhred(79), 0.001);
 		assertEquals(48.5349559686103, d.getPhred(1000), 0.001);
 	}
+	@Test
+	public void should_default_to_zero_score() {
+		SoftClipSizeDistribution d = new SoftClipSizeDistribution(new ArrayList<SoftClipDetailMetrics>());
+		assertEquals(0, d.getPhred(0), 0);
+	}
 }

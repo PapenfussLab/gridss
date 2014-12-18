@@ -44,7 +44,9 @@ import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
 import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetricsCollector;
+import au.edu.wehi.idsv.metrics.InsertSizeDistribution;
 import au.edu.wehi.idsv.metrics.SoftClipDetailMetrics;
+import au.edu.wehi.idsv.metrics.SoftClipSizeDistribution;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
@@ -221,12 +223,35 @@ public class TestHelper {
 				1, B("ATT"), new byte[] { 7, 7, 7 },
 				6, 8);
 	}
+	public static class MockSoftClipSizeDistribution extends SoftClipSizeDistribution {
+		public MockSoftClipSizeDistribution() {
+			super(new ArrayList<SoftClipDetailMetrics>());
+		}
+		@Override
+		public double getPhred(int softClipLength) {
+			return softClipLength;
+		}
+	}
 
 	public static class MockMetrics extends IdsvSamFileMetrics {
 		public MockMetrics() {
 			super(new InsertSizeMetrics(), new IdsvMetrics() {{
+				MAX_READ_LENGTH = 100;
 				MAX_PROPER_PAIR_FRAGMENT_LENGTH = 300;
-			}}, null, new ArrayList<SoftClipDetailMetrics>());
+				READ_PAIRS = 1000;
+				READ_PAIRS_ONE_MAPPED = 25;
+				READ_PAIRS_ZERO_MAPPED = 50;
+				READ_PAIRS_BOTH_MAPPED = READ_PAIRS - READ_PAIRS_ONE_MAPPED - READ_PAIRS_ZERO_MAPPED;
+				READS = 2 * READ_PAIRS;
+				MAPPED_READS = READS - READ_PAIRS_ONE_MAPPED - 2*READ_PAIRS_ZERO_MAPPED;
+			}}, new InsertSizeDistribution(
+					new int[] { 1, 50, 100, 200, 300, 400, },
+					new double[] { 1, 50, 500, 50, 20, 10, },
+					1+50+500+50+20+10), new ArrayList<SoftClipDetailMetrics>());
+		}
+		@Override
+		public SoftClipSizeDistribution getSoftClipDistribution() {
+			return new MockSoftClipSizeDistribution();
 		}
 	}
 

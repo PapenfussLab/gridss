@@ -82,16 +82,16 @@ public class IdsvSamFileMetrics {
 	public InsertSizeDistribution getInsertSizeDistribution() {
 		return insertDistribution;
 	}
+	public SoftClipSizeDistribution getSoftClipDistribution() {
+		return softClipDistribution;
+	}
 	/**
 	 * Sort order of soft clips by soft clip length
 	 */
-	public static Ordering<SoftClipDetailMetrics> SoftClipDetailMetricsByLength = new Ordering<SoftClipDetailMetrics>() {
+	private static Ordering<SoftClipDetailMetrics> SoftClipDetailMetricsByLength = new Ordering<SoftClipDetailMetrics>() {
 		@Override
 		public int compare(SoftClipDetailMetrics left, SoftClipDetailMetrics right) {
 			return Longs.compare(left.LENGTH, right.LENGTH);
 		}
 	};
-	public SoftClipSizeDistribution getSoftClipDistribution() {
-		return softClipDistribution;
-	}
 }

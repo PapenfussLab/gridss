@@ -29,6 +29,9 @@ public class SoftClipSizeDistribution {
 			phred[i] = score;
 			cumsum -= m.READCOUNT;
 		}
+		if (phred.length == 0) {
+			phred = new double[] { 0 };
+		}
 		return phred;
 	}
 	/**

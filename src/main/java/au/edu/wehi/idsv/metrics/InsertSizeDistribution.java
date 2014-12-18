@@ -58,8 +58,8 @@ public class InsertSizeDistribution extends EnumeratedIntegerDistribution {
 		}
 		return new InsertSizeDistribution(insertSize, count, (int)total);
 	}
-	public InsertSizeDistribution(int[] singletons, double[] probabilities, int readTotal) {
-		super(singletons, probabilities);
+	public InsertSizeDistribution(int[] singletons, double[] readCounts, int readTotal) {
+		super(singletons, readCounts);
 		this.total = readTotal;
 	}
 	public double descendingCumulativeProbability(int x) {
