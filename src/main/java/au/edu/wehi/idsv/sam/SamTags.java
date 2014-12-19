@@ -4,11 +4,11 @@ public class SamTags {
 	/**
 	 * Contig of the remainder of the realigned read
 	 */
-	public static final String REALIGNMENT_REFERENCE_INDEX = "rr";
+	public static final String REALIGNMENT_REFERENCE_INDEX = "ai";
 	/**
 	 * Position of the remainder of the realigned read
 	 */
-	public static final String REALIGNMENT_POSITION = "rp";
+	public static final String REALIGNMENT_POSITION = "ap";
 	/**
 	 * Filters applied to assembly
 	 */
@@ -17,4 +17,10 @@ public class SamTags {
 	 * EvidenceID of assembly components
 	 */
 	public static final String ASSEMLBY_COMPONENT_EVIDENCEID = "es";
+	public static final String ASSEMBLY_BASE_COUNT = "bc";
+	public static final String ASSEMBLY_READPAIR_COUNT = "rp";
+	public static final String ASSEMBLY_SOFTCLIP_COUNT = "sc";
+	public static final String ASSEMBLY_READPAIR_LENGTH_MAX = "rl";
+	public static final String ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX = "sl";
+	public static final String ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL = "sm";
 }

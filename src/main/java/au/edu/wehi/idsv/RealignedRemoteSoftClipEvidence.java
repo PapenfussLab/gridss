@@ -170,4 +170,8 @@ public class RealignedRemoteSoftClipEvidence extends RealignedSoftClipEvidence i
 	public String toString() {
 		return "R" + super.toString();
 	}
+	@Override
+	public double getBreakpointQual() {
+		return scPhred(getEvidenceSource(), getOriginalSoftClipLength(), getLocalMapq(), getRemoteMapq());
+	}
 }

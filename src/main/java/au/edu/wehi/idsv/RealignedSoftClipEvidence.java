@@ -85,4 +85,8 @@ public class RealignedSoftClipEvidence extends SoftClipEvidence implements Direc
 		        .result();
 	    }
 	}
+	@Override
+	public double getBreakpointQual() {
+		return scPhred(getEvidenceSource(), getSoftClipLength(), getLocalMapq(), getRemoteMapq());
+	}
 }

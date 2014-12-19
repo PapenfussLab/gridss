@@ -116,7 +116,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		}
 		builder.breakpoint(breakpoint, "");
 		builder.phredScore(node.weight);
-		builder.attribute(VcfAttributes.LOG_LIKELIHOOD_RATIO_BREAKPOINT, node.weight);
+		builder.attribute(VcfAttributes.CALLED_QUAL, node.weight);
 		VariantContextDirectedEvidence v = (VariantContextDirectedBreakpoint)builder.make();
 		assert(v != null);
 		return v;

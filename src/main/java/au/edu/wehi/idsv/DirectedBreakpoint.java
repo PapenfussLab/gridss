@@ -7,6 +7,11 @@ package au.edu.wehi.idsv;
  *
  */
 public interface DirectedBreakpoint extends DirectedEvidence {
+	/**
+	 * Phred-scaled quality score of breakpoint
+	 * @return
+	 */
+	double getBreakpointQual();
 	public BreakpointSummary getBreakendSummary();
 	int getRemoteMapq();
 	int getRemoteBaseLength();

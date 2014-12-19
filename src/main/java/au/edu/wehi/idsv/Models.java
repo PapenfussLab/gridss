@@ -2,6 +2,7 @@ package au.edu.wehi.idsv;
 
 import htsjdk.samtools.util.Log;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -95,13 +96,6 @@ public class Models {
 	private static double oeaLlr(UnmappedMateReadPair e) {
 		return oeaPhred(e.getEvidenceSource(), e.getLocalMapq());
 	}
-	private static double dpLlr(DiscordantReadPair e) {
-		return dpPhred(
-				e.getEvidenceSource(),
-				SAMRecordUtil.calculateFragmentSize(e.getLocalledMappedRead(), e.getNonReferenceRead()),
-				e.getLocalMapq(),
-				e.getRemoteMapq());
-	}
 	private static double scLlr(SoftClipEvidence e) {
 		return scPhred(e.getEvidenceSource(), e.getSoftClipLength(), e.getLocalMapq());
 	}
@@ -111,51 +105,16 @@ public class Models {
 	private static double rrscLlr(RealignedRemoteSoftClipEvidence e) {
 		return scPhred(e.getEvidenceSource(), e.getOriginalSoftClipLength(), e.getRemoteMapq(), e.getLocalMapq());
 	}
-	private static double scPhred(SAMEvidenceSource source, int clipLength, int localMapq) {
-		// TODO: look at MAPQ distribution vs SC length
-		// this approach may unfairly penalise long SCs due to aligned MAPQ strategy
-		double score = source.getMetrics().getSoftClipDistribution().getPhred(clipLength);
-		score = Math.min(score, localMapq);
-		return score;
-	}
 	private static double scPhred(SAMEvidenceSource source, int clipLength, int localMapq, int remoteMapq) {
 		double score = scPhred(source, clipLength, localMapq);
 		score = Math.min(score, remoteMapq);
 		return score;
 	}
-	private static double oeaPhred(SAMEvidenceSource source, int localMapq) {
-		IdsvMetrics metrics = source.getMetrics().getIdsvMetrics();
-		// completely unmapped read pairs are excluded for consistency with sc and dp calculation
-		double score = -10 * Math.log10((double)metrics.READ_PAIRS_ONE_MAPPED / (double)(metrics.READ_PAIRS - metrics.READ_PAIRS_ZERO_MAPPED));
-		score = Math.min(score, localMapq);
-		return score;
-	}
-	/**
-	 * 
-	 * @param source
-	 * @param fragmentSize size of fragment, 0 indicates read pair does not support a reference-allele fragment at all
-	 * @param localMapq
-	 * @param remoteMapq
-	 * @return
-	 */
-	private static double dpPhred(SAMEvidenceSource source, int fragmentSize, int localMapq, int remoteMapq) {
-		double pairsFromFragmentDistribution = 0;
-		InsertSizeDistribution isd = source.getMetrics().getInsertSizeDistribution();
-		IdsvMetrics metrics = source.getMetrics().getIdsvMetrics();
-		if (fragmentSize > 0) {
-			if (fragmentSize >= isd.getSupportLowerBound() && fragmentSize <= isd.getSupportUpperBound()) {
-				double pr = source.getMetrics().getInsertSizeDistribution().cumulativeProbability(fragmentSize);
-				if (pr < 0.5) {
-					pr = 1.0 - pr;
-				}
-				pairsFromFragmentDistribution = pr * isd.getTotalMappedPairs();
-			}
+	public static int getAssemblyScore(Collection<DirectedEvidence> support) {
+		int score = 0;
+		for (DirectedEvidence e : support) {
+			score += llr(e);
 		}
-		double totalPairs = metrics.READ_PAIRS_BOTH_MAPPED;
-		double dpPairs = totalPairs - isd.getTotalMappedPairs() + pairsFromFragmentDistribution;
-		double score = -10 * Math.log10(dpPairs / totalPairs);
-		score = Math.min(score, localMapq);
-		score = Math.min(score, remoteMapq);
 		return score;
 	}
 	// TODO: proper 95% Confidence Interval instead of hard limits on the bounds

@@ -6,6 +6,11 @@ import com.google.common.primitives.Doubles;
 
 public interface DirectedEvidence {
 	/**
+	 * Phred-scaled quality score of breakend
+	 * @return
+	 */
+	double getBreakendQual();
+	/**
 	 * Location of breakpoints consistent with the given evidence.
 	 * If the destination of the breakpoint is known, a @see BreakpointSummary
 	 * should be returned. 

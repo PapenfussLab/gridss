@@ -1,12 +1,9 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMUtils;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
-import java.io.UnsupportedEncodingException;
 import java.math.RoundingMode;
-import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Set;
@@ -48,11 +45,11 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 		return processContext.getVcf41Mode() ? VcfConstants.VCF41BREAKEND_REPLACEMENT : VcfConstants.VCF42BREAKEND;
 	}
 	public IdsvVariantContextBuilder referenceReads(int normalCount, int tumourCount) {
-		attribute(VcfAttributes.REFERENCE_COUNT_READ.attribute(), ImmutableList.of(normalCount, tumourCount ));
+		attribute(VcfAttributes.REFERENCE_READ_COUNT.attribute(), ImmutableList.of(normalCount, tumourCount ));
 		return this;
 	}
 	public IdsvVariantContextBuilder referenceSpanningPairs(int normalCount, int tumourCount) {
-		attribute(VcfAttributes.REFERENCE_COUNT_READPAIR.attribute(), ImmutableList.of(normalCount, tumourCount));
+		attribute(VcfAttributes.REFERENCE_READPAIR_COUNT.attribute(), ImmutableList.of(normalCount, tumourCount));
 		return this;
 	}
 	/**
@@ -149,15 +146,6 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 			}
 		} else {
 			rmAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute());
-		}
-		if (untemplatedBaseQual != null && untemplatedBaseQual.length != 0) {
-			try {
-				attribute(VcfAttributes.ASSEMBLY_BREAKEND_QUALS, URLEncoder.encode(SAMUtils.phredToFastq(untemplatedBaseQual), "UTF-8"));
-			} catch (UnsupportedEncodingException e) {
-				throw new RuntimeException(String.format("Sanity check failure: unreachable code"));
-			} 
-		} else {
-			rmAttribute(VcfAttributes.ASSEMBLY_BREAKEND_QUALS.attribute());
 		}
 		return this;
 	}

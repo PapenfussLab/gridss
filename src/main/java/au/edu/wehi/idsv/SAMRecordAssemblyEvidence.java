@@ -14,15 +14,12 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
 import com.google.common.collect.ImmutableList;
@@ -202,9 +199,9 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 			int anchoredBaseCount,
 			byte[] baseCalls,
 			byte[] baseQuals,
-			Map<VcfAttributes, int[]> intListAttributes
+			int normalBaseCount, int tumourBaseCount
 			) {
-		this(source, createAssemblySAMRecord(evidence, samFileHeader, source, breakend, anchoredBaseCount, baseCalls, baseQuals, intListAttributes), null);
+		this(source, createAssemblySAMRecord(evidence, samFileHeader, source, breakend, anchoredBaseCount, baseCalls, baseQuals, normalBaseCount, tumourBaseCount), null);
 		this.evidence = evidence;
 	}
 	private SAMRecord getPlaceholderRealignment() {
@@ -267,7 +264,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 			SAMFileHeader samFileHeader, AssemblyEvidenceSource source,
 			BreakendSummary breakend,
 			int anchoredBaseCount, byte[] baseCalls, byte[] baseQuals,
-			Map<VcfAttributes, int[]> intListAttributes) {
+			int normalBaseCount, int tumourBaseCount) {
 		if (breakend instanceof BreakpointSummary) throw new IllegalArgumentException("Breakpoints not supported by this constructor");
 		SAMRecord record = new SAMRecord(samFileHeader);
 		record.setReferenceIndex(breakend.referenceIndex);
@@ -276,7 +273,6 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 				breakend.start, breakend.end,
 				breakend.direction == BreakendDirection.Forward ? "f" : "b",
 				Math.abs(Arrays.hashCode(baseCalls))) + anchoredBaseCount);
-		setIntListAttributes(record, intListAttributes);
 		if (anchoredBaseCount > 0) {
 			record.setReadBases(baseCalls);
 			record.setBaseQualities(baseQuals);
@@ -326,33 +322,37 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 				record.setBaseQualities(Bytes.concat(baseQuals, PAD_QUALS[padBases]));
 			}
 		}
+		record.setMappingQuality(Models.getAssemblyScore(evidence));
 		setEvidenceIDs(record, evidence);
+		record.setAttribute(SamTags.ASSEMBLY_BASE_COUNT, new int[] { normalBaseCount, tumourBaseCount });
+		
+		int[] rpCount = new int[] { 0, 0, };
+		int[] rpMaxLen = new int[] { 0, 0, };
+		int[] scCount = new int[] { 0, 0, };
+		int[] scLenMax = new int[] { 0, 0, };
+		int[] scLenTotal = new int[] { 0, 0, };
+		for (DirectedEvidence e : evidence) {
+			int offset = ((SAMEvidenceSource)e.getEvidenceSource()).isTumour() ? 1 : 0;
+			if (e instanceof NonReferenceReadPair) {
+				rpCount[offset]++;
+				rpMaxLen[offset] = Math.max(rpMaxLen[offset], ((NonReferenceReadPair)e).getNonReferenceRead().getReadLength());
+			}
+			if (e instanceof SoftClipEvidence) {
+				scCount[offset]++;
+				int clipLength = ((SoftClipEvidence)e).getSoftClipLength();
+				scLenMax[offset] = Math.max(scLenMax[offset], clipLength);
+				scLenTotal[offset] += clipLength;
+			}
+		}
+		record.setAttribute(SamTags.ASSEMBLY_READPAIR_COUNT, rpCount);
+		record.setAttribute(SamTags.ASSEMBLY_READPAIR_LENGTH_MAX, rpMaxLen);
+		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT, scCount);
+		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX, scLenMax);
+		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL, scLenTotal);
 		return record;
 	}
 	private static final byte[][] PAD_BASES = new byte[][] { new byte[] {}, new byte[] { 'N' }, new byte[] { 'N', 'N' } };
 	private static final byte[][] PAD_QUALS = new byte[][] { new byte[] {}, new byte[] { 0 }, new byte[] { 0, 0 } };
-	private static void setIntListAttributes(SAMRecord record, Map<VcfAttributes, int[]> intListAttributes) {
-		if (intListAttributes == null) throw new IllegalArgumentException("Attribute list not supplied");
-		// Stored in our MAPQ flag
-		record.setMappingQuality(AttributeConverter.asInt(intListAttributes.get(VcfAttributes.ASSEMBLY_MAPQ_LOCAL_MAX), 0));
-		intListAttributes.remove(VcfAttributes.ASSEMBLY_MAPQ_LOCAL_MAX);
-		for (Entry<VcfAttributes, int[]> entry : intListAttributes.entrySet()) {
-			VcfAttributes attr = entry.getKey();
-			int[] value = entry.getValue();
-			String samtag = attr.samTag();
-			if (StringUtils.isBlank(samtag)) {
-				throw new IllegalArgumentException(String.format("Attribute %s does not have a sam tag assigned", attr));
-			}
-			if (attr.infoHeader() != null && attr.infoHeader().isFixedCount() && attr.infoHeader().getCount() != value.length) {
-				throw new IllegalArgumentException(String.format("Attribute %s has %d values - expected %d", attr, value.length, attr.infoHeader().getCount()));
-			}
-			if (value.length == 1) {
-				record.setAttribute(attr.samTag(), value[0]);
-			} else {
-				record.setAttribute(attr.samTag(), value);
-			}
-		}
-	}
 	private int getAnchorLength() {
 		CigarElement ce;
 		if (breakend.direction == BreakendDirection.Forward) {
@@ -455,27 +455,27 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	}
 	@Override
 	public int getAssemblyBaseCount(EvidenceSubset subset) {
-		return AttributeConverter.asIntSumTN(record.getAttribute(VcfAttributes.ASSEMBLY_BASE_COUNT.samTag()), subset);
+		return AttributeConverter.asIntSumTN(record.getAttribute(SamTags.ASSEMBLY_BASE_COUNT), subset);
 	}
 	@Override
 	public int getAssemblySupportCountReadPair(EvidenceSubset subset) {
-		return AttributeConverter.asIntSumTN(record.getAttribute(VcfAttributes.ASSEMBLY_READPAIR_COUNT.samTag()), subset);
+		return AttributeConverter.asIntSumTN(record.getAttribute(SamTags.ASSEMBLY_READPAIR_COUNT), subset);
 	}
 	@Override
 	public int getAssemblyReadPairLengthMax(EvidenceSubset subset) {
-		return AttributeConverter.asIntMaxTN(record.getAttribute(VcfAttributes.ASSEMBLY_READPAIR_LENGTH_MAX.samTag()), subset);
+		return AttributeConverter.asIntMaxTN(record.getAttribute(SamTags.ASSEMBLY_READPAIR_LENGTH_MAX), subset);
 	}
 	@Override
 	public int getAssemblySupportCountSoftClip(EvidenceSubset subset) {
-		return AttributeConverter.asIntSumTN(record.getAttribute(VcfAttributes.ASSEMBLY_SOFTCLIP_COUNT.samTag()), subset);
+		return AttributeConverter.asIntSumTN(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT), subset);
 	}
 	@Override
 	public int getAssemblySoftClipLengthTotal(EvidenceSubset subset) {
-		return AttributeConverter.asIntSumTN(record.getAttribute(VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL.samTag()), subset);
+		return AttributeConverter.asIntSumTN(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL), subset);
 	}
 	@Override
 	public int getAssemblySoftClipLengthMax(EvidenceSubset subset) {
-		return AttributeConverter.asIntMaxTN(record.getAttribute(VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX.samTag()), subset);
+		return AttributeConverter.asIntMaxTN(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX), subset);
 	}
 	@Override
 	public boolean isAssemblyFiltered() {
