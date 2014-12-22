@@ -11,8 +11,8 @@ public interface DirectedBreakpoint extends DirectedEvidence {
 	 * Phred-scaled quality score of breakpoint
 	 * @return
 	 */
-	double getBreakpointQual();
-	public BreakpointSummary getBreakendSummary();
+	float getBreakpointQual();
+	BreakpointSummary getBreakendSummary();
 	int getRemoteMapq();
 	int getRemoteBaseLength();
 	int getRemoteBaseCount();

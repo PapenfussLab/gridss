@@ -23,4 +23,6 @@ public class SamTags {
 	public static final String ASSEMBLY_READPAIR_LENGTH_MAX = "rl";
 	public static final String ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX = "sl";
 	public static final String ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL = "sm";
+	public static final String ASSEMBLY_READPAIR_QUAL = "qr";
+	public static final String ASSEMBLY_SOFTCLIP_QUAL = "qs";
 }

@@ -20,13 +20,11 @@ import com.google.common.collect.Ordering;
 public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private final ProcessingContext processContext;
 	private final VariantContextDirectedEvidence parent;
-	private BreakendSummary calledBreakend;
 	private List<DirectedEvidence> list = Lists.newArrayList();
 	public StructuralVariationCallBuilder(ProcessingContext processContext, VariantContextDirectedEvidence parent) {
 		super(processContext, parent);
 		this.processContext = processContext;
 		this.parent = parent;
-		calledBreakend = parent.getBreakendSummary();
 	}
 	private BreakendSummary getBreakendWithMargin(DirectedEvidence evidence) {
 		BreakendSummary bs = evidence.getBreakendSummary();
@@ -109,29 +107,27 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		int asCount = 0;
 		int[] scCount = new int[] {0, 0};
 		int[] rpCount = new int[] {0, 0};
-		int rasCount = 0;
-		int[] rscCount = new int[] {0, 0};
-		double totalQual = 0;
-		double asQual = 0;
-		double[] scQual = new double[] {0, 0};
-		double[] rpQual = new double[] {0, 0};
-		double rasQual = 0;
-		double[] rscQual = new double[] {0, 0};
+		float totalQual = 0;
+		float asQual = 0;
+		float[] scQual = new float[] {0, 0};
+		float[] rpQual = new float[] {0, 0};
 		for (DirectedEvidence e : list) {
-			double qual = e.getBreakendQual();
+			float qual = e.getBreakendQual();
 			int offset = offsetTN(e);
 			if (e instanceof AssemblyEvidence) {
 				if (e instanceof RemoteEvidence) {
-					rasCount++;
-					rasQual += qual;
+					throw new RuntimeException("Sanity check failure: remote support for only breakend should not be possible");
+					//rasCount++;
+					//rasQual += qual;
 				} else {
 					asCount++;
 					asQual += qual;
 				}
 			} else if (e instanceof SoftClipEvidence) {
 				if (e instanceof RemoteEvidence) {
-					rscCount[offset]++;
-					rscQual[offset] += qual;
+					throw new RuntimeException("Sanity check failure: remote support for only breakend should not be possible");
+					//rscCount[offset]++;
+					//rscQual[offset] += qual;
 				} else {
 					scCount[offset]++;
 					scQual[offset] += qual;
@@ -147,13 +143,9 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		attribute(VcfAttributes.BREAKEND_ASSEMBLY_COUNT.attribute(), asCount); 
 		attribute(VcfAttributes.BREAKEND_SOFTCLIP_COUNT.attribute(), scCount);
 		attribute(VcfAttributes.BREAKEND_READPAIR_COUNT.attribute(), rpCount);
-		attribute(VcfAttributes.BREAKEND_ASSEMBLY_COUNT_REMOTE.attribute(), rasCount); 
-		attribute(VcfAttributes.BREAKEND_SOFTCLIP_COUNT_REMOTE.attribute(), rscCount);		
 		attribute(VcfAttributes.BREAKEND_ASSEMBLY_QUAL.attribute(), asQual); 
 		attribute(VcfAttributes.BREAKEND_SOFTCLIP_QUAL.attribute(), scQual);
 		attribute(VcfAttributes.BREAKEND_READPAIR_QUAL.attribute(), rpQual);
-		attribute(VcfAttributes.BREAKEND_ASSEMBLY_QUAL_REMOTE.attribute(), rasQual); 
-		attribute(VcfAttributes.BREAKEND_SOFTCLIP_QUAL_REMOTE.attribute(), rscQual);
 		attribute(VcfAttributes.BREAKEND_QUAL.attribute(), totalQual);
 	}
 	private void setBreakpointAttributes() {
@@ -162,14 +154,14 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		int[] rpCount = new int[] {0, 0};
 		int rasCount = 0;
 		int[] rscCount = new int[] {0, 0};
-		double totalQual = 0;
-		double asQual = 0;
-		double[] scQual = new double[] {0, 0};
-		double[] rpQual = new double[] {0, 0};
-		double rasQual = 0;
-		double[] rscQual = new double[] {0, 0};
+		float totalQual = 0;
+		float asQual = 0;
+		float[] scQual = new float[] {0, 0};
+		float[] rpQual = new float[] {0, 0};
+		float rasQual = 0;
+		float[] rscQual = new float[] {0, 0};
 		for (DirectedBreakpoint e : Iterables.filter(list, DirectedBreakpoint.class)) {
-			double qual = e.getBreakpointQual();
+			float qual = e.getBreakpointQual();
 			int offset = offsetTN(e);
 			if (e instanceof AssemblyEvidence) {
 				if (e instanceof RemoteEvidence) {
@@ -209,7 +201,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	}
 	private VariantContextDirectedEvidence calcSpv(VariantContextDirectedEvidence variant) {
 		// TODO: somatic p-value should use evidence from both sides of the breakpoint
-		double pvalue = Models.somaticPvalue(processContext, variant);
+		float pvalue = Models.somaticPvalue(processContext, variant);
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(processContext, variant);
 		builder.attribute(VcfAttributes.SOMATIC_P_VALUE, pvalue);
 		if (pvalue < processContext.getVariantCallingParameters().somaticPvalueThreshold) {
@@ -249,7 +241,8 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			        .compareTrueFirst(o1 instanceof DirectedBreakpoint, o2 instanceof DirectedBreakpoint)
 			        .compareTrueFirst(o1.isBreakendExact(), o2.isBreakendExact())
 			        //.compareFalseFirst(o1 instanceof RemoteEvidence, o2 instanceof RemoteEvidence)
-			        .compare(Models.llr(o2), Models.llr(o1)) // desc
+			        .compare(o2 instanceof DirectedBreakpoint ? ((DirectedBreakpoint)o2).getBreakpointQual() : o2.getBreakendQual(),
+			        		o1 instanceof DirectedBreakpoint ? ((DirectedBreakpoint)o1).getBreakpointQual() : o1.getBreakendQual()) // desc
 			        .result();
 		  }
 	};

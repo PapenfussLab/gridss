@@ -9,7 +9,7 @@ public interface DirectedEvidence {
 	 * Phred-scaled quality score of breakend
 	 * @return
 	 */
-	double getBreakendQual();
+	float getBreakendQual();
 	/**
 	 * Location of breakpoints consistent with the given evidence.
 	 * If the destination of the breakpoint is known, a @see BreakpointSummary
@@ -78,11 +78,11 @@ public interface DirectedEvidence {
 			return BreakendSummary.ByStartEnd.compare(arg0.getBreakendSummary(), arg1.getBreakendSummary());
 		}
 	};
-	static final Ordering<DirectedEvidence> ByLlr = new Ordering<DirectedEvidence>() {
+	static final Ordering<DirectedEvidence> ByBreakendQual = new Ordering<DirectedEvidence>() {
 		@Override
 		public int compare(DirectedEvidence arg0, DirectedEvidence arg1) {
-			return Doubles.compare(Models.llr(arg0), Models.llr(arg1));
+			return Doubles.compare(arg0.getBreakendQual(), arg1.getBreakendQual());
 		}
 	};
-	static final Ordering<DirectedEvidence> ByLlrDesc = ByLlr.reverse();
+	static final Ordering<DirectedEvidence> ByBreakendQualDesc = ByBreakendQual.reverse();
 }

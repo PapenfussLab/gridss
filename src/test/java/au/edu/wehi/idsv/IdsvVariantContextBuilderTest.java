@@ -51,13 +51,6 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		assertArrayEquals(quals, v.getBreakendQuality());
 	}
 	@Test
-	public void should_round_trip_getAssemblyConsensus() {
-		VariantContextDirectedEvidence dba = CallSV(AE());
-		assertEquals("ATT", dba.getAssemblyConsensus().get(0));
-		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
-		assertEquals("ATT", dba.getAssemblyConsensus().get(0));
-	}
-	@Test
 	public void getBreakpointSequence_should_get_untemplated_sequence() {
 		VariantContextDirectedEvidence dba = CallSV(AE());
 		assertEquals("TT", S(dba.getBreakendSequence()));

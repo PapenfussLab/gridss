@@ -5,6 +5,7 @@ import htsjdk.variant.variantcontext.VariantContext;
 import java.util.List;
 
 import au.edu.wehi.idsv.util.CollectionUtil;
+import au.edu.wehi.idsv.vcf.VcfAttributes;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ComparisonChain;
@@ -23,15 +24,15 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 	}
 	@Override
 	public int getRemoteMapq() {
-		return getMapqAssemblyMax();
+		throw new IllegalArgumentException("NYI");
 	}
 	@Override
 	public int getRemoteBaseLength() {
-		return getAssemblyBreakendLengthMax();
+		throw new IllegalArgumentException("NYI");
 	}
 	@Override
 	public int getRemoteBaseCount() {
-		return getAssemblyBaseCount(null);
+		throw new IllegalArgumentException("NYI");
 	}
 	@Override
 	public int getRemoteMaxBaseQual() {
@@ -98,4 +99,16 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 			  }
 		};
 	}
+	@Override
+	public double getBreakpointQual() {
+		return getPhredScaledQual();
+	}
+	public int getBreakpointEvidenceCount(EvidenceSubset subset) {
+		return getBreakpointEvidenceCountAssembly() +
+				getBreakpointEvidenceCountReadPair(subset) +
+				getBreakpointEvidenceCountSoftClip(subset);
+	}
+	public int getBreakpointEvidenceCountAssembly() { return AttributeConverter.asInt(getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT.attribute()), 0); }
+	public int getBreakpointEvidenceCountReadPair(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.BREAKPOINT_READPAIR_COUNT.attribute()), subset); }
+	public int getBreakpointEvidenceCountSoftClip(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_COUNT.attribute()), subset); }
 }

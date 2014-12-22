@@ -1,7 +1,9 @@
 package au.edu.wehi.idsv;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.PriorityQueue;
 
@@ -26,10 +28,12 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 	private final PeekingIterator<VariantContextDirectedEvidence> callIt;
 	private final TreeMultimap<Long, ActiveVariant> activeVariantStart = TreeMultimap.<Long, ActiveVariant>create(Ordering.natural(), ActiveVariantByEndStart);
 	private final PriorityQueue<VariantContextDirectedEvidence> outputBuffer = new PriorityQueue<VariantContextDirectedEvidence>(1024, VariantContextDirectedEvidence.ByLocationStart);
+	private final EvidenceToCsv dump;
 	/**
 	 * Incorporates the next evidence record in the called variants
 	 */
 	private void processNextEvidence() {
+		boolean evidenceCalled = false;
 		DirectedEvidence evidence = evidenceIt.next();
 		BreakendSummary bs = evidence.getBreakendSummary();
 		if (evidence instanceof SoftClipEvidence) {
@@ -53,16 +57,21 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 				}
 			}
 			if (best != null) {
-				best.builder.addEvidence(evidence);
+				best.attributeEvidence(evidence);
+				evidenceCalled = true;
 			}
 		} else {
 			for (Collection<ActiveVariant> cv : activeVariantStart.asMap().subMap(evidenceStart, true, evidenceEnd, true).values()) {
 				for (ActiveVariant v : cv) {
 					if (v.location.overlaps(bs)) {
-						v.builder.addEvidence(evidence);
+						v.attributeEvidence(evidence);
+						evidenceCalled = true;
 					}
 				}
 			}
+		}
+		if (!evidenceCalled || dump != null) {
+			dump.writeEvidence(evidence, null);
 		}
 	}
 	/**
@@ -88,7 +97,7 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 				return;
 			}
 			it.remove();
-			VariantContextDirectedEvidence result = av.builder.make();
+			VariantContextDirectedEvidence result = av.callVariant();
 			outputBuffer.add(result);
 		}
 	}
@@ -97,13 +106,27 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 		public final long endLocation;
 		public final BreakendSummary location;
 		public final float score;
-		public final StructuralVariationCallBuilder builder;
+		private final StructuralVariationCallBuilder builder;
+		private List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
 		public ActiveVariant(VariantContextDirectedEvidence call) {
 			this.builder = new StructuralVariationCallBuilder(context, call);
 			this.score = (float)call.getPhredScaledQual();
 			this.location = call.getBreakendSummary();
 			this.startLocation = context.getLinear().getStartLinearCoordinate(this.location);
 			this.endLocation = context.getLinear().getEndLinearCoordinate(this.location);
+		}
+		public void attributeEvidence(DirectedEvidence e) {
+			evidence.add(e);
+			builder.addEvidence(e);
+		}
+		public VariantContextDirectedEvidence callVariant() {
+			VariantContextDirectedEvidence call = builder.make();
+			if (dump != null) {
+				for (DirectedEvidence e : evidence) {
+					dump.writeEvidence(e, call);
+				}
+			}
+			return builder.make();
 		}
 	}
 	private static final Ordering<ActiveVariant> ActiveVariantByEndStart = new Ordering<ActiveVariant>() {
@@ -120,12 +143,14 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 			Iterator<VariantContextDirectedEvidence> calls,
 			Iterator<DirectedEvidence> evidence,
 			int maxCallWindowSize,
-			boolean assignEvidenceToSingleBreakpoint) {
+			boolean assignEvidenceToSingleBreakpoint,
+			EvidenceToCsv dump) {
 		this.context = context;
 		this.maxCallRange = maxCallWindowSize;
 		this.callIt = Iterators.peekingIterator(calls);
 		this.evidenceIt = evidence;
 		this.assignEvidenceToSingleBreakpoint = assignEvidenceToSingleBreakpoint;
+		this.dump = dump;
 	}
 	@Override
 	protected VariantContextDirectedEvidence computeNext() {

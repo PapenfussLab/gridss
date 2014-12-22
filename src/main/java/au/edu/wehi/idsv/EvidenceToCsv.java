@@ -1,29 +1,19 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.util.CloseableIterator;
-
 import java.io.BufferedOutputStream;
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
-import java.util.Iterator;
-
-import com.google.common.collect.AbstractIterator;
 
 /**
  * Writes the evidence stream to a file
  * @author Daniel Cameron
  *
  */
-public class EvidenceToCsv extends AbstractIterator<DirectedEvidence> implements CloseableIterator<DirectedEvidence> {
-	private final Iterator<DirectedEvidence> it;
+public class EvidenceToCsv {
 	private final PrintStream stream;
-	public EvidenceToCsv(File file, Iterator<DirectedEvidence> it) {
-		this.it = it;
+	public EvidenceToCsv(File file) {
 		try {
 			this.stream = new PrintStream(new BufferedOutputStream(new FileOutputStream(file)));
 		} catch (FileNotFoundException e) {
@@ -32,27 +22,96 @@ public class EvidenceToCsv extends AbstractIterator<DirectedEvidence> implements
 		writeHeader();
 	}
 	private void writeHeader() {
+		writeCallContextHeader();
+		writeDirectedEvidenceHeader();
+		writeDirectedBreakpointHeader();
+		stream.println();
 	}
-	@Override
-	protected DirectedEvidence computeNext() {
-		if (!it.hasNext()) return endOfData();
-		DirectedEvidence e = it.next();
-		double getBreakendQual();
-		BreakendSummary getBreakendSummary();
-		public byte[] getBreakendSequence();
-		public byte[] getBreakendQuality();
-		String getEvidenceID();
-		EvidenceSource getEvidenceSource();
-		int getLocalMapq();
-		int getLocalBaseLength();
-		int getLocalMaxBaseQual();
-		int getLocalTotalBaseQual();
-		
-		stream.print("hello");
-		return e;
+	private void writeCallContextHeader() {
+		for (String s : new String[] { "callID", }) {
+			stream.print(s);
+			stream.print(',');
+		}
 	}
-	@Override
-	public void close() {
-		stream.close();
+	private void writeDirectedEvidenceHeader() {
+		for (String s : new String[] {
+				"breakendQual",
+				//"breakendSummary",
+				//"breakendSequence",
+				//"breakendQuality",
+				"evidenceID",
+				"localMapq",
+				"localBaseLength",
+				"localMaxBaseQual",
+				"localTotalBaseQual",
+				"exact",
+				}) {
+			stream.print(s);
+			stream.print(',');
+		}
+	}
+	private void writeDirectedBreakpointHeader() {
+		for (String s : new String[] {
+				"breakpointQual",
+				//"breakendSummary",
+				"remoteMapq",
+				"remoteBaseLength",
+				"remoteBaseCount",
+				"remoteMaxBaseQual",
+				"remoteTotalBaseQual",
+				"untemplatedSequence",
+				}) {
+			stream.print(s);
+			stream.print(',');
+		}
+	}
+	public void writeEvidence(DirectedEvidence evidence, VariantContextDirectedEvidence call) {
+		writeCallContext(call);
+		writeDirectedEvidence(evidence);
+		writeDirectedBreakpoint(evidence);
+		stream.println();
+	}
+	private void writeCallContext(VariantContextDirectedEvidence call) {
+		if (call != null) stream.print(call.getID());
+		stream.print(',');
+	}
+	private void writeDirectedEvidence(DirectedEvidence e) {
+		stream.print(e.getBreakendQual());
+		stream.print(',');
+		stream.print(e.getEvidenceID());
+		stream.print(',');
+		stream.print(e.getLocalMapq());
+		stream.print(',');
+		stream.print(e.getLocalBaseLength());
+		stream.print(',');
+		stream.print(e.getLocalMaxBaseQual());
+		stream.print(',');
+		stream.print(e.getLocalTotalBaseQual());
+		stream.print(',');
+		stream.print(e.isBreakendExact());
+		stream.print(',');
+	}
+	private void writeDirectedBreakpoint(DirectedEvidence evidence) {
+		if (evidence instanceof DirectedBreakpoint) {
+			DirectedBreakpoint bp = (DirectedBreakpoint)evidence;
+			stream.print(bp.getBreakpointQual());
+			stream.print(',');
+			stream.print(bp.getRemoteMapq());
+			stream.print(',');
+			stream.print(bp.getRemoteBaseLength());
+			stream.print(',');
+			stream.print(bp.getRemoteBaseCount());
+			stream.print(',');
+			stream.print(bp.getRemoteMaxBaseQual());
+			stream.print(',');
+			stream.print(bp.getRemoteTotalBaseQual());
+			stream.print(',');
+			stream.print(bp.getUntemplatedSequence());
+			stream.print(',');
+		} else {
+			for (int i = 0; i < 7; i++) {
+				stream.print(',');
+			}
+		}
 	}
 }

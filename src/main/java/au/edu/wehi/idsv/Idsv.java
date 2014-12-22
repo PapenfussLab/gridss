@@ -169,7 +169,12 @@ public class Idsv extends CommandLineProgram {
 	    	VariantCaller caller = null;
 	    	try {
 	    		// Run variant caller single-threaded as we can do streaming calls
-	    		caller = new VariantCaller(getContext(), OUTPUT, samEvidence, assemblyEvidence, false);
+	    		caller = new VariantCaller(
+	    			getContext(),
+	    			OUTPUT,
+	    			samEvidence,
+	    			assemblyEvidence,
+	    			new EvidenceToCsv(new File(getContext().getFileSystemContext().getIntermediateDirectory(OUTPUT), "evidence.csv")));
 	    		caller.callBreakends(threadpool);
 	    		caller.annotateBreakpoints(TRUTH_VCF);
 	    	} finally {

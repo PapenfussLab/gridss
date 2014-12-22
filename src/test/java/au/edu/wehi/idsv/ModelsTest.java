@@ -10,10 +10,6 @@ import org.junit.Test;
 import com.google.common.collect.Lists;
 
 public class ModelsTest extends TestHelper {
-	@Test
-	public void llr_should_be_greater_than_zero() {
-		assertNotEquals(0d, Models.llr(SCE(FWD, withMapq(1, Read(0,  1,  "1M1S")))));
-	}
 	@Test(expected=IllegalArgumentException.class)
 	public void calculateBreakend_should_throw_upon_null_evidence() {
 		Models.calculateBreakend(null);

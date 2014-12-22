@@ -8,8 +8,6 @@ import htsjdk.variant.variantcontext.VariantContextBuilder;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import au.edu.wehi.idsv.vcf.VcfAttributes;
-
 public class VariantContextDirectedEvidenceTest extends TestHelper {
 	@Test
 	public void getBreakendSummary_should_handle_f_single_breakend() {
@@ -59,11 +57,6 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext(), AES(), minimalVariant().alleles("A", "CGTA[polyA[").id("test").make());
 		assertEquals("GTA", vc.getBreakpointSequenceString());
 		assertArrayEquals(B(vc.getBreakpointSequenceString()), vc.getBreakendSequence());
-	}
-	@Test
-	public void getAnchorSequenceString_should_match_bases_corresponding_to_ref_positions() {
-		VariantContextDirectedEvidence vc = new VariantContextDirectedEvidence(getContext(), AES(), minimalVariant().start(1).stop(4).alleles("ACGT", "AAAAT.").id("test").make());
-		assertEquals("AAAA", vc.getAnchorSequenceString());
 	}
 	@Test
 	public void getBreakendSummary_should_handle_partner_contig() {
@@ -257,42 +250,6 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 		assertEquals(12, s1.end2);
 	}
 	@Test
-	public void ALL_subset_should_sum_tumour_normal() {
-		VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)minimalBreakend()
-				.attribute(VcfAttributes.ASSEMBLY_READPAIR_COUNT, new int[] { 1, 2})
-				.make();
-		assertEquals(3, v.getAssemblySupportCountReadPair(EvidenceSubset.ALL));
-	}
-	@Test
-	public void ALL_subset_should_max_tumour_normal() {
-		VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)minimalBreakend()
-				.attribute(VcfAttributes.ASSEMBLY_READPAIR_LENGTH_MAX, new int[] { 1, 2})
-				.make();
-		assertEquals(2, v.getAssemblyReadPairLengthMax(EvidenceSubset.ALL));
-	}
-	@Test
-	public void null_should_alias_Subset_ALL() {
-		VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)minimalBreakend()
-				.attribute(VcfAttributes.ASSEMBLY_READPAIR_COUNT, new int[] { 1, 2})
-				.make();
-		assertEquals(3, v.getAssemblySupportCountReadPair(null));
-	}
-	@Test
-	public void getAnchorSequenceString_should_return_entire_assembly_anchor() {
-		assertEquals("GAA", ((VariantContextDirectedEvidence)minimalBreakend()
-				.breakend(new BreakendSummary(0, FWD, 1, 1), "GTAC")
-				.attribute(VcfAttributes.ASSEMBLY_CONSENSUS.attribute(), "GAATT")
-				.attribute(VcfAttributes.ASSEMBLY_LENGTH_LOCAL_MAX.attribute(), 3)
-				.make())
-			.getAnchorSequenceString());
-		assertEquals("ATT", ((VariantContextDirectedEvidence)minimalBreakend()
-				.breakend(new BreakendSummary(0, BWD, 1, 1), "GTAC")
-				.attribute(VcfAttributes.ASSEMBLY_CONSENSUS.attribute(), "GAATT")
-				.attribute(VcfAttributes.ASSEMBLY_LENGTH_LOCAL_MAX.attribute(), 3)
-				.make())
-			.getAnchorSequenceString());
-	}
-	@Test
 	public void percent_encoding_should_round_trip() {
 		byte[] q = new byte[90];
 		byte[] b = new byte[90];
@@ -305,20 +262,5 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 			.breakend(new BreakendSummary(0, FWD, 1, 1), b, q).make();
 		e = (VariantContextDirectedEvidence)(IdsvVariantContext.create(getContext(), null, e));
 		assertArrayEquals(q, e.getBreakendQuality());
-	}
-	@Test
-	public void percent_encoding_should_not_include_VCF_reserved_chars() {
-		byte[] q = new byte[90];
-		byte[] b = new byte[90];
-		for (int i = 0; i < b.length; i++) {
-			q[i] = (byte)i;
-			b[i] = (byte)'A';
-		}
-		VariantContextDirectedEvidence e = (VariantContextDirectedEvidence) minimalBreakend()
-				.breakend(new BreakendSummary(0, FWD, 1, 1), b, q).make();
-		e = (VariantContextDirectedEvidence)(IdsvVariantContext.create(getContext(), null, e));
-		for (char c : new char[] { '\t', ' ', '\n', ',', ';', '='}) {
-			assertFalse(e.getAttributeAsString(VcfAttributes.ASSEMBLY_BREAKEND_QUALS.attribute(), null).contains("" + c));
-		}
 	}
 }

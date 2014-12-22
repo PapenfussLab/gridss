@@ -8,13 +8,9 @@ import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
 
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
-
-import au.edu.wehi.idsv.vcf.VcfAttributes;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -163,6 +159,14 @@ public class AssemblyFactoryTest extends TestHelper {
 	public void should_set_assembly_attribute_ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX() {
 		assertEquals(4, bigr().getAssemblySoftClipLengthMax(EvidenceSubset.NORMAL));
 		assertEquals(3, bigr().getAssemblySoftClipLengthMax(EvidenceSubset.TUMOUR));
+	}
+	@Test
+	public void should_set_assembly_attribute_ASSEMBLY_READPAIR_QUAL() {
+		
+	}
+	@Test
+	public void should_set_samtag_ASSEMBLY_SOFTCLIP_QUAL() {
+		
 	}
 	@Test
 	public void should_set_assembly_getLocalMapq() {
@@ -411,78 +415,25 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertArrayEquals(e.getBreakendQuality(), e2.getBreakendQuality());
 	}
 	@Test
-	public void calculateAssemblyIntAttributes_should_set_ASSEMBLY_MAPQ_LOCAL_MAX() {
-		assertArrayEquals(new int[] { 3 }, AssemblyFactory.calculateAssemblyIntAttributes(Sets.<DirectedEvidence>newHashSet(
-			SCE(FWD, withMapq(1, Read(0, 1, "1M1S"))),
-			SCE(FWD, withMapq(2, Read(0, 1, "1M1S"))),
-			NRRP(withMapq(3, DP(0, 1, "1M", true, 0, 1, "1M", true))[0], withMapq(4, DP(0, 1, "1M", true, 0, 1, "1M", true))[1])
-			), 0, 0).get(VcfAttributes.ASSEMBLY_MAPQ_LOCAL_MAX));
-	}
-	@Test
-	public void calculateAssemblyIntAttributes_should_set_ASSEMBLY_LENGTH_LOCAL_MAX() {
-		assertArrayEquals(new int[] { 1, 2 }, AssemblyFactory.calculateAssemblyIntAttributes(Sets.<DirectedEvidence>newHashSet(
-				), 1, 2).get(VcfAttributes.ASSEMBLY_BASE_COUNT));
-	}
-	@Test
-	public void calculateAssemblyIntAttributes_should_set_ASSEMBLY_READPAIR_COUNT() {
-		assertArrayEquals(new int[] { 2, 1 }, AssemblyFactory.calculateAssemblyIntAttributes(Sets.<DirectedEvidence>newHashSet(
-				SCE(FWD, withMapq(1, Read(0, 1, "1M1S"))),
-				NRRP(SES(true), OEA(0, 1, "1M", true)),
-				NRRP(OEA(0, 1, "1M", true)),
-				NRRP(DP(0, 1, "1M", true, 0, 1, "1M", true))
-				), 0, 0).get(VcfAttributes.ASSEMBLY_READPAIR_COUNT));
-	}
-	@Test
-	public void calculateAssemblyIntAttributes_should_set_ASSEMBLY_READPAIR_LENGTH_MAX() {
-		assertArrayEquals(new int[] { 4, 5 }, AssemblyFactory.calculateAssemblyIntAttributes(Sets.<DirectedEvidence>newHashSet(
-				SCE(FWD, withMapq(1, Read(0, 1, "1M1S"))),
-				NRRP(SES(true), OEA(0, 1, "5M", true)),
-				NRRP(OEA(0, 1, "1M", true)),
-				NRRP(DP(0, 1, "10M", true, 0, 1, "4M", true))
-				), 0, 0).get(VcfAttributes.ASSEMBLY_READPAIR_LENGTH_MAX));
-	}
-	@Test
-	public void calculateAssemblyIntAttributes_should_set_ASSEMBLY_SOFTCLIP_COUNT() {
-		assertArrayEquals(new int[] { 2, 1 }, AssemblyFactory.calculateAssemblyIntAttributes(Sets.<DirectedEvidence>newHashSet(
-				SCE(FWD, withMapq(1, Read(0, 1, "1M1S"))),
-				SCE(FWD, withMapq(1, Read(0, 1, "1M1S"))),
-				SCE(FWD, SES(true), withMapq(1, Read(0, 1, "1M1S"))),
-				NRRP(SES(true), OEA(0, 1, "5M", true)),
-				NRRP(OEA(0, 1, "1M", true)),
-				NRRP(DP(0, 1, "10M", true, 0, 1, "4M", true))
-				), 0, 0).get(VcfAttributes.ASSEMBLY_SOFTCLIP_COUNT));
-	}
-	@Test
-	public void calculateAssemblyIntAttributes_should_set_ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL() {
-		assertArrayEquals(new int[] { 7, 1 }, AssemblyFactory.calculateAssemblyIntAttributes(Sets.<DirectedEvidence>newHashSet(
-				SCE(FWD, withMapq(1, Read(0, 1, "1M4S"))),
-				SCE(FWD, withMapq(1, Read(0, 1, "1M3S"))),
-				SCE(FWD, SES(true), withMapq(1, Read(0, 1, "1M1S"))),
-				NRRP(SES(true), OEA(0, 1, "5M", true)),
-				NRRP(OEA(0, 1, "1M", true)),
-				NRRP(DP(0, 1, "10M", true, 0, 1, "4M", true))
-				), 0, 0).get(VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL));
-	}
-	@Test
-	public void calculateAssemblyIntAttributes_should_set_ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX() {
-		assertArrayEquals(new int[] { 4, 1 }, AssemblyFactory.calculateAssemblyIntAttributes(Sets.<DirectedEvidence>newHashSet(
-				SCE(FWD, withMapq(1, Read(0, 1, "1M4S"))),
-				SCE(FWD, withMapq(1, Read(0, 1, "1M3S"))),
-				SCE(FWD, SES(true), withMapq(1, Read(0, 1, "1M1S"))),
-				NRRP(SES(true), OEA(0, 1, "5M", true)),
-				NRRP(OEA(0, 1, "1M", true)),
-				NRRP(DP(0, 1, "10M", true, 0, 1, "4M", true))
-				), 0, 0).get(VcfAttributes.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX));
-	}
-	@Test
-	public void calculateAssemblyIntAttributes_should_set_attributes_with_sam_tags() {
-		Set<DirectedEvidence> evidence = Sets.<DirectedEvidence>newHashSet();
-		Map<VcfAttributes, int[]> map = AssemblyFactory.calculateAssemblyIntAttributes(evidence, 0, 0);
-		for (VcfAttributes attr : VcfAttributes.values()) {
-			if (!StringUtils.isBlank(attr.samTag())) {
-				assertTrue(attr.samTag(), map.containsKey(attr));
-			}
+	public void getBreakendQual_should_be_sum_of_evidence_quals() {
+		double target = 0;
+		for (DirectedEvidence e : bigr().getEvidence()) {
+			target += e.getBreakendQual();
 		}
+		assertEquals(target, bigr().getBreakendQual(), 0.001);
+	}
+	@Test
+	public void should_keep_evidence_upon_construction() {
+		assertEquals(9, bigr().getEvidence().size());
+	}
+	@Test
+	public void getLocalMapq_should_be_max_evidence_mapq() {
+		assertEquals(3, AssemblyFactory.createUnanchored(
+				getContext(), AES(), Sets.<DirectedEvidence>newHashSet(
+						SCE(FWD, withMapq(1, Read(0, 1, "1M1S"))),
+						SCE(FWD, withMapq(2, Read(0, 1, "1M1S"))),
+						NRRP(withMapq(3, DP(0, 1, "1M", true, 0, 1, "1M", true))[0], withMapq(4, DP(0, 1, "1M", true, 0, 1, "1M", true))[1])),
+						B("T"), B("T"),1, 2).getLocalMapq());
 	}
 	@Test
 	public void id_should_contain_position_direction() {

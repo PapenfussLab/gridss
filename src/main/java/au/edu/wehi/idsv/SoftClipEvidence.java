@@ -201,15 +201,15 @@ public class SoftClipEvidence implements DirectedEvidence {
 	public boolean isBreakendExact() {
 		return true;
 	}
-	protected static double scPhred(SAMEvidenceSource source, int clipLength, int localMapq, int remoteMapq) {
+	protected static float scPhred(SAMEvidenceSource source, int clipLength, int localMapq, int remoteMapq) {
 		// TODO: look at MAPQ distribution vs SC length
 		// this approach may unfairly penalise long SCs due to aligned MAPQ strategy
 		double score = source.getMetrics().getSoftClipDistribution().getPhred(clipLength);
 		score = Math.min(score, localMapq);
-		return score;
+		return (float)score;
 	}
 	@Override
-	public double getBreakendQual() {
+	public float getBreakendQual() {
 		return scPhred(getEvidenceSource(), getSoftClipLength(), getLocalMapq(), Integer.MAX_VALUE);
 	}
 }

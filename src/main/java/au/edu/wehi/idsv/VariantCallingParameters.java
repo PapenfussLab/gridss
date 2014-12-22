@@ -42,12 +42,14 @@ public class VariantCallingParameters {
 	}
 	public VariantContextDirectedEvidence applyFilters(VariantContextDirectedEvidence call) {
 		List<VcfFilter> filters = Lists.newArrayList();
-		if (call.getBreakendSummary() instanceof BreakpointSummary) {
-			BreakpointSummary bp = (BreakpointSummary)call.getBreakendSummary();
+		if (call instanceof VariantContextDirectedBreakpoint) {
+			VariantContextDirectedBreakpoint vcdbp = (VariantContextDirectedBreakpoint)call;
+			BreakpointSummary bp = vcdbp.getBreakendSummary();
 			filters.addAll(breakpointFilters(bp));
-		}
-		if (call.getEvidenceCount(EvidenceSubset.ALL) == 0) {
-			filters.add(VcfFilter.NO_SUPPORT);
+			
+			if (vcdbp.getBreakpointEvidenceCount(EvidenceSubset.ALL) == 0) {
+				filters.add(VcfFilter.NO_BREAKPOINT_SUPPORT);
+			}
 		}
 		if (!filters.isEmpty()) {
 			VariantContextBuilder builder = new VariantContextBuilder(call);

@@ -86,7 +86,7 @@ public class RealignedSoftClipEvidence extends SoftClipEvidence implements Direc
 	    }
 	}
 	@Override
-	public double getBreakpointQual() {
+	public float getBreakpointQual() {
 		return scPhred(getEvidenceSource(), getSoftClipLength(), getLocalMapq(), getRemoteMapq());
 	}
 }

@@ -322,33 +322,41 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 				record.setBaseQualities(Bytes.concat(baseQuals, PAD_QUALS[padBases]));
 			}
 		}
-		record.setMappingQuality(Models.getAssemblyScore(evidence));
 		setEvidenceIDs(record, evidence);
 		record.setAttribute(SamTags.ASSEMBLY_BASE_COUNT, new int[] { normalBaseCount, tumourBaseCount });
 		
+		float[] rpQual = new float[] { 0, 0, };
+		float[] scQual = new float[] { 0, 0, };
 		int[] rpCount = new int[] { 0, 0, };
 		int[] rpMaxLen = new int[] { 0, 0, };
 		int[] scCount = new int[] { 0, 0, };
 		int[] scLenMax = new int[] { 0, 0, };
 		int[] scLenTotal = new int[] { 0, 0, };
+		int maxLocalMapq = 0;
 		for (DirectedEvidence e : evidence) {
+			maxLocalMapq = Math.max(maxLocalMapq, e.getLocalMapq());
 			int offset = ((SAMEvidenceSource)e.getEvidenceSource()).isTumour() ? 1 : 0;
 			if (e instanceof NonReferenceReadPair) {
 				rpCount[offset]++;
+				rpQual[offset] += e.getBreakendQual();
 				rpMaxLen[offset] = Math.max(rpMaxLen[offset], ((NonReferenceReadPair)e).getNonReferenceRead().getReadLength());
 			}
 			if (e instanceof SoftClipEvidence) {
 				scCount[offset]++;
+				scQual[offset] += e.getBreakendQual();
 				int clipLength = ((SoftClipEvidence)e).getSoftClipLength();
 				scLenMax[offset] = Math.max(scLenMax[offset], clipLength);
 				scLenTotal[offset] += clipLength;
 			}
 		}
+		record.setMappingQuality(maxLocalMapq);
 		record.setAttribute(SamTags.ASSEMBLY_READPAIR_COUNT, rpCount);
 		record.setAttribute(SamTags.ASSEMBLY_READPAIR_LENGTH_MAX, rpMaxLen);
 		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT, scCount);
 		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX, scLenMax);
 		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL, scLenTotal);
+		record.setAttribute(SamTags.ASSEMBLY_READPAIR_QUAL, rpQual);
+		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_QUAL, scQual);
 		return record;
 	}
 	private static final byte[][] PAD_BASES = new byte[][] { new byte[] {}, new byte[] { 'N' }, new byte[] { 'N', 'N' } };
@@ -477,6 +485,12 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	public int getAssemblySoftClipLengthMax(EvidenceSubset subset) {
 		return AttributeConverter.asIntMaxTN(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX), subset);
 	}
+	public float getAssemblySupportReadPairQualityScore(EvidenceSubset subset) {
+		return AttributeConverter.asFloatSumTN(record.getAttribute(SamTags.ASSEMBLY_READPAIR_QUAL), subset);
+	}
+	public float getAssemblySupportSoftClipQualityScore(EvidenceSubset subset) {
+		return AttributeConverter.asFloatSumTN(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT), subset);
+	}
 	@Override
 	public boolean isAssemblyFiltered() {
 		return StringUtils.isNotBlank((String)record.getAttribute(SamTags.ASSEMLBY_FILTERS));
@@ -522,5 +536,15 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	@Override
 	public boolean isBreakendExact() {
 		return isExact;
+	}
+	@Override
+	public float getBreakendQual() {
+		int evidenceCount = getAssemblySupportCountReadPair(EvidenceSubset.ALL) + getAssemblySupportCountSoftClip(EvidenceSubset.ALL);
+		double qual = getAssemblySupportReadPairQualityScore(EvidenceSubset.ALL);
+		qual += getAssemblySupportSoftClipQualityScore(EvidenceSubset.ALL);
+		// currently redundant as evidence is capped by local mapq so cap
+		// is always larger than the actual score.
+		qual = Math.max(getLocalMapq() * evidenceCount, qual);
+		return (float)qual;
 	}
 }

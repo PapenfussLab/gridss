@@ -53,7 +53,7 @@ public class DiscordantReadPair extends NonReferenceReadPair implements Directed
 	 * @param remoteMapq
 	 * @return
 	 */
-	protected static double dpPhred(SAMEvidenceSource source, int fragmentSize, int localMapq, int remoteMapq) {
+	protected static float dpPhred(SAMEvidenceSource source, int fragmentSize, int localMapq, int remoteMapq) {
 		double pairsFromFragmentDistribution = 0;
 		InsertSizeDistribution isd = source.getMetrics().getInsertSizeDistribution();
 		IdsvMetrics metrics = source.getMetrics().getIdsvMetrics();
@@ -71,17 +71,17 @@ public class DiscordantReadPair extends NonReferenceReadPair implements Directed
 		double score = -10 * Math.log10(dpPairs / totalPairs);
 		score = Math.min(score, localMapq);
 		score = Math.min(score, remoteMapq);
-		return score;
+		return (float)score;
 	}
 	@Override
-	public double getBreakendQual() {
+	public float getBreakendQual() {
 		return dpPhred(getEvidenceSource(),
 				SAMRecordUtil.calculateFragmentSize(getLocalledMappedRead(), getNonReferenceRead()),
 				getLocalMapq(),
 				Integer.MAX_VALUE);
 	}
 	@Override
-	public double getBreakpointQual() {
+	public float getBreakpointQual() {
 		return dpPhred(getEvidenceSource(),
 				SAMRecordUtil.calculateFragmentSize(getLocalledMappedRead(), getNonReferenceRead()),
 				getLocalMapq(),
