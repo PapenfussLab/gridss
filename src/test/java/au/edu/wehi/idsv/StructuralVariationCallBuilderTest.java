@@ -24,7 +24,7 @@ import com.google.common.collect.Sets;
 
 public class StructuralVariationCallBuilderTest extends TestHelper {
 	public final static BreakpointSummary BP = new BreakpointSummary(0, BWD, 10, 10, 1, BWD, 100, 100);
-	public class sc extends SoftClipEvidence {
+	public static class sc extends SoftClipEvidence {
 		protected sc(int offset, boolean tumour) {
 			super(getContext(), SES(tumour), BWD, Read(0, 10, "5S5M"));
 			this.offset = offset;
@@ -35,10 +35,10 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		@Override public int getLocalBaseLength() { return 2 + offset; }
 		@Override public int getLocalMaxBaseQual() { return 4 + offset; }
 		@Override public int getLocalTotalBaseQual() { return 5 + offset; }
-		@Override public double getBreakendQual() { return 16 + offset; }
-		@Override public String getEvidenceID() { return "rsc" + Integer.toString(offset); }
+		@Override public float getBreakendQual() { return 16 + offset; }
+		@Override public String getEvidenceID() { return "sc" + Integer.toString(offset); }
 	}
-	public class rsc extends RealignedSoftClipEvidence {
+	public static class rsc extends RealignedSoftClipEvidence {
 		int offset;
 		protected rsc(int offset, boolean tumour) {
 			super(getContext(), SES(tumour), BWD, Read(0, 10, "5S5M"), onNegative(Read(1, 100, "5M"))[0]);
@@ -53,14 +53,14 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		@Override public int getRemoteBaseCount() { return 8 + offset; }
 		@Override public int getRemoteMaxBaseQual() { return 9 + offset; }
 		@Override public int getRemoteTotalBaseQual() { return 10 + offset; }
-		@Override public double getBreakendQual() { return 111 + offset; }
-		@Override public double getBreakpointQual() { return 112 + offset; }
+		@Override public float getBreakendQual() { return 111 + offset; }
+		@Override public float getBreakpointQual() { return 112 + offset; }
 		@Override public String getEvidenceID() { return "rsc" + Integer.toString(offset); }
 	}
-	public class rrsc extends RealignedRemoteSoftClipEvidence {
+	public static class rrsc extends RealignedRemoteSoftClipEvidence {
 		int offset;
 		protected rrsc(int offset, boolean tumour) {
-			super(getContext(), SES(tumour), BWD, Read(0, 10, "5S5M"), onNegative(Read(1, 100, "5M"))[0]);
+			super(getContext(), SES(tumour), BWD, Read(1, 100, "5S5M"), onNegative(Read(0, 10, "5M"))[0]);
 			this.offset = offset;
 		}
 		@Override public int getLocalMapq() { return 1 + offset; }
@@ -72,10 +72,11 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		@Override public int getRemoteBaseCount() { return 8 + offset; }
 		@Override public int getRemoteMaxBaseQual() { return 9 + offset; }
 		@Override public int getRemoteTotalBaseQual() { return 10 + offset; }
-		@Override public double getBreakendQual() { return 211 + offset; }
-		@Override public double getBreakpointQual() { return 212 + offset; }
+		@Override public float getBreakendQual() { return 211 + offset; }
+		@Override public float getBreakpointQual() { return 212 + offset; }
+		@Override public String getEvidenceID() { return "rrsc" + Integer.toString(offset); }
 	}
-	public class um extends UnmappedMateReadPair {
+	public static class um extends UnmappedMateReadPair {
 		int offset;
 		protected um(int offset, boolean tumour) {
 			super(OEA(0, 15, "5M", false)[0],
@@ -87,10 +88,10 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		@Override public int getLocalBaseLength() { return 2 + offset; }
 		@Override public int getLocalMaxBaseQual() { return 4 + offset; }
 		@Override public int getLocalTotalBaseQual() { return 5 + offset; }
-		@Override public double getBreakendQual() { return 6 + offset; }
+		@Override public float getBreakendQual() { return 6 + offset; }
 		@Override public String getEvidenceID() { return "um" + Integer.toString(offset); }
 	}
-	public class dp extends DiscordantReadPair {
+	public static class dp extends DiscordantReadPair {
 		int offset;
 		protected dp(int offset, boolean tumour) {
 			super(DP(0, 12, "6M", false, 1, 102, "7M", false)[0],
@@ -107,14 +108,14 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		@Override public int getRemoteBaseCount() { return 8 + offset; }
 		@Override public int getRemoteMaxBaseQual() { return 9 + offset; }
 		@Override public int getRemoteTotalBaseQual() { return 10 + offset; }
-		@Override public double getBreakendQual() { return 11 + offset; }
-		@Override public double getBreakpointQual() { return 12 + offset; }
+		@Override public float getBreakendQual() { return 11 + offset; }
+		@Override public float getBreakpointQual() { return 12 + offset; }
 		@Override public String getEvidenceID() { return "dp" + Integer.toString(offset); }
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void should_not_allow_unsupporting_evidence() {
 		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)minimalBreakend()
-				.breakend(new BreakendSummary(0, BWD, 1, 10), null).make());
+				.breakend(new BreakendSummary(0, BWD, 1, 10), "").make());
 		cb.addEvidence(SCE(BWD, Read(1, 5, "1S2M")));
 	}
 	@Test
@@ -124,11 +125,6 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test
 	public void should_set_breakend_qual() {
 		assertTrue(big().hasAttribute(VcfAttributes.BREAKEND_QUAL.attribute()));
-	}
-	@Test
-	public void should_set_qual_counts_by_type() {
-		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)minimalBreakend()
-				.breakend(new BreakendSummary(0, BWD, 1, 10), null).make());
 	}
 	@Test
 	public void should_set_VcfAttribute_REFERENCE_COUNT_READ() {
@@ -151,84 +147,69 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			new um(5, true),
 			new um(6, true),
 			new um(7, false));
-		assertEquals(3, e.getBreakendEvidenceCountReadPair(EvidenceSubset.NORMAL));
-		assertEquals(5, e.getBreakendEvidenceCountReadPair(EvidenceSubset.TUMOUR));
-		assertEquals(3, e.getBreakpointEvidenceCountReadPair(EvidenceSubset.NORMAL));
-		assertEquals(5, e.getBreakpointEvidenceCountReadPair(EvidenceSubset.TUMOUR));
+		assertEquals(1, e.getBreakendEvidenceCountReadPair(EvidenceSubset.NORMAL));
+		assertEquals(3, e.getBreakendEvidenceCountReadPair(EvidenceSubset.TUMOUR));
+		assertEquals(2, e.getBreakpointEvidenceCountReadPair(EvidenceSubset.NORMAL));
+		assertEquals(2, e.getBreakpointEvidenceCountReadPair(EvidenceSubset.TUMOUR));
 	}
-	/*
-	BREAKPOINT_ASSEMBLY_COUNT("AS", 1, VCFHeaderLineType.Integer, "Count of assemblies supporting breakpoint"),
-	BREAKPOINT_READPAIR_COUNT("RP", 2, VCFHeaderLineType.Integer, "Count of read pairs supporting breakpoint (Normal,Tumour)"),
-	BREAKPOINT_SOFTCLIP_COUNT("SC", 2, VCFHeaderLineType.Integer, "Count of soft clips supporting breakpoint (Normal,Tumour)"),
-	BREAKPOINT_ASSEMBLY_COUNT_REMOTE("RAS", 1, VCFHeaderLineType.Integer, "Count of assemblies supporting breakpoint from remote breakend"),
-	BREAKPOINT_SOFTCLIP_COUNT_REMOTE("RSC", 2, VCFHeaderLineType.Integer, "Count of soft clips supporting breakpoint from remote breakend (Normal,Tumour)"),
-	
-	BREAKPOINT_ASSEMBLY_QUAL("ASQ", 1, VCFHeaderLineType.Integer, "Quality score of assemblies supporting breakpoint"),
-	BREAKPOINT_READPAIR_QUAL("RPQ", 2, VCFHeaderLineType.Integer, "Quality score of read pairs supporting breakpoint (Normal,Tumour)"),
-	BREAKPOINT_SOFTCLIP_QUAL("SCQ", 2, VCFHeaderLineType.Integer, "Quality score of soft clips supporting breakpoint (Normal,Tumour)"),
-	BREAKPOINT_ASSEMBLY_QUAL_REMOTE("RASQ", 1, VCFHeaderLineType.Integer, "Quality score of assemblies supporting breakpoint from remote breakend"),
-	BREAKPOINT_SOFTCLIP_QUAL_REMOTE("RSCQ", 2, VCFHeaderLineType.Integer, "Quality score of soft clips supporting breakpoint from remote breakend (Normal,Tumour)"),
-
-	BREAKEND_ASSEMBLY_COUNT("BAS", 1, VCFHeaderLineType.Integer, "Count of assemblies supporting breakend"),
-	BREAKEND_READPAIR_COUNT("BRP", 2, VCFHeaderLineType.Integer, "Count of read pairs supporting breakend (Normal,Tumour)"),
-	("BSC", 2, VCFHeaderLineType.Integer, "Count of soft clips supporting breakend (Normal,Tumour)"),
-	BREAKEND_ASSEMBLY_COUNT_REMOTE("BRAS", 1, VCFHeaderLineType.Integer, "Count of assemblies supporting breakend from any remote breakend"),
-	BREAKEND_SOFTCLIP_COUNT_REMOTE("BRSC", 2, VCFHeaderLineType.Integer, "Count of soft clips supporting breakend from any remote breakend (Normal,Tumour)"),
-
-	BREAKEND_ASSEMBLY_QUAL("BASQ", 1, VCFHeaderLineType.Integer, "Quality score of assemblies supporting breakend"),
-	BREAKEND_READPAIR_QUAL("BRPQ", 2, VCFHeaderLineType.Integer, "Quality score of read pairs supporting breakend (Normal,Tumour)"),
-	BREAKEND_SOFTCLIP_QUAL("BSCQ", 2, VCFHeaderLineType.Integer, "Quality score of soft clips supporting breakend (Normal,Tumour)"),
-	BREAKEND_ASSEMBLY_QUAL_REMOTE("BRASQ", 1, VCFHeaderLineType.Integer, "Quality score of assemblies supporting breakend from any remote breakend"),
-	BREAKEND_SOFTCLIP_QUAL_REMOTE("BRSCQ", 2, VCFHeaderLineType.Integer, "Quality score of soft clips supporting breakend from any remote breakend (Normal,Tumour)"),
-	 */
 	public VariantContextDirectedBreakpoint complex_bp() {
 		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)minimalBreakend()
 				.breakpoint(BP, "GT").make());
-		cb.addEvidence(new sc(1, true));
 		cb.addEvidence(new sc(2, false));
 		cb.addEvidence(new sc(3, false));
-		cb.addEvidence(new rsc(1, true));
-		cb.addEvidence(new rsc(2, true));
 		cb.addEvidence(new rsc(3, false));
 		cb.addEvidence(new rsc(4, false));
 		cb.addEvidence(new rsc(5, false));
-		cb.addEvidence(new rrsc(1, true));
 		cb.addEvidence(new rrsc(2, true));
 		cb.addEvidence(new rrsc(3, true));
 		cb.addEvidence(new rrsc(4, false));
-		cb.addEvidence(new um(1, false));
-		cb.addEvidence(new um(2, false));
 		cb.addEvidence(new um(3, false));
 		cb.addEvidence(new um(4, false));
 		cb.addEvidence(new um(5, true));
 		cb.addEvidence(new dp(1, true));
 		cb.addEvidence(new dp(2, true));
+		cb.addEvidence(AssemblyFactory.incorporateRealignment(getContext(),
+				AssemblyFactory.createAnchored(getContext(), AES(), BP.direction, Sets.<DirectedEvidence>newHashSet(
+						new sc(1, true),
+						new rsc(1, true),
+						new rrsc(1, true)
+						), BP.referenceIndex, BP.end, 1, B("TT"), B("TT"), 1, 2),
+				onNegative(Read(BP.referenceIndex2, BP.start2, "1M"))[0]));
+		cb.addEvidence(AssemblyFactory.createAnchored(getContext(), AES(), BP.direction, Sets.<DirectedEvidence>newHashSet(
+						new rsc(2, true),
+						new um(1, false),
+						new um(2, false)
+						), BP.referenceIndex, BP.end, 1, B("TT"), B("TT"), 1, 2));
 		return (VariantContextDirectedBreakpoint)cb.make();
 	}
 	@Test
 	public void should_set_BREAKEND_SOFTCLIP() {
 		Assert.assertArrayEquals(new int[] { 2,  1, }, (int[])complex_bp().getAttribute(VcfAttributes.BREAKEND_SOFTCLIP_COUNT.attribute()));
-		Assert.assertArrayEquals(new double[] { 2*16 + 2+3,  1*16 + 1, }, (double[])complex_bp().getAttribute(VcfAttributes.BREAKEND_SOFTCLIP_QUAL.attribute()), 0);
+		Assert.assertArrayEquals(new float[] { 2*16 + 2+3,  1*16 + 1, }, (float[])complex_bp().getAttribute(VcfAttributes.BREAKEND_SOFTCLIP_QUAL.attribute()), 0);
 	}
 	@Test
 	public void should_set_BREAKPOINT_SOFTCLIP() {
 		Assert.assertArrayEquals(new int[] { 3,  2, }, (int[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_COUNT.attribute()));
-		Assert.assertArrayEquals(new double[] { 3*112 + 3+4+5,  2*112 + 1+2, }, (double[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_QUAL.attribute()), 0);
+		Assert.assertArrayEquals(new float[] { 3*112 + 3+4+5,  2*112 + 1+2, }, (float[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_QUAL.attribute()), 0);
 	}
 	@Test
 	public void should_set_BREAKPOINT_SOFTCLIP_REMOTE() {
 		Assert.assertArrayEquals(new int[] { 1,  3, }, (int[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_COUNT_REMOTE.attribute()));
-		Assert.assertArrayEquals(new double[] { 1*212 + 4, 3*212 + 1+2+3, }, (double[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_QUAL_REMOTE.attribute()), 0);
+		Assert.assertArrayEquals(new float[] { 1*212 + 4, 3*212 + 1+2+3, }, (float[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_QUAL_REMOTE.attribute()), 0);
 	}
 	@Test
 	public void should_set_BREAKEND_READPAIR() {
 		Assert.assertArrayEquals(new int[] { 4,  1, }, (int[])complex_bp().getAttribute(VcfAttributes.BREAKEND_READPAIR_COUNT.attribute()));
-		Assert.assertArrayEquals(new double[] { 4*6 + 1+2+3+4,  1*6 + 5, }, (double[])complex_bp().getAttribute(VcfAttributes.BREAKEND_READPAIR_QUAL.attribute()), 0);
+		Assert.assertArrayEquals(new float[] { 4*6 + 1+2+3+4,  1*6 + 5, }, (float[])complex_bp().getAttribute(VcfAttributes.BREAKEND_READPAIR_QUAL.attribute()), 0);
 	}
 	@Test
 	public void should_set_BREAKPOINT_READPAIR() {
 		Assert.assertArrayEquals(new int[] { 0,  2, }, (int[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_READPAIR_COUNT.attribute()));
-		Assert.assertArrayEquals(new double[] { 0,  2*12 + 1+2, }, (double[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_READPAIR_QUAL.attribute()), 0);
+		Assert.assertArrayEquals(new float[] { 0,  2*12 + 1+2, }, (float[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_READPAIR_QUAL.attribute()), 0);
+	}
+	@Test
+	public void should_include_evidence_contributing_to_assembly_in_sc_rp_evidence() {
+		should_set_BREAKPOINT_SOFTCLIP_REMOTE();
 	}
 	@Test
 	public void should_count_evidence_once() {
@@ -253,7 +234,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	public StructuralVariationCallBuilder cb(DirectedEvidence... evidence) {
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)minimalBreakend()
-				.breakend(new BreakendSummary(0, BWD, 1, 10), "").make());
+				.breakpoint(BP, "").make());
 		for (DirectedEvidence e : evidence) {
 			builder.addEvidence(e);
 		}
@@ -490,13 +471,5 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		builder.addEvidence(SoftClipEvidence.create(getContext(), SES(), FWD, withSequence("NNNN", Read(0, 12, "1M3S"))[0], withSequence("NNN", Read(0, 10, "3M"))[0]));
 		VariantContextDirectedEvidence de = builder.make();
 		assertEquals(new BreakpointSummary(0, FWD, 12, 12, 0, BWD, 10, 10), de.getBreakendSummary());
-	}
-	@Test
-	public void should_count_enlisted_breakpoint_support() {
-		Assert.fail();
-	}
-	@Test
-	public void should_include_evidence_contributing_to_assembly_in_sc_rp_evidence() {
-		Assert.fail();
 	}
 }

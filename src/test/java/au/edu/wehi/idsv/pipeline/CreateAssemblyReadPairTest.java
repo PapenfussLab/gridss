@@ -293,8 +293,8 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	}
 	@Test
 	public void assembly_evidence_source_should_resort_to_evidence_order() {
-		orderedAddNoRealign(AssemblyFactory.createAnchored(getContext(), AES(), FWD, null, 0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), 0, 0)); // alignment starts at 5
-		orderedAddNoRealign(AssemblyFactory.createAnchored(getContext(), AES(), BWD, null, 0, 6, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), 0, 0)); // alignment starts at 6
+		orderedAddNoRealign(AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(), 0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), 0, 0)); // alignment starts at 5
+		orderedAddNoRealign(AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(), 0, 6, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), 0, 0)); // alignment starts at 6
 		go();
 	}
 	@Test

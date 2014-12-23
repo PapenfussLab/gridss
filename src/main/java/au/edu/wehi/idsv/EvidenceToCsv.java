@@ -28,7 +28,7 @@ public class EvidenceToCsv {
 		stream.println();
 	}
 	private void writeCallContextHeader() {
-		for (String s : new String[] { "callID", }) {
+		for (String s : new String[] { "callID", "assembly", "assemblyRemapped", "assemblyElevated"}) {
 			stream.print(s);
 			stream.print(',');
 		}
@@ -66,13 +66,28 @@ public class EvidenceToCsv {
 		}
 	}
 	public void writeEvidence(DirectedEvidence evidence, VariantContextDirectedEvidence call) {
-		writeCallContext(call);
+		writeSingleEvidence(evidence, null, call);
+		if (evidence instanceof AssemblyEvidence) {
+			AssemblyEvidence ass = (AssemblyEvidence)evidence;
+			for (DirectedEvidence e : ass.getEvidence()) {
+				writeSingleEvidence(e, ass, call);
+			}
+		}
+	}
+	private void writeSingleEvidence(DirectedEvidence evidence, AssemblyEvidence containingAssembly, VariantContextDirectedEvidence call) {
+		writeCallContext(call, containingAssembly);
 		writeDirectedEvidence(evidence);
 		writeDirectedBreakpoint(evidence);
 		stream.println();
 	}
-	private void writeCallContext(VariantContextDirectedEvidence call) {
+	private void writeCallContext(VariantContextDirectedEvidence call, AssemblyEvidence containingAssembly) {
 		if (call != null) stream.print(call.getID());
+		stream.print(',');
+		if (containingAssembly != null) stream.print(containingAssembly.getEvidenceID());
+		stream.print(',');
+		if (containingAssembly != null) stream.print(call instanceof DirectedBreakpoint && containingAssembly instanceof DirectedBreakpoint && !call.getBreakendSummary().overlaps(containingAssembly.getBreakendSummary()));
+		stream.print(',');
+		if (containingAssembly != null) stream.print(!(call instanceof DirectedBreakpoint) && containingAssembly instanceof DirectedBreakpoint);
 		stream.print(',');
 	}
 	private void writeDirectedEvidence(DirectedEvidence e) {

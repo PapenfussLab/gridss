@@ -4,11 +4,11 @@ public class SamTags {
 	/**
 	 * Contig of the remainder of the realigned read
 	 */
-	public static final String REALIGNMENT_REFERENCE_INDEX = "ai";
+	public static final String REALIGNMENT_REFERENCE_INDEX = "rr";
 	/**
 	 * Position of the remainder of the realigned read
 	 */
-	public static final String REALIGNMENT_POSITION = "ap";
+	public static final String REALIGNMENT_POSITION = "rp";
 	/**
 	 * Filters applied to assembly
 	 */
@@ -18,11 +18,11 @@ public class SamTags {
 	 */
 	public static final String ASSEMLBY_COMPONENT_EVIDENCEID = "es";
 	public static final String ASSEMBLY_BASE_COUNT = "bc";
-	public static final String ASSEMBLY_READPAIR_COUNT = "rp";
+	public static final String ASSEMBLY_READPAIR_COUNT = "dp";
 	public static final String ASSEMBLY_SOFTCLIP_COUNT = "sc";
 	public static final String ASSEMBLY_READPAIR_LENGTH_MAX = "rl";
 	public static final String ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX = "sl";
-	public static final String ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL = "sm";
-	public static final String ASSEMBLY_READPAIR_QUAL = "qr";
+	public static final String ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL = "st";
+	public static final String ASSEMBLY_READPAIR_QUAL = "qp";
 	public static final String ASSEMBLY_SOFTCLIP_QUAL = "qs";
 }

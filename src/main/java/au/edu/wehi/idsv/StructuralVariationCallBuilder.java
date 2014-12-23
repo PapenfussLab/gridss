@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.util.Log;
 import htsjdk.variant.vcf.VCFConstants;
 
 import java.util.ArrayList;
@@ -18,6 +19,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 
 public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
+	private static final Log log = Log.getInstance(StructuralVariationCallBuilder.class);
 	private final ProcessingContext processContext;
 	private final VariantContextDirectedEvidence parent;
 	private List<DirectedEvidence> list = Lists.newArrayList();
@@ -44,7 +46,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	}
 	public VariantContextDirectedEvidence make() {
 		extractAssemblySupport();
-		//deduplicateEvidence();
+		deduplicateEvidence();
 		orderEvidence();
 		setBreakpoint();
 		setImprecise();
@@ -61,7 +63,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	 * Includes the evidence supporting the assembly in the RP and SC totals 
 	 */
 	private void extractAssemblySupport() {
-		for (AssemblyEvidence ae : Iterables.filter(list, AssemblyEvidence.class)) {
+		for (AssemblyEvidence ae : Lists.newArrayList(Iterables.filter(list, AssemblyEvidence.class))) {
 			list.addAll(ae.getEvidence());
 		}
 	}
@@ -70,7 +72,10 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		for (DirectedEvidence e : list) {
 			unique.put(e.getEvidenceID(), e);
 		}
-		list = new ArrayList<DirectedEvidence>(unique.values());
+		if (list.size() != unique.size()) {
+			log.debug(String.format("Deduplicated %d records from %s", list.size() - unique.size(), getID()));
+			list = new ArrayList<DirectedEvidence>(unique.values());
+		}
 	}
 	private void orderEvidence() {
 		Collections.sort(list, ByBestDesc);
@@ -93,7 +98,11 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		}
 	}
 	private void setImprecise() {
-		if (list.stream().anyMatch(e -> e instanceof DirectedBreakpoint && e.isBreakendExact())) {
+		if (Iterables.any(list, new Predicate<DirectedEvidence>() {
+				@Override
+				public boolean apply(DirectedEvidence input) {
+					return input instanceof DirectedBreakpoint && input.isBreakendExact();
+				}})) {
 			rmAttribute(VcfSvConstants.IMPRECISE_KEY);
 		} else {
 			attribute(VcfSvConstants.IMPRECISE_KEY, true);
@@ -112,6 +121,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		float[] scQual = new float[] {0, 0};
 		float[] rpQual = new float[] {0, 0};
 		for (DirectedEvidence e : list) {
+			if (e instanceof DirectedBreakpoint) continue;
 			float qual = e.getBreakendQual();
 			int offset = offsetTN(e);
 			if (e instanceof AssemblyEvidence) {

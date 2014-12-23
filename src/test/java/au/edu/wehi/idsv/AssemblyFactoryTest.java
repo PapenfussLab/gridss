@@ -415,12 +415,20 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertArrayEquals(e.getBreakendQuality(), e2.getBreakendQuality());
 	}
 	@Test
-	public void getBreakendQual_should_be_sum_of_evidence_quals() {
+	public void getBreakendQual_should_be_sum_of_evidence() {
 		double target = 0;
 		for (DirectedEvidence e : bigr().getEvidence()) {
 			target += e.getBreakendQual();
 		}
 		assertEquals(target, bigr().getBreakendQual(), 0.001);
+	}
+	@Test
+	public void getBreakendQual_should_be_sum_of_breakend_evidence() {
+		double target = 0;
+		for (DirectedEvidence e : bigr().getEvidence()) {
+			target += e.getBreakendQual();
+		}
+		assertEquals(target, bigr().getBreakpointQual(), 0.001);
 	}
 	@Test
 	public void should_keep_evidence_upon_construction() {
@@ -430,7 +438,7 @@ public class AssemblyFactoryTest extends TestHelper {
 	public void getLocalMapq_should_be_max_evidence_mapq() {
 		assertEquals(3, AssemblyFactory.createUnanchored(
 				getContext(), AES(), Sets.<DirectedEvidence>newHashSet(
-						SCE(FWD, withMapq(1, Read(0, 1, "1M1S"))),
+						SCE(FWD, withMapq(1, Read(0, 1, "1M2S"))),
 						SCE(FWD, withMapq(2, Read(0, 1, "1M1S"))),
 						NRRP(withMapq(3, DP(0, 1, "1M", true, 0, 1, "1M", true))[0], withMapq(4, DP(0, 1, "1M", true, 0, 1, "1M", true))[1])),
 						B("T"), B("T"),1, 2).getLocalMapq());
@@ -449,15 +457,15 @@ public class AssemblyFactoryTest extends TestHelper {
 	}
 	@Test
 	public void id_be_assembly_unique() {
-		AssemblyEvidence e1a = AssemblyFactory.createAnchored(getContext(), AES(), FWD, null, 0, 1, 1, B("AAAAA"), B("AAAAA"), 0, 0);
-		AssemblyEvidence e1b = AssemblyFactory.createAnchored(getContext(), AES(), FWD, null, 0, 1, 1, B("AAAAA"), B("AAAAA"), 0, 0);
+		AssemblyEvidence e1a = AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(), 0, 1, 1, B("AAAAA"), B("AAAAA"), 0, 0);
+		AssemblyEvidence e1b = AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(), 0, 1, 1, B("AAAAA"), B("AAAAA"), 0, 0);
 		assertEquals(e1a.getEvidenceID(), e1b.getEvidenceID());
 		for (AssemblyEvidence e : new AssemblyEvidence[] {
-				AssemblyFactory.createAnchored(getContext(), AES(), BWD, null, 0, 1, 1, B("AAAAA"), B("AAAAA"), 0, 0),
-				AssemblyFactory.createAnchored(getContext(), AES(), FWD, null, 1, 1, 1, B("AAAAA"), B("AAAAA"), 0, 0),
-				AssemblyFactory.createAnchored(getContext(), AES(), FWD, null, 0, 2, 1, B("AAAAA"), B("AAAAA"), 0, 0),
-				AssemblyFactory.createAnchored(getContext(), AES(), FWD, null, 0, 1, 3, B("AAAAA"), B("AAAAA"), 0, 0),
-				AssemblyFactory.createAnchored(getContext(), AES(), FWD, null, 0, 1, 1, B("AAAAT"), B("AAAAA"), 0, 0),
+				AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(), 0, 1, 1, B("AAAAA"), B("AAAAA"), 0, 0),
+				AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(), 1, 1, 1, B("AAAAA"), B("AAAAA"), 0, 0),
+				AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(), 0, 2, 1, B("AAAAA"), B("AAAAA"), 0, 0),
+				AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(), 0, 1, 3, B("AAAAA"), B("AAAAA"), 0, 0),
+				AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(), 0, 1, 1, B("AAAAT"), B("AAAAA"), 0, 0),
 		}) {
 			assertNotEquals(e1a.getEvidenceID(), e.getEvidenceID());
 		}
@@ -480,7 +488,7 @@ public class AssemblyFactoryTest extends TestHelper {
 	}
 	@Test
 	public void should_set_breakend_exact() {
-		assertTrue(AssemblyFactory.createAnchored(getContext(), AES(), FWD, null, 0, 1, 1, B("AAAAA"), B("AAAAA"), 0, 0).isBreakendExact());
+		assertTrue(AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(), 0, 1, 1, B("AAAAA"), B("AAAAA"), 0, 0).isBreakendExact());
 		assertFalse(AssemblyFactory.createUnanchored(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(NRRP(DP(0, 10, "2M", true, 0, 10, "2M", false))), B("AAAAA"), B("AAAAA"), 2, 0)
 				.isBreakendExact());
 	}

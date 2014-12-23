@@ -70,7 +70,9 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 				}
 			}
 		}
-		if (!evidenceCalled || dump != null) {
+		if (!evidenceCalled && dump != null) {
+			// evidence stranded and does not provide support for any call
+			// write out now before we drop it
 			dump.writeEvidence(evidence, null);
 		}
 	}

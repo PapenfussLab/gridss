@@ -250,6 +250,7 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 		assertEquals(12, s1.end2);
 	}
 	@Test
+	@Ignore
 	public void percent_encoding_should_round_trip() {
 		byte[] q = new byte[90];
 		byte[] b = new byte[90];

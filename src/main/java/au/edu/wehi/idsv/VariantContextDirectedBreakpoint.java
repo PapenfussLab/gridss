@@ -100,8 +100,8 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 		};
 	}
 	@Override
-	public double getBreakpointQual() {
-		return getPhredScaledQual();
+	public float getBreakpointQual() {
+		return (float)getPhredScaledQual();
 	}
 	public int getBreakpointEvidenceCount(EvidenceSubset subset) {
 		return getBreakpointEvidenceCountAssembly() +

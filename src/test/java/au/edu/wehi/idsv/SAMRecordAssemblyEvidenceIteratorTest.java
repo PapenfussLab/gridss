@@ -13,6 +13,7 @@ import org.junit.Test;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 
 public class SAMRecordAssemblyEvidenceIteratorTest extends TestHelper {
@@ -47,7 +48,7 @@ public class SAMRecordAssemblyEvidenceIteratorTest extends TestHelper {
 		//}
 	}
 	public SAMRecordAssemblyEvidence BE(int position) {
-		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), BWD, null,
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
 				0, position, 1 , B("AA"), new byte[] { 7,7 }, 5, 6);
 		return e;
 	}

@@ -51,10 +51,10 @@ public class DuplicatingIterableTest {
 		Iterator<Integer> it1 = dib.iterator();
 		ConsumerThread<Integer> t = new ConsumerThread<Integer>(dib.iterator(), 3);
 		t.start();
-		Thread.sleep(1);
+		Thread.sleep(10);
 		assertTrue(t.isAlive());
 		it1.next(); // consume record thus allowing the thread to read the third record
-		Thread.sleep(1);
+		Thread.sleep(10);
 		assertFalse(t.isAlive());
 	}
 	public class ConsumerThread<T> extends Thread {

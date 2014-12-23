@@ -1,5 +1,8 @@
 package au.edu.wehi.idsv;
 
+import org.junit.Assert;
+import org.junit.Test;
+
 import htsjdk.samtools.SAMRecord;
 
 
@@ -26,5 +29,10 @@ public class RealignedRemoteSoftClipEvidenceTest extends RemoteEvidenceTest {
 				setAlignmentStart(bs.start);
 			}
 		}};
+	}
+	@Test
+	public void evidenceID_should_be_suffixed_with_R() {
+		String evidenceID = makeRemote(new BreakendSummary(0, FWD, 1, 1), "NN", "1M", false).getEvidenceID();
+		Assert.assertEquals("R", evidenceID.substring(evidenceID.length() - 1));
 	}
 }

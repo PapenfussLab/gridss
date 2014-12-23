@@ -21,7 +21,7 @@ public class ModelsTest extends TestHelper {
 	@Test
 	public void calculateBreakend_should_return_breakend() {
 		BreakendSummary bs = Models.calculateBreakend(Lists.newArrayList(
-			new MockDirectedEvidence(new BreakpointSummary(0, FWD, 1, 2, 1, BWD, 2, 2))
+			new MockDirectedBreakpoint(new BreakpointSummary(0, FWD, 1, 2, 1, BWD, 2, 2))
 				));
 		assertEquals(new BreakendSummary(0, FWD, 1, 2), bs);
 		assertEquals(BreakendSummary.class, bs.getClass());
@@ -29,14 +29,14 @@ public class ModelsTest extends TestHelper {
 	@Test
 	public void calculateBreakend_should_return_interval_for_single_evidence() {
 		BreakendSummary bs = Models.calculateBreakend(Lists.newArrayList(
-			new MockDirectedEvidence(new BreakpointSummary(0, FWD, 1, 2, 1, BWD, 2, 2))
+			new MockDirectedBreakpoint(new BreakpointSummary(0, FWD, 1, 2, 1, BWD, 2, 2))
 				));
 		assertEquals(new BreakendSummary(0, FWD, 1, 2), bs);
 	}
 	@Test
 	public void calculateBreakend_should_return_overlap_for_multiple_evidence() {
 		BreakendSummary bs = Models.calculateBreakend(Lists.newArrayList(
-			new MockDirectedEvidence(new BreakpointSummary(0, FWD, 1, 4, 1, BWD, 2, 2)),
+			new MockDirectedBreakpoint(new BreakpointSummary(0, FWD, 1, 4, 1, BWD, 2, 2)),
 			new MockDirectedEvidence(new BreakendSummary(0, FWD, 3, 5))
 				));
 		assertEquals(new BreakendSummary(0, FWD, 3, 4), bs);
@@ -44,7 +44,7 @@ public class ModelsTest extends TestHelper {
 	@Test
 	public void calculateBreakend_should_ignore_overlaps_resulting_in_no_breakend() {
 		BreakendSummary bs = Models.calculateBreakend(Lists.newArrayList(
-			new MockDirectedEvidence(new BreakpointSummary(0, FWD, 1, 4, 1, BWD, 2, 2)),
+			new MockDirectedBreakpoint(new BreakpointSummary(0, FWD, 1, 4, 1, BWD, 2, 2)),
 			new MockDirectedEvidence(new BreakendSummary(0, FWD, 3, 5)),
 			new MockDirectedEvidence(new BreakendSummary(0, FWD, 5, 5))
 				));

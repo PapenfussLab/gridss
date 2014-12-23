@@ -75,7 +75,7 @@ public class AttributeConverter {
 		if (obj == null) return null;
 		if (obj instanceof Double) return (Double)obj;
 		if (obj instanceof Float) return (double)(float)(Float)obj;
-		if (obj instanceof Integer) return (Double)obj;
+		if (obj instanceof Integer) return (Double)(double)(int)(Integer)obj;
 		if (obj instanceof Short) return (double)(short)(Short)obj;
 		if (obj instanceof Long) return (double)(long)(Long)obj;
 		if (obj instanceof Byte) return (double)UnsignedBytes.toInt((byte)(Byte)obj);
@@ -98,7 +98,7 @@ public class AttributeConverter {
 			result = Lists.newArrayList();
 			int len = Array.getLength(obj);
 			for (int i = 0; i < len; i++) {
-				result.add(asRawInt(Array.get(obj, len)));
+				result.add(asRawInt(Array.get(obj, i)));
 			}
 			return result;
 		} else if (obj instanceof String) {
@@ -130,7 +130,7 @@ public class AttributeConverter {
 			result = Lists.newArrayList();
 			int len = Array.getLength(obj);
 			for (int i = 0; i < len; i++) {
-				result.add(asRawDouble(Array.get(obj, len)));
+				result.add(asRawDouble(Array.get(obj, i)));
 			}
 			return result;
 		} else if (obj instanceof String) {

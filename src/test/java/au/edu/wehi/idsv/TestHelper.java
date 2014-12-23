@@ -350,7 +350,6 @@ public class TestHelper {
 		dp[1].setProperPairFlag(false);
 		return dp;
 	}
-
 	static public SAMRecord Read(int referenceIndex, int pos, int length) {
 		return Read(referenceIndex, pos, String.format("%dM", length));
 	}

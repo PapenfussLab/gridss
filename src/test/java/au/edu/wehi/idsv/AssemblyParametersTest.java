@@ -84,7 +84,7 @@ public class AssemblyParametersTest extends TestHelper {
 	public void should_filter_too_few_reads() {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().minReads = 3;
-		AssemblyEvidence e = AssemblyFactory.createAnchored(pc, AES(), BWD, null, 0, 1, 5, B("AACGTG"), B("AACGTG"), 2, 0);
+		AssemblyEvidence e = AssemblyFactory.createAnchored(pc, AES(), BWD, Sets.<DirectedEvidence>newHashSet(), 0, 1, 5, B("AACGTG"), B("AACGTG"), 2, 0);
 		assertTrue(pc.getAssemblyParameters().applyFilters(e));
 		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_FEW_READ));
 		

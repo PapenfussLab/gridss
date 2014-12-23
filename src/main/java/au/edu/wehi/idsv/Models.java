@@ -23,16 +23,14 @@ public class Models {
 	 * @return somatic p-value
 	 */
 	public static float somaticPvalue(ProcessingContext context, VariantContextDirectedEvidence call) {
-		int variantNormal = 0, variantTumour = 0;
 		int refNormal = call.getReferenceReadCount(EvidenceSubset.NORMAL) + call.getReferenceReadPairCount(EvidenceSubset.NORMAL);
 		int refTumour = call.getReferenceReadCount(EvidenceSubset.TUMOUR) + call.getReferenceReadPairCount(EvidenceSubset.TUMOUR);
+		int variantNormal = call.getBreakendEvidenceCountReadPair(EvidenceSubset.NORMAL) + call.getBreakendEvidenceCountSoftClip(EvidenceSubset.NORMAL);
+		int variantTumour = call.getBreakendEvidenceCountReadPair(EvidenceSubset.TUMOUR) + call.getBreakendEvidenceCountSoftClip(EvidenceSubset.TUMOUR);
 		if (call instanceof VariantContextDirectedBreakpoint) {
 			VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)call;
-			variantNormal = bp.getBreakpointEvidenceCountReadPair(EvidenceSubset.NORMAL) + bp.getBreakpointEvidenceCountSoftClip(EvidenceSubset.NORMAL);
-			variantTumour = bp.getBreakpointEvidenceCountReadPair(EvidenceSubset.NORMAL) + bp.getBreakpointEvidenceCountSoftClip(EvidenceSubset.NORMAL);
-
-		} else {
-			throw new RuntimeException("NYI");
+			variantNormal += bp.getBreakpointEvidenceCountReadPair(EvidenceSubset.NORMAL) + bp.getBreakpointEvidenceCountSoftClip(EvidenceSubset.NORMAL);
+			variantTumour += bp.getBreakpointEvidenceCountReadPair(EvidenceSubset.TUMOUR) + bp.getBreakpointEvidenceCountSoftClip(EvidenceSubset.TUMOUR);
 		}
 		assert(variantNormal >= 0);
 		assert(variantTumour >= 0);

@@ -98,8 +98,8 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 		return !hasAttribute(VcfSvConstants.IMPRECISE_KEY);
 	}
 	@Override
-	public double getBreakendQual() {
-		return getPhredScaledQual();
+	public float getBreakendQual() {
+		return (float)getPhredScaledQual();
 	}
 	public int getBreakendEvidenceCount(EvidenceSubset subset) {
 		return getBreakendEvidenceCountAssembly() +

@@ -33,6 +33,8 @@ gridss.truthdetails.processvcf.vcftodf <- function(vcf) {
   df$svlen <- ifelse(is.na(matchLength), mismatchLength, matchLength)
   df$svtype <- i$SVTYPE
   df$CQUAL <- i$CQUAL
+  df$BEQUAL <- i$BEQUAL
+  df$BPQUAL <- i$BPQUAL
   df$call <- ifelse(!is.na(matchLength), "good", ifelse(!is.na(mismatchLength), "misaligned", "bad"))
   df$LR <- i$LR
   df$LRBP <- i$LRBP

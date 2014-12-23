@@ -486,10 +486,10 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		return AttributeConverter.asIntMaxTN(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX), subset);
 	}
 	public float getAssemblySupportReadPairQualityScore(EvidenceSubset subset) {
-		return AttributeConverter.asFloatSumTN(record.getAttribute(SamTags.ASSEMBLY_READPAIR_QUAL), subset);
+		return (float)AttributeConverter.asDoubleSumTN(record.getAttribute(SamTags.ASSEMBLY_READPAIR_QUAL), subset);
 	}
 	public float getAssemblySupportSoftClipQualityScore(EvidenceSubset subset) {
-		return AttributeConverter.asFloatSumTN(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT), subset);
+		return (float)AttributeConverter.asDoubleSumTN(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_QUAL), subset);
 	}
 	@Override
 	public boolean isAssemblyFiltered() {
@@ -544,7 +544,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		qual += getAssemblySupportSoftClipQualityScore(EvidenceSubset.ALL);
 		// currently redundant as evidence is capped by local mapq so cap
 		// is always larger than the actual score.
-		qual = Math.max(getLocalMapq() * evidenceCount, qual);
+		qual = Math.min(getLocalMapq() * evidenceCount, qual);
 		return (float)qual;
 	}
 }
