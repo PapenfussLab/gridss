@@ -36,7 +36,7 @@ public class RectangleGraphMaximalCliqueCalculator {
 	private final PriorityQueue<GraphNode> activeScanlineEndingY = new PriorityQueue<GraphNode>(11, GraphNode.ByEndY); // sorted by endX
 	private final ScanlineInterval activeScanlineStart;
 	private ScanlineInterval activeScanlineCurrentPosition = null;
-	private int activeScanlineActiveWeight = 0;
+	private long activeScanlineActiveWeight = 0;
 	private long scanlineX = Long.MIN_VALUE;
 	public RectangleGraphMaximalCliqueCalculator() {
 		activeScanlineStart = new ScanlineInterval();

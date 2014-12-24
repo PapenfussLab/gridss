@@ -2,6 +2,7 @@ package au.edu.wehi.idsv.graph;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -239,5 +240,37 @@ public class RectangleGraphMaximalCliqueCalculatorTest {
 		for (int i = 0; i < 8; i++) {
 			test_lattice(1 << i);			
 		}
+	}
+	@Test
+	public void exhaustive() {
+		int size = 8;
+		List<GraphNode> nodes = new ArrayList<GraphNode>();
+		for (int startx = 0; startx < size; startx++) {
+			for (int endx = startx; endx < size; endx++) {
+				for (int starty = 0; starty < size; starty++) {
+					for (int endy = starty; endy < size; endy++) {
+						nodes.add(new GraphNode(startx, endx, starty, endy, 1));
+					}
+				}
+			}
+		}
+		GraphNode[] cliques = getCliques(nodes.toArray(new GraphNode[nodes.size()]));
+		assertEquals(size * size, cliques.length); // clique at every grid position
+	}
+	@Test
+	public void should_handle_greater_than_int_max_value() {
+		int size = 3;
+		List<GraphNode> nodes = new ArrayList<GraphNode>();
+		for (int startx = 0; startx < size; startx++) {
+			for (int endx = startx; endx < size; endx++) {
+				for (int starty = 0; starty < size; starty++) {
+					for (int endy = starty; endy < size; endy++) {
+						nodes.add(new GraphNode(startx, endx, starty, endy, Integer.MAX_VALUE - 10));
+					}
+				}
+			}
+		}
+		GraphNode[] cliques = getCliques(nodes.toArray(new GraphNode[nodes.size()]));
+		assertEquals(size * size, cliques.length); // clique at every grid position
 	}
 }
