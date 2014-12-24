@@ -78,9 +78,10 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		long endY = startY + bp.end2 - bp.start2;
 		BreakendDirection lowDir = bp.direction;
 		BreakendDirection highDir = bp.direction2;
-		GraphNode node = new GraphNode(startX, endX, startY, endY, (float)((DirectedBreakpoint)e).getBreakpointQual());
+		float weight = ((DirectedBreakpoint)e).getBreakpointQual();
+		if (weight <= 0) return null;
+		GraphNode node = new GraphNode(startX, endX, startY, endY, weight);
 		// Must have positive phred score  
-		if (node.weight <= 0) return null;
 		if (startX > startY) {
 			// only take the lower half of the evidence since both sides of all breakpoints
 			// have evidence
