@@ -57,6 +57,25 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		@Override public float getBreakpointQual() { return 112 + offset; }
 		@Override public String getEvidenceID() { return "rsc" + Integer.toString(offset); }
 	}
+	public static class rsc_not_supporting_breakpoint extends RealignedSoftClipEvidence {
+		int offset;
+		protected rsc_not_supporting_breakpoint(int offset, boolean tumour) {
+			super(getContext(), SES(tumour), BWD, Read(0, 10, "5S5M"), onNegative(Read(2, 100, "5M"))[0]);
+			this.offset = offset;
+		}
+		@Override public int getLocalMapq() { return 1 + offset; }
+		@Override public int getLocalBaseLength() { return 2 + offset; }
+		@Override public int getLocalMaxBaseQual() { return 4 + offset; }
+		@Override public int getLocalTotalBaseQual() { return 5 + offset; }
+		@Override public int getRemoteMapq() { return 6 + offset; }
+		@Override public int getRemoteBaseLength() { return 7 + offset; }
+		@Override public int getRemoteBaseCount() { return 8 + offset; }
+		@Override public int getRemoteMaxBaseQual() { return 9 + offset; }
+		@Override public int getRemoteTotalBaseQual() { return 10 + offset; }
+		@Override public float getBreakendQual() { return 111 + offset; }
+		@Override public float getBreakpointQual() { return 112 + offset; }
+		@Override public String getEvidenceID() { return "rsc" + Integer.toString(offset); }
+	}
 	public static class rrsc extends RealignedRemoteSoftClipEvidence {
 		int offset;
 		protected rrsc(int offset, boolean tumour) {
@@ -170,13 +189,13 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		cb.addEvidence(new dp(2, true));
 		cb.addEvidence(AssemblyFactory.incorporateRealignment(getContext(),
 				AssemblyFactory.createAnchored(getContext(), AES(), BP.direction, Sets.<DirectedEvidence>newHashSet(
-						new sc(1, true),
+						new rsc(2, true),
 						new rsc(1, true),
 						new rrsc(1, true)
 						), BP.referenceIndex, BP.end, 1, B("TT"), B("TT"), 1, 2),
 				onNegative(Read(BP.referenceIndex2, BP.start2, "1M"))[0]));
 		cb.addEvidence(AssemblyFactory.createAnchored(getContext(), AES(), BP.direction, Sets.<DirectedEvidence>newHashSet(
-						new rsc(2, true),
+						new sc(1, true),
 						new um(1, false),
 						new um(2, false)
 						), BP.referenceIndex, BP.end, 1, B("TT"), B("TT"), 1, 2));
@@ -210,6 +229,25 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test
 	public void should_include_evidence_contributing_to_assembly_in_sc_rp_evidence() {
 		should_set_BREAKPOINT_SOFTCLIP_REMOTE();
+	}
+	/**
+	 * We do this to prevent inflation of support for a breakpoint by an assembly that
+	 * doesn't not actually support that breakend 
+	 */
+	@Test
+	public void should_exclude_breakpoint_evidence_contributing_to_breakend_assembly_but_not_supporting_breakpoint() {
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)minimalBreakend()
+				.breakpoint(BP, "GT").make());
+		cb.addEvidence(AssemblyFactory.createAnchored(getContext(), AES(), BP.direction, Sets.<DirectedEvidence>newHashSet(
+						new rsc_not_supporting_breakpoint(1, true)
+						), BP.referenceIndex, BP.end, 1, B("TT"), B("TT"), 1, 2));
+		VariantContextDirectedBreakpoint call = (VariantContextDirectedBreakpoint)cb.make();
+		Assert.assertArrayEquals(new int[] { 0,  0, }, asIntTN(call.getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_COUNT.attribute())));
+		Assert.assertArrayEquals(new int[] { 0,  0, }, asIntTN(call.getAttribute(VcfAttributes.BREAKEND_SOFTCLIP_COUNT.attribute())));
+	}
+	private int[] asIntTN(Object attrValue) {
+		if (attrValue == null) return new int[] { 0, 0, };
+		return (int[])attrValue;
 	}
 	@Test
 	public void should_count_evidence_once() {

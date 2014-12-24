@@ -28,6 +28,14 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		this.processContext = processContext;
 		this.parent = parent;
 	}
+	public StructuralVariationCallBuilder addEvidence(DirectedEvidence evidence) {
+		if (evidence == null) throw new NullPointerException();
+		if (!isSupportingEvidence(evidence)) {
+			throw new IllegalArgumentException(String.format("Sanity check failure: Evidence %s does not provide support for call at %s", evidence.getBreakendSummary(), parent.getBreakendSummary()));
+		}
+		list.add(evidence);
+		return this;
+	}
 	private BreakendSummary getBreakendWithMargin(DirectedEvidence evidence) {
 		BreakendSummary bs = evidence.getBreakendSummary();
 		if (evidence instanceof SoftClipEvidence) {
@@ -35,14 +43,9 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		}
 		return bs;
 	}
-	public StructuralVariationCallBuilder addEvidence(DirectedEvidence evidence) {
-		if (evidence == null) throw new NullPointerException();
-		list.add(evidence);
+	private boolean isSupportingEvidence(DirectedEvidence evidence) {
 		BreakendSummary bs = getBreakendWithMargin(evidence);
-		if (!parent.getBreakendSummary().overlaps(bs)) {
-			throw new IllegalArgumentException(String.format("Sanity check failure: Evidence %s does not provide support for call at %s", evidence.getBreakendSummary(), parent.getBreakendSummary()));
-		}
-		return this;
+		return parent.getBreakendSummary().overlaps(bs);
 	}
 	public VariantContextDirectedEvidence make() {
 		extractAssemblySupport();
@@ -64,7 +67,17 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	 */
 	private void extractAssemblySupport() {
 		for (AssemblyEvidence ae : Lists.newArrayList(Iterables.filter(list, AssemblyEvidence.class))) {
-			list.addAll(ae.getEvidence());
+			for (DirectedEvidence e : ae.getEvidence()) {
+				if (ae instanceof DirectedBreakpoint) {
+					list.add(e);
+				} else {
+					if (e instanceof DirectedBreakpoint && !isSupportingEvidence(e)) {
+						// don't include breakpoint evidence from a breakend assembly
+					} else {
+						list.add(e);
+					}
+				}
+			}
 		}
 	}
 	private void deduplicateEvidence() {

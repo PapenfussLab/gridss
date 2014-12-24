@@ -7,13 +7,15 @@ source("libgridss.R")
 vcf <- readVcf("C:/dev/778.vcf", "hg19_random")
 #vcf <- readVcf("W:/778/idsv/778.vcf", "hg19_random")
 df <- gridss.truthdetails.processvcf.vcftodf(vcf)
-df$A_RM[is.na(df$A_RM)] <- 0
-df$A_EC[is.na(df$A_EC)] <- 0
-df$ASSCNT <- df$A_EC
-df$ASSCNT[df$ASSCNT >= 4] <- 4
 
 
-pp <- df
+# Contribution of local breakend evidence
+ggplot(df, aes(x=QUAL, y=BQ, color=factor(pmin(AS, 1)+pmin(RAS, 1)))) + geom_point() + scale_x_log10() + scale_y_log10()
+
+# Effect of unique read mapping
+# TODO: why to points exist where QUAL > CQ ? this should not be possible
+ggplot(df, aes(x=QUAL, y=CQ, color=factor(pmin(AS, 1)+pmin(RAS, 1)))) + geom_point() + scale_x_log10() + scale_y_log10()
+
 
 # local anchor length shouldn't mean much
 ggplot(pp, aes(x=A_BLRM, y=A_BLLM)) + geom_point()
