@@ -56,7 +56,7 @@ public class RectangleGraphMaximalCliqueCalculator {
 		private ScanlineInterval(
 				long startY,
 				long startx,
-				float weight,
+				long weight,
 				int startHere,
 				int endHere,
 				ScanlineInterval next) {
@@ -95,7 +95,7 @@ public class RectangleGraphMaximalCliqueCalculator {
 		 * Long.MIN_VALUE indicates this interval is not maximal
 		 */
 		private long startX = Long.MAX_VALUE;
-		private float weight = 0;
+		private long weight = 0;
 		private int startHere = 0;
 		private int endHere = 0;
 		private ScanlineInterval next;
@@ -224,7 +224,7 @@ public class RectangleGraphMaximalCliqueCalculator {
 				assert(si.endHere == 0);
 			}
 		}
-		float weight = 0;
+		long weight = 0;
 		for (GraphNode n : activeScanlineEndingY) {
 			assert(n.startY <= activeScanlineCurrentPosition.getStartY());
 			weight += n.weight;
@@ -269,7 +269,7 @@ public class RectangleGraphMaximalCliqueCalculator {
 			GraphNode node = activeScanlineEndingY.poll();
 			long endYexclusive = node.endY + 1;
 			int yendCount = 1;
-			float yendWeight = node.weight;
+			long yendWeight = node.weight;
 			while (!activeScanlineEndingY.isEmpty() && activeScanlineEndingY.peek().endY + 1 == endYexclusive) {
 				node = activeScanlineEndingY.poll();
 				yendCount++;

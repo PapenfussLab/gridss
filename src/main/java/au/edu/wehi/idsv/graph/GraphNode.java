@@ -14,8 +14,8 @@ public class GraphNode {
 	public final long endX;
 	public final long startY;
 	public final long endY;
-	public float weight;
-	public GraphNode(long startX, long endX, long startY, long endY, float weight) {
+	public long weight;
+	public GraphNode(long startX, long endX, long startY, long endY, long weight) {
 		assert(weight > 0);
 		this.startX = startX;
 		this.endX = endX;
@@ -38,7 +38,7 @@ public class GraphNode {
 	}
 	@Override
 	public String toString() {
-		return String.format("(x=[%d, %d], y=[%d, %d], %f)", startX, endX, startY, endY, weight);
+		return String.format("(x=[%d, %d], y=[%d, %d], %d)", startX, endX, startY, endY, weight);
 	}
 	public static Ordering<GraphNode> ByEndXYStartXY = new Ordering<GraphNode>() {
 		public int compare(GraphNode o1, GraphNode o2) {
