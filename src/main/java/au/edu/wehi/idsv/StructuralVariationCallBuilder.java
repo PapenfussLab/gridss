@@ -48,7 +48,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		return parent.getBreakendSummary().overlaps(bs);
 	}
 	public VariantContextDirectedEvidence make() {
-		extractAssemblySupport();
+		//extractAssemblySupport(); // don't extract - as extraction inflates evidence beyond original call
 		deduplicateEvidence();
 		orderEvidence();
 		setBreakpoint();
@@ -60,11 +60,23 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		VariantContextDirectedEvidence variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(processContext, null, super.make());
 		variant = calcSpv(variant);
 		variant = processContext.getVariantCallingParameters().applyFilters(variant);
+		//assert(sanitycheck(variant));
 		return variant;
 	}
+	private boolean sanitycheck(VariantContextDirectedEvidence annotated) {
+		double qual = annotated.getPhredScaledQual();
+		double origqual = parent.getPhredScaledQual();
+		assert(qual <= origqual);
+		return true;
+	}
 	/**
-	 * Includes the evidence supporting the assembly in the RP and SC totals 
+	 * Includes the evidence supporting the assembly in the RP and SC totals
+	 * 
+	 * ISSUE: would like to include alternatively mapped evidence as support but
+	 * a) assemblies sometimes include read not even supporting the breakend
+	 * b) extracting causes qual to be greater than called qual which causes problems with evidence assignment
 	 */
+	@SuppressWarnings("unused")
 	private void extractAssemblySupport() {
 		for (AssemblyEvidence ae : Lists.newArrayList(Iterables.filter(list, AssemblyEvidence.class))) {
 			for (DirectedEvidence e : ae.getEvidence()) {

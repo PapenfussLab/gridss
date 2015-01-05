@@ -61,7 +61,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 				try {
 					boolean assemblyOnly = processContext.getVariantCallingParameters().callOnlyAssemblies;
 					evidenceIt = getAllEvidence(true, true, !assemblyOnly, !assemblyOnly, !assemblyOnly);
-					evidenceIt = new AutoClosingIterator<DirectedEvidence>(new OrthogonalEvidenceIterator(processContext.getLinear(), evidenceIt, getMaxWindowSize()), Lists.<Closeable>newArrayList(evidenceIt));
+					evidenceIt = adjustEvidenceStream(evidenceIt);
 					EvidenceClusterProcessor processor = new EvidenceClusterProcessor(processContext, evidenceIt);
 					writeMaximalCliquesToVcf(
 							processContext,
@@ -80,6 +80,13 @@ public class VariantCaller extends EvidenceProcessorBase {
 		} finally {
 			close();
 		}
+	}
+	private CloseableIterator<DirectedEvidence> adjustEvidenceStream(CloseableIterator<DirectedEvidence> evidenceIt) {
+		// back to treating assemblies as independent evidence which do not affect SC or RP support counts
+		// due to annotation quality being greater (in some cases over 10x) than the called quality due
+		// to assembly evidence enlistment at BP evidence for a BP the evidence itself does not support
+		//evidenceIt = new AutoClosingIterator<DirectedEvidence>(new OrthogonalEvidenceIterator(processContext.getLinear(), evidenceIt, getMaxWindowSize()), Lists.<Closeable>newArrayList(evidenceIt));
+		return evidenceIt;
 	}
 	private List<Closeable> toClose = Lists.newArrayList();
 	private CloseableIterator<IdsvVariantContext> getAllCalledVariants() {
@@ -170,7 +177,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 			normalCoverage = getReferenceLookup(normal, maxWindowSize);
 			tumourCoverage = getReferenceLookup(tumour, maxWindowSize);
 			evidenceIt = getAllEvidence(true, true, true, true, true);
-			evidenceIt = new AutoClosingIterator<DirectedEvidence>(new OrthogonalEvidenceIterator(processContext.getLinear(), evidenceIt, getMaxWindowSize()), Lists.<Closeable>newArrayList(evidenceIt));
+			evidenceIt = adjustEvidenceStream(evidenceIt);
 			breakendIt = new SequentialEvidenceAnnotator(processContext, breakendIt, evidenceIt, maxWindowSize, true, evidenceDump);
 			// Mostly sorted but since breakpoint position is recalculated, there can be some wiggle
 			breakendIt = new DirectEvidenceWindowedSortingIterator<VariantContextDirectedEvidence>(processContext, maxWindowSize, breakendIt);

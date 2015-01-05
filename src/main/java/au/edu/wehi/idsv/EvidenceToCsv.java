@@ -67,12 +67,12 @@ public class EvidenceToCsv {
 	}
 	public void writeEvidence(DirectedEvidence evidence, VariantContextDirectedEvidence call) {
 		writeSingleEvidence(evidence, null, call);
-		if (evidence instanceof AssemblyEvidence) {
-			AssemblyEvidence ass = (AssemblyEvidence)evidence;
-			for (DirectedEvidence e : ass.getEvidence()) {
-				writeSingleEvidence(e, ass, call);
-			}
-		}
+//		if (evidence instanceof AssemblyEvidence) {
+//			AssemblyEvidence ass = (AssemblyEvidence)evidence;
+//			for (DirectedEvidence e : ass.getEvidence()) {
+//				writeSingleEvidence(e, ass, call);
+//			}
+//		}
 	}
 	private void writeSingleEvidence(DirectedEvidence evidence, AssemblyEvidence containingAssembly, VariantContextDirectedEvidence call) {
 		writeCallContext(call, containingAssembly);

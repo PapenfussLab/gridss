@@ -174,14 +174,20 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public VariantContextDirectedBreakpoint complex_bp() {
 		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)minimalBreakend()
 				.breakpoint(BP, "GT").make());
+		cb.addEvidence(new sc(1, true));
 		cb.addEvidence(new sc(2, false));
 		cb.addEvidence(new sc(3, false));
+		cb.addEvidence(new rsc(1, true));
+		cb.addEvidence(new rsc(2, true));
 		cb.addEvidence(new rsc(3, false));
 		cb.addEvidence(new rsc(4, false));
 		cb.addEvidence(new rsc(5, false));
+		cb.addEvidence(new rrsc(1, true));
 		cb.addEvidence(new rrsc(2, true));
 		cb.addEvidence(new rrsc(3, true));
 		cb.addEvidence(new rrsc(4, false));
+		cb.addEvidence(new um(1, false));
+		cb.addEvidence(new um(2, false));
 		cb.addEvidence(new um(3, false));
 		cb.addEvidence(new um(4, false));
 		cb.addEvidence(new um(5, true));
@@ -189,15 +195,11 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		cb.addEvidence(new dp(2, true));
 		cb.addEvidence(AssemblyFactory.incorporateRealignment(getContext(),
 				AssemblyFactory.createAnchored(getContext(), AES(), BP.direction, Sets.<DirectedEvidence>newHashSet(
-						new rsc(2, true),
-						new rsc(1, true),
-						new rrsc(1, true)
+						new rsc(5, false)
 						), BP.referenceIndex, BP.end, 1, B("TT"), B("TT"), 1, 2),
 				onNegative(Read(BP.referenceIndex2, BP.start2, "1M"))[0]));
 		cb.addEvidence(AssemblyFactory.createAnchored(getContext(), AES(), BP.direction, Sets.<DirectedEvidence>newHashSet(
-						new sc(1, true),
-						new um(1, false),
-						new um(2, false)
+						new um(6, true)
 						), BP.referenceIndex, BP.end, 1, B("TT"), B("TT"), 1, 2));
 		return (VariantContextDirectedBreakpoint)cb.make();
 	}
@@ -227,7 +229,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		Assert.assertArrayEquals(new float[] { 0,  2*12 + 1+2, }, (float[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_READPAIR_QUAL.attribute()), 0);
 	}
 	@Test
-	public void should_include_evidence_contributing_to_assembly_in_sc_rp_evidence() {
+	public void should_not_include_evidence_contributing_to_assembly_in_sc_rp_evidence() {
 		should_set_BREAKPOINT_SOFTCLIP_REMOTE();
 	}
 	/**
@@ -387,11 +389,12 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		support.add(SCE(BWD, tes, Read(0, 10, "3S6M")));
 		support.add(NRRP(tes, OEA(0, 16, "5M", false)));
 		support.add(NRRP(tes, OEA(0, 17, "5M", false)));
-		support.add(NRRP(tes, DP(0, 1, "2M", true, 0, 15, "5M", false)));
-		support.add(NRRP(tes, DP(0, 2, "2M", true, 0, 16, "5M", false)));
+		support.add(NRRP(tes, DP(0, 10, "2M", false, 1, 100, "5M", false)));
+		support.add(NRRP(tes, DP(0, 10, "2M", false, 1, 101, "5M", false)));
 		AssemblyEvidence ass = AssemblyFactory.createAnchored(pc, AES(), BWD,
 				support, 0, 10, 5, B("CGTAAAAT"), new byte[] { 0,1,2,3,4,5,6,7}, 0, 45);
-		VariantContextDirectedEvidence e = (VariantContextDirectedEvidence)cb(ass)
+		support.add(ass);
+		VariantContextDirectedEvidence e = (VariantContextDirectedEvidence)cb(support.toArray(new DirectedEvidence[0]))
 			.referenceReads(10, 10)
 			.referenceSpanningPairs(10, 10)
 			.make();
@@ -509,5 +512,21 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		builder.addEvidence(SoftClipEvidence.create(getContext(), SES(), FWD, withSequence("NNNN", Read(0, 12, "1M3S"))[0], withSequence("NNN", Read(0, 10, "3M"))[0]));
 		VariantContextDirectedEvidence de = builder.make();
 		assertEquals(new BreakpointSummary(0, FWD, 12, 12, 0, BWD, 10, 10), de.getBreakendSummary());
+	}
+	@Test(expected=IllegalArgumentException.class)
+	public void should_exclude_unsupporting_realigned_soft_clip() {
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(0, FWD, 11, 12, 0, BWD, 10, 10), "");
+			phredScore(10);
+		}}.make());
+		builder.addEvidence(SoftClipEvidence.create(getContext(), SES(), FWD, withSequence("NNNN", Read(0, 12, "1M3S"))[0], withSequence("NNN", Read(1, 10, "3M"))[0]));
+	}
+	@Test(expected=IllegalArgumentException.class)
+	public void should_exclude_unsupporting_discordant_read_pair() {
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(0, FWD, 11, 12, 0, BWD, 10, 10), "");
+			phredScore(10);
+		}}.make());
+		builder.addEvidence(NRRP(DP(0, 10, "1M", true, 0, 2, "1M", false)));
 	}
 }
