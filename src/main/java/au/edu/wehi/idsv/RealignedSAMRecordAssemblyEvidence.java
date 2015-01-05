@@ -51,10 +51,13 @@ public class RealignedSAMRecordAssemblyEvidence extends SAMRecordAssemblyEvidenc
 	public String getUntemplatedSequence() {
 		return rbp.getInsertedSequence();
 	}
+	public int getRealignmentMapq() {
+		return getRemoteSAMRecord().getReadUnmappedFlag() ? 0 : getRemoteSAMRecord().getMappingQuality();
+	}
 	public float getBreakpointQual() {
 		int evidenceCount = getAssemblySupportCountReadPair(EvidenceSubset.ALL) + getAssemblySupportCountSoftClip(EvidenceSubset.ALL);
-		// cap quality by mapq score of assembly alignment  
-		double qual = Math.min(getRemoteMapq() * evidenceCount, getBreakendQual());
+		// cap quality by mapq score of assembly alignment per evidence
+		double qual = Math.min(getRealignmentMapq() * evidenceCount, getBreakendQual());
 		return (float)qual;
 	}
 	/**

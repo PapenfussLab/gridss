@@ -206,6 +206,7 @@ public class SoftClipEvidence implements DirectedEvidence {
 		// this approach may unfairly penalise long SCs due to aligned MAPQ strategy
 		double score = source.getMetrics().getSoftClipDistribution().getPhred(clipLength);
 		score = Math.min(score, localMapq);
+		score = Math.min(score, remoteMapq);
 		return (float)score;
 	}
 	@Override

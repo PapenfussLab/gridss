@@ -83,4 +83,12 @@ public abstract class RemoteEvidenceTest extends TestHelper  {
 	public void should_have_different_evidenceID() {
 		assertNotEquals(L().getEvidenceID(), R().getEvidenceID());
 	}
+	@Test
+	public void getBreakpointQual_should_be_unchanged() {
+		assertEquals(L().getBreakpointQual(), R().getBreakpointQual(), 0);
+	}
+	@Test
+	public void getBreakendQual_should_be_unchanged() {
+		assertEquals(L().getBreakendQual(), R().getBreakendQual(), 0);
+	}
 }

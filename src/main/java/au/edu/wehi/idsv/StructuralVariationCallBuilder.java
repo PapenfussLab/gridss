@@ -66,7 +66,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private boolean sanitycheck(VariantContextDirectedEvidence annotated) {
 		double qual = annotated.getPhredScaledQual();
 		double origqual = parent.getPhredScaledQual();
-		assert(qual <= origqual);
+		assert(qual <= origqual + 0.01);
 		return true;
 	}
 	/**

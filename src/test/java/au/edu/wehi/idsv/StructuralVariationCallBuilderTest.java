@@ -254,7 +254,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test
 	public void should_set_BREAKPOINT_ASSEMBLY_REMOTE() {
 		Assert.assertEquals(1, (int)(Integer)complex_bp().getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE.attribute()));
-		Assert.assertEquals(5, (float)(Float)complex_bp().getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE.attribute()), 0);
+		Assert.assertEquals(new sc(4, false).getBreakendQual(), (float)(Float)complex_bp().getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE.attribute()), 0);
 	}
 	/**
 	 * We do this to prevent inflation of support for a breakpoint by an assembly that

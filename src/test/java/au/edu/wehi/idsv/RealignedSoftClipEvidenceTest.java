@@ -139,5 +139,25 @@ public class RealignedSoftClipEvidenceTest extends TestHelper {
 				withQual(new byte[] { 1,2,3,4,5,6}, Read(0, 1, "1S3M2S"))[0]))
 			.getRemoteTotalBaseQual());
 	}
-
+	@Test
+	public void getBreakendQual_should_be_non_zero() {
+		RealignedSoftClipEvidence sce = ((RealignedSoftClipEvidence)SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Forward,
+				withMapq(40, Read(0, 1, "4M30S"))[0],
+				withMapq(40, withQual(new byte[] { 1,2,3,4,5,6}, Read(0, 1, "1S3M2S")))[0]));
+		assertEquals(30, sce.getBreakendQual(), 0);
+	}
+	@Test
+	public void getBreakendQual_should_factor_in_local_mapq() {
+		RealignedSoftClipEvidence sce = ((RealignedSoftClipEvidence)SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Forward,
+				withMapq(0, Read(0, 1, "4M60S"))[0],
+				withMapq(40, withQual(new byte[] { 1,2,3,4,5,6}, Read(0, 1, "1S3M2S")))[0]));
+		assertEquals(0, sce.getBreakendQual(), 0);
+	}
+	@Test
+	public void getBreakpointQual_should_factor_in_remote_mapq() {
+		RealignedSoftClipEvidence sce = ((RealignedSoftClipEvidence)SoftClipEvidence.create(getContext(), SES(), BreakendDirection.Forward,
+				withMapq(40, Read(0, 1, "4M60S"))[0],
+				withMapq(11, withQual(new byte[] { 1,2,3,4,5,6}, Read(0, 1, "1S3M2S")))[0]));
+		assertEquals(11, sce.getBreakpointQual(), 0);
+	}
 }

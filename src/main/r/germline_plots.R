@@ -15,7 +15,7 @@ ggplot(df, aes(x=QUAL, y=BQ, color=factor(pmin(AS, 1)+pmin(RAS, 1)))) + geom_poi
 # Effect of unique read mapping
 # TODO: why to points exist where QUAL > CQ ? this should not be possible
 ggplot(df, aes(x=QUAL, y=CQ, color=factor(pmin(AS, 1)+pmin(RAS, 1)))) + geom_point() + scale_x_log10() + scale_y_log10()
-
+head(df[df$QUAL > 100 * df$CQ,])
 
 # local anchor length shouldn't mean much
 ggplot(pp, aes(x=A_BLRM, y=A_BLLM)) + geom_point()
