@@ -18,7 +18,7 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	private final BreakendSummary location;
 	private final SAMEvidenceSource source;
 	private String evidenceID = null;
-	protected NonReferenceReadPair(SAMRecord local, SAMRecord remote, SAMEvidenceSource source, ProcessingContext processContext) {
+	protected NonReferenceReadPair(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {
 		if (local == null) throw new IllegalArgumentException("local is null");
 		if (remote == null) throw new IllegalArgumentException("remote is null");
 		if (!StringUtils.equals(local.getReadName(), remote.getReadName())) throw new IllegalArgumentException(String.format("Paired reads %s and %s have differing read names", local.getReadName(), remote.getReadName()));
@@ -28,14 +28,14 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		if (source.getMaxConcordantFragmentSize() < local.getReadLength()) throw new IllegalArgumentException(String.format("Sanity check failure: read pair %s contains read of length %d when maximum fragment size is %d", local.getReadName(), local.getReadLength(), source.getMaxConcordantFragmentSize()));
 		this.local = local;
 		this.remote = remote;
-		this.location = calculateBreakendSummary(local, remote, source, processContext);
+		this.location = calculateBreakendSummary(local, remote, source, source.getContext());
 		this.source = source;
 	}
-	public static NonReferenceReadPair create(SAMRecord local, SAMRecord remote, SAMEvidenceSource source, ProcessingContext processContext) {
+	public static NonReferenceReadPair create(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {
 		if (remote == null || remote.getReadUnmappedFlag()) {
-			return new UnmappedMateReadPair(local, remote, source, processContext);
+			return new UnmappedMateReadPair(local, remote, source);
 		} else {
-			return new DiscordantReadPair(local, remote, source, processContext);
+			return new DiscordantReadPair(local, remote, source);
 		}
 	}
 	public boolean meetsEvidenceCritera(ReadPairParameters rp) {

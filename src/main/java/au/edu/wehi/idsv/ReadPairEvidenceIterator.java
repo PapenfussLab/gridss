@@ -10,13 +10,11 @@ import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
 
 public class ReadPairEvidenceIterator extends AbstractIterator<NonReferenceReadPair> implements CloseableIterator<NonReferenceReadPair> {
-	private final ProcessingContext processContext;
 	private final SAMEvidenceSource source;
 	private final SequentialNonReferenceReadPairFactory factory;
 	private final Iterator<SAMRecord> iterator;
 	private final Iterator<SAMRecord> mateIterator;
-	public ReadPairEvidenceIterator(ProcessingContext processContext, SAMEvidenceSource source, Iterator<SAMRecord> it, Iterator<SAMRecord> mateIt) {
-		this.processContext = processContext;
+	public ReadPairEvidenceIterator(SAMEvidenceSource source, Iterator<SAMRecord> it, Iterator<SAMRecord> mateIt) {
 		this.source = source;
 		this.iterator = it;
 		this.mateIterator = mateIt;
@@ -31,9 +29,9 @@ public class ReadPairEvidenceIterator extends AbstractIterator<NonReferenceReadP
 	protected NonReferenceReadPair computeNext() {
 		while (iterator.hasNext()) {
 			SAMRecord record = iterator.next();
-			if (NonReferenceReadPair.meetsLocalEvidenceCritera(processContext.getReadPairParameters(), source, record)) {
-				NonReferenceReadPair pair = factory.createNonReferenceReadPair(record, source, processContext);
-				if (pair != null && pair.meetsEvidenceCritera(processContext.getReadPairParameters())) {
+			if (NonReferenceReadPair.meetsLocalEvidenceCritera(source.getContext().getReadPairParameters(), source, record)) {
+				NonReferenceReadPair pair = factory.createNonReferenceReadPair(record, source);
+				if (pair != null && pair.meetsEvidenceCritera(source.getContext().getReadPairParameters())) {
 					return pair;
 				}
 			}

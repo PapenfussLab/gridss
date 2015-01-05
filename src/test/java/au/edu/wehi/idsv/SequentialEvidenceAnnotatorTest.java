@@ -26,7 +26,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 			.loc("polyA", 1, 1)
 			.alleles("A", "A[polyA:10[");
 		VariantContextDirectedBreakpoint result = (VariantContextDirectedBreakpoint)go(L(
-				(DirectedEvidence)SoftClipEvidence.create(getContext(), SES(), FWD, Read(0, 1, "1M3S"), Read(0, 10, "3M"))
+				(DirectedEvidence)SoftClipEvidence.create(SES(), FWD, Read(0, 1, "1M3S"), Read(0, 10, "3M"))
 			), (VariantContextDirectedEvidence)builder.make());
 		assertEquals(1, result.getBreakpointEvidenceCountSoftClip(null));
 	}
@@ -37,7 +37,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 			.loc("polyA", 1, 1)
 			.alleles("A", "A[polyA:10[");
 		VariantContextDirectedEvidence result = go(L(
-				(DirectedEvidence)SoftClipEvidence.create(getContext(), SES(), FWD, Read(0, 1, "1M3S"))
+				(DirectedEvidence)SoftClipEvidence.create(SES(), FWD, Read(0, 1, "1M3S"))
 			), (VariantContextDirectedEvidence)builder.make());
 		assertEquals(1, result.getBreakendEvidenceCountSoftClip(null));
 	}
@@ -65,8 +65,8 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 			.loc("polyA", 1, 1)
 			.alleles("A", "A[polyA:10[");
 		VariantContextDirectedBreakpoint result = (VariantContextDirectedBreakpoint)go(L(
-				(DirectedEvidence)SoftClipEvidence.create(getContext(), SES(), FWD, Read(0, 1, "1M2S"), Read(0, 10, "3M")),
-				(DirectedEvidence)SoftClipEvidence.create(getContext(), SES(), FWD, Read(0, 1, "1M3S"), Read(0, 10, "3M"))
+				(DirectedEvidence)SoftClipEvidence.create(SES(), FWD, Read(0, 1, "1M2S"), Read(0, 10, "3M")),
+				(DirectedEvidence)SoftClipEvidence.create(SES(), FWD, Read(0, 1, "1M3S"), Read(0, 10, "3M"))
 			), (VariantContextDirectedEvidence)builder.make());
 		assertEquals(2, result.getBreakpointEvidenceCountSoftClip(null));
 	}
@@ -77,7 +77,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 			.loc("polyA", 2, 2)
 			.alleles("A", "A[polyA:10[");
 		VariantContextDirectedBreakpoint result = (VariantContextDirectedBreakpoint)go(L(
-				(DirectedEvidence)SoftClipEvidence.create(getContext(), SES(), FWD, Read(0, 1, "1M3S"))
+				(DirectedEvidence)SoftClipEvidence.create(SES(), FWD, Read(0, 1, "1M3S"))
 			), (VariantContextDirectedEvidence)builder.make());
 		assertEquals(1, result.getBreakendEvidenceCountSoftClip(null));
 	}
@@ -109,8 +109,8 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 				phredScore(20);
 			}}.make());
 		List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
-		evidence.add(SoftClipEvidence.create(getContext(), SES(), FWD, withSequence("NNNNN", Read(0, 12, "1M4S"))[0], withSequence("NNN", Read(0, 10, "3M"))[0]));
-		evidence.add(SoftClipEvidence.create(getContext(), SES(), FWD, withSequence("NNNN", Read(0, 12, "1M3S"))[0], withSequence("NNN", Read(0, 10, "3M"))[0]));
+		evidence.add(SoftClipEvidence.create(SES(), FWD, withSequence("NNNNN", Read(0, 12, "1M4S"))[0], withSequence("NNN", Read(0, 10, "3M"))[0]));
+		evidence.add(SoftClipEvidence.create(SES(), FWD, withSequence("NNNN", Read(0, 12, "1M3S"))[0], withSequence("NNN", Read(0, 10, "3M"))[0]));
 		
 		BreakpointSummary bp = new BreakpointSummary(0,  FWD, 12, 12, 0, BWD, 10, 10); 
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(new SequentialEvidenceAnnotator(getContext(), calls.iterator(), evidence.iterator(), 300, true, null));
@@ -132,7 +132,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 			.loc("polyA", 1, 1)
 			.alleles("A", "A[polyA:10[");
 		VariantContextDirectedBreakpoint result = (VariantContextDirectedBreakpoint)go(L(
-				(DirectedEvidence)SoftClipEvidence.create(getContext(), SES(), BWD, Read(0, 1, "3S1M"), Read(0, 10, "3M"))
+				(DirectedEvidence)SoftClipEvidence.create(SES(), BWD, Read(0, 1, "3S1M"), Read(0, 10, "3M"))
 			), (VariantContextDirectedEvidence)builder.make());
 		assertEquals(0, result.getBreakpointEvidenceCountSoftClip(null));
 		assertEquals(0, result.getBreakendEvidenceCountSoftClip(null));
@@ -144,7 +144,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 			.loc("polyA", 1, 1)
 			.alleles("A", "A[polyA:10[");
 		VariantContextDirectedBreakpoint result = (VariantContextDirectedBreakpoint)go(L(
-				(DirectedEvidence)SoftClipEvidence.create(getContext(), SES(), FWD, withSequence("TTTTTTTT", Read(0, 5, "3S1M3S"))[0], withSequence("TTT", Read(0, 12, "3M"))[0])
+				(DirectedEvidence)SoftClipEvidence.create(SES(), FWD, withSequence("TTTTTTTT", Read(0, 5, "3S1M3S"))[0], withSequence("TTT", Read(0, 12, "3M"))[0])
 			), (VariantContextDirectedEvidence)builder.make());
 		assertEquals(0, result.getBreakpointEvidenceCountSoftClip(null));
 		assertEquals(0, result.getBreakendEvidenceCountSoftClip(null));

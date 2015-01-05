@@ -26,7 +26,6 @@ public class ReadPairEvidenceIteratorTest extends TestHelper {
 		sv = sorted(sv);
 		mate = mateSorted(mate);
 		ReadPairEvidenceIterator it = new ReadPairEvidenceIterator(
-				getContext(),
 				SES(),
 				sv.iterator(),
 				mate.iterator());

@@ -8,7 +8,10 @@ import java.io.File;
 public abstract class EvidenceSource {
 	public abstract int getMaxConcordantFragmentSize();
 	protected final File input;
-	protected final ProcessingContext processContext;
+	private final ProcessingContext processContext;
+	public ProcessingContext getContext() {
+		return processContext;
+	}
 	/**
 	 * Gets the file that the intermediate directory location and stucture is based on.
 	 * @return anchor file

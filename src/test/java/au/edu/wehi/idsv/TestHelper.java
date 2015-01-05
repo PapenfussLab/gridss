@@ -163,7 +163,7 @@ public class TestHelper {
 	public static NonReferenceReadPair NRRP(SAMEvidenceSource source,
 			SAMRecord... pair) {
 		pair[1].setReadName(pair[0].getReadName());
-		return NonReferenceReadPair.create(pair[0], pair[1], source, getContext());
+		return NonReferenceReadPair.create(pair[0], pair[1], source);
 	}
 	public SAMRecordAssemblyEvidence A(BreakpointSummary bs) {
 		// TODO handle more cases
@@ -206,11 +206,11 @@ public class TestHelper {
 	public static SoftClipEvidence SCE(BreakendDirection direction,
 			SAMEvidenceSource source, SAMRecord... pair) {
 		if (pair.length >= 2) {
-			return SoftClipEvidence.create(getContext(), source, direction,
-					pair[0], pair[1]);
+			return SoftClipEvidence.create(source, direction, pair[0],
+					pair[1]);
 		} else {
-			return SoftClipEvidence.create(getContext(), source, direction,
-					pair[0], null);
+			return SoftClipEvidence.create(source, direction, pair[0],
+					null);
 		}
 	}
 

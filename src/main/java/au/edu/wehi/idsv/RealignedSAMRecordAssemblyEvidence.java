@@ -6,21 +6,19 @@ import au.edu.wehi.idsv.sam.SAMRecordUtil;
 public class RealignedSAMRecordAssemblyEvidence extends SAMRecordAssemblyEvidence implements DirectedBreakpoint {
 	private final RealignedBreakpoint rbp;
 	public RealignedSAMRecordAssemblyEvidence(
-			ProcessingContext processContext,
 			AssemblyEvidenceSource source,
 			SAMRecordAssemblyEvidence assembly,
 			SAMRecord realigned) {
 		super(source, assembly, realigned);
-		this.rbp = new RealignedBreakpoint(processContext, super.getBreakendSummary(), super.getAssemblyAnchorSequence(), realigned);
+		this.rbp = new RealignedBreakpoint(source.getContext(), super.getBreakendSummary(), super.getAssemblyAnchorSequence(), realigned);
 		SAMRecordUtil.pairReads(getSAMRecord(), getRemoteSAMRecord());
 	}
 	public RealignedSAMRecordAssemblyEvidence(
-			ProcessingContext processContext,
 			AssemblyEvidenceSource source,
 			SAMRecord assembly,
 			SAMRecord realigned) {
 		super(source, assembly, realigned);
-		this.rbp = new RealignedBreakpoint(processContext, super.getBreakendSummary(), super.getAssemblyAnchorSequence(), realigned);
+		this.rbp = new RealignedBreakpoint(source.getContext(), super.getBreakendSummary(), super.getAssemblyAnchorSequence(), realigned);
 		SAMRecordUtil.pairReads(getSAMRecord(), getRemoteSAMRecord());
 	}
 	@Override
@@ -51,13 +49,10 @@ public class RealignedSAMRecordAssemblyEvidence extends SAMRecordAssemblyEvidenc
 	public String getUntemplatedSequence() {
 		return rbp.getInsertedSequence();
 	}
-	public int getRealignmentMapq() {
-		return getRemoteSAMRecord().getReadUnmappedFlag() ? 0 : getRemoteSAMRecord().getMappingQuality();
-	}
 	public float getBreakpointQual() {
 		int evidenceCount = getAssemblySupportCountReadPair(EvidenceSubset.ALL) + getAssemblySupportCountSoftClip(EvidenceSubset.ALL);
 		// cap quality by mapq score of assembly alignment per evidence
-		double qual = Math.min(getRealignmentMapq() * evidenceCount, getBreakendQual());
+		double qual = Math.min(getRemoteMapq() * evidenceCount, getBreakendQual());
 		return (float)qual;
 	}
 	/**
@@ -65,6 +60,6 @@ public class RealignedSAMRecordAssemblyEvidence extends SAMRecordAssemblyEvidenc
 	 * @return
 	 */
 	public RealignedRemoteSAMRecordAssemblyEvidence asRemote() {
-		return new RealignedRemoteSAMRecordAssemblyEvidence(getEvidenceSource().processContext, getEvidenceSource(), getSAMRecord(), getRemoteSAMRecord());
+		return new RealignedRemoteSAMRecordAssemblyEvidence(this);
 	}
 }

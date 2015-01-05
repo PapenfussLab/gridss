@@ -26,7 +26,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public final static BreakpointSummary BP = new BreakpointSummary(0, BWD, 10, 10, 1, BWD, 100, 100);
 	public static class sc extends SoftClipEvidence {
 		protected sc(int offset, boolean tumour) {
-			super(getContext(), SES(tumour), BWD, Read(0, 10, "5S5M"));
+			super(SES(tumour), BWD, Read(0, 10, "5S5M"));
 			this.offset = offset;
 		}
 		int offset;
@@ -41,7 +41,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public static class rsc extends RealignedSoftClipEvidence {
 		int offset;
 		protected rsc(int offset, boolean tumour) {
-			super(getContext(), SES(tumour), BWD, Read(0, 10, "5S5M"), onNegative(Read(1, 100, "5M"))[0]);
+			super(SES(tumour), BWD, Read(0, 10, "5S5M"), onNegative(Read(1, 100, "5M"))[0]);
 			this.offset = offset;
 		}
 		@Override public int getLocalMapq() { return 1 + offset; }
@@ -60,7 +60,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public static class rsc_not_supporting_breakpoint extends RealignedSoftClipEvidence {
 		int offset;
 		protected rsc_not_supporting_breakpoint(int offset, boolean tumour) {
-			super(getContext(), SES(tumour), BWD, Read(0, 10, "5S5M"), onNegative(Read(2, 100, "5M"))[0]);
+			super(SES(tumour), BWD, Read(0, 10, "5S5M"), onNegative(Read(2, 100, "5M"))[0]);
 			this.offset = offset;
 		}
 		@Override public int getLocalMapq() { return 1 + offset; }
@@ -79,7 +79,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public static class rrsc extends RealignedRemoteSoftClipEvidence {
 		int offset;
 		protected rrsc(int offset, boolean tumour) {
-			super(getContext(), SES(tumour), BWD, Read(1, 100, "5S5M"), onNegative(Read(0, 10, "5M"))[0]);
+			super(new RealignedSoftClipEvidence(SES(tumour), BWD, Read(1, 100, "5S5M"), onNegative(Read(0, 10, "5M"))[0]));
 			this.offset = offset;
 		}
 		@Override public int getLocalMapq() { return 1 + offset; }
@@ -100,7 +100,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		protected um(int offset, boolean tumour) {
 			super(OEA(0, 15, "5M", false)[0],
 				OEA(0, 15, "5M", false)[1],
-				SES(tumour), getContext());
+				SES(tumour));
 			this.offset = offset;
 		}
 		@Override public int getLocalMapq() { return 1 + offset; }
@@ -115,7 +115,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		protected dp(int offset, boolean tumour) {
 			super(DP(0, 12, "6M", false, 1, 102, "7M", false)[0],
 					DP(0, 12, "6M", false, 1, 102, "7M", false)[1],
-					SES(tumour), getContext());
+					SES(tumour));
 				this.offset = offset;
 			}
 		@Override public int getLocalMapq() { return 1 + offset; }
@@ -254,7 +254,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test
 	public void should_set_BREAKPOINT_ASSEMBLY_REMOTE() {
 		Assert.assertEquals(1, (int)(Integer)complex_bp().getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE.attribute()));
-		Assert.assertEquals(new sc(4, false).getBreakendQual(), (float)(Float)complex_bp().getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE.attribute()), 0);
+		Assert.assertEquals(5, (float)(Float)complex_bp().getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE.attribute()), 0);
 	}
 	/**
 	 * We do this to prevent inflation of support for a breakpoint by an assembly that
@@ -491,7 +491,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 					setReadBases(B("TTTT"));
 					setMappingQuality(21);
 					}}));		
-		evidence.add(SoftClipEvidence.create(getContext(), SES(), FWD, Read(0, 12, "1M3S"), Read(1, 11, "3M")));
+		evidence.add(SoftClipEvidence.create(SES(), FWD, Read(0, 12, "1M3S"), Read(1, 11, "3M")));
 		for (DirectedEvidence e : evidence) {
 			builder.addEvidence(e);
 		}
@@ -505,8 +505,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			phredScore(20);
 		}}.make());
 		List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
-		evidence.add(SoftClipEvidence.create(getContext(), SES(), FWD, Read(0, 12, "1M3S"), withMapq(14, Read(1, 11, "3M"))[0]));
-		evidence.add(SoftClipEvidence.create(getContext(), SES(), FWD, Read(0, 13, "1M3S"), withMapq(15, Read(1, 11, "3M"))[0]));
+		evidence.add(SoftClipEvidence.create(SES(), FWD, Read(0, 12, "1M3S"), withMapq(14, Read(1, 11, "3M"))[0]));
+		evidence.add(SoftClipEvidence.create(SES(), FWD, Read(0, 13, "1M3S"), withMapq(15, Read(1, 11, "3M"))[0]));
 		for (DirectedEvidence e : evidence) {
 			builder.addEvidence(e);
 		}
@@ -520,7 +520,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			phredScore(31);
 		}}.make());
 		List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
-		evidence.add(SoftClipEvidence.create(getContext(), SES(), FWD, Read(0, 12, "1M3S"), withMapq(14, Read(1, 11, "3M"))[0]));
+		evidence.add(SoftClipEvidence.create(SES(), FWD, Read(0, 12, "1M3S"), withMapq(14, Read(1, 11, "3M"))[0]));
 		for (DirectedEvidence e : evidence) {
 			builder.addEvidence(e);
 		}
@@ -533,7 +533,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			breakpoint(new BreakpointSummary(0, FWD, 11, 12, 0, BWD, 10, 10), "");
 			phredScore(10);
 		}}.make());
-		builder.addEvidence(SoftClipEvidence.create(getContext(), SES(), FWD, withSequence("NNNN", Read(0, 12, "1M3S"))[0], withSequence("NNN", Read(0, 10, "3M"))[0]));
+		builder.addEvidence(SoftClipEvidence.create(SES(), FWD, withSequence("NNNN", Read(0, 12, "1M3S"))[0], withSequence("NNN", Read(0, 10, "3M"))[0]));
 		VariantContextDirectedEvidence de = builder.make();
 		assertEquals(new BreakpointSummary(0, FWD, 12, 12, 0, BWD, 10, 10), de.getBreakendSummary());
 	}
@@ -543,7 +543,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			breakpoint(new BreakpointSummary(0, FWD, 11, 12, 0, BWD, 10, 10), "");
 			phredScore(10);
 		}}.make());
-		builder.addEvidence(SoftClipEvidence.create(getContext(), SES(), FWD, withSequence("NNNN", Read(0, 12, "1M3S"))[0], withSequence("NNN", Read(1, 10, "3M"))[0]));
+		builder.addEvidence(SoftClipEvidence.create(SES(), FWD, withSequence("NNNN", Read(0, 12, "1M3S"))[0], withSequence("NNN", Read(1, 10, "3M"))[0]));
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void should_exclude_unsupporting_discordant_read_pair() {

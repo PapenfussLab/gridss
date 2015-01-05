@@ -86,7 +86,7 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	}
 	public class CompletedSAMEvidenceSource extends MockSAMEvidenceSource {
 		public CompletedSAMEvidenceSource() {
-			super(getContext(), 0, 300);
+			super(IntermediateFilesTest.getContext(), 0, 300);
 		}
 		@Override
 		public boolean isComplete(ProcessStep step) {

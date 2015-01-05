@@ -20,20 +20,17 @@ import com.google.common.collect.Lists;
  *
  */
 public class RealignedRemoteSoftClipEvidence extends RealignedSoftClipEvidence implements RemoteEvidence {
-	private final int originalClipLength;
-	public RealignedRemoteSoftClipEvidence(ProcessingContext processContext,
-			SAMEvidenceSource source, BreakendDirection direction,
-			SAMRecord record, SAMRecord realigned) {
+	private final RealignedSoftClipEvidence local;
+	public RealignedRemoteSoftClipEvidence(RealignedSoftClipEvidence evidence) {
 		super(
-				processContext,
-				source,
-				getRemoteDirection(direction, record, realigned),
-				createLocal(direction, record, realigned),
-				createRemote(direction, record, realigned));
-		this.originalClipLength = direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipLength(record) : SAMRecordUtil.getStartSoftClipLength(record);
+				evidence.getEvidenceSource(),
+				getRemoteDirection(evidence.getBreakendSummary().direction, evidence.getSAMRecord(), evidence.getRealignedSAMRecord()),
+				createLocal(evidence.getBreakendSummary().direction, evidence.getSAMRecord(), evidence.getRealignedSAMRecord()),
+				createRemote(evidence.getBreakendSummary().direction, evidence.getSAMRecord(), evidence.getRealignedSAMRecord()));
+		this.local = evidence;
 	}
-	public int getOriginalSoftClipLength() {
-		return originalClipLength;
+	public RealignedSoftClipEvidence asLocal() {
+		return local;
 	}
 	@Override
 	protected StringBuilder buildEvidenceID() {
@@ -172,10 +169,10 @@ public class RealignedRemoteSoftClipEvidence extends RealignedSoftClipEvidence i
 	}
 	@Override
 	public float getBreakpointQual() {
-		return scPhred(getEvidenceSource(), getOriginalSoftClipLength(), getRemoteMapq(), getLocalMapq());
+		return local.getBreakpointQual();
 	}
 	@Override
 	public float getBreakendQual() {
-		return scPhred(getEvidenceSource(), getOriginalSoftClipLength(), getRemoteMapq(), Integer.MAX_VALUE);
+		return local.getBreakendQual();
 	}
 }

@@ -47,7 +47,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		this.record = assembly;
 		BreakendSummary bs = calculateBreakendFromAlignmentCigar(this.record.getReferenceIndex(), this.record.getAlignmentStart(), this.record.getCigar());
 		if (bs instanceof BreakpointSummary && realignment != null && !realignment.getReadUnmappedFlag()
-				&& !source.processContext.getRealignmentParameters().realignmentPositionUnique(realignment)) {
+				&& !source.getContext().getRealignmentParameters().realignmentPositionUnique(realignment)) {
 			// ignore mapping location of realignment
 			bs = ((BreakpointSummary)bs).localBreakend();
 		}
@@ -275,7 +275,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		SAMRecord record = new SAMRecord(samFileHeader);
 		record.setReferenceIndex(breakend.referenceIndex);
 		record.setReadName(String.format("gridss_%s_%d_%d%s_%d",
-				source.processContext.getDictionary().getSequence(breakend.referenceIndex).getSequenceName(),
+				source.getContext().getDictionary().getSequence(breakend.referenceIndex).getSequenceName(),
 				breakend.start, breakend.end,
 				breakend.direction == BreakendDirection.Forward ? "f" : "b",
 				Math.abs(Arrays.hashCode(baseCalls))) + anchoredBaseCount);
@@ -548,8 +548,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		int evidenceCount = getAssemblySupportCountReadPair(EvidenceSubset.ALL) + getAssemblySupportCountSoftClip(EvidenceSubset.ALL);
 		double qual = getAssemblySupportReadPairQualityScore(EvidenceSubset.ALL);
 		qual += getAssemblySupportSoftClipQualityScore(EvidenceSubset.ALL);
-		// currently redundant as evidence is capped by local mapq so cap
-		// is always larger than the actual score.
+		// currently redundant as evidence is capped by local mapq so cap is always larger than the actual score.
 		qual = Math.min(getLocalMapq() * evidenceCount, qual);
 		return (float)qual;
 	}

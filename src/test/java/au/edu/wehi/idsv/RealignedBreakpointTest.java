@@ -96,7 +96,7 @@ public class RealignedBreakpointTest extends TestHelper {
 		r.setReadBases(B("TTTTTAAAAAAAAAT"));
 		SAMRecord realign = Read(0, 100, "5M");
 		realign.setReadBases(B("AAAAT"));
-		SoftClipEvidence sce = new SoftClipEvidence(getContext(), SES(), FWD, r);
+		SoftClipEvidence sce = new SoftClipEvidence(SES(), FWD, r);
 		RealignedBreakpoint rbp = new RealignedBreakpoint(getContext(), sce.getBreakendSummary(), r.getReadBases(), realign);
 		// breakpoint could be anywhere in the poly A microhomology
 		assertEquals(rbp.getMicroHomologyLength(), rbp.getBreakpointSummary().end - rbp.getBreakpointSummary().start);

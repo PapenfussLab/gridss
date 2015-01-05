@@ -92,19 +92,23 @@ public class AssemblyParameters {
 	 */
 	public boolean writeFilteredAssemblies = Defaults.WRITE_FILTERED_ASSEMBLIES;
 	public boolean applyFilters(AssemblyEvidence evidence) {
+		AssemblyEvidence localEvidence = evidence;
+		if (evidence instanceof RemoteEvidence) {
+			localEvidence = ((RealignedRemoteSAMRecordAssemblyEvidence)evidence).asLocal();
+		}
 		boolean filtered = false;
-		if (evidence.getBreakendSequence() == null) {
+		if (localEvidence.getBreakendSequence() == null) {
 			log.error("Breakpoint sequence missing for assembly " + evidence.toString());
 		}
-		if (evidence.getBreakendSequence().length == 0) {
+		if (localEvidence.getBreakendSequence().length == 0) {
 			evidence.filterAssembly(VcfFilter.ASSEMBLY_REF);
 			filtered = true;
 		}
-		if (evidence.getAssemblySupportCountReadPair(EvidenceSubset.ALL) + evidence.getAssemblySupportCountSoftClip(EvidenceSubset.ALL) < minReads) {
+		if (localEvidence.getAssemblySupportCountReadPair(EvidenceSubset.ALL) + localEvidence.getAssemblySupportCountSoftClip(EvidenceSubset.ALL) < minReads) {
 			evidence.filterAssembly(VcfFilter.ASSEMBLY_TOO_FEW_READ);
 			filtered = true;
 		}
-		if (evidence.getAssemblyAnchorLength() == 0 && evidence.getBreakendSequence().length <= evidence.getAssemblyReadPairLengthMax(EvidenceSubset.ALL)) {
+		if (localEvidence.getAssemblyAnchorLength() == 0 && localEvidence.getBreakendSequence().length <= localEvidence.getAssemblyReadPairLengthMax(EvidenceSubset.ALL)) {
 			// just assembled a single read - not very exciting
 			evidence.filterAssembly(VcfFilter.ASSEMBLY_TOO_SHORT); // assembly length = 1 read
 			filtered = true;

@@ -6,8 +6,8 @@ import au.edu.wehi.idsv.metrics.InsertSizeDistribution;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 public class DiscordantReadPair extends NonReferenceReadPair implements DirectedBreakpoint {
-	protected DiscordantReadPair(SAMRecord local, SAMRecord remote, SAMEvidenceSource source, ProcessingContext processContext) {
-		super(local, remote, source, processContext);
+	protected DiscordantReadPair(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {
+		super(local, remote, source);
 		assert(!remote.getReadUnmappedFlag());
 	}
 	@Override

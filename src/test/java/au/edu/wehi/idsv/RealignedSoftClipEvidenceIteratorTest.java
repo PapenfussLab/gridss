@@ -25,7 +25,7 @@ public class RealignedSoftClipEvidenceIteratorTest extends TestHelper {
 	}
 	public void go() {
 		sv = sorted(sv);
-		List<SoftClipEvidence> sclist = Lists.newArrayList(new SoftClipEvidenceIterator(getContext(), SES(), sv.iterator()));
+		List<SoftClipEvidence> sclist = Lists.newArrayList(new SoftClipEvidenceIterator(SES(), sv.iterator()));
 		Collections.sort(sclist, DirectedEvidenceOrder.ByNatural);
 		out = Lists.newArrayList(new RealignedSoftClipEvidenceIterator(sclist.iterator(), realigned.iterator()));
 	}

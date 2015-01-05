@@ -20,7 +20,6 @@ import com.google.common.collect.Lists;
  *
  */
 public class RealignedRemoteSoftClipEvidenceIterator extends AbstractIterator<RealignedRemoteSoftClipEvidence> implements CloseableIterator<RealignedRemoteSoftClipEvidence> {
-	private final ProcessingContext processContext;
 	private final SAMEvidenceSource source;
 	private final Iterator<SAMRecord> realigned;
 	private final SequentialSoftClipRealignedRemoteBreakpointFactory ffactory;
@@ -28,12 +27,10 @@ public class RealignedRemoteSoftClipEvidenceIterator extends AbstractIterator<Re
 	private final List<Object> toClose;
 	private final Queue<RealignedRemoteSoftClipEvidence> buffer = new ArrayDeque<RealignedRemoteSoftClipEvidence>();
 	public RealignedRemoteSoftClipEvidenceIterator(
-			ProcessingContext processContext,
 			SAMEvidenceSource source,
 			Iterator<SAMRecord> realigned,
 			Iterator<SAMRecord> forwardSoftClipsOrderByRealignedCoordinate,
 			Iterator<SAMRecord> backwardSoftClipsOrderByRealignedCoordinate) {
-		this.processContext = processContext;
 		this.source = source;
 		this.toClose = Lists.<Object>newArrayList(realigned, forwardSoftClipsOrderByRealignedCoordinate, backwardSoftClipsOrderByRealignedCoordinate);
 		this.realigned = realigned;
@@ -44,17 +41,34 @@ public class RealignedRemoteSoftClipEvidenceIterator extends AbstractIterator<Re
 	protected RealignedRemoteSoftClipEvidence computeNext() {
 		while (realigned.hasNext() && buffer.isEmpty()) {
 			SAMRecord realign = realigned.next();
-			SAMRecord fsc = ffactory.findAssociatedSAMRecord(realign);
-			if (fsc != null) {
-				buffer.add(new RealignedRemoteSoftClipEvidence(processContext, source, BreakendDirection.Forward, fsc, realign));
-			}
-			SAMRecord bsc = bfactory.findAssociatedSAMRecord(realign);
-			if (bsc != null) {
-				buffer.add(new RealignedRemoteSoftClipEvidence(processContext, source, BreakendDirection.Backward, bsc, realign));
+			String evidenceId = BreakpointFastqEncoding.getEncodedID(realign.getReadName());
+			if (evidenceId.startsWith(SoftClipEvidence.FORWARD_EVIDENCEID_PREFIX)) {
+				RealignedRemoteSoftClipEvidence fsce = createRemote(BreakendDirection.Forward, ffactory.findAssociatedSAMRecord(realign), realign);
+				if (fsce != null) {
+					buffer.add(fsce);
+				}
+			} else if (evidenceId.startsWith(SoftClipEvidence.BACKWARD_EVIDENCEID_PREFIX)) {
+				RealignedRemoteSoftClipEvidence bsce = createRemote(BreakendDirection.Backward, bfactory.findAssociatedSAMRecord(realign), realign);
+				if (bsce != null) {
+					buffer.add(bsce);
+				}
+			} else {
+				throw new RuntimeException(String.format("Malformed realigned soft clip read name %s", evidenceId));
 			}
 		}
 		if (buffer.isEmpty()) return endOfData();
 		return buffer.poll();
+	}
+	private RealignedRemoteSoftClipEvidence createRemote(BreakendDirection direction, SAMRecord sc, SAMRecord realign) {
+		if (sc == null || realign == null) return null;
+		SoftClipEvidence breakendEvidence = SoftClipEvidence.create(source, direction, sc);
+		if (breakendEvidence.meetsEvidenceCritera(source.getContext().getSoftClipParameters())) {
+			SoftClipEvidence breakpointEvidence = SoftClipEvidence.create(breakendEvidence, realign);
+			if (breakpointEvidence instanceof RealignedSoftClipEvidence) {
+				return ((RealignedSoftClipEvidence)breakpointEvidence).asRemote();
+			}
+		}
+		return null;
 	}
 	@Override
 	public void close() {

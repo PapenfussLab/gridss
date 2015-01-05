@@ -18,12 +18,10 @@ import com.google.common.collect.Queues;
  *
  */
 public class SoftClipEvidenceIterator extends AbstractIterator<SoftClipEvidence> implements CloseableIterator<SoftClipEvidence> {
-	private final ProcessingContext processContext;
 	private final SAMEvidenceSource source;
 	private final Iterator<SAMRecord> it;
 	private final Queue<SoftClipEvidence> buffer = Queues.newArrayDeque();
-	public SoftClipEvidenceIterator(ProcessingContext processContext, SAMEvidenceSource source, Iterator<SAMRecord> it) {
-		this.processContext = processContext;
+	public SoftClipEvidenceIterator(SAMEvidenceSource source, Iterator<SAMRecord> it) {
 		this.source = source;
 		this.it = it;
 	}
@@ -32,14 +30,14 @@ public class SoftClipEvidenceIterator extends AbstractIterator<SoftClipEvidence>
 			SAMRecord record = it.next();
 			if (!record.getReadUnmappedFlag()) {
 				if (SAMRecordUtil.getStartSoftClipLength(record) > 0) {
-					SoftClipEvidence sce = SoftClipEvidence.create(processContext, source, BreakendDirection.Backward, record);
-					if (sce.meetsEvidenceCritera(processContext.getSoftClipParameters())) {
+					SoftClipEvidence sce = SoftClipEvidence.create(source, BreakendDirection.Backward, record);
+					if (sce.meetsEvidenceCritera(source.getContext().getSoftClipParameters())) {
 						buffer.add(sce);
 					}
 				}
 				if (SAMRecordUtil.getEndSoftClipLength(record) > 0) {
-					SoftClipEvidence sce = SoftClipEvidence.create(processContext, source, BreakendDirection.Forward, record);
-					if (sce.meetsEvidenceCritera(processContext.getSoftClipParameters())) {
+					SoftClipEvidence sce = SoftClipEvidence.create(source, BreakendDirection.Forward, record);
+					if (sce.meetsEvidenceCritera(source.getContext().getSoftClipParameters())) {
 						buffer.add(sce);
 					}
 				}

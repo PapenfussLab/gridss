@@ -66,7 +66,7 @@ public final class AssemblyFactory {
 			// Breakend did not align well enough for us to call a breakpoint
 			return new SAMRecordAssemblyEvidence(a.getEvidenceSource(), assembly, realignment);
 		} else {
-			return new RealignedSAMRecordAssemblyEvidence(processContext, a.getEvidenceSource(), assembly, realignment);
+			return new RealignedSAMRecordAssemblyEvidence(a.getEvidenceSource(), assembly, realignment);
 		}
 	}
 }

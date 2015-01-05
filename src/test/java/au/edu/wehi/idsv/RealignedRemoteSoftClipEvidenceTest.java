@@ -1,19 +1,19 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMRecord;
+
 import org.junit.Assert;
 import org.junit.Test;
-
-import htsjdk.samtools.SAMRecord;
 
 
 public class RealignedRemoteSoftClipEvidenceTest extends RemoteEvidenceTest {
 	@Override
-	public RemoteEvidence makeRemote(BreakendSummary bs, String allBases, String realignCigar, boolean realignNegativeStrand) {
-		return new RealignedRemoteSoftClipEvidence(getContext(), SES(), bs.direction, makeSC(bs, allBases, realignCigar), realignSAM(bs, allBases, realignCigar, realignNegativeStrand));
+	public RealignedRemoteSoftClipEvidence makeRemote(BreakendSummary bs, String allBases, String realignCigar, boolean realignNegativeStrand) {
+		return makeLocal(bs, allBases, realignCigar, realignNegativeStrand).asRemote();
 	}
 	@Override
-	public DirectedBreakpoint makeLocal(BreakendSummary bs, String allBases, String realignCigar, boolean realignNegativeStrand) {
-		return new RealignedSoftClipEvidence(getContext(), SES(), bs.direction, makeSC(bs, allBases, realignCigar), realignSAM(bs, allBases, realignCigar, realignNegativeStrand));
+	public RealignedSoftClipEvidence makeLocal(BreakendSummary bs, String allBases, String realignCigar, boolean realignNegativeStrand) {
+		return new RealignedSoftClipEvidence(SES(), bs.direction, makeSC(bs, allBases, realignCigar), realignSAM(bs, allBases, realignCigar, realignNegativeStrand));
 	}
 	private SAMRecord makeSC(final BreakendSummary bs, final String allBases, final String realignCigar) {
 		return new SAMRecord(getContext().getBasicSamHeader()) {{
@@ -35,4 +35,5 @@ public class RealignedRemoteSoftClipEvidenceTest extends RemoteEvidenceTest {
 		String evidenceID = makeRemote(new BreakendSummary(0, FWD, 1, 1), "NN", "1M", false).getEvidenceID();
 		Assert.assertEquals("R", evidenceID.substring(evidenceID.length() - 1));
 	}
+	
 }

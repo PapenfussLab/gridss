@@ -33,7 +33,6 @@ import com.google.common.collect.Lists;
  */
 public class SAMEvidenceSource extends EvidenceSource {
 	private static final Log log = Log.getInstance(SAMEvidenceSource.class);
-	private final ProcessingContext processContext;
 	private final File input;
 	private final boolean isTumour;
 	private final ReadPairConcordanceMethod rpcMethod;
@@ -52,7 +51,6 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	protected SAMEvidenceSource(ProcessingContext processContext, File file, boolean isTumour, ReadPairConcordanceMethod rpcMethod, Object[] rpcParams) {
 		super(processContext, file);
-		this.processContext = processContext;
 		this.input = file;
 		this.isTumour = isTumour;
 		this.rpcMethod = rpcMethod;
@@ -62,7 +60,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		if (header == null) {
 			SamReader reader = null;
 			try {
-				reader = processContext.getSamReader(input);
+				reader = getContext().getSamReader(input);
 				header = reader.getFileHeader();
 			} finally {
 				CloserUtil.close(reader);
@@ -80,7 +78,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			if (!isComplete(ProcessStep.CALCULATE_METRICS)
 	    			|| !isComplete(ProcessStep.EXTRACT_SOFT_CLIPS)
 	    			|| !isComplete(ProcessStep.EXTRACT_READ_PAIRS)) {
-				extract = new ExtractEvidence(processContext, this);
+				extract = new ExtractEvidence(getContext(), this);
 				log.info("START extract evidence for ", input);
 				extract.process(steps);
 				log.info("SUCCESS extract evidence for ", input);
@@ -93,7 +91,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			if (extract != null) extract.close();
 		}
 		if (isRealignmentComplete() && steps.contains(ProcessStep.SORT_REALIGNED_SOFT_CLIPS)) {
-			SortRealignedSoftClips srsc = new SortRealignedSoftClips(processContext, this);
+			SortRealignedSoftClips srsc = new SortRealignedSoftClips(getContext(), this);
 			if (!srsc.isComplete()) {
 				srsc.process(steps);
 			}
@@ -101,7 +99,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		}
 	}
 	public boolean isComplete(ProcessStep step) {
-		FileSystemContext fsc = processContext.getFileSystemContext();
+		FileSystemContext fsc = getContext().getFileSystemContext();
 		boolean done = true;
 		switch (step) {
 			case CALCULATE_METRICS:
@@ -113,8 +111,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 				if (!done) return false;
 				break;
 			case EXTRACT_SOFT_CLIPS:
-				if (processContext.shouldProcessPerChromosome()) {
-					for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
+				if (getContext().shouldProcessPerChromosome()) {
+					for (SAMSequenceRecord seq : getContext().getReference().getSequenceDictionary().getSequences()) {
 						done &= IntermediateFileUtil.checkIntermediate(fsc.getSoftClipBamForChr(input, seq.getSequenceName()), input);
 						if (!done) return false;
 					}
@@ -124,8 +122,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 				}
 				break;
 			case EXTRACT_READ_PAIRS:
-				if (processContext.shouldProcessPerChromosome()) {
-					for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
+				if (getContext().shouldProcessPerChromosome()) {
+					for (SAMSequenceRecord seq : getContext().getReference().getSequenceDictionary().getSequences()) {
 						done &= IntermediateFileUtil.checkIntermediate(fsc.getReadPairBamForChr(input, seq.getSequenceName()), input);
 						if (!done) return false;
 						//done &= IntermediateFileUtil.checkIntermediate(fsc.getMateBamUnsortedForChr(input, seq.getSequenceName()), input);
@@ -144,7 +142,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 				done = isRealignmentComplete();
 				break;
 			case SORT_REALIGNED_SOFT_CLIPS:
-				done = new SortRealignedSoftClips(processContext, this).isComplete();
+				done = new SortRealignedSoftClips(getContext(), this).isComplete();
 				break;
 			default:
 				done = false;
@@ -157,16 +155,16 @@ public class SAMEvidenceSource extends EvidenceSource {
 			if (!isComplete(ProcessStep.CALCULATE_METRICS)) {
 				completeSteps(EnumSet.of(ProcessStep.CALCULATE_METRICS));
 			}
-			metrics = new IdsvSamFileMetrics(processContext, getSourceFile());
+			metrics = new IdsvSamFileMetrics(getContext(), getSourceFile());
 		}
 		return metrics;
 	}
 	public File getSourceFile() { return input; }
 	public boolean isTumour() { return isTumour; }
 	public CloseableIterator<DirectedEvidence> iterator(final boolean includeReadPair, final boolean includeSoftClip, final boolean includeSoftClipRemote) {
-		if (processContext.shouldProcessPerChromosome()) {
+		if (getContext().shouldProcessPerChromosome()) {
 			// Lazily iterator over each input
-			return new PerChromosomeAggregateIterator<DirectedEvidence>(processContext.getReference().getSequenceDictionary(), new Function<String, Iterator<DirectedEvidence>>() {
+			return new PerChromosomeAggregateIterator<DirectedEvidence>(getContext().getReference().getSequenceDictionary(), new Function<String, Iterator<DirectedEvidence>>() {
 				@Override
 				public Iterator<DirectedEvidence> apply(String chr) {
 					return perChrIterator(includeReadPair, includeSoftClip, includeSoftClipRemote, chr);
@@ -177,14 +175,14 @@ public class SAMEvidenceSource extends EvidenceSource {
 		}
 	}
 	public CloseableIterator<DirectedEvidence> iterator(final boolean includeReadPair, final boolean includeSoftClip, final boolean includeSoftClipRemote, final String chr) {
-		if (processContext.shouldProcessPerChromosome()) {
+		if (getContext().shouldProcessPerChromosome()) {
 			return perChrIterator(includeReadPair, includeSoftClip, includeSoftClipRemote, chr);
 		} else {
-			return new ChromosomeFilteringIterator<DirectedEvidence>(singleFileIterator(includeReadPair, includeSoftClip, includeSoftClipRemote), processContext.getDictionary().getSequence(chr).getSequenceIndex(), true);
+			return new ChromosomeFilteringIterator<DirectedEvidence>(singleFileIterator(includeReadPair, includeSoftClip, includeSoftClipRemote), getContext().getDictionary().getSequence(chr).getSequenceIndex(), true);
 		}
 	}
 	protected CloseableIterator<DirectedEvidence> perChrIterator(final boolean includeReadPair, final boolean includeSoftClip, final boolean includeSoftClipRemote, final String chr) {
-		FileSystemContext fsc = processContext.getFileSystemContext();
+		FileSystemContext fsc = getContext().getFileSystemContext();
 		return iterator(includeReadPair, includeSoftClip, includeSoftClipRemote,
 				fsc.getReadPairBamForChr(input, chr),
 				fsc.getMateBamForChr(input, chr),
@@ -195,7 +193,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 				chr);
 	}
 	protected CloseableIterator<DirectedEvidence> singleFileIterator(final boolean includeReadPair, final boolean includeSoftClip, final boolean includeSoftClipRemote) {
-		FileSystemContext fsc = processContext.getFileSystemContext();
+		FileSystemContext fsc = getContext().getFileSystemContext();
 		return iterator(includeReadPair, includeSoftClip, includeSoftClipRemote,
 				fsc.getReadPairBam(input),
 				fsc.getMateBam(input),
@@ -233,28 +231,26 @@ public class SAMEvidenceSource extends EvidenceSource {
 			throw new IllegalStateException("Cannot traverse evidence before evidence extraction");
 		}
 		if (includeReadPair) {
-			final CloseableIterator<SAMRecord> rawPairIt = processContext.getSamReaderIterator(readPair);
-			final CloseableIterator<SAMRecord> rawMateIt = processContext.getSamReaderIterator(pairMate);
+			final CloseableIterator<SAMRecord> rawPairIt = getContext().getSamReaderIterator(readPair);
+			final CloseableIterator<SAMRecord> rawMateIt = getContext().getSamReaderIterator(pairMate);
 			final CloseableIterator<NonReferenceReadPair> rawRpIt = new ReadPairEvidenceIterator(
-					processContext,
 					this,
 					rawPairIt,
 					rawMateIt);
-			final Iterator<NonReferenceReadPair> sortedRpIt = new DirectEvidenceWindowedSortingIterator<NonReferenceReadPair>(processContext, getReadPairSortWindowSize(), rawRpIt);
+			final Iterator<NonReferenceReadPair> sortedRpIt = new DirectEvidenceWindowedSortingIterator<NonReferenceReadPair>(getContext(), getReadPairSortWindowSize(), rawRpIt);
 			final CloseableIterator<NonReferenceReadPair> finalrpIt = new AutoClosingIterator<NonReferenceReadPair>(sortedRpIt,
 					Lists.<Closeable>newArrayList(rawRpIt, rawPairIt, rawMateIt));
 			itList.add((CloseableIterator<DirectedEvidence>)(Object)finalrpIt);
 		}
 		if (includeSoftClip) {
 			final List<Closeable> scToClose = Lists.newArrayList();
-			final CloseableIterator<SAMRecord> rawScIt = processContext.getSamReaderIterator(softClip);
+			final CloseableIterator<SAMRecord> rawScIt = getContext().getSamReaderIterator(softClip);
 			scToClose.add(rawScIt);
-			CloseableIterator<SoftClipEvidence> scIt = new SoftClipEvidenceIterator(processContext, this,
-					rawScIt);
+			CloseableIterator<SoftClipEvidence> scIt = new SoftClipEvidenceIterator(this, rawScIt);
 			scToClose.add(scIt);
 			if (isRealignmentComplete()) {
 				//log.debug("Realignment is complete for ", input);
-				CloseableIterator<SAMRecord> rawRealignIt = processContext.getSamReaderIterator(realigned);
+				CloseableIterator<SAMRecord> rawRealignIt = getContext().getSamReaderIterator(realigned);
 				scToClose.add(rawRealignIt);
 				scIt = new RealignedSoftClipEvidenceIterator(scIt, rawRealignIt);
 				scToClose.add(scIt);
@@ -263,7 +259,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			}
 			// sort into evidence order
 			scIt =  new AutoClosingIterator<SoftClipEvidence>(
-						new DirectEvidenceWindowedSortingIterator<SoftClipEvidence>(processContext, getSoftClipSortWindowSize(), scIt),
+						new DirectEvidenceWindowedSortingIterator<SoftClipEvidence>(getContext(), getSoftClipSortWindowSize(), scIt),
 						scToClose
 					);
 			itList.add((CloseableIterator<DirectedEvidence>)(Object)scIt);
@@ -273,11 +269,11 @@ public class SAMEvidenceSource extends EvidenceSource {
 				throw new IllegalArgumentException(String.format("Realignment resorting not complete for ", input));
 			}
 			CloseableIterator<RealignedRemoteSoftClipEvidence> remoteScIt = new AutoClosingIterator<RealignedRemoteSoftClipEvidence>(Collections.<RealignedRemoteSoftClipEvidence>emptyIterator()); 
-			CloseableIterator<SAMRecord> rsrRawIt = processContext.getSamReaderIterator(remoteRealigned);
-			CloseableIterator<SAMRecord> sssRawItf = processContext.getSamReaderIterator(remoteSoftClip);
-			CloseableIterator<SAMRecord> sssRawItb = processContext.getSamReaderIterator(remoteSoftClip);
-			remoteScIt = new RealignedRemoteSoftClipEvidenceIterator(processContext, this, rsrRawIt, sssRawItf, sssRawItb);
-			remoteScIt = new AutoClosingIterator<RealignedRemoteSoftClipEvidence>(new DirectEvidenceWindowedSortingIterator<RealignedRemoteSoftClipEvidence>(processContext, getSoftClipSortWindowSize(), remoteScIt),
+			CloseableIterator<SAMRecord> rsrRawIt = getContext().getSamReaderIterator(remoteRealigned);
+			CloseableIterator<SAMRecord> sssRawItf = getContext().getSamReaderIterator(remoteSoftClip);
+			CloseableIterator<SAMRecord> sssRawItb = getContext().getSamReaderIterator(remoteSoftClip);
+			remoteScIt = new RealignedRemoteSoftClipEvidenceIterator(this, rsrRawIt, sssRawItf, sssRawItb);
+			remoteScIt = new AutoClosingIterator<RealignedRemoteSoftClipEvidence>(new DirectEvidenceWindowedSortingIterator<RealignedRemoteSoftClipEvidence>(getContext(), getSoftClipSortWindowSize(), remoteScIt),
 					ImmutableList.<Closeable>of(remoteScIt, rsrRawIt, sssRawItf, sssRawItb));
 			itList.add((CloseableIterator<DirectedEvidence>)(Object)remoteScIt);
 		}
@@ -321,7 +317,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 								+ " Insert size distribution counts can be found in %s",
 								getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH,
 								input,
-								processContext.getFileSystemContext().getIdsvMetrics(input)); 
+								getContext().getFileSystemContext().getIdsvMetrics(input)); 
 						log.error(msg);
 						throw new IllegalArgumentException(msg);
 					}
@@ -339,5 +335,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	public int getMaxReadMappedLength() {
 		return getMetrics().getIdsvMetrics().MAX_READ_MAPPED_LENGTH;
+	}
+	public ProcessingContext getProcessContext() {
+		return getContext();
 	}
 }

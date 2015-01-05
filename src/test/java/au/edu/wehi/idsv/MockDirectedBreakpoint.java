@@ -9,7 +9,7 @@ public class MockDirectedBreakpoint extends DiscordantReadPair {
 		this(bs, null);
 	}
 	public MockDirectedBreakpoint(BreakpointSummary bs, String id) {
-		super(DP(bs)[0], DP(bs)[1], TestHelper.SES(), TestHelper.getContext());
+		super(DP(bs)[0], DP(bs)[1], TestHelper.SES());
 		this.breakend = bs;
 		if (id != null) {
 			this.id = id;

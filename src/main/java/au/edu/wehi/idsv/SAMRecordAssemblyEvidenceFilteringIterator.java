@@ -22,8 +22,12 @@ public class SAMRecordAssemblyEvidenceFilteringIterator extends AbstractIterator
 		while (it.hasNext()) {
 			SAMRecordAssemblyEvidence evidence = it.next();
 			processContext.getAssemblyParameters().applyFilters(evidence);
-			if (evidence.getBreakendSummary() instanceof BreakpointSummary) {
-				for (VcfFilter breakpointFilter : processContext.getVariantCallingParameters().breakpointFilters((BreakpointSummary)evidence.getBreakendSummary())) {
+			if (evidence instanceof DirectedBreakpoint) {
+				BreakpointSummary bs = ((DirectedBreakpoint)evidence).getBreakendSummary();
+				if (evidence instanceof RemoteEvidence) {
+					bs = bs.remoteBreakpoint(); // ensures assembly & matching remote always get filtered in/out together
+				}
+				for (VcfFilter breakpointFilter : processContext.getVariantCallingParameters().breakpointFilters(bs)) {
 					evidence.filterAssembly(breakpointFilter);
 				}
 			}

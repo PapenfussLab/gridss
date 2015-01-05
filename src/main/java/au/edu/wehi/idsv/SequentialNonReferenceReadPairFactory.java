@@ -20,11 +20,11 @@ public class SequentialNonReferenceReadPairFactory extends SequentialSAMRecordFa
 		PeekingIterator<SAMRecord> mates) {
 		super(mates);
 	}
-	public NonReferenceReadPair createNonReferenceReadPair(SAMRecord record, SAMEvidenceSource source, ProcessingContext processContext) {
+	public NonReferenceReadPair createNonReferenceReadPair(SAMRecord record, SAMEvidenceSource source) {
 		if (!record.getReadPairedFlag()) return null;
 		SAMRecord mate = findAssociatedSAMRecord(record);
 		if (record != null && mate != null) {
-			NonReferenceReadPair nrrp = NonReferenceReadPair.create(record, mate, source, processContext);
+			NonReferenceReadPair nrrp = NonReferenceReadPair.create(record, mate, source);
 			return nrrp;
 		}
 		return null;

@@ -9,7 +9,8 @@ import org.apache.commons.lang3.StringUtils;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 public class SoftClipEvidence implements DirectedEvidence {
-	private final ProcessingContext processContext;
+	public static final String FORWARD_EVIDENCEID_PREFIX = "f";
+	public static final String BACKWARD_EVIDENCEID_PREFIX = "b";
 	private final SAMEvidenceSource source;
 	private final SAMRecord record;
 	private final BreakendSummary location;
@@ -17,30 +18,42 @@ public class SoftClipEvidence implements DirectedEvidence {
 	 * Lazily computed evidence identifier
 	 */
 	private String evidenceID = null;
-	public static SoftClipEvidence create(ProcessingContext processContext, SAMEvidenceSource source, BreakendDirection direction, SAMRecord record) {
-		return create(processContext, source, direction, record, null);
+	public static SoftClipEvidence create(SAMEvidenceSource source, BreakendDirection direction, SAMRecord record) {
+		return create(source, direction, record, null);
 	}
 	public static SoftClipEvidence create(SoftClipEvidence evidence, SAMRecord realigned) {
-		return create(evidence.processContext, evidence.source, evidence.location.direction, evidence.record, realigned);
+		return create(evidence, evidence.source, evidence.location.direction, evidence.record, realigned);
 	}
-	public static SoftClipEvidence create(ProcessingContext processContext, SAMEvidenceSource source, BreakendDirection direction, SAMRecord record, SAMRecord realigned) {
+	public static SoftClipEvidence create(SAMEvidenceSource source, BreakendDirection direction, SAMRecord record, SAMRecord realigned) {
+		return create(null, source, direction, record, realigned);
+	}
+	/**
+	 * Creates soft clip breakpoint evidence if the realignment was successful, otherwise creates soft clip breakend evidence
+	 * @param evidence existing breakend evidence if already constructed, null otherwise
+	 * @param source evidence source
+	 * @param direction soft clip direction
+	 * @param record soft clipped read
+	 * @param realigned realigned soft clip
+	 * @return soft clip evidence
+	 */
+	private static SoftClipEvidence create(SoftClipEvidence evidence, SAMEvidenceSource source, BreakendDirection direction, SAMRecord record, SAMRecord realigned) {
 		if (record == null) throw new IllegalArgumentException("record is null");
 		if (direction == null) throw new IllegalArgumentException("direction is null");
 		if (record.getReadUnmappedFlag()) throw new IllegalArgumentException(String.format("record %s is unmapped", record.getReadName()));
 		if (record.getReadBases() == null || record.getReadBases() == SAMRecord.NULL_SEQUENCE ) throw new IllegalArgumentException(String.format("record %s missing sequence information", record.getReadName()));
 		SoftClipEvidence result = null;
-		if (realigned != null && !realigned.getReadUnmappedFlag() && processContext.getRealignmentParameters().realignmentPositionUnique(realigned)) {
-			result = new RealignedSoftClipEvidence(processContext, source, direction, record, realigned);
+		if (realigned != null && !realigned.getReadUnmappedFlag() && source.getContext().getRealignmentParameters().realignmentPositionUnique(realigned)) {
+			result = new RealignedSoftClipEvidence(source, direction, record, realigned);
 		} else {
-			result = new SoftClipEvidence(processContext, source, direction, record);
+			// Realignment was not useful
+			result = evidence != null ? evidence : new SoftClipEvidence(source, direction, record);
 		}
 		if (result.getSoftClipLength() == 0) {
 			throw new IllegalArgumentException(String.format("record %s is not %s soft clipped", record.getReadName(), direction));
 		}
 		return result;
 	}
-	protected SoftClipEvidence(ProcessingContext processContext, SAMEvidenceSource source, BreakendDirection direction, SAMRecord record) {
-		this.processContext = processContext;
+	protected SoftClipEvidence(SAMEvidenceSource source, BreakendDirection direction, SAMRecord record) {
 		this.source = source;
 		this.record = record;
 		int pos = direction == BreakendDirection.Forward ? record.getAlignmentEnd() : record.getAlignmentStart();
@@ -61,9 +74,9 @@ public class SoftClipEvidence implements DirectedEvidence {
 	protected static StringBuilder buildSoftClipEvidenceID(BreakendDirection direction, SAMRecord record) {
 		StringBuilder sb = new StringBuilder();
 		if (direction == BreakendDirection.Forward) {
-			sb.append('f');
+			sb.append(FORWARD_EVIDENCEID_PREFIX);
 		} else {
-			sb.append('b');
+			sb.append(BACKWARD_EVIDENCEID_PREFIX);
 		}
 		sb.append(record.getReadName());
 		if (record.getReadPairedFlag()) {

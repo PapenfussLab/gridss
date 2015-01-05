@@ -1,17 +1,21 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.util.SequenceUtil;
+
 import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.lang3.ArrayUtils;
 
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.SequenceUtil;
-
 public class RealignedRemoteSAMRecordAssemblyEvidence extends RealignedSAMRecordAssemblyEvidence implements RemoteEvidence {
 	private final BreakpointSummary bs;
-	public RealignedRemoteSAMRecordAssemblyEvidence(ProcessingContext processContext, AssemblyEvidenceSource source, SAMRecord assembly, SAMRecord realigned) {
-		super(processContext, source, assembly, realigned);
+	private final RealignedSAMRecordAssemblyEvidence local;
+	public RealignedRemoteSAMRecordAssemblyEvidence(RealignedSAMRecordAssemblyEvidence assembly) {
+		super(assembly.getEvidenceSource(), assembly.getSAMRecord(), assembly.getRemoteSAMRecord());
 		this.bs = super.getBreakendSummary().remoteBreakpoint();
+		this.local = assembly;
+	}
+	public RealignedSAMRecordAssemblyEvidence asLocal() {
+		return local;
 	}
 	@Override
 	public BreakpointSummary getBreakendSummary() {
@@ -81,5 +85,13 @@ public class RealignedRemoteSAMRecordAssemblyEvidence extends RealignedSAMRecord
 	@Override
 	public int getRemoteTotalBaseQual() {
 		return super.getLocalTotalBaseQual();
+	}
+	@Override
+	public float getBreakpointQual() {
+		return local.getBreakpointQual();
+	}
+	@Override
+	public float getBreakendQual() {
+		return local.getBreakendQual();
 	}
 }

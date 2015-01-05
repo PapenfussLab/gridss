@@ -21,12 +21,12 @@ public class RealignedRemoteSoftClipEvidenceIteratorTest extends TestHelper {
 			
 		};		
 		SAMRecord[] softClip = new SAMRecord[] {
-				SoftClipEvidence.create(getContext(), SES(), FWD, withReadName("r3", Read(2, 3, "15S15M15S"))[0], orderedRealigned[0]).getSAMRecord(),
-				SoftClipEvidence.create(getContext(), SES(), FWD, withReadName("r2", Read(1, 2, "15S15M15S"))[0], orderedRealigned[1]).getSAMRecord(),
-				SoftClipEvidence.create(getContext(), SES(), FWD, withReadName("r1", Read(0, 1, "15S15M15S"))[0], orderedRealigned[2]).getSAMRecord(),
-				SoftClipEvidence.create(getContext(), SES(), BWD, withReadName("r2", Read(1, 2, "15S15M15S"))[0], orderedRealigned[3]).getSAMRecord(),
+				SoftClipEvidence.create(SES(), FWD, withReadName("r3", Read(2, 3, "15S15M15S"))[0], orderedRealigned[0]).getSAMRecord(),
+				SoftClipEvidence.create(SES(), FWD, withReadName("r2", Read(1, 2, "15S15M15S"))[0], orderedRealigned[1]).getSAMRecord(),
+				SoftClipEvidence.create(SES(), FWD, withReadName("r1", Read(0, 1, "15S15M15S"))[0], orderedRealigned[2]).getSAMRecord(),
+				SoftClipEvidence.create(SES(), BWD, withReadName("r2", Read(1, 2, "15S15M15S"))[0], orderedRealigned[3]).getSAMRecord(),
 		};
-		List<RealignedRemoteSoftClipEvidence> result = Lists.newArrayList(new RealignedRemoteSoftClipEvidenceIterator(getContext(), SES(), Lists.newArrayList(orderedRealigned).iterator(), Lists.newArrayList(softClip).iterator(), Lists.newArrayList(softClip).iterator()));
+		List<RealignedRemoteSoftClipEvidence> result = Lists.newArrayList(new RealignedRemoteSoftClipEvidenceIterator(SES(), Lists.newArrayList(orderedRealigned).iterator(), Lists.newArrayList(softClip).iterator(), Lists.newArrayList(softClip).iterator()));
 		assertEquals(4, result.size());
 		assertEquals(FWD, result.get(0).getBreakendSummary().direction2);
 		assertEquals(FWD, result.get(1).getBreakendSummary().direction2);

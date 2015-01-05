@@ -10,12 +10,12 @@ import com.google.common.collect.ComparisonChain;
 public class RealignedSoftClipEvidence extends SoftClipEvidence implements DirectedBreakpoint {
 	private final RealignedBreakpoint rbp;
 	private final SAMRecord realigned;
-	protected RealignedSoftClipEvidence(ProcessingContext processContext, SAMEvidenceSource source, BreakendDirection direction, SAMRecord record, SAMRecord realigned) {
-		super(processContext, source, direction, SAMRecordUtil.clone(record)); // need a copy since we're changing attributes to different values for the forward and backward records 
+	protected RealignedSoftClipEvidence(SAMEvidenceSource source, BreakendDirection direction, SAMRecord record, SAMRecord realigned) {
+		super(source, direction, SAMRecordUtil.clone(record)); // need a copy since we're changing attributes to different values for the forward and backward records 
 		this.realigned = realigned;
 		int pos = direction == BreakendDirection.Forward ? record.getAlignmentEnd() : record.getAlignmentStart();
 		BreakendSummary local = new BreakendSummary(record.getReferenceIndex(), direction, pos, pos);
-		this.rbp = new RealignedBreakpoint(processContext, local, record.getReadBases(), realigned);
+		this.rbp = new RealignedBreakpoint(source.getContext(), local, record.getReadBases(), realigned);
 		setPositionAttributes();
 	}
 	private void setPositionAttributes() {
@@ -88,5 +88,8 @@ public class RealignedSoftClipEvidence extends SoftClipEvidence implements Direc
 	@Override
 	public float getBreakpointQual() {
 		return scPhred(getEvidenceSource(), getSoftClipLength(), getLocalMapq(), getRemoteMapq());
+	}
+	public RealignedRemoteSoftClipEvidence asRemote() {
+		return new RealignedRemoteSoftClipEvidence(this);
 	}
 }

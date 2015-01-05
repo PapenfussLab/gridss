@@ -22,7 +22,7 @@ public class SoftClipEvidenceIteratorTest extends TestHelper {
 	}
 	public void go() {
 		sv = sorted(sv);
-		out = Lists.newArrayList(new SoftClipEvidenceIterator(getContext(), SES(), sv.iterator()));
+		out = Lists.newArrayList(new SoftClipEvidenceIterator(SES(), sv.iterator()));
 		// check output is in order
 		//for (int i = 0; i < out.size() - 1; i++) {
 		//	BreakendSummary l0 = out.get(i).getBreakendSummary();
