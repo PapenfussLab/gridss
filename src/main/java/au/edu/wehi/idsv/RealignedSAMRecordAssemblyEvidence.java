@@ -57,4 +57,11 @@ public class RealignedSAMRecordAssemblyEvidence extends SAMRecordAssemblyEvidenc
 		double qual = Math.min(getRemoteMapq() * evidenceCount, getBreakendQual());
 		return (float)qual;
 	}
+	/**
+	 * Swaps the view of the evidence to the remote breakend 
+	 * @return
+	 */
+	public RealignedRemoteSAMRecordAssemblyEvidence asRemote() {
+		return new RealignedRemoteSAMRecordAssemblyEvidence(getEvidenceSource().processContext, getEvidenceSource(), getSAMRecord(), getRemoteSAMRecord());
+	}
 }

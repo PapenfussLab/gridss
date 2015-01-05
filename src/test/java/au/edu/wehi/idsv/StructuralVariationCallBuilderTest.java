@@ -197,10 +197,19 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				AssemblyFactory.createAnchored(getContext(), AES(), BP.direction, Sets.<DirectedEvidence>newHashSet(
 						new rsc(5, false)
 						), BP.referenceIndex, BP.end, 1, B("TT"), B("TT"), 1, 2),
-				onNegative(Read(BP.referenceIndex2, BP.start2, "1M"))[0]));
+				withMapq(44, onNegative(Read(BP.referenceIndex2, BP.start2, "1M")))[0]));
 		cb.addEvidence(AssemblyFactory.createAnchored(getContext(), AES(), BP.direction, Sets.<DirectedEvidence>newHashSet(
 						new um(6, true)
-						), BP.referenceIndex, BP.end, 1, B("TT"), B("TT"), 1, 2));
+						), BP.referenceIndex, BP.end, 1, B("TC"), B("TC"), 1, 2));
+		cb.addEvidence(AssemblyFactory.incorporateRealignment(getContext(),
+				AssemblyFactory.createAnchored(getContext(), AES(), BP.direction, Sets.<DirectedEvidence>newHashSet(
+						new rsc(6, false)
+						), BP.referenceIndex, BP.end, 1, B("TA"), B("TA"), 1, 2),
+				withMapq(1, onNegative(Read(BP.referenceIndex2, BP.start2, "1M")))[0]));
+		cb.addEvidence(((RealignedSAMRecordAssemblyEvidence)AssemblyFactory.incorporateRealignment(getContext(),
+				AssemblyFactory.createAnchored(getContext(), AES(), BP.direction, Sets.<DirectedEvidence>newHashSet(
+						new sc(4, false)), BP.referenceIndex2, BP.end2, 1, B("TT"), B("TT"), 1, 2),
+				withMapq(44, onNegative(Read(BP.referenceIndex, BP.start, "1M")))[0])).asRemote());
 		return (VariantContextDirectedBreakpoint)cb.make();
 	}
 	@Test
@@ -231,6 +240,21 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test
 	public void should_not_include_evidence_contributing_to_assembly_in_sc_rp_evidence() {
 		should_set_BREAKPOINT_SOFTCLIP_REMOTE();
+	}
+	@Test
+	public void should_set_BREAKEND_ASSEMBLY() {
+		Assert.assertEquals(2, (int)(Integer)complex_bp().getAttribute(VcfAttributes.BREAKEND_ASSEMBLY_COUNT.attribute()));
+		Assert.assertEquals(14, (float)(Float)complex_bp().getAttribute(VcfAttributes.BREAKEND_ASSEMBLY_QUAL.attribute()), 0);
+	}
+	@Test
+	public void should_set_BREAKPOINT_ASSEMBLY() {
+		Assert.assertEquals(1, (int)(Integer)complex_bp().getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT.attribute()));
+		Assert.assertEquals(6, (float)(Float)complex_bp().getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL.attribute()), 0);
+	}
+	@Test
+	public void should_set_BREAKPOINT_ASSEMBLY_REMOTE() {
+		Assert.assertEquals(1, (int)(Integer)complex_bp().getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE.attribute()));
+		Assert.assertEquals(5, (float)(Float)complex_bp().getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE.attribute()), 0);
 	}
 	/**
 	 * We do this to prevent inflation of support for a breakpoint by an assembly that

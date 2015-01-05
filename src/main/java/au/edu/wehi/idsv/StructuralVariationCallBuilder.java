@@ -36,7 +36,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		list.add(evidence);
 		return this;
 	}
-	private BreakendSummary getBreakendWithMargin(DirectedEvidence evidence) {
+	private BreakendSummary getBreakendSummaryWithMargin(DirectedEvidence evidence) {
 		BreakendSummary bs = evidence.getBreakendSummary();
 		if (evidence instanceof SoftClipEvidence) {
 			bs = processContext.getSoftClipParameters().withMargin(processContext, bs);
@@ -44,7 +44,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		return bs;
 	}
 	private boolean isSupportingEvidence(DirectedEvidence evidence) {
-		BreakendSummary bs = getBreakendWithMargin(evidence);
+		BreakendSummary bs = getBreakendSummaryWithMargin(evidence);
 		return parent.getBreakendSummary().overlaps(bs);
 	}
 	public VariantContextDirectedEvidence make() {

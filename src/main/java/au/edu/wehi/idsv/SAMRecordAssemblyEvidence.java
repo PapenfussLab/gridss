@@ -45,7 +45,13 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	public SAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecord assembly, SAMRecord realignment) {
 		this.source = source;
 		this.record = assembly;
-		this.breakend = calculateBreakendFromAlignmentCigar(this.record.getReferenceIndex(), this.record.getAlignmentStart(), this.record.getCigar());
+		BreakendSummary bs = calculateBreakendFromAlignmentCigar(this.record.getReferenceIndex(), this.record.getAlignmentStart(), this.record.getCigar());
+		if (bs instanceof BreakpointSummary && realignment != null && !realignment.getReadUnmappedFlag()
+				&& !source.processContext.getRealignmentParameters().realignmentPositionUnique(realignment)) {
+			// ignore mapping location of realignment
+			bs = ((BreakpointSummary)bs).localBreakend();
+		}
+		this.breakend = bs; 
 		this.isExact = calculateIsBreakendExactFromCigar(this.record.getCigar());
 		this.realignment = realignment == null ? getPlaceholderRealignment() : realignment;
 		fixReadPair();

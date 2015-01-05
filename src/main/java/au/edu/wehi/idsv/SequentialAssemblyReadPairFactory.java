@@ -35,7 +35,7 @@ public class SequentialAssemblyReadPairFactory extends SequentialSAMRecordFactor
 		SAMRecordAssemblyEvidence evidence = AssemblyFactory.incorporateRealignment(processContext, new SAMRecordAssemblyEvidence(source, assembly, realign), realign);
 		if (!recordIsAssembly) {
 			if (evidence instanceof RealignedSAMRecordAssemblyEvidence) {
-				evidence = new RealignedRemoteSAMRecordAssemblyEvidence(processContext, source, mate, record);
+				evidence = ((RealignedSAMRecordAssemblyEvidence)evidence).asRemote();
 			} else {
 				// realignment not good enough to qualify as breakend
 				evidence = null;
