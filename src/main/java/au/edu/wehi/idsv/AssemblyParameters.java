@@ -10,6 +10,10 @@ public class AssemblyParameters {
 	private static final Log log = Log.getInstance(AssemblyParameters.class);
 	public AssemblyMethod method = AssemblyMethod.DEBRUIJN_SUBGRAPH;
 	/**
+	 * Assemble soft clips at the remote realigned position
+	 */
+	public boolean includeRemoteSoftClips = false;
+	/**
 	 * De Bruijn graph kmer size
 	 */
 	public int k = 25;

@@ -111,4 +111,8 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 	public int getBreakpointEvidenceCountAssembly() { return AttributeConverter.asInt(getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT.attribute()), 0); }
 	public int getBreakpointEvidenceCountReadPair(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.BREAKPOINT_READPAIR_COUNT.attribute()), subset); }
 	public int getBreakpointEvidenceCountSoftClip(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_COUNT.attribute()), subset); }
+	@Override
+	public DirectedBreakpoint asRemote() {
+		throw new RuntimeException("NYI");
+	}
 }

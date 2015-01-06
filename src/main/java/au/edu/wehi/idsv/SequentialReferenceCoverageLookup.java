@@ -184,6 +184,5 @@ public class SequentialReferenceCoverageLookup implements Closeable, ReferenceCo
 				&& (read.getAlignmentStart() < read.getMateAlignmentStart()
 						|| (read.getAlignmentStart() == read.getMateAlignmentStart() && read.getFirstOfPairFlag()))
 				&& pairing.isConcordant(read);
-				
 	}
 }

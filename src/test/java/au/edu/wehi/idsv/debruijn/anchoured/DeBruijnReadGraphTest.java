@@ -50,6 +50,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		local.setReadName(remote.getReadName());
 		local.setReadPairedFlag(true);
 		local.setReadNegativeStrandFlag(ass.getDirection() == BWD);
+		local.setReadPairedFlag(false);
 		return local;
 	}
 	private void addRead(DeBruijnAnchoredGraph ass, SAMRecord r, boolean sc) {
@@ -135,7 +136,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		assertEquals(expectedSeq, S(result.getAssemblySequence()));
 		assertEquals(breakendSequence, S(result.getBreakendSequence()));
 		
-		ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, direction);
+		ass = new DeBruijnAnchoredGraph(getContext(), AES(), 3, direction);
 		addRead(ass, anchor, true);
 		unanchored = R(null, unanchorSeq, null, mappedNegativeStrand, mateNegativeStrand);
 		unanchored.setReadUnmappedFlag(false);

@@ -14,7 +14,7 @@ import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.RealignedRemoteSoftClipEvidence;
+import au.edu.wehi.idsv.RemoteEvidence;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SoftClipEvidence;
 
@@ -42,10 +42,7 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		return direction;
 	}
 	public void addEvidence(DirectedEvidence evidence) {
-		if (evidence instanceof RealignedRemoteSoftClipEvidence) {
-			// TODO: should we assemble these? for now, ignore remote soft clips - as they get assembled on the other side
-			// TODO: FIXME: add these in
-		} else if (evidence instanceof NonReferenceReadPair) {
+		if (evidence instanceof NonReferenceReadPair) {
 			addEvidence((NonReferenceReadPair)evidence);
 		} else if (evidence instanceof SoftClipEvidence) {
 			addEvidence((SoftClipEvidence)evidence);
@@ -69,6 +66,10 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		addEvidenceKmers(graphEvidence);
 	}
 	public void addEvidence(SoftClipEvidence read) {
+		if (read instanceof RemoteEvidence && !processContext.getAssemblyParameters().includeRemoteSoftClips) {
+			// ignore remote soft clips
+			return;
+		}
 		VariantEvidence graphEvidence = VariantEvidence.createSoftClipEvidence(direction, getK(), read);
 		addEvidenceKmers(graphEvidence);
 	}

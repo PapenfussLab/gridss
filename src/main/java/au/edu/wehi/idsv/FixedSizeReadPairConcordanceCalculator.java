@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 public class FixedSizeReadPairConcordanceCalculator extends ReadPairConcordanceCalculator {
@@ -15,17 +16,26 @@ public class FixedSizeReadPairConcordanceCalculator extends ReadPairConcordanceC
 		return maxFragmentSize;
 	}
 	@Override
-	public boolean isConcordant(SAMRecord local) {
-		return local.getReadPairedFlag()
-				&& !local.getReadUnmappedFlag()
-				&& !local.getMateUnmappedFlag()
-				&& local.getReferenceIndex() == local.getMateReferenceIndex()
+	public boolean isConcordant(SAMRecord read1, SAMRecord read2) {
+		return read1.getReadPairedFlag()
+				&& !read1.getReadUnmappedFlag()
+				&& !read1.getMateUnmappedFlag()
+				&& read1.getReferenceIndex() == read1.getMateReferenceIndex()
 				// (assumes FR)
-				&& local.getReadNegativeStrandFlag() != local.getMateNegativeStrandFlag()
-				&& isConcordantFragmentSize(local);
+				&& read1.getReadNegativeStrandFlag() != read1.getMateNegativeStrandFlag()
+				&& isConcordantFragmentSize(read1, read2);
 	}
-	private boolean isConcordantFragmentSize(SAMRecord local) {
-		int fragSize = SAMRecordUtil.estimateFragmentSize(local);
+	@Override
+	public boolean isConcordant(SAMRecord read) {
+		return isConcordant(read, null);
+	}
+	private boolean isConcordantFragmentSize(SAMRecord read1, SAMRecord read2) {
+		int fragSize;
+		if (read2 == null) {
+			fragSize = SAMRecordUtil.estimateFragmentSize(read1, PairOrientation.FR);
+		} else {
+			fragSize = SAMRecordUtil.calculateFragmentSize(read1, read2, PairOrientation.FR);
+		}
 		return minFragmentSize <= fragSize && fragSize <= maxFragmentSize;
 	}
 }

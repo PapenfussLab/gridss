@@ -18,19 +18,19 @@ public enum VcfAttributes {
 	BREAKPOINT_ASSEMBLY_COUNT_REMOTE("RAS", 1, VCFHeaderLineType.Integer, "Count of assemblies supporting breakpoint from remote breakend"),
 	BREAKPOINT_SOFTCLIP_COUNT_REMOTE("RSC", 2, VCFHeaderLineType.Integer, "Count of soft clips supporting breakpoint from remote breakend (Normal,Tumour)"),
 	
-	BREAKPOINT_ASSEMBLY_QUAL("ASQ", 1, VCFHeaderLineType.Integer, "Quality score of assemblies supporting breakpoint"),
-	BREAKPOINT_READPAIR_QUAL("RPQ", 2, VCFHeaderLineType.Integer, "Quality score of read pairs supporting breakpoint (Normal,Tumour)"),
-	BREAKPOINT_SOFTCLIP_QUAL("SCQ", 2, VCFHeaderLineType.Integer, "Quality score of soft clips supporting breakpoint (Normal,Tumour)"),
-	BREAKPOINT_ASSEMBLY_QUAL_REMOTE("RASQ", 1, VCFHeaderLineType.Integer, "Quality score of assemblies supporting breakpoint from remote breakend"),
-	BREAKPOINT_SOFTCLIP_QUAL_REMOTE("RSCQ", 2, VCFHeaderLineType.Integer, "Quality score of soft clips supporting breakpoint from remote breakend (Normal,Tumour)"),
+	BREAKPOINT_ASSEMBLY_QUAL("ASQ", 1, VCFHeaderLineType.Float, "Quality score of assemblies supporting breakpoint"),
+	BREAKPOINT_READPAIR_QUAL("RPQ", 2, VCFHeaderLineType.Float, "Quality score of read pairs supporting breakpoint (Normal,Tumour)"),
+	BREAKPOINT_SOFTCLIP_QUAL("SCQ", 2, VCFHeaderLineType.Float, "Quality score of soft clips supporting breakpoint (Normal,Tumour)"),
+	BREAKPOINT_ASSEMBLY_QUAL_REMOTE("RASQ", 1, VCFHeaderLineType.Float, "Quality score of assemblies supporting breakpoint from remote breakend"),
+	BREAKPOINT_SOFTCLIP_QUAL_REMOTE("RSCQ", 2, VCFHeaderLineType.Float, "Quality score of soft clips supporting breakpoint from remote breakend (Normal,Tumour)"),
 
 	BREAKEND_ASSEMBLY_COUNT("BAS", 1, VCFHeaderLineType.Integer, "Count of assemblies supporting just local breakend"),
 	BREAKEND_READPAIR_COUNT("BRP", 2, VCFHeaderLineType.Integer, "Count of read pairs supporting just local breakend (Normal,Tumour)"),
 	BREAKEND_SOFTCLIP_COUNT("BSC", 2, VCFHeaderLineType.Integer, "Count of soft clips supporting just local breakend (Normal,Tumour)"),
 
-	BREAKEND_ASSEMBLY_QUAL("BASQ", 1, VCFHeaderLineType.Integer, "Quality score of assemblies supporting just local breakend"),
-	BREAKEND_READPAIR_QUAL("BRPQ", 2, VCFHeaderLineType.Integer, "Quality score of read pairs supporting just local breakend (Normal,Tumour)"),
-	BREAKEND_SOFTCLIP_QUAL("BSCQ", 2, VCFHeaderLineType.Integer, "Quality score of soft clips supporting just local breakend (Normal,Tumour)"),
+	BREAKEND_ASSEMBLY_QUAL("BASQ", 1, VCFHeaderLineType.Float, "Quality score of assemblies supporting just local breakend"),
+	BREAKEND_READPAIR_QUAL("BRPQ", 2, VCFHeaderLineType.Float, "Quality score of read pairs supporting just local breakend (Normal,Tumour)"),
+	BREAKEND_SOFTCLIP_QUAL("BSCQ", 2, VCFHeaderLineType.Float, "Quality score of soft clips supporting just local breakend (Normal,Tumour)"),
 
 	CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY ("CIRPOS", 2, VCFHeaderLineType.Integer, "Confidence interval around remote breakend POS for imprecise variants"),
 	

@@ -9,6 +9,7 @@ import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTag;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
@@ -24,6 +25,9 @@ import au.edu.wehi.idsv.Defaults;
  *
  */
 public class SAMRecordUtil {
+	/**
+	 * Minimum number of mapped bases in any alignment
+	 */
 	public static final int MIN_BASES_TO_ALIGN = 18;
 
 	/**
@@ -208,7 +212,8 @@ public class SAMRecordUtil {
 	 * @return true if the soft clip is due to a fragment size smaller than the
 	 *         read length
 	 */
-	public static boolean isDovetailing(SAMRecord record1, SAMRecord record2) {
+	public static boolean isDovetailing(SAMRecord record1, SAMRecord record2, PairOrientation expectedOrientation) {
+		if (expectedOrientation != PairOrientation.FR) throw new RuntimeException("NYI");
 		return !record1.getReadUnmappedFlag()
 				&& !record2.getReadUnmappedFlag()
 				&& record1.getReferenceIndex() == record2.getReferenceIndex()
@@ -233,13 +238,17 @@ public class SAMRecordUtil {
 	/**
 	 * Estimates the size of sequenced fragment
 	 * @param record
+	 * @param expectedOrientation 
 	 * @return
 	 */
-	public static int estimateFragmentSize(SAMRecord record) {
+	public static int estimateFragmentSize(SAMRecord record, PairOrientation expectedOrientation) {
+		if (expectedOrientation != PairOrientation.FR) throw new RuntimeException("NYI");
 		if (record.getReadUnmappedFlag() ||
 				record.getReadUnmappedFlag() ||
 				record.getMateUnmappedFlag() ||
-				record.getReferenceIndex() != record.getMateReferenceIndex()) {
+				record.getReferenceIndex() != record.getMateReferenceIndex() ||
+				// FR assumption
+				record.getReadNegativeStrandFlag() == record.getMateNegativeStrandFlag()) {
 			return 0;
 		}
 		// Assuming FR orientation, adapter sequences have been removed, and no SCs
@@ -259,28 +268,36 @@ public class SAMRecordUtil {
 	 * @return number possible breakpoints between the read pair mapped in the expected orientation,
 	 *  or Integer.MAX_VALUE if placement is not as expected
 	 */
-	public static boolean estimatedReadsOverlap(SAMRecord record) {
+	public static boolean estimatedReadsOverlap(SAMRecord record, PairOrientation expectedOrientation) {
+		if (expectedOrientation != PairOrientation.FR) throw new RuntimeException("NYI");
 		if (record.getReadUnmappedFlag() ||
 				record.getReadUnmappedFlag() ||
 				record.getMateUnmappedFlag() ||
 				record.getReferenceIndex() != record.getMateReferenceIndex() ||
+				// FR assumption
 				record.getReadNegativeStrandFlag() == record.getMateNegativeStrandFlag()) {
 			return false;
 		}
 		// Assuming FR orientation, adapter sequences have been removed, and no SCs
 		if (record.getReadNegativeStrandFlag()) {
-			// <--record
-			return record.getMateAlignmentStart() >= record.getAlignmentStart() &&
-					record.getMateAlignmentStart() <= record.getAlignmentEnd();
-		} else {
-			// record-->
+			//   <-----	record
+			// ----->	mate
+			if (record.getMateAlignmentStart() > record.getAlignmentStart()) return false; // not FR
 			// we don't know where the mate actually ends
 			// we can't assume = read length as that will
 			// remove our pair when it spans a deletion
-			// and our mate has an inner soft clip
-			int offset = Math.min(MIN_BASES_TO_ALIGN, record.getReadLength());
+			// and our mate has an inner soft clip or non-reference CIGAR
+			// so we make a conservative guess based on the min bases aligners
+			// will return a alignment for
+			int offset = Math.min(MIN_BASES_TO_ALIGN, record.getReadLength()) - 1;
 			return record.getMateAlignmentStart() + offset >= record.getAlignmentStart() &&
 					record.getMateAlignmentStart() + offset <= record.getAlignmentEnd();
+			
+		} else {
+			// record ----->
+			//           <-----
+			return record.getMateAlignmentStart() >= record.getAlignmentStart() &&
+					record.getMateAlignmentStart() <= record.getAlignmentEnd();
 		}
 	}
 	/**
@@ -288,18 +305,21 @@ public class SAMRecordUtil {
 	 * @param record
 	 * @return
 	 */
-	public static int calculateFragmentSize(SAMRecord record1, SAMRecord record2) {
+	public static int calculateFragmentSize(SAMRecord record1, SAMRecord record2, PairOrientation expectedOrientation) {
+		if (expectedOrientation != PairOrientation.FR) throw new RuntimeException("NYI");
 		if (record1.getReadUnmappedFlag() ||
 			record2.getReadUnmappedFlag() ||
-			record1.getReferenceIndex() != record2.getReferenceIndex()) {
+			record1.getReferenceIndex() != record2.getReferenceIndex() ||
+			// FR assumption
+			record1.getReadNegativeStrandFlag() == record2.getReadNegativeStrandFlag()) {
 			return 0;
 		}
 		// Assuming FR orientation and adapter sequences have been removed 
 		if (record1.getReadNegativeStrandFlag()) {
 			// <--record
-			return record1.getUnclippedEnd() - record2.getUnclippedStart();
+			return record1.getUnclippedEnd() - record2.getUnclippedStart() + 1;
 		} else {
-			return record2.getUnclippedEnd() - record1.getUnclippedStart();
+			return record2.getUnclippedEnd() - record1.getUnclippedStart() + 1;
 		}
 	}
 	/**

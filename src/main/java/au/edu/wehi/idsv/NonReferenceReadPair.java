@@ -2,6 +2,7 @@ package au.edu.wehi.idsv;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -28,35 +29,59 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		if (source.getMaxConcordantFragmentSize() < local.getReadLength()) throw new IllegalArgumentException(String.format("Sanity check failure: read pair %s contains read of length %d when maximum fragment size is %d", local.getReadName(), local.getReadLength(), source.getMaxConcordantFragmentSize()));
 		this.local = local;
 		this.remote = remote;
-		this.location = calculateBreakendSummary(local, remote, source, source.getContext());
+		this.location = calculateBreakendSummary(local, meetsAnchorCriteria(source, remote) ? remote : null, source);
 		this.source = source;
 	}
+	/**
+	 * Creates a read pair not supporting the reference allele from the given reads
+	 * @param local read mapped to local side of putative breakpoint
+	 * @param remote read mapped to remote side of putative breakpoint
+	 * @param source source
+	 * @return Read pair evidence if reads support putative breakpoint, null otherwise
+	 */
 	public static NonReferenceReadPair create(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {
-		if (remote == null || remote.getReadUnmappedFlag()) {
-			return new UnmappedMateReadPair(local, remote, source);
+		if (local == null || remote == null) return null;
+		if (!meetsAnchorCriteria(source, local)) return null;
+		if (SAMRecordUtil.isDovetailing(local,  remote, PairOrientation.FR)) return null;
+		// should only need to check for adapters in OEA as DP with adapter should be dovetailing
+		if (source.getContext().getReadPairParameters().adapters.containsAdapter(local)) return null;
+		if (source.getContext().getReadPairParameters().adapters.containsAdapter(remote)) return null;
+		assert(source.getReadPairConcordanceCalculator().isConcordant(local, remote) == source.getReadPairConcordanceCalculator().isConcordant(remote, local));
+		if (source.getReadPairConcordanceCalculator().isConcordant(local, remote)) return null;
+		if (pairSeparation(local, remote, PairOrientation.FR) < 0) return null; // discordant because the pairs overlap = no SV evidence
+		NonReferenceReadPair rp = null;
+		if (!meetsAnchorCriteria(source, remote)) {
+			rp = new UnmappedMateReadPair(local, remote, source);
 		} else {
-			return new DiscordantReadPair(local, remote, source);
+			rp = new DiscordantReadPair(local, remote, source);
 		}
+		if (rp.location == null) {
+			// all seemed good but we found no SV support
+			// Eg: read length >= expected max fragment size 
+			rp = null;
+		}
+		return rp;
 	}
-	public boolean meetsEvidenceCritera(ReadPairParameters rp) {
-		return location != null
-				&& meetsLocalEvidenceCritera(rp, source, local)
-				&& meetsRemoteEvidenceCritera(rp, source, remote)
-				&& !SAMRecordUtil.isDovetailing(local,  remote);
+	public static boolean meetsAnchorCriteria(SAMEvidenceSource source, SAMRecord read) {
+		return read.getReadPairedFlag()
+				&& !read.getReadUnmappedFlag()
+				&& read.getMappingQuality() >= source.getContext().getReadPairParameters().minMapq
+				&& !SAMRecordUtil.estimatedReadsOverlap(read, PairOrientation.FR)
+				&& !source.getReadPairConcordanceCalculator().isConcordant(read);
 	}
-	public static boolean meetsLocalEvidenceCritera(ReadPairParameters rp, SAMEvidenceSource source, SAMRecord local) {
-		return !local.getReadUnmappedFlag()
-				&& local.getReadPairedFlag()
-				&& local.getMappingQuality() >= rp.minLocalMapq
-				&& !SAMRecordUtil.estimatedReadsOverlap(local)
-				&& !source.getReadPairConcordanceCalculator().isConcordant(local);
+	public static boolean meetsRemoteCriteria(SAMEvidenceSource source, SAMRecord read) {
+		return read.getReadPairedFlag()
+				&& !read.getMateUnmappedFlag() // other side has to be an anchor
+				&& (meetsDPRemoteCriteria(source, read) || meetsOEARemoteCriteria(source, read))
+				&& !source.getContext().getReadPairParameters().adapters.containsAdapter(read);
 	}
-	public static boolean meetsRemoteEvidenceCritera(ReadPairParameters rp, SAMEvidenceSource source, SAMRecord remote) {
-		return remote.getReadPairedFlag()
-				&& !remote.getMateUnmappedFlag()
-				&& ((remote.getReadUnmappedFlag() && !remote.getMateUnmappedFlag()) // OEA
-					|| !(source.getReadPairConcordanceCalculator().isConcordant(remote) || SAMRecordUtil.estimatedReadsOverlap(remote))) // DP
-				&& !rp.adapters.containsAdapter(remote);
+	private static boolean meetsDPRemoteCriteria(SAMEvidenceSource source, SAMRecord read) {
+		return !read.getReadUnmappedFlag()
+			&& !SAMRecordUtil.estimatedReadsOverlap(read, PairOrientation.FR)
+			&& !source.getReadPairConcordanceCalculator().isConcordant(read);
+	}
+	private static boolean meetsOEARemoteCriteria(SAMEvidenceSource source, SAMRecord read) {
+		return read.getReadUnmappedFlag();
 	}
 	/**
 	 * Calculates the local breakpoint location
@@ -91,7 +116,7 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 			}
 		}
 		int intervalWidth = maxfragmentSize - local.getReadLength() + intervalExtendedReadDueToLocalClipping - intervalReducedDueToRemoteMapping;
-		intervalWidth = Math.min(intervalWidth, pairSeparation(local, remote));
+		intervalWidth = Math.min(intervalWidth, pairSeparation(local, remote, PairOrientation.FR));
 		if (intervalWidth < 0) return null;
 		return new BreakendSummary(local.getReferenceIndex(), direction,
 				Math.max(1, Math.min(positionClosestToBreakpoint, positionClosestToBreakpoint + intervalWidth * intervalDirection)),
@@ -102,35 +127,33 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	 * Determines the number of unsequenced bases in the fragment
 	 * @param local
 	 * @param remote
+	 * @param expectedOrientation 
 	 * @return number possible breakpoints between the read pair mapped in the expected orientation,
 	 *  or Integer.MAX_VALUE if placement is not as expected
 	 */
-	private static int pairSeparation(SAMRecord local, SAMRecord remote) {
-		if (local.getReadUnmappedFlag() || remote.getReadUnmappedFlag()) return Integer.MAX_VALUE;
+	private static int pairSeparation(SAMRecord local, SAMRecord remote, PairOrientation expectedOrientation) {
+		if (remote == null || local.getReadUnmappedFlag() || remote.getReadUnmappedFlag()) return Integer.MAX_VALUE;
 		if (local.getReferenceIndex() != remote.getReferenceIndex()) return Integer.MAX_VALUE;
 		// Assuming FR orientation
 		if (local.getReadNegativeStrandFlag() == remote.getReadNegativeStrandFlag()) return Integer.MAX_VALUE;
 				// <--local
-		if ((local.getReadNegativeStrandFlag() && local.getAlignmentStart() > remote.getAlignmentStart())
+		if ((local.getReadNegativeStrandFlag() && local.getAlignmentStart() >= remote.getAlignmentStart())
 				// local--> 
-				|| (!local.getReadNegativeStrandFlag() && local.getAlignmentStart() < remote.getAlignmentStart())) {
+				|| (!local.getReadNegativeStrandFlag() && local.getAlignmentStart() <= remote.getAlignmentStart())) {
 			// only problem with this pair is the fragment size is unexpected
 			return Math.max(local.getAlignmentStart(), remote.getAlignmentStart()) - Math.min(local.getAlignmentEnd(), remote.getAlignmentEnd()) - 1;
 		}
 		return Integer.MAX_VALUE;
 	}
-	private static BreakendSummary calculateBreakendSummary(SAMRecord local, SAMRecord remote, SAMEvidenceSource source, ProcessingContext processContext) {
+	private static BreakendSummary calculateBreakendSummary(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {
 		int maxFragmentSize = source.getMaxConcordantFragmentSize();
-		SAMSequenceDictionary dictionary = processContext.getDictionary();
+		SAMSequenceDictionary dictionary = source.getContext().getDictionary();
+		BreakendSummary bsLocal = calculateLocalBreakendSummary(local, remote, maxFragmentSize, dictionary);
 		if (remote == null || remote.getReadUnmappedFlag()) {
-			return calculateLocalBreakendSummary(local, remote, maxFragmentSize, dictionary);
+			return bsLocal;
 		} else {
-			// Discordant because the pairs overlap = no SV evidence
-			int separation = pairSeparation(local, remote);
-			if (separation < 0) return null;
-			BreakendSummary bsLocal = calculateLocalBreakendSummary(local, remote, maxFragmentSize, dictionary);
 			BreakendSummary bsRemote = calculateLocalBreakendSummary(remote, local, maxFragmentSize, dictionary);
-			if (bsLocal == null || bsRemote == null) return null;
+			if (bsRemote == null && bsLocal == null) return null;
 			return new BreakpointSummary(bsLocal, bsRemote);
 		}
 	}

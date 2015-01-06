@@ -291,10 +291,10 @@ public class ExtractEvidence implements Closeable {
 				}
 				if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) {
 					if (record.getReadPairedFlag()) {
-						if (NonReferenceReadPair.meetsLocalEvidenceCritera(processContext.getReadPairParameters(), source, record)) {
+						if (NonReferenceReadPair.meetsAnchorCriteria(source, record)) {
 							rpwriters.get(offset % rpwriters.size()).addAlignment(record);
 						}
-						if (NonReferenceReadPair.meetsRemoteEvidenceCritera(processContext.getReadPairParameters(), source, record)) {
+						if (NonReferenceReadPair.meetsRemoteCriteria(source, record)) {
 							matewriters.get(record.getMateReferenceIndex() % matewriters.size()).addAlignment(record);
 						}
 					}

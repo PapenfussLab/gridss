@@ -171,7 +171,7 @@ public class SoftClipEvidence implements DirectedEvidence {
 	}
 	@Override
 	public String toString() {
-		return "SC" + getSoftClipLength() + " " + getBreakendSummary().toString() + " " + getSAMRecord().getReadName();
+		return "SC" + getSoftClipLength() + " " + getBreakendSummary().toString() + " " + getEvidenceID();
 	}
 	/**
 	 * Determines whether this evidence provides support for a putative SV

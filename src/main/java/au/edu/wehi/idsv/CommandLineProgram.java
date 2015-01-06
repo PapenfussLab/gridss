@@ -63,7 +63,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     public int SOFT_CLIP_MIN_LENGTH = new SoftClipParameters().minLength;
     @Option(doc = "Minimum read MAPQ for a read pair to be considerd anchored",
     		optional=true)
-    public int READ_PAIR_ANCHOR_MIN_MAPQ = new ReadPairParameters().minLocalMapq;
+    public int READ_PAIR_ANCHOR_MIN_MAPQ = new ReadPairParameters().minMapq;
     @Option(doc = "Minimum read MAPQ for soft clip realignment to be performed",
     		optional=true)
     public int SOFT_CLIP_MIN_MAPQ = new SoftClipParameters().minReadMapq;
@@ -214,7 +214,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 	}
 	private ReadPairParameters getReadPairParameters() {
 		ReadPairParameters rpp = new ReadPairParameters();
-		rpp.minLocalMapq = READ_PAIR_ANCHOR_MIN_MAPQ;
+		rpp.minMapq = READ_PAIR_ANCHOR_MIN_MAPQ;
 		rpp.adapters = new AdapterHelper((String[])ADAPTER_SEQUENCE.toArray(new String[ADAPTER_SEQUENCE.size()]));
 	    return rpp;
 	}

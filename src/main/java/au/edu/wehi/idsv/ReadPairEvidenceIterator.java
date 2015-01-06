@@ -29,11 +29,9 @@ public class ReadPairEvidenceIterator extends AbstractIterator<NonReferenceReadP
 	protected NonReferenceReadPair computeNext() {
 		while (iterator.hasNext()) {
 			SAMRecord record = iterator.next();
-			if (NonReferenceReadPair.meetsLocalEvidenceCritera(source.getContext().getReadPairParameters(), source, record)) {
-				NonReferenceReadPair pair = factory.createNonReferenceReadPair(record, source);
-				if (pair != null && pair.meetsEvidenceCritera(source.getContext().getReadPairParameters())) {
-					return pair;
-				}
+			NonReferenceReadPair pair = factory.createNonReferenceReadPair(record, source);
+			if (pair != null) {
+				return pair;
 			}
 		}
 		return endOfData();

@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
 import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import au.edu.wehi.idsv.metrics.InsertSizeDistribution;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
@@ -39,7 +40,7 @@ public class DiscordantReadPair extends NonReferenceReadPair implements Directed
 	}
 	@Override
 	public String toString() {
-		return String.format("DP %s MQ=%d,%d RN=%s", getBreakendSummary(), getLocalMapq(), getRemoteMapq(), getLocalledMappedRead().getReadName());
+		return String.format("DP %s MQ=%d,%d RN=%s", getBreakendSummary(), getLocalMapq(), getRemoteMapq(), getEvidenceID());
 	}
 	@Override
 	public String getUntemplatedSequence() {
@@ -76,15 +77,18 @@ public class DiscordantReadPair extends NonReferenceReadPair implements Directed
 	@Override
 	public float getBreakendQual() {
 		return dpPhred(getEvidenceSource(),
-				SAMRecordUtil.calculateFragmentSize(getLocalledMappedRead(), getNonReferenceRead()),
+				SAMRecordUtil.calculateFragmentSize(getLocalledMappedRead(), getNonReferenceRead(), PairOrientation.FR),
 				getLocalMapq(),
 				Integer.MAX_VALUE);
 	}
 	@Override
 	public float getBreakpointQual() {
 		return dpPhred(getEvidenceSource(),
-				SAMRecordUtil.calculateFragmentSize(getLocalledMappedRead(), getNonReferenceRead()),
+				SAMRecordUtil.calculateFragmentSize(getLocalledMappedRead(), getNonReferenceRead(), PairOrientation.FR),
 				getLocalMapq(),
 				getRemoteMapq());
+	}
+	public DiscordantReadPair asRemote() {
+		return (DiscordantReadPair)NonReferenceReadPair.create(getNonReferenceRead(), getLocalledMappedRead(), getEvidenceSource());
 	}
 }

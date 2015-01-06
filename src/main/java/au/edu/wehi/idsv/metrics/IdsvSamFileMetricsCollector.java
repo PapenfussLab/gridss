@@ -2,6 +2,7 @@ package au.edu.wehi.idsv.metrics;
 
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.CollectionUtil;
@@ -53,7 +54,7 @@ public class IdsvSamFileMetricsCollector {
     	}
     	if (record.getReadPairedFlag()) {
     		if (record.getProperPairFlag()) {
-	    		int fragmentSize = SAMRecordUtil.estimateFragmentSize(record);
+	    		int fragmentSize = SAMRecordUtil.estimateFragmentSize(record, PairOrientation.FR);
 	    		idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH = Math.max(idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH, Math.abs(fragmentSize));
     		}
     		if (record.getFirstOfPairFlag()) {

@@ -9,7 +9,7 @@ public class UnmappedMateReadPair extends NonReferenceReadPair {
 	}
 	@Override
 	public String toString() {
-		return String.format("UM %s MQ=%d RN=%s", getBreakendSummary(), getLocalMapq(), getLocalledMappedRead().getReadName());
+		return String.format("UM %s MQ=%d RN=%s", getBreakendSummary(), getLocalMapq(), getEvidenceID());
 	}
 	@Override
 	public float getBreakendQual() {

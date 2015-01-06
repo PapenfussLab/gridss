@@ -60,13 +60,13 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		VariantContextDirectedEvidence variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(processContext, null, super.make());
 		variant = calcSpv(variant);
 		variant = processContext.getVariantCallingParameters().applyFilters(variant);
-		assert(sanitycheck(variant));
+		//assert(sanitycheck(variant));
 		return variant;
 	}
 	private boolean sanitycheck(VariantContextDirectedEvidence annotated) {
 		double qual = annotated.getPhredScaledQual();
 		double origqual = parent.getPhredScaledQual();
-		//assert(qual <= origqual + 0.01);
+		assert(qual <= origqual + 0.01);
 		return true;
 	}
 	/**

@@ -6,6 +6,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 
 import org.junit.Test;
@@ -118,11 +119,67 @@ public class SAMRecordUtilTest extends TestHelper {
 	}
 	@Test
 	public void estimateFragmentSize() {
-		assertEquals(1, SAMRecordUtil.estimateFragmentSize(RP(0, 1, 1, 1)[0]));
-		assertEquals(1, SAMRecordUtil.estimateFragmentSize(RP(0, 1, 1, 1)[1]));
-		assertEquals(2, SAMRecordUtil.estimateFragmentSize(RP(0, 1, 2, 1)[0]));
-		assertEquals(2, SAMRecordUtil.estimateFragmentSize(RP(0, 1, 2, 1)[1]));
-		assertEquals(3, SAMRecordUtil.estimateFragmentSize(RP(0, 1, 2, 2)[0]));
-		assertEquals(3, SAMRecordUtil.estimateFragmentSize(RP(0, 1, 2, 2)[1]));
+		assertEquals(1, SAMRecordUtil.estimateFragmentSize(RP(0, 1, 1, 1)[0], PairOrientation.FR));
+		assertEquals(1, SAMRecordUtil.estimateFragmentSize(RP(0, 1, 1, 1)[1], PairOrientation.FR));
+		assertEquals(2, SAMRecordUtil.estimateFragmentSize(RP(0, 1, 2, 1)[0], PairOrientation.FR));
+		assertEquals(2, SAMRecordUtil.estimateFragmentSize(RP(0, 1, 2, 1)[1], PairOrientation.FR));
+		assertEquals(3, SAMRecordUtil.estimateFragmentSize(RP(0, 1, 2, 2)[0], PairOrientation.FR));
+		assertEquals(3, SAMRecordUtil.estimateFragmentSize(RP(0, 1, 2, 2)[1], PairOrientation.FR));
+	}
+	@Test
+	public void estimateFragmentSize_should_assume_FR_orientation() {
+		SAMRecord[] dp = DP(0, 1, "1M", true, 0, 5, "1M", true);
+		assertEquals(0, SAMRecordUtil.estimateFragmentSize(dp[0], PairOrientation.FR));
+		assertEquals(0, SAMRecordUtil.estimateFragmentSize(dp[1], PairOrientation.FR));
+		dp = DP(0, 1, "1M", false, 0, 5, "1M", false);
+		assertEquals(0, SAMRecordUtil.estimateFragmentSize(dp[0], PairOrientation.FR));
+		assertEquals(0, SAMRecordUtil.estimateFragmentSize(dp[1], PairOrientation.FR));
+	}
+	@Test
+	public void calculateFragmentSize_should_assume_FR_orientation() {
+		SAMRecord[] dp = DP(0, 1, "1M", true, 0, 5, "1M", true);
+		assertEquals(0, SAMRecordUtil.calculateFragmentSize(dp[0], dp[1], PairOrientation.FR));
+		assertEquals(0, SAMRecordUtil.calculateFragmentSize(dp[1], dp[0], PairOrientation.FR));
+		dp = DP(0, 1, "1M", false, 0, 5, "1M", false);
+		assertEquals(0, SAMRecordUtil.calculateFragmentSize(dp[0], dp[1], PairOrientation.FR));
+		assertEquals(0, SAMRecordUtil.calculateFragmentSize(dp[1], dp[0], PairOrientation.FR));
+	}
+	@Test
+	public void fragmentSize_estimation_should_match_calculation_for_mapped_reads() {
+		for (int i = 1; i < 16; i++) {
+			SAMRecord[] rp = RP(0, 1, i, 1);
+			assertEquals(SAMRecordUtil.estimateFragmentSize(rp[0], PairOrientation.FR), SAMRecordUtil.calculateFragmentSize(rp[0], rp[1], PairOrientation.FR));
+			assertEquals(SAMRecordUtil.estimateFragmentSize(rp[1], PairOrientation.FR), SAMRecordUtil.calculateFragmentSize(rp[0], rp[1], PairOrientation.FR));
+			assertEquals(SAMRecordUtil.estimateFragmentSize(rp[0], PairOrientation.FR), SAMRecordUtil.calculateFragmentSize(rp[1], rp[0], PairOrientation.FR));
+			assertEquals(SAMRecordUtil.estimateFragmentSize(rp[1], PairOrientation.FR), SAMRecordUtil.calculateFragmentSize(rp[1], rp[0], PairOrientation.FR));
+		}
+		for (int i = 2; i < 16; i++) {
+			SAMRecord[] rp = RP(0, 1, i, 2);
+			assertEquals(SAMRecordUtil.estimateFragmentSize(rp[0], PairOrientation.FR), SAMRecordUtil.calculateFragmentSize(rp[0], rp[1], PairOrientation.FR));
+			assertEquals(SAMRecordUtil.estimateFragmentSize(rp[1], PairOrientation.FR), SAMRecordUtil.calculateFragmentSize(rp[0], rp[1], PairOrientation.FR));
+			assertEquals(SAMRecordUtil.estimateFragmentSize(rp[0], PairOrientation.FR), SAMRecordUtil.calculateFragmentSize(rp[1], rp[0], PairOrientation.FR));
+			assertEquals(SAMRecordUtil.estimateFragmentSize(rp[1], PairOrientation.FR), SAMRecordUtil.calculateFragmentSize(rp[1], rp[0], PairOrientation.FR));
+		}
+	}
+	@Test
+	public void estimatedReadsOverlap_should_call_conservatively_and_assume_18_mapped_bases_in_mate() {
+		assertFalse(SAMRecordUtil.estimatedReadsOverlap(RP(0, 100, 80, 20)[0], PairOrientation.FR));
+		assertFalse(SAMRecordUtil.estimatedReadsOverlap(RP(0, 100, 80, 20)[1], PairOrientation.FR));
+		assertFalse(SAMRecordUtil.estimatedReadsOverlap(RP(0, 100, 81, 20)[0], PairOrientation.FR));
+		assertFalse(SAMRecordUtil.estimatedReadsOverlap(RP(0, 100, 81, 20)[1], PairOrientation.FR));
+		assertFalse(SAMRecordUtil.estimatedReadsOverlap(RP(0, 100, 99, 20)[0], PairOrientation.FR));
+		assertFalse(SAMRecordUtil.estimatedReadsOverlap(RP(0, 100, 99, 20)[1], PairOrientation.FR));
+		assertTrue(SAMRecordUtil.estimatedReadsOverlap(RP(0, 100, 100, 20)[0], PairOrientation.FR));
+		assertTrue(SAMRecordUtil.estimatedReadsOverlap(RP(0, 100, 100, 20)[1], PairOrientation.FR));
+		assertTrue(SAMRecordUtil.estimatedReadsOverlap(RP(0, 100, 110, 20)[0], PairOrientation.FR));
+		assertTrue(SAMRecordUtil.estimatedReadsOverlap(RP(0, 100, 110, 20)[1], PairOrientation.FR));
+		assertTrue(SAMRecordUtil.estimatedReadsOverlap(RP(0, 100, 117, 20)[0], PairOrientation.FR));
+		assertTrue(SAMRecordUtil.estimatedReadsOverlap(RP(0, 100, 117, 20)[1], PairOrientation.FR));
+		assertTrue(SAMRecordUtil.estimatedReadsOverlap(RP(0, 100, 118, 20)[0], PairOrientation.FR));
+		assertFalse(SAMRecordUtil.estimatedReadsOverlap(RP(0, 100, 118, 20)[1], PairOrientation.FR)); // conservate call since we don't know mate CIGAR
+		assertTrue(SAMRecordUtil.estimatedReadsOverlap(RP(0, 100, 119, 20)[0], PairOrientation.FR));
+		assertFalse(SAMRecordUtil.estimatedReadsOverlap(RP(0, 100, 119, 20)[1], PairOrientation.FR)); // conservate call since we don't know mate CIGAR
+		assertFalse(SAMRecordUtil.estimatedReadsOverlap(RP(0, 100, 120, 20)[0], PairOrientation.FR));
+		assertFalse(SAMRecordUtil.estimatedReadsOverlap(RP(0, 100, 120, 20)[1], PairOrientation.FR));
 	}
 }

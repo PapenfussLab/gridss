@@ -23,4 +23,9 @@ public interface DirectedBreakpoint extends DirectedEvidence {
 	 * @return known untemplated bases, empty string if no bases can be identified
 	 */
 	String getUntemplatedSequence();
+	/**
+	 * Evidence according to the remote breakend 
+	 * @return evidence from the remote breakend perspective
+	 */
+	DirectedBreakpoint asRemote();
 }

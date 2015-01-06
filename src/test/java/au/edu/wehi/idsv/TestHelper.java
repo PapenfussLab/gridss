@@ -157,7 +157,8 @@ public class TestHelper {
 	}
 
 	public static NonReferenceReadPair NRRP(SAMRecord... pair) {
-		return NRRP(SES(), pair);
+		NonReferenceReadPair rp = NRRP(SES(), pair);
+		return rp;
 	}
 
 	public static NonReferenceReadPair NRRP(SAMEvidenceSource source,

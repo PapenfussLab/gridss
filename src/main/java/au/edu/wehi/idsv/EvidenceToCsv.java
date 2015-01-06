@@ -45,6 +45,7 @@ public class EvidenceToCsv {
 				"localMaxBaseQual",
 				"localTotalBaseQual",
 				"exact",
+				"class",
 				}) {
 			stream.print(s);
 			stream.print(',');
@@ -104,6 +105,8 @@ public class EvidenceToCsv {
 		stream.print(e.getLocalTotalBaseQual());
 		stream.print(',');
 		stream.print(e.isBreakendExact());
+		stream.print(',');
+		stream.print(e.getClass().getSimpleName());
 		stream.print(',');
 	}
 	private void writeDirectedBreakpoint(DirectedEvidence evidence) {

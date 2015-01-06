@@ -7,12 +7,11 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class NonReferenceReadPairTest extends TestHelper {
-	public NonReferenceReadPair newPair(SAMRecord[] pair, int maxfragmentSize) {
-		return NonReferenceReadPair.create(pair[0], pair[1], SES(maxfragmentSize));
+	public NonReferenceReadPair newPair(SAMRecord[] pair, int expectedFragmentSize) {
+		return NonReferenceReadPair.create(pair[0], pair[1], SES(expectedFragmentSize, expectedFragmentSize));
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void should_abort_if_max_frag_size_not_sane() {
@@ -22,12 +21,12 @@ public class NonReferenceReadPairTest extends TestHelper {
 	@Test
 	public void getLocalledMappedRead_should_return_local() {
 		SAMRecord[] pair = OEA(0, 1, "100M", true);
-		assertEquals(pair[0], newPair(pair, 100).getLocalledMappedRead());
+		assertEquals(pair[0], newPair(pair, 200).getLocalledMappedRead());
 	}
 	@Test
-	public void getRemoteReferenceIndex_should_return_remote() {
+	public void getNonReferenceRead_should_return_remote() {
 		SAMRecord[] pair = OEA(0, 1, "100M", true);
-		assertEquals(pair[1], newPair(pair, 100).getNonReferenceRead());
+		assertEquals(pair[1], newPair(pair, 200).getNonReferenceRead());
 	}
 	@Test
 	public void getBreakendSummary_should_return_location_for_OEA() {
@@ -190,8 +189,8 @@ public class NonReferenceReadPairTest extends TestHelper {
 		// 012345678901234567890
 		//  ==>
 		//    <==
-		assertNull(newPair(DP(0, 1, "3M", true, 0, 3, "3M", false), 100).getBreakendSummary());
-		assertNull(newPair(DP(0, 3, "3M", false, 0, 1, "3M", true), 100).getBreakendSummary());
+		assertNull(newPair(DP(0, 1, "3M", true, 0, 3, "3M", false), 100));
+		assertNull(newPair(DP(0, 3, "3M", false, 0, 1, "3M", true), 100));
 	}
 	@Test
 	public void overlapping_PE_reads_should_suppress_tandem_duplication_support() {
@@ -199,8 +198,8 @@ public class NonReferenceReadPairTest extends TestHelper {
 		// 012345678901234567890
 		//     =====>
 		//  <=====
-		assertNotNull(newPair(DP(0, 4, "6M", true, 0, 1, "6M", false), 100).getBreakendSummary());
-		assertNotNull(newPair(DP(0, 1, "6M", false, 0, 4, "6M", true), 100).getBreakendSummary());
+		assertNull(newPair(DP(0, 4, "6M", true, 0, 1, "6M", false), 100));
+		assertNull(newPair(DP(0, 1, "6M", false, 0, 4, "6M", true), 100));
 	}
 	@Test
 	public void should_handle_concordant_position_but_discordant_chr() {
@@ -255,17 +254,23 @@ public class NonReferenceReadPairTest extends TestHelper {
 	}
 	private void meetsEvidenceCriteria(boolean expected, SAMRecord[] pair, int min, int max, boolean testSingle) {
 		MockSAMEvidenceSource ses = SES(min, max);
+		ses.getContext().getReadPairParameters().minMapq = 0;
 		NonReferenceReadPair nrrp = NonReferenceReadPair.create(pair[0], pair[1], ses);
-		ReadPairParameters rpp = new ReadPairParameters() {{
-			minLocalMapq = 0;
-		}};
-		assertEquals(expected, nrrp.meetsEvidenceCritera(rpp));
-		if (testSingle) assertEquals(expected, NonReferenceReadPair.meetsLocalEvidenceCritera(rpp, ses, pair[0]));
-		if (testSingle) assertEquals(expected, NonReferenceReadPair.meetsRemoteEvidenceCritera(rpp, ses, pair[1]));
+		if (expected) {
+			assertNotNull(nrrp);
+		} else {
+			assertNull(nrrp);
+		}
+		if (testSingle) assertEquals(expected, NonReferenceReadPair.meetsAnchorCriteria(ses, pair[0]));
+		if (testSingle) assertEquals(expected, NonReferenceReadPair.meetsRemoteCriteria(ses, pair[1]));
 		if (!pair[1].getReadUnmappedFlag()) {
-			assertEquals(expected, NonReferenceReadPair.create(pair[1], pair[0], ses).meetsEvidenceCritera(rpp));
-			if (testSingle) assertEquals(expected, NonReferenceReadPair.meetsLocalEvidenceCritera(rpp, ses, pair[1]));
-			if (testSingle) assertEquals(expected, NonReferenceReadPair.meetsRemoteEvidenceCritera(rpp, ses, pair[0]));
+			if (expected) {
+				assertNotNull(NonReferenceReadPair.create(pair[1], pair[0], ses));
+			} else {
+				assertNull(NonReferenceReadPair.create(pair[1], pair[0], ses));
+			}
+			if (testSingle) assertEquals(expected, NonReferenceReadPair.meetsAnchorCriteria(ses, pair[1]));
+			if (testSingle) assertEquals(expected, NonReferenceReadPair.meetsRemoteCriteria(ses, pair[0]));
 		}
 	}
 	@Test
@@ -290,7 +295,6 @@ public class NonReferenceReadPairTest extends TestHelper {
 		meetsEvidenceCriteria(true, RP(0, 100, 210, 1));
 	}
 	@Test
-	@Ignore("Can't filter overlap if we don't have mate cigar")
 	public void filter_overlapping_fragment() {
 		SAMRecord[] rp;
 		// no SV support for overlapping reads
@@ -344,24 +348,23 @@ public class NonReferenceReadPairTest extends TestHelper {
 		rp[1].setMateNegativeStrandFlag(true);
 		meetsEvidenceCriteria(true, rp);
 	}
-	// Adapters completely mess up the de Bruijn graph
+	// Adapters completely mess up de Bruijn graph assembly
 	@Test
-	public void meetsEvidenceCritera_should_filter_remote_reads_with_adapter_sequence() {
+	public void meetsEvidenceCritera_should_filter_reads_pairs_containing_adapter_sequence() {
 		MockSAMEvidenceSource ses = SES(500, 500);
-		ReadPairParameters rpp = new ReadPairParameters() {{
-			minLocalMapq = 0;
-		}};
+		ses.getContext().getReadPairParameters().minMapq = 0;
 		SAMRecord[] rp = RP(0, 100, 300, 101);
 		rp[0].setReadBases(B("CTGGGGGGACCTGAACAACTCCAAGGGCCTTGGCTGGCGAGAAAATCCTGCCTCAAAAGGGCGCGTGCTCGGTGGATCCACGGGCTACCGTTCCCTCTTAA"));
 		rp[1].setReadBases(B("CTGGGGGGACCTGAACAACTCCAAGGGCCTTGGCTGGCGAGAAAATCCTGCCTCAAAAGGGCGCGTGCTCGGTGGATCCACGGGCTACCGTTCCCTCTTAA"));
-		assertTrue(NonReferenceReadPair.create(rp[0], rp[1], ses).meetsEvidenceCritera(rpp));
+		assertNotNull(NonReferenceReadPair.create(rp[0], rp[1], ses));
 		
 		rp[1].setReadBases(B("ACCGCTCTTCCGATCTCATGCCTGGCGTCCACTTTCTTGACTATTTCCTGAAGACCAGCGTTTCCCGGGTGGTTTCACAGCTGCGGAAGCTGCCTGTGTCA"));
-		assertFalse(NonReferenceReadPair.create(rp[0], rp[1], ses).meetsEvidenceCritera(rpp));
+		assertNull(NonReferenceReadPair.create(rp[0], rp[1], ses));
+		assertNull(NonReferenceReadPair.create(rp[1], rp[0], ses));
 	}
 	@Test
 	public void isNotExact() {
-		assertFalse(NRRP(DP(1, 1, "1M", true, 1, 3, "1M", false)).isBreakendExact());
-		assertFalse(NRRP(DP(1, 1, "1M", true, 1, 2, "1M", false)).isBreakendExact());
+		assertFalse(NRRP(DP(0, 1, "1M", true, 1, 3, "1M", false)).isBreakendExact());
+		assertFalse(NRRP(DP(0, 1, "1M", true, 1, 2, "1M", false)).isBreakendExact());
 	}
 }

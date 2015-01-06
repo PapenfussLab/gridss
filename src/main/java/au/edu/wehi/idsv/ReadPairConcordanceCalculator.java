@@ -13,5 +13,6 @@ public abstract class ReadPairConcordanceCalculator {
 	 * @return
 	 */
 	public abstract int maxConcordantFragmentSize();
-	public abstract boolean isConcordant(SAMRecord local);
+	public abstract boolean isConcordant(SAMRecord read);
+	public abstract boolean isConcordant(SAMRecord read1, SAMRecord read2);
 }
