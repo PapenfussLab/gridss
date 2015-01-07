@@ -1,5 +1,9 @@
 package au.edu.wehi.idsv;
 
+import jaligner.matrix.Matrix;
+import jaligner.matrix.MatrixLoader;
+import jaligner.matrix.MatrixLoaderException;
+
 
 public class Defaults {
 	/**
@@ -41,6 +45,13 @@ public class Defaults {
 	 */
 	public static final int MIN_BASES_TO_ALIGN;
 	/**
+	 * Number of bases to extend the reference when realigning assemblies
+	 */
+	public static final int ASSEMBLY_REALIGNMENT_WINDOW_SIZE;
+	public static final Matrix ASSEMBLY_REALIGNMENT_MATRIX;
+	public static final float ASSEMBLY_REALIGNMENT_PENALTY_GAPOPEN;
+	public static final float ASSEMBLY_REALIGNMENT_PENALTY_GAPEXTEND;
+	/**
 	 * Maximum subgraph width
 	 */
 	public static final float MAX_SUBGRAPH_WIDTH_IN_FRAGMENT_SIZE_MULTIPLES;
@@ -57,9 +68,18 @@ public class Defaults {
 		PERFORM_EXPENSIVE_CLIQUE_SANITY_CHECKS = Boolean.valueOf(System.getProperty("gridss.expensiveAsserts.clique", "false"));
 		COLLAPSE_PATH_MAX_TRAVERSAL = Integer.valueOf(System.getProperty("gridss.debruijn.maxCollapseTraversal", "2097152"));
 		BEST_PATH_MAX_TRAVERSAL = Integer.valueOf(System.getProperty("gridss.debruijn.maxPathTraversal", "65536"));
-		MAX_SUBGRAPH_WIDTH_IN_FRAGMENT_SIZE_MULTIPLES = Float.valueOf(System.getProperty("gridss.debruijn.maxSubgraphFragmentWidth", "32"));
 		READ_PAIR_DOVETAIL_MARGIN = Integer.valueOf(System.getProperty("gridss.readpair.dovetailMargin", "4"));
 		MIN_BASES_TO_ALIGN = Integer.valueOf(System.getProperty("gridss.readpair.minAlignmentBases", "18"));
+		ASSEMBLY_REALIGNMENT_WINDOW_SIZE = Integer.valueOf(System.getProperty("gridss.assembly.realignment.window", "20"));
+		String matrixName = System.getProperty("gridss.assembly.realignment.matrix", "EDNAFULL");
+		try {
+			ASSEMBLY_REALIGNMENT_MATRIX = MatrixLoader.load(matrixName);
+		} catch (MatrixLoaderException e) {
+			throw new RuntimeException("Unable to load alignment matrix " + matrixName);
+		}
+		ASSEMBLY_REALIGNMENT_PENALTY_GAPOPEN = Float.valueOf(System.getProperty("gridss.assembly.realignment.gapopen", "14"));
+		ASSEMBLY_REALIGNMENT_PENALTY_GAPEXTEND = Float.valueOf(System.getProperty("gridss.assembly.realignment.gapextend", "0.5"));
+		MAX_SUBGRAPH_WIDTH_IN_FRAGMENT_SIZE_MULTIPLES = Float.valueOf(System.getProperty("gridss.debruijn.maxSubgraphFragmentWidth", "32"));
 		ASYNC_READAHEAD_BUFFERS = Integer.valueOf(System.getProperty("gridss.readahead.buffers", "32"));
 		ASYNC_READAHEAD_BUFFER_SIZE = Integer.valueOf(System.getProperty("gridss.readahead.buffersize", "128"));
 	}

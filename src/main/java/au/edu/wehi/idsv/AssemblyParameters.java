@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import htsjdk.samtools.util.Log;
+import jaligner.matrix.Matrix;
 
 import java.io.File;
 
@@ -95,6 +96,11 @@ public class AssemblyParameters {
 	 * Determines whether filtered assemblies are written to intermediate files
 	 */
 	public boolean writeFilteredAssemblies = Defaults.WRITE_FILTERED_ASSEMBLIES;
+	
+	public int realignmentWindowSize = Defaults.ASSEMBLY_REALIGNMENT_WINDOW_SIZE;
+	public Matrix realignmentMatrix = Defaults.ASSEMBLY_REALIGNMENT_MATRIX;
+	public float realignmentGapOpen = Defaults.ASSEMBLY_REALIGNMENT_PENALTY_GAPOPEN;
+	public float realignmentGapExtend = Defaults.ASSEMBLY_REALIGNMENT_PENALTY_GAPEXTEND;
 	public boolean applyFilters(AssemblyEvidence evidence) {
 		AssemblyEvidence localEvidence = evidence;
 		if (evidence instanceof RemoteEvidence) {

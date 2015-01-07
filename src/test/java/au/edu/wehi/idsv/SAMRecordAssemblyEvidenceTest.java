@@ -7,6 +7,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import com.google.common.collect.Sets;
@@ -186,5 +187,30 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		e.hydrateEvidenceSet(e2);
 		e.hydrateEvidenceSet(e3);
 		assertEquals(3, e.getEvidence().size());
+	}
+	@Test
+	public void realign_should_shift_breakend_to_match_reference() {
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
+				0, 5, 5, B("AAAATTTT"), new byte[] {1,2,3,4,1,2,3,4}, 0, 0).realign();
+		assertEquals("TTTT", S(e.getBreakendSequence()));
+		assertEquals(new BreakendSummary(0, FWD, 4, 4), e.getBreakendSummary());
+		assertEquals("4M4S", e.getSAMRecord().getCigarString());
+	}
+	@Test
+	public void realign_should_align_to_reference_with_20bp_margin() {
+		Assert.fail();
+	}
+	@Test
+	public void realign_should_not_remap_breakend_to_reference_for_small_microhomology() {
+		Assert.fail();
+	}
+	@Test
+	public void realign_should_allow_small_anchor_indels() {
+		Assert.fail();
+	}
+	@Test
+	public void realign_should_fix_778_chr1_25613745_misalignment() {
+		// TODO: add in 778 data
+		Assert.fail();
 	}
 }

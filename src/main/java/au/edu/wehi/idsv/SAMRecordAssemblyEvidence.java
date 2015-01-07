@@ -6,7 +6,15 @@ import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.Log;
+import jaligner.Alignment;
+import jaligner.Sequence;
+import jaligner.SmithWatermanGotoh;
+import jaligner.example.SmithWatermanGotohExample;
+import jaligner.matrix.MatrixLoader;
+import jaligner.util.SequenceParser;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -51,7 +59,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 			// ignore mapping location of realignment
 			bs = ((BreakpointSummary)bs).localBreakend();
 		}
-		this.breakend = bs; 
+		this.breakend = bs;
 		this.isExact = calculateIsBreakendExactFromCigar(this.record.getCigar());
 		this.realignment = realignment == null ? getPlaceholderRealignment() : realignment;
 		fixReadPair();
@@ -258,7 +266,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		}
 		return new BreakendSummary(referenceIndex, direction, start, end);
 	}
-	private boolean calculateIsBreakendExactFromCigar(Cigar cigar) {
+	private static boolean calculateIsBreakendExactFromCigar(Cigar cigar) {
 		for (CigarElement ce : cigar.getCigarElements()) {
 			if (ce.getOperator() == CigarOperator.M) return true;
 			if (ce.getOperator() == CigarOperator.X) return false;
@@ -271,7 +279,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 			BreakendSummary breakend,
 			int anchoredBaseCount, byte[] baseCalls, byte[] baseQuals,
 			int normalBaseCount, int tumourBaseCount) {
-		if (breakend instanceof BreakpointSummary) throw new IllegalArgumentException("Breakpoints not supported by this constructor");
+		if (breakend instanceof BreakpointSummary) throw new IllegalArgumentException("Breakpoint not supported by this constructor");
 		SAMRecord record = new SAMRecord(samFileHeader);
 		record.setReferenceIndex(breakend.referenceIndex);
 		record.setReadName(String.format("gridss_%s_%d_%d%s_%d",
@@ -552,4 +560,57 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		qual = Math.min(getLocalMapq() * evidenceCount, qual);
 		return (float)qual;
 	}
+	/**
+	 * Performs local Smith-Watermann alignment of assembled contig
+	 * to remove artifacts caused by misalignment of soft clipped reads 
+	 * @return Assembly contig with aligned anchor.
+	 */
+	public SAMRecordAssemblyEvidence realign() {
+		if (!this.isExact) throw new RuntimeException("Sanity check failure: realignment of unanchored assemblies not yet implemented.");
+		AssemblyParameters ap = source.getContext().getAssemblyParameters();
+		int refIndex = getBreakendSummary().referenceIndex;
+		SAMSequenceRecord refSeq = source.getContext().getDictionary().getSequence(refIndex);
+		int start = Math.max(1, getBreakendSummary().start - ap.realignmentWindowSize);
+		int end = Math.min(refSeq.getSequenceLength(), getBreakendSummary().end + ap.realignmentWindowSize);
+		Sequence ref = new Sequence(new String(source.getContext().getReference().getSubsequenceAt(refSeq.getSequenceName(), start, end).getBases()));
+		Sequence ass = new Sequence(new String(record.getReadBases()));
+        Alignment alignment = SmithWatermanGotoh.align(ref, ass, ap.realignmentMatrix, ap.realignmentGapOpen, ap.realignmentGapExtend);
+        
+        List<CigarElement> cigar = new ArrayList<CigarElement>();
+        if (alignment.getStart2() > 0) {
+        	cigar.add(new CigarElement(alignment.getStart2(), CigarOperator.SOFT_CLIP));
+        }
+        char[] markup = alignment.getMarkupLine();
+        int length = 0;
+        CigarOperator op = CigarOperator.MATCH_OR_MISMATCH;
+        for (int i = 0; i < markup.length; i++) {
+        	CigarOperator currentOp;
+        	switch (markup[i]) {
+        	case '|': // match
+        		currentOp = CigarOperator.MATCH_OR_MISMATCH;
+        		break;
+    		default:
+    			throw new RuntimeException("Unknown alignment markup " + new String(markup));
+        	}
+        	if (currentOp != op) {
+        		if (length > 0) {
+        			cigar.add(new CigarElement(length, op));
+        		}
+        		op = currentOp;
+        		length = 0;
+        	}
+        	length++;
+        }
+        cigar.add(new CigarElement(length, op));
+        int assemblyBasesConsumed = new Cigar(cigar).getReadLength();
+        if (assemblyBasesConsumed != record.getReadLength()) {
+        	cigar.add(new CigarElement(record.getReadLength() - assemblyBasesConsumed, CigarOperator.SOFT_CLIP));
+        }
+        SAMRecord newAssembly = SAMRecordUtil.clone(record);
+		newAssembly.setReadName(newAssembly.getReadName() + "_r");
+        newAssembly.setAlignmentStart(start + alignment.getStart1());
+        newAssembly.setCigar(new Cigar(cigar));
+		return new SAMRecordAssemblyEvidence(source, newAssembly, null);
+	}
+	
 }
