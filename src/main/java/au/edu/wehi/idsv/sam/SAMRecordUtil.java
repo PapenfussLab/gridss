@@ -26,11 +26,6 @@ import au.edu.wehi.idsv.Defaults;
  */
 public class SAMRecordUtil {
 	/**
-	 * Minimum number of mapped bases in any alignment
-	 */
-	public static final int MIN_BASES_TO_ALIGN = 18;
-
-	/**
 	 * Determines whether the given record is soft-clipped
 	 * 
 	 * @param aln
@@ -199,7 +194,6 @@ public class SAMRecordUtil {
 		}
 		return max;
 	}
-
 	/**
 	 * Dovetailing reads either either due to an SV
 	 * or failure to trim adapters from a fragment smaller than the read length
@@ -218,6 +212,7 @@ public class SAMRecordUtil {
 				&& !record2.getReadUnmappedFlag()
 				&& record1.getReferenceIndex() == record2.getReferenceIndex()
 				&& record1.getReadNegativeStrandFlag() != record2.getReadNegativeStrandFlag() // FR
+				&& overlap(record1, record2)
 				&& Math.abs(record1.getAlignmentStart()
 						- record2.getAlignmentStart()) <= Defaults.READ_PAIR_DOVETAIL_MARGIN
 				&& Math.abs(record1.getAlignmentEnd()
@@ -289,7 +284,7 @@ public class SAMRecordUtil {
 			// and our mate has an inner soft clip or non-reference CIGAR
 			// so we make a conservative guess based on the min bases aligners
 			// will return a alignment for
-			int offset = Math.min(MIN_BASES_TO_ALIGN, record.getReadLength()) - 1;
+			int offset = Math.min(Defaults.MIN_BASES_TO_ALIGN, record.getReadLength()) - 1;
 			return record.getMateAlignmentStart() + offset >= record.getAlignmentStart() &&
 					record.getMateAlignmentStart() + offset <= record.getAlignmentEnd();
 			

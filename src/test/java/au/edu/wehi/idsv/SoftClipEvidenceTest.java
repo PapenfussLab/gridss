@@ -278,7 +278,7 @@ public class SoftClipEvidenceTest extends TestHelper {
 		//assertTrue(new SoftClipEvidence(getContext(), SES(), BWD, rp[1]).meetsEvidenceCritera(scp));
 	}
 	@Test
-	public void should_allow_2_bp_dovetail_margin() {
+	public void should_allow_4_bp_dovetail_margin() {
 		SoftClipParameters scp = new SoftClipParameters();
 		scp.minAnchorIdentity = 0;
 		scp.minLength = 1;

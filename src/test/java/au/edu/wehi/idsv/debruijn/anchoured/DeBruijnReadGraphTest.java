@@ -43,28 +43,36 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		record.setReferenceIndex(0);
 		record.setAlignmentStart(1);
 		record.setCigarString(String.format("%dM1S", read.length() - 1));
+		record.setMappingQuality(40);
 		return record;
 	}
 	private SAMRecord inferLocal(DeBruijnAnchoredGraph ass, SAMRecord remote) {
-		SAMRecord local = Read(0, 1, "1M");
+		SAMRecord local = Read(1, 1, "1M");
 		local.setReadName(remote.getReadName());
 		local.setReadPairedFlag(true);
 		local.setReadNegativeStrandFlag(ass.getDirection() == BWD);
 		local.setReadPairedFlag(false);
+		local.setMappingQuality(40);
+		local.setFirstOfPairFlag(true);
+		remote.setFirstOfPairFlag(false);
+		local.setSecondOfPairFlag(false);
+		remote.setSecondOfPairFlag(true);
+		local.setReadPairedFlag(true);
+		remote.setReadPairedFlag(true);
 		return local;
 	}
 	private void addRead(DeBruijnAnchoredGraph ass, SAMRecord r, boolean sc) {
 		if (sc) {
 			ass.addEvidence(SCE(ass.getDirection(), r));
 		} else {
-			ass.addEvidence(NRRP(inferLocal(ass, r), r));
+			ass.addEvidence(NRRP(SES(1000, 1000), inferLocal(ass, r), r));
 		}
 	}
 	private void removeRead(DeBruijnAnchoredGraph ass, SAMRecord r, boolean sc) {
 		if (sc) {
 			ass.removeEvidence(SCE(ass.getDirection(), r));
 		} else {
-			ass.removeEvidence(NRRP(inferLocal(ass, r), r));
+			ass.removeEvidence(NRRP(SES(1000, 1000), inferLocal(ass, r), r));
 		}
 	}
 	@Test

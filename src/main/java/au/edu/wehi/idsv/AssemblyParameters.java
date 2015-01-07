@@ -10,7 +10,7 @@ public class AssemblyParameters {
 	private static final Log log = Log.getInstance(AssemblyParameters.class);
 	public AssemblyMethod method = AssemblyMethod.DEBRUIJN_SUBGRAPH;
 	/**
-	 * Assemble soft clips at the remote realigned position
+	 * Assemble soft clips at the remote realigned position as well as the read mapping location
 	 */
 	public boolean includeRemoteSoftClips = false;
 	/**

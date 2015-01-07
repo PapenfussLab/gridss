@@ -86,6 +86,10 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     		shortName="K")
     // --- De Bruijn assembly parameters ---
     public int ASSEMBLY_DEBRUIJN_KMER = new AssemblyParameters().k;
+    @Option(doc = "Assemble soft clips both at the read mapping location and the soft clip realignment location.",
+    		optional=true)
+    public boolean ASSEMBLY_INCLUDE_REMOTE_SOFT_CLIPS = new AssemblyParameters().includeRemoteSoftClips;
+    // --- De Bruijn assembly parameters ---
     @Option(doc = "Maximum of base mismatches for de bruijn kmer paths to be merged",
     		optional=true)
     public int ASSEMBLY_DEBRUIJN_MAX_PATH_COLLAPSE_BASE_MISMATCHES = new AssemblyParameters().maxBaseMismatchForCollapse;
@@ -186,6 +190,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 	private AssemblyParameters getAssemblyParameters() {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.method = ASSEMBLY_METHOD;
+		ap.includeRemoteSoftClips = ASSEMBLY_INCLUDE_REMOTE_SOFT_CLIPS;
 		ap.k = ASSEMBLY_DEBRUIJN_KMER;
 		ap.maxBaseMismatchForCollapse = ASSEMBLY_DEBRUIJN_MAX_PATH_COLLAPSE_BASE_MISMATCHES;
 		ap.collapseBubblesOnly = ASSEMBLY_DEBRUIJN_COLLAPSE_BUBBLES_ONLY;

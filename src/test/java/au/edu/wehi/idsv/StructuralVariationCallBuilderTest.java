@@ -440,7 +440,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		assertTrue(CallSV(NRRP(OEA(0, 1, "1M", true))).hasAttribute(VcfSvConstants.IMPRECISE_KEY));
 		// Should still be inexact event if our CI is 1bp because we don't know if there
 		// is any untemplated sequence included in the breakpoint
-		assertTrue(CallSV(NRRP(DP(0, 1, "1M", true, 0, 2, "1M", false))).hasAttribute(VcfSvConstants.IMPRECISE_KEY));
+		assertTrue(CallSV(NRRP(SES(300, 300), DP(0, 1, "1M", true, 0, 2, "1M", false))).hasAttribute(VcfSvConstants.IMPRECISE_KEY));
 	}
 	@Test
 	public void unanchored_assembly_should_set_imprecise_header() {

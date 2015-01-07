@@ -42,7 +42,7 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	public static NonReferenceReadPair create(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {
 		if (local == null || remote == null) return null;
 		if (!meetsAnchorCriteria(source, local)) return null;
-		if (SAMRecordUtil.isDovetailing(local,  remote, PairOrientation.FR)) return null;
+		if (SAMRecordUtil.isDovetailing(local,  remote, PairOrientation.FR)) return null; 
 		// should only need to check for adapters in OEA as DP with adapter should be dovetailing
 		if (source.getContext().getReadPairParameters().adapters.containsAdapter(local)) return null;
 		if (source.getContext().getReadPairParameters().adapters.containsAdapter(remote)) return null;

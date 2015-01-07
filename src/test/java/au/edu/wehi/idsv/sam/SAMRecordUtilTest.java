@@ -182,4 +182,8 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertFalse(SAMRecordUtil.estimatedReadsOverlap(RP(0, 100, 120, 20)[0], PairOrientation.FR));
 		assertFalse(SAMRecordUtil.estimatedReadsOverlap(RP(0, 100, 120, 20)[1], PairOrientation.FR));
 	}
+	@Test
+	public void isDovetailing_should_require_overlap() {
+		assertFalse(SAMRecordUtil.isDovetailing(RP(0, 1, 2, 1)[0], RP(0, 1, 2, 1)[1], PairOrientation.FR));
+	}
 }

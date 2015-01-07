@@ -436,11 +436,11 @@ public class AssemblyFactoryTest extends TestHelper {
 	}
 	@Test
 	public void getLocalMapq_should_be_max_evidence_mapq() {
-		assertEquals(3, AssemblyFactory.createUnanchored(
+		assertEquals(30, AssemblyFactory.createUnanchored(
 				getContext(), AES(), Sets.<DirectedEvidence>newHashSet(
-						SCE(FWD, withMapq(1, Read(0, 1, "1M2S"))),
-						SCE(FWD, withMapq(2, Read(0, 1, "1M1S"))),
-						NRRP(withMapq(3, DP(0, 1, "1M", true, 0, 1, "1M", true))[0], withMapq(4, DP(0, 1, "1M", true, 0, 1, "1M", true))[1])),
+						SCE(FWD, withMapq(10, Read(0, 1, "1M2S"))),
+						SCE(FWD, withMapq(20, Read(0, 1, "1M1S"))),
+						NRRP(withMapq(30, DP(0, 1, "1M", true, 1, 1, "1M", true))[0], withMapq(4, DP(0, 1, "1M", true, 1, 1, "1M", true))[1])),
 						B("T"), B("T"),1, 2).getLocalMapq());
 	}
 	@Test
@@ -489,7 +489,7 @@ public class AssemblyFactoryTest extends TestHelper {
 	@Test
 	public void should_set_breakend_exact() {
 		assertTrue(AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(), 0, 1, 1, B("AAAAA"), B("AAAAA"), 0, 0).isBreakendExact());
-		assertFalse(AssemblyFactory.createUnanchored(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(NRRP(DP(0, 10, "2M", true, 0, 10, "2M", false))), B("AAAAA"), B("AAAAA"), 2, 0)
+		assertFalse(AssemblyFactory.createUnanchored(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(NRRP(DP(0, 10, "2M", true, 1, 10, "2M", false))), B("AAAAA"), B("AAAAA"), 2, 0)
 				.isBreakendExact());
 	}
 }
