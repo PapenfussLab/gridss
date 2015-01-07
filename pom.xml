@@ -40,8 +40,20 @@
 	  </executions>
 	</plugin>
 	</plugins>
-	</build>
+  </build>
+  <repositories>
+    <repository>
+        <id>project.local</id>
+        <name>project</name>
+        <url>file:${project.basedir}/repo</url>
+    </repository>
+  </repositories>
   <dependencies>
+    <dependency>
+      <groupId>jaligner</groupId>
+      <artifactId>jaligner</artifactId>
+      <version>1.0</version>
+  </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
