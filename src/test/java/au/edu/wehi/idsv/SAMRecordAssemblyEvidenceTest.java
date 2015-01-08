@@ -6,9 +6,16 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.metrics.Header;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 import com.google.common.collect.Sets;
 
@@ -197,20 +204,45 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals("4M4S", e.getSAMRecord().getCigarString());
 	}
 	@Test
-	public void realign_should_align_to_reference_with_20bp_margin() {
-		Assert.fail();
+	public void realign_should_align_to_reference_with_30bp_margin() {
+		int margin = 30;
+		for (int startpos = 41 - margin; startpos <= 41 + margin; startpos++) {
+			SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
+					2, startpos, 80-40, B(S(B('N', 60)) + S(Arrays.copyOfRange(RANDOM, 40, 80))), B(40, 100), 0, 0).realign();
+			assertEquals(41, e.getBreakendSummary().start);
+			assertEquals(60, e.getBreakendSequence().length);
+		}
 	}
 	@Test
-	public void realign_should_not_remap_breakend_to_reference_for_small_microhomology() {
-		Assert.fail();
+	public void realign_should_allow_small_anchor_deletion() {
+		String seq = S(B('N', 100)) + S(Arrays.copyOfRange(RANDOM, 0, 100)) + S(Arrays.copyOfRange(RANDOM, 110, 210));
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
+				2, 1, 210, B(seq), B(40, seq.length()), 0, 0).realign();
+		assertEquals("100S100M10D100M", e.getSAMRecord().getCigarString());
 	}
 	@Test
-	public void realign_should_allow_small_anchor_indels() {
-		Assert.fail();
+	public void realign_should_allow_small_anchor_insertion() {
+		String seq = S(B('N', 100)) + S(Arrays.copyOfRange(RANDOM, 0, 100)) + "NNNNNNNNNN" + S(Arrays.copyOfRange(RANDOM, 100, 200));
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
+				2, 1, 200, B(seq), B(40, seq.length()), 0, 0).realign();
+		assertEquals("100S100M10I100M", e.getSAMRecord().getCigarString());
 	}
+	@Rule
+    public TemporaryFolder testFolder = new TemporaryFolder();
 	@Test
-	public void realign_should_fix_778_chr1_25613745_misalignment() {
-		// TODO: add in 778 data
-		Assert.fail();
+	public void realign_should_fix_778_chr1_170849702_misalignment() {
+		String assembly = "ATCCATCCCTATGACCCAAACATCTCCCACCAGGCCTCATGTTCAATATTAAAGATCACATTTCAACTTGAGATTTGGAGGGGACAAACATACAAATCATATCATTATCTCTCTCCCCACTTCTCTCTTTATCAATCCCTCCCTCTTTGTCAATCTTAGCCTTGGCCTTCAGATTTTACCACTTGATTTTTCACATTTTCTGTATTCTTAAT"
+				+ "GATTATTATATTTTCATGTTCTTGCTAATCTATATCATGGTTAGAAATCAAAGCATGCCGAAATTTCTCTCTTACTTTTTTTGCTGTT";
+		File ref = new File("src/test/resources/chr1_170849600_170849850.fa");
+		ProcessingContext context = new ProcessingContext(getFSContext(),
+				new ArrayList<Header>(), new SoftClipParameters(),
+				new ReadPairParameters(), new AssemblyParameters(),
+				new RealignmentParameters(), new VariantCallingParameters(),
+				ref, false, false);
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(context, AES(context), BWD, Sets.<DirectedEvidence>newHashSet(),
+				0, 170849702-170849600+1, 97, B(assembly), B(40, assembly.length()), 0, 0).realign();
+		// anchor location is 11bp off
+		assertEquals("212S88M", e.getSAMRecord().getCigarString());
+		assertEquals(170849713-170849600+1, e.getBreakendSummary().start);
 	}
 }

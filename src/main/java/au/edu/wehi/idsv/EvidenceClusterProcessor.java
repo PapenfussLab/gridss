@@ -54,7 +54,7 @@ public class EvidenceClusterProcessor extends AbstractIterator<VariantContextDir
 		private final MaximalEvidenceCliqueIterator cliqueIt;
 		public MaximalCliqueIteratorRunnable(ProcessingContext processContext, Iterator<DirectedEvidence> evidenceIt, BreakendDirection lowDir, BreakendDirection highDir) {
 			cliqueIt = new MaximalEvidenceCliqueIterator(processContext, evidenceIt, lowDir, highDir);
-			this.setName(String.format("MaxClique%s%s-%d", lowDir == BreakendDirection.Forward ? "F" : "B", highDir == BreakendDirection.Forward ? "F" : "B", threadCount.incrementAndGet()));
+			this.setName(String.format("MaxClique%s%s-%d", lowDir.toChar(), highDir.toChar(), threadCount.incrementAndGet()));
 		}
 		@Override
 		public void run() {

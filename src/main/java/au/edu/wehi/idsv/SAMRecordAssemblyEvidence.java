@@ -7,14 +7,10 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
 import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.Log;
 import jaligner.Alignment;
 import jaligner.Sequence;
 import jaligner.SmithWatermanGotoh;
-import jaligner.example.SmithWatermanGotohExample;
-import jaligner.matrix.MatrixLoader;
-import jaligner.util.SequenceParser;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,14 +49,14 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	public SAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecord assembly, SAMRecord realignment) {
 		this.source = source;
 		this.record = assembly;
-		BreakendSummary bs = calculateBreakendFromAlignmentCigar(this.record.getReferenceIndex(), this.record.getAlignmentStart(), this.record.getCigar());
+		BreakendSummary bs = calculateBreakend(this.record);
 		if (bs instanceof BreakpointSummary && realignment != null && !realignment.getReadUnmappedFlag()
 				&& !source.getContext().getRealignmentParameters().realignmentPositionUnique(realignment)) {
 			// ignore mapping location of realignment
 			bs = ((BreakpointSummary)bs).localBreakend();
 		}
 		this.breakend = bs;
-		this.isExact = calculateIsBreakendExactFromCigar(this.record.getCigar());
+		this.isExact = calculateIsBreakendExact(this.record.getCigar());
 		this.realignment = realignment == null ? getPlaceholderRealignment() : realignment;
 		fixReadPair();
 	}
@@ -226,52 +222,27 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		placeholder.setReadNegativeStrandFlag(false);
 		return placeholder;
 	}
-	private static BreakendSummary calculateBreakendFromAlignmentCigar(Integer referenceIndex, int alignmentStart, Cigar cigar) {
-		if (referenceIndex == null) return null;
-		List<CigarElement> ce = cigar.getCigarElements();
-		BreakendDirection direction = ce.get(0).getOperator() == CigarOperator.SOFT_CLIP ? BreakendDirection.Backward : BreakendDirection.Forward;
-		int start = alignmentStart;
-		int end = alignmentStart;
-		int nonSoftClipCigarLength = 0;
-		for (CigarElement e : ce) {
-			if (e.getOperator() != CigarOperator.SOFT_CLIP) {
-				nonSoftClipCigarLength += e.getLength();
-			}
+	private static BreakendSummary calculateBreakend(SAMRecord record) {
+		BreakendDirection direction = BreakendDirection.fromChar((char)(Character)record.getAttribute(SamTags.ASSEMBLY_DIRECTION));
+		int beStart;
+		int beEnd;
+		if (!calculateIsBreakendExact(record.getCigar())) {
+			beStart = record.getAlignmentStart();
+			beEnd = record.getAlignmentEnd();
+		} else if (direction == BreakendDirection.Forward) {
+			beStart = record.getAlignmentEnd();
+			beEnd = record.getAlignmentEnd();
+		} else {
+			beStart = record.getAlignmentStart();
+			beEnd = record.getAlignmentStart();
 		}
-		switch (ce.get(direction == BreakendDirection.Forward ? 0 : ce.size() - 1).getOperator()) {
-			case M:
-				assert(cigar.numCigarElements() == 2);
-				if (direction == BreakendDirection.Forward) {
-					assert(cigar.getCigarElement(0).getOperator() == CigarOperator.MATCH_OR_MISMATCH);
-					assert(cigar.getCigarElement(1).getOperator() == CigarOperator.SOFT_CLIP);
-					// breakend is at end
-					int anchorLength = nonSoftClipCigarLength;
-					start += anchorLength - 1;
-					end += anchorLength - 1;
-				} else {
-					assert(cigar.numCigarElements() == 2);
-					assert(cigar.getCigarElement(0).getOperator() == CigarOperator.SOFT_CLIP);
-					assert(cigar.getCigarElement(1).getOperator() == CigarOperator.MATCH_OR_MISMATCH);
-				}
-				break;
-			case X:
-				if (direction == BreakendDirection.Forward) {
-					end += nonSoftClipCigarLength - 1;
-				} else {
-					start -= nonSoftClipCigarLength - 1;
-				}
-				break;
-			default:
-				throw new IllegalArgumentException(cigar + "is not a valid assembly CIGAR");
-		}
-		return new BreakendSummary(referenceIndex, direction, start, end);
+		return new BreakendSummary(record.getReferenceIndex(), direction, beStart, beEnd);
 	}
-	private static boolean calculateIsBreakendExactFromCigar(Cigar cigar) {
+	private static boolean calculateIsBreakendExact(Cigar cigar) {
 		for (CigarElement ce : cigar.getCigarElements()) {
-			if (ce.getOperator() == CigarOperator.M) return true;
 			if (ce.getOperator() == CigarOperator.X) return false;
 		}
-		throw new IllegalArgumentException("Cannot determine breakend type from cigar " + cigar.toString());
+		return true;
 	}
 	private static SAMRecord createAssemblySAMRecord(
 			Collection<DirectedEvidence> evidence,
@@ -285,7 +256,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		record.setReadName(String.format("gridss_%s_%d_%d%s_%d",
 				source.getContext().getDictionary().getSequence(breakend.referenceIndex).getSequenceName(),
 				breakend.start, breakend.end,
-				breakend.direction == BreakendDirection.Forward ? "f" : "b",
+				breakend.direction.toChar(),
 				Math.abs(Arrays.hashCode(baseCalls))) + anchoredBaseCount);
 		if (anchoredBaseCount > 0) {
 			record.setReadBases(baseCalls);
@@ -371,6 +342,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL, scLenTotal);
 		record.setAttribute(SamTags.ASSEMBLY_READPAIR_QUAL, rpQual);
 		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_QUAL, scQual);
+		record.setAttribute(SamTags.ASSEMBLY_DIRECTION, breakend.direction.toChar());
 		return record;
 	}
 	private static final byte[][] PAD_BASES = new byte[][] { new byte[] {}, new byte[] { 'N' }, new byte[] { 'N', 'N' } };
@@ -571,26 +543,26 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		int refIndex = getBreakendSummary().referenceIndex;
 		SAMSequenceRecord refSeq = source.getContext().getDictionary().getSequence(refIndex);
 		int start = Math.max(1, getBreakendSummary().start - ap.realignmentWindowSize);
-		int end = Math.min(refSeq.getSequenceLength(), getBreakendSummary().end + ap.realignmentWindowSize);
+		int end = Math.min(refSeq.getSequenceLength(), getBreakendSummary().end + record.getAlignmentEnd() - record.getAlignmentStart() + 1 + ap.realignmentWindowSize);
 		Sequence ref = new Sequence(new String(source.getContext().getReference().getSubsequenceAt(refSeq.getSequenceName(), start, end).getBases()));
 		Sequence ass = new Sequence(new String(record.getReadBases()));
-        Alignment alignment = SmithWatermanGotoh.align(ref, ass, ap.realignmentMatrix, ap.realignmentGapOpen, ap.realignmentGapExtend);
-        
+        Alignment alignment = AlignmentHelper.align_bowtie2_local(ref, ass);        
         List<CigarElement> cigar = new ArrayList<CigarElement>();
         if (alignment.getStart2() > 0) {
         	cigar.add(new CigarElement(alignment.getStart2(), CigarOperator.SOFT_CLIP));
         }
-        char[] markup = alignment.getMarkupLine();
+        char[] seq1 = alignment.getSequence1();
+        char[] seq2 = alignment.getSequence2();
         int length = 0;
         CigarOperator op = CigarOperator.MATCH_OR_MISMATCH;
-        for (int i = 0; i < markup.length; i++) {
+        for (int i = 0; i < seq1.length; i++) {
         	CigarOperator currentOp;
-        	switch (markup[i]) {
-        	case '|': // match
+        	if (seq1[i] == Alignment.GAP) {
+        		currentOp = CigarOperator.INSERTION;
+        	} else if (seq2[i]  == Alignment.GAP) {
+        		currentOp = CigarOperator.DELETION;
+        	} else {
         		currentOp = CigarOperator.MATCH_OR_MISMATCH;
-        		break;
-    		default:
-    			throw new RuntimeException("Unknown alignment markup " + new String(markup));
         	}
         	if (currentOp != op) {
         		if (length > 0) {

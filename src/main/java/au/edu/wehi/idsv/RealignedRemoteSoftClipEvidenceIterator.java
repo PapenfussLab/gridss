@@ -42,12 +42,12 @@ public class RealignedRemoteSoftClipEvidenceIterator extends AbstractIterator<Re
 		while (realigned.hasNext() && buffer.isEmpty()) {
 			SAMRecord realign = realigned.next();
 			String evidenceId = BreakpointFastqEncoding.getEncodedID(realign.getReadName());
-			if (evidenceId.startsWith(SoftClipEvidence.FORWARD_EVIDENCEID_PREFIX)) {
+			if (evidenceId.charAt(0) == BreakendDirection.Forward.toChar()) {
 				RealignedRemoteSoftClipEvidence fsce = createRemote(BreakendDirection.Forward, ffactory.findAssociatedSAMRecord(realign), realign);
 				if (fsce != null) {
 					buffer.add(fsce);
 				}
-			} else if (evidenceId.startsWith(SoftClipEvidence.BACKWARD_EVIDENCEID_PREFIX)) {
+			} else if (evidenceId.charAt(0) == BreakendDirection.Backward.toChar()) {
 				RealignedRemoteSoftClipEvidence bsce = createRemote(BreakendDirection.Backward, bfactory.findAssociatedSAMRecord(realign), realign);
 				if (bsce != null) {
 					buffer.add(bsce);

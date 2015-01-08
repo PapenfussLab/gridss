@@ -64,6 +64,18 @@ public class TestHelper {
 			return null;
 		return s.getBytes(StandardCharsets.US_ASCII);
 	}
+	
+	public static byte[] B(byte b, int repeats) {
+		byte[] result = new byte[repeats];
+		for (int i = 0; i < result.length; i++) {
+			result[i] = b;
+		}
+		return result;
+	}
+	
+	public static byte[] B(int b, int repeats) {
+		return B((byte)b, repeats);
+	}
 
 	public static String S(byte[] b) {
 		if (b == null)
@@ -730,7 +742,9 @@ public class TestHelper {
 	public static MockSAMEvidenceSource SES() {
 		return new MockSAMEvidenceSource(getContext());
 	}
-
+	public static MockSAMEvidenceSource SES(ProcessingContext context) {
+		return new MockSAMEvidenceSource(context);
+	}
 	public static MockSAMEvidenceSource SES(boolean isTumour) {
 		MockSAMEvidenceSource e = new MockSAMEvidenceSource(getContext());
 		e.isTumour = isTumour;
@@ -745,6 +759,11 @@ public class TestHelper {
 	public static AssemblyEvidenceSource AES() {
 		return new AssemblyEvidenceSource(getContext(),
 				ImmutableList.<SAMEvidenceSource>of(SES()), new File(
+						"test.bam"));
+	}
+	public static AssemblyEvidenceSource AES(ProcessingContext context) {
+		return new AssemblyEvidenceSource(context,
+				ImmutableList.<SAMEvidenceSource>of(SES(context)), new File(
 						"test.bam"));
 	}
 	public static AssemblyEvidenceSource AES(int maxFragmentSize) {

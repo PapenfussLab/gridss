@@ -9,8 +9,6 @@ import org.apache.commons.lang3.StringUtils;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 public class SoftClipEvidence implements DirectedEvidence {
-	public static final String FORWARD_EVIDENCEID_PREFIX = "f";
-	public static final String BACKWARD_EVIDENCEID_PREFIX = "b";
 	private final SAMEvidenceSource source;
 	private final SAMRecord record;
 	private final BreakendSummary location;
@@ -73,11 +71,7 @@ public class SoftClipEvidence implements DirectedEvidence {
 	}
 	protected static StringBuilder buildSoftClipEvidenceID(BreakendDirection direction, SAMRecord record) {
 		StringBuilder sb = new StringBuilder();
-		if (direction == BreakendDirection.Forward) {
-			sb.append(FORWARD_EVIDENCEID_PREFIX);
-		} else {
-			sb.append(BACKWARD_EVIDENCEID_PREFIX);
-		}
+		sb.append(direction.toChar());
 		sb.append(record.getReadName());
 		if (record.getReadPairedFlag()) {
 			if (record.getFirstOfPairFlag()) {

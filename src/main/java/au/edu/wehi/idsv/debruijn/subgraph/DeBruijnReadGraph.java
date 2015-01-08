@@ -137,7 +137,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 				processContext.getDictionary().getSequence(referenceIndex).getSequenceName()),
 				String.format("%d", ss.getMinAnchor() - ss.getMinAnchor() % 100000));
 		String filename = String.format("%s_%s_%d-%d_%d.precollapse.gexf",
-				direction == BreakendDirection.Forward ? "f" : "b",
+				direction.toChar(),
 				processContext.getDictionary().getSequence(referenceIndex).getSequenceName(),
 				ss.getMinAnchor(),
 				ss.getMaxAnchor(),
@@ -154,7 +154,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 				processContext.getDictionary().getSequence(referenceIndex).getSequenceName()),
 				String.format("%d", ss.getMinAnchor() - ss.getMinAnchor() % 100000));
 		String filename = String.format("%s_%s_%d-%d_%d.subgraph.gexf",
-				direction == BreakendDirection.Forward ? "f" : "b",
+				direction.toChar(),
 				processContext.getDictionary().getSequence(referenceIndex).getSequenceName(),
 				ss.getMinAnchor(),
 				ss.getMaxAnchor(),
