@@ -379,6 +379,10 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		    		if (a != null) {
 		    			SAMRecordAssemblyEvidence e = (SAMRecordAssemblyEvidence)a;
 			    		maxAssembledPosition = Math.max(maxAssembledPosition, getContext().getLinear().getStartLinearCoordinate(e.getSAMRecord()));
+			    		// realign
+			    		if (e.isBreakendExact() && getContext().getAssemblyParameters().performRealignment) {
+			    			e = e.realign();
+			    		}
 			    		getContext().getAssemblyParameters().applyFilters(e);
 			    		if (getContext().getAssemblyParameters().writeFilteredAssemblies || !e.isAssemblyFiltered()) {
 			    			resortBuffer.add(e);
@@ -422,6 +426,6 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		return maxSourceFragSize;
 	}
 	public int getAssemblyWindowSize() {
-		return (int)((2 + getContext().getAssemblyParameters().maxSubgraphFragmentWidth + getContext().getAssemblyParameters().subgraphAssemblyMargin) * maxSourceFragSize);
+		return (int)((3 + getContext().getAssemblyParameters().maxSubgraphFragmentWidth + getContext().getAssemblyParameters().subgraphAssemblyMargin) * maxSourceFragSize);
 	}
 }

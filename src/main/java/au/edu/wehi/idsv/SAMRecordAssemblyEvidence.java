@@ -361,7 +361,6 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		CigarElement ce;
 		if (breakend.direction == BreakendDirection.Forward) {
 			ce = record.getCigar().getCigarElement(record.getCigarLength() - 1);
-			
 		} else {
 			ce = record.getCigar().getCigarElement(0);
 		}
@@ -581,6 +580,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
         newAssembly.setAlignmentStart(start + alignment.getStart1());
         newAssembly.setCigar(new Cigar(cigar));
 		return new SAMRecordAssemblyEvidence(source, newAssembly, null);
+		// TODO: handle case where realignment results in no breakend assembly
+		// Handle by calling the biggest internal indel
 	}
-	
 }

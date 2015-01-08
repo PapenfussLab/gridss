@@ -95,7 +95,7 @@ public class AssemblyParameters {
 	 * Determines whether filtered assemblies are written to intermediate files
 	 */
 	public boolean writeFilteredAssemblies = Defaults.WRITE_FILTERED_ASSEMBLIES;
-	
+	public boolean performRealignment = true;
 	public int realignmentWindowSize = Defaults.ASSEMBLY_REALIGNMENT_WINDOW_SIZE;
 	public boolean applyFilters(AssemblyEvidence evidence) {
 		AssemblyEvidence localEvidence = evidence;

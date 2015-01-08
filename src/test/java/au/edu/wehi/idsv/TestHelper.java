@@ -279,6 +279,7 @@ public class TestHelper {
 				new ReadPairParameters(), new AssemblyParameters() {{
 					minReads = 2;
 					assemble_remote_soft_clips = false;
+					performRealignment = false;
 					}},
 				new RealignmentParameters(), new VariantCallingParameters(),
 				SMALL_FA_FILE, false, false);
