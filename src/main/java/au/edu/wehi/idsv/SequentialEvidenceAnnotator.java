@@ -36,9 +36,7 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 		boolean evidenceCalled = false;
 		DirectedEvidence evidence = evidenceIt.next();
 		BreakendSummary bs = evidence.getBreakendSummary();
-		if (evidence instanceof SoftClipEvidence) {
-			bs = context.getSoftClipParameters().withMargin(context,  bs);
-		}
+		bs = context.getVariantCallingParameters().withMargin(context, bs);
 		long evidenceStart = context.getLinear().getStartLinearCoordinate(bs);
 		long evidenceEnd = context.getLinear().getEndLinearCoordinate(bs);
 		flushCallsStartBefore(evidenceStart - maxCallRange - 1);

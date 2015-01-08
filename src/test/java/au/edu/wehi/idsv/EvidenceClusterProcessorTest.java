@@ -12,14 +12,17 @@ import com.google.common.collect.Lists;
 
 public class EvidenceClusterProcessorTest extends TestHelper {
 	@Test
-	public void soft_clip_evidence_should_expand_by_margin() {
+	public void evidence_should_expand_by_margin_then_shrink() {
 		List<DirectedEvidence> list = new ArrayList<DirectedEvidence>();
 		list.add(SCE(FWD, withSequence("TTTT", Read(0, 10, "1M3S"))[0], Read(1, 10, "3M")));
+		list.add(SCE(FWD, withSequence("TTTT", Read(0, 13, "1M3S"))[0], Read(1, 13, "3M")));
 		EvidenceClusterProcessor ecp = new EvidenceClusterProcessor(getContext(), list.iterator());
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp);
 		BreakpointSummary bp = ((VariantContextDirectedBreakpoint)result.get(0)).getBreakendSummary();
-		assertEquals(10-3, bp.start);
-		assertEquals(10+3, bp.end);
+		// expand by 3bp, overlap is 10-13
+		// then shrink back down to call the middle of the interval
+		assertEquals(11, bp.start);
+		assertEquals(11, bp.end);
 	}
 	@Test
 	public void should_call_maximal_clique() {

@@ -89,4 +89,20 @@ public class BreakpointSummaryTest extends TestHelper {
 	public void expandBounds_should_expand_both_sides() {
 		assertEquals(new BreakpointSummary(0, FWD, 3, 8, 1, BWD, 9, 12), new BreakpointSummary(0, FWD, 4, 7, 1, BWD, 10, 11).expandBounds(1, SMALL_FA.getSequenceDictionary()));
 	}
+	@Test
+	public void compressBounds_should_compress_both_sides() {
+		assertEquals(new BreakpointSummary(0, FWD, 5, 6, 1, BWD, 11, 11), new BreakpointSummary(0, FWD, 4, 7, 1, BWD, 10, 12).compressBounds(1));
+	}
+	@Test
+	public void compressBounds_should_reduce_lower_coordinate_down_upper_coordinate_up() {
+		assertEquals(new BreakpointSummary(0, FWD, 4, 4, 1, FWD, 5, 5), new BreakpointSummary(0, FWD, 4, 5, 1, FWD, 4, 5).compressBounds(1));
+		assertEquals(new BreakpointSummary(1, FWD, 5, 5, 0, FWD, 4, 4), new BreakpointSummary(1, FWD, 4, 5, 0, FWD, 4, 5).compressBounds(1));
+		assertEquals(new BreakpointSummary(0, FWD, 4, 4, 0, FWD, 6, 6), new BreakpointSummary(0, FWD, 4, 5, 0, FWD, 5, 6).compressBounds(5));
+		assertEquals(new BreakpointSummary(0, FWD, 6, 6, 0, FWD, 4, 4), new BreakpointSummary(0, FWD, 5, 6, 0, FWD, 4, 5).compressBounds(5));
+		assertEquals(new BreakpointSummary(0, FWD, 3, 3, 0, FWD, 1, 1), new BreakpointSummary(0, FWD, 1, 4, 0, FWD, 1, 2).compressBounds(5));
+	}
+	@Test
+	public void compressBounds_should_reduce_both_down_if_symmetrical() {
+		assertEquals(new BreakpointSummary(0, FWD, 1, 1, 0, FWD, 1, 1), new BreakpointSummary(0, FWD, 1, 2, 0, FWD, 1, 2).compressBounds(1));
+	}
 }

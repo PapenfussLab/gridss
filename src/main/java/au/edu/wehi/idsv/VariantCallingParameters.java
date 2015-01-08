@@ -25,6 +25,17 @@ public class VariantCallingParameters {
 	 * Minimum indel size
 	 */
 	public int minIndelSize = 100; // DREAM challenge SV min size is 100bp //16;
+	/**
+	 * Margin of error around breakends
+	 * This margin is used to mitigate alignment errors around breakend coordinates
+	 */
+	public int breakendMargin = 3;
+	public BreakendSummary withMargin(ProcessingContext context, BreakendSummary bp) {
+		return bp.expandBounds(breakendMargin, context.getDictionary());
+	}
+	public BreakendSummary withoutMargin(BreakendSummary bp) {
+		return bp.compressBounds(breakendMargin);
+	}
 	public List<VcfFilter> breakpointFilters(BreakpointSummary bp) {
 		List<VcfFilter> list = Lists.newArrayList();
 		if (bp.referenceIndex == bp.referenceIndex2

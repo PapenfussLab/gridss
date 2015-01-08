@@ -276,10 +276,11 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 			}
 		} else {
 			// SAM spec requires at least one mapped base
-			// to conform to this, we add a placeholder mismatched base to our read
+			// to conform to this, we add a placeholder mismatched bases to our read
 			// in the furthest anchor position
 			// and represent the breakend confidence interval as an N
 			// interval anchored by Xs
+			record.setAlignmentStart(breakend.start);
 			LinkedList<CigarElement> ce = new LinkedList<CigarElement>();
 			int len = breakend.end - breakend.start + 1;
 			int padBases;
@@ -293,13 +294,11 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 				padBases = 2;
 			}
 			if (breakend.direction == BreakendDirection.Forward) {
-				record.setAlignmentStart(breakend.start);
 				ce.addLast(new CigarElement(baseCalls.length, CigarOperator.SOFT_CLIP));
 				record.setCigar(new Cigar(ce));
 				record.setReadBases(Bytes.concat(PAD_BASES[padBases], baseCalls));
 				record.setBaseQualities(Bytes.concat(PAD_QUALS[padBases], baseQuals));
 			} else {
-				record.setAlignmentStart(breakend.end);
 				ce.addFirst(new CigarElement(baseCalls.length, CigarOperator.SOFT_CLIP));
 				record.setCigar(new Cigar(ce));
 				record.setReadBases(Bytes.concat(baseCalls, PAD_BASES[padBases]));

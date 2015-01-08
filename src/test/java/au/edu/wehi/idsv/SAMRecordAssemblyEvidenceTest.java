@@ -53,7 +53,9 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals(1, (int)fwd.getSAMRecord().getReferenceIndex());
 		assertEquals(1, (int)bwd.getSAMRecord().getReferenceIndex());
 		assertEquals(5, fwd.getSAMRecord().getAlignmentStart());
-		assertEquals(10, bwd.getSAMRecord().getAlignmentStart());
+		assertEquals(5, bwd.getSAMRecord().getAlignmentStart());
+		assertEquals(10, fwd.getSAMRecord().getAlignmentEnd());
+		assertEquals(10, bwd.getSAMRecord().getAlignmentEnd());
 		assertEquals("1X4N1X3S", fwd.getSAMRecord().getCigarString());
 		assertEquals("3S1X4N1X", bwd.getSAMRecord().getCigarString());
 	}

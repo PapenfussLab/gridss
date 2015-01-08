@@ -70,9 +70,6 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     @Option(doc = "Minimum sequence identity to reference. Percentage value taking a value in the range 0-100.",
     		optional=true)
     public float SOFT_CLIP_MIN_ANCHOR_PERCENT_IDENTITY = new SoftClipParameters().minAnchorIdentity;
-    @Option(doc = "Number bases in which nearby soft clips will be considered to support the same variant.",
-    		optional=true)
-    public int SOFT_CLIP_BREAKEND_MARGIN = new SoftClipParameters().breakendMargin;
     @Option(doc = "Adapter sequence to exclude from analysis."
     		+ "Defaults to Illumina Universal Adapter, Illumina Small RNA Adapter, Nextera Transposase Sequence",
     		optional=true)
@@ -122,6 +119,9 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     		optional=true)
     public int REALIGNMENT_MAPQ_UNIQUE_THRESHOLD = new RealignmentParameters().mapqUniqueThreshold;
     // --- Variant calling parameters  ---
+    @Option(doc = "Number bases in which nearby evidence will be considered to support the same variant.",
+    		optional=true)
+    public int BREAKEND_MARGIN = new VariantCallingParameters().breakendMargin;
     @Option(doc = "Maximum somatic p-value for a variant to be called somatic",
     		optional=true)
     private double SOMATIC_THRESHOLD = new VariantCallingParameters().somaticPvalueThreshold;
@@ -206,7 +206,6 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 	    scp.minLength = SOFT_CLIP_MIN_LENGTH;
 	    scp.minReadMapq = SOFT_CLIP_MIN_MAPQ;
 	    scp.minAnchorIdentity = SOFT_CLIP_MIN_ANCHOR_PERCENT_IDENTITY;
-	    scp.breakendMargin = SOFT_CLIP_BREAKEND_MARGIN;
 	    scp.adapters = new AdapterHelper((String[])ADAPTER_SEQUENCE.toArray(new String[ADAPTER_SEQUENCE.size()]));
 	    return scp;
 	}
@@ -231,6 +230,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 		vcp.somaticPvalueThreshold = SOMATIC_THRESHOLD;
 		vcp.callOnlyAssemblies = CALL_ONLY_ASSEMBLIES;
 		vcp.minIndelSize = MIN_INDEL_SIZE;
+		vcp.breakendMargin = BREAKEND_MARGIN;
 		return vcp;
 	}
 	public void close() throws IOException {

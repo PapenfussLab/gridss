@@ -36,7 +36,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 						// collapse evidence at the same location to a single node
 						new GraphNodeMergingIterator(GraphNode.ByStartXY,
 							// reorder due to soft clip margin changing record order
-							new GraphNodeWindowedSortingIterator(context, 2 * processContext.getSoftClipParameters().breakendMargin + 1,
+							new GraphNodeWindowedSortingIterator(context, 2 * processContext.getVariantCallingParameters().breakendMargin + 1,
 								// convert evidence breakpoints to GraphNodes
 								new EvidenceToGraphNodeIterator(evidenceIt))));
 		this.targetLowDir = lowDir;
@@ -70,9 +70,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 	}
 	private GraphNode toGraphNode(DirectedEvidence e) {
 		BreakendSummary loc = e.getBreakendSummary();
-		if (e instanceof SoftClipEvidence) {
-			loc = context.getSoftClipParameters().withMargin(context, loc);
-		}
+		loc = context.getVariantCallingParameters().withMargin(context, loc);
 		if (!(loc instanceof BreakpointSummary)) return null;
 		
 		BreakpointSummary bp = (BreakpointSummary)loc;
@@ -115,6 +113,8 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 				targetHighDir,
 				context.getLinear().getReferencePosition(node.startY),
 				context.getLinear().getReferencePosition(node.endY));
+		breakpoint = (BreakpointSummary)context.getVariantCallingParameters().withoutMargin(breakpoint);
+		
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
 		// use a hash of the breakpoint as a (probably) unique identifier
 		String id = String.format("idsv%d", Math.abs(breakpoint.hashCode()));

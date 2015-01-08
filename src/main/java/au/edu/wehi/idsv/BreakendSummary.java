@@ -1,9 +1,12 @@
 package au.edu.wehi.idsv;
 
+import java.math.RoundingMode;
+
 import htsjdk.samtools.SAMSequenceDictionary;
 
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
+import com.google.common.math.IntMath;
 
 /**
  * Positional location of a breakpoint that is consistent with the given evidence
@@ -91,6 +94,22 @@ public class BreakendSummary {
 	 */
 	public BreakendSummary expandBounds(int expandBy, SAMSequenceDictionary dictionary) {
 		return new BreakendSummary(referenceIndex, direction, Math.max(1, start - expandBy), Math.min(dictionary.getSequence(referenceIndex).getSequenceLength(), end + expandBy));
+	}
+	/**
+	 * Reduces size of the breakend location interval
+	 * @param by bases to reduce each side of the bounds by 
+	 * @param dictionary sequence dictionary
+	 * @return breakend with bounds reduced
+	 */
+	public BreakendSummary compressBounds(int by) {
+		return compressBounds(by, RoundingMode.DOWN);
+	}
+	protected BreakendSummary compressBounds(int by, RoundingMode roundingMode) {
+		if (end - start + 1 <= 2 * by) {
+			int centre = IntMath.divide(end + start, 2, roundingMode);
+			return new BreakendSummary(referenceIndex, direction, centre, centre);
+		}
+		return new BreakendSummary(referenceIndex, direction, start + by, end - by);
 	}
 	protected static String toString(int referenceIndex, int start, int end, ProcessingContext processContext) {
 		if (processContext != null && referenceIndex >= 0 && referenceIndex < processContext.getDictionary().size()) {
