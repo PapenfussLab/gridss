@@ -10,7 +10,6 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.Log;
 import jaligner.Alignment;
 import jaligner.Sequence;
-import jaligner.SmithWatermanGotoh;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -546,7 +545,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		int end = Math.min(refSeq.getSequenceLength(), getBreakendSummary().end + record.getAlignmentEnd() - record.getAlignmentStart() + 1 + ap.realignmentWindowSize);
 		Sequence ref = new Sequence(new String(source.getContext().getReference().getSubsequenceAt(refSeq.getSequenceName(), start, end).getBases()));
 		Sequence ass = new Sequence(new String(record.getReadBases()));
-        Alignment alignment = AlignmentHelper.align_bowtie2_local(ref, ass);        
+        Alignment alignment = AlignmentHelper.align_local(ref, ass);        
         List<CigarElement> cigar = new ArrayList<CigarElement>();
         if (alignment.getStart2() > 0) {
         	cigar.add(new CigarElement(alignment.getStart2(), CigarOperator.SOFT_CLIP));

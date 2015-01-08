@@ -1,8 +1,5 @@
 package au.edu.wehi.idsv;
 
-import jaligner.matrix.Matrix;
-import jaligner.matrix.MatrixLoader;
-import jaligner.matrix.MatrixLoaderException;
 
 
 public class Defaults {
