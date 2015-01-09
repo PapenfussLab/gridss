@@ -436,7 +436,9 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	}
 	@Override
 	public byte[] getAssemblySequence() {
-		return record.getReadBases();
+		if (isBreakendExact()) return record.getReadBases();
+		// Need to remove placeholder Ns from inexact breakend
+		return getBreakendDirection() == BreakendDirection.Forward ? Bytes.concat(getAssemblyAnchorSequence(), getBreakendSequence()) : Bytes.concat(getBreakendSequence(), getAssemblyAnchorSequence());
 	}
 	@Override
 	public byte[] getAssemblyAnchorSequence() {

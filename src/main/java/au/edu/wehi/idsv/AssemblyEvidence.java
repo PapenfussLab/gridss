@@ -12,7 +12,7 @@ import au.edu.wehi.idsv.vcf.VcfFilter;
  */
 public interface AssemblyEvidence extends DirectedEvidence {
 	/**
-	 * Aequence of assembly as if mapped to positive strand of the local breakend location 
+	 * Sequence of assembly as if mapped to positive strand of the local breakend location 
 	 * @return
 	 */
 	byte[] getAssemblySequence();

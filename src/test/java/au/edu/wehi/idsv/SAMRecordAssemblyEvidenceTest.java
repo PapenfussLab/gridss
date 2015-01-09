@@ -320,4 +320,11 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		e = e.realign();
 		assertEquals(new BreakendSummary(2, BWD, 1, 1), e.getBreakendSummary());
 	}
+	@Test
+	public void getAssemblySequence_should_return_assembly() {
+		assertEquals("AAAA", S(AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
+				0, 1, 1, B("AAAA"), new byte[] {1,1,1,1}, 0, 0).getAssemblySequence()));
+		assertEquals("GTAC", S(AssemblyFactory.createUnanchored(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(NRRP(OEA(0, 1000, "1M", true))), B("GTAC"), new byte[] {1,2,3,4}, 0, 0).getAssemblySequence()));
+		assertEquals("GTAC", S(AssemblyFactory.createUnanchored(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(NRRP(OEA(0, 1000, "1M", false))), B("GTAC"), new byte[] {1,2,3,4}, 0, 0).getAssemblySequence()));
+	}
 }
