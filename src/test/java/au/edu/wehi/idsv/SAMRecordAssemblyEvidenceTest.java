@@ -205,8 +205,8 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals("4M4S", e.getSAMRecord().getCigarString());
 	}
 	@Test
-	public void realign_should_align_to_reference_with_30bp_margin_around_expected_anchor_interval() {
-		int margin = 30;
+	public void realign_should_align_to_reference_with_50bp_margin_around_expected_anchor_interval() {
+		int margin = 50;
 		for (int startpos = 300 - margin; startpos <= 300 + margin; startpos++) {
 			String seq = S("N", 50) + S(Arrays.copyOfRange(RANDOM, 299, 399)); // genomic positions 300-400
 			SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
