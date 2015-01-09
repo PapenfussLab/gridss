@@ -213,6 +213,12 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		this(source, createAssemblySAMRecord(evidence, samFileHeader, source, breakend, anchoredBaseCount, baseCalls, baseQuals, normalBaseCount, tumourBaseCount), null);
 		this.evidence = evidence;
 	}
+	private BreakendDirection getBreakendDirection() {
+		return BreakendDirection.fromChar((char)(Character)record.getAttribute(SamTags.ASSEMBLY_DIRECTION));
+	}
+	private static BreakendDirection getBreakendDirection(SAMRecord record) {
+		return BreakendDirection.fromChar((char)(Character)record.getAttribute(SamTags.ASSEMBLY_DIRECTION));
+	}
 	private SAMRecord getPlaceholderRealignment() {
 		SAMRecord placeholder = new SAMRecord(record.getHeader());
 		placeholder.setReadUnmappedFlag(true);
@@ -222,7 +228,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		return placeholder;
 	}
 	private static BreakendSummary calculateBreakend(SAMRecord record) {
-		BreakendDirection direction = BreakendDirection.fromChar((char)(Character)record.getAttribute(SamTags.ASSEMBLY_DIRECTION));
+		BreakendDirection direction = getBreakendDirection(record);
 		int beStart;
 		int beEnd;
 		if (!calculateIsBreakendExact(record.getCigar())) {
@@ -347,7 +353,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	private static final byte[][] PAD_QUALS = new byte[][] { new byte[] {}, new byte[] { 0 }, new byte[] { 0, 0 } };
 	private int getAnchorLength() {
 		CigarElement ce;
-		if (breakend.direction == BreakendDirection.Forward) {
+		if (getBreakendDirection() == BreakendDirection.Forward) {
 			ce = record.getCigar().getCigarElement(0);
 		} else {
 			ce = record.getCigar().getCigarElement(record.getCigarLength() - 1);
@@ -355,21 +361,24 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		if (ce.getOperator() == CigarOperator.X) {
 			return 0;
 		}
-		return ce.getLength();
+		return record.getReadLength() - getBreakendLength();
 	}
 	private int getBreakendLength() {
+		return getBreakendLength(record);
+	}
+	private static int getBreakendLength(SAMRecord record) {
 		CigarElement ce;
-		if (breakend.direction == BreakendDirection.Forward) {
+		if (getBreakendDirection(record) == BreakendDirection.Forward) {
 			ce = record.getCigar().getCigarElement(record.getCigarLength() - 1);
 		} else {
 			ce = record.getCigar().getCigarElement(0);
 		}
-		assert(ce.getOperator() == CigarOperator.SOFT_CLIP);
-		return ce.getLength();
+		if (ce.getOperator() == CigarOperator.SOFT_CLIP) return ce.getLength();
+		return 0;
 	}
 	private byte[] getAnchorBytes(byte[] data) {
 		int len = getAnchorLength();
-		if (breakend.direction == BreakendDirection.Forward) {
+		if (getBreakendDirection() == BreakendDirection.Forward) {
 			return Arrays.copyOfRange(data, 0, len);
 		} else {
 			return Arrays.copyOfRange(data, data.length - len, data.length);
@@ -377,7 +386,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	}
 	private byte[] getBreakendBytes(byte[] data) {
 		int len = getBreakendLength();
-		if (breakend.direction == BreakendDirection.Forward) {
+		if (getBreakendDirection() == BreakendDirection.Forward) {
 			return Arrays.copyOfRange(data, data.length - len, data.length);
 		} else {
 			return Arrays.copyOfRange(data, 0, len);
@@ -427,11 +436,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	}
 	@Override
 	public byte[] getAssemblySequence() {
-		if (breakend.direction == BreakendDirection.Forward) {
-			return Bytes.concat(getAssemblyAnchorSequence(), getBreakendSequence());
-		} else {
-			return Bytes.concat(getBreakendSequence(), getAssemblyAnchorSequence());
-		}
+		return record.getReadBases();
 	}
 	@Override
 	public byte[] getAssemblyAnchorSequence() {
@@ -522,6 +527,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	}
 	@Override
 	public float getBreakendQual() {
+		if (getBreakendLength() == 0) return 0;
 		int evidenceCount = getAssemblySupportCountReadPair(EvidenceSubset.ALL) + getAssemblySupportCountSoftClip(EvidenceSubset.ALL);
 		double qual = getAssemblySupportReadPairQualityScore(EvidenceSubset.ALL);
 		qual += getAssemblySupportSoftClipQualityScore(EvidenceSubset.ALL);
@@ -545,19 +551,11 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		Sequence ass = new Sequence(new String(record.getReadBases()));
         Alignment alignment = AlignmentHelper.align_local(ref, ass);        
         Cigar cigar = AlignmentHelper.alignmentToCigar(alignment);
-        int clipLength = getBreakendLength(); 
-        CigarElement clipElement = getBreakendSummary().direction == BreakendDirection.Forward ? cigar.getCigarElement(cigar.numCigarElements() - 1) : cigar.getCigarElement(0);
-        int realignedClipLength = clipElement.getOperator() == CigarOperator.SOFT_CLIP ? clipElement.getLength() : 0;
-        if (realignedClipLength == 0) {
-        	// TODO: handle case where realignment results the detection (through spanning) of a small indel
-        	log.debug(String.format("%s: converted cigar %s to %s when realigning", getEvidenceID(), record.getCigarString(), cigar.toString()));
-        	return this;
-        }
         SAMRecord newAssembly = SAMRecordUtil.clone(record);
 		newAssembly.setReadName(newAssembly.getReadName() + "_r");
         newAssembly.setAlignmentStart(start + alignment.getStart1());
-        newAssembly.setCigar(cigar);
-        if (clipLength != realignedClipLength) {
+        if (!cigar.equals(record.getCigar())) {
+        	newAssembly.setCigar(cigar);
         	newAssembly.setAttribute(SamTags.ORIGINAL_CIGAR, record.getCigarString());
         }
         SAMRecordAssemblyEvidence realigned = new SAMRecordAssemblyEvidence(source, newAssembly, null);

@@ -103,12 +103,11 @@ public class AssemblyParameters {
 			localEvidence = ((RealignedRemoteSAMRecordAssemblyEvidence)evidence).asLocal();
 		}
 		boolean filtered = false;
-		if (localEvidence.getBreakendSequence() == null) {
-			log.error("Breakpoint sequence missing for assembly " + evidence.toString());
-		}
-		if (localEvidence.getBreakendSequence().length == 0) {
+		if (localEvidence.getBreakendSequence().length == 0 || localEvidence.getBreakendSummary() == null) {
 			evidence.filterAssembly(VcfFilter.ASSEMBLY_REF);
 			filtered = true;
+		} else if (localEvidence.getBreakendSequence() == null) {
+			log.error("Breakpoint sequence missing for assembly " + evidence.toString());
 		}
 		if (localEvidence.getAssemblySupportCountReadPair(EvidenceSubset.ALL) + localEvidence.getAssemblySupportCountSoftClip(EvidenceSubset.ALL) < minReads) {
 			evidence.filterAssembly(VcfFilter.ASSEMBLY_TOO_FEW_READ);

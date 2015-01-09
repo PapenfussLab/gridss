@@ -1,9 +1,5 @@
 package au.edu.wehi.idsv;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Logger;
-
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
@@ -11,6 +7,10 @@ import jaligner.Alignment;
 import jaligner.Sequence;
 import jaligner.SmithWatermanGotoh;
 import jaligner.matrix.Matrix;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
 
 public class AlignmentHelper {
 	private AlignmentHelper() { }

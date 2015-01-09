@@ -269,11 +269,55 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals(170849713-170849600+1, e.getBreakendSummary().start);
 	}
 	@Test
-	public void realign_should_be_abandoned_if_no_soft_clip_left() {
+	public void small_indel_should_be_called_if_realignment_spans_event() {
+		String assembly = "AAAAAAAAAATTAAAAAAAAAA";
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
+				0, 1, 10, B(assembly), B(40, assembly.length()), 0, 0).realign();
+		assertEquals("10M2I10M", e.getSAMRecord().getCigarString());
+		assertEquals(new BreakpointSummary(0, FWD, 10, 10, 0, BWD, 11, 11), e.getBreakendSummary());
+		assertTrue(e instanceof DirectedBreakpoint);
+	}
+	/**
+	 * Needed for realignment that turn out to match reference
+	 */
+	@Test
+	public void should_allow_reference_allele_assemblies() {
+		String assembly = "AAAAAAAAAAA";
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(SCE(BWD, Read(0, 1, "5S5M"))),
+				0, 1, assembly.length(), B(assembly), B(40, assembly.length()), 0, 0);
+		assertEquals(assembly.length(), e.getAssemblyAnchorLength());
+		assertEquals(0, e.getBreakendSequence().length);
+		assertEquals(0, e.getBreakendQual(), 0);
+	}
+	@Test
+	public void should_round_trip_reference_allele_assemblies() {
+		String assembly = "AAAAAAAAAAA";
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(SCE(BWD, Read(0, 1, "5S5M"))),
+				0, 1, assembly.length(), B(assembly), B(40, assembly.length()), 0, 0);
+		e = new SAMRecordAssemblyEvidence(AES(), e.getSAMRecord(), null);
+		assertEquals(assembly.length(), e.getAssemblyAnchorLength());
+		assertEquals(0, e.getBreakendSequence().length);
+	}
+	@Test
+	public void should_allow_realignment_to_reference_allele() {
 		String assembly = "AAAAAAAAAAA";
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
-				0, 1, 5, B(assembly), B(40, assembly.length()), 0, 0);
-		SAMRecordAssemblyEvidence re = e.realign();
-		assertEquals(e, re);
+				0, 1, 1, B(assembly), B(40, assembly.length()), 0, 0);
+		e = e.realign();
+		assertEquals(assembly.length(), e.getAssemblyAnchorLength());
+		assertEquals(0, e.getBreakendSequence().length);
+	}
+	@Test
+	public void should_call_placeholder_breakend_when_calling_reference_allele() {
+		String assembly = S(Arrays.copyOf(RANDOM, 10));
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
+				2, 1, 1, B(assembly), B(40, assembly.length()), 0, 0);
+		e = e.realign();
+		assertEquals(new BreakendSummary(2, FWD, 10, 10), e.getBreakendSummary());
+		
+		e = AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
+				2, 1, 1, B(assembly), B(40, assembly.length()), 0, 0);
+		e = e.realign();
+		assertEquals(new BreakendSummary(2, BWD, 1, 1), e.getBreakendSummary());
 	}
 }

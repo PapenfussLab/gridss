@@ -1,8 +1,8 @@
 package au.edu.wehi.idsv;
 
-import java.math.RoundingMode;
-
 import htsjdk.samtools.SAMSequenceDictionary;
+
+import java.math.RoundingMode;
 
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
