@@ -26,4 +26,5 @@ public class SamTags {
 	public static final String ASSEMBLY_READPAIR_QUAL = "qp";
 	public static final String ASSEMBLY_SOFTCLIP_QUAL = "qs";
 	public static final String ASSEMBLY_DIRECTION = "ad";
+	public static final String ORIGINAL_CIGAR = "oc";
 }

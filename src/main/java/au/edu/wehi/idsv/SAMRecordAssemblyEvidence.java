@@ -544,43 +544,23 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		Sequence ref = new Sequence(new String(source.getContext().getReference().getSubsequenceAt(refSeq.getSequenceName(), start, end).getBases()));
 		Sequence ass = new Sequence(new String(record.getReadBases()));
         Alignment alignment = AlignmentHelper.align_local(ref, ass);        
-        List<CigarElement> cigar = new ArrayList<CigarElement>();
-        if (alignment.getStart2() > 0) {
-        	cigar.add(new CigarElement(alignment.getStart2(), CigarOperator.SOFT_CLIP));
-        }
-        char[] seq1 = alignment.getSequence1();
-        char[] seq2 = alignment.getSequence2();
-        int length = 0;
-        CigarOperator op = CigarOperator.MATCH_OR_MISMATCH;
-        for (int i = 0; i < seq1.length; i++) {
-        	CigarOperator currentOp;
-        	if (seq1[i] == Alignment.GAP) {
-        		currentOp = CigarOperator.INSERTION;
-        	} else if (seq2[i]  == Alignment.GAP) {
-        		currentOp = CigarOperator.DELETION;
-        	} else {
-        		currentOp = CigarOperator.MATCH_OR_MISMATCH;
-        	}
-        	if (currentOp != op) {
-        		if (length > 0) {
-        			cigar.add(new CigarElement(length, op));
-        		}
-        		op = currentOp;
-        		length = 0;
-        	}
-        	length++;
-        }
-        cigar.add(new CigarElement(length, op));
-        int assemblyBasesConsumed = new Cigar(cigar).getReadLength();
-        if (assemblyBasesConsumed != record.getReadLength()) {
-        	cigar.add(new CigarElement(record.getReadLength() - assemblyBasesConsumed, CigarOperator.SOFT_CLIP));
+        Cigar cigar = AlignmentHelper.alignmentToCigar(alignment);
+        int clipLength = getBreakendLength(); 
+        CigarElement clipElement = getBreakendSummary().direction == BreakendDirection.Forward ? cigar.getCigarElement(cigar.numCigarElements() - 1) : cigar.getCigarElement(0);
+        int realignedClipLength = clipElement.getOperator() == CigarOperator.SOFT_CLIP ? clipElement.getLength() : 0;
+        if (realignedClipLength == 0) {
+        	// TODO: handle case where realignment results the detection (through spanning) of a small indel
+        	log.debug(String.format("%s: converted cigar %s to %s when realigning", getEvidenceID(), record.getCigarString(), cigar.toString()));
+        	return this;
         }
         SAMRecord newAssembly = SAMRecordUtil.clone(record);
 		newAssembly.setReadName(newAssembly.getReadName() + "_r");
         newAssembly.setAlignmentStart(start + alignment.getStart1());
-        newAssembly.setCigar(new Cigar(cigar));
-		return new SAMRecordAssemblyEvidence(source, newAssembly, null);
-		// TODO: handle case where realignment results in no breakend assembly
-		// Handle by calling the biggest internal indel
+        newAssembly.setCigar(cigar);
+        if (clipLength != realignedClipLength) {
+        	newAssembly.setAttribute(SamTags.ORIGINAL_CIGAR, record.getCigarString());
+        }
+        SAMRecordAssemblyEvidence realigned = new SAMRecordAssemblyEvidence(source, newAssembly, null);
+        return realigned;
 	}
 }

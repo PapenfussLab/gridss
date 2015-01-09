@@ -246,4 +246,12 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals("212S88M", e.getSAMRecord().getCigarString());
 		assertEquals(170849713-170849600+1, e.getBreakendSummary().start);
 	}
+	@Test
+	public void realign_should_be_abandoned_if_no_soft_clip_left() {
+		String assembly = "AAAAAAAAAAA";
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
+				0, 1, 5, B(assembly), B(40, assembly.length()), 0, 0);
+		SAMRecordAssemblyEvidence re = e.realign();
+		assertEquals(e, re);
+	}
 }
