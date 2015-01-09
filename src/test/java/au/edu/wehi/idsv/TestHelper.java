@@ -82,6 +82,10 @@ public class TestHelper {
 			return null;
 		return new String(b, StandardCharsets.US_ASCII);
 	}
+	
+	public static String S(String s, int repeats) {
+		return StringUtils.repeat(s, repeats);
+	}
 
 	@SafeVarargs
 	public static <T> List<T> L(T[]... list) {

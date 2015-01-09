@@ -2,6 +2,7 @@ package au.edu.wehi.idsv;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
@@ -15,8 +16,8 @@ public class AlignmentHelper {
 	private AlignmentHelper() { }
 	static {
 		// quieten down the JAligner logging spam
-		java.util.logging.Logger.getLogger(SmithWatermanGotoh.class.getName());
-		java.util.logging.LogManager.getLogManager().getLogger(SmithWatermanGotoh.class.getName()).setLevel(java.util.logging.Level.WARNING);
+		Logger jalignerLogger = Logger.getLogger(SmithWatermanGotoh.class.getName());
+		jalignerLogger.setLevel(java.util.logging.Level.OFF);
 	}
 	/**
 	 * Converts an alignment of a read (seq2) against a reference sequence (seq1) to a read cigar

@@ -205,13 +205,21 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals("4M4S", e.getSAMRecord().getCigarString());
 	}
 	@Test
-	public void realign_should_align_to_reference_with_30bp_margin() {
+	public void realign_should_align_to_reference_with_30bp_margin_around_expected_anchor_interval() {
 		int margin = 30;
-		for (int startpos = 41 - margin; startpos <= 41 + margin; startpos++) {
+		for (int startpos = 300 - margin; startpos <= 300 + margin; startpos++) {
+			String seq = S("N", 50) + S(Arrays.copyOfRange(RANDOM, 299, 399)); // genomic positions 300-400
 			SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
-					2, startpos, 80-40, B(S(B('N', 60)) + S(Arrays.copyOfRange(RANDOM, 40, 80))), B(40, 100), 0, 0).realign();
-			assertEquals(41, e.getBreakendSummary().start);
-			assertEquals(60, e.getBreakendSequence().length);
+					2, startpos, 100, B(seq), B(40, seq.length()), 0, 0).realign();
+			assertEquals(300, e.getBreakendSummary().start);
+			assertEquals(50, e.getBreakendSequence().length);
+			
+			// FWD breakend
+			seq = S(Arrays.copyOfRange(RANDOM, 299, 399)) + S("N", 50);
+			e = AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
+					2, startpos + 100, 100, B(seq), B(40, seq.length()), 0, 0).realign();
+			assertEquals(399, e.getBreakendSummary().start);
+			assertEquals(50, e.getBreakendSequence().length);
 		}
 	}
 	@Test
