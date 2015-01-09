@@ -213,14 +213,28 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 					2, startpos, 100, B(seq), B(40, seq.length()), 0, 0).realign();
 			assertEquals(300, e.getBreakendSummary().start);
 			assertEquals(50, e.getBreakendSequence().length);
-			
-			// FWD breakend
-			seq = S(Arrays.copyOfRange(RANDOM, 299, 399)) + S("N", 50);
-			e = AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
+		}
+		// FWD breakend
+		for (int startpos = 300 - margin; startpos <= 300 + margin; startpos++) {
+			String seq = S(Arrays.copyOfRange(RANDOM, 299, 399)) + S("N", 50);
+			SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
 					2, startpos + 100, 100, B(seq), B(40, seq.length()), 0, 0).realign();
 			assertEquals(399, e.getBreakendSummary().start);
 			assertEquals(50, e.getBreakendSequence().length);
 		}
+	}
+	@Test
+	public void realign_should_expand_window_by_breakend_length_to_allow_for_mapping_over_small_indels() {
+		int indelSize = 20;
+		String seq = "N" + S(Arrays.copyOfRange(RANDOM, 299-indelSize-100, 299-indelSize)) + S(Arrays.copyOfRange(RANDOM, 299, 399)); // genomic positions 300-400
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
+				2, 300, 100, B(seq), B(40, seq.length()), 0, 0).realign();
+		assertEquals("1S100M20D100M", e.getSAMRecord().getCigarString());
+		
+		seq = S(Arrays.copyOfRange(RANDOM, 299, 399)) + S(Arrays.copyOfRange(RANDOM, 399+indelSize, 399+indelSize+100)) + "N";
+		e = AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
+				2, 399, 100, B(seq), B(40, seq.length()), 0, 0).realign();
+		assertEquals("100M20D100M1S", e.getSAMRecord().getCigarString());
 	}
 	@Test
 	public void realign_should_allow_small_anchor_deletion() {

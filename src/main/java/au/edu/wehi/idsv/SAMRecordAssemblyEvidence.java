@@ -539,8 +539,8 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		AssemblyParameters ap = source.getContext().getAssemblyParameters();
 		int refIndex = getBreakendSummary().referenceIndex;
 		SAMSequenceRecord refSeq = source.getContext().getDictionary().getSequence(refIndex);
-		int start = Math.max(1, record.getAlignmentStart() - ap.realignmentWindowSize);
-		int end = Math.min(refSeq.getSequenceLength(), record.getAlignmentEnd() + ap.realignmentWindowSize);
+		int start = Math.max(1, record.getAlignmentStart() - ap.realignmentWindowSize - (getBreakendSummary().direction == BreakendDirection.Backward ? getBreakendLength() : 0));
+		int end = Math.min(refSeq.getSequenceLength(), record.getAlignmentEnd() + ap.realignmentWindowSize + (getBreakendSummary().direction == BreakendDirection.Forward ? getBreakendLength() : 0));
 		Sequence ref = new Sequence(new String(source.getContext().getReference().getSubsequenceAt(refSeq.getSequenceName(), start, end).getBases()));
 		Sequence ass = new Sequence(new String(record.getReadBases()));
         Alignment alignment = AlignmentHelper.align_local(ref, ass);        
