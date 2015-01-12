@@ -161,12 +161,16 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals(3, bigr().getAssemblySoftClipLengthMax(EvidenceSubset.TUMOUR));
 	}
 	@Test
-	public void should_set_assembly_attribute_ASSEMBLY_READPAIR_QUAL() {
-		
-	}
-	@Test
-	public void should_set_samtag_ASSEMBLY_SOFTCLIP_QUAL() {
-		
+	public void should_set_assembly_attribute_ASSEMBLY_REMOTE_COUNT() {
+		ProcessingContext pc = getContext();
+		MockSAMEvidenceSource tes = new MockSAMEvidenceSource(pc);
+		tes.isTumour = true;
+		Set<DirectedEvidence> support = Sets.newHashSet();
+		support.add(((RealignedSoftClipEvidence)SoftClipEvidence.create(SCE(BWD, tes, Read(1, 10, "4S1M")), Read(0, 10, "4M"))).asRemote());
+		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchored(pc, AES(), BWD, support, 0, 10, 5, B("CGTAAAAT"), new byte[] { 0,1,2,3,4,5,6,7}, 513, 745);
+		assertEquals(1, ass.getAssemblySupportCountRemote(EvidenceSubset.ALL));
+		assertEquals(0, ass.getAssemblySupportCountRemote(EvidenceSubset.NORMAL));
+		assertEquals(1, ass.getAssemblySupportCountRemote(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_set_assembly_getLocalMapq() {

@@ -20,11 +20,13 @@ public class SamTags {
 	public static final String ASSEMBLY_BASE_COUNT = "bc";
 	public static final String ASSEMBLY_READPAIR_COUNT = "dp";
 	public static final String ASSEMBLY_SOFTCLIP_COUNT = "sc";
+	public static final String ASSEMBLY_REMOTE_COUNT = "rc";
 	public static final String ASSEMBLY_READPAIR_LENGTH_MAX = "rl";
 	public static final String ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX = "sl";
 	public static final String ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL = "st";
 	public static final String ASSEMBLY_READPAIR_QUAL = "qp";
 	public static final String ASSEMBLY_SOFTCLIP_QUAL = "qs";
+	public static final String ASSEMBLY_REMOTE_QUAL = "qr";
 	public static final String ASSEMBLY_DIRECTION = "ad";
 	public static final String ORIGINAL_CIGAR = "oc";
 }

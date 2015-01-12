@@ -12,7 +12,7 @@ public class AssemblyParameters {
 	/**
 	 * Assemble soft clips at the remote realigned position as well as the read mapping location
 	 */
-	public boolean includeRemoteSoftClips = false;
+	public boolean includeRemoteSoftClips = true;
 	/**
 	 * De Bruijn graph kmer size
 	 */
@@ -116,6 +116,13 @@ public class AssemblyParameters {
 		if (localEvidence.getAssemblyAnchorLength() == 0 && localEvidence.getBreakendSequence().length <= localEvidence.getAssemblyReadPairLengthMax(EvidenceSubset.ALL)) {
 			// just assembled a single read - not very exciting
 			evidence.filterAssembly(VcfFilter.ASSEMBLY_TOO_SHORT); // assembly length = 1 read
+			filtered = true;
+		}
+		
+		if (localEvidence.getAssemblySupportCountRemote(EvidenceSubset.ALL) > 0 &&
+				localEvidence.getAssemblySupportCountRemote(EvidenceSubset.ALL) == localEvidence.getAssemblySupportCountSoftClip(EvidenceSubset.ALL) + localEvidence.getAssemblySupportCountReadPair(EvidenceSubset.ALL)) {
+			// assembly is entirely made of remote support with no reads mapping to our location at all
+			evidence.filterAssembly(VcfFilter.ASSEMBLY_REMOTE);
 			filtered = true;
 		}
 		return filtered;

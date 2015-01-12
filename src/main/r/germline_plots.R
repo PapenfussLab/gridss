@@ -10,12 +10,18 @@ df <- gridss.truthdetails.processvcf.vcftodf(vcf)
 
 
 # Contribution of local breakend evidence
-ggplot(df, aes(x=QUAL, y=BQ, color=factor(pmin(AS, 1)+pmin(RAS, 1)))) + geom_point() + scale_x_log10() + scale_y_log10()
+ggplot(df, aes(x=QUAL, y=BQ, color=factor(pmin(AS, 1)+pmin(RAS, 1)), size=BAS+1)) + geom_point() + scale_x_log10() + scale_y_log10()
 
 # Effect of unique read mapping
 # TODO: why to points exist where QUAL > CQ ? this should not be possible
 ggplot(df, aes(x=QUAL, y=CQ, color=factor(pmin(AS, 1)+pmin(RAS, 1)))) + geom_point() + scale_x_log10() + scale_y_log10()
-head(df[df$QUAL > df$CQ,])
+# histogram of 
+ggplot(df, aes(x=QUAL/CQ)) + geom_histogram()# + scale_y_log10()
+head(df[df$QUAL > 0.6 * df$CQ & df$QUAL < 0.8 * df$CQ & df$CQ > 1000,])
+
+# evidence counts
+ggplot(df, aes(x=RP, y=SC+RSC, color=factor(pmin(AS, 1)+pmin(RAS, 1)))) + geom_point() + scale_x_log10() + scale_y_log10() + geom_jitter(position = position_jitter(width = 1, height=1))
+
 
 # local anchor length shouldn't mean much
 ggplot(pp, aes(x=A_BLRM, y=A_BLLM)) + geom_point()
