@@ -110,7 +110,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
 		// use a hash of the breakpoint as a (probably) unique identifier
-		String id = String.format("idsv%d", Math.abs(breakpoint.hashCode()));
+		String id = String.format("gridss%d", Math.abs(breakpoint.hashCode()));
 		builder.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, id);
 		builder.attribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, id + (isHighBreakend ? "o" : "h"));
 		builder.id(id + (isHighBreakend ? "h" : "o"));

@@ -54,7 +54,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		attribute(VcfAttributes.CALLED_QUAL.attribute(), parent.getPhredScaledQual());
 		setBreakpointAttributes();
 		setBreakendAttributes();
-		id(getID());
+		// id(parent.getID()); // can't change from parent ID as the id is already referenced in the MATEID of the other breakend  
 		VariantContextDirectedEvidence variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(processContext, null, super.make());
 		variant = calcSpv(variant);
 		variant = processContext.getVariantCallingParameters().applyFilters(variant);
@@ -96,7 +96,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			unique.put(e.getEvidenceID(), e);
 		}
 		if (list.size() != unique.size()) {
-			log.debug(String.format("Deduplicated %d records from %s", list.size() - unique.size(), getID()));
+			log.debug(String.format("Deduplicated %d records from %s", list.size() - unique.size(), parent.getID()));
 			list = new ArrayList<DirectedEvidence>(unique.values());
 		}
 	}
@@ -243,30 +243,6 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			builder.rmAttribute(VCFConstants.SOMATIC_KEY);
 		}
 		return (VariantContextDirectedEvidence)builder.make();
-	}
-	private String getID() {
-		BreakendSummary call = parent.getBreakendSummary();
-		StringBuilder sb = new StringBuilder("call");
-		sb.append(processContext.getDictionary().getSequence(call.referenceIndex).getSequenceName());
-		sb.append(':');
-		sb.append(call.start);
-		if (call.end != call.start) {
-			sb.append('-');
-			sb.append(call.end);
-		}
-		sb.append(call.direction == BreakendDirection.Forward ? 'f' : 'b');
-		if (call instanceof BreakpointSummary) {
-			BreakpointSummary loc = (BreakpointSummary)call;
-			sb.append(processContext.getDictionary().getSequence(loc.referenceIndex2).getSequenceName());
-			sb.append(':');
-			sb.append(loc.start2);
-			if (loc.end2 != loc.start2) {
-				sb.append('-');
-				sb.append(loc.end2);
-			}
-			sb.append(loc.direction2 == BreakendDirection.Forward ? 'f' : 'b');
-		}
-		return sb.toString();
 	}
 	private static Ordering<DirectedEvidence> ByBestDesc = new Ordering<DirectedEvidence>() {
 		public int compare(DirectedEvidence o1, DirectedEvidence o2) {
