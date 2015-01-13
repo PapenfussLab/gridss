@@ -64,18 +64,27 @@ public class Models {
 		BreakendDirection direction = evidence.get(0).getBreakendSummary().direction;
 		MaximumCliqueIntervalGraph calc = new MaximumCliqueIntervalGraph();
 		List<Node> nodes = new ArrayList<Node>(evidence.size());
+		boolean hasWeight = false;
 		for (DirectedEvidence e : evidence) {
 			long weight = ScalingHelper.toScaledWeight(e.getBreakendQual());
-			if (weight > 0) {
 			BreakendSummary bs = e.getBreakendSummary();
-			assert(bs.direction == direction);
-			nodes.add(new Node(
-					lgc.getLinearCoordinate(bs.referenceIndex, bs.start), 
-					lgc.getLinearCoordinate(bs.referenceIndex, bs.end),
-					weight));
+			if (weight > 0 && bs != null) {
+				hasWeight = true;
+				assert(bs.direction == direction);
+				nodes.add(new Node(
+						lgc.getLinearCoordinate(bs.referenceIndex, bs.start), 
+						lgc.getLinearCoordinate(bs.referenceIndex, bs.end),
+						weight));
 			}
 		}
+		if (!hasWeight) {
+			// all evidence is insignificant, just return something as we're going to get filtered anyway
+			return evidence.get(0).getBreakendSummary();
+		}
 		Node call = calc.calculateMaximumClique(nodes);
-		return new BreakendSummary(lgc.getReferenceIndex(call.start), direction, lgc.getReferencePosition(call.start), lgc.getReferencePosition(call.stop));
+		int ref = lgc.getReferenceIndex(call.start);
+		assert(ref == lgc.getReferenceIndex(call.stop));
+		BreakendSummary bs = new BreakendSummary(ref, direction, lgc.getReferencePosition(call.start), lgc.getReferencePosition(call.stop));
+		return bs;
 	}
 }

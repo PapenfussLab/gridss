@@ -26,6 +26,7 @@ gridss.truthdetails.processvcf.vcftodf <- function(vcf) {
   df <- data.frame(variantid=names(rowData(vcf)))
   df$QUAL <- fixed(vcf)$QUAL
   df$EVENT <-i$EVENT
+  df$mateid <- as.character(i$MATEID)
   df$SOMATIC <- i$SOMATIC
   matchLength <- as.integer(gsub(".*_", "", as.character(i$TRUTH_MATCHES)))
   mismatchLength <- as.integer(gsub(".*_", "", as.character(i$TRUTH_MISREALIGN)))
@@ -59,6 +60,8 @@ gridss.truthdetails.processvcf.vcftodf <- function(vcf) {
   df <- gridss.truthdetails.processvcf.addtn(df, "BSCQ", i$BSCQ)
   
   df <- replace(df, is.na(df), 0)
+  rownames(df) <- df$variantid
+  return(df)
 }
 
 

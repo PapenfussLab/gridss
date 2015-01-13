@@ -61,7 +61,7 @@ public class DiscordantReadPair extends NonReferenceReadPair implements Directed
 		if (fragmentSize > 0) {
 			if (fragmentSize >= isd.getSupportLowerBound() && fragmentSize <= isd.getSupportUpperBound()) {
 				double pr = source.getMetrics().getInsertSizeDistribution().cumulativeProbability(fragmentSize);
-				if (pr < 0.5) {
+				if (pr > 0.5) {
 					pr = 1.0 - pr;
 				}
 				pairsFromFragmentDistribution = pr * isd.getTotalMappedPairs();
