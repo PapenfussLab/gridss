@@ -25,18 +25,16 @@ public class RealignedRemoteSoftClipEvidence extends RealignedSoftClipEvidence i
 		super(
 				evidence.getEvidenceSource(),
 				getRemoteDirection(evidence.getBreakendSummary().direction, evidence.getSAMRecord(), evidence.getRealignedSAMRecord()),
-				createLocal(evidence.getBreakendSummary().direction, evidence.getSAMRecord(), evidence.getRealignedSAMRecord()),
-				createRemote(evidence.getBreakendSummary().direction, evidence.getSAMRecord(), evidence.getRealignedSAMRecord()));
+				createLocal(evidence, evidence.getBreakendSummary().direction, evidence.getSAMRecord(), evidence.getRealignedSAMRecord()),
+				createRemote(evidence, evidence.getBreakendSummary().direction, evidence.getSAMRecord(), evidence.getRealignedSAMRecord()));
 		this.local = evidence;
 	}
 	public RealignedSoftClipEvidence asLocal() {
 		return local;
 	}
 	@Override
-	protected StringBuilder buildEvidenceID() {
-		StringBuilder sb = super.buildEvidenceID();
-		sb.append('R');
-		return sb;
+	public String getEvidenceID() {
+		return getSAMRecord().getReadName();
 	}
 	/**
 	 * Creates a new SAMRecord equivalent to a realigned record had to aligner mapped to the realigned location
@@ -45,10 +43,10 @@ public class RealignedRemoteSoftClipEvidence extends RealignedSoftClipEvidence i
 	 * @param realigned
 	 * @return
 	 */
-	private static SAMRecord createRemote(BreakendDirection direction, SAMRecord local, SAMRecord realigned) {
+	private static SAMRecord createRemote(RealignedSoftClipEvidence evidence, BreakendDirection direction, SAMRecord local, SAMRecord realigned) {
 		// strip out the soft clip to convert into a realigned record
 		SAMRecord newRealigned = SAMRecordUtil.clone(local);
-		newRealigned.setReadName(realigned.getReadName());
+		newRealigned.setReadName(evidence.getEvidenceID());
 		List<CigarElement> cigar = Lists.newArrayList(newRealigned.getCigar().getCigarElements());
 		int readLen = local.getReadLength();
 		byte[] bases = local.getReadBases();
@@ -87,15 +85,16 @@ public class RealignedRemoteSoftClipEvidence extends RealignedSoftClipEvidence i
 	}
 	/**
 	 * Creates a new SAMRecord equivalent to a soft clipped record had to aligner mapped to the realigned location
+	 * @param evidence 
 	 * @param direction
 	 * @param local
 	 * @param realigned
 	 * @return
 	 */
-	public static SAMRecord createLocal(BreakendDirection direction, SAMRecord local, SAMRecord realigned) {
+	public static SAMRecord createLocal(RealignedSoftClipEvidence evidence, BreakendDirection direction, SAMRecord local, SAMRecord realigned) {
 		// fill in the anchor bases as a large soft clip on the realigned record so it acts like a local soft clip record
 		SAMRecord newLocal = SAMRecordUtil.clone(realigned);
-		newLocal.setReadName(local.getReadName());
+		newLocal.setReadName("R" + evidence.getEvidenceID());
 		List<CigarElement> cigar = Lists.newArrayList(newLocal.getCigar().getCigarElements());
 		newLocal.setReadNegativeStrandFlag(local.getReadNegativeStrandFlag()); // preserve source strand so we can get back to the FASTQ sequence
 		byte[] bases = local.getReadBases();

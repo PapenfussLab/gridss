@@ -484,10 +484,6 @@ public class TestHelper {
 		r2.setReadName(r1.getReadName());
 		r1.setReadPairedFlag(true);
 		r2.setReadPairedFlag(true);
-		if (r1.getFirstOfPairFlag() == r2.getFirstOfPairFlag()) {
-			r1.setFirstOfPairFlag(true);
-			r2.setFirstOfPairFlag(false);
-		}
 		boolean properpair = !r1.getReadUnmappedFlag()
 				&& !r2.getReadUnmappedFlag()
 				&& r1.getReferenceIndex() == r2.getReferenceIndex()

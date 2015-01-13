@@ -1,8 +1,8 @@
 package au.edu.wehi.idsv;
 
+import static org.junit.Assert.assertEquals;
 import htsjdk.samtools.SAMRecord;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 
@@ -17,6 +17,7 @@ public class RealignedRemoteSoftClipEvidenceTest extends RemoteEvidenceTest {
 	}
 	private SAMRecord makeSC(final BreakendSummary bs, final String allBases, final String realignCigar) {
 		return new SAMRecord(getContext().getBasicSamHeader()) {{
+			setReadName("readName");
 			setReferenceIndex(bs.referenceIndex);
 			setReadBases(B(allBases));
 			setMappingQuality(40);
@@ -31,9 +32,17 @@ public class RealignedRemoteSoftClipEvidenceTest extends RemoteEvidenceTest {
 		}};
 	}
 	@Test
-	public void evidenceID_should_be_suffixed_with_R() {
-		String evidenceID = makeRemote(new BreakendSummary(0, FWD, 1, 1), "NN", "1M", false).getEvidenceID();
-		Assert.assertEquals("R", evidenceID.substring(evidenceID.length() - 1));
+	public void evidenceID_should_correspond_to_underlying_evidenceID() {
+		SAMRecord read = Read(0, 1, "1M1S");
+		read.setReadPairedFlag(true);
+		read.setFirstOfPairFlag(true);
+		read.setMateUnmappedFlag(true);
+		RealignedSoftClipEvidence realigned = (RealignedSoftClipEvidence) SoftClipEvidence.create(SES(), FWD, read, Read(0, 5, "1M"));
+		assertEquals("R" + realigned.getEvidenceID(), realigned.asRemote().getEvidenceID());
+		
+		read.setFirstOfPairFlag(false);
+		read.setSecondOfPairFlag(true);
+		realigned = (RealignedSoftClipEvidence) SoftClipEvidence.create(SES(), FWD, read, Read(0, 5, "1M"));
+		assertEquals("R" + realigned.getEvidenceID(), realigned.asRemote().getEvidenceID());
 	}
-	
 }

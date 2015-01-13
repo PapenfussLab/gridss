@@ -33,6 +33,7 @@ import com.google.common.primitives.Bytes;
 import com.google.common.primitives.UnsignedBytes;
 
 public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
+	private static final String COMPONENT_EVIDENCEID_SEPARATOR = " ";
 	private static final Log log = Log.getInstance(SAMRecordAssemblyEvidence.class);
 	private final SAMRecord record;
 	private final SAMRecord realignment;
@@ -70,7 +71,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		if (evidenceIds == null) {
 			Object value = record.getAttribute(SamTags.ASSEMLBY_COMPONENT_EVIDENCEID);
 			if (value instanceof String) {
-				String[] ids = ((String)value).split(" ");
+				String[] ids = ((String)value).split(COMPONENT_EVIDENCEID_SEPARATOR);
 				evidenceIds = Sets.newHashSet(ids);
 			} else {
 				evidenceIds = Sets.newHashSet();
@@ -86,7 +87,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 			for (DirectedEvidence e : evidence) {
 				String id = e.getEvidenceID(); 
 				sb.append(id);
-				sb.append(' ');
+				sb.append(COMPONENT_EVIDENCEID_SEPARATOR);
 			}
 			sb.deleteCharAt(sb.length() - 1);
 			r.setAttribute(SamTags.ASSEMLBY_COMPONENT_EVIDENCEID, sb.toString());

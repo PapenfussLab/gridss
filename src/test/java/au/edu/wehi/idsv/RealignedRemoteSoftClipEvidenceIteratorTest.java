@@ -32,9 +32,9 @@ public class RealignedRemoteSoftClipEvidenceIteratorTest extends TestHelper {
 		assertEquals(FWD, result.get(1).getBreakendSummary().direction2);
 		assertEquals(FWD, result.get(2).getBreakendSummary().direction2);
 		assertEquals(BWD, result.get(3).getBreakendSummary().direction2);
-		assertEquals("r3", result.get(0).getSAMRecord().getReadName());
-		assertEquals("r2", result.get(1).getSAMRecord().getReadName());
-		assertEquals("r1", result.get(2).getSAMRecord().getReadName());
-		assertEquals("r2", result.get(3).getSAMRecord().getReadName());
+		assertEquals("Rfr3", result.get(0).getEvidenceID());
+		assertEquals("Rfr2", result.get(1).getEvidenceID());
+		assertEquals("Rfr1", result.get(2).getEvidenceID());
+		assertEquals("Rbr2", result.get(3).getEvidenceID());
 	}
 }
