@@ -5,6 +5,7 @@ import java.util.Iterator;
 import au.edu.wehi.idsv.graph.GraphNode;
 import au.edu.wehi.idsv.graph.GraphNodeMergingIterator;
 import au.edu.wehi.idsv.graph.RectangleGraphMaximalCliqueIterator;
+import au.edu.wehi.idsv.graph.ScalingHelper;
 import au.edu.wehi.idsv.util.WindowedSortingIterator;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
@@ -17,14 +18,6 @@ import com.google.common.collect.AbstractIterator;
  *
  */
 public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantContextDirectedEvidence> {
-	/**
-	 * Number of discrete points per quality score.
-	 * 
-	 * Maximal clique calling requires exact addition and subtraction
-	 * which is not possible with floating point types so weightings
-	 * are converted to an exact integer type through this scaling factor.
-	 */
-	private static final long PER_UNIT_WEIGHT = 1 << 20;
 	private VariantContextDirectedEvidence lastHigh = null;
 	private final BreakendDirection targetLowDir;
 	private final BreakendDirection targetHighDir;
@@ -85,7 +78,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		BreakendDirection lowDir = bp.direction;
 		BreakendDirection highDir = bp.direction2;
 		float weight = ((DirectedBreakpoint)e).getBreakpointQual();
-		long scaledWeight = toScaledWeight(weight);
+		long scaledWeight = ScalingHelper.toScaledWeight(weight);
 		if (scaledWeight <= 0) return null;
 		GraphNode node = new GraphNode(startX, endX, startY, endY, scaledWeight);
 		// Must have positive phred score  
@@ -126,18 +119,12 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		}
 		builder.breakpoint(breakpoint, "");
 		long scaledWeight = node.weight;
-		double weight = toUnscaledWeight(scaledWeight);
+		double weight = ScalingHelper.toUnscaledWeight(scaledWeight);
 		builder.phredScore(weight);
 		builder.attribute(VcfAttributes.CALLED_QUAL, weight);
 		VariantContextDirectedEvidence v = (VariantContextDirectedBreakpoint)builder.make();
 		assert(v != null);
 		return v;
-	}
-	private long toScaledWeight(double weight) {
-		return (long)(weight * PER_UNIT_WEIGHT);
-	}
-	private double toUnscaledWeight(long weight) {
-		return ((double)weight) / PER_UNIT_WEIGHT;
 	}
 	@Override
 	protected VariantContextDirectedEvidence computeNext() {

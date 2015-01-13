@@ -97,6 +97,7 @@ public class AssemblyParameters {
 	public boolean writeFilteredAssemblies = Defaults.WRITE_FILTERED_ASSEMBLIES;
 	public boolean performRealignment = true;
 	public int realignmentWindowSize = Defaults.ASSEMBLY_REALIGNMENT_WINDOW_SIZE;
+	public boolean excludeNonSupportingEvidence = Defaults.EXCLUDE_ASSEMBLY_NON_SUPPORTING_EVIDENCE;
 	public boolean applyFilters(AssemblyEvidence evidence) {
 		AssemblyEvidence localEvidence = evidence;
 		if (evidence instanceof RemoteEvidence) {

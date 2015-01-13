@@ -1,11 +1,13 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.util.Log;
-
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.math3.distribution.BinomialDistribution;
+
+import au.edu.wehi.idsv.graph.MaximumCliqueIntervalGraph;
+import au.edu.wehi.idsv.graph.MaximumCliqueIntervalGraph.Node;
+import au.edu.wehi.idsv.graph.ScalingHelper;
 
 /**
  * variant/reference Log-likelihood statistical model
@@ -14,7 +16,7 @@ import org.apache.commons.math3.distribution.BinomialDistribution;
  *
  */
 public class Models {
-	private static final Log log = Log.getInstance(Models.class);
+	//private static final Log log = Log.getInstance(Models.class);
 	/**
 	 * Calculates a somatic p-value for the given call
 	 * Null hypothesis: germline and somatic BAFs are the same
@@ -50,41 +52,27 @@ public class Models {
 		float somaticP = (float)tumourDist.cumulativeProbability(variantTumour - 1, tumourTotal); // lower bound is exclusive
 		return somaticP;
 	}
-	// TODO: proper 95% Confidence Interval instead of hard limits on the bounds
 	/**
+	 * Calculates the most likely breakend interval for the given evidence 
 	 * @param evidence
-	 * @return
+	 * @return breakend interval with highest total evidence quality
 	 */
-	public static BreakendSummary calculateBreakend(List<? extends DirectedEvidence> evidence) {
+	public static BreakendSummary calculateBreakend(LinearGenomicCoordinate lgc, List<? extends DirectedEvidence> evidence) {
 		if (evidence == null || evidence.size() == 0) {
 			throw new IllegalArgumentException("No evidence supplied");
 		}
-		boolean errorMessagePrinted = false;
-		Collections.sort(evidence, DirectedEvidence.ByBreakendQualDesc);
-		// Start with best evidence
-		BreakendSummary bounds = evidence.get(0).getBreakendSummary();
-		bounds = new BreakendSummary(bounds.referenceIndex, bounds.direction, bounds.start, bounds.end);
+		BreakendDirection direction = evidence.get(0).getBreakendSummary().direction;
+		MaximumCliqueIntervalGraph calc = new MaximumCliqueIntervalGraph();
+		List<Node> nodes = new ArrayList<Node>(evidence.size());
 		for (DirectedEvidence e : evidence) {
-			// Reduce as we can
-			BreakendSummary newbounds = BreakendSummary.overlapOf(bounds, e.getBreakendSummary());
-			if (newbounds == null) {
-				if (!errorMessagePrinted) {
-					printInconsisentSupportSetErrorMessage(evidence);
-					errorMessagePrinted = true;
-				}
-			} else {
-				bounds = newbounds;
-			}
+			BreakendSummary bs = e.getBreakendSummary();
+			assert(bs.direction == direction);
+			nodes.add(new Node(
+					lgc.getLinearCoordinate(bs.referenceIndex, bs.start), 
+					lgc.getLinearCoordinate(bs.referenceIndex, bs.end),
+					ScalingHelper.toScaledWeight(e.getBreakendQual())));
 		}
-		return bounds;
-	}
-	private static void printInconsisentSupportSetErrorMessage(List<? extends DirectedEvidence> evidence) {
-		StringBuilder sb = new StringBuilder("Inconsisent support set {");
-		for (DirectedEvidence e : evidence) {
-			sb.append(e.getBreakendSummary().toString());
-			sb.append(", ");
-		}
-		sb.append("}");
-		log.debug(sb.toString());
+		Node call = calc.calculateMaximumClique(nodes);
+		return new BreakendSummary(lgc.getReferenceIndex(call.start), direction, lgc.getReferencePosition(call.start), lgc.getReferencePosition(call.stop));
 	}
 }

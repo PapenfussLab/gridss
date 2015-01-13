@@ -11,11 +11,13 @@ import htsjdk.samtools.metrics.Header;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 
@@ -326,5 +328,19 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 				0, 1, 1, B("AAAA"), new byte[] {1,1,1,1}, 0, 0).getAssemblySequence()));
 		assertEquals("GTAC", S(AssemblyFactory.createUnanchored(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(NRRP(OEA(0, 1000, "1M", true))), B("GTAC"), new byte[] {1,2,3,4}, 0, 0).getAssemblySequence()));
 		assertEquals("GTAC", S(AssemblyFactory.createUnanchored(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(NRRP(OEA(0, 1000, "1M", false))), B("GTAC"), new byte[] {1,2,3,4}, 0, 0).getAssemblySequence()));
+	}
+	@Test
+	public void getBreakendQual_should_exclude_assembled_evidence_that_does_not_support_breakend() {
+		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(
+				NRRP(OEA(0, 1, "1M", true)),
+				NRRP(OEA(0, 2, "1M", true)),
+				NRRP(OEA(0, 1000, "1M", true)));
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().excludeNonSupportingEvidence = false;
+		assertEquals(support.get(0).getBreakendQual() + support.get(1).getBreakendQual() + support.get(2).getBreakendQual(),
+				AssemblyFactory.createUnanchored(pc, AES(pc), Sets.<DirectedEvidence>newHashSet(support), B("GTAC"), new byte[] {1,2,3,4}, 0, 0).getBreakendQual(), DELTA);
+		pc.getAssemblyParameters().excludeNonSupportingEvidence = true;
+		assertEquals(support.get(0).getBreakendQual() + support.get(1).getBreakendQual(),
+				AssemblyFactory.createUnanchored(pc, AES(pc), Sets.<DirectedEvidence>newHashSet(support), B("GTAC"), new byte[] {1,2,3,4}, 0, 0).getBreakendQual(), DELTA);
 	}
 }

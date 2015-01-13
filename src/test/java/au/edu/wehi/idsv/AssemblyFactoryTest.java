@@ -102,7 +102,7 @@ public class AssemblyFactoryTest extends TestHelper {
 		// TODO: what to do when our assembled reads are inconsistent?
 		AssemblyEvidence e = AssemblyFactory.createUnanchored(
 				getContext(), AES(), evidence, B("AAAAA"), B("AAAAA"), 0, 0);
-		assertEquals(Models.calculateBreakend(Lists.newArrayList(evidence)), e.getBreakendSummary());
+		assertEquals(Models.calculateBreakend(getContext().getLinear(), Lists.newArrayList(evidence)), e.getBreakendSummary());
 	}
 	@Test
 	public void should_restrict_mate_anchor_interval_based_on_dp_interval() {

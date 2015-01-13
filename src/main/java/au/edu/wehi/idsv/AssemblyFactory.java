@@ -51,7 +51,7 @@ public final class AssemblyFactory {
 			Set<DirectedEvidence> evidence,
 			byte[] baseCalls, byte[] baseQuals,
 			int normalBaseCount, int tumourBaseCount) {
-		BreakendSummary breakend = Models.calculateBreakend(Lists.newArrayList(evidence));
+		BreakendSummary breakend = Models.calculateBreakend(processContext.getLinear(), Lists.newArrayList(evidence));
 		return new SAMRecordAssemblyEvidence(evidence, processContext.getBasicSamHeader(), breakend, source, 0, baseCalls, baseQuals, normalBaseCount, tumourBaseCount);
 	}
 	/**

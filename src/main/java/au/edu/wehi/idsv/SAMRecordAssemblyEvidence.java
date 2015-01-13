@@ -315,15 +315,19 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		setEvidenceIDs(record, evidence);
 		record.setAttribute(SamTags.ASSEMBLY_BASE_COUNT, new int[] { normalBaseCount, tumourBaseCount });
 		
+		BreakendSummary breakendWithMargin = source.getContext().getVariantCallingParameters().withMargin(source.getContext(), breakend);
+		
 		float[] rpQual = new float[] { 0, 0, };
 		float[] scQual = new float[] { 0, 0, };
 		float[] rQual = new float[] { 0, 0, };
+		float[] nsQual = new float[] { 0, 0, };
 		int[] rpCount = new int[] { 0, 0, };
 		int[] rpMaxLen = new int[] { 0, 0, };
 		int[] scCount = new int[] { 0, 0, };
 		int[] scLenMax = new int[] { 0, 0, };
 		int[] scLenTotal = new int[] { 0, 0, };
 		int[] rCount = new int[] { 0, 0 };
+		int[] nsCount = new int[] { 0, 0 };
 		int maxLocalMapq = 0;
 		for (DirectedEvidence e : evidence) {
 			maxLocalMapq = Math.max(maxLocalMapq, e.getLocalMapq());
@@ -345,17 +349,23 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 				rCount[offset]++;
 				rQual[offset] += qual;
 			}
+			if (!breakendWithMargin.overlaps(e.getBreakendSummary())) {
+				nsCount[offset]++;
+				nsQual[offset] += qual;
+			}
 		}
 		record.setMappingQuality(maxLocalMapq);
 		record.setAttribute(SamTags.ASSEMBLY_READPAIR_COUNT, rpCount);
 		record.setAttribute(SamTags.ASSEMBLY_READPAIR_LENGTH_MAX, rpMaxLen);
 		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT, scCount);
 		record.setAttribute(SamTags.ASSEMBLY_REMOTE_COUNT, rCount);
+		record.setAttribute(SamTags.ASSEMBLY_NONSUPPORTING_COUNT, nsCount);
 		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX, scLenMax);
 		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL, scLenTotal);
 		record.setAttribute(SamTags.ASSEMBLY_READPAIR_QUAL, rpQual);
 		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_QUAL, scQual);
 		record.setAttribute(SamTags.ASSEMBLY_REMOTE_QUAL, rQual);
+		record.setAttribute(SamTags.ASSEMBLY_NONSUPPORTING_QUAL, nsQual);
 		record.setAttribute(SamTags.ASSEMBLY_DIRECTION, breakend.direction.toChar());
 		return record;
 	}
@@ -481,6 +491,9 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	public int getAssemblySupportCountRemote(EvidenceSubset subset) {
 		return AttributeConverter.asIntSumTN(record.getAttribute(SamTags.ASSEMBLY_REMOTE_COUNT), subset);
 	}
+	public int getAssemblyNonSupportingCount(EvidenceSubset subset) {
+		return AttributeConverter.asIntSumTN(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_COUNT), subset);
+	}
 	@Override
 	public int getAssemblySoftClipLengthTotal(EvidenceSubset subset) {
 		return AttributeConverter.asIntSumTN(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL), subset);
@@ -497,6 +510,9 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	}
 	public float getAssemblySupportRemoteQualityScore(EvidenceSubset subset) {
 		return (float)AttributeConverter.asDoubleSumTN(record.getAttribute(SamTags.ASSEMBLY_REMOTE_QUAL), subset);
+	}
+	public float getAssemblyNonSupportingQualityScore(EvidenceSubset subset) {
+		return (float)AttributeConverter.asDoubleSumTN(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_QUAL), subset);
 	}
 	@Override
 	public boolean isAssemblyFiltered() {
@@ -547,9 +563,14 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	@Override
 	public float getBreakendQual() {
 		if (getBreakendLength() == 0) return 0;
-		int evidenceCount = getAssemblySupportCountReadPair(EvidenceSubset.ALL) + getAssemblySupportCountSoftClip(EvidenceSubset.ALL);
-		double qual = getAssemblySupportReadPairQualityScore(EvidenceSubset.ALL);
-		qual += getAssemblySupportSoftClipQualityScore(EvidenceSubset.ALL);
+		int evidenceCount = getAssemblySupportCountReadPair(EvidenceSubset.ALL)
+				+ getAssemblySupportCountSoftClip(EvidenceSubset.ALL);
+		double qual = getAssemblySupportReadPairQualityScore(EvidenceSubset.ALL)
+				+ getAssemblySupportSoftClipQualityScore(EvidenceSubset.ALL);
+		if (source.getContext().getAssemblyParameters().excludeNonSupportingEvidence) {
+			evidenceCount -= getAssemblyNonSupportingCount(EvidenceSubset.ALL);
+			qual -= getAssemblyNonSupportingQualityScore(EvidenceSubset.ALL);
+		}
 		// currently redundant as evidence is capped by local mapq so cap is always larger than the actual score.
 		qual = Math.min(getLocalMapq() * evidenceCount, qual);
 		return (float)qual;
