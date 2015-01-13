@@ -65,12 +65,15 @@ public class Models {
 		MaximumCliqueIntervalGraph calc = new MaximumCliqueIntervalGraph();
 		List<Node> nodes = new ArrayList<Node>(evidence.size());
 		for (DirectedEvidence e : evidence) {
+			long weight = ScalingHelper.toScaledWeight(e.getBreakendQual());
+			if (weight > 0) {
 			BreakendSummary bs = e.getBreakendSummary();
 			assert(bs.direction == direction);
 			nodes.add(new Node(
 					lgc.getLinearCoordinate(bs.referenceIndex, bs.start), 
 					lgc.getLinearCoordinate(bs.referenceIndex, bs.end),
-					ScalingHelper.toScaledWeight(e.getBreakendQual())));
+					weight));
+			}
 		}
 		Node call = calc.calculateMaximumClique(nodes);
 		return new BreakendSummary(lgc.getReferenceIndex(call.start), direction, lgc.getReferencePosition(call.start), lgc.getReferencePosition(call.stop));
