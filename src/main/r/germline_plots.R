@@ -1,12 +1,25 @@
 library(ggplot2)
 library(RColorBrewer)
+library(GenomicRanges)
+library(rtracklayer)
+library(data.table)
+library(stringr)
 setwd("C:/dev/idsv/src/main/R/")
 source("libgridss.R")
 
 # gridss TODO: split out *_RM into mapping to us, and mapping elsewhere
 #vcf <- readVcf("C:/dev/778.vcf", "hg19_random")
-vcf <- readVcf("W:/778/idsv/778.vcf", "hg19_random")
+bed <- import.bed(con="W:/778/idsv/cgrs-from-table3.bed")
+vcf <- readVcf("W:/778/idsv/778.norsc.vcf", "hg19_random")
 df <- gridss.truthdetails.processvcf.vcftodf(vcf)
+hits <- findOverlaps(rowData(vcf), bed)
+df$cgr <- FALSE
+df$cgr[queryHits(hits)] <- TRUE
+row.names(df) <- str_replace(str_replace(str_replace(df$mateid, "o", "_"), "h", "o"), "_", "h")
+df$cgrMate <- df[df$mateid,]$cgr
+
+# Sanity checks
+table(as.data.frame(table(df$EVENT))$Freq) # should all be 2 - one for each side of the breakpoint
 
 
 # Contribution of local breakend evidence
@@ -20,7 +33,7 @@ ggplot(df, aes(x=QUAL/CQ)) + geom_histogram()# + scale_y_log10()
 head(df[df$QUAL > 0.6 * df$CQ & df$QUAL < 0.8 * df$CQ & df$CQ > 1000,])
 
 # evidence counts
-ggplot(df, aes(x=RP, y=SC+RSC, color=factor(pmin(AS, 1)+pmin(RAS, 1)))) + geom_point() + scale_x_log10() + scale_y_log10() + geom_jitter(position = position_jitter(width = 1, height=1))
+ggplot(df, aes(x=RP, y=SC+RSC, color=factor(pmin(AS, 1)+pmin(RAS, 1)))) + facet_grid(cgrMate ~ cgr) + geom_point() + scale_x_log10() + scale_y_log10() + geom_jitter(position = position_jitter(width = 1, height=1))
 
 
 # local anchor length shouldn't mean much

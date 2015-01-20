@@ -57,9 +57,8 @@ public class VariantCallingParameters {
 			VariantContextDirectedBreakpoint vcdbp = (VariantContextDirectedBreakpoint)call;
 			BreakpointSummary bp = vcdbp.getBreakendSummary();
 			filters.addAll(breakpointFilters(bp));
-			
-			if (vcdbp.getBreakpointEvidenceCount(EvidenceSubset.ALL) == 0) {
-				filters.add(VcfFilter.NO_BREAKPOINT_SUPPORT);
+			if (vcdbp.getBreakpointQual() < minScore || vcdbp.getBreakpointEvidenceCount(EvidenceSubset.ALL) == 0) {
+				filters.add(VcfFilter.LOW_BREAKPOINT_SUPPORT);
 			}
 		}
 		if (!filters.isEmpty()) {
