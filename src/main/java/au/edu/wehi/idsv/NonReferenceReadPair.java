@@ -184,7 +184,7 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		return remote.getReferenceIndex();
 	}
 	public static String getEvidenceID(SAMRecord record) {
-		return record.getReadName() + (record.getFirstOfPairFlag() ? "/1" : "/2");
+		return record.getReadName() + (record.getFirstOfPairFlag() ? SAMRecordUtil.FIRST_OF_PAIR_NAME_SUFFIX : SAMRecordUtil.SECOND_OF_PAIR_NAME_SUFFIX);
 	}
 	@Override
 	public String getEvidenceID() {

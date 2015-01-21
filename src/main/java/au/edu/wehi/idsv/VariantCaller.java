@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutorService;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
+import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
 import au.edu.wehi.idsv.validation.TruthAnnotator;
 import au.edu.wehi.idsv.vcf.VcfFileUtil;
 
@@ -81,6 +82,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 		}
 	}
 	private CloseableIterator<DirectedEvidence> adjustEvidenceStream(CloseableIterator<DirectedEvidence> evidenceIt) {
+		evidenceIt = new PairedEvidenceTracker<DirectedEvidence>(evidenceIt);
 		// back to treating assemblies as independent evidence which do not affect SC or RP support counts
 		// due to annotation quality being greater (in some cases over 10x) than the called quality due
 		// to assembly evidence enlistment at BP evidence for a BP the evidence itself does not support
@@ -186,13 +188,16 @@ public class VariantCaller extends EvidenceProcessorBase {
 			if (truthVcf != null) {
 				breakendIt = new TruthAnnotator(processContext, breakendIt, truthVcf);
 			}
+			breakendIt = new PairedEvidenceTracker<VariantContextDirectedEvidence>(breakendIt);
 			while (breakendIt.hasNext()) {
 				VariantContextDirectedEvidence variant = breakendIt.next();
 				if (variant.isValid() && (!variant.isFiltered() || Defaults.WRITE_FILTERED_CALLS)) {
 					vcfWriter.add(variant);
 				}
 			}
+			
 			CloserUtil.close(vcfWriter);
+			CloserUtil.close(breakendIt);
 			vcfWriter = null;
 			FileHelper.move(working, output, true);
 			log.info("Variant calls written to ", output);

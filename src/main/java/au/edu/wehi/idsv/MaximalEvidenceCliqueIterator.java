@@ -18,6 +18,8 @@ import com.google.common.collect.AbstractIterator;
  *
  */
 public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantContextDirectedEvidence> {
+	public static final String MATE_BREAKEND_ID_SUFFIX_HIGH = "h";
+	public static final String MATE_BREAKEND_ID_SUFFIX_LOW = "o";
 	private VariantContextDirectedEvidence lastHigh = null;
 	private final BreakendDirection targetLowDir;
 	private final BreakendDirection targetHighDir;
@@ -112,8 +114,8 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		// use a hash of the breakpoint as a (probably) unique identifier
 		String id = String.format("gridss%d", Math.abs(breakpoint.hashCode()));
 		builder.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, id);
-		builder.attribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, id + (isHighBreakend ? "o" : "h"));
-		builder.id(id + (isHighBreakend ? "h" : "o"));
+		builder.attribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, id + (isHighBreakend ? MATE_BREAKEND_ID_SUFFIX_LOW : MATE_BREAKEND_ID_SUFFIX_HIGH));
+		builder.id(id + (isHighBreakend ? MATE_BREAKEND_ID_SUFFIX_HIGH : MATE_BREAKEND_ID_SUFFIX_LOW));
 		if (isHighBreakend) {
 			breakpoint = breakpoint.remoteBreakpoint();
 		}
