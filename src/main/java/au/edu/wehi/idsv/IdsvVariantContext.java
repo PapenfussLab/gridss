@@ -58,6 +58,7 @@ public class IdsvVariantContext extends VariantContext {
 			        .compare(o1.getReferenceIndex(), o2.getReferenceIndex())
 			        .compare(o1.getStart(), o2.getStart())
 			        .compare(o1.getEnd(), o2.getEnd())
+			        .compare(o1.getID(), o2.getID())
 			        .result();
 		  }
 	};
@@ -67,6 +68,7 @@ public class IdsvVariantContext extends VariantContext {
 			        .compare(o1.getReferenceIndex(), o2.getReferenceIndex())
 			        .compare(o1.getEnd(), o2.getEnd())
 			        .compare(o1.getStart(), o2.getStart())
+			        .compare(o1.getID(), o2.getID())
 			        .result();
 		  }
 	};

@@ -16,9 +16,9 @@ import com.google.common.collect.AbstractIterator;
  * 
  * This wrapper is thread-safe.
  * 
- * <b>Separate producer and consumer threads are required as
+ * <b>Separate consumer threads are required as
  * iterator calls block the calling thread when sufficiently
- * further ahead of other iterators.
+ * far ahead of other iterators.
  * </b>
  * @author Daniel Cameron
  *
@@ -35,6 +35,7 @@ public class DuplicatingIterable<T> implements Iterable<T> {
 	
 	/**
 	 * Duplicates an iterator
+	 * @param nIterators number of consuming iterators
 	 * @param it underlying iterator
 	 * @param maxIteratorDifference maximum number of records an iterator can traverse before blocking to wait
 	 * for other iterators to catch up
@@ -52,7 +53,7 @@ public class DuplicatingIterable<T> implements Iterable<T> {
 		this.thread.start();
 	}
 	/**
-	 * Creates a new iterator from the current position
+	 * Creates a new iterator
 	 */
 	@Override
 	public synchronized Iterator<T> iterator() {
@@ -66,7 +67,7 @@ public class DuplicatingIterable<T> implements Iterable<T> {
 				while (it.hasNext()) {
 					T n = it.next();
 					for (BlockingQueue<Object> queue : queues) {
-							queue.put(n);
+						queue.put(n);
 					}
 				}
 				eos();

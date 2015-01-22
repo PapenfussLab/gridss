@@ -18,8 +18,9 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
-import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
+import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.FileHelper;
+import au.edu.wehi.idsv.validation.BreakpointFilterTracker;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
 import au.edu.wehi.idsv.validation.TruthAnnotator;
 import au.edu.wehi.idsv.vcf.VcfFileUtil;
@@ -91,10 +92,8 @@ public class VariantCaller extends EvidenceProcessorBase {
 	}
 	private List<Closeable> toClose = Lists.newArrayList();
 	private CloseableIterator<IdsvVariantContext> getAllCalledVariants() {
-		List<Iterator<IdsvVariantContext>> variants = Lists.newArrayList();
-		variants.add(getVariants(processContext.getFileSystemContext().getBreakpointVcf(output)));
-		CloseableIterator<IdsvVariantContext> merged = new AutoClosingMergedIterator<IdsvVariantContext>(variants, IdsvVariantContext.ByLocationStart);
-		return new AsyncBufferedIterator<IdsvVariantContext>(merged, "CalledBreakPoints");
+		CloseableIterator<IdsvVariantContext> it = getVariants(processContext.getFileSystemContext().getBreakpointVcf(output));
+		return new AsyncBufferedIterator<IdsvVariantContext>(it, "CalledBreakPoints");
 	}
 	public void close() {
 		super.close();
@@ -109,7 +108,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 		}
 		toClose.clear();
 	}
-	private Iterator<IdsvVariantContext> getVariants(File file) {
+	private CloseableIterator<IdsvVariantContext> getVariants(File file) {
 		VCFFileReader vcfReader = new VCFFileReader(file, false);
 		toClose.add(vcfReader);
 		CloseableIterator<VariantContext> it = vcfReader.iterator();
@@ -120,7 +119,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 				return IdsvVariantContext.create(processContext, null, arg);
 			}
 		});
-		return idsvIt;
+		return new AutoClosingIterator<IdsvVariantContext>(idsvIt, toClose);
 	}
 	private static void writeMaximalCliquesToVcf(ProcessingContext processContext, Iterator<VariantContextDirectedEvidence> it, File vcf) {
 		final ProgressLogger writeProgress = new ProgressLogger(log);
@@ -175,12 +174,14 @@ public class VariantCaller extends EvidenceProcessorBase {
 			vcfWriter = processContext.getVariantContextWriter(working, true);
 			it = getAllCalledVariants();
 			Iterator<VariantContextDirectedEvidence> breakendIt = Iterators.filter(it, VariantContextDirectedEvidence.class);
+			// reorder from VCF order to breakend position order
+			breakendIt = new DirectEvidenceWindowedSortingIterator<VariantContextDirectedEvidence>(processContext, maxWindowSize, breakendIt);
 			normalCoverage = getReferenceLookup(normal, maxWindowSize);
 			tumourCoverage = getReferenceLookup(tumour, maxWindowSize);
 			evidenceIt = getAllEvidence(true, true, true, true, true);
 			evidenceIt = adjustEvidenceStream(evidenceIt);
 			breakendIt = new SequentialEvidenceAnnotator(processContext, breakendIt, evidenceIt, maxWindowSize, true, evidenceDump);
-			// Mostly sorted but since breakpoint position is recalculated, there can be some wiggle
+			// breakpoint position is recalculated, so we need to resort again
 			breakendIt = new DirectEvidenceWindowedSortingIterator<VariantContextDirectedEvidence>(processContext, maxWindowSize, breakendIt);
 			breakendIt = new AsyncBufferedIterator<VariantContextDirectedEvidence>(breakendIt, "Annotator-SV");
 			breakendIt = new SequentialCoverageAnnotator(processContext, breakendIt, normalCoverage, tumourCoverage);
@@ -188,8 +189,8 @@ public class VariantCaller extends EvidenceProcessorBase {
 			if (truthVcf != null) {
 				breakendIt = new TruthAnnotator(processContext, breakendIt, truthVcf);
 			}
-			breakendIt = new PairedEvidenceTracker<VariantContextDirectedEvidence>(breakendIt);
-			// Resort from breakend position ordering to VCF position ordering
+			breakendIt = new BreakpointFilterTracker<VariantContextDirectedEvidence>(breakendIt);
+			// Resort back into VCF sort order
 			breakendIt = new VariantContextWindowedSortingIterator<VariantContextDirectedEvidence>(processContext, maxWindowSize, breakendIt);
 			while (breakendIt.hasNext()) {
 				VariantContextDirectedEvidence variant = breakendIt.next();
@@ -198,7 +199,6 @@ public class VariantCaller extends EvidenceProcessorBase {
 					vcfWriter.add(variant);
 				}
 			}
-			
 			CloserUtil.close(vcfWriter);
 			CloserUtil.close(breakendIt);
 			vcfWriter = null;

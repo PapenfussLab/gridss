@@ -72,7 +72,7 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 				// other side already included
 				unpaired.remove(partnerId);
 			} else {
-				unpaired.add(partnerId);
+				unpaired.add(evidenceId);
 			}
 		}
 		return true;
@@ -111,6 +111,7 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 			if (partner == null) {
 				throw new RuntimeException("Sanity check failure: unexpected VCF breakend evidence ID " + evidenceId);
 			}
+			return partner;
 		}
 		throw new RuntimeException("Sanity check failure: unhandled directed breakpoint type " + evidence.getClass().getName());
 	}

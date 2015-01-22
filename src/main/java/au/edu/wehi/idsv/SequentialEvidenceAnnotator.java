@@ -42,7 +42,7 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 		flushCallsStartBefore(evidenceStart - maxCallRange - 1);
 		addCallsStartBefore(evidenceEnd + 1);
 		if (assignEvidenceToSingleBreakpoint) {
-			float bestScore = -Float.MAX_VALUE;
+			float bestScore = Float.MIN_VALUE;
 			ActiveVariant best = null;
 			for (Collection<ActiveVariant> cv : activeVariantStart.asMap().subMap(evidenceStart, true, evidenceEnd, true).values()) {
 				for (ActiveVariant v : cv) {

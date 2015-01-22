@@ -72,9 +72,6 @@ public class WindowedSortingIterator<T> extends AbstractIterator<T> {
 	private void advanceUnderlying() {
 		while (it.hasNext() && (calls.isEmpty() || nextRecordCouldBeAtStartOfWindow())) {
 			T next = it.next();
-			if (next == null) {
-				throw new RuntimeException("Sanity check failure: null evidence");
-			}
 			calls.add(next);
 		}
 	}
