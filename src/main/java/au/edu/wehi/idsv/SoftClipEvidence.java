@@ -75,9 +75,9 @@ public class SoftClipEvidence implements DirectedEvidence {
 		sb.append(record.getReadName());
 		if (record.getReadPairedFlag()) {
 			if (record.getFirstOfPairFlag()) {
-				sb.append("/1");
+				sb.append(SAMRecordUtil.FIRST_OF_PAIR_NAME_SUFFIX);
 			} else {
-				sb.append("/2");
+				sb.append(SAMRecordUtil.SECOND_OF_PAIR_NAME_SUFFIX);
 			}
 		}
 		return sb;

@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import htsjdk.samtools.SAMRecord;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 import com.google.common.collect.PeekingIterator;
 
@@ -47,11 +48,11 @@ public class SequentialAssemblyReadPairFactory extends SequentialSAMRecordFactor
 	public SAMRecord findAssociatedSAMRecord(SAMRecord record) {
 		if (record == null) return null;
 		if (record.getReadUnmappedFlag()) return null;
-		return findMatching(record.getReferenceIndex(), record.getAlignmentStart(), record.getReadName() + (record.getFirstOfPairFlag() ? "/1" : "/2"));
+		return findMatching(record.getReferenceIndex(), record.getAlignmentStart(), record.getReadName() + (record.getFirstOfPairFlag() ? SAMRecordUtil.FIRST_OF_PAIR_NAME_SUFFIX : SAMRecordUtil.SECOND_OF_PAIR_NAME_SUFFIX));
 	}
 	@Override
 	protected String getMatchingKey(SAMRecord record) {
-		return record.getReadName() + (record.getFirstOfPairFlag() ? "/2" : "/1");
+		return record.getReadName() + (record.getFirstOfPairFlag() ? SAMRecordUtil.SECOND_OF_PAIR_NAME_SUFFIX : SAMRecordUtil.FIRST_OF_PAIR_NAME_SUFFIX);
 	}
 	@Override
 	protected int getReferenceIndex(SAMRecord record) {

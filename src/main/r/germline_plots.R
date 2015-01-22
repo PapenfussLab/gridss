@@ -12,15 +12,32 @@ source("libgridss.R")
 bed <- import.bed(con="W:/778/idsv/cgrs-from-table3.bed")
 vcf <- readVcf("W:/778/idsv/778.norsc.vcf", "hg19_random")
 df <- gridss.truthdetails.processvcf.vcftodf(vcf)
+mdf <- df[df$mateid,]
 hits <- findOverlaps(rowData(vcf), bed)
 df$cgr <- FALSE
 df$cgr[queryHits(hits)] <- TRUE
 row.names(df) <- str_replace(str_replace(str_replace(df$mateid, "o", "_"), "h", "o"), "_", "h")
-df$cgrMate <- df[df$mateid,]$cgr
+df$cgrMate <- mdf$cgr
 
+##################
 # Sanity checks
-table(as.data.frame(table(df$EVENT))$Freq) # should all be 2 - one for each side of the breakpoint
-
+##################
+# should all have mates
+df[is.na(mdf$mateid),]
+# breakpoint fields should match on both sides of the breakend
+df[df$FILTER != mdf$FILTER,]
+df[df$SOMATIC != mdf$SOMATIC,]
+df[df$IMPRECISE != mdf$IMPRECISE,]
+df[df$SVLEN != mdf$SVLEN,]
+df[df$SVTYPE != mdf$SVTYPE,]
+df[df$SPV != mdf$SPV,]
+df[df$CQ != mdf$CQ,]
+df[df$AS != mdf$AS,]
+df[df$ASQ != mdf$ASQ,]
+df[df$RP != mdf$RP,]
+df[df$RPQ != mdf$RPQ,]
+df[df$SC != mdf$SC,]
+df[df$SCQ != mdf$SCQ,]
 
 # Contribution of local breakend evidence
 ggplot(df, aes(x=QUAL, y=BQ, color=factor(pmin(AS, 1)+pmin(RAS, 1)), size=BAS+1)) + geom_point() + scale_x_log10() + scale_y_log10()

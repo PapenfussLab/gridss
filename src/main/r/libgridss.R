@@ -24,6 +24,7 @@ gridss.truthdetails.processvcf.addtn <- function(df, name, column, max=FALSE) {
 gridss.truthdetails.processvcf.vcftodf <- function(vcf) {
   i <- info(vcf)
   df <- data.frame(variantid=names(rowData(vcf)))
+  df$FILTER=rowData(vcf)$FILTER
   df$QUAL <- fixed(vcf)$QUAL
   df$EVENT <-i$EVENT
   df$mateid <- as.character(i$MATEID)
