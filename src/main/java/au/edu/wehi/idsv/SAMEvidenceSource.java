@@ -21,6 +21,8 @@ import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
+import au.edu.wehi.idsv.validation.OrderAssertingIterator;
+import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
@@ -171,7 +173,14 @@ public class SAMEvidenceSource extends EvidenceSource {
 				}
 			});
 		} else {
-			return singleFileIterator(includeReadPair, includeSoftClip, includeSoftClipRemote);
+			CloseableIterator<DirectedEvidence> it = singleFileIterator(includeReadPair, includeSoftClip, includeSoftClipRemote);
+			// can only check pairing if we are iterating over the entire record set
+			if (Defaults.PERFORM_SORTED_SANITY_CHECKS) {
+				if (includeSoftClip == includeSoftClipRemote) {
+					it = new AutoClosingIterator<DirectedEvidence>(new PairedEvidenceTracker<DirectedEvidence>(it), ImmutableList.<Closeable>of(it));
+				}
+			}
+			return it; 
 		}
 	}
 	public CloseableIterator<DirectedEvidence> iterator(final boolean includeReadPair, final boolean includeSoftClip, final boolean includeSoftClipRemote, final String chr) {
@@ -277,7 +286,10 @@ public class SAMEvidenceSource extends EvidenceSource {
 					ImmutableList.<Closeable>of(remoteScIt, rsrRawIt, sssRawItf, sssRawItb));
 			itList.add((CloseableIterator<DirectedEvidence>)(Object)remoteScIt);
 		}
-		final CloseableIterator<DirectedEvidence> mergedIt = new AutoClosingMergedIterator<DirectedEvidence>(itList, DirectedEvidenceOrder.ByNatural);
+		CloseableIterator<DirectedEvidence> mergedIt = new AutoClosingMergedIterator<DirectedEvidence>(itList, DirectedEvidenceOrder.ByNatural);
+		if (Defaults.PERFORM_SORTED_SANITY_CHECKS) {
+			mergedIt = new AutoClosingIterator<DirectedEvidence>(new OrderAssertingIterator<DirectedEvidence>(mergedIt, DirectedEvidenceOrder.ByNatural), ImmutableList.<Closeable>of(mergedIt));
+		}
 		return new AsyncBufferedIterator<DirectedEvidence>(mergedIt, input.getName() + "-" + chr);
 	}
 	private int getSoftClipSortWindowSize() {

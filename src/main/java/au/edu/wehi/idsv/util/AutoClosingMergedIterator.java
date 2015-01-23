@@ -4,14 +4,15 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 
 import java.io.Closeable;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
+import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.validation.OrderAssertingIterator;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
@@ -34,11 +35,11 @@ public class AutoClosingMergedIterator<T> implements Closeable, CloseableIterato
 		this.stillOpen = Lists.newArrayList(Iterables.transform(iterators, new Function<Iterator<? extends T>, AutoClosingIterator<T>>() {
 			@Override
 			public AutoClosingIterator<T> apply(Iterator<? extends T> input) {
-				List<Closeable> toClose = new ArrayList<Closeable>();
-				if (input instanceof Closeable) {
-					toClose.add((Closeable)input);
+				AutoClosingIterator<T> it = new AutoClosingIterator<T>(input);
+				if (Defaults.PERFORM_SORTED_SANITY_CHECKS) {
+					it = new AutoClosingIterator<T>(new OrderAssertingIterator<T>(it, comparator), ImmutableList.<Closeable>of(it));
 				}
-				return new AutoClosingIterator<T>(new OrderAssertingIterator<T>(input, comparator), toClose);
+				return it;
 			}
 		}));
 		this.merged = Iterators.mergeSorted(stillOpen, comparator);

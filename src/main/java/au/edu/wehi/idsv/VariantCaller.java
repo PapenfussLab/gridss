@@ -21,11 +21,13 @@ import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.validation.BreakpointFilterTracker;
+import au.edu.wehi.idsv.validation.OrderAssertingIterator;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
 import au.edu.wehi.idsv.validation.TruthAnnotator;
 import au.edu.wehi.idsv.vcf.VcfFileUtil;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
@@ -83,7 +85,10 @@ public class VariantCaller extends EvidenceProcessorBase {
 		}
 	}
 	private CloseableIterator<DirectedEvidence> adjustEvidenceStream(CloseableIterator<DirectedEvidence> evidenceIt) {
-		evidenceIt = new PairedEvidenceTracker<DirectedEvidence>(evidenceIt);
+		if (Defaults.PERFORM_SORTED_SANITY_CHECKS) {
+			evidenceIt = new PairedEvidenceTracker<DirectedEvidence>(evidenceIt);
+			evidenceIt = new AutoClosingIterator<DirectedEvidence>(new OrderAssertingIterator<DirectedEvidence>(evidenceIt, DirectedEvidenceOrder.ByNatural), ImmutableList.<Closeable>of(evidenceIt));
+		}
 		// back to treating assemblies as independent evidence which do not affect SC or RP support counts
 		// due to annotation quality being greater (in some cases over 10x) than the called quality due
 		// to assembly evidence enlistment at BP evidence for a BP the evidence itself does not support
@@ -174,8 +179,14 @@ public class VariantCaller extends EvidenceProcessorBase {
 			vcfWriter = processContext.getVariantContextWriter(working, true);
 			it = getAllCalledVariants();
 			Iterator<VariantContextDirectedEvidence> breakendIt = Iterators.filter(it, VariantContextDirectedEvidence.class);
+			if (Defaults.PERFORM_SORTED_SANITY_CHECKS) {
+				breakendIt = new OrderAssertingIterator<VariantContextDirectedEvidence>(breakendIt, IdsvVariantContext.ByLocationStart);
+			}
 			// reorder from VCF order to breakend position order
 			breakendIt = new DirectEvidenceWindowedSortingIterator<VariantContextDirectedEvidence>(processContext, maxWindowSize, breakendIt);
+			if (Defaults.PERFORM_SORTED_SANITY_CHECKS) {
+				breakendIt = new OrderAssertingIterator<VariantContextDirectedEvidence>(breakendIt, DirectedEvidenceOrder.ByNatural);
+			}
 			normalCoverage = getReferenceLookup(normal, maxWindowSize);
 			tumourCoverage = getReferenceLookup(tumour, maxWindowSize);
 			evidenceIt = getAllEvidence(true, true, true, true, true);
@@ -183,6 +194,9 @@ public class VariantCaller extends EvidenceProcessorBase {
 			breakendIt = new SequentialEvidenceAnnotator(processContext, breakendIt, evidenceIt, maxWindowSize, true, evidenceDump);
 			// breakpoint position is recalculated, so we need to resort again
 			breakendIt = new DirectEvidenceWindowedSortingIterator<VariantContextDirectedEvidence>(processContext, maxWindowSize, breakendIt);
+			if (Defaults.PERFORM_SORTED_SANITY_CHECKS) {
+				breakendIt = new OrderAssertingIterator<VariantContextDirectedEvidence>(breakendIt, DirectedEvidenceOrder.ByNatural);
+			}
 			breakendIt = new AsyncBufferedIterator<VariantContextDirectedEvidence>(breakendIt, "Annotator-SV");
 			breakendIt = new SequentialCoverageAnnotator(processContext, breakendIt, normalCoverage, tumourCoverage);
 			breakendIt = new AsyncBufferedIterator<VariantContextDirectedEvidence>(breakendIt, "Annotator-Coverage");
@@ -192,6 +206,9 @@ public class VariantCaller extends EvidenceProcessorBase {
 			breakendIt = new BreakpointFilterTracker<VariantContextDirectedEvidence>(breakendIt);
 			// Resort back into VCF sort order
 			breakendIt = new VariantContextWindowedSortingIterator<VariantContextDirectedEvidence>(processContext, maxWindowSize, breakendIt);
+			if (Defaults.PERFORM_SORTED_SANITY_CHECKS) {
+				breakendIt = new OrderAssertingIterator<VariantContextDirectedEvidence>(breakendIt, IdsvVariantContext.ByLocationStart);
+			}
 			while (breakendIt.hasNext()) {
 				VariantContextDirectedEvidence variant = breakendIt.next();
 				assert(variant.isValid());

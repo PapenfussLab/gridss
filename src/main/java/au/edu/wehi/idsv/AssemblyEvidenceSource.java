@@ -30,6 +30,8 @@ import au.edu.wehi.idsv.pipeline.CreateAssemblyReadPair;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
+import au.edu.wehi.idsv.validation.OrderAssertingIterator;
+import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
@@ -139,7 +141,17 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				getContext(),
 				getAssemblyWindowSize(),
 				filteredIt), ImmutableList.<Closeable>of(it, mateIt, evidenceIt));
-		return sortedIt;
+		return wrapTracking(sortedIt, includeRemote);
+	}
+	private static CloseableIterator<SAMRecordAssemblyEvidence> wrapTracking(CloseableIterator<SAMRecordAssemblyEvidence> it, boolean trackRemote) {
+		if (Defaults.PERFORM_SORTED_SANITY_CHECKS) {
+			Iterator<SAMRecordAssemblyEvidence> trackedIt = new OrderAssertingIterator<SAMRecordAssemblyEvidence>(it, DirectedEvidenceOrder.ByNatural);
+			if (trackRemote) {
+				trackedIt = new PairedEvidenceTracker<SAMRecordAssemblyEvidence>(trackedIt);
+			}
+			it = new AutoClosingIterator<SAMRecordAssemblyEvidence>(trackedIt, ImmutableList.<Closeable>of(it));
+		}
+		return it;
 	}
 	private CloseableIterator<SAMRecordAssemblyEvidence> samAssemblyRealignIterator(
 			boolean includeRemote,
@@ -178,7 +190,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				getContext(),
 				getAssemblyWindowSize(),
 				filteredIt), toClose);
-		return sortedIt;
+		return wrapTracking(sortedIt, includeRemote);
 	}
 	private boolean isProcessingComplete() {
 		boolean done = true;

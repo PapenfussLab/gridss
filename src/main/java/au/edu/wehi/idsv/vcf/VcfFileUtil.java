@@ -11,15 +11,21 @@ import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFHeader;
 import htsjdk.variant.vcf.VCFRecordCodec;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.concurrent.Callable;
 
+import com.google.common.collect.ImmutableList;
+
+import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.IntermediateFileUtil;
 import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.FileHelper;
+import au.edu.wehi.idsv.validation.OrderAssertingIterator;
 
 public class VcfFileUtil {
 	private static final Log log = Log.getInstance(VcfFileUtil.class);
@@ -103,6 +109,9 @@ public class VcfFileUtil {
 				collection.doneAdding();
 				writer = processContext.getVariantContextWriter(FileSystemContext.getWorkingFileFor(output), indexed);
 		    	wit = collection.iterator();
+		    	if (Defaults.PERFORM_SORTED_SANITY_CHECKS) {
+					wit = new AutoClosingIterator<VariantContext>(new OrderAssertingIterator<VariantContext>(wit, sortComparator), ImmutableList.<Closeable>of(wit));
+				}
 				while (wit.hasNext()) {
 					writer.add(wit.next());
 				}

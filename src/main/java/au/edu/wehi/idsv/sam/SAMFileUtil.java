@@ -15,14 +15,20 @@ import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.samtools.util.SortingCollection;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Callable;
 
+import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.IntermediateFileUtil;
 import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.FileHelper;
+import au.edu.wehi.idsv.validation.OrderAssertingIterator;
+
+import com.google.common.collect.ImmutableList;
 
 public class SAMFileUtil {
 	private static final Log log = Log.getInstance(SAMFileUtil.class);
@@ -122,6 +128,9 @@ public class SAMFileUtil {
 				writer = processContext.getSamFileWriterFactory(sortOrder == SortOrder.coordinate).makeSAMOrBAMWriter(header, true, FileSystemContext.getWorkingFileFor(output));
 				writer.setProgressLogger(new ProgressLogger(log));
 		    	wit = collection.iterator();
+		    	if (Defaults.PERFORM_SORTED_SANITY_CHECKS) {
+					wit = new AutoClosingIterator<SAMRecord>(new OrderAssertingIterator<SAMRecord>(wit, sortComparator), ImmutableList.<Closeable>of(wit));
+				}
 				while (wit.hasNext()) {
 					writer.addAlignment(wit.next());
 				}

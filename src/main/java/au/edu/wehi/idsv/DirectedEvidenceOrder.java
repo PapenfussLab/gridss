@@ -44,7 +44,7 @@ public abstract class DirectedEvidenceOrder {
 		}
 	};
 	/**
-	 * Natural (genomic) ordering of directed evidence.  
+	 * Natural (genomic location of breakend) ordering of directed evidence.  
 	 */
 	public static Ordering<DirectedEvidence> ByNatural = ByStartStart2EndEnd2;
 }
