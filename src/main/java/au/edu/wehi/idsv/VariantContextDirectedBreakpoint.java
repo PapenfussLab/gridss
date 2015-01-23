@@ -108,9 +108,13 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 				getBreakpointEvidenceCountReadPair(subset) +
 				getBreakpointEvidenceCountSoftClip(subset);
 	}
-	public int getBreakpointEvidenceCountAssembly() { return AttributeConverter.asInt(getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT.attribute()), 0); }
 	public int getBreakpointEvidenceCountReadPair(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.BREAKPOINT_READPAIR_COUNT.attribute()), subset); }
-	public int getBreakpointEvidenceCountSoftClip(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_COUNT.attribute()), subset); }
+	public int getBreakpointEvidenceCountAssembly() { return getBreakpointEvidenceCountLocalAssembly() + getBreakpointEvidenceCountRemoteAssembly(); }
+	public int getBreakpointEvidenceCountLocalAssembly() { return AttributeConverter.asInt(getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT.attribute()), 0); }
+	public int getBreakpointEvidenceCountRemoteAssembly() { return AttributeConverter.asInt(getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE.attribute()), 0); }
+	public int getBreakpointEvidenceCountSoftClip(EvidenceSubset subset) { return getBreakpointEvidenceCountLocalSoftClip(subset) + getBreakpointEvidenceCountRemoteSoftClip(subset); }
+	public int getBreakpointEvidenceCountLocalSoftClip(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_COUNT.attribute()), subset); }
+	public int getBreakpointEvidenceCountRemoteSoftClip(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_COUNT_REMOTE.attribute()), subset); }
 	@Override
 	public DirectedBreakpoint asRemote() {
 		throw new RuntimeException("NYI");
