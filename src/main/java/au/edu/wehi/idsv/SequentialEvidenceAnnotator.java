@@ -111,6 +111,7 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 		public ActiveVariant(VariantContextDirectedEvidence call) {
 			this.builder = new StructuralVariationCallBuilder(context, call);
 			this.score = (float)call.getPhredScaledQual();
+			assert(this.score >= 0); // variant must have score set
 			this.location = call.getBreakendSummary();
 			this.startLocation = context.getLinear().getStartLinearCoordinate(this.location);
 			this.endLocation = context.getLinear().getEndLinearCoordinate(this.location);

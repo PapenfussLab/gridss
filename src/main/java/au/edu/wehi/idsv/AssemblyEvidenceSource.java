@@ -72,17 +72,22 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		}
 	}
 	public CloseableIterator<SAMRecordAssemblyEvidence> iterator(final boolean includeRemote, final boolean includeFiltered) {
+		CloseableIterator<SAMRecordAssemblyEvidence> it;
 		if (getContext().shouldProcessPerChromosome()) {
 			// Lazily iterator over each input
-			return new PerChromosomeAggregateIterator<SAMRecordAssemblyEvidence>(getContext().getReference().getSequenceDictionary(), new Function<String, Iterator<SAMRecordAssemblyEvidence>>() {
+			it = new PerChromosomeAggregateIterator<SAMRecordAssemblyEvidence>(getContext().getReference().getSequenceDictionary(), new Function<String, Iterator<SAMRecordAssemblyEvidence>>() {
 				@Override
 				public Iterator<SAMRecordAssemblyEvidence> apply(String chr) {
 					return perChrIterator(includeRemote, includeFiltered, chr);
 				}
 			});
 		} else {
-			return singleFileIterator(includeRemote, includeFiltered);
+			it = singleFileIterator(includeRemote, includeFiltered);
 		}
+		if (Defaults.PERFORM_SORTED_SANITY_CHECKS && includeRemote) {
+			it = new PairedEvidenceTracker<SAMRecordAssemblyEvidence>(it);
+		}
+		return it;
 	}
 	public CloseableIterator<SAMRecordAssemblyEvidence> iterator(boolean includeRemote, boolean includeFiltered, String chr) {
 		if (getContext().shouldProcessPerChromosome()) {
@@ -141,17 +146,10 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				getContext(),
 				getAssemblyWindowSize(),
 				filteredIt), ImmutableList.<Closeable>of(it, mateIt, evidenceIt));
-		return wrapTracking(sortedIt, includeRemote);
-	}
-	private static CloseableIterator<SAMRecordAssemblyEvidence> wrapTracking(CloseableIterator<SAMRecordAssemblyEvidence> it, boolean trackRemote) {
 		if (Defaults.PERFORM_SORTED_SANITY_CHECKS) {
-			Iterator<SAMRecordAssemblyEvidence> trackedIt = new OrderAssertingIterator<SAMRecordAssemblyEvidence>(it, DirectedEvidenceOrder.ByNatural);
-			if (trackRemote) {
-				trackedIt = new PairedEvidenceTracker<SAMRecordAssemblyEvidence>(trackedIt);
-			}
-			it = new AutoClosingIterator<SAMRecordAssemblyEvidence>(trackedIt, ImmutableList.<Closeable>of(it));
+			sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(new OrderAssertingIterator<SAMRecordAssemblyEvidence>(sortedIt, DirectedEvidenceOrder.ByNatural), ImmutableList.<Closeable>of(sortedIt));
 		}
-		return it;
+		return sortedIt;
 	}
 	private CloseableIterator<SAMRecordAssemblyEvidence> samAssemblyRealignIterator(
 			boolean includeRemote,
@@ -190,7 +188,10 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				getContext(),
 				getAssemblyWindowSize(),
 				filteredIt), toClose);
-		return wrapTracking(sortedIt, includeRemote);
+		if (Defaults.PERFORM_SORTED_SANITY_CHECKS) {
+			sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(new OrderAssertingIterator<SAMRecordAssemblyEvidence>(sortedIt, DirectedEvidenceOrder.ByNatural), ImmutableList.<Closeable>of(sortedIt));
+		}
+		return sortedIt;
 	}
 	private boolean isProcessingComplete() {
 		boolean done = true;

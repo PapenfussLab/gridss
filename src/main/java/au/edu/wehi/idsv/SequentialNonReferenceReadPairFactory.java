@@ -24,7 +24,19 @@ public class SequentialNonReferenceReadPairFactory extends SequentialSAMRecordFa
 	public NonReferenceReadPair createNonReferenceReadPair(SAMRecord record, SAMEvidenceSource source) {
 		if (!record.getReadPairedFlag()) return null;
 		SAMRecord mate = findAssociatedSAMRecord(record);
-		return NonReferenceReadPair.create(record, mate, source);
+		NonReferenceReadPair rp = NonReferenceReadPair.create(record, mate, source);
+		assert(sanityCheckEvidencePairing(rp, record, mate, source));
+		return rp;
+	}
+	/**
+	 * Evaluation of read pair from the mate perspective must match what we consider the evidence to be
+	 */
+	private boolean sanityCheckEvidencePairing(NonReferenceReadPair rpLocal, SAMRecord record, SAMRecord mate, SAMEvidenceSource source) {
+		NonReferenceReadPair rpRemote = NonReferenceReadPair.create(mate, record, source);
+		return (rpLocal instanceof DiscordantReadPair && rpRemote instanceof DiscordantReadPair)
+				|| (rpLocal == null && rpRemote == null)
+				|| (rpLocal instanceof UnmappedMateReadPair && rpRemote == null)
+				|| (rpRemote instanceof UnmappedMateReadPair && rpLocal == null);
 	}
 	@Override
 	public SAMRecord findAssociatedSAMRecord(SAMRecord record) {

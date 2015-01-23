@@ -23,6 +23,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 	public void should_add_breakpoint_supporting_evidence() {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());
 		builder
+			.phredScore(1)
 			.loc("polyA", 1, 1)
 			.alleles("A", "A[polyA:10[");
 		VariantContextDirectedBreakpoint result = (VariantContextDirectedBreakpoint)go(L(
@@ -34,6 +35,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 	public void should_add_breakend_supporting_evidence() {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());
 		builder
+			.phredScore(1)
 			.loc("polyA", 1, 1)
 			.alleles("A", "A[polyA:10[");
 		VariantContextDirectedEvidence result = go(L(
@@ -51,6 +53,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 		RealignedSAMRecordAssemblyEvidence ass = (RealignedSAMRecordAssemblyEvidence) AssemblyFactory.incorporateRealignment(getContext(), be, r);
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());
 		builder
+			.phredScore(1)
 			.loc("polyA", 0, 1)
 			.alleles("A", "A[polyA:10[");
 		VariantContextDirectedBreakpoint result = (VariantContextDirectedBreakpoint)go(L(
@@ -62,6 +65,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 	public void should_merge_supporting_evidence() {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());
 		builder
+			.phredScore(1)
 			.loc("polyA", 1, 1)
 			.alleles("A", "A[polyA:10[");
 		VariantContextDirectedBreakpoint result = (VariantContextDirectedBreakpoint)go(L(
@@ -74,6 +78,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 	public void should_incorporate_sc_margin_when_adding_evidence() {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());
 		builder
+			.phredScore(1)
 			.loc("polyA", 2, 2)
 			.alleles("A", "A[polyA:10[");
 		VariantContextDirectedBreakpoint result = (VariantContextDirectedBreakpoint)go(L(
@@ -129,6 +134,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 	public void should_not_add_breakend_nonsupporting_evidence() {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());
 		builder
+			.phredScore(1)
 			.loc("polyA", 1, 1)
 			.alleles("A", "A[polyA:10[");
 		VariantContextDirectedBreakpoint result = (VariantContextDirectedBreakpoint)go(L(
@@ -141,6 +147,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 	public void should_not_add_breakpoint_nonsupporting_evidence() {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());
 		builder
+			.phredScore(1)
 			.loc("polyA", 1, 1)
 			.alleles("A", "A[polyA:10[");
 		VariantContextDirectedBreakpoint result = (VariantContextDirectedBreakpoint)go(L(
