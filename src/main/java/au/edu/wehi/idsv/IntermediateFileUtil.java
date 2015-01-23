@@ -3,6 +3,9 @@ package au.edu.wehi.idsv;
 import htsjdk.samtools.util.Log;
 
 import java.io.File;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Utility helper class for intermediate files
@@ -35,5 +38,41 @@ public abstract class IntermediateFileUtil {
 	 */
 	public static  boolean checkIntermediate(File file) {
 		return checkIntermediate(file, null);
+	}
+	public static boolean checkIntermediate(List<File> fileList, List<File> sourceList) {
+		assert(fileList.size() == sourceList.size());
+		Map<String, File[]> dirList = new HashMap<String, File[]>();
+		for (int i = 0; i < fileList.size(); i++) {
+			File file = fileList.get(i);
+			File source = sourceList.get(i);
+			if (!checkIntermediateCached(dirList, file, source)) {
+				return false;
+			}
+		}
+		return true;
+	}
+	private static boolean checkIntermediateCached(Map<String, File[]> dirList, File file, File source) {
+		file = cacheLookup(dirList, file); 
+		if (file == null) return false;
+		if (source != null) {
+			source = cacheLookup(dirList, source);
+			if (source != null && source.lastModified() > file.lastModified()) return false;
+		}
+		return true;
+	}
+	private static File cacheLookup(Map<String, File[]> dirList, File file) {
+		File dir = file.getParentFile();
+		String dirKey = dir.getAbsolutePath();
+		File[] dirContents = dirList.get(dirKey);
+		if (dirContents == null) {
+			dirContents = dir.listFiles();
+			dirList.put(dirKey, dirContents);
+		}
+		for (File f : dirContents) {
+			if (f.getName().equals(file.getName())) {
+				return f;
+			}
+		}
+		return null;
 	}
 }

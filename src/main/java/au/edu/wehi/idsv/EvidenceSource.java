@@ -4,6 +4,8 @@ import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMSequenceRecord;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public abstract class EvidenceSource {
 	public abstract int getMaxConcordantFragmentSize();
@@ -58,26 +60,35 @@ public abstract class EvidenceSource {
 	 */
 	public boolean isRealignmentComplete() {
 		FileSystemContext fsc = processContext.getFileSystemContext();
+		List<File> bamList = new ArrayList<File>();
+		List<File> fastqList = new ArrayList<File>();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				if (!isRealignmentComplete(fsc.getRealignmentBamForChr(input, seq.getSequenceName()), fsc.getRealignmentFastqForChr(input, seq.getSequenceName()))) {
-					return false;
-				}
+				bamList.add(fsc.getRealignmentBamForChr(input, seq.getSequenceName()));
+				fastqList.add(fsc.getRealignmentFastqForChr(input, seq.getSequenceName()));
 			}
 		} else {
-			if (!isRealignmentComplete(fsc.getRealignmentBam(input), fsc.getRealignmentFastq(input))) {
-				return false;
-			}
+			bamList.add(fsc.getRealignmentBam(input));
+			fastqList.add(fsc.getRealignmentFastq(input));
 		}
-		return true;
+		return isRealignmentComplete(bamList, fastqList);
 	}
-	private boolean isRealignmentComplete(File bam, File fastq) {
-		if (fastq.exists() && fastq.length() == 0) {
-			if (!bam.exists() || bam.lastModified() < fastq.lastModified()) {
-				writeEmptyBAM(bam);
+	private boolean isRealignmentComplete(List<File> bamList, List<File> fastqList) {
+		assert(bamList.size() == fastqList.size());
+		boolean complete = IntermediateFileUtil.checkIntermediate(bamList, fastqList);
+		if (!complete) {
+			// mock up empty files for the chromosomes we have no reads to realign
+			for (int i = 0; i < bamList.size(); i++) {
+				File bam = bamList.get(i);
+				File fastq = fastqList.get(i);
+				if (fastq.exists() && fastq.length() == 0) {
+					if (!bam.exists() || bam.lastModified() < fastq.lastModified()) {
+						writeEmptyBAM(bam);
+					}
+				}
 			}
 		}
-		return IntermediateFileUtil.checkIntermediate(bam, fastq);
+		return complete; 
 	}
 	private void writeEmptyBAM(File sam) {
 		SAMFileWriter w = processContext.getSamFileWriterFactory(false).makeSAMOrBAMWriter(processContext.getBasicSamHeader(), false, sam);

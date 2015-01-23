@@ -57,6 +57,7 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
         this.readerRunnable = new ReaderRunnable();
         this.reader = new Thread(readerRunnable, description == null ? getThreadNamePrefix() + threadsCreated.incrementAndGet() : description);
         this.reader.setDaemon(true);
+        log.debug("Starting thread " + this.reader.getName());
         this.reader.start();
 	}
 	protected String getThreadNamePrefix() {
