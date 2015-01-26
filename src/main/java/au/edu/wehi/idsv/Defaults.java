@@ -53,6 +53,7 @@ public class Defaults {
 	public static final float MAX_SUBGRAPH_WIDTH_IN_FRAGMENT_SIZE_MULTIPLES;
 	public static final int ASYNC_READAHEAD_BUFFER_SIZE;
 	public static final int ASYNC_READAHEAD_BUFFERS;
+	public static final boolean IGNORE_TIMESTAMPS;
 	static {
 		VISUALISE_ALL = Boolean.valueOf(System.getProperty("gridss.visualisation.saveall", "false"));
 		VISUALISE_TIMEOUTS = Boolean.valueOf(System.getProperty("gridss.visualisation.savetimeouts", "false"));
@@ -60,7 +61,7 @@ public class Defaults {
 		//WRITE_FILTERED_EVIDENCE = Boolean.valueOf(System.getProperty("gridss.writeFilteredEvidence", "false"));
 		WRITE_FILTERED_CALLS = Boolean.valueOf(System.getProperty("gridss.writeFilteredCalls", "false"));
 		WRITE_FILTERED_ASSEMBLIES = Boolean.valueOf(System.getProperty("gridss.writeFilteredAssemblies", "false"));
-		PERFORM_SORTED_SANITY_CHECKS = Boolean.valueOf(System.getProperty("gridss.expensiveAsserts.sorted", "false"));
+		PERFORM_SORTED_SANITY_CHECKS = Boolean.valueOf(System.getProperty("gridss.expensiveAsserts.sorted", "true"));
 		PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS = Boolean.valueOf(System.getProperty("gridss.expensiveAsserts.debruijn", "false"));
 		PERFORM_EXPENSIVE_CLIQUE_SANITY_CHECKS = Boolean.valueOf(System.getProperty("gridss.expensiveAsserts.clique", "false"));
 		COLLAPSE_PATH_MAX_TRAVERSAL = Integer.valueOf(System.getProperty("gridss.debruijn.maxCollapseTraversal", "2097152"));
@@ -72,5 +73,6 @@ public class Defaults {
 		MAX_SUBGRAPH_WIDTH_IN_FRAGMENT_SIZE_MULTIPLES = Float.valueOf(System.getProperty("gridss.debruijn.maxSubgraphFragmentWidth", "32"));
 		ASYNC_READAHEAD_BUFFERS = Integer.valueOf(System.getProperty("gridss.readahead.buffers", "32"));
 		ASYNC_READAHEAD_BUFFER_SIZE = Integer.valueOf(System.getProperty("gridss.readahead.buffersize", "128"));
+		IGNORE_TIMESTAMPS = Boolean.valueOf(System.getProperty("gridss.ignoreTimestamps", "false"));
 	}
 }

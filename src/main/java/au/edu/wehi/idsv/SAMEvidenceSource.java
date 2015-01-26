@@ -10,6 +10,7 @@ import htsjdk.samtools.util.Log;
 
 import java.io.Closeable;
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
@@ -102,42 +103,33 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	public boolean isComplete(ProcessStep step) {
 		FileSystemContext fsc = getContext().getFileSystemContext();
+		List<File> target = new ArrayList<File>();
+		List<File> source = new ArrayList<File>();
 		boolean done = true;
 		switch (step) {
 			case CALCULATE_METRICS:
-				done &= IntermediateFileUtil.checkIntermediate(fsc.getInsertSizeMetrics(input), input);
-				if (!done) return false;
-				done &= IntermediateFileUtil.checkIntermediate(fsc.getIdsvMetrics(input), input);
-				if (!done) return false;
-				done &= IntermediateFileUtil.checkIntermediate(fsc.getSoftClipMetrics(input), input);
-				if (!done) return false;
+				source.add(input); target.add(fsc.getInsertSizeMetrics(input));
+				source.add(input); target.add(fsc.getIdsvMetrics(input));
+				source.add(input); target.add(fsc.getSoftClipMetrics(input));
 				break;
 			case EXTRACT_SOFT_CLIPS:
 				if (getContext().shouldProcessPerChromosome()) {
 					for (SAMSequenceRecord seq : getContext().getReference().getSequenceDictionary().getSequences()) {
-						done &= IntermediateFileUtil.checkIntermediate(fsc.getSoftClipBamForChr(input, seq.getSequenceName()), input);
-						if (!done) return false;
+						source.add(input); target.add(fsc.getSoftClipBamForChr(input, seq.getSequenceName()));
 					}
 				} else {
-					done &= IntermediateFileUtil.checkIntermediate(fsc.getSoftClipBam(input), input);
-					if (!done) return false;
+					source.add(input); target.add(fsc.getSoftClipBam(input));
 				}
 				break;
 			case EXTRACT_READ_PAIRS:
 				if (getContext().shouldProcessPerChromosome()) {
 					for (SAMSequenceRecord seq : getContext().getReference().getSequenceDictionary().getSequences()) {
-						done &= IntermediateFileUtil.checkIntermediate(fsc.getReadPairBamForChr(input, seq.getSequenceName()), input);
-						if (!done) return false;
-						//done &= IntermediateFileUtil.checkIntermediate(fsc.getMateBamUnsortedForChr(input, seq.getSequenceName()), input);
-						done &= IntermediateFileUtil.checkIntermediate(fsc.getMateBamForChr(input, seq.getSequenceName()), input);
-						if (!done) return false;
+						source.add(input); target.add(fsc.getReadPairBamForChr(input, seq.getSequenceName()));
+						source.add(input); target.add(fsc.getMateBamForChr(input, seq.getSequenceName()));
 					}
 				} else {
-					done &= IntermediateFileUtil.checkIntermediate(fsc.getReadPairBam(input), input);
-					if (!done) return false;
-					//done &= IntermediateFileUtil.checkIntermediate(fsc.getMateBamUnsorted(input), input);
-					done &= IntermediateFileUtil.checkIntermediate(fsc.getMateBam(input), input);
-					if (!done) return false;
+					source.add(input); target.add(fsc.getReadPairBam(input));
+					source.add(input); target.add(fsc.getMateBam(input));
 				}
 				break;
 			case REALIGN_SOFT_CLIPS:
@@ -150,7 +142,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 				done = false;
 				break;
 		}
-		return done;
+		return done && IntermediateFileUtil.checkIntermediate(target, source);
 	}
 	protected IdsvSamFileMetrics getMetrics() {
 		if (metrics == null) {

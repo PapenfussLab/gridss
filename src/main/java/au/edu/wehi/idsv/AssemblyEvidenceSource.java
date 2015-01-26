@@ -14,6 +14,7 @@ import htsjdk.samtools.util.ProgressLogger;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
@@ -194,33 +195,32 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		return sortedIt;
 	}
 	private boolean isProcessingComplete() {
-		boolean done = true;
+		List<File> target = new ArrayList<File>();
+		List<File> source = new ArrayList<File>();
 		if (getContext().shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : getContext().getReference().getSequenceDictionary().getSequences()) {
-				done &= IntermediateFileUtil.checkIntermediate(fsc.getAssemblyRawBamForChr(input, seq.getSequenceName()));
-				if (!done) return false;
-				done &= IntermediateFileUtil.checkIntermediate(fsc.getRealignmentFastqForChr(input, seq.getSequenceName()));
-				if (!done) return false;
+				source.add(null); target.add(fsc.getAssemblyRawBamForChr(input, seq.getSequenceName()));
+				source.add(null); target.add(fsc.getRealignmentFastqForChr(input, seq.getSequenceName()));
 			}
 		} else {
-			done &= IntermediateFileUtil.checkIntermediate(fsc.getAssemblyRawBam(input));
-			if (!done) return false;
-			done &= IntermediateFileUtil.checkIntermediate(fsc.getRealignmentFastq(input));
-			if (!done) return false;
+			source.add(null); target.add(fsc.getAssemblyRawBam(input));
+			source.add(null); target.add(fsc.getRealignmentFastq(input));
 		}
-		return done;
+		return IntermediateFileUtil.checkIntermediate(target, source);
 	}
 	private boolean isReadPairingComplete() {
+		List<File> target = new ArrayList<File>();
+		List<File> source = new ArrayList<File>();
 		if (getContext().shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : getContext().getReference().getSequenceDictionary().getSequences()) {
-				if (!IntermediateFileUtil.checkIntermediate(fsc.getAssemblyForChr(input, seq.getSequenceName()))) return false;
-				if (!IntermediateFileUtil.checkIntermediate(fsc.getAssemblyMateForChr(input, seq.getSequenceName()))) return false;
+				source.add(null); target.add(fsc.getAssemblyForChr(input, seq.getSequenceName()));
+				source.add(null); target.add(fsc.getAssemblyMateForChr(input, seq.getSequenceName()));
 			}
 		} else {
-			if (!IntermediateFileUtil.checkIntermediate(fsc.getAssembly(input))) return false;
-			if (!IntermediateFileUtil.checkIntermediate(fsc.getAssemblyMate(input))) return false;
+			source.add(null); target.add(fsc.getAssembly(input));
+			source.add(null); target.add(fsc.getAssemblyMate(input));
 		}
-		return true;
+		return IntermediateFileUtil.checkIntermediate(target, source);
 	}
 	protected void process(ExecutorService threadpool) {
 		if (isProcessingComplete()) return;

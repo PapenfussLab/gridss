@@ -19,7 +19,7 @@ public class Manual extends TestHelper {
 	/**
 	 * Test our iterators are behaving correctly
 	 */
-	@Test
+	//@Test
 	public void debug778sorting() {
 		ProcessingContext pc = new ProcessingContext(
 			new FileSystemContext(new File("W:\\778\\idsv"), new File("W:\\778\\idsv"), 500000),

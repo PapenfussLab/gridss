@@ -8,12 +8,14 @@ import htsjdk.samtools.util.Log;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.FileSystemContext;
+import au.edu.wehi.idsv.IntermediateFileUtil;
 import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.RealignedRemoteSoftClipEvidence;
@@ -36,18 +38,19 @@ public class SortRealignedSoftClips extends DataTransformStep {
 		this.source = source;
 	}
 	public synchronized boolean isComplete() {
+		List<File> targetFile = new ArrayList<File>();
+		List<File> sourceFile = new ArrayList<File>();
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		boolean done = true;
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				done &= fsc.getSoftClipRemoteBamForChr(source.getSourceFile(), seq.getSequenceName()).exists();
-				done &= fsc.getRealignmentRemoteBamForChr(source.getSourceFile(), seq.getSequenceName()).exists();
+				sourceFile.add(null); targetFile.add(fsc.getSoftClipRemoteBamForChr(source.getSourceFile(), seq.getSequenceName()));
+				sourceFile.add(null); targetFile.add(fsc.getRealignmentRemoteBamForChr(source.getSourceFile(), seq.getSequenceName()));
 			}
 		} else {
-			done &= fsc.getSoftClipRemoteBam(source.getSourceFile()).exists();
-			done &= fsc.getRealignmentRemoteBam(source.getSourceFile()).exists();
+			sourceFile.add(null); targetFile.add(fsc.getSoftClipRemoteBam(source.getSourceFile()));
+			sourceFile.add(null); targetFile.add(fsc.getRealignmentRemoteBam(source.getSourceFile()));
 		}
-		return done;
+		return IntermediateFileUtil.checkIntermediate(targetFile, sourceFile);
 	}
 	@Override
 	public synchronized void process(EnumSet<ProcessStep> steps) {

@@ -25,7 +25,7 @@ public abstract class IntermediateFileUtil {
 			//log.debug("Missing intermediate ", file);
 			return false;
 		}
-		if (source != null && source.exists() && file.lastModified() < source.lastModified()) {
+		if (!Defaults.IGNORE_TIMESTAMPS && source != null && source.exists() && file.lastModified() < source.lastModified()) {
 			log.info(source, " has a more recent timestamp than ", file, ". Considering ", file, " out of date.");
 			return false;
 		}
@@ -36,7 +36,7 @@ public abstract class IntermediateFileUtil {
 	 * @param file file to check
 	 * @return true if intermediate file appears to be valid
 	 */
-	public static  boolean checkIntermediate(File file) {
+	public static boolean checkIntermediate(File file) {
 		return checkIntermediate(file, null);
 	}
 	public static boolean checkIntermediate(List<File> fileList, List<File> sourceList) {
@@ -56,7 +56,10 @@ public abstract class IntermediateFileUtil {
 		if (file == null) return false;
 		if (source != null) {
 			source = cacheLookup(dirList, source);
-			if (source != null && source.lastModified() > file.lastModified()) return false;
+			if (!Defaults.IGNORE_TIMESTAMPS && source != null && source.exists() && file.lastModified() < source.lastModified()) {
+				log.info(source, " has a more recent timestamp than ", file, ". Considering ", file, " out of date.");
+				return false;
+			}
 		}
 		return true;
 	}
