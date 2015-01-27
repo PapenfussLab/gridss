@@ -2,11 +2,18 @@ package au.edu.wehi.idsv;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 public class FileSystemContext {
 	private final File tempDir;
 	private final File workingDir;
 	private final int maxRecordsInRam;
+	/**
+	 * List of directories already created/known to exist.
+	 * Used as a performance optimisation to reduce expensive samba I/O operations
+	 */
+	private Set<File> createdDirectories = new HashSet<File>();
 	public FileSystemContext(
 			File tempDir,
 			File workingDir,
@@ -92,11 +99,14 @@ public class FileSystemContext {
 	 * @param file file
 	 * @return intermediate directory
 	 */
-	public File getIntermediateDirectory(File file) {
+	public synchronized File getIntermediateDirectory(File file) {
 		File input = getSource(file);
 		File workingDir = new File(getWorkingDirectory(file), input.getName() + INTERMEDIATE_DIR_SUFFIX);
-		if (!workingDir.exists()) {
-			workingDir.mkdir();
+		if (!createdDirectories.contains(workingDir)) {
+			if (!workingDir.exists()) {
+				workingDir.mkdir();
+			}
+			createdDirectories.add(workingDir);
 		}
 		return workingDir;
 	}
