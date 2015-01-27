@@ -1,10 +1,10 @@
 package au.edu.wehi.idsv.validation;
 
-import gnu.trove.set.hash.THashSet;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 
+import java.util.HashMap;
 import java.util.Iterator;
 
 import au.edu.wehi.idsv.DirectedBreakpoint;
@@ -34,7 +34,7 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 	private static final Log log = Log.getInstance(PairedEvidenceTracker.class);
 	private final Iterator<T> it;
 	private boolean closed = false;
-	private THashSet<String> unpaired = new THashSet<String>();
+	private HashMap<String, DirectedEvidence> unpaired = new HashMap<String, DirectedEvidence>();
 
 	public PairedEvidenceTracker(Iterator<T> it) {
 		this.it = it;
@@ -50,6 +50,7 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 
 	@Override
 	protected T computeNext() {
+		if (closed) return endOfData();
 		if (!it.hasNext()) {
 			assert(allMatched());
 			return endOfData();
@@ -63,16 +64,16 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 		if (evidence instanceof DirectedBreakpoint) {
 			String evidenceId = evidence.getEvidenceID();
 			String partnerId = getPartnerEvidenceID((DirectedBreakpoint)evidence, evidenceId);
-			if (unpaired.contains(evidenceId)) {
+			if (unpaired.containsKey(evidenceId)) {
 				String msg = String.format("Encountered %s multiple times.", evidenceId);
 				log.error(msg);
 				return false;
 			}
-			if (unpaired.contains(partnerId)) {
+			if (unpaired.containsKey(partnerId)) {
 				// other side already included
 				unpaired.remove(partnerId);
 			} else {
-				unpaired.add(evidenceId);
+				unpaired.put(evidenceId, evidence);
 			}
 		}
 		return true;
@@ -83,7 +84,7 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 			String msg = String.format("Missing %d evidence pairings: ", unpaired.size()); 
 			StringBuilder sb = new StringBuilder();
 			sb.append(msg);
-			for (String s : unpaired) {
+			for (String s : unpaired.keySet()) {
 				sb.append(s);
 				sb.append(", ");
 			}
@@ -117,9 +118,9 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 	}
 	private static String swapSuffix(String evidenceId, String suffixA, String suffixB) {
 		if (evidenceId.endsWith(suffixA)) {
-			return evidenceId.substring(0, evidenceId.length() - 1 - suffixA.length()) + suffixB;
+			return evidenceId.substring(0, evidenceId.length() - suffixA.length()) + suffixB;
 		} else if (evidenceId.endsWith(suffixB)) {
-			return evidenceId.substring(0, evidenceId.length() - 1 - suffixB.length()) + suffixA;
+			return evidenceId.substring(0, evidenceId.length() - suffixB.length()) + suffixA;
 		}
 		return null;
 	}

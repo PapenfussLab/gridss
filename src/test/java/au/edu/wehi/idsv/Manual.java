@@ -47,16 +47,15 @@ public class Manual extends TestHelper {
 			samEvidence.add(ses);
 		}
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, samEvidence, new File("W:\778\\idsv\\778.vcf.idsv.working"));
-		Iterator<SAMRecordAssemblyEvidence> it = aes.iterator(true, true);
-		while (it.hasNext()) {
-			it.next();
-		}
+		//Iterator<SAMRecordAssemblyEvidence> it = aes.iterator(true, true);
+		//while (it.hasNext()) {
+		//	it.next();
+		//}
 		EP e = new EP(pc, new File("W:\778\\idsv\\778.vcf"), samEvidence, aes);
 		Iterator<DirectedEvidence> allIt = e.getAllEvidence();
 		while (allIt.hasNext()) {
 			allIt.next();
 		}
-		
 	}
 	private static class EP extends EvidenceProcessorBase {
 		public EP(ProcessingContext context, File output, List<SAMEvidenceSource> samEvidence, AssemblyEvidenceSource assemblyEvidence) {
