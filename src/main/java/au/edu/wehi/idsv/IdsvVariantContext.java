@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.variant.variantcontext.VariantContext;
 
 import com.google.common.collect.ComparisonChain;
@@ -72,4 +73,16 @@ public class IdsvVariantContext extends VariantContext {
 			        .result();
 		  }
 	};
+	public static Ordering<VariantContext> VariantContextByLocationStart(final SAMSequenceDictionary dictionary) {
+		return new Ordering<VariantContext>() {
+			public int compare(VariantContext o1, VariantContext o2) {
+				return ComparisonChain.start()
+				        .compare(dictionary.getSequenceIndex(o1.getChr()), dictionary.getSequenceIndex(o2.getChr()))
+				        .compare(o1.getEnd(), o2.getEnd())
+				        .compare(o1.getStart(), o2.getStart())
+				        .compare(o1.getID(), o2.getID())
+				        .result();
+			  }
+		};
+	}
 }

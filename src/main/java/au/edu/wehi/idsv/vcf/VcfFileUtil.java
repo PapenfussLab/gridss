@@ -5,7 +5,6 @@ import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SortingCollection;
 import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.VariantContextComparator;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFFileReader;
 import htsjdk.variant.vcf.VCFHeader;
@@ -17,15 +16,16 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.concurrent.Callable;
 
-import com.google.common.collect.ImmutableList;
-
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.FileSystemContext;
+import au.edu.wehi.idsv.IdsvVariantContext;
 import au.edu.wehi.idsv.IntermediateFileUtil;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.validation.OrderAssertingIterator;
+
+import com.google.common.collect.ImmutableList;
 
 public class VcfFileUtil {
 	private static final Log log = Log.getInstance(VcfFileUtil.class);
@@ -63,11 +63,11 @@ public class VcfFileUtil {
 		private final File output;
 		private final Comparator<VariantContext> sortComparator;
 		private final boolean indexed;
+		public SortCallable(ProcessingContext processContext, File input, File output) {
+			this(processContext, input, output, IdsvVariantContext.VariantContextByLocationStart(processContext.getDictionary()));
+		}
 		public SortCallable(ProcessingContext processContext, File input, File output, Comparator<VariantContext> sortComparator) {
 			this(processContext, input, output, sortComparator, false);
-		}
-		public SortCallable(ProcessingContext processContext, File input, File output) {
-			this(processContext, input, output, new VariantContextComparator(processContext.getDictionary()), false/*true*/);
 		}
 		private SortCallable(ProcessingContext processContext, File input, File output, Comparator<VariantContext> sortComparator, boolean writeIndex) {
 			this.processContext = processContext;
