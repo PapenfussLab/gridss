@@ -109,7 +109,7 @@ public class VcfFileUtil {
 				collection.doneAdding();
 				writer = processContext.getVariantContextWriter(FileSystemContext.getWorkingFileFor(output), indexed);
 		    	wit = collection.iterator();
-		    	if (Defaults.PERFORM_SORTED_SANITY_CHECKS) {
+		    	if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
 					wit = new AutoClosingIterator<VariantContext>(new OrderAssertingIterator<VariantContext>(wit, sortComparator), ImmutableList.<Closeable>of(wit));
 				}
 				while (wit.hasNext()) {

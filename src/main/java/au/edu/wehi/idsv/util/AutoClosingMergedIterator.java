@@ -36,7 +36,7 @@ public class AutoClosingMergedIterator<T> implements Closeable, CloseableIterato
 			@Override
 			public AutoClosingIterator<T> apply(Iterator<? extends T> input) {
 				AutoClosingIterator<T> it = new AutoClosingIterator<T>(input);
-				if (Defaults.PERFORM_SORTED_SANITY_CHECKS) {
+				if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
 					it = new AutoClosingIterator<T>(new OrderAssertingIterator<T>(it, comparator), ImmutableList.<Closeable>of(it));
 				}
 				return it;

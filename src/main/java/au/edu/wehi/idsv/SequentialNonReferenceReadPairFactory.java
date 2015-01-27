@@ -33,6 +33,9 @@ public class SequentialNonReferenceReadPairFactory extends SequentialSAMRecordFa
 	 */
 	private boolean sanityCheckEvidencePairing(NonReferenceReadPair rpLocal, SAMRecord record, SAMRecord mate, SAMEvidenceSource source) {
 		NonReferenceReadPair rpRemote = NonReferenceReadPair.create(mate, record, source);
+		if (rpLocal instanceof DiscordantReadPair) {
+			assert(((BreakpointSummary)rpRemote.getBreakendSummary()).remoteBreakpoint().equals(rpLocal.getBreakendSummary()));
+		}
 		return (rpLocal instanceof DiscordantReadPair && rpRemote instanceof DiscordantReadPair)
 				|| (rpLocal == null && rpRemote == null)
 				|| (rpLocal instanceof UnmappedMateReadPair && rpRemote == null)

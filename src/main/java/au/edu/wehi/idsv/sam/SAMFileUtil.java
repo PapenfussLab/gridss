@@ -128,7 +128,7 @@ public class SAMFileUtil {
 				writer = processContext.getSamFileWriterFactory(sortOrder == SortOrder.coordinate).makeSAMOrBAMWriter(header, true, FileSystemContext.getWorkingFileFor(output));
 				writer.setProgressLogger(new ProgressLogger(log));
 		    	wit = collection.iterator();
-		    	if (Defaults.PERFORM_SORTED_SANITY_CHECKS) {
+		    	if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
 					wit = new AutoClosingIterator<SAMRecord>(new OrderAssertingIterator<SAMRecord>(wit, sortComparator), ImmutableList.<Closeable>of(wit));
 				}
 				while (wit.hasNext()) {

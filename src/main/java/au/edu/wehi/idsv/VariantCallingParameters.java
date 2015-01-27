@@ -30,6 +30,7 @@ public class VariantCallingParameters {
 	 * This margin is used to mitigate alignment errors around breakend coordinates
 	 */
 	public int breakendMargin = 3;
+	public boolean writeFilteredCalls = Defaults.WRITE_FILTERED_CALLS;
 	public BreakendSummary withMargin(ProcessingContext context, BreakendSummary bp) {
 		return bp.expandBounds(breakendMargin, context.getDictionary());
 	}

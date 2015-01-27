@@ -65,6 +65,7 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	public static boolean meetsAnchorCriteria(SAMEvidenceSource source, SAMRecord read) {
 		return read.getReadPairedFlag()
 				&& !read.getReadUnmappedFlag()
+				&& !read.getReadFailsVendorQualityCheckFlag()
 				&& read.getMappingQuality() >= source.getContext().getReadPairParameters().minMapq
 				&& !SAMRecordUtil.estimatedReadsOverlap(read, PairOrientation.FR)
 				&& !source.getReadPairConcordanceCalculator().isConcordant(read);
@@ -72,11 +73,14 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	public static boolean meetsRemoteCriteria(SAMEvidenceSource source, SAMRecord read) {
 		return read.getReadPairedFlag()
 				&& !read.getMateUnmappedFlag() // other side has to be an anchor
+				&& !read.getReadFailsVendorQualityCheckFlag()
 				&& (meetsDPRemoteCriteria(source, read) || meetsOEARemoteCriteria(source, read))
 				&& !source.getContext().getReadPairParameters().adapters.containsAdapter(read);
 	}
 	private static boolean meetsDPRemoteCriteria(SAMEvidenceSource source, SAMRecord read) {
-		return !read.getReadUnmappedFlag()
+		return read.getReadPairedFlag()
+			&& !read.getReadUnmappedFlag()
+			&& !read.getReadFailsVendorQualityCheckFlag()
 			&& !SAMRecordUtil.estimatedReadsOverlap(read, PairOrientation.FR)
 			&& !source.getReadPairConcordanceCalculator().isConcordant(read);
 	}

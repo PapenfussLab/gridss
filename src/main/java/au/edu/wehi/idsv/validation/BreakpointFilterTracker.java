@@ -27,13 +27,14 @@ import com.google.common.collect.TreeMultimap;
  *
  */
 public class BreakpointFilterTracker<T extends VariantContextDirectedEvidence> extends AbstractIterator<T> implements CloseableIterator<T> {
-	private static final Log log = Log.getInstance(PairedEvidenceTracker.class);
+	private static final Log log = Log.getInstance(BreakpointFilterTracker.class);
 	private final Iterator<T> it;
+	private final boolean doAssert;
+	private final Multimap<String, String> filters = TreeMultimap.create();
 	private boolean closed = false;
-	private Multimap<String, String> filters = TreeMultimap.create();
-
-	public BreakpointFilterTracker(Iterator<T> it) {
+	public BreakpointFilterTracker(Iterator<T> it, boolean doAssert) {
 		this.it = it;
+		this.doAssert = doAssert;
 	}
 
 	@Override
@@ -61,7 +62,7 @@ public class BreakpointFilterTracker<T extends VariantContextDirectedEvidence> e
 				if (currentFilters.size() != storedFiltered.size() || !currentFilters.containsAll(storedFiltered)) {
 					String msg = "Breakend filter mismatch for " + eventid + " " + toString(storedFiltered) + " vs " + toString(currentFilters); 
 					log.error(msg);
-					return false;
+					return !doAssert;
 				}
 				filters.removeAll(eventid);
 			} else {

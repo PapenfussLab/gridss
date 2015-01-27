@@ -85,7 +85,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		} else {
 			it = singleFileIterator(includeRemote, includeFiltered);
 		}
-		if (Defaults.PERFORM_SORTED_SANITY_CHECKS && includeRemote) {
+		if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS && includeRemote) {
 			it = new PairedEvidenceTracker<SAMRecordAssemblyEvidence>(it);
 		}
 		return it;
@@ -147,7 +147,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				getContext(),
 				getAssemblyWindowSize(),
 				filteredIt), ImmutableList.<Closeable>of(it, mateIt, evidenceIt));
-		if (Defaults.PERFORM_SORTED_SANITY_CHECKS) {
+		if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
 			sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(new OrderAssertingIterator<SAMRecordAssemblyEvidence>(sortedIt, DirectedEvidenceOrder.ByNatural), ImmutableList.<Closeable>of(sortedIt));
 		}
 		return sortedIt;
@@ -189,7 +189,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				getContext(),
 				getAssemblyWindowSize(),
 				filteredIt), toClose);
-		if (Defaults.PERFORM_SORTED_SANITY_CHECKS) {
+		if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
 			sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(new OrderAssertingIterator<SAMRecordAssemblyEvidence>(sortedIt, DirectedEvidenceOrder.ByNatural), ImmutableList.<Closeable>of(sortedIt));
 		}
 		return sortedIt;

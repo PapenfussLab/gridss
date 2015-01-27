@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNotEquals;
 import htsjdk.samtools.SAMRecord;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.Test;
@@ -155,5 +156,54 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 			), (VariantContextDirectedEvidence)builder.make());
 		assertEquals(0, result.getBreakpointEvidenceCountSoftClip(null));
 		assertEquals(0, result.getBreakendEvidenceCountSoftClip(null));
+	}
+	@Test
+	public void should_allocate_in_order() {
+		int fragSize = 8;
+		List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
+		List<VariantContextDirectedBreakpoint> calls = new ArrayList<VariantContextDirectedBreakpoint>();
+		ProcessingContext pc = getContext();
+		MockSAMEvidenceSource ses = SES(fragSize, fragSize);
+		int testSize = 64;
+		for (int i = 1; i <= testSize; i++) {
+			for (int j = 1; j <= testSize; j++) {
+				IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(pc);
+				builder
+					.phredScore(1)
+					.breakpoint(new BreakpointSummary(0, FWD, i, i, 1, BWD, j, j), "")
+					.attribute("EVENT", String.format("%d-%d", i, j));
+				calls.add((VariantContextDirectedBreakpoint)builder.make());
+				// And the matching reverse
+				IdsvVariantContextBuilder builder2 = new IdsvVariantContextBuilder(pc);
+				builder2
+					.phredScore(1)
+					.breakpoint(new BreakpointSummary(1, BWD, j, j, 0, FWD, i, i), "")
+					.attribute("EVENT", String.format("%d-%d", i, j));
+				calls.add((VariantContextDirectedBreakpoint)builder2.make());
+			}
+		}
+		for (int i = 1; i <= testSize; i++) {
+			for (int j = 1; j <= testSize; j++) {
+				SAMRecord[] dp = DP(0, i, "1M", true, 1, j, "1M", false);
+				evidence.add(NonReferenceReadPair.create(dp[0], dp[1], ses));
+				evidence.add(NonReferenceReadPair.create(dp[1], dp[0], ses));
+			}
+		}
+		Collections.sort(calls, DirectedEvidenceOrder.ByNatural);
+		Collections.sort(evidence, DirectedEvidenceOrder.ByNatural);
+		ArrayList<VariantContextDirectedEvidence> result = Lists.newArrayList(new SequentialEvidenceAnnotator(pc, calls.iterator(), evidence.iterator(), fragSize, true, null));
+		assertEquals(calls.size(), result.size());
+		
+		double expectedEvidence = 0;
+		for (DirectedEvidence e : evidence) {
+			DiscordantReadPair bp = (DiscordantReadPair) e;
+			expectedEvidence += bp.getBreakpointQual();
+		}
+		double annotatedEvidence = 0;
+		for (IdsvVariantContext e : result) {
+			annotatedEvidence += e.getPhredScaledQual();
+		}
+		// each piece of evidence should be assigned to a single breakpoint so totals should match
+		assertEquals(expectedEvidence, annotatedEvidence, DELTA);
 	}
 }

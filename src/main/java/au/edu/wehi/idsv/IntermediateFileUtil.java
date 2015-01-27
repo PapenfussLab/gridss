@@ -64,8 +64,14 @@ public abstract class IntermediateFileUtil {
 		return true;
 	}
 	private static File cacheLookup(Map<String, File[]> dirList, File file) {
+		file = file.getAbsoluteFile();
 		File dir = file.getParentFile();
-		String dirKey = dir.getAbsolutePath();
+		if (dir == null) {
+			// bypass cache
+			log.debug("Not caching " + file.toString());
+			return file;
+		}
+		String dirKey = dir.getPath();
 		File[] dirContents = dirList.get(dirKey);
 		if (dirContents == null) {
 			dirContents = dir.listFiles();

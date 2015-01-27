@@ -87,6 +87,7 @@ public abstract class EvidenceSource {
 					}
 				}
 			}
+			complete = IntermediateFileUtil.checkIntermediate(bamList, fastqList);
 		}
 		return complete; 
 	}

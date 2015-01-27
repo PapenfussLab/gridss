@@ -167,7 +167,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		} else {
 			CloseableIterator<DirectedEvidence> it = singleFileIterator(includeReadPair, includeSoftClip, includeSoftClipRemote);
 			// can only check pairing if we are iterating over the entire record set
-			if (Defaults.PERFORM_SORTED_SANITY_CHECKS) {
+			if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
 				if (includeSoftClip == includeSoftClipRemote) {
 					it = new AutoClosingIterator<DirectedEvidence>(new PairedEvidenceTracker<DirectedEvidence>(it), ImmutableList.<Closeable>of(it));
 				}
@@ -279,7 +279,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			itList.add((CloseableIterator<DirectedEvidence>)(Object)remoteScIt);
 		}
 		CloseableIterator<DirectedEvidence> mergedIt = new AutoClosingMergedIterator<DirectedEvidence>(itList, DirectedEvidenceOrder.ByNatural);
-		if (Defaults.PERFORM_SORTED_SANITY_CHECKS) {
+		if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
 			mergedIt = new AutoClosingIterator<DirectedEvidence>(new OrderAssertingIterator<DirectedEvidence>(mergedIt, DirectedEvidenceOrder.ByNatural), ImmutableList.<Closeable>of(mergedIt));
 		}
 		return new AsyncBufferedIterator<DirectedEvidence>(mergedIt, input.getName() + "-" + chr);

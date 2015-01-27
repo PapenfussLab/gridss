@@ -35,6 +35,13 @@ public class BreakpointSummaryTest extends TestHelper {
 		assertEquals(6, loc.end2);
 	}
 	@Test
+	public void overlaps_should_consider_breakpoint_remote_location_when_downcast() {
+		BreakendSummary be = new BreakpointSummary(0, FWD, 2, 3, 1, FWD, 2, 3);
+		assertTrue(be.overlaps(new BreakendSummary(0, FWD, 3, 3)));
+		assertFalse(be.overlaps(new BreakpointSummary(0, FWD, 3, 3, 0, FWD, 1, 1)));
+		assertTrue(be.overlaps(new BreakpointSummary(0, FWD, 3, 3, 1, FWD, 2, 2)));
+	}
+	@Test
 	public void overlaps_should_consider_breakpoint_remote_location() {
 		BreakpointSummary bp = new BreakpointSummary(0, FWD, 2, 3, 1, FWD, 2, 3); 
 		for (BreakendSummary local : new BreakendSummary[] { 

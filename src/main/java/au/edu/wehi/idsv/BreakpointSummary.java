@@ -71,9 +71,17 @@ public class BreakpointSummary extends BreakendSummary {
 	 */
 	@Override
 	public boolean overlaps(BreakendSummary loc) {
-		return super.overlaps(loc) &&
-				(!(loc instanceof BreakpointSummary) ||
-						remoteBreakend().breakendOverlaps(((BreakpointSummary)loc).remoteBreakend()));
+		if (loc instanceof BreakpointSummary) return overlaps((BreakpointSummary)loc);
+		return super.overlaps(loc);
+	}
+	public boolean overlaps(BreakpointSummary loc) {
+		return breakendOverlaps(loc) && remoteBreakendOverlaps((BreakpointSummary)loc);
+	}
+	protected boolean remoteBreakendOverlaps(BreakpointSummary loc) {
+		return this.referenceIndex2 == loc.referenceIndex2 &&
+				this.direction2 == loc.direction2 &&
+				((this.start2 <= loc.start2 && this.end2 >= loc.start2) ||
+				 (this.start2 >= loc.start2 && this.start2 <= loc.end2));
 	}
 	@Override
 	public BreakpointSummary expandBounds(int expandBy, SAMSequenceDictionary dictionary) {
