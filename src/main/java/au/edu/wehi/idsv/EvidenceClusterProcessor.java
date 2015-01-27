@@ -38,11 +38,12 @@ public class EvidenceClusterProcessor extends AbstractIterator<VariantContextDir
 		this.underlying = new AutoClosingIterator<DirectedEvidence>(evidence);
 		// Start each on their own thread
 		DuplicatingIterable<DirectedEvidence> dib = new DuplicatingIterable<DirectedEvidence>(4, this.underlying, EVIDENCE_BUFFER_SIZE);
+		SequentialVariantIdGenerator idgen = new SequentialVariantIdGenerator("gridss");
 		this.threads = new MaximalCliqueIteratorRunnable[] {
-			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Forward, BreakendDirection.Forward),
-			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Forward, BreakendDirection.Backward),
-			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Backward, BreakendDirection.Forward),
-			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Backward, BreakendDirection.Backward)
+			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Forward, BreakendDirection.Forward, idgen),
+			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Forward, BreakendDirection.Backward, idgen),
+			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Backward, BreakendDirection.Forward, idgen),
+			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Backward, BreakendDirection.Backward, idgen)
 		};
 		for (MaximalCliqueIteratorRunnable r : threads) {
 			r.setUncaughtExceptionHandler(handler);
@@ -52,8 +53,8 @@ public class EvidenceClusterProcessor extends AbstractIterator<VariantContextDir
 	
 	private class MaximalCliqueIteratorRunnable extends Thread {
 		private final MaximalEvidenceCliqueIterator cliqueIt;
-		public MaximalCliqueIteratorRunnable(ProcessingContext processContext, Iterator<DirectedEvidence> evidenceIt, BreakendDirection lowDir, BreakendDirection highDir) {
-			cliqueIt = new MaximalEvidenceCliqueIterator(processContext, evidenceIt, lowDir, highDir);
+		public MaximalCliqueIteratorRunnable(ProcessingContext processContext, Iterator<DirectedEvidence> evidenceIt, BreakendDirection lowDir, BreakendDirection highDir, VariantIdGenerator generator) {
+			cliqueIt = new MaximalEvidenceCliqueIterator(processContext, evidenceIt, lowDir, highDir, generator);
 			this.setName(String.format("MaxClique%s%s-%d", lowDir.toChar(), highDir.toChar(), threadCount.incrementAndGet()));
 		}
 		@Override

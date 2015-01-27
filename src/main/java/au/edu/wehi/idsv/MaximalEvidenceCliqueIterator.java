@@ -25,7 +25,8 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 	private final BreakendDirection targetHighDir;
 	private final RectangleGraphMaximalCliqueIterator calc;
 	private final ProcessingContext context;
-	public MaximalEvidenceCliqueIterator(ProcessingContext processContext, Iterator<DirectedEvidence> evidenceIt, BreakendDirection lowDir, BreakendDirection highDir) {
+	private final VariantIdGenerator idGenerator;
+	public MaximalEvidenceCliqueIterator(ProcessingContext processContext, Iterator<DirectedEvidence> evidenceIt, BreakendDirection lowDir, BreakendDirection highDir, VariantIdGenerator idGenerator) {
 		this.context = processContext;
 		this.calc = new RectangleGraphMaximalCliqueIterator(
 						// collapse evidence at the same location to a single node
@@ -36,6 +37,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 								new EvidenceToGraphNodeIterator(evidenceIt))));
 		this.targetLowDir = lowDir;
 		this.targetHighDir = highDir;
+		this.idGenerator = idGenerator;
 	}
 	private class GraphNodeWindowedSortingIterator extends WindowedSortingIterator<GraphNode> {
 		public GraphNodeWindowedSortingIterator(final ProcessingContext processContext, final int windowSize, final Iterator<GraphNode> it) {
@@ -112,7 +114,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
 		// use a hash of the breakpoint as a (probably) unique identifier
-		String id = String.format("gridss%d", Math.abs(breakpoint.hashCode()));
+		String id = idGenerator.generate(breakpoint);
 		builder.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, id);
 		builder.attribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, id + (isHighBreakend ? MATE_BREAKEND_ID_SUFFIX_LOW : MATE_BREAKEND_ID_SUFFIX_HIGH));
 		builder.id(id + (isHighBreakend ? MATE_BREAKEND_ID_SUFFIX_HIGH : MATE_BREAKEND_ID_SUFFIX_LOW));

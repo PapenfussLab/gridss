@@ -79,7 +79,12 @@ public class Models {
 		}
 		if (!hasWeight) {
 			// all evidence is insignificant, just return something as we're going to get filtered anyway
-			return evidence.get(0).getBreakendSummary();
+			BreakendSummary bs = evidence.get(0).getBreakendSummary();
+			if (bs instanceof BreakpointSummary) {
+				BreakpointSummary bp = (BreakpointSummary)bs;
+				bs = bp.localBreakend();
+			}
+			return bs;
 		}
 		Node call = calc.calculateMaximumClique(nodes);
 		int ref = lgc.getReferenceIndex(call.start);

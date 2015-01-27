@@ -10,13 +10,13 @@ source("libgridss.R")
 # gridss TODO: split out *_RM into mapping to us, and mapping elsewhere
 #vcf <- readVcf("C:/dev/778.vcf", "hg19_random")
 bed <- import.bed(con="W:/778/idsv/cgrs-from-table3.bed")
-vcf <- readVcf("W:/778/idsv/778.norsc.vcf", "hg19_random")
+vcf <- readVcf("W:/778/idsv/778.filtered.vcf", "hg19_random")
 df <- gridss.truthdetails.processvcf.vcftodf(vcf)
 mdf <- df[df$mateid,]
 hits <- findOverlaps(rowData(vcf), bed)
 df$cgr <- FALSE
 df$cgr[queryHits(hits)] <- TRUE
-row.names(df) <- str_replace(str_replace(str_replace(df$mateid, "o", "_"), "h", "o"), "_", "h")
+#row.names(df) <- str_replace(str_replace(str_replace(df$mateid, "o", "_"), "h", "o"), "_", "h")
 df$cgrMate <- mdf$cgr
 
 ##################

@@ -11,18 +11,15 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.Map.Entry;
 
-import org.apache.commons.math3.distribution.EnumeratedIntegerDistribution;
-
 import picard.analysis.InsertSizeMetrics;
+import au.edu.wehi.idsv.util.CachedEnumeratedIntegerDistribution;
 
-public class InsertSizeDistribution extends EnumeratedIntegerDistribution {
+public class InsertSizeDistribution extends CachedEnumeratedIntegerDistribution {
 	private static final Log log = Log.getInstance(InsertSizeDistribution.class);
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = -2332020573213102253L;
-	private static final int MAX_CACHE_SIZE = 1024 * 1024;
-	private double[] cpcache;
 	private final int total;
 	public int getTotalMappedPairs() {
 		return total;
@@ -64,17 +61,5 @@ public class InsertSizeDistribution extends EnumeratedIntegerDistribution {
 	}
 	public double descendingCumulativeProbability(int x) {
 		return 1.0 - cumulativeProbability(x - 1);
-	}
-	@Override
-	public double cumulativeProbability(int x) {
-		if (cpcache == null) {
-			cpcache = new double[Math.min(MAX_CACHE_SIZE, getSupportUpperBound())];
-			for (int i = 0; i < cpcache.length; i++) {
-				cpcache[i] = super.cumulativeProbability(i);
-			}
-		}
-		if (x < 0) return 0;
-		if (x >= cpcache.length) return 1;
-		return cpcache[x];
 	}
 }

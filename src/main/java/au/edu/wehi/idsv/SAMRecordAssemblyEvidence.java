@@ -256,7 +256,9 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 			BreakendSummary breakend,
 			int anchoredBaseCount, byte[] baseCalls, byte[] baseQuals,
 			int normalBaseCount, int tumourBaseCount) {
-		if (breakend instanceof BreakpointSummary) throw new IllegalArgumentException("Breakpoint not supported by this constructor");
+		if (breakend instanceof BreakpointSummary) {
+			throw new IllegalArgumentException("Breakpoint not supported by this constructor");
+		}
 		SAMRecord record = new SAMRecord(samFileHeader);
 		record.setReferenceIndex(breakend.referenceIndex);
 		record.setReadName(String.format("gridss_%s_%d_%d%s_%d",
