@@ -354,4 +354,21 @@ public class SAMRecordUtil {
 			throw new SAMException(e);
 		}
 	}
+	/**
+	 * Determine whether the two reads are the same. This is useful
+	 * for filtering out read pairs which, due to sequencing chemistry
+	 * error, both sequence the same end of the fragment.
+	 *   
+	 * @param r1 read to compare
+	 * @param r2 read to compare
+	 * @return true if the reads appear to be the same, false otherwise
+	 */
+	public static boolean areSameRead(SAMRecord r1, SAMRecord r2) {
+		// TODO: compare read sequences
+		return !r1.getReadUnmappedFlag()
+				&& !r2.getReadUnmappedFlag()
+				&& r1.getReferenceIndex() == r2.getReferenceIndex()
+				&& (r1.getUnclippedStart() == r2.getUnclippedStart() || r1.getUnclippedEnd() == r2.getUnclippedEnd())
+				&& r1.getReadNegativeStrandFlag() == r2.getReadNegativeStrandFlag();
+	}
 }

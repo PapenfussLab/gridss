@@ -3,6 +3,7 @@ package au.edu.wehi.idsv;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
+import htsjdk.samtools.util.Log;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -14,6 +15,7 @@ import au.edu.wehi.idsv.sam.SAMRecordUtil;
  *
  */
 public abstract class NonReferenceReadPair implements DirectedEvidence {
+	private static final Log log = Log.getInstance(NonReferenceReadPair.class);
 	private final SAMRecord local;
 	private final SAMRecord remote;
 	private final BreakendSummary location;
@@ -49,6 +51,10 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		assert(source.getReadPairConcordanceCalculator().isConcordant(local, remote) == source.getReadPairConcordanceCalculator().isConcordant(remote, local));
 		if (source.getReadPairConcordanceCalculator().isConcordant(local, remote)) return null;
 		if (pairSeparation(local, remote, PairOrientation.FR) < 0) return null; // discordant because the pairs overlap = no SV evidence
+		if (SAMRecordUtil.areSameRead(local, remote)) {
+			log.debug(String.format("Filtering self-matching read %s at position %s:%d", local.getReadName(), source.getContext().getDictionary().getSequence(local.getReferenceIndex()).getSequenceName(), local.getAlignmentStart()));
+			return null;
+		}
 		NonReferenceReadPair rp = null;
 		if (!meetsAnchorCriteria(source, remote)) {
 			rp = new UnmappedMateReadPair(local, remote, source);
