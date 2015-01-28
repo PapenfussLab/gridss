@@ -363,8 +363,18 @@ public class NonReferenceReadPairTest extends TestHelper {
 		assertNull(NonReferenceReadPair.create(rp[1], rp[0], ses));
 	}
 	@Test
-	public void isNotExact() {
+	public void is_not_exact_breakend() {
 		assertFalse(NRRP(DP(0, 1, "1M", true, 1, 3, "1M", false)).isBreakendExact());
 		assertFalse(NRRP(DP(0, 1, "1M", true, 1, 2, "1M", false)).isBreakendExact());
+	}
+	@Test
+	public void should_filter_when_both_reads_the_same() {
+		assertNull(NRRP(DP(0, 1, "1M", true, 0, 1, "1M", true)));
+		assertNull(NRRP(DP(0, 2, "1M", true, 0, 1, "2M", true)));
+		
+		// assertNotNull(NRRP(DP(0, 1, "1M", true, 0, 1, "1M", false))); // dovetail filtered
+		assertNotNull(NRRP(DP(0, 1, "1M", true, 1, 1, "1M", true)));
+		assertNotNull(NRRP(DP(0, 1, "1M", true, 0, 2, "1M", true)));
+		assertNotNull(NRRP(DP(0, 1, "1S1M", true, 0, 1, "2M", true)));
 	}
 }

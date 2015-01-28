@@ -1,9 +1,17 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMRecord;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang3.StringUtils;
+
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
@@ -22,8 +30,11 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 	private final PeekingIterator<? extends DirectedEvidence> evidenceIt;
 	private final Iterator<? extends VariantContextDirectedEvidence> callIt;
 	private final ArrayDeque<ActiveVariant> variantBuffer = new ArrayDeque<ActiveVariant>();
+	private final Map<String, ActiveVariant> bufferedVariantId = new HashMap<String, ActiveVariant>();
 	private final EvidenceToCsv dump;
 	private class ActiveVariant {
+		public final String id;
+		public final String mateid;
 		public final long startLocation;
 		//public final long endLocation;
 		public final BreakendSummary location;
@@ -31,6 +42,8 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 		private final StructuralVariationCallBuilder builder;
 		private List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
 		public ActiveVariant(VariantContextDirectedEvidence call) {
+			this.id = call.hasID() ? call.getID() : null;
+			this.mateid = call.hasID() ? (String)call.getAttribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, null) : null;
 			this.builder = new StructuralVariationCallBuilder(context, call);
 			this.score = (float)call.getPhredScaledQual();
 			assert(this.score >= 0); // variant must have score set
@@ -67,7 +80,11 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 		this.dump = dump;
 	}
 	private void buffer(VariantContextDirectedEvidence variant) {
-		variantBuffer.add(new ActiveVariant(variant));
+		ActiveVariant av = new ActiveVariant(variant);
+		variantBuffer.add(av);
+		if (StringUtils.isNotBlank(av.id)) {
+			bufferedVariantId.put(av.id, av);
+		}
 	}
 	@Override
 	protected VariantContextDirectedEvidence computeNext() {
@@ -87,6 +104,9 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 		bufferVariantsBefore(variant.startLocation + 2 * (maxCallRange + 1));
 		processEvidenceBefore(variant.startLocation + maxCallRange + 1);
 		variantBuffer.poll();
+		if (!StringUtils.isNoneEmpty(variant.id)) {
+			bufferedVariantId.remove(variant.id);
+		}
 		return variant.callVariant();
 	}
 	private void processEvidenceBefore(long position) {
@@ -117,7 +137,13 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 				}
 			}
 			if (best != null) {
-				best.attributeEvidence(evidence);
+				ActiveVariant mate = bufferedVariantId.get(best.mateid);
+				if (mate != null && mate.location.overlaps(bs) && allocateToHighBreakend(evidence)) {
+					// special case: evidence overlaps 
+					mate.attributeEvidence(evidence);
+				} else {
+					best.attributeEvidence(evidence);
+				}
 				evidenceCalled = true;
 			}
 		} else {
@@ -134,6 +160,34 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 			// write out now before we drop it
 			dump.writeEvidence(evidence, null);
 		}
+	}
+	/**
+	 * Determines which breakend to allocate evidence that overlaps both sides of the breakend
+	 * @param e
+	 * @return
+	 */
+	private boolean allocateToHighBreakend(DirectedEvidence evidence) {
+		// want even allocation of evidence to both sides
+		// want local and remote for same evidence allocated to different sides
+		// want read pair evidence to be allocated to different sides
+		String commonIdentifier;
+		boolean flip = false;
+		if (evidence instanceof NonReferenceReadPair) {
+			// read name same for both sides of Discordant pairs
+			SAMRecord local = ((NonReferenceReadPair) evidence).getLocalledMappedRead();
+			commonIdentifier = local.getReadName();
+			flip = local.getSecondOfPairFlag();
+		} else if (evidence instanceof RemoteEvidence) {
+			commonIdentifier = ((RemoteEvidence)evidence).asLocal().getEvidenceID();
+			flip = true;
+		} else if (evidence instanceof VariantContextDirectedEvidence) {
+			commonIdentifier = ((VariantContextDirectedEvidence)evidence).getAttributeAsString(VcfSvConstants.BREAKEND_EVENT_ID_KEY, evidence.getEvidenceID());
+		} else {
+			commonIdentifier = evidence.getEvidenceID();
+		}
+		boolean allocateLow = (Integer.bitCount(commonIdentifier.hashCode()) & 1) == 1; // randomly allocate high/low based on string hash
+		allocateLow ^= flip;
+		return allocateLow;
 	}
 	private void bufferVariantsBefore(long position) {
 		while (callIt.hasNext() && (variantBuffer.isEmpty() || variantBuffer.peekLast().startLocation <= position)) {
