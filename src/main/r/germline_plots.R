@@ -31,12 +31,12 @@ df[df$SVLEN != mdf$SVLEN,]
 df[df$SVTYPE != mdf$SVTYPE,]
 df[df$SPV != mdf$SPV,]
 df[df$CQ != mdf$CQ,]
-df[df$AS != mdf$AS,]
-df[df$ASQ != mdf$ASQ,]
+df[df$AS != mdf$RAS,]
+df[df$ASQ != mdf$RASQ,]
 df[df$RP != mdf$RP,]
 df[df$RPQ != mdf$RPQ,]
-df[df$SC != mdf$SC,]
-df[df$SCQ != mdf$SCQ,]
+df[df$SC != mdf$RSC,]
+df[df$SCQ != mdf$RSCQ,]
 
 # Contribution of local breakend evidence
 ggplot(df, aes(x=QUAL, y=BQ, color=factor(pmin(AS, 1)+pmin(RAS, 1)), size=BAS+1)) + geom_point() + scale_x_log10() + scale_y_log10()
