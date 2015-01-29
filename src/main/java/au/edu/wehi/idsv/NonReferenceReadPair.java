@@ -15,7 +15,7 @@ import au.edu.wehi.idsv.sam.SAMRecordUtil;
  *
  */
 public abstract class NonReferenceReadPair implements DirectedEvidence {
-	private static final Log log = Log.getInstance(NonReferenceReadPair.class);
+	//private static final Log log = Log.getInstance(NonReferenceReadPair.class);
 	private final SAMRecord local;
 	private final SAMRecord remote;
 	private final BreakendSummary location;
