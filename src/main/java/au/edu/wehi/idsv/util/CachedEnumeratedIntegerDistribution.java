@@ -33,14 +33,14 @@ public class CachedEnumeratedIntegerDistribution extends EnumeratedIntegerDistri
     	super(rng, singletons, probabilities);
     }
     private TIntDoubleMap cacheProbability = new TIntDoubleHashMap();
-    public double probability(final int x) {
+    public synchronized double probability(final int x) {
     	if (!cacheProbability.containsKey(x) && x >= getSupportLowerBound() && x <= getSupportUpperBound()) {
     		cacheProbability.put(x, super.probability(x));
     	}
 		return cacheProbability.get(x);
     }
     private TIntDoubleMap cacheCumulativeProbability = new TIntDoubleHashMap();
-    public double cumulativeProbability(final int x) {
+    public synchronized double cumulativeProbability(final int x) {
     	if (!cacheCumulativeProbability.containsKey(x) && x >= getSupportLowerBound() && x <= getSupportUpperBound()) {
     		cacheCumulativeProbability.put(x, super.cumulativeProbability(x));
     	}
