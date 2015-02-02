@@ -1,4 +1,34 @@
 library(VariantAnnotation)
+
+gridss.annotateBreakpointHits <- function(bed, bedMate, gridssVcf, ...) {
+  # filter breakends and one-sided breakpoint calls
+  gridssVcf <- gridssVcf[as.character(info(gridssVcf)$MATEID) %in% row.names(gridssVcf),]
+  callPos <- rowData(gridssVcf)
+  callPos$mate <- as.character(info(gridssVcf)$MATEID)
+  strand(callPos) <- ifelse(str_detect(as.character(callPos$ALT), "[[:alpha:]]+(\\[|]).*(\\[|])"), "+", "-")
+  callPosMate <- callPos[callPos$mate,]
+  
+  hits <- rbind(
+    as.data.frame(findOverlaps(bed, callPos, ...)),
+    as.data.frame(findOverlaps(bed, callPosMate, ...)),
+    as.data.frame(findOverlaps(bedMate, callPos, ...)),
+    as.data.frame(findOverlaps(bedMate, callPosMate, ...)))
+  hits <- hits[duplicated(hits),]
+  hits$qual <- rowData(gridssVcf)$QUAL[hits[[2]]]
+  annotatedBed <- bed
+  annotatedBed$called <- FALSE
+  annotatedBed$called[hits[[1]]] <- TRUE
+  annotatedBed$qual <- 0
+  annotatedBed$qual[aggregate(hits, FUN=max, by=list(hits$queryHits))$queryHits] <- aggregate(hits, FUN=max, by=list(hits$queryHits))$qual
+  return(annotatedBed)
+}
+
+gridss.overlaps <- function(vcf, bed, ...) {
+  hits <- findOverlaps(rowData(vcf), bed, ...)
+  result <- rep(FALSE, nrow(vcf))
+  result[queryHits(hits)] <- TRUE
+  return(result)
+}
 #CompressedIntegerList to array
 ciltoarray <- function(cil, column) {
   if (length(cil) == 0) return(NULL)
