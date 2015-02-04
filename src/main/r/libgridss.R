@@ -3,6 +3,7 @@ library(VariantAnnotation)
 gridss.annotateBreakpointHits <- function(bed, bedMate, gridssVcf, ...) {
   # filter breakends and one-sided breakpoint calls
   gridssVcf <- gridssVcf[as.character(info(gridssVcf)$MATEID) %in% row.names(gridssVcf),]
+  gridssdf <- gridss.truthdetails.processvcf.vcftodf(gridssVcf)
   callPos <- rowData(gridssVcf)
   callPos$mate <- as.character(info(gridssVcf)$MATEID)
   strand(callPos) <- ifelse(str_detect(as.character(callPos$ALT), "[[:alpha:]]+(\\[|]).*(\\[|])"), "+", "-")
@@ -15,9 +16,11 @@ gridss.annotateBreakpointHits <- function(bed, bedMate, gridssVcf, ...) {
     as.data.frame(findOverlaps(bedMate, callPosMate, ...)))
   hits <- hits[duplicated(hits),]
   hits$qual <- rowData(gridssVcf)$QUAL[hits[[2]]]
+  hits$hc <- gridssdf$QUAL[hits[[2]]] >= 1000 & gridssdf$AS[hits[[2]]] > 0 & gridssdf$RAS[hits[[2]]] > 0
   annotatedBed <- bed
-  annotatedBed$called <- FALSE
-  annotatedBed$called[hits[[1]]] <- TRUE
+  annotatedBed$called <- "miss"
+  annotatedBed$called[hits[[1]]] <- "hit"
+  annotatedBed$called[hits[hits$hc,][[1]]] <- "high confidence"
   annotatedBed$qual <- 0
   annotatedBed$qual[aggregate(hits, FUN=max, by=list(hits$queryHits))$queryHits] <- aggregate(hits, FUN=max, by=list(hits$queryHits))$qual
   return(annotatedBed)

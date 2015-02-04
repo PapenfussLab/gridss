@@ -261,11 +261,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		}
 		SAMRecord record = new SAMRecord(samFileHeader);
 		record.setReferenceIndex(breakend.referenceIndex);
-		record.setReadName(String.format("gridss_%s_%d_%d%s_%d",
-				source.getContext().getDictionary().getSequence(breakend.referenceIndex).getSequenceName(),
-				breakend.start, breakend.end,
-				breakend.direction.toChar(),
-				Math.abs(Arrays.hashCode(baseCalls))) + anchoredBaseCount);
+		record.setReadName(source.getContext().getAssemblyIdGenerator().generate(breakend, baseCalls, anchoredBaseCount));
 		if (anchoredBaseCount > 0) {
 			record.setReadBases(baseCalls);
 			record.setBaseQualities(baseQuals);

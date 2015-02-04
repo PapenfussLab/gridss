@@ -38,7 +38,7 @@ public class EvidenceClusterProcessor extends AbstractIterator<VariantContextDir
 		this.underlying = new AutoClosingIterator<DirectedEvidence>(evidence);
 		// Start each on their own thread
 		DuplicatingIterable<DirectedEvidence> dib = new DuplicatingIterable<DirectedEvidence>(4, this.underlying, EVIDENCE_BUFFER_SIZE);
-		SequentialVariantIdGenerator idgen = new SequentialVariantIdGenerator("gridss");
+		SequentialIdGenerator idgen = new SequentialIdGenerator("gridss");
 		this.threads = new MaximalCliqueIteratorRunnable[] {
 			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Forward, BreakendDirection.Forward, idgen),
 			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Forward, BreakendDirection.Backward, idgen),

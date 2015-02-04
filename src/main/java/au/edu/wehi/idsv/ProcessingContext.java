@@ -59,6 +59,7 @@ public class ProcessingContext implements Closeable {
 	private final SAMFileHeader basicHeader;
 	private boolean filterDuplicates = true;
 	private long calculateMetricsRecordCount = Long.MAX_VALUE; 
+	private AssemblyIdGenerator assemblyIdGenerator = new SequentialIdGenerator("asm");
 	public ProcessingContext(
 			FileSystemContext fileSystemContext,
 			List<Header> metricsHeaders,
@@ -256,5 +257,11 @@ public class ProcessingContext implements Closeable {
 	}
 	public void setCalculateMetricsRecordCount(long calculateMetricsRecordCount) {
 		this.calculateMetricsRecordCount = calculateMetricsRecordCount;
+	}
+	public AssemblyIdGenerator getAssemblyIdGenerator() {
+		return assemblyIdGenerator;
+	}
+	public void setAssemblyIdGenerator(AssemblyIdGenerator generator) {
+		this.assemblyIdGenerator = generator;
 	}
 }

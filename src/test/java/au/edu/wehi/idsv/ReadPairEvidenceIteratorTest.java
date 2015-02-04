@@ -80,8 +80,8 @@ public class ReadPairEvidenceIteratorTest extends TestHelper {
 	}
 	@Test
 	public void should_not_filter_on_remote_mapq() {
-		sv.add(withMapq(44, DP(0, 1, "5M", true, 0, 1, "5M", true))[0]);
-		mate.add(withMapq(1, DP(0, 1, "5M", true, 0, 1, "5M", true))[1]);
+		sv.add(withMapq(44, DP(0, 1, "5M", true, 1, 1, "5M", true))[0]);
+		mate.add(withMapq(1, DP(0, 1, "5M", true, 1, 1, "5M", true))[1]);
 		go();
 		assertEquals(1, out.size());
 		assertTrue(out.get(0) instanceof NonReferenceReadPair);
