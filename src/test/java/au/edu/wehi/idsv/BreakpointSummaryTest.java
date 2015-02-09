@@ -99,6 +99,7 @@ public class BreakpointSummaryTest extends TestHelper {
 	@Test
 	public void compressBounds_should_compress_both_sides() {
 		assertEquals(new BreakpointSummary(0, FWD, 5, 6, 1, BWD, 11, 11), new BreakpointSummary(0, FWD, 4, 7, 1, BWD, 10, 12).compressBounds(1));
+		assertEquals(new BreakpointSummary(0, FWD, 5, 6, 1, BWD, 11, 11), ((BreakendSummary)new BreakpointSummary(0, FWD, 4, 7, 1, BWD, 10, 12)).compressBounds(1));
 	}
 	@Test
 	public void compressBounds_should_reduce_lower_coordinate_down_upper_coordinate_up() {

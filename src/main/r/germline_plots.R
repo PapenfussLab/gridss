@@ -16,7 +16,6 @@ mdf <- df[df$mateid,]
 hits <- findOverlaps(rowData(vcf), bed)
 df$cgr <- FALSE
 df$cgr[queryHits(hits)] <- TRUE
-#row.names(df) <- str_replace(str_replace(str_replace(df$mateid, "o", "_"), "h", "o"), "_", "h")
 df$cgrMate <- mdf$cgr
 
 ##################
@@ -32,12 +31,12 @@ df[df$SVLEN != mdf$SVLEN,]
 df[df$SVTYPE != mdf$SVTYPE,]
 df[df$SPV != mdf$SPV,]
 df[df$CQ != mdf$CQ,]
-df[df$AS != mdf$AS,]
-df[df$ASQ != mdf$ASQ,]
+df[df$AS != mdf$RAS,]
+df[df$ASQ != mdf$RASQ,]
 df[df$RP != mdf$RP,]
 df[df$RPQ != mdf$RPQ,]
-df[df$SC != mdf$SC,]
-df[df$SCQ != mdf$SCQ,]
+df[df$SC != mdf$RSC,]
+df[df$SCQ != mdf$RSCQ,]
 
 # Contribution of local breakend evidence
 ggplot(df, aes(x=QUAL, y=BQ, color=factor(pmin(AS, 1)+pmin(RAS, 1)), size=BAS+1)) + geom_point() + scale_x_log10() + scale_y_log10()
@@ -47,7 +46,7 @@ ggplot(df, aes(x=QUAL, y=BQ, color=factor(pmin(AS, 1)+pmin(RAS, 1)), size=BAS+1)
 ggplot(df, aes(x=QUAL, y=CQ, color=factor(pmin(AS, 1)+pmin(RAS, 1)))) + geom_point() + scale_x_log10() + scale_y_log10()
 # histogram of 
 ggplot(df, aes(x=QUAL/CQ)) + geom_histogram()# + scale_y_log10()
-head(df[df$QUAL > 0.6 * df$CQ & df$QUAL < 0.8 * df$CQ & df$CQ > 1000,])
+head(df[df$QUAL > df$CQ & df$CQ > 100,])
 
 # evidence counts
 ggplot(df, aes(x=RP, y=SC+RSC, color=factor(pmin(AS, 1)+pmin(RAS, 1)))) + facet_grid(cgrMate ~ cgr) + geom_point() + scale_x_log10() + scale_y_log10() + geom_jitter(position = position_jitter(width = 1, height=1))

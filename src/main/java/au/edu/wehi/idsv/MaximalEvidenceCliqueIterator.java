@@ -100,24 +100,11 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		if (lowDir != targetLowDir || highDir != targetHighDir) return null;
 		return node;
 	}
-	private VariantContextDirectedEvidence toVariant(GraphNode node, boolean isHighBreakend) {
-		BreakpointSummary breakpoint = new BreakpointSummary(
-				context.getLinear().getReferenceIndex(node.startX),
-				targetLowDir,
-				context.getLinear().getReferencePosition(node.startX),
-				context.getLinear().getReferencePosition(node.endX),
-				context.getLinear().getReferenceIndex(node.startY),
-				targetHighDir,
-				context.getLinear().getReferencePosition(node.startY),
-				context.getLinear().getReferencePosition(node.endY));
-		breakpoint = (BreakpointSummary)context.getVariantCallingParameters().withoutMargin(breakpoint);
-		
+	private VariantContextDirectedEvidence toVariant(String event, GraphNode node, BreakpointSummary breakpoint, boolean isHighBreakend) {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
-		// use a hash of the breakpoint as a (probably) unique identifier
-		String id = idGenerator.generate(breakpoint);
-		builder.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, id);
-		builder.attribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, id + (isHighBreakend ? MATE_BREAKEND_ID_SUFFIX_LOW : MATE_BREAKEND_ID_SUFFIX_HIGH));
-		builder.id(id + (isHighBreakend ? MATE_BREAKEND_ID_SUFFIX_HIGH : MATE_BREAKEND_ID_SUFFIX_LOW));
+		builder.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, event);
+		builder.attribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, event + (isHighBreakend ? MATE_BREAKEND_ID_SUFFIX_LOW : MATE_BREAKEND_ID_SUFFIX_HIGH));
+		builder.id(event + (isHighBreakend ? MATE_BREAKEND_ID_SUFFIX_HIGH : MATE_BREAKEND_ID_SUFFIX_LOW));
 		if (isHighBreakend) {
 			breakpoint = breakpoint.remoteBreakpoint();
 		}
@@ -130,6 +117,19 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		assert(v != null);
 		return v;
 	}
+	private BreakpointSummary toBreakpointSummary(GraphNode node) {
+		BreakpointSummary breakpoint = new BreakpointSummary(
+				context.getLinear().getReferenceIndex(node.startX),
+				targetLowDir,
+				context.getLinear().getReferencePosition(node.startX),
+				context.getLinear().getReferencePosition(node.endX),
+				context.getLinear().getReferenceIndex(node.startY),
+				targetHighDir,
+				context.getLinear().getReferencePosition(node.startY),
+				context.getLinear().getReferencePosition(node.endY));
+		breakpoint = (BreakpointSummary)context.getVariantCallingParameters().withoutMargin(breakpoint);
+		return breakpoint;
+	}
 	@Override
 	protected VariantContextDirectedEvidence computeNext() {
 		if (lastHigh != null) {
@@ -139,8 +139,10 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		}
 		if (calc.hasNext()) {
 			GraphNode node = calc.next();
-			VariantContextDirectedEvidence result = toVariant(node, false); 
-			lastHigh = toVariant(node, true);
+			BreakpointSummary breakpoint = toBreakpointSummary(node);
+			String id = idGenerator.generate(breakpoint);
+			VariantContextDirectedEvidence result = toVariant(id, node, breakpoint, false); 
+			lastHigh = toVariant(id, node, breakpoint, true);
 			return result;
 		}
 		return endOfData();
