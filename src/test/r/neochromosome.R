@@ -1,44 +1,52 @@
-library(openxlsx) # install.packages("openxlsx")
-library(VariantAnnotation)
+source("libneochromosome.R")
 
-# extracts read pair breakpoint calls from the supplementary table
-# creates a breakpoint GRanges object containing
-# breakend positions
-# .mate column containing name of corresponding breakend in GRanges object
-getrpcalls <- function(xlsx = "mmc3.xlsx", tabname) {
-  dt <- read.xlsx(xlsx, tabname)
-  row.names(dt) <- paste0(dt$chrom1, ":", dt$start1, dt$strand1, dt$chrom2, ":", dt$start2, dt$strand2)
-  gr <- GRanges(seqnames=c(dt$chrom1, dt$chrom2),
-                ranges=IRanges(start=c(dt$start1, dt$start2), width=1),
-                strand=c(as.character(dt$strand1), as.character(dt$strand2)),
-                mate=c(paste0(row.names(dt),"/1"), paste0(row.names(dt),"/2")))
-  names(gr) <- c(paste0(row.names(dt),"/2"), paste0(row.names(dt),"/1"))
-  return(gr)
+sample <- "778"
+rp <- getrpcalls("C:/dev/neochromosome/mmc3.xlsx", "778 (DR)")
+cgr <- getcgr("C:/dev/neochromosome/mmc4.xlsx", "778_CGRs")
+cn <- getcn("C:/dev/neochromosome/mmc4.xlsx", "778_CN")
+vcf <- readVcf("W:/778/778.vcf", "hg19")
+
+sample <- "T1000"
+rp <- getrpcalls("C:/dev/neochromosome/mmc3.xlsx", "T1000 (DR)")
+cgr <- getcgr("C:/dev/neochromosome/mmc4.xlsx", "T1000_CGRs")
+cn <- getcn("C:/dev/neochromosome/mmc4.xlsx", "T1000_CN")
+vcf <- readVcf("W:/T1000/T1000.vcf", "hg19")
+
+sample <- "GOT3"
+rp <- getrpcalls("C:/dev/neochromosome/mmc3.xlsx", "GOT3 (DR)")
+cgr <- getcgr("C:/dev/neochromosome/mmc4.xlsx", "GOT3_CGRs")
+cn <- getcn("C:/dev/neochromosome/mmc4.xlsx", "GOT3_CN")
+vcf <- readVcf("W:/Papenfuss_lab/projects/liposarcoma/data/gridss/GOT3/GOT3.vcf", "hg19")
+
+
+
+vcf <- gridss.removeUnpartnerededBreakend(vcf)
+vcfdf <- gridss.truthdetails.processvcf.vcftodf(vcf)
+rpmaxgap=120
+hits <- countVcfGrBreakpointHits(vcf, rp, maxgap=rpmaxgap)
+vcfdf$rpHits <- hits$queryHits
+vcfdf$hits_all_gap120 <- hits$subjectHits
+rp$hits_hc_gap120 <- countVcfGrBreakpointHits(vcf[vcfdf$confidence=="High",], rp, maxgap=rpmaxgap)$subjectHits
+rp$hits_mc_gap120 <- countVcfGrBreakpointHits(vcf[vcfdf$confidence=="High" | vcfdf$confidence=="Medium",], rp, maxgap=rpmaxgap)$subjectHits
+rp$hits_gap120 <- as.factor((rp$hits_all_gap120 > 0) + (rp$hits_mc_gap120 > 0) + (rp$hits_hc_gap120 > 0))
+levels(rp$hits_gap120) <- c("None", "Low", "Medium", "High")
+
+###############
+# Read Pair variant calling concordance
+###############
+#library(pROC) #install.packages("pROC")
+dfroc <- NULL
+for (confidence in as.numeric(unique(vcfdf$confidence))) {
+  subset <- as.numeric(vcfdf$confidence) >= confidence
+  dftmp <- toroc(vcfdf$QUAL[subset], vcfdf$rpHits[subset] > 0, totaltp=length(rp))
+  dftmp$confidence <- levels(vcfdf$confidence)[confidence]
+  dfroc <- rbind(dfroc, dftmp)  
 }
-# extract CGR regions from the supplementary table
-getcgr <- function(xlsx = "mmc4.xlsx", tabname) {
-  dt <- read.xlsx(xlsx, tabname)
-  gr <- GRanges(seqnames=dt$Chromosome, ranges=IRanges(start=dt$Start, end=dt$End))
-  names(gr) <- dt$CGR.name
-  return(gr)
-}
-# extract copy number from the supplementary table
-getcn <- function(xlsx = "mmc4.xlsx", tabname) {
-  dt <- read.xlsx(xlsx, tabname)
-  gr <- GRanges(seqnames=dt$Chromosome,
-                ranges=IRanges(start=dt$Start, end=dt$End),
-                cgrname=dt$CGR.name,
-                cn=dt$Copy.number)
-  return(gr)
-}
+ggplot(dfroc, aes(x=log(qual), y=sens, color=confidence)) + geom_line() + scale_x_reverse() + labs(title=paste0("Sensitivity of curated RP call detection - ", sample))
+ggsave(paste0(sample, "_rp_roc.png"), width=10, height=7.5)
 
-
-
-zz <- getrpcalls("C:/dev/neochromosome/mmc3.xlsx", "778 (DR)")
-zz <- getcgr("C:/dev/neochromosome/mmc4.xlsx", "778_CGRs")
-zz <- getcn("C:/dev/neochromosome/mmc4.xlsx", "778_CN")
-dt <- read.xlsx2(xlsx, tabname, colClasses=c("character", "numeric", "numeric", "character", "numeric"))
-
-xlsx <- "C:/dev/neochromosome/mmc4.xlsx"
-tabname <- "778_CGRs"
-
+ggplot(as.data.frame(mcols(rp)), aes(x=nreads, fill=hits_gap120)) +
+  geom_histogram() +
+  scale_x_log10() + 
+  labs(title=paste0("Sensitivity of curated RP call detection - ", sample))
+ggsave(paste0(sample, "_rp_hist.png"), width=10, height=7.5)

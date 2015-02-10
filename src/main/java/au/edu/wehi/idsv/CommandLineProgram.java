@@ -131,6 +131,9 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     @Option(doc = "Ignore indel variants smaller than this size.",
     		optional=true)
 	private int MIN_INDEL_SIZE = new VariantCallingParameters().minIndelSize;
+    @Option(doc = "Minimum variant score",
+    		optional=true)
+	private double MIN_SCORE = new VariantCallingParameters().minScore;
     // --- output format parameters ---
 	@Option(doc = "Breakends are written to VCF files as VCF v4.1 compatible breakpoints to a placeholder contig " + VcfConstants.VCF41BREAKEND_REPLACEMENT,
             optional = true,

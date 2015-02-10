@@ -54,13 +54,20 @@ gridss.truthdetails.processvcf.addtn <- function(df, name, column, max=FALSE) {
   is.na(df[[paste0(name, "Tumour")]]) <- 0
   return(df)
 }
-gridss.truthdetails.processvcf.vcftodf <- function(vcf) {
+gridss.removeUnpartnerededBreakend <- function(vcf) {
+  toKeep <- as.character(info(vcf)$MATEID) %in% row.names(vcf)
+  if (sum(toKeep == FALSE) > 0) {
+    warning(paste("Found ", sum(toKeep == FALSE), " unpartnered breakends."))
+  }
+  return(vcf[toKeep,])
+}
+gridss.truthdetails.processvcf.vcftodf <- function(vcf, sanityCheck=TRUE) {
   i <- info(vcf)
   df <- data.frame(variantid=names(rowData(vcf)))
   df$FILTER=rowData(vcf)$FILTER
   df$QUAL <- fixed(vcf)$QUAL
   df$EVENT <-i$EVENT
-  df$mateid <- as.character(i$MATEID)
+  df$mate <- as.character(i$MATEID)
   df$SOMATIC <- i$SOMATIC
   matchLength <- as.integer(gsub(".*_", "", as.character(i$TRUTH_MATCHES)))
   mismatchLength <- as.integer(gsub(".*_", "", as.character(i$TRUTH_MISREALIGN)))
@@ -95,8 +102,40 @@ gridss.truthdetails.processvcf.vcftodf <- function(vcf) {
   
   df <- replace(df, is.na(df), 0)
   rownames(df) <- df$variantid
+  if (sanityCheck) {
+    # should all have mates
+    if (!all(df$mate %in% row.names(df))) {
+      warning("Unpartnered breakend found")
+    }
+    mdf <- df[df$mateid,]
+    # breakpoint fields should match on both sides of the breakend
+    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[df$FILTER != mdf$FILTER,], "filter")
+    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[df$SOMATIC != mdf$SOMATIC,], "somatic")
+    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[df$IMPRECISE != mdf$IMPRECISE,], "flag")
+    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[df$SVLEN != mdf$SVLEN,], "svlen")
+    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[df$SVTYPE != mdf$SVTYPE,], "svtype")
+    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[df$SPV != mdf$SPV,], "spv")
+    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[df$QUAL != mdf$QUAL,], "qual")
+    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[df$CQ != mdf$CQ,], "called qual")
+    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[df$AS != mdf$RAS,], "assembly")
+    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[df$RP != mdf$RP,], "read pair")
+    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[df$SC != mdf$RSC,], "soft clip")
+    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[abs(df$ASQ - mdf$RASQ) > 0.1,], "assembly qual")
+    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[abs(df$RPQ - mdf$RPQ) > 0.1,], "read pair qual")
+    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[abs(df$SCQ - mdf$RSCQ) > 0.1,], "soft clip qual")
+  }
+  df$hasSC <- paste("SC", ifelse(df$SC > 0 & df$RSC > 0, "Both", ifelse(df$SC > 0, "local", ifelse(df$RSC > 0, "remote", "zero"))))
+  df$hasAS <- paste("AS", ifelse(df$AS > 0 & df$RAS > 0, "Both", ifelse(df$AS > 0, "local", ifelse(df$RAS > 0, "remote", "zero"))))
+  df$hasRP <- ifelse(df$RP > 0, "Has RP", "No RP")
+  df$confidence <- as.factor(ifelse(df$QUAL >= 1000 & df$hasAS == "AS Both", 3, ifelse(df$QUAL >= 500 & df$hasAS != "AS zero", 2, 1)))
+  levels(df$confidence) <- c("Low", "Medium", "High")
   return(df)
 }
-
+gridss.truthdetails.processvcf.vcftodf.sanitycheck <- function(failing, desc) {
+  failCount <- nrow(failing)
+  if (failCount > 0) {
+    warning(paste(failCount, "rows failed ", desc, "sanity check "))
+  }
+}
 
 

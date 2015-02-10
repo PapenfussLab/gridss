@@ -7,43 +7,39 @@ library(stringr)
 setwd("C:/dev/idsv/src/main/R/")
 source("libgridss.R")
 
-# gridss TODO: split out *_RM into madfing to us, and madfing elsewhere
-#vcf <- readVcf("C:/dev/778.vcf", "hg19_random")
-bed <- import.bed(con="W:/778/idsv/cgrs-from-table3.bed")
-socBed <- import.bed(con="C:/dev/tracks/778_breakpoints_SOCRATES.bed")
-rpBed <- import.bed(con="C:/dev/tracks/778_breakpoints_v15.bed")
-vcf <- readVcf("W:/778/idsv/778.vcf", "hg19_random")
+
+##################
+# Cleanup
+##################
+suppressWarnings(remove(bed, socBed, rpBed, vcf, evidence, df, mdf))
+
+##################
+# 778
+##################
+bed <- import.bed(con="W:/Papenfuss_lab/projects/liposarcoma/data/gridss/778/cgrs-from-table3.bed")
+socBed <- import.bed(con="W:/Papenfuss_lab/projects/liposarcoma/data/gridss/778/778_breakpoints_SOCRATES.bed")
+rpBed <- import.bed(con="W:/Papenfuss_lab/projects/liposarcoma/data/gridss/778/778_breakpoints_v15.bed")
+vcf <- readVcf("W:/Papenfuss_lab/projects/liposarcoma/data/gridss/778/778.vcf", "hg19_random")
+evidence <- read.csv("W:/Papenfuss_lab/projects/liposarcoma/data/gridss/778/778.vcf.idsv.working/evidence.csv")
+
+##################
+# T1000
+##################
+vcf <- readVcf("W:/Papenfuss_lab/projects/liposarcoma/data/gridss/T1000/T1000.vcf", "hg19_random")
+evidence <- read.csv("W:/Papenfuss_lab/projects/liposarcoma/data/gridss/T1000/T1000.vcf.idsv.working/evidence.csv")
+
+##################
+# Set up data frame
+##################
 df <- gridss.truthdetails.processvcf.vcftodf(vcf)
 df$cgr <- gridss.overlaps(vcf, bed)
 #df$socrates <- gridss.overlaps(vcf, socBed, maxgap=4)
 #df$rpBed <- gridss.overlaps(vcf, socBed, maxgap=16)
-df$hasSC <- paste("SC", ifelse(df$SC > 0 & df$RSC > 0, "Both", ifelse(df$SC > 0, "local", ifelse(df$RSC > 0, "remote", "znone"))))
-df$hasAS <- paste("AS", ifelse(df$AS > 0 & df$RAS > 0, "Both", ifelse(df$AS > 0, "local", ifelse(df$RAS > 0, "remote", "znone"))))
+df$hasSC <- paste("SC", ifelse(df$SC > 0 & df$RSC > 0, "Both", ifelse(df$SC > 0, "local", ifelse(df$RSC > 0, "remote", "zero"))))
+df$hasAS <- paste("AS", ifelse(df$AS > 0 & df$RAS > 0, "Both", ifelse(df$AS > 0, "local", ifelse(df$RAS > 0, "remote", "zero"))))
 df$hasRP <- ifelse(df$RP > 0, "RP", "RP None")
 # set remote breakend columns
 df$cgrmate <- df[df$mateid,]$cgr
-
-##################
-# Sanity checks
-##################
-# should all have mates
-df[!(df$mateid %in% row.names(df)),]
-mdf <- df[df$mateid,]
-# breakpoint fields should match on both sides of the breakend
-df[df$FILTER != mdf$FILTER,]
-df[df$SOMATIC != mdf$SOMATIC,]
-df[df$IMPRECISE != mdf$IMPRECISE,]
-df[df$SVLEN != mdf$SVLEN,]
-df[df$SVTYPE != mdf$SVTYPE,]
-df[df$SPV != mdf$SPV,]
-df[df$QUAL != mdf$QUAL,]
-df[df$CQ != mdf$CQ,]
-df[df$AS != mdf$RAS,]
-df[df$RP != mdf$RP,]
-df[df$SC != mdf$RSC,]
-df[abs(df$ASQ - mdf$RASQ) > 0.1,]
-df[abs(df$RPQ - mdf$RPQ) > 0.1,]
-df[abs(df$SCQ - mdf$RSCQ) > 0.1,]
 
 # remove those that fail mate check so we can continue
 vcf <- vcf[as.character(info(vcf)$MATEID) %in% row.names(vcf),]
@@ -92,13 +88,44 @@ ggplot(as.data.frame(mcols(socBed)), aes(x=score, y=qual, color=called)) +
 ggsave("778_soc_concordance.png", width=10, height=7.5)
 
 
+###############
+# Background filter model
+###############
+# what's a good fit?
+for (windowSize in c(1, 10, 100, 100, 1000)) {
+  dfWindow <- rbind(dfWindow, data.frame(QUAL=rowData(vcf)$QUAL, count=countQueryHits(findOverlaps(rowData(vcf), rowData(vcf), maxgap=windowSize)), windowSize=windowSize))
+}
+dfWindow$countBin <- cut(dfWindow$count, c(0, 1, 2, 4, 8, 16, 32, 64, 128, 256, Inf))
+ggplot(dfWindow, aes(x=count, y=QUAL, color=factor(windowSize))) + geom_point() + scale_y_log10()
+ggplot(dfWindow, aes(x=QUAL)) + 
+  geom_density() + 
+  facet_grid(countBin ~ windowSize) +
+  scale_x_log10() + 
+  labs(title="Breakpoint call clustering by window size", color="Number of calls in window")
 
-
+###############
+# Evidence distributions
+###############
+ggplot(evidence[evidence$class=="DiscordantReadPair",], aes(x=breakpointQual)) + geom_histogram() + labs(title="Discordant read pair quality score distribution")
+ggplot(evidence[evidence$class=="RealignedSoftClipEvidence",], aes(x=breakpointQual)) + geom_histogram() + labs(title="Split read quality score distribution")
+ggplot(evidence[evidence$class=="RealignedSAMRecordAssemblyEvidence",], aes(x=breakpointQual, color=class)) + geom_histogram() + scale_x_log10() + labs(title="Assembly quality score distribution")
+aggregate(evidence$breakpointQual, list(evidence$class), mean)
+aggregate(evidence$breakendQual, list(evidence$class), mean)
 
 
 ###############
 # Exploratory plots
 ###############
+ggplot(df[df$RP==0&df$SC==0&df$RSC==0,], aes(x=QUAL)) + geom_histogram()
+
+###############
+# Exploratory plots
+###############
+
+ggplot(df[df$QUAL>100&df$RP>0,], aes(x=RP, y=QUAL-ASQ-RASQ-SCQ-RSCQ, color=factor(pmin(AS, 1)+pmin(RAS, 1)))) + geom_point() +
+  scale_x_log10() + scale_y_log10() +
+  stat_smooth(method = "lm") + 
+  labs(title="RP")
 
 # Contribution of local breakend evidence
 ggplot(df, aes(x=QUAL, y=BQ, color=factor(pmin(AS, 1)+pmin(RAS, 1)), size=BAS+1)) + geom_point() + scale_x_log10() + scale_y_log10() + facet_grid(cgrmate ~ cgr) +
@@ -177,4 +204,23 @@ nrow(df[df$SCRM==0 & df$RPRM==0 & df$A_RM==0,]) # = number of calls in which *AL
 ggplot(df[df$SCRM==0 & df$RPRM==0,], aes(x=A_MQT)) + geom_histogram()
 # great assemblies in both directions
 head(df[df$SCRM==0 & df$RPRM==0 & df$A_MQT>80,])
+
+
+
+###############
+# Chromothripsis feature finding
+###############
+vcf <- vcf[fixed(vcf)$QUAL > 500,]
+
+hits <- findOverlaps(rowData(vcf), rowData(vcf))
+hits <- hits[queryHits(hits) != subjectHits(hits),]
+hitRows <- rowData(vcf[unique(queryHits(hits)),])
+hitLocations <- unique(paste0(seqnames(hitRows), ":", start(ranges(hitRows))))
+
+
+
+
+
+
+
 
