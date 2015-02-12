@@ -12,6 +12,17 @@ import com.google.common.collect.Lists;
 
 public class EvidenceClusterProcessorTest extends TestHelper {
 	@Test
+	public void margin_should_expand_and_contract_past_chromosome_end() {
+		List<DirectedEvidence> list = new ArrayList<DirectedEvidence>();
+		list.add(new MockDirectedBreakpoint(new BreakpointSummary(0, BWD, 1, 1, 0, FWD, POLY_A.length, POLY_A.length)));
+		EvidenceClusterProcessor ecp = new EvidenceClusterProcessor(getContext(), list.iterator());
+		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp);
+		assertEquals(2, result.size());
+		assertTrue(result.get(0) instanceof VariantContextDirectedBreakpoint);
+		assertEquals(new BreakpointSummary(0, BWD, 1, 1, 0, FWD, POLY_A.length, POLY_A.length), result.get(0).getBreakendSummary());
+		assertEquals(new BreakpointSummary(0, FWD, POLY_A.length, POLY_A.length, 0, BWD, 1, 1), result.get(1).getBreakendSummary());
+	}
+	@Test
 	public void evidence_should_expand_by_margin_then_shrink() {
 		List<DirectedEvidence> list = new ArrayList<DirectedEvidence>();
 		list.add(SCE(FWD, withSequence("TTTT", Read(0, 10, "1M3S"))[0], Read(1, 10, "3M")));

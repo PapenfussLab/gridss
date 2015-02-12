@@ -34,9 +34,6 @@ public class BreakendSummary {
 		if (referenceIndex < 0) {
 			throw new IllegalArgumentException("Reference index must be valid");
 		}
-		if (start <= 0) {
-			throw new IllegalArgumentException("start must be valid");
-		}
 		if (end < start) {
 			throw new IllegalArgumentException("end must be at or after start");
 		}
@@ -92,8 +89,8 @@ public class BreakendSummary {
 	 * @param dictionary sequence dictionary
 	 * @return breakend with bounds expanded on both sides
 	 */
-	public BreakendSummary expandBounds(int expandBy, SAMSequenceDictionary dictionary) {
-		return new BreakendSummary(referenceIndex, direction, Math.max(1, start - expandBy), Math.min(dictionary.getSequence(referenceIndex).getSequenceLength(), end + expandBy));
+	public BreakendSummary expandBounds(int expandBy) {
+		return new BreakendSummary(referenceIndex, direction, start - expandBy, end + expandBy);
 	}
 	/**
 	 * Reduces size of the breakend location interval

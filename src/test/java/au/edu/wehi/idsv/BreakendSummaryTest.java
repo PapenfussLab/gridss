@@ -70,15 +70,15 @@ public class BreakendSummaryTest extends TestHelper {
 	}
 	@Test
 	public void expandBounds_should_extend_both_sides() {
-		assertEquals(new BreakendSummary(0, FWD, 3, 8), new BreakendSummary(0, FWD, 4, 7).expandBounds(1, SMALL_FA.getSequenceDictionary()));
-		assertEquals(new BreakendSummary(0, FWD, 2, 9), new BreakendSummary(0, FWD, 4, 7).expandBounds(2, SMALL_FA.getSequenceDictionary()));
+		assertEquals(new BreakendSummary(0, FWD, 3, 8), new BreakendSummary(0, FWD, 4, 7).expandBounds(1));
+		assertEquals(new BreakendSummary(0, FWD, 2, 9), new BreakendSummary(0, FWD, 4, 7).expandBounds(2));
 	}
 	@Test
-	public void expandBounds_should_not_extend_past_bounds() {
+	public void expandBounds_should_extend_past_chr_bounds() {
 		SAMSequenceDictionary dict = new SAMSequenceDictionary();
 		dict.addSequence(new SAMSequenceRecord("test", 10));
-		assertEquals(new BreakendSummary(0, FWD, 7, 10), new BreakendSummary(0, FWD, 9, 9).expandBounds(2, dict));
-		assertEquals(new BreakendSummary(0, FWD, 1, 3), new BreakendSummary(0, FWD, 1, 1).expandBounds(2, dict));
+		assertEquals(new BreakendSummary(0, FWD, 7, 11), new BreakendSummary(0, FWD, 9, 9).expandBounds(2));
+		assertEquals(new BreakendSummary(0, FWD, -1, 3), new BreakendSummary(0, FWD, 1, 1).expandBounds(2));
 	}
 	@Test
 	public void compressBounds_should_reduce_both_sides() {
@@ -115,8 +115,8 @@ public class BreakendSummaryTest extends TestHelper {
 	public void constructor_should_ensure_referenceindex_bounds() {
 		new BreakendSummary(-1, FWD, 1, 1);
 	}
-	@Test(expected=IllegalArgumentException.class)
-	public void constructor_should_ensure_position_bounds() {
+	@Test
+	public void constructor_should_not_ensure_position_bounds() {
 		new BreakendSummary(0, FWD, 0, 1);
 	}
 	@Test(expected=IllegalArgumentException.class)

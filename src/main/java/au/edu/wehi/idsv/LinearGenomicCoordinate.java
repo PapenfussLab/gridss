@@ -22,32 +22,33 @@ public class LinearGenomicCoordinate {
 	/**
 	 * Create a coordinate lookup from the given dictionary
 	 * @param dictionary sequence dictionary
-	 * @param number of bases to pad around chromosomes 
+	 * @param padding number of bases to pad at start and end of each chromosome
 	 */
-	public LinearGenomicCoordinate(SAMSequenceDictionary dictionary, int buffer) {
+	public LinearGenomicCoordinate(SAMSequenceDictionary dictionary, long padding) {
 		this.dictionary = dictionary;
-		generateLookups(dictionary.getSequences(), buffer);
+		generateLookups(dictionary.getSequences(), padding);
 	}
 	public LinearGenomicCoordinate(SAMSequenceDictionary dictionary) {
 		this(dictionary, 0);
 	}
-	private void generateLookups(List<SAMSequenceRecord> sequences, int buffer) {
+	private void generateLookups(List<SAMSequenceRecord> sequences, long padding) {
 		offset = new long[sequences.size()];
-		long cumsum = buffer;
+		long cumsum = 0;
 		for (int i = 0; i < sequences.size(); i++) {
+			cumsum += padding;
 			offset[i] = cumsum;
-			cumsum += sequences.get(i).getSequenceLength() + buffer;
+			cumsum += sequences.get(i).getSequenceLength() + padding;
 			if (sequences.get(i).getSequenceLength() == 0) {
 				throw new IllegalArgumentException(String.format("Missing length for contig %s", sequences.get(i).getSequenceName()));
 			}
 		}
 		referenceIndices = Maps.newTreeMap();
 		for (int i = 0; i < sequences.size(); i++) {
-			referenceIndices.put(offset[i], i);
+			referenceIndices.put(offset[i] - padding, i);
 		}
 		// add sentinels so lookup always succeeds
 		referenceIndices.put(Long.MIN_VALUE, -1);
-		referenceIndices.put(offset[sequences.size()-1] + sequences.get(sequences.size()-1).getSequenceLength() + buffer, -1);
+		referenceIndices.put(cumsum + 1, -1);
 	}
 	public long getLinearCoordinate(int referenceIndex, long pos) {
 		if (referenceIndex < 0 || referenceIndex >= offset.length) {

@@ -32,7 +32,7 @@ public class VariantCallingParameters {
 	public int breakendMargin = 10;
 	public boolean writeFilteredCalls = Defaults.WRITE_FILTERED_CALLS;
 	public BreakendSummary withMargin(ProcessingContext context, BreakendSummary bp) {
-		return bp.expandBounds(breakendMargin, context.getDictionary());
+		return bp.expandBounds(breakendMargin);
 	}
 	public BreakendSummary withoutMargin(BreakendSummary bp) {
 		return bp.compressBounds(breakendMargin);

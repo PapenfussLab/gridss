@@ -68,13 +68,8 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 	private GraphNode toGraphNode(DirectedEvidence e) {
 		BreakendSummary loc = e.getBreakendSummary();
 		loc = context.getVariantCallingParameters().withMargin(context, loc);
-		if (!(loc instanceof BreakpointSummary)) return null;
-		
+		if (!(loc instanceof BreakpointSummary)) return null;		
 		BreakpointSummary bp = (BreakpointSummary)loc;
-		assert(bp.referenceIndex >= 0);
-		assert(bp.referenceIndex2 >= 0);
-		assert(bp.start >= 1);
-		assert(bp.start2 >= 1);
 		long startX = context.getLinear().getLinearCoordinate(bp.referenceIndex, bp.start);
 		long endX = startX + bp.end - bp.start;
 		long startY = context.getLinear().getLinearCoordinate(bp.referenceIndex2, bp.start2);
@@ -128,6 +123,11 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 				context.getLinear().getReferencePosition(node.startY),
 				context.getLinear().getReferencePosition(node.endY));
 		breakpoint = (BreakpointSummary)context.getVariantCallingParameters().withoutMargin(breakpoint);
+		// sanity check that the resultant breakpoint makes sense
+		assert(breakpoint.start >= 1);
+		assert(breakpoint.start2 >= 1);
+		assert(breakpoint.referenceIndex >= 0);
+		assert(breakpoint.referenceIndex2 >= 0);
 		return breakpoint;
 	}
 	@Override

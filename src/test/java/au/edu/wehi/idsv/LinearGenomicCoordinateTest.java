@@ -59,8 +59,8 @@ public class LinearGenomicCoordinateTest {
 		LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict, 2);
 		// start padding
 		assertEquals(3, c.getLinearCoordinate("contig1",  1));
-		// padding from start + between chromosomes = 11 + 2 + 2
-		assertEquals(15, c.getLinearCoordinate("contig2",  1));
+		// padding from start + between chromosomes = 2 + 11 + 2 + 2
+		assertEquals(17, c.getLinearCoordinate("contig2",  1));
 	}
 	@Test
 	public void getReferenceIndex_should_round_trip() {
@@ -103,5 +103,30 @@ public class LinearGenomicCoordinateTest {
 				assertEquals(i, c.getReferencePosition(c.getLinearCoordinate(2, i)));
 			}
 		}
+	}
+	@Test
+	public void should_round_trip_before_and_after_chr_positions() {
+		SAMSequenceDictionary dict = new SAMSequenceDictionary();
+		dict.addSequence(new SAMSequenceRecord("contig1", 10));
+		dict.addSequence(new SAMSequenceRecord("contig2", 10));
+		dict.addSequence(new SAMSequenceRecord("contig3", 10));
+		for (int bufferSize = 0; bufferSize < 16; bufferSize++) {
+			LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict, bufferSize);
+			for (int i = 1 - bufferSize; i <= 10 + bufferSize; i++) {
+				for (int j = 0; j < 3; j++) {
+					assertEquals(j, c.getReferenceIndex(c.getLinearCoordinate(j, i)));
+					assertEquals(i, c.getReferencePosition(c.getLinearCoordinate(j, i)));
+				}
+			}
+		}
+	}
+	@Test
+	public void getReferencePosition_should_be_negative_one_outside_of_padding() {
+		SAMSequenceDictionary dict = new SAMSequenceDictionary();
+		dict.addSequence(new SAMSequenceRecord("contig1", 10));
+		dict.addSequence(new SAMSequenceRecord("contig2", 10));
+		LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict, 1);
+		assertEquals(-1, c.getReferenceIndex(0));
+		assertEquals(-1, c.getReferenceIndex(1+10+1 +1+10+1 + 2));
 	}
 }

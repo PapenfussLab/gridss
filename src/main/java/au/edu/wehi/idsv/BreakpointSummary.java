@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMSequenceDictionary;
-
 import java.math.RoundingMode;
 
 import com.google.common.collect.ComparisonChain;
@@ -42,7 +40,7 @@ public class BreakpointSummary extends BreakendSummary {
 		this.direction2 = direction2;
 	}
 	public BreakpointSummary(BreakendSummary local, BreakendSummary remote) {
-		this(local.referenceIndex, local.direction, local.start, local.end,
+		this(local.referenceIndex, local.direction, local.start, local.end, 
 				remote.referenceIndex, remote.direction, remote.start, remote.end);
 	}
 	public BreakendSummary localBreakend() {
@@ -102,8 +100,8 @@ public class BreakpointSummary extends BreakendSummary {
 				 (this.start2 >= loc.start2 && this.start2 <= loc.end2));
 	}
 	@Override
-	public BreakpointSummary expandBounds(int expandBy, SAMSequenceDictionary dictionary) {
-		return new BreakpointSummary(localBreakend().expandBounds(expandBy, dictionary), remoteBreakend().expandBounds(expandBy, dictionary));
+	public BreakpointSummary expandBounds(int expandBy) {
+		return new BreakpointSummary(localBreakend().expandBounds(expandBy), remoteBreakend().expandBounds(expandBy));
 	}
 	@Override
 	public BreakpointSummary compressBounds(int by) {
