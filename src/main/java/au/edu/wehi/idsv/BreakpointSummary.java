@@ -116,6 +116,31 @@ public class BreakpointSummary extends BreakendSummary {
 			return new BreakpointSummary(local.compressBounds(by, RoundingMode.UP), remote.compressBounds(by, RoundingMode.DOWN));
 		}
 	}
+	public boolean couldBeIndelOfSize(int minSize, int maxSize) {
+		if (referenceIndex != referenceIndex2 || direction == direction2) return false;
+		int fwdStart, fwdEnd, bwdStart, bwdEnd;
+		if (direction == BreakendDirection.Forward) {
+			fwdStart = start;
+			fwdEnd = end;
+			bwdStart = start2;
+			bwdEnd = end2;
+		} else {
+			bwdStart = start;
+			bwdEnd = end;
+			fwdStart = start2;
+			fwdEnd = end2;
+		}
+		int bpMinSize = bwdStart - fwdEnd - 1;
+		int bpMaxSize = bwdEnd - fwdStart - 1;
+		return intervalsOverlap(bpMinSize, bpMaxSize, minSize, maxSize);
+	}
+	/**
+	 * Determines whether the (end-point inclusive) intervals overlap
+	 * @return true if overlap, false otherwise
+	 */
+	private static boolean intervalsOverlap(int start1, int end1, int start2, int end2) {
+		return start1 <= end2 && start2 <= end1;
+	}
 	@Override
 	public int hashCode() {
 		final int prime = 31;

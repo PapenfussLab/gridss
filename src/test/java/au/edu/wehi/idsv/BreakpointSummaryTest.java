@@ -135,4 +135,17 @@ public class BreakpointSummaryTest extends TestHelper {
 		assertFalse(new BreakpointSummary(1, FWD, 11, 20, 1, FWD, 10, 20).isLowBreakend());
 		assertFalse(new BreakpointSummary(1, FWD, 10, 21, 1, FWD, 10, 20).isLowBreakend());
 	}
+	@Test
+	public void couldBeIndelOfSize() {
+		assertTrue(new BreakpointSummary(0, FWD, 1, 1, 0, BWD, 3, 3).couldBeIndelOfSize(1, 1));
+		assertFalse(new BreakpointSummary(0, FWD, 1, 1, 0, FWD, 3, 3).couldBeIndelOfSize(1, 1));
+		assertFalse(new BreakpointSummary(0, BWD, 1, 1, 0, BWD, 3, 3).couldBeIndelOfSize(1, 1));
+		assertFalse(new BreakpointSummary(0, BWD, 1, 1, 0, FWD, 3, 3).couldBeIndelOfSize(1, 1));
+		
+		assertTrue(new BreakpointSummary(0, BWD, 3, 3, 0, FWD, 1, 1).couldBeIndelOfSize(1, 1));
+		assertTrue(new BreakpointSummary(0, FWD, 1, 1, 0, BWD, 2, 3).couldBeIndelOfSize(1, 1));
+		assertTrue(new BreakpointSummary(0, FWD, 1, 1, 0, BWD, 4, 4).couldBeIndelOfSize(2, 2));
+		assertTrue(new BreakpointSummary(0, FWD, 1, 1, 0, BWD, 3, 3).couldBeIndelOfSize(1, 2));
+		assertTrue(new BreakpointSummary(0, FWD, 1, 1, 0, BWD, 4, 4).couldBeIndelOfSize(1, 2));
+	}
 }

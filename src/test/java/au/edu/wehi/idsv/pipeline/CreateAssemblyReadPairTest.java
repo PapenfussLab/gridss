@@ -56,9 +56,6 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	List<SAMRecord> realign;
 	int realignCount;
 	private void orderedAddNoRealign(SAMRecordAssemblyEvidence e) {
-		orderedAdd(e, null);
-	}
-	private void orderedAddUnmapped(SAMRecordAssemblyEvidence e) {
 		SAMRecord r = new SAMRecord(getContext().getBasicSamHeader());
 		r.setReadUnmappedFlag(true);
 		orderedAdd(e, r);
@@ -248,11 +245,11 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	public void read_pair_should_match_assembly_realign_iterator() {
 		orderedAddNoRealign(AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
 				0, 1, 1, B("AA"), B("AA"), 0, 0));
-		orderedAddUnmapped(AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
+		orderedAddNoRealign(AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
 				0, 2, 1, B("AA"), B("AA"), 0, 0));
 		orderedAddNoRealign(AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
 				0, 1, 1, B("AA"), B("AA"), 0, 0));
-		orderedAddUnmapped(AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
+		orderedAddNoRealign(AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
 				0, 2, 1, B("AA"), B("AA"), 0, 0));
 		orderedAdd(AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
 				0, 3, 1, B("AA"), B("AA"), 0, 0), 1, 2, true);
@@ -264,11 +261,11 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 				0, 6, 1, B("AA"), B("AA"), 0, 0), 1, 2, false);
 		orderedAddNoRealign(AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
 				1, 1, 1, B("AA"), B("AA"), 0, 0));
-		orderedAddUnmapped(AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
+		orderedAddNoRealign(AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
 				1, 2, 1, B("AA"), B("AA"), 0, 0));
 		orderedAddNoRealign(AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
 				1, 1, 1, B("AA"), B("AA"), 0, 0));
-		orderedAddUnmapped(AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
+		orderedAddNoRealign(AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
 				1, 2, 1, B("AA"), B("AA"), 0, 0));
 		orderedAdd(AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
 				1, 3, 1, B("AA"), B("AA"), 0, 0), 1, 2, true);
@@ -305,7 +302,8 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	@Test
 	public void should_filter_breakpoints() {
 		orderedAdd(AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
-				0, 5, 1, B("TT"), B("TT"), 0, 0), 0, 6, false);
+				0, 5, 1, B("TT"), B("TT"), 0, 0),
+				0, 6, false);
 		
 		ProcessingContext pc = getCommandlineContext(false);
 		pc.getAssemblyParameters().writeFilteredAssemblies = false;
@@ -323,6 +321,7 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 		AssemblyEvidenceSource rp = new AssemblyEvidenceSource(pc, ImmutableList.<SAMEvidenceSource>of(SES()), frp);
 		rp.ensureAssembled();
 		assertEquals("precondition: breakend and realign should have been written as breakend passes filters", 1, Iterators.size(ar.iterator(false,  true)));
-		assertEquals(0, Iterators.size(rp.iterator(false,  false)));
+		List<SAMRecordAssemblyEvidence> result = Lists.newArrayList(rp.iterator(false,  false));
+		assertEquals(0, result.size());
 	}
 }

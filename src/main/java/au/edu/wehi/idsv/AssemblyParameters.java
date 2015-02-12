@@ -105,7 +105,7 @@ public class AssemblyParameters {
 		}
 		boolean filtered = false;
 		if (localEvidence.getBreakendSequence().length == 0 || localEvidence.getBreakendSummary() == null) {
-			evidence.filterAssembly(VcfFilter.ASSEMBLY_REF);
+			evidence.filterAssembly(VcfFilter.REFERENCE_ALLELE);
 			filtered = true;
 		} else if (localEvidence.getBreakendSequence() == null) {
 			log.error("Breakpoint sequence missing for assembly " + evidence.toString());

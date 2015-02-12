@@ -39,39 +39,17 @@ public class VariantCallingParameters {
 	}
 	public List<VcfFilter> breakpointFilters(BreakpointSummary bp) {
 		List<VcfFilter> list = Lists.newArrayList();
-		if (couldBeIndelUpToThan(bp, minIndelSize - 1)) {
+		if (bp.couldBeIndelOfSize(1, minIndelSize - 1)) {
 			// likely to be an artifact
 			// due to noise/poor alignment (eg bowtie2 2.1.0 would misalign reference reads)
 			// and a nearby (real) indel
 			// causing real indel mates to be assembled with noise read
 			list.add(VcfFilter.SMALL_INDEL);
 		}
-		return list;
-	}
-	private static boolean couldBeIndelUpToThan(BreakpointSummary bp, int size) {
-		if (bp.referenceIndex != bp.referenceIndex2 || bp.direction == bp.direction2) return false;
-		int fwdStart, fwdEnd, bwdStart, bwdEnd;
-		if (bp.direction == BreakendDirection.Forward) {
-			fwdStart = bp.start;
-			fwdEnd = bp.end;
-			bwdStart = bp.start2;
-			bwdEnd = bp.end2;
-		} else {
-			bwdStart = bp.start;
-			bwdEnd = bp.end;
-			fwdStart = bp.start2;
-			fwdEnd = bp.end2;
+		if (bp.couldBeIndelOfSize(0, 0)) {
+			list.add(VcfFilter.REFERENCE_ALLELE);
 		}
-		int minSize = bwdStart - fwdEnd - 1;
-		int maxSize = bwdEnd - fwdStart - 1;
-		return intervalsOverlap(minSize, maxSize, 1, size);
-	}
-	/**
-	 * Determines whether the (end-point inclusive) intervals overlap
-	 * @return true if overlap, false otherwise
-	 */
-	private static boolean intervalsOverlap(int start1, int end1, int start2, int end2) {
-		return start1 <= end2 && start2 <= end1;
+		return list;
 	}
 	public VariantContextDirectedEvidence applyFilters(VariantContextDirectedEvidence call) {
 		List<VcfFilter> filters = Lists.newArrayList();
