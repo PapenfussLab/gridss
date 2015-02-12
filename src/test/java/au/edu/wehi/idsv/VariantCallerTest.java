@@ -1,6 +1,6 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import htsjdk.samtools.SAMRecord;
 
 import java.io.File;

@@ -3,7 +3,6 @@ package au.edu.wehi.idsv;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
-import htsjdk.samtools.util.Log;
 
 import org.apache.commons.lang3.StringUtils;
 
