@@ -4,6 +4,7 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 
 import java.io.Closeable;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
@@ -30,6 +31,8 @@ public class AutoClosingMergedIterator<T> implements Closeable, CloseableIterato
 	private Iterator<? extends T> merged;
 	private boolean closed = false;
 	private T lastEmitted = null;
+	private List<CountingIterator<T>> counts = new ArrayList<CountingIterator<T>>();
+	private int emitCount = 0;
 	public AutoClosingMergedIterator(final Iterable<? extends Iterator<? extends T>> iterators, final Comparator<? super T> comparator) {
 		this.comparator = comparator;
 		this.stillOpen = Lists.newArrayList(Iterables.transform(iterators, new Function<Iterator<? extends T>, AutoClosingIterator<T>>() {
@@ -37,7 +40,9 @@ public class AutoClosingMergedIterator<T> implements Closeable, CloseableIterato
 			public AutoClosingIterator<T> apply(Iterator<? extends T> input) {
 				AutoClosingIterator<T> it = new AutoClosingIterator<T>(input);
 				if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
-					it = new AutoClosingIterator<T>(new OrderAssertingIterator<T>(it, comparator), ImmutableList.<Closeable>of(it));
+					CountingIterator<T> cit = new CountingIterator<T>(it);
+					it = new AutoClosingIterator<T>(new OrderAssertingIterator<T>(cit, comparator), ImmutableList.<Closeable>of(it));
+					counts.add(cit);
 				}
 				return it;
 			}
@@ -46,8 +51,15 @@ public class AutoClosingMergedIterator<T> implements Closeable, CloseableIterato
 	}
 	@Override
 	public boolean hasNext() {
-		return !closed && merged.hasNext();
-		
+		if (closed) return false;
+		if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS && !merged.hasNext()) {
+			int underlyingCounts = 0;
+			for (CountingIterator<T> cit : counts) {
+				underlyingCounts += cit.emitted();
+			}
+			assert(underlyingCounts == emitCount);
+		}
+		return merged.hasNext();
 	}
 	@Override
 	public T next() {
@@ -57,6 +69,7 @@ public class AutoClosingMergedIterator<T> implements Closeable, CloseableIterato
 			throw new IllegalStateException(String.format("Unable to merge out of order sequences. %s emitted before %s", lastEmitted, n));
 		}
 		lastEmitted = n;
+		emitCount++;
 		return n;
 	}
 	@Override
