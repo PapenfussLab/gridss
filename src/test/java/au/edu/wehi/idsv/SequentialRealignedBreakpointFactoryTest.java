@@ -44,4 +44,11 @@ public class SequentialRealignedBreakpointFactoryTest extends TestHelper {
 		assertNotNull(factory.findAssociatedSAMRecord(new MockDirectedEvidence(1, 1, "n5")));
 		assertNull(factory.findAssociatedSAMRecord(new MockDirectedEvidence(0, 1, "n1")));
 	}
+	@Test(expected=RuntimeException.class)
+	public void should_error_if_expected_record_not_found() {
+		SequentialRealignedBreakpointFactory factory = getFactory(L(
+			withReadName("0#1#n1", Read(0, 1, "1M"))
+			));
+		factory.findAssociatedSAMRecord(new MockDirectedEvidence(0, 1, "n2"), true);
+	}
 }
