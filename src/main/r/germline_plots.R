@@ -16,7 +16,7 @@ suppressWarnings(remove(bed, socBed, rpBed, vcf, evidence, df, mdf))
 ##################
 # 778
 ##################
-bed <- import.bed(con="W:/Papenfuss_lab/projects/liposarcoma/data/gridss/778/cgrs-from-table3.bed")
+cgr <- import.bed(con="W:/Papenfuss_lab/projects/liposarcoma/data/gridss/778/cgrs-from-table3.bed")
 socBed <- import.bed(con="W:/Papenfuss_lab/projects/liposarcoma/data/gridss/778/778_breakpoints_SOCRATES.bed")
 rpBed <- import.bed(con="W:/Papenfuss_lab/projects/liposarcoma/data/gridss/778/778_breakpoints_v15.bed")
 vcf <- readVcf("W:/Papenfuss_lab/projects/liposarcoma/data/gridss/778/778.vcf", "hg19_random")
@@ -31,15 +31,13 @@ evidence <- read.csv("W:/Papenfuss_lab/projects/liposarcoma/data/gridss/T1000/T1
 ##################
 # Set up data frame
 ##################
+vcf <- gridss.removeUnpartnerededBreakend(vcf)
 df <- gridss.truthdetails.processvcf.vcftodf(vcf)
-df$cgr <- gridss.overlaps(vcf, bed)
+df$cgr <- gridss.overlaps(vcf, cgr)
 #df$socrates <- gridss.overlaps(vcf, socBed, maxgap=4)
 #df$rpBed <- gridss.overlaps(vcf, socBed, maxgap=16)
-df$hasSC <- paste("SC", ifelse(df$SC > 0 & df$RSC > 0, "Both", ifelse(df$SC > 0, "local", ifelse(df$RSC > 0, "remote", "zero"))))
-df$hasAS <- paste("AS", ifelse(df$AS > 0 & df$RAS > 0, "Both", ifelse(df$AS > 0, "local", ifelse(df$RAS > 0, "remote", "zero"))))
-df$hasRP <- ifelse(df$RP > 0, "RP", "RP None")
 # set remote breakend columns
-df$cgrmate <- df[df$mateid,]$cgr
+df$cgrmate <- df[df$mate,]$cgr
 
 # remove those that fail mate check so we can continue
 vcf <- vcf[as.character(info(vcf)$MATEID) %in% row.names(vcf),]
@@ -128,7 +126,7 @@ ggplot(df[df$QUAL>100&df$RP>0,], aes(x=RP, y=QUAL-ASQ-RASQ-SCQ-RSCQ, color=facto
   labs(title="RP")
 
 # Contribution of local breakend evidence
-ggplot(df, aes(x=QUAL, y=BQ, color=factor(pmin(AS, 1)+pmin(RAS, 1)), size=BAS+1)) + geom_point() + scale_x_log10() + scale_y_log10() + facet_grid(cgrmate ~ cgr) +
+ggplot(df, aes(x=QUAL, y=BQ, color=confidence, size=BAS+1)) + geom_point() + scale_x_log10() + scale_y_log10() + facet_grid(cgrmate ~ cgr) +
   labs(title="Breakpoint and breakend quality score distributions according to breakend CGR location")
 
 # Effect of unique read madfing
