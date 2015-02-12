@@ -37,7 +37,7 @@ public class SequentialRealignedBreakpointFactory extends SequentialSAMRecordFac
 					+ "a) alignment not completed successfully or "
 					+ "b) chosen aligner writing records out of order."
 					+ "The aligner is required to write records in same order as the input fastq. "
-					+ "Please raise a github enhancement request if use by an aligner with no capability to ensure this ordering is required." );
+					+ "Please raise a github enhancement request if use by an aligner with no capability to ensure this ordering is required.", source.getEvidenceID());
 			log.equals(msg);
 			throw new RuntimeException(msg);
 		}

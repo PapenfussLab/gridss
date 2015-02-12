@@ -221,6 +221,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				withReadName("0#1#fr1", Read(2, 10, "15M"))[0],
 				withReadName("0#1#br1", Read(1, 15, "15M"))[0],
 				withReadName("1#2#fr2", Read(1, 10, "15M"))[0],
+				withReadName("1#2#br2", Unmapped(15))[0],
 				withReadName("2#3#fr3", Read(0, 10, "15M"))[0],
 				withReadName("2#3#br3", Read(0, 100, "15M"))[0]
 		);
@@ -243,6 +244,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				withReadName("0#1#fr1", Read(2, 10, "15M"))[0],
 				withReadName("0#1#br1", Read(1, 15, "15M"))[0],
 				withReadName("1#2#fr2", Read(1, 10, "15M"))[0],
+				withReadName("1#2#br2", Unmapped(15))[0],
 				withReadName("2#3#fr3", Read(0, 10, "15M"))[0],
 				withReadName("2#3#br3", Read(0, 100, "15M"))[0]);
 		source.completeSteps(ProcessStep.ALL_STEPS);
@@ -252,6 +254,28 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		
 		List<RealignedSoftClipEvidence> result = Lists.newArrayList(Iterators.filter(source.iterator(true, true, true), RealignedSoftClipEvidence.class));
 		assertEquals(5, result.size() - remote.size());
+	}
+	@Test(expected=RuntimeException.class)
+	public void should_require_reads_for_each_fastq_record() {
+		ProcessingContext pc = getCommandlineContext();
+		pc.getSoftClipParameters().minReadMapq = 10;
+		pc.getRealignmentParameters().minLength = 15;
+		createInput(
+				withReadName("r1", Read(0, 1, "15S15M15S")),
+				withReadName("r2", Read(1, 2, "15S15M15S")),
+				withReadName("r3", Read(2, 3, "15S15M15S")));
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
+		source.completeSteps(ProcessStep.ALL_STEPS);
+		createBAM(pc.getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, 
+				withReadName("0#1#fr1", Read(2, 10, "15M"))[0],
+				withReadName("0#1#br1", Read(1, 15, "15M"))[0],
+				withReadName("1#2#fr2", Read(1, 10, "15M"))[0],
+				//withReadName("1#2#br2", Unmapped(15))[0],
+				withReadName("2#3#fr3", Read(0, 10, "15M"))[0],
+				withReadName("2#3#br3", Read(0, 100, "15M"))[0]);
+		source.completeSteps(ProcessStep.ALL_STEPS);
+		
+		List<DirectedEvidence> result = Lists.newArrayList(source.iterator(true, true, true));
 	}
 	@Test
 	public void should_construct_percentage_based_calculator() {
