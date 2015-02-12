@@ -70,8 +70,18 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 				return false;
 			}
 			if (unpaired.containsKey(partnerId)) {
-				// other side already included
-				unpaired.remove(partnerId);
+				DirectedEvidence remote = unpaired.remove(partnerId);
+				if (!(remote instanceof DirectedBreakpoint)) {
+					String msg = String.format("Invalid pairing of breakpoint %s with breakend %s", evidence.getEvidenceID(), remote.getEvidenceID()); 
+					log.error(msg);
+					return false;
+				}
+				// Breakpoints must be the same
+				if (!((DirectedBreakpoint)remote).getBreakendSummary().remoteBreakpoint().equals(((DirectedBreakpoint)evidence).getBreakendSummary())) {
+					String msg = String.format("Breakpoints %s and %s differ for evidence pair %s %s", evidence.getBreakendSummary(), remote.getBreakendSummary(), evidence.getEvidenceID(), remote.getEvidenceID()); 
+					log.error(msg);
+					return false;
+				}
 			} else {
 				unpaired.put(evidenceId, evidence);
 			}
