@@ -113,4 +113,26 @@ public class BreakpointSummaryTest extends TestHelper {
 	public void compressBounds_should_reduce_both_down_if_symmetrical() {
 		assertEquals(new BreakpointSummary(0, FWD, 1, 1, 0, FWD, 1, 1), new BreakpointSummary(0, FWD, 1, 2, 0, FWD, 1, 2).compressBounds(1));
 	}
+	@Test
+	public void isHighBreakend() {
+		assertFalse(new BreakpointSummary(1, FWD, 10, 20, 1, FWD, 10, 20).isHighBreakend());
+		assertFalse(new BreakpointSummary(1, FWD, 10, 20, 1, BWD, 10, 20).isHighBreakend());
+		assertFalse(new BreakpointSummary(0, FWD, 10, 20, 1, FWD, 10, 20).isHighBreakend());
+		assertFalse(new BreakpointSummary(1, FWD, 9, 20, 1, FWD, 10, 20).isHighBreakend());
+		assertFalse(new BreakpointSummary(1, FWD, 10, 19, 1, FWD, 10, 20).isHighBreakend());
+		assertTrue(new BreakpointSummary(2, FWD, 10, 20, 1, FWD, 10, 20).isHighBreakend());
+		assertTrue(new BreakpointSummary(1, FWD, 11, 20, 1, FWD, 10, 20).isHighBreakend());
+		assertTrue(new BreakpointSummary(1, FWD, 10, 21, 1, FWD, 10, 20).isHighBreakend());
+	}
+	@Test
+	public void isLowBreakend() {
+		assertFalse(new BreakpointSummary(1, FWD, 10, 20, 1, FWD, 10, 20).isLowBreakend());
+		assertFalse(new BreakpointSummary(1, FWD, 10, 20, 1, BWD, 10, 20).isLowBreakend());
+		assertTrue(new BreakpointSummary(0, FWD, 10, 20, 1, FWD, 10, 20).isLowBreakend());
+		assertTrue(new BreakpointSummary(1, FWD, 9, 20, 1, FWD, 10, 20).isLowBreakend());
+		assertTrue(new BreakpointSummary(1, FWD, 10, 19, 1, FWD, 10, 20).isLowBreakend());
+		assertFalse(new BreakpointSummary(2, FWD, 10, 20, 1, FWD, 10, 20).isLowBreakend());
+		assertFalse(new BreakpointSummary(1, FWD, 11, 20, 1, FWD, 10, 20).isLowBreakend());
+		assertFalse(new BreakpointSummary(1, FWD, 10, 21, 1, FWD, 10, 20).isLowBreakend());
+	}
 }

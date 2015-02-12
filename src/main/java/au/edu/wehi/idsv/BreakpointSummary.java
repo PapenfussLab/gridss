@@ -52,6 +52,24 @@ public class BreakpointSummary extends BreakendSummary {
 		return new BreakendSummary(referenceIndex2, direction2, start2, end2);
 	}
 	/**
+	 * Determines whether this breakend is the higher of the two breakends
+	 * @return true if this breakend starts after the remote breakend
+	 */
+	public boolean isHighBreakend() {
+		if (referenceIndex != referenceIndex2) return referenceIndex > referenceIndex2;
+		if (start != start2) return start > start2;
+		return end > end2;
+	}
+	/**
+	 * Determines whether this breakend is the lower of the two breakends
+	 * @return true if this breakend starts before the remote breakend
+	 */
+	public boolean isLowBreakend() {
+		if (referenceIndex != referenceIndex2) return referenceIndex < referenceIndex2;
+		if (start != start2) return start < start2;
+		return end < end2;
+	}
+	/**
 	 * Returns the other end of this breakpoint
 	 * @return breakpoint with ends swapped
 	 */
@@ -140,6 +158,14 @@ public class BreakpointSummary extends BreakendSummary {
 			        .compare(o1.end, o2.end)
 			        .compare(o1.end2, o2.end2)
 			        .result();
+		  }
+	};
+	/**
+	 * Orders breakpoints in ascending order of the genomic location of both breakends 
+	 */
+	public static Ordering<BreakpointSummary> ByLowHigh = new Ordering<BreakpointSummary>() {
+		public int compare(BreakpointSummary o1, BreakpointSummary o2) {
+			return ByStartStart2EndEnd2.compare(o1.isHighBreakend() ? o1.remoteBreakpoint() : o1, o2.isHighBreakend() ? o2.remoteBreakpoint() : o2);
 		  }
 	};
 }

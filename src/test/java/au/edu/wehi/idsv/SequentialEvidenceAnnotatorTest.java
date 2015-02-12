@@ -152,7 +152,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 			.loc("polyA", 1, 1)
 			.alleles("A", "A[polyA:10[");
 		VariantContextDirectedBreakpoint result = (VariantContextDirectedBreakpoint)go(L(
-				(DirectedEvidence)SoftClipEvidence.create(SES(), FWD, withSequence("TTTTTTTT", Read(0, 5, "3S1M3S"))[0], withSequence("TTT", Read(0, 12, "3M"))[0])
+				(DirectedEvidence)SoftClipEvidence.create(SES(), FWD, withSequence("TTTTTTTT", Read(0, 5, "3S1M3S"))[0], withSequence("TTT", Read(0, 22, "3M"))[0])
 			), (VariantContextDirectedEvidence)builder.make());
 		assertEquals(0, result.getBreakpointEvidenceCountSoftClip(null));
 		assertEquals(0, result.getBreakendEvidenceCountSoftClip(null));
@@ -239,5 +239,48 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 		assertEquals(calls.size(), result.size());
 		assertEquals(1, ((VariantContextDirectedBreakpoint)result.get(0)).getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL));
 		assertEquals(1, ((VariantContextDirectedBreakpoint)result.get(1)).getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL));
+	}
+	private List<VariantContextDirectedBreakpoint> buildPair(ProcessingContext pc, BreakpointSummary bs, String eventid) {
+		List<VariantContextDirectedBreakpoint> list = new ArrayList<VariantContextDirectedBreakpoint>();
+		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(pc);
+		builder
+			.phredScore(1)
+			.breakpoint(bs, "")
+			.attribute("EVENT", eventid)
+			.id("low" + eventid)
+			.attribute("MATEID", "high" + eventid);
+		list.add((VariantContextDirectedBreakpoint)builder.make());
+		builder = new IdsvVariantContextBuilder(pc);
+		builder
+			.phredScore(1)
+			.breakpoint(bs.remoteBreakpoint(), "")
+			.attribute("EVENT", eventid)
+			.id("high" + eventid)
+			.attribute("MATEID", "low" + eventid);
+		list.add((VariantContextDirectedBreakpoint)builder.make());
+		return list;
+	}
+	@Test
+	public void should_disambiguate_equally_weighted_calls_by_low_high_breakend_coordinates() {
+		List<VariantContextDirectedBreakpoint> calls = new ArrayList<VariantContextDirectedBreakpoint>();
+		List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
+		ProcessingContext pc = getContext();
+		MockSAMEvidenceSource ses = SES(10, 10);
+		
+		calls.addAll(buildPair(pc, new BreakpointSummary(0, FWD, 1, 10, 1, FWD, 11, 20), "1"));
+		calls.addAll(buildPair(pc, new BreakpointSummary(0, FWD, 11, 20, 1, FWD, 1, 10), "2"));
+		
+		SAMRecord[] dp = DP(0, 1, "1M", true, 1, 1, "1M", true);
+		evidence.add(NonReferenceReadPair.create(dp[0], dp[1], ses));
+		evidence.add(NonReferenceReadPair.create(dp[1], dp[0], ses));
+		
+		Collections.sort(calls, DirectedEvidenceOrder.ByNatural);
+		Collections.sort(evidence, DirectedEvidenceOrder.ByNatural);
+		ArrayList<VariantContextDirectedEvidence> result = Lists.newArrayList(new SequentialEvidenceAnnotator(pc, calls.iterator(), evidence.iterator(), 20, true, null));
+		assertEquals(calls.size(), result.size());
+		assertEquals(1, ((VariantContextDirectedBreakpoint)result.get(0)).getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL)); // low1
+		assertEquals(0, ((VariantContextDirectedBreakpoint)result.get(1)).getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL)); // low2
+		assertEquals(0, ((VariantContextDirectedBreakpoint)result.get(2)).getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL)); // high2
+		assertEquals(1, ((VariantContextDirectedBreakpoint)result.get(3)).getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL)); // high1
 	}
 }

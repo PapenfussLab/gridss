@@ -14,7 +14,9 @@ import org.apache.commons.lang3.StringUtils;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Ordering;
 import com.google.common.collect.PeekingIterator;
 
 /**
@@ -35,6 +37,7 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 	private class ActiveVariant {
 		public final String id;
 		public final String mateid;
+		public final String eventid;
 		public final long startLocation;
 		//public final long endLocation;
 		public final BreakendSummary location;
@@ -44,6 +47,7 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 		public ActiveVariant(VariantContextDirectedEvidence call) {
 			this.id = call.hasID() ? call.getID() : null;
 			this.mateid = call.hasID() ? (String)call.getAttribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, null) : null;
+			this.eventid = (String)call.getAttribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, null);
 			this.builder = new StructuralVariationCallBuilder(context, call);
 			this.score = (float)call.getPhredScaledQual();
 			assert(this.score >= 0); // variant must have score set
@@ -65,6 +69,27 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 			return builder.make();
 		}
 	}
+	/**
+	 * Orders variants by their score then position.
+	 * Positional comparison that returns the same order for both high and low breakends
+	 * is required to ensure both sides of paired evidence is assigned to corresponding
+	 * breakends of the same event. 
+	 */
+	public static final Ordering<ActiveVariant> ByScorePosition = new Ordering<ActiveVariant>() {
+		public int compare(ActiveVariant o1, ActiveVariant o2) {
+			ComparisonChain chain = ComparisonChain.start()
+			        .compare(o1.score, o2.score);
+			if (o1.location instanceof BreakpointSummary && o2.location instanceof BreakpointSummary) {
+				chain = chain.compare((BreakpointSummary)o1.location, (BreakpointSummary)o2.location, BreakpointSummary.ByLowHigh);
+			} else {
+				chain = chain.compare(o1.location, o2.location, BreakendSummary.ByStartEnd);
+			}
+			chain = chain
+			        .compare(o1.eventid, o2.eventid)
+			        .compare(o1.id, o2.id);
+			return chain.result();
+		}
+	};
 	public SequentialEvidenceAnnotator(
 			ProcessingContext context,
 			Iterator<? extends VariantContextDirectedEvidence> calls,
@@ -91,10 +116,11 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 		if (variantBuffer.isEmpty()) {
 			if (!callIt.hasNext()) {
 				if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
-					// advance so we can check it was correct, even though
-					// we have no more calls to make so this doesn't
-					// actually need to be done
-					while (evidenceIt.hasNext()) evidenceIt.next();
+					// we have no more calls to make so this doesn't actually need to be done
+					// unless we're sanity checking
+					while (evidenceIt.hasNext()) {
+						assignEvidence(evidenceIt.next());
+					}
 				}
 				return endOfData();
 			}
@@ -125,13 +151,11 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 		bs = context.getVariantCallingParameters().withMargin(context, bs);
 		long endLocation = context.getLinear().getEndLinearCoordinate(bs);
 		if (assignEvidenceToSingleBreakpoint) {
-			float bestScore = Float.MIN_VALUE;
 			ActiveVariant best = null;
 			for (ActiveVariant v : variantBuffer) {
 				if (v.startLocation > endLocation) break;
 				if (v.location.overlaps(bs)) {
-					if (v.score > bestScore) {
-						bestScore = v.score;
+					if (best == null || ByScorePosition.compare(v, best) > 0) { 
 						best = v;
 					}
 				}
