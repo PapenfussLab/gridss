@@ -255,6 +255,22 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		List<RealignedSoftClipEvidence> result = Lists.newArrayList(Iterators.filter(source.iterator(true, true, true), RealignedSoftClipEvidence.class));
 		assertEquals(5, result.size() - remote.size());
 	}
+	@Test
+	public void remote_soft_clips_should_match_location() {
+		ProcessingContext pc = getCommandlineContext();
+		pc.getSoftClipParameters().minReadMapq = 10;
+		pc.getRealignmentParameters().minLength = 15;
+		createInput(
+				withReadName("r2", Read(1, 2, "15M15S")));
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
+		source.completeSteps(ProcessStep.ALL_STEPS);
+		createBAM(pc.getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, 
+				withReadName("1#2#fr2", Read(1, 10, "15M"))[0]);
+		source.completeSteps(ProcessStep.ALL_STEPS);
+		
+		List<DirectedEvidence> result = Lists.newArrayList(source.iterator(true, true, true));
+		assertEquals(result.get(0).getBreakendSummary(), ((BreakpointSummary)result.get(1).getBreakendSummary()).remoteBreakpoint());
+	}
 	@Test(expected=RuntimeException.class)
 	public void should_require_reads_for_each_fastq_record() {
 		ProcessingContext pc = getCommandlineContext();
@@ -275,7 +291,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				withReadName("2#3#br3", Read(0, 100, "15M"))[0]);
 		source.completeSteps(ProcessStep.ALL_STEPS);
 		
-		List<DirectedEvidence> result = Lists.newArrayList(source.iterator(true, true, true));
+		Lists.newArrayList(source.iterator(true, true, true));
 	}
 	@Test
 	public void should_construct_percentage_based_calculator() {

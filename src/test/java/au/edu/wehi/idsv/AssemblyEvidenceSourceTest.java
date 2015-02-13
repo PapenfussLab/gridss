@@ -53,6 +53,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", Read(3, 1, "1M99S"))
 				);
 		ProcessingContext pc = getCommandlineContext();
+		pc.getRealignmentParameters().requireRealignment = false;
 		pc.getAssemblyParameters().method = AssemblyMethod.DEBRUIJN_PER_POSITION;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, false);
 		ses.completeSteps(ProcessStep.ALL_STEPS);
@@ -78,6 +79,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", Read(3, 1, "1M99S"))
 				);
 		ProcessingContext pc = getCommandlineContext();
+		pc.getRealignmentParameters().requireRealignment = false;
 		pc.getAssemblyParameters().method = AssemblyMethod.DEBRUIJN_PER_POSITION;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, false);
 		ses.completeSteps(EnumSet.allOf(ProcessStep.class));

@@ -100,4 +100,8 @@ public abstract class RemoteEvidenceTest extends TestHelper  {
 	public void getBreakendQual_should_be_unchanged() {
 		assertEquals(L().getBreakendQual(), R().getBreakendQual(), 0);
 	}
+	@Test
+	public void local_remote_should_be_same_breakpoint() {
+		assertEquals(L().getBreakendSummary(), R().getBreakendSummary().remoteBreakpoint());
+	}
 }

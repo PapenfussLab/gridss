@@ -291,7 +291,9 @@ public class TestHelper {
 					assemble_remote_soft_clips = false;
 					performRealignment = false;
 					}},
-				new RealignmentParameters(), new VariantCallingParameters(),
+				new RealignmentParameters(), new VariantCallingParameters() {{
+					breakendMargin = 3;
+					}},
 				SMALL_FA_FILE, false, false);
 		return pc;
 	}

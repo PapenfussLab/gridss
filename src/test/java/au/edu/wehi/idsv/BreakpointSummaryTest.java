@@ -148,4 +148,8 @@ public class BreakpointSummaryTest extends TestHelper {
 		assertTrue(new BreakpointSummary(0, FWD, 1, 1, 0, BWD, 3, 3).couldBeIndelOfSize(1, 2));
 		assertTrue(new BreakpointSummary(0, FWD, 1, 1, 0, BWD, 4, 4).couldBeIndelOfSize(1, 2));
 	}
+	@Test
+	public void remoteBreakpoint() {
+		assertEquals(new BreakpointSummary(4, BWD, 5, 6, 1, FWD, 2, 3), new BreakpointSummary(1, FWD, 2, 3, 4, BWD, 5, 6).remoteBreakpoint());
+	}
 }

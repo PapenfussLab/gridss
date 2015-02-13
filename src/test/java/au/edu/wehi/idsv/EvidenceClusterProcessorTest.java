@@ -25,8 +25,8 @@ public class EvidenceClusterProcessorTest extends TestHelper {
 	@Test
 	public void evidence_should_expand_by_margin_then_shrink() {
 		List<DirectedEvidence> list = new ArrayList<DirectedEvidence>();
-		list.add(SCE(FWD, withSequence("TTTT", Read(0, 10, "1M3S"))[0], Read(1, 10, "3M")));
-		list.add(SCE(FWD, withSequence("TTTT", Read(0, 13, "1M3S"))[0], Read(1, 13, "3M")));
+		list.add(SCE(FWD, withSequence("TTTT", Read(0, 10, "1M3S"))[0], withSequence("TTTT", Read(1, 10, "3M"))[0]));
+		list.add(SCE(FWD, withSequence("TTTT", Read(0, 13, "1M3S"))[0], withSequence("TTTT", Read(1, 13, "3M"))[0]));
 		EvidenceClusterProcessor ecp = new EvidenceClusterProcessor(getContext(), list.iterator());
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp);
 		BreakpointSummary bp = ((VariantContextDirectedBreakpoint)result.get(0)).getBreakendSummary();

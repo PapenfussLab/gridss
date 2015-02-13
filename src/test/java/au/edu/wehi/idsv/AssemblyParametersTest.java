@@ -18,7 +18,7 @@ public class AssemblyParametersTest extends TestHelper {
 				0, 1, 2, B("AA"), B("AA"), 2, 0);
 		getContext().getAssemblyParameters().applyFilters(e);
 		assertTrue(e.isAssemblyFiltered());
-		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_REF));
+		assertTrue(e.getFilters().contains(VcfFilter.REFERENCE_ALLELE));
 	}
 	@Test
 	public void should_filter_single_read_assemblies() {
@@ -69,7 +69,7 @@ public class AssemblyParametersTest extends TestHelper {
 						NRRP(OEA(0, 1, "4M", false))),
 				0, 1, 2, B("AA"), B("AA"), 2, 0);
 		assertTrue(getContext().getAssemblyParameters().applyFilters(e));
-		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_REF));
+		assertTrue(e.getFilters().contains(VcfFilter.REFERENCE_ALLELE));
 	}
 	@Test
 	public void should_not_apply_breakend_filter_to_unanchored_assembly() {
@@ -78,7 +78,7 @@ public class AssemblyParametersTest extends TestHelper {
 						NRRP(SES(100, 100), DP(0, 1, "1M", true, 0, 5, "1M", false))),
 				B("AA"), B("AA"), 2, 0);
 		getContext().getAssemblyParameters().applyFilters(e);
-		assertFalse(e.getFilters().contains(VcfFilter.ASSEMBLY_REF));
+		assertFalse(e.getFilters().contains(VcfFilter.REFERENCE_ALLELE));
 	}
 	@Test
 	public void should_filter_too_few_reads() {

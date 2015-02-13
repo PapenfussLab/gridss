@@ -243,38 +243,24 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	}
 	@Test
 	public void read_pair_should_match_assembly_realign_iterator() {
-		orderedAddNoRealign(AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
-				0, 1, 1, B("AA"), B("AA"), 0, 0));
-		orderedAddNoRealign(AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
-				0, 2, 1, B("AA"), B("AA"), 0, 0));
-		orderedAddNoRealign(AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
-				0, 1, 1, B("AA"), B("AA"), 0, 0));
-		orderedAddNoRealign(AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
-				0, 2, 1, B("AA"), B("AA"), 0, 0));
-		orderedAdd(AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
-				0, 3, 1, B("AA"), B("AA"), 0, 0), 1, 2, true);
-		orderedAdd(AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
-				0, 4, 1, B("AA"), B("AA"), 0, 0), 1, 2, false);
-		orderedAdd(AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
-				0, 5, 1, B("AA"), B("AA"), 0, 0), 1, 2, true);
-		orderedAdd(AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
-				0, 6, 1, B("AA"), B("AA"), 0, 0), 1, 2, false);
-		orderedAddNoRealign(AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
-				1, 1, 1, B("AA"), B("AA"), 0, 0));
-		orderedAddNoRealign(AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
-				1, 2, 1, B("AA"), B("AA"), 0, 0));
-		orderedAddNoRealign(AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
-				1, 1, 1, B("AA"), B("AA"), 0, 0));
-		orderedAddNoRealign(AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
-				1, 2, 1, B("AA"), B("AA"), 0, 0));
-		orderedAdd(AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
-				1, 3, 1, B("AA"), B("AA"), 0, 0), 1, 2, true);
-		orderedAdd(AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
-				1, 4, 1, B("AA"), B("AA"), 0, 0), 1, 2, false);
-		orderedAdd(AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
-				1, 5, 1, B("AA"), B("AA"), 0, 0), 1, 2, true);
-		orderedAdd(AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
-				1, 6, 1, B("AA"), B("AA"), 0, 0), 1, 2, false);
+		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES(pc);
+		orderedAddNoRealign(AssemblyFactory.createAnchored(pc, aes, FWD, Sets.<DirectedEvidence>newHashSet(), 0, 1, 1, B("AA"), B("AA"), 0, 0));
+		orderedAddNoRealign(AssemblyFactory.createAnchored(pc, aes, BWD, Sets.<DirectedEvidence>newHashSet(), 0, 1, 1, B("AA"), B("AA"), 0, 0));
+		orderedAddNoRealign(AssemblyFactory.createAnchored(pc, aes, FWD, Sets.<DirectedEvidence>newHashSet(), 0, 2, 1, B("AA"), B("AA"), 0, 0));
+		orderedAddNoRealign(AssemblyFactory.createAnchored(pc, aes, BWD, Sets.<DirectedEvidence>newHashSet(), 0, 2, 1, B("AA"), B("AA"), 0, 0));
+		orderedAdd(AssemblyFactory.createAnchored(pc, aes, BWD, Sets.<DirectedEvidence>newHashSet(), 0, 3, 1, B("AA"), B("AA"), 0, 0), 1, 2, true);
+		orderedAdd(AssemblyFactory.createAnchored(pc, aes, BWD, Sets.<DirectedEvidence>newHashSet(), 0, 4, 1, B("AA"), B("AA"), 0, 0), 1, 2, false);
+		orderedAdd(AssemblyFactory.createAnchored(pc, aes, FWD, Sets.<DirectedEvidence>newHashSet(), 0, 5, 1, B("AA"), B("AA"), 0, 0), 1, 2, true);
+		orderedAdd(AssemblyFactory.createAnchored(pc, aes, FWD, Sets.<DirectedEvidence>newHashSet(), 0, 6, 1, B("AA"), B("AA"), 0, 0), 1, 2, false);
+		orderedAddNoRealign(AssemblyFactory.createAnchored(pc, aes, FWD, Sets.<DirectedEvidence>newHashSet(), 1, 1, 1, B("AA"), B("AA"), 0, 0));
+		orderedAddNoRealign(AssemblyFactory.createAnchored(pc, aes, BWD, Sets.<DirectedEvidence>newHashSet(), 1, 1, 1, B("AA"), B("AA"), 0, 0));
+		orderedAddNoRealign(AssemblyFactory.createAnchored(pc, aes, FWD, Sets.<DirectedEvidence>newHashSet(), 1, 2, 1, B("AA"), B("AA"), 0, 0));
+		orderedAddNoRealign(AssemblyFactory.createAnchored(pc, aes, BWD, Sets.<DirectedEvidence>newHashSet(), 1, 2, 1, B("AA"), B("AA"), 0, 0));
+		orderedAdd(AssemblyFactory.createAnchored(pc, aes, BWD, Sets.<DirectedEvidence>newHashSet(), 1, 3, 1, B("AA"), B("AA"), 0, 0), 1, 2, true);
+		orderedAdd(AssemblyFactory.createAnchored(pc, aes, BWD, Sets.<DirectedEvidence>newHashSet(), 1, 4, 1, B("AA"), B("AA"), 0, 0), 1, 2, false);
+		orderedAdd(AssemblyFactory.createAnchored(pc, aes, FWD, Sets.<DirectedEvidence>newHashSet(), 1, 5, 1, B("AA"), B("AA"), 0, 0), 1, 2, true);
+		orderedAdd(AssemblyFactory.createAnchored(pc, aes, FWD, Sets.<DirectedEvidence>newHashSet(), 1, 6, 1, B("AA"), B("AA"), 0, 0), 1, 2, false);
 		go();
 	}
 	@Test

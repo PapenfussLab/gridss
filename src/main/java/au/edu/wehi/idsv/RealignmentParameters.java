@@ -16,6 +16,11 @@ public class RealignmentParameters {
 	 * Minimum MAPQ of realigned segment to be considered uniquely aligned  
 	 */
 	public int mapqUniqueThreshold = 10;
+	/**
+	 * Flag indicating if realignment is required. If true, an error is raised
+	 * if a realignment record is required a no record is found.
+	 */
+	public boolean requireRealignment = true;
 	public boolean shouldRealignBreakend(SoftClipEvidence evidence) {
 		if (evidence.getBreakendSummary() instanceof BreakpointSummary) return false;
 		return evidence.getSoftClipLength() >= minLength

@@ -10,7 +10,7 @@ public class RealignedSAMRecordAssemblyEvidence extends SAMRecordAssemblyEvidenc
 			SAMRecordAssemblyEvidence assembly,
 			SAMRecord realigned) {
 		super(source, assembly, realigned);
-		this.rbp = new RealignedBreakpoint(source.getContext(), super.getBreakendSummary(), super.getAssemblyAnchorSequence(), realigned);
+		this.rbp = RealignedBreakpoint.create(source.getContext().getReference(), source.getContext().getDictionary(), super.getBreakendSummary(), super.getAssemblyAnchorSequence(), realigned);
 		SAMRecordUtil.pairReads(getSAMRecord(), getRemoteSAMRecord());
 	}
 	public RealignedSAMRecordAssemblyEvidence(
@@ -18,7 +18,7 @@ public class RealignedSAMRecordAssemblyEvidence extends SAMRecordAssemblyEvidenc
 			SAMRecord assembly,
 			SAMRecord realigned) {
 		super(source, assembly, realigned);
-		this.rbp = new RealignedBreakpoint(source.getContext(), super.getBreakendSummary(), super.getAssemblyAnchorSequence(), realigned);
+		this.rbp = RealignedBreakpoint.create(source.getContext().getReference(), source.getContext().getDictionary(), super.getBreakendSummary(), super.getAssemblyAnchorSequence(), realigned);
 		SAMRecordUtil.pairReads(getSAMRecord(), getRemoteSAMRecord());
 	}
 	@Override

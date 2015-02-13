@@ -15,7 +15,7 @@ public class RealignedSoftClipEvidence extends SoftClipEvidence implements Direc
 		this.realigned = realigned;
 		int pos = direction == BreakendDirection.Forward ? record.getAlignmentEnd() : record.getAlignmentStart();
 		BreakendSummary local = new BreakendSummary(record.getReferenceIndex(), direction, pos, pos);
-		this.rbp = new RealignedBreakpoint(source.getContext(), local, record.getReadBases(), realigned);
+		this.rbp = RealignedBreakpoint.create(source.getContext().getReference(), source.getContext().getDictionary(), local, record.getReadBases(), realigned);
 		setPositionAttributes();
 	}
 	private void setPositionAttributes() {

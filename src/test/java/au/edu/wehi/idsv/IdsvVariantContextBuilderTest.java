@@ -118,7 +118,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		
 		dba = new VariantContextDirectedEvidence(getContext(), AES(fragSize), new VariantContextBuilder(dba).make());
 		
-		RealignedBreakpoint rbp = new RealignedBreakpoint(getContext(), dba.getBreakendSummary(), "", realigned);
+		RealignedBreakpoint rbp = RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), dba.getBreakendSummary(), "", realigned);
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext(), dba)
 			.breakend(rbp.getBreakpointSummary(), rbp.getInsertedSequence());
 		dba = (VariantContextDirectedEvidence)builder.make();
