@@ -116,8 +116,17 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 				return input.isBreakendExact() && input instanceof DirectedBreakpoint && input instanceof SoftClipEvidence;
 			}
 		})).orNull();
+		String homo = "";
 		if (bestbp != null) {
 			breakpoint(bestbp.getBreakendSummary(), bestbp.getUntemplatedSequence());
+			homo = bestbp.getHomologySequence();
+		}
+		if (homo.length() > 0) {
+			attribute(VcfSvConstants.HOMOLOGY_SEQUENCE_KEY, homo);
+			attribute(VcfSvConstants.HOMOLOGY_LENGTH_KEY, homo.length());
+		} else {
+			rmAttribute(VcfSvConstants.HOMOLOGY_SEQUENCE_KEY);
+			rmAttribute(VcfSvConstants.HOMOLOGY_LENGTH_KEY);
 		}
 	}
 	private void setImprecise() {

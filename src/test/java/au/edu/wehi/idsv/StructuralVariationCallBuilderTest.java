@@ -26,7 +26,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public final static BreakpointSummary BP = new BreakpointSummary(0, BWD, 10, 10, 1, BWD, 100, 100);
 	public static class sc extends SoftClipEvidence {
 		protected sc(int offset, boolean tumour) {
-			super(SES(tumour), BWD, Read(0, 10, "5S5M"));
+			super(SES(tumour), BWD, withSequence("NNNNNNNNNN", Read(0, 10, "5S5M"))[0]);
 			this.offset = offset;
 		}
 		int offset;
@@ -41,7 +41,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public static class rsc extends RealignedSoftClipEvidence {
 		int offset;
 		protected rsc(int offset, boolean tumour) {
-			super(SES(tumour), BWD, Read(0, 10, "5S5M"), onNegative(Read(1, 100, "5M"))[0]);
+			super(SES(tumour), BWD, withSequence("NNNNNNNNNN", Read(0, 10, "5S5M"))[0], onNegative(withSequence("NNNNN", Read(1, 100, "5M")))[0]);
 			this.offset = offset;
 		}
 		@Override public int getLocalMapq() { return 1 + offset; }
@@ -172,7 +172,9 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		assertEquals(2, e.getBreakpointEvidenceCountReadPair(EvidenceSubset.TUMOUR));
 	}
 	public VariantContextDirectedBreakpoint complex_bp() {
-		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)minimalBreakend()
+		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES(pc);
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
 				.breakpoint(BP, "GT").make());
 		cb.addEvidence(new sc(1, true));
 		cb.addEvidence(new sc(2, false));
@@ -194,20 +196,20 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		cb.addEvidence(new dp(1, true));
 		cb.addEvidence(new dp(2, true));
 		cb.addEvidence(AssemblyFactory.incorporateRealignment(getContext(),
-				AssemblyFactory.createAnchored(getContext(), AES(), BP.direction, Sets.<DirectedEvidence>newHashSet(
+				AssemblyFactory.createAnchored(pc, aes, BP.direction, Sets.<DirectedEvidence>newHashSet(
 						new rsc(5, false)
 						), BP.referenceIndex, BP.end, 1, B("TT"), B("TT"), 1, 2),
 				withMapq(44, onNegative(Read(BP.referenceIndex2, BP.start2, "1M")))[0]));
-		cb.addEvidence(AssemblyFactory.createAnchored(getContext(), AES(), BP.direction, Sets.<DirectedEvidence>newHashSet(
+		cb.addEvidence(AssemblyFactory.createAnchored(pc, aes, BP.direction, Sets.<DirectedEvidence>newHashSet(
 						new um(6, true)
 						), BP.referenceIndex, BP.end, 1, B("TC"), B("TC"), 1, 2));
-		cb.addEvidence(AssemblyFactory.incorporateRealignment(getContext(),
-				AssemblyFactory.createAnchored(getContext(), AES(), BP.direction, Sets.<DirectedEvidence>newHashSet(
+		cb.addEvidence(AssemblyFactory.incorporateRealignment(pc,
+				AssemblyFactory.createAnchored(pc, aes, BP.direction, Sets.<DirectedEvidence>newHashSet(
 						new rsc(6, false)
 						), BP.referenceIndex, BP.end, 1, B("TA"), B("TA"), 1, 2),
 				withMapq(1, onNegative(Read(BP.referenceIndex2, BP.start2, "1M")))[0]));
-		cb.addEvidence(((RealignedSAMRecordAssemblyEvidence)AssemblyFactory.incorporateRealignment(getContext(),
-				AssemblyFactory.createAnchored(getContext(), AES(), BP.direction, Sets.<DirectedEvidence>newHashSet(
+		cb.addEvidence(((RealignedSAMRecordAssemblyEvidence)AssemblyFactory.incorporateRealignment(pc,
+				AssemblyFactory.createAnchored(pc, aes, BP.direction, Sets.<DirectedEvidence>newHashSet(
 						new sc(4, false)), BP.referenceIndex2, BP.end2, 1, B("TT"), B("TT"), 1, 2),
 				withMapq(44, onNegative(Read(BP.referenceIndex, BP.start, "1M")))[0])).asRemote());
 		return (VariantContextDirectedBreakpoint)cb.make();
@@ -426,13 +428,15 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_filter_small_indels() {
-		assertTrue(new StructuralVariationCallBuilder(getContext(),
+		ProcessingContext pc = getContext();
+		pc.getVariantCallingParameters().minIndelSize = 16;
+		assertTrue(new StructuralVariationCallBuilder(pc,
 				(VariantContextDirectedEvidence)minimalBreakend()
-					.breakpoint(new BreakpointSummary(new BreakendSummary(0, FWD, 100, 200), new BreakendSummary(0, BWD, 115, 215)), "")
+					.breakpoint(new BreakpointSummary(new BreakendSummary(0, FWD, 100, 200), new BreakendSummary(0, BWD, 116, 216)), "") // could be 15bp deletion
 					.make()).make().getFilters().contains(VcfFilter.SMALL_INDEL.filter()));
-		assertFalse(new StructuralVariationCallBuilder(getContext(),
+		assertFalse(new StructuralVariationCallBuilder(pc,
 				(VariantContextDirectedEvidence)minimalBreakend()
-					.breakpoint(new BreakpointSummary(new BreakendSummary(0, FWD, 100, 200), new BreakendSummary(0, BWD, 216, 316)), "")
+					.breakpoint(new BreakpointSummary(new BreakendSummary(0, FWD, 100, 200), new BreakendSummary(0, BWD, 217, 317)), "") // 16+bp deletion
 					.make()).make().getFilters().contains(VcfFilter.SMALL_INDEL.filter()));
 	}
 	@Test
@@ -449,7 +453,18 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_set_HOMLEN_HOMSEQ_for_microhomology() {
-		Assert.fail();
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(0, FWD, 10, 20, 0, BWD, 30, 40), "");
+			phredScore(20);
+		}}.make());
+		List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
+		evidence.add(SoftClipEvidence.create(SES(), FWD, Read(0, 11, "5M5S"), Read(0, 35, "5M")));
+		for (DirectedEvidence e : evidence) {
+			builder.addEvidence(e);
+		}
+		VariantContextDirectedEvidence call = builder.make();
+		assertEquals("AAAAAAAAAA", call.getAttribute(VcfSvConstants.HOMOLOGY_SEQUENCE_KEY));
+		assertEquals(10, call.getAttribute(VcfSvConstants.HOMOLOGY_LENGTH_KEY));
 	}
 	@Test
 	public void should_use_CILEN_tag_for_total_untemplated_sequence() {
@@ -505,8 +520,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			phredScore(20);
 		}}.make());
 		List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
-		evidence.add(SoftClipEvidence.create(SES(), FWD, Read(0, 12, "1M3S"), withMapq(14, Read(1, 11, "3M"))[0]));
-		evidence.add(SoftClipEvidence.create(SES(), FWD, Read(0, 13, "1M3S"), withMapq(15, Read(1, 11, "3M"))[0]));
+		evidence.add(SoftClipEvidence.create(SES(), FWD, Read(0, 12, "1M3S"), withSequence("NNN", withMapq(14, Read(1, 11, "3M")))[0]));
+		evidence.add(SoftClipEvidence.create(SES(), FWD, Read(0, 13, "1M3S"), withSequence("NNN", withMapq(15, Read(1, 11, "3M")))[0]));
 		for (DirectedEvidence e : evidence) {
 			builder.addEvidence(e);
 		}
