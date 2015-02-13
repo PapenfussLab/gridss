@@ -6,6 +6,7 @@ import java.util.List;
 
 import au.edu.wehi.idsv.util.CollectionUtil;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ComparisonChain;
@@ -58,6 +59,14 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 	@Override
 	public String getUntemplatedSequence() {
 		return getBreakpointSequenceString();
+	}
+	@Override
+	public String getHomologySequence() {
+		return getAttributeAsString(VcfSvConstants.HOMOLOGY_SEQUENCE_KEY, "");
+	}
+	@Override
+	public int getHomologyAnchoredBaseCount() {
+		throw new RuntimeException("NYI: need to recalculate microhomology");
 	}
 	public static Ordering<VariantContextDirectedBreakpoint> ByRemoteBreakendLocationStart = new Ordering<VariantContextDirectedBreakpoint>() {
 		public int compare(VariantContextDirectedBreakpoint o1, VariantContextDirectedBreakpoint o2) {

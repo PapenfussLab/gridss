@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv;
 
+import java.util.Arrays;
+
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.util.SequenceUtil;
@@ -103,6 +105,15 @@ public class SoftClipEvidence implements DirectedEvidence {
 	@Override
 	public byte[] getBreakendQuality() {
 		return location.direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipBaseQualities(record) : SAMRecordUtil.getStartSoftClipBaseQualities(record);
+	}
+	public byte[] getAnchorSequence() {
+		byte[] data = record.getReadBases();
+		int len = data.length - getSoftClipLength();
+		if (location.direction == BreakendDirection.Forward) {
+			return Arrays.copyOfRange(data, 0, len);
+		} else {
+			return Arrays.copyOfRange(data, data.length - len, data.length);
+		}
 	}
 	public SAMRecord getSAMRecord() {
 		return this.record;

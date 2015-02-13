@@ -232,7 +232,7 @@ public class AssemblyFactoryTest extends TestHelper {
 		
 		assertEquals(new BreakpointSummary(0, FWD, 100, 100, 1, BWD, 200, 200),
 				AssemblyFactory.incorporateRealignment(pc,
-					AssemblyFactory.createAnchored(pc, aes, FWD, support, 0, 100, 1, B("TTT"), B("TTT"), 0, 0),
+					AssemblyFactory.createAnchored(pc, aes, FWD, support, 0, 100, 1, B("NNN"), B("NNN"), 0, 0),
 					new SAMRecord(pc.getBasicSamHeader()) {{
 						setMappingQuality(40);
 						setReferenceIndex(1);
@@ -243,7 +243,7 @@ public class AssemblyFactoryTest extends TestHelper {
 		
 		assertEquals(new BreakpointSummary(0, FWD, 100, 100, 1, FWD, 200, 200),
 				AssemblyFactory.incorporateRealignment(pc,
-					AssemblyFactory.createAnchored(pc, aes, FWD, support, 0, 100, 1, B("TTT"), B("TTT"), 0, 0),
+					AssemblyFactory.createAnchored(pc, aes, FWD, support, 0, 100, 1, B("NNN"), B("NNN"), 0, 0),
 					new SAMRecord(pc.getBasicSamHeader()) {{
 						setMappingQuality(40);
 						setReferenceIndex(1);
@@ -254,7 +254,7 @@ public class AssemblyFactoryTest extends TestHelper {
 		
 		assertEquals(new BreakpointSummary(0, BWD, 100, 100, 1, FWD, 200, 200),
 				AssemblyFactory.incorporateRealignment(pc,
-					AssemblyFactory.createAnchored(pc, aes, BWD, support, 0, 100, 1, B("TTT"), B("TTT"), 0, 0),
+					AssemblyFactory.createAnchored(pc, aes, BWD, support, 0, 100, 1, B("NNN"), B("NNN"), 0, 0),
 					new SAMRecord(pc.getBasicSamHeader()) {{
 						setMappingQuality(40);
 						setReferenceIndex(1);
@@ -265,7 +265,7 @@ public class AssemblyFactoryTest extends TestHelper {
 		
 		assertEquals(new BreakpointSummary(0, BWD, 100, 100, 1, BWD, 200, 200),
 				AssemblyFactory.incorporateRealignment(pc,
-					AssemblyFactory.createAnchored(pc, aes, BWD, support, 0, 100, 1, B("TTT"), B("TTT"), 0, 0),
+					AssemblyFactory.createAnchored(pc, aes, BWD, support, 0, 100, 1, B("NNN"), B("NNN"), 0, 0),
 					new SAMRecord(pc.getBasicSamHeader()) {{
 						setMappingQuality(40);
 						setReferenceIndex(1);

@@ -15,7 +15,7 @@ public class RealignedSoftClipEvidence extends SoftClipEvidence implements Direc
 		this.realigned = realigned;
 		int pos = direction == BreakendDirection.Forward ? record.getAlignmentEnd() : record.getAlignmentStart();
 		BreakendSummary local = new BreakendSummary(record.getReferenceIndex(), direction, pos, pos);
-		this.rbp = RealignedBreakpoint.create(source.getContext().getReference(), source.getContext().getDictionary(), local, record.getReadBases(), realigned);
+		this.rbp = RealignedBreakpoint.create(source.getContext().getReference(), source.getContext().getDictionary(), local, getAnchorSequence(), realigned);
 		setPositionAttributes();
 	}
 	private void setPositionAttributes() {
@@ -40,6 +40,14 @@ public class RealignedSoftClipEvidence extends SoftClipEvidence implements Direc
 	}
 	public String getUntemplatedSequence() {
 		return rbp.getInsertedSequence();
+	}
+	@Override
+	public String getHomologySequence() {
+		return rbp.getHomologySequence();
+	}
+	@Override
+	public int getHomologyAnchoredBaseCount() {
+		return rbp.getHomologyBaseCountIncludedLocally();
 	}
 	@Override
 	public int getRemoteMapq() {

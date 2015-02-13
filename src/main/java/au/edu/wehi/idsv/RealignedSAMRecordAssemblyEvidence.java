@@ -26,6 +26,18 @@ public class RealignedSAMRecordAssemblyEvidence extends SAMRecordAssemblyEvidenc
 		return rbp.getBreakpointSummary();
 	}
 	@Override
+	public String getHomologySequence() {
+		return rbp.getHomologySequence();
+	}
+	@Override
+	public int getHomologyAnchoredBaseCount() {
+		return rbp.getHomologyBaseCountIncludedLocally();
+	}
+	@Override
+	public String getUntemplatedSequence() {
+		return rbp.getInsertedSequence();
+	}
+	@Override
 	public int getRemoteMapq() {
 		return getRemoteSAMRecord().getMappingQuality();
 	}
@@ -44,10 +56,6 @@ public class RealignedSAMRecordAssemblyEvidence extends SAMRecordAssemblyEvidenc
 	@Override
 	public int getRemoteTotalBaseQual() {
 		return SAMRecordUtil.getTotalReferenceBaseQual(getRemoteSAMRecord());
-	}
-	@Override
-	public String getUntemplatedSequence() {
-		return rbp.getInsertedSequence();
 	}
 	public float getBreakpointQual() {
 		int evidenceCount = getAssemblySupportCountReadPair(EvidenceSubset.ALL) + getAssemblySupportCountSoftClip(EvidenceSubset.ALL);

@@ -15,9 +15,13 @@ public class RealignedBreakpoint {
 	private final BreakpointSummary summary;
 	private final String insertedSequence;
 	private final boolean exact;
-	private RealignedBreakpoint(BreakpointSummary summary, String insertedSequence, boolean exact) {
+	private final String homology;
+	private final int locallyMappedHomologyBaseCount;
+	private RealignedBreakpoint(BreakpointSummary summary, String insertedSequence, boolean exact, String homology, int locallyMappedHomologyBaseCount) {
 		this.summary = summary;
 		this.insertedSequence = insertedSequence;
+		this.homology = homology;
+		this.locallyMappedHomologyBaseCount = locallyMappedHomologyBaseCount;
 		this.exact = exact;
 	}
 	public static RealignedBreakpoint create(ReferenceSequenceFile reference, SAMSequenceDictionary dictionary, BreakendSummary local, String anchoredSequence, SAMRecord realigned) {
@@ -63,21 +67,38 @@ public class RealignedBreakpoint {
 				remoteDirection == BreakendDirection.Forward ? remotePosition : remotePosition - ci,
 				remoteDirection == BreakendDirection.Backward ? remotePosition : remotePosition + ci);
 		
-		int microhomologyLengthLocalSequenceRemotePosition = 0;
-		int microhomologyLengthRemoteSequenceLocalPosition = 0;
+		String microhomologyLocalSequenceRemotePosition = "";
+		String microhomologyRemoteSequenceLocalPosition = "";
+		String microhomology = "";
 		if (insertedSequence.length() == 0 && exact) {
 			// only consider microhomology if there is no inserted sequence
-			microhomologyLengthLocalSequenceRemotePosition = calculateMicrohomologyLength(reference, dictionary, local.direction, anchoredSequence, realigned.getReferenceIndex(), remoteDirection, remotePosition);
-			microhomologyLengthRemoteSequenceLocalPosition = calculateMicrohomologyLength(reference, dictionary, remoteDirection, realigned.getReadBases(), local.referenceIndex, local.direction, local.start);
+			microhomologyLocalSequenceRemotePosition = calculateMicrohomology(reference, dictionary, local.direction, anchoredSequence, realigned.getReferenceIndex(), remoteDirection, remotePosition);
+			microhomologyRemoteSequenceLocalPosition = calculateMicrohomology(reference, dictionary, remoteDirection, realigned.getReadBases(), local.referenceIndex, local.direction, local.start);
+			if (local.direction == remoteDirection) {
+				microhomologyRemoteSequenceLocalPosition = SequenceUtil.reverseComplement(microhomologyRemoteSequenceLocalPosition);
+			}
+			if (local.direction == BreakendDirection.Forward) {
+				microhomology = microhomologyLocalSequenceRemotePosition + microhomologyRemoteSequenceLocalPosition;
+			} else {
+				microhomology = microhomologyRemoteSequenceLocalPosition + microhomologyLocalSequenceRemotePosition;
+			}
 		}
-		if (microhomologyLengthLocalSequenceRemotePosition > 0 || microhomologyLengthRemoteSequenceLocalPosition > 0) {
+		if (microhomology.length() > 0) {
+			// given local FWD, remote BWD: 
+			//       local       remote       abc=microhomologyLengthLocalSequenceRemotePosition
+			// Read: NNabc>     <defNNN       def=microhomologyLengthRemoteSequenceLocalPosition
+			// Ref:  -----def-abc------
+			// local start = call position - |def|
+			// local end = call position + |abc|
+			int localHomoBases = microhomologyLocalSequenceRemotePosition.length();
+			int remoteHomoBases = microhomologyRemoteSequenceLocalPosition.length();
 			summary = new BreakpointSummary(
 					summary.referenceIndex, summary.direction,
-					summary.direction == BreakendDirection.Backward ? summary.start - microhomologyLengthRemoteSequenceLocalPosition : summary.start - microhomologyLengthLocalSequenceRemotePosition,
-					summary.direction == BreakendDirection.Forward ? summary.end + microhomologyLengthRemoteSequenceLocalPosition : summary.end + microhomologyLengthLocalSequenceRemotePosition,
+					summary.direction == BreakendDirection.Forward ? summary.start - localHomoBases: summary.start - remoteHomoBases,
+					summary.direction == BreakendDirection.Forward ? summary.end + remoteHomoBases: summary.end + localHomoBases,
 					summary.referenceIndex2, summary.direction2,
-					summary.direction2 == BreakendDirection.Forward ? summary.start2 - microhomologyLengthRemoteSequenceLocalPosition : summary.start2 - microhomologyLengthLocalSequenceRemotePosition,
-					summary.direction2 == BreakendDirection.Backward ? summary.end2 + microhomologyLengthRemoteSequenceLocalPosition : summary.end2 + microhomologyLengthLocalSequenceRemotePosition) ;
+					summary.direction2 == BreakendDirection.Forward ? summary.start2 - remoteHomoBases: summary.start2 - localHomoBases,
+					summary.direction2 == BreakendDirection.Forward ? summary.end2 + localHomoBases: summary.end2 + remoteHomoBases);
 		}
 		if (local instanceof BreakpointSummary) {
 			BreakpointSummary bp = (BreakpointSummary)local;
@@ -93,7 +114,7 @@ public class RealignedBreakpoint {
 				summary.referenceIndex2, summary.direction2,
 				ensureOnContig(dictionary, summary.referenceIndex2, summary.start2),
 				ensureOnContig(dictionary, summary.referenceIndex2, summary.end2));
-		return new RealignedBreakpoint(summary, insertedSequence, exact);
+		return new RealignedBreakpoint(summary, insertedSequence, exact, microhomology, microhomologyLocalSequenceRemotePosition.length());
 	}
 	private static int ensureOnContig(SAMSequenceDictionary dict, int referenceIndex, int position) {
 		int contigLength = dict.getSequence(referenceIndex).getSequenceLength();
@@ -107,9 +128,9 @@ public class RealignedBreakpoint {
 	 * @param anchoredSequence anchored sequence
 	 * @param remoteLocation realignment location
 	 * @param baseOffset
-	 * @return
+	 * @return microhomology
 	 */
-	private static int calculateMicrohomologyLength(
+	private static String calculateMicrohomology(
 			ReferenceSequenceFile reference,
 			SAMSequenceDictionary dictionary,
 			BreakendDirection anchorDirection,
@@ -120,7 +141,7 @@ public class RealignedBreakpoint {
 		// Micro-homology detection:
 		// anchored sequence: TTTAAAAA>
 		// realign reference: GGGAAAAA
-		if (realignReferenceIndex == null || realignReferenceIndex < 0) return 0;
+		if (realignReferenceIndex == null || realignReferenceIndex < 0) return "";
 		int windowStart = realignDirection == BreakendDirection.Forward ? realignPosition + 1 : realignPosition - 1 - anchoredSequence.length + 1;
 		int windowEnd = realignDirection == BreakendDirection.Forward ? realignPosition + 1 + anchoredSequence.length - 1 : realignPosition - 1;
 		byte[] referenceBases = getPaddedSubsequenceAt(reference, dictionary, realignReferenceIndex, windowStart, windowEnd);
@@ -138,10 +159,14 @@ public class RealignedBreakpoint {
 			realignInc = -1;
 		}
 		int i = 0;
-		while (i < anchoredSequence.length && basesMatch(anchoredSequence[firstAnchorBase + anchorInc * i], referenceBases[firstRealignBase + realignInc * i])) {
+		while (i < anchoredSequence.length && basesMatch(anchoredSequence[firstAnchorBase + anchorInc * i], referenceBases[firstRealignBase + realignInc * i], anchorDirection, realignDirection)) {
 			i++;
 		}
-		return i;
+		if (anchorDirection == BreakendDirection.Forward) {
+			return new String(anchoredSequence, anchoredSequence.length - i, i);
+		} else {
+			return new String(anchoredSequence, 0, i);
+		}
 	}
 	/**
 	 * Gets the subsequence at the given position, padding with Ns if the contig bounds are overrun
@@ -170,17 +195,14 @@ public class RealignedBreakpoint {
 		}
 		return bases;
 	}
-	private static boolean basesMatch(byte anchor, byte realign) {
+	private static boolean basesMatch(byte anchor, byte realign, BreakendDirection anchorDirection, BreakendDirection realignDirection) {
 		int c1 = Character.toUpperCase(anchor);
-		int c2 = Character.toUpperCase(realign);
+		int c2 = Character.toUpperCase(anchorDirection != realignDirection ? realign : SequenceUtil.complement(realign));
 		// require exact base matching (any case)
 		return c1 == c2 && c1 != 'N';
 	}
 	public BreakpointSummary getBreakpointSummary() {
 		return summary;
-	}
-	public int getInsertedSequenceLength() {
-		return insertedSequence.length();
 	}
 	/**
 	 * Returns the untemplated breakpoint sequence not mapped to either the local
@@ -190,10 +212,39 @@ public class RealignedBreakpoint {
 	public String getInsertedSequence() {
 		return insertedSequence;
 	}
-	public int getMicroHomologyLength() {
-		return isExact() ? summary.end - summary.start : 0;
+	/**
+	 * Returns any microhomology present at the breakpoint location.
+	 * @return homologous bases
+	 */
+	public String getHomologySequence() {
+		return homology;
+	}
+	/**
+	 * Returns the number of homologous bases included in the anchor sequence
+	 * @return homologous bases
+	 */
+	public int getHomologyBaseCountIncludedLocally() {
+		return locallyMappedHomologyBaseCount;
 	}
 	public boolean isExact() {
 		return exact;
+	}
+	public String toString() {
+		StringBuilder sb = new StringBuilder(getBreakpointSummary().toString());
+		if (getInsertedSequence().length() > 0) {
+			sb.append(" ins:");
+			sb.append(getInsertedSequence());
+		}
+		if (getHomologySequence().length() > 0) {
+			sb.append(" hom:");
+			sb.append(getHomologySequence());
+			sb.append("(");
+			sb.append(getHomologyBaseCountIncludedLocally());
+			sb.append(")");
+		}
+		if (!exact) {
+			sb.append(" inexact");
+		}
+		return sb.toString();
 	}
 }

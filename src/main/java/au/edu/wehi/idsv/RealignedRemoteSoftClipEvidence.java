@@ -28,6 +28,7 @@ public class RealignedRemoteSoftClipEvidence extends RealignedSoftClipEvidence i
 				createLocal(evidence, evidence.getBreakendSummary().direction, evidence.getSAMRecord(), evidence.getRealignedSAMRecord()),
 				createRemote(evidence, evidence.getBreakendSummary().direction, evidence.getSAMRecord(), evidence.getRealignedSAMRecord()));
 		this.local = evidence;
+		assert(getBreakendSummary().equals(local.getBreakendSummary().remoteBreakpoint()));
 	}
 	public RealignedSoftClipEvidence asLocal() {
 		return local;

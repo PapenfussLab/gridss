@@ -152,4 +152,9 @@ public class RealignedSoftClipEvidenceTest extends TestHelper {
 				withMapq(11, withQual(new byte[] { 1,2,3,4,5,6}, Read(0, 1, "1S3M2S")))[0]));
 		assertEquals(11, sce.getBreakpointQual(), 0);
 	}
+	@Test
+	public void should_calc_homology() {
+		RealignedSoftClipEvidence sce = ((RealignedSoftClipEvidence)SoftClipEvidence.create(SES(), BreakendDirection.Forward, Read(0, 2, "1M1S"), Read(0, 5, "1M")));
+		assertEquals(new BreakpointSummary(0, FWD, 1, 3, 0, BWD, 4, 6), sce.getBreakendSummary());
+	}
 }

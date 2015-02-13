@@ -24,6 +24,16 @@ public interface DirectedBreakpoint extends DirectedEvidence {
 	 */
 	String getUntemplatedSequence();
 	/**
+	 * Returns any microhomology present at the breakpoint location.
+	 * @return homologous bases
+	 */
+	String getHomologySequence();
+	/**
+	 * Returns the number of homologous bases included in the anchor sequence
+	 * @return homologous bases
+	 */
+	int getHomologyAnchoredBaseCount();
+	/**
 	 * Evidence according to the remote breakend 
 	 * @return evidence from the remote breakend perspective
 	 */

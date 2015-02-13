@@ -68,21 +68,24 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 			}
 			return builder.make();
 		}
+		public String toString() {
+			return String.format("%s %f %s", location, score, id);
+		}
 	}
 	/**
-	 * Orders variants by their score then position.
+	 * Orders variants by their score then position
 	 * Positional comparison that returns the same order for both high and low breakends
 	 * is required to ensure both sides of paired evidence is assigned to corresponding
 	 * breakends of the same event. 
 	 */
-	public static final Ordering<ActiveVariant> ByScorePosition = new Ordering<ActiveVariant>() {
+	private static final Ordering<ActiveVariant> ByScoreAscPositionDesc = new Ordering<ActiveVariant>() {
 		public int compare(ActiveVariant o1, ActiveVariant o2) {
 			ComparisonChain chain = ComparisonChain.start()
 			        .compare(o1.score, o2.score);
 			if (o1.location instanceof BreakpointSummary && o2.location instanceof BreakpointSummary) {
-				chain = chain.compare((BreakpointSummary)o1.location, (BreakpointSummary)o2.location, BreakpointSummary.ByLowHigh);
+				chain = chain.compare((BreakpointSummary)o2.location, (BreakpointSummary)o1.location, BreakpointSummary.ByLowHigh);
 			} else {
-				chain = chain.compare(o1.location, o2.location, BreakendSummary.ByStartEnd);
+				chain = chain.compare(o2.location, o1.location, BreakendSummary.ByStartEnd);
 			}
 			chain = chain
 			        .compare(o1.eventid, o2.eventid)
@@ -155,7 +158,7 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 			for (ActiveVariant v : variantBuffer) {
 				if (v.startLocation > endLocation) break;
 				if (v.location.overlaps(bs)) {
-					if (best == null || ByScorePosition.compare(v, best) > 0) { 
+					if (best == null || ByScoreAscPositionDesc.compare(v, best) > 0) { 
 						best = v;
 					}
 				}
