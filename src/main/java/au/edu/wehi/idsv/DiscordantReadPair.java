@@ -91,4 +91,12 @@ public class DiscordantReadPair extends NonReferenceReadPair implements Directed
 	public DiscordantReadPair asRemote() {
 		return (DiscordantReadPair)NonReferenceReadPair.create(getNonReferenceRead(), getLocalledMappedRead(), getEvidenceSource());
 	}
+	@Override
+	public String getHomologySequence() {
+		return null;
+	}
+	@Override
+	public int getHomologyAnchoredBaseCount() {
+		return 0;
+	}
 }

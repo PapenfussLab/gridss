@@ -1,10 +1,10 @@
 package au.edu.wehi.idsv;
 
-import java.util.Arrays;
-
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.util.SequenceUtil;
+
+import java.util.Arrays;
 
 import org.apache.commons.lang3.StringUtils;
 
