@@ -33,6 +33,8 @@ public class VcfConstants {
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.IMPRECISE);
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.MATE_BREAKEND_ID);
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.BREAKEND_EVENT_ID);
+		header.addMetaDataLine(VcfStructuralVariantHeaderLines.HOMOLOGY_LENGTH);
+		header.addMetaDataLine(VcfStructuralVariantHeaderLines.HOMOLOGY_SEQUENCE);
 		header.addMetaDataLine(VCFStandardHeaderLines.getInfoLine(VCFConstants.SOMATIC_KEY));
 		
 		// indel headers
