@@ -321,4 +321,9 @@ public class SoftClipEvidenceTest extends TestHelper {
 	public void isNotExact() {
 		assertTrue(SCE(FWD, Read(0, 1, "1M1S")).isBreakendExact());
 	}
+	@Test
+	public void getAnchorSequence_should_return_all_bases_not_in_soft_clip() {
+		assertEquals("ACGT", S(SCE(FWD, withSequence("ACGTNN", Read(0, 1, "1S3M2S"))[0]).getAnchorSequence()));
+		assertEquals("CGTNN", S(SCE(BWD, withSequence("ACGTNN", Read(0, 1, "1S3M2S"))[0]).getAnchorSequence()));
+	}
 }

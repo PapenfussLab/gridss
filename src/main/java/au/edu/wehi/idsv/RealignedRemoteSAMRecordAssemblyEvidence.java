@@ -43,6 +43,18 @@ public class RealignedRemoteSAMRecordAssemblyEvidence extends RealignedSAMRecord
 		}
 	}
 	@Override
+	public int getHomologyAnchoredBaseCount() {
+		return super.getHomologySequence().length() - super.getHomologyAnchoredBaseCount();
+	}
+	@Override
+	public String getHomologySequence() {
+		String seq = super.getHomologySequence();
+		if (getRemoteSAMRecord().getReadNegativeStrandFlag()) {
+			seq = SequenceUtil.reverseComplement(seq);
+		}
+		return seq;
+	}
+	@Override
 	public String getEvidenceID() {
 		return "R" + super.getEvidenceID();
 	}

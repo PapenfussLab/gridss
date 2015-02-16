@@ -258,7 +258,6 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			  return ComparisonChain.start()
 			        .compareTrueFirst(o1 instanceof DirectedBreakpoint, o2 instanceof DirectedBreakpoint)
 			        .compareTrueFirst(o1.isBreakendExact(), o2.isBreakendExact())
-			        //.compareFalseFirst(o1 instanceof RemoteEvidence, o2 instanceof RemoteEvidence)
 			        .compare(o2 instanceof DirectedBreakpoint ? ((DirectedBreakpoint)o2).getBreakpointQual() : o2.getBreakendQual(),
 			        		o1 instanceof DirectedBreakpoint ? ((DirectedBreakpoint)o1).getBreakpointQual() : o1.getBreakendQual()) // desc
 			        .result();

@@ -101,6 +101,12 @@ ggplot(dfWindow, aes(x=QUAL)) +
   scale_x_log10() + 
   labs(title="Breakpoint call clustering by window size", color="Number of calls in window")
 
+
+###############
+# Microhomology size distribution
+###############
+ggplot(df, aes(x=HOMLEN)) + geom_histogram(binwidth=1) #geom_point() 
+
 ###############
 # Evidence distributions
 ###############

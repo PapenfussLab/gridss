@@ -18,6 +18,7 @@ import com.google.common.io.Files;
 
 public class IdsvTest extends IntermediateFilesTest {
 	@Test
+	@Ignore("Moved to 3-pass system: need sc realignment bams before assemblies can be created")
 	public void test_sv_comparision_203541() throws IOException {
 		File output = new File(super.testFolder.getRoot(), "203541.vcf");
 		setReference(new File("C:/dev/chr12.fa"));

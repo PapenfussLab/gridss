@@ -60,13 +60,13 @@ countVcfGrBreakpointHits <- function(vcf, gr, ...) {
 vcftobpgr <- function(vcf) {
   vcfgr <- rowData(vcf)
   # set strand
-  strand(vcfgr) <- ifelse(str_detect(as.character(fixed(vcf)$ALT), "[[:alpha:]]+(\\[|]).*(\\[|])"), "+", "-")
+  strand(vcfgr) <- ifelse(str_detect(as.character(rowData(vcf)$ALT), "[[:alpha:]]+(\\[|]).*(\\[|])"), "+", "-")
   vcfgr$mate <- as.character(info(vcf)$MATEID)
   return(vcfgr)
 }
 vcftoroc <- function(vcf, grtp, ...) {
   hits <- breakpointHits(vcftobpgr(vcf), grtp, ...)
-  hits$qual <- fixed(vcf)$QUAL[hits$queryHits]
+  hits$qual <- rowData(vcf)$QUAL[hits$queryHits]
   hits <- hits[order(hits$qual),]
   tp <- rep(0, length(grtp))
   tp[hits$subjectHits] <- hits$qual

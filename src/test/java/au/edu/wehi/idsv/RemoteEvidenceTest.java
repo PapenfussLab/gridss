@@ -5,6 +5,7 @@ import static org.junit.Assert.assertNotEquals;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
 
+import org.junit.Before;
 import org.junit.Test;
 
 
@@ -12,10 +13,17 @@ public abstract class RemoteEvidenceTest extends TestHelper  {
 	protected int anchorLength(final String allBases, final String realignCigar) {
 		return allBases.length() - (new SAMRecord(null) {{ setCigarString(realignCigar); }}).getCigar().getReadLength();
 	}
+	protected int realignReferenceIndex;
+	protected int realignAlignmentStart;
+	@Before
+	public void setup() {
+		realignReferenceIndex = 1;
+		realignAlignmentStart = 100;
+	}
 	protected SAMRecord realignSAM(final BreakendSummary bs, final String allBases, final String realignCigar, final boolean realignNegativeStrand) {
 		return new SAMRecord(getContext().getBasicSamHeader()) {{
-			setReferenceIndex(1);
-			setAlignmentStart(100);
+			setReferenceIndex(realignReferenceIndex);
+			setAlignmentStart(realignAlignmentStart);
 			setCigarString(realignCigar);
 			setReadNegativeStrandFlag(realignNegativeStrand);
 			String realignBases;
@@ -103,5 +111,36 @@ public abstract class RemoteEvidenceTest extends TestHelper  {
 	@Test
 	public void local_remote_should_be_same_breakpoint() {
 		assertEquals(L().getBreakendSummary(), R().getBreakendSummary().remoteBreakpoint());
+	}
+	@Test
+	public void homology_sequence_should_be_as_if_local() {
+		realignReferenceIndex = 0;
+		DirectedBreakpoint bp = makeRemote(new BreakendSummary(0, FWD, 100, 100), "AAAAAAAA", "1M", false);
+		assertEquals("AAAAAAAA", bp.getHomologySequence());
+		assertEquals(1, bp.getHomologyAnchoredBaseCount());
+		
+		realignReferenceIndex = 0;
+		bp = makeRemote(new BreakendSummary(0, BWD, 100, 100), "AAAAAAAA", "1M", false);
+		assertEquals("AAAAAAAA", bp.getHomologySequence());
+		assertEquals(1, bp.getHomologyAnchoredBaseCount());
+		
+		 // 3519-3523 = TTTTT
+		realignReferenceIndex = 2;
+		realignAlignmentStart = 3519;
+		bp = makeRemote(new BreakendSummary(0, FWD, 100, 100), "AAAAA", "1M", true);
+		assertEquals("TTTTT", bp.getHomologySequence());
+		assertEquals(1, bp.getHomologyAnchoredBaseCount());
+		
+		realignReferenceIndex = 2;
+		realignAlignmentStart = 3523;
+		bp = makeRemote(new BreakendSummary(0, BWD, 100, 100), "AAAAA", "1M", true);
+		assertEquals("TTTTT", bp.getHomologySequence());
+		assertEquals(1, bp.getHomologyAnchoredBaseCount());
+		
+		realignReferenceIndex = 1;
+		realignAlignmentStart = 3;
+		bp = makeRemote(new BreakendSummary(1, FWD, 1, 1), "AC", "1M", true);
+		assertEquals("GT", bp.getHomologySequence());
+		assertEquals(1, bp.getHomologyAnchoredBaseCount());
 	}
 }

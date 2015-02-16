@@ -65,7 +65,7 @@ gridss.truthdetails.processvcf.vcftodf <- function(vcf, sanityCheck=TRUE) {
   i <- info(vcf)
   df <- data.frame(variantid=names(rowData(vcf)))
   df$FILTER=rowData(vcf)$FILTER
-  df$QUAL <- fixed(vcf)$QUAL
+  df$QUAL <- rowData(vcf)$QUAL
   df$EVENT <-i$EVENT
   df$mate <- as.character(i$MATEID)
   df$SOMATIC <- i$SOMATIC
@@ -73,6 +73,8 @@ gridss.truthdetails.processvcf.vcftodf <- function(vcf, sanityCheck=TRUE) {
   mismatchLength <- as.integer(gsub(".*_", "", as.character(i$TRUTH_MISREALIGN)))
   df$SVLEN <- ifelse(is.na(matchLength), mismatchLength, matchLength)
   df$SVTYPE <- i$SVTYPE
+  df$HOMSEQ <- ifelse(is.na(as.character(i$HOMSEQ)), "", as.character(i$HOMSEQ))
+  df$HOMLEN <- as.numeric(i$HOMLEN)
   df$call <- ifelse(!is.na(matchLength), "good", ifelse(!is.na(mismatchLength), "misaligned", "bad"))
   df <- gridss.truthdetails.processvcf.addtn(df, "REF", i$REF)
   df <- gridss.truthdetails.processvcf.addtn(df, "REFPAIR", i$REFPAIR)

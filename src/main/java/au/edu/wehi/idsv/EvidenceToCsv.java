@@ -36,7 +36,7 @@ public class EvidenceToCsv {
 	private void writeDirectedEvidenceHeader() {
 		for (String s : new String[] {
 				"breakendQual",
-				//"breakendSummary",
+				"breakpointSummary",
 				//"breakendSequence",
 				//"breakendQuality",
 				"evidenceID",
@@ -93,6 +93,8 @@ public class EvidenceToCsv {
 	}
 	private void writeDirectedEvidence(DirectedEvidence e) {
 		stream.print(e.getBreakendQual());
+		stream.print(',');
+		stream.print(e.getBreakendSummary());
 		stream.print(',');
 		stream.print(e.getEvidenceID());
 		stream.print(',');

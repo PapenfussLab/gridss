@@ -343,4 +343,9 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals(support.get(0).getBreakendQual() + support.get(1).getBreakendQual(),
 				AssemblyFactory.createUnanchored(pc, AES(pc), Sets.<DirectedEvidence>newHashSet(support), B("GTAC"), new byte[] {1,2,3,4}, 0, 0).getBreakendQual(), DELTA);
 	}
+	@Test
+	public void getAnchor_should_not_include_inexact_breakend_bases() {
+		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(NRRP(OEA(0, 1, "1M", true)));
+		assertEquals(0, AssemblyFactory.createUnanchored(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(support), B("GTAC"), new byte[] {1,2,3,4}, 0, 0).getAssemblyAnchorSequence().length);
+	}
 }
