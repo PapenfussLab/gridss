@@ -255,12 +255,17 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	}
 	private static Ordering<DirectedEvidence> ByBestDesc = new Ordering<DirectedEvidence>() {
 		public int compare(DirectedEvidence o1, DirectedEvidence o2) {
-			  return ComparisonChain.start()
+			ComparisonChain chain = ComparisonChain.start()
 			        .compareTrueFirst(o1 instanceof DirectedBreakpoint, o2 instanceof DirectedBreakpoint)
 			        .compareTrueFirst(o1.isBreakendExact(), o2.isBreakendExact())
 			        .compare(o2 instanceof DirectedBreakpoint ? ((DirectedBreakpoint)o2).getBreakpointQual() : o2.getBreakendQual(),
 			        		o1 instanceof DirectedBreakpoint ? ((DirectedBreakpoint)o1).getBreakpointQual() : o1.getBreakendQual()) // desc
-			        .result();
+			        .compareTrueFirst(o1 instanceof AssemblyEvidence, o2 instanceof AssemblyEvidence);
+			if (o1 instanceof DirectedBreakpoint && o2 instanceof DirectedBreakpoint) {
+				// TODO: favour small indels
+				chain = chain.compare(((DirectedBreakpoint)o1).getBreakendSummary(), ((DirectedBreakpoint)o2).getBreakendSummary(), BreakpointSummary.ByLowHigh);
+			}
+			return chain.result();
 		  }
 	};
 }
