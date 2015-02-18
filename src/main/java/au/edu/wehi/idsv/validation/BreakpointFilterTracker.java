@@ -10,6 +10,8 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 
 import au.edu.wehi.idsv.DirectedBreakpoint;
+import au.edu.wehi.idsv.EvidenceSubset;
+import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
@@ -68,18 +70,48 @@ public class BreakpointFilterTracker<T extends VariantContextDirectedEvidence> e
 		return true;
 	}
 	private boolean isValidBreakpoint(T be1, T be2) {
-		if (be1.getFilters().equals(be2.getFilters()) &&
-				breakendsMatchs(be1, be2) &&
-				Math.abs(be1.getPhredScaledQual() - be2.getPhredScaledQual()) <= 0.01
-				
-						) {
-			return true;
+		String be1value = "";
+		String be2value = "";
+		if (!be1.getFilters().equals(be2.getFilters())) {
+			be1value += " {" + be1.getFilters().toString() + "}";
+			be2value += " {" + be2.getFilters().toString() + "}";
 		}
-		String msg = String.format("Breakend mismatch between %s (%s){%s} and %s (%s){%s}",
-				be1.getID(), be1.getBreakendSummary(), be1.getFilters(),
-				be2.getID(), be2.getBreakendSummary(), be2.getFilters());
-		log.error(msg);
-		return !doAssert;
+		if (!breakendsMatchs(be1, be2)) {
+			be1value += be1.getBreakendSummary().toString();
+			be2value += be2.getBreakendSummary().toString();
+		}
+		if (Math.abs(be1.getPhredScaledQual() - be2.getPhredScaledQual()) > 0.01) {
+			be1value += " Q:" + be1.getPhredScaledQual();
+			be2value += " Q:" + be2.getPhredScaledQual();
+		}
+		if (be1 instanceof VariantContextDirectedBreakpoint && be2 instanceof VariantContextDirectedBreakpoint) {
+			VariantContextDirectedBreakpoint bp1 = (VariantContextDirectedBreakpoint) be1;
+			VariantContextDirectedBreakpoint bp2 = (VariantContextDirectedBreakpoint) be2;
+			if (bp1.getBreakpointEvidenceCountAssembly() != bp2.getBreakpointEvidenceCountAssembly()) {
+				be1value += " AS:" + bp1.getBreakpointEvidenceCountLocalAssembly() + " RAS:" + bp1.getBreakpointEvidenceCountRemoteAssembly();
+				be2value += " AS:" + bp2.getBreakpointEvidenceCountLocalAssembly() + " RAS:" + bp2.getBreakpointEvidenceCountRemoteAssembly();
+			}
+			if (bp1.getBreakpointEvidenceCountSoftClip(EvidenceSubset.ALL) != bp2.getBreakpointEvidenceCountSoftClip(EvidenceSubset.ALL)) {
+				be1value += " SC:" + bp1.getBreakpointEvidenceCountLocalSoftClip(EvidenceSubset.ALL) + " RSC:" + bp1.getBreakpointEvidenceCountRemoteSoftClip(EvidenceSubset.ALL);
+				be2value += " SC:" + bp2.getBreakpointEvidenceCountLocalSoftClip(EvidenceSubset.ALL) + " RSC:" + bp2.getBreakpointEvidenceCountRemoteSoftClip(EvidenceSubset.ALL);
+			}
+			if (bp1.getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL) != bp2.getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL)) {
+				be1value += " RP:" + bp1.getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL);
+				be2value += " RP:" + bp2.getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL);
+			}
+			if (bp1.getHomologySequence().length() != bp2.getHomologySequence().length()) {
+				be1value += " HOMSEQ:" + bp1.getHomologySequence();
+				be2value += " HOMSEQ:" + bp2.getHomologySequence();
+			}
+		}
+		if (be1value.length() > 0) {
+			String msg = String.format("Breakend mismatch between %s %s and %s %s",
+					be1.getID(), be1value,
+					be2.getID(), be2value);
+			log.error(msg);
+			return !doAssert;
+		}
+		return true;
 	}
 	private boolean breakendsMatchs(T be1, T be2) {
 		if (be1 instanceof DirectedBreakpoint && be2 instanceof DirectedBreakpoint) {

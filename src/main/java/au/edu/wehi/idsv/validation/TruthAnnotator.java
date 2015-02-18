@@ -15,6 +15,7 @@ import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.IdsvVariantContext;
+import au.edu.wehi.idsv.IdsvVariantContextBuilder;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.StructuralVariationCallBuilder;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
@@ -89,10 +90,10 @@ public class TruthAnnotator extends AbstractIterator<VariantContextDirectedEvide
 			}
 		}
 		if (!breakpointHits.isEmpty() || !breakendHits.isEmpty()) {
-			StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(processContext, variant);
+			IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(processContext, variant);
 			builder.attribute(VcfAttributes.TRUTH_MATCHES.attribute(), Lists.newArrayList(breakpointHits));
 			builder.attribute(VcfAttributes.TRUTH_MISREALIGN.attribute(), Lists.newArrayList(breakendHits));
-			return builder.make();
+			return (VariantContextDirectedEvidence) builder.make();
 		}
 		return variant;
 	}
