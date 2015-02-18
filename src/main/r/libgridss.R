@@ -1,4 +1,6 @@
 library(VariantAnnotation)
+library(plyr)
+
 
 gridss.annotateBreakpointHits <- function(bed, bedMate, gridssVcf, ...) {
   # filter breakends and one-sided breakpoint calls
@@ -138,6 +140,50 @@ gridss.truthdetails.processvcf.vcftodf.sanitycheck <- function(failing, desc) {
   if (failCount > 0) {
     warning(paste(failCount, "rows failed ", desc, "sanity check "))
   }
+}
+# lists overlapping breakpoints
+breakpointHits <- function(queryGr, subjectGr, mateQueryGr=queryGr[queryGr$mate,], mateSubjectGr=subjectGr[subjectGr$mate,], ...) {
+  dfhits <- rbind(as.data.frame(findOverlaps(queryGr, subjectGr, ...)),
+                  as.data.frame(findOverlaps(mateQueryGr, mateSubjectGr, ...)))
+  dfhits <- dfhits[duplicated(dfhits),] # both breakends match
+  return(dfhits)
+}
+# counts overlapping breakpoints
+countBreakpointHits <- function(queryGr, subjectGr, mateQueryGr=queryGr[queryGr$mate,], mateSubjectGr=subjectGr[subjectGr$mate,], ...) {
+  dfhits <- breakpointHits(queryGr, subjectGr, mateQueryGr, mateSubjectGr, ...)
+  queryHits <- rep(0, length(queryGr))
+  queryHits[count(dfhits, "queryHits")$queryHits] <- count(dfhits, "queryHits")$freq
+  subjectHits <- rep(0, length(subjectGr))
+  subjectHits[count(dfhits, "subjectHits")$subjectHits] <- count(dfhits, "subjectHits")$freq
+  return(list(queryHitCount=queryHits, subjectHitCount=subjectHits))
+}
+# counts overlapping breakpoints
+# VCF records MUST each be a valid symbolic breakend alleles
+# VCF MUST have a single valid MATEID for every record
+# GRanges MUST have a $mate set to the name of the other breakend for that breakpoint
+countVcfGrBreakpointHits <- function(vcf, gr, ...) {
+  vcfgr <- vcftobpgr(vcf)
+  return(countBreakpointHits(vcfgr, gr, vcfgr[vcfgr$mate,], gr[gr$mate,], ...))
+}
+# converts a breakpoint VCF to a breakpoint GR
+vcftobpgr <- function(vcf) {
+  vcfgr <- rowData(vcf)
+  # set strand
+  strand(vcfgr) <- ifelse(str_detect(as.character(rowData(vcf)$ALT), "[[:alpha:]]+(\\[|]).*(\\[|])"), "+", "-")
+  vcfgr$mate <- as.character(info(vcf)$MATEID)
+  return(vcfgr)
+}
+vcftoroc <- function(vcf, grtp, ...) {
+  hits <- breakpointHits(vcftobpgr(vcf), grtp, ...)
+  hits$qual <- rowData(vcf)$QUAL[hits$queryHits]
+  hits <- hits[order(hits$qual),]
+  tp <- rep(0, length(grtp))
+  tp[hits$subjectHits] <- hits$qual
+  tp <- tp[order(-tp)]
+  df <- data.frame(qual=tp, sens=1:length(tp) / length(tp))
+  df <- df[order(-df$sens),]
+  df <- df[!duplicated(df$qual),]
+  return(df)
 }
 
 

@@ -1,70 +1,19 @@
 library(ggplot2)
+library(scales)
 library(RColorBrewer)
 library(GenomicRanges)
 library(rtracklayer)
 library(data.table)
 library(stringr)
-setwd("C:/dev/idsv/src/main/R/")
 source("libgridss.R")
 
 
-##################
-# Cleanup
-##################
-suppressWarnings(remove(bed, socBed, rpBed, vcf, evidence, df, mdf))
-
-##################
-# 778
-##################
-cgr <- import.bed(con="W:/Papenfuss_lab/projects/liposarcoma/data/gridss/778/cgrs-from-table3.bed")
-socBed <- import.bed(con="W:/Papenfuss_lab/projects/liposarcoma/data/gridss/778/778_breakpoints_SOCRATES.bed")
-rpBed <- import.bed(con="W:/Papenfuss_lab/projects/liposarcoma/data/gridss/778/778_breakpoints_v15.bed")
-vcf <- readVcf("W:/Papenfuss_lab/projects/liposarcoma/data/gridss/778/778.vcf", "hg19_random")
-evidence <- read.csv("W:/Papenfuss_lab/projects/liposarcoma/data/gridss/778/778.vcf.idsv.working/evidence.csv")
-
-##################
-# T1000
-##################
-vcf <- readVcf("W:/Papenfuss_lab/projects/liposarcoma/data/gridss/T1000/T1000.vcf", "hg19_random")
-evidence <- read.csv("W:/Papenfuss_lab/projects/liposarcoma/data/gridss/T1000/T1000.vcf.idsv.working/evidence.csv")
 
 ##################
 # Set up data frame
 ##################
 vcf <- gridss.removeUnpartnerededBreakend(vcf)
 df <- gridss.truthdetails.processvcf.vcftodf(vcf)
-df$cgr <- gridss.overlaps(vcf, cgr)
-#df$socrates <- gridss.overlaps(vcf, socBed, maxgap=4)
-#df$rpBed <- gridss.overlaps(vcf, socBed, maxgap=16)
-# set remote breakend columns
-df$cgrmate <- df[df$mate,]$cgr
-
-# remove those that fail mate check so we can continue
-vcf <- vcf[as.character(info(vcf)$MATEID) %in% row.names(vcf),]
-callPos <- rowData(vcf)
-callPos$mate <- as.character(info(vcf)$MATEID)
-strand(callPos) <- ifelse(str_detect(as.character(callPos$ALT), "[[:alpha:]]+(\\[|]).*(\\[|])"), "+", "-")
-callPosMate <- callPos[callPos$mate,]
-
-###############
-# Read Pair variant calling concordance
-###############
-# chr12:84262289 call position for RP calls incorrect by 111 bases
-rpBedMate <- str_match(rpBed$name, "[[:alnum:]]+:[[:digit:]]+\\([+-]\\)-([[:alnum:]]+):([[:digit:]]+)\\(([+-])\\)")
-rpBedMate <- GRanges(seqnames=rpBedMate[,2], ranges=IRanges(start=as.numeric(rpBedMate[,3]), width=1, names=rpBedMate[,1]), strand=rpBedMate[,4])
-rpBed <- gridss.annotateBreakpointHits(rpBed, rpBedMate, vcf, maxgap=120)
-
-ggplot(as.data.frame(mcols(rpBed)), aes(x=score, fill=called)) +
-  geom_histogram() +
-  scale_x_log10() + 
-  labs(title="Concordance with existing read pair based calls")
-ggsave("778_rp_histogram.png", width=10, height=7.5)
-
-ggplot(as.data.frame(mcols(rpBed)), aes(x=score, y=qual, color=called)) +
-  geom_point() +
-  scale_x_log10() + scale_y_log10() + 
-  labs(title="Concordance with existing read pair based calls")
-ggsave("778_rp_concordance.png", width=10, height=7.5)
 
 ###############
 # Socrates variant calling concordance
@@ -105,7 +54,8 @@ ggplot(dfWindow, aes(x=QUAL)) +
 ###############
 # Microhomology size distribution
 ###############
-ggplot(df, aes(x=HOMLEN)) + geom_histogram(binwidth=1) #geom_point() 
+ggplot(df, aes(x=HOMLEN, color=confidence)) + geom_density(adjust=2) + scale_x_continuous(limits=c(0, 25))
+
 
 ###############
 # Evidence distributions
@@ -132,8 +82,22 @@ ggplot(df[df$QUAL>100&df$RP>0,], aes(x=RP, y=QUAL-ASQ-RASQ-SCQ-RSCQ, color=facto
   labs(title="RP")
 
 # Contribution of local breakend evidence
-ggplot(df, aes(x=QUAL, y=BQ, color=confidence, size=BAS+1)) + geom_point() + scale_x_log10() + scale_y_log10() + facet_grid(cgrmate ~ cgr) +
+ggplot(df, aes(x=QUAL, y=BQ, color=, size=BAS+1)) + geom_point() + scale_x_log10() + scale_y_log10() + facet_grid(cgrmate ~ cgr) +
   labs(title="Breakpoint and breakend quality score distributions according to breakend CGR location")
+
+# Assembly rate by evidence QUAL
+ggplot(df, aes(x=SC+RSC+RP+BSC+BRP, color=factor(pmin(AS, 1)+pmin(RAS, 1)))) + geom_density() + scale_x_log10(limits=c(25, 10000)) +
+  labs(title="Assembly rate by evidence quality")
+ggplot(df, aes(x=SC+RSC+RP+BSC+BRP, fill=factor(pmin(AS, 1)+pmin(RAS, 1)))) + geom_bar(position = 'fill') + scale_x_log10(limits=c(25, 10000))
+
+ggplot(df, aes(x=QUAL-ASQ-RASQ, fill=hasAS)) +
+  geom_bar(position='fill') +
+  scale_x_log10(limits=c(25, 10000), expand=c(0, 0)) +
+  scale_y_continuous(labels=percent, expand=c(0, 0)) +
+  labs(title="Assembly rate", x="Quality of read pair and split read evidence", y="")
+
+ggplot(df, aes(x=SC+RSC+RP+BSC+BRP, fill=hasAS)) + geom_bar(position='fill') + scale_x_log10(limits=c(3, 500)) + scale_y_continuous(labels=percent)
+
 
 # Effect of unique read madfing
 # TODO: why to points exist where QUAL > CQ ? this should not be possible

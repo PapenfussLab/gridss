@@ -1,6 +1,9 @@
-source("libgridss.R")
+source("../../main/r/libgridss.R")
 source("libneochromosome.R")
 
+#setwd("C:/dev/idsv/src/test/R/")
+
+theme_set(theme_bw())
 
 sample <- "778"
 rp <- getrpcalls("C:/dev/neochromosome/mmc3.xlsx", "778 (DR)")
@@ -23,3 +26,4 @@ cgr <- getcgr("C:/dev/neochromosome/mmc4.xlsx", "GOT3_CGRs")
 cn <- getcn("C:/dev/neochromosome/mmc4.xlsx", "GOT3_CN")
 vcf <- readVcf("W:/Papenfuss_lab/projects/liposarcoma/data/gridss/GOT3/GOT3.vcf", "hg19")
 go(sample, vcf, rp)
+
