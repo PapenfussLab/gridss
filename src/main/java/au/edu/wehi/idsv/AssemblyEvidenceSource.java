@@ -378,7 +378,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				writer = null;
 				FileHelper.move(FileSystemContext.getWorkingFileFor(breakendOutput), breakendOutput, true);
 				FileHelper.move(FileSystemContext.getWorkingFileFor(realignmentFastq), realignmentFastq, true);
-			} catch (IOException e) {
+			} catch (Throwable e) {
 				log.error(e, "Error assembling breakend ", breakendOutput);
 				throw new RuntimeException("Error assembling breakend", e);
 			} finally {

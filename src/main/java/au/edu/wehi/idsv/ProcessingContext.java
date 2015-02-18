@@ -10,8 +10,12 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.fastq.FastqWriterFactory;
+import htsjdk.samtools.filter.AggregateFilter;
 import htsjdk.samtools.filter.DuplicateReadFilter;
+import htsjdk.samtools.filter.FailsVendorReadQualityFilter;
 import htsjdk.samtools.filter.FilteringIterator;
+import htsjdk.samtools.filter.SamRecordFilter;
+import htsjdk.samtools.filter.SecondaryOrSupplementaryFilter;
 import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.metrics.MetricBase;
 import htsjdk.samtools.metrics.MetricsFile;
@@ -35,6 +39,7 @@ import au.edu.wehi.idsv.util.BufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.vcf.VcfConstants;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 /**
  * Processing context for the given record
@@ -152,9 +157,6 @@ public class ProcessingContext implements Closeable {
 		}
 		// wrap so we're happy to close as many times as we want
 		CloseableIterator<SAMRecord> safeIterator = new AutoClosingIterator<SAMRecord>(rawIterator,  ImmutableList.<Closeable>of(reader));
-		//if (isUseAsyncIO()) {
-		//	finalIterator = new AsyncBufferedIterator<SAMRecord>(filterIterator, READAHEAD_BUFFERS, READAHEAD_BUFFER_SIZE, file != null ? file.getAbsolutePath() : null);
-		//}
 		return applyCommonSAMRecordFilters(safeIterator);
 	}
 	public SAMFileWriterFactory getSamFileWriterFactory(boolean sorted) {
@@ -168,10 +170,23 @@ public class ProcessingContext implements Closeable {
 	 * @return iterator with filtered record excluded
 	 */
 	public CloseableIterator<SAMRecord> applyCommonSAMRecordFilters(CloseableIterator<SAMRecord> iterator) {
-		if (filterDuplicates) {
-			iterator = new AutoClosingIterator<SAMRecord>(new FilteringIterator(iterator, new DuplicateReadFilter()), ImmutableList.<Closeable>of(iterator)); 
+		return applyCommonSAMRecordFilters(iterator, true);
+	}
+	/**
+	 * Applies filters such as duplicate removal that apply to all SAMRecord parsing
+	 * @param iterator raw reads
+	 * @param filterSecondaryAlignment should secondary alignment be filtered out
+	 * @return iterator with filtered record excluded
+	 */
+	public CloseableIterator<SAMRecord> applyCommonSAMRecordFilters(final CloseableIterator<SAMRecord> iterator, final boolean singleAlignmentPerRead) {
+		List<SamRecordFilter> filters = Lists.<SamRecordFilter>newArrayList(new FailsVendorReadQualityFilter());
+		if (singleAlignmentPerRead) {
+			filters.add(new SecondaryOrSupplementaryFilter());
 		}
-		return iterator;
+		if (filterDuplicates) {
+			filters.add(new DuplicateReadFilter());
+		}
+		return new AutoClosingIterator<SAMRecord>(new FilteringIterator(iterator, new AggregateFilter(filters)), ImmutableList.<Closeable>of(iterator));
 	}
 	public FastqWriterFactory getFastqWriterFactory(){
 		FastqWriterFactory factory = new FastqWriterFactory();
