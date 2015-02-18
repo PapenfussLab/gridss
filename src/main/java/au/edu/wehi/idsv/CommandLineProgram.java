@@ -30,12 +30,16 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     public List<File> INPUT;
     @Option(doc = "Per input maximum concordant read pair size.", optional=true)
     public List<Integer> INPUT_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE;
+    @Option(doc = "Per input minimum concordant fragment size.", optional=true)
+    public List<Integer> INPUT_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE;
 	@Option(doc="Coordinate-sorted tumour BAM file.",
 			optional=true,
     		shortName="T")
     public List<File> INPUT_TUMOUR = Lists.newArrayList();
-	@Option(doc = "Per input percent of read pairs considered concorant (0.0-1.0). If this is not set, the SAM proper pair flag is used to determine whether a read is discordantly aligned.", optional=true)
+	@Option(doc = "Per input maximum concordant fragment size.", optional=true)
     public List<Integer> INPUT_TUMOUR_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE;
+	@Option(doc = "Per input minimum concordant fragment size.", optional=true)
+    public List<Integer> INPUT_TUMOUR_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE;
 	@Option(doc="VCF structural variation calls.",
     		shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME)
     public File OUTPUT;
@@ -55,7 +59,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
             optional = true)
     public File WORKING_DIR = null;
     // --- evidence filtering parameters ---
-    @Option(doc = "Per input percent of read pairs considered concorant (0.0-1.0). If this is not set, the SAM proper pair flag is used to determine whether a read is discordantly aligned.", optional=true)
+    @Option(doc = "Percent of read pairs considered concorant (0.0-1.0). If this is not set, the SAM proper pair flag is used to determine whether a read is discordantly aligned.", optional=true)
     public Float READ_PAIR_CONCORDANT_PERCENT = 0.995f;
     @Option(doc = "Minimum length of a soft-clip to be considered for analysis." +
 			" Local aligners tend to produce many reads with very short soft clips.",

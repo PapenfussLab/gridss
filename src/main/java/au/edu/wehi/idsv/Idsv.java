@@ -9,7 +9,6 @@ import htsjdk.variant.vcf.VCFFileReader;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -51,8 +50,17 @@ public class Idsv extends CommandLineProgram {
     public EnumSet<ProcessStep> STEPS = ProcessStep.ALL_STEPS;
     private SAMEvidenceSource constructSamEvidenceSource(File file, int index, boolean isTumour) throws IOException { 
     	List<Integer> maxFragSizeList = isTumour ? INPUT_TUMOUR_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE : INPUT_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE;
+    	List<Integer> minFragSizeList = isTumour ? INPUT_TUMOUR_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE : INPUT_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE;
+    	int maxFragSize = 0;
+    	int minFragSize = 0;
     	if (maxFragSizeList != null && maxFragSizeList.size() > index && maxFragSizeList.get(index) != null) {
-    		return new SAMEvidenceSource(getContext(), file, isTumour, 0, maxFragSizeList.get(index));
+    		maxFragSize = maxFragSizeList.get(index);
+    	}
+    	if (minFragSizeList != null && minFragSizeList.size() > index && minFragSizeList.get(index) != null) {
+    		minFragSize = minFragSizeList.get(index);
+    	}
+    	if (maxFragSize > 0) {
+    		return new SAMEvidenceSource(getContext(), file, isTumour, minFragSize, maxFragSize);
     	} else if (READ_PAIR_CONCORDANT_PERCENT != null) {
     		return new SAMEvidenceSource(getContext(), file, isTumour, READ_PAIR_CONCORDANT_PERCENT);
     	} else {
@@ -234,42 +242,31 @@ public class Idsv extends CommandLineProgram {
     }
 	private void hackOutputIndels() throws IOException {
 		log.info("DEBUGGING HACK: naive translation to INDEL calls");
-		List<IdsvVariantContext> out = Lists.newArrayList();
 		VCFFileReader reader = new VCFFileReader(OUTPUT, false);
+		VariantContextWriter writer = getContext().getVariantContextWriter(new File(OUTPUT.toString() + ".indel.vcf"), true);
 		for (VariantContext vc : reader) {
 			IdsvVariantContext context = IdsvVariantContext.create(getContext(), null, vc);
-			IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext(), context);
 			if (context instanceof VariantContextDirectedBreakpoint) {
 				VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)context;
-				BreakpointSummary loc = bp.getBreakendSummary();
-				int indelSize = 0;
-				if (loc.referenceIndex == loc.referenceIndex2) {
-					if (loc.start < loc.start2 && loc.direction == BreakendDirection.Forward && loc.direction2 == BreakendDirection.Backward) {
-						// low position of indel
-						indelSize = loc.start - loc.start2;
-					} else if (loc.start2 < loc.start && loc.direction2 == BreakendDirection.Forward && loc.direction == BreakendDirection.Backward) {
-						indelSize = loc.start2 - loc.start;
-					}
+				BreakpointSummary loc = bp.getBreakendSummary().getCallPosition();
+				if (loc.isLowBreakend() && loc.referenceIndex == loc.referenceIndex2 && loc.direction == BreakendDirection.Forward && loc.direction2 == BreakendDirection.Backward) {
+					int indelSize = loc.start - loc.start2;
 					indelSize += bp.getBreakpointSequenceString().length() + 1;
-				}
-				if (indelSize != 0) {
-					builder.attribute(VcfSvConstants.SV_LENGTH_KEY, indelSize);
-					builder.attribute(VcfSvConstants.SV_TYPE_KEY, indelSize < 0 ? "DEL" : "INS");
-					builder.attribute("ALT", bp.getAlternateAllele(0).getDisplayString());
-					builder.alleles("N", indelSize < 0 ? "<DEL>" : "<INS>");
-					builder.start(Math.min(loc.start, loc.start2));
-					builder.stop(Math.max(loc.start, loc.start2));
-					builder.attribute(VCFConstants.END_KEY, Math.max(loc.start, loc.start2));
+					if (indelSize != 0) {
+						IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext(), context);
+						builder.attribute(VcfSvConstants.SV_LENGTH_KEY, indelSize);
+						builder.attribute(VcfSvConstants.SV_TYPE_KEY, indelSize < 0 ? "DEL" : "INS");
+						builder.attribute("ALT", bp.getAlternateAllele(0).getDisplayString());
+						builder.alleles("N", indelSize < 0 ? "<DEL>" : "<INS>");
+						builder.start(loc.start);
+						builder.stop(loc.start2);
+						builder.attribute(VCFConstants.END_KEY, loc.start2);
+						writer.add(builder.make());
+					}
 				}
 			}
-			out.add(builder.make());
 		}
 		reader.close();
-		Collections.sort(out, IdsvVariantContext.ByLocationStart);
-		VariantContextWriter writer = getContext().getVariantContextWriter(new File(OUTPUT.toString() + ".indel.vcf"), true);
-		for (VariantContext vc : out) {
-			writer.add(vc);
-		}
 		writer.close();
 	}
 	public static void main(String[] argv) {

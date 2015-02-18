@@ -3,7 +3,6 @@ package au.edu.wehi.idsv;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
-import java.math.RoundingMode;
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Set;
@@ -15,7 +14,6 @@ import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
-import com.google.common.math.IntMath;
 
 /**
  * Builder for generating VCF structural variation calls with appropriate attributes
@@ -100,22 +98,15 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 		String chr = processContext.getDictionary().getSequence(loc.referenceIndex).getSequenceName();
 		String ref, alt;
 		// call the middle position of inexact intervals
-		int callPos = IntMath.divide(loc.start + loc.end, 2, RoundingMode.FLOOR);
-		int remoteCallPos = Integer.MIN_VALUE;
-		ref = new String(processContext.getReference().getSubsequenceAt(chr, loc.start, loc.start).getBases(), StandardCharsets.US_ASCII);
-		if (loc instanceof BreakpointSummary) {
+		BreakendSummary bpCall = loc.getCallPosition();
+		int callPos = bpCall.start;
+		int remoteCallPos = bpCall instanceof BreakpointSummary ? ((BreakpointSummary)bpCall).start2 : 0;
+		ref = new String(processContext.getReference().getSubsequenceAt(chr, callPos, callPos).getBases(), StandardCharsets.US_ASCII);
+		if (bpCall instanceof BreakpointSummary) {
 			BreakpointSummary bp = (BreakpointSummary)loc;
-			// round the called position of the lower breakend down
-			if (BreakendSummary.ByStartEnd.compare(bp.localBreakend(), bp.remoteBreakend()) > 0) {
-				callPos = IntMath.divide(loc.start + loc.end, 2, RoundingMode.CEILING);
-				remoteCallPos = IntMath.divide(bp.start2 + bp.end2, 2, RoundingMode.FLOOR);
-			} else {
-				callPos = IntMath.divide(loc.start + loc.end, 2, RoundingMode.FLOOR);
-				remoteCallPos = IntMath.divide(bp.start2 + bp.end2, 2, RoundingMode.CEILING);
-			}
 			char remoteBracket = bp.direction2 == BreakendDirection.Forward ? ']' : '[';
 			String target = String.format("%s:%d", processContext.getDictionary().getSequence(bp.referenceIndex2).getSequenceName(), remoteCallPos);
-			if (loc.direction == BreakendDirection.Forward) {
+			if (bpCall.direction == BreakendDirection.Forward) {
 				alt = String.format("%s%s%c%s%c", ref, untemplatedSequence, remoteBracket, target, remoteBracket);
 			} else {
 				alt = String.format("%c%s%c%s%s", remoteBracket, target, remoteBracket, untemplatedSequence, ref);

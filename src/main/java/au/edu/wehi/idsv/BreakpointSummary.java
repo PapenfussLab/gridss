@@ -4,6 +4,7 @@ import java.math.RoundingMode;
 
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
+import com.google.common.math.IntMath;
 
 /**
  * Positional locations on source and target chromosomes
@@ -140,6 +141,23 @@ public class BreakpointSummary extends BreakendSummary {
 	 */
 	private static boolean intervalsOverlap(int start1, int end1, int start2, int end2) {
 		return start1 <= end2 && start2 <= end1;
+	}
+	/**
+	 * Gets the nominal position of the variant for variant calling purposes
+	 * @return position to call
+	 */
+	public BreakpointSummary getCallPosition() {
+		int callPos;
+		int remoteCallPos;
+		// round the called position of the lower breakend down
+		if (BreakendSummary.ByStartEnd.compare(localBreakend(), remoteBreakend()) > 0) {
+			callPos = IntMath.divide(start + end, 2, RoundingMode.CEILING);
+			remoteCallPos = IntMath.divide(start2 + end2, 2, RoundingMode.FLOOR);
+		} else {
+			callPos = IntMath.divide(start + end, 2, RoundingMode.FLOOR);
+			remoteCallPos = IntMath.divide(start2 +end2, 2, RoundingMode.CEILING);
+		}
+		return new BreakpointSummary(referenceIndex, direction, callPos, callPos, referenceIndex2, direction2, remoteCallPos, remoteCallPos);
 	}
 	@Override
 	public int hashCode() {

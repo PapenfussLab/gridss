@@ -108,6 +108,14 @@ public class BreakendSummary {
 		}
 		return new BreakendSummary(referenceIndex, direction, start + by, end - by);
 	}
+	/**
+	 * Gets the nominal position of the variant for variant calling purposes
+	 * @return position to call
+	 */
+	public BreakendSummary getCallPosition() {
+		int callPos = IntMath.divide(start + end, 2, RoundingMode.FLOOR);
+		return new BreakendSummary(referenceIndex, direction, callPos, callPos);
+	}
 	protected static String toString(int referenceIndex, int start, int end, ProcessingContext processContext) {
 		if (processContext != null && referenceIndex >= 0 && referenceIndex < processContext.getDictionary().size()) {
 			return String.format("%s:%d-%d", processContext.getDictionary().getSequence(referenceIndex).getSequenceName(), start, end);

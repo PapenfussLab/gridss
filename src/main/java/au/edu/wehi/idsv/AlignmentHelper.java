@@ -12,6 +12,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
+// TODO: add JNI interface to https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library
 public class AlignmentHelper {
 	private AlignmentHelper() { }
 	static {
