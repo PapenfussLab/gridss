@@ -7,9 +7,8 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.TextCigarCodec;
 import htsjdk.samtools.util.Log;
-import jaligner.Alignment;
-import jaligner.Sequence;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,6 +20,8 @@ import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 
+import au.edu.wehi.idsv.alignment.AlignerFactory;
+import au.edu.wehi.idsv.alignment.Alignment;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.vcf.VcfFilter;
@@ -585,13 +586,14 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		SAMSequenceRecord refSeq = source.getContext().getDictionary().getSequence(refIndex);
 		int start = Math.max(1, record.getAlignmentStart() - ap.realignmentWindowSize - (getBreakendSummary().direction == BreakendDirection.Backward ? getBreakendLength() : 0));
 		int end = Math.min(refSeq.getSequenceLength(), record.getAlignmentEnd() + ap.realignmentWindowSize + (getBreakendSummary().direction == BreakendDirection.Forward ? getBreakendLength() : 0));
-		Sequence ref = new Sequence(new String(source.getContext().getReference().getSubsequenceAt(refSeq.getSequenceName(), start, end).getBases()));
-		Sequence ass = new Sequence(new String(record.getReadBases()));
-        Alignment alignment = AlignmentHelper.align_local(ref, ass);        
-        Cigar cigar = AlignmentHelper.alignmentToCigar(alignment);
+		byte[] ass = record.getReadBases();
+		byte[] ref = source.getContext().getReference().getSubsequenceAt(refSeq.getSequenceName(), start, end).getBases();
+		
+        Alignment alignment = AlignerFactory.create().align_smith_waterman(ass, ref);        
+        Cigar cigar = TextCigarCodec.getSingleton().decode(alignment.getCigar());
         SAMRecord newAssembly = SAMRecordUtil.clone(record);
 		newAssembly.setReadName(newAssembly.getReadName() + "_r");
-        newAssembly.setAlignmentStart(start + alignment.getStart1());
+        newAssembly.setAlignmentStart(start + alignment.getStartPosition());
         if (!cigar.equals(record.getCigar())) {
         	newAssembly.setCigar(cigar);
         	newAssembly.setAttribute(SamTags.ORIGINAL_CIGAR, record.getCigarString());
