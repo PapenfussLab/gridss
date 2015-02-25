@@ -218,7 +218,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	private BreakendDirection getBreakendDirection() {
 		return BreakendDirection.fromChar((char)(Character)record.getAttribute(SamTags.ASSEMBLY_DIRECTION));
 	}
-	private static BreakendDirection getBreakendDirection(SAMRecord record) {
+	protected static BreakendDirection getBreakendDirection(SAMRecord record) {
 		return BreakendDirection.fromChar((char)(Character)record.getAttribute(SamTags.ASSEMBLY_DIRECTION));
 	}
 	private SAMRecord getPlaceholderRealignment() {
@@ -598,7 +598,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
         	newAssembly.setCigar(cigar);
         	newAssembly.setAttribute(SamTags.ORIGINAL_CIGAR, record.getCigarString());
         }
-        SAMRecordAssemblyEvidence realigned = new SAMRecordAssemblyEvidence(source, newAssembly, null);
+        SAMRecordAssemblyEvidence realigned = AssemblyFactory.hydrate(getEvidenceSource(), newAssembly);
         return realigned;
 	}
 }

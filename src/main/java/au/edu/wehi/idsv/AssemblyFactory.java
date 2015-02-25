@@ -1,8 +1,14 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 
+import java.util.List;
 import java.util.Set;
+
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 import com.google.common.collect.Lists;
 
@@ -68,5 +74,30 @@ public final class AssemblyFactory {
 		} else {
 			return new RealignedSAMRecordAssemblyEvidence(a.getEvidenceSource(), assembly, realignment);
 		}
+	}
+	/**
+	 * Rehydrates an assembly that has been persisted as a SAMRecord
+	 * @param processContext
+	 * @param record assembly SAMRecord
+	 * @return Assembly evidence
+	 */
+	public static SAMRecordAssemblyEvidence hydrate(AssemblyEvidenceSource source, SAMRecord record) {
+		BreakendDirection dir = SAMRecordAssemblyEvidence.getBreakendDirection(record);
+		int breakendLength = SAMRecordUtil.getSoftClipLength(record, dir);
+		if (breakendLength == 0 && containsIndel(record.getCigar())) {
+			return new SmallIndelSAMRecordAssemblyEvidence(source,  record);
+		} else {
+			return new SAMRecordAssemblyEvidence(source, record, null);
+		}
+	}
+	private static boolean containsIndel(Cigar cigar) {
+		List<CigarElement> list = cigar.getCigarElements();
+		for (int i = 0; i < list.size(); i++) {
+			CigarElement e = list.get(i);
+			if (e.getOperator() == CigarOperator.DELETION || e.getOperator() == CigarOperator.INSERTION) {
+				return true;
+			}
+		}
+		return false;
 	}
 }

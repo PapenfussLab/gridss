@@ -18,6 +18,7 @@ import htsjdk.samtools.util.SequenceUtil;
 import java.util.Arrays;
 import java.util.List;
 
+import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.Defaults;
 
 /**
@@ -91,6 +92,14 @@ public class SAMRecordUtil {
 			i--;
 		}
 		return 0;
+	}
+	
+	public static int getSoftClipLength(SAMRecord aln, BreakendDirection direction) {
+		if (direction == BreakendDirection.Forward) {
+			return getEndSoftClipLength(aln);
+		} else {
+			return getStartSoftClipLength(aln);
+		}
 	}
 
 	public static byte[] getStartSoftClipBases(SAMRecord record) {

@@ -289,7 +289,7 @@ public class TestHelper {
 				new ReadPairParameters(), new AssemblyParameters() {{
 					minReads = 2;
 					assemble_remote_soft_clips = false;
-					performRealignment = false;
+					performLocalRealignment = false;
 					}},
 				new RealignmentParameters(), new VariantCallingParameters() {{
 					breakendMargin = 3;

@@ -13,7 +13,6 @@ import htsjdk.samtools.util.ProgressLogger;
 
 import java.io.Closeable;
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Iterator;
@@ -393,7 +392,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		    			SAMRecordAssemblyEvidence e = (SAMRecordAssemblyEvidence)a;
 			    		maxAssembledPosition = Math.max(maxAssembledPosition, getContext().getLinear().getStartLinearCoordinate(e.getSAMRecord()));
 			    		// realign
-			    		if (e.isBreakendExact() && getContext().getAssemblyParameters().performRealignment) {
+			    		if (e.isBreakendExact() && getContext().getAssemblyParameters().performLocalRealignment) {
 			    			e = e.realign();
 			    		}
 			    		getContext().getAssemblyParameters().applyFilters(e);

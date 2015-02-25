@@ -30,8 +30,8 @@ public class SAMRecordAssemblyEvidenceIterator extends AbstractIterator<SAMRecor
 	protected SAMRecordAssemblyEvidence computeNext() {
 		while (it.hasNext()) {
 			SAMRecord record = it.next();
-			SAMRecordAssemblyEvidence evidence = new SAMRecordAssemblyEvidence(source, record, null);
-			if (factory != null) {
+			SAMRecordAssemblyEvidence evidence = AssemblyFactory.hydrate(source, record);
+			if (factory != null && !(evidence instanceof DirectedBreakpoint)) {
 				RealignmentParameters rp = evidence.getEvidenceSource().getContext().getRealignmentParameters();
 				SAMRecord realigned = factory.findAssociatedSAMRecord(evidence,
 						rp.requireRealignment && 
