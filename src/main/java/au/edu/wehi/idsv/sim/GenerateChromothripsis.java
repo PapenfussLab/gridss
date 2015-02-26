@@ -1,30 +1,14 @@
 package au.edu.wehi.idsv.sim;
 
 import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.Log;
 
 import java.io.File;
 
-import net.sf.picard.io.IoUtil;
-import net.sf.picard.reference.ReferenceSequence;
-import net.sf.picard.reference.ReferenceSequenceFile;
-import net.sf.picard.reference.ReferenceSequenceFileFactory;
-
-import org.broadinstitute.variant.variantcontext.writer.VariantContextWriter;
-import org.broadinstitute.variant.variantcontext.writer.VariantContextWriterFactory;
-import org.broadinstitute.variant.vcf.VCFHeader;
-
-import au.edu.wehi.bioinf.appraisal.VCFStructuralVariantHeaderLines;
-import au.edu.wehi.bioinf.commandline.GenerateReferenceVcf;
-import au.edu.wehi.idsv.FileSystemContext;
-import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.VariantCallingParameters;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
-import au.edu.wehi.idsv.util.BufferedReferenceSequenceFile;
+import picard.cmdline.CommandLineProgram;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
-import picard.cmdline.Usage;
-import picard.cmdline.CommandLineProgram;
+import au.edu.wehi.idsv.FileSystemContext;
+import au.edu.wehi.idsv.ProcessingContext;
 
 /**
  * Simulates chromothripsis through random translocation
@@ -32,7 +16,6 @@ import picard.cmdline.CommandLineProgram;
  *
  */
 public class GenerateChromothripsis extends CommandLineProgram {
-	private Log log = Log.getInstance(GenerateChromothripsis.class);
 	private static final String PROGRAM_VERSION = "0.1";
 
     // The following attributes define the command-line arguments
@@ -42,14 +25,18 @@ public class GenerateChromothripsis extends CommandLineProgram {
     public File REFERENCE;
     @Option(doc="VCF variant list")
     public File VCF;
-    @Option(doc="Number of bases between variants")
-    public int SIZE;
-    @Option(doc="Number translocations")
-    public int COUNT;
-    @Option(doc="Minimum of bases of unambiguous reference around breakponts")
-    public int PADDING;
+    @Option(doc="Reassembled shatter chromosome")
+    public File FASTA;
+    @Option(doc="Number of genomic fragment to shatter into", optional=true)
+    public Integer FRAGMENTS;
+    @Option(doc="Fragment retention rate", optional=true)
+    public double RETENTION_RATE = 0.25;
+    @Option(doc="Minimum of bases of unambiguous reference around breakponts", optional=true)
+    public int PADDING = 1500;
     @Option(doc="Seed for random number generator", optional=true)
     public int RANDOM_SEED = 1;
+    @Option(doc="chr to shatter")
+    public String CHR;
     protected int doWork() {
         try {
         	IOUtil.assertFileIsReadable(REFERENCE);
@@ -63,8 +50,14 @@ public class GenerateChromothripsis extends CommandLineProgram {
         			null,
         			REFERENCE,
         			false,
-        			false);
-        	// load variants
+        			true);
+        	int referenceIndex = 0;
+        	int length = pc.getReference().getSequenceDictionary().getSequence(referenceIndex).getSequenceLength();
+        	int fragments = (FRAGMENTS == null || FRAGMENTS <= 0) ? (length / (2 * PADDING) / 4) : FRAGMENTS ;
+        	int retainedFragments = (int)(fragments * RETENTION_RATE);
+        	FragmentedChromosome fc = new FragmentedChromosome(pc, CHR, PADDING, RANDOM_SEED);
+        	fc.shatter(fragments);
+        	fc.assemble(FASTA, VCF, retainedFragments);
         } catch (Exception e) {
 			e.printStackTrace();
 			return 1;
