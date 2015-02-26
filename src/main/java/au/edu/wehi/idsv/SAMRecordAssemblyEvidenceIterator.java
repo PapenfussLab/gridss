@@ -38,7 +38,7 @@ public class SAMRecordAssemblyEvidenceIterator extends AbstractIterator<SAMRecor
 						rp.shouldRealignBreakend(evidence));
 				evidence = AssemblyFactory.incorporateRealignment(processContext, evidence, realigned);
 			}
-			if (evidence != null) {
+			if (evidence != null && !evidence.isReferenceAssembly()) {
 				return evidence;
 			}
 		}

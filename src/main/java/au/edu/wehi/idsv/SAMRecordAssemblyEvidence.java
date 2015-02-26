@@ -5,7 +5,6 @@ import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordCoordinateComparator;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.TextCigarCodec;
 import htsjdk.samtools.util.Log;
@@ -28,7 +27,6 @@ import au.edu.wehi.idsv.vcf.VcfFilter;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.UnsignedBytes;
@@ -593,5 +591,12 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
         }
         SAMRecordAssemblyEvidence realigned = AssemblyFactory.hydrate(getEvidenceSource(), newAssembly);
         return realigned;
+	}
+	/**
+	 * Determines whether the assembly is of the reference allele
+	 * @return
+	 */
+	public boolean isReferenceAssembly() {
+		return isExact && getBreakendLength() == 0;
 	}
 }
