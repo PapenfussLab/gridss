@@ -10,7 +10,7 @@ import au.edu.wehi.idsv.sam.SamTags;
 
 
 public class SmallIndelSAMRecordAssemblyEvidenceTest extends TestHelper {
-	private SmallIndelSAMRecordAssemblyEvidence create(int position, String cigar, String bases, BreakendDirection dir) {
+	public static SmallIndelSAMRecordAssemblyEvidence create(int position, String cigar, String bases, BreakendDirection dir) {
 		SAMRecord r = Read(0, position, cigar);
 		r.setAttribute(SamTags.ASSEMBLY_DIRECTION, dir.toChar());
 		r.setReadBases(B(bases));

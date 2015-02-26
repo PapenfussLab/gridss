@@ -548,13 +548,6 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	public String toString() {
 		return String.format("A  %s N=%s", getBreakendSummary(), getEvidenceID());
 	}
-	static final Ordering<SAMRecordAssemblyEvidence> BySAMCoordinate = new Ordering<SAMRecordAssemblyEvidence>() {
-		private final SAMRecordCoordinateComparator cmp = new SAMRecordCoordinateComparator();
-		@Override
-		public int compare(SAMRecordAssemblyEvidence arg0, SAMRecordAssemblyEvidence arg1) {
-			return cmp.compare(arg0.getSAMRecord(), arg1.getSAMRecord());
-		}
-	};
 	@Override
 	public boolean isBreakendExact() {
 		return isExact;

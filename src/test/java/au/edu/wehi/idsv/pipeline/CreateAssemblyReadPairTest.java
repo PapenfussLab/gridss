@@ -35,6 +35,8 @@ import au.edu.wehi.idsv.RealignedSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.RemoteEvidence;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
+import au.edu.wehi.idsv.SmallIndelSAMRecordAssemblyEvidence;
+import au.edu.wehi.idsv.SmallIndelSAMRecordAssemblyEvidenceTest;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 
 import com.google.common.base.Predicate;
@@ -81,7 +83,7 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 		}
 		realign.add(r);
 	}
-	public class CompletedSAMEvidenceSource extends MockSAMEvidenceSource {
+	public static class CompletedSAMEvidenceSource extends MockSAMEvidenceSource {
 		public CompletedSAMEvidenceSource() {
 			super(IntermediateFilesTest.getContext(), 0, 300);
 		}
@@ -109,7 +111,7 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	 * @author Daniel Cameron
 	 *
 	 */
-	public class FixedAssemblyEvidenceSource extends AssemblyEvidenceSource {
+	public static class FixedAssemblyEvidenceSource extends AssemblyEvidenceSource {
 		public FixedAssemblyEvidenceSource(ProcessingContext processContext, List<SAMRecordAssemblyEvidence> assemblyResult, File file) {
 			super(processContext, ImmutableList.<SAMEvidenceSource>of(new CompletedSAMEvidenceSource()), file);
 			this.assemblies = Lists.newArrayList();
@@ -161,6 +163,12 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 				}
 			}
 			writer.close();
+		}
+		for (SAMRecordAssemblyEvidence e : evidence) {
+			if (e instanceof SmallIndelSAMRecordAssemblyEvidence) {
+				// considered realigned already
+				realignCount++;
+			}
 		}
 	}
 	private void go() {
@@ -309,5 +317,10 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 		assertEquals("precondition: breakend and realign should have been written as breakend passes filters", 1, Iterators.size(ar.iterator(false,  true)));
 		List<SAMRecordAssemblyEvidence> result = Lists.newArrayList(rp.iterator(false,  false));
 		assertEquals(0, result.size());
+	}
+	@Test
+	public void should_include_small_indel_remote_breakends() {
+		orderedAddNoRealign(SmallIndelSAMRecordAssemblyEvidenceTest.create(1, "10M10D10M", "NNNNNNNNNNATATATATAT", FWD));
+		go();
 	}
 }
