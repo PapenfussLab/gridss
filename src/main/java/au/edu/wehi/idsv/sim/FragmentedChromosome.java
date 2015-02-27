@@ -19,6 +19,8 @@ import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.IdsvVariantContext;
 import au.edu.wehi.idsv.IdsvVariantContextBuilder;
 import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.vcf.VcfStructuralVariantHeaderLines;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
@@ -95,8 +97,9 @@ public class FragmentedChromosome {
 			sb.append(f.getSequence());
 			if (last != null) {
 				BreakpointSummary bp = new BreakpointSummary(last.getEndBreakend(), f.getStartBreakend());
-				calls.add(new IdsvVariantContextBuilder(context).breakpoint(bp, "").make());
-				calls.add(new IdsvVariantContextBuilder(context).breakpoint(bp.remoteBreakpoint(), "").make());
+				String event = String.format("truth_%d_", i);
+				calls.add(create(bp, event));
+				calls.add(create(bp.remoteBreakpoint(), event));
 			}
 			last = f;
 		}
@@ -107,6 +110,15 @@ public class FragmentedChromosome {
 			writer.add(vc);
 		}
 		writer.close();
+	}
+	public IdsvVariantContext create(BreakpointSummary bp, String event) {
+		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
+		builder.breakpoint(bp, "")
+			.id(event + (bp.isLowBreakend() ? "o" : "h"))
+			.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, event)
+			.attribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, event + (bp.isLowBreakend() ? "h" : "o"));
+		return builder.make();
+		
 	}
 	/**
 	 * Determines whether the given breakpoint position contains the required margin of unambiguous, unbroken bases
