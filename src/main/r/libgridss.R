@@ -5,7 +5,7 @@ library(plyr)
 gridss.annotateBreakpointHits <- function(bed, bedMate, gridssVcf, ...) {
   # filter breakends and one-sided breakpoint calls
   gridssVcf <- gridssVcf[as.character(info(gridssVcf)$MATEID) %in% row.names(gridssVcf),]
-  gridssdf <- gridss.truthdetails.processvcf.vcftodf(gridssVcf)
+  gridssdf <- gridss.vcftodf(gridssVcf)
   callPos <- rowData(gridssVcf)
   callPos$mate <- as.character(info(gridssVcf)$MATEID)
   strand(callPos) <- ifelse(str_detect(as.character(callPos$ALT), "[[:alpha:]]+(\\[|]).*(\\[|])"), "+", "-")
@@ -63,7 +63,7 @@ gridss.removeUnpartnerededBreakend <- function(vcf) {
   }
   return(vcf[toKeep,])
 }
-gridss.truthdetails.processvcf.vcftodf <- function(vcf, sanityCheck=TRUE) {
+gridss.vcftodf <- function(vcf, sanityCheck=TRUE) {
   i <- info(vcf)
   df <- data.frame(variantid=names(rowData(vcf)))
   df$FILTER=rowData(vcf)$FILTER
@@ -113,20 +113,20 @@ gridss.truthdetails.processvcf.vcftodf <- function(vcf, sanityCheck=TRUE) {
     }
     mdf <- df[df$mateid,]
     # breakpoint fields should match on both sides of the breakend
-    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[df$FILTER != mdf$FILTER,], "filter")
-    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[df$SOMATIC != mdf$SOMATIC,], "somatic")
-    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[df$IMPRECISE != mdf$IMPRECISE,], "flag")
-    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[df$SVLEN != mdf$SVLEN,], "svlen")
-    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[df$SVTYPE != mdf$SVTYPE,], "svtype")
-    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[df$SPV != mdf$SPV,], "spv")
-    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[df$QUAL != mdf$QUAL,], "qual")
-    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[df$CQ != mdf$CQ,], "called qual")
-    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[df$AS != mdf$RAS,], "assembly")
-    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[df$RP != mdf$RP,], "read pair")
-    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[df$SC != mdf$RSC,], "soft clip")
-    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[abs(df$ASQ - mdf$RASQ) > 0.1,], "assembly qual")
-    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[abs(df$RPQ - mdf$RPQ) > 0.1,], "read pair qual")
-    gridss.truthdetails.processvcf.vcftodf.sanitycheck(df[abs(df$SCQ - mdf$RSCQ) > 0.1,], "soft clip qual")
+    gridss.vcftodf.sanitycheck(df[df$FILTER != mdf$FILTER,], "filter")
+    gridss.vcftodf.sanitycheck(df[df$SOMATIC != mdf$SOMATIC,], "somatic")
+    gridss.vcftodf.sanitycheck(df[df$IMPRECISE != mdf$IMPRECISE,], "flag")
+    gridss.vcftodf.sanitycheck(df[df$SVLEN != mdf$SVLEN,], "svlen")
+    gridss.vcftodf.sanitycheck(df[df$SVTYPE != mdf$SVTYPE,], "svtype")
+    gridss.vcftodf.sanitycheck(df[df$SPV != mdf$SPV,], "spv")
+    gridss.vcftodf.sanitycheck(df[df$QUAL != mdf$QUAL,], "qual")
+    gridss.vcftodf.sanitycheck(df[df$CQ != mdf$CQ,], "called qual")
+    gridss.vcftodf.sanitycheck(df[df$AS != mdf$RAS,], "assembly")
+    gridss.vcftodf.sanitycheck(df[df$RP != mdf$RP,], "read pair")
+    gridss.vcftodf.sanitycheck(df[df$SC != mdf$RSC,], "soft clip")
+    gridss.vcftodf.sanitycheck(df[abs(df$ASQ - mdf$RASQ) > 0.1,], "assembly qual")
+    gridss.vcftodf.sanitycheck(df[abs(df$RPQ - mdf$RPQ) > 0.1,], "read pair qual")
+    gridss.vcftodf.sanitycheck(df[abs(df$SCQ - mdf$RSCQ) > 0.1,], "soft clip qual")
   }
   df$hasSC <- paste("SC", ifelse(df$SC > 0 & df$RSC > 0, "Both", ifelse(df$SC > 0, "local", ifelse(df$RSC > 0, "remote", "zero"))))
   df$hasAS <- paste("AS", ifelse(df$AS > 0 & df$RAS > 0, "Both", ifelse(df$AS > 0, "local", ifelse(df$RAS > 0, "remote", "zero"))))
@@ -135,7 +135,7 @@ gridss.truthdetails.processvcf.vcftodf <- function(vcf, sanityCheck=TRUE) {
   levels(df$confidence) <- c("Low", "Medium", "High")
   return(df)
 }
-gridss.truthdetails.processvcf.vcftodf.sanitycheck <- function(failing, desc) {
+gridss.vcftodf.sanitycheck <- function(failing, desc) {
   failCount <- nrow(failing)
   if (failCount > 0) {
     warning(paste(failCount, "rows failed ", desc, "sanity check "))
@@ -171,6 +171,13 @@ vcftobpgr <- function(vcf) {
   # set strand
   strand(vcfgr) <- ifelse(str_detect(as.character(rowData(vcf)$ALT), "[[:alpha:]]+(\\[|]).*(\\[|])"), "+", "-")
   vcfgr$mate <- as.character(info(vcf)$MATEID)
+  if ("CIPOS" %in% names(info(vcf))) {
+    # Expand call position by CIPOS
+    offsets <- matrix(unlist(info(vcf)$CIPOS), ncol = 2, byrow = TRUE)
+    offsets[is.na(offsets)] <- 0
+    start(ranges(vcfgr)) <- start(ranges(vcfgr)) + offsets[,1]
+    end(ranges(vcfgr)) <- end(ranges(vcfgr)) + offsets[,2]
+  }
   return(vcfgr)
 }
 vcftoroc <- function(vcf, grtp, ...) {
