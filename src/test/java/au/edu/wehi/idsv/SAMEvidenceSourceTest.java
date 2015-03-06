@@ -383,4 +383,35 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		}
 		assertEquals(in.size(), results.size());
 	}
+	@Test
+	public void soft_clip_sort_window_should_allow_for_microhomology_causing_bounds_change() {
+		ProcessingContext pc = getCommandlineContext();
+		pc.getSoftClipParameters().minReadMapq = 0;
+		pc.getSoftClipParameters().minLength = 1;
+		pc.getSoftClipParameters().minAnchorIdentity = 0;
+		pc.getSoftClipParameters().adapters = new AdapterHelper(new String[0]);
+		pc.getRealignmentParameters().minLength = 1;
+		pc.getRealignmentParameters().mapqUniqueThreshold = 0;
+		pc.getRealignmentParameters().minAverageQual = 0;
+		List<SAMRecord> in = Lists.newArrayList();
+		List<SAMRecord> realn = Lists.newArrayList();
+		for (int i = 100; i < 200; i++) {
+			in.add(withReadName("a_" + Integer.toString(i), withSequence("NNNNNNNNNNN", Read(0, i, "10M1S")))[0]);
+			in.add(withReadName("b_" + Integer.toString(i), Read(0, i, "10S1M"))[0]);
+			in.add(withReadName("c_" + Integer.toString(i), withSequence("NNNNNNNNNNN", Read(0, i, "1S10M")))[0]);
+			in.add(withReadName("d_" + Integer.toString(i), withSequence("NNNNNNNNNNN", Read(0, i, "10M10S")))[0]);
+			realn.add(withReadName(String.format("0#%d#fa_%d", i, i), withSequence("N", Read(1, 10, "1M")))[0]);
+			realn.add(withReadName(String.format("0#%d#bb_%d", i, i), withSequence("N", Read(1, 10, "10M")))[0]);
+			realn.add(withReadName(String.format("0#%d#bc_%d", i, i), withSequence("N", Read(1, 10, "1M")))[0]);
+			realn.add(withReadName(String.format("0#%d#fd_%d", i, i), withSequence("N", Read(1, 10, "10M")))[0]);
+		}
+		createInput(in);
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
+		source.completeSteps(ProcessStep.ALL_STEPS);
+		createBAM(pc.getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, realn.toArray(new SAMRecord[realn.size()]));
+		source.completeSteps(ProcessStep.ALL_STEPS);
+		List<DirectedEvidence> result = Lists.newArrayList(source.iterator(false, true, false));
+		assertEquals(in.size(), result.size());
+		// should be sorted correctly
+	}
 }

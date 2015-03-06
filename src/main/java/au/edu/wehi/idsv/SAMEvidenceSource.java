@@ -285,7 +285,10 @@ public class SAMEvidenceSource extends EvidenceSource {
 		return new AsyncBufferedIterator<DirectedEvidence>(mergedIt, input.getName() + "-" + chr);
 	}
 	private int getSoftClipSortWindowSize() {
-		return getMaxReadMappedLength() + 1;
+		// worst case: forward with small clip followed by large homologous clip 
+		// MMMMMMMMMM>
+		//          <<<<<<<<<<M with microhomology the full length of the read
+		return 2 * Math.max(getMaxReadMappedLength(), getMaxReadLength()) + 1;
 	}
 	private int getReadPairSortWindowSize() {
 		// worst case scenario is a fully mapped forward read followed by a large soft-clipped backward read at max distance
