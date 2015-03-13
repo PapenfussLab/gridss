@@ -40,7 +40,7 @@ public class VcfConstants {
 		// indel headers
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.SV_LENGTH);
 		header.addMetaDataLine(VCFStandardHeaderLines.getInfoLine(VCFConstants.END_KEY));
-		header.addMetaDataLine(new VCFInfoHeaderLine("ALT", 1, VCFHeaderLineType.String, "Temporary indel testing hack. //TODO: //FIXME: remove when testing is complete"));
+		header.addMetaDataLine(new VCFInfoHeaderLine("ALT", 1, VCFHeaderLineType.String, "Alt allele sequence"));
 		
 		// Retrogene headers		
 		//header.addMetaDataLine(new VCFInfoHeaderLine(IdsvConstants.GENE_ID, 1, VCFHeaderLineType.String, "GTF gene_id of gene containing exons"));

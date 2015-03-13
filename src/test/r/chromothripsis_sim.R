@@ -74,12 +74,12 @@ ggplot(calls[calls$CX_READ_FRAGMENT_LENGTH==400 & calls$CX_READ_DEPTH==100,]) +
   labs(title="Assembly rate 100x 400bp fragment", x="Evidence quality")
 ggsave("assembly_rate_qual.png", width=10, height=7.5)
 ggplot(calls) +
-  aes(x=SC+RSC+RP+BRP+BSC, fill=paste(AS+BAS, "assemblies")) +
+  aes(x=SC+RSC+RP+BRP+BSC, fill=factor(AS+BAS)) +
   scale_y_continuous(labels=percent, expand=c(0, 0)) +  
   geom_bar(position='fill', binwidth=0.15) + 
   scale_x_log10() + 
-  facet_wrap(~CX_READ_LENGTH) +
-  labs(title="Assembly rate 100x 400bp fragment", x="Reads supporting variant", fill="Assembly contigs")
+  facet_grid(CX_READ_FRAGMENT_LENGTH ~ CX_READ_LENGTH) +
+  labs(title="Assembly rate k=25", x="Reads supporting variant", fill="Assembled contigs")
 ggsave("assembly_rate_reads.png", width=10, height=7.5)
 
 ggplot(calls[calls$CX_READ_LENGTH==100,]) +

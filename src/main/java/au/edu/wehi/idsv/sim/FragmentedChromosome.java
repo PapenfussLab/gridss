@@ -19,7 +19,6 @@ import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.IdsvVariantContext;
 import au.edu.wehi.idsv.IdsvVariantContextBuilder;
 import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.vcf.VcfStructuralVariantHeaderLines;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.collect.Lists;
@@ -32,25 +31,18 @@ import com.google.common.io.Files;
  * @author cameron.d
  *
  */
-public class FragmentedChromosome {
-	private final byte[] seq;
-	private final int referenceIndex;
-	private final int margin;
+public class FragmentedChromosome extends SimulatedChromosome {
 	private final Random rng;
 	/**
 	 * Linear 1-based genomic coordinate of base immediately before break 
 	 */
 	private final NavigableSet<Integer> breaks = new TreeSet<Integer>();
-	private final ProcessingContext context;
 	/**
 	 * @param reference reference genome
 	 * @param breakCleanMargin number of unambiguous bases around the breakpoint
 	 */
 	public FragmentedChromosome(ProcessingContext context, String chr, int breakCleanMargin, int seed) {
-		this.context = context;
-		this.referenceIndex = context.getReference().getSequenceDictionary().getSequence(chr).getSequenceIndex();
-		this.seq = context.getReference().getSequence(chr).getBases();
-		this.margin = breakCleanMargin;
+		super(context, chr, breakCleanMargin);
 		this.breaks.add(0);
 		this.breaks.add(seq.length - 1);
 		this.rng = new Random(seed);
@@ -74,7 +66,7 @@ public class FragmentedChromosome {
 		breakAt(pos);
 		return pos;
 	}
-	public void assemble(File fasta, File vcf, int fragments) throws IOException {
+	public void assemble(File fasta, File vcf, int fragments, boolean includeReference) throws IOException {
 		List<Fragment> fragList = new ArrayList<Fragment>();
 		List<Integer> breakList = Lists.newArrayList(breaks);
 		for (int i = 0; i < breaks.size() - 1; i++) {
@@ -89,7 +81,15 @@ public class FragmentedChromosome {
 		}
 		if (fragments > fragList.size()) throw new IllegalArgumentException("Too many fragments requested");
 		Collections.shuffle(fragList, rng);
-		StringBuilder sb = new StringBuilder(">chromthripsis\n");
+		StringBuilder sb = new StringBuilder();
+		if (includeReference) {
+			sb.append(">");
+			sb.append( getChr());
+			sb.append("\n");
+			sb.append(new String(seq, StandardCharsets.US_ASCII));
+			sb.append("\n");
+		}
+		sb.append(">chromothripsis." + getChr() + "\n");
 		List<IdsvVariantContext> calls = Lists.newArrayList();
 		Fragment last = null;
 		for (int i = 0; i < fragments; i++) {
