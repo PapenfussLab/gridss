@@ -1,11 +1,7 @@
 package au.edu.wehi.idsv.sim;
 
 import htsjdk.samtools.util.IOUtil;
-
-import java.io.File;
-
 import picard.cmdline.Option;
-import picard.cmdline.StandardOptionDefinitions;
 import au.edu.wehi.idsv.ProcessingContext;
 
 /**
@@ -19,12 +15,6 @@ public class GenerateChromothripsis extends SimulationGenerator {
     // The following attributes define the command-line arguments
     @picard.cmdline.Usage
     public String USAGE = getStandardUsagePreamble() + "Translocation breakpoint simulator " + PROGRAM_VERSION;
-    @Option(doc="Reference used for alignment", shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME)
-    public File REFERENCE;
-    @Option(doc="VCF variant list")
-    public File VCF;
-    @Option(doc="Reassembled shatter chromosome")
-    public File FASTA;
     @Option(doc="Number of genomic fragment to shatter into.", optional=true)
     public Integer FRAGMENTS;
     @Option(doc="Fragment retention rate", optional=true)

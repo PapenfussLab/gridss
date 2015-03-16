@@ -42,6 +42,11 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	public int getK() { return k; }
 	public T getKmer(long kmer) { return kmers.get(kmer); }
 	public Collection<Long> getAllKmers() { return Longs.asList(kmers.keys()); }
+	/**
+	 * Gets the underlying data structure storing the k-mer graph
+	 * @return
+	 */
+	protected TLongObjectHashMap<T> getBackingStore() { return kmers; }
 	public int size() { return kmers.size(); }
 	/**
 	 * Merges the given nodes together
@@ -283,11 +288,11 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 		return readBaseCount;
 	}
 	/**
-	 * set of all kmers reachable from the given kmer
+	 * Set of all kmers reachable from the given kmer
 	 * @param seed start kmer
 	 * @return all reachable kmers
 	 */
-	public Set<Long> reachableFrom(long seed) {
+	public Iterable<Long> reachableFrom(long seed) {
 		Set<Long> reachable = Sets.newHashSet();
 		Set<Long> frontier = Sets.newHashSet();
 		frontier.add(seed);

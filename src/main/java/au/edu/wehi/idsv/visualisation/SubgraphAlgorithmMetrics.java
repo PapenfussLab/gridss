@@ -2,7 +2,6 @@ package au.edu.wehi.idsv.visualisation;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
@@ -26,7 +25,7 @@ public class SubgraphAlgorithmMetrics implements SubgraphAssemblyAlgorithmTracke
 	private long timeCalcNonReferenceSubgraphsComplete;
 	private int subgraphCount;
 	private int startingNodesCounts;
-	private int nonreferencePaths;
+	//private int nonreferencePaths;
 	private long timeAssemblyNonReferenceContigsComplete;
 	private int contigsAssembled;
 	private int nodesTraversedDuringContigAssembly;
@@ -119,7 +118,7 @@ public class SubgraphAlgorithmMetrics implements SubgraphAssemblyAlgorithmTracke
 		sb.append(String.format("Collapses \"%d (%d steps overs %d iteration)\"; ", pathsCollapsed - leavesCollapsed, collapseNodesTraversed, collapseIterations));
 		sb.append(String.format("Subgraphs %d; ", subgraphCount));
 		sb.append(String.format("StartingNodes %d; ", startingNodesCounts));
-		sb.append(String.format("NonReferencePaths %d; ", nonreferencePaths));
+		//sb.append(String.format("NonReferencePaths %d; ", nonreferencePaths));
 		sb.append(String.format("AssemblyNodeTraversals %d; ", nodesTraversedDuringContigAssembly));
 		sb.append(String.format("Times %s; ", toCommaList(toTimeSequenceMs(
 				timeKmerConstructionStart,
@@ -168,17 +167,15 @@ public class SubgraphAlgorithmMetrics implements SubgraphAssemblyAlgorithmTracke
 		this.timeSplitOutReferencePathsComplete = System.nanoTime();
 		this.pathsSplit = pathsSplits;
 	}
-	@Override
-	public void calcNonReferenceSubgraphs(
-			List<Set<SubgraphPathNode>> subgraphs,
-			List<Set<SubgraphPathNode>> startingNodes) {
+	//@Override
+	public void calcNonReferenceSubgraphs(List<List<SubgraphPathNode>> startingNodes) {
 		this.timeCalcNonReferenceSubgraphsComplete = System.nanoTime();
-		this.subgraphCount = subgraphs.size();
+		this.subgraphCount = startingNodes.size();
 		this.startingNodesCounts = 0;
-		this.nonreferencePaths = 0;
-		for (Set<SubgraphPathNode> s : subgraphs) {
-			this.nonreferencePaths += s.size();
-			this.startingNodesCounts += startingNodes.size();
+		//this.nonreferencePaths = 0;
+		for (List<SubgraphPathNode> s : startingNodes) {
+			//this.nonreferencePaths += s.size();
+			this.startingNodesCounts += s.size();
 		}
 	}
 	@Override

@@ -145,8 +145,8 @@ public class StaticDeBruijnPathGraphGexfExporter<T extends DeBruijnNodeBase, PN 
 		}
 	}
 	@Override
-	public void annotateStartingPaths(List<Set<PN>> startingPaths) {
-		for (Set<PN> sg : startingPaths) {
+	public void annotateStartingPaths(List<Iterable<PN>> startingPaths) {
+		for (Iterable<PN> sg : startingPaths) {
 			for (PN pn : sg) {
 				lookup.get(pn).getAttributeValues()
 					.createValue(attrStartNode, "true");

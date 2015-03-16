@@ -4,6 +4,7 @@ import htsjdk.samtools.util.Log;
 
 import java.io.File;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -37,8 +38,8 @@ import com.google.common.primitives.Ints;
 public class PathGraphAssembler extends PathGraph {
 	private static final Log log = Log.getInstance(PathGraphAssembler.class);
 	private final AssemblyParameters parameters;
-	private final List<Set<SubgraphPathNode>> subgraphs = Lists.newArrayList();
-	private final List<Set<SubgraphPathNode>> startingPaths = Lists.newArrayList();
+	//private final List<Set<SubgraphPathNode>> subgraphs = Lists.newArrayList();
+	private final List<Iterable<SubgraphPathNode>> startingPaths = Lists.newArrayList();
 	private int nodeTraversals = 0;
 	private static int timeoutGraphsWritten = 0;
 	public PathGraphAssembler(DeBruijnGraphBase<DeBruijnSubgraphNode> graph, AssemblyParameters parameters, long seed, SubgraphAssemblyAlgorithmTracker tracker) {
@@ -56,8 +57,8 @@ public class PathGraphAssembler extends PathGraph {
 	private List<LinkedList<Long>> assemblyNonReferenceContigs(DeBruijnPathGraphExporter<DeBruijnSubgraphNode, SubgraphPathNode> graphExporter) {
 		final Function<SubgraphPathNode, Integer> scoringFunction = SCORE_TOTAL_KMER;
 		List<List<SubgraphPathNode>> result = Lists.newArrayList();
-		for (int i = 0; i < subgraphs.size(); i++) {
-			List<SubgraphPathNode> contig = assembleSubgraph(subgraphs.get(i), startingPaths.get(i), scoringFunction);
+		for (Iterable<SubgraphPathNode> starts : startingPaths) {
+			List<SubgraphPathNode> contig = assembleSubgraph(starts, scoringFunction);
 			result.add(contig);
 		}
 		// return the best assembly first
@@ -70,7 +71,6 @@ public class PathGraphAssembler extends PathGraph {
 			}}); 
 		if (graphExporter != null) {
 			graphExporter.snapshot(this);
-			graphExporter.annotateSubgraphs(subgraphs);
 			graphExporter.annotateStartingPaths(startingPaths);
 			graphExporter.contigs(result);
 		} else if (nodeTraversals >= parameters.maxPathTraversalNodes && parameters.debruijnGraphVisualisationDirectory != null) {
@@ -78,7 +78,6 @@ public class PathGraphAssembler extends PathGraph {
 			parameters.debruijnGraphVisualisationDirectory.mkdirs();
 			graphExporter = new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k);
 			graphExporter.snapshot(this);
-			graphExporter.annotateSubgraphs(subgraphs);
 			graphExporter.annotateStartingPaths(startingPaths);
 			graphExporter.contigs(result);
 			graphExporter.saveTo(new File(parameters.debruijnGraphVisualisationDirectory,
@@ -102,18 +101,17 @@ public class PathGraphAssembler extends PathGraph {
 			SubgraphPathNode node = toProcess.iterator().next();
 			toProcess.remove(node);
 			if (node.containsNonReferenceKmer()) {
-				newNonreferenceSubgraph(node);
-				toProcess.removeAll(subgraphs.get(subgraphs.size() - 1));
+				toProcess.removeAll(newNonreferenceSubgraph(node));
 			}
 		}
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
 			assert(sanityCheckSubgraphs());
 		}
-		tracker.calcNonReferenceSubgraphs(subgraphs, startingPaths);
+		//tracker.calcNonReferenceSubgraphs(subgraphs, startingPaths);
 	}
-	private void newNonreferenceSubgraph(SubgraphPathNode seed) {
+	private Set<SubgraphPathNode> newNonreferenceSubgraph(SubgraphPathNode seed) {
 		Set<SubgraphPathNode> nodes = Sets.newHashSet();
-		Set<SubgraphPathNode> startingNodes = Sets.newHashSet();
+		List<SubgraphPathNode> startingNodes = new ArrayList<SubgraphPathNode>();
 		Queue<SubgraphPathNode> frontier = new ArrayDeque<SubgraphPathNode>();
 		nodes.add(seed);
 		frontier.add(seed);
@@ -139,16 +137,24 @@ public class PathGraphAssembler extends PathGraph {
 			// no reference anchors at all - try starting anywhere
 			// TODO: reduce # starting positions by restricting to either
 			// 1) no incoming edges (in the nodes set)
-			// 2) nodes forming part of a cycle 
-			startingNodes = nodes;
+			// 2) nodes forming part of a cycle
+			startingNodes = Lists.newArrayListWithCapacity(nodes.size());
+			startingNodes.addAll(nodes);
 		}
-		subgraphs.add(nodes);
+		//subgraphs.add(nodes);
 		startingPaths.add(startingNodes);
+		return nodes;
 	}
+	/**
+	 * Returns the best possible non-reference contig starting from one of the starting nodes. 
+	 * @param startingNodes available starting nodes
+	 * @param scoringFunction node scoring function
+	 * @return non-reference contig, preceeded by reference assembly 
+	 */
 	private List<SubgraphPathNode> assembleSubgraph(
-			Set<SubgraphPathNode> nodes,
-			Set<SubgraphPathNode> startingNodes,
+			Iterable<SubgraphPathNode> startingNodes,
 			Function<SubgraphPathNode, Integer> scoringFunction) {
+		assert(startingNodes != null);
 		int branchingFactor = parameters.subgraphAssemblyTraversalMaximumBranchingFactor;
 		List<SubgraphPathNode> best = null;
 		int bestScore = Integer.MIN_VALUE;
@@ -160,7 +166,10 @@ public class PathGraphAssembler extends PathGraph {
 				best = current;
 			}
 		}
+		assert(best != null); // subgraphs contain at least one node
+		// TODO: limit anchor traversal length as we don't need a massive anchor: just enough that realignment places the breakpoint correctly
 		List<SubgraphPathNode> anchor = traverse(best.get(0), scoringFunction, false, true, branchingFactor);
+		assert(anchor.size() > 0); // assembly includes starting node so must include that
 		anchor.remove(anchor.size() - 1); // don't repeat the non-reference node we used as the anchor
 		return Lists.newArrayList(Iterables.concat(anchor, best));
 	}
@@ -327,6 +336,7 @@ public class PathGraphAssembler extends PathGraph {
 			expensiveSanityCheckLog.warn("Expensive sanity checking is being performed. Performance will be poor");
 			expensiveSanityCheckLog = null;
 		}
+		/*
 		assert(subgraphs.size() == startingPaths.size());
 		for (int i = 0; i < subgraphs.size(); i++) {
 			boolean shouldBeReferenceStart = false;
@@ -367,6 +377,7 @@ public class PathGraphAssembler extends PathGraph {
 				}
 			}
 		}
+		*/
 		return true;
 	}
 	private boolean sanityCheckMemoization(

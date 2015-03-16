@@ -2,7 +2,6 @@ package au.edu.wehi.idsv.visualisation;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.debruijn.subgraph.SubgraphPathNode;
@@ -21,7 +20,7 @@ public interface SubgraphAssemblyAlgorithmTracker {
 
 	public abstract void splitOutReferencePaths(int pathsSplits);
 
-	public abstract void calcNonReferenceSubgraphs(List<Set<SubgraphPathNode>> subgraphs, List<Set<SubgraphPathNode>> startingNodes);
+	//public abstract void calcNonReferenceSubgraphs(List<Set<SubgraphPathNode>> subgraphs, List<Set<SubgraphPathNode>> startingNodes);
 
 	public abstract void assemblyNonReferenceContigs(List<List<SubgraphPathNode>> assembledPaths, List<LinkedList<Long>> assembledKmers, int nodesTraversed);
 

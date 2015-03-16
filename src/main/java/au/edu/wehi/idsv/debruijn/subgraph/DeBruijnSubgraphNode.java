@@ -20,8 +20,8 @@ public class DeBruijnSubgraphNode extends DeBruijnNodeBase {
 	 * 
 	 * Note: reads with less than k bases mapped to the reference will be considered unanchored 
 	 */
-	TIntList referencePosition = new TIntArrayList(4);
-	TIntList referencePositionWeight = new TIntArrayList(4);
+	private TIntList referencePosition = new TIntArrayList(4);
+	private TIntList referencePositionWeight = new TIntArrayList(4);
 	private int minReferencePosition = Integer.MAX_VALUE;
 	private int maxReferencePosition = Integer.MIN_VALUE;
 	/**

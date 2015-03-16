@@ -22,6 +22,6 @@ public interface DeBruijnPathGraphExporter<T extends DeBruijnNodeBase, PN extend
 
 	public abstract void annotateSubgraphs(List<Set<PN>> subgraphs);
 
-	public abstract void annotateStartingPaths(List<Set<PN>> startingPaths);
+	public abstract void annotateStartingPaths(List<Iterable<PN>> startingPaths);
 
 }

@@ -192,9 +192,9 @@ public class DynamicDeBruijnPathGraphGexfExporter implements DeBruijnPathGraphEx
 		}
 	}
 	@Override
-	public void annotateStartingPaths(List<Set<SubgraphPathNode>> startingPaths) {
+	public void annotateStartingPaths(List<Iterable<SubgraphPathNode>> startingPaths) {
 		currentTime++;
-		for (Set<SubgraphPathNode> sg : startingPaths) {
+		for (Iterable<SubgraphPathNode> sg : startingPaths) {
 			for (SubgraphPathNode pn : sg) {
 				lookup.get(pn).getAttributeValues()
 					.createValue(attrStartNode, "true");

@@ -2,7 +2,6 @@ package au.edu.wehi.idsv.visualisation;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.debruijn.subgraph.SubgraphPathNode;
@@ -18,11 +17,6 @@ public class NontrackingSubgraphTracker implements SubgraphAssemblyAlgorithmTrac
 	}
 	@Override
 	public void splitOutReferencePaths(int pathsSplits) {
-	}
-	@Override
-	public void calcNonReferenceSubgraphs(
-			List<Set<SubgraphPathNode>> subgraphs,
-			List<Set<SubgraphPathNode>> startingNodes) {
 	}
 	@Override
 	public void assemblyNonReferenceContigs(
