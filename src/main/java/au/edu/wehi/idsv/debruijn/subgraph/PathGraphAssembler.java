@@ -8,24 +8,21 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.NavigableMap;
 import java.util.Queue;
 import java.util.Set;
 
 import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
-import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
+import au.edu.wehi.idsv.debruijn.PathNode;
 import au.edu.wehi.idsv.visualisation.DeBruijnPathGraphExporter;
 import au.edu.wehi.idsv.visualisation.StaticDeBruijnSubgraphPathGraphGexfExporter;
 import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTracker;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
@@ -36,12 +33,13 @@ import com.google.common.primitives.Ints;
  *
  */
 public class PathGraphAssembler extends PathGraph {
-	private static final Log log = Log.getInstance(PathGraphAssembler.class);
+	//private static final Log log = Log.getInstance(PathGraphAssembler.class);
 	private final AssemblyParameters parameters;
 	//private final List<Set<SubgraphPathNode>> subgraphs = Lists.newArrayList();
 	private final List<Iterable<SubgraphPathNode>> startingPaths = Lists.newArrayList();
-	private int nodeTraversals = 0;
 	private static int timeoutGraphsWritten = 0;
+	private boolean timeoutReached = false;
+	private int totalNodesTraversed = 0;
 	public PathGraphAssembler(DeBruijnGraphBase<DeBruijnSubgraphNode> graph, AssemblyParameters parameters, long seed, SubgraphAssemblyAlgorithmTracker tracker) {
 		super(graph, seed, tracker);
 		this.parameters = parameters;
@@ -55,7 +53,7 @@ public class PathGraphAssembler extends PathGraph {
 		return assemblyNonReferenceContigs(graphExporter);
 	}
 	private List<LinkedList<Long>> assemblyNonReferenceContigs(DeBruijnPathGraphExporter<DeBruijnSubgraphNode, SubgraphPathNode> graphExporter) {
-		final Function<SubgraphPathNode, Integer> scoringFunction = SCORE_TOTAL_KMER;
+		final Function<SubgraphPathNode, Integer> scoringFunction = SubgraphHelper.SCORE_TOTAL_KMER;
 		List<List<SubgraphPathNode>> result = Lists.newArrayList();
 		for (Iterable<SubgraphPathNode> starts : startingPaths) {
 			List<SubgraphPathNode> contig = assembleSubgraph(starts, scoringFunction);
@@ -66,14 +64,14 @@ public class PathGraphAssembler extends PathGraph {
 			@Override
 			public int compare(List<SubgraphPathNode> arg0, List<SubgraphPathNode> arg1) {
 				return Ints.compare(
-						getScore(arg1, scoringFunction, false, true),
-						getScore(arg0, scoringFunction, false, true));
+						SubgraphHelper.getScore(arg1, scoringFunction, false, true),
+						SubgraphHelper.getScore(arg0, scoringFunction, false, true));
 			}}); 
 		if (graphExporter != null) {
 			graphExporter.snapshot(this);
 			graphExporter.annotateStartingPaths(startingPaths);
 			graphExporter.contigs(result);
-		} else if (nodeTraversals >= parameters.maxPathTraversalNodes && parameters.debruijnGraphVisualisationDirectory != null) {
+		} else if (timeoutReached && parameters.debruijnGraphVisualisationDirectory != null) {
 			// weren't planning to export but we timed out
 			parameters.debruijnGraphVisualisationDirectory.mkdirs();
 			graphExporter = new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k);
@@ -89,7 +87,7 @@ public class PathGraphAssembler extends PathGraph {
 				return Lists.newLinkedList(Lists.newArrayList(SubgraphPathNode.kmerIterator(arg0)));
 			}
 		}));
-		tracker.assemblyNonReferenceContigs(result, resultKmers, nodeTraversals);
+		tracker.assemblyNonReferenceContigs(result, resultKmers, totalNodesTraversed);
 		return resultKmers;
 	}
 	/**
@@ -156,180 +154,23 @@ public class PathGraphAssembler extends PathGraph {
 			Function<SubgraphPathNode, Integer> scoringFunction) {
 		assert(startingNodes != null);
 		int branchingFactor = parameters.subgraphAssemblyTraversalMaximumBranchingFactor;
-		List<SubgraphPathNode> best = null;
-		int bestScore = Integer.MIN_VALUE;
-		for (SubgraphPathNode startingNode : startingNodes) {
-			List<SubgraphPathNode> current = traverse(startingNode, scoringFunction, true, false, branchingFactor);
-			int currentScore = getScore(current, scoringFunction, false, true);
-			if (currentScore >= bestScore) {
-				bestScore = currentScore;
-				best = current;
-			}
-		}
+		
+		PathGraphTraverse trav = new PathGraphTraverse(this, parameters.maxPathTraversalNodes, scoringFunction, true, false, branchingFactor, Integer.MAX_VALUE);
+		List<SubgraphPathNode> best = trav.traverse(startingNodes);
+		totalNodesTraversed += trav.getNodesTraversed();
+		timeoutReached |= trav.getNodesTraversed() >= parameters.maxPathTraversalNodes;
+		
 		assert(best != null); // subgraphs contain at least one node
 		// TODO: limit anchor traversal length as we don't need a massive anchor: just enough that realignment places the breakpoint correctly
-		List<SubgraphPathNode> anchor = traverse(best.get(0), scoringFunction, false, true, branchingFactor);
+		PathGraphTraverse anchorTrav = new PathGraphTraverse(this, parameters.maxPathTraversalNodes, scoringFunction, false, true, branchingFactor, Math.max(parameters.anchorAssemblyLength, PathNode.kmerLength(best) ));
+		List<SubgraphPathNode> anchor = anchorTrav.traverse(ImmutableList.of(best.get(0)));
+		totalNodesTraversed += trav.getNodesTraversed();
+		timeoutReached |= trav.getNodesTraversed() >= parameters.maxPathTraversalNodes;
 		assert(anchor.size() > 0); // assembly includes starting node so must include that
 		anchor.remove(anchor.size() - 1); // don't repeat the non-reference node we used as the anchor
+		
 		return Lists.newArrayList(Iterables.concat(anchor, best));
 	}
-	private int getScore(
-			List<SubgraphPathNode> current,
-			Function<SubgraphPathNode,
-			Integer> perNodeScoringFunction,
-			boolean scoreReference,
-			boolean scoreNonReference) {
-		int sum = 0;
-		for (SubgraphPathNode n : current) {
-			if ((n.containsNonReferenceKmer() && scoreNonReference) ||
-				 (n.containsReferenceKmer() && scoreReference)) {
-				sum += perNodeScoringFunction.apply(n);
-			}
-		}
-		return sum;
-	}
-	private static Ordering<SubgraphPathNode> getScoreOrderDesc(final Function<SubgraphPathNode, Integer> scoringFunction) {
-		return new Ordering<SubgraphPathNode>() {
-			@Override
-			public int compare(SubgraphPathNode arg0, SubgraphPathNode arg1) {
-				return Ints.compare(scoringFunction.apply(arg1), scoringFunction.apply(arg0));
-			}};
-	}
-	private List<SubgraphPathNode> traverse(
-			final SubgraphPathNode startingNode,
-			final Function<SubgraphPathNode, Integer> scoringFunction,
-			final boolean traverseForward,
-			final boolean referenceTraverse,
-			final int maxNextStates) {
-		try {
-			if (nodeTraversals < parameters.maxPathTraversalNodes) {
-				return memoizedTraverse(startingNode, scoringFunction, traverseForward, referenceTraverse, maxNextStates);
-			}
-		} catch (AlgorithmRuntimeSafetyLimitExceededException e) {
-			log.info(String.format("Reached path traversal timeout traversing subgraph with %d paths. Switching to greedy traversal.", getPathCount()));
-		}
-		try {
-			return memoizedTraverse(startingNode, scoringFunction, traverseForward, referenceTraverse, 1);
-		} catch (AlgorithmRuntimeSafetyLimitExceededException e) {
-			log.error("Sanity check failure: timeout hit again when performing greedy traversal");
-			throw new RuntimeException(e);
-		}
-	}
-	protected List<SubgraphPathNode> memoizedTraverse(
-			final SubgraphPathNode startingNode,
-			final Function<SubgraphPathNode, Integer> scoringFunction,
-			final boolean traverseForward,
-			final boolean referenceTraverse,
-			final int maxNextStates) throws AlgorithmRuntimeSafetyLimitExceededException {
-		Ordering<SubgraphPathNode> order = getScoreOrderDesc(scoringFunction);
-			
-		Map<SubgraphPathNode, Integer> bestScore = Maps.newHashMap();
-		Map<SubgraphPathNode, List<SubgraphPathNode>> bestPath = Maps.newHashMap();
-		NavigableMap<Integer, Set<SubgraphPathNode>> frontier = Maps.newTreeMap();
-		int bestFinalScore = Integer.MIN_VALUE;
-		List<SubgraphPathNode> bestFinalPath = null;
-		List<SubgraphPathNode> startingPath = Lists.newArrayList(startingNode); 
-		int startingScore = getScore(startingPath, scoringFunction, referenceTraverse, !referenceTraverse);
-		bestScore.put(startingNode, startingScore);
-		bestPath.put(startingNode, startingPath);
-		pushFronter(frontier, startingNode, startingScore, null);
-		
-		while (!frontier.isEmpty()) {
-			nodeTraversals++;
-			if (nodeTraversals > parameters.maxPathTraversalNodes && maxNextStates != 1) {
-				// maxNextStates = 1 is a greedy traversal - need need for a timeout as it is n nodes traversed
-				// even in a fully connected graph
-				throw new AlgorithmRuntimeSafetyLimitExceededException();
-			}
-			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
-				assert(sanityCheckMemoization(bestScore, bestPath, frontier, scoringFunction, referenceTraverse, !referenceTraverse));
-			}
-			SubgraphPathNode node = popFronter(frontier);
-			int score = bestScore.get(node);
-			List<SubgraphPathNode> nodePath = bestPath.get(node);
-			List<SubgraphPathNode> nextStates = traverseForward ? nextPath(node) : prevPath(node);
-			Collections.sort(nextStates, order);
-			int nextStateCount = 0;
-			for (SubgraphPathNode next : nextStates) {
-				if ((referenceTraverse && !next.containsReferenceKmer()) ||
-					(!referenceTraverse && !next.containsNonReferenceKmer())) {
-					// don't want to transition between reference and non-reference
-					continue;
-				}
-				// path must be simple path 
-				if (nodePath.contains(next)) continue;
-				
-				// ok, we have somewhere to go!
-				int nextScore = score + scoringFunction.apply(next);
-				if (bestScore.containsKey(next) && (int)bestScore.get(next) >= nextScore) {
-					// our destination already has a better path to it - clearly not an optimal path
-					continue;
-				}
-				nextStateCount++;
-				if (nextStateCount > maxNextStates) {
-					// out we go: we've tried enough times
-					continue;
-				}
-				// memoize our path to our next node
-				List<SubgraphPathNode> nextPath = Lists.newArrayListWithCapacity(nodePath.size() + 1);
-				nextPath.addAll(nodePath);
-				nextPath.add(next);
-				pushFronter(frontier, next, nextScore, bestScore.containsKey(next) ? bestScore.get(next) : null);
-				bestScore.put(next, nextScore);
-				bestPath.put(next, nextPath);
-			}
-			if (nextStateCount == 0 && score > bestFinalScore) {
-				bestFinalScore = score;
-				bestFinalPath = nodePath;
-			}
-		}
-		if (!traverseForward) {
-			bestFinalPath = Lists.reverse(bestFinalPath);
-		}
-		return bestFinalPath;
-	}
-	private static void pushFronter(NavigableMap<Integer, Set<SubgraphPathNode>> frontier, SubgraphPathNode node, int score, Integer oldScore) {
-		assert (oldScore == null || (int)oldScore != score); // we shouldn't be adding a node with the same score to the frontier twice
-		// Check if the node is currently active with a lower score
-		// if so, remove it from the frontier before we add the latest
-		// score
-		if (oldScore != null) {
-			if (frontier.containsKey(oldScore)) {
-				Set<SubgraphPathNode> oldLocation = frontier.get(oldScore);
-				if (oldLocation.contains(node)) {
-					oldLocation.remove(node);
-					if (oldLocation.isEmpty()) {
-						frontier.remove(oldScore);
-					}
-				}
-			}
-		}
-		if (!frontier.containsKey(score)) {
-			Set<SubgraphPathNode> value = Sets.newHashSet();
-			frontier.put(score, value);
-		}
-		frontier.get(score).add(node);
-	}
-	private static SubgraphPathNode popFronter(NavigableMap<Integer, Set<SubgraphPathNode>> frontier) {
-		Entry<Integer, Set<SubgraphPathNode>> entry = frontier.firstEntry();
-		Set<SubgraphPathNode> value = entry.getValue();
-		SubgraphPathNode head = value.iterator().next();
-		value.remove(head);
-		if (value.isEmpty()) {
-			frontier.remove(entry.getKey());
-		}
-		return head;
-	}
-	public static final Function<SubgraphPathNode, Integer> SCORE_TOTAL_KMER = new Function<SubgraphPathNode, Integer>() {
-		public Integer apply(SubgraphPathNode arg) {
-			return arg.getWeight();
-		}
-	};
-	public static final Function<SubgraphPathNode, Integer> SCORE_MAX_KMER = new Function<SubgraphPathNode, Integer>() {
-		public Integer apply(SubgraphPathNode arg) {
-			return arg.getMaxKmerWeight();
-		}
-	};
 	private static Log expensiveSanityCheckLog = Log.getInstance(PathGraphAssembler.class);
 	private boolean sanityCheckSubgraphs() {
 		if (expensiveSanityCheckLog != null) {
@@ -378,46 +219,6 @@ public class PathGraphAssembler extends PathGraph {
 			}
 		}
 		*/
-		return true;
-	}
-	private boolean sanityCheckMemoization(
-			Map<SubgraphPathNode, Integer> bestScore,
-			Map<SubgraphPathNode, List<SubgraphPathNode>> bestPath,
-			NavigableMap<Integer, Set<SubgraphPathNode>> frontier,
-			Function<SubgraphPathNode, Integer> scoringFunction,
-			boolean scoreReference, boolean scoreNonReference) {
-		if (expensiveSanityCheckLog != null) {
-			expensiveSanityCheckLog.warn("Expensive sanity checking is being performed. Performance will be poor");
-			expensiveSanityCheckLog = null;
-		}
-		for (Entry<SubgraphPathNode, Integer> entry : bestScore.entrySet()) {
-			SubgraphPathNode node = entry.getKey();
-			assert(bestScore.containsKey(node));
-			assert(bestPath.containsKey(node));
-			assert(bestScore.get(node) == getScore(bestPath.get(node), scoringFunction, scoreReference, scoreNonReference));
-		}
-		for (Entry<SubgraphPathNode, List<SubgraphPathNode>> entry : bestPath.entrySet()) {
-			SubgraphPathNode node = entry.getKey();
-			List<SubgraphPathNode> path = entry.getValue();
-			assert(path.size() == Sets.newHashSet(path).size()); // ensure simple path
-			assert(bestScore.containsKey(node));
-			assert(bestPath.containsKey(node));
-			assert(bestScore.get(node) == getScore(bestPath.get(node), scoringFunction, scoreReference, scoreNonReference));
-		}
-		Set<SubgraphPathNode> frontierNodes = Sets.newHashSet();
-		int frontierNodeCount = 0;
-		for (Entry<Integer, Set<SubgraphPathNode>> entry : frontier.entrySet()) {
-			int score = entry.getKey();
-			for (SubgraphPathNode node : entry.getValue()) {
-				assert(bestScore.containsKey(node));
-				assert(bestPath.containsKey(node));
-				assert(frontier.get(score).contains(node));
-				assert(bestScore.get(node) >= getScore(bestPath.get(node), scoringFunction, scoreReference, scoreNonReference));
-			}
-			frontierNodeCount += entry.getValue().size();
-			frontierNodes.addAll(entry.getValue());
-		}
-		assert(frontierNodeCount == frontierNodes.size()); // no duplicates
 		return true;
 	}
 }

@@ -101,6 +101,12 @@ public class AssemblyParameters {
 	public boolean performLocalRealignment = true;
 	public int realignmentWindowSize = Defaults.ASSEMBLY_REALIGNMENT_WINDOW_SIZE;
 	public boolean excludeNonSupportingEvidence = Defaults.EXCLUDE_ASSEMBLY_NON_SUPPORTING_EVIDENCE;
+	/**
+	 * Number of reference sequence bases to assemble.
+	 * 
+	 * Note: a breakend assembly longer than this length will cause reference sequence assembly to be at least as long as the breakend 
+	 */
+	public int anchorAssemblyLength = 100;
 	public boolean applyFilters(AssemblyEvidence evidence) {
 		AssemblyEvidence localEvidence = evidence;
 		if (evidence instanceof RemoteEvidence) {

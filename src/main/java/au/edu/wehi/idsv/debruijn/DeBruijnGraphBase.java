@@ -41,6 +41,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	}
 	public int getK() { return k; }
 	public T getKmer(long kmer) { return kmers.get(kmer); }
+	public int getKmerCount() { return kmers.size(); }
 	public Collection<Long> getAllKmers() { return Longs.asList(kmers.keys()); }
 	/**
 	 * Gets the underlying data structure storing the k-mer graph

@@ -18,6 +18,7 @@ public class SubgraphSummary {
 	private SubgraphSummary parent = null;
 	private int maxAnchor = Integer.MIN_VALUE;
 	private int minAnchor = Integer.MAX_VALUE;
+	private int kmerCount = 0;
 	private long kmer;
 	public SubgraphSummary(long startingKmer) {
 		this.kmer = startingKmer;
@@ -45,6 +46,13 @@ public class SubgraphSummary {
 	}
 	public boolean isAnchored() {
 		return minAnchor != Integer.MAX_VALUE;
+	}
+	/**
+	 * Number of kmers in this subgraph
+	 * @return
+	 */
+	public int getKmerCount() {
+		return kmerCount;
 	}
 	/**
 	 * Gets the full subgraph containing this partial subgraph
@@ -84,26 +92,22 @@ public class SubgraphSummary {
 		graphRoot.parent = myRoot;
 		myRoot.maxAnchor = Math.max(myRoot.maxAnchor, graphRoot.maxAnchor);
 		myRoot.minAnchor = Math.min(myRoot.minAnchor, graphRoot.minAnchor);
+		myRoot.kmerCount += graphRoot.kmerCount;
 		return true;
 	}
-	private static void addAnchor(SubgraphSummary g, int position) {
-		SubgraphSummary rootg = g.getRoot();
-		rootg.maxAnchor = Math.max(rootg.maxAnchor, position);
-		rootg.minAnchor = Math.min(rootg.minAnchor, position);
-	}
-	public void addAnchor(int position) {
-		addAnchor(this, position);
-	}
-	public void addAnchor(Integer position) {
+	private void addAnchor(SubgraphSummary root, Integer position) {
 		if (position != null) {
-			addAnchor(this, position);
+			root.maxAnchor = Math.max(root.maxAnchor, position);
+			root.minAnchor = Math.min(root.minAnchor, position);
 		}
 	}
 	public void addNode(DeBruijnSubgraphNode node) {
-		addAnchor(node.getMinReferencePosition());
-		addAnchor(node.getMaxReferencePosition());
-		addAnchor(node.getMinMatePosition());
-		addAnchor(node.getMaxMatePosition());
+		SubgraphSummary root = getRoot();
+		addAnchor(root, node.getMinReferencePosition());
+		addAnchor(root, node.getMaxReferencePosition());
+		addAnchor(root, node.getMinMatePosition());
+		addAnchor(root, node.getMaxMatePosition());
+		root.kmerCount++;
 		// TODO: FIXME: sc with anchor < kmer length will be completely unanchored and subgraph min/max bounds will not be set! 
 		// assertion fails
 		//assert(node.getMinReferencePosition() != null ||
@@ -113,7 +117,7 @@ public class SubgraphSummary {
 	}
 	@Override
 	public String toString() {
-		return String.format("Subgraph [%d, %d] containing %s", minAnchor, maxAnchor, KmerEncodingHelper.toApproximateString(kmer));
+		return String.format("Subgraph [%d, %d] %d kmers including %s", minAnchor, maxAnchor, kmerCount, KmerEncodingHelper.toApproximateString(kmer));
 	}
 	public static Ordering<SubgraphSummary> ByMinAnchor = new Ordering<SubgraphSummary>() {
 		public int compare(SubgraphSummary g1, SubgraphSummary g2) {

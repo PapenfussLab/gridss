@@ -64,7 +64,7 @@ public class Defaults {
 		PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS = Boolean.valueOf(System.getProperty("gridss.expensiveAsserts.debruijn", "false"));
 		PERFORM_EXPENSIVE_CLIQUE_SANITY_CHECKS = Boolean.valueOf(System.getProperty("gridss.expensiveAsserts.clique", "false"));
 		COLLAPSE_PATH_MAX_TRAVERSAL = Integer.valueOf(System.getProperty("gridss.debruijn.maxCollapseTraversal", "2097152"));
-		BEST_PATH_MAX_TRAVERSAL = Integer.valueOf(System.getProperty("gridss.debruijn.maxPathTraversal", "65536"));
+		BEST_PATH_MAX_TRAVERSAL = Integer.valueOf(System.getProperty("gridss.debruijn.maxPathTraversal", "1048576"));
 		READ_PAIR_DOVETAIL_MARGIN = Integer.valueOf(System.getProperty("gridss.readpair.dovetailMargin", "4"));
 		EXCLUDE_ASSEMBLY_NON_SUPPORTING_EVIDENCE = Boolean.valueOf(System.getProperty("gridss.assembly.excludeNonSupporting", "false"));
 		MIN_BASES_TO_ALIGN = Integer.valueOf(System.getProperty("gridss.readpair.minAlignmentBases", "18"));

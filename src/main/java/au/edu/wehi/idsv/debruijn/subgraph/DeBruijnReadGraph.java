@@ -274,18 +274,19 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		List<SubgraphSummary> toRemove = Lists.newArrayList();
 		for (final SubgraphSummary ss : subgraphs) {
 			if (ss.getMaxAnchor() < position || exceedsTimeout(ss) || !ss.isAnchored()) {
-				// TODO: choose which algorithm to use based on subgraph size
-				// small subgraphs should perform reachability check
-				//for (long kmer : reachableFrom(ss.getAnyKmer())) {
-				//	remove(kmer);
-				//}
-				// large subgraphs should iterate over the backing collection
-				getBackingStore().retainEntries(new TLongObjectProcedure<DeBruijnSubgraphNode>() {
-					@Override
-					public boolean execute(long kmer, DeBruijnSubgraphNode node) {
-						return node.getSubgraph() != ss;
+				if (ss.getKmerCount() > getBackingStore().capacity() * 0.0625) {
+					// TODO: do performance testing to find optimal bulk delete thresholds
+					getBackingStore().retainEntries(new TLongObjectProcedure<DeBruijnSubgraphNode>() {
+						@Override
+						public boolean execute(long kmer, DeBruijnSubgraphNode node) {
+							return node.getSubgraph() != ss;
+						}
+					});
+				} else {
+					for (long kmer : reachableFrom(ss.getAnyKmer())) {
+						remove(kmer);
 					}
-				});
+				}
 				toRemove.add(ss);
 			}
 		}

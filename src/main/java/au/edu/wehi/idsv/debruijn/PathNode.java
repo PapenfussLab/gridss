@@ -202,7 +202,9 @@ public class PathNode<T extends DeBruijnNodeBase> {
 	}
 	/**
 	 * Gets the total weight of all kmers on the given subpath
-	 * @param path path
+	 * @param it path
+	 * @param kmersToSkip number of kmers
+	 * @param kmers number of kmers to calculate weight of
 	 * @return total weight
 	 */
 	public static <T extends DeBruijnNodeBase> int kmerTotalWeight(Iterable<? extends PathNode<T>> it, int kmersToSkip, int kmers, DeBruijnGraphBase<T> graph) {
