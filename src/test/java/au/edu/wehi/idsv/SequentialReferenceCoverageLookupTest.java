@@ -124,11 +124,14 @@ public class SequentialReferenceCoverageLookupTest extends TestHelper {
 			assertEquals(i >= 10 && i < 14 ? 6 : 0, r);
 		}
 	}
-	@Ignore
 	@Test
 	public void should_consider_CIGAR() {
-		assertTrue("NYI", false);
-		// Should handle soft-clipping of start and end
+		List<SAMRecord> reads;
+		ReferenceCoverageLookup lookup;
+		// soft clips
+		reads = L(Read(0, 2, "2S3M2S"));
+		lookup = init(reads, 1);
+		assertEquals(0, lookup.readPairsSupportingNoBreakendAfter(0, 1));
 		//          1         2         3         4
 		// 12345678901234567890123456789012345678901234567890
 		//          AAAAA---------------
@@ -140,8 +143,7 @@ public class SequentialReferenceCoverageLookupTest extends TestHelper {
 		//          AAAAA---------------
 		//          AAIIIAAA----------?????
 		//          ADA----------?????
-
-		// but for now we'll ignore as these are (hopefully) uncommon edge cases
+		;
 	}
 	@Test
 	public void readsPairsSupportingNoBreakendAfter_should_not_return_OEA() {

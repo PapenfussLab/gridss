@@ -35,7 +35,7 @@ class PathGraphTraverse {
 	private int currentNextStates;
 	private int nodeTraversals;
 	private Map<SubgraphPathNode, MemoizedNode> bestPath = Maps.newHashMap();
-	private PriorityQueue<MemoizedNode> frontier = new PriorityQueue<MemoizedNode>();
+	private PriorityQueue<MemoizedNode> frontier = new PriorityQueue<MemoizedNode>(ByScore);
 	private MemoizedNode traveralBest = null;
 	public int getNodesTraversed() { return nodeTraversals; }
 	public PathGraphTraverse(
@@ -55,7 +55,19 @@ class PathGraphTraverse {
 		this.maxNextStates = maxNextStates;
 		this.maxKmerPathLength = maxKmerPathLength;
 	}
-	private static class MemoizedNode implements Comparable<MemoizedNode> {
+	private static final Ordering<MemoizedNode> ByScore = new Ordering<MemoizedNode>() {
+		@Override
+		public int compare(MemoizedNode arg0, MemoizedNode arg1) {
+			return Ints.compare(arg0.score, arg1.score);
+		}
+	};
+	private static final Ordering<MemoizedNode> ByLength = new Ordering<MemoizedNode>() {
+		@Override
+		public int compare(MemoizedNode arg0, MemoizedNode arg1) {
+			return Ints.compare(arg0.length, arg1.length);
+		}
+	};
+	private static class MemoizedNode {
 		public MemoizedNode(MemoizedNode prev, SubgraphPathNode node, int score, int length) {
 			this.prev = prev;
 			this.node = node;
@@ -66,10 +78,6 @@ class PathGraphTraverse {
 		public final MemoizedNode prev;
 		public final int score;
 		public final int length;
-		@Override
-		public int compareTo(MemoizedNode o) {
-			return Ints.compare(this.score, o.score);
-		}
 	}
 	public List<SubgraphPathNode> traverse(final Iterable<SubgraphPathNode> startingNodes) {
 		currentNextStates = maxNextStates;

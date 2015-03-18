@@ -159,17 +159,21 @@ public class PathGraphAssembler extends PathGraph {
 		List<SubgraphPathNode> best = trav.traverse(startingNodes);
 		totalNodesTraversed += trav.getNodesTraversed();
 		timeoutReached |= trav.getNodesTraversed() >= parameters.maxPathTraversalNodes;
-		
 		assert(best != null); // subgraphs contain at least one node
-		// TODO: limit anchor traversal length as we don't need a massive anchor: just enough that realignment places the breakpoint correctly
-		PathGraphTraverse anchorTrav = new PathGraphTraverse(this, parameters.maxPathTraversalNodes, scoringFunction, false, true, branchingFactor, Math.max(parameters.anchorAssemblyLength, PathNode.kmerLength(best) ));
-		List<SubgraphPathNode> anchor = anchorTrav.traverse(ImmutableList.of(best.get(0)));
+		assert(best.size() > 0);
+		SubgraphPathNode breakendAnchorStart = best.get(0);
+		PathGraphTraverse anchorTrav = new PathGraphTraverse(this, parameters.maxPathTraversalNodes, scoringFunction, false, true, branchingFactor,
+				breakendAnchorStart.length() + Math.max(parameters.anchorAssemblyLength, PathNode.kmerLength(best)));
+		List<SubgraphPathNode> anchor = anchorTrav.traverse(ImmutableList.of(breakendAnchorStart));
 		totalNodesTraversed += trav.getNodesTraversed();
 		timeoutReached |= trav.getNodesTraversed() >= parameters.maxPathTraversalNodes;
+		assert(anchor != null); // assembly includes starting node so must include that
 		assert(anchor.size() > 0); // assembly includes starting node so must include that
 		anchor.remove(anchor.size() - 1); // don't repeat the non-reference node we used as the anchor
-		
-		return Lists.newArrayList(Iterables.concat(anchor, best));
+		ArrayList<SubgraphPathNode> result = new ArrayList<SubgraphPathNode>(best.size() + anchor.size());
+		result.addAll(anchor);
+		result.addAll(best);
+		return result;
 	}
 	private static Log expensiveSanityCheckLog = Log.getInstance(PathGraphAssembler.class);
 	private boolean sanityCheckSubgraphs() {
