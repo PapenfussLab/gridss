@@ -72,6 +72,10 @@ public class AssemblyParameters {
 	 */
 	public float maxSubgraphFragmentWidth = Defaults.MAX_SUBGRAPH_WIDTH_IN_FRAGMENT_SIZE_MULTIPLES;
 	/**
+	 * Minimum number of bases before immediate assembly is forced
+	 */
+	public int minSubgraphWidthForTimeout = 20000; // mammalian mitochondrial size is 15-17kb 
+	/**
 	 * Minimum number of reads contributing the the assembly
 	 */
 	public int minReads = 3;
