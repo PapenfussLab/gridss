@@ -39,10 +39,10 @@ public class FragmentedChromosome extends SimulatedChromosome {
 	private final NavigableSet<Integer> breaks = new TreeSet<Integer>();
 	/**
 	 * @param reference reference genome
-	 * @param breakCleanMargin number of unambiguous bases around the breakpoint
+	 * @param breakMargin number of unambiguous bases around the breakpoint
 	 */
-	public FragmentedChromosome(ProcessingContext context, String chr, int breakCleanMargin, int seed) {
-		super(context, chr, breakCleanMargin);
+	public FragmentedChromosome(ProcessingContext context, String chr, int breakMargin, int seed) {
+		super(context, chr, breakMargin);
 		this.breaks.add(0);
 		this.breaks.add(seq.length - 1);
 		this.rng = new Random(seed);
