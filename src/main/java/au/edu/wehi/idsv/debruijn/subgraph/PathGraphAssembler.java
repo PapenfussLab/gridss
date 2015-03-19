@@ -39,6 +39,7 @@ public class PathGraphAssembler extends PathGraph {
 	private final List<Iterable<SubgraphPathNode>> startingPaths = Lists.newArrayList();
 	private static int timeoutGraphsWritten = 0;
 	private boolean timeoutReached = false;
+	private boolean anchorTimeoutReached = false;
 	private int totalNodesTraversed = 0;
 	public PathGraphAssembler(DeBruijnGraphBase<DeBruijnSubgraphNode> graph, AssemblyParameters parameters, long seed, SubgraphAssemblyAlgorithmTracker tracker) {
 		super(graph, seed, tracker);
@@ -162,11 +163,16 @@ public class PathGraphAssembler extends PathGraph {
 		assert(best != null); // subgraphs contain at least one node
 		assert(best.size() > 0);
 		SubgraphPathNode breakendAnchorStart = best.get(0);
-		PathGraphTraverse anchorTrav = new PathGraphTraverse(this, parameters.maxPathTraversalNodes, scoringFunction, false, true, branchingFactor,
+		PathGraphTraverse anchorTrav = new PathGraphTraverse(this, parameters.maxPathTraversalNodes, scoringFunction, false, true,
+				// if the anchor has previously timed out on a different breakend subgraph
+				// just do a greedy traversal as we're likely to time out again
+				anchorTimeoutReached ? 1 : branchingFactor,
+				// assemble anchorAssemblyLength bases / at least the length of the breakend
 				breakendAnchorStart.length() + Math.max(parameters.anchorAssemblyLength, PathNode.kmerLength(best)));
 		List<SubgraphPathNode> anchor = anchorTrav.traverse(ImmutableList.of(breakendAnchorStart));
 		totalNodesTraversed += trav.getNodesTraversed();
-		timeoutReached |= trav.getNodesTraversed() >= parameters.maxPathTraversalNodes;
+		anchorTimeoutReached |= trav.getNodesTraversed() >= parameters.maxPathTraversalNodes; 
+		timeoutReached |= anchorTimeoutReached;
 		assert(anchor != null); // assembly includes starting node so must include that
 		assert(anchor.size() > 0); // assembly includes starting node so must include that
 		anchor.remove(anchor.size() - 1); // don't repeat the non-reference node we used as the anchor
