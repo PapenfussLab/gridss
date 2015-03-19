@@ -35,7 +35,7 @@ class PathGraphTraverse {
 	private int currentNextStates;
 	private int nodeTraversals;
 	private Map<SubgraphPathNode, MemoizedNode> bestPath = Maps.newHashMap();
-	private PriorityQueue<MemoizedNode> frontier = new PriorityQueue<MemoizedNode>(ByScore);
+	private PriorityQueue<MemoizedNode> frontier = new PriorityQueue<MemoizedNode>(1024, ByScore);
 	private MemoizedNode traveralBest = null;
 	public int getNodesTraversed() { return nodeTraversals; }
 	public PathGraphTraverse(

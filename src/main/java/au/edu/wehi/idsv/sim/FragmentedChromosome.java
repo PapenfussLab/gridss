@@ -32,7 +32,7 @@ import com.google.common.io.Files;
  *
  */
 public class FragmentedChromosome extends SimulatedChromosome {
-	private final Random rng;
+	protected final Random rng;
 	/**
 	 * Linear 1-based genomic coordinate of base immediately before break 
 	 */
@@ -46,6 +46,7 @@ public class FragmentedChromosome extends SimulatedChromosome {
 		this.breaks.add(0);
 		this.breaks.add(seq.length - 1);
 		this.rng = new Random(seed);
+		
 	}
 	public void breakAt(int position) {
 		this.breaks.add(position);
@@ -81,6 +82,9 @@ public class FragmentedChromosome extends SimulatedChromosome {
 		}
 		if (fragments > fragList.size()) throw new IllegalArgumentException("Too many fragments requested");
 		Collections.shuffle(fragList, rng);
+		assemble(fasta, vcf, fragList, includeReference);
+	}
+	protected void assemble(File fasta, File vcf, List<Fragment> fragList, boolean includeReference) throws IOException {
 		StringBuilder sb = new StringBuilder();
 		if (includeReference) {
 			sb.append(">");
@@ -92,14 +96,14 @@ public class FragmentedChromosome extends SimulatedChromosome {
 		sb.append(">chromothripsis." + getChr() + "\n");
 		List<IdsvVariantContext> calls = Lists.newArrayList();
 		Fragment last = null;
-		for (int i = 0; i < fragments; i++) {
+		for (int i = 0; i < fragList.size(); i++) {
 			Fragment f = fragList.get(i);
 			sb.append(f.getSequence());
 			if (last != null) {
 				BreakpointSummary bp = new BreakpointSummary(last.getEndBreakend(), f.getStartBreakend());
 				String event = String.format("truth_%d_", i);
-				calls.add(create(bp, event));
-				calls.add(create(bp.remoteBreakpoint(), event));
+				calls.add(create(bp, event).make());
+				calls.add(create(bp.remoteBreakpoint(), event).make());
 			}
 			last = f;
 		}
@@ -111,14 +115,13 @@ public class FragmentedChromosome extends SimulatedChromosome {
 		}
 		writer.close();
 	}
-	public IdsvVariantContext create(BreakpointSummary bp, String event) {
+	protected IdsvVariantContextBuilder create(BreakpointSummary bp, String event) {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
 		builder.breakpoint(bp, "")
 			.id(event + (bp.isLowBreakend() ? "o" : "h"))
 			.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, event)
 			.attribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, event + (bp.isLowBreakend() ? "h" : "o"));
-		return builder.make();
-		
+		return builder;
 	}
 	/**
 	 * Determines whether the given breakpoint position contains the required margin of unambiguous, unbroken bases
