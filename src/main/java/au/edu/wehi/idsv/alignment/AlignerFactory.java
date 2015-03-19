@@ -22,8 +22,9 @@ public class AlignerFactory {
 			return new JAlignerAligner(match, mismatch, ambiguous, gapOpen, gapExtend);
 		}
 	}
+	private static Aligner defaultAligner = create(1, -4, -4, 6, 1); // bwa mem
+	//private static Aligner defaultAligner = create(2, -6, -1, 5, 3); // bowtie2
 	public static Aligner create() {
-		return create(1, -4, -4, 6, 1); // bwa mem
-		//return create(2, -6, -1, 5, 3); // bowtie2
+		return defaultAligner;
 	}
 }
