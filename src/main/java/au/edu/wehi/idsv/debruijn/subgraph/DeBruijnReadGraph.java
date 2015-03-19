@@ -125,12 +125,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		}
 		return result;
 	}
-	private int subgraphMessageStartingSize = 4096;
 	private boolean exceedsTimeout(SubgraphSummary ss) {
-		return ss.isAnchored() && ss.getMaxAnchor() - ss.getMinAnchor() > getSafetyWidth();
-	}
-	private int getSafetyWidth() {
-		return (int)(parameters.maxSubgraphFragmentWidth * source.getMaxConcordantFragmentSize());
+		return ss.isAnchored() && ss.getMaxAnchor() - ss.getMinAnchor() > source.getAssemblyMaximumEvidenceDelay();
 	}
 	private void visualisePrecollapsePathGraph(SubgraphSummary ss, PathGraphAssembler pga) {
 		File directory = new File(new File(
@@ -180,7 +176,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 						processContext.getDictionary().getSequence(this.referenceIndex).getSequenceName(),
 						ss.getMinAnchor(),
 						ss.getMaxAnchor(),
-						getSafetyWidth()));
+						source.getAssemblyMaximumEvidenceDelay()));
 			}
 			if ((ss.getMaxAnchor() < position || timeoutExceeded) && ss.isAnchored()) {
 				SubgraphAssemblyAlgorithmTracker tracker = createSubgraphAssemblyAlgorithmTracker(ss);
@@ -198,11 +194,11 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 						timeoutExceeded = true;
 					}
 				}
-				int width = ss.getMaxAnchor() - ss.getMinAnchor();
-				if (width > subgraphMessageStartingSize) {
-					subgraphMessageStartingSize = width;
-					log.debug(String.format("Subgraph width=%s [%d, %d] has %d paths: %s", width, ss.getMinAnchor(), ss.getMaxAnchor(), pga.getPathCount(), new DebugOutputSubgraphKmerSpread(ss).toString()));
-				}
+				//int width = ss.getMaxAnchor() - ss.getMinAnchor();
+				//if (width > subgraphMessageStartingSize) {
+				//	subgraphMessageStartingSize = width;
+				//	log.debug(String.format("Large subgraph width=%s [%d, %d] has %d paths: %s", width, ss.getMinAnchor(), ss.getMaxAnchor(), pga.getPathCount(), new DebugOutputSubgraphKmerSpread(ss).toString()));
+				//}
 				StaticDeBruijnSubgraphPathGraphGexfExporter graphExporter = null;
 				if (shouldVisualise(timeoutExceeded)) {
 					graphExporter = new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k);
@@ -228,6 +224,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	/**
 	 * Helper class for printing kmer related debugging information.   
 	 */
+	@SuppressWarnings("unused")
 	private class DebugOutputSubgraphKmerSpread implements TLongObjectProcedure<DeBruijnSubgraphNode> {
 		public DebugOutputSubgraphKmerSpread(SubgraphSummary ss) {
 			this.ss = ss;

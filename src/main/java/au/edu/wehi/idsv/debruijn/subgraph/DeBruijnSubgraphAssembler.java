@@ -46,7 +46,7 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 		}
 		// Assemble old evidence that couldn't have anything to do with us
 		int startpos = evidence.getBreakendSummary().start;
-		int shouldBeCompletedPos = (int)(startpos - processContext.getAssemblyParameters().subgraphAssemblyMargin * source.getMaxConcordantFragmentSize());
+		int shouldBeCompletedPos = (int)(startpos - source.getAssemblyEvidenceWindowSize());
 		it = Iterables.concat(it, assembleBefore(shouldBeCompletedPos));
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
 			assert(fgraph.sanityCheckSubgraphs(shouldBeCompletedPos, startpos + source.getMaxConcordantFragmentSize()));

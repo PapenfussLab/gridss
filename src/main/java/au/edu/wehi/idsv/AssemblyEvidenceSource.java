@@ -457,9 +457,14 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	public int getMaxConcordantFragmentSize() {
 		return maxSourceFragSize;
 	}
+	public int getAssemblyEvidenceWindowSize() {
+		return (int)(getContext().getAssemblyParameters().subgraphAssemblyMargin * getMaxConcordantFragmentSize());
+	}
+	public int getAssemblyMaximumEvidenceDelay() {
+		return Math.max(getContext().getAssemblyParameters().minSubgraphWidthForTimeout,
+				(int)(getContext().getAssemblyParameters().maxSubgraphFragmentWidth * getMaxConcordantFragmentSize()));
+	}
 	public int getAssemblyWindowSize() {
-		int size = (int)((3 + getContext().getAssemblyParameters().maxSubgraphFragmentWidth + getContext().getAssemblyParameters().subgraphAssemblyMargin) * maxSourceFragSize);
-		size = Math.max(size, getContext().getAssemblyParameters().minSubgraphWidthForTimeout);
-		return size;
+		return getAssemblyMaximumEvidenceDelay() + 3 * getAssemblyEvidenceWindowSize() + 2;
 	}
 }
