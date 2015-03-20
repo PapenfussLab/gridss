@@ -67,7 +67,7 @@ public class SimpleVariantChromosome extends SimulatedChromosome {
 			String altSeq = getVariantSeq(e.type, e.size, genomicPosition, 1, 0);
 			sb.append(altSeq);
 			VariantContextBuilder builder = new VariantContextBuilder();
-			builder.id(String.format("%s.%s%d", getChr(), e.type, e.size))
+			builder.id(String.format("%s.%d.%s%d", getChr(), e.start, e.type, e.size))
 				.chr(getChr())
 				.start(e.start)
 				.stop(e.start)
