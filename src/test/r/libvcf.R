@@ -221,6 +221,7 @@ CalculateTruth <- function(callvcf, truthvcf, ...) {
   truthdf <- cbind(truthdf, tdfbe)
   truthdf$tp <- truthdf$expectedbehits == truthdf$behits
   truthdf$partialtp <- !truthdf$tp & truthdf$behits > 0
+  truthdf$fn <- !truthdf$tp
   
   # per variant call
   hits <- data.table(hits, key="queryHits")
@@ -247,6 +248,7 @@ CalculateTruth <- function(callvcf, truthvcf, ...) {
   calldf <- cbind(calldf, cdfbe)
   calldf$tp <- calldf$expectedbehits == calldf$behits
   calldf$partialtp <- !calldf$tp & calldf$behits > 0
+  calldf$fp <- !calldf$tp
   return(list(calls=calldf, truth=truthdf))
 }
 CalculateTruthSummary <- function(vcfs, ...) {
@@ -278,6 +280,24 @@ CalculateTruthSummary <- function(vcfs, ...) {
   calls = rbindlist(lapply(truthSet, function(x) x$calls), use.names=TRUE, fill=TRUE)
   truth = rbindlist(lapply(truthSet, function(x) x$truth), use.names=TRUE, fill=TRUE)
   return(list(calls=calls, truth=truth))
+}
+TruthSummaryToROC <- function(ts, bylist=c("CX_ALIGNER", "CX_ALIGNER_SOFTCLIP", "CX_CALLER", "CX_READ_DEPTH", "CX_READ_FRAGMENT_LENGTH", "CX_READ_LENGTH", "CX_REFERENCE_VCF_VARIANTS", "SVTYPE")) {
+  callset <- ts$calls[, c(bylist, "QUAL", "tp", "fp"), with=FALSE]
+  callset$fn <- FALSE
+  callset[callset$tp==FALSE,] # TPs are in both call and truth sets - drop the call set version
+  truthset <- ts$truth[, c(bylist, "QUAL", "tp", "fn"), with=FALSE]
+  truthset$fp <- FALSE
+  combined <- rbind(callset, truthset)
+  combined$tp <- as.integer(combined$tp)
+  combined$fn <- as.integer(combined$fn)
+  combined$fp <- as.integer(combined$fp)
+  setkeyv(combined, bylist)
+  # aggregate from high to low
+  combined <- combined[order(-combined$QUAL),]
+  combined[,`:=`(ntruth=sum(tp)+sum(fn), ncalls=sum(tp)+sum(fp), tp=cumsum(tp), fp=cumsum(fp), fn=cumsum(fn), QUAL=cummin(QUAL)), by=bylist]
+  combined <- combined[!duplicated(combined[, c(bylist, "QUAL"), with=FALSE], fromLast=TRUE),] # take only one data point per QUAL
+  combined[,`:=`(sens=tp/ntruth, prec=tp/(tp+fp), fdr=fp/(tp+fp))]
+  return(combined)
 }
 FilterOutSNV <- function(vcf, caller) {
   if (any(elementLengths(alt(z)) != 1)) {

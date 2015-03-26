@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
@@ -101,7 +102,12 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 		BreakendSummary bpCall = loc.getCallPosition();
 		int callPos = bpCall.start;
 		int remoteCallPos = bpCall instanceof BreakpointSummary ? ((BreakpointSummary)bpCall).start2 : 0;
-		ref = new String(processContext.getReference().getSubsequenceAt(chr, callPos, callPos).getBases(), StandardCharsets.US_ASCII);
+		byte refBase = processContext.getReference().getSubsequenceAt(chr, callPos, callPos).getBases()[0];
+		if (!SequenceUtil.isValidBase(refBase)) {
+			// Convert ambiguous bases to Ns as VCF does not support full IUPAC notation
+			refBase = 'N';
+		}
+		ref = new String(new byte[] { refBase }, StandardCharsets.US_ASCII);
 		if (bpCall instanceof BreakpointSummary) {
 			BreakpointSummary bp = (BreakpointSummary)loc;
 			char remoteBracket = bp.direction2 == BreakendDirection.Forward ? ']' : '[';
