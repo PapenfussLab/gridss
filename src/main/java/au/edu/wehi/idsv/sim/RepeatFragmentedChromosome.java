@@ -4,7 +4,6 @@ import htsjdk.samtools.util.Log;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -45,13 +44,13 @@ public class RepeatFragmentedChromosome extends FragmentedChromosome {
 				public Fragment apply(RepeatMaskerRepeat r) {
 					Fragment f = null;
 					if (rng.nextBoolean()) {
-						// fragment starts with repeat
+						// start with repeat
 						f = createFragment(r.begin, fragmentLength, true);
-						if (repeats.get(f.getEndBreakend().end) != null) return null; // other end of fragment is also in a repeat
+						if (repeats.get(f.getHighBreakend().end) != null) return null; // other end of fragment is also in a repeat
 					} else {
-						// fragment ends with repeat
-						f = createFragment(r.end - fragmentLength, fragmentLength, true);
-						if (repeats.get(f.getStartBreakend().start) != null) return null; // other end of fragment is also in a repeat
+						// end with repeat
+						f = createFragment(r.end - fragmentLength, fragmentLength, false);
+						if (repeats.get(f.getLowBreakend().start) != null) return null; // other end of fragment is also in a repeat
 					}
 					return f;
 				}
