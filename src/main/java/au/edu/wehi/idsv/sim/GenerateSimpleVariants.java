@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv.sim;
 
 import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.Log;
 
 import java.util.List;
 
@@ -26,7 +25,7 @@ public class GenerateSimpleVariants extends SimulationGenerator {
 	public List<Integer> SIZE = Lists.newArrayList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 12, 16, 20, 24, 28, 32, 48, 64, 80, 96, 112, 128, 160, 192, 224, 256, 288, 320, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536);
     @Option(doc="Number of copies of each variant (type,size) pairing to insert. Defaults to as many copies as possible ", optional=true)
     public Integer COPIES;
-    private Log log = Log.getInstance(GenerateSimpleVariants.class);
+    //private static Log log = Log.getInstance(GenerateSimpleVariants.class);
     @Override
 	protected int doWork() {
     	try {

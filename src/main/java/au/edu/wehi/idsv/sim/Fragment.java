@@ -34,10 +34,12 @@ public class Fragment {
 		return getBreakend(!negative);
 	}
 	private BreakendSummary getBreakend(boolean high) {
-		if (high) {
-			return new BreakendSummary(referenceIndex, BreakendDirection.Forward, end, end);
-		} else {
-			return new BreakendSummary(referenceIndex, BreakendDirection.Backward, start, start);	
-		}
+		return high ? getHighBreakend() : getLowBreakend();
+	}
+	public BreakendSummary getLowBreakend() {
+		return new BreakendSummary(referenceIndex, BreakendDirection.Backward, start, start);
+	}
+	public BreakendSummary getHighBreakend() {
+		return new BreakendSummary(referenceIndex, BreakendDirection.Forward, end, end);
 	}
 }

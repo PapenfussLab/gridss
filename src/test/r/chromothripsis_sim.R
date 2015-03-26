@@ -1,6 +1,7 @@
+source("../../../../../dev/ws/indelappraisal/libindelappraisal.R")
 source("../../main/r/libgridss.R")
 source("libneochromosome.R")
-source("../../../../../dev/ws/indelappraisal/libindelappraisal.R")
+source("libvcf.R")
 library(data.table)
 library(stringr)
 library(ggplot2)
@@ -25,7 +26,9 @@ vcfs <- LoadVcfs(metadata)
 #vcfs <- vcfs[sapply(vcfs, function(vcf) { return(!is.na(attr(vcf, "metadata")$Id))})]
 setwd(pwd)
 
+Rprof("C:/dev/Rprof.out")
 truthlist <- CalculateTruthSummary(vcfs, maxgap=100)
+Rprof(NULL)
 calls <- data.table(truthlist$calls)
 truth <- data.table(truthlist$truth)
 dtroc <- NULL

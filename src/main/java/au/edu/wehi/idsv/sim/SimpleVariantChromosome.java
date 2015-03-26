@@ -41,7 +41,7 @@ public class SimpleVariantChromosome extends SimulatedChromosome {
 	 * @param margin number of unambiguous bases around the breakpoint
 	 */
 	public SimpleVariantChromosome(ProcessingContext context, String chr, int margin, int seed) {
-		super(context, chr, margin);
+		super(context, chr, margin, seed);
 		this.baseGen = new RandomBaseGenerator(seed);
 	}
 	public void assemble(File fasta, File vcf, boolean includeReference, List<SvType> type, List<Integer> size, int countPerEventTypeSize) throws IOException {

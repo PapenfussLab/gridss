@@ -1,28 +1,17 @@
 package au.edu.wehi.idsv.sim;
 
-import htsjdk.samtools.util.SequenceUtil;
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.samtools.util.Log;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
-import java.util.NavigableSet;
-import java.util.Random;
-import java.util.TreeSet;
 
-import au.edu.wehi.idsv.BreakpointSummary;
-import au.edu.wehi.idsv.IdsvVariantContext;
-import au.edu.wehi.idsv.IdsvVariantContextBuilder;
 import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
-import com.google.common.collect.Lists;
-import com.google.common.io.Files;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
 
 /**
  * 
@@ -32,111 +21,46 @@ import com.google.common.io.Files;
  *
  */
 public class FragmentedChromosome extends SimulatedChromosome {
-	protected final Random rng;
-	/**
-	 * Linear 1-based genomic coordinate of base immediately before break 
-	 */
-	private final NavigableSet<Integer> breaks = new TreeSet<Integer>();
+	private static final Log log = Log.getInstance(FragmentedChromosome.class);
+	protected final int fragmentLength;
 	/**
 	 * @param reference reference genome
 	 * @param breakMargin number of unambiguous bases around the breakpoint
 	 */
-	public FragmentedChromosome(ProcessingContext context, String chr, int breakMargin, int seed) {
-		super(context, chr, breakMargin);
-		this.breaks.add(0);
-		this.breaks.add(seq.length - 1);
-		this.rng = new Random(seed);
-		
+	public FragmentedChromosome(ProcessingContext context, String chr, int breakMargin, int fragmentLength, int seed) {
+		super(context, chr, breakMargin, seed);
+		this.fragmentLength = fragmentLength;
 	}
-	public void breakAt(int position) {
-		this.breaks.add(position);
-	}
-	/**
-	 * Shatter the chromosome
-	 */
-	public void shatter(int pieces) {
-		for (int i = 0; i < pieces - 1; i++) {
-			randomCleanBreak();
+	private class RandomFragmentIterator implements Iterator<Fragment> {
+		@Override
+		public boolean hasNext() {
+			return true;
+		}
+		@Override
+		public Fragment next() {
+			return createFragment(1 + rng.nextInt(seq.length - fragmentLength), fragmentLength, rng.nextBoolean());
+		}
+		@Override
+		public void remove() {
 		}
 	}
-	private int randomCleanBreak() {
-		int pos;
-		do {
-			pos = rng.nextInt(seq.length);
-		} while (!isCleanBreak(pos));
-		breakAt(pos);
-		return pos;
+	protected Iterator<Fragment> candidateFragments() {
+		return new RandomFragmentIterator();
 	}
 	public void assemble(File fasta, File vcf, int fragments, boolean includeReference) throws IOException {
 		List<Fragment> fragList = new ArrayList<Fragment>();
-		List<Integer> breakList = Lists.newArrayList(breaks);
-		for (int i = 0; i < breaks.size() - 1; i++) {
-			int low = breakList.get(i) + 1;
-			int high = breakList.get(i + 1);
-			//  NNNN
-			// 01234
-			// ^ ^
-			//  ^^
-			byte[] fragmentSeq = Arrays.copyOfRange(seq, low - 1, high + 1);
-			fragList.add(new Fragment(referenceIndex, low, fragmentSeq, rng.nextBoolean()));
+		RangeSet<Integer> invalid = calcInvalidBreakPositions(margin + fragmentLength);
+		Iterator<Fragment> it = candidateFragments();
+		while (it.hasNext() && fragList.size() < fragments) {
+			Fragment f = it.next();
+			if (f == null || !invalid.subRangeSet(Range.closedOpen(f.getLowBreakend().start, f.getHighBreakend().end)).isEmpty()) {
+				// skip fragments we can't use
+				continue;
+			}
+			invalid.add(Range.closedOpen(f.getLowBreakend().start - margin, f.getHighBreakend().end + 1 + margin));
+			fragList.add(f);
 		}
-		if (fragments > fragList.size()) throw new IllegalArgumentException("Too many fragments requested");
-		Collections.shuffle(fragList, rng);
+		log.info(String.format("%d fragments created", fragList.size()));
 		assemble(fasta, vcf, fragList, includeReference);
-	}
-	protected void assemble(File fasta, File vcf, List<Fragment> fragList, boolean includeReference) throws IOException {
-		StringBuilder sb = new StringBuilder();
-		if (includeReference) {
-			sb.append(">");
-			sb.append( getChr());
-			sb.append("\n");
-			sb.append(new String(seq, StandardCharsets.US_ASCII));
-			sb.append("\n");
-		}
-		sb.append(">chromothripsis." + getChr() + "\n");
-		List<IdsvVariantContext> calls = Lists.newArrayList();
-		Fragment last = null;
-		for (int i = 0; i < fragList.size(); i++) {
-			Fragment f = fragList.get(i);
-			sb.append(f.getSequence());
-			if (last != null) {
-				BreakpointSummary bp = new BreakpointSummary(last.getEndBreakend(), f.getStartBreakend());
-				String event = String.format("truth_%d_", i);
-				calls.add(create(bp, event).make());
-				calls.add(create(bp.remoteBreakpoint(), event).make());
-			}
-			last = f;
-		}
-		Collections.sort(calls, IdsvVariantContext.ByLocationStart);
-		Files.write(sb.toString(), fasta, StandardCharsets.US_ASCII);
-		VariantContextWriter writer = context.getVariantContextWriter(vcf, true);
-		for (VariantContext vc : calls) {
-			writer.add(vc);
-		}
-		writer.close();
-	}
-	protected IdsvVariantContextBuilder create(BreakpointSummary bp, String event) {
-		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
-		builder.breakpoint(bp, "")
-			.id(event + (bp.isLowBreakend() ? "o" : "h"))
-			.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, event)
-			.attribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, event + (bp.isLowBreakend() ? "h" : "o"));
-		return builder;
-	}
-	/**
-	 * Determines whether the given breakpoint position contains the required margin of unambiguous, unbroken bases
-	 * @param position
-	 * @return
-	 */
-	public boolean isCleanBreak(int position) {
-		Integer before = breaks.floor(position);
-		Integer after = breaks.ceiling(position);
-		if (position - before <= margin || after - position <= margin) return false;
-		for (int i = position - margin + 1; i < position + margin; i++) {
-			if (!SequenceUtil.isValidBase(seq[i])) {
-				return false;
-			}
-		}
-		return true;
 	}
 }
