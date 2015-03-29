@@ -35,36 +35,41 @@ LoadMetadata <- function(directory=".") {
   write(paste(nrow(metadata), "metadata files loaded"), stderr())
   return(metadata)
 }
+issymbolic <- function(vcf) {
+  if (nrow(vcf) == 0) return(logical(0))
+  v <- as.character(unstrsplit(alt(vcf)))
+  return(str_detect(v, fixed("<")) | str_detect(v, fixed("[")) | str_detect(v, fixed("]")))
+}
 svlen <- function(vcf) {
-  if (nrow(vcf) == 0) return(integer(0))
+  return(svlentype(vcf)$len)
+}
+svtype <- function(vcf) {
+  return(svlentype(vcf)$type)
+}
+svlentype <- function(vcf) {
+  if (nrow(vcf) == 0) return(list(len=integer(0), type=c()))
+  sym <- issymbolic(vcf)
+  # calculate from first alt allele
+  alleleLen <- width(unlist(alt(vcf)))[c(1, 1 + head(cumsum(elementLengths(alt(vcf))), -1))]
+  refLen <- elementLengths(ref(vcf))
+  alleleSizeDiff <- alleleLen - refLen
+  len=ifelse(sym, NA, ifelse(alleleLen != refLen, abs(alleleLen - refLen), alleleLen))
+  # can't correctly classify events with no length change (INV, DUP, ...) for non-symbolic alleles
+  type=ifelse(sym, NA, ifelse(alleleLen > refLen, "INS", ifelse(alleleLen < refLen, "DEL", "UNKNOWN")))
+  
+  # override with SV info column data
   svcol <- info(vcf)$SVLEN
   if (!is.null(svcol)) {
     # grab first allele
-    len <- unlist(svcol)[c(1, 1 + head(cumsum(elementLengths(svcol)), -1))]
-    len[elementLengths(svcol) == 0] <- NA
-    return(len)
+    len2 <- unlist(svcol)[c(1, 1 + head(cumsum(elementLengths(svcol)), -1))]
+    len2[elementLengths(svcol) == 0] <- NA
+    len <- ifelse(is.na(len2), len, len2)
   }
-  if (attr(vcf, "metadata")$CX_CALLER %in% c("samtools", "gatk", "dindel", "SOAPindel", "soapindel")) {
-    # calculate from genotype
-    # grab the length of the first alt allele
-    # Notes:
-    # unlist flattens multiple alleles
-    # cumsum of elementLenths returns offset of the last allele in the flattened list
-    # to get the first, we shift over by 1 so [1, 3, 4] becomes [+1+, 2, 4, -5-]
-    return(width(unlist(alt(vcf))[c(1, 1 + head(cumsum(elementLengths(alt(vcf))), -1))])  - elementLengths(ref(vcf)))
-  }
-  stop("Unable to determine SVLEN from INFO columns")
-}
-svtype <- function(vcf) {
   svcol <- info(vcf)$SVTYPE
   if (!is.null(svcol)) {
-    return(svcol)
-  } else if (length(fixed(vcf)) == 0) {
-    return(c())
-  } else {
-    # fall-back to infer from SVLEN
-    return(ifelse(VcfGet$SVLEN(vcf) > 0, "INS", "DEL"))
+    type <- ifelse(is.na(svcol), type, svcol)
   }
+  return(list(len=len, type=type))
 }
 breakendCount <- function(type) {
   return (ifelse(type=="BND", 1,
@@ -100,112 +105,139 @@ countBreakpointHits <- function(queryGr, subjectGr, mateQueryGr=queryGr[queryGr$
 # size: event size
 # SVTYPE: type of event called
 vcftobpgr <- function(vcf) {
+  lentype <- svlentype(vcf)
   grcall <- rowData(vcf)
-  grcall$vcfIndex <- seq(1:nrow(vcf))
-  grcall$mateIndex <- NA_integer_ # seq(1:nrow(vcf))
-  grcall$SVTYPE <- info(vcf)$SVTYPE
-  grcall$size <- svlen(vcf)
-  grcall$untemplated <- NA_integer_
-  strand(grcall) <- "+"
-  if (any(grcall$SVTYPE=="BND")) {
+  grcall$vcfIndex <- seq_along(grcall)
+  grcall$mateIndex <- rep(NA_integer_, length(grcall))
+  grcall$SVTYPE <- lentype$type
+  grcall$size <- lentype$len
+  grcall$untemplated <- rep(NA_integer_, length(grcall))
+  strand(grcall) <- rep("+", length(grcall))
+  rows <- !issymbolic(vcf)
+  if (!is.null(grcall$SVTYPE)) {
+    rows <- rows & is.na(grcall$SVTYPE)
+  }
+  if (any(rows)) {
+    # non-symbolic VCF record
+    browser()
+    stop("TODO: handle non-symbolic alleles")
+  }
+  rows <- grcall$SVTYPE=="BND"
+  if (any(rows)) {
     # set strand for BND
-    bndMatches <- str_match(as.character(rowData(vcf[grcall$SVTYPE=="BND",])$ALT), "(.*)(\\[|])(.*)(\\[|])(.*)")
+    bndMatches <- str_match(as.character(rowData(vcf[rows,])$ALT), "(.*)(\\[|])(.*)(\\[|])(.*)")
     preBases <- bndMatches[,2]
     bracket <- bndMatches[,3]
     remoteLocation <- bndMatches[,4]
     postBases <- bndMatches[,6]
-    strand(grcall[grcall$SVTYPE=="BND",]) <- ifelse(str_length(preBases) > 0, "+", "-")
+    strand(grcall[rows,]) <- ifelse(str_length(preBases) > 0, "+", "-")
     grcall$mate <- NULL
     if (!is.null(info(vcf)$MATEID)) {
-      grcall[grcall$SVTYPE=="BND",]$mateIndex <- match(as.character(info(vcf)$MATEID[grcall$SVTYPE=="BND"]), names(rowData(vcf)))
+      grcall[rows,]$mateIndex <- match(as.character(info(vcf)$MATEID[rows]), names(rowData(vcf)))
     } else if (!is.null(info(vcf)$PARID)) {
-      grcall[grcall$SVTYPE=="BND",]$mateIndex <- match(info(vcf)$PARID[grcall$SVTYPE=="BND"], names(rowData(vcf)))
+      grcall[rows,]$mateIndex <- match(info(vcf)$PARID[rows], names(rowData(vcf)))
     }
-    grcall[grcall$SVTYPE=="BND",]$untemplated <- str_length(preBases) + str_length(postBases) - str_length(as.character(rowData(vcf)$REF)[grcall$SVTYPE=="BND"])
+    grcall[rows,]$untemplated <- str_length(preBases) + str_length(postBases) - str_length(as.character(rowData(vcf)$REF)[rows])
+    
+    mateBnd <- grcall[grcall[rows,]$mateIndex,]
+    grcall[rows,]$size <- ifelse(seqnames(mateBnd)==seqnames(grcall[rows,]), abs(start(grcall[rows,]) - start(mateBnd)), NA)
   }
-  if (any(grcall$SVTYPE=="DEL")) {
-    grcall[grcall$SVTYPE=="DEL"]$mateIndex <- length(grcall) + seq(1, sum(grcall$SVTYPE=="DEL"))
-    eventgr <- grcall[grcall$SVTYPE=="DEL"]
+  rows <- grcall$SVTYPE=="DEL"
+  if (any(rows)) {
+    grcall[rows]$mateIndex <- length(grcall) + seq_len(sum(rows))
+    eventgr <- grcall[rows]
     strand(eventgr) <- "-"
-    ranges(eventgr) <- IRanges(start=start(eventgr) - grcall[grcall$SVTYPE=="DEL"]$size, width=1)
-    eventgr$mateIndex <- seq(1, length(grcall))[grcall$SVTYPE=="DEL"]
+    ranges(eventgr) <- IRanges(start=start(eventgr) + abs(grcall$size[rows]), width=1)
+    eventgr$mateIndex <- seq_len(length(grcall))[rows]
     grcall <- c(grcall, eventgr)
   }
-  if (any(grcall$SVTYPE=="INS")) {
-    grcall[grcall$SVTYPE=="INS"]$mateIndex <- length(grcall) + seq(1, sum(grcall$SVTYPE=="INS"))
-    eventgr <- grcall[grcall$SVTYPE=="INS"]
+  rows <- grcall$SVTYPE=="INS"
+  if (any(rows)) {
+    grcall[rows]$mateIndex <- length(grcall) + seq_len(sum(rows))
+    eventgr <- grcall[rows]
     strand(eventgr) <- "-"
     ranges(eventgr) <-IRanges(start=start(eventgr) + 1, width=1)
-    eventgr$mateIndex <- seq(1, length(grcall))[grcall$SVTYPE=="INS"]
+    eventgr$mateIndex <- seq_len(length(grcall))[rows]
     grcall <- c(grcall, eventgr)
   }
-  if (any(grcall$SVTYPE=="INV")) {
-    grcall[grcall$SVTYPE=="INV"]$mateIndex <- length(grcall) + seq(1, sum(grcall$SVTYPE=="INV"))
-    eventgr1 <- grcall[grcall$SVTYPE=="INV"]
-    eventgr2 <- grcall[grcall$SVTYPE=="INV"]
-    eventgr3 <- grcall[grcall$SVTYPE=="INV"]
+  rows <- grcall$SVTYPE=="INV"
+  if (any(rows)) {
+    grcall[rows]$mateIndex <- length(grcall) + seq_len(sum(rows))
+    eventgr1 <- grcall[rows]
+    eventgr2 <- grcall[rows]
+    eventgr3 <- grcall[rows]
     strand(eventgr2) <- "-"
     strand(eventgr3) <- "-"
-    ranges(eventgr1) <- IRanges(start=start(eventgr1) + abs(grcall[grcall$SVTYPE=="INV"]$size), width=1)
-    ranges(eventgr3) <- IRanges(start=start(eventgr3) + abs(grcall[grcall$SVTYPE=="INV"]$size), width=1)
-    eventgr1$mateIndex <- seq(1, length(grcall))[grcall$SVTYPE=="INV"]
-    eventgr2$mateIndex <- length(grcall) + length(eventgr1) + length(eventgr2) + seq(1, length(eventgr3))
-    eventgr3$mateIndex <- length(grcall) + length(eventgr1) + seq(1, length(eventgr2))
+    ranges(eventgr1) <- IRanges(start=start(eventgr1) + abs(grcall[rows]$size), width=1)
+    ranges(eventgr3) <- IRanges(start=start(eventgr3) + abs(grcall[rows]$size), width=1)
+    eventgr1$mateIndex <- seq_len(length(grcall))[rows]
+    eventgr2$mateIndex <- length(grcall) + length(eventgr1) + length(eventgr2) + seq_len(length(eventgr3))
+    eventgr3$mateIndex <- length(grcall) + length(eventgr1) + seq_len(length(eventgr2))
     grcall <- c(grcall, eventgr1, eventgr2, eventgr3)
   }
-  if (any(grcall$SVTYPE=="DUP")) {
-    grcall[grcall$SVTYPE=="DUP"]$mateIndex <- length(grcall) + seq(1, sum(grcall$SVTYPE=="DUP"))
-    eventgr <- grcall[grcall$SVTYPE=="DUP"]
-    strand(grcall[grcall$SVTYPE=="DUP"]) <- "-"
-    ranges(eventgr) <- IRanges(start=start(eventgr) + abs(grcall[grcall$SVTYPE=="DUP"]$size), width=1)
-    eventgr$mateIndex <- seq(1, length(grcall))[grcall$SVTYPE=="DUP"]
+  rows <- grcall$SVTYPE=="DUP"
+  if (any(rows)) {
+    grcall[rows]$mateIndex <- length(grcall) + seq_len(sum(rows))
+    eventgr <- grcall[rows]
+    strand(grcall[rows]) <- "-"
+    ranges(eventgr) <- IRanges(start=start(eventgr) + abs(grcall[rows]$size), width=1)
+    eventgr$mateIndex <- seq_len(length(grcall))[rows]
     grcall <- c(grcall, eventgr)
   }
-  width(grcall) <- 1
-  # TODO handle CIPOS by widening the breakend width
+  width(grcall) <- rep(1, length(grcall))
   if (FALSE & "CIPOS" %in% names(info(vcf))) {
+    browser()
+    stop("TODO handle CIPOS by widening the breakend width")
     # Expand call position by CIPOS
     offsets <- matrix(unlist(info(vcf)$CIPOS), ncol = 2, byrow = TRUE)
     offsets[is.na(offsets)] <- 0
     start(ranges(grcall)) <- start(ranges(grcall)) + offsets[,1]
     end(ranges(grcall)) <- end(ranges(grcall)) + offsets[,2]
   }
+  if (any(is.na(grcall$mateIndex))) {
+    browser()
+    stop(paste0("Unhandled SVTYPE ", unique(grcall$SVTYPE)[is.na(grcall$mateIndex)]))
+  }
   # Check the partner of the partner of each row is the row itself
-  if (!all(grcall[grcall$mateIndex,]$mateIndex == seq(1:length(grcall)))) {
+  if (!all(grcall[grcall$mateIndex,]$mateIndex == seq_along(grcall))) {
     browser()
     stop("Breakends are not uniquely paired.")
   }
-  if (any(grcall$mateIndex == seq(1:length(grcall)))) {
+  if (any(grcall$mateIndex == seq_along(grcall))) {
     browser()
     stop("Breakend cannot be partner of itself - have all appropriate SV types been handled?")
   }
   return(grcall)
 }
-CalculateTruth <- function(callvcf, truthvcf, ...) {
-  if (any(rowData(callvcf)$QUAL <= 0)) {
-    stop("Precondition failure: not all variants have positive quality score")
+CalculateTruth <- function(callvcf, truthvcf, maxerrorbp, ...) {
+  if (any(!is.na(rowData(callvcf)$QUAL) & rowData(callvcf)$QUAL < 0)) {
+    stop("Precondition failure: variant exists with negative quality score")
   }
   grcall <- vcftobpgr(callvcf)
   grtruth <- vcftobpgr(truthvcf)
-  hits <- breakpointHits(grcall, grtruth, ...)
+  #TMPDEBUG: grtruth[overlapsAny(grtruth, GRanges("chr12", IRanges(148000, width=1000))),]
+  hits <- breakpointHits(grcall, grtruth, maxgap=maxerrorbp, ...)
   hits$QUAL <- grcall$QUAL[hits$queryHits]
-  hits$bperror <- abs(start(grcall)[hits$queryHits] - start(grtruth)[hits$subjectHits]) # breakend error distribution
-  hits$size <- abs(start(grcall)[hits$queryHits] - start(grcall[grcall$mateIndex][hits$queryHits]))
-  hits$expectedsize <- abs(svlen(truthvcf)[hits$subjectHits])
-  hits$sizeerror <- abs(hits$size - hits$expectedsize)
-  # TODO: filter hits according to size difference
-  hits <- data.table(hits, key="subjectHits")
+  hits$QUAL[is.na(hits$QUAL)] <- 0
+  hits$poserror <- abs(start(grcall)[hits$queryHits] - start(grtruth)[hits$subjectHits]) # breakend error distribution
+  hits$calledsize <- grcall$size[hits$queryHits]
+  hits$expectedsize <- grtruth$size[hits$subjectHits]
+  hits$errorsize <- abs(hits$calledsize - hits$expectedsize)
+  hits <- hits[hits$errorsize <= maxerrorbp, ] # Remove hits that call incorrect event size
+  # TODO: percentage based size filter?
+  # Calling a 100bp event when it is really a 1bp event should probably be considered incorrect. exact vs inexact callers?
   
   # per truth variant
-  tdf <- hits[, list(hits=.N, bperror=min(bperror), sizeerror=min(sizeerror), QUAL=max(QUAL)), by="subjectHits"] 
-  grtruth$QUAL <- 0
+  hits <- data.table(hits, key="subjectHits")
+  tdf <- hits[, list(hits=.N, poserror=min(poserror), errorsize=min(errorsize), QUAL=max(QUAL)), by="subjectHits"] 
+  grtruth$QUAL <- -1
   grtruth$QUAL[tdf$subjectHits] <- tdf$QUAL
   grtruth$hits <- 0
   grtruth$hits[tdf$subjectHits] <- tdf$hits
-  grtruth$bperror <- NA_integer_
-  grtruth$bperror[tdf$subjectHits] <- tdf$bperror
-  grtruth$sizeerror <- NA_integer_
-  grtruth$sizeerror[tdf$subjectHits] <- tdf$sizeerror
+  grtruth$poserror <- NA_integer_
+  grtruth$poserror[tdf$subjectHits] <- tdf$poserror
+  grtruth$errorsize <- NA_integer_
+  grtruth$errorsize[tdf$subjectHits] <- tdf$errorsize
   grtruth$tp <- grtruth$hits > 0
   truthdf <- data.frame(
     vcfIndex=seq_along(rowData(truthvcf)),
@@ -213,7 +245,13 @@ CalculateTruth <- function(callvcf, truthvcf, ...) {
     SVLEN=svlen(truthvcf),
     expectedbehits=breakendCount(svtype(truthvcf))
     )
-  tdfbe <- data.table(as.data.frame(mcols(grtruth)), key="vcfIndex")[, list(behits=sum(tp), bperror=mean(bperror), maxbperror=max(bperror), QUAL=mean(QUAL)), by="vcfIndex"]
+  tdfbe <- data.table(as.data.frame(mcols(grtruth)), key="vcfIndex")[, list(
+    behits=sum(tp),
+    poserror=mean(poserror),
+    maxposerror=max(poserror),
+    errorsize=min(errorsize),
+    QUAL=mean(QUAL)
+    ), by="vcfIndex"]
   if (any(truthdf$vcfIndex != tdfbe$vcfIndex)) {
     stop("Sanity check failure: tdfbe vcfIndex offsets do not match truthdf")
   }
@@ -225,13 +263,13 @@ CalculateTruth <- function(callvcf, truthvcf, ...) {
   
   # per variant call
   hits <- data.table(hits, key="queryHits")
-  cdf <- hits[, list(hits=.N, bperror=min(bperror), sizeerror=min(sizeerror)), by="queryHits"]
-  grcall$hits <- 0
+  cdf <- hits[, list(hits=.N, poserror=min(poserror), errorsize=min(errorsize)), by="queryHits"]
+  grcall$hits <- rep(0, length(grcall))
   grcall$hits[cdf$queryHits] <- cdf$hits
-  grcall$bperror <- NA_integer_
-  grcall$bperror[cdf$queryHits] <- cdf$bperror
-  grcall$sizeerror <- NA_integer_
-  grcall$sizeerror[cdf$queryHits] <- cdf$sizeerror
+  grcall$poserror <- rep(NA_integer_, length(grcall))
+  grcall$poserror[cdf$queryHits] <- cdf$poserror
+  grcall$errorsize <- rep(NA_integer_, length(grcall))
+  grcall$errorsize[cdf$queryHits] <- cdf$errorsize
   grcall$tp <- grcall$hits > 0
   calldf <- data.frame(
     vcfIndex=seq_along(rowData(callvcf)),
@@ -240,7 +278,12 @@ CalculateTruth <- function(callvcf, truthvcf, ...) {
     SVLEN=svlen(callvcf),
     expectedbehits=breakendCount(svtype(callvcf))
   )
-  cdfbe <- data.table(as.data.frame(mcols(grcall)), key="vcfIndex")[, list(behits=sum(tp), bperror=mean(bperror), maxbperror=max(bperror)), by="vcfIndex"]
+  cdfbe <- data.table(as.data.frame(mcols(grcall)), key="vcfIndex")[, list(
+    behits=sum(tp),
+    poserror=mean(poserror),
+    errorsize=min(errorsize),
+    maxposerror=max(poserror)
+    ), by="vcfIndex"]
   if (any(calldf$vcfIndex != cdfbe$vcfIndex)) {
     stop("Sanity check failure: cdfbe vcfIndex offsets do not match calldf")
   }
@@ -251,7 +294,7 @@ CalculateTruth <- function(callvcf, truthvcf, ...) {
   calldf$fp <- !calldf$tp
   return(list(calls=calldf, truth=truthdf))
 }
-CalculateTruthSummary <- function(vcfs, ...) {
+CalculateTruthSummary <- function(vcfs, maxerrorbp, ...) {
   truthSet <- lapply(vcfs, function(vcf) {
     md <- attr(vcf, "metadata")
     if (is.null(md)) {
@@ -271,8 +314,10 @@ CalculateTruthSummary <- function(vcfs, ...) {
       return(NULL)
     }
     write(paste0("Loading truth for ", md$Id), stderr())
-    callTruthPair <- CalculateTruth(vcf, truthvcf, ...)
-    callTruthPair$calls <- cbind(callTruthPair$calls, md, row.names=NULL)
+    callTruthPair <- CalculateTruth(vcf, truthvcf, maxerrorbp, ...)
+    if (nrow(callTruthPair$calls) > 0) {
+      callTruthPair$calls <- cbind(callTruthPair$calls, md, row.names=NULL)
+    }
     callTruthPair$truth <- cbind(callTruthPair$truth, md, row.names=NULL)
     return(callTruthPair)
   })
