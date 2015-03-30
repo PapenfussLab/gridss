@@ -23,6 +23,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		ap.method = AssemblyMethod.DEBRUIJN_SUBGRAPH;
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
 		ap.maxContigsPerAssembly = 1;
+		ap.assemblyBackToReference = false;
 		
 		DeBruijnReadGraph g = G(ap.k, FWD);
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
@@ -47,6 +48,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
 		ap.maxContigsPerAssembly = 1000;
 		ap.maxBaseMismatchForCollapse = 0;
+		ap.assemblyBackToReference = false;
 		
 		DeBruijnReadGraph g = G(ap.k, FWD);
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
@@ -68,6 +70,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
 		ap.maxContigsPerAssembly = 1000;
 		ap.maxBaseMismatchForCollapse = 0;
+		ap.assemblyBackToReference = false;
 		
 		DeBruijnReadGraph g = G(ap.k, FWD);
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
@@ -88,6 +91,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		ap.method = AssemblyMethod.DEBRUIJN_SUBGRAPH;
 		ap.maxContigsPerAssembly = 1000;
 		ap.maxBaseMismatchForCollapse = 0;
+		ap.assemblyBackToReference = false;
 		DeBruijnReadGraph g = G(ap.k, FWD);
 		g.addEvidence(SCE(FWD, withSequence("AAATGGGG", Read(0, 10, "6M3S"))));
 		g.addEvidence(SCE(FWD, withSequence("GTACCCGGGG", Read(0, 10, "9M2S"))));
@@ -105,6 +109,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
 		ap.maxContigsPerAssembly = 1000;
 		ap.maxBaseMismatchForCollapse = 0;
+		ap.assemblyBackToReference = false;
 		DeBruijnReadGraph g = G(ap.k, FWD);
 		g.addEvidence(SCE(FWD, withSequence( "TAAATGGG", Read(0, 10, "7M1S"))));
 		g.addEvidence(SCE(FWD, withSequence( "TAAATGGG", Read(0, 10, "7M1S"))));
@@ -128,6 +133,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 16;
 		ap.maxContigsPerAssembly = 1000;
 		ap.maxBaseMismatchForCollapse = 0;
+		ap.assemblyBackToReference = false;
 		DeBruijnReadGraph g = G(ap.k, FWD);
 		g.addEvidence(SCE(FWD, withSequence("GGTACCCAAATGGG", Read(0, 10, "10M4S"))));
 		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("TGGG")), new NontrackingSubgraphTracker());
@@ -135,21 +141,36 @@ public class PathGraphAssemblerTest extends TestHelper {
 		assertEquals(1, result.size());
 		assertEquals("GGTACCCAAATGGG", S(g, result.get(0)));
 	}
+	/**
+	 * Assembly back into reference is required for small-medium insertion detection
+	 */
 	@Test
-	public void should_not_assemble_back_into_reference() {
+	public void assemblyBackToReference_should_control_assembly_from_breakend_back_to_reference_kmers() {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.k = 3;
 		ap.method = AssemblyMethod.DEBRUIJN_SUBGRAPH;
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 16;
 		ap.maxContigsPerAssembly = 1000;
 		ap.maxBaseMismatchForCollapse = 0;
+		ap.assemblyBackToReference = false;
 		DeBruijnReadGraph g = G(ap.k, FWD);
 		g.addEvidence(SCE(FWD, withSequence("ACTGT", Read(0, 10, "3M2S"))));
 		g.addEvidence(SCE(FWD, withSequence("GTCA", Read(0, 10, "3M1S"))));
 		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("ACT")), new NontrackingSubgraphTracker());
 		List<LinkedList<Long>> result = pga.assembleContigs();
 		assertEquals(2, result.size());
-		assertEquals("ACTGT", S(g, result.get(0))); // don't extend into GTC reference kmer
+		assertEquals("ACTGT", S(g, result.get(0)));
+		
+		ap.assemblyBackToReference = true;
+		pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("ACT")), new NontrackingSubgraphTracker());
+		result = pga.assembleContigs();
+		assertEquals(2, result.size());
+		assertEquals("ACTGTC", S(g, result.get(0)));
+		// Anchor     ACT>
+		// Breakend    CTG>
+		//              TGT>
+		// Ref           GTC>
+		//                TCA is not included as that's back out to another breakend
 	}
 	@Test
 	public void should_order_assembly_by_breakend_weight() {
@@ -159,6 +180,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
 		ap.maxContigsPerAssembly = 4;
 		ap.maxBaseMismatchForCollapse = 0;
+		ap.assemblyBackToReference = false;
 		DeBruijnReadGraph g = G(ap.k, FWD);
 		//                                    RRRRRR
 		g.addEvidence(SCE(FWD, withSequence( "TTTTCGAGAT", Read(0, 10, "8M1S"))));
@@ -179,6 +201,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		ap.maxContigsPerAssembly = 1000;
 		ap.maxBaseMismatchForCollapse = 0;
 		ap.maxPathTraversalNodes = 2;
+		ap.assemblyBackToReference = false;
 		DeBruijnReadGraph g = G(ap.k, FWD);
 		g.addEvidence(SCE(FWD, withSequence("AAATGGGGGGGGGGG", Read(0, 10, "6M10S"))));
 		g.addEvidence(SCE(FWD, withSequence("AAATGGGC", Read(0, 10, "6M3S"))));

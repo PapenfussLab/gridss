@@ -111,6 +111,12 @@ public class AssemblyParameters {
 	 * Note: a breakend assembly longer than this length will cause reference sequence assembly to be at least as long as the breakend 
 	 */
 	public int anchorAssemblyLength = 100;
+	/**
+	 * Determine whether to assemble breakend back to into reference-supporting kmers
+	 * Enabling this allows detection of small-medium size insertions at the cost
+	 * of increased misassembly rate for degenerate graphs.
+	 */
+	public boolean assemblyBackToReference = true;
 	public boolean applyFilters(AssemblyEvidence evidence) {
 		AssemblyEvidence localEvidence = evidence;
 		if (evidence instanceof RemoteEvidence) {

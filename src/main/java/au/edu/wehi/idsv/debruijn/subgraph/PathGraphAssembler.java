@@ -162,6 +162,7 @@ public class PathGraphAssembler extends PathGraph {
 		timeoutReached |= trav.getNodesTraversed() >= parameters.maxPathTraversalNodes;
 		assert(best != null); // subgraphs contain at least one node
 		assert(best.size() > 0);
+		
 		SubgraphPathNode breakendAnchorStart = best.get(0);
 		PathGraphTraverse anchorTrav = new PathGraphTraverse(this, parameters.maxPathTraversalNodes, scoringFunction, false, true,
 				// if the anchor has previously timed out on a different breakend subgraph
@@ -176,9 +177,28 @@ public class PathGraphAssembler extends PathGraph {
 		assert(anchor != null); // assembly includes starting node so must include that
 		assert(anchor.size() > 0); // assembly includes starting node so must include that
 		anchor.remove(anchor.size() - 1); // don't repeat the non-reference node we used as the anchor
-		ArrayList<SubgraphPathNode> result = new ArrayList<SubgraphPathNode>(best.size() + anchor.size());
+		
+		List<SubgraphPathNode> farAnchor;
+		if (parameters.assemblyBackToReference) {
+			SubgraphPathNode farBreakendAnchorStart = best.get(best.size() - 1);
+			PathGraphTraverse farAnchorTrav = new PathGraphTraverse(this, parameters.maxPathTraversalNodes, scoringFunction, true, true,
+					anchorTimeoutReached ? 1 : branchingFactor,
+					parameters.anchorAssemblyLength);
+			farAnchor = farAnchorTrav.traverse(ImmutableList.of(farBreakendAnchorStart));
+			totalNodesTraversed += farAnchorTrav.getNodesTraversed();
+			anchorTimeoutReached |= farAnchorTrav.getNodesTraversed() >= parameters.maxPathTraversalNodes; 
+			timeoutReached |= anchorTimeoutReached;
+			assert(farAnchor != null);
+			assert(farAnchor.size() > 0);
+			farAnchor.remove(0);
+		} else {
+			farAnchor = ImmutableList.of();
+		}
+		
+		ArrayList<SubgraphPathNode> result = new ArrayList<SubgraphPathNode>(best.size() + anchor.size() + farAnchor.size());
 		result.addAll(anchor);
 		result.addAll(best);
+		result.addAll(farAnchor);
 		return result;
 	}
 	private static Log expensiveSanityCheckLog = Log.getInstance(PathGraphAssembler.class);
