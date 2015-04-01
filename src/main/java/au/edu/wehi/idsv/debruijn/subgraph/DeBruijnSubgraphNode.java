@@ -2,7 +2,7 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 
 import gnu.trove.list.TIntList;
 import gnu.trove.list.array.TIntArrayList;
-import gnu.trove.map.hash.TIntIntHashMap;
+import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.VariantEvidence;
@@ -12,84 +12,53 @@ import com.google.common.primitives.Ints;
 
 public class DeBruijnSubgraphNode extends DeBruijnNodeBase {
 	/**
-	 * Safety cut-off to prevent high computational burden for degenerate mapping locations
-	 */
-	private static final int MAX_EVIDENCE_TO_CHECK_FOR_BEST_POSITION = 1024;
-	/**
-	 * Genomic coordinates of positions this kmer is aligned to the reference
+	 * Genomic coordinate the positions this kmer would be aligned to
 	 * 
-	 * Note: reads with less than k bases mapped to the reference will be considered unanchored 
 	 */
-	private TIntList referencePosition = new TIntArrayList(4);
-	private TIntList referencePositionWeight = new TIntArrayList(4);
-	private int minReferencePosition = Integer.MAX_VALUE;
-	private int maxReferencePosition = Integer.MIN_VALUE;
-	/**
-	 * Genomic coordinates of closest anchored mate of reads starting with this kmer 
-	 */
-	//private TIntList matePosition = new TIntArrayList();
-	//private TIntList matePositionWeight = new TIntArrayList();
-	private int minMatePosition = Integer.MAX_VALUE;
-	private int maxMatePosition = Integer.MIN_VALUE;
+	private TIntList fposition = new TIntArrayList(4);
+	private TIntList fweight = new TIntArrayList(4);
+	private TIntList bposition = new TIntArrayList(4);
+	private TIntList bweight = new TIntArrayList(4);
+	private int maxPosition;
+	private int referenceSupport = 0;
 	 
 	private SubgraphSummary subgraph;
 	public DeBruijnSubgraphNode(VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) {
 		super(evidence, readKmerOffset, kmer);
+		int expectedPos = evidence.getExpectedReferencePosition(readKmerOffset);
+		maxPosition = expectedPos;
+		// TODO: split f and b evidence
+		if (evidence.getDirection() == BreakendDirection.Forward) {
+			fposition.add(expectedPos);
+			fweight.add(kmer.weight);
+		} else {
+			bposition.add(expectedPos);
+			bweight.add(kmer.weight);
+		}
 		if (evidence.isReferenceKmer(readKmerOffset)) {
-			addRefPosition(evidence.getInferredReferencePosition(readKmerOffset), kmer.weight);
-		} else if (!evidence.isDirectlyAnchoredToReference()) {
-			addMatePosition(evidence.getMateAnchorPosition(), kmer.weight);
+			referenceSupport++;
 		}
 	}
-	private void addMatePosition(int position, int weight) {
-		minMatePosition = Math.min(minMatePosition, position);
-		maxMatePosition = Math.max(maxMatePosition, position);
-		//matePosition.add(position);
-		//matePositionWeight.add(weight);
-	}
-	private void addRefPosition(int position, int weight) {
-		minReferencePosition = Math.min(minReferencePosition, position);
-		maxReferencePosition = Math.max(maxReferencePosition, position);
-		referencePosition.add(position);
-		referencePositionWeight.add(weight);
-	}
-	private static Integer getBestPosition(TIntList positions, TIntList weights) {
-		TIntIntHashMap lookup = new TIntIntHashMap();
-		int bestWeight = 0;
-		int bestPos = -1;
-		int stride = Math.max(1, positions.size() / MAX_EVIDENCE_TO_CHECK_FOR_BEST_POSITION);
-		for (int i = 0; i < positions.size(); i += stride) {
-			int added = lookup.adjustOrPutValue(positions.get(i), weights.get(i), weights.get(i));
-			if (added > bestWeight) {
-				bestWeight = added;
-				bestPos = positions.get(i);
-			}
-		}
-		if (bestWeight > 0) return bestPos;
-		return null;
+	public int getMaxPosition() {
+		return maxPosition;
 	}
 	@Override
 	public void add(DeBruijnNodeBase node) {
 		assert(node instanceof DeBruijnSubgraphNode);
 		super.add(node);
 		DeBruijnSubgraphNode s = (DeBruijnSubgraphNode)node;
-		this.referencePosition.addAll(s.referencePosition);
-		this.referencePositionWeight.addAll(s.referencePositionWeight);
-		//this.matePosition.addAll(s.matePosition);
-		//this.matePositionWeight.addAll(s.matePositionWeight);
-		this.minReferencePosition = Math.min(minReferencePosition, s.minReferencePosition);
-		this.maxReferencePosition = Math.max(maxReferencePosition, s.maxReferencePosition);
-		this.minMatePosition = Math.min(minMatePosition, s.minMatePosition);
-		this.maxMatePosition = Math.max(maxMatePosition, s.maxMatePosition);
+		this.fposition.addAll(s.fposition);
+		this.fweight.addAll(s.fweight);
+		this.bposition.addAll(s.bposition);
+		this.bweight.addAll(s.bweight);
+		this.maxPosition = Math.max(maxPosition, s.maxPosition);
+		this.referenceSupport += s.referenceSupport;
 	}
 	public boolean remove(DeBruijnSubgraphNode node) {
 		throw new UnsupportedOperationException("Unable to remove read support from individual kmers: only most closest anchors are tracked.");
 	}
 	public boolean isReference() {
-		return minReferencePosition != Integer.MAX_VALUE;
-	}
-	public boolean isMateAnchored() {
-		return minMatePosition != Integer.MAX_VALUE;
+		return referenceSupport > 0;
 	}
 	public SubgraphSummary getSubgraph() {
 		if (subgraph == null) return null;
@@ -98,30 +67,25 @@ public class DeBruijnSubgraphNode extends DeBruijnNodeBase {
 	public void setSubgraph(SubgraphSummary subgraph) {
 		this.subgraph = subgraph;
 	}
-	public Integer getMinReferencePosition() {
-		return isReference() ? minReferencePosition : null;
-	}
-	public Integer getMaxReferencePosition() {
-		return isReference() ? maxReferencePosition : null;
-	}
-	public Integer getBestReferencePosition() {
-		return getBestPosition(referencePosition, referencePositionWeight);
-	}
-	public Integer getMinMatePosition() {
-		return isMateAnchored() ? minMatePosition : null;
-	}
-	public Integer getMaxMatePosition() {
-		return isMateAnchored() ? maxMatePosition : null; 
-	}
 	public static Ordering<DeBruijnSubgraphNode> ByWeight = new Ordering<DeBruijnSubgraphNode>() {
 		public int compare(DeBruijnSubgraphNode o1, DeBruijnSubgraphNode o2) {
 			  return Ints.compare(o1.getWeight(), o2.getWeight());
 		  }
 	};
+	private static long weightedSum(TIntList value, TIntList weight, int offset) {
+		long sum = 0;
+		for (int i = 0; i < value.size(); i++) {
+			long currentPos = value.get(i) + offset;
+			long currentWeight = weight.get(i);
+			sum += currentPos * currentWeight;
+		}
+		return sum;
+	}
 	public String toString() {
-		return String.format("%s%s g=%d,%s",
+		return String.format("%s%s g=%d,f=%.1f,b=%.1f",
 				isReference() ? "R" : " ",
-				isMateAnchored() ? "M" : " ",
+				weightedSum(fposition, fweight, 0) / (double)fweight.sum(),
+				weightedSum(bposition, bweight, 0) / (double)bweight.sum(),
 				subgraph.getAnyKmer(),
 				super.toString());
 	}

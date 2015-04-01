@@ -254,15 +254,15 @@ public class VariantEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void getInferredReferencePosition_should_assume_direct_mapping_to_reference() {
-		assertEquals(8, fsc.getInferredReferencePosition(4));
-		assertEquals(9, fsc.getInferredReferencePosition(5));
-		assertEquals(10, fsc.getInferredReferencePosition(6));
-		assertEquals(11, fsc.getInferredReferencePosition(7));
+		assertEquals(8, fsc.getExpectedReferencePosition(4));
+		assertEquals(9, fsc.getExpectedReferencePosition(5));
+		assertEquals(10, fsc.getExpectedReferencePosition(6));
+		assertEquals(11, fsc.getExpectedReferencePosition(7));
 		
-		assertEquals(8, rsc.getInferredReferencePosition(8));
-		assertEquals(7, rsc.getInferredReferencePosition(9));
-		assertEquals(6, rsc.getInferredReferencePosition(10));
-		assertEquals(5, rsc.getInferredReferencePosition(11));
+		assertEquals(8, rsc.getExpectedReferencePosition(8));
+		assertEquals(7, rsc.getExpectedReferencePosition(9));
+		assertEquals(6, rsc.getExpectedReferencePosition(10));
+		assertEquals(5, rsc.getExpectedReferencePosition(11));
 	}
 	@Test
 	public void mMateAnchorPosition_should_be_mapped_position_adjacent_to_breakend() {

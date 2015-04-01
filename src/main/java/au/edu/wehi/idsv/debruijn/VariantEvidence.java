@@ -21,9 +21,8 @@ import com.google.common.collect.Lists;
  *
  */
 public class VariantEvidence {
-	private static boolean shouldReverse(SAMRecord record, boolean isAnchored, BreakendDirection graphDirection) {
-		boolean reverseDirection = graphDirection == BreakendDirection.Backward;
-		return reverseDirection ^ isReverseComplimentRequiredForPositiveStrandReadout(record, isAnchored);
+	private static boolean shouldReverse(SAMRecord record, boolean isAnchored) {
+		return isReverseComplimentRequiredForPositiveStrandReadout(record, isAnchored);
 	}
 	private static boolean isReverseComplimentRequiredForPositiveStrandReadout(SAMRecord record, boolean isAnchored) {
 		if (isAnchored && record.getReadUnmappedFlag()) throw new RuntimeException("Sanity check failure: anchored read is unmapped");
@@ -49,19 +48,19 @@ public class VariantEvidence {
 	private final BreakendDirection direction;
 	private final DirectedEvidence evidence;
 	
-	public static VariantEvidence createRemoteReadEvidence(BreakendDirection graphDirection, int k, NonReferenceReadPair pair) {
+	public static VariantEvidence createRemoteReadEvidence(int k, NonReferenceReadPair pair) {
 		if (graphDirection != pair.getBreakendSummary().direction) throw new RuntimeException("Sanity check failure: local read pair evidence direction does not match de bruijn graph direction");
 		int mateAnchorPosition = graphDirection == BreakendDirection.Forward ? pair.getBreakendSummary().start: pair.getBreakendSummary().end;
 		return new VariantEvidence(pair, graphDirection, k, pair.getNonReferenceRead(), mateAnchorPosition);
 	}
-	public static VariantEvidence createSoftClipEvidence(BreakendDirection graphDirection, int k, SoftClipEvidence read) {
+	public static VariantEvidence createSoftClipEvidence(int k, SoftClipEvidence read) {
 		if (graphDirection != read.getBreakendSummary().direction) throw new RuntimeException("Sanity check failure: soft clip direction does not match de bruijn graph direction");
 		return new VariantEvidence(read, graphDirection, k, read.getSAMRecord());
 	}
 	/**
 	 * Creates unanchored De Bruijn graph read evidence
 	 */
-	private VariantEvidence(DirectedEvidence evidence, BreakendDirection graphDirection, int k, SAMRecord record, int mateAnchorPosition) {
+	private VariantEvidence(DirectedEvidence evidence, int k, SAMRecord record, int mateAnchorPosition) {
 		this.evidence = evidence;
 		this.direction = graphDirection;
 		this.k = k;
@@ -76,7 +75,7 @@ public class VariantEvidence {
 	/**
 	 * Creates anchored De Bruijn graph read evidence
 	 */
-	private VariantEvidence(DirectedEvidence evidence, BreakendDirection graphDirection, int k, SAMRecord record) {
+	private VariantEvidence(DirectedEvidence evidence, int k, SAMRecord record) {
 		this.evidence = evidence;
 		this.direction = graphDirection;
 		this.k = k;
@@ -199,7 +198,7 @@ public class VariantEvidence {
 	 * @param readKmerOffset kmer index of read
 	 * @return inferred reference anchor of this kmer
 	 */
-	public int getInferredReferencePosition(int readKmerOffset) {
+	public int getExpectedReferencePosition(int readKmerOffset) {
 		if (referenceKmerAnchorPosition == Integer.MIN_VALUE) throw new IllegalStateException(String.format("Not anchored evidence."));
 		int offset = lastReferenceKmerOffset() - readKmerOffset;
 		return referenceKmerAnchorPosition - offset * (direction == BreakendDirection.Forward ? 1 : -1);

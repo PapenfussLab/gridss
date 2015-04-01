@@ -17,8 +17,8 @@ public class DeBruijnSubgraphNodeTest extends TestHelper {
 	public void should_set_reference_bounds_based_on_evidence() {
 		VariantEvidence e = VariantEvidence.createSoftClipEvidence(FWD, 4, SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
 		for (int i = 0; i < 4; i++) {
-			assertEquals(e.getInferredReferencePosition(i), (int)new DeBruijnSubgraphNode(e, i, new ReadKmer(0, 2, false)).getMinReferencePosition());
-			assertEquals(e.getInferredReferencePosition(i), (int)new DeBruijnSubgraphNode(e, i, new ReadKmer(0, 2, false)).getMaxReferencePosition());
+			assertEquals(e.getExpectedReferencePosition(i), (int)new DeBruijnSubgraphNode(e, i, new ReadKmer(0, 2, false)).getMinReferencePosition());
+			assertEquals(e.getExpectedReferencePosition(i), (int)new DeBruijnSubgraphNode(e, i, new ReadKmer(0, 2, false)).getMaxReferencePosition());
 			assertTrue(new DeBruijnSubgraphNode(e, i, new ReadKmer(0, 2, false)).isReference());
 		}
 		for (int i = 4; i < 11; i++) {
@@ -35,22 +35,22 @@ public class DeBruijnSubgraphNodeTest extends TestHelper {
 			DeBruijnSubgraphNode n1 = new DeBruijnSubgraphNode(e1, i, new ReadKmer(0, 2, false));
 			assertFalse(n1.isMateAnchored());
 			assertTrue(n1.isReference());
-			assertEquals(e1.getInferredReferencePosition(i), (int)n1.getMinReferencePosition());
-			assertEquals(e1.getInferredReferencePosition(i), (int)n1.getMaxReferencePosition());
+			assertEquals(e1.getExpectedReferencePosition(i), (int)n1.getMinReferencePosition());
+			assertEquals(e1.getExpectedReferencePosition(i), (int)n1.getMaxReferencePosition());
 			assertNull(n1.getMaxMatePosition());
 			assertNull(n1.getMinMatePosition());
 			DeBruijnSubgraphNode n2 = new DeBruijnSubgraphNode(e2, i, new ReadKmer(0, 2, false));
 			assertFalse(n2.isMateAnchored());
 			assertTrue(n2.isReference());
-			assertEquals(e2.getInferredReferencePosition(i), (int)n2.getMinReferencePosition());
-			assertEquals(e2.getInferredReferencePosition(i), (int)n2.getMaxReferencePosition());
+			assertEquals(e2.getExpectedReferencePosition(i), (int)n2.getMinReferencePosition());
+			assertEquals(e2.getExpectedReferencePosition(i), (int)n2.getMaxReferencePosition());
 			assertNull(n2.getMaxMatePosition());
 			assertNull(n2.getMinMatePosition());
 			n1.add(n2);
 			n1.add(n2);
-			assertEquals(e1.getInferredReferencePosition(i), (int)n1.getMinReferencePosition());
-			assertEquals(e2.getInferredReferencePosition(i), (int)n1.getMaxReferencePosition());
-			assertEquals(e2.getInferredReferencePosition(i), (int)n1.getBestReferencePosition());
+			assertEquals(e1.getExpectedReferencePosition(i), (int)n1.getMinReferencePosition());
+			assertEquals(e2.getExpectedReferencePosition(i), (int)n1.getMaxReferencePosition());
+			assertEquals(e2.getExpectedReferencePosition(i), (int)n1.getBestReferencePosition());
 		}
 	}
 	@Test

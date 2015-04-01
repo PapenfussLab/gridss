@@ -304,21 +304,29 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		return reads;
 	}
 	private AssemblyEvidence toAssemblyEvidence(List<Long> contigKmers, SubgraphAssemblyAlgorithmTracker tracker) {
-		int refCount = 0;
-		int refAnchor = 0;
+		int startRefCount = 0;
+		int startRefAnchor = 0;
+		int endRefCount = 0;
+		int endRefAnchor = 0;
 		Integer mateAnchor = null;
 		// Advance to first non-reference kmer
-		while (getKmer(contigKmers.get(refCount)).isReference()) {
-			refCount++;
+		while (getKmer(contigKmers.get(startRefCount)).isReference()) {
+			startRefCount++;
 		}
-		if (refCount > 0) {
-			refAnchor = getKmer(contigKmers.get(refCount - 1)).getBestReferencePosition();
+		if (startRefCount > 0) {
+			startRefAnchor = getKmer(contigKmers.get(startRefCount - 1)).getBestReferencePosition();
+		}
+		while (getKmer(contigKmers.get(contigKmers.size() - 1 - endRefCount)).isReference()) {
+			endRefCount--;
+		}
+		if (endRefCount > 0) {
+			endRefAnchor = getKmer(contigKmers.get(contigKmers.size() - endRefCount)).getBestReferencePosition();
 		}
 		// Iterate over breakpoint kmers
 		boolean messagePrinted = false;
-		for (int i = refCount; i < contigKmers.size(); i++) {
+		for (int i = startRefCount; i < contigKmers.size() - endRefCount; i++) {
 			DeBruijnSubgraphNode kmer = getKmer(contigKmers.get(i));
-			if (kmer.isReference()) continue;
+			assert(!kmer.isReference());
 			Integer mp = direction == BreakendDirection.Forward ? kmer.getMaxMatePosition() : kmer.getMinMatePosition();
 			if (mateAnchor == null) {
 				mateAnchor = mp;

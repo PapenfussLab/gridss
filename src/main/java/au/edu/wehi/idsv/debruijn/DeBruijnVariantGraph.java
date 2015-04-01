@@ -29,17 +29,12 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 	private static final int SUPPORT_SIZE_TO_START_APPROXIMATION = 1024;
 	private static final int SUPPORT_SIZE_HARD_LIMIT = 100000;
 	private static final Log log = Log.getInstance(DeBruijnVariantGraph.class);
-	protected final BreakendDirection direction;
 	protected final ProcessingContext processContext;
 	protected final AssemblyEvidenceSource source;
-	public DeBruijnVariantGraph(ProcessingContext context, AssemblyEvidenceSource source, int k, BreakendDirection direction) {
+	public DeBruijnVariantGraph(ProcessingContext context, AssemblyEvidenceSource source, int k) {
 		super(k);
 		this.processContext = context;
 		this.source = source;
-		this.direction = direction;
-	}
-	public BreakendDirection getDirection() {
-		return direction;
 	}
 	public void addEvidence(DirectedEvidence evidence) {
 		if (evidence instanceof NonReferenceReadPair) {
@@ -62,7 +57,7 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		return node;
 	}
 	public void addEvidence(NonReferenceReadPair pair) {
-		VariantEvidence graphEvidence = VariantEvidence.createRemoteReadEvidence(direction, getK(), pair);
+		VariantEvidence graphEvidence = VariantEvidence.createRemoteReadEvidence(getK(), pair);
 		addEvidenceKmers(graphEvidence);
 	}
 	public void addEvidence(SoftClipEvidence read) {
@@ -70,43 +65,40 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 			// ignore remote soft clips
 			return;
 		}
-		VariantEvidence graphEvidence = VariantEvidence.createSoftClipEvidence(direction, getK(), read);
+		VariantEvidence graphEvidence = VariantEvidence.createSoftClipEvidence(getK(), read);
 		addEvidenceKmers(graphEvidence);
 	}
 	public void removeEvidence(NonReferenceReadPair pair) {
-		VariantEvidence graphEvidence = VariantEvidence.createRemoteReadEvidence(direction, getK(), pair);
+		VariantEvidence graphEvidence = VariantEvidence.createRemoteReadEvidence(getK(), pair);
 		removeEvidenceKmers(graphEvidence);
 	}
 	public void removeEvidence(SoftClipEvidence read) {
-		VariantEvidence graphEvidence = VariantEvidence.createSoftClipEvidence(direction, getK(), read);
+		VariantEvidence graphEvidence = VariantEvidence.createSoftClipEvidence(getK(), read);
 		removeEvidenceKmers(graphEvidence);
 	}
 	protected void addEvidenceKmers(VariantEvidence evidence) {
 		int readKmerOffset = 0;
 		SAMRecord record = evidence.getSAMRecord();
-		for (ReadKmer kmer : new ReadKmerIterable(getK(), record.getReadBases(), record.getBaseQualities(), evidence.isReversed(), evidence.isComplemented())) {
-			T node = createNode(evidence, readKmerOffset, kmer);
-			if (evidence.isSkippedKmer(readKmerOffset)) {
-				// do nothing with skipped kmers
-			} else if (kmer.containsAmbiguousBases) {
-				// do nothing if the kmer contains an ambiguous base 
-			} else {
-				T graphNode = add(kmer.kmer, node);
-				onEvidenceAdded(graphNode, node, evidence, readKmerOffset, kmer);
+		for (ReadKmer readKmer : new ReadKmerIterable(getK(), record.getReadBases(), record.getBaseQualities(), evidence.isReversed(), evidence.isComplemented())) {
+			if (!shouldSkipKmer(evidence, readKmerOffset, readKmer)) {
+				T node = createNode(evidence, readKmerOffset, readKmer);
+				T graphNode = add(readKmer.kmer, node);
+				onEvidenceAdded(graphNode, node, evidence, readKmerOffset, readKmer);
 			}
 			readKmerOffset++;
 		}
 	}
+	protected boolean shouldSkipKmer(VariantEvidence evidence, int readKmerOffset, ReadKmer readKmer) {
+		return evidence.isSkippedKmer(readKmerOffset) || readKmer.containsAmbiguousBases;
+	}
 	protected void removeEvidenceKmers(VariantEvidence evidence) {
 		int readKmerOffset = 0;
 		SAMRecord record = evidence.getSAMRecord();
-		for (ReadKmer kmer : new ReadKmerIterable(getK(), record.getReadBases(), record.getBaseQualities(), evidence.isReversed(), evidence.isComplemented())) {
-			T node = createNode(evidence, readKmerOffset, kmer);
-			if (evidence.isSkippedKmer(readKmerOffset)) {
-				// do nothing with skipped kmers
-			} else {
-				T graphNode = remove(kmer.kmer, node);
-				onEvidenceRemoved(graphNode, node, evidence, readKmerOffset, kmer);
+		for (ReadKmer readKmer : new ReadKmerIterable(getK(), record.getReadBases(), record.getBaseQualities(), evidence.isReversed(), evidence.isComplemented())) {
+			if (!shouldSkipKmer(evidence, readKmerOffset, readKmer)) {
+				T node = createNode(evidence, readKmerOffset, readKmer);
+				T graphNode = remove(readKmer.kmer, node);
+				onEvidenceRemoved(graphNode, node, evidence, readKmerOffset, readKmer);
 			}
 			readKmerOffset++;
 		}
@@ -132,17 +124,11 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 	@Override
 	public byte[] getBaseCalls(List<Long> path) {
 		byte[] bases = super.getBaseCalls(path); 
-		if (direction == BreakendDirection.Backward) {
-			ArrayUtils.reverse(bases);
-		}
 		return bases;
 	}
 	@Override
 	public byte[] getBaseQuals(List<Long> path) {
 		byte[] quals = super.getBaseQuals(path); 
-		if (direction == BreakendDirection.Backward) {
-			ArrayUtils.reverse(quals);
-		}
 		return quals;
 	}
 //	/**
@@ -207,7 +193,7 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		}
 		return count;
 	}
-	private ContigAssembly assembleSinglePass(List<Long> path, int referenceKmersAtStartOfPath) {
+	private ContigAssembly assembleSinglePass(List<Long> path, int referenceKmersAtStartOfPath, int referenceKmersAtEndOfPath) {
 		ContigAssembly ca = new ContigAssembly();
 		ca.baseCalls = getBaseCalls(path);
 		ca.support = Sets.newHashSet();
@@ -250,7 +236,7 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 						}
 					}
 				} else {
-					// reached hard limit - we should log this
+					// already reached hard limit
 				}
 				if (offset == referenceKmersAtStartOfPath) {
 					nAnchorSupportCount = ca.normalBaseCount;
@@ -262,9 +248,6 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		// pad out qualities to match the path length
 		for (int i = 0; i < getK() - 1; i++) qual.add(qual.get(qual.size() - 1));
 		ca.baseQuals = rescaleBaseQualities(qual);
-		if (direction == BreakendDirection.Backward) {
-			ArrayUtils.reverse(ca.baseQuals);
-		}
 		// adjust base counts for non-anchored reads
 		int nSupport = 0;
 		int tSupport = 0;
