@@ -1,12 +1,13 @@
 #source("http://bioconductor.org/biocLite.R")
 #biocLite("VariantAnnotation", "GenomicFeatures")
 #install.packages('reshape')
-library(VariantAnnotation)
-library(GenomicFeatures)
+library(stringr)
 library(reshape)
 library(parallel)
 library(plyr)
 library(data.table)
+library(VariantAnnotation)
+library(GenomicFeatures)
 
 GetMetadataId <- function(filenames) {
   return (regmatches(as.character(filenames), regexpr("[0-9a-f]{32}", as.character(filenames))))
@@ -38,7 +39,7 @@ LoadMetadata <- function(directory=".") {
 issymbolic <- function(vcf) {
   if (nrow(vcf) == 0) return(logical(0))
   v <- as.character(unstrsplit(alt(vcf)))
-  return(str_detect(v, fixed("<")) | str_detect(v, fixed("[")) | str_detect(v, fixed("]")))
+  return(str_detect(v, stringr::fixed("<")) | str_detect(v, stringr::fixed("[")) | str_detect(v, stringr::fixed("]")))
 }
 svlen <- function(vcf) {
   return(svlentype(vcf)$len)
@@ -53,16 +54,16 @@ svlentype <- function(vcf) {
   alleleLen <- width(unlist(alt(vcf)))[c(1, 1 + head(cumsum(elementLengths(alt(vcf))), -1))]
   refLen <- elementLengths(ref(vcf))
   alleleSizeDiff <- alleleLen - refLen
-  len=ifelse(sym, NA, ifelse(alleleLen != refLen, abs(alleleLen - refLen), alleleLen))
+  len=ifelse(sym, NA_integer_, ifelse(alleleLen != refLen, abs(alleleLen - refLen), alleleLen))
   # can't correctly classify events with no length change (INV, DUP, ...) for non-symbolic alleles
-  type=ifelse(sym, NA, ifelse(alleleLen > refLen, "INS", ifelse(alleleLen < refLen, "DEL", "UNKNOWN")))
+  type=ifelse(sym, NA_integer_, ifelse(alleleLen > refLen, "INS", ifelse(alleleLen < refLen, "DEL", "UNKNOWN")))
   
   # override with SV info column data
   svcol <- info(vcf)$SVLEN
   if (!is.null(svcol)) {
     # grab first allele
     len2 <- unlist(svcol)[c(1, 1 + head(cumsum(elementLengths(svcol)), -1))]
-    len2[elementLengths(svcol) == 0] <- NA
+    len2[elementLengths(svcol) == 0] <- NA_integer_
     len <- ifelse(is.na(len2), len, len2)
   }
   svcol <- info(vcf)$SVTYPE
@@ -131,7 +132,6 @@ vcftobpgr <- function(vcf) {
     remoteLocation <- bndMatches[,4]
     postBases <- bndMatches[,6]
     strand(grcall[rows,]) <- ifelse(str_length(preBases) > 0, "+", "-")
-    grcall$mate <- NULL
     if (!is.null(info(vcf)$MATEID)) {
       grcall[rows,]$mateIndex <- match(as.character(info(vcf)$MATEID[rows]), names(rowData(vcf)))
     } else if (!is.null(info(vcf)$PARID)) {
@@ -140,7 +140,7 @@ vcftobpgr <- function(vcf) {
     grcall[rows,]$untemplated <- str_length(preBases) + str_length(postBases) - str_length(as.character(rowData(vcf)$REF)[rows])
     
     mateBnd <- grcall[grcall[rows,]$mateIndex,]
-    grcall[rows,]$size <- ifelse(seqnames(mateBnd)==seqnames(grcall[rows,]), abs(start(grcall[rows,]) - start(mateBnd)), NA)
+    grcall[rows,]$size <- ifelse(seqnames(mateBnd)==seqnames(grcall[rows,]), abs(start(grcall[rows,]) - start(mateBnd)) + grcall[rows,]$untemplated, NA_integer_)
   }
   rows <- grcall$SVTYPE=="DEL"
   if (any(rows)) {
@@ -209,23 +209,28 @@ vcftobpgr <- function(vcf) {
   }
   return(grcall)
 }
-CalculateTruth <- function(callvcf, truthvcf, maxerrorbp, ...) {
+CalculateTruth <- function(callvcf, truthvcf, maxerrorbp, maxerrorpercent=0.25, ...) {
   if (any(!is.na(rowData(callvcf)$QUAL) & rowData(callvcf)$QUAL < 0)) {
     stop("Precondition failure: variant exists with negative quality score")
   }
   grcall <- vcftobpgr(callvcf)
   grtruth <- vcftobpgr(truthvcf)
   #TMPDEBUG: grtruth[overlapsAny(grtruth, GRanges("chr12", IRanges(148000, width=1000))),]
-  hits <- breakpointHits(grcall, grtruth, maxgap=maxerrorbp, ...)
+  hits <- breakpointHits(query=grcall, subject=grtruth, maxgap=maxerrorbp, ...)
   hits$QUAL <- grcall$QUAL[hits$queryHits]
   hits$QUAL[is.na(hits$QUAL)] <- 0
   hits$poserror <- abs(start(grcall)[hits$queryHits] - start(grtruth)[hits$subjectHits]) # breakend error distribution
-  hits$calledsize <- grcall$size[hits$queryHits]
-  hits$expectedsize <- grtruth$size[hits$subjectHits]
+  hits$calledsize <- abs(grcall$size[hits$queryHits])
+  hits$expectedsize <- abs(grtruth$size[hits$subjectHits])
   hits$errorsize <- abs(hits$calledsize - hits$expectedsize)
-  hits <- hits[hits$errorsize <= maxerrorbp, ] # Remove hits that call incorrect event size
+  hits$percentsize <- hits$expectedsize / hits$calledsize
+  # TODO: add untemplated into sizerror calculation for insertions
+  hits <- hits[is.na(hits$errorsize) | hits$errorsize <= maxerrorbp, ] # Remove hits that call incorrect event size
+  hits <- hits[is.na(hits$errorsize) | (hits$percentsize >= 1 - maxerrorpercent & hits$percentsize <= 1 + maxerrorpercent), ]
+  # TODO: filter mismatched event types (eg: DEL called for INS)
   # TODO: percentage based size filter?
   # Calling a 100bp event when it is really a 1bp event should probably be considered incorrect. exact vs inexact callers?
+  
   
   # per truth variant
   hits <- data.table(hits, key="subjectHits")
@@ -329,9 +334,11 @@ CalculateTruthSummary <- function(vcfs, maxerrorbp, ...) {
 TruthSummaryToROC <- function(ts, bylist=c("CX_ALIGNER", "CX_ALIGNER_SOFTCLIP", "CX_CALLER", "CX_READ_DEPTH", "CX_READ_FRAGMENT_LENGTH", "CX_READ_LENGTH", "CX_REFERENCE_VCF_VARIANTS", "SVTYPE")) {
   callset <- ts$calls[, c(bylist, "QUAL", "tp", "fp"), with=FALSE]
   callset$fn <- FALSE
+  callset$QUAL[is.na(callset$QUAL)] <- 0
   callset[callset$tp==FALSE,] # TPs are in both call and truth sets - drop the call set version
   truthset <- ts$truth[, c(bylist, "QUAL", "tp", "fn"), with=FALSE]
   truthset$fp <- FALSE
+  truthset$QUAL[is.na(truthset$QUAL)] <- -1
   combined <- rbind(callset, truthset)
   combined$tp <- as.integer(combined$tp)
   combined$fn <- as.integer(combined$fn)
@@ -365,11 +372,13 @@ LoadVcfs <- function(metadata, directory=".", pattern="*.vcf$") {
   write("Loading VCFs", stderr())
   vcfFileList <- list.files(directory, pattern=pattern)
   # Parallel load of VCFs
-  vcfs <- foreach (file=vcfFileList, .packages="VariantAnnotation") %dopar% {
-    vcf <- readVcf(file, "unknown")
-    attr(vcf, "filename") <- file
+  #vcfs <- foreach (filename=vcfFileList, .packages="VariantAnnotation") %dopar% {
+  vcfs <- lapply(vcfFileList, function(filename) {
+    write(paste0("Loading ", filename), stderr())
+    vcf <- readVcf(filename, "unknown")
+    attr(vcf, "filename") <- filename
     vcf
-  }
+  })
   vcfs <- lapply(vcfs, function(vcf) {
     filename <- attr(vcf, "filename")
     id <- GetMetadataId(filename)

@@ -1,6 +1,6 @@
-source("../../../../../dev/ws/indelappraisal/libindelappraisal.R")
+#source("../../../../../dev/ws/indelappraisal/libindelappraisal.R")
 source("../../main/r/libgridss.R")
-source("libneochromosome.R")
+#source("libneochromosome.R")
 source("libvcf.R")
 library(data.table)
 library(stringr)
@@ -21,6 +21,25 @@ metadata <- LoadMetadata()
 vcfs <- LoadVcfs(metadata)
 setwd(pwd)
 
+# Separate out GRIDSS confidence levels
+vcfs <- c(
+  vcfs,
+  lapply(vcfs, function(vcf) {
+    if (is.null(attr(vcf, "metadata")) || is.na(vcf@metadata$CX_CALLER) || vcf@metadata$CX_CALLER !="gridss") return(NULL)
+    vcf <- vcf[gridss.vcftodf(vcf)$confidence %in% c("High"),]
+    attr(vcf, "metadata")$CX_CALLER <- "gridss High"
+    return(vcf)
+  }),
+  lapply(vcfs, function(vcf) {
+    if (is.null(attr(vcf, "metadata")) || is.na(vcf@metadata$CX_CALLER) || vcf@metadata$CX_CALLER !="gridss") return(NULL)
+    vcf <- vcf[gridss.vcftodf(vcf)$confidence %in% c("High", "Medium"),]
+    attr(vcf, "metadata")$CX_CALLER <- "gridss Medium"
+    return(vcf)
+  }))
+vcfs[sapply(vcfs, is.null)] <- NULL
+
+
+
 #TODO: apply filters
 #Rprof("C:/dev/Rprof.out")
 truthlist <- CalculateTruthSummary(vcfs, maxerrorbp=100, ignore.strand=TRUE)
@@ -28,19 +47,33 @@ truthlist <- CalculateTruthSummary(vcfs, maxerrorbp=100, ignore.strand=TRUE)
 # Sensitivity
 #
 dtsenssize <- truthlist$truth[, list(sens=sum(tp)/.N), by=c("SVLEN", "SVTYPE", "CX_ALIGNER", "CX_ALIGNER_SOFTCLIP", "CX_CALLER", "CX_READ_DEPTH", "CX_READ_FRAGMENT_LENGTH", "CX_READ_LENGTH", "CX_REFERENCE_VCF_VARIANTS")]
-ggplot(dtsenssize) +
+ggplot(dtsenssize) + # with(dtsenssize, dtsenssize[CX_CALLER %in% c("breakdancer-max", "gridss", "crest", "socrates"),])) +
   aes(y=sens, x=SVLEN, shape=factor(CX_READ_FRAGMENT_LENGTH), color=CX_REFERENCE_VCF_VARIANTS) +
   geom_line() + 
-  facet_grid(CX_ALIGNER + CX_CALLER ~ CX_READ_LENGTH + CX_READ_DEPTH) +
+  facet_grid(CX_ALIGNER + CX_CALLER ~ CX_READ_FRAGMENT_LENGTH + CX_READ_LENGTH + CX_READ_DEPTH) +
   scale_x_log10(breaks=unique(dtsenssize$SVLEN)) +
   labs(y="sensitivity", x="Event size", title="Sensitivity")
+ggsave("sens_size.png", width=10, height=7.5)
 
-ggplot(truthlist$truth) + aes(x=sizeerror) + facet_grid(CX_REFERENCE_VCF_VARIANTS~CX_CALLER) + geom_histogram() + scale_y_log10()
+ggplot(truthlist$truth) + aes(x=errorsize) + facet_grid(CX_REFERENCE_VCF_VARIANTS~CX_CALLER) + geom_histogram() + scale_y_log10()
+ggplot(truthlist$calls) + aes(x=partialtp) + facet_grid(CX_REFERENCE_VCF_VARIANTS~CX_CALLER) + geom_histogram()
+
 ############
 # ROC
 #
 bylist <- c("CX_ALIGNER", "CX_ALIGNER_SOFTCLIP", "CX_CALLER", "CX_READ_DEPTH", "CX_READ_FRAGMENT_LENGTH", "CX_READ_LENGTH", "CX_REFERENCE_VCF_VARIANTS")
 dtrocall <- TruthSummaryToROC(truthlist, bylist=bylist)
+
+ggplot(dtrocall) + # with(dtrocall, dtrocall[CX_CALLER %in% c("breakdancer-max", "gridss", "crest", "socrates"),])) +
+  aes(y=sens, x=fp+1, color=log(QUAL)) +
+  scale_colour_gradientn(colours = rainbow(11)) +
+  geom_line() + 
+  geom_point(size=0.25) + 
+  facet_grid(CX_ALIGNER + CX_CALLER ~ CX_READ_FRAGMENT_LENGTH + CX_READ_LENGTH + CX_READ_DEPTH + CX_REFERENCE_VCF_VARIANTS) +
+  scale_x_log10() + 
+  labs(y="sensitivity", title="ROC by call quality threshold")
+ggsave(paste0("roc_full_fp.png"), width=10, height=7.5)
+
 for (variant in unique(dtrocall$CX_REFERENCE_VCF_VARIANTS)) {
   dtroc <- dtrocall[dtrocall$CX_REFERENCE_VCF_VARIANTS == variant,]
   plot_roc_all <- ggplot(dtroc) +
