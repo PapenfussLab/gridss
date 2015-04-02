@@ -56,7 +56,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			BreakendDirection direction,
 			AssemblyParameters parameters,
 			SubgraphAssemblyAlgorithmTrackerBEDWriter trackingWriter) {
-		super(processContext, source, parameters.k, direction);
+		super(processContext, source, parameters.k);
 		this.referenceIndex = referenceIndex;
 		this.parameters = parameters;
 		this.trackingWriter = trackingWriter;
@@ -222,55 +222,13 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		return contigs;
 	}
 	/**
-	 * Helper class for printing kmer related debugging information.   
-	 */
-	@SuppressWarnings("unused")
-	private class DebugOutputSubgraphKmerSpread implements TLongObjectProcedure<DeBruijnSubgraphNode> {
-		public DebugOutputSubgraphKmerSpread(SubgraphSummary ss) {
-			this.ss = ss;
-		}
-		private final SubgraphSummary ss;
-		private long maxKmer;
-		private int maxSpread;
-		@Override
-		public boolean execute(long kmer, DeBruijnSubgraphNode node) {
-			if (node.getSubgraph() == ss) {
-				int refWidth = 0;
-				if (node.getMinReferencePosition() != null) {
-					refWidth = node.getMaxReferencePosition() - node.getMinReferencePosition();
-				}
-				int mateWidth = 0;
-				if (node.getMinMatePosition() != null) {
-					mateWidth = node.getMaxMatePosition() - node.getMinMatePosition();
-				}
-				if (Math.max(mateWidth, refWidth) > maxSpread) {
-					maxSpread = Math.max(mateWidth, refWidth);
-					maxKmer = kmer;
-				}
-			}
-			return true;
-		}
-		@Override
-		public String toString() {
-			maxKmer = 0;
-			maxSpread = -1;
-			getBackingStore().forEachEntry(this);
-			return String.format("Max kmer %s ref:[%d,%d] mate:[%d,%d]",
-				KmerEncodingHelper.toString(getK(), maxKmer),
-				getKmer(maxKmer).getMinReferencePosition(),
-				getKmer(maxKmer).getMaxReferencePosition(),
-				getKmer(maxKmer).getMinMatePosition(),
-				getKmer(maxKmer).getMaxMatePosition());
-		}
-	}
-	/**
 	 * Removes all kmers not relevant at or after the given position
 	 * @param position
 	 */
 	public void removeBefore(int position) {
 		List<SubgraphSummary> toRemove = Lists.newArrayList();
 		for (final SubgraphSummary ss : subgraphs) {
-			if (ss.getMaxAnchor() < position || exceedsTimeout(ss) || !ss.isAnchored()) {
+			if (ss.getMaxLinearPosition() < position || exceedsTimeout(ss)) {
 				if (ss.getKmerCount() > getBackingStore().capacity() * 0.0625) {
 					// TODO: do performance testing to find optimal bulk delete thresholds
 					getBackingStore().retainEntries(new TLongObjectProcedure<DeBruijnSubgraphNode>() {

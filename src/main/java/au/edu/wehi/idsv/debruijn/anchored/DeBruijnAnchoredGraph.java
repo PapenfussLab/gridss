@@ -18,8 +18,8 @@ import com.google.common.collect.Multimap;
 public class DeBruijnAnchoredGraph extends DeBruijnVariantGraph<DeBruijnNodeBase> {
 	public static final String ASSEMBLER_NAME = "debruijnA";
 	private final Multimap<Long, Integer> startkmers = HashMultimap.<Long, Integer>create();
-	public DeBruijnAnchoredGraph(ProcessingContext context, AssemblyEvidenceSource source, int k, BreakendDirection direction) {
-		super(context, source, k, direction);
+	public DeBruijnAnchoredGraph(ProcessingContext context, AssemblyEvidenceSource source, int k) {
+		super(context, source, k);
 	}
 	@Override
 	protected DeBruijnNodeBase createNode(VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) {

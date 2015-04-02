@@ -155,6 +155,13 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	public File getSourceFile() { return input; }
 	public boolean isTumour() { return isTumour; }
+	/**
+	 * Grouping category of source. For tumour/normal analysis, normal is considered group 0, tumour group 1
+	 * @return
+	 */
+	public int sourceCategory() {
+		return isTumour ? 1 : 0;
+	}
 	public CloseableIterator<DirectedEvidence> iterator(final boolean includeReadPair, final boolean includeSoftClip, final boolean includeSoftClipRemote) {
 		if (getContext().shouldProcessPerChromosome()) {
 			// Lazily iterator over each input
@@ -342,6 +349,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	public int getMaxReadMappedLength() {
 		return getMetrics().getIdsvMetrics().MAX_READ_MAPPED_LENGTH;
+	}
+	public int getExpectedFragmentSize() {
+		return (int)getMetrics().getInsertSizeMetrics().MEDIAN_INSERT_SIZE;
 	}
 	public ProcessingContext getProcessContext() {
 		return getContext();

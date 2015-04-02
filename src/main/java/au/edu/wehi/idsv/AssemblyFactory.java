@@ -39,6 +39,14 @@ public final class AssemblyFactory {
 		BreakendSummary breakend = new BreakendSummary(anchorReferenceIndex, direction, anchorBreakendPosition, anchorBreakendPosition);
 		return new SAMRecordAssemblyEvidence(evidence, processContext.getBasicSamHeader(), breakend, source, anchoredBaseCount, baseCalls, baseQuals, normalBaseCount, tumourBaseCount);
 	}
+	public static AssemblyEvidence createAnchored(
+			ProcessingContext processContext, AssemblyEvidenceSource source,
+			Set<DirectedEvidence> breakendSupport,
+			int startAnchorReferenceIndex, int startAnchorPosition, int breakendStartOffset,
+			int endAnchorReferenceIndex, int endAnchorPosition, int breakendEndOffset,
+			byte[] baseCalls, byte[] baseQuals, int normalBaseCount, int tumourBaseCount) {
+		throw new RuntimeException("NYI");
+	}
 	/**
 	 * Creates an assembly whose breakpoint cannot be exactly anchored to the reference  
 	 * @param processContext context

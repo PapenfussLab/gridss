@@ -377,4 +377,11 @@ public class NonReferenceReadPairTest extends TestHelper {
 		assertNotNull(NRRP(DP(0, 1, "1M", true, 0, 2, "1M", true)));
 		assertNotNull(NRRP(DP(0, 1, "1S1M", true, 0, 1, "2M", true)));
 	}
+	@Test
+	public void should_default_to_expect_FR_strand() {
+		assertTrue(NRRP(DP(0, 1, "1M", true, 1, 3, "1M", false)).onExpectedStrand());
+		assertTrue(NRRP(DP(0, 1, "1M", false, 1, 3, "1M", true)).onExpectedStrand());
+		assertFalse(NRRP(DP(0, 1, "1M", true, 1, 3, "1M", true)).onExpectedStrand());
+		assertFalse(NRRP(DP(0, 1, "1M", false, 1, 3, "1M", false)).onExpectedStrand());
+	}
 }

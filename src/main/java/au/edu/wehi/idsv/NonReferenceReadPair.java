@@ -238,4 +238,23 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	public boolean isBreakendExact() {
 		return false;
 	}
+	/**
+	 * Determines whether the reads are on strands compatible with their expected orientation.
+	 * Alignment details are ignored
+	 * @return true if the strands are as expected, false if the strands are unexpected. 
+	 */
+	public boolean onExpectedStrand() {
+		PairOrientation po = PairOrientation.FR;
+		if (source.getMetrics() != null && source.getMetrics().getInsertSizeMetrics() != null && source.getMetrics().getInsertSizeMetrics().PAIR_ORIENTATION != null) {
+			po = source.getMetrics().getInsertSizeMetrics().PAIR_ORIENTATION;
+		}
+		switch (po) {
+			case FR:
+			case RF:
+				return getLocalledMappedRead().getReadNegativeStrandFlag() != getNonReferenceRead().getReadNegativeStrandFlag();
+			case TANDEM:
+				return getLocalledMappedRead().getReadNegativeStrandFlag() == getNonReferenceRead().getReadNegativeStrandFlag();
+		}
+		throw new IllegalStateException("Unknown read pair orientation");
+	}
 }
