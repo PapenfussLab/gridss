@@ -79,4 +79,20 @@ public class LinearGenomicCoordinate {
 		if (referenceIndex < 0) return -1;
 		return (int)(linearCoordinate - getLinearCoordinate(referenceIndex, 0));
 	}
+	public String encodedToString(long linearCoordinate) {
+		return String.format("%s:%d",
+				dictionary.getSequence(getReferenceIndex(linearCoordinate)).getSequenceName(),
+				getReferencePosition(linearCoordinate));
+	}
+	public String encodedIntervalToString(long startLinearCoordinate, long endLinearCoordinate) {
+		if (startLinearCoordinate > endLinearCoordinate) throw new IllegalArgumentException("end cannot be before start");
+		if (getReferenceIndex(startLinearCoordinate) == getReferenceIndex(endLinearCoordinate)) {
+			return String.format("%s:%d-%d",
+					dictionary.getSequence(getReferenceIndex(startLinearCoordinate)).getSequenceName(),
+					getReferencePosition(startLinearCoordinate),
+					getReferencePosition(endLinearCoordinate)); 
+		} else {
+			return encodedToString(startLinearCoordinate) + "-" + encodedToString(endLinearCoordinate);
+		}
+	}
 }

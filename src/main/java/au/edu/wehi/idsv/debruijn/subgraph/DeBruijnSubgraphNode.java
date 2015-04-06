@@ -6,10 +6,13 @@ import au.edu.wehi.idsv.debruijn.VariantEvidence;
 
 public class DeBruijnSubgraphNode extends DeBruijnNodeBase {
 	private long maxPosition;
+	private long minPosition;
 	private SubgraphSummary subgraph;
 	public DeBruijnSubgraphNode(VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) {
 		super(evidence, readKmerOffset, kmer);
-		this.maxPosition = evidence.getExpectedLinearPosition(readKmerOffset);
+		long expectedPosition = evidence.getExpectedLinearPosition(readKmerOffset); 
+		this.maxPosition = expectedPosition;
+		this.minPosition = expectedPosition;
 	}
 	/**
 	 * Highest expected reference-allele genomic position
@@ -17,6 +20,9 @@ public class DeBruijnSubgraphNode extends DeBruijnNodeBase {
 	 */
 	public long getMaxLinearPosition() {
 		return maxPosition;
+	}
+	public long getMinLinearPosition() {
+		return minPosition;
 	}
 	@Override
 	public void add(DeBruijnNodeBase node) {

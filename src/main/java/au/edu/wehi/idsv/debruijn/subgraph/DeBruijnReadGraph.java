@@ -53,7 +53,6 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			ProcessingContext processContext,
 			AssemblyEvidenceSource source,
 			int referenceIndex,
-			BreakendDirection direction,
 			AssemblyParameters parameters,
 			SubgraphAssemblyAlgorithmTrackerBEDWriter trackingWriter) {
 		super(processContext, source, parameters.k);
@@ -108,7 +107,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	}
 	private SubgraphAssemblyAlgorithmTracker createSubgraphAssemblyAlgorithmTracker(SubgraphSummary ss) {
 		if (parameters.trackAlgorithmProgress) {
-			return new SubgraphAlgorithmMetrics(processContext, referenceIndex, direction, ((TimedSubgraphSummary)ss).getCreationTime());
+			return new SubgraphAlgorithmMetrics(processContext, referenceIndex, ((TimedSubgraphSummary)ss).getCreationTime());
 		} else {
 			return new NontrackingSubgraphTracker();
 		}
@@ -126,18 +125,14 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		return result;
 	}
 	private boolean exceedsTimeout(SubgraphSummary ss) {
-		return ss.isAnchored() && ss.getMaxAnchor() - ss.getMinAnchor() > source.getAssemblyMaximumEvidenceDelay();
+		return ss.getMaxLinearPosition() - ss.getMinLinearPosition() > source.getAssemblyMaximumEvidenceDelay();
 	}
 	private void visualisePrecollapsePathGraph(SubgraphSummary ss, PathGraphAssembler pga) {
-		File directory = new File(new File(
+		File directory = new File(
 				parameters.debruijnGraphVisualisationDirectory,
-				processContext.getDictionary().getSequence(referenceIndex).getSequenceName()),
-				String.format("%d", ss.getMinAnchor() - ss.getMinAnchor() % 100000));
-		String filename = String.format("%s_%s_%d-%d_%d.precollapse.gexf",
-				direction.toChar(),
-				processContext.getDictionary().getSequence(referenceIndex).getSequenceName(),
-				ss.getMinAnchor(),
-				ss.getMaxAnchor(),
+				processContext.getDictionary().getSequence(referenceIndex).getSequenceName());
+		String filename = String.format("%d_%s.precollapse.gexf",
+				processContext.getLinear().encodedIntervalToString(ss.getMinLinearPosition(), ss.getMaxLinearPosition()).replace("-", "_").replace(":", "_"),
 				graphsExported); 
 		directory.mkdirs();
 		new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k)
@@ -146,15 +141,11 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	}
 	private void visualisePathGraph(SubgraphSummary ss, StaticDeBruijnSubgraphPathGraphGexfExporter graphExporter) {
 		if (graphExporter == null) return;
-		File directory = new File(new File(
+		File directory = new File(
 				parameters.debruijnGraphVisualisationDirectory,
-				processContext.getDictionary().getSequence(referenceIndex).getSequenceName()),
-				String.format("%d", ss.getMinAnchor() - ss.getMinAnchor() % 100000));
-		String filename = String.format("%s_%s_%d-%d_%d.subgraph.gexf",
-				direction.toChar(),
-				processContext.getDictionary().getSequence(referenceIndex).getSequenceName(),
-				ss.getMinAnchor(),
-				ss.getMaxAnchor(),
+				processContext.getDictionary().getSequence(referenceIndex).getSequenceName());
+		String filename = String.format("%d_%s.subgraph.gexf",
+				processContext.getLinear().encodedIntervalToString(ss.getMinLinearPosition(), ss.getMaxLinearPosition()).replace("-", "_").replace(":", "_"),
 				graphsExported++);
 		directory.mkdirs();
 		graphExporter.saveTo(new File(directory, filename));
@@ -164,23 +155,23 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	}
 	/**
 	 * Assembles contigs which do not have any relevance at or after the given position 
-	 * @param position
+	 * @param position linear position
 	 * @return
 	 */
-	public Iterable<AssemblyEvidence> assembleContigsBefore(int position) {
+	public Iterable<AssemblyEvidence> assembleContigsBefore(long position) {
 		List<AssemblyEvidence> contigs = Lists.newArrayList();
 		for (SubgraphSummary ss : subgraphs) {
 			boolean timeoutExceeded = exceedsTimeout(ss);
 			if (timeoutExceeded) {
 				log.warn(String.format("Subgraph at %s:%d-%d exceeded maximum width of %d - calling",
 						processContext.getDictionary().getSequence(this.referenceIndex).getSequenceName(),
-						ss.getMinAnchor(),
-						ss.getMaxAnchor(),
+						ss.getMinLinearPosition(),
+						ss.getMaxLinearPosition(),
 						source.getAssemblyMaximumEvidenceDelay()));
 			}
-			if ((ss.getMaxAnchor() < position || timeoutExceeded) && ss.isAnchored()) {
+			if (ss.getMaxLinearPosition() < position || timeoutExceeded) {
 				SubgraphAssemblyAlgorithmTracker tracker = createSubgraphAssemblyAlgorithmTracker(ss);
-				tracker.finalAnchors(ss.getMinAnchor(), ss.getMaxAnchor());
+				tracker.finalAnchors(processContext.getLinear().getReferenceIndex(ss.getMinLinearPosition()), processContext.getLinear().getReferenceIndex(ss.getMaxLinearPosition()));
 				tracker.assemblyStarted();
 				PathGraphAssembler pga = new PathGraphAssembler(this, this.parameters, ss.getAnyKmer(), tracker);
 				if (parameters.maxBaseMismatchForCollapse > 0) {
@@ -194,17 +185,12 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 						timeoutExceeded = true;
 					}
 				}
-				//int width = ss.getMaxAnchor() - ss.getMinAnchor();
-				//if (width > subgraphMessageStartingSize) {
-				//	subgraphMessageStartingSize = width;
-				//	log.debug(String.format("Large subgraph width=%s [%d, %d] has %d paths: %s", width, ss.getMinAnchor(), ss.getMaxAnchor(), pga.getPathCount(), new DebugOutputSubgraphKmerSpread(ss).toString()));
-				//}
 				StaticDeBruijnSubgraphPathGraphGexfExporter graphExporter = null;
 				if (shouldVisualise(timeoutExceeded)) {
 					graphExporter = new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k);
 				}
 				for (List<Long> contig : pga.assembleContigs(graphExporter)) {
-					AssemblyEvidence variant = toAssemblyEvidence(contig, tracker);
+					AssemblyEvidence variant = createAssembly(contig);
 					if (variant != null) {
 						contigs.add(variant);
 					}
@@ -225,7 +211,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	 * Removes all kmers not relevant at or after the given position
 	 * @param position
 	 */
-	public void removeBefore(int position) {
+	public void removeBefore(long position) {
 		List<SubgraphSummary> toRemove = Lists.newArrayList();
 		for (final SubgraphSummary ss : subgraphs) {
 			if (ss.getMaxLinearPosition() < position || exceedsTimeout(ss)) {
@@ -261,104 +247,6 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		}
 		return reads;
 	}
-	private AssemblyEvidence toAssemblyEvidence(List<Long> contigKmers, SubgraphAssemblyAlgorithmTracker tracker) {
-		int startRefCount = 0;
-		int startRefAnchor = 0;
-		int endRefCount = 0;
-		int endRefAnchor = 0;
-		Integer mateAnchor = null;
-		// Advance to first non-reference kmer
-		while (getKmer(contigKmers.get(startRefCount)).isReference()) {
-			startRefCount++;
-		}
-		if (startRefCount > 0) {
-			startRefAnchor = getKmer(contigKmers.get(startRefCount - 1)).getBestReferencePosition();
-		}
-		while (getKmer(contigKmers.get(contigKmers.size() - 1 - endRefCount)).isReference()) {
-			endRefCount--;
-		}
-		if (endRefCount > 0) {
-			endRefAnchor = getKmer(contigKmers.get(contigKmers.size() - endRefCount)).getBestReferencePosition();
-		}
-		// Iterate over breakpoint kmers
-		boolean messagePrinted = false;
-		for (int i = startRefCount; i < contigKmers.size() - endRefCount; i++) {
-			DeBruijnSubgraphNode kmer = getKmer(contigKmers.get(i));
-			assert(!kmer.isReference());
-			Integer mp = direction == BreakendDirection.Forward ? kmer.getMaxMatePosition() : kmer.getMinMatePosition();
-			if (mateAnchor == null) {
-				mateAnchor = mp;
-			} else {
-				if (mp != null) {
-					// take closest mate anchor
-					mateAnchor = direction == BreakendDirection.Forward ?
-							Math.max(mp, mateAnchor) :
-							Math.min(mp, mateAnchor);
-				}
-				if (mp == null && refCount == 0) {
-					//         D-E    <-- we are attempting to assemble DE from soft-clips after assembling ABC 
-					//        /
-					//     A-B-C             (this shouldn't happen.)
-					//    /
-					// R-R
-					// 
-					//throw new RuntimeException("Sanity check failure: attempted to assemble anchored read as unanchored");
-					
-					// or we have multiple events at the same loci:
-					//  RP - SC
-					// =====>--------<===C
-					//                 ==CCCCCC
-					// read pair and long soft clip sharing same kmer
-					// soft clip is sufficiently long that no anchor kmer exists
-					if (!messagePrinted) {
-						log.debug("Unsufficiently anchored SC being treated as mate evidence at ", kmer.getSupportingEvidenceList().iterator().next().getBreakendSummary().toString(processContext));
-						messagePrinted = true;
-					}
-				}
-			}
-		}
-		ContigAssembly ca = debruijnContigAssembly(contigKmers, refCount);
-		AssemblyEvidence evidence = null;
-		if (refCount > 0) {
-			if (!ca.containsAnchoredSupport()) {
-				// This is a misassembly - we're anchored to a reference kmer
-				// but none of the support.
-				// This usually occurs when a reference-allele assembly (due to assembling reference-supporting reads with large fragment sizes)
-				// overlaps a soft clip. The soft clip reference kmers anchor
-				// the read, but no soft clipped bases provide support for
-				// this particular path.
-				// we'll fall back to an unanchored assembly of only the breakend
-				
-				evidence = AssemblyFactory.createUnanchored(processContext, source, ca.support,
-						Arrays.copyOfRange(ca.baseCalls, refCount, ca.baseCalls.length),
-						Arrays.copyOfRange(ca.baseQuals, refCount, ca.baseQuals.length), 
-						ca.normalBaseCount, ca.tumourBaseCount);
-			} else {
-				// anchored read
-				evidence = AssemblyFactory.createAnchored(processContext, source, direction, ca.support,
-						referenceIndex, refAnchor, refCount + getK() - 1,
-						ca.baseCalls, ca.baseQuals, ca.normalBaseCount, ca.tumourBaseCount);
-			}
-		} else if (mateAnchor != null) {
-			// inexact breakend
-			evidence = AssemblyFactory.createUnanchored(processContext, source, ca.support,
-					ca.baseCalls, ca.baseQuals, ca.normalBaseCount, ca.tumourBaseCount);
-		} else {
-			// Assembly is neither anchored by breakend nor anchored by mate pair
-			// This occurs when the de bruijn graph has a non-reference kmer fork
-			// the best path will be taken first which removes the anchor from the
-			// forked path. We are left with an unanchored assembly that we can't
-			// do anything with
-			//                      B-B-B   <- assembly B is unanchored
-			//                     /
-			//                A-A-A-A-A-A-A-A
-			//               /
-			// Ref: A-A-A-A-A
-			//
-			return null;
-		}
-		return evidence;
-	}
 	private static Log expensiveSanityCheckLog = Log.getInstance(DeBruijnReadGraph.class);
 	public boolean sanityCheckSubgraphs() {
 		if (expensiveSanityCheckLog != null) {
@@ -369,10 +257,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			DeBruijnSubgraphNode node = getKmer(kmer);
 			assert(node.getSubgraph() != null);
 			assert(subgraphs.contains(node.getSubgraph()));
-			if (node.getMinMatePosition() != null) assert(node.getSubgraph().getMinAnchor() <= node.getMinMatePosition());
-			if (node.getMaxMatePosition() != null) assert(node.getSubgraph().getMaxAnchor() >= node.getMaxMatePosition());
-			if (node.getMinReferencePosition() != null) assert(node.getSubgraph().getMinAnchor() <= node.getMinReferencePosition());
-			if (node.getMaxReferencePosition() != null) assert(node.getSubgraph().getMaxAnchor() >= node.getMaxReferencePosition());
+			assert(node.getSubgraph().getMaxLinearPosition() <= node.getMaxLinearPosition());
+			assert(node.getSubgraph().getMinLinearPosition() <= node.getMinLinearPosition());
 		}		
 		//int lastMax = Integer.MIN_VALUE;
 		for (SubgraphSummary ss : subgraphs) {
@@ -384,26 +270,26 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		}
 		return true;
 	}
-	public boolean sanityCheckSubgraphs(int minExpected, int maxExpected) {
+	public boolean sanityCheckSubgraphs(long minExpected, long maxExpected) {
 		sanityCheckSubgraphs();
 		for (SubgraphSummary ss : subgraphs) {
-			assert(ss.getMaxAnchor() >= minExpected);
-			assert(ss.getMaxAnchor() <= maxExpected);
+			assert(ss.getMaxLinearPosition() >= minExpected);
+			assert(ss.getMaxLinearPosition() <= maxExpected);
 		}
 		return true;
 	}
 	public String getStateSummaryMetrics() {
 		String result = String.format("kmers=%d subgraphs=%d", size(), subgraphs.size());
 		if (size() > 0) {
-			int minAnchor = Integer.MAX_VALUE;
-			int maxAnchor = Integer.MIN_VALUE;
+			long minAnchor = Integer.MIN_VALUE;
+			long maxAnchor = Integer.MAX_VALUE;
 			int maxWidth = 0;
 			for (SubgraphSummary ss : subgraphs) {
-				minAnchor = Math.min(minAnchor, ss.getMinAnchor());
-				maxAnchor = Math.max(maxAnchor, ss.getMaxAnchor());
-				maxWidth = Math.max(maxWidth, ss.getMaxAnchor() - ss.getMinAnchor());
+				minAnchor = Math.min(minAnchor, ss.getMinLinearPosition());
+				maxAnchor = Math.max(maxAnchor, ss.getMaxLinearPosition());
+				maxWidth = Math.max(maxWidth, (int)(ss.getMaxLinearPosition() - ss.getMinLinearPosition()));
 			}
-			result = result + String.format(" maxWidth=%d anchor=[%d,%d]", maxWidth, minAnchor, maxAnchor);
+			result = result + String.format(" %s maxWidth=%d ", processContext.getLinear().encodedIntervalToString(minAnchor, maxAnchor), maxWidth);
 		}
 		return result;
 	}

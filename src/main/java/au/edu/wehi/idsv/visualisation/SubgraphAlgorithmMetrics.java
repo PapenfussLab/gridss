@@ -48,13 +48,12 @@ public class SubgraphAlgorithmMetrics implements SubgraphAssemblyAlgorithmTracke
 	private long timeToAssemblyEvidenceComplete;
 	private int collapseNodeCountReducedBy;
 	private int pathGraphKmers;
-	public SubgraphAlgorithmMetrics(ProcessingContext processContext, int referenceIndex, BreakendDirection direction) {
-		this(processContext, referenceIndex, direction, System.nanoTime());
+	public SubgraphAlgorithmMetrics(ProcessingContext processContext, int referenceIndex) {
+		this(processContext, referenceIndex, System.nanoTime());
 	}
-	public SubgraphAlgorithmMetrics(ProcessingContext processContext, int referenceIndex, BreakendDirection direction, long constructionStartTime) {
+	public SubgraphAlgorithmMetrics(ProcessingContext processContext, int referenceIndex, long constructionStartTime) {
 		this.processContext = processContext;
 		this.referenceIndex = referenceIndex;
-		this.direction = direction;
 		this.timeKmerConstructionStart = constructionStartTime;
 	}
 	/**

@@ -1,6 +1,6 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -221,5 +221,9 @@ public class PathGraphAssemblerTest extends TestHelper {
 		List<LinkedList<Long>> result = pga.assembleContigs();
 		assertEquals(1, result.size());
 		assertEquals("AAATGGGGA", S(g, result.get(0)));
+	}
+	@Test
+	public void should_limit_anchor_assembly_length() {
+		fail();
 	}
 }

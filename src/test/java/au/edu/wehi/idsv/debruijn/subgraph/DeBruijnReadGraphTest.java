@@ -10,7 +10,6 @@ import org.junit.Test;
 
 import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyParameters;
-import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.EvidenceSubset;
 import au.edu.wehi.idsv.TestHelper;
 
@@ -18,16 +17,16 @@ import com.google.common.collect.Lists;
 
 
 public class DeBruijnReadGraphTest extends TestHelper {
-	public DeBruijnReadGraph G(int referenceIndex, int k, BreakendDirection direction) {
+	public DeBruijnReadGraph G(int referenceIndex, int k) {
 		AssemblyParameters p = new AssemblyParameters();
 		p.maxBaseMismatchForCollapse = 0;
 		p.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
 		p.k = k;
-		return new DeBruijnReadGraph(getContext(), AES(), referenceIndex, direction, p, null);
+		return new DeBruijnReadGraph(getContext(), AES(), referenceIndex, p, null);
 	}
 	@Test
 	public void should_excluse_kmers_containing_ambiguous_base() {
-		DeBruijnReadGraph g = G(0, 3, FWD);
+		DeBruijnReadGraph g = G(0, 3);
 		g.addEvidence(SCE(FWD, withSequence("TANAGTN", Read(0, 10, "4M3S"))));
 		g.addEvidence(SCE(FWD, withSequence( "AANGTCT", Read(0, 11, "3M4S"))));
 		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
@@ -35,7 +34,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void should_assemble_sc() {
-		DeBruijnReadGraph g = G(0, 3, FWD);
+		DeBruijnReadGraph g = G(0, 3);
 		g.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(0, 10, "4M3S"))));
 		g.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(0, 11, "3M4S"))));
 		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
@@ -45,7 +44,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void should_assemble_sc_b() {
-		DeBruijnReadGraph g = G(0, 3, BWD);
+		DeBruijnReadGraph g = G(0, 3);
 		g.addEvidence(SCE(BWD, withSequence("TATG", Read(0, 10, "1S3M"))));
 		g.addEvidence(SCE(BWD, withSequence("TTATG", Read(0, 10, "2S3M"))));
 		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
@@ -55,7 +54,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void should_set_assembly_common_attributes() {
-		DeBruijnReadGraph g = G(0, 3, FWD);
+		DeBruijnReadGraph g = G(0, 3);
 		g.addEvidence(SCE(FWD, withQual(new byte[] { 4,4,4,4,4,4,4}, withSequence("AAAGTCT", Read(0, 10, "3M4S")))));
 		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		AssemblyEvidence bp = result.get(0);
@@ -64,7 +63,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void should_set_assembly_sc_attributes() {
-		DeBruijnReadGraph g = G(0, 3, FWD);
+		DeBruijnReadGraph g = G(0, 3);
 		g.addEvidence(SCE(FWD, withQual(new byte[] { 4,4,4,4,4,4,4}, withName("r1", withSequence("TAAAGTC", Read(0, 10, "4M3S"))))));
 		g.addEvidence(SCE(FWD, withQual(new byte[] { 4,4,4,4,4,4,4}, withName("r2", withSequence("AAAGTCT", Read(0, 10, "3M4S"))))));
 		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
@@ -74,7 +73,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		assertEquals(2, bp.getAssemblySupportCountSoftClip(null));
 	}
 	public void should_set_assembly_mate_attributes() {
-		DeBruijnReadGraph g = G(0, 3, FWD);
+		DeBruijnReadGraph g = G(0, 3);
 		g.addEvidence(NRRP(OEA(0, 1, "5M", true)));
 		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
 		AssemblyEvidence bp = result.get(0);
@@ -82,7 +81,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void should_assemble_adjacent_scs() {
-		DeBruijnReadGraph g = G(0, 3, FWD);
+		DeBruijnReadGraph g = G(0, 3);
 		g.addEvidence(SCE(FWD, withName("r1", withSequence("AAAGTC", Read(0, 10, "3M3S"))))); // 12
 		g.addEvidence(SCE(FWD, withName("r2", withSequence("AAAAGTCTT", Read(0, 10, "4M4S"))))); // 13
 		g.addEvidence(SCE(FWD, withName("r3", withSequence("AAAAGTCTT", Read(0, 10, "4M4S"))))); // 13
@@ -96,7 +95,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void should_anchor_to_best_reference_position() {
-		DeBruijnReadGraph g = G(0, 3, FWD);
+		DeBruijnReadGraph g = G(0, 3);
 		g.addEvidence(SCE(FWD, withName("r1", withSequence("AAAGTC", Read(0, 9, "3M3S")))));
 		g.addEvidence(SCE(FWD, withName("r2", withSequence("AAAGTC", Read(0, 10, "3M3S")))));
 		g.addEvidence(SCE(FWD, withName("r3", withSequence("AAAGTC", Read(0, 10, "3M3S")))));
@@ -109,7 +108,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void base_quals_should_match_positive_strand() {
-		DeBruijnReadGraph g = G(0, 3, BWD);
+		DeBruijnReadGraph g = G(0, 3);
 		g.addEvidence(SCE(BWD, withName("r1", withSequence(  "AAGTCTTT", new byte[]       { 1, 2, 3, 4, 5, 6, 7, 8}, Read(0, 10, "5S3M")))));
 		g.addEvidence(SCE(BWD, withName("r2", withSequence( "TAAGTCTTT", new byte[]    { 1, 2, 3, 4, 5, 6, 7, 8, 9}, Read(0, 10, "6S3M")))));
 		g.addEvidence(SCE(BWD, withName("r3", withSequence("GTAAGTCTTT", new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, Read(0, 10, "7S3M")))));
@@ -118,7 +117,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		assertEquals("GTAAGTCTTT", S(result.get(0).getAssemblySequence()));
 		assertArrayEquals(new byte[] { 1, 1, 1, 3, 6, 9, 12, }, result.get(0).getBreakendQuality());
 		
-		g = G(0, 3, FWD);
+		g = G(0, 3);
 		g.addEvidence(SCE(FWD, withName("r1", withSequence("TTTCTGAA",  new byte[]      { 8, 7, 6, 5, 4, 3, 2, 1}, Read(0, 10, "3M5S")))));
 		g.addEvidence(SCE(FWD, withName("r2", withSequence("TTTCTGAAT", new byte[]    {9, 8, 7, 6, 5, 4, 3, 2, 1}, Read(0, 10, "3M6S")))));
 		g.addEvidence(SCE(FWD, withName("r3", withSequence("TTTCTGAATG",new byte[] {10,9, 8, 7, 6, 5, 4, 3, 2, 1}, Read(0, 10, "3M7S")))));
@@ -129,7 +128,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void assembly_count_should_match_expected() {
-		DeBruijnReadGraph g = G(0, 3, BWD);
+		DeBruijnReadGraph g = G(0, 3);
 		g.addEvidence(SCE(BWD, withName("r1", withSequence(  "AAGTCTTT", Read(0, 10, "5S3M")))));
 		g.addEvidence(SCE(BWD, withName("r2", withSequence( "TAAGTCTTT", Read(0, 10, "6S3M")))));
 		g.addEvidence(SCE(BWD, withName("r3", withSequence("GTAAGTCTTT", Read(0, 10, "7S3M")))));
@@ -140,7 +139,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void should_assemble_sc_and_nrrp_together() {
-		DeBruijnReadGraph g = G(0, 4, FWD);
+		DeBruijnReadGraph g = G(0, 4);
 		g.addEvidence(SCE(FWD, withName("r1", withSequence("TAAAGTCC", Read(0, 10, "4M4S")))));
 		g.addEvidence(SCE(FWD, withName("r2", withSequence("AAAAGTCCT", Read(0, 10, "4M5S")))));
 		g.addEvidence(SCE(FWD, withName("r3", withSequence("AAAAGTCCT", Read(0, 10, "4M5S")))));
@@ -163,7 +162,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void should_assemble_nrrp() {
-		DeBruijnReadGraph g = G(0, 3, FWD);
+		DeBruijnReadGraph g = G(0, 3);
 		// expect FR orientation so we need to reverse comp the unmapped seq
 		g.addEvidence(NRRP(withName("r1", withSequence("AGAC", OEA(0, 10, "4M", true))))); // revcomp=GTCT
 		g.addEvidence(NRRP(withName("r2", withSequence("CTAG", DP(0, 9, "4M", true, 1, 10, "4M", false)))));
@@ -177,7 +176,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void should_assemble_best_contig() {
-		DeBruijnReadGraph g = G(0, 3, FWD);
+		DeBruijnReadGraph g = G(0, 3);
 		g.addEvidence(SCE(FWD, withName("r1", withSequence("AAAGTCTA", Read(0, 10, "3M5S")))));
 		g.addEvidence(SCE(FWD, withName("r2", withSequence("AAAGTCTA", Read(0, 10, "3M5S")))));
 		g.addEvidence(SCE(FWD, withName("r3", withSequence("AAAGTCTG", Read(0, 10, "3M5S")))));
@@ -189,7 +188,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void should_assemble_when_out_of_scope() {
-		DeBruijnReadGraph g = G(0, 3, FWD);
+		DeBruijnReadGraph g = G(0, 3);
 		g.addEvidence(SCE(FWD, withName("r1", withSequence("TAAAGTC", Read(0, 1, "4M3S")))));
 		g.addEvidence(SCE(FWD, withName("r2", withSequence("AAAGTCT", Read(0, 2, "3M4S")))));
 		assertEquals(0, Lists.newArrayList(g.assembleContigsBefore(3)).size());
@@ -198,7 +197,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void should_filter_short_contigs_that_do_not_include_reference_bases() {
-		DeBruijnReadGraph g = G(0, 4, FWD);
+		DeBruijnReadGraph g = G(0, 4);
 		g.addEvidence(SCE(FWD, withName("r1", withSequence("TAAAGTCC", Read(0, 10, "4M4S")))));
 		g.addEvidence(SCE(FWD, withName("r2", withSequence("AAAAGTCCT", Read(0, 10, "4M5S")))));
 		g.addEvidence(SCE(FWD, withName("r3", withSequence("AAAAGTCCT", Read(0, 10, "4M5S")))));
@@ -220,7 +219,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void debugPrintPaths_should_work() {
-		DeBruijnReadGraph g = G(0, 4, FWD);
+		DeBruijnReadGraph g = G(0, 4);
 		g.addEvidence(SCE(FWD, withName("r1", withSequence("TAAAGTCC", Read(0, 10, "4M4S")))));
 		g.addEvidence(SCE(FWD, withName("r2", withSequence("AAAAGTCCT", Read(0, 10, "4M5S")))));
 		g.addEvidence(SCE(FWD, withName("r3", withSequence("AAAAGTCCT", Read(0, 10, "4M5S")))));
@@ -234,7 +233,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void reference_kmer_support_should_not_be_considered_read_support() {
-		DeBruijnReadGraph g = G(0, 3, FWD);
+		DeBruijnReadGraph g = G(0, 3);
 		g.addEvidence(SCE(FWD, withName("r1", withSequence("AAAAAAAA", Read(0, 10, "3M5S")))));
 		g.addEvidence(SCE(FWD, withName("r2", withSequence("AAAGTCTA", Read(0, 10, "3M5S")))));
 		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
@@ -245,7 +244,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void should_exclude_sc_nrrp_without_ref_anchor() {
-		DeBruijnReadGraph g = G(0, 3, FWD);
+		DeBruijnReadGraph g = G(0, 3);
 		// main assembly
 		g.addEvidence(SCE(FWD, withName("r1", withSequence("AAAAGTCCTAG", Read(0, 10, "4M7S")))));
 		g.addEvidence(SCE(FWD, withName("r2", withSequence("AAAAGTCCTAG", Read(0, 10, "4M7S")))));
@@ -262,7 +261,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void should_filter_sc_branch() {
-		DeBruijnReadGraph g = G(0, 3, FWD);
+		DeBruijnReadGraph g = G(0, 3);
 		// main assembly
 		g.addEvidence(SCE(FWD, withName("z1", withSequence("AAAAGTCCTAG", Read(0, 10, "4M7S")))));
 		g.addEvidence(SCE(FWD, withName("z2", withSequence("AAAAGTCCTAG", Read(0, 10, "4M7S")))));
@@ -277,7 +276,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void removeBefore_should_remove_kmers() {
-		DeBruijnReadGraph g = G(0, 3, FWD);
+		DeBruijnReadGraph g = G(0, 3);
 		g.addEvidence(SCE(FWD, withName("z1", withSequence("AAAGTC", Read(0, 9, "3M3S")))));
 		g.addEvidence(SCE(FWD, withName("z2", withSequence("AAAGTC", Read(0, 10, "3M3S")))));
 		g.addEvidence(SCE(FWD, withName("z3", withSequence("AAAGTC", Read(0, 10, "3M3S")))));
@@ -290,7 +289,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void should_count_only_breakend_evidence() {
-		DeBruijnReadGraph g = G(0, 3, FWD);
+		DeBruijnReadGraph g = G(0, 3);
 		g.addEvidence(SCE(FWD, SES(true),  withName("r1", withSequence("TATG", Read(0, 10, "3M1S")))));
 		g.addEvidence(SCE(FWD, SES(false), withName("r2", withSequence("TATT", Read(0, 10, "3M1S")))));
 		List<AssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(10000));
@@ -300,14 +299,14 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	}
 	@Test
 	public void removeBefore_should_clear_unanchored_subgraphs_SC_N_bases() {
-		DeBruijnReadGraph g = G(0, 14, FWD);
+		DeBruijnReadGraph g = G(0, 14);
 		g.addEvidence(SCE(FWD, SES(true),  withSequence("CATTAATCGCAAGAGCGGGTTGTATTCGACNNNCAAGTCAGCTGAAGCACCATTACCCGATCANAACATATCAGAAATGATTGACGTATCACAAGCCGGA", Read(0, 10, "15M85S"))));
 		g.removeBefore(0);
 		g.sanityCheckSubgraphs();
 	}
 	@Test
 	public void subgraphs_must_be_anchored_RP_N_bases() {
-		DeBruijnReadGraph g = G(0, 14, FWD);
+		DeBruijnReadGraph g = G(0, 14);
 		g.addEvidence(NRRP(withSequence("CATTAATCGCAAGAGCGGGTTGTATTCGACNNNCAAGTCAGCTGAAGCACCATTACCCGATCANAACATATCAGAAATGATTGACGTATCACAAGCCGGA", OEA(0, 1, "100M", true))));
 		g.sanityCheckSubgraphs();
 	}

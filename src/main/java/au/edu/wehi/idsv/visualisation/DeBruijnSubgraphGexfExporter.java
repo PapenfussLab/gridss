@@ -15,7 +15,6 @@ import it.uniroma1.dis.wsngroup.gexf4j.core.data.AttributeType;
 import it.uniroma1.dis.wsngroup.gexf4j.core.dynamic.TimeFormat;
 import it.uniroma1.dis.wsngroup.gexf4j.core.impl.GexfImpl;
 import it.uniroma1.dis.wsngroup.gexf4j.core.impl.data.AttributeListImpl;
-import it.uniroma1.dis.wsngroup.gexf4j.core.impl.viz.ColorImpl;
 
 import java.io.File;
 import java.util.Date;
@@ -42,7 +41,6 @@ public class DeBruijnSubgraphGexfExporter implements DeBruijnGraphExporter<DeBru
 	private final Graph graph;
 	private final Attribute attrWeight;
 	private final Attribute attrIsReference;
-	private final Attribute attrIsMateAnchored;
 	private final Attribute attrReferencePosition;
 	private int currentTime;
 	public DeBruijnSubgraphGexfExporter(int k) {
@@ -62,7 +60,6 @@ public class DeBruijnSubgraphGexfExporter implements DeBruijnGraphExporter<DeBru
 			.setMode(Mode.DYNAMIC);
 		attrWeight = nodeAttrList.createAttribute("w", AttributeType.INTEGER, "weight");
 		attrIsReference = nodeAttrList.createAttribute("r", AttributeType.INTEGER, "isReferenceKmer");
-		attrIsMateAnchored = nodeAttrList.createAttribute("m", AttributeType.INTEGER, "isMateAnchored");
 		attrReferencePosition = nodeAttrList.createAttribute("rp", AttributeType.INTEGER, "referencePosition");
 		graph.getAttributeLists().add(nodeAttrList);
 		//AttributeList edgeAttrList = new AttributeListImpl(AttributeClass.EDGE)
@@ -104,11 +101,9 @@ public class DeBruijnSubgraphGexfExporter implements DeBruijnGraphExporter<DeBru
 	private void updateDynamicAttributes(Node node, int timeStamp, DeBruijnSubgraphNode kmerNode) {
 		GexfHelper.setDynamicAttribute(node, timeStamp, attrWeight, kmerNode.getWeight());
 		GexfHelper.setDynamicAttribute(node, timeStamp, attrIsReference, kmerNode.isReference() ? 1 : 0);
-		GexfHelper.setDynamicAttribute(node, timeStamp, attrIsMateAnchored, kmerNode.isMateAnchored() ? 1 : 0);
-		GexfHelper.setDynamicAttribute(node, timeStamp, attrReferencePosition, kmerNode.getBestReferencePosition());
-		
+		GexfHelper.setDynamicAttribute(node, timeStamp, attrReferencePosition, kmerNode.getExpectedPosition());
 		// try getting a sane graph by placing nodes at their anchor position
-		node.setColor(new ColorImpl(kmerNode.isReference() ? 255 : 0, kmerNode.isMateAnchored() ? 255 : 0, 255));
+		//node.setColor(new ColorImpl(kmerNode.isReference() ? 255 : 0, kmerNode.isMateAnchored() ? 255 : 0, 255));
 		//node.setPosition(new PositionImpl(
 		//		kmerNode.getBestReferencePosition() != null ? kmerNode.getBestReferencePosition() : 
 		//			(kmerNode.getMinMatePosition() != null ? kmerNode.getMinMatePosition() : timeStamp), 
@@ -117,7 +112,6 @@ public class DeBruijnSubgraphGexfExporter implements DeBruijnGraphExporter<DeBru
 		//setDynamicAttribute(node, timeStamp, attrMaxReferencePosition, kmerNode.getMaxReferencePosition());
 		//setDynamicAttribute(node, timeStamp, attrMinReferencePosition, kmerNode.getMinReferencePosition());
 	}
-	
 	/**
 	 * Ensures that graph edges exist between all adjacent kmers
 	 * @param state

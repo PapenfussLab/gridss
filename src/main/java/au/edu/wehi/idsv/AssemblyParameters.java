@@ -40,8 +40,12 @@ public class AssemblyParameters {
 	 * This determines how long to wait before assembling a subgraph 
 	 * Too short and we will assemble a subgraph before all evidence has been added to it
 	 * Too long and we will have a greater misassembly rate in repetitive regions
+	 * 
+	 * Evidence can be up to 1 read length (SC) or 1 fragment size (read pair) from
+	 * breakend position. Maximum detectable breakend size is (twice fragment size - kmer size)
+	 * = 4 * fragment size for maximal indel breakpoint
 	 */
-	public float subgraphAssemblyMargin = 2.5f;
+	public float subgraphAssemblyMargin = 4f;
 	/**
 	 * Maximum number of branches consider at kmer branches.
 	 * A value of 1 indicates a greedy traversal
@@ -106,17 +110,11 @@ public class AssemblyParameters {
 	public int realignmentWindowSize = Defaults.ASSEMBLY_REALIGNMENT_WINDOW_SIZE;
 	public boolean excludeNonSupportingEvidence = Defaults.EXCLUDE_ASSEMBLY_NON_SUPPORTING_EVIDENCE;
 	/**
-	 * Number of reference sequence bases to assemble.
+	 * Default minimum length in bases of reference sequence anchor assembly
 	 * 
 	 * Note: a breakend assembly longer than this length will cause reference sequence assembly to be at least as long as the breakend 
 	 */
 	public int anchorAssemblyLength = 100;
-	/**
-	 * Determine whether to assemble breakend back to into reference-supporting kmers
-	 * Enabling this allows detection of small-medium size insertions at the cost
-	 * of increased misassembly rate for degenerate graphs.
-	 */
-	public boolean assemblyBackToReference = true;
 	public boolean applyFilters(AssemblyEvidence evidence) {
 		AssemblyEvidence localEvidence = evidence;
 		if (evidence instanceof RemoteEvidence) {

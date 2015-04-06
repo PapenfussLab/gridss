@@ -5,6 +5,7 @@ import htsjdk.samtools.util.Log;
 import java.io.File;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -33,14 +34,164 @@ import com.google.common.primitives.Ints;
  *
  */
 public class PathGraphAssembler extends PathGraph {
-	//private static final Log log = Log.getInstance(PathGraphAssembler.class);
+	private static final Log log = Log.getInstance(PathGraphAssembler.class);
+	private static final Function<SubgraphPathNode, Integer> scoringFunction = SubgraphHelper.SCORE_TOTAL_KMER;
 	private final AssemblyParameters parameters;
-	//private final List<Set<SubgraphPathNode>> subgraphs = Lists.newArrayList();
-	private final List<Iterable<SubgraphPathNode>> startingPaths = Lists.newArrayList();
+	private final List<NonReferenceSubgraph> subgraphs = Lists.newArrayList();
 	private static int timeoutGraphsWritten = 0;
 	private boolean timeoutReached = false;
 	private boolean anchorTimeoutReached = false;
+	private boolean misassemblyDetected = false;
 	private int totalNodesTraversed = 0;
+	private class NonReferenceSubgraph {
+		/**
+		 * Node set of the non-reference subgraphs
+		 */
+		public final Set<SubgraphPathNode> nodes = Sets.newHashSet();
+		/**
+		 * Nodes with a connected reference kmer preceding the given path
+		 */
+		public final List<SubgraphPathNode> referenceAnchoredPreceding = Lists.newArrayList();
+		/**
+		 * Nodes with a connected reference kmer following the given path
+		 */
+		public final List<SubgraphPathNode> referenceAnchoredPost = Lists.newArrayList();
+		public NonReferenceSubgraph(SubgraphPathNode seed) {
+			assert(seed.containsNonReferenceKmer() && !seed.containsReferenceKmer());
+			visitAll(seed);
+		}
+		private void visitAll(SubgraphPathNode seed) {
+			Queue<SubgraphPathNode> frontier = new ArrayDeque<SubgraphPathNode>();
+			nodes.add(seed);
+			frontier.add(seed);
+			while (!frontier.isEmpty()) {
+				SubgraphPathNode node = frontier.poll();
+				boolean added = false;
+				for (SubgraphPathNode prev : prevPath(node)) {
+					if (!added && prev.containsReferenceKmer()) {
+						referenceAnchoredPreceding.add(node);
+						added = true;
+					}
+					if (prev.containsNonReferenceKmer() && !nodes.contains(prev)) {
+						nodes.add(prev);
+						frontier.add(prev);
+					}
+				}
+				added = false;
+				for (SubgraphPathNode next : nextPath(node)) {
+					if (!added && next.containsReferenceKmer()) {
+						referenceAnchoredPost.add(node);
+						added = true;
+					}
+					if (next.containsNonReferenceKmer() && !nodes.contains(next)) {
+						nodes.add(next);
+						frontier.add(next);
+					}
+				}
+			}
+		}
+		private List<SubgraphPathNode> traverseNonReference(
+				Collection<SubgraphPathNode> startNodes,
+				Collection<SubgraphPathNode> endNodes,
+				boolean traverseForward
+				) {
+			PathGraphTraverse trav = new PathGraphTraverse(
+					PathGraphAssembler.this,
+					parameters.maxPathTraversalNodes,
+					scoringFunction,
+					traverseForward,
+					false,
+					parameters.subgraphAssemblyTraversalMaximumBranchingFactor,
+					Integer.MAX_VALUE);
+			List<SubgraphPathNode> best;
+			if (endNodes != null) {
+				best = trav.traverse(startNodes, endNodes); 
+			} else {
+				best = trav.traverse(startNodes);
+			}
+			totalNodesTraversed += trav.getNodesTraversed();
+			timeoutReached |= trav.getNodesTraversed() >= parameters.maxPathTraversalNodes;
+			return best;
+		}
+		/**
+		 * Generates a reference anchor contig
+		 * @param node non-reference starting node
+		 * @param traverseForward direction of traversal
+		 * @param targetLength maximum number of non-reference kmers to traverse
+		 * @return reference path
+		 */
+		private List<SubgraphPathNode> traverseReference(SubgraphPathNode node, boolean traverseForward, int targetLength) {
+			assert(!node.containsReferenceKmer());
+			PathGraphTraverse trav = new PathGraphTraverse(PathGraphAssembler.this, parameters.maxPathTraversalNodes, scoringFunction,
+					traverseForward, true,
+					// if anchor has previously timed out on a different breakend subgraph
+					// just do a greedy traversal as we're likely to time out again
+					anchorTimeoutReached ? 1 : parameters.subgraphAssemblyTraversalMaximumBranchingFactor,
+					// assemble anchorAssemblyLength bases / at least the length of the breakend
+					node.length() + targetLength);
+			List<SubgraphPathNode> anchor = trav.traverse(ImmutableList.of(node));
+			totalNodesTraversed += trav.getNodesTraversed();
+			anchorTimeoutReached |= trav.getNodesTraversed() >= parameters.maxPathTraversalNodes; 
+			timeoutReached |= anchorTimeoutReached;
+			assert(anchor != null); // assembly includes starting node so must include that
+			assert(anchor.size() > 0); // assembly includes starting node so must include that
+			anchor.remove(traverseForward ? 0 : anchor.size() - 1); // don't repeat the non-reference node we used as the anchor
+			return anchor;
+		}
+		/**
+		 * Returns the highest scoring contig from the non-reference subgraph 
+		 * @param scoringFunction node scoring function
+		 * @return non-reference contig
+		 */
+		private List<SubgraphPathNode> assembleSubgraph() {
+			List<SubgraphPathNode> best = null;
+			if (!referenceAnchoredPreceding.isEmpty() && referenceAnchoredPreceding.isEmpty()) {
+				if (referenceAnchoredPreceding.size() >= referenceAnchoredPreceding.size()) {
+					best = traverseNonReference(referenceAnchoredPreceding, referenceAnchoredPost, true);
+				} else {
+					// going backwards is faster since we have fewer end paths than start paths
+					best = traverseNonReference(referenceAnchoredPost, referenceAnchoredPreceding, false);
+				}
+				if (best == null) {
+					//    A - B - C
+					//     \     /
+					//  R - R - R - R
+					//
+					// No path from C to A results in nul contig
+					// TODO: assemble both AR and CR as two separate contigs instead of just
+					// falling through to an RC assembly
+					misassemblyDetected = true;
+					log.debug(String.format("Breakpoint assembly failed at linear position %d. Falling back to breakend assembly.",
+							getGraph().getKmer(referenceAnchoredPreceding.get(0).getFirst()).getSubgraph().getMinLinearPosition()));
+				}
+			}
+			if (best == null && !referenceAnchoredPreceding.isEmpty()) {
+				best = traverseNonReference(referenceAnchoredPreceding, null, true);
+			}
+			if (best == null && !referenceAnchoredPost.isEmpty()) {
+				best = traverseNonReference(referenceAnchoredPost, null, false);
+			}
+			if (best == null) {
+				// no anchors/anchored assemby failed -> just assemble what we can
+				best = traverseNonReference(nodes, null, true);
+			}
+			assert(best != null); // subgraphs contain at least one node
+			assert(best.size() > 0);
+			
+			int targetAnchorAssemblyLength = Math.max(parameters.anchorAssemblyLength, PathNode.kmerLength(best));
+			List<SubgraphPathNode> preAnchor = traverseReference(best.get(0), false, targetAnchorAssemblyLength);
+			preAnchor.remove(preAnchor.size() - 1); // don't repeat the non-reference node we used as the anchor
+			
+			List<SubgraphPathNode> postAnchor = traverseReference(best.get(best.size() - 1), true, targetAnchorAssemblyLength);
+			postAnchor.remove(0);
+
+			ArrayList<SubgraphPathNode> result = new ArrayList<SubgraphPathNode>(best.size() + preAnchor.size() + postAnchor.size());
+			result.addAll(preAnchor);
+			result.addAll(best);
+			result.addAll(postAnchor);
+			return result;
+		}
+	}
 	public PathGraphAssembler(DeBruijnGraphBase<DeBruijnSubgraphNode> graph, AssemblyParameters parameters, long seed, SubgraphAssemblyAlgorithmTracker tracker) {
 		super(graph, seed, tracker);
 		this.parameters = parameters;
@@ -54,10 +205,9 @@ public class PathGraphAssembler extends PathGraph {
 		return assemblyNonReferenceContigs(graphExporter);
 	}
 	private List<LinkedList<Long>> assemblyNonReferenceContigs(DeBruijnPathGraphExporter<DeBruijnSubgraphNode, SubgraphPathNode> graphExporter) {
-		final Function<SubgraphPathNode, Integer> scoringFunction = SubgraphHelper.SCORE_TOTAL_KMER;
 		List<List<SubgraphPathNode>> result = Lists.newArrayList();
-		for (Iterable<SubgraphPathNode> starts : startingPaths) {
-			List<SubgraphPathNode> contig = assembleSubgraph(starts, scoringFunction);
+		for (NonReferenceSubgraph nrsg: subgraphs) {
+			List<SubgraphPathNode> contig = nrsg.assembleSubgraph();
 			result.add(contig);
 		}
 		// return the best assembly first
@@ -70,14 +220,14 @@ public class PathGraphAssembler extends PathGraph {
 			}}); 
 		if (graphExporter != null) {
 			graphExporter.snapshot(this);
-			graphExporter.annotateStartingPaths(startingPaths);
+			//graphExporter.annotateStartingPaths(startingPaths);
 			graphExporter.contigs(result);
-		} else if (timeoutReached && parameters.debruijnGraphVisualisationDirectory != null) {
-			// weren't planning to export but we timed out
+		} else if ((misassemblyDetected || timeoutReached) && parameters.debruijnGraphVisualisationDirectory != null) {
+			// weren't planning to export but we encountering something worth logging
 			parameters.debruijnGraphVisualisationDirectory.mkdirs();
 			graphExporter = new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k);
 			graphExporter.snapshot(this);
-			graphExporter.annotateStartingPaths(startingPaths);
+			//graphExporter.annotateStartingPaths(startingPaths);
 			graphExporter.contigs(result);
 			graphExporter.saveTo(new File(parameters.debruijnGraphVisualisationDirectory,
 					String.format("pathTraversalTimeout-%d.subgraph.gexf", ++timeoutGraphsWritten)));
@@ -100,106 +250,15 @@ public class PathGraphAssembler extends PathGraph {
 			SubgraphPathNode node = toProcess.iterator().next();
 			toProcess.remove(node);
 			if (node.containsNonReferenceKmer()) {
-				toProcess.removeAll(newNonreferenceSubgraph(node));
+				NonReferenceSubgraph nrsg = new NonReferenceSubgraph(node); 
+				subgraphs.add(nrsg);
+				toProcess.removeAll(nrsg.nodes);
 			}
 		}
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
 			assert(sanityCheckSubgraphs());
 		}
 		//tracker.calcNonReferenceSubgraphs(subgraphs, startingPaths);
-	}
-	private Set<SubgraphPathNode> newNonreferenceSubgraph(SubgraphPathNode seed) {
-		Set<SubgraphPathNode> nodes = Sets.newHashSet();
-		List<SubgraphPathNode> startingNodes = new ArrayList<SubgraphPathNode>();
-		Queue<SubgraphPathNode> frontier = new ArrayDeque<SubgraphPathNode>();
-		nodes.add(seed);
-		frontier.add(seed);
-		while (!frontier.isEmpty()) {
-			SubgraphPathNode node = frontier.poll();
-			for (SubgraphPathNode prev : prevPath(node)) {
-				if (prev.containsReferenceKmer()) {
-					startingNodes.add(node);
-				}
-				if (prev.containsNonReferenceKmer() && !nodes.contains(prev)) {
-					nodes.add(prev);
-					frontier.add(prev);
-				}
-			}
-			for (SubgraphPathNode next : nextPath(node)) {
-				if (next.containsNonReferenceKmer() && !nodes.contains(next)) {
-					nodes.add(next);
-					frontier.add(next);
-				}
-			}
-		}
-		if (startingNodes.isEmpty()) { 
-			// no reference anchors at all - try starting anywhere
-			// TODO: reduce # starting positions by restricting to either
-			// 1) no incoming edges (in the nodes set)
-			// 2) nodes forming part of a cycle
-			startingNodes = Lists.newArrayListWithCapacity(nodes.size());
-			startingNodes.addAll(nodes);
-		}
-		//subgraphs.add(nodes);
-		startingPaths.add(startingNodes);
-		return nodes;
-	}
-	/**
-	 * Returns the best possible non-reference contig starting from one of the starting nodes. 
-	 * @param startingNodes available starting nodes
-	 * @param scoringFunction node scoring function
-	 * @return non-reference contig, preceeded by reference assembly 
-	 */
-	private List<SubgraphPathNode> assembleSubgraph(
-			Iterable<SubgraphPathNode> startingNodes,
-			Function<SubgraphPathNode, Integer> scoringFunction) {
-		assert(startingNodes != null);
-		int branchingFactor = parameters.subgraphAssemblyTraversalMaximumBranchingFactor;
-		
-		PathGraphTraverse trav = new PathGraphTraverse(this, parameters.maxPathTraversalNodes, scoringFunction, true, false, branchingFactor, Integer.MAX_VALUE);
-		List<SubgraphPathNode> best = trav.traverse(startingNodes);
-		totalNodesTraversed += trav.getNodesTraversed();
-		timeoutReached |= trav.getNodesTraversed() >= parameters.maxPathTraversalNodes;
-		assert(best != null); // subgraphs contain at least one node
-		assert(best.size() > 0);
-		
-		SubgraphPathNode breakendAnchorStart = best.get(0);
-		PathGraphTraverse anchorTrav = new PathGraphTraverse(this, parameters.maxPathTraversalNodes, scoringFunction, false, true,
-				// if the anchor has previously timed out on a different breakend subgraph
-				// just do a greedy traversal as we're likely to time out again
-				anchorTimeoutReached ? 1 : branchingFactor,
-				// assemble anchorAssemblyLength bases / at least the length of the breakend
-				breakendAnchorStart.length() + Math.max(parameters.anchorAssemblyLength, PathNode.kmerLength(best)));
-		List<SubgraphPathNode> anchor = anchorTrav.traverse(ImmutableList.of(breakendAnchorStart));
-		totalNodesTraversed += trav.getNodesTraversed();
-		anchorTimeoutReached |= trav.getNodesTraversed() >= parameters.maxPathTraversalNodes; 
-		timeoutReached |= anchorTimeoutReached;
-		assert(anchor != null); // assembly includes starting node so must include that
-		assert(anchor.size() > 0); // assembly includes starting node so must include that
-		anchor.remove(anchor.size() - 1); // don't repeat the non-reference node we used as the anchor
-		
-		List<SubgraphPathNode> farAnchor;
-		if (parameters.assemblyBackToReference) {
-			SubgraphPathNode farBreakendAnchorStart = best.get(best.size() - 1);
-			PathGraphTraverse farAnchorTrav = new PathGraphTraverse(this, parameters.maxPathTraversalNodes, scoringFunction, true, true,
-					anchorTimeoutReached ? 1 : branchingFactor,
-					parameters.anchorAssemblyLength);
-			farAnchor = farAnchorTrav.traverse(ImmutableList.of(farBreakendAnchorStart));
-			totalNodesTraversed += farAnchorTrav.getNodesTraversed();
-			anchorTimeoutReached |= farAnchorTrav.getNodesTraversed() >= parameters.maxPathTraversalNodes; 
-			timeoutReached |= anchorTimeoutReached;
-			assert(farAnchor != null);
-			assert(farAnchor.size() > 0);
-			farAnchor.remove(0);
-		} else {
-			farAnchor = ImmutableList.of();
-		}
-		
-		ArrayList<SubgraphPathNode> result = new ArrayList<SubgraphPathNode>(best.size() + anchor.size() + farAnchor.size());
-		result.addAll(anchor);
-		result.addAll(best);
-		result.addAll(farAnchor);
-		return result;
 	}
 	private static Log expensiveSanityCheckLog = Log.getInstance(PathGraphAssembler.class);
 	private boolean sanityCheckSubgraphs() {

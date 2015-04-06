@@ -4,7 +4,6 @@ import java.io.File;
 
 import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
-import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
@@ -28,8 +27,7 @@ import com.google.common.collect.Iterables;
 public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 	private final ProcessingContext processContext;
 	private final AssemblyEvidenceSource source;
-	private DeBruijnReadGraph fgraph;
-	private DeBruijnReadGraph bgraph;
+	private DeBruijnReadGraph graph;
 	private int currentReferenceIndex = -1;
 	private SubgraphAssemblyAlgorithmTrackerBEDWriter currentTracker = null;
 	private int processStep = 0;
@@ -45,19 +43,15 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 			init(evidence.getBreakendSummary().referenceIndex);
 		}
 		// Assemble old evidence that couldn't have anything to do with us
-		int startpos = evidence.getBreakendSummary().start;
-		int shouldBeCompletedPos = (int)(startpos - source.getAssemblyEvidenceWindowSize());
+		assert(evidence.getBreakendSummary().referenceIndex == currentReferenceIndex);
+		long startpos = processContext.getLinear().getLinearCoordinate(currentReferenceIndex, evidence.getBreakendSummary().start);
+		long shouldBeCompletedPos = startpos - source.getAssemblyEvidenceWindowSize();
 		it = Iterables.concat(it, assembleBefore(shouldBeCompletedPos));
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
-			assert(fgraph.sanityCheckSubgraphs(shouldBeCompletedPos, startpos + source.getMaxConcordantFragmentSize()));
-			assert(bgraph.sanityCheckSubgraphs(shouldBeCompletedPos, startpos + source.getMaxConcordantFragmentSize()));
+			assert(graph.sanityCheckSubgraphs(shouldBeCompletedPos, startpos + source.getMaxConcordantFragmentSize()));
 		}
 		startingNextProcessingStep();
-		if (evidence.getBreakendSummary().direction == BreakendDirection.Forward) {
-			fgraph.addEvidence(evidence);
-		} else {
-			bgraph.addEvidence(evidence);
-		}
+		graph.addEvidence(evidence);
 		return it;
 	}
 	@Override
@@ -76,11 +70,10 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 				new File(processContext.getAssemblyParameters().debruijnGraphVisualisationDirectory,
 					String.format("debruijn.assembly.metrics.%s.bed", processContext.getDictionary().getSequence(currentReferenceIndex).getSequenceName())));
 		}
-		fgraph = new DeBruijnReadGraph(processContext, source, referenceIndex, BreakendDirection.Forward, processContext.getAssemblyParameters(), currentTracker);
-		bgraph = new DeBruijnReadGraph(processContext, source, referenceIndex, BreakendDirection.Backward, processContext.getAssemblyParameters(), currentTracker);
+		graph = new DeBruijnReadGraph(processContext, source, referenceIndex, processContext.getAssemblyParameters(), currentTracker);
 		if (processContext.getAssemblyParameters().debruijnGraphVisualisationDirectory != null && processContext.getAssemblyParameters().visualiseAll) {
-			fgraph.setGraphExporter(new DeBruijnSubgraphGexfExporter(processContext.getAssemblyParameters().k));
-			bgraph.setGraphExporter(new DeBruijnSubgraphGexfExporter(processContext.getAssemblyParameters().k));
+			graph.setGraphExporter(new DeBruijnSubgraphGexfExporter(processContext.getAssemblyParameters().k));
+		
 		}
 	}
 	private Iterable<AssemblyEvidence> assembleAll() {
@@ -88,30 +81,22 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 		File exportDir = processContext.getAssemblyParameters().debruijnGraphVisualisationDirectory;
 		if (exportDir != null && processContext.getAssemblyParameters().visualiseAll) {
 			exportDir.mkdir();
-			if (fgraph != null) {
-				fgraph.getGraphExporter().saveTo(new File(exportDir, String.format("debruijn.kmers.forward.%s.gexf", processContext.getDictionary().getSequence(currentReferenceIndex).getSequenceName())));
-			}
-			if (bgraph != null) {
-				bgraph.getGraphExporter().saveTo(new File(exportDir, String.format("debruijn.kmers.backward.%s.gexf", processContext.getDictionary().getSequence(currentReferenceIndex).getSequenceName())));
+			if (graph != null) {
+				graph.getGraphExporter().saveTo(new File(exportDir, String.format("debruijn.kmers.forward.%s.gexf", processContext.getDictionary().getSequence(currentReferenceIndex).getSequenceName())));
 			}
 		}
-		fgraph = null;
-		bgraph = null;
+		graph = null;
 		if (currentTracker != null) {
 			currentTracker.close();
 			currentTracker = null;
 		}
 		return assemblies;
 	}
-	private Iterable<AssemblyEvidence> assembleBefore(int position) {
+	private Iterable<AssemblyEvidence> assembleBefore(long position) {
 		startingNextProcessingStep();
 		if (currentReferenceIndex < 0) return ImmutableList.of();
-		Iterable<AssemblyEvidence> it = Iterables.mergeSorted(ImmutableList.of(
-				fgraph.assembleContigsBefore(position),
-				bgraph.assembleContigsBefore(position)),
-				DirectedEvidence.ByStartEnd);
-		fgraph.removeBefore(position);
-		bgraph.removeBefore(position);
+		Iterable<AssemblyEvidence> it = graph.assembleContigsBefore(position);
+		graph.removeBefore(position);
 		return it;
 	}
 	/**
@@ -119,11 +104,10 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 	 */
 	private void startingNextProcessingStep() {
 		processStep++;
-		if (fgraph != null && fgraph.getGraphExporter() != null) fgraph.getGraphExporter().setTime(processStep);
-		if (bgraph != null && bgraph.getGraphExporter() != null) bgraph.getGraphExporter().setTime(processStep);
+		if (graph != null && graph.getGraphExporter() != null) graph.getGraphExporter().setTime(processStep);
 	}
 	@Override
 	public String getStateSummaryMetrics() {
-		return "FWD:{" + fgraph.getStateSummaryMetrics() + "}, BWD:{" + bgraph.getStateSummaryMetrics() + "}";
+		return graph.getStateSummaryMetrics();
 	}
 }

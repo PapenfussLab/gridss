@@ -3,10 +3,12 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 import htsjdk.samtools.util.Log;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
+import java.util.Set;
 
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
@@ -15,6 +17,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
 /**
  * Dynamic programming traversal of subgraph of path graph
@@ -24,6 +27,7 @@ import com.google.common.primitives.Ints;
  */
 class PathGraphTraverse {
 	private static final Log log = Log.getInstance(PathGraphTraverse.class);
+	private static final MemoizedNode noBestPath = new MemoizedNode(null, null, Integer.MIN_VALUE, 0);
 	private final PathGraph pg;
 	private final int maxPathTraversalNodes;
 	private final Function<SubgraphPathNode, Integer> scoringFunction;
@@ -36,7 +40,8 @@ class PathGraphTraverse {
 	private int nodeTraversals;
 	private Map<SubgraphPathNode, MemoizedNode> bestPath = Maps.newHashMap();
 	private PriorityQueue<MemoizedNode> frontier = new PriorityQueue<MemoizedNode>(1024, ByScore);
-	private MemoizedNode traveralBest = null;
+	private MemoizedNode traveralBest;
+	private Set<SubgraphPathNode> terminalNodes;
 	public int getNodesTraversed() { return nodeTraversals; }
 	public PathGraphTraverse(
 			final PathGraph pg,
@@ -80,9 +85,17 @@ class PathGraphTraverse {
 		public final int length;
 	}
 	public List<SubgraphPathNode> traverse(final Iterable<SubgraphPathNode> startingNodes) {
+		return traverse(startingNodes, null);
+	}
+	public List<SubgraphPathNode> traverse(final Iterable<SubgraphPathNode> startingNodes, Collection<SubgraphPathNode> endNodes) {
+		if (endNodes instanceof Set<?>) {
+			terminalNodes = (Set<SubgraphPathNode>)endNodes;
+		} else {
+			terminalNodes = Sets.newHashSet(endNodes);
+		}
 		currentNextStates = maxNextStates;
 		nodeTraversals = 0;
-		MemoizedNode globalBest = null;
+		MemoizedNode globalBest = noBestPath;
 		for (SubgraphPathNode starting : startingNodes) {
 			MemoizedNode best;
 			try {
@@ -97,7 +110,7 @@ class PathGraphTraverse {
 					throw new RuntimeException(e);
 				}
 			}
-			if (globalBest == null || best.score > globalBest.score) {
+			if (best.score > globalBest.score) {
 				globalBest = best;
 			}
 		}
@@ -112,6 +125,7 @@ class PathGraphTraverse {
 		return traveralBest;
 	}
 	private static List<SubgraphPathNode> toList(MemoizedNode node, boolean traverseForward) {
+		if (node == noBestPath) return null;
 		List<SubgraphPathNode> list = new ArrayList<SubgraphPathNode>();
 		while (node != null) {
 			list.add(node.node);
@@ -125,9 +139,10 @@ class PathGraphTraverse {
 	private void init(SubgraphPathNode startingNode) {
 		bestPath.clear();
 		frontier.clear();
-		traveralBest = new MemoizedNode(null, startingNode, SubgraphHelper.getScore(startingNode, scoringFunction, referenceTraverse, !referenceTraverse), startingNode.length());
-		bestPath.put(startingNode, traveralBest);
-		frontier.add(traveralBest);
+		traveralBest = noBestPath;
+		MemoizedNode start = new MemoizedNode(null, startingNode, SubgraphHelper.getScore(startingNode, scoringFunction, referenceTraverse, !referenceTraverse), startingNode.length());
+		bestPath.put(startingNode, start);
+		frontier.add(start);
 	}
 	private void visit(MemoizedNode node) throws AlgorithmRuntimeSafetyLimitExceededException {
 		nodeTraversals++;
@@ -136,6 +151,11 @@ class PathGraphTraverse {
 			throw new AlgorithmRuntimeSafetyLimitExceededException();
 		}
 		assert(!Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS || sanityCheck());
+		if (traveralBest.score < node.score) {
+			if (terminalNodes == null || terminalNodes.contains(node.node)) {
+				traveralBest = node;
+			}
+		}
 		List<SubgraphPathNode> nextStates = traverseForward ? pg.nextPath(node.node) : pg.prevPath(node.node);
 		Collections.sort(nextStates, order);
 		int nextStateCount = 0;
@@ -182,9 +202,6 @@ class PathGraphTraverse {
 			return false;
 		}
 		MemoizedNode newNode = new MemoizedNode(node, next, score, length);
-		if (traveralBest.score < score) {
-			traveralBest = newNode;
-		}
 		bestPath.put(next, newNode);
 		frontier.add(newNode);
 		return true;
@@ -200,7 +217,7 @@ class PathGraphTraverse {
 	}
 	private boolean sanityCheck() {
 		for (MemoizedNode n : frontier) {
-			assert(n.score <= traveralBest.score);
+			assert(terminalNodes != null || n.score <= traveralBest.score);
 			assert(bestPath.containsKey(n.node));
 			assert(bestPath.get(n.node).score >= n.score);
 		}

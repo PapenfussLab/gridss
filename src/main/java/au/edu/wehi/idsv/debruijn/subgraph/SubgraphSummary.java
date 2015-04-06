@@ -16,7 +16,8 @@ import com.google.common.primitives.Longs;
  */
 public class SubgraphSummary {
 	private SubgraphSummary parent = null;
-	private long maxPosition = -1;
+	private long maxPosition = Long.MIN_VALUE;
+	private long minPosition = Long.MAX_VALUE;
 	private int kmerCount = 0;
 	private long kmer;
 	public SubgraphSummary(long startingKmer) {
@@ -35,6 +36,13 @@ public class SubgraphSummary {
 	 */
 	public long getMaxLinearPosition() {
 		return maxPosition;
+	}
+	/**
+	 * Max anchor position for this subgraph
+	 * @return
+	 */
+	public long getMinLinearPosition() {
+		return minPosition;
 	}
 	/**
 	 * Number of kmers in this subgraph
@@ -75,22 +83,24 @@ public class SubgraphSummary {
 	 * both graphs represent the same graph
 	 */
 	public boolean add(SubgraphSummary graph) {
-		SubgraphSummary myRoot = getRoot();
+		SubgraphSummary root = getRoot();
 		SubgraphSummary graphRoot = graph.getRoot();
-		if (myRoot == graphRoot) return false;
-		graphRoot.parent = myRoot;
-		myRoot.maxPosition = Math.max(myRoot.maxPosition, graphRoot.maxPosition);
-		myRoot.kmerCount += graphRoot.kmerCount;
+		if (root == graphRoot) return false;
+		graphRoot.parent = root;
+		root.maxPosition = Math.max(root.maxPosition, graphRoot.maxPosition);
+		root.minPosition = Math.max(root.minPosition, graphRoot.minPosition);
+		root.kmerCount += graphRoot.kmerCount;
 		return true;
 	}
 	public void addNode(DeBruijnSubgraphNode node) {
 		SubgraphSummary root = getRoot();
 		root.maxPosition = Math.max(root.maxPosition, node.getMaxLinearPosition());
+		root.minPosition = Math.max(root.minPosition, node.getMinLinearPosition());
 		root.kmerCount++;
 	}
 	@Override
 	public String toString() {
-		return String.format("Subgraph [,%d] %d kmers including %s", getMaxLinearPosition(), kmerCount, KmerEncodingHelper.toApproximateString(kmer));
+		return String.format("Subgraph [%d,%d] %d kmers including %s", getMinLinearPosition(), getMaxLinearPosition(), kmerCount, KmerEncodingHelper.toApproximateString(kmer));
 	}
 	public static Ordering<SubgraphSummary> ByMaxPosition = new Ordering<SubgraphSummary>() {
 		public int compare(SubgraphSummary g1, SubgraphSummary g2) {
