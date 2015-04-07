@@ -155,21 +155,21 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 	protected AssemblyEvidence createAssembly(List<Long> kmers) {
 		List<T> path = new ArrayList<T>(kmers.size());
 		List<T> breakendPath = new ArrayList<T>(path.size());
-		Integer breakendStartOffset = null;
-		int breakendEndOffset = -1;
+		int breakendStartOffset = -1;
+		int breakendEndOffset = kmers.size();
 		for (int i = 0; i < kmers.size(); i++) {
 			T node = getKmer(kmers.get(i));
 			path.add(node);
 			if (!node.isReference()) {
 				breakendPath.add(node);
-				if (breakendStartOffset == null) {
+				if (breakendStartOffset == -1) {
 					breakendStartOffset = i;
 				}
 				breakendEndOffset = i;
 			}
 		}
-		T beforeBreakend = breakendStartOffset != null ? path.get(breakendStartOffset) : null;
-		T afterBreakend = breakendEndOffset >= 0 && breakendEndOffset < path.size() ? path.get(breakendEndOffset) : null;
+		T beforeBreakend = breakendStartOffset > 0 ? path.get(breakendStartOffset -1) : null;
+		T afterBreakend = breakendEndOffset + 1 < path.size() ? path.get(breakendEndOffset + 1) : null;
 		
 		Set<DirectedEvidence> breakendSupport = getSupport(breakendPath);
 		int[] breakendBaseCounts = getBaseCountsByCategory(breakendPath, breakendSupport);

@@ -4,16 +4,13 @@ import gnu.trove.procedure.TLongObjectProcedure;
 import htsjdk.samtools.util.Log;
 
 import java.io.File;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
 import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
-import au.edu.wehi.idsv.AssemblyFactory;
 import au.edu.wehi.idsv.AssemblyParameters;
-import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
@@ -265,8 +262,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			//assert(ss.getMaxAnchor() >= lastMax); // sort order
 			//lastMax = ss.getMaxAnchor();
 			assert(ss == ss.getRoot()); // only root subgraphs should be in list
-			//assert(ss.getRoot().getMinAnchor() != Integer.MAX_VALUE); // Will happen until we anchor long SC & reads split by Ns
-			//assert(ss.getRoot().getMaxAnchor() != Integer.MIN_VALUE); // Will happen until we anchor long SC & reads split by Ns
+			//assert(ss.getRoot().getMinAnchor() != Long.MAX_VALUE); // Will happen until we anchor long SC & reads split by Ns
+			//assert(ss.getRoot().getMaxAnchor() != Long.MIN_VALUE); // Will happen until we anchor long SC & reads split by Ns
 		}
 		return true;
 	}
@@ -281,8 +278,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	public String getStateSummaryMetrics() {
 		String result = String.format("kmers=%d subgraphs=%d", size(), subgraphs.size());
 		if (size() > 0) {
-			long minAnchor = Integer.MIN_VALUE;
-			long maxAnchor = Integer.MAX_VALUE;
+			long minAnchor = Long.MIN_VALUE;
+			long maxAnchor = Long.MAX_VALUE;
 			int maxWidth = 0;
 			for (SubgraphSummary ss : subgraphs) {
 				minAnchor = Math.min(minAnchor, ss.getMinLinearPosition());

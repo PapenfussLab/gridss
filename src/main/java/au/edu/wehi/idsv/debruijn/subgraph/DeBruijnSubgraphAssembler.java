@@ -77,7 +77,7 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 		}
 	}
 	private Iterable<AssemblyEvidence> assembleAll() {
-		Iterable<AssemblyEvidence> assemblies = assembleBefore(Integer.MAX_VALUE);
+		Iterable<AssemblyEvidence> assemblies = assembleBefore(Long.MAX_VALUE);
 		File exportDir = processContext.getAssemblyParameters().debruijnGraphVisualisationDirectory;
 		if (exportDir != null && processContext.getAssemblyParameters().visualiseAll) {
 			exportDir.mkdir();

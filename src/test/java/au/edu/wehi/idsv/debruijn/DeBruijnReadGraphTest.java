@@ -1,4 +1,4 @@
-package au.edu.wehi.idsv.debruijn.anchoured;
+package au.edu.wehi.idsv.debruijn;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -6,9 +6,15 @@ import static org.junit.Assert.assertFalse;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
 
+import java.util.List;
+
+import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.AssemblyEvidence;
+import au.edu.wehi.idsv.AssemblyEvidenceSource;
+import au.edu.wehi.idsv.AssemblyMethod;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.EvidenceSubset;
 import au.edu.wehi.idsv.ProcessingContext;
@@ -16,7 +22,30 @@ import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredGraph;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 
+import com.google.common.collect.Lists;
+
 public class DeBruijnReadGraphTest extends TestHelper {
+	private List<AssemblyEvidence> result;
+	private DeBruijnSubgraphAssembler ass;
+	private AssemblyEvidenceSource aes;
+	private ProcessingContext context;
+	@Before
+	public void setup(){
+		setup(4);
+	}
+	public void setup(int k) {
+		context = getContext();
+		context.getAssemblyParameters().k = k;
+		context.getAssemblyParameters().method = AssemblyMethod.DEBRUIJN_SUBGRAPH;
+		context.getAssemblyParameters().minReads = 0;
+		context.getAssemblyParameters().maxBaseMismatchForCollapse = 0;
+		context.getAssemblyParameters().collapseBubblesOnly = true;
+		context.getAssemblyParameters().writeFilteredAssemblies = true;
+		aes = AES(context);
+		ass = new DeBruijnSubgraphAssembler(context, aes);
+		result = Lists.newArrayList(); 
+	}
+	
 	private static SAMRecord R(String read) {
 		return R(null, read, null, false, true);
 	}
@@ -46,11 +75,11 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		record.setMappingQuality(40);
 		return record;
 	}
-	private SAMRecord inferLocal(DeBruijnAnchoredGraph ass, SAMRecord remote) {
+	private SAMRecord inferLocal(BreakendDirection dir, SAMRecord remote) {
 		SAMRecord local = Read(1, 1, "1M");
 		local.setReadName(remote.getReadName());
 		local.setReadPairedFlag(true);
-		local.setReadNegativeStrandFlag(ass.getDirection() == BWD);
+		local.setReadNegativeStrandFlag((dir == BWD) == remote.getReadNegativeStrandFlag());
 		local.setReadPairedFlag(false);
 		local.setMappingQuality(40);
 		local.setFirstOfPairFlag(true);
@@ -61,62 +90,60 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		remote.setReadPairedFlag(true);
 		return local;
 	}
-	private void addRead(DeBruijnAnchoredGraph ass, SAMRecord r, boolean sc) {
+	private void addRead(SAMRecord r, boolean sc) {
 		if (sc) {
-			ass.addEvidence(SCE(ass.getDirection(), r));
+			result.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, r))));
 		} else {
-			ass.addEvidence(NRRP(SES(1000, 1000), inferLocal(ass, r), r));
-		}
-	}
-	private void removeRead(DeBruijnAnchoredGraph ass, SAMRecord r, boolean sc) {
-		if (sc) {
-			ass.removeEvidence(SCE(ass.getDirection(), r));
-		} else {
-			ass.removeEvidence(NRRP(SES(1000, 1000), inferLocal(ass, r), r));
+			result.addAll(Lists.newArrayList(ass.addEvidence(NRRP(SES(1000, 1000), inferLocal(FWD, r), r))));
 		}
 	}
 	@Test
 	public void should_assemble_single_read() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(), 4, BreakendDirection.Forward);
-		addRead(ass, R("AAAACGTC"), true);
-		AssemblyEvidence result = ass.assemble(0, 1);
-		assertEquals("AAAACGTC", S(result.getAssemblySequence()));
+		addRead(R("AAAACGTC"), true);
+		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, result.size());
+		
+		assertEquals("AAAACGTC", S(result.get(0).getAssemblySequence()));
 	}
 	@Test
 	public void should_assemble_positive_strand_consensus() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(), 4, BreakendDirection.Forward);
-		addRead(ass, R(null, "AAAACGTC", null, true, true), true);
-		AssemblyEvidence result = ass.assemble(0, 1);
-		assertEquals("AAAACGTC", S(result.getAssemblySequence()));
+		addRead(R(null, "AAAACGTC", null, true, true), true);
+		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, result.size());
+		assertEquals(1, result.size());
+		assertEquals("AAAACGTC", S(result.get(0).getAssemblySequence()));
 	}
 	@Test
 	public void should_assemble_short_breakend() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, BreakendDirection.Forward);
-		addRead(ass, withSequence("CTAAA", Read(0, 1, "4M1S"))[0], true);
-		addRead(ass, withSequence("CTAAA", Read(0, 2, "4M1S"))[0], true);
-		AssemblyEvidence result = ass.assemble(0, 1);
-		assertEquals("CTAAA", S(result.getAssemblySequence()));
-		assertEquals("A", S(result.getBreakendSequence()));
+		addRead(withSequence("CTAAA", Read(0, 1, "4M1S"))[0], true);
+		addRead(withSequence("CTAAA", Read(0, 2, "4M1S"))[0], true);
+		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, result.size());
+		
+		assertEquals("CTAAA", S(result.get(0).getAssemblySequence()));
+		assertEquals("A", S(result.get(0).getBreakendSequence()));
 	}
 	@Test
 	public void should_assemble_unanchored_reads() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, BreakendDirection.Forward);
-		addRead(ass, withSequence("CTAAA", Read(0, 1, "4M1S"))[0], true);
-		addRead(ass, R(null, "AAAGT", null, false, true), false);
-		AssemblyEvidence result = ass.assemble(0, 1);
-		assertEquals("CTAAAGT", S(result.getAssemblySequence()));
-		assertEquals("AGT", S(result.getBreakendSequence()));
+		addRead(withSequence("CTAAA", Read(0, 1, "4M1S"))[0], true);
+		addRead(R(null, "AAAGT", null, false, true), false);
+		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, result.size());
+		
+		assertEquals("CTAAAGT", S(result.get(0).getAssemblySequence()));
+		assertEquals("AGT", S(result.get(0).getBreakendSequence()));
 	}
-	@Test(expected = RuntimeException.class)  
+	@Test  
 	public void unanchored_reads_should_require_mapped_mate() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, BreakendDirection.Forward);
-		addRead(ass, R("CTAAA"), true);
+		addRead(R("CTAAA"), true);
 		SAMRecord unanchored = R(null, "AAAGT", null, false, true);
 		unanchored.setMateUnmappedFlag(true);
-		addRead(ass, unanchored, false);
-		AssemblyEvidence result = ass.assemble(0, 1);
-		assertEquals("CTAAAGT", S(result.getAssemblySequence()));
-		assertEquals("AAAGT", S(result.getBreakendSequence()));
+		addRead(unanchored, false);
+		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, result.size());
+		
+		assertEquals("CTAAAGT", S(result.get(0).getAssemblySequence()));
+		assertEquals("AAAGT", S(result.get(0).getBreakendSequence()));
 	}
 	@Test
 	public void should_assemble_unanchored_reads_in_FR_orientation() {
@@ -135,93 +162,84 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		if (direction == BWD) anchor.setCigarString("1S4M");
 		
 		// Assembly should not depend on whether the read is mapped or not 
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, direction);
-		addRead(ass, anchor, true);
+		setup(3);
+		addRead(anchor, true);
 		SAMRecord unanchored = R(null, unanchorSeq, null, mappedNegativeStrand, mateNegativeStrand);
 		unanchored.setReadUnmappedFlag(true);
-		addRead(ass, unanchored, false);
-		AssemblyEvidence result = ass.assemble(0, 1);
-		assertEquals(expectedSeq, S(result.getAssemblySequence()));
-		assertEquals(breakendSequence, S(result.getBreakendSequence()));
+		addRead(unanchored, false);
+		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, result.size());
+		assertEquals(expectedSeq, S(result.get(0).getAssemblySequence()));
+		assertEquals(breakendSequence, S(result.get(0).getBreakendSequence()));
 		
-		ass = new DeBruijnAnchoredGraph(getContext(), AES(), 3, direction);
-		addRead(ass, anchor, true);
+		setup(3);
+		addRead(anchor, true);
 		unanchored = R(null, unanchorSeq, null, mappedNegativeStrand, mateNegativeStrand);
 		unanchored.setReadUnmappedFlag(false);
-		addRead(ass, unanchored, false);
-		result = ass.assemble(0, 1);
-		assertEquals(expectedSeq, S(result.getAssemblySequence()));
-		assertEquals(direction, result.getBreakendSummary().direction);
-		assertEquals(breakendSequence, S(result.getBreakendSequence()));
+		addRead(unanchored, false);
+		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, result.size());
+		assertEquals(expectedSeq, S(result.get(0).getAssemblySequence()));
+		assertEquals(direction, result.get(0).getBreakendSummary().direction);
+		assertEquals(breakendSequence, S(result.get(0).getBreakendSequence()));
 	}
 	@Test
 	public void should_assemble_soft_clipped_read() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(), 4, BreakendDirection.Forward);
 		SAMRecord sc = R("AAAACGTC");
-		sc.setCigarString("4M4S");
-		addRead(ass, sc, true);
-		AssemblyEvidence result = ass.assemble(0, 1);
-		assertEquals("AAAACGTC", S(result.getAssemblySequence()));
-		assertEquals("CGTC", S(result.getBreakendSequence()));
+		sc.setCigarString("4M4S");e
+		addRead(sc, true);
+		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, result.size());
+		assertEquals("AAAACGTC", S(result.get(0).getAssemblySequence()));
+		assertEquals("CGTC", S(result.get(0).getBreakendSequence()));
 	}
 	@Test
 	public void should_greedy_traverse_highest_weight_path() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),2, BreakendDirection.Forward);
+		setup(2);
 		SAMRecord sc = R(null, "ACGTACTGAG", new byte[] { 1,2,3,4,5,6,7,8,9,10}, false, true);
 		sc.setCigarString("4M6S");
-		addRead(ass, sc, true);
-		AssemblyEvidence result = ass.assemble(0, 1);
-		assertEquals("TACTGAGT", S(result.getAssemblySequence()));
+		addRead(sc, true);
+		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, result.size());
+		assertEquals("TACTGAGT", S(result.get(0).getAssemblySequence()));
 	}
 	@Test
 	public void should_assemble_backward_breakpoint() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(), 4, BreakendDirection.Backward);
 		SAMRecord sc = R("AAAACGTC");
 		sc.setCigarString("4S4M");
-		addRead(ass, sc, true);
-		AssemblyEvidence result = ass.assemble(0, 1);
-		assertEquals("AAAACGTC", S(result.getAssemblySequence()));
-		assertEquals("AAAA", S(result.getBreakendSequence()));
-	}
-	@Test
-	public void remove_should_exclude_from_graph() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(), 4, BreakendDirection.Forward);
-		SAMRecord sc = R("AAAACGTC");
-		sc.setCigarString("4M4S");
-		addRead(ass, sc, true);
-		addRead(ass, R("r1", "AAAACGTCT"), false);
-		assertEquals("AAAACGTCT", S(ass.assemble(0, 1).getAssemblySequence()));
-		removeRead(ass, R("r1", "AAAACGTCT"), false);
-		AssemblyEvidence result = ass.assemble(0, 1);
-		assertEquals("AAAACGTC", S(result.getAssemblySequence()));
+		result.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, sc))));
+		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, result.size());
+		assertEquals("AAAACGTC", S(result.get(0).getAssemblySequence()));
+		assertEquals("AAAA", S(result.get(0).getBreakendSequence()));
 	}
 	@Test
 	public void should_use_offset_kmer_if_softclip_longer_than_k() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(), 4, BreakendDirection.Forward);
 		SAMRecord sc = R("AAAACGTC");
 		sc.setCigarString("2M6S");
-		addRead(ass, sc, true);
-		AssemblyEvidence result = ass.assemble(0, 1);
-		assertEquals("AAAACGTC", S(result.getAssemblySequence()));
-		assertEquals("AACGTC", S(result.getBreakendSequence()));
+		addRead(sc, true);
+		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, result.size());
+		assertEquals("AAAACGTC", S(result.get(0).getAssemblySequence()));
+		assertEquals("AACGTC", S(result.get(0).getBreakendSequence()));
 	}
 	@Test
 	public void assembly_base_quality_should_be_sum_of_min_read_qualities() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, BreakendDirection.Forward);
-		addRead(ass, R(null, "ACGTA", new byte[] { 1,2,3,4,5 }, false, true), true);
-		addRead(ass, R(null, "ACGTA", new byte[] { 3,4,5,6,7 }, false, true), true);
-		AssemblyEvidence result = ass.assemble(0, 1);
+		addRead(R(null, "ACGTA", new byte[] { 1,2,3,4,5 }, false, true), true);
+		addRead(R(null, "ACGTA", new byte[] { 3,4,5,6,7 }, false, true), true);
+		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, result.size());
 		// pad out read qualities
-		assertArrayEquals(new byte[] { /*4,6,8,8,*/8 }, result.getBreakendQuality());
+		assertArrayEquals(new byte[] { /*4,6,8,8,*/8 }, result.get(0).getBreakendQuality());
 	}
-	// @Test // can't see the anchor qualities in the current API
+	@Test // can't see the anchor qualities in the current API
 	public void assembly_base_quality_should_pad_to_match_read_length() {
-		DeBruijnAnchoredGraph ass = new DeBruijnAnchoredGraph(getContext(), AES(),3, BreakendDirection.Forward);
-		addRead(ass, R(null, "ACGTA", new byte[] { 1,2,3,4,5 }, false, true), true);
-		addRead(ass, R(null, "ACGTA", new byte[] { 3,4,5,6,7 }, false, true), true);
-		AssemblyEvidence result = ass.assemble(0, 1);
+		addRead(R(null, "ACGTA", new byte[] { 1,2,3,4,5 }, false, true), true);
+		addRead(R(null, "ACGTA", new byte[] { 3,4,5,6,7 }, false, true), true);
+		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, result.size());
 		// pad out read qualities
-		assertEquals(S(result.getAssemblySequence()), result.getBreakendQuality());
+		assertEquals(S(result.get(0).getAssemblySequence()), result.get(0).getBreakendQuality());
 	}
 	@Test
 	public void read_base_count_should_be_number_of_breakend_read_bases() {
@@ -229,7 +247,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		MockSAMEvidenceSource normal = SES(false);
 		MockSAMEvidenceSource tumour = SES(true);
 		pc.getAssemblyParameters().k = 4;
-		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(pc, AES());
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(pc, aes);
 		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TTTTA", Read(0, 10, "4M1S")))).iterator().hasNext());
 		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TTTTAA", Read(0, 10, "4M2S")))).iterator().hasNext());
 		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TTTTAAA", Read(0, 10, "4M3S")))).iterator().hasNext());
@@ -250,7 +268,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		MockSAMEvidenceSource normal = SES(false);
 		MockSAMEvidenceSource tumour = SES(true);
 		pc.getAssemblyParameters().k = 4;
-		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(pc, AES());
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(pc, aes);
 		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TTCTT", Read(0, 9, "4M1S")))).iterator().hasNext()); // only on ref path
 		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TCTTA", Read(0, 10, "4M1S")))).iterator().hasNext());
 		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TCTTAA", Read(0, 10, "4M2S")))).iterator().hasNext());

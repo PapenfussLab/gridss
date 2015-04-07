@@ -4,9 +4,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.List;
+
 import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
+
+import com.google.common.collect.Lists;
 
 
 public class VariantEvidenceTest extends TestHelper {
@@ -32,218 +36,78 @@ public class VariantEvidenceTest extends TestHelper {
 	//           |    SSSS 15 branch kmer
 	//           ^
 	//        anchor pos
-	public VariantEvidence fsc = VariantEvidence.createSoftClipEvidence(FWD, 4, SCE(FWD, Read(0, 5, "4S7M8S")));
-	public VariantEvidence fdp = VariantEvidence.createRemoteReadEvidence(FWD, 4, NRRP(DP(0, 1, "2M", true, 1, 5, "4S7M8S", false)));
+	public VariantEvidence fsc = new VariantEvidence(4, SCE(FWD, Read(0, 5, "4S7M8S")), getContext().getLinear());
+	public VariantEvidence fdp = new VariantEvidence(4, NRRP(DP(0, 1, "2M", true, 1, 5, "4S7M8S", false)), getContext().getLinear());
 	// RSC:
 	// 0        1
 	// 1234567890123456789
 	// SSSSMMMMMMMSSSSSSSS start=4, ref=7, end=8, k=4
-	// SSSS|             | 15 branch kmer
-	//  SSSM             | 14 branch kmer
-	//   SSMM            | 13 branch kmer
-	//    SMMM           | 12 branch kmer
-	//	   MMMM          | 11 ref kmer     <- anchor kmer
-	//     |MMMM         | 10 ref kmer
-	//     | MMMM        | 9  ref kmer
-	//     |  MMMM       | 8  ref kmer
-	//     |   MMMS      | 7  ignored kmer
-	//     |    MMSS     | 6  ignored kmer
-	//     |     MSSS    | 5  ignored kmer
-	//     |      SSSS   | 4  ignored kmer
-	//     |       SSSS  | 3  ignored kmer
-	//     |        SSSS | 2  ignored kmer
-	//     |         SSSS| 1  ignored kmer
-	//     |          SSSS 0  ignored kmer
+	// SSSS|             | 0  branch kmer
+	//  SSSM             | 1  branch kmer
+	//   SSMM            | 2  branch kmer
+	//    SMMM           | 3  branch kmer
+	//	   MMMM          | 4  ref kmer     <- anchor kmer
+	//     |MMMM         | 5  ref kmer
+	//     | MMMM        | 6  ref kmer
+	//     |  MMMM       | 7  ref kmer
+	//     |   MMMS      | 8  ignored kmer
+	//     |    MMSS     | 9  ignored kmer
+	//     |     MSSS    | 10 ignored kmer
+	//     |      SSSS   | 11 ignored kmer
+	//     |       SSSS  | 12 ignored kmer
+	//     |        SSSS | 13 ignored kmer
+	//     |         SSSS| 14 ignored kmer
+	//     |          SSSS 15 ignored kmer
 	//     ^
 	//  anchor pos
-	public VariantEvidence rsc = VariantEvidence.createSoftClipEvidence(BWD, 4, SCE(BWD, Read(0, 5, "4S7M8S")));
-	public VariantEvidence rdp = VariantEvidence.createRemoteReadEvidence(BWD, 4, NRRP(DP(0, 1, "2M", false, 1, 5, "4S7M8S", true)));
+	public VariantEvidence rsc = new VariantEvidence(4, SCE(BWD, Read(0, 5, "4S7M8S")), getContext().getLinear());
+	public VariantEvidence rdp = new VariantEvidence(4, NRRP(DP(0, 1, "2M", false, 1, 5, "4S7M8S", true)), getContext().getLinear());
 	@Test
-	public void shouldReverse_backward_direction_so_all_graph_breakends_are_forward() {
-		assertEquals(false, fsc.isReversed());
-		assertEquals(true, rsc.isReversed());
-		assertEquals(false, fsc.isComplemented());
-		assertEquals(false, rsc.isComplemented());
+	public void getReadKmers_should_read_kmers_in_ascending_genomic_coordinates() {
+		VariantEvidence e = new VariantEvidence(2, SCE(FWD, withSequence("ACGTTTTT", Read(0, 5, "4M4S"))), getContext().getLinear());
+		List<ReadKmer> kmers = Lists.newArrayList(e.getReadKmers());
+		assertEquals(7, kmers.size());
+		assertEquals("AC", S(KmerEncodingHelper.encodedToPicardBases(2, kmers.get(0).kmer)));
+		assertEquals("CG", S(KmerEncodingHelper.encodedToPicardBases(2, kmers.get(1).kmer)));
 	}
 	@Test
-	public void should_conditionally_reverse__and_complement_remote_reads_so_they_assemble_with_soft_clips() {
-		// In expected orientation => no change
-		// MMMM>    <----
-		assertEquals(false, VariantEvidence.createRemoteReadEvidence(FWD, 4, NRRP(DP(0, 1, "2M", true, 1, 5, "4S7M8S", false))).isReversed());
-		assertEquals(false, VariantEvidence.createRemoteReadEvidence(FWD, 4, NRRP(DP(0, 1, "2M", true, 1, 5, "4S7M8S", false))).isComplemented());
-		
-		// Aligned to wrong strand -> reverse comp
-		// MMMM>    ---->
-		assertEquals(true, VariantEvidence.createRemoteReadEvidence(FWD, 4, NRRP(DP(0, 1, "2M", true, 1, 5, "4S7M8S", true))).isReversed());
-		assertEquals(true, VariantEvidence.createRemoteReadEvidence(FWD, 4, NRRP(DP(0, 1, "2M", true, 1, 5, "4S7M8S", true))).isComplemented());
-		
-		// In expected orientation, but we're going backward = only reverse
-		// ---->    <MMMM
-		assertEquals(true, VariantEvidence.createRemoteReadEvidence(BWD, 4, NRRP(DP(0, 1, "2M", false, 1, 5, "4S7M8S", true))).isReversed());
-		assertEquals(false, VariantEvidence.createRemoteReadEvidence(BWD, 4, NRRP(DP(0, 1, "2M", false, 1, 5, "4S7M8S", true))).isComplemented());
-		
-		// Wrong orientation, and going backward = reverse twice & comp
-		// <----    <MMMM
-		assertEquals(false, VariantEvidence.createRemoteReadEvidence(BWD, 4, NRRP(DP(0, 1, "2M", false, 1, 5, "4S7M8S", false))).isReversed());
-		assertEquals(true, VariantEvidence.createRemoteReadEvidence(BWD, 4, NRRP(DP(0, 1, "2M", false, 1, 5, "4S7M8S", false))).isComplemented());
-	}
-	@Test
-	public void basesSupportingReference_should_count_all_ref_bases() {
-		assertEquals(0, fsc.basesSupportingReference(0));
-		assertEquals(1, fsc.basesSupportingReference(1));
-		assertEquals(2, fsc.basesSupportingReference(2));
-		assertEquals(3, fsc.basesSupportingReference(3));
-		assertEquals(4, fsc.basesSupportingReference(4));
-		assertEquals(4, fsc.basesSupportingReference(5));
-		assertEquals(4, fsc.basesSupportingReference(6));
-		assertEquals(4, fsc.basesSupportingReference(7));
-		assertEquals(3, fsc.basesSupportingReference(8));
-		assertEquals(2, fsc.basesSupportingReference(9));
-		assertEquals(1, fsc.basesSupportingReference(10));
-		assertEquals(0, fsc.basesSupportingReference(11));
-		assertEquals(0, fsc.basesSupportingReference(12));
-		assertEquals(0, fsc.basesSupportingReference(13));
-		assertEquals(0, fsc.basesSupportingReference(14));
-		assertEquals(0, fsc.basesSupportingReference(15));
-		for (int i= 0; i < 19 - 4; i++) {
-			assertEquals(0, fdp.basesSupportingReference(i));
-		}
-		assertEquals(0, rsc.basesSupportingReference(0));
-		assertEquals(0, rsc.basesSupportingReference(1));
-		assertEquals(0, rsc.basesSupportingReference(2));
-		assertEquals(0, rsc.basesSupportingReference(3));
-		assertEquals(0, rsc.basesSupportingReference(4));
-		assertEquals(1, rsc.basesSupportingReference(5));
-		assertEquals(2, rsc.basesSupportingReference(6));
-		assertEquals(3, rsc.basesSupportingReference(7));
-		assertEquals(4, rsc.basesSupportingReference(8));
-		assertEquals(4, rsc.basesSupportingReference(9));
-		assertEquals(4, rsc.basesSupportingReference(10));
-		assertEquals(4, rsc.basesSupportingReference(11));
-		assertEquals(3, rsc.basesSupportingReference(12));
-		assertEquals(2, rsc.basesSupportingReference(13));
-		assertEquals(1, rsc.basesSupportingReference(14));
-		assertEquals(0, rsc.basesSupportingReference(15));
-		for (int i= 0; i < 19 - 4; i++) {
-			assertEquals(0, rdp.basesSupportingReference(i));
-		}
+	public void shouldReverseComp_for_concordant_position() {
+		assertEquals("GA", S(KmerEncodingHelper.encodedToPicardBases(2, Lists.newArrayList(new VariantEvidence(2, NRRP(withSequence("TTTC", DP(0, 1, "4M", true, 1, 5, "4M", true))), getContext().getLinear()).getReadKmers()).get(0).kmer)));
+		assertEquals("TT", S(KmerEncodingHelper.encodedToPicardBases(2, Lists.newArrayList(new VariantEvidence(2, NRRP(withSequence("TTTC", DP(0, 1, "4M", true, 1, 5, "4M", false))), getContext().getLinear()).getReadKmers()).get(0).kmer)));
+		assertEquals("TT", S(KmerEncodingHelper.encodedToPicardBases(2, Lists.newArrayList(new VariantEvidence(2, NRRP(withSequence("TTTC", DP(0, 1, "4M", false, 1, 5, "4M", true))), getContext().getLinear()).getReadKmers()).get(0).kmer)));
+		assertEquals("GA", S(KmerEncodingHelper.encodedToPicardBases(2, Lists.newArrayList(new VariantEvidence(2, NRRP(withSequence("TTTC", DP(0, 1, "4M", false, 1, 5, "4M", false))), getContext().getLinear()).getReadKmers()).get(0).kmer)));
 	}
 	@Test
 	public void isReferenceKmer_should_require_all_bases_matching_reference() {
 		for (int i= 0; i < 19 - 4; i++) {
 			assertEquals(i >= 4 && i <= 7, fsc.isReferenceKmer(i));
-		}
-		for (int i= 0; i < 19 - 4; i++) {
+			assertEquals(i >= 4 && i <= 7, rsc.isReferenceKmer(i));
 			assertEquals(false, fdp.isReferenceKmer(i));
-		}
-		for (int i= 0; i < 19 - 4; i++) {
-			assertEquals(i >= 8 && i <= 11, rsc.isReferenceKmer(i));
-		}
-		for (int i= 0; i < 19 - 4; i++) {
 			assertEquals(false, rdp.isReferenceKmer(i));
 		}
 	}
 	@Test
-	public void isReferenceKmer_should_allow_zero_skipped_bases() {
-		assertTrue(VariantEvidence.createSoftClipEvidence(BWD, 3, SCE(BWD, withSequence("TTATG", Read(0, 10, "2S3M")))).isReferenceKmer(0));
-	}
-	@Test
-	public void isSkippedKmer_should_skip_if_any_SC() {
+	public void isSkippedKmer_should_skip_nonvariant_SC_for_SC_evidence() {
 		for (int i= 0; i < 19 - 4; i++) {
 			assertEquals(i >= 0 && i <= 3, fsc.isSkippedKmer(i));
+			assertEquals(i >= 8 && i <= 15, rsc.isSkippedKmer(i));
 		}
+	}
+	@Test
+	public void isSkippedKmer_should_not_skip_read_SC_pair_bases() {
 		for (int i= 0; i < 19 - 4; i++) {
 			assertEquals(false, fdp.isSkippedKmer(i));
-		}
-		for (int i= 0; i < 19 - 4; i++) {
-			assertEquals(i >= 0 && i <= 7, rsc.isSkippedKmer(i));
-		}
-		for (int i= 0; i < 19 - 4; i++) {
 			assertEquals(false, rdp.isSkippedKmer(i));
 		}
 	}
 	@Test
-	public void isVariantKmer_if_any_SC() {
+	public void getExpectedLinearPosition_should_return_linear_genomic_position_as_if_concordantly_mapped() {
 		for (int i= 0; i < 19 - 4; i++) {
-			assertEquals(i >= 8 && i <= 15, fsc.isVariantKmer(i));
+			assertEquals(LCCB + 1 + i, fsc.getExpectedLinearPosition(i));
+			assertEquals(LCCB + 1 + i, rsc.getExpectedLinearPosition(i));
+			assertEquals(LCCB + 1 + 300 - 19 + i, fdp.getExpectedLinearPosition(i));
+			assertEquals(LCCB + 1 - 300 + 19 + i, rdp.getExpectedLinearPosition(i));
 		}
-		for (int i= 0; i < 19 - 4; i++) {
-			assertEquals(true, fdp.isVariantKmer(i));
-		}
-		for (int i= 0; i < 19 - 4; i++) {
-			assertEquals(i >= 12 && i <= 15, rsc.isVariantKmer(i));
-		}
-		for (int i= 0; i < 19 - 4; i++) {
-			assertEquals(true, rdp.isVariantKmer(i));
-		}
-	}
-	@Test
-	public void getReferenceStartingPosition_should_return_genomic_position_of_first_base_of_kmer() {
-		assertEquals(1, fsc.getReferenceStartingPosition(0));
-		assertEquals(2, fsc.getReferenceStartingPosition(1));
-		assertEquals(3, fsc.getReferenceStartingPosition(2));
-		assertEquals(4, fsc.getReferenceStartingPosition(3));
-		assertEquals(5, fsc.getReferenceStartingPosition(4));
-		assertEquals(6, fsc.getReferenceStartingPosition(5));
-		assertEquals(7, fsc.getReferenceStartingPosition(6));
-		assertEquals(8, fsc.getReferenceStartingPosition(7));
-		assertEquals(9, fsc.getReferenceStartingPosition(8));
-		assertEquals(10, fsc.getReferenceStartingPosition(9));
-		assertEquals(11, fsc.getReferenceStartingPosition(10));
-		
-		assertEquals(19, rsc.getReferenceStartingPosition(0));
-		assertEquals(18, rsc.getReferenceStartingPosition(1));
-		assertEquals(17, rsc.getReferenceStartingPosition(2));
-		assertEquals(16, rsc.getReferenceStartingPosition(3));
-		assertEquals(15, rsc.getReferenceStartingPosition(4));
-		assertEquals(14, rsc.getReferenceStartingPosition(5));
-		assertEquals(13, rsc.getReferenceStartingPosition(6));
-		assertEquals(12, rsc.getReferenceStartingPosition(7));
-		assertEquals(11, rsc.getReferenceStartingPosition(8));
-		assertEquals(10, rsc.getReferenceStartingPosition(9));
-		assertEquals(9, rsc.getReferenceStartingPosition(10));
-		assertEquals(8, rsc.getReferenceStartingPosition(11));
-		assertEquals(7, rsc.getReferenceStartingPosition(12));
-		assertEquals(6, rsc.getReferenceStartingPosition(13));
-		assertEquals(5, rsc.getReferenceStartingPosition(14));
-	}
-	@Test
-	public void first_last_methods_should_return_zero_based_kmer_index() {
-		assertEquals(0, fsc.firstSkippedKmerOffset());
-		assertEquals(3, fsc.lastSkippedKmerOffset());
-		assertEquals(4, fsc.firstReferenceKmerOffset());
-		assertEquals(7, fsc.lastReferenceKmerOffset());
-		assertEquals(8, fsc.firstVariantKmerOffset());
-		assertEquals(15, fsc.lastVariantKmerOffset());
-		assertEquals(15, fsc.lastKmerOffset());
-		assertEquals(16, fsc.kmerCount());
-		
-		assertEquals(-1, fdp.firstSkippedKmerOffset());
-		assertEquals(-1, fdp.lastSkippedKmerOffset());
-		assertEquals(-1, fdp.firstReferenceKmerOffset());
-		assertEquals(-1, fdp.lastReferenceKmerOffset());
-		assertEquals(0, fdp.firstVariantKmerOffset());
-		assertEquals(15, fdp.lastVariantKmerOffset());
-		assertEquals(15, fdp.lastKmerOffset());
-		assertEquals(16, fdp.kmerCount());
-		
-		assertEquals(0, rsc.firstSkippedKmerOffset());
-		assertEquals(7, rsc.lastSkippedKmerOffset());
-		assertEquals(8, rsc.firstReferenceKmerOffset());
-		assertEquals(11, rsc.lastReferenceKmerOffset());
-		assertEquals(12, rsc.firstVariantKmerOffset());
-		assertEquals(15, rsc.lastVariantKmerOffset());
-		assertEquals(15, rsc.lastKmerOffset());
-		assertEquals(16, rsc.kmerCount());
-		
-		assertEquals(-1, rdp.firstSkippedKmerOffset());
-		assertEquals(-1, rdp.lastSkippedKmerOffset());
-		assertEquals(-1, rdp.firstReferenceKmerOffset());
-		assertEquals(-1, rdp.lastReferenceKmerOffset());
-		assertEquals(0, rdp.firstVariantKmerOffset());
-		assertEquals(15, rdp.lastVariantKmerOffset());
-		assertEquals(15, rdp.lastKmerOffset());
-		assertEquals(16, rdp.kmerCount());
 	}
 	@Test
 	public void sc_not_dp_should_be_directly_anchored_to_reference() {
@@ -253,20 +117,10 @@ public class VariantEvidenceTest extends TestHelper {
 		assertTrue(rsc.isDirectlyAnchoredToReference());
 	}
 	@Test
-	public void getInferredReferencePosition_should_assume_direct_mapping_to_reference() {
-		assertEquals(8, fsc.getExpectedReferencePosition(4));
-		assertEquals(9, fsc.getExpectedReferencePosition(5));
-		assertEquals(10, fsc.getExpectedReferencePosition(6));
-		assertEquals(11, fsc.getExpectedReferencePosition(7));
-		
-		assertEquals(8, rsc.getExpectedReferencePosition(8));
-		assertEquals(7, rsc.getExpectedReferencePosition(9));
-		assertEquals(6, rsc.getExpectedReferencePosition(10));
-		assertEquals(5, rsc.getExpectedReferencePosition(11));
-	}
-	@Test
-	public void mMateAnchorPosition_should_be_mapped_position_adjacent_to_breakend() {
-		assertEquals(2, fdp.getMateAnchorPosition());
-		assertEquals(1, rdp.getMateAnchorPosition());
+	public void getReferenceKmerCount_should_count_reference_supporting_kmers() {
+		assertEquals(4, fsc.getReferenceKmerCount());
+		assertEquals(4, rsc.getReferenceKmerCount());
+		assertEquals(0, fdp.getReferenceKmerCount());
+		assertEquals(0, rdp.getReferenceKmerCount());
 	}
 }

@@ -90,7 +90,7 @@ public class VariantEvidence {
 		//            ^
 		//         anchor pos
 		this.referenceKmerStartOffset = startClipLength;
-		this.referenceKmerEndOffset = readLength - k - endClipLength;
+		this.referenceKmerEndOffset = readLength - k - endClipLength + 1;
 		int chrPos;
 		if (evidence.getBreakendSummary().direction == BreakendDirection.Forward) {
 			this.startSkipKmerCount = startClipLength;
@@ -129,7 +129,7 @@ public class VariantEvidence {
 	public long getExpectedLinearPosition(int readKmerOffset) {
 		return expectedAnchorPos + readKmerOffset;
 	}
-	public int kmerCount() { return bases.length - k + 1; }
+	private int kmerCount() { return bases.length - k + 1; }
 	/**
 	 * @return true if this evidence is directly anchored to the reference (ie: direct breakend evidence),
 	 * false if anchored by the mate 

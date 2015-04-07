@@ -88,10 +88,14 @@ class PathGraphTraverse {
 		return traverse(startingNodes, null);
 	}
 	public List<SubgraphPathNode> traverse(final Iterable<SubgraphPathNode> startingNodes, Collection<SubgraphPathNode> endNodes) {
-		if (endNodes instanceof Set<?>) {
-			terminalNodes = (Set<SubgraphPathNode>)endNodes;
+		if (endNodes == null) {
+			terminalNodes = null;
 		} else {
-			terminalNodes = Sets.newHashSet(endNodes);
+			if (endNodes instanceof Set<?>) {
+				terminalNodes = (Set<SubgraphPathNode>)endNodes;
+			} else {
+				terminalNodes = Sets.newHashSet(endNodes);
+			}
 		}
 		currentNextStates = maxNextStates;
 		nodeTraversals = 0;

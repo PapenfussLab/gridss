@@ -23,7 +23,6 @@ public class PathGraphAssemblerTest extends TestHelper {
 		ap.method = AssemblyMethod.DEBRUIJN_SUBGRAPH;
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
 		ap.maxContigsPerAssembly = 1;
-		ap.assemblyBackToReference = false;
 		
 		DeBruijnReadGraph g = G(ap.k, FWD);
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));

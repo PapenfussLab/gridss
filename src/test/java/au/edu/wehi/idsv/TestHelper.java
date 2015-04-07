@@ -62,6 +62,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public class TestHelper {
+	public static final long LCCB = ProcessingContext.LINEAR_COORDINATE_CHROMOSOME_BUFFER;
 	public static final BreakendDirection FWD = BreakendDirection.Forward;
 	public static final BreakendDirection BWD = BreakendDirection.Backward;
 
@@ -258,7 +259,13 @@ public class TestHelper {
 
 	public static class MockMetrics extends IdsvSamFileMetrics {
 		public MockMetrics() {
-			super(new InsertSizeMetrics(), new IdsvMetrics() {{
+			super(new InsertSizeMetrics() {{
+				MEAN_INSERT_SIZE = 300;
+				MEDIAN_INSERT_SIZE = 300;
+				MIN_INSERT_SIZE = 300;
+				MAX_INSERT_SIZE = 300;
+				MEDIAN_ABSOLUTE_DEVIATION = 30;
+			}}, new IdsvMetrics() {{
 				MAX_READ_LENGTH = 100;
 				MAX_PROPER_PAIR_FRAGMENT_LENGTH = 300;
 				READ_PAIRS = 1000;
@@ -607,10 +614,10 @@ public class TestHelper {
 		}
 
 		public BaseGraph add(String sequence, int weight) {
+			NonReferenceReadPair placeholderEvidence = NRRP(OEA(0, 1, "100M", true));
+			int i = 1;
 			for (long kmer : toKmer(this, sequence)) {
-				add(kmer,
-						new DeBruijnNodeBase(weight, NRRP(OEA(0, 1, "100M",
-								true))));
+				add(kmer, new DeBruijnNodeBase(weight, i++, placeholderEvidence, false, false));
 			}
 			return this;
 		}
@@ -714,10 +721,10 @@ public class TestHelper {
 		return new BasePathGraph(g, new PathNodeBaseFactory());
 	}
 
-	public static DeBruijnReadGraph G(int k, BreakendDirection direction) {
+	public static DeBruijnReadGraph RG(int k) {
 		AssemblyParameters p = new AssemblyParameters();
 		p.k = k;
-		return new DeBruijnReadGraph(getContext(), AES(), 0, direction, p, null);
+		return new DeBruijnReadGraph(getContext(), AES(), 0, p, null);
 	}
 
 	public static class MockSAMEvidenceSource extends SAMEvidenceSource {
@@ -731,6 +738,12 @@ public class TestHelper {
 			super(processContext, new File("test.bam"), false, minFragmentSize, maxFragmentSize);
 			metrics.getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH = maxFragmentSize;
 			metrics.getIdsvMetrics().MAX_READ_LENGTH = maxFragmentSize;
+			metrics.getInsertSizeMetrics().MAX_INSERT_SIZE = maxFragmentSize;
+			metrics.getInsertSizeMetrics().MIN_INSERT_SIZE = minFragmentSize;
+			metrics.getInsertSizeMetrics().MEDIAN_INSERT_SIZE = (minFragmentSize + maxFragmentSize) / 2;
+			metrics.getInsertSizeMetrics().MEAN_INSERT_SIZE = (minFragmentSize + maxFragmentSize) / 2;
+			metrics.getInsertSizeMetrics().MEDIAN_ABSOLUTE_DEVIATION = maxFragmentSize / 10 / 1.4;
+			metrics.getInsertSizeMetrics().STANDARD_DEVIATION = maxFragmentSize / 10;
 		}
 		@Override
 		public boolean isTumour() {

@@ -179,12 +179,8 @@ public class PathGraphAssembler extends PathGraph {
 			assert(best.size() > 0);
 			
 			int targetAnchorAssemblyLength = Math.max(parameters.anchorAssemblyLength, PathNode.kmerLength(best));
-			List<SubgraphPathNode> preAnchor = traverseReference(best.get(0), false, targetAnchorAssemblyLength);
-			preAnchor.remove(preAnchor.size() - 1); // don't repeat the non-reference node we used as the anchor
-			
+			List<SubgraphPathNode> preAnchor = traverseReference(best.get(0), false, targetAnchorAssemblyLength);			
 			List<SubgraphPathNode> postAnchor = traverseReference(best.get(best.size() - 1), true, targetAnchorAssemblyLength);
-			postAnchor.remove(0);
-
 			ArrayList<SubgraphPathNode> result = new ArrayList<SubgraphPathNode>(best.size() + preAnchor.size() + postAnchor.size());
 			result.addAll(preAnchor);
 			result.addAll(best);
