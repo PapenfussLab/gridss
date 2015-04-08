@@ -37,6 +37,7 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 	}
 	@Override
 	public Iterable<AssemblyEvidence> addEvidence(DirectedEvidence evidence) {
+		if (evidence.getBreakendSummary() == null) throw new IllegalArgumentException("Invalid evidence");
 		Iterable<AssemblyEvidence> it = ImmutableList.of();
 		if (evidence.getBreakendSummary().referenceIndex != currentReferenceIndex) {
 			it = assembleAll();

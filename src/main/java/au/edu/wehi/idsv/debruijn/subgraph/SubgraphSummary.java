@@ -88,14 +88,14 @@ public class SubgraphSummary {
 		if (root == graphRoot) return false;
 		graphRoot.parent = root;
 		root.maxPosition = Math.max(root.maxPosition, graphRoot.maxPosition);
-		root.minPosition = Math.max(root.minPosition, graphRoot.minPosition);
+		root.minPosition = Math.min(root.minPosition, graphRoot.minPosition);
 		root.kmerCount += graphRoot.kmerCount;
 		return true;
 	}
 	public void addNode(DeBruijnSubgraphNode node) {
 		SubgraphSummary root = getRoot();
 		root.maxPosition = Math.max(root.maxPosition, node.getMaxLinearPosition());
-		root.minPosition = Math.max(root.minPosition, node.getMinLinearPosition());
+		root.minPosition = Math.min(root.minPosition, node.getMinLinearPosition());
 		root.kmerCount++;
 	}
 	@Override

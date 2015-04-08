@@ -160,7 +160,10 @@ public class SAMEvidenceSource extends EvidenceSource {
 	 * @return
 	 */
 	public int sourceCategory() {
-		return isTumour ? 1 : 0;
+		if (isTumour()) {
+			return 1;
+		}
+		return 0;
 	}
 	public CloseableIterator<DirectedEvidence> iterator(final boolean includeReadPair, final boolean includeSoftClip, final boolean includeSoftClipRemote) {
 		if (getContext().shouldProcessPerChromosome()) {

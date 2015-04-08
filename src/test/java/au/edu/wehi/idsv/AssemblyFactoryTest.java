@@ -106,6 +106,16 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals(Models.calculateBreakend(getContext().getLinear(), Lists.newArrayList(evidence)), e.getBreakendSummary());
 	}
 	@Test
+	public void should_infer_anchor_direction_based_on_evidence_weight() {
+		HashSet<DirectedEvidence> evidence = Sets.<DirectedEvidence>newHashSet(
+				NRRP(OEA(0, 50, "5M", true)),
+				NRRP(OEA(0, 55, "5M", false)),
+				NRRP(OEA(0, 60, "5M", true)),
+				NRRP(OEA(0, 65, "5M", true)));
+		AssemblyEvidence e = AssemblyFactory.createUnanchored(getContext(), AES(), evidence, B("AAAAA"), B("AAAAA"), 0, 0);
+		assertEquals(FWD, e.getBreakendSummary().direction);
+	}
+	@Test
 	public void should_restrict_mate_anchor_interval_based_on_dp_interval() {
 		HashSet<DirectedEvidence> evidence = Sets.<DirectedEvidence>newHashSet(
 				NRRP(DP(0, 10, "1M", true, 0, 16, "1M", false)), // 10->16

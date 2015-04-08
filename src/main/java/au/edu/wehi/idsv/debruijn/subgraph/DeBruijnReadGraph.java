@@ -254,7 +254,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			DeBruijnSubgraphNode node = getKmer(kmer);
 			assert(node.getSubgraph() != null);
 			assert(subgraphs.contains(node.getSubgraph()));
-			assert(node.getSubgraph().getMaxLinearPosition() <= node.getMaxLinearPosition());
+			assert(node.getSubgraph().getMaxLinearPosition() >= node.getMaxLinearPosition());
 			assert(node.getSubgraph().getMinLinearPosition() <= node.getMinLinearPosition());
 		}		
 		//int lastMax = Integer.MIN_VALUE;

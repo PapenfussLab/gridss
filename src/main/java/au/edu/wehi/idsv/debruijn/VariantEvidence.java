@@ -48,9 +48,10 @@ public class VariantEvidence {
 		this.quals = pair.getNonReferenceRead().getBaseQualities();
 		int chrPos;
 		if (evidence.getBreakendSummary().direction == BreakendDirection.Forward) {
-			chrPos = pair.getNonReferenceRead().getUnclippedStart() + pair.getEvidenceSource().getExpectedFragmentSize() - bases.length;
+			// Assumes FR orientation
+			chrPos = pair.getLocalledMappedRead().getUnclippedStart() + pair.getEvidenceSource().getExpectedFragmentSize() - bases.length;
 		} else {
-			chrPos = pair.getNonReferenceRead().getUnclippedEnd() - pair.getEvidenceSource().getExpectedFragmentSize() + 1;
+			chrPos = pair.getLocalledMappedRead().getUnclippedEnd() - pair.getEvidenceSource().getExpectedFragmentSize() + 1;
 		}
 		this.expectedAnchorPos = lgc.getLinearCoordinate(evidence.getBreakendSummary().referenceIndex, chrPos);
 		this.referenceKmerStartOffset = -1;

@@ -143,7 +143,9 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		// adjust base counts for non-anchored reads
 		int[] supportCounts = new int[] { 0, 0 };
 		for (DirectedEvidence e : support) {
-			supportCounts[((SAMEvidenceSource)e.getEvidenceSource()).sourceCategory()]++;
+			if (!e.isBreakendExact()) { // !e.isDirectlyAnchoredToReference()
+				supportCounts[((SAMEvidenceSource)e.getEvidenceSource()).sourceCategory()]++;
+			}
 		}
 		// convert kmer counts into base counts
 		// Note: this conversion assumes that each piece of evidence forms a single contiguous kmer support path
@@ -176,59 +178,62 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		byte[] bases = getBaseCalls(kmers);
 		byte[] quals = getBaseQuals(kmers);
 		
-		if (beforeBreakend == null || afterBreakend == null) {
+		if (beforeBreakend == null && afterBreakend == null) {
 			// unanchored
 			return AssemblyFactory.createUnanchored(processContext, source, breakendSupport, bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
 		} else {
 			double startBreakendAnchorPosition = DeBruijnNodeBase.getExpectedPositionForDirectAnchor(BreakendDirection.Forward, breakendPath);
 			double endBreakendAnchorPosition = DeBruijnNodeBase.getExpectedPositionForDirectAnchor(BreakendDirection.Backward, breakendPath);
 			// fall back to expected position of reference kmer
-			if (startBreakendAnchorPosition == Double.NaN && beforeBreakend != null) {
+			if (Double.isNaN(startBreakendAnchorPosition) && beforeBreakend != null) {
 				startBreakendAnchorPosition = beforeBreakend.getExpectedPosition();
 			}
-			if (endBreakendAnchorPosition == Double.NaN && beforeBreakend != null) {
+			if (Double.isNaN(endBreakendAnchorPosition) && afterBreakend != null) {
 				endBreakendAnchorPosition = afterBreakend.getExpectedPosition();
 			}
-			assert(endBreakendAnchorPosition != Double.NaN || startBreakendAnchorPosition != Double.NaN);
-			if (startBreakendAnchorPosition == Double.NaN) {
-				// k=3
-				// 1234567890
-				// MMMSSSMMM
-				// 000   | |
-				// |111  | |
-				// | 222 | |
-				// |  333| |
-				// |   444 |
-				// |    555|
-				// |     666
-				// ^ start kmer pos
-				//       ^ end kmer pos
-				// adjust position from start of kmer over to closest reference anchor base position
-				startBreakendAnchorPosition += getK() - 1;
-			}
+			assert(!Double.isNaN(endBreakendAnchorPosition) || !Double.isNaN(startBreakendAnchorPosition));
+			// k=3
+			// 1234567890
+			// MMMSSSMMM
+			// 000   | |
+			// |111  | |
+			// | 222 | |
+			// |  333| |
+			// |   444 |
+			// |    555|
+			// |     666
+			// ^ start kmer pos
+			//       ^ end kmer pos
+			// adjust position from start of kmer over to closest reference anchor base position
+			startBreakendAnchorPosition += getK() - 1;
+			
 			LinearGenomicCoordinate lgc = processContext.getLinear();
 			int startAnchorReferenceIndex = -1;
 			int startAnchorPosition =  0;
 			int endAnchorReferenceIndex = -1;
 			int endAnchorPosition =  0;
-			if (startBreakendAnchorPosition != Double.NaN) {
-				startBreakendAnchorPosition = Math.round(startAnchorPosition);
-				startAnchorReferenceIndex = lgc.getReferenceIndex((long)startBreakendAnchorPosition); 
-				startAnchorPosition = lgc.getReferencePosition((long)startBreakendAnchorPosition);
+			if (!Double.isNaN(startBreakendAnchorPosition)) {
+				long pos = (long)Math.round(startBreakendAnchorPosition);
+				startAnchorReferenceIndex = lgc.getReferenceIndex(pos); 
+				startAnchorPosition = lgc.getReferencePosition(pos);
 			}
-			if (endBreakendAnchorPosition != Double.NaN) {
-				endBreakendAnchorPosition = Math.round(endAnchorPosition);
-				endAnchorReferenceIndex = lgc.getReferenceIndex((long)endBreakendAnchorPosition); 
-				endAnchorPosition = lgc.getReferencePosition((long)endBreakendAnchorPosition);
-			}			
-			if (endBreakendAnchorPosition == -1) {
-				return AssemblyFactory.createAnchored(processContext, source, BreakendDirection.Forward, breakendSupport, startAnchorReferenceIndex, startAnchorPosition, breakendStartOffset, bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
-			} else if (startBreakendAnchorPosition == -1) {
-				return AssemblyFactory.createAnchored(processContext, source, BreakendDirection.Backward, breakendSupport, endAnchorReferenceIndex, endAnchorPosition, path.size() - breakendEndOffset, bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
+			if (!Double.isNaN(endBreakendAnchorPosition)) {
+				long pos = (long)Math.round(endBreakendAnchorPosition);
+				endAnchorReferenceIndex = lgc.getReferenceIndex(pos); 
+				endAnchorPosition = lgc.getReferencePosition(pos);
+			}
+			if (endAnchorReferenceIndex == -1) {
+				return AssemblyFactory.createAnchored(processContext, source, BreakendDirection.Forward, breakendSupport,
+						startAnchorReferenceIndex, startAnchorPosition, breakendStartOffset + getK() - 1,
+						bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
+			} else if (startAnchorReferenceIndex == -1) {
+				return AssemblyFactory.createAnchored(processContext, source, BreakendDirection.Backward, breakendSupport,
+						endAnchorReferenceIndex, endAnchorPosition, path.size() - breakendEndOffset - 1 + getK() - 1,
+						bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
 			} else {
 				return AssemblyFactory.createAnchored(processContext, source, breakendSupport,
-						startAnchorReferenceIndex, startAnchorPosition, breakendStartOffset,
-						endAnchorReferenceIndex, endAnchorPosition, path.size() - breakendEndOffset,
+						startAnchorReferenceIndex, startAnchorPosition, breakendStartOffset + getK() - 1,
+						endAnchorReferenceIndex, endAnchorPosition, path.size() - breakendEndOffset - 1 + getK() - 1,
 						bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
 			}
 		}

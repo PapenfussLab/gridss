@@ -18,13 +18,14 @@ import au.edu.wehi.idsv.AssemblyMethod;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.EvidenceSubset;
 import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
+import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
-import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredGraph;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 
 import com.google.common.collect.Lists;
 
-public class DeBruijnReadGraphTest extends TestHelper {
+public class DeBruijnVariantGraphTest extends TestHelper {
 	private List<AssemblyEvidence> result;
 	private DeBruijnSubgraphAssembler ass;
 	private AssemblyEvidenceSource aes;
@@ -48,9 +49,6 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	
 	private static SAMRecord R(String read) {
 		return R(null, read, null, false, true);
-	}
-	private static SAMRecord R(String readName, String read) {
-		return R(readName, read, null, false, true);
 	}
 	private static SAMRecord R(String readName, String read, byte[] qual, boolean mappedNegativeStrand, boolean mateNegativeStrand) {
 		SAMRecord record = new SAMRecord(getHeader());
@@ -76,7 +74,8 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		return record;
 	}
 	private SAMRecord inferLocal(BreakendDirection dir, SAMRecord remote) {
-		SAMRecord local = Read(1, 1, "1M");
+		SAMRecord local = Read(0, 1, "1M");
+		remote.setReferenceIndex(1);
 		local.setReadName(remote.getReadName());
 		local.setReadPairedFlag(true);
 		local.setReadNegativeStrandFlag((dir == BWD) == remote.getReadNegativeStrandFlag());
@@ -100,6 +99,14 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	@Test
 	public void should_assemble_single_read() {
 		addRead(R("AAAACGTC"), true);
+		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, result.size());
+		
+		assertEquals("AAAACGTC", S(result.get(0).getAssemblySequence()));
+	}
+	@Test
+	public void should_assemble_single_dp_read() {
+		addRead(R("AAAACGTC"), false);
 		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, result.size());
 		
@@ -134,16 +141,14 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		assertEquals("AGT", S(result.get(0).getBreakendSequence()));
 	}
 	@Test  
-	public void unanchored_reads_should_require_mapped_mate() {
+	public void should_assemble_sc_with_dp() {
 		addRead(R("CTAAA"), true);
-		SAMRecord unanchored = R(null, "AAAGT", null, false, true);
-		unanchored.setMateUnmappedFlag(true);
-		addRead(unanchored, false);
+		addRead(R(null, "AAAGT", null, false, true), false);
 		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, result.size());
 		
 		assertEquals("CTAAAGT", S(result.get(0).getAssemblySequence()));
-		assertEquals("AAAGT", S(result.get(0).getBreakendSequence()));
+		assertEquals("AGT", S(result.get(0).getBreakendSequence()));
 	}
 	@Test
 	public void should_assemble_unanchored_reads_in_FR_orientation() {
@@ -161,22 +166,30 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		SAMRecord anchor = R(anchorSeq);
 		if (direction == BWD) anchor.setCigarString("1S4M");
 		
+		SAMRecord[] oea = withSequence(unanchorSeq, RP(0, 1, 1000, unanchorSeq.length()));
+		oea[0].setReadNegativeStrandFlag(mappedNegativeStrand);
+		oea[1].setMateNegativeStrandFlag(mappedNegativeStrand);
+		oea[1].setReadNegativeStrandFlag(mateNegativeStrand);
+		oea[0].setMateNegativeStrandFlag(mateNegativeStrand);
+		oea[0].setProperPairFlag(false);
+		oea[1].setProperPairFlag(false);
+		
 		// Assembly should not depend on whether the read is mapped or not 
 		setup(3);
-		addRead(anchor, true);
-		SAMRecord unanchored = R(null, unanchorSeq, null, mappedNegativeStrand, mateNegativeStrand);
-		unanchored.setReadUnmappedFlag(true);
-		addRead(unanchored, false);
+		oea[0].setMateUnmappedFlag(true);
+		oea[1].setReadUnmappedFlag(true);
+		ass.addEvidence(SCE(direction, anchor));
+		ass.addEvidence(NRRP(oea));
 		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, result.size());
 		assertEquals(expectedSeq, S(result.get(0).getAssemblySequence()));
 		assertEquals(breakendSequence, S(result.get(0).getBreakendSequence()));
 		
 		setup(3);
-		addRead(anchor, true);
-		unanchored = R(null, unanchorSeq, null, mappedNegativeStrand, mateNegativeStrand);
-		unanchored.setReadUnmappedFlag(false);
-		addRead(unanchored, false);
+		oea[0].setMateUnmappedFlag(false);
+		oea[1].setReadUnmappedFlag(false);
+		ass.addEvidence(SCE(direction, anchor));
+		ass.addEvidence(NRRP(oea));
 		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, result.size());
 		assertEquals(expectedSeq, S(result.get(0).getAssemblySequence()));
@@ -184,14 +197,55 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		assertEquals(breakendSequence, S(result.get(0).getBreakendSequence()));
 	}
 	@Test
-	public void should_assemble_soft_clipped_read() {
+	public void should_assemble_end_soft_clipped_read() {
 		SAMRecord sc = R("AAAACGTC");
-		sc.setCigarString("4M4S");e
+		sc.setCigarString("4M4S");
 		addRead(sc, true);
 		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, result.size());
 		assertEquals("AAAACGTC", S(result.get(0).getAssemblySequence()));
 		assertEquals("CGTC", S(result.get(0).getBreakendSequence()));
+	}
+	@Test
+	public void should_assemble_start_soft_clipped_read() {
+		SAMRecord sc = R("CGTCAAAA");
+		sc.setCigarString("4S4M");
+		result.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, sc))));
+		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, result.size());
+		assertEquals("CGTCAAAA", S(result.get(0).getAssemblySequence()));
+		assertEquals("CGTC", S(result.get(0).getBreakendSequence()));
+	}
+	@Test
+	public void kmers_should_be_weighted_by_min_base_qual() {
+		addRead(R(null, "ACGTA", new byte[] { 1,2,3,4,5 }, false, true), true);
+		addRead(R(null, "ACGTA", new byte[] { 3,4,5,6,7 }, false, true), true);
+		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, result.size());
+		// pad out read qualities
+		assertArrayEquals(new byte[] { 4,5,5,5,6 }, ((SAMRecordAssemblyEvidence)result.get(0)).getSAMRecord().getBaseQualities());
+	}
+	@Test
+	public void getBaseQuals_should_take_average_of_kmers_containing_base() {
+		setup(3);
+		SAMRecord sc = R(null, "CGTCAATTG", new byte[] {1,2,3,4,5,6,7,8,9}, false, true);
+		sc.setCigarString("4M5S");
+		addRead(sc, true);
+		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, result.size());
+		// 123456789 k=3
+		//  1234567
+		assertArrayEquals(
+				new byte[] {(1)/1,
+						(1+2)/2,
+						(1+2+3)/3,
+						(2+3+4)/3,
+						(3+4+5)/3,
+						(4+5+6)/3,
+						(5+6+7)/3,
+						(6+7)/2,
+						(7)/1,
+				}, ((SAMRecordAssemblyEvidence)result.get(0)).getSAMRecord().getBaseQualities());
 	}
 	@Test
 	public void should_greedy_traverse_highest_weight_path() {
@@ -201,7 +255,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		addRead(sc, true);
 		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, result.size());
-		assertEquals("TACTGAGT", S(result.get(0).getAssemblySequence()));
+		assertEquals("ACGTACTGAGT", S(result.get(0).getAssemblySequence()));
 	}
 	@Test
 	public void should_assemble_backward_breakpoint() {
@@ -214,6 +268,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		assertEquals("AAAA", S(result.get(0).getBreakendSequence()));
 	}
 	@Test
+	@Ignore("Treated as unanchored")
 	public void should_use_offset_kmer_if_softclip_longer_than_k() {
 		SAMRecord sc = R("AAAACGTC");
 		sc.setCigarString("2M6S");
@@ -222,24 +277,6 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		assertEquals(1, result.size());
 		assertEquals("AAAACGTC", S(result.get(0).getAssemblySequence()));
 		assertEquals("AACGTC", S(result.get(0).getBreakendSequence()));
-	}
-	@Test
-	public void assembly_base_quality_should_be_sum_of_min_read_qualities() {
-		addRead(R(null, "ACGTA", new byte[] { 1,2,3,4,5 }, false, true), true);
-		addRead(R(null, "ACGTA", new byte[] { 3,4,5,6,7 }, false, true), true);
-		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
-		assertEquals(1, result.size());
-		// pad out read qualities
-		assertArrayEquals(new byte[] { /*4,6,8,8,*/8 }, result.get(0).getBreakendQuality());
-	}
-	@Test // can't see the anchor qualities in the current API
-	public void assembly_base_quality_should_pad_to_match_read_length() {
-		addRead(R(null, "ACGTA", new byte[] { 1,2,3,4,5 }, false, true), true);
-		addRead(R(null, "ACGTA", new byte[] { 3,4,5,6,7 }, false, true), true);
-		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
-		assertEquals(1, result.size());
-		// pad out read qualities
-		assertEquals(S(result.get(0).getAssemblySequence()), result.get(0).getBreakendQuality());
 	}
 	@Test
 	public void read_base_count_should_be_number_of_breakend_read_bases() {
@@ -254,11 +291,12 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TTTTAAAC", Read(0, 10, "4M4S")))).iterator().hasNext());
 		assertFalse(ass.addEvidence(SCE(FWD, tumour, withSequence("TTTTAAACG", Read(0, 10, "4M5S")))).iterator().hasNext());
 		assertFalse(ass.addEvidence(SCE(FWD, tumour, withSequence("TTTTAAACGG", Read(0, 10, "4M6S")))).iterator().hasNext());
-		assertFalse(ass.addEvidence(NRRP(withSequence("CGTTT", OEA(0, 5, "5M", true)))).iterator().hasNext());	
-		assertFalse(ass.addEvidence(NRRP(tumour, withSequence("CGTTTG", OEA(0, 6, "5M", true)))).iterator().hasNext());
+		assertFalse(ass.addEvidence(NRRP(normal, withSequence("CGTTT", OEA(0, 5, "5M", true)))).iterator().hasNext()); // AAACG	
+		assertFalse(ass.addEvidence(NRRP(tumour, withSequence("CGTTTG", OEA(0, 6, "5M", true)))).iterator().hasNext()); // CAAACG
 		AssemblyEvidence result = ass.endOfEvidence().iterator().next();
 		
 		assertEquals("test assumes this contruction - did I get the test case wrong?", "TTTTAAACGG", S(result.getAssemblySequence()));
+		assertEquals("test assumes this contruction - did I get the test case wrong?", "AAACGG", S(result.getBreakendSequence()));
 		assertEquals(5 + 6 + 5, result.getAssemblyBaseCount(EvidenceSubset.TUMOUR));
 		assertEquals(1 + 2 + 3 + 4 + 5, result.getAssemblyBaseCount(EvidenceSubset.NORMAL));
 	}

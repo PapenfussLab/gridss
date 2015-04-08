@@ -32,7 +32,7 @@ import com.google.common.primitives.Longs;
  * @param <T>
  */
 public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
-	public static final int MAX_QUAL_SCORE = 128 - 66;
+	public static final byte MAX_QUAL_SCORE = 128 - 66;
 	private final TLongObjectHashMap<T> kmers = new TLongObjectHashMap<T>();
 	private final int k;
 	private DeBruijnGraphExporter<T> exporter = null;
@@ -107,15 +107,8 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	 * @param bases base qualities to adjust
 	 * @return 0-based phred-encodable base qualities
 	 */
-	public byte[] rescaleBaseQualities(List<Integer> bases) {
-		//Long largest = Collections.max(bases);
-		//float scaleFactor = Math.min(1, MAX_QUAL_SCORE / (float)largest);
-		byte[] result = new byte[bases.size()];
-		for (int i = 0; i < result.length; i++) {
-			//result[i] = (byte)(bases.get(i) * scaleFactor);
-			result[i] = (byte)(bases.get(i) > MAX_QUAL_SCORE ? MAX_QUAL_SCORE : bases.get(i));
-		}
-		return result;
+	public byte toPicardFastqBaseQuality(int qual) {
+		return (byte) (qual > MAX_QUAL_SCORE ? MAX_QUAL_SCORE : qual);
 	}
 	/**
 	 * Gets the all graph kmer following the given kmer
@@ -249,16 +242,31 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	 * @return base qualities of a positive strand SAMRecord readout of contig
 	 */
 	public byte[] getBaseQuals(List<Long> path) {
-		List<Integer> qual = new ArrayList<Integer>(path.size());
-		for (Long node : path) {
+		int[] kmerWeight = new int[path.size()];
+		for (int i = 0; i < path.size(); i++) {
 			// subtract # reads to adjust for the +1 qual introduced by ReadKmerIterable
 			// to ensure positive node weights
-			qual.add(this.kmers.get(node).getWeight() - this.kmers.get(node).getSupportingEvidenceList().size());
+			T node = kmers.get(path.get(i));
+			kmerWeight[i] = node.getWeight() - node.getSupportingEvidenceList().size();
 		}
-		// pad out qualities to match the path length
-		for (int i = 0; i < k - 1; i++) qual.add(qual.get(qual.size() - 1));
-		byte[] quals = rescaleBaseQualities(qual);
-		return quals;
+		byte[] result = new byte[path.size() + k - 1];
+		// take the average kmer qual of the kmers this bases is part of
+		int accum = 0;
+		int windowSize = 0;
+		for (int i = 0; i < result.length; i++) {
+			if (i < kmerWeight.length) {
+				// add to window
+				windowSize++;
+				accum += kmerWeight[i];
+			}
+			if (i >= k) {
+				// remove from window
+				windowSize--;
+				accum -= kmerWeight[i - k];
+			}
+			result[i] = toPicardFastqBaseQuality(accum / windowSize);
+		}
+		return result;
 	}
 	public Set<DirectedEvidence> getSupportingEvidence(Iterable<Long> path) {
 		Set<DirectedEvidence> reads = Sets.newHashSet();

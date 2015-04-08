@@ -37,7 +37,7 @@ public class VariantEvidenceTest extends TestHelper {
 	//           ^
 	//        anchor pos
 	public VariantEvidence fsc = new VariantEvidence(4, SCE(FWD, Read(0, 5, "4S7M8S")), getContext().getLinear());
-	public VariantEvidence fdp = new VariantEvidence(4, NRRP(DP(0, 1, "2M", true, 1, 5, "4S7M8S", false)), getContext().getLinear());
+	public VariantEvidence fdp = new VariantEvidence(4, NRRP(DP(0, 1, "2M", true, 1, 500, "4S7M8S", false)), getContext().getLinear());
 	// RSC:
 	// 0        1
 	// 1234567890123456789
@@ -61,7 +61,7 @@ public class VariantEvidenceTest extends TestHelper {
 	//     ^
 	//  anchor pos
 	public VariantEvidence rsc = new VariantEvidence(4, SCE(BWD, Read(0, 5, "4S7M8S")), getContext().getLinear());
-	public VariantEvidence rdp = new VariantEvidence(4, NRRP(DP(0, 1, "2M", false, 1, 5, "4S7M8S", true)), getContext().getLinear());
+	public VariantEvidence rdp = new VariantEvidence(4, NRRP(DP(0, 1, "2M", false, 1, 500, "4S7M8S", true)), getContext().getLinear());
 	@Test
 	public void getReadKmers_should_read_kmers_in_ascending_genomic_coordinates() {
 		VariantEvidence e = new VariantEvidence(2, SCE(FWD, withSequence("ACGTTTTT", Read(0, 5, "4M4S"))), getContext().getLinear());
@@ -102,11 +102,16 @@ public class VariantEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void getExpectedLinearPosition_should_return_linear_genomic_position_as_if_concordantly_mapped() {
+		// 12345
+		// **-MM
+		VariantEvidence v = new VariantEvidence(4, NRRP(SES(5, 5), DP(0, 4, "2M", false, 1, 500, "2M", true)), getContext().getLinear());
+		assertEquals(LCCB + 1, v.getExpectedLinearPosition(0));
+		
 		for (int i= 0; i < 19 - 4; i++) {
 			assertEquals(LCCB + 1 + i, fsc.getExpectedLinearPosition(i));
 			assertEquals(LCCB + 1 + i, rsc.getExpectedLinearPosition(i));
 			assertEquals(LCCB + 1 + 300 - 19 + i, fdp.getExpectedLinearPosition(i));
-			assertEquals(LCCB + 1 - 300 + 19 + i, rdp.getExpectedLinearPosition(i));
+			assertEquals(LCCB + 1 - 300 + i + 1 + 1, rdp.getExpectedLinearPosition(i));
 		}
 	}
 	@Test

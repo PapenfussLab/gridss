@@ -17,12 +17,7 @@ public class FixedSizeReadPairConcordanceCalculator extends ReadPairConcordanceC
 	}
 	@Override
 	public boolean isConcordant(SAMRecord read1, SAMRecord read2) {
-		return read1.getReadPairedFlag()
-				&& !read1.getReadUnmappedFlag()
-				&& !read1.getMateUnmappedFlag()
-				&& read1.getReferenceIndex() == read1.getMateReferenceIndex()
-				// (assumes FR)
-				&& read1.getReadNegativeStrandFlag() != read1.getMateNegativeStrandFlag()
+		return super.isConcordant(read1, read2)
 				&& isConcordantFragmentSize(read1, read2);
 	}
 	@Override
