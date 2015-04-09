@@ -76,4 +76,13 @@ public class ModelsTest extends TestHelper {
 				));
 		assertEquals(new BreakendSummary(0, FWD, 15, 15), bs);
 	}
+	@Test
+	public void calculateBreakend_should_infer_direction_from_support() {
+		BreakendSummary bs = Models.calculateBreakend(getContext().getLinear(), Lists.newArrayList(
+			new MockDirectedEvidence(new BreakendSummary(0, FWD, 10, 15)),
+			new MockDirectedEvidence(new BreakendSummary(0, FWD, 10, 16)),
+			new MockDirectedEvidence(new BreakendSummary(0, BWD, 12, 18))
+				));
+		assertEquals(new BreakendSummary(0, FWD, 10, 15), bs);
+	}
 }

@@ -13,7 +13,7 @@ import com.google.common.collect.Sets;
 public class AssemblyParametersTest extends TestHelper {
 	@Test
 	public void should_filter_fully_reference_assemblies() {
-		AssemblyEvidence e = AssemblyFactory.createAnchored(
+		AssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(
 				getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
 				0, 1, 2, B("AA"), B("AA"), 2, 0);
 		getContext().getAssemblyParameters().applyFilters(e);
@@ -22,7 +22,7 @@ public class AssemblyParametersTest extends TestHelper {
 	}
 	@Test
 	public void should_filter_single_read_assemblies() {
-		AssemblyEvidence e = AssemblyFactory.createAnchored(
+		AssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(
 				getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(
 					SCE(FWD, Read(0, 1, "1M2S"))),
 				0, 1, 1, B("AA"), B("AA"), 2, 0);
@@ -32,7 +32,7 @@ public class AssemblyParametersTest extends TestHelper {
 	}
 	@Test
 	public void should_filter_mate_anchored_assembly_shorter_than_read_length() {
-		AssemblyEvidence e = AssemblyFactory.createUnanchored(
+		AssemblyEvidence e = AssemblyFactory.createUnanchoredBreakend(
 				getContext(), AES(), Sets.<DirectedEvidence>newHashSet(NRRP(OEA(0, 1, "4M", true))),
 				B("AAA"), B("AAA"), 2, 0);
 		getContext().getAssemblyParameters().applyFilters(e);
@@ -41,7 +41,7 @@ public class AssemblyParametersTest extends TestHelper {
 	}
 	@Test
 	public void read_length_filter_should_not_apply_to_anchored_breakend_assembly() {
-		AssemblyEvidence e = AssemblyFactory.createAnchored(
+		AssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(
 				getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(
 						SCE(FWD, Read(0, 1, "1M2S")),
 						NRRP(OEA(0, 1, "3M", true)),
@@ -52,7 +52,7 @@ public class AssemblyParametersTest extends TestHelper {
 	}
 	@Test
 	public void soft_clip_size_filter_should_not_apply_to_unanchored_assembly() {
-		AssemblyEvidence e = AssemblyFactory.createUnanchored(
+		AssemblyEvidence e = AssemblyFactory.createUnanchoredBreakend(
 				getContext(), AES(), Sets.<DirectedEvidence>newHashSet(
 						NRRP(OEA(0, 1, "3M", false)),
 						NRRP(OEA(0, 1, "4M", false))),
@@ -62,7 +62,7 @@ public class AssemblyParametersTest extends TestHelper {
 	}
 	@Test
 	public void should_filter_if_no_breakpoint_assembly() {
-		AssemblyEvidence e = AssemblyFactory.createAnchored(
+		AssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(
 				getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(
 						SCE(BWD, Read(0, 1, "1S1M")),
 						NRRP(OEA(0, 1, "3M", false)),
@@ -73,7 +73,7 @@ public class AssemblyParametersTest extends TestHelper {
 	}
 	@Test
 	public void should_not_apply_breakend_filter_to_unanchored_assembly() {
-		AssemblyEvidence e = AssemblyFactory.createUnanchored(
+		AssemblyEvidence e = AssemblyFactory.createUnanchoredBreakend(
 				getContext(), AES(), Sets.<DirectedEvidence>newHashSet(
 						NRRP(SES(100, 100), DP(0, 1, "1M", true, 0, 5, "1M", false))),
 				B("AA"), B("AA"), 2, 0);
@@ -84,18 +84,18 @@ public class AssemblyParametersTest extends TestHelper {
 	public void should_filter_too_few_reads() {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().minReads = 3;
-		AssemblyEvidence e = AssemblyFactory.createAnchored(pc, AES(), BWD, Sets.<DirectedEvidence>newHashSet(), 0, 1, 5, B("AACGTG"), B("AACGTG"), 2, 0);
+		AssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(pc, AES(), BWD, Sets.<DirectedEvidence>newHashSet(), 0, 1, 5, B("AACGTG"), B("AACGTG"), 2, 0);
 		assertTrue(pc.getAssemblyParameters().applyFilters(e));
 		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_FEW_READ));
 		
-		e = AssemblyFactory.createAnchored(
+		e = AssemblyFactory.createAnchoredBreakend(
 				getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(
 						SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5 }, withSequence("AACGTG", Read(0, 1, "1M5S"))))),
 				0, 1, 5, B("AACGTG"), B("AACGTG"), 2, 0);
 		assertTrue(pc.getAssemblyParameters().applyFilters(e));
 		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_FEW_READ));
 		
-		e = AssemblyFactory.createAnchored(
+		e = AssemblyFactory.createAnchoredBreakend(
 				pc, AES(), BWD, Sets.<DirectedEvidence>newHashSet(
 						SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5 }, withSequence("AACGTG", Read(0, 1, "1M5S")))),
 						NRRP(OEA(0, 1, "4M", false))),
@@ -103,7 +103,7 @@ public class AssemblyParametersTest extends TestHelper {
 		assertTrue(pc.getAssemblyParameters().applyFilters(e));
 		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_FEW_READ));
 		
-		e = AssemblyFactory.createAnchored(
+		e = AssemblyFactory.createAnchoredBreakend(
 				pc, AES(), BWD, Sets.<DirectedEvidence>newHashSet(
 						SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5 }, withSequence("AACGTG", Read(0, 1, "1M5S")))),
 						NRRP(OEA(0, 1, "3M", false)),

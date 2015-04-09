@@ -49,7 +49,7 @@ public class SAMRecordAssemblyEvidenceFilteringIteratorTest extends TestHelper {
 		evidence.add(SCE(FWD, Read(0, 5, "5M5S")));
 		//evidence.add(SCE(FWD, Read(0, 5, "5M6S")));
 		//evidence.add(SCE(FWD, Read(0, 5, "5M7S")));
-		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), FWD, evidence,
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, evidence,
 				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), 5, 6);
 		in.add(e);
 		assertEquals(0, out.size());
@@ -60,7 +60,7 @@ public class SAMRecordAssemblyEvidenceFilteringIteratorTest extends TestHelper {
 		evidence.add(SCE(FWD, Read(0, 5, "5M5S")));
 		evidence.add(SCE(FWD, Read(0, 5, "5M6S")));
 		evidence.add(SCE(FWD, Read(0, 5, "5M7S")));
-		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), FWD, evidence,
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, evidence,
 				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), 5, 6);		
 		SAMRecord r = Read(0, 11, "5M");
 		r.setReadName(BreakpointFastqEncoding.getRealignmentFastq(e).getReadHeader());
@@ -78,7 +78,7 @@ public class SAMRecordAssemblyEvidenceFilteringIteratorTest extends TestHelper {
 		evidence.add(SCE(FWD, Read(0, 10, "5S5M5S")));
 		evidence.add(SCE(FWD, Read(0, 10, "6S5M6S")));
 		evidence.add(SCE(FWD, Read(0, 10, "7S5M7S")));
-		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), BWD, evidence,
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, evidence,
 				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), 5, 6);		
 		SAMRecord r = Read(0, 5, "5M");
 		r.setReadName(BreakpointFastqEncoding.getRealignmentFastq(e).getReadHeader());
@@ -92,7 +92,7 @@ public class SAMRecordAssemblyEvidenceFilteringIteratorTest extends TestHelper {
 		evidence.add(SCE(FWD, Read(0, 10, "5S5M5S")));
 		evidence.add(SCE(FWD, Read(0, 10, "6S5M6S")));
 		evidence.add(SCE(FWD, Read(0, 10, "7S5M7S")));
-		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), BWD, evidence,
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, evidence,
 				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), 5, 6);		
 		SAMRecord r = Read(0, 105, "5M");
 		r.setReadNegativeStrandFlag(true);

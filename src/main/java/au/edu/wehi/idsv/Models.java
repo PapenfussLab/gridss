@@ -61,23 +61,9 @@ public class Models {
 		if (evidence == null || evidence.size() == 0) {
 			throw new IllegalArgumentException("No evidence supplied");
 		}
-		BreakendDirection direction = evidence.get(0).getBreakendSummary().direction;
-		MaximumCliqueIntervalGraph calc = new MaximumCliqueIntervalGraph();
-		List<Node> nodes = new ArrayList<Node>(evidence.size());
-		boolean hasWeight = false;
-		for (DirectedEvidence e : evidence) {
-			long weight = ScalingHelper.toScaledWeight(e.getBreakendQual());
-			BreakendSummary bs = e.getBreakendSummary();
-			if (weight > 0 && bs != null) {
-				hasWeight = true;
-				assert(bs.direction == direction);
-				nodes.add(new Node(
-						lgc.getLinearCoordinate(bs.referenceIndex, bs.start), 
-						lgc.getLinearCoordinate(bs.referenceIndex, bs.end),
-						weight));
-			}
-		}
-		if (!hasWeight) {
+		Node fwd = maximalInterval(lgc, BreakendDirection.Forward, evidence);
+		Node bwd = maximalInterval(lgc, BreakendDirection.Backward, evidence);
+		if (fwd == null && bwd == null) {
 			// all evidence is insignificant, just return something as we're going to get filtered anyway
 			BreakendSummary bs = evidence.get(0).getBreakendSummary();
 			if (bs instanceof BreakpointSummary) {
@@ -86,10 +72,31 @@ public class Models {
 			}
 			return bs;
 		}
-		Node call = calc.calculateMaximumClique(nodes);
-		int ref = lgc.getReferenceIndex(call.start);
-		assert(ref == lgc.getReferenceIndex(call.stop));
-		BreakendSummary bs = new BreakendSummary(ref, direction, lgc.getReferencePosition(call.start), lgc.getReferencePosition(call.stop));
-		return bs;
+		Node node = fwd;
+		BreakendDirection dir = BreakendDirection.Forward;
+		if (fwd == null || (bwd != null && fwd.weight < bwd.weight)) {
+			node = bwd;
+			dir = BreakendDirection.Backward;
+		}
+		assert(lgc.getReferenceIndex(node.start) == lgc.getReferenceIndex(node.stop));
+		return new BreakendSummary(lgc.getReferenceIndex(node.start), dir, lgc.getReferencePosition(node.start), lgc.getReferencePosition(node.stop));
+	}
+	private static Node maximalInterval(LinearGenomicCoordinate lgc, BreakendDirection dir, List<? extends DirectedEvidence> evidence) {
+		MaximumCliqueIntervalGraph calc = new MaximumCliqueIntervalGraph();
+		List<Node> nodes = new ArrayList<Node>(evidence.size());
+		for (DirectedEvidence e : evidence) {
+			BreakendSummary bs = e.getBreakendSummary();
+			if (bs == null) continue;
+			if (bs.direction != dir) continue;
+			long weight = ScalingHelper.toScaledWeight(e.getBreakendQual());
+			if (weight > 0) {
+				nodes.add(new Node(
+						lgc.getLinearCoordinate(bs.referenceIndex, bs.start), 
+						lgc.getLinearCoordinate(bs.referenceIndex, bs.end),
+						weight));
+			}
+		}
+		if (nodes.size() == 0) return null;
+		return calc.calculateMaximumClique(nodes);
 	}
 }

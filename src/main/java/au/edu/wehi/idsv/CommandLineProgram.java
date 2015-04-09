@@ -79,9 +79,6 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     		optional=true)
     public List<String> ADAPTER_SEQUENCE = Lists.newArrayList(new SoftClipParameters().adapters.getAdapterSequences());
  // --- Assembly parameters ---
-    @Option(doc = "Local assembly algorithm used to construct breakend contigs.",
-    		optional=true)
-    public AssemblyMethod ASSEMBLY_METHOD = new AssemblyParameters().method;
     @Option(doc = "k-mer used for de bruijn graph construction",
     		optional=true,
     		shortName="K")
@@ -196,7 +193,6 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 	}
 	private AssemblyParameters getAssemblyParameters() {
 		AssemblyParameters ap = new AssemblyParameters();
-		ap.method = ASSEMBLY_METHOD;
 		ap.includeRemoteSoftClips = ASSEMBLY_INCLUDE_REMOTE_SOFT_CLIPS;
 		ap.k = ASSEMBLY_DEBRUIJN_KMER;
 		ap.maxBaseMismatchForCollapse = ASSEMBLY_DEBRUIJN_MAX_PATH_COLLAPSE_BASE_MISMATCHES;

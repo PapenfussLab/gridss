@@ -11,5 +11,5 @@ public interface AssemblyIdGenerator {
 	 * Generates an identifier for the given structural variant assembly
 	 * 
 	 */
-	String generate(BreakendSummary breakpoint, byte[] baseCalls, int anchoredBaseCount);
+	String generate(BreakendSummary breakpoint, byte[] baseCalls, int startAnchoredBaseCount, int endAnchoredBaseCount);
 }

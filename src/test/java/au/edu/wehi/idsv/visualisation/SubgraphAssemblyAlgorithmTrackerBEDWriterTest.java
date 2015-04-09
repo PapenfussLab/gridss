@@ -19,13 +19,13 @@ public class SubgraphAssemblyAlgorithmTrackerBEDWriterTest extends IntermediateF
 	public void should_sort_by_genomic_start_position() throws IOException {
 		File f = new File(testFolder.getRoot(), "test.bed");
 		SubgraphAssemblyAlgorithmTrackerBEDWriter writer = new SubgraphAssemblyAlgorithmTrackerBEDWriter(100, f);
-		writer.write(new SubgraphAlgorithmMetrics(getContext(), 0, FWD) {{
+		writer.write(new SubgraphAlgorithmMetrics(getContext(), 0) {{
 			finalAnchors(12310, 12320);
 		}});
-		writer.write(new SubgraphAlgorithmMetrics(getContext(), 0, FWD) {{
+		writer.write(new SubgraphAlgorithmMetrics(getContext(), 0) {{
 			finalAnchors(12305, 12311);
 		}});
-		writer.write(new SubgraphAlgorithmMetrics(getContext(), 1, FWD) {{
+		writer.write(new SubgraphAlgorithmMetrics(getContext(), 1) {{
 			finalAnchors(12301, 12302);
 		}});
 		writer.close();

@@ -180,7 +180,7 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		
 		if (beforeBreakend == null && afterBreakend == null) {
 			// unanchored
-			return AssemblyFactory.createUnanchored(processContext, source, breakendSupport, bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
+			return AssemblyFactory.createUnanchoredBreakend(processContext, source, breakendSupport, bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
 		} else {
 			double startBreakendAnchorPosition = DeBruijnNodeBase.getExpectedPositionForDirectAnchor(BreakendDirection.Forward, breakendPath);
 			double endBreakendAnchorPosition = DeBruijnNodeBase.getExpectedPositionForDirectAnchor(BreakendDirection.Backward, breakendPath);
@@ -223,15 +223,15 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 				endAnchorPosition = lgc.getReferencePosition(pos);
 			}
 			if (endAnchorReferenceIndex == -1) {
-				return AssemblyFactory.createAnchored(processContext, source, BreakendDirection.Forward, breakendSupport,
+				return AssemblyFactory.createAnchoredBreakend(processContext, source, BreakendDirection.Forward, breakendSupport,
 						startAnchorReferenceIndex, startAnchorPosition, breakendStartOffset + getK() - 1,
 						bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
 			} else if (startAnchorReferenceIndex == -1) {
-				return AssemblyFactory.createAnchored(processContext, source, BreakendDirection.Backward, breakendSupport,
+				return AssemblyFactory.createAnchoredBreakend(processContext, source, BreakendDirection.Backward, breakendSupport,
 						endAnchorReferenceIndex, endAnchorPosition, path.size() - breakendEndOffset - 1 + getK() - 1,
 						bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
 			} else {
-				return AssemblyFactory.createAnchored(processContext, source, breakendSupport,
+				return AssemblyFactory.createAnchoredBreakpoint(processContext, source, breakendSupport,
 						startAnchorReferenceIndex, startAnchorPosition, breakendStartOffset + getK() - 1,
 						endAnchorReferenceIndex, endAnchorPosition, path.size() - breakendEndOffset - 1 + getK() - 1,
 						bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);

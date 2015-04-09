@@ -46,7 +46,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 	}
 	@Test
 	public void should_use_breakpoint_assembly_sequence() {
-		SAMRecordAssemblyEvidence be = AssemblyFactory.createAnchored(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
+		SAMRecordAssemblyEvidence be = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
 				0, 1, 1, B("TGGAAT"), B("TAAAAT"), 0, 0);
 		// Untemplated sequence
 		SAMRecord r = Read(0, 10, "2S3M");

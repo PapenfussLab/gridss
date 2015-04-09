@@ -31,14 +31,13 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", Read(0, 1, "1M99S"))
 				);
 		ProcessingContext pc = getCommandlineContext();
-		pc.getAssemblyParameters().method = AssemblyMethod.DEBRUIJN_PER_POSITION;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, false);
 		ses.completeSteps(ProcessStep.ALL_STEPS);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
 		aes.ensureAssembled();
 
 		assertEquals(1, getFastqRecords(aes).size());
-		assertEquals("ATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", getFastqRecords(aes).get(0).getReadString());
+		assertEquals("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", getFastqRecords(aes).get(0).getReadString());
 	}
 	@Test
 	public void iterator_should_return_in_chr_order() {
@@ -54,7 +53,6 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 				);
 		ProcessingContext pc = getCommandlineContext();
 		pc.getRealignmentParameters().requireRealignment = false;
-		pc.getAssemblyParameters().method = AssemblyMethod.DEBRUIJN_PER_POSITION;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, false);
 		ses.completeSteps(ProcessStep.ALL_STEPS);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
@@ -80,7 +78,6 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 				);
 		ProcessingContext pc = getCommandlineContext();
 		pc.getRealignmentParameters().requireRealignment = false;
-		pc.getAssemblyParameters().method = AssemblyMethod.DEBRUIJN_PER_POSITION;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, false);
 		ses.completeSteps(EnumSet.allOf(ProcessStep.class));
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
@@ -98,7 +95,6 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		createInput(r1, r2);
 		ProcessingContext pc = getCommandlineContext();
 		pc.getAssemblyParameters().k = 3;
-		pc.getAssemblyParameters().method = AssemblyMethod.DEBRUIJN_PER_POSITION;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, false);
 		ses.completeSteps(ProcessStep.ALL_STEPS);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
@@ -109,7 +105,6 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 	public void should_write_raw_bam() {
 		createInput(RP(0, 1, 2, 1));
 		ProcessingContext pc = getCommandlineContext();
-		pc.getAssemblyParameters().method = AssemblyMethod.DEBRUIJN_PER_POSITION;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, false);
 		ses.completeSteps(EnumSet.allOf(ProcessStep.class));
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
@@ -128,7 +123,6 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 				          //AGATCGGAAGAG
 				);
 		ProcessingContext pc = getCommandlineContext();
-		pc.getAssemblyParameters().method = AssemblyMethod.DEBRUIJN_PER_POSITION;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, false);
 		ses.completeSteps(EnumSet.allOf(ProcessStep.class));
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));

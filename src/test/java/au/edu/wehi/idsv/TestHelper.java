@@ -194,7 +194,7 @@ public class TestHelper {
 		assert(bs.start == bs.end);
 		assert(bs.start2 == bs.end2);
 		assert(bs.direction2 == BWD);
-		SAMRecordAssemblyEvidence abe = AssemblyFactory.createAnchored(getContext(), AES(), bs.direction, Sets.<DirectedEvidence>newHashSet(
+		SAMRecordAssemblyEvidence abe = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), bs.direction, Sets.<DirectedEvidence>newHashSet(
 				SCE(bs)), bs.referenceIndex, bs.start, 1, B("TT"), B("TT"), 0, 0);
 		SAMRecord r = new SAMRecord(getContext().getBasicSamHeader());
 		r.setReferenceIndex(bs.referenceIndex2);
@@ -239,7 +239,7 @@ public class TestHelper {
 	}
 
 	public static AssemblyEvidence AE() {
-		return AssemblyFactory.createAnchored(getContext(), AES(),
+		return AssemblyFactory.createAnchoredBreakend(getContext(), AES(),
 				FWD,
 				Sets.newHashSet((DirectedEvidence) SCE(FWD,
 						Read(0, 1, "1M5S"))),

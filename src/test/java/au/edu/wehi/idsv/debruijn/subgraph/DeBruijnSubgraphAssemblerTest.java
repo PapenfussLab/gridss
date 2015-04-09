@@ -46,14 +46,14 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		assertEquals(2, results.size());
 	}
 	@Test
-	public void should_assemble_RP_with_fake_SC_anchor_as_unanchored() {
+	public void should_assemble_RP_with_SC_anchor() {
 		DeBruijnSubgraphAssembler ass = DSA(3);
 		List<AssemblyEvidence> results = Lists.newArrayList();
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAT", Read(0, 15, "3M1S"))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(withSequence(SequenceUtil.reverseComplement("TAAAGTC"), OEA(0, 1, "7M", true))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, results.size());
-		assertEquals(0, results.get(0).getAssemblyAnchorLength());
+		assertEquals(3, results.get(0).getAssemblyAnchorLength());
 	}
 	@Test
 	public void should_export_debruijn_graph() {
@@ -64,10 +64,8 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(1, 1, "4M3S"))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(1, 2, "3M4S"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
-		assertTrue(new File(new File(testFolder.getRoot(), "visualisation"), "debruijn.kmers.forward.polyA.gexf").exists());
-		assertTrue(new File(new File(testFolder.getRoot(), "visualisation"), "debruijn.kmers.backward.polyA.gexf").exists());
-		assertTrue(new File(new File(testFolder.getRoot(), "visualisation"), "debruijn.kmers.forward.polyACGT.gexf").exists());
-		assertTrue(new File(new File(testFolder.getRoot(), "visualisation"), "debruijn.kmers.backward.polyACGT.gexf").exists());
+		assertTrue(new File(new File(testFolder.getRoot(), "visualisation"), "debruijn.kmers.polyA.gexf").exists());
+		assertTrue(new File(new File(testFolder.getRoot(), "visualisation"), "debruijn.kmers.polyACGT.gexf").exists());
 	}
 	@Test
 	public void should_track_progress() throws IOException {
@@ -107,8 +105,21 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		List<AssemblyEvidence> results = Lists.newArrayList();
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(0, 1, "4M3S"))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(0, 2, "3M4S"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("CTGAAAT", Read(0, 10, "3S4M"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("TCTGAAA", Read(0, 10, "4S3M"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("CCGACAT", Read(0, 10, "3S4M"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("GCCGACA", Read(0, 10, "4S3M"))))));
+		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(2, results.size());
+		assertEquals(4, results.get(0).getBreakendSequence().length);
+		assertEquals(4, results.get(1).getBreakendSequence().length);
+	}
+	@Test
+	public void should_assemble_() {
+		DeBruijnSubgraphAssembler ass = DSA(3);
+		List<AssemblyEvidence> results = Lists.newArrayList();
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(0, 1, "4M3S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(0, 2, "3M4S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("CCGACAT", Read(0, 10, "3S4M"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("GCCGACA", Read(0, 10, "4S3M"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(2, results.size());
 		assertEquals(4, results.get(0).getBreakendSequence().length);

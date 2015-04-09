@@ -41,9 +41,9 @@ public class DeBruijnSubgraphNode extends DeBruijnNodeBase {
 		this.subgraph = subgraph;
 	}
 	public String toString() {
-		return String.format("%s g=%d max=%d",
+		return String.format("%s [%d,%d] g=(%s)",
 				super.toString(),
-				subgraph.getAnyKmer(),
-				maxPosition);
+				minPosition, maxPosition,
+				subgraph);
 	}
 }

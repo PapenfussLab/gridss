@@ -14,12 +14,10 @@ import org.junit.Test;
 
 import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
-import au.edu.wehi.idsv.AssemblyMethod;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.EvidenceSubset;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
-import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 
@@ -37,7 +35,6 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 	public void setup(int k) {
 		context = getContext();
 		context.getAssemblyParameters().k = k;
-		context.getAssemblyParameters().method = AssemblyMethod.DEBRUIJN_SUBGRAPH;
 		context.getAssemblyParameters().minReads = 0;
 		context.getAssemblyParameters().maxBaseMismatchForCollapse = 0;
 		context.getAssemblyParameters().collapseBubblesOnly = true;

@@ -83,7 +83,7 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 		if (exportDir != null && processContext.getAssemblyParameters().visualiseAll) {
 			exportDir.mkdir();
 			if (graph != null) {
-				graph.getGraphExporter().saveTo(new File(exportDir, String.format("debruijn.kmers.forward.%s.gexf", processContext.getDictionary().getSequence(currentReferenceIndex).getSequenceName())));
+				graph.getGraphExporter().saveTo(new File(exportDir, String.format("debruijn.kmers.%s.gexf", processContext.getDictionary().getSequence(currentReferenceIndex).getSequenceName())));
 			}
 		}
 		graph = null;

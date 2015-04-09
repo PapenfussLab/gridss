@@ -48,7 +48,7 @@ public class SAMRecordAssemblyEvidenceIteratorTest extends TestHelper {
 		//}
 	}
 	public SAMRecordAssemblyEvidence BE(int position) {
-		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
 				0, position, 1 , B("AA"), new byte[] { 7,7 }, 5, 6);
 		return e;
 	}

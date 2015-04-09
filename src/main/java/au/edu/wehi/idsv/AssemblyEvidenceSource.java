@@ -25,7 +25,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-import au.edu.wehi.idsv.debruijn.anchored.DeBruijnAnchoredAssembler;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 import au.edu.wehi.idsv.pipeline.CreateAssemblyReadPair;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
@@ -444,14 +443,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		}
 	}
 	protected ReadEvidenceAssembler getAssembler() {
-    	switch (getContext().getAssemblyParameters().method) {
-	    	case DEBRUIJN_PER_POSITION:
-	    		return new DeBruijnAnchoredAssembler(getContext(), this);
-	    	case DEBRUIJN_SUBGRAPH:
-	    		return new DeBruijnSubgraphAssembler(getContext(), this);
-	    	default:
-	    		throw new IllegalArgumentException("Unknown assembly method.");
-    	}
+		return new DeBruijnSubgraphAssembler(getContext(), this);
     }
 	@Override
 	public int getMaxConcordantFragmentSize() {

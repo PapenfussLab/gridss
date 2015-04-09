@@ -129,8 +129,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 				parameters.debruijnGraphVisualisationDirectory,
 				processContext.getDictionary().getSequence(referenceIndex).getSequenceName());
 		String filename = String.format("%d_%s.precollapse.gexf",
-				processContext.getLinear().encodedIntervalToString(ss.getMinLinearPosition(), ss.getMaxLinearPosition()).replace("-", "_").replace(":", "_"),
-				graphsExported); 
+				graphsExported,
+				processContext.getLinear().encodedIntervalToString(ss.getMinLinearPosition(), ss.getMaxLinearPosition()).replace("-", "_").replace(":", "_")); 
 		directory.mkdirs();
 		new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k)
 			.snapshot(pga)
@@ -142,8 +142,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 				parameters.debruijnGraphVisualisationDirectory,
 				processContext.getDictionary().getSequence(referenceIndex).getSequenceName());
 		String filename = String.format("%d_%s.subgraph.gexf",
-				processContext.getLinear().encodedIntervalToString(ss.getMinLinearPosition(), ss.getMaxLinearPosition()).replace("-", "_").replace(":", "_"),
-				graphsExported++);
+				graphsExported++,
+				processContext.getLinear().encodedIntervalToString(ss.getMinLinearPosition(), ss.getMaxLinearPosition()).replace("-", "_").replace(":", "_"));
 		directory.mkdirs();
 		graphExporter.saveTo(new File(directory, filename));
 	}

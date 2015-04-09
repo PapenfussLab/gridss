@@ -20,7 +20,7 @@ public class SequentialIdGenerator implements VariantIdGenerator, AssemblyIdGene
 		return generate();
 	}
 	@Override
-	public String generate(BreakendSummary breakpoint, byte[] baseCalls, int anchoredBaseCount) {
+	public String generate(BreakendSummary breakpoint, byte[] baseCalls, int startAnchoredBaseCount, int endAnchoredBaseCount) {
 		return generate();
 	}
 }

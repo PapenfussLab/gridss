@@ -48,7 +48,7 @@ public class SAMRecordAssemblyEvidenceReadPairIteratorTest extends TestHelper {
 		evidence.add(SCE(FWD, Read(0, 5, "5M5S")));
 		evidence.add(SCE(FWD, Read(0, 5, "5M6S")));
 		evidence.add(SCE(FWD, Read(0, 5, "5M7S")));
-		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchored(getContext(), AES(), FWD, evidence,
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, evidence,
 				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), 5, 6);
 		in.add(e);
 		go(true);

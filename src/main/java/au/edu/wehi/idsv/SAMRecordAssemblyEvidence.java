@@ -3,7 +3,6 @@ package au.edu.wehi.idsv;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.TextCigarCodec;
@@ -12,8 +11,6 @@ import htsjdk.samtools.util.Log;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -32,7 +29,10 @@ import com.google.common.primitives.Bytes;
 import com.google.common.primitives.UnsignedBytes;
 
 public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
-	private static final String COMPONENT_EVIDENCEID_SEPARATOR = " ";
+	/*
+	 * Using space as a separator as it is reserved in FASTA so shouldn't be in read names
+	 */
+	public static final String COMPONENT_EVIDENCEID_SEPARATOR = " ";
 	private static final Log log = Log.getInstance(SAMRecordAssemblyEvidence.class);
 	private final SAMRecord record;
 	private final SAMRecord realignment;
@@ -75,22 +75,6 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 			} else {
 				evidenceIds = Sets.newHashSet();
 			}
-		}
-	}
-	/*
-	 * Using space as a separator as it is reserved in FASTA so shouldn't be in read names
-	 */
-	private static void setEvidenceIDs(SAMRecord r, Collection<DirectedEvidence> evidence) {
-		if (evidence != null && evidence.size() > 0) {
-			StringBuilder sb = new StringBuilder();
-			for (DirectedEvidence e : evidence) {
-				String id = e.getEvidenceID(); 
-				sb.append(id);
-				sb.append(COMPONENT_EVIDENCEID_SEPARATOR);
-			}
-			sb.deleteCharAt(sb.length() - 1);
-			r.setAttribute(SamTags.ASSEMLBY_COMPONENT_EVIDENCEID, sb.toString());
-			assert(ensureUniqueEvidenceID(evidence));
 		}
 	}
 	/**
@@ -136,18 +120,6 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 			}
 		}
 		return evidence;
-	}
-	private static boolean ensureUniqueEvidenceID(Collection<DirectedEvidence> evidence) {
-		boolean isUnique = true;
-		Set<String> map = new HashSet<String>();
-		for (DirectedEvidence e : evidence) {
-			if (map.contains(e.getEvidenceID())) {
-				log.error("Found evidenceID " + e.getEvidenceID() + " multiple times in assembly");
-				isUnique = false;
-			}
-			map.add(e.getEvidenceID());
-		}
-		return isUnique;
 	}
 	private String debugEvidenceMismatch() {
 		StringBuilder sb = new StringBuilder();
@@ -201,23 +173,13 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		}
 		SAMRecordUtil.pairReads(this.record, this.realignment);
 	}
-	public SAMRecordAssemblyEvidence(
-			Collection<DirectedEvidence> evidence,
-			SAMFileHeader samFileHeader, BreakendSummary breakend,
-			AssemblyEvidenceSource source,
-			int anchoredBaseCount,
-			byte[] baseCalls,
-			byte[] baseQuals,
-			int normalBaseCount, int tumourBaseCount
-			) {
-		this(source, createAssemblySAMRecord(evidence, samFileHeader, source, breakend, anchoredBaseCount, baseCalls, baseQuals, normalBaseCount, tumourBaseCount), null);
-		this.evidence = evidence;
-	}
 	private BreakendDirection getBreakendDirection() {
-		return BreakendDirection.fromChar((char)(Character)record.getAttribute(SamTags.ASSEMBLY_DIRECTION));
+		return getBreakendDirection(record);
 	}
 	protected static BreakendDirection getBreakendDirection(SAMRecord record) {
-		return BreakendDirection.fromChar((char)(Character)record.getAttribute(SamTags.ASSEMBLY_DIRECTION));
+		Character c = (Character)record.getAttribute(SamTags.ASSEMBLY_DIRECTION);
+		if (c == null) return null;
+		return BreakendDirection.fromChar((char)c);
 	}
 	private SAMRecord getPlaceholderRealignment() {
 		SAMRecord placeholder = new SAMRecord(record.getHeader());
@@ -249,125 +211,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		}
 		return true;
 	}
-	private static SAMRecord createAssemblySAMRecord(
-			Collection<DirectedEvidence> evidence,
-			SAMFileHeader samFileHeader, AssemblyEvidenceSource source,
-			BreakendSummary breakend,
-			int anchoredBaseCount, byte[] baseCalls, byte[] baseQuals,
-			int normalBaseCount, int tumourBaseCount) {
-		if (breakend instanceof BreakpointSummary) {
-			throw new IllegalArgumentException("Breakpoint not supported by this constructor");
-		}
-		SAMRecord record = new SAMRecord(samFileHeader);
-		record.setReferenceIndex(breakend.referenceIndex);
-		record.setReadName(source.getContext().getAssemblyIdGenerator().generate(breakend, baseCalls, anchoredBaseCount));
-		if (anchoredBaseCount > 0) {
-			record.setReadBases(baseCalls);
-			record.setBaseQualities(baseQuals);
-			if (breakend.start != breakend.end) {
-				throw new IllegalArgumentException("Imprecisely anchored breakends not supported by this constructor");
-			}
-			if (breakend.direction == BreakendDirection.Forward) {
-				record.setAlignmentStart(breakend.start - anchoredBaseCount + 1);
-				record.setCigar(new Cigar(ImmutableList.of(
-						new CigarElement(anchoredBaseCount, CigarOperator.MATCH_OR_MISMATCH),
-						new CigarElement(baseCalls.length - anchoredBaseCount, CigarOperator.SOFT_CLIP))));
-			} else {
-				record.setAlignmentStart(breakend.start);
-				record.setCigar(new Cigar(ImmutableList.of(
-						new CigarElement(baseCalls.length - anchoredBaseCount, CigarOperator.SOFT_CLIP),
-						new CigarElement(anchoredBaseCount, CigarOperator.MATCH_OR_MISMATCH))));
-			}
-		} else {
-			// SAM spec requires at least one mapped base
-			// to conform to this, we add a placeholder mismatched bases to our read
-			// in the furthest anchor position
-			// and represent the breakend confidence interval as an N
-			// interval anchored by Xs
-			record.setAlignmentStart(breakend.start);
-			LinkedList<CigarElement> ce = new LinkedList<CigarElement>();
-			int len = breakend.end - breakend.start + 1;
-			int padBases;
-			if (len <= 2) {
-				ce.add(new CigarElement(len, CigarOperator.X));
-				padBases = len;
-			} else {
-				ce.add(new CigarElement(1, CigarOperator.X));
-				ce.add(new CigarElement(len - 2, CigarOperator.N));
-				ce.add(new CigarElement(1, CigarOperator.X));
-				padBases = 2;
-			}
-			if (breakend.direction == BreakendDirection.Forward) {
-				ce.addLast(new CigarElement(baseCalls.length, CigarOperator.SOFT_CLIP));
-				record.setCigar(new Cigar(ce));
-				record.setReadBases(Bytes.concat(PAD_BASES[padBases], baseCalls));
-				record.setBaseQualities(Bytes.concat(PAD_QUALS[padBases], baseQuals));
-			} else {
-				ce.addFirst(new CigarElement(baseCalls.length, CigarOperator.SOFT_CLIP));
-				record.setCigar(new Cigar(ce));
-				record.setReadBases(Bytes.concat(baseCalls, PAD_BASES[padBases]));
-				record.setBaseQualities(Bytes.concat(baseQuals, PAD_QUALS[padBases]));
-			}
-		}
-		setEvidenceIDs(record, evidence);
-		record.setAttribute(SamTags.ASSEMBLY_BASE_COUNT, new int[] { normalBaseCount, tumourBaseCount });
-		
-		BreakendSummary breakendWithMargin = source.getContext().getVariantCallingParameters().withMargin(source.getContext(), breakend);
-		
-		float[] rpQual = new float[] { 0, 0, };
-		float[] scQual = new float[] { 0, 0, };
-		float[] rQual = new float[] { 0, 0, };
-		float[] nsQual = new float[] { 0, 0, };
-		int[] rpCount = new int[] { 0, 0, };
-		int[] rpMaxLen = new int[] { 0, 0, };
-		int[] scCount = new int[] { 0, 0, };
-		int[] scLenMax = new int[] { 0, 0, };
-		int[] scLenTotal = new int[] { 0, 0, };
-		int[] rCount = new int[] { 0, 0 };
-		int[] nsCount = new int[] { 0, 0 };
-		int maxLocalMapq = 0;
-		for (DirectedEvidence e : evidence) {
-			maxLocalMapq = Math.max(maxLocalMapq, e.getLocalMapq());
-			int offset = ((SAMEvidenceSource)e.getEvidenceSource()).isTumour() ? 1 : 0;
-			float qual = e.getBreakendQual();
-			if (e instanceof NonReferenceReadPair) {
-				rpCount[offset]++;
-				rpQual[offset] += qual;
-				rpMaxLen[offset] = Math.max(rpMaxLen[offset], ((NonReferenceReadPair)e).getNonReferenceRead().getReadLength());
-			}
-			if (e instanceof SoftClipEvidence) {
-				scCount[offset]++;
-				scQual[offset] += qual;
-				int clipLength = ((SoftClipEvidence)e).getSoftClipLength();
-				scLenMax[offset] = Math.max(scLenMax[offset], clipLength);
-				scLenTotal[offset] += clipLength;
-			}
-			if (e instanceof RemoteEvidence) {
-				rCount[offset]++;
-				rQual[offset] += qual;
-			}
-			if (!breakendWithMargin.overlaps(e.getBreakendSummary())) {
-				nsCount[offset]++;
-				nsQual[offset] += qual;
-			}
-		}
-		record.setMappingQuality(maxLocalMapq);
-		record.setAttribute(SamTags.ASSEMBLY_READPAIR_COUNT, rpCount);
-		record.setAttribute(SamTags.ASSEMBLY_READPAIR_LENGTH_MAX, rpMaxLen);
-		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT, scCount);
-		record.setAttribute(SamTags.ASSEMBLY_REMOTE_COUNT, rCount);
-		record.setAttribute(SamTags.ASSEMBLY_NONSUPPORTING_COUNT, nsCount);
-		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX, scLenMax);
-		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL, scLenTotal);
-		record.setAttribute(SamTags.ASSEMBLY_READPAIR_QUAL, rpQual);
-		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_QUAL, scQual);
-		record.setAttribute(SamTags.ASSEMBLY_REMOTE_QUAL, rQual);
-		record.setAttribute(SamTags.ASSEMBLY_NONSUPPORTING_QUAL, nsQual);
-		record.setAttribute(SamTags.ASSEMBLY_DIRECTION, breakend.direction.toChar());
-		return record;
-	}
-	private static final byte[][] PAD_BASES = new byte[][] { new byte[] {}, new byte[] { 'N' }, new byte[] { 'N', 'N' } };
-	private static final byte[][] PAD_QUALS = new byte[][] { new byte[] {}, new byte[] { 0 }, new byte[] { 0, 0 } };
+	
 	private int getAnchorLength() {
 		CigarElement ce;
 		if (getBreakendDirection() == BreakendDirection.Forward) {
@@ -572,6 +416,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 */
 	public SAMRecordAssemblyEvidence realign() {
 		if (!this.isExact) throw new RuntimeException("Sanity check failure: realignment of unanchored assemblies not yet implemented.");
+		if (getBreakendSummary() instanceof DirectedBreakpoint) throw new IllegalStateException("Unable to realign breakpoint assemblies");
 		AssemblyParameters ap = source.getContext().getAssemblyParameters();
 		int refIndex = getBreakendSummary().referenceIndex;
 		SAMSequenceRecord refSeq = source.getContext().getDictionary().getSequence(refIndex);

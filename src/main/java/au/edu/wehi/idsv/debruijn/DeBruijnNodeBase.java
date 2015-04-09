@@ -1,12 +1,12 @@
 package au.edu.wehi.idsv.debruijn;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
 
@@ -22,7 +22,7 @@ public class DeBruijnNodeBase {
 	/**
 	 * Contributing evidence
 	 */
-	private List<DirectedEvidence> supportList = Lists.newArrayList();
+	private List<DirectedEvidence> supportList = new ArrayList<DirectedEvidence>(4);
 	private long tPositionWeightSum = 0;
 	private long fPositionWeightSum = 0;
 	private long bPositionWeightSum = 0;

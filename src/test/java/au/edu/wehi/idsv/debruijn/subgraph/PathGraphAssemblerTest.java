@@ -1,6 +1,6 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -8,7 +8,6 @@ import java.util.List;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import au.edu.wehi.idsv.AssemblyMethod;
 import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
@@ -20,11 +19,10 @@ public class PathGraphAssemblerTest extends TestHelper {
 	public void anchor_should_not_diverge_from_reference() {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.k = 4;
-		ap.method = AssemblyMethod.DEBRUIJN_SUBGRAPH;
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
 		ap.maxContigsPerAssembly = 1;
 		
-		DeBruijnReadGraph g = G(ap.k, FWD);
+		DeBruijnReadGraph g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
 		g.addEvidence(NRRP(withSequence("GGTTAACC", DP(0, 1, "8M", true, 1, 10, "8M", false))));
@@ -43,13 +41,11 @@ public class PathGraphAssemblerTest extends TestHelper {
 	public void should_assemble_excluding_used_non_reference_kmers() {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.k = 4;
-		ap.method = AssemblyMethod.DEBRUIJN_SUBGRAPH;
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
 		ap.maxContigsPerAssembly = 1000;
 		ap.maxBaseMismatchForCollapse = 0;
-		ap.assemblyBackToReference = false;
 		
-		DeBruijnReadGraph g = G(ap.k, FWD);
+		DeBruijnReadGraph g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
 		g.addEvidence(NRRP(withSequence(           "GCCAATC", OEA(0, 10, "7M", true)))); // not on main patch, but reachable
@@ -65,13 +61,12 @@ public class PathGraphAssemblerTest extends TestHelper {
 	public void should_assemble_excluding_all_reachable_non_reference_kmers() {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.k = 4;
-		ap.method = AssemblyMethod.DEBRUIJN_SUBGRAPH;
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
 		ap.maxContigsPerAssembly = 1000;
 		ap.maxBaseMismatchForCollapse = 0;
-		ap.assemblyBackToReference = false;
 		
-		DeBruijnReadGraph g = G(ap.k, FWD);
+		
+		DeBruijnReadGraph g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
 		g.addEvidence(NRRP(withSequence(              "AATC", OEA(0, 10, "7M", true)))); // not on main patch, but reachable
@@ -87,11 +82,10 @@ public class PathGraphAssemblerTest extends TestHelper {
 	public void should_maximise_non_reference_weight() {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.k = 4;
-		ap.method = AssemblyMethod.DEBRUIJN_SUBGRAPH;
 		ap.maxContigsPerAssembly = 1000;
 		ap.maxBaseMismatchForCollapse = 0;
-		ap.assemblyBackToReference = false;
-		DeBruijnReadGraph g = G(ap.k, FWD);
+		
+		DeBruijnReadGraph g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence("AAATGGGG", Read(0, 10, "6M3S"))));
 		g.addEvidence(SCE(FWD, withSequence("GTACCCGGGG", Read(0, 10, "9M2S"))));
 		// should take the shorter assembly that has a longer soft clip
@@ -104,12 +98,11 @@ public class PathGraphAssemblerTest extends TestHelper {
 	public void should_maximise_reference_weight() {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.k = 4;
-		ap.method = AssemblyMethod.DEBRUIJN_SUBGRAPH;
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
 		ap.maxContigsPerAssembly = 1000;
 		ap.maxBaseMismatchForCollapse = 0;
-		ap.assemblyBackToReference = false;
-		DeBruijnReadGraph g = G(ap.k, FWD);
+		
+		DeBruijnReadGraph g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence( "TAAATGGG", Read(0, 10, "7M1S"))));
 		g.addEvidence(SCE(FWD, withSequence( "TAAATGGG", Read(0, 10, "7M1S"))));
 		g.addEvidence(SCE(FWD, withSequence( "TAAATGGG", Read(0, 10, "7M1S"))));
@@ -128,12 +121,11 @@ public class PathGraphAssemblerTest extends TestHelper {
 	public void should_assemble_simple_sequence() {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.k = 4;
-		ap.method = AssemblyMethod.DEBRUIJN_SUBGRAPH;
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 16;
 		ap.maxContigsPerAssembly = 1000;
 		ap.maxBaseMismatchForCollapse = 0;
-		ap.assemblyBackToReference = false;
-		DeBruijnReadGraph g = G(ap.k, FWD);
+		
+		DeBruijnReadGraph g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence("GGTACCCAAATGGG", Read(0, 10, "10M4S"))));
 		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("TGGG")), new NontrackingSubgraphTracker());
 		List<LinkedList<Long>> result = pga.assembleContigs();
@@ -144,25 +136,19 @@ public class PathGraphAssemblerTest extends TestHelper {
 	 * Assembly back into reference is required for small-medium insertion detection
 	 */
 	@Test
-	public void assemblyBackToReference_should_control_assembly_from_breakend_back_to_reference_kmers() {
+	public void should_assemble_viable_breakpoint() {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.k = 3;
-		ap.method = AssemblyMethod.DEBRUIJN_SUBGRAPH;
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 16;
 		ap.maxContigsPerAssembly = 1000;
 		ap.maxBaseMismatchForCollapse = 0;
-		ap.assemblyBackToReference = false;
-		DeBruijnReadGraph g = G(ap.k, FWD);
+		
+		DeBruijnReadGraph g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence("ACTGT", Read(0, 10, "3M2S"))));
 		g.addEvidence(SCE(FWD, withSequence("GTCA", Read(0, 10, "3M1S"))));
+		
 		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("ACT")), new NontrackingSubgraphTracker());
 		List<LinkedList<Long>> result = pga.assembleContigs();
-		assertEquals(2, result.size());
-		assertEquals("ACTGT", S(g, result.get(0)));
-		
-		ap.assemblyBackToReference = true;
-		pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("ACT")), new NontrackingSubgraphTracker());
-		result = pga.assembleContigs();
 		assertEquals(2, result.size());
 		assertEquals("ACTGTC", S(g, result.get(0)));
 		// Anchor     ACT>
@@ -175,12 +161,11 @@ public class PathGraphAssemblerTest extends TestHelper {
 	public void should_order_assembly_by_breakend_weight() {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.k = 4;
-		ap.method = AssemblyMethod.DEBRUIJN_SUBGRAPH;
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
 		ap.maxContigsPerAssembly = 4;
 		ap.maxBaseMismatchForCollapse = 0;
-		ap.assemblyBackToReference = false;
-		DeBruijnReadGraph g = G(ap.k, FWD);
+		
+		DeBruijnReadGraph g = RG(ap.k);
 		//                                    RRRRRR
 		g.addEvidence(SCE(FWD, withSequence( "TTTTCGAGAT", Read(0, 10, "8M1S"))));
 		g.addEvidence(SCE(FWD, withSequence( "TTTTCGCCGGT", Read(0, 10, "8M3S"))));
@@ -196,12 +181,11 @@ public class PathGraphAssemblerTest extends TestHelper {
 	public void should_fall_back_to_greedy_assemble() {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.k = 4;
-		ap.method = AssemblyMethod.DEBRUIJN_SUBGRAPH;
 		ap.maxContigsPerAssembly = 1000;
 		ap.maxBaseMismatchForCollapse = 0;
 		ap.maxPathTraversalNodes = 2;
-		ap.assemblyBackToReference = false;
-		DeBruijnReadGraph g = G(ap.k, FWD);
+		
+		DeBruijnReadGraph g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence("AAATGGGGGGGGGGG", Read(0, 10, "6M10S"))));
 		g.addEvidence(SCE(FWD, withSequence("AAATGGGC", Read(0, 10, "6M3S"))));
 		g.addEvidence(SCE(FWD, withSequence("AAATGGGTAA", Read(0, 10, "6M5S"))));
@@ -223,6 +207,26 @@ public class PathGraphAssemblerTest extends TestHelper {
 	}
 	@Test
 	public void should_limit_anchor_assembly_length() {
-		fail();
+		AssemblyParameters ap = new AssemblyParameters();
+		ap.k = 2;
+		ap.maxContigsPerAssembly = 1000;
+		ap.maxBaseMismatchForCollapse = 0;
+		ap.maxPathTraversalNodes = 2;
+		ap.anchorAssemblyLength = 2;
+		DeBruijnReadGraph g = RG(ap.k);
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAGAGCATT", Read(0, 1, "20M1S"))));
+		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("TT")), new NontrackingSubgraphTracker());
+		List<LinkedList<Long>> result = pga.assembleContigs();
+		assertEquals(1, result.size());
+		assertEquals("ATT", S(g, result.get(0)));
+		
+		// above limit should fully assemble
+		ap.anchorAssemblyLength = 1000;
+		g = RG(ap.k);
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAGAGCATT", Read(0, 1, "20M1S"))));
+		pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("TT")), new NontrackingSubgraphTracker());
+		result = pga.assembleContigs();
+		assertEquals(1, result.size());
+		assertEquals(9, result.get(0).size()); // actually a misassembly due to repeated anchor kmers but not relevant to our test
 	}
 }

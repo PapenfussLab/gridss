@@ -21,7 +21,7 @@ public abstract class ReadPairConcordanceCalculator {
 		if (read2 == null) {
 			return read1.getReadPairedFlag()
 					&& !read1.getReadUnmappedFlag()
-					&& read1.getMateUnmappedFlag()
+					&& !read1.getMateUnmappedFlag()
 					&& read1.getReferenceIndex() == read1.getMateReferenceIndex()
 					&& read1.getReadNegativeStrandFlag() != read1.getMateNegativeStrandFlag();
 		} else {
