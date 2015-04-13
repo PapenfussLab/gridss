@@ -18,6 +18,8 @@ import htsjdk.samtools.util.SequenceUtil;
 import java.util.Arrays;
 import java.util.List;
 
+import com.google.common.collect.Lists;
+
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.Defaults;
 
@@ -348,7 +350,7 @@ public class SAMRecordUtil {
 		second.setMateReferenceIndex(first.getReferenceIndex());
 		second.setMateAlignmentStart(first.getAlignmentStart());
 		second.setMateNegativeStrandFlag(first.getReadNegativeStrandFlag());
-		second.setMateUnmappedFlag(false);
+		second.setMateUnmappedFlag(first.getReadUnmappedFlag());
 		second.setReadName(first.getReadName());
 	}
 	/**
@@ -379,5 +381,37 @@ public class SAMRecordUtil {
 				&& r1.getReferenceIndex() == r2.getReferenceIndex()
 				&& (r1.getUnclippedStart() == r2.getUnclippedStart() || r1.getUnclippedEnd() == r2.getUnclippedEnd())
 				&& r1.getReadNegativeStrandFlag() == r2.getReadNegativeStrandFlag();
+	}
+	/**
+	 * Removes soft-clipped bases from the ends of read
+	 */
+	public static void trimSoftClips(SAMRecord read, int startCount, int endCount) {
+		List<CigarElement> cigar = Lists.newArrayList(read.getCigar().getCigarElements());
+		if (startCount > 0) {
+			CigarElement sc = cigar.get(0);
+			int len = sc.getLength();
+			assert(sc.getOperator() == CigarOperator.SOFT_CLIP);
+			assert(len >= startCount);
+			cigar.remove(0);
+			len -= startCount;
+			if (len > 0) {
+				cigar.add(0, new CigarElement(len, CigarOperator.SOFT_CLIP));
+			}
+		}
+		if (endCount > 0) {
+			CigarElement sc = cigar.get(cigar.size() - 1);
+			int len = sc.getLength();
+			assert(sc.getOperator() == CigarOperator.SOFT_CLIP);
+			assert(len >= endCount);
+			cigar.remove(cigar.size() - 1);
+			len -= endCount;
+			if (len > 0) {
+				cigar.add(cigar.size(), new CigarElement(len, CigarOperator.SOFT_CLIP));
+			}
+		}
+		int readLength = read.getReadLength();
+		read.setCigar(new Cigar(cigar));
+		read.setReadBases(Arrays.copyOfRange(read.getReadBases(), startCount, readLength - endCount));
+		read.setBaseQualities(Arrays.copyOfRange(read.getBaseQualities(), startCount, readLength - endCount));
 	}
 }

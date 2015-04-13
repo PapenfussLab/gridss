@@ -512,7 +512,7 @@ public class AssemblyFactoryTest extends TestHelper {
 	}
 	@Test
 	public void should_assemble_breakpoint() {
-		AssemblyEvidence e = AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(),
+		SmallIndelSAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(),
 				Sets.<DirectedEvidence>newHashSet(),
 				0, 1, 1, 0, 2, 3,
 				B("NAAAN"), B("AAAAA"), 0, 0);
@@ -526,11 +526,11 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals(2, bp.start2);
 		assertEquals(2, bp.end2);
 		assertEquals(BWD, bp.direction2);
-		assertEquals("AAA", S(e.getBreakendSequence()));
+		assertEquals("AAA", e.getUntemplatedSequence());
 	}
 	@Test
 	public void breakpoint_assembly_should_allow_BWD_breakend_before_FWD() {
-		AssemblyEvidence e = AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(),
+		SmallIndelSAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(),
 				Sets.<DirectedEvidence>newHashSet(),
 				0, 10, 1, 0, 1, 3,
 				B("NAAAN"), B("AAAAA"), 0, 0);
@@ -539,12 +539,12 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals(0, bp.referenceIndex);
 		assertEquals(10, bp.start);
 		assertEquals(10, bp.end);
-		assertEquals(BWD, bp.direction);
+		assertEquals(FWD, bp.direction);
 		assertEquals(0, bp.referenceIndex2);
 		assertEquals(1, bp.start2);
 		assertEquals(1, bp.end2);
-		assertEquals(FWD, bp.direction2);
-		assertEquals("AAA", S(e.getBreakendSequence()));
+		assertEquals(BWD, bp.direction2);
+		assertEquals("AAA", e.getUntemplatedSequence());
 	}
 	@Test
 	public void hydrate_should_allow_round_trip() {
@@ -560,7 +560,7 @@ public class AssemblyFactoryTest extends TestHelper {
 					B("NNAAATTTT"), B("ABCDEFG"), 0, 0),
 				SmallIndelSAMRecordAssemblyEvidenceTest.create(1, "2M5D3M", "AAAAAA")
 			}) {
-			SAMRecordAssemblyEvidence r = AssemblyFactory.hydrate(e.getEvidenceSource(), e.getSAMRecord());
+			SAMRecordAssemblyEvidence r = AssemblyFactory.hydrate(e.getEvidenceSource(), e.getBackingRecord());
 			SAMRecordAssemblyEvidenceTest.assertEvidenceEquals(e, r);
 		}
 	}

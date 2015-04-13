@@ -22,6 +22,11 @@ public class RealignedSAMRecordAssemblyEvidence extends SAMRecordAssemblyEvidenc
 		SAMRecordUtil.pairReads(getSAMRecord(), getRemoteSAMRecord());
 	}
 	@Override
+	public boolean isReferenceAssembly() {
+		return super.isReferenceAssembly()
+			|| (getBreakendSummary().couldBeReferenceAllele() && getUntemplatedSequence().length() == 0);
+	}
+	@Override
 	public BreakpointSummary getBreakendSummary() {
 		return rbp.getBreakpointSummary();
 	}
@@ -67,7 +72,7 @@ public class RealignedSAMRecordAssemblyEvidence extends SAMRecordAssemblyEvidenc
 	 * Swaps the view of the evidence to the remote breakend 
 	 * @return
 	 */
-	public RealignedRemoteSAMRecordAssemblyEvidence asRemote() {
+	public RealignedSAMRecordAssemblyEvidence asRemote() {
 		return new RealignedRemoteSAMRecordAssemblyEvidence(this);
 	}
 }

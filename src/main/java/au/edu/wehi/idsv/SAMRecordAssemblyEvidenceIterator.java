@@ -15,19 +15,28 @@ public class SAMRecordAssemblyEvidenceIterator extends AbstractIterator<SAMRecor
 	private final Iterator<SAMRecord> it;
 	private final Iterator<SAMRecord> rit;
 	private final SequentialRealignedBreakpointFactory factory;
+	private boolean includeBothBreakendsOfSpanningAssemblies;
 	public SAMRecordAssemblyEvidenceIterator(
 			ProcessingContext processContext,
 			AssemblyEvidenceSource source,
 			Iterator<SAMRecord> it,
-			Iterator<SAMRecord> realignedIt) {
+			Iterator<SAMRecord> realignedIt,
+			boolean includeBothBreakendsOfSpanningAssemblies) {
 		this.processContext = processContext;
 		this.source = source;
 		this.it = it;
 		this.rit = realignedIt;
 		this.factory = realignedIt != null ? new SequentialRealignedBreakpointFactory(Iterators.peekingIterator(this.rit)) : null;
+		this.includeBothBreakendsOfSpanningAssemblies = includeBothBreakendsOfSpanningAssemblies;
 	}
+	private SAMRecordAssemblyEvidence buffer = null;
 	@Override
 	protected SAMRecordAssemblyEvidence computeNext() {
+		if (buffer != null) {
+			SAMRecordAssemblyEvidence r = buffer;
+			buffer = null;
+			return r;
+		}
 		while (it.hasNext()) {
 			SAMRecord record = it.next();
 			SAMRecordAssemblyEvidence evidence = AssemblyFactory.hydrate(source, record);
@@ -38,7 +47,10 @@ public class SAMRecordAssemblyEvidenceIterator extends AbstractIterator<SAMRecor
 						rp.shouldRealignBreakend(evidence));
 				evidence = AssemblyFactory.incorporateRealignment(processContext, evidence, realigned);
 			}
-			if (evidence != null && !evidence.isReferenceAssembly()) {
+			if (includeBothBreakendsOfSpanningAssemblies && evidence.isSpanningAssembly()) {
+				buffer = ((SmallIndelSAMRecordAssemblyEvidence)evidence).asRemote();
+			}
+			if (evidence != null) {
 				return evidence;
 			}
 		}

@@ -16,6 +16,7 @@ import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
+import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -38,16 +39,20 @@ public class SubgraphSizeTimeoutVisualisationTest extends IntermediateFilesTest 
 	}	
 	@Test
 	public void should_export_on_path_timeout_gexf() throws IOException {
+		int k = 6;
 		ProcessingContext pc = getCommandlineContext(false);
+		pc.getAssemblyParameters().maxPathTraversalNodes = 1024;
+		pc.getAssemblyParameters().k = k;
+		pc.getSoftClipParameters().minLength = 1;
 		File output = new File(super.testFolder.getRoot(), "test_path_timeout_gexf.vcf");
 		List<SAMRecord> list = Lists.newArrayList();
-		for (int i = 1; i < 1000; i++) {
+		for (int i = 0; i < 1 << (2*k); i++) {
 			SAMRecord r = new SAMRecord(pc.getBasicSamHeader());
 			r.setReferenceIndex(0);
-			r.setAlignmentStart(i);
-			r.setReadBases(B("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"));
-			r.setBaseQualities(B("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"));
-			r.setCigarString("50M50S");
+			r.setAlignmentStart(1);
+			r.setReadBases(KmerEncodingHelper.encodedToPicardBases(k, i));
+			r.setBaseQualities(B(40, k));
+			r.setCigarString(String.format("1M%dS", k-1));
 			r.setReadName(Integer.toString(i));
 			r.setMappingQuality(40);
 			list.add(r);
@@ -58,11 +63,8 @@ public class SubgraphSizeTimeoutVisualisationTest extends IntermediateFilesTest 
 		ses.completeSteps(ProcessStep.ALL_STEPS);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), output);
 		aes.ensureAssembled();
-		File dir = new File(new File(new File(super.testFolder.getRoot(), "visualisation"), "polyA"), "0");
-		File[] subgraph = dir.listFiles((FileFilter)new WildcardFileFilter("*.subgraph.gexf"));
-		assertTrue(subgraph != null && subgraph.length > 0);
+		assertTrue(new File(new File(super.testFolder.getRoot(), "visualisation"), "pathTraversalTimeout-1.subgraph.gexf").exists());
 	}
-	
 	@Override
 	public ProcessingContext getCommandlineContext(boolean perChr) {
 		ProcessingContext pc = super.getCommandlineContext(perChr);

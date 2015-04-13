@@ -77,9 +77,11 @@ public abstract class IntermediateFileUtil {
 			dirContents = dir.listFiles();
 			dirList.put(dirKey, dirContents);
 		}
-		for (File f : dirContents) {
-			if (f.getName().equals(file.getName())) {
-				return f;
+		if (dirContents != null) { 
+			for (File f : dirContents) {
+				if (f.getName().equals(file.getName())) {
+					return f;
+				}
 			}
 		}
 		return null;

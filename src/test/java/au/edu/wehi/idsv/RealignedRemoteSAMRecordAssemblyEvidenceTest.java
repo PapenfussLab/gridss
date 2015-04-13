@@ -7,7 +7,7 @@ import com.google.common.collect.Sets;
 public class RealignedRemoteSAMRecordAssemblyEvidenceTest extends RemoteEvidenceTest {
 	@Override
 	public RealignedRemoteSAMRecordAssemblyEvidence makeRemote(BreakendSummary bs, String allBases, String realignCigar, boolean realignNegativeStrand) {
-		return makeLocal(bs, allBases, realignCigar, realignNegativeStrand).asRemote();
+		return (RealignedRemoteSAMRecordAssemblyEvidence)makeLocal(bs, allBases, realignCigar, realignNegativeStrand).asRemote();
 	}
 	@Override
 	public RealignedSAMRecordAssemblyEvidence makeLocal(BreakendSummary bs, String allBases, String realignCigar, boolean realignNegativeStrand) {

@@ -171,15 +171,15 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		DirectedEvidence b1 = SCE(BWD, Read(0, 1, "7S5M"));
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(e1, e2, e3),
 			1, 2, 1, B("GTAC"), new byte[] {1,2,3,4}, 1, 2);
-		assertTrue(e.isPartOfAssemblyBreakend(e1));
-		assertTrue(e.isPartOfAssemblyBreakend(e2));
-		assertTrue(e.isPartOfAssemblyBreakend(e3));
-		assertFalse(e.isPartOfAssemblyBreakend(b1));
+		assertTrue(e.isPartOfAssembly(e1));
+		assertTrue(e.isPartOfAssembly(e2));
+		assertTrue(e.isPartOfAssembly(e3));
+		assertFalse(e.isPartOfAssembly(b1));
 		e = new SAMRecordAssemblyEvidence(AES(), e.getSAMRecord(), null);
-		assertTrue(e.isPartOfAssemblyBreakend(e1));
-		assertTrue(e.isPartOfAssemblyBreakend(e2));
-		assertTrue(e.isPartOfAssemblyBreakend(e3));
-		assertFalse(e.isPartOfAssemblyBreakend(b1));
+		assertTrue(e.isPartOfAssembly(e1));
+		assertTrue(e.isPartOfAssembly(e2));
+		assertTrue(e.isPartOfAssembly(e3));
+		assertFalse(e.isPartOfAssembly(b1));
 	}
 	@Test
 	public void should_rehydrate_breakend_evidence() {
@@ -188,9 +188,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		DirectedEvidence e3 = NRRP(OEA(0, 1, "1M", false));
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(e1, e2, e3),
 			1, 2, 1, B("GTAC"), new byte[] {1,2,3,4}, 1, 2);
-		e.hydrateEvidenceSet(e1);
-		e.hydrateEvidenceSet(e2);
-		e.hydrateEvidenceSet(e3);
+		// should still have evidence since we just created it
 		assertEquals(3, e.getEvidence().size());
 		e = new SAMRecordAssemblyEvidence(AES(), e.getSAMRecord(), null);
 		e.hydrateEvidenceSet(e1);
@@ -275,7 +273,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		String assembly = "AAAAAAAAAATTAAAAAAAAAA";
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
 				0, 1, 10, B(assembly), B(40, assembly.length()), 0, 0).realign();
-		assertEquals("10M2I10M", ((SmallIndelSAMRecordAssemblyEvidence)e).getIndelSAMRecord().getCigarString());
+		assertEquals("10M2I10M", ((SmallIndelSAMRecordAssemblyEvidence)e).getBackingRecord().getCigarString());
 		assertEquals(new BreakpointSummary(0, FWD, 10, 10, 0, BWD, 11, 11), e.getBreakendSummary());
 		assertTrue(e instanceof DirectedBreakpoint);
 	}
@@ -310,17 +308,21 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals(0, e.getBreakendSequence().length);
 	}
 	@Test
-	public void should_call_placeholder_breakend_when_calling_reference_allele() {
-		String assembly = S(Arrays.copyOf(RANDOM, 10));
+	public void matching_reference_allele_should_have_read_length_microhomology() {
+		// 12345678901234567890
+		//          MMMMMMMMMM
+		//         >>>>>>>>>>>
+		//          <<<<<<<<<<<
+		String assembly = S(Arrays.copyOfRange(RANDOM, 10-1, 20-1));
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
 				2, 1, 1, B(assembly), B(40, assembly.length()), 0, 0);
 		e = e.realign();
-		assertEquals(new BreakendSummary(2, FWD, 10, 10), e.getBreakendSummary());
+		assertEquals(new BreakpointSummary(2, FWD, 9, 19, 2, BWD, 10, 20), e.getBreakendSummary());
 		
 		e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(),
 				2, 1, 1, B(assembly), B(40, assembly.length()), 0, 0);
 		e = e.realign();
-		assertEquals(new BreakendSummary(2, BWD, 1, 1), e.getBreakendSummary());
+		assertEquals(new BreakpointSummary(2, FWD, 9, 19, 2, BWD, 10, 20), e.getBreakendSummary());
 	}
 	@Test
 	public void getAssemblySequence_should_return_assembly() {
@@ -357,7 +359,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		SAMRecord r = ((SAMRecordAssemblyEvidence)AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(support),
 				0, 10, 2,
 				0, 15, 4,
-				B("NNAAATTTT"), B("ABCDEFG"), 0, 0)).getSAMRecord();
+				B("NNAAATTTT"), B("ABCDEFG"), 0, 0)).getBackingRecord();
 		assertEquals(0, (int)r.getReferenceIndex());
 		assertEquals(9, r.getAlignmentStart());
 		assertEquals("2M3I4D4M", r.getCigarString());

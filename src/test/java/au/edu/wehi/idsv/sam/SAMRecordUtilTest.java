@@ -186,4 +186,14 @@ public class SAMRecordUtilTest extends TestHelper {
 	public void isDovetailing_should_require_overlap() {
 		assertFalse(SAMRecordUtil.isDovetailing(RP(0, 1, 2, 1)[0], RP(0, 1, 2, 1)[1], PairOrientation.FR));
 	}
+	@Test
+	public void trimSoftClips_should_remove_from_both_end() {
+		SAMRecord r = Read(0,  1, "3S1M1S");
+		r.setReadBases(B("ACGTN"));
+		r.setBaseQualities(B("ACGTN"));
+		SAMRecordUtil.trimSoftClips(r, 2, 1);
+		assertEquals("1S1M", r.getCigarString());
+		assertEquals("GT", S(r.getReadBases()));
+		assertEquals("GT", S(r.getBaseQualities()));
+	}
 }

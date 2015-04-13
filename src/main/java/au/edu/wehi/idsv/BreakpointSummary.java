@@ -117,7 +117,7 @@ public class BreakpointSummary extends BreakendSummary {
 			return new BreakpointSummary(local.compressBounds(by, RoundingMode.UP), remote.compressBounds(by, RoundingMode.DOWN));
 		}
 	}
-	public boolean couldBeIndelOfSize(int minSize, int maxSize) {
+	public boolean couldBeDeletionOfSize(int minSize, int maxSize) {
 		if (referenceIndex != referenceIndex2 || direction == direction2) return false;
 		int fwdStart, fwdEnd, bwdStart, bwdEnd;
 		if (direction == BreakendDirection.Forward) {
@@ -134,6 +134,13 @@ public class BreakpointSummary extends BreakendSummary {
 		int bpMinSize = bwdStart - fwdEnd - 1;
 		int bpMaxSize = bwdEnd - fwdStart - 1;
 		return intervalsOverlap(bpMinSize, bpMaxSize, minSize, maxSize);
+	}
+	/**
+	 * Determines whether this breakpoint could just be the reference allele
+	 * @return
+	 */
+	public boolean couldBeReferenceAllele() {
+		return couldBeDeletionOfSize(0, 0);
 	}
 	/**
 	 * Determines whether the (end-point inclusive) intervals overlap

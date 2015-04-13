@@ -77,7 +77,7 @@ public class OrthogonalEvidenceIterator extends AbstractIterator<DirectedEvidenc
 	private void outputOrthogonalNonAssembly(DirectedEvidence e) {
 		boolean usedInUnfilteredAssembly = false;
 		for (AssemblyEvidence assembly : assemblyLookup) {
-			if (assembly.isPartOfAssemblyBreakend(e)) {
+			if (assembly.isPartOfAssembly(e)) {
 				if (assembly instanceof SAMRecordAssemblyEvidence) {
 					((SAMRecordAssemblyEvidence)assembly).hydrateEvidenceSet(e);
 				}

@@ -46,24 +46,27 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		this.evidence = assembly.evidence;
 	}
 	public SAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecord assembly, SAMRecord realignment) {
-		this.source = source;
-		this.record = assembly;
-		BreakendSummary bs = calculateBreakend(this.record);
+		this(source, assembly, realignment,
+				calculateBreakend(assembly),
+				calculateIsBreakendExact(assembly.getCigar()));
+	}
+	protected SAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecord assembly, SAMRecord realignment,
+			BreakendSummary bs, boolean isExact) {
 		if (bs instanceof BreakpointSummary && realignment != null && !realignment.getReadUnmappedFlag()
 				&& !source.getContext().getRealignmentParameters().realignmentPositionUnique(realignment)) {
-			// ignore mapping location of realignment
+			// ignore breakpoint realignment if the mapping is ambiguous
 			bs = ((BreakpointSummary)bs).localBreakend();
 		}
+		this.source = source;
+		this.record = assembly;
 		this.breakend = bs;
-		this.isExact = calculateIsBreakendExact(this.record.getCigar());
+		this.isExact = isExact;
 		this.realignment = realignment == null ? getPlaceholderRealignment() : realignment;
 		fixReadPair();
 	}
 	/**
 	 * Lazily calculated evidence IDs of the evidence contributing to this breakend
 	 * 
-	 * Hashes of the IDs are stored due to the overhead of storing the full strings
-	 * and the low likelihood and impact of hash collisions
 	 */
 	private Set<String> evidenceIds = null;
 	private void ensureEvidenceIDs() {
@@ -86,7 +89,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 * @param evidence
 	 * @return true if the record is likely part of the breakend, false if definitely not
 	 */
-	public boolean isPartOfAssemblyBreakend(DirectedEvidence e) {
+	public boolean isPartOfAssembly(DirectedEvidence e) {
 		ensureEvidenceIDs();
 		return evidenceIds.contains(e.getEvidenceID());
 	}
@@ -95,8 +98,17 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 * @param e
 	 */
 	public void hydrateEvidenceSet(DirectedEvidence e) {
-		if (isPartOfAssemblyBreakend(e)) {
+		if (isPartOfAssembly(e)) {
 			evidence.add(e);
+		}
+	}
+	/**
+	 * Hydrates the given evidence back into the assembly evidence set
+	 * @param e
+	 */
+	public void hydrateEvidenceSet(Collection<DirectedEvidence> evidence) {
+		for (DirectedEvidence e : evidence) {
+			hydrateEvidenceSet(e);
 		}
 	}
 	public Collection<DirectedEvidence> getEvidence() {
@@ -386,6 +398,9 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	public SAMRecord getRemoteSAMRecord() {
 		return realignment;
 	}
+	public SAMRecord getBackingRecord() {
+		return getSAMRecord();
+	}
 	@Override
 	public String toString() {
 		return String.format("A  %s N=%s", getBreakendSummary(), getEvidenceID());
@@ -443,5 +458,13 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 */
 	public boolean isReferenceAssembly() {
 		return isExact && getBreakendLength() == 0;
+	}
+	/**
+	 * Assembly spans entire breakpoint
+	 * @return
+	 */
+	public boolean isSpanningAssembly() {
+		Byte attr = (Byte)getSAMRecord().getAttribute(SamTags.SPANNING_ASSEMBLY);
+		return attr != null && (byte)attr == 1;
 	}
 }

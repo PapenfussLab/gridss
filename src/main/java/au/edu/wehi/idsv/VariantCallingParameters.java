@@ -39,14 +39,14 @@ public class VariantCallingParameters {
 	}
 	public List<VcfFilter> breakpointFilters(BreakpointSummary bp) {
 		List<VcfFilter> list = Lists.newArrayList();
-		if (bp.couldBeIndelOfSize(1, minIndelSize - 1)) {
+		if (bp.couldBeDeletionOfSize(1, minIndelSize - 1)) {
 			// likely to be an artifact
 			// due to noise/poor alignment (eg bowtie2 2.1.0 would misalign reference reads)
 			// and a nearby (real) indel
 			// causing real indel mates to be assembled with noise read
 			list.add(VcfFilter.SMALL_INDEL);
 		}
-		if (bp.couldBeIndelOfSize(0, 0)) {
+		if (bp.couldBeReferenceAllele()) {
 			list.add(VcfFilter.REFERENCE_ALLELE);
 		}
 		return list;

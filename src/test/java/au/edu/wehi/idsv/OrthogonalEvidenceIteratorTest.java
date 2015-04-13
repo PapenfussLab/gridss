@@ -50,6 +50,7 @@ public class OrthogonalEvidenceIteratorTest extends TestHelper {
 		DirectedEvidence e3 = SCE(FWD, Read(0, 10, "1M12S"));
 		DirectedEvidence e4 = SCE(FWD, Read(0, 100, "1M12S"));
 		SAMRecordAssemblyEvidence a1 = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Sets.newHashSet(e1, e2, e3), 0, 10, 1, B("TT"), B("TT"), 1, 1);
+		a1 = AssemblyFactory.hydrate(AES(), a1.getBackingRecord());
 		List<DirectedEvidence> result = Lists.newArrayList(new OrthogonalEvidenceIterator(getContext().getLinear(), Lists.newArrayList(e0, e1, e2, e3, a1, e4).iterator(), 2));
 		assertFalse(result.contains(e1));
 		assertFalse(result.contains(e2));

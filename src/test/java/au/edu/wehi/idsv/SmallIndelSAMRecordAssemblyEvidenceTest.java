@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMUtils;
 
@@ -17,7 +16,7 @@ public class SmallIndelSAMRecordAssemblyEvidenceTest extends TestHelper {
 		SmallIndelSAMRecordAssemblyEvidence e = new SmallIndelSAMRecordAssemblyEvidence(AES(), r);
 		return e;
 	}
-	private void check_matches(int position, String cigar, String bases, BreakendDirection dir,
+	private void check_matches(int position, String cigar, String bases,
 			int anchorPos, String anchorCigar, String anchorSeq,
 			int realignPos, String realignCigar, String realignSeq) {
 		SmallIndelSAMRecordAssemblyEvidence e = create(position, cigar, bases);
@@ -36,21 +35,19 @@ public class SmallIndelSAMRecordAssemblyEvidenceTest extends TestHelper {
 	public void should_act_as_split_read_mapping() {
 		// 1234567890
 		//  MMdddMMMM
-		check_matches(2, "2M3D4M", "AANNNN", FWD, 2, "2M4S", "AANNNN", 7, "4M", "NNNN");
-		check_matches(2, "2M3D4M", "AANNNN", BWD, 7, "2S4M", "AANNNN", 2, "2M", "AA");
+		check_matches(2, "2M3D4M", "AANNNN", 2, "2M4S", "AANNNN", 7, "4M", "NNNN");
+
 		
 		// 123---4567890
 		//  MMiiiMMMM
-		check_matches(2, "2M3I4M", "AATTTNNNN", FWD, 2, "2M7S", "AATTTNNNN", 4, "3S4M", "TTTNNNN");
-		check_matches(2, "2M3I4M", "AATTTNNNN", BWD, 4, "5S4M", "AATTTNNNN", 2, "2M3S", "AATTT");
+		check_matches(2, "2M3I4M", "AATTTNNNN", 2, "2M7S", "AATTTNNNN", 4, "3S4M", "TTTNNNN");
 	}
 	@Test
 	public void should_split_read_on_largest_indel() {
 		// 1234567----8901234567890
 		//  MMdddMiiiiMMMMM
 		
-		check_matches(2, "2M3D1M4I5M", "AAATTTTNNNNN", FWD, 2, "2M3D1M9S", "AAATTTTNNNNN", 8, "4S5M", "TTTTNNNNN");
-		check_matches(2, "2M3D1M4I5M", "AAATTTTNNNNN", BWD, 8, "7S5M", "AAATTTTNNNNN", 2, "2M3D1M4S", "AAATTTT");
+		check_matches(2, "2M3D1M4I5M", "AAATTTTNNNNN", 2, "2M3D1M9S", "AAATTTTNNNNN", 8, "4S5M", "TTTTNNNNN");
 	}
 	@Test
 	public void split_read_mapq_should_be_source_mapq() {
@@ -62,8 +59,7 @@ public class SmallIndelSAMRecordAssemblyEvidenceTest extends TestHelper {
 	public void should_consider_adjacent_indel_operands_as_single_event() {
 		// 123 4567890
 		//  MMidddMMMM
-		check_matches(2, "2M3D4M", "AATNNNN", FWD, 2, "2M5S", "AATNNNN", 7, "1S4M", "TNNNN");
-		check_matches(2, "2M3D4M", "AATNNNN", BWD, 7, "3S4M", "AATNNNN", 2, "2M1S", "AAT");
+		check_matches(2, "2M1I3D4M", "AATNNNN", 2, "2M5S", "AATNNNN", 7, "1S4M", "TNNNN");
 	}
 	/**
 	 * placeholder value required as SAM unable to represent such alignments
@@ -75,12 +71,32 @@ public class SmallIndelSAMRecordAssemblyEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void remote_breakend_SAMRecord_should_have_start_coordinate_of_high_breakend() {
-		assertEquals(13, create(10, "1M2D1M", "NN").asRemote().getSAMRecord().getAlignmentStart());
-		assertEquals(9, create(10, "1M2P2N2P1M", "NN").asRemote().getSAMRecord().getAlignmentStart());
+		assertEquals(13, create(10, "1M2D1M", "NN").getRemoteSAMRecord().getAlignmentStart());
+		assertEquals(9, create(10, "1M2P2N2P1M", "NN").getRemoteSAMRecord().getAlignmentStart());
 	}
 	@Test
 	public void should_not_have_assembly_direction() {
 		SmallIndelSAMRecordAssemblyEvidence e = create(0, "1M1D1M", "NN");
-		assertNull(SAMRecordAssemblyEvidence.getBreakendDirection(e.getIndelSAMRecord()));
+		assertNull(SAMRecordAssemblyEvidence.getBreakendDirection(e.getBackingRecord()));
+	}
+	@Test
+	public void remote_should_not_be_considered_remote_evidence_since_assembly_spans_entire_breakpoint() {
+		SmallIndelSAMRecordAssemblyEvidence e = create(0, "1M1D1M", "NN");
+		assertFalse(e.asRemote() instanceof RemoteEvidence);
+	}
+	@Test
+	public void getEvidenceID_should_prefix_with_local_breakend_direction() {
+		SmallIndelSAMRecordAssemblyEvidence e = create(0, "1M1D1M", "NN");
+		assertEquals('f', e.getEvidenceID().charAt(0));
+		assertEquals('b', e.asRemote().getEvidenceID().charAt(0));
+	}
+	@Test
+	public void isSpanningAssembly() {
+		SmallIndelSAMRecordAssemblyEvidence e = create(0, "1M1D1M", "NN");
+		assertTrue(e.isSpanningAssembly());
+		assertTrue(e.asRemote().isSpanningAssembly());
+		assertTrue(AssemblyFactory.hydrate(AES(), e.getBackingRecord()).isSpanningAssembly());
+		assertTrue(AssemblyFactory.hydrate(AES(), e.getSAMRecord()).isSpanningAssembly());
+		assertTrue(AssemblyFactory.incorporateRealignment(getContext(), AssemblyFactory.hydrate(AES(), e.getSAMRecord()), e.getRemoteSAMRecord()).isSpanningAssembly());
 	}
 }

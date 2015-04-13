@@ -15,6 +15,7 @@ import htsjdk.samtools.util.SequenceUtil;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import org.junit.Before;
@@ -39,6 +40,7 @@ import au.edu.wehi.idsv.SmallIndelSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.SmallIndelSAMRecordAssemblyEvidenceTest;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 
+import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -57,6 +59,7 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	List<SAMRecordAssemblyEvidence> evidence;
 	List<SAMRecord> realign;
 	int realignCount;
+	int spanningCount;
 	private void orderedAddNoRealign(SAMRecordAssemblyEvidence e) {
 		SAMRecord r = new SAMRecord(getContext().getBasicSamHeader());
 		r.setReadUnmappedFlag(true);
@@ -164,10 +167,12 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 			}
 			writer.close();
 		}
+		spanningCount = 0;
 		for (SAMRecordAssemblyEvidence e : evidence) {
 			if (e instanceof SmallIndelSAMRecordAssemblyEvidence) {
 				// considered realigned already
 				realignCount++;
+				spanningCount++;
 			}
 		}
 	}
@@ -197,9 +202,9 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 		new FixedAssemblyEvidenceSource(pc, evidence, file).ensureAssembled();
 	}
 	private void assertMatch(AssemblyEvidenceSource rp, AssemblyEvidenceSource aes) {
-		assertEquals(evidence.size(), Iterators.size(aes.iterator(false, true)));
-		assertEquals(evidence.size(), Iterators.size(rp.iterator(false, true)));
-		assertEquals(evidence.size() + realignCount, Iterators.size(rp.iterator(true, true)));
+		assertEquals(evidence.size() + spanningCount, Iterators.size(aes.iterator(false, true)));
+		assertEquals(evidence.size() + spanningCount, Iterators.size(rp.iterator(false, true)));
+		assertEquals(evidence.size() + realignCount + 2 * spanningCount, Iterators.size(rp.iterator(true, true)));
 		assertContains(Lists.newArrayList(rp.iterator(false, true)), Lists.newArrayList(aes.iterator(false, true)));
 		assertSorted(Lists.newArrayList(rp.iterator(false, true)));
 		assertSorted(Lists.newArrayList(aes.iterator(false, true)));
@@ -219,6 +224,18 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 				assertContains(Lists.newArrayList(aes.iterator(false, true)), e.getBreakendSummary().remoteBreakpoint());
 			}
 		}
+		assertUniqueEvidenceIDs(aes.iterator(false, true));
+		assertUniqueEvidenceIDs(rp.iterator(false, true));
+		assertUniqueEvidenceIDs(rp.iterator(true, true));
+	}
+	private static void assertUniqueEvidenceIDs(Iterator<SAMRecordAssemblyEvidence> it) {
+		List<String> ids = Lists.newArrayList(Iterators.transform(it, new Function<SAMRecordAssemblyEvidence, String>() {
+			@Override
+			public String apply(SAMRecordAssemblyEvidence input) {
+				return input.getEvidenceID();
+			}
+		}));
+		assertEquals(ids.size(), Sets.newHashSet(ids).size());
 	}
 	private void assertCorrectChr(Iterable<SAMRecordAssemblyEvidence> list, int expected) {
 		for (SAMRecordAssemblyEvidence s : list) {
@@ -284,8 +301,9 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	}
 	@Test
 	public void assembly_evidence_source_should_resort_to_evidence_order() {
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(), 0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), 0, 0)); // alignment starts at 5
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(), 0, 6, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), 0, 0)); // alignment starts at 6
+		AssemblyEvidenceSource aes = AES();
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(getContext(), aes, FWD, Sets.<DirectedEvidence>newHashSet(), 0, 10, 5, B("AACCCCCCCC"), B("CCCCCCCCCC"), 0, 0)); // alignment starts at 5
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(getContext(), aes, BWD, Sets.<DirectedEvidence>newHashSet(), 0, 6, 5,  B("TTTTTTTTAA"), B("TTTTTTTTTT"), 0, 0)); // alignment starts at 6
 		go();
 	}
 	@Test
@@ -296,7 +314,7 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	@Test
 	public void should_filter_breakpoints() {
 		orderedAdd(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
-				0, 5, 1, B("TT"), B("TT"), 0, 0),
+				0, 5, 1, B("AA"), B("AA"), 0, 0),
 				0, 6, false);
 		
 		ProcessingContext pc = getCommandlineContext(false);

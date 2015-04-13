@@ -1,13 +1,10 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.util.Log;
-
 import java.io.File;
 
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
 public class AssemblyParameters {
-	private static final Log log = Log.getInstance(AssemblyParameters.class);
 	/**
 	 * Assemble soft clips at the remote realigned position as well as the read mapping location
 	 */
@@ -114,17 +111,17 @@ public class AssemblyParameters {
 	 * Note: a breakend assembly longer than this length will cause reference sequence assembly to be at least as long as the breakend 
 	 */
 	public int anchorAssemblyLength = 100;
-	public boolean applyFilters(AssemblyEvidence evidence) {
+	public boolean applyFilters(SAMRecordAssemblyEvidence evidence) {
 		AssemblyEvidence localEvidence = evidence;
 		if (evidence instanceof RemoteEvidence) {
 			localEvidence = ((RealignedRemoteSAMRecordAssemblyEvidence)evidence).asLocal();
 		}
 		boolean filtered = false;
-		if (localEvidence.getBreakendSequence().length == 0 || localEvidence.getBreakendSummary() == null) {
+		if (localEvidence.getBreakendSummary() == null ||
+				evidence.isReferenceAssembly() ||
+				localEvidence.getBreakendSequence().length == 0) {
 			evidence.filterAssembly(VcfFilter.REFERENCE_ALLELE);
 			filtered = true;
-		} else if (localEvidence.getBreakendSequence() == null) {
-			log.error("Breakpoint sequence missing for assembly " + evidence.toString());
 		}
 		if (localEvidence.getAssemblySupportCountReadPair(EvidenceSubset.ALL) + localEvidence.getAssemblySupportCountSoftClip(EvidenceSubset.ALL) < minReads) {
 			evidence.filterAssembly(VcfFilter.ASSEMBLY_TOO_FEW_READ);

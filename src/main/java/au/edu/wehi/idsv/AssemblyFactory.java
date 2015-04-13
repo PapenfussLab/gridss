@@ -14,6 +14,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import au.edu.wehi.idsv.sam.CigarUtil;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
 
 import com.google.common.collect.ImmutableList;
@@ -50,9 +52,11 @@ public final class AssemblyFactory {
 				breakend.direction == BreakendDirection.Forward ? anchoredBaseCount : 0,
 				breakend.direction == BreakendDirection.Backward ? anchoredBaseCount : 0,
 				baseCalls, baseQuals, normalBaseCount, tumourBaseCount);
-		return hydrate(source, r);
+		SAMRecordAssemblyEvidence assembly = hydrate(source, r);
+		assembly.hydrateEvidenceSet(evidence);
+		return assembly;
 	}
-	public static SAMRecordAssemblyEvidence createAnchoredBreakpoint(
+	public static SmallIndelSAMRecordAssemblyEvidence createAnchoredBreakpoint(
 			ProcessingContext processContext, AssemblyEvidenceSource source,
 			Set<DirectedEvidence> evidence,
 			int startAnchorReferenceIndex, int startAnchorPosition, int breakendStartOffset,
@@ -63,11 +67,15 @@ public final class AssemblyFactory {
 				endAnchorReferenceIndex, BreakendDirection.Backward, endAnchorPosition, endAnchorPosition);
 		int startAnchorBaseCount = breakendStartOffset;
 		int endAnchorBaseCount = baseCalls.length - breakendEndOffset - 1;
+		assert(startAnchorBaseCount > 0);
+		assert(endAnchorBaseCount > 0);
 		SAMRecord r = createAssemblySAMRecord(evidence, processContext.getBasicSamHeader(), source, bp,
 				startAnchorBaseCount,
 				endAnchorBaseCount,
 				baseCalls, baseQuals, normalBaseCount, tumourBaseCount);
-		return hydrate(source, r);
+		SAMRecordAssemblyEvidence assembly = hydrate(source, r);
+		assembly.hydrateEvidenceSet(evidence);
+		return (SmallIndelSAMRecordAssemblyEvidence)assembly;
 	}
 	/**
 	 * Creates an assembly whose breakpoint cannot be exactly anchored to the reference  
@@ -91,7 +99,9 @@ public final class AssemblyFactory {
 		SAMRecord r = createAssemblySAMRecord(evidence, processContext.getBasicSamHeader(), source, breakend,
 				0, 0,
 				baseCalls, baseQuals, normalBaseCount, tumourBaseCount);
-		return hydrate(source, r);
+		SAMRecordAssemblyEvidence assembly = hydrate(source, r);
+		assembly.hydrateEvidenceSet(evidence);
+		return assembly;
 	}
 	/**
 	 * Updates the given assembly to incorporate the given realignment of the assembly breakend
@@ -116,7 +126,7 @@ public final class AssemblyFactory {
 	 */
 	public static SAMRecordAssemblyEvidence hydrate(AssemblyEvidenceSource source, SAMRecord record) {
 		BreakendDirection dir = SAMRecordAssemblyEvidence.getBreakendDirection(record);
-		if (dir == null) {
+		if (dir == null || SAMRecordUtil.getSoftClipLength(record, dir) == 0) {
 			return new SmallIndelSAMRecordAssemblyEvidence(source,  record);
 		} else {
 			return new SAMRecordAssemblyEvidence(source, record, null);
@@ -173,25 +183,23 @@ public final class AssemblyFactory {
 				throw new IllegalArgumentException("Imprecisely anchored breakends not supported by this constructor");
 			}
 			if (startAnchoredBaseCount > 0 && endAnchoredBaseCount > 0) {
-				// This is a breakpoint alignment!
+				// This is a breakpoint alignment spanning the entire event
 				BreakpointSummary bp = (BreakpointSummary)breakend;
 				record.setAlignmentStart(breakend.start - startAnchoredBaseCount + 1);
 				List<CigarElement> c = new ArrayList<CigarElement>(4);
 				int insSize = baseCalls.length - startAnchoredBaseCount - endAnchoredBaseCount;
 				int delSize = bp.start2 - bp.start - 1;
 				c.add(new CigarElement(startAnchoredBaseCount, CigarOperator.MATCH_OR_MISMATCH));
-				if (insSize > 0) {
+				if (insSize != 0) {
 					c.add(new CigarElement(insSize, CigarOperator.INSERTION));
 				}
-				if (delSize > 0) {
+				if (delSize != 0) {
 					c.add(new CigarElement(delSize, CigarOperator.DELETION));
-				} else if (delSize < 0) {
-					// negative relative alignment position not representable in SAM
-					// as all CIGAR elements must be positive in size.
-					// we'll use xPxNxP as a proxy for -D
-					c.add(new CigarElement(delSize, CigarOperator.PADDING));
-					c.add(new CigarElement(delSize, CigarOperator.SKIPPED_REGION));
-					c.add(new CigarElement(delSize, CigarOperator.PADDING));
+					if (delSize < 0) {
+						// negative relative alignment position not representable in SAM
+						// as all CIGAR element lengths must be positive in size.
+						c = CigarUtil.encodeNegativeDeletion(c);
+					}
 				}
 				c.add(new CigarElement(endAnchoredBaseCount, CigarOperator.MATCH_OR_MISMATCH));
 				record.setCigar(new Cigar(c));

@@ -28,7 +28,7 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 		ses.completeSteps(ProcessStep.ALL_STEPS);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), output);
 		aes.ensureAssembled();
-		File dir = new File(new File(new File(super.testFolder.getRoot(), "visualisation"), "chr12"), "200000");
+		File dir = new File(new File(super.testFolder.getRoot(), "visualisation"), "chr12");
 		File[] precollapse = dir.listFiles((FileFilter)new WildcardFileFilter("*.precollapse.gexf"));
 		File[] subgraph = dir.listFiles((FileFilter)new WildcardFileFilter("*.subgraph.gexf"));
 		assertTrue(precollapse.length > 0);

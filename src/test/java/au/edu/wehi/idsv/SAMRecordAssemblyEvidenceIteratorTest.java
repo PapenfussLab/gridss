@@ -37,9 +37,9 @@ public class SAMRecordAssemblyEvidenceIteratorTest extends TestHelper {
 				Iterators.transform(in.iterator(), new Function<SAMRecordAssemblyEvidence, SAMRecord>() {
 					@Override
 					public SAMRecord apply(SAMRecordAssemblyEvidence input) {
-						return input.getSAMRecord();
+						return input.getBackingRecord();
 					} })
-				, realigned.iterator()));
+				, realigned.iterator(), true));
 		// check output is in order
 		//for (int i = 0; i < out.size() - 1; i++) {
 		//	BreakendSummary l0 = out.get(i).getBreakendSummary();
@@ -105,5 +105,11 @@ public class SAMRecordAssemblyEvidenceIteratorTest extends TestHelper {
 		assertEquals(1, out.size());
 		assertTrue(out.get(0) instanceof RealignedSAMRecordAssemblyEvidence);
 		assertTrue(out.get(0).getBreakendSummary() instanceof BreakpointSummary);
+	}
+	@Test
+	public void should_include_both_side_of_spanning_assembly() {
+		in.add(SmallIndelSAMRecordAssemblyEvidenceTest.create(1, "1M1D1M", "NN"));
+		go();
+		assertEquals(2, out.size());
 	}
 }

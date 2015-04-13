@@ -278,8 +278,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	public String getStateSummaryMetrics() {
 		String result = String.format("kmers=%d subgraphs=%d", size(), subgraphs.size());
 		if (size() > 0) {
-			long minAnchor = Long.MIN_VALUE;
-			long maxAnchor = Long.MAX_VALUE;
+			long minAnchor = Long.MAX_VALUE;
+			long maxAnchor = Long.MIN_VALUE;
 			int maxWidth = 0;
 			for (SubgraphSummary ss : subgraphs) {
 				minAnchor = Math.min(minAnchor, ss.getMinLinearPosition());

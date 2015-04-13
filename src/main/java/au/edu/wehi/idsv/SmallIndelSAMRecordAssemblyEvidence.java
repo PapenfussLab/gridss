@@ -1,110 +1,130 @@
 package au.edu.wehi.idsv;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 
+import java.util.List;
+
+import au.edu.wehi.idsv.sam.CigarUtil;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.SamTags;
+
 /**
  * Assembly spanning a small indel
  */
 public class SmallIndelSAMRecordAssemblyEvidence extends RealignedSAMRecordAssemblyEvidence {
-	
-	private SAMRecord assembly;
+	private final SAMRecord assembly;
+	/**
+	 * Creates the forward breakpoint of the event spanned by the assembly
+	 * @param source
+	 * @param assembly
+	 */
 	public SmallIndelSAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecord assembly) {
-		this(source, assembly, new IndelInfo(assembly));
-	}
-	private SmallIndelSAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecord assembly, IndelInfo info) {
-		super(source, info.createAnchored(), info.createRealigned());
+		super(source, createFwdAnchored(assembly), createFwdRealigned(assembly));
 		this.assembly = assembly;
 	}
-	private static class IndelInfo {
-		private SAMRecord read;
-		private BreakendDirection dir;
-		private CigarElement op;
-		private List<CigarElement> anchorCigar;
-		private List<CigarElement> realignCigar;
-		public IndelInfo(SAMRecord read) {
-			this.read = read;
-			this.dir = getBreakendDirection(read);
-			calcCigar();
+	/**
+	 * Creates the backward breakpoint of the event spanned by the assembly
+	 * @param assembly assembly
+	 */
+	private SmallIndelSAMRecordAssemblyEvidence(SmallIndelSAMRecordAssemblyEvidence assembly) {
+		super(assembly.getEvidenceSource(), createBwdAnchored(assembly.getBackingRecord()), createBwdRealigned(assembly.getBackingRecord()));
+		this.assembly = assembly.assembly;
+	}
+	/**
+	 * Emulates the anchored portion as if the assembly was a split read mapping
+	 * @param indelAssembly assembly spanning indel breakpoint
+	 * @param 
+	 * @return anchored breakend alignment
+	 */
+	private static SAMRecord createFwdAnchored(final SAMRecord r) {
+		SAMRecord read = createFwdSoftClipped(r);
+		read.setReadName(getEvidenceID(r, BreakendDirection.Forward));
+		return read;
+	}
+	private static SAMRecord createBwdAnchored(final SAMRecord r) {
+		SAMRecord read = createBwdSoftClipped(r);
+		read.setReadName(getEvidenceID(r, BreakendDirection.Backward));
+		return read;
+	}
+	/**
+	 * Emulates a split read realignment as if the assembly was a split read mapping
+	 * @param indelAssembly assembly spanning indel breakpoint
+	 * @return breakend split read realignment
+	 */
+	private static SAMRecord createFwdRealigned(final SAMRecord r) {
+		SAMRecord read = createBwdSoftClipped(r);
+		SAMRecordUtil.trimSoftClips(read, CigarUtil.readLength(CigarUtil.splitAtLargestIndel(r.getCigar().getCigarElements()).get(0)), 0);
+		return read;
+	}
+	private static SAMRecord createBwdRealigned(final SAMRecord r) {
+		SAMRecord read = createFwdSoftClipped(r);
+		// Realigned read should not include bases mapped to the anchored read
+		SAMRecordUtil.trimSoftClips(read, 0, CigarUtil.readLength(CigarUtil.splitAtLargestIndel(r.getCigar().getCigarElements()).get(2)));
+		return read;
+	}
+	/**
+	 * Creates a softclip mapping of the start of the read
+	 * @param indelAssembly assembly spanning indel breakpoint
+	 * @param 
+	 * @return anchored breakend alignment
+	 */
+	private static SAMRecord createFwdSoftClipped(final SAMRecord r) {
+		List<CigarElement> cigar = CigarUtil.splitAtLargestIndel(r.getCigar().getCigarElements()).get(0);
+		int clipLength = r.getReadLength() - CigarUtil.readLength(cigar);
+		if (clipLength > 0) {
+			cigar.add(new CigarElement(clipLength, CigarOperator.SOFT_CLIP));
 		}
-		private void calcCigar() {
-			int offset = -1;
-			int opSize = 0;
-			List<CigarElement> list = read.getCigar().getCigarElements();
-			for (int i = 0; i < list.size(); i++) {
-				CigarElement e = list.get(i);
-				// Just grab the biggest one
-				if (e.getLength() > opSize && (e.getOperator() == CigarOperator.DELETION || e.getOperator() == CigarOperator.INSERTION)) {
-					offset = i;
-					opSize = e.getLength();
-					op = e;
-				}
-			}
-			if (offset < 0) {
-				throw new IllegalArgumentException(String.format("Indel not found in %s", read.getReadName()));
-			}
-			List<CigarElement> pre = list.subList(0, offset);
-			List<CigarElement> post = list.subList(offset + 1, list.size());
-			// assign to anchor/realign based on dir
-			if (dir == BreakendDirection.Forward) {
-				anchorCigar = pre;
-				realignCigar = post;
-			} else {
-				anchorCigar = post;
-				realignCigar = pre;
-			}
+		SAMRecord read = SAMRecordUtil.clone(r);
+		read.setCigar(new Cigar(cigar));
+		read.setAttribute(SamTags.ASSEMBLY_DIRECTION, BreakendDirection.Forward.toChar());
+		read.setAttribute(SamTags.SPANNING_ASSEMBLY, (byte)1);
+		return read;
+	}
+	/**
+	 * Emulates a split read realignment as if the assembly was a split read mapping
+	 * @param indelAssembly assembly spanning indel breakpoint
+	 * @return breakend split read realignment
+	 */
+	private static SAMRecord createBwdSoftClipped(final SAMRecord r) {
+		List<List<CigarElement>> split = CigarUtil.splitAtLargestIndel(r.getCigar().getCigarElements());
+		List<CigarElement> cigar = split.get(2);
+		int clipLength = r.getReadLength() - CigarUtil.readLength(cigar);
+		if (clipLength > 0) {
+			cigar.add(0, new CigarElement(clipLength, CigarOperator.SOFT_CLIP));
 		}
-		/**
-		 * Emulates the anchored portion as if the assembly was a split read mapping
-		 * @param indelAssembly assembly spanning indel breakpoint
-		 * @param 
-		 * @return anchored breakend alignment
-		 */
-		public SAMRecord createAnchored() {
-			SAMRecord r = SAMRecordUtil.clone(read);
-			List<CigarElement> cigarList = new ArrayList<CigarElement>(anchorCigar);
-			cigarList.add(dir == BreakendDirection.Forward ? cigarList.size() : 0, new CigarElement(r.getReadLength() - new Cigar(anchorCigar).getReadLength(), CigarOperator.SOFT_CLIP));
-			Cigar cigar = new Cigar(cigarList);
-			int offset = 0;
-			if (dir == BreakendDirection.Backward) {
-				offset = r.getCigar().getReferenceLength() - cigar.getReferenceLength();
-			} 
-			r.setAlignmentStart(r.getAlignmentStart() + offset);
-			r.setCigar(cigar);
-			return r;
-		}
-		/**
-		 * Emulates a split read realignment as if the assembly was a split read mapping
-		 * @param indelAssembly assembly spanning indel breakpoint
-		 * @return breakend split read realignment
-		 */
-		private SAMRecord createRealigned() {
-			SAMRecord r = SAMRecordUtil.clone(read);
-			List<CigarElement> cigarList = new ArrayList<CigarElement>(realignCigar);
-			if (op.getOperator() == CigarOperator.I) {
-				cigarList.add(dir == BreakendDirection.Forward ? 0 : cigarList.size(), new CigarElement(op.getLength(), CigarOperator.SOFT_CLIP));
-			}
-			Cigar cigar = new Cigar(cigarList);
-			int refOffset = 0, readOffset = 0;
-			if (dir == BreakendDirection.Forward) {
-				refOffset = r.getCigar().getReferenceLength() - cigar.getReferenceLength();
-				readOffset = new Cigar(anchorCigar).getReadLength();
-			}
-			r.setAlignmentStart(r.getAlignmentStart() + refOffset);
-			r.setCigar(cigar);
-			r.setReadBases(Arrays.copyOfRange(r.getReadBases(), readOffset, readOffset + cigar.getReadLength()));
-			r.setBaseQualities(Arrays.copyOfRange(r.getBaseQualities(), readOffset, readOffset + cigar.getReadLength()));
-			return r;
+		int bwdStartPosition = r.getAlignmentStart() + CigarUtil.referenceLength(split.get(0)) + CigarUtil.referenceLength(split.get(1));
+		SAMRecord read = SAMRecordUtil.clone(r);
+		read.setAlignmentStart(bwdStartPosition);
+		read.setCigar(new Cigar(cigar));
+		read.setAttribute(SamTags.ASSEMBLY_DIRECTION, BreakendDirection.Backward.toChar());
+		read.setAttribute(SamTags.SPANNING_ASSEMBLY, (byte)1);
+		return read;
+	}
+	@Override
+	public SAMRecord getBackingRecord() {
+		return assembly;
+	}
+	@Override
+	public SmallIndelSAMRecordAssemblyEvidence asRemote() {
+		if (getBreakendSummary().direction == BreakendDirection.Forward) {
+			return new SmallIndelSAMRecordAssemblyEvidence(this);
+		} else {
+			return new SmallIndelSAMRecordAssemblyEvidence(this.getEvidenceSource(), this.assembly);
 		}
 	}
-	public SAMRecord getIndelSAMRecord() {
-		return assembly;
+	@Override
+	public String getEvidenceID() {
+		return getEvidenceID(assembly, getBreakendSummary().direction);
+	}
+	private static String getEvidenceID(SAMRecord r, BreakendDirection direction) {
+		String prefix = direction == BreakendDirection.Forward ? "f" : "b";
+		return prefix + r.getReadName();
+	}
+	@Override
+	public boolean isSpanningAssembly() {
+		return true;
 	}
 }

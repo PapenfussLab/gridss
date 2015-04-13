@@ -43,6 +43,18 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		ass = new DeBruijnSubgraphAssembler(context, aes);
 		result = Lists.newArrayList(); 
 	}
+	public void setup(int k, int maxPathTraversalNodes) {
+		context = getContext();
+		context.getAssemblyParameters().k = k;
+		context.getAssemblyParameters().minReads = 0;
+		context.getAssemblyParameters().maxBaseMismatchForCollapse = 0;
+		context.getAssemblyParameters().collapseBubblesOnly = true;
+		context.getAssemblyParameters().writeFilteredAssemblies = true;
+		context.getAssemblyParameters().maxPathTraversalNodes = 0;
+		aes = AES(context);
+		ass = new DeBruijnSubgraphAssembler(context, aes);
+		result = Lists.newArrayList(); 
+	}
 	
 	private static SAMRecord R(String read) {
 		return R(null, read, null, false, true);
@@ -246,13 +258,16 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 	}
 	@Test
 	public void should_greedy_traverse_highest_weight_path() {
-		setup(2);
-		SAMRecord sc = R(null, "ACGTACTGAG", new byte[] { 1,2,3,4,5,6,7,8,9,10}, false, true);
-		sc.setCigarString("4M6S");
+		setup(3, 0);
+		SAMRecord sc = R(null, "AAATCT", new byte[] { 1,2,3,4,5,6}, false, true);
+		SAMRecord sc2 = R(null, "AAATCG", new byte[] { 2,3,4,5,6,7}, false, true);
+		sc.setCigarString("3M3S");
+		sc2.setCigarString("3M3S");
 		addRead(sc, true);
+		addRead(sc2, true);
 		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, result.size());
-		assertEquals("ACGTACTGAGT", S(result.get(0).getAssemblySequence()));
+		assertEquals("AAATCG", S(result.get(0).getAssemblySequence()));
 	}
 	@Test
 	public void should_assemble_backward_breakpoint() {

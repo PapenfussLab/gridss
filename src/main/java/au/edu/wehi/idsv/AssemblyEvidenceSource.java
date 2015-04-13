@@ -180,7 +180,8 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		CloseableIterator<SAMRecordAssemblyEvidence> evidenceIt = new SAMRecordAssemblyEvidenceIterator(
 				getContext(), this,
 				new AutoClosingIterator<SAMRecord>(rawReaderIt, ImmutableList.<Closeable>of(realignedIt)),
-				realignedIt);
+				realignedIt,
+				true);
 		toClose.add(evidenceIt);
 		Iterator<SAMRecordAssemblyEvidence> filteredIt = includeFiltered ? evidenceIt : new SAMRecordAssemblyEvidenceFilteringIterator(getContext(), evidenceIt);
 		// Change sort order to breakend position order
@@ -326,18 +327,9 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		private final SAMRecordCoordinateComparator cmp = new SAMRecordCoordinateComparator();
 		@Override
 		public int compare(SAMRecordAssemblyEvidence arg0, SAMRecordAssemblyEvidence arg1) {
-			return cmp.compare(getFullSAMRecord(arg0), getFullSAMRecord(arg1));
+			return cmp.compare(arg0.getBackingRecord(), arg1.getBackingRecord());
 		}
 	};
-	/**
-	 * Gets the breakpoint record. For
-	 * @param e
-	 * @return
-	 */
-	private static SAMRecord getFullSAMRecord(SAMRecordAssemblyEvidence e) {
-		if (e instanceof SmallIndelSAMRecordAssemblyEvidence) return ((SmallIndelSAMRecordAssemblyEvidence)e).getIndelSAMRecord();
-		return e.getSAMRecord();
-	}
 	private class ContigAssembler implements Runnable {
 		private Iterator<DirectedEvidence> it;
 		private File breakendOutput;
@@ -425,8 +417,8 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	    	flushWriterQueueBefore(maxAssembledPosition - getAssemblyWindowSize());
 	    }
 		private void flushWriterQueueBefore(long flushBefore) {
-			while (!resortBuffer.isEmpty() && getContext().getLinear().getStartLinearCoordinate(getFullSAMRecord(resortBuffer.peek())) < flushBefore) {
-				long pos = getContext().getLinear().getStartLinearCoordinate(getFullSAMRecord(resortBuffer.peek()));
+			while (!resortBuffer.isEmpty() && getContext().getLinear().getStartLinearCoordinate(resortBuffer.peek().getBackingRecord()) < flushBefore) {
+				long pos = getContext().getLinear().getStartLinearCoordinate(resortBuffer.peek().getBackingRecord());
 				SAMRecordAssemblyEvidence evidence = resortBuffer.poll();
 				if (pos < lastFlushedPosition) {
 					log.error(String.format("Sanity check failure: assembly breakend %s written out of order.", evidence.getEvidenceID()));
@@ -434,7 +426,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				}
 				lastFlushedPosition = pos;
 				if (getContext().getAssemblyParameters().writeFilteredAssemblies || !evidence.isAssemblyFiltered()) {
-					writer.addAlignment(getFullSAMRecord(evidence));
+					writer.addAlignment(evidence.getBackingRecord());
 					if (getContext().getRealignmentParameters().shouldRealignBreakend(evidence)) {
 						fastqWriter.write(evidence);
 					}

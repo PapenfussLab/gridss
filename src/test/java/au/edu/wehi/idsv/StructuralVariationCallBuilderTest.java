@@ -258,6 +258,10 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		Assert.assertEquals(1, (int)(Integer)complex_bp().getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE.attribute()));
 		Assert.assertEquals(5, (float)(Float)complex_bp().getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE.attribute()), 0);
 	}
+	@Test
+	public void how_should_we_count_spanning_assemblies() {
+		fail();
+	}
 	/**
 	 * We do this to prevent inflation of support for a breakpoint by an assembly that
 	 * doesn't not actually support that breakend 
