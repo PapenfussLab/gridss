@@ -80,7 +80,7 @@ public class SmallIndelSAMRecordAssemblyEvidence extends RealignedSAMRecordAssem
 		SAMRecord read = SAMRecordUtil.clone(r);
 		read.setCigar(new Cigar(cigar));
 		read.setAttribute(SamTags.ASSEMBLY_DIRECTION, BreakendDirection.Forward.toChar());
-		read.setAttribute(SamTags.SPANNING_ASSEMBLY, (byte)1);
+		read.setAttribute(SamTags.SPANNING_ASSEMBLY, (char)'y');
 		return read;
 	}
 	/**
@@ -100,7 +100,7 @@ public class SmallIndelSAMRecordAssemblyEvidence extends RealignedSAMRecordAssem
 		read.setAlignmentStart(bwdStartPosition);
 		read.setCigar(new Cigar(cigar));
 		read.setAttribute(SamTags.ASSEMBLY_DIRECTION, BreakendDirection.Backward.toChar());
-		read.setAttribute(SamTags.SPANNING_ASSEMBLY, (byte)1);
+		read.setAttribute(SamTags.SPANNING_ASSEMBLY, (char)'y');
 		return read;
 	}
 	@Override

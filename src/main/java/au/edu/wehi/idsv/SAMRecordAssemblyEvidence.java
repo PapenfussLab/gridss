@@ -464,7 +464,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 * @return
 	 */
 	public boolean isSpanningAssembly() {
-		Byte attr = (Byte)getSAMRecord().getAttribute(SamTags.SPANNING_ASSEMBLY);
-		return attr != null && (byte)attr == 1;
+		Character attr = (Character)getSAMRecord().getAttribute(SamTags.SPANNING_ASSEMBLY);
+		return attr != null && (char)attr == 'y';
 	}
 }
