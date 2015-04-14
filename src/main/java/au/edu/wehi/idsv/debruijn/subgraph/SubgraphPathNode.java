@@ -18,13 +18,19 @@ public class SubgraphPathNode extends PathNode<DeBruijnSubgraphNode> {
 	}
 	@Override
 	protected void onKmersChanged(DeBruijnGraphBase<DeBruijnSubgraphNode> graph) {
-		refCount = 0; 
+		refCount = 0;
 		super.onKmersChanged(graph);
 		for (List<Long> kmers : getPathAllKmers()) {
-			for (long kmer : kmers) {
-				if (graph.getKmer(kmer).isReference()) refCount++;
+			if (containsReference(graph, kmers)) {
+				refCount++;
 			}
 		}
+	}
+	public static boolean containsReference(DeBruijnGraphBase<DeBruijnSubgraphNode> graph, List<Long> kmers) {
+		for (long kmer : kmers) {
+			if (graph.getKmer(kmer).isReference()) return true;
+		}
+		return false;
 	}
 	public boolean containsReferenceKmer() { return refCount > 0; }
 	public boolean containsNonReferenceKmer() { return refCount < length(); }

@@ -29,11 +29,11 @@ public class PathGraph extends DeBruijnPathGraph<DeBruijnSubgraphNode, SubgraphP
 		}));
 		for (SubgraphPathNode n : toSplit) {
 			List<Integer> lengths = Lists.newArrayList();
-			List<Long> path = n.getPath();
+			List<List<Long>> path = n.getPathAllKmers();
 			int currentLength = 0;
-			boolean currentIsReference = getGraph().getKmer(path.get(0)).isReference();
-			for (long kmer : path) {
-				boolean isRef = getGraph().getKmer(kmer).isReference();
+			boolean currentIsReference = SubgraphPathNode.containsReference(getGraph(), path.get(0));
+			for (List<Long> kmers : path) {
+				boolean isRef = SubgraphPathNode.containsReference(getGraph(), kmers);
 				if (currentIsReference == isRef) {
 					currentLength++;
 				} else {
