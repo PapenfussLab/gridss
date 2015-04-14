@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
+import java.util.List;
+
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.PathNode;
 
@@ -18,8 +20,10 @@ public class SubgraphPathNode extends PathNode<DeBruijnSubgraphNode> {
 	protected void onKmersChanged(DeBruijnGraphBase<DeBruijnSubgraphNode> graph) {
 		refCount = 0; 
 		super.onKmersChanged(graph);
-		for (long kmer : getPath()) {
-			if (graph.getKmer(kmer).isReference()) refCount++;
+		for (List<Long> kmers : getPathAllKmers()) {
+			for (long kmer : kmers) {
+				if (graph.getKmer(kmer).isReference()) refCount++;
+			}
 		}
 	}
 	public boolean containsReferenceKmer() { return refCount > 0; }

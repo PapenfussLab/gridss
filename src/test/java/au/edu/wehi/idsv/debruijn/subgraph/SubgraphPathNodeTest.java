@@ -36,4 +36,15 @@ public class SubgraphPathNodeTest extends TestHelper {
 				KmerEncodingHelper.picardBaseToEncoded(4, B("TTTA"))
 				), g).containsNonReferenceKmer());  
 	}
+	@Test
+	public void onKmersChanged_should_recalc_reference() {
+		DeBruijnReadGraph g = RG(4);
+		g.addEvidence(SCE(FWD, withSequence("TTTTAAAA", Read(0, 10, "4M4S"))));
+		SubgraphPathNode r = new SubgraphPathNode(ImmutableList.of(KmerEncodingHelper.picardBaseToEncoded(4, B("TTTT"))), g);
+		SubgraphPathNode n = new SubgraphPathNode(ImmutableList.of(KmerEncodingHelper.picardBaseToEncoded(4, B("AAAA"))), g);
+		assertTrue(r.containsReferenceKmer());
+		assertFalse(n.containsReferenceKmer());
+		n.merge(ImmutableList.of(r), g);		
+		assertTrue(n.containsReferenceKmer());
+	}
 }

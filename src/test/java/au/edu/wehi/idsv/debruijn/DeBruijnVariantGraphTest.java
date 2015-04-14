@@ -373,4 +373,21 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		assertEquals("", e.getUntemplatedSequence());
 		assertEquals(new BreakpointSummary(0, FWD, 50, 50, 0, BWD, 100, 100), e.getBreakendSummary());
 	}
+	/**
+	 * If the non-reference kmer path less than k-1 in length
+	 * and is anchored on both sides, then the non-reference
+	 * kmers are likely to be FPs as all bases have reference
+	 * support 
+	 */
+	@Test
+	public void should_not_assemble_ref_ref_misassemblies() {
+		setup(4);
+		// AAAACGTA
+		// MMMMMSSS
+		// SSSSMMMM
+		result.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("AAAACGTA", Read(0, 10, "5M3S"))))));
+		result.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("AAAACGTA", Read(0, 10, "3S5M"))))));
+		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(0, result.size());
+	}
 }

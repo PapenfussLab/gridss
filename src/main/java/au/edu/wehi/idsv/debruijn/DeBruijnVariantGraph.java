@@ -222,18 +222,28 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 				endAnchorReferenceIndex = lgc.getReferenceIndex(pos); 
 				endAnchorPosition = lgc.getReferencePosition(pos);
 			}
+			int startAnchorLength = breakendStartOffset + getK() - 1;
+			int endAnchorLength = path.size() + getK() - breakendEndOffset - 2;
 			if (endAnchorReferenceIndex == -1) {
 				return AssemblyFactory.createAnchoredBreakend(processContext, source, BreakendDirection.Forward, breakendSupport,
-						startAnchorReferenceIndex, startAnchorPosition, breakendStartOffset + getK() - 1,
+						startAnchorReferenceIndex, startAnchorPosition, startAnchorLength,
 						bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
 			} else if (startAnchorReferenceIndex == -1) {
 				return AssemblyFactory.createAnchoredBreakend(processContext, source, BreakendDirection.Backward, breakendSupport,
-						endAnchorReferenceIndex, endAnchorPosition, path.size() + getK() - breakendEndOffset - 2,
+						endAnchorReferenceIndex, endAnchorPosition, endAnchorLength,
 						bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
 			} else {
+				if (startAnchorLength + endAnchorLength > bases.length) {
+					// All bases support reference allele - this is likely an assembly artifact
+					// eg: creates a bubble of nonreference kmers all of which have at least
+					// one base supporting the reference
+					// MMMMSSS
+					// SSSMMMM
+					return null;
+				}
 				return AssemblyFactory.createAnchoredBreakpoint(processContext, source, breakendSupport,
-						startAnchorReferenceIndex, startAnchorPosition, breakendStartOffset + getK() - 1,
-						endAnchorReferenceIndex, endAnchorPosition, path.size() + getK() - breakendEndOffset - 2,
+						startAnchorReferenceIndex, startAnchorPosition, startAnchorLength,
+						endAnchorReferenceIndex, endAnchorPosition, endAnchorLength,
 						bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
 			}
 		}
