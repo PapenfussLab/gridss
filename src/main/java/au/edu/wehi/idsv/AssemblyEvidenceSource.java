@@ -404,7 +404,10 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		    			SAMRecordAssemblyEvidence e = (SAMRecordAssemblyEvidence)a;
 			    		maxAssembledPosition = Math.max(maxAssembledPosition, getContext().getLinear().getStartLinearCoordinate(e.getSAMRecord()));
 			    		// realign
-			    		if (e.isBreakendExact() && getContext().getAssemblyParameters().performLocalRealignment) {
+			    		if (getContext().getAssemblyParameters().performLocalRealignment
+			    				&& e.isBreakendExact() // let the aligner perform realignment of unanchored reads
+			    				&& !(e.getBreakendSummary() instanceof BreakpointSummary) // don't realign if we already know where the other side is // TODO: promote to parameter and test effectiveness			    				
+			    				) {
 			    			e = e.realign();
 			    		}
 			    		getContext().getAssemblyParameters().applyFilters(e);
