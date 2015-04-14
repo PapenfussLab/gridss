@@ -39,8 +39,8 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void anchor_positions_should_match_genomic() {
-		SAMRecordAssemblyEvidence fwd = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(), 1, 10, 3, B("GTACCCA"), new byte[] { 1, 2, 3, 4, 4, 8 }, 2, 0);
-		SAMRecordAssemblyEvidence bwd = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(), 1, 10, 3, B("GTACCCA"), new byte[] { 1, 2, 3, 4, 4, 8 }, 2, 0);
+		SAMRecordAssemblyEvidence fwd = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(), 1, 10, 3, B("GTACCCA"), new byte[] { 1, 2, 3, 4, 4, 8, 8 }, 2, 0);
+		SAMRecordAssemblyEvidence bwd = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(), 1, 10, 3, B("GTACCCA"), new byte[] { 1, 2, 3, 4, 4, 8, 8 }, 2, 0);
 		assertEquals(1, (int)fwd.getSAMRecord().getReferenceIndex());
 		assertEquals(1, (int)bwd.getSAMRecord().getReferenceIndex());
 		assertEquals(8, fwd.getSAMRecord().getAlignmentStart());
@@ -359,11 +359,12 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		SAMRecord r = ((SAMRecordAssemblyEvidence)AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(support),
 				0, 10, 2,
 				0, 15, 4,
-				B("NNAAATTTT"), B("ABCDEFG"), 0, 0)).getBackingRecord();
+				B("NNAAATTTT"),
+				B("ABCDEFGHI"), 0, 0)).getBackingRecord();
 		assertEquals(0, (int)r.getReferenceIndex());
 		assertEquals(9, r.getAlignmentStart());
 		assertEquals("2M3I4D4M", r.getCigarString());
-		assertEquals("ABCDEFG", S(r.getBaseQualities()));
+		assertEquals("ABCDEFGHI", S(r.getBaseQualities()));
 		assertEquals("NNAAATTTT", S(r.getReadBases()));
 	}
 }

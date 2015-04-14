@@ -228,12 +228,12 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 						bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
 			} else if (startAnchorReferenceIndex == -1) {
 				return AssemblyFactory.createAnchoredBreakend(processContext, source, BreakendDirection.Backward, breakendSupport,
-						endAnchorReferenceIndex, endAnchorPosition, path.size() - breakendEndOffset - 1 + getK() - 1,
+						endAnchorReferenceIndex, endAnchorPosition, path.size() + getK() - breakendEndOffset - 2,
 						bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
 			} else {
 				return AssemblyFactory.createAnchoredBreakpoint(processContext, source, breakendSupport,
 						startAnchorReferenceIndex, startAnchorPosition, breakendStartOffset + getK() - 1,
-						endAnchorReferenceIndex, endAnchorPosition, path.size() - breakendEndOffset - 1 + getK() - 1,
+						endAnchorReferenceIndex, endAnchorPosition, path.size() + getK() - breakendEndOffset - 2,
 						bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
 			}
 		}

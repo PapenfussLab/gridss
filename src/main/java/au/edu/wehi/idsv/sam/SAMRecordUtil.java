@@ -386,6 +386,7 @@ public class SAMRecordUtil {
 	 * Removes soft-clipped bases from the ends of read
 	 */
 	public static void trimSoftClips(SAMRecord read, int startCount, int endCount) {
+		assert(read.getReadLength() == read.getCigar().getReadLength());
 		List<CigarElement> cigar = Lists.newArrayList(read.getCigar().getCigarElements());
 		if (startCount > 0) {
 			CigarElement sc = cigar.get(0);
@@ -413,5 +414,6 @@ public class SAMRecordUtil {
 		read.setCigar(new Cigar(cigar));
 		read.setReadBases(Arrays.copyOfRange(read.getReadBases(), startCount, readLength - endCount));
 		read.setBaseQualities(Arrays.copyOfRange(read.getBaseQualities(), startCount, readLength - endCount));
+		assert(read.getReadLength() == read.getCigar().getReadLength());
 	}
 }

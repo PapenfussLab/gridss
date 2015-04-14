@@ -3,6 +3,7 @@ package au.edu.wehi.idsv.debruijn;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
 
@@ -15,9 +16,11 @@ import org.junit.Test;
 import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.BreakendDirection;
+import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.EvidenceSubset;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
+import au.edu.wehi.idsv.SmallIndelSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 
@@ -337,5 +340,37 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		assertEquals(4, result.getAssemblySupportCountSoftClip(EvidenceSubset.NORMAL));
 		assertEquals(2, result.getAssemblySupportCountSoftClip(EvidenceSubset.TUMOUR));
 		assertEquals(6, result.getAssemblySupportCountSoftClip(EvidenceSubset.ALL));
+	}
+	@Test
+	public void should_assemble_spanning_breakend_with_insertion() {
+		setup(25);
+		SAMRecord f = Read(0, 1, "50M100S");
+		SAMRecord b = Read(0, 100, "100S50M");
+		f.setReadBases(B(S(RANDOM).substring(0, 50) + S(RANDOM).substring(500, 600)));
+		b.setReadBases(B(S(RANDOM).substring(550, 650) + S(RANDOM).substring(100, 150)));
+		result.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, f))));
+		result.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, b))));
+		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, result.size());
+		assertTrue(result.get(0) instanceof SmallIndelSAMRecordAssemblyEvidence);
+		SmallIndelSAMRecordAssemblyEvidence e = (SmallIndelSAMRecordAssemblyEvidence) result.get(0);
+		assertEquals(S(RANDOM).substring(500, 650), e.getUntemplatedSequence());
+		assertEquals(new BreakpointSummary(0, FWD, 50, 50, 0, BWD, 100, 100), e.getBreakendSummary());
+	}
+	@Test
+	public void should_assemble_spanning_breakend() {
+		setup(25);
+		SAMRecord f = Read(0, 1, "50M50S");
+		SAMRecord b = Read(0, 100, "50S50M");
+		f.setReadBases(B(S(RANDOM).substring(0, 50) + S(RANDOM).substring(100, 150)));
+		b.setReadBases(B(S(RANDOM).substring(0, 50) + S(RANDOM).substring(100, 150)));
+		result.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, f))));
+		result.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, b))));
+		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, result.size());
+		assertTrue(result.get(0) instanceof SmallIndelSAMRecordAssemblyEvidence);
+		SmallIndelSAMRecordAssemblyEvidence e = (SmallIndelSAMRecordAssemblyEvidence) result.get(0);
+		assertEquals("", e.getUntemplatedSequence());
+		assertEquals(new BreakpointSummary(0, FWD, 50, 50, 0, BWD, 100, 100), e.getBreakendSummary());
 	}
 }

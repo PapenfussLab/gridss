@@ -59,14 +59,12 @@ public final class AssemblyFactory {
 	public static SmallIndelSAMRecordAssemblyEvidence createAnchoredBreakpoint(
 			ProcessingContext processContext, AssemblyEvidenceSource source,
 			Set<DirectedEvidence> evidence,
-			int startAnchorReferenceIndex, int startAnchorPosition, int breakendStartOffset,
-			int endAnchorReferenceIndex, int endAnchorPosition, int breakendEndOffset,
+			int startAnchorReferenceIndex, int startAnchorPosition, int startAnchorBaseCount,
+			int endAnchorReferenceIndex, int endAnchorPosition, int endAnchorBaseCount,
 			byte[] baseCalls, byte[] baseQuals, int normalBaseCount, int tumourBaseCount) {
 		BreakpointSummary bp = new BreakpointSummary(
 				startAnchorReferenceIndex, BreakendDirection.Forward, startAnchorPosition, startAnchorPosition,
 				endAnchorReferenceIndex, BreakendDirection.Backward, endAnchorPosition, endAnchorPosition);
-		int startAnchorBaseCount = breakendStartOffset;
-		int endAnchorBaseCount = baseCalls.length - breakendEndOffset - 1;
 		assert(startAnchorBaseCount > 0);
 		assert(endAnchorBaseCount > 0);
 		SAMRecord r = createAssemblySAMRecord(evidence, processContext.getBasicSamHeader(), source, bp,
@@ -142,6 +140,11 @@ public final class AssemblyFactory {
 			int endAnchoredBaseCount,
 			byte[] baseCalls, byte[] baseQuals,
 			int normalBaseCount, int tumourBaseCount) {
+		assert(startAnchoredBaseCount >= 0);
+		assert(endAnchoredBaseCount >= 0);
+		assert(startAnchoredBaseCount + endAnchoredBaseCount <= baseCalls.length);
+		assert(baseCalls.length == baseQuals.length);
+		assert(breakend != null);
 		SAMRecord record = new SAMRecord(samFileHeader);
 		record.setReferenceIndex(breakend.referenceIndex);
 		record.setReadName(source.getContext().getAssemblyIdGenerator().generate(breakend, baseCalls, startAnchoredBaseCount, endAnchoredBaseCount));
