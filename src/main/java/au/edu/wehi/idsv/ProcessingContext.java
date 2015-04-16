@@ -71,6 +71,7 @@ public class ProcessingContext implements Closeable {
 	private boolean filterDuplicates = true;
 	private long calculateMetricsRecordCount = Long.MAX_VALUE; 
 	private AssemblyIdGenerator assemblyIdGenerator = new SequentialIdGenerator("asm");
+	private final List<String> categories = Lists.newArrayList((String)null);
 	public ProcessingContext(
 			FileSystemContext fileSystemContext,
 			List<Header> metricsHeaders,
@@ -284,5 +285,17 @@ public class ProcessingContext implements Closeable {
 	}
 	public void setAssemblyIdGenerator(AssemblyIdGenerator generator) {
 		this.assemblyIdGenerator = generator;
+	}
+	public void registerCategory(int category, String description) {
+		if (category < 0) throw new IllegalArgumentException("Category cannot be negative");
+		while (categories.size() <= category) categories.add(null);
+		categories.set(category, description);
+	}
+	/**
+	 * Number of categories registered  
+	 * @return
+	 */
+	public int getCategoryCount() {
+		return categories.size();
 	}
 }

@@ -6,7 +6,6 @@ import htsjdk.samtools.SAMRecord;
 import java.util.List;
 
 import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.LinearGenomicCoordinate;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.SoftClipEvidence;
@@ -38,31 +37,36 @@ public class VariantEvidence {
 	private final int startSkipKmerCount;
 	private final int endSkipKmerCount;
 	private final int k;
-	private final DirectedEvidence evidence;
-	
+	private final String evidenceID;
+	private boolean isExact;
+	private BreakendDirection direction;
+	private int category;
 	public VariantEvidence(int k, NonReferenceReadPair pair, LinearGenomicCoordinate lgc) {
 		this.k = k;
-		this.evidence = pair;
+		this.evidenceID = pair.getEvidenceID();
 		this.shouldReverseComplement = !pair.onExpectedStrand();		
 		this.bases = pair.getNonReferenceRead().getReadBases();
 		this.quals = pair.getNonReferenceRead().getBaseQualities();
 		int chrPos;
-		if (evidence.getBreakendSummary().direction == BreakendDirection.Forward) {
+		if (pair.getBreakendSummary().direction == BreakendDirection.Forward) {
 			// Assumes FR orientation
 			chrPos = pair.getLocalledMappedRead().getUnclippedStart() + pair.getEvidenceSource().getExpectedFragmentSize() - bases.length;
 		} else {
 			chrPos = pair.getLocalledMappedRead().getUnclippedEnd() - pair.getEvidenceSource().getExpectedFragmentSize() + 1;
 		}
-		this.expectedAnchorPos = lgc.getLinearCoordinate(evidence.getBreakendSummary().referenceIndex, chrPos);
+		this.expectedAnchorPos = lgc.getLinearCoordinate(pair.getBreakendSummary().referenceIndex, chrPos);
 		this.referenceKmerStartOffset = -1;
 		this.referenceKmerEndOffset = -1;
 		this.startSkipKmerCount = 0;
 		this.endSkipKmerCount = 0;
+		this.isExact = pair.isBreakendExact();
+		this.direction = pair.getBreakendSummary().direction;
+		this.category = pair.getEvidenceSource().getSourceCategory();
 	}
 	public VariantEvidence(int k, SoftClipEvidence softClipEvidence, LinearGenomicCoordinate lgc) {
 		SAMRecord read = softClipEvidence.getSAMRecord();
 		this.k = k;
-		this.evidence = softClipEvidence;
+		this.evidenceID = softClipEvidence.getEvidenceID();
 		this.shouldReverseComplement = false;		
 		this.bases = read.getReadBases();
 		this.quals = read.getBaseQualities();
@@ -93,7 +97,7 @@ public class VariantEvidence {
 		this.referenceKmerStartOffset = startClipLength;
 		this.referenceKmerEndOffset = readLength - k - endClipLength + 1;
 		int chrPos;
-		if (evidence.getBreakendSummary().direction == BreakendDirection.Forward) {
+		if (softClipEvidence.getBreakendSummary().direction == BreakendDirection.Forward) {
 			this.startSkipKmerCount = startClipLength;
 			this.endSkipKmerCount = 0;
 			chrPos = read.getUnclippedEnd() - readLength + 1;
@@ -102,7 +106,10 @@ public class VariantEvidence {
 			this.endSkipKmerCount = endClipLength;
 			chrPos = read.getUnclippedStart();
 		}
-		this.expectedAnchorPos = lgc.getLinearCoordinate(evidence.getBreakendSummary().referenceIndex, chrPos);
+		this.expectedAnchorPos = lgc.getLinearCoordinate(softClipEvidence.getBreakendSummary().referenceIndex, chrPos);
+		this.isExact = softClipEvidence.isBreakendExact();
+		this.direction = softClipEvidence.getBreakendSummary().direction;
+		this.category = softClipEvidence.getEvidenceSource().getSourceCategory();
 	}
 	public ReadKmerIterable getReadKmers() {
 		return new ReadKmerIterable(k, bases, quals, shouldReverseComplement, shouldReverseComplement);
@@ -135,12 +142,14 @@ public class VariantEvidence {
 	 * @return true if this evidence is directly anchored to the reference (ie: direct breakend evidence),
 	 * false if anchored by the mate 
 	 */
-	public boolean isDirectlyAnchoredToReference() { return evidence.isBreakendExact(); }
+	public boolean isDirectlyAnchoredToReference() { return isExact; }
+	public BreakendDirection getDirection() { return direction; }
+	public int getCategory() { return category; }
 	/**
 	 * Gets the underlying evidence
 	 * @return evidence
 	 */
-	public DirectedEvidence getDirectedEvidence() {
-		return evidence;
+	public String getEvidenceID() {
+		return evidenceID;
 	}
 }

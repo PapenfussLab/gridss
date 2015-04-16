@@ -37,25 +37,25 @@ import com.google.common.collect.Lists;
 public class SAMEvidenceSource extends EvidenceSource {
 	private static final Log log = Log.getInstance(SAMEvidenceSource.class);
 	private final File input;
-	private final boolean isTumour;
+	private final int sourceCategory;
 	private final ReadPairConcordanceMethod rpcMethod;
 	private final Object[] rpcParams;
 	private IdsvSamFileMetrics metrics;
 	private SAMFileHeader header;
 	private ReadPairConcordanceCalculator rpcc;
-	public SAMEvidenceSource(ProcessingContext processContext, File file, boolean isTumour) {
-		this(processContext, file, isTumour, ReadPairConcordanceMethod.SAM_FLAG, null);
+	public SAMEvidenceSource(ProcessingContext processContext, File file, int sourceCategory) {
+		this(processContext, file, sourceCategory, ReadPairConcordanceMethod.SAM_FLAG, null);
 	}
-	public SAMEvidenceSource(ProcessingContext processContext, File file, boolean isTumour, int minFragmentSize, int maxFragmentSize) {
-		this(processContext, file, isTumour, ReadPairConcordanceMethod.FIXED, new Object[] { minFragmentSize, maxFragmentSize });
+	public SAMEvidenceSource(ProcessingContext processContext, File file,int sourceCategory, int minFragmentSize, int maxFragmentSize) {
+		this(processContext, file, sourceCategory, ReadPairConcordanceMethod.FIXED, new Object[] { minFragmentSize, maxFragmentSize });
 	}
-	public SAMEvidenceSource(ProcessingContext processContext, File file, boolean isTumour, double concordantPercentage) {
-		this(processContext, file, isTumour, ReadPairConcordanceMethod.PERCENTAGE, new Object[] { (double)concordantPercentage });
+	public SAMEvidenceSource(ProcessingContext processContext, File file, int sourceCategory, double concordantPercentage) {
+		this(processContext, file, sourceCategory, ReadPairConcordanceMethod.PERCENTAGE, new Object[] { (double)concordantPercentage });
 	}
-	protected SAMEvidenceSource(ProcessingContext processContext, File file, boolean isTumour, ReadPairConcordanceMethod rpcMethod, Object[] rpcParams) {
+	protected SAMEvidenceSource(ProcessingContext processContext, File file, int sourceCategory, ReadPairConcordanceMethod rpcMethod, Object[] rpcParams) {
 		super(processContext, file);
 		this.input = file;
-		this.isTumour = isTumour;
+		this.sourceCategory = sourceCategory;
 		this.rpcMethod = rpcMethod;
 		this.rpcParams = rpcParams;
 	}
@@ -154,16 +154,12 @@ public class SAMEvidenceSource extends EvidenceSource {
 		return metrics;
 	}
 	public File getSourceFile() { return input; }
-	public boolean isTumour() { return isTumour; }
 	/**
 	 * Grouping category of source. For tumour/normal analysis, normal is considered group 0, tumour group 1
 	 * @return
 	 */
-	public int sourceCategory() {
-		if (isTumour()) {
-			return 1;
-		}
-		return 0;
+	public int getSourceCategory() {
+		return sourceCategory;
 	}
 	public CloseableIterator<DirectedEvidence> iterator(final boolean includeReadPair, final boolean includeSoftClip, final boolean includeSoftClipRemote) {
 		if (getContext().shouldProcessPerChromosome()) {

@@ -36,10 +36,11 @@ public abstract class EvidenceProcessorBase {
 			boolean includeAssemblyRemote,
 			boolean includeReadPair,
 			boolean includeSoftClip,
-			boolean includeSoftClipRemote) {
+			boolean includeSoftClipRemote,
+			boolean includeFilteredAssemblies) {
 		List<CloseableIterator<DirectedEvidence>> evidenceItList = Lists.newArrayList();
 		if (includeAssembly && assemblyEvidence != null) {
-			evidenceItList.add((CloseableIterator<DirectedEvidence>)(Object)assemblyEvidence.iterator(includeAssemblyRemote, false));
+			evidenceItList.add((CloseableIterator<DirectedEvidence>)(Object)assemblyEvidence.iterator(includeAssemblyRemote, includeFilteredAssemblies));
 		}
 		if (includeReadPair || includeSoftClip || includeSoftClipRemote) {
 			for (SAMEvidenceSource source : samEvidence) {
@@ -49,6 +50,14 @@ public abstract class EvidenceProcessorBase {
 		toClose.addAll(evidenceItList);
 		CloseableIterator<DirectedEvidence> evidenceIt = new AutoClosingMergedIterator<DirectedEvidence>(evidenceItList, DirectedEvidenceOrder.ByNatural);
 		return evidenceIt;
+	}
+	protected CloseableIterator<DirectedEvidence> getAllEvidence(
+			boolean includeAssembly,
+			boolean includeAssemblyRemote,
+			boolean includeReadPair,
+			boolean includeSoftClip,
+			boolean includeSoftClipRemote) {
+		return getAllEvidence(includeAssembly, includeAssemblyRemote, includeReadPair, includeSoftClip, includeSoftClipRemote, false);
 	}
 	@SuppressWarnings("unchecked")
 	protected CloseableIterator<DirectedEvidence> getEvidenceForChr(

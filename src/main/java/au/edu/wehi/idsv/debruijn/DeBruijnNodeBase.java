@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv.debruijn;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
@@ -22,37 +23,38 @@ public class DeBruijnNodeBase {
 	/**
 	 * Contributing evidence
 	 */
-	private List<DirectedEvidence> supportList = new ArrayList<DirectedEvidence>(4);
+	private List<String> supportList = new ArrayList<String>(4);
 	private long tPositionWeightSum = 0;
 	private long fPositionWeightSum = 0;
 	private long bPositionWeightSum = 0;
 	private int tWeightSum = 0;
 	private int fWeightSum = 0;
 	private int bWeightSum = 0;
+	private int[] categoryCount;
 	public DeBruijnNodeBase(VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) {
-		this(kmer.weight, evidence.getExpectedLinearPosition(readKmerOffset), evidence.getDirectedEvidence(), evidence.isReferenceKmer(readKmerOffset), evidence.isDirectlyAnchoredToReference());
+		this(kmer.weight, evidence.getExpectedLinearPosition(readKmerOffset), evidence.getEvidenceID(), evidence.isReferenceKmer(readKmerOffset), evidence.isDirectlyAnchoredToReference() ? evidence.getDirection() : null, evidence.getCategory());
 	}
 	/**
 	 * Creates a node from the given read with the given level of support
 	 * @param weight support weight
 	 * @param read source read
 	 */
-	public DeBruijnNodeBase(int weight, long expectedLinearPosition, DirectedEvidence evidence, boolean isReference, boolean isAnchored) {
+	public DeBruijnNodeBase(int weight, long expectedLinearPosition, String evidenceID, boolean isReference, BreakendDirection anchorDirection, int category) {
 		if (weight <= 0) throw new IllegalArgumentException("weight must be positive");
 		this.nodeWeight = weight;
-		supportList.add(evidence);
+		supportList.add(evidenceID);
 		if (isReference) referenceSupport++;
 		tPositionWeightSum += expectedLinearPosition * weight;
 		tWeightSum += weight;
-		if (isAnchored) {
-			if (evidence.getBreakendSummary().direction == BreakendDirection.Forward) {
-				fPositionWeightSum += expectedLinearPosition * weight;
-				fWeightSum += weight;
-			} else {
-				bPositionWeightSum += expectedLinearPosition * weight;
-				bWeightSum += weight;
-			}
+		if (anchorDirection == BreakendDirection.Forward) {
+			fPositionWeightSum += expectedLinearPosition * weight;
+			fWeightSum += weight;
+		} else if (anchorDirection == BreakendDirection.Backward) {
+			bPositionWeightSum += expectedLinearPosition * weight;
+			bWeightSum += weight;
 		}
+		categoryCount = new int[category + 1];
+		categoryCount[category] = 1;
 	}
 	/**
 	 * Merges the given node into this one
@@ -68,6 +70,12 @@ public class DeBruijnNodeBase {
 		this.tWeightSum += node.tWeightSum;
 		this.fWeightSum += node.fWeightSum;
 		this.bWeightSum += node.bWeightSum;
+		if (categoryCount.length < node.categoryCount.length) {
+			categoryCount = Arrays.copyOf(categoryCount, node.categoryCount.length);
+		}
+		for (int i = 0; i < categoryCount.length; i++) {
+			this.categoryCount[i] += node.categoryCount[i];
+		}
 	}
 	/**
 	 * Reduces the weighting of this node due to removal of a supporting read
@@ -82,6 +90,9 @@ public class DeBruijnNodeBase {
 		this.tWeightSum -= node.tWeightSum;
 		this.fWeightSum -= node.fWeightSum;
 		this.bWeightSum -= node.bWeightSum;
+		for (int i = 0; i < node.categoryCount.length; i++) {
+			this.categoryCount[i] -= node.categoryCount[i];
+		}
 	}
 	/**
 	 * returns the weight of this node
@@ -101,7 +112,7 @@ public class DeBruijnNodeBase {
 	 * Reads supporting this kmer. Reads containing this kmer multiple times will have multiple entries
 	 * @return supporting reads
 	 */
-	public List<DirectedEvidence> getSupportingEvidenceList() {
+	public List<String> getSupportingEvidenceList() {
 		return supportList;
 	}
 	/**

@@ -111,6 +111,70 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 			hydrateEvidenceSet(e);
 		}
 	}
+	/**
+	 * Annotates an assembly with a fully hydrated evidence set
+	 */
+	public void annotateAssembly() {
+		int n = source.getContext().getCategoryCount();
+		BreakendSummary breakendWithMargin = source.getContext().getVariantCallingParameters().withMargin(source.getContext(), breakend);
+		float[] rpQual = new float[n];
+		float[] scQual = new float[n];
+		float[] rQual = new float[n];
+		float[] nsQual = new float[n];
+		int[] rpCount = new int[n];
+		int[] rpMaxLen = new int[n];
+		int[] scCount = new int[n];
+		int[] scLenMax = new int[n];
+		int[] scLenTotal = new int[n];
+		int[] rCount = new int[n];
+		int[] nsCount = new int[n];
+		int maxLocalMapq = 0;
+		for (DirectedEvidence e : evidence) {
+			maxLocalMapq = Math.max(maxLocalMapq, e.getLocalMapq());
+			int offset = ((SAMEvidenceSource)e).getSourceCategory();
+			float qual = e.getBreakendQual();
+			if (e instanceof NonReferenceReadPair) {
+				rpCount[offset]++;
+				rpQual[offset] += qual;
+				rpMaxLen[offset] = Math.max(rpMaxLen[offset], ((NonReferenceReadPair)e).getNonReferenceRead().getReadLength());
+			}
+			if (e instanceof SoftClipEvidence) {
+				scCount[offset]++;
+				scQual[offset] += qual;
+				int clipLength = ((SoftClipEvidence)e).getSoftClipLength();
+				scLenMax[offset] = Math.max(scLenMax[offset], clipLength);
+				scLenTotal[offset] += clipLength;
+			}
+			if (e instanceof RemoteEvidence) {
+				rCount[offset]++;
+				rQual[offset] += qual;
+			}
+			if (!breakendWithMargin.overlaps(e.getBreakendSummary())) {
+				nsCount[offset]++;
+				nsQual[offset] += qual;
+			}
+		}
+		annotateSAMRecord(getSAMRecord(), rpQual, scQual, rQual, nsQual, rpCount, rpMaxLen, scCount, scLenMax, scLenTotal, rCount, nsCount, maxLocalMapq);
+		annotateSAMRecord(getBackingRecord(), rpQual, scQual, rQual, nsQual, rpCount, rpMaxLen, scCount, scLenMax, scLenTotal, rCount, nsCount, maxLocalMapq);
+		annotateSAMRecord(getRemoteSAMRecord(), rpQual, scQual, rQual, nsQual, rpCount, rpMaxLen, scCount, scLenMax, scLenTotal, rCount, nsCount, getRemoteSAMRecord().getMappingQuality());
+	}
+	private void annotateSAMRecord(SAMRecord r, float[] rpQual, float[] scQual,
+			float[] rQual, float[] nsQual, int[] rpCount, int[] rpMaxLen,
+			int[] scCount, int[] scLenMax, int[] scLenTotal, int[] rCount,
+			int[] nsCount, int maxLocalMapq) {
+		r.setMappingQuality(maxLocalMapq);
+		r.setAttribute(SamTags.ASSEMBLY_READPAIR_COUNT, rpCount);
+		r.setAttribute(SamTags.ASSEMBLY_READPAIR_LENGTH_MAX, rpMaxLen);
+		r.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT, scCount);
+		r.setAttribute(SamTags.ASSEMBLY_REMOTE_COUNT, rCount);
+		r.setAttribute(SamTags.ASSEMBLY_NONSUPPORTING_COUNT, nsCount);
+		r.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX, scLenMax);
+		r.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL, scLenTotal);
+		r.setAttribute(SamTags.ASSEMBLY_READPAIR_QUAL, rpQual);
+		r.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_QUAL, scQual);
+		r.setAttribute(SamTags.ASSEMBLY_REMOTE_QUAL, rQual);
+		r.setAttribute(SamTags.ASSEMBLY_NONSUPPORTING_QUAL, nsQual);
+	}
 	public Collection<DirectedEvidence> getEvidence() {
 		if (evidence == null) {
 			return ImmutableList.of();

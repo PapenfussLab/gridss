@@ -13,6 +13,7 @@ import htsjdk.variant.vcf.VCFFileReader;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -158,23 +159,23 @@ public class VariantCaller extends EvidenceProcessorBase {
 	}
 	public void annotateBreakpoints(File truthVcf) {
 		log.info("Annotating Calls");
-		List<SAMEvidenceSource> normal = Lists.newArrayList();
+		List<List<SAMEvidenceSource>> byCategory = Lists.newArrayList();
+		while (byCategory.size() < processContext.getCategoryCount()) {
+			byCategory.add(new ArrayList<SAMEvidenceSource>());
+		}
 		List<SAMEvidenceSource> tumour = Lists.newArrayList();
-		int maxWindowSize = getMaxWindowSize();
-		for (EvidenceSource source : samEvidence) {
-			SAMEvidenceSource samSource = (SAMEvidenceSource)source;
-			if (samSource.isTumour()) {
-				tumour.add(samSource);
-			} else {
-				normal.add(samSource);
-			}
+		final int maxWindowSize = getMaxWindowSize();
+		for (SAMEvidenceSource source : samEvidence) {
+			byCategory.get(source.getSourceCategory()).add(source);
 		}
 		VariantContextWriter vcfWriter = null;
-		ReferenceCoverageLookup normalCoverage = null;
-		ReferenceCoverageLookup tumourCoverage = null;
 		CloseableIterator<IdsvVariantContext> it = null;
 		CloseableIterator<DirectedEvidence> evidenceIt = null;
+		List<ReferenceCoverageLookup> coverage = Lists.newArrayList();
 		try {
+			for (int i = 0; i < byCategory.size(); i++) {
+				coverage.add(getReferenceLookup(byCategory.get(i), maxWindowSize));
+			}
 			File working = FileSystemContext.getWorkingFileFor(output);
 			vcfWriter = processContext.getVariantContextWriter(working, true);
 			it = getAllCalledVariants();
@@ -187,8 +188,6 @@ public class VariantCaller extends EvidenceProcessorBase {
 			if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
 				breakendIt = new OrderAssertingIterator<VariantContextDirectedEvidence>(breakendIt, DirectedEvidenceOrder.ByNatural);
 			}
-			normalCoverage = getReferenceLookup(normal, maxWindowSize);
-			tumourCoverage = getReferenceLookup(tumour, maxWindowSize);
 			evidenceIt = getAllEvidence(true, true, true, true, true);
 			evidenceIt = adjustEvidenceStream(evidenceIt);
 			breakendIt = new SequentialEvidenceAnnotator(processContext, breakendIt, evidenceIt, maxWindowSize, true, evidenceDump);
@@ -198,7 +197,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 				breakendIt = new OrderAssertingIterator<VariantContextDirectedEvidence>(breakendIt, DirectedEvidenceOrder.ByNatural);
 			}
 			breakendIt = new AsyncBufferedIterator<VariantContextDirectedEvidence>(breakendIt, "Annotator-SV");
-			breakendIt = new SequentialCoverageAnnotator(processContext, breakendIt, normalCoverage, tumourCoverage);
+			breakendIt = new SequentialCoverageAnnotator(processContext, breakendIt, coverage);
 			breakendIt = new AsyncBufferedIterator<VariantContextDirectedEvidence>(breakendIt, "Annotator-Coverage");
 			if (truthVcf != null) {
 				breakendIt = new TruthAnnotator(processContext, breakendIt, truthVcf);
@@ -225,8 +224,9 @@ public class VariantCaller extends EvidenceProcessorBase {
 			throw new RuntimeException(e);
 		} finally {
 			CloserUtil.close(vcfWriter);
-			CloserUtil.close(normalCoverage);
-			CloserUtil.close(tumourCoverage);
+			for (int i = 0; i < coverage.size(); i++) {
+				CloserUtil.close(coverage.get(i));
+			}
 			CloserUtil.close(it);
 			CloserUtil.close(evidenceIt);
 		}

@@ -234,8 +234,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	 * Only non-reference reads are considered supporting the breakpoint.
 	 */
 	@Override
-	public Set<DirectedEvidence> getSupportingEvidence(Iterable<Long> path) {
-		Set<DirectedEvidence> reads = Sets.newHashSet();
+	public Set<String> getSupportingEvidence(Iterable<Long> path) {
+		Set<String> reads = Sets.newHashSet();
 		for (Long kmer : path) {
 			DeBruijnSubgraphNode node = getKmer(kmer);
 			if (!node.isReference()) {

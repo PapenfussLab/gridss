@@ -5,34 +5,34 @@ import htsjdk.variant.vcf.VCFHeaderLineType;
 import htsjdk.variant.vcf.VCFInfoHeaderLine;
 
 public enum VcfAttributes {
-	REFERENCE_READ_COUNT ("REF", 2, VCFHeaderLineType.Integer, "Count of reads mapping across this breakend (Normal,Tumour)"),
-	REFERENCE_READPAIR_COUNT ("REFPAIR", 2, VCFHeaderLineType.Integer, "Count of reference read pairs spanning this breakpoint supporting the reference allele (Normal,Tumour)"),
-	SOMATIC_P_VALUE ("SPV", 1, VCFHeaderLineType.Float, "Somatic p-value"),
+	REFERENCE_READ_COUNT ("REF", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of reads mapping across this breakend per category"),
+	REFERENCE_READPAIR_COUNT ("REFPAIR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of reference read pairs spanning this breakpoint supporting the reference allele per category"),
+	SOMATIC_P_VALUE ("SPV", 1, VCFHeaderLineType.Float, "Somatic p-value. Assume first category is normal, second is tumour"),
 	CALLED_QUAL ("CQ", 1, VCFHeaderLineType.Float, "Breakpoint quality score before evidence reallocation"),
 	//BREAKPOINT_QUAL ("BPQUAL", 1, VCFHeaderLineType.Float, "Quality score of breakpoint evidence after evidence reallocation"), // QUAL field
 	BREAKEND_QUAL ("BQ", 1, VCFHeaderLineType.Float, "Quality score of breakend evidence after evidence reallocation"),
 	
 	BREAKPOINT_ASSEMBLY_COUNT("AS", 1, VCFHeaderLineType.Integer, "Count of assemblies supporting breakpoint"),
-	BREAKPOINT_READPAIR_COUNT("RP", 2, VCFHeaderLineType.Integer, "Count of read pairs supporting breakpoint (Normal,Tumour)"),
-	BREAKPOINT_SOFTCLIP_COUNT("SC", 2, VCFHeaderLineType.Integer, "Count of soft clips supporting breakpoint (Normal,Tumour)"),
+	BREAKPOINT_READPAIR_COUNT("RP", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of read pairs supporting breakpoint per category"),
+	BREAKPOINT_SOFTCLIP_COUNT("SC", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of soft clips supporting breakpoint per category"),
 	BREAKPOINT_ASSEMBLY_COUNT_REMOTE("RAS", 1, VCFHeaderLineType.Integer, "Count of assemblies supporting breakpoint from remote breakend"),
-	BREAKPOINT_SOFTCLIP_COUNT_REMOTE("RSC", 2, VCFHeaderLineType.Integer, "Count of soft clips supporting breakpoint from remote breakend (Normal,Tumour)"),
+	BREAKPOINT_SOFTCLIP_COUNT_REMOTE("RSC", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of soft clips supporting breakpoint from remote breakend per category"),
 	
 	BREAKPOINT_ASSEMBLY_QUAL("ASQ", 1, VCFHeaderLineType.Float, "Quality score of assemblies supporting breakpoint"),
-	BREAKPOINT_READPAIR_QUAL("RPQ", 2, VCFHeaderLineType.Float, "Quality score of read pairs supporting breakpoint (Normal,Tumour)"),
-	BREAKPOINT_SOFTCLIP_QUAL("SCQ", 2, VCFHeaderLineType.Float, "Quality score of soft clips supporting breakpoint (Normal,Tumour)"),
+	BREAKPOINT_READPAIR_QUAL("RPQ", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Float, "Quality score of read pairs supporting breakpoint per category"),
+	BREAKPOINT_SOFTCLIP_QUAL("SCQ", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Float, "Quality score of soft clips supporting breakpoint per category"),
 	BREAKPOINT_ASSEMBLY_QUAL_REMOTE("RASQ", 1, VCFHeaderLineType.Float, "Quality score of assemblies supporting breakpoint from remote breakend"),
-	BREAKPOINT_SOFTCLIP_QUAL_REMOTE("RSCQ", 2, VCFHeaderLineType.Float, "Quality score of soft clips supporting breakpoint from remote breakend (Normal,Tumour)"),
+	BREAKPOINT_SOFTCLIP_QUAL_REMOTE("RSCQ", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Float, "Quality score of soft clips supporting breakpoint from remote breakend per category"),
 
 	BREAKEND_ASSEMBLY_COUNT("BAS", 1, VCFHeaderLineType.Integer, "Count of assemblies supporting just local breakend"),
-	BREAKEND_READPAIR_COUNT("BRP", 2, VCFHeaderLineType.Integer, "Count of read pairs supporting just local breakend (Normal,Tumour)"),
-	BREAKEND_SOFTCLIP_COUNT("BSC", 2, VCFHeaderLineType.Integer, "Count of soft clips supporting just local breakend (Normal,Tumour)"),
+	BREAKEND_READPAIR_COUNT("BRP", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of read pairs supporting just local breakend per category"),
+	BREAKEND_SOFTCLIP_COUNT("BSC", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of soft clips supporting just local breakend per category"),
 
 	BREAKEND_ASSEMBLY_QUAL("BASQ", 1, VCFHeaderLineType.Float, "Quality score of assemblies supporting just local breakend"),
-	BREAKEND_READPAIR_QUAL("BRPQ", 2, VCFHeaderLineType.Float, "Quality score of read pairs supporting just local breakend (Normal,Tumour)"),
-	BREAKEND_SOFTCLIP_QUAL("BSCQ", 2, VCFHeaderLineType.Float, "Quality score of soft clips supporting just local breakend (Normal,Tumour)"),
+	BREAKEND_READPAIR_QUAL("BRPQ", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Float, "Quality score of read pairs supporting just local breakend per category"),
+	BREAKEND_SOFTCLIP_QUAL("BSCQ", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Float, "Quality score of soft clips supporting just local breakend per category"),
 
-	CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY ("CIRPOS", 2, VCFHeaderLineType.Integer, "Confidence interval around remote breakend POS for imprecise variants"),
+	CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY ("CIRPOS", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Confidence interval around remote breakend POS for imprecise variants"),
 	
 	SELF_INTERSECTING ("SELF", 1, VCFHeaderLineType.Flag, "Indicates a breakpoint is self-intersecting"),
 	

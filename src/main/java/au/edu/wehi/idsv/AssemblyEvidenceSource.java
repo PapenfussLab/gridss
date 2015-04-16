@@ -67,7 +67,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			process(threadpool);
 		}
 		if (isRealignmentComplete()) {
-			CreateAssemblyReadPair step = new CreateAssemblyReadPair(getContext(), this);
+			CreateAssemblyReadPair step = new CreateAssemblyReadPair(getContext(), this, source);
 			step.process(EnumSet.of(ProcessStep.SORT_REALIGNED_ASSEMBLIES), threadpool);
 			step.close();
 		}

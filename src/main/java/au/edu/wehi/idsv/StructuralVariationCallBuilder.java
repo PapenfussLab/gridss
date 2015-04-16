@@ -142,16 +142,17 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	}
 	private int offsetTN(DirectedEvidence e) {
 		EvidenceSource source = e.getEvidenceSource();
-		return (source instanceof SAMEvidenceSource && ((SAMEvidenceSource)source).isTumour()) ? 1 : 0;
+		if (source instanceof SAMEvidenceSource) return ((SAMEvidenceSource)source).getSourceCategory();
+		return 0;
 	}
 	private void setBreakendAttributes() {
 		int asCount = 0;
-		int[] scCount = new int[] {0, 0};
-		int[] rpCount = new int[] {0, 0};
+		int[] scCount = new int[processContext.getCategoryCount()];
+		int[] rpCount = new int[processContext.getCategoryCount()];
 		float totalQual = 0;
 		float asQual = 0;
-		float[] scQual = new float[] {0, 0};
-		float[] rpQual = new float[] {0, 0};
+		float[] scQual = new float[processContext.getCategoryCount()];
+		float[] rpQual = new float[processContext.getCategoryCount()];
 		for (DirectedEvidence e : list) {
 			if (e instanceof DirectedBreakpoint) continue;
 			float qual = e.getBreakendQual();
@@ -192,16 +193,16 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	}
 	private void setBreakpointAttributes() {
 		int asCount = 0;
-		int[] scCount = new int[] {0, 0};
-		int[] rpCount = new int[] {0, 0};
+		int[] scCount = new int[processContext.getCategoryCount()];
+		int[] rpCount = new int[processContext.getCategoryCount()];
 		int rasCount = 0;
-		int[] rscCount = new int[] {0, 0};
+		int[] rscCount = new int[processContext.getCategoryCount()];
 		float totalQual = 0;
 		float asQual = 0;
-		float[] scQual = new float[] {0, 0};
-		float[] rpQual = new float[] {0, 0};
+		float[] scQual = new float[processContext.getCategoryCount()];
+		float[] rpQual = new float[processContext.getCategoryCount()];
 		float rasQual = 0;
-		float[] rscQual = new float[] {0, 0};
+		float[] rscQual = new float[processContext.getCategoryCount()];
 		for (DirectedBreakpoint e : Iterables.filter(list, DirectedBreakpoint.class)) {
 			float qual = e.getBreakpointQual();
 			int offset = offsetTN(e);

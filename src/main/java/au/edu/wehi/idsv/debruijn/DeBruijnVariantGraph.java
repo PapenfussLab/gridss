@@ -116,14 +116,14 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 	 * @param kmer evidence kmer
 	 */
 	protected void onEvidenceRemoved(T graphNode, T evidenceNode, VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) { }
-	private Set<DirectedEvidence> getSupport(List<T> path) {
-		Set<DirectedEvidence> support = Sets.newHashSet();
+	private Set<String> getSupport(List<T> path) {
+		Set<String> support = Sets.newHashSet();
 		// iterate in strides to improve support composition when limit is hit 
 		int stride = getK();
 		for (int j = 0; j < stride; j++) {
 			for (int i = j; i < path.size(); i += stride) {
 				T node = path.get(i);
-				List<DirectedEvidence> nodeSupport = node.getSupportingEvidenceList();
+				List<String> nodeSupport = node.getSupportingEvidenceList();
 				support.addAll(nodeSupport);
 				if (support.size() > SUPPORT_SIZE_HARD_LIMIT) {
 					log.warn(String.format("Hit support size hard limit of %d - no longer processing additional support", SUPPORT_SIZE_HARD_LIMIT));

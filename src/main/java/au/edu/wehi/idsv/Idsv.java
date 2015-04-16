@@ -48,9 +48,9 @@ public class Idsv extends CommandLineProgram {
     @Option(doc = "Processing steps to execute",
             optional = true)
     public EnumSet<ProcessStep> STEPS = ProcessStep.ALL_STEPS;
-    private SAMEvidenceSource constructSamEvidenceSource(File file, int index, boolean isTumour) throws IOException { 
-    	List<Integer> maxFragSizeList = isTumour ? INPUT_TUMOUR_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE : INPUT_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE;
-    	List<Integer> minFragSizeList = isTumour ? INPUT_TUMOUR_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE : INPUT_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE;
+    private SAMEvidenceSource constructSamEvidenceSource(File file, int index, int category) throws IOException { 
+    	List<Integer> maxFragSizeList = category == 1 ? INPUT_TUMOUR_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE : INPUT_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE;
+    	List<Integer> minFragSizeList = category == 1 ? INPUT_TUMOUR_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE : INPUT_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE;
     	int maxFragSize = 0;
     	int minFragSize = 0;
     	if (maxFragSizeList != null && maxFragSizeList.size() > index && maxFragSizeList.get(index) != null) {
@@ -60,11 +60,11 @@ public class Idsv extends CommandLineProgram {
     		minFragSize = minFragSizeList.get(index);
     	}
     	if (maxFragSize > 0) {
-    		return new SAMEvidenceSource(getContext(), file, isTumour, minFragSize, maxFragSize);
+    		return new SAMEvidenceSource(getContext(), file, category, minFragSize, maxFragSize);
     	} else if (READ_PAIR_CONCORDANT_PERCENT != null) {
-    		return new SAMEvidenceSource(getContext(), file, isTumour, READ_PAIR_CONCORDANT_PERCENT);
+    		return new SAMEvidenceSource(getContext(), file, category, READ_PAIR_CONCORDANT_PERCENT);
     	} else {
-    		return new SAMEvidenceSource(getContext(), file, isTumour);
+    		return new SAMEvidenceSource(getContext(), file, category);
     	}
     }
     public List<SAMEvidenceSource> createSamEvidenceSources() throws IOException {
@@ -72,12 +72,12 @@ public class Idsv extends CommandLineProgram {
     	List<SAMEvidenceSource> samEvidence = Lists.newArrayList();
     	for (File f : INPUT) {
     		log.debug("Processing normal input ", f);
-    		SAMEvidenceSource sref = constructSamEvidenceSource(f, i++, false);
+    		SAMEvidenceSource sref = constructSamEvidenceSource(f, i++, 0);
     		samEvidence.add(sref);
     	}
     	for (File f : INPUT_TUMOUR) {
     		log.debug("Processing tumour input ", f);
-    		SAMEvidenceSource sref = constructSamEvidenceSource(f, i++, true);
+    		SAMEvidenceSource sref = constructSamEvidenceSource(f, i++, 1);
     		samEvidence.add(sref);
     	}
     	return samEvidence;

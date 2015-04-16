@@ -19,7 +19,6 @@ import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.primitives.Bytes;
 
 public final class AssemblyFactory {
@@ -43,7 +42,7 @@ public final class AssemblyFactory {
 	public static SAMRecordAssemblyEvidence createAnchoredBreakend(
 			ProcessingContext processContext,
 			AssemblyEvidenceSource source, BreakendDirection direction,
-			Set<DirectedEvidence> evidence,
+			Set<String> evidence,
 			int anchorReferenceIndex, int anchorBreakendPosition, int anchoredBaseCount,
 			byte[] baseCalls, byte[] baseQuals,
 			int normalBaseCount, int tumourBaseCount) {
@@ -53,12 +52,11 @@ public final class AssemblyFactory {
 				breakend.direction == BreakendDirection.Backward ? anchoredBaseCount : 0,
 				baseCalls, baseQuals, normalBaseCount, tumourBaseCount);
 		SAMRecordAssemblyEvidence assembly = hydrate(source, r);
-		assembly.hydrateEvidenceSet(evidence);
 		return assembly;
 	}
 	public static SmallIndelSAMRecordAssemblyEvidence createAnchoredBreakpoint(
 			ProcessingContext processContext, AssemblyEvidenceSource source,
-			Set<DirectedEvidence> evidence,
+			Set<String> evidence,
 			int startAnchorReferenceIndex, int startAnchorPosition, int startAnchorBaseCount,
 			int endAnchorReferenceIndex, int endAnchorPosition, int endAnchorBaseCount,
 			byte[] baseCalls, byte[] baseQuals, int normalBaseCount, int tumourBaseCount) {
@@ -72,7 +70,6 @@ public final class AssemblyFactory {
 				endAnchorBaseCount,
 				baseCalls, baseQuals, normalBaseCount, tumourBaseCount);
 		SAMRecordAssemblyEvidence assembly = hydrate(source, r);
-		assembly.hydrateEvidenceSet(evidence);
 		return (SmallIndelSAMRecordAssemblyEvidence)assembly;
 	}
 	/**
@@ -90,15 +87,15 @@ public final class AssemblyFactory {
 	public static SAMRecordAssemblyEvidence createUnanchoredBreakend(
 			ProcessingContext processContext,
 			AssemblyEvidenceSource source,
-			Set<DirectedEvidence> evidence,
+			BreakendSummary breakend,
+			Set<String> evidence,
 			byte[] baseCalls, byte[] baseQuals,
 			int normalBaseCount, int tumourBaseCount) {
-		BreakendSummary breakend = Models.calculateBreakend(processContext.getLinear(), Lists.newArrayList(evidence));
+		//BreakendSummary breakend = Models.calculateBreakend(processContext.getLinear(), Lists.newArrayList(evidence));
 		SAMRecord r = createAssemblySAMRecord(evidence, processContext.getBasicSamHeader(), source, breakend,
 				0, 0,
 				baseCalls, baseQuals, normalBaseCount, tumourBaseCount);
 		SAMRecordAssemblyEvidence assembly = hydrate(source, r);
-		assembly.hydrateEvidenceSet(evidence);
 		return assembly;
 	}
 	/**
@@ -133,7 +130,7 @@ public final class AssemblyFactory {
 	private static final byte[][] PAD_BASES = new byte[][] { new byte[] {}, new byte[] { 'N' }, new byte[] { 'N', 'N' } };
 	private static final byte[][] PAD_QUALS = new byte[][] { new byte[] {}, new byte[] { 0 }, new byte[] { 0, 0 } };
 	private static SAMRecord createAssemblySAMRecord(
-			Collection<DirectedEvidence> evidence,
+			Collection<String> evidence,
 			SAMFileHeader samFileHeader, AssemblyEvidenceSource source,
 			BreakendSummary breakend,
 			int startAnchoredBaseCount,
@@ -224,68 +221,15 @@ public final class AssemblyFactory {
 		}
 		setEvidenceIDs(record, evidence);
 		record.setAttribute(SamTags.ASSEMBLY_BASE_COUNT, new int[] { normalBaseCount, tumourBaseCount });
-		
-		BreakendSummary breakendWithMargin = source.getContext().getVariantCallingParameters().withMargin(source.getContext(), breakend);
-		
-		float[] rpQual = new float[] { 0, 0, };
-		float[] scQual = new float[] { 0, 0, };
-		float[] rQual = new float[] { 0, 0, };
-		float[] nsQual = new float[] { 0, 0, };
-		int[] rpCount = new int[] { 0, 0, };
-		int[] rpMaxLen = new int[] { 0, 0, };
-		int[] scCount = new int[] { 0, 0, };
-		int[] scLenMax = new int[] { 0, 0, };
-		int[] scLenTotal = new int[] { 0, 0, };
-		int[] rCount = new int[] { 0, 0 };
-		int[] nsCount = new int[] { 0, 0 };
-		int maxLocalMapq = 0;
-		for (DirectedEvidence e : evidence) {
-			maxLocalMapq = Math.max(maxLocalMapq, e.getLocalMapq());
-			int offset = ((SAMEvidenceSource)e.getEvidenceSource()).isTumour() ? 1 : 0;
-			float qual = e.getBreakendQual();
-			if (e instanceof NonReferenceReadPair) {
-				rpCount[offset]++;
-				rpQual[offset] += qual;
-				rpMaxLen[offset] = Math.max(rpMaxLen[offset], ((NonReferenceReadPair)e).getNonReferenceRead().getReadLength());
-			}
-			if (e instanceof SoftClipEvidence) {
-				scCount[offset]++;
-				scQual[offset] += qual;
-				int clipLength = ((SoftClipEvidence)e).getSoftClipLength();
-				scLenMax[offset] = Math.max(scLenMax[offset], clipLength);
-				scLenTotal[offset] += clipLength;
-			}
-			if (e instanceof RemoteEvidence) {
-				rCount[offset]++;
-				rQual[offset] += qual;
-			}
-			if (!breakendWithMargin.overlaps(e.getBreakendSummary())) {
-				nsCount[offset]++;
-				nsQual[offset] += qual;
-			}
-		}
-		record.setMappingQuality(maxLocalMapq);
-		record.setAttribute(SamTags.ASSEMBLY_READPAIR_COUNT, rpCount);
-		record.setAttribute(SamTags.ASSEMBLY_READPAIR_LENGTH_MAX, rpMaxLen);
-		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT, scCount);
-		record.setAttribute(SamTags.ASSEMBLY_REMOTE_COUNT, rCount);
-		record.setAttribute(SamTags.ASSEMBLY_NONSUPPORTING_COUNT, nsCount);
-		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX, scLenMax);
-		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL, scLenTotal);
-		record.setAttribute(SamTags.ASSEMBLY_READPAIR_QUAL, rpQual);
-		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_QUAL, scQual);
-		record.setAttribute(SamTags.ASSEMBLY_REMOTE_QUAL, rQual);
-		record.setAttribute(SamTags.ASSEMBLY_NONSUPPORTING_QUAL, nsQual);
 		if (!(breakend instanceof BreakpointSummary)) {
 			record.setAttribute(SamTags.ASSEMBLY_DIRECTION, breakend.direction.toChar());
 		}
 		return record;
 	}
-	private static void setEvidenceIDs(SAMRecord r, Collection<DirectedEvidence> evidence) {
+	private static void setEvidenceIDs(SAMRecord r, Collection<String> evidence) {
 		if (evidence != null && evidence.size() > 0) {
 			StringBuilder sb = new StringBuilder();
-			for (DirectedEvidence e : evidence) {
-				String id = e.getEvidenceID(); 
+			for (String id : evidence) { 
 				sb.append(id);
 				sb.append(SAMRecordAssemblyEvidence.COMPONENT_EVIDENCEID_SEPARATOR);
 			}
@@ -294,15 +238,15 @@ public final class AssemblyFactory {
 			assert(ensureUniqueEvidenceID(evidence));
 		}
 	}
-	private static boolean ensureUniqueEvidenceID(Collection<DirectedEvidence> evidence) {
+	private static boolean ensureUniqueEvidenceID(Collection<String> evidence) {
 		boolean isUnique = true;
 		Set<String> map = new HashSet<String>();
-		for (DirectedEvidence e : evidence) {
-			if (map.contains(e.getEvidenceID())) {
-				log.error("Found evidenceID " + e.getEvidenceID() + " multiple times in assembly");
+		for (String id : evidence) {
+			if (map.contains(id)) {
+				log.error("Found evidenceID " + id + " multiple times in assembly");
 				isUnique = false;
 			}
-			map.add(e.getEvidenceID());
+			map.add(id);
 		}
 		return isUnique;
 	}
