@@ -23,15 +23,31 @@ public class LinearGenomicCoordinate {
 	 * Create a coordinate lookup from the given dictionary
 	 * @param dictionary sequence dictionary
 	 * @param padding number of bases to pad at start and end of each chromosome
+	 * @param padding between chromosomes include sequence bases such at each chromosome starts at an integer multiple of padding
+	 */
+	public LinearGenomicCoordinate(SAMSequenceDictionary dictionary, long padding, boolean fixedPadding) {
+		this.dictionary = dictionary;
+		generateLookups(dictionary.getSequences(), padding, fixedPadding);
+	}
+	/**
+	 * Create a coordinate lookup from the given dictionary
+	 * @param dictionary sequence dictionary
+	 * @param padding number of bases to pad at start and end of each chromosome
 	 */
 	public LinearGenomicCoordinate(SAMSequenceDictionary dictionary, long padding) {
-		this.dictionary = dictionary;
-		generateLookups(dictionary.getSequences(), padding);
+		this(dictionary, padding, false);
 	}
 	public LinearGenomicCoordinate(SAMSequenceDictionary dictionary) {
 		this(dictionary, 0);
 	}
-	private void generateLookups(List<SAMSequenceRecord> sequences, long padding) {
+	private void generateLookups(List<SAMSequenceRecord> sequences, long padding, boolean fixedPadding) {
+		if (fixedPadding) {
+			generateFixedLookups(sequences, padding);
+		} else {
+			generatePaddedLookups(sequences, padding);
+		}
+	}
+	private void generatePaddedLookups(List<SAMSequenceRecord> sequences, long padding) {
 		offset = new long[sequences.size()];
 		long cumsum = 0;
 		for (int i = 0; i < sequences.size(); i++) {
@@ -48,7 +64,27 @@ public class LinearGenomicCoordinate {
 		}
 		// add sentinels so lookup always succeeds
 		referenceIndices.put(Long.MIN_VALUE, -1);
-		referenceIndices.put(cumsum + 1, -1);
+		referenceIndices.put(cumsum, -1);
+	}
+	private void generateFixedLookups(List<SAMSequenceRecord> sequences, long width) {
+		offset = new long[sequences.size()];
+		for (int i = 0; i < sequences.size(); i++) {
+			if (sequences.get(i).getSequenceLength() > width) {
+				throw new IllegalArgumentException(String.format("Length %dbp of %s  is longer than fixed padding size of %d", sequences.get(i).getSequenceLength(), sequences.get(i).getSequenceName(), width));
+			}
+			if (sequences.get(i).getSequenceLength() == 0) {
+				throw new IllegalArgumentException(String.format("Missing length for contig %s", sequences.get(i).getSequenceName()));
+			}
+			offset[i] = (i + 1) * width;
+		}
+		referenceIndices = Maps.newTreeMap();
+		for (int i = 0; i < sequences.size(); i++) {
+			referenceIndices.put(offset[i] - width / 2, i);
+		}
+		referenceIndices.put(0L, 0); // first gets a full width of starting padding
+		// add sentinels so lookup always succeeds
+		referenceIndices.put(Long.MIN_VALUE, -1);
+		referenceIndices.put((sequences.size() + 2) * width - 1, -1); // end gets a full width of ending padding
 	}
 	public long getLinearCoordinate(int referenceIndex, long pos) {
 		if (referenceIndex < 0 || referenceIndex >= offset.length) {
