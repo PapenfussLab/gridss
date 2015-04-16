@@ -48,11 +48,11 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 		long startpos = processContext.getLinear().getLinearCoordinate(currentReferenceIndex, evidence.getBreakendSummary().start);
 		long shouldBeCompletedPos = startpos - source.getAssemblyEvidenceWindowSize();
 		it = Iterables.concat(it, assembleBefore(shouldBeCompletedPos));
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
-			assert(graph.sanityCheckSubgraphs(shouldBeCompletedPos, startpos + source.getMaxConcordantFragmentSize()));
-		}
 		startingNextProcessingStep();
 		graph.addEvidence(evidence);
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			assert(graph.sanityCheckSubgraphs());
+		}
 		return it;
 	}
 	@Override

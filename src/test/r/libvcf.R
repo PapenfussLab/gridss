@@ -18,14 +18,15 @@ GetGenome <- function(file) {
 # Load metadata into a dataframe
 LoadMetadata <- function(directory=".") {
   write("Loading metadata", stderr())
-  metadata <- foreach (filename=list.files(directory, pattern="*.metadata$"), .export=c("GetMetadataId"), .combine=rbind) %dopar% {
+  #metadata <- foreach (filename=list.files(directory, pattern="*.metadata$"), .export=c("GetMetadataId"), .combine=rbind) %dopar% {
+  metadata <- lapply(list.files(directory, pattern="*.metadata$"), function(filename) {
       md <- read.csv(filename, header=FALSE, sep="=", quote = "\"'", col.names=c("CX", "V"))
       md$File <- filename
       md$Id <- GetMetadataId(filename)
       md
-  }
-  #metadata <- do.call("rbind", metadata)  # collapse data frames # stringsAsFactors
-  metadata <- data.frame(rapply(metadata, as.character, classes="factor", how="replace"), stringsAsFactors=FALSE, row.names=NULL)  # workaround for do.call("rbind" not liking stringsAsFactors=FALSE
+  })
+  metadata <- do.call(rbind, metadata)
+  metadata <- data.frame(lapply(metadata, as.character), stringsAsFactors=FALSE)
   metadata <- cast(metadata, File + Id ~ CX, value="V")  # pivot on context name
   rownames(metadata) <- metadata$Id
   # transform known numeric data to expected type

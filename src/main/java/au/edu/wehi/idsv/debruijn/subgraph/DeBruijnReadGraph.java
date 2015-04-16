@@ -37,8 +37,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	private final Set<SubgraphSummary> subgraphs = Sets.newHashSet();
 	private final int referenceIndex;
 	private final AssemblyParameters parameters;
-	private int graphsExported = 0;
-	
+	private int graphsExported = 0;	
 	/**
 	 * 
 	 * @param k
@@ -122,7 +121,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		return result;
 	}
 	private boolean exceedsTimeout(SubgraphSummary ss) {
-		return ss.getMaxLinearPosition() - ss.getMinLinearPosition() > source.getAssemblyMaximumEvidenceDelay();
+		long width = ss.getMaxLinearPosition() - ss.getMinLinearPosition();
+		return width > source.getAssemblyMaximumEvidenceDelay();
 	}
 	private void visualisePrecollapsePathGraph(SubgraphSummary ss, PathGraphAssembler pga) {
 		File directory = new File(
@@ -160,10 +160,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		for (SubgraphSummary ss : subgraphs) {
 			boolean timeoutExceeded = exceedsTimeout(ss);
 			if (timeoutExceeded) {
-				log.warn(String.format("Subgraph at %s:%d-%d exceeded maximum width of %d - calling",
-						processContext.getDictionary().getSequence(this.referenceIndex).getSequenceName(),
-						ss.getMinLinearPosition(),
-						ss.getMaxLinearPosition(),
+				log.warn(String.format("Subgraph at %s exceeded maximum width of %d - calling",
+						processContext.getLinear().encodedIntervalToString(ss.getMinLinearPosition(), ss.getMaxLinearPosition()),
 						source.getAssemblyMaximumEvidenceDelay()));
 			}
 			if (ss.getMaxLinearPosition() < position || timeoutExceeded) {
@@ -257,13 +255,9 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			assert(node.getSubgraph().getMaxLinearPosition() >= node.getMaxLinearPosition());
 			assert(node.getSubgraph().getMinLinearPosition() <= node.getMinLinearPosition());
 		}		
-		//int lastMax = Integer.MIN_VALUE;
 		for (SubgraphSummary ss : subgraphs) {
-			//assert(ss.getMaxAnchor() >= lastMax); // sort order
-			//lastMax = ss.getMaxAnchor();
-			assert(ss == ss.getRoot()); // only root subgraphs should be in list
-			//assert(ss.getRoot().getMinAnchor() != Long.MAX_VALUE); // Will happen until we anchor long SC & reads split by Ns
-			//assert(ss.getRoot().getMaxAnchor() != Long.MIN_VALUE); // Will happen until we anchor long SC & reads split by Ns
+			assert(ss == ss.getRoot()); // only root subgraphs should be in list			
+			assert(ss.getMaxLinearPosition() - ss.getMinLinearPosition() < source.getAssemblyMaximumEvidenceDelay() + source.getMaxConcordantFragmentSize() + 1);
 		}
 		return true;
 	}

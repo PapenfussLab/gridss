@@ -354,7 +354,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		return getMetrics().getIdsvMetrics().MAX_READ_MAPPED_LENGTH;
 	}
 	public int getExpectedFragmentSize() {
-		return (int)getMetrics().getInsertSizeMetrics().MEDIAN_INSERT_SIZE;
+		return Math.min((int)getMetrics().getInsertSizeMetrics().MEDIAN_INSERT_SIZE, getMaxConcordantFragmentSize());
 	}
 	public ProcessingContext getProcessContext() {
 		return getContext();

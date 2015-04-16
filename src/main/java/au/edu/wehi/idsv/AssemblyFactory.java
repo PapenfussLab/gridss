@@ -9,6 +9,7 @@ import htsjdk.samtools.util.Log;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -43,7 +44,7 @@ public final class AssemblyFactory {
 	public static SAMRecordAssemblyEvidence createAnchoredBreakend(
 			ProcessingContext processContext,
 			AssemblyEvidenceSource source, BreakendDirection direction,
-			Set<DirectedEvidence> evidence,
+			Collection<DirectedEvidence> evidence,
 			int anchorReferenceIndex, int anchorBreakendPosition, int anchoredBaseCount,
 			byte[] baseCalls, byte[] baseQuals,
 			int normalBaseCount, int tumourBaseCount) {
@@ -58,7 +59,7 @@ public final class AssemblyFactory {
 	}
 	public static SmallIndelSAMRecordAssemblyEvidence createAnchoredBreakpoint(
 			ProcessingContext processContext, AssemblyEvidenceSource source,
-			Set<DirectedEvidence> evidence,
+			Collection<DirectedEvidence> evidence,
 			int startAnchorReferenceIndex, int startAnchorPosition, int startAnchorBaseCount,
 			int endAnchorReferenceIndex, int endAnchorPosition, int endAnchorBaseCount,
 			byte[] baseCalls, byte[] baseQuals, int normalBaseCount, int tumourBaseCount) {
@@ -90,7 +91,7 @@ public final class AssemblyFactory {
 	public static SAMRecordAssemblyEvidence createUnanchoredBreakend(
 			ProcessingContext processContext,
 			AssemblyEvidenceSource source,
-			Set<DirectedEvidence> evidence,
+			Collection<DirectedEvidence> evidence,
 			byte[] baseCalls, byte[] baseQuals,
 			int normalBaseCount, int tumourBaseCount) {
 		BreakendSummary breakend = Models.calculateBreakend(processContext.getLinear(), Lists.newArrayList(evidence));
@@ -124,7 +125,7 @@ public final class AssemblyFactory {
 	 */
 	public static SAMRecordAssemblyEvidence hydrate(AssemblyEvidenceSource source, SAMRecord record) {
 		BreakendDirection dir = SAMRecordAssemblyEvidence.getBreakendDirection(record);
-		if (dir == null || SAMRecordUtil.getSoftClipLength(record, dir) == 0) {
+		if (dir == null || (SAMRecordUtil.getSoftClipLength(record, dir) == 0)) {
 			return new SmallIndelSAMRecordAssemblyEvidence(source,  record);
 		} else {
 			return new SAMRecordAssemblyEvidence(source, record, null);
@@ -142,6 +143,12 @@ public final class AssemblyFactory {
 			int normalBaseCount, int tumourBaseCount) {
 		assert(startAnchoredBaseCount >= 0);
 		assert(endAnchoredBaseCount >= 0);
+		if (startAnchoredBaseCount + endAnchoredBaseCount > baseCalls.length) {
+			log.debug(String.format("Adjusting anchored base count: %d start, %d end for %d bases", startAnchoredBaseCount, endAnchoredBaseCount, baseCalls.length));
+			int overBy = endAnchoredBaseCount + startAnchoredBaseCount - baseCalls.length;
+			startAnchoredBaseCount -= overBy / 2;
+			endAnchoredBaseCount -= overBy - overBy / 2; // (so rounding is correct)
+		}
 		assert(startAnchoredBaseCount + endAnchoredBaseCount <= baseCalls.length);
 		assert(baseCalls.length == baseQuals.length);
 		assert(breakend != null);
@@ -282,17 +289,27 @@ public final class AssemblyFactory {
 		return record;
 	}
 	private static void setEvidenceIDs(SAMRecord r, Collection<DirectedEvidence> evidence) {
-		if (evidence != null && evidence.size() > 0) {
-			StringBuilder sb = new StringBuilder();
+		List<String> evidenceIDs;
+		if (evidence == null) {
+			evidenceIDs = new ArrayList<String>();
+		} else {
+			evidenceIDs = new ArrayList<String>(evidence.size());
 			for (DirectedEvidence e : evidence) {
-				String id = e.getEvidenceID(); 
-				sb.append(id);
-				sb.append(SAMRecordAssemblyEvidence.COMPONENT_EVIDENCEID_SEPARATOR);
+				evidenceIDs.add(e.getEvidenceID());
 			}
-			sb.deleteCharAt(sb.length() - 1);
-			r.setAttribute(SamTags.ASSEMLBY_COMPONENT_EVIDENCEID, sb.toString());
-			assert(ensureUniqueEvidenceID(evidence));
 		}
+		// Set deterministic ordering of evidence to allow for SAM diff
+		Collections.sort(evidenceIDs);
+		StringBuilder sb = new StringBuilder();
+		for (String s : evidenceIDs) {
+			sb.append(s);
+			sb.append(SAMRecordAssemblyEvidence.COMPONENT_EVIDENCEID_SEPARATOR);
+		}
+		if (evidenceIDs.size() > 0) {
+			sb.deleteCharAt(sb.length() - 1);
+		}
+		r.setAttribute(SamTags.ASSEMLBY_COMPONENT_EVIDENCEID, sb.toString());
+		assert(ensureUniqueEvidenceID(evidence));
 	}
 	private static boolean ensureUniqueEvidenceID(Collection<DirectedEvidence> evidence) {
 		boolean isUnique = true;

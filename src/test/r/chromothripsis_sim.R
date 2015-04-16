@@ -42,7 +42,8 @@ vcfs[sapply(vcfs, is.null)] <- NULL
 
 #TODO: apply filters
 #Rprof("C:/dev/Rprof.out")
-truthlist <- CalculateTruthSummary(vcfs, maxerrorbp=100, ignore.strand=TRUE)
+#truthlist <- CalculateTruthSummary(vcfs, maxerrorbp=100, ignore.strand=TRUE)
+truthlist <- CalculateTruthSummary(vcfs, maxerrorbp=10, ignore.strand=FALSE)
 ############
 # Sensitivity
 #

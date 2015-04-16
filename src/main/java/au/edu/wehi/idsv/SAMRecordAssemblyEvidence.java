@@ -379,7 +379,9 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		} else if (!tag.contains(reason.filter())) {
 			tag = tag + "," + reason.filter();
 		}
-		record.setAttribute(SamTags.ASSEMLBY_FILTERS, tag);
+		getBackingRecord().setAttribute(SamTags.ASSEMLBY_FILTERS, tag);
+		getSAMRecord().setAttribute(SamTags.ASSEMLBY_FILTERS, tag);
+		getRemoteSAMRecord().setAttribute(SamTags.ASSEMLBY_FILTERS, tag);
 	}
 	@Override
 	public List<VcfFilter> getFilters() {

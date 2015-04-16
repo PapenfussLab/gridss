@@ -112,14 +112,12 @@ public class AssemblyParameters {
 	 */
 	public int anchorAssemblyLength = 100;
 	public boolean applyFilters(SAMRecordAssemblyEvidence evidence) {
-		AssemblyEvidence localEvidence = evidence;
+		SAMRecordAssemblyEvidence localEvidence = evidence;
 		if (evidence instanceof RemoteEvidence) {
 			localEvidence = ((RealignedRemoteSAMRecordAssemblyEvidence)evidence).asLocal();
 		}
 		boolean filtered = false;
-		if (localEvidence.getBreakendSummary() == null ||
-				evidence.isReferenceAssembly() ||
-				localEvidence.getBreakendSequence().length == 0) {
+		if (localEvidence.getBreakendSummary() == null || localEvidence.isReferenceAssembly()) {
 			evidence.filterAssembly(VcfFilter.REFERENCE_ALLELE);
 			filtered = true;
 		}

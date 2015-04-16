@@ -16,6 +16,7 @@ import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.RemoteEvidence;
 import au.edu.wehi.idsv.SAMEvidenceSource;
+import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.SoftClipEvidence;
 
 import com.google.common.collect.Sets;
@@ -154,7 +155,7 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		}
 		return baseCounts;
 	}
-	protected AssemblyEvidence createAssembly(List<Long> kmers) {
+	protected SAMRecordAssemblyEvidence createAssembly(List<Long> kmers) {
 		List<T> path = new ArrayList<T>(kmers.size());
 		List<T> breakendPath = new ArrayList<T>(path.size());
 		int breakendStartOffset = -1;
@@ -177,19 +178,21 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		int[] breakendBaseCounts = getBaseCountsByCategory(breakendPath, breakendSupport);
 		byte[] bases = getBaseCalls(kmers);
 		byte[] quals = getBaseQuals(kmers);
-		
+		SAMRecordAssemblyEvidence ae = null;
 		if (beforeBreakend == null && afterBreakend == null) {
 			// unanchored
-			return AssemblyFactory.createUnanchoredBreakend(processContext, source, breakendSupport, bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
+			ae = AssemblyFactory.createUnanchoredBreakend(processContext, source, breakendSupport, bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
 		} else {
+			LinearGenomicCoordinate lgc = processContext.getLinear();
 			double startBreakendAnchorPosition = DeBruijnNodeBase.getExpectedPositionForDirectAnchor(BreakendDirection.Forward, breakendPath);
 			double endBreakendAnchorPosition = DeBruijnNodeBase.getExpectedPositionForDirectAnchor(BreakendDirection.Backward, breakendPath);
-			// fall back to expected position of reference kmer
+			// fall back to expected position of anchor kmer
+			// then fall back to expected kmer position - this will give the wrong answer for breakpoint assemblies as it will average the expected location of each breakpoint
 			if (Double.isNaN(startBreakendAnchorPosition) && beforeBreakend != null) {
-				startBreakendAnchorPosition = beforeBreakend.getExpectedPosition();
+				startBreakendAnchorPosition = beforeBreakend.getExpectedAnchorPosition();
 			}
 			if (Double.isNaN(endBreakendAnchorPosition) && afterBreakend != null) {
-				endBreakendAnchorPosition = afterBreakend.getExpectedPosition();
+				endBreakendAnchorPosition = afterBreakend.getExpectedAnchorPosition();
 			}
 			assert(!Double.isNaN(endBreakendAnchorPosition) || !Double.isNaN(startBreakendAnchorPosition));
 			// k=3
@@ -207,7 +210,6 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 			// adjust position from start of kmer over to closest reference anchor base position
 			startBreakendAnchorPosition += getK() - 1;
 			
-			LinearGenomicCoordinate lgc = processContext.getLinear();
 			int startAnchorReferenceIndex = -1;
 			int startAnchorPosition =  0;
 			int endAnchorReferenceIndex = -1;
@@ -225,27 +227,30 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 			int startAnchorLength = breakendStartOffset + getK() - 1;
 			int endAnchorLength = path.size() + getK() - breakendEndOffset - 2;
 			if (endAnchorReferenceIndex == -1) {
-				return AssemblyFactory.createAnchoredBreakend(processContext, source, BreakendDirection.Forward, breakendSupport,
+				ae = AssemblyFactory.createAnchoredBreakend(processContext, source, BreakendDirection.Forward, breakendSupport,
 						startAnchorReferenceIndex, startAnchorPosition, startAnchorLength,
 						bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
 			} else if (startAnchorReferenceIndex == -1) {
-				return AssemblyFactory.createAnchoredBreakend(processContext, source, BreakendDirection.Backward, breakendSupport,
+				ae = AssemblyFactory.createAnchoredBreakend(processContext, source, BreakendDirection.Backward, breakendSupport,
 						endAnchorReferenceIndex, endAnchorPosition, endAnchorLength,
 						bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
 			} else {
 				if (startAnchorLength + endAnchorLength > bases.length) {
-					// All bases support reference allele - this is likely an assembly artifact
+					// All bases support reference allele - this is likely
+					// a) an assembly artifact
 					// eg: creates a bubble of nonreference kmers all of which have at least
 					// one base supporting the reference
 					// MMMMSSS
 					// SSSMMMM
-					return null;
+					// b) microhomology at breakpoint
+					ae = null;
 				}
-				return AssemblyFactory.createAnchoredBreakpoint(processContext, source, breakendSupport,
+				ae = AssemblyFactory.createAnchoredBreakpoint(processContext, source, breakendSupport,
 						startAnchorReferenceIndex, startAnchorPosition, startAnchorLength,
 						endAnchorReferenceIndex, endAnchorPosition, endAnchorLength,
 						bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
 			}
 		}
+		return ae;
 	}
 }

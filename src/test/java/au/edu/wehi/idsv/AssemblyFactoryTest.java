@@ -13,6 +13,8 @@ import java.util.Set;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import au.edu.wehi.idsv.sam.SamTags;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -487,6 +489,11 @@ public class AssemblyFactoryTest extends TestHelper {
 		}) {
 			assertNotEquals(e1a.getEvidenceID(), e.getEvidenceID());
 		}
+	}
+	@Test
+	public void setEvidenceIDs_should_set_same_value_regardless_of_collection_ordering() {
+		assertEquals(AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), Lists.<DirectedEvidence>newArrayList(NRRP(OEA(0, 1000, "1M", true)), NRRP(OEA(0, 1001, "1M", true))), B("GTAC"), new byte[] {1,2,3,4}, 0, 0).getSAMRecord().getAttribute(SamTags.ASSEMLBY_COMPONENT_EVIDENCEID),
+					 AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), Lists.<DirectedEvidence>newArrayList(NRRP(OEA(0, 1001, "1M", true)), NRRP(OEA(0, 1000, "1M", true))), B("GTAC"), new byte[] {1,2,3,4}, 0, 0).getSAMRecord().getAttribute(SamTags.ASSEMLBY_COMPONENT_EVIDENCEID));
 	}
 	@Test
 	public void should_include_untemplated_sequence_for_imprecise_breakpoint() {
