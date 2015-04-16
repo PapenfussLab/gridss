@@ -13,7 +13,6 @@ import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfConstants;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
 /**
@@ -43,12 +42,14 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 	private String getBreakendString() {
 		return processContext.getVcf41Mode() ? VcfConstants.VCF41BREAKEND_REPLACEMENT : VcfConstants.VCF42BREAKEND;
 	}
-	public IdsvVariantContextBuilder referenceReads(int normalCount, int tumourCount) {
-		attribute(VcfAttributes.REFERENCE_READ_COUNT.attribute(), ImmutableList.of(normalCount, tumourCount ));
+	public IdsvVariantContextBuilder referenceReads(int[] count) {
+		assert(count.length == processContext.getCategoryCount());
+		attribute(VcfAttributes.REFERENCE_READ_COUNT.attribute(), count);
 		return this;
 	}
-	public IdsvVariantContextBuilder referenceSpanningPairs(int normalCount, int tumourCount) {
-		attribute(VcfAttributes.REFERENCE_READPAIR_COUNT.attribute(), ImmutableList.of(normalCount, tumourCount));
+	public IdsvVariantContextBuilder referenceSpanningPairs(int[] count) {
+		assert(count.length == processContext.getCategoryCount());
+		attribute(VcfAttributes.REFERENCE_READPAIR_COUNT.attribute(), count);
 		return this;
 	}
 	/**

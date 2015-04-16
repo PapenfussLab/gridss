@@ -12,8 +12,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.visualisation.DeBruijnGraphExporter;
 
 import com.google.common.collect.Iterables;
@@ -267,33 +265,30 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 		}
 		return result;
 	}
-	public Set<DirectedEvidence> getSupportingEvidence(Iterable<Long> path) {
-		Set<DirectedEvidence> reads = Sets.newHashSet();
+	public Set<String> getSupportingEvidence(Iterable<Long> path) {
+		Set<String> reads = Sets.newHashSet();
 		for (Long kmer : path) {
 			reads.addAll(kmers.get(kmer).getSupportingEvidenceList());
 		}
 		return reads;
 	}
 	/**
-	 * Total kmer support for the given path
+	 * Total kmer support for the given path by category
 	 * @param path kmer contig
-	 * @param countTumour count bases from evidence evidence if true, otherwise count bases from normal evidence
-	 * @return number of read bases include in at least one kmer on the given kmer contig
+	 * @return number of read bases per category include in at least one kmer on the given kmer contig
 	 */
-	public int getEvidenceKmerCount(List<Long> path, boolean countTumour) {
-		int readBaseCount = 0;
-		for (Long node : path) {
-			for (DirectedEvidence evidence : this.kmers.get(node).getSupportingEvidenceList()) {
-				SAMEvidenceSource source = (SAMEvidenceSource)evidence.getEvidenceSource();
-				boolean evidenceIsTumour = source != null && source.isTumour();
-				if (evidenceIsTumour == countTumour) {
-					readBaseCount++;
-				} else {
-					// ignore evidence we're not counting
-				}
+	public int[] getEvidenceKmerCount(List<T> path) {
+		int[] count = new int[1];
+		for (T node : path) {
+			int[] c = node.getCountByCategory();
+			if (c.length > count.length) {
+				count = Arrays.copyOf(count, c.length);
+			}
+			for (int i = 0; i < count.length; i++) {
+				count[i] += c[i];
 			}
 		}
-		return readBaseCount;
+		return count;
 	}
 	/**
 	 * Set of all kmers reachable from the given kmer

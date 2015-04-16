@@ -147,6 +147,9 @@ public class DeBruijnNodeBase {
 	public double getExpectedPosition() {
 		return tPositionWeightSum / (double)tWeightSum;
 	}
+	public int[] getCountByCategory() {
+		return categoryCount;
+	}
 	public static Ordering<? extends DeBruijnNodeBase> ByWeight = new Ordering<DeBruijnNodeBase>() {
 		public int compare(DeBruijnNodeBase o1, DeBruijnNodeBase o2) {
 			  return Ints.compare(o1.getWeight(), o2.getWeight());

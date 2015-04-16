@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import java.util.Iterator;
+import java.util.List;
 
 import com.google.common.collect.AbstractIterator;
 
@@ -13,39 +14,33 @@ import com.google.common.collect.AbstractIterator;
  */
 public class SequentialCoverageAnnotator extends AbstractIterator<VariantContextDirectedEvidence> implements BreakendAnnotator {
 	private final ProcessingContext context;
-	private final ReferenceCoverageLookup referenceNormal;
-	private final ReferenceCoverageLookup referenceTumour;
+	private final List<ReferenceCoverageLookup> reference;
 	private final Iterator<VariantContextDirectedEvidence> it;
 	public SequentialCoverageAnnotator(
 			ProcessingContext context,
 			Iterator<VariantContextDirectedEvidence> it,
-			ReferenceCoverageLookup referenceNormal,
-			ReferenceCoverageLookup referenceTumour) {
+			List<ReferenceCoverageLookup> reference) {
 		this.it = it;
 		this.context = context;
-		this.referenceNormal = referenceNormal;
-		this.referenceTumour = referenceTumour;
+		this.reference = reference;
 	}
 	public VariantContextDirectedEvidence annotate(VariantContextDirectedEvidence variant) {
 		BreakendSummary loc = variant.getBreakendSummary();
 		int referenceIndex = loc.referenceIndex;
 		// TODO: start or end based on call position
 		int positionImmediatelyBeforeBreakend = loc.start - (loc.direction == BreakendDirection.Forward ? 0 : 1);
-		int normalReads = 0;
-		int normalSpans = 0;
-		int tumourReads = 0;
-		int tumourSpans = 0;
-		if (referenceNormal != null) {
-			normalReads = referenceNormal.readsSupportingNoBreakendAfter(referenceIndex, positionImmediatelyBeforeBreakend);
-			normalSpans = referenceNormal.readPairsSupportingNoBreakendAfter(referenceIndex, positionImmediatelyBeforeBreakend);
-		}
-		if (referenceTumour != null) {
-			tumourReads = referenceTumour.readsSupportingNoBreakendAfter(referenceIndex, positionImmediatelyBeforeBreakend);
-			tumourSpans = referenceTumour.readPairsSupportingNoBreakendAfter(referenceIndex, positionImmediatelyBeforeBreakend);
+		int[] reads = new int[reference.size()];
+		int[] spans = new int[reference.size()];
+		for (int i = 0; i < reference.size(); i++) {
+			ReferenceCoverageLookup r = reference.get(i);
+			if (r != null) {
+				reads[i] = r.readsSupportingNoBreakendAfter(referenceIndex, positionImmediatelyBeforeBreakend);
+				spans[i] = r.readPairsSupportingNoBreakendAfter(referenceIndex, positionImmediatelyBeforeBreakend);
+			}
 		}
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context, variant);
-		builder.referenceReads(normalReads, tumourReads);
-		builder.referenceSpanningPairs(normalSpans, tumourSpans);
+		builder.referenceReads(reads);
+		builder.referenceSpanningPairs(spans);
 		return (VariantContextDirectedEvidence)builder.make();
 	}
 	@Override

@@ -133,13 +133,11 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		}
 		return support;
 	}
-	private int[] getBaseCountsByCategory(List<T> path, Set<DirectedEvidence> support) {
-		int[] baseCounts = new int[] { 0, 0 };
-		for (T node : path) {
-			for (DirectedEvidence e : node.getSupportingEvidenceList()) {
-				baseCounts[((SAMEvidenceSource)e.getEvidenceSource()).sourceCategory()]++;
-			}
-		}
+	private int[] getBaseCountsByCategory(List<T> path, boolean startAnchored, boolean endAnchored) {
+		int[] baseCounts = getEvidenceKmerCount(path);
+		return baseCounts;
+		// TODO: adjust counts according to start/end anchoring 
+		/*
 		// adjust base counts for non-anchored reads
 		int[] supportCounts = new int[] { 0, 0 };
 		for (DirectedEvidence e : support) {
@@ -153,6 +151,7 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 			baseCounts[i] += (getK() - 1) * supportCounts[i];
 		}
 		return baseCounts;
+		*/
 	}
 	protected AssemblyEvidence createAssembly(List<Long> kmers) {
 		List<T> path = new ArrayList<T>(kmers.size());
@@ -173,13 +172,14 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		T beforeBreakend = breakendStartOffset > 0 ? path.get(breakendStartOffset -1) : null;
 		T afterBreakend = breakendEndOffset + 1 < path.size() ? path.get(breakendEndOffset + 1) : null;
 		
-		Set<DirectedEvidence> breakendSupport = getSupport(breakendPath);
-		int[] breakendBaseCounts = getBaseCountsByCategory(breakendPath, breakendSupport);
+		Set<String> breakendSupport = getSupport(breakendPath);
+		int[] breakendBaseCounts = getBaseCountsByCategory(breakendPath, beforeBreakend != null, afterBreakend != null);
 		byte[] bases = getBaseCalls(kmers);
 		byte[] quals = getBaseQuals(kmers);
 		
 		if (beforeBreakend == null && afterBreakend == null) {
 			// unanchored
+			// TODO: work out breakend interval from expected location & interval
 			return AssemblyFactory.createUnanchoredBreakend(processContext, source, breakendSupport, bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
 		} else {
 			double startBreakendAnchorPosition = DeBruijnNodeBase.getExpectedPositionForDirectAnchor(BreakendDirection.Forward, breakendPath);
