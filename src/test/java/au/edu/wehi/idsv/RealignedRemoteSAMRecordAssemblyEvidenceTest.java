@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv;
 
-import com.google.common.collect.Sets;
 
 
 
@@ -11,7 +10,7 @@ public class RealignedRemoteSAMRecordAssemblyEvidenceTest extends RemoteEvidence
 	}
 	@Override
 	public RealignedSAMRecordAssemblyEvidence makeLocal(BreakendSummary bs, String allBases, String realignCigar, boolean realignNegativeStrand) {
-		return new RealignedSAMRecordAssemblyEvidence(AES(), AssemblyFactory.createAnchoredBreakend(getContext(), AES(), bs.direction, Sets.<DirectedEvidence>newHashSet(), bs.referenceIndex, bs.start, anchorLength(allBases, realignCigar), B(allBases), B(allBases), 0, 0).getSAMRecord(),
+		return new RealignedSAMRecordAssemblyEvidence(AES(), AssemblyFactory.createAnchoredBreakend(getContext(), AES(), bs.direction, null, bs.referenceIndex, bs.start, anchorLength(allBases, realignCigar), B(allBases), B(allBases), new int[] {0, 0}).annotateAssembly().getSAMRecord(),
 				realignSAM(bs, allBases, realignCigar, realignNegativeStrand));
 	}
 }

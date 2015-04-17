@@ -8,9 +8,7 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.variant.vcf.VCFConstants;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.junit.Assert;
 import org.junit.Ignore;
@@ -20,7 +18,7 @@ import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
-import com.google.common.collect.Sets;
+import com.google.common.collect.Lists;
 
 public class StructuralVariationCallBuilderTest extends TestHelper {
 	public final static BreakpointSummary BP = new BreakpointSummary(0, BWD, 10, 10, 1, BWD, 100, 100);
@@ -195,23 +193,31 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		cb.addEvidence(new um(5, true));
 		cb.addEvidence(new dp(1, true));
 		cb.addEvidence(new dp(2, true));
-		cb.addEvidence(AssemblyFactory.incorporateRealignment(getContext(),
-				AssemblyFactory.createAnchoredBreakend(pc, aes, BP.direction, Sets.<DirectedEvidence>newHashSet(
-						new rsc(5, false)
-						), BP.referenceIndex, BP.end, 1, B("TT"), B("TT"), 1, 2),
-				withMapq(44, onNegative(Read(BP.referenceIndex2, BP.start2, "1M")))[0]));
-		cb.addEvidence(AssemblyFactory.createAnchoredBreakend(pc, aes, BP.direction, Sets.<DirectedEvidence>newHashSet(
-						new um(6, true)
-						), BP.referenceIndex, BP.end, 1, B("TC"), B("TC"), 1, 2));
-		cb.addEvidence(AssemblyFactory.incorporateRealignment(pc,
-				AssemblyFactory.createAnchoredBreakend(pc, aes, BP.direction, Sets.<DirectedEvidence>newHashSet(
-						new rsc(6, false)
-						), BP.referenceIndex, BP.end, 1, B("TA"), B("TA"), 1, 2),
-				withMapq(1, onNegative(Read(BP.referenceIndex2, BP.start2, "1M")))[0]));
-		cb.addEvidence(((RealignedSAMRecordAssemblyEvidence)AssemblyFactory.incorporateRealignment(pc,
-				AssemblyFactory.createAnchoredBreakend(pc, aes, BP.direction, Sets.<DirectedEvidence>newHashSet(
-						new sc(4, false)), BP.referenceIndex2, BP.end2, 1, B("TT"), B("TT"), 1, 2),
-				withMapq(44, onNegative(Read(BP.referenceIndex, BP.start, "1M")))[0])).asRemote());
+		
+		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(new rsc(5, false)); 
+		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakend(pc, aes, BP.direction, Lists.transform(support, EID), BP.referenceIndex, BP.end, 1, B("TT"), B("TT"), new int[] { 1, 2 });
+		ass.hydrateEvidenceSet(support);
+		ass.annotateAssembly();
+		cb.addEvidence(AssemblyFactory.incorporateRealignment(getContext(), ass, withMapq(44, onNegative(Read(BP.referenceIndex2, BP.start2, "1M")))[0]));
+		
+		support = Lists.<DirectedEvidence>newArrayList(new um(6, true)); 
+		ass = AssemblyFactory.createAnchoredBreakend(pc, aes, BP.direction, Lists.transform(support, EID), BP.referenceIndex, BP.end, 1, B("TT"), B("TT"), new int[] { 1, 2 });
+		ass.hydrateEvidenceSet(support);
+		ass.annotateAssembly();
+		cb.addEvidence(ass);
+		
+		support = Lists.<DirectedEvidence>newArrayList(new rsc(6, false));
+		ass = AssemblyFactory.createAnchoredBreakend(pc, aes, BP.direction, Lists.transform(support, EID), BP.referenceIndex, BP.end, 1, B("TA"), B("TA"), new int[] { 1, 2 });
+		ass.hydrateEvidenceSet(support);
+		ass.annotateAssembly();
+		cb.addEvidence(AssemblyFactory.incorporateRealignment(pc, ass, withMapq(1, onNegative(Read(BP.referenceIndex2, BP.start2, "1M")))[0]));
+		
+		support = Lists.<DirectedEvidence>newArrayList(new sc(4, false));
+		ass = AssemblyFactory.createAnchoredBreakend(pc, aes, BP.direction, Lists.transform(support, EID), BP.referenceIndex2, BP.end2, 1, B("TT"), B("TT"), new int[] { 1, 2 });
+		ass.hydrateEvidenceSet(support);
+		ass.annotateAssembly();
+		cb.addEvidence(((RealignedSAMRecordAssemblyEvidence)AssemblyFactory.incorporateRealignment(pc, ass, withMapq(44, onNegative(Read(BP.referenceIndex, BP.start, "1M")))[0])).asRemote());
+		
 		return (VariantContextDirectedBreakpoint)cb.make();
 	}
 	@Test
@@ -270,9 +276,11 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public void should_exclude_breakpoint_evidence_contributing_to_breakend_assembly_but_not_supporting_breakpoint() {
 		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)minimalBreakend()
 				.breakpoint(BP, "GT").make());
-		cb.addEvidence(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BP.direction, Sets.<DirectedEvidence>newHashSet(
-						new rsc_not_supporting_breakpoint(1, true)
-						), BP.referenceIndex, BP.end, 1, B("TT"), B("TT"), 1, 2));
+		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(new rsc_not_supporting_breakpoint(1, true)); 
+		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BP.direction, Lists.transform(support, EID), BP.referenceIndex, BP.end, 1, B("TT"), B("TT"), new int[] { 1, 2 });
+		ass.hydrateEvidenceSet(support);
+		ass.annotateAssembly();
+		cb.addEvidence(ass);
 		VariantContextDirectedBreakpoint call = (VariantContextDirectedBreakpoint)cb.make();
 		Assert.assertArrayEquals(new int[] { 0,  0, }, asIntTN(call.getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_COUNT.attribute())));
 		Assert.assertArrayEquals(new int[] { 0,  0, }, asIntTN(call.getAttribute(VcfAttributes.BREAKEND_SOFTCLIP_COUNT.attribute())));
@@ -317,7 +325,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		ProcessingContext pc = getContext();
 		MockSAMEvidenceSource nes = new MockSAMEvidenceSource(pc);
 		MockSAMEvidenceSource tes = new MockSAMEvidenceSource(pc);
-		tes.isTumour = true;
+		tes.category = 1;
 		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
 				.breakend(new BreakendSummary(0, BWD, 1, 10), "").make());
 		cb.addEvidence(SCE(BWD, nes, Read(0, 5, "1S2M")));
@@ -329,16 +337,16 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		cb.addEvidence(NRRP(nes, OEA(0, 15, "9M", false)));
 		cb.addEvidence(ass1());
 		cb.addEvidence(ass2());
-		cb.referenceReads(7, 8);
-		cb.referenceSpanningPairs(9, 10);
+		cb.referenceReads(new int[] { 7, 8} );
+		cb.referenceSpanningPairs(new int[] { 9, 10 } );
 		return cb.make();
 	}
 	public SAMRecordAssemblyEvidence ass1() {
 		ProcessingContext pc = getContext();
 		MockSAMEvidenceSource nes = new MockSAMEvidenceSource(pc);
 		MockSAMEvidenceSource tes = new MockSAMEvidenceSource(pc);
-		tes.isTumour = true;
-		Set<DirectedEvidence> support = Sets.newHashSet();
+		tes.category = 1;
+		List<DirectedEvidence> support = Lists.newArrayList();
 		support.add(SCE(BWD, nes, Read(0, 10, "4S1M")));
 		support.add(SCE(BWD, tes, Read(0, 10, "3S5M")));
 		support.add(SCE(BWD, tes, Read(0, 10, "3S6M")));
@@ -348,15 +356,17 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		support.add(NRRP(tes, DP(0, 1, "2M", true, 0, 15, "5M", false)));
 		support.add(NRRP(tes, DP(0, 2, "2M", true, 0, 16, "5M", false)));
 		support.add(NRRP(nes, DP(0, 3, "2M", true, 0, 17, "10M", false)));
-		return AssemblyFactory.createAnchoredBreakend(pc, AES(), BWD,
-				support, 0, 10, 5, B("CGTAAAAT"), new byte[] { 0,1,2,3,4,5,6,7}, 13, 45);
+		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakend(pc, AES(), BWD, Lists.transform(support, EID), 0, 10, 5, B("CGTAAAAT"), new byte[] { 0,1,2,3,4,5,6,7}, new int[] {13, 45});
+		ass.hydrateEvidenceSet(support);
+		ass.annotateAssembly();
+		return ass;
 	}
 	public RealignedSAMRecordAssemblyEvidence ass2() {
 		ProcessingContext pc = getContext();
 		MockSAMEvidenceSource nes = new MockSAMEvidenceSource(pc);
 		MockSAMEvidenceSource tes = new MockSAMEvidenceSource(pc);
-		tes.isTumour = true;
-		Set<DirectedEvidence> support = Sets.newHashSet();
+		tes.category = 1;
+		List<DirectedEvidence> support = Lists.newArrayList();
 		support.add(SCE(BWD, nes, Read(0, 10, "4S1M")));
 		support.add(SCE(BWD, tes, Read(0, 10, "3S5M")));
 		support.add(SCE(BWD, tes, Read(0, 10, "3S6M")));
@@ -366,8 +376,9 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		support.add(NRRP(tes, DP(0, 1, "2M", true, 0, 15, "5M", false)));
 		support.add(NRRP(tes, DP(0, 2, "2M", true, 0, 16, "5M", false)));
 		support.add(NRRP(nes, DP(0, 3, "2M", true, 0, 17, "10M", false)));
-		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(pc, AES(), BWD,
-				support, 0, 10, 5, B("GGTAAAAC"), new byte[] { 7,6,5,4,3,2,1,0}, 21, 23);
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(pc, AES(), BWD, Lists.transform(support, EID), 0, 10, 5, B("GGTAAAAC"), new byte[] { 7,6,5,4,3,2,1,0}, new int[] {21, 23});
+		e.hydrateEvidenceSet(support);
+		e.annotateAssembly();
 		SAMRecord ra = Read(1, 102, "1S1M1S");
 		ra.setReadBases(B("GGT"));
 		ra.setMappingQuality(45);
@@ -400,8 +411,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				new sc(2, true),
 				new sc(3, true),
 				new sc(4, true));
-		cb.referenceReads(10, 2);
-		cb.referenceSpanningPairs(10, 2);
+		cb.referenceReads(new int[] { 10, 2 });
+		cb.referenceSpanningPairs(new int[] { 10, 2 });
 		assertTrue(cb.make().hasAttribute(VCFConstants.SOMATIC_KEY));
 	}
 	@Test
@@ -413,20 +424,21 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public void should_call_somatic_from_assembly_evidence() {
 		ProcessingContext pc = getContext();
 		MockSAMEvidenceSource tes = new MockSAMEvidenceSource(pc);
-		tes.isTumour = true;
-		Set<DirectedEvidence> support = Sets.newHashSet();
+		tes.category = 1;
+		List<DirectedEvidence> support = Lists.newArrayList();
 		support.add(SCE(BWD, tes, Read(0, 10, "3S5M")));
 		support.add(SCE(BWD, tes, Read(0, 10, "3S6M")));
 		support.add(NRRP(tes, OEA(0, 16, "5M", false)));
 		support.add(NRRP(tes, OEA(0, 17, "5M", false)));
 		support.add(NRRP(tes, DP(0, 10, "2M", false, 1, 100, "5M", false)));
 		support.add(NRRP(tes, DP(0, 10, "2M", false, 1, 101, "5M", false)));
-		AssemblyEvidence ass = AssemblyFactory.createAnchoredBreakend(pc, AES(), BWD,
-				support, 0, 10, 5, B("CGTAAAAT"), new byte[] { 0,1,2,3,4,5,6,7}, 0, 45);
+		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakend(pc, AES(), BWD, Lists.transform(support, EID), 0, 10, 5, B("CGTAAAAT"), new byte[] { 0,1,2,3,4,5,6,7}, new int[] {0, 45});
+		ass.hydrateEvidenceSet(support);
+		ass.annotateAssembly();
 		support.add(ass);
 		VariantContextDirectedEvidence e = (VariantContextDirectedEvidence)cb(support.toArray(new DirectedEvidence[0]))
-			.referenceReads(10, 10)
-			.referenceSpanningPairs(10, 10)
+			.referenceReads(new int[] { 10, 10 })
+			.referenceSpanningPairs(new int[] { 10, 10 })
 			.make();
 		assertTrue(e.hasAttribute(VCFConstants.SOMATIC_KEY));
 	}
@@ -452,7 +464,9 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void unanchored_assembly_should_set_imprecise_header() {
-		VariantContextDirectedEvidence dba = CallSV(AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), Sets.<DirectedEvidence>newHashSet(new MockDirectedEvidence(new BreakendSummary(0, FWD, 1, 2))), B("A"), B("A"), 0, 0));
+		SAMRecordAssemblyEvidence ass = AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 1, 2), null, B("A"), B("A"), new int[] {0, 0});
+		ass.annotateAssembly();
+		VariantContextDirectedEvidence dba = CallSV(ass);
 		assertTrue(dba.hasAttribute(VcfSvConstants.IMPRECISE_KEY));
 	}
 	@Test
@@ -501,7 +515,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		}}.make());
 		List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
 		evidence.add(AssemblyFactory.incorporateRealignment(getContext(),
-				AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, new HashSet<DirectedEvidence>(), 0, 12, 1, B("NTTTT"), B("NTTTT"), 0, 0),
+				AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null, 0, 12, 1, B("NTTTT"), B("NTTTT"), new int[] {0, 0}).annotateAssembly(),
 				new SAMRecord(getContext().getBasicSamHeader()) {{
 					setReferenceIndex(1);
 					setAlignmentStart(11);

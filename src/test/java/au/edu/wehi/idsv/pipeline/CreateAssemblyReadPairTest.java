@@ -21,7 +21,6 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Test;
 
-import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.AssemblyFactory;
 import au.edu.wehi.idsv.BreakendSummary;
@@ -138,7 +137,7 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 		@Override
 		protected ReadEvidenceAssembler getAssembler() {
 			// works for one call if not per chr, otherwise returns results for chr in order
-			return new MockReadEvidenceAssembler((List<AssemblyEvidence>)(Object)assemblies.get(calls++));
+			return new MockReadEvidenceAssembler(assemblies.get(calls++));
 		}
 		
 	}
@@ -177,6 +176,9 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 		}
 	}
 	private void go() {
+		for (SAMRecordAssemblyEvidence e : evidence) {
+			e.annotateAssembly();
+		}
 		go(getCommandlineContext(false));
 		go(getCommandlineContext(true));
 	}
@@ -270,40 +272,40 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	public void read_pair_should_match_assembly_realign_iterator() {
 		ProcessingContext pc = getContext();
 		AssemblyEvidenceSource aes = AES(pc);
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, Sets.<DirectedEvidence>newHashSet(), 0, 1, 1, B("AA"), B("AA"), 0, 0));
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, Sets.<DirectedEvidence>newHashSet(), 0, 1, 1, B("AA"), B("AA"), 0, 0));
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, Sets.<DirectedEvidence>newHashSet(), 0, 2, 1, B("AA"), B("AA"), 0, 0));
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, Sets.<DirectedEvidence>newHashSet(), 0, 2, 1, B("AA"), B("AA"), 0, 0));
-		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, Sets.<DirectedEvidence>newHashSet(), 0, 3, 1, B("AA"), B("AA"), 0, 0), 1, 2, true);
-		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, Sets.<DirectedEvidence>newHashSet(), 0, 4, 1, B("AA"), B("AA"), 0, 0), 1, 2, false);
-		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, Sets.<DirectedEvidence>newHashSet(), 0, 5, 1, B("AA"), B("AA"), 0, 0), 1, 2, true);
-		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, Sets.<DirectedEvidence>newHashSet(), 0, 6, 1, B("AA"), B("AA"), 0, 0), 1, 2, false);
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, Sets.<DirectedEvidence>newHashSet(), 1, 1, 1, B("AA"), B("AA"), 0, 0));
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, Sets.<DirectedEvidence>newHashSet(), 1, 1, 1, B("AA"), B("AA"), 0, 0));
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, Sets.<DirectedEvidence>newHashSet(), 1, 2, 1, B("AA"), B("AA"), 0, 0));
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, Sets.<DirectedEvidence>newHashSet(), 1, 2, 1, B("AA"), B("AA"), 0, 0));
-		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, Sets.<DirectedEvidence>newHashSet(), 1, 3, 1, B("AA"), B("AA"), 0, 0), 1, 2, true);
-		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, Sets.<DirectedEvidence>newHashSet(), 1, 4, 1, B("AA"), B("AA"), 0, 0), 1, 2, false);
-		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, Sets.<DirectedEvidence>newHashSet(), 1, 5, 1, B("AA"), B("AA"), 0, 0), 1, 2, true);
-		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, Sets.<DirectedEvidence>newHashSet(), 1, 6, 1, B("AA"), B("AA"), 0, 0), 1, 2, false);
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 0, 1, 1, B("AA"), B("AA"), new int[] {0, 0}));
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 1, 1, B("AA"), B("AA"), new int[] {0, 0}));
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 0, 2, 1, B("AA"), B("AA"), new int[] {0, 0}));
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 2, 1, B("AA"), B("AA"), new int[] {0, 0}));
+		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 3, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 2, true);
+		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 4, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 2, false);
+		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 0, 5, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 2, true);
+		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 0, 6, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 2, false);
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 1, 1, 1, B("AA"), B("AA"), new int[] {0, 0}));
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 1, 1, 1, B("AA"), B("AA"), new int[] {0, 0}));
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 1, 2, 1, B("AA"), B("AA"), new int[] {0, 0}));
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 1, 2, 1, B("AA"), B("AA"), new int[] {0, 0}));
+		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 1, 3, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 2, true);
+		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 1, 4, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 2, false);
+		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 1, 5, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 2, true);
+		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 1, 6, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 2, false);
 		go();
 	}
 	@Test
 	public void should_have_realign() {
-		orderedAdd(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
-				0, 6, 1, B("TT"), B("TT"), 0, 0), 1, 2, false);
+		orderedAdd(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null,
+				0, 6, 1, B("TT"), B("TT"), new int[] {0, 0}), 1, 2, false);
 		go();
 	}
 	@Test
 	public void read_pair_should_match_assembly_realign_iterator_simple() {
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(), 0, 1, 1, B("AA"), B("AA"), 0, 0));
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null, 0, 1, 1, B("AA"), B("AA"), new int[] {0, 0}));
 		go();
 	}
 	@Test
 	public void assembly_evidence_source_should_resort_to_evidence_order() {
 		AssemblyEvidenceSource aes = AES();
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(getContext(), aes, FWD, Sets.<DirectedEvidence>newHashSet(), 0, 10, 5, B("AACCCCCCCC"), B("CCCCCCCCCC"), 0, 0)); // alignment starts at 5
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(getContext(), aes, BWD, Sets.<DirectedEvidence>newHashSet(), 0, 6, 5,  B("TTTTTTTTAA"), B("TTTTTTTTTT"), 0, 0)); // alignment starts at 6
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(getContext(), aes, FWD, null, 0, 10, 5, B("AACCCCCCCC"), B("CCCCCCCCCC"), new int[] {0, 0})); // alignment starts at 5
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(getContext(), aes, BWD, null, 0, 6, 5,  B("TTTTTTTTAA"), B("TTTTTTTTTT"), new int[] {0, 0})); // alignment starts at 6
 		go();
 	}
 	@Test
@@ -313,10 +315,9 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	}
 	@Test
 	public void should_filter_breakpoints() {
-		orderedAdd(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
-				0, 5, 1, B("AA"), B("AA"), 0, 0),
+		orderedAdd(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null,
+				0, 5, 1, B("AA"), B("AA"), new int[] {0, 0}),
 				0, 6, false);
-		
 		ProcessingContext pc = getCommandlineContext(false);
 		pc.getAssemblyParameters().writeFilteredAssemblies = false;
 		pc.getAssemblyParameters().minReads = 0;
@@ -329,8 +330,10 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 		writeAssemblies(pc, frp);
 		writeRealign(pc, faes);
 		writeRealign(pc, frp);
-		AssemblyEvidenceSource ar = new AssemblyEvidenceSource(pc, ImmutableList.<SAMEvidenceSource>of(SES()), faes);
-		AssemblyEvidenceSource rp = new AssemblyEvidenceSource(pc, ImmutableList.<SAMEvidenceSource>of(SES()), frp);
+		MockSAMEvidenceSource ses = SES(pc);
+		ses.completeSteps(ProcessStep.ALL_STEPS);
+		AssemblyEvidenceSource ar = new AssemblyEvidenceSource(pc, ImmutableList.<SAMEvidenceSource>of(ses), faes);
+		AssemblyEvidenceSource rp = new AssemblyEvidenceSource(pc, ImmutableList.<SAMEvidenceSource>of(ses), frp);
 		rp.ensureAssembled();
 		assertEquals("precondition: breakend and realign should have been written as breakend passes filters", 1, Iterators.size(ar.iterator(false,  true)));
 		List<SAMRecordAssemblyEvidence> result = Lists.newArrayList(rp.iterator(false,  false));

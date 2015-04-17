@@ -8,12 +8,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.debruijn.DeBruijnVariantGraph;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
@@ -155,8 +155,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	 * @param position linear position
 	 * @return
 	 */
-	public Iterable<AssemblyEvidence> assembleContigsBefore(long position) {
-		List<AssemblyEvidence> contigs = Lists.newArrayList();
+	public Iterable<SAMRecordAssemblyEvidence> assembleContigsBefore(long position) {
+		List<SAMRecordAssemblyEvidence> contigs = Lists.newArrayList();
 		for (SubgraphSummary ss : subgraphs) {
 			boolean timeoutExceeded = exceedsTimeout(ss);
 			if (timeoutExceeded) {
@@ -187,7 +187,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 					graphExporter = new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k);
 				}
 				for (List<Long> contig : pga.assembleContigs(graphExporter)) {
-					AssemblyEvidence variant = createAssembly(contig);
+					SAMRecordAssemblyEvidence variant = createAssembly(contig);
 					if (variant != null) {
 						contigs.add(variant);
 					}

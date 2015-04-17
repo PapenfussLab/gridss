@@ -12,7 +12,6 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 
 
@@ -46,8 +45,8 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 	}
 	@Test
 	public void should_use_breakpoint_assembly_sequence() {
-		SAMRecordAssemblyEvidence be = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Sets.<DirectedEvidence>newHashSet(),
-				0, 1, 1, B("TGGAAT"), B("TAAAAT"), 0, 0);
+		SAMRecordAssemblyEvidence be = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null,
+				0, 1, 1, B("TGGAAT"), B("TAAAAT"), new int[] {0, 0}).annotateAssembly();
 		// Untemplated sequence
 		SAMRecord r = Read(0, 10, "2S3M");
 		r.setReadBases(B("GGAAT"));

@@ -12,6 +12,7 @@ import java.util.List;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 
 
@@ -21,8 +22,7 @@ public class SequentialCoverageAnnotatorTest extends TestHelper {
 		return new SequentialCoverageAnnotator(
 				getContext(),
 				ImmutableList.of(toAnnotate).iterator(),
-				new SequentialReferenceCoverageLookup(ref.iterator(), IDSV(ref), new SAMFlagReadPairConcordanceCalculator(IDSV(ref)), 1024),
-				null)
+				Lists.<ReferenceCoverageLookup>newArrayList(new SequentialReferenceCoverageLookup(ref.iterator(), IDSV(ref), new SAMFlagReadPairConcordanceCalculator(IDSV(ref)), 1024)))
 			.annotate(toAnnotate);
 	}
 	@Test

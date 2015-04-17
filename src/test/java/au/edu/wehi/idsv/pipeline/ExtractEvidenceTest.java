@@ -21,7 +21,7 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 	@Test
 	public void should_generate_rp_sc_mate_fq() {
 		createInput();
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0);
 		ExtractEvidence e = new ExtractEvidence(getCommandlineContext(), source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
 		assertEquals(0, getRP(source).size());
 		assertEquals(0, getSC(source).size());
@@ -31,7 +31,7 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 	@Test
 	public void should_generate_rp_sc_mate_fq_per_chr() {
 		createInput();
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, 0);
 		ExtractEvidence e = new ExtractEvidence(getCommandlineContext(true), source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
 		assertEquals(0, new PerChr().getRP(source).size());
 		assertEquals(0, new PerChr().getSC(source).size());
@@ -41,21 +41,21 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 	@Test
 	public void sc_should_be_located_in_sc_bam_for_chr() {
 		createInput(Read(1, 1, "50M50S"));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, 0);
 		ExtractEvidence e = new ExtractEvidence(getCommandlineContext(true), source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
 		assertEquals(1, new PerChr().getSC(source, "polyACGT").size());
 	}
 	@Test
 	public void oea_should_be_located_in_rp_bam_for_chr() {
 		createInput(OEA(1, 1, "100M", true));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, 0);
 		ExtractEvidence e = new ExtractEvidence(getCommandlineContext(true), source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
 		assertEquals(1, new PerChr().getRP(source, "polyACGT").size());
 	}
 	@Test
 	public void dp_should_be_located_in_rp_bam_for_chr() {
 		createInput(DP(1, 1, "100M", true, 2, 2, "100M", true));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, 0);
 		ExtractEvidence e = new ExtractEvidence(getCommandlineContext(true), source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
 		assertEquals(1, new PerChr().getRP(source, "polyACGT").size());
 		assertEquals(1, new PerChr().getRP(source, "random").size());
@@ -63,7 +63,7 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 	@Test
 	public void concordant_read_should_not_be_located_in_rp_or_scbam() {
 		createInput(Read(1, 1, "100M"));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0);
 		ExtractEvidence e = new ExtractEvidence(getCommandlineContext(), source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
 		assertEquals(0, getRP(source).size());
 		assertEquals(0, getSC(source).size());
@@ -71,7 +71,7 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 	@Test
 	public void oea_mate_should_be_located_in_mate_bam_for_chr() {
 		createInput(OEA(1, 1, "100M", true));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, 0);
 		ExtractEvidence e = new ExtractEvidence(getCommandlineContext(true), source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
 		List<SAMRecord> rs = new PerChr().getMate(source, "polyACGT");
 		assertEquals(1, rs.size());
@@ -83,7 +83,7 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 	@Test
 	public void dp_mate_should_be_located_in_mate_bam_for_chr() {
 		createInput(DP(1, 1, "100M", true, 2, 2, "100M", true));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, 0);
 		ExtractEvidence e = new ExtractEvidence(getCommandlineContext(true), source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
 		assertEquals(1, new PerChr().getMate(source, "polyACGT").size());
 		assertEquals(1, new PerChr().getMate(source, "random").size());
@@ -98,7 +98,7 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 		   DP(1, 2, "100M", true, 2, 4, "100M", true),
 		   DP(1, 3, "100M", true, 2, 6, "100M", true),
 		   OEA(1, 4, "100M", false));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0);
 		ExtractEvidence e = new ExtractEvidence(getCommandlineContext(), source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
 		List<SAMRecord> rs =  getMate(source);
 		// polyACGT
@@ -115,7 +115,7 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 	@Test
 	public void should_create_metrics() {
 		createInput(RP(1, 1, 100, 10));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0);
 		ExtractEvidence e = new ExtractEvidence(getCommandlineContext(), source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
 		assertTrue(getCommandlineContext().getFileSystemContext().getIdsvMetrics(input).exists());
 		assertTrue(getCommandlineContext().getFileSystemContext().getInsertSizeMetrics(input).exists());
@@ -123,7 +123,7 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 	@Test
 	public void should_process_metrics() {
 		createInput(RP(0, 1, 2, 1), RP(0, 1, 7, 5));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0);
 		source.completeSteps(EnumSet.of(ProcessStep.CALCULATE_METRICS));
 		assertEquals(5, source.getMaxReadLength());
 		// 12345678901234567890
@@ -134,14 +134,14 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 	@Test
 	public void should_set_NM_tag() {
 		createInput(withSequence(S(POLY_A).substring(0, 100), Read(0, 1, "50M50S")));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0);
 		ExtractEvidence e = new ExtractEvidence(getCommandlineContext(), source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
 		assertEquals(0, (int)getSC(source).get(0).getIntegerAttribute("NM"));
 	}
 	@Test
 	public void should_write_long_sc_to_fastq() {
 		createInput(ValidSC());
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0);
 		ExtractEvidence e = new ExtractEvidence(getCommandlineContext(), source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
 		
 		List<FastqRecord> fastq = getFastqRecords(source);
@@ -157,7 +157,7 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 		createInput(ValidSC());
 		ProcessingContext pc = getCommandlineContext();
 		pc.getSoftClipParameters().minReadMapq = 6;
-		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
 		ExtractEvidence e = new ExtractEvidence(pc, source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
 		
 		assertEquals(0, getFastqRecords(source).size());
@@ -167,7 +167,7 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 		createInput(ValidSC());
 		ProcessingContext pc = getCommandlineContext();
 		pc.getRealignmentParameters().minLength = 26;
-		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
 		ExtractEvidence e = new ExtractEvidence(pc, source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
 		
 		assertEquals(0, getFastqRecords(source).size());
@@ -184,7 +184,7 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 		createInput(RP(0, 1, 2, 1));
 		ProcessingContext pc = getCommandlineContext();
 		pc.getSoftClipParameters().minAnchorIdentity = 50;
-		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
 		ExtractEvidence e = new ExtractEvidence(pc, source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
 		
 		assertEquals(0, getFastqRecords(source).size());
@@ -194,7 +194,7 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 		createInput(ValidSC());
 		ProcessingContext pc = getCommandlineContext();
 		pc.getRealignmentParameters().minAverageQual = 6;
-		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
 		ExtractEvidence e = new ExtractEvidence(pc, source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
 		
 		assertEquals(0, getFastqRecords(source).size());
@@ -204,7 +204,7 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 		createInput(Read(1, 1, "50M50S"));
 		ProcessingContext pc = getCommandlineContext();
 		pc.getSoftClipParameters().minLength = 51;
-		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
 		ExtractEvidence e = new ExtractEvidence(pc, source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
 		assertEquals(0, getSC(source).size());
 	}
@@ -219,7 +219,7 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 		createInput(r);
 		ProcessingContext pc = getCommandlineContext();
 		pc.getRealignmentParameters().minAverageQual = 6;
-		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
 		ExtractEvidence e = new ExtractEvidence(pc, source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
 		
 		assertEquals(0, getFastqRecords(source).size());
@@ -230,7 +230,7 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 		r.setReadUnmappedFlag(true);
 		createInput(r);
 		ProcessingContext pc = getCommandlineContext();
-		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
 		ExtractEvidence e = new ExtractEvidence(pc, source); e.process(ProcessStep.ALL_STEPS); e.close();
 		assertEquals(0, getSC(source).size());
 	}

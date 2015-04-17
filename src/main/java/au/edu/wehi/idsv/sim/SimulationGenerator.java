@@ -2,11 +2,11 @@ package au.edu.wehi.idsv.sim;
 
 import java.io.File;
 
-import au.edu.wehi.idsv.FileSystemContext;
-import au.edu.wehi.idsv.ProcessingContext;
 import picard.cmdline.CommandLineProgram;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
+import au.edu.wehi.idsv.FileSystemContext;
+import au.edu.wehi.idsv.ProcessingContext;
 
 public abstract class SimulationGenerator extends CommandLineProgram {
     @Option(doc="Reference used for alignment", shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME)

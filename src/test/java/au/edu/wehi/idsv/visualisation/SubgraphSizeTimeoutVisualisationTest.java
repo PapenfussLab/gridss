@@ -29,7 +29,7 @@ public class SubgraphSizeTimeoutVisualisationTest extends IntermediateFilesTest 
 		File output = new File(super.testFolder.getRoot(), "chr12-244000.vcf");
 		setReference(new File("C:/dev/chr12.fa"));
 		createInput(new File("src/test/resources/chr12-244000.bam"));
-		SAMEvidenceSource ses = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		SAMEvidenceSource ses = new SAMEvidenceSource(getCommandlineContext(), input, 0);
 		ses.completeSteps(ProcessStep.ALL_STEPS);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), output);
 		aes.ensureAssembled();
@@ -59,7 +59,7 @@ public class SubgraphSizeTimeoutVisualisationTest extends IntermediateFilesTest 
 		}
 		createInput(list.toArray(new SAMRecord[0]));
 		
-		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, false);
+		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
 		ses.completeSteps(ProcessStep.ALL_STEPS);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), output);
 		aes.ensureAssembled();

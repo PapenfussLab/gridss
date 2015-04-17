@@ -1,13 +1,12 @@
 package au.edu.wehi.idsv.sam;
 
-import static org.junit.Assert.*;
-
-import java.util.List;
-
+import static org.junit.Assert.assertEquals;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.TextCigarCodec;
+
+import java.util.List;
 
 import org.junit.Test;
 

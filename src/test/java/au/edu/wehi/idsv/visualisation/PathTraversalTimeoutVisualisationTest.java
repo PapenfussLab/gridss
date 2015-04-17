@@ -22,7 +22,7 @@ public class PathTraversalTimeoutVisualisationTest extends IntermediateFilesTest
 		File output = new File(super.testFolder.getRoot(), "chr12-244000.vcf");
 		setReference(new File("C:/dev/chr12.fa"));
 		createInput(new File("src/test/resources/chr12-244000.bam"));
-		SAMEvidenceSource ses = new SAMEvidenceSource(getCommandlineContext(), input, false);
+		SAMEvidenceSource ses = new SAMEvidenceSource(getCommandlineContext(), input, 0);
 		ses.completeSteps(ProcessStep.ALL_STEPS);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), output);
 		aes.ensureAssembled();

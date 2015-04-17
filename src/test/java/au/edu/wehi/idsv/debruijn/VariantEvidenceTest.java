@@ -128,4 +128,7 @@ public class VariantEvidenceTest extends TestHelper {
 		assertEquals(0, fdp.getReferenceKmerCount());
 		assertEquals(0, rdp.getReferenceKmerCount());
 	}
+	@Test
+	public void should_expose_evidenceID() {
+	}
 }

@@ -42,24 +42,24 @@ public final class AssemblyFactory {
 	public static SAMRecordAssemblyEvidence createAnchoredBreakend(
 			ProcessingContext processContext,
 			AssemblyEvidenceSource source, BreakendDirection direction,
-			Set<String> evidence,
+			Collection<String> evidence,
 			int anchorReferenceIndex, int anchorBreakendPosition, int anchoredBaseCount,
 			byte[] baseCalls, byte[] baseQuals,
-			int normalBaseCount, int tumourBaseCount) {
+			int[] baseCounts) {
 		BreakendSummary breakend = new BreakendSummary(anchorReferenceIndex, direction, anchorBreakendPosition, anchorBreakendPosition);
 		SAMRecord r = createAssemblySAMRecord(evidence, processContext.getBasicSamHeader(), source, breakend,
 				breakend.direction == BreakendDirection.Forward ? anchoredBaseCount : 0,
 				breakend.direction == BreakendDirection.Backward ? anchoredBaseCount : 0,
-				baseCalls, baseQuals, normalBaseCount, tumourBaseCount);
+				baseCalls, baseQuals, baseCounts);
 		SAMRecordAssemblyEvidence assembly = hydrate(source, r);
 		return assembly;
 	}
 	public static SmallIndelSAMRecordAssemblyEvidence createAnchoredBreakpoint(
 			ProcessingContext processContext, AssemblyEvidenceSource source,
-			Set<String> evidence,
+			Collection<String> evidence,
 			int startAnchorReferenceIndex, int startAnchorPosition, int startAnchorBaseCount,
 			int endAnchorReferenceIndex, int endAnchorPosition, int endAnchorBaseCount,
-			byte[] baseCalls, byte[] baseQuals, int normalBaseCount, int tumourBaseCount) {
+			byte[] baseCalls, byte[] baseQuals, int[] baseCounts) {
 		BreakpointSummary bp = new BreakpointSummary(
 				startAnchorReferenceIndex, BreakendDirection.Forward, startAnchorPosition, startAnchorPosition,
 				endAnchorReferenceIndex, BreakendDirection.Backward, endAnchorPosition, endAnchorPosition);
@@ -68,7 +68,7 @@ public final class AssemblyFactory {
 		SAMRecord r = createAssemblySAMRecord(evidence, processContext.getBasicSamHeader(), source, bp,
 				startAnchorBaseCount,
 				endAnchorBaseCount,
-				baseCalls, baseQuals, normalBaseCount, tumourBaseCount);
+				baseCalls, baseQuals, baseCounts);
 		SAMRecordAssemblyEvidence assembly = hydrate(source, r);
 		return (SmallIndelSAMRecordAssemblyEvidence)assembly;
 	}
@@ -88,13 +88,12 @@ public final class AssemblyFactory {
 			ProcessingContext processContext,
 			AssemblyEvidenceSource source,
 			BreakendSummary breakend,
-			Set<String> evidence,
+			Collection<String> evidence,
 			byte[] baseCalls, byte[] baseQuals,
-			int normalBaseCount, int tumourBaseCount) {
-		//BreakendSummary breakend = Models.calculateBreakend(processContext.getLinear(), Lists.newArrayList(evidence));
+			int[] baseCounts) {
 		SAMRecord r = createAssemblySAMRecord(evidence, processContext.getBasicSamHeader(), source, breakend,
 				0, 0,
-				baseCalls, baseQuals, normalBaseCount, tumourBaseCount);
+				baseCalls, baseQuals, baseCounts);
 		SAMRecordAssemblyEvidence assembly = hydrate(source, r);
 		return assembly;
 	}
@@ -136,7 +135,7 @@ public final class AssemblyFactory {
 			int startAnchoredBaseCount,
 			int endAnchoredBaseCount,
 			byte[] baseCalls, byte[] baseQuals,
-			int normalBaseCount, int tumourBaseCount) {
+			int[] baseCounts) {
 		assert(startAnchoredBaseCount >= 0);
 		assert(endAnchoredBaseCount >= 0);
 		assert(startAnchoredBaseCount + endAnchoredBaseCount <= baseCalls.length);
@@ -220,7 +219,7 @@ public final class AssemblyFactory {
 			}
 		}
 		setEvidenceIDs(record, evidence);
-		record.setAttribute(SamTags.ASSEMBLY_BASE_COUNT, new int[] { normalBaseCount, tumourBaseCount });
+		record.setAttribute(SamTags.ASSEMBLY_BASE_COUNT, baseCounts);
 		if (!(breakend instanceof BreakpointSummary)) {
 			record.setAttribute(SamTags.ASSEMBLY_DIRECTION, breakend.direction.toChar());
 		}
@@ -234,7 +233,7 @@ public final class AssemblyFactory {
 				sb.append(SAMRecordAssemblyEvidence.COMPONENT_EVIDENCEID_SEPARATOR);
 			}
 			sb.deleteCharAt(sb.length() - 1);
-			r.setAttribute(SamTags.ASSEMLBY_COMPONENT_EVIDENCEID, sb.toString());
+			r.setAttribute(SamTags.ASSEMBLY_COMPONENT_EVIDENCEID, sb.toString());
 			assert(ensureUniqueEvidenceID(evidence));
 		}
 	}

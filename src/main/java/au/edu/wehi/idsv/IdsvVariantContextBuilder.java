@@ -43,12 +43,10 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 		return processContext.getVcf41Mode() ? VcfConstants.VCF41BREAKEND_REPLACEMENT : VcfConstants.VCF42BREAKEND;
 	}
 	public IdsvVariantContextBuilder referenceReads(int[] count) {
-		assert(count.length == processContext.getCategoryCount());
 		attribute(VcfAttributes.REFERENCE_READ_COUNT.attribute(), count);
 		return this;
 	}
 	public IdsvVariantContextBuilder referenceSpanningPairs(int[] count) {
-		assert(count.length == processContext.getCategoryCount());
 		attribute(VcfAttributes.REFERENCE_READPAIR_COUNT.attribute(), count);
 		return this;
 	}

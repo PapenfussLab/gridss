@@ -127,4 +127,10 @@ public class SmallIndelSAMRecordAssemblyEvidence extends RealignedSAMRecordAssem
 	public boolean isSpanningAssembly() {
 		return true;
 	}
+	@Override
+	public SmallIndelSAMRecordAssemblyEvidence annotateAssembly() {
+		super.annotateAssembly();
+		getRemoteSAMRecord().setMappingQuality(getLocalMapq());
+		return this;
+	}
 }

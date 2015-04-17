@@ -62,7 +62,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	@Test
 	public void should_match_variant_location_f() {
 		VariantContextDirectedEvidence dba = CallSV(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD,
-				Sets.<DirectedEvidence>newHashSet(), 0, 10, 1, B("AA"), B("AA"), 0, 0));
+				null, 0, 10, 1, B("AA"), B("AA"), new int[] {0, 0}).annotateAssembly());
 		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals("polyA", dba.getChr());
 		assertEquals(10, dba.getStart());
@@ -71,7 +71,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	@Test
 	public void should_match_variant_location_b() {
 		VariantContextDirectedEvidence dba = CallSV(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD,
-				Sets.<DirectedEvidence>newHashSet(), 0, 10, 1, B("AA"), B("AA"), 0, 0));
+				null, 0, 10, 1, B("AA"), B("AA"), new int[] {0, 0}).annotateAssembly());
 		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals("polyA", dba.getChr());
 		assertEquals(10, dba.getStart());
@@ -84,7 +84,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	@Test
 	public void should_generate_single_breakend_f() {
 		VariantContextDirectedEvidence dba = CallSV(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD,
-				Sets.<DirectedEvidence>newHashSet(), 0, 10, 2, B("NNGT"), B("    "), 0, 0));
+				null, 0, 10, 2, B("NNGT"), B("    "), new int[] {0, 0}).annotateAssembly());
 		// ref base + breakpoint
 		assertEquals("AGT.", dba.getAlternateAllele(0).getDisplayString());
 		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
@@ -94,7 +94,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	public void should_generate_single_breakend_b() {
 		// ref base + breakpoint
 		VariantContextDirectedEvidence dba = CallSV(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD,
-				Sets.<DirectedEvidence>newHashSet(), 0, 10, 2, B("GTNN"), B("    "), 0, 0));
+				null, 0, 10, 2, B("GTNN"), B("    "), new int[] {0, 0}).annotateAssembly());
 		assertEquals(".GTA", dba.getAlternateAllele(0).getDisplayString());
 		dba = new VariantContextDirectedEvidence(getContext(), AES(), new VariantContextBuilder(dba).make());
 		assertEquals(".GTA", dba.getAlternateAllele(0).getDisplayString());
@@ -102,7 +102,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	@Test
 	public void anchor_should_use_reference_base_not_assembly_base() {
 		String alt = CallSV(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD,
-				Sets.<DirectedEvidence>newHashSet(), 0, 10, 1, B("TTT"), B("   "), 0, 0)).getAlternateAllele(0).getDisplayString(); 
+				null, 0, 10, 1, B("TTT"), B("   "), new int[] {0, 0}).annotateAssembly()).getAlternateAllele(0).getDisplayString(); 
 		assertEquals('A', alt.charAt(0));
 	}
 	public VariantContextDirectedEvidence test_mated_breakend(BreakendDirection direction, boolean realignPositive, String bpString, String realignedCigar, String expectedAllele) {
@@ -111,9 +111,8 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		realigned.setReadNegativeStrandFlag(!realignPositive);
 		int fragSize = realigned.getCigar().getReferenceLength() - 1; // temp hack until better upstream calculation is performed
 		VariantContextDirectedEvidence dba = CallSV(AssemblyFactory.createUnanchoredBreakend(getContext(), AES(fragSize),
-				Sets.<DirectedEvidence>newHashSet(
-						NRRP(SES(fragSize), OEA(0, 1000, "1M", direction == FWD))
-						), B(bpString), B(bpString), 0, 0));
+				new BreakendSummary(0, direction, 1000, 1000), null, //NRRP(SES(fragSize), OEA(0, 1000, "1M", direction == FWD))
+				B(bpString), B(bpString), new int[] {0, 0}).annotateAssembly());
 				//AB().direction(direction).anchorLength(0).assemblyBases(B(bpString)).makeVariant();
 		
 		dba = new VariantContextDirectedEvidence(getContext(), AES(fragSize), new VariantContextBuilder(dba).make());

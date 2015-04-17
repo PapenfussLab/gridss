@@ -397,20 +397,16 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				if (writer != null) writer.close();
 			}
 		}
-		private void processAssembly(Iterable<AssemblyEvidence> evidenceList) {
+		private void processAssembly(Iterable<SAMRecordAssemblyEvidence> evidenceList) {
 	    	if (evidenceList != null) {
-		    	for (AssemblyEvidence a : evidenceList) {
+		    	for (SAMRecordAssemblyEvidence a : evidenceList) {
 		    		if (a != null) {
-		    			SAMRecordAssemblyEvidence e = (SAMRecordAssemblyEvidence)a;
-			    		maxAssembledPosition = Math.max(maxAssembledPosition, getContext().getLinear().getStartLinearCoordinate(e.getSAMRecord()));
+			    		maxAssembledPosition = Math.max(maxAssembledPosition, getContext().getLinear().getStartLinearCoordinate(a.getSAMRecord()));
 			    		// realign
-			    		if (e.isBreakendExact() && getContext().getAssemblyParameters().performLocalRealignment) {
-			    			e = e.realign();
+			    		if (a.isBreakendExact() && getContext().getAssemblyParameters().performLocalRealignment) {
+			    			a = a.realign();
 			    		}
-			    		getContext().getAssemblyParameters().applyFilters(e);
-			    		if (getContext().getAssemblyParameters().writeFilteredAssemblies || !e.isAssemblyFiltered()) {
-			    			resortBuffer.add(e);
-			    		}
+			    		resortBuffer.add(a);
 		    		}
 		    	}
 	    	}

@@ -14,6 +14,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.EnumSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
@@ -26,11 +27,13 @@ import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
+import au.edu.wehi.idsv.SAMRecordAssemblyEvidenceFilteringIterator;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
@@ -66,11 +69,17 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 		public void process() {
 			throw new UnsupportedOperationException("We're just using this as a helper class for getting an iterator of annotated assemblies");
 		}
-		public CloseableIterator<SAMRecordAssemblyEvidence> annotatedAssembliesIterator(boolean includeFilteredAssemblies) {
-			CloseableIterator<DirectedEvidence> rawit = getAllEvidence(true, false, true, true, true, includeFilteredAssemblies);
+		public CloseableIterator<SAMRecordAssemblyEvidence> annotatedAssembliesIterator() {
+			CloseableIterator<DirectedEvidence> rawit = getAllEvidence(true, false, true, true, true, true);
 			OrthogonalEvidenceIterator annotatedIt = new OrthogonalEvidenceIterator(processContext.getLinear(), rawit, source.getAssemblyWindowSize());
 			UnmodifiableIterator<SAMRecordAssemblyEvidence> filteredIt = Iterators.filter(annotatedIt, SAMRecordAssemblyEvidence.class);
-			return new AutoClosingIterator<SAMRecordAssemblyEvidence>(filteredIt, Lists.<Closeable>newArrayList(rawit));
+			Iterator<SAMRecordAssemblyEvidence> it = Iterators.transform(filteredIt, new Function<SAMRecordAssemblyEvidence, SAMRecordAssemblyEvidence> () {
+				@Override
+				public SAMRecordAssemblyEvidence apply(SAMRecordAssemblyEvidence input) {
+					return input.annotateAssembly();
+				}
+			});
+			return new AutoClosingIterator<SAMRecordAssemblyEvidence>(it, Lists.<Closeable>newArrayList(rawit));
 		}
 	}
 	@Override
@@ -197,19 +206,21 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 		mateWriters.clear();
 	}
 	private void writeUnsortedOutput() {
-		CloseableIterator<SAMRecordAssemblyEvidence> it = aa.annotatedAssembliesIterator(processContext.getAssemblyParameters().writeFilteredAssemblies); 
-				source.iterator(false, processContext.getAssemblyParameters().writeFilteredAssemblies);
-		while (it.hasNext()) {
-			SAMRecordAssemblyEvidence e = it.next();
-			e.annotateAssembly();
-			SAMRecord assembly = e.getSAMRecord();
-			SAMRecord realign = e.getRemoteSAMRecord();
-			sortedWriters.get(assembly.getReferenceIndex() % sortedWriters.size()).addAlignment(assembly);
-			sortedWriters.get(realign.getReferenceIndex() % sortedWriters.size()).addAlignment(realign);
-			mateWriters.get(assembly.getMateReferenceIndex() % mateWriters.size()).addAlignment(assembly);
-			mateWriters.get(realign.getMateReferenceIndex() % mateWriters.size()).addAlignment(realign);
+		CloseableIterator<SAMRecordAssemblyEvidence> cit = aa.annotatedAssembliesIterator();
+		try {
+			Iterator<SAMRecordAssemblyEvidence> it = new SAMRecordAssemblyEvidenceFilteringIterator(processContext, cit);
+			while (it.hasNext()) {
+				SAMRecordAssemblyEvidence e = it.next();
+				SAMRecord assembly = e.getSAMRecord();
+				SAMRecord realign = e.getRemoteSAMRecord();
+				sortedWriters.get(assembly.getReferenceIndex() % sortedWriters.size()).addAlignment(assembly);
+				sortedWriters.get(realign.getReferenceIndex() % sortedWriters.size()).addAlignment(realign);
+				mateWriters.get(assembly.getMateReferenceIndex() % mateWriters.size()).addAlignment(assembly);
+				mateWriters.get(realign.getMateReferenceIndex() % mateWriters.size()).addAlignment(realign);
+			}
+		} finally {
+			cit.close();
 		}
-		it.close();
 	}
 	private void createUnsortedOutputWriters() {
 		FileSystemContext fsc = processContext.getFileSystemContext();

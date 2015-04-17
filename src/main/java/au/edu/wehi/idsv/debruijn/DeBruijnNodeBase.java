@@ -1,13 +1,16 @@
 package au.edu.wehi.idsv.debruijn;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
 import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.DirectedEvidence;
+import au.edu.wehi.idsv.BreakendSummary;
+import au.edu.wehi.idsv.LinearGenomicCoordinate;
+import au.edu.wehi.idsv.Models;
+import au.edu.wehi.idsv.util.ArrayHelper;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
 
@@ -31,16 +34,25 @@ public class DeBruijnNodeBase {
 	private int fWeightSum = 0;
 	private int bWeightSum = 0;
 	private int[] categoryCount;
+	private List<BreakendSummary> breakends = new ArrayList<BreakendSummary>(4);
+	private List<Long> weights = new ArrayList<Long>(4);
 	public DeBruijnNodeBase(VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) {
-		this(kmer.weight, evidence.getExpectedLinearPosition(readKmerOffset), evidence.getEvidenceID(), evidence.isReferenceKmer(readKmerOffset), evidence.isDirectlyAnchoredToReference() ? evidence.getDirection() : null, evidence.getCategory());
+		this(kmer.weight,
+			evidence.getExpectedLinearPosition(readKmerOffset),
+			evidence.getEvidenceID(),
+			evidence.isReferenceKmer(readKmerOffset),
+			evidence.isDirectlyAnchoredToReference() ? evidence.getBreakend().direction : null,
+			evidence.getCategory(),
+			evidence.getBreakend());
 	}
 	/**
 	 * Creates a node from the given read with the given level of support
 	 * @param weight support weight
 	 * @param read source read
 	 */
-	public DeBruijnNodeBase(int weight, long expectedLinearPosition, String evidenceID, boolean isReference, BreakendDirection anchorDirection, int category) {
+	public DeBruijnNodeBase(int weight, long expectedLinearPosition, String evidenceID, boolean isReference, BreakendDirection anchorDirection, int category, BreakendSummary unanchoredBreakend) {
 		if (weight <= 0) throw new IllegalArgumentException("weight must be positive");
+		assert(unanchoredBreakend != null);
 		this.nodeWeight = weight;
 		supportList.add(evidenceID);
 		if (isReference) referenceSupport++;
@@ -55,6 +67,8 @@ public class DeBruijnNodeBase {
 		}
 		categoryCount = new int[category + 1];
 		categoryCount[category] = 1;
+		breakends.add(unanchoredBreakend);
+		weights.add((long)weight);
 	}
 	/**
 	 * Merges the given node into this one
@@ -70,12 +84,9 @@ public class DeBruijnNodeBase {
 		this.tWeightSum += node.tWeightSum;
 		this.fWeightSum += node.fWeightSum;
 		this.bWeightSum += node.bWeightSum;
-		if (categoryCount.length < node.categoryCount.length) {
-			categoryCount = Arrays.copyOf(categoryCount, node.categoryCount.length);
-		}
-		for (int i = 0; i < categoryCount.length; i++) {
-			this.categoryCount[i] += node.categoryCount[i];
-		}
+		this.categoryCount = ArrayHelper.add(this.categoryCount, node.categoryCount);
+		this.breakends.addAll(node.breakends);
+		this.weights.addAll(node.weights);
 	}
 	/**
 	 * Reduces the weighting of this node due to removal of a supporting read
@@ -90,9 +101,9 @@ public class DeBruijnNodeBase {
 		this.tWeightSum -= node.tWeightSum;
 		this.fWeightSum -= node.fWeightSum;
 		this.bWeightSum -= node.bWeightSum;
-		for (int i = 0; i < node.categoryCount.length; i++) {
-			this.categoryCount[i] -= node.categoryCount[i];
-		}
+		this.categoryCount = ArrayHelper.subtract(this.categoryCount, node.categoryCount);
+		this.breakends.removeAll(node.breakends);
+		this.weights.removeAll(node.weights);
 	}
 	/**
 	 * returns the weight of this node
@@ -143,6 +154,15 @@ public class DeBruijnNodeBase {
 			}
 		}
 		return posWeightSum / (double)weightSum;
+	}
+	public static BreakendSummary getExpectedBreakend(LinearGenomicCoordinate lgc, Collection<? extends DeBruijnNodeBase> path) {
+		List<BreakendSummary> bs = Lists.newArrayList();
+		List<Long> weights = Lists.newArrayList();
+		for (DeBruijnNodeBase n : path) {
+			bs.addAll(n.breakends);
+			weights.addAll(n.weights);
+		}
+		return Models.calculateBreakend(lgc, bs, weights);
 	}
 	public double getExpectedPosition() {
 		return tPositionWeightSum / (double)tWeightSum;

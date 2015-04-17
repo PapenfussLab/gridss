@@ -5,7 +5,6 @@ import static org.junit.Assert.assertFalse;
 import htsjdk.samtools.SAMRecord;
 
 import java.util.List;
-import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -13,7 +12,6 @@ import org.junit.Test;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 
 public class SAMRecordAssemblyEvidenceFilteringIteratorTest extends TestHelper {
@@ -45,23 +43,27 @@ public class SAMRecordAssemblyEvidenceFilteringIteratorTest extends TestHelper {
 	}
 	@Test
 	public void should_filter_reference_breakend() {
-		Set<DirectedEvidence> evidence = Sets.<DirectedEvidence>newHashSet();
+		List<DirectedEvidence> evidence = Lists.newArrayList();
 		evidence.add(SCE(FWD, Read(0, 5, "5M5S")));
 		//evidence.add(SCE(FWD, Read(0, 5, "5M6S")));
 		//evidence.add(SCE(FWD, Read(0, 5, "5M7S")));
-		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, evidence,
-				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), 5, 6);
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Lists.transform(evidence, EID),
+				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), new int[] { 5, 6});
+		e.hydrateEvidenceSet(evidence);
+		e.annotateAssembly();
 		in.add(e);
 		assertEquals(0, out.size());
 	}
 	@Test
 	public void should_filter_reference_breakpoint() {
-		Set<DirectedEvidence> evidence = Sets.<DirectedEvidence>newHashSet();
+		List<DirectedEvidence> evidence = Lists.newArrayList();
 		evidence.add(SCE(FWD, Read(0, 5, "5M5S")));
 		evidence.add(SCE(FWD, Read(0, 5, "5M6S")));
 		evidence.add(SCE(FWD, Read(0, 5, "5M7S")));
-		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, evidence,
-				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), 5, 6);		
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Lists.transform(evidence, EID),
+				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), new int[] { 5, 6});
+		e.hydrateEvidenceSet(evidence);
+		e.annotateAssembly();
 		SAMRecord r = Read(0, 11, "5M");
 		r.setReadName(BreakpointFastqEncoding.getRealignmentFastq(e).getReadHeader());
 		in.add(AssemblyFactory.incorporateRealignment(getContext(), e, r));
@@ -74,12 +76,14 @@ public class SAMRecordAssemblyEvidenceFilteringIteratorTest extends TestHelper {
 	}
 	@Test
 	public void should_filter_reference_allele() {
-		Set<DirectedEvidence> evidence = Sets.<DirectedEvidence>newHashSet();
+		List<DirectedEvidence> evidence = Lists.newArrayList();
 		evidence.add(SCE(FWD, Read(0, 10, "5S5M5S")));
 		evidence.add(SCE(FWD, Read(0, 10, "6S5M6S")));
 		evidence.add(SCE(FWD, Read(0, 10, "7S5M7S")));
-		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, evidence,
-				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), 5, 6);		
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, Lists.transform(evidence, EID),
+				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), new int[] { 5, 6});
+		e.hydrateEvidenceSet(evidence);
+		e.annotateAssembly();
 		SAMRecord r = Read(0, 5, "5M");
 		r.setReadName(BreakpointFastqEncoding.getRealignmentFastq(e).getReadHeader());
 		in.add(AssemblyFactory.incorporateRealignment(getContext(), e, r));
@@ -88,12 +92,14 @@ public class SAMRecordAssemblyEvidenceFilteringIteratorTest extends TestHelper {
 	}
 	@Test
 	public void should_not_filter_valid_breakpoints() {
-		Set<DirectedEvidence> evidence = Sets.<DirectedEvidence>newHashSet();
+		List<DirectedEvidence> evidence = Lists.newArrayList();
 		evidence.add(SCE(FWD, Read(0, 10, "5S5M5S")));
 		evidence.add(SCE(FWD, Read(0, 10, "6S5M6S")));
 		evidence.add(SCE(FWD, Read(0, 10, "7S5M7S")));
-		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, evidence,
-				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), 5, 6);		
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, Lists.transform(evidence, EID),
+				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), new int[] { 5, 6});
+		e.hydrateEvidenceSet(evidence);
+		e.annotateAssembly();
 		SAMRecord r = Read(0, 105, "5M");
 		r.setReadNegativeStrandFlag(true);
 		r.setReadName(BreakpointFastqEncoding.getRealignmentFastq(e).getReadHeader());

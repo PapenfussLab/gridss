@@ -2,8 +2,6 @@ package au.edu.wehi.idsv;
 
 import java.util.Iterator;
 
-import au.edu.wehi.idsv.vcf.VcfFilter;
-
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;

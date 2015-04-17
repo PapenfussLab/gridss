@@ -1,12 +1,14 @@
 package au.edu.wehi.idsv.debruijn;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-
 import au.edu.wehi.idsv.TestHelper;
+
+import com.google.common.collect.ImmutableList;
 
 
 public class DeBruijnNodeBaseTest extends TestHelper {
@@ -46,17 +48,17 @@ public class DeBruijnNodeBaseTest extends TestHelper {
 		}
 	}
 	@Test
-	public void should_track_support() {
+	public void should_track_support_evidenceIDs() {
 		DeBruijnNodeBase r1 = new DeBruijnNodeBase(fsc, 0, new ReadKmer(0, 1, false));
 		DeBruijnNodeBase r2 = new DeBruijnNodeBase(bsc, 0, new ReadKmer(0, 1, false));
 		assertEquals(1, r1.getSupportingEvidenceList().size());
 		assertEquals(1, r2.getSupportingEvidenceList().size());
-		assertTrue(r1.getSupportingEvidenceList().contains(fsc.getDirectedEvidence()));
-		assertTrue(r2.getSupportingEvidenceList().contains(bsc.getDirectedEvidence()));
+		assertTrue(r1.getSupportingEvidenceList().contains(fsc.getEvidenceID()));
+		assertTrue(r2.getSupportingEvidenceList().contains(bsc.getEvidenceID()));
 		r1.add(r2);
 		assertEquals(2, r1.getSupportingEvidenceList().size());
-		assertTrue(r1.getSupportingEvidenceList().contains(fsc.getDirectedEvidence()));
-		assertTrue(r1.getSupportingEvidenceList().contains(bsc.getDirectedEvidence()));
+		assertTrue(r1.getSupportingEvidenceList().contains(fsc.getEvidenceID()));
+		assertTrue(r1.getSupportingEvidenceList().contains(bsc.getEvidenceID()));
 	}
 	@Test
 	public void should_track_weight() {

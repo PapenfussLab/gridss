@@ -17,6 +17,7 @@ import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakpointSummary;
+import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.EvidenceSubset;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
@@ -300,17 +301,20 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		MockSAMEvidenceSource tumour = SES(true);
 		pc.getAssemblyParameters().k = 4;
 		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(pc, aes);
-		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TTTTA", Read(0, 10, "4M1S")))).iterator().hasNext());
-		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TTTTAA", Read(0, 10, "4M2S")))).iterator().hasNext());
-		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TTTTAAA", Read(0, 10, "4M3S")))).iterator().hasNext());
-		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TTTTAAAC", Read(0, 10, "4M4S")))).iterator().hasNext());
-		assertFalse(ass.addEvidence(SCE(FWD, tumour, withSequence("TTTTAAACG", Read(0, 10, "4M5S")))).iterator().hasNext());
-		assertFalse(ass.addEvidence(SCE(FWD, tumour, withSequence("TTTTAAACGG", Read(0, 10, "4M6S")))).iterator().hasNext());
-		assertFalse(ass.addEvidence(NRRP(normal, withSequence("CGTTT", OEA(0, 5, "5M", true)))).iterator().hasNext()); // AAACG	
-		assertFalse(ass.addEvidence(NRRP(tumour, withSequence("CGTTTG", OEA(0, 6, "5M", true)))).iterator().hasNext()); // CAAACG
-		AssemblyEvidence result = ass.endOfEvidence().iterator().next();
+		List<DirectedEvidence> e = Lists.newArrayList();
+		e.add(SCE(FWD, normal, withSequence("TTCTT", Read(0, 9, "4M1S")))); // only on ref path
+		e.add(SCE(FWD, normal, withSequence("TCTTA", Read(0, 10, "4M1S"))));
+		e.add(SCE(FWD, normal, withSequence("TCTTAA", Read(0, 10, "4M2S"))));
+		e.add(SCE(FWD, normal, withSequence("TCTTAAA", Read(0, 10, "4M3S"))));
+		e.add(SCE(FWD, normal, withSequence("TCTTAAAC", Read(0, 10, "4M4S"))));
+		e.add(SCE(FWD, tumour, withSequence("TCTTAAACG", Read(0, 10, "4M5S"))));
+		e.add(SCE(FWD, tumour, withSequence("TCTTAAACGG", Read(0, 10, "4M6S"))));
+		e.add(NRRP(withSequence(SequenceUtil.reverseComplement("AAACG"), OEA(0, 5, "5M", true))));	
+		e.add(NRRP(tumour, withSequence(SequenceUtil.reverseComplement("CAAACG"), OEA(0, 6, "5M", true))));
+		for (DirectedEvidence ev : e) assertFalse(ass.addEvidence(ev).iterator().hasNext());
+		AssemblyEvidence result = ass.endOfEvidence().iterator().next().hydrateEvidenceSet(e).annotateAssembly();
 		
-		assertEquals("test assumes this contruction - did I get the test case wrong?", "TTTTAAACGG", S(result.getAssemblySequence()));
+		assertEquals("test assumes this contruction - did I get the test case wrong?", "TTCTTAAACGG", S(result.getAssemblySequence()));
 		assertEquals("test assumes this contruction - did I get the test case wrong?", "AAACGG", S(result.getBreakendSequence()));
 		assertEquals(5 + 6 + 5, result.getAssemblyBaseCount(EvidenceSubset.TUMOUR));
 		assertEquals(1 + 2 + 3 + 4 + 5, result.getAssemblyBaseCount(EvidenceSubset.NORMAL));
@@ -322,16 +326,18 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		MockSAMEvidenceSource tumour = SES(true);
 		pc.getAssemblyParameters().k = 4;
 		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(pc, aes);
-		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TTCTT", Read(0, 9, "4M1S")))).iterator().hasNext()); // only on ref path
-		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TCTTA", Read(0, 10, "4M1S")))).iterator().hasNext());
-		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TCTTAA", Read(0, 10, "4M2S")))).iterator().hasNext());
-		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TCTTAAA", Read(0, 10, "4M3S")))).iterator().hasNext());
-		assertFalse(ass.addEvidence(SCE(FWD, normal, withSequence("TCTTAAAC", Read(0, 10, "4M4S")))).iterator().hasNext());
-		assertFalse(ass.addEvidence(SCE(FWD, tumour, withSequence("TCTTAAACG", Read(0, 10, "4M5S")))).iterator().hasNext());
-		assertFalse(ass.addEvidence(SCE(FWD, tumour, withSequence("TCTTAAACGG", Read(0, 10, "4M6S")))).iterator().hasNext());
-		assertFalse(ass.addEvidence(NRRP(withSequence(SequenceUtil.reverseComplement("AAACG"), OEA(0, 5, "5M", true)))).iterator().hasNext());	
-		assertFalse(ass.addEvidence(NRRP(tumour, withSequence(SequenceUtil.reverseComplement("CAAACG"), OEA(0, 6, "5M", true)))).iterator().hasNext());
-		AssemblyEvidence result = ass.endOfEvidence().iterator().next();
+		List<DirectedEvidence> e = Lists.newArrayList();
+		e.add(SCE(FWD, normal, withSequence("TTCTT", Read(0, 9, "4M1S")))); // only on ref path
+		e.add(SCE(FWD, normal, withSequence("TCTTA", Read(0, 10, "4M1S"))));
+		e.add(SCE(FWD, normal, withSequence("TCTTAA", Read(0, 10, "4M2S"))));
+		e.add(SCE(FWD, normal, withSequence("TCTTAAA", Read(0, 10, "4M3S"))));
+		e.add(SCE(FWD, normal, withSequence("TCTTAAAC", Read(0, 10, "4M4S"))));
+		e.add(SCE(FWD, tumour, withSequence("TCTTAAACG", Read(0, 10, "4M5S"))));
+		e.add(SCE(FWD, tumour, withSequence("TCTTAAACGG", Read(0, 10, "4M6S"))));
+		e.add(NRRP(withSequence(SequenceUtil.reverseComplement("AAACG"), OEA(0, 5, "5M", true))));	
+		e.add(NRRP(tumour, withSequence(SequenceUtil.reverseComplement("CAAACG"), OEA(0, 6, "5M", true))));
+		for (DirectedEvidence ev : e) assertFalse(ass.addEvidence(ev).iterator().hasNext());
+		AssemblyEvidence result = ass.endOfEvidence().iterator().next().hydrateEvidenceSet(e).annotateAssembly();
 		
 		assertEquals("test assumes this contruction - did I get the test case wrong?", "TTCTTAAACGG", S(result.getAssemblySequence()));
 		assertEquals(1, result.getAssemblySupportCountReadPair(EvidenceSubset.NORMAL));

@@ -1,8 +1,9 @@
 package au.edu.wehi.idsv.sim;
 
+import htsjdk.samtools.util.IOUtil;
+
 import java.io.File;
 
-import htsjdk.samtools.util.IOUtil;
 import picard.cmdline.Option;
 import au.edu.wehi.idsv.ProcessingContext;
 

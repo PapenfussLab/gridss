@@ -6,16 +6,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.AssemblyFactory;
 import au.edu.wehi.idsv.BreakendDirection;
+import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.LinearGenomicCoordinate;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.RemoteEvidence;
-import au.edu.wehi.idsv.SAMEvidenceSource;
+import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.SoftClipEvidence;
 
 import com.google.common.collect.Sets;
@@ -135,25 +135,18 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 	}
 	private int[] getBaseCountsByCategory(List<T> path, boolean startAnchored, boolean endAnchored) {
 		int[] baseCounts = getEvidenceKmerCount(path);
-		return baseCounts;
-		// TODO: adjust counts according to start/end anchoring 
-		/*
-		// adjust base counts for non-anchored reads
-		int[] supportCounts = new int[] { 0, 0 };
-		for (DirectedEvidence e : support) {
-			if (!e.isBreakendExact()) { // !e.isDirectlyAnchoredToReference()
-				supportCounts[((SAMEvidenceSource)e.getEvidenceSource()).sourceCategory()]++;
+		if (!startAnchored && !endAnchored) {
+			// add all the starting bases to the calculation
+			int[] firstKmerCounts = path.get(0).getCountByCategory();
+			for (int i = 0; i < firstKmerCounts.length; i++) {
+				baseCounts[i] += (getK() - 1) * firstKmerCounts[i];
 			}
 		}
-		// convert kmer counts into base counts
-		// Note: this conversion assumes that each piece of evidence forms a single contiguous kmer support path
-		for (int i = 0; i < baseCounts.length; i++) {
-			baseCounts[i] += (getK() - 1) * supportCounts[i];
-		}
+		// TODO: what to do when both anchored? If path.size() < getK() - 1 then expected breakend size is negative;
+		// counting kmers instead of bases in this case for now
 		return baseCounts;
-		*/
 	}
-	protected AssemblyEvidence createAssembly(List<Long> kmers) {
+	protected SAMRecordAssemblyEvidence createAssembly(List<Long> kmers) {
 		List<T> path = new ArrayList<T>(kmers.size());
 		List<T> breakendPath = new ArrayList<T>(path.size());
 		int breakendStartOffset = -1;
@@ -179,8 +172,8 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		
 		if (beforeBreakend == null && afterBreakend == null) {
 			// unanchored
-			// TODO: work out breakend interval from expected location & interval
-			return AssemblyFactory.createUnanchoredBreakend(processContext, source, breakendSupport, bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
+			BreakendSummary breakend = DeBruijnNodeBase.getExpectedBreakend(processContext.getLinear(), breakendPath);
+			return AssemblyFactory.createUnanchoredBreakend(processContext, source, breakend, breakendSupport, bases, quals, breakendBaseCounts);
 		} else {
 			double startBreakendAnchorPosition = DeBruijnNodeBase.getExpectedPositionForDirectAnchor(BreakendDirection.Forward, breakendPath);
 			double endBreakendAnchorPosition = DeBruijnNodeBase.getExpectedPositionForDirectAnchor(BreakendDirection.Backward, breakendPath);
@@ -227,11 +220,11 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 			if (endAnchorReferenceIndex == -1) {
 				return AssemblyFactory.createAnchoredBreakend(processContext, source, BreakendDirection.Forward, breakendSupport,
 						startAnchorReferenceIndex, startAnchorPosition, startAnchorLength,
-						bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
+						bases, quals, breakendBaseCounts);
 			} else if (startAnchorReferenceIndex == -1) {
 				return AssemblyFactory.createAnchoredBreakend(processContext, source, BreakendDirection.Backward, breakendSupport,
 						endAnchorReferenceIndex, endAnchorPosition, endAnchorLength,
-						bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
+						bases, quals, breakendBaseCounts);
 			} else {
 				if (startAnchorLength + endAnchorLength > bases.length) {
 					// All bases support reference allele - this is likely an assembly artifact
@@ -244,7 +237,7 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 				return AssemblyFactory.createAnchoredBreakpoint(processContext, source, breakendSupport,
 						startAnchorReferenceIndex, startAnchorPosition, startAnchorLength,
 						endAnchorReferenceIndex, endAnchorPosition, endAnchorLength,
-						bases, quals, breakendBaseCounts[0], breakendBaseCounts[1]);
+						bases, quals, breakendBaseCounts);
 			}
 		}
 	}

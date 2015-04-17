@@ -72,6 +72,8 @@ public class IntermediateFilesTest extends TestHelper {
 				new VariantCallingParameters(),
 				reference,
 				perChr, false);
+		pc.registerCategory(0, "Normal");
+		pc.registerCategory(1, "Tumour");
 		return pc;
 	}
 	public ProcessingContext getCommandlineContext() {

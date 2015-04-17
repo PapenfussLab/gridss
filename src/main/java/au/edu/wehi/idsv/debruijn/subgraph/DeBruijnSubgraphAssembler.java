@@ -2,12 +2,12 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 
 import java.io.File;
 
-import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.ReadEvidenceAssembler;
+import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.visualisation.DeBruijnSubgraphGexfExporter;
 import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTrackerBEDWriter;
 
@@ -36,9 +36,9 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 		this.source = source;
 	}
 	@Override
-	public Iterable<AssemblyEvidence> addEvidence(DirectedEvidence evidence) {
+	public Iterable<SAMRecordAssemblyEvidence> addEvidence(DirectedEvidence evidence) {
 		if (evidence.getBreakendSummary() == null) throw new IllegalArgumentException("Invalid evidence");
-		Iterable<AssemblyEvidence> it = ImmutableList.of();
+		Iterable<SAMRecordAssemblyEvidence> it = ImmutableList.of();
 		if (evidence.getBreakendSummary().referenceIndex != currentReferenceIndex) {
 			it = assembleAll();
 			init(evidence.getBreakendSummary().referenceIndex);
@@ -56,7 +56,7 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 		return it;
 	}
 	@Override
-	public Iterable<AssemblyEvidence> endOfEvidence() {
+	public Iterable<SAMRecordAssemblyEvidence> endOfEvidence() {
 		return assembleAll();
 	}
 	private void init(int referenceIndex) {
@@ -77,8 +77,8 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 		
 		}
 	}
-	private Iterable<AssemblyEvidence> assembleAll() {
-		Iterable<AssemblyEvidence> assemblies = assembleBefore(Long.MAX_VALUE);
+	private Iterable<SAMRecordAssemblyEvidence> assembleAll() {
+		Iterable<SAMRecordAssemblyEvidence> assemblies = assembleBefore(Long.MAX_VALUE);
 		File exportDir = processContext.getAssemblyParameters().debruijnGraphVisualisationDirectory;
 		if (exportDir != null && processContext.getAssemblyParameters().visualiseAll) {
 			exportDir.mkdir();
@@ -93,10 +93,10 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 		}
 		return assemblies;
 	}
-	private Iterable<AssemblyEvidence> assembleBefore(long position) {
+	private Iterable<SAMRecordAssemblyEvidence> assembleBefore(long position) {
 		startingNextProcessingStep();
 		if (currentReferenceIndex < 0) return ImmutableList.of();
-		Iterable<AssemblyEvidence> it = graph.assembleContigsBefore(position);
+		Iterable<SAMRecordAssemblyEvidence> it = graph.assembleContigsBefore(position);
 		graph.removeBefore(position);
 		return it;
 	}

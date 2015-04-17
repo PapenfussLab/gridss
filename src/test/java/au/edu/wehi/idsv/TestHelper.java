@@ -55,11 +55,11 @@ import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
 
+import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 public class TestHelper {
 	public static final long LCCB = ProcessingContext.LINEAR_COORDINATE_CHROMOSOME_BUFFER;
@@ -115,6 +115,13 @@ public class TestHelper {
 		return list;
 	}
 
+	public static Function<DirectedEvidence, String> EID = new Function<DirectedEvidence, String>() {
+		@Override
+		public String apply(DirectedEvidence input) {
+			return input.getEvidenceID();
+		}
+	}; 
+	
 	public static IdsvVariantContextBuilder minimalVariant() {
 		return (IdsvVariantContextBuilder) new IdsvVariantContextBuilder(
 				getContext()).chr("polyA").start(1).stop(1).alleles("A", "C");
@@ -194,8 +201,7 @@ public class TestHelper {
 		assert(bs.start == bs.end);
 		assert(bs.start2 == bs.end2);
 		assert(bs.direction2 == BWD);
-		SAMRecordAssemblyEvidence abe = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), bs.direction, Sets.<DirectedEvidence>newHashSet(
-				SCE(bs)), bs.referenceIndex, bs.start, 1, B("TT"), B("TT"), 0, 0);
+		SAMRecordAssemblyEvidence abe = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), bs.direction, null, bs.referenceIndex, bs.start, 1, B("TT"), B("TT"), new int[] {0, 0});
 		SAMRecord r = new SAMRecord(getContext().getBasicSamHeader());
 		r.setReferenceIndex(bs.referenceIndex2);
 		r.setAlignmentStart(bs.start2);
@@ -218,14 +224,6 @@ public class TestHelper {
 			SAMRecord... pair) {
 		return SCE(direction, SES(), pair);
 	}
-	private SoftClipEvidence SCE(BreakendSummary bs) {
-		assert(bs.start == bs.end);
-		if (bs.direction == FWD) {
-			return SCE(bs.direction, Read(bs.referenceIndex, bs.start, "1M1S"));
-		} else {
-			return SCE(bs.direction, Read(bs.referenceIndex, bs.start, "1S1M"));
-		}
-	}
 
 	public static SoftClipEvidence SCE(BreakendDirection direction,
 			SAMEvidenceSource source, SAMRecord... pair) {
@@ -238,14 +236,13 @@ public class TestHelper {
 		}
 	}
 
-	public static AssemblyEvidence AE() {
+	public static SAMRecordAssemblyEvidence AE() {
 		return AssemblyFactory.createAnchoredBreakend(getContext(), AES(),
 				FWD,
-				Sets.newHashSet((DirectedEvidence) SCE(FWD,
-						Read(0, 1, "1M5S"))),
+				null,
 				0, 1,
 				1, B("ATT"), new byte[] { 7, 7, 7 },
-				6, 8);
+				new int[] {6, 8}).annotateAssembly();
 	}
 	public static class MockSoftClipSizeDistribution extends SoftClipSizeDistribution {
 		public MockSoftClipSizeDistribution() {
@@ -302,6 +299,8 @@ public class TestHelper {
 					breakendMargin = 3;
 					}},
 				SMALL_FA_FILE, false, false);
+		pc.registerCategory(0, "Normal");
+		pc.registerCategory(1, "Tumour");
 		return pc;
 	}
 
@@ -617,7 +616,7 @@ public class TestHelper {
 			NonReferenceReadPair placeholderEvidence = NRRP(OEA(0, 1, "100M", true));
 			int i = 1;
 			for (long kmer : toKmer(this, sequence)) {
-				add(kmer, new DeBruijnNodeBase(weight, i++, placeholderEvidence, false, false));
+				add(kmer, new DeBruijnNodeBase(weight, i++, "evidence" + Integer.toString(i), false, null, 0, placeholderEvidence.getBreakendSummary()));
 			}
 			return this;
 		}
@@ -729,13 +728,13 @@ public class TestHelper {
 
 	public static class MockSAMEvidenceSource extends SAMEvidenceSource {
 		public IdsvSamFileMetrics metrics = new MockMetrics();
-		public boolean isTumour = false;
-
+		public int category = 0;
+		public EnumSet<ProcessStep> completedSteps = EnumSet.of(ProcessStep.CALCULATE_METRICS); 
 		public MockSAMEvidenceSource(ProcessingContext processContext) {
-			super(processContext, new File("test.bam"), false);
+			super(processContext, new File("test.bam"), 0);
 		}
 		protected MockSAMEvidenceSource(ProcessingContext processContext, int minFragmentSize, int maxFragmentSize) {
-			super(processContext, new File("test.bam"), false, minFragmentSize, maxFragmentSize);
+			super(processContext, new File("test.bam"), 0, minFragmentSize, maxFragmentSize);
 			metrics.getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH = maxFragmentSize;
 			metrics.getIdsvMetrics().MAX_READ_LENGTH = maxFragmentSize;
 			metrics.getInsertSizeMetrics().MAX_INSERT_SIZE = maxFragmentSize;
@@ -746,18 +745,29 @@ public class TestHelper {
 			metrics.getInsertSizeMetrics().STANDARD_DEVIATION = maxFragmentSize / 10;
 		}
 		@Override
-		public boolean isTumour() {
-			return isTumour;
+		public int getSourceCategory() {
+			return category;
 		}
 		@Override
 		public boolean isComplete(ProcessStep step) {
-			if (step == ProcessStep.CALCULATE_METRICS) return true;
-			return super.isComplete(step);
+			return completedSteps.contains(step);
 		}
 		@Override
 		protected IdsvSamFileMetrics getMetrics() {
 			if (metrics != null) return metrics;
 			return super.getMetrics();
+		}
+		@Override
+		public void completeSteps(EnumSet<ProcessStep> steps) {
+			completedSteps.addAll(steps);
+		}
+		@Override
+		protected CloseableIterator<DirectedEvidence> perChrIterator( boolean includeReadPair, boolean includeSoftClip, boolean includeSoftClipRemote, String chr) {
+			return new AutoClosingIterator<DirectedEvidence>(Collections.<DirectedEvidence>emptyIterator());
+		}
+		@Override
+		protected CloseableIterator<DirectedEvidence> singleFileIterator(boolean includeReadPair, boolean includeSoftClip, boolean includeSoftClipRemote) {
+			return new AutoClosingIterator<DirectedEvidence>(Collections.<DirectedEvidence>emptyIterator());
 		}
 	}
 
@@ -769,7 +779,7 @@ public class TestHelper {
 	}
 	public static MockSAMEvidenceSource SES(boolean isTumour) {
 		MockSAMEvidenceSource e = new MockSAMEvidenceSource(getContext());
-		e.isTumour = isTumour;
+		e.category = isTumour ? 1 : 0;
 		return e;
 	}
 	public static MockSAMEvidenceSource SES(int maxFragmentSize) {
@@ -783,8 +793,8 @@ public class TestHelper {
 		public int maxReadLength = 100;
 		public IdsvSamFileMetrics metrics = new MockMetrics();
 		public List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
-		public StubSAMEvidenceSource(ProcessingContext processContext, File file, boolean isTumour, int minFragmentSize, int maxFragmentSize) {
-			super(processContext, file, isTumour, minFragmentSize, maxFragmentSize);
+		public StubSAMEvidenceSource(ProcessingContext processContext, File file, int category, int minFragmentSize, int maxFragmentSize) {
+			super(processContext, file, category, minFragmentSize, maxFragmentSize);
 			this.maxFragmentSize = maxFragmentSize;
 		}
 		@Override

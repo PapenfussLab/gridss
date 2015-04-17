@@ -16,7 +16,7 @@ public class SamTags {
 	/**
 	 * EvidenceID of assembly components
 	 */
-	public static final String ASSEMLBY_COMPONENT_EVIDENCEID = "es";
+	public static final String ASSEMBLY_COMPONENT_EVIDENCEID = "es";
 	public static final String ASSEMBLY_BASE_COUNT = "bc";
 	public static final String ASSEMBLY_READPAIR_COUNT = "dp";
 	public static final String ASSEMBLY_SOFTCLIP_COUNT = "sc";

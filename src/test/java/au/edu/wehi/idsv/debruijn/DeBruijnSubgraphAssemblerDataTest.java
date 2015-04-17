@@ -5,6 +5,7 @@ import htsjdk.samtools.util.CloseableIterator;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.EnumSet;
 
 import org.junit.Test;
 
@@ -12,6 +13,7 @@ import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.IntermediateFilesTest;
+import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.ReadPairParameters;
 import au.edu.wehi.idsv.RealignmentParameters;
@@ -54,8 +56,8 @@ public class DeBruijnSubgraphAssemblerDataTest extends IntermediateFilesTest {
 				new RealignmentParameters(),
 				new VariantCallingParameters(),
 				hg19decoy,
-				true, false), new File("W:\\na12878\\NA12878D_HiSeqX_R1.bam"), false);
-		
+				true, false), new File("W:\\na12878\\NA12878D_HiSeqX_R1.bam"), 0);
+		ses.completeSteps(ProcessStep.ALL_STEPS);
 		CloseableIterator<DirectedEvidence> it = ses.iterator(true,  true, true, "MT");
 		
 		while (it.hasNext()) {

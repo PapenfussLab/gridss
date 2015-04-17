@@ -6,6 +6,7 @@ import htsjdk.samtools.SAMRecord;
 import java.util.List;
 
 import au.edu.wehi.idsv.BreakendDirection;
+import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.LinearGenomicCoordinate;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.SoftClipEvidence;
@@ -39,7 +40,7 @@ public class VariantEvidence {
 	private final int k;
 	private final String evidenceID;
 	private boolean isExact;
-	private BreakendDirection direction;
+	private BreakendSummary be;
 	private int category;
 	public VariantEvidence(int k, NonReferenceReadPair pair, LinearGenomicCoordinate lgc) {
 		this.k = k;
@@ -60,7 +61,7 @@ public class VariantEvidence {
 		this.startSkipKmerCount = 0;
 		this.endSkipKmerCount = 0;
 		this.isExact = pair.isBreakendExact();
-		this.direction = pair.getBreakendSummary().direction;
+		this.be = pair.getBreakendSummary();
 		this.category = pair.getEvidenceSource().getSourceCategory();
 	}
 	public VariantEvidence(int k, SoftClipEvidence softClipEvidence, LinearGenomicCoordinate lgc) {
@@ -108,7 +109,7 @@ public class VariantEvidence {
 		}
 		this.expectedAnchorPos = lgc.getLinearCoordinate(softClipEvidence.getBreakendSummary().referenceIndex, chrPos);
 		this.isExact = softClipEvidence.isBreakendExact();
-		this.direction = softClipEvidence.getBreakendSummary().direction;
+		this.be = softClipEvidence.getBreakendSummary();
 		this.category = softClipEvidence.getEvidenceSource().getSourceCategory();
 	}
 	public ReadKmerIterable getReadKmers() {
@@ -143,7 +144,7 @@ public class VariantEvidence {
 	 * false if anchored by the mate 
 	 */
 	public boolean isDirectlyAnchoredToReference() { return isExact; }
-	public BreakendDirection getDirection() { return direction; }
+	public BreakendSummary getBreakend() { return be; }
 	public int getCategory() { return category; }
 	/**
 	 * Gets the underlying evidence

@@ -25,7 +25,7 @@ public class SortRealignedSoftClipsTest extends IntermediateFilesTest {
 	SAMEvidenceSource source;
 	public void go(boolean perChr, SAMRecord... realign) {
 		processContext = getCommandlineContext(perChr);
-		source = new SAMEvidenceSource(processContext, input, false);
+		source = new SAMEvidenceSource(processContext, input, 0);
 		source.completeSteps(ProcessStep.ALL_STEPS);
 		if (perChr) {
 			for (final SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
@@ -80,7 +80,7 @@ public class SortRealignedSoftClipsTest extends IntermediateFilesTest {
 		};
 		createInput(softClip);
 		ProcessingContext processContext = getCommandlineContext(false);
-		SAMEvidenceSource source = new SAMEvidenceSource(processContext, input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(processContext, input, 0);
 		source.completeSteps(ProcessStep.ALL_STEPS);
 		createBAM(processContext.getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, realigned);
 		SortRealignedSoftClips srs = new SortRealignedSoftClips(processContext, source);

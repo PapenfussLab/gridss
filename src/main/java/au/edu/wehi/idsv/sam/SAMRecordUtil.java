@@ -18,10 +18,10 @@ import htsjdk.samtools.util.SequenceUtil;
 import java.util.Arrays;
 import java.util.List;
 
-import com.google.common.collect.Lists;
-
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.Defaults;
+
+import com.google.common.collect.Lists;
 
 /**
  * @author Daniel Cameron

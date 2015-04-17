@@ -29,7 +29,7 @@ public class SequentialSoftClipRealignedRemoteBreakpointFactoryTest extends Inte
 		};
 		createInput(softClip);
 		ProcessingContext processContext = getCommandlineContext(false);
-		SAMEvidenceSource source = new SAMEvidenceSource(processContext, input, false);
+		SAMEvidenceSource source = new SAMEvidenceSource(processContext, input, 0);
 		source.completeSteps(ProcessStep.ALL_STEPS);
 		createBAM(processContext.getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, realigned);
 		SortRealignedSoftClips srs = new SortRealignedSoftClips(processContext, source);

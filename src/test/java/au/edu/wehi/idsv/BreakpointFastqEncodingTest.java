@@ -5,8 +5,6 @@ import htsjdk.samtools.fastq.FastqRecord;
 
 import org.junit.Test;
 
-import com.google.common.collect.Sets;
-
 public class BreakpointFastqEncodingTest extends TestHelper {
 	public class StubDirectedBreakend implements DirectedEvidence {
 		@Override
@@ -87,7 +85,7 @@ public class BreakpointFastqEncodingTest extends TestHelper {
 	}
 	@Test
 	public void sam_assembly_should_be_sorted_by_sam_coordinate_sort_order() {
-		SAMRecordAssemblyEvidence ass =  AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, Sets.<DirectedEvidence>newHashSet(), 1, 4, 3, B("AAAAAA"), B("AAAAAA"), 1, 1);
+		SAMRecordAssemblyEvidence ass =  AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, null, 1, 4, 3, B("AAAAAA"), B("AAAAAA"), new int[] {1, 1});
 		FastqRecord fq = BreakpointFastqEncoding.getRealignmentFastq(ass);
 		assertEquals(1, BreakpointFastqEncoding.getEncodedReferenceIndex(fq.getReadHeader()));
 		assertEquals(ass.getSAMRecord().getAlignmentStart(), BreakpointFastqEncoding.getEncodedStartPosition(fq.getReadHeader()));

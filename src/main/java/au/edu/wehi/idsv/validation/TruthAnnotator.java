@@ -17,7 +17,6 @@ import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.IdsvVariantContext;
 import au.edu.wehi.idsv.IdsvVariantContextBuilder;
 import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.StructuralVariationCallBuilder;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;

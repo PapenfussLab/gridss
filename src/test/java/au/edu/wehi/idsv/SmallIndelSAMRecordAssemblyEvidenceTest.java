@@ -1,10 +1,15 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMUtils;
 
 import org.junit.Test;
+
+import au.edu.wehi.idsv.sam.SamTags;
 
 
 public class SmallIndelSAMRecordAssemblyEvidenceTest extends TestHelper {
@@ -12,8 +17,11 @@ public class SmallIndelSAMRecordAssemblyEvidenceTest extends TestHelper {
 		SAMRecord r = Read(0, position, cigar);
 		r.setReadBases(B(bases));
 		r.setBaseQualityString(bases);
-		r.setMappingQuality(35);
+		MockDirectedEvidence evidence = new MockDirectedEvidence(new BreakendSummary(0, FWD, 1, 2));
+		r.setAttribute(SamTags.ASSEMBLY_COMPONENT_EVIDENCEID, evidence.getEvidenceID());
 		SmallIndelSAMRecordAssemblyEvidence e = new SmallIndelSAMRecordAssemblyEvidence(AES(), r);
+		e.hydrateEvidenceSet(evidence);
+		e.annotateAssembly();
 		return e;
 	}
 	private void check_matches(int position, String cigar, String bases,
@@ -52,8 +60,13 @@ public class SmallIndelSAMRecordAssemblyEvidenceTest extends TestHelper {
 	@Test
 	public void split_read_mapq_should_be_source_mapq() {
 		SmallIndelSAMRecordAssemblyEvidence e = create(0, "1M1D1M", "NN");
-		assertEquals(35, e.getSAMRecord().getMappingQuality());
-		assertEquals(35, e.getRemoteSAMRecord().getMappingQuality());
+		assertEquals(e.getBackingRecord().getMappingQuality(), e.getSAMRecord().getMappingQuality());
+		assertEquals(e.getBackingRecord().getMappingQuality(), e.getRemoteSAMRecord().getMappingQuality());
+	}
+	@Test
+	public void remote_mapq_should_match_local() {
+		SmallIndelSAMRecordAssemblyEvidence e = create(0, "1M1D1M", "NN");
+		assertEquals(e.getRemoteMapq(), e.getLocalMapq());
 	}
 	@Test
 	public void should_consider_adjacent_indel_operands_as_single_event() {

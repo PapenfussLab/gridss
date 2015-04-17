@@ -22,7 +22,6 @@ import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Bytes;
@@ -71,7 +70,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	private Set<String> evidenceIds = null;
 	private void ensureEvidenceIDs() {
 		if (evidenceIds == null) {
-			Object value = record.getAttribute(SamTags.ASSEMLBY_COMPONENT_EVIDENCEID);
+			Object value = record.getAttribute(SamTags.ASSEMBLY_COMPONENT_EVIDENCEID);
 			if (value instanceof String) {
 				String[] ids = ((String)value).split(COMPONENT_EVIDENCEID_SEPARATOR);
 				evidenceIds = Sets.newHashSet(ids);
@@ -97,24 +96,26 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 * Hydrates the given evidence back into the assembly evidence set
 	 * @param e
 	 */
-	public void hydrateEvidenceSet(DirectedEvidence e) {
+	public SAMRecordAssemblyEvidence hydrateEvidenceSet(DirectedEvidence e) {
 		if (isPartOfAssembly(e)) {
 			evidence.add(e);
 		}
+		return this;
 	}
 	/**
 	 * Hydrates the given evidence back into the assembly evidence set
 	 * @param e
 	 */
-	public void hydrateEvidenceSet(Collection<DirectedEvidence> evidence) {
+	public SAMRecordAssemblyEvidence hydrateEvidenceSet(Collection<? extends DirectedEvidence> evidence) {
 		for (DirectedEvidence e : evidence) {
 			hydrateEvidenceSet(e);
 		}
+		return this;
 	}
 	/**
 	 * Annotates an assembly with a fully hydrated evidence set
 	 */
-	public void annotateAssembly() {
+	public SAMRecordAssemblyEvidence annotateAssembly() {
 		int n = source.getContext().getCategoryCount();
 		BreakendSummary breakendWithMargin = source.getContext().getVariantCallingParameters().withMargin(source.getContext(), breakend);
 		float[] rpQual = new float[n];
@@ -131,7 +132,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		int maxLocalMapq = 0;
 		for (DirectedEvidence e : evidence) {
 			maxLocalMapq = Math.max(maxLocalMapq, e.getLocalMapq());
-			int offset = ((SAMEvidenceSource)e).getSourceCategory();
+			int offset = ((SAMEvidenceSource)e.getEvidenceSource()).getSourceCategory();
 			float qual = e.getBreakendQual();
 			if (e instanceof NonReferenceReadPair) {
 				rpCount[offset]++;
@@ -154,15 +155,17 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 				nsQual[offset] += qual;
 			}
 		}
-		annotateSAMRecord(getSAMRecord(), rpQual, scQual, rQual, nsQual, rpCount, rpMaxLen, scCount, scLenMax, scLenTotal, rCount, nsCount, maxLocalMapq);
-		annotateSAMRecord(getBackingRecord(), rpQual, scQual, rQual, nsQual, rpCount, rpMaxLen, scCount, scLenMax, scLenTotal, rCount, nsCount, maxLocalMapq);
-		annotateSAMRecord(getRemoteSAMRecord(), rpQual, scQual, rQual, nsQual, rpCount, rpMaxLen, scCount, scLenMax, scLenTotal, rCount, nsCount, getRemoteSAMRecord().getMappingQuality());
+		annotateSAMRecord(getSAMRecord(), rpQual, scQual, rQual, nsQual, rpCount, rpMaxLen, scCount, scLenMax, scLenTotal, rCount, nsCount);
+		annotateSAMRecord(getBackingRecord(), rpQual, scQual, rQual, nsQual, rpCount, rpMaxLen, scCount, scLenMax, scLenTotal, rCount, nsCount);
+		annotateSAMRecord(getRemoteSAMRecord(), rpQual, scQual, rQual, nsQual, rpCount, rpMaxLen, scCount, scLenMax, scLenTotal, rCount, nsCount);
+		getSAMRecord().setMappingQuality(maxLocalMapq);
+		getBackingRecord().setMappingQuality(maxLocalMapq);
+		return this;
 	}
 	private void annotateSAMRecord(SAMRecord r, float[] rpQual, float[] scQual,
 			float[] rQual, float[] nsQual, int[] rpCount, int[] rpMaxLen,
 			int[] scCount, int[] scLenMax, int[] scLenTotal, int[] rCount,
-			int[] nsCount, int maxLocalMapq) {
-		r.setMappingQuality(maxLocalMapq);
+			int[] nsCount) {
 		r.setAttribute(SamTags.ASSEMBLY_READPAIR_COUNT, rpCount);
 		r.setAttribute(SamTags.ASSEMBLY_READPAIR_LENGTH_MAX, rpMaxLen);
 		r.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT, scCount);
@@ -176,9 +179,6 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		r.setAttribute(SamTags.ASSEMBLY_NONSUPPORTING_QUAL, nsQual);
 	}
 	public Collection<DirectedEvidence> getEvidence() {
-		if (evidence == null) {
-			return ImmutableList.of();
-		}
 		ensureEvidenceIDs();
 		if (evidenceIds != null) {
 			if (evidence.size() < evidenceIds.size()) {
@@ -263,6 +263,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		placeholder.setReadBases(getBreakendSequence());
 		placeholder.setBaseQualities(getBreakendQuality());
 		placeholder.setReadNegativeStrandFlag(false);
+		placeholder.setMappingQuality(0);
 		return placeholder;
 	}
 	private static BreakendSummary calculateBreakend(SAMRecord record) {
@@ -394,42 +395,59 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	}
 	@Override
 	public int getAssemblySupportCountReadPair(EvidenceSubset subset) {
+		assertAnnotated();
 		return AttributeConverter.asIntSumTN(record.getAttribute(SamTags.ASSEMBLY_READPAIR_COUNT), subset);
 	}
 	@Override
 	public int getAssemblyReadPairLengthMax(EvidenceSubset subset) {
+		assertAnnotated();
 		return AttributeConverter.asIntMaxTN(record.getAttribute(SamTags.ASSEMBLY_READPAIR_LENGTH_MAX), subset);
 	}
 	@Override
 	public int getAssemblySupportCountSoftClip(EvidenceSubset subset) {
+		assertAnnotated();
 		return AttributeConverter.asIntSumTN(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT), subset);
 	}
 	@Override
 	public int getAssemblySupportCountRemote(EvidenceSubset subset) {
+		assertAnnotated();
 		return AttributeConverter.asIntSumTN(record.getAttribute(SamTags.ASSEMBLY_REMOTE_COUNT), subset);
 	}
 	public int getAssemblyNonSupportingCount(EvidenceSubset subset) {
+		assertAnnotated();
 		return AttributeConverter.asIntSumTN(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_COUNT), subset);
 	}
 	@Override
 	public int getAssemblySoftClipLengthTotal(EvidenceSubset subset) {
+		assertAnnotated();
 		return AttributeConverter.asIntSumTN(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL), subset);
 	}
 	@Override
 	public int getAssemblySoftClipLengthMax(EvidenceSubset subset) {
+		assertAnnotated();
 		return AttributeConverter.asIntMaxTN(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX), subset);
 	}
 	public float getAssemblySupportReadPairQualityScore(EvidenceSubset subset) {
+		assertAnnotated();
 		return (float)AttributeConverter.asDoubleSumTN(record.getAttribute(SamTags.ASSEMBLY_READPAIR_QUAL), subset);
 	}
 	public float getAssemblySupportSoftClipQualityScore(EvidenceSubset subset) {
+		assertAnnotated();
 		return (float)AttributeConverter.asDoubleSumTN(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_QUAL), subset);
 	}
 	public float getAssemblySupportRemoteQualityScore(EvidenceSubset subset) {
+		assertAnnotated();
 		return (float)AttributeConverter.asDoubleSumTN(record.getAttribute(SamTags.ASSEMBLY_REMOTE_QUAL), subset);
 	}
 	public float getAssemblyNonSupportingQualityScore(EvidenceSubset subset) {
+		assertAnnotated();
 		return (float)AttributeConverter.asDoubleSumTN(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_QUAL), subset);
+	}
+	private void assertAnnotated() {
+		Object attr = record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT);
+		if (attr == null) {
+			throw new IllegalStateException("Assembly has not yet been annotated");
+		}
 	}
 	@Override
 	public boolean isAssemblyFiltered() {
