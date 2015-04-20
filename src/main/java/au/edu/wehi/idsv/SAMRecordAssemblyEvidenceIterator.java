@@ -50,7 +50,7 @@ public class SAMRecordAssemblyEvidenceIterator extends AbstractIterator<SAMRecor
 			if (includeBothBreakendsOfSpanningAssemblies && evidence.isSpanningAssembly()) {
 				buffer = ((SmallIndelSAMRecordAssemblyEvidence)evidence).asRemote();
 			}
-			if (evidence != null) {
+			if (evidence != null && !evidence.isReferenceAssembly()) {
 				return evidence;
 			}
 		}

@@ -4,6 +4,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.metrics.Header;
@@ -247,6 +248,14 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 				2, 1, 200, B(seq), B(40, seq.length()), new int[] {0, 0}).realign();
 		assertEquals("100S100M10I100M", e.getSAMRecord().getCigarString());
 	}
+	@Test
+	public void realign_should_abort_if_anchor_turns_into_soft_clip() {
+		String seq = S(Arrays.copyOfRange(RANDOM, 0, 10)) + S(Arrays.copyOfRange(RANDOM, 30, 70));
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null,
+				2, 1, 10, B(seq), B(40, seq.length()), new int[] {0, 0});
+		assertEquals("10M40S", e.getSAMRecord().getCigarString());
+		assertEquals("10M40S", e.realign().getSAMRecord().getCigarString());
+	}
 	@Rule
     public TemporaryFolder testFolder = new TemporaryFolder();
 	@Test
@@ -305,7 +314,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals(0, e.getBreakendSequence().length);
 	}
 	@Test
-	public void matching_reference_allele_should_have_read_length_microhomology() {
+	public void reference_allele_should_have_no_breakend_call() {
 		// 12345678901234567890
 		//          MMMMMMMMMM
 		//         >>>>>>>>>>>
@@ -314,12 +323,12 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null,
 				2, 1, 1, B(assembly), B(40, assembly.length()), new int[] {0, 0});
 		e = e.realign();
-		assertEquals(new BreakpointSummary(2, FWD, 9, 19, 2, BWD, 10, 20), e.getBreakendSummary());
+		assertNull(null, e.getBreakendSummary());
 		
 		e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, null,
 				2, 1, 1, B(assembly), B(40, assembly.length()), new int[] {0, 0});
 		e = e.realign();
-		assertEquals(new BreakpointSummary(2, FWD, 9, 19, 2, BWD, 10, 20), e.getBreakendSummary());
+		assertNull(null, e.getBreakendSummary());
 	}
 	@Test
 	public void getAssemblySequence_should_return_assembly() {

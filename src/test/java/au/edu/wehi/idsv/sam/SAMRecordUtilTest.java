@@ -196,4 +196,17 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertEquals("GT", S(r.getReadBases()));
 		assertEquals("GT", S(r.getBaseQualities()));
 	}
+	@Test
+	public void isReferenceAlignment_should_allow_only_match_mismatch_and_hard_clipping() {
+		assertTrue(SAMRecordUtil.isReferenceAlignment(Read(0, 1, "1M")));
+		assertTrue(SAMRecordUtil.isReferenceAlignment(Read(0, 1, "1H1X1=")));
+		assertFalse(SAMRecordUtil.isReferenceAlignment(Read(0, 1, "1S1M")));
+		assertFalse(SAMRecordUtil.isReferenceAlignment(Read(0, 1, "1M1N1M")));
+		assertFalse(SAMRecordUtil.isReferenceAlignment(Read(0, 1, "1M1D1M")));
+		assertFalse(SAMRecordUtil.isReferenceAlignment(Read(0, 1, "1M1I1M")));
+	}
+	@Test
+	public void isReferenceAlignment_should_ignore_zero_length_elements() {
+		assertTrue(SAMRecordUtil.isReferenceAlignment(Read(0, 1, "1M0S")));
+	}
 }

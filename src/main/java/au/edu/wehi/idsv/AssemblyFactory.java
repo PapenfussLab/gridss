@@ -120,7 +120,7 @@ public final class AssemblyFactory {
 	 */
 	public static SAMRecordAssemblyEvidence hydrate(AssemblyEvidenceSource source, SAMRecord record) {
 		BreakendDirection dir = SAMRecordAssemblyEvidence.getBreakendDirection(record);
-		if (dir == null || SAMRecordUtil.getSoftClipLength(record, dir) == 0) {
+		if (!SAMRecordUtil.isReferenceAlignment(record) && (dir == null || SAMRecordUtil.getSoftClipLength(record, dir) == 0)) {
 			return new SmallIndelSAMRecordAssemblyEvidence(source,  record);
 		} else {
 			return new SAMRecordAssemblyEvidence(source, record, null);

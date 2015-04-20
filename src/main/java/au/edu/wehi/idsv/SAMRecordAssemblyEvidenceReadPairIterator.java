@@ -35,7 +35,7 @@ public class SAMRecordAssemblyEvidenceReadPairIterator extends AbstractIterator<
 			SAMRecord record = it.next();
 			if (record.getFirstOfPairFlag() || includeRemote) {
 				SAMRecordAssemblyEvidence evidence = factory.createAssembly(record, processContext, source);
-				if (evidence != null) {
+				if (evidence != null && !evidence.isReferenceAssembly()) {
 					return evidence;
 				}
 			}

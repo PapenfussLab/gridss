@@ -24,6 +24,7 @@ public class SmallIndelSAMRecordAssemblyEvidence extends RealignedSAMRecordAssem
 	public SmallIndelSAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecord assembly) {
 		super(source, createFwdAnchored(assembly), createFwdRealigned(assembly));
 		this.assembly = assembly;
+		assert(sanityCheck());
 	}
 	/**
 	 * Creates the backward breakpoint of the event spanned by the assembly
@@ -132,5 +133,16 @@ public class SmallIndelSAMRecordAssemblyEvidence extends RealignedSAMRecordAssem
 		super.annotateAssembly();
 		getRemoteSAMRecord().setMappingQuality(getLocalMapq());
 		return this;
+	}
+	private boolean sanityCheck() {
+		List<List<CigarElement>> split = CigarUtil.splitAtLargestIndel(assembly.getCigar().getCigarElements());
+		assert(getBreakendSummary() != null);
+		assert(getBreakendSummary() instanceof BreakpointSummary);
+		assert(getBreakendSummary().direction == BreakendDirection.Forward);
+		assert(getBreakendSummary().direction2 == BreakendDirection.Backward);
+		assert(split.get(0).size() > 0);
+		assert(split.get(1).size() > 0);
+		assert(split.get(2).size() > 0);
+		return true;
 	}
 }

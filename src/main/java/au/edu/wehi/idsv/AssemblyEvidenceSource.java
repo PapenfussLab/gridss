@@ -32,6 +32,7 @@ import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.validation.OrderAssertingIterator;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
+import au.edu.wehi.idsv.vcf.VcfFilter;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
@@ -421,6 +422,9 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 					throw new IllegalStateException(String.format("Sanity check failure: assembly breakend %s written out of order.", evidence.getEvidenceID()));
 				}
 				lastFlushedPosition = pos;
+				if (evidence.isReferenceAssembly()) {
+					evidence.filterAssembly(VcfFilter.REFERENCE_ALLELE);
+				}
 				if (getContext().getAssemblyParameters().writeFilteredAssemblies || !evidence.isAssemblyFiltered()) {
 					writer.addAlignment(evidence.getBackingRecord());
 					if (getContext().getRealignmentParameters().shouldRealignBreakend(evidence)) {

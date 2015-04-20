@@ -28,6 +28,10 @@ public enum BreakendDirection {
 	}
 	private final char c;
 	public char toChar() { return c; }
+	/**
+	 * @return Opposite direction of the given breakend direction 
+	 */
+	public BreakendDirection reverse() { return this == Forward ? Backward : Forward; }
 	public static BreakendDirection fromChar(char c) {
 		for (BreakendDirection dir : values()) {
 			if (dir.toChar() == c) return dir;

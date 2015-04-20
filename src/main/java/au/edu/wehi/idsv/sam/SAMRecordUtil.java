@@ -96,6 +96,14 @@ public class SAMRecordUtil {
 		return 0;
 	}
 	
+	public static int getSoftClipLength(List<CigarElement> elements, BreakendDirection direction) {
+		if (direction == BreakendDirection.Forward) {
+			return getEndSoftClipLength(elements);
+		} else {
+			return getStartSoftClipLength(elements);
+		}
+	}
+	
 	public static int getSoftClipLength(SAMRecord aln, BreakendDirection direction) {
 		if (direction == BreakendDirection.Forward) {
 			return getEndSoftClipLength(aln);
@@ -415,5 +423,26 @@ public class SAMRecordUtil {
 		read.setReadBases(Arrays.copyOfRange(read.getReadBases(), startCount, readLength - endCount));
 		read.setBaseQualities(Arrays.copyOfRange(read.getBaseQualities(), startCount, readLength - endCount));
 		assert(read.getReadLength() == read.getCigar().getReadLength());
+	}
+	public static boolean isReferenceAlignment(SAMRecord r) {
+		if (r.getCigar() == null) return true;
+		return isReferenceAlignment(r.getCigar().getCigarElements());
+	}
+	public static boolean isReferenceAlignment(List<CigarElement> cigar) {
+		if (cigar == null || cigar.size() == 0) return true;
+		for (CigarElement e : cigar) {
+			if (e.getLength() > 0) {
+				switch (e.getOperator()) {
+					case M:
+					case EQ:
+					case X:
+					case H:
+						break;
+					default:
+						return false;
+				}
+			}
+		}
+		return true;
 	}
 }

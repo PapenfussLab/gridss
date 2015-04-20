@@ -267,6 +267,9 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		return placeholder;
 	}
 	private static BreakendSummary calculateBreakend(SAMRecord record) {
+		if (SAMRecordUtil.isReferenceAlignment(record)) {
+			return null;
+		}
 		BreakendDirection direction = getBreakendDirection(record);
 		int beStart;
 		int beEnd;
@@ -524,12 +527,27 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		
         Alignment alignment = AlignerFactory.create().align_smith_waterman(ass, ref);        
         Cigar cigar = TextCigarCodec.getSingleton().decode(alignment.getCigar());
+        
+        if (SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), getBreakendSummary().direction) == 0 && 
+    		SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), getBreakendSummary().direction.reverse()) > 0) {
+        	// medium size indel breakend is longer than the anchor causing the anchor to soft clip instead of an indel call
+        	log.debug(String.format("Realignment of assembly %s converts cigar from %s to %s. Likely to be small indel with short anchor - ignoring realignment.",
+        			getEvidenceID(),
+        			record.getCigarString(),
+        			cigar
+        			));
+        	return this;
+        }
+        
         SAMRecord newAssembly = SAMRecordUtil.clone(record);
 		newAssembly.setReadName(newAssembly.getReadName() + "_r");
         newAssembly.setAlignmentStart(start + alignment.getStartPosition());
         if (!cigar.equals(record.getCigar())) {
         	newAssembly.setCigar(cigar);
         	newAssembly.setAttribute(SamTags.ORIGINAL_CIGAR, record.getCigarString());
+        }
+        if (newAssembly.getAlignmentStart() != record.getAlignmentStart()) {
+        	newAssembly.setAttribute(SamTags.ORIGINAL_POSITION, record.getAlignmentStart());
         }
         SAMRecordAssemblyEvidence realigned = AssemblyFactory.hydrate(getEvidenceSource(), newAssembly);
         return realigned;
@@ -539,7 +557,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 * @return
 	 */
 	public boolean isReferenceAssembly() {
-		return isExact && getBreakendLength() == 0;
+		return SAMRecordUtil.isReferenceAlignment(record) || (isExact && getBreakendLength() == 0);
 	}
 	/**
 	 * Assembly spans entire breakpoint

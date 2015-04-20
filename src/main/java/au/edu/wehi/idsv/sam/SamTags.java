@@ -31,6 +31,7 @@ public class SamTags {
 	public static final String ASSEMBLY_NONSUPPORTING_QUAL = "qn";
 	public static final String ASSEMBLY_DIRECTION = "ad";
 	public static final String ORIGINAL_CIGAR = "oc";
+	public static final String ORIGINAL_POSITION = "op";
 	public static final String SPANNING_ASSEMBLY = "sp";
 	
 }
