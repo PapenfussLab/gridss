@@ -403,8 +403,8 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		    	for (SAMRecordAssemblyEvidence a : evidenceList) {
 		    		if (a != null) {
 			    		maxAssembledPosition = Math.max(maxAssembledPosition, getContext().getLinear().getStartLinearCoordinate(a.getSAMRecord()));
-			    		// realign
-			    		if (a.isBreakendExact() && getContext().getAssemblyParameters().performLocalRealignment) {
+			    		if (getContext().getAssemblyParameters().performLocalRealignment && a.isBreakendExact() && !(a.getBreakendSummary() instanceof BreakpointSummary)) {
+			    			// realign anchored breakends to improve anchor position
 			    			a = a.realign();
 			    		}
 			    		resortBuffer.add(a);
