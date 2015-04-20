@@ -284,10 +284,10 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 1, 1, 1, B("AA"), B("AA"), new int[] {0, 0}));
 		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 1, 2, 1, B("AA"), B("AA"), new int[] {0, 0}));
 		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 1, 2, 1, B("AA"), B("AA"), new int[] {0, 0}));
-		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 1, 3, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 2, true);
-		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 1, 4, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 2, false);
-		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 1, 5, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 2, true);
-		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 1, 6, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 2, false);
+		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 1, 3, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 12, true);
+		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 1, 4, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 12, false);
+		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 1, 5, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 12, true);
+		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 1, 6, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 12, false);
 		go();
 	}
 	@Test
@@ -316,11 +316,11 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	@Test
 	public void should_filter_breakpoints() {
 		orderedAdd(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null,
-				0, 5, 1, B("AA"), B("AA"), new int[] {0, 0}),
-				0, 6, false);
+				0, 5, 1, B("ATA"), B("ATA"), new int[] {0, 0}),
+				0, 10, false);
 		ProcessingContext pc = getCommandlineContext(false);
 		pc.getAssemblyParameters().writeFilteredAssemblies = false;
-		pc.getAssemblyParameters().minReads = 0;
+		pc.getAssemblyParameters().minReads = 1000;
 		pc.getRealignmentParameters().minLength = 0;
 		pc.getRealignmentParameters().mapqUniqueThreshold = 0;
 		pc.getRealignmentParameters().minAverageQual = 0;
@@ -337,7 +337,7 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 		rp.ensureAssembled();
 		assertEquals("precondition: breakend and realign should have been written as breakend passes filters", 1, Iterators.size(ar.iterator(false,  true)));
 		List<SAMRecordAssemblyEvidence> result = Lists.newArrayList(rp.iterator(false,  false));
-		assertEquals(0, result.size());
+		assertEquals(0, result.size()); // not enough read supporting breakend
 	}
 	@Test
 	public void should_include_small_indel_remote_breakends() {

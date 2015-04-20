@@ -9,6 +9,7 @@ import htsjdk.samtools.util.Log;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -138,6 +139,12 @@ public final class AssemblyFactory {
 			int[] baseCounts) {
 		assert(startAnchoredBaseCount >= 0);
 		assert(endAnchoredBaseCount >= 0);
+		if (startAnchoredBaseCount + endAnchoredBaseCount > baseCalls.length) {
+			log.debug(String.format("Adjusting anchored base count: %d start, %d end for %d bases", startAnchoredBaseCount, endAnchoredBaseCount, baseCalls.length));
+			int overBy = endAnchoredBaseCount + startAnchoredBaseCount - baseCalls.length;
+			startAnchoredBaseCount -= overBy / 2;
+			endAnchoredBaseCount -= overBy - overBy / 2; // (so rounding is correct)
+		}
 		assert(startAnchoredBaseCount + endAnchoredBaseCount <= baseCalls.length);
 		assert(baseCalls.length == baseQuals.length);
 		assert(breakend != null);
@@ -226,16 +233,24 @@ public final class AssemblyFactory {
 		return record;
 	}
 	private static void setEvidenceIDs(SAMRecord r, Collection<String> evidence) {
-		if (evidence != null && evidence.size() > 0) {
-			StringBuilder sb = new StringBuilder();
-			for (String id : evidence) { 
-				sb.append(id);
-				sb.append(SAMRecordAssemblyEvidence.COMPONENT_EVIDENCEID_SEPARATOR);
-			}
-			sb.deleteCharAt(sb.length() - 1);
-			r.setAttribute(SamTags.ASSEMBLY_COMPONENT_EVIDENCEID, sb.toString());
-			assert(ensureUniqueEvidenceID(evidence));
+		List<String> evidenceIDs;
+		if (evidence == null) {
+			evidenceIDs = new ArrayList<String>();
+		} else {
+			evidenceIDs = new ArrayList<String>(evidence);
 		}
+		// Set deterministic ordering of evidence to allow for SAM diff
+		Collections.sort(evidenceIDs);
+		StringBuilder sb = new StringBuilder();
+		for (String id : evidenceIDs) { 
+			sb.append(id);
+			sb.append(SAMRecordAssemblyEvidence.COMPONENT_EVIDENCEID_SEPARATOR);
+		}
+		if (evidenceIDs.size() > 0) {
+			sb.deleteCharAt(sb.length() - 1);
+		}
+		r.setAttribute(SamTags.ASSEMBLY_COMPONENT_EVIDENCEID, sb.toString());
+		assert(ensureUniqueEvidenceID(evidenceIDs));
 	}
 	private static boolean ensureUniqueEvidenceID(Collection<String> evidence) {
 		boolean isUnique = true;

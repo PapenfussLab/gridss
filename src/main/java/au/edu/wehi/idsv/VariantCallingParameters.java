@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.variant.variantcontext.VariantContextBuilder;
-
 import java.util.List;
 
 import au.edu.wehi.idsv.vcf.VcfFilter;
@@ -38,37 +36,26 @@ public class VariantCallingParameters {
 	public BreakendSummary withoutMargin(BreakendSummary bp) {
 		return bp.compressBounds(breakendMargin);
 	}
-	public List<VcfFilter> breakpointFilters(BreakpointSummary bp) {
-		List<VcfFilter> list = Lists.newArrayList();
-		if (bp.couldBeDeletionOfSize(1, minIndelSize - 1)) {
+	public List<VcfFilter> calculateBreakendFilters(VariantContextDirectedEvidence call) {
+		List<VcfFilter> filters = Lists.newArrayList();
+		return filters;
+	}
+	public List<VcfFilter> calculateBreakpointFilters(VariantContextDirectedBreakpoint call) {
+		List<VcfFilter> filters = Lists.newArrayList();
+		BreakpointSummary bp = call.getBreakendSummary();
+		if (minIndelSize > 0 && bp.couldBeDeletionOfSize(1, minIndelSize - 1)) {
 			// likely to be an artifact
 			// due to noise/poor alignment (eg bowtie2 2.1.0 would misalign reference reads)
 			// and a nearby (real) indel
 			// causing real indel mates to be assembled with noise read
-			list.add(VcfFilter.SMALL_INDEL);
+			filters.add(VcfFilter.SMALL_INDEL);
 		}
-		if (bp.couldBeReferenceAllele()) {
-			list.add(VcfFilter.REFERENCE_ALLELE);
+		if (bp.couldBeReferenceAllele() && call.getUntemplatedSequence().length() == 0) {
+			filters.add(VcfFilter.REFERENCE_ALLELE);
 		}
-		return list;
-	}
-	public VariantContextDirectedEvidence applyFilters(VariantContextDirectedEvidence call) {
-		List<VcfFilter> filters = Lists.newArrayList();
-		if (call instanceof VariantContextDirectedBreakpoint) {
-			VariantContextDirectedBreakpoint vcdbp = (VariantContextDirectedBreakpoint)call;
-			BreakpointSummary bp = vcdbp.getBreakendSummary();
-			filters.addAll(breakpointFilters(bp));
-			if (vcdbp.getBreakpointQual() < minScore || vcdbp.getBreakpointEvidenceCount(EvidenceSubset.ALL) == 0) {
-				filters.add(VcfFilter.LOW_BREAKPOINT_SUPPORT);
-			}
+		if (call.getBreakpointQual() < minScore || call.getBreakpointEvidenceCount(EvidenceSubset.ALL) == 0) {
+			filters.add(VcfFilter.LOW_BREAKPOINT_SUPPORT);
 		}
-		if (!filters.isEmpty()) {
-			VariantContextBuilder builder = new VariantContextBuilder(call);
-			for (VcfFilter f : filters) {
-				builder.filter(f.filter());
-			}
-			call = (VariantContextDirectedEvidence)IdsvVariantContext.create(call.processContext, call.source, builder.make());
-		}
-		return call;
+		return filters;
 	}
 }

@@ -208,25 +208,41 @@ public class PathGraphAssemblerTest extends TestHelper {
 	@Test
 	public void should_limit_anchor_assembly_length() {
 		AssemblyParameters ap = new AssemblyParameters();
-		ap.k = 2;
+		ap.k = 5;
 		ap.maxContigsPerAssembly = 1000;
 		ap.maxBaseMismatchForCollapse = 0;
 		ap.maxPathTraversalNodes = 2;
 		ap.anchorAssemblyLength = 2;
 		DeBruijnReadGraph g = RG(ap.k);
-		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAGAGCATT", Read(0, 1, "20M1S"))));
-		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("TT")), new NontrackingSubgraphTracker());
+		g.addEvidence(SCE(FWD, withSequence( "AACCGGACAGCGCAGAGCATT", Read(0, 1, "20M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAGAgGCATT", Read(0, 1, "20M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAGgAGCATT", Read(0, 1, "20M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAgGAGCATT", Read(0, 1, "20M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCgAGAGCATT", Read(0, 1, "20M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGgCAGAGCATT", Read(0, 1, "20M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCgGCAGAGCATT", Read(0, 1, "20M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGgCGCAGAGCATT", Read(0, 1, "20M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAgGCGCAGAGCATT", Read(0, 1, "20M1S"))));
+		PathGraphAssembler pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("GCATT")), new NontrackingSubgraphTracker());
 		List<LinkedList<Long>> result = pga.assembleContigs();
 		assertEquals(1, result.size());
-		assertEquals("ATT", S(g, result.get(0)));
+		assertEquals("GAGCATT", S(g, result.get(0))); 
 		
 		// above limit should fully assemble
 		ap.anchorAssemblyLength = 1000;
 		g = RG(ap.k);
-		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAGAGCATT", Read(0, 1, "20M1S"))));
-		pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("TT")), new NontrackingSubgraphTracker());
+		g.addEvidence(SCE(FWD, withSequence( "AACCGGACAGCGCAGAGCATT", Read(0, 1, "20M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAGAgGCATT", Read(0, 1, "20M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAGgAGCATT", Read(0, 1, "20M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAgGAGCATT", Read(0, 1, "20M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCgAGAGCATT", Read(0, 1, "20M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGgCAGAGCATT", Read(0, 1, "20M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCgGCAGAGCATT", Read(0, 1, "20M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGgCGCAGAGCATT", Read(0, 1, "20M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAgGCGCAGAGCATT", Read(0, 1, "20M1S"))));
+		pga = new PathGraphAssembler(g, ap, KmerEncodingHelper.picardBaseToEncoded(ap.k, B("GCATT")), new NontrackingSubgraphTracker());
 		result = pga.assembleContigs();
 		assertEquals(1, result.size());
-		assertEquals(9, result.get(0).size()); // actually a misassembly due to repeated anchor kmers but not relevant to our test
+		assertEquals(17, result.get(0).size());
 	}
 }

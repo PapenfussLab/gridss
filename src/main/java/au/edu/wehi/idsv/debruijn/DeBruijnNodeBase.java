@@ -137,12 +137,16 @@ public class DeBruijnNodeBase {
 	public static double getExpectedPositionForDirectAnchor(BreakendDirection direction, Collection<? extends DeBruijnNodeBase> path) {
 		long posWeightSum = 0;
 		long weightSum = 0;
+		//long oppositePosWeightSum = 0;
+		//long oppositeWeightSum = 0;
 		int offset;
 		if (direction == BreakendDirection.Forward) {
 			offset = 1;
 			for (DeBruijnNodeBase n : path) {
 				weightSum += n.fWeightSum;
 				posWeightSum += n.fPositionWeightSum - n.fWeightSum * offset;
+				//oppositeWeightSum += n.bWeightSum;
+				//oppositePosWeightSum += n.bPositionWeightSum - n.bWeightSum * offset;
 				offset++;
 			}
 		} else {
@@ -150,10 +154,16 @@ public class DeBruijnNodeBase {
 			for (DeBruijnNodeBase n : path) {
 				weightSum += n.bWeightSum;
 				posWeightSum += n.bPositionWeightSum - n.bWeightSum * offset;
+				//oppositeWeightSum += n.fWeightSum;
+				//oppositePosWeightSum += n.fPositionWeightSum - n.fWeightSum * offset;
 				offset++;
 			}
 		}
-		return posWeightSum / (double)weightSum;
+		double result = posWeightSum / (double)weightSum;
+		return result;
+	}
+	public double getExpectedAnchorPosition() {
+		return (fPositionWeightSum + bPositionWeightSum) / (double)(fWeightSum + bWeightSum); 
 	}
 	public static BreakendSummary getExpectedBreakend(LinearGenomicCoordinate lgc, Collection<? extends DeBruijnNodeBase> path) {
 		List<BreakendSummary> bs = Lists.newArrayList();

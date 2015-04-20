@@ -8,6 +8,7 @@ import java.util.List;
 
 import org.junit.Test;
 
+import au.edu.wehi.idsv.RealignedSoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
 
 import com.google.common.collect.Lists;
@@ -128,7 +129,19 @@ public class VariantEvidenceTest extends TestHelper {
 		assertEquals(0, fdp.getReferenceKmerCount());
 		assertEquals(0, rdp.getReferenceKmerCount());
 	}
+
 	@Test
-	public void should_expose_evidenceID() {
+	public void expected_position_should_be_for_local_breakend() {
+		for (VariantEvidence v : new VariantEvidence[] { 
+				new VariantEvidence(4, NRRP(SES(5, 5), DP(0, 1, "2M", true, 0, 1000, "2M", false)), getContext().getLinear()),
+				new VariantEvidence(4, SCE(FWD, Read(0, 5, "5M5S")), getContext().getLinear()),
+				new VariantEvidence(4, SCE(FWD, Read(0, 5, "5M5S"), Read(0, 100, "5M")), getContext().getLinear()),
+				new VariantEvidence(4, ((RealignedSoftClipEvidence)SCE(BWD, Read(0, 100, "5S5M"), Read(0, 5, "5M"))).asRemote(), getContext().getLinear())
+				}) {
+			for (int i = 0; i < Lists.newArrayList(v.getReadKmers()).size(); i++) {
+				assertTrue(v.getExpectedLinearPosition(i) < LCCB + 350);
+				assertTrue(v.getExpectedLinearPosition(i) > LCCB);
+			}
+		}
 	}
 }

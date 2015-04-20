@@ -27,6 +27,22 @@ public class LinearGenomicCoordinateTest {
 		assertEquals(11, c.getLinearCoordinate("contig2",  1));
 	}
 	@Test
+	public void fixed_padding_should_offset_by_fixed_amount() {
+		SAMSequenceDictionary dict = new SAMSequenceDictionary();
+		dict.addSequence(new SAMSequenceRecord("contig1", 10));
+		dict.addSequence(new SAMSequenceRecord("contig2", 20));
+		LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict, 100000, true);
+		assertEquals(100001, c.getLinearCoordinate("contig1",  1));
+		assertEquals(200001, c.getLinearCoordinate("contig2",  1));
+	}
+	@Test(expected=IllegalArgumentException.class)
+	public void fixed_padding_should_not_be_smaller_than_max_contig_length() {
+		SAMSequenceDictionary dict = new SAMSequenceDictionary();
+		dict.addSequence(new SAMSequenceRecord("contig1", 10));
+		dict.addSequence(new SAMSequenceRecord("contig2", 20));
+		new LinearGenomicCoordinate(dict, 19, true);
+	}
+	@Test
 	public void GetStartLinearCoordinate() {
 		SAMSequenceDictionary dict = new SAMSequenceDictionary();
 		dict.addSequence(new SAMSequenceRecord("contig1", 10));
@@ -118,6 +134,48 @@ public class LinearGenomicCoordinateTest {
 					assertEquals(i, c.getReferencePosition(c.getLinearCoordinate(j, i)));
 				}
 			}
+		}
+	}
+	@Test
+	public void should_map_to_closest_chr_fixed_width() {
+		SAMSequenceDictionary dict = new SAMSequenceDictionary();
+		dict.addSequence(new SAMSequenceRecord("contig0", 1));
+		dict.addSequence(new SAMSequenceRecord("contig1", 2));
+		dict.addSequence(new SAMSequenceRecord("contig2", 3));
+		//            1         2         3
+		//  0123456789012345678901234567890
+		//  ++++0+++11++222+++++
+		// --00000*1111222222222-
+		//  aaaabbbbccccddddeeee   width blocks
+		LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict, 4, true);
+		for (int i = -10; i < 30; i++) {
+			int refIndex = c.getReferenceIndex(i);
+			if (i <= 0) assertEquals(-1, refIndex);
+			else if (i < 7) assertEquals(0, refIndex);
+			else if (i < 11) assertEquals(1, refIndex);
+			else if (i < 20) assertEquals(2, refIndex);
+			else assertEquals(-1, refIndex);
+		}
+	}
+	@Test
+	public void should_map_to_closest_chr_padded() {
+		SAMSequenceDictionary dict = new SAMSequenceDictionary();
+		dict.addSequence(new SAMSequenceRecord("contig0", 1));
+		dict.addSequence(new SAMSequenceRecord("contig1", 2));
+		dict.addSequence(new SAMSequenceRecord("contig2", 3));
+		//            1         2         3
+		//  01234567890123456789012345678901234567890
+		//   ++++0++++++++11++++++++222++++
+		// --000000000111111111122222222222-
+		//  aaaa aaaabbbb  bbbbcccc   cccc
+		LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict, 4, false);
+		for (int i = -10; i < 40; i++) {
+			int refIndex = c.getReferenceIndex(i);
+			if (i <= 0) assertEquals(-1, refIndex);
+			else if (i <= 9) assertEquals(0, refIndex);
+			else if (i <= 19) assertEquals(1, refIndex);
+			else if (i <= 30) assertEquals(2, refIndex);
+			else assertEquals(-1, refIndex);
 		}
 	}
 	@Test

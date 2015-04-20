@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv.sam;
 
+import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 
@@ -78,6 +79,19 @@ public class CigarUtil {
 			}
 		}
 		return length;
+	}
+	/**
+	 * Contains indel
+	 * @param list
+	 * @return
+	 */
+	public static boolean containsIndel(Cigar c) {
+		for (CigarElement e : decodeNegativeDeletion(c.getCigarElements())) {
+			if (e.getOperator() == CigarOperator.DELETION || e.getOperator() == CigarOperator.INSERTION) {
+				return true;
+			}
+		}
+		return false;
 	}
 	/**
 	 * Splits a CIGAR list at the largest indel event

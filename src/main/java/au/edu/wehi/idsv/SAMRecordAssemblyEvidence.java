@@ -150,7 +150,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 				rCount[offset]++;
 				rQual[offset] += qual;
 			}
-			if (!breakendWithMargin.overlaps(e.getBreakendSummary())) {
+			if (breakendWithMargin != null && !breakendWithMargin.overlaps(e.getBreakendSummary())) {
 				nsCount[offset]++;
 				nsQual[offset] += qual;
 			}
@@ -464,7 +464,9 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		} else if (!tag.contains(reason.filter())) {
 			tag = tag + "," + reason.filter();
 		}
-		record.setAttribute(SamTags.ASSEMLBY_FILTERS, tag);
+		getBackingRecord().setAttribute(SamTags.ASSEMLBY_FILTERS, tag);
+		getSAMRecord().setAttribute(SamTags.ASSEMLBY_FILTERS, tag);
+		getRemoteSAMRecord().setAttribute(SamTags.ASSEMLBY_FILTERS, tag);
 	}
 	@Override
 	public List<VcfFilter> getFilters() {

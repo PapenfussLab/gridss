@@ -386,7 +386,7 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 	 * support 
 	 */
 	@Test
-	public void should_not_assemble_ref_ref_misassemblies() {
+	public void should_assemble_even_if_length_less_than_k_misassemblies() {
 		setup(4);
 		// AAAACGTA
 		// MMMMMSSS
@@ -394,6 +394,6 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		result.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("AAAACGTA", Read(0, 10, "5M3S"))))));
 		result.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("AAAACGTA", Read(0, 10, "3S5M"))))));
 		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
-		assertEquals(0, result.size());
+		assertEquals(1, result.size());
 	}
 }

@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import htsjdk.samtools.util.Log;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
 import htsjdk.variant.vcf.VCFConstants;
 
 import java.util.ArrayList;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.base.Predicate;
@@ -57,8 +59,22 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		// id(parent.getID()); // can't change from parent ID as the id is already referenced in the MATEID of the other breakend  
 		VariantContextDirectedEvidence variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(processContext, null, super.make());
 		variant = calcSpv(variant);
-		variant = processContext.getVariantCallingParameters().applyFilters(variant);
+		variant = applyFilters(variant);
 		//assert(sanitycheck(variant));
+		return variant;
+	}
+	public VariantContextDirectedEvidence applyFilters(VariantContextDirectedEvidence variant) {
+		List<VcfFilter> filters = processContext.getVariantCallingParameters().calculateBreakendFilters(variant);
+		if (variant instanceof VariantContextDirectedBreakpoint) {
+			filters.addAll(processContext.getVariantCallingParameters().calculateBreakpointFilters((VariantContextDirectedBreakpoint)variant));
+		}
+		if (!filters.isEmpty()) {
+			VariantContextBuilder builder = new VariantContextBuilder(variant);
+			for (VcfFilter f : filters) {
+				builder.filter(f.filter());
+			}
+			variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(processContext, variant.source, builder.make());
+		}
 		return variant;
 	}
 	private boolean sanitycheck(VariantContextDirectedEvidence annotated) {
