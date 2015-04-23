@@ -5,7 +5,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.List;
+
 import org.junit.Test;
+
+import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.TestHelper;
 
@@ -233,5 +237,39 @@ public class KmerEncodingHelperTest extends TestHelper {
 		assertEquals("T", KmerEncodingHelper.toApproximateString(P2E("T")));
 		assertEquals("A", KmerEncodingHelper.toApproximateString(P2E("A")));
 		assertEquals("C", KmerEncodingHelper.toApproximateString(P2E("C")));
+	}
+	public List<Long> asList(int k, String bases) {
+		List<Long> list = Lists.newArrayList();
+		for (ReadKmer rk : new ReadKmerIterable(k, B(bases), B(bases))) {
+			list.add(rk.kmer);
+		}
+		return list;
+	}
+	@Test
+	public void baseCalls_should_concat() {
+		String s = "GTACCGGTATACGTCATAATG";
+		for (int i = 1; i < 16; i++) {
+			assertEquals(s, S(KmerEncodingHelper.baseCalls(asList(i, s), i)));
+		}
+	}
+	@Test
+	public void basesDifference_should_count_each_base_once() {
+		for (int i = 1; i < 16; i++) {
+			assertEquals(0, KmerEncodingHelper.totalBaseDifference(
+					asList(i, "GTACCGGTATACGTCATAATG").iterator(),
+					asList(i, "GTACCGGTATACGTCATAATG").iterator(), i));
+			assertEquals(1, KmerEncodingHelper.totalBaseDifference(
+					asList(i, "GTACCGGTATACGTCATAATG").iterator(),
+					asList(i, "GTACCGGTATACGTCATAATT").iterator(), i));
+			assertEquals(2, KmerEncodingHelper.totalBaseDifference(
+					asList(i, "GTTCCGGTATACGTCATATTG").iterator(),
+					asList(i, "GTACCGGTATACGTCATAATG").iterator(), i));
+			assertEquals(1, KmerEncodingHelper.totalBaseDifference(
+					asList(i, "GTACCGGTATACGTCATAATG").iterator(),
+					asList(i, "GTACCGGTATTCGTCATAATG").iterator(), i));
+			assertEquals(2, KmerEncodingHelper.totalBaseDifference(
+					asList(i, "GTACCGGTATACGTCATAATG").iterator(),
+					asList(i, "GTACCGGTATTTGTCATAATG").iterator(), i));
+		}
 	}
 }

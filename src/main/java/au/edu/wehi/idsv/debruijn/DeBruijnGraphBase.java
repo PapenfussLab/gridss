@@ -4,6 +4,8 @@ import gnu.trove.map.hash.TLongObjectHashMap;
 import gnu.trove.set.TLongSet;
 import gnu.trove.set.hash.TLongHashSet;
 
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -14,6 +16,7 @@ import java.util.Set;
 
 import au.edu.wehi.idsv.visualisation.DeBruijnGraphExporter;
 
+import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -28,7 +31,7 @@ import com.google.common.primitives.Longs;
  *
  * @param <T>
  */
-public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
+public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> implements DeBruijnGraph<T> {
 	public static final byte MAX_QUAL_SCORE = 128 - 66;
 	private final TLongObjectHashMap<T> kmers = new TLongObjectHashMap<T>();
 	private final int k;
@@ -60,17 +63,17 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	 * @return Merged node. As nodes may be mutable, 
 	 */
 	protected abstract T remove(T node, T toRemove);
-	public T add(long kmer, T node) {
-		T existing = kmers.get(kmer);
+	public T add(T node) {
+		T existing = kmers.get(node.getKmer());
 		if (existing != null) {
 			node = merge(existing, node);
-			kmers.put(kmer, node);
+			kmers.put(node.getKmer(), node);
 		} else {
-			kmers.put(kmer, node);
-			onKmerAdded(kmer, node);
+			kmers.put(node.getKmer(), node);
+			onKmerAdded(node.getKmer(), node);
 		}
 		if (getGraphExporter() != null) {
-			getGraphExporter().trackChanges(kmer, node);
+			getGraphExporter().trackChanges(node.getKmer(), node);
 		}
 		return node;
 	}
@@ -208,30 +211,6 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 			visited.add(node);
 		}
 		return path;
-	}
-	/**
-	 * Base calls of contig
-	 * @param path kmer contig
-	 * @return base calls of a positive strand SAMRecord readout of contig
-	 */
-	public byte[] getBaseCalls(List<Long> path) {
-		return getBaseCalls(path, k);
-	}
-	/**
-	 * Base calls of contig
-	 * @param path kmer contig
-	 * @return base calls of a positive strand SAMRecord readout of contig
-	 */
-	public static byte[] getBaseCalls(List<Long> path, int k) {
-		int assemblyLength = path.size() + k - 1;
-		byte[] bases = KmerEncodingHelper.encodedToPicardBases(k, path.get(0));
-		bases = Arrays.copyOf(bases, assemblyLength);
-		int offset = k - 1;
-		for (Long node : path) {
-			bases[offset] = KmerEncodingHelper.lastBaseEncodedToPicardBase(k, node);
-			offset++;
-		}
-		return bases;
 	}
 	/**
 	 * Base qualities of contig
@@ -404,7 +383,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	private String printPath(LinkedList<Long> path, Map<Long, Integer> contigLookup) {
 		StringBuilder sb = new StringBuilder();
 		sb.append(String.format("[%3d]\t", contigLookup.get(path.getFirst())));
-		sb.append(new String(getBaseCalls(path)));
+		sb.append(new String(KmerEncodingHelper.baseCalls(path, getK())));
 		int weight = 0;
 		for (Long y : path) weight += kmers.get(y).getWeight();
 		sb.append(String.format(" %d kmers %d weight", path.size(), weight));
@@ -436,5 +415,57 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> {
 	 */
 	public void setGraphExporter(DeBruijnGraphExporter<T> exporter) {
 		this.exporter = exporter;
+	}
+	@Override
+	public List<T> next(T node) {
+		ArrayList<T> result = new ArrayList<T>(2);
+		for (long kmer : KmerEncodingHelper.nextStates(k, node.getKmer())) {
+			T n = kmers.get(kmer);
+			if (n != null) {
+				result.add(n);
+			}
+		}
+		return result;
+	}
+	@Override
+	public List<T> prev(T node) {
+		ArrayList<T> result = new ArrayList<T>(2);
+		for (long kmer : KmerEncodingHelper.prevStates(k, node.getKmer())) {
+			T n = kmers.get(kmer);
+			if (n != null) {
+				result.add(n);
+			}
+		}
+		return result;
+	}
+	@Override
+	public void removeNode(T node) {
+		kmers.remove(node.getKmer());
+	}
+	@Override
+	public void removeEdge(T source, T sink) {
+		throw new IllegalStateException("Edges are stored implicitly");
+	}
+	@Override
+	public void addNode(T node) {
+		add(node);
+	}
+	@Override
+	public void addEdge(T source, T sink) {
+		throw new IllegalStateException("Edges are stored implicitly");
+	}
+	@Override
+	public Collection<T> allNodes() {
+		return kmers.valueCollection();
+	}
+	@Override
+	public String toString(Iterable<? extends T> path) {
+		Iterable<Long> asKmers = Iterables.transform(path, new Function<T, Long>() {
+			@Override
+			public Long apply(T input) {
+				return input.getKmer();
+			}
+		});
+		return new String(KmerEncodingHelper.baseCalls(Lists.newArrayList(asKmers), getK()), StandardCharsets.US_ASCII);
 	}
 }

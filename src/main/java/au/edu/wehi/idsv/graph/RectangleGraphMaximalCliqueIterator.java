@@ -11,17 +11,17 @@ import com.google.common.collect.AbstractIterator;
  * 
  * @author Daniel Cameron
  */
-public class RectangleGraphMaximalCliqueIterator extends AbstractIterator<GraphNode> {
-	private final Queue<GraphNode> buffer = new ArrayDeque<GraphNode>();
+public class RectangleGraphMaximalCliqueIterator extends AbstractIterator<RectangleGraphNode> {
+	private final Queue<RectangleGraphNode> buffer = new ArrayDeque<RectangleGraphNode>();
 	private RectangleGraphMaximalCliqueCalculator calc = new RectangleGraphMaximalCliqueCalculator();
-	private Iterator<GraphNode> it;
-	public RectangleGraphMaximalCliqueIterator(Iterator<GraphNode> it) {
+	private Iterator<RectangleGraphNode> it;
+	public RectangleGraphMaximalCliqueIterator(Iterator<RectangleGraphNode> it) {
 		this.it = it;
 	}
 	@Override
-	protected GraphNode computeNext() {
+	protected RectangleGraphNode computeNext() {
 		while (buffer.isEmpty() && it.hasNext()) {
-			GraphNode nextEvidence = it.next(); 
+			RectangleGraphNode nextEvidence = it.next(); 
 			buffer.addAll(calc.next(nextEvidence));
 		}
 		if (buffer.isEmpty() && calc != null) {

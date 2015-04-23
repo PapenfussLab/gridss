@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.debruijn;
 
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import com.google.common.primitives.Bytes;
@@ -240,4 +242,46 @@ public class KmerEncodingHelper {
 		int baseCount = Long.bitCount(baseMatch & usedBits[k]); 
 		return baseCount;
 	}
+	/**
+	 * Base calls of contig
+	 * @param path kmer contig
+	 * @return base calls of a positive strand SAMRecord readout of contig
+	 */
+	public static byte[] baseCalls(List<Long> path, int k) {
+		int assemblyLength = path.size() + k - 1;
+		byte[] bases = KmerEncodingHelper.encodedToPicardBases(k, path.get(0));
+		bases = Arrays.copyOf(bases, assemblyLength);
+		int offset = k - 1;
+		for (Long node : path) {
+			bases[offset] = KmerEncodingHelper.lastBaseEncodedToPicardBase(k, node);
+			offset++;
+		}
+		return bases;
+	}
+	/**
+	 * Base calls of contig
+	 * @param path kmer contig
+	 * @return base calls of a positive strand SAMRecord readout of contig
+	 */
+	public static int totalBaseDifference(Iterator<Long> pathA, Iterator<Long> pathB, int k) {
+		if (!pathA.hasNext() || pathB.hasNext()) return 0;
+		int diffCount = basesDifference(k, pathA.next(), pathB.next());
+		while (pathA.hasNext() && pathB.hasNext()) {
+			if (!lastBaseMatches(k, pathA.next(), pathB.next())) {
+				diffCount++;
+			}
+		}
+		return diffCount;
+	}
+	public static <T> int totalBaseDifference(DeBruijnGraph<T> graph, Iterator<T> pathA, Iterator<T> pathB, int k) {
+		if (!pathA.hasNext() || pathB.hasNext()) return 0;
+		int diffCount = basesDifference(k, graph.getKmer(pathA.next()), graph.getKmer(pathB.next()));
+		while (pathA.hasNext() && pathB.hasNext()) {
+			if (!lastBaseMatches(k, graph.getKmer(pathA.next()), graph.getKmer((pathB.next())))) {
+				diffCount++;
+			}
+		}
+		return diffCount;
+	}
+	
 }

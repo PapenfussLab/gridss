@@ -1,10 +1,12 @@
-package au.edu.wehi.idsv.debruijn;
+package au.edu.wehi.idsv.graph;
 
 import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
+import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
+import au.edu.wehi.idsv.graph.PathNode;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
@@ -19,7 +21,7 @@ public class PathNodeTest extends TestHelper {
 		.add("TACA", 2)
 		.add("ACAG", 3);
 		PathNode<DeBruijnNodeBase> n = new PathNode<DeBruijnNodeBase>(toKmer(g, "ATACAG"), g);
-		assertEquals(6, n.getWeight());
+		assertEquals(6, n.weight());
 	}
 	@Test
 	public void getMaxKmerWeight_should_be_largest_kmer_weights() {
@@ -57,9 +59,9 @@ public class PathNodeTest extends TestHelper {
 		assertEquals("AGAGTT", g.S(new PathNode<DeBruijnNodeBase>(unsplit, 2, 3, g)));
 		assertEquals("AGTT", g.S(new PathNode<DeBruijnNodeBase>(unsplit, 4, 1, g)));
 		
-		assertEquals(10, new PathNode<DeBruijnNodeBase>(unsplit, 0, 3, g).getWeight());
-		assertEquals(14, new PathNode<DeBruijnNodeBase>(unsplit, 1, 3, g).getWeight());
-		assertEquals(18, new PathNode<DeBruijnNodeBase>(unsplit, 2, 3, g).getWeight());
+		assertEquals(10, new PathNode<DeBruijnNodeBase>(unsplit, 0, 3, g).weight());
+		assertEquals(14, new PathNode<DeBruijnNodeBase>(unsplit, 1, 3, g).weight());
+		assertEquals(18, new PathNode<DeBruijnNodeBase>(unsplit, 2, 3, g).weight());
 		
 		assertEquals(5, new PathNode<DeBruijnNodeBase>(unsplit, 0, 3, g).getMaxKmerWeight());
 		assertEquals(8, new PathNode<DeBruijnNodeBase>(unsplit, 1, 3, g).getMaxKmerWeight());
@@ -82,7 +84,7 @@ public class PathNodeTest extends TestHelper {
 		
 		assertEquals(unsplit.length(), n.length());
 		assertEquals(g.S(unsplit), g.S(n));
-		assertEquals(unsplit.getWeight(), n.getWeight());
+		assertEquals(unsplit.weight(), n.weight());
 		assertEquals(unsplit.getMaxKmerWeight(), n.getMaxKmerWeight());
 	}
 	@Test
@@ -102,7 +104,7 @@ public class PathNodeTest extends TestHelper {
 		
 		assertEquals(unsplit.length(), n.length());
 		assertEquals(g.S(unsplit), g.S(n));
-		assertEquals(unsplit.getWeight(), n.getWeight());
+		assertEquals(unsplit.weight(), n.weight());
 		assertEquals(unsplit.getMaxKmerWeight(), n.getMaxKmerWeight());
 	}
 	@Test
@@ -128,7 +130,7 @@ public class PathNodeTest extends TestHelper {
 		
 		assertEquals("ATAGAGTT", g.S(n)); // merge doesn't change main path
 		assertEquals(12, n.getMaxKmerWeight()); // merge doesn't change main path
-		assertEquals(4+5+1+8+9+2+3+11+1+1, n.getWeight()); // merge doesn't change main path
+		assertEquals(4+5+1+8+9+2+3+11+1+1, n.weight()); // merge doesn't change main path
 		assertEquals(10, Lists.newArrayList(Iterables.concat(n.getPathAllKmers())).size());
 	}
 	@Test
@@ -156,7 +158,7 @@ public class PathNodeTest extends TestHelper {
 				g);		
 		assertEquals("ATAGAGTT", g.S(n));
 		assertEquals(9 + 11, n.getMaxKmerWeight());
-		assertEquals(4+5+1+8+9 + 3+11, n.getWeight());
+		assertEquals(4+5+1+8+9 + 3+11, n.weight());
 		for (int i = 0; i < n.length(); i++) {
 			assertEquals((i == 3 || i == 4) ? 2 : 1, n.getPathAllKmers().get(i).size());
 		}
@@ -175,8 +177,8 @@ public class PathNodeTest extends TestHelper {
 			.add("AGAG", 1)
 			.add("GAGT", 8)
 			.add("AGTT", 9);
-		assertEquals(4+5+1+8, PathNode.kmerTotalWeight(ImmutableList.of(new PathNode<DeBruijnNodeBase>(toKmer(g, "ATAGAGT"), g))));
-		assertEquals(4+5+1+8+9, PathNode.kmerTotalWeight(ImmutableList.of(
+		assertEquals(4+5+1+8, PathNode.totalWeight(ImmutableList.of(new PathNode<DeBruijnNodeBase>(toKmer(g, "ATAGAGT"), g))));
+		assertEquals(4+5+1+8+9, PathNode.totalWeight(ImmutableList.of(
 				new PathNode<DeBruijnNodeBase>(toKmer(g, "ATAGAGT"), g),
 				new PathNode<DeBruijnNodeBase>(toKmer(g, "AGTT"), g))));
 	}

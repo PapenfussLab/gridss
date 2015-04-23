@@ -6,7 +6,7 @@ import java.util.Set;
 
 import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
-import au.edu.wehi.idsv.debruijn.PathNode;
+import au.edu.wehi.idsv.graph.PathNode;
 
 public interface DeBruijnPathGraphExporter<T extends DeBruijnNodeBase, PN extends PathNode<T>> {
 

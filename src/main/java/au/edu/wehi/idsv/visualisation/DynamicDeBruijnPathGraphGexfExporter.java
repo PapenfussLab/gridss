@@ -129,7 +129,7 @@ public class DynamicDeBruijnPathGraphGexfExporter implements DeBruijnPathGraphEx
 	}
 	private void trackChanges(SubgraphPathNode pn) {
 		Node node = lookup.get(pn);
-		GexfHelper.setDynamicAttribute(node, currentTime, attrTotalWeight, pn.getWeight());
+		GexfHelper.setDynamicAttribute(node, currentTime, attrTotalWeight, pn.weight());
 		GexfHelper.setDynamicAttribute(node, currentTime, attrMaxKmerWeight, pn.getMaxKmerWeight());
 	}
 	private void ensureNextEdges(DeBruijnPathGraph<DeBruijnSubgraphNode, SubgraphPathNode> pg, SubgraphPathNode pn) {

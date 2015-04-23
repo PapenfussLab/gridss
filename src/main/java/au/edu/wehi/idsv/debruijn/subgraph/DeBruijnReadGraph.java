@@ -5,6 +5,7 @@ import htsjdk.samtools.util.Log;
 
 import java.io.File;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -112,8 +113,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	 * Updates subgraph aggregates based on the new evidence
 	 */
 	@Override
-	public DeBruijnSubgraphNode add(long kmer, DeBruijnSubgraphNode node) {
-		DeBruijnSubgraphNode result = super.add(kmer, node);
+	public DeBruijnSubgraphNode add(DeBruijnSubgraphNode node) {
+		DeBruijnSubgraphNode result = super.add(node);
 		// update subgraph bounds
 		if (result.getSubgraph() != null) {
 			result.getSubgraph().addNode(node);
@@ -184,7 +185,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 				if (shouldVisualise(timeoutExceeded)) {
 					graphExporter = new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k);
 				}
-				for (List<Long> contig : pga.assembleContigs(graphExporter)) {
+				for (List<PN> contig : pga.assembleContigs(graphExporter)) {
 					SAMRecordAssemblyEvidence variant = createAssembly(contig);
 					if (variant != null) {
 						contigs.add(variant);
@@ -283,5 +284,21 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			result = result + String.format(" %s maxWidth=%d ", processContext.getLinear().encodedIntervalToString(minAnchor, maxAnchor), maxWidth);
 		}
 		return result;
+	}
+	@Override
+	public int basesDifferent(Iterator<DeBruijnSubgraphNode> pathA, Iterator<DeBruijnSubgraphNode> pathB) {
+		return KmerEncodingHelper.totalBaseDifference(this, pathA, pathB, getK());
+	}
+	@Override
+	public long getKmer(DeBruijnSubgraphNode node) {
+		return node.getKmer();
+	}
+	@Override
+	public boolean isReference(DeBruijnSubgraphNode node) {
+		return node.isReference();
+	}
+	@Override
+	public int getWeight(DeBruijnSubgraphNode node) {
+		return node.getWeight();
 	}
 }

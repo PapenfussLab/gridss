@@ -26,14 +26,14 @@ import com.google.common.collect.ImmutableList;
  * @author Daniel Cameron
  */
 public class RectangleGraphMaximalCliqueCalculator {
-	private GraphNode lastNode = null;
-	private List<GraphNode> outBuffer;
-	private final PriorityQueue<GraphNode> activeEndingX = new PriorityQueue<GraphNode>(11, GraphNode.ByEndXStartYEndY); // sorted by endX
+	private RectangleGraphNode lastNode = null;
+	private List<RectangleGraphNode> outBuffer;
+	private final PriorityQueue<RectangleGraphNode> activeEndingX = new PriorityQueue<RectangleGraphNode>(11, RectangleGraphNode.ByEndXStartYEndY); // sorted by endX
 	//private final RangeMap<GraphNode> activeScanlineEvidence;
 	/**
 	 * Contains GraphNodes of which the start Y has been processed but the end Y has not yet been encountered
 	 */
-	private final PriorityQueue<GraphNode> activeScanlineEndingY = new PriorityQueue<GraphNode>(11, GraphNode.ByEndY); // sorted by endX
+	private final PriorityQueue<RectangleGraphNode> activeScanlineEndingY = new PriorityQueue<RectangleGraphNode>(11, RectangleGraphNode.ByEndY); // sorted by endX
 	private final ScanlineInterval activeScanlineStart;
 	private ScanlineInterval activeScanlineCurrentPosition = null;
 	private long activeScanlineActiveWeight = 0;
@@ -136,8 +136,8 @@ public class RectangleGraphMaximalCliqueCalculator {
 			return s;
 		}
 	}
-	private List<GraphNode> getCalledCliques() {
-		List<GraphNode> result = outBuffer == null ? ImmutableList.<GraphNode>of() : outBuffer;
+	private List<RectangleGraphNode> getCalledCliques() {
+		List<RectangleGraphNode> result = outBuffer == null ? ImmutableList.<RectangleGraphNode>of() : outBuffer;
 		outBuffer = null;
 		return result;
 	}
@@ -146,12 +146,12 @@ public class RectangleGraphMaximalCliqueCalculator {
 	 * @param node
 	 * @return
 	 */
-	public List<GraphNode> next(GraphNode node) {
+	public List<RectangleGraphNode> next(RectangleGraphNode node) {
 		assert(node.startX <= node.endX);
 		assert(node.startY <= node.endY);
 		assert(node.weight > 0);
 		assert(node.startX >= scanlineX);
-		assert(lastNode == null || GraphNode.ByStartXY.compare(lastNode, node) <= 0);
+		assert(lastNode == null || RectangleGraphNode.ByStartXY.compare(lastNode, node) <= 0);
 		lastNode = node;
 		if (node.startX != scanlineX) {
 			scanlineCompleteProcessing(1);
@@ -225,7 +225,7 @@ public class RectangleGraphMaximalCliqueCalculator {
 			}
 		}
 		long weight = 0;
-		for (GraphNode n : activeScanlineEndingY) {
+		for (RectangleGraphNode n : activeScanlineEndingY) {
 			assert(n.startY <= activeScanlineCurrentPosition.getStartY());
 			weight += n.weight;
 		}
@@ -240,7 +240,7 @@ public class RectangleGraphMaximalCliqueCalculator {
 	 * @Param multiplier 1 indicates we are incorporating the start of the given GraphNode to the current scanline 
 	 * 0 indicates we are incorporating the end of the given GraphNode to the current scanline
 	 */
-	private void incorporateInCurrentScanline(GraphNode node, int multiplier) {
+	private void incorporateInCurrentScanline(RectangleGraphNode node, int multiplier) {
 		assert(multiplier == -1 || multiplier == 1);
 		assert(scanlineX == (multiplier == 1 ? node.startX : node.endX));
 		long y = node.startY;
@@ -266,7 +266,7 @@ public class RectangleGraphMaximalCliqueCalculator {
 	private void scanlineProcessYEndBefore(long endYBefore, int multiplier) {
 		assert(multiplier == -1 || multiplier == 1);
 		while (!activeScanlineEndingY.isEmpty() && activeScanlineEndingY.peek().endY < endYBefore) {
-			GraphNode node = activeScanlineEndingY.poll();
+			RectangleGraphNode node = activeScanlineEndingY.poll();
 			long endYexclusive = node.endY + 1;
 			int yendCount = 1;
 			long yendWeight = node.weight;
@@ -315,7 +315,7 @@ public class RectangleGraphMaximalCliqueCalculator {
 	 * Calls maximum cliques
 	 * @param endingCurrentScanline nodes ending here. Maximum cliques will always occur within one of these intervals
 	 */
-	private void callMaximumCliques(List<GraphNode> endingCurrentScanline) {
+	private void callMaximumCliques(List<RectangleGraphNode> endingCurrentScanline) {
 		ScanlineInterval interval = activeScanlineStart;
 		int index = 0;
 		while (index < endingCurrentScanline.size()) {
@@ -336,7 +336,7 @@ public class RectangleGraphMaximalCliqueCalculator {
 			assert(interval.getStartY() == startY);
 			while (interval.getStartY() < endYexclusive) {
 				if (interval.isMaximalClique()) {
-					outBuffer.add(new GraphNode(
+					outBuffer.add(new RectangleGraphNode(
 							interval.startX, scanlineX,
 							interval.getStartY(), interval.getEndY() - 1, // convert back from half-open to close interval
 							interval.weight));
@@ -357,7 +357,7 @@ public class RectangleGraphMaximalCliqueCalculator {
 		assert(sanityCheckScanlineComplete());
 	}
 	private void processEndXBefore(long endBeforeX) {
-		outBuffer = new ArrayList<GraphNode>();
+		outBuffer = new ArrayList<RectangleGraphNode>();
 		while (!activeEndingX.isEmpty() && activeEndingX.peek().endX < endBeforeX) {
 			scanlineX = activeEndingX.peek().endX;
 			processEndingXOnCurrentScanline();
@@ -365,17 +365,17 @@ public class RectangleGraphMaximalCliqueCalculator {
 	}
 	private void processEndingXOnCurrentScanline() {
 		assert(activeScanlineEndingY.isEmpty());
-		List<GraphNode> endingCurrentScanline = new ArrayList<GraphNode>();
+		List<RectangleGraphNode> endingCurrentScanline = new ArrayList<RectangleGraphNode>();
 		while (!activeEndingX.isEmpty() && activeEndingX.peek().endX == scanlineX) {
 			endingCurrentScanline.add(activeEndingX.poll());
 		}
 		callMaximumCliques(endingCurrentScanline);
-		for (GraphNode g : endingCurrentScanline) {
+		for (RectangleGraphNode g : endingCurrentScanline) {
 			incorporateInCurrentScanline(g, -1);
 		}
 		scanlineCompleteProcessing(-1);
 	}
-	public List<GraphNode> complete() {
+	public List<RectangleGraphNode> complete() {
 		scanlineCompleteProcessing(1);
 		processEndXBefore(Long.MAX_VALUE);
 		return outBuffer;

@@ -15,6 +15,7 @@ import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
 
 public class DeBruijnNodeBase {
+	private long kmer;
 	/**
 	 * Total support for kmer
 	 */
@@ -37,7 +38,8 @@ public class DeBruijnNodeBase {
 	private List<BreakendSummary> breakends = new ArrayList<BreakendSummary>(4);
 	private List<Long> weights = new ArrayList<Long>(4);
 	public DeBruijnNodeBase(VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) {
-		this(kmer.weight,
+		this(kmer.kmer,
+			kmer.weight,
 			evidence.getExpectedLinearPosition(readKmerOffset),
 			evidence.getEvidenceID(),
 			evidence.isReferenceKmer(readKmerOffset),
@@ -50,9 +52,10 @@ public class DeBruijnNodeBase {
 	 * @param weight support weight
 	 * @param read source read
 	 */
-	public DeBruijnNodeBase(int weight, long expectedLinearPosition, String evidenceID, boolean isReference, BreakendDirection anchorDirection, int category, BreakendSummary unanchoredBreakend) {
+	public DeBruijnNodeBase(long kmer, int weight, long expectedLinearPosition, String evidenceID, boolean isReference, BreakendDirection anchorDirection, int category, BreakendSummary unanchoredBreakend) {
 		if (weight <= 0) throw new IllegalArgumentException("weight must be positive");
 		assert(unanchoredBreakend != null);
+		this.kmer = kmer;
 		this.nodeWeight = weight;
 		supportList.add(evidenceID);
 		if (isReference) referenceSupport++;
@@ -104,6 +107,9 @@ public class DeBruijnNodeBase {
 		this.categoryCount = ArrayHelper.subtract(this.categoryCount, node.categoryCount);
 		this.breakends.removeAll(node.breakends);
 		this.weights.removeAll(node.weights);
+	}
+	public long getKmer() {
+		return kmer;
 	}
 	/**
 	 * returns the weight of this node

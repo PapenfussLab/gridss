@@ -2,8 +2,8 @@ package au.edu.wehi.idsv;
 
 import java.util.Iterator;
 
-import au.edu.wehi.idsv.graph.GraphNode;
-import au.edu.wehi.idsv.graph.GraphNodeMergingIterator;
+import au.edu.wehi.idsv.graph.RectangleGraphNode;
+import au.edu.wehi.idsv.graph.RectangleGraphNodeMergingIterator;
 import au.edu.wehi.idsv.graph.RectangleGraphMaximalCliqueIterator;
 import au.edu.wehi.idsv.graph.ScalingHelper;
 import au.edu.wehi.idsv.util.WindowedSortingIterator;
@@ -30,7 +30,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		this.context = processContext;
 		this.calc = new RectangleGraphMaximalCliqueIterator(
 						// collapse evidence at the same location to a single node
-						new GraphNodeMergingIterator(GraphNode.ByStartXY,
+						new RectangleGraphNodeMergingIterator(RectangleGraphNode.ByStartXY,
 							// reorder due to soft clip margin changing record order
 							new GraphNodeWindowedSortingIterator(context, 2 * processContext.getVariantCallingParameters().breakendMargin + 1,
 								// convert evidence breakpoints to GraphNodes
@@ -39,25 +39,25 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		this.targetHighDir = highDir;
 		this.idGenerator = idGenerator;
 	}
-	private class GraphNodeWindowedSortingIterator extends WindowedSortingIterator<GraphNode> {
-		public GraphNodeWindowedSortingIterator(final ProcessingContext processContext, final int windowSize, final Iterator<GraphNode> it) {
-			super(it, new Function<GraphNode, Long>() {
-				public Long apply(GraphNode arg) {
+	private class GraphNodeWindowedSortingIterator extends WindowedSortingIterator<RectangleGraphNode> {
+		public GraphNodeWindowedSortingIterator(final ProcessingContext processContext, final int windowSize, final Iterator<RectangleGraphNode> it) {
+			super(it, new Function<RectangleGraphNode, Long>() {
+				public Long apply(RectangleGraphNode arg) {
 					return arg.startX;
 				}
-			}, windowSize, GraphNode.ByStartXY);
+			}, windowSize, RectangleGraphNode.ByStartXY);
 		}
 	}
-	private class EvidenceToGraphNodeIterator extends AbstractIterator<GraphNode> {
+	private class EvidenceToGraphNodeIterator extends AbstractIterator<RectangleGraphNode> {
 		private final Iterator<DirectedEvidence> it;
 		public EvidenceToGraphNodeIterator(Iterator<DirectedEvidence> it) {
 			this.it = it;
 		}
 		@Override
-		protected GraphNode computeNext() {
+		protected RectangleGraphNode computeNext() {
 			while (it.hasNext()) {
 				DirectedEvidence evidence = it.next();
-				GraphNode node = toGraphNode(evidence);
+				RectangleGraphNode node = toGraphNode(evidence);
 				if (node != null) {
 					return node;
 				}
@@ -65,7 +65,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 			return endOfData();
 		}
 	}
-	private GraphNode toGraphNode(DirectedEvidence e) {
+	private RectangleGraphNode toGraphNode(DirectedEvidence e) {
 		BreakendSummary loc = e.getBreakendSummary();
 		loc = context.getVariantCallingParameters().withMargin(context, loc);
 		if (!(loc instanceof BreakpointSummary)) return null;		
@@ -79,7 +79,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		float weight = ((DirectedBreakpoint)e).getBreakpointQual();
 		long scaledWeight = ScalingHelper.toScaledWeight(weight);
 		if (scaledWeight <= 0) return null;
-		GraphNode node = new GraphNode(startX, endX, startY, endY, scaledWeight);
+		RectangleGraphNode node = new RectangleGraphNode(startX, endX, startY, endY, scaledWeight);
 		// Must have positive phred score  
 		if (startX > startY) {
 			// only take the lower half of the evidence since both sides of all breakpoints
@@ -95,7 +95,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		if (lowDir != targetLowDir || highDir != targetHighDir) return null;
 		return node;
 	}
-	private VariantContextDirectedEvidence toVariant(String event, GraphNode node, BreakpointSummary breakpoint, boolean isHighBreakend) {
+	private VariantContextDirectedEvidence toVariant(String event, RectangleGraphNode node, BreakpointSummary breakpoint, boolean isHighBreakend) {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
 		builder.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, event);
 		builder.attribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, event + (isHighBreakend ? MATE_BREAKEND_ID_SUFFIX_LOW : MATE_BREAKEND_ID_SUFFIX_HIGH));
@@ -112,7 +112,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		assert(v != null);
 		return v;
 	}
-	private BreakpointSummary toBreakpointSummary(GraphNode node) {
+	private BreakpointSummary toBreakpointSummary(RectangleGraphNode node) {
 		BreakpointSummary breakpoint = new BreakpointSummary(
 				context.getLinear().getReferenceIndex(node.startX),
 				targetLowDir,
@@ -138,7 +138,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 			return result;
 		}
 		if (calc.hasNext()) {
-			GraphNode node = calc.next();
+			RectangleGraphNode node = calc.next();
 			BreakpointSummary breakpoint = toBreakpointSummary(node);
 			String id = idGenerator.generate(breakpoint);
 			VariantContextDirectedEvidence result = toVariant(id, node, breakpoint, false); 

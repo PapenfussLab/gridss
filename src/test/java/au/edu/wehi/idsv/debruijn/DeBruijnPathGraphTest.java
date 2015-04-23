@@ -13,6 +13,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
+import au.edu.wehi.idsv.graph.PathNode;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
 import au.edu.wehi.idsv.visualisation.StaticDeBruijnPathGraphGexfExporter;
 
@@ -298,7 +299,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		//              |
 		//         bad transition
 		PathNode<DeBruijnNodeBase> pn = pg.getPaths().iterator().next();
-		assertEquals("AATC", S(KmerEncodingHelper.encodedToPicardBases(4, pn.getLast())));
+		assertEquals("AATC", S(KmerEncodingHelper.encodedToPicardBases(4, pn.last())));
 		
 		// test backwards as well
 		pg = PG(G(4)
@@ -307,7 +308,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 				.add("CCAA"));
 		pg.collapseLeaves(1);
 		pn = pg.getPaths().iterator().next();
-		assertEquals("CTAA", S(KmerEncodingHelper.encodedToPicardBases(4, pn.getFirst())));
+		assertEquals("CTAA", S(KmerEncodingHelper.encodedToPicardBases(4, pn.first())));
 	}
 	@Test
 	public void mergePaths_should_merge_into_highest_weight_path() {
@@ -329,7 +330,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 				.add("CGTC", 5)); // = 5 + 2
 		pg.mergePaths(ImmutableList.of(pg.get("AGTC")), ImmutableList.of(pg.get("CGTC")));
 		assertEquals(pg.get("CGTC"), pg.get("AGTC"));
-		assertEquals(7, pg.get("CGTC").getWeight());
+		assertEquals(7, pg.get("CGTC").weight());
 	}
 	@Test
 	public void shrink_should_remove_self_intersecting_path_edges() {

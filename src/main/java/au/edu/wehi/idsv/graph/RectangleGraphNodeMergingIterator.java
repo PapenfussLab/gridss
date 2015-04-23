@@ -12,19 +12,19 @@ import com.google.common.collect.PeekingIterator;
  * @author Daniel Cameron
  *
  */
-public class GraphNodeMergingIterator extends AbstractIterator<GraphNode> {
-	private final PeekingIterator<GraphNode> it;
-	private final Comparator<GraphNode> expectedOrder;
-	public GraphNodeMergingIterator(Comparator<GraphNode> expectedOrder, Iterator<GraphNode> it) {
+public class RectangleGraphNodeMergingIterator extends AbstractIterator<RectangleGraphNode> {
+	private final PeekingIterator<RectangleGraphNode> it;
+	private final Comparator<RectangleGraphNode> expectedOrder;
+	public RectangleGraphNodeMergingIterator(Comparator<RectangleGraphNode> expectedOrder, Iterator<RectangleGraphNode> it) {
 		this.it = Iterators.peekingIterator(it);
 		this.expectedOrder = expectedOrder;
 	}
 	@Override
-	protected GraphNode computeNext() {
+	protected RectangleGraphNode computeNext() {
 		if (it.hasNext()) {
-			GraphNode node = it.next();
+			RectangleGraphNode node = it.next();
 			while (it.hasNext() && it.peek().isSameCoordinate(node)) {
-				node = new GraphNode(node.startX, node.endX, node.startY, node.endY, node.weight + it.next().weight);
+				node = new RectangleGraphNode(node.startX, node.endX, node.startY, node.endY, node.weight + it.next().weight);
 			}
 			if (expectedOrder != null) {
 				if (it.hasNext() && expectedOrder.compare(node, it.peek()) > 0) {

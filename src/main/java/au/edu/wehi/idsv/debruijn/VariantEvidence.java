@@ -13,7 +13,7 @@ import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 /**
- * Helper wrapper exposing information both the raw evidence read and
+ * Helper wrapper exposing information on both the raw evidence read and
  * kmer-specific information for that read.
  *   
  * @author Daniel Cameron

@@ -38,12 +38,12 @@ import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
-import au.edu.wehi.idsv.debruijn.PathNode;
-import au.edu.wehi.idsv.debruijn.PathNodeBaseFactory;
-import au.edu.wehi.idsv.debruijn.PathNodeFactory;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.ReadKmerIterable;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
+import au.edu.wehi.idsv.graph.PathNode;
+import au.edu.wehi.idsv.graph.PathNodeBaseFactory;
+import au.edu.wehi.idsv.graph.PathNodeFactory;
 import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetricsCollector;
@@ -661,7 +661,7 @@ public class TestHelper {
 			((BaseGraph) getGraph()).add(sequence, kmerWeight);
 			PathNode<DeBruijnNodeBase> n = new PathNode<DeBruijnNodeBase>(
 					toKmer(getGraph(), sequence), getGraph());
-			super.expectedWeight += n.getWeight();
+			super.expectedWeight += n.weight();
 			return n;
 		}
 
@@ -671,7 +671,7 @@ public class TestHelper {
 
 		public String S(Iterable<PathNode<DeBruijnNodeBase>> nodes) {
 			return new String(getGraph().getBaseCalls(
-					Lists.newArrayList((PathNode.kmerIterator(nodes)))));
+					Lists.newArrayList((PathNode.nodeIterator(nodes)))));
 		}
 	}
 

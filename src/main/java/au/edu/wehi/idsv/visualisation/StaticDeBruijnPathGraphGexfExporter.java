@@ -22,7 +22,7 @@ import java.util.Set;
 
 import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
-import au.edu.wehi.idsv.debruijn.PathNode;
+import au.edu.wehi.idsv.graph.PathNode;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Maps;
@@ -84,7 +84,7 @@ public class StaticDeBruijnPathGraphGexfExporter<T extends DeBruijnNodeBase, PN 
 	}
 	protected void setStaticAttributes(Node node, PN pn) {
 		node.getAttributeValues().createValue(attrLength, ((Integer)pn.getPath().size()).toString());
-		node.getAttributeValues().createValue(attrTotalWeight, ((Integer)pn.getWeight()).toString());
+		node.getAttributeValues().createValue(attrTotalWeight, ((Integer)pn.weight()).toString());
 		node.getAttributeValues().createValue(attrMaxKmerWeight, ((Integer)pn.getMaxKmerWeight()).toString());
 	}
 	private void ensureNextEdges(DeBruijnPathGraph<T, PN> pg, PN pn) {

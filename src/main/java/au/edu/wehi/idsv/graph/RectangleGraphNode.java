@@ -9,13 +9,13 @@ import com.google.common.collect.Ordering;
  * @author Daniel Cameron
  *
  */
-public class GraphNode {
+public class RectangleGraphNode {
 	public final long startX;
 	public final long endX;
 	public final long startY;
 	public final long endY;
 	public long weight;
-	public GraphNode(long startX, long endX, long startY, long endY, long weight) {
+	public RectangleGraphNode(long startX, long endX, long startY, long endY, long weight) {
 		assert(weight > 0);
 		this.startX = startX;
 		this.endX = endX;
@@ -23,7 +23,7 @@ public class GraphNode {
 		this.endY = endY;
 		this.weight = weight;
 	}
-	public boolean isSameCoordinate(GraphNode node) {
+	public boolean isSameCoordinate(RectangleGraphNode node) {
 		return startX == node.startX &&
 				endX == node.endX &&
 				startY == node.startY &&
@@ -33,15 +33,15 @@ public class GraphNode {
 	 * Flips the axes for the given graph node
 	 * @return
 	 */
-	public GraphNode flipAxis() {
-		return new GraphNode(startY, endY, startX, endX, weight);
+	public RectangleGraphNode flipAxis() {
+		return new RectangleGraphNode(startY, endY, startX, endX, weight);
 	}
 	@Override
 	public String toString() {
 		return String.format("(x=[%d, %d], y=[%d, %d], %d)", startX, endX, startY, endY, weight);
 	}
-	public static Ordering<GraphNode> ByEndXYStartXY = new Ordering<GraphNode>() {
-		public int compare(GraphNode o1, GraphNode o2) {
+	public static Ordering<RectangleGraphNode> ByEndXYStartXY = new Ordering<RectangleGraphNode>() {
+		public int compare(RectangleGraphNode o1, RectangleGraphNode o2) {
 			  return ComparisonChain.start()
 			        .compare(o1.endX, o2.endX)
 			        .compare(o1.endY, o2.endY)
@@ -50,8 +50,8 @@ public class GraphNode {
 			        .result();
 		  }
 	};
-	public static Ordering<GraphNode> ByStartXYEndXY = new Ordering<GraphNode>() {
-		public int compare(GraphNode o1, GraphNode o2) {
+	public static Ordering<RectangleGraphNode> ByStartXYEndXY = new Ordering<RectangleGraphNode>() {
+		public int compare(RectangleGraphNode o1, RectangleGraphNode o2) {
 			  return ComparisonChain.start()
 				  	.compare(o1.startX, o2.startX)
 			        .compare(o1.startY, o2.startY)
@@ -60,16 +60,16 @@ public class GraphNode {
 			        .result();
 		  }
 	};
-	public static Ordering<GraphNode> ByStartXY = new Ordering<GraphNode>() {
-		public int compare(GraphNode o1, GraphNode o2) {
+	public static Ordering<RectangleGraphNode> ByStartXY = new Ordering<RectangleGraphNode>() {
+		public int compare(RectangleGraphNode o1, RectangleGraphNode o2) {
 			  return ComparisonChain.start()
 				  	.compare(o1.startX, o2.startX)
 			        .compare(o1.startY, o2.startY)
 			        .result();
 		  }
 	};
-	public static Ordering<GraphNode> ByEndYXStartYX = new Ordering<GraphNode>() {
-		public int compare(GraphNode o1, GraphNode o2) {
+	public static Ordering<RectangleGraphNode> ByEndYXStartYX = new Ordering<RectangleGraphNode>() {
+		public int compare(RectangleGraphNode o1, RectangleGraphNode o2) {
 			  return ComparisonChain.start()
 					 .compare(o1.endY, o2.endY)
 					 .compare(o1.endX, o2.endX)
@@ -78,8 +78,8 @@ public class GraphNode {
 					 .result();
 		  }
 	};
-	public static Ordering<GraphNode> ByStartYXEndYX = new Ordering<GraphNode>() {
-		public int compare(GraphNode o1, GraphNode o2) {
+	public static Ordering<RectangleGraphNode> ByStartYXEndYX = new Ordering<RectangleGraphNode>() {
+		public int compare(RectangleGraphNode o1, RectangleGraphNode o2) {
 			return ComparisonChain.start()
 					.compare(o1.startY, o2.startY)
 					.compare(o1.startX, o2.startX)
@@ -88,8 +88,8 @@ public class GraphNode {
 					.result();
 		  }
 	};
-	public static Ordering<GraphNode> ByEndXStartYEndY = new Ordering<GraphNode>() {
-		public int compare(GraphNode o1, GraphNode o2) {
+	public static Ordering<RectangleGraphNode> ByEndXStartYEndY = new Ordering<RectangleGraphNode>() {
+		public int compare(RectangleGraphNode o1, RectangleGraphNode o2) {
 			return ComparisonChain.start()
 					.compare(o1.endX, o2.endX)
 					.compare(o1.startY, o2.startY)
@@ -97,8 +97,8 @@ public class GraphNode {
 					.result();
 		  }
 	};
-	public static Ordering<GraphNode> ByEndY = new Ordering<GraphNode>() {
-		public int compare(GraphNode o1, GraphNode o2) {
+	public static Ordering<RectangleGraphNode> ByEndY = new Ordering<RectangleGraphNode>() {
+		public int compare(RectangleGraphNode o1, RectangleGraphNode o2) {
 			return ComparisonChain.start()
 					.compare(o1.endY, o2.endY)
 					.result();

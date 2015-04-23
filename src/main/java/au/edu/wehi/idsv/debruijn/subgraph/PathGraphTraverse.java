@@ -11,6 +11,8 @@ import java.util.PriorityQueue;
 import java.util.Set;
 
 import au.edu.wehi.idsv.Defaults;
+import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
+import au.edu.wehi.idsv.graph.PathNode;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
 
 import com.google.common.base.Function;
@@ -25,28 +27,34 @@ import com.google.common.primitives.Ints;
  * @author cameron.d
  *
  */
-class PathGraphTraverse {
+class PathGraphTraverse<T, PN extends PathNode<T>> {
 	private static final Log log = Log.getInstance(PathGraphTraverse.class);
-	private static final MemoizedNode NO_BEST_PATH = new MemoizedNode(null, null, Integer.MIN_VALUE, 0);
-	private final PathGraph pg;
+	private final Ordering<MemoizedNode<PN>> ByScore = new Ordering<MemoizedNode<PN>>() {
+		@Override
+		public int compare(MemoizedNode<PN> arg0, MemoizedNode<PN> arg1) {
+			return Ints.compare(arg0.score, arg1.score);
+		}
+	};
+	private final MemoizedNode<PN> NO_BEST_PATH = new MemoizedNode<PN>(null, null, Integer.MIN_VALUE, 0);
+	private final DeBruijnPathGraph<T, PN> pg;
 	private final int maxPathTraversalNodes;
-	private final Function<SubgraphPathNode, Integer> scoringFunction;
-	private final Ordering<SubgraphPathNode> order;
+	private final Function<PN, Integer> scoringFunction;
+	private final Ordering<PN> order;
 	private final boolean traverseForward;
 	private final boolean referenceTraverse;
 	private final int maxNextStates;
 	private final int maxKmerPathLength;
 	private int currentNextStates;
 	private int nodeTraversals;
-	private Map<SubgraphPathNode, MemoizedNode> bestPath = Maps.newHashMap();
-	private PriorityQueue<MemoizedNode> frontier = new PriorityQueue<MemoizedNode>(1024, ByScore);
-	private MemoizedNode traversalBest;
-	private Set<SubgraphPathNode> terminalNodes;
+	private Map<PN, MemoizedNode<PN>> bestPath = Maps.newHashMap();
+	private PriorityQueue<MemoizedNode<PN>> frontier = new PriorityQueue<MemoizedNode<PN>>(1024, ByScore);
+	private MemoizedNode<PN> traversalBest;
+	private Set<PN> terminalNodes;
 	public int getNodesTraversed() { return nodeTraversals; }
 	public PathGraphTraverse(
-			final PathGraph pg,
+			final DeBruijnPathGraph<T, PN> pg,
 			final int maxPathTraversalNodes,
-			final Function<SubgraphPathNode, Integer> scoringFunction,
+			final Function<PN, Integer> scoringFunction,
 			final boolean traverseForward,
 			final boolean referenceTraverse,
 			final int maxNextStates,
@@ -60,48 +68,36 @@ class PathGraphTraverse {
 		this.maxNextStates = maxNextStates;
 		this.maxKmerPathLength = maxKmerPathLength;
 	}
-	private static final Ordering<MemoizedNode> ByScore = new Ordering<MemoizedNode>() {
-		@Override
-		public int compare(MemoizedNode arg0, MemoizedNode arg1) {
-			return Ints.compare(arg0.score, arg1.score);
-		}
-	};
-	private static final Ordering<MemoizedNode> ByLength = new Ordering<MemoizedNode>() {
-		@Override
-		public int compare(MemoizedNode arg0, MemoizedNode arg1) {
-			return Ints.compare(arg0.length, arg1.length);
-		}
-	};
-	private static class MemoizedNode {
-		public MemoizedNode(MemoizedNode prev, SubgraphPathNode node, int score, int length) {
+	private static class MemoizedNode<PN> {
+		public MemoizedNode(MemoizedNode<PN> prev, PN node, int score, int length) {
 			this.prev = prev;
 			this.node = node;
 			this.score = score;
 			this.length = length;
 		}
-		public final SubgraphPathNode node;
-		public final MemoizedNode prev;
+		public final PN node;
+		public final MemoizedNode<PN> prev;
 		public final int score;
 		public final int length;
 	}
-	public List<SubgraphPathNode> traverse(final Iterable<SubgraphPathNode> startingNodes) {
+	public List<PN> traverse(final Iterable<PN> startingNodes) {
 		return traverse(startingNodes, null);
 	}
-	public List<SubgraphPathNode> traverse(final Iterable<SubgraphPathNode> startingNodes, Collection<SubgraphPathNode> endNodes) {
+	public List<PN> traverse(final Iterable<PN> startingNodes, Collection<PN> endNodes) {
 		if (endNodes == null) {
 			terminalNodes = null;
 		} else {
 			if (endNodes instanceof Set<?>) {
-				terminalNodes = (Set<SubgraphPathNode>)endNodes;
+				terminalNodes = (Set<PN>)endNodes;
 			} else {
 				terminalNodes = Sets.newHashSet(endNodes);
 			}
 		}
 		currentNextStates = maxNextStates;
 		nodeTraversals = 0;
-		MemoizedNode globalBest = NO_BEST_PATH;
-		for (SubgraphPathNode starting : startingNodes) {
-			MemoizedNode best;
+		MemoizedNode<PN> globalBest = NO_BEST_PATH;
+		for (PN starting : startingNodes) {
+			MemoizedNode<PN> best;
 			try {
 				best = traverse(starting);
 			} catch (AlgorithmRuntimeSafetyLimitExceededException e) {
@@ -118,19 +114,19 @@ class PathGraphTraverse {
 				globalBest = best;
 			}
 		}
-		List<SubgraphPathNode> bestPath = toList(globalBest, traverseForward); 
+		List<PN> bestPath = toList(globalBest, traverseForward); 
 		return bestPath;
 	}
-	private MemoizedNode traverse(final SubgraphPathNode startingNode) throws AlgorithmRuntimeSafetyLimitExceededException {
+	private MemoizedNode<PN> traverse(final PN startingNode) throws AlgorithmRuntimeSafetyLimitExceededException {
 		init(startingNode);
-		for (MemoizedNode node = popFronter(); node != null; node = popFronter()) {
+		for (MemoizedNode<PN> node = popFronter(); node != null; node = popFronter()) {
 			visitChildren(node);
 		}
 		return traversalBest;
 	}
-	private static List<SubgraphPathNode> toList(MemoizedNode node, boolean traverseForward) {
+	private List<PN> toList(MemoizedNode<PN> node, boolean traverseForward) {
 		if (node == NO_BEST_PATH) return null;
-		List<SubgraphPathNode> list = new ArrayList<SubgraphPathNode>();
+		List<PN> list = new ArrayList<PN>();
 		while (node != null) {
 			list.add(node.node);
 			node = node.prev;
@@ -140,26 +136,27 @@ class PathGraphTraverse {
 		}
 		return list;
 	}
-	private void init(SubgraphPathNode startingNode) {
+	private void init(PN startingNode) {
 		bestPath.clear();
 		frontier.clear();
 		traversalBest = NO_BEST_PATH;
-		MemoizedNode start = new MemoizedNode(null, startingNode, SubgraphHelper.getScore(startingNode, scoringFunction, referenceTraverse, !referenceTraverse), startingNode.length());
+		MemoizedNode<PN> start = new MemoizedNode<PN>(null, startingNode, SubgraphHelper.getScore(startingNode, scoringFunction, referenceTraverse, !referenceTraverse), startingNode.length());
 		pushFrontier(start);
 	}
-	private void visitChildren(MemoizedNode node) throws AlgorithmRuntimeSafetyLimitExceededException {
+	private void visitChildren(MemoizedNode<PN> node) throws AlgorithmRuntimeSafetyLimitExceededException {
 		nodeTraversals++;
 		if (nodeTraversals > maxPathTraversalNodes && currentNextStates > 1) {
 			// maxNextStates = 1 is a greedy traversal - no need for a timeout as it is n nodes traversed even in a fully connected graph
 			throw new AlgorithmRuntimeSafetyLimitExceededException();
 		}
 		assert(!Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS || sanityCheck());
-		List<SubgraphPathNode> nextStates = traverseForward ? pg.nextPath(node.node) : pg.prevPath(node.node);
+		List<PN> nextStates = traverseForward ? pg.next(node.node) : pg.prev(node.node);
 		Collections.sort(nextStates, order);
 		int nextStateCount = 0;
-		for (SubgraphPathNode next : nextStates) {
-			if ((referenceTraverse && !next.containsReferenceKmer()) ||
-				(!referenceTraverse && !next.containsNonReferenceKmer())) {
+		for (PN next : nextStates) {
+			boolean isRef = pg.isReference(next);
+			if ((referenceTraverse && !isRef) ||
+				(!referenceTraverse && isRef)) {
 				// don't want to transition between reference and non-reference
 				continue;
 			}
@@ -181,16 +178,16 @@ class PathGraphTraverse {
 	 * @param node
 	 * @return
 	 */
-	private boolean inPath(MemoizedNode path, SubgraphPathNode node) {
-		for (MemoizedNode mn = path; mn != null; mn = mn.prev) {
+	private boolean inPath(MemoizedNode<PN> path, PN node) {
+		for (MemoizedNode<PN> mn = path; mn != null; mn = mn.prev) {
 			if (node == mn.node) {
 				return true;
 			}
 		}
 		return false;
 	}
-	private boolean pushFrontier(MemoizedNode node) {
-		MemoizedNode existing = bestPath.get(node.node);
+	private boolean pushFrontier(MemoizedNode<PN> node) {
+		MemoizedNode<PN> existing = bestPath.get(node.node);
 		if (existing != null && existing.score >= node.score) {
 			// our destination already has a better path to it - clearly not an optimal path 
 			return false;
@@ -204,15 +201,15 @@ class PathGraphTraverse {
 		frontier.add(node);
 		return true;
 	}
-	private boolean pushFrontier(MemoizedNode node, SubgraphPathNode next) {
+	private boolean pushFrontier(MemoizedNode<PN> node, PN next) {
 		// TODO: calculate score only on bases within maxKmerPathLength
 		int length = node.length + next.length();
 		int score = node.score + scoringFunction.apply(next);
-		return pushFrontier(new MemoizedNode(node, next, score, length));
+		return pushFrontier(new MemoizedNode<PN>(node, next, score, length));
 	}
-	private MemoizedNode popFronter() {
+	private MemoizedNode<PN> popFronter() {
 		while (!frontier.isEmpty()) {
-			MemoizedNode node = frontier.poll();
+			MemoizedNode<PN> node = frontier.poll();
 			if (bestPath.get(node.node) == node && node.length < maxKmerPathLength) {
 				return node;
 			}
@@ -220,12 +217,12 @@ class PathGraphTraverse {
 		return null;
 	}
 	private boolean sanityCheck() {
-		for (MemoizedNode n : frontier) {
+		for (MemoizedNode<PN> n : frontier) {
 			assert(terminalNodes != null || n.score <= traversalBest.score);
 			assert(bestPath.containsKey(n.node));
 			assert(bestPath.get(n.node).score >= n.score);
 		}
-		for (MemoizedNode n : bestPath.values()) {
+		for (MemoizedNode<PN> n : bestPath.values()) {
 			assert(bestPath.get(n.node).node == n.node);
 		}
 		return true;

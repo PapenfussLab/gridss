@@ -16,7 +16,6 @@ import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.RemoteEvidence;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
-import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.SoftClipEvidence;
 
 import com.google.common.collect.Sets;
@@ -79,7 +78,7 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		for (ReadKmer readKmer : evidence.getReadKmers()) {
 			if (!shouldSkipKmer(evidence, readKmerOffset, readKmer)) {
 				T node = createNode(evidence, readKmerOffset, readKmer);
-				T graphNode = add(readKmer.kmer, node);
+				T graphNode = add(node);
 				onEvidenceAdded(graphNode, node, evidence, readKmerOffset, readKmer);
 			}
 			readKmerOffset++;
@@ -168,7 +167,8 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		
 		Set<String> breakendSupport = getSupport(breakendPath);
 		int[] breakendBaseCounts = getBaseCountsByCategory(breakendPath, beforeBreakend != null, afterBreakend != null);
-		byte[] bases = getBaseCalls(kmers);
+		// TODO: improve base calling by considering the weight of all kmers contributing to that base position
+		byte[] bases = KmerEncodingHelper.baseCalls(kmers, getK());
 		byte[] quals = getBaseQuals(kmers);
 		SAMRecordAssemblyEvidence ae = null;
 		if (beforeBreakend == null && afterBreakend == null) {

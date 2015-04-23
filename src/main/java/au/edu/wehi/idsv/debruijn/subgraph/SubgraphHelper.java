@@ -8,19 +8,19 @@ import com.google.common.primitives.Ints;
 
 class SubgraphHelper {
 	public static int getScore(
-			List<SubgraphPathNode> current,
-			Function<SubgraphPathNode, Integer> perNodeScoringFunction,
+			List<PathNode> current,
+			Function<PathNode, Integer> perNodeScoringFunction,
 			boolean scoreReference,
 			boolean scoreNonReference) {
 		int sum = 0;
-		for (SubgraphPathNode n : current) {
+		for (PathNode n : current) {
 			sum += getScore(n, perNodeScoringFunction, scoreReference, scoreNonReference);
 		}
 		return sum;
 	}
 	public static int getScore(
-			SubgraphPathNode node,
-			Function<SubgraphPathNode, Integer> scoringFunction,
+			PathNode node,
+			Function<PathNode, Integer> scoringFunction,
 			boolean scoreReference,
 			boolean scoreNonReference) {
 		if ((node.containsNonReferenceKmer() && scoreNonReference) ||
@@ -29,20 +29,20 @@ class SubgraphHelper {
 		}
 		return 0;
 	}
-	public static Ordering<SubgraphPathNode> getScoreOrderDesc(final Function<SubgraphPathNode, Integer> scoringFunction) {
-		return new Ordering<SubgraphPathNode>() {
+	public static Ordering<PathNode> getScoreOrderDesc(final Function<PathNode, Integer> scoringFunction) {
+		return new Ordering<PathNode>() {
 			@Override
-			public int compare(SubgraphPathNode arg0, SubgraphPathNode arg1) {
+			public int compare(PathNode arg0, PathNode arg1) {
 				return Ints.compare(scoringFunction.apply(arg1), scoringFunction.apply(arg0));
 			}};
 	}
-	public static final Function<SubgraphPathNode, Integer> SCORE_TOTAL_KMER = new Function<SubgraphPathNode, Integer>() {
-		public Integer apply(SubgraphPathNode arg) {
-			return arg.getWeight();
+	public static final Function<PathNode, Integer> SCORE_TOTAL_KMER = new Function<PathNode, Integer>() {
+		public Integer apply(PathNode arg) {
+			return arg.weight();
 		}
 	};
-	public static final Function<SubgraphPathNode, Integer> SCORE_MAX_KMER = new Function<SubgraphPathNode, Integer>() {
-		public Integer apply(SubgraphPathNode arg) {
+	public static final Function<PathNode, Integer> SCORE_MAX_KMER = new Function<PathNode, Integer>() {
+		public Integer apply(PathNode arg) {
 			return arg.getMaxKmerWeight();
 		}
 	};
