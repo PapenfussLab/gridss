@@ -4,14 +4,14 @@ import java.util.LinkedList;
 import java.util.List;
 
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
-import au.edu.wehi.idsv.debruijn.subgraph.SubgraphPathNode;
+import au.edu.wehi.idsv.graph.PathNode;
 
 /**
  * Does not perform any algorithm tracking
  * @author cameron.d
  *
  */
-public class NontrackingSubgraphTracker implements SubgraphAssemblyAlgorithmTracker {
+public class NontrackingSubgraphTracker<T, PN extends PathNode<T>> implements SubgraphAssemblyAlgorithmTracker<T, PN> {
 	@Override
 	public void finalAnchors(int minAnchor, int maxAnchor) {
 	}
@@ -20,8 +20,8 @@ public class NontrackingSubgraphTracker implements SubgraphAssemblyAlgorithmTrac
 	}
 	@Override
 	public void assemblyNonReferenceContigs(
-			List<List<SubgraphPathNode>> assembledPaths,
-			List<LinkedList<Long>> assembledKmers, int nodesTraversed) {
+			List<List<PN>> assembledPaths,
+			List<LinkedList<T>> assembledKmers, int nodesTraversed) {
 	}
 	@Override
 	public void toAssemblyEvidence(VariantContextDirectedEvidence assembly) {

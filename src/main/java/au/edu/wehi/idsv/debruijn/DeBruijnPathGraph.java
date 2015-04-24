@@ -2,7 +2,6 @@ package au.edu.wehi.idsv.debruijn;
 
 import java.util.Collection;
 import java.util.Deque;
-import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
 
@@ -22,11 +21,11 @@ import com.google.common.collect.Queues;
 public class DeBruijnPathGraph<T, PN extends PathNode<T>> extends PathGraph<T, PN> implements DeBruijnGraph<PN> {
 	private final DeBruijnGraph<T> graph;
 	private int nodeTaversalCount;
-	public DeBruijnPathGraph(DeBruijnGraph<T> graph, Collection<T> seeds, PathNodeFactory<T, PN> factory, SubgraphAssemblyAlgorithmTracker tracker) {
+	public DeBruijnPathGraph(DeBruijnGraph<T> graph, Collection<T> seeds, PathNodeFactory<T, PN> factory, SubgraphAssemblyAlgorithmTracker<T, PN> tracker) {
 		super(graph, seeds, factory, tracker);
 		this.graph = graph;
 	}
-	public DeBruijnPathGraph(DeBruijnGraph<T> graph, PathNodeFactory<T, PN> factory, SubgraphAssemblyAlgorithmTracker tracker) {
+	public DeBruijnPathGraph(DeBruijnGraph<T> graph, PathNodeFactory<T, PN> factory, SubgraphAssemblyAlgorithmTracker<T, PN> tracker) {
 		super(graph, factory, tracker);
 		this.graph = graph;
 	}
@@ -37,8 +36,13 @@ public class DeBruijnPathGraph<T, PN extends PathNode<T>> extends PathGraph<T, P
 	@Override
 	public boolean isReference(PN node) {
 		// TODO: cache this value in the node itself
-		for (T n : node.allNodes()) {
-			if (graph.isReference(n)) return true;
+		return isReference(node.allNodes());
+	}
+	private boolean isReference(Iterable<T> nodeSet) {
+		for (T n : nodeSet) {
+			if (graph.isReference(n)) {
+				return true;
+			}
 		}
 		return false;
 	}
@@ -334,11 +338,11 @@ public class DeBruijnPathGraph<T, PN extends PathNode<T>> extends PathGraph<T, P
 	 * @param pathB
 	 * @return number of bases difference between the two paths
 	 */
-	protected int reverseBasesDifferent(Iterable<PN> pathA, Iterable<PN> pathB) {
+	public int reverseBasesDifferent(Iterable<PN> pathA, Iterable<PN> pathB) {
 		int lengthA = PathNode.nodeLength(pathA);
 		int lengthB = PathNode.nodeLength(pathB);
 		// skip initial bases of the longer path
-		return graph.basesDifferent(
+		return KmerEncodingHelper.totalBaseDifference(graph,
 				PathNode.nodeIterator(pathA.iterator(), lengthA - Math.max(0, lengthA - lengthB)),
 				PathNode.nodeIterator(pathB.iterator(), lengthB - Math.max(0, lengthB - lengthA)));
 	}
@@ -350,29 +354,10 @@ public class DeBruijnPathGraph<T, PN extends PathNode<T>> extends PathGraph<T, P
 	 * @param pathB
 	 * @return number of bases difference between the two paths
 	 */
-	public int basesDifferent(Iterator<PN> pathA, Iterator<PN> pathB) {
-		Iterator<T> itA = PathNode.nodeIterator(pathA);
-		Iterator<T> itB = PathNode.nodeIterator(pathB);
-		return graph.basesDifferent(itA, itB);
-	}
-	/**
-	 * Returns the number of bases difference between the two paths
-	 * Bases are only compared up to the length of the shortest of the
-	 * paths
-	 * @param pathA
-	 * @param pathB
-	 * @return number of bases difference between the two paths
-	 */
 	public int basesDifferent(Iterable<PN> pathA, Iterable<PN> pathB) {
-		return basesDifferent(pathA.iterator(), pathB.iterator());
-	}
-	private boolean containsReferenceNode(Iterable<T> nodeSet) {
-		for (T n : nodeSet) {
-			if (graph.isReference(n)) {
-				return true;
-			}
-		}
-		return false;
+		return KmerEncodingHelper.totalBaseDifference(graph,
+				PathNode.nodeIterator(pathA.iterator()),
+				PathNode.nodeIterator(pathB.iterator()));
 	}
 	private int referencePathsSplit = 0;
 	public int getReferencePathsSplit() { return referencePathsSplit; }
@@ -386,7 +371,7 @@ public class DeBruijnPathGraph<T, PN extends PathNode<T>> extends PathGraph<T, P
 				boolean containsReference = false;
 				boolean containsNonReference = false;
 				for (List<T> nodeSet : arg.getPathAllNodes()) {
-					boolean isRef = containsReferenceNode(nodeSet);
+					boolean isRef = isReference(nodeSet);
 					containsReference |= isRef;
 					containsNonReference |= !isRef;
 					if (containsReference && containsNonReference) {
@@ -401,9 +386,9 @@ public class DeBruijnPathGraph<T, PN extends PathNode<T>> extends PathGraph<T, P
 			List<List<T>> path = n.getPathAllNodes();
 			List<Boolean> ref = Lists.newArrayList();
 			int currentLength = 0;
-			boolean currentIsReference = containsReferenceNode(path.get(0)); 
+			boolean currentIsReference = isReference(path.get(0)); 
 			for (List<T> kmers : path) {
-				boolean isRef = containsReferenceNode(kmers);
+				boolean isRef = isReference(kmers);
 				if (currentIsReference == isRef) {
 					currentLength++;
 				} else {
@@ -427,12 +412,12 @@ public class DeBruijnPathGraph<T, PN extends PathNode<T>> extends PathGraph<T, P
 			assert(Iterables.all(pn.getPathAllNodes(), new Predicate<List<T>>() {
 					@Override
 					public boolean apply(List<T> input) {
-						return containsReferenceNode(input);
+						return isReference(input);
 					}
 				}) || Iterables.all(pn.getPathAllNodes(), new Predicate<List<T>>() {
 					@Override
 					public boolean apply(List<T> input) {
-						return !containsReferenceNode(input);
+						return !isReference(input);
 					}
 				}));
 		}
@@ -441,5 +426,9 @@ public class DeBruijnPathGraph<T, PN extends PathNode<T>> extends PathGraph<T, P
 	@Override
 	public long getKmer(PN node) {
 		throw new UnsupportedOperationException("path nodes contain multiple kmers");
+	}
+	@Override
+	public int getK() {
+		return getGraph().getK();
 	}
 }

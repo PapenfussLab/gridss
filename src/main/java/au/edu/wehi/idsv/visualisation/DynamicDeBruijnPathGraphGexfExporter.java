@@ -21,35 +21,32 @@ import it.uniroma1.dis.wsngroup.gexf4j.core.impl.data.AttributeListImpl;
 import java.io.File;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
-import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphNode;
-import au.edu.wehi.idsv.debruijn.subgraph.SubgraphPathNode;
+import au.edu.wehi.idsv.graph.PathNode;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 
-public class DynamicDeBruijnPathGraphGexfExporter implements DeBruijnPathGraphExporter<DeBruijnSubgraphNode, SubgraphPathNode> {
+public class DynamicDeBruijnPathGraphGexfExporter<T, PN extends PathNode<T>> implements DeBruijnPathGraphExporter<T, PN> {
 	//private static final Log log = Log.getInstance(DeBruijnPathGraphGexfExporter.class);
-	private final int k;
-	private final HashMap<SubgraphPathNode, Node> lookup = Maps.newHashMap();
+	private final HashMap<PN, Node> lookup = Maps.newHashMap();
 	private final Gexf gexf = new GexfImpl();
 	private final Graph graph;
 	private final Attribute attrTotalWeight;
 	private final Attribute attrMaxKmerWeight;
 	private final Attribute attrLength;
 	private final Attribute attrIsReference;
-	private final Attribute attrIsNonReference;
 	private final Attribute attrContig;
 	private final Attribute attrContigList;
 	private final Attribute attrSubgraphId;
 	private final Attribute attrStartNode;
 	private int currentTime = 0;
-	public DynamicDeBruijnPathGraphGexfExporter(int k) {
-		this.k = k;
+	public DynamicDeBruijnPathGraphGexfExporter() {
 		gexf.getMetadata()
 			.setLastModified(new Date())
 			.setCreator("GRIDSS")
@@ -70,8 +67,7 @@ public class DynamicDeBruijnPathGraphGexfExporter implements DeBruijnPathGraphEx
 		AttributeList nodeStaticAttrList = new AttributeListImpl(AttributeClass.NODE)
 			.setMode(Mode.STATIC);
 		attrLength = nodeStaticAttrList.createAttribute("l", AttributeType.INTEGER, "length of path");
-		attrIsReference = nodeStaticAttrList.createAttribute("r", AttributeType.BOOLEAN, "containsReferenceKmer");
-		attrIsNonReference = nodeStaticAttrList.createAttribute("nr", AttributeType.BOOLEAN, "containsNonReferenceKmer");
+		attrIsReference = nodeStaticAttrList.createAttribute("r", AttributeType.BOOLEAN, "isReference");
 		attrSubgraphId = nodeStaticAttrList.createAttribute("sg", AttributeType.INTEGER, "subgraph index");
 		attrStartNode = nodeStaticAttrList.createAttribute("sn", AttributeType.BOOLEAN, "starting node");
 		attrContigList = nodeStaticAttrList.createAttribute("contigs", AttributeType.LISTSTRING, "Contig memberships");
@@ -84,26 +80,26 @@ public class DynamicDeBruijnPathGraphGexfExporter implements DeBruijnPathGraphEx
 		//graph.getAttributeLists().add(edgeAttrList);
 	}
 	@Override
-	public DeBruijnPathGraphExporter<DeBruijnSubgraphNode, SubgraphPathNode> snapshot(DeBruijnPathGraph<DeBruijnSubgraphNode, SubgraphPathNode> pg) {
+	public DeBruijnPathGraphExporter<T, PN> snapshot(DeBruijnPathGraph<T, PN> pg) {
 		currentTime++;
-		for (SubgraphPathNode pn : pg.getPaths()) {
+		for (PN pn : pg.getPaths()) {
 			if (!lookup.containsKey(pn)) {
 				// Add node
-				Node node = graph.createNode(pn.pathKmerString(k));
+				Node node = graph.createNode(pn.toString(pg.getGraph()));
 				node.getAttributeValues().createValue(attrLength, ((Integer)pn.getPath().size()).toString());
-				node.getAttributeValues().createValue(attrIsReference, ((Boolean)pn.containsReferenceKmer()).toString());
-				node.getAttributeValues().createValue(attrIsNonReference, ((Boolean)pn.containsNonReferenceKmer()).toString());
+				node.getAttributeValues().createValue(attrIsReference, ((Boolean)pg.isReference(pn)).toString());
 				lookup.put(pn, node);
 			}
-			trackChanges(pn);
+			trackChanges(pg, pn);
 			
 		}
-		for (SubgraphPathNode pn : pg.getPaths()) {
+		for (PN pn : pg.getPaths()) {
 			ensureNextEdges(pg, pn);
 		}
+		HashSet<PN> allNodes = new HashSet<PN>(pg.allNodes());
 		// set node validity timing
-		for (SubgraphPathNode pn : lookup.keySet()) {
-			ensureNodeState(lookup.get(pn), pn.getNodeId() >= 0);
+		for (PN pn : lookup.keySet()) {
+			ensureNodeState(lookup.get(pn), allNodes.contains(pn));
 		}
 		return this;
 	}
@@ -127,14 +123,14 @@ public class DynamicDeBruijnPathGraphGexfExporter implements DeBruijnPathGraphEx
 			}
 		}
 	}
-	private void trackChanges(SubgraphPathNode pn) {
+	private void trackChanges(DeBruijnPathGraph<T, PN> pg, PN pn) {
 		Node node = lookup.get(pn);
 		GexfHelper.setDynamicAttribute(node, currentTime, attrTotalWeight, pn.weight());
-		GexfHelper.setDynamicAttribute(node, currentTime, attrMaxKmerWeight, pn.getMaxKmerWeight());
+		GexfHelper.setDynamicAttribute(node, currentTime, attrMaxKmerWeight, pn.maxNodeWeight(pg.getGraph()));
 	}
-	private void ensureNextEdges(DeBruijnPathGraph<DeBruijnSubgraphNode, SubgraphPathNode> pg, SubgraphPathNode pn) {
+	private void ensureNextEdges(DeBruijnPathGraph<T, PN> pg, PN pn) {
 		Node node = lookup.get(pn);
-		for (SubgraphPathNode next : pg.nextPath(pn)) {
+		for (PN next : pg.next(pn)) {
 			Node nextNode = lookup.get(next);
 			ensureEdge(node, nextNode);
 		}
@@ -149,16 +145,16 @@ public class DynamicDeBruijnPathGraphGexfExporter implements DeBruijnPathGraphEx
 	 * @see au.edu.wehi.idsv.visualisation.DeBruijnPathGraphExporter#contig(java.util.List)
 	 */
 	@Override
-	public DeBruijnPathGraphExporter<DeBruijnSubgraphNode, SubgraphPathNode> contigs(List<List<SubgraphPathNode>> assembledContigs) {
+	public DeBruijnPathGraphExporter<T, PN> contigs(List<List<PN>> assembledContigs) {
 		currentTime++;
-		Multimap<SubgraphPathNode, Integer> mm = ArrayListMultimap.create();
+		Multimap<PN, Integer> mm = ArrayListMultimap.create();
 		int contig = 0;
-		for (List<SubgraphPathNode> assembledContig : assembledContigs) {
-			for (SubgraphPathNode pn : assembledContig) {
+		for (List<PN> assembledContig : assembledContigs) {
+			for (PN pn : assembledContig) {
 				mm.put(pn, contig);
 			}
 		}
-		for (SubgraphPathNode pn : mm.keySet()) {
+		for (PN pn : mm.keySet()) {
 			Node node = lookup.get(pn);
 			node.getAttributeValues().createValue(attrContig, "true");
 			StringBuilder sb = new StringBuilder();
@@ -175,16 +171,16 @@ public class DynamicDeBruijnPathGraphGexfExporter implements DeBruijnPathGraphEx
 	 * @see au.edu.wehi.idsv.visualisation.DeBruijnPathGraphExporter#saveTo(java.io.File)
 	 */
 	@Override
-	public DeBruijnPathGraphExporter<DeBruijnSubgraphNode, SubgraphPathNode> saveTo(File file) {
+	public DeBruijnPathGraphExporter<T, PN> saveTo(File file) {
 		GexfHelper.saveTo(gexf, file);
 		return this;
 	}
 	@Override
-	public void annotateSubgraphs(List<Set<SubgraphPathNode>> subgraphs) {
+	public void annotateSubgraphs(List<Set<PN>> subgraphs) {
 		currentTime++;
 		int i = 0;
-		for (Set<SubgraphPathNode> sg : subgraphs) {
-			for (SubgraphPathNode pn : sg) {
+		for (Set<PN> sg : subgraphs) {
+			for (PN pn : sg) {
 				lookup.get(pn).getAttributeValues()
 					.createValue(attrSubgraphId, ((Integer)i).toString());
 			}
@@ -192,10 +188,10 @@ public class DynamicDeBruijnPathGraphGexfExporter implements DeBruijnPathGraphEx
 		}
 	}
 	@Override
-	public void annotateStartingPaths(List<Iterable<SubgraphPathNode>> startingPaths) {
+	public void annotateStartingPaths(List<Iterable<PN>> startingPaths) {
 		currentTime++;
-		for (Iterable<SubgraphPathNode> sg : startingPaths) {
-			for (SubgraphPathNode pn : sg) {
+		for (Iterable<PN> sg : startingPaths) {
+			for (PN pn : sg) {
 				lookup.get(pn).getAttributeValues()
 					.createValue(attrStartNode, "true");
 			}

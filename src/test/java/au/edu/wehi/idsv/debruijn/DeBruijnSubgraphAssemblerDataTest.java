@@ -5,7 +5,6 @@ import htsjdk.samtools.util.CloseableIterator;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.EnumSet;
 
 import org.junit.Test;
 

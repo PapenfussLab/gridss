@@ -11,11 +11,11 @@ import java.util.PriorityQueue;
 import java.util.Set;
 
 import au.edu.wehi.idsv.Defaults;
+import au.edu.wehi.idsv.debruijn.DeBruijnGraphUtil;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
 import au.edu.wehi.idsv.graph.PathNode;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
 
-import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
@@ -29,17 +29,17 @@ import com.google.common.primitives.Ints;
  */
 class PathGraphTraverse<T, PN extends PathNode<T>> {
 	private static final Log log = Log.getInstance(PathGraphTraverse.class);
-	private final Ordering<MemoizedNode<PN>> ByScore = new Ordering<MemoizedNode<PN>>() {
+	@SuppressWarnings("rawtypes")
+	private final static Ordering<MemoizedNode> ByWeight = new Ordering<MemoizedNode>() {
 		@Override
-		public int compare(MemoizedNode<PN> arg0, MemoizedNode<PN> arg1) {
+		public int compare(MemoizedNode arg0, MemoizedNode arg1) {
 			return Ints.compare(arg0.score, arg1.score);
 		}
 	};
 	private final MemoizedNode<PN> NO_BEST_PATH = new MemoizedNode<PN>(null, null, Integer.MIN_VALUE, 0);
 	private final DeBruijnPathGraph<T, PN> pg;
-	private final int maxPathTraversalNodes;
-	private final Function<PN, Integer> scoringFunction;
 	private final Ordering<PN> order;
+	private final int maxPathTraversalNodes;
 	private final boolean traverseForward;
 	private final boolean referenceTraverse;
 	private final int maxNextStates;
@@ -47,22 +47,25 @@ class PathGraphTraverse<T, PN extends PathNode<T>> {
 	private int currentNextStates;
 	private int nodeTraversals;
 	private Map<PN, MemoizedNode<PN>> bestPath = Maps.newHashMap();
-	private PriorityQueue<MemoizedNode<PN>> frontier = new PriorityQueue<MemoizedNode<PN>>(1024, ByScore);
+	private PriorityQueue<MemoizedNode<PN>> frontier = new PriorityQueue<MemoizedNode<PN>>(1024, ByWeight);
 	private MemoizedNode<PN> traversalBest;
 	private Set<PN> terminalNodes;
 	public int getNodesTraversed() { return nodeTraversals; }
 	public PathGraphTraverse(
 			final DeBruijnPathGraph<T, PN> pg,
 			final int maxPathTraversalNodes,
-			final Function<PN, Integer> scoringFunction,
 			final boolean traverseForward,
 			final boolean referenceTraverse,
 			final int maxNextStates,
 			final int maxKmerPathLength) {
 		this.pg = pg;
+		this.order = new Ordering<PN>() {
+			@Override
+			public int compare(PN left, PN right) {
+				return Ints.compare(DeBruijnGraphUtil.score(pg, left), DeBruijnGraphUtil.score(pg, right));
+			}
+		}.reverse();
 		this.maxPathTraversalNodes = maxPathTraversalNodes;
-		this.scoringFunction = scoringFunction;
-		this.order = SubgraphHelper.getScoreOrderDesc(scoringFunction);
 		this.traverseForward = traverseForward;
 		this.referenceTraverse = referenceTraverse;
 		this.maxNextStates = maxNextStates;
@@ -140,7 +143,7 @@ class PathGraphTraverse<T, PN extends PathNode<T>> {
 		bestPath.clear();
 		frontier.clear();
 		traversalBest = NO_BEST_PATH;
-		MemoizedNode<PN> start = new MemoizedNode<PN>(null, startingNode, SubgraphHelper.getScore(startingNode, scoringFunction, referenceTraverse, !referenceTraverse), startingNode.length());
+		MemoizedNode<PN> start = new MemoizedNode<PN>(null, startingNode, DeBruijnGraphUtil.score(pg, startingNode, referenceTraverse, !referenceTraverse), startingNode.length());
 		pushFrontier(start);
 	}
 	private void visitChildren(MemoizedNode<PN> node) throws AlgorithmRuntimeSafetyLimitExceededException {
@@ -204,7 +207,7 @@ class PathGraphTraverse<T, PN extends PathNode<T>> {
 	private boolean pushFrontier(MemoizedNode<PN> node, PN next) {
 		// TODO: calculate score only on bases within maxKmerPathLength
 		int length = node.length + next.length();
-		int score = node.score + scoringFunction.apply(next);
+		int score = node.score + DeBruijnGraphUtil.score(pg, next);
 		return pushFrontier(new MemoizedNode<PN>(node, next, score, length));
 	}
 	private MemoizedNode<PN> popFronter() {

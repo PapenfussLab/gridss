@@ -5,7 +5,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -13,57 +12,20 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
+import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
+import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphNode;
 import au.edu.wehi.idsv.graph.PathNode;
+import au.edu.wehi.idsv.graph.PathNodeBaseFactory;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
+import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
 import au.edu.wehi.idsv.visualisation.StaticDeBruijnPathGraphGexfExporter;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
-import com.google.common.collect.Lists;
 
 
 public class DeBruijnPathGraphTest extends TestHelper {
-	@Test
-	public void constructor_should_compress_graph_at_construction() {
-		BasePathGraph pg = PG(G(4)
-				.add("GTACCTA"));
-		assertEquals(1, pg.getPathCount());
-	}
-	@Test
-	public void constructor_should_not_compress_forks() {
-		BasePathGraph pg = PG(G(4)
-			.add("GTACCTA")
-			.add("GTACCTC"));
-		assertEquals(3, pg.getPathCount());
-	}
-	@Test
-	public void ByMaxKmerWeightDesc_should_sort_by_weight_of_kmer() {
-		BasePathGraph pg = PG(G(4)
-		//     TTAT(GTC)-(GTC)AGTA
-		//            /
-		//       C(GTC)
-				.add("GTCAGTA", 1)
-				.add("GTCAGT", 1)
-				.add("GTCAG", 1)
-				.add("GTCA", 1) // = 4
-				.add("TTATGTC", 1)
-				.add( "TATGTC", 1)
-				.add(  "ATGTC", 1)
-				.add(   "TGTC", 3) // = 6
-				.add("TCCGTC", 1)
-				.add("CCGTC", 1)
-				.add("CGTC", 3)); // = 5
-		List<PathNode<DeBruijnNodeBase>> nodes = Lists.newArrayList(pg.getPaths());
-		assertEquals(3, nodes.size()); // precondition
-		Collections.sort(nodes, pg.ByMaxKmerWeightDesc);
-		assertEquals(pg.get("TGTC") , nodes.get(0));
-		assertEquals(pg.get("CGTC") , nodes.get(1));
-		assertEquals(pg.get("GTCA") , nodes.get(2));
-	}
-	/**
-	 * 
-	 */
 	@Test
 	public void random_sequence_should_not_have_any_repeated_14mers() {
 		BasePathGraph pg = PG(G(14).add(S(RANDOM)));
@@ -202,7 +164,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 	}
 	private void debugDumpToCDevDebugGraphGexf(BasePathGraph pg, int k) {
 		StaticDeBruijnPathGraphGexfExporter<DeBruijnNodeBase, PathNode<DeBruijnNodeBase>> tmp =
-				new StaticDeBruijnPathGraphGexfExporter<DeBruijnNodeBase, PathNode<DeBruijnNodeBase>>(k);
+				new StaticDeBruijnPathGraphGexfExporter<DeBruijnNodeBase, PathNode<DeBruijnNodeBase>>();
 		tmp.snapshot(pg);
 		tmp.saveTo(new File("C:/dev/debugGraph.gexf"));
 	}
@@ -227,7 +189,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		assertEquals(1, pg.collapseLeaves(1));
 		assertEquals(1, pg.getPathCount());
 		// Should merge the path then collapse the two remaining nodes into one
-		assertEquals("AAAAT", pg.getPaths().iterator().next().pathKmerString(4));
+		assertEquals("AAAAT", toKmerString(pg, pg.getPaths().iterator().next()));
 		// backward
 		pg = PG(G(4)
 				.add("TAAAA",2)
@@ -236,7 +198,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		assertEquals(0, pg.collapseLeaves(0));
 		assertEquals(1, pg.collapseLeaves(1));
 		assertEquals(1, pg.getPathCount());
-		assertEquals("TAAAA", pg.getPaths().iterator().next().pathKmerString(4));
+		assertEquals("TAAAA", toKmerString(pg, pg.getPaths().iterator().next()));
 	}
 	@Ignore("See github issue 12: de Bruijn subgraph contig construction should call highest weighted base")
 	@Test
@@ -250,7 +212,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		assertEquals(1, pg.collapseLeaves(1));
 		assertEquals(1, pg.getPathCount());
 		// take the AAAAT path then extend with the additional bases from the other path
-		assertEquals("AAAATCC", pg.getPaths().iterator().next().pathKmerString(4));
+		assertEquals("AAAATCC", toKmerString(pg, pg.getPaths().iterator().next()));
 		// backward
 		pg = PG(G(4)
 				.add("TAAAA",2)
@@ -260,7 +222,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		assertEquals(0, pg.collapseLeaves(0));
 		assertEquals(1, pg.collapseLeaves(1));
 		assertEquals(1, pg.getPathCount());
-		assertEquals("CCTGAAAA", pg.getPaths().iterator().next().pathKmerString(4));
+		assertEquals("CCTGAAAA", toKmerString(pg, pg.getPaths().iterator().next()));
 	}
 	/**
 	 * See github issue 12: de Bruijn subgraph contig construction should call highest weighted base
@@ -299,7 +261,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		//              |
 		//         bad transition
 		PathNode<DeBruijnNodeBase> pn = pg.getPaths().iterator().next();
-		assertEquals("AATC", S(KmerEncodingHelper.encodedToPicardBases(4, pn.last())));
+		assertEquals("AATC", S(KmerEncodingHelper.encodedToPicardBases(4, pn.last().getKmer())));
 		
 		// test backwards as well
 		pg = PG(G(4)
@@ -308,7 +270,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 				.add("CCAA"));
 		pg.collapseLeaves(1);
 		pn = pg.getPaths().iterator().next();
-		assertEquals("CTAA", S(KmerEncodingHelper.encodedToPicardBases(4, pn.first())));
+		assertEquals("CTAA", S(KmerEncodingHelper.encodedToPicardBases(4, pn.first().getKmer())));
 	}
 	@Test
 	public void mergePaths_should_merge_into_highest_weight_path() {
@@ -338,9 +300,9 @@ public class DeBruijnPathGraphTest extends TestHelper {
 			.add("GTAC"));
 		// lets add a self-intersecting edge
 		pg.addEdge(pg.get("GTAC"), pg.get("GTAC"));
-		assertEquals(1, pg.nextPath(pg.get("GTAC")).size());
+		assertEquals(1, pg.next(pg.get("GTAC")).size());
 		pg.shrink();
-		assertEquals(0, pg.nextPath(pg.get("GTAC")).size());
+		assertEquals(0, pg.next(pg.get("GTAC")).size());
 	}
 	@Test
 	public void basesDifferent_should_count_bases_on_path() {
@@ -445,5 +407,40 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		assertTrue(pg.mergePaths(
 				ImmutableList.of(pg.get("AAAA"), pg.get("TTTT"), pg.get("CCCC"), pg.get("GTAC")),
 				ImmutableList.of(pg.get("AAAA"), pg.get("GGGG"), pg.get("GTAC"))));
+	}
+	@Test
+	public void splitOutReferencePaths_should_break_paths_at_reference_non_reference_transition() {
+		DeBruijnReadGraph g = RG(4);
+		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
+		g.addEvidence(NRRP(withSequence("GGTTAACC", DP(0, 1, "8M", true, 1, 10, "8M", false))));
+		g.addEvidence(SCE(FWD, withSequence("TTGGT", Read(0, 10, "4M1S"))));
+		//     TTAACCGGCCAATT
+		//   GGTTAACC
+		// TTGGT
+		// ^   ^^^^ <- starts of reference kmers
+		DeBruijnPathGraph<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> pg = new DeBruijnPathGraph<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>>(
+				g,
+				ImmutableList.of(g.getKmer(KmerEncodingHelper.picardBaseToEncoded(4, B("TTAA")))),
+				new PathNodeBaseFactory<DeBruijnSubgraphNode>(),
+				new NontrackingSubgraphTracker<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>>());
+		assertEquals("precondition", 1, pg.getPathCount());
+		pg.splitOutReferencePaths();
+		assertEquals(4, pg.getPathCount());
+	}
+	@Test
+	public void splitOutReferencePaths_should_consider_kmer_as_reference_if_any_collapsed_kmer_is_reference() throws AlgorithmRuntimeSafetyLimitExceededException {
+		DeBruijnReadGraph g = RG(4);
+		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
+		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
+		g.addEvidence(SCE(BWD, withSequence(         "CAATG", Read(0, 10, "1S4M"))));
+		DeBruijnPathGraph<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> pg = new DeBruijnPathGraph<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>>(
+				g,
+				ImmutableList.of(g.getKmer(KmerEncodingHelper.picardBaseToEncoded(4, B("TTAA")))),
+				new PathNodeBaseFactory<DeBruijnSubgraphNode>(),
+				new NontrackingSubgraphTracker<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>>());
+		pg.collapseSimilarPaths(1, false);
+		assertEquals(1, pg.getPathCount());
+		pg.splitOutReferencePaths();
+		assertEquals(3, pg.getPathCount());
 	}
 }

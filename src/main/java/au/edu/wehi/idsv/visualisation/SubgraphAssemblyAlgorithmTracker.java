@@ -4,17 +4,14 @@ import java.util.LinkedList;
 import java.util.List;
 
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
-import au.edu.wehi.idsv.debruijn.subgraph.SubgraphPathNode;
-
-import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.Ordering;
+import au.edu.wehi.idsv.graph.PathNode;
 
 /**
  * Tracks de Bruijn subgraph assembly progress for a single subgraph
  * @author cameron.d
  *
  */
-public interface SubgraphAssemblyAlgorithmTracker {
+public interface SubgraphAssemblyAlgorithmTracker<T, PN extends PathNode<T>> {
 
 	public abstract void finalAnchors(int minAnchor, int maxAnchor);
 
@@ -22,7 +19,7 @@ public interface SubgraphAssemblyAlgorithmTracker {
 
 	//public abstract void calcNonReferenceSubgraphs(List<Set<SubgraphPathNode>> subgraphs, List<Set<SubgraphPathNode>> startingNodes);
 
-	public abstract void assemblyNonReferenceContigs(List<List<SubgraphPathNode>> assembledPaths, List<LinkedList<Long>> assembledKmers, int nodesTraversed);
+	public abstract void assemblyNonReferenceContigs(List<List<PN>> assembledPaths, List<LinkedList<T>> assembledKmers, int nodesTraversed);
 
 	public abstract void toAssemblyEvidence(VariantContextDirectedEvidence assembly);
 
@@ -43,15 +40,4 @@ public interface SubgraphAssemblyAlgorithmTracker {
 	public abstract long getStartAnchorPosition();
 	
 	public abstract long getEndAnchorPosition();
-	
-	public static Ordering<SubgraphAssemblyAlgorithmTracker> ByGenomicPosition = new Ordering<SubgraphAssemblyAlgorithmTracker>() {
-		@Override
-		public int compare(SubgraphAssemblyAlgorithmTracker left, SubgraphAssemblyAlgorithmTracker right) {
-			return ComparisonChain.start()
-			        .compare(left.getReferenceIndex(), right.getReferenceIndex())
-			        .compare(left.getStartAnchorPosition(), right.getStartAnchorPosition())
-			        .compare(left.getEndAnchorPosition(), right.getEndAnchorPosition())
-			        .result();
-		}
-	};
 }

@@ -1,7 +1,8 @@
 package au.edu.wehi.idsv.util;
 
+import static org.junit.Assert.assertArrayEquals;
+
 import org.junit.Test;
-import static org.junit.Assert.*;
 
 public class ArrayHelperTest {
 	@Test

@@ -20,7 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Set;
 
-import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
 import au.edu.wehi.idsv.graph.PathNode;
 
@@ -28,10 +27,8 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 
-public class StaticDeBruijnPathGraphGexfExporter<T extends DeBruijnNodeBase, PN extends PathNode<T>>
-	implements DeBruijnPathGraphExporter<T, PN> {
+public class StaticDeBruijnPathGraphGexfExporter<T, PN extends PathNode<T>> implements DeBruijnPathGraphExporter<T, PN> {
 	//private static final Log log = Log.getInstance(DeBruijnPathGraphGexfExporter.class);
-	private final int k;
 	private final HashMap<PN, Node> lookup = Maps.newHashMap();
 	private final Gexf gexf = new GexfImpl();
 	private final Graph graph;
@@ -42,9 +39,9 @@ public class StaticDeBruijnPathGraphGexfExporter<T extends DeBruijnNodeBase, PN 
 	private final Attribute attrContigList;
 	private final Attribute attrSubgraphId;
 	private final Attribute attrStartNode;
+	private final Attribute attrIsReference;
 	private final AttributeList nodeStaticAttrList;
-	public StaticDeBruijnPathGraphGexfExporter(int k) {
-		this.k = k;
+	public StaticDeBruijnPathGraphGexfExporter() {
 		gexf.getMetadata()
 			.setLastModified(new Date())
 			.setCreator("GRIDSS")
@@ -63,6 +60,7 @@ public class StaticDeBruijnPathGraphGexfExporter<T extends DeBruijnNodeBase, PN 
 		attrContig = nodeStaticAttrList.createAttribute("contig", AttributeType.BOOLEAN, "Part of assembly");
 		attrTotalWeight = nodeStaticAttrList.createAttribute("tw", AttributeType.INTEGER, "total weight");
 		attrMaxKmerWeight = nodeStaticAttrList.createAttribute("mw", AttributeType.INTEGER, "max kmer weight");
+		attrIsReference = nodeStaticAttrList.createAttribute("r", AttributeType.BOOLEAN, "isReference");
 		graph.getAttributeLists().add(nodeStaticAttrList);
 	}
 	protected AttributeList getNodeStaticAttributeList() { return nodeStaticAttrList; }
@@ -72,8 +70,8 @@ public class StaticDeBruijnPathGraphGexfExporter<T extends DeBruijnNodeBase, PN 
 		for (PN pn : pg.getPaths()) {
 			if (!lookup.containsKey(pn)) {
 				// Add node
-				Node node = graph.createNode(pn.pathKmerString(k));
-				setStaticAttributes(node, pn);
+				Node node = graph.createNode(pn.toString(pg.getGraph()));
+				setStaticAttributes(pg, node, pn);
 				lookup.put(pn, node);
 			}
 		}
@@ -82,14 +80,15 @@ public class StaticDeBruijnPathGraphGexfExporter<T extends DeBruijnNodeBase, PN 
 		}
 		return this;
 	}
-	protected void setStaticAttributes(Node node, PN pn) {
+	protected void setStaticAttributes(DeBruijnPathGraph<T, PN> pg, Node node, PN pn) {
 		node.getAttributeValues().createValue(attrLength, ((Integer)pn.getPath().size()).toString());
 		node.getAttributeValues().createValue(attrTotalWeight, ((Integer)pn.weight()).toString());
-		node.getAttributeValues().createValue(attrMaxKmerWeight, ((Integer)pn.getMaxKmerWeight()).toString());
+		node.getAttributeValues().createValue(attrMaxKmerWeight, ((Integer)pn.maxNodeWeight(pg.getGraph())).toString());
+		node.getAttributeValues().createValue(attrIsReference, ((Boolean)pg.isReference(pn)).toString());
 	}
 	private void ensureNextEdges(DeBruijnPathGraph<T, PN> pg, PN pn) {
 		Node node = lookup.get(pn);
-		for (PN next : pg.nextPath(pn)) {
+		for (PN next : pg.next(pn)) {
 			Node nextNode = lookup.get(next);
 			ensureEdge(node, nextNode);
 		}

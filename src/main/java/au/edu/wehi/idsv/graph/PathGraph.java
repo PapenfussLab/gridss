@@ -38,7 +38,7 @@ import com.google.common.primitives.Ints;
  */
 public class PathGraph<T, PN extends PathNode<T>> implements WeightedDirectedGraph<PN> {
 	private static Log log = Log.getInstance(PathGraph.class);
-	protected final SubgraphAssemblyAlgorithmTracker tracker;
+	protected final SubgraphAssemblyAlgorithmTracker<T, PN> tracker;
 	private final PathNodeFactory<T, PN> factory;
 	private final WeightedDirectedGraph<T> graph;
 	private final List<PN> pathList = Lists.newArrayList();
@@ -50,13 +50,13 @@ public class PathGraph<T, PN extends PathNode<T>> implements WeightedDirectedGra
 	 */
 	protected int expectedWeight;
 	//private static Log log = Log.getInstance(DeBruijnPathGraph.class);
-	public PathGraph(WeightedDirectedGraph<T> graph, Collection<T> seeds, PathNodeFactory<T, PN> factory, SubgraphAssemblyAlgorithmTracker tracker) {
+	public PathGraph(WeightedDirectedGraph<T> graph, Collection<T> seeds, PathNodeFactory<T, PN> factory, SubgraphAssemblyAlgorithmTracker<T, PN> tracker) {
 		this.graph = graph;
 		this.factory = factory;
 		this.tracker = tracker;
 		generatePathGraph(seeds);
 	}
-	public PathGraph(WeightedDirectedGraph<T> graph, PathNodeFactory<T, PN> factory, SubgraphAssemblyAlgorithmTracker tracker) {
+	public PathGraph(WeightedDirectedGraph<T> graph, PathNodeFactory<T, PN> factory, SubgraphAssemblyAlgorithmTracker<T, PN> tracker) {
 		this(graph, graph.allNodes(), factory, tracker);
 	}
 	public boolean sanityCheck() {

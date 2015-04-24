@@ -214,18 +214,18 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> implements D
 	}
 	/**
 	 * Base qualities of contig
-	 * @param path kmer contig
+	 * @param contig kmer contig
 	 * @return base qualities of a positive strand SAMRecord readout of contig
 	 */
-	public byte[] getBaseQuals(List<Long> path) {
-		int[] kmerWeight = new int[path.size()];
-		for (int i = 0; i < path.size(); i++) {
+	public byte[] getBaseQuals(List<T> contig) {
+		int[] kmerWeight = new int[contig.size()];
+		for (int i = 0; i < contig.size(); i++) {
 			// subtract # reads to adjust for the +1 qual introduced by ReadKmerIterable
 			// to ensure positive node weights
-			T node = kmers.get(path.get(i));
+			T node = contig.get(i);
 			kmerWeight[i] = node.getWeight() - node.getSupportingEvidenceList().size();
 		}
-		byte[] result = new byte[path.size() + k - 1];
+		byte[] result = new byte[contig.size() + k - 1];
 		// take the average kmer qual of the kmers this bases is part of
 		int accum = 0;
 		int windowSize = 0;
@@ -467,5 +467,17 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> implements D
 			}
 		});
 		return new String(KmerEncodingHelper.baseCalls(Lists.newArrayList(asKmers), getK()), StandardCharsets.US_ASCII);
+	}
+	@Override
+	public long getKmer(T node) {
+		return node.getKmer();
+	}
+	@Override
+	public boolean isReference(T node) {
+		return node.isReference();
+	}
+	@Override
+	public int getWeight(T node) {
+		return node.getWeight();
 	}
 }

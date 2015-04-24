@@ -4,6 +4,9 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.primitives.Bytes;
 
 
@@ -273,15 +276,23 @@ public class KmerEncodingHelper {
 		}
 		return diffCount;
 	}
-	public static <T> int totalBaseDifference(DeBruijnGraph<T> graph, Iterator<T> pathA, Iterator<T> pathB, int k) {
+	public static <T> int totalBaseDifference(DeBruijnGraph<T> graph, Iterator<T> pathA, Iterator<T> pathB) {
 		if (!pathA.hasNext() || pathB.hasNext()) return 0;
-		int diffCount = basesDifference(k, graph.getKmer(pathA.next()), graph.getKmer(pathB.next()));
+		int diffCount = basesDifference(graph.getK(), graph.getKmer(pathA.next()), graph.getKmer(pathB.next()));
 		while (pathA.hasNext() && pathB.hasNext()) {
-			if (!lastBaseMatches(k, graph.getKmer(pathA.next()), graph.getKmer((pathB.next())))) {
+			if (!lastBaseMatches(graph.getK(), graph.getKmer(pathA.next()), graph.getKmer((pathB.next())))) {
 				diffCount++;
 			}
 		}
 		return diffCount;
+	}
+	public static <T> List<Long> asKmers(final DeBruijnGraph<T> graph, final Iterable<? extends T> path) {
+		return Lists.newArrayList(Iterables.transform(path, new Function<T, Long>() {
+			@Override
+			public Long apply(T input) {
+				return graph.getKmer(input);
+			}
+		}));
 	}
 	
 }

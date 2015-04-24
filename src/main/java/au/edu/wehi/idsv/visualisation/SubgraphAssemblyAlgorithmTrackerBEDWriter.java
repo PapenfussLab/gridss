@@ -10,16 +10,31 @@ import java.util.PriorityQueue;
 
 import org.apache.commons.lang3.StringUtils;
 
+import au.edu.wehi.idsv.graph.PathNode;
+
+import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Ordering;
+
 /**
  * Writes algorithm tracking information to a BED file
  * @author Daniel Cameron
  *
  */
-public class SubgraphAssemblyAlgorithmTrackerBEDWriter implements Closeable {
+public class SubgraphAssemblyAlgorithmTrackerBEDWriter<T, PN extends PathNode<T>> implements Closeable {
 	private static final Log log = Log.getInstance(SubgraphAssemblyAlgorithmTrackerBEDWriter.class);
+	public Ordering<SubgraphAssemblyAlgorithmTracker<T, PN>> ByGenomicPosition = new Ordering<SubgraphAssemblyAlgorithmTracker<T, PN>>() {
+		@Override
+		public int compare(SubgraphAssemblyAlgorithmTracker<T, PN> left, SubgraphAssemblyAlgorithmTracker<T, PN> right) {
+			return ComparisonChain.start()
+			        .compare(left.getReferenceIndex(), right.getReferenceIndex())
+			        .compare(left.getStartAnchorPosition(), right.getStartAnchorPosition())
+			        .compare(left.getEndAnchorPosition(), right.getEndAnchorPosition())
+			        .result();
+		}
+	};
 	private FileWriter fw = null;
 	private BufferedWriter bw = null;
-	private PriorityQueue<SubgraphAssemblyAlgorithmTracker> sortBuffer = new PriorityQueue<SubgraphAssemblyAlgorithmTracker>(32, SubgraphAssemblyAlgorithmTracker.ByGenomicPosition);
+	private PriorityQueue<SubgraphAssemblyAlgorithmTracker<T, PN>> sortBuffer = new PriorityQueue<SubgraphAssemblyAlgorithmTracker<T, PN>>(32, ByGenomicPosition);
 	private int windowSize;
 	public SubgraphAssemblyAlgorithmTrackerBEDWriter(int maxSubgraphSize, File bedFile) {
 		this.windowSize = 16 * maxSubgraphSize + 1024;
@@ -34,7 +49,7 @@ public class SubgraphAssemblyAlgorithmTrackerBEDWriter implements Closeable {
 			close();
 		}
 	}
-	public void write(SubgraphAssemblyAlgorithmTracker tracker) {
+	public void write(SubgraphAssemblyAlgorithmTracker<T, PN> tracker) {
 		if (tracker == null) return;
 		if (tracker.getReferenceIndex() < 0) return;
 		if (tracker.getStartAnchorPosition() < 0) return;
@@ -44,7 +59,7 @@ public class SubgraphAssemblyAlgorithmTrackerBEDWriter implements Closeable {
 	}
 	private void flushPosition(int referenceIndex, long pos) {
 		while (!sortBuffer.isEmpty() && (sortBuffer.peek().getReferenceIndex() < referenceIndex || sortBuffer.peek().getStartAnchorPosition() <= pos)) {
-			SubgraphAssemblyAlgorithmTracker tracker = sortBuffer.poll();
+			SubgraphAssemblyAlgorithmTracker<T, PN> tracker = sortBuffer.poll();
 			try {
 				if (bw != null) {
 					String result = tracker.toBed();

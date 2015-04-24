@@ -14,11 +14,13 @@ import java.util.Set;
 
 import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.Defaults;
-import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
+import au.edu.wehi.idsv.debruijn.DeBruijnGraph;
+import au.edu.wehi.idsv.debruijn.DeBruijnGraphUtil;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
 import au.edu.wehi.idsv.graph.PathNode;
+import au.edu.wehi.idsv.graph.PathNodeFactory;
 import au.edu.wehi.idsv.visualisation.DeBruijnPathGraphExporter;
-import au.edu.wehi.idsv.visualisation.StaticDeBruijnSubgraphPathGraphGexfExporter;
+import au.edu.wehi.idsv.visualisation.StaticDeBruijnPathGraphGexfExporter;
 import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTracker;
 
 import com.google.common.base.Function;
@@ -36,7 +38,6 @@ import com.google.common.primitives.Ints;
  */
 public class PathGraphAssembler<T, PN extends PathNode<T>> extends DeBruijnPathGraph<T, PN> {
 	private static final Log log = Log.getInstance(PathGraphAssembler.class);
-	private final Function<PN, Integer> scoringFunction = SubgraphHelper.SCORE_TOTAL_KMER;
 	private final AssemblyParameters parameters;
 	private final List<NonReferenceSubgraph> subgraphs = Lists.newArrayList();
 	private static int timeoutGraphsWritten = 0;
@@ -98,10 +99,9 @@ public class PathGraphAssembler<T, PN extends PathNode<T>> extends DeBruijnPathG
 				Collection<PN> endNodes,
 				boolean traverseForward
 				) {
-			PathGraphTraverse trav = new PathGraphTraverse(
+			PathGraphTraverse<T, PN> trav = new PathGraphTraverse<T, PN>(
 					PathGraphAssembler.this,
 					parameters.maxPathTraversalNodes,
-					scoringFunction,
 					traverseForward,
 					false,
 					parameters.subgraphAssemblyTraversalMaximumBranchingFactor,
@@ -125,7 +125,7 @@ public class PathGraphAssembler<T, PN extends PathNode<T>> extends DeBruijnPathG
 		 */
 		private List<PN> traverseReference(PN node, boolean traverseForward, int targetLength) {
 			assert(isReference(node));
-			PathGraphTraverse trav = new PathGraphTraverse(PathGraphAssembler.this, parameters.maxPathTraversalNodes, scoringFunction,
+			PathGraphTraverse<T, PN> trav = new PathGraphTraverse<T, PN>(PathGraphAssembler.this, parameters.maxPathTraversalNodes,
 					traverseForward, true,
 					// if anchor has previously timed out on a different breakend subgraph
 					// just do a greedy traversal as we're likely to time out again
@@ -160,12 +160,12 @@ public class PathGraphAssembler<T, PN extends PathNode<T>> extends DeBruijnPathG
 					//     \     /
 					//  R - R - R - R
 					//
-					// No path from C to A results in nul contig
+					// No path from C to A results in null contig
 					// TODO: assemble both AR and CR as two separate contigs instead of just
 					// falling through to an RC assembly
 					misassemblyDetected = true;
-					log.debug(String.format("Breakpoint assembly failed at linear position %d. Falling back to breakend assembly.",
-							getGraph().getKmer(referenceAnchoredPreceding.get(0).first()).getSubgraph().getMinLinearPosition()));
+					log.debug(String.format("Breakpoint assembly failed at %s. Falling back to breakend assembly.",
+							referenceAnchoredPreceding.get(0).toString()));
 				}
 			}
 			if (best == null && !referenceAnchoredPreceding.isEmpty()) {
@@ -191,31 +191,32 @@ public class PathGraphAssembler<T, PN extends PathNode<T>> extends DeBruijnPathG
 			return result;
 		}
 	}
-	public PathGraphAssembler(DeBruijnGraphBase<DeBruijnSubgraphNode> graph, AssemblyParameters parameters, long seed, SubgraphAssemblyAlgorithmTracker tracker) {
-		super(graph, seed, tracker);
+	public PathGraphAssembler(DeBruijnGraph<T> graph, AssemblyParameters parameters, Collection<T> seeds, PathNodeFactory<T, PN> factory, SubgraphAssemblyAlgorithmTracker<T, PN> tracker) {
+		super(graph, seeds, factory, tracker);
 		this.parameters = parameters;
 	}
-	public List<LinkedList<Long>> assembleContigs() {
+	public List<LinkedList<T>> assembleContigs() {
 		return assembleContigs(null);
 	}
-	public List<LinkedList<Long>> assembleContigs(DeBruijnPathGraphExporter<DeBruijnSubgraphNode, PN> graphExporter) {
+	public List<LinkedList<T>> assembleContigs(DeBruijnPathGraphExporter<T, PN> graphExporter) {
 		splitOutReferencePaths();
 		calcNonReferenceSubgraphs();
 		return assemblyNonReferenceContigs(graphExporter);
 	}
-	private List<LinkedList<Long>> assemblyNonReferenceContigs(DeBruijnPathGraphExporter<DeBruijnSubgraphNode, PN> graphExporter) {
+	private List<LinkedList<T>> assemblyNonReferenceContigs(DeBruijnPathGraphExporter<T, PN> graphExporter) {
 		List<List<PN>> result = Lists.newArrayList();
 		for (NonReferenceSubgraph nrsg: subgraphs) {
 			List<PN> contig = nrsg.assembleSubgraph();
 			result.add(contig);
 		}
 		// return the best assembly first
+		final DeBruijnGraph<PN> g = this;
 		Collections.sort(result, new Ordering<List<PN>>() {
 			@Override
 			public int compare(List<PN> arg0, List<PN> arg1) {
 				return Ints.compare(
-						SubgraphHelper.getScore(arg1, scoringFunction, false, true),
-						SubgraphHelper.getScore(arg0, scoringFunction, false, true));
+						DeBruijnGraphUtil.scorePath(g, arg1, false, true),
+						DeBruijnGraphUtil.scorePath(g, arg0, false, true));
 			}}); 
 		if (graphExporter != null) {
 			graphExporter.snapshot(this);
@@ -224,17 +225,17 @@ public class PathGraphAssembler<T, PN extends PathNode<T>> extends DeBruijnPathG
 		} else if ((misassemblyDetected || timeoutReached) && parameters.debruijnGraphVisualisationDirectory != null) {
 			// weren't planning to export but we encountering something worth logging
 			parameters.debruijnGraphVisualisationDirectory.mkdirs();
-			graphExporter = new StaticDeBruijnSubgraphPathGraphGexfExporter(this.parameters.k);
+			graphExporter = new StaticDeBruijnPathGraphGexfExporter<T, PN>();
 			graphExporter.snapshot(this);
 			//graphExporter.annotateStartingPaths(startingPaths);
 			graphExporter.contigs(result);
 			graphExporter.saveTo(new File(parameters.debruijnGraphVisualisationDirectory,
 					String.format("pathTraversalTimeout-%d.subgraph.gexf", ++timeoutGraphsWritten)));
 		}
-		List<LinkedList<Long>> resultKmers = Lists.newArrayList(Iterables.transform(result, new Function<List<PN>, LinkedList<Long>>() {
+		List<LinkedList<T>> resultKmers = Lists.newArrayList(Iterables.transform(result, new Function<List<PN>, LinkedList<T>>() {
 			@Override
-			public LinkedList<Long> apply(List<PN> arg0) {
-				return Lists.newLinkedList(Lists.newArrayList(PN.nodeIterator(arg0)));
+			public LinkedList<T> apply(List<PN> arg0) {
+				return Lists.newLinkedList(Lists.newArrayList(PN.nodeIterator(arg0.iterator())));
 			}
 		}));
 		tracker.assemblyNonReferenceContigs(result, resultKmers, totalNodesTraversed);
@@ -248,7 +249,7 @@ public class PathGraphAssembler<T, PN extends PathNode<T>> extends DeBruijnPathG
 		while (!toProcess.isEmpty()) {
 			PN node = toProcess.iterator().next();
 			toProcess.remove(node);
-			if (node.containsNonReferenceKmer()) {
+			if (!isReference(node)) {
 				NonReferenceSubgraph nrsg = new NonReferenceSubgraph(node); 
 				subgraphs.add(nrsg);
 				toProcess.removeAll(nrsg.nodes);

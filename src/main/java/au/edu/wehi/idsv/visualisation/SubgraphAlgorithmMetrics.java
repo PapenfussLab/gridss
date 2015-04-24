@@ -7,7 +7,7 @@ import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
-import au.edu.wehi.idsv.debruijn.subgraph.SubgraphPathNode;
+import au.edu.wehi.idsv.graph.PathNode;
 
 import com.google.common.collect.Lists;
 
@@ -16,7 +16,7 @@ import com.google.common.collect.Lists;
  * @author cameron.d
  *
  */
-public class SubgraphAlgorithmMetrics implements SubgraphAssemblyAlgorithmTracker {
+public class SubgraphAlgorithmMetrics<T, PN extends PathNode<T>> implements SubgraphAssemblyAlgorithmTracker<T, PN> {
 	private long timeKmerConstructionStart;
 	private int minAnchor;
 	private int maxAnchor;
@@ -167,20 +167,20 @@ public class SubgraphAlgorithmMetrics implements SubgraphAssemblyAlgorithmTracke
 		this.pathsSplit = pathsSplits;
 	}
 	//@Override
-	public void calcNonReferenceSubgraphs(List<List<SubgraphPathNode>> startingNodes) {
+	public void calcNonReferenceSubgraphs(List<List<PN>> startingNodes) {
 		this.timeCalcNonReferenceSubgraphsComplete = System.nanoTime();
 		this.subgraphCount = startingNodes.size();
 		this.startingNodesCounts = 0;
 		//this.nonreferencePaths = 0;
-		for (List<SubgraphPathNode> s : startingNodes) {
+		for (List<PN> s : startingNodes) {
 			//this.nonreferencePaths += s.size();
 			this.startingNodesCounts += s.size();
 		}
 	}
 	@Override
 	public void assemblyNonReferenceContigs(
-			List<List<SubgraphPathNode>> assembledPaths,
-			List<LinkedList<Long>> assembledKmers, int nodesTraversed) {
+			List<List<PN>> assembledPaths,
+			List<LinkedList<T>> assembledKmers, int nodesTraversed) {
 		this.timeAssemblyNonReferenceContigsComplete = System.nanoTime();
 		this.contigsAssembled = assembledPaths.size();
 		this.nodesTraversedDuringContigAssembly = nodesTraversed;

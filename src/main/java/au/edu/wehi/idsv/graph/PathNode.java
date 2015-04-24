@@ -75,7 +75,7 @@ public class PathNode<T> {
 		}
 		int offset = 0;
 		for (PathNode<T> pn : nodes) {
-			for (int j = 0; j < pn.length() && offset < length; j++) {
+			for (int j = 0; j < pn.length() && offset - startOffset < length; j++, offset++) {
 				if (offset < startOffset) {
 					// skip
 				} else {
@@ -89,9 +89,7 @@ public class PathNode<T> {
 						}
 					}
 				}
-				offset++;
 			}
-			if (offset >= length) break;
 		}
 		fol = new FirstOverflowList<T>(path, equivalents);
 		recalculateWeight(graph);
@@ -123,7 +121,7 @@ public class PathNode<T> {
 		}
 	}
 	protected void onNodesChanged(WeightedDirectedGraph<T> graph) { }
-	public Collection<T> getPath() { return path; }
+	public List<T> getPath() { return path; }
 	/**
 	 * All nodes on this path including nodes that have been merged from similar paths
 	 * @return iterator over all nodes
@@ -200,15 +198,14 @@ public class PathNode<T> {
 			WeightedDirectedGraph<T> graph) {
 		assert(nodeLength(alternatePath) >= alternatePathKmers + alternatePathKmerOffset);
 		if (alternatePathKmers > length() - nodeOffset) throw new IllegalArgumentException("Alternate path is too long.");
-		int i = nodeOffset;
 		for (PathNode<T> pn : alternatePath) {
-			for (int j = 0; j < pn.length(); j++) {
+			for (int j = 0; j < pn.length() && alternatePathKmers > 0; j++) {
 				if (alternatePathKmerOffset > 0) {
 					alternatePathKmerOffset--;
 				} else {
-					merge(i, pn, j, graph);
+					merge(nodeOffset++, pn, j, graph);
+					alternatePathKmers--;
 				}
-				i++;
 			}
 		}
 		onNodesChanged(graph);
@@ -236,7 +233,7 @@ public class PathNode<T> {
 		if (equivalents == null) {
 			equivalents = new ArrayList<LinkedList<T>>(length());
 			fol = new FirstOverflowList<T>(path, equivalents);
-			for (int i = 0; i < equivalents.size(); i++) {
+			for (int i = 0; i < length(); i++) {
 				equivalents.add(null);
 			}
 		}

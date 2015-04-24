@@ -146,13 +146,13 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		// counting kmers instead of bases in this case for now
 		return baseCounts;
 	}
-	protected SAMRecordAssemblyEvidence createAssembly(List<Long> kmers) {
-		List<T> path = new ArrayList<T>(kmers.size());
+	protected SAMRecordAssemblyEvidence createAssembly(List<T> contig) {
+		List<T> path = new ArrayList<T>(contig.size());
 		List<T> breakendPath = new ArrayList<T>(path.size());
 		int breakendStartOffset = -1;
-		int breakendEndOffset = kmers.size();
-		for (int i = 0; i < kmers.size(); i++) {
-			T node = getKmer(kmers.get(i));
+		int breakendEndOffset = contig.size();
+		for (int i = 0; i < contig.size(); i++) {
+			T node = contig.get(i);
 			path.add(node);
 			if (!node.isReference()) {
 				breakendPath.add(node);
@@ -168,8 +168,8 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		Set<String> breakendSupport = getSupport(breakendPath);
 		int[] breakendBaseCounts = getBaseCountsByCategory(breakendPath, beforeBreakend != null, afterBreakend != null);
 		// TODO: improve base calling by considering the weight of all kmers contributing to that base position
-		byte[] bases = KmerEncodingHelper.baseCalls(kmers, getK());
-		byte[] quals = getBaseQuals(kmers);
+		byte[] bases = KmerEncodingHelper.baseCalls(KmerEncodingHelper.asKmers(this, contig), getK());
+		byte[] quals = getBaseQuals(contig);
 		SAMRecordAssemblyEvidence ae = null;
 		if (beforeBreakend == null && afterBreakend == null) {
 			// unanchored

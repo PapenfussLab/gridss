@@ -4,11 +4,10 @@ import java.io.File;
 import java.util.List;
 import java.util.Set;
 
-import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
 import au.edu.wehi.idsv.graph.PathNode;
 
-public interface DeBruijnPathGraphExporter<T extends DeBruijnNodeBase, PN extends PathNode<T>> {
+public interface DeBruijnPathGraphExporter<T, PN extends PathNode<T>> {
 
 	/**
 	 * Takes a snapshot of the path graph at the given time
