@@ -55,7 +55,7 @@ public final class AssemblyFactory {
 		SAMRecordAssemblyEvidence assembly = hydrate(source, r);
 		return assembly;
 	}
-	public static SmallIndelSAMRecordAssemblyEvidence createAnchoredBreakpoint(
+	public static SAMRecordAssemblyEvidence createAnchoredBreakpoint(
 			ProcessingContext processContext, AssemblyEvidenceSource source,
 			Collection<String> evidence,
 			int startAnchorReferenceIndex, int startAnchorPosition, int startAnchorBaseCount,
@@ -71,7 +71,7 @@ public final class AssemblyFactory {
 				endAnchorBaseCount,
 				baseCalls, baseQuals, baseCounts);
 		SAMRecordAssemblyEvidence assembly = hydrate(source, r);
-		return (SmallIndelSAMRecordAssemblyEvidence)assembly;
+		return assembly;
 	}
 	/**
 	 * Creates an assembly whose breakpoint cannot be exactly anchored to the reference  

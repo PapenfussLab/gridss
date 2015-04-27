@@ -1,10 +1,6 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import htsjdk.samtools.SAMRecord;
 
 import java.util.List;
@@ -449,7 +445,7 @@ public class AssemblyFactoryTest extends TestHelper {
 	}
 	@Test
 	public void should_assemble_breakpoint() {
-		SmallIndelSAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(),
+		SmallIndelSAMRecordAssemblyEvidence e = (SmallIndelSAMRecordAssemblyEvidence)AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(),
 				null,
 				0, 1, 1, 0, 2, 1,
 				B("NAAAN"), B("AAAAA"), new int[] { 0, 0});
@@ -467,7 +463,7 @@ public class AssemblyFactoryTest extends TestHelper {
 	}
 	@Test
 	public void breakpoint_assembly_should_allow_BWD_breakend_before_FWD() {
-		SmallIndelSAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(),
+		SmallIndelSAMRecordAssemblyEvidence e = (SmallIndelSAMRecordAssemblyEvidence)AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(),
 				null,
 				0, 10, 1, 0, 1, 1,
 				B("NAAAN"), B("AAAAA"), new int[] { 0, 0});
@@ -500,6 +496,13 @@ public class AssemblyFactoryTest extends TestHelper {
 			SAMRecordAssemblyEvidence r = AssemblyFactory.hydrate(e.getEvidenceSource(), e.getBackingRecord());
 			SAMRecordAssemblyEvidenceTest.assertEvidenceEquals(e, r);
 		}
+	}
+	@Test
+	public void createAnchoredBreakpoint_should_not_crash_on_ref_allele_breakpoint() {
+		// 1M1M
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), Lists.<String>newArrayList(), 0, 10, 1, 0, 11, 1, B("AA"), B("AA"), new int[] { 1, 1});
+		assertTrue(e.isReferenceAssembly());
+		assertNull(e.getBreakendSummary());
 	}
 }
 
