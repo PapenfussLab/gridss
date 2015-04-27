@@ -518,7 +518,14 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 */
 	public SAMRecordAssemblyEvidence realign() {
 		if (!this.isExact) throw new RuntimeException("Sanity check failure: realignment of unanchored assemblies not yet implemented.");
-		if (getBreakendSummary() instanceof BreakpointSummary) throw new IllegalStateException("Unable to realign breakpoint assemblies");
+		BreakendSummary bs = getBreakendSummary();
+		if (bs == null || isReferenceAssembly()) {
+			// misassembly with no breakend - nothing to do
+			return this;
+		}
+		if (bs instanceof BreakpointSummary) {
+			throw new IllegalStateException("Unable to realign breakpoint assemblies");
+		}
 		AssemblyParameters ap = source.getContext().getAssemblyParameters();
 		int refIndex = getBreakendSummary().referenceIndex;
 		SAMSequenceRecord refSeq = source.getContext().getDictionary().getSequence(refIndex);
