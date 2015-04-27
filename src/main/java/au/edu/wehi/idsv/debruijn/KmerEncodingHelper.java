@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Bytes;
 
@@ -267,7 +268,8 @@ public class KmerEncodingHelper {
 	 * @return base calls of a positive strand SAMRecord readout of contig
 	 */
 	public static int totalBaseDifference(Iterator<Long> pathA, Iterator<Long> pathB, int k) {
-		if (!pathA.hasNext() || pathB.hasNext()) return 0;
+		if (pathA == null || pathB == null) return 0;
+		if (!pathA.hasNext() || !pathB.hasNext()) return 0;
 		int diffCount = basesDifference(k, pathA.next(), pathB.next());
 		while (pathA.hasNext() && pathB.hasNext()) {
 			if (!lastBaseMatches(k, pathA.next(), pathB.next())) {
@@ -276,15 +278,16 @@ public class KmerEncodingHelper {
 		}
 		return diffCount;
 	}
-	public static <T> int totalBaseDifference(DeBruijnGraph<T> graph, Iterator<T> pathA, Iterator<T> pathB) {
-		if (!pathA.hasNext() || pathB.hasNext()) return 0;
-		int diffCount = basesDifference(graph.getK(), graph.getKmer(pathA.next()), graph.getKmer(pathB.next()));
-		while (pathA.hasNext() && pathB.hasNext()) {
-			if (!lastBaseMatches(graph.getK(), graph.getKmer(pathA.next()), graph.getKmer((pathB.next())))) {
-				diffCount++;
+	public static <T> int totalBaseDifference(final DeBruijnGraph<T> graph, final Iterator<T> pathA, final Iterator<T> pathB) {
+		assert(graph != null);
+		if (pathA == null || pathB == null) return 0;
+		Function<T, Long> f = new Function<T, Long>() {
+			@Override
+			public Long apply(T input) {
+				return graph.getKmer(input);
 			}
-		}
-		return diffCount;
+		};
+		return totalBaseDifference(Iterators.transform(pathA, f), Iterators.transform(pathB, f), graph.getK());
 	}
 	public static <T> List<Long> asKmers(final DeBruijnGraph<T> graph, final Iterable<? extends T> path) {
 		return Lists.newArrayList(Iterables.transform(path, new Function<T, Long>() {

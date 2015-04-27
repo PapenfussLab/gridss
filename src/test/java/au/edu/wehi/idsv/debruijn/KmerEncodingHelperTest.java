@@ -5,6 +5,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
@@ -271,5 +272,16 @@ public class KmerEncodingHelperTest extends TestHelper {
 					asList(i, "GTACCGGTATACGTCATAATG").iterator(),
 					asList(i, "GTACCGGTATTTGTCATAATG").iterator(), i));
 		}
+	}
+	@Test
+	public void totalBaseDifference_should_diff_of_common_bases() {
+		assertEquals(0, KmerEncodingHelper.totalBaseDifference(asList(4, "GTACCGGTATACGTCATAATG").iterator(), new ArrayList<Long>().iterator(), 4));
+		assertEquals(0, KmerEncodingHelper.totalBaseDifference(new ArrayList<Long>().iterator(), asList(4, "GTACCGGTATACGTCATAATG").iterator(), 4));
+		assertEquals(0, KmerEncodingHelper.totalBaseDifference(asList(4, "GTACCGGTATACGTCATAATG").iterator(), null, 4));
+		assertEquals(0, KmerEncodingHelper.totalBaseDifference(null, asList(4, "GTACCGGTATACGTCATAATG").iterator(), 4));
+		assertEquals(0, KmerEncodingHelper.totalBaseDifference(asList(1, "AA").iterator(), asList(1, "A").iterator(), 1));
+		assertEquals(1, KmerEncodingHelper.totalBaseDifference(asList(1, "TA").iterator(), asList(1, "A").iterator(), 1));
+		
+		assertEquals(1, KmerEncodingHelper.totalBaseDifference(asList(4, "CAAAC").iterator(), asList(4, "TAAAC").iterator(), 4));
 	}
 }

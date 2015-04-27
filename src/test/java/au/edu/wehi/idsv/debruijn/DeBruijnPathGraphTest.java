@@ -388,7 +388,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 	public void mergePaths_should_not_merge_inconsistent_paths() {
 		BasePathGraph pg = PG(G(1)
 				.add("AAGATACAGTGCGGTCTTCC"));
-		assertFalse(pg.mergePaths(ImmutableList.of(pg.get("A"), pg.get("B")), ImmutableList.of(pg.get("B"), pg.get("A"))));
+		assertFalse(pg.mergePaths(ImmutableList.of(pg.get("A"), pg.get("T")), ImmutableList.of(pg.get("T"), pg.get("A"))));
 	}
 	@Test
 	public void mergePaths_should_compare_path_position_of_nodes_when_checking_for_inconsistent_paths() {

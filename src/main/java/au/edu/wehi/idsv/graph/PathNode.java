@@ -2,7 +2,6 @@ package au.edu.wehi.idsv.graph;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -38,6 +37,8 @@ public class PathNode<T> {
 	 * @param graph parent graph
 	 */
 	public PathNode(Collection<T> nodes, WeightedDirectedGraph<T> graph) {
+		assert(nodes != null);
+		assert(graph != null);
 		assert(nodes.size() > 0);
 		this.path = new ArrayList<T>(nodes.size());
 		this.path.addAll(nodes);
@@ -265,29 +266,19 @@ public class PathNode<T> {
 	/**
 	 * Iterates over each node in the given path
 	 * @param it path
+	 * @param offset number starting of nodes to skip 
 	 * @return sequence of primary node along the given path
 	 */
 	public static <T> Iterator<T> nodeIterator(Iterator<? extends PathNode<T>> it, int offset) {
-		// Advance the given offset amount
-		Iterator<T> firstIt = null;
-		while (it.hasNext()) {
-			PathNode<T> node = it.next();
-			if (node.length() < offset) {
-				offset -= node.length();
-			} else {
-				firstIt = node.path.iterator();
-				Iterators.advance(firstIt, offset);
-			}
-		}
-		if (firstIt == null) {
-			return Collections.emptyIterator();
-		}
-		Iterator<T> result = Iterators.concat(firstIt, Iterators.concat(Iterators.transform(it, new Function<PathNode<T>, Iterator<T>>() {
+		Iterator<T> result = Iterators.concat(Iterators.transform(it, new Function<PathNode<T>, Iterator<T>>() {
 			@Override
 			public Iterator<T> apply(PathNode<T> input) {
 				return input.path.iterator();
 			}
-		})));
+		}));
+		if (offset > 0) {
+			Iterators.advance(result, offset);
+		}
 		return result;
 	}
 	/**
@@ -375,7 +366,11 @@ public class PathNode<T> {
 		return toString(null);
 	}
 	public String toString(WeightedDirectedGraph<T> graph) {
-		return String.format("[%4d]%s\t%s", nodeId, printAttributes(), graph.toString(path));
+		if (graph != null) {
+			return String.format("[%4d]%s\t%s", nodeId, printAttributes(), graph.toString(path));
+		} else {
+			return String.format("[%4d]%s\t?", nodeId, printAttributes());
+		}
 	}
 	protected String printAttributes() {
 		return String.format(" l=%d\tn=%d\tw=%d", length(), nodes(), weight());

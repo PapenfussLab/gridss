@@ -1,6 +1,10 @@
 package au.edu.wehi.idsv.graph;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
+import java.util.Iterator;
+import java.util.List;
 
 import org.junit.Test;
 
@@ -9,6 +13,7 @@ import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
 
@@ -201,5 +206,40 @@ public class PathNodeTest extends TestHelper {
 				new PathNode<DeBruijnNodeBase>(toNodes(g, "ATAGAGT"), g),
 				new PathNode<DeBruijnNodeBase>(toNodes(g, "AGTTC"), g)),
 			3, 2, g));
+	}
+	@Test
+	public void nodeIterator_should_iterate_over_underlying_nodes() {
+		BasePathGraph pg = PG(G(4)
+				.add("GTAC")
+				.add("TGTA")
+				.add("CGTA")
+				.add("TACCC")
+				.add("TACG")
+				);
+		List<PathNode<DeBruijnNodeBase>> path = Lists.<PathNode<DeBruijnNodeBase>>newArrayList(pg.get("TGTA"), pg.get("GTAC"), pg.get("TACC"));
+		assertEquals(4, Iterators.size(PathNode.nodeIterator(path.iterator())));
+		Iterator<DeBruijnNodeBase> it = PathNode.nodeIterator(path.iterator());
+		assertEquals(pg.getGraph().getKmer(K("TGTA")), it.next());
+		assertEquals(pg.getGraph().getKmer(K("GTAC")), it.next());
+		assertEquals(pg.getGraph().getKmer(K("TACC")), it.next());
+		assertEquals(pg.getGraph().getKmer(K("ACCC")), it.next());
+		assertFalse(it.hasNext());
+		
+		it = PathNode.nodeIterator(path.iterator(), 1);
+		assertEquals(pg.getGraph().getKmer(K("GTAC")), it.next());
+		assertEquals(pg.getGraph().getKmer(K("TACC")), it.next());
+		assertEquals(pg.getGraph().getKmer(K("ACCC")), it.next());
+		assertFalse(it.hasNext());
+		
+		it = PathNode.nodeIterator(path.iterator(), 2);
+		assertEquals(pg.getGraph().getKmer(K("TACC")), it.next());
+		assertEquals(pg.getGraph().getKmer(K("ACCC")), it.next());
+		assertFalse(it.hasNext());
+		
+		it = PathNode.nodeIterator(path.iterator(), 3);
+		assertEquals(pg.getGraph().getKmer(K("ACCC")), it.next());
+		
+		it = PathNode.nodeIterator(path.iterator(), 4);
+		assertFalse(it.hasNext());
 	}
 }

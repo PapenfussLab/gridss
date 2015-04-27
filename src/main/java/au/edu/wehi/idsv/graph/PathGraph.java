@@ -51,6 +51,9 @@ public class PathGraph<T, PN extends PathNode<T>> implements WeightedDirectedGra
 	protected int expectedWeight;
 	//private static Log log = Log.getInstance(DeBruijnPathGraph.class);
 	public PathGraph(WeightedDirectedGraph<T> graph, Collection<T> seeds, PathNodeFactory<T, PN> factory, SubgraphAssemblyAlgorithmTracker<T, PN> tracker) {
+		assert(graph != null);
+		assert(seeds != null);
+		assert(factory != null);
 		this.graph = graph;
 		this.factory = factory;
 		this.tracker = tracker;
@@ -117,12 +120,12 @@ public class PathGraph<T, PN extends PathNode<T>> implements WeightedDirectedGra
 			pathStart.put(path.first(), path);
 			visited.addAll(path.getPath());
 			for (T adj : graph.prev(path.first())) {
-				if (visited.contains(adj)) {
+				if (!visited.contains(adj)) {
 					frontier.add(adj);
 				}
 			}
 			for (T adj : graph.next(path.last())) {
-				if (visited.contains(adj)) {
+				if (!visited.contains(adj)) {
 					frontier.add(adj);
 				}
 			}
@@ -132,10 +135,13 @@ public class PathGraph<T, PN extends PathNode<T>> implements WeightedDirectedGra
 		}
 		int edges = 0;
 		for (PN path : pathList) {
+			assert(path != null);
 			// construct edges
 			List<T> nextKmers = graph.next(path.last());
 			for (T adj : nextKmers) {
+				assert(adj != null);
 				PN next = pathStart.get(adj);
+				assert(next != null);
 				addEdge(path, next);
 				edges++;
 			}
@@ -238,6 +244,8 @@ public class PathGraph<T, PN extends PathNode<T>> implements WeightedDirectedGra
 	 * @param to target node
 	 */
 	public void addEdge(PN from, PN to) {
+		assert(from != null);
+		assert(to != null);
 		assert(from.getNodeId() >= 0);
 		assert(to.getNodeId() >= 0);
 		assert(pathList.get(from.getNodeId()) == from);
@@ -429,7 +437,7 @@ public class PathGraph<T, PN extends PathNode<T>> implements WeightedDirectedGra
 			if (log != null && inconsistentMergePathRemainingCalls > 0) {
 				inconsistentMergePathRemainingCalls--;
 				log.debug(String.format("Near %s: found similar but inconsistent paths \"%s\" and \"%s\". Both contain \"%s\"",
-					problematicNode.toString(),
+					problematicNode.toString(getGraph()),
 					toString(pathA),
 					toString(pathB),
 					toString(ImmutableList.of(problematicNode))));
@@ -698,11 +706,12 @@ public class PathGraph<T, PN extends PathNode<T>> implements WeightedDirectedGra
 	/**
 	 * Ordering by total weight of each path.
 	 */
-	public Ordering<PN> ByPathTotalWeightDesc = new Ordering<PN>() {
+	public Ordering<PN> ByPathTotalWeight = new Ordering<PN>() {
 		public int compare(PN o1, PN o2) {
 			return Ints.compare(o1.weight(), o2.weight());
 		}
-	}.reverse();
+	};
+	public Ordering<PN> ByPathTotalWeightDesc = ByPathTotalWeight.reverse();
 	/**
 	 * Ordering by max node weight
 	 */

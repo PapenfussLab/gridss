@@ -50,4 +50,20 @@ public class PathGraphTest extends TestHelper {
 		assertEquals(pg.get("CGTC") , nodes.get(1));
 		assertEquals(pg.get("GTCA") , nodes.get(2));
 	}
+	@Test
+	public void should_reduce_simple_paths() {
+		BasePathGraph pg = PG(G(4)
+				.add("AAAATTT"));
+		List<PathNode<DeBruijnNodeBase>> nodes = Lists.newArrayList(pg.getPaths());
+		assertEquals(1, nodes.size());
+	}
+	@Test
+	public void should_not_reduce_forks() {
+		BasePathGraph pg = PG(G(4)
+				.add("TCCGAAT")
+				.add("TCCGAAC")
+				.add("TCCGAAG"));
+		List<PathNode<DeBruijnNodeBase>> nodes = Lists.newArrayList(pg.getPaths());
+		assertEquals(4, nodes.size());
+	}
 }

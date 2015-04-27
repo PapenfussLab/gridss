@@ -19,19 +19,16 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 
 public class DeBruijnPathGraph<T, PN extends PathNode<T>> extends PathGraph<T, PN> implements DeBruijnGraph<PN> {
-	private final DeBruijnGraph<T> graph;
 	private int nodeTaversalCount;
 	public DeBruijnPathGraph(DeBruijnGraph<T> graph, Collection<T> seeds, PathNodeFactory<T, PN> factory, SubgraphAssemblyAlgorithmTracker<T, PN> tracker) {
 		super(graph, seeds, factory, tracker);
-		this.graph = graph;
 	}
 	public DeBruijnPathGraph(DeBruijnGraph<T> graph, PathNodeFactory<T, PN> factory, SubgraphAssemblyAlgorithmTracker<T, PN> tracker) {
 		super(graph, factory, tracker);
-		this.graph = graph;
 	}
 	@Override
 	public DeBruijnGraph<T> getGraph() {
-		return graph;
+		return (DeBruijnGraph<T>)super.getGraph();
 	}
 	@Override
 	public boolean isReference(PN node) {
@@ -39,8 +36,9 @@ public class DeBruijnPathGraph<T, PN extends PathNode<T>> extends PathGraph<T, P
 		return isReference(node.allNodes());
 	}
 	private boolean isReference(Iterable<T> nodeSet) {
+		DeBruijnGraph<T> g = getGraph();
 		for (T n : nodeSet) {
-			if (graph.isReference(n)) {
+			if (g.isReference(n)) {
 				return true;
 			}
 		}
@@ -96,7 +94,7 @@ public class DeBruijnPathGraph<T, PN extends PathNode<T>> extends PathGraph<T, P
 		int collapsedThisRound;
 		do {
 			collapsedThisRound = 0;
-			PriorityQueue<PN> ordering = new PriorityQueue<PN>(getPathCount(), ByPathTotalWeightDesc.reverse());
+			PriorityQueue<PN> ordering = new PriorityQueue<PN>(getPathCount(), ByPathTotalWeight);
 			for (PN p : getPaths()) ordering.add(p); //ordering.addAll(getPaths()); // no PriorityQueue.addAll(Iterable) method :(
 			// unlike collapsing paths, collapsing leaves is a local
 			// change and does not invalidate any other paths
@@ -156,7 +154,7 @@ public class DeBruijnPathGraph<T, PN extends PathNode<T>> extends PathGraph<T, P
 	 * @param leaf leaf node
 	 * @param anchor anchor to start collapse
 	 * @param forward anchor to leaf is in the direction of kmer traversal 
-	 * @return true if the leaf was collapsed, false if not similar path found
+	 * @return true if the leaf was collapsed, false if no similar path found
 	 * @throws AlgorithmRuntimeSafetyLimitExceededException 
 	 */
 	private boolean collapseLeaf(int maxDifference, PN leaf, PN anchor, boolean forward) throws AlgorithmRuntimeSafetyLimitExceededException {
@@ -341,10 +339,12 @@ public class DeBruijnPathGraph<T, PN extends PathNode<T>> extends PathGraph<T, P
 	public int reverseBasesDifferent(Iterable<PN> pathA, Iterable<PN> pathB) {
 		int lengthA = PathNode.nodeLength(pathA);
 		int lengthB = PathNode.nodeLength(pathB);
+		int skipCountA = Math.max(0, lengthA - lengthB);
+		int skipCountB = Math.max(0, lengthB - lengthA);
 		// skip initial bases of the longer path
-		return KmerEncodingHelper.totalBaseDifference(graph,
-				PathNode.nodeIterator(pathA.iterator(), lengthA - Math.max(0, lengthA - lengthB)),
-				PathNode.nodeIterator(pathB.iterator(), lengthB - Math.max(0, lengthB - lengthA)));
+		return KmerEncodingHelper.totalBaseDifference(getGraph(),
+				PathNode.nodeIterator(pathA.iterator(), skipCountA),
+				PathNode.nodeIterator(pathB.iterator(), skipCountB));
 	}
 	/**
 	 * Returns the number of bases difference between the two paths
@@ -355,7 +355,7 @@ public class DeBruijnPathGraph<T, PN extends PathNode<T>> extends PathGraph<T, P
 	 * @return number of bases difference between the two paths
 	 */
 	public int basesDifferent(Iterable<PN> pathA, Iterable<PN> pathB) {
-		return KmerEncodingHelper.totalBaseDifference(graph,
+		return KmerEncodingHelper.totalBaseDifference(getGraph(),
 				PathNode.nodeIterator(pathA.iterator()),
 				PathNode.nodeIterator(pathB.iterator()));
 	}
@@ -400,7 +400,7 @@ public class DeBruijnPathGraph<T, PN extends PathNode<T>> extends PathGraph<T, P
 			}
 			ref.add(currentIsReference);
 			lengths.add(currentLength);
-			// List<PN> splits = split(n, lengths);
+			split(n, lengths);
 			referencePathsSplit += lengths.size() - 1;
 		}
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
