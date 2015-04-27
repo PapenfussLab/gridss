@@ -59,7 +59,7 @@ public class PathGraphAssembler<T, PN extends PathNode<T>> extends DeBruijnPathG
 		 */
 		public final List<PN> referenceAnchoredPost = Lists.newArrayList();
 		public NonReferenceSubgraph(PN seed) {
-			assert(isReference(seed));
+			assert(!isReference(seed));
 			visitAll(seed);
 		}
 		private void visitAll(PN seed) {
@@ -124,7 +124,7 @@ public class PathGraphAssembler<T, PN extends PathNode<T>> extends DeBruijnPathG
 		 * @return reference path
 		 */
 		private List<PN> traverseReference(PN node, boolean traverseForward, int targetLength) {
-			assert(isReference(node));
+			assert(!isReference(node));
 			PathGraphTraverse<T, PN> trav = new PathGraphTraverse<T, PN>(PathGraphAssembler.this, parameters.maxPathTraversalNodes,
 					traverseForward, true,
 					// if anchor has previously timed out on a different breakend subgraph

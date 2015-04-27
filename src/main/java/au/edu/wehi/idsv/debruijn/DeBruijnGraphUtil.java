@@ -16,7 +16,7 @@ public class DeBruijnGraphUtil {
 	}
 	public static <PN extends PathNode<?>> int score(DeBruijnGraph<PN> graph, PN node, boolean scoreReference, boolean scoreNonReference) {
 		boolean isRef = graph.isReference(node);
-		if ((isRef && scoreReference) || (isRef && scoreNonReference)) {
+		if ((isRef && scoreReference) || (!isRef && scoreNonReference)) {
 			// scoring function is the node weight
 			return node.weight();
 		}

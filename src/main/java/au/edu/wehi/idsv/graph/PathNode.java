@@ -144,7 +144,9 @@ public class PathNode<T> {
 		int nodeCount = path.size();
 		if (equivalents != null) {
 			for (LinkedList<T> l : equivalents) {
-				nodeCount += l.size();
+				if (l != null) {
+					nodeCount += l.size();
+				}
 			}
 		}
 		return nodeCount;

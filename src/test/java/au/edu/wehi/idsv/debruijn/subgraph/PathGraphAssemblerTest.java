@@ -65,7 +65,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		g.addEvidence(NRRP(withSequence(           "GCCAATC", OEA(0, 10, "7M", true)))); // not on main patch, but reachable
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGAGTCCTG", Read(0, 10, "7M7S"))));
 		
-		PathGraphAssembler pga = PGA(g, ap, "AATT");
+		PathGraphAssembler<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "AATT");
 		List<LinkedList<DeBruijnSubgraphNode>> result = pga.assembleContigs();
 		assertEquals(3, result.size());
 		assertEquals("TTAACCGGCCAATT", S(g, result.get(0)));

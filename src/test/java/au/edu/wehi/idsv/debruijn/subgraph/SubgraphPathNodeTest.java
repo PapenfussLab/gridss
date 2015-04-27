@@ -18,12 +18,11 @@ public class SubgraphPathNodeTest extends TestHelper {
 	public void containsReferenceKmer() {
 		// no ref kmers if anchor too short
 		DeBruijnReadGraph g = RG(4);
-		g.addEvidence(SCE(FWD, withSequence("TTTTAAAAC", Read(0, 10, "4M5S"))));
-		assertTrue(g.isReference(g.getKmer(KmerEncodingHelper.picardBaseToEncoded(g.getK(), B("TTTT")))));
-		assertFalse(g.isReference(g.getKmer(KmerEncodingHelper.picardBaseToEncoded(g.getK(), B("TTTA")))));
-		
+		g.addEvidence(SCE(FWD, withSequence("TGTTAAGAC", Read(0, 10, "4M5S"))));
+		assertTrue(g.isReference(g.getKmer(KmerEncodingHelper.picardBaseToEncoded(g.getK(), B("TGTT")))));
+		assertFalse(g.isReference(g.getKmer(KmerEncodingHelper.picardBaseToEncoded(g.getK(), B("GTTA")))));
 		
 		DeBruijnPathGraph<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> pg = new DeBruijnPathGraph<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>>(g, new PathNodeBaseFactory<DeBruijnSubgraphNode>(), new NontrackingSubgraphTracker<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>>());
-		assertTrue(pg.isReference(pg.allNodes().iterator().next()));
+		assertTrue(pg.isReference(pg.getPaths().iterator().next()));
 	}
 }

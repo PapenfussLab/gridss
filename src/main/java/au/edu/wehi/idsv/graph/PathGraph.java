@@ -285,7 +285,7 @@ public class PathGraph<T, PN extends PathNode<T>> implements WeightedDirectedGra
 	}
 	@Override
 	public Collection<PN> allNodes() {
-		return pathList;
+		return Lists.newArrayList(getPaths());
 	}
 	/**
 	 * Replaces edges pointing to the given node with the given node
