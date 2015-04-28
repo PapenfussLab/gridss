@@ -18,8 +18,14 @@ GetGenome <- function(file) {
 # Load metadata into a dataframe
 LoadMetadata <- function(directory=".") {
   write("Loading metadata", stderr())
-  #metadata <- foreach (filename=list.files(directory, pattern="*.metadata$"), .export=c("GetMetadataId"), .combine=rbind) %dopar% {
-  metadata <- lapply(list.files(directory, pattern="*.metadata$"), function(filename) {
+  fileList <- list.files(directory, pattern="*.metadata$")
+  zeroSizeFiles = file.info(fileList)$size == 0
+  if (any(zeroSizeFiles)) {
+    warning(paste("Skipping files", fileList[zeroSizeFiles], "as they have 0 size."))
+    fileList <- fileList[!zeroSizeFiles]
+  }
+  #metadata <- foreach (filename=fileList, .export=c("GetMetadataId"), .combine=rbind) %dopar% {
+  metadata <- lapply(fileList, function(filename) {
       md <- read.csv(filename, header=FALSE, sep="=", quote = "\"'", col.names=c("CX", "V"))
       md$File <- filename
       md$Id <- GetMetadataId(filename)
@@ -371,10 +377,16 @@ FilterOutSNV <- function(vcf, caller) {
 # Load VCFs into a list
 LoadVcfs <- function(metadata, directory=".", pattern="*.vcf$") {
   write("Loading VCFs", stderr())
-  vcfFileList <- list.files(directory, pattern=pattern)
+  fileList <- list.files(directory, pattern=pattern)
+  zeroSizeFiles = file.info(fileList)$size == 0
+  if (any(zeroSizeFiles)) {
+    write(paste("Skipping file", fileList[zeroSizeFiles], "due to 0 size.\n"))
+    warning(paste("Skipping files", paste(fileList[zeroSizeFiles]), "due to 0 size.\n"))
+    fileList <- fileList[!zeroSizeFiles]
+  }
   # Parallel load of VCFs
-  #vcfs <- foreach (filename=vcfFileList, .packages="VariantAnnotation") %dopar% {
-  vcfs <- lapply(vcfFileList, function(filename) {
+  #vcfs <- foreach (filename=fileList, .packages="VariantAnnotation") %dopar% {
+  vcfs <- lapply(fileList, function(filename) {
     write(paste0("Loading ", filename), stderr())
     vcf <- readVcf(filename, "unknown")
     attr(vcf, "filename") <- filename
@@ -388,7 +400,7 @@ LoadVcfs <- function(metadata, directory=".", pattern="*.vcf$") {
     attr(vcf, "metadata") <- md
     vcf
   })
-  names(vcfs) <- GetMetadataId(vcfFileList)
+  names(vcfs) <- GetMetadataId(fileList)
   vcfs[sapply(vcfs, is.null)] <- NULL # Remove NULL VCFs list
   write(paste("Loaded", length(vcfs), "VCFs"), stderr())
   return(vcfs)

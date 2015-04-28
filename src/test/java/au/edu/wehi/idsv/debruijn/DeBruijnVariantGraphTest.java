@@ -59,7 +59,17 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		ass = new DeBruijnSubgraphAssembler(context, aes);
 		result = Lists.newArrayList(); 
 	}
-	
+	public void setupWithGraphReduction(int k) {
+		context = getContext();
+		context.getAssemblyParameters().k = k;
+		context.getAssemblyParameters().minReads = 0;
+		context.getAssemblyParameters().maxBaseMismatchForCollapse = 1;
+		context.getAssemblyParameters().collapseBubblesOnly = false;
+		context.getAssemblyParameters().writeFilteredAssemblies = true;
+		aes = AES(context);
+		ass = new DeBruijnSubgraphAssembler(context, aes);
+		result = Lists.newArrayList(); 
+	}
 	private static SAMRecord R(String read) {
 		return R(null, read, null, false, true);
 	}
@@ -378,6 +388,7 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		SmallIndelSAMRecordAssemblyEvidence e = (SmallIndelSAMRecordAssemblyEvidence) result.get(0);
 		assertEquals("", e.getUntemplatedSequence());
 		assertEquals(new BreakpointSummary(0, FWD, 50, 50, 0, BWD, 100, 100), e.getBreakendSummary());
+		assertEquals("50M49D50M", e.getBackingRecord().getCigarString());
 	}
 	/**
 	 * If the non-reference kmer path less than k-1 in length
@@ -395,5 +406,16 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		result.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("AAAACGTA", Read(0, 10, "3S5M"))))));
 		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, result.size());
+	}
+	@Test
+	public void should_assemble_non_reference_primary_kmer_as_reference_if_alt_ref_kmer_exists() {
+		setupWithGraphReduction(4);
+		addRead(withSequence("GCTAGG", Read(0, 1, "5M2S"))[0], true);
+		addRead(withSequence("GCTAGG", Read(0, 1, "5M2S"))[0], true);
+		addRead(withSequence("GCTATG", Read(0, 1, "6M1S"))[0], true);
+		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, result.size());
+		assertEquals("GCTAGG", S(result.get(0).getAssemblySequence()));
+		assertEquals("G", S(result.get(0).getBreakendSequence()));
 	}
 }

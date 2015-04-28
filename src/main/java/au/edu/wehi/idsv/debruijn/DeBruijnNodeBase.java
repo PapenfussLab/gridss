@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv.debruijn;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import au.edu.wehi.idsv.BreakendDirection;
@@ -37,6 +36,10 @@ public class DeBruijnNodeBase {
 	private int[] categoryCount;
 	private List<BreakendSummary> breakends = new ArrayList<BreakendSummary>(4);
 	private List<Long> weights = new ArrayList<Long>(4);
+	/**
+	 * Need to record an offset so we don't overflow our positional weight sum
+	 */
+	private final long linearPositionOffset;
 	public DeBruijnNodeBase(VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) {
 		this(kmer.kmer,
 			kmer.weight,
@@ -55,17 +58,18 @@ public class DeBruijnNodeBase {
 	public DeBruijnNodeBase(long kmer, int weight, long expectedLinearPosition, String evidenceID, boolean isReference, BreakendDirection anchorDirection, int category, BreakendSummary unanchoredBreakend) {
 		if (weight <= 0) throw new IllegalArgumentException("weight must be positive");
 		assert(unanchoredBreakend != null);
+		this.linearPositionOffset = 0; // TODO: fix this
 		this.kmer = kmer;
 		this.nodeWeight = weight;
 		supportList.add(evidenceID);
 		if (isReference) referenceSupport++;
-		tPositionWeightSum += expectedLinearPosition * weight;
+		tPositionWeightSum += linearPositionOffset * weight;
 		tWeightSum += weight;
 		if (anchorDirection == BreakendDirection.Forward) {
-			fPositionWeightSum += expectedLinearPosition * weight;
+			fPositionWeightSum += linearPositionOffset * weight;
 			fWeightSum += weight;
 		} else if (anchorDirection == BreakendDirection.Backward) {
-			bPositionWeightSum += expectedLinearPosition * weight;
+			bPositionWeightSum += linearPositionOffset * weight;
 			bWeightSum += weight;
 		}
 		categoryCount = new int[category + 1];
@@ -137,10 +141,10 @@ public class DeBruijnNodeBase {
 	 * @param direction breakend direction.
 	 * Forward returns the inferred position of the kmer immediately before the start of the path
 	 * Backwards returns the inferred position of the kmer immediately after the end of the path
-	 * @param path kmer path
+	 * @param breakendPathAllKmers kmer path
 	 * @return Inferred reference anchor position 
 	 */
-	public static double getExpectedPositionForDirectAnchor(BreakendDirection direction, Collection<? extends DeBruijnNodeBase> path) {
+	public static <T extends DeBruijnNodeBase>double getExpectedPositionForDirectAnchor(BreakendDirection direction, List<List<T>> breakendPathAllKmers) {
 		long posWeightSum = 0;
 		long weightSum = 0;
 		//long oppositePosWeightSum = 0;
@@ -148,20 +152,24 @@ public class DeBruijnNodeBase {
 		int offset;
 		if (direction == BreakendDirection.Forward) {
 			offset = 1;
-			for (DeBruijnNodeBase n : path) {
-				weightSum += n.fWeightSum;
-				posWeightSum += n.fPositionWeightSum - n.fWeightSum * offset;
-				//oppositeWeightSum += n.bWeightSum;
-				//oppositePosWeightSum += n.bPositionWeightSum - n.bWeightSum * offset;
+			for (List<T> list : breakendPathAllKmers) {
+				for (DeBruijnNodeBase n : list) {
+					weightSum += n.fWeightSum;
+					posWeightSum += n.fPositionWeightSum - n.fWeightSum * offset;
+					//oppositeWeightSum += n.bWeightSum;
+					//oppositePosWeightSum += n.bPositionWeightSum - n.bWeightSum * offset;
+				}
 				offset++;
 			}
 		} else {
-			offset = -path.size();
-			for (DeBruijnNodeBase n : path) {
-				weightSum += n.bWeightSum;
-				posWeightSum += n.bPositionWeightSum - n.bWeightSum * offset;
-				//oppositeWeightSum += n.fWeightSum;
-				//oppositePosWeightSum += n.fPositionWeightSum - n.fWeightSum * offset;
+			offset = -breakendPathAllKmers.size();
+			for (List<T> list : breakendPathAllKmers) {
+				for (DeBruijnNodeBase n : list) {
+					weightSum += n.bWeightSum;
+					posWeightSum += n.bPositionWeightSum - n.bWeightSum * offset;
+					//oppositeWeightSum += n.fWeightSum;
+					//oppositePosWeightSum += n.fPositionWeightSum - n.fWeightSum * offset;
+				}
 				offset++;
 			}
 		}
@@ -171,7 +179,7 @@ public class DeBruijnNodeBase {
 	public double getExpectedAnchorPosition() {
 		return (fPositionWeightSum + bPositionWeightSum) / (double)(fWeightSum + bWeightSum); 
 	}
-	public static BreakendSummary getExpectedBreakend(LinearGenomicCoordinate lgc, Collection<? extends DeBruijnNodeBase> path) {
+	public static BreakendSummary getExpectedBreakend(LinearGenomicCoordinate lgc, Iterable<? extends DeBruijnNodeBase> path) {
 		List<BreakendSummary> bs = Lists.newArrayList();
 		List<Long> weights = Lists.newArrayList();
 		for (DeBruijnNodeBase n : path) {

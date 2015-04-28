@@ -5,7 +5,6 @@ import htsjdk.samtools.util.Log;
 
 import java.io.File;
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -194,8 +193,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 				if (shouldVisualise(timeoutExceeded)) {
 					graphExporter = new StaticDeBruijnPathGraphGexfExporter<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>>();
 				}
-				for (LinkedList<DeBruijnSubgraphNode> contig : pga.assembleContigs(graphExporter)) {
-					SAMRecordAssemblyEvidence variant = createAssembly(contig);
+				for (List<PathNode<DeBruijnSubgraphNode>> contig : pga.assembleContigs(graphExporter)) {
+					SAMRecordAssemblyEvidence variant = createAssembly(pga, contig);
 					if (variant != null) {
 						contigs.add(variant);
 					}

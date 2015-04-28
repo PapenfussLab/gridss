@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv.visualisation;
 
-import java.util.LinkedList;
 import java.util.List;
 
 import au.edu.wehi.idsv.BreakendDirection;
@@ -178,9 +177,7 @@ public class SubgraphAlgorithmMetrics<T, PN extends PathNode<T>> implements Subg
 		}
 	}
 	@Override
-	public void assemblyNonReferenceContigs(
-			List<List<PN>> assembledPaths,
-			List<LinkedList<T>> assembledKmers, int nodesTraversed) {
+	public void assemblyNonReferenceContigs(List<List<PN>> assembledPaths, int nodesTraversed) {
 		this.timeAssemblyNonReferenceContigsComplete = System.nanoTime();
 		this.contigsAssembled = assembledPaths.size();
 		this.nodesTraversedDuringContigAssembly = nodesTraversed;

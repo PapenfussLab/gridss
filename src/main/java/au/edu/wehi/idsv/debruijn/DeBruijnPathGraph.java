@@ -409,17 +409,17 @@ public class DeBruijnPathGraph<T, PN extends PathNode<T>> extends PathGraph<T, P
 	}
 	private boolean assertReferenceKmersSplit() {
 		for (PN pn : getPaths()) {
-			assert(Iterables.all(pn.getPathAllNodes(), new Predicate<List<T>>() {
-					@Override
-					public boolean apply(List<T> input) {
-						return isReference(input);
+			boolean shouldBeReference = isReference(pn);
+			for (List<T> list : pn.getPathAllNodes()) {
+				int referenceNodeCount = 0;
+				for (T n : list) {
+					if (getGraph().isReference(n)) {
+						referenceNodeCount++;
 					}
-				}) || Iterables.all(pn.getPathAllNodes(), new Predicate<List<T>>() {
-					@Override
-					public boolean apply(List<T> input) {
-						return !isReference(input);
-					}
-				}));
+				}
+				boolean containsReference = referenceNodeCount > 0;
+				assert(containsReference == shouldBeReference);
+			}
 		}
 		return true;
 	}

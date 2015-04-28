@@ -208,7 +208,7 @@ public class PathNodeTest extends TestHelper {
 			3, 2, g));
 	}
 	@Test
-	public void nodeIterator_should_iterate_over_underlying_nodes() {
+	public void nodeIterator_should_iterate_over_underlying_primary_nodes() {
 		BasePathGraph pg = PG(G(4)
 				.add("GTAC")
 				.add("TGTA")

@@ -443,4 +443,20 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		pg.splitOutReferencePaths();
 		assertEquals(3, pg.getPathCount());
 	}
+	@Test
+	public void isReference_should_consider_alternate_paths() throws AlgorithmRuntimeSafetyLimitExceededException {
+		DeBruijnReadGraph g = RG(4);
+		g.addEvidence(SCE(BWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7S7M"))));
+		g.addEvidence(SCE(BWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7S7M"))));
+		g.addEvidence(SCE(BWD, withSequence(         "TTAAC", Read(0, 10, "1S4M"))));
+		DeBruijnPathGraph<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> pg = new DeBruijnPathGraph<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>>(
+				g,
+				ImmutableList.of(g.getKmer(KmerEncodingHelper.picardBaseToEncoded(4, B("TTAA")))),
+				new PathNodeBaseFactory<DeBruijnSubgraphNode>(),
+				new NontrackingSubgraphTracker<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>>());
+		pg.collapseSimilarPaths(1, false);
+		assertEquals(1, pg.getPathCount());
+		pg.splitOutReferencePaths();
+		assertEquals(4, pg.getPathCount());
+	}
 }

@@ -496,6 +496,13 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	public boolean isBreakendExact() {
 		return isExact;
 	}
+	/**
+	 * Indicates that the breakend sequence was not aligned to the reference
+	 * @return true if the breakend is likely to be novel sequence, false otherwise
+	 */
+	public boolean isNovelBreakend() {
+		return realignment.getReadUnmappedFlag();
+	}
 	@Override
 	public float getBreakendQual() {
 		if (getBreakendLength() == 0) return 0;

@@ -377,20 +377,4 @@ public class PathNode<T> {
 	protected String printAttributes() {
 		return String.format(" l=%d\tn=%d\tw=%d", length(), nodes(), weight());
 	}
-	/*
-	private String debugPrintPathString(Graph<T> graph) {
-		if (graph != null) pathKmerString(graph.getK());
-		// try to infer k from the states
-		int k = 1;
-		for (long s : getPath()) {
-			while (s >>> (2 * k) > 0) k++;
-		}
-		return String.format("%s->%s",
-				new String(KmerEncodingHelper.encodedToPicardBases(k, getPath().get(0))),
-				new String(KmerEncodingHelper.encodedToPicardBases(k, getPath().get(length()-1))));
-	}
-	public String pathKmerString(int k) {
-		return new String(DeBruijnGraphBase.getBaseCalls(this.getPath(), k), StandardCharsets.US_ASCII);
-	}
-	*/
 }
