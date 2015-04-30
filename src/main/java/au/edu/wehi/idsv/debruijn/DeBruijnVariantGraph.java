@@ -171,7 +171,7 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		int breakendStartOffset = pathAllKmers.indexOf(breakendPathAllKmers.get(0));
 		int breakendEndOffset = pathAllKmers.indexOf(breakendPathAllKmers.get(breakendPathAllKmers.size() - 1));
 		assert(breakendEndOffset - breakendStartOffset == breakendPathAllKmers.size() - 1); // should be a single breakend path
-		List<T> beforeBreakend = breakendStartOffset > 0 ? pathAllKmers.get(breakendStartOffset -1) : null;
+		List<T> beforeBreakend = breakendStartOffset > 0 ? pathAllKmers.get(breakendStartOffset - 1) : null;
 		List<T> afterBreakend = breakendEndOffset + 1 < pathAllKmers.size() ? pathAllKmers.get(breakendEndOffset + 1) : null;
 		
 		if (breakendPathAllKmers.size() < getK() - 1 && beforeBreakend != null && afterBreakend != null) {
@@ -183,17 +183,24 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 			//     making sure we don't overrun either anchor and turn the breakpoint into a breakend
 			int basesToAdjust = getK() - 1 - breakendPathAllKmers.size();
 			while (basesToAdjust > 0 && (breakendStartOffset > 1 || breakendEndOffset < pathAllKmers.size() - 2)) {
-				if (basesToAdjust > 0 && breakendStartOffset > 0) {
+				if (basesToAdjust > 0 && breakendStartOffset > 1) {
 					breakendPathAllKmers.add(0, beforeBreakend);
 					breakendStartOffset--;
+					basesToAdjust--;
 					beforeBreakend = pathAllKmers.get(breakendStartOffset - 1);
-					basesToAdjust--;
 				}
-				if (basesToAdjust > 0 && breakendEndOffset < pathAllKmers.size() - 1) {
+				if (basesToAdjust > 0 && breakendEndOffset < pathAllKmers.size() - 2) {
+					breakendPathAllKmers.add(afterBreakend);
 					breakendEndOffset++;
-					afterBreakend = pathAllKmers.get(breakendEndOffset + 1);
 					basesToAdjust--;
+					afterBreakend = pathAllKmers.get(breakendEndOffset + 1);
 				}
+			}
+			if (basesToAdjust > 0) {
+				// not enough anchored bases either side.
+				// TODO: chew into the anchoring kmers and calling with less than k anchor bases either side instead of outright rejection
+				log.debug(String.format("Rejecting undersized breakpoint assembly near (%d).", beforeBreakend.get(0).getExpectedPosition()));
+				return null;
 			}
 		}
 		Set<String> breakendSupport = getSupport(breakendPathAllKmers);
