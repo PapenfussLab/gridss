@@ -2,12 +2,12 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 
 import htsjdk.samtools.util.Log;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
-import java.util.PriorityQueue;
+import java.util.Queue;
 import java.util.Set;
 
 import au.edu.wehi.idsv.Defaults;
@@ -17,7 +17,6 @@ import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
@@ -46,8 +45,13 @@ class PathGraphTraverse<T, PN extends DeBruijnPathNode<T>> {
 	private final int maxKmerPathLength;
 	private int currentNextStates;
 	private int nodeTraversals;
-	private Map<PN, MemoizedNode<PN>> bestPath = Maps.newHashMap();
-	private PriorityQueue<MemoizedNode<PN>> frontier = new PriorityQueue<MemoizedNode<PN>>(1024, ByWeight);
+	private MemoizedNode<PN>[] bestPath;
+	//private PriorityQueue<MemoizedNode<PN>> frontier = new PriorityQueue<MemoizedNode<PN>>(1024, ByWeight);
+	/**
+	 * Using a queue results in cycles being visited in order of shortest PathNode distance.
+	 * Priority queue results in cycles being visited in order of weight
+	 */
+	private Queue<MemoizedNode<PN>> frontier = new ArrayDeque<MemoizedNode<PN>>();
 	private MemoizedNode<PN> traversalBest;
 	private Set<PN> terminalNodes;
 	public int getNodesTraversed() { return nodeTraversals; }
@@ -139,8 +143,9 @@ class PathGraphTraverse<T, PN extends DeBruijnPathNode<T>> {
 		}
 		return list;
 	}
+	@SuppressWarnings("unchecked")
 	private void init(PN startingNode) {
-		bestPath.clear();
+		bestPath = (MemoizedNode<PN>[])new MemoizedNode<?>[pg.getMaxNodeId() + 1];
 		frontier.clear();
 		traversalBest = NO_BEST_PATH;
 		MemoizedNode<PN> start = new MemoizedNode<PN>(null, startingNode, DeBruijnGraphUtil.score(pg, startingNode, referenceTraverse, !referenceTraverse), startingNode.length());
@@ -149,7 +154,7 @@ class PathGraphTraverse<T, PN extends DeBruijnPathNode<T>> {
 	private void visitChildren(MemoizedNode<PN> node) throws AlgorithmRuntimeSafetyLimitExceededException {
 		nodeTraversals++;
 		if (nodeTraversals > maxPathTraversalNodes && currentNextStates > 1) {
-			// maxNextStates = 1 is a greedy traversal - no need for a timeout as it is n nodes traversed even in a fully connected graph
+			// maxNextStates = 1 is a greedy traversal - no need for a timeout as it is max n nodes traversed even in a fully connected graph
 			throw new AlgorithmRuntimeSafetyLimitExceededException();
 		}
 		assert(!Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS || sanityCheck());
@@ -190,7 +195,8 @@ class PathGraphTraverse<T, PN extends DeBruijnPathNode<T>> {
 		return false;
 	}
 	private boolean pushFrontier(MemoizedNode<PN> node) {
-		MemoizedNode<PN> existing = bestPath.get(node.node);
+		assert(node.node != null);
+		MemoizedNode<PN> existing = bestPath[node.node.getNodeId()];
 		if (existing != null && existing.score >= node.score) {
 			// our destination already has a better path to it - clearly not an optimal path 
 			return false;
@@ -200,7 +206,7 @@ class PathGraphTraverse<T, PN extends DeBruijnPathNode<T>> {
 				traversalBest = node;
 			}
 		}
-		bestPath.put(node.node, node);
+		bestPath[node.node.getNodeId()] = node;
 		frontier.add(node);
 		return true;
 	}
@@ -213,7 +219,8 @@ class PathGraphTraverse<T, PN extends DeBruijnPathNode<T>> {
 	private MemoizedNode<PN> popFronter() {
 		while (!frontier.isEmpty()) {
 			MemoizedNode<PN> node = frontier.poll();
-			if (bestPath.get(node.node) == node && node.length < maxKmerPathLength) {
+			assert(node.node != null);
+			if (bestPath[node.node.getNodeId()] == node && node.length < maxKmerPathLength) {
 				return node;
 			}
 		}
@@ -222,11 +229,12 @@ class PathGraphTraverse<T, PN extends DeBruijnPathNode<T>> {
 	private boolean sanityCheck() {
 		for (MemoizedNode<PN> n : frontier) {
 			assert(terminalNodes != null || n.score <= traversalBest.score);
-			assert(bestPath.containsKey(n.node));
-			assert(bestPath.get(n.node).score >= n.score);
+			assert(bestPath[n.node.getNodeId()] != null);
+			assert(bestPath[n.node.getNodeId()].score >= n.score);
 		}
-		for (MemoizedNode<PN> n : bestPath.values()) {
-			assert(bestPath.get(n.node).node == n.node);
+		for (int i = 0; i < bestPath.length; i++) {
+			MemoizedNode<PN> n = bestPath[i];
+			assert(n == null || n.node.getNodeId() == i);
 		}
 		return true;
 	}
