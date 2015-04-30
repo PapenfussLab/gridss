@@ -121,7 +121,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		assertEquals("AAATGGGG", S(g, result.get(0)));
 	}
 	@Test
-	public void should_maximise_reference_weight() {
+	public void greedy_should_maximise_reference_weight() {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.k = 4;
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
@@ -136,7 +136,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withSequence("GCAAATGGG", Read(0, 10, "8M1S"))));
 		g.addEvidence(SCE(FWD, withSequence("GCAAATGGG", Read(0, 10, "8M1S"))));
 		g.addEvidence(SCE(FWD, withSequence("CCAAATGGG", Read(0, 10, "8M1S")))); // worst weight at the immediate next kmer
-		g.addEvidence(SCE(FWD, withSequence("GGTACCCAAATGGG", Read(0, 10, "13M1S")))); // but best overall
+		g.addEvidence(SCE(FWD, withSequence("GGTACCCAAATGGG", Read(0, 10, "13M1S")))); // but best overall path node
 		// should take the shorter assembly that has a longer soft clip
 		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "TGGG");
 		List<List<DeBruijnSubgraphNode>> result = flatten(pga.assembleContigs());

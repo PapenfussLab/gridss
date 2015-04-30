@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
 import htsjdk.samtools.util.Log;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -28,13 +29,13 @@ import com.google.common.primitives.Ints;
  */
 class PathGraphTraverse<T, PN extends DeBruijnPathNode<T>> {
 	private static final Log log = Log.getInstance(PathGraphTraverse.class);
-	@SuppressWarnings("rawtypes")
-	private final static Ordering<MemoizedNode> ByWeight = new Ordering<MemoizedNode>() {
-		@Override
-		public int compare(MemoizedNode arg0, MemoizedNode arg1) {
-			return Ints.compare(arg0.score, arg1.score);
-		}
-	};
+	//@SuppressWarnings("rawtypes")
+	//private final static Ordering<MemoizedNode> ByWeight = new Ordering<MemoizedNode>() {
+	//	@Override
+	//	public int compare(MemoizedNode arg0, MemoizedNode arg1) {
+	//		return Ints.compare(arg0.score, arg1.score);
+	//	}
+	//};
 	private final MemoizedNode<PN> NO_BEST_PATH = new MemoizedNode<PN>(null, null, Integer.MIN_VALUE, 0);
 	private final DeBruijnPathGraph<T, PN> pg;
 	private final Ordering<PN> order;
@@ -45,7 +46,7 @@ class PathGraphTraverse<T, PN extends DeBruijnPathNode<T>> {
 	private final int maxKmerPathLength;
 	private int currentNextStates;
 	private int nodeTraversals;
-	private MemoizedNode<PN>[] bestPath;
+	private Int2ObjectOpenHashMap<MemoizedNode<PN>> bestPath;
 	//private PriorityQueue<MemoizedNode<PN>> frontier = new PriorityQueue<MemoizedNode<PN>>(1024, ByWeight);
 	/**
 	 * Using a queue results in cycles being visited in order of shortest PathNode distance.
@@ -63,17 +64,18 @@ class PathGraphTraverse<T, PN extends DeBruijnPathNode<T>> {
 			final int maxNextStates,
 			final int maxKmerPathLength) {
 		this.pg = pg;
-		this.order = new Ordering<PN>() {
-			@Override
-			public int compare(PN left, PN right) {
-				return Ints.compare(DeBruijnGraphUtil.score(pg, left), DeBruijnGraphUtil.score(pg, right));
-			}
-		}.reverse();
+		this.order = new ByScore().reverse();
 		this.maxPathTraversalNodes = maxPathTraversalNodes;
 		this.traverseForward = traverseForward;
 		this.referenceTraverse = referenceTraverse;
 		this.maxNextStates = maxNextStates;
 		this.maxKmerPathLength = maxKmerPathLength;
+	}
+	private class ByScore extends Ordering<PN> {
+		@Override
+		public int compare(PN left, PN right) {
+			return Ints.compare(DeBruijnGraphUtil.score(pg, left), DeBruijnGraphUtil.score(pg, right));
+		}
 	}
 	private static class MemoizedNode<PN> {
 		public MemoizedNode(MemoizedNode<PN> prev, PN node, int score, int length) {
@@ -143,9 +145,8 @@ class PathGraphTraverse<T, PN extends DeBruijnPathNode<T>> {
 		}
 		return list;
 	}
-	@SuppressWarnings("unchecked")
 	private void init(PN startingNode) {
-		bestPath = (MemoizedNode<PN>[])new MemoizedNode<?>[pg.getMaxNodeId() + 1];
+		bestPath = new Int2ObjectOpenHashMap<MemoizedNode<PN>>();
 		frontier.clear();
 		traversalBest = NO_BEST_PATH;
 		MemoizedNode<PN> start = new MemoizedNode<PN>(null, startingNode, DeBruijnGraphUtil.score(pg, startingNode, referenceTraverse, !referenceTraverse), startingNode.length());
@@ -159,7 +160,10 @@ class PathGraphTraverse<T, PN extends DeBruijnPathNode<T>> {
 		}
 		assert(!Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS || sanityCheck());
 		List<PN> nextStates = traverseForward ? pg.next(node.node) : pg.prev(node.node);
-		Collections.sort(nextStates, order);
+		if (nextStates.size() > currentNextStates) {
+			// only sort if we're not going to visit all the nodes
+			Collections.sort(nextStates, order);
+		}
 		int nextStateCount = 0;
 		for (PN next : nextStates) {
 			boolean isRef = pg.isReference(next);
@@ -196,7 +200,7 @@ class PathGraphTraverse<T, PN extends DeBruijnPathNode<T>> {
 	}
 	private boolean pushFrontier(MemoizedNode<PN> node) {
 		assert(node.node != null);
-		MemoizedNode<PN> existing = bestPath[node.node.getNodeId()];
+		MemoizedNode<PN> existing = bestPath.get(node.node.getNodeId());
 		if (existing != null && existing.score >= node.score) {
 			// our destination already has a better path to it - clearly not an optimal path 
 			return false;
@@ -206,7 +210,7 @@ class PathGraphTraverse<T, PN extends DeBruijnPathNode<T>> {
 				traversalBest = node;
 			}
 		}
-		bestPath[node.node.getNodeId()] = node;
+		bestPath.put(node.node.getNodeId(), node);
 		frontier.add(node);
 		return true;
 	}
@@ -220,7 +224,7 @@ class PathGraphTraverse<T, PN extends DeBruijnPathNode<T>> {
 		while (!frontier.isEmpty()) {
 			MemoizedNode<PN> node = frontier.poll();
 			assert(node.node != null);
-			if (bestPath[node.node.getNodeId()] == node && node.length < maxKmerPathLength) {
+			if (bestPath.get(node.node.getNodeId()) == node && node.length < maxKmerPathLength) {
 				return node;
 			}
 		}
@@ -229,12 +233,11 @@ class PathGraphTraverse<T, PN extends DeBruijnPathNode<T>> {
 	private boolean sanityCheck() {
 		for (MemoizedNode<PN> n : frontier) {
 			assert(terminalNodes != null || n.score <= traversalBest.score);
-			assert(bestPath[n.node.getNodeId()] != null);
-			assert(bestPath[n.node.getNodeId()].score >= n.score);
+			assert(bestPath.get(n.node.getNodeId()) != null);
+			assert(bestPath.get(n.node.getNodeId()).score >= n.score);
 		}
-		for (int i = 0; i < bestPath.length; i++) {
-			MemoizedNode<PN> n = bestPath[i];
-			assert(n == null || n.node.getNodeId() == i);
+		for (MemoizedNode<PN> n : bestPath.values()) {
+			assert(bestPath.get(n.node.getNodeId()) != n);
 		}
 		return true;
 	}

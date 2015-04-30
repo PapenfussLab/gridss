@@ -3,14 +3,13 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 import htsjdk.samtools.util.Log;
 
 import java.io.File;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Queue;
-import java.util.Set;
+import java.util.Stack;
 
 import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.Defaults;
@@ -50,7 +49,7 @@ public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBru
 		/**
 		 * Node set of the non-reference subgraphs
 		 */
-		public final Set<PN> nodes = Sets.newHashSet();
+		public final List<PN> nodes = Lists.newArrayList();
 		/**
 		 * Nodes with a connected reference kmer preceding the given path
 		 */
@@ -59,38 +58,41 @@ public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBru
 		 * Nodes with a connected reference kmer following the given path
 		 */
 		public final List<PN> referenceAnchoredPost = Lists.newArrayList();
-		public NonReferenceSubgraph(PN seed) {
+		public NonReferenceSubgraph(PN seed, BitSet processed) {
 			assert(!isReference(seed));
-			visitAll(seed);
+			visitAll(seed, processed);
 		}
-		private void visitAll(PN seed) {
-			Queue<PN> frontier = new ArrayDeque<PN>();
+		private void visitAll(PN seed, BitSet processed) {
+			Stack<PN> frontier = new Stack<PN>();
 			nodes.add(seed);
+			processed.set(seed.getNodeId());
 			frontier.add(seed);
 			while (!frontier.isEmpty()) {
-				PN node = frontier.poll();
+				PN node = frontier.pop();
 				boolean added = false;
-				for (PN prev : prev(node)) {
-					boolean adjIsRef = isReference(prev);
+				for (PN adj : prev(node)) {
+					boolean adjIsRef = isReference(adj);
 					if (!added && adjIsRef) {
 						referenceAnchoredPreceding.add(node);
 						added = true;
 					}
-					if (!adjIsRef && !nodes.contains(prev)) {
-						nodes.add(prev);
-						frontier.add(prev);
+					if (!adjIsRef && !processed.get(adj.getNodeId())) {
+						nodes.add(adj);
+						processed.set(adj.getNodeId());
+						frontier.add(adj);
 					}
 				}
 				added = false;
-				for (PN next : next(node)) {
-					boolean adjIsRef = isReference(next);
+				for (PN adj : next(node)) {
+					boolean adjIsRef = isReference(adj);
 					if (!added && adjIsRef) {
 						referenceAnchoredPost.add(node);
 						added = true;
 					}
-					if (!adjIsRef && !nodes.contains(next)) {
-						nodes.add(next);
-						frontier.add(next);
+					if (!adjIsRef && !processed.get(adj.getNodeId())) {
+						nodes.add(adj);
+						processed.set(adj.getNodeId());
+						frontier.add(adj);
 					}
 				}
 			}
@@ -251,14 +253,12 @@ public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBru
 	 * Separates non-reference kmers of the subgraph into disjoint non-reference subgraphs 
 	 */
 	private void calcNonReferenceSubgraphs() {
-		Set<PN> toProcess = Sets.newHashSet(getPaths());
-		while (!toProcess.isEmpty()) {
-			PN node = toProcess.iterator().next();
-			toProcess.remove(node);
-			if (!isReference(node)) {
-				NonReferenceSubgraph nrsg = new NonReferenceSubgraph(node); 
+		BitSet processed = new BitSet(getMaxNodeId() + 1);
+		for (PN node : getPaths()) {
+			if (!processed.get(node.getNodeId()) && !isReference(node)) {
+				// start of a new non-reference subgraph
+				NonReferenceSubgraph nrsg = new NonReferenceSubgraph(node, processed); 
 				subgraphs.add(nrsg);
-				toProcess.removeAll(nrsg.nodes);
 			}
 		}
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
@@ -293,9 +293,9 @@ public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBru
 				}
 			}
 		}
-		List<PN> allSubgraphs = Lists.newArrayList(Iterables.concat(Iterables.transform(subgraphs, new Function<NonReferenceSubgraph, Set<PN>>() {
+		List<PN> allSubgraphs = Lists.newArrayList(Iterables.concat(Iterables.transform(subgraphs, new Function<NonReferenceSubgraph, Iterable<PN>>() {
 			@Override
-			public Set<PN> apply(NonReferenceSubgraph input) {
+			public Iterable<PN> apply(NonReferenceSubgraph input) {
 				return input.nodes;
 			}
 		})));
