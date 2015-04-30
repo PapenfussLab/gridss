@@ -617,7 +617,7 @@ public class PathGraph<T, PN extends PathNode<T>> implements WeightedDirectedGra
 				return prev(node).size() == 1 && next(node).size() == 1;
 			}
 		});
-	}
+	} 
 	/**
 	 * Traverses source graph until a branch is found
 	 * @param seed starting node
@@ -625,24 +625,29 @@ public class PathGraph<T, PN extends PathNode<T>> implements WeightedDirectedGra
 	 */
 	private LinkedList<T> traverseBranchless(T seed) {
 		LinkedList<T> path = new LinkedList<T>();
-		Set<T> visited = Sets.newHashSet();
 		path.add(seed);
-		visited.add(seed);
-		for(List<T> adj = graph.next(path.getLast()); adj.size() == 1 && graph.prev(adj.get(0)).size() <= 1; adj = graph.next(path.getLast())) {
-			if (visited.contains(adj.get(0))) {
-				// circular contig
+		List<T> adj = graph.next(path.getLast());
+		while (adj.size() == 1) {
+			T adjNode = adj.get(0);
+			if (adjNode.equals(seed)) {
+				// cycle detected
+				return path;
+			}
+			if (graph.prev(adjNode).size() != 1) {
 				break;
 			}
-			path.addLast(adj.get(0));
-			visited.add(adj.get(0));
+			path.addLast(adjNode);
+			adj = graph.next(path.getLast());
 		}
-		for(List<T> adj = graph.prev(path.getFirst()); adj.size() == 1 && graph.next(adj.get(0)).size() <= 1; adj = graph.prev(path.getFirst())) {
-			if (visited.contains(adj.get(0))) {
-				// circular contig
+		adj = graph.prev(path.getFirst());
+		while (adj.size() == 1) {
+			T adjNode = adj.get(0);
+			// (no need to check for cycle since if we were a cycle, we would have reached our starting position on the forward traverse)
+			if (graph.next(adjNode).size() != 1) {
 				break;
 			}
-			path.addFirst(adj.get(0));
-			visited.add(adj.get(0));
+			path.addFirst(adjNode);
+			adj = graph.prev(path.getFirst());
 		}
 		return path;
 	}

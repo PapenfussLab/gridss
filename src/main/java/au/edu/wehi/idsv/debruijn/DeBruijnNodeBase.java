@@ -176,8 +176,9 @@ public class DeBruijnNodeBase {
 	};
 	@Override
 	public String toString() {
-		String str = String.format("%s w=%d, #=%d p=%d",
+		String str = String.format("%s %s w=%d, #=%d p=%d",
 				isReference() ? "R" : " ",
+				KmerEncodingHelper.toApproximateString(kmer),
 				cacheWeight,
 				getSupportingEvidenceList().size(),
 				getExpectedPosition());
