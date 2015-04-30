@@ -2,7 +2,6 @@ package au.edu.wehi.idsv;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.SequenceUtil;
 
@@ -141,10 +140,8 @@ public class RealignedBreakpoint {
 		// Micro-homology detection:
 		// anchored sequence: TTTAAAAA>
 		// realign reference: GGGAAAAA
-		if (realignReferenceIndex == null || realignReferenceIndex < 0) return "";
-		int windowStart = realignDirection == BreakendDirection.Forward ? realignPosition + 1 : realignPosition - 1 - anchoredSequence.length + 1;
-		int windowEnd = realignDirection == BreakendDirection.Forward ? realignPosition + 1 + anchoredSequence.length - 1 : realignPosition - 1;
-		byte[] referenceBases = getPaddedSubsequenceAt(reference, dictionary, realignReferenceIndex, windowStart, windowEnd);
+		if (realignReferenceIndex == null || realignReferenceIndex < 0 || realignReferenceIndex >= dictionary.size()) return "";
+		byte[] ref = reference.getSequence(dictionary.getSequence(realignReferenceIndex).getSequenceName()).getBases();
 		// set up traversal iterators
 		int firstAnchorBase = 0;
 		int anchorInc = 1;
@@ -152,14 +149,12 @@ public class RealignedBreakpoint {
 			firstAnchorBase = anchoredSequence.length - 1;
 			anchorInc = -1;
 		}
-		int firstRealignBase = 0;
 		int realignInc = 1;
 		if (realignDirection == BreakendDirection.Backward) {
-			firstRealignBase = anchoredSequence.length - 1;
 			realignInc = -1;
 		}
 		int i = 0;
-		while (i < anchoredSequence.length && basesMatch(anchoredSequence[firstAnchorBase + anchorInc * i], referenceBases[firstRealignBase + realignInc * i], anchorDirection, realignDirection)) {
+		while (i < anchoredSequence.length && basesMatch(anchoredSequence[firstAnchorBase + anchorInc * i], ref, realignPosition + realignInc * (i + 1), anchorDirection == realignDirection)) {
 			i++;
 		}
 		if (anchorDirection == BreakendDirection.Forward) {
@@ -168,36 +163,11 @@ public class RealignedBreakpoint {
 			return new String(anchoredSequence, 0, i);
 		}
 	}
-	/**
-	 * Gets the subsequence at the given position, padding with Ns if the contig bounds are overrun
-	 * @param context
-	 * @param realignReferenceIndex
-	 * @param windowStart
-	 * @param windowEnd
-	 * @return
-	 */
-	private static byte[] getPaddedSubsequenceAt(ReferenceSequenceFile reference, SAMSequenceDictionary dictionary, int realignReferenceIndex, int windowStart, int windowEnd) {
-		SAMSequenceRecord contig = dictionary.getSequence(realignReferenceIndex);
-		byte[] bases = reference.getSubsequenceAt(contig.getSequenceName(), Math.max(1, windowStart), Math.min(windowEnd, contig.getSequenceLength())).getBases();
-		if (windowStart < 1) {
-			int toPad = 1 - windowStart;
-			byte[] newBases = new byte[bases.length + toPad];
-			Arrays.fill(newBases, (byte)'N');
-			System.arraycopy(bases, 0, newBases, toPad, bases.length);
-			bases = newBases;
-		}
-		if (windowEnd > contig.getSequenceLength()) {
-			int toPad = windowEnd - contig.getSequenceLength();
-			byte[] newBases = new byte[bases.length + toPad];
-			Arrays.fill(newBases, (byte)'N');
-			System.arraycopy(bases, 0, newBases, 0, bases.length);
-			bases = newBases;
-		}
-		return bases;
-	}
-	private static boolean basesMatch(byte anchor, byte realign, BreakendDirection anchorDirection, BreakendDirection realignDirection) {
-		int c1 = Character.toUpperCase(anchor);
-		int c2 = Character.toUpperCase(anchorDirection != realignDirection ? realign : SequenceUtil.complement(realign));
+	private static boolean basesMatch(byte base, byte[] reference, int referenceGenomicPosition, boolean complementBase) {
+		int refOffset = referenceGenomicPosition - 1;
+		if (refOffset < 0 || refOffset >= reference.length) return false;
+		int c1 = Character.toUpperCase(complementBase ? SequenceUtil.complement(base) : base);
+		int c2 = Character.toUpperCase(reference[refOffset]);
 		// require exact base matching (any case)
 		return c1 == c2 && c1 != 'N';
 	}
