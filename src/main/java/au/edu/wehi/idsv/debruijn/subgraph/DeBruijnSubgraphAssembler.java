@@ -8,7 +8,7 @@ import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.ReadEvidenceAssembler;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
-import au.edu.wehi.idsv.graph.PathNode;
+import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
 import au.edu.wehi.idsv.visualisation.DeBruijnSubgraphGexfExporter;
 import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTrackerBEDWriter;
 
@@ -30,7 +30,7 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 	private final AssemblyEvidenceSource source;
 	private DeBruijnReadGraph graph;
 	private int currentReferenceIndex = -1;
-	private SubgraphAssemblyAlgorithmTrackerBEDWriter<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> currentTracker = null;
+	private SubgraphAssemblyAlgorithmTrackerBEDWriter<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> currentTracker = null;
 	private int processStep = 0;
 	public DeBruijnSubgraphAssembler(ProcessingContext processContext, AssemblyEvidenceSource source) {
 		this.processContext = processContext;
@@ -67,7 +67,7 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 			currentTracker.close();
 		}
 		if (processContext.getAssemblyParameters().trackAlgorithmProgress) {
-			currentTracker = new SubgraphAssemblyAlgorithmTrackerBEDWriter<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>>(
+			currentTracker = new SubgraphAssemblyAlgorithmTrackerBEDWriter<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>(
 					(int)(processContext.getAssemblyParameters().subgraphAssemblyMargin * source.getMaxConcordantFragmentSize()),
 				new File(processContext.getAssemblyParameters().debruijnGraphVisualisationDirectory,
 					String.format("debruijn.assembly.metrics.%s.bed", processContext.getDictionary().getSequence(currentReferenceIndex).getSequenceName())));

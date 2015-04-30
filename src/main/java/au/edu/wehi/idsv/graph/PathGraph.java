@@ -62,6 +62,7 @@ public class PathGraph<T, PN extends PathNode<T>> implements WeightedDirectedGra
 	public PathGraph(WeightedDirectedGraph<T> graph, PathNodeFactory<T, PN> factory, SubgraphAssemblyAlgorithmTracker<T, PN> tracker) {
 		this(graph, graph.allNodes(), factory, tracker);
 	}
+	public int getMaxNodeId() { return pathList.size() - 1; } 
 	public boolean sanityCheck() {
 		assert(pathNext.size() == pathList.size());
 		assert(pathPrev.size() == pathList.size());
@@ -115,7 +116,7 @@ public class PathGraph<T, PN extends PathNode<T>> implements WeightedDirectedGra
 		while (!frontier.isEmpty()) {
 			T node = frontier.poll();
 			if (visited.contains(node)) continue;
-			PN path = factory.createPathNode(traverseBranchless(node), getGraph());
+			PN path = factory.createPathNode(traverseBranchless(node));
 			kmersTraversed += path.length();
 			pathStart.put(path.first(), path);
 			visited.addAll(path.getPath());
@@ -326,7 +327,7 @@ public class PathGraph<T, PN extends PathNode<T>> implements WeightedDirectedGra
 		if (prev(nextNode).get(0) != node) throw new IllegalStateException("Sanity check failure: missing matching prev entry for next node");
 		
 		// create new node
-		PN newNode = factory.concatPathNodes(ImmutableList.of(node, nextNode), getGraph());
+		PN newNode = factory.concatPathNodes(ImmutableList.of(node, nextNode));
 		addNode(newNode);
 		// hook up incoming and output
 		replaceIncomingEdges(node, newNode);
@@ -560,7 +561,7 @@ public class PathGraph<T, PN extends PathNode<T>> implements WeightedDirectedGra
 		List<PN> result = Lists.newArrayList();
 		int offset = 0;
 		for (int i = 0; i < lengths.size(); i++) {
-			result.add(factory.splitPathNode(node, offset, lengths.get(i), getGraph()));
+			result.add(factory.splitPathNode(node, offset, lengths.get(i)));
 			offset += lengths.get(i);
 		}
 		assert(offset == node.length());

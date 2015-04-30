@@ -7,9 +7,9 @@ import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
+import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
+import au.edu.wehi.idsv.debruijn.DeBruijnPathNodeFactory;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
-import au.edu.wehi.idsv.graph.PathNode;
-import au.edu.wehi.idsv.graph.PathNodeBaseFactory;
 import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
 
 
@@ -22,7 +22,7 @@ public class SubgraphPathNodeTest extends TestHelper {
 		assertTrue(g.isReference(g.getKmer(KmerEncodingHelper.picardBaseToEncoded(g.getK(), B("TGTT")))));
 		assertFalse(g.isReference(g.getKmer(KmerEncodingHelper.picardBaseToEncoded(g.getK(), B("GTTA")))));
 		
-		DeBruijnPathGraph<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> pg = new DeBruijnPathGraph<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>>(g, new PathNodeBaseFactory<DeBruijnSubgraphNode>(), new NontrackingSubgraphTracker<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>>());
+		DeBruijnPathGraph<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pg = new DeBruijnPathGraph<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>(g, new DeBruijnPathNodeFactory<DeBruijnSubgraphNode>(g), new NontrackingSubgraphTracker<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>());
 		assertTrue(pg.isReference(pg.getPaths().iterator().next()));
 	}
 }

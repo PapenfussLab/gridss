@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv.visualisation;
 
-import java.util.LinkedList;
 import java.util.List;
 
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;

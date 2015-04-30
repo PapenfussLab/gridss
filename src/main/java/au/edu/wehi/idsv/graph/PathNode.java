@@ -9,15 +9,15 @@ import java.util.List;
 import au.edu.wehi.idsv.util.FirstOverflowList;
 
 import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 
 public class PathNode<T> {
 	/**
-	 * Performance optimisation: offset of this PathNode within the containing PathGraph lookups
+	 * Sequential node identifier within this path graph.
+	 * Used improve lookup performance
 	 * @return node identifier
 	 */
-	int getNodeId() {
+	public int getNodeId() {
 		return nodeId;
 	}
 	/**
@@ -46,7 +46,6 @@ public class PathNode<T> {
 			this.weight += graph.getWeight(n);
 		}
 		this.fol = new FirstOverflowList<T>(path, equivalents);
-		onNodesChanged(graph);
 	}
 	/**
 	 * Merges the given path into the current path node
@@ -94,17 +93,6 @@ public class PathNode<T> {
 		}
 		fol = new FirstOverflowList<T>(path, equivalents);
 		recalculateWeight(graph);
-		onNodesChanged(graph);
-	}
-	/**
-	 * Creates a new path node which is a subpath of the given path 
-	 * @param unsplit node sequence
-	 * @param startIndex number of starting nodes of unsplit sequence to skip
-	 * @param length length of sequence
-	 * @param graph parent graph
-	 */
-	public PathNode(PathNode<T> unsplit, int startIndex, int length, WeightedDirectedGraph<T> graph) {
-		this(ImmutableList.of(unsplit), startIndex, length, graph);
 	}
 	private void recalculateWeight(WeightedDirectedGraph<T> graph) {
 		weight = 0;
@@ -121,7 +109,6 @@ public class PathNode<T> {
 			}
 		}
 	}
-	protected void onNodesChanged(WeightedDirectedGraph<T> graph) { }
 	public List<T> getPath() { return path; }
 	/**
 	 * All nodes on this path including nodes that have been merged from similar paths
@@ -211,7 +198,6 @@ public class PathNode<T> {
 				}
 			}
 		}
-		onNodesChanged(graph);
 	}
 	/**
 	 * Merges the nodes on this alternate path into this path
@@ -219,7 +205,7 @@ public class PathNode<T> {
 	 * @param offset number of initial nodes that the alternate path does not contain.
 	 * The first alternate path node will be merged into the node at offset position.
 	 * @param length 
-	 */
+	 
 	public void merge(Iterable<? extends PathNode<T>> alternatePath, int offset, WeightedDirectedGraph<T> graph) {
 		if (nodeLength(alternatePath) + offset > length()) throw new IllegalArgumentException("Alternate path is too long.");
 		int i = 0;
@@ -228,9 +214,8 @@ public class PathNode<T> {
 				merge(offset + i++, node, j, graph);
 			}
 		}
-		onNodesChanged(graph);
-	}
-	private void merge(int offset, PathNode<T> pn, int pnOffset, WeightedDirectedGraph<T> graph) {
+	}*/
+	protected void merge(int offset, PathNode<T> pn, int pnOffset, WeightedDirectedGraph<T> graph) {
 		assert(offset >= 0 && offset < length());
 		assert(pnOffset >= 0 && pnOffset < pn.length());
 		if (equivalents == null) {

@@ -14,12 +14,12 @@ import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
+import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
+import au.edu.wehi.idsv.debruijn.DeBruijnPathNodeFactory;
 import au.edu.wehi.idsv.debruijn.DeBruijnVariantGraph;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.VariantEvidence;
-import au.edu.wehi.idsv.graph.PathNode;
-import au.edu.wehi.idsv.graph.PathNodeBaseFactory;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
 import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
 import au.edu.wehi.idsv.visualisation.StaticDeBruijnPathGraphGexfExporter;
@@ -33,7 +33,7 @@ import com.google.common.collect.Sets;
 
 public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode> {
 	private static final Log log = Log.getInstance(DeBruijnReadGraph.class);
-	private SubgraphAssemblyAlgorithmTrackerBEDWriter<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> trackingWriter;
+	private SubgraphAssemblyAlgorithmTrackerBEDWriter<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> trackingWriter;
 	/**
 	 * Connected subgraphs
 	 */
@@ -53,7 +53,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			AssemblyEvidenceSource source,
 			int referenceIndex,
 			AssemblyParameters parameters,
-			SubgraphAssemblyAlgorithmTrackerBEDWriter<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> trackingWriter) {
+			SubgraphAssemblyAlgorithmTrackerBEDWriter<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> trackingWriter) {
 		super(processContext, source, parameters.k);
 		this.referenceIndex = referenceIndex;
 		this.parameters = parameters;
@@ -104,11 +104,11 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			return new SubgraphSummary(kmer);
 		}
 	}
-	private SubgraphAssemblyAlgorithmTracker<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> createSubgraphAssemblyAlgorithmTracker(SubgraphSummary ss) {
+	private SubgraphAssemblyAlgorithmTracker<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> createSubgraphAssemblyAlgorithmTracker(SubgraphSummary ss) {
 		if (parameters.trackAlgorithmProgress) {
-			return new SubgraphAlgorithmMetrics<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>>(processContext, referenceIndex, ((TimedSubgraphSummary)ss).getCreationTime());
+			return new SubgraphAlgorithmMetrics<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>(processContext, referenceIndex, ((TimedSubgraphSummary)ss).getCreationTime());
 		} else {
-			return new NontrackingSubgraphTracker<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>>();
+			return new NontrackingSubgraphTracker<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>();
 		}
 	}
 	/**
@@ -127,7 +127,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		long width = ss.getMaxLinearPosition() - ss.getMinLinearPosition();
 		return width > source.getAssemblyMaximumEvidenceDelay();
 	}
-	private void visualisePrecollapsePathGraph(SubgraphSummary ss, PathGraphAssembler<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> pga) {
+	private void visualisePrecollapsePathGraph(SubgraphSummary ss, PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga) {
 		File directory = new File(
 				parameters.debruijnGraphVisualisationDirectory,
 				processContext.getDictionary().getSequence(referenceIndex).getSequenceName());
@@ -135,11 +135,11 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 				graphsExported,
 				processContext.getLinear().encodedIntervalToString(ss.getMinLinearPosition(), ss.getMaxLinearPosition()).replace("-", "_").replace(":", "_")); 
 		directory.mkdirs();
-		new StaticDeBruijnPathGraphGexfExporter<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>>()
+		new StaticDeBruijnPathGraphGexfExporter<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>()
 			.snapshot(pga)
 			.saveTo(new File(directory, filename));
 	}
-	private void visualisePathGraph(SubgraphSummary ss, StaticDeBruijnPathGraphGexfExporter<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> graphExporter) {
+	private void visualisePathGraph(SubgraphSummary ss, StaticDeBruijnPathGraphGexfExporter<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> graphExporter) {
 		if (graphExporter == null) return;
 		File directory = new File(
 				parameters.debruijnGraphVisualisationDirectory,
@@ -168,15 +168,15 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 						source.getAssemblyMaximumEvidenceDelay()));
 			}
 			if (ss.getMaxLinearPosition() < position || timeoutExceeded) {
-				SubgraphAssemblyAlgorithmTracker<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> tracker = createSubgraphAssemblyAlgorithmTracker(ss);
+				SubgraphAssemblyAlgorithmTracker<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> tracker = createSubgraphAssemblyAlgorithmTracker(ss);
 				tracker.finalAnchors(processContext.getLinear().getReferenceIndex(ss.getMinLinearPosition()), processContext.getLinear().getReferenceIndex(ss.getMaxLinearPosition()));
 				tracker.assemblyStarted();
 				List<DeBruijnSubgraphNode> seed = ImmutableList.of(getKmer(ss.getAnyKmer()));
-				PathGraphAssembler<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> pga = new PathGraphAssembler<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>>(
+				PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = new PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>(
 						this,
 						this.parameters,
 						seed,
-						new PathNodeBaseFactory<DeBruijnSubgraphNode>(),
+						new DeBruijnPathNodeFactory<DeBruijnSubgraphNode>(this),
 						tracker);
 				if (parameters.maxBaseMismatchForCollapse > 0) {
 					if (shouldVisualise(timeoutExceeded)) {
@@ -189,11 +189,11 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 						timeoutExceeded = true;
 					}
 				}
-				StaticDeBruijnPathGraphGexfExporter<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> graphExporter = null;
+				StaticDeBruijnPathGraphGexfExporter<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> graphExporter = null;
 				if (shouldVisualise(timeoutExceeded)) {
-					graphExporter = new StaticDeBruijnPathGraphGexfExporter<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>>();
+					graphExporter = new StaticDeBruijnPathGraphGexfExporter<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>();
 				}
-				for (List<PathNode<DeBruijnSubgraphNode>> contig : pga.assembleContigs(graphExporter)) {
+				for (List<DeBruijnPathNode<DeBruijnSubgraphNode>> contig : pga.assembleContigs(graphExporter)) {
 					SAMRecordAssemblyEvidence variant = createAssembly(pga, contig);
 					if (variant != null) {
 						contigs.add(variant);

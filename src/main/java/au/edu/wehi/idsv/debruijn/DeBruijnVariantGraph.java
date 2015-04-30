@@ -17,7 +17,6 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.RemoteEvidence;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.SoftClipEvidence;
-import au.edu.wehi.idsv.graph.PathNode;
 import au.edu.wehi.idsv.util.ArrayHelper;
 
 import com.google.common.base.Function;
@@ -154,12 +153,12 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		// counting kmers instead of bases in this case for now
 		return baseCounts;
 	}
-	protected SAMRecordAssemblyEvidence createAssembly(DeBruijnPathGraph<T, PathNode<T>> pga, List<PathNode<T>> contig) {
+	protected SAMRecordAssemblyEvidence createAssembly(DeBruijnPathGraph<T, DeBruijnPathNode<T>> pga, List<DeBruijnPathNode<T>> contig) {
 		//List<T> path = new ArrayList<T>(contig.size());
 		List<List<T>> pathAllKmers = new ArrayList<List<T>>(contig.size());
 		//List<T> breakendPath = new ArrayList<T>(contig.size());
 		List<List<T>> breakendPathAllKmers = new ArrayList<List<T>>(contig.size());
-		for (PathNode<T> pn : contig) {
+		for (DeBruijnPathNode<T> pn : contig) {
 			boolean isRef = pga.isReference(pn); 
 			for (List<T> kmers : pn.getPathAllNodes()) {
 				pathAllKmers.add(kmers);
@@ -175,6 +174,28 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		List<T> beforeBreakend = breakendStartOffset > 0 ? pathAllKmers.get(breakendStartOffset -1) : null;
 		List<T> afterBreakend = breakendEndOffset + 1 < pathAllKmers.size() ? pathAllKmers.get(breakendEndOffset + 1) : null;
 		
+		if (breakendPathAllKmers.size() < getK() - 1 && beforeBreakend != null && afterBreakend != null) {
+			// our bubble is smaller than expected - this is likely due to either:
+			// a) assembly artifact: bubble of non-reference kmers all of which have at least one base supporting the reference
+			//     MMMMSSS
+			//     SSSMMMM			
+			// b) microhomology at breakpoint: adjust bases called so we call the middle of the microhomology
+			//     making sure we don't overrun either anchor and turn the breakpoint into a breakend
+			int basesToAdjust = getK() - 1 - breakendPathAllKmers.size();
+			while (basesToAdjust > 0 && (breakendStartOffset > 1 || breakendEndOffset < pathAllKmers.size() - 2)) {
+				if (basesToAdjust > 0 && breakendStartOffset > 0) {
+					breakendPathAllKmers.add(0, beforeBreakend);
+					breakendStartOffset--;
+					beforeBreakend = pathAllKmers.get(breakendStartOffset - 1);
+					basesToAdjust--;
+				}
+				if (basesToAdjust > 0 && breakendEndOffset < pathAllKmers.size() - 1) {
+					breakendEndOffset++;
+					afterBreakend = pathAllKmers.get(breakendEndOffset + 1);
+					basesToAdjust--;
+				}
+			}
+		}
 		Set<String> breakendSupport = getSupport(breakendPathAllKmers);
 		int[] breakendBaseCounts = getBaseCountsByCategory(breakendPathAllKmers, beforeBreakend != null, afterBreakend != null);
 		byte[] bases = KmerEncodingHelper.baseCalls(KmerEncodingHelper.asKmers(this, Iterables.transform(pathAllKmers, new Function<List<T>, T>() {
@@ -191,24 +212,15 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 			return AssemblyFactory.createUnanchoredBreakend(processContext, source, breakend, breakendSupport, bases, quals, breakendBaseCounts);
 		} else {
 			LinearGenomicCoordinate lgc = processContext.getLinear();
-			double startBreakendAnchorPosition = DeBruijnNodeBase.getExpectedPositionForDirectAnchor(BreakendDirection.Forward, breakendPathAllKmers);
-			double endBreakendAnchorPosition = DeBruijnNodeBase.getExpectedPositionForDirectAnchor(BreakendDirection.Backward, breakendPathAllKmers);
-			// fall back to expected position of anchor kmer
-			if (Double.isNaN(startBreakendAnchorPosition) && beforeBreakend != null) {
-				for (T anchor : beforeBreakend) {
-					if (Double.isNaN(startBreakendAnchorPosition)) {
-						startBreakendAnchorPosition = anchor.getExpectedAnchorPosition();
-					}
-				}
+			Long startBreakendAnchorPosition = null;
+			Long endBreakendAnchorPosition = null;
+			if (beforeBreakend != null) {
+				startBreakendAnchorPosition = DeBruijnNodeBase.getExpectedReferencePosition(beforeBreakend);
 			}
-			if (Double.isNaN(endBreakendAnchorPosition) && afterBreakend != null) {
-				for (T anchor : afterBreakend) {
-					if (Double.isNaN(endBreakendAnchorPosition)) {
-						endBreakendAnchorPosition = anchor.getExpectedAnchorPosition();
-					}
-				}
+			if (afterBreakend != null) {
+				endBreakendAnchorPosition = DeBruijnNodeBase.getExpectedReferencePosition(afterBreakend);
 			}
-			assert(!Double.isNaN(endBreakendAnchorPosition) || !Double.isNaN(startBreakendAnchorPosition));
+			assert(endBreakendAnchorPosition != null || startBreakendAnchorPosition != null);
 			// k=3
 			// 1234567890
 			// MMMSSSMMM
@@ -222,21 +234,21 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 			// ^ start kmer pos
 			//       ^ end kmer pos
 			// adjust position from start of kmer over to closest reference anchor base position
-			startBreakendAnchorPosition += getK() - 1;
+			if (startBreakendAnchorPosition != null) {
+				startBreakendAnchorPosition += getK() - 1;
+			}
 			
 			int startAnchorReferenceIndex = -1;
 			int startAnchorPosition =  0;
 			int endAnchorReferenceIndex = -1;
 			int endAnchorPosition =  0;
-			if (!Double.isNaN(startBreakendAnchorPosition)) {
-				long pos = (long)Math.round(startBreakendAnchorPosition);
-				startAnchorReferenceIndex = lgc.getReferenceIndex(pos); 
-				startAnchorPosition = lgc.getReferencePosition(pos);
+			if (startBreakendAnchorPosition != null) {
+				startAnchorReferenceIndex = lgc.getReferenceIndex(startBreakendAnchorPosition); 
+				startAnchorPosition = lgc.getReferencePosition(startBreakendAnchorPosition);
 			}
-			if (!Double.isNaN(endBreakendAnchorPosition)) {
-				long pos = (long)Math.round(endBreakendAnchorPosition);
-				endAnchorReferenceIndex = lgc.getReferenceIndex(pos); 
-				endAnchorPosition = lgc.getReferencePosition(pos);
+			if (endBreakendAnchorPosition != null) {
+				endAnchorReferenceIndex = lgc.getReferenceIndex(endBreakendAnchorPosition); 
+				endAnchorPosition = lgc.getReferencePosition(endBreakendAnchorPosition);
 			}
 			int startAnchorLength = breakendStartOffset + getK() - 1;
 			int endAnchorLength = pathAllKmers.size() + getK() - breakendEndOffset - 2;
@@ -249,16 +261,6 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 						endAnchorReferenceIndex, endAnchorPosition, endAnchorLength,
 						bases, quals, breakendBaseCounts);
 			} else {
-				if (startAnchorLength + endAnchorLength > bases.length) {
-					// All bases support reference allele - this is likely
-					// a) an assembly artifact
-					// eg: creates a bubble of nonreference kmers all of which have at least
-					// one base supporting the reference
-					// MMMMSSS
-					// SSSMMMM
-					// b) microhomology at breakpoint
-					ae = null;
-				}
 				ae = AssemblyFactory.createAnchoredBreakpoint(processContext, source, breakendSupport,
 						startAnchorReferenceIndex, startAnchorPosition, startAnchorLength,
 						endAnchorReferenceIndex, endAnchorPosition, endAnchorLength,

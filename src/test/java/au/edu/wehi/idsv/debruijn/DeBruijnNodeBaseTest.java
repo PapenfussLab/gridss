@@ -4,14 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.util.List;
-
 import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 
 public class DeBruijnNodeBaseTest extends TestHelper {
@@ -86,72 +81,28 @@ public class DeBruijnNodeBaseTest extends TestHelper {
 		nr.add(r);
 		assertTrue(nr.isReference());
 	}
-	private List<List<DeBruijnNodeBase>> flat(DeBruijnNodeBase ... nodes) {
-		List<List<DeBruijnNodeBase>> l = Lists.newArrayList();
-		for (DeBruijnNodeBase n : nodes) {
-			l.add(ImmutableList.of(n));
-		}
-		return l;
+	@Test
+	public void getExpectedPosition_should_return_max_weight_position() {
+		VariantEvidence v = new VariantEvidence(1, SCE(FWD, withSequence("TTTT", Read(0, 1, "1M3S"))), getContext().getLinear());
+		DeBruijnNodeBase r = new DeBruijnNodeBase(v, 0, new ReadKmer(0, 1, false));
+		r.add(new DeBruijnNodeBase(v, 1, new ReadKmer(0, 1, false)));
+		r.add(new DeBruijnNodeBase(v, 2, new ReadKmer(0, 2, false)));
+		r.add(new DeBruijnNodeBase(v, 3, new ReadKmer(0, 3, false)));
+		r.add(new DeBruijnNodeBase(v, 3, new ReadKmer(0, 3, false)));
+		r.add(new DeBruijnNodeBase(v, 4, new ReadKmer(0, 4, false)));
+		r.add(new DeBruijnNodeBase(v, 5, new ReadKmer(0, 5, false)));
+		r.add(new DeBruijnNodeBase(v, 6, new ReadKmer(0, 6, false)));
+		assertEquals(LCCB + 4, r.getExpectedPosition()); // position 3 has max total weight
 	}
 	@Test
-	public void getExpectedPositionForDirectAnchor_FWD_should_return_expected_position_immediately_before_first_kmer() {
-		DeBruijnNodeBase r0 = new DeBruijnNodeBase(fsc, 0, new ReadKmer(0, 1, false));
-		DeBruijnNodeBase r1 = new DeBruijnNodeBase(fsc, 1, new ReadKmer(0, 1, false));
-		assertEquals(r0.getExpectedPosition() - 1, DeBruijnNodeBase.getExpectedPositionForDirectAnchor(FWD, flat(r0)), 0);
-		assertEquals(r0.getExpectedPosition() - 1, DeBruijnNodeBase.getExpectedPositionForDirectAnchor(FWD, flat(r0, r1)), 0);
-		assertEquals(r0.getExpectedPosition() - 1 - 0.5, DeBruijnNodeBase.getExpectedPositionForDirectAnchor(FWD, flat(r0, r0)), 0);
-	}
-	@Test
-	public void getExpectedPositionForDirectAnchor_BWD_should_return_expected_position_immediately_before_first_kmer() {
-		DeBruijnNodeBase r0 = new DeBruijnNodeBase(bsc, 0, new ReadKmer(0, 1, false));
-		DeBruijnNodeBase r1 = new DeBruijnNodeBase(bsc, 1, new ReadKmer(0, 1, false));
-		assertEquals(r0.getExpectedPosition() + 1, DeBruijnNodeBase.getExpectedPositionForDirectAnchor(BWD, flat(r0)), 0);
-		assertEquals(r1.getExpectedPosition() + 1, DeBruijnNodeBase.getExpectedPositionForDirectAnchor(BWD, flat(r0, r1)), 0);
-		assertEquals(r0.getExpectedPosition() + 1 + 0.5, DeBruijnNodeBase.getExpectedPositionForDirectAnchor(BWD, flat(r0, r0)), 0);
-	}
-	@Test
-	public void getExpectedPositionForDirectAnchor_should_weight_expected_positions_by_kmer_weight() {
-		DeBruijnNodeBase w1 = new DeBruijnNodeBase(fsc, 0, new ReadKmer(0, 1, false));
-		DeBruijnNodeBase w2 = new DeBruijnNodeBase(fsc, 4, new ReadKmer(0, 2, false));
-		assertEquals(LCCB + 10, w1.getExpectedPosition(), 0);
-		assertEquals(LCCB + 14, w2.getExpectedPosition(), 0);
-		// Anchor, w1, w2
-		// w1 expected at 10 -> anchor at 9
-		// w2 expected at 14 -> anchor at 12
-		assertEquals(LCCB + 11, DeBruijnNodeBase.getExpectedPositionForDirectAnchor(FWD, flat(w1, w2)), 0);
-	}
-	@Test
-	public void getExpectedPositionForDirectAnchor_should_only_consider_direct_evidence_in_given_direction() {
-		DeBruijnNodeBase r1 = new DeBruijnNodeBase(fsc, 0, new ReadKmer(0, 1, false));
-		DeBruijnNodeBase r2 = new DeBruijnNodeBase(bsc, 0, new ReadKmer(0, 2, false));
-		DeBruijnNodeBase r3 = new DeBruijnNodeBase(frp, 0, new ReadKmer(0, 2, false));
-		assertEquals(r1.getExpectedPosition() - 1, DeBruijnNodeBase.getExpectedPositionForDirectAnchor(FWD, flat(r1)), 0);
-		assertTrue(Double.isNaN(DeBruijnNodeBase.getExpectedPositionForDirectAnchor(BWD, flat(r1))));
-		assertTrue(Double.isNaN(DeBruijnNodeBase.getExpectedPositionForDirectAnchor(FWD, flat(r2))));
-		assertEquals(r2.getExpectedPosition() + 1, DeBruijnNodeBase.getExpectedPositionForDirectAnchor(BWD, flat(r2)), 0);
-		assertTrue(Double.isNaN(DeBruijnNodeBase.getExpectedPositionForDirectAnchor(FWD, flat(r3))));
-		assertTrue(Double.isNaN(DeBruijnNodeBase.getExpectedPositionForDirectAnchor(BWD, flat(r3))));
-	}
-	@Test
-	public void getExpectedPositionForDirectAnchor_should_consider_all_kmers() {
-		DeBruijnNodeBase r0 = new DeBruijnNodeBase(new VariantEvidence(1, SCE(FWD, withSequence("TT", Read(0, 10, "1M1S"))), getContext().getLinear()), 0, new ReadKmer(0, 1, false));
-		DeBruijnNodeBase r1 = new DeBruijnNodeBase(new VariantEvidence(1, SCE(FWD, withSequence("TT", Read(0, 12, "1M1S"))), getContext().getLinear()), 0, new ReadKmer(0, 1, false));
-		List<List<DeBruijnNodeBase>> list = Lists.newArrayList();
-		list.add(ImmutableList.of(r0, r1));
-		assertEquals(10000000011L, (long)DeBruijnNodeBase.getExpectedPositionForDirectAnchor(FWD, list), 0);
-	}
-	@Test
-	public void getExpectedPositionForDirectAnchor_should_not_lose_precision_or_overflow() {
-		DeBruijnNodeBase r0 = new DeBruijnNodeBase(new VariantEvidence(1, SCE(FWD, withSequence("TT", Read(0, 10, "1M1S"))), getContext().getLinear()), 0, new ReadKmer(0, 1024, false));
-		DeBruijnNodeBase r1 = new DeBruijnNodeBase(new VariantEvidence(1, SCE(FWD, withSequence("TT", Read(0, 12, "1M1S"))), getContext().getLinear()), 0, new ReadKmer(0, 1024, false));
-		List<DeBruijnNodeBase> listlist = Lists.newArrayList();
-		for (int i = 0; i < 512 * 1024; i++) {
-			listlist.add(r0);
-			listlist.add(r1);
-		}
-		List<List<DeBruijnNodeBase>> list = Lists.newArrayList();
-		list.add(listlist);
-		assertEquals(10000000011L, (long)DeBruijnNodeBase.getExpectedPositionForDirectAnchor(FWD, list), 0);
-		assertEquals(10000000011d, DeBruijnNodeBase.getExpectedPositionForDirectAnchor(FWD, list), 0);
+	public void getExpectedReferencePosition_should_return_max_weight_reference_position() {
+		VariantEvidence v = new VariantEvidence(1, SCE(FWD, withSequence("TTTT", Read(0, 1, "2M2S"))), getContext().getLinear());
+		DeBruijnNodeBase r = new DeBruijnNodeBase(v, 0, new ReadKmer(0, 1, false));
+		r.add(new DeBruijnNodeBase(v, 0, new ReadKmer(0, 1, false)));
+		r.add(new DeBruijnNodeBase(v, 0, new ReadKmer(0, 1, false)));
+		r.add(new DeBruijnNodeBase(v, 1, new ReadKmer(0, 2, false)));
+		r.add(new DeBruijnNodeBase(v, 2, new ReadKmer(0, 4, false)));
+		r.add(new DeBruijnNodeBase(v, 3, new ReadKmer(0, 8, false)));
+		assertEquals(LCCB + 1, r.getExpectedReferencePosition()); // 4 & 8 positions are non-reference
 	}
 }

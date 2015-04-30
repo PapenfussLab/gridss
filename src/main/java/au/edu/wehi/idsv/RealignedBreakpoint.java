@@ -140,7 +140,7 @@ public class RealignedBreakpoint {
 		// Micro-homology detection:
 		// anchored sequence: TTTAAAAA>
 		// realign reference: GGGAAAAA
-		if (realignReferenceIndex == null || realignReferenceIndex < 0 || realignReferenceIndex >= dictionary.size()) return "";
+		if (realignReferenceIndex == null || realignReferenceIndex < 0 || realignReferenceIndex >= reference.getSequenceDictionary().size()) return "";
 		byte[] ref = reference.getSequence(dictionary.getSequence(realignReferenceIndex).getSequenceName()).getBases();
 		// set up traversal iterators
 		int firstAnchorBase = 0;

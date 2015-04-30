@@ -159,6 +159,8 @@ public class ExtractEvidence implements Closeable {
 	    	final SAMSequenceDictionary dictionary = header.getSequenceDictionary();
 	    	dictionary.assertSameDictionary(processContext.getReference().getSequenceDictionary());
 	    	
+	    	// Need to pass the underlying file and reread it since ReferenceSequenceFileWalker forcably
+	    	// closes the passed in reference regardless of constructor and we still need it
 	    	referenceWalker = new ReferenceSequenceFileWalker(processContext.getReferenceFile());
 	    	
 	    	createOutputWriters(steps, header, dictionary);

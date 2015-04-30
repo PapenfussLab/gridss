@@ -17,7 +17,7 @@ import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraph;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphUtil;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
-import au.edu.wehi.idsv.graph.PathNode;
+import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
 import au.edu.wehi.idsv.graph.PathNodeFactory;
 import au.edu.wehi.idsv.visualisation.DeBruijnPathGraphExporter;
 import au.edu.wehi.idsv.visualisation.StaticDeBruijnPathGraphGexfExporter;
@@ -37,7 +37,7 @@ import com.google.common.primitives.Ints;
  * @author Daniel Cameron
  *
  */
-public class PathGraphAssembler<T, PN extends PathNode<T>> extends DeBruijnPathGraph<T, PN> {
+public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBruijnPathGraph<T, PN> {
 	private static final Log log = Log.getInstance(PathGraphAssembler.class);
 	private final AssemblyParameters parameters;
 	private final List<NonReferenceSubgraph> subgraphs = Lists.newArrayList();

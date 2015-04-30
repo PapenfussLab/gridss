@@ -56,6 +56,7 @@ public class ProcessingContext implements Closeable {
 	static final long LINEAR_COORDINATE_CHROMOSOME_BUFFER = 10000000000L;
 	private final ReferenceSequenceFile reference;
 	private final File referenceFile;
+	//private final File referenceFile;
 	private final SAMSequenceDictionary dictionary;
 	private final LinearGenomicCoordinate linear;
 	private final FileSystemContext fsContext;
@@ -81,6 +82,31 @@ public class ProcessingContext implements Closeable {
 			RealignmentParameters realignmentParameters,
 			VariantCallingParameters variantCallingParameters,
 			File ref, boolean perChr, boolean vcf41) {
+		this(fileSystemContext, metricsHeaders, softClipParameters, readPairParameters, assemblyParameters, realignmentParameters, variantCallingParameters, LoadReference(ref), ref, perChr, vcf41);
+	}
+	private static ReferenceSequenceFile LoadReference(File ref) {
+		try {
+			ReferenceSequenceFile refToUse = new MappedFastaSequenceFile(ref);
+			if (ref.length() > Runtime.getRuntime().maxMemory() / 2) {
+				log.error("Caching reference fasta in memory would require more than 50% of the memory allocated to the JVM. Reference sequence caching will not be performed. Execution will be very slow.");
+				throw new RuntimeException("Not enough memory to cache reference fasta.");
+			} else {
+				refToUse = new BufferedReferenceSequenceFile(refToUse);
+			}
+			return refToUse;
+		} catch (FileNotFoundException e) {
+			throw new RuntimeException("Unabled load fasta " + ref, e);
+		}
+	}
+	public ProcessingContext(
+			FileSystemContext fileSystemContext,
+			List<Header> metricsHeaders,
+			SoftClipParameters softClipParameters,
+			ReadPairParameters readPairParameters,
+			AssemblyParameters assemblyParameters,
+			RealignmentParameters realignmentParameters,
+			VariantCallingParameters variantCallingParameters,
+			ReferenceSequenceFile reference, File ref, boolean perChr, boolean vcf41) {
 		this.fsContext = fileSystemContext;
 		this.metricsHeaders = metricsHeaders;
 		this.scp = softClipParameters;
@@ -91,18 +117,7 @@ public class ProcessingContext implements Closeable {
 		this.perChr = perChr;
 		this.vcf41mode = vcf41;
 		this.referenceFile = ref;
-		try {
-			ReferenceSequenceFile refToUse = new MappedFastaSequenceFile(this.referenceFile);
-			if (this.referenceFile.length() > Runtime.getRuntime().maxMemory() / 2) {
-				log.error("Caching reference fasta in memory would require more than 50% of the memory allocated to the JVM. Reference sequence caching will not be performed. Execution likely to be very slow.");
-				throw new RuntimeException("Not enough memory to cache reference fasta.");
-			} else {
-				refToUse = new BufferedReferenceSequenceFile(refToUse);
-			}
-			this.reference = refToUse;
-		} catch (FileNotFoundException e) {
-			throw new RuntimeException("Unabled load fasta " + ref, e);
-		}
+		this.reference = reference;
 		if (this.reference.getSequenceDictionary() == null) {
 			throw new IllegalArgumentException("Missing sequence dictionary for reference genome. Please create using picard CreateSequenceDictionary.");
 		}

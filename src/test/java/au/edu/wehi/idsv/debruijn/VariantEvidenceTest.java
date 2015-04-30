@@ -129,9 +129,8 @@ public class VariantEvidenceTest extends TestHelper {
 		assertEquals(0, fdp.getReferenceKmerCount());
 		assertEquals(0, rdp.getReferenceKmerCount());
 	}
-
 	@Test
-	public void expected_position_should_be_for_local_breakend() {
+	public void getExpectedLinearPosition_should_be_for_local_breakend() {
 		for (VariantEvidence v : new VariantEvidence[] { 
 				new VariantEvidence(4, NRRP(SES(5, 5), DP(0, 1, "2M", true, 0, 1000, "2M", false)), getContext().getLinear()),
 				new VariantEvidence(4, SCE(FWD, Read(0, 5, "5M5S")), getContext().getLinear()),
@@ -141,6 +140,17 @@ public class VariantEvidenceTest extends TestHelper {
 			for (int i = 0; i < Lists.newArrayList(v.getReadKmers()).size(); i++) {
 				assertTrue(v.getExpectedLinearPosition(i) < LCCB + 350);
 				assertTrue(v.getExpectedLinearPosition(i) > LCCB);
+			}
+		}
+	}
+	@Test
+	public void getExpectedLinearPosition_should_assume_reference_mapping() {
+		for (VariantEvidence v : new VariantEvidence[] {
+				new VariantEvidence(4, SCE(FWD, Read(0, 1, "10M5S")), getContext().getLinear()),
+				new VariantEvidence(4, SCE(BWD, Read(0, 6, "5S10M")), getContext().getLinear()),
+				}) {
+			for (int i = 0; i < Lists.newArrayList(v.getReadKmers()).size(); i++) {
+				assertEquals(LCCB + i + 1, v.getExpectedLinearPosition(i));
 			}
 		}
 	}

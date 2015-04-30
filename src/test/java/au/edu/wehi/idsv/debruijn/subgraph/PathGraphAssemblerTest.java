@@ -9,9 +9,10 @@ import org.junit.Test;
 
 import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.TestHelper;
+import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
+import au.edu.wehi.idsv.debruijn.DeBruijnPathNodeFactory;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.graph.PathNode;
-import au.edu.wehi.idsv.graph.PathNodeBaseFactory;
 import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
 
 import com.google.common.base.Function;
@@ -21,20 +22,20 @@ import com.google.common.collect.Lists;
 
 
 public class PathGraphAssemblerTest extends TestHelper {
-	PathGraphAssembler<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> PGA(DeBruijnReadGraph g, AssemblyParameters ap, String seed) {
+	PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> PGA(DeBruijnReadGraph g, AssemblyParameters ap, String seed) {
 		DeBruijnSubgraphNode seedNode = g.getKmer(KmerEncodingHelper.picardBaseToEncoded(ap.k, B(seed)));
-		PathGraphAssembler<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> pga = new PathGraphAssembler<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>>(
+		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = new PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>(
 			g,
 			ap,
 			ImmutableList.of(seedNode),
-			new PathNodeBaseFactory<DeBruijnSubgraphNode>(),
-			new NontrackingSubgraphTracker<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>>());
+			new DeBruijnPathNodeFactory<DeBruijnSubgraphNode>(g),
+			new NontrackingSubgraphTracker<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>());
 		return pga;
 	}
-	private List<List<DeBruijnSubgraphNode>> flatten(List<List<PathNode<DeBruijnSubgraphNode>>> list) {
-		List<List<DeBruijnSubgraphNode>> result = Lists.newArrayList(Iterables.transform(list, new Function<List<PathNode<DeBruijnSubgraphNode>>, List<DeBruijnSubgraphNode>>() {
+	private List<List<DeBruijnSubgraphNode>> flatten(List<List<DeBruijnPathNode<DeBruijnSubgraphNode>>> list) {
+		List<List<DeBruijnSubgraphNode>> result = Lists.newArrayList(Iterables.transform(list, new Function<List<DeBruijnPathNode<DeBruijnSubgraphNode>>, List<DeBruijnSubgraphNode>>() {
 			@Override
-			public List<DeBruijnSubgraphNode> apply(List<PathNode<DeBruijnSubgraphNode>> input) {
+			public List<DeBruijnSubgraphNode> apply(List<DeBruijnPathNode<DeBruijnSubgraphNode>> input) {
 				return Lists.newArrayList(PathNode.nodeIterator(input.iterator()));
 			}
 		}));
@@ -56,7 +57,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		//   GGTTAACC
 		// TTGGT
 		// ^   ^^^^ <- starts of reference kmers
-		PathGraphAssembler<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "AATT");
+		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "AATT");
 		List<List<DeBruijnSubgraphNode>> result = flatten(pga.assembleContigs());
 		assertEquals(2, result.size());
 		assertEquals("TTAACCGGCCAATT", S(g, result.get(0)));
@@ -76,7 +77,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		g.addEvidence(NRRP(withSequence(           "GCCAATC", OEA(0, 10, "7M", true)))); // not on main patch, but reachable
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGAGTCCTG", Read(0, 10, "7M7S"))));
 		
-		PathGraphAssembler<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "AATT");
+		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "AATT");
 		List<List<DeBruijnSubgraphNode>> result = flatten(pga.assembleContigs());
 		assertEquals(3, result.size());
 		assertEquals("TTAACCGGCCAATT", S(g, result.get(0)));
@@ -97,7 +98,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		g.addEvidence(NRRP(withSequence(              "AATC", OEA(0, 10, "7M", true)))); // not on main patch, but reachable
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGAGTCCTG", Read(0, 10, "7M7S"))));
 		
-		PathGraphAssembler<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "AATT");
+		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "AATT");
 		List<List<DeBruijnSubgraphNode>> result = flatten(pga.assembleContigs());
 		assertEquals(2, result.size());
 		assertEquals("TTAACCGGCCAATT", S(g, result.get(0)));
@@ -114,7 +115,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withSequence("AAATGGGG", Read(0, 10, "6M3S"))));
 		g.addEvidence(SCE(FWD, withSequence("GTACCCGGGG", Read(0, 10, "9M2S"))));
 		// should take the shorter assembly that has a longer soft clip
-		PathGraphAssembler<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "GGGG");
+		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "GGGG");
 		List<List<DeBruijnSubgraphNode>> result = flatten(pga.assembleContigs());
 		assertEquals(1, result.size());
 		assertEquals("AAATGGGG", S(g, result.get(0)));
@@ -137,7 +138,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withSequence("CCAAATGGG", Read(0, 10, "8M1S")))); // worst weight at the immediate next kmer
 		g.addEvidence(SCE(FWD, withSequence("GGTACCCAAATGGG", Read(0, 10, "13M1S")))); // but best overall
 		// should take the shorter assembly that has a longer soft clip
-		PathGraphAssembler<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "TGGG");
+		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "TGGG");
 		List<List<DeBruijnSubgraphNode>> result = flatten(pga.assembleContigs());
 		assertEquals(1, result.size());
 		assertEquals("GGTACCCAAATGGG", S(g, result.get(0)));
@@ -152,7 +153,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		
 		DeBruijnReadGraph g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence("GGTACCCAAATGGG", Read(0, 10, "10M4S"))));
-		PathGraphAssembler<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "TGGG");
+		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "TGGG");
 		List<List<DeBruijnSubgraphNode>> result = flatten(pga.assembleContigs());
 		assertEquals(1, result.size());
 		assertEquals("GGTACCCAAATGGG", S(g, result.get(0)));
@@ -172,7 +173,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withSequence("ACTGT", Read(0, 10, "3M2S"))));
 		g.addEvidence(SCE(FWD, withSequence("GTCA", Read(0, 10, "3M1S"))));
 		
-		PathGraphAssembler<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "ACT");
+		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "ACT");
 		List<List<DeBruijnSubgraphNode>> result = flatten(pga.assembleContigs());
 		assertEquals(2, result.size());
 		assertEquals("ACTGTC", S(g, result.get(0)));
@@ -195,7 +196,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withSequence( "TTTTCGAGAT", Read(0, 10, "8M1S"))));
 		g.addEvidence(SCE(FWD, withSequence( "TTTTCGCCGGT", Read(0, 10, "8M3S"))));
 		g.addEvidence(SCE(FWD, withSequence( "TTTTCGTTAACC", Read(0, 10, "8M6S"))));
-		PathGraphAssembler<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap,"TTTT");
+		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap,"TTTT");
 		List<List<DeBruijnSubgraphNode>> result = flatten(pga.assembleContigs());
 		assertEquals(3, result.size());
 		assertEquals("TTTTCGTTAACC", S(g, result.get(0)));
@@ -222,7 +223,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withSequence("AAATGGGA", Read(0, 10, "6M3S"))));
 		g.addEvidence(SCE(FWD, withSequence("AAATGGGA", Read(0, 10, "6M3S"))));
 		// greedy traversal
-		PathGraphAssembler<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "GGGG");
+		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "GGGG");
 		//new StaticDeBruijnSubgraphPathGraphGexfExporter(ap.k)
 		//	.snapshot(pga)
 		//	.saveTo(new File("C:\\temp\\test.gexf"));
@@ -248,7 +249,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCgGCAGAGCATT", Read(0, 1, "20M1S"))));
 		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGgCGCAGAGCATT", Read(0, 1, "20M1S"))));
 		g.addEvidence(SCE(FWD, withSequence("AACCGGACAgGCGCAGAGCATT", Read(0, 1, "20M1S"))));
-		PathGraphAssembler<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "GCATT");
+		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "GCATT");
 		List<List<DeBruijnSubgraphNode>> result = flatten(pga.assembleContigs());
 		assertEquals(1, result.size());
 		assertEquals("GAGCATT", S(g, result.get(0))); 

@@ -57,19 +57,19 @@ public class PathNodeTest extends TestHelper {
 		.add("AGTT", 9);
 		PathNode<DeBruijnNodeBase> unsplit = new PathNode<DeBruijnNodeBase>(toNodes(g, "ATAGAGTT"), g);
 		// kmer length is 5
-		assertEquals(2, new PathNode<DeBruijnNodeBase>(unsplit, 0, 2, g).length());
-		assertEquals("ATAGAG", g.S(new PathNode<DeBruijnNodeBase>(unsplit, 0, 3, g)));
-		assertEquals("TAGAGT", g.S(new PathNode<DeBruijnNodeBase>(unsplit, 1, 3, g)));
-		assertEquals("AGAGTT", g.S(new PathNode<DeBruijnNodeBase>(unsplit, 2, 3, g)));
-		assertEquals("AGTT", g.S(new PathNode<DeBruijnNodeBase>(unsplit, 4, 1, g)));
+		assertEquals(2, new PathNode<DeBruijnNodeBase>(ImmutableList.of(unsplit), 0, 2, g).length());
+		assertEquals("ATAGAG", g.S(new PathNode<DeBruijnNodeBase>(ImmutableList.of(unsplit), 0, 3, g)));
+		assertEquals("TAGAGT", g.S(new PathNode<DeBruijnNodeBase>(ImmutableList.of(unsplit), 1, 3, g)));
+		assertEquals("AGAGTT", g.S(new PathNode<DeBruijnNodeBase>(ImmutableList.of(unsplit), 2, 3, g)));
+		assertEquals("AGTT", g.S(new PathNode<DeBruijnNodeBase>(ImmutableList.of(unsplit), 4, 1, g)));
 		
-		assertEquals(10, new PathNode<DeBruijnNodeBase>(unsplit, 0, 3, g).weight());
-		assertEquals(14, new PathNode<DeBruijnNodeBase>(unsplit, 1, 3, g).weight());
-		assertEquals(18, new PathNode<DeBruijnNodeBase>(unsplit, 2, 3, g).weight());
+		assertEquals(10, new PathNode<DeBruijnNodeBase>(ImmutableList.of(unsplit), 0, 3, g).weight());
+		assertEquals(14, new PathNode<DeBruijnNodeBase>(ImmutableList.of(unsplit), 1, 3, g).weight());
+		assertEquals(18, new PathNode<DeBruijnNodeBase>(ImmutableList.of(unsplit), 2, 3, g).weight());
 		
-		assertEquals(5, new PathNode<DeBruijnNodeBase>(unsplit, 0, 3, g).maxNodeWeight(g));
-		assertEquals(8, new PathNode<DeBruijnNodeBase>(unsplit, 1, 3, g).maxNodeWeight(g));
-		assertEquals(9, new PathNode<DeBruijnNodeBase>(unsplit, 2, 3, g).maxNodeWeight(g));
+		assertEquals(5, new PathNode<DeBruijnNodeBase>(ImmutableList.of(unsplit), 0, 3, g).maxNodeWeight(g));
+		assertEquals(8, new PathNode<DeBruijnNodeBase>(ImmutableList.of(unsplit), 1, 3, g).maxNodeWeight(g));
+		assertEquals(9, new PathNode<DeBruijnNodeBase>(ImmutableList.of(unsplit), 2, 3, g).maxNodeWeight(g));
 	}
 	@Test
 	public void concat_should_append_path() {

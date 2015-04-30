@@ -13,7 +13,7 @@ import java.util.Set;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphUtil;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
-import au.edu.wehi.idsv.graph.PathNode;
+import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
 
 import com.google.common.collect.Lists;
@@ -27,7 +27,7 @@ import com.google.common.primitives.Ints;
  * @author cameron.d
  *
  */
-class PathGraphTraverse<T, PN extends PathNode<T>> {
+class PathGraphTraverse<T, PN extends DeBruijnPathNode<T>> {
 	private static final Log log = Log.getInstance(PathGraphTraverse.class);
 	@SuppressWarnings("rawtypes")
 	private final static Ordering<MemoizedNode> ByWeight = new Ordering<MemoizedNode>() {

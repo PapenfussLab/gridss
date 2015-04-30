@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
+import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
 
 import com.google.common.collect.Lists;
 
@@ -43,7 +44,7 @@ public class PathGraphTest extends TestHelper {
 				.add("TCCGTC", 1)
 				.add("CCGTC", 1)
 				.add("CGTC", 3)); // = 5
-		List<PathNode<DeBruijnNodeBase>> nodes = Lists.newArrayList(pg.getPaths());
+		List<DeBruijnPathNode<DeBruijnNodeBase>> nodes = Lists.newArrayList(pg.getPaths());
 		assertEquals(3, nodes.size()); // precondition
 		Collections.sort(nodes, pg.ByMaxNodeWeightDesc);
 		assertEquals(pg.get("TGTC") , nodes.get(0));
@@ -54,7 +55,7 @@ public class PathGraphTest extends TestHelper {
 	public void should_reduce_simple_paths() {
 		BasePathGraph pg = PG(G(4)
 				.add("AAAATTT"));
-		List<PathNode<DeBruijnNodeBase>> nodes = Lists.newArrayList(pg.getPaths());
+		List<DeBruijnPathNode<DeBruijnNodeBase>> nodes = Lists.newArrayList(pg.getPaths());
 		assertEquals(1, nodes.size());
 	}
 	@Test
@@ -63,7 +64,7 @@ public class PathGraphTest extends TestHelper {
 				.add("TCCGAAT")
 				.add("TCCGAAC")
 				.add("TCCGAAG"));
-		List<PathNode<DeBruijnNodeBase>> nodes = Lists.newArrayList(pg.getPaths());
+		List<DeBruijnPathNode<DeBruijnNodeBase>> nodes = Lists.newArrayList(pg.getPaths());
 		assertEquals(4, nodes.size());
 	}
 }
