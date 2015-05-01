@@ -4,7 +4,7 @@
   <groupId>au.edu.wehi</groupId>
   <artifactId>gridss</artifactId>
   <packaging>jar</packaging>
-  <version>0.3-SNAPSHOT</version>
+  <version>0.4-SNAPSHOT</version>
   <name>gridss</name>
   <url>http://github.com/d-cameron</url>
   <build>
