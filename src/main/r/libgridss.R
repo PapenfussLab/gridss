@@ -41,19 +41,30 @@ ciltoarray <- function(cil, column) {
   result[is.na(result)] <- 0
   return(result)
 }
-# adds tumour/normal/total columns to the given data frame
-gridss.truthdetails.processvcf.addtn <- function(df, name, column, max=FALSE) {
-  if (max) {
-    df[[paste0(name)]] <- pmax(ciltoarray(column, 1), ciltoarray(column, 2))
-  } else {
-    df[[paste0(name)]] <- ciltoarray(column, 1) + ciltoarray(column, 2)
-  }
-  df[[paste0(name, "Normal")]] <- ciltoarray(column, 1)
-  df[[paste0(name, "Tumour")]] <- ciltoarray(column, 2)
+#CompressedList to matrix
+cltomatrix <- function(cl) {
+  el <- elementLengths(cl)
+  rowCount <- length(cl)
+  colCount <- max(el)
+  # TODO: can we do with without having to use lapply?
+  # colOffset <- rep(seq_len(rowCount), elementLengths(cl))
+  # rowOffset <- #cumsum resetting
+  mat <- matrix(unlist(lapply(cl, function(x) c(x, rep(0, colCount-length(x))))), rowCount, colCount, byrow=TRUE)
+  return(mat)
+}
+# Flattens a list column into summary and index columns
+gridss.vcftodf.flattenNumeric <- function(df, name, column, max=FALSE, allColumns=FALSE) {
+  mat <- cltomatrix(column)
   
-  is.na(df[[paste0(name)]]) <- 0
-  is.na(df[[paste0(name, "Normal")]]) <- 0
-  is.na(df[[paste0(name, "Tumour")]]) <- 0
+  if (max) {
+    df[[name]] <- rowMax(mat)
+  } else {
+    df[[name]] <- rowSums(mat)
+  }
+  if (allColumns) {
+    df[c(paste(ncol(mat)))] <- mat
+    stop("Fix this code")
+  }
   return(df)
 }
 gridss.removeUnpartnerededBreakend <- function(vcf) {
@@ -78,31 +89,31 @@ gridss.vcftodf <- function(vcf, sanityCheck=TRUE) {
   df$HOMSEQ <- ifelse(is.na(as.character(i$HOMSEQ)), "", as.character(i$HOMSEQ))
   df$HOMLEN <- as.numeric(i$HOMLEN)
   df$call <- ifelse(!is.na(matchLength), "good", ifelse(!is.na(mismatchLength), "misaligned", "bad"))
-  df <- gridss.truthdetails.processvcf.addtn(df, "REF", i$REF)
-  df <- gridss.truthdetails.processvcf.addtn(df, "REFPAIR", i$REFPAIR)
+  df <- gridss.vcftodf.flattenNumeric(df, "REF", i$REF)
+  df <- gridss.vcftodf.flattenNumeric(df, "REFPAIR", i$REFPAIR)
   df$SPV <- i$SPV
   df$CQ <- i$CQ
   df$BQ <- i$BQ
   
   df$AS <- i$AS
-  df <- gridss.truthdetails.processvcf.addtn(df, "RP", i$RP)
-  df <- gridss.truthdetails.processvcf.addtn(df, "SC", i$SC)
+  df <- gridss.vcftodf.flattenNumeric(df, "RP", i$RP)
+  df <- gridss.vcftodf.flattenNumeric(df, "SC", i$SC)
   df$RAS <- i$RAS
-  df <- gridss.truthdetails.processvcf.addtn(df, "RSC", i$RSC)
+  df <- gridss.vcftodf.flattenNumeric(df, "RSC", i$RSC)
   
   df$ASQ <- i$ASQ
-  df <- gridss.truthdetails.processvcf.addtn(df, "RPQ", i$RPQ)
-  df <- gridss.truthdetails.processvcf.addtn(df, "SCQ", i$SCQ)
+  df <- gridss.vcftodf.flattenNumeric(df, "RPQ", i$RPQ)
+  df <- gridss.vcftodf.flattenNumeric(df, "SCQ", i$SCQ)
   df$RASQ <- i$RASQ
-  df <- gridss.truthdetails.processvcf.addtn(df, "RSCQ", i$RSCQ)
+  df <- gridss.vcftodf.flattenNumeric(df, "RSCQ", i$RSCQ)
   
   df$BAS <- i$BAS
-  df <- gridss.truthdetails.processvcf.addtn(df, "BRP", i$BRP)
-  df <- gridss.truthdetails.processvcf.addtn(df, "BSC", i$BSC)
+  df <- gridss.vcftodf.flattenNumeric(df, "BRP", i$BRP)
+  df <- gridss.vcftodf.flattenNumeric(df, "BSC", i$BSC)
   
   df$BASQ <- i$BASQ
-  df <- gridss.truthdetails.processvcf.addtn(df, "BRPQ", i$BRPQ)
-  df <- gridss.truthdetails.processvcf.addtn(df, "BSCQ", i$BSCQ)
+  df <- gridss.vcftodf.flattenNumeric(df, "BRPQ", i$BRPQ)
+  df <- gridss.vcftodf.flattenNumeric(df, "BSCQ", i$BSCQ)
   
   df <- replace(df, is.na(df), 0)
   rownames(df) <- df$variantid
