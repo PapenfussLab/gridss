@@ -43,12 +43,13 @@ vcfs[sapply(vcfs, is.null)] <- NULL
 #TODO: apply filters
 #Rprof("C:/dev/Rprof.out")
 #truthlist <- CalculateTruthSummary(vcfs, maxerrorbp=100, ignore.strand=TRUE)
-truthlist <- CalculateTruthSummary(vcfs, maxerrorbp=10, ignore.strand=FALSE)
+truthlist <- CalculateTruthSummary(vcfs, maxerrorbp=100, ignore.strand=FALSE)
 ############
 # Sensitivity
 #
 dtsenssize <- truthlist$truth[, list(sens=sum(tp)/.N), by=c("SVLEN", "SVTYPE", "CX_ALIGNER", "CX_ALIGNER_SOFTCLIP", "CX_CALLER", "CX_READ_DEPTH", "CX_READ_FRAGMENT_LENGTH", "CX_READ_LENGTH", "CX_REFERENCE_VCF_VARIANTS")]
 ggplot(dtsenssize) + # with(dtsenssize, dtsenssize[CX_CALLER %in% c("breakdancer-max", "gridss", "crest", "socrates"),])) +
+ggplot(dtsenssize[dtsenssize$CX_CALLER %in% c("pindel"),]) +
   aes(y=sens, x=SVLEN, shape=factor(CX_READ_FRAGMENT_LENGTH), color=CX_REFERENCE_VCF_VARIANTS) +
   geom_line() + 
   facet_grid(CX_ALIGNER + CX_CALLER ~ CX_READ_FRAGMENT_LENGTH + CX_READ_LENGTH + CX_READ_DEPTH) +
@@ -58,6 +59,15 @@ ggsave("sens_size.png", width=10, height=7.5)
 
 ggplot(truthlist$truth) + aes(x=errorsize) + facet_grid(CX_REFERENCE_VCF_VARIANTS~CX_CALLER) + geom_histogram() + scale_y_log10()
 ggplot(truthlist$calls) + aes(x=partialtp) + facet_grid(CX_REFERENCE_VCF_VARIANTS~CX_CALLER) + geom_histogram()
+
+############
+# Error in called position
+#
+ggplot(truthlist$truth[!is.na(truthlist$truth$errorsize),]) +
+  aes(x=errorsize, color=factor(SVLEN)) +
+  geom_density(aes(y=..density..)) +
+  facet_grid(CX_ALIGNER + CX_CALLER ~ CX_READ_FRAGMENT_LENGTH + CX_READ_LENGTH + CX_READ_DEPTH, scale="free")
+
 
 ############
 # ROC

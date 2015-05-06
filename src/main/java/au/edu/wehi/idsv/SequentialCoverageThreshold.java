@@ -10,7 +10,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 public class SequentialCoverageThreshold {
 	private final int threshold;
 	private IntervalBed bed;
-	private PriorityQueue<SAMRecord> active = new PriorityQueue<SAMRecord>(new SAMRecordEndCoordinateComparator());
+	private PriorityQueue<SAMRecord> active = new PriorityQueue<SAMRecord>(1024, new SAMRecordEndCoordinateComparator());
 	private int activeIntervalReferenceIndex = -1;
 	private int activeIntervalStart;
 	public SequentialCoverageThreshold(SAMSequenceDictionary dictionary, LinearGenomicCoordinate linear, int thresholdCoverage) {
@@ -20,7 +20,7 @@ public class SequentialCoverageThreshold {
 	}
 	public void acceptRecord(SAMRecord r) {
 		if (r.getReadUnmappedFlag()) return;
-		assert(active.peek().getReferenceIndex() <= r.getReferenceIndex());
+		assert(active.isEmpty() || active.peek().getReferenceIndex() <= r.getReferenceIndex());
 		processBefore(r.getReferenceIndex(), r.getAlignmentStart());
 		active.add(r);
 		if (active.size() == threshold) {
@@ -29,7 +29,7 @@ public class SequentialCoverageThreshold {
 		}
 	}
 	private void processBefore(int referenceIndex, int position) {
-		while (active.peek().getReferenceIndex() < referenceIndex || active.peek().getAlignmentEnd() < position) {
+		while (!active.isEmpty() && (active.peek().getReferenceIndex() < referenceIndex || active.peek().getAlignmentEnd() < position)) {
 			if (active.size() == threshold) {
 				bed.addInterval(activeIntervalReferenceIndex, activeIntervalStart, active.peek().getAlignmentEnd());
 			}

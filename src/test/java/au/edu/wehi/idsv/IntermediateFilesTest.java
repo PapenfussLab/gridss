@@ -61,8 +61,12 @@ public class IntermediateFilesTest extends TestHelper {
 		ProcessingContext pc = new ProcessingContext(
 				new FileSystemContext(testFolder.getRoot(), 500000),
 				headers,
-				new SoftClipParameters(),
-				new ReadPairParameters(),
+				new SoftClipParameters() {{
+					minAnchorEntropy = 0;
+				}},
+				new ReadPairParameters() {{
+					minAnchorEntropy = 0;
+				}},
 				new AssemblyParameters() {{
 					minReads = 2;
 					assemble_remote_soft_clips = false;

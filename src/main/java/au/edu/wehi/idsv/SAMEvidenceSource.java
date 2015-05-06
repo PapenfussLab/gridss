@@ -236,7 +236,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 			final File remoteRealigned,
 			final String chr) {
 		List<CloseableIterator<DirectedEvidence>> itList = Lists.newArrayList();
-		if (!isComplete(ProcessStep.EXTRACT_SOFT_CLIPS) ||
+		if (!isComplete(ProcessStep.CALCULATE_METRICS) ||
+			!isComplete(ProcessStep.EXTRACT_SOFT_CLIPS) ||
 			!isComplete(ProcessStep.EXTRACT_READ_PAIRS)) {
 			throw new IllegalStateException("Cannot traverse evidence before evidence extraction");
 		}
@@ -245,7 +246,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			final CloseableIterator<SAMRecord> rawMateIt = getContext().getSamReaderIterator(pairMate);
 			final CloseableIterator<NonReferenceReadPair> rawRpIt = new ReadPairEvidenceIterator(
 					this,
-					new IntervalBedFilteringIterator(blacklist, rawPairIt, getMaxConcordantFragmentSize()),
+					new IntervalBedFilteringIterator(getBlacklistedRegions(), rawPairIt, getMaxConcordantFragmentSize()),
 					rawMateIt);
 			final Iterator<NonReferenceReadPair> sortedRpIt = new DirectEvidenceWindowedSortingIterator<NonReferenceReadPair>(getContext(), getReadPairSortWindowSize(), rawRpIt);
 			final CloseableIterator<NonReferenceReadPair> finalrpIt = new AutoClosingIterator<NonReferenceReadPair>(sortedRpIt,
@@ -256,7 +257,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			final List<Closeable> scToClose = Lists.newArrayList();
 			final CloseableIterator<SAMRecord> rawScIt = getContext().getSamReaderIterator(softClip);
 			scToClose.add(rawScIt);
-			CloseableIterator<SoftClipEvidence> scIt = new SoftClipEvidenceIterator(this, new IntervalBedFilteringIterator(blacklist, rawScIt, getMaxReadLength()));
+			CloseableIterator<SoftClipEvidence> scIt = new SoftClipEvidenceIterator(this, new IntervalBedFilteringIterator(getBlacklistedRegions(), rawScIt, getMaxReadLength()));
 			scToClose.add(scIt);
 			if (isRealignmentComplete()) {
 				//log.debug("Realignment is complete for ", input);
@@ -282,7 +283,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			CloseableIterator<SAMRecord> sssRawItf = getContext().getSamReaderIterator(remoteSoftClip);
 			CloseableIterator<SAMRecord> sssRawItb = getContext().getSamReaderIterator(remoteSoftClip);
 			CloseableIterator<RealignedRemoteSoftClipEvidence> remoteScIt = new RealignedRemoteSoftClipEvidenceIterator(this,
-					new IntervalBedFilteringIterator(blacklist, rsrRawIt, getMaxReadLength()),
+					new IntervalBedFilteringIterator(getBlacklistedRegions(), rsrRawIt, getMaxReadLength()),
 					sssRawItf,
 					sssRawItb);
 			CloseableIterator<RealignedRemoteSoftClipEvidence> sortedRemoteScIt = new AutoClosingIterator<RealignedRemoteSoftClipEvidence>(
