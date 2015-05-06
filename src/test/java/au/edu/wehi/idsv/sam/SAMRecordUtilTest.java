@@ -209,4 +209,18 @@ public class SAMRecordUtilTest extends TestHelper {
 	public void isReferenceAlignment_should_ignore_zero_length_elements() {
 		assertTrue(SAMRecordUtil.isReferenceAlignment(Read(0, 1, "1M0S")));
 	}
+	@Test
+	public void alignedEntropy_should_return_entropy_excluding_soft_clipped_bases() {
+		assertEquals(0, SAMRecordUtil.alignedEntropy(withSequence("ATG", Read(0, 1, "1S1M1S"))[0]), 0);
+		assertEquals(0, SAMRecordUtil.alignedEntropy(withSequence("ATTG", Read(0, 1, "1S2M1S"))[0]), 0);
+		assertEquals(2, SAMRecordUtil.alignedEntropy(withSequence("AACGTG", Read(0, 1, "1S4M1S"))[0]), 0);
+		assertEquals(2, SAMRecordUtil.alignedEntropy(withSequence("AACGTGG", Read(0, 1, "1S4M2S"))[0]), 0);
+		assertEquals(2, SAMRecordUtil.alignedEntropy(withSequence("TAACGTGG", Read(0, 1, "2S4M2S"))[0]), 0);
+		assertEquals(1, SAMRecordUtil.alignedEntropy(withSequence("TAGTGG", Read(0, 1, "2S2M2S"))[0]), 0);
+		assertEquals(2, SAMRecordUtil.alignedEntropy(withSequence("ACGT", Read(0, 1, "4M"))[0]), 0);
+	}
+	@Test
+	public void entropy_should_ignore_cigar_and_alignment() {
+		assertEquals(2, SAMRecordUtil.entropy(withSequence("ACGT", Read(0, 1, "3S1M"))[0]), 0);
+	}
 }

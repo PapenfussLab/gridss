@@ -71,6 +71,12 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     @Option(doc = "Minimum read MAPQ for soft clip realignment to be performed",
     		optional=true)
     public int SOFT_CLIP_MIN_MAPQ = new SoftClipParameters().minReadMapq;
+    @Option(doc = "Minimum Shannon entropy (in bits) of read pairs. Both reads in pair must be above the entropy minimum.",
+    		optional=true)
+    public double READ_PAIR_MIN_ENTROPY = new ReadPairParameters().minAnchorEntropy;
+    @Option(doc = "Minimum Shannon entropy (in bits) of anchored bases",
+    		optional=true)
+    public double SOFT_CLIP_MIN_ENTROPY = new SoftClipParameters().minAnchorEntropy;
     @Option(doc = "Minimum sequence identity to reference. Percentage value taking a value in the range 0-100.",
     		optional=true)
     public float SOFT_CLIP_MIN_ANCHOR_PERCENT_IDENTITY = new SoftClipParameters().minAnchorIdentity;

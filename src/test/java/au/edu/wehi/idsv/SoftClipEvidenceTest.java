@@ -198,6 +198,7 @@ public class SoftClipEvidenceTest extends TestHelper {
 		scp.minAnchorIdentity = 0;
 		scp.minLength = 1;
 		scp.minReadMapq = 0;
+		scp.minAnchorEntropy = 0;
 		SAMRecord r = Read(0, 1000, String.format("%dM%dS", seq.length() - scLen, scLen));
 		r.setReadBases(B(seq));
 		r.setReadNegativeStrandFlag(false);
@@ -263,6 +264,7 @@ public class SoftClipEvidenceTest extends TestHelper {
 		scp.minAnchorIdentity = 0;
 		scp.minLength = 1;
 		scp.minReadMapq = 0;
+		scp.minAnchorEntropy = 0;
 		scp.adapters = new AdapterHelper(null);
 		SAMRecord[] rp = RP(0, 100, 100, 20);
 		rp[0].setCigarString("10M10S");
@@ -283,6 +285,7 @@ public class SoftClipEvidenceTest extends TestHelper {
 		scp.minAnchorIdentity = 0;
 		scp.minLength = 1;
 		scp.minReadMapq = 0;
+		scp.minAnchorEntropy = 0;
 		scp.adapters = new AdapterHelper(null);
 		for (int i = 95 ; i <= 105; i++) { // -3bp -> +3bp, only +-3bp pass dovetail filter  
 			SAMRecord[] rp = RP(0, 100, i, 20);
@@ -303,6 +306,7 @@ public class SoftClipEvidenceTest extends TestHelper {
 		scp.minAnchorIdentity = 0;
 		scp.minLength = 1;
 		scp.minReadMapq = 0;
+		scp.minAnchorEntropy = 0;
 		scp.adapters = new AdapterHelper(null);
 		SAMRecord[] rp = RP(0, 100, 100, 20);
 		rp[0].setCigarString("10M10S");
@@ -325,5 +329,43 @@ public class SoftClipEvidenceTest extends TestHelper {
 	public void getAnchorSequence_should_return_all_bases_not_in_soft_clip() {
 		assertEquals("ACGT", S(SCE(FWD, withSequence("ACGTNN", Read(0, 1, "1S3M2S"))[0]).getAnchorSequence()));
 		assertEquals("CGTNN", S(SCE(BWD, withSequence("ACGTNN", Read(0, 1, "1S3M2S"))[0]).getAnchorSequence()));
+	}
+	@Test
+	public void should_filter_low_complexity_anchors() {
+		SoftClipParameters scp = new SoftClipParameters();
+		scp.minAnchorIdentity = 0;
+		scp.minAnchorEntropy = 0.5;
+		scp.minLength = 1;
+		scp.minReadMapq = 0;
+		scp.adapters = new AdapterHelper(null);
+		
+		assertFalse(new SoftClipEvidence(SES(), FWD, withSequence("AT", Read(0, 1, "1M1S"))[0]).meetsEvidenceCritera(scp));
+		assertFalse(new SoftClipEvidence(SES(), FWD, withSequence("AAT", Read(0, 1, "2M1S"))[0]).meetsEvidenceCritera(scp));
+		assertFalse(new SoftClipEvidence(SES(), FWD, withSequence("AAAT", Read(0, 1, "3M1S"))[0]).meetsEvidenceCritera(scp));
+		assertFalse(new SoftClipEvidence(SES(), FWD, withSequence("AAAAT", Read(0, 1, "4M1S"))[0]).meetsEvidenceCritera(scp));
+		assertFalse(new SoftClipEvidence(SES(), FWD, withSequence("AAAAAT", Read(0, 1, "5M1S"))[0]).meetsEvidenceCritera(scp));
+		assertFalse(new SoftClipEvidence(SES(), FWD, withSequence("AAAAAAT", Read(0, 1, "6M1S"))[0]).meetsEvidenceCritera(scp));
+		assertFalse(new SoftClipEvidence(SES(), FWD, withSequence("AAAAAAAT", Read(0, 1, "7M1S"))[0]).meetsEvidenceCritera(scp));
+		assertFalse(new SoftClipEvidence(SES(), FWD, withSequence("AAAAAAAAT", Read(0, 1, "8M1S"))[0]).meetsEvidenceCritera(scp));
+		assertFalse(new SoftClipEvidence(SES(), FWD, withSequence("AAAAAAAAAT", Read(0, 1, "9M1S"))[0]).meetsEvidenceCritera(scp));
+		assertFalse(new SoftClipEvidence(SES(), FWD, withSequence("AAAAAAAAAAT", Read(0, 1, "10M1S"))[0]).meetsEvidenceCritera(scp));
+		
+		assertFalse(new SoftClipEvidence(SES(), FWD, withSequence("GT", Read(0, 1, "1M1S"))[0]).meetsEvidenceCritera(scp));
+		assertTrue(new SoftClipEvidence(SES(), FWD, withSequence("GAT", Read(0, 1, "2M1S"))[0]).meetsEvidenceCritera(scp));
+		assertTrue(new SoftClipEvidence(SES(), FWD, withSequence("GAAT", Read(0, 1, "3M1S"))[0]).meetsEvidenceCritera(scp));
+		assertTrue(new SoftClipEvidence(SES(), FWD, withSequence("GAAAT", Read(0, 1, "4M1S"))[0]).meetsEvidenceCritera(scp));
+		assertTrue(new SoftClipEvidence(SES(), FWD, withSequence("GAAAAT", Read(0, 1, "5M1S"))[0]).meetsEvidenceCritera(scp));
+		assertTrue(new SoftClipEvidence(SES(), FWD, withSequence("GAAAAAT", Read(0, 1, "6M1S"))[0]).meetsEvidenceCritera(scp));
+		assertTrue(new SoftClipEvidence(SES(), FWD, withSequence("GAAAAAAT", Read(0, 1, "7M1S"))[0]).meetsEvidenceCritera(scp));
+		assertTrue(new SoftClipEvidence(SES(), FWD, withSequence("GAAAAAAAT", Read(0, 1, "8M1S"))[0]).meetsEvidenceCritera(scp));
+		assertTrue(new SoftClipEvidence(SES(), FWD, withSequence("GAAAAAAAAT", Read(0, 1, "9M1S"))[0]).meetsEvidenceCritera(scp));
+		assertFalse(new SoftClipEvidence(SES(), FWD, withSequence("GAAAAAAAAAT", Read(0, 1, "10M1S"))[0]).meetsEvidenceCritera(scp));
+		assertFalse(new SoftClipEvidence(SES(), FWD, withSequence("GAAAAAAAAAAT", Read(0, 1, "11M1S"))[0]).meetsEvidenceCritera(scp));
+		
+		assertTrue(new SoftClipEvidence(SES(), FWD, withSequence("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGTCT", Read(0, 1, "40M1S"))[0]).meetsEvidenceCritera(scp)); // 37	1	1	1	0.503183732
+		assertFalse(new SoftClipEvidence(SES(), FWD, withSequence("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGTCT", Read(0, 1, "41M1S"))[0]).meetsEvidenceCritera(scp)); // 38	1	1	1	0.493619187
+		
+		assertTrue(new SoftClipEvidence(SES(), FWD, withSequence("TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGTCT", Read(0, 1, "1S40M1S"))[0]).meetsEvidenceCritera(scp)); // 37	1	1	1	0.503183732
+		assertFalse(new SoftClipEvidence(SES(), FWD, withSequence("TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGTCT", Read(0, 1, "1S41M1S"))[0]).meetsEvidenceCritera(scp)); // 38	1	1	1	0.493619187
 	}
 }

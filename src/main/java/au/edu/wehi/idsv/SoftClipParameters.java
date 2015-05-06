@@ -15,6 +15,10 @@ public class SoftClipParameters {
 	 * 0-100
 	 */
 	public float minAnchorIdentity = 95;
+	/**
+	 * Minimum entropy of anchored sequence (in bits) (Shannon entropy)
+	 */
+	public double minAnchorEntropy = 0.5;
 	public AdapterHelper adapters = new AdapterHelper(new String[] {
 			"AGATCGGAAGAG", // Illumina Universal Adapter
 			"ATGGAATTCTCG", // Illumina Small RNA Adapter

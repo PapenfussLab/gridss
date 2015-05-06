@@ -445,4 +445,24 @@ public class SAMRecordUtil {
 		}
 		return true;
 	}
+	/**
+	 * Gets the entropy of the read, excluding soft clips
+	 * @param read read
+	 * @return number of bits of entropy, excluding soft clipped bases
+	 */
+	public static double alignedEntropy(SAMRecord read) {
+		int offset = getStartSoftClipLength(read);
+		int length = read.getReadLength() - offset - getEndSoftClipLength(read);
+		double bits = au.edu.wehi.idsv.util.SequenceUtil.shannonEntropy(read.getReadBases(), offset, length);
+		return bits;
+	}
+	/**
+	 * Gets the entropy of the entire read, regardless of alignment
+	 * @param read read
+	 * @return number of bits of entropy
+	 */
+	public static double entropy(SAMRecord read) {
+		double bits = au.edu.wehi.idsv.util.SequenceUtil.shannonEntropy(read.getReadBases(), 0, read.getReadLength());
+		return bits;
+	}
 }

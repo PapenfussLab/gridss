@@ -363,6 +363,22 @@ public class NonReferenceReadPairTest extends TestHelper {
 		assertNull(NonReferenceReadPair.create(rp[1], rp[0], ses));
 	}
 	@Test
+	public void meetsEvidenceCritera_should_filter_low_complexity_reads() {
+		MockSAMEvidenceSource ses = SES(500, 500);
+		ses.getContext().getReadPairParameters().minMapq = 0;
+		ses.getContext().getReadPairParameters().minAnchorEntropy = 0.5;
+		SAMRecord[] rp = RP(0, 100, 300, 10);
+		rp[0].setReadBases(B("AAAAAAAAGT"));
+		rp[1].setReadBases(B("AAAAAAAAGT"));
+		// 0.8658 0.468 bits
+		assertNotNull(NonReferenceReadPair.create(rp[0], rp[1], ses)); 
+
+		// 0.468 bits
+		rp[1].setReadBases(B("AAAAAAAAAT"));
+		assertNull(NonReferenceReadPair.create(rp[0], rp[1], ses));
+		assertNull(NonReferenceReadPair.create(rp[1], rp[0], ses));
+	}
+	@Test
 	public void is_not_exact_breakend() {
 		assertFalse(NRRP(DP(0, 1, "1M", true, 1, 3, "1M", false)).isBreakendExact());
 		assertFalse(NRRP(DP(0, 1, "1M", true, 1, 2, "1M", false)).isBreakendExact());
