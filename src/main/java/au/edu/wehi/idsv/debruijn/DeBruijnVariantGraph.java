@@ -17,7 +17,10 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.RemoteEvidence;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.SoftClipEvidence;
+import au.edu.wehi.idsv.util.ArrayHelper;
 
+import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
 public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends DeBruijnGraphBase<T> {
@@ -116,28 +119,32 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 	 * @param kmer evidence kmer
 	 */
 	protected void onEvidenceRemoved(T graphNode, T evidenceNode, VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) { }
-	private Set<String> getSupport(List<T> path) {
+	private Set<String> getSupport(List<List<T>> breakendPathAllKmers) {
 		Set<String> support = Sets.newHashSet();
 		// iterate in strides to improve support composition when limit is hit 
 		int stride = getK();
 		for (int j = 0; j < stride; j++) {
-			for (int i = j; i < path.size(); i += stride) {
-				T node = path.get(i);
-				List<String> nodeSupport = node.getSupportingEvidenceList();
-				support.addAll(nodeSupport);
-				if (support.size() > SUPPORT_SIZE_HARD_LIMIT) {
-					log.warn(String.format("Hit support size hard limit of %d - no longer processing additional support", SUPPORT_SIZE_HARD_LIMIT));
-					return support;
+			for (int i = j; i < breakendPathAllKmers.size(); i += stride) {
+				for (T node : breakendPathAllKmers.get(i)) {
+					List<String> nodeSupport = node.getSupportingEvidenceList();
+					support.addAll(nodeSupport);
+					if (support.size() > SUPPORT_SIZE_HARD_LIMIT) {
+						log.warn(String.format("Hit support size hard limit of %d - no longer processing additional support", SUPPORT_SIZE_HARD_LIMIT));
+						return support;
+					}
 				}
 			}
 		}
 		return support;
 	}
-	private int[] getBaseCountsByCategory(List<T> path, boolean startAnchored, boolean endAnchored) {
-		int[] baseCounts = getEvidenceKmerCount(path);
+	private int[] getBaseCountsByCategory(List<List<T>> pathAllKmers, boolean startAnchored, boolean endAnchored) {
+		int[] baseCounts = getEvidenceKmerCount(pathAllKmers);
 		if (!startAnchored && !endAnchored) {
 			// add all the starting bases to the calculation
-			int[] firstKmerCounts = path.get(0).getCountByCategory();
+			int[] firstKmerCounts = new int[0];
+			for (T firstKmer : pathAllKmers.get(0)) {
+				firstKmerCounts = ArrayHelper.add(firstKmerCounts, firstKmer.getCountByCategory());
+			}
 			for (int i = 0; i < firstKmerCounts.length; i++) {
 				baseCounts[i] += (getK() - 1) * firstKmerCounts[i];
 			}
@@ -146,48 +153,81 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		// counting kmers instead of bases in this case for now
 		return baseCounts;
 	}
-	protected SAMRecordAssemblyEvidence createAssembly(List<T> contig) {
-		List<T> path = new ArrayList<T>(contig.size());
-		List<T> breakendPath = new ArrayList<T>(path.size());
-		int breakendStartOffset = -1;
-		int breakendEndOffset = contig.size();
-		for (int i = 0; i < contig.size(); i++) {
-			T node = contig.get(i);
-			path.add(node);
-			if (!node.isReference()) {
-				breakendPath.add(node);
-				if (breakendStartOffset == -1) {
-					breakendStartOffset = i;
+	protected SAMRecordAssemblyEvidence createAssembly(DeBruijnPathGraph<T, DeBruijnPathNode<T>> pga, List<DeBruijnPathNode<T>> contig) {
+		//List<T> path = new ArrayList<T>(contig.size());
+		List<List<T>> pathAllKmers = new ArrayList<List<T>>(contig.size());
+		//List<T> breakendPath = new ArrayList<T>(contig.size());
+		List<List<T>> breakendPathAllKmers = new ArrayList<List<T>>(contig.size());
+		for (DeBruijnPathNode<T> pn : contig) {
+			boolean isRef = pga.isReference(pn); 
+			for (List<T> kmers : pn.getPathAllNodes()) {
+				pathAllKmers.add(kmers);
+				if (!isRef) {
+					breakendPathAllKmers.add(kmers);
 				}
-				breakendEndOffset = i;
 			}
 		}
-		T beforeBreakend = breakendStartOffset > 0 ? path.get(breakendStartOffset -1) : null;
-		T afterBreakend = breakendEndOffset + 1 < path.size() ? path.get(breakendEndOffset + 1) : null;
+		assert(breakendPathAllKmers.size() > 0);
+		int breakendStartOffset = pathAllKmers.indexOf(breakendPathAllKmers.get(0));
+		int breakendEndOffset = pathAllKmers.indexOf(breakendPathAllKmers.get(breakendPathAllKmers.size() - 1));
+		assert(breakendEndOffset - breakendStartOffset == breakendPathAllKmers.size() - 1); // should be a single breakend path
+		List<T> beforeBreakend = breakendStartOffset > 0 ? pathAllKmers.get(breakendStartOffset - 1) : null;
+		List<T> afterBreakend = breakendEndOffset + 1 < pathAllKmers.size() ? pathAllKmers.get(breakendEndOffset + 1) : null;
 		
-		Set<String> breakendSupport = getSupport(breakendPath);
-		int[] breakendBaseCounts = getBaseCountsByCategory(breakendPath, beforeBreakend != null, afterBreakend != null);
-		// TODO: improve base calling by considering the weight of all kmers contributing to that base position
-		byte[] bases = KmerEncodingHelper.baseCalls(KmerEncodingHelper.asKmers(this, contig), getK());
-		byte[] quals = getBaseQuals(contig);
+		if (breakendPathAllKmers.size() < getK() - 1 && beforeBreakend != null && afterBreakend != null) {
+			// our bubble is smaller than expected - this is likely due to either:
+			// a) assembly artifact: bubble of non-reference kmers all of which have at least one base supporting the reference
+			//     MMMMSSS
+			//     SSSMMMM			
+			// b) microhomology at breakpoint: adjust bases called so we call the middle of the microhomology
+			//     making sure we don't overrun either anchor and turn the breakpoint into a breakend
+			int basesToAdjust = getK() - 1 - breakendPathAllKmers.size();
+			while (basesToAdjust > 0 && (breakendStartOffset > 1 || breakendEndOffset < pathAllKmers.size() - 2)) {
+				if (basesToAdjust > 0 && breakendStartOffset > 1) {
+					breakendPathAllKmers.add(0, beforeBreakend);
+					breakendStartOffset--;
+					basesToAdjust--;
+					beforeBreakend = pathAllKmers.get(breakendStartOffset - 1);
+				}
+				if (basesToAdjust > 0 && breakendEndOffset < pathAllKmers.size() - 2) {
+					breakendPathAllKmers.add(afterBreakend);
+					breakendEndOffset++;
+					basesToAdjust--;
+					afterBreakend = pathAllKmers.get(breakendEndOffset + 1);
+				}
+			}
+			if (basesToAdjust > 0) {
+				// not enough anchored bases either side.
+				// TODO: chew into the anchoring kmers and calling with less than k anchor bases either side instead of outright rejection
+				log.debug(String.format("Rejecting undersized breakpoint assembly near (%d).", beforeBreakend.get(0).getExpectedPosition()));
+				return null;
+			}
+		}
+		Set<String> breakendSupport = getSupport(breakendPathAllKmers);
+		int[] breakendBaseCounts = getBaseCountsByCategory(breakendPathAllKmers, beforeBreakend != null, afterBreakend != null);
+		byte[] bases = KmerEncodingHelper.baseCalls(KmerEncodingHelper.asKmers(this, Iterables.transform(pathAllKmers, new Function<List<T>, T>() {
+			// TODO: improve base calling by considering all kmers contributing to each base position
+			@Override
+			public T apply(List<T> input) {
+				return input.get(0);
+			}})), getK());
+		byte[] quals = getBaseQuals(pathAllKmers);
 		SAMRecordAssemblyEvidence ae = null;
 		if (beforeBreakend == null && afterBreakend == null) {
 			// unanchored
-			BreakendSummary breakend = DeBruijnNodeBase.getExpectedBreakend(processContext.getLinear(), breakendPath);
+			BreakendSummary breakend = DeBruijnNodeBase.getExpectedBreakend(processContext.getLinear(), Iterables.concat(breakendPathAllKmers));
 			return AssemblyFactory.createUnanchoredBreakend(processContext, source, breakend, breakendSupport, bases, quals, breakendBaseCounts);
 		} else {
 			LinearGenomicCoordinate lgc = processContext.getLinear();
-			double startBreakendAnchorPosition = DeBruijnNodeBase.getExpectedPositionForDirectAnchor(BreakendDirection.Forward, breakendPath);
-			double endBreakendAnchorPosition = DeBruijnNodeBase.getExpectedPositionForDirectAnchor(BreakendDirection.Backward, breakendPath);
-			// fall back to expected position of anchor kmer
-			// then fall back to expected kmer position - this will give the wrong answer for breakpoint assemblies as it will average the expected location of each breakpoint
-			if (Double.isNaN(startBreakendAnchorPosition) && beforeBreakend != null) {
-				startBreakendAnchorPosition = beforeBreakend.getExpectedAnchorPosition();
+			Long startBreakendAnchorPosition = null;
+			Long endBreakendAnchorPosition = null;
+			if (beforeBreakend != null) {
+				startBreakendAnchorPosition = DeBruijnNodeBase.getExpectedReferencePosition(beforeBreakend);
 			}
-			if (Double.isNaN(endBreakendAnchorPosition) && afterBreakend != null) {
-				endBreakendAnchorPosition = afterBreakend.getExpectedAnchorPosition();
+			if (afterBreakend != null) {
+				endBreakendAnchorPosition = DeBruijnNodeBase.getExpectedReferencePosition(afterBreakend);
 			}
-			assert(!Double.isNaN(endBreakendAnchorPosition) || !Double.isNaN(startBreakendAnchorPosition));
+			assert(endBreakendAnchorPosition != null || startBreakendAnchorPosition != null);
 			// k=3
 			// 1234567890
 			// MMMSSSMMM
@@ -201,24 +241,24 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 			// ^ start kmer pos
 			//       ^ end kmer pos
 			// adjust position from start of kmer over to closest reference anchor base position
-			startBreakendAnchorPosition += getK() - 1;
+			if (startBreakendAnchorPosition != null) {
+				startBreakendAnchorPosition += getK() - 1;
+			}
 			
 			int startAnchorReferenceIndex = -1;
 			int startAnchorPosition =  0;
 			int endAnchorReferenceIndex = -1;
 			int endAnchorPosition =  0;
-			if (!Double.isNaN(startBreakendAnchorPosition)) {
-				long pos = (long)Math.round(startBreakendAnchorPosition);
-				startAnchorReferenceIndex = lgc.getReferenceIndex(pos); 
-				startAnchorPosition = lgc.getReferencePosition(pos);
+			if (startBreakendAnchorPosition != null) {
+				startAnchorReferenceIndex = lgc.getReferenceIndex(startBreakendAnchorPosition); 
+				startAnchorPosition = lgc.getReferencePosition(startBreakendAnchorPosition);
 			}
-			if (!Double.isNaN(endBreakendAnchorPosition)) {
-				long pos = (long)Math.round(endBreakendAnchorPosition);
-				endAnchorReferenceIndex = lgc.getReferenceIndex(pos); 
-				endAnchorPosition = lgc.getReferencePosition(pos);
+			if (endBreakendAnchorPosition != null) {
+				endAnchorReferenceIndex = lgc.getReferenceIndex(endBreakendAnchorPosition); 
+				endAnchorPosition = lgc.getReferencePosition(endBreakendAnchorPosition);
 			}
 			int startAnchorLength = breakendStartOffset + getK() - 1;
-			int endAnchorLength = path.size() + getK() - breakendEndOffset - 2;
+			int endAnchorLength = pathAllKmers.size() + getK() - breakendEndOffset - 2;
 			if (endAnchorReferenceIndex == -1) {
 				ae = AssemblyFactory.createAnchoredBreakend(processContext, source, BreakendDirection.Forward, breakendSupport,
 						startAnchorReferenceIndex, startAnchorPosition, startAnchorLength,
@@ -228,16 +268,6 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 						endAnchorReferenceIndex, endAnchorPosition, endAnchorLength,
 						bases, quals, breakendBaseCounts);
 			} else {
-				if (startAnchorLength + endAnchorLength > bases.length) {
-					// All bases support reference allele - this is likely
-					// a) an assembly artifact
-					// eg: creates a bubble of nonreference kmers all of which have at least
-					// one base supporting the reference
-					// MMMMSSS
-					// SSSMMMM
-					// b) microhomology at breakpoint
-					ae = null;
-				}
 				ae = AssemblyFactory.createAnchoredBreakpoint(processContext, source, breakendSupport,
 						startAnchorReferenceIndex, startAnchorPosition, startAnchorLength,
 						endAnchorReferenceIndex, endAnchorPosition, endAnchorLength,

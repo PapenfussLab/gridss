@@ -2,14 +2,7 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.reference.ReferenceSequence;
-import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.SequenceUtil;
-
-import java.io.IOException;
-import java.util.Arrays;
 
 import org.junit.Test;
 
@@ -194,96 +187,60 @@ public class RealignedBreakpointTest extends TestHelper {
 	}
 	@Test
 	public void should_calc_microhomology() {
-		MockReference ref = new MockReference(
-				"AAAAAAAA", "AAAAAAAA");
+		InMemoryReferenceSequenceFile ref = new InMemoryReferenceSequenceFile(new String[] { "0", "1" }, new byte[][] {
+				B("AAAAAAAA"), B("AAAAAAAA")});
 		//       >>>>            <<<<
 		RealignedBreakpoint bp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, FWD, 4, 4), "AAAA", R(1, 5, "4M", "AAAA", false));
 		assertEquals("AAAAAAAA", bp.getHomologySequence());
 		assertEquals(4, bp.getHomologyBaseCountIncludedLocally());
 		assertEquals(new BreakpointSummary(0, FWD, 1, 8, 1, BWD, 1, 8), bp.getBreakpointSummary());
 		
-		ref = new MockReference(
-				"AAAAAAAA", "AAAAAAAA");
+		ref = new InMemoryReferenceSequenceFile(new String[] { "0", "1" }, new byte[][] {
+				B("AAAAAAAA"), B("AAAAAAAA")});
 		//       >>>            <<<<<
 		bp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, FWD, 3, 3), "AAA", R(1, 4, "5M", "AAAAA", false));
 		assertEquals("AAAAAAAA", bp.getHomologySequence());
 		assertEquals(3, bp.getHomologyBaseCountIncludedLocally());
 		assertEquals(new BreakpointSummary(0, FWD, 1, 8, 1, BWD, 1, 8), bp.getBreakpointSummary());
 		
-		ref = new MockReference(
-				"ATTAGGCG", "CGCCTAAT");
+		ref = new InMemoryReferenceSequenceFile(new String[] { "0", "1" }, new byte[][] {
+				B("ATTAGGCG"), B("CGCCTAAT")});
 		//       >>>>        >>>>
 		bp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, FWD, 4, 4), "ATTA", R(1, 1, "4M", "CGCC", true));
 		assertEquals(new BreakpointSummary(0, FWD, 1, 8, 1, FWD, 1, 8), bp.getBreakpointSummary());
 		assertEquals("ATTAGGCG", bp.getHomologySequence());
 		assertEquals(4, bp.getHomologyBaseCountIncludedLocally());
 		
-		ref = new MockReference(
-				"NNNNAAAA", "NNAAAA");
+		ref = new InMemoryReferenceSequenceFile(new String[] { "0", "1" }, new byte[][] {
+				B("NNNNAAAA"), B("NNAAAA")});
 		//       >>>>          <<<<
 		bp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, FWD, 4, 4), "NNNN", R(1, 3, "4M", "AAAA", false));
 		assertEquals("AAAA", bp.getHomologySequence());
 		assertEquals(0, bp.getHomologyBaseCountIncludedLocally());
 		
-		ref = new MockReference(
-				"TAAANNNN", "NNTTTAN");
+		ref = new InMemoryReferenceSequenceFile(new String[] { "0", "1" }, new byte[][] {
+				B("TAAANNNN"), B("NNTTTAN")});
 		//           <<<<      <<<<    
 		bp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, BWD, 5, 5), "NNNN", R(1, 3, "4M", "TTTA", true));
 		assertEquals("TAAA", bp.getHomologySequence());
 		assertEquals(0, bp.getHomologyBaseCountIncludedLocally());
 		
-		ref = new MockReference(
-				"TAAANNNN", "NNTAAAN");
+		ref = new InMemoryReferenceSequenceFile(new String[] { "0", "1" }, new byte[][] {
+				B("TAAANNNN"), B("NNTAAAN")});
 		//           <<<<      >>>>    
 		bp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, BWD, 5, 5), "NNNN", R(1, 3, "4M", "TAAA", false));
 		assertEquals("TAAA", bp.getHomologySequence());
 		assertEquals(0, bp.getHomologyBaseCountIncludedLocally());
 	}
-	public class MockReference implements ReferenceSequenceFile {
-		private String[] seq;
-		private SAMSequenceDictionary dict;
-		public MockReference(String... seq) {
-			this.seq = seq;
-			this.dict = new SAMSequenceDictionary();
-			int i = 0;
-			for (String s : seq) {
-				dict.addSequence(new SAMSequenceRecord(Integer.toString(i++), s.length()));
-			}
-		}
-		@Override
-		public SAMSequenceDictionary getSequenceDictionary() {
-			return dict;
-		}
-		@Override
-		public ReferenceSequence nextSequence() {
-			// TODO Auto-generated method stub
-			return null;
-		}
-
-		@Override
-		public void reset() {
-		}
-
-		@Override
-		public boolean isIndexed() {
-			return true;
-		}
-
-		@Override
-		public ReferenceSequence getSequence(String contig) {
-			return getSubsequenceAt(contig, 1, getSequenceDictionary().getSequence(contig).getSequenceLength());
-		}
-
-		@Override
-		public ReferenceSequence getSubsequenceAt(String contig, long start, long stop) {
-			SAMSequenceRecord s = getSequenceDictionary().getSequence(contig);
-			return new ReferenceSequence(s.getSequenceName(), s.getSequenceIndex(), Arrays.copyOfRange(B(seq[s.getSequenceIndex()]), (int)start - 1, (int)stop));
-		}
-
-		@Override
-		public void close() throws IOException {
-			// TODO Auto-generated method stub
-			
-		}
+	@Test
+	public void should_call_deletion_microhomology() {
+		//          1         2         3         4
+		// 1234567890123456789012345678901234567890123456789
+		// CATTAATCGCAATAAAATGTTCAAAACGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAA
+		// ***************         ***************
+		String contig = "CATTAATCGCAAGAAAAGGTTGAAAACGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAA";
+		InMemoryReferenceSequenceFile ref = new InMemoryReferenceSequenceFile(new String[] { "Contig" }, new byte[][] { B(contig) });
+		RealignedBreakpoint bp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, FWD, 15, 15), "CATTAATCGCAATAA", R(0, 25, "25M", "AACGACGCCAAGTCA", false));
+		assertEquals("AAAA", bp.getHomologySequence());
 	}
 }

@@ -15,6 +15,7 @@ import org.junit.Test;
 
 import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
+import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.DirectedEvidence;
@@ -22,7 +23,9 @@ import au.edu.wehi.idsv.EvidenceSubset;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.SmallIndelSAMRecordAssemblyEvidence;
+import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
+import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 
 import com.google.common.collect.Lists;
@@ -59,7 +62,17 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		ass = new DeBruijnSubgraphAssembler(context, aes);
 		result = Lists.newArrayList(); 
 	}
-	
+	public void setupWithGraphReduction(int k) {
+		context = getContext();
+		context.getAssemblyParameters().k = k;
+		context.getAssemblyParameters().minReads = 0;
+		context.getAssemblyParameters().maxBaseMismatchForCollapse = 1;
+		context.getAssemblyParameters().collapseBubblesOnly = false;
+		context.getAssemblyParameters().writeFilteredAssemblies = true;
+		aes = AES(context);
+		ass = new DeBruijnSubgraphAssembler(context, aes);
+		result = Lists.newArrayList(); 
+	}
 	private static SAMRecord R(String read) {
 		return R(null, read, null, false, true);
 	}
@@ -378,6 +391,7 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		SmallIndelSAMRecordAssemblyEvidence e = (SmallIndelSAMRecordAssemblyEvidence) result.get(0);
 		assertEquals("", e.getUntemplatedSequence());
 		assertEquals(new BreakpointSummary(0, FWD, 50, 50, 0, BWD, 100, 100), e.getBreakendSummary());
+		assertEquals("50M49D50M", e.getBackingRecord().getCigarString());
 	}
 	/**
 	 * If the non-reference kmer path less than k-1 in length
@@ -395,5 +409,35 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		result.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("AAAACGTA", Read(0, 10, "3S5M"))))));
 		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, result.size());
+	}
+	@Test
+	public void should_assemble_non_reference_primary_kmer_as_reference_if_alt_ref_kmer_exists() {
+		setupWithGraphReduction(4);
+		addRead(withSequence("GCTAGG", Read(0, 1, "5M2S"))[0], true);
+		addRead(withSequence("GCTAGG", Read(0, 1, "5M2S"))[0], true);
+		addRead(withSequence("GCTATG", Read(0, 1, "6M1S"))[0], true);
+		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, result.size());
+		assertEquals("GCTAGG", S(result.get(0).getAssemblySequence()));
+		assertEquals("G", S(result.get(0).getBreakendSequence()));
+	}
+	@Test
+	public void should_merge_kmers() {
+		//          1         2         3         4
+		// 1234567890123456789012345678901234567890123456789
+		// CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAA
+		// ***************         ***************
+		//        12345678         12345678
+		// start anchor position = 8 -> 8 + k-1 = 15
+		// end anchor position = 25
+		DeBruijnReadGraph g = new DeBruijnReadGraph(getContext(), AES(), 2, new AssemblyParameters() {{ k = 8; }}, null);
+		String seq = S(RANDOM).substring(0, 0+15) + S(RANDOM).substring(24, 24+15);
+		SoftClipEvidence f = SCE(FWD, withSequence(seq, Read(2, 1, "15M15S")));
+		SoftClipEvidence b = SCE(BWD, withSequence(seq, Read(2, 25, "15S15M")));
+		g.addEvidence(f);
+		g.addEvidence(b);
+		
+		assertEquals(30 - 8 + 1, g.size());
+		//DeBruijnSubgraphNode node = g.getKmer(K(S(RANDOM).substring(0, 8)));		
 	}
 }

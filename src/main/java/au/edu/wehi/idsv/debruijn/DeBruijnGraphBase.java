@@ -214,18 +214,19 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> implements D
 	}
 	/**
 	 * Base qualities of contig
-	 * @param contig kmer contig
+	 * @param pathAllKmers kmer contig
 	 * @return base qualities of a positive strand SAMRecord readout of contig
 	 */
-	public byte[] getBaseQuals(List<T> contig) {
-		int[] kmerWeight = new int[contig.size()];
-		for (int i = 0; i < contig.size(); i++) {
-			// subtract # reads to adjust for the +1 qual introduced by ReadKmerIterable
-			// to ensure positive node weights
-			T node = contig.get(i);
-			kmerWeight[i] = node.getWeight() - node.getSupportingEvidenceList().size();
+	public byte[] getBaseQuals(List<List<T>> pathAllKmers) {
+		int[] kmerWeight = new int[pathAllKmers.size()];
+		for (int i = 0; i < pathAllKmers.size(); i++) {
+			for (T node : pathAllKmers.get(i)) {
+				// subtract # reads to adjust for the +1 qual introduced by ReadKmerIterable
+				// to ensure positive node weights
+				kmerWeight[i] = node.getWeight() - node.getSupportingEvidenceList().size();
+			}
 		}
-		byte[] result = new byte[contig.size() + k - 1];
+		byte[] result = new byte[pathAllKmers.size() + k - 1];
 		// take the average kmer qual of the kmers this bases is part of
 		int accum = 0;
 		int windowSize = 0;
@@ -253,12 +254,12 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> implements D
 	}
 	/**
 	 * Total kmer support for the given path by category
-	 * @param path kmer contig
+	 * @param breakendPathAllKmers kmer contig
 	 * @return number of read bases per category include in at least one kmer on the given kmer contig
 	 */
-	public int[] getEvidenceKmerCount(List<T> path) {
+	public int[] getEvidenceKmerCount(List<List<T>> breakendPathAllKmers) {
 		int[] count = new int[1];
-		for (T node : path) {
+		for (T node : Iterables.concat(breakendPathAllKmers)) {
 			int[] c = node.getCountByCategory();
 			if (c.length > count.length) {
 				count = Arrays.copyOf(count, c.length);

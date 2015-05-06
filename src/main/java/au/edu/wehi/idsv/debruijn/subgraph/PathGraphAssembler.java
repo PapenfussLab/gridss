@@ -3,27 +3,27 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 import htsjdk.samtools.util.Log;
 
 import java.io.File;
-import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.LinkedList;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Queue;
-import java.util.Set;
+import java.util.Stack;
 
 import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraph;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphUtil;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
-import au.edu.wehi.idsv.graph.PathNode;
+import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
 import au.edu.wehi.idsv.graph.PathNodeFactory;
 import au.edu.wehi.idsv.visualisation.DeBruijnPathGraphExporter;
 import au.edu.wehi.idsv.visualisation.StaticDeBruijnPathGraphGexfExporter;
 import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTracker;
 
 import com.google.common.base.Function;
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -36,7 +36,7 @@ import com.google.common.primitives.Ints;
  * @author Daniel Cameron
  *
  */
-public class PathGraphAssembler<T, PN extends PathNode<T>> extends DeBruijnPathGraph<T, PN> {
+public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBruijnPathGraph<T, PN> {
 	private static final Log log = Log.getInstance(PathGraphAssembler.class);
 	private final AssemblyParameters parameters;
 	private final List<NonReferenceSubgraph> subgraphs = Lists.newArrayList();
@@ -49,7 +49,7 @@ public class PathGraphAssembler<T, PN extends PathNode<T>> extends DeBruijnPathG
 		/**
 		 * Node set of the non-reference subgraphs
 		 */
-		public final Set<PN> nodes = Sets.newHashSet();
+		public final List<PN> nodes = Lists.newArrayList();
 		/**
 		 * Nodes with a connected reference kmer preceding the given path
 		 */
@@ -58,38 +58,41 @@ public class PathGraphAssembler<T, PN extends PathNode<T>> extends DeBruijnPathG
 		 * Nodes with a connected reference kmer following the given path
 		 */
 		public final List<PN> referenceAnchoredPost = Lists.newArrayList();
-		public NonReferenceSubgraph(PN seed) {
+		public NonReferenceSubgraph(PN seed, BitSet processed) {
 			assert(!isReference(seed));
-			visitAll(seed);
+			visitAll(seed, processed);
 		}
-		private void visitAll(PN seed) {
-			Queue<PN> frontier = new ArrayDeque<PN>();
+		private void visitAll(PN seed, BitSet processed) {
+			Stack<PN> frontier = new Stack<PN>();
 			nodes.add(seed);
+			processed.set(seed.getNodeId());
 			frontier.add(seed);
 			while (!frontier.isEmpty()) {
-				PN node = frontier.poll();
+				PN node = frontier.pop();
 				boolean added = false;
-				for (PN prev : prev(node)) {
-					boolean adjIsRef = isReference(prev);
+				for (PN adj : prev(node)) {
+					boolean adjIsRef = isReference(adj);
 					if (!added && adjIsRef) {
 						referenceAnchoredPreceding.add(node);
 						added = true;
 					}
-					if (!adjIsRef && !nodes.contains(prev)) {
-						nodes.add(prev);
-						frontier.add(prev);
+					if (!adjIsRef && !processed.get(adj.getNodeId())) {
+						nodes.add(adj);
+						processed.set(adj.getNodeId());
+						frontier.add(adj);
 					}
 				}
 				added = false;
-				for (PN next : next(node)) {
-					boolean adjIsRef = isReference(next);
+				for (PN adj : next(node)) {
+					boolean adjIsRef = isReference(adj);
 					if (!added && adjIsRef) {
 						referenceAnchoredPost.add(node);
 						added = true;
 					}
-					if (!adjIsRef && !nodes.contains(next)) {
-						nodes.add(next);
-						frontier.add(next);
+					if (!adjIsRef && !processed.get(adj.getNodeId())) {
+						nodes.add(adj);
+						processed.set(adj.getNodeId());
+						frontier.add(adj);
 					}
 				}
 			}
@@ -188,6 +191,7 @@ public class PathGraphAssembler<T, PN extends PathNode<T>> extends DeBruijnPathG
 			result.addAll(preAnchor);
 			result.addAll(best);
 			result.addAll(postAnchor);
+			assertHasSingleNonReferenceKmerChain_PN(result);
 			return result;
 		}
 	}
@@ -195,15 +199,25 @@ public class PathGraphAssembler<T, PN extends PathNode<T>> extends DeBruijnPathG
 		super(graph, seeds, factory, tracker);
 		this.parameters = parameters;
 	}
-	public List<LinkedList<T>> assembleContigs() {
+	public List<List<PN>> assembleContigs() {
 		return assembleContigs(null);
 	}
-	public List<LinkedList<T>> assembleContigs(DeBruijnPathGraphExporter<T, PN> graphExporter) {
+	public List<List<PN>> assembleContigs(DeBruijnPathGraphExporter<T, PN> graphExporter) {
 		splitOutReferencePaths();
 		calcNonReferenceSubgraphs();
 		return assemblyNonReferenceContigs(graphExporter);
 	}
-	private List<LinkedList<T>> assemblyNonReferenceContigs(DeBruijnPathGraphExporter<T, PN> graphExporter) {
+	private boolean assertHasSingleNonReferenceKmerChain_PN(List<PN> contig) {
+		int chainStarts = isReference(contig.get(0)) ? 0 : 1;
+		for (int i = 1; i < contig.size(); i++) {
+			if (isReference(contig.get(i - 1)) && !isReference(contig.get(i))) {
+				chainStarts++;
+			}
+		}
+		assert(chainStarts == 1);
+		return chainStarts == 1;
+	}
+	private List<List<PN>> assemblyNonReferenceContigs(DeBruijnPathGraphExporter<T, PN> graphExporter) {
 		List<List<PN>> result = Lists.newArrayList();
 		for (NonReferenceSubgraph nrsg: subgraphs) {
 			List<PN> contig = nrsg.assembleSubgraph();
@@ -232,27 +246,19 @@ public class PathGraphAssembler<T, PN extends PathNode<T>> extends DeBruijnPathG
 			graphExporter.saveTo(new File(parameters.debruijnGraphVisualisationDirectory,
 					String.format("pathTraversalTimeout-%d.subgraph.gexf", ++timeoutGraphsWritten)));
 		}
-		List<LinkedList<T>> resultKmers = Lists.newArrayList(Iterables.transform(result, new Function<List<PN>, LinkedList<T>>() {
-			@Override
-			public LinkedList<T> apply(List<PN> arg0) {
-				return Lists.newLinkedList(Lists.newArrayList(PN.nodeIterator(arg0.iterator())));
-			}
-		}));
-		tracker.assemblyNonReferenceContigs(result, resultKmers, totalNodesTraversed);
-		return resultKmers;
+		tracker.assemblyNonReferenceContigs(result, totalNodesTraversed);
+		return result;
 	}
 	/**
 	 * Separates non-reference kmers of the subgraph into disjoint non-reference subgraphs 
 	 */
 	private void calcNonReferenceSubgraphs() {
-		Set<PN> toProcess = Sets.newHashSet(getPaths());
-		while (!toProcess.isEmpty()) {
-			PN node = toProcess.iterator().next();
-			toProcess.remove(node);
-			if (!isReference(node)) {
-				NonReferenceSubgraph nrsg = new NonReferenceSubgraph(node); 
+		BitSet processed = new BitSet(getMaxNodeId() + 1);
+		for (PN node : getPaths()) {
+			if (!processed.get(node.getNodeId()) && !isReference(node)) {
+				// start of a new non-reference subgraph
+				NonReferenceSubgraph nrsg = new NonReferenceSubgraph(node, processed); 
 				subgraphs.add(nrsg);
-				toProcess.removeAll(nrsg.nodes);
 			}
 		}
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
@@ -266,48 +272,43 @@ public class PathGraphAssembler<T, PN extends PathNode<T>> extends DeBruijnPathG
 			expensiveSanityCheckLog.warn("Expensive sanity checking is being performed. Performance will be poor");
 			expensiveSanityCheckLog = null;
 		}
-		/*
-		assert(subgraphs.size() == startingPaths.size());
-		for (int i = 0; i < subgraphs.size(); i++) {
-			boolean shouldBeReferenceStart = false;
-			for (PN n : subgraphs.get(i)) {
+		for (NonReferenceSubgraph subgraph : subgraphs) {
+			for (PN n : subgraph.nodes) {
+				assert(subgraph.nodes.containsAll(subgraph.referenceAnchoredPreceding));
+				assert(subgraph.nodes.containsAll(subgraph.referenceAnchoredPost));
+				assert(!isReference(n));
 				for (PN adj : prev(n)) {
-					if (adj.containsNonReferenceKmer()) {
-						assert(subgraphs.get(i).contains(adj));
-					} else if (adj.containsReferenceKmer()) {
-						shouldBeReferenceStart = true;
+					if (isReference(adj)) {
+						assert(subgraph.referenceAnchoredPreceding.contains(n));
+					} else {
+						subgraph.nodes.contains(adj);
 					}
 				}
 				for (PN adj : next(n)) {
-					if (adj.containsNonReferenceKmer()) {
-						assert(subgraphs.get(i).contains(adj));
+					if (isReference(adj)) {
+						assert(subgraph.referenceAnchoredPost.contains(n));
+					} else {
+						subgraph.nodes.contains(adj);
 					}
-				}
-				for (int j = 0; j < subgraphs.size(); j++) {
-					if (i != j) {
-						// disjoint
-						assert(!subgraphs.get(j).contains(n));
-					}
-				}
-			}
-			if (shouldBeReferenceStart) {
-				for (PN n : startingPaths.get(i)) {
-					boolean hasPrevReference = false;
-					for (PN adj : prev(n)) {
-						if (adj.containsReferenceKmer()) {
-							hasPrevReference = true;
-							break;
-						}
-					}
-					assert(hasPrevReference);
-				}
-			} else {
-				for (PN n : startingPaths.get(i)) {
-					assert(n.containsNonReferenceKmer());
 				}
 			}
 		}
-		*/
+		List<PN> allSubgraphs = Lists.newArrayList(Iterables.concat(Iterables.transform(subgraphs, new Function<NonReferenceSubgraph, Iterable<PN>>() {
+			@Override
+			public Iterable<PN> apply(NonReferenceSubgraph input) {
+				return input.nodes;
+			}
+		})));
+		HashSet<PN> allSubgraphsNodeSet = Sets.newHashSet(allSubgraphs);
+		// PNs occurs exactly once
+		assert(allSubgraphs.size() == allSubgraphsNodeSet.size());
+		// all non-reference PNs are included in subgraphs
+		assert(allSubgraphsNodeSet.size() == Iterables.size(Iterables.filter(allNodes(), new Predicate<PN>() {
+			@Override
+			public boolean apply(PN input) {
+				return !isReference(input);
+			}
+		})));
 		return true;
 	}
 }

@@ -5,9 +5,9 @@ import java.util.List;
 import java.util.Set;
 
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
-import au.edu.wehi.idsv.graph.PathNode;
+import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
 
-public interface DeBruijnPathGraphExporter<T, PN extends PathNode<T>> {
+public interface DeBruijnPathGraphExporter<T, PN extends DeBruijnPathNode<T>> {
 
 	/**
 	 * Takes a snapshot of the path graph at the given time

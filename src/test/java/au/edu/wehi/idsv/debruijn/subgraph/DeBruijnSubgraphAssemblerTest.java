@@ -16,7 +16,10 @@ import org.junit.rules.TemporaryFolder;
 
 import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyParameters;
+import au.edu.wehi.idsv.BreakpointSummary;
+import au.edu.wehi.idsv.InMemoryReferenceSequenceFile;
 import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.SmallIndelSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.TestHelper;
 
 import com.google.common.collect.Lists;
@@ -167,5 +170,101 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, results.size());
 		assertEquals(3, results.get(0).getBreakendSummary().start);
+	}
+	@Test
+	public void should_assemble_deletion() {
+		//          1         2         3         4
+		// 1234567890123456789012345678901234567890123456789
+		// CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAA
+		// ***************         ***************
+		//        12345678         12345678
+		// start anchor position = 8 -> 8 + k-1 = 15
+		// end anchor position = 25
+		String seq = S(RANDOM).substring(0, 0+15) + S(RANDOM).substring(24, 24+15);
+		DeBruijnSubgraphAssembler ass = DSA(8);
+		List<AssemblyEvidence> results = Lists.newArrayList();
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence(seq, Read(2, 1, "15M15S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence(seq, Read(2, 25, "15S15M"))))));
+		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, results.size());
+		SmallIndelSAMRecordAssemblyEvidence e = (SmallIndelSAMRecordAssemblyEvidence)results.get(0);
+		assertEquals(seq, S(e.getAssemblySequence()));
+		assertEquals("15M9D15M", e.getBackingRecord().getCigarString());
+		assertEquals(1, e.getBackingRecord().getAlignmentStart());
+		assertEquals(seq, S(e.getBackingRecord().getReadBases()));
+		assertEquals(new BreakpointSummary(2, FWD, 15, 15, 2, BWD, 25, 25), e.getBreakendSummary());
+	}
+	@Test
+	public void should_assemble_deletion_microhomology() {
+		String contig = "CATTAATCGCAATAAAATGTTCAAAACGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAA";
+		ProcessingContext context = getContext(new InMemoryReferenceSequenceFile(new String[] { "Contig" }, new byte[][] { B(contig) }));
+		context.getAssemblyParameters().k = 8;
+		MockSAMEvidenceSource ses = SES(context);
+		//          1         2         3         4
+		// 1234567890123456789012345678901234567890123456789
+		// CATTAATCGCAATAAAATGTTCAAAACGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAA
+		// ***************         ***************
+		//        12345678         12345678
+		// start anchor position = 8 -> 8 + k-1 = 15
+		// end anchor position = 25
+		String seq = contig.substring(0, 0+15) + contig.substring(24, 24+15);
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(context, AES(context));
+		List<AssemblyEvidence> results = Lists.newArrayList();
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence(seq, Read(0, 1, "15M15S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, ses, withSequence(seq, Read(0, 25, "15S15M"))))));
+		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, results.size());
+		SmallIndelSAMRecordAssemblyEvidence e = (SmallIndelSAMRecordAssemblyEvidence)results.get(0);
+		assertEquals(seq, S(e.getAssemblySequence()));
+		assertEquals("15M9D15M", e.getBackingRecord().getCigarString());
+		assertEquals(1, e.getBackingRecord().getAlignmentStart());
+		assertEquals(seq, S(e.getBackingRecord().getReadBases()));
+		assertEquals(1, e.getSAMRecord().getAlignmentStart());
+		assertEquals(25, e.getRemoteSAMRecord().getAlignmentStart());
+		assertEquals("CATTAATCGCAATAAAACGACGCCAAGTCA", S(e.getSAMRecord().getReadBases()));
+		assertEquals("AACGACGCCAAGTCA", S(e.getRemoteSAMRecord().getReadBases()));
+		assertEquals(new BreakpointSummary(0, FWD, 13, 17, 0, BWD, 23, 27), e.getBreakendSummary());
+	}
+	@Test
+	public void breakpoint_microhomology_should_be_centre_aligned() {
+		String contig = "CATTAATCGCAATAAAATGTTCAAAACGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAA";
+		ProcessingContext context = getContext(new InMemoryReferenceSequenceFile(new String[] { "Contig" }, new byte[][] { B(contig) }));
+		context.getAssemblyParameters().k = 8;
+		MockSAMEvidenceSource ses = SES(context);
+		//          1         2         3         4
+		// 1234567890123456789012345678901234567890123456789
+		// CATTAATCGCAATAAAATGTTCAAAACGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAA
+		// *****************     *****************
+		//        12345678         12345678
+		// start anchor position = 8 -> 8 + k-1 = 15
+		// end anchor position = 25
+		String seq = contig.substring(0, 0+15) + contig.substring(24, 24+15);
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(context, AES(context));
+		List<AssemblyEvidence> results = Lists.newArrayList();
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence(seq, Read(0, 1, "17M13S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, ses, withSequence(seq, Read(0, 23, "13S17M"))))));
+		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, results.size());
+		SmallIndelSAMRecordAssemblyEvidence e = (SmallIndelSAMRecordAssemblyEvidence)results.get(0);
+		assertEquals(seq, S(e.getAssemblySequence()));
+		assertEquals("15M9D15M", e.getBackingRecord().getCigarString());
+		assertEquals(1, e.getBackingRecord().getAlignmentStart());
+		assertEquals(seq, S(e.getBackingRecord().getReadBases()));
+		assertEquals(1, e.getSAMRecord().getAlignmentStart());
+		assertEquals(25, e.getRemoteSAMRecord().getAlignmentStart());
+		assertEquals("CATTAATCGCAATAAAACGACGCCAAGTCA", S(e.getSAMRecord().getReadBases()));
+		assertEquals("AACGACGCCAAGTCA", S(e.getRemoteSAMRecord().getReadBases()));
+		assertEquals(new BreakpointSummary(0, FWD, 13, 17, 0, BWD, 23, 27), e.getBreakendSummary());
+	}
+	@Test
+	public void should_not_call_reference_bubble() {
+		String seq = S(RANDOM).substring(0, 10);
+		DeBruijnSubgraphAssembler ass = DSA(5);
+		List<AssemblyEvidence> results = Lists.newArrayList();
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence(seq, Read(0, 1, "5M5S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence(seq, Read(0, 6, "5S5M"))))));
+		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		// no actual variant support - artifact of tracking reference/non-reference at kmer resolution, not base pair resolution  
+		assertEquals(0, results.size());
 	}
 }

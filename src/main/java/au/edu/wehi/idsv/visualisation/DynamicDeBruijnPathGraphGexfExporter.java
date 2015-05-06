@@ -26,13 +26,13 @@ import java.util.List;
 import java.util.Set;
 
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
-import au.edu.wehi.idsv.graph.PathNode;
+import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
 
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
 
-public class DynamicDeBruijnPathGraphGexfExporter<T, PN extends PathNode<T>> implements DeBruijnPathGraphExporter<T, PN> {
+public class DynamicDeBruijnPathGraphGexfExporter<T, PN extends DeBruijnPathNode<T>> implements DeBruijnPathGraphExporter<T, PN> {
 	//private static final Log log = Log.getInstance(DeBruijnPathGraphGexfExporter.class);
 	private final HashMap<PN, Node> lookup = Maps.newHashMap();
 	private final Gexf gexf = new GexfImpl();

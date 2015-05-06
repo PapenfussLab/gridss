@@ -69,13 +69,13 @@ public interface DirectedEvidence {
 	static final Ordering<DirectedEvidence> ByEndStart = new Ordering<DirectedEvidence>() {
 		@Override
 		public int compare(DirectedEvidence arg0, DirectedEvidence arg1) {
-			return BreakendSummary.ByEndStart.compare(arg0.getBreakendSummary(), arg1.getBreakendSummary());
+			return BreakendSummary.ByEndStart.nullsFirst().compare(arg0.getBreakendSummary(), arg1.getBreakendSummary());
 		}
 	};
 	static final Ordering<DirectedEvidence> ByStartEnd = new Ordering<DirectedEvidence>() {
 		@Override
 		public int compare(DirectedEvidence arg0, DirectedEvidence arg1) {
-			return BreakendSummary.ByStartEnd.compare(arg0.getBreakendSummary(), arg1.getBreakendSummary());
+			return BreakendSummary.ByStartEnd.nullsFirst().compare(arg0.getBreakendSummary(), arg1.getBreakendSummary());
 		}
 	};
 	static final Ordering<DirectedEvidence> ByBreakendQual = new Ordering<DirectedEvidence>() {

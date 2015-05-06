@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv.visualisation;
 
-import java.util.LinkedList;
 import java.util.List;
 
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
@@ -19,9 +18,7 @@ public class NontrackingSubgraphTracker<T, PN extends PathNode<T>> implements Su
 	public void splitOutReferencePaths(int pathsSplits) {
 	}
 	@Override
-	public void assemblyNonReferenceContigs(
-			List<List<PN>> assembledPaths,
-			List<LinkedList<T>> assembledKmers, int nodesTraversed) {
+	public void assemblyNonReferenceContigs(List<List<PN>> assembledPaths, int nodesTraversed) {
 	}
 	@Override
 	public void toAssemblyEvidence(VariantContextDirectedEvidence assembly) {

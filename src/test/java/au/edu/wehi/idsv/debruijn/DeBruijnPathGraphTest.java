@@ -14,8 +14,6 @@ import org.junit.Test;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphNode;
-import au.edu.wehi.idsv.graph.PathNode;
-import au.edu.wehi.idsv.graph.PathNodeBaseFactory;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
 import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
 import au.edu.wehi.idsv.visualisation.StaticDeBruijnPathGraphGexfExporter;
@@ -163,8 +161,8 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		assertEquals(7, pg.getPathCount());
 	}
 	private void debugDumpToCDevDebugGraphGexf(BasePathGraph pg, int k) {
-		StaticDeBruijnPathGraphGexfExporter<DeBruijnNodeBase, PathNode<DeBruijnNodeBase>> tmp =
-				new StaticDeBruijnPathGraphGexfExporter<DeBruijnNodeBase, PathNode<DeBruijnNodeBase>>();
+		StaticDeBruijnPathGraphGexfExporter<DeBruijnNodeBase, DeBruijnPathNode<DeBruijnNodeBase>> tmp =
+				new StaticDeBruijnPathGraphGexfExporter<DeBruijnNodeBase, DeBruijnPathNode<DeBruijnNodeBase>>();
 		tmp.snapshot(pg);
 		tmp.saveTo(new File("C:/dev/debugGraph.gexf"));
 	}
@@ -260,7 +258,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		//              ^     \___ need to change this C to a T
 		//              |
 		//         bad transition
-		PathNode<DeBruijnNodeBase> pn = pg.getPaths().iterator().next();
+		DeBruijnPathNode<DeBruijnNodeBase> pn = pg.getPaths().iterator().next();
 		assertEquals("AATC", S(KmerEncodingHelper.encodedToPicardBases(4, pn.last().getKmer())));
 		
 		// test backwards as well
@@ -336,7 +334,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		//                                 123456789012345
 		assertEquals("precondition", 1, pg.getPathCount());
 		assertEquals("precondition", 15, pg.get("TTAA").length());
-		List<PathNode<DeBruijnNodeBase>> result = pg.splitPathToEnsureBreaksAt(ImmutableList.of(pg.get("TTAA")), ImmutableSortedSet.of(0, 2, 5, 15));
+		List<DeBruijnPathNode<DeBruijnNodeBase>> result = pg.splitPathToEnsureBreaksAt(ImmutableList.of(pg.get("TTAA")), ImmutableSortedSet.of(0, 2, 5, 15));
 		assertEquals(3, result.size());
 		assertEquals("TTAAG", pg.S(result.get(0)));
 		assertEquals("AAGGCC", pg.S(result.get(1)));
@@ -369,7 +367,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 				.add("GGTA", 3)
 				.add("TGTA", 4)
 				);
-		LinkedList<PathNode<DeBruijnNodeBase>> path = pg.greedyTraverse(pg.get("GTAC"), pg.ByPathTotalWeightDesc, pg.ByPathTotalWeightDesc, null);
+		LinkedList<DeBruijnPathNode<DeBruijnNodeBase>> path = pg.greedyTraverse(pg.get("GTAC"), pg.ByPathTotalWeightDesc, pg.ByPathTotalWeightDesc, null);
 		assertEquals("TGTACC", pg.S(path));
 	}
 	@Test
@@ -381,7 +379,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 				.add("TACG", 3)
 				.add("TACC", 4)
 				);
-		LinkedList<PathNode<DeBruijnNodeBase>> path = pg.greedyTraverse(pg.get("GTAC"), pg.ByPathTotalWeightDesc, pg.ByPathTotalWeightDesc, ImmutableSet.of(pg.get("TACC")));
+		LinkedList<DeBruijnPathNode<DeBruijnNodeBase>> path = pg.greedyTraverse(pg.get("GTAC"), pg.ByPathTotalWeightDesc, pg.ByPathTotalWeightDesc, ImmutableSet.of(pg.get("TACC")));
 		assertEquals("GTACG", pg.S(path));
 	}
 	@Test
@@ -418,11 +416,11 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		//   GGTTAACC
 		// TTGGT
 		// ^   ^^^^ <- starts of reference kmers
-		DeBruijnPathGraph<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> pg = new DeBruijnPathGraph<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>>(
+		DeBruijnPathGraph<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pg = new DeBruijnPathGraph<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>(
 				g,
 				ImmutableList.of(g.getKmer(KmerEncodingHelper.picardBaseToEncoded(4, B("TTAA")))),
-				new PathNodeBaseFactory<DeBruijnSubgraphNode>(),
-				new NontrackingSubgraphTracker<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>>());
+				new DeBruijnPathNodeFactory<DeBruijnSubgraphNode>(g),
+				new NontrackingSubgraphTracker<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>());
 		assertEquals("precondition", 1, pg.getPathCount());
 		pg.splitOutReferencePaths();
 		assertEquals(4, pg.getPathCount());
@@ -433,14 +431,30 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
 		g.addEvidence(SCE(BWD, withSequence(         "CAATG", Read(0, 10, "1S4M"))));
-		DeBruijnPathGraph<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>> pg = new DeBruijnPathGraph<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>>(
+		DeBruijnPathGraph<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pg = new DeBruijnPathGraph<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>(
 				g,
 				ImmutableList.of(g.getKmer(KmerEncodingHelper.picardBaseToEncoded(4, B("TTAA")))),
-				new PathNodeBaseFactory<DeBruijnSubgraphNode>(),
-				new NontrackingSubgraphTracker<DeBruijnSubgraphNode, PathNode<DeBruijnSubgraphNode>>());
+				new DeBruijnPathNodeFactory<DeBruijnSubgraphNode>(g),
+				new NontrackingSubgraphTracker<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>());
 		pg.collapseSimilarPaths(1, false);
 		assertEquals(1, pg.getPathCount());
 		pg.splitOutReferencePaths();
 		assertEquals(3, pg.getPathCount());
+	}
+	@Test
+	public void isReference_should_consider_alternate_paths() throws AlgorithmRuntimeSafetyLimitExceededException {
+		DeBruijnReadGraph g = RG(4);
+		g.addEvidence(SCE(BWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7S7M"))));
+		g.addEvidence(SCE(BWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7S7M"))));
+		g.addEvidence(SCE(BWD, withSequence(         "TTAAC", Read(0, 10, "1S4M"))));
+		DeBruijnPathGraph<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pg = new DeBruijnPathGraph<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>(
+				g,
+				ImmutableList.of(g.getKmer(KmerEncodingHelper.picardBaseToEncoded(4, B("TTAA")))),
+				new DeBruijnPathNodeFactory<DeBruijnSubgraphNode>(g),
+				new NontrackingSubgraphTracker<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>());
+		pg.collapseSimilarPaths(1, false);
+		assertEquals(1, pg.getPathCount());
+		pg.splitOutReferencePaths();
+		assertEquals(4, pg.getPathCount());
 	}
 }

@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 
@@ -15,6 +16,8 @@ import com.google.common.primitives.Longs;
  *
  */
 public class SubgraphSummary {
+	private static AtomicInteger debugIdCounter = new AtomicInteger(0);
+	private final int debugId = debugIdCounter.getAndIncrement();
 	private SubgraphSummary parent = null;
 	private long maxPosition = Long.MIN_VALUE;
 	private long minPosition = Long.MAX_VALUE;
@@ -101,6 +104,9 @@ public class SubgraphSummary {
 	@Override
 	public String toString() {
 		return String.format("Subgraph [%d,%d] %d kmers including %s", getMinLinearPosition(), getMaxLinearPosition(), kmerCount, KmerEncodingHelper.toApproximateString(kmer));
+	}
+	public String toDebugString() {
+		return Integer.toString(debugId);
 	}
 	public static Ordering<SubgraphSummary> ByMaxPosition = new Ordering<SubgraphSummary>() {
 		public int compare(SubgraphSummary g1, SubgraphSummary g2) {

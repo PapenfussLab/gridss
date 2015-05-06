@@ -23,6 +23,25 @@ public class ArrayHelper {
 		return first;
 	}
 	/**
+	 * Adds the given value to the given position in the array, copying and padding with zeroes
+	 * is required.
+	 * @param array
+	 * @param position
+	 * @param value
+	 * @return
+	 */
+	public static int[] add(int[] array, int position, int value) {
+		int requiredSize = position + 1;
+		if (array == null) {
+			array = new int[requiredSize];
+		}
+		if (array.length < requiredSize) {
+			array = Arrays.copyOf(array, requiredSize);
+		}
+		array[position] += value;
+		return array;
+	}
+	/**
 	 * Adds the values from the second array to the first,
 	 * reusing the first array if possible
 	 * The result will be expanded to fit the maximum number of array elements in either array

@@ -496,6 +496,13 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	public boolean isBreakendExact() {
 		return isExact;
 	}
+	/**
+	 * Indicates that the breakend sequence was not aligned to the reference
+	 * @return true if the breakend is likely to be novel sequence, false otherwise
+	 */
+	public boolean isNovelBreakend() {
+		return realignment.getReadUnmappedFlag();
+	}
 	@Override
 	public float getBreakendQual() {
 		if (getBreakendLength() == 0) return 0;
@@ -518,7 +525,14 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 */
 	public SAMRecordAssemblyEvidence realign() {
 		if (!this.isExact) throw new RuntimeException("Sanity check failure: realignment of unanchored assemblies not yet implemented.");
-		if (getBreakendSummary() instanceof BreakpointSummary) throw new IllegalStateException("Unable to realign breakpoint assemblies");
+		BreakendSummary bs = getBreakendSummary();
+		if (bs == null || isReferenceAssembly()) {
+			// misassembly with no breakend - nothing to do
+			return this;
+		}
+		if (bs instanceof BreakpointSummary) {
+			throw new IllegalStateException("Unable to realign breakpoint assemblies");
+		}
 		AssemblyParameters ap = source.getContext().getAssemblyParameters();
 		int refIndex = getBreakendSummary().referenceIndex;
 		SAMSequenceRecord refSeq = source.getContext().getDictionary().getSequence(refIndex);

@@ -55,7 +55,7 @@ public final class AssemblyFactory {
 		SAMRecordAssemblyEvidence assembly = hydrate(source, r);
 		return assembly;
 	}
-	public static SmallIndelSAMRecordAssemblyEvidence createAnchoredBreakpoint(
+	public static SAMRecordAssemblyEvidence createAnchoredBreakpoint(
 			ProcessingContext processContext, AssemblyEvidenceSource source,
 			Collection<String> evidence,
 			int startAnchorReferenceIndex, int startAnchorPosition, int startAnchorBaseCount,
@@ -71,7 +71,7 @@ public final class AssemblyFactory {
 				endAnchorBaseCount,
 				baseCalls, baseQuals, baseCounts);
 		SAMRecordAssemblyEvidence assembly = hydrate(source, r);
-		return (SmallIndelSAMRecordAssemblyEvidence)assembly;
+		return assembly;
 	}
 	/**
 	 * Creates an assembly whose breakpoint cannot be exactly anchored to the reference  
@@ -139,12 +139,6 @@ public final class AssemblyFactory {
 			int[] baseCounts) {
 		assert(startAnchoredBaseCount >= 0);
 		assert(endAnchoredBaseCount >= 0);
-		if (startAnchoredBaseCount + endAnchoredBaseCount > baseCalls.length) {
-			log.debug(String.format("Adjusting anchored base count: %d start, %d end for %d bases", startAnchoredBaseCount, endAnchoredBaseCount, baseCalls.length));
-			int overBy = endAnchoredBaseCount + startAnchoredBaseCount - baseCalls.length;
-			startAnchoredBaseCount -= overBy / 2;
-			endAnchoredBaseCount -= overBy - overBy / 2; // (so rounding is correct)
-		}
 		assert(startAnchoredBaseCount + endAnchoredBaseCount <= baseCalls.length);
 		assert(baseCalls.length == baseQuals.length);
 		assert(breakend != null);

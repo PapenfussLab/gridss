@@ -90,7 +90,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	@Test
 	public void should_use_XNXS_for_unanchored_interval_breakend() {
 		assertEquals("1X1N1X4S", AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 1, 3), null, B("GTAC"), new byte[] {1,2,3,4}, new int[] {0, 0}).getSAMRecord().getCigarString());
-		assertEquals("4S1X18N1X", AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, BWD, 10, 20), null, B("GTAC"), new byte[] {1,2,3,4}, new int[] {0, 0}).getSAMRecord().getCigarString());
+		assertEquals("4S1X9N1X", AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, BWD, 10, 20), null, B("GTAC"), new byte[] {1,2,3,4}, new int[] {0, 0}).getSAMRecord().getCigarString());
 	}
 	@Test
 	public void should_use_minimal_cigar_representation() {

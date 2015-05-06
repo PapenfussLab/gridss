@@ -18,7 +18,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 
-public class DeBruijnPathGraph<T, PN extends PathNode<T>> extends PathGraph<T, PN> implements DeBruijnGraph<PN> {
+public class DeBruijnPathGraph<T, PN extends DeBruijnPathNode<T>> extends PathGraph<T, PN> implements DeBruijnGraph<PN> {
 	private int nodeTaversalCount;
 	public DeBruijnPathGraph(DeBruijnGraph<T> graph, Collection<T> seeds, PathNodeFactory<T, PN> factory, SubgraphAssemblyAlgorithmTracker<T, PN> tracker) {
 		super(graph, seeds, factory, tracker);
@@ -32,8 +32,7 @@ public class DeBruijnPathGraph<T, PN extends PathNode<T>> extends PathGraph<T, P
 	}
 	@Override
 	public boolean isReference(PN node) {
-		// TODO: cache this value in the node itself
-		return isReference(node.allNodes());
+		return node.isReference();
 	}
 	private boolean isReference(Iterable<T> nodeSet) {
 		DeBruijnGraph<T> g = getGraph();
@@ -409,17 +408,17 @@ public class DeBruijnPathGraph<T, PN extends PathNode<T>> extends PathGraph<T, P
 	}
 	private boolean assertReferenceKmersSplit() {
 		for (PN pn : getPaths()) {
-			assert(Iterables.all(pn.getPathAllNodes(), new Predicate<List<T>>() {
-					@Override
-					public boolean apply(List<T> input) {
-						return isReference(input);
+			boolean shouldBeReference = isReference(pn);
+			for (List<T> list : pn.getPathAllNodes()) {
+				int referenceNodeCount = 0;
+				for (T n : list) {
+					if (getGraph().isReference(n)) {
+						referenceNodeCount++;
 					}
-				}) || Iterables.all(pn.getPathAllNodes(), new Predicate<List<T>>() {
-					@Override
-					public boolean apply(List<T> input) {
-						return !isReference(input);
-					}
-				}));
+				}
+				boolean containsReference = referenceNodeCount > 0;
+				assert(containsReference == shouldBeReference);
+			}
 		}
 		return true;
 	}

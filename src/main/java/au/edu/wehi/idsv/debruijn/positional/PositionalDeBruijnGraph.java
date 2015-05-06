@@ -24,7 +24,7 @@ public class PositionalDeBruijnGraph {
 	public Map<Long, NavigableSet<KmerAggregateNode>> toKmerAggregateGraph() {
 		Map<Long, NavigableSet<KmerAggregateNode>> result = new HashMap<Long, NavigableSet<KmerAggregateNode>>();
 		for (Entry<Long, NavigableSet<KmerSupportNode>> support : rawKmers.entrySet()) {
-			result.put(support.getKey(), KmerAggregateNode.aggregate(support.getValue()));
+			result.put(support.getKey(), KmerAggregateNode.aggregate(support.getKey(), support.getValue()));
 		}
 		return result;
 	}
