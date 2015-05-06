@@ -25,126 +25,89 @@ import com.google.common.collect.Lists;
  */
 public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgram {
 	// --- files ---
-	@Option(doc="Coordinate-sorted input BAM file.",
-    		shortName=StandardOptionDefinitions.INPUT_SHORT_NAME)
+	@Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Coordinate-sorted input BAM file.")
     public List<File> INPUT;
     @Option(doc = "Per input maximum concordant read pair size.", optional=true)
     public List<Integer> INPUT_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE;
     @Option(doc = "Per input minimum concordant fragment size.", optional=true)
     public List<Integer> INPUT_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE;
-	@Option(doc="Coordinate-sorted tumour BAM file.",
-			optional=true,
-    		shortName="T")
+	@Option(shortName="T", doc="Coordinate-sorted tumour BAM file.", optional=true)
     public List<File> INPUT_TUMOUR = Lists.newArrayList();
 	@Option(doc = "Per input maximum concordant fragment size.", optional=true)
     public List<Integer> INPUT_TUMOUR_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE;
 	@Option(doc = "Per input minimum concordant fragment size.", optional=true)
     public List<Integer> INPUT_TUMOUR_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE;
-	@Option(doc="VCF structural variation calls.",
-    		shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME)
+	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="VCF structural variation calls.")
     public File OUTPUT;
-    @Option(doc="Reference used for alignment",
-    		shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME)
+    @Option(shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME, doc="Reference used for alignment")
     public File REFERENCE;
-    @Option(doc="File to write recommended realignment script to",
-    		optional=true)
+    @Option(doc="File to write recommended realignment script to", optional=true)
     public File SCRIPT;
     // --- intermediate file parameters ---
-    @Option(doc = "Save intermediate results into separate files for each chromosome.",
-            optional = true)
+    @Option(doc = "Save intermediate results into separate files for each chromosome.", optional = true)
     public boolean PER_CHR = true;
     @Option(doc = "Directory to place intermediate results directories. Default location is the same directory"
     		+ " as the associated input or output file. Increases the number of intermediate files"
-    		+ " but allows a greater level of parallelisation.",
-            optional = true)
+    		+ " but allows a greater level of parallelisation.", optional = true)
     public File WORKING_DIR = null;
     // --- evidence filtering parameters ---
     @Option(doc = "Percent of read pairs considered concorant (0.0-1.0). If this is not set, the SAM proper pair flag is used to determine whether a read is discordantly aligned.", optional=true)
     public Float READ_PAIR_CONCORDANT_PERCENT = 0.995f;
-    @Option(doc = "Minimum length of a soft-clip to be considered for analysis." +
-			" Local aligners tend to produce many reads with very short soft clips.",
-		optional=true)
+    @Option(doc = "Minimum length of a soft-clip to be considered for analysis. Local aligners tend to produce many reads with very short soft clips.", optional=true)
     public int SOFT_CLIP_MIN_LENGTH = new SoftClipParameters().minLength;
-    @Option(doc = "Minimum read MAPQ for a read pair to be considerd anchored",
-    		optional=true)
+    @Option(doc = "Minimum read MAPQ for a read pair to be considerd anchored", optional=true)
     public int READ_PAIR_ANCHOR_MIN_MAPQ = new ReadPairParameters().minMapq;
-    @Option(doc = "Minimum read MAPQ for soft clip realignment to be performed",
-    		optional=true)
+    @Option(doc = "Minimum read MAPQ for soft clip realignment to be performed", optional=true)
     public int SOFT_CLIP_MIN_MAPQ = new SoftClipParameters().minReadMapq;
-    @Option(doc = "Minimum Shannon entropy (in bits) of read pairs. Both reads in pair must be above the entropy minimum.",
-    		optional=true)
+    @Option(doc = "Minimum Shannon entropy (in bits) of read pairs. Both reads in pair must be above the entropy minimum.", optional=true)
     public double READ_PAIR_MIN_ENTROPY = new ReadPairParameters().minAnchorEntropy;
-    @Option(doc = "Minimum Shannon entropy (in bits) of anchored bases",
-    		optional=true)
+    @Option(doc = "Minimum Shannon entropy (in bits) of anchored bases", optional=true)
     public double SOFT_CLIP_MIN_ENTROPY = new SoftClipParameters().minAnchorEntropy;
-    @Option(doc = "Minimum sequence identity to reference. Percentage value taking a value in the range 0-100.",
-    		optional=true)
+    @Option(doc = "Minimum sequence identity to reference. Percentage value taking a value in the range 0-100.", optional=true)
     public float SOFT_CLIP_MIN_ANCHOR_PERCENT_IDENTITY = new SoftClipParameters().minAnchorIdentity;
-    @Option(doc = "Adapter sequence to exclude from analysis."
-    		+ "Defaults to Illumina Universal Adapter, Illumina Small RNA Adapter, Nextera Transposase Sequence",
-    		optional=true)
+    @Option(doc = "Adapter sequence to exclude from analysis. Defaults to Illumina Universal Adapter, Illumina Small RNA Adapter, and Nextera Transposase sequences", optional=true)
     public List<String> ADAPTER_SEQUENCE = Lists.newArrayList(new SoftClipParameters().adapters.getAdapterSequences());
  // --- Assembly parameters ---
-    @Option(doc = "k-mer used for de bruijn graph construction",
-    		optional=true,
-    		shortName="K")
+    @Option(shortName="K", doc = "k-mer used for de bruijn graph construction", optional=true)
     // --- De Bruijn assembly parameters ---
     public int ASSEMBLY_DEBRUIJN_KMER = new AssemblyParameters().k;
-    @Option(doc = "Assemble soft clips both at the read mapping location and the soft clip realignment location.",
-    		optional=true)
+    @Option(doc = "Assemble soft clips both at the read mapping location and the soft clip realignment location.", optional=true)
     public boolean ASSEMBLY_INCLUDE_REMOTE_SOFT_CLIPS = new AssemblyParameters().includeRemoteSoftClips;
     // --- De Bruijn assembly parameters ---
-    @Option(doc = "Maximum of base mismatches for de bruijn kmer paths to be merged",
-    		optional=true)
+    @Option(doc = "Maximum of base mismatches for de bruijn kmer paths to be merged", optional=true)
     public int ASSEMBLY_DEBRUIJN_MAX_PATH_COLLAPSE_BASE_MISMATCHES = new AssemblyParameters().maxBaseMismatchForCollapse;
-    @Option(doc = "Only consider bubbles for path collapse."
-    		+ "Bubbles are kmer paths with a single entry and exit kmer choice",
-    		optional=true)
+    @Option(doc = "Only consider bubbles for path collapse. Bubbles are kmer paths with a single entry and exit kmer choice", optional=true)
     public boolean ASSEMBLY_DEBRUIJN_COLLAPSE_BUBBLES_ONLY = false;
-    @Option(doc = "Allow reuse of reference kmers when assembling subsequent"
-    		+ " contigs in an assembly iteration",
-    		optional=true)
+    @Option(doc = "Allow reuse of reference kmers when assembling subsequent contigs in an assembly iteration", optional=true)
     public boolean ASSEMBLY_DEBRUIJN_ALLOW_REFERENCE_KMER_RESUSE = new AssemblyParameters().allReferenceKmerReuse;
-    @Option(doc = "Maximum number of contigs per assembly iteration",
-    		optional=true)
+    @Option(doc = "Maximum number of contigs per assembly iteration", optional=true)
     public int ASSEMBLY_DEBRUIJN_MAX_CONTIGS_PER_ITERATION = new AssemblyParameters().maxContigsPerAssembly;
-    @Option(doc = "Number of branches consider at each kmer branch",
-    		optional=true)
+    @Option(doc = "Number of branches consider at each kmer branch", optional=true)
     public int ASSEMBLY_DEBRUIJN_SUBGRAPH_BRANCHING_FACTOR = 16; // new AssemblyParameters().subgraphAssemblyTraversalMaximumBranchingFactor;
-    @Option(doc = "Number of bases (in multiples of maximum fragment size)"
-    		+ "of no contributing evidence before subgraph assembly.",
-    		optional=true)
+    @Option(doc = "Number of bases (in multiples of maximum fragment size) of no contributing evidence before subgraph assembly.", optional=true)
     public float ASSEMBLY_DEBRUIJN_SUBGRAPH_ASSEMBLY_FRAGMENT_DELAY = new AssemblyParameters().subgraphAssemblyMargin;
     // --- Realignment parameters ---
-    @Option(doc = "Minimum length of a breakend to be considered for realignment",
-    		optional=true)
+    @Option(doc = "Minimum length of a breakend to be considered for realignment", optional=true)
     public int REALIGNMENT_MIN_BREAKEND_LENGTH = 20;
-    @Option(doc = "Minimum average base quality score for realignment",
-    		optional=true)
+    @Option(doc = "Minimum average base quality score for realignment", optional=true)
     public float REALIGNMENT_MIN_BASE_QUALITY = 5;
-    @Option(doc = "Minimum mapq of a realignment to be considered uniquely mapped",
-    		optional=true)
+    @Option(doc = "Minimum mapq of a realignment to be considered uniquely mapped", optional=true)
     public int REALIGNMENT_MAPQ_UNIQUE_THRESHOLD = new RealignmentParameters().mapqUniqueThreshold;
     // --- Variant calling parameters  ---
-    @Option(doc = "Number bases in which nearby evidence will be considered to support the same variant.",
-    		optional=true)
+    @Option(doc = "Number bases in which nearby evidence will be considered to support the same variant.", optional=true)
     public int BREAKEND_MARGIN = new VariantCallingParameters().breakendMargin;
-    @Option(doc = "Maximum somatic p-value for a variant to be called somatic",
-    		optional=true)
+    @Option(doc = "Maximum per-input coverage after which reads falling within regions exceeding this coverage are excluded from assembly and variant calling", optional=true)
+    public int MAX_COVERAGE = new VariantCallingParameters().maxCoverage;
+    @Option(doc = "Maximum somatic p-value for a variant to be called somatic", optional=true)
     private double SOMATIC_THRESHOLD = new VariantCallingParameters().somaticPvalueThreshold;
-    @Option(doc = "Use only assembled evidence when calling variants",
-    		optional=true)
+    @Option(doc = "Use only assembled evidence when calling variants", optional=true)
 	private boolean CALL_ONLY_ASSEMBLIES = false;
-    @Option(doc = "Ignore indel variants smaller than this size.",
-    		optional=true)
+    @Option(doc = "Ignore indel variants smaller than this size.", optional=true)
 	private int MIN_INDEL_SIZE = new VariantCallingParameters().minIndelSize;
-    @Option(doc = "Minimum variant score",
-    		optional=true)
+    @Option(doc = "Minimum variant score", optional=true)
 	private double MIN_SCORE = new VariantCallingParameters().minScore;
     // --- output format parameters ---
-	@Option(doc = "Breakends are written to VCF files as VCF v4.1 compatible breakpoints to a placeholder contig " + VcfConstants.VCF41BREAKEND_REPLACEMENT,
-            optional = true,
-            shortName = "VCF41")
+	@Option(shortName = "VCF41", doc = "Breakends are written to VCF files as VCF v4.1 compatible breakpoints to a placeholder contig " + VcfConstants.VCF41BREAKEND_REPLACEMENT, optional = true)
 	public boolean VCF41_COMPATIBLE = true;
 	public File ensureFileExists(final File file) {
     	if (!file.exists()) {
@@ -240,6 +203,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 		vcp.callOnlyAssemblies = CALL_ONLY_ASSEMBLIES;
 		vcp.minIndelSize = MIN_INDEL_SIZE;
 		vcp.breakendMargin = BREAKEND_MARGIN;
+		vcp.maxCoverage = MAX_COVERAGE;
 		return vcp;
 	}
 	public void close() throws IOException {

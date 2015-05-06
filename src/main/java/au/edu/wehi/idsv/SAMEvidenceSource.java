@@ -10,12 +10,13 @@ import htsjdk.samtools.util.Log;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 
+import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.pipeline.ExtractEvidence;
 import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
@@ -41,6 +42,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 	private final ReadPairConcordanceMethod rpcMethod;
 	private final Object[] rpcParams;
 	private IdsvSamFileMetrics metrics;
+	private IntervalBed blacklist;
 	private SAMFileHeader header;
 	private ReadPairConcordanceCalculator rpcc;
 	public SAMEvidenceSource(ProcessingContext processContext, File file, int sourceCategory) {
@@ -111,6 +113,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 				source.add(input); target.add(fsc.getInsertSizeMetrics(input));
 				source.add(input); target.add(fsc.getIdsvMetrics(input));
 				source.add(input); target.add(fsc.getSoftClipMetrics(input));
+				source.add(input); target.add(fsc.getCoverageBlacklistBed(input));
 				break;
 			case EXTRACT_SOFT_CLIPS:
 				if (getContext().shouldProcessPerChromosome()) {
@@ -220,7 +223,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 	 * @param remoteRealigned
 	 * @return
 	 */
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "unchecked" })
 	protected CloseableIterator<DirectedEvidence> iterator(
 			final boolean includeReadPair,
 			final boolean includeSoftClip,
@@ -242,7 +245,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			final CloseableIterator<SAMRecord> rawMateIt = getContext().getSamReaderIterator(pairMate);
 			final CloseableIterator<NonReferenceReadPair> rawRpIt = new ReadPairEvidenceIterator(
 					this,
-					rawPairIt,
+					new IntervalBedFilteringIterator(blacklist, rawPairIt, getMaxConcordantFragmentSize()),
 					rawMateIt);
 			final Iterator<NonReferenceReadPair> sortedRpIt = new DirectEvidenceWindowedSortingIterator<NonReferenceReadPair>(getContext(), getReadPairSortWindowSize(), rawRpIt);
 			final CloseableIterator<NonReferenceReadPair> finalrpIt = new AutoClosingIterator<NonReferenceReadPair>(sortedRpIt,
@@ -253,7 +256,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			final List<Closeable> scToClose = Lists.newArrayList();
 			final CloseableIterator<SAMRecord> rawScIt = getContext().getSamReaderIterator(softClip);
 			scToClose.add(rawScIt);
-			CloseableIterator<SoftClipEvidence> scIt = new SoftClipEvidenceIterator(this, rawScIt);
+			CloseableIterator<SoftClipEvidence> scIt = new SoftClipEvidenceIterator(this, new IntervalBedFilteringIterator(blacklist, rawScIt, getMaxReadLength()));
 			scToClose.add(scIt);
 			if (isRealignmentComplete()) {
 				//log.debug("Realignment is complete for ", input);
@@ -275,14 +278,17 @@ public class SAMEvidenceSource extends EvidenceSource {
 			if (!isRealignmentComplete()) {
 				throw new IllegalArgumentException(String.format("Realignment resorting not complete for ", input));
 			}
-			CloseableIterator<RealignedRemoteSoftClipEvidence> remoteScIt = new AutoClosingIterator<RealignedRemoteSoftClipEvidence>(Collections.<RealignedRemoteSoftClipEvidence>emptyIterator()); 
 			CloseableIterator<SAMRecord> rsrRawIt = getContext().getSamReaderIterator(remoteRealigned);
 			CloseableIterator<SAMRecord> sssRawItf = getContext().getSamReaderIterator(remoteSoftClip);
 			CloseableIterator<SAMRecord> sssRawItb = getContext().getSamReaderIterator(remoteSoftClip);
-			remoteScIt = new RealignedRemoteSoftClipEvidenceIterator(this, rsrRawIt, sssRawItf, sssRawItb);
-			remoteScIt = new AutoClosingIterator<RealignedRemoteSoftClipEvidence>(new DirectEvidenceWindowedSortingIterator<RealignedRemoteSoftClipEvidence>(getContext(), getSoftClipSortWindowSize(), remoteScIt),
-					ImmutableList.<Closeable>of(remoteScIt, rsrRawIt, sssRawItf, sssRawItb));
-			itList.add((CloseableIterator<DirectedEvidence>)(Object)remoteScIt);
+			CloseableIterator<RealignedRemoteSoftClipEvidence> remoteScIt = new RealignedRemoteSoftClipEvidenceIterator(this,
+					new IntervalBedFilteringIterator(blacklist, rsrRawIt, getMaxReadLength()),
+					sssRawItf,
+					sssRawItb);
+			CloseableIterator<RealignedRemoteSoftClipEvidence> sortedRemoteScIt = new AutoClosingIterator<RealignedRemoteSoftClipEvidence>(
+					new DirectEvidenceWindowedSortingIterator<RealignedRemoteSoftClipEvidence>(getContext(), getSoftClipSortWindowSize(), remoteScIt),
+						ImmutableList.<Closeable>of(remoteScIt, rsrRawIt, sssRawItf, sssRawItb));
+			itList.add((CloseableIterator<DirectedEvidence>)(Object)sortedRemoteScIt);
 		}
 		CloseableIterator<DirectedEvidence> mergedIt = new AutoClosingMergedIterator<DirectedEvidence>(itList, DirectedEvidenceOrder.ByNatural);
 		if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
@@ -354,5 +360,21 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	public ProcessingContext getProcessContext() {
 		return getContext();
+	}
+	public IntervalBed getBlacklistedRegions() {
+		if (blacklist == null) {
+			if (!isComplete(ProcessStep.CALCULATE_METRICS)) {
+				completeSteps(EnumSet.of(ProcessStep.CALCULATE_METRICS));
+			}
+			try {
+				blacklist = new IntervalBed(
+						getContext().getDictionary(),
+						getContext().getLinear(),
+						getContext().getFileSystemContext().getCoverageBlacklistBed(getSourceFile()));
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		return blacklist;
 	}
 }

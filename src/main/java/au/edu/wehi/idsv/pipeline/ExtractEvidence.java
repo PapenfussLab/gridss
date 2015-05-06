@@ -26,7 +26,9 @@ import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
+import au.edu.wehi.idsv.SequentialCoverageThreshold;
 import au.edu.wehi.idsv.SoftClipEvidence;
+import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetricsCollector;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
@@ -132,14 +134,16 @@ public class ExtractEvidence implements Closeable {
 			reader = processContext.getSamReader(source.getSourceFile());
 			final SAMFileHeader header = reader.getFileHeader();
 			final IdsvSamFileMetricsCollector collector = new IdsvSamFileMetricsCollector(header);
+			final SequentialCoverageThreshold coverageThresholdBlacklist = new SequentialCoverageThreshold(processContext.getDictionary(), processContext.getLinear(), processContext.getVariantCallingParameters().maxCoverage + 1);
 	    	
-	    	long recordsProcessed = processMetrics(collector, maxRecords);
+	    	long recordsProcessed = processMetrics(collector, maxRecords, coverageThresholdBlacklist);
 	    	writeMetrics(collector);
 	    	
 	    	if (recordsProcessed >= maxRecords) {
 	    		log.info(String.format("Library metrics calculated from first %d records", recordsProcessed));
 	    	}
 	    	flush();
+	    	coverageThresholdBlacklist.finish().write(processContext.getFileSystemContext().getCoverageBlacklistBed(source.getSourceFile()), "coverageBlacklist");
 	    	shouldDelete = false;
     	} catch (IOException e) {
     		log.error(e);
@@ -231,7 +235,7 @@ public class ExtractEvidence implements Closeable {
 		}
 		realignmentWriters.clear();
 	}
-	private long processMetrics(IdsvSamFileMetricsCollector collector, long maxRecords) {
+	private long processMetrics(IdsvSamFileMetricsCollector collector, long maxRecords, SequentialCoverageThreshold blacklist) {
 		long recordsProcessed = 0;
 		final ProgressLogger progress = new ProgressLogger(log);
 		CloseableIterator<SAMRecord> iter = null;
@@ -240,6 +244,7 @@ public class ExtractEvidence implements Closeable {
 			while (iter.hasNext() && recordsProcessed++ < maxRecords) {
 				SAMRecord record = iter.next();
 				collector.acceptRecord(record, null);
+				blacklist.acceptRecord(record);
 				progress.record(record);
 			}
 		} finally {

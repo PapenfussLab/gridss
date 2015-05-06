@@ -28,6 +28,10 @@ public class VariantCallingParameters {
 	 * This margin is used to mitigate alignment errors around breakend coordinates
 	 */
 	public int breakendMargin = 10;
+	/**
+	 * Maximum coverage before evidence is filtered
+	 */
+	public int maxCoverage = 100000;
 	public boolean writeFilteredCalls = Defaults.WRITE_FILTERED_CALLS;
 	public BreakendSummary withMargin(ProcessingContext context, BreakendSummary bp) {
 		if (bp == null) return null;

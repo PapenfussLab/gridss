@@ -61,6 +61,7 @@ public class FileSystemContext {
 	private static final String FORMAT_INSERT_SIZE_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.insertsize.txt";
 	private static final String FORMAT_IDSV_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.idsv.txt";
 	private static final String FORMAT_SOFTLCIP_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.softclip.txt";
+	private static final String FORMAT_COVERAGE_BLACKLIST_BED = "%s" + COMMON_INITIAL_SUFFIX + ".coverage.blacklist.bed";
 	private static final String FORMAT_REALIGN_FASTQ = "%s" + COMMON_INITIAL_SUFFIX + ".realign.fq";
 	private static final String FORMAT_REALIGN_FASTQ_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign.fq";
 	private static final String FORMAT_REALIGN_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".realign" + SAM_SUFFIX;
@@ -225,5 +226,8 @@ public class FileSystemContext {
 	}
 	public File getRealignmentRemoteBamForChr(File input, String chromosome) {
 		return new File(String.format(FORMAT_REALIGN_REMOTE_SAM_PER_CHR, getStem(input), chromosome));
+	}
+	public File getCoverageBlacklistBed(File input) {
+		return new File(String.format(FORMAT_COVERAGE_BLACKLIST_BED, getStem(input)));
 	}
 }
