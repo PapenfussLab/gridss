@@ -56,7 +56,7 @@ public class DeBruijnSubgraphAssemblerDataTest extends IntermediateFilesTest {
 				new VariantCallingParameters(),
 				hg19decoy,
 				true, false), new File("W:\\na12878\\NA12878D_HiSeqX_R1.bam"), 0);
-		ses.completeSteps(ProcessStep.ALL_STEPS);
+		ses.completeSteps(ProcessStep.ALL_STEPS); 
 		CloseableIterator<DirectedEvidence> it = ses.iterator(true,  true, true, "MT");
 		
 		while (it.hasNext()) {

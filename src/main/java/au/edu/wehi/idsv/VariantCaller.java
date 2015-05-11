@@ -163,7 +163,6 @@ public class VariantCaller extends EvidenceProcessorBase {
 		while (byCategory.size() < processContext.getCategoryCount()) {
 			byCategory.add(new ArrayList<SAMEvidenceSource>());
 		}
-		List<SAMEvidenceSource> tumour = Lists.newArrayList();
 		final int maxWindowSize = getMaxWindowSize();
 		for (SAMEvidenceSource source : samEvidence) {
 			byCategory.get(source.getSourceCategory()).add(source);

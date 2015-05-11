@@ -15,6 +15,7 @@ import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphUtil;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
+import au.edu.wehi.idsv.graph.DirectedAcyclicGraph;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
 
 import com.google.common.collect.Lists;
@@ -173,7 +174,7 @@ class PathGraphTraverse<T, PN extends DeBruijnPathNode<T>> {
 				continue;
 			}
 			// path must be simple path
-			if (inPath(node, next)) continue;
+			if (!(pg instanceof DirectedAcyclicGraph) && inPath(node, next)) continue;
 			// ok, we have somewhere to go!
 			if (pushFrontier(node, next)) {
 				nextStateCount++;

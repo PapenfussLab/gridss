@@ -189,7 +189,15 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		CloseableIterator<SAMRecordAssemblyEvidence> sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(
 				new DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence>(
 				getContext(),
-				getAssemblyWindowSize(),
+				// double window size due to spanning assembly edge case: 
+				//   |--- window ---|
+				// <-A              A->
+				//                  B->              <-B
+				//                  ^
+				// SAMRecord anchored at breakend
+				// since our SAMRecordAssemblyEvidenceIterator returns 4 records (both breakends, both assemblies)
+				// the breakend position can be +- window size size away from the start position of the underlying SAMRecord
+				2 * getAssemblyWindowSize(),
 				filteredIt), toClose);
 		if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
 			sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(new OrderAssertingIterator<SAMRecordAssemblyEvidence>(sortedIt, DirectedEvidenceOrder.ByNatural), ImmutableList.<Closeable>of(sortedIt));

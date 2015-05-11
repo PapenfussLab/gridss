@@ -114,12 +114,12 @@ public class AssemblyParameters {
 	public boolean applyFilters(SAMRecordAssemblyEvidence evidence) {
 		SAMRecordAssemblyEvidence localEvidence = evidence;
 		if (evidence instanceof RemoteEvidence) {
+			// ensures assembly & matching remote always get filtered in/out together
 			localEvidence = ((RealignedRemoteSAMRecordAssemblyEvidence)evidence).asLocal();
 		}
 		boolean filtered = false;
 		if (localEvidence.isReferenceAssembly() ||
 				localEvidence.getBreakendSummary() == null ||
-				evidence.isReferenceAssembly() ||
 				localEvidence.getBreakendSequence().length == 0) {
 			evidence.filterAssembly(VcfFilter.REFERENCE_ALLELE);
 			filtered = true;
@@ -129,7 +129,6 @@ public class AssemblyParameters {
 			filtered = true;
 		}
 		if (localEvidence.getAssemblyAnchorLength() == 0 && localEvidence.getBreakendSequence().length <= localEvidence.getAssemblyReadPairLengthMax(EvidenceSubset.ALL)) {
-			// just assembled a single read - not very exciting
 			evidence.filterAssembly(VcfFilter.ASSEMBLY_TOO_SHORT); // assembly length = 1 read
 			filtered = true;
 		}
