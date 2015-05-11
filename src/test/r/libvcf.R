@@ -72,6 +72,10 @@ svlentype <- function(vcf) {
     len2 <- unlist(svcol)[c(1, 1 + head(cumsum(elementLengths(svcol)), -1))]
     len2[elementLengths(svcol) == 0] <- NA_integer_
     len <- ifelse(is.na(len2), len, len2)
+  } else if (!is.null(info(vcf)$END)) {
+    # Delly "INFO:SVLEN was a redundant tag because it's just INFO:END - POS for Delly. Since SVLEN is kind of ill-defined in the VCF-Specification I decided to remove it. If you need it for filtering just use end - start."
+    len2 <- info(vcf)$END - start(rowData(vcf))
+    len <- ifelse(is.na(len2), len, len2)
   }
   svcol <- info(vcf)$SVTYPE
   if (!is.null(svcol)) {
@@ -148,6 +152,21 @@ vcftobpgr <- function(vcf) {
     
     mateBnd <- grcall[grcall[rows,]$mateIndex,]
     grcall[rows,]$size <- ifelse(seqnames(mateBnd)==seqnames(grcall[rows,]), abs(start(grcall[rows,]) - start(mateBnd)) + grcall[rows,]$untemplated, NA_integer_)
+  }
+  # non-standard event type used by DELLY
+  rows <- grcall$SVTYPE=="TRA"
+  if (any(rows)) {
+    strand(grcall[rows,]) <- ifelse(substr(info(vcf)$CT[rows], 1, 1) == "3", "+", "-")
+    grcall[rows]$mateIndex <- length(grcall) + seq_len(sum(rows))
+    eventgr <- grcall[rows]
+    eventgr$mateIndex <- seq_len(length(grcall))[rows]
+    # need to make new copy since seqlevels might not match
+    bareeventgr <- GRanges(
+      seqnames=info(vcf)$CHR2[rows],
+      ranges=IRanges(start=info(vcf)$END[rows], width=1),
+      strand=ifelse(substr(info(vcf)$CT[rows], 4, 4) == "3", "+", "-"))
+    mcols(bareeventgr) <- mcols(eventgr)
+    grcall <- c(grcall, eventgr)
   }
   rows <- grcall$SVTYPE=="DEL"
   if (any(rows)) {

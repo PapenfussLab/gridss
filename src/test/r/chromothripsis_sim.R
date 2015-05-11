@@ -49,7 +49,6 @@ truthlist <- CalculateTruthSummary(vcfs, maxerrorbp=100, ignore.strand=FALSE)
 #
 dtsenssize <- truthlist$truth[, list(sens=sum(tp)/.N), by=c("SVLEN", "SVTYPE", "CX_ALIGNER", "CX_ALIGNER_SOFTCLIP", "CX_CALLER", "CX_READ_DEPTH", "CX_READ_FRAGMENT_LENGTH", "CX_READ_LENGTH", "CX_REFERENCE_VCF_VARIANTS")]
 ggplot(dtsenssize) + # with(dtsenssize, dtsenssize[CX_CALLER %in% c("breakdancer-max", "gridss", "crest", "socrates"),])) +
-ggplot(dtsenssize[dtsenssize$CX_CALLER %in% c("pindel"),]) +
   aes(y=sens, x=SVLEN, shape=factor(CX_READ_FRAGMENT_LENGTH), color=CX_REFERENCE_VCF_VARIANTS) +
   geom_line() + 
   facet_grid(CX_ALIGNER + CX_CALLER ~ CX_READ_FRAGMENT_LENGTH + CX_READ_LENGTH + CX_READ_DEPTH) +
