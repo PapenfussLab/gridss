@@ -236,7 +236,8 @@ public final class AssemblyFactory {
 		// Set deterministic ordering of evidence to allow for SAM diff
 		Collections.sort(evidenceIDs);
 		StringBuilder sb = new StringBuilder();
-		for (String id : evidenceIDs) { 
+		for (String id : evidenceIDs) {
+			assert(!id.contains(SAMRecordAssemblyEvidence.COMPONENT_EVIDENCEID_SEPARATOR));
 			sb.append(id);
 			sb.append(SAMRecordAssemblyEvidence.COMPONENT_EVIDENCEID_SEPARATOR);
 		}

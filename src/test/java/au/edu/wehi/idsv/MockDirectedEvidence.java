@@ -13,7 +13,7 @@ public class MockDirectedEvidence extends UnmappedMateReadPair {
 		this(new BreakendSummary(referenceIndex, BreakendDirection.Forward, start, start), id);
 	}
 	public MockDirectedEvidence(BreakendSummary bs) {
-		this(bs, null);
+		this(bs, bs.toString().replace(' ', '_'));
 	}
 	public MockDirectedEvidence(BreakendSummary bs, String id) {
 		super(TestHelper.OEA(0, 1, "1M", true)[0], TestHelper.OEA(0, 1, "1M", true)[1], TestHelper.SES());

@@ -32,7 +32,6 @@ import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.validation.OrderAssertingIterator;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
-import au.edu.wehi.idsv.vcf.VcfFilter;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
