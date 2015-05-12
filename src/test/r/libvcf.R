@@ -201,12 +201,25 @@ vcftobpgr <- function(vcf) {
     eventgr3$mateIndex <- length(grcall) + length(eventgr1) + seq_len(length(eventgr2))
     grcall <- c(grcall, eventgr1, eventgr2, eventgr3)
   }
-  rows <- grcall$SVTYPE=="DUP"
+  rows <- grcall$SVTYPE=="DUP" | grcall$SVTYPE=="DUP:TANDEM" 
   if (any(rows)) {
+    # note: pindel tandem duplication includes the sequence being duplicated in the REF allele
     grcall[rows]$mateIndex <- length(grcall) + seq_len(sum(rows))
     eventgr <- grcall[rows]
     strand(grcall[rows]) <- "-"
     ranges(eventgr) <- IRanges(start=start(eventgr) + abs(grcall[rows]$size), width=1)
+    eventgr$mateIndex <- seq_len(length(grcall))[rows]
+    grcall <- c(grcall, eventgr)
+  }
+  rows <- grcall$SVTYPE=="RPL"
+  if (any(rows)) {
+    # pindel 'replacement' SV type for handling untemplated sequence
+    # place breakpoints at start and end of ref allele position
+    # (not ideal, but it's the best conversion we can do without examine the actual sequences)
+    grcall[rows]$mateIndex <- length(grcall) + seq_len(sum(rows))
+    eventgr <- grcall[rows]
+    strand(eventgr) <- "-"
+    ranges(eventgr) <- IRanges(start=start(eventgr) + abs(elementLengths(ref(vcf))[rows]), width=1)
     eventgr$mateIndex <- seq_len(length(grcall))[rows]
     grcall <- c(grcall, eventgr)
   }
@@ -222,7 +235,7 @@ vcftobpgr <- function(vcf) {
   }
   if (any(is.na(grcall$mateIndex))) {
     browser()
-    stop(paste0("Unhandled SVTYPE ", unique(grcall$SVTYPE)[is.na(grcall$mateIndex)]))
+    stop(paste0("Unhandled SVTYPE ", unique(grcall$SVTYPE[is.na(grcall$mateIndex)])))
   }
   # Check the partner of the partner of each row is the row itself
   if (!all(grcall[grcall$mateIndex,]$mateIndex == seq_along(grcall))) {

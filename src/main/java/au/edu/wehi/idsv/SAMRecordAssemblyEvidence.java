@@ -396,6 +396,10 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	public int getAssemblyBaseCount(EvidenceSubset subset) {
 		return AttributeConverter.asIntSumTN(record.getAttribute(SamTags.ASSEMBLY_BASE_COUNT), subset);
 	}
+	public int getAssemblySupportCount() {
+		ensureEvidenceIDs();
+		return evidenceIds.size();
+	}
 	@Override
 	public int getAssemblySupportCountReadPair(EvidenceSubset subset) {
 		assertAnnotated();

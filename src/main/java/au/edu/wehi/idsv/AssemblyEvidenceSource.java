@@ -408,18 +408,17 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		}
 		private void processAssembly(Iterable<SAMRecordAssemblyEvidence> evidenceList) {
 	    	if (evidenceList != null) {
-		    	for (SAMRecordAssemblyEvidence a : evidenceList) {
-		    		if (a != null) {
-		    			SAMRecordAssemblyEvidence e = (SAMRecordAssemblyEvidence)a;
-			    		maxAssembledPosition = Math.max(maxAssembledPosition, getContext().getLinear().getStartLinearCoordinate(e.getSAMRecord()));
+		    	for (SAMRecordAssemblyEvidence ass : evidenceList) {
+		    		if (ass != null) {
+			    		maxAssembledPosition = Math.max(maxAssembledPosition, getContext().getLinear().getStartLinearCoordinate(ass.getSAMRecord()));
 			    		// realign
 			    		if (getContext().getAssemblyParameters().performLocalRealignment
-			    				&& e.isBreakendExact() // let the aligner perform realignment of unanchored reads
-			    				&& !(e.getBreakendSummary() instanceof BreakpointSummary) // don't realign if we already know where the other side is // TODO: promote to parameter and test effectiveness			    				
+			    				&& ass.isBreakendExact() // let the aligner perform realignment of unanchored reads
+			    				&& !(ass.getBreakendSummary() instanceof BreakpointSummary) // don't realign if we already know where the other side is // TODO: promote to parameter and test effectiveness			    				
 			    				) {
-			    			e = e.realign();
+			    			ass = ass.realign();
 			    		}
-			    		resortBuffer.add(a);
+			    		resortBuffer.add(ass);
 		    		}
 		    	}
 	    	}
@@ -434,9 +433,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 					throw new IllegalStateException(String.format("Sanity check failure: assembly breakend %s written out of order.", evidence.getEvidenceID()));
 				}
 				lastFlushedPosition = pos;
-				if (evidence.isReferenceAssembly()) {
-					evidence.filterAssembly(VcfFilter.REFERENCE_ALLELE);
-				}
+				getContext().getAssemblyParameters().applyBasicFilters(evidence);
 				if (getContext().getAssemblyParameters().writeFilteredAssemblies || !evidence.isAssemblyFiltered()) {
 					writer.addAlignment(evidence.getBackingRecord());
 					if (getContext().getRealignmentParameters().shouldRealignBreakend(evidence)) {

@@ -117,6 +117,30 @@ public class AssemblyParameters {
 			// ensures assembly & matching remote always get filtered in/out together
 			localEvidence = ((RealignedRemoteSAMRecordAssemblyEvidence)evidence).asLocal();
 		}
+		boolean filtered = applyBasicFilters(evidence);
+		if (localEvidence.getAssemblyAnchorLength() == 0 && localEvidence.getBreakendSequence().length <= localEvidence.getAssemblyReadPairLengthMax(EvidenceSubset.ALL)) {
+			evidence.filterAssembly(VcfFilter.ASSEMBLY_TOO_SHORT); // assembly length = 1 read
+			filtered = true;
+		}
+		if (localEvidence.getAssemblySupportCountRemote(EvidenceSubset.ALL) > 0 &&
+				localEvidence.getAssemblySupportCountRemote(EvidenceSubset.ALL) == localEvidence.getAssemblySupportCountSoftClip(EvidenceSubset.ALL) + localEvidence.getAssemblySupportCountReadPair(EvidenceSubset.ALL)) {
+			// assembly is entirely made of remote support with no reads mapping to our location at all
+			evidence.filterAssembly(VcfFilter.ASSEMBLY_REMOTE);
+			filtered = true;
+		}
+		return filtered;
+	}
+	/**
+	 * Applies filters that do not required the assembly to be annotated or realigned
+	 * @param evidence
+	 * @return
+	 */
+	public boolean applyBasicFilters(SAMRecordAssemblyEvidence evidence) {
+		SAMRecordAssemblyEvidence localEvidence = evidence;
+		if (evidence instanceof RemoteEvidence) {
+			// ensures assembly & matching remote always get filtered in/out together
+			localEvidence = ((RealignedRemoteSAMRecordAssemblyEvidence)evidence).asLocal();
+		}
 		boolean filtered = false;
 		if (localEvidence.isReferenceAssembly() ||
 				localEvidence.getBreakendSummary() == null ||
@@ -124,19 +148,8 @@ public class AssemblyParameters {
 			evidence.filterAssembly(VcfFilter.REFERENCE_ALLELE);
 			filtered = true;
 		}
-		if (localEvidence.getAssemblySupportCountReadPair(EvidenceSubset.ALL) + localEvidence.getAssemblySupportCountSoftClip(EvidenceSubset.ALL) < minReads) {
+		if (localEvidence.getAssemblySupportCount() < minReads) {
 			evidence.filterAssembly(VcfFilter.ASSEMBLY_TOO_FEW_READ);
-			filtered = true;
-		}
-		if (localEvidence.getAssemblyAnchorLength() == 0 && localEvidence.getBreakendSequence().length <= localEvidence.getAssemblyReadPairLengthMax(EvidenceSubset.ALL)) {
-			evidence.filterAssembly(VcfFilter.ASSEMBLY_TOO_SHORT); // assembly length = 1 read
-			filtered = true;
-		}
-		
-		if (localEvidence.getAssemblySupportCountRemote(EvidenceSubset.ALL) > 0 &&
-				localEvidence.getAssemblySupportCountRemote(EvidenceSubset.ALL) == localEvidence.getAssemblySupportCountSoftClip(EvidenceSubset.ALL) + localEvidence.getAssemblySupportCountReadPair(EvidenceSubset.ALL)) {
-			// assembly is entirely made of remote support with no reads mapping to our location at all
-			evidence.filterAssembly(VcfFilter.ASSEMBLY_REMOTE);
 			filtered = true;
 		}
 		return filtered;

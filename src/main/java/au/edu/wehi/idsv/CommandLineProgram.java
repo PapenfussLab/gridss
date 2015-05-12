@@ -82,15 +82,15 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     public boolean ASSEMBLY_DEBRUIJN_ALLOW_REFERENCE_KMER_RESUSE = new AssemblyParameters().allReferenceKmerReuse;
     @Option(doc = "Maximum number of contigs per assembly iteration", optional=true)
     public int ASSEMBLY_DEBRUIJN_MAX_CONTIGS_PER_ITERATION = new AssemblyParameters().maxContigsPerAssembly;
-    @Option(doc = "Number of branches consider at each kmer branch", optional=true)
+    @Option(doc = "Number of branches to consider at each kmer branch", optional=true)
     public int ASSEMBLY_DEBRUIJN_SUBGRAPH_BRANCHING_FACTOR = 16; // new AssemblyParameters().subgraphAssemblyTraversalMaximumBranchingFactor;
     @Option(doc = "Number of bases (in multiples of maximum fragment size) of no contributing evidence before subgraph assembly.", optional=true)
     public float ASSEMBLY_DEBRUIJN_SUBGRAPH_ASSEMBLY_FRAGMENT_DELAY = new AssemblyParameters().subgraphAssemblyMargin;
     // --- Realignment parameters ---
     @Option(doc = "Minimum length of a breakend to be considered for realignment", optional=true)
-    public int REALIGNMENT_MIN_BREAKEND_LENGTH = 20;
+    public int REALIGNMENT_MIN_BREAKEND_LENGTH = new RealignmentParameters().minLength;
     @Option(doc = "Minimum average base quality score for realignment", optional=true)
-    public float REALIGNMENT_MIN_BASE_QUALITY = 5;
+    public float REALIGNMENT_MIN_BASE_QUALITY = new RealignmentParameters().minAverageQual;
     @Option(doc = "Minimum mapq of a realignment to be considered uniquely mapped", optional=true)
     public int REALIGNMENT_MAPQ_UNIQUE_THRESHOLD = new RealignmentParameters().mapqUniqueThreshold;
     // --- Variant calling parameters  ---
