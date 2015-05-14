@@ -188,7 +188,7 @@ public class Idsv extends CommandLineProgram {
 	    	} finally {
 	    		if (caller != null) caller.close();
 	    	}
-	    	hackOutputIndels();
+	    	//hackOutputIndels();
     	} catch (IOException e) {
     		log.error(e);
     		throw new RuntimeException(e);
