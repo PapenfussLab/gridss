@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.variant.variantcontext.VariantContextBuilder;
+
 import java.util.List;
 
 import au.edu.wehi.idsv.vcf.VcfFilter;
@@ -61,5 +63,20 @@ public class VariantCallingParameters {
 			filters.add(VcfFilter.LOW_BREAKPOINT_SUPPORT);
 		}
 		return filters;
+	}
+	public VariantContextDirectedEvidence applyConfidenceFilter(VariantContextDirectedEvidence variant) {
+		if (variant instanceof VariantContextDirectedBreakpoint) {
+			VariantContextDirectedBreakpoint v = (VariantContextDirectedBreakpoint)variant;
+			if (v.getBreakpointEvidenceCountLocalAssembly() == 0 && v.getBreakpointEvidenceCountRemoteAssembly() == 0) { 
+				variant = (VariantContextDirectedEvidence)new VariantContextBuilder(variant).filter(VcfFilter.NO_ASSEMBLY.filter()).make();
+			} else if (v.getBreakpointEvidenceCountLocalAssembly() == 0 || v.getBreakpointEvidenceCountRemoteAssembly() == 0) {
+				//variant = (VariantContextDirectedEvidence)new VariantContextBuilder(variant).filter(VcfFilter.SINGLE_ASSEMBLY.filter()).make();
+			}
+		} else {
+			if (variant.getBreakendEvidenceCountAssembly() == 0) {
+				variant = (VariantContextDirectedEvidence)new VariantContextBuilder(variant).filter(VcfFilter.NO_ASSEMBLY.filter()).make();
+			}
+		}
+		return variant;
 	}
 }

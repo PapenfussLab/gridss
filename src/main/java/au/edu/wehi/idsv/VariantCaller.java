@@ -211,6 +211,8 @@ public class VariantCaller extends EvidenceProcessorBase {
 				VariantContextDirectedEvidence variant = breakendIt.next();
 				assert(variant.isValid());
 				if (variant.isNotFiltered() || processContext.getVariantCallingParameters().writeFilteredCalls) {
+					// add confidence filter
+					variant = processContext.getVariantCallingParameters().applyConfidenceFilter(variant);
 					vcfWriter.add(variant);
 				}
 			}
