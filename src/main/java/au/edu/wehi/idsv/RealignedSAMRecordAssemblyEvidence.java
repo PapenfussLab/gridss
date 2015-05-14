@@ -66,6 +66,10 @@ public class RealignedSAMRecordAssemblyEvidence extends SAMRecordAssemblyEvidenc
 		int evidenceCount = getAssemblySupportCountReadPair(EvidenceSubset.ALL) + getAssemblySupportCountSoftClip(EvidenceSubset.ALL);
 		// cap quality by mapq score of assembly alignment per evidence
 		double qual = Math.min(getRemoteMapq() * evidenceCount, getBreakendQual());
+		if (isSpanningAssembly()) {
+			// spanning assemblies have their evidence allocated equally to both sides
+			qual /= 2;
+		}
 		return (float)qual;
 	}
 	/**
