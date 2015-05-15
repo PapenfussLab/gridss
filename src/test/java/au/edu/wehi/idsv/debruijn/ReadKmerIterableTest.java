@@ -91,4 +91,19 @@ public class ReadKmerIterableTest extends TestHelper {
 		ReadKmerIterable rki = new ReadKmerIterable(2, B("A"), B("A"));
 		assertFalse(rki.iterator().hasNext());
 	}
+	@Test
+	public void should_complement() {
+		ReadKmerIterable rki = new ReadKmerIterable(4, B("GTAA"), B("AAAA"), false, true);
+		assertEquals("CATT", K(4, rki.iterator().next().kmer));
+	}
+	@Test
+	public void should_reverse() {
+		ReadKmerIterable rki = new ReadKmerIterable(4, B("GTAA"), B("AAAA"), true, false);
+		assertEquals("AATG", K(4, rki.iterator().next().kmer));
+	}
+	@Test
+	public void should_reverse_comp() {
+		ReadKmerIterable rki = new ReadKmerIterable(4, B("GTAA"), B("AAAA"), true, true);
+		assertEquals("TTAC", K(4, rki.iterator().next().kmer));
+	}
 }

@@ -77,7 +77,8 @@ gridss.removeUnpartnerededBreakend <- function(vcf) {
 gridss.vcftodf <- function(vcf, sanityCheck=TRUE) {
   i <- info(vcf)
   df <- data.frame(variantid=names(rowData(vcf)))
-  df$FILTER=rowData(vcf)$FILTER
+  df$POS <- paste0(seqnames(rowData(vcf)), ":", start(rowData(vcf)))
+  df$FILTER <- rowData(vcf)$FILTER
   df$QUAL <- rowData(vcf)$QUAL
   df$EVENT <-i$EVENT
   df$mate <- as.character(i$MATEID)

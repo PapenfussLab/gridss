@@ -68,7 +68,7 @@ public class VariantCallingParameters {
 		if (variant instanceof VariantContextDirectedBreakpoint) {
 			VariantContextDirectedBreakpoint v = (VariantContextDirectedBreakpoint)variant;
 			if (v.getBreakpointEvidenceCountLocalAssembly() == 0 && v.getBreakpointEvidenceCountRemoteAssembly() == 0) { 
-				variant = (VariantContextDirectedEvidence)new VariantContextBuilder(variant).filter(VcfFilter.NO_ASSEMBLY.filter()).make();
+				variant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(variant.processContext, variant).filter(VcfFilter.NO_ASSEMBLY.filter()).make();
 			} else if (v.getBreakpointEvidenceCountLocalAssembly() == 0 || v.getBreakpointEvidenceCountRemoteAssembly() == 0) {
 				//variant = (VariantContextDirectedEvidence)new VariantContextBuilder(variant).filter(VcfFilter.SINGLE_ASSEMBLY.filter()).make();
 			}

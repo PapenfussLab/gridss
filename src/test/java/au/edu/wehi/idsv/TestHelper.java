@@ -709,6 +709,9 @@ public class TestHelper {
 	public static long K(String seq) {
 		return KmerEncodingHelper.picardBaseToEncoded(seq.length(), B(seq));
 	}
+	public static String K(int k, long kmer) {
+		return S(KmerEncodingHelper.encodedToPicardBases(k, kmer));
+	}
 	public static <T, PN extends DeBruijnPathNode<T>> String toKmerString(DeBruijnPathGraph<T, PN> pg, PN node) {
 		return toKmerString(pg.getGraph(), node.getPath());
 	}

@@ -9,15 +9,15 @@ import java.util.TreeSet;
 public class PositionalDeBruijnGraph {
 	private Map<Long, NavigableSet<KmerSupportNode>> rawKmers = new HashMap<Long, NavigableSet<KmerSupportNode>>();
 	public void addEvidence(Evidence e) {
-		for (KmerSupportNode support : e.support) {
-			add(support);
+		for (int i = 0; i < e.length(); i++) {
+			add(e.node(i));
 		}
 	}
 	private void add(KmerSupportNode node) {
-		NavigableSet<KmerSupportNode> set = rawKmers.get(node.getKmer());
+		NavigableSet<KmerSupportNode> set = rawKmers.get(node.kmer());
 		if (set == null) {
 			set = new TreeSet<KmerSupportNode>();
-			rawKmers.put(node.getKmer(), set);
+			rawKmers.put(node.kmer(), set);
 		}
 		set.add(node);
 	}

@@ -18,7 +18,6 @@ import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathNodeFactory;
 import au.edu.wehi.idsv.debruijn.DeBruijnVariantGraph;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
-import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.VariantEvidence;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
 import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
@@ -60,8 +59,8 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		this.trackingWriter = trackingWriter;
 	}
 	@Override
-	protected DeBruijnSubgraphNode createNode(VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) {
-		return new DeBruijnSubgraphNode(evidence, readKmerOffset, kmer);
+	protected DeBruijnSubgraphNode createNode(VariantEvidence evidence, int readKmerOffset) {
+		return new DeBruijnSubgraphNode(evidence, readKmerOffset);
 	}
 	/**
 	 * Sets the subgraph for this new node

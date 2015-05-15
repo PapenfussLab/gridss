@@ -47,9 +47,9 @@ public class DeBruijnNodeBase {
 		public final String evidenceID;
 		public final BreakendSummary breakend;
 	}
-	public DeBruijnNodeBase(VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) {
-		this(kmer.kmer,
-			kmer.weight,
+	public DeBruijnNodeBase(VariantEvidence evidence, int readKmerOffset) {
+		this(evidence.getKmers().kmer(readKmerOffset),
+			evidence.getKmers().weight(readKmerOffset),
 			evidence.getExpectedLinearPosition(readKmerOffset),
 			evidence.getEvidenceID(),
 			evidence.isReferenceKmer(readKmerOffset),

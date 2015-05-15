@@ -7,8 +7,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
-import au.edu.wehi.idsv.debruijn.ReadKmer;
-import au.edu.wehi.idsv.debruijn.ReadKmerIterable;
+import au.edu.wehi.idsv.debruijn.PackedReadKmerList;
 
 import com.google.common.collect.ImmutableList;
 
@@ -42,9 +41,11 @@ public class AdapterHelper {
 	public boolean containsAdapter(SAMRecord record) {
 		if (!hasAdapters()) return false;
 		if (record.getReadLength() < k) return false;
-		for (ReadKmer readKmer : new ReadKmerIterable(k, record.getReadBases(), record.getBaseQualities())) {
-			for (int i = 0; i < kmers.length; i++) {
-				if (readKmer.kmer == kmers[i]) {
+		PackedReadKmerList list = new PackedReadKmerList(k, record.getReadBases(), null, false, false);
+		for (int i = 0; i < list.length(); i++) {
+			long kmer = list.kmer(i);
+			for (int j = 0; j < kmers.length; j++) {
+				if (kmer == kmers[j]) {
 					return true;
 				}
 			}

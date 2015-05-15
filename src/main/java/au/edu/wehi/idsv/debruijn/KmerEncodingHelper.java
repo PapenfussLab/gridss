@@ -52,7 +52,7 @@ public class KmerEncodingHelper {
 	 * @param base ASCII byte representation of base
 	 * @return 2bit representation of base
 	 */
-	private static long picardBaseToEncoded(byte base) {
+	public static long picardBaseToEncoded(byte base) {
 		switch (base) {
 			case 'G':
 			case 'g':

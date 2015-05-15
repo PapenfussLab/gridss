@@ -32,18 +32,18 @@ public class KmerAggregrateGraph implements DeBruijnGraph<KmerAggregateNode>, Di
 	private final int k;
 	private final Map<Long, RangeMap<Integer, Integer>> kmerIntervalWeights;
 	private final Long2ObjectOpenHashMap<Int2BooleanSortedMap> reference = null; // TODO: populate this map
-	public KmerAggregrateGraph(int k, Map<Long, SortedSet<KmerSupportNode>> support) {
+	public KmerAggregrateGraph(int k, Map<Long, SortedSet<? extends KmerNode>> support) {
 		this.k = k;
 		this.kmerIntervalWeights = transform(support);
 		splitIntervals();
 	}
-	private static Map<Long, RangeMap<Integer, Integer>> transform(Map<Long, SortedSet<KmerSupportNode>> support) {
+	private static Map<Long, RangeMap<Integer, Integer>> transform(Map<Long, SortedSet<? extends KmerNode>> support) {
 		Map<Long, RangeMap<Integer, Integer>> result = new HashMap<Long, RangeMap<Integer,Integer>>();
-		for (Entry<Long, SortedSet<KmerSupportNode>> entry : support.entrySet()) {
+		for (Entry<Long, SortedSet<? extends KmerNode>> entry : support.entrySet()) {
 			NavigableSet<KmerAggregateNode> split = KmerAggregateNode.aggregate(entry.getKey(), entry.getValue());
 			RangeMap<Integer, Integer> rm = TreeRangeMap.create();
 			for (KmerAggregateNode n : split) {
-				rm.put(Range.closedOpen(n.getStartPosition(), n.getEndPosition() + 1), n.getWeight());
+				rm.put(Range.closedOpen(n.startPosition(), n.endPosition() + 1), n.weight());
 			}
 			result.put(entry.getKey(), rm);
 		}
@@ -109,21 +109,21 @@ public class KmerAggregrateGraph implements DeBruijnGraph<KmerAggregateNode>, Di
 		return changedCount;
 	}
 	public List<KmerAggregateNode> next(KmerAggregateNode node) {
-		return adj(node, KmerEncodingHelper.nextStates(k, node.getKmer()), 1);
+		return adj(node, KmerEncodingHelper.nextStates(k, node.kmer()), 1);
 	}
 	public List<KmerAggregateNode> prev(KmerAggregateNode node) {
-		return adj(node, KmerEncodingHelper.prevStates(k, node.getKmer()), -1);
+		return adj(node, KmerEncodingHelper.prevStates(k, node.kmer()), -1);
 	}
 	private List<KmerAggregateNode> adj(KmerAggregateNode node, long[] states, int delta) {
 		List<KmerAggregateNode> adj = new ArrayList<KmerAggregateNode>(4);
 		for (long kmer : states) {
 			RangeMap<Integer, Integer> intervals = kmerIntervalWeights.get(kmer);
 			if (intervals != null) {
-				Entry<Range<Integer>, Integer> entry = intervals.getEntry(node.getStartPosition() + delta);
+				Entry<Range<Integer>, Integer> entry = intervals.getEntry(node.startPosition() + delta);
 				if (entry != null) {
 					// assumes that the intervals have alread been split
-					assert(entry.getKey().lowerEndpoint() == node.getStartPosition() + delta);
-					assert(entry.getKey().upperEndpoint() == node.getEndPosition() + 1 + delta);
+					assert(entry.getKey().lowerEndpoint() == node.startPosition() + delta);
+					assert(entry.getKey().upperEndpoint() == node.endPosition() + 1 + delta);
 					adj.add(new KmerAggregateNode(kmer, entry.getValue(), entry.getKey().lowerEndpoint(), entry.getKey().upperEndpoint()));
 				}
 			}
@@ -131,13 +131,13 @@ public class KmerAggregrateGraph implements DeBruijnGraph<KmerAggregateNode>, Di
 		return adj;
 	}
 	public List<KmerAggregateNode> nextUnsplit(KmerAggregateNode node) {
-		return nextUnsplit(node.getKmer(), node.getStartPosition(), node.getEndPosition());
+		return nextUnsplit(node.kmer(), node.startPosition(), node.endPosition());
 	}
 	public List<KmerAggregateNode> nextUnsplit(long kmer, int start, int end) {
 		return adjUnsplit(start, end, KmerEncodingHelper.nextStates(k, kmer), 1);
 	}
 	public List<KmerAggregateNode> prevUnsplit(KmerAggregateNode node) {
-		return prevUnsplit(node.getKmer(), node.getStartPosition(), node.getEndPosition());
+		return prevUnsplit(node.kmer(), node.startPosition(), node.endPosition());
 	}
 	public List<KmerAggregateNode> prevUnsplit(long kmer, int start, int end) {
 		return adjUnsplit(start, end, KmerEncodingHelper.prevStates(k, kmer), -1);
@@ -210,7 +210,7 @@ public class KmerAggregrateGraph implements DeBruijnGraph<KmerAggregateNode>, Di
 	}
 	@Override
 	public int getWeight(KmerAggregateNode node) {
-		return node.getWeight();
+		return node.weight();
 	}
 	@Override
 	public void removeNode(KmerAggregateNode node) {
@@ -237,21 +237,21 @@ public class KmerAggregrateGraph implements DeBruijnGraph<KmerAggregateNode>, Di
 		Iterable<Long> kmerIt = Iterables.transform(path, new Function<KmerAggregateNode, Long>() {
 			@Override
 			public Long apply(KmerAggregateNode input) {
-				return input.getKmer();
+				return input.kmer();
 			}
 		});
 		return new String(KmerEncodingHelper.baseCalls(Lists.newArrayList(kmerIt), k), StandardCharsets.US_ASCII);
 	}
 	@Override
 	public boolean isReference(KmerAggregateNode node) {
-		Int2BooleanSortedMap lookup = reference.get(node.getKmer());
+		Int2BooleanSortedMap lookup = reference.get(node.kmer());
 		// requires sentinel placeholders outside of bounds
 		// TODO: no lowerEntry() in fastutils - is heapMap() our only option?
-		return lookup.get(lookup.headMap(node.getStartPosition()).firstIntKey());
+		return lookup.get(lookup.headMap(node.startPosition()).firstIntKey());
 	}
 	@Override
 	public long getKmer(KmerAggregateNode node) {
-		return node.getKmer();
+		return node.kmer();
 	}
 	@Override
 	public int getK() {

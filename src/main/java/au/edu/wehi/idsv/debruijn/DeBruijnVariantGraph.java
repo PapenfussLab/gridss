@@ -45,7 +45,7 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 			throw new RuntimeException(String.format("NYI: Unable to add %s evidence to de bruijn graph", evidence));
 		}
 	}
-	protected abstract T createNode(VariantEvidence evidence, int readKmerOffset, ReadKmer kmer);
+	protected abstract T createNode(VariantEvidence evidence, int readKmerOffset);
 	@Override
 	protected T merge(T node, T toAdd) {
 		node.add(toAdd);
@@ -77,28 +77,26 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		removeEvidenceKmers(graphEvidence);
 	}
 	protected void addEvidenceKmers(VariantEvidence evidence) {
-		int readKmerOffset = 0;
-		for (ReadKmer readKmer : evidence.getReadKmers()) {
-			if (!shouldSkipKmer(evidence, readKmerOffset, readKmer)) {
-				T node = createNode(evidence, readKmerOffset, readKmer);
+		PackedReadKmerList kmers = evidence.getKmers();
+		for (int i = 0; i < kmers.length(); i++) {
+			if (!shouldSkipKmer(evidence, i)) {
+				T node = createNode(evidence, i);
 				T graphNode = add(node);
-				onEvidenceAdded(graphNode, node, evidence, readKmerOffset, readKmer);
+				onEvidenceAdded(graphNode, node, evidence, i);
 			}
-			readKmerOffset++;
 		}
 	}
-	protected boolean shouldSkipKmer(VariantEvidence evidence, int readKmerOffset, ReadKmer readKmer) {
-		return evidence.isSkippedKmer(readKmerOffset) || readKmer.containsAmbiguousBases;
+	protected boolean shouldSkipKmer(VariantEvidence evidence, int readKmerOffset) {
+		return evidence.isSkippedKmer(readKmerOffset) || evidence.containsAmbiguousBases(readKmerOffset);
 	}
 	protected void removeEvidenceKmers(VariantEvidence evidence) {
-		int readKmerOffset = 0;
-		for (ReadKmer readKmer : evidence.getReadKmers()) {
-			if (!shouldSkipKmer(evidence, readKmerOffset, readKmer)) {
-				T node = createNode(evidence, readKmerOffset, readKmer);
-				T graphNode = remove(readKmer.kmer, node);
-				onEvidenceRemoved(graphNode, node, evidence, readKmerOffset, readKmer);
+		PackedReadKmerList kmers = evidence.getKmers();
+		for (int i = 0; i < kmers.length(); i++) {
+			if (!shouldSkipKmer(evidence, i)) {
+				T node = createNode(evidence, i);
+				T graphNode = remove(kmers.kmer(i), node);
+				onEvidenceRemoved(graphNode, node, evidence, i);
 			}
-			readKmerOffset++;
 		}
 	}
 	/**
@@ -107,9 +105,8 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 	 * @param evidenceNode evidence node that has been added
 	 * @param evidence evidence details
 	 * @param readKmerOffset kmer offset of this kmer within evidence 
-	 * @param kmer evidence kmer
 	 */
-	protected void onEvidenceAdded(T graphNode, T evidenceNode, VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) { }
+	protected void onEvidenceAdded(T graphNode, T evidenceNode, VariantEvidence evidence, int readKmerOffset) { }
 	/**
 	 * Called whenever evidence has been removed 
 	 * @param graphNode de bruijn graph kmer after evidence has been removed
@@ -118,7 +115,7 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 	 * @param readKmerOffset kmer offset of this kmer within evidence 
 	 * @param kmer evidence kmer
 	 */
-	protected void onEvidenceRemoved(T graphNode, T evidenceNode, VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) { }
+	protected void onEvidenceRemoved(T graphNode, T evidenceNode, VariantEvidence evidence, int readKmerOffset) { }
 	private Set<String> getSupport(List<List<T>> breakendPathAllKmers) {
 		Set<String> support = Sets.newHashSet();
 		// iterate in strides to improve support composition when limit is hit 

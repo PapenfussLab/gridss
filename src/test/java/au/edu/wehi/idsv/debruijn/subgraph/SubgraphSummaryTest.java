@@ -6,7 +6,6 @@ import static org.junit.Assert.assertTrue;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
-import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.VariantEvidence;
 
 
@@ -31,7 +30,7 @@ public class SubgraphSummaryTest extends TestHelper {
 	}
 	private DeBruijnSubgraphNode node(int pos) {
 		VariantEvidence e = new VariantEvidence(4, SCE(FWD, Read(0, 1, "500M500S")), getContext().getLinear());
-		DeBruijnSubgraphNode n = new DeBruijnSubgraphNode(e, pos - 1,  new ReadKmer(0, 2, false));
+		DeBruijnSubgraphNode n = new DeBruijnSubgraphNode(e, pos - 1);
 		return n;
 	}
 	@Test

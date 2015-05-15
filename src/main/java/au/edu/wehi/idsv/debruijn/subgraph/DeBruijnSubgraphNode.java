@@ -1,15 +1,14 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
 import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
-import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.VariantEvidence;
 
 public class DeBruijnSubgraphNode extends DeBruijnNodeBase {
 	private long maxPosition;
 	private long minPosition;
 	private SubgraphSummary subgraph;
-	public DeBruijnSubgraphNode(VariantEvidence evidence, int readKmerOffset, ReadKmer kmer) {
-		super(evidence, readKmerOffset, kmer);
+	public DeBruijnSubgraphNode(VariantEvidence evidence, int readKmerOffset) {
+		super(evidence, readKmerOffset);
 		long expectedPosition = evidence.getExpectedLinearPosition(readKmerOffset); 
 		this.maxPosition = expectedPosition;
 		this.minPosition = expectedPosition;

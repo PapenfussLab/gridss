@@ -4,14 +4,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import java.util.List;
-
 import org.junit.Test;
 
 import au.edu.wehi.idsv.RealignedSoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
-
-import com.google.common.collect.Lists;
 
 
 public class VariantEvidenceTest extends TestHelper {
@@ -66,17 +62,16 @@ public class VariantEvidenceTest extends TestHelper {
 	@Test
 	public void getReadKmers_should_read_kmers_in_ascending_genomic_coordinates() {
 		VariantEvidence e = new VariantEvidence(2, SCE(FWD, withSequence("ACGTTTTT", Read(0, 5, "4M4S"))), getContext().getLinear());
-		List<ReadKmer> kmers = Lists.newArrayList(e.getReadKmers());
-		assertEquals(7, kmers.size());
-		assertEquals("AC", S(KmerEncodingHelper.encodedToPicardBases(2, kmers.get(0).kmer)));
-		assertEquals("CG", S(KmerEncodingHelper.encodedToPicardBases(2, kmers.get(1).kmer)));
+		assertEquals(7, e.getKmers().length());
+		assertEquals("AC", S(KmerEncodingHelper.encodedToPicardBases(2, e.getKmers().kmer(0))));
+		assertEquals("CG", S(KmerEncodingHelper.encodedToPicardBases(2, e.getKmers().kmer(1))));
 	}
 	@Test
 	public void shouldReverseComp_for_concordant_position() {
-		assertEquals("GA", S(KmerEncodingHelper.encodedToPicardBases(2, Lists.newArrayList(new VariantEvidence(2, NRRP(withSequence("TTTC", DP(0, 1, "4M", true, 1, 5, "4M", true))), getContext().getLinear()).getReadKmers()).get(0).kmer)));
-		assertEquals("TT", S(KmerEncodingHelper.encodedToPicardBases(2, Lists.newArrayList(new VariantEvidence(2, NRRP(withSequence("TTTC", DP(0, 1, "4M", true, 1, 5, "4M", false))), getContext().getLinear()).getReadKmers()).get(0).kmer)));
-		assertEquals("TT", S(KmerEncodingHelper.encodedToPicardBases(2, Lists.newArrayList(new VariantEvidence(2, NRRP(withSequence("TTTC", DP(0, 1, "4M", false, 1, 5, "4M", true))), getContext().getLinear()).getReadKmers()).get(0).kmer)));
-		assertEquals("GA", S(KmerEncodingHelper.encodedToPicardBases(2, Lists.newArrayList(new VariantEvidence(2, NRRP(withSequence("TTTC", DP(0, 1, "4M", false, 1, 5, "4M", false))), getContext().getLinear()).getReadKmers()).get(0).kmer)));
+		assertEquals("GA", K(2, new VariantEvidence(2, NRRP(withSequence("TTTC", DP(0, 1, "4M", true, 1, 5, "4M", true))), getContext().getLinear()).getKmers().kmer(0)));
+		assertEquals("TT", K(2, new VariantEvidence(2, NRRP(withSequence("TTTC", DP(0, 1, "4M", true, 1, 5, "4M", false))), getContext().getLinear()).getKmers().kmer(0)));
+		assertEquals("TT", K(2, new VariantEvidence(2, NRRP(withSequence("TTTC", DP(0, 1, "4M", false, 1, 5, "4M", true))), getContext().getLinear()).getKmers().kmer(0)));
+		assertEquals("GA", K(2, new VariantEvidence(2, NRRP(withSequence("TTTC", DP(0, 1, "4M", false, 1, 5, "4M", false))), getContext().getLinear()).getKmers().kmer(0)));
 	}
 	@Test
 	public void isReferenceKmer_should_require_all_bases_matching_reference() {
@@ -137,7 +132,7 @@ public class VariantEvidenceTest extends TestHelper {
 				new VariantEvidence(4, SCE(FWD, Read(0, 5, "5M5S"), Read(0, 100, "5M")), getContext().getLinear()),
 				new VariantEvidence(4, ((RealignedSoftClipEvidence)SCE(BWD, Read(0, 100, "5S5M"), Read(0, 5, "5M"))).asRemote(), getContext().getLinear())
 				}) {
-			for (int i = 0; i < Lists.newArrayList(v.getReadKmers()).size(); i++) {
+			for (int i = 0; i < v.getKmers().length(); i++) {
 				assertTrue(v.getExpectedLinearPosition(i) < LCCB + 350);
 				assertTrue(v.getExpectedLinearPosition(i) > LCCB);
 			}
@@ -149,9 +144,18 @@ public class VariantEvidenceTest extends TestHelper {
 				new VariantEvidence(4, SCE(FWD, Read(0, 1, "10M5S")), getContext().getLinear()),
 				new VariantEvidence(4, SCE(BWD, Read(0, 6, "5S10M")), getContext().getLinear()),
 				}) {
-			for (int i = 0; i < Lists.newArrayList(v.getReadKmers()).size(); i++) {
+			for (int i = 0; i < v.getKmers().length(); i++) {
 				assertEquals(LCCB + i + 1, v.getExpectedLinearPosition(i));
 			}
+		}
+	}
+	@Test
+	public void containsAmbiguousBases_should_match_readkmer() {
+		String seq = "NANAANAAANAAAANAAAAANAAAAAANAAAAAAANAAAAAAAANNAAAAAAAANNNAAAAAAAANNN"; 
+		VariantEvidence e = new VariantEvidence(4, SCE(FWD, withSequence(seq, Read(0, 5, "8M60S"))), getContext().getLinear());
+		int offset = 0;
+		for (ReadKmer rk : new ReadKmerIterable(4, B(seq), B(seq))) {
+			assertEquals(rk.containsAmbiguousBases, e.containsAmbiguousBases(offset++));
 		}
 	}
 }

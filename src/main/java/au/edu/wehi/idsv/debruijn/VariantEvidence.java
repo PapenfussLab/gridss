@@ -2,7 +2,9 @@ package au.edu.wehi.idsv.debruijn;
 
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
 
+import java.util.BitSet;
 import java.util.List;
 
 import au.edu.wehi.idsv.BreakendDirection;
@@ -20,9 +22,8 @@ import au.edu.wehi.idsv.sam.SAMRecordUtil;
  *
  */
 public class VariantEvidence {
-	private final boolean shouldReverseComplement;
-	private final byte[] bases;
-	private final byte[] quals;
+	private final PackedReadKmerList kmers;
+	private final BitSet ambiguous;
 	/**
 	 * Expected linear genomic position of the start of the read
 	 */
@@ -37,17 +38,15 @@ public class VariantEvidence {
 	private final int referenceKmerEndOffset;
 	private final int startSkipKmerCount;
 	private final int endSkipKmerCount;
-	private final int k;
 	private final String evidenceID;
 	private boolean isExact;
 	private BreakendSummary be;
 	private int category;
 	public VariantEvidence(int k, NonReferenceReadPair pair, LinearGenomicCoordinate lgc) {
-		this.k = k;
 		this.evidenceID = pair.getEvidenceID();
-		this.shouldReverseComplement = !pair.onExpectedStrand();		
-		this.bases = pair.getNonReferenceRead().getReadBases();
-		this.quals = pair.getNonReferenceRead().getBaseQualities();
+		boolean shouldReverseComplement = !pair.onExpectedStrand();		
+		byte[] bases = pair.getNonReferenceRead().getReadBases();
+		byte[] quals = pair.getNonReferenceRead().getBaseQualities();
 		int chrPos;
 		if (pair.getBreakendSummary().direction == BreakendDirection.Forward) {
 			// Assumes FR orientation
@@ -63,14 +62,15 @@ public class VariantEvidence {
 		this.isExact = pair.isBreakendExact();
 		this.be = pair.getBreakendSummary();
 		this.category = pair.getEvidenceSource().getSourceCategory();
+		this.kmers = new PackedReadKmerList(k, bases, quals, shouldReverseComplement, shouldReverseComplement);
+		this.ambiguous = markAmbiguous(k, bases);
 	}
 	public VariantEvidence(int k, SoftClipEvidence softClipEvidence, LinearGenomicCoordinate lgc) {
 		SAMRecord read = softClipEvidence.getSAMRecord();
-		this.k = k;
 		this.evidenceID = softClipEvidence.getEvidenceID();
-		this.shouldReverseComplement = false;		
-		this.bases = read.getReadBases();
-		this.quals = read.getBaseQualities();
+		boolean shouldReverseComplement = false;		
+		byte[] bases = read.getReadBases();
+		byte[] quals = read.getBaseQualities();
 		
 		// calculate anchor info 
 		List<CigarElement> elements = read.getCigar().getCigarElements();
@@ -111,9 +111,20 @@ public class VariantEvidence {
 		this.isExact = softClipEvidence.isBreakendExact();
 		this.be = softClipEvidence.getBreakendSummary();
 		this.category = softClipEvidence.getEvidenceSource().getSourceCategory();
+		this.kmers = new PackedReadKmerList(k, bases, quals, shouldReverseComplement, shouldReverseComplement);
+		this.ambiguous = markAmbiguous(k, bases);
 	}
-	public ReadKmerIterable getReadKmers() {
-		return new ReadKmerIterable(k, bases, quals, shouldReverseComplement, shouldReverseComplement);
+	private static BitSet markAmbiguous(int k, byte[] bases) {
+		BitSet lookup = new BitSet(Math.max(0,bases.length - k + 1));
+		for (int i = 0; i < bases.length; i++) {
+			if (!SequenceUtil.isValidBase(bases[i])) {
+				lookup.set(Math.max(0, i - k + 1), Math.min(lookup.size(), i + 1));
+			}
+		}
+		return lookup;
+	}
+	public PackedReadKmerList getKmers() {
+		return kmers;
 	}
 	public int getReferenceKmerCount() {
 		return referenceKmerEndOffset - referenceKmerStartOffset;
@@ -138,7 +149,7 @@ public class VariantEvidence {
 	public long getExpectedLinearPosition(int readKmerOffset) {
 		return expectedAnchorPos + readKmerOffset;
 	}
-	private int kmerCount() { return bases.length - k + 1; }
+	private int kmerCount() { return kmers.length(); }
 	/**
 	 * @return true if this evidence is directly anchored to the reference (ie: direct breakend evidence),
 	 * false if anchored by the mate 
@@ -152,5 +163,8 @@ public class VariantEvidence {
 	 */
 	public String getEvidenceID() {
 		return evidenceID;
+	}
+	public boolean containsAmbiguousBases(int readKmerOffset) {
+		return ambiguous.get(readKmerOffset);
 	}
 }
