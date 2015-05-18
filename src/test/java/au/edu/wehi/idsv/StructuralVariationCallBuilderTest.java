@@ -265,6 +265,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		Assert.assertEquals(5, (float)(Float)complex_bp().getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE.attribute()), 0);
 	}
 	@Test
+	@Ignore() //  TODO: enchancement
 	public void how_should_we_count_spanning_assemblies() {
 		fail();
 	}
@@ -485,16 +486,19 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		assertEquals(10, call.getAttribute(VcfSvConstants.HOMOLOGY_LENGTH_KEY));
 	}
 	@Test
+	@Ignore() //  TODO: enchancement
 	public void should_use_CILEN_tag_for_total_untemplated_sequence() {
 		Assert.fail();
 	}
 	@Test
+	@Ignore() //  TODO: enchancement
 	public void should_use_INS_UNKNOWN_symbolic_allele_for_unknown_untemplated_sequence() {
 		// <INS:UNKNOWN> insertion of unknown sequence and length
 		// CIINSLEN confidence interval around insertion  
 		Assert.fail();
 	}
 	@Test
+	@Ignore() //  TODO: enchancement
 	public void should_use_INS_UNKNOWN_when_bases_missing() {
 		// <INS:UNKNOWN> insertion of unknown sequence and length
 		// CIINSLEN confidence interval around insertion  

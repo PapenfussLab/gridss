@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.IOException;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
@@ -17,7 +18,8 @@ import com.google.common.collect.ImmutableList;
 
 
 public class PathTraversalTimeoutVisualisationTest extends IntermediateFilesTest {
-	@Test // TODO: fix this test case - now out of date
+	@Test
+	@Ignore() // "TODO: fix this test case - now out of date"
 	public void should_export_on_path_timeout_gexf() throws IOException {
 		File output = new File(super.testFolder.getRoot(), "chr12-244000.vcf");
 		setReference(new File("C:/dev/chr12.fa"));

@@ -308,6 +308,7 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		assertEquals("AACGTC", S(result.get(0).getBreakendSequence()));
 	}
 	@Test
+	@Ignore() //  TODO: drop read base count completely
 	public void read_base_count_should_be_number_of_breakend_read_bases() {
 		ProcessingContext pc = getContext();
 		MockSAMEvidenceSource normal = SES(false);
