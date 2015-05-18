@@ -10,7 +10,13 @@ public class PackedReadKmerList {
 		int kmers = bases.length - k + 1;
 		this.k = (byte)k;
 		this.twoBitBases = twoBitEncodeBases(k, bases, reverse, complement);
-		this.weights = qual != null && kmers > 0 ? calcWeight(k, qual, reverse) : new byte[0];
+		if (kmers <= 0) {
+			this.weights = new byte[0];
+		} else if (qual == null) {
+			this.weights = new byte[kmers];
+		} else {
+			this.weights = calcWeight(k, qual, reverse);
+		}
 	}
 	private static byte[] twoBitEncodeBases(int k, byte[] bases, boolean reverse, boolean complement) {
 		byte[] kmer = new byte[IntMath.divide(bases.length, Byte.SIZE / 2, RoundingMode.CEILING)];
