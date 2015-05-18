@@ -15,6 +15,10 @@ import java.util.Map;
 public abstract class IntermediateFileUtil {
 	private static final Log log = Log.getInstance(IntermediateFileUtil.class);
 	/**
+	 * Timestamps this close together are consider written at the same time.
+	 */
+	private static final int TIMESTAMP_MS_ALLOWABLE_ERROR = 2000;
+	/**
 	 * Checks that the given intermediate file is valid
 	 * @param file file to check
 	 * @param source source file intermediate has been generated from
@@ -25,8 +29,8 @@ public abstract class IntermediateFileUtil {
 			//log.debug("Missing intermediate ", file);
 			return false;
 		}
-		if (!Defaults.IGNORE_TIMESTAMPS && source != null && source.exists() && file.lastModified() < source.lastModified()) {
-			log.info(source, " has a more recent timestamp than ", file, ". Considering ", file, " out of date.");
+		if (!Defaults.IGNORE_TIMESTAMPS && source != null && source.exists() && file.lastModified() < source.lastModified() + TIMESTAMP_MS_ALLOWABLE_ERROR) {
+			log.info(source, " has a more recent timestamp than ", file, ". Considering the latter out of date.");
 			return false;
 		}
 		return true;

@@ -49,6 +49,7 @@ public class IntermediateFilesTest extends TestHelper {
 	public void setup() throws IOException {
 		reference = SMALL_FA_FILE;
 		input = testFolder.newFile("input.bam");
+		input.delete();
 		output = testFolder.newFile("out.vcf");
 		output.delete();
 	}
