@@ -6,6 +6,7 @@ import htsjdk.samtools.util.CloseableIterator;
 import java.io.File;
 import java.util.ArrayList;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.AssemblyParameters;
@@ -28,6 +29,7 @@ import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
  */
 public class DeBruijnSubgraphAssemblerDataTest extends IntermediateFilesTest {
 	@Test//(timeout=60000)
+	@Ignore() // TODO: fix testing architecture so performance test requiring external data are configurable
 	public void should_assemble_MT_efficiently() {
 		File hg19decoy = new File("C:\\dev\\hs37d5.fa");
 		ProcessingContext pc = new ProcessingContext(
