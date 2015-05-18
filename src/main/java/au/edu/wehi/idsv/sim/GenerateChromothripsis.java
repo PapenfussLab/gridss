@@ -4,6 +4,7 @@ import htsjdk.samtools.util.IOUtil;
 
 import java.io.File;
 
+import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
 import au.edu.wehi.idsv.ProcessingContext;
 
@@ -12,12 +13,11 @@ import au.edu.wehi.idsv.ProcessingContext;
  * @author cameron.d
  *
  */
+@CommandLineProgramProperties(
+        usage = "Shatters a chromosome into fragments of the given size, and randomly reassembles a subset of them.",  
+        usageShort = "Simulates chromothripsis through random translocation"
+)
 public class GenerateChromothripsis extends SimulationGenerator {
-	private static final String PROGRAM_VERSION = "0.1";
-
-    // The following attributes define the command-line arguments
-	@picard.cmdline.Usage
-    public String USAGE = getStandardUsagePreamble() + "Translocation breakpoint simulator." + PROGRAM_VERSION;
     @Option(doc="Number of genomic fragments to assemble", optional=true)
     public Integer FRAGMENTS = 1000;
     @Option(doc="Size of each fragment", optional=true)

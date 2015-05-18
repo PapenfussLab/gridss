@@ -19,7 +19,7 @@ import htsjdk.samtools.filter.SecondaryOrSupplementaryFilter;
 import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.metrics.MetricBase;
 import htsjdk.samtools.metrics.MetricsFile;
-import htsjdk.samtools.reference.MappedFastaSequenceFile;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
@@ -86,9 +86,9 @@ public class ProcessingContext implements Closeable {
 	}
 	private static ReferenceSequenceFile LoadReference(File ref) {
 		try {
-			ReferenceSequenceFile refToUse = new MappedFastaSequenceFile(ref);
+			ReferenceSequenceFile refToUse = new IndexedFastaSequenceFile(ref);
 			if (ref.length() > Runtime.getRuntime().maxMemory() / 2) {
-				log.error("Caching reference fasta in memory would require more than 50% of the memory allocated to the JVM. Reference sequence caching will not be performed. Execution will be very slow.");
+				log.error("Caching reference fasta in memory would require more than 50% of the memory allocated to the JVM. Allocate more memory to the JVM.");
 				throw new RuntimeException("Not enough memory to cache reference fasta.");
 			} else {
 				refToUse = new BufferedReferenceSequenceFile(refToUse);

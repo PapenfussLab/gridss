@@ -15,7 +15,7 @@ import com.google.common.collect.Lists;
 
 public class CigarUtilTest {
 	public static List<CigarElement> C(String cigar) {
-		return TextCigarCodec.getSingleton().decode(cigar).getCigarElements();
+		return TextCigarCodec.decode(cigar).getCigarElements();
 	}
 	@Test
 	public void encodeNegativeDeletion_should_convert_negD_to_xPxNxP() {

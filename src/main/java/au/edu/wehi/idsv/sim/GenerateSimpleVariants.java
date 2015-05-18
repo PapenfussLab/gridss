@@ -4,20 +4,18 @@ import htsjdk.samtools.util.IOUtil;
 
 import java.util.List;
 
+import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
-import picard.cmdline.Usage;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.vcf.SvType;
 
 import com.google.common.collect.Lists;
 
+@CommandLineProgramProperties(
+        usage = "Create a fasta containing structural variants of the requested types. Can simulate, insertion of random sequence, deletion, inversion, and tandem duplication.",  
+        usageShort = "Simple structural variant simulator"
+)
 public class GenerateSimpleVariants extends SimulationGenerator {
-
-    private static final String PROGRAM_VERSION = "0.1";
-
-    // The following attributes define the command-line arguments
-    @Usage
-    public String USAGE = getStandardUsagePreamble() + "Simple structural variant simulator" + PROGRAM_VERSION;
 
     @Option(doc="List of variants to insert. Valid variants are {INS, DEL, INV, DUP} for novel sequence insertion, deletion, inversion, and tandem duplication", optional=true)
     public List<SvType> TYPE = Lists.newArrayList(SvType.INS, SvType.DEL, SvType.INV, SvType.DUP);

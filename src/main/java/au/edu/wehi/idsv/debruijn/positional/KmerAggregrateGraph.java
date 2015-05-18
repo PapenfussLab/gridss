@@ -121,7 +121,7 @@ public class KmerAggregrateGraph implements DeBruijnGraph<KmerAggregateNode>, Di
 			if (intervals != null) {
 				Entry<Range<Integer>, Integer> entry = intervals.getEntry(node.startPosition() + delta);
 				if (entry != null) {
-					// assumes that the intervals have alread been split
+					// assumes that the intervals have already been split
 					assert(entry.getKey().lowerEndpoint() == node.startPosition() + delta);
 					assert(entry.getKey().upperEndpoint() == node.endPosition() + 1 + delta);
 					adj.add(new KmerAggregateNode(kmer, entry.getValue(), entry.getKey().lowerEndpoint(), entry.getKey().upperEndpoint()));

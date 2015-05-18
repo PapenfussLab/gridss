@@ -19,8 +19,8 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
+import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
-import picard.cmdline.Usage;
 import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
@@ -33,9 +33,12 @@ import com.google.common.collect.Lists;
  * @author Daniel Cameron
  *
  */
+@CommandLineProgramProperties(
+        usage = "Calls structural variations from one or more SAM/BAM input files.",  
+        usageShort = "Calls structural variations from NGS sequencing data"
+)
 public class Idsv extends CommandLineProgram {
 	private Log log = Log.getInstance(Idsv.class);
-	private static final String PROGRAM_VERSION = "0.1";
 	@Option(doc="Number of worker threads to spawn."
 			+ "CPU usage can be higher than the number of worker thread due to additional I/O threads",
     		shortName="THREADS")
@@ -43,8 +46,6 @@ public class Idsv extends CommandLineProgram {
     // The following attributes define the command-line arguments
 	@Option(doc="VCF containing true calls. Called variants will be annotated as true/false positive calls based on this truth file.", optional=true)
     public File TRUTH_VCF = null;
-    @Usage
-    public String USAGE = getStandardUsagePreamble() + "Calls structural variations from NGS sequencing data. " + PROGRAM_VERSION;
     @Option(doc = "Processing steps to execute",
             optional = true)
     public EnumSet<ProcessStep> STEPS = ProcessStep.ALL_STEPS;
