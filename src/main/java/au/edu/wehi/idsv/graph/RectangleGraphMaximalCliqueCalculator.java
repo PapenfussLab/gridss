@@ -19,8 +19,8 @@ import com.google.common.collect.ImmutableList;
  * Since total vertex weight is fixed, minimising number of cliques is equivalent to maximising average clique weight.
  * This an NP, see:
  * Greedy is good: An experimental study on minimum clique cover and maximum independent set problems for randomly generated rectangles
- * Finding the connected components and a maximum clique of an intersection graph of rectangles in the plane, Journal of Algorithms, Volume 4, Issue 4, December 1983, Pages 310–323
- * A note on maximum independent sets in rectangle intersection graphs, Information Processing Letters, Volume 89, Issue 1, 16 January 2004, Pages 19–23
+ * Finding the connected components and a maximum clique of an intersection graph of rectangles in the plane, Journal of Algorithms, Volume 4, Issue 4, December 1983, Pages 310-323
+ * A note on maximum independent sets in rectangle intersection graphs, Information Processing Letters, Volume 89, Issue 1, 16 January 2004, Pages 19-23
  * GREEDY MAXIMUM-CLIQUE DECOMPOSITIONS http://faculty.tru.ca/smcguinness/greedymaxclique.pdf (we want to decompose by removing vertices, not edges) 
  * 
  * @author Daniel Cameron
