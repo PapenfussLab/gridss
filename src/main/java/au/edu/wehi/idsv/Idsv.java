@@ -1,10 +1,6 @@
 package au.edu.wehi.idsv;
 
 import htsjdk.samtools.util.Log;
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.writer.VariantContextWriter;
-import htsjdk.variant.vcf.VCFConstants;
-import htsjdk.variant.vcf.VCFFileReader;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -22,7 +18,6 @@ import java.util.concurrent.TimeUnit;
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
 import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
@@ -186,6 +181,7 @@ public class Idsv extends CommandLineProgram {
 	    			new EvidenceToCsv(new File(getContext().getFileSystemContext().getIntermediateDirectory(OUTPUT), "evidence.csv")));
 	    		caller.callBreakends(threadpool);
 	    		caller.annotateBreakpoints(TRUTH_VCF);
+	    		caller.writeBreakpointBedpe(OUTPUT, new File(OUTPUT.toString() + ".bedpe"));
 	    	} finally {
 	    		if (caller != null) caller.close();
 	    	}
@@ -241,35 +237,6 @@ public class Idsv extends CommandLineProgram {
 			}
 		}
     }
-	private void hackOutputIndels() throws IOException {
-		log.info("DEBUGGING HACK: naive translation to INDEL calls");
-		VCFFileReader reader = new VCFFileReader(OUTPUT, false);
-		VariantContextWriter writer = getContext().getVariantContextWriter(new File(OUTPUT.toString() + ".indel.vcf"), true);
-		for (VariantContext vc : reader) {
-			IdsvVariantContext context = IdsvVariantContext.create(getContext(), null, vc);
-			if (context instanceof VariantContextDirectedBreakpoint) {
-				VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)context;
-				BreakpointSummary loc = bp.getBreakendSummary().getCallPosition();
-				if (loc.isLowBreakend() && loc.referenceIndex == loc.referenceIndex2 && loc.direction == BreakendDirection.Forward && loc.direction2 == BreakendDirection.Backward) {
-					int indelSize = loc.start - loc.start2;
-					indelSize += bp.getBreakpointSequenceString().length() + 1;
-					if (indelSize != 0) {
-						IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext(), context);
-						builder.attribute(VcfSvConstants.SV_LENGTH_KEY, indelSize);
-						builder.attribute(VcfSvConstants.SV_TYPE_KEY, indelSize < 0 ? "DEL" : "INS");
-						builder.attribute("ALT", bp.getAlternateAllele(0).getDisplayString());
-						builder.alleles("N", indelSize < 0 ? "<DEL>" : "<INS>");
-						builder.start(loc.start);
-						builder.stop(loc.start2);
-						builder.attribute(VCFConstants.END_KEY, loc.start2);
-						writer.add(builder.make());
-					}
-				}
-			}
-		}
-		reader.close();
-		writer.close();
-	}
 	public static void main(String[] argv) {
         System.exit(new Idsv().instanceMain(argv));
     }

@@ -57,7 +57,7 @@ Variant calling output file. Can be VCF or BCF.
 
 #### REFERENCE
 
-Reference genome fasta file. As the entire 
+Reference genome fasta file. Note that gridss caches the entire reference genome in memory so ensure that the working memory available to gridss comfortably exceeds the reference genome size.
 
 #### INPUT
 
@@ -81,7 +81,9 @@ When alignment is required to continue processing, gridss will write a script fo
 
 #### PER_CHR
 
-Flags whether processing should be performed in parallel for each chromosome, or serially for each file. If your input files are small, 
+Flags whether processing should be performed in parallel for each chromosome, or serially for each file.
+If your input files are small, or you have a limited number of file handles available, `PER_CHR=false` will
+reduce the number of intermediate files created, at the cost of reduced parallelism.
 
 #### TODO
 
@@ -91,11 +93,15 @@ TODO: complete rest of flags
 
 # Output
 
-Gridss is fundamentally a structural variantion breakpoint caller. Variants are output as VCF breakends. Each call is a breakpoint consisting of two breakends, one from location A to location B, and a reciprocal record from location B back to A. Note that although each record fully defines the call, the VCF format required both breakend to be written as separate record.
+Gridss is fundamentally a structural variation breakpoint caller. Variants are output as VCF breakends. Each call is a breakpoint consisting of two breakends, one from location A to location B, and a reciprocal record from location B back to A. Note that although each record fully defines the call, the VCF format required both breakend to be written as separate record.
 
 ## Quality score
 
-Gridss calculates quality scores according to the model outlined in [paper]. As gridss does not yet perform multiple test correction or score recalibration, **QUAL scores are vastly overestimated for all variants**. As a rule of thumb, variants with QUAL >= 500 and have assembles from both sides of the breakpoint (AS > 0 & RAS > 0) are considered HIGH quality, variant with QUAL >= 250 but can only be assembled from one breakend (AS > 0 | RAS > 0) are considered MEDIUM quality, and variants with low QUAL score or lack any supporting assemblies are considered LOW quality.
+Gridss calculates quality scores according to the model outlined in [paper].
+As gridss does not yet perform multiple test correction or score recalibration, **QUAL scores are vastly overestimated for all variants**.
+As a rule of thumb, variants with QUAL >= 500 and have assembles from both sides of the breakpoint (AS > 0 & RAS > 0) are considered HIGH quality,
+variant with QUAL >= 250 but can only be assembled from one breakend (AS > 0 | RAS > 0) are considered MEDIUM quality,
+and variants with low QUAL score or lack any supporting assemblies are considered LOW quality.
 
 ## Non-standard INFO fields
 
