@@ -12,12 +12,6 @@ import com.google.common.collect.Lists;
 
 
 public class VariantContextDirectedBreakpointTest extends TestHelper {
-	public VariantContextDirectedBreakpoint BP(String id, BreakpointSummary bp) {
-		IdsvVariantContextBuilder builder = minimalBreakend()
-				.breakpoint(bp, "");
-		builder.id(id);
-		return (VariantContextDirectedBreakpoint)builder.make();
-	}
 	@Test
 	public void ByRemoteBreakendLocationStart_should_sort_by_remote_breakend() {
 		List<VariantContextDirectedBreakpoint> list = Lists.newArrayList(

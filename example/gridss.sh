@@ -28,8 +28,7 @@ fi
 
 exec_gridss() {
 	if [[ -f $OUTPUT ]] ; then
-		echo "Found $OUTPUT. Not reprocessing."
-		exit 0
+		return
 	fi
 	rm -f realign.sh
 	java \
@@ -56,3 +55,15 @@ exec_gridss() {
 exec_gridss pass1
 exec_gridss pass2
 exec_gridss pass3
+
+if [[ -f $OUTPUT ]] ; then
+	java \
+		-ea \
+		-Xmx16g \
+		-cp ../target/gridss-*-SNAPSHOT-jar-with-dependencies.jar \
+		au.edu.wehi.idsv.VcfBreakendToBedpe \
+		INPUT="$OUTPUT" \
+		OUTPUT="${OUTPUT/.vcf/.bedpe}" \
+		REFERENCE="$REFERENCE"
+		
+fi

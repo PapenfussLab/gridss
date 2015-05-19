@@ -138,6 +138,13 @@ public class TestHelper {
 		return builder;
 	}
 
+	public VariantContextDirectedBreakpoint BP(String id, BreakpointSummary bp) {
+		IdsvVariantContextBuilder builder = minimalBreakend()
+				.breakpoint(bp, "");
+		builder.id(id);
+		return (VariantContextDirectedBreakpoint)builder.make();
+	}
+	
 	static public SAMFileHeader getHeader() {
 		SAMFileHeader header = new SAMFileHeader();
 		header.setSequenceDictionary(getSequenceDictionary());
@@ -448,7 +455,6 @@ public class TestHelper {
 		clean(read1, read2);
 		return new SAMRecord[] { read1, read2 };
 	}
-
 	/**
 	 * Fills in missing information from the given read
 	 * 

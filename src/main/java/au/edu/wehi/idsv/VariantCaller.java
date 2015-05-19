@@ -233,32 +233,6 @@ public class VariantCaller extends EvidenceProcessorBase {
 			CloserUtil.close(evidenceIt);
 		}
 	}
-	public void writeBreakpointBedpe(File vcf, File bedpe) throws IOException {
-		File working = FileSystemContext.getWorkingFileFor(bedpe);
-		CloseableIterator<IdsvVariantContext> it = null;
-		BedpeWriter writer = null;
-		try {
-			it = getVariants(vcf);
-			writer = new BedpeWriter(processContext.getDictionary(), working);
-			while (it.hasNext()) {
-				IdsvVariantContext variant = it.next();
-				if (variant instanceof VariantContextDirectedBreakpoint) {
-					VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)variant;
-					if (bp.getBreakendSummary().isLowBreakend()) {
-						writer.write(bp);
-					}
-				}
-			}
-			it.close();
-			writer.close();
-			FileHelper.move(working, bedpe, false);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		} finally {
-			CloserUtil.close(it);
-			CloserUtil.close(writer);
-		}
-	}
 	public ReferenceCoverageLookup getReferenceLookup(List<SAMEvidenceSource> input, int windowSize) {
 		List<ReferenceCoverageLookup> lookup = Lists.newArrayList();
 		for (SAMEvidenceSource s : input) {

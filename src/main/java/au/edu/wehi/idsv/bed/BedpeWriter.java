@@ -31,9 +31,8 @@ public class BedpeWriter implements Closeable {
 	public BedpeWriter(SAMSequenceDictionary dictionary, OutputStream stream) throws IOException {
 		this.dict = dictionary;
 		this.os = new BufferedOutputStream(stream);
-		writeHeader();
 	}
-	private void writeHeader() throws IOException {
+	public void writeHeader() throws IOException {
 		os.write((
 				"#" +
 				"chrom1" + "\t" +
@@ -64,10 +63,10 @@ public class BedpeWriter implements Closeable {
 	public void write(VariantContextDirectedBreakpoint variant) throws IOException {
 		BreakpointSummary bp = variant.getBreakendSummary();
 		StringBuilder sb = new StringBuilder();
-		sb.append(dict.getSequence(bp.referenceIndex).getSequenceLength());
+		sb.append(dict.getSequence(bp.referenceIndex).getSequenceName());
 		sb.append('\t'); sb.append(Integer.toString(bp.start - 1));
 		sb.append('\t'); sb.append(Integer.toString(bp.end - 1));
-		sb.append('\t'); sb.append(dict.getSequence(bp.referenceIndex2).getSequenceLength());
+		sb.append('\t'); sb.append(dict.getSequence(bp.referenceIndex2).getSequenceName());
 		sb.append('\t'); sb.append(Integer.toString(bp.start2 - 1));
 		sb.append('\t'); sb.append(Integer.toString(bp.end2 - 1));
 		sb.append('\t'); sb.append(variant.getID());

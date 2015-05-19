@@ -15,6 +15,10 @@ import com.google.common.collect.Ordering;
 import com.google.common.primitives.Bytes;
 
 public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvidence implements DirectedBreakpoint {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	public VariantContextDirectedBreakpoint(ProcessingContext processContext, EvidenceSource source, VariantContext context) {
 		super(processContext, source, context);
 		assert(super.getBreakendSummary() instanceof BreakpointSummary);

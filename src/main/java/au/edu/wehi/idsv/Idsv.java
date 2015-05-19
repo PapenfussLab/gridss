@@ -181,7 +181,6 @@ public class Idsv extends CommandLineProgram {
 	    			new EvidenceToCsv(new File(getContext().getFileSystemContext().getIntermediateDirectory(OUTPUT), "evidence.csv")));
 	    		caller.callBreakends(threadpool);
 	    		caller.annotateBreakpoints(TRUTH_VCF);
-	    		caller.writeBreakpointBedpe(OUTPUT, new File(OUTPUT.toString() + ".bedpe"));
 	    	} finally {
 	    		if (caller != null) caller.close();
 	    	}
