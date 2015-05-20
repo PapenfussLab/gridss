@@ -4,6 +4,7 @@ import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
 
@@ -26,7 +27,7 @@ public class VcfBreakendToBedpeTest extends IntermediateFilesTest {
 		vcw.close();
 	}
 	private List<List<String>> parse() throws IOException {
-		return Lists.transform(Files.readAllLines(bedpe().toPath()), new Function<String, List<String>>() {
+		return Lists.transform(Files.readAllLines(bedpe().toPath(), StandardCharsets.US_ASCII), new Function<String, List<String>>() {
 			@Override
 			public List<String> apply(String input) {
 				return Lists.newArrayList(input.split("\\s"));
