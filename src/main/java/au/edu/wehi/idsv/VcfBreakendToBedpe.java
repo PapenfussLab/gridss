@@ -23,16 +23,18 @@ import au.edu.wehi.idsv.util.FileHelper;
         		+ "Gridss breakpoint fields, if present, are stored in the optional columns. ",  
         usageShort = "Converts VCF breakend calls to BEDPE format."
 )
-public class VcfBreakendToBedpe extends CommandLineProgram {
+public class VcfBreakendToBedpe extends picard.cmdline.CommandLineProgram {
 	private Log log = Log.getInstance(VcfBreakendToBedpe.class);
 	@Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="VCF containing structural variation breakend calls")
     public File INPUT;
 	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="BEDPE output file")
     public File OUTPUT;
-	@Option(doc="Inlcude VCF filtered calls in output.")
+	@Option(doc="Include VCF filtered calls in output.")
 	public boolean INCLUDE_FILTERED = false;
 	@Option(shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME, doc="Reference used for alignment")
     public File REFERENCE;
+	@Option(doc="Inlcude header line with column names.")
+	public boolean INCLUDE_HEADER = false;
 	@Override
 	protected int doWork() {
 		if (TMP_DIR == null || TMP_DIR.size() == 0) {
@@ -40,14 +42,14 @@ public class VcfBreakendToBedpe extends CommandLineProgram {
 		}
 		try {
 			ProcessingContext pc = new ProcessingContext(new FileSystemContext(TMP_DIR.get(0), MAX_RECORDS_IN_RAM), null, null, null, null, null, null, REFERENCE, false, false);
-			writeBreakpointBedpe(pc, INPUT, OUTPUT, INCLUDE_FILTERED);
+			writeBreakpointBedpe(pc, INPUT, OUTPUT, INCLUDE_FILTERED, INCLUDE_HEADER);
 		} catch (IOException e) {
 			log.error(e);
 			return -1;
 		}
 		return 0;
 	}
-	public static void writeBreakpointBedpe(ProcessingContext pc, File vcf, File bedpe, boolean includeFiltered) throws IOException {
+	public static void writeBreakpointBedpe(ProcessingContext pc, File vcf, File bedpe, boolean includeFiltered, boolean includeHeader) throws IOException {
 		File working = FileSystemContext.getWorkingFileFor(bedpe);
 		VCFFileReader vcfReader = null;
 		CloseableIterator<VariantContext> it = null; 
@@ -56,6 +58,9 @@ public class VcfBreakendToBedpe extends CommandLineProgram {
 			vcfReader = new VCFFileReader(vcf, false);
 			it = vcfReader.iterator();
 			writer = new BedpeWriter(pc.getDictionary(), working);
+			if (includeHeader) {
+				writer.writeHeader();
+			}
 			while (it.hasNext()) {
 				IdsvVariantContext variant = IdsvVariantContext.create(pc, null, it.next());
 				if (variant instanceof VariantContextDirectedBreakpoint) {
@@ -75,4 +80,7 @@ public class VcfBreakendToBedpe extends CommandLineProgram {
 			CloserUtil.close(vcfReader);
 		}
 	}
+	public static void main(String[] argv) {
+        System.exit(new VcfBreakendToBedpe().instanceMain(argv));
+    }
 }
