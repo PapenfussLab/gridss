@@ -35,6 +35,10 @@ public class VcfBreakendToBedpe extends picard.cmdline.CommandLineProgram {
     public File REFERENCE;
 	@Option(doc="Inlcude header line with column names.")
 	public boolean INCLUDE_HEADER = false;
+	@Option(shortName="LOW", doc="Write record at breakend with lower genomic coordinate")
+	public boolean INCLUDE_LOW_BREAKEND = true;
+	@Option(shortName="HIGH", doc="Write record at breakend with higher genomic coordinate")
+	public boolean INCLUDE_HIGH_BREAKEND = false;
 	@Override
 	protected int doWork() {
 		if (TMP_DIR == null || TMP_DIR.size() == 0) {
@@ -42,14 +46,17 @@ public class VcfBreakendToBedpe extends picard.cmdline.CommandLineProgram {
 		}
 		try {
 			ProcessingContext pc = new ProcessingContext(new FileSystemContext(TMP_DIR.get(0), MAX_RECORDS_IN_RAM), null, null, null, null, null, null, REFERENCE, false, false);
-			writeBreakpointBedpe(pc, INPUT, OUTPUT, INCLUDE_FILTERED, INCLUDE_HEADER);
+			writeBreakpointBedpe(pc, INPUT, OUTPUT, INCLUDE_FILTERED, INCLUDE_HEADER, INCLUDE_LOW_BREAKEND, INCLUDE_HIGH_BREAKEND);
 		} catch (IOException e) {
 			log.error(e);
 			return -1;
 		}
 		return 0;
 	}
-	public static void writeBreakpointBedpe(ProcessingContext pc, File vcf, File bedpe, boolean includeFiltered, boolean includeHeader) throws IOException {
+	public static void writeBreakpointBedpe(ProcessingContext pc, File vcf, File bedpe, boolean includeFiltered, boolean includeHeader, boolean writeLow, boolean writeHigh) throws IOException {
+		if (!writeLow && !writeHigh) {
+			throw new IllegalArgumentException("No breakends to be written. At least one of {LOW, HIGH} breakends should be specified");
+		}
 		File working = FileSystemContext.getWorkingFileFor(bedpe);
 		VCFFileReader vcfReader = null;
 		CloseableIterator<VariantContext> it = null; 
@@ -65,7 +72,12 @@ public class VcfBreakendToBedpe extends picard.cmdline.CommandLineProgram {
 				IdsvVariantContext variant = IdsvVariantContext.create(pc, null, it.next());
 				if (variant instanceof VariantContextDirectedBreakpoint) {
 					VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)variant;
-					if (bp.getBreakendSummary().isLowBreakend()) {
+					if (bp.getBreakendSummary().isLowBreakend() && writeLow) {
+						if (!bp.isFiltered() || includeFiltered) {
+							writer.write(bp);
+						}
+					}
+					if (bp.getBreakendSummary().isHighBreakend() && writeHigh) {
 						if (!bp.isFiltered() || includeFiltered) {
 							writer.write(bp);
 						}
