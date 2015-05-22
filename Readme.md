@@ -49,47 +49,52 @@ If libsswjni.so cannot be loaded, gridss will fall back to a slower java impleme
 
 Gridss has a large number of parameters that can be be adjusted. The default parameter set has been tested with paired-end illumina data ranging from 2x36bp to 2x250bp and should give a reasonably good.
 
-### command-line parameters
+Commonly used parameter are listed below, a full list and description of all command-line parameters available with the -h or --help flags.
+Debugging/internal usage parameters (for operations such as export of de Bruijn graphs to .gexf) are documented in `Defaults.java`.
 
-#### OUTPUT
+### OUTPUT (Required)
 
 Variant calling output file. Can be VCF or BCF.
 
-#### REFERENCE
+### REFERENCE (Required)
 
 Reference genome fasta file. Note that gridss caches the entire reference genome in memory so ensure that the working memory available to gridss comfortably exceeds the reference genome size.
 
-#### INPUT
+### INPUT (Required)
 
 Input libraries. Specify multiple times (ie INPUT=file1.bam INPUT=file2.bam INPUT=file3.bam ) to process multiple libraries together. Gridss considers all reads in each file to come from a single library. BAMs containing read groups from multiple different libraries should be split into per-library
 
-#### INPUT_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE, INPUT_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE
+### INPUT_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE, INPUT_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE
 
 Per INPUT overrides of the default concordant fragment size calculation. If your fragment size distribution is unusual, this option can be used to override the.
 
-#### INPUT_TUMOUR
+### INPUT_TUMOUR
 
 Same as INPUT, but used for tumour/normal processing. The somatic P-value (SPV INFO field) is calculated based on total INPUT evidence vs INPUT_TUMOUR evidence.
 
-#### INPUT_TUMOUR_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE, INPUT_TUMOUR_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE
+### INPUT_TUMOUR_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE, INPUT_TUMOUR_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE
 
 Matching INPUT_TUMOUR overrides for INPUT_READ_PAIR_MIN/MAX_CONCORDANT_FRAGMENT_SIZE.
 
-#### SCRIPT
+### SCRIPT
 
 When alignment is required to continue processing, gridss will write a script for the alignments required to this file as well as stderr.
 
-#### PER_CHR
+### PER_CHR
 
 Flags whether processing should be performed in parallel for each chromosome, or serially for each file.
 If your input files are small, or you have a limited number of file handles available, `PER_CHR=false` will
 reduce the number of intermediate files created, at the cost of reduced parallelism.
 
-#### TODO
+### WORKING_DIR
 
-TODO: complete rest of flags
+Directory to write intermediate results directories. By default, intermediate files for each input or output file are written to a subdirectory in the same directory as the relevant input or output file.
+If WORKING_DIR is set, all intermediate results are written to subdirectories of the given directory.
 
-### Java defines
+### TMP_DIR
+
+This field is a standard Picard tools argument and carries the usual meaning. Temporary files created during processes such as sort are written to this directory.
+
 
 # Output
 
@@ -106,3 +111,18 @@ and variants with low QUAL score or lack any supporting assemblies are considere
 ## Non-standard INFO fields
 
 Gridss writes a number of non-standard VCF fields. These fields are described in the VCF header.
+
+
+## BEDPE
+
+Gridss supports conversion of VCF to BEDPE format using the VcfBreakendToBedpe utility program included in the gridss jar.
+
+Calling VcfBreakendToBedpe with `INCLUDE_HEADER=true` will include a header containing column names in the bedpe file. These fields match the VCF INFO fields of the same name. For bedpe output, breakend information is not exported and per category totals (such as split read counts) are aggregrated to a single value.
+
+
+
+
+
+
+
+
