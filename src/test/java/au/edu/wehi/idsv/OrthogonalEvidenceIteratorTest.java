@@ -23,10 +23,40 @@ public class OrthogonalEvidenceIteratorTest extends TestHelper {
 		DirectedEvidence e3 = SCE(FWD, Read(0, 10, "1M12S"));
 		DirectedEvidence e4 = SCE(FWD, Read(0, 100, "1M12S"));
 		AssemblyEvidence a1 = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Lists.transform(Lists.newArrayList(e1, e2, e3), EID), 0, 10, 1, B("TT"), B("TT"), new int[] {0, 0});
-		List<DirectedEvidence> result = Lists.newArrayList(new OrthogonalEvidenceIterator(getContext().getLinear(), Lists.newArrayList(e0, e1, e2, e3, a1, e4).iterator(), 2));
+		List<DirectedEvidence> result = Lists.newArrayList(new OrthogonalEvidenceIterator(getContext().getLinear(), Lists.newArrayList(e0, e1, e2, e3, a1, e4).iterator(), 2, false));
 		assertTrue(result.contains(e0));
 		assertTrue(result.contains(e4));
 		assertTrue(result.contains(a1));
+	}
+	@Test
+	public void should_hydrate_all_assemblies() {
+		DirectedEvidence e0 = SCE(FWD, Read(0, 1, "1M12S"));
+		DirectedEvidence e1 = SCE(FWD, Read(0, 10, "1M10S"));
+		DirectedEvidence e2 = SCE(FWD, Read(0, 10, "1M11S"));
+		DirectedEvidence e3 = SCE(FWD, Read(0, 10, "1M12S"));
+		DirectedEvidence e4 = SCE(FWD, Read(0, 100, "1M12S"));
+		AssemblyEvidence a1 = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Lists.transform(Lists.newArrayList(e2, e3), EID), 0, 10, 1, B("TT"), B("TT"), new int[] {0, 0});
+		AssemblyEvidence a2 = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Lists.transform(Lists.newArrayList(e1, e2), EID), 0, 11, 1, B("TT"), B("TT"), new int[] {0, 0});
+		List<DirectedEvidence> result = Lists.newArrayList(new OrthogonalEvidenceIterator(getContext().getLinear(), Lists.newArrayList(e0, e1, e2, e3, a1, a2, e4).iterator(), 1000, true));
+		assertEquals(2, result.size());
+		assertEquals(2, ((SAMRecordAssemblyEvidence)result.get(0)).getEvidence().size());
+		assertEquals(2, ((SAMRecordAssemblyEvidence)result.get(1)).getEvidence().size());
+		assertTrue(((SAMRecordAssemblyEvidence)result.get(0)).getEvidence().contains(e3));
+		assertTrue(((SAMRecordAssemblyEvidence)result.get(0)).getEvidence().contains(e2));
+		assertTrue(((SAMRecordAssemblyEvidence)result.get(0)).getEvidence().contains(e3));
+		assertTrue(((SAMRecordAssemblyEvidence)result.get(1)).getEvidence().contains(e1));
+		assertTrue(((SAMRecordAssemblyEvidence)result.get(1)).getEvidence().contains(e2));
+	}
+	@Test
+	public void assembliesOnly_should_not_output_nonassembly_evidence() {
+		DirectedEvidence e0 = SCE(FWD, Read(0, 1, "1M12S"));
+		DirectedEvidence e1 = SCE(FWD, Read(0, 10, "1M10S"));
+		DirectedEvidence e2 = SCE(FWD, Read(0, 10, "1M11S"));
+		DirectedEvidence e3 = SCE(FWD, Read(0, 10, "1M12S"));
+		DirectedEvidence e4 = SCE(FWD, Read(0, 100, "1M12S"));
+		AssemblyEvidence a1 = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Lists.transform(Lists.newArrayList(e1, e2, e3), EID), 0, 10, 1, B("TT"), B("TT"), new int[] {0, 0});
+		List<DirectedEvidence> result = Lists.newArrayList(new OrthogonalEvidenceIterator(getContext().getLinear(), Lists.newArrayList(e0, e1, e2, e3, a1, e4).iterator(), 2, true));
+		assertEquals(1, result.size());
 	}
 	@Test
 	public void should_remove_component_evidence() {
@@ -36,7 +66,7 @@ public class OrthogonalEvidenceIteratorTest extends TestHelper {
 		DirectedEvidence e3 = SCE(FWD, Read(0, 10, "1M12S"));
 		DirectedEvidence e4 = SCE(FWD, Read(0, 100, "1M12S"));
 		AssemblyEvidence a1 = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Lists.transform(Lists.newArrayList(e1, e2, e3), EID), 0, 10, 1, B("TT"), B("TT"), new int[] {0, 0});
-		List<DirectedEvidence> result = Lists.newArrayList(new OrthogonalEvidenceIterator(getContext().getLinear(), Lists.newArrayList(e0, e1, e2, e3, a1, e4).iterator(), 2));
+		List<DirectedEvidence> result = Lists.newArrayList(new OrthogonalEvidenceIterator(getContext().getLinear(), Lists.newArrayList(e0, e1, e2, e3, a1, e4).iterator(), 2, false));
 		assertFalse(result.contains(e1));
 		assertFalse(result.contains(e2));
 		assertFalse(result.contains(e3));
@@ -50,7 +80,7 @@ public class OrthogonalEvidenceIteratorTest extends TestHelper {
 		DirectedEvidence e4 = SCE(FWD, Read(0, 100, "1M12S"));
 		SAMRecordAssemblyEvidence a1 = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Lists.transform(Lists.newArrayList(e1, e2, e3), EID), 0, 10, 1, B("TT"), B("TT"),new int[] {0, 0});
 		a1 = AssemblyFactory.hydrate(AES(), a1.getBackingRecord());
-		List<DirectedEvidence> result = Lists.newArrayList(new OrthogonalEvidenceIterator(getContext().getLinear(), Lists.newArrayList(e0, e1, e2, e3, a1, e4).iterator(), 2));
+		List<DirectedEvidence> result = Lists.newArrayList(new OrthogonalEvidenceIterator(getContext().getLinear(), Lists.newArrayList(e0, e1, e2, e3, a1, e4).iterator(), 2, false));
 		assertFalse(result.contains(e1));
 		assertFalse(result.contains(e2));
 		assertFalse(result.contains(e3));
@@ -65,7 +95,7 @@ public class OrthogonalEvidenceIteratorTest extends TestHelper {
 		DirectedEvidence e4 = SCE(FWD, Read(0, 100, "1M12S"));
 		AssemblyEvidence a1 = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Lists.transform(Lists.newArrayList(e1, e2, e3), EID), 0, 10, 1, B("TT"), B("TT"), new int[] {0, 0});
 		a1.filterAssembly(VcfFilter.SMALL_INDEL);
-		List<DirectedEvidence> result = Lists.newArrayList(new OrthogonalEvidenceIterator(getContext().getLinear(), Lists.newArrayList(e0, e1, e2, e3, a1, e4).iterator(), 2));
+		List<DirectedEvidence> result = Lists.newArrayList(new OrthogonalEvidenceIterator(getContext().getLinear(), Lists.newArrayList(e0, e1, e2, e3, a1, e4).iterator(), 2, false));
 		assertTrue(result.contains(e1));
 		assertTrue(result.contains(e2));
 		assertTrue(result.contains(e3));
@@ -78,9 +108,9 @@ public class OrthogonalEvidenceIteratorTest extends TestHelper {
 		List<DirectedEvidence> list = new ArrayList<DirectedEvidence>();
 		for (int i = 1; i <= 1000; i++) {
 			list.add(SoftClipEvidence.create(ses, FWD, Read(0, i, "1M10S"), null));
-			list.add(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 0, i, 1, B("TT"), B("TT"),new int[] {0, 0}));
+			list.add(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 0, i, 1, B("TT"), B("TT"), new int[] {0, 0}));
 		}
-		List<DirectedEvidence> result = Lists.newArrayList(new OrthogonalEvidenceIterator(pc.getLinear(), list.iterator(), 10));
+		List<DirectedEvidence> result = Lists.newArrayList(new OrthogonalEvidenceIterator(pc.getLinear(), list.iterator(), 10, false));
 		for (int i = 1; i < result.size(); i++) {
 			assertTrue(DirectedEvidence.ByStartEnd.compare(result.get(i-1), result.get(i)) <= 0);
 		}

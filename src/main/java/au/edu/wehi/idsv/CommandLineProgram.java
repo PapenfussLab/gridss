@@ -71,7 +71,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     @Option(shortName="K", doc = "k-mer used for de bruijn graph construction", optional=true)
     // --- De Bruijn assembly parameters ---
     public int ASSEMBLY_DEBRUIJN_KMER = new AssemblyParameters().k;
-    @Option(doc = "Assemble soft clips both at the read mapping location and the soft clip realignment location.", optional=true)
+    @Option(doc = "Assemble split reads at both the read mapping location and the soft clip realignment location.", optional=true)
     public boolean ASSEMBLY_INCLUDE_REMOTE_SOFT_CLIPS = new AssemblyParameters().includeRemoteSoftClips;
     // --- De Bruijn assembly parameters ---
     @Option(doc = "Maximum of base mismatches for de bruijn kmer paths to be merged", optional=true)

@@ -29,5 +29,10 @@ public interface AssemblyEvidence extends DirectedEvidence {
 	void filterAssembly(VcfFilter reason);
 	boolean isPartOfAssembly(DirectedEvidence evidence);
 	Collection<DirectedEvidence> getEvidence();
+	/**
+	 * Gets evidenceIDs of evidence used to construct the assembly
+	 * @return
+	 */
+	Collection<String> getEvidenceIDs();
 	int getAssemblySupportCountRemote(EvidenceSubset subset);
 }

@@ -68,16 +68,18 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 * 
 	 */
 	private Set<String> evidenceIds = null;
-	private void ensureEvidenceIDs() {
+	@Override
+	public Collection<String> getEvidenceIDs() {
 		if (evidenceIds == null) {
 			Object value = record.getAttribute(SamTags.ASSEMBLY_COMPONENT_EVIDENCEID);
-			if (value instanceof String) {
+			if (value instanceof String && StringUtils.isNotEmpty((String)value)) {
 				String[] ids = ((String)value).split(COMPONENT_EVIDENCEID_SEPARATOR);
 				evidenceIds = Sets.newHashSet(ids);
 			} else {
 				evidenceIds = Sets.newHashSet();
 			}
 		}
+		return evidenceIds;
 	}
 	/**
 	 * Determines whether the given record is part of the given assembly
@@ -89,8 +91,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 * @return true if the record is likely part of the breakend, false if definitely not
 	 */
 	public boolean isPartOfAssembly(DirectedEvidence e) {
-		ensureEvidenceIDs();
-		return evidenceIds.contains(e.getEvidenceID());
+		return getEvidenceIDs().contains(e.getEvidenceID());
 	}
 	/**
 	 * Hydrates the given evidence back into the assembly evidence set
@@ -179,16 +180,16 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		r.setAttribute(SamTags.ASSEMBLY_NONSUPPORTING_QUAL, nsQual);
 	}
 	public Collection<DirectedEvidence> getEvidence() {
-		ensureEvidenceIDs();
+		Collection<String> ids = getEvidenceIDs();
 		if (evidenceIds != null) {
-			if (evidence.size() < evidenceIds.size()) {
+			if (evidence.size() < ids.size()) {
 				if (this instanceof RealignedRemoteSAMRecordAssemblyEvidence) {
 					// We don't expect rehydration of short SC, OEA, or alternatively mapped evidence at remote position 
 				} else {
 					log.debug(String.format("Expected %d, found %d support for %s %s%s", evidenceIds.size(), evidence.size(), getEvidenceID(), debugEvidenceMismatch(), debugEvidenceIDsMssingFromEvidence()));
 				}
 			}
-			if (evidence.size() > evidenceIds.size()) {
+			if (evidence.size() > ids.size()) {
 				// Don't throw exception as the user can't actually do anything about this
 				// Just continue with as correct results as we can manage
 				log.debug(String.format("Expected %d, found %d support for %s %s%s", evidenceIds.size(), evidence.size(), getEvidenceID(), debugEvidenceMismatch(), debugEvidenceIDsMssingFromEvidence()));
@@ -397,8 +398,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		return AttributeConverter.asIntSumTN(record.getAttribute(SamTags.ASSEMBLY_BASE_COUNT), subset);
 	}
 	public int getAssemblySupportCount() {
-		ensureEvidenceIDs();
-		return evidenceIds.size();
+		return getEvidenceIDs().size();
 	}
 	@Override
 	public int getAssemblySupportCountReadPair(EvidenceSubset subset) {

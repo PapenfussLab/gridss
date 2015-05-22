@@ -51,7 +51,7 @@ public class IntervalBed {
 		BEDCodec codec = new BEDCodec();
 	    try (AbstractFeatureReader<BEDFeature, LineIterator> reader = AbstractFeatureReader.getFeatureReader(bed.getAbsolutePath(), codec, false)) {
 			for (BEDFeature feat : reader.iterator()) {
-				String chr = feat.getChr();
+				String chr = feat.getContig();
 				int start = feat.getStart();
 				int end = feat.getEnd();
 				int referenceIndex = dictionary.getSequenceIndex(chr);

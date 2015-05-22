@@ -56,9 +56,8 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 	public CreateAssemblyReadPair(final ProcessingContext processContext, final AssemblyEvidenceSource source, final List<SAMEvidenceSource> samEvidence) {
 		super(processContext);
 		this.source = source;
-		this.header = new SAMFileHeader() {{
-			setSequenceDictionary(processContext.getReference().getSequenceDictionary());
-		}};
+		this.header = new SAMFileHeader();
+		header.setSequenceDictionary(processContext.getReference().getSequenceDictionary());
 		this.aa = new AssemblyAnnotator(processContext, samEvidence, source);
 	}
 	private class AssemblyAnnotator extends EvidenceProcessorBase {
@@ -71,7 +70,7 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 		}
 		public CloseableIterator<SAMRecordAssemblyEvidence> annotatedAssembliesIterator() {
 			CloseableIterator<DirectedEvidence> rawit = getAllEvidence(true, false, true, true, true, true);
-			OrthogonalEvidenceIterator annotatedIt = new OrthogonalEvidenceIterator(processContext.getLinear(), rawit, source.getAssemblyWindowSize());
+			OrthogonalEvidenceIterator annotatedIt = new OrthogonalEvidenceIterator(processContext.getLinear(), rawit, source.getAssemblyWindowSize(), true);
 			UnmodifiableIterator<SAMRecordAssemblyEvidence> filteredIt = Iterators.filter(annotatedIt, SAMRecordAssemblyEvidence.class);
 			Iterator<SAMRecordAssemblyEvidence> it = Iterators.transform(filteredIt, new Function<SAMRecordAssemblyEvidence, SAMRecordAssemblyEvidence> () {
 				@Override

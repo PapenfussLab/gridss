@@ -4,26 +4,33 @@ import java.util.Iterator;
 import java.util.PriorityQueue;
 
 import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.HashMultimap;
 
 /**
- * Filters sorted evidence such that all raw evidence contributing to an assembly is replaced by
- * the assembly 
+ * Hydrates assemblies and filters evidence contributing to an assembly
  * @author cameron.d
  *
  */
 public class OrthogonalEvidenceIterator extends AbstractIterator<DirectedEvidence> {
 	private final Iterator<DirectedEvidence> it;
 	private final int assemblyWindowSize;
+	private final boolean assembliesOnly;
 	private final LinearGenomicCoordinate linear;
-	private final PriorityQueue<AssemblyEvidence> assemblyLookup = new PriorityQueue<AssemblyEvidence>(64, DirectedEvidence.ByStartEnd);
+	private final PriorityQueue<AssemblyEvidence> assemblyQueue = new PriorityQueue<AssemblyEvidence>(64, DirectedEvidence.ByStartEnd);
 	private final PriorityQueue<DirectedEvidence> nonAssemblyQueue = new PriorityQueue<DirectedEvidence>(1024, DirectedEvidence.ByStartEnd); 
 	private final PriorityQueue<DirectedEvidence> outputQueue = new PriorityQueue<DirectedEvidence>(1024, DirectedEvidence.ByStartEnd);
+	/**
+	 * Cache mapping evidence to assembly. Values are either AssemblyEvidence, or List<AssemblyEvidence> depending on how many assemblies
+	 * the evidence participates in.
+	 */
+	private final HashMultimap<String, AssemblyEvidence> assemblyEvidenceLookup = HashMultimap.create(1204, 1);
 	private long linearPosition;
-	private DirectedEvidence lastEmitted = null;
-	public OrthogonalEvidenceIterator(LinearGenomicCoordinate linear, Iterator<DirectedEvidence> it, int assemblyWindowSize) {
+	private DirectedEvidence lastEmitted = null;	
+	public OrthogonalEvidenceIterator(LinearGenomicCoordinate linear, Iterator<DirectedEvidence> it, int assemblyWindowSize, boolean assembliesOnly) {
 		this.linear = linear;
 		this.it = it;
 		this.assemblyWindowSize = assemblyWindowSize;
+		this.assembliesOnly = assembliesOnly;
 	}
 	private boolean outputReady() {
 		return !outputQueue.isEmpty() && linear.getStartLinearCoordinate(outputQueue.peek().getBreakendSummary()) < linearPosition - getWindowSize();
@@ -67,24 +74,25 @@ public class OrthogonalEvidenceIterator extends AbstractIterator<DirectedEvidenc
 		while (!nonAssemblyQueue.isEmpty() && linear.getStartLinearCoordinate(nonAssemblyQueue.peek().getBreakendSummary()) + getEvidenceWindowSize() < linearPosition) {
 			outputOrthogonalNonAssembly(nonAssemblyQueue.poll());
 		}
-		while (!assemblyLookup.isEmpty() && linear.getStartLinearCoordinate(assemblyLookup.peek().getBreakendSummary()) + getAssemblyWindowSize() < linearPosition) {
-			outputOrthogonalAssembly(assemblyLookup.poll());
+		while (!assemblyQueue.isEmpty() && linear.getStartLinearCoordinate(assemblyQueue.peek().getBreakendSummary()) + getAssemblyWindowSize() < linearPosition) {
+			outputOrthogonalAssembly(assemblyQueue.poll());
 		}
 	}
 	private void outputOrthogonalAssembly(AssemblyEvidence e) {
+		for (String evidence : e.getEvidenceIDs()) { 
+			assemblyEvidenceLookup.remove(evidence, e);
+		}
 		outputQueue.add(e);
 	}
 	private void outputOrthogonalNonAssembly(DirectedEvidence e) {
 		boolean usedInUnfilteredAssembly = false;
-		for (AssemblyEvidence assembly : assemblyLookup) {
-			if (assembly.isPartOfAssembly(e)) {
-				if (assembly instanceof SAMRecordAssemblyEvidence) {
-					((SAMRecordAssemblyEvidence)assembly).hydrateEvidenceSet(e);
-				}
-				usedInUnfilteredAssembly |= !assembly.isAssemblyFiltered();
+		for (AssemblyEvidence assembly : assemblyEvidenceLookup.get(e.getEvidenceID())) {
+			if (assembly instanceof SAMRecordAssemblyEvidence) {
+				((SAMRecordAssemblyEvidence)assembly).hydrateEvidenceSet(e);
 			}
+			usedInUnfilteredAssembly = !assembly.isAssemblyFiltered();
 		}
-		if (!usedInUnfilteredAssembly) {
+		if (!usedInUnfilteredAssembly && !assembliesOnly) {
 			outputQueue.add(e);
 		}
 	}
@@ -92,7 +100,10 @@ public class OrthogonalEvidenceIterator extends AbstractIterator<DirectedEvidenc
 		linearPosition = linear.getStartLinearCoordinate(e.getBreakendSummary());
 		if (e instanceof AssemblyEvidence) {
 			AssemblyEvidence a = (AssemblyEvidence)e;
-			assemblyLookup.add(a);
+			assemblyQueue.add(a);
+			for (String evidence : a.getEvidenceIDs()) {
+				assemblyEvidenceLookup.put(evidence, a);
+			}
 		} else {
 			nonAssemblyQueue.add(e);
 		}

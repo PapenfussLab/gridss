@@ -12,6 +12,7 @@ import htsjdk.samtools.metrics.Header;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 
 import org.junit.Rule;
@@ -193,6 +194,26 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		e.hydrateEvidenceSet(e2);
 		e.hydrateEvidenceSet(e3);
 		assertEquals(3, e.getEvidence().size());
+	}
+	@Test
+	public void getEvidenceIDs_should_return_underlying_evidence() {
+		DirectedEvidence e1 = SCE(BWD, Read(0, 1, "5S5M"));
+		DirectedEvidence e2 = SCE(BWD, Read(0, 1, "6S5M"));
+		DirectedEvidence e3 = NRRP(OEA(0, 1, "1M", false));
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Lists.transform(Lists.newArrayList(e1, e2, e3), EID),
+			1, 2, 1, B("GTAC"), new byte[] {1,2,3,4}, new int[] {1, 2});
+		Collection<String> ids = e.getEvidenceIDs();
+		assertEquals(3, e.getEvidenceIDs().size());
+		assertTrue(e.getEvidenceIDs().contains(e1.getEvidenceID()));
+		assertTrue(e.getEvidenceIDs().contains(e2.getEvidenceID()));
+		assertTrue(e.getEvidenceIDs().contains(e3.getEvidenceID()));
+	}
+	@Test
+	public void getEvidenceIDs_should_return_empty_collection_for_no_evidence() {
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Lists.<String>newArrayList(),
+			1, 2, 1, B("GTAC"), new byte[] {1,2,3,4}, new int[] {1, 2});
+		Collection<String> ids = e.getEvidenceIDs();
+		assertEquals(0, e.getEvidenceIDs().size());
 	}
 	@Test
 	public void realign_should_shift_breakend_to_match_reference() {
