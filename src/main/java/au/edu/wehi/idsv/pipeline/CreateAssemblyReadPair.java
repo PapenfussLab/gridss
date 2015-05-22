@@ -28,8 +28,10 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidenceFilteringIterator;
+import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
+import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 
@@ -70,7 +72,8 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 		}
 		public CloseableIterator<SAMRecordAssemblyEvidence> annotatedAssembliesIterator() {
 			CloseableIterator<DirectedEvidence> rawit = getAllEvidence(true, false, true, true, true, true);
-			OrthogonalEvidenceIterator annotatedIt = new OrthogonalEvidenceIterator(processContext.getLinear(), rawit, source.getAssemblyWindowSize(), true);
+			AsyncBufferedIterator<DirectedEvidence> asyncIt = new AsyncBufferedIterator<DirectedEvidence>(rawit, "AssemblyEvidenceRehydration");
+			OrthogonalEvidenceIterator annotatedIt = new OrthogonalEvidenceIterator(processContext.getLinear(), asyncIt, source.getAssemblyWindowSize(), true);
 			UnmodifiableIterator<SAMRecordAssemblyEvidence> filteredIt = Iterators.filter(annotatedIt, SAMRecordAssemblyEvidence.class);
 			Iterator<SAMRecordAssemblyEvidence> it = Iterators.transform(filteredIt, new Function<SAMRecordAssemblyEvidence, SAMRecordAssemblyEvidence> () {
 				@Override
@@ -78,7 +81,7 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 					return input.annotateAssembly();
 				}
 			});
-			return new AutoClosingIterator<SAMRecordAssemblyEvidence>(it, Lists.<Closeable>newArrayList(rawit));
+			return new AutoClosingIterator<SAMRecordAssemblyEvidence>(it, Lists.<Closeable>newArrayList(asyncIt, rawit));
 		}
 	}
 	@Override
