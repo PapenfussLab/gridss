@@ -112,4 +112,21 @@ public class SmallIndelSAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertTrue(AssemblyFactory.hydrate(AES(), e.getSAMRecord()).isSpanningAssembly());
 		assertTrue(AssemblyFactory.incorporateRealignment(getContext(), AssemblyFactory.hydrate(AES(), e.getSAMRecord()), e.getRemoteSAMRecord()).isSpanningAssembly());
 	}
+	@Test
+	public void read_pair_conversion_soft_clip_in_correct_direction() {
+		// asm49752266     0       MT      10603   0       136M88I8952P8952N8952P136M      *       0       0       CTCTCATAACCCTCAACACCCACTCCCTCTTAGCCAATATTGTGCCTATTGCCATACTAGTCTTTGCCGCCTGCGAAGCAGCGGTGGGCCTAGCCCTACTAGTCTCAATCTCCAACACATATGGCCTAGACTACGGCTTAGTTAAACTTTCGTTTATTGCTAAAGGTTAATCACTGCTGTTTCCCGTGGGGGTGTGGCTAGGCTAAGCGTTTTGAGCTGCATTGCCAAGGGAAAGATGAAAAATTATAACCAAGCATAATATAGCAAGGACTAACCCCTATACCTTCTGCATAATGAATTAACTAGAAATAACTTTGCAAGGAGAGCCAAAGCTAAGACCCCCGAAACCAGACGAGCTAC        _______________________________________________________________________________________________________________________________________@<<<<<<<<<>ACEGIKMOQSUWY[]_______________________________________________________________________________________________________________________________________________________________________________________________________        bc:B:i,147      es:Z:RbST-E00106:108:H03M0ALXX:1:1118:24253:3735/2 fST-E00106:108:H03M0ALXX:1:1205:2583:30439/1 fST-E00106:108:H03M0ALXX:1:2207:15443:7989/2
+		SAMRecord r = new SAMRecord(getContext().getBasicSamHeader());
+		r.setReadName("asm49752266");
+		r.setAlignmentStart(10603);
+		r.setReferenceIndex(0);
+		r.setCigarString("136M88I8952P8952N8952P136M");
+		r.setReadBases(B("CTCTCATAACCCTCAACACCCACTCCCTCTTAGCCAATATTGTGCCTATTGCCATACTAGTCTTTGCCGCCTGCGAAGCAGCGGTGGGCCTAGCCCTACTAGTCTCAATCTCCAACACATATGGCCTAGACTACGGCTTAGTTAAACTTTCGTTTATTGCTAAAGGTTAATCACTGCTGTTTCCCGTGGGGGTGTGGCTAGGCTAAGCGTTTTGAGCTGCATTGCCAAGGGAAAGATGAAAAATTATAACCAAGCATAATATAGCAAGGACTAACCCCTATACCTTCTGCATAATGAATTAACTAGAAATAACTTTGCAAGGAGAGCCAAAGCTAAGACCCCCGAAACCAGACGAGCTAC"));
+		r.setBaseQualities(B("_______________________________________________________________________________________________________________________________________@<<<<<<<<<>ACEGIKMOQSUWY[]_______________________________________________________________________________________________________________________________________________________________________________________________________"));
+		r.setAttribute("bc", 147);
+		r.setAttribute("es", "RbST-E00106:108:H03M0ALXX:1:1118:24253:3735/2 fST-E00106:108:H03M0ALXX:1:1205:2583:30439/1 fST-E00106:108:H03M0ALXX:1:2207:15443:7989/2");
+		SmallIndelSAMRecordAssemblyEvidence e = (SmallIndelSAMRecordAssemblyEvidence)AssemblyFactory.hydrate(AES(), r);
+		assertEquals("136M224S", e.getSAMRecord().getCigarString());
+		assertEquals(10603, e.getSAMRecord().getAlignmentStart());
+		assertEquals("88S136M", e.getRemoteSAMRecord().getCigarString());
+	}
 }

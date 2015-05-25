@@ -7,6 +7,7 @@ import htsjdk.samtools.util.Log;
 import java.util.HashMap;
 import java.util.Iterator;
 
+import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.DirectedBreakpoint;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.DiscordantReadPair;
@@ -32,9 +33,13 @@ import com.google.common.collect.AbstractIterator;
  */
 public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractIterator<T> implements CloseableIterator<T> {
 	private static final Log log = Log.getInstance(PairedEvidenceTracker.class);
+	/**
+	 * Maximum number of unpair records log in full. 
+	 */
+	private static final int MAX_TO_PRINT = 32;
 	private final Iterator<T> it;
 	private boolean closed = false;
-	private HashMap<String, DirectedEvidence> unpaired = new HashMap<String, DirectedEvidence>();
+	private HashMap<String, BreakpointSummary> unpaired = new HashMap<String, BreakpointSummary>();
 
 	public PairedEvidenceTracker(Iterator<T> it) {
 		this.it = it;
@@ -70,20 +75,15 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 				return false;
 			}
 			if (unpaired.containsKey(partnerId)) {
-				DirectedEvidence remote = unpaired.remove(partnerId);
-				if (!(remote instanceof DirectedBreakpoint)) {
-					String msg = String.format("Invalid pairing of breakpoint %s with breakend %s", evidence.getEvidenceID(), remote.getEvidenceID()); 
-					log.error(msg);
-					return false;
-				}
+				BreakpointSummary remoteBp = unpaired.remove(partnerId);
 				// Breakpoints must be the same
-				if (!((DirectedBreakpoint)remote).getBreakendSummary().remoteBreakpoint().equals(((DirectedBreakpoint)evidence).getBreakendSummary())) {
-					String msg = String.format("Breakpoints %s and %s differ for evidence pair %s %s", evidence.getBreakendSummary(), remote.getBreakendSummary(), evidence.getEvidenceID(), remote.getEvidenceID()); 
+				if (!remoteBp.remoteBreakpoint().equals(((DirectedBreakpoint)evidence).getBreakendSummary())) {
+					String msg = String.format("Breakpoints %s and %s differ for evidence pair %s %s", evidence.getBreakendSummary(), remoteBp, evidence.getEvidenceID(), partnerId); 
 					log.error(msg);
 					return false;
 				}
 			} else {
-				unpaired.put(evidenceId, evidence);
+				unpaired.put(evidenceId, (BreakpointSummary)evidence.getBreakendSummary());
 			}
 		}
 		return true;
@@ -94,9 +94,13 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 			String msg = String.format("Missing %d evidence pairings: ", unpaired.size()); 
 			StringBuilder sb = new StringBuilder();
 			sb.append(msg);
+			int i = MAX_TO_PRINT;
 			for (String s : unpaired.keySet()) {
-				sb.append(s);
-				sb.append(", ");
+				sb.append(String.format("%s (%s), ", s, unpaired.get(s)));
+				if (--i == 0) break;
+			}
+			if (unpaired.size() > MAX_TO_PRINT) {
+				sb.append("...");
 			}
 			log.error(sb.toString());
 		}
