@@ -18,7 +18,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
-import au.edu.wehi.idsv.bed.BedpeWriter;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.FileHelper;
@@ -29,7 +28,6 @@ import au.edu.wehi.idsv.validation.TruthAnnotator;
 import au.edu.wehi.idsv.vcf.VcfFileUtil;
 
 import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
@@ -89,7 +87,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 	private CloseableIterator<DirectedEvidence> adjustEvidenceStream(CloseableIterator<DirectedEvidence> evidenceIt) {
 		if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
 			evidenceIt = new PairedEvidenceTracker<DirectedEvidence>(evidenceIt);
-			evidenceIt = new AutoClosingIterator<DirectedEvidence>(new OrderAssertingIterator<DirectedEvidence>(evidenceIt, DirectedEvidenceOrder.ByNatural), ImmutableList.<Closeable>of(evidenceIt));
+			evidenceIt = new OrderAssertingIterator<DirectedEvidence>(evidenceIt, DirectedEvidenceOrder.ByNatural);
 		}
 		// back to treating assemblies as independent evidence which do not affect SC or RP support counts
 		// due to annotation quality being greater (in some cases over 10x) than the called quality due

@@ -244,11 +244,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 		if (includeReadPair) {
 			final CloseableIterator<SAMRecord> rawPairIt = getContext().getSamReaderIterator(readPair);
 			final CloseableIterator<SAMRecord> rawMateIt = getContext().getSamReaderIterator(pairMate);
-			final CloseableIterator<NonReferenceReadPair> rawRpIt = new ReadPairEvidenceIterator(
-					this,
-					new IntervalBedFilteringIterator(getBlacklistedRegions(), rawPairIt, getMaxConcordantFragmentSize()),
-					rawMateIt);
-			final Iterator<NonReferenceReadPair> sortedRpIt = new DirectEvidenceWindowedSortingIterator<NonReferenceReadPair>(getContext(), getReadPairSortWindowSize(), rawRpIt);
+			final CloseableIterator<NonReferenceReadPair> rawRpIt = new ReadPairEvidenceIterator(this, rawPairIt, rawMateIt);
+			final Iterator<NonReferenceReadPair> sortedRpIt = new DirectEvidenceWindowedSortingIterator<NonReferenceReadPair>(getContext(), getReadPairSortWindowSize(), applyBlacklistFilter(rawRpIt));
 			final CloseableIterator<NonReferenceReadPair> finalrpIt = new AutoClosingIterator<NonReferenceReadPair>(sortedRpIt,
 					Lists.<Closeable>newArrayList(rawRpIt, rawPairIt, rawMateIt));
 			itList.add((CloseableIterator<DirectedEvidence>)(Object)finalrpIt);
@@ -257,7 +254,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			final List<Closeable> scToClose = Lists.newArrayList();
 			final CloseableIterator<SAMRecord> rawScIt = getContext().getSamReaderIterator(softClip);
 			scToClose.add(rawScIt);
-			CloseableIterator<SoftClipEvidence> scIt = new SoftClipEvidenceIterator(this, new IntervalBedFilteringIterator(getBlacklistedRegions(), rawScIt, getMaxReadLength()));
+			CloseableIterator<SoftClipEvidence> scIt = new SoftClipEvidenceIterator(this, rawScIt);
 			scToClose.add(scIt);
 			if (isRealignmentComplete()) {
 				//log.debug("Realignment is complete for ", input);
@@ -270,7 +267,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			}
 			// sort into evidence order
 			scIt =  new AutoClosingIterator<SoftClipEvidence>(
-						new DirectEvidenceWindowedSortingIterator<SoftClipEvidence>(getContext(), getSoftClipSortWindowSize(), scIt),
+						new DirectEvidenceWindowedSortingIterator<SoftClipEvidence>(getContext(), getSoftClipSortWindowSize(), applyBlacklistFilter(scIt)),
 						scToClose
 					);
 			itList.add((CloseableIterator<DirectedEvidence>)(Object)scIt);
@@ -282,12 +279,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 			CloseableIterator<SAMRecord> rsrRawIt = getContext().getSamReaderIterator(remoteRealigned);
 			CloseableIterator<SAMRecord> sssRawItf = getContext().getSamReaderIterator(remoteSoftClip);
 			CloseableIterator<SAMRecord> sssRawItb = getContext().getSamReaderIterator(remoteSoftClip);
-			CloseableIterator<RealignedRemoteSoftClipEvidence> remoteScIt = new RealignedRemoteSoftClipEvidenceIterator(this,
-					new IntervalBedFilteringIterator(getBlacklistedRegions(), rsrRawIt, getMaxReadLength()),
-					sssRawItf,
-					sssRawItb);
+			CloseableIterator<RealignedRemoteSoftClipEvidence> remoteScIt = new RealignedRemoteSoftClipEvidenceIterator(this, rsrRawIt, sssRawItf, sssRawItb);
 			CloseableIterator<RealignedRemoteSoftClipEvidence> sortedRemoteScIt = new AutoClosingIterator<RealignedRemoteSoftClipEvidence>(
-					new DirectEvidenceWindowedSortingIterator<RealignedRemoteSoftClipEvidence>(getContext(), getSoftClipSortWindowSize(), remoteScIt),
+					new DirectEvidenceWindowedSortingIterator<RealignedRemoteSoftClipEvidence>(getContext(), getSoftClipSortWindowSize(), applyBlacklistFilter(remoteScIt)),
 						ImmutableList.<Closeable>of(remoteScIt, rsrRawIt, sssRawItf, sssRawItb));
 			itList.add((CloseableIterator<DirectedEvidence>)(Object)sortedRemoteScIt);
 		}
@@ -296,6 +290,12 @@ public class SAMEvidenceSource extends EvidenceSource {
 			mergedIt = new AutoClosingIterator<DirectedEvidence>(new OrderAssertingIterator<DirectedEvidence>(mergedIt, DirectedEvidenceOrder.ByNatural), ImmutableList.<Closeable>of(mergedIt));
 		}
 		return new AsyncBufferedIterator<DirectedEvidence>(mergedIt, input.getName() + "-" + chr);
+	}
+	private <T extends DirectedEvidence> IntervalBedFilteringIterator<T> applyBlacklistFilter(Iterator<T> it) {
+		return new IntervalBedFilteringIterator<T>(getBlacklistedRegions(), it, getBlacklistFilterMargin());
+	}
+	private int getBlacklistFilterMargin() {
+		return getMaxConcordantFragmentSize();
 	}
 	private int getSoftClipSortWindowSize() {
 		// worst case: forward with small clip followed by large homologous clip 

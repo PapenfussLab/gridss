@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.validation;
 
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 
 import java.util.Comparator;
@@ -13,11 +15,12 @@ import java.util.Iterator;
  * @author cameron.d
  *
  */
-public class OrderAssertingIterator<T> implements Iterator<T> {
+public class OrderAssertingIterator<T> implements CloseableIterator<T> {
 	private static final Log log = Log.getInstance(OrderAssertingIterator.class);
 	private final Iterator<? extends T> it;
 	private final Comparator<? super T> comparator;
 	private T last = null;
+	private boolean closed = false;
 	public OrderAssertingIterator(Iterator<? extends T> input, Comparator<? super T> comparator) {
 		this.it = input;
 		this.comparator = comparator;
@@ -44,5 +47,12 @@ public class OrderAssertingIterator<T> implements Iterator<T> {
 	@Override
 	public void remove() {
 		it.remove();
+	}
+	@Override
+	public void close() {
+		if (!closed) {
+			CloserUtil.close(it);
+			closed = true;
+		}
 	}
 }

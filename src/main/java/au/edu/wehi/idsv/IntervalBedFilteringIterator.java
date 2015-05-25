@@ -1,18 +1,16 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMRecord;
-
 import java.util.Iterator;
 
 import au.edu.wehi.idsv.bed.IntervalBed;
 
 import com.google.common.collect.AbstractIterator;
 
-public class IntervalBedFilteringIterator extends AbstractIterator<SAMRecord> {
+public class IntervalBedFilteringIterator<T extends DirectedEvidence> extends AbstractIterator<T> {
 	private final IntervalBed filterOutRegions;
-	private final Iterator<SAMRecord> it;
+	private final Iterator<? extends T> it;
 	private final int margin;
-	public IntervalBedFilteringIterator(IntervalBed filterOutRegions, Iterator<SAMRecord> it, int margin) {
+	public IntervalBedFilteringIterator(IntervalBed filterOutRegions, Iterator<? extends T> it, int margin) {
 		if (filterOutRegions == null) throw new NullPointerException();
 		if (it == null) throw new NullPointerException();
 		if (margin < 0) throw new IllegalArgumentException();
@@ -21,11 +19,19 @@ public class IntervalBedFilteringIterator extends AbstractIterator<SAMRecord> {
 		this.margin = margin;
 	}
 	@Override
-	protected SAMRecord computeNext() {
+	protected T computeNext() {
 		while (it.hasNext()) {
-			SAMRecord r = it.next();
-			if (r.getReadUnmappedFlag() || !filterOutRegions.overlaps(r.getReferenceIndex(), r.getAlignmentStart() - margin, r.getAlignmentEnd() + margin)) {
-				return r;
+			T r = it.next();
+			BreakendSummary bs = r.getBreakendSummary();
+			if (!filterOutRegions.overlaps(bs.referenceIndex, bs.start - margin, bs.end + margin)) {
+				if (bs instanceof BreakpointSummary) {
+					BreakpointSummary bp = (BreakpointSummary)bs;
+					if (!filterOutRegions.overlaps(bp.referenceIndex2, bp.start2 - margin, bp.end2 + margin)) {
+						return r;
+					}
+				} else {
+					return r;
+				}
 			}
 		}
 		return endOfData();
