@@ -16,7 +16,7 @@ public class AssemblyParameters {
 	/**
 	 * Maximum of base mismatches for de bruijn kmer paths to be merged   
 	 */
-	public int maxBaseMismatchForCollapse = 2;
+	public int maxBaseMismatchForCollapse = 4;
 	/**
 	 * Only collapse bubble path with a single entry and exit kmer choice
 	 */

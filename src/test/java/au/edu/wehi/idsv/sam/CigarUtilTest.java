@@ -62,4 +62,10 @@ public class CigarUtilTest {
 		assertEquals("-5D", new Cigar(split.get(1)).toString());
 		assertEquals("2M3I", new Cigar(split.get(2)).toString());
 	}
+	@Test
+	public void splitAtLargestIndel_should_create_placeholder_0M_if_no_indel() {
+		List<List<CigarElement>> split = CigarUtil.splitAtLargestIndel(C("10M"));
+		assertEquals("10M", new Cigar(split.get(0)).toString());
+		assertEquals("0M", new Cigar(split.get(2)).toString());
+	}
 }

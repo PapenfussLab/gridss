@@ -411,10 +411,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		    		if (ass != null) {
 			    		maxAssembledPosition = Math.max(maxAssembledPosition, getContext().getLinear().getStartLinearCoordinate(ass.getSAMRecord()));
 			    		// realign
-			    		if (getContext().getAssemblyParameters().performLocalRealignment
-			    				&& ass.isBreakendExact() // let the aligner perform realignment of unanchored reads
-			    				&& !(ass.getBreakendSummary() instanceof BreakpointSummary) // don't realign if we already know where the other side is // TODO: promote to parameter and test effectiveness			    				
-			    				) {
+			    		if (getContext().getAssemblyParameters().performLocalRealignment && ass.isBreakendExact()) { // let the aligner perform realignment of unanchored reads
 			    			ass = ass.realign();
 			    		}
 			    		resortBuffer.add(ass);

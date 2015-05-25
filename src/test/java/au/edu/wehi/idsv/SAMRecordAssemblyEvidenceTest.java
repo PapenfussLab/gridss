@@ -12,7 +12,6 @@ import htsjdk.samtools.metrics.Header;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 import org.junit.Rule;
@@ -202,7 +201,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		DirectedEvidence e3 = NRRP(OEA(0, 1, "1M", false));
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Lists.transform(Lists.newArrayList(e1, e2, e3), EID),
 			1, 2, 1, B("GTAC"), new byte[] {1,2,3,4}, new int[] {1, 2});
-		Collection<String> ids = e.getEvidenceIDs();
+		//Collection<String> ids = e.getEvidenceIDs();
 		assertEquals(3, e.getEvidenceIDs().size());
 		assertTrue(e.getEvidenceIDs().contains(e1.getEvidenceID()));
 		assertTrue(e.getEvidenceIDs().contains(e2.getEvidenceID()));
@@ -212,7 +211,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	public void getEvidenceIDs_should_return_empty_collection_for_no_evidence() {
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Lists.<String>newArrayList(),
 			1, 2, 1, B("GTAC"), new byte[] {1,2,3,4}, new int[] {1, 2});
-		Collection<String> ids = e.getEvidenceIDs();
+		//Collection<String> ids = e.getEvidenceIDs();
 		assertEquals(0, e.getEvidenceIDs().size());
 	}
 	@Test
@@ -276,6 +275,17 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 				2, 1, 10, B(seq), B(40, seq.length()), new int[] {0, 0});
 		assertEquals("10M40S", e.getSAMRecord().getCigarString());
 		assertEquals("10M40S", e.realign().getSAMRecord().getCigarString());
+	}
+	@Test
+	public void realign_should_turn_reference_bubble_into_reference_assembly() {
+		SmallIndelSAMRecordAssemblyEvidence ass = (SmallIndelSAMRecordAssemblyEvidence)AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), null,
+				0, 10, 1,
+				0, 17, 1,
+				B("AAAAAAAA"),
+				B("AAAAAAAA"), new int[] {0, 0});
+		ass = (SmallIndelSAMRecordAssemblyEvidence)ass.realign();
+		assertTrue(ass.isReferenceAssembly());
+		assertEquals("8M", ass.getBackingRecord().getCigarString());
 	}
 	@Rule
     public TemporaryFolder testFolder = new TemporaryFolder();
@@ -379,12 +389,12 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void getAnchor_should_not_include_inexact_breakend_bases() {
-		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(NRRP(OEA(0, 1, "1M", true)));
+		//List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(NRRP(OEA(0, 1, "1M", true)));
 		assertEquals(0, AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 1, 1), null, B("GTAC"), new byte[] {1,2,3,4}, new int[] {0, 0}).getAssemblyAnchorSequence().length);
 	}
 	@Test
 	public void breakpoint_should_use_indel_cigar() {
-		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList();
+		//List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList();
 		// 1234567890   1234567890
 		//         MMIIIDDDDMMMM
 		//         NNAAA    TTTT

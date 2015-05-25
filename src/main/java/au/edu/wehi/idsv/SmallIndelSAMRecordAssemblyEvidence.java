@@ -136,13 +136,16 @@ public class SmallIndelSAMRecordAssemblyEvidence extends RealignedSAMRecordAssem
 	}
 	private boolean sanityCheck() {
 		List<List<CigarElement>> split = CigarUtil.splitAtLargestIndel(assembly.getCigar().getCigarElements());
-		assert(getBreakendSummary() != null);
-		assert(getBreakendSummary() instanceof BreakpointSummary);
-		assert(getBreakendSummary().direction == BreakendDirection.Forward);
-		assert(getBreakendSummary().direction2 == BreakendDirection.Backward);
-		assert(split.get(0).size() > 0);
-		assert(split.get(1).size() > 0);
-		assert(split.get(2).size() > 0);
+		if (getBreakendSummary()  != null) {
+			assert(getBreakendSummary() instanceof BreakpointSummary);
+			assert(getBreakendSummary().direction == BreakendDirection.Forward);
+			assert(getBreakendSummary().direction2 == BreakendDirection.Backward);
+			assert(split.get(0).size() > 0);
+			assert(split.get(1).size() > 0);
+			assert(split.get(2).size() > 0);
+		} else {
+			assert(isReferenceAssembly());
+		}
 		return true;
 	}
 }

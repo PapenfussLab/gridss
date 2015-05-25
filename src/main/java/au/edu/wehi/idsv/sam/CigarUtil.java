@@ -125,6 +125,9 @@ public class CigarUtil {
 		result.add(Lists.newArrayList(Iterables.limit(list, bestOffset)));
 		result.add(Lists.newArrayList(Iterables.limit(Iterables.skip(list, bestOffset), bestLength)));
 		result.add(Lists.newArrayList(Iterables.skip(list, bestOffset + bestLength)));
+		if (result.get(2).size() == 0) {
+			result.get(2).add(new CigarElement(0, CigarOperator.MATCH_OR_MISMATCH));
+		}
 		return result;
 	}
 }

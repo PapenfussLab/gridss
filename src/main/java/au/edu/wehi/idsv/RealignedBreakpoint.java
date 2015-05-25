@@ -28,6 +28,10 @@ public class RealignedBreakpoint {
 	}
 	public static RealignedBreakpoint create(ReferenceSequenceFile reference, SAMSequenceDictionary dictionary, BreakendSummary local, byte[] anchoredSequence, SAMRecord realigned) {
 		if (realigned.getReadUnmappedFlag()) throw new IllegalArgumentException("Realigned read is not mapped");
+		if (local == null) {
+			// No breakpoint if no breakend
+			return new RealignedBreakpoint(null, "", true, "", 0);
+		}
 		boolean exact = anchoredSequence != null && anchoredSequence.length > 0;
 		int ci = local.end - local.start;
 		if (exact && ci != 0) {

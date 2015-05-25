@@ -441,4 +441,23 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		assertEquals(30 - 8 + 1, g.size());
 		//DeBruijnSubgraphNode node = g.getKmer(K(S(RANDOM).substring(0, 8)));		
 	}
+	@Test
+	public void should_create_spanning_assembly() {
+		// 1234567890123
+		// GCTAGGTATCTCG
+		// MMMM--
+		// ---------MMMM
+		setup(4);
+		result.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("GCTAGG", Read(0, 1, "4M2S"))[0]))));
+		result.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("GCTAGGTATCTCG", Read(0, 10, "9S4M"))[0]))));
+		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, result.size());
+		assertTrue(result.get(0) instanceof SmallIndelSAMRecordAssemblyEvidence);
+		SmallIndelSAMRecordAssemblyEvidence e = (SmallIndelSAMRecordAssemblyEvidence)result.get(0);
+		assertEquals("GCTAGGTATCTCG", S(e.getAssemblySequence()));
+		assertEquals("4M5I5D4M", e.getBackingRecord().getCigarString());
+		assertEquals(1, e.getSAMRecord().getAlignmentStart());
+		assertEquals(10, e.getRemoteSAMRecord().getAlignmentStart());
+		assertEquals("5S4M", e.getRemoteSAMRecord().getCigarString());
+	}
 }

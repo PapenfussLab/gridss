@@ -534,40 +534,47 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 			// misassembly with no breakend - nothing to do
 			return this;
 		}
-		if (bs instanceof BreakpointSummary) {
-			throw new IllegalStateException("Unable to realign breakpoint assemblies");
-		}
 		AssemblyParameters ap = source.getContext().getAssemblyParameters();
 		int refIndex = getBreakendSummary().referenceIndex;
 		SAMSequenceRecord refSeq = source.getContext().getDictionary().getSequence(refIndex);
-		int start = Math.max(1, record.getAlignmentStart() - ap.realignmentWindowSize - (getBreakendSummary().direction == BreakendDirection.Backward ? getBreakendLength() : 0));
-		int end = Math.min(refSeq.getSequenceLength(), record.getAlignmentEnd() + ap.realignmentWindowSize + (getBreakendSummary().direction == BreakendDirection.Forward ? getBreakendLength() : 0));
-		byte[] ass = record.getReadBases();
+		SAMRecord r = getBackingRecord();
+		int start = Math.max(1, r.getAlignmentStart() - ap.realignmentWindowSize - (getBreakendSummary().direction == BreakendDirection.Backward ? getBreakendLength() : 0));
+		int end = Math.min(refSeq.getSequenceLength(), r.getAlignmentEnd() + ap.realignmentWindowSize + (getBreakendSummary().direction == BreakendDirection.Forward ? getBreakendLength() : 0));
+		byte[] ass = r.getReadBases();
 		byte[] ref = source.getContext().getReference().getSubsequenceAt(refSeq.getSequenceName(), start, end).getBases();
 		
         Alignment alignment = AlignerFactory.create().align_smith_waterman(ass, ref);        
         Cigar cigar = TextCigarCodec.decode(alignment.getCigar());
         
-        if (SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), getBreakendSummary().direction) == 0 && 
+        if (isSpanningAssembly() &&
+        		SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), BreakendDirection.Forward) +  
+    			SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), BreakendDirection.Backward) > 0) {
+        	// Realignment of small indel assembly transformed breakpoint assembly to breakend
+        	// so we're going to ignore it
+        	// (spanning realignment is currently used to remove reference bubble assemblies with alignment such as 10M5I5D10M)
+        	return this;
+        } else if (SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), getBreakendSummary().direction) == 0 && 
     		SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), getBreakendSummary().direction.reverse()) > 0) {
         	// medium size indel breakend is longer than the anchor causing the anchor to soft clip instead of an indel call
-        	log.debug(String.format("Realignment of assembly %s converts cigar from %s to %s. Likely to be small indel with short anchor - ignoring realignment.",
+        	log.debug(String.format("Realignment of assembly %s at %s converts cigar from %s to %s starting at %d. Likely to be small indel with short anchor - ignoring realignment.",
         			getEvidenceID(),
-        			record.getCigarString(),
-        			cigar
+        			getBreakendSummary().toString(source.getContext()),
+        			r.getCigarString(),
+        			cigar,
+        			start + alignment.getStartPosition()
         			));
         	return this;
         }
         
-        SAMRecord newAssembly = SAMRecordUtil.clone(record);
+        SAMRecord newAssembly = SAMRecordUtil.clone(getBackingRecord());
 		newAssembly.setReadName(newAssembly.getReadName() + "_r");
         newAssembly.setAlignmentStart(start + alignment.getStartPosition());
-        if (!cigar.equals(record.getCigar())) {
+        if (!cigar.equals(getBackingRecord().getCigar())) {
         	newAssembly.setCigar(cigar);
-        	newAssembly.setAttribute(SamTags.ORIGINAL_CIGAR, record.getCigarString());
+        	newAssembly.setAttribute(SamTags.ORIGINAL_CIGAR, r.getCigarString());
         }
-        if (newAssembly.getAlignmentStart() != record.getAlignmentStart()) {
-        	newAssembly.setAttribute(SamTags.ORIGINAL_POSITION, record.getAlignmentStart());
+        if (newAssembly.getAlignmentStart() != r.getAlignmentStart()) {
+        	newAssembly.setAttribute(SamTags.ORIGINAL_POSITION, r.getAlignmentStart());
         }
         SAMRecordAssemblyEvidence realigned = AssemblyFactory.hydrate(getEvidenceSource(), newAssembly);
         return realigned;
@@ -584,7 +591,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 * @return
 	 */
 	public boolean isSpanningAssembly() {
-		Character attr = (Character)getSAMRecord().getAttribute(SamTags.SPANNING_ASSEMBLY);
+		Character attr = (Character)record.getAttribute(SamTags.SPANNING_ASSEMBLY);
 		return attr != null && (char)attr == 'y';
 	}
 }
