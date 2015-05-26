@@ -8,6 +8,7 @@ public abstract class KmerNode {
 	public abstract int startPosition();
 	public abstract int endPosition();
 	public abstract int weight();
+	public abstract boolean isReference();
 	public static final Ordering<KmerNode> ByStartPosition = new Ordering<KmerNode>() {
 		@Override
 		public int compare(KmerNode left, KmerNode right) {
