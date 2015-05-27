@@ -46,19 +46,19 @@ public class BedpeWriter implements Closeable {
 				"strand1" + "\t" +
 				"strand2" + "\t" +
 				VcfSvConstants.HOMOLOGY_SEQUENCE_KEY + "\t" +
-				VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT + "\t" +
-				VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE + "\t" +
-				VcfAttributes.BREAKPOINT_SOFTCLIP_COUNT + "\t" +
-				VcfAttributes.BREAKPOINT_SOFTCLIP_COUNT_REMOTE + "\t" +
-				VcfAttributes.BREAKPOINT_READPAIR_COUNT + "\t" +
-				VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL + "\t" +
-				VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE + "\t" +
-				VcfAttributes.BREAKPOINT_SOFTCLIP_QUAL + "\t" +
-				VcfAttributes.BREAKPOINT_SOFTCLIP_QUAL_REMOTE + "\t" +
-				VcfAttributes.BREAKPOINT_READPAIR_QUAL + "\t" +
-				VcfAttributes.REFERENCE_READ_COUNT + "\t" +
-				VcfAttributes.REFERENCE_READPAIR_COUNT + "\t" +
-				"").getBytes(StandardCharsets.UTF_8));
+				VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT.attribute() + "\t" +
+				VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE.attribute() + "\t" +
+				VcfAttributes.BREAKPOINT_SOFTCLIP_COUNT.attribute() + "\t" +
+				VcfAttributes.BREAKPOINT_SOFTCLIP_COUNT_REMOTE.attribute() + "\t" +
+				VcfAttributes.BREAKPOINT_READPAIR_COUNT.attribute() + "\t" +
+				VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL.attribute() + "\t" +
+				VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE.attribute() + "\t" +
+				VcfAttributes.BREAKPOINT_SOFTCLIP_QUAL.attribute() + "\t" +
+				VcfAttributes.BREAKPOINT_SOFTCLIP_QUAL_REMOTE.attribute() + "\t" +
+				VcfAttributes.BREAKPOINT_READPAIR_QUAL.attribute() + "\t" +
+				VcfAttributes.REFERENCE_READ_COUNT.attribute() + "\t" +
+				VcfAttributes.REFERENCE_READPAIR_COUNT.attribute() +
+				"\n").getBytes(StandardCharsets.UTF_8));
 	}
 	public void write(VariantContextDirectedBreakpoint variant) throws IOException {
 		BreakpointSummary bp = variant.getBreakendSummary();
