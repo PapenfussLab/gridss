@@ -16,7 +16,7 @@ import com.google.common.collect.PeekingIterator;
 public class PositionalDeBruijnPathNodeIterator implements Iterator<KmerPathNode> {
 	private final PeekingIterator<KmerAggregateNode> underlying;
 	private final int maxSupportWidth;
-	private PriorityQueue<KmerPathNode> buffer = new PriorityQueue<KmerPathNode>(KmerPathNode.ByFirstKmerStartPosition);
+	private PriorityQueue<KmerPathNode> buffer = new PriorityQueue<KmerPathNode>(1024, KmerPathNode.ByFirstKmerStartPosition);
 	/**
 	 * A PathNode is considered active if the [start, end] interval of the final kmer overlaps
 	 * the start position of the last node encountered.
@@ -73,5 +73,9 @@ public class PositionalDeBruijnPathNodeIterator implements Iterator<KmerPathNode
 		
 		// add as predecessor
 		
+	}
+	@Override
+	public void remove() {
+		throw new UnsupportedOperationException();
 	}
 }

@@ -21,9 +21,9 @@ import com.google.common.primitives.Longs;
 public class PositionalDeBruijnAggregateNodeIterator implements Iterator<KmerAggregateNode> {
 	private final PeekingIterator<KmerSupportNode> underlying;
 	private final int maxSupportWidth;
-	private PriorityQueue<KmerAggregateNode> buffer = new PriorityQueue<KmerAggregateNode>(KmerNode.ByStartPosition);
+	private PriorityQueue<KmerAggregateNode> buffer = new PriorityQueue<KmerAggregateNode>(1024, KmerNode.ByStartPosition);
 	private Map<Long, KmerNodeAggregator> byKmer;
-	private PriorityQueue<KmerNodeAggregatorSnapshot> byStartPosition = new PriorityQueue<KmerNodeAggregatorSnapshot>(BySnapshotStartPosition);
+	private PriorityQueue<KmerNodeAggregatorSnapshot> byStartPosition = new PriorityQueue<KmerNodeAggregatorSnapshot>(1024, BySnapshotStartPosition);
 	public PositionalDeBruijnAggregateNodeIterator(Iterator<KmerSupportNode> it, int maxSupportWidth) {
 		this.underlying = Iterators.peekingIterator(it);
 		this.maxSupportWidth = maxSupportWidth;
@@ -165,5 +165,9 @@ public class PositionalDeBruijnAggregateNodeIterator implements Iterator<KmerAgg
 		public int compareTo(KmerNodeAggregator right) {
 			return Longs.compare(kmer, right.kmer);
 		}
+	}
+	@Override
+	public void remove() {
+		throw new UnsupportedOperationException();
 	}
 }

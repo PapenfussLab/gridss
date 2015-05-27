@@ -9,7 +9,7 @@ import com.google.common.collect.PeekingIterator;
 public class PositionalDeBruijnSupportNodeIterator implements Iterator<KmerSupportNode> {
 	private final PeekingIterator<Evidence> underlying;
 	private final int maxSupportWidth;
-	private final PriorityQueue<KmerSupportNode> buffer = new PriorityQueue<KmerSupportNode>(KmerNode.ByStartPosition);
+	private final PriorityQueue<KmerSupportNode> buffer = new PriorityQueue<KmerSupportNode>(1024, KmerNode.ByStartPosition);
 	public PositionalDeBruijnSupportNodeIterator(Iterator<Evidence> it, int maxSupportWidth) {
 		this.underlying = Iterators.peekingIterator(it);
 		this.maxSupportWidth = maxSupportWidth;
@@ -33,5 +33,9 @@ public class PositionalDeBruijnSupportNodeIterator implements Iterator<KmerSuppo
 		while (underlying.hasNext() && buffer.peek().startPosition() + maxSupportWidth >= underlying.peek().startPosition()) {
 			process(underlying.next());
 		}
+	}
+	@Override
+	public void remove() {
+		throw new UnsupportedOperationException();
 	}
 }
