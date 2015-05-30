@@ -944,4 +944,42 @@ public class TestHelper {
 		IdsvMetrics metrics = idsv.getMetrics().get(0);
 		return metrics;
 	}
+	/**
+	 * Gets the reference sequence offset from the given breakend
+	 * @param contig
+	 * @param baseCount number of bases to return
+	 * @param breakendPos breakend position
+	 * @param direction direction of breakend
+	 * @param localFragBaseCount number of fragment bases on this side of the breakend
+	 * @return read bases
+	 */
+	public static byte[] getRef(byte[] contig, int baseCount, int breakendPos, BreakendDirection direction, int localFragBaseCount) {
+		int genomicPositionOfFirstBase = getBasePos(breakendPos, direction, localFragBaseCount);
+		if (direction == BWD) {
+			genomicPositionOfFirstBase = getBasePos(breakendPos, direction, localFragBaseCount) - (baseCount - 1);
+		}
+		int arrayOffsetOfFirstBase = genomicPositionOfFirstBase - 1;
+		return B(S(contig).substring(arrayOffsetOfFirstBase, arrayOffsetOfFirstBase + baseCount));
+	}
+	/**
+	 * Gets the position of the base baseCount bases away from the breakend
+	 * @param be breakend
+	 * @param baseCount
+	 * @return
+	 */
+	public static int getStartBasePos(BreakendSummary be, int baseCount) {
+		return getBasePos(be.start, be.direction, baseCount);
+	}
+	public static int getBasePos(int breakendPos, BreakendDirection direction, int baseCount) {
+		int offset = baseCount - 1;
+		if (direction == FWD) return breakendPos - offset;
+		else return breakendPos + offset;
+	}
+	public static byte[] getRef(int referenceIndex, int baseCount, int breakendPos, BreakendDirection direction, int localFragBaseCount) {
+		if (referenceIndex == 0) return getRef(POLY_A, baseCount, breakendPos, direction, localFragBaseCount);
+		if (referenceIndex == 1) return getRef(POLY_ACGT, baseCount, breakendPos, direction, localFragBaseCount);
+		if (referenceIndex == 2) return getRef(RANDOM, baseCount, breakendPos, direction, localFragBaseCount);
+		if (referenceIndex == 3) return getRef(NPOWER2, baseCount, breakendPos, direction, localFragBaseCount);
+		throw new IllegalArgumentException("Unknown contig");
+	}	
 }

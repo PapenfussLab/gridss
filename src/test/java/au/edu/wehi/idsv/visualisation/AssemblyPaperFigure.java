@@ -4,7 +4,6 @@ import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.fastq.FastqRecord;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,8 +12,6 @@ import java.util.List;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.BreakpointFastqEncoding;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.IntermediateFilesTest;
@@ -98,45 +95,6 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 		reads.add(r);
 		splitReads.add(realign);
 	}
-	/**
-	 * 
-	 * @param contig
-	 * @param baseCount number of bases to return
-	 * @param breakendPos breakend position
-	 * @param direction direction of breakend
-	 * @param localFragBaseCount number of fragment bases on this side of the breakend
-	 * @return read bases
-	 */
-	private byte[] getRef(byte[] contig, int baseCount, int breakendPos, BreakendDirection direction, int localFragBaseCount) {
-		int genomicPositionOfFirstBase = getBasePos(breakendPos, direction, localFragBaseCount);
-		if (direction == BWD) {
-			genomicPositionOfFirstBase = getBasePos(breakendPos, direction, localFragBaseCount) - (baseCount - 1);
-		}
-		int arrayOffsetOfFirstBase = genomicPositionOfFirstBase - 1;
-		return B(S(contig).substring(arrayOffsetOfFirstBase, arrayOffsetOfFirstBase + baseCount));
-	}
-	/**
-	 * Gets the position of the base baseCount bases away from the breakend
-	 * @param be breakend
-	 * @param baseCount
-	 * @return
-	 */
-	private int getStartBasePos(BreakendSummary be, int baseCount) {
-		return getBasePos(be.start, be.direction, baseCount);
-	}
-	private int getBasePos(int breakendPos, BreakendDirection direction, int baseCount) {
-		int offset = baseCount - 1;
-		if (direction == FWD) return breakendPos + offset;
-		else return breakendPos - offset;
-	}
-	
-	private byte[] getRef(int referenceIndex, int baseCount, int breakendPos, BreakendDirection direction, int localFragBaseCount) {
-		if (referenceIndex == 0) return getRef(POLY_A, baseCount, breakendPos, direction, localFragBaseCount);
-		if (referenceIndex == 1) return getRef(POLY_ACGT, baseCount, breakendPos, direction, localFragBaseCount);
-		if (referenceIndex == 2) return getRef(RANDOM, baseCount, breakendPos, direction, localFragBaseCount);
-		if (referenceIndex == 3) return getRef(NPOWER2, baseCount, breakendPos, direction, localFragBaseCount);
-		throw new IllegalArgumentException("Unknown contig");
-	}	
 	/**
 	 * Adds discordant read pairs to the evidence set
 	 * @param reads output list

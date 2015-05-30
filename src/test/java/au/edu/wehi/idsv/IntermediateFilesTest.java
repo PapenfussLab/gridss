@@ -127,7 +127,7 @@ public class IntermediateFilesTest extends TestHelper {
 	public void createBAM(File file, SortOrder sortOrder, SAMRecord... data) {
 		SAMFileHeader header = getHeader();
 		header.setSortOrder(sortOrder);
-		SAMFileWriter writer =  new SAMFileWriterFactory().makeSAMWriter(header, true, file);
+		SAMFileWriter writer =  new SAMFileWriterFactory().setCreateIndex(true).makeSAMOrBAMWriter(header, true, file);
 		if (sortOrder == SortOrder.coordinate) {
 			SortingCollection<SAMRecord> presort = SortingCollection.newInstance(SAMRecord.class, new BAMRecordCodec(header), new SAMRecordCoordinateComparator(), 100000000, testFolder.getRoot());
 			for (SAMRecord r : data) {
