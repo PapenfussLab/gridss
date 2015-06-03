@@ -31,10 +31,11 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		this.calc = new RectangleGraphMaximalCliqueIterator(
 						// collapse evidence at the same location to a single node
 						new RectangleGraphNodeMergingIterator(RectangleGraphNode.ByStartXY,
-							// reorder due to soft clip margin changing record order
-							new GraphNodeWindowedSortingIterator(context, 2 * processContext.getVariantCallingParameters().breakendMargin + 1,
-								// convert evidence breakpoints to GraphNodes
-								new EvidenceToGraphNodeIterator(evidenceIt))));
+							// reordering window size of 1 as all variants get expanded by same margin so are
+							// still ordered by local start coordinate
+							new GraphNodeWindowedSortingIterator(context, 1, 
+							// convert evidence breakpoints to GraphNodes
+							new EvidenceToGraphNodeIterator(evidenceIt))));
 		this.targetLowDir = lowDir;
 		this.targetHighDir = highDir;
 		this.idGenerator = idGenerator;
