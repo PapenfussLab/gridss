@@ -4,6 +4,10 @@ package au.edu.wehi.idsv;
 
 public class Defaults {
 	/**
+	 * Should export evidence allocation to csv
+	 */
+	public static final boolean EXPORT_EVIDENCE_ALLOCATION;
+	/**
 	 * Should assemblies causing timeouts be saved
 	 */
 	public static final boolean VISUALISE_ALL;
@@ -58,9 +62,10 @@ public class Defaults {
 		VISUALISE_ALL = Boolean.valueOf(System.getProperty("gridss.visualisation.saveall", "false"));
 		VISUALISE_TIMEOUTS = Boolean.valueOf(System.getProperty("gridss.visualisation.savetimeouts", "false"));
 		VISUALISE_ASSEMBLY_PROGRESS = Boolean.valueOf(System.getProperty("gridss.visualisation.trackAssemblyProgress", "false"));
+		EXPORT_EVIDENCE_ALLOCATION  = Boolean.valueOf(System.getProperty("gridss.visualisation.evidenceAllocation", "false"));
 		WRITE_FILTERED_CALLS = Boolean.valueOf(System.getProperty("gridss.writeFilteredCalls", "false"));
 		WRITE_FILTERED_ASSEMBLIES = Boolean.valueOf(System.getProperty("gridss.writeFilteredAssemblies", "false"));
-		PERFORM_ITERATOR_SANITY_CHECKS = Boolean.valueOf(System.getProperty("gridss.expensiveAsserts.iterators", "true"));
+		PERFORM_ITERATOR_SANITY_CHECKS = Boolean.valueOf(System.getProperty("gridss.expensiveAsserts.iterators", "false"));
 		PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS = Boolean.valueOf(System.getProperty("gridss.expensiveAsserts.debruijn", "false"));
 		PERFORM_EXPENSIVE_CLIQUE_SANITY_CHECKS = Boolean.valueOf(System.getProperty("gridss.expensiveAsserts.clique", "false"));
 		COLLAPSE_PATH_MAX_TRAVERSAL = Integer.valueOf(System.getProperty("gridss.debruijn.maxCollapseTraversal", "2097152"));
@@ -73,5 +78,6 @@ public class Defaults {
 		ASYNC_READAHEAD_BUFFERS = Integer.valueOf(System.getProperty("gridss.readahead.buffers", "32"));
 		ASYNC_READAHEAD_BUFFER_SIZE = Integer.valueOf(System.getProperty("gridss.readahead.buffersize", "128"));
 		IGNORE_TIMESTAMPS = Boolean.valueOf(System.getProperty("gridss.ignoreTimestamps", "false"));
+		
 	}
 }

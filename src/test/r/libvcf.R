@@ -74,7 +74,7 @@ svlentype <- function(vcf) {
     len <- ifelse(is.na(len2), len, len2)
   } else if (!is.null(info(vcf)$END)) {
     # Delly "INFO:SVLEN was a redundant tag because it's just INFO:END - POS for Delly. Since SVLEN is kind of ill-defined in the VCF-Specification I decided to remove it. If you need it for filtering just use end - start."
-    len2 <- info(vcf)$END - start(rowData(vcf))
+    len2 <- info(vcf)$END - start(rowRanges(vcf))
     len <- ifelse(is.na(len2), len, len2)
   }
   svcol <- info(vcf)$SVTYPE
@@ -118,7 +118,7 @@ countBreakpointHits <- function(queryGr, subjectGr, mateQueryGr=queryGr[queryGr$
 # SVTYPE: type of event called
 vcftobpgr <- function(vcf) {
   lentype <- svlentype(vcf)
-  grcall <- rowData(vcf)
+  grcall <- rowRanges(vcf)
   grcall$vcfIndex <- seq_along(grcall)
   grcall$mateIndex <- rep(NA_integer_, length(grcall))
   grcall$SVTYPE <- lentype$type
@@ -129,6 +129,15 @@ vcftobpgr <- function(vcf) {
   if (!is.null(grcall$SVTYPE)) {
     rows <- rows & is.na(grcall$SVTYPE)
   }
+  grcall$cistartoffset <- rep(0, length(grcall))
+  grcall$ciwidth <- rep(0, length(grcall))
+  if ("CIPOS" %in% names(info(vcf))) {
+    # Expand call position by CIPOS
+    offsets <- matrix(unlist(info(vcf)$CIPOS), ncol = 2, byrow = TRUE)
+    offsets[is.na(offsets)] <- 0
+    grcall$cistartoffset <- offsets[,1]
+    grcall$ciwidth <- offsets[,2] - offsets[,1]
+  }
   if (any(rows)) {
     # non-symbolic VCF record
     browser()
@@ -137,18 +146,18 @@ vcftobpgr <- function(vcf) {
   rows <- grcall$SVTYPE=="BND"
   if (any(rows)) {
     # set strand for BND
-    bndMatches <- str_match(as.character(rowData(vcf[rows,])$ALT), "(.*)(\\[|])(.*)(\\[|])(.*)")
+    bndMatches <- str_match(as.character(rowRanges(vcf[rows,])$ALT), "(.*)(\\[|])(.*)(\\[|])(.*)")
     preBases <- bndMatches[,2]
     bracket <- bndMatches[,3]
     remoteLocation <- bndMatches[,4]
     postBases <- bndMatches[,6]
     strand(grcall[rows,]) <- ifelse(str_length(preBases) > 0, "+", "-")
     if (!is.null(info(vcf)$MATEID)) {
-      grcall[rows,]$mateIndex <- match(as.character(info(vcf)$MATEID[rows]), names(rowData(vcf)))
+      grcall[rows,]$mateIndex <- match(as.character(info(vcf)$MATEID[rows]), names(rowRanges(vcf)))
     } else if (!is.null(info(vcf)$PARID)) {
-      grcall[rows,]$mateIndex <- match(info(vcf)$PARID[rows], names(rowData(vcf)))
+      grcall[rows,]$mateIndex <- match(info(vcf)$PARID[rows], names(rowRanges(vcf)))
     }
-    grcall[rows,]$untemplated <- str_length(preBases) + str_length(postBases) - str_length(as.character(rowData(vcf)$REF)[rows])
+    grcall[rows,]$untemplated <- str_length(preBases) + str_length(postBases) - str_length(as.character(rowRanges(vcf)$REF)[rows])
     
     mateBnd <- grcall[grcall[rows,]$mateIndex,]
     grcall[rows,]$size <- ifelse(seqnames(mateBnd)==seqnames(grcall[rows,]), abs(start(grcall[rows,]) - start(mateBnd)) + grcall[rows,]$untemplated, NA_integer_)
@@ -224,15 +233,8 @@ vcftobpgr <- function(vcf) {
     grcall <- c(grcall, eventgr)
   }
   width(grcall) <- rep(1, length(grcall))
-  if (FALSE & "CIPOS" %in% names(info(vcf))) {
-    browser()
-    stop("TODO handle CIPOS by widening the breakend width")
-    # Expand call position by CIPOS
-    offsets <- matrix(unlist(info(vcf)$CIPOS), ncol = 2, byrow = TRUE)
-    offsets[is.na(offsets)] <- 0
-    start(ranges(grcall)) <- start(ranges(grcall)) + offsets[,1]
-    end(ranges(grcall)) <- end(ranges(grcall)) + offsets[,2]
-  }
+  start(grcall) <- start(grcall) + grcall$cistartoffset
+  end(grcall) <- start(grcall) + grcall$ciwidth
   if (any(is.na(grcall$mateIndex))) {
     browser()
     stop(paste0("Unhandled SVTYPE ", unique(grcall$SVTYPE[is.na(grcall$mateIndex)])))
@@ -248,28 +250,30 @@ vcftobpgr <- function(vcf) {
   }
   return(grcall)
 }
+interval_distance <- function(s1, e1, s2, e2) {
+  return (ifelse(s2 >= s1 & s2 <= e1, 0,
+          ifelse(s1 >= s2 & s1 <= e2, 0,
+          ifelse(s1 < s2, s2 - e1, s1 - e2))))
+}
 CalculateTruth <- function(callvcf, truthvcf, maxerrorbp, maxerrorpercent=0.25, ...) {
-  if (any(!is.na(rowData(callvcf)$QUAL) & rowData(callvcf)$QUAL < 0)) {
+  if (any(!is.na(rowRanges(callvcf)$QUAL) & rowRanges(callvcf)$QUAL < 0)) {
     stop("Precondition failure: variant exists with negative quality score")
   }
   grcall <- vcftobpgr(callvcf)
   grtruth <- vcftobpgr(truthvcf)
   #TMPDEBUG: grtruth[overlapsAny(grtruth, GRanges("chr12", IRanges(148000, width=1000))),]
-  hits <- breakpointHits(query=grcall, subject=grtruth, maxgap=maxerrorbp, ...)
+  hits <- breakpointHits(query=grcall, subject=grtruth, maxgap=maxerrorbp + max(0, grcall$ciwidth), ...)
   hits$QUAL <- grcall$QUAL[hits$queryHits]
   hits$QUAL[is.na(hits$QUAL)] <- 0
-  hits$poserror <- abs(start(grcall)[hits$queryHits] - start(grtruth)[hits$subjectHits]) # breakend error distribution
+  hits$poserror <- interval_distance(start(grcall)[hits$queryHits], end(grcall)[hits$queryHits], start(grtruth)[hits$subjectHits], end(grtruth)[hits$subjectHits]) # breakend error distribution
   hits$calledsize <- abs(grcall$size[hits$queryHits])
   hits$expectedsize <- abs(grtruth$size[hits$subjectHits])
-  hits$errorsize <- abs(hits$calledsize - hits$expectedsize)
-  hits$percentsize <- hits$expectedsize / hits$calledsize
+  hits$errorsize <- abs(abs(hits$calledsize - hits$expectedsize) - grcall$ciwidth[hits$queryHits])
+  hits$percentsize <- hits$calledsize / hits$expectedsize
   # TODO: add untemplated into sizerror calculation for insertions
-  hits <- hits[is.na(hits$errorsize) | hits$errorsize <= maxerrorbp, ] # Remove hits that call incorrect event size
-  hits <- hits[is.na(hits$errorsize) | (hits$percentsize >= 1 - maxerrorpercent & hits$percentsize <= 1 + maxerrorpercent), ]
+  hits <- hits[is.na(hits$poserror) | hits$poserror <= maxerrorbp, ] # position must be within margin
+  hits <- hits[is.na(hits$expectedsize) | is.na(hits$calledsize) | (hits$percentsize >= 1 - maxerrorpercent & hits$percentsize <= 1 + maxerrorpercent), ] # size must approximately match
   # TODO: filter mismatched event types (eg: DEL called for INS)
-  # TODO: percentage based size filter?
-  # Calling a 100bp event when it is really a 1bp event should probably be considered incorrect. exact vs inexact callers?
-  
   
   # per truth variant
   hits <- data.table(hits, key="subjectHits")
@@ -284,7 +288,7 @@ CalculateTruth <- function(callvcf, truthvcf, maxerrorbp, maxerrorpercent=0.25, 
   grtruth$errorsize[tdf$subjectHits] <- tdf$errorsize
   grtruth$tp <- grtruth$hits > 0
   truthdf <- data.frame(
-    vcfIndex=seq_along(rowData(truthvcf)),
+    vcfIndex=seq_along(rowRanges(truthvcf)),
     SVTYPE=svtype(truthvcf),
     SVLEN=svlen(truthvcf),
     expectedbehits=breakendCount(svtype(truthvcf))
@@ -316,8 +320,8 @@ CalculateTruth <- function(callvcf, truthvcf, maxerrorbp, maxerrorpercent=0.25, 
   grcall$errorsize[cdf$queryHits] <- cdf$errorsize
   grcall$tp <- grcall$hits > 0
   calldf <- data.frame(
-    vcfIndex=seq_along(rowData(callvcf)),
-    QUAL=rowData(callvcf)$QUAL,
+    vcfIndex=seq_along(rowRanges(callvcf)),
+    QUAL=rowRanges(callvcf)$QUAL,
     SVTYPE=svtype(callvcf),
     SVLEN=svlen(callvcf),
     expectedbehits=breakendCount(svtype(callvcf))

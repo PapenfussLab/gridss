@@ -43,7 +43,7 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 		public final BreakendSummary location;
 		public final float score;
 		private final StructuralVariationCallBuilder builder;
-		private List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
+		private List<DirectedEvidence> evidenceDump;
 		public ActiveVariant(VariantContextDirectedEvidence call) {
 			this.id = call.hasID() ? call.getID() : null;
 			this.mateid = call.hasID() ? (String)call.getAttribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, null) : null;
@@ -54,15 +54,20 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 			this.location = call.getBreakendSummary();
 			this.startLocation = context.getLinear().getStartLinearCoordinate(this.location);
 			//this.endLocation = context.getLinear().getEndLinearCoordinate(this.location);
+			if (dump != null) {
+				evidenceDump = new ArrayList<DirectedEvidence>();
+			}
 		}
 		public void attributeEvidence(DirectedEvidence e) {
-			evidence.add(e);
+			if (evidenceDump != null) {
+				evidenceDump.add(e);
+			}
 			builder.addEvidence(e);
 		}
 		public VariantContextDirectedEvidence callVariant() {
 			VariantContextDirectedEvidence call = builder.make();
 			if (dump != null) {
-				for (DirectedEvidence e : evidence) {
+				for (DirectedEvidence e : evidenceDump) {
 					dump.writeEvidence(e, call);
 				}
 			}

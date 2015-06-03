@@ -172,13 +172,17 @@ public class Idsv extends CommandLineProgram {
 	    	}
 	    	VariantCaller caller = null;
 	    	try {
+	    		EvidenceToCsv evidenceDump = null;
+	    		if (Defaults.EXPORT_EVIDENCE_ALLOCATION) {
+	    			evidenceDump = new EvidenceToCsv(new File(getContext().getFileSystemContext().getIntermediateDirectory(OUTPUT), "evidence.csv"));
+	    		}
 	    		// Run variant caller single-threaded as we can do streaming calls
 	    		caller = new VariantCaller(
 	    			getContext(),
 	    			OUTPUT,
 	    			samEvidence,
 	    			assemblyEvidence,
-	    			new EvidenceToCsv(new File(getContext().getFileSystemContext().getIntermediateDirectory(OUTPUT), "evidence.csv")));
+	    			evidenceDump);
 	    		caller.callBreakends(threadpool);
 	    		caller.annotateBreakpoints(TRUTH_VCF);
 	    	} finally {
