@@ -104,8 +104,8 @@ Gridss is fundamentally a structural variation breakpoint caller. Variants are o
 
 Gridss calculates quality scores according to the model outlined in [paper].
 As gridss does not yet perform multiple test correction or score recalibration, **QUAL scores are vastly overestimated for all variants**.
-As a rule of thumb, variants with QUAL >= 500 and have assembles from both sides of the breakpoint (AS > 0 & RAS > 0) are considered HIGH quality,
-variant with QUAL >= 250 but can only be assembled from one breakend (AS > 0 | RAS > 0) are considered MEDIUM quality,
+As a rule of thumb, variants with QUAL >= 1000 and have assembles from both sides of the breakpoint (AS > 0 & RAS > 0) are considered HIGH quality,
+variant with QUAL >= 500 but can only be assembled from one breakend (AS > 0 | RAS > 0) are considered MEDIUM quality,
 and variants with low QUAL score or lack any supporting assemblies are considered LOW quality.
 
 ## Non-standard INFO fields
