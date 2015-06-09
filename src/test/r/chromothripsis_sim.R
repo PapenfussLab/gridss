@@ -22,47 +22,72 @@ vcfs <- LoadVcfs(metadata)
 setwd(pwd)
 
 # Separate out GRIDSS confidence levels
-vcfs <- c(
-  vcfs,
-  lapply(vcfs, function(vcf) {
-    if (is.null(attr(vcf, "metadata")) || is.na(vcf@metadata$CX_CALLER) || vcf@metadata$CX_CALLER !="gridss") return(NULL)
-    vcf <- vcf[gridss.vcftodf(vcf)$confidence %in% c("High"),]
-    attr(vcf, "metadata")$CX_CALLER <- "gridss High"
-    return(vcf)
-  }),
-  lapply(vcfs, function(vcf) {
-    if (is.null(attr(vcf, "metadata")) || is.na(vcf@metadata$CX_CALLER) || vcf@metadata$CX_CALLER !="gridss") return(NULL)
-    vcf <- vcf[gridss.vcftodf(vcf)$confidence %in% c("High", "Medium"),]
-    attr(vcf, "metadata")$CX_CALLER <- "gridss Medium"
-    return(vcf)
-  }))
+# vcfs <- c(
+#   vcfs,
+#   lapply(vcfs, function(vcf) {
+#     if (is.null(attr(vcf, "metadata")) || is.na(vcf@metadata$CX_CALLER) || vcf@metadata$CX_CALLER !="gridss") return(NULL)
+#     vcf <- vcf[gridss.vcftodf(vcf)$confidence %in% c("High"),]
+#     attr(vcf, "metadata")$CX_CALLER <- "gridss High"
+#     return(vcf)
+#   }),
+#   lapply(vcfs, function(vcf) {
+#     if (is.null(attr(vcf, "metadata")) || is.na(vcf@metadata$CX_CALLER) || vcf@metadata$CX_CALLER !="gridss") return(NULL)
+#     vcf <- vcf[gridss.vcftodf(vcf)$confidence %in% c("High", "Medium"),]
+#     attr(vcf, "metadata")$CX_CALLER <- "gridss Medium"
+#     return(vcf)
+#   }))
 vcfs[sapply(vcfs, is.null)] <- NULL
-
+vcfs <- lapply(vcfs, function(vcf) {
+  if (all(is.na(rowRanges(vcf)$QUAL))) {
+    caller <- vcf@metadata$CX_CALLER
+    # use total read support as a qual proxy
+    if (caller %in% c("delly")) {
+      rowRanges(vcf)$QUAL <- ifelse(is.na(info(vcf)$PE), 0, info(vcf)$PE) + ifelse(is.na(info(vcf)$SR), 0, info(vcf)$SR)
+    } else if (caller %in% c("crest")) {
+      rowRanges(vcf)$QUAL <- ifelse(is.na(info(vcf)$right_softclipped_read_count), 0, info(vcf)$right_softclipped_read_count) + ifelse(is.na(info(vcf)$left_softclipped_read_count), 0, info(vcf)$left_softclipped_read_count)
+    } else if (caller %in% c("pindel")) {
+      rowRanges(vcf)$QUAL <- geno(vcf)$AD[,1,2]
+    } else {
+      warning(paste("No QUAL scores for ", caller))
+    }
+  }
+  return(vcf)
+})
+vcfs_passfilters <- lapply(vcfs, function(vcf) vcf[rowRanges(vcf)$FILTER %in% c(".", "PASS")])
 
 
 #TODO: apply filters
 #Rprof("C:/dev/Rprof.out")
-#truthlist <- CalculateTruthSummary(vcfs, maxerrorbp=100, ignore.strand=TRUE)
-truthlist <- CalculateTruthSummary(vcfs, maxerrorbp=100, ignore.strand=FALSE)
+#truthlist_all <- CalculateTruthSummary(vcfs, maxerrorbp=100, ignore.strand=TRUE)
+truthlist_all <- CalculateTruthSummary(vcfs, maxerrorbp=100, ignore.strand=TRUE) # breakdancer does not specify strand
+truthlist_passfilters <- CalculateTruthSummary(vcfs_passfilters, maxerrorbp=100, ignore.strand=TRUE) # breakdancer does not specify strand
 ############
 # Sensitivity
 #
-dtsenssize <- truthlist$truth[, list(sens=sum(tp)/.N), by=c("SVLEN", "SVTYPE", "CX_ALIGNER", "CX_ALIGNER_SOFTCLIP", "CX_CALLER", "CX_READ_DEPTH", "CX_READ_FRAGMENT_LENGTH", "CX_READ_LENGTH", "CX_REFERENCE_VCF_VARIANTS")]
-ggplot(dtsenssize) + # with(dtsenssize, dtsenssize[CX_CALLER %in% c("breakdancer-max", "gridss", "crest", "socrates"),])) +
-  aes(y=sens, x=SVLEN, shape=factor(CX_READ_FRAGMENT_LENGTH), color=CX_REFERENCE_VCF_VARIANTS) +
+dtsenssize_all <- truthlist_all$truth[, list(sens=sum(tp)/.N), by=c("SVLEN", "SVTYPE", "CX_ALIGNER", "CX_ALIGNER_SOFTCLIP", "CX_CALLER", "CX_READ_DEPTH", "CX_READ_FRAGMENT_LENGTH", "CX_READ_LENGTH", "CX_REFERENCE_VCF_VARIANTS")]
+dtsenssize_passfilters <- truthlist_passfilters$truth[, list(sens=sum(tp)/.N), by=c("SVLEN", "SVTYPE", "CX_ALIGNER", "CX_ALIGNER_SOFTCLIP", "CX_CALLER", "CX_READ_DEPTH", "CX_READ_FRAGMENT_LENGTH", "CX_READ_LENGTH", "CX_REFERENCE_VCF_VARIANTS")]
+dtsenssize_all$Filters <- "All calls"
+dtsenssize_passfilters$Filters <- "Passing"
+dtsenssize <- rbind(dtsenssize_all, dtsenssize_passfilters)
+dtsenssize$CX_CALLER <- as.character(dtsenssize$CX_CALLER) # poor-man's lexical sort
+plot_sens <- ggplot(dtsenssize[!(dtsenssize$CX_REFERENCE_VCF_VARIANTS %in% c("homBP", "homBP_SINE")),]) + # with(dtsenssize, dtsenssize[CX_CALLER %in% c("breakdancer-max", "gridss", "crest", "socrates"),])) +
+  aes(y=sens, x=SVLEN, shape=factor(CX_READ_FRAGMENT_LENGTH), color=Filters) +
   geom_line() + 
-  facet_grid(CX_ALIGNER + CX_CALLER ~ CX_READ_FRAGMENT_LENGTH + CX_READ_LENGTH + CX_READ_DEPTH) +
-  scale_x_log10(breaks=unique(dtsenssize$SVLEN)) +
+  facet_grid(CX_ALIGNER + CX_CALLER ~ CX_READ_FRAGMENT_LENGTH + CX_READ_LENGTH + CX_READ_DEPTH + CX_REFERENCE_VCF_VARIANTS) +
+  scale_x_log10(breaks=2**(0:16)) +  
+  theme(panel.grid.major = element_blank()) +
   labs(y="sensitivity", x="Event size", title="Sensitivity")
-ggsave("sens_size.png", width=10, height=7.5)
+ggsave("sens_size.png", plot_sens, width=10, height=7.5)
+# rescaled to show close to 1
+ggsave("sens_size_nonlinearscale.png", plot_sens + aes(y=sens**5) + scale_y_continuous(breaks=seq(0,1,0.1)**5, labels=seq(0,1,0.1)), width=10, height=7.5)
 
-ggplot(truthlist$truth) + aes(x=errorsize) + facet_grid(CX_REFERENCE_VCF_VARIANTS~CX_CALLER) + geom_histogram() + scale_y_log10()
-ggplot(truthlist$calls) + aes(x=partialtp) + facet_grid(CX_REFERENCE_VCF_VARIANTS~CX_CALLER) + geom_histogram()
+ggplot(truthlist_all$truth) + aes(x=errorsize) + facet_grid(CX_REFERENCE_VCF_VARIANTS~CX_CALLER) + geom_histogram() + scale_y_log10()
+ggplot(truthlist_all$calls) + aes(x=partialtp) + facet_grid(CX_REFERENCE_VCF_VARIANTS~CX_CALLER) + geom_histogram()
 
 ############
 # Error in called position
 #
-ggplot(truthlist$truth[!is.na(truthlist$truth$errorsize),]) +
+ggplot(truthlist_all$truth[!is.na(truthlist_all$truth$errorsize),]) +
   aes(x=errorsize, color=factor(SVLEN)) +
   geom_density(aes(y=..density..)) +
   facet_grid(CX_ALIGNER + CX_CALLER ~ CX_READ_FRAGMENT_LENGTH + CX_READ_LENGTH + CX_READ_DEPTH, scale="free")
@@ -72,9 +97,11 @@ ggplot(truthlist$truth[!is.na(truthlist$truth$errorsize),]) +
 # ROC
 #
 bylist <- c("CX_ALIGNER", "CX_ALIGNER_SOFTCLIP", "CX_CALLER", "CX_READ_DEPTH", "CX_READ_FRAGMENT_LENGTH", "CX_READ_LENGTH", "CX_REFERENCE_VCF_VARIANTS")
-dtrocall <- TruthSummaryToROC(truthlist, bylist=bylist)
+dtrocall <- TruthSummaryToROC(truthlist_passfilters, bylist=bylist)
+dtrocall$CX_CALLER <- as.character(dtrocall$CX_CALLER) # poor-man's lexical sort
 
-ggplot(dtrocall) + # with(dtrocall, dtrocall[CX_CALLER %in% c("breakdancer-max", "gridss", "crest", "socrates"),])) +
+plot_roc <- ggplot(dtrocall[dtrocall$CX_REFERENCE_VCF_VARIANTS %in% c("homBP", "homBP_SINE") &
+                dtrocall$CX_CALLER %in% c("breakdancer-max", "gridss", "delly", "crest", "socrates"),]) + 
   aes(y=sens, x=fp+1, color=log(QUAL)) +
   scale_colour_gradientn(colours = rainbow(11)) +
   geom_line() + 
@@ -82,7 +109,8 @@ ggplot(dtrocall) + # with(dtrocall, dtrocall[CX_CALLER %in% c("breakdancer-max",
   facet_grid(CX_ALIGNER + CX_CALLER ~ CX_READ_FRAGMENT_LENGTH + CX_READ_LENGTH + CX_READ_DEPTH + CX_REFERENCE_VCF_VARIANTS) +
   scale_x_log10() + 
   labs(y="sensitivity", title="ROC by call quality threshold")
-ggsave(paste0("roc_full_fp.png"), width=10, height=7.5)
+ggsave("roc_full.png", plot_roc, width=10, height=7.5)
+ggsave("roc_full_nonlinear_scale.png", plot_roc + scale_x_continuous(limits=c(0, 100)) + aes(x=fp) + aes(y=sens**5) + scale_y_continuous(breaks=seq(0,1,0.1)**5, labels=seq(0,1,0.1)), width=10, height=7.5)
 
 for (variant in unique(dtrocall$CX_REFERENCE_VCF_VARIANTS)) {
   dtroc <- dtrocall[dtrocall$CX_REFERENCE_VCF_VARIANTS == variant,]
@@ -127,7 +155,7 @@ for (variant in unique(dtrocall$CX_REFERENCE_VCF_VARIANTS)) {
 # GRIDSS
 #
 
-calls <- truthlist$calls[truthlist$calls$CX_CALLER=="gridss", cbind(gridss.vcftodf(vcfs[[Id]])[vcfIndex,], .SD), by="Id"]
+calls <- truthlist_all$calls[truthlist_all$calls$CX_CALLER=="gridss", cbind(gridss.vcftodf(vcfs[[Id]])[vcfIndex,], .SD), by="Id"]
 
 # assembly rate
 ggplot(calls[calls$CX_READ_FRAGMENT_LENGTH==300 & calls$CX_READ_DEPTH==100,]) +

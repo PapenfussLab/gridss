@@ -98,7 +98,8 @@ public class VariantCaller extends EvidenceProcessorBase {
 	private List<Closeable> toClose = Lists.newArrayList();
 	private CloseableIterator<IdsvVariantContext> getAllCalledVariants() {
 		CloseableIterator<IdsvVariantContext> it = getVariants(processContext.getFileSystemContext().getBreakpointVcf(output));
-		return new AsyncBufferedIterator<IdsvVariantContext>(it, "CalledBreakPoints");
+		return it;
+		//return new AsyncBufferedIterator<IdsvVariantContext>(it, "CalledBreakPoints");
 	}
 	public void close() {
 		super.close();
@@ -194,9 +195,9 @@ public class VariantCaller extends EvidenceProcessorBase {
 			if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
 				breakendIt = new OrderAssertingIterator<VariantContextDirectedEvidence>(breakendIt, DirectedEvidenceOrder.ByNatural);
 			}
-			breakendIt = new AsyncBufferedIterator<VariantContextDirectedEvidence>(breakendIt, "Annotator-SV");
+			//breakendIt = new AsyncBufferedIterator<VariantContextDirectedEvidence>(breakendIt, "Annotator-SV");
 			breakendIt = new SequentialCoverageAnnotator(processContext, breakendIt, coverage);
-			breakendIt = new AsyncBufferedIterator<VariantContextDirectedEvidence>(breakendIt, "Annotator-Coverage");
+			//breakendIt = new AsyncBufferedIterator<VariantContextDirectedEvidence>(breakendIt, "Annotator-Coverage");
 			if (truthVcf != null) {
 				breakendIt = new TruthAnnotator(processContext, breakendIt, truthVcf);
 			}
