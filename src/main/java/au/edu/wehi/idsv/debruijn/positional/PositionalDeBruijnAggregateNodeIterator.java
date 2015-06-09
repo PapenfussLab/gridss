@@ -1,7 +1,8 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+
 import java.util.Iterator;
-import java.util.Map;
 import java.util.PriorityQueue;
 
 import au.edu.wehi.idsv.debruijn.positional.PositionalDeBruijnAggregateNodeIterator.KmerNodeAggregator.KmerNodeAggregatorSnapshot;
@@ -14,15 +15,15 @@ import com.google.common.primitives.Longs;
 
 /**
  * Transforms a start position sorted sequence of KmerNodes to a
- * start position sorted sequence of KmerAggregateNodes
+ * start position sorted sequence of non-overlapping KmerAggregateNodes
  * @author Daniel Cameron
  *
  */
 public class PositionalDeBruijnAggregateNodeIterator implements Iterator<KmerAggregateNode> {
 	private final PeekingIterator<KmerSupportNode> underlying;
 	private final int maxSupportWidth;
-	private PriorityQueue<KmerAggregateNode> buffer = new PriorityQueue<KmerAggregateNode>(1024, KmerNode.ByStartPosition);
-	private Map<Long, KmerNodeAggregator> byKmer;
+	private PriorityQueue<KmerAggregateNode> outputSortBuffer = new PriorityQueue<KmerAggregateNode>(1024, KmerNode.ByStartPosition);
+	private Long2ObjectOpenHashMap<KmerNodeAggregator> byKmer = new Long2ObjectOpenHashMap<KmerNodeAggregator>();
 	private PriorityQueue<KmerNodeAggregatorSnapshot> byStartPosition = new PriorityQueue<KmerNodeAggregatorSnapshot>(1024, BySnapshotStartPosition);
 	public PositionalDeBruijnAggregateNodeIterator(Iterator<KmerSupportNode> it, int maxSupportWidth) {
 		this.underlying = Iterators.peekingIterator(it);
@@ -31,15 +32,15 @@ public class PositionalDeBruijnAggregateNodeIterator implements Iterator<KmerAgg
 	@Override
 	public boolean hasNext() {
 		ensureBuffer();
-		return !buffer.isEmpty();
+		return !outputSortBuffer.isEmpty();
 	}
 	@Override
 	public KmerAggregateNode next() {
 		ensureBuffer();
-		return buffer.poll();
+		return outputSortBuffer.poll();
 	}
 	private void ensureBuffer() {
-		while (underlying.hasNext() && buffer.peek().startPosition() + maxSupportWidth >= underlying.peek().startPosition()) {
+		while (underlying.hasNext() && outputSortBuffer.peek().startPosition() + maxSupportWidth >= underlying.peek().startPosition()) {
 			process(underlying.next());
 		}
 		if (!underlying.hasNext()) {
@@ -151,7 +152,7 @@ public class PositionalDeBruijnAggregateNodeIterator implements Iterator<KmerAgg
 				KmerNode endingHere = active.poll();
 				int end = endingHere.endPosition();
 				long kmer = endingHere.kmer();
-				buffer.add(new KmerAggregateNode(kmer, weight, start, end, referenceCount > 0));
+				outputSortBuffer.add(new KmerAggregateNode(kmer, weight, start, end, referenceCount > 0));
 				while (active.peek().endPosition() == end) {
 					weight -= endingHere.weight();
 					if (endingHere.isReference()) {

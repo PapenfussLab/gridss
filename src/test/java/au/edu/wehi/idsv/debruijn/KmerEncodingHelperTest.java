@@ -284,4 +284,26 @@ public class KmerEncodingHelperTest extends TestHelper {
 		
 		assertEquals(1, KmerEncodingHelper.totalBaseDifference(asList(4, "CAAAC").iterator(), asList(4, "TAAAC").iterator(), 4));
 	}
+	@Test
+	public void isNext_should_match_any_subsequent_kmer() {
+		assertTrue(KmerEncodingHelper.isNext(4, K("GTAC"), K("TACA")));
+		assertTrue(KmerEncodingHelper.isNext(4, K("GTAC"), K("TACC")));
+		assertTrue(KmerEncodingHelper.isNext(4, K("GTAC"), K("TACG")));
+		assertTrue(KmerEncodingHelper.isNext(4, K("GTAC"), K("TACT")));
+		assertFalse(KmerEncodingHelper.isNext(4, K("TACA"), K("GTAC")));
+		assertFalse(KmerEncodingHelper.isNext(4, K("TACC"), K("GTAC")));
+		assertFalse(KmerEncodingHelper.isNext(4, K("TACG"), K("GTAC")));
+		assertFalse(KmerEncodingHelper.isNext(4, K("TACT"), K("GTAC")));
+	}
+	@Test
+	public void isPrev_should_match_any_previous_kmer() {
+		assertFalse(KmerEncodingHelper.isPrev(4, K("GTAC"), K("TACA")));
+		assertFalse(KmerEncodingHelper.isPrev(4, K("GTAC"), K("TACC")));
+		assertFalse(KmerEncodingHelper.isPrev(4, K("GTAC"), K("TACG")));
+		assertFalse(KmerEncodingHelper.isPrev(4, K("GTAC"), K("TACT")));
+		assertTrue(KmerEncodingHelper.isPrev(4, K("TACA"), K("GTAC")));
+		assertTrue(KmerEncodingHelper.isPrev(4, K("TACC"), K("GTAC")));
+		assertTrue(KmerEncodingHelper.isPrev(4, K("TACG"), K("GTAC")));
+		assertTrue(KmerEncodingHelper.isPrev(4, K("TACT"), K("GTAC")));
+	}
 }

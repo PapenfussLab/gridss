@@ -154,6 +154,12 @@ public class KmerEncodingHelper {
 		}
 		return result;
 	}
+	public static boolean isPrev(int k, long encoded, long prev) {
+		return isNext(k, prev, encoded);
+	}
+	public static boolean isNext(int k, long encoded, long next) {
+		return clearBase(k - 1, encoded) == next >>> 2;
+	}
 	public static long[] nextStates(int k, long encoded) {
 		long next = clearBase(k - 1, encoded) << 2;
 		return new long[] {
