@@ -2,6 +2,8 @@ package au.edu.wehi.idsv;
 
 import java.math.RoundingMode;
 
+import au.edu.wehi.idsv.util.IntervalUtil;
+
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 import com.google.common.math.IntMath;
@@ -97,8 +99,7 @@ public class BreakpointSummary extends BreakendSummary {
 	protected boolean remoteBreakendOverlaps(BreakpointSummary loc) {
 		return this.referenceIndex2 == loc.referenceIndex2 &&
 				this.direction2 == loc.direction2 &&
-				((this.start2 <= loc.start2 && this.end2 >= loc.start2) ||
-				 (this.start2 >= loc.start2 && this.start2 <= loc.end2));
+				IntervalUtil.overlapsClosed(this.start2, this.end2, loc.start2, loc.end2);
 	}
 	@Override
 	public BreakpointSummary expandBounds(int expandBy) {
@@ -133,7 +134,7 @@ public class BreakpointSummary extends BreakendSummary {
 		}
 		int bpMinSize = bwdStart - fwdEnd - 1;
 		int bpMaxSize = bwdEnd - fwdStart - 1;
-		return intervalsOverlap(bpMinSize, bpMaxSize, minSize, maxSize);
+		return IntervalUtil.overlapsClosed(bpMinSize, bpMaxSize, minSize, maxSize);
 	}
 	/**
 	 * Determines whether this breakpoint could just be the reference allele
@@ -141,13 +142,6 @@ public class BreakpointSummary extends BreakendSummary {
 	 */
 	public boolean couldBeReferenceAllele() {
 		return couldBeDeletionOfSize(0, 0);
-	}
-	/**
-	 * Determines whether the (end-point inclusive) intervals overlap
-	 * @return true if overlap, false otherwise
-	 */
-	private static boolean intervalsOverlap(int start1, int end1, int start2, int end2) {
-		return start1 <= end2 && start2 <= end1;
 	}
 	/**
 	 * Gets the nominal position of the variant for variant calling purposes
