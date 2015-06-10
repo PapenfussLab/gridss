@@ -4,6 +4,8 @@ import htsjdk.samtools.SAMSequenceDictionary;
 
 import java.math.RoundingMode;
 
+import au.edu.wehi.idsv.util.IntervalUtil;
+
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 import com.google.common.math.IntMath;
@@ -64,8 +66,7 @@ public class BreakendSummary {
 	protected boolean breakendOverlaps(BreakendSummary loc) {
 		return this.referenceIndex == loc.referenceIndex &&
 				this.direction == loc.direction &&
-				((this.start <= loc.start && this.end >= loc.start) ||
-				 (this.start >= loc.start && this.start <= loc.end));
+				IntervalUtil.overlapsClosed(this.start, this.end, loc.start, loc.end);
 	}
 	/**
 	 * Returns the overlap of the given breakends
