@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.PriorityQueue;
 
@@ -39,13 +38,9 @@ public class EdgeIntervalIterator {
 	private int start = Integer.MIN_VALUE;
 	private int end = Integer.MIN_VALUE;
 	public EdgeIntervalIterator(KmerPathNode node) {
-		this(node.startPosition(), node.endPosition(), node.length(), node.next(), node.prev(), false);
+		this(node.startPosition(), node.endPosition(), node.length(), node.next(), node.prev());
 	}
-	public EdgeIntervalIterator(int start, int end, int length, List<KmerPathNode> next, List<KmerPathNode> prev, boolean preSorted) {
-		if (!preSorted) {
-			Collections.sort(next, KmerPathNode.ByFirstKmerStartPosition);
-			Collections.sort(prev, KmerPathNode.ByStartPosition);
-		}
+	public EdgeIntervalIterator(int start, int end, int length, List<KmerPathNode> next, List<KmerPathNode> prev) {
 		this.next = next;
 		this.prev = prev;
 		this.maxEnd = end;

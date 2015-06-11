@@ -27,9 +27,29 @@ public class AssemblyParameters {
 	 */
 	public boolean allReferenceKmerReuse = true;
 	/**
+	 * Directory to save debruijn graph visualisation information to.
+	 */
+	public File debruijnGraphVisualisationDirectory = null;
+	/**
+	 * Directory to save debruijn graph visualisation information to.
+	 */
+	public boolean visualiseAll = Defaults.VISUALISE_ALL;
+	/**
+	 * Directory to save debruijn graph visualisation information to.
+	 */
+	public boolean visualiseTimeouts = Defaults.VISUALISE_TIMEOUTS;
+	/**
+	 * Maximum width (in multiples of maximum fragment size) of subgraph
+	 */
+	public float maxSubgraphFragmentWidth = Defaults.MAX_SUBGRAPH_WIDTH_IN_FRAGMENT_SIZE_MULTIPLES;
+	/**
+	 * Minimum number of bases before immediate assembly is forced
+	 */
+	public int minSubgraphWidthForTimeout = 20000; // mammalian mitochondrial size is 15-17kb
+	/**
 	 * Maximum number of contigs per assembly iteration
 	 */
-	public int maxContigsPerAssembly = 1024;
+	public int subgraphMaxContigsPerAssembly = 1024;
 	/**
 	 * Subgraph assembly margin in multiples of max fragment size
 	 * 
@@ -50,31 +70,21 @@ public class AssemblyParameters {
 	/**
 	 * Maximum nodes when finding the best path
 	 */
-	public int maxPathTraversalNodes = Defaults.BEST_PATH_MAX_TRAVERSAL;
+	public int subgraphMaxPathTraversalNodes = Defaults.BEST_PATH_MAX_TRAVERSAL;
 	/**
-	 * Maximum number of nodes to consider when collapsing paths and leaves
+	 * Maximum length of path to collapse
+	 * Units are multiples of max support width (ie largest max fragment size)
 	 */
-	//public int maxCollapseTraversalNodes = Defaults.COLLAPSE_PATH_MAX_TRAVERSAL; // TODO: refactor to pass this in
+	public float positionalMaxPathCollapseLength = 2f;
+	public int positionalMaxPathCollapseLengthInBases(int maxSupportWidth) { return (int)(positionalMaxPathCollapseLength * maxSupportWidth); }
 	/**
-	 * Directory to save debruijn graph visualisation information to.
+	 * Maximum length of a single path node. Leaves longer that this length will not be collapsed.
+	 * 
+	 * This limit is required to ensure that the width of the partial graph loaded into memory
+	 * is bounded.    
 	 */
-	public File debruijnGraphVisualisationDirectory = null;
-	/**
-	 * Directory to save debruijn graph visualisation information to.
-	 */
-	public boolean visualiseAll = Defaults.VISUALISE_ALL;
-	/**
-	 * Directory to save debruijn graph visualisation information to.
-	 */
-	public boolean visualiseTimeouts = Defaults.VISUALISE_TIMEOUTS;
-	/**
-	 * Maximum width (in multiples of maximum fragment size) of subgraph
-	 */
-	public float maxSubgraphFragmentWidth = Defaults.MAX_SUBGRAPH_WIDTH_IN_FRAGMENT_SIZE_MULTIPLES;
-	/**
-	 * Minimum number of bases before immediate assembly is forced
-	 */
-	public int minSubgraphWidthForTimeout = 20000; // mammalian mitochondrial size is 15-17kb 
+	public float positionalMaxPathLength = 1.1f;
+	public int positionalMaxPathLengthInBases(int maxSupportWidth) { return (int)(positionalMaxPathLength * maxSupportWidth); }
 	/**
 	 * Minimum number of reads contributing the the assembly
 	 */

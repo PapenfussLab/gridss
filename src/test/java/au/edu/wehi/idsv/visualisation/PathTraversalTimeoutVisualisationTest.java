@@ -37,7 +37,7 @@ public class PathTraversalTimeoutVisualisationTest extends IntermediateFilesTest
 		pc.getAssemblyParameters().collapseBubblesOnly = false;
 		pc.getAssemblyParameters().debruijnGraphVisualisationDirectory = new File(super.testFolder.getRoot(), "visualisation");
 		pc.getAssemblyParameters().visualiseTimeouts = true;
-		pc.getAssemblyParameters().maxPathTraversalNodes = 1;
+		pc.getAssemblyParameters().subgraphMaxPathTraversalNodes = 1;
 		return pc;
 	}
 }

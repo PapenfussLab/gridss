@@ -12,14 +12,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 public class HighestWeightSimilarPath<PN extends DeBruijnSequenceGraphNode> {
+	private final int maxDifference;
+	private final PN leaf;
+	private final PN anchor;
+	private final boolean traverseForward;
+	private final DeBruijnGraph<PN> graph;
+	private final NodeTraversalTracker<PN> tracker;
 	private List<PN> bestPath = null;
 	private int bestWeight = Integer.MIN_VALUE;
-	private int maxDifference;
-	private PN leaf;
-	private PN anchor;
-	private boolean traverseForward;
-	private DeBruijnGraph<PN> graph;
-	private NodeTraversalTracker<PN> tracker;
 	/**
 	 * Finds all paths similar to the leaf path and returns the highest weighted similar path. 
 	 * @param bestPath best path so far
@@ -48,6 +48,9 @@ public class HighestWeightSimilarPath<PN extends DeBruijnSequenceGraphNode> {
 		this.traverseForward = traverseForward;
 		this.graph = graph;
 		this.tracker = tracker;
+	}
+	public PN anchor() {
+		return anchor;
 	}
 	public List<PN> find() {
 		recursiveFind(new ArrayDeque<PN>(), 0, 0);

@@ -3,7 +3,9 @@ package au.edu.wehi.idsv.debruijn.positional;
 import java.util.ArrayList;
 import java.util.List;
 
-public class KmerPathSubnode {
+import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNode;
+
+public class KmerPathSubnode implements DeBruijnSequenceGraphNode {
 	private final KmerPathNode n;
 	private final int start;
 	private final int end;
@@ -18,6 +20,22 @@ public class KmerPathSubnode {
 	public KmerPathNode node() { return n; }
 	public int firstKmerStartPosition() { return start; }
 	public int firstKmerEndPosition() { return end; }
+	@Override
+	public int length() {
+		return n.length();
+	}
+	@Override
+	public int weight() {
+		return n.weight();
+	}
+	@Override
+	public int weight(int offset) {
+		return n.weight(offset);
+	}
+	@Override
+	public long kmer(int offset) {
+		return n.kmer(offset);
+	}
 	public List<KmerPathSubnode> next() {
 		List<KmerPathSubnode> adj = new ArrayList<KmerPathSubnode>(n.next().size());
 		int targetStart = start + n.length() + 1;

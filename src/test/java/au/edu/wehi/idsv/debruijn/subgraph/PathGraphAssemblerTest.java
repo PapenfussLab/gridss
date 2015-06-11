@@ -46,7 +46,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.k = 4;
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
-		ap.maxContigsPerAssembly = 1;
+		ap.subgraphMaxContigsPerAssembly = 1;
 		
 		DeBruijnReadGraph g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
@@ -68,7 +68,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.k = 4;
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
-		ap.maxContigsPerAssembly = 1000;
+		ap.subgraphMaxContigsPerAssembly = 1000;
 		ap.maxBaseMismatchForCollapse = 0;
 		
 		DeBruijnReadGraph g = RG(ap.k);
@@ -88,7 +88,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.k = 4;
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
-		ap.maxContigsPerAssembly = 1000;
+		ap.subgraphMaxContigsPerAssembly = 1000;
 		ap.maxBaseMismatchForCollapse = 0;
 		
 		
@@ -108,7 +108,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 	public void should_maximise_non_reference_weight() {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.k = 4;
-		ap.maxContigsPerAssembly = 1000;
+		ap.subgraphMaxContigsPerAssembly = 1000;
 		ap.maxBaseMismatchForCollapse = 0;
 		
 		DeBruijnReadGraph g = RG(ap.k);
@@ -125,7 +125,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.k = 4;
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
-		ap.maxContigsPerAssembly = 1000;
+		ap.subgraphMaxContigsPerAssembly = 1000;
 		ap.maxBaseMismatchForCollapse = 0;
 		
 		DeBruijnReadGraph g = RG(ap.k);
@@ -148,7 +148,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.k = 4;
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 16;
-		ap.maxContigsPerAssembly = 1000;
+		ap.subgraphMaxContigsPerAssembly = 1000;
 		ap.maxBaseMismatchForCollapse = 0;
 		
 		DeBruijnReadGraph g = RG(ap.k);
@@ -166,7 +166,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.k = 3;
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 16;
-		ap.maxContigsPerAssembly = 1000;
+		ap.subgraphMaxContigsPerAssembly = 1000;
 		ap.maxBaseMismatchForCollapse = 0;
 		
 		DeBruijnReadGraph g = RG(ap.k);
@@ -188,7 +188,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.k = 4;
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
-		ap.maxContigsPerAssembly = 4;
+		ap.subgraphMaxContigsPerAssembly = 4;
 		ap.maxBaseMismatchForCollapse = 0;
 		
 		DeBruijnReadGraph g = RG(ap.k);
@@ -207,9 +207,9 @@ public class PathGraphAssemblerTest extends TestHelper {
 	public void should_fall_back_to_greedy_assemble() {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.k = 4;
-		ap.maxContigsPerAssembly = 1000;
+		ap.subgraphMaxContigsPerAssembly = 1000;
 		ap.maxBaseMismatchForCollapse = 0;
-		ap.maxPathTraversalNodes = 2;
+		ap.subgraphMaxPathTraversalNodes = 2;
 		
 		DeBruijnReadGraph g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence("AAATGGGGGGGGGGG", Read(0, 10, "6M10S"))));
@@ -235,9 +235,9 @@ public class PathGraphAssemblerTest extends TestHelper {
 	public void should_limit_anchor_assembly_length() {
 		AssemblyParameters ap = new AssemblyParameters();
 		ap.k = 5;
-		ap.maxContigsPerAssembly = 1000;
+		ap.subgraphMaxContigsPerAssembly = 1000;
 		ap.maxBaseMismatchForCollapse = 0;
-		ap.maxPathTraversalNodes = 2;
+		ap.subgraphMaxPathTraversalNodes = 2;
 		ap.anchorAssemblyLength = 2;
 		DeBruijnReadGraph g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence( "AACCGGACAGCGCAGAGCATT", Read(0, 1, "20M1S"))));

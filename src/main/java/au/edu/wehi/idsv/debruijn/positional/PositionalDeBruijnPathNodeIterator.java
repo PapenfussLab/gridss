@@ -183,9 +183,9 @@ public class PositionalDeBruijnPathNodeIterator implements Iterator<KmerPathNode
 		}
 		if (nextList.size() == 1 && gn.pn.length() < maxPathLength) {
 			GraphNode nextNode = nextList.get(0);
-			if (nextNode.n.isReference() == gn.n.isReference() &&
-					nextNode.n.startPosition() == gn.n.startPosition() + 1 &&
-					nextNode.n.endPosition() == gn.n.endPosition() + 1) {
+				if (nextNode.n.isReference() == gn.n.isReference()
+						&& nextNode.n.startPosition() == gn.n.startPosition() + 1
+						&& nextNode.n.endPosition() == gn.n.endPosition() + 1) {
 				// We want to merge with our next node.
 				// Delay processing until we know what's happening with the next node.
 				// We can't perform the merge now as the adjacent nodes

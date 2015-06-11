@@ -81,7 +81,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     @Option(doc = "Allow reuse of reference kmers when assembling subsequent contigs in an assembly iteration", optional=true)
     public boolean ASSEMBLY_DEBRUIJN_ALLOW_REFERENCE_KMER_RESUSE = new AssemblyParameters().allReferenceKmerReuse;
     @Option(doc = "Maximum number of contigs per assembly iteration", optional=true)
-    public int ASSEMBLY_DEBRUIJN_MAX_CONTIGS_PER_ITERATION = new AssemblyParameters().maxContigsPerAssembly;
+    public int ASSEMBLY_DEBRUIJN_MAX_CONTIGS_PER_ITERATION = new AssemblyParameters().subgraphMaxContigsPerAssembly;
     @Option(doc = "Number of branches to consider at each kmer branch", optional=true)
     public int ASSEMBLY_DEBRUIJN_SUBGRAPH_BRANCHING_FACTOR = 16; // new AssemblyParameters().subgraphAssemblyTraversalMaximumBranchingFactor;
     @Option(doc = "Number of bases (in multiples of maximum fragment size) of no contributing evidence before subgraph assembly.", optional=true)
@@ -167,7 +167,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 		ap.maxBaseMismatchForCollapse = ASSEMBLY_DEBRUIJN_MAX_PATH_COLLAPSE_BASE_MISMATCHES;
 		ap.collapseBubblesOnly = ASSEMBLY_DEBRUIJN_COLLAPSE_BUBBLES_ONLY;
 		ap.allReferenceKmerReuse = ASSEMBLY_DEBRUIJN_ALLOW_REFERENCE_KMER_RESUSE;
-		ap.maxContigsPerAssembly = ASSEMBLY_DEBRUIJN_MAX_CONTIGS_PER_ITERATION;
+		ap.subgraphMaxContigsPerAssembly = ASSEMBLY_DEBRUIJN_MAX_CONTIGS_PER_ITERATION;
 		ap.subgraphAssemblyTraversalMaximumBranchingFactor = ASSEMBLY_DEBRUIJN_SUBGRAPH_BRANCHING_FACTOR;
 		ap.subgraphAssemblyMargin = ASSEMBLY_DEBRUIJN_SUBGRAPH_ASSEMBLY_FRAGMENT_DELAY;
 		ap.debruijnGraphVisualisationDirectory = WORKING_DIR != null ? new File(WORKING_DIR, "gridss_vis") : new File("gridss_vis");

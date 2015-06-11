@@ -57,7 +57,7 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		context.getAssemblyParameters().maxBaseMismatchForCollapse = 0;
 		context.getAssemblyParameters().collapseBubblesOnly = true;
 		context.getAssemblyParameters().writeFilteredAssemblies = true;
-		context.getAssemblyParameters().maxPathTraversalNodes = 0;
+		context.getAssemblyParameters().subgraphMaxPathTraversalNodes = 0;
 		aes = AES(context);
 		ass = new DeBruijnSubgraphAssembler(context, aes);
 		result = Lists.newArrayList(); 

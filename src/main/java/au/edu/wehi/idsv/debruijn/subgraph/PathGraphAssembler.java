@@ -105,7 +105,7 @@ public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBru
 				) {
 			PathGraphTraverse<T, PN> trav = new PathGraphTraverse<T, PN>(
 					PathGraphAssembler.this,
-					parameters.maxPathTraversalNodes,
+					parameters.subgraphMaxPathTraversalNodes,
 					traverseForward,
 					false,
 					parameters.subgraphAssemblyTraversalMaximumBranchingFactor,
@@ -117,7 +117,7 @@ public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBru
 				best = trav.traverse(startNodes);
 			}
 			totalNodesTraversed += trav.getNodesTraversed();
-			timeoutReached |= trav.getNodesTraversed() >= parameters.maxPathTraversalNodes;
+			timeoutReached |= trav.getNodesTraversed() >= parameters.subgraphMaxPathTraversalNodes;
 			return best;
 		}
 		/**
@@ -129,7 +129,7 @@ public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBru
 		 */
 		private List<PN> traverseReference(PN node, boolean traverseForward, int targetLength) {
 			assert(!isReference(node));
-			PathGraphTraverse<T, PN> trav = new PathGraphTraverse<T, PN>(PathGraphAssembler.this, parameters.maxPathTraversalNodes,
+			PathGraphTraverse<T, PN> trav = new PathGraphTraverse<T, PN>(PathGraphAssembler.this, parameters.subgraphMaxPathTraversalNodes,
 					traverseForward, true,
 					// if anchor has previously timed out on a different breakend subgraph
 					// just do a greedy traversal as we're likely to time out again
@@ -138,7 +138,7 @@ public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBru
 					node.length() + targetLength);
 			List<PN> anchor = trav.traverse(ImmutableList.of(node));
 			totalNodesTraversed += trav.getNodesTraversed();
-			anchorTimeoutReached |= trav.getNodesTraversed() >= parameters.maxPathTraversalNodes; 
+			anchorTimeoutReached |= trav.getNodesTraversed() >= parameters.subgraphMaxPathTraversalNodes; 
 			timeoutReached |= anchorTimeoutReached;
 			assert(anchor != null); // assembly includes starting node so must include that
 			assert(anchor.size() > 0); // assembly includes starting node so must include that

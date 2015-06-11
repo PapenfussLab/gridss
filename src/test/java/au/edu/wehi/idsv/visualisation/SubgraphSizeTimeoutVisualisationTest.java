@@ -41,7 +41,7 @@ public class SubgraphSizeTimeoutVisualisationTest extends IntermediateFilesTest 
 	public void should_export_on_path_timeout_gexf() throws IOException {
 		int k = 6;
 		ProcessingContext pc = getCommandlineContext(false);
-		pc.getAssemblyParameters().maxPathTraversalNodes = 1024;
+		pc.getAssemblyParameters().subgraphMaxPathTraversalNodes = 1024;
 		pc.getAssemblyParameters().k = k;
 		pc.getSoftClipParameters().minLength = 1;
 		File output = new File(super.testFolder.getRoot(), "test_path_timeout_gexf.vcf");
