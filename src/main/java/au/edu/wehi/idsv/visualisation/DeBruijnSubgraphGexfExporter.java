@@ -78,7 +78,7 @@ public class DeBruijnSubgraphGexfExporter implements DeBruijnGraphExporter<DeBru
 	@Override
 	public DeBruijnSubgraphGexfExporter trackChanges(long kmer, DeBruijnSubgraphNode kmerNode) {
 		if (gexfNodes.size() >= MAXIMUM_NODES) return this;
-		if (kmerNode == null || kmerNode.getWeight() <= 0) {
+		if (kmerNode == null || kmerNode.weight() <= 0) {
 			// close out final interval
 			Node node = gexfNodes.get(kmer);
 			if (node != null) {
@@ -99,7 +99,7 @@ public class DeBruijnSubgraphGexfExporter implements DeBruijnGraphExporter<DeBru
 		return this;
 	}
 	private void updateDynamicAttributes(Node node, int timeStamp, DeBruijnSubgraphNode kmerNode) {
-		GexfHelper.setDynamicAttribute(node, timeStamp, attrWeight, kmerNode.getWeight());
+		GexfHelper.setDynamicAttribute(node, timeStamp, attrWeight, kmerNode.weight());
 		GexfHelper.setDynamicAttribute(node, timeStamp, attrIsReference, kmerNode.isReference() ? 1 : 0);
 		GexfHelper.setDynamicAttribute(node, timeStamp, attrReferencePosition, kmerNode.getExpectedPosition());
 		// try getting a sane graph by placing nodes at their anchor position

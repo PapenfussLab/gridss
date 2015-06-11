@@ -126,7 +126,7 @@ public class DynamicDeBruijnPathGraphGexfExporter<T, PN extends DeBruijnPathNode
 	private void trackChanges(DeBruijnPathGraph<T, PN> pg, PN pn) {
 		Node node = lookup.get(pn);
 		GexfHelper.setDynamicAttribute(node, currentTime, attrTotalWeight, pn.weight());
-		GexfHelper.setDynamicAttribute(node, currentTime, attrMaxKmerWeight, pn.maxNodeWeight(pg.getGraph()));
+		GexfHelper.setDynamicAttribute(node, currentTime, attrMaxKmerWeight, pn.maxNodeWeight());
 	}
 	private void ensureNextEdges(DeBruijnPathGraph<T, PN> pg, PN pn) {
 		Node node = lookup.get(pn);

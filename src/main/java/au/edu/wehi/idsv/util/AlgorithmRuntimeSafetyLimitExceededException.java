@@ -7,7 +7,7 @@ package au.edu.wehi.idsv.util;
  * @author Daniel Cameron
  *
  */
-public class AlgorithmRuntimeSafetyLimitExceededException extends Exception {
+public class AlgorithmRuntimeSafetyLimitExceededException extends RuntimeException {
 	public AlgorithmRuntimeSafetyLimitExceededException() {
 		super();
 	}

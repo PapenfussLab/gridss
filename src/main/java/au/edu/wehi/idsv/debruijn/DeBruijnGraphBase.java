@@ -64,16 +64,16 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> implements D
 	 */
 	protected abstract T remove(T node, T toRemove);
 	public T add(T node) {
-		T existing = kmers.get(node.getKmer());
+		T existing = kmers.get(node.kmer());
 		if (existing != null) {
 			node = merge(existing, node);
-			kmers.put(node.getKmer(), node);
+			kmers.put(node.kmer(), node);
 		} else {
-			kmers.put(node.getKmer(), node);
-			onKmerAdded(node.getKmer(), node);
+			kmers.put(node.kmer(), node);
+			onKmerAdded(node.kmer(), node);
 		}
 		if (getGraphExporter() != null) {
-			getGraphExporter().trackChanges(node.getKmer(), node);
+			getGraphExporter().trackChanges(node.kmer(), node);
 		}
 		return node;
 	}
@@ -89,7 +89,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> implements D
 		T existing = kmers.get(kmer);
 		if (existing != null) {
 			node = remove(existing, node);
-			if (node.getWeight() <= 0) {
+			if (node.weight() <= 0) {
 				remove(kmer);
 			} else {
 				kmers.put(kmer, node);
@@ -164,7 +164,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> implements D
 		int best = Integer.MIN_VALUE;
 		Long bestNode = null;
 		for (Long next : nextStates(state, inclusionSet, exclusionSet)) {
-			int weight = kmers.get(next).getWeight();
+			int weight = kmers.get(next).weight();
 			if (weight > best) {
 				bestNode = next;
 				best = weight;
@@ -183,7 +183,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> implements D
 		int best = Integer.MIN_VALUE;
 		Long bestNode = null;
 		for (Long prev : prevStates(state, inclusionSet, exclusionSet)) {
-			int weight = kmers.get(prev).getWeight();
+			int weight = kmers.get(prev).weight();
 			if (weight > best) {
 				bestNode = prev;
 				best = weight;
@@ -223,7 +223,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> implements D
 			for (T node : pathAllKmers.get(i)) {
 				// subtract # reads to adjust for the +1 qual introduced by ReadKmerIterable
 				// to ensure positive node weights
-				kmerWeight[i] = node.getWeight() - node.getSupportingEvidenceList().size();
+				kmerWeight[i] = node.weight() - node.getSupportingEvidenceList().size();
 			}
 		}
 		byte[] result = new byte[pathAllKmers.size() + k - 1];
@@ -301,7 +301,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> implements D
 		private int getWeight(long kmer) {
 			int weight = 0;
 			T node = kmers.get(kmer);
-			if (node != null) weight = node.getWeight();
+			if (node != null) weight = node.weight();
 			return weight;
 		}
 	};
@@ -386,7 +386,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> implements D
 		sb.append(String.format("[%3d]\t", contigLookup.get(path.getFirst())));
 		sb.append(new String(KmerEncodingHelper.baseCalls(path, getK())));
 		int weight = 0;
-		for (Long y : path) weight += kmers.get(y).getWeight();
+		for (Long y : path) weight += kmers.get(y).weight();
 		sb.append(String.format(" %d kmers %d weight", path.size(), weight));
 		sb.append(" from:{");
 		for (Long y : prevStates(path.getFirst(), null, null)) {
@@ -420,7 +420,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> implements D
 	@Override
 	public List<T> next(T node) {
 		ArrayList<T> result = new ArrayList<T>(2);
-		for (long kmer : KmerEncodingHelper.nextStates(k, node.getKmer())) {
+		for (long kmer : KmerEncodingHelper.nextStates(k, node.kmer())) {
 			T n = kmers.get(kmer);
 			if (n != null) {
 				result.add(n);
@@ -431,7 +431,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> implements D
 	@Override
 	public List<T> prev(T node) {
 		ArrayList<T> result = new ArrayList<T>(2);
-		for (long kmer : KmerEncodingHelper.prevStates(k, node.getKmer())) {
+		for (long kmer : KmerEncodingHelper.prevStates(k, node.kmer())) {
 			T n = kmers.get(kmer);
 			if (n != null) {
 				result.add(n);
@@ -441,7 +441,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> implements D
 	}
 	@Override
 	public void removeNode(T node) {
-		kmers.remove(node.getKmer());
+		kmers.remove(node.kmer());
 	}
 	@Override
 	public void removeEdge(T source, T sink) {
@@ -464,14 +464,14 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> implements D
 		Iterable<Long> asKmers = Iterables.transform(path, new Function<T, Long>() {
 			@Override
 			public Long apply(T input) {
-				return input.getKmer();
+				return input.kmer();
 			}
 		});
 		return new String(KmerEncodingHelper.baseCalls(Lists.newArrayList(asKmers), getK()), StandardCharsets.US_ASCII);
 	}
 	@Override
 	public long getKmer(T node) {
-		return node.getKmer();
+		return node.kmer();
 	}
 	@Override
 	public boolean isReference(T node) {
@@ -479,6 +479,6 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> implements D
 	}
 	@Override
 	public int getWeight(T node) {
-		return node.getWeight();
+		return node.weight();
 	}
 }

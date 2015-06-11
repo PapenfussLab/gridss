@@ -4,10 +4,6 @@ import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
 import com.google.common.primitives.Bytes;
 
 
@@ -284,24 +280,4 @@ public class KmerEncodingHelper {
 		}
 		return diffCount;
 	}
-	public static <T> int totalBaseDifference(final DeBruijnGraph<T> graph, final Iterator<T> pathA, final Iterator<T> pathB) {
-		assert(graph != null);
-		if (pathA == null || pathB == null) return 0;
-		Function<T, Long> f = new Function<T, Long>() {
-			@Override
-			public Long apply(T input) {
-				return graph.getKmer(input);
-			}
-		};
-		return totalBaseDifference(Iterators.transform(pathA, f), Iterators.transform(pathB, f), graph.getK());
-	}
-	public static <T> List<Long> asKmers(final DeBruijnGraph<T> graph, final Iterable<? extends T> path) {
-		return Lists.newArrayList(Iterables.transform(path, new Function<T, Long>() {
-			@Override
-			public Long apply(T input) {
-				return graph.getKmer(input);
-			}
-		}));
-	}
-	
 }

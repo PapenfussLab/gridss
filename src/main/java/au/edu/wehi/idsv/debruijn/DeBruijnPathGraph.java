@@ -7,10 +7,11 @@ import java.util.PriorityQueue;
 
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.graph.PathGraph;
-import au.edu.wehi.idsv.graph.PathNode;
 import au.edu.wehi.idsv.graph.PathNodeFactory;
+import au.edu.wehi.idsv.graph.WeightedSequenceGraphNodeUtil;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
 import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTracker;
+import au.edu.wehi.idsv.visualisation.TimeoutNodeTraversalTracker;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
@@ -19,7 +20,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Queues;
 
 public class DeBruijnPathGraph<T, PN extends DeBruijnPathNode<T>> extends PathGraph<T, PN> implements DeBruijnGraph<PN> {
-	private int nodeTaversalCount;
+	private TimeoutNodeTraversalTracker<PN> collapseTimeout;
 	public DeBruijnPathGraph(DeBruijnGraph<T> graph, Collection<T> seeds, PathNodeFactory<T, PN> factory, SubgraphAssemblyAlgorithmTracker<T, PN> tracker) {
 		super(graph, seeds, factory, tracker);
 	}
@@ -63,7 +64,7 @@ public class DeBruijnPathGraph<T, PN extends DeBruijnPathNode<T>> extends PathGr
 	 *  @return number of paths collapsed
 	 */
 	public int collapseSimilarPaths(int maxDifference, boolean bubblesOnly) throws AlgorithmRuntimeSafetyLimitExceededException {
-		nodeTaversalCount = 0;
+		collapseTimeout = new TimeoutNodeTraversalTracker<PN>();
 		int collapseCount = 0;
 		// Keep collapsing until we can't anymore
 		boolean collapsed = true;
@@ -88,7 +89,7 @@ public class DeBruijnPathGraph<T, PN extends DeBruijnPathNode<T>> extends PathGr
 	 * @throws AlgorithmRuntimeSafetyLimitExceededException
 	 */
 	public int collapseLeaves(int maxDifference) throws AlgorithmRuntimeSafetyLimitExceededException {
-		nodeTaversalCount = 0;
+		collapseTimeout = new TimeoutNodeTraversalTracker<PN>();
 		int collapseCount = 0;
 		int collapsedThisRound;
 		do {
@@ -144,7 +145,7 @@ public class DeBruijnPathGraph<T, PN extends DeBruijnPathNode<T>> extends PathGr
 			collapsePathCount = collapseSimilarPaths(maxBaseMismatchForCollapse, bubblesOnly);
 			totalPathsCollapsed += collapsePathCount;
 		} while (collapseLeafCount + collapsePathCount > 0);
-		tracker.collapse(collapseIterations, totalPathsCollapsed, totalLeavesCollapsed, nodeTaversalCount, nodesBefore - getPathCount());
+		tracker.collapse(collapseIterations, totalPathsCollapsed, totalLeavesCollapsed, collapseTimeout.count(), nodesBefore - getPathCount());
 		return totalPathsCollapsed + totalLeavesCollapsed;
 	}
 	/**
@@ -158,95 +159,18 @@ public class DeBruijnPathGraph<T, PN extends DeBruijnPathNode<T>> extends PathGr
 	 */
 	private boolean collapseLeaf(int maxDifference, PN leaf, PN anchor, boolean forward) throws AlgorithmRuntimeSafetyLimitExceededException {
 		// find path from anchor that is within maxDifference from leaf
-		List<PN> path = findHighestWeightSimilarPath(ImmutableList.<PN>of(), Queues.<PN>newArrayDeque(), 0, 0, maxDifference, leaf, anchor, forward);
+		List<PN> path = new HighestWeightSimilarPath<PN>(maxDifference, leaf, forward, this, collapseTimeout).find();
 		if (path == null || path.isEmpty()) return false;
 		// compare weights of shared kmers
-		int pathLength = PathNode.nodeLength(path);
+		int pathLength = WeightedSequenceGraphNodeUtil.nodeLength(path);
 		int sharedLength = Math.min(leaf.length(), pathLength);
-		if (PathNode.totalWeight(ImmutableList.of(leaf), forward ? 0 : leaf.length() - sharedLength, sharedLength, getGraph()) >=
-			PathNode.totalWeight(path, forward ? 0 : pathLength - sharedLength, sharedLength, getGraph())) {
+		if (WeightedSequenceGraphNodeUtil.totalWeight(ImmutableList.of(leaf), forward ? 0 : leaf.length() - sharedLength, sharedLength) >=
+				WeightedSequenceGraphNodeUtil.totalWeight(path, forward ? 0 : pathLength - sharedLength, sharedLength)) {
 			return false;
 		}
 		collapseLeafInto(leaf, path, forward);
 		assert(sanityCheck());
 		return true;
-	}
-	/**
-	 * Finds all paths similar to the leaf path and returns the highest weighted similar path. 
-	 * @param bestPath best path so far
-	 * @param currentPath current search path
-	 * @param currentLength length of current search path
-	 * @param currentDifferences current number of search path bases different
-	 * @param maxDifference maximum path differences
-	 * @param leaf path to compare to
-	 * @param anchor anchor path that leaf and search paths share
-	 * @param traverseForward direction of traversal
-	 * @return similar path with highest weight
-	 * @throws AlgorithmRuntimeSafetyLimitExceededException thrown when maximum number of search nodes has been exceeded
-	 */
-	private List<PN> findHighestWeightSimilarPath(
-			List<PN> bestPath,
-			Deque<PN> currentPath,
-			int currentLength,
-			int currentDifferences,
-			int maxDifference,
-			PN leaf,
-			PN anchor,
-			boolean traverseForward) throws AlgorithmRuntimeSafetyLimitExceededException {
-		if (++nodeTaversalCount >= Defaults.COLLAPSE_PATH_MAX_TRAVERSAL) {
-			throw new AlgorithmRuntimeSafetyLimitExceededException(String.format(
-					"Leaf collapse not complete after %d node traversals. Aborting path collapse whilst processing \"%s\".",
-					nodeTaversalCount,
-					toString(ImmutableList.of(leaf))));
-		}
-		if (currentDifferences > maxDifference) {
-			return bestPath;
-		}
-		List<PN> nextList = traverseForward ? next((currentPath.isEmpty() ? anchor : currentPath.getLast())) : prev((currentPath.isEmpty() ? anchor : currentPath.getFirst()));
-		if (currentLength >= leaf.length()) {
-			assert(currentLength == PathNode.nodeLength(currentPath));
-			int leafLength = leaf.length();
-			int bestLength = PathNode.nodeLength(bestPath);
-			int currentSharedLength = Math.min(currentLength, leafLength);
-			int bestSharedLength = Math.min(bestLength, leafLength);
-			if (PathNode.totalWeight(currentPath, traverseForward ? 0 : currentLength - currentSharedLength, currentSharedLength, getGraph()) >
-				PathNode.totalWeight(bestPath, traverseForward ? 0 : bestLength - bestSharedLength, bestSharedLength, getGraph())) {
-				// this path has a higher total weight over the kmers shared with the leaf 
-				return Lists.newArrayList(currentPath);
-			} else {
-				return bestPath;
-			}
-		}
-		if (nextList.size() == 0) {
-			// Don't merge a leaf into shorter paths
-			// Doing so messes up consensus kmer sequence - the primary sequence
-			// would no longer be a valid kmer path. We also can't try to fix the
-			// consensus sequence as the kmer we replace the inconsistent kmers
-			// with could already be part of our graph elsewhere
-			// or, even worse, part of a different subgraph in the kmer graph! 
-			return bestPath;
-		}
-		for (PN next : nextList) {
-			if (next != leaf && !currentPath.contains(next)) {
-				if (traverseForward) {
-					currentPath.addLast(next);
-				} else {
-					currentPath.addFirst(next);
-				}
-				bestPath = findHighestWeightSimilarPath(
-						bestPath,
-						currentPath,
-						currentLength + next.length(),
-						traverseForward ? basesDifferent(ImmutableList.of(leaf), currentPath) : reverseBasesDifferent(ImmutableList.of(leaf), currentPath),
-						maxDifference, leaf, anchor, traverseForward);
-				if (traverseForward) {
-					currentPath.removeLast();
-				} else {
-					currentPath.removeFirst();
-				}
-			}
-		}
-		return bestPath;
 	}
 	private boolean collapsePaths(int maxDifference, boolean bubblesOnly, PN start) throws AlgorithmRuntimeSafetyLimitExceededException {
 		Deque<PN> listA = Queues.newArrayDeque();
@@ -274,16 +198,9 @@ public class DeBruijnPathGraph<T, PN extends DeBruijnPathNode<T>> extends PathGr
 			Deque<PN> pathB,
 			int pathALength,
 			int pathBLength) throws AlgorithmRuntimeSafetyLimitExceededException {
-		if (++nodeTaversalCount >= Defaults.COLLAPSE_PATH_MAX_TRAVERSAL) {
-			throw new AlgorithmRuntimeSafetyLimitExceededException(String.format(
-					"Path collapse not complete after %d node traversals. Aborting path collapse whilst processing \"%s\" and \"%s\".",
-					nodeTaversalCount,
-					toString(pathA),
-					toString(pathB)));
-		}
 		// paths have diverged too far
 		// Optimisation: cache bases compared and difference so far so only 2 PNs need to be compared
-		if (basesDifferent(pathA, pathB) > differencesAllowed) return false;
+		if (DeBruijnSequenceGraphNodeUtil.basesDifferent(getK(), pathA, pathB) > differencesAllowed) return false;
 		
 		if (shareNextPaths(pathA.getLast(), pathB.getLast())) {
 			// only accept base difference, not indels
@@ -300,6 +217,7 @@ public class DeBruijnPathGraph<T, PN extends DeBruijnPathNode<T>> extends PathGr
 			for (PN nextA : next(pathA.getLast())) {
 				if (!pathA.contains(nextA)) {
 					pathA.addLast(nextA);
+					collapseTimeout.track(nextA);
 					// don't continue if the node we just added would result in a problematic path merge
 					if (!pathB.contains(nextA) || getNodeAtDifferentPosition(pathA, pathB) == null) {
 						if (collapsePaths(differencesAllowed, bubblesOnly, pathA, pathB, pathALength + nextA.length(), pathBLength)) {
@@ -314,6 +232,7 @@ public class DeBruijnPathGraph<T, PN extends DeBruijnPathNode<T>> extends PathGr
 			for (PN nextB : next(pathB.getLast())) {
 				if (!pathB.contains(nextB)) {
 					pathB.addLast(nextB);
+					collapseTimeout.track(nextB);
 					if (!pathA.contains(nextB) || getNodeAtDifferentPosition(pathA, pathB) == null) {
 						if (collapsePaths(differencesAllowed, bubblesOnly, pathA, pathB, pathALength, pathBLength + nextB.length())) {
 							pathB.removeLast();
@@ -325,38 +244,6 @@ public class DeBruijnPathGraph<T, PN extends DeBruijnPathNode<T>> extends PathGr
 			}
 		}
 		return false; 
-	}
-	/**
-	 * Returns the number of bases difference between the two paths when
-	 * traversing the paths backward.
-	 * Bases are only compared up to the length of the shortest of the
-	 * paths
-	 * @param pathA
-	 * @param pathB
-	 * @return number of bases difference between the two paths
-	 */
-	public int reverseBasesDifferent(Iterable<PN> pathA, Iterable<PN> pathB) {
-		int lengthA = PathNode.nodeLength(pathA);
-		int lengthB = PathNode.nodeLength(pathB);
-		int skipCountA = Math.max(0, lengthA - lengthB);
-		int skipCountB = Math.max(0, lengthB - lengthA);
-		// skip initial bases of the longer path
-		return KmerEncodingHelper.totalBaseDifference(getGraph(),
-				PathNode.nodeIterator(pathA.iterator(), skipCountA),
-				PathNode.nodeIterator(pathB.iterator(), skipCountB));
-	}
-	/**
-	 * Returns the number of bases difference between the two paths
-	 * Bases are only compared up to the length of the shortest of the
-	 * paths
-	 * @param pathA
-	 * @param pathB
-	 * @return number of bases difference between the two paths
-	 */
-	public int basesDifferent(Iterable<PN> pathA, Iterable<PN> pathB) {
-		return KmerEncodingHelper.totalBaseDifference(getGraph(),
-				PathNode.nodeIterator(pathA.iterator()),
-				PathNode.nodeIterator(pathB.iterator()));
 	}
 	private int referencePathsSplit = 0;
 	public int getReferencePathsSplit() { return referencePathsSplit; }

@@ -445,8 +445,8 @@ public class PathGraph<T, PN extends PathNode<T>> implements WeightedDirectedGra
 			}
 			return false;
 		}
-		int weightA = PathNode.totalWeight(pathA);
-		int weightB = PathNode.totalWeight(pathB);
+		int weightA = WeightedSequenceGraphNodeUtil.totalWeight(pathA);
+		int weightB = WeightedSequenceGraphNodeUtil.totalWeight(pathB);
 		
 		Iterable<PN> imainPath = weightA >= weightB ? pathA : pathB;
 		Iterable<PN> ialtPath = weightA >= weightB ? pathB : pathA;
@@ -723,7 +723,7 @@ public class PathGraph<T, PN extends PathNode<T>> implements WeightedDirectedGra
 	 */
 	public Ordering<PN> ByMaxNodeWeightDesc = new Ordering<PN>() {
 		public int compare(PN o1, PN o2) {
-			return Ints.compare(o1.maxNodeWeight(graph), o2.maxNodeWeight(graph));
+			return Ints.compare(o1.maxNodeWeight(), o2.maxNodeWeight());
 		}
 	}.reverse();
 	@Override

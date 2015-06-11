@@ -21,6 +21,7 @@ import au.edu.wehi.idsv.util.ArrayHelper;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends DeBruijnGraphBase<T> {
@@ -202,12 +203,12 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		}
 		Set<String> breakendSupport = getSupport(breakendPathAllKmers);
 		int[] breakendBaseCounts = getBaseCountsByCategory(breakendPathAllKmers, beforeBreakend != null, afterBreakend != null);
-		byte[] bases = KmerEncodingHelper.baseCalls(KmerEncodingHelper.asKmers(this, Iterables.transform(pathAllKmers, new Function<List<T>, T>() {
+		byte[] bases = KmerEncodingHelper.baseCalls(Lists.transform(pathAllKmers, new Function<List<T>, Long>() {
 			// TODO: improve base calling by considering all kmers contributing to each base position
 			@Override
-			public T apply(List<T> input) {
-				return input.get(0);
-			}})), getK());
+			public Long apply(List<T> input) {
+				return input.get(0).kmer();
+			}}), getK());
 		byte[] quals = getBaseQuals(pathAllKmers);
 		SAMRecordAssemblyEvidence ae = null;
 		if (beforeBreakend == null && afterBreakend == null) {

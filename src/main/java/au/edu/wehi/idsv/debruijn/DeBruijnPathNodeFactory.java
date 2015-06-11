@@ -2,8 +2,8 @@ package au.edu.wehi.idsv.debruijn;
 
 import java.util.Collection;
 
-import au.edu.wehi.idsv.graph.PathNode;
 import au.edu.wehi.idsv.graph.PathNodeFactory;
+import au.edu.wehi.idsv.graph.WeightedSequenceGraphNodeUtil;
 
 import com.google.common.collect.ImmutableList;
 
@@ -18,7 +18,7 @@ public class DeBruijnPathNodeFactory<T> implements PathNodeFactory<T, DeBruijnPa
 	}
 	@Override
 	public DeBruijnPathNode<T> concatPathNodes(Iterable<DeBruijnPathNode<T>> path) {
-		return new DeBruijnPathNode<T>(path, 0, PathNode.nodeLength(path), graph);
+		return new DeBruijnPathNode<T>(path, 0, WeightedSequenceGraphNodeUtil.nodeLength(path), graph);
 	}
 	@Override
 	public DeBruijnPathNode<T> createPathNode(Collection<T> path) {

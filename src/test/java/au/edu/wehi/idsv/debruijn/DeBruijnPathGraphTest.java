@@ -259,7 +259,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		//              |
 		//         bad transition
 		DeBruijnPathNode<DeBruijnNodeBase> pn = pg.getPaths().iterator().next();
-		assertEquals("AATC", S(KmerEncodingHelper.encodedToPicardBases(4, pn.last().getKmer())));
+		assertEquals("AATC", S(KmerEncodingHelper.encodedToPicardBases(4, pn.last().kmer())));
 		
 		// test backwards as well
 		pg = PG(G(4)
@@ -268,7 +268,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 				.add("CCAA"));
 		pg.collapseLeaves(1);
 		pn = pg.getPaths().iterator().next();
-		assertEquals("CTAA", S(KmerEncodingHelper.encodedToPicardBases(4, pn.first().getKmer())));
+		assertEquals("CTAA", S(KmerEncodingHelper.encodedToPicardBases(4, pn.first().kmer())));
 	}
 	@Test
 	public void mergePaths_should_merge_into_highest_weight_path() {
@@ -302,26 +302,7 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		pg.shrink();
 		assertEquals(0, pg.next(pg.get("GTAC")).size());
 	}
-	@Test
-	public void basesDifferent_should_count_bases_on_path() {
-		BasePathGraph pg = PG(G(16)
-				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATC")
-				.add("CATTAATCGCAAGAGCGGGTTGTATTCGACGTTAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATC")
-				//                                   ^^
-				);
-		assertEquals(2, pg.basesDifferent(ImmutableList.of(pg.get("TCGACGTTAAGTCAGC")), ImmutableList.of(pg.get("TCGACGCCAAGTCAGC"))));
-		
-		
-		String[] s = new String[] {  S(RANDOM).substring(0, 100), S(RANDOM).substring(200, 300) };
-		pg = PG(G(20)
-			.add(s[0])
-			.add(s[1]));
-		int mismatches = 0;
-		for (int i = 0; i < 100; i++) if (s[0].charAt(i) != s[1].charAt(i)) mismatches++;
-		assertEquals(mismatches, pg.basesDifferent(
-				ImmutableList.of(pg.get(s[0].substring(0, 20))),
-				ImmutableList.of(pg.get(s[1].substring(0, 20)))));
-	}
+	
 	@Test
 	public void seed_should_restrict_path_graph_to_reachable_subgraph() {
 		String[] s = new String[] { S(RANDOM).substring(0, 100), S(RANDOM).substring(200, 300) };

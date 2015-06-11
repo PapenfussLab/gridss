@@ -18,6 +18,7 @@ import au.edu.wehi.idsv.debruijn.DeBruijnGraphUtil;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
 import au.edu.wehi.idsv.graph.PathNodeFactory;
+import au.edu.wehi.idsv.graph.WeightedSequenceGraphNodeUtil;
 import au.edu.wehi.idsv.visualisation.DeBruijnPathGraphExporter;
 import au.edu.wehi.idsv.visualisation.StaticDeBruijnPathGraphGexfExporter;
 import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTracker;
@@ -184,7 +185,7 @@ public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBru
 			assert(best != null); // subgraphs contain at least one node
 			assert(best.size() > 0);
 			
-			int targetAnchorAssemblyLength = Math.max(parameters.anchorAssemblyLength, PN.nodeLength(best));
+			int targetAnchorAssemblyLength = Math.max(parameters.anchorAssemblyLength, WeightedSequenceGraphNodeUtil.nodeLength(best));
 			List<PN> preAnchor = traverseReference(best.get(0), false, targetAnchorAssemblyLength);			
 			List<PN> postAnchor = traverseReference(best.get(best.size() - 1), true, targetAnchorAssemblyLength);
 			ArrayList<PN> result = new ArrayList<PN>(best.size() + preAnchor.size() + postAnchor.size());

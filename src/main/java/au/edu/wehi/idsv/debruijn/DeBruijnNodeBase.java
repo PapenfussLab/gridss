@@ -18,7 +18,7 @@ import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
 
 public class DeBruijnNodeBase {
-	private long kmer;
+	private long nodeKmer;
 	/**
 	 * Cached total support for kmer
 	 */
@@ -64,7 +64,7 @@ public class DeBruijnNodeBase {
 	public DeBruijnNodeBase(long kmer, int weight, long expectedLinearPosition, String evidenceID, boolean isReference, int category, BreakendSummary breakend) {
 		if (weight <= 0) throw new IllegalArgumentException("weight must be positive");
 		this.support.add(new Support(weight, expectedLinearPosition, evidenceID, isReference, category, breakend));
-		this.kmer = kmer;
+		this.nodeKmer = kmer;
 		this.cacheWeight = weight;
 		if (isReference) {
 			this.cacheReferenceWeight = weight;
@@ -87,14 +87,14 @@ public class DeBruijnNodeBase {
 		this.cacheWeight -= node.cacheWeight;
 		this.cacheReferenceWeight -= node.cacheReferenceWeight;
 	}
-	public long getKmer() {
-		return kmer;
+	public long kmer() {
+		return nodeKmer;
 	}
 	/**
 	 * returns the weight of this node
 	 * @return weight of this node
 	 */
-	public int getWeight() {
+	public int weight() {
 		return cacheWeight;
 	}
 	/**
@@ -171,14 +171,14 @@ public class DeBruijnNodeBase {
 	}
 	public static Ordering<? extends DeBruijnNodeBase> ByWeight = new Ordering<DeBruijnNodeBase>() {
 		public int compare(DeBruijnNodeBase o1, DeBruijnNodeBase o2) {
-			  return Ints.compare(o1.getWeight(), o2.getWeight());
+			  return Ints.compare(o1.weight(), o2.weight());
 		  }
 	};
 	@Override
 	public String toString() {
 		String str = String.format("%s %s w=%d, #=%d p=%d",
 				isReference() ? "R" : " ",
-				KmerEncodingHelper.toApproximateString(kmer),
+				KmerEncodingHelper.toApproximateString(nodeKmer),
 				cacheWeight,
 				getSupportingEvidenceList().size(),
 				getExpectedPosition());
@@ -204,5 +204,12 @@ public class DeBruijnNodeBase {
 		public BreakendSummary get(int index) { return support.get(index).breakend; }
 		@Override
 		public int size() { return support.size(); }
+	}
+	public static List<Long> asKmers(final Iterable<? extends DeBruijnNodeBase> path) {
+		List<Long> kmers = new ArrayList<Long>();
+		for (DeBruijnNodeBase n : path) {
+			kmers.add(n.nodeKmer);
+		}
+		return kmers;
 	}
 }

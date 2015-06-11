@@ -635,7 +635,7 @@ public class TestHelper {
 		}
 
 		public String S(PathNode<DeBruijnNodeBase> node) {
-			return new String(KmerEncodingHelper.baseCalls(KmerEncodingHelper.asKmers(this, node.getPath()), getK()));
+			return new String(KmerEncodingHelper.baseCalls(DeBruijnNodeBase.asKmers(node.getPath()), getK()));
 		}
 	}
 
@@ -659,7 +659,7 @@ public class TestHelper {
 					.getK(), B(kmer.substring(0, getGraph().getK())));
 			for (DeBruijnPathNode<DeBruijnNodeBase> pn : getPaths()) {
 				for (DeBruijnNodeBase n: Iterables.concat(pn.getPathAllNodes())) {
-					if (state == n.getKmer()) {
+					if (state == n.kmer()) {
 						return pn;
 					}
 				}
@@ -674,13 +674,13 @@ public class TestHelper {
 		}
 
 		public String S(DeBruijnPathNode<DeBruijnNodeBase> node) {
-			return new String(KmerEncodingHelper.baseCalls(KmerEncodingHelper.asKmers(this.getGraph(), node.getPath()), getK()));
+			return new String(KmerEncodingHelper.baseCalls(DeBruijnNodeBase.asKmers(node.getPath()), getK()));
 		}
 
 		public String S(Iterable<DeBruijnPathNode<DeBruijnNodeBase>> nodes) {
 			Iterator<DeBruijnNodeBase> it = PathNode.nodeIterator(nodes.iterator());
 			ArrayList<DeBruijnNodeBase> list = Lists.newArrayList(it);
-			return new String(KmerEncodingHelper.baseCalls(KmerEncodingHelper.asKmers(this.getGraph(), list), getK()));
+			return new String(KmerEncodingHelper.baseCalls(DeBruijnNodeBase.asKmers(list), getK()));
 		}
 		public List<DeBruijnPathNode<DeBruijnNodeBase>> splitPathToEnsureBreaksAt(Iterable<DeBruijnPathNode<DeBruijnNodeBase>> path, SortedSet<Integer> breaksAt) {
 			return super.splitPathToEnsureBreaksAt(path, breaksAt);
@@ -698,7 +698,7 @@ public class TestHelper {
 		if (obj.get(0) instanceof Long) {
 			return new String(KmerEncodingHelper.baseCalls(Lists.<Long>newArrayList(path), g.getK()));
 		} else {
-			return new String(KmerEncodingHelper.baseCalls(KmerEncodingHelper.asKmers(g, path), g.getK()));
+			return toKmerString(g, path);
 		}
 	}
 	public static <T> List<Long> toKmer(DeBruijnGraph<T> graph, String sequence) {
@@ -721,8 +721,14 @@ public class TestHelper {
 	public static <T, PN extends DeBruijnPathNode<T>> String toKmerString(DeBruijnPathGraph<T, PN> pg, PN node) {
 		return toKmerString(pg.getGraph(), node.getPath());
 	}
-	public static <T> String toKmerString(DeBruijnGraph<T> g, Iterable<? extends T> node) {
-		return new String(KmerEncodingHelper.baseCalls(KmerEncodingHelper.asKmers(g, node), g.getK()));
+	public static <T> String toKmerString(final DeBruijnGraph<T> g, final Iterable<? extends T> node) {
+		return new String(KmerEncodingHelper.baseCalls(
+				Lists.<Long>newArrayList(Iterables.transform(node, new Function<T, Long>() {
+					@Override
+					public Long apply(T input) {
+						return g.getKmer(input);
+					}
+				})), g.getK()));
 	}
 	public static <T> List<DeBruijnNodeBase> toNodes(final DeBruijnGraphBase<DeBruijnNodeBase> graph, final String sequence) {
 		return Lists.transform(toKmer(graph, sequence), new Function<Long, DeBruijnNodeBase>() {

@@ -83,7 +83,7 @@ public class StaticDeBruijnPathGraphGexfExporter<T, PN extends DeBruijnPathNode<
 	protected void setStaticAttributes(DeBruijnPathGraph<T, PN> pg, Node node, PN pn) {
 		node.getAttributeValues().createValue(attrLength, ((Integer)pn.getPath().size()).toString());
 		node.getAttributeValues().createValue(attrTotalWeight, ((Integer)pn.weight()).toString());
-		node.getAttributeValues().createValue(attrMaxKmerWeight, ((Integer)pn.maxNodeWeight(pg.getGraph())).toString());
+		node.getAttributeValues().createValue(attrMaxKmerWeight, ((Integer)pn.maxNodeWeight()).toString());
 		node.getAttributeValues().createValue(attrIsReference, ((Boolean)pg.isReference(pn)).toString());
 	}
 	private void ensureNextEdges(DeBruijnPathGraph<T, PN> pg, PN pn) {

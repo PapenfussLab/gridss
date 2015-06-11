@@ -58,10 +58,10 @@ public class DeBruijnNodeBaseTest extends TestHelper {
 	public void should_track_weight() {
 		DeBruijnNodeBase r1 = new DeBruijnNodeBase(fsc, 0);
 		DeBruijnNodeBase r2 = new DeBruijnNodeBase(bsc, 0);
-		assertEquals(31, r1.getWeight());
-		assertEquals(31, r2.getWeight());
+		assertEquals(31, r1.weight());
+		assertEquals(31, r2.weight());
 		r1.add(r2);
-		assertEquals(62, r1.getWeight());
+		assertEquals(62, r1.weight());
 	}
 	@Test
 	public void reference_with_non_reference_should_be_reference() {

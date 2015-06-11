@@ -11,7 +11,7 @@ import au.edu.wehi.idsv.util.FirstOverflowList;
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 
-public class PathNode<T> {
+public class PathNode<T> implements WeightedSequenceGraphNode {
 	/**
 	 * Sequential node identifier within this path graph.
 	 * Used improve lookup performance
@@ -31,6 +31,7 @@ public class PathNode<T> {
 	private ArrayList<T> path;
 	private ArrayList<LinkedList<T>> equivalents = null;
 	private FirstOverflowList<T> fol; // TODO: refactor and inherit FirstOverflowList
+	protected final WeightedDirectedGraph<T> graph;
 	/**
 	 * Creates a new path graph node from the given node sequence
 	 * @param path node sequence
@@ -46,6 +47,7 @@ public class PathNode<T> {
 			this.weight += graph.getWeight(n);
 		}
 		this.fol = new FirstOverflowList<T>(path, equivalents);
+		this.graph = graph;
 	}
 	/**
 	 * Merges the given path into the current path node
@@ -54,7 +56,7 @@ public class PathNode<T> {
 	 * @return 
 	 */
 	public static <T> PathNode<T> concat(Iterable<? extends PathNode<T>> path, WeightedDirectedGraph<T> graph) {
-		int length = nodeLength(path);
+		int length = WeightedSequenceGraphNodeUtil.nodeLength(path);
 		return new PathNode<T>(path, 0, length, graph);
 	}
 	/**
@@ -65,7 +67,7 @@ public class PathNode<T> {
 	 * @param graph graph
 	 */
 	public PathNode(Iterable<? extends PathNode<T>> nodes, int startOffset, int length, WeightedDirectedGraph<T> graph) {
-		path = new ArrayList<T>(length);
+		this.path = new ArrayList<T>(length);
 		for (PathNode<T> pn : nodes) {
 			if (pn.equivalents != null) {
 				equivalents = new ArrayList<LinkedList<T>>(length);
@@ -91,10 +93,11 @@ public class PathNode<T> {
 				}
 			}
 		}
-		fol = new FirstOverflowList<T>(path, equivalents);
-		recalculateWeight(graph);
+		this.fol = new FirstOverflowList<T>(path, equivalents);
+		this.graph = graph;
+		recalculateWeight();
 	}
-	private void recalculateWeight(WeightedDirectedGraph<T> graph) {
+	private void recalculateWeight() {
 		weight = 0;
 		for (T n : path) {
 			weight += graph.getWeight(n);
@@ -141,7 +144,7 @@ public class PathNode<T> {
 	public int weight() {
 		return weight;
 	}
-	private int weight(int offset, WeightedDirectedGraph<T> graph) {
+	public int weight(int offset) {
 		int w = graph.getWeight(path.get(offset));
 		if (equivalents != null) {
 			LinkedList<T> c = equivalents.get(offset);
@@ -153,7 +156,7 @@ public class PathNode<T> {
 		}
 		return w;
 	}
-	public int maxNodeWeight(WeightedDirectedGraph<T> graph) {
+	public int maxNodeWeight() {
 		int maxNodeWeight = 0;
 		for (Collection<T> c : getPathAllNodes()) {
 			int nodeWeight = 0;
@@ -169,7 +172,7 @@ public class PathNode<T> {
 	 * @param alternatePath alternate path to merge
 	 */
 	public void merge(Iterable<? extends PathNode<T>> alternatePath, WeightedDirectedGraph<T> graph) {
-		assert(nodeLength(alternatePath) == length());
+		assert(WeightedSequenceGraphNodeUtil.nodeLength(alternatePath) == length());
 		merge(alternatePath, 0, this.length(), 0, graph);
 	}
 	/**
@@ -186,7 +189,7 @@ public class PathNode<T> {
 			int alternatePathKmers,
 			int nodeOffset,
 			WeightedDirectedGraph<T> graph) {
-		assert(nodeLength(alternatePath) >= alternatePathKmers + alternatePathKmerOffset);
+		assert(WeightedSequenceGraphNodeUtil.nodeLength(alternatePath) >= alternatePathKmers + alternatePathKmerOffset);
 		if (alternatePathKmers > length() - nodeOffset) throw new IllegalArgumentException("Alternate path is too long.");
 		for (PathNode<T> pn : alternatePath) {
 			for (int j = 0; j < pn.length() && alternatePathKmers > 0; j++) {
@@ -267,68 +270,6 @@ public class PathNode<T> {
 			Iterators.advance(result, offset);
 		}
 		return result;
-	}
-	/**
-	 * Gets the node length of the given path
-	 * @param it node path
-	 * @return total node length
-	 */
-	public static <T> int nodeLength(Iterable<? extends PathNode<T>> it) {
-		return nodeLength(it.iterator());
-	}
-	/**
-	 * Gets the node length of the given path
-	 * @param it node path
-	 * @return total node length
-	 */
-	public static <T> int nodeLength(Iterator<? extends PathNode<T>> it) {
-		int len = 0;
-		while (it.hasNext()) {
-			PathNode<T> pn = it.next();
-			len += pn.length();
-		}
-		return len;
-	}
-	/**
-	 * Gets the total weight of all nodes on the given path
-	 * @param path path
-	 * @return total weight
-	 */
-	public static <T> int totalWeight(Iterable<? extends PathNode<T>> it) {
-		int weight = 0;
-		for (PathNode<T> pn : it) {
-			weight += pn.weight();
-		}
-		return weight;
-	}
-	/**
-	 * Gets the total weight of all nodes on the given subpath
-	 * @param it path
-	 * @param offset number of starting nodes to skip
-	 * @param length number of nodes to calculate weight of
-	 * @return total weight
-	 */
-	public static <T> int totalWeight(Iterable<? extends PathNode<T>> it, int offset, int length, WeightedDirectedGraph<T> graph) {
-		int weight = 0;
-		for (PathNode<T> pn : it) {
-			if (offset == 0 && pn.length() <= length) {
-				// take entire node
-				weight += pn.weight();
-				length -= pn.length();
-			} else {
-				// pro-rata weight according to all the nodes in the positions of interest
-				int toSkip = Math.min(pn.length(), offset);
-				int toTake = Math.min(pn.length() - toSkip, length);
-				for (int i = 0; i < toTake; i++) {
-					weight += pn.weight(i + toSkip, graph);
-				}
-				offset -= toSkip;				
-				length -= toTake;
-			}
-		}
-		if (length != 0) throw new IllegalArgumentException("Too many nodes requested");
-		if (offset != 0) throw new IllegalArgumentException("Skipping more nodes than exist on path");
-		return weight;
 	}
 	public int indexOf(T node) {
 		for (int i = 0; i < length(); i++) {

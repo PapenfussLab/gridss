@@ -294,7 +294,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	}
 	@Override
 	public long getKmer(DeBruijnSubgraphNode node) {
-		return node.getKmer();
+		return node.kmer();
 	}
 	@Override
 	public boolean isReference(DeBruijnSubgraphNode node) {
@@ -302,6 +302,6 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	}
 	@Override
 	public int getWeight(DeBruijnSubgraphNode node) {
-		return node.getWeight();
+		return node.weight();
 	}
 }
