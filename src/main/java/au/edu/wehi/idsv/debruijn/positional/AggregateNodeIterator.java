@@ -5,7 +5,7 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import java.util.Iterator;
 import java.util.PriorityQueue;
 
-import au.edu.wehi.idsv.debruijn.positional.PositionalDeBruijnAggregateNodeIterator.KmerNodeAggregator.KmerNodeAggregatorSnapshot;
+import au.edu.wehi.idsv.debruijn.positional.AggregateNodeIterator.KmerNodeAggregator.KmerNodeAggregatorSnapshot;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
@@ -19,13 +19,13 @@ import com.google.common.primitives.Longs;
  * @author Daniel Cameron
  *
  */
-public class PositionalDeBruijnAggregateNodeIterator implements Iterator<KmerAggregateNode> {
+public class AggregateNodeIterator implements Iterator<KmerAggregateNode> {
 	private final PeekingIterator<KmerSupportNode> underlying;
 	private final int maxSupportWidth;
 	private PriorityQueue<KmerAggregateNode> outputSortBuffer = new PriorityQueue<KmerAggregateNode>(1024, KmerNode.ByStartPosition);
 	private Long2ObjectOpenHashMap<KmerNodeAggregator> byKmer = new Long2ObjectOpenHashMap<KmerNodeAggregator>();
 	private PriorityQueue<KmerNodeAggregatorSnapshot> byStartPosition = new PriorityQueue<KmerNodeAggregatorSnapshot>(1024, BySnapshotStartPosition);
-	public PositionalDeBruijnAggregateNodeIterator(Iterator<KmerSupportNode> it, int maxSupportWidth) {
+	public AggregateNodeIterator(Iterator<KmerSupportNode> it, int maxSupportWidth) {
 		this.underlying = Iterators.peekingIterator(it);
 		this.maxSupportWidth = maxSupportWidth;
 	}

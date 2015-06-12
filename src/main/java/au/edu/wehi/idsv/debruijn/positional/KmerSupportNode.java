@@ -5,7 +5,7 @@ package au.edu.wehi.idsv.debruijn.positional;
  * @author cameron.d
  *
  */
-public class KmerSupportNode extends KmerNode {
+public class KmerSupportNode implements KmerNode {
 	public long kmer() { return evidence.kmer(offset); }
 	public int startPosition() { return evidence.startPosition() - evidence.errorWidth() + offset; }
 	public int endPosition() { return evidence.startPosition() + evidence.errorWidth() + offset; }

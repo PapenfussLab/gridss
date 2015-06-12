@@ -13,13 +13,13 @@ import com.google.common.collect.Lists;
 import au.edu.wehi.idsv.TestHelper;
 
 
-public class PositionalDeBruijnPathNodeIteratorTest extends TestHelper {
+public class PathNodeIteratorTest extends TestHelper {
 	@Test
 	public void should_merge_successive_nodes() {
 		List<KmerAggregateNode> in = new ArrayList<KmerAggregateNode>();
 		in.add(new KmerAggregateNode(K("GAAA"), 1, 1, 2, true));
 		in.add(new KmerAggregateNode(K("AAAT"), 1, 2, 3, true));
-		List<KmerPathNode> out = Lists.newArrayList(new PositionalDeBruijnPathNodeIterator(in.iterator(), 10, 10, 4));
+		List<KmerPathNode> out = Lists.newArrayList(new PathNodeIterator(in.iterator(), 10, 10, 4));
 		
 		assertEquals(1, out.size());
 		assertContains(out, 4, "GAAAT", 1, 2, true, 2);
@@ -28,7 +28,7 @@ public class PositionalDeBruijnPathNodeIteratorTest extends TestHelper {
 		List<KmerAggregateNode> list = new ArrayList<KmerAggregateNode>();
 		for (KmerAggregateNode n : in) list.add(n);
 		Collections.sort(list, KmerNode.ByStartPosition);
-		List<KmerPathNode> out = Lists.newArrayList(new PositionalDeBruijnPathNodeIterator(list.iterator(), 10, 10, 4));
+		List<KmerPathNode> out = Lists.newArrayList(new PathNodeIterator(list.iterator(), 10, 10, 4));
 		assertEquals(expected, out.size());
 	}
 	@Test
@@ -62,7 +62,7 @@ public class PositionalDeBruijnPathNodeIteratorTest extends TestHelper {
 		in.add(new KmerAggregateNode(K("AAAT"), 1, 2, 2, true));
 		in.add(new KmerAggregateNode(K("AAAG"), 1, 2, 2, true));
 		in.add(new KmerAggregateNode(K("AAAC"), 1, 2, 2, true));
-		List<KmerPathNode> out = Lists.newArrayList(new PositionalDeBruijnPathNodeIterator(in.iterator(), 10, 10, 4));
+		List<KmerPathNode> out = Lists.newArrayList(new PathNodeIterator(in.iterator(), 10, 10, 4));
 		assertEquals(5, out.size());
 		assertContains(out, 4, "TAAAA", 0, 0, true, 2);
 		assertContains(out, 4, "AAAA", 2, 2, true, 1);
@@ -79,7 +79,7 @@ public class PositionalDeBruijnPathNodeIteratorTest extends TestHelper {
 		in.add(new KmerAggregateNode(K("ACTT"), 4, 4, 6, true));
 		in.add(new KmerAggregateNode(K("CTTG"), 5, 5, 7, true));
 		in.add(new KmerAggregateNode(K("TTGG"), 6, 6, 8, true));
-		List<KmerPathNode> out = Lists.newArrayList(new PositionalDeBruijnPathNodeIterator(in.iterator(), 10, 10, 4));
+		List<KmerPathNode> out = Lists.newArrayList(new PathNodeIterator(in.iterator(), 10, 10, 4));
 		assertEquals(1, out.size());
 		assertContains(out, 4, "TAAACTTGG", 1, 3, true, 1+2+3+4+5+6);
 	}
@@ -92,7 +92,7 @@ public class PositionalDeBruijnPathNodeIteratorTest extends TestHelper {
 		in.add(new KmerAggregateNode(K("ACTT"), 4, 4, 6, true));
 		in.add(new KmerAggregateNode(K("CTTG"), 5, 5, 7, true));
 		in.add(new KmerAggregateNode(K("TTGG"), 6, 6, 8, true));
-		List<KmerPathNode> out = Lists.newArrayList(new PositionalDeBruijnPathNodeIterator(in.iterator(), 10, 3, 4));
+		List<KmerPathNode> out = Lists.newArrayList(new PathNodeIterator(in.iterator(), 10, 3, 4));
 		assertEquals(2, out.size());
 		assertContains(out, 4, "TAAACT", 1, 3, true, 1+2+3);
 		assertContains(out, 4, "ACTTGG", 4, 6, true, 4+5+6);

@@ -11,6 +11,7 @@ import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNode;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.util.IntervalUtil;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
 
@@ -19,14 +20,23 @@ import com.google.common.primitives.Ints;
  * @author cameron.d
  *
  */
-public class KmerPathNode extends KmerNode implements DeBruijnSequenceGraphNode {
+public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
+	private static final LongArrayList EMPTY_KMER_LIST = new LongArrayList();
+	private static final List<KmerPathNode> EMPTY_EDGE_LIST = ImmutableList.of();
 	private LongArrayList kmers; // FIXME: replace with 2-bit encoding of kmer sequence
+	private LongArrayList additionalKmers = null;
 	private IntArrayList weight;
 	private int totalWeight;
 	private int start;
 	private int end;
 	private boolean reference;
 	private int versionId = 0;
+	/**
+	 * Edges
+	 */
+	private ArrayList<KmerPathNode> nextList = null;
+	private ArrayList<KmerPathNode> prevList = null;
+	private boolean edgesSorted = true;
 	/**
 	 * Final kmer in path graph
 	 */
@@ -60,6 +70,16 @@ public class KmerPathNode extends KmerNode implements DeBruijnSequenceGraphNode 
 	 * @return incrementing version number
 	 */
 	public int version() { return versionId; }
+	/**
+	 * List of kmers that have been collapsed into this path
+	 * 
+	 * Note: this list is unordered
+	 * @return collapsed kmers. Callers must not modify the returned list
+	 */
+	public LongArrayList collapsedKmers()
+	{
+		return additionalKmers != null ? additionalKmers : EMPTY_KMER_LIST;
+	}
 	public KmerPathNode(long kmer, int weight, int start, int end, boolean reference) {
 		this.kmers = new LongArrayList(1);
 		this.kmers.add(kmer);
@@ -102,6 +122,56 @@ public class KmerPathNode extends KmerNode implements DeBruijnSequenceGraphNode 
 		versionId++;
 	}
 	/**
+	 * Adds the given node to the front of this one
+	 * @param node
+	 */
+	public void prepend(KmerPathNode node) {
+		assert(startPosition() == node.startPosition(length() - 1) + 1);
+		assert(endPosition() == node.endPosition(length() - 1) + 1);
+		assert(isReference() == node.isReference());
+		assert(node.next().size() == 1);
+		assert(node.next().get(0) == this);
+		assert(prev().size() == 1);
+		assert(prev().get(0) == node);
+		node.kmers.addAll(kmers);
+		kmers = node.kmers;
+		node.weight.addAll(weight);
+		weight = node.weight;
+		totalWeight += node.totalWeight;
+		reference |= node.reference;
+		if (node.additionalKmers != null) {
+			if (additionalKmers == null) {
+				additionalKmers = new LongArrayList(node.additionalKmers.size());
+			}
+			additionalKmers.addAll(node.additionalKmers);
+		}
+		nextList = node.nextList;
+		versionId++;
+		node.invalidate();
+	}
+	/**
+	 * Merges the given node into this one
+	 * @param toMerge
+	 */
+	public void merge(KmerPathNode toMerge) {
+		assert(toMerge.startPosition() == startPosition());
+		assert(toMerge.endPosition() == endPosition());
+		assert(toMerge.length() == length());
+		reference |= toMerge.reference;
+		if (additionalKmers == null) {
+			additionalKmers = new LongArrayList(toMerge.kmers.size() + toMerge.collapsedKmers().size());
+		}
+		additionalKmers.addAll(toMerge.kmers);
+		additionalKmers.addAll(toMerge.collapsedKmers());
+		totalWeight += toMerge.totalWeight;
+		for (int i = 0; i < weight.size(); i++) {
+			weight.set(i, weight.get(i) + toMerge.weight.get(i));
+		}
+		versionId++;
+		replaceEdges(toMerge, this);
+		toMerge.invalidate();
+	}
+	/**
 	 * Indicates that this node has been transformed or deleted
 	 *  
 	 *  Edges 
@@ -109,21 +179,20 @@ public class KmerPathNode extends KmerNode implements DeBruijnSequenceGraphNode 
 	public void invalidate() {
 		kmers = null;
 		weight = null;
+		nextList = null;
+		prevList = null;
+		additionalKmers = null;
 		versionId++;
 	}
 	public boolean isValid() {
 		return kmers != null;
 	}
 	/**
-	 * Edges
-	 */
-	private ArrayList<KmerPathNode> nextList = new ArrayList<KmerPathNode>(3);
-	private ArrayList<KmerPathNode> prevList = new ArrayList<KmerPathNode>(3);
-	/**
 	 * Successor nodes, ordered by adjacency position  
 	 * 
 	 */
 	public List<KmerPathNode> next() {
+		if (nextList == null) return EMPTY_EDGE_LIST;
 		ensureEdgesSorted();
 		return nextList;
 	}
@@ -132,22 +201,49 @@ public class KmerPathNode extends KmerNode implements DeBruijnSequenceGraphNode 
 	 * 
 	 */
 	public List<KmerPathNode> prev() {
+		if (prevList == null) return EMPTY_EDGE_LIST;
 		ensureEdgesSorted();
 		return prevList;
 	}
-	private boolean edgesSorted = false;
 	public static void addEdge(KmerPathNode from, KmerPathNode to) {
 		assert(from.isValid());
 		assert(to.isValid());
+		assert(!from.next().contains(to));
+		assert(!to.prev().contains(from));
 		from.nextList.add(to);
 		to.prevList.add(from);
-		from.edgesSorted = false;
-		to.edgesSorted = false;
+		if (from.nextList.size() > 1 && KmerPathNode.ByFirstKmerStartPosition.compare(from.nextList.get(from.nextList.size() - 2), from.nextList.get(from.nextList.size() - 1)) > 0) {
+			from.edgesSorted = false;
+		}
+		if (to.prevList.size() > 1 && KmerPathNode.ByFirstKmerStartPosition.compare(to.prevList.get(to.prevList.size() - 2), to.prevList.get(to.prevList.size() - 1)) > 0) {
+			to.edgesSorted = false;
+		}
+	}
+	/**
+	 * Replaces all edges coming to/from the source node, with edges to/from the target node
+	 * @param toRemoveFrom source node to remove all edges from
+	 * @param toAddTo target node to replace with
+	 */
+	private static void replaceEdges(KmerPathNode toRemoveFrom, KmerPathNode toAddTo) {
+		for (KmerPathNode n : toRemoveFrom.next()) {
+			if (!toAddTo.next().contains(n)) {
+				addEdge(toAddTo, n);
+			}
+		}
+		for (KmerPathNode n : toRemoveFrom.prev()) {
+			if (!toAddTo.prev().contains(n)) {
+				addEdge(n, toAddTo);
+			}
+		}
 	}
 	private void ensureEdgesSorted() {
 		if (!edgesSorted) {
-			Collections.sort(nextList, KmerPathNode.ByFirstKmerStartPosition);
-			Collections.sort(prevList, KmerPathNode.ByStartPosition);
+			if (nextList != null) {
+				Collections.sort(nextList, KmerPathNode.ByFirstKmerStartPosition);
+			}
+			if (prevList != null) {
+				Collections.sort(prevList, KmerPathNode.ByStartPosition);
+			}
 			edgesSorted = true;
 		}
 	}
@@ -274,6 +370,7 @@ public class KmerPathNode extends KmerNode implements DeBruijnSequenceGraphNode 
 				assert(prevList.get(i - 1).startPosition() < prevList.get(i).startPosition());
 			}
 		}
+		assert(EMPTY_KMER_LIST.size() == 0); // fastutil doesn't have ImmutableList wrappers
 		return true;
 	}
 	@Override

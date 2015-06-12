@@ -17,6 +17,9 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode {
 		this.start = start;
 		this.end = end;
 	}
+	public KmerPathSubnode(KmerPathNode node) {
+		this(node, node.startPosition(0), node.endPosition(0));
+	}
 	public KmerPathNode node() { return n; }
 	public int firstKmerStartPosition() { return start; }
 	public int firstKmerEndPosition() { return end; }

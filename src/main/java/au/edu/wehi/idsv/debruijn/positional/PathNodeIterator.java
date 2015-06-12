@@ -23,7 +23,7 @@ import com.google.common.collect.TreeRangeMap;
  * @author Daniel Cameron
  *
  */
-public class PositionalDeBruijnPathNodeIterator implements Iterator<KmerPathNode> {
+public class PathNodeIterator implements Iterator<KmerPathNode> {
 	private final PeekingIterator<KmerAggregateNode> underlying;
 	private final int maxSupportWidth;
 	private final int maxPathLength;
@@ -32,7 +32,7 @@ public class PositionalDeBruijnPathNodeIterator implements Iterator<KmerPathNode
 	private final PriorityQueue<GraphNode> active = new PriorityQueue<GraphNode>(1024, ByGraphNodeStartPosition);
 	private final PriorityQueue<GraphNode> pathNodeConstructed = new PriorityQueue<GraphNode>(1024, ByGraphNodeFirstKmerStartPosition);
 	private int lastProcessPosition = Integer.MIN_VALUE;
-	public PositionalDeBruijnPathNodeIterator(Iterator<KmerAggregateNode> it, int maxSupportWidth, int maxPathLength, int k) {
+	public PathNodeIterator(Iterator<KmerAggregateNode> it, int maxSupportWidth, int maxPathLength, int k) {
 		this.underlying = Iterators.peekingIterator(it);
 		this.maxSupportWidth = maxSupportWidth;
 		this.maxPathLength = maxPathLength;

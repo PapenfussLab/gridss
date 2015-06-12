@@ -6,11 +6,11 @@ import java.util.PriorityQueue;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 
-public class PositionalDeBruijnSupportNodeIterator implements Iterator<KmerSupportNode> {
+public class SupportNodeIterator implements Iterator<KmerSupportNode> {
 	private final PeekingIterator<Evidence> underlying;
 	private final int maxSupportWidth;
 	private final PriorityQueue<KmerSupportNode> buffer = new PriorityQueue<KmerSupportNode>(1024, KmerNode.ByStartPosition);
-	public PositionalDeBruijnSupportNodeIterator(Iterator<Evidence> it, int maxSupportWidth) {
+	public SupportNodeIterator(Iterator<Evidence> it, int maxSupportWidth) {
 		this.underlying = Iterators.peekingIterator(it);
 		this.maxSupportWidth = maxSupportWidth;
 	}

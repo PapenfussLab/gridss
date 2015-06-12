@@ -7,7 +7,7 @@ import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
  * @author cameron.d
  *
  */
-public class KmerAggregateNode extends KmerNode {
+public class KmerAggregateNode implements KmerNode {
 	public long kmer() { return kmer; }
 	public int startPosition() { return start; }
 	public int endPosition() { return end; }
