@@ -113,10 +113,12 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		}
 		return sum;
 	}
-	public void append(KmerAggregateNode node) {
-		assert(node.startPosition() == startPosition(length() - 1) + 1);
-		assert(node.endPosition() == endPosition(length() - 1) + 1);
+	public void append(KmerNode node) {
+		assert(!(node instanceof KmerPathNode)); // should be using prepend
+		assert(node.startPosition() == startPosition() + 1);
+		assert(node.endPosition() == endPosition() + 1);
 		assert(node.isReference() == isReference());
+		assert(nextList == null || nextList.size() == 0);
 		//assert(KmerEncodingHelper.isNext(k, kmer(length() - 1), node.kmer())); 
 		kmers.add(node.kmer());
 		weight.add(node.weight());
@@ -129,8 +131,8 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	 * @param node
 	 */
 	public void prepend(KmerPathNode node) {
-		assert(startPosition() == node.startPosition(length() - 1) + 1);
-		assert(endPosition() == node.endPosition(length() - 1) + 1);
+		assert(startPosition(0) == node.startPosition() + 1);
+		assert(endPosition(0) == node.endPosition() + 1);
 		assert(isReference() == node.isReference());
 		assert(node.next().size() == 1);
 		assert(node.next().get(0) == this);
@@ -148,7 +150,9 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 			}
 			additionalKmers.addAll(node.additionalKmers);
 		}
-		nextList = node.nextList;
+		prevList = node.prevList;
+		start = node.start;
+		end = node.end;
 		versionId++;
 		node.invalidate();
 	}
@@ -224,7 +228,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	 * @return KmerPathSubnodes fully covering this KmerPathNode
 	 */
 	public List<KmerPathSubnode> asSubnodesByNext() {
-		List<KmerPathSubnode> subnodes = new ArrayList<KmerPathSubnode>(nextList.size() + 1);
+		List<KmerPathSubnode> subnodes = new ArrayList<KmerPathSubnode>(next().size() + 1);
 		PriorityQueue<KmerPathNode> active = new PriorityQueue<KmerPathNode>(4, KmerPathNode.ByFirstKmerEndPosition);
 		ensureEdgesSorted();
 		if (nextList == null) {
@@ -307,6 +311,12 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		assert(to.isValid());
 		assert(!from.next().contains(to));
 		assert(!to.prev().contains(from));
+		if (from.nextList == null) {
+			from.nextList = new ArrayList<KmerPathNode>(2);
+		}
+		if (to.prevList == null) {
+			to.prevList = new ArrayList<KmerPathNode>(2);
+		}
 		from.nextList.add(to);
 		to.prevList.add(from);
 		if (from.nextList.size() > 1 && KmerPathNode.ByFirstKmerStartPosition.compare(from.nextList.get(from.nextList.size() - 2), from.nextList.get(from.nextList.size() - 1)) > 0) {
@@ -388,6 +398,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		return split;
 	}
 	private static void replaceFirst(List<KmerPathNode> list, KmerPathNode existing, KmerPathNode replaceWith) {
+		if (list == null) return;
 		for (int i = 0; i < list.size(); i++) {
 			if (list.get(i) == existing) { 
 				list.set(i, replaceWith);
@@ -408,8 +419,8 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		KmerPathNode split = new KmerPathNode(kmers, weight, totalWeight, start, newStartPosition - 1, reference);
 		this.start = newStartPosition;
 		
-		ArrayList<KmerPathNode> newNextThis = new ArrayList<KmerPathNode>(nextList.size());
-		ArrayList<KmerPathNode> newNextSplit = new ArrayList<KmerPathNode>(nextList.size());
+		ArrayList<KmerPathNode> newNextThis = new ArrayList<KmerPathNode>(next().size());
+		ArrayList<KmerPathNode> newNextSplit = new ArrayList<KmerPathNode>(next().size());
 		for (KmerPathNode adj : nextList) {
 			if (IntervalUtil.overlapsClosed(adj.startPosition(0) - 1, adj.endPosition(0) - 1, this.start, this.end)) {
 				newNextThis.add(adj);
@@ -472,7 +483,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	}
 	@Override
 	public String toString() {
-		return String.format("[%d-%d]%s%d, %d kmers", isReference() ? "R" : " ",  startPosition(), endPosition(), weight(), length());
+		return String.format("[%d-%d]%s %d kmers, %s weight", startPosition(), endPosition(), isReference() ? "R" : " ", length(),  weight());
 	}
 	@Override
 	public int hashCode() {
