@@ -103,7 +103,7 @@ public class AggregateNodeIterator implements Iterator<KmerAggregateNode> {
 			public boolean isValid() {
 				return this.snapshotStart == KmerNodeAggregator.this.start;
 			}
-			// TODO: what's the correct syntax for doing this from outside the class?
+			// what's the correct syntax for doing this from outside the class?
 			public KmerNodeAggregator aggegrator() { return KmerNodeAggregator.this; }
 		}
 		public KmerNodeAggregator(long kmer) {

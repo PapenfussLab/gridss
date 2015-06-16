@@ -6,6 +6,7 @@ import it.unimi.dsi.fastutil.longs.LongArrayList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.PriorityQueue;
 
 import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNode;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
@@ -59,6 +60,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	}
 	public boolean isReference() { return reference; }
 	public int length() { return kmers.size(); }
+	public int width() { return end - start + 1; }
 	/**
 	 * Structural version identifier. The version number is changed
 	 * whenever a structural modification is made to the path node.
@@ -115,6 +117,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		assert(node.startPosition() == startPosition(length() - 1) + 1);
 		assert(node.endPosition() == endPosition(length() - 1) + 1);
 		assert(node.isReference() == isReference());
+		//assert(KmerEncodingHelper.isNext(k, kmer(length() - 1), node.kmer())); 
 		kmers.add(node.kmer());
 		weight.add(node.weight());
 		totalWeight += node.weight();
@@ -149,8 +152,28 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		versionId++;
 		node.invalidate();
 	}
+	public boolean canCoalese(KmerPathNode node) {
+		return start == node.end + 1
+				&& length() == node.length()
+				&& reference == node.reference
+				&& totalWeight == node.totalWeight 
+				&& kmers.equals(node.kmers)
+				&& weight.equals(node.weight);
+	}
 	/**
-	 * Merges the given node into this one
+	 * Merges the node covering the adjacent interval with matching kmers
+	 * immediately preceeding this node in genomic 
+	 * @param node 
+	 */
+	public void coaleseAdjacent(KmerPathNode node) {
+		assert(canCoalese(node));
+		start = node.start;
+		replaceEdges(node, this);
+		versionId++;
+		node.invalidate();
+	}
+	/**
+	 * Merges the given alternate kmer path into this one
 	 * @param toMerge
 	 */
 	public void merge(KmerPathNode toMerge) {
@@ -195,6 +218,80 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		if (nextList == null) return EMPTY_EDGE_LIST;
 		ensureEdgesSorted();
 		return nextList;
+	}
+	/**
+	 * Divides this PathNode into Subnodes that each share the same PathNode sucessors
+	 * @return KmerPathSubnodes fully covering this KmerPathNode
+	 */
+	public List<KmerPathSubnode> asSubnodesByNext() {
+		List<KmerPathSubnode> subnodes = new ArrayList<KmerPathSubnode>(nextList.size() + 1);
+		PriorityQueue<KmerPathNode> active = new PriorityQueue<KmerPathNode>(4, KmerPathNode.ByFirstKmerEndPosition);
+		ensureEdgesSorted();
+		if (nextList == null) {
+			subnodes.add(new KmerPathSubnode(this));
+		} else {
+			int activeStart = start;
+			int offset = 0;
+			while (activeStart <= end) {
+				while (offset < nextList.size() && nextList.get(offset).startPosition(0) - length() <= activeStart) {
+					// add successors that should now be in scope
+					active.add(nextList.get(offset++));
+				}
+				while (!active.isEmpty() && active.peek().endPosition(0) - length() < activeStart) {
+					// remove out of scope successors
+					active.poll();
+				}
+				int endPos = end;
+				if (offset < nextList.size()) {
+					int nextStart = nextList.get(offset).startPosition(0) - length();
+					endPos = Math.min(endPos, nextStart - 1);
+				}
+				if (!active.isEmpty()) {
+					int nextEnd = active.peek().endPosition(0) - length();
+					endPos = Math.min(endPos, nextEnd);
+				}
+				subnodes.add(new KmerPathSubnode(this, activeStart, endPos));
+				activeStart = endPos + 1;
+			}
+		}
+		return subnodes;
+	}
+	/**
+	 * Divides this PathNode into Subnodes that each share the same PathNode sucessors
+	 * @return KmerPathSubnodes fully covering this KmerPathNode
+	 */
+	public List<KmerPathSubnode> asSubnodesByPrev() {
+		List<KmerPathSubnode> subnodes = new ArrayList<KmerPathSubnode>(prevList.size() + 1);
+		PriorityQueue<KmerPathNode> active = new PriorityQueue<KmerPathNode>(4, KmerPathNode.ByFirstKmerEndPosition);
+		ensureEdgesSorted();
+		if (prevList == null) {
+			subnodes.add(new KmerPathSubnode(this));
+		} else {
+			int activeStart = start;
+			int offset = 0;
+			while (activeStart <= end) {
+				while (offset < prevList.size() && prevList.get(offset).start <= activeStart) {
+					// add successors that should now be in scope
+					active.add(prevList.get(offset++));
+				}
+				while (!active.isEmpty() && active.peek().endPosition() + 1 < activeStart) {
+					// remove out of scope successors
+					active.poll();
+				}
+				int endPos = end;
+				if (offset < prevList.size()) {
+					int nextStart = prevList.get(offset).startPosition() + 1;
+					endPos = Math.min(endPos, nextStart - 1);
+				}
+				if (!active.isEmpty()) {
+					int nextEnd = active.peek().endPosition() + 1;
+					endPos = Math.min(endPos, nextEnd);
+				}
+				subnodes.add(new KmerPathSubnode(this, activeStart, endPos));
+				activeStart = endPos + 1;
+			}
+		}
+		return subnodes;
 	}
 	/**
 	 * Precedessor nodes, ordered by adjacency position  
