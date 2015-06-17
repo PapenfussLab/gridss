@@ -6,16 +6,21 @@ package au.edu.wehi.idsv.debruijn.positional;
  *
  */
 public class KmerSupportNode implements KmerNode {
-	public long kmer() { return evidence.kmer(offset); }
-	public int startPosition() { return evidence.startPosition() - evidence.errorWidth() + offset; }
-	public int endPosition() { return evidence.startPosition() + evidence.errorWidth() + offset; }
-	public int weight() { return evidence.weight(offset); }
-	public boolean isReference() { return evidence.isAnchored(offset); }
 	private final int offset;
 	private final Evidence evidence;
+	public long kmer() { return evidence.kmer(offset); }
+	public int startPosition() { return evidence.startPosition() + offset; }
+	public int endPosition() { return evidence.endPosition() + offset; }
+	public int weight() { return evidence.weight(offset); }
+	public boolean isReference() { return evidence.isAnchored(offset); }
+	public Evidence evidence() { return evidence; }
 	public KmerSupportNode(Evidence evidence, int offset) {
 		this.evidence = evidence;
 		this.offset = offset;
+	}
+	@Override
+	public String toString() {
+		return String.format("[%d-%d]%s %s", startPosition(), endPosition(), isReference() ? "R" : " ", weight());
 	}
 	@Override
 	public int hashCode() {

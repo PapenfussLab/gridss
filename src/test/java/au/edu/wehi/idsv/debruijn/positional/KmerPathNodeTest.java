@@ -1,8 +1,12 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
-import org.junit.Assert;
+import java.util.Arrays;
+import java.util.stream.IntStream;
+
 import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
@@ -31,6 +35,8 @@ public class KmerPathNodeTest extends TestHelper {
 		assertEquals(2+3+4, pn.weight());
 		assertFalse(pn.isReference());
 		assertTrue(pn.isValid());
+		assertEquals(3, pn.length());
+		assertEquals(2, pn.width());
 		
 		assertEquals(1, pn.startPosition(0));
 		assertEquals(2, pn.endPosition(0));
@@ -99,6 +105,31 @@ public class KmerPathNodeTest extends TestHelper {
 		}
 		return pn;
 	}
+	public KmerPathNode kpn(long[] kmers, int start, int end, boolean reference) {
+		int[] weights = new int[kmers.length];
+		Arrays.fill(weights, 1);
+		return kpn(kmers, weights, start, end, reference);
+	}
+	public void assertIs(KmerPathNode pn, long[] kmers, int[] weights, int start, int end, boolean reference) {
+		assertEquals(start, pn.startPosition(0));
+		assertEquals(end, pn.endPosition(0));
+		assertEquals(kmers.length, pn.length());
+		for (int i = 0; i < pn.length(); i++) {
+			assertEquals(kmers[i], pn.kmer(i));
+		}
+		for (int i = 0; i < pn.length(); i++) {
+			assertEquals(weights[i], pn.weight(i));
+		}
+		assertEquals(IntStream.of(weights).sum(), pn.weight());
+		assertEquals(reference, pn.isReference());
+		assertTrue(pn.isValid());
+		for (int i = 1; i < pn.next().size(); i++) {
+			assertTrue(pn.next().get(i - 1).startPosition(0) <= pn.next().get(i).startPosition(0));
+		}
+		for (int i = 1; i < pn.prev().size(); i++) {
+			assertTrue(pn.prev().get(i - 1).startPosition() <= pn.prev().get(i).startPosition());
+		}
+	}
 	@Test
 	public void canCoalese_should_require_adjacent_before_position_and_everything_else_matching() {
 		assertTrue(kpn(new long[] { 0, 1, 2, 3 }, new int[] { 1, 2, 3, 4 }, 5, 10, true).canCoalese(
@@ -121,16 +152,44 @@ public class KmerPathNodeTest extends TestHelper {
 	}
 	@Test
 	public void coaleseAdjacent_should_merge_interval() {
-		KmerPathNode pn = kpn(new long[] { 0, 1, 2, 3 }, new int[] { 1, 2, 3, 4 }, 5, 10, true);
+		KmerPathNode pn1 = kpn(new long[] { 0, 1, 2, 3 }, new int[] { 1, 2, 3, 4 }, 5, 10, true);
 		KmerPathNode pn2 = kpn(new long[] { 0, 1, 2, 3 }, new int[] { 1, 2, 3, 4 }, 3, 4, true);
-		pn.coaleseAdjacent(pn2);
-		assertEquals(3, pn.startPosition(0));
-		assertEquals(10, pn.endPosition(0));
-		assertEquals(0, pn.kmer(0));
-		assertEquals(1+2+3+4, pn.weight());
-		assertTrue(pn.isReference());
-		assertTrue(pn.isValid());
-		assertFalse(pn2.isValid());
+		
+		KmerPathNode.addEdge(kpn(new long[] { 0 }, new int[] { 1}, 4, 5, true), pn1);
+		KmerPathNode.addEdge(kpn(new long[] { 0 }, new int[] { 1}, 6, 7, true), pn1);
+		KmerPathNode sharedPrev = kpn(new long[] { 1 }, new int[] { 1}, 0, 6, true);
+		KmerPathNode.addEdge(sharedPrev, pn1);
+		KmerPathNode.addEdge(sharedPrev, pn2);
+		KmerPathNode.addEdge(kpn(new long[] { 2 }, new int[] { 1 }, 2, 2, true), pn2);
+		KmerPathNode sharedNext = kpn(new long[] { 4 }, new int[] { 1 }, 0, 20, true);
+		KmerPathNode.addEdge(pn1, sharedNext);
+		KmerPathNode.addEdge(pn2, sharedNext);
+		
+		pn1.coaleseAdjacent(pn2);
+		assertEquals(4, pn1.prev().size());
+		assertEquals(1, pn1.next().size());
+	}
+	@Test
+	public void invalidate_should_remove_node() {
+		KmerPathNode pn1 = kpn(new long[] { 0, 1, 2, 3 }, new int[] { 1, 2, 3, 4 }, 5, 10, true);
+		pn1.invalidate();
+		assertFalse(pn1.isValid());
+	}
+	@Test
+	public void next_should_sort_by_first_kmer_start() {
+		KmerPathNode pn1 = kpn(new long[] { 0 }, new int[] { 1 }, 1, 100, true);
+		KmerPathNode.addEdge(pn1, kpn(new long[] { 0, 1, 2, 3, 4, 5, 6, 7 }, 3, 3, true));
+		KmerPathNode.addEdge(pn1, kpn(new long[] { 0, 1, 3, 4 }, 2, 2, true));
+		assertEquals(2, pn1.next().get(0).startPosition(0));
+		assertEquals(3, pn1.next().get(1).startPosition(0));
+	}
+	@Test
+	public void prev_should_sort_by_last_kmer_start() {
+		KmerPathNode pn1 = kpn(new long[] { 0 }, new int[] { 1 }, 1, 100, true);
+		KmerPathNode.addEdge(kpn(new long[] { 0, 1, 2, 3, 4, 5, 6, 7 }, 1, 1, true), pn1);
+		KmerPathNode.addEdge(kpn(new long[] { 0, 1, 3, 4 }, 2, 2, true), pn1);
+		assertEquals(5, pn1.prev().get(0).startPosition());
+		assertEquals(8, pn1.prev().get(1).startPosition());
 	}
 	@Test
 	public void KmerNode_kmer_position_should_be_of_lastKmer() {
@@ -146,7 +205,46 @@ public class KmerPathNodeTest extends TestHelper {
 		assertEquals(pn.kmer(2), pn.kmer());
 	}
 	@Test
-	public void coaleseAdjacent_should_merge_edges() {
-		// TODO: Assert.fail();
-	}	
+	public void splitAtLength_should_break_after_nth_kmer() {
+		KmerPathNode pn = kpn(new long[] { 0, 1, 2, 3, 4 }, new int[] { 1, 2, 3, 4, 5 }, 1, 10, true);
+		KmerPathNode.addEdge(kpn(new long[] { 0, 1, 2, 3, 4, 5, 6, 7 }, 1, 1, true), pn);
+		KmerPathNode.addEdge(kpn(new long[] { 0, 1, 2, 3, 4, 5, 6, 7 }, 2, 2, true), pn);
+		KmerPathNode.addEdge(pn, kpn(new long[] { 0, 1, 2, 3, 4, 5, 6, 7 }, 1, 1, false));
+		KmerPathNode.addEdge(pn, kpn(new long[] { 0, 1, 2, 3, 4, 5, 6, 7 }, 2, 2, false));
+		KmerPathNode split = pn.splitAtLength(3);
+		
+		assertIs(split, new long[] { 0, 1, 2 }, new int[] { 1, 2, 3 }, 1, 10, true);
+		assertIs(pn, new long[] { 3, 4 }, new int[] { 4, 5 }, 4, 13, true);
+		
+		assertEquals(1, pn.prev().size());
+		assertEquals(1, split.next().size());
+		assertEquals(split, pn.prev().get(0));
+		assertEquals(pn, split.next().get(0));
+		assertEquals(2, split.prev().size());
+		assertEquals(2, pn.next().size());
+	}
+	@Test
+	public void splitAtStartPosition_should_split_so_first_kmer_starts_at_given_position() {
+		KmerPathNode pn = kpn(new long[] { 0, 1, 2, 3, 4 }, new int[] { 1, 2, 3, 4, 5 }, 1, 10, true);
+		// prev: 
+		KmerPathNode.addEdge(kpn(new long[] { 0, 1 }, -5, 1, true), pn); // split only
+		KmerPathNode.addEdge(kpn(new long[] { 1, 1 }, 1, 1, true), pn); // split only
+		KmerPathNode.addEdge(kpn(new long[] { 2, 1 }, 2, 2, true), pn); // pn only
+		KmerPathNode.addEdge(kpn(new long[] { 3, 1 }, -100, 100, false), pn); // both
+		// next
+		KmerPathNode.addEdge(pn, kpn(new long[] { 0, 1, 2, 3, 4, 5, 6, 7 }, 6, 6, false)); // split only
+		KmerPathNode.addEdge(pn, kpn(new long[] { 1, 1, 2, 3, 4, 5, 6, 7 }, 8, 8, false)); // split only
+		KmerPathNode.addEdge(pn, kpn(new long[] { 2, 1, 2, 3, 4, 5, 6, 7 }, 8, 9, false)); // both
+		KmerPathNode.addEdge(pn, kpn(new long[] { 3, 1, 2, 3, 4, 5, 6, 7 }, 9, 9, false)); // pn only
+		KmerPathNode split = pn.splitAtStartPosition(4);
+		
+		assertIs(split, new long[] { 0, 1, 2, 3, 4 }, new int[] { 1, 2, 3, 4, 5 }, 1, 3, true);
+		assertIs(pn, new long[] { 0, 1, 2, 3, 4 }, new int[] { 1, 2, 3, 4, 5 }, 4, 10, true);
+		
+		assertEquals(2, pn.next().size());
+		assertEquals(3, split.next().size());
+		
+		assertEquals(2, pn.prev().size());
+		assertEquals(3, split.prev().size());
+	}
 }

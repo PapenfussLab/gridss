@@ -43,6 +43,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	private static final Log log = Log.getInstance(AssemblyEvidenceSource.class);
 	private final List<SAMEvidenceSource> source;
 	private final int maxSourceFragSize;
+	private final int minSourceFragSize;
 	private final FileSystemContext fsc;
 	/**
 	 * Generates assembly evidence based on the given evidence
@@ -54,10 +55,13 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		this.fsc = getContext().getFileSystemContext();
 		this.source = evidence;
 		int max = 0;
+		int min = 0;
 		for (SAMEvidenceSource s : evidence) {
 			max = Math.max(max, s.getMaxConcordantFragmentSize());
+			min = Math.min(min, s.getMinConcordantFragmentSize());
 		}
 		maxSourceFragSize = max;
+		minSourceFragSize = min;
 	}
 	public void ensureAssembled() {
 		ensureAssembled(null);
@@ -445,6 +449,10 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	@Override
 	public int getMaxConcordantFragmentSize() {
 		return maxSourceFragSize;
+	}
+	@Override
+	public int getMinConcordantFragmentSize() {
+		return minSourceFragSize;
 	}
 	public int getAssemblyEvidenceWindowSize() {
 		return (int)(getContext().getAssemblyParameters().subgraphAssemblyMargin * getMaxConcordantFragmentSize());

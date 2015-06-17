@@ -78,7 +78,7 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		removeEvidenceKmers(graphEvidence);
 	}
 	protected void addEvidenceKmers(VariantEvidence evidence) {
-		PackedReadKmerList kmers = evidence.getKmers();
+		PackedKmerList kmers = evidence.getKmers();
 		for (int i = 0; i < kmers.length(); i++) {
 			if (!shouldSkipKmer(evidence, i)) {
 				T node = createNode(evidence, i);
@@ -91,7 +91,7 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		return evidence.isSkippedKmer(readKmerOffset) || evidence.containsAmbiguousBases(readKmerOffset);
 	}
 	protected void removeEvidenceKmers(VariantEvidence evidence) {
-		PackedReadKmerList kmers = evidence.getKmers();
+		PackedKmerList kmers = evidence.getKmers();
 		for (int i = 0; i < kmers.length(); i++) {
 			if (!shouldSkipKmer(evidence, i)) {
 				T node = createNode(evidence, i);

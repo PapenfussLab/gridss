@@ -16,6 +16,10 @@ public class FixedSizeReadPairConcordanceCalculator extends ReadPairConcordanceC
 		return maxFragmentSize;
 	}
 	@Override
+	public int minConcordantFragmentSize() {
+		return minFragmentSize;
+	}
+	@Override
 	public boolean isConcordant(SAMRecord read1, SAMRecord read2) {
 		return super.isConcordant(read1, read2)
 				&& isConcordantFragmentSize(read1, read2);

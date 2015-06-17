@@ -10,7 +10,7 @@ import com.google.common.collect.Lists;
 import au.edu.wehi.idsv.TestHelper;
 
 
-public class PackedReadKmerListTest extends TestHelper {
+public class PackedKmerListTest extends TestHelper {
 	public void matches(int k, String sequence, String weights) {
 		matches(k, sequence, weights, false, false);
 		matches(k, sequence, weights, false, true);
@@ -19,7 +19,7 @@ public class PackedReadKmerListTest extends TestHelper {
 	}
 	public void matches(int k, String sequence, String weights, boolean reverse, boolean complement) {
 		ReadKmerIterable it = new ReadKmerIterable(k, B(sequence), B(weights), reverse, complement);
-		PackedReadKmerList packed = new PackedReadKmerList(k, B(sequence), B(weights), reverse, complement);
+		PackedKmerList packed = new PackedKmerList(k, B(sequence), B(weights), reverse, complement);
 		List<ReadKmer> rk = Lists.newArrayList(it.iterator());
 		assertEquals(rk.size(), packed.length());
 		for (int i = 0; i < rk.size(); i++) {
@@ -63,14 +63,14 @@ public class PackedReadKmerListTest extends TestHelper {
 	}
 	@Test
 	public void should_complement() {
-		assertEquals("AGT", K(3, new PackedReadKmerList(3, B("TCA"), B("AAAA"), false, true).kmer(0)));
+		assertEquals("AGT", K(3, new PackedKmerList(3, B("TCA"), B("AAAA"), false, true).kmer(0)));
 	}
 	@Test
 	public void should_reverse() {
-		assertEquals("ACT", K(3, new PackedReadKmerList(3, B("TCA"), B("AAAA"), true, false).kmer(0)));
+		assertEquals("ACT", K(3, new PackedKmerList(3, B("TCA"), B("AAAA"), true, false).kmer(0)));
 	}
 	@Test
 	public void should_reverse_complement() {
-		assertEquals("TGA", K(3, new PackedReadKmerList(3, B("TCA"), B("AAA"), true, true).kmer(0)));
+		assertEquals("TGA", K(3, new PackedKmerList(3, B("TCA"), B("AAA"), true, true).kmer(0)));
 	}
 }

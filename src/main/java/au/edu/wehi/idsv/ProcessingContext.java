@@ -122,7 +122,7 @@ public class ProcessingContext implements Closeable {
 			throw new IllegalArgumentException("Missing sequence dictionary for reference genome. Please create using picard CreateSequenceDictionary.");
 		}
 		this.dictionary = new DynamicSAMSequenceDictionary(this.reference.getSequenceDictionary());
-		this.linear = new LinearGenomicCoordinate(this.dictionary, LINEAR_COORDINATE_CHROMOSOME_BUFFER, true);
+		this.linear = new PaddedLinearGenomicCoordinate(this.dictionary, LINEAR_COORDINATE_CHROMOSOME_BUFFER, true);
 		this.basicHeader = new SAMFileHeader();
 		this.basicHeader.setSequenceDictionary(this.reference.getSequenceDictionary());
 	}

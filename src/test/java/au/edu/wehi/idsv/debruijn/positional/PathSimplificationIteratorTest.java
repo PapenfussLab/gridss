@@ -2,6 +2,8 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import static org.junit.Assert.*;
 
+import java.util.List;
+
 import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;

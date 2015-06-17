@@ -9,6 +9,7 @@ import java.util.List;
 
 public abstract class EvidenceSource {
 	public abstract int getMaxConcordantFragmentSize();
+	public abstract int getMinConcordantFragmentSize();
 	protected final File input;
 	private final ProcessingContext processContext;
 	public ProcessingContext getContext() {

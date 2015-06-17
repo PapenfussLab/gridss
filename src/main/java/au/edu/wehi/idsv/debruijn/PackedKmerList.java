@@ -5,8 +5,13 @@ import java.math.RoundingMode;
 import com.google.common.math.IntMath;
 
 
-public class PackedReadKmerList {
-	public PackedReadKmerList(int k, byte[] bases, byte[] qual, boolean reverse, boolean complement) {
+public class PackedKmerList {
+	private static final int BITS_PER_BASE = 2;
+	private static final int BASES_PER_WORD = Byte.SIZE / BITS_PER_BASE;
+	private final byte[] twoBitBases;
+	private final byte[] weights;
+	private final byte k;
+	public PackedKmerList(int k, byte[] bases, byte[] qual, boolean reverse, boolean complement) {
 		int kmers = bases.length - k + 1;
 		this.k = (byte)k;
 		this.twoBitBases = twoBitEncodeBases(k, bases, reverse, complement);
@@ -61,11 +66,6 @@ public class PackedReadKmerList {
 		}
 		return weights;
 	}
-	private final byte[] twoBitBases;
-	private final byte[] weights;
-	private final byte k;
-	private static final int BITS_PER_BASE = 2;
-	private static final int BASES_PER_WORD = Byte.SIZE / BITS_PER_BASE;
 	public long kmer(int offset) {
 		int toTake = k;
 		long accum = 0;

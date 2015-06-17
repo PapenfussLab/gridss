@@ -56,6 +56,7 @@ public class IdsvSamFileMetricsCollector {
     		if (record.getProperPairFlag()) {
 	    		int fragmentSize = SAMRecordUtil.estimateFragmentSize(record, PairOrientation.FR);
 	    		idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH = Math.max(idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH, Math.abs(fragmentSize));
+	    		idsv.MIN_PROPER_PAIR_FRAGMENT_LENGTH = Math.min(idsv.MIN_PROPER_PAIR_FRAGMENT_LENGTH, Math.abs(fragmentSize));
     		}
     		if (record.getFirstOfPairFlag()) {
     			idsv.READ_PAIRS++;

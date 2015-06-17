@@ -13,6 +13,10 @@ public class SAMFlagReadPairConcordanceCalculator extends ReadPairConcordanceCal
 		return metrics.MAX_PROPER_PAIR_FRAGMENT_LENGTH;
 	}
 	@Override
+	public int minConcordantFragmentSize() {
+		return metrics.MIN_PROPER_PAIR_FRAGMENT_LENGTH;
+	}
+	@Override
 	public boolean isConcordant(SAMRecord read) {
 		return read.getReadPairedFlag() && read.getProperPairFlag();
 	}

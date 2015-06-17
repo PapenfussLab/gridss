@@ -22,6 +22,10 @@ public class EvidenceSourceTest extends IntermediateFilesTest {
 		public int getMaxConcordantFragmentSize() {
 			return 300;
 		}
+		@Override
+		public int getMinConcordantFragmentSize() {
+			return 0;
+		}
 	}
 	@Test
 	public void getFileIntermediateDirectoryBasedOn_should_be_input_file() {

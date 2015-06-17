@@ -7,13 +7,13 @@ import htsjdk.samtools.SAMSequenceRecord;
 import org.junit.Test;
 
 
-public class LinearGenomicCoordinateTest {
+public class PaddedLinearGenomicCoordinateTest {
 	@Test
 	public void testGetLinearCoordinate() {
 		SAMSequenceDictionary dict = new SAMSequenceDictionary();
 		dict.addSequence(new SAMSequenceRecord("contig1", 10));
 		dict.addSequence(new SAMSequenceRecord("contig2", 20));
-		LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict);
+		LinearGenomicCoordinate c = new PaddedLinearGenomicCoordinate(dict);
 		assertEquals(1, c.getLinearCoordinate(0,  1));
 		assertEquals(11, c.getLinearCoordinate(1,  1));
 	}
@@ -22,7 +22,7 @@ public class LinearGenomicCoordinateTest {
 		SAMSequenceDictionary dict = new SAMSequenceDictionary();
 		dict.addSequence(new SAMSequenceRecord("contig1", 10));
 		dict.addSequence(new SAMSequenceRecord("contig2", 20));
-		LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict);
+		LinearGenomicCoordinate c = new PaddedLinearGenomicCoordinate(dict);
 		assertEquals(1, c.getLinearCoordinate("contig1",  1));
 		assertEquals(11, c.getLinearCoordinate("contig2",  1));
 	}
@@ -31,7 +31,7 @@ public class LinearGenomicCoordinateTest {
 		SAMSequenceDictionary dict = new SAMSequenceDictionary();
 		dict.addSequence(new SAMSequenceRecord("contig1", 10));
 		dict.addSequence(new SAMSequenceRecord("contig2", 20));
-		LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict, 100000, true);
+		LinearGenomicCoordinate c = new PaddedLinearGenomicCoordinate(dict, 100000, true);
 		assertEquals(100001, c.getLinearCoordinate("contig1",  1));
 		assertEquals(200001, c.getLinearCoordinate("contig2",  1));
 	}
@@ -40,14 +40,14 @@ public class LinearGenomicCoordinateTest {
 		SAMSequenceDictionary dict = new SAMSequenceDictionary();
 		dict.addSequence(new SAMSequenceRecord("contig1", 10));
 		dict.addSequence(new SAMSequenceRecord("contig2", 20));
-		new LinearGenomicCoordinate(dict, 19, true);
+		new PaddedLinearGenomicCoordinate(dict, 19, true);
 	}
 	@Test
 	public void GetStartLinearCoordinate() {
 		SAMSequenceDictionary dict = new SAMSequenceDictionary();
 		dict.addSequence(new SAMSequenceRecord("contig1", 10));
 		dict.addSequence(new SAMSequenceRecord("contig2", 20));
-		LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict);
+		LinearGenomicCoordinate c = new PaddedLinearGenomicCoordinate(dict);
 		assertEquals(2, c.getStartLinearCoordinate(new BreakendSummary(0, BreakendDirection.Forward, 2, 5)));
 	}
 	@Test
@@ -55,7 +55,7 @@ public class LinearGenomicCoordinateTest {
 		SAMSequenceDictionary dict = new SAMSequenceDictionary();
 		dict.addSequence(new SAMSequenceRecord("contig1", 10));
 		dict.addSequence(new SAMSequenceRecord("contig2", 20));
-		LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict);
+		LinearGenomicCoordinate c = new PaddedLinearGenomicCoordinate(dict);
 		assertEquals(5, c.getEndLinearCoordinate(new BreakendSummary(0, BreakendDirection.Forward, 2, 5)));
 	}
 	@SuppressWarnings("deprecation")
@@ -64,7 +64,7 @@ public class LinearGenomicCoordinateTest {
 		SAMSequenceDictionary dict = new SAMSequenceDictionary();
 		dict.addSequence(new SAMSequenceRecord("contig1"));
 		dict.addSequence(new SAMSequenceRecord("contig2"));
-		LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict);
+		LinearGenomicCoordinate c = new PaddedLinearGenomicCoordinate(dict);
 		assertEquals(1, c.getLinearCoordinate(0,  1));
 	}
 	@Test
@@ -72,7 +72,7 @@ public class LinearGenomicCoordinateTest {
 		SAMSequenceDictionary dict = new SAMSequenceDictionary();
 		dict.addSequence(new SAMSequenceRecord("contig1", 10));
 		dict.addSequence(new SAMSequenceRecord("contig2", 20));
-		LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict, 2);
+		LinearGenomicCoordinate c = new PaddedLinearGenomicCoordinate(dict, 2);
 		// start padding
 		assertEquals(3, c.getLinearCoordinate("contig1",  1));
 		// padding from start + between chromosomes = 2 + 11 + 2 + 2
@@ -84,7 +84,7 @@ public class LinearGenomicCoordinateTest {
 		dict.addSequence(new SAMSequenceRecord("contig1", 10));
 		dict.addSequence(new SAMSequenceRecord("contig2", 20));
 		dict.addSequence(new SAMSequenceRecord("contig3", 30));
-		LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict, 1);
+		LinearGenomicCoordinate c = new PaddedLinearGenomicCoordinate(dict, 1);
 		
 		assertEquals(0, c.getReferenceIndex(c.getLinearCoordinate(0, 1)));
 		assertEquals(1, c.getReferenceIndex(c.getLinearCoordinate(1, 1)));
@@ -96,7 +96,7 @@ public class LinearGenomicCoordinateTest {
 		dict.addSequence(new SAMSequenceRecord("contig2", 20));
 		dict.addSequence(new SAMSequenceRecord("contig3", 30));
 		for (int bufferSize = 0; bufferSize < 3; bufferSize++) {
-			LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict, bufferSize);
+			LinearGenomicCoordinate c = new PaddedLinearGenomicCoordinate(dict, bufferSize);
 			assertEquals(1, c.getReferencePosition(c.getLinearCoordinate(0, 1)));
 			assertEquals(2, c.getReferencePosition(c.getLinearCoordinate(1, 2)));
 			assertEquals(3, c.getReferencePosition(c.getLinearCoordinate(0, 3)));
@@ -112,7 +112,7 @@ public class LinearGenomicCoordinateTest {
 		dict.addSequence(new SAMSequenceRecord("contig2", 10));
 		dict.addSequence(new SAMSequenceRecord("contig3", 10));
 		for (int bufferSize = 0; bufferSize < 3; bufferSize++) {
-			LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict, bufferSize);
+			LinearGenomicCoordinate c = new PaddedLinearGenomicCoordinate(dict, bufferSize);
 			for (int i = 1; i <= 10; i++) {
 				assertEquals(i, c.getReferencePosition(c.getLinearCoordinate(0, i)));
 				assertEquals(i, c.getReferencePosition(c.getLinearCoordinate(1, i)));
@@ -127,7 +127,7 @@ public class LinearGenomicCoordinateTest {
 		dict.addSequence(new SAMSequenceRecord("contig2", 10));
 		dict.addSequence(new SAMSequenceRecord("contig3", 10));
 		for (int bufferSize = 0; bufferSize < 16; bufferSize++) {
-			LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict, bufferSize);
+			LinearGenomicCoordinate c = new PaddedLinearGenomicCoordinate(dict, bufferSize);
 			for (int i = 1 - bufferSize; i <= 10 + bufferSize; i++) {
 				for (int j = 0; j < 3; j++) {
 					assertEquals(j, c.getReferenceIndex(c.getLinearCoordinate(j, i)));
@@ -147,7 +147,7 @@ public class LinearGenomicCoordinateTest {
 		//  ++++0+++11++222+++++
 		// --00000*1111222222222-
 		//  aaaabbbbccccddddeeee   width blocks
-		LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict, 4, true);
+		LinearGenomicCoordinate c = new PaddedLinearGenomicCoordinate(dict, 4, true);
 		for (int i = -10; i < 30; i++) {
 			int refIndex = c.getReferenceIndex(i);
 			if (i <= 0) assertEquals(-1, refIndex);
@@ -168,7 +168,7 @@ public class LinearGenomicCoordinateTest {
 		//   ++++0++++++++11++++++++222++++
 		// --000000000111111111122222222222-
 		//  aaaa aaaabbbb  bbbbcccc   cccc
-		LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict, 4, false);
+		LinearGenomicCoordinate c = new PaddedLinearGenomicCoordinate(dict, 4, false);
 		for (int i = -10; i < 40; i++) {
 			int refIndex = c.getReferenceIndex(i);
 			if (i <= 0) assertEquals(-1, refIndex);
@@ -183,7 +183,7 @@ public class LinearGenomicCoordinateTest {
 		SAMSequenceDictionary dict = new SAMSequenceDictionary();
 		dict.addSequence(new SAMSequenceRecord("contig1", 10));
 		dict.addSequence(new SAMSequenceRecord("contig2", 10));
-		LinearGenomicCoordinate c = new LinearGenomicCoordinate(dict, 1);
+		LinearGenomicCoordinate c = new PaddedLinearGenomicCoordinate(dict, 1);
 		assertEquals(-1, c.getReferenceIndex(0));
 		assertEquals(-1, c.getReferenceIndex(1+10+1 +1+10+1 + 2));
 	}

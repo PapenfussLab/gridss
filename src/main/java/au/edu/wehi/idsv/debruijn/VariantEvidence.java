@@ -22,7 +22,7 @@ import au.edu.wehi.idsv.sam.SAMRecordUtil;
  *
  */
 public class VariantEvidence {
-	private final PackedReadKmerList kmers;
+	private final PackedKmerList kmers;
 	private final BitSet ambiguous;
 	/**
 	 * Expected linear genomic position of the start of the read
@@ -62,7 +62,7 @@ public class VariantEvidence {
 		this.isExact = pair.isBreakendExact();
 		this.be = pair.getBreakendSummary();
 		this.category = pair.getEvidenceSource().getSourceCategory();
-		this.kmers = new PackedReadKmerList(k, bases, quals, shouldReverseComplement, shouldReverseComplement);
+		this.kmers = new PackedKmerList(k, bases, quals, shouldReverseComplement, shouldReverseComplement);
 		this.ambiguous = markAmbiguous(k, bases);
 	}
 	public VariantEvidence(int k, SoftClipEvidence softClipEvidence, LinearGenomicCoordinate lgc) {
@@ -111,7 +111,7 @@ public class VariantEvidence {
 		this.isExact = softClipEvidence.isBreakendExact();
 		this.be = softClipEvidence.getBreakendSummary();
 		this.category = softClipEvidence.getEvidenceSource().getSourceCategory();
-		this.kmers = new PackedReadKmerList(k, bases, quals, shouldReverseComplement, shouldReverseComplement);
+		this.kmers = new PackedKmerList(k, bases, quals, shouldReverseComplement, shouldReverseComplement);
 		this.ambiguous = markAmbiguous(k, bases);
 	}
 	private static BitSet markAmbiguous(int k, byte[] bases) {
@@ -123,7 +123,7 @@ public class VariantEvidence {
 		}
 		return lookup;
 	}
-	public PackedReadKmerList getKmers() {
+	public PackedKmerList getKmers() {
 		return kmers;
 	}
 	public int getReferenceKmerCount() {

@@ -783,7 +783,8 @@ public class TestHelper {
 		protected MockSAMEvidenceSource(ProcessingContext processContext, int minFragmentSize, int maxFragmentSize) {
 			super(processContext, new File("test.bam"), 0, minFragmentSize, maxFragmentSize);
 			metrics.getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH = maxFragmentSize;
-			metrics.getIdsvMetrics().MAX_READ_LENGTH = maxFragmentSize;
+			metrics.getIdsvMetrics().MIN_PROPER_PAIR_FRAGMENT_LENGTH = minFragmentSize;
+			metrics.getIdsvMetrics().MAX_READ_LENGTH = minFragmentSize == 0 ? maxFragmentSize : minFragmentSize;
 			metrics.getInsertSizeMetrics().MAX_INSERT_SIZE = maxFragmentSize;
 			metrics.getInsertSizeMetrics().MIN_INSERT_SIZE = minFragmentSize;
 			metrics.getInsertSizeMetrics().MEDIAN_INSERT_SIZE = (minFragmentSize + maxFragmentSize) / 2;

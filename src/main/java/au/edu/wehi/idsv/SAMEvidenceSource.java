@@ -48,7 +48,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 	public SAMEvidenceSource(ProcessingContext processContext, File file, int sourceCategory) {
 		this(processContext, file, sourceCategory, ReadPairConcordanceMethod.SAM_FLAG, null);
 	}
-	public SAMEvidenceSource(ProcessingContext processContext, File file,int sourceCategory, int minFragmentSize, int maxFragmentSize) {
+	public SAMEvidenceSource(ProcessingContext processContext, File file, int sourceCategory, int minFragmentSize, int maxFragmentSize) {
 		this(processContext, file, sourceCategory, ReadPairConcordanceMethod.FIXED, new Object[] { minFragmentSize, maxFragmentSize });
 	}
 	public SAMEvidenceSource(ProcessingContext processContext, File file, int sourceCategory, double concordantPercentage) {
@@ -349,6 +349,10 @@ public class SAMEvidenceSource extends EvidenceSource {
 	@Override
 	public int getMaxConcordantFragmentSize() {
 		return Math.max(getMaxReadMappedLength(), Math.max(getMaxReadLength(), getReadPairConcordanceCalculator().maxConcordantFragmentSize()));
+	}
+	@Override
+	public int getMinConcordantFragmentSize() {
+		return Math.max(getMaxReadLength(), getReadPairConcordanceCalculator().minConcordantFragmentSize());
 	}
 	public int getMaxReadLength() {
 		return getMetrics().getIdsvMetrics().MAX_READ_LENGTH;
