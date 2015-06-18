@@ -2,6 +2,7 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
+import java.util.Comparator;
 import java.util.Iterator;
 import java.util.PriorityQueue;
 
@@ -40,9 +41,9 @@ public class AggregateNodeIterator implements Iterator<KmerAggregateNode> {
 	private void ensureBuffer() {
 		// we can emit whenever there are no unprocessed or incomplete intervals
 		// before our current interval
-		// TODO: handle isEmpty and !hasNext
-		while (outputSortBuffer.peek().startPosition() >= underlying.peek().startPosition() ||
-				outputSortBuffer.peek().startPosition() >= byStartPosition.peek().snapshotStart) {
+		while (underlying.hasNext() && (outputSortBuffer.isEmpty() ||
+				outputSortBuffer.peek().startPosition() >= underlying.peek().startPosition() ||
+				(!byStartPosition.isEmpty() && outputSortBuffer.peek().startPosition() >= byStartPosition.peek().snapshotStart))) {
 			process(underlying.next());
 		}
 		if (!underlying.hasNext()) {
@@ -60,23 +61,24 @@ public class AggregateNodeIterator implements Iterator<KmerAggregateNode> {
 			byKmer.put(kmer, ag);
 		}
 		byStartPosition.add(ag.new KmerNodeAggregatorSnapshot());
+		byStartPosition_removeInvalidHead();
 	}
 	/**
 	 * Flush all aggregate nodes starting before the given position
 	 * @param position
 	 */
 	private void flushBefore(int position) {
+		byStartPosition_removeInvalidHead();
 		while (!byStartPosition.isEmpty()) {
-			if (!byStartPosition.peek().isValid()) {
-				byStartPosition.poll();
-			} else if (byStartPosition.peek().snapshotStart < position) {
-				KmerNodeAggregator ag = byStartPosition.poll().aggegrator();
+			if (byStartPosition.peek().snapshotStart < position) {
+				KmerNodeAggregator ag = byStartPosition.poll().aggregator();
 				ag.advanceTo(position);
 				if (ag.isEmpty()) {
 					byKmer.remove(ag.kmer);
 				} else {
 					byStartPosition.add(ag.new KmerNodeAggregatorSnapshot());
 				}
+				byStartPosition_removeInvalidHead();
 			}
 		}
 	}
@@ -106,7 +108,7 @@ public class AggregateNodeIterator implements Iterator<KmerAggregateNode> {
 				return this.snapshotStart == KmerNodeAggregator.this.start;
 			}
 			// what's the correct syntax for doing this from outside the class?
-			public KmerNodeAggregator aggegrator() { return KmerNodeAggregator.this; }
+			public KmerNodeAggregator aggregator() { return KmerNodeAggregator.this; }
 		}
 		public KmerNodeAggregator(long kmer) {
 			this.kmer = kmer;
@@ -119,15 +121,15 @@ public class AggregateNodeIterator implements Iterator<KmerAggregateNode> {
 		/**
 		 * Start position of currently active aggregation interval
 		 */
-		private int start;
+		private int start = Integer.MIN_VALUE;
 		/**
 		 * Weight of currently active aggregation interval
 		 */
-		private int weight;
+		private int weight = 0;
 		/**
 		 * Number of active reference KmerNode 
 		 */
-		private int referenceCount;
+		private int referenceCount = 0;
 		/**
 		 * Advances to the next node, adding aggregate nodes to the given collection
 		 * @param node next node
@@ -172,5 +174,10 @@ public class AggregateNodeIterator implements Iterator<KmerAggregateNode> {
 	@Override
 	public void remove() {
 		throw new UnsupportedOperationException();
+	}
+	private void byStartPosition_removeInvalidHead() {
+		while (!byStartPosition.isEmpty() && !byStartPosition.peek().isValid()) {
+			byStartPosition.poll();
+		}
 	}
 }
