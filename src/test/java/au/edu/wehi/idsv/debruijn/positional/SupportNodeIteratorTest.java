@@ -16,19 +16,27 @@ import au.edu.wehi.idsv.TestHelper;
 
 
 public class SupportNodeIteratorTest extends TestHelper {
+	public static List<DirectedEvidence> scrp(int k, String sequence, int minFragSize, int maxFragSize) {
+		SAMEvidenceSource ses = SES(minFragSize, maxFragSize);
+		byte[] qual = new byte[sequence.length()];
+		for (int i = 0; i < qual.length; i++) {
+			qual[i] = (byte)i;
+		}
+		List<DirectedEvidence> input = new ArrayList<DirectedEvidence>();
+		for (int i = 1; i <= 100; i++) {
+			input.add(SCE(FWD, ses, withQual(qual, withSequence(sequence, Read(0, i, "1S4M6S")))));
+			input.add(SCE(BWD, ses, withQual(qual, withSequence(sequence, Read(0, i, "1S4M6S")))));
+			input.add(NRRP(ses, withQual(qual, withSequence(sequence, DP(0, i, "1S9M1S", false, 1, 1, "11M", true)))));
+			input.add(NRRP(ses, withQual(qual, withSequence(sequence, DP(0, i, "1S9M1S", false, 1, 1, "11M", false)))));
+		}
+		Collections.sort(input, DirectedEvidence.ByStartEnd);
+		return input;
+	}
 	@Test
 	public void should_return_kmernodes_in_start_position_order() {
 		int k = 4;
-		SAMEvidenceSource ses = SES(30, 60);
-		List<DirectedEvidence> input = new ArrayList<DirectedEvidence>();
-		for (int i = 1; i <= 100; i++) {
-			input.add(SCE(FWD, ses, withQual(new byte[] { 0,1,2,3,4,5,6,7,8,9,10}, withSequence("ACGTTATACCG", Read(0, i, "1S4M6S")))));
-			input.add(SCE(BWD, ses, withQual(new byte[] { 0,1,2,3,4,5,6,7,8,9,10}, withSequence("ACGTTATACCG", Read(0, i, "1S4M6S")))));
-			input.add(NRRP(ses, withQual(new byte[] { 0,1,2,3,4,5,6,7,8,9,10}, withSequence("ACGTTATACCG", DP(0, 21, "1S9M1S", false, 1, 1, "11M", true)))));
-			input.add(NRRP(ses, withQual(new byte[] { 0,1,2,3,4,5,6,7,8,9,10}, withSequence("ACGTTATACCG", DP(0, 21, "1S9M1S", false, 1, 1, "11M", false)))));
-		}
-		Collections.sort(input, DirectedEvidence.ByStartEnd);
-		List<KmerSupportNode> output = Lists.newArrayList(new SupportNodeIterator(k, input.iterator(), ses.getMaxConcordantFragmentSize()));
+		List<DirectedEvidence> input = scrp(k, "ACGTTATACCG", 30, 60);
+		List<KmerSupportNode> output = Lists.newArrayList(new SupportNodeIterator(k, input.iterator(), 60));
 		assertTrue(KmerNode.ByStartPosition.isOrdered(output));
 		assertEquals(100 * ( 10-3 + 5-3 + 11-3 + 11-3 ), output.size());
 	}

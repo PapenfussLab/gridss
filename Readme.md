@@ -6,7 +6,7 @@ A high-speed assembly-based next-gen sequencing structural variation caller
 
 To run, gridss the following must be installed:
 
-* Java 1.7 or later
+* Java 1.8 or later
 * maven (if building from source)
 * NGS aligner. bowtie2 (default), bwa, novoalign, and subread are currently supported
 
@@ -106,7 +106,8 @@ Gridss calculates quality scores according to the model outlined in [paper].
 As gridss does not yet perform multiple test correction or score recalibration, **QUAL scores are vastly overestimated for all variants**.
 As a rule of thumb, variants with QUAL >= 1000 and have assembles from both sides of the breakpoint (AS > 0 & RAS > 0) are considered HIGH quality,
 variant with QUAL >= 500 but can only be assembled from one breakend (AS > 0 | RAS > 0) are considered MEDIUM quality,
-and variants with low QUAL score or lack any supporting assemblies are considered LOW quality.
+and variants with low QUAL score or lack any supporting assemblies are considered LOW quality. The NO_ASSEMBLY filter is applied to all variants
+without any assembly support. 
 
 ## Non-standard INFO fields
 

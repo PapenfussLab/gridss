@@ -21,13 +21,11 @@ import com.google.common.primitives.Longs;
  */
 public class AggregateNodeIterator implements Iterator<KmerAggregateNode> {
 	private final PeekingIterator<KmerSupportNode> underlying;
-	private final int maxSupportWidth;
 	private PriorityQueue<KmerAggregateNode> outputSortBuffer = new PriorityQueue<KmerAggregateNode>(1024, KmerNode.ByStartPosition);
 	private Long2ObjectOpenHashMap<KmerNodeAggregator> byKmer = new Long2ObjectOpenHashMap<KmerNodeAggregator>();
 	private PriorityQueue<KmerNodeAggregatorSnapshot> byStartPosition = new PriorityQueue<KmerNodeAggregatorSnapshot>(1024, BySnapshotStartPosition);
-	public AggregateNodeIterator(Iterator<KmerSupportNode> it, int maxSupportWidth) {
+	public AggregateNodeIterator(Iterator<KmerSupportNode> it) {
 		this.underlying = Iterators.peekingIterator(it);
-		this.maxSupportWidth = maxSupportWidth;
 	}
 	@Override
 	public boolean hasNext() {
@@ -40,7 +38,11 @@ public class AggregateNodeIterator implements Iterator<KmerAggregateNode> {
 		return outputSortBuffer.poll();
 	}
 	private void ensureBuffer() {
-		while (underlying.hasNext() && outputSortBuffer.peek().startPosition() + maxSupportWidth >= underlying.peek().startPosition()) {
+		// we can emit whenever there are no unprocessed or incomplete intervals
+		// before our current interval
+		// TODO: handle isEmpty and !hasNext
+		while (outputSortBuffer.peek().startPosition() >= underlying.peek().startPosition() ||
+				outputSortBuffer.peek().startPosition() >= byStartPosition.peek().snapshotStart) {
 			process(underlying.next());
 		}
 		if (!underlying.hasNext()) {
