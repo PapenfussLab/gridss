@@ -126,7 +126,7 @@ public class KmerEncodingHelper {
 	public static byte firstBaseEncodedToPicardBase(int k, long state) {
 		return encodedToPicardBase(state >>> (2 * (k - 1)));
 	}
-	public static byte lastBaseEncodedToPicardBase(int k, long state) {
+	public static byte lastBaseEncodedToPicardBase(long state) {
 		return encodedToPicardBase(state);
 	}
 	public static void assertValid(int k, long encoded) {
@@ -145,7 +145,7 @@ public class KmerEncodingHelper {
 		long state = encoded;
 		byte[] result = new byte[k];
 		for (int i = 0; i < k; i++) {
-			result[k - i - 1] = lastBaseEncodedToPicardBase(k, state);
+			result[k - i - 1] = lastBaseEncodedToPicardBase(state);
 			state >>>= 2;
 		}
 		return result;
@@ -211,7 +211,7 @@ public class KmerEncodingHelper {
 	public static String toString(int k, long state) {
 		StringBuilder sb = new StringBuilder();
 		for (int i = 0; i < k; i++) {
-			sb.append((char)KmerEncodingHelper.lastBaseEncodedToPicardBase(0, state));
+			sb.append((char)KmerEncodingHelper.lastBaseEncodedToPicardBase(state));
 			state >>>=2;
 		}
 		return sb.reverse().toString();
@@ -259,7 +259,7 @@ public class KmerEncodingHelper {
 		bases = Arrays.copyOf(bases, assemblyLength);
 		int offset = k - 1;
 		for (Long node : path) {
-			bases[offset] = KmerEncodingHelper.lastBaseEncodedToPicardBase(k, node);
+			bases[offset] = KmerEncodingHelper.lastBaseEncodedToPicardBase(node);
 			offset++;
 		}
 		return bases;

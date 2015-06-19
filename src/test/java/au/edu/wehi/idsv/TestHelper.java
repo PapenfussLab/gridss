@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
@@ -31,7 +33,12 @@ import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.SortedSet;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.concurrent.ExecutorService;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -45,6 +52,9 @@ import au.edu.wehi.idsv.debruijn.DeBruijnPathNodeFactory;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.ReadKmerIterable;
+import au.edu.wehi.idsv.debruijn.positional.ImmutableKmerNode;
+import au.edu.wehi.idsv.debruijn.positional.KmerNode;
+import au.edu.wehi.idsv.debruijn.positional.KmerPathNode;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
 import au.edu.wehi.idsv.graph.PathNode;
 import au.edu.wehi.idsv.graph.PathNodeFactory;
@@ -988,5 +998,57 @@ public class TestHelper {
 		if (referenceIndex == 2) return getRef(RANDOM, baseCount, breakendPos, direction, localFragBaseCount);
 		if (referenceIndex == 3) return getRef(NPOWER2, baseCount, breakendPos, direction, localFragBaseCount);
 		throw new IllegalArgumentException("Unknown contig");
-	}	
+	}
+	public static int totalWeight(Iterable<? extends KmerNode> it) {
+		return totalWeight(it.iterator());
+	}
+	public static int totalWeight(final Iterator<? extends KmerNode> it) {
+		Stream<KmerNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize(it, Spliterator.ORDERED), false);
+		return stream.mapToInt(n -> n.weight() * n.width()).sum();
+	}
+	public static List<KmerNode> split(KmerPathNode pn) {
+		List<KmerNode> list = new ArrayList<KmerNode>(pn.width() * pn.length());
+		for (int i = 0; i < pn.length(); i++) {
+			for (int j = 0; j < pn.width(); j++) {
+				list.add(new ImmutableKmerNode(pn.kmer(i), pn.startPosition(i) + j, pn.startPosition(i) + j, pn.isReference(), pn.weight(i)));
+			}
+		}
+		assert(list.size() == pn.width() * pn.length());
+		assert(list.stream().allMatch(n -> n.width() == 1));
+		return list;
+	}
+	public static List<KmerNode> split(KmerNode n) {
+		List<KmerNode> list = new ArrayList<KmerNode>(n.width());
+		for (int i = 0; i < n.width(); i++) {
+			list.add(new ImmutableKmerNode(n.kmer(), n.startPosition() + i, n.startPosition() + i, n.isReference(), n.weight()));
+		}
+		assert(list.stream().allMatch(nn -> nn.width() == 1));
+		return list;
+	}
+	private static List<KmerNode> split(List<? extends KmerNode> in) {
+		return in.stream().flatMap(n -> (n instanceof KmerPathNode ? split((KmerPathNode)n) : split(n)).stream()).collect(Collectors.toList());
+	}
+	public static void assertSameNodes(List<? extends KmerNode> expected, List<? extends KmerNode> actual) {
+		List<KmerNode> splitExpected = split(expected);
+		List<KmerNode> splitActual = split(actual);
+		splitExpected.sort(KmerNode.ByStartEndPositionKmerReferenceWeight);
+		splitActual.sort(KmerNode.ByStartEndPositionKmerReferenceWeight);
+		assertEquals(totalWeight(expected), totalWeight(splitExpected));
+		assertEquals(totalWeight(actual), totalWeight(splitActual));
+		assertEquals(splitExpected, splitActual);
+	}
+	/**
+	 * Asserts that no nodes overlap the same interval
+	 * @param nodes
+	 */
+	public static void assertDisjoint(List<? extends KmerNode> nodes) {
+		List<KmerNode> split = split(nodes);
+		for (int i = 0; i < split.size(); i++) {
+			KmerNode ni = split.get(i);
+			for (int j = i + 1; j < split.size(); j++) {
+				KmerNode nj = split.get(j);				
+				assertTrue(ni.kmer() != nj.kmer() || ni.startPosition() != nj.startPosition());
+			}
+		}
+	}
 }

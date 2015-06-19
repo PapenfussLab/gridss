@@ -17,7 +17,7 @@ public class ReadKmer {
 		StringBuilder sb = new StringBuilder();
 		long state = kmer;
 		while (state > 0) {
-			sb.append((char)KmerEncodingHelper.lastBaseEncodedToPicardBase(0, state));
+			sb.append((char)KmerEncodingHelper.lastBaseEncodedToPicardBase(state));
 			state >>=2;
 		}
 		return sb.reverse().toString();
@@ -26,7 +26,7 @@ public class ReadKmer {
 		StringBuilder sb = new StringBuilder();
 		long state = kmer;
 		for (int i = 0; i < k; i++) {
-			sb.append((char)KmerEncodingHelper.lastBaseEncodedToPicardBase(0, state));
+			sb.append((char)KmerEncodingHelper.lastBaseEncodedToPicardBase(state));
 			state >>=2;
 		}
 		return sb.reverse().toString();

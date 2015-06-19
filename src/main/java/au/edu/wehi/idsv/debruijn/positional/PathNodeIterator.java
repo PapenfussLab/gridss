@@ -19,12 +19,12 @@ import com.google.common.collect.TreeRangeMap;
 
 /**
  * Transforms a start position sorted sequence of non-overlapping KmerAggregateNode to a
- * start position sorted sequence of KmerPathNode
+ * start position sorted sequence of KmerPathNode with graph edges 
  * @author Daniel Cameron
  *
  */
 public class PathNodeIterator implements Iterator<KmerPathNode> {
-	private final PeekingIterator<KmerAggregateNode> underlying;
+	private final PeekingIterator<? extends KmerNode> underlying;
 	private final int maxSupportWidth;
 	private final int maxPathLength;
 	private final int k;
@@ -32,17 +32,17 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 	private final PriorityQueue<GraphNode> active = new PriorityQueue<GraphNode>(1024, ByGraphNodeStartPosition);
 	private final PriorityQueue<GraphNode> pathNodeConstructed = new PriorityQueue<GraphNode>(1024, ByGraphNodeFirstKmerStartPosition);
 	private int lastProcessPosition = Integer.MIN_VALUE;
-	public PathNodeIterator(Iterator<KmerAggregateNode> it, int maxSupportWidth, int maxPathLength, int k) {
+	public PathNodeIterator(Iterator<? extends KmerNode> it, int maxSupportWidth, int maxPathLength, int k) {
 		this.underlying = Iterators.peekingIterator(it);
 		this.maxSupportWidth = maxSupportWidth;
 		this.maxPathLength = maxPathLength;
 		this.k = k;
 	}
 	private static class GraphNode {
-		public GraphNode(KmerAggregateNode node) {
+		public GraphNode(KmerNode node) {
 			this.n = node;
 		}
-		public final KmerAggregateNode n;
+		public final KmerNode n;
 		public KmerPathNode pn = null;
 		/**
 		 * Node we want to merge with
@@ -110,7 +110,7 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 	}
 	private void ensureBuffer() {
 		while (underlying.hasNext() && (pathNodeConstructed.isEmpty() || !edgesFullyDefined(pathNodeConstructed.peek()))) {
-			KmerAggregateNode node = underlying.next();
+			KmerNode node = underlying.next();
 			addAggregateNodeToGraph(node);
 			process(node.startPosition());
 		}
@@ -177,7 +177,13 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 			}
 			for (GraphNode n : prevList) {
 				if (n.pn != null) {
-					KmerPathNode.addEdge(n.pn, gn.pn);
+					if (n.pn != gn.pn) {
+						KmerPathNode.addEdge(n.pn, gn.pn);
+					} else {
+						// self-intersection special case: should have already been added
+						// since adding self to next list also adds to prev list
+						assert(n.pn.next().contains(gn.pn));
+					}
 				}
 			}
 		}
@@ -200,7 +206,7 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 			pathNodeConstructed.add(gn);
 		}
 	}
-	private void addAggregateNodeToGraph(KmerAggregateNode node) {
+	private void addAggregateNodeToGraph(KmerNode node) {
 		if (node.endPosition() - node.startPosition() > maxSupportWidth) {
 			throw new RuntimeException("Sanity check failure: support width greater than maximum");
 		}

@@ -10,6 +10,7 @@ public interface KmerNode {
 	int endPosition();
 	int weight();
 	boolean isReference();
+	default int width() { return endPosition() - startPosition() + 1; }
 	public static final Ordering<KmerNode> ByStartPosition = new Ordering<KmerNode>() {
 		@Override
 		public int compare(KmerNode left, KmerNode right) {
@@ -31,92 +32,16 @@ public interface KmerNode {
 					.result();
 		}
 	};
-	/**
-	 * Wrapper class that considers only kmer and startPosition when determining equality. 
-	 * @author cameron.d
-	 *
-	 */
-	public class KmerStartPositionEqualityWrapper {
-		private final KmerNode node;
-		public KmerNode node() { return node; }
-		public KmerStartPositionEqualityWrapper(KmerNode node) {
-			this.node = node;
-		}
+	public static final Ordering<KmerNode> ByStartEndPositionKmerReferenceWeight = new Ordering<KmerNode>() {
 		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + (int) (node.kmer() ^ (node.kmer() >>> 32));
-			result = prime * result + node.startPosition();
-			return result;
+		public int compare(KmerNode left, KmerNode right) {
+			return ComparisonChain.start()
+					.compare(left.startPosition(), right.startPosition())
+					.compare(left.endPosition(), right.endPosition())
+					.compare(left.kmer(), right.kmer())
+					.compareTrueFirst(left.isReference(), right.isReference())
+					.compare(left.weight(), right.weight())
+					.result();
 		}
-		@Override
-		public boolean equals(Object obj) {
-			if (!(obj instanceof KmerNode))
-				return false;
-			KmerNode other = (KmerNode) obj;
-			if (node.kmer() != other.kmer())
-				return false;
-			if (node.startPosition() != other.startPosition())
-				return false;
-			return true;
-		}
-		
-	}
-	public class KmerStartPositionEqualityLookup implements KmerNode {
-		private final long kmer;
-		private final int start;
-		public KmerStartPositionEqualityLookup(
-				long kmer,
-				int start) {
-			this.kmer = kmer;
-			this.start = start;
-		}
-		public long kmer() { return kmer; }
-		public int startPosition() { return start; }
-		public int endPosition() { return 0; }
-		public int weight() { return 0; }
-		public boolean isReference() { return true; }
-	}
-	public class KmerEndPositionEqualityWrapper {
-		private final KmerNode node;
-		public KmerNode node() { return node; }
-		public KmerEndPositionEqualityWrapper(KmerNode node) {
-			this.node = node;
-		}
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + (int) (node.kmer() ^ (node.kmer() >>> 32));
-			result = prime * result + node.endPosition();
-			return result;
-		}
-		@Override
-		public boolean equals(Object obj) {
-			if (!(obj instanceof KmerNode))
-				return false;
-			KmerNode other = (KmerNode) obj;
-			if (node.kmer() != other.kmer())
-				return false;
-			if (node.endPosition() != other.endPosition())
-				return false;
-			return true;
-		}
-	}
-	public class KmerEndPositionEqualityLookup implements KmerNode {
-		private final long kmer;
-		private final int end;
-		public KmerEndPositionEqualityLookup(
-				long kmer,
-				int end) {
-			this.kmer = kmer;
-			this.end = end;
-		}
-		public long kmer() { return kmer; }
-		public int startPosition() { return 0; }
-		public int endPosition() { return end; }
-		public int weight() { return 0; }
-		public boolean isReference() { return true; }
-	}
+	};
 }

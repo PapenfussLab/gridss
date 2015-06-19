@@ -130,7 +130,7 @@ public class KmerEncodingHelperTest extends TestHelper {
 	@Test
 	public void lastBaseEncodedToPicardBase_should_return_first_base() {
 		long state = KmerEncodingHelper.picardBaseToEncoded(4, B("ACTG"));
-		assertEquals((byte)'G', KmerEncodingHelper.lastBaseEncodedToPicardBase(4, state));
+		assertEquals((byte)'G', KmerEncodingHelper.lastBaseEncodedToPicardBase(state));
 	}
 	@Test
 	public void reverse_should_change_base_order() {

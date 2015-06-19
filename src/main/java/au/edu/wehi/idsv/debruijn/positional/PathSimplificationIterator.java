@@ -1,9 +1,12 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import java.util.HashMap;
+import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
+
 import java.util.Iterator;
-import java.util.NavigableSet;
+import java.util.PriorityQueue;
 import java.util.TreeSet;
+
+import au.edu.wehi.idsv.Defaults;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
@@ -42,97 +45,106 @@ import com.google.common.collect.PeekingIterator;
  *  
  * A larger example would result in additional nodes being further merged.
  * The number of possible merges is unbounded, but since each merge results in a node containing N_1,
- * width of the merge is bounded by maxSupportWidth + maxPathLength = maxNodeSize in either direction
+ * width and length of the merge is bounded by maxSupportWidth and maxPathLength
  * 
  * @author cameron.d
  *
  */
 public class PathSimplificationIterator implements Iterator<KmerPathNode> {
-	private final HashMap<KmerNode.KmerStartPositionEqualityWrapper, KmerPathNode> startLookup = new HashMap<KmerNode.KmerStartPositionEqualityWrapper, KmerPathNode>();
-	private final HashMap<KmerNode.KmerEndPositionEqualityWrapper, KmerPathNode> endLookup = new HashMap<KmerNode.KmerEndPositionEqualityWrapper, KmerPathNode>();
+	private final ObjectOpenCustomHashSet<KmerPathNode> endLookup = new ObjectOpenCustomHashSet<KmerPathNode>(new KmerNodeUtil.HashByEndPositionKmer<KmerPathNode>());
 	/**
+	 * Always merge with earlier nodes. Ordering by end position ensures that
+	 * both kmer and position precedessors have been processed before each node
+	 * is processed.
+	 * 
 	 *  |---- maxNodeLength+maxNodeWidth----|                                       
-	 *                                      |---- maxNodeLength+maxNodeWidth----|
-	 *  ^                                   ^                                   ^           
-	 *  |                                  process                         input position
+	 *                                      |
+	 *  ^                                   ^           
+	 *  |                                  input
 	 * unchanged                          position
-	 *  offset
+	 * offset
 	 *  
 	 *  Worst case scenario results in merge of node of
 	 *  kmer length of 1, support width of 1 until 
-	 *  node is maxNodeLength + maxNodeWidth in size 
+	 *  node is maxNodeLength + maxNodeWidth in size
 	 * 
 	 */
-	private final NavigableSet<KmerPathNode> unprocessed = new TreeSet<KmerPathNode>(KmerPathNode.ByFirstKmerStartPosition);
-	private final NavigableSet<KmerPathNode> processed = new TreeSet<KmerPathNode>(KmerPathNode.ByFirstKmerStartPosition);
-	private final int maxNodeLength;
-	private final int maxNodeWidth;
-	private final int processOffset;
-	private final int emitOffset;
+	private final PriorityQueue<KmerPathNode> unprocessed = new PriorityQueue<KmerPathNode>(16, KmerPathNode.ByEndPosition);
+	/**
+	 * Nodes that have been processed, but could be modified further
+	 * 
+	 */
+	private final TreeSet<KmerPathNode> processed = new TreeSet<KmerPathNode>(KmerPathNode.ByFirstKmerStartPositionKmer);
+	private final int maxLength;
+	private final int maxWidth;
 	private final PeekingIterator<KmerPathNode> underlying;
 	private int inputPosition;
 	public PathSimplificationIterator(
 			Iterator<KmerPathNode> it,
-			int maxNodeLength,
-			int maxNodeWidth) {
+			int maxLength,
+			int maxWidth) {
 		this.underlying = Iterators.peekingIterator(it);
-		this.maxNodeLength = maxNodeLength;
-		this.maxNodeWidth = maxNodeWidth;
-		this.processOffset = maxNodeLength + maxNodeWidth + 1;
-		this.emitOffset = processOffset + maxNodeLength + maxNodeWidth + 1;
+		this.maxLength = maxLength;
+		this.maxWidth = maxWidth;
 	}
-	private void enqueueForProcessing(KmerPathNode node) {
-		assert(node.isValid());
-		startLookup.put(new KmerNode.KmerStartPositionEqualityWrapper(node), node);
-		endLookup.put(new KmerNode.KmerEndPositionEqualityWrapper(node), node);
-		unprocessed.add(node);
+	/**
+	 * Determines whether it is possible for the given node to be expanded
+	 * to contain a kmer at the given position
+	 * @param node node to consider
+	 * @param position position to check
+	 * @return true if a merge is possible, false otherwise
+	 */
+	private boolean couldMergeToIncludeKmerAt(KmerPathNode node, int position) {
+		int latestFirstKmerEnd = node.startPosition() + maxWidth - 1;
+		int latestLastKmerEnd = latestFirstKmerEnd + maxLength - 1;
+		return latestLastKmerEnd >= position;
 	}
-	private void dequeue(KmerPathNode node) {
-		startLookup.remove(new KmerNode.KmerStartPositionEqualityWrapper(node));
-		endLookup.remove(new KmerNode.KmerEndPositionEqualityWrapper(node));
-		unprocessed.remove(node);
-		processed.remove(node);
-	}
-	private boolean compress(KmerPathNode node) {
-		// merge with successor
-		if (mergeWithNextKmers(node)) return true;
-		if (node.prev().size() == 1) {
-			// merge with predecessor
-			if (mergeWithNextKmers(node.prev().get(0))) return true;
+	/**
+	 * Merges the given node with the a matching previous node.
+	 * 
+	 * @param node node to attempt merge
+	 * @return true if the node was merged, false otherwise.
+	 */
+	private boolean reduce(KmerPathNode node) {
+		KmerPathNode prev = prevKmerToMergeWith(node);
+		if (prev != null) {
+			assert(processed.contains(prev));
+			processed.remove(prev);
+			endLookup.remove(prev);
+			node.prepend(prev);
+			return true;
 		}
-		if (mergeAdjacent(endLookup.get(new KmerNode.KmerEndPositionEqualityLookup(node.kmer(), node.startPosition() - 1)), node)) return true;
-		if (mergeAdjacent(node, startLookup.get(new KmerNode.KmerStartPositionEqualityLookup(node.kmer(), node.endPosition() + 1)))) return true;
-		return false;
-	}
-	private boolean mergeAdjacent(KmerPathNode first, KmerPathNode second) {
-		if (first == null || second == null) return false;
-		assert(first.startPosition() <= second.startPosition());
-		if (first.canCoalese(second)
-				&& first.width() + second.width() <= maxNodeWidth) {
-			dequeue(first);
-			dequeue(second);
-			second.coaleseAdjacent(first);
-			enqueueForProcessing(second);
+		KmerPathNode adj = adjacentBeforeKmerToMergeWith(node);
+		if (adj != null) {
+			assert(processed.contains(adj));
+			processed.remove(adj);
+			endLookup.remove(adj);
+			node.coaleseBeforeAdjacent(adj);
 			return true;
 		}
 		return false;
 	}
-	private boolean mergeWithNextKmers(KmerPathNode node) {
-		if (node.next().size() == 1) {
-			KmerPathNode candidate = node.next().get(0);
-			if (candidate.prev().size() == 1
-					&& candidate.startPosition(0) == node.endPosition() + 1
-					&& candidate.endPosition(0) == node.endPosition() + 1
-					&& node.length() + candidate.length() <= maxNodeLength) {
-				// we can concatenate these nodes together
-				dequeue(node);
-				dequeue(candidate);
-				candidate.prepend(node);
-				enqueueForProcessing(candidate);
-				return true;
+	private KmerPathNode adjacentBeforeKmerToMergeWith(KmerPathNode node) {
+		KmerPathNode adj = endLookup.get(new KmerPathNode(node.kmer(), 0, node.startPosition() - 1, false, 0));
+		if (adj != null
+				&& node.canCoaleseBeforeAdjacent(adj)
+				&& adj.width() + node.width() <= maxWidth) {
+			return adj;
+		}
+		return null;
+	}
+	private KmerPathNode prevKmerToMergeWith(KmerPathNode node) {
+		if (node.prev().size() == 1) {
+			KmerPathNode prev = node.prev().get(0);
+			if (prev.endPosition() + 1 == node.endPosition(0)
+					&& prev.startPosition() + 1 == node.startPosition(0)
+					&& prev.isReference() == node.isReference()
+					&& prev.length() + node.length() <= maxLength
+					&& prev.next().size() == 1) {
+				return prev;
 			}
 		}
-		return false;
+		return null;
 	}
 	@Override
 	public boolean hasNext() {
@@ -143,38 +155,72 @@ public class PathSimplificationIterator implements Iterator<KmerPathNode> {
 	public KmerPathNode next() {
 		ensureBuffer();
 		KmerPathNode node = processed.pollFirst();
-		assert(node.startPosition(0) < inputPosition - emitOffset);
-		dequeue(node);
+		endLookup.remove(node);
+		assert(!couldMergeToIncludeKmerAt(node, inputPosition));
 		return node;
 	}
 	private void ensureBuffer() {
-		while (inputPosition < Integer.MAX_VALUE && (processed.isEmpty() || processed.first().startPosition(0) > inputPosition - emitOffset)) {
+		while (inputPosition < Integer.MAX_VALUE && (processed.isEmpty() || couldMergeToIncludeKmerAt(processed.first(), inputPosition))) {
 			// advance graph position
 			if (underlying.hasNext()) {
 				inputPosition = underlying.peek().startPosition(0);
 			} else {
 				inputPosition = Integer.MAX_VALUE;
 			}
-			loadGraphNodes();
+			advance();
 			process();
 		}
-	}
-	private void process() {
-		while (!unprocessed.isEmpty() && unprocessed.first().startPosition(0) <= inputPosition - processOffset) {
-			KmerPathNode node = unprocessed.first();
-			if (!compress(node)) {
-				unprocessed.remove(node);
-				processed.add(node);
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			assert(sanityCheck());
+			if (inputPosition == Integer.MAX_VALUE) {
+				assert(!underlying.hasNext());
+				assert(unprocessed.isEmpty());
 			}
 		}
 	}
-	private void loadGraphNodes() {
+	private void process() {
+		while (!unprocessed.isEmpty() && unprocessed.peek().endPosition() <= inputPosition) {
+			KmerPathNode node = unprocessed.poll();
+			int beforeTotalWeight = 0;
+			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+				beforeTotalWeight = node.width() * node.weight() + processed.stream().mapToInt(n -> n.width() * n.weight()).sum();
+				assert(!processed.contains(node));
+			}
+			while (reduce(node)) {
+				// loop until we can't merge any more nodes into this one
+			}
+			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+				int afterTotalWeight = node.width() * node.weight() + processed.stream().mapToInt(n -> n.width() * n.weight()).sum();
+				assert(beforeTotalWeight == afterTotalWeight);
+				assert(!processed.contains(node));
+			}
+			processed.add(node);
+			endLookup.add(node);
+		}
+	}
+	/**
+	 * Loads records from the underlying stream up to and including the current inputPosition.
+	 */
+	private void advance() {
 		while (underlying.hasNext() && underlying.peek().startPosition(0) <= inputPosition) {
-			enqueueForProcessing(underlying.next());
+			KmerPathNode nextRecord = underlying.next();
+			assert(nextRecord.width() <= maxWidth);
+			assert(nextRecord.length() <= maxLength);
+			unprocessed.add(nextRecord);
 		}
 	}
 	@Override
 	public void remove() {
 		throw new UnsupportedOperationException();
+	}
+	public boolean sanityCheck() {
+		assert(endLookup.size() == processed.size());
+		for (KmerPathNode pn : processed) {
+			// should not be able to reduce processed nodes any further
+			assert(prevKmerToMergeWith(pn) == null);
+			assert(adjacentBeforeKmerToMergeWith(pn) == null);
+			assert(!unprocessed.contains(pn));
+		}
+		return true;
 	}
 }

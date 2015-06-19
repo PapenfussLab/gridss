@@ -1,50 +1,112 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
 
+import com.google.common.collect.Lists;
+
 
 public class PathSimplificationIteratorTest extends TestHelper {
-	/**
-	 * Create a data set that tiles
-	 */
-	List<KmerNode> tiled(int width, int length, int n) {
-		int k = 25;
-		for (int i = 0; i < n; i++) {
-			for (int j = 0; j < n; j++) {
-				// Need to tile in multiple steps
-				new KmerAggregateNode(kmer, weight, start, end, reference)
-				ImmutableKmerNode node = new ImmutableKmerNode(kmer, start, end, weight, isReference);
-				Evidence e = new Evidence(String.format("i=%d,j=%d", i, j), i * width, error, k, bases, new byte[bases.length], false, false)
-			}
-		}
-	}
-	KmerPathNode KPN(int start, int end, int length) {
-		KmerPathNode pn = new KmerPathNode(0, 1, start, end, false);
-		for (int i = 1; i < length; i++) {
-			pn.append(new KmerAggregateNode(0, 1, start + i, end + i, false));
-		}
-		return pn;
-	}
 	@Test
-	public void test_worst_case_tiling() {
-		for (int maxSupportWidth = 1; maxSupportWidth < 16; maxSupportWidth++) {
-			for (int maxPathLength = 1; maxPathLength < 16; maxPathLength++) {
-				for (int supportWidth = 1; supportWidth <= maxSupportWidth; supportWidth++) {
-					for (int pathLength = 1; pathLength <= maxPathLength; pathLength++) {
+	public void should_not_collapse_past_limits() {
+		int k = 4;
+		int tiles = 2;
+		for (int inputWidth = 1; inputWidth <= 4; inputWidth++) {
+			for (int inputLength = 1; inputLength <= 4; inputLength++) {
+				for (int maxSupportWidth = inputWidth; maxSupportWidth <= 16; maxSupportWidth++) {
+					for (int maxPathLength = inputLength; maxPathLength <= 16; maxPathLength++) {
 						// tile evidence such that the entire input could be compressed to a single
 						// node if the limits did not exist
-						List<KmerPathNode> input = 
-						new KmerPathNode(kmer, weight, start, end, reference)
-						fail();
+						List<KmerNode> in = PathNodeIteratorTest.tiled(inputWidth, tiles, maxPathLength * tiles, k);
+						in.sort(KmerNode.ByStartPosition);
+						int weightIn = totalWeight(in);
+						List<KmerPathNode> inpn = Lists.newArrayList(new PathNodeIterator(in.iterator(), maxSupportWidth, inputLength, k));
+						assertEquals(weightIn, totalWeight(inpn)); // precondition
+						PathSimplificationIterator psi = new PathSimplificationIterator(inpn.iterator(), maxPathLength, maxSupportWidth);
+						List<KmerPathNode> list = Lists.newArrayList(psi);
+						assertSameNodes(in, list);
+						for (KmerPathNode pn : list) {
+							pn.sanityCheck(k, maxSupportWidth, maxPathLength);
+							assertTrue(pn.width() <= maxSupportWidth);
+							assertTrue(pn.length() <= maxPathLength);
+						}
+						assertEquals(weightIn, totalWeight(list));
 					}
 				}
 			}
 		}
+	}
+	@Test
+	public void should_match_reference_when_collapsing() {
+		List<KmerPathNode> in = new ArrayList<KmerPathNode>();
+		in.add(new KmerPathNode(K("TAAA"), 1, 1, true, 1));
+		in.add(new KmerPathNode(K("AAAT"), 2, 2, false, 1));
+		KmerPathNode.addEdge(in.get(0), in.get(1));
+		in.sort(KmerPathNode.ByFirstKmerStartPosition);
+		List<KmerPathNode> list = Lists.newArrayList(new PathSimplificationIterator(in.iterator(), 64, 64));
+		assertEquals(2, list.size());
+		assertEquals(totalWeight(in), totalWeight(list));
+	}
+	@Test
+	public void should_collapse_adjacent() {
+		List<KmerPathNode> in = new ArrayList<KmerPathNode>();
+		in.add(new KmerPathNode(K("TAAA"), 1, 1, true, 1));
+		in.add(new KmerPathNode(K("TAAA"), 2, 3, true, 1));
+		in.add(new KmerPathNode(K("TAAA"), 4, 4, true, 1));
+		in.add(new KmerPathNode(K("TAAA"), 5, 10, true, 1));
+		in.sort(KmerPathNode.ByFirstKmerStartPosition);
+		
+		int weightIn = totalWeight(in);
+		List<KmerPathNode> list = Lists.newArrayList(new PathSimplificationIterator(in.iterator(), 64, 64));
+		assertEquals(1, list.size());
+		assertEquals(weightIn, totalWeight(list));
+	}
+	@Test
+	public void should_collapse_consecutive() {
+		List<KmerPathNode> in = new ArrayList<KmerPathNode>();
+		in.add(new KmerPathNode(K("TAAA"), 1, 10, true, 1));
+		in.add(new KmerPathNode(K("AAAT"), 2, 11, true, 1));
+		in.get(in.size() - 1).append(new ImmutableKmerNode(K("AATC"), 3, 12, true, 5));
+		in.add(new KmerPathNode(K("ATCC"), 4, 13, true, 6));
+		in.sort(KmerPathNode.ByFirstKmerStartPosition);
+		
+		KmerPathNode.addEdge(in.get(0), in.get(1));
+		KmerPathNode.addEdge(in.get(1), in.get(2));
+		int weightIn = totalWeight(in);
+		List<KmerPathNode> list = Lists.newArrayList(new PathSimplificationIterator(in.iterator(), 64, 64));
+		assertEquals(1, list.size());
+		assertEquals(10, list.get(0).width());
+		assertEquals(4, list.get(0).length());
+		assertEquals(1+1+5+6, list.get(0).weight());
+		assertEquals(weightIn, totalWeight(list));
+	}
+	@Test
+	public void should_chain_collapse() {
+		List<KmerPathNode> in = new ArrayList<KmerPathNode>();
+		in.add(new KmerPathNode(K("TAAA"), 1, 2, true, 4));
+		in.add(new KmerPathNode(K("AAAT"), 2, 3, true, 5));
+		in.add(new KmerPathNode(K("TAAA"), 3, 4, true, 4));
+		in.add(new KmerPathNode(K("AAAT"), 4, 5, true, 5));
+		KmerPathNode.addEdge(in.get(0), in.get(1));
+		KmerPathNode.addEdge(in.get(2), in.get(3));
+		in.sort(KmerPathNode.ByFirstKmerStartPosition);
+		
+		int weightIn = totalWeight(in);
+		assertEquals(2*4+2*5+2*4+2*5, weightIn);
+		List<KmerPathNode> list = Lists.newArrayList(new PathSimplificationIterator(in.iterator(), 64, 64));
+		assertEquals(1, list.size());
+		assertEquals(2, list.get(0).length());
+		assertEquals(4, list.get(0).width());
+		assertEquals(1, list.get(0).startPosition(0));
+		assertEquals(4, list.get(0).endPosition(0));
+		assertEquals(4+5, list.get(0).weight());
+		assertEquals(weightIn, totalWeight(list));
 	}
 }
