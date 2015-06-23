@@ -85,6 +85,9 @@ public class KmerPathNodePath extends KmerPathNodeBasePath {
 		return headNode().terminalRanges();
 	}
 	public RangeSet<Integer> terminalLeafRanges() {
-		return headNode().terminalLeafRanges();
+		return headNode().terminalLeafAnchorRanges();
+	}
+	public String toString() {
+		return headNode().asSubnodeList().toString().replace(",", "\n");
 	}
 }

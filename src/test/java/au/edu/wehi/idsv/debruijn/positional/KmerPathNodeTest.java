@@ -4,7 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.stream.IntStream;
 
 import org.junit.Test;
@@ -108,7 +110,7 @@ public class KmerPathNodeTest extends TestHelper {
 		pn3.prepend(pn2);
 		assertEquals(pn3, pn1.next().get(0));
 	}
-	public KmerPathNode kpn(long[] kmers, int start, int end, boolean reference, int[] weights) {
+	public static KmerPathNode kpn(long[] kmers, int start, int end, boolean reference, int[] weights) {
 		KmerPathNode pn = new KmerPathNode(kmers[0], start, end, reference, weights[0]);
 		for (int i = 1; i < kmers.length; i++) {
 			pn.append(new ImmutableKmerNode(kmers[i], start + i, end + i, reference, weights[i]));
@@ -120,7 +122,7 @@ public class KmerPathNodeTest extends TestHelper {
 		Arrays.fill(weights, 1);
 		return kpn(kmers, start, end, reference, weights);
 	}
-	public void assertIs(KmerPathNode pn, long[] kmers, int start, int end, boolean reference, int[] weights) {
+	public static void assertIs(KmerPathNode pn, long[] kmers, int start, int end, boolean reference, int[] weights) {
 		assertEquals(start, pn.startPosition(0));
 		assertEquals(end, pn.endPosition(0));
 		assertEquals(kmers.length, pn.length());
@@ -259,5 +261,18 @@ public class KmerPathNodeTest extends TestHelper {
 		
 		assertEquals(2, pn.prev().size());
 		assertEquals(3, split.prev().size());
+	}
+	@Test
+	public void splitAtStartPosition_should_update_neighbours() {
+		int k = 4;
+		List<KmerPathNode> input = new ArrayList<KmerPathNode>();
+		input.add(KPN(k, "GTACC", 1, 10, false));
+		input.add(KPN(k, "ACCTT", 2, 11, false)); // this gets split on position as weight increases at position 5
+		input.add(KPN(k, "ACCG", 5, 5, false));
+		KmerPathNode.addEdge(input.get(0), input.get(1));
+		KmerPathNode.addEdge(input.get(0), input.get(2));
+		KmerPathNode split = input.get(1).splitAtStartPosition(5);
+		assertTrue(split.sanityCheckReachableSubgraph());
+		assertTrue(input.get(1).sanityCheckReachableSubgraph());
 	}
 }

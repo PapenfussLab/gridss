@@ -272,6 +272,8 @@ public class KmerEncodingHelperTest extends TestHelper {
 					asList(i, "GTACCGGTATACGTCATAATG").iterator(),
 					asList(i, "GTACCGGTATTTGTCATAATG").iterator(), i));
 		}
+		assertEquals(2, KmerEncodingHelper.basesDifference(25, K("ACCATTACCCGATCAAAACATATGG"), K("ACCATTACCCGATCAAAACATATCA")));	
+		assertEquals(2, KmerEncodingHelper.basesDifference(25, K("ACCATTACCCGATCAAAACATATCA"), K("ACCATTACCCGATCAAAACATATGG")));
 	}
 	@Test
 	public void totalBaseDifference_should_diff_of_common_bases() {

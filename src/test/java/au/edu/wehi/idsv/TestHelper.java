@@ -50,11 +50,13 @@ import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathNodeFactory;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
+import au.edu.wehi.idsv.debruijn.PackedKmerList;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.ReadKmerIterable;
 import au.edu.wehi.idsv.debruijn.positional.ImmutableKmerNode;
 import au.edu.wehi.idsv.debruijn.positional.KmerNode;
 import au.edu.wehi.idsv.debruijn.positional.KmerPathNode;
+import au.edu.wehi.idsv.debruijn.positional.KmerPathSubnode;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
 import au.edu.wehi.idsv.graph.PathNode;
 import au.edu.wehi.idsv.graph.PathNodeFactory;
@@ -1050,5 +1052,40 @@ public class TestHelper {
 				assertTrue(ni.kmer() != nj.kmer() || ni.startPosition() != nj.startPosition());
 			}
 		}
+	}
+	public static KmerPathNode KPN(int k, String seq, int start, int end, boolean reference) {
+		return KPN(k, seq, start, end, reference, 1);
+	}
+	public static KmerPathNode KPN(int k, String seq, int start, int end, boolean reference, int weight) {
+		int[] w = new int[seq.length() - k + 1];
+		Arrays.fill(w, weight);
+		return KPN(k, seq, start, end, reference, w);
+	}
+	public static KmerPathNode KPN(int k, String seq, int start, int end, boolean reference, int[] weight) {
+		PackedKmerList kmers = new PackedKmerList(k, B(seq), new byte[seq.length()], false, false);
+		KmerPathNode pn = new KmerPathNode(kmers.kmer(0), start, end, reference, weight[0]);
+		for (int i = 1; i < kmers.length(); i++) {
+			pn.append(new ImmutableKmerNode(kmers.kmer(i), start + i, end + i, reference, weight[i]));
+		}
+		return pn;
+	}
+	public static void assertSame(KmerPathNode n1, KmerPathNode n2) {
+		assertEquals(n1.length(), n2.length());
+		assertEquals(n1.weight(), n2.weight());
+		assertEquals(n1.startPosition(), n2.startPosition());
+		assertEquals(n1.endPosition(), n2.endPosition());
+		assertEquals(n1.isReference(), n2.isReference());
+		assertEquals(n1.isValid(), n2.isValid());
+		for (int i = 0; i < n1.length(); i++) {
+			assertEquals(n1.kmer(i), n2.kmer(i));
+			assertEquals(n1.weight(i), n2.weight(i));
+		}
+	}
+	public static void assertSame(KmerPathSubnode n1, KmerPathSubnode n2) {
+		assertEquals(n1.firstKmerStartPosition() , n2.firstKmerStartPosition());
+		assertEquals(n1.firstKmerEndPosition(), n2.firstKmerEndPosition());
+		assertSame(n1.node(), n2.node());
+		assertEquals(n1.length(), n2.length());
+		assertEquals(n1.weight(), n2.weight());
 	}
 }

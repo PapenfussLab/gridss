@@ -5,6 +5,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
+
 import au.edu.wehi.idsv.util.RangeUtil;
 
 import com.google.common.collect.Iterators;
@@ -59,7 +61,7 @@ public abstract class KmerPathNodeBasePath {
 		 *  
 		 * @return intervals for which this path is a terminal leaf. Intervals are for position of the path anchor kmer
 		 */
-		public RangeSet<Integer> terminalLeafRanges() {
+		public RangeSet<Integer> terminalLeafAnchorRanges() {
 			RangeSet<Integer> ranges = toAnchorPosition(terminalRanges());
 			TraversalNode tn = this;
 			KmerPathSubnode sn = node;
@@ -67,14 +69,16 @@ public abstract class KmerPathNodeBasePath {
 				if (tn != this) {
 					// only a single successor
 					RangeSet<Integer> singleSuccessor = traversingForward() ? sn.nextPathRangesOfDegree(1) : sn.prevPathRangesOfDegree(1);
-					ranges = RangeUtil.intersect(ranges, tn.toAnchorPosition(singleSuccessor));
+					singleSuccessor = tn.toAnchorPosition(singleSuccessor);
+					ranges = RangeUtil.intersect(ranges, singleSuccessor);
 				}
 				// only a single ancestor
 				RangeSet<Integer> singleAncestor = traversingForward() ? sn.prevPathRangesOfDegree(1) : sn.nextPathRangesOfDegree(1);
-				ranges = RangeUtil.intersect(ranges, tn.toAnchorPosition(singleAncestor));
+				singleAncestor = tn.toAnchorPosition(singleAncestor);
+				ranges = RangeUtil.intersect(ranges, singleAncestor);
 				tn = tn.parent;
 				if (tn != null) {
-					sn = traversingForward() ? tn.node.givenPrev(sn) :  tn.node.givenNext(sn);
+					sn = traversingForward() ? tn.node.givenNext(sn) :  tn.node.givenPrev(sn);
 				}
 			}
 			return ranges;
@@ -120,13 +124,13 @@ public abstract class KmerPathNodeBasePath {
 			KmerPathSubnode sn = node;
 			while (tn != null) {
 				if (traversingForward()) {
-					queue.addLast(sn);
-				} else {
 					queue.addFirst(sn);
+				} else {
+					queue.addLast(sn);
 				}
 				tn = tn.parent;
 				if (tn != null) {
-					sn = traversingForward() ? tn.node.givenPrev(sn) :  tn.node.givenNext(sn);
+					sn = traversingForward() ? tn.node.givenNext(sn) :  tn.node.givenPrev(sn);
 				}
 			}
 			return new ArrayList<KmerPathSubnode>(queue);
@@ -142,20 +146,22 @@ public abstract class KmerPathNodeBasePath {
 			}
 		}
 		public TraversalNode firstTerminalLeaf() {
-			RangeSet<Integer> rs = terminalLeafRanges();
+			RangeSet<Integer> rs = terminalLeafAnchorRanges();
 			if (rs == null || rs.isEmpty()) return null;
 			Range<Integer> firstRange = rs.asRanges().iterator().next();
 			int start = firstRange.lowerEndpoint();
 			int end = firstRange.upperEndpoint();
-			if (!traversingForward()) {
-				start = anchorTofirstNodeKmerPosition(start);
-				end = anchorTofirstNodeKmerPosition(end);
-			}
+			start = anchorTofirstNodeKmerPosition(start);
+			end = anchorTofirstNodeKmerPosition(end);
 			return new TraversalNode(parent, new KmerPathSubnode(node().node(), start, end));
 		}
 		@Override
 		public Iterator<TraversalNode> iterator() {
-			return new TraversalNodeIterator(this, traversingForward() ? node.next().iterator() : node.prev().iterator());
+			List<KmerPathSubnode> adj = traversingForward() ? node.next() : node.prev();
+			return new TraversalNodeIterator(this, adj.iterator());
+		}
+		public String toString() {
+			return StringUtils.stripEnd(asSubnodeList().toString().replace(",", "\n").substring(1), "]");
 		}
 	}
 	private class TraversalNodeIterator implements Iterator<TraversalNode> {

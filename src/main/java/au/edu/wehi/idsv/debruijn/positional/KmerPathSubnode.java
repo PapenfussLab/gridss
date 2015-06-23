@@ -7,9 +7,6 @@ import java.util.List;
 
 import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNode;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
@@ -32,7 +29,7 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode {
 	public KmerPathNode node() { return n; }
 	public int firstKmerStartPosition() { return start; }
 	public int firstKmerEndPosition() { return end; }
-	public int width() { return start - end + 1; }
+	public int width() { return end - start + 1; }
 	@Override
 	public int length() {
 		return n.length();
@@ -48,16 +45,6 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode {
 	@Override
 	public long kmer(int offset) {
 		return n.kmer(offset);
-	}
-	/**
-	 * Determines whether this node is a positional subset of the given node
-	 * @param node node to check containment of
-	 * @return true if this node is a subset of the given node, false otherwise
-	 */
-	public boolean isSubsetOf(KmerPathSubnode node) {
-		return node.n == n
-				&& node.start <= start
-				&& node.end >= end;
 	}
 	/**
 	 * Returns the subset of valid position of this node for the given next traversal 
@@ -89,8 +76,8 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode {
 	}
 	public List<KmerPathSubnode> next() {
 		List<KmerPathSubnode> adj = new ArrayList<KmerPathSubnode>(n.next().size());
-		int targetStart = start + n.length() + 1;
-		int targetEnd = end + n.length() + 1;
+		int targetStart = start + n.length();
+		int targetEnd = end + n.length();
 		for (KmerPathNode pn : n.next()) {
 			int pnStart = pn.startPosition(0);
 			int pnEnd = pn.endPosition(0);
@@ -109,19 +96,19 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode {
 	}
 	public List<KmerPathSubnode> prev() {
 		List<KmerPathSubnode> adj = new ArrayList<KmerPathSubnode>(n.prev().size());
-		int targetStart = start - 1;
-		int targetEnd = end - 1;
+		int targetStartLastKmer = start - 1;
+		int targetEndLastKmer = end - 1;
 		for (KmerPathNode pn : n.prev()) {
-			int pnStart = pn.startPosition();
-			int pnEnd = pn.endPosition();
-			if (pnEnd < targetStart) {
+			int pnStartLastKmer = pn.startPosition();
+			int pnEndLastKmer = pn.endPosition();
+			if (pnEndLastKmer < targetStartLastKmer) {
 				continue;
-			} else if (pnStart > targetEnd) {
+			} else if (pnStartLastKmer > targetEndLastKmer) {
 				break;
 			} else {
 				adj.add(new KmerPathSubnode(pn,
-						Math.max(targetStart, pnStart) - pn.length(),
-						Math.min(targetEnd, pnEnd) - pn.length()));
+						Math.max(targetStartLastKmer, pnStartLastKmer) - pn.length() + 1,
+						Math.min(targetEndLastKmer, pnEndLastKmer) - pn.length() + 1));
 			}
 		}
 		return adj;
@@ -132,11 +119,7 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode {
 	 * @return
 	 */
 	public RangeSet<Integer> nextPathRangesOfDegree(int degree) {
-		return pathRangesOfDegree(degree, Iterators.peekingIterator(Iterators.transform(next().iterator(), new Function<KmerPathSubnode, KmerPathSubnode>(){
-					@Override
-					public KmerPathSubnode apply(KmerPathSubnode input) {
-						return givenNext(input);
-					}})));
+		return pathRangesOfDegree(degree, true);
 	}
 	/**
 	 * Returns the positions for which this node has the given out-degree 
@@ -144,43 +127,62 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode {
 	 * @return
 	 */
 	public RangeSet<Integer> prevPathRangesOfDegree(int degree) {
-		return pathRangesOfDegree(degree, Iterators.peekingIterator(Iterators.transform(prev().iterator(), new Function<KmerPathSubnode, KmerPathSubnode>(){
-					@Override
-					public KmerPathSubnode apply(KmerPathSubnode input) {
-						return givenPrev(input);
-					}})));
+		return pathRangesOfDegree(degree, false);
 	}
 	/**
 	 * Returns the positions for which this node has the given degree 
-	 * @param degree
+	 * @param degree degree expected
+	 * @param outEdges calculate out edges
 	 * @return
 	 */
-	private RangeSet<Integer> pathRangesOfDegree(int degree, PeekingIterator<KmerPathSubnode> it) {
-		RangeSet<Integer> result = TreeRangeSet.create();
-		IntHeapPriorityQueue endsAt = new IntHeapPriorityQueue();
+	private RangeSet<Integer> pathRangesOfDegree(int degree, boolean outEdges) {
 		int start = firstKmerStartPosition();
 		final int scopeEnd = firstKmerEndPosition();
-		while (start <= scopeEnd) {
-			while (it.hasNext() && it.peek().firstKmerStartPosition() <= start) {
-				endsAt.enqueue(it.peek().firstKmerStartPosition());
+		IntHeapPriorityQueue unprocessedEndsAt = new IntHeapPriorityQueue();
+		IntHeapPriorityQueue unprocessedStartsAt = new IntHeapPriorityQueue();
+		if (outEdges) {
+			for (KmerPathSubnode adj : next()) {
+				KmerPathSubnode thisRestricted = givenNext(adj);
+				unprocessedStartsAt.enqueue(thisRestricted.firstKmerStartPosition());
+				unprocessedEndsAt.enqueue(thisRestricted.firstKmerEndPosition());
 			}
-			while (!endsAt.isEmpty() && endsAt.firstInt() < start) {
-				endsAt.dequeueInt();
+		} else {
+			for (KmerPathSubnode adj : prev()) {
+				KmerPathSubnode thisRestricted = givenPrev(adj);
+				unprocessedStartsAt.enqueue(thisRestricted.firstKmerStartPosition());
+				unprocessedEndsAt.enqueue(thisRestricted.firstKmerEndPosition());
+			}
+		}
+		RangeSet<Integer> result = TreeRangeSet.create();
+		int activeCount = 0;
+		while (start <= scopeEnd) {
+			// fall out of scope
+			while (!unprocessedEndsAt.isEmpty() && unprocessedEndsAt.firstInt() < start) {
+				unprocessedEndsAt.dequeueInt();
+				activeCount--;
+			}
+			while (!unprocessedStartsAt.isEmpty() && unprocessedStartsAt.firstInt() <= start) {
+				unprocessedStartsAt.dequeueInt();
+				activeCount++;
 			}
 			int end = scopeEnd;
-			if (it.hasNext()) {
-				end = Math.min(end, it.peek().firstKmerEndPosition() - 1);
+			if (!unprocessedEndsAt.isEmpty()) {
+				end = Math.min(end, unprocessedEndsAt.firstInt());
 			}
-			if (!endsAt.isEmpty()) {
-				end = Math.min(end, endsAt.firstInt());
+			if (!unprocessedStartsAt.isEmpty()) {
+				end = Math.min(end, unprocessedStartsAt.firstInt() - 1);
 			}
 			// matches the expected number of adjacent nodes
-			if (endsAt.size() == degree) {
+			if (activeCount == degree) {
 				result.add(Range.closed(start, end));
 			}
 			start = end + 1;
 		}
 		return result;
+	}
+	@Override
+	public String toString() {
+		return String.format("[%d-%d]%s", firstKmerStartPosition(), firstKmerEndPosition(), n);
 	}
 	@Override
 	public int hashCode() {

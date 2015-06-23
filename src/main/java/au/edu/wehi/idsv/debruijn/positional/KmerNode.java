@@ -44,4 +44,18 @@ public interface KmerNode {
 					.result();
 		}
 	};
+	/**
+	 * Ordering usable as a graph node key (since duplicate nodes should not occur)  
+	 */
+	public static final Ordering<KmerPathNode> ByEndStartKmerReference = new Ordering<KmerPathNode>() {
+		@Override
+		public int compare(KmerPathNode left, KmerPathNode right) {
+			return ComparisonChain.start()
+					.compare(left.endPosition(), right.endPosition())
+					.compare(left.startPosition(), right.startPosition())
+					.compare(left.kmer(), right.kmer())
+					.compareTrueFirst(left.isReference(), right.isReference())
+					.result();
+		}
+	};
 }
