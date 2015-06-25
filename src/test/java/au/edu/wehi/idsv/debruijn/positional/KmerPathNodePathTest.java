@@ -78,7 +78,7 @@ public class KmerPathNodePathTest extends TestHelper {
 			for (int i = 0; i < input.size(); i++) {
 				KmerPathNodePath path = new KmerPathNodePath(new KmerPathSubnode(input.get(i)), dir, 1000);
 				while (path.dfsNextChild());
-				List<KmerPathSubnode> snl = path.headNode().asSubnodeList();
+				List<KmerPathSubnode> snl = new ArrayList<KmerPathSubnode>(path.headNode().asSubnodes());
 				for (int j = 1; j < snl.size(); j++) {
 					assertEquals(snl.get(j - 1).firstKmerStartPosition() + snl.get(j - 1).length(), snl.get(j).firstKmerStartPosition());
 					assertEquals(snl.get(j - 1).firstKmerEndPosition() + snl.get(j - 1).length(), snl.get(j).firstKmerEndPosition());
@@ -94,17 +94,17 @@ public class KmerPathNodePathTest extends TestHelper {
 		assertEquals(input.get(9), path.headPath());
 		assertEquals(40, path.headNode().startPositionOfAnchorKmer());
 		assertEquals(60, path.headNode().endPositionOfAnchorKmer());
-		assertEquals(21, path.headNode().asSubnodeList().get(0).width()); // 9
+		assertEquals(21, path.headNode().asSubnodes().getFirst().width()); // 9
 		assertTrue(path.dfsNextChild());
 		assertEquals(input.get(10), path.headPath());
-		assertEquals(1, path.headNode().asSubnodeList().get(0).width()); // 10
+		assertEquals(1, path.headNode().asSubnodes().getFirst().width()); // 10
 		assertFalse(path.dfsNextChild());
 		path.dfsPop();
 		assertFalse(path.dfsNextChild());
 		path.dfsPop();
 		assertTrue(path.dfsNextChild());
 		assertEquals(input.get(8), path.headPath());
-		assertEquals(21, path.headNode().asSubnodeList().get(0).width()); // 8
+		assertEquals(21, path.headNode().asSubnodes().getFirst().width()); // 8
 		assertFalse(path.dfsNextChild());
 		path.dfsPop();
 	}
@@ -149,5 +149,29 @@ public class KmerPathNodePathTest extends TestHelper {
 		assertEquals(expected, path.headNode().terminalLeafAnchorRanges());
 		
 		assertEquals(1, path.headNode().firstTerminalLeaf().node().firstKmerStartPosition());
+	}
+	@Test
+	public void greedyTraverse_should_follow_highest_weighted_path() {
+		List<KmerPathNode> input = testgraph();
+		KmerPathNodePath path = new KmerPathNodePath(new KmerPathSubnode(input.get(0)), true, 100);
+		path.greedyTraverse(true, true);
+		assertEquals(4, path.headNode().asSubnodes().size());
+	}
+	@Test
+	public void greedyTraverse_should_follow_allowable_nodes() {
+		List<KmerPathNode> input = testgraph();
+		KmerPathNodePath path = new KmerPathNodePath(new KmerPathSubnode(input.get(0)), true, 100);
+		path.greedyTraverse(true, false);
+		assertEquals(1, path.headNode().asSubnodes().size());
+	}
+	@Test
+	public void greedyTraverse_should_exhaust_alternate_paths() {
+		List<KmerPathNode> input = testgraph();
+		KmerPathNodePath path = new KmerPathNodePath(new KmerPathSubnode(input.get(0)), true, 100);
+		path.greedyTraverse(true, true);
+		while (path.headNode() != path.rootNode()) {
+			assertFalse(path.dfsNextChild());
+			path.dfsPop();
+		}
 	}
 }

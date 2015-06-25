@@ -10,7 +10,6 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.ProgressLogger;
 
 import java.io.Closeable;
 import java.io.File;
@@ -353,7 +352,6 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		private Queue<SAMRecordAssemblyEvidence> resortBuffer = new PriorityQueue<SAMRecordAssemblyEvidence>(32, BySAMFileCoordinate);
 		private long maxAssembledPosition = Long.MIN_VALUE;
 		private long lastFlushedPosition = Long.MIN_VALUE;
-		private long lastProgress = 0;
 		public ContigAssembler(Iterator<DirectedEvidence> it, File breakendOutput, File realignmentFastq) {
 			this.it = it;
 			this.breakendOutput = breakendOutput;
@@ -370,30 +368,14 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 						setSortOrder(SortOrder.coordinate);
 					}}, true, FileSystemContext.getWorkingFileFor(breakendOutput));
 				fastqWriter = new FastqBreakpointWriter(getContext().getFastqWriterFactory().newWriter(FileSystemContext.getWorkingFileFor(realignmentFastq)));
-				ReadEvidenceAssembler assembler = getAssembler();
-				final ProgressLogger progress = new ProgressLogger(log);
-				while (it.hasNext()) {
-					DirectedEvidence readEvidence = it.next();
-					if (readEvidence instanceof NonReferenceReadPair) {
-						progress.record(((NonReferenceReadPair)readEvidence).getLocalledMappedRead());
-					} else if (readEvidence instanceof SoftClipEvidence) {
-						progress.record(((SoftClipEvidence)readEvidence).getSAMRecord());
-					}
+				Iterator<SAMRecordAssemblyEvidence> assemblyIt = getAssembler(it);
+				while (assemblyIt.hasNext()) {
 					// Need to process assembly evidence first since assembly calls are made when the
 					// evidence falls out of scope so processing a given position will emit evidence
 					// for a previous position (for it is only at this point we know there is no more
 					// evidence for the previous position).
-					processAssembly(assembler.addEvidence(readEvidence));
-					
-					if (maxAssembledPosition / 1000000 > lastProgress / 1000000) {
-						lastProgress = maxAssembledPosition;
-						log.info(String.format("Assembly at %s:%d %s",
-								getContext().getDictionary().getSequence(getContext().getLinear().getReferenceIndex(lastProgress)).getSequenceName(),
-								getContext().getLinear().getReferencePosition(lastProgress),
-								assembler.getStateSummaryMetrics()));
-					}
+					processAssembly(assemblyIt.next());					
 				}
-				processAssembly(assembler.endOfEvidence());
 				flushWriterQueueBefore(Long.MAX_VALUE);
 				fastqWriter.close();
 				fastqWriter = null;
@@ -409,20 +391,15 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				if (writer != null) writer.close();
 			}
 		}
-		private void processAssembly(Iterable<SAMRecordAssemblyEvidence> evidenceList) {
-	    	if (evidenceList != null) {
-		    	for (SAMRecordAssemblyEvidence ass : evidenceList) {
-		    		if (ass != null) {
-			    		maxAssembledPosition = Math.max(maxAssembledPosition, getContext().getLinear().getStartLinearCoordinate(ass.getSAMRecord()));
-			    		// realign
-			    		if (getContext().getAssemblyParameters().performLocalRealignment && ass.isBreakendExact()) { // let the aligner perform realignment of unanchored reads
-			    			ass = ass.realign();
-			    		}
-			    		resortBuffer.add(ass);
-		    		}
-		    	}
-	    	}
-	    	flushWriterQueueBefore(maxAssembledPosition - getAssemblyWindowSize());
+		private void processAssembly(SAMRecordAssemblyEvidence ass) {
+    		if (ass == null) return;
+    		maxAssembledPosition = Math.max(maxAssembledPosition, getContext().getLinear().getStartLinearCoordinate(ass.getSAMRecord()));
+    		// realign
+    		if (getContext().getAssemblyParameters().performLocalRealignment && ass.isBreakendExact()) { // let the aligner perform realignment of unanchored reads
+    			ass = ass.realign();
+    		}
+    		resortBuffer.add(ass);
+    		flushWriterQueueBefore(maxAssembledPosition - getAssemblyWindowSize());
 	    }
 		private void flushWriterQueueBefore(long flushBefore) {
 			while (!resortBuffer.isEmpty() && getContext().getLinear().getStartLinearCoordinate(resortBuffer.peek().getBackingRecord()) < flushBefore) {
@@ -443,8 +420,8 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			}
 		}
 	}
-	protected ReadEvidenceAssembler getAssembler() {
-		return new DeBruijnSubgraphAssembler(getContext(), this);
+	protected Iterator<SAMRecordAssemblyEvidence> getAssembler(Iterator<DirectedEvidence> it) {
+		return new ReadEvidenceAssemblyIterator(new DeBruijnSubgraphAssembler(getContext(), this), it);
     }
 	@Override
 	public int getMaxConcordantFragmentSize() {

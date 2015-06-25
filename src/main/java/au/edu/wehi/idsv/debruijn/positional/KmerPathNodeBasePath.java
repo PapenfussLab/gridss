@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
 import java.util.ArrayDeque;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
@@ -19,7 +18,7 @@ public abstract class KmerPathNodeBasePath {
 	private final TraversalNode root;
 	private final boolean traverseForward;
 	private final int maxPathLength;
-	protected TraversalNode getRoot() { return root; }
+	protected TraversalNode rootNode() { return root; }
 	public boolean traversingForward() { return traverseForward; }
 	public KmerPathNodeBasePath(KmerPathSubnode node, int maxPathLength, boolean traverseForward) {
 		this.traverseForward = traverseForward;
@@ -118,7 +117,7 @@ public abstract class KmerPathNodeBasePath {
 			}
 			return rootRanges;
 		}
-		public List<KmerPathSubnode> asSubnodeList() {
+		public ArrayDeque<KmerPathSubnode> asSubnodes() {
 			ArrayDeque<KmerPathSubnode> queue = new ArrayDeque<KmerPathSubnode>();
 			TraversalNode tn = this;
 			KmerPathSubnode sn = node;
@@ -133,7 +132,7 @@ public abstract class KmerPathNodeBasePath {
 					sn = traversingForward() ? tn.node.givenNext(sn) :  tn.node.givenPrev(sn);
 				}
 			}
-			return new ArrayList<KmerPathSubnode>(queue);
+			return queue;
 		}
 		public TraversalNode overlapping(TraversalNode path) {
 			int startAnchor = Math.max(startPositionOfAnchorKmer(), path.startPositionOfAnchorKmer());
@@ -161,7 +160,7 @@ public abstract class KmerPathNodeBasePath {
 			return new TraversalNodeIterator(this, adj.iterator());
 		}
 		public String toString() {
-			return StringUtils.stripEnd(asSubnodeList().toString().replace(",", "\n").substring(1), "]");
+			return StringUtils.stripEnd(asSubnodes().toString().replace(",", "\n").substring(1), "]");
 		}
 	}
 	private class TraversalNodeIterator implements Iterator<TraversalNode> {

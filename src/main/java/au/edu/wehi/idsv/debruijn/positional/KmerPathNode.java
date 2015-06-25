@@ -3,6 +3,7 @@ package au.edu.wehi.idsv.debruijn.positional;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -16,7 +17,9 @@ import au.edu.wehi.idsv.util.IntervalUtil;
 
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.PeekingIterator;
 import com.google.common.primitives.Ints;
 
 /**
@@ -61,11 +64,13 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		}
 	};
 	private static final LongArrayList EMPTY_KMER_LIST = new LongArrayList();
+	private static final IntArrayList EMPTY_OFFSET_LIST = new IntArrayList();
 	private static final List<KmerPathNode> EMPTY_EDGE_LIST = ImmutableList.of();
 	private static final Ordering<KmerPathNode> NEXT_SORT_ORDER = KmerPathNode.ByFirstKmerStartPosition;
 	private static final Ordering<KmerNode> PREV_SORT_ORDER = KmerPathNode.ByStartPosition;
 	private LongArrayList kmers; // FIXME: replace with 2-bit encoding of kmer sequence
 	private LongArrayList additionalKmers = null;
+	private IntArrayList additionalKmerOffsets = null;
 	private IntArrayList weight;
 	private int totalWeight;
 	private int start;
@@ -94,6 +99,8 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	public int startPosition(int offset) { return start + offset; }
 	public int endPosition(int offset) { return end + offset; }
 	public int weight() { return totalWeight; }
+	public LongArrayList pathKmers() { return kmers; }
+	public IntArrayList pathWeights() { return weight; }
 	@Override
 	public int weight(int offset) {
 		return weight.getInt(offset);
@@ -121,6 +128,10 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	public LongArrayList collapsedKmers()
 	{
 		return additionalKmers != null ? additionalKmers : EMPTY_KMER_LIST;
+	}
+	public IntArrayList collapsedKmerOffsets()
+	{
+		return additionalKmerOffsets != null ? additionalKmerOffsets : EMPTY_OFFSET_LIST;
 	}
 	public KmerPathNode(long kmer, int start, int end, boolean reference, int weight) {
 		this.kmers = new LongArrayList(1);
@@ -245,10 +256,16 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		assert(toMerge.length() == length());
 		reference |= toMerge.reference;
 		if (additionalKmers == null) {
-			additionalKmers = new LongArrayList(toMerge.kmers.size() + toMerge.collapsedKmers().size());
+			int targetSize = toMerge.kmers.size() + toMerge.collapsedKmers().size();
+			additionalKmers = new LongArrayList(targetSize);
+			additionalKmerOffsets = new IntArrayList(targetSize);
 		}
 		additionalKmers.addAll(toMerge.kmers);
 		additionalKmers.addAll(toMerge.collapsedKmers());
+		for (int i = 0; i < toMerge.length(); i++) {
+			additionalKmerOffsets.add(i);
+		}
+		additionalKmerOffsets.addAll(toMerge.collapsedKmerOffsets());
 		totalWeight += toMerge.totalWeight;
 		for (int i = 0; i < weight.size(); i++) {
 			weight.set(i, weight.get(i) + toMerge.weight.get(i));
@@ -471,8 +488,10 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		ArrayList<KmerPathNode> prevEmpty = split.prevList;
 		split.prevList = this.prevList;
 		this.prevList = prevEmpty;
-		for (KmerPathNode n : split.prevList) {
-			replaceFirst(n.nextList, this, split);
+		if (split.prevList != null) {
+			for (KmerPathNode n : split.prevList) {
+				replaceFirst(n.nextList, this, split);
+			}
 		}
 		// edge sorting invariant remains unchanged
 		this.kmers = kmerSecond;
@@ -481,7 +500,26 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		this.start += firstNodeLength;
 		this.end += firstNodeLength;
 		this.versionId++;
-		addEdge(split, this); 
+		addEdge(split, this);
+		if (this.additionalKmers != null) {
+			LongArrayList nodeKmers = new LongArrayList();
+			IntArrayList nodeOffsets = new IntArrayList();
+			LongArrayList splitKmers = new LongArrayList();
+			IntArrayList splitOffsets = new IntArrayList();
+			for (int i = 0; i < additionalKmerOffsets.size(); i++) {
+				if (additionalKmerOffsets.get(i) < firstNodeLength) {
+					splitKmers.add(additionalKmers.getLong(i));
+					splitOffsets.add(additionalKmerOffsets.getInt(i));
+				} else {
+					nodeKmers.add(additionalKmers.getLong(i));
+					nodeOffsets.add(additionalKmerOffsets.getInt(i - firstNodeLength));
+				}
+			}
+			this.additionalKmers = nodeKmers;
+			this.additionalKmerOffsets = nodeOffsets;
+			split.additionalKmers = splitKmers;
+			split.additionalKmerOffsets = splitOffsets;
+		}
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
 			this.sanityCheck();
 			split.sanityCheck();
@@ -534,7 +572,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	 */
 	public KmerPathNode splitAtStartPosition(int newStartPosition) {
 		assert(newStartPosition > start);
-		assert(newStartPosition < end);
+		assert(newStartPosition <= end);
 		KmerPathNode split = new KmerPathNode(kmers, start, newStartPosition - 1, reference, totalWeight, weight);
 		this.start = newStartPosition;
 		
@@ -575,6 +613,10 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 			split.prevList = newPrevSplit;
 		}
 		split.edgesSorted = this.edgesSorted; // edge list order retained
+		if (this.additionalKmers != null) {
+			split.additionalKmers = new LongArrayList(this.additionalKmers);
+			split.additionalKmerOffsets = new IntArrayList(this.additionalKmerOffsets);
+		}
 		this.versionId++;
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
 			this.sanityCheck();
@@ -611,6 +653,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		assert(sumWeights(weight) == totalWeight);
 		assert(sanityCheckEdges(this, true));
 		assert(EMPTY_KMER_LIST != null && EMPTY_KMER_LIST.size() == 0); // fastutil doesn't have ImmutableList wrappers
+		assert((additionalKmerOffsets == null && additionalKmers == null) || additionalKmerOffsets.size() == additionalKmers.size());
 		return true;
 	}
 	private static boolean sanityCheckEdges(KmerPathNode node, boolean checkNeighbours) {
@@ -711,5 +754,192 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		} else if (!weight.equals(other.weight))
 			return false;
 		return true;
+	}
+	private KmerPathNode removeKmer(int offset) {
+		assert(offset >= 0);
+		assert(offset < length());
+		if (offset > 0 && offset < length() - 1) {
+			KmerPathNode split = splitAtLength(offset + 1);
+			KmerPathNode additionalSplit = split.removeKmer(offset);
+			assert(additionalSplit == null);
+			this.prevList = null;
+			split.nextList = null;
+			return split;
+		}
+		// start or end kmer
+		if (offset == length() - 1) {
+			// remove final node
+			for (KmerPathNode n : next()) {
+				n.prevList.remove(this);
+			}
+			this.nextList = null;
+		}
+		if (offset == 0) {
+			for (KmerPathNode n : prev()) {
+				n.nextList.remove(this);
+			}
+			this.prevList = null;
+		}
+		totalWeight -= weight.getInt(offset);
+		weight.remove(offset);
+		kmers.remove(offset);
+		if (additionalKmers != null) {
+			if (length() > 0) {
+				int offsetShift = offset == 0 ? 1 : 0;
+				for (int i = additionalKmers.size() - 1; i >= 0; i--) {
+					int currentOffset = additionalKmerOffsets.getInt(i);
+					int newOffset = currentOffset - offsetShift;
+					if (newOffset < 0 && newOffset >= length()) {
+						additionalKmerOffsets.remove(i);
+						additionalKmers.remove(i);
+					} else if (newOffset != currentOffset) {
+						additionalKmerOffsets.set(i, newOffset);
+					}
+				}
+			}
+		}
+		if (length() == 0) {
+			invalidate();
+		}
+		return null;
+	}
+	/**
+	 * Removes supporting evidence from the given node
+	 * @param node node to remove support 
+	 * @param toRemove supporting evidence to remove. Each node 
+	 * @return
+	 */
+	public static ArrayDeque<KmerPathNode> removeWeight(KmerPathNode node, List<? extends List<? extends KmerNode>> toRemove) {
+		int preWeight = node.totalWeight;
+		ArrayDeque<KmerPathNode> replacement = new ArrayDeque<KmerPathNode>();
+		while (!toRemove.isEmpty()) {
+			int index = toRemove.size() - 1;
+			List<? extends KmerNode> collection = toRemove.get(index);
+			toRemove.remove(index);
+			if (collection != null) {
+				collection.sort(KmerNode.ByStartPosition);
+				node = removeWeight(replacement, node, index, collection);
+			}
+		}
+		if (node != null) {
+			replacement.addFirst(node);
+		}
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			replacement.stream().forEach(n -> n.sanityCheck());
+			int postWeight = replacement.stream().mapToInt(n -> n.weight()).sum();
+			int deltaWeight = toRemove.stream().filter(l -> l != null).flatMapToInt(l -> l.stream().mapToInt(n -> n.weight())).sum();
+			assert(postWeight + deltaWeight == preWeight);
+		}
+		return replacement;
+	}
+	/**
+	 * Removes weight from this KmerPathNode.
+	 * 
+	 * Weight is removed kmer-by-kmer. In the case of removal of weight from part of the
+	 * defined interval, the node is split first by length, then by position, then the
+	 * weight of the resultant node is reduced
+	 *  
+	 * @param replacementNodeList collection to add any additional KmerPathNode created
+	 * @param node node to remove weight from
+	 * @param offset offset of evidence to remove
+	 * @param toRemove evidence to remove
+	 * @return returns the node with the earliest startPosition after removing weight
+	 */
+	private static KmerPathNode removeWeight(ArrayDeque<KmerPathNode> outList, KmerPathNode node, int offset, List<? extends KmerNode> toRemove) {
+		if (toRemove == null || toRemove.size() == 0) return node;
+		PriorityQueue<KmerNode> active = new PriorityQueue<KmerNode>(4, KmerNode.ByEndPosition);
+		PeekingIterator<? extends KmerNode> startIt = Iterators.peekingIterator(toRemove.iterator());
+		int start = node.startPosition(offset);
+		final int scopeEnd = node.endPosition(offset);
+		int weightToRemove = 0;
+		KmerPathNode pre = null;
+		while (start <= scopeEnd) {
+			// advance
+			while (startIt.hasNext() && startIt.peek().startPosition() <= start) {
+				KmerNode n = startIt.next();
+				weightToRemove += n.weight();
+				active.add(n);
+			}
+			while (!active.isEmpty() && active.peek().endPosition() < start) {
+				KmerNode n = active.poll();
+				weightToRemove -= n.weight();
+			}
+			int end = scopeEnd;
+			if (startIt.hasNext() && startIt.peek().startPosition() <= end) {
+				end = startIt.peek().startPosition() - 1;
+			}
+			if (!active.isEmpty() && active.peek().endPosition() < end) {
+				end = active.peek().endPosition();
+			}
+			if (start == node.startPosition(offset) && end == node.endPosition(offset)) {
+				// simple case: just down-weight this kmer
+				node = removeWeight(outList, node, offset, weightToRemove);
+				assert(pre == null || node == null); // only one precedecessor allowed
+				return pre == null ? node : pre;
+			} else {
+				if (node.length() != 1) {
+					// split our path node up so it's 1 kmer wide
+					int postOffsetLength = node.length() - offset;
+					int preOffsetLength = offset;
+					if (postOffsetLength > 0) {
+						outList.addFirst(node);
+						node = node.splitAtLength(offset + 1);
+					}
+					if (preOffsetLength > 0) {
+						pre = node.splitAtLength(preOffsetLength);
+					}
+					offset = 0;
+				}
+				// then split path so we have a single path node containing our interval of interest 
+				KmerPathNode after = null;
+				if (start != node.startPosition()) {
+					outList.addFirst(node.splitAtStartPosition(start));
+					assert(start == node.startPosition());
+				} else if (end != node.endPosition()) {
+					after = node;
+					node = node.splitAtStartPosition(end + 1);
+				}
+				// ok, we're ready to process this node
+				if (weightToRemove > 0) {
+					node = removeWeight(outList, node, 0, weightToRemove);
+				}
+				// move on to the next interval
+				if (node != null) {
+					outList.addFirst(node);
+				}
+				node = after;
+			}
+			start = end + 1;
+		}
+		return pre;
+	}
+	/**
+	 * Remove the given weight from the given node 
+	 * @param outList 
+	 * @param node
+	 * @param offset
+	 * @param weightToRemove
+	 * @return KmerPathNode containing kmers preceeding the offset
+	 */
+	private static KmerPathNode removeWeight(ArrayDeque<KmerPathNode> outList, KmerPathNode node, int offset, int weightToRemove) {
+		int newWeight = node.weight.get(offset) - weightToRemove;
+		if (newWeight == 0) {
+			// remove entire kmer from KmerPathNode
+			KmerPathNode split = node.removeKmer(offset);
+			if (split != null) {
+				outList.addFirst(node);
+				node = split;
+			}
+		} else {
+			node.weight.set(offset, newWeight);
+			node.totalWeight -= weightToRemove;
+		}
+		if (!node.isValid()) return null;
+		if (offset == 0) {
+			// node is not valid before this position
+			outList.addFirst(node);
+			return null;
+		}
+		return node;
 	}
 }

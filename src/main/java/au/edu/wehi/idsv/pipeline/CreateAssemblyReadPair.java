@@ -28,7 +28,6 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidenceFilteringIterator;
-import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;

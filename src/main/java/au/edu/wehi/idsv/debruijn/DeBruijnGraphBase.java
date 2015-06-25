@@ -107,7 +107,7 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> implements D
 	 * @param bases base qualities to adjust
 	 * @return 0-based phred-encodable base qualities
 	 */
-	public byte toPicardFastqBaseQuality(int qual) {
+	public static byte toPicardFastqBaseQuality(int qual) {
 		return (byte) (qual > MAX_QUAL_SCORE ? MAX_QUAL_SCORE : qual);
 	}
 	/**
@@ -226,7 +226,10 @@ public abstract class DeBruijnGraphBase<T extends DeBruijnNodeBase> implements D
 				kmerWeight[i] = node.weight() - node.getSupportingEvidenceList().size();
 			}
 		}
-		byte[] result = new byte[pathAllKmers.size() + k - 1];
+		return kmerWeightsToBaseQuals(k, kmerWeight);
+	}
+	public static byte[] kmerWeightsToBaseQuals(int k, int[] kmerWeight) {
+		byte[] result = new byte[kmerWeight.length + k - 1];
 		// take the average kmer qual of the kmers this bases is part of
 		int accum = 0;
 		int windowSize = 0;

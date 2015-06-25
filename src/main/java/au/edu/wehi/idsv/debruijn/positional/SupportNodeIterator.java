@@ -43,11 +43,11 @@ public class SupportNodeIterator implements Iterator<KmerSupportNode> {
 	}
 	private void process(DirectedEvidence de) {
 		assert(de.getBreakendSummary().referenceIndex == firstReferenceIndex);
-		Evidence e;
+		KmerEvidence e;
 		if (de instanceof SoftClipEvidence) {
-			e = Evidence.create(k, (SoftClipEvidence)de, true);
+			e = KmerEvidence.create(k, (SoftClipEvidence)de, true);
 		} else if (de instanceof NonReferenceReadPair) {
-			e = Evidence.create(k, (NonReferenceReadPair)de);
+			e = KmerEvidence.create(k, (NonReferenceReadPair)de);
 		} else {
 			throw new RuntimeException("Assembler able to process only soft clip and read pair evidence");
 		}

@@ -11,6 +11,7 @@ import java.util.BitSet;
 import java.util.List;
 
 import au.edu.wehi.idsv.BreakendDirection;
+import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
@@ -24,18 +25,24 @@ import au.edu.wehi.idsv.sam.SAMRecordUtil;
  * @author Daniel Cameron
  *
  */
-public class Evidence extends PackedKmerList {
-	private String id;
-	private BitSet anchor;
-	private BitSet ambiguous;
-	private int start;
-	private int end;
+public class KmerEvidence extends PackedKmerList {
+	// TODO: optimisation: soft clip can store end and BreakendSummary implicitly
+	// TODO: optimisation: read pair can store anchor position & direction instead of breakend & anchor
+	private final String id;
+	private final BitSet anchor;
+	private final BitSet ambiguous;
+	private final int start;
+	private final int end;
+	private final BreakendSummary be;
+	private final float score;
 	public KmerSupportNode node(int offset) {
 		if (ambiguous != null && ambiguous.get(offset)) {
 			return null;
 		}
 		return new KmerSupportNode(this, offset);
 	}
+	public float evidenceQuality() { return score; }
+	public BreakendSummary breakend() { return be; }
 	public String evidenceId() { return id; }
 	/**
 	 * Start position of first kmer
@@ -68,11 +75,12 @@ public class Evidence extends PackedKmerList {
 		}
 		return ambiguous;
 	}
-	public Evidence(
+	public KmerEvidence(
 			String evidenceId,
 			int start,
 			int end,
-			int k, BitSet anchorKmers, byte[] bases, byte[] qual, boolean reverse, boolean complement) {
+			int k, BitSet anchorKmers, byte[] bases, byte[] qual, boolean reverse, boolean complement,
+			BreakendSummary be, float evidenceQual) {
 		super(k, bases, qual, reverse, complement);
 		assert(evidenceId != null);
 		assert(qual.length == bases.length);
@@ -81,8 +89,10 @@ public class Evidence extends PackedKmerList {
 		this.end = end;
 		this.ambiguous = ambiguousKmers(k, bases);
 		this.anchor = anchorKmers;
+		this.be = be;
+		this.score = evidenceQual;
 	}
-	public static Evidence create(int k, NonReferenceReadPair pair) {
+	public static KmerEvidence create(int k, NonReferenceReadPair pair) {
 		SAMRecord local = pair.getLocalledMappedRead();
 		SAMRecord remote = pair.getNonReferenceRead();
 		boolean reverseComp = !pair.onExpectedStrand();
@@ -107,9 +117,9 @@ public class Evidence extends PackedKmerList {
 			startPosition = local.getUnclippedEnd() - maxFragSize + 1;
 			endPosition = local.getUnclippedEnd() - minFragSize + 1;
 		}
-		return new Evidence(pair.getEvidenceID(), startPosition, endPosition, k, null, remote.getReadBases(), remote.getBaseQualities(), reverseComp, reverseComp);
+		return new KmerEvidence(pair.getEvidenceID(), startPosition, endPosition, k, null, remote.getReadBases(), remote.getBaseQualities(), reverseComp, reverseComp, pair.getBreakendSummary(), pair.getBreakendQual());
 	}
-	public static Evidence create(int k, SoftClipEvidence softClipEvidence, boolean trimOtherSoftClip) {
+	public static KmerEvidence create(int k, SoftClipEvidence softClipEvidence, boolean trimOtherSoftClip) {
 		SAMRecord read = softClipEvidence.getSAMRecord();
 		List<CigarElement> elements = read.getCigar().getCigarElements();
 		int startClipLength = SAMRecordUtil.getStartSoftClipLength(elements);
@@ -154,7 +164,8 @@ public class Evidence extends PackedKmerList {
 		} else {
 			startPosition = read.getAlignmentStart() - startClipLength;
 		}
-		return new Evidence(softClipEvidence.getEvidenceID(), startPosition, startPosition, k, anchor, read.getReadBases(), read.getBaseQualities(), false, false);
+		return new KmerEvidence(softClipEvidence.getEvidenceID(), startPosition, startPosition, k, anchor, read.getReadBases(), read.getBaseQualities(), false, false,
+				softClipEvidence.getBreakendSummary(), softClipEvidence.getBreakendQual());
 	}
 	@Override
 	public int hashCode() {
@@ -168,7 +179,7 @@ public class Evidence extends PackedKmerList {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		Evidence other = (Evidence) obj;
+		KmerEvidence other = (KmerEvidence) obj;
 		if (id == null) {
 			if (other.id != null)
 				return false;

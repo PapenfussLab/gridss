@@ -1053,6 +1053,21 @@ public class TestHelper {
 			}
 		}
 	}
+	public static KmerPathNode KPN(long[] kmers, int start, int end, boolean reference, int[] weights) {
+		KmerPathNode pn = new KmerPathNode(kmers[0], start, end, reference, weights[0]);
+		for (int i = 1; i < kmers.length; i++) {
+			pn.append(new ImmutableKmerNode(kmers[i], start + i, end + i, reference, weights[i]));
+		}
+		return pn;
+	}
+	public KmerPathNode KPN(long[] kmers, int start, int end, boolean reference, int weight) {
+		int[] weights = new int[kmers.length];
+		Arrays.fill(weights, weight);
+		return KPN(kmers, start, end, reference, weights);
+	}
+	public KmerPathNode KPN(long[] kmers, int start, int end, boolean reference) {
+		return KPN(kmers, start, end, reference, 1);
+	}
 	public static KmerPathNode KPN(int k, String seq, int start, int end, boolean reference) {
 		return KPN(k, seq, start, end, reference, 1);
 	}

@@ -13,7 +13,7 @@ public class KmerPathNodePath extends KmerPathNodeBasePath {
 	private ArrayDeque<Iterator<TraversalNode>> nextPath = new ArrayDeque<Iterator<TraversalNode>>();
 	public KmerPathNodePath(KmerPathSubnode node, boolean traverseForward, int maxPathLength) {
 		super(node, maxPathLength, traverseForward);
-		dfsPush(getRoot());
+		dfsPush(rootNode());
 	}
 	public int pathLength() {
 		return (traversingForward() ? nodepath.getLast() : nodepath.getFirst()).pathLength();
@@ -87,7 +87,26 @@ public class KmerPathNodePath extends KmerPathNodeBasePath {
 	public RangeSet<Integer> terminalLeafRanges() {
 		return headNode().terminalLeafAnchorRanges();
 	}
+	public void greedyTraverse(boolean allowReference, boolean allowNonReference) {
+		TraversalNode best;
+		do {
+			best = null;
+			Iterator<TraversalNode> it = headNext();
+			while (it.hasNext()) {
+				TraversalNode n = it.next();
+				boolean isRef = n.node().node().isReference();
+				if ((isRef && allowReference) || (!isRef && allowNonReference)) {
+					if (best == null || n.node().weight() > best.node().weight()) {
+						best = n;
+					}
+				}
+			}
+			if (best != null) {
+				dfsPush(best);
+			}
+		} while (best != null);
+	}
 	public String toString() {
-		return headNode().asSubnodeList().toString().replace(",", "\n");
+		return headNode().asSubnodes().toString().replace(",", "\n");
 	}
 }

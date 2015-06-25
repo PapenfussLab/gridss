@@ -250,8 +250,8 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 		assert(findLeaf || findCommonChild);
 		if (findCommonChild) {
 			if (pathA.headPath() == pathB.headPath() && pathA.pathLength() == pathB.pathLength()) {
-				List<KmerPathSubnode> lA = pathA.headNode().overlapping(pathB.headNode()).asSubnodeList();
-				List<KmerPathSubnode> lB = pathB.headNode().overlapping(pathA.headNode()).asSubnodeList();
+				List<KmerPathSubnode> lA = new ArrayList<KmerPathSubnode>(pathA.headNode().overlapping(pathB.headNode()).asSubnodes());
+				List<KmerPathSubnode> lB = new ArrayList<KmerPathSubnode>(pathB.headNode().overlapping(pathA.headNode()).asSubnodes());
 				if (pathA.pathWeight() < pathB.pathWeight()) {
 					merge(lA, lB, 0, 0);
 				} else {
@@ -272,7 +272,9 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 		if (firstLeaf == null) return false;
 		int leafSkip = 0;
 		int pathSkip = traverseForward ? 0 : path.pathLength() - leaf.pathLength();
-		merge(firstLeaf.asSubnodeList(), path.headNode().overlapping(firstLeaf).asSubnodeList(), leafSkip, pathSkip);
+		merge(new ArrayList<KmerPathSubnode>(firstLeaf.asSubnodes()),
+				new ArrayList<KmerPathSubnode>(path.headNode().overlapping(firstLeaf).asSubnodes()),
+				leafSkip, pathSkip);
 		return true;
 	}
 	/**

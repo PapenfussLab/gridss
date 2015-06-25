@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import au.edu.wehi.idsv.util.IntervalUtil;
+
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
@@ -11,6 +13,9 @@ public interface KmerNode {
 	int weight();
 	boolean isReference();
 	default int width() { return endPosition() - startPosition() + 1; }
+	default boolean overlaps(KmerNode node) {
+		return kmer() == node.kmer() && IntervalUtil.overlapsClosed(startPosition(), endPosition(), node.startPosition(), node.endPosition());
+	}
 	public static final Ordering<KmerNode> ByStartPosition = new Ordering<KmerNode>() {
 		@Override
 		public int compare(KmerNode left, KmerNode right) {
@@ -47,9 +52,9 @@ public interface KmerNode {
 	/**
 	 * Ordering usable as a graph node key (since duplicate nodes should not occur)  
 	 */
-	public static final Ordering<KmerPathNode> ByEndStartKmerReference = new Ordering<KmerPathNode>() {
+	public static final Ordering<KmerNode> ByEndStartKmerReference = new Ordering<KmerNode>() {
 		@Override
-		public int compare(KmerPathNode left, KmerPathNode right) {
+		public int compare(KmerNode left, KmerNode right) {
 			return ComparisonChain.start()
 					.compare(left.endPosition(), right.endPosition())
 					.compare(left.startPosition(), right.startPosition())

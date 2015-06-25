@@ -29,6 +29,7 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode {
 	public KmerPathNode node() { return n; }
 	public int firstKmerStartPosition() { return start; }
 	public int firstKmerEndPosition() { return end; }
+	public int startPosition() { return firstKmerStartPosition() + length() - 1; }
 	public int endPosition() { return firstKmerEndPosition() + length() - 1; }
 	public int width() { return end - start + 1; }
 	@Override
