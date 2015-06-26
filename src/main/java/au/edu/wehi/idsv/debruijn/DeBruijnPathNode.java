@@ -24,7 +24,7 @@ public class DeBruijnPathNode<T> extends PathNode<T> implements DeBruijnSequence
 	}
 	public DeBruijnPathNode(Iterable<? extends DeBruijnPathNode<T>> nodes, int startOffset, int length, DeBruijnGraph<T> graph) {
 		super(nodes, startOffset, length, graph);
-		addRefCounts(getPath());
+		addRefCounts(allNodes());
 	}
 	@Override
 	protected void merge(int offset, PathNode<T> pn, int pnOffset, WeightedDirectedGraph<T> graph) {

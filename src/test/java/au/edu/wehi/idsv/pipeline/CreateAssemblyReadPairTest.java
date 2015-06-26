@@ -30,7 +30,7 @@ import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.MockReadEvidenceAssembler;
 import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.ReadEvidenceAssembler;
+import au.edu.wehi.idsv.ReadEvidenceAssemblyIterator;
 import au.edu.wehi.idsv.RealignedSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.RemoteEvidence;
 import au.edu.wehi.idsv.SAMEvidenceSource;
@@ -134,11 +134,10 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 		private List<List<SAMRecordAssemblyEvidence>> assemblies;
 		int calls = 0;
 		@Override
-		protected ReadEvidenceAssembler getAssembler() {
+		protected Iterator<SAMRecordAssemblyEvidence> getAssembler(Iterator<DirectedEvidence> it) {
 			// works for one call if not per chr, otherwise returns results for chr in order
-			return new MockReadEvidenceAssembler(assemblies.get(calls++));
+			return new ReadEvidenceAssemblyIterator(new MockReadEvidenceAssembler(assemblies.get(calls++)), it);
 		}
-		
 	}
 	private void writeRealign(ProcessingContext pc, File base) {
 		realignCount = 0;

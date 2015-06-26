@@ -89,6 +89,10 @@ class PathGraphTraverse<T, PN extends DeBruijnPathNode<T>> {
 		public final MemoizedNode<PN> prev;
 		public final int score;
 		public final int length;
+		@Override
+		public String toString() {
+			return String.format("l=%d s=%d %s", length, score, node);
+		}
 	}
 	public List<PN> traverse(final Iterable<PN> startingNodes) {
 		return traverse(startingNodes, null);
@@ -238,7 +242,7 @@ class PathGraphTraverse<T, PN extends DeBruijnPathNode<T>> {
 			assert(bestPath.get(n.node.getNodeId()).score >= n.score);
 		}
 		for (MemoizedNode<PN> n : bestPath.values()) {
-			assert(bestPath.get(n.node.getNodeId()) != n);
+			assert(bestPath.get(n.node.getNodeId()) == n);
 		}
 		return true;
 	}

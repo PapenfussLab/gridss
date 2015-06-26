@@ -658,7 +658,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	}
 	private static boolean sanityCheckEdges(KmerPathNode node, boolean checkNeighbours) {
 		if (node.nextList != null) {
-			for (KmerPathNode next : node.nextList) {
+			for (KmerPathNode next : node.next()) {
 				assert(IntervalUtil.overlapsClosed(node.startPosition() + 1, node.endPosition() + 1, next.startPosition(0), next.endPosition(0)));
 				assert(next.isValid());
 				assert(next.prev().contains(node));
@@ -671,7 +671,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 			}
 		}
 		if (node.prevList != null) {
-			for (KmerPathNode prev : node.prevList) {
+			for (KmerPathNode prev : node.prev()) {
 				assert(IntervalUtil.overlapsClosed(node.startPosition(0) - 1, node.endPosition(0) - 1, prev.startPosition(), prev.endPosition()));
 				assert(prev.isValid());
 				assert(prev.next().contains(node));
