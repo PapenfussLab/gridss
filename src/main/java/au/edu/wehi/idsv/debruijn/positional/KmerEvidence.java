@@ -117,6 +117,9 @@ public class KmerEvidence extends PackedKmerList {
 			startPosition = local.getUnclippedEnd() - maxFragSize + 1;
 			endPosition = local.getUnclippedEnd() - minFragSize + 1;
 		}
+		if (k > remote.getReadLength()) {
+			return null;
+		}
 		return new KmerEvidence(pair.getEvidenceID(), startPosition, endPosition, k, null, remote.getReadBases(), remote.getBaseQualities(), reverseComp, reverseComp, pair.getBreakendSummary(), pair.getBreakendQual());
 	}
 	public static KmerEvidence create(int k, SoftClipEvidence softClipEvidence, boolean trimOtherSoftClip) {
@@ -155,9 +158,16 @@ public class KmerEvidence extends PackedKmerList {
 			trimmed.setReadBases(Arrays.copyOfRange(trimmed.getReadBases(), trimStart, trimmed.getReadLength() - trimEnd));
 			read = trimmed;
 		}
+		if (k > read.getReadLength()) {
+			return null;
+		}
 		// TODO: handle indels
 		BitSet anchor = new BitSet(read.getReadLength());
-		anchor.set(startClipLength, read.getReadLength() - (k - 1) - endClipLength, true);
+		int startAnchorIndex = startClipLength;
+		int endAnchorIndex = read.getReadLength() - (k - 1) - endClipLength;
+		if (endAnchorIndex > startAnchorIndex) {
+			anchor.set(startClipLength, read.getReadLength() - (k - 1) - endClipLength, true);
+		}
 		int startPosition;
 		if (softClipEvidence.getBreakendSummary().direction == BreakendDirection.Forward) {
 			startPosition = read.getAlignmentEnd() + endClipLength - read.getReadLength() + 1;

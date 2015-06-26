@@ -61,10 +61,10 @@ public class KmerPathNodeTest extends TestHelper {
 		ImmutableKmerNode n2 = new ImmutableKmerNode(1, 2, 3, false, 3);
 		ImmutableKmerNode n3 = new ImmutableKmerNode(2, 3, 4, false, 4);
 		ImmutableKmerNode n4 = new ImmutableKmerNode(3, 4, 5, false, 6);
-		ImmutableKmerNode n5 = new ImmutableKmerNode(0, 1, 2, false, 2);
+		ImmutableKmerNode n5 = new ImmutableKmerNode(0, 1, 10, false, 2);
 		
 		KmerPathNode pn0 = new KmerPathNode(n0);
-		KmerPathNode pn0a = new KmerPathNode(new ImmutableKmerNode(-1, 2, 2, false, 1));
+		KmerPathNode pn0a = new KmerPathNode(new ImmutableKmerNode(4, -1, 2, false, 1));
 		KmerPathNode pn5 = new KmerPathNode(n5);
 		
 		KmerPathNode pn1 = new KmerPathNode(n1);
@@ -213,8 +213,8 @@ public class KmerPathNodeTest extends TestHelper {
 		KmerPathNode pn = KPN(new long[] { 0, 1, 2, 3, 4 }, 1, 10, true, new int[] { 1, 2, 3, 4, 5 });
 		KmerPathNode.addEdge(KPN(new long[] { 0, 1, 2, 3, 4, 5, 6, 7 }, 1, 1, true), pn);
 		KmerPathNode.addEdge(KPN(new long[] { 0, 1, 2, 3, 4, 5, 6, 7 }, 2, 2, true), pn);
-		KmerPathNode.addEdge(pn, KPN(new long[] { 0, 1, 2, 3, 4, 5, 6, 7 }, 1, 1, false));
-		KmerPathNode.addEdge(pn, KPN(new long[] { 0, 1, 2, 3, 4, 5, 6, 7 }, 2, 2, false));
+		KmerPathNode.addEdge(pn, KPN(new long[] { 0, 1, 2, 3, 4, 5, 6, 7 }, 6, 6, false));
+		KmerPathNode.addEdge(pn, KPN(new long[] { 0, 1, 2, 3, 4, 5, 6, 7 }, 7, 7, false));
 		KmerPathNode split = pn.splitAtLength(3);
 		
 		assertIs(split, new long[] { 0, 1, 2 }, 1, 10, true, new int[] { 1, 2, 3 });
@@ -308,7 +308,7 @@ public class KmerPathNodeTest extends TestHelper {
 	@Test
 	public void removeWeight_full_remove_should_remove_node() {
 		KmerPathNode prev1 = KPN(new long[] { 0 }, 0, 9, true);
-		KmerPathNode next1 = KPN(new long[] { 0 }, 3, 3, true);
+		KmerPathNode next1 = KPN(new long[] { 0 }, 4, 4, true);
 		KmerPathNode pn = KPN(new long[] { 0, 1, 2 }, 1, 10, true, new int[] { 1, 2, 3 });
 		KmerPathNode.addEdge(prev1, pn);
 		KmerPathNode.addEdge(pn, next1);
@@ -326,7 +326,7 @@ public class KmerPathNodeTest extends TestHelper {
 	@Test
 	public void removeWeight_should_split_kmer_by_position() {
 		KmerPathNode prev1 = KPN(new long[] { 0 }, 0, 9, true);
-		KmerPathNode next1 = KPN(new long[] { 0 }, 3, 3, true);
+		KmerPathNode next1 = KPN(new long[] { 0 }, 4, 4, true);
 		KmerPathNode pn = KPN(new long[] { 0, 1, 2 }, 1, 10, true, new int[] { 1, 2, 3 });
 		KmerPathNode.addEdge(prev1, pn);
 		KmerPathNode.addEdge(pn, next1);
@@ -343,7 +343,7 @@ public class KmerPathNodeTest extends TestHelper {
 	@Test
 	public void removeWeight_should_split_node_if_zero_weight() {
 		KmerPathNode prev1 = KPN(new long[] { 0 }, 0, 9, true);
-		KmerPathNode next1 = KPN(new long[] { 0 }, 3, 3, true);
+		KmerPathNode next1 = KPN(new long[] { 0 }, 4, 4, true);
 		KmerPathNode pn = KPN(new long[] { 0, 1, 2 }, 1, 10, true, new int[] { 1, 2, 3 });
 		KmerPathNode.addEdge(prev1, pn);
 		KmerPathNode.addEdge(pn, next1);
@@ -360,7 +360,7 @@ public class KmerPathNodeTest extends TestHelper {
 	@Test
 	public void removeWeight_should_split_nodes_based_on_aggregate_weight() {
 		KmerPathNode prev1 = KPN(new long[] { 0 }, 0, 9, true);
-		KmerPathNode next1 = KPN(new long[] { 0 }, 3, 3, true);
+		KmerPathNode next1 = KPN(new long[] { 0 }, 4, 4, true);
 		KmerPathNode pn = KPN(new long[] { 0, 1, 2 }, 1, 10, true, new int[] { 1, 5, 3 });
 		KmerPathNode.addEdge(prev1, pn);
 		KmerPathNode.addEdge(pn, next1);

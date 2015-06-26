@@ -659,8 +659,8 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	private static boolean sanityCheckEdges(KmerPathNode node, boolean checkNeighbours) {
 		if (node.nextList != null) {
 			for (KmerPathNode next : node.next()) {
-				assert(IntervalUtil.overlapsClosed(node.startPosition() + 1, node.endPosition() + 1, next.startPosition(0), next.endPosition(0)));
 				assert(next.isValid());
+				assert(IntervalUtil.overlapsClosed(node.startPosition() + 1, node.endPosition() + 1, next.startPosition(0), next.endPosition(0)));
 				assert(next.prev().contains(node));
 				if (checkNeighbours) {
 					assert(sanityCheckEdges(next, false));
@@ -672,8 +672,8 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		}
 		if (node.prevList != null) {
 			for (KmerPathNode prev : node.prev()) {
-				assert(IntervalUtil.overlapsClosed(node.startPosition(0) - 1, node.endPosition(0) - 1, prev.startPosition(), prev.endPosition()));
 				assert(prev.isValid());
+				assert(IntervalUtil.overlapsClosed(node.startPosition(0) - 1, node.endPosition(0) - 1, prev.startPosition(), prev.endPosition()));
 				assert(prev.next().contains(node));
 				if (checkNeighbours) {
 					assert(sanityCheckEdges(prev, false));
@@ -810,7 +810,12 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	 * @return
 	 */
 	public static ArrayDeque<KmerPathNode> removeWeight(KmerPathNode node, List<? extends List<? extends KmerNode>> toRemove) {
-		int preWeight = node.totalWeight;
+		int preWeight = 0;
+		int deltaWeight = 0;
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			preWeight = node.weight() * node.width();
+			deltaWeight = toRemove.stream().filter(l -> l != null).flatMapToInt(l -> l.stream().mapToInt(n -> n.weight() * n.width())).sum();
+		}
 		ArrayDeque<KmerPathNode> replacement = new ArrayDeque<KmerPathNode>();
 		while (!toRemove.isEmpty()) {
 			int index = toRemove.size() - 1;
@@ -826,8 +831,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		}
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
 			replacement.stream().forEach(n -> n.sanityCheck());
-			int postWeight = replacement.stream().mapToInt(n -> n.weight()).sum();
-			int deltaWeight = toRemove.stream().filter(l -> l != null).flatMapToInt(l -> l.stream().mapToInt(n -> n.weight())).sum();
+			int postWeight = replacement.stream().mapToInt(n -> n.weight() * n.width()).sum();
 			assert(postWeight + deltaWeight == preWeight);
 		}
 		return replacement;

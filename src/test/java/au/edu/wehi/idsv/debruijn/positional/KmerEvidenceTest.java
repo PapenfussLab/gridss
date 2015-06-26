@@ -2,6 +2,8 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import static org.junit.Assert.*;
 
+import java.util.stream.IntStream;
+
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -128,6 +130,21 @@ public class KmerEvidenceTest extends TestHelper {
 	public void softclip_should_trim_soft_clip_on_other_side() {
 		assertEquals(4, KmerEvidence.create(2, SCE(FWD, Read(0, 1, "10H1S2M3S")), true).length());
 		assertEquals(2, KmerEvidence.create(2, SCE(BWD, Read(0, 1, "10H1S2M3S")), true).length());
+		assertEquals(7, KmerEvidence.create(2, SCE(FWD, Read(0, 1, "5M3S")), true).length());
+		assertEquals(7, KmerEvidence.create(2, SCE(BWD, Read(0, 1, "3S5M")), true).length());
+		
+	}
+	@Test
+	public void should_return_null_if_kmer_longer_than_read() {
+		assertNotNull(KmerEvidence.create(12, SCE(FWD, withSequence("ACGTGGTCGACC", Read(0, 5, "6M6S"))), true));
+		assertNull(KmerEvidence.create(13, SCE(FWD, withSequence("ACGTGGTCGACC", Read(0, 5, "6M6S"))), true));
+		assertNotNull(KmerEvidence.create(11, NRRP(withSequence("ACGTTATACCG", DP(0, 21, "1S9M1S", false, 1, 1, "11M", false)))));
+		assertNull(KmerEvidence.create(12, NRRP(withSequence("ACGTTATACCG", DP(0, 21, "1S9M1S", false, 1, 1, "11M", false)))));
+	}
+	@Test
+	public void short_sc_anchor_should_be_considered_unanchored_evidence() {
+		KmerEvidence e = KmerEvidence.create(3, SCE(FWD, withSequence("ACGTGGTCGACC", Read(0, 5, "2M10S"))), true);
+		assertTrue(IntStream.range(0, e.length()).allMatch(i -> !e.isAnchored(i)));
 	}
 	@Test
 	public void should_exclude_ambiguous_kmers() {
