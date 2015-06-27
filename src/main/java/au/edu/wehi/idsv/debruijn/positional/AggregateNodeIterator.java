@@ -59,6 +59,7 @@ public class AggregateNodeIterator implements Iterator<KmerNode> {
 	private void process(int position) {
 		while (underlying.hasNext() && underlying.peek().startPosition() <= position) {
 			KmerNode n = underlying.next();
+			assert(position == Integer.MAX_VALUE || n.startPosition() == position); // input should be sorted by start position
 			long kmer = n.kmer();
 			KmerNodeAggregator ag = byKmer.get(kmer);
 			if (ag == null) {

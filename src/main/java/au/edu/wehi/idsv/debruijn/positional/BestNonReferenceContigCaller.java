@@ -8,6 +8,8 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeRangeSet;
 import com.google.common.primitives.Ints;
 
 
@@ -38,7 +40,7 @@ public class BestNonReferenceContigCaller {
 	 * for starting node intervals.
 	 */
 	private final PriorityQueue<KmerPathNode> unprocessedStartNodes = new PriorityQueue<KmerPathNode>(1024, KmerPathNode.ByEndPosition);
-	private final PriorityQueue<Contig> called = new PriorityQueue<Contig>(1024, Contig.ByScore.reverse());
+	private final PriorityQueue<Contig> called = new PriorityQueue<Contig>(1024, Contig.ByScoreDesc);
 	private final int maxEvidenceWidth;
 	private int inputPosition;
 	public BestNonReferenceContigCaller(
@@ -109,7 +111,7 @@ public class BestNonReferenceContigCaller {
 				else nonReferenceCount++;
 				active.add(n);
 			}
-			while (!active.isEmpty() && active.peek().endPosition() - 1 < start) {
+			while (!active.isEmpty() && active.peek().endPosition() + 1 < start) {
 				KmerPathNode n = active.poll();
 				if (n.isReference()) referenceCount--;
 				else nonReferenceCount--;
@@ -133,16 +135,25 @@ public class BestNonReferenceContigCaller {
 	}
 	private void visit(TraversalNode ms) {
 		assert(ms.node.endPosition() < inputPosition); // successors must be fully defined
+		RangeSet<Integer> terminalAnchor = null;
 		for (KmerPathSubnode sn : ms.node.next()) {
 			if (!sn.node().isReference()) {
 				frontier.memoize(new TraversalNode(ms, sn));
 			} else {
-				// terminal node
-				// TODO: handle overlapping/multiple
-				called.add(new Contig(new TraversalNode(ms, sn.firstKmerStartPosition(), sn.firstKmerEndPosition()), true));
+				if (terminalAnchor == null) {
+					terminalAnchor = TreeRangeSet.create();
+				}
+				terminalAnchor.add(Range.closed(ms.node.firstKmerStartPosition(), ms.node.firstKmerEndPosition()));
 			}
 		}
+		if (terminalAnchor != null) {
+			// path has reference successor = path is anchored to the reference here
+			for (Range<Integer> rs : terminalAnchor.asRanges()) {
+				called.add(new Contig(new TraversalNode(ms, rs.lowerEndpoint(), rs.upperEndpoint()), true));
+			}	
+		}
 		for (Range<Integer> rs : ms.node.nextPathRangesOfDegree(0).asRanges()) {
+			// path has no successors = end of path
 			called.add(new Contig(new TraversalNode(ms, rs.lowerEndpoint(), rs.upperEndpoint()), false));
 		}
 	}
@@ -170,10 +181,19 @@ public class BestNonReferenceContigCaller {
 			}
 			return contigPath;
 		}
+		@Override
+		public String toString() {
+			return String.format("Path Score %d, %s", score, node);
+		}
 		public static final Ordering<Contig> ByScore = new Ordering<Contig>() {
 			@Override
 			public int compare(Contig left, Contig right) {
 				return Ints.compare(left.score, right.score);
+			}};
+		public static final Ordering<Contig> ByScoreDesc = new Ordering<Contig>() {
+			@Override
+			public int compare(Contig left, Contig right) {
+				return Ints.compare(right.score, left.score);
 			}};
 	}
 	public ArrayDeque<KmerPathSubnode> bestContig() {
@@ -184,6 +204,7 @@ public class BestNonReferenceContigCaller {
 		if (!underlying.hasNext()) {
 			// final advance to end of input
 			advance();
+			assert(frontier.peekFrontier() == null);
 		}
 		Contig best = called.poll();
 		if (best == null) return null;

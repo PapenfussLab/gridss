@@ -1,21 +1,52 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Test;
+
+import au.edu.wehi.idsv.DiscordantReadPair;
+import au.edu.wehi.idsv.SoftClipEvidence;
+import au.edu.wehi.idsv.TestHelper;
+import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
+import au.edu.wehi.idsv.util.IntervalUtil;
 
 import com.google.common.collect.Lists;
 
-import au.edu.wehi.idsv.TestHelper;
-import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
-
 
 public class PathNodeIteratorTest extends TestHelper {
+	/**
+	 * Checks that all edges are included in the given graph
+	 * @param list
+	 * @param k
+	 */
+	public static void assertCompleteGraph(List<KmerPathNode> list, final int k) {
+		for (KmerPathNode pn : list) {
+			long[] nextKmers = KmerEncodingHelper.nextStates(k, pn.kmer());
+			List<KmerPathNode> nextList = list.stream()
+					.filter(n -> ArrayUtils.contains(nextKmers, n.kmer(0)) && IntervalUtil.overlapsClosed(n.startPosition(0), n.endPosition(0), pn.startPosition() + 1, pn.endPosition() + 1))
+					.collect(Collectors.toList());
+			assertEquals(nextList.size(), pn.next().size());
+			assertTrue(KmerPathNode.ByFirstKmerStartPosition.isOrdered(pn.next()));
+			nextList.stream().forEach(n -> assertTrue(pn.next().contains(n)));
+			
+			long[] prevKmers = KmerEncodingHelper.prevStates(k, pn.kmer(0));
+			List<KmerPathNode> prevList = list.stream()
+					.filter(n -> ArrayUtils.contains(prevKmers, n.kmer()) && IntervalUtil.overlapsClosed(n.startPosition(), n.endPosition(), pn.startPosition(0) - 1, pn.endPosition(0) - 1))
+					.collect(Collectors.toList());
+			assertEquals(prevList.size(), pn.prev().size());
+			assertTrue(KmerPathNode.ByStartPosition.isOrdered(pn.prev()));
+			prevList.stream().forEach(n -> assertTrue(pn.prev().contains(n)));
+		}
+	}
 	private void assertContains(List<KmerPathNode> list, int k, String baseSequence, int firstStart, int firstEnd, boolean reference, int weight) {
 		for (KmerPathNode node : list) {
 			if (matches(node, k, baseSequence, firstStart, firstEnd, reference, weight)) {
@@ -68,7 +99,7 @@ public class PathNodeIteratorTest extends TestHelper {
 		in.add(new ImmutableKmerNode(K("GAAA"), 1, 2, true, 1));
 		in.add(new ImmutableKmerNode(K("AAAT"), 2, 3, true, 1));
 		List<KmerPathNode> out = Lists.newArrayList(new PathNodeIterator(in.iterator(), 10, 10, 4));
-		
+		assertCompleteGraph(out, 4);
 		assertEquals(1, out.size());
 		assertContains(out, 4, "GAAAT", 1, 2, true, 2);
 		assertSameNodes(in, out);
@@ -77,6 +108,7 @@ public class PathNodeIteratorTest extends TestHelper {
 		List<ImmutableKmerNode> list = Lists.newArrayList(in);
 		Collections.sort(list, KmerNode.ByStartPosition);
 		List<KmerPathNode> out = Lists.newArrayList(new PathNodeIterator(list.iterator(), 10, 10, 4));
+		assertCompleteGraph(out, 4);
 		assertEquals(expected, out.size());
 		assertSameNodes(list, out);
 	}
@@ -118,6 +150,7 @@ public class PathNodeIteratorTest extends TestHelper {
 		assertContains(out, 4, "AAAC", 2, 2, true, 1);
 		assertContains(out, 4, "AAAG", 2, 2, true, 1);
 		assertContains(out, 4, "AAAT", 2, 2, true, 1);
+		assertCompleteGraph(out, 4);
 	}
 	@Test
 	public void should_concatenate_to_path() {
@@ -129,6 +162,7 @@ public class PathNodeIteratorTest extends TestHelper {
 		in.add(new ImmutableKmerNode(K("CTTG"), 5, 7, true, 5));
 		in.add(new ImmutableKmerNode(K("TTGG"), 6, 8, true, 6));
 		List<KmerPathNode> out = Lists.newArrayList(new PathNodeIterator(in.iterator(), 10, 10, 4));
+		assertCompleteGraph(out, 4);
 		assertEquals(1, out.size());
 		assertContains(out, 4, "TAAACTTGG", 1, 3, true, 1+2+3+4+5+6);
 	}
@@ -142,6 +176,7 @@ public class PathNodeIteratorTest extends TestHelper {
 		in.add(new ImmutableKmerNode(K("CTTG"), 5, 7, true, 5));
 		in.add(new ImmutableKmerNode(K("TTGG"), 6, 8, true, 6));
 		List<KmerPathNode> out = Lists.newArrayList(new PathNodeIterator(in.iterator(), 10, 3, 4));
+		assertCompleteGraph(out, 4);
 		assertEquals(2, out.size());
 		assertContains(out, 4, "TAAACT", 1, 3, true, 1+2+3);
 		assertContains(out, 4, "ACTTGG", 4, 6, true, 4+5+6);
@@ -152,6 +187,7 @@ public class PathNodeIteratorTest extends TestHelper {
 		in.add(new ImmutableKmerNode(K("TAAA"), 1, 3, true, 1));
 		in.add(new ImmutableKmerNode(K("AAAC"), 2, 4, false, 2));
 		List<KmerPathNode> out = Lists.newArrayList(new PathNodeIterator(in.iterator(), 10, 3, 4));
+		assertCompleteGraph(out, 4);
 		assertEquals(2, out.size());
 	}
 	@Test
@@ -170,9 +206,50 @@ public class PathNodeIteratorTest extends TestHelper {
 							assertEquals(tileLength, pn.length());
 							assertEquals(tileWidth, pn.width());
 						}
+						assertCompleteGraph(result, k);
 					}
 				}
 			}
 		}
+	}
+	@Test
+	public void link_adjacent() { 
+		List<ImmutableKmerNode> in = new ArrayList<ImmutableKmerNode>();
+		in.add(new ImmutableKmerNode(K("TAAA"), 5, 5, false, 1));
+		in.add(new ImmutableKmerNode(K("AAAC"), 6, 6, false, 2));
+		in.add(new ImmutableKmerNode(K("AACT"), 1, 10, false, 2));
+		in.sort(KmerNode.ByStartPosition);
+		List<KmerPathNode> paths = Lists.newArrayList(new PathNodeIterator(in.iterator(), 301, 100, 4));
+		assertCompleteGraph(paths, 4);
+	}
+	@Test
+	public void should_assemble_adjacent() {
+		SoftClipEvidence sc = SCE(FWD, withSequence("GTGGTCGACC", Read(0, 50, "6M6S")));
+		DiscordantReadPair rp = (DiscordantReadPair)NRRP(SES(10, 200), withSequence("GACCT", DP(0, 25, "5M", true, 1, 1, "5M", false)));
+		List<KmerPathNode> result = asCheckedKPN(5, 1000, 1000, 1000, sc, rp);
+		assertCompleteGraph(result, 5);
+		assertEquals(3, result.size());
+		assertEquals(2, result.stream().mapToInt(n -> n.next().size()).sum());
+		assertEquals(2, result.stream().mapToInt(n -> n.prev().size()).sum());
+	}
+	@Test
+	public void should_assemble_adjacent_sc_rp() {
+		SoftClipEvidence sc = SCE(FWD, withSequence("GTGGTCGACC", Read(0, 50, "6M6S")));
+		DiscordantReadPair rp = (DiscordantReadPair)NRRP(SES(10, 200), withSequence("GACCT", DP(0, 25, "5M", true, 1, 1, "5M", false)));
+		List<KmerPathNode> result = asCheckedKPN(5, 1000, 1000, 1000, sc, rp);
+		assertCompleteGraph(result, 5);
+		assertEquals(3, result.size());
+		assertEquals(2, result.stream().mapToInt(n -> n.next().size()).sum());
+		assertEquals(2, result.stream().mapToInt(n -> n.prev().size()).sum());
+	}
+	@Test
+	public void should_overlapping_adjacent_sc_rp() {
+		SoftClipEvidence sc = SCE(FWD, withSequence("ACGTGGTCGACC", Read(0, 50, "6M6S")));
+		DiscordantReadPair rp = (DiscordantReadPair)NRRP(SES(10, 200), withSequence("TCGACCTCCGGAA", DP(0, 25, "10M", true, 1, 1, "10M", false)));
+		List<KmerPathNode> result = asCheckedKPN(5, 1000, 1000, 1000, sc, rp);
+		assertCompleteGraph(result, 5);
+		assertEquals(5, result.size());
+		assertEquals(4, result.stream().mapToInt(n -> n.next().size()).sum());
+		assertEquals(4, result.stream().mapToInt(n -> n.prev().size()).sum());
 	}
 }

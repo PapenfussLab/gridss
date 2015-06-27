@@ -7,6 +7,7 @@ import java.util.List;
 
 import org.junit.Test;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
@@ -162,5 +163,12 @@ public class KmerPathSubnodeTest extends TestHelper {
 		expected.add(Range.closed(3, 4));
 		expected.add(Range.closed(7, 10));
 		assertEquals(expected, sn.nextPathRangesOfDegree(0));
+	}
+	@Test
+	public void should_traverse_simple_sc() { 
+		List<KmerPathNode> paths = Lists.newArrayList(asKPN(4, 100, 100, 100, SCE(FWD, withSequence("ACGTGGTCGACC", Read(0, 5, "6M6S")))));
+		assertEquals(2, paths.size());
+		assertEquals(1, new KmerPathSubnode(paths.get(0)).next().size());
+		assertEquals(1, new KmerPathSubnode(paths.get(1)).prev().size());
 	}
 }

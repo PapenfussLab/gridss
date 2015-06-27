@@ -178,6 +178,10 @@ public class KmerEvidence extends PackedKmerList {
 				softClipEvidence.getBreakendSummary(), softClipEvidence.getBreakendQual());
 	}
 	@Override
+	public String toString() {
+		return evidenceId();
+	}
+	@Override
 	public int hashCode() {
 		return id.hashCode();
 	}

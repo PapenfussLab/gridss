@@ -1,5 +1,8 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
+
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 
 /**
@@ -63,5 +66,24 @@ public class ImmutableKmerNode implements KmerNode {
 		if (weight != other.weight())
 			return false;
 		return true;
+	}
+	/**
+	 * Makes a copy of the given path node
+	 * @param node
+	 * @return
+	 */
+	public static Stream<ImmutableKmerNode> copyPath(KmerPathNode node) {
+		return IntStream.range(0, node.length())
+				.mapToObj(i -> new ImmutableKmerNode(node.kmer(i), node.startPosition(i), node.endPosition(i), node.isReference(), node.weight(i)));
+	}
+	/**
+	 * Splits the given node into each individual position
+	 * @param node
+	 * @return
+	 */
+	public static Stream<ImmutableKmerNode> fragment(KmerNode node) {
+		if (node instanceof KmerPathNode) throw new IllegalArgumentException("copyPath() should be called before fragment()");
+		return IntStream.range(node.startPosition(), node.endPosition() + 1)
+				.mapToObj(p -> new ImmutableKmerNode(node.kmer(), p, p, node.isReference(), node.weight()));
 	}
 }

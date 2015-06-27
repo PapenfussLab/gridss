@@ -33,6 +33,7 @@ public class SupportNodeIterator implements Iterator<KmerSupportNode> {
 	private int inputPosition = Integer.MIN_VALUE;
 	private int firstReferenceIndex;
 	private int lastPosition = Integer.MIN_VALUE;
+	private DirectedEvidence lastEvidence = null;
 	public SupportNodeIterator(int k, Iterator<DirectedEvidence> it, int maxReadLength) {
 		this.underlying = Iterators.peekingIterator(it);
 		this.k = k;
@@ -43,6 +44,9 @@ public class SupportNodeIterator implements Iterator<KmerSupportNode> {
 	}
 	private void process(DirectedEvidence de) {
 		assert(de.getBreakendSummary().referenceIndex == firstReferenceIndex);
+		assert(lastEvidence == null || DirectedEvidence.ByStartEnd.compare(lastEvidence, de) <= 0);
+		lastEvidence = de;
+		
 		KmerEvidence e;
 		if (de instanceof SoftClipEvidence) {
 			e = KmerEvidence.create(k, (SoftClipEvidence)de, true);
@@ -68,7 +72,7 @@ public class SupportNodeIterator implements Iterator<KmerSupportNode> {
 		ensureBuffer();
 		KmerSupportNode node = buffer.poll();
 		assert(node.startPosition() >= lastPosition);
-		lastPosition = node.startPosition();
+		lastPosition = node.startPosition();		
 		return node;
 	}
 	private void ensureBuffer() {

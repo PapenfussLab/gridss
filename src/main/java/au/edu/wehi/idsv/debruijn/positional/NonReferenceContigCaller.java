@@ -19,6 +19,7 @@ import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.AssemblyFactory;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
+import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.Models;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
@@ -37,6 +38,11 @@ import com.google.common.collect.Iterators;
  */
 public class NonReferenceContigCaller extends AbstractIterator<SAMRecordAssemblyEvidence> {
 	private Long2ObjectMap<Collection<KmerPathNodeKmerNode>> graphByKmerNode = new Long2ObjectOpenHashMap<Collection<KmerPathNodeKmerNode>>();
+	/**
+	 * Weights to remove from each kmer path. removeWeight() relies on the following properties of the iterator:
+	 * - KmerPathNodes are adjacent, and in ascending order of kmer offset
+	 * - traversal does not invoke comparator
+	 */ 
 	private Object2ObjectRBTreeMap<KmerPathNodeKmerNode, List<KmerNode>> weightToRemove = new Object2ObjectRBTreeMap<KmerPathNodeKmerNode, List<KmerNode>>(KmerPathNodeKmerNode.ByKmerPathNodeOffset);
 	private SortedSet<KmerPathNode> graphByPosition = new TreeSet<KmerPathNode>(KmerPathNode.ByStartEndPositionKmerReferenceWeight);
 	private final EvidenceTracker evidenceTracker;
@@ -70,14 +76,18 @@ public class NonReferenceContigCaller extends AbstractIterator<SAMRecordAssembly
 		return callContig(contig);
 	}
 	private SAMRecordAssemblyEvidence callContig(ArrayDeque<KmerPathSubnode> contig) {
-		ArrayDeque<KmerPathSubnode> startingAnchor = new KmerPathNodePath(contig.getFirst(), false, maxAnchorLength).headNode().asSubnodes();
+		KmerPathNodePath startAnchorPath = new KmerPathNodePath(contig.getFirst(), false, maxAnchorLength);
+		startAnchorPath.greedyTraverse(true, false);
+		ArrayDeque<KmerPathSubnode> startingAnchor = startAnchorPath.headNode().asSubnodes();
 		startingAnchor.remove(contig.getFirst());
 		while (wrapper.hasNext() && contig.getLast().endPosition() + maxAnchorLength > wrapper.lastPosition()) {
 			// make sure we have enough of the graph loaded that when
 			// we traverse forward, our anchor sequence is fully defined
 			wrapper.next();
 		}
-		ArrayDeque<KmerPathSubnode> endingAnchor = new KmerPathNodePath(contig.getLast(), true, maxAnchorLength).headNode().asSubnodes();
+		KmerPathNodePath endAnchorPath = new KmerPathNodePath(contig.getLast(), true, maxAnchorLength);
+		endAnchorPath.greedyTraverse(true, false);
+		ArrayDeque<KmerPathSubnode> endingAnchor = endAnchorPath.headNode().asSubnodes();
 		endingAnchor.remove(contig.getLast());
 		
 		List<KmerPathSubnode> fullContig = new ArrayList<KmerPathSubnode>(contig.size() + startingAnchor.size() + endingAnchor.size());
@@ -90,36 +100,39 @@ public class NonReferenceContigCaller extends AbstractIterator<SAMRecordAssembly
 		assert(quals.length == bases.length);
 		// need to rehydrate evidence
 		Set<KmerEvidence> evidence = evidenceTracker.untrack(contig);
-		removeFromGraph(evidence);
 		List<String> evidenceIds = evidence.stream().map(e -> e.evidenceId()).collect(Collectors.toList());
+		SAMRecordAssemblyEvidence assembledContig;
 		if (startingAnchor.size() == 0 && endingAnchor.size() == 0) {
 			// unanchored
 			BreakendSummary be = Models.calculateBreakend(aes.getContext().getLinear(),
 					evidence.stream().map(e -> e.breakend()).collect(Collectors.toList()),
 					evidence.stream().map(e -> ScalingHelper.toScaledWeight(e.evidenceQuality())).collect(Collectors.toList()));
-			return AssemblyFactory.createUnanchoredBreakend(aes.getContext(), aes,
+			assembledContig = AssemblyFactory.createUnanchoredBreakend(aes.getContext(), aes,
 					be,
 					evidenceIds,
 					bases, quals, new int[] { 0, 0 });
 		} else if (startingAnchor.size() == 0) {
 			// end anchored
-			return AssemblyFactory.createAnchoredBreakend(aes.getContext(), aes,
+			assembledContig = AssemblyFactory.createAnchoredBreakend(aes.getContext(), aes,
 					BreakendDirection.Backward, evidenceIds,
 					referenceIndex, endingAnchor.getFirst().firstKmerStartPosition(), endingAnchor.stream().mapToInt(n -> n.length()).sum(),
 					bases, quals, new int[] { 0, 0 });
 		} else if (endingAnchor.size() == 0) {
 			// start anchored
-			return AssemblyFactory.createAnchoredBreakend(aes.getContext(), aes,
+			assembledContig = AssemblyFactory.createAnchoredBreakend(aes.getContext(), aes,
 					BreakendDirection.Forward, evidenceIds,
-					referenceIndex, startingAnchor.getLast().startPosition(), startingAnchor.stream().mapToInt(n -> n.length()).sum(),
+					referenceIndex, startingAnchor.getLast().startPosition() + k - 1, startingAnchor.stream().mapToInt(n -> n.length()).sum(),
 					bases, quals, new int[] { 0, 0 });
 		} else {
 			// left aligned
-			return AssemblyFactory.createAnchoredBreakpoint(aes.getContext(), aes, evidenceIds,
-					referenceIndex, startingAnchor.getLast().startPosition(), startingAnchor.stream().mapToInt(n -> n.length()).sum(),
+			assembledContig = AssemblyFactory.createAnchoredBreakpoint(aes.getContext(), aes, evidenceIds,
+					referenceIndex, startingAnchor.getLast().startPosition() + k - 1, startingAnchor.stream().mapToInt(n -> n.length()).sum(),
 					referenceIndex, endingAnchor.getFirst().firstKmerStartPosition(), endingAnchor.stream().mapToInt(n -> n.length()).sum(),
 					bases, quals, new int[] { 0, 0 });
 		}
+		// remove all evidence contributing to this assembly from the graph
+		removeFromGraph(evidence);
+		return assembledContig;
 		
 	}
 	/**
@@ -130,13 +143,16 @@ public class NonReferenceContigCaller extends AbstractIterator<SAMRecordAssembly
 		for (KmerEvidence e : evidence) {
 			for (int i = 0; i < e.length(); i++) {
 				KmerSupportNode support = e.node(i);
-				assert(support.endPosition() <= wrapper.lastPosition());
 				if (support != null) {
+					assert(support.endPosition() <= wrapper.lastPosition());
 					addToRemovalList(support);
 				}
 			}
 		}
 		removeWeight();
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			assert(sanityCheck());
+		}
 	}
 	/**
 	 * Remove all indicated weight from the graph
@@ -144,6 +160,11 @@ public class NonReferenceContigCaller extends AbstractIterator<SAMRecordAssembly
 	private void removeWeight() {
 		KmerPathNode current = null;
 		List<List<KmerNode>> toRemove = null;
+		// WARNING: this loop is dangerous as we're mutating the 
+		// comparator value of the current node as we traverse the tree
+		// Fortunately, we don't change the tree structure as we traverse
+		// and we immediately clear the entire tree once we've traversed
+		// so we're ok.
 		for (Entry<KmerPathNodeKmerNode, List<KmerNode>> entry : weightToRemove.entrySet()) {
 			KmerPathNodeKmerNode node = entry.getKey();
 			if (node.node() != current) {
@@ -162,6 +183,7 @@ public class NonReferenceContigCaller extends AbstractIterator<SAMRecordAssembly
 	}
 	private void removeWeight(KmerPathNode node, List<List<KmerNode>> toRemove) {
 		if (node == null) return;
+		assert(node.length() >= toRemove.size());
 		// remove from graph
 		removeFromGraph(node);
 		for (KmerPathNode split : KmerPathNode.removeWeight(node, toRemove)) {
@@ -242,5 +264,15 @@ public class NonReferenceContigCaller extends AbstractIterator<SAMRecordAssembly
 			position = node.startPosition(0);
 			return node;
 		}
+	}
+	public boolean sanityCheck() {
+		graphByKmerNode.entrySet().stream().flatMap(e -> e.getValue().stream()).forEach(kn -> { 
+			assert(kn.node().isValid());
+			assert(graphByPosition.contains(kn.node()));
+		});
+		for (KmerPathNode n : graphByPosition) {
+			assert(n.isValid());
+		}
+		return true;
 	}
 }

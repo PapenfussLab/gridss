@@ -19,10 +19,12 @@ public class KmerPathNodeKmerNode implements KmerNode {
 	public KmerPathNodeKmerNode(KmerPathNode node, int offset) {
 		this.node = node;
 		this.offset = offset;
+		assert(offset < node.length());
 	}
 	public KmerPathNodeKmerNode(int alternateKmerOffset, KmerPathNode node) {
 		this.node = node;
 		this.offset = -alternateKmerOffset - 1;
+		assert(offsetOfPrimaryKmer() < node.length());
 	}
 	private int alternateKmerIndex() {
 		return -offset - 1;
@@ -55,6 +57,27 @@ public class KmerPathNodeKmerNode implements KmerNode {
 	public boolean isReference() {
 		return node.isReference();
 	}
+	@Override
+	public String toString() {
+		return String.format("{%d}%s", offset, node);
+	}
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + node.hashCode();
+		result = prime * result + offset;
+		return result;
+	}
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		KmerPathNodeKmerNode other = (KmerPathNodeKmerNode) obj;
+		if (other == null)
+			return false;
+		return offset == other.offset && node == other.node; 
+	}
 	/**
 	 * Order by KmerPathNode, then by offset within the KmerPathNode
 	 */
@@ -62,7 +85,7 @@ public class KmerPathNodeKmerNode implements KmerNode {
 		@Override
 		public int compare(KmerPathNodeKmerNode left, KmerPathNodeKmerNode right) {
 			return ComparisonChain.start()
-					.compare(left, right, KmerNode.ByEndStartKmerReference)
+					.compare(left.node, right.node, KmerNode.ByEndStartKmerReference)
 					.compare(left.offsetOfPrimaryKmer(), right.offsetOfPrimaryKmer())
 					.result();
 		}

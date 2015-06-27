@@ -112,7 +112,11 @@ public class MemoizedTraverse {
 	 * kmer position interval, false if a superior path has been found.
 	 */
 	private boolean isValid(TraversalNode node) {
-		return memoized.contains(node);
+		return node != null && memoized.contains(node);
+	}
+	@Override
+	public String toString() {
+		return String.format("%d nodes memoized, %d in frontier", memoized.size(), frontier.size());
 	}
 	public boolean sanityCheck() {
 		// memoized scores must be unique 

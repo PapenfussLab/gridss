@@ -4,18 +4,17 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.PriorityQueue;
 
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
+import au.edu.wehi.idsv.util.IntervalUtil;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.PeekingIterator;
-import com.google.common.collect.Range;
-import com.google.common.collect.RangeMap;
-import com.google.common.collect.TreeRangeMap;
 
 /**
  * Transforms a start position sorted sequence of non-overlapping KmerAggregateNode to a
@@ -28,7 +27,7 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 	private final int maxSupportWidth;
 	private final int maxPathLength;
 	private final int k;
-	private final Long2ObjectOpenHashMap<RangeMap<Integer, GraphNode>> kmerNodes = new Long2ObjectOpenHashMap<RangeMap<Integer, GraphNode>>();
+	private final Long2ObjectOpenHashMap<List<GraphNode>> kmerNodes = new Long2ObjectOpenHashMap<List<GraphNode>>();
 	private final PriorityQueue<GraphNode> active = new PriorityQueue<GraphNode>(1024, ByGraphNodeStartPosition);
 	private final PriorityQueue<GraphNode> pathNodeConstructed = new PriorityQueue<GraphNode>(1024, ByGraphNodeFirstKmerStartPosition);
 	private int lastProcessPosition = Integer.MIN_VALUE;
@@ -66,7 +65,12 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 	@Override
 	public boolean hasNext() {
 		ensureBuffer();
-		return !pathNodeConstructed.isEmpty();
+		boolean complete = pathNodeConstructed.isEmpty();
+		if (complete) {
+			assert(active.isEmpty());
+			assert(kmerNodes.isEmpty());
+		}
+		return !complete;
 	}
 	@Override
 	public KmerPathNode next() {
@@ -78,10 +82,10 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 	}
 	private void removeFromGraph(GraphNode node) {
 		for (; node != null; node = node.prev) {
-			RangeMap<Integer, GraphNode> existing = kmerNodes.get(node.n.kmer());
+			List<GraphNode> existing = kmerNodes.get(node.n.kmer());
 			assert(existing != null);
-			existing.remove(Range.closed(node.n.startPosition(), node.n.endPosition()));
-			if (existing.asMapOfRanges().isEmpty()) {
+			existing.remove(node);
+			if (existing.isEmpty()) {
 				kmerNodes.remove(node.n.kmer());
 			}
 		}
@@ -89,10 +93,13 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 	private List<GraphNode> nextKmers(long kmer, int start, int end) {
 		List<GraphNode> adj = new ArrayList<GraphNode>(4);
 		for (long kmers : KmerEncodingHelper.nextStates(k, kmer)) {
-			RangeMap<Integer, GraphNode> map = kmerNodes.get(kmers);
-			if (map != null) {
-				map = map.subRangeMap(Range.closed(start + 1, end + 1));
-				adj.addAll(map.asMapOfRanges().values());
+			List<GraphNode> list = kmerNodes.get(kmers);
+			if (list != null) {
+				for (GraphNode n : list) {
+					if (IntervalUtil.overlapsClosed(start + 1, end + 1, n.n.startPosition(), n.n.endPosition())) {
+						adj.add(n);
+					}
+				}
 			}
 		}
 		return adj;
@@ -100,10 +107,13 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 	private List<GraphNode> prevKmers(long kmer, int start, int end) {
 		List<GraphNode> adj = new ArrayList<GraphNode>(4);
 		for (long kmers : KmerEncodingHelper.prevStates(k, kmer)) {
-			RangeMap<Integer, GraphNode> map = kmerNodes.get(kmers);
-			if (map != null) {
-				map = map.subRangeMap(Range.closed(start - 1, end - 1));
-				adj.addAll(map.asMapOfRanges().values());
+			List<GraphNode> list = kmerNodes.get(kmers);
+			if (list != null) {
+				for (GraphNode n : list) {
+					if (IntervalUtil.overlapsClosed(start - 1, end - 1, n.n.startPosition(), n.n.endPosition())) {
+						adj.add(n);
+					}
+				}
 			}
 		}
 		return adj;
@@ -111,6 +121,7 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 	private void ensureBuffer() {
 		while (underlying.hasNext() && (pathNodeConstructed.isEmpty() || !edgesFullyDefined(pathNodeConstructed.peek()))) {
 			KmerNode node = underlying.next();
+			assert(node.startPosition() >= lastProcessPosition); // input should be sorted by start position
 			addAggregateNodeToGraph(node);
 			process(node.startPosition());
 		}
@@ -139,7 +150,7 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 		gn.processed = true;
 		// since active is sorted by start position, we are guaranteed that we have
 		// processed all kmers intervals that start before our current start position
-		// unfortunately, this is not particularly helpful as  unprocessed prev nodes
+		// unfortunately, this is not particularly helpful as unprocessed prev nodes
 		// to this GraphNode could still exist.
 		// For example: AAA [3,5] starts after AAT [1,10] but is a prev node to the subset AAT [4,6]
 		List<GraphNode> prevList = prevKmers(gn.n.kmer(), gn.n.startPosition(), gn.n.endPosition());
@@ -207,17 +218,17 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 		}
 	}
 	private void addAggregateNodeToGraph(KmerNode node) {
-		if (node.endPosition() - node.startPosition() > maxSupportWidth) {
+		if (node.width() > maxSupportWidth) {
 			throw new RuntimeException("Sanity check failure: support width greater than maximum");
 		}
 		GraphNode gn = new GraphNode(node);
 		active.add(gn);
-		RangeMap<Integer, GraphNode> existing = kmerNodes.get(node.kmer());
+		List<GraphNode> existing = kmerNodes.get(node.kmer());
 		if (existing == null) {
-			existing = TreeRangeMap.create();
+			existing = new LinkedList<GraphNode>();
 			kmerNodes.put(node.kmer(), existing);
 		}
-		existing.put(Range.closed(node.startPosition(), node.endPosition()), gn);
+		existing.add(gn);
 	}
 	@Override
 	public void remove() {

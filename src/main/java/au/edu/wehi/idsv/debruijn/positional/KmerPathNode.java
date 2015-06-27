@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 
@@ -9,6 +10,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.stream.IntStream;
 
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNode;
@@ -659,6 +661,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	private static boolean sanityCheckEdges(KmerPathNode node, boolean checkNeighbours) {
 		if (node.nextList != null) {
 			for (KmerPathNode next : node.next()) {
+				assert(next != null);
 				assert(next.isValid());
 				assert(IntervalUtil.overlapsClosed(node.startPosition() + 1, node.endPosition() + 1, next.startPosition(0), next.endPosition(0)));
 				assert(next.prev().contains(node));
@@ -672,6 +675,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		}
 		if (node.prevList != null) {
 			for (KmerPathNode prev : node.prev()) {
+				assert(prev != null);
 				assert(prev.isValid());
 				assert(IntervalUtil.overlapsClosed(node.startPosition(0) - 1, node.endPosition(0) - 1, prev.startPosition(), prev.endPosition()));
 				assert(prev.next().contains(node));
@@ -813,8 +817,15 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		int preWeight = 0;
 		int deltaWeight = 0;
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			final KmerPathNode initalNode = node;
 			preWeight = node.weight() * node.width();
-			deltaWeight = toRemove.stream().filter(l -> l != null).flatMapToInt(l -> l.stream().mapToInt(n -> n.weight() * n.width())).sum();
+			deltaWeight = IntStream.range(0, toRemove.size()).map(i -> {
+				List<? extends KmerNode> list = toRemove.get(i);
+				if (list == null) return 0;
+				int start = initalNode.startPosition(i);
+				int end = initalNode.endPosition(i);
+				return list.stream().mapToInt(n -> n.weight() * IntervalUtil.overlapsWidthClosed(n.startPosition(), n.endPosition(), start, end)).sum();
+			}).sum();
 		}
 		ArrayDeque<KmerPathNode> replacement = new ArrayDeque<KmerPathNode>();
 		while (!toRemove.isEmpty()) {
@@ -945,5 +956,31 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 			return null;
 		}
 		return node;
+	}
+	public static class HashByFirstKmerEndPositionKmer<T extends KmerPathNode> implements Hash.Strategy<T> {
+		@Override
+		public int hashCode(T node) {
+			int result = (int) (node.kmer() ^ (node.kmer() >>> 32));
+			result ^= node.endPosition(0);
+			return result;
+		}
+		@Override
+		public boolean equals(T a, T b) {
+			return a.endPosition(0) == b.endPosition(0)
+					&& a.kmer(0) == b.kmer(0);
+		}
+	}
+	public static class HashByFirstKmerStartPositionKmer<T extends KmerPathNode> implements Hash.Strategy<T> {
+		@Override
+		public int hashCode(T node) {
+			int result = (int) (node.kmer() ^ (node.kmer() >>> 32));
+			result ^= node.startPosition();
+			return result;
+		}
+		@Override
+		public boolean equals(T a, T b) {
+			return a.startPosition(0) == b.startPosition(0)
+					&& a.kmer(0) == b.kmer(0);
+		}
 	}
 }

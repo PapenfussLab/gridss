@@ -53,10 +53,15 @@ import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.PackedKmerList;
 import au.edu.wehi.idsv.debruijn.ReadKmer;
 import au.edu.wehi.idsv.debruijn.ReadKmerIterable;
+import au.edu.wehi.idsv.debruijn.positional.AggregateNodeIterator;
 import au.edu.wehi.idsv.debruijn.positional.ImmutableKmerNode;
 import au.edu.wehi.idsv.debruijn.positional.KmerNode;
 import au.edu.wehi.idsv.debruijn.positional.KmerPathNode;
 import au.edu.wehi.idsv.debruijn.positional.KmerPathSubnode;
+import au.edu.wehi.idsv.debruijn.positional.KmerSupportNode;
+import au.edu.wehi.idsv.debruijn.positional.PathNodeIterator;
+import au.edu.wehi.idsv.debruijn.positional.PathNodeIteratorTest;
+import au.edu.wehi.idsv.debruijn.positional.SupportNodeIterator;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
 import au.edu.wehi.idsv.graph.PathNode;
 import au.edu.wehi.idsv.graph.PathNodeFactory;
@@ -1008,27 +1013,11 @@ public class TestHelper {
 		Stream<KmerNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize(it, Spliterator.ORDERED), false);
 		return stream.mapToInt(n -> n.weight() * n.width()).sum();
 	}
-	public static List<KmerNode> split(KmerPathNode pn) {
-		List<KmerNode> list = new ArrayList<KmerNode>(pn.width() * pn.length());
-		for (int i = 0; i < pn.length(); i++) {
-			for (int j = 0; j < pn.width(); j++) {
-				list.add(new ImmutableKmerNode(pn.kmer(i), pn.startPosition(i) + j, pn.startPosition(i) + j, pn.isReference(), pn.weight(i)));
-			}
-		}
-		assert(list.size() == pn.width() * pn.length());
-		assert(list.stream().allMatch(n -> n.width() == 1));
-		return list;
-	}
-	public static List<KmerNode> split(KmerNode n) {
-		List<KmerNode> list = new ArrayList<KmerNode>(n.width());
-		for (int i = 0; i < n.width(); i++) {
-			list.add(new ImmutableKmerNode(n.kmer(), n.startPosition() + i, n.startPosition() + i, n.isReference(), n.weight()));
-		}
-		assert(list.stream().allMatch(nn -> nn.width() == 1));
-		return list;
-	}
 	private static List<KmerNode> split(List<? extends KmerNode> in) {
-		return in.stream().flatMap(n -> (n instanceof KmerPathNode ? split((KmerPathNode)n) : split(n)).stream()).collect(Collectors.toList());
+		return in.stream().flatMap(n -> {
+			if (n instanceof KmerPathNode) return ImmutableKmerNode.copyPath((KmerPathNode)n).flatMap(x -> ImmutableKmerNode.fragment(x));
+			return ImmutableKmerNode.fragment(n);
+		}).collect(Collectors.toList());
 	}
 	public static void assertSameNodes(List<? extends KmerNode> expected, List<? extends KmerNode> actual) {
 		List<KmerNode> splitExpected = split(expected);
@@ -1083,6 +1072,27 @@ public class TestHelper {
 			pn.append(new ImmutableKmerNode(kmers.kmer(i), start + i, end + i, reference, weight[i]));
 		}
 		return pn;
+	}
+	public Iterator<KmerPathNode> asKPN(int k, int maxReadLength, int maxSupportWidth, int maxPathLength, DirectedEvidence... input) {
+		Arrays.sort(input, DirectedEvidence.ByStartEnd);
+		SupportNodeIterator supportIt = new SupportNodeIterator(k, Arrays.stream(input).iterator(), maxReadLength);
+		AggregateNodeIterator agIt = new AggregateNodeIterator(supportIt);
+		Iterator<KmerPathNode> pnIt = new PathNodeIterator(agIt, maxSupportWidth, maxPathLength, k);
+		return pnIt;
+	}
+	public List<KmerPathNode> asCheckedKPN(int k, int maxReadLength, int maxSupportWidth, int maxPathLength, DirectedEvidence... input) {
+		Arrays.sort(input, DirectedEvidence.ByStartEnd);
+		List<KmerSupportNode> support = Lists.newArrayList(new SupportNodeIterator(k, Arrays.stream(input).iterator(), maxReadLength));
+		int supportWeight = support.stream().mapToInt(n -> n.weight() * n.width()).sum();
+		List<KmerNode> aggregate = Lists.newArrayList(new AggregateNodeIterator(support.iterator()));
+		int aggregateWeight = aggregate.stream().mapToInt(n -> n.weight() * n.width()).sum();
+		assertEquals(supportWeight, aggregateWeight);
+		List<KmerPathNode> pnList = Lists.newArrayList(new PathNodeIterator(aggregate.iterator(), maxSupportWidth, maxPathLength, k));
+		int pathWeight = pnList.stream().flatMap(pn -> ImmutableKmerNode.copyPath(pn)).mapToInt(n -> n.weight() * n.width()).sum();
+		assertEquals(supportWeight, pathWeight);
+		assertTrue(KmerPathNode.ByFirstKmerStartPosition.isOrdered(pnList));
+		PathNodeIteratorTest.assertCompleteGraph(pnList, k);
+		return pnList;
 	}
 	public static void assertSame(KmerPathNode n1, KmerPathNode n2) {
 		assertEquals(n1.length(), n2.length());
