@@ -29,15 +29,25 @@ public class SupportNodeIterator implements Iterator<KmerSupportNode> {
 	 *              ====>------------?????  RP
 	 */
 	private final int emitOffset;
-	private final PriorityQueue<KmerSupportNode> buffer = new PriorityQueue<KmerSupportNode>(1024, KmerNode.ByStartPosition);
+	private final int maxSupportStartPositionOffset;
+	private final PriorityQueue<KmerSupportNode> buffer = new PriorityQueue<KmerSupportNode>(1024, KmerNodeUtil.ByStartPosition);
 	private int inputPosition = Integer.MIN_VALUE;
 	private int firstReferenceIndex;
 	private int lastPosition = Integer.MIN_VALUE;
 	private DirectedEvidence lastEvidence = null;
-	public SupportNodeIterator(int k, Iterator<DirectedEvidence> it, int maxReadLength) {
+	
+	/**
+	 * Iterator that converts evidence to kmer nodes 
+	 * @param k kmer
+	 * @param it underlying evidence iterator sorted by evidence start position
+	 * @param maxSupportStartPositionOffset maximum number of
+	 * For typical Illumina PE data, this is equal to the maximum read length
+	 */
+	public SupportNodeIterator(int k, Iterator<DirectedEvidence> it, int maxSupportStartPositionOffset) {
 		this.underlying = Iterators.peekingIterator(it);
 		this.k = k;
-		this.emitOffset = maxReadLength + 1;
+		this.emitOffset = maxSupportStartPositionOffset + 1;
+		this.maxSupportStartPositionOffset = maxSupportStartPositionOffset;
 		if (underlying.hasNext()) {
 			firstReferenceIndex = underlying.peek().getBreakendSummary().referenceIndex;
 		}
@@ -58,6 +68,8 @@ public class SupportNodeIterator implements Iterator<KmerSupportNode> {
 		for (int i = 0; i < e.length(); i++) {
 			KmerSupportNode support = e.node(i); 
 			if (support != null) {
+				// max sure that we are actually able to resort into kmer order
+				assert(support.startPosition() >= de.getBreakendSummary().start - maxSupportStartPositionOffset);
 				buffer.add(support);
 			}
 		}

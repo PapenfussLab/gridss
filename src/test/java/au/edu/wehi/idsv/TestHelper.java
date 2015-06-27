@@ -56,6 +56,7 @@ import au.edu.wehi.idsv.debruijn.ReadKmerIterable;
 import au.edu.wehi.idsv.debruijn.positional.AggregateNodeIterator;
 import au.edu.wehi.idsv.debruijn.positional.ImmutableKmerNode;
 import au.edu.wehi.idsv.debruijn.positional.KmerNode;
+import au.edu.wehi.idsv.debruijn.positional.KmerNodeUtil;
 import au.edu.wehi.idsv.debruijn.positional.KmerPathNode;
 import au.edu.wehi.idsv.debruijn.positional.KmerPathSubnode;
 import au.edu.wehi.idsv.debruijn.positional.KmerSupportNode;
@@ -1022,8 +1023,8 @@ public class TestHelper {
 	public static void assertSameNodes(List<? extends KmerNode> expected, List<? extends KmerNode> actual) {
 		List<KmerNode> splitExpected = split(expected);
 		List<KmerNode> splitActual = split(actual);
-		splitExpected.sort(KmerNode.ByStartEndPositionKmerReferenceWeight);
-		splitActual.sort(KmerNode.ByStartEndPositionKmerReferenceWeight);
+		splitExpected.sort(KmerNodeUtil.ByStartEndPositionKmerReferenceWeight);
+		splitActual.sort(KmerNodeUtil.ByStartEndPositionKmerReferenceWeight);
 		assertEquals(totalWeight(expected), totalWeight(splitExpected));
 		assertEquals(totalWeight(actual), totalWeight(splitActual));
 		assertEquals(splitExpected, splitActual);
@@ -1049,12 +1050,12 @@ public class TestHelper {
 		}
 		return pn;
 	}
-	public KmerPathNode KPN(long[] kmers, int start, int end, boolean reference, int weight) {
+	public static KmerPathNode KPN(long[] kmers, int start, int end, boolean reference, int weight) {
 		int[] weights = new int[kmers.length];
 		Arrays.fill(weights, weight);
 		return KPN(kmers, start, end, reference, weights);
 	}
-	public KmerPathNode KPN(long[] kmers, int start, int end, boolean reference) {
+	public static KmerPathNode KPN(long[] kmers, int start, int end, boolean reference) {
 		return KPN(kmers, start, end, reference, 1);
 	}
 	public static KmerPathNode KPN(int k, String seq, int start, int end, boolean reference) {
@@ -1073,24 +1074,26 @@ public class TestHelper {
 		}
 		return pn;
 	}
-	public Iterator<KmerPathNode> asKPN(int k, int maxReadLength, int maxSupportWidth, int maxPathLength, DirectedEvidence... input) {
+	public static Iterator<KmerPathNode> asKPN(int k, int maxPathLength, DirectedEvidence... input) {
 		Arrays.sort(input, DirectedEvidence.ByStartEnd);
+		int maxReadLength = maxReadLength(input);
 		SupportNodeIterator supportIt = new SupportNodeIterator(k, Arrays.stream(input).iterator(), maxReadLength);
 		AggregateNodeIterator agIt = new AggregateNodeIterator(supportIt);
-		Iterator<KmerPathNode> pnIt = new PathNodeIterator(agIt, maxSupportWidth, maxPathLength, k);
+		Iterator<KmerPathNode> pnIt = new PathNodeIterator(agIt, maxPathLength, k);
 		return pnIt;
 	}
-	public List<KmerPathNode> asCheckedKPN(int k, int maxReadLength, int maxSupportWidth, int maxPathLength, DirectedEvidence... input) {
+	public static List<KmerPathNode> asCheckedKPN(int k, int maxPathLength, DirectedEvidence... input) {
 		Arrays.sort(input, DirectedEvidence.ByStartEnd);
+		int maxReadLength = maxReadLength(input);
 		List<KmerSupportNode> support = Lists.newArrayList(new SupportNodeIterator(k, Arrays.stream(input).iterator(), maxReadLength));
 		int supportWeight = support.stream().mapToInt(n -> n.weight() * n.width()).sum();
 		List<KmerNode> aggregate = Lists.newArrayList(new AggregateNodeIterator(support.iterator()));
 		int aggregateWeight = aggregate.stream().mapToInt(n -> n.weight() * n.width()).sum();
 		assertEquals(supportWeight, aggregateWeight);
-		List<KmerPathNode> pnList = Lists.newArrayList(new PathNodeIterator(aggregate.iterator(), maxSupportWidth, maxPathLength, k));
+		List<KmerPathNode> pnList = Lists.newArrayList(new PathNodeIterator(aggregate.iterator(), maxPathLength, k));
 		int pathWeight = pnList.stream().flatMap(pn -> ImmutableKmerNode.copyPath(pn)).mapToInt(n -> n.weight() * n.width()).sum();
 		assertEquals(supportWeight, pathWeight);
-		assertTrue(KmerPathNode.ByFirstKmerStartPosition.isOrdered(pnList));
+		assertTrue(KmerNodeUtil.ByFirstKmerStartPosition.isOrdered(pnList));
 		PathNodeIteratorTest.assertCompleteGraph(pnList, k);
 		return pnList;
 	}
@@ -1112,5 +1115,14 @@ public class TestHelper {
 		assertSame(n1.node(), n2.node());
 		assertEquals(n1.length(), n2.length());
 		assertEquals(n1.weight(), n2.weight());
+	}
+	public static int maxReadLength(DirectedEvidence... input) {
+		return Arrays.stream(input).mapToInt(e -> {
+			if (e instanceof NonReferenceReadPair) {
+				return ((NonReferenceReadPair)e).getNonReferenceRead().getReadLength();
+			} else {
+				return ((SoftClipEvidence)e).getSAMRecord().getReadLength();
+			}
+		}).max().orElse(0);
 	}
 }

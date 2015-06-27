@@ -17,27 +17,27 @@ import com.google.common.collect.Lists;
 public class PathCollapseIteratorTest extends TestHelper {
 	public static List<KmerPathNode> simplify(List<KmerPathNode> list) {
 		ArrayList<KmerPathNode> result = Lists.newArrayList(new PathSimplificationIterator(list.iterator(), 10000, 10000));
-		result.sort(KmerPathNode.ByFirstKmerStartEndKmerReference);
+		result.sort(KmerNodeUtil.ByFirstKmerStartEndKmerReference);
 		return result;
 	}
 	public static Iterator<KmerPathNode> toPathNodeIterator(List<DirectedEvidence> input, int k, int maxWidth, int maxLength) {
-		return new PathNodeIterator(new AggregateNodeIterator(new SupportNodeIterator(k, input.iterator(), maxLength)), maxWidth, maxLength, k);
+		return new PathNodeIterator(new AggregateNodeIterator(new SupportNodeIterator(k, input.iterator(), maxWidth)), maxLength, k);
 	}
 	public static List<KmerPathNode> toPathNode(List<DirectedEvidence> input, int k, int maxWidth, int maxLength) {
 		List<KmerNode> snList = Lists.newArrayList(new SupportNodeIterator(k, input.iterator(), maxLength));
 		List<KmerNode> anList = Lists.newArrayList(new AggregateNodeIterator(snList.iterator()));
-		List<KmerPathNode> pnList = Lists.newArrayList( new PathNodeIterator(anList.iterator(), maxWidth, maxLength, k));
+		List<KmerPathNode> pnList = Lists.newArrayList(new PathNodeIterator(anList.iterator(), maxWidth, k));
 		assertSameNodes(anList, pnList);
-		assert(KmerPathNode.ByFirstKmerStartPositionKmer.isOrdered(pnList));
+		assert(KmerNodeUtil.ByFirstKmerStartPositionKmer.isOrdered(pnList));
 		return pnList;
 	}
-	private static List<KmerPathNode> go(List<DirectedEvidence> input, int k, int maxWidth, int maxLength, int maxPathCollapseLength, int maxBasesMismatch) {
-		List<KmerPathNode> pnList = toPathNode(input, k, maxWidth, maxLength);
-		return go(k, maxWidth, maxLength, maxPathCollapseLength, maxBasesMismatch, pnList);
+	private static List<KmerPathNode> go(List<DirectedEvidence> input, int k, int maxLength, int maxPathCollapseLength, int maxBasesMismatch) {
+		List<KmerPathNode> pnList = asCheckedKPN(k, maxLength, input.toArray(new DirectedEvidence[0]));
+		return go(k, maxPathCollapseLength, maxBasesMismatch, pnList);
 	}
-	private static List<KmerPathNode> go(int k, int maxWidth, int maxLength, int maxPathCollapseLength, int maxBasesMismatch, List<KmerPathNode> pnList) {
+	private static List<KmerPathNode> go(int k, int maxPathCollapseLength, int maxBasesMismatch, List<KmerPathNode> pnList) {
 		int pnTotalWeight = totalWeight(pnList);
-		PathCollapseIterator pcit = new PathCollapseIterator(pnList.iterator(), k, maxWidth, maxLength, maxPathCollapseLength, maxBasesMismatch);
+		PathCollapseIterator pcit = new PathCollapseIterator(pnList.iterator(), k, maxPathCollapseLength, maxBasesMismatch);
 		ArrayList<KmerPathNode> result = Lists.newArrayList(pcit);
 		assertEquals(pnTotalWeight, totalWeight(result));
 		return result;
@@ -54,7 +54,7 @@ public class PathCollapseIteratorTest extends TestHelper {
 		KmerPathNode.addEdge(input.get(0), input.get(2));
 		KmerPathNode.addEdge(input.get(1), input.get(3));
 		KmerPathNode.addEdge(input.get(2), input.get(3));
-		List<KmerPathNode> result = simplify(go(k, 1, 200, 100, 100, input));
+		List<KmerPathNode> result = simplify(go(k, 100, 100, input));
 		assertTrue(result.contains(KPN(k, "GTAC", 1, 10, false)));
 		assertTrue(result.contains(KPN(k, "TACTAAA", 3, 3, false, 2)));
 		assertTrue(result.contains(KPN(k, "TACTAAA", 4, 5, false, 3)));
@@ -68,7 +68,7 @@ public class PathCollapseIteratorTest extends TestHelper {
 		input.add(SCE(FWD, withSequence(S(RANDOM).substring(0, 75), Read(0, 1, "50M25S"))));
 		input.add(SCE(FWD, withSequence(S(RANDOM).substring(0, 70) + "GG", Read(0, 1, "50M22S"))));
 		
-		List<KmerPathNode> result = go(input, k, 1, 200, 200, 1);
+		List<KmerPathNode> result = go(input, k, 200, 200, 1);
 		assertEquals(4, result.size());
 	}
 	@Test
@@ -78,7 +78,7 @@ public class PathCollapseIteratorTest extends TestHelper {
 		input.add(SCE(FWD, withSequence(S(RANDOM).substring(0, 75), Read(0, 1, "50M25S"))));
 		input.add(SCE(FWD, withSequence(S(RANDOM).substring(0, 70) + "GG", Read(0, 1, "50M22S"))));
 		
-		List<KmerPathNode> result = go(input, k, 1, 200, 1, 100);
+		List<KmerPathNode> result = go(input, k, 200, 1, 100);
 		assertEquals(4, result.size());
 	}
 	@Test
@@ -90,7 +90,7 @@ public class PathCollapseIteratorTest extends TestHelper {
 		input.add(KPN(k, "ACCG", 5, 5, false));
 		KmerPathNode.addEdge(input.get(0), input.get(1));
 		KmerPathNode.addEdge(input.get(0), input.get(2));
-		List<KmerPathNode> result = go(k, 1, 200, 5, 1, input);
+		List<KmerPathNode> result = go(k, 5, 1, input);
 		assertSame(result.get(0), KPN(k, "GTACC", 1, 10, false));
 		assertSame(result.get(1), KPN(k, "ACCTT", 2, 4, false));
 		assertSame(result.get(2), KPN(k, "ACCT", 5, 5, false, new int[] { 2, }));
@@ -106,7 +106,7 @@ public class PathCollapseIteratorTest extends TestHelper {
 		input.add(KPN(k, "ACCG", 2, 5, false));
 		KmerPathNode.addEdge(input.get(0), input.get(1));
 		KmerPathNode.addEdge(input.get(0), input.get(2));
-		List<KmerPathNode> result = go(k, 1, 200, 5, 1, input);
+		List<KmerPathNode> result = go(k, 5, 1, input);
 		assertEquals(4, result.size());
 		assertSame(result.get(0), KPN(k, "GTACC", 0, 9, false));
 		assertSame(result.get(1), KPN(k, "ACCT", 2, 5, false, new int[] { 2 }));
@@ -122,7 +122,7 @@ public class PathCollapseIteratorTest extends TestHelper {
 		input.add(KPN(k, "ACCGG", 5, 11, false));
 		KmerPathNode.addEdge(input.get(0), input.get(1));
 		KmerPathNode.addEdge(input.get(0), input.get(2));
-		List<KmerPathNode> result = go(k, 1, 200, 10, 1, input);
+		List<KmerPathNode> result = go(k, 10, 1, input);
 		assertEquals(4, result.size());
 		assertSame(result.get(0), KPN(k, "GTACC", 1, 10, false));
 		assertSame(result.get(1), KPN(k, "ACCT", 2, 4, false));

@@ -91,17 +91,23 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 	private final PeekingIterator<KmerPathNode> underlying;
 	private final int k;
 	private final int processOffset;
-	private final int emitOffset;
 	private final int maxCollapseLength;
 	private final int maxBasesMismatch;
-	private final NavigableSet<KmerPathNode> processed = new TreeSet<KmerPathNode>(KmerPathNode.ByFirstKmerStartEndKmerReference);
-	private final NavigableSet<KmerPathNode> unprocessed = new TreeSet<KmerPathNode>(KmerPathNode.ByEndStartKmerReference );
+	private final NavigableSet<KmerPathNode> processed = new TreeSet<KmerPathNode>(KmerNodeUtil.ByFirstKmerStartEndKmerReference);
+	private final NavigableSet<KmerPathNode> unprocessed = new TreeSet<KmerPathNode>(KmerNodeUtil.ByEndStartKmerReference );
 	private int inputPosition = Integer.MIN_VALUE;
+	private int maxNodeWidth = 0;
+	private int maxNodeLength = 0;
+	private int emitOffset() {
+		// records ending before this position cannot be changed by subsequent operations
+		int unchangedOffset = processOffset + maxNodeLength + maxNodeWidth + maxCollapseLength + 1;
+		// records are added to the emit queue when their last kmer end position position is before unchangedOffset
+		// we need to resort so they are output in the correct start kmer order
+		return unchangedOffset + maxNodeLength + maxNodeWidth + 1; 
+	}
 	public PathCollapseIterator(
 			Iterator<KmerPathNode> it,
 			int k,
-			int maxNodeWidth,
-			int maxNodeLength,
 			int maxPathCollapseLength,
 			int maxBasesMismatch) {
 		this.underlying = Iterators.peekingIterator(it);
@@ -109,11 +115,6 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 		this.maxBasesMismatch = maxBasesMismatch;
 		this.maxCollapseLength = maxPathCollapseLength;
 		this.processOffset = maxCollapseLength + 1;
-		// records ending before this position cannot be changed by subsequent operations
-		int unchangedOffset = processOffset + maxNodeLength + maxNodeWidth + maxCollapseLength + 1;
-		// records are added to the emit queue when their last kmer end position position is before unchangedOffset
-		// we need to resort so they are output in the correct start kmer order
-		this.emitOffset = unchangedOffset + maxNodeLength + maxNodeWidth + 1; 
 	}
 	@Override
 	public boolean hasNext() {
@@ -132,10 +133,10 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 		return node;
 	}
 	private void ensureBuffer() {
-		while (inputPosition < Integer.MAX_VALUE && (processed.isEmpty() || processed.first().startPosition(0) > inputPosition - emitOffset)) {
+		while (inputPosition < Integer.MAX_VALUE && (processed.isEmpty() || processed.first().firstKmerStartPosition() > inputPosition - emitOffset())) {
 			// advance graph position
 			if (underlying.hasNext()) {
-				inputPosition = underlying.peek().startPosition(0);
+				inputPosition = underlying.peek().firstKmerStartPosition();
 			} else {
 				inputPosition = Integer.MAX_VALUE;
 			}
@@ -148,8 +149,11 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 	 * to processing queue
 	 */
 	private void loadGraphNodes() {
-		while (underlying.hasNext() && underlying.peek().startPosition(0) <= inputPosition) {
-			unprocessed.add(underlying.next());
+		while (underlying.hasNext() && underlying.peek().firstKmerStartPosition() <= inputPosition) {
+			KmerPathNode node = underlying.next();
+			maxNodeWidth = Math.max(maxNodeWidth, node.width());
+			maxNodeLength = Math.max(maxNodeLength, node.length());
+			unprocessed.add(node);
 		}
 	}
 	private int collapse() {
@@ -318,12 +322,12 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 		List<KmerPathNode> target = positionSplit(targetPath);
 		IntSortedSet kmerStartPositions = new IntRBTreeSet();
 		for (KmerPathNode n : source) {
-			kmerStartPositions.add(n.startPosition(0));
-			kmerStartPositions.add(n.startPosition(0) + n.length());
+			kmerStartPositions.add(n.firstKmerStartPosition());
+			kmerStartPositions.add(n.firstKmerStartPosition() + n.length());
 		}
 		for (KmerPathNode n : target) {
-			kmerStartPositions.add(n.startPosition(0));
-			kmerStartPositions.add(n.startPosition(0) + n.length());
+			kmerStartPositions.add(n.firstKmerStartPosition());
+			kmerStartPositions.add(n.firstKmerStartPosition() + n.length());
 		}
 		source = lengthSplit(kmerStartPositions, source);
 		target = lengthSplit(kmerStartPositions, target);
@@ -367,8 +371,8 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 		for (int i = 0; i < path.size(); i++) {
 			KmerPathNode pn = path.get(i);
 			// break node internally
-			for (int breakStartPosition : startPositions.subSet(pn.startPosition(0) + 1, pn.startPosition(0) + pn.length())) {
-				int breakLength = breakStartPosition - pn.startPosition(0);
+			for (int breakStartPosition : startPositions.subSet(pn.firstKmerStartPosition() + 1, pn.firstKmerStartPosition() + pn.length())) {
+				int breakLength = breakStartPosition - pn.firstKmerStartPosition();
 				KmerPathNode split = lengthSplit(pn, breakLength);
 				result.add(split);
 			}
@@ -399,14 +403,14 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 	private KmerPathNode positionSplit(KmerPathSubnode n) {
 		KmerPathNode pn = n.node();
 		assert(processed.contains(pn) || unprocessed.contains(pn));
-		if (n.firstKmerStartPosition() != pn.startPosition(0)) {
+		if (n.firstKmerStartPosition() != pn.firstKmerStartPosition()) {
 			NavigableSet<KmerPathNode> queue = processed.contains(pn) ? processed : unprocessed;
 			queue.remove(pn);
 			KmerPathNode preNode = pn.splitAtStartPosition(n.firstKmerStartPosition());
 			queue.add(pn);
 			queue.add(preNode);
 		}
-		if (pn.endPosition(0) != n.firstKmerEndPosition()) {
+		if (pn.firstKmerEndPosition() != n.firstKmerEndPosition()) {
 			NavigableSet<KmerPathNode> queue = processed.contains(pn) ? processed : unprocessed;
 			queue.remove(pn);
 			KmerPathNode midNode = pn.splitAtStartPosition(n.firstKmerEndPosition() + 1);
@@ -414,8 +418,8 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 			queue.add(midNode);
 			pn = midNode;
 		}
-		assert(pn.startPosition(0) == n.firstKmerStartPosition());
-		assert(pn.endPosition(0) == n.firstKmerEndPosition());
+		assert(pn.firstKmerStartPosition() == n.firstKmerStartPosition());
+		assert(pn.firstKmerEndPosition() == n.firstKmerEndPosition());
 		return pn;
 	}
 	private void merge(KmerPathNode toMerge, KmerPathNode into) {

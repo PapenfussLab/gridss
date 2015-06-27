@@ -85,7 +85,7 @@ public class KmerPathNodeKmerNode implements KmerNode {
 		@Override
 		public int compare(KmerPathNodeKmerNode left, KmerPathNodeKmerNode right) {
 			return ComparisonChain.start()
-					.compare(left.node, right.node, KmerNode.ByEndStartKmerReference)
+					.compare(left.node, right.node, KmerNodeUtil.ByEndStartKmerReference)
 					.compare(left.offsetOfPrimaryKmer(), right.offsetOfPrimaryKmer())
 					.result();
 		}

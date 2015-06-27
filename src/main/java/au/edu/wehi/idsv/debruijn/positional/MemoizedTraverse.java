@@ -37,13 +37,13 @@ public class MemoizedTraverse {
 			couldOverlap = memoized.tailSet(memoized.floor(node), true);
 		}
 		for (TraversalNode existing : couldOverlap) {
-			if (existing.node.kmer(0) > node.node.kmer(0)) break;
-			if (existing.node.kmer(0) < node.node.kmer(0)) continue;
+			if (existing.node.firstKmer() > node.node.firstKmer()) break;
+			if (existing.node.firstKmer() < node.node.firstKmer()) continue;
 			if (existing.node.firstKmerEndPosition() < node.node.firstKmerStartPosition()) continue;
 			if (existing.node.firstKmerStartPosition() > node.node.firstKmerEndPosition()) break;
 			
 			// we overlap an existing path
-			assert(existing.node.kmer(0) == node.node.kmer(0) && IntervalUtil.overlapsClosed(
+			assert(existing.node.firstKmer() == node.node.firstKmer() && IntervalUtil.overlapsClosed(
 					existing.node.firstKmerStartPosition(), existing.node.firstKmerStartPosition(),
 					node.node.firstKmerStartPosition(), node.node.firstKmerStartPosition()));
 			
@@ -123,7 +123,7 @@ public class MemoizedTraverse {
 		TraversalNode last = null;
 		for (TraversalNode n : memoized) {
 			if (last != null) {
-				assert(!(last.node.kmer(0) == n.node.kmer(0) && IntervalUtil.overlapsClosed(
+				assert(!(last.node.firstKmer() == n.node.firstKmer() && IntervalUtil.overlapsClosed(
 						last.node.firstKmerStartPosition(), last.node.firstKmerStartPosition(),
 						n.node.firstKmerStartPosition(), n.node.firstKmerStartPosition())));
 			}
@@ -135,7 +135,7 @@ public class MemoizedTraverse {
 		@Override
 		public int compare(TraversalNode left, TraversalNode right) {
 			return ComparisonChain.start()
-					.compare(left.node.node().kmer(0), right.node.node().kmer(0))
+					.compare(left.node.node().firstKmer(), right.node.node().firstKmer())
 					.compare(left.node.firstKmerStartPosition(), right.node.firstKmerStartPosition())
 					.compare(left.node.firstKmerEndPosition(), right.node.firstKmerEndPosition())
 					.compare(left.score, right.score)

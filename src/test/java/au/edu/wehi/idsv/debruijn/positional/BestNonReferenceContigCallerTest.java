@@ -82,7 +82,7 @@ public class BestNonReferenceContigCallerTest extends TestHelper {
 		SoftClipEvidence scb = SCE(BWD, withSequence("GTCAGTC", Read(0, 5, "3S4M")));
 		// unanchored
 		DiscordantReadPair e = (DiscordantReadPair)NRRP(SES(20, 30), withSequence("GACCTCTACT", DP(0, 25, "10M", true, 1, 1, "10M", false)));
-		List<String> result = contigs(Lists.newArrayList(asKPN(4, 100, 100, 100, spanf, spanb, scf, scb, e)), 100, 4);		
+		List<String> result = contigs(Lists.newArrayList(asKPN(4, 100, spanf, spanb, scf, scb, e)), 100, 4);		
 		assertEquals(4, result.size());
 		// only returns the unanchored kmers
 		assertEquals("GTTAATTG", result.get(0));
@@ -94,7 +94,7 @@ public class BestNonReferenceContigCallerTest extends TestHelper {
 	public void should_assemble_overlapping_sc_rp() {
 		SoftClipEvidence sc = SCE(FWD, withSequence("ACGTGGTCGACC", Read(0, 50, "6M6S")));
 		DiscordantReadPair rp = (DiscordantReadPair)NRRP(SES(10, 200), withSequence("GACCTCCGGAA", DP(0, 25, "10M", true, 1, 1, "10M", false)));
-		ArrayList<KmerPathNode> in = Lists.newArrayList(asKPN(4, 1000, 1000, 1000, sc, rp));
+		ArrayList<KmerPathNode> in = Lists.newArrayList(asKPN(4, 1000, sc, rp));
 		List<String> result = contigs(in, 1000, 4);
 		assertEquals(3, result.size()); // SC+RP, RP starting before SC, RP starting after SC
 		assertEquals("TGGTCGACCTCCGGAA", result.get(0));

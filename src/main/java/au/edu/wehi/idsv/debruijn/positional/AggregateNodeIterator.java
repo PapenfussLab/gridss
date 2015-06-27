@@ -22,7 +22,7 @@ import com.google.common.primitives.Longs;
  */
 public class AggregateNodeIterator implements Iterator<KmerNode> {
 	private final PeekingIterator<? extends KmerNode> underlying;
-	private PriorityQueue<ImmutableKmerNode> outputSortBuffer = new PriorityQueue<ImmutableKmerNode>(1024, KmerNode.ByStartPosition);
+	private PriorityQueue<ImmutableKmerNode> outputSortBuffer = new PriorityQueue<ImmutableKmerNode>(1024, KmerNodeUtil.ByStartPosition);
 	private Long2ObjectOpenHashMap<KmerNodeAggregator> byKmer = new Long2ObjectOpenHashMap<KmerNodeAggregator>();
 	private PriorityQueue<KmerNodeAggregatorSnapshot> byStartPosition = new PriorityQueue<KmerNodeAggregatorSnapshot>(1024, BySnapshotEndPosition);
 	public AggregateNodeIterator(Iterator<? extends KmerNode> it) {
@@ -126,7 +126,7 @@ public class AggregateNodeIterator implements Iterator<KmerNode> {
 		/**
 		 * KmerNodes in the currently active aggregation interval
 		 */
-		private PriorityQueue<KmerNode> active = new PriorityQueue<KmerNode>(8, KmerNode.ByEndPosition);
+		private PriorityQueue<KmerNode> active = new PriorityQueue<KmerNode>(8, KmerNodeUtil.ByEndPosition);
 		/**
 		 * Start position of currently active aggregation interval
 		 */

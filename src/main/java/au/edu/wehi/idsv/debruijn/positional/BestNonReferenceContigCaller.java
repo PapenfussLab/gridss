@@ -39,7 +39,7 @@ public class BestNonReferenceContigCaller {
 	 * We need to wait until all previous nodes are defined before checking
 	 * for starting node intervals.
 	 */
-	private final PriorityQueue<KmerPathNode> unprocessedStartNodes = new PriorityQueue<KmerPathNode>(1024, KmerPathNode.ByEndPosition);
+	private final PriorityQueue<KmerPathNode> unprocessedStartNodes = new PriorityQueue<KmerPathNode>(1024, KmerNodeUtil.ByEndPosition);
 	private final PriorityQueue<Contig> called = new PriorityQueue<Contig>(1024, Contig.ByScoreDesc);
 	private final int maxEvidenceWidth;
 	private int inputPosition;
@@ -53,7 +53,7 @@ public class BestNonReferenceContigCaller {
 		if (!underlying.hasNext()) {
 			inputPosition = Integer.MAX_VALUE;
 		} else {
-			inputPosition = underlying.peek().startPosition(0);
+			inputPosition = underlying.peek().firstKmerStartPosition();
 		}
 		advanceUnderlying();
 		advanceUnprocessed();
@@ -63,7 +63,7 @@ public class BestNonReferenceContigCaller {
 	 * Loads records from the underlying stream up to and including the current inputPosition.
 	 */
 	private void advanceUnderlying() {
-		while (underlying.hasNext() && underlying.peek().startPosition(0) <= inputPosition) {			
+		while (underlying.hasNext() && underlying.peek().firstKmerStartPosition() <= inputPosition) {			
 			KmerPathNode nextRecord = underlying.next();
 			queueForProcessing(nextRecord);
 		}
@@ -97,12 +97,12 @@ public class BestNonReferenceContigCaller {
 	private void addStartingPaths(KmerPathNode node) {
 		assert(!node.isReference());
 		PeekingIterator<KmerPathNode> startIt = Iterators.peekingIterator(node.prev().iterator());
-		int start = node.startPosition(0);
-		final int scopeEnd = node.endPosition(0);
+		int start = node.firstKmerStartPosition();
+		final int scopeEnd = node.firstKmerEndPosition();
 		int nonReferenceCount = 0;
 		int referenceCount = 0;
 		// TODO: is using a linear array faster?
-		PriorityQueue<KmerPathNode> active = new PriorityQueue<KmerPathNode>(3, KmerNode.ByEndPosition);
+		PriorityQueue<KmerPathNode> active = new PriorityQueue<KmerPathNode>(3, KmerNodeUtil.ByEndPosition);
 		while (start <= scopeEnd) {
 			// advance
 			while (startIt.hasNext() && startIt.peek().startPosition() < start) {

@@ -16,38 +16,27 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode {
 	private final int start;
 	private final int end;
 	public KmerPathSubnode(KmerPathNode n, int start, int end) {
-		assert(n.startPosition(0) <= start);
-		assert(n.endPosition(0) >= end);
+		assert(n.firstKmerStartPosition() <= start);
+		assert(n.firstKmerEndPosition() >= end);
 		assert(end - start >= 0);
 		this.n = n;
 		this.start = start;
 		this.end = end;
 	}
 	public KmerPathSubnode(KmerPathNode node) {
-		this(node, node.startPosition(0), node.endPosition(0));
+		this(node, node.firstKmerStartPosition(), node.firstKmerEndPosition());
 	}
 	public KmerPathNode node() { return n; }
+	public long firstKmer() { return n.firstKmer(); }
 	public int firstKmerStartPosition() { return start; }
 	public int firstKmerEndPosition() { return end; }
 	public int startPosition() { return firstKmerStartPosition() + length() - 1; }
 	public int endPosition() { return firstKmerEndPosition() + length() - 1; }
 	public int width() { return end - start + 1; }
-	@Override
-	public int length() {
-		return n.length();
-	}
-	@Override
-	public int weight() {
-		return n.weight();
-	}
-	@Override
-	public int weight(int offset) {
-		return n.weight(offset);
-	}
-	@Override
-	public long kmer(int offset) {
-		return n.kmer(offset);
-	}
+	public int length() { return n.length(); }
+	public int weight() { return n.weight(); }
+	public int weight(int offset) { return n.weight(offset); }
+	public long kmer(int offset) { return n.kmer(offset); }
 	/**
 	 * Returns the subset of valid position of this node for the given next traversal 
 	 * @param node next node traversed
@@ -81,8 +70,8 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode {
 		int targetStart = start + n.length();
 		int targetEnd = end + n.length();
 		for (KmerPathNode pn : n.next()) {
-			int pnStart = pn.startPosition(0);
-			int pnEnd = pn.endPosition(0);
+			int pnStart = pn.firstKmerStartPosition();
+			int pnEnd = pn.firstKmerEndPosition();
 			// since next() is sorted, we only need to process the neighbours overlapping our interval
 			if (pnEnd < targetStart) {
 				continue;

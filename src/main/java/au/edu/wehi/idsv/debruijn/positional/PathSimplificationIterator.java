@@ -69,12 +69,12 @@ public class PathSimplificationIterator implements Iterator<KmerPathNode> {
 	 *  node is maxNodeLength + maxNodeWidth in size
 	 * 
 	 */
-	private final PriorityQueue<KmerPathNode> unprocessed = new PriorityQueue<KmerPathNode>(16, KmerPathNode.ByEndPosition);
+	private final PriorityQueue<KmerPathNode> unprocessed = new PriorityQueue<KmerPathNode>(16, KmerNodeUtil.ByEndPosition);
 	/**
 	 * Nodes that have been processed, but could be modified further
 	 * 
 	 */
-	private final TreeSet<KmerPathNode> processed = new TreeSet<KmerPathNode>(KmerPathNode.ByFirstKmerStartPositionKmer);
+	private final TreeSet<KmerPathNode> processed = new TreeSet<KmerPathNode>(KmerNodeUtil.ByFirstKmerStartPositionKmer);
 	private final int maxLength;
 	private final int maxWidth;
 	private final PeekingIterator<KmerPathNode> underlying;
@@ -136,8 +136,8 @@ public class PathSimplificationIterator implements Iterator<KmerPathNode> {
 	private KmerPathNode prevKmerToMergeWith(KmerPathNode node) {
 		if (node.prev().size() == 1) {
 			KmerPathNode prev = node.prev().get(0);
-			if (prev.endPosition() + 1 == node.endPosition(0)
-					&& prev.startPosition() + 1 == node.startPosition(0)
+			if (prev.endPosition() + 1 == node.firstKmerEndPosition()
+					&& prev.startPosition() + 1 == node.firstKmerStartPosition()
 					&& prev.isReference() == node.isReference()
 					&& prev.length() + node.length() <= maxLength
 					&& prev.next().size() == 1) {
@@ -163,7 +163,7 @@ public class PathSimplificationIterator implements Iterator<KmerPathNode> {
 		while (inputPosition < Integer.MAX_VALUE && (processed.isEmpty() || couldMergeToIncludeKmerAt(processed.first(), inputPosition))) {
 			// advance graph position
 			if (underlying.hasNext()) {
-				inputPosition = underlying.peek().startPosition(0);
+				inputPosition = underlying.peek().firstKmerStartPosition();
 			} else {
 				inputPosition = Integer.MAX_VALUE;
 			}
@@ -202,7 +202,7 @@ public class PathSimplificationIterator implements Iterator<KmerPathNode> {
 	 * Loads records from the underlying stream up to and including the current inputPosition.
 	 */
 	private void advance() {
-		while (underlying.hasNext() && underlying.peek().startPosition(0) <= inputPosition) {
+		while (underlying.hasNext() && underlying.peek().firstKmerStartPosition() <= inputPosition) {
 			KmerPathNode nextRecord = underlying.next();
 			assert(nextRecord.width() <= maxWidth);
 			assert(nextRecord.length() <= maxLength);

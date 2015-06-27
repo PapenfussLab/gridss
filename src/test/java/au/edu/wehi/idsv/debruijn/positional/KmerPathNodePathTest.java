@@ -54,7 +54,7 @@ public class KmerPathNodePathTest extends TestHelper {
 	}
 	public static List<KmerPathNode> sortedKPN(List<KmerPathNode> list) {
 		ArrayList<KmerPathNode> out = new ArrayList<KmerPathNode>(list);
-		Collections.sort(out, KmerPathNode.ByFirstKmerStartPosition);
+		Collections.sort(out, KmerNodeUtil.ByFirstKmerStartPosition);
 		return out;
 	}
 	@Test

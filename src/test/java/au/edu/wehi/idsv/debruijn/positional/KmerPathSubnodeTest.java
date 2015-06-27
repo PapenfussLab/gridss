@@ -166,7 +166,7 @@ public class KmerPathSubnodeTest extends TestHelper {
 	}
 	@Test
 	public void should_traverse_simple_sc() { 
-		List<KmerPathNode> paths = Lists.newArrayList(asKPN(4, 100, 100, 100, SCE(FWD, withSequence("ACGTGGTCGACC", Read(0, 5, "6M6S")))));
+		List<KmerPathNode> paths = Lists.newArrayList(asKPN(4, 100, SCE(FWD, withSequence("ACGTGGTCGACC", Read(0, 5, "6M6S")))));
 		assertEquals(2, paths.size());
 		assertEquals(1, new KmerPathSubnode(paths.get(0)).next().size());
 		assertEquals(1, new KmerPathSubnode(paths.get(1)).prev().size());

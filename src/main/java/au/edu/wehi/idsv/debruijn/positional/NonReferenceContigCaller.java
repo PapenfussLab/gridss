@@ -25,6 +25,7 @@ import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.graph.ScalingHelper;
+import au.edu.wehi.idsv.util.IntervalUtil;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
@@ -44,7 +45,7 @@ public class NonReferenceContigCaller extends AbstractIterator<SAMRecordAssembly
 	 * - traversal does not invoke comparator
 	 */ 
 	private Object2ObjectRBTreeMap<KmerPathNodeKmerNode, List<KmerNode>> weightToRemove = new Object2ObjectRBTreeMap<KmerPathNodeKmerNode, List<KmerNode>>(KmerPathNodeKmerNode.ByKmerPathNodeOffset);
-	private SortedSet<KmerPathNode> graphByPosition = new TreeSet<KmerPathNode>(KmerPathNode.ByStartEndPositionKmerReferenceWeight);
+	private SortedSet<KmerPathNode> graphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByStartEndPositionKmerReferenceWeight);
 	private final EvidenceTracker evidenceTracker;
 	private final AssemblyEvidenceSource aes;
 	private final int maxEvidenceWidth;
@@ -193,7 +194,7 @@ public class NonReferenceContigCaller extends AbstractIterator<SAMRecordAssembly
 	private void addToRemovalList(KmerNode support) {
 		// find all KmerPathNodeKmerNode matching our support node
 		for (KmerPathNodeKmerNode n : graphByKmerNode.get(support.kmer())) {
-			if (support.overlaps(n)) {
+			if (IntervalUtil.overlapsClosed(support.startPosition(), support.endPosition(), n.startPosition(), n.endPosition())) {
 				List<KmerNode> list = weightToRemove.get(n);
 				if (list == null) {
 					list = new ArrayList<KmerNode>();
@@ -261,7 +262,7 @@ public class NonReferenceContigCaller extends AbstractIterator<SAMRecordAssembly
 		public KmerPathNode next() {
 			KmerPathNode node = underlying.next();
 			addToGraph(node);
-			position = node.startPosition(0);
+			position = node.firstKmerStartPosition();
 			return node;
 		}
 	}
