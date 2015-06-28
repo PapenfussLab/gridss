@@ -30,7 +30,7 @@ public class SupportNodeIterator implements Iterator<KmerSupportNode> {
 	 */
 	private final int emitOffset;
 	private final int maxSupportStartPositionOffset;
-	private final PriorityQueue<KmerSupportNode> buffer = new PriorityQueue<KmerSupportNode>(1024, KmerNodeUtil.ByLastStart);
+	private final PriorityQueue<KmerSupportNode> buffer = new PriorityQueue<KmerSupportNode>(1024, KmerNodeUtil.ByFirstStart);
 	private int inputPosition = Integer.MIN_VALUE;
 	private int firstReferenceIndex;
 	private int lastPosition = Integer.MIN_VALUE;
@@ -40,14 +40,20 @@ public class SupportNodeIterator implements Iterator<KmerSupportNode> {
 	 * Iterator that converts evidence to kmer nodes 
 	 * @param k kmer
 	 * @param it underlying evidence iterator sorted by evidence start position
-	 * @param maxSupportStartPositionOffset maximum number of
-	 * For typical Illumina PE data, this is equal to the maximum read length
+	 * @param maxSupportStartPositionOffset maximum number of bases offset
+	 * For typical Illumina PE data, this is equal to the maximum concordant fragment size
+	 * This occurs when:
+	 *  - short DP causes 1bp breakend interval
+	 *  - 1bp of read mapped
+	 * In the above scenario, the mate will be placed for assembly purposes as far away
+	 * as max frag size from the mapping position (which in this scenario is also the breakend
+	 * position).
 	 */
-	public SupportNodeIterator(int k, Iterator<DirectedEvidence> it, int maxSupportStartPositionOffset) {
+	public SupportNodeIterator(int k, Iterator<DirectedEvidence> it, int maxFragmentSize) {
 		this.underlying = Iterators.peekingIterator(it);
 		this.k = k;
+		this.maxSupportStartPositionOffset = maxFragmentSize;
 		this.emitOffset = maxSupportStartPositionOffset + 1;
-		this.maxSupportStartPositionOffset = maxSupportStartPositionOffset;
 		if (underlying.hasNext()) {
 			firstReferenceIndex = underlying.peek().getBreakendSummary().referenceIndex;
 		}
@@ -69,7 +75,7 @@ public class SupportNodeIterator implements Iterator<KmerSupportNode> {
 			KmerSupportNode support = e.node(i); 
 			if (support != null) {
 				// max sure that we are actually able to resort into kmer order
-				assert(support.lastStart() >= de.getBreakendSummary().start - maxSupportStartPositionOffset);
+				assert(support.firstStart() >= de.getBreakendSummary().start - maxSupportStartPositionOffset);
 				buffer.add(support);
 			}
 		}

@@ -1078,16 +1078,18 @@ public class TestHelper {
 	}
 	public static Iterator<KmerPathNode> asKPN(int k, int maxPathLength, DirectedEvidence... input) {
 		Arrays.sort(input, DirectedEvidence.ByStartEnd);
-		int maxReadLength = maxReadLength(input);
-		SupportNodeIterator supportIt = new SupportNodeIterator(k, Arrays.stream(input).iterator(), maxReadLength);
+		//int maxReadLength = maxReadLength(input);
+		int maxFrag = Arrays.stream(input).mapToInt(e -> e.getEvidenceSource().getMaxConcordantFragmentSize()).sum();
+		SupportNodeIterator supportIt = new SupportNodeIterator(k, Arrays.stream(input).iterator(), maxFrag);
 		AggregateNodeIterator agIt = new AggregateNodeIterator(supportIt);
 		Iterator<KmerPathNode> pnIt = new PathNodeIterator(agIt, maxPathLength, k);
 		return pnIt;
 	}
 	public static List<KmerPathNode> asCheckedKPN(int k, int maxPathLength, DirectedEvidence... input) {
 		Arrays.sort(input, DirectedEvidence.ByStartEnd);
-		int maxReadLength = maxReadLength(input);
-		List<KmerSupportNode> support = Lists.newArrayList(new SupportNodeIterator(k, Arrays.stream(input).iterator(), maxReadLength));
+		//int maxReadLength = maxReadLength(input);
+		int maxFrag = Arrays.stream(input).mapToInt(e -> e.getEvidenceSource().getMaxConcordantFragmentSize()).sum();
+		List<KmerSupportNode> support = Lists.newArrayList(new SupportNodeIterator(k, Arrays.stream(input).iterator(), maxFrag));
 		int supportWeight = support.stream().mapToInt(n -> n.weight() * n.width()).sum();
 		List<KmerNode> aggregate = Lists.newArrayList(new AggregateNodeIterator(support.iterator()));
 		int aggregateWeight = aggregate.stream().mapToInt(n -> n.weight() * n.width()).sum();

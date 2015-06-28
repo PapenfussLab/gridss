@@ -33,9 +33,9 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		int maxEvidenceWidth = aes.getMaxConcordantFragmentSize() - aes.getMinConcordantFragmentSize() + 1;
 		int maxReadLength = maxReadLength(input);
 		int k = pc.getAssemblyParameters().k;
-		int maxPathLength = pc.getAssemblyParameters().positionalMaxPathLengthInBases(maxEvidenceWidth);
-		int maxPathCollapseLength = pc.getAssemblyParameters().positionalMaxPathCollapseLengthInBases(maxEvidenceWidth);
-		SupportNodeIterator supportIt = new SupportNodeIterator(k, Arrays.stream(input).iterator(), maxReadLength);
+		int maxPathLength = pc.getAssemblyParameters().positionalMaxPathLengthInBases(maxReadLength);
+		int maxPathCollapseLength = pc.getAssemblyParameters().positionalMaxPathCollapseLengthInBases(maxReadLength);
+		SupportNodeIterator supportIt = new SupportNodeIterator(k, Arrays.stream(input).iterator(), aes.getMaxConcordantFragmentSize());
 		trackedIt = new EvidenceTracker(supportIt);
 		AggregateNodeIterator agIt = new AggregateNodeIterator(trackedIt);
 		Iterator<KmerPathNode> pnIt = new PathNodeIterator(agIt, maxPathLength, k);

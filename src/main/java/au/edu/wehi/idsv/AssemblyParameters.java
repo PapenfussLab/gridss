@@ -77,7 +77,7 @@ public class AssemblyParameters {
 	 * Units are multiples of max support width (ie largest max fragment size)
 	 */
 	public float positionalMaxPathCollapseLength = 2f;
-	public int positionalMaxPathCollapseLengthInBases(int maxSupportWidth) { return (int)(positionalMaxPathCollapseLength * maxSupportWidth); }
+	public int positionalMaxPathCollapseLengthInBases(int readLength) { return (int)(positionalMaxPathCollapseLength * readLength); }
 	/**
 	 * Maximum length of a single path node. Leaves longer that this length will not be collapsed.
 	 * 
@@ -85,7 +85,7 @@ public class AssemblyParameters {
 	 * is bounded.    
 	 */
 	public float positionalMaxPathLength = 1.1f;
-	public int positionalMaxPathLengthInBases(int maxSupportWidth) { return (int)(positionalMaxPathLength * maxSupportWidth); }
+	public int positionalMaxPathLengthInBases(int readLength) { return (int)(positionalMaxPathLength * readLength); }
 	/**
 	 * Minimum number of reads contributing the the assembly
 	 */

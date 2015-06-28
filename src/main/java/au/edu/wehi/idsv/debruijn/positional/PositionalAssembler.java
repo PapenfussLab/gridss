@@ -49,12 +49,12 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 		int maxEvidenceWidth = source.getMaxConcordantFragmentSize() - source.getMinConcordantFragmentSize() + 1;
 		int maxReadLength = source.getMaxReadLength();
 		int k = ap.k;
-		int maxPathLength = ap.positionalMaxPathLengthInBases(maxEvidenceWidth);
-		int maxPathCollapseLength = ap.positionalMaxPathCollapseLengthInBases(maxEvidenceWidth);
+		int maxPathLength = ap.positionalMaxPathLengthInBases(maxReadLength);
+		int maxPathCollapseLength = ap.positionalMaxPathCollapseLengthInBases(maxReadLength);
 		int anchorAssemblyLength = ap.anchorAssemblyLength;
 		int referenceIndex = it.peek().getBreakendSummary().referenceIndex;
 		ReferenceIndexIterator evidenceIt = new ReferenceIndexIterator(it, referenceIndex);
-		SupportNodeIterator supportIt = new SupportNodeIterator(k, evidenceIt, maxReadLength);
+		SupportNodeIterator supportIt = new SupportNodeIterator(k, evidenceIt, source.getMaxConcordantFragmentSize());
 		EvidenceTracker trackedIt = new EvidenceTracker(supportIt);
 		AggregateNodeIterator agIt = new AggregateNodeIterator(trackedIt);
 		Iterator<KmerPathNode> pnIt = new PathNodeIterator(agIt, maxPathLength, k);
