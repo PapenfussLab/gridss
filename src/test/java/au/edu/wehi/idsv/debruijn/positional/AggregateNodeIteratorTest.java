@@ -171,4 +171,11 @@ public class AggregateNodeIteratorTest extends TestHelper {
 		//		snList.stream().mapToInt(n -> (n.endPosition() - n.startPosition() + 1) * n.weight()).sum(),
 		//		anList.stream().mapToInt(n -> (n.endPosition() - n.startPosition() + 1) * n.weight()).sum());
 	}
+	//@Test // expensive test to run
+	public void should_stream_input() {
+		AggregateNodeIterator agIt = new AggregateNodeIterator(new SupportNodeIterator(25, new RandomSoftClipIterator(), 100));
+		while (agIt.hasNext()) {
+			agIt.next();
+		}
+	}
 }

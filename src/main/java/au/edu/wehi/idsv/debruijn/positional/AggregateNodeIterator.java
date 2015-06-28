@@ -22,9 +22,11 @@ import com.google.common.primitives.Longs;
  */
 public class AggregateNodeIterator implements Iterator<KmerNode> {
 	private final PeekingIterator<? extends KmerNode> underlying;
-	private PriorityQueue<ImmutableKmerNode> outputSortBuffer = new PriorityQueue<ImmutableKmerNode>(1024, KmerNodeUtil.ByLastStart);
+	private PriorityQueue<ImmutableKmerNode> outputSortBuffer = new PriorityQueue<ImmutableKmerNode>(1024, KmerNodeUtil.ByFirstStart);
 	private Long2ObjectOpenHashMap<KmerNodeAggregator> byKmer = new Long2ObjectOpenHashMap<KmerNodeAggregator>();
-	private PriorityQueue<KmerNodeAggregatorSnapshot> byStartPosition = new PriorityQueue<KmerNodeAggregatorSnapshot>(1024, BySnapshotEndPosition);
+	private PriorityQueue<KmerNodeAggregatorSnapshot> byEnd = new PriorityQueue<KmerNodeAggregatorSnapshot>(1024, BySnapshotEnd);
+	private int maxWidth = 0;
+	private int inputPosition = Integer.MIN_VALUE;
 	public AggregateNodeIterator(Iterator<? extends KmerNode> it) {
 		this.underlying = Iterators.peekingIterator(it);
 	}
@@ -41,57 +43,57 @@ public class AggregateNodeIterator implements Iterator<KmerNode> {
 	private void ensureBuffer() {
 		// we can emit whenever there are no unprocessed or incomplete intervals
 		// before our current interval
-		while (underlying.hasNext() && (outputSortBuffer.isEmpty() ||
-				outputSortBuffer.peek().lastStart() >= underlying.peek().lastStart() ||
-				(!byStartPosition.isEmpty() && outputSortBuffer.peek().lastEnd() >= byStartPosition.peek().snapshotEnd))) {
-			process(underlying.peek().lastStart());
+		while (underlying.hasNext() && (outputSortBuffer.isEmpty() || outputSortBuffer.peek().firstStart() >= earliestPossibleStartOfNodeBeingAggregated())) {
+			inputPosition = underlying.peek().firstStart(); 
+			process();
+			flush();
 		}
 		if (!underlying.hasNext()) {
 			// flush everything
-			flushBefore(Integer.MAX_VALUE);
-		} else {
-			flushBefore(underlying.peek().lastStart());
+			inputPosition = Integer.MAX_VALUE;
+			flush();
 		}
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
 			assert(sanityCheck());
 		}
 	}
-	private void process(int position) {
-		while (underlying.hasNext() && underlying.peek().lastStart() <= position) {
+	private int earliestPossibleStartOfNodeBeingAggregated() {
+		return inputPosition - maxWidth;
+	}
+	private void process() {
+		while (underlying.hasNext() && underlying.peek().firstStart() <= inputPosition) {
 			KmerNode n = underlying.next();
-			assert(position == Integer.MAX_VALUE || n.lastStart() == position); // input should be sorted by start position
-			long kmer = n.lastKmer();
+			assert(n.firstStart() == inputPosition || inputPosition == Integer.MAX_VALUE); // input should be sorted by start position
+			long kmer = n.firstKmer();
 			KmerNodeAggregator ag = byKmer.get(kmer);
 			if (ag == null) {
 				ag = new KmerNodeAggregator(kmer);
 				byKmer.put(kmer, ag);
 			}
 			ag.add(n);
-			byStartPosition.add(ag.new KmerNodeAggregatorSnapshot());
+			byEnd.add(ag.new KmerNodeAggregatorSnapshot());
 		}
 	}
 	/**
 	 * Flush all aggregate nodes starting before the given position
 	 * @param position
 	 */
-	private void flushBefore(int position) {
-		byStartPosition_removeInvalidHead();
-		while (!byStartPosition.isEmpty() && byStartPosition.peek().snapshotEnd < position) {
-			KmerNodeAggregatorSnapshot snapshot = byStartPosition.poll();
-			assert(snapshot.isValid());
+	private void flush() {
+		while (!byEnd.isEmpty() && byEnd.peek().snapshotEnd < inputPosition) {
+			KmerNodeAggregatorSnapshot snapshot = byEnd.poll();
+			if (!snapshot.isValid()) continue;
 			KmerNodeAggregator ag = snapshot.aggregator();
-			ag.advanceTo(position - 1);
+			ag.advanceTo(inputPosition - 1);
 			if (ag.isEmpty()) {
 				byKmer.remove(ag.kmer);
 			} else {
 				KmerNodeAggregatorSnapshot newSnapshot = ag.new KmerNodeAggregatorSnapshot();
-				assert(newSnapshot.snapshotEnd >= position);
-				byStartPosition.add(newSnapshot);
+				assert(newSnapshot.snapshotEnd >= inputPosition);
+				byEnd.add(newSnapshot);
 			}
-			byStartPosition_removeInvalidHead();
 		}
 	}
-	private static final Ordering<KmerNodeAggregatorSnapshot> BySnapshotEndPosition = new Ordering<KmerNodeAggregatorSnapshot>() {
+	private static final Ordering<KmerNodeAggregatorSnapshot> BySnapshotEnd = new Ordering<KmerNodeAggregatorSnapshot>() {
 		@Override
 		public int compare(KmerNodeAggregatorSnapshot left, KmerNodeAggregatorSnapshot right) {
 			return Ints.compare(left.snapshotEnd, right.snapshotEnd);
@@ -147,16 +149,17 @@ public class AggregateNodeIterator implements Iterator<KmerNode> {
 		private final long kmer;
 		public int end() {
 			if (active.isEmpty()) return Integer.MAX_VALUE;
-			return active.peek().lastEnd();
+			return active.peek().firstEnd();
 		}
 		public void add(KmerNode node) {
-			assert(node.lastKmer() == kmer);
-			assert(node.lastStart() >= start);
-			advanceTo(node.lastStart() - 1);
-			if (weight > 0 && start < node.lastStart()) {
-				outputSortBuffer.add(new ImmutableKmerNode(kmer, start, node.lastStart() - 1, referenceCount > 0, weight));
+			assert(node.firstKmer() == kmer);
+			assert(node.firstStart() >= start);
+			maxWidth = Math.max(maxWidth, node.width());
+			advanceTo(node.firstStart() - 1);
+			if (weight > 0 && start < node.firstStart()) {
+				outputSortBuffer.add(new ImmutableKmerNode(kmer, start, node.firstStart() - 1, referenceCount > 0, weight));
 			}
-			start = node.lastStart();
+			start = node.firstStart();
 			if (node.isReference()) {
 				referenceCount++;
 			}
@@ -169,12 +172,12 @@ public class AggregateNodeIterator implements Iterator<KmerNode> {
 		 * @param emitTo collection to emit aggregate records to
 		 */
 		public void advanceTo(int position) {
-			while (!active.isEmpty() && active.peek().lastEnd() <= position) {
-				int end = active.peek().lastEnd();
+			while (!active.isEmpty() && active.peek().firstEnd() <= position) {
+				int end = active.peek().firstEnd();
 				outputSortBuffer.add(new ImmutableKmerNode(kmer, start, end, referenceCount > 0, weight));
-				while (!active.isEmpty() && active.peek().lastEnd() == end) {
+				while (!active.isEmpty() && active.peek().firstEnd() == end) {
 					KmerNode endingHere = active.poll();
-					assert(endingHere.lastKmer() == kmer);
+					assert(endingHere.firstKmer() == kmer);
 					weight -= endingHere.weight();
 					if (endingHere.isReference()) {
 						referenceCount--;
@@ -192,31 +195,20 @@ public class AggregateNodeIterator implements Iterator<KmerNode> {
 	public void remove() {
 		throw new UnsupportedOperationException();
 	}
-	private void byStartPosition_removeInvalidHead() {
-		while (!byStartPosition.isEmpty() && !byStartPosition.peek().isValid()) {
-			byStartPosition.poll();
-		}
-	}
 	private boolean sanityCheck() {
 		// kmer lookup is correct
 		assert(byKmer.entrySet().stream().allMatch(kvp -> kvp.getKey() == kvp.getValue().kmer));
 		// empty aggregators have been removed
 		assert(byKmer.values().stream().allMatch(ag -> !ag.active.isEmpty()));
 		// could have many start position entries, but only one position is valid (and even that could have duplicate entries)
-		assert(byStartPosition.size() >= byKmer.size());
-		assert(byStartPosition.stream().allMatch(snapshot -> !snapshot.isValid() || byKmer.containsKey(snapshot.aggregator().kmer)));
+		assert(byEnd.size() >= byKmer.size());
+		assert(byEnd.stream().allMatch(snapshot -> !snapshot.isValid() || byKmer.containsKey(snapshot.aggregator().kmer)));
+		assert(byKmer.values().stream().allMatch(ag -> ag.end() >= inputPosition));
 		if (outputSortBuffer.isEmpty()) {
 			assert(byKmer.isEmpty());
-			assert(byStartPosition.isEmpty());
+			assert(byEnd.isEmpty());
 			assert(!underlying.hasNext());
-		}
-		if (!byStartPosition.isEmpty()) {
-			assert(byStartPosition.peek().isValid());
-			if (underlying.hasNext()) {
-				assert(byStartPosition.peek().snapshotEnd >= underlying.peek().lastStart());
-			}
-		}
-		
+		}	
 		return true;
 	}
 }

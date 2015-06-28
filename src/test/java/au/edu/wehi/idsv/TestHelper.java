@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 import java.util.SortedSet;
 import java.util.Spliterator;
 import java.util.Spliterators;
@@ -1128,5 +1129,34 @@ public class TestHelper {
 				return ((SoftClipEvidence)e).getSAMRecord().getReadLength();
 			}
 		}).max().orElse(0);
+	}
+	public static class RandomSoftClipIterator implements Iterator<DirectedEvidence> {
+		public int readLength = 100;
+		public int stopAfter = 1000000;
+		private int n = 0;
+		private Random rng = new Random(0);
+		private byte[] bases = new byte[] { 'A', 'C', 'G', 'T' };
+		@Override
+		public boolean hasNext() {
+			return n < stopAfter;
+		}
+		@Override
+		public DirectedEvidence next() {
+			byte[] seq = new byte[readLength]; 
+			byte[] qual = new byte[readLength];
+			for (int i = 0; i < readLength; i++) {
+				seq[i] = (byte)bases[rng.nextInt(4)];
+				qual[i] = (byte)rng.nextInt(45);
+			}
+			SAMRecord r = Read(0, ++n, "50M50S");
+			r.setReadBases(seq);
+			r.setBaseQualities(qual);
+			return SCE(FWD, r);
+					
+			//int sclen = rng.nextInt(readLength / 2) + 5;
+			//boolean fwd = rng.nextBoolean();
+			//SAMRecord r = Read(0, n++, fwd ? String.format("%dM%dS", readLength - sclen, sclen) : String.format("%dS%dM", sclen, readLength - sclen));
+			//return SCE(fwd ? FWD : BWD, r);
+		}
 	}
 }

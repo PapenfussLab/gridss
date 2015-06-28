@@ -345,7 +345,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				SAMFileHeader samHeader = new SAMFileHeader();
 				samHeader.setSequenceDictionary(getContext().getReference().getSequenceDictionary());
 				samHeader.setSortOrder(SortOrder.unsorted);
-				writer = getContext().getSamFileWriterFactory(true).makeSAMOrBAMWriter(samHeader, true, unsorted);
+				writer = getContext().getSamFileWriterFactory(false).makeSAMOrBAMWriter(samHeader, true, unsorted);
 				Iterator<SAMRecordAssemblyEvidence> assemblyIt = getAssembler(it);
 				while (assemblyIt.hasNext()) {
 					SAMRecordAssemblyEvidence ass = assemblyIt.next();
@@ -359,6 +359,8 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 						writer.addAlignment(record);
 					}
 				}
+				writer.close();
+				writer = null;
 			} finally {
 				CloserUtil.close(writer);
 			}

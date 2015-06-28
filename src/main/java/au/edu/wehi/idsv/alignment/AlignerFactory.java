@@ -12,7 +12,7 @@ public class AlignerFactory {
         	sswjniLoaded = true;
         } catch (UnsatisfiedLinkError e) {
         	sswjniLoaded = false;
-        	log.warn("Unable to load sswjni library - assembly will be 10x slower than normal. Please ensure libsswjni.so can be found by setting LD_LIBRARY_PATH or java.library.path");
+        	log.warn("Unable to load sswjni library - assembly will be very slow. Please ensure libsswjni.so can be found by setting LD_LIBRARY_PATH or java.library.path");
         }
     }
 	public static Aligner create(int match, int mismatch, int ambiguous, int gapOpen, int gapExtend) {
