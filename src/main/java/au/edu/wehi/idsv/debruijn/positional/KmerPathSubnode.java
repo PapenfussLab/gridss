@@ -11,41 +11,43 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
 
-public class KmerPathSubnode implements DeBruijnSequenceGraphNode {
+public class KmerPathSubnode implements DeBruijnSequenceGraphNode, KmerNode {
 	private final KmerPathNode n;
 	private final int start;
 	private final int end;
 	public KmerPathSubnode(KmerPathNode n, int start, int end) {
-		assert(n.firstKmerStart() <= start);
-		assert(n.firstKmerEnd() >= end);
+		assert(n.firstStart() <= start);
+		assert(n.firstEnd() >= end);
 		assert(end - start >= 0);
 		this.n = n;
 		this.start = start;
 		this.end = end;
 	}
 	public KmerPathSubnode(KmerPathNode node) {
-		this(node, node.firstKmerStart(), node.firstKmerEnd());
+		this(node, node.firstStart(), node.firstEnd());
 	}
 	public KmerPathNode node() { return n; }
 	public long firstKmer() { return n.firstKmer(); }
-	public int firstKmerStartPosition() { return start; }
-	public int firstKmerEndPosition() { return end; }
-	public int startPosition() { return firstKmerStartPosition() + length() - 1; }
-	public int endPosition() { return firstKmerEndPosition() + length() - 1; }
+	public long lastKmer() { return n.lastKmer(); }
+	public int firstStart() { return start; }
+	public int firstEnd() { return end; }
+	public int lastStart() { return firstStart() + length() - 1; }
+	public int lastEnd() { return firstEnd() + length() - 1; }
 	public int width() { return end - start + 1; }
 	public int length() { return n.length(); }
 	public int weight() { return n.weight(); }
 	public int weight(int offset) { return n.weight(offset); }
 	public long kmer(int offset) { return n.kmer(offset); }
+	public boolean isReference() { return n.isReference(); }
 	/**
 	 * Returns the subset of valid position of this node for the given next traversal 
 	 * @param node next node traversed
 	 * @return subset of this that is valid for the given traversal
 	 */
 	public KmerPathSubnode givenNext(KmerPathSubnode node) {
-		int subsetStart = Math.max(firstKmerStartPosition(), node.firstKmerStartPosition() - this.length());
-		int subsetEnd = Math.min(firstKmerEndPosition(), node.firstKmerEndPosition() - this.length());
-		if (subsetStart == firstKmerStartPosition() && subsetEnd == firstKmerEndPosition()) {
+		int subsetStart = Math.max(firstStart(), node.firstStart() - this.length());
+		int subsetEnd = Math.min(firstEnd(), node.firstEnd() - this.length());
+		if (subsetStart == firstStart() && subsetEnd == firstEnd()) {
 			return this;
 		} else {
 			return new KmerPathSubnode(node(), subsetStart, subsetEnd);
@@ -57,9 +59,9 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode {
 	 * @return subset of this that is valid for the given traversal
 	 */
 	public KmerPathSubnode givenPrev(KmerPathSubnode node) {
-		int subsetStart = Math.max(firstKmerStartPosition(), node.firstKmerStartPosition() + node.length());
-		int subsetEnd = Math.min(firstKmerEndPosition(), node.firstKmerEndPosition() + node.length());
-		if (subsetStart == firstKmerStartPosition() && subsetEnd == firstKmerEndPosition()) {
+		int subsetStart = Math.max(firstStart(), node.firstStart() + node.length());
+		int subsetEnd = Math.min(firstEnd(), node.firstEnd() + node.length());
+		if (subsetStart == firstStart() && subsetEnd == firstEnd()) {
 			return this;
 		} else {
 			return new KmerPathSubnode(node(), subsetStart, subsetEnd);
@@ -70,8 +72,8 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode {
 		int targetStart = start + n.length();
 		int targetEnd = end + n.length();
 		for (KmerPathNode pn : n.next()) {
-			int pnStart = pn.firstKmerStart();
-			int pnEnd = pn.firstKmerEnd();
+			int pnStart = pn.firstStart();
+			int pnEnd = pn.firstEnd();
 			// since next() is sorted, we only need to process the neighbours overlapping our interval
 			if (pnEnd < targetStart) {
 				continue;
@@ -127,21 +129,21 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode {
 	 * @return
 	 */
 	private RangeSet<Integer> pathRangesOfDegree(int degree, boolean outEdges) {
-		int start = firstKmerStartPosition();
-		final int scopeEnd = firstKmerEndPosition();
+		int start = firstStart();
+		final int scopeEnd = firstEnd();
 		IntHeapPriorityQueue unprocessedEndsAt = new IntHeapPriorityQueue();
 		IntHeapPriorityQueue unprocessedStartsAt = new IntHeapPriorityQueue();
 		if (outEdges) {
 			for (KmerPathSubnode adj : next()) {
 				KmerPathSubnode thisRestricted = givenNext(adj);
-				unprocessedStartsAt.enqueue(thisRestricted.firstKmerStartPosition());
-				unprocessedEndsAt.enqueue(thisRestricted.firstKmerEndPosition());
+				unprocessedStartsAt.enqueue(thisRestricted.firstStart());
+				unprocessedEndsAt.enqueue(thisRestricted.firstEnd());
 			}
 		} else {
 			for (KmerPathSubnode adj : prev()) {
 				KmerPathSubnode thisRestricted = givenPrev(adj);
-				unprocessedStartsAt.enqueue(thisRestricted.firstKmerStartPosition());
-				unprocessedEndsAt.enqueue(thisRestricted.firstKmerEndPosition());
+				unprocessedStartsAt.enqueue(thisRestricted.firstStart());
+				unprocessedEndsAt.enqueue(thisRestricted.firstEnd());
 			}
 		}
 		RangeSet<Integer> result = TreeRangeSet.create();
@@ -173,7 +175,7 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode {
 	}
 	@Override
 	public String toString() {
-		return String.format("[%d-%d]%s", firstKmerStartPosition(), firstKmerEndPosition(), n);
+		return String.format("[%d-%d]%s", firstStart(), firstEnd(), n);
 	}
 	@Override
 	public int hashCode() {

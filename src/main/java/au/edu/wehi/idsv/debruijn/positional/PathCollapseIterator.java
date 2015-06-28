@@ -136,10 +136,10 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 		return node;
 	}
 	private void ensureBuffer() {
-		while (inputPosition < Integer.MAX_VALUE && (processed.isEmpty() || processed.first().firstKmerStart() > inputPosition - emitOffset())) {
+		while (inputPosition < Integer.MAX_VALUE && (processed.isEmpty() || processed.first().firstStart() > inputPosition - emitOffset())) {
 			// advance graph position
 			if (underlying.hasNext()) {
-				inputPosition = underlying.peek().firstKmerStart();
+				inputPosition = underlying.peek().firstStart();
 			} else {
 				inputPosition = Integer.MAX_VALUE;
 			}
@@ -152,7 +152,7 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 	 * to processing queue
 	 */
 	private void loadGraphNodes() {
-		while (underlying.hasNext() && underlying.peek().firstKmerStart() <= inputPosition) {
+		while (underlying.hasNext() && underlying.peek().firstStart() <= inputPosition) {
 			KmerPathNode node = underlying.next();
 			maxNodeWidth = Math.max(maxNodeWidth, node.width());
 			maxNodeLength = Math.max(maxNodeLength, node.length());
@@ -325,7 +325,7 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 	}
 	private void merge(List<KmerPathSubnode> sourcePath, List<KmerPathSubnode> targetPath) {
 		assert(sourcePath.get(0).width() == targetPath.get(0).width());
-		assert(sourcePath.get(0).firstKmerStartPosition() == targetPath.get(0).firstKmerStartPosition());
+		assert(sourcePath.get(0).firstStart() == targetPath.get(0).firstStart());
 		// trim common path prefix and suffixes
 		// we don't want to split common nodes since a source split
 		// can invalidate the target node due to changed node width/length
@@ -341,12 +341,12 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 		List<KmerPathNode> target = positionSplit(targetPath);
 		IntSortedSet kmerStartPositions = new IntRBTreeSet();
 		for (KmerPathNode n : source) {
-			kmerStartPositions.add(n.firstKmerStart());
-			kmerStartPositions.add(n.firstKmerStart() + n.length());
+			kmerStartPositions.add(n.firstStart());
+			kmerStartPositions.add(n.firstStart() + n.length());
 		}
 		for (KmerPathNode n : target) {
-			kmerStartPositions.add(n.firstKmerStart());
-			kmerStartPositions.add(n.firstKmerStart() + n.length());
+			kmerStartPositions.add(n.firstStart());
+			kmerStartPositions.add(n.firstStart() + n.length());
 		}
 		source = lengthSplit(kmerStartPositions, source);
 		target = lengthSplit(kmerStartPositions, target);
@@ -380,8 +380,8 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 				// split the underlying node
 				int splitLength = splitAfter - length;
 				KmerPathNode split = lengthSplit(n.node(), splitLength);
-				path.add(index, new KmerPathSubnode(split, n.firstKmerStartPosition(), n.firstKmerEndPosition()));
-				path.set(index + 1, new KmerPathSubnode(n.node(), n.firstKmerStartPosition() + splitLength, n.firstKmerEndPosition() + splitLength));
+				path.add(index, new KmerPathSubnode(split, n.firstStart(), n.firstEnd()));
+				path.set(index + 1, new KmerPathSubnode(n.node(), n.firstStart() + splitLength, n.firstEnd() + splitLength));
 			}		
 		}
 	}
@@ -390,8 +390,8 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 		for (int i = 0; i < path.size(); i++) {
 			KmerPathNode pn = path.get(i);
 			// break node internally
-			for (int breakStartPosition : startPositions.subSet(pn.firstKmerStart() + 1, pn.firstKmerStart() + pn.length())) {
-				int breakLength = breakStartPosition - pn.firstKmerStart();
+			for (int breakStartPosition : startPositions.subSet(pn.firstStart() + 1, pn.firstStart() + pn.length())) {
+				int breakLength = breakStartPosition - pn.firstStart();
 				KmerPathNode split = lengthSplit(pn, breakLength);
 				result.add(split);
 			}
@@ -422,23 +422,23 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 	private KmerPathNode positionSplit(KmerPathSubnode n) {
 		KmerPathNode pn = n.node();
 		assert(processed.contains(pn) || unprocessed.contains(pn));
-		if (n.firstKmerStartPosition() != pn.firstKmerStart()) {
+		if (n.firstStart() != pn.firstStart()) {
 			NavigableSet<KmerPathNode> queue = processed.contains(pn) ? processed : unprocessed;
 			queue.remove(pn);
-			KmerPathNode preNode = pn.splitAtStartPosition(n.firstKmerStartPosition());
+			KmerPathNode preNode = pn.splitAtStartPosition(n.firstStart());
 			queue.add(pn);
 			queue.add(preNode);
 		}
-		if (pn.firstKmerEnd() != n.firstKmerEndPosition()) {
+		if (pn.firstEnd() != n.firstEnd()) {
 			NavigableSet<KmerPathNode> queue = processed.contains(pn) ? processed : unprocessed;
 			queue.remove(pn);
-			KmerPathNode midNode = pn.splitAtStartPosition(n.firstKmerEndPosition() + 1);
+			KmerPathNode midNode = pn.splitAtStartPosition(n.firstEnd() + 1);
 			queue.add(pn);
 			queue.add(midNode);
 			pn = midNode;
 		}
-		assert(pn.firstKmerStart() == n.firstKmerStartPosition());
-		assert(pn.firstKmerEnd() == n.firstKmerEndPosition());
+		assert(pn.firstStart() == n.firstStart());
+		assert(pn.firstEnd() == n.firstEnd());
 		return pn;
 	}
 	private void merge(KmerPathNode toMerge, KmerPathNode into) {
@@ -496,8 +496,8 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 	@Override
 	public String toString(Iterable<? extends KmerPathSubnode> path) {
 		return String.format("[%d-%d] %s",
-			path.iterator().next().firstKmerStartPosition(),
-			path.iterator().next().firstKmerEndPosition(),
+			path.iterator().next().firstStart(),
+			path.iterator().next().firstEnd(),
 			KmerEncodingHelper.baseCalls(DeBruijnSequenceGraphNodeUtil.asKmers(path), k));
 	}
 	@Override

@@ -83,7 +83,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		startAnchorPath.greedyTraverse(true, false);
 		ArrayDeque<KmerPathSubnode> startingAnchor = startAnchorPath.headNode().asSubnodes();
 		startingAnchor.remove(contig.getFirst());
-		while (wrapper.hasNext() && contig.getLast().endPosition() + targetAnchorLength > wrapper.lastPosition()) {
+		while (wrapper.hasNext() && contig.getLast().lastEnd() + targetAnchorLength > wrapper.lastPosition()) {
 			// make sure we have enough of the graph loaded so that when
 			// we traverse forward, our anchor sequence will be fully defined
 			wrapper.next();
@@ -118,19 +118,19 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			// end anchored
 			assembledContig = AssemblyFactory.createAnchoredBreakend(aes.getContext(), aes,
 					BreakendDirection.Backward, evidenceIds,
-					referenceIndex, endingAnchor.getFirst().firstKmerStartPosition(), endingAnchor.stream().mapToInt(n -> n.length()).sum(),
+					referenceIndex, endingAnchor.getFirst().firstStart(), endingAnchor.stream().mapToInt(n -> n.length()).sum() + k - 1,
 					bases, quals, new int[] { 0, 0 });
 		} else if (endingAnchor.size() == 0) {
 			// start anchored
 			assembledContig = AssemblyFactory.createAnchoredBreakend(aes.getContext(), aes,
 					BreakendDirection.Forward, evidenceIds,
-					referenceIndex, startingAnchor.getLast().startPosition() + k - 1, startingAnchor.stream().mapToInt(n -> n.length()).sum(),
+					referenceIndex, startingAnchor.getLast().lastStart() + k - 1, startingAnchor.stream().mapToInt(n -> n.length()).sum() + k - 1,
 					bases, quals, new int[] { 0, 0 });
 		} else {
 			// left aligned
 			assembledContig = AssemblyFactory.createAnchoredBreakpoint(aes.getContext(), aes, evidenceIds,
-					referenceIndex, startingAnchor.getLast().startPosition() + k - 1, startingAnchor.stream().mapToInt(n -> n.length()).sum(),
-					referenceIndex, endingAnchor.getFirst().firstKmerStartPosition(), endingAnchor.stream().mapToInt(n -> n.length()).sum(),
+					referenceIndex, startingAnchor.getLast().lastStart() + k - 1, startingAnchor.stream().mapToInt(n -> n.length()).sum() + k - 1,
+					referenceIndex, endingAnchor.getFirst().firstStart(), endingAnchor.stream().mapToInt(n -> n.length()).sum() + k - 1,
 					bases, quals, new int[] { 0, 0 });
 		}
 		// remove all evidence contributing to this assembly from the graph
@@ -264,7 +264,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		public KmerPathNode next() {
 			KmerPathNode node = underlying.next();
 			addToGraph(node);
-			position = node.firstKmerStart();
+			position = node.firstStart();
 			return node;
 		}
 	}

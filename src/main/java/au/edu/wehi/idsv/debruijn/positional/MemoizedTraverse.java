@@ -43,42 +43,42 @@ public class MemoizedTraverse {
 		for (TraversalNode existing : couldOverlap) {
 			if (existing.node.firstKmer() > node.node.firstKmer()) break;
 			if (existing.node.firstKmer() < node.node.firstKmer()) continue;
-			if (existing.node.firstKmerEndPosition() < node.node.firstKmerStartPosition()) continue;
-			if (existing.node.firstKmerStartPosition() > node.node.firstKmerEndPosition()) break;
+			if (existing.node.firstEnd() < node.node.firstStart()) continue;
+			if (existing.node.firstStart() > node.node.firstEnd()) break;
 			
 			// we overlap an existing path
 			assert(existing.node.firstKmer() == node.node.firstKmer() && IntervalUtil.overlapsClosed(
-					existing.node.firstKmerStartPosition(), existing.node.firstKmerStartPosition(),
-					node.node.firstKmerStartPosition(), node.node.firstKmerStartPosition()));
+					existing.node.firstStart(), existing.node.firstStart(),
+					node.node.firstStart(), node.node.firstStart()));
 			
 			// ok, so now we know the nodes overlap
 			if (node.score > existing.score) {
 				// remove existing node in overlapping interval
 				toRemove.add(existing);
-				if (existing.node.firstKmerStartPosition() < node.node.firstKmerStartPosition()) {
+				if (existing.node.firstStart() < node.node.firstStart()) {
 					// still valid in earlier interval
-					TraversalNode existingBefore = new TraversalNode(existing, existing.node.firstKmerStartPosition(), node.node.firstKmerStartPosition() - 1);
+					TraversalNode existingBefore = new TraversalNode(existing, existing.node.firstStart(), node.node.firstStart() - 1);
 					toAdd.add(existingBefore);
 				}
-				if (existing.node.firstKmerEndPosition() > node.node.firstKmerEndPosition()) {
+				if (existing.node.firstEnd() > node.node.firstEnd()) {
 					// still valid in earlier interval
-					TraversalNode existingAfter = new TraversalNode(existing, node.node.firstKmerEndPosition() + 1, existing.node.firstKmerEndPosition());
+					TraversalNode existingAfter = new TraversalNode(existing, node.node.firstEnd() + 1, existing.node.firstEnd());
 					toAdd.add(existingAfter);
 				}
 			} else { // existing node scores better than us
-				int newStartPosition = existing.node.firstKmerEndPosition() + 1;
-				if (node.node.firstKmerStartPosition() < existing.node.firstKmerStartPosition()) {
+				int newStartPosition = existing.node.firstEnd() + 1;
+				if (node.node.firstStart() < existing.node.firstStart()) {
 					// start before this node -> we have
-					TraversalNode newBefore = new TraversalNode(node, node.node.firstKmerStartPosition(), existing.node.firstKmerStartPosition() - 1);
+					TraversalNode newBefore = new TraversalNode(node, node.node.firstStart(), existing.node.firstStart() - 1);
 					toAdd.add(newBefore);
 				}
-				if (newStartPosition > node.node.firstKmerEndPosition()) {
+				if (newStartPosition > node.node.firstEnd()) {
 					// existing node is better than us for all remaining starting position
 					// -> don't memoize node
 					node = null;
 					break;
 				} else {
-					node = new TraversalNode(node, newStartPosition, node.node.firstKmerEndPosition());
+					node = new TraversalNode(node, newStartPosition, node.node.firstEnd());
 				}
 			}
 		}
@@ -131,8 +131,8 @@ public class MemoizedTraverse {
 		for (TraversalNode n : memoized) {
 			if (last != null) {
 				assert(!(last.node.firstKmer() == n.node.firstKmer() && IntervalUtil.overlapsClosed(
-						last.node.firstKmerStartPosition(), last.node.firstKmerStartPosition(),
-						n.node.firstKmerStartPosition(), n.node.firstKmerStartPosition())));
+						last.node.firstStart(), last.node.firstStart(),
+						n.node.firstStart(), n.node.firstStart())));
 			}
 			n = last;
 		}
@@ -143,8 +143,8 @@ public class MemoizedTraverse {
 		public int compare(TraversalNode left, TraversalNode right) {
 			return ComparisonChain.start()
 					.compare(left.node.node().firstKmer(), right.node.node().firstKmer())
-					.compare(left.node.firstKmerStartPosition(), right.node.firstKmerStartPosition())
-					.compare(left.node.firstKmerEndPosition(), right.node.firstKmerEndPosition())
+					.compare(left.node.firstStart(), right.node.firstStart())
+					.compare(left.node.firstEnd(), right.node.firstEnd())
 					.compare(left.score, right.score)
 					.result();
 		}
@@ -152,7 +152,7 @@ public class MemoizedTraverse {
 	private static Ordering<TraversalNode> MemoizedNodeByEnd = new Ordering<TraversalNode>() {
 		@Override
 		public int compare(TraversalNode left, TraversalNode right) {
-			return Ints.compare(left.node.firstKmerEndPosition() + left.node.length(), right.node.firstKmerEndPosition() + right.node.length());
+			return Ints.compare(left.node.firstEnd() + left.node.length(), right.node.firstEnd() + right.node.length());
 		}
 	};
 }

@@ -80,8 +80,8 @@ public class KmerPathNodePathTest extends TestHelper {
 				while (path.dfsNextChild());
 				List<KmerPathSubnode> snl = new ArrayList<KmerPathSubnode>(path.headNode().asSubnodes());
 				for (int j = 1; j < snl.size(); j++) {
-					assertEquals(snl.get(j - 1).firstKmerStartPosition() + snl.get(j - 1).length(), snl.get(j).firstKmerStartPosition());
-					assertEquals(snl.get(j - 1).firstKmerEndPosition() + snl.get(j - 1).length(), snl.get(j).firstKmerEndPosition());
+					assertEquals(snl.get(j - 1).firstStart() + snl.get(j - 1).length(), snl.get(j).firstStart());
+					assertEquals(snl.get(j - 1).firstEnd() + snl.get(j - 1).length(), snl.get(j).firstEnd());
 				}
 			}
 		}
@@ -148,7 +148,7 @@ public class KmerPathNodePathTest extends TestHelper {
 		expected.add(Range.closed(7, 7));
 		assertEquals(expected, path.headNode().terminalLeafAnchorRanges());
 		
-		assertEquals(1, path.headNode().firstTerminalLeaf().node().firstKmerStartPosition());
+		assertEquals(1, path.headNode().firstTerminalLeaf().node().firstStart());
 	}
 	@Test
 	public void greedyTraverse_should_follow_highest_weighted_path() {

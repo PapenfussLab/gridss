@@ -74,7 +74,7 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 			List<KmerNode> list = edgeLookup.get(kmer);
 			if (list != null) {
 				for (KmerNode n : list) {
-					if (!(n instanceof KmerPathNode) && IntervalUtil.overlapsClosed(node.lastStart() + 1, node.lastEnd() + 1, n.firstKmerStart(), n.firstKmerEnd())) {
+					if (!(n instanceof KmerPathNode) && IntervalUtil.overlapsClosed(node.lastStart() + 1, node.lastEnd() + 1, n.firstStart(), n.firstEnd())) {
 						assert(KmerEncodingHelper.isNext(k, node.lastKmer(), n.firstKmer()));
 						adj.add(n);
 					}
@@ -83,7 +83,7 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 			List<KmerPathNode> pnList = firstKmerEdgeLookup.get(kmer);
 			if (pnList != null) {
 				for (KmerNode n : pnList) {
-					if (IntervalUtil.overlapsClosed(node.lastStart() + 1, node.lastEnd() + 1, n.firstKmerStart(), n.firstKmerEnd())) {
+					if (IntervalUtil.overlapsClosed(node.lastStart() + 1, node.lastEnd() + 1, n.firstStart(), n.firstEnd())) {
 						assert(KmerEncodingHelper.isNext(k, node.lastKmer(), n.firstKmer()));
 						adj.add(n);
 					}
@@ -98,7 +98,7 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 			List<KmerNode> list = edgeLookup.get(kmer);
 			if (list != null) {
 				for (KmerNode n : list) {
-					if (IntervalUtil.overlapsClosed(n.lastStart() + 1, n.lastEnd() + 1, node.firstKmerStart(), node.firstKmerEnd())) {
+					if (IntervalUtil.overlapsClosed(n.lastStart() + 1, n.lastEnd() + 1, node.firstStart(), node.firstEnd())) {
 						assert(KmerEncodingHelper.isNext(k, n.lastKmer(), node.firstKmer()));
 						adj.add(n);
 					}
@@ -195,8 +195,8 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 		List<KmerNode> prev = prevNodes(node);
 		if (prev.size() == 1) {
 			KmerNode toMerge = prev.get(0);
-			if (toMerge.lastStart() == node.firstKmerStart() - 1
-					&& toMerge.lastEnd() == node.firstKmerEnd() - 1
+			if (toMerge.lastStart() == node.firstStart() - 1
+					&& toMerge.lastEnd() == node.firstEnd() - 1
 					&& toMerge.isReference() == node.isReference()
 					&& toMerge.length() < maxNodeLength) {
 				// we can merge

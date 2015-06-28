@@ -136,8 +136,8 @@ public class PathSimplificationIterator implements Iterator<KmerPathNode> {
 	private KmerPathNode prevKmerToMergeWith(KmerPathNode node) {
 		if (node.prev().size() == 1) {
 			KmerPathNode prev = node.prev().get(0);
-			if (prev.lastEnd() + 1 == node.firstKmerEnd()
-					&& prev.lastStart() + 1 == node.firstKmerStart()
+			if (prev.lastEnd() + 1 == node.firstEnd()
+					&& prev.lastStart() + 1 == node.firstStart()
 					&& prev.isReference() == node.isReference()
 					&& prev.length() + node.length() <= maxLength
 					&& prev.next().size() == 1) {
@@ -163,7 +163,7 @@ public class PathSimplificationIterator implements Iterator<KmerPathNode> {
 		while (inputPosition < Integer.MAX_VALUE && (processed.isEmpty() || couldMergeToIncludeKmerAt(processed.first(), inputPosition))) {
 			// advance graph position
 			if (underlying.hasNext()) {
-				inputPosition = underlying.peek().firstKmerStart();
+				inputPosition = underlying.peek().firstStart();
 			} else {
 				inputPosition = Integer.MAX_VALUE;
 			}
@@ -208,7 +208,7 @@ public class PathSimplificationIterator implements Iterator<KmerPathNode> {
 	 * Loads records from the underlying stream up to and including the current inputPosition.
 	 */
 	private void advance() {
-		while (underlying.hasNext() && underlying.peek().firstKmerStart() <= inputPosition) {
+		while (underlying.hasNext() && underlying.peek().firstStart() <= inputPosition) {
 			KmerPathNode nextRecord = underlying.next();
 			assert(nextRecord.width() <= maxWidth);
 			assert(nextRecord.length() <= maxLength);

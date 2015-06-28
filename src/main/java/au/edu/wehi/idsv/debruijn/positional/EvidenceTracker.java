@@ -78,8 +78,8 @@ public class EvidenceTracker implements Iterator<KmerSupportNode> {
 	public Set<KmerEvidence> untrack(Collection<KmerPathSubnode> contig) {
 		HashSet<KmerEvidence> evidence = new HashSet<KmerEvidence>();
 		for (KmerPathSubnode sn : contig) {
-			int start = sn.firstKmerStartPosition();
-			int end = sn.firstKmerEndPosition();
+			int start = sn.firstStart();
+			int end = sn.firstEnd();
 			for (int i = 0; i < sn.length(); i++) {
 				removeToCollection(evidence, sn.kmer(i), start + i, end + i);
 			}

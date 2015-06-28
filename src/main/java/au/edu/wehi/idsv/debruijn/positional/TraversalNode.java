@@ -48,8 +48,8 @@ public class TraversalNode {
 	 */
 	public TraversalNode(TraversalNode node, int start, int end) {
 		assert(end >= start);
-		assert(node.node.firstKmerStartPosition() <= start);
-		assert(node.node.firstKmerEndPosition() >= end);
+		assert(node.node.firstStart() <= start);
+		assert(node.node.firstEnd() >= end);
 		this.node = new KmerPathSubnode(node.node.node(), start, end);
 		this.prev = node.prev;
 		this.score = node.score;

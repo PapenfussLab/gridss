@@ -45,12 +45,12 @@ public class BestNonReferenceContigCallerTest extends TestHelper {
 		List<ArrayDeque<KmerPathSubnode>> result = calls(input, 100);
 		assertEquals(2, result.size());
 		assertEquals(2, result.get(0).size());
-		assertEquals(1, result.get(0).getFirst().firstKmerStartPosition());
-		assertEquals(10, result.get(0).getFirst().firstKmerEndPosition());
+		assertEquals(1, result.get(0).getFirst().firstStart());
+		assertEquals(10, result.get(0).getFirst().firstEnd());
 		// alternate start position
 		assertEquals(1, result.get(1).size());
-		assertEquals(12, result.get(1).getFirst().firstKmerStartPosition());
-		assertEquals(13, result.get(1).getFirst().firstKmerEndPosition());
+		assertEquals(12, result.get(1).getFirst().firstStart());
+		assertEquals(13, result.get(1).getFirst().firstEnd());
 	}
 	@Test
 	public void should_start_path_with_no_predecessor() {

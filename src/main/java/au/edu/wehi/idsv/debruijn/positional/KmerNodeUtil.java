@@ -15,20 +15,20 @@ public class KmerNodeUtil {
 	public static final Ordering<KmerNode> ByFirstStart = new Ordering<KmerNode>() {
 		@Override
 		public int compare(KmerNode left, KmerNode right) {
-			return Ints.compare(left.firstKmerStart(), right.firstKmerStart());
+			return Ints.compare(left.firstStart(), right.firstStart());
 		}
 	};
 	public static final Ordering<KmerNode> ByFirstEnd = new Ordering<KmerNode>() {
 		@Override
 		public int compare(KmerNode left, KmerNode right) {
-			return Ints.compare(left.firstKmerStart(), right.firstKmerStart());
+			return Ints.compare(left.firstStart(), right.firstStart());
 		}
 	};
 	public static final Ordering<KmerNode> ByFirstStartKmer = new Ordering<KmerNode>() {
 		@Override
 		public int compare(KmerNode left, KmerNode right) {
 			return ComparisonChain.start()
-					.compare(left.firstKmerStart(), right.firstKmerStart())
+					.compare(left.firstStart(), right.firstStart())
 					.compare(left.firstKmer(), right.firstKmer())
 					.result();
 		}
@@ -40,8 +40,8 @@ public class KmerNodeUtil {
 		@Override
 		public int compare(KmerNode left, KmerNode right) {
 			return ComparisonChain.start()
-					.compare(left.firstKmerStart(), right.firstKmerStart())
-					.compare(left.firstKmerEnd(), right.firstKmerEnd())
+					.compare(left.firstStart(), right.firstStart())
+					.compare(left.firstEnd(), right.firstEnd())
 					.compare(left.firstKmer(), right.firstKmer())
 					.compareTrueFirst(left.isReference(), right.isReference())
 					.result();

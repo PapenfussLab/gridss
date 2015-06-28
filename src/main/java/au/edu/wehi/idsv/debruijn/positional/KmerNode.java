@@ -8,8 +8,8 @@ public interface KmerNode {
 	int weight();
 	boolean isReference();
 	default int width() { return lastEnd() - lastStart() + 1; }
-	default int firstKmerStart() { return lastStart(); }
-	default int firstKmerEnd() { return lastEnd(); }
+	default int firstStart() { return lastStart(); }
+	default int firstEnd() { return lastEnd(); }
 	default long firstKmer() { return lastKmer(); }
 	default int length() { return 1; }
 }

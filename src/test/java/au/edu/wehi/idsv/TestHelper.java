@@ -1112,8 +1112,8 @@ public class TestHelper {
 		}
 	}
 	public static void assertSame(KmerPathSubnode n1, KmerPathSubnode n2) {
-		assertEquals(n1.firstKmerStartPosition() , n2.firstKmerStartPosition());
-		assertEquals(n1.firstKmerEndPosition(), n2.firstKmerEndPosition());
+		assertEquals(n1.firstStart() , n2.firstStart());
+		assertEquals(n1.firstEnd(), n2.firstEnd());
 		assertSame(n1.node(), n2.node());
 		assertEquals(n1.length(), n2.length());
 		assertEquals(n1.weight(), n2.weight());

@@ -83,10 +83,10 @@ public abstract class KmerPathNodeBasePath {
 			return ranges;
 		}
 		public int startPositionOfAnchorKmer() {
-			return firstNodeKmerToAnchorPosition(node().firstKmerStartPosition()); 
+			return firstNodeKmerToAnchorPosition(node().firstStart()); 
 		}
 		public int endPositionOfAnchorKmer() {
-			return firstNodeKmerToAnchorPosition(node().firstKmerEndPosition());
+			return firstNodeKmerToAnchorPosition(node().firstEnd());
 		}
 		/**
 		 * Translates a path position of the first kmer of this to the corresponding anchor kmer
