@@ -67,7 +67,9 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     public float SOFT_CLIP_MIN_ANCHOR_PERCENT_IDENTITY = new SoftClipParameters().minAnchorIdentity;
     @Option(doc = "Adapter sequence to exclude from analysis. Defaults to Illumina Universal Adapter, Illumina Small RNA Adapter, and Nextera Transposase sequences", optional=true)
     public List<String> ADAPTER_SEQUENCE = Lists.newArrayList(new SoftClipParameters().adapters.getAdapterSequences());
- // --- Assembly parameters ---
+    // --- Assembly parameters ---
+    @Option(doc = "Algorithm used to perform assembly of all reads supporting any putative structural variant", optional=true)
+    public AssemblyAlgorithm ASSEMBLY_ALGORITHM = new AssemblyParameters().method;
     @Option(shortName="K", doc = "k-mer used for de bruijn graph construction", optional=true)
     // --- De Bruijn assembly parameters ---
     public int ASSEMBLY_DEBRUIJN_KMER = new AssemblyParameters().k;

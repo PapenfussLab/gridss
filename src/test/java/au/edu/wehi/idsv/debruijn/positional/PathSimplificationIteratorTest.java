@@ -25,7 +25,7 @@ public class PathSimplificationIteratorTest extends TestHelper {
 						// tile evidence such that the entire input could be compressed to a single
 						// node if the limits did not exist
 						List<KmerNode> in = PathNodeIteratorTest.tiled(inputWidth, tiles, maxPathLength * tiles, k);
-						in.sort(KmerNodeUtil.ByStartPosition);
+						in.sort(KmerNodeUtil.ByLastStart);
 						int weightIn = totalWeight(in);
 						List<KmerPathNode> inpn = Lists.newArrayList(new PathNodeIterator(in.iterator(), inputLength, k));
 						assertEquals(weightIn, totalWeight(inpn)); // precondition
@@ -49,7 +49,7 @@ public class PathSimplificationIteratorTest extends TestHelper {
 		in.add(new KmerPathNode(K("TAAA"), 1, 1, true, 1));
 		in.add(new KmerPathNode(K("AAAT"), 2, 2, false, 1));
 		KmerPathNode.addEdge(in.get(0), in.get(1));
-		in.sort(KmerNodeUtil.ByFirstKmerStartPosition);
+		in.sort(KmerNodeUtil.ByFirstStart);
 		List<KmerPathNode> list = Lists.newArrayList(new PathSimplificationIterator(in.iterator(), 64, 64));
 		assertEquals(2, list.size());
 		assertEquals(totalWeight(in), totalWeight(list));
@@ -61,7 +61,7 @@ public class PathSimplificationIteratorTest extends TestHelper {
 		in.add(new KmerPathNode(K("TAAA"), 2, 3, true, 1));
 		in.add(new KmerPathNode(K("TAAA"), 4, 4, true, 1));
 		in.add(new KmerPathNode(K("TAAA"), 5, 10, true, 1));
-		in.sort(KmerNodeUtil.ByFirstKmerStartPosition);
+		in.sort(KmerNodeUtil.ByFirstStart);
 		
 		int weightIn = totalWeight(in);
 		List<KmerPathNode> list = Lists.newArrayList(new PathSimplificationIterator(in.iterator(), 64, 64));
@@ -75,7 +75,7 @@ public class PathSimplificationIteratorTest extends TestHelper {
 		in.add(new KmerPathNode(K("AAAT"), 2, 11, true, 1));
 		in.get(in.size() - 1).append(new ImmutableKmerNode(K("AATC"), 3, 12, true, 5));
 		in.add(new KmerPathNode(K("ATCC"), 4, 13, true, 6));
-		in.sort(KmerNodeUtil.ByFirstKmerStartPosition);
+		in.sort(KmerNodeUtil.ByFirstStart);
 		
 		KmerPathNode.addEdge(in.get(0), in.get(1));
 		KmerPathNode.addEdge(in.get(1), in.get(2));
@@ -96,7 +96,7 @@ public class PathSimplificationIteratorTest extends TestHelper {
 		in.add(new KmerPathNode(K("AAAT"), 4, 5, true, 5));
 		KmerPathNode.addEdge(in.get(0), in.get(1));
 		KmerPathNode.addEdge(in.get(2), in.get(3));
-		in.sort(KmerNodeUtil.ByFirstKmerStartPosition);
+		in.sort(KmerNodeUtil.ByFirstStart);
 		
 		int weightIn = totalWeight(in);
 		assertEquals(2*4+2*5+2*4+2*5, weightIn);

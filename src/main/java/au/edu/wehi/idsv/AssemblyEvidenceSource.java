@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import au.edu.wehi.idsv.debruijn.positional.PositionalAssembler;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 import au.edu.wehi.idsv.pipeline.CreateAssemblyReadPair;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
@@ -43,6 +44,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	private final List<SAMEvidenceSource> source;
 	private final int maxSourceFragSize;
 	private final int minSourceFragSize;
+	private final int maxReadLength;
 	private final FileSystemContext fsc;
 	/**
 	 * Generates assembly evidence based on the given evidence
@@ -53,14 +55,10 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		super(processContext, intermediateFileLocation);
 		this.fsc = getContext().getFileSystemContext();
 		this.source = evidence;
-		int max = 0;
-		int min = 0;
-		for (SAMEvidenceSource s : evidence) {
-			max = Math.max(max, s.getMaxConcordantFragmentSize());
-			min = Math.min(min, s.getMinConcordantFragmentSize());
-		}
-		maxSourceFragSize = max;
-		minSourceFragSize = min;
+		this.maxSourceFragSize = evidence.stream().mapToInt(s -> s.getMaxConcordantFragmentSize()).max().orElse(0);
+		this.minSourceFragSize = evidence.stream().mapToInt(s -> s.getMinConcordantFragmentSize()).min().orElse(0);
+		this.maxReadLength = evidence.stream().mapToInt(s -> s.getMaxReadLength()).max().orElse(0);
+		assert(maxSourceFragSize >= minSourceFragSize);
 	}
 	public void ensureAssembled() {
 		ensureAssembled(null);
@@ -362,11 +360,11 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			try {
 				FileSystemContext.getWorkingFileFor(breakendOutput).delete();
 				FileSystemContext.getWorkingFileFor(realignmentFastq).delete();
-				//writer = getContext().getVariantContextWriter(FileSystemContext.getWorkingFileFor(breakendVcf), true); 
-				writer = getContext().getSamFileWriterFactory(true).makeSAMOrBAMWriter(new SAMFileHeader() {{
-						setSequenceDictionary(getContext().getReference().getSequenceDictionary());
-						setSortOrder(SortOrder.coordinate);
-					}}, true, FileSystemContext.getWorkingFileFor(breakendOutput));
+				//writer = getContext().getVariantContextWriter(FileSystemContext.getWorkingFileFor(breakendVcf), true);
+				SAMFileHeader samHeader = new SAMFileHeader();
+				samHeader.setSequenceDictionary(getContext().getReference().getSequenceDictionary());
+				samHeader.setSortOrder(SortOrder.coordinate);
+				writer = getContext().getSamFileWriterFactory(true).makeSAMOrBAMWriter(samHeader, true, FileSystemContext.getWorkingFileFor(breakendOutput));
 				fastqWriter = new FastqBreakpointWriter(getContext().getFastqWriterFactory().newWriter(FileSystemContext.getWorkingFileFor(realignmentFastq)));
 				Iterator<SAMRecordAssemblyEvidence> assemblyIt = getAssembler(it);
 				while (assemblyIt.hasNext()) {
@@ -421,16 +419,14 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		}
 	}
 	protected Iterator<SAMRecordAssemblyEvidence> getAssembler(Iterator<DirectedEvidence> it) {
-		return new ReadEvidenceAssemblyIterator(new DeBruijnSubgraphAssembler(getContext(), this), it);
+		switch (getContext().getAssemblyParameters().method) {
+			case Positional:
+				return new PositionalAssembler(getContext(), this, it);
+			case Subgraph:
+				return new ReadEvidenceAssemblyIterator(new DeBruijnSubgraphAssembler(getContext(), this), it);
+		}
+		throw new IllegalArgumentException("Assembly algorithm has not been set");
     }
-	@Override
-	public int getMaxConcordantFragmentSize() {
-		return maxSourceFragSize;
-	}
-	@Override
-	public int getMinConcordantFragmentSize() {
-		return minSourceFragSize;
-	}
 	public int getAssemblyEvidenceWindowSize() {
 		return (int)(getContext().getAssemblyParameters().subgraphAssemblyMargin * getMaxConcordantFragmentSize());
 	}
@@ -440,5 +436,20 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	}
 	public int getAssemblyWindowSize() {
 		return getAssemblyMaximumEvidenceDelay() + 3 * getAssemblyEvidenceWindowSize() + 2;
+	}
+	@Override
+	public int getMaxConcordantFragmentSize() {
+		return maxSourceFragSize;
+	}
+	@Override
+	public int getMinConcordantFragmentSize() {
+		return minSourceFragSize;
+	}
+	/**
+	 * Maximum read length of reads contributing to assemblies
+	 * @return
+	 */
+	public int getMaxReadLength() {
+		return maxReadLength;
 	}
 }

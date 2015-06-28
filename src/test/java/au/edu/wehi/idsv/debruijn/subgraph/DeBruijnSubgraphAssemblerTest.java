@@ -74,7 +74,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 	public void should_track_progress() throws IOException {
 		DeBruijnSubgraphAssembler ass = DSA(5);
 		List<AssemblyEvidence> results = Lists.newArrayList();
-		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(withSequence("GTCTTA", DP(0, 1, "8M", true, 0, 500, "8M", false))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(withSequence("GTCTTA", DP(0, 1, "6M", true, 0, 500, "6M", false))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("CTTAGA", Read(0, 100, "1M5S"))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("CTTAGA", Read(0, 101, "1M5S"))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(0, 1, "4M3S"))))));

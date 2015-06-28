@@ -93,7 +93,7 @@ public class BestNonReferenceContigCallerTest extends TestHelper {
 	@Test
 	public void should_assemble_overlapping_sc_rp() {
 		SoftClipEvidence sc = SCE(FWD, withSequence("ACGTGGTCGACC", Read(0, 50, "6M6S")));
-		DiscordantReadPair rp = (DiscordantReadPair)NRRP(SES(10, 200), withSequence("GACCTCCGGAA", DP(0, 25, "10M", true, 1, 1, "10M", false)));
+		DiscordantReadPair rp = (DiscordantReadPair)NRRP(SES(10, 200), withSequence("GACCTCCGGAA", DP(0, 25, "11M", true, 1, 1, "11M", false)));
 		ArrayList<KmerPathNode> in = Lists.newArrayList(asKPN(4, 1000, sc, rp));
 		List<String> result = contigs(in, 1000, 4);
 		assertEquals(3, result.size()); // SC+RP, RP starting before SC, RP starting after SC

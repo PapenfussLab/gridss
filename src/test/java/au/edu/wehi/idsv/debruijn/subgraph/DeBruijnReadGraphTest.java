@@ -82,16 +82,16 @@ public class DeBruijnReadGraphTest extends TestHelper {
 	@Test
 	public void should_assemble_adjacent_scs() {
 		DeBruijnReadGraph g = G(0, 3);
-		g.addEvidence(SCE(FWD, withName("r1", withSequence("AAAGTC", Read(0, 10, "3M3S"))))); // 12
-		g.addEvidence(SCE(FWD, withName("r2", withSequence("AAAAGTCTT", Read(0, 10, "4M4S"))))); // 13
-		g.addEvidence(SCE(FWD, withName("r3", withSequence("AAAAGTCTT", Read(0, 10, "4M4S"))))); // 13
+		g.addEvidence(SCE(FWD, withName("r1", withSequence("AAAGTC", Read(0, 10, "4M2S"))))); // 13
+		g.addEvidence(SCE(FWD, withName("r2", withSequence("AAAAGTCTT", Read(0, 10, "5M4S"))))); // 14
+		g.addEvidence(SCE(FWD, withName("r3", withSequence("AAAAGTCTT", Read(0, 10, "5M4S"))))); // 14
 		List<SAMRecordAssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(LCCB + 10000));
 		assertEquals(1, result.size());
 		AssemblyEvidence bp = result.get(0);
 		assertEquals("AAAGTCTT", S(bp.getAssemblySequence()));
 		assertEquals(0, bp.getBreakendSummary().referenceIndex);
-		assertEquals(13, bp.getBreakendSummary().start);
-		assertEquals(13, bp.getBreakendSummary().end);
+		assertEquals(14, bp.getBreakendSummary().start);
+		assertEquals(14, bp.getBreakendSummary().end);
 	}
 	@Test
 	public void should_anchor_to_best_reference_position() {
@@ -177,7 +177,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withName("r1", withSequence("TAAAGTCC", Read(0, 10, "4M4S")))));
 		g.addEvidence(SCE(FWD, withName("r2", withSequence("AAAAGTCCT", Read(0, 10, "4M5S")))));
 		g.addEvidence(SCE(FWD, withName("r3", withSequence("AAAAGTCCT", Read(0, 10, "4M5S")))));
-		g.addEvidence(NRRP(withName("r4", withSequence("GTCCTAGAC", DP(0, 1, "8M", true, 1, 10, "8M", false)))));
+		g.addEvidence(NRRP(withName("r4", withSequence("GTCCTAGAC", DP(0, 1, "9M", true, 1, 10, "9M", false)))));
 		List<SAMRecordAssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(LCCB + 10000));
 		assertEquals(1, result.size());
 		AssemblyEvidence bp = result.get(0);
@@ -245,11 +245,11 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withName("r1", withSequence("TAAAGTCC", Read(0, 10, "4M4S")))));
 		g.addEvidence(SCE(FWD, withName("r2", withSequence("AAAAGTCCT", Read(0, 10, "4M5S")))));
 		g.addEvidence(SCE(FWD, withName("r3", withSequence("AAAAGTCCT", Read(0, 10, "4M5S")))));
-		g.addEvidence(NRRP(withName("r4", withSequence("GTCCTAGAC", DP(0, 1, "8M", true, 1, 10, "8M", false)))));
-		g.addEvidence(NRRP(withName("r5", withSequence("GTCCTAGAC", DP(0, 1, "8M", true, 1, 10, "8M", false)))));
-		g.addEvidence(NRRP(withName("r6", withSequence("GTCCTAGAC", DP(0, 1, "8M", true, 1, 10, "8M", false)))));
-		g.addEvidence(NRRP(withName("r7", withSequence("GTCCTAGAT", DP(0, 1, "8M", true, 1, 10, "8M", false)))));
-		g.addEvidence(NRRP(withName("r8", withSequence("GTCCTAGAT", DP(0, 1, "8M", true, 1, 10, "8M", false)))));
+		g.addEvidence(NRRP(withName("r4", withSequence("GTCCTAGAC", DP(0, 1, "9M", true, 1, 10, "9M", false)))));
+		g.addEvidence(NRRP(withName("r5", withSequence("GTCCTAGAC", DP(0, 1, "9M", true, 1, 10, "9M", false)))));
+		g.addEvidence(NRRP(withName("r6", withSequence("GTCCTAGAC", DP(0, 1, "9M", true, 1, 10, "9M", false)))));
+		g.addEvidence(NRRP(withName("r7", withSequence("GTCCTAGAT", DP(0, 1, "9M", true, 1, 10, "9M", false)))));
+		g.addEvidence(NRRP(withName("r8", withSequence("GTCCTAGAT", DP(0, 1, "9M", true, 1, 10, "9M", false)))));
 		List<SAMRecordAssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(LCCB + 10000));
 		assertEquals(1, result.size()); // Update: we now remove the entire tree when do the first assembly
 		
@@ -267,11 +267,11 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withName("r1", withSequence("TAAAGTCC", Read(0, 10, "4M4S")))));
 		g.addEvidence(SCE(FWD, withName("r2", withSequence("AAAAGTCCT", Read(0, 10, "4M5S")))));
 		g.addEvidence(SCE(FWD, withName("r3", withSequence("AAAAGTCCT", Read(0, 10, "4M5S")))));
-		g.addEvidence(NRRP(withName("r4", withSequence("GTCCTAGAC", DP(0, 1, "8M", true, 1, 10, "8M", false)))));
-		g.addEvidence(NRRP(withName("r5", withSequence("GTCCTAGAC", DP(0, 1, "8M", true, 1, 10, "8M", false)))));
-		g.addEvidence(NRRP(withName("r6", withSequence("GTCCTAGAC", DP(0, 1, "8M", true, 1, 10, "8M", false)))));
-		g.addEvidence(NRRP(withName("r7", withSequence("GTCCTAGAT", DP(0, 1, "8M", true, 1, 10, "8M", false)))));
-		g.addEvidence(NRRP(withName("r8", withSequence("GTCCTAGAT", DP(0, 1, "8M", true, 1, 10, "8M", false)))));
+		g.addEvidence(NRRP(withName("r4", withSequence("GTCCTAGAC", DP(0, 1, "9M", true, 1, 10, "9M", false)))));
+		g.addEvidence(NRRP(withName("r5", withSequence("GTCCTAGAC", DP(0, 1, "9M", true, 1, 10, "9M", false)))));
+		g.addEvidence(NRRP(withName("r6", withSequence("GTCCTAGAC", DP(0, 1, "9M", true, 1, 10, "9M", false)))));
+		g.addEvidence(NRRP(withName("r7", withSequence("GTCCTAGAT", DP(0, 1, "9M", true, 1, 10, "9M", false)))));
+		g.addEvidence(NRRP(withName("r8", withSequence("GTCCTAGAT", DP(0, 1, "9M", true, 1, 10, "9M", false)))));
 		String s = g.debugPrintPaths();
 		assertNotNull(s);
 	}
@@ -300,8 +300,8 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withName("r6", withSequence("AAAAGTCCTAG", Read(0, 10, "4M7S")))));
 		// problematic assembly: we have an anchor sequence, but we've used it elsewhere
 		// so we end up unanchored
-		g.addEvidence(SCE(FWD, withName("r7", withSequence("AAAAGTCCTATG", Read(0, 10, "4M7S")))));
-		g.addEvidence(NRRP(withName("r8", withSequence(             "ATGT", DP(0, 1, "8M", true, 1, 10, "8M", false)))));
+		g.addEvidence(SCE(FWD, withName("r7", withSequence("AAAAGTCCTATG", Read(0, 10, "4M8S")))));
+		g.addEvidence(NRRP(withName("r8", withSequence(             "ATGT", DP(0, 1, "4M", true, 1, 10, "4M", false)))));
 		List<SAMRecordAssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(LCCB + 10000));
 		assertEquals(1, result.size());
 	}
@@ -315,7 +315,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withName("z4", withSequence("AAAAGTCCTAG", Read(0, 10, "4M7S")))));
 		g.addEvidence(SCE(FWD, withName("z5", withSequence("AAAAGTCCTAG", Read(0, 10, "4M7S")))));
 		g.addEvidence(SCE(FWD, withName("z6", withSequence("AAAAGTCCTAG", Read(0, 10, "4M7S")))));
-		g.addEvidence(SCE(FWD, withName("z7", withSequence("AAAAGTCCTATG", Read(0, 10, "4M7S")))));
+		g.addEvidence(SCE(FWD, withName("z7", withSequence("AAAAGTCCTATG", Read(0, 10, "4M8S")))));
 		List<SAMRecordAssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(LCCB + 10000));
 		assertEquals(1, result.size());
 		// TATG should not be included as a result 

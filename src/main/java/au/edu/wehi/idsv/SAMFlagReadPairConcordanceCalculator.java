@@ -10,10 +10,12 @@ public class SAMFlagReadPairConcordanceCalculator extends ReadPairConcordanceCal
 	}
 	@Override
 	public int maxConcordantFragmentSize() {
+		if (metrics.MAX_PROPER_PAIR_FRAGMENT_LENGTH == null) return metrics.MAX_READ_LENGTH;
 		return metrics.MAX_PROPER_PAIR_FRAGMENT_LENGTH;
 	}
 	@Override
 	public int minConcordantFragmentSize() {
+		if (metrics.MIN_PROPER_PAIR_FRAGMENT_LENGTH == null) return metrics.MAX_READ_LENGTH;
 		return metrics.MIN_PROPER_PAIR_FRAGMENT_LENGTH;
 	}
 	@Override

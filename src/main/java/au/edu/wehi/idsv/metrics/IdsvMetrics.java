@@ -17,12 +17,12 @@ public class IdsvMetrics extends MetricBase {
 	 * Inferred size of largest concordantly mapped fragment including all read bases of both pairs
 	 * Note: This differs from the htsjdk definition of fragment size 
 	 */
-	public int MAX_PROPER_PAIR_FRAGMENT_LENGTH = 0;
+	public Integer MAX_PROPER_PAIR_FRAGMENT_LENGTH = null;
 	/**
 	 * Inferred size of largest concordantly mapped fragment including all read bases of both pairs
 	 * Note: This differs from the htsjdk definition of fragment size 
 	 */
-	public int MIN_PROPER_PAIR_FRAGMENT_LENGTH = Integer.MAX_VALUE;
+	public Integer MIN_PROPER_PAIR_FRAGMENT_LENGTH = null;
 	/**
 	 * Number of reads
 	 */

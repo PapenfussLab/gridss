@@ -37,16 +37,16 @@ public class KmerPathNodeKmerNode implements KmerNode {
 		return node.collapsedKmerOffsets().getInt(alternateKmerIndex());
 	}
 	@Override
-	public long kmer() {
+	public long lastKmer() {
 		if (offset >= 0) return node.kmer(offset);
 		return node.collapsedKmers().getLong(alternateKmerIndex());
 	}
 	@Override
-	public int startPosition() {
+	public int lastStart() {
 		return node.startPosition(offsetOfPrimaryKmer());
 	}
 	@Override
-	public int endPosition() {
+	public int lastEnd() {
 		return node.endPosition(offsetOfPrimaryKmer());
 	}
 	@Override
@@ -85,7 +85,7 @@ public class KmerPathNodeKmerNode implements KmerNode {
 		@Override
 		public int compare(KmerPathNodeKmerNode left, KmerPathNodeKmerNode right) {
 			return ComparisonChain.start()
-					.compare(left.node, right.node, KmerNodeUtil.ByEndStartKmerReference)
+					.compare(left.node, right.node, KmerNodeUtil.ByLastEndStartKmerReference)
 					.compare(left.offsetOfPrimaryKmer(), right.offsetOfPrimaryKmer())
 					.result();
 		}

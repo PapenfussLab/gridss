@@ -61,13 +61,17 @@ public class KmerPathNodePath extends KmerPathNodeBasePath {
 	 */
 	public void dfsResetChildTraversal() {
 		TraversalNode node = headNode();
-		dfsPop();
+		dfsPopUnchecked();
 		dfsPush(node);
 	}
 	/**
 	 * Stop any further child traversal of this node and remove it from the path
 	 */
 	public void dfsPop() {
+		if (nodepath.size() == 1) throw new IllegalStateException("Cannot remove root node from traversal path");
+		dfsPopUnchecked();
+	}
+	private void dfsPopUnchecked() {
 		if (traversingForward()) {
 			nodepath.removeLast();
 			path.removeLast();

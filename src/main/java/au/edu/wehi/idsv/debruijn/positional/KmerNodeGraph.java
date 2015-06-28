@@ -65,7 +65,7 @@ public class KmerNodeGraph implements DeBruijnGraph<KmerNode>, DirectedAcyclicGr
 
 	@Override
 	public long getKmer(KmerNode node) {
-		return node.kmer();
+		return node.lastKmer();
 	}
 
 	@Override

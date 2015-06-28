@@ -399,11 +399,11 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 			in.add(withReadName("a_" + Integer.toString(i), withSequence("NNNNNNNNNNN", Read(0, i, "10M1S")))[0]);
 			in.add(withReadName("b_" + Integer.toString(i), Read(0, i, "10S1M"))[0]);
 			in.add(withReadName("c_" + Integer.toString(i), withSequence("NNNNNNNNNNN", Read(0, i, "1S10M")))[0]);
-			in.add(withReadName("d_" + Integer.toString(i), withSequence("NNNNNNNNNNN", Read(0, i, "10M10S")))[0]);
+			in.add(withReadName("d_" + Integer.toString(i), withSequence("NNNNNNNNNNN", Read(0, i, "10M1S")))[0]);
 			realn.add(withReadName(String.format("0#%d#fa_%d", i, i), withSequence("N", Read(1, 10, "1M")))[0]);
-			realn.add(withReadName(String.format("0#%d#bb_%d", i, i), withSequence("N", Read(1, 10, "10M")))[0]);
+			realn.add(withReadName(String.format("0#%d#bb_%d", i, i), withSequence("NNNNNNNNNN", Read(1, 10, "10M")))[0]);
 			realn.add(withReadName(String.format("0#%d#bc_%d", i, i), withSequence("N", Read(1, 10, "1M")))[0]);
-			realn.add(withReadName(String.format("0#%d#fd_%d", i, i), withSequence("N", Read(1, 10, "10M")))[0]);
+			realn.add(withReadName(String.format("0#%d#fd_%d", i, i), withSequence("NNNNNNNNNN", Read(1, 10, "10M")))[0]);
 		}
 		createInput(in);
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);

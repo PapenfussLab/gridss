@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv.metrics;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.metrics.MetricsFile;
 
@@ -156,5 +155,16 @@ public class IdsvSamFileMetricsCollectorTest extends TestHelper {
 		c.finish(is, idsv, sc);
 		assertEquals(1, idsv.getMetrics().size());
 		assertTrue(idsv.getMetrics().get(0) instanceof IdsvMetrics);
+	}
+	@Test
+	public void fragment_size_should_not_be_set_if_no_proper_pairs_found() {
+		IdsvSamFileMetricsCollector c = new IdsvSamFileMetricsCollector(null);
+		c.acceptRecord(Read(0, 1, "100M"), null);
+		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
+		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
+		MetricsFile<SoftClipDetailMetrics, Integer> sc = new MetricsFile<SoftClipDetailMetrics, Integer>();
+		c.finish(is, idsv, sc);
+		assertNull(idsv.getMetrics().get(0).MAX_PROPER_PAIR_FRAGMENT_LENGTH);
+		assertNull(idsv.getMetrics().get(0).MIN_PROPER_PAIR_FRAGMENT_LENGTH);
 	}
 }

@@ -16,15 +16,15 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode {
 	private final int start;
 	private final int end;
 	public KmerPathSubnode(KmerPathNode n, int start, int end) {
-		assert(n.firstKmerStartPosition() <= start);
-		assert(n.firstKmerEndPosition() >= end);
+		assert(n.firstKmerStart() <= start);
+		assert(n.firstKmerEnd() >= end);
 		assert(end - start >= 0);
 		this.n = n;
 		this.start = start;
 		this.end = end;
 	}
 	public KmerPathSubnode(KmerPathNode node) {
-		this(node, node.firstKmerStartPosition(), node.firstKmerEndPosition());
+		this(node, node.firstKmerStart(), node.firstKmerEnd());
 	}
 	public KmerPathNode node() { return n; }
 	public long firstKmer() { return n.firstKmer(); }
@@ -70,8 +70,8 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode {
 		int targetStart = start + n.length();
 		int targetEnd = end + n.length();
 		for (KmerPathNode pn : n.next()) {
-			int pnStart = pn.firstKmerStartPosition();
-			int pnEnd = pn.firstKmerEndPosition();
+			int pnStart = pn.firstKmerStart();
+			int pnEnd = pn.firstKmerEnd();
 			// since next() is sorted, we only need to process the neighbours overlapping our interval
 			if (pnEnd < targetStart) {
 				continue;
@@ -90,8 +90,8 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode {
 		int targetStartLastKmer = start - 1;
 		int targetEndLastKmer = end - 1;
 		for (KmerPathNode pn : n.prev()) {
-			int pnStartLastKmer = pn.startPosition();
-			int pnEndLastKmer = pn.endPosition();
+			int pnStartLastKmer = pn.lastStart();
+			int pnEndLastKmer = pn.lastEnd();
 			if (pnEndLastKmer < targetStartLastKmer) {
 				continue;
 			} else if (pnStartLastKmer > targetEndLastKmer) {

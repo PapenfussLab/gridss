@@ -35,7 +35,7 @@ public class EvidenceTracker implements Iterator<KmerSupportNode> {
 	 * @param evidence
 	 */
 	public KmerSupportNode track(KmerSupportNode support) {
-		long kmer = support.kmer();
+		long kmer = support.lastKmer();
 		LinkedList<KmerSupportNode> list = lookup.get(kmer);
 		if (list == null) {
 			list = new LinkedList<KmerSupportNode>();
@@ -110,7 +110,7 @@ public class EvidenceTracker implements Iterator<KmerSupportNode> {
 			ListIterator<KmerSupportNode> it = list.listIterator();
 			while (it.hasNext()) {
 				KmerSupportNode n = it.next();
-				if (IntervalUtil.overlapsClosed(start, end, n.startPosition(), n.endPosition())) {
+				if (IntervalUtil.overlapsClosed(start, end, n.lastStart(), n.lastEnd())) {
 					it.remove();
 					collection.add(n.evidence());
 				}

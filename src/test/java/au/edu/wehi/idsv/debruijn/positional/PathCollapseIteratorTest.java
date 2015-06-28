@@ -17,7 +17,7 @@ import com.google.common.collect.Lists;
 public class PathCollapseIteratorTest extends TestHelper {
 	public static List<KmerPathNode> simplify(List<KmerPathNode> list) {
 		ArrayList<KmerPathNode> result = Lists.newArrayList(new PathSimplificationIterator(list.iterator(), 10000, 10000));
-		result.sort(KmerNodeUtil.ByFirstKmerStartEndKmerReference);
+		result.sort(KmerNodeUtil.ByFirstStartEndKmerReference);
 		return result;
 	}
 	public static Iterator<KmerPathNode> toPathNodeIterator(List<DirectedEvidence> input, int k, int maxWidth, int maxLength) {
@@ -28,7 +28,7 @@ public class PathCollapseIteratorTest extends TestHelper {
 		List<KmerNode> anList = Lists.newArrayList(new AggregateNodeIterator(snList.iterator()));
 		List<KmerPathNode> pnList = Lists.newArrayList(new PathNodeIterator(anList.iterator(), maxWidth, k));
 		assertSameNodes(anList, pnList);
-		assert(KmerNodeUtil.ByFirstKmerStartPositionKmer.isOrdered(pnList));
+		assert(KmerNodeUtil.ByFirstStartKmer.isOrdered(pnList));
 		return pnList;
 	}
 	private static List<KmerPathNode> go(List<DirectedEvidence> input, int k, int maxLength, int maxPathCollapseLength, int maxBasesMismatch) {
@@ -37,7 +37,7 @@ public class PathCollapseIteratorTest extends TestHelper {
 	}
 	private static List<KmerPathNode> go(int k, int maxPathCollapseLength, int maxBasesMismatch, List<KmerPathNode> pnList) {
 		int pnTotalWeight = totalWeight(pnList);
-		PathCollapseIterator pcit = new PathCollapseIterator(pnList.iterator(), k, maxPathCollapseLength, maxBasesMismatch);
+		PathCollapseIterator pcit = new PathCollapseIterator(pnList.iterator(), k, maxPathCollapseLength, maxBasesMismatch, false);
 		ArrayList<KmerPathNode> result = Lists.newArrayList(pcit);
 		assertEquals(pnTotalWeight, totalWeight(result));
 		return result;
@@ -128,5 +128,49 @@ public class PathCollapseIteratorTest extends TestHelper {
 		assertSame(result.get(1), KPN(k, "ACCT", 2, 4, false));
 		assertSame(result.get(2), KPN(k, "ACCG", 5, 11, false, new int[] { 2}));
 		assertSame(result.get(3), KPN(k, "CCGG", 6, 12, false));
+	}
+	@Test
+	public void should_traverse_forks() {
+		//                  G - C
+		//                 /  \
+		// AAAA - TTGGCCA      T
+		//                \
+		//                  TAA
+		int k = 4;          
+		List<DirectedEvidence> input = new ArrayList<DirectedEvidence>();
+		input.add(SCE(FWD, withSequence("AAAATTGGCCAGC", Read(0, 1, "4M9S"))));
+		input.add(SCE(FWD, withSequence("AAAATTGGCCAGT", Read(0, 1, "4M9S"))));
+		input.add(SCE(FWD, withSequence("AAAATTGGCCATAA", Read(0, 1, "4M10S"))));
+		List<KmerPathNode> result = go(input, k, 200, 200, 1);
+		result = Lists.newArrayList(new PathSimplificationIterator(result.iterator(), 100, 100));
+		assertEquals(4, result.size());
+	}
+	@Test
+	public void should_not_collapse_higher_weighted_leaf() {
+		int k = 4;   
+		List<DirectedEvidence> input = new ArrayList<DirectedEvidence>();
+		input.add(SCE(FWD, withSequence("AAAATTGGCCAGCTCATTTT", Read(0, 1, "4M16S"))));
+		input.add(SCE(FWD, withSequence("AAAATTGGCCAGCTCAGGGG", Read(0, 1, "4M16S"))));
+		input.add(SCE(FWD, withSequence("AAAATTGGCCAGCTCT", Read(0, 1, "4M12S"))));
+		input.add(SCE(FWD, withSequence("AAAATTGGCCAGCTCT", Read(0, 1, "4M12S"))));
+		input.add(SCE(FWD, withSequence("AAAATTGGCCAGCTCT", Read(0, 1, "4M12S"))));
+		input.add(SCE(FWD, withSequence("AAAATTGGCCAGCTCT", Read(0, 1, "4M12S"))));
+		input.add(SCE(FWD, withSequence("AAAATTGGCCAGCTCT", Read(0, 1, "4M12S"))));
+		input.add(SCE(FWD, withSequence("AAAATTGGCCAGCTCT", Read(0, 1, "4M12S"))));
+		input.add(SCE(FWD, withSequence("AAAATTGGCCAGCTCT", Read(0, 1, "4M12S"))));
+		input.add(SCE(FWD, withSequence("AAAATTGGCCAGCTCT", Read(0, 1, "4M12S"))));
+		input.add(SCE(FWD, withSequence("AAAATTGGCCAGCTCT", Read(0, 1, "4M12S"))));
+		List<KmerPathNode> result = go(input, k, 200, 200, 1);
+		assertEquals(6, result.size());
+	}
+	@Test
+	public void should_collapse_lower_higher_weighted_leaf() {
+		int k = 4;   
+		List<DirectedEvidence> input = new ArrayList<DirectedEvidence>();
+		input.add(SCE(FWD, withSequence("AAAATTGGCCAGCTCATTTT", Read(0, 1, "4M16S"))));
+		input.add(SCE(FWD, withSequence("AAAATTGGCCAGCTCAGGGG", Read(0, 1, "4M16S"))));
+		input.add(SCE(FWD, withSequence("AAAATTGGCCAGCTCT", Read(0, 1, "4M12S"))));
+		List<KmerPathNode> result = go(input, k, 200, 200, 1);
+		assertEquals(5, result.size());
 	}
 }

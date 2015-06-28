@@ -47,10 +47,10 @@ public class KmerEvidenceTest extends TestHelper {
 			assertFalse(e.isAnchored(7));
 			assertEquals(sce.getEvidenceID(), e.evidenceId());
 			for (int i = 0; i < e.length(); i++) {
-				assertEquals(1 + i, e.node(i).startPosition());
-				assertEquals(1 + i, e.node(i).endPosition());
+				assertEquals(1 + i, e.node(i).lastStart());
+				assertEquals(1 + i, e.node(i).lastEnd());
 				assertEquals(e.isAnchored(i), e.node(i).isReference());
-				assertEquals(e.kmer(i), e.node(i).kmer());
+				assertEquals(e.kmer(i), e.node(i).lastKmer());
 				assertEquals(e.weight(i), e.node(i).weight());
 				assertEquals(e, e.node(i).evidence());
 			}

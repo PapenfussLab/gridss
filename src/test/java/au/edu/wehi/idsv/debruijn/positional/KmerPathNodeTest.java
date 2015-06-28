@@ -19,9 +19,9 @@ public class KmerPathNodeTest extends TestHelper {
 	@Test
 	public void Constructor_should_copy_KmerNode() {
 		KmerPathNode pn = new KmerPathNode(new ImmutableKmerNode(0, 2, 3, true, 1));
-		assertEquals(2, pn.startPosition());
-		assertEquals(3, pn.endPosition());
-		assertEquals(0, pn.kmer());
+		assertEquals(2, pn.lastStart());
+		assertEquals(3, pn.lastEnd());
+		assertEquals(0, pn.lastKmer());
 		assertEquals(1, pn.weight());
 		assertTrue(pn.isReference());
 		assertTrue(pn.isValid());
@@ -111,6 +111,22 @@ public class KmerPathNodeTest extends TestHelper {
 		pn3.prepend(pn2);
 		assertEquals(pn3, pn1.next().get(0));
 	}
+	@Test
+	public void prepend_should_shift_additional_kmer_offsets() {
+		KmerPathNode pn1 = new KmerPathNode(0, 2, 2, true, 1);
+		KmerPathNode pn2 = new KmerPathNode(0, 3, 3, true, 1);
+		KmerPathNode.addEdge(pn1, pn2);
+		pn2.merge(new KmerPathNode(7, 3, 3, true, 1));
+		pn1.merge(new KmerPathNode(5, 2, 2, true, 1));
+		assertEquals(1, pn2.collapsedKmerOffsets().size());
+		assertEquals(0, pn2.collapsedKmerOffsets().getInt(0));
+		pn2.prepend(pn1);
+		assertEquals(2, pn2.collapsedKmerOffsets().size());
+		assertEquals(1, pn2.collapsedKmerOffsets().getInt(0));
+		assertEquals(0, pn2.collapsedKmerOffsets().getInt(1));
+		assertEquals(7, pn2.collapsedKmers().getLong(0));
+		assertEquals(5, pn2.collapsedKmers().getLong(1));
+	}
 	public static void assertIs(KmerPathNode pn, long[] kmers, int start, int end, boolean reference, int[] weights) {
 		assertEquals(start, pn.startPosition(0));
 		assertEquals(end, pn.endPosition(0));
@@ -128,7 +144,7 @@ public class KmerPathNodeTest extends TestHelper {
 			assertTrue(pn.next().get(i - 1).startPosition(0) <= pn.next().get(i).startPosition(0));
 		}
 		for (int i = 1; i < pn.prev().size(); i++) {
-			assertTrue(pn.prev().get(i - 1).startPosition() <= pn.prev().get(i).startPosition());
+			assertTrue(pn.prev().get(i - 1).lastStart() <= pn.prev().get(i).lastStart());
 		}
 	}
 	@Test
@@ -192,8 +208,8 @@ public class KmerPathNodeTest extends TestHelper {
 		KmerPathNode pn1 = KPN(new long[] { 0 }, 1, 100, true, new int[] { 1 });
 		KmerPathNode.addEdge(KPN(new long[] { 0, 1, 2, 3, 4, 5, 6, 7 }, 1, 1, true), pn1);
 		KmerPathNode.addEdge(KPN(new long[] { 0, 1, 3, 4 }, 2, 2, true), pn1);
-		assertEquals(5, pn1.prev().get(0).startPosition());
-		assertEquals(8, pn1.prev().get(1).startPosition());
+		assertEquals(5, pn1.prev().get(0).lastStart());
+		assertEquals(8, pn1.prev().get(1).lastStart());
 	}
 	@Test
 	public void KmerNode_kmer_position_should_be_of_lastKmer() {
@@ -204,9 +220,9 @@ public class KmerPathNodeTest extends TestHelper {
 		KmerPathNode pn = new KmerPathNode(n1);
 		pn.append(n2);
 		pn.append(n3);
-		assertEquals(pn.startPosition(2), pn.startPosition());
-		assertEquals(pn.endPosition(2), pn.endPosition());
-		assertEquals(pn.kmer(2), pn.kmer());
+		assertEquals(pn.startPosition(2), pn.lastStart());
+		assertEquals(pn.endPosition(2), pn.lastEnd());
+		assertEquals(pn.kmer(2), pn.lastKmer());
 	}
 	@Test
 	public void splitAtLength_should_break_after_nth_kmer() {

@@ -294,6 +294,7 @@ public class TestHelper {
 			}}, new IdsvMetrics() {{
 				MAX_READ_LENGTH = 100;
 				MAX_PROPER_PAIR_FRAGMENT_LENGTH = 300;
+				MIN_PROPER_PAIR_FRAGMENT_LENGTH = 300;
 				READ_PAIRS = 1000;
 				READ_PAIRS_ONE_MAPPED = 25;
 				READ_PAIRS_ZERO_MAPPED = 50;
@@ -355,6 +356,7 @@ public class TestHelper {
 	}
 	static public SAMRecord[] withSequence(String seq, byte[] qual, SAMRecord... data) {
 		for (SAMRecord r : data) {
+			assert(r.getReadLength() == seq.length());
 			r.setReadBases(B(seq));
 			r.setBaseQualities(qual);
 		}
@@ -1023,8 +1025,8 @@ public class TestHelper {
 	public static void assertSameNodes(List<? extends KmerNode> expected, List<? extends KmerNode> actual) {
 		List<KmerNode> splitExpected = split(expected);
 		List<KmerNode> splitActual = split(actual);
-		splitExpected.sort(KmerNodeUtil.ByStartEndPositionKmerReferenceWeight);
-		splitActual.sort(KmerNodeUtil.ByStartEndPositionKmerReferenceWeight);
+		splitExpected.sort(KmerNodeUtil.ByLastStartEndKmerReferenceWeight);
+		splitActual.sort(KmerNodeUtil.ByLastStartEndKmerReferenceWeight);
 		assertEquals(totalWeight(expected), totalWeight(splitExpected));
 		assertEquals(totalWeight(actual), totalWeight(splitActual));
 		assertEquals(splitExpected, splitActual);
@@ -1039,7 +1041,7 @@ public class TestHelper {
 			KmerNode ni = split.get(i);
 			for (int j = i + 1; j < split.size(); j++) {
 				KmerNode nj = split.get(j);				
-				assertTrue(ni.kmer() != nj.kmer() || ni.startPosition() != nj.startPosition());
+				assertTrue(ni.lastKmer() != nj.lastKmer() || ni.lastStart() != nj.lastStart());
 			}
 		}
 	}
@@ -1093,15 +1095,15 @@ public class TestHelper {
 		List<KmerPathNode> pnList = Lists.newArrayList(new PathNodeIterator(aggregate.iterator(), maxPathLength, k));
 		int pathWeight = pnList.stream().flatMap(pn -> ImmutableKmerNode.copyPath(pn)).mapToInt(n -> n.weight() * n.width()).sum();
 		assertEquals(supportWeight, pathWeight);
-		assertTrue(KmerNodeUtil.ByFirstKmerStartPosition.isOrdered(pnList));
+		assertTrue(KmerNodeUtil.ByFirstStart.isOrdered(pnList));
 		PathNodeIteratorTest.assertCompleteGraph(pnList, k);
 		return pnList;
 	}
 	public static void assertSame(KmerPathNode n1, KmerPathNode n2) {
 		assertEquals(n1.length(), n2.length());
 		assertEquals(n1.weight(), n2.weight());
-		assertEquals(n1.startPosition(), n2.startPosition());
-		assertEquals(n1.endPosition(), n2.endPosition());
+		assertEquals(n1.lastStart(), n2.lastStart());
+		assertEquals(n1.lastEnd(), n2.lastEnd());
 		assertEquals(n1.isReference(), n2.isReference());
 		assertEquals(n1.isValid(), n2.isValid());
 		for (int i = 0; i < n1.length(); i++) {

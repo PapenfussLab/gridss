@@ -37,7 +37,7 @@ import com.google.common.collect.Iterators;
  * @author Daniel Cameron
  *
  */
-public class NonReferenceContigCaller extends AbstractIterator<SAMRecordAssemblyEvidence> {
+public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssemblyEvidence> {
 	private Long2ObjectMap<Collection<KmerPathNodeKmerNode>> graphByKmerNode = new Long2ObjectOpenHashMap<Collection<KmerPathNodeKmerNode>>();
 	/**
 	 * Weights to remove from each kmer path. removeWeight() relies on the following properties of the iterator:
@@ -45,7 +45,7 @@ public class NonReferenceContigCaller extends AbstractIterator<SAMRecordAssembly
 	 * - traversal does not invoke comparator
 	 */ 
 	private Object2ObjectRBTreeMap<KmerPathNodeKmerNode, List<KmerNode>> weightToRemove = new Object2ObjectRBTreeMap<KmerPathNodeKmerNode, List<KmerNode>>(KmerPathNodeKmerNode.ByKmerPathNodeOffset);
-	private SortedSet<KmerPathNode> graphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByStartEndPositionKmerReferenceWeight);
+	private SortedSet<KmerPathNode> graphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByLastStartEndKmerReferenceWeight);
 	private final EvidenceTracker evidenceTracker;
 	private final AssemblyEvidenceSource aes;
 	private final int maxEvidenceWidth;
@@ -53,7 +53,8 @@ public class NonReferenceContigCaller extends AbstractIterator<SAMRecordAssembly
 	private final int k;
 	private final int referenceIndex;
 	private final KmerPathNodeIteratorInterceptor wrapper;
-	public NonReferenceContigCaller(
+	public int getReferenceIndex() { return referenceIndex; }
+	public NonReferenceContigAssembler(
 			Iterator<KmerPathNode> it,
 			int referenceIndex,
 			int maxEvidenceWidth,
@@ -77,16 +78,17 @@ public class NonReferenceContigCaller extends AbstractIterator<SAMRecordAssembly
 		return callContig(contig);
 	}
 	private SAMRecordAssemblyEvidence callContig(ArrayDeque<KmerPathSubnode> contig) {
-		KmerPathNodePath startAnchorPath = new KmerPathNodePath(contig.getFirst(), false, maxAnchorLength);
+		int targetAnchorLength = Math.max(contig.stream().mapToInt(sn -> sn.length()).sum(), maxAnchorLength);
+		KmerPathNodePath startAnchorPath = new KmerPathNodePath(contig.getFirst(), false, targetAnchorLength);
 		startAnchorPath.greedyTraverse(true, false);
 		ArrayDeque<KmerPathSubnode> startingAnchor = startAnchorPath.headNode().asSubnodes();
 		startingAnchor.remove(contig.getFirst());
-		while (wrapper.hasNext() && contig.getLast().endPosition() + maxAnchorLength > wrapper.lastPosition()) {
-			// make sure we have enough of the graph loaded that when
-			// we traverse forward, our anchor sequence is fully defined
+		while (wrapper.hasNext() && contig.getLast().endPosition() + targetAnchorLength > wrapper.lastPosition()) {
+			// make sure we have enough of the graph loaded so that when
+			// we traverse forward, our anchor sequence will be fully defined
 			wrapper.next();
 		}
-		KmerPathNodePath endAnchorPath = new KmerPathNodePath(contig.getLast(), true, maxAnchorLength);
+		KmerPathNodePath endAnchorPath = new KmerPathNodePath(contig.getLast(), true, targetAnchorLength);
 		endAnchorPath.greedyTraverse(true, false);
 		ArrayDeque<KmerPathSubnode> endingAnchor = endAnchorPath.headNode().asSubnodes();
 		endingAnchor.remove(contig.getLast());
@@ -145,7 +147,7 @@ public class NonReferenceContigCaller extends AbstractIterator<SAMRecordAssembly
 			for (int i = 0; i < e.length(); i++) {
 				KmerSupportNode support = e.node(i);
 				if (support != null) {
-					assert(support.endPosition() <= wrapper.lastPosition());
+					assert(support.lastEnd() <= wrapper.lastPosition());
 					addToRemovalList(support);
 				}
 			}
@@ -193,8 +195,8 @@ public class NonReferenceContigCaller extends AbstractIterator<SAMRecordAssembly
 	}
 	private void addToRemovalList(KmerNode support) {
 		// find all KmerPathNodeKmerNode matching our support node
-		for (KmerPathNodeKmerNode n : graphByKmerNode.get(support.kmer())) {
-			if (IntervalUtil.overlapsClosed(support.startPosition(), support.endPosition(), n.startPosition(), n.endPosition())) {
+		for (KmerPathNodeKmerNode n : graphByKmerNode.get(support.lastKmer())) {
+			if (IntervalUtil.overlapsClosed(support.lastStart(), support.lastEnd(), n.lastStart(), n.lastEnd())) {
 				List<KmerNode> list = weightToRemove.get(n);
 				if (list == null) {
 					list = new ArrayList<KmerNode>();
@@ -223,19 +225,19 @@ public class NonReferenceContigCaller extends AbstractIterator<SAMRecordAssembly
 		}
 	}
 	private void addToGraph(KmerPathNodeKmerNode node) {
-		Collection<KmerPathNodeKmerNode> list = graphByKmerNode.get(node.kmer());
+		Collection<KmerPathNodeKmerNode> list = graphByKmerNode.get(node.lastKmer());
 		if (list == null) {
 			list = new ArrayList<KmerPathNodeKmerNode>();
-			graphByKmerNode.put(node.kmer(), list);
+			graphByKmerNode.put(node.lastKmer(), list);
 		}
 		list.add(node);
 	}
 	private void removeFromGraph(KmerPathNodeKmerNode node) {
-		Collection<KmerPathNodeKmerNode> list = graphByKmerNode.get(node.kmer());
+		Collection<KmerPathNodeKmerNode> list = graphByKmerNode.get(node.lastKmer());
 		if (list == null) return;
 		list.remove(node);
 		if (list.size() == 0) {
-			graphByKmerNode.remove(node.kmer());
+			graphByKmerNode.remove(node.lastKmer());
 		}
 	}
 	/**
@@ -262,7 +264,7 @@ public class NonReferenceContigCaller extends AbstractIterator<SAMRecordAssembly
 		public KmerPathNode next() {
 			KmerPathNode node = underlying.next();
 			addToGraph(node);
-			position = node.firstKmerStartPosition();
+			position = node.firstKmerStart();
 			return node;
 		}
 	}

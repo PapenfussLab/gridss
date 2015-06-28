@@ -31,20 +31,20 @@ public class PathNodeIteratorTest extends TestHelper {
 	 */
 	public static void assertCompleteGraph(List<KmerPathNode> list, final int k) {
 		for (KmerPathNode pn : list) {
-			long[] nextKmers = KmerEncodingHelper.nextStates(k, pn.kmer());
+			long[] nextKmers = KmerEncodingHelper.nextStates(k, pn.lastKmer());
 			List<KmerPathNode> nextList = list.stream()
-					.filter(n -> ArrayUtils.contains(nextKmers, n.kmer(0)) && IntervalUtil.overlapsClosed(n.startPosition(0), n.endPosition(0), pn.startPosition() + 1, pn.endPosition() + 1))
+					.filter(n -> ArrayUtils.contains(nextKmers, n.kmer(0)) && IntervalUtil.overlapsClosed(n.startPosition(0), n.endPosition(0), pn.lastStart() + 1, pn.lastEnd() + 1))
 					.collect(Collectors.toList());
 			assertEquals(nextList.size(), pn.next().size());
-			assertTrue(KmerNodeUtil.ByFirstKmerStartPosition.isOrdered(pn.next()));
+			assertTrue(KmerNodeUtil.ByFirstStart.isOrdered(pn.next()));
 			nextList.stream().forEach(n -> assertTrue(pn.next().contains(n)));
 			
 			long[] prevKmers = KmerEncodingHelper.prevStates(k, pn.kmer(0));
 			List<KmerPathNode> prevList = list.stream()
-					.filter(n -> ArrayUtils.contains(prevKmers, n.kmer()) && IntervalUtil.overlapsClosed(n.startPosition(), n.endPosition(), pn.startPosition(0) - 1, pn.endPosition(0) - 1))
+					.filter(n -> ArrayUtils.contains(prevKmers, n.lastKmer()) && IntervalUtil.overlapsClosed(n.lastStart(), n.lastEnd(), pn.startPosition(0) - 1, pn.endPosition(0) - 1))
 					.collect(Collectors.toList());
 			assertEquals(prevList.size(), pn.prev().size());
-			assertTrue(KmerNodeUtil.ByStartPosition.isOrdered(pn.prev()));
+			assertTrue(KmerNodeUtil.ByLastStart.isOrdered(pn.prev()));
 			prevList.stream().forEach(n -> assertTrue(pn.prev().contains(n)));
 		}
 	}
@@ -87,7 +87,7 @@ public class PathNodeIteratorTest extends TestHelper {
 				list.add(new ImmutableKmerNode(KmerEncodingHelper.picardBaseToEncoded(k, Arrays.copyOfRange(RANDOM, 0+lengthOffset, k+lengthOffset)), start+lengthOffset, end+lengthOffset, true, 1));
 			}
 		}
-		list.sort(KmerNodeUtil.ByStartPosition);
+		list.sort(KmerNodeUtil.ByLastStart);
 		// sanity checks
 		assertTrue(list.stream().allMatch(n -> n.width() == width));
 		assertTrue(list.size() == list.stream().distinct().count());
@@ -107,7 +107,7 @@ public class PathNodeIteratorTest extends TestHelper {
 	}
 	public void assertCount(int expected, ImmutableKmerNode... in) {
 		List<ImmutableKmerNode> list = Lists.newArrayList(in);
-		Collections.sort(list, KmerNodeUtil.ByStartPosition);
+		Collections.sort(list, KmerNodeUtil.ByLastStart);
 		List<KmerPathNode> out = Lists.newArrayList(new PathNodeIterator(list.iterator(), 10, 4));
 		assertCompleteGraph(out, 4);
 		assertEquals(expected, out.size());
@@ -220,13 +220,13 @@ public class PathNodeIteratorTest extends TestHelper {
 		in.add(new ImmutableKmerNode(K("TAAA"), 5, 5, false, 1));
 		in.add(new ImmutableKmerNode(K("AAAC"), 6, 6, false, 2));
 		in.add(new ImmutableKmerNode(K("AACT"), 1, 10, false, 2));
-		in.sort(KmerNodeUtil.ByStartPosition);
+		in.sort(KmerNodeUtil.ByLastStart);
 		List<KmerPathNode> paths = Lists.newArrayList(new PathNodeIterator(in.iterator(), 100, 4));
 		assertCompleteGraph(paths, 4);
 	}
 	@Test
 	public void should_assemble_adjacent_sc_rp() {
-		SoftClipEvidence sc = SCE(FWD, withSequence("GTGGTCGACC", Read(0, 50, "6M6S")));
+		SoftClipEvidence sc = SCE(FWD, withSequence("GTGGTCGACC", Read(0, 50, "4M6S")));
 		DiscordantReadPair rp = (DiscordantReadPair)NRRP(SES(10, 200), withSequence("GACCT", DP(0, 25, "5M", true, 1, 1, "5M", false)));
 		List<KmerPathNode> result = asCheckedKPN(5, 1000, sc, rp);
 		assertCompleteGraph(result, 5);
@@ -237,7 +237,7 @@ public class PathNodeIteratorTest extends TestHelper {
 	@Test
 	public void should_overlapping_adjacent_sc_rp() {
 		SoftClipEvidence sc = SCE(FWD, withSequence("ACGTGGTCGACC", Read(0, 50, "6M6S")));
-		DiscordantReadPair rp = (DiscordantReadPair)NRRP(SES(10, 200), withSequence("TCGACCTCCGGAA", DP(0, 25, "10M", true, 1, 1, "10M", false)));
+		DiscordantReadPair rp = (DiscordantReadPair)NRRP(SES(13, 200), withSequence("TCGACCTCCGGAA", DP(0, 25, "13M", true, 1, 1, "13M", false)));
 		List<KmerPathNode> result = asCheckedKPN(5, 1000, sc, rp);
 		assertCompleteGraph(result, 5);
 		assertEquals(5, result.size());

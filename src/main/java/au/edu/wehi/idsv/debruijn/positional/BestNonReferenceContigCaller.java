@@ -4,13 +4,13 @@ import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.PriorityQueue;
 
+import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
-import com.google.common.primitives.Ints;
 
 
 /**
@@ -39,8 +39,12 @@ public class BestNonReferenceContigCaller {
 	 * We need to wait until all previous nodes are defined before checking
 	 * for starting node intervals.
 	 */
-	private final PriorityQueue<KmerPathNode> unprocessedStartNodes = new PriorityQueue<KmerPathNode>(1024, KmerNodeUtil.ByEndPosition);
-	private final PriorityQueue<Contig> called = new PriorityQueue<Contig>(1024, Contig.ByScoreDesc);
+	private final PriorityQueue<KmerPathNode> unprocessedStartNodes = new PriorityQueue<KmerPathNode>(1024, KmerNodeUtil.ByLastEnd);
+	/**
+	 * Assembled contigs. The best contig is called once all potential alternate contigs
+	 * involving the evidence used to construct the contig have also been assembled.
+	 */
+	private final PriorityQueue<Contig> called = new PriorityQueue<Contig>(1024, Contig.ByScoreDescPosition);
 	private final int maxEvidenceWidth;
 	private int inputPosition;
 	public BestNonReferenceContigCaller(
@@ -53,7 +57,7 @@ public class BestNonReferenceContigCaller {
 		if (!underlying.hasNext()) {
 			inputPosition = Integer.MAX_VALUE;
 		} else {
-			inputPosition = underlying.peek().firstKmerStartPosition();
+			inputPosition = underlying.peek().firstKmerStart();
 		}
 		advanceUnderlying();
 		advanceUnprocessed();
@@ -63,14 +67,14 @@ public class BestNonReferenceContigCaller {
 	 * Loads records from the underlying stream up to and including the current inputPosition.
 	 */
 	private void advanceUnderlying() {
-		while (underlying.hasNext() && underlying.peek().firstKmerStartPosition() <= inputPosition) {			
+		while (underlying.hasNext() && underlying.peek().firstKmerStart() <= inputPosition) {			
 			KmerPathNode nextRecord = underlying.next();
 			queueForProcessing(nextRecord);
 		}
 	}
 	private void advanceUnprocessed() {
 		// final kmer ending before inputPosition means that all adjacent nodes have been loaded
-		while (!unprocessedStartNodes.isEmpty() && unprocessedStartNodes.peek().endPosition() < inputPosition) {
+		while (!unprocessedStartNodes.isEmpty() && unprocessedStartNodes.peek().lastEnd() < inputPosition) {
 			KmerPathNode unprocessed = unprocessedStartNodes.poll();
 			addStartingPaths(unprocessed);
 		}
@@ -97,31 +101,31 @@ public class BestNonReferenceContigCaller {
 	private void addStartingPaths(KmerPathNode node) {
 		assert(!node.isReference());
 		PeekingIterator<KmerPathNode> startIt = Iterators.peekingIterator(node.prev().iterator());
-		int start = node.firstKmerStartPosition();
-		final int scopeEnd = node.firstKmerEndPosition();
+		int start = node.firstKmerStart();
+		final int scopeEnd = node.firstKmerEnd();
 		int nonReferenceCount = 0;
 		int referenceCount = 0;
 		// TODO: is using a linear array faster?
-		PriorityQueue<KmerPathNode> active = new PriorityQueue<KmerPathNode>(3, KmerNodeUtil.ByEndPosition);
+		PriorityQueue<KmerPathNode> active = new PriorityQueue<KmerPathNode>(3, KmerNodeUtil.ByLastEnd);
 		while (start <= scopeEnd) {
 			// advance
-			while (startIt.hasNext() && startIt.peek().startPosition() < start) {
+			while (startIt.hasNext() && startIt.peek().lastStart() < start) {
 				KmerPathNode n = startIt.next();
 				if (n.isReference()) referenceCount++;
 				else nonReferenceCount++;
 				active.add(n);
 			}
-			while (!active.isEmpty() && active.peek().endPosition() + 1 < start) {
+			while (!active.isEmpty() && active.peek().lastEnd() + 1 < start) {
 				KmerPathNode n = active.poll();
 				if (n.isReference()) referenceCount--;
 				else nonReferenceCount--;
 			}
 			int end = scopeEnd;
 			if (startIt.hasNext()) {
-				end = Math.min(end, startIt.peek().startPosition());
+				end = Math.min(end, startIt.peek().lastStart());
 			}
 			if (!active.isEmpty()) {
-				end = Math.min(end, active.peek().endPosition() + 1);
+				end = Math.min(end, active.peek().lastEnd() + 1);
 			}
 			if (referenceCount > 0) {
 				// start of anchored path
@@ -185,18 +189,17 @@ public class BestNonReferenceContigCaller {
 		public String toString() {
 			return String.format("Path Score %d, %s", score, node);
 		}
-		public static final Ordering<Contig> ByScore = new Ordering<Contig>() {
+		public static final Ordering<Contig> ByScoreDescPosition = new Ordering<Contig>() {
 			@Override
 			public int compare(Contig left, Contig right) {
-				return Ints.compare(left.score, right.score);
-			}};
-		public static final Ordering<Contig> ByScoreDesc = new Ordering<Contig>() {
-			@Override
-			public int compare(Contig left, Contig right) {
-				return Ints.compare(right.score, left.score);
+				return ComparisonChain.start()
+						.compare(right.score, left.score)
+						.compare(left.node.node.startPosition(), right.node.node.startPosition())
+						.result();
 			}};
 	}
 	public ArrayDeque<KmerPathSubnode> bestContig() {
+		// FIXME: add hard bounds to the width of the loaded graph.
 		while (underlying.hasNext() && (called.isEmpty() || frontier.peekFrontier() == null || called.peek().node.node.endPosition() > frontier.peekFrontier().node.firstKmerStartPosition() - maxEvidenceWidth)) {
 			// if our best assembly could share evidence with an assembly that could be better, then we need to process more
 			advance();

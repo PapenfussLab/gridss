@@ -52,14 +52,15 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 	 * - prev nodes must end before current not first kmer end position
 	 * - next nodes must start no later than our end position + 1
 	 */
-	private final PriorityQueue<KmerNode> activeNodes = new PriorityQueue<KmerNode>(KmerNodeUtil.ByEndPosition);
-	private final PriorityQueue<KmerPathNode> pathNodes = new PriorityQueue<KmerPathNode>(1024, KmerNodeUtil.ByFirstKmerStartPosition);
+	private final PriorityQueue<KmerNode> activeNodes = new PriorityQueue<KmerNode>(KmerNodeUtil.ByLastEnd);
+	private final PriorityQueue<KmerPathNode> pathNodes = new PriorityQueue<KmerPathNode>(1024, KmerNodeUtil.ByFirstStart);
 	private int inputPosition = Integer.MIN_VALUE;
 	/**
 	 * Maximum width of a single node. This is calculated from the input sequence
 	 */
 	private int maxNodeWidth = 0;
 	public PathNodeIterator(Iterator<? extends KmerNode> it, int maxPathLength, int k) {
+		if (maxPathLength < 1) throw new IllegalArgumentException("Path length must be positive");
 		this.underlying = Iterators.peekingIterator(it);
 		this.maxNodeLength = maxPathLength;
 		this.k = k;
@@ -69,12 +70,12 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 	 */
 	private List<KmerNode> nextNodes(KmerNode node) {
 		List<KmerNode> adj = new ArrayList<KmerNode>(4);
-		for (long kmer : KmerEncodingHelper.nextStates(k, node.kmer())) {
+		for (long kmer : KmerEncodingHelper.nextStates(k, node.lastKmer())) {
 			List<KmerNode> list = edgeLookup.get(kmer);
 			if (list != null) {
 				for (KmerNode n : list) {
-					if (!(n instanceof KmerPathNode) && IntervalUtil.overlapsClosed(node.startPosition() + 1, node.endPosition() + 1, n.firstKmerStartPosition(), n.firstKmerEndPosition())) {
-						assert(KmerEncodingHelper.isNext(k, node.kmer(), n.firstKmer()));
+					if (!(n instanceof KmerPathNode) && IntervalUtil.overlapsClosed(node.lastStart() + 1, node.lastEnd() + 1, n.firstKmerStart(), n.firstKmerEnd())) {
+						assert(KmerEncodingHelper.isNext(k, node.lastKmer(), n.firstKmer()));
 						adj.add(n);
 					}
 				}
@@ -82,8 +83,8 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 			List<KmerPathNode> pnList = firstKmerEdgeLookup.get(kmer);
 			if (pnList != null) {
 				for (KmerNode n : pnList) {
-					if (IntervalUtil.overlapsClosed(node.startPosition() + 1, node.endPosition() + 1, n.firstKmerStartPosition(), n.firstKmerEndPosition())) {
-						assert(KmerEncodingHelper.isNext(k, node.kmer(), n.firstKmer()));
+					if (IntervalUtil.overlapsClosed(node.lastStart() + 1, node.lastEnd() + 1, n.firstKmerStart(), n.firstKmerEnd())) {
+						assert(KmerEncodingHelper.isNext(k, node.lastKmer(), n.firstKmer()));
 						adj.add(n);
 					}
 				}
@@ -97,8 +98,8 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 			List<KmerNode> list = edgeLookup.get(kmer);
 			if (list != null) {
 				for (KmerNode n : list) {
-					if (IntervalUtil.overlapsClosed(n.startPosition() + 1, n.endPosition() + 1, node.firstKmerStartPosition(), node.firstKmerEndPosition())) {
-						assert(KmerEncodingHelper.isNext(k, n.kmer(), node.firstKmer()));
+					if (IntervalUtil.overlapsClosed(n.lastStart() + 1, n.lastEnd() + 1, node.firstKmerStart(), node.firstKmerEnd())) {
+						assert(KmerEncodingHelper.isNext(k, n.lastKmer(), node.firstKmer()));
 						adj.add(n);
 					}
 				}
@@ -112,7 +113,7 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 	 * @param pn
 	 */
 	private void lookupReplace(KmerNode node, KmerPathNode pn) {
-		List<KmerNode> list = edgeLookup.get(node.kmer());
+		List<KmerNode> list = edgeLookup.get(node.lastKmer());
 		assert(list != null);
 		ListIterator<KmerNode> it = list.listIterator();
 		while (it.hasNext()) {
@@ -129,20 +130,20 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 	 * @param node
 	 */
 	private void lookupAdd(KmerNode node) {
-		List<KmerNode> list = edgeLookup.get(node.kmer());
+		List<KmerNode> list = edgeLookup.get(node.lastKmer());
 		if (list == null) {
 			list = new LinkedList<KmerNode>();
-			edgeLookup.put(node.kmer(), list);
+			edgeLookup.put(node.lastKmer(), list);
 		}
 		list.add(node);
 	}
 	private void lookupRemove(KmerNode node) {
-		List<KmerNode> list = edgeLookup.get(node.kmer());
+		List<KmerNode> list = edgeLookup.get(node.lastKmer());
 		assert(list != null);
 		boolean found = list.remove(node);
 		assert(found);
 		if (list.isEmpty()) {
-			edgeLookup.remove(node.kmer());
+			edgeLookup.remove(node.lastKmer());
 		}
 	}
 	private void firstKmerLookupAdd(KmerPathNode node) {
@@ -175,8 +176,8 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 		return hasMore;
 	}
 	private void advance() {
-		inputPosition = underlying.peek().startPosition();
-		while (underlying.hasNext() && underlying.peek().startPosition() == inputPosition) {
+		inputPosition = underlying.peek().lastStart();
+		while (underlying.hasNext() && underlying.peek().lastStart() == inputPosition) {
 			KmerNode node = underlying.next();
 			lookupAdd(node);
 			activeNodes.add(node);
@@ -184,7 +185,7 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 		}
 	}
 	private void merge() {
-		while (!activeNodes.isEmpty() && activeNodes.peek().endPosition() < inputPosition) {
+		while (!activeNodes.isEmpty() && activeNodes.peek().lastEnd() < inputPosition) {
 			KmerNode node = activeNodes.poll();
 			merge(node);
 		}
@@ -194,12 +195,12 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 		List<KmerNode> prev = prevNodes(node);
 		if (prev.size() == 1) {
 			KmerNode toMerge = prev.get(0);
-			if (toMerge.startPosition() == node.firstKmerStartPosition() - 1
-					&& toMerge.endPosition() == node.firstKmerEndPosition() - 1
+			if (toMerge.lastStart() == node.firstKmerStart() - 1
+					&& toMerge.lastEnd() == node.firstKmerEnd() - 1
 					&& toMerge.isReference() == node.isReference()
 					&& toMerge.length() < maxNodeLength) {
 				// we can merge
-				assert(KmerEncodingHelper.isNext(k, toMerge.kmer(), node.firstKmer()));
+				assert(KmerEncodingHelper.isNext(k, toMerge.lastKmer(), node.firstKmer()));
 				assert(toMerge instanceof KmerPathNode); // must have already processed our previous node
 				KmerPathNode pn = (KmerPathNode)toMerge;
 				List<KmerNode> pnNext = nextNodes(pn);
@@ -254,7 +255,7 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 		// therefore, earliest start position of a unprocessed node
 		// is based on the maximum width of a node
 		int earliestFirstKmerStartPositionOfActiveNode = inputPosition - maxNodeWidth;
-		return node.endPosition() < earliestFirstKmerStartPositionOfActiveNode;
+		return node.lastEnd() < earliestFirstKmerStartPositionOfActiveNode;
 	}
 	@Override
 	public void remove() {

@@ -349,7 +349,7 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		e.add(SCE(FWD, tumour, withSequence("TCTTAAACG", Read(0, 10, "4M5S"))));
 		e.add(SCE(FWD, tumour, withSequence("TCTTAAACGG", Read(0, 10, "4M6S"))));
 		e.add(NRRP(withSequence(SequenceUtil.reverseComplement("AAACG"), OEA(0, 5, "5M", true))));	
-		e.add(NRRP(tumour, withSequence(SequenceUtil.reverseComplement("CAAACG"), OEA(0, 6, "5M", true))));
+		e.add(NRRP(tumour, withSequence(SequenceUtil.reverseComplement("CAAACG"), OEA(0, 6, "6M", true))));
 		for (DirectedEvidence ev : e) assertFalse(ass.addEvidence(ev).iterator().hasNext());
 		AssemblyEvidence result = ass.endOfEvidence().iterator().next().hydrateEvidenceSet(e).annotateAssembly();
 		
@@ -414,9 +414,9 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 	@Test
 	public void should_assemble_non_reference_primary_kmer_as_reference_if_alt_ref_kmer_exists() {
 		setupWithGraphReduction(4);
-		addRead(withSequence("GCTAGG", Read(0, 1, "5M2S"))[0], true);
-		addRead(withSequence("GCTAGG", Read(0, 1, "5M2S"))[0], true);
-		addRead(withSequence("GCTATG", Read(0, 1, "6M1S"))[0], true);
+		addRead(withSequence("GCTAGG", Read(0, 1, "4M2S"))[0], true);
+		addRead(withSequence("GCTAGG", Read(0, 1, "4M2S"))[0], true);
+		addRead(withSequence("GCTATG", Read(0, 1, "5M1S"))[0], true);
 		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, result.size());
 		assertEquals("GCTAGG", S(result.get(0).getAssemblySequence()));

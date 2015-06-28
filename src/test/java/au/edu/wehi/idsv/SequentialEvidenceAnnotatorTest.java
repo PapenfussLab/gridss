@@ -151,7 +151,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 			.loc("polyA", 1, 1)
 			.alleles("A", "A[polyA:10[");
 		VariantContextDirectedBreakpoint result = (VariantContextDirectedBreakpoint)go(L(
-				(DirectedEvidence)SoftClipEvidence.create(SES(), FWD, withSequence("TTTTTTTT", Read(0, 5, "3S1M3S"))[0], withSequence("TTT", Read(0, 22, "3M"))[0])
+				(DirectedEvidence)SoftClipEvidence.create(SES(), FWD, withSequence("TTTTTTT", Read(0, 5, "3S1M3S"))[0], withSequence("TTT", Read(0, 22, "3M"))[0])
 			), (VariantContextDirectedEvidence)builder.make());
 		assertEquals(0, result.getBreakpointEvidenceCountSoftClip(null));
 		assertEquals(0, result.getBreakendEvidenceCountSoftClip(null));

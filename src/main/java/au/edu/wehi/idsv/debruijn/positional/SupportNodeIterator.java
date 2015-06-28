@@ -30,7 +30,7 @@ public class SupportNodeIterator implements Iterator<KmerSupportNode> {
 	 */
 	private final int emitOffset;
 	private final int maxSupportStartPositionOffset;
-	private final PriorityQueue<KmerSupportNode> buffer = new PriorityQueue<KmerSupportNode>(1024, KmerNodeUtil.ByStartPosition);
+	private final PriorityQueue<KmerSupportNode> buffer = new PriorityQueue<KmerSupportNode>(1024, KmerNodeUtil.ByLastStart);
 	private int inputPosition = Integer.MIN_VALUE;
 	private int firstReferenceIndex;
 	private int lastPosition = Integer.MIN_VALUE;
@@ -69,7 +69,7 @@ public class SupportNodeIterator implements Iterator<KmerSupportNode> {
 			KmerSupportNode support = e.node(i); 
 			if (support != null) {
 				// max sure that we are actually able to resort into kmer order
-				assert(support.startPosition() >= de.getBreakendSummary().start - maxSupportStartPositionOffset);
+				assert(support.lastStart() >= de.getBreakendSummary().start - maxSupportStartPositionOffset);
 				buffer.add(support);
 			}
 		}
@@ -83,17 +83,18 @@ public class SupportNodeIterator implements Iterator<KmerSupportNode> {
 	public KmerSupportNode next() {
 		ensureBuffer();
 		KmerSupportNode node = buffer.poll();
-		assert(node.startPosition() >= lastPosition);
-		lastPosition = node.startPosition();		
+		assert(node.lastStart() >= lastPosition);
+		lastPosition = node.lastStart();		
 		return node;
 	}
 	private void ensureBuffer() {
-		while (underlying.hasNext() && (buffer.isEmpty() || buffer.peek().startPosition() > inputPosition - emitOffset)) {
+		while (underlying.hasNext() && (buffer.isEmpty() || buffer.peek().lastStart() > inputPosition - emitOffset)) {
 			inputPosition = underlying.peek().getBreakendSummary().start;
 			advance();
 		}
 		if (!underlying.hasNext()) {
 			inputPosition = Integer.MAX_VALUE;
+			advance();
 		}
 	}
 	private void advance() {

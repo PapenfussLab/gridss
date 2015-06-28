@@ -328,7 +328,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 				case SAM_FLAG:
 					rpcc = new SAMFlagReadPairConcordanceCalculator(getMetrics().getIdsvMetrics());
 					// Safety check for BWA which sets proper pair flag based only correct chromosome and orientation 
-					if (getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH >= 100000 &&  
+					if (getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH != null &&
+							getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH >= 100000 &&  
 							getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH >= getMetrics().getInsertSizeMetrics().MAX_INSERT_SIZE / 2 &&
 							getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH >= 10 * getMaxReadLength()) {
 						String msg = String.format("Proper pair flag indicates fragment size of %d is expected!"
@@ -352,7 +353,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	@Override
 	public int getMinConcordantFragmentSize() {
-		return Math.max(getMaxReadLength(), getReadPairConcordanceCalculator().minConcordantFragmentSize());
+		int min = Math.max(getMaxReadLength(), getReadPairConcordanceCalculator().minConcordantFragmentSize());
+		return min;
 	}
 	public int getMaxReadLength() {
 		return getMetrics().getIdsvMetrics().MAX_READ_LENGTH;

@@ -22,26 +22,26 @@ import au.edu.wehi.idsv.TestHelper;
 import com.google.common.collect.Lists;
 
 
-public class NonReferenceContigCallerTest extends TestHelper {
-	private NonReferenceContigCaller caller;
+public class NonReferenceContigAssemblerTest extends TestHelper {
+	private NonReferenceContigAssembler caller;
 	private EvidenceTracker trackedIt;
 	public List<SAMRecordAssemblyEvidence> go(ProcessingContext pc, boolean collapse, DirectedEvidence... input) {
 		Arrays.sort(input, DirectedEvidence.ByStartEnd);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, Arrays.stream(input).map(e -> (SAMEvidenceSource)e.getEvidenceSource()).collect(Collectors.toList()), null);
-		int maxSupportWidth = aes.getMaxConcordantFragmentSize() - aes.getMinConcordantFragmentSize() + 1;
+		int maxEvidenceWidth = aes.getMaxConcordantFragmentSize() - aes.getMinConcordantFragmentSize() + 1;
 		int maxReadLength = maxReadLength(input);
 		int k = pc.getAssemblyParameters().k;
-		int maxPathLength = pc.getAssemblyParameters().positionalMaxPathLengthInBases(maxSupportWidth);
-		int maxPathCollapseLength = pc.getAssemblyParameters().positionalMaxPathCollapseLengthInBases(maxSupportWidth);
+		int maxPathLength = pc.getAssemblyParameters().positionalMaxPathLengthInBases(maxEvidenceWidth);
+		int maxPathCollapseLength = pc.getAssemblyParameters().positionalMaxPathCollapseLengthInBases(maxEvidenceWidth);
 		SupportNodeIterator supportIt = new SupportNodeIterator(k, Arrays.stream(input).iterator(), maxReadLength);
 		trackedIt = new EvidenceTracker(supportIt);
 		AggregateNodeIterator agIt = new AggregateNodeIterator(trackedIt);
 		Iterator<KmerPathNode> pnIt = new PathNodeIterator(agIt, maxPathLength, k);
 		if (collapse) {
-			pnIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, pc.getAssemblyParameters().maxBaseMismatchForCollapse);
-			pnIt = new PathSimplificationIterator(pnIt, maxPathLength, maxSupportWidth);
+			pnIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, pc.getAssemblyParameters().maxBaseMismatchForCollapse, pc.getAssemblyParameters().collapseBubblesOnly);
+			pnIt = new PathSimplificationIterator(pnIt, maxPathLength, maxEvidenceWidth);
 		}
-		caller = new NonReferenceContigCaller(pnIt, 0, maxSupportWidth, maxReadLength, k, aes, trackedIt);
+		caller = new NonReferenceContigAssembler(pnIt, 0, maxEvidenceWidth, maxReadLength, k, aes, trackedIt);
 		List<SAMRecordAssemblyEvidence> assemblies = Lists.newArrayList(caller);
 		return assemblies;
 	}
@@ -69,7 +69,7 @@ public class NonReferenceContigCallerTest extends TestHelper {
 	public void should_call_simple_fwd_RP() {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
-		DiscordantReadPair e = (DiscordantReadPair)NRRP(SES(100, 200), withSequence("ACGTGGTCGACC", DP(0, 50, "10M", true, 1, 1, "10M", false)));
+		DiscordantReadPair e = (DiscordantReadPair)NRRP(SES(100, 200), withSequence("ACGTGGTCGACC", DP(0, 50, "12M", true, 1, 1, "12M", false)));
 		List<SAMRecordAssemblyEvidence> output = go(pc, true, e);
 		assertEquals(1, output.size());
 		assertEquals("ACGTGGTCGACC", S(output.get(0).getAssemblySequence()));

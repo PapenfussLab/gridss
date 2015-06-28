@@ -11,6 +11,7 @@ import java.util.List;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.junit.Test;
 
+import au.edu.wehi.idsv.AssemblyAlgorithm;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.ProcessStep;
@@ -43,6 +44,7 @@ public class SubgraphSizeTimeoutVisualisationTest extends IntermediateFilesTest 
 		ProcessingContext pc = getCommandlineContext(false);
 		pc.getAssemblyParameters().subgraphMaxPathTraversalNodes = 1024;
 		pc.getAssemblyParameters().k = k;
+		pc.getAssemblyParameters().method = AssemblyAlgorithm.Subgraph;
 		pc.getSoftClipParameters().minLength = 1;
 		File output = new File(super.testFolder.getRoot(), "test_path_timeout_gexf.vcf");
 		List<SAMRecord> list = Lists.newArrayList();

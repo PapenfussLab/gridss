@@ -95,7 +95,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		DeBruijnReadGraph g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
-		g.addEvidence(NRRP(withSequence(              "AATC", OEA(0, 10, "7M", true)))); // not on main patch, but reachable
+		g.addEvidence(NRRP(withSequence(              "AATC", OEA(0, 10, "4M", true)))); // not on main path, but reachable
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGAGTCCTG", Read(0, 10, "7M7S"))));
 		
 		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "AATT");
@@ -112,8 +112,8 @@ public class PathGraphAssemblerTest extends TestHelper {
 		ap.maxBaseMismatchForCollapse = 0;
 		
 		DeBruijnReadGraph g = RG(ap.k);
-		g.addEvidence(SCE(FWD, withSequence("AAATGGGG", Read(0, 10, "6M3S"))));
-		g.addEvidence(SCE(FWD, withSequence("GTACCCGGGG", Read(0, 10, "9M2S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAATGGGG", Read(0, 10, "6M2S"))));
+		g.addEvidence(SCE(FWD, withSequence("GTACCCGGGG", Read(0, 10, "9M1S"))));
 		// should take the shorter assembly that has a longer soft clip
 		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "GGGG");
 		List<List<DeBruijnSubgraphNode>> result = flatten(pga.assembleContigs());
@@ -193,9 +193,9 @@ public class PathGraphAssemblerTest extends TestHelper {
 		
 		DeBruijnReadGraph g = RG(ap.k);
 		//                                    RRRRRR
-		g.addEvidence(SCE(FWD, withSequence( "TTTTCGAGAT", Read(0, 10, "8M1S"))));
+		g.addEvidence(SCE(FWD, withSequence( "TTTTCGAGAT", Read(0, 10, "8M2S"))));
 		g.addEvidence(SCE(FWD, withSequence( "TTTTCGCCGGT", Read(0, 10, "8M3S"))));
-		g.addEvidence(SCE(FWD, withSequence( "TTTTCGTTAACC", Read(0, 10, "8M6S"))));
+		g.addEvidence(SCE(FWD, withSequence( "TTTTCGTTAACC", Read(0, 10, "8M4S"))));
 		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap,"TTTT");
 		List<List<DeBruijnSubgraphNode>> result = flatten(pga.assembleContigs());
 		assertEquals(3, result.size());
@@ -212,16 +212,16 @@ public class PathGraphAssemblerTest extends TestHelper {
 		ap.subgraphMaxPathTraversalNodes = 2;
 		
 		DeBruijnReadGraph g = RG(ap.k);
-		g.addEvidence(SCE(FWD, withSequence("AAATGGGGGGGGGGG", Read(0, 10, "6M10S"))));
-		g.addEvidence(SCE(FWD, withSequence("AAATGGGC", Read(0, 10, "6M3S"))));
-		g.addEvidence(SCE(FWD, withSequence("AAATGGGTAA", Read(0, 10, "6M5S"))));
-		g.addEvidence(SCE(FWD, withSequence("AAATGGGTCC", Read(0, 10, "6M5S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAATGGGGGGGGGGG", Read(0, 10, "6M9S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAATGGGC", Read(0, 10, "6M2S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAATGGGTAA", Read(0, 10, "6M4S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAATGGGTCC", Read(0, 10, "6M4S"))));
 		g.addEvidence(NRRP(withSequence("GGAC", OEA(0, 10, "4M", true)))); // GTCC reverse comp GGAC
 		g.addEvidence(NRRP(withSequence("GGAC", OEA(0, 10, "4M", true))));
-		g.addEvidence(SCE(FWD, withSequence("AAATGGGA", Read(0, 10, "6M3S"))));
-		g.addEvidence(SCE(FWD, withSequence("AAATGGGA", Read(0, 10, "6M3S"))));
-		g.addEvidence(SCE(FWD, withSequence("AAATGGGA", Read(0, 10, "6M3S"))));
-		g.addEvidence(SCE(FWD, withSequence("AAATGGGA", Read(0, 10, "6M3S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAATGGGA", Read(0, 10, "6M2S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAATGGGA", Read(0, 10, "6M2S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAATGGGA", Read(0, 10, "6M2S"))));
+		g.addEvidence(SCE(FWD, withSequence("AAATGGGA", Read(0, 10, "6M2S"))));
 		// greedy traversal
 		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "GGGG");
 		//new StaticDeBruijnSubgraphPathGraphGexfExporter(ap.k)
@@ -241,14 +241,14 @@ public class PathGraphAssemblerTest extends TestHelper {
 		ap.anchorAssemblyLength = 2;
 		DeBruijnReadGraph g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence( "AACCGGACAGCGCAGAGCATT", Read(0, 1, "20M1S"))));
-		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAGAgGCATT", Read(0, 1, "20M1S"))));
-		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAGgAGCATT", Read(0, 1, "20M1S"))));
-		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAgGAGCATT", Read(0, 1, "20M1S"))));
-		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCgAGAGCATT", Read(0, 1, "20M1S"))));
-		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGgCAGAGCATT", Read(0, 1, "20M1S"))));
-		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCgGCAGAGCATT", Read(0, 1, "20M1S"))));
-		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGgCGCAGAGCATT", Read(0, 1, "20M1S"))));
-		g.addEvidence(SCE(FWD, withSequence("AACCGGACAgGCGCAGAGCATT", Read(0, 1, "20M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAGAgGCATT", Read(0, 1, "21M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAGgAGCATT", Read(0, 1, "21M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAgGAGCATT", Read(0, 1, "21M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCgAGAGCATT", Read(0, 1, "21M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGgCAGAGCATT", Read(0, 1, "21M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCgGCAGAGCATT", Read(0, 1, "21M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGgCGCAGAGCATT", Read(0, 1, "21M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAgGCGCAGAGCATT", Read(0, 1, "21M1S"))));
 		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "GCATT");
 		List<List<DeBruijnSubgraphNode>> result = flatten(pga.assembleContigs());
 		assertEquals(1, result.size());
@@ -258,14 +258,14 @@ public class PathGraphAssemblerTest extends TestHelper {
 		ap.anchorAssemblyLength = 1000;
 		g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence( "AACCGGACAGCGCAGAGCATT", Read(0, 1, "20M1S"))));
-		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAGAgGCATT", Read(0, 1, "20M1S"))));
-		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAGgAGCATT", Read(0, 1, "20M1S"))));
-		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAgGAGCATT", Read(0, 1, "20M1S"))));
-		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCgAGAGCATT", Read(0, 1, "20M1S"))));
-		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGgCAGAGCATT", Read(0, 1, "20M1S"))));
-		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCgGCAGAGCATT", Read(0, 1, "20M1S"))));
-		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGgCGCAGAGCATT", Read(0, 1, "20M1S"))));
-		g.addEvidence(SCE(FWD, withSequence("AACCGGACAgGCGCAGAGCATT", Read(0, 1, "20M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAGAgGCATT", Read(0, 1, "21M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAGgAGCATT", Read(0, 1, "21M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAgGAGCATT", Read(0, 1, "21M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCgAGAGCATT", Read(0, 1, "21M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGgCAGAGCATT", Read(0, 1, "21M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCgGCAGAGCATT", Read(0, 1, "21M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGgCGCAGAGCATT", Read(0, 1, "21M1S"))));
+		g.addEvidence(SCE(FWD, withSequence("AACCGGACAgGCGCAGAGCATT", Read(0, 1, "21M1S"))));
 		pga = PGA(g, ap, "GCATT");
 		result = flatten(pga.assembleContigs());
 		assertEquals(1, result.size());

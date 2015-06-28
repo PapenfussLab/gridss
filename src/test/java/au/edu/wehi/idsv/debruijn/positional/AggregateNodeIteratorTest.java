@@ -18,9 +18,9 @@ import com.google.common.collect.Lists;
 
 public class AggregateNodeIteratorTest extends TestHelper {
 	public void assertIs(KmerNode node, long kmer, int start, int end, int weight, boolean isReference) {
-		assertEquals(kmer, node.kmer());
-		assertEquals(start, node.startPosition());
-		assertEquals(end, node.endPosition());
+		assertEquals(kmer, node.lastKmer());
+		assertEquals(start, node.lastStart());
+		assertEquals(end, node.lastEnd());
 		assertEquals(weight, node.weight());
 		assertEquals(isReference, node.isReference());
 	}
@@ -29,9 +29,9 @@ public class AggregateNodeIteratorTest extends TestHelper {
 		List<KmerNode> input = new ArrayList<KmerNode>();
 		input.add(new ImmutableKmerNode(0, 1, 1, true, 3));
 		input.add(new ImmutableKmerNode(0, 1, 1, false, 3));
-		Collections.sort(input, KmerNodeUtil.ByStartPosition);
+		Collections.sort(input, KmerNodeUtil.ByLastStart);
 		List<KmerNode> anList = Lists.newArrayList(new AggregateNodeIterator(input.iterator()));
-		assertTrue(KmerNodeUtil.ByStartPosition.isOrdered(anList));
+		assertTrue(KmerNodeUtil.ByLastStart.isOrdered(anList));
 		assertEquals(1, anList.size());
 		assertIs(anList.get(0), 0, 1, 1, 6, true);
 	}
@@ -40,9 +40,9 @@ public class AggregateNodeIteratorTest extends TestHelper {
 		List<KmerNode> input = new ArrayList<KmerNode>();
 		input.add(new ImmutableKmerNode(0, 1, 1, true, 3));
 		input.add(new ImmutableKmerNode(0, 2, 2, false, 3));
-		Collections.sort(input, KmerNodeUtil.ByStartPosition);
+		Collections.sort(input, KmerNodeUtil.ByLastStart);
 		List<KmerNode> anList = Lists.newArrayList(new AggregateNodeIterator(input.iterator()));
-		assertTrue(KmerNodeUtil.ByStartPosition.isOrdered(anList));
+		assertTrue(KmerNodeUtil.ByLastStart.isOrdered(anList));
 		assertEquals(2, anList.size());
 	}
 	/**
@@ -54,9 +54,9 @@ public class AggregateNodeIteratorTest extends TestHelper {
 		List<KmerNode> input = new ArrayList<KmerNode>();
 		input.add(new ImmutableKmerNode(0, 1, 1, true, 3));
 		input.add(new ImmutableKmerNode(0, 2, 2, true, 3));
-		Collections.sort(input, KmerNodeUtil.ByStartPosition);
+		Collections.sort(input, KmerNodeUtil.ByLastStart);
 		List<KmerNode> anList = Lists.newArrayList(new AggregateNodeIterator(input.iterator()));
-		assertTrue(KmerNodeUtil.ByStartPosition.isOrdered(anList));
+		assertTrue(KmerNodeUtil.ByLastStart.isOrdered(anList));
 		assertEquals(2, anList.size());
 		assertIs(anList.get(0), 0, 1, 1, 3, true);
 		assertIs(anList.get(1), 0, 2, 2, 3, true);
@@ -66,9 +66,9 @@ public class AggregateNodeIteratorTest extends TestHelper {
 		List<KmerNode> input = new ArrayList<KmerNode>();
 		input.add(new ImmutableKmerNode(0, 1, 1, true, 1));
 		input.add(new ImmutableKmerNode(0, 2, 2, true, 2));
-		Collections.sort(input, KmerNodeUtil.ByStartPosition);
+		Collections.sort(input, KmerNodeUtil.ByLastStart);
 		List<KmerNode> anList = Lists.newArrayList(new AggregateNodeIterator(input.iterator()));
-		assertTrue(KmerNodeUtil.ByStartPosition.isOrdered(anList));
+		assertTrue(KmerNodeUtil.ByLastStart.isOrdered(anList));
 		assertEquals(2, anList.size());
 		assertIs(anList.get(0), 0, 1, 1, 1, true);
 		assertIs(anList.get(1), 0, 2, 2, 2, true);
@@ -84,9 +84,9 @@ public class AggregateNodeIteratorTest extends TestHelper {
 		input.add(new ImmutableKmerNode(0, 1, 5, true, 2));
 		input.add(new ImmutableKmerNode(0, 2, 4, true, 2));
 		input.add(new ImmutableKmerNode(0, 3, 3, true, 2));
-		Collections.sort(input, KmerNodeUtil.ByStartPosition);
+		Collections.sort(input, KmerNodeUtil.ByLastStart);
 		List<KmerNode> anList = Lists.newArrayList(new AggregateNodeIterator(input.iterator()));
-		assertTrue(KmerNodeUtil.ByStartPosition.isOrdered(anList));
+		assertTrue(KmerNodeUtil.ByLastStart.isOrdered(anList));
 		assertEquals(5, anList.size());
 		assertIs(anList.get(0), 0, 1, 1, 2, true);
 		assertIs(anList.get(1), 0, 2, 2, 4, true);
@@ -106,9 +106,9 @@ public class AggregateNodeIteratorTest extends TestHelper {
 		input.add(new ImmutableKmerNode(0, 1, 4, true, 3));
 		input.add(new ImmutableKmerNode(0, 2, 5, true, 4));
 		input.add(new ImmutableKmerNode(0, 3, 6, true, 5));
-		Collections.sort(input, KmerNodeUtil.ByStartPosition);
+		Collections.sort(input, KmerNodeUtil.ByLastStart);
 		List<KmerNode> anList = Lists.newArrayList(new AggregateNodeIterator(input.iterator()));
-		assertTrue(KmerNodeUtil.ByStartPosition.isOrdered(anList));
+		assertTrue(KmerNodeUtil.ByLastStart.isOrdered(anList));
 		assertEquals(5, anList.size());
 		assertIs(anList.get(0), 0, 1, 1, 3, true);
 		assertIs(anList.get(1), 0, 2, 2, 7, true);
@@ -127,9 +127,9 @@ public class AggregateNodeIteratorTest extends TestHelper {
 		input.add(new ImmutableKmerNode(0, 1, 10, true, 1));
 		input.add(new ImmutableKmerNode(0, 2, 11, true, 2));
 		input.add(new ImmutableKmerNode(0, 10, 20, true, 3));
-		Collections.sort(input, KmerNodeUtil.ByStartPosition);
+		Collections.sort(input, KmerNodeUtil.ByLastStart);
 		List<KmerNode> anList = Lists.newArrayList(new AggregateNodeIterator(input.iterator()));
-		assertTrue(KmerNodeUtil.ByStartPosition.isOrdered(anList));
+		assertTrue(KmerNodeUtil.ByLastStart.isOrdered(anList));
 		assertEquals(5, anList.size());
 		assertIs(anList.get(0), 0, 1, 1, 1, true);
 		assertIs(anList.get(1), 0, 2, 9, 3, true);
@@ -143,9 +143,9 @@ public class AggregateNodeIteratorTest extends TestHelper {
 		for (int i = 0; i < 64; i++) {
 			input.add(new ImmutableKmerNode(0, i, i+4, true, 1));
 		}
-		Collections.sort(input, KmerNodeUtil.ByStartPosition);
+		Collections.sort(input, KmerNodeUtil.ByLastStart);
 		List<KmerNode> anList = Lists.newArrayList(new AggregateNodeIterator(input.iterator()));
-		assertTrue(KmerNodeUtil.ByStartPosition.isOrdered(anList));
+		assertTrue(KmerNodeUtil.ByLastStart.isOrdered(anList));
 		assertEquals(68, anList.size());
 	}
 	@Test
@@ -158,14 +158,14 @@ public class AggregateNodeIteratorTest extends TestHelper {
 		Collections.sort(input, DirectedEvidence.ByStartEnd);
 		List<KmerSupportNode> snList = Lists.newArrayList(new SupportNodeIterator(k, input.iterator(), ses.getMaxConcordantFragmentSize()));
 		List<KmerNode> anList = Lists.newArrayList(new AggregateNodeIterator(snList.iterator()));
-		assertTrue(KmerNodeUtil.ByStartPosition.isOrdered(anList));
+		assertTrue(KmerNodeUtil.ByLastStart.isOrdered(anList));
 		assertEquals(4, snList.size());
 		assertEquals(6, anList.size());
 	}
 	@Test
 	public void total_weight_should_remain_constant() {
 		List<KmerSupportNode> snList = Lists.newArrayList(new SupportNodeIterator(4, SupportNodeIteratorTest.scrp(4, "ACGTTATACCG", 30, 60).iterator(), 60));
-		assertTrue(KmerNodeUtil.ByStartPosition.isOrdered(snList));
+		assertTrue(KmerNodeUtil.ByLastStart.isOrdered(snList));
 		List<KmerNode> anList = Lists.newArrayList(new AggregateNodeIterator(snList.iterator()));
 		assertEquals(totalWeight(snList), totalWeight(anList));
 		//		snList.stream().mapToInt(n -> (n.endPosition() - n.startPosition() + 1) * n.weight()).sum(),

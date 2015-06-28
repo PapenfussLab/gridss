@@ -55,8 +55,17 @@ public class IdsvSamFileMetricsCollector {
     	if (record.getReadPairedFlag()) {
     		if (record.getProperPairFlag()) {
 	    		int fragmentSize = SAMRecordUtil.estimateFragmentSize(record, PairOrientation.FR);
-	    		idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH = Math.max(idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH, Math.abs(fragmentSize));
-	    		idsv.MIN_PROPER_PAIR_FRAGMENT_LENGTH = Math.min(idsv.MIN_PROPER_PAIR_FRAGMENT_LENGTH, Math.abs(fragmentSize));
+	    		fragmentSize = Math.abs(fragmentSize);
+	    		if (idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH == null) {
+	    			idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH = fragmentSize;
+	    		} else {
+	    			idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH = Math.max(idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH, Math.abs(fragmentSize));
+	    		}
+	    		if (idsv.MIN_PROPER_PAIR_FRAGMENT_LENGTH == null) {
+	    			idsv.MIN_PROPER_PAIR_FRAGMENT_LENGTH = fragmentSize;
+	    		} else {
+	    			idsv.MIN_PROPER_PAIR_FRAGMENT_LENGTH = Math.min(idsv.MIN_PROPER_PAIR_FRAGMENT_LENGTH, Math.abs(fragmentSize));
+	    		}
     		}
     		if (record.getFirstOfPairFlag()) {
     			idsv.READ_PAIRS++;
@@ -74,7 +83,7 @@ public class IdsvSamFileMetricsCollector {
     		idsv.MAPPED_READS++;
     	}
 	}
-	public void finish(ProcessingContext processContext, File source) {
+	public void finish(ProcessingContext processContext, File source) {		
 		MetricsFile<InsertSizeMetrics, Integer> isMetricsFile = processContext.<InsertSizeMetrics, Integer>createMetricsFile();
 		MetricsFile<IdsvMetrics, Integer> idsvMetricsFile = processContext.<IdsvMetrics, Integer>createMetricsFile();
 		MetricsFile<SoftClipDetailMetrics, Integer> scMetricsFile = processContext.<SoftClipDetailMetrics, Integer>createMetricsFile();

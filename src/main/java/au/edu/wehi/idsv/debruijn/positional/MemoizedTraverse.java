@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NavigableSet;
 import java.util.PriorityQueue;
 import java.util.TreeSet;
@@ -36,6 +38,8 @@ public class MemoizedTraverse {
 		if (floorNode != null) {
 			couldOverlap = memoized.tailSet(memoized.floor(node), true);
 		}
+		List<TraversalNode> toAdd = new ArrayList<TraversalNode>(4);
+		List<TraversalNode> toRemove = new ArrayList<TraversalNode>(4);
 		for (TraversalNode existing : couldOverlap) {
 			if (existing.node.firstKmer() > node.node.firstKmer()) break;
 			if (existing.node.firstKmer() < node.node.firstKmer()) continue;
@@ -50,38 +54,41 @@ public class MemoizedTraverse {
 			// ok, so now we know the nodes overlap
 			if (node.score > existing.score) {
 				// remove existing node in overlapping interval
-				memoized.remove(existing);
+				toRemove.add(existing);
 				if (existing.node.firstKmerStartPosition() < node.node.firstKmerStartPosition()) {
 					// still valid in earlier interval
 					TraversalNode existingBefore = new TraversalNode(existing, existing.node.firstKmerStartPosition(), node.node.firstKmerStartPosition() - 1);
-					memoized.add(existingBefore);
-					frontier.add(existingBefore);
+					toAdd.add(existingBefore);
 				}
 				if (existing.node.firstKmerEndPosition() > node.node.firstKmerEndPosition()) {
 					// still valid in earlier interval
 					TraversalNode existingAfter = new TraversalNode(existing, node.node.firstKmerEndPosition() + 1, existing.node.firstKmerEndPosition());
-					memoized.add(existingAfter);
-					frontier.add(existingAfter);
+					toAdd.add(existingAfter);
 				}
 			} else { // existing node scores better than us
 				int newStartPosition = existing.node.firstKmerEndPosition() + 1;
 				if (node.node.firstKmerStartPosition() < existing.node.firstKmerStartPosition()) {
 					// start before this node -> we have
 					TraversalNode newBefore = new TraversalNode(node, node.node.firstKmerStartPosition(), existing.node.firstKmerStartPosition() - 1);
-					memoized.add(newBefore);
-					frontier.add(newBefore);
+					toAdd.add(newBefore);
 				}
 				if (newStartPosition > node.node.firstKmerEndPosition()) {
 					// existing node is better than us for all remaining starting position
-					// -> nothing more to do
-					return;
+					// -> don't memoize node
+					node = null;
+					break;
 				} else {
 					node = new TraversalNode(node, newStartPosition, node.node.firstKmerEndPosition());
 				}
 			}
 		}
-		memoized.add(node);
-		frontier.add(node);
+		if (node != null) {
+			toAdd.add(node);
+		}
+		// update now that we have finished iterating over memoized
+		memoized.removeAll(toRemove);
+		frontier.addAll(toAdd);
+		memoized.addAll(toAdd);
 	}
 	/**
 	 * Removes returns the next node for visitation

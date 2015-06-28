@@ -51,7 +51,7 @@ import com.google.common.collect.PeekingIterator;
  *
  */
 public class PathSimplificationIterator implements Iterator<KmerPathNode> {
-	private final ObjectOpenCustomHashSet<KmerPathNode> endLookup = new ObjectOpenCustomHashSet<KmerPathNode>(new KmerNodeUtil.HashByEndPositionKmer<KmerPathNode>());
+	private final ObjectOpenCustomHashSet<KmerPathNode> endLookup = new ObjectOpenCustomHashSet<KmerPathNode>(new KmerNodeUtil.HashByLastEndKmer<KmerPathNode>());
 	/**
 	 * Always merge with earlier nodes. Ordering by end position ensures that
 	 * both kmer and position precedessors have been processed before each node
@@ -69,12 +69,12 @@ public class PathSimplificationIterator implements Iterator<KmerPathNode> {
 	 *  node is maxNodeLength + maxNodeWidth in size
 	 * 
 	 */
-	private final PriorityQueue<KmerPathNode> unprocessed = new PriorityQueue<KmerPathNode>(16, KmerNodeUtil.ByEndPosition);
+	private final PriorityQueue<KmerPathNode> unprocessed = new PriorityQueue<KmerPathNode>(16, KmerNodeUtil.ByLastEnd);
 	/**
 	 * Nodes that have been processed, but could be modified further
 	 * 
 	 */
-	private final TreeSet<KmerPathNode> processed = new TreeSet<KmerPathNode>(KmerNodeUtil.ByFirstKmerStartPositionKmer);
+	private final TreeSet<KmerPathNode> processed = new TreeSet<KmerPathNode>(KmerNodeUtil.ByFirstStartKmer);
 	private final int maxLength;
 	private final int maxWidth;
 	private final PeekingIterator<KmerPathNode> underlying;
@@ -95,7 +95,7 @@ public class PathSimplificationIterator implements Iterator<KmerPathNode> {
 	 * @return true if a merge is possible, false otherwise
 	 */
 	private boolean couldMergeToIncludeKmerAt(KmerPathNode node, int position) {
-		int latestFirstKmerEnd = node.startPosition() + maxWidth - 1;
+		int latestFirstKmerEnd = node.lastStart() + maxWidth - 1;
 		int latestLastKmerEnd = latestFirstKmerEnd + maxLength - 1;
 		return latestLastKmerEnd >= position;
 	}
@@ -125,7 +125,7 @@ public class PathSimplificationIterator implements Iterator<KmerPathNode> {
 		return false;
 	}
 	private KmerPathNode adjacentBeforeKmerToMergeWith(KmerPathNode node) {
-		KmerPathNode adj = endLookup.get(new KmerPathNode(node.kmer(), 0, node.startPosition() - 1, false, 0));
+		KmerPathNode adj = endLookup.get(new KmerPathNode(node.lastKmer(), 0, node.lastStart() - 1, false, 0));
 		if (adj != null
 				&& node.canCoaleseBeforeAdjacent(adj)
 				&& adj.width() + node.width() <= maxWidth) {
@@ -136,8 +136,8 @@ public class PathSimplificationIterator implements Iterator<KmerPathNode> {
 	private KmerPathNode prevKmerToMergeWith(KmerPathNode node) {
 		if (node.prev().size() == 1) {
 			KmerPathNode prev = node.prev().get(0);
-			if (prev.endPosition() + 1 == node.firstKmerEndPosition()
-					&& prev.startPosition() + 1 == node.firstKmerStartPosition()
+			if (prev.lastEnd() + 1 == node.firstKmerEnd()
+					&& prev.lastStart() + 1 == node.firstKmerStart()
 					&& prev.isReference() == node.isReference()
 					&& prev.length() + node.length() <= maxLength
 					&& prev.next().size() == 1) {
@@ -163,7 +163,7 @@ public class PathSimplificationIterator implements Iterator<KmerPathNode> {
 		while (inputPosition < Integer.MAX_VALUE && (processed.isEmpty() || couldMergeToIncludeKmerAt(processed.first(), inputPosition))) {
 			// advance graph position
 			if (underlying.hasNext()) {
-				inputPosition = underlying.peek().firstKmerStartPosition();
+				inputPosition = underlying.peek().firstKmerStart();
 			} else {
 				inputPosition = Integer.MAX_VALUE;
 			}
@@ -179,34 +179,43 @@ public class PathSimplificationIterator implements Iterator<KmerPathNode> {
 		}
 	}
 	private void process() {
-		while (!unprocessed.isEmpty() && unprocessed.peek().endPosition() <= inputPosition) {
+		while (!unprocessed.isEmpty() && unprocessed.peek().lastEnd() <= inputPosition) {
 			KmerPathNode node = unprocessed.poll();
-			int beforeTotalWeight = 0;
-			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
-				beforeTotalWeight = node.width() * node.weight() + processed.stream().mapToInt(n -> n.width() * n.weight()).sum();
-				assert(!processed.contains(node));
-			}
-			while (reduce(node)) {
-				// loop until we can't merge any more nodes into this one
-			}
-			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
-				int afterTotalWeight = node.width() * node.weight() + processed.stream().mapToInt(n -> n.width() * n.weight()).sum();
-				assert(beforeTotalWeight == afterTotalWeight);
-				assert(!processed.contains(node));
-			}
-			processed.add(node);
-			endLookup.add(node);
+			process(node);
+		}
+	}
+	private void process(KmerPathNode node) {
+		int beforeTotalWeight = 0;
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			beforeTotalWeight = node.width() * node.weight() + processed.stream().mapToInt(n -> n.width() * n.weight()).sum();
+			assert(!processed.contains(node));
+		}
+		while (reduce(node)) {
+			// loop until we can't merge any more nodes into this one
+		}
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			int afterTotalWeight = node.width() * node.weight() + processed.stream().mapToInt(n -> n.width() * n.weight()).sum();
+			assert(beforeTotalWeight == afterTotalWeight);
+			assert(!processed.contains(node));
+		}
+		processed.add(node);
+		endLookup.add(node);
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			assert(sanityCheck());
 		}
 	}
 	/**
 	 * Loads records from the underlying stream up to and including the current inputPosition.
 	 */
 	private void advance() {
-		while (underlying.hasNext() && underlying.peek().firstKmerStartPosition() <= inputPosition) {
+		while (underlying.hasNext() && underlying.peek().firstKmerStart() <= inputPosition) {
 			KmerPathNode nextRecord = underlying.next();
 			assert(nextRecord.width() <= maxWidth);
 			assert(nextRecord.length() <= maxLength);
 			unprocessed.add(nextRecord);
+		}
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			assert(sanityCheck());
 		}
 	}
 	@Override
@@ -219,7 +228,10 @@ public class PathSimplificationIterator implements Iterator<KmerPathNode> {
 			// should not be able to reduce processed nodes any further
 			assert(prevKmerToMergeWith(pn) == null);
 			assert(adjacentBeforeKmerToMergeWith(pn) == null);
-			assert(!unprocessed.contains(pn));
+			assert(unprocessed.stream().filter(n -> pn.equals(n)).count() == 0);
+		}
+		for (KmerPathNode pn : unprocessed) {
+			assert(processed.stream().filter(n -> pn.equals(n)).count() == 0);
 		}
 		return true;
 	}

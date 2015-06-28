@@ -5,6 +5,7 @@ import java.io.File;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
 public class AssemblyParameters {
+	public AssemblyAlgorithm method = AssemblyAlgorithm.Positional;
 	/**
 	 * Assemble soft clips at the remote realigned position as well as the read mapping location
 	 */

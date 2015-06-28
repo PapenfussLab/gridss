@@ -70,7 +70,7 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 			throw new UnsupportedOperationException("We're just using this as a helper class for getting an iterator of annotated assemblies");
 		}
 		public CloseableIterator<SAMRecordAssemblyEvidence> annotatedAssembliesIterator() {
-			CloseableIterator<DirectedEvidence> rawit = getAllEvidence(true, false, true, true, true, true);
+			CloseableIterator<DirectedEvidence> rawit = getAllEvidence(true, false, true, true, processContext.getAssemblyParameters().includeRemoteSoftClips, true);
 			AsyncBufferedIterator<DirectedEvidence> asyncIt = new AsyncBufferedIterator<DirectedEvidence>(rawit, "AssemblyEvidenceRehydration");
 			OrthogonalEvidenceIterator annotatedIt = new OrthogonalEvidenceIterator(processContext.getLinear(), asyncIt, source.getAssemblyWindowSize(), true);
 			UnmodifiableIterator<SAMRecordAssemblyEvidence> filteredIt = Iterators.filter(annotatedIt, SAMRecordAssemblyEvidence.class);

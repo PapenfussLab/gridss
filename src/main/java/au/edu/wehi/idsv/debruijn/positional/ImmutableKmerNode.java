@@ -11,9 +11,9 @@ import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
  *
  */
 public class ImmutableKmerNode implements KmerNode {
-	public long kmer() { return kmer; }
-	public int startPosition() { return start; }
-	public int endPosition() { return end; }
+	public long lastKmer() { return kmer; }
+	public int lastStart() { return start; }
+	public int lastEnd() { return end; }
 	public int weight() { return weight; }
 	public boolean isReference() { return reference; }
 	private final long kmer;
@@ -29,11 +29,11 @@ public class ImmutableKmerNode implements KmerNode {
 		this.reference = reference;
 	}
 	public ImmutableKmerNode(KmerNode node) {
-		this(node.kmer(), node.endPosition(), node.weight(), node.isReference(), node.startPosition());
+		this(node.lastKmer(), node.lastEnd(), node.weight(), node.isReference(), node.lastStart());
 	}
 	@Override
 	public String toString() {
-		return String.format("[%d-%d]%s%d, %s", startPosition(), endPosition(), isReference() ? "R" : " ", weight(), KmerEncodingHelper.toApproximateString(kmer()));
+		return String.format("[%d-%d]%s%d, %s", lastStart(), lastEnd(), isReference() ? "R" : " ", weight(), KmerEncodingHelper.toApproximateString(lastKmer()));
 	}
 	@Override
 	public int hashCode() {
@@ -55,13 +55,13 @@ public class ImmutableKmerNode implements KmerNode {
 		if (getClass() != obj.getClass())
 			return false;
 		KmerNode other = (KmerNode) obj;
-		if (end != other.endPosition())
+		if (end != other.lastEnd())
 			return false;
-		if (kmer != other.kmer())
+		if (kmer != other.lastKmer())
 			return false;
 		if (reference != other.isReference())
 			return false;
-		if (start != other.startPosition())
+		if (start != other.lastStart())
 			return false;
 		if (weight != other.weight())
 			return false;
@@ -83,7 +83,7 @@ public class ImmutableKmerNode implements KmerNode {
 	 */
 	public static Stream<ImmutableKmerNode> fragment(KmerNode node) {
 		if (node instanceof KmerPathNode) throw new IllegalArgumentException("copyPath() should be called before fragment()");
-		return IntStream.range(node.startPosition(), node.endPosition() + 1)
-				.mapToObj(p -> new ImmutableKmerNode(node.kmer(), p, p, node.isReference(), node.weight()));
+		return IntStream.range(node.lastStart(), node.lastEnd() + 1)
+				.mapToObj(p -> new ImmutableKmerNode(node.lastKmer(), p, p, node.isReference(), node.weight()));
 	}
 }
