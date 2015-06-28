@@ -89,21 +89,25 @@ public class SortRealignedSoftClips extends DataTransformStep {
 				actions.add(new SAMFileUtil.SortCallable(processContext,
 						fsc.getSoftClipRemoteUnsortedBamForChr(source.getSourceFile(), seq.getSequenceName()),
 						fsc.getSoftClipRemoteBamForChr(source.getSourceFile(), seq.getSequenceName()),
-						new RealignedSoftClipEvidence.RealignmentCoordinateComparator()));
+						new RealignedSoftClipEvidence.RealignmentCoordinateComparator(),
+						header -> header));
 				actions.add(new SAMFileUtil.SortCallable(processContext,
 						fsc.getRealignmentRemoteUnsortedBamForChr(source.getSourceFile(), seq.getSequenceName()),
 						fsc.getRealignmentRemoteBamForChr(source.getSourceFile(), seq.getSequenceName()),
-						SortOrder.coordinate));
+						SortOrder.coordinate,
+						header -> header));
 			}
 		} else {
 			actions.add(new SAMFileUtil.SortCallable(processContext,
 					fsc.getSoftClipRemoteUnsortedBam(source.getSourceFile()),
 					fsc.getSoftClipRemoteBam(source.getSourceFile()),
-					new RealignedSoftClipEvidence.RealignmentCoordinateComparator()));
+					new RealignedSoftClipEvidence.RealignmentCoordinateComparator(),
+					header -> header));
 			actions.add(new SAMFileUtil.SortCallable(processContext,
 					fsc.getRealignmentRemoteUnsortedBam(source.getSourceFile()),
 					fsc.getRealignmentRemoteBam(source.getSourceFile()),
-					SortOrder.coordinate));
+					SortOrder.coordinate,
+					header -> header));
 		}
 		// PARALLEL opportunity - not great candidate due memory usage of sorting
 		for (SortCallable c : actions) {

@@ -4,7 +4,6 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordCoordinateComparator;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.CloseableIterator;
@@ -13,12 +12,11 @@ import htsjdk.samtools.util.Log;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.PriorityQueue;
-import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -27,6 +25,7 @@ import java.util.concurrent.Future;
 import au.edu.wehi.idsv.debruijn.positional.PositionalAssembler;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 import au.edu.wehi.idsv.pipeline.CreateAssemblyReadPair;
+import au.edu.wehi.idsv.sam.SAMFileUtil.SortCallable;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
@@ -36,7 +35,6 @@ import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
 
 
 public class AssemblyEvidenceSource extends EvidenceSource {
@@ -329,92 +327,99 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		}
 		log.info("SUCCESS evidence assembly ", input);
 	}
-	/**
-	 * Ordering according to SAM coordinate sort order
-	 */
-	private static final Ordering<SAMRecordAssemblyEvidence> BySAMFileCoordinate = new Ordering<SAMRecordAssemblyEvidence>() {
-		private final SAMRecordCoordinateComparator cmp = new SAMRecordCoordinateComparator();
-		@Override
-		public int compare(SAMRecordAssemblyEvidence arg0, SAMRecordAssemblyEvidence arg1) {
-			return cmp.compare(arg0.getBackingRecord(), arg1.getBackingRecord());
-		}
-	};
 	private class ContigAssembler implements Runnable {
 		private Iterator<DirectedEvidence> it;
 		private File breakendOutput;
 		private File realignmentFastq;
 		private FastqBreakpointWriter fastqWriter = null;
-		//private VariantContextWriter vcfWriter = null;
-		//private Queue<AssemblyEvidence> resortBuffer = new PriorityQueue<AssemblyEvidence>(32, DirectedEvidence.ByStartEnd);
-		private SAMFileWriter writer = null;
-		private Queue<SAMRecordAssemblyEvidence> resortBuffer = new PriorityQueue<SAMRecordAssemblyEvidence>(32, BySAMFileCoordinate);
-		private long maxAssembledPosition = Long.MIN_VALUE;
-		private long lastFlushedPosition = Long.MIN_VALUE;
 		public ContigAssembler(Iterator<DirectedEvidence> it, File breakendOutput, File realignmentFastq) {
 			this.it = it;
 			this.breakendOutput = breakendOutput;
 			this.realignmentFastq = realignmentFastq;
 		}
+		private int generateAssembles(File unsorted) {
+			SAMFileWriter writer = null;
+			// Maximum value that the assembly SAM position differs from the assembly location
+			int maxBreakendOffset = 0;
+			try {
+				SAMFileHeader samHeader = new SAMFileHeader();
+				samHeader.setSequenceDictionary(getContext().getReference().getSequenceDictionary());
+				samHeader.setSortOrder(SortOrder.unsorted);
+				writer = getContext().getSamFileWriterFactory(true).makeSAMOrBAMWriter(samHeader, true, unsorted);
+				Iterator<SAMRecordAssemblyEvidence> assemblyIt = getAssembler(it);
+				while (assemblyIt.hasNext()) {
+					SAMRecordAssemblyEvidence ass = assemblyIt.next();
+					ass = fixAssembly(ass);
+					if (ass != null) {
+						SAMRecord record = ass.getBackingRecord();
+						maxBreakendOffset = Math.max(maxBreakendOffset, Math.abs(record.getAlignmentStart() - ass.getBreakendSummary().start));
+						if (ass.getBreakendSummary() instanceof BreakpointSummary) {
+							maxBreakendOffset = Math.max(maxBreakendOffset, Math.abs(record.getAlignmentStart() - ((BreakpointSummary)ass.getBreakendSummary()).start2)); 
+						}
+						writer.addAlignment(record);
+					}
+				}
+			} finally {
+				CloserUtil.close(writer);
+			}
+			return maxBreakendOffset;
+		}
+		private SAMRecordAssemblyEvidence fixAssembly(SAMRecordAssemblyEvidence ass) {
+			if (ass == null) return null;
+			// realign
+    		if (getContext().getAssemblyParameters().performLocalRealignment && ass.isBreakendExact()) {
+    			ass = ass.realign();
+    		}
+			if (ass == null || ass.getBreakendSummary() == null) return null;
+			getContext().getAssemblyParameters().applyBasicFilters(ass);
+			if (getContext().getAssemblyParameters().writeFilteredAssemblies) return ass;
+			if (ass.isReferenceAssembly()) return null;
+			if (ass.isAssemblyFiltered()) return null;
+			return ass;
+		}
+		private void assembliesToSortedBamAndFastq(int maxBreakendOffset, File unsorted) throws IOException {
+			File tmp = FileSystemContext.getWorkingFileFor(breakendOutput);
+			File fq = FileSystemContext.getWorkingFileFor(realignmentFastq);
+			fq.delete();
+			tmp.delete();
+			CloseableIterator<SAMRecord> readerIt = null;
+			try {
+				// sort the assemblies
+				new SortCallable(getContext(), unsorted, breakendOutput, SortOrder.coordinate, header -> {
+					header.addComment(String.format("gridss.maxBreakendOffset=%d", maxBreakendOffset));
+					return header;
+				}).call();
+				log.info("Writing assembly fastq " + fq);
+				// then write the fastq
+				fastqWriter = new FastqBreakpointWriter(getContext().getFastqWriterFactory().newWriter(fq));
+				readerIt = getContext().getSamReaderIterator(breakendOutput, SortOrder.coordinate);
+				while (readerIt.hasNext()) {
+					SAMRecord record = readerIt.next();
+					AssemblyEvidence assembly = AssemblyFactory.hydrate(AssemblyEvidenceSource.this, record);
+					if (getContext().getRealignmentParameters().shouldRealignBreakend(assembly)) {
+						fastqWriter.write(assembly);
+					}
+				}
+				readerIt.close();
+				readerIt = null;
+				fastqWriter.close();
+				fastqWriter = null;
+				FileHelper.move(fq, realignmentFastq, true);
+			} finally {
+				CloserUtil.close(readerIt);
+				CloserUtil.close(fastqWriter);
+			}
+		}
 		@Override
 		public void run() {
 			try {
-				FileSystemContext.getWorkingFileFor(breakendOutput).delete();
-				FileSystemContext.getWorkingFileFor(realignmentFastq).delete();
-				//writer = getContext().getVariantContextWriter(FileSystemContext.getWorkingFileFor(breakendVcf), true);
-				SAMFileHeader samHeader = new SAMFileHeader();
-				samHeader.setSequenceDictionary(getContext().getReference().getSequenceDictionary());
-				samHeader.setSortOrder(SortOrder.coordinate);
-				writer = getContext().getSamFileWriterFactory(true).makeSAMOrBAMWriter(samHeader, true, FileSystemContext.getWorkingFileFor(breakendOutput));
-				fastqWriter = new FastqBreakpointWriter(getContext().getFastqWriterFactory().newWriter(FileSystemContext.getWorkingFileFor(realignmentFastq)));
-				Iterator<SAMRecordAssemblyEvidence> assemblyIt = getAssembler(it);
-				while (assemblyIt.hasNext()) {
-					// Need to process assembly evidence first since assembly calls are made when the
-					// evidence falls out of scope so processing a given position will emit evidence
-					// for a previous position (for it is only at this point we know there is no more
-					// evidence for the previous position).
-					processAssembly(assemblyIt.next());					
-				}
-				flushWriterQueueBefore(Long.MAX_VALUE);
-				fastqWriter.close();
-				fastqWriter = null;
-				writer.close();
-				writer = null;
-				FileHelper.move(FileSystemContext.getWorkingFileFor(breakendOutput), breakendOutput, true);
-				FileHelper.move(FileSystemContext.getWorkingFileFor(realignmentFastq), realignmentFastq, true);
+				File unsorted = FileSystemContext.getWorkingFileFor(breakendOutput, "unsorted"); 
+				unsorted.delete();
+				int maxBreakendOffset = generateAssembles(unsorted);
+				assembliesToSortedBamAndFastq(maxBreakendOffset, unsorted);
 			} catch (Throwable e) {
 				log.error(e, "Error assembling breakend ", breakendOutput);
 				throw new RuntimeException("Error assembling breakend", e);
-			} finally {
-				if (fastqWriter != null) fastqWriter.close();
-				if (writer != null) writer.close();
-			}
-		}
-		private void processAssembly(SAMRecordAssemblyEvidence ass) {
-    		if (ass == null) return;
-    		maxAssembledPosition = Math.max(maxAssembledPosition, getContext().getLinear().getStartLinearCoordinate(ass.getSAMRecord()));
-    		// realign
-    		if (getContext().getAssemblyParameters().performLocalRealignment && ass.isBreakendExact()) { // let the aligner perform realignment of unanchored reads
-    			ass = ass.realign();
-    		}
-    		resortBuffer.add(ass);
-    		flushWriterQueueBefore(maxAssembledPosition - getAssemblyWindowSize());
-	    }
-		private void flushWriterQueueBefore(long flushBefore) {
-			while (!resortBuffer.isEmpty() && getContext().getLinear().getStartLinearCoordinate(resortBuffer.peek().getBackingRecord()) < flushBefore) {
-				long pos = getContext().getLinear().getStartLinearCoordinate(resortBuffer.peek().getBackingRecord());
-				SAMRecordAssemblyEvidence evidence = resortBuffer.poll();
-				if (pos < lastFlushedPosition) {
-					log.error(String.format("Sanity check failure: assembly breakend %s written out of order.", evidence.getEvidenceID()));
-					throw new IllegalStateException(String.format("Sanity check failure: assembly breakend %s written out of order.", evidence.getEvidenceID()));
-				}
-				lastFlushedPosition = pos;
-				getContext().getAssemblyParameters().applyBasicFilters(evidence);
-				if (getContext().getAssemblyParameters().writeFilteredAssemblies || !evidence.isAssemblyFiltered()) {
-					writer.addAlignment(evidence.getBackingRecord());
-					if (getContext().getRealignmentParameters().shouldRealignBreakend(evidence)) {
-						fastqWriter.write(evidence);
-					}
-				}
 			}
 		}
 	}

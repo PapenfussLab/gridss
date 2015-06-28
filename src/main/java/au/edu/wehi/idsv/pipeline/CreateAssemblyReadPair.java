@@ -157,21 +157,21 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 				tasks.add(new SAMFileUtil.SortCallable(processContext,
 						FileSystemContext.getWorkingFileFor((fsc.getAssemblyForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName())), UNSORTED_FILE_PREFIX),
 						fsc.getAssemblyForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName()),
-						SortOrder.coordinate));
+						SortOrder.coordinate, null));
 				tasks.add(new SAMFileUtil.SortCallable(processContext,
 						FileSystemContext.getWorkingFileFor((fsc.getAssemblyMateForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName())), UNSORTED_FILE_PREFIX),
 						fsc.getAssemblyMateForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName()),
-						new SAMRecordMateCoordinateComparator()));
+						new SAMRecordMateCoordinateComparator(), null));
 			}
 		} else {
 			tasks.add(new SAMFileUtil.SortCallable(processContext,
 					FileSystemContext.getWorkingFileFor((fsc.getAssembly(source.getFileIntermediateDirectoryBasedOn())), UNSORTED_FILE_PREFIX),
 					fsc.getAssembly(source.getFileIntermediateDirectoryBasedOn()),
-					SortOrder.coordinate));
+					SortOrder.coordinate, null));
 			tasks.add(new SAMFileUtil.SortCallable(processContext,
 					FileSystemContext.getWorkingFileFor((fsc.getAssemblyMate(source.getFileIntermediateDirectoryBasedOn())), UNSORTED_FILE_PREFIX),
 					fsc.getAssemblyMate(source.getFileIntermediateDirectoryBasedOn()),
-					new SAMRecordMateCoordinateComparator()));
+					new SAMRecordMateCoordinateComparator(), null));
 		}
 		//if (threadpool != null) {
 		//	try {

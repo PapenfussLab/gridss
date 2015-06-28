@@ -19,6 +19,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.Callable;
+import java.util.function.Function;
 
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.FileSystemContext;
@@ -41,7 +42,7 @@ public class SAMFileUtil {
 	 */
 	public static void sort(ProcessingContext processContext, File unsorted, File output, SortOrder sortOrder) throws IOException {
 		try {
-			new SortCallable(processContext, unsorted, output, sortOrder).call();
+			new SortCallable(processContext, unsorted, output, sortOrder, header -> header).call();
 		} catch (IOException e) {
 			log.error(log);
 			throw new RuntimeException(e);
@@ -56,7 +57,7 @@ public class SAMFileUtil {
 	 */
 	public static void sort(ProcessingContext processContext, File unsorted, File output, SAMRecordComparator sortComparator) {
 		try {
-		new SortCallable(processContext, unsorted, output, sortComparator).call();
+		new SortCallable(processContext, unsorted, output, sortComparator, header -> header).call();
 		} catch (IOException e) {
 			log.error(log);
 			throw new RuntimeException(e);
@@ -73,8 +74,9 @@ public class SAMFileUtil {
 		private final File output;
 		private final SAMRecordComparator sortComparator;
 		private final SortOrder sortOrder;
-		public SortCallable(ProcessingContext processContext, File unsorted, File output, SortOrder sortOrder) {
-			this(processContext, unsorted, output, sortOrder == SortOrder.coordinate ? new SAMRecordCoordinateComparator() : new SAMRecordQueryNameComparator(), sortOrder);
+		private Function<SAMFileHeader, SAMFileHeader> headerCallback;
+		public SortCallable(ProcessingContext processContext, File unsorted, File output, SortOrder sortOrder, Function<SAMFileHeader, SAMFileHeader> headerCallback) {
+			this(processContext, unsorted, output, sortOrder == SortOrder.coordinate ? new SAMRecordCoordinateComparator() : new SAMRecordQueryNameComparator(), sortOrder, headerCallback);
 			switch (sortOrder) {
 			case coordinate:
 			case queryname:
@@ -83,15 +85,16 @@ public class SAMFileUtil {
 				throw new IllegalArgumentException("Sort order not specified");
 			}
 		}
-		public SortCallable(ProcessingContext processContext, File unsorted, File output, SAMRecordComparator sortComparator) {
-			this(processContext, unsorted, output, sortComparator, SortOrder.unsorted);
+		public SortCallable(ProcessingContext processContext, File unsorted, File output, SAMRecordComparator sortComparator, Function<SAMFileHeader, SAMFileHeader> headerCallback) {
+			this(processContext, unsorted, output, sortComparator, SortOrder.unsorted, headerCallback);
 		}
-		private SortCallable(ProcessingContext processContext, File unsorted, File output, SAMRecordComparator sortComparator, SortOrder sortOrder) {
+		private SortCallable(ProcessingContext processContext, File unsorted, File output, SAMRecordComparator sortComparator, SortOrder sortOrder, Function<SAMFileHeader, SAMFileHeader> headerCallback) {
 			this.processContext = processContext;
 			this.unsorted = unsorted;
 			this.output = output;
 			this.sortComparator = sortComparator;
 			this.sortOrder = sortOrder;
+			this.headerCallback = headerCallback;
 		}
 		@Override
 		public Void call() throws IOException {
@@ -99,17 +102,21 @@ public class SAMFileUtil {
 				log.info("Not sorting as output already exists: " + output);
 				return null;
 			}
+			File tmpFile = FileSystemContext.getWorkingFileFor(output, "sorting");
 			log.info("Sorting " + unsorted);
 			SamReader reader = null;
 			CloseableIterator<SAMRecord> rit = null;
 			SAMFileWriter writer = null;
 			CloseableIterator<SAMRecord> wit = null;
 			SortingCollection<SAMRecord> collection = null;
-			if (FileSystemContext.getWorkingFileFor(output).exists()) FileSystemContext.getWorkingFileFor(output).delete();
+			if (tmpFile.exists()) tmpFile.delete();
 			try {
 				reader = processContext.getSamReader(unsorted);
 				SAMFileHeader header = reader.getFileHeader().clone();
 				header.setSortOrder(sortOrder);
+				if (headerCallback != null) {
+					header = headerCallback.apply(header);
+				}
 				rit = processContext.getSamReaderIterator(reader);
 				collection = SortingCollection.newInstance(
 						SAMRecord.class,
@@ -125,7 +132,7 @@ public class SAMFileUtil {
 				reader.close();
 				reader = null;
 				collection.doneAdding();
-				writer = processContext.getSamFileWriterFactory(sortOrder == SortOrder.coordinate).makeSAMOrBAMWriter(header, true, FileSystemContext.getWorkingFileFor(output));
+				writer = processContext.getSamFileWriterFactory(sortOrder == SortOrder.coordinate).makeSAMOrBAMWriter(header, true, tmpFile);
 				writer.setProgressLogger(new ProgressLogger(log));
 		    	wit = collection.iterator();
 		    	if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
@@ -140,14 +147,14 @@ public class SAMFileUtil {
 				writer = null;
 				collection.cleanup();
 				collection = null;
-				FileHelper.move(FileSystemContext.getWorkingFileFor(output), output, true);
+				FileHelper.move(tmpFile, output, true);
 			} finally {
 				CloserUtil.close(writer);
 				CloserUtil.close(wit);
 				CloserUtil.close(rit);
 				CloserUtil.close(reader);
 				if (collection != null) collection.cleanup();
-				if (FileSystemContext.getWorkingFileFor(output).exists()) FileSystemContext.getWorkingFileFor(output).delete();
+				if (tmpFile.exists()) tmpFile.delete();
 			}
 			return null;
 		}
