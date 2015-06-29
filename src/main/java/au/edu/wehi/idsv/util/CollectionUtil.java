@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv.util;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.google.common.base.Function;
@@ -37,5 +38,51 @@ public class CollectionUtil {
 			if (i != null) sum += i;
 		}
 		return sum;
+	}
+	/**
+	 * Removes the given object from the list using reference equality, not equals()
+	 * @param list
+	 * @param object
+	 * @return
+	 */
+	public static <T >boolean removeByReference(ArrayList<T> list, T object) {
+		if (list == null) return false;
+		int size = list.size();
+		for (int i = 0; i < size; i++) {
+			if (list.get(i) == object) {
+				list.remove(i);
+				return true;
+			}
+		}
+		return false;
+	}
+	/**
+	 * Adds the object to the list if it does not already exist
+	 * @param list
+	 * @param object
+	 * @return
+	 */
+	public static <T> boolean addUniqueByReference(ArrayList<T> list, T object) {
+		if (!containsByReference(list, object)) {
+			list.add(object);
+			return true;
+		}
+		return false;
+	}
+	/**
+	 * Adds the object to the list if it does not already exist
+	 * @param list
+	 * @param object
+	 * @return
+	 */
+	public static <T> boolean containsByReference(ArrayList<T> list, T object) {
+		if (list == null) return false;
+		int size = list.size();
+		for (int i = 0; i < size; i++) {
+			if (list.get(i) == object) {
+				return true;
+			}
+		}
+		return false;
 	}
 }

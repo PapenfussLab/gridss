@@ -23,7 +23,7 @@ import com.google.common.collect.Lists;
 public class BestNonReferenceContigCallerTest extends TestHelper {
 	public List<ArrayDeque<KmerPathSubnode>> calls(List<KmerPathNode> input, int maxEvidenceWidth) {
 		List<ArrayDeque<KmerPathSubnode>> list = new ArrayList<ArrayDeque<KmerPathSubnode>>();
-		BestNonReferenceContigCaller caller = new BestNonReferenceContigCaller(input.iterator(), 100);
+		BestNonReferenceContigCaller caller = new BestNonReferenceContigCaller(input.iterator(), maxEvidenceWidth);
 		for (ArrayDeque<KmerPathSubnode> contig = caller.bestContig(); contig != null; contig = caller.bestContig()) {
 			list.add(contig);
 		}

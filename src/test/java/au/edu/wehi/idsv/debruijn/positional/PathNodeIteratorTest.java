@@ -31,6 +31,7 @@ public class PathNodeIteratorTest extends TestHelper {
 	 */
 	public static void assertCompleteGraph(List<KmerPathNode> list, final int k) {
 		for (KmerPathNode pn : list) {
+			pn.sanityCheck();
 			long[] nextKmers = KmerEncodingHelper.nextStates(k, pn.lastKmer());
 			List<KmerPathNode> nextList = list.stream()
 					.filter(n -> ArrayUtils.contains(nextKmers, n.kmer(0)) && IntervalUtil.overlapsClosed(n.startPosition(0), n.endPosition(0), pn.lastStart() + 1, pn.lastEnd() + 1))
@@ -38,6 +39,7 @@ public class PathNodeIteratorTest extends TestHelper {
 			assertEquals(nextList.size(), pn.next().size());
 			assertTrue(KmerNodeUtil.ByFirstStart.isOrdered(pn.next()));
 			nextList.stream().forEach(n -> assertTrue(pn.next().contains(n)));
+			nextList.stream().forEach(n -> assertTrue(list.contains(n)));
 			
 			long[] prevKmers = KmerEncodingHelper.prevStates(k, pn.kmer(0));
 			List<KmerPathNode> prevList = list.stream()
@@ -46,6 +48,7 @@ public class PathNodeIteratorTest extends TestHelper {
 			assertEquals(prevList.size(), pn.prev().size());
 			assertTrue(KmerNodeUtil.ByLastStart.isOrdered(pn.prev()));
 			prevList.stream().forEach(n -> assertTrue(pn.prev().contains(n)));
+			prevList.stream().forEach(n -> assertTrue(list.contains(n)));
 		}
 	}
 	private void assertContains(List<KmerPathNode> list, int k, String baseSequence, int firstStart, int firstEnd, boolean reference, int weight) {

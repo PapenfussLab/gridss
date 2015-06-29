@@ -5,6 +5,7 @@ import java.util.NoSuchElementException;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.AssemblyParameters;
+import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
@@ -46,9 +47,10 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 	}
 	private NonReferenceContigAssembler createAssembler() {
 		AssemblyParameters ap = context.getAssemblyParameters();
-		int maxEvidenceWidth = source.getMaxConcordantFragmentSize() - source.getMinConcordantFragmentSize() + 1;
+		int maxSupportNodeWidth = source.getMaxConcordantFragmentSize() - source.getMinConcordantFragmentSize() + 1; 		
 		int maxReadLength = source.getMaxReadLength();
 		int k = ap.k;
+		int maxEvidenceDistance = maxSupportNodeWidth + maxReadLength + 1;
 		int maxPathLength = ap.positionalMaxPathLengthInBases(maxReadLength);
 		int maxPathCollapseLength = ap.positionalMaxPathCollapseLengthInBases(maxReadLength);
 		int anchorAssemblyLength = ap.anchorAssemblyLength;
@@ -56,13 +58,25 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 		ReferenceIndexIterator evidenceIt = new ReferenceIndexIterator(it, referenceIndex);
 		SupportNodeIterator supportIt = new SupportNodeIterator(k, evidenceIt, source.getMaxConcordantFragmentSize());
 		EvidenceTracker trackedIt = new EvidenceTracker(supportIt);
-		AggregateNodeIterator agIt = new AggregateNodeIterator(trackedIt);
+		Iterator<KmerNode> agIt = new AggregateNodeIterator(trackedIt);
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			agIt = trackedIt.new AggregateNodeAssertionInterceptor(agIt);
+		}
 		Iterator<KmerPathNode> pnIt = new PathNodeIterator(agIt, maxPathLength, k);
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			pnIt = trackedIt.new PathNodeAssertionInterceptor(pnIt, "PathNodeIterator");
+		}
 		if (ap.maxBaseMismatchForCollapse > 0) {
 			pnIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, ap.maxBaseMismatchForCollapse, ap.collapseBubblesOnly);
-			pnIt = new PathSimplificationIterator(pnIt, maxPathLength, maxEvidenceWidth);
+			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+				pnIt = trackedIt.new PathNodeAssertionInterceptor(pnIt, "PathCollapseIterator");
+			}
+			pnIt = new PathSimplificationIterator(pnIt, maxPathLength, maxSupportNodeWidth);
+			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+				pnIt = trackedIt.new PathNodeAssertionInterceptor(pnIt, "PathSimplificationIterator");
+			}
 		}
-		currentAssembler = new NonReferenceContigAssembler(pnIt, referenceIndex, maxEvidenceWidth, anchorAssemblyLength, k, source, trackedIt);
+		currentAssembler = new NonReferenceContigAssembler(pnIt, referenceIndex, maxEvidenceDistance, anchorAssemblyLength, k, source, trackedIt);
 		return currentAssembler;
 	}
 	private static class ReferenceIndexIterator implements PeekingIterator<DirectedEvidence> {

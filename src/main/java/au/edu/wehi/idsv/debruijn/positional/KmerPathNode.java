@@ -7,14 +7,15 @@ import it.unimi.dsi.fastutil.longs.LongArrayList;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.PriorityQueue;
-import java.util.stream.IntStream;
+import java.util.Set;
 
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNode;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
+import au.edu.wehi.idsv.util.CollectionUtil;
 import au.edu.wehi.idsv.util.IntervalUtil;
 
 import com.google.common.collect.ImmutableList;
@@ -193,7 +194,26 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 				&& reference == node.reference
 				&& totalWeight == node.totalWeight 
 				&& kmers.equals(node.kmers)
-				&& weight.equals(node.weight);
+				&& weight.equals(node.weight)
+				&& hasSameCollapsedKmers(node);
+	}
+	private boolean hasSameCollapsedKmers(KmerPathNode node) {
+		if (collapsedKmers().size() != node.collapsedKmers().size()) return false;
+		for (int i = 0; i < node.collapsedKmers().size(); i++) {
+			if (!containsCollapsedKmer(node.additionalKmers.getLong(i), node.additionalKmerOffsets.getInt(i))) {
+				return false;
+			}
+		}
+		return true;
+	}
+	private boolean containsCollapsedKmer(long kmer, int offset) {
+		if (additionalKmers == null) return false;
+		for (int i = 0; i < additionalKmers.size(); i++) {
+			if (additionalKmers.getLong(i) == kmer && additionalKmerOffsets.getInt(i) == offset) {
+				return true;
+			}
+		}
+		return false;
 	}
 	/**
 	 * Merges the node covering the adjacent interval with matching kmers
@@ -202,6 +222,8 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	 */
 	public void coaleseBeforeAdjacent(KmerPathNode node) {
 		assert(canCoaleseBeforeAdjacent(node));
+		// start position of this about to change so all neighbours will now be unsorted
+		invalidateNeighbourEdgeSorting();
 		replaceEdges(node, this);
 		start = node.start;
 		node.invalidate();
@@ -215,30 +237,35 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	 */
 	public void merge(KmerPathNode toMerge) {
 		if (toMerge == this) return;
-		assert(toMerge.lastStart() == lastStart());
-		assert(toMerge.lastEnd() == lastEnd());
+		assert(toMerge.firstStart() == firstStart());
+		assert(toMerge.firstEnd() == firstEnd());
 		assert(toMerge.length() == length());
 		reference |= toMerge.reference;
 		if (additionalKmers == null) {
-			int targetSize = toMerge.kmers.size() + toMerge.collapsedKmers().size();
-			additionalKmers = new LongArrayList(targetSize);
-			additionalKmerOffsets = new IntArrayList(targetSize);
+			additionalKmers = toMerge.additionalKmers;
+			additionalKmerOffsets = toMerge.additionalKmerOffsets;
+		} else if (toMerge.additionalKmers != null) {
+			additionalKmers.addAll(toMerge.additionalKmers);
+			additionalKmerOffsets.addAll(toMerge.additionalKmerOffsets);
 		}
-		additionalKmers.addAll(toMerge.kmers);
-		additionalKmers.addAll(toMerge.collapsedKmers());
+		if (additionalKmers == null) {
+			additionalKmers = toMerge.kmers;
+			additionalKmerOffsets = new IntArrayList(toMerge.kmers.size());
+		} else {
+			additionalKmers.addAll(toMerge.kmers);
+		}
 		for (int i = 0; i < toMerge.length(); i++) {
 			additionalKmerOffsets.add(i);
 		}
-		additionalKmerOffsets.addAll(toMerge.collapsedKmerOffsets());
 		totalWeight += toMerge.totalWeight;
 		for (int i = 0; i < weight.size(); i++) {
 			weight.set(i, weight.get(i) + toMerge.weight.get(i));
 		}
 		replaceEdges(toMerge, this);
-		toMerge.invalidate();
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
 			sanityCheck();
 		}
+		toMerge.invalidate();
 	}
 	/**
 	 * Indicates that this node has been transformed or deleted
@@ -246,8 +273,8 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	 *  Edges 
 	 */
 	public void invalidate() {
-		assert(next().size() == 0);
-		assert(prev().size() == 0);
+		assert(nextList == null || nextList.size() == 0);
+		assert(prevList == null || prevList.size() == 0);
 		kmers = null;
 		weight = null;
 		nextList = null;
@@ -350,10 +377,17 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		return prevList;
 	}
 	public static void addEdge(KmerPathNode from, KmerPathNode to) {
+		addEdgeImpl(from, to);
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			from.sanityCheck();
+			to.sanityCheck();
+		}
+	}
+	private static void addEdgeImpl(KmerPathNode from, KmerPathNode to) {
 		assert(from.isValid());
 		assert(to.isValid());
-		assert(!from.next().contains(to));
-		assert(!to.prev().contains(from));
+		assert(from.nextList == null || !CollectionUtil.containsByReference(from.nextList, to));
+		assert(to.prevList == null || !CollectionUtil.containsByReference(to.prevList, to));
 		if (from.nextList == null) {
 			from.nextList = new ArrayList<KmerPathNode>(2);
 		}
@@ -368,10 +402,6 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		if (to.prevList.size() > 1 && PREV_SORT_ORDER.compare(to.prevList.get(to.prevList.size() - 2), to.prevList.get(to.prevList.size() - 1)) > 0) {
 			to.edgesSorted = false;
 		}
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
-			from.sanityCheck();
-			to.sanityCheck();
-		}
 	}
 	/**
 	 * Replaces all edges coming to/from the source node, with edges to/from the target node
@@ -379,20 +409,25 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	 * @param toAddTo target node to replace with
 	 */
 	private static void replaceEdges(KmerPathNode toRemoveFrom, KmerPathNode toAddTo) {
+		assert(toRemoveFrom != toAddTo);
+		assert(toRemoveFrom != null && toRemoveFrom.isValid());
+		assert(toAddTo != null && toAddTo.isValid());
 		if (toRemoveFrom.nextList != null) {
 			if (toAddTo.nextList == null) {
 				toAddTo.nextList = new ArrayList<KmerPathNode>(toRemoveFrom.nextList.size() + 2);
 			}
 			for (KmerPathNode n : toRemoveFrom.nextList) {
 				assert(n.prevList != null);
-				replaceUnique(n.prevList, toRemoveFrom, toAddTo);
-				if (!toAddTo.nextList.contains(n)) {
-					toAddTo.nextList.add(n);
+				boolean couldRemove = CollectionUtil.removeByReference(n.prevList, toRemoveFrom);
+				assert(couldRemove);
+				if (CollectionUtil.addUniqueByReference(n.prevList, toAddTo)) {
+					n.edgesSorted = false;
 				}
-				n.edgesSorted = false;
+				if (CollectionUtil.addUniqueByReference(toAddTo.nextList, n)) {
+					toAddTo.edgesSorted = false;
+				}
 			}
 			toRemoveFrom.nextList = null;
-			toAddTo.edgesSorted = false;
 		}
 		if (toRemoveFrom.prevList != null) {
 			if (toAddTo.prevList == null) {
@@ -400,14 +435,33 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 			}
 			for (KmerPathNode n : toRemoveFrom.prevList) {
 				assert(n.nextList != null);
-				replaceUnique(n.nextList, toRemoveFrom, toAddTo);
-				if (!toAddTo.prevList.contains(n)) {
-					toAddTo.prevList.add(n);
+				boolean couldRemove = CollectionUtil.removeByReference(n.nextList, toRemoveFrom);
+				assert(couldRemove);
+				if (CollectionUtil.addUniqueByReference(n.nextList, toAddTo)) {
+					n.edgesSorted = false;
 				}
-				n.edgesSorted = false;
+				if (CollectionUtil.addUniqueByReference(toAddTo.prevList, n)) {
+					toAddTo.edgesSorted = false;
+				}
 			}
 			toRemoveFrom.prevList = null;
-			toAddTo.edgesSorted = false;
+		}
+		// invalidate neighbours of our target
+	}
+	/**
+	 * Invalidate the edge sorting of all neighbours.
+	 * This should be called when the node start or end interval changes
+	 */
+	private void invalidateNeighbourEdgeSorting() {
+		if (nextList != null) {
+			for (KmerPathNode n : nextList) {
+				n.edgesSorted = false;
+			}
+		}
+		if (prevList != null) {
+			for (KmerPathNode n : prevList) {
+				n.edgesSorted = false;
+			}
 		}
 	}
 	private void ensureEdgesSorted() {
@@ -447,33 +501,33 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 				reference,
 				this.weight);
 		// Update incoming edges to split
-		ArrayList<KmerPathNode> prevEmpty = split.prevList;
 		split.prevList = this.prevList;
-		this.prevList = prevEmpty;
+		split.edgesSorted = this.edgesSorted; // edge sorting remains unchanged for all nodes
+		this.prevList = null;
 		if (split.prevList != null) {
 			for (KmerPathNode n : split.prevList) {
 				replaceFirst(n.nextList, this, split);
 			}
 		}
-		// edge sorting invariant remains unchanged
+		// outgoing edges remain unchanged since our end kmer is unchanged
 		this.kmers = kmerSecond;
 		this.weight = weightSecond;
 		this.totalWeight -= split.weight();
 		this.start += firstNodeLength;
 		this.end += firstNodeLength;
-		addEdge(split, this);
+		addEdgeImpl(split, this);
 		if (this.additionalKmers != null) {
 			LongArrayList nodeKmers = new LongArrayList();
 			IntArrayList nodeOffsets = new IntArrayList();
 			LongArrayList splitKmers = new LongArrayList();
 			IntArrayList splitOffsets = new IntArrayList();
 			for (int i = 0; i < additionalKmerOffsets.size(); i++) {
-				if (additionalKmerOffsets.get(i) < firstNodeLength) {
+				if (additionalKmerOffsets.getInt(i) < firstNodeLength) {
 					splitKmers.add(additionalKmers.getLong(i));
 					splitOffsets.add(additionalKmerOffsets.getInt(i));
 				} else {
 					nodeKmers.add(additionalKmers.getLong(i));
-					nodeOffsets.add(additionalKmerOffsets.getInt(i - firstNodeLength));
+					nodeOffsets.add(additionalKmerOffsets.getInt(i) - firstNodeLength);
 				}
 			}
 			this.additionalKmers = nodeKmers;
@@ -498,34 +552,6 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		throw new IllegalStateException("Could not replace non-existant element " + existing.toString());
 	}
 	/**
-	 * Replaces the given element with the given replacement, ensuring that the replacement element is not
-	 * duplicated.
-	 * @param list
-	 * @param existing
-	 * @param replaceWith
-	 */
-	private static void replaceUnique(List<KmerPathNode> list, KmerPathNode existing, KmerPathNode replaceWith) {
-		if (list == null) return;
-		int existingOffset = -1;
-		int replaceWithOffset = -1;
-		for (int i = 0; i < list.size(); i++) {
-			if (list.get(i) == existing) {
-				existingOffset = i;
-			} else if (list.get(i) == replaceWith) {
-				replaceWithOffset = i;
-			}
-		}
-		if (existingOffset < 0) {
-			throw new IllegalStateException("Could not replace non-existant element " + existing.toString());
-		}
-		if (replaceWithOffset >= 0) {
-			// already in list
-			list.remove(existingOffset);
-		} else {
-			list.set(existingOffset, replaceWith);
-		}
-	}
-	/**
 	 * Splits at the given internal start position
 	 * 
 	 * @param internalStart start position to split at
@@ -542,8 +568,11 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 			for (KmerPathNode adj : nextList) {
 				if (IntervalUtil.overlapsClosed(this.lastStart() + 1, this.lastEnd() + 1, adj.firstStart(), adj.firstEnd())) {
 					newNextThis.add(adj);
+					// start position of this has changed so that might have invalidated the sort order of the neighbour
+					adj.edgesSorted = false;
 				} else {
-					adj.prevList.remove(this);
+					boolean removed = CollectionUtil.removeByReference(adj.prevList, this);
+					assert(removed);
 				}
 				if (IntervalUtil.overlapsClosed(split.lastStart() + 1, split.lastEnd() + 1, adj.firstStart(), adj.firstEnd())) {
 					newNextSplit.add(adj);
@@ -561,11 +590,10 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 				if (IntervalUtil.overlapsClosed(adj.lastStart() + 1, adj.lastEnd() + 1, this.firstStart(), this.firstEnd())) {
 					newPrevThis.add(adj);
 					// start position of this has changed so that might have invalidated the sort order of the neighbour
-					// this is only a problem of prev nodes since next nodes are sorted by the final kmer start position
-					// which doesn't change
 					adj.edgesSorted = false;
 				} else {
-					adj.nextList.remove(this);
+					boolean removed = CollectionUtil.removeByReference(adj.nextList, this);
+					assert(removed);
 				}
 				if (IntervalUtil.overlapsClosed(adj.lastStart() + 1, adj.lastEnd() + 1, split.firstStart(), split.firstEnd())) {
 					newPrevSplit.add(adj);
@@ -618,15 +646,27 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		assert(EMPTY_KMER_LIST != null && EMPTY_KMER_LIST.size() == 0); // fastutil doesn't have ImmutableList wrappers
 		assert((additionalKmerOffsets == null && additionalKmers == null) || (additionalKmerOffsets != null && additionalKmers != null));
 		assert((additionalKmerOffsets == null && additionalKmers == null) || additionalKmerOffsets.size() == additionalKmers.size());
+		if (additionalKmers != null) {
+			for (int i = 0; i < additionalKmers.size(); i++) {
+				assert(additionalKmerOffsets.getInt(i) < length());
+				long pathKmer = kmer(additionalKmerOffsets.getInt(i));
+				long altKmer = additionalKmers.get(i);
+				assert(KmerEncodingHelper.basesDifference(KmerEncodingHelper.MAX_K, altKmer, pathKmer) < 10);
+			}
+		}
+		//if (EvidenceTracker.TEMP_HACK_CURRENT_TRACKER != null) {
+		//	EvidenceTracker.TEMP_HACK_CURRENT_TRACKER.matchesExpected(new KmerPathSubnode(this));
+		//}
 		return true;
 	}
 	private static boolean sanityCheckEdges(KmerPathNode node, boolean checkNeighbours) {
 		if (node.nextList != null) {
+			assert(node.nextList.stream().distinct().count() == node.nextList.size());
 			for (KmerPathNode next : node.nextList) {
 				assert(next != null);
 				assert(next.isValid());
 				assert(IntervalUtil.overlapsClosed(node.lastStart() + 1, node.lastEnd() + 1, next.firstStart(), next.firstEnd()));
-				assert(next.prevList.contains(node));
+				assert(CollectionUtil.containsByReference(next.prevList, node));
 				if (checkNeighbours) {
 					assert(sanityCheckEdges(next, false));
 				}
@@ -636,11 +676,12 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 			}
 		}
 		if (node.prevList != null) {
+			assert(node.prevList.stream().distinct().count() == node.prevList.size());
 			for (KmerPathNode prev : node.prevList) {
 				assert(prev != null);
 				assert(prev.isValid());
 				assert(IntervalUtil.overlapsClosed(node.firstStart() - 1, node.firstEnd() - 1, prev.lastStart(), prev.lastEnd()));
-				assert(prev.nextList.contains(node));
+				assert(CollectionUtil.containsByReference(prev.nextList, node));
 				if (checkNeighbours) {
 					assert(sanityCheckEdges(prev, false));
 				}
@@ -652,8 +693,8 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		return true;
 	}
 	public boolean sanityCheckReachableSubgraph() {
-		HashSet<KmerPathNode> visited = new HashSet<KmerPathNode>();
-		HashSet<KmerPathNode> frontier = new HashSet<KmerPathNode>();
+		Set<KmerPathNode> visited = Collections.newSetFromMap(new IdentityHashMap<KmerPathNode, Boolean>());
+		Set<KmerPathNode> frontier = Collections.newSetFromMap(new IdentityHashMap<KmerPathNode, Boolean>());
 		frontier.add(this);
 		while (!frontier.isEmpty()) {
 			KmerPathNode node = frontier.iterator().next();
@@ -730,21 +771,35 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 			assert(additionalSplit == null);
 			this.prevList = null;
 			split.nextList = null;
+			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+				assert(sanityCheck());
+				assert(split.sanityCheck());
+			}
 			return split;
 		}
 		// start or end kmer
 		if (offset == length() - 1) {
-			// remove final node
-			for (KmerPathNode n : next()) {
-				n.prevList.remove(this);
+			if (nextList != null) {
+				// remove final node
+				for (KmerPathNode n : nextList) {
+					boolean removed = CollectionUtil.removeByReference(n.prevList, this);
+					assert(removed);
+				}
+				nextList = null;
 			}
-			this.nextList = null;
 		}
 		if (offset == 0) {
-			for (KmerPathNode n : prev()) {
-				n.nextList.remove(this);
+			if (prevList != null) {
+				for (KmerPathNode n : prevList) {
+					boolean removed = CollectionUtil.removeByReference(n.nextList, this);
+					assert(removed);
+				}
+				prevList = null;
 			}
-			this.prevList = null;
+			// make sure we're still starting at the same place
+			// (but after we remove ourself)
+			this.start++;
+			this.end++;
 		}
 		totalWeight -= weight.getInt(offset);
 		weight.remove(offset);
@@ -755,7 +810,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 				for (int i = additionalKmers.size() - 1; i >= 0; i--) {
 					int currentOffset = additionalKmerOffsets.getInt(i);
 					int newOffset = currentOffset - offsetShift;
-					if (newOffset < 0 && newOffset >= length()) {
+					if (newOffset < 0 || newOffset >= length()) {
 						additionalKmerOffsets.remove(i);
 						additionalKmers.remove(i);
 					} else if (newOffset != currentOffset) {
@@ -766,6 +821,11 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		}
 		if (length() == 0) {
 			invalidate();
+		}
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			if (kmers != null) {
+				assert(sanityCheck());
+			}
 		}
 		return null;
 	}
@@ -779,15 +839,35 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		int preWeight = 0;
 		int deltaWeight = 0;
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
-			final KmerPathNode initalNode = node;
 			preWeight = node.weight() * node.width();
-			deltaWeight = IntStream.range(0, toRemove.size()).map(i -> {
+			for (int i = 0; i < toRemove.size(); i++) {
 				List<? extends KmerNode> list = toRemove.get(i);
-				if (list == null) return 0;
-				int start = initalNode.startPosition(i);
-				int end = initalNode.endPosition(i);
-				return list.stream().mapToInt(n -> n.weight() * IntervalUtil.overlapsWidthClosed(n.lastStart(), n.lastEnd(), start, end)).sum();
-			}).sum();
+				int start = node.startPosition(i);
+				int end = node.endPosition(i);
+				int nodeDeltaWeight = list == null ? 0 : list.stream().mapToInt(n -> n.weight() * IntervalUtil.overlapsWidthClosed(n.lastStart(), n.lastEnd(), start, end)).sum();
+				int nodeWeight = node.weight(i) * node.width();
+				if (list != null) {
+					for (KmerNode n : list) {
+						long nkmer = n.firstKmer();
+						if (nkmer != node.kmer(i)) {
+							boolean foundMatchingAltKmer = false;
+							for (int j = 0; j < node.collapsedKmers().size(); j++) {
+								if (node.collapsedKmers().getLong(j) == nkmer) {
+									if (node.collapsedKmerOffsets().getInt(j) == i) {
+										// found an alt kmer that goes to the expected node
+										foundMatchingAltKmer = true;
+										break;
+									}
+								}
+							}
+							assert(foundMatchingAltKmer);
+						}
+					}
+				}
+				assert(nodeDeltaWeight <= nodeWeight);
+				deltaWeight += nodeDeltaWeight;
+			}
+			assert(deltaWeight <= preWeight);
 		}
 		ArrayDeque<KmerPathNode> replacement = new ArrayDeque<KmerPathNode>();
 		while (!toRemove.isEmpty()) {
@@ -797,6 +877,11 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 			if (collection != null) {
 				collection.sort(KmerNodeUtil.ByLastStart);
 				node = removeWeight(replacement, node, index, collection);
+				if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+					if (node != null) {
+						assert(node.sanityCheck());
+					}
+				}
 			}
 		}
 		if (node != null) {
@@ -888,6 +973,11 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 				node = after;
 			}
 			start = end + 1;
+			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+				if (node != null) {
+					assert(node.sanityCheck());
+				}
+			}
 		}
 		return pre;
 	}
@@ -900,6 +990,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	 * @return KmerPathNode containing kmers preceeding the offset
 	 */
 	private static KmerPathNode removeWeight(ArrayDeque<KmerPathNode> outList, KmerPathNode node, int offset, int weightToRemove) {
+		assert(node.totalWeight >= weightToRemove);
 		int newWeight = node.weight.get(offset) - weightToRemove;
 		if (newWeight == 0) {
 			// remove entire kmer from KmerPathNode

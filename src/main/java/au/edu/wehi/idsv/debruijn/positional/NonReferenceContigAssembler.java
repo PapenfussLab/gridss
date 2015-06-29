@@ -48,22 +48,49 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	private SortedSet<KmerPathNode> graphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByLastStartEndKmerReferenceWeight);
 	private final EvidenceTracker evidenceTracker;
 	private final AssemblyEvidenceSource aes;
-	private final int maxEvidenceWidth;
+	/**
+	 * Worst case scenario is a RP providing single kmer support for contig
+	 * read length - (k-1) + max-min fragment size
+	 *
+	 * ========== contig
+	 *          --------- read contributes single kmer to contig  
+	 *           \       \  in the earliest position
+	 *            \  RP   \
+	 *             \       \
+	 *              \       \
+	 *               ---------
+	 *                        ^
+	 *                        |
+	 * Last position supported by this RP is here. 
+	 */
+	private final int maxEvidenceDistance;
 	private final int maxAnchorLength;
 	private final int k;
 	private final int referenceIndex;
 	private final KmerPathNodeIteratorInterceptor wrapper;
 	public int getReferenceIndex() { return referenceIndex; }
+	/**
+	 * Creates a new structural variant positional de Bruijn graph contig assembly for the given chromosome
+	 * @param it reads
+	 * @param referenceIndex evidence source
+	 * @param maxEvidenceDistance maximum distance from the first position of the first kmer of a read,
+	 *  to the last position of the last kmer of a read. This should be set to read length plus
+	 *  the max-min concordant fragment size
+	 * @param maxAnchorLength maximum number of reference-supporting anchor bases to assemble
+	 * @param k
+	 * @param source assembly source
+	 * @param tracker evidence lookup
+	 */
 	public NonReferenceContigAssembler(
 			Iterator<KmerPathNode> it,
 			int referenceIndex,
-			int maxEvidenceWidth,
+			int maxEvidenceDistance,
 			int maxAnchorLength,
 			int k,
 			AssemblyEvidenceSource source,
 			EvidenceTracker tracker) {
 		this.wrapper = new KmerPathNodeIteratorInterceptor(it);
-		this.maxEvidenceWidth = maxEvidenceWidth;
+		this.maxEvidenceDistance = maxEvidenceDistance;
 		this.maxAnchorLength = maxAnchorLength;
 		this.k = k;
 		this.referenceIndex = referenceIndex;
@@ -72,9 +99,18 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	}
 	@Override
 	protected SAMRecordAssemblyEvidence computeNext() {
-		BestNonReferenceContigCaller bestCaller = new BestNonReferenceContigCaller(Iterators.concat(graphByPosition.iterator(), wrapper), maxEvidenceWidth);
+		while (!graphByPosition.isEmpty() || wrapper.hasNext()) {
+			SAMRecordAssemblyEvidence contig =nextContig();
+			if (contig != null) {
+				return contig;
+			}
+		}
+		return endOfData();
+	}
+	private SAMRecordAssemblyEvidence nextContig() {
+		BestNonReferenceContigCaller bestCaller = new BestNonReferenceContigCaller(Iterators.concat(graphByPosition.iterator(), wrapper), maxEvidenceDistance);
 		ArrayDeque<KmerPathSubnode> contig = bestCaller.bestContig();
-		if (contig == null) return endOfData();
+		if (contig == null) return null;
 		return callContig(contig);
 	}
 	private SAMRecordAssemblyEvidence callContig(ArrayDeque<KmerPathSubnode> contig) {
@@ -128,10 +164,19 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 					bases, quals, new int[] { 0, 0 });
 		} else {
 			// left aligned
-			assembledContig = AssemblyFactory.createAnchoredBreakpoint(aes.getContext(), aes, evidenceIds,
-					referenceIndex, startingAnchor.getLast().lastStart() + k - 1, startingAnchor.stream().mapToInt(n -> n.length()).sum() + k - 1,
-					referenceIndex, endingAnchor.getFirst().firstStart(), endingAnchor.stream().mapToInt(n -> n.length()).sum() + k - 1,
-					bases, quals, new int[] { 0, 0 });
+			int startAnchorPosition = startingAnchor.getLast().lastStart() + k - 1;
+			int startAnchorBaseCount = startingAnchor.stream().mapToInt(n -> n.length()).sum() + k - 1;
+			int endAnchorPosition = endingAnchor.getFirst().firstStart();
+			int endAnchorBaseCount = endingAnchor.stream().mapToInt(n -> n.length()).sum() + k - 1;
+			if (startAnchorBaseCount + endAnchorBaseCount >= quals.length) {
+				// no unanchored bases - not an SV assembly
+				assembledContig = null;
+			} else {
+				assembledContig = AssemblyFactory.createAnchoredBreakpoint(aes.getContext(), aes, evidenceIds,
+						referenceIndex, startAnchorPosition, startAnchorBaseCount,
+						referenceIndex, endAnchorPosition, endAnchorBaseCount,
+						bases, quals, new int[] { 0, 0 });
+			}
 		}
 		// remove all evidence contributing to this assembly from the graph
 		removeFromGraph(evidence);
@@ -163,10 +208,10 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	private void removeWeight() {
 		KmerPathNode current = null;
 		List<List<KmerNode>> toRemove = null;
-		// WARNING: this loop is dangerous as we're mutating the 
+		// WARNING: this loop is dangerous in that we're mutating the 
 		// comparator value of the current node as we traverse the tree
 		// Fortunately, we don't change the tree structure as we traverse
-		// and we immediately clear the entire tree once we've traversed
+		// and we immediately clear() the entire tree once we've traversed
 		// so we're ok.
 		for (Entry<KmerPathNodeKmerNode, List<KmerNode>> entry : weightToRemove.entrySet()) {
 			KmerPathNodeKmerNode node = entry.getKey();
@@ -189,7 +234,11 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		assert(node.length() >= toRemove.size());
 		// remove from graph
 		removeFromGraph(node);
-		for (KmerPathNode split : KmerPathNode.removeWeight(node, toRemove)) {
+		Collection<KmerPathNode> replacementNodes = KmerPathNode.removeWeight(node, toRemove);
+		for (KmerPathNode split : replacementNodes) {
+			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+				assert(evidenceTracker.matchesExpected(new KmerPathSubnode(split)));
+			}
 			addToGraph(split);
 		}
 	}
@@ -263,6 +312,9 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		@Override
 		public KmerPathNode next() {
 			KmerPathNode node = underlying.next();
+			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+				assert(evidenceTracker.matchesExpected(new KmerPathSubnode(node)));
+			}
 			addToGraph(node);
 			position = node.firstStart();
 			return node;

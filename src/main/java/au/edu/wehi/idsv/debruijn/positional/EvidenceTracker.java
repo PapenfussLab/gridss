@@ -21,6 +21,7 @@ import au.edu.wehi.idsv.util.IntervalUtil;
  *
  */
 public class EvidenceTracker implements Iterator<KmerSupportNode> {
+	//public static EvidenceTracker TEMP_HACK_CURRENT_TRACKER = null;
 	private final Long2ObjectOpenHashMap<LinkedList<KmerSupportNode>> lookup = new Long2ObjectOpenHashMap<LinkedList<KmerSupportNode>>();
 	private final Iterator<KmerSupportNode> underlying;
 	/**
@@ -29,6 +30,7 @@ public class EvidenceTracker implements Iterator<KmerSupportNode> {
 	 */
 	public EvidenceTracker(Iterator<KmerSupportNode> it) {
 		this.underlying = it;
+		//TEMP_HACK_CURRENT_TRACKER = this;
 	}
 	/**
 	 * Tracks the given evidence
@@ -117,6 +119,34 @@ public class EvidenceTracker implements Iterator<KmerSupportNode> {
 			}
 		}
 	}
+	public boolean matchesExpected(KmerPathSubnode pn) {
+		for (int i = 0; i < pn.length(); i++) {
+			LongArrayList kmers = new LongArrayList();
+			kmers.add(pn.kmer(i));
+			for (int j = 0; j < pn.node().collapsedKmerOffsets().size(); j++) {
+				if (pn.node().collapsedKmerOffsets().get(j) == i) {
+					kmers.add(pn.node().collapsedKmers().get(j));
+				}
+			}
+			if (!matchesExpected(pn.weight(i) * pn.width(), kmers, pn.firstStart() + i, pn.firstEnd() + i)) {
+				return false;
+			}
+		}
+		return true;
+	}
+	public boolean matchesExpected(int expectedWidthWeight, LongArrayList kmers, int start, int end) {
+		int evidenceWeight = 0;
+		for (long kmer : kmers) {
+			LinkedList<KmerSupportNode> list = lookup.get(kmer);
+			if (list != null) {
+				for (KmerSupportNode n : list) {
+					evidenceWeight += n.weight() * IntervalUtil.overlapsWidthClosed(start, end, n.lastStart(), n.lastEnd());
+				}
+			}
+		}
+		assert(evidenceWeight == expectedWidthWeight);
+		return evidenceWeight == expectedWidthWeight;
+	}
 	@Override
 	public boolean hasNext() {
 		return underlying.hasNext();
@@ -125,5 +155,44 @@ public class EvidenceTracker implements Iterator<KmerSupportNode> {
 	public KmerSupportNode next() {
 		// TODO Auto-generated method stub
 		return track(underlying.next());
+	}
+	public class PathNodeAssertionInterceptor implements Iterator<KmerPathNode> {
+		private final Iterator<KmerPathNode> underlying;
+		private final String id;
+		public PathNodeAssertionInterceptor(Iterator<KmerPathNode> it, String id) {
+			this.underlying = it;
+			this.id = id;
+		}
+		@Override
+		public boolean hasNext() {
+			return underlying.hasNext();
+		}
+		@Override
+		public KmerPathNode next() {
+			KmerPathNode node = underlying.next();
+			assert(matchesExpected(new KmerPathSubnode(node)));
+			return node;
+		}
+		@Override
+		public String toString() {
+			return id;
+		}
+	}
+	public class AggregateNodeAssertionInterceptor implements Iterator<KmerNode> {
+		private final Iterator<KmerNode> underlying;
+		public AggregateNodeAssertionInterceptor(Iterator<KmerNode> it) {
+			this.underlying = it;
+		}
+		@Override
+		public boolean hasNext() {
+			return underlying.hasNext();
+		}
+		@Override
+		public KmerNode next() {
+			KmerNode node = underlying.next();
+			assert(matchesExpected(node.width() * node.weight(), LongArrayList.wrap(new long[] { node.firstKmer() }), node.firstStart(), node.firstEnd()));
+			return node;
+		}
+		
 	}
 }

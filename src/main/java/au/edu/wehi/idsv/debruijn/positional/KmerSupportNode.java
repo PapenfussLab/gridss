@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
+
 /**
  * Evidence contribution to the given kmer position of a single piece of evidence
  * @author cameron.d
@@ -20,7 +22,7 @@ public class KmerSupportNode implements KmerNode {
 	}
 	@Override
 	public String toString() {
-		return String.format("[%d-%d]%s %s", lastStart(), lastEnd(), isReference() ? "R" : " ", weight());
+		return String.format("[%d-%d]%s %d %s", lastStart(), lastEnd(), isReference() ? "R" : " ", weight(), KmerEncodingHelper.toApproximateString(lastKmer()));
 	}
 	@Override
 	public int hashCode() {

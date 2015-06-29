@@ -173,4 +173,21 @@ public class PathCollapseIteratorTest extends TestHelper {
 		List<KmerPathNode> result = go(input, k, 200, 200, 1);
 		assertEquals(5, result.size());
 	}
+	@Test
+	public void should_not_compress_loops() {
+		int k = 4;
+		List<KmerPathNode> input = new ArrayList<KmerPathNode>();
+		input.add(KPN(k, "AAAA", 0, 10, false));
+		input.add(KPN(k, "AAAG", 0, 10, false));
+		input.add(KPN(k, "AAGC", 0, 10, false));
+		KmerPathNode.addEdge(input.get(0), input.get(0));
+		KmerPathNode.addEdge(input.get(0), input.get(1));
+		KmerPathNode.addEdge(input.get(1), input.get(2));
+		List<KmerPathNode> result = go(k, 100, 100, input);
+		// AAAA->AAAA
+		// can collapse with
+		// AAAA->AAAG
+		// TODO: actual test case that tests loop compression
+		assertEquals(3, result.size());
+	}
 }

@@ -48,8 +48,8 @@ public class MemoizedTraverse {
 			
 			// we overlap an existing path
 			assert(existing.node.firstKmer() == node.node.firstKmer() && IntervalUtil.overlapsClosed(
-					existing.node.firstStart(), existing.node.firstStart(),
-					node.node.firstStart(), node.node.firstStart()));
+					existing.node.firstStart(), existing.node.firstEnd(),
+					node.node.firstStart(), node.node.firstEnd()));
 			
 			// ok, so now we know the nodes overlap
 			if (node.score > existing.score) {

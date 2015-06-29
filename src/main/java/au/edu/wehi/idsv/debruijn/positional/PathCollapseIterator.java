@@ -5,6 +5,7 @@ import it.unimi.dsi.fastutil.ints.IntSortedSet;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableSet;
@@ -178,22 +179,22 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 		List<KmerPathSubnode> nextNodes = root.next();
 		for (int i = 0; i < nextNodes.size(); i++) {
 			for (int j = i + 1; j < nextNodes.size(); j++) {
-				if (collapseSimilarPath(nextNodes.get(i), nextNodes.get(j), true, true, true)) return true;
+				if (collapseSimilarPath(node, nextNodes.get(i), nextNodes.get(j), true, true, true)) return true;
 			}
 		}
 		List<KmerPathSubnode> prevNodes = root.next();
 		for (int i = 0; i < prevNodes.size(); i++) {
 			for (int j = i + 1; j < prevNodes.size(); j++) {
-				if (collapseSimilarPath(prevNodes.get(i), prevNodes.get(j), true, false, false)) return true;
+				if (collapseSimilarPath(node, prevNodes.get(i), prevNodes.get(j), true, false, false)) return true;
 			}
 		}
 		return false;
 	}
-	private boolean collapseSimilarPath(KmerPathSubnode startNodeA, KmerPathSubnode startNodeB, boolean findLeaf, boolean findCommonChild, boolean traverseForward) {
+	private boolean collapseSimilarPath(KmerPathNode root, KmerPathSubnode startNodeA, KmerPathSubnode startNodeB, boolean findLeaf, boolean findCommonChild, boolean traverseForward) {
 		KmerPathNodePath pathA = new KmerPathNodePath(startNodeA, traverseForward, maxCollapseLength);
 		KmerPathNodePath pathB = new KmerPathNodePath(startNodeB, traverseForward, maxCollapseLength);
 		if (pathA.pathLength() <= maxCollapseLength && pathB.pathLength() <= maxCollapseLength) {
-			return collapseSimilarPath(pathA, pathB, findLeaf, findCommonChild, traverseForward);
+			return collapseSimilarPath(root, pathA, pathB, findLeaf, findCommonChild, traverseForward);
 		}
 		return false;
 	}
@@ -202,28 +203,42 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 	 * 
 	 * Need to simultaneous traverse across both trees comparing all possible path combinations until a match is found. 
 	 * 
-	 * Invariant: pathA and pathB are unchanged when call returns
+	 * Invariant: pathA and pathB are unchanged when returning false
+	 * 
+	 * Although the underlying graph is a DAG, KmerPathSubnode traversal is not. The same
+	 * underlying KmerPathNode can be present multiple times in either path. Example scenario:
+	 * [1,10] AAAA -> [2,11] AAAA -> [3,12] AAAG = [1,10] AAAAG 
+	 * [1,10] AAAA -> [2,11] AAAG -> [3,12] AAGG = [1,10] AAAGG
+	 * only 1 kmer difference so should collapse but when merging, we are unable to fragment
+	 * [1,11] AAAA in such a way that each KmerPathSubnode contains a single KmerPathNode
+	 * per KmerPathSubnode, we have to fragment the KmerPathNode across all boundaries.
+	 * For now, we handle this by not collapsing if we encounter a KmerPathNode repeat. 
 	 * 
 	 */
-	private boolean collapseSimilarPath(KmerPathNodePath pathA, KmerPathNodePath pathB, boolean findLeaf, boolean findCommonChild, boolean traverseForward) {
+	private boolean collapseSimilarPath(KmerPathNode root, KmerPathNodePath pathA, KmerPathNodePath pathB, boolean findLeaf, boolean findCommonChild, boolean traverseForward) {
 		// paths don't share any common interval - no way for them to be the same length and still overlap
 		if (!pathsOverlap(pathA, pathB)) return false;
 		// paths have too many bases different
 		if (!areSimilarPartialPaths(pathA, pathB, traverseForward)) return false;
-		if (tryCollapse(pathA, pathB, findLeaf, findCommonChild, traverseForward)) return true;
+		if (tryCollapse(root, pathA, pathB, findLeaf, findCommonChild, traverseForward)) return true;
 		int pathAlength = pathA.pathLength();
 		int pathBlength = pathB.pathLength();
 		if (pathA.pathLength() <= pathB.pathLength()) {
 			while (pathA.dfsNextChild()) {
-				pathB.dfsResetChildTraversal();
-				if (collapseSimilarPath(pathA, pathB, findLeaf, findCommonChild, traverseForward)) return true;
+				if (pathA.headNode().parent() == null || pathA.headNode().parent().node().node() == pathA.headPath()) {
+					pathB.dfsResetChildTraversal();
+					if (collapseSimilarPath(root, pathA, pathB, findLeaf, findCommonChild, traverseForward)) return true;
+				}
 				pathA.dfsPop();
 			}
 			//pathA.dfsPop(); // done with this node
 		} else {
 			while (pathB.dfsNextChild()) {
-				if (collapseSimilarPath(pathA, pathB, findLeaf, findCommonChild, traverseForward)) return true;
+				if (pathB.headNode().parent() == null || pathB.headNode().parent().node().node() == pathB.headPath()) {
+					if (collapseSimilarPath(root, pathA, pathB, findLeaf, findCommonChild, traverseForward)) return true;
+				}
 				pathB.dfsPop();
+				
 			}
 		}
 		assert(pathA.pathLength() == pathAlength);
@@ -251,10 +266,15 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 	 * @param traverseForward
 	 * @return true if paths were collapsed, false otherwise
 	 */
-	private boolean tryCollapse(KmerPathNodePath pathA, KmerPathNodePath pathB, boolean findLeaf, boolean findCommonChild, boolean traverseForward) {
+	private boolean tryCollapse(KmerPathNode root, KmerPathNodePath pathA, KmerPathNodePath pathB, boolean findLeaf, boolean findCommonChild, boolean traverseForward) {
 		assert(findLeaf || findCommonChild);
 		if (findCommonChild) {
-			if (pathA.headPath() == pathB.headPath() && pathA.pathLength() == pathB.pathLength()) {
+			if (pathA.headPath() == pathB.headPath()
+					&& pathA.pathLength() == pathB.pathLength()
+					&& repeatedKmerPathNodeCount(root, pathA, pathB) == 1) {
+				// remove common trailing node
+				pathA.dfsPop();
+				pathB.dfsPop();
 				List<KmerPathSubnode> lA = new ArrayList<KmerPathSubnode>(pathA.headNode().overlapping(pathB.headNode()).asSubnodes());
 				List<KmerPathSubnode> lB = new ArrayList<KmerPathSubnode>(pathB.headNode().overlapping(pathA.headNode()).asSubnodes());
 				if (pathA.pathWeight() < pathB.pathWeight()) {
@@ -270,8 +290,8 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 				}
 			}
 		}
-		if (tryLeafCollapse(pathA, pathB, traverseForward)) return true;
-		if (tryLeafCollapse(pathB, pathA, traverseForward)) return true;
+		if (tryLeafCollapse(root, pathA, pathB, traverseForward)) return true;
+		if (tryLeafCollapse(root, pathB, pathA, traverseForward)) return true;
 		return false;
 	}
 	/**
@@ -287,12 +307,24 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 		}
 		return true;
 	}
-	private boolean tryLeafCollapse(KmerPathNodePath leaf, KmerPathNodePath path, boolean traverseForward) {
+	private int repeatedKmerPathNodeCount(KmerPathNode root, KmerPathNodePath... paths) {
+		HashSet<KmerPathNode> set = new HashSet<KmerPathNode>();
+		set.add(root);
+		int nodeCount = 1;
+		for (KmerPathNodePath path : paths) {
+			nodeCount += path.currentPath().size();
+			set.addAll(path.currentPath());
+		}
+		// we if shrunk in size then we have a repeat
+		return nodeCount - set.size();
+	}
+	private boolean tryLeafCollapse(KmerPathNode root, KmerPathNodePath leaf, KmerPathNodePath path, boolean traverseForward) {
 		// leaf can't be longer than the path
 		if (leaf.pathLength() > path.pathLength()) return false;
 		if (leaf.pathWeight() > path.pathWeight()) return false;
 		TraversalNode firstLeaf = leaf.headNode().overlapping(path.headNode()).firstTerminalLeaf();
 		if (firstLeaf == null) return false;
+		if (repeatedKmerPathNodeCount(root, leaf, path) > 0) return false;
 		int leafSkip = 0;
 		int pathSkip = traverseForward ? 0 : path.pathLength() - leaf.pathLength();
 		merge(new ArrayList<KmerPathSubnode>(firstLeaf.asSubnodes()),
@@ -326,17 +358,6 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 	private void merge(List<KmerPathSubnode> sourcePath, List<KmerPathSubnode> targetPath) {
 		assert(sourcePath.get(0).width() == targetPath.get(0).width());
 		assert(sourcePath.get(0).firstStart() == targetPath.get(0).firstStart());
-		// trim common path prefix and suffixes
-		// we don't want to split common nodes since a source split
-		// can invalidate the target node due to changed node width/length
-		while (sourcePath.get(0).equals(targetPath.get(0))) {
-			sourcePath.remove(0);
-			targetPath.remove(0);
-		}
-		while (sourcePath.get(sourcePath.size() - 1).equals(targetPath.get(targetPath.size() - 1))) {
-			sourcePath.remove(sourcePath.size() - 1);
-			targetPath.remove(targetPath.size() - 1);
-		}
 		List<KmerPathNode> source = positionSplit(sourcePath);
 		List<KmerPathNode> target = positionSplit(targetPath);
 		IntSortedSet kmerStartPositions = new IntRBTreeSet();

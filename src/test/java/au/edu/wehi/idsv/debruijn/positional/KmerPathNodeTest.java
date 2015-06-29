@@ -3,6 +3,8 @@ package au.edu.wehi.idsv.debruijn.positional;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -405,5 +407,74 @@ public class KmerPathNodeTest extends TestHelper {
 		assertEquals(KPN(new long[] { 1 }, 6, 6, true, 1), replacement.get(4));
 		assertEquals(KPN(new long[] { 1 }, 2, 3, true, 3), replacement.get(5));
 		assertEquals(KPN(new long[] { 2 }, 3, 12, true, 3), replacement.get(6));
+	}
+	@Test
+	public void removeWeight_final_kmer_removal_should_remove_corresponding_kmers() {
+		KmerPathNode pn = KPN(new long[] { 0, 1, 2 }, 1, 1, true);
+		pn.merge(KPN(new long[] { 3, 4, 5 }, 1, 1, true));
+		List<List<KmerNode>> toRemove = new ArrayList<List<KmerNode>>();
+		toRemove.add(null);
+		toRemove.add(null);
+		toRemove.add(new ArrayList<KmerNode>(ImmutableList.of(new ImmutableKmerNode(5, 3, 3, false, 2))));
+		
+		KmerPathNode.removeWeight(pn, toRemove);
+		assertEquals(LongArrayList.wrap(new long[] { 3, 4 }), pn.collapsedKmers());
+		assertEquals(IntArrayList.wrap(new int[] { 0, 1 }), pn.collapsedKmerOffsets());
+	}
+	@Test
+	public void removeWeight_first_kmer_removal_should_remove_corresponding_kmers() {
+		KmerPathNode pn = KPN(new long[] { 0, 1, 2 }, 1, 1, true);
+		pn.merge(KPN(new long[] { 3, 4, 5 }, 1, 1, true));
+		List<List<KmerNode>> toRemove = new ArrayList<List<KmerNode>>();
+		toRemove.add(new ArrayList<KmerNode>(ImmutableList.of(new ImmutableKmerNode(3, 1, 1, false, 2))));
+		
+		KmerPathNode.removeWeight(pn, toRemove);
+		assertEquals(LongArrayList.wrap(new long[] { 4, 5 }), pn.collapsedKmers());
+		assertEquals(IntArrayList.wrap(new int[] { 0, 1 }), pn.collapsedKmerOffsets());
+	}
+	@Test
+	public void remove_should_handle_cycles() {
+		KmerPathNode pre = KPN(4, "CAAA", 37, 47, true);
+		KmerPathNode node = KPN(4, "AAAA", 39, 40, true);
+		KmerPathNode post1 = KPN(4, "AAAA", 41, 80, true);
+		KmerPathNode post2 = KPN(4, "AAAC", 41, 81, true);
+		KmerPathNode.addEdge(pre, node);
+		KmerPathNode.addEdge(node, node);
+		KmerPathNode.addEdge(node, post1);
+		KmerPathNode.addEdge(node, post2);
+		KmerPathNode.addEdge(pre, post1);
+		KmerPathNode.addEdge(pre, post2);
+		KmerPathNode.addEdge(post1, post1);
+		KmerPathNode.addEdge(post1, post2);
+		List<List<KmerNode>> toRemove = new ArrayList<List<KmerNode>>();
+		toRemove.add(new ArrayList<KmerNode>(ImmutableList.of(
+				new ImmutableKmerNode(node.kmer(0), 39, 39, false, 1),
+				new ImmutableKmerNode(node.kmer(0), 40, 40, false, 1))));
+		
+		KmerPathNode.removeWeight(node, toRemove);
+		PathNodeIteratorTest.assertCompleteGraph(ImmutableList.of(pre, post1, post2), 4);
+	}
+	@Test
+	public void splitAtPosition_should_handle_cycles() {
+		KmerPathNode pre = KPN(4, "CAAA", 37, 47, true);
+		KmerPathNode node = KPN(4, "AAAA", 39, 40, true);
+		KmerPathNode post1 = KPN(4, "AAAA", 41, 80, true);
+		KmerPathNode post2 = KPN(4, "AAAC", 41, 81, true);
+		KmerPathNode.addEdge(pre, node);
+		KmerPathNode.addEdge(node, node);
+		KmerPathNode.addEdge(node, post1);
+		KmerPathNode.addEdge(node, post2);
+		KmerPathNode.addEdge(pre, post1);
+		KmerPathNode.addEdge(pre, post2);
+		KmerPathNode.addEdge(post1, post1);
+		KmerPathNode.addEdge(post1, post2);
+		PathNodeIteratorTest.assertCompleteGraph(ImmutableList.of(pre, node, post1, post2), 4);
+		KmerPathNode n39 = node.splitAtStartPosition(40);
+		PathNodeIteratorTest.assertCompleteGraph(ImmutableList.of(pre, node, post1, post2, n39), 4);
+		assertEquals(1, n39.width());
+		assertEquals(1, node.width());
+		assertEquals(1, n39.prev().size());
+		assertEquals(2, node.prev().size());
+		assertEquals(1, n39.next().size());
 	}
 }
