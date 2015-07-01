@@ -387,7 +387,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		assert(from.isValid());
 		assert(to.isValid());
 		assert(from.nextList == null || !CollectionUtil.containsByReference(from.nextList, to));
-		assert(to.prevList == null || !CollectionUtil.containsByReference(to.prevList, to));
+		assert(to.prevList == null || !CollectionUtil.containsByReference(to.prevList, from));
 		if (from.nextList == null) {
 			from.nextList = new ArrayList<KmerPathNode>(2);
 		}

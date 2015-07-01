@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.PriorityQueue;
 
+import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.util.IntervalUtil;
 
@@ -183,11 +184,17 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 			activeNodes.add(node);
 			maxNodeWidth = Math.max(maxNodeWidth, node.width());
 		}
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			sanityCheck();
+		}
 	}
 	private void merge() {
 		while (!activeNodes.isEmpty() && activeNodes.peek().lastEnd() < inputPosition) {
 			KmerNode node = activeNodes.poll();
 			merge(node);
+		}
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			sanityCheck();
 		}
 	}
 	private void merge(KmerNode node) {
@@ -248,6 +255,9 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 		lookupRemove(pn);
 		firstKmerLookupRemove(pn);
 		assert(pn.length() <= maxNodeLength);
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			sanityCheck();
+		}
 		return pn;
 	}
 	private boolean edgesCanBeFullyDefined(KmerPathNode node) {
@@ -260,5 +270,28 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 	@Override
 	public void remove() {
 		throw new UnsupportedOperationException();
+	}
+	public boolean sanityCheck() {
+		for (KmerNode n : activeNodes) {
+			assert(!pathNodes.contains(n));
+			assert(edgeLookup.get(n.lastKmer()) != null);
+			assert(edgeLookup.get(n.lastKmer()).contains(n));
+			if (n instanceof KmerPathNode) {
+				assert(firstKmerEdgeLookup.get(n.firstKmer()) != null);
+				assert(firstKmerEdgeLookup.get(n.firstKmer()).contains(n));
+				((KmerPathNode)n).sanityCheck();
+			}
+		}
+		for (KmerPathNode n : pathNodes) {
+			assert(!activeNodes.contains(n));
+			assert(edgeLookup.get(n.lastKmer()) != null);
+			assert(edgeLookup.get(n.lastKmer()).contains(n));
+			assert(firstKmerEdgeLookup.get(n.firstKmer()) != null);
+			assert(firstKmerEdgeLookup.get(n.firstKmer()).contains(n));
+			n.sanityCheck();
+		}
+		assert(activeNodes.stream().distinct().count() == activeNodes.size());
+		assert(pathNodes.stream().distinct().count() == pathNodes.size());
+		return true;
 	}
 }
