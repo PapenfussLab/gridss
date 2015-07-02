@@ -15,11 +15,9 @@ To run, gridss the following must be installed:
 Pre-compiled binaries are not yet available so gridss must be built from source. Maven is used for build and dependency management which simplifies compile to the following steps:
 
 * git clone https://github.com/d-cameron/gridss
-* `mvn package`
+* `mvn package -DskipTests`
 
 If gridss was built successfully, a combined jar containing gridss and all required library located at target/gridss-0.4-SNAPSHOT-jar-with-dependencies.jar
-
-Note: there may or may no still exist some race conditions in the tests causes some tests to fail during the build, but success if run individually, if you encounter this, please raise a github issue. Tests can be skipped by running `mvn package -DskipTests`
 
 
 # Running
