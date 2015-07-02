@@ -1,4 +1,4 @@
-package au.edu.wehi.idsv.util;
+package au.edu.wehi.idsv.picard;
 
 import static org.junit.Assert.assertEquals;
 
@@ -7,6 +7,7 @@ import java.io.IOException;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
+import au.edu.wehi.idsv.picard.BufferedReferenceSequenceFile;
 
 
 public class BufferedReferenceSequenceFileTest extends TestHelper {

@@ -1,4 +1,4 @@
-package au.edu.wehi.idsv;
+package au.edu.wehi.idsv.picard;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
@@ -8,6 +8,12 @@ import htsjdk.samtools.reference.ReferenceSequenceFile;
 import java.io.IOException;
 import java.util.Arrays;
 
+/**
+ * Reference genome stored only in memory and not backed by a fasta file.
+ * 
+ * @author cameron.d
+ *
+ */
 public class InMemoryReferenceSequenceFile implements ReferenceSequenceFile {
 	private SAMSequenceDictionary dictionary;
 	private byte[][] sequences;

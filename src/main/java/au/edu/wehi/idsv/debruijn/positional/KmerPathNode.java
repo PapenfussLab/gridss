@@ -127,7 +127,6 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		assert(node.lastEnd() == lastEnd() + 1);
 		assert(node.isReference() == isReference());
 		assert(nextList == null || nextList.size() == 0);
-		//assert(KmerEncodingHelper.isNext(k, kmer(length() - 1), node.kmer())); 
 		kmers.add(node.lastKmer());
 		weight.add(node.weight());
 		totalWeight += node.weight();
@@ -240,6 +239,13 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		assert(toMerge.firstStart() == firstStart());
 		assert(toMerge.firstEnd() == firstEnd());
 		assert(toMerge.length() == length());
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			for (int i = 0; i < toMerge.length(); i++) {
+				int temphack = 42; // TODO:: FIXME:: remove hack
+				//assert(KmerEncodingHelper.basesDifference(25, kmer(i), toMerge.kmer(i)) <= 4);
+			}
+			sanityCheck();
+		}
 		reference |= toMerge.reference;
 		if (additionalKmers == null) {
 			additionalKmers = toMerge.additionalKmers;
@@ -615,98 +621,6 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		}
 		return split;
 	}
-	public boolean sanityCheck(int k, int maxSupportWidth, int maxPathLength) {
-		sanityCheck();
-		assert(length() <= maxPathLength);
-		assert(end - start <= maxSupportWidth);
-		for (int i = 1; i < length(); i++) {
-			assert(KmerEncodingHelper.isNext(k, kmers.getLong(i - 1), kmers.getLong(i)));
-		}
-		assert(sumWeights(weight) == totalWeight);
-		if (nextList != null) {
-			for (KmerPathNode next : nextList) {
-				assert(KmerEncodingHelper.isNext(k, lastKmer(), next.firstKmer()));
-			}
-		}
-		if (prevList != null) {
-			for (KmerPathNode prev : prevList) {
-				assert(KmerEncodingHelper.isNext(k, prev.lastKmer(), firstKmer()));
-			}
-		}
-		return true;
-	}
-	public boolean sanityCheck() {
-		assert(isValid());
-		assert(start <= end);
-		assert(totalWeight > 0);
-		assert(kmers.size() == length());
-		assert(weight.size() == length());
-		assert(sumWeights(weight) == totalWeight);
-		assert(sanityCheckEdges(this, true));
-		assert(EMPTY_KMER_LIST != null && EMPTY_KMER_LIST.size() == 0); // fastutil doesn't have ImmutableList wrappers
-		assert((additionalKmerOffsets == null && additionalKmers == null) || (additionalKmerOffsets != null && additionalKmers != null));
-		assert((additionalKmerOffsets == null && additionalKmers == null) || additionalKmerOffsets.size() == additionalKmers.size());
-		if (additionalKmers != null) {
-			for (int i = 0; i < additionalKmers.size(); i++) {
-				assert(additionalKmerOffsets.getInt(i) < length());
-				long pathKmer = kmer(additionalKmerOffsets.getInt(i));
-				long altKmer = additionalKmers.get(i);
-				assert(KmerEncodingHelper.basesDifference(KmerEncodingHelper.MAX_K, altKmer, pathKmer) < 10);
-			}
-		}
-		//if (EvidenceTracker.TEMP_HACK_CURRENT_TRACKER != null) {
-		//	EvidenceTracker.TEMP_HACK_CURRENT_TRACKER.matchesExpected(new KmerPathSubnode(this));
-		//}
-		return true;
-	}
-	private static boolean sanityCheckEdges(KmerPathNode node, boolean checkNeighbours) {
-		if (node.nextList != null) {
-			assert(node.nextList.stream().distinct().count() == node.nextList.size());
-			for (KmerPathNode next : node.nextList) {
-				assert(next != null);
-				assert(next.isValid());
-				assert(IntervalUtil.overlapsClosed(node.lastStart() + 1, node.lastEnd() + 1, next.firstStart(), next.firstEnd()));
-				assert(CollectionUtil.containsByReference(next.prevList, node));
-				if (checkNeighbours) {
-					assert(sanityCheckEdges(next, false));
-				}
-			}
-			if (node.edgesSorted) {
-				assert(NEXT_SORT_ORDER.isOrdered(node.nextList));
-			}
-		}
-		if (node.prevList != null) {
-			assert(node.prevList.stream().distinct().count() == node.prevList.size());
-			for (KmerPathNode prev : node.prevList) {
-				assert(prev != null);
-				assert(prev.isValid());
-				assert(IntervalUtil.overlapsClosed(node.firstStart() - 1, node.firstEnd() - 1, prev.lastStart(), prev.lastEnd()));
-				assert(CollectionUtil.containsByReference(prev.nextList, node));
-				if (checkNeighbours) {
-					assert(sanityCheckEdges(prev, false));
-				}
-			}
-			if (node.edgesSorted) {
-				assert(PREV_SORT_ORDER.isOrdered(node.prevList));
-			}
-		}
-		return true;
-	}
-	public boolean sanityCheckReachableSubgraph() {
-		Set<KmerPathNode> visited = Collections.newSetFromMap(new IdentityHashMap<KmerPathNode, Boolean>());
-		Set<KmerPathNode> frontier = Collections.newSetFromMap(new IdentityHashMap<KmerPathNode, Boolean>());
-		frontier.add(this);
-		while (!frontier.isEmpty()) {
-			KmerPathNode node = frontier.iterator().next();
-			frontier.remove(node);
-			if (visited.contains(node)) continue;
-			visited.add(node);
-			frontier.addAll(node.next());
-			frontier.addAll(node.prev());
-			assert(node.sanityCheck());
-		}
-		return true;
-	}
 	@Override
 	public String toString() {
 		if (!isValid()) {
@@ -714,13 +628,11 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		}
 		StringBuilder sb = new StringBuilder(String.format("[%d-%d]%s %dw ", firstStart(), firstEnd(), isReference() ? "R" : " ", weight()));
 		sb.append(KmerEncodingHelper.toApproximateString(firstKmer()));
-		for (int i = 1; i < 64 && i < length(); i++) {
+		sb.replace(sb.length() - 1, sb.length(), " ");
+		for (int i = 0; i < length(); i++) {
 			sb.append((char)KmerEncodingHelper.lastBaseEncodedToPicardBase(kmer(i)));
 		}
-		if (length() >= 64) {
-			sb.append("...");
-		}
-		sb.append(String.format("(%d)", length()));
+		sb.append(String.format(" (%d)", length()));
 		sb.append('\n');
 		return sb.toString();
 	}
@@ -1036,5 +948,98 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 			return a.firstStart() == b.firstStart()
 					&& a.firstKmer() == b.firstKmer();
 		}
+	}
+	public boolean sanityCheck(int k, int maxSupportWidth, int maxPathLength) {
+		//sanityCheck(); // TEMPHACK
+		assert(length() <= maxPathLength);
+		assert(end - start <= maxSupportWidth);
+		for (int i = 1; i < length(); i++) {
+			assert(KmerEncodingHelper.isNext(k, kmers.getLong(i - 1), kmers.getLong(i)));
+		}
+		assert(sumWeights(weight) == totalWeight);
+		if (nextList != null) {
+			for (KmerPathNode next : nextList) {
+				assert(KmerEncodingHelper.isNext(k, lastKmer(), next.firstKmer()));
+			}
+		}
+		if (prevList != null) {
+			for (KmerPathNode prev : prevList) {
+				assert(KmerEncodingHelper.isNext(k, prev.lastKmer(), firstKmer()));
+			}
+		}
+		return true;
+	}
+	public boolean sanityCheck() {
+		//sanityCheck(25, 1000, 1000); int temphack = 42;// TEMPHACK 
+		assert(isValid());
+		assert(start <= end);
+		assert(totalWeight > 0);
+		assert(kmers.size() == length());
+		assert(weight.size() == length());
+		assert(sumWeights(weight) == totalWeight);
+		assert(sanityCheckEdges(this, true));
+		assert(EMPTY_KMER_LIST != null && EMPTY_KMER_LIST.size() == 0); // fastutil doesn't have ImmutableList wrappers
+		assert((additionalKmerOffsets == null && additionalKmers == null) || (additionalKmerOffsets != null && additionalKmers != null));
+		assert((additionalKmerOffsets == null && additionalKmers == null) || additionalKmerOffsets.size() == additionalKmers.size());
+		if (additionalKmers != null) {
+			for (int i = 0; i < additionalKmers.size(); i++) {
+				assert(additionalKmerOffsets.getInt(i) < length());
+				long pathKmer = kmer(additionalKmerOffsets.getInt(i));
+				long altKmer = additionalKmers.get(i);
+				//assert(KmerEncodingHelper.basesDifference(KmerEncodingHelper.MAX_K, altKmer, pathKmer) < 10);
+			}
+		}
+		//if (EvidenceTracker.TEMP_HACK_CURRENT_TRACKER != null) {
+		//	EvidenceTracker.TEMP_HACK_CURRENT_TRACKER.matchesExpected(new KmerPathSubnode(this));
+		//}
+		return true;
+	}
+	private static boolean sanityCheckEdges(KmerPathNode node, boolean checkNeighbours) {
+		if (node.nextList != null) {
+			assert(node.nextList.stream().distinct().count() == node.nextList.size());
+			for (KmerPathNode next : node.nextList) {
+				assert(next != null);
+				assert(next.isValid());
+				assert(IntervalUtil.overlapsClosed(node.lastStart() + 1, node.lastEnd() + 1, next.firstStart(), next.firstEnd()));
+				assert(CollectionUtil.containsByReference(next.prevList, node));
+				if (checkNeighbours) {
+					assert(sanityCheckEdges(next, false));
+				}
+			}
+			if (node.edgesSorted) {
+				assert(NEXT_SORT_ORDER.isOrdered(node.nextList));
+			}
+		}
+		if (node.prevList != null) {
+			assert(node.prevList.stream().distinct().count() == node.prevList.size());
+			for (KmerPathNode prev : node.prevList) {
+				assert(prev != null);
+				assert(prev.isValid());
+				assert(IntervalUtil.overlapsClosed(node.firstStart() - 1, node.firstEnd() - 1, prev.lastStart(), prev.lastEnd()));
+				assert(CollectionUtil.containsByReference(prev.nextList, node));
+				if (checkNeighbours) {
+					assert(sanityCheckEdges(prev, false));
+				}
+			}
+			if (node.edgesSorted) {
+				assert(PREV_SORT_ORDER.isOrdered(node.prevList));
+			}
+		}
+		return true;
+	}
+	public boolean sanityCheckReachableSubgraph() {
+		Set<KmerPathNode> visited = Collections.newSetFromMap(new IdentityHashMap<KmerPathNode, Boolean>());
+		Set<KmerPathNode> frontier = Collections.newSetFromMap(new IdentityHashMap<KmerPathNode, Boolean>());
+		frontier.add(this);
+		while (!frontier.isEmpty()) {
+			KmerPathNode node = frontier.iterator().next();
+			frontier.remove(node);
+			if (visited.contains(node)) continue;
+			visited.add(node);
+			frontier.addAll(node.next());
+			frontier.addAll(node.prev());
+			assert(node.sanityCheck());
+		}
+		return true;
 	}
 }

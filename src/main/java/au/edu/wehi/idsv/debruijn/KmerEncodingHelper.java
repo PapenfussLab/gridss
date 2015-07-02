@@ -204,6 +204,9 @@ public class KmerEncodingHelper {
 	public static boolean lastBaseMatches(int k, long state1, long state2) {
 		return (state1 & 3L) == (state2 & 3L);
 	}
+	public static boolean firstBaseMatches(int k, long state1, long state2) {
+		return state1 >>> ((k - 1) * 2) == state2 >>> ((k - 1) * 2);
+	}
 	private static long clearBase(int k, long state) {
 		long bitsToClear = (1L << ((2*k)+1)) | (1L << (2*k));
 		return state & ~bitsToClear;

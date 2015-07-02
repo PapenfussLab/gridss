@@ -6,6 +6,8 @@ import htsjdk.samtools.util.SequenceUtil;
 
 import org.junit.Test;
 
+import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
+
 
 public class RealignedBreakpointTest extends TestHelper {
 	@Test(expected=IllegalArgumentException.class)

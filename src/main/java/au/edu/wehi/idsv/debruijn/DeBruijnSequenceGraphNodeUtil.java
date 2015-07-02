@@ -3,7 +3,12 @@ package au.edu.wehi.idsv.debruijn;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.PrimitiveIterator.OfLong;
+import java.util.stream.IntStream;
+import java.util.stream.LongStream;
+import java.util.stream.StreamSupport;
 
+import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.graph.WeightedSequenceGraphNodeUtil;
 
 
@@ -34,9 +39,38 @@ public class DeBruijnSequenceGraphNodeUtil {
 		int skipCountA = Math.max(0, lengthA - lengthB);
 		int skipCountB = Math.max(0, lengthB - lengthA);
 		// skip initial bases of the longer path
-		return basesDifferent(k, pathA, pathB, skipCountA, skipCountB);
+		int diff = basesDifferent(k, pathA, pathB, skipCountA, skipCountB); 
+		return diff;
 	}
-	private static int basesDifferent(int k, Iterable<? extends DeBruijnSequenceGraphNode> pathA, Iterable<? extends DeBruijnSequenceGraphNode> pathB, int skipCountA, int skipCountB) {
+	/**
+	 * Returns the number of bases difference between the two paths
+	 * @param k
+	 * @param pathA
+	 * @param pathB
+	 * @param forwardKmerTraversal sequence to successor next kmers 
+	 * @return number of bases difference
+	 */
+	public static int basesDifferent(int k, LongStream pathA, LongStream pathB, boolean forwardKmerTraversal) {
+		OfLong itA = pathA.iterator();
+		OfLong itB = pathB.iterator();
+		if (!itA.hasNext() || !itB.hasNext()) return 0;
+		int diff = KmerEncodingHelper.basesDifference(k, itA.nextLong(), itB.nextLong());
+		while (itA.hasNext() && itB.hasNext()) {
+			if (forwardKmerTraversal) {
+				if (!KmerEncodingHelper.lastBaseMatches(k, itA.nextLong(), itB.nextLong())) {
+					diff++;
+				}
+			} else {
+				if (!KmerEncodingHelper.firstBaseMatches(k, itA.nextLong(), itB.nextLong())) {
+					diff++;
+				}
+			}
+		}
+		return diff;
+	}
+	private static int basesDifferent(int k, Iterable<? extends DeBruijnSequenceGraphNode> pathA, Iterable<? extends DeBruijnSequenceGraphNode> pathB, final int initialSkipCountA, final int initialSkipCountB) {
+		int skipCountA = initialSkipCountA;
+		int skipCountB = initialSkipCountB;
 		int diff = 0;
 		Iterator<? extends DeBruijnSequenceGraphNode> itA = pathA.iterator();
 		Iterator<? extends DeBruijnSequenceGraphNode> itB = pathB.iterator();
@@ -80,6 +114,13 @@ public class DeBruijnSequenceGraphNodeUtil {
 					offsetB++;
 				}
 			}
+		}
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			int streamDiff = basesDifferent(k,
+					StreamSupport.stream(pathA.spliterator(), false).flatMapToLong(n -> IntStream.range(0, n.length()).mapToLong(i -> n.kmer(i))).skip(initialSkipCountA),
+					StreamSupport.stream(pathB.spliterator(), false).flatMapToLong(n -> IntStream.range(0, n.length()).mapToLong(i -> n.kmer(i))).skip(initialSkipCountB),
+					true);
+			assert(diff == streamDiff);
 		}
 		return diff;
 	}

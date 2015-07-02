@@ -34,8 +34,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 
+import au.edu.wehi.idsv.picard.BufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
-import au.edu.wehi.idsv.util.BufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.vcf.VcfConstants;
 
 import com.google.common.collect.ImmutableList;

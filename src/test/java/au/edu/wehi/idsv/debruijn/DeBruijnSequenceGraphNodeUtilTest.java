@@ -5,6 +5,8 @@ import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
+import au.edu.wehi.idsv.debruijn.positional.KmerPathNode;
+
 import com.google.common.collect.ImmutableList;
 
 
@@ -28,5 +30,15 @@ public class DeBruijnSequenceGraphNodeUtilTest extends TestHelper {
 		assertEquals(mismatches, DeBruijnSequenceGraphNodeUtil.basesDifferent(pg.getK(),
 				ImmutableList.of(pg.get(s[0].substring(0, 20))),
 				ImmutableList.of(pg.get(s[1].substring(0, 20)))));
+	}
+	@Test
+	public void split_bases_should_match_bases() {
+		KmerPathNode a1 = KPN(25, "GATCGAGACCACGGTGAAACCCCGTTTCTATTAAAAATACAAAAAATTAGCCGGGCGCGGTGGCGGGCGCCTGTAGTCCCAG", 1, 1, false);
+		KmerPathNode b1 = KPN(25, "GATCGAGACCACGGTGAAACCCCGTTTCTATTAAAA", 1, 1, false);
+		KmerPathNode b2 = KPN(25,             "GGTGAAACCCCGTTTCTATTAAAAATACAAAAAATTAGCCGGGCGCGGTGGCGGGCGCCTGTAGTCCCAG", 13, 13, false);
+		assertEquals(0, DeBruijnSequenceGraphNodeUtil.basesDifferent(25, ImmutableList.of(a1), ImmutableList.of(b1)));
+		assertEquals(0, DeBruijnSequenceGraphNodeUtil.basesDifferent(25, ImmutableList.of(a1), ImmutableList.of(b1, b2)));
+		assertEquals(0, DeBruijnSequenceGraphNodeUtil.reverseBasesDifferent(25, ImmutableList.of(a1), ImmutableList.of(b2)));
+		assertEquals(0, DeBruijnSequenceGraphNodeUtil.reverseBasesDifferent(25, ImmutableList.of(a1), ImmutableList.of(b1, b2)));
 	}
 }

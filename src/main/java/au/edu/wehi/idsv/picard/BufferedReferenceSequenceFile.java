@@ -1,4 +1,4 @@
-package au.edu.wehi.idsv.util;
+package au.edu.wehi.idsv.picard;
 
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.reference.ReferenceSequence;

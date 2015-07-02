@@ -226,6 +226,18 @@ public class KmerEncodingHelperTest extends TestHelper {
 		}
 	}
 	@Test
+	public void firstBaseMatches_should_match_first_base() {
+		assertTrue(KmerEncodingHelper.firstBaseMatches(32, P2E("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"), P2E("ATTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT")));
+		assertTrue(KmerEncodingHelper.firstBaseMatches(31, P2E("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"), P2E("ATTTTTTTTTTTTTTTTTTTTTTTTTTTTTT")));
+		assertFalse(KmerEncodingHelper.firstBaseMatches(32, P2E("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA"), P2E("TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")));
+		assertFalse(KmerEncodingHelper.firstBaseMatches(31, P2E("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAG"), P2E("TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")));
+		for (String s1: TWOMERS) {
+			for (String s2: TWOMERS) {
+				assertEquals(s1.charAt(0) == s2.charAt(0), KmerEncodingHelper.firstBaseMatches(2, P2E(s1), P2E(s2)));
+			}
+		}
+	}
+	@Test
 	public void toApproximateString_should_print_with_leading_Ts_missing() {
 		assertEquals("GG", KmerEncodingHelper.toApproximateString(P2E("GG")));
 		assertEquals("A", KmerEncodingHelper.toApproximateString(P2E("TA")));

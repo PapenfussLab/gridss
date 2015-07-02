@@ -16,7 +16,6 @@ import java.util.TreeSet;
 
 import au.edu.wehi.idsv.debruijn.DeBruijnGraph;
 import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNodeUtil;
-import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNodeUtilTest;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.positional.KmerPathNodeBasePath.TraversalNode;
 import au.edu.wehi.idsv.util.IntervalUtil;
@@ -260,9 +259,18 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 		return false;
 	}
 	private boolean areSimilarPartialPaths(KmerPathNodePath pathA, KmerPathNodePath pathB, boolean traverseForward) {
-		int basesDifference = traverseForward ?
-				DeBruijnSequenceGraphNodeUtil.basesDifferent(k, pathA.currentPath(), pathB.currentPath()) :
-				DeBruijnSequenceGraphNodeUtil.reverseBasesDifferent(k, pathA.currentPath(), pathB.currentPath());
+		int basesDifference;
+		if (traverseForward) {
+			basesDifference = DeBruijnSequenceGraphNodeUtil.basesDifferent(k, pathA.currentPath(), pathB.currentPath()); 
+		} else {
+			basesDifference = DeBruijnSequenceGraphNodeUtil.reverseBasesDifferent(k, pathA.currentPath(), pathB.currentPath());
+			//basesDifference = DeBruijnSequenceGraphNodeUtil.basesDifferent(k,
+			//		StreamSupport.stream(Spliterators.spliteratorUnknownSize(pathA.currentPath().descendingIterator(), Spliterator.ORDERED), false)
+			//			.flatMapToLong(n -> IntStream.rangeClosed(n.length() - 1, 0).mapToLong(i -> n.kmer(-i))),
+			//		StreamSupport.stream(Spliterators.spliteratorUnknownSize(pathA.currentPath().descendingIterator(), Spliterator.ORDERED), false)
+			//			.flatMapToLong(n -> IntStream.rangeClosed(n.length() - 1, 0).mapToLong(i -> n.kmer(-i))),
+			//		false);
+		}
 		return basesDifference <= maxBasesMismatch; 
 	}
 	private boolean pathsOverlap(KmerPathNodePath pathA, KmerPathNodePath pathB) {
@@ -477,6 +485,7 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 		return pn;
 	}
 	private void merge(KmerPathNode toMerge, KmerPathNode into) {
+		assert(toMerge != into);
 		assert(toMerge.lastStart() == into.lastStart());
 		assert(toMerge.lastEnd() == into.lastEnd());
 		assert(toMerge.length() == into.length());

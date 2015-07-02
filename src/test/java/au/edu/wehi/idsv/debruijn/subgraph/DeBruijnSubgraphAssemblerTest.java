@@ -17,10 +17,10 @@ import org.junit.rules.TemporaryFolder;
 import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.BreakpointSummary;
-import au.edu.wehi.idsv.InMemoryReferenceSequenceFile;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SmallIndelSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.TestHelper;
+import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
 
 import com.google.common.collect.Lists;
 

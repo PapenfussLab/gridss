@@ -1,7 +1,7 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
 import java.util.ArrayDeque;
-import java.util.Collection;
+import java.util.Deque;
 import java.util.Iterator;
 
 import com.google.common.collect.RangeSet;
@@ -82,7 +82,7 @@ public class KmerPathNodePath extends KmerPathNodeBasePath {
 			nextPath.removeFirst();
 		}
 	}
-	public Collection<KmerPathNode> currentPath() {
+	public Deque<KmerPathNode> currentPath() {
 		return path;
 	}
 	public RangeSet<Integer> terminalRanges() {
