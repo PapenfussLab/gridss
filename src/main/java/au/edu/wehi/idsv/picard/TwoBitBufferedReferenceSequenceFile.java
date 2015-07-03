@@ -20,15 +20,27 @@ import com.google.common.collect.TreeRangeSet;
  * @author cameron.d
  *
  */
-public class TwoBitBufferedReferenceSequenceFile implements ReferenceSequenceFile {
+public class TwoBitBufferedReferenceSequenceFile implements ReferenceSequenceFile, ReferenceLookup {
 	private static final Log log = Log.getInstance(TwoBitBufferedReferenceSequenceFile.class);
 	private final ReferenceSequenceFile underlying;
 	/**
 	 * Cached contigs
 	 */
 	private volatile ImmutableMap<String, PackedReferenceSequence> cache = ImmutableMap.of();
+	private PackedReferenceSequence[] referenceIndexLookup; 
+	
 	public TwoBitBufferedReferenceSequenceFile(ReferenceSequenceFile underlying) {
 		this.underlying = underlying;
+		this.referenceIndexLookup = new PackedReferenceSequence[underlying.getSequenceDictionary().getSequences().size()];
+	}
+	public byte getBase(int referenceIndex, int position) {
+		PackedReferenceSequence seq = referenceIndexLookup[referenceIndex];
+		if (seq == null) {
+			synchronized (referenceIndexLookup) {
+				seq = addToCache(underlying.getSequenceDictionary().getSequence(referenceIndex).getSequenceName());
+			}
+		}
+		return seq.get(position - 1); 
 	}
 	private class PackedReferenceSequence extends PackedSequence {
 		private final String name;
@@ -45,7 +57,12 @@ public class TwoBitBufferedReferenceSequenceFile implements ReferenceSequenceFil
 			this.length = seq.length();
 			for (int i = 0; i < length; i++) {
 				if (KmerEncodingHelper.isAmbiguous(seq.getBases()[i])) {
-					ambiguous.add(Range.closedOpen(i + 1, i + 2));
+					int end = i + 1;
+					while (end < length && KmerEncodingHelper.isAmbiguous(seq.getBases()[end])) {
+						end++;
+					}
+					ambiguous.add(Range.closedOpen(i + 1, end + 1));
+					i = end - 1;
 				}
 			}
 		}
@@ -98,6 +115,7 @@ public class TwoBitBufferedReferenceSequenceFile implements ReferenceSequenceFil
 				.putAll(cache)
 				.put(contig, seq)
 				.build();
+		referenceIndexLookup[underlying.getSequenceDictionary().getSequence(contig).getSequenceIndex()] = seq;
 		return seq;
 	}
 	@Override

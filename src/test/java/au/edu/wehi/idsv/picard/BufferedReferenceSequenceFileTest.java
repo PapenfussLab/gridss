@@ -32,4 +32,13 @@ public class BufferedReferenceSequenceFileTest extends TestHelper {
 			}
 		}
 	}
+	@Test
+	public void should_retain_Ns() throws IOException {
+		TwoBitBufferedReferenceSequenceFile b = new TwoBitBufferedReferenceSequenceFile(new InMemoryReferenceSequenceFile(new String[] { "test" }, new byte[][] { B("NANNT") }));
+		assertEquals("NANNT", S(b.getSequence("test").getBases()));
+		assertEquals("N", S(b.getSubsequenceAt("test", 1, 1) .getBases()));
+		assertEquals("A", S(b.getSubsequenceAt("test", 2, 2) .getBases()));
+		assertEquals("NAN", S(b.getSubsequenceAt("test", 1, 3) .getBases()));
+		assertEquals('A', b.getBase(0, 1));
+	}
 }

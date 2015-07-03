@@ -34,6 +34,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 
+import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.vcf.VcfConstants;
@@ -54,7 +55,7 @@ public class ProcessingContext implements Closeable {
 	 * value this huge helps with debugging as the chromosome index and offset are immediately apparent  
 	 */
 	static final long LINEAR_COORDINATE_CHROMOSOME_BUFFER = 10000000000L;
-	private final ReferenceSequenceFile reference;
+	private final ReferenceLookup reference;
 	private final File referenceFile;
 	//private final File referenceFile;
 	private final SAMSequenceDictionary dictionary;
@@ -84,16 +85,14 @@ public class ProcessingContext implements Closeable {
 			File ref, boolean perChr, boolean vcf41) {
 		this(fileSystemContext, metricsHeaders, softClipParameters, readPairParameters, assemblyParameters, realignmentParameters, variantCallingParameters, LoadReference(ref), ref, perChr, vcf41);
 	}
-	private static ReferenceSequenceFile LoadReference(File ref) {
+	private static ReferenceLookup LoadReference(File ref) {
 		try {
-			ReferenceSequenceFile refToUse = new IndexedFastaSequenceFile(ref);
+			ReferenceSequenceFile underlying = new IndexedFastaSequenceFile(ref);
 			if (ref.length() > Runtime.getRuntime().maxMemory() / 2) {
 				log.error("Caching reference fasta in memory would require more than 50% of the memory allocated to the JVM. Allocate more memory to the JVM.");
 				throw new RuntimeException("Not enough memory to cache reference fasta.");
-			} else {
-				refToUse = new TwoBitBufferedReferenceSequenceFile(refToUse);
 			}
-			return refToUse;
+			return new TwoBitBufferedReferenceSequenceFile(underlying);
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException("Unabled load fasta " + ref, e);
 		}
@@ -106,7 +105,7 @@ public class ProcessingContext implements Closeable {
 			AssemblyParameters assemblyParameters,
 			RealignmentParameters realignmentParameters,
 			VariantCallingParameters variantCallingParameters,
-			ReferenceSequenceFile reference, File ref, boolean perChr, boolean vcf41) {
+			ReferenceLookup reference, File ref, boolean perChr, boolean vcf41) {
 		this.fsContext = fileSystemContext;
 		this.metricsHeaders = metricsHeaders;
 		this.scp = softClipParameters;
@@ -243,7 +242,7 @@ public class ProcessingContext implements Closeable {
 	public SAMFileHeader getBasicSamHeader() {
 		return basicHeader;
 	}
-	public ReferenceSequenceFile getReference() {
+	public ReferenceLookup getReference() {
 		return reference;
 	}
 	public File getReferenceFile() {

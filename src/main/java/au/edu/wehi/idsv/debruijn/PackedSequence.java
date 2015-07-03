@@ -19,7 +19,7 @@ public class PackedSequence {
 	 */
 	protected final int[] packed;
 	protected static int[] pack(byte[] bases, boolean reverse, boolean complement) {
-		int[] packed = new int[IntMath.divide(bases.length, Byte.SIZE / 2, RoundingMode.CEILING)];
+		int[] packed = new int[IntMath.divide(bases.length, BASES_PER_WORD, RoundingMode.CEILING)];
 		int currentWord = 0;
 		int packedIntoCurrentWord = 0;
 		int currentOffset = 0;
@@ -46,13 +46,17 @@ public class PackedSequence {
 	public PackedSequence(byte[] bases, boolean reverse, boolean complement) {
 		this.packed = pack(bases, reverse, complement);
 	}
+	public byte get(int offset) {
+		int wordIndex = (offset) / BASES_PER_WORD;
+		int wordOffset = BASES_PER_WORD - ((offset) % BASES_PER_WORD) - 1;
+		byte b = KmerEncodingHelper.encodedToPicardBase(packed[wordIndex] >>> (wordOffset * BITS_PER_BASE));
+		return b;
+	}
 	public byte[] getBytes(int offset, int length) {
 		assert(offset + length <= packed.length * BASES_PER_WORD);
 		byte[] seq = new byte[length];
 		for (int i = 0; i < length; i++) {
-			int wordIndex = (offset + i) / BASES_PER_WORD;
-			int wordOffset = BASES_PER_WORD - ((offset + i) % BASES_PER_WORD) - 1;
-			seq[i] = KmerEncodingHelper.encodedToPicardBase(packed[wordIndex] >>> (wordOffset * BITS_PER_BASE));
+			seq[i] = get(offset + i);
 		}
 		return seq;
 	}

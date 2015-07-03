@@ -2,12 +2,12 @@ package au.edu.wehi.idsv;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.SequenceUtil;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 public class RealignedBreakpoint {
@@ -23,10 +23,10 @@ public class RealignedBreakpoint {
 		this.locallyMappedHomologyBaseCount = locallyMappedHomologyBaseCount;
 		this.exact = exact;
 	}
-	public static RealignedBreakpoint create(ReferenceSequenceFile reference, SAMSequenceDictionary dictionary, BreakendSummary local, String anchoredSequence, SAMRecord realigned) {
+	public static RealignedBreakpoint create(ReferenceLookup reference, SAMSequenceDictionary dictionary, BreakendSummary local, String anchoredSequence, SAMRecord realigned) {
 		return create(reference,dictionary, local, anchoredSequence.getBytes(StandardCharsets.US_ASCII), realigned);
 	}
-	public static RealignedBreakpoint create(ReferenceSequenceFile reference, SAMSequenceDictionary dictionary, BreakendSummary local, byte[] anchoredSequence, SAMRecord realigned) {
+	public static RealignedBreakpoint create(ReferenceLookup reference, SAMSequenceDictionary dictionary, BreakendSummary local, byte[] anchoredSequence, SAMRecord realigned) {
 		if (realigned.getReadUnmappedFlag()) throw new IllegalArgumentException("Realigned read is not mapped");
 		if (local == null) {
 			// No breakpoint if no breakend
@@ -134,7 +134,7 @@ public class RealignedBreakpoint {
 	 * @return microhomology
 	 */
 	private static String calculateMicrohomology(
-			ReferenceSequenceFile reference,
+			ReferenceLookup reference,
 			SAMSequenceDictionary dictionary,
 			BreakendDirection anchorDirection,
 			byte[] anchoredSequence,
@@ -145,7 +145,7 @@ public class RealignedBreakpoint {
 		// anchored sequence: TTTAAAAA>
 		// realign reference: GGGAAAAA
 		if (realignReferenceIndex == null || realignReferenceIndex < 0 || realignReferenceIndex >= reference.getSequenceDictionary().size()) return "";
-		byte[] ref = reference.getSequence(dictionary.getSequence(realignReferenceIndex).getSequenceName()).getBases();
+		//byte[] ref = reference.getSequence(dictionary.getSequence(realignReferenceIndex).getSequenceName()).getBases();
 		// set up traversal iterators
 		int firstAnchorBase = 0;
 		int anchorInc = 1;
@@ -158,7 +158,11 @@ public class RealignedBreakpoint {
 			realignInc = -1;
 		}
 		int i = 0;
-		while (i < anchoredSequence.length && basesMatch(anchoredSequence[firstAnchorBase + anchorInc * i], ref, realignPosition + realignInc * (i + 1), anchorDirection == realignDirection)) {
+		while (i < anchoredSequence.length && basesMatch(
+				anchoredSequence[firstAnchorBase + anchorInc * i],
+				reference, realignReferenceIndex,
+				realignPosition + realignInc * (i + 1),
+				anchorDirection == realignDirection)) {
 			i++;
 		}
 		if (anchorDirection == BreakendDirection.Forward) {
@@ -167,11 +171,10 @@ public class RealignedBreakpoint {
 			return new String(anchoredSequence, 0, i);
 		}
 	}
-	private static boolean basesMatch(byte base, byte[] reference, int referenceGenomicPosition, boolean complementBase) {
-		int refOffset = referenceGenomicPosition - 1;
-		if (refOffset < 0 || refOffset >= reference.length) return false;
+	private static boolean basesMatch(byte base, ReferenceLookup reference, int referenceIndex, int referenceGenomicPosition, boolean complementBase) {
+		if (referenceGenomicPosition < 1 || referenceGenomicPosition > reference.getSequenceDictionary().getSequence(referenceIndex).getSequenceLength()) return false;
 		int c1 = Character.toUpperCase(complementBase ? SequenceUtil.complement(base) : base);
-		int c2 = Character.toUpperCase(reference[refOffset]);
+		int c2 = Character.toUpperCase(reference.getBase(referenceIndex, referenceGenomicPosition));
 		// require exact base matching (any case)
 		return c1 == c2 && c1 != 'N';
 	}

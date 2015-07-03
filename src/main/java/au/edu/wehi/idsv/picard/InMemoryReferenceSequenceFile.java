@@ -3,7 +3,6 @@ package au.edu.wehi.idsv.picard;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.reference.ReferenceSequence;
-import htsjdk.samtools.reference.ReferenceSequenceFile;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -14,7 +13,7 @@ import java.util.Arrays;
  * @author cameron.d
  *
  */
-public class InMemoryReferenceSequenceFile implements ReferenceSequenceFile {
+public class InMemoryReferenceSequenceFile implements ReferenceLookup {
 	private SAMSequenceDictionary dictionary;
 	private byte[][] sequences;
 	private int referenceIndex = 0;
@@ -58,5 +57,9 @@ public class InMemoryReferenceSequenceFile implements ReferenceSequenceFile {
 	}
 	@Override
 	public void close() throws IOException {
+	}
+	@Override
+	public byte getBase(int referenceIndex, int position) {
+		return sequences[referenceIndex][position - 1];
 	}
 }
