@@ -65,7 +65,9 @@ public class KmerPathNodeKmerNode implements KmerNode {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + node.hashCode();
+		long kmer = node.firstKmer();
+		result = prime * result + (int) (kmer ^ (kmer >>> 32));
+		result = prime * result + node.firstStart();
 		result = prime * result + offset;
 		return result;
 	}
@@ -85,7 +87,8 @@ public class KmerPathNodeKmerNode implements KmerNode {
 		@Override
 		public int compare(KmerPathNodeKmerNode left, KmerPathNodeKmerNode right) {
 			return ComparisonChain.start()
-					.compare(left.node, right.node, KmerNodeUtil.ByLastEndStartKmerReference)
+					.compare(left.node.firstKmer(), right.node.firstKmer())
+					.compare(left.node.firstStart(), right.node.firstStart())
 					.compare(left.offsetOfPrimaryKmer(), right.offsetOfPrimaryKmer())
 					.result();
 		}

@@ -2,13 +2,14 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Object2ObjectRBTreeMap;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedSet;
@@ -39,12 +40,6 @@ import com.google.common.collect.Iterators;
  */
 public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssemblyEvidence> {
 	private Long2ObjectMap<Collection<KmerPathNodeKmerNode>> graphByKmerNode = new Long2ObjectOpenHashMap<Collection<KmerPathNodeKmerNode>>();
-	/**
-	 * Weights to remove from each kmer path. removeWeight() relies on the following properties of the iterator:
-	 * - KmerPathNodes are adjacent, and in ascending order of kmer offset
-	 * - traversal does not invoke comparator
-	 */ 
-	private Object2ObjectRBTreeMap<KmerPathNodeKmerNode, List<KmerNode>> weightToRemove = new Object2ObjectRBTreeMap<KmerPathNodeKmerNode, List<KmerNode>>(KmerPathNodeKmerNode.ByKmerPathNodeOffset);
 	private SortedSet<KmerPathNode> graphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByLastStartEndKmerReferenceWeight);
 	private final EvidenceTracker evidenceTracker;
 	private final AssemblyEvidenceSource aes;
@@ -188,46 +183,47 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	 * @param evidence
 	 */
 	private void removeFromGraph(Set<KmerEvidence> evidence) {
+		Map<KmerPathNode, List<List<KmerNode>>> toRemove = new IdentityHashMap<KmerPathNode, List<List<KmerNode>>>();
 		for (KmerEvidence e : evidence) {
 			for (int i = 0; i < e.length(); i++) {
 				KmerSupportNode support = e.node(i);
 				if (support != null) {
 					assert(support.lastEnd() <= wrapper.lastPosition());
-					addToRemovalList(support);
+					updateRemovalList(toRemove, support);
 				}
 			}
 		}
-		removeWeight();
+		for (Entry<KmerPathNode, List<List<KmerNode>>> entry : toRemove.entrySet()) {
+			removeWeight(entry.getKey(), entry.getValue());
+		}
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
 			assert(sanityCheck());
 		}
 	}
-	/**
-	 * Remove all indicated weight from the graph
-	 */
-	private void removeWeight() {
-		KmerPathNode current = null;
-		List<List<KmerNode>> toRemove = null;
-		// WARNING: this loop is dangerous in that we're mutating the 
-		// comparator value of the current node as we traverse the tree
-		// Fortunately, we don't change the tree structure as we traverse
-		// and we immediately clear() the entire tree once we've traversed
-		// so we're ok.
-		for (Entry<KmerPathNodeKmerNode, List<KmerNode>> entry : weightToRemove.entrySet()) {
-			KmerPathNodeKmerNode node = entry.getKey();
-			if (node.node() != current) {
-				removeWeight(current, toRemove);
-				current = node.node();
-				toRemove = new ArrayList<List<KmerNode>>(node.node().length());
+	private void updateRemovalList(Map<KmerPathNode, List<List<KmerNode>>> toRemove, KmerSupportNode support) {
+		for (KmerPathNodeKmerNode n : graphByKmerNode.get(support.lastKmer())) {
+			if (IntervalUtil.overlapsClosed(support.lastStart(), support.lastEnd(), n.lastStart(), n.lastEnd())) {
+				updateRemovalList(toRemove, n, support);
 			}
-			int offset = node.offsetOfPrimaryKmer();
-			while (toRemove.size() < offset) {
-				toRemove.add(null);
-			}
-			toRemove.add(entry.getValue());
 		}
-		removeWeight(current, toRemove);
-		weightToRemove.clear();
+	}
+	private void updateRemovalList(Map<KmerPathNode, List<List<KmerNode>>> toRemove, KmerPathNodeKmerNode node, KmerSupportNode support) {
+		KmerPathNode pn = node.node();
+		List<List<KmerNode>> list = toRemove.get(pn);
+		if (list == null) {
+			list = new ArrayList<List<KmerNode>>(pn.length());
+			toRemove.put(pn, list);
+		}
+		int offset = node.offsetOfPrimaryKmer();
+		while (list.size() <= offset) {
+			list.add(null);
+		}
+		List<KmerNode> evidenceList = list.get(offset); 
+		if (evidenceList == null) {
+			evidenceList = new ArrayList<KmerNode>();
+			list.set(offset, evidenceList);
+		}
+		evidenceList.add(support);
 	}
 	private void removeWeight(KmerPathNode node, List<List<KmerNode>> toRemove) {
 		if (node == null) return;
@@ -240,19 +236,6 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 				assert(evidenceTracker.matchesExpected(new KmerPathSubnode(split)));
 			}
 			addToGraph(split);
-		}
-	}
-	private void addToRemovalList(KmerNode support) {
-		// find all KmerPathNodeKmerNode matching our support node
-		for (KmerPathNodeKmerNode n : graphByKmerNode.get(support.lastKmer())) {
-			if (IntervalUtil.overlapsClosed(support.lastStart(), support.lastEnd(), n.lastStart(), n.lastEnd())) {
-				List<KmerNode> list = weightToRemove.get(n);
-				if (list == null) {
-					list = new ArrayList<KmerNode>();
-					weightToRemove.put(n, list);
-				}
-				list.add(support);
-			}
 		}
 	}
 	private void addToGraph(KmerPathNode node) {
@@ -274,19 +257,19 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		}
 	}
 	private void addToGraph(KmerPathNodeKmerNode node) {
-		Collection<KmerPathNodeKmerNode> list = graphByKmerNode.get(node.lastKmer());
+		Collection<KmerPathNodeKmerNode> list = graphByKmerNode.get(node.firstKmer());
 		if (list == null) {
 			list = new ArrayList<KmerPathNodeKmerNode>();
-			graphByKmerNode.put(node.lastKmer(), list);
+			graphByKmerNode.put(node.firstKmer(), list);
 		}
 		list.add(node);
 	}
 	private void removeFromGraph(KmerPathNodeKmerNode node) {
-		Collection<KmerPathNodeKmerNode> list = graphByKmerNode.get(node.lastKmer());
+		Collection<KmerPathNodeKmerNode> list = graphByKmerNode.get(node.firstKmer());
 		if (list == null) return;
 		list.remove(node);
 		if (list.size() == 0) {
-			graphByKmerNode.remove(node.lastKmer());
+			graphByKmerNode.remove(node.firstKmer());
 		}
 	}
 	/**

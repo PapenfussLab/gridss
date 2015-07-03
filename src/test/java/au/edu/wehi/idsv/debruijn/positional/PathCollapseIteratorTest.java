@@ -38,7 +38,7 @@ public class PathCollapseIteratorTest extends TestHelper {
 	}
 	private static List<KmerPathNode> go(int k, int maxPathCollapseLength, int maxBasesMismatch, List<KmerPathNode> pnList) {
 		int pnTotalWeight = totalWeight(pnList);
-		PathCollapseIterator pcit = new PathCollapseIterator(pnList.iterator(), k, maxPathCollapseLength, maxBasesMismatch, false);
+		PathCollapseIterator pcit = new PathCollapseIterator(pnList.iterator(), k, maxPathCollapseLength, maxBasesMismatch, false, 0);
 		ArrayList<KmerPathNode> result = Lists.newArrayList(pcit);
 		assertEquals(pnTotalWeight, totalWeight(result));
 		return result;

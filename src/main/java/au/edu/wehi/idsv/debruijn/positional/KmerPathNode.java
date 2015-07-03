@@ -61,9 +61,9 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	 * Last possible position of final kmer
 	 */
 	public int lastEnd() { return endPosition(length() - 1); }
-	public int firstStart() { return startPosition(0); }
-	public int firstEnd() { return endPosition(0); }
-	public long kmer(int offset) { return kmers.get(offset); }
+	public int firstStart() { return start; }
+	public int firstEnd() { return end; }
+	public long kmer(int offset) { return kmers.getLong(offset); }
 	public int startPosition(int offset) { return start + offset; }
 	public int endPosition(int offset) { return end + offset; }
 	public int weight() { return totalWeight; }
@@ -239,13 +239,6 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		assert(toMerge.firstStart() == firstStart());
 		assert(toMerge.firstEnd() == firstEnd());
 		assert(toMerge.length() == length());
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
-			for (int i = 0; i < toMerge.length(); i++) {
-				int temphack = 42; // TODO:: FIXME:: remove hack
-				//assert(KmerEncodingHelper.basesDifference(25, kmer(i), toMerge.kmer(i)) <= 4);
-			}
-			sanityCheck();
-		}
 		reference |= toMerge.reference;
 		if (additionalKmers == null) {
 			additionalKmers = toMerge.additionalKmers;
@@ -981,14 +974,15 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		assert(EMPTY_KMER_LIST != null && EMPTY_KMER_LIST.size() == 0); // fastutil doesn't have ImmutableList wrappers
 		assert((additionalKmerOffsets == null && additionalKmers == null) || (additionalKmerOffsets != null && additionalKmers != null));
 		assert((additionalKmerOffsets == null && additionalKmers == null) || additionalKmerOffsets.size() == additionalKmers.size());
-		if (additionalKmers != null) {
-			for (int i = 0; i < additionalKmers.size(); i++) {
-				assert(additionalKmerOffsets.getInt(i) < length());
-				long pathKmer = kmer(additionalKmerOffsets.getInt(i));
-				long altKmer = additionalKmers.get(i);
-				//assert(KmerEncodingHelper.basesDifference(KmerEncodingHelper.MAX_K, altKmer, pathKmer) < 10);
-			}
-		}
+		//if (additionalKmers != null) {
+		//	for (int i = 0; i < additionalKmers.size(); i++) {
+		//		assert(additionalKmerOffsets.getInt(i) < length());
+		//		long pathKmer = kmer(additionalKmerOffsets.getInt(i));
+		//		long altKmer = additionalKmers.get(i);
+		//		// difference is unbounded unless only collapsing bubbles and leaves
+		//		assert(KmerEncodingHelper.basesDifference(KmerEncodingHelper.MAX_K, altKmer, pathKmer) < 10);
+		//	}
+		//}
 		//if (EvidenceTracker.TEMP_HACK_CURRENT_TRACKER != null) {
 		//	EvidenceTracker.TEMP_HACK_CURRENT_TRACKER.matchesExpected(new KmerPathSubnode(this));
 		//}
