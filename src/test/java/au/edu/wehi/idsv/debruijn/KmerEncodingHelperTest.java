@@ -18,12 +18,12 @@ public class KmerEncodingHelperTest extends TestHelper {
 	public long P2E(String bases) {
 		return KmerEncodingHelper.picardBaseToEncoded(bases.length(), B(bases));
 	}
-	private static final String[] TWOMERS = new String[] {
+	public static final String[] TWOMERS = new String[] {
 		"AA", "AC", "AG", "AT",
 		"CA", "CC", "CG", "CT",
 		"GA", "GC", "GG", "GT",
 		"TA", "TC", "TG", "TT",
-};
+	};
 	@Test
 	public void picardBaseToEncoded_should_use_blat_2bit_base_encoding() {
 		assertEquals(0,  KmerEncodingHelper.picardBaseToEncoded(1, new byte[] {'T'}));

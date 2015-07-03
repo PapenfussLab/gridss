@@ -25,17 +25,22 @@ public class SequenceUtil {
 					break;
 			}
 		}
-		int sum = a + c + g + t;
-		double entropy = 0;
-		entropy += shannon(a, sum);
-		entropy += shannon(c, sum);
-		entropy += shannon(g, sum);
-		entropy += shannon(t, sum);
-		return entropy;
+		return shannonEntropy(new int[] { a, c, g, t });
 	}
 	private static double shannon(int n, int total) {
 		if (n == 0) return 0;
 		double pr = n / (double)total;
 		return -pr * Math.log(pr) / Math.log(2); 
+	}
+	public static double shannonEntropy(int[] counts) {
+		int sum = 0;
+		for (int i = 0; i < counts.length; i++) {
+			sum += counts[i];
+		}
+		double entropy = 0;
+		for (int i = 0; i < counts.length; i++) {
+			entropy +=  shannon(counts[i], sum);
+		}
+		return entropy;
 	}
 }

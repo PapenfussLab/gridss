@@ -34,7 +34,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 
-import au.edu.wehi.idsv.picard.BufferedReferenceSequenceFile;
+import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.vcf.VcfConstants;
 
@@ -91,7 +91,7 @@ public class ProcessingContext implements Closeable {
 				log.error("Caching reference fasta in memory would require more than 50% of the memory allocated to the JVM. Allocate more memory to the JVM.");
 				throw new RuntimeException("Not enough memory to cache reference fasta.");
 			} else {
-				refToUse = new BufferedReferenceSequenceFile(refToUse);
+				refToUse = new TwoBitBufferedReferenceSequenceFile(refToUse);
 			}
 			return refToUse;
 		} catch (FileNotFoundException e) {

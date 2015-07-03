@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.debruijn;
 
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -48,7 +50,7 @@ public class KmerEncodingHelper {
 	 * @param base ASCII byte representation of base
 	 * @return 2bit representation of base
 	 */
-	public static long picardBaseToEncoded(byte base) {
+	public static int picardBaseToEncoded(byte base) {
 		switch (base) {
 			case 'G':
 			case 'g':
@@ -114,7 +116,7 @@ public class KmerEncodingHelper {
 	public static long reverseComplement(int k, long encoded) {
 		return reverse(k, complement(k, encoded));
 	}
-	private static byte encodedToPicardBase(long encoded) {
+	public static byte encodedToPicardBase(int encoded) {
 		switch ((int)encoded & 0x03) {
 			case 3: return 'G';
 			case 1: return 'C';
@@ -122,6 +124,9 @@ public class KmerEncodingHelper {
 			default:
 			case 2: return 'A';
 		}
+	}
+	public static byte encodedToPicardBase(long encoded) {
+		return encodedToPicardBase((int)encoded);
 	}
 	public static byte firstBaseEncodedToPicardBase(int k, long state) {
 		return encodedToPicardBase(state >>> (2 * (k - 1)));
@@ -282,5 +287,21 @@ public class KmerEncodingHelper {
 			}
 		}
 		return diffCount;
+	}
+	/**
+	 * Sums base counts for the given sequence
+	 * @return
+	 */
+	public static int[] baseCounts(int k, LongArrayList path) {
+		int[] counts = new int[4];
+		long startKmer = path.getLong(0);
+		for (int i = 0; i < k; i++) {
+			counts[(int)startKmer & 3]++;
+			startKmer >>>= 2;
+		}
+		for (int i = 1; i < path.size(); i++) {
+			counts[(int)path.getLong(i) & 3]++;
+		}
+		return counts;
 	}
 }
