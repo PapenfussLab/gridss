@@ -39,6 +39,7 @@ import com.google.common.collect.Lists;
 
 public class AssemblyEvidenceSource extends EvidenceSource {
 	private static final Log log = Log.getInstance(AssemblyEvidenceSource.class);
+	private static final int PROGRESS_UPDATE_INTERVAL_SECONDS = 10;
 	private final List<SAMEvidenceSource> source;
 	private final int maxSourceFragSize;
 	private final int minSourceFragSize;
@@ -342,6 +343,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			// Maximum value that the assembly SAM position differs from the assembly location
 			int maxBreakendOffset = 0;
 			try {
+				long nextProgress = System.currentTimeMillis();
 				SAMFileHeader samHeader = new SAMFileHeader();
 				samHeader.setSequenceDictionary(getContext().getReference().getSequenceDictionary());
 				samHeader.setSortOrder(SortOrder.unsorted);
@@ -357,6 +359,10 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 							maxBreakendOffset = Math.max(maxBreakendOffset, Math.abs(record.getAlignmentStart() - ((BreakpointSummary)ass.getBreakendSummary()).start2)); 
 						}
 						writer.addAlignment(record);
+						if (System.currentTimeMillis() > nextProgress) {
+							nextProgress = System.currentTimeMillis() + 1000 * PROGRESS_UPDATE_INTERVAL_SECONDS;
+							log.info(String.format("Assembled up to %s:%d", getContext().getDictionary().getSequence(ass.getBreakendSummary().referenceIndex).getSequenceName(), ass.getBreakendSummary().start));
+						}
 					}
 				}
 				writer.close();
