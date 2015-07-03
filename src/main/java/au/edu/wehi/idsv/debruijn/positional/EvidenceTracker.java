@@ -124,8 +124,8 @@ public class EvidenceTracker implements Iterator<KmerSupportNode> {
 			LongArrayList kmers = new LongArrayList();
 			kmers.add(pn.kmer(i));
 			for (int j = 0; j < pn.node().collapsedKmerOffsets().size(); j++) {
-				if (pn.node().collapsedKmerOffsets().get(j) == i) {
-					kmers.add(pn.node().collapsedKmers().get(j));
+				if (pn.node().collapsedKmerOffsets().getInt(j) == i) {
+					kmers.add(pn.node().collapsedKmers().getLong(j));
 				}
 			}
 			if (!matchesExpected(pn.weight(i) * pn.width(), kmers, pn.firstStart() + i, pn.firstEnd() + i)) {
