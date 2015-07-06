@@ -72,9 +72,9 @@ public class EvidenceTracker implements Iterator<KmerSupportNode> {
 					it.remove();
 				}
 			}
-		}
-		if (list.size() == 0) {
-			lookup.remove(kmer);
+			if (list.size() == 0) {
+				lookup.remove(kmer);
+			}
 		}
 	}
 	/**

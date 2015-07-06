@@ -74,9 +74,9 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 		} else {
 			throw new RuntimeException("Assembler able to process only soft clip and read pair evidence");
 		}
+		List<KmerSupportNode> supportNodes = new ArrayList<KmerSupportNode>(e.length());
+		boolean hasNonReference = false;
 		for (int i = 0; i < e.length(); i++) {
-			List<KmerSupportNode> supportNodes = new ArrayList<KmerSupportNode>(e.length());
-			boolean hasNonReference = false;
 			KmerSupportNode support = e.node(i); 
 			if (support != null) {
 				// max sure that we are actually able to resort into kmer order
@@ -85,15 +85,15 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 				supportNodes.add(support);
 				hasNonReference |= !support.isReference();
 			}
-			if (hasNonReference) {
-				// only add evidence that proves support for an SV
-				// If we have no non-reference kmers then we might
-				// never call a contig containing this evidence thus
-				// never remove it from the graph
-				// SC or RPs with no non-reference kmers can occur when
-				// an ambiguous base case exist in the soft clip/mate  
-				buffer.addAll(supportNodes);
-			}
+		}
+		if (hasNonReference) {
+			// only add evidence that proves support for an SV
+			// If we have no non-reference kmers then we might
+			// never call a contig containing this evidence thus
+			// never remove it from the graph
+			// SC or RPs with no non-reference kmers can occur when
+			// an ambiguous base case exist in the soft clip/mate  
+			buffer.addAll(supportNodes);
 		}
 	}
 	@Override
