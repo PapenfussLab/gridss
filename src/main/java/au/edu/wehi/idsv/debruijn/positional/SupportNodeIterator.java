@@ -18,7 +18,7 @@ import com.google.common.collect.PeekingIterator;
  * @author Daniel Cameron
  *
  */
-public class SupportNodeIterator implements Iterator<KmerSupportNode> {
+public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 	private final PeekingIterator<DirectedEvidence> underlying;
 	private final int k;
 	/**
@@ -81,6 +81,8 @@ public class SupportNodeIterator implements Iterator<KmerSupportNode> {
 			if (support != null) {
 				// max sure that we are actually able to resort into kmer order
 				assert(support.firstStart() >= de.getBreakendSummary().start - maxSupportStartPositionOffset);
+				assert(support.weight() > 0);
+				supportNodes.add(support);
 				hasNonReference |= !support.isReference();
 			}
 			if (hasNonReference) {
@@ -106,6 +108,11 @@ public class SupportNodeIterator implements Iterator<KmerSupportNode> {
 		assert(node.lastStart() >= lastPosition);
 		lastPosition = node.lastStart();		
 		return node;
+	}
+	@Override
+	public KmerSupportNode peek() {
+		ensureBuffer();
+		return buffer.peek();
 	}
 	private void ensureBuffer() {
 		while (underlying.hasNext() && (buffer.isEmpty() || buffer.peek().lastStart() > inputPosition - emitOffset)) {

@@ -20,7 +20,7 @@ import com.google.common.primitives.Longs;
  * @author Daniel Cameron
  *
  */
-public class AggregateNodeIterator implements Iterator<KmerNode> {
+public class AggregateNodeIterator implements PeekingIterator<KmerNode> {
 	private final PeekingIterator<? extends KmerNode> underlying;
 	private PriorityQueue<ImmutableKmerNode> outputSortBuffer = new PriorityQueue<ImmutableKmerNode>(1024, KmerNodeUtil.ByFirstStart);
 	private Long2ObjectOpenHashMap<KmerNodeAggregator> byKmer = new Long2ObjectOpenHashMap<KmerNodeAggregator>();
@@ -40,6 +40,11 @@ public class AggregateNodeIterator implements Iterator<KmerNode> {
 	public KmerNode next() {
 		ensureBuffer();
 		return outputSortBuffer.poll();
+	}
+	@Override
+	public KmerNode peek() {
+		ensureBuffer();
+		return outputSortBuffer.peek();
 	}
 	private void ensureBuffer() {
 		// we can emit whenever there are no unprocessed or incomplete intervals

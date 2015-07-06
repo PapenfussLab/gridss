@@ -45,19 +45,24 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 		ensureAssembler();
 		return currentAssembler.next();
 	}
-	private void ensureAssembler() {
-		while ((currentAssembler == null || !currentAssembler.hasNext()) && it.hasNext()) {
-			if (!currentAssembler.hasNext()) {
-				if (currentAssembler.getExportTracker() != null) {
-					try {
-						currentAssembler.getExportTracker().close();
-					} catch (IOException e) {
-						log.debug(e);
-					}
+	private void flushIfRequired() {
+		if (currentAssembler != null && !currentAssembler.hasNext()) {
+			if (currentAssembler.getExportTracker() != null) {
+				try {
+					currentAssembler.getExportTracker().close();
+				} catch (IOException e) {
+					log.debug(e);
 				}
 			}
+			currentAssembler = null;
+		}
+	}
+	private void ensureAssembler() {
+		flushIfRequired();
+		while ((currentAssembler == null || !currentAssembler.hasNext()) && it.hasNext()) {
 			// traverse contigs until we find one that has an assembly to call
 			currentAssembler = createAssembler();
+			flushIfRequired();
 		}
 	}
 	private NonReferenceContigAssembler createAssembler() {

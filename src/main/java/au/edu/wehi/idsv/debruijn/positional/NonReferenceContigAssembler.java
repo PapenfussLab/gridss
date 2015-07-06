@@ -108,7 +108,13 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	private SAMRecordAssemblyEvidence nextContig() {
 		BestNonReferenceContigCaller bestCaller = new BestNonReferenceContigCaller(Iterators.concat(graphByPosition.iterator(), wrapper), maxEvidenceDistance);
 		ArrayDeque<KmerPathSubnode> contig = bestCaller.bestContig();
-		if (contig == null) return null;
+		if (exportTracker != null) {
+			exportTracker.trackAssembly(bestCaller);
+		}
+		if (contig == null) {
+			assert(!wrapper.hasNext());
+			return null;
+		}
 		return callContig(contig);
 	}
 	private SAMRecordAssemblyEvidence callContig(ArrayDeque<KmerPathSubnode> contig) {
@@ -314,6 +320,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		});
 		for (KmerPathNode n : graphByPosition) {
 			assert(n.isValid());
+			assert(evidenceTracker.matchesExpected(new KmerPathSubnode(n)));
 		}
 		return true;
 	}
@@ -325,6 +332,9 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	}
 	public long tracking_underlyingConsumed() {
 		return consumed;
+	}
+	public int tracking_inputPosition() {
+		return wrapper.lastPosition();
 	}
 	public int tracking_firstPosition() {
 		if (graphByPosition.size() == 0) return Integer.MAX_VALUE;

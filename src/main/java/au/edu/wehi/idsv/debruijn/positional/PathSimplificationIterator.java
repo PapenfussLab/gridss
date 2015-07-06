@@ -50,7 +50,7 @@ import com.google.common.collect.PeekingIterator;
  * @author cameron.d
  *
  */
-public class PathSimplificationIterator implements Iterator<KmerPathNode> {
+public class PathSimplificationIterator implements PeekingIterator<KmerPathNode> {
 	private final ObjectOpenCustomHashSet<KmerPathNode> endLookup = new ObjectOpenCustomHashSet<KmerPathNode>(new KmerNodeUtil.HashByLastEndKmer<KmerPathNode>());
 	/**
 	 * Always merge with earlier nodes. Ordering by end position ensures that
@@ -160,6 +160,11 @@ public class PathSimplificationIterator implements Iterator<KmerPathNode> {
 		endLookup.remove(node);
 		assert(!couldMergeToIncludeKmerAt(node, inputPosition));
 		return node;
+	}
+	@Override
+	public KmerPathNode peek() {
+		ensureBuffer();
+		return processed.first();
 	}
 	private void ensureBuffer() {
 		while (inputPosition < Integer.MAX_VALUE && (processed.isEmpty() || couldMergeToIncludeKmerAt(processed.first(), inputPosition))) {

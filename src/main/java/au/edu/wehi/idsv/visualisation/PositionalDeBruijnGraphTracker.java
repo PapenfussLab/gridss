@@ -8,11 +8,12 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayDeque;
 
 import au.edu.wehi.idsv.debruijn.positional.AggregateNodeIterator;
 import au.edu.wehi.idsv.debruijn.positional.BestNonReferenceContigCaller;
-import au.edu.wehi.idsv.debruijn.positional.BestNonReferenceContigCaller.Contig;
 import au.edu.wehi.idsv.debruijn.positional.EvidenceTracker;
+import au.edu.wehi.idsv.debruijn.positional.KmerPathSubnode;
 import au.edu.wehi.idsv.debruijn.positional.NonReferenceContigAssembler;
 import au.edu.wehi.idsv.debruijn.positional.PathCollapseIterator;
 import au.edu.wehi.idsv.debruijn.positional.PathNodeIterator;
@@ -54,8 +55,8 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 	}
 	public void writeHeader() throws IOException {
 		if (writer == null) return;
-		writer.write("supportPosition,aggregatePosition,pathNodePosition,collapsePosition,simplifyPosition,firstContigPosition,calledContigPosition,assemblerPosition");
-		writer.write(",supportConsumed,aggregateConsumed,pathNodeConsumed,collapseConsumed,simplifyConsumed,contigConsumed,assemblerConsumed");
+		writer.write("supportPosition,aggregatePosition,pathNodePosition,collapsePosition,simplifyPosition,firstContigPosition,calledContigPosition,assemblerPosition,assemblerFirstPosition");
+		writer.write(",supportConsumed,aggregateConsumed,pathNodeConsumed,collapseConsumed,simplifyConsumed,contigConsumed,assemblerConsumed,trackerConsumed");
 		writer.write(",supportProcessedSize");
 		writer.write(",aggregateProcessedSize,aggregateQueueSize,aggregateActiveKmers,");
 		writer.write("pathNodeProcessedSize,pathNodeActiveSize,pathNodeEdgeLookupSize,pathNodePathLookupSize");
@@ -65,10 +66,12 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 		writer.write(",contigCount,contigFrontierSize,contigMemoizedCount,contigUnprocessedSize");
 		writer.write(",assemblyActiveSize");
 		writer.write(",aggregateKmerMaxActive,aggregateActiveNodes,pathNodeEdgeMaxActive,pathNodePathMaxActive,trackerMaxKmerSupport,assemblyMaxActive");
+		writer.write('\n');
 	}
-	public void trackAssembly(BestNonReferenceContigCaller caller, Contig called) throws IOException {
+	public void trackAssembly(BestNonReferenceContigCaller caller) {
 		if (writer == null) return;
 		try {
+			ArrayDeque<KmerPathSubnode> called = caller.bestContig();
 			writer.write(Integer.toString(support.tracking_inputPosition()));
 			writer.write(',');
 			writer.write(Integer.toString(aggregate.tracking_inputPosition()));
@@ -81,9 +84,11 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 			writer.write(',');
 			writer.write(Integer.toString(caller.tracking_contigFirstPosition()));
 			writer.write(',');
-			if (called != null) writer.write(Integer.toString(called.toSubnodePath().getFirst().firstStart()));
+			if (called != null) writer.write(Integer.toString(called.getFirst().firstStart()));
 			writer.write(',');
 			writer.write(Integer.toString(assembler.tracking_firstPosition()));
+			writer.write(',');
+			writer.write(Integer.toString(assembler.tracking_inputPosition()));
 			writer.write(',');
 			writer.write(Long.toString(support.tracking_underlyingConsumed()));
 			writer.write(',');
@@ -98,6 +103,8 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 			writer.write(Long.toString(caller.tracking_underlyingConsumed()));
 			writer.write(',');
 			writer.write(Long.toString(assembler.tracking_underlyingConsumed()));
+			writer.write(',');
+			writer.write(Long.toString(tracker.tracking_underlyingConsumed()));
 			writer.write(',');
 			writer.write(Integer.toString(support.tracking_processedSize()));
 			writer.write(',');
@@ -160,6 +167,7 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 			writer.write(Integer.toString(tracker.tracking_maxKmerSupportNodesCount()));
 			writer.write(',');
 			writer.write(Integer.toString(assembler.tracking_maxKmerActiveNodeCount()));
+			writer.write('\n');
 		} catch (IOException e) {
 			if (log != null) log.error(e);
 			log = null;
@@ -167,6 +175,7 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 	}
 	@Override
 	public void close() throws IOException {
+		if (writer != null) writer.flush();
 		CloserUtil.close(writer);
 		writer = null;
 		support = null;

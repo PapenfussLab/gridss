@@ -91,7 +91,7 @@ import com.google.common.collect.PeekingIterator;
  * @author Daniel Cameron
  *
  */
-public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGraph<KmerPathSubnode> {
+public class PathCollapseIterator implements PeekingIterator<KmerPathNode>, DeBruijnGraph<KmerPathSubnode> {
 	private final PeekingIterator<KmerPathNode> underlying;
 	private final int k;
 	private final int processOffset;
@@ -144,6 +144,12 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 	public KmerPathNode next() {
 		ensureBuffer();
 		KmerPathNode node = processed.pollFirst();
+		return node;
+	}
+	@Override
+	public KmerPathNode peek() {
+		ensureBuffer();
+		KmerPathNode node = processed.first();
 		return node;
 	}
 	private void ensureBuffer() {

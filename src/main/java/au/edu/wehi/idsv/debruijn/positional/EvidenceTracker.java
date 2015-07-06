@@ -5,7 +5,8 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Collections;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.ListIterator;
@@ -24,6 +25,7 @@ public class EvidenceTracker implements Iterator<KmerSupportNode> {
 	//public static EvidenceTracker TEMP_HACK_CURRENT_TRACKER = null;
 	private final Long2ObjectOpenHashMap<LinkedList<KmerSupportNode>> lookup = new Long2ObjectOpenHashMap<LinkedList<KmerSupportNode>>();
 	private final Iterator<KmerSupportNode> underlying;
+	private long consumed = 0;
 	/**
 	 * Tracks evidence emitted from the given iterator
 	 * @param it iterator to track
@@ -71,6 +73,9 @@ public class EvidenceTracker implements Iterator<KmerSupportNode> {
 				}
 			}
 		}
+		if (list.size() == 0) {
+			lookup.remove(kmer);
+		}
 	}
 	/**
 	 * Stops tracking all evidence overlapping the given contig
@@ -78,7 +83,7 @@ public class EvidenceTracker implements Iterator<KmerSupportNode> {
 	 * @return matching evidence
 	 */
 	public Set<KmerEvidence> untrack(Collection<KmerPathSubnode> contig) {
-		HashSet<KmerEvidence> evidence = new HashSet<KmerEvidence>();
+		Set<KmerEvidence> evidence = Collections.newSetFromMap(new IdentityHashMap<KmerEvidence, Boolean>());
 		for (KmerPathSubnode sn : contig) {
 			int start = sn.firstStart();
 			int end = sn.firstEnd();
@@ -153,7 +158,7 @@ public class EvidenceTracker implements Iterator<KmerSupportNode> {
 	}
 	@Override
 	public KmerSupportNode next() {
-		// TODO Auto-generated method stub
+		consumed++;
 		return track(underlying.next());
 	}
 	public class PathNodeAssertionInterceptor implements Iterator<KmerPathNode> {
@@ -193,6 +198,9 @@ public class EvidenceTracker implements Iterator<KmerSupportNode> {
 			assert(matchesExpected(node.width() * node.weight(), LongArrayList.wrap(new long[] { node.firstKmer() }), node.firstStart(), node.firstEnd()));
 			return node;
 		}
+	}
+	public long tracking_underlyingConsumed() {
+		return consumed;
 	}
 	public int tracking_kmerCount() {
 		return lookup.size();

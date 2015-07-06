@@ -200,10 +200,29 @@ public class BestNonReferenceContigCaller {
 						.result();
 			}};
 	}
+	/**
+	 * Determines whether the contig could overlap evidence with another contig
+	 * that we have not yet generated. We need to ensure that the contig is
+	 * at least maxEvidenceWidth away from:
+	 * a) all partially generated contig
+	 * b) all unprocessed contig start locations
+	 * c) any additional nodes not ryet read from the underlying stream
+	 *  
+	 * @param contig
+	 * @return true if the contig will not share evidence with future contigs, false otherwise
+	 */
+	private boolean contigDoesNotShareEvidenceWithUnprocessed(Contig contig) {
+		assert(contig != null);
+		int contigLastEnd = contig.node.node.lastEnd();
+		int frontierFirstStart = frontier.peekFrontier() == null ? Integer.MAX_VALUE : frontier.peekFrontier().node.firstStart();
+		int unprocessedFirstNodeLastEnd = unprocessedStartNodes.isEmpty() ? Integer.MAX_VALUE : unprocessedStartNodes.peek().lastEnd();
+		int unprocessedFirstStart = unprocessedFirstNodeLastEnd - maxEvidenceWidth; // node could contain entire evidence
+		int firstStart = Math.min(frontierFirstStart, Math.min(unprocessedFirstStart, inputPosition));
+		return contigLastEnd < firstStart - maxEvidenceWidth; // evidence could overlap just contig last end
+	}
 	public ArrayDeque<KmerPathSubnode> bestContig() {
 		// FIXME: add hard bounds to the width of the loaded graph.
-		while (underlying.hasNext() && (called.isEmpty() || frontier.peekFrontier() == null || called.peek().node.node.lastEnd() > frontier.peekFrontier().node.firstStart() - maxEvidenceWidth)) {
-			// if our best assembly could share evidence with an assembly that could be better, then we need to process more
+		while (underlying.hasNext() && (called.isEmpty() || !contigDoesNotShareEvidenceWithUnprocessed(called.peek()))) {
 			advance();
 		}
 		if (!underlying.hasNext()) {
@@ -212,7 +231,10 @@ public class BestNonReferenceContigCaller {
 			assert(frontier.peekFrontier() == null);
 		}
 		Contig best = called.poll();
-		if (best == null) return null;
+		if (best == null) {
+			assert(!underlying.hasNext());
+			return null;
+		}
 		return best.toSubnodePath();
 	}
 	public int tracking_contigCount() {
