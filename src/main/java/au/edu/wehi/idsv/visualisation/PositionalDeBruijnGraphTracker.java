@@ -10,6 +10,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayDeque;
 
+import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.positional.AggregateNodeIterator;
 import au.edu.wehi.idsv.debruijn.positional.BestNonReferenceContigCaller;
 import au.edu.wehi.idsv.debruijn.positional.EvidenceTracker;
@@ -58,14 +59,16 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 		writer.write("supportPosition,aggregatePosition,pathNodePosition,collapsePosition,simplifyPosition,firstContigPosition,calledContigPosition,assemblerPosition,assemblerFirstPosition");
 		writer.write(",supportConsumed,aggregateConsumed,pathNodeConsumed,collapseConsumed,simplifyConsumed,contigConsumed,assemblerConsumed,trackerConsumed");
 		writer.write(",supportProcessedSize");
-		writer.write(",aggregateProcessedSize,aggregateQueueSize,aggregateActiveKmers,");
-		writer.write("pathNodeProcessedSize,pathNodeActiveSize,pathNodeEdgeLookupSize,pathNodePathLookupSize");
+		writer.write(",aggregateProcessedSize,aggregateQueueSize,aggregateActiveSize");
+		writer.write(",pathNodeProcessedSize,pathNodeActiveSize,pathNodeEdgeLookupSize,pathNodePathLookupSize");
 		writer.write(",collapseProcessedSize,collapseUnprocessedSize,collapseTraversalCount,collapsedBranchCount,collapsedLeafCount");
 		writer.write(",simplifyProcessedSize,simplifyLookupSize,simplifyUnprocessedSize,simplifiedCount");
-		writer.write(",trackerKmerCount,trackerLookupSize");
-		writer.write(",contigCount,contigFrontierSize,contigMemoizedCount,contigUnprocessedSize");
+		writer.write(",trackerLookupSize");
+		writer.write(",contigSize,contigFrontierSize,contigMemoizedSize,contigUnprocessedSize");
 		writer.write(",assemblyActiveSize");
-		writer.write(",aggregateKmerMaxActive,aggregateActiveNodes,pathNodeEdgeMaxActive,pathNodePathMaxActive,trackerMaxKmerSupport,assemblyMaxActive");
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			writer.write(",aggregateKmerMaxActive,aggregateActiveNodes,pathNodeEdgeMaxActive,pathNodePathMaxActive,trackerMaxKmerSupport,assemblyMaxActive,trackerLookupSize");
+		}
 		writer.write('\n');
 	}
 	public void trackAssembly(BestNonReferenceContigCaller caller) {
@@ -142,8 +145,6 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 			writer.write(',');
 			writer.write(Integer.toString(tracker.tracking_kmerCount()));
 			writer.write(',');
-			writer.write(Integer.toString(tracker.tracking_supportNodeCount()));		
-			writer.write(',');
 			writer.write(Integer.toString(caller.tracking_contigCount()));
 			writer.write(',');
 			writer.write(Integer.toString(caller.tracking_frontierSize()));
@@ -154,19 +155,22 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 			writer.write(',');
 			writer.write(Integer.toString(assembler.tracking_activeNodes()));
 			
-			
-			writer.write(',');
-			writer.write(Integer.toString(aggregate.tracking_aggregatorKmerMaxActiveNodeCount()));
-			writer.write(',');
-			writer.write(Integer.toString(aggregate.tracking_aggregatorActiveNodeCount()));
-			writer.write(',');
-			writer.write(Integer.toString(pathNode.tracking_pathNodeEdgeLookupMaxKmerNodeCount()));
-			writer.write(',');
-			writer.write(Integer.toString(pathNode.tracking_edgeLookupMaxKmerNodeCount()));
-			writer.write(',');
-			writer.write(Integer.toString(tracker.tracking_maxKmerSupportNodesCount()));
-			writer.write(',');
-			writer.write(Integer.toString(assembler.tracking_maxKmerActiveNodeCount()));
+			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+				writer.write(',');
+				writer.write(Integer.toString(aggregate.tracking_aggregatorKmerMaxActiveNodeCount()));
+				writer.write(',');
+				writer.write(Integer.toString(aggregate.tracking_aggregatorActiveNodeCount()));
+				writer.write(',');
+				writer.write(Integer.toString(pathNode.tracking_pathNodeEdgeLookupMaxKmerNodeCount()));
+				writer.write(',');
+				writer.write(Integer.toString(pathNode.tracking_edgeLookupMaxKmerNodeCount()));
+				writer.write(',');
+				writer.write(Integer.toString(tracker.tracking_maxKmerSupportNodesCount()));
+				writer.write(',');
+				writer.write(Integer.toString(assembler.tracking_maxKmerActiveNodeCount()));
+				writer.write(',');
+				writer.write(Integer.toString(tracker.tracking_supportNodeCount()));	
+			}
 			writer.write('\n');
 		} catch (IOException e) {
 			if (log != null) log.error(e);

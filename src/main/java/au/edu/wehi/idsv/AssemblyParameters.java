@@ -105,7 +105,7 @@ public class AssemblyParameters {
 	/**
 	 * Output internal assembly state information for debugging purposes
 	 */
-	public boolean trackAlgorithmProgress = Defaults.VISUALISE_ASSEMBLY_PROGRESS;
+	public boolean trackAlgorithmProgress = Defaults.VISUALISE_ASSEMBLY_PROGRESS || Defaults.VISUALISE_ALL;
 	/**
 	 * Determines whether filtered assemblies are written to intermediate files
 	 */
