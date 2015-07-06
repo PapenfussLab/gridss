@@ -102,6 +102,10 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 	private final NavigableSet<KmerPathNode> processed = new TreeSet<KmerPathNode>(KmerNodeUtil.ByFirstStartEndKmerReference);
 	private final NavigableSet<KmerPathNode> unprocessed = new TreeSet<KmerPathNode>(KmerNodeUtil.ByLastEndStartKmerReference );
 	private int inputPosition = Integer.MIN_VALUE;
+	private long nodesTraversed = 0;
+	private long leavesCollapsed = 0;
+	private long branchesCollapsed = 0;
+	private long consumed =  0;
 	private int maxNodeWidth = 0;
 	private int maxNodeLength = 0;
 	private int emitOffset() {
@@ -161,6 +165,7 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 	private void loadGraphNodes() {
 		while (underlying.hasNext() && underlying.peek().firstStart() <= inputPosition) {
 			KmerPathNode node = underlying.next();
+			consumed++;
 			maxNodeWidth = Math.max(maxNodeWidth, node.width());
 			maxNodeLength = Math.max(maxNodeLength, node.length());
 			unprocessed.add(node);
@@ -230,6 +235,7 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 	 * 
 	 */
 	private boolean collapseSimilarPath(Set<KmerPathNode> onPath, KmerPathNodePath pathA, KmerPathNodePath pathB, boolean findLeaf, boolean findCommonChild, boolean traverseForward) {
+		nodesTraversed++;
 		if (!couldMatch(pathA, pathB, traverseForward)) return false;
 		if (findLeaf) {
 			if (tryLeafCollapse(pathA, pathB, traverseForward)) return true;
@@ -312,11 +318,13 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 				if (pathA.pathWeight() < pathB.pathWeight()) {
 					if (!bubblesAndLeavesOnly || isBubblePath(lA)) {
 						merge(lA, lB, 0, 0);
+						branchesCollapsed++;
 						return true;
 					}
 				} else {
 					if (!bubblesAndLeavesOnly || isBubblePath(lB)) {
 						merge(lB, lA, 0, 0);
+						branchesCollapsed++;
 						return true;
 					}
 				}
@@ -361,6 +369,7 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 		merge(new ArrayList<KmerPathSubnode>(firstLeaf.asSubnodes()),
 				new ArrayList<KmerPathSubnode>(path.headNode().overlapping(firstLeaf).asSubnodes()),
 				leafSkip, pathSkip);
+		leavesCollapsed++;
 		return true;
 	}
 	private boolean hasSufficientEntropy(KmerPathNode node) {
@@ -563,5 +572,26 @@ public class PathCollapseIterator implements Iterator<KmerPathNode>, DeBruijnGra
 	@Override
 	public boolean isReference(KmerPathSubnode node) {
 		return node.node().isReference();
+	}
+	public int tracking_processedSize() {
+		return processed.size();
+	}
+	public int tracking_inputPosition() {
+		return inputPosition;
+	}
+	public long tracking_underlyingConsumed() {
+		return consumed;
+	}
+	public int tracking_unprocessedSize() {
+		return unprocessed.size();
+	}
+	public long tracking_traversalCount() {
+		return nodesTraversed;
+	}
+	public long tracking_branchCollapseCount() {
+		return branchesCollapsed;
+	}
+	public long tracking_leafCollapseCount() {
+		return leavesCollapsed;
 	}
 }

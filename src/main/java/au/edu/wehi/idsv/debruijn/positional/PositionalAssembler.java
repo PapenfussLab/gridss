@@ -1,5 +1,9 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import htsjdk.samtools.util.Log;
+
+import java.io.File;
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -9,6 +13,7 @@ import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
+import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
@@ -20,6 +25,7 @@ import com.google.common.collect.PeekingIterator;
  *
  */
 public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> {
+	private static final Log log = Log.getInstance(PositionalAssembler.class);
 	private ProcessingContext context;
 	private AssemblyEvidenceSource source;
 	private PeekingIterator<DirectedEvidence> it;
@@ -41,6 +47,15 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 	}
 	private void ensureAssembler() {
 		while ((currentAssembler == null || !currentAssembler.hasNext()) && it.hasNext()) {
+			if (!currentAssembler.hasNext()) {
+				if (currentAssembler.getExportTracker() != null) {
+					try {
+						currentAssembler.getExportTracker().close();
+					} catch (IOException e) {
+						log.debug(e);
+					}
+				}
+			}
 			// traverse contigs until we find one that has an assembly to call
 			currentAssembler = createAssembler();
 		}
@@ -58,25 +73,44 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 		ReferenceIndexIterator evidenceIt = new ReferenceIndexIterator(it, referenceIndex);
 		SupportNodeIterator supportIt = new SupportNodeIterator(k, evidenceIt, source.getMaxConcordantFragmentSize());
 		EvidenceTracker trackedIt = new EvidenceTracker(supportIt);
-		Iterator<KmerNode> agIt = new AggregateNodeIterator(trackedIt);
+		AggregateNodeIterator agIt = new AggregateNodeIterator(trackedIt);
+		Iterator<KmerNode> knIt = agIt;
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
-			agIt = trackedIt.new AggregateNodeAssertionInterceptor(agIt);
+			knIt = trackedIt.new AggregateNodeAssertionInterceptor(knIt);
 		}
-		Iterator<KmerPathNode> pnIt = new PathNodeIterator(agIt, maxPathLength, k);
+		PathNodeIterator pathNodeIt = new PathNodeIterator(knIt, maxPathLength, k); 
+		Iterator<KmerPathNode> pnIt = pathNodeIt;
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
 			pnIt = trackedIt.new PathNodeAssertionInterceptor(pnIt, "PathNodeIterator");
 		}
+		PathCollapseIterator collapseIt = null;
+		PathSimplificationIterator simplifyIt = null;
 		if (ap.maxBaseMismatchForCollapse > 0) {
-			pnIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, ap.maxBaseMismatchForCollapse, ap.collapseBubblesOnly, 0); // TODO entropy parameter
+			collapseIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, ap.maxBaseMismatchForCollapse, ap.collapseBubblesOnly, 0); // TODO entropy parameter
+			pnIt = collapseIt;
 			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
 				pnIt = trackedIt.new PathNodeAssertionInterceptor(pnIt, "PathCollapseIterator");
 			}
-			pnIt = new PathSimplificationIterator(pnIt, maxPathLength, maxSupportNodeWidth);
+			simplifyIt = new PathSimplificationIterator(pnIt, maxPathLength, maxSupportNodeWidth);
+			pnIt = simplifyIt;
 			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
 				pnIt = trackedIt.new PathNodeAssertionInterceptor(pnIt, "PathSimplificationIterator");
 			}
 		}
 		currentAssembler = new NonReferenceContigAssembler(pnIt, referenceIndex, maxEvidenceDistance, anchorAssemblyLength, k, source, trackedIt);
+		if (ap.trackAlgorithmProgress && ap.debruijnGraphVisualisationDirectory != null) {
+			ap.debruijnGraphVisualisationDirectory.mkdirs();
+			String filename = String.format("positional-%s.csv", context.getDictionary().getSequence(referenceIndex).getSequenceName());
+			File file = new File(ap.debruijnGraphVisualisationDirectory, filename);
+			PositionalDeBruijnGraphTracker tracker;
+			try {
+				tracker = new PositionalDeBruijnGraphTracker(file, supportIt, agIt, pathNodeIt, collapseIt, simplifyIt, trackedIt, currentAssembler);
+				tracker.writeHeader();
+				currentAssembler.setExportTracker(tracker);
+			} catch (IOException e) {
+				log.debug(e);
+			}
+		}
 		return currentAssembler;
 	}
 	private static class ReferenceIndexIterator implements PeekingIterator<DirectedEvidence> {

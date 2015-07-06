@@ -27,6 +27,7 @@ public class AggregateNodeIterator implements Iterator<KmerNode> {
 	private PriorityQueue<KmerNodeAggregatorSnapshot> byEnd = new PriorityQueue<KmerNodeAggregatorSnapshot>(1024, BySnapshotEnd);
 	private int maxWidth = 0;
 	private int inputPosition = Integer.MIN_VALUE;
+	private long consumed = 0;
 	public AggregateNodeIterator(Iterator<? extends KmerNode> it) {
 		this.underlying = Iterators.peekingIterator(it);
 	}
@@ -63,6 +64,7 @@ public class AggregateNodeIterator implements Iterator<KmerNode> {
 	private void process() {
 		while (underlying.hasNext() && underlying.peek().firstStart() <= inputPosition) {
 			KmerNode n = underlying.next();
+			consumed++;
 			assert(n.firstStart() == inputPosition || inputPosition == Integer.MAX_VALUE); // input should be sorted by start position
 			long kmer = n.firstKmer();
 			KmerNodeAggregator ag = byKmer.get(kmer);
@@ -210,5 +212,26 @@ public class AggregateNodeIterator implements Iterator<KmerNode> {
 			assert(!underlying.hasNext());
 		}	
 		return true;
+	}
+	public int tracking_processedSize() {
+		return outputSortBuffer.size();
+	}
+	public int tracking_inputPosition() {
+		return inputPosition;
+	}
+	public long tracking_underlyingConsumed() {
+		return consumed;
+	}
+	public int tracking_kmerCount() {
+		return byKmer.size();
+	}
+	public int tracking_aggregatorQueueSize() {
+		return byEnd.size();
+	}
+	public int tracking_aggregatorActiveNodeCount() {
+		return byKmer.values().stream().mapToInt(x -> x.active.size()).sum();
+	}
+	public int tracking_aggregatorKmerMaxActiveNodeCount() {
+		return byKmer.values().stream().mapToInt(x -> x.active.size()).max().orElse(0);
 	}
 }

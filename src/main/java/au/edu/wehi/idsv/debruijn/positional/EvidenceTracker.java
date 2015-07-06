@@ -193,6 +193,14 @@ public class EvidenceTracker implements Iterator<KmerSupportNode> {
 			assert(matchesExpected(node.width() * node.weight(), LongArrayList.wrap(new long[] { node.firstKmer() }), node.firstStart(), node.firstEnd()));
 			return node;
 		}
-		
+	}
+	public int tracking_kmerCount() {
+		return lookup.size();
+	}
+	public int tracking_supportNodeCount() {
+		return lookup.values().stream().mapToInt(x -> x.size()).sum();
+	}
+	public int tracking_maxKmerSupportNodesCount() {
+		return lookup.values().stream().mapToInt(x -> x.size()).max().orElse(0);
 	}
 }

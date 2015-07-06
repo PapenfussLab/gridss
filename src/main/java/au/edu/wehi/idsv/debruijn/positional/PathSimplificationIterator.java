@@ -79,6 +79,8 @@ public class PathSimplificationIterator implements Iterator<KmerPathNode> {
 	private final int maxWidth;
 	private final PeekingIterator<KmerPathNode> underlying;
 	private int inputPosition;
+	private long consumed = 0;
+	private long simplified = 0;
 	public PathSimplificationIterator(
 			Iterator<KmerPathNode> it,
 			int maxLength,
@@ -191,7 +193,9 @@ public class PathSimplificationIterator implements Iterator<KmerPathNode> {
 			assert(!processed.contains(node));
 		}
 		while (reduce(node)) {
+			
 			// loop until we can't merge any more nodes into this one
+			simplified++;
 		}
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
 			int afterTotalWeight = node.width() * node.weight() + processed.stream().mapToInt(n -> n.width() * n.weight()).sum();
@@ -210,6 +214,7 @@ public class PathSimplificationIterator implements Iterator<KmerPathNode> {
 	private void advance() {
 		while (underlying.hasNext() && underlying.peek().firstStart() <= inputPosition) {
 			KmerPathNode nextRecord = underlying.next();
+			consumed++;
 			assert(nextRecord.width() <= maxWidth);
 			assert(nextRecord.length() <= maxLength);
 			unprocessed.add(nextRecord);
@@ -234,5 +239,23 @@ public class PathSimplificationIterator implements Iterator<KmerPathNode> {
 			assert(processed.stream().filter(n -> pn.equals(n)).count() == 0);
 		}
 		return true;
+	}
+	public int tracking_processedSize() {
+		return processed.size();
+	}
+	public int tracking_unprocessedSize() {
+		return unprocessed.size();
+	}
+	public int tracking_lookupSize() {
+		return endLookup.size();
+	}
+	public int tracking_inputPosition() {
+		return inputPosition;
+	}
+	public long tracking_underlyingConsumed() {
+		return consumed;
+	}
+	public long tracking_simplifiedCount() {
+		return simplified;
 	}
 }

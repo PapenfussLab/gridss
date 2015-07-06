@@ -60,6 +60,7 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 	 * Maximum width of a single node. This is calculated from the input sequence
 	 */
 	private int maxNodeWidth = 0;
+	private long consumed = 0;
 	public PathNodeIterator(Iterator<? extends KmerNode> it, int maxPathLength, int k) {
 		if (maxPathLength < 1) throw new IllegalArgumentException("Path length must be positive");
 		this.underlying = Iterators.peekingIterator(it);
@@ -180,6 +181,7 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 		inputPosition = underlying.peek().lastStart();
 		while (underlying.hasNext() && underlying.peek().lastStart() == inputPosition) {
 			KmerNode node = underlying.next();
+			consumed++;
 			lookupAdd(node);
 			activeNodes.add(node);
 			maxNodeWidth = Math.max(maxNodeWidth, node.width());
@@ -293,5 +295,29 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 		assert(activeNodes.stream().distinct().count() == activeNodes.size());
 		assert(pathNodes.stream().distinct().count() == pathNodes.size());
 		return true;
+	}
+	public int tracking_processedSize() {
+		return pathNodes.size();
+	}
+	public int tracking_activeSize() {
+		return activeNodes.size();
+	}
+	public int tracking_inputPosition() {
+		return inputPosition;
+	}
+	public long tracking_underlyingConsumed() {
+		return consumed;
+	}
+	public int tracking_edgeLookupSize() {
+		return edgeLookup.size();
+	}
+	public int tracking_pathNodeEdgeLookupSize() {
+		return firstKmerEdgeLookup.size();
+	}
+	public int tracking_edgeLookupMaxKmerNodeCount() {
+		return edgeLookup.values().stream().mapToInt(x -> x.size()).max().orElse(0);
+	}
+	public int tracking_pathNodeEdgeLookupMaxKmerNodeCount() {
+		return firstKmerEdgeLookup.values().stream().mapToInt(x -> x.size()).max().orElse(0);
 	}
 }

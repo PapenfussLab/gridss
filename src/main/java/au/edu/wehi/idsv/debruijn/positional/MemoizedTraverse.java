@@ -155,4 +155,10 @@ public class MemoizedTraverse {
 			return Ints.compare(left.node.firstEnd() + left.node.length(), right.node.firstEnd() + right.node.length());
 		}
 	};
+	public int tracking_memoizedNodeCount() {
+		return memoized.size();
+	}
+	public int tracking_frontierSize() {
+		return frontier.size();
+	}
 }

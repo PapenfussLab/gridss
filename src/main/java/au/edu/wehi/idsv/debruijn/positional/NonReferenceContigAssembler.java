@@ -27,6 +27,7 @@ import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.graph.ScalingHelper;
 import au.edu.wehi.idsv.util.IntervalUtil;
+import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
@@ -63,6 +64,8 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	private final int k;
 	private final int referenceIndex;
 	private final KmerPathNodeIteratorInterceptor wrapper;
+	private long consumed = 0;
+	private PositionalDeBruijnGraphTracker exportTracker = null;
 	public int getReferenceIndex() { return referenceIndex; }
 	/**
 	 * Creates a new structural variant positional de Bruijn graph contig assembly for the given chromosome
@@ -95,7 +98,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	@Override
 	protected SAMRecordAssemblyEvidence computeNext() {
 		while (!graphByPosition.isEmpty() || wrapper.hasNext()) {
-			SAMRecordAssemblyEvidence contig =nextContig();
+			SAMRecordAssemblyEvidence contig = nextContig();
 			if (contig != null) {
 				return contig;
 			}
@@ -295,6 +298,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		@Override
 		public KmerPathNode next() {
 			KmerPathNode node = underlying.next();
+			consumed++;
 			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
 				assert(evidenceTracker.matchesExpected(new KmerPathSubnode(node)));
 			}
@@ -312,5 +316,24 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			assert(n.isValid());
 		}
 		return true;
+	}
+	public int tracking_activeNodes() {
+		return graphByPosition.size();
+	}
+	public int tracking_maxKmerActiveNodeCount() {
+		return graphByKmerNode.values().stream().mapToInt(x -> x.size()).max().orElse(0);
+	}
+	public long tracking_underlyingConsumed() {
+		return consumed;
+	}
+	public int tracking_firstPosition() {
+		if (graphByPosition.size() == 0) return Integer.MAX_VALUE;
+		return graphByPosition.first().firstStart();
+	}
+	public PositionalDeBruijnGraphTracker getExportTracker() {
+		return exportTracker;
+	}
+	public void setExportTracker(PositionalDeBruijnGraphTracker exportTracker) {
+		this.exportTracker = exportTracker;
 	}
 }

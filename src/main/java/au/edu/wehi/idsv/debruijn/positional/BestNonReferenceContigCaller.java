@@ -47,6 +47,7 @@ public class BestNonReferenceContigCaller {
 	private final PriorityQueue<Contig> called = new PriorityQueue<Contig>(1024, Contig.ByScoreDescPosition);
 	private final int maxEvidenceWidth;
 	private int inputPosition;
+	private long consumed = 0;
 	public BestNonReferenceContigCaller(
 			Iterator<KmerPathNode> it,
 			int maxEvidenceWidth) {
@@ -69,6 +70,7 @@ public class BestNonReferenceContigCaller {
 	private void advanceUnderlying() {
 		while (underlying.hasNext() && underlying.peek().firstStart() <= inputPosition) {			
 			KmerPathNode nextRecord = underlying.next();
+			consumed++;
 			queueForProcessing(nextRecord);
 		}
 	}
@@ -213,4 +215,23 @@ public class BestNonReferenceContigCaller {
 		if (best == null) return null;
 		return best.toSubnodePath();
 	}
+	public int tracking_contigCount() {
+		return called.size();
+	}
+	public int tracking_contigFirstPosition() {
+		return called.stream().mapToInt(c -> c.toSubnodePath().getFirst().firstStart()).min().orElse(Integer.MAX_VALUE);
+	}
+	public long tracking_underlyingConsumed() {
+		return consumed;
+	}
+	public int tracking_memoizedNodeCount() {
+		return frontier.tracking_memoizedNodeCount();
+	}
+	public int tracking_frontierSize() {
+		return frontier.tracking_frontierSize();
+	}
+	public int tracking_unprocessedStartNodeCount() {
+		return unprocessedStartNodes.size();
+	}
+	
 }

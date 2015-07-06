@@ -1,6 +1,8 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.PriorityQueue;
 
 import au.edu.wehi.idsv.DirectedEvidence;
@@ -34,6 +36,7 @@ public class SupportNodeIterator implements Iterator<KmerSupportNode> {
 	private int inputPosition = Integer.MIN_VALUE;
 	private int firstReferenceIndex;
 	private int lastPosition = Integer.MIN_VALUE;
+	private long consumed = 0;
 	private DirectedEvidence lastEvidence = null;
 	
 	/**
@@ -72,11 +75,22 @@ public class SupportNodeIterator implements Iterator<KmerSupportNode> {
 			throw new RuntimeException("Assembler able to process only soft clip and read pair evidence");
 		}
 		for (int i = 0; i < e.length(); i++) {
+			List<KmerSupportNode> supportNodes = new ArrayList<KmerSupportNode>(e.length());
+			boolean hasNonReference = false;
 			KmerSupportNode support = e.node(i); 
 			if (support != null) {
 				// max sure that we are actually able to resort into kmer order
 				assert(support.firstStart() >= de.getBreakendSummary().start - maxSupportStartPositionOffset);
-				buffer.add(support);
+				hasNonReference |= !support.isReference();
+			}
+			if (hasNonReference) {
+				// only add evidence that proves support for an SV
+				// If we have no non-reference kmers then we might
+				// never call a contig containing this evidence thus
+				// never remove it from the graph
+				// SC or RPs with no non-reference kmers can occur when
+				// an ambiguous base case exist in the soft clip/mate  
+				buffer.addAll(supportNodes);
 			}
 		}
 	}
@@ -106,10 +120,20 @@ public class SupportNodeIterator implements Iterator<KmerSupportNode> {
 	private void advance() {
 		while (underlying.hasNext() && underlying.peek().getBreakendSummary().start <= inputPosition) {
 			process(underlying.next());
+			consumed++;
 		}
 	}
 	@Override
 	public void remove() {
 		throw new UnsupportedOperationException();
+	}
+	public int tracking_processedSize() {
+		return buffer.size();
+	}
+	public int tracking_inputPosition() {
+		return inputPosition;
+	}
+	public long tracking_underlyingConsumed() {
+		return consumed;
 	}
 }
