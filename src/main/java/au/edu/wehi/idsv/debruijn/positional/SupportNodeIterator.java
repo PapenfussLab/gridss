@@ -74,6 +74,9 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 		} else {
 			throw new RuntimeException("Assembler able to process only soft clip and read pair evidence");
 		}
+		if (e == null) {
+			return;
+		}
 		List<KmerSupportNode> supportNodes = new ArrayList<KmerSupportNode>(e.length());
 		boolean hasNonReference = false;
 		for (int i = 0; i < e.length(); i++) {
