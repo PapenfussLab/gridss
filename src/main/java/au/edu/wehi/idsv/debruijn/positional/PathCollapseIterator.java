@@ -13,6 +13,7 @@ import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeSet;
 
+import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraph;
 import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNodeUtil;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
@@ -218,7 +219,7 @@ public class PathCollapseIterator implements PeekingIterator<KmerPathNode>, DeBr
 			set.add(pathA.headPath());
 			set.add(pathB.headPath());
 			if (set.size() == 3) {
-				return collapseSimilarPath(set, pathA, pathB, findLeaf, findCommonChild, traverseForward);
+				return collapseSimilarPath(set, pathA, pathB, pathBasesDifferent(pathA, pathB, traverseForward), findLeaf, findCommonChild, traverseForward);
 			}
 		}
 		return false;
@@ -240,9 +241,16 @@ public class PathCollapseIterator implements PeekingIterator<KmerPathNode>, DeBr
 	 * For now, we handle this by not collapsing if we encounter a KmerPathNode repeat. 
 	 * 
 	 */
-	private boolean collapseSimilarPath(Set<KmerPathNode> onPath, KmerPathNodePath pathA, KmerPathNodePath pathB, boolean findLeaf, boolean findCommonChild, boolean traverseForward) {
+	private boolean collapseSimilarPath(
+			final Set<KmerPathNode> onPath,
+			final KmerPathNodePath pathA,
+			final KmerPathNodePath pathB,
+			final int basesDifferent,
+			final boolean findLeaf,
+			final boolean findCommonChild,
+			final boolean traverseForward) {
 		nodesTraversed++;
-		if (!couldMatch(pathA, pathB, traverseForward)) return false;
+		if (!couldMatch(pathA, pathB, basesDifferent, traverseForward)) return false;
 		if (findLeaf) {
 			if (tryLeafCollapse(pathA, pathB, traverseForward)) return true;
 			if (tryLeafCollapse(pathB, pathA, traverseForward)) return true; 
@@ -252,13 +260,14 @@ public class PathCollapseIterator implements PeekingIterator<KmerPathNode>, DeBr
 		if (pathA.pathLength() <= pathB.pathLength()) {
 			while (pathA.dfsNextChild()) {
 				KmerPathNode added = pathA.headPath();
+				int additionalBasesDifferent = headNodeBasesDifferent(pathA, pathB, traverseForward);
 				if (!onPath.contains(added) && hasSufficientEntropy(added)) {
 					onPath.add(added);
 					pathB.dfsResetChildTraversal();
-					if (collapseSimilarPath(onPath, pathA, pathB, findLeaf, findCommonChild, traverseForward)) return true;
+					if (collapseSimilarPath(onPath, pathA, pathB, basesDifferent + additionalBasesDifferent, findLeaf, findCommonChild, traverseForward)) return true;
 					assert(added == pathA.headPath());
 					onPath.remove(added);
-				} else if (added == pathB.headPath() && findCommonChild && couldMatch(pathA, pathB, traverseForward)) {
+				} else if (added == pathB.headPath() && findCommonChild && couldMatch(pathA, pathB, basesDifferent + additionalBasesDifferent, traverseForward)) {
 					if (tryPathCollapse(pathA, pathB, traverseForward)) return true;
 				}
 				pathA.dfsPop();
@@ -267,12 +276,13 @@ public class PathCollapseIterator implements PeekingIterator<KmerPathNode>, DeBr
 		} else {
 			while (pathB.dfsNextChild()) {
 				KmerPathNode added = pathB.headPath();
+				int additionalBasesDifferent = headNodeBasesDifferent(pathB, pathA, traverseForward);
 				if (!onPath.contains(added) && hasSufficientEntropy(added)) {
 					onPath.add(added);
-					if (collapseSimilarPath(onPath, pathA, pathB, findLeaf, findCommonChild, traverseForward)) return true;
+					if (collapseSimilarPath(onPath, pathA, pathB, basesDifferent + additionalBasesDifferent, findLeaf, findCommonChild, traverseForward)) return true;
 					assert(added == pathB.headPath());
 					onPath.remove(added);
-				} else if (added == pathA.headPath() && findCommonChild && couldMatch(pathA, pathB, traverseForward)) {
+				} else if (added == pathA.headPath() && findCommonChild && couldMatch(pathA, pathB, basesDifferent + additionalBasesDifferent, traverseForward)) {
 					if (tryPathCollapse(pathA, pathB, traverseForward)) return true;
 				}
 				pathB.dfsPop();
@@ -282,27 +292,73 @@ public class PathCollapseIterator implements PeekingIterator<KmerPathNode>, DeBr
 		assert(pathB.pathLength() == pathBlength);
 		return false;
 	}
-	private boolean couldMatch(KmerPathNodePath pathA, KmerPathNodePath pathB, boolean traverseForward) {
+	private boolean couldMatch(KmerPathNodePath pathA, KmerPathNodePath pathB, int basesDifferent, boolean traverseForward) {
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			// can't actually do this assertion as the path difference may actually be violated when a non-bubble path is merged
+			//      F - -
+			//     /     \
+			//    D - E   \
+			//   /     \   \
+			//  A - B - C - G
+			//
+			// Step 1) DE merged into B
+			//      F - -
+			//     /     \
+			//   B1'-B2   \
+			//   /     \   \
+			//  A       C - G
+			//
+			// 
+			// Transition from B1' to F is now an invalid kmer path
+			// number of bases different now depends on which base call is 
+			assert(!bubblesAndLeavesOnly || basesDifferent == pathBasesDifferent(pathA, pathB, traverseForward));
+		}
+		if (basesDifferent > maxBasesMismatch) return false;
 		// paths don't share any common interval - no way for them to be the same length and still overlap
 		if (!pathsOverlap(pathA, pathB)) return false;
-		// paths have too many bases different
-		if (!areSimilarPartialPaths(pathA, pathB, traverseForward)) return false;
 		return true;
 	}
-	private boolean areSimilarPartialPaths(KmerPathNodePath pathA, KmerPathNodePath pathB, boolean traverseForward) {
+	private int pathBasesDifferent(KmerPathNodePath pathA, KmerPathNodePath pathB, boolean traverseForward) {
 		int basesDifference;
 		if (traverseForward) {
 			basesDifference = DeBruijnSequenceGraphNodeUtil.basesDifferent(k, pathA.currentPath(), pathB.currentPath()); 
 		} else {
 			basesDifference = DeBruijnSequenceGraphNodeUtil.reverseBasesDifferent(k, pathA.currentPath(), pathB.currentPath());
-			//basesDifference = DeBruijnSequenceGraphNodeUtil.basesDifferent(k,
-			//		StreamSupport.stream(Spliterators.spliteratorUnknownSize(pathA.currentPath().descendingIterator(), Spliterator.ORDERED), false)
-			//			.flatMapToLong(n -> IntStream.rangeClosed(n.length() - 1, 0).mapToLong(i -> n.kmer(-i))),
-			//		StreamSupport.stream(Spliterators.spliteratorUnknownSize(pathA.currentPath().descendingIterator(), Spliterator.ORDERED), false)
-			//			.flatMapToLong(n -> IntStream.rangeClosed(n.length() - 1, 0).mapToLong(i -> n.kmer(-i))),
-			//		false);
 		}
-		return basesDifference <= maxBasesMismatch; 
+		return basesDifference;
+	}
+	/**
+	 * Number of bases that the headPath head node differs from the refPath
+	 */
+	private int headNodeBasesDifferent(final KmerPathNodePath headPath, final KmerPathNodePath refPath, final boolean traverseForward) {
+		int diff = 0;
+		final TraversalNode headNode = headPath.headNode();
+		final KmerPathNode headPathNode = headPath.headPath();
+		assert(headPathNode != headPath.rootNode().node().node());
+		final int headPathLengthExcludingHead = headNode.parent().pathLength();
+		final int headPathStartOffset = headNode.pathLength() - headPathNode.length();
+		final int headPathEndOffset = headNode.pathLength() - 1;
+		TraversalNode refNode = refPath.headNode();
+		while (refNode != null && refPath.pathLength() > headPathLengthExcludingHead) {
+			final KmerPathNode refPathNode = refNode.node().node();
+			final int nodePathStartOffset = refNode.pathLength() - refPathNode.length();
+			final int nodePathEndOffset = refNode.pathLength() - 1;
+			final int commonPathStartOffset = Math.max(headPathStartOffset, nodePathStartOffset);
+			final int commonPathEndOffset  = Math.min(headPathEndOffset, nodePathEndOffset);
+			if (commonPathEndOffset < commonPathStartOffset) break;
+			for (int offset = commonPathStartOffset; offset <= commonPathEndOffset; offset++) {
+				if ((traverseForward && !KmerEncodingHelper.lastBaseMatches(k,
+						headPathNode.kmer(offset - headPathStartOffset),
+						refPathNode.kmer(offset - nodePathStartOffset)))
+					|| (!traverseForward && !KmerEncodingHelper.firstBaseMatches(k,
+						headPathNode.kmer(headPathNode.length() - 1 - (offset - headPathStartOffset)),
+						refPathNode.kmer(refPathNode.length() - 1 - (offset - nodePathStartOffset))))) {
+					diff++;
+				}
+			}
+			refNode = refNode.parent();
+		}
+		return diff;
 	}
 	private boolean pathsOverlap(KmerPathNodePath pathA, KmerPathNodePath pathB) {
 		boolean overlaps = IntervalUtil.overlapsClosed(
@@ -318,7 +374,6 @@ public class PathCollapseIterator implements PeekingIterator<KmerPathNode>, DeBr
 				pathB.dfsPop();
 				assert(repeatedKmerPathNodeCount(pathA, pathB) == 0);
 				assert(pathsOverlap(pathA, pathB));
-				assert(areSimilarPartialPaths(pathA, pathB, traverseForward));
 				List<KmerPathSubnode> lA = new ArrayList<KmerPathSubnode>(pathA.headNode().overlapping(pathB.headNode()).asSubnodes());
 				List<KmerPathSubnode> lB = new ArrayList<KmerPathSubnode>(pathB.headNode().overlapping(pathA.headNode()).asSubnodes());
 				if (pathA.pathWeight() < pathB.pathWeight()) {
@@ -369,7 +424,6 @@ public class PathCollapseIterator implements PeekingIterator<KmerPathNode>, DeBr
 		if (firstLeaf == null) return false;
 		assert(repeatedKmerPathNodeCount(leaf, path) == 0);
 		assert(pathsOverlap(leaf, path));
-		assert(areSimilarPartialPaths(leaf, path, traverseForward));
 		int leafSkip = 0;
 		int pathSkip = traverseForward ? 0 : path.pathLength() - leaf.pathLength();
 		merge(new ArrayList<KmerPathSubnode>(firstLeaf.asSubnodes()),

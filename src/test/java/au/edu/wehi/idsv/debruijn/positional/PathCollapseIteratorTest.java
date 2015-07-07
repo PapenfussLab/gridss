@@ -1,10 +1,11 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
-import static org.junit.Assert.*;
 
 import org.junit.Test;
 
@@ -212,5 +213,45 @@ public class PathCollapseIteratorTest extends TestHelper {
 		// AAAATCCCGTGTGTTGTG
 		//     |
 		// AAAACCCCGTGTGTTGTG
+	}
+	@Test
+	public void should_collapse_kmers() {
+		// mostly this test is about checking assertions
+		for (int k = 1; k <= 4; k++) {
+			List<DirectedEvidence> input = new ArrayList<DirectedEvidence>();
+			for (long encoded = 0; encoded < 1 << (2 * k); encoded++) {
+				String seq = K(k, encoded);
+				input.add(NRRP(withSequence(seq, DP(0, 1, String.format("%dM", k), false, 1, 1, String.format("%dM", k), true))));
+			}
+			go(input, k, 100, 100, 4);
+		}
+	}
+	@Test
+	public void should_collapse_bubbles() {
+		int k = 25;
+		int sclen = 50;
+		int anchorlen = 100;
+		boolean twoBasesDifferent = false;
+		String seq = S(RANDOM).substring(0, sclen + anchorlen);
+		List<DirectedEvidence> input = new ArrayList<DirectedEvidence>();
+		for (int i = 0; i < sclen; i++) {
+			for (int j = 0; j < sclen; j++) {
+				for (byte ci : new byte[] { 'a', 'c', 'g', 't' }) {
+					for (byte cj : new byte[] { 'a', 'c', 'g', 't' }) {
+						byte[] readSeq = B(seq);
+						readSeq[100 + i] = ci;
+						if (twoBasesDifferent) readSeq[100 + j] = cj;
+						input.add(SCE(FWD, withSequence(readSeq, Read(0, 1, String.format("%dM%dS", sclen, anchorlen)))));
+					}
+				}
+			}
+		}
+		// should all have collapsed since all initial paths are 2 bases from the start
+		// unfortunately, the order of path collapse matters and path collapse happens
+		// as soon as a pair of eligible paths are found.
+		// To fix this would be computationally expensive as all paths would need
+		// to be enumerated before collapse
+		go(input, k, 200, 200, 4);
+		// assertEquals(2, result.size());
 	}
 }

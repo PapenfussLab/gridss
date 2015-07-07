@@ -2,14 +2,21 @@ library(ggplot2)
 library(stringr)
 library(reshape2)
 
-dtraw <- read.csv("W:/na12878/gridss_vis/positional-13.csv")
-#names(dt)
-#names(dt)[str_detect(names(dt), "Position")]
-#names(dt)[str_detect(names(dt), "Consumed")]
-dtlong <- melt(dtraw)
+dtraw <- read.csv("W:/na12878/gridss_vis/positional-3.csv")
+dtraw$index <- seq_len(nrow(dtraw))
+for (pos in names(dtraw)[str_detect(names(dtraw), "Position")]) {
+  dtraw[,paste0(pos,"Delta")] <- dtraw[,pos] - c(0, head(dtraw[,pos], nrow(dtraw) - 1))
+}
+dtlong <- melt(dtraw, id.vars="index")
 dtSize <- dtlong[str_detect(dtlong$variable, "Size"),]
 
 ggplot(dtSize, aes(x=variable, y=value + 1)) +
   geom_boxplot() +
   scale_y_log10() +
   labs(x="Data Structure Size", y="Record count", title="Size of streaming positional de Bruijn graph data structures")
+
+
+
+z <- c(1,2,4)
+
+c(z, NA) - c(NA, z)

@@ -94,6 +94,18 @@ public class KmerNodeUtil {
 					.result();
 		}
 	};
+	public static final Ordering<KmerNode> ByWeight = new Ordering<KmerNode>() {
+		@Override
+		public int compare(KmerNode left, KmerNode right) {
+			return Ints.compare(left.weight(), right.weight());
+		}
+	};
+	public static final Ordering<KmerNode> ByWeightDesc = new Ordering<KmerNode>() {
+		@Override
+		public int compare(KmerNode left, KmerNode right) {
+			return Ints.compare(right.weight(), left.weight());
+		}
+	};
 	public static class HashByLastEndKmer<T extends KmerNode> implements Hash.Strategy<T> {
 		@Override
 		public int hashCode(T node) {
