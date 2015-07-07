@@ -91,7 +91,7 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 		PathCollapseIterator collapseIt = null;
 		PathSimplificationIterator simplifyIt = null;
 		if (ap.maxBaseMismatchForCollapse > 0) {
-			collapseIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, ap.maxBaseMismatchForCollapse, ap.collapseBubblesOnly, 0); // TODO entropy parameter
+			collapseIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, ap.maxBaseMismatchForCollapse, ap.collapseBubblesOnly, ap.minNodeCollapseEntry); // TODO entropy parameter
 			pnIt = collapseIt;
 			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
 				pnIt = trackedIt.new PathNodeAssertionInterceptor(pnIt, "PathCollapseIterator");

@@ -2,7 +2,7 @@ library(ggplot2)
 library(stringr)
 library(reshape2)
 
-dtraw <- read.csv("W:/na12878/gridss_vis/positional-3.csv")
+dtraw <- read.csv("W:/na12878/gridss_vis/positional-14.csv")
 dtraw$index <- seq_len(nrow(dtraw))
 for (pos in names(dtraw)[str_detect(names(dtraw), "Position")]) {
   dtraw[,paste0(pos,"Delta")] <- dtraw[,pos] - c(0, head(dtraw[,pos], nrow(dtraw) - 1))
@@ -17,6 +17,5 @@ ggplot(dtSize, aes(x=variable, y=value + 1)) +
 
 
 
-z <- c(1,2,4)
-
-c(z, NA) - c(NA, z)
+tail(dtraw$collapsedBranchCount)
+tail(dtraw$collapsedLeafCount)

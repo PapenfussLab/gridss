@@ -122,6 +122,13 @@ public class AssemblyParameters {
 	 * Note: a breakend assembly longer than this length will cause reference sequence assembly to be at least as long as the breakend 
 	 */
 	public int anchorAssemblyLength = 100;
+	/**
+	 * Minimum path node kmer entropy required for path collapse.
+	 * 
+	 * This is intended as a proxy graph degeneracy proxy to prevent hangs when collapsing low complexity sequence
+	 *  
+	 */
+	public double minNodeCollapseEntry = 0.5;
 	public boolean applyFilters(SAMRecordAssemblyEvidence evidence) {
 		SAMRecordAssemblyEvidence localEvidence = evidence;
 		if (evidence instanceof RemoteEvidence) {
