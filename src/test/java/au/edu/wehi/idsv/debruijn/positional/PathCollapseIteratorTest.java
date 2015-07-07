@@ -197,7 +197,7 @@ public class PathCollapseIteratorTest extends TestHelper {
 		KmerPathNode toMerge1 = KPN(4, "AAAT", 2, 2, true);
 		KmerPathNode toMerge2 = KPN(4, "AATGGG", 3, 3, true);
 		KmerPathNode into = KPN(4, "AAACGGG", 2, 2, true);
-		KmerPathNode end = KPN(4, "GGGG", 5, 5, true);
+		KmerPathNode end = KPN(4, "GGGG", 6, 6, true);
 		KmerPathNode toMergeAlt = KPN(4, "AATCCCGTGTGTTGTG", 3, 3, true);
 		KmerPathNode.addEdge(start, toMerge1);
 		KmerPathNode.addEdge(toMerge1, toMerge2);

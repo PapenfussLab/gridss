@@ -3,6 +3,7 @@ package au.edu.wehi.idsv.debruijn;
 import java.util.List;
 
 import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 
 import com.google.common.collect.Lists;
@@ -72,5 +73,16 @@ public class PackedKmerListTest extends TestHelper {
 	@Test
 	public void should_reverse_complement() {
 		assertEquals("TGA", K(3, new PackedKmerList(3, B("TCA"), B("AAA"), true, true).kmer(0)));
+	}
+	@Test
+	public void should_allow_1_to_32_base_kmers() {
+		String seq = "CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGATTTTGTTTACAGCCTGTCTTATATCCTGAATAACGCACCGCCTATTCGAACGGGCGAATCTACCTAGGTCGCTCAGAACCGGCACCCTTAACCATCCATAT"; 
+		for (int k = 1; k <= 32; k++) {
+			PackedKmerList list = new PackedKmerList(k, B(seq), B(seq), false, false);
+			for (int i = 0; i < seq.length()-(k-1); i++) {
+				long kmer = list.kmer(i);
+				assertEquals(KmerEncodingHelper.picardBaseToEncoded(k, B(seq.substring(i, i+k))), kmer);
+			}
+		}
 	}
 }

@@ -35,7 +35,7 @@ public class PackedKmerList extends PackedSequence {
 		return weights;
 	}
 	public long kmer(int offset) {
-		return getEncodedLong(offset, k); 
+		return getKmer(offset, k); 
 	}
 	public int weight(int offset) {
 		return weights[offset];

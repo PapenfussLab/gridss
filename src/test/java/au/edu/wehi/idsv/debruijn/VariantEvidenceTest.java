@@ -158,4 +158,15 @@ public class VariantEvidenceTest extends TestHelper {
 			assertEquals(rk.containsAmbiguousBases, e.containsAmbiguousBases(offset++));
 		}
 	}
+	@Test
+	public void should_match_read_kmers() {
+		String seq = "CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGATTTTGTTTACAGCCTGTCTTATATCCTGAATAACGCACCGCCTATTCGAACGGGCGAATCTACCTAGGTCGCTCAGAACCGGCACCCTTAACCATCCATAT"; 
+		for (int k = 1; k <= 32; k++) {
+			VariantEvidence e = new VariantEvidence(k, SCE(FWD, withSequence(seq, Read(0, 5, "100M100S"))), getContext().getLinear());
+			for (int i = 0; i < 200-(k-1); i++) {
+				long kmer = e.getKmers().kmer(i);
+				assertEquals(KmerEncodingHelper.picardBaseToEncoded(k, B(seq.substring(i, i+k))), kmer);
+			}
+		}
+	}
 }

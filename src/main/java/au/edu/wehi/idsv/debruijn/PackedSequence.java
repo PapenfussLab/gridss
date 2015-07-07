@@ -11,45 +11,64 @@ import com.google.common.math.IntMath;
  */
 public class PackedSequence {
 	private static final int BITS_PER_BASE = 2;
-	private static final int BASES_PER_WORD = Integer.SIZE / BITS_PER_BASE;
+	private static final int BASES_PER_WORD = Long.SIZE / BITS_PER_BASE;
+	//private static final long BASE_MASK = (1 << BITS_PER_BASE) - 1;
+	private static final int ARRAY_SHIFT = Long.SIZE - 1 - Long.numberOfLeadingZeros(BASES_PER_WORD);
+	private static final int ARRAY_OFFSET_MASK = (1 << ARRAY_SHIFT) - 1;
+	private static final long BASE_MASK = (1 << BITS_PER_BASE) - 1;
 	/**
 	 * First base is packed in MSB of first word
 	 * Second base is packed in second MSB of first word
 	 * and so on
 	 */
-	protected final int[] packed;
-	protected static int[] pack(byte[] bases, boolean reverse, boolean complement) {
-		int[] packed = new int[IntMath.divide(bases.length, BASES_PER_WORD, RoundingMode.CEILING)];
-		int currentWord = 0;
-		int packedIntoCurrentWord = 0;
-		int currentOffset = 0;
-		for (int i = 0; i < bases.length; i++) {
-			byte base = bases[reverse ? bases.length - 1 - i: i];
-			long encoded = KmerEncodingHelper.picardBaseToEncoded(base);
-			if (complement) {
-				encoded = KmerEncodingHelper.complement(1, encoded);
-			}
-			currentWord <<= 2;
-			currentWord |= (int)encoded;
-			packedIntoCurrentWord ++;
-			if (packedIntoCurrentWord == BASES_PER_WORD) {
-				packed[currentOffset++] = currentWord;
-				packedIntoCurrentWord = 0;
-				currentWord = 0;
-			}
-		}
-		if (packedIntoCurrentWord != 0) {
-			packed[currentOffset] = (int)(currentWord << (BITS_PER_BASE * (BASES_PER_WORD - packedIntoCurrentWord)));
-		}
-		return packed;
-	}
+	private final long[] packed;
 	public PackedSequence(byte[] bases, boolean reverse, boolean complement) {
-		this.packed = pack(bases, reverse, complement);
+		packed = new long[IntMath.divide(bases.length, BASES_PER_WORD, RoundingMode.CEILING)];
+		int revMultiplier = 1;
+		int revOffset = 0;
+		if (reverse) {
+			revMultiplier = -1;
+			revOffset = bases.length - 1;
+		}
+		if (complement) { 
+			for (int i = 0; i < bases.length; i++) {
+				byte base = bases[i];
+				long encoded = KmerEncodingHelper.picardBaseToEncoded(base);
+				encoded = KmerEncodingHelper.complement(1, encoded);
+				setBaseEncoded(revOffset + i * revMultiplier, encoded);
+			}
+		} else {
+			for (int i = 0; i < bases.length; i++) {
+				byte base = bases[i];
+				long encoded = KmerEncodingHelper.picardBaseToEncoded(base);
+				setBaseEncoded(revOffset + i * revMultiplier, encoded);
+			}
+		}
 	}
-	public byte get(int offset) {
-		int wordIndex = (offset) / BASES_PER_WORD;
-		int wordOffset = BASES_PER_WORD - ((offset) % BASES_PER_WORD) - 1;
-		byte b = KmerEncodingHelper.encodedToPicardBase(packed[wordIndex] >>> (wordOffset * BITS_PER_BASE));
+	private void setBaseEncoded(final int offset, final long base) {
+		int wordIndex = offset >> ARRAY_SHIFT;
+		int wordOffset = BASES_PER_WORD - 1 - (offset & ARRAY_OFFSET_MASK);
+		assert(wordIndex < packed.length);
+		long word = packed[wordIndex];
+		word &= ~(BASE_MASK << (BITS_PER_BASE * wordOffset));
+		word |= base << (BITS_PER_BASE * wordOffset);
+		packed[wordIndex] = word;
+	}
+	private long getBaseEncoded(final int offset) {
+		int wordIndex = offset >> ARRAY_SHIFT;
+		int wordOffset = BASES_PER_WORD - 1 - (offset & ARRAY_OFFSET_MASK);
+		assert(wordIndex < packed.length);
+		long base = packed[wordIndex] >>> (BITS_PER_BASE * wordOffset);
+		return base;
+	}
+	private long getWordBases(final int wordIndex, final int highBaseIgnoreCount, final int lowBaseIgnoreCount) {
+		long word = packed[wordIndex];
+		word <<= BITS_PER_BASE * highBaseIgnoreCount; // force high bases off the top
+		word >>>= BITS_PER_BASE * (highBaseIgnoreCount + lowBaseIgnoreCount); // and low off the bottom
+		return word;
+	}
+	public byte get(final int offset) {
+		byte b = KmerEncodingHelper.encodedToPicardBase(getBaseEncoded(offset));
 		return b;
 	}
 	public byte[] getBytes(int offset, int length) {
@@ -60,21 +79,23 @@ public class PackedSequence {
 		}
 		return seq;
 	}
-	public long getEncodedLong(int offset, int length) {
-		assert(length <= Long.SIZE / BITS_PER_BASE);
+	public long getKmer(final int offset, final int length) {
 		assert(offset + length <= packed.length * BASES_PER_WORD);
-		int toTake = length;
-		long accum = 0;
-		while (toTake > 0) {
-			int wordOffset = offset / BASES_PER_WORD;
-			int basesToSkipInWord = offset % BASES_PER_WORD;
-			int basesToTakeInWord = Math.min(toTake, BASES_PER_WORD - basesToSkipInWord);
-			
-			accum <<= basesToTakeInWord * BITS_PER_BASE;
-			accum |= ((int)packed[wordOffset] >> (BITS_PER_BASE * (BASES_PER_WORD - basesToSkipInWord - basesToTakeInWord))) & ((1 << (BITS_PER_BASE * basesToTakeInWord)) - 1);
-			toTake -= basesToTakeInWord;
-			offset += basesToTakeInWord;
+		int wordIndex = offset >> ARRAY_SHIFT;
+		int basesToSkipInWord = offset & ARRAY_OFFSET_MASK;
+		int basesRemaining = BASES_PER_WORD - basesToSkipInWord;
+		if (length <= BASES_PER_WORD - basesToSkipInWord) {
+			return getWordBases(wordIndex, basesToSkipInWord, BASES_PER_WORD - basesToSkipInWord - length);
+		} else {
+			int lengthInNextWord = length - basesRemaining;
+			long kmer = getWordBases(wordIndex, basesToSkipInWord, 0);
+			kmer <<= lengthInNextWord * BITS_PER_BASE;
+			kmer |= getWordBases(wordIndex + 1, 0, BASES_PER_WORD - lengthInNextWord);
+			return kmer;
 		}
-		return accum;
+	}
+	@Override
+	public String toString() {
+		return new String(getBytes(0, packed.length * BASES_PER_WORD));
 	}
 }

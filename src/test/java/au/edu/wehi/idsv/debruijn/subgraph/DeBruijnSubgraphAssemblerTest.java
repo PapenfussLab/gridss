@@ -132,6 +132,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		List<AssemblyEvidence> results = Lists.newArrayList();
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence(S(RANDOM).substring(0, 200), Read(0, 1, "100M100S"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(1, results.size());
 		assertEquals(100, results.get(0).getBreakendSequence().length);
 		assertEquals(200, results.get(0).getAssemblySequence().length);
 	}
