@@ -29,12 +29,20 @@ public abstract class KmerPathNodeBasePath {
 		public TraversalNode(TraversalNode parent, KmerPathSubnode node) {
 			this.parent = parent;
 			this.node = node;
-			this.pathLength = node.length() + (parent == null ? 0 : parent.pathLength);
+			if (parent == null) {
+				this.pathLength = node.length();
+				this.pathWeight = node.weight();
+			} else {
+				this.pathLength = node.length() + parent.pathLength;
+				this.pathWeight = node.weight() + parent.pathWeight;
+			}
 		}
 		private final KmerPathSubnode node;
 		private final TraversalNode parent;
 		private final int pathLength;
+		private final int pathWeight;
 		public int pathLength() { return pathLength; }
+		public int pathWeight() { return pathWeight; }
 		public TraversalNode parent() { return parent; }
 		public KmerPathSubnode node() { return node; }
 		/**

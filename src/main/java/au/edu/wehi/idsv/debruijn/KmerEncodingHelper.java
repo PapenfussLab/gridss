@@ -32,6 +32,7 @@ public class KmerEncodingHelper {
 	 * Bit mask return only bits used by a kmer of length k 
 	 */
 	private static final long[] usedBits = new long[MAX_K + 1];
+	private static final byte[] ENCODED_TO_PICARD_LOOKUP = { 'T', 'C', 'A', 'G' };
 	static {
 		long usedMask = 0;
 		long complementMask = 0;
@@ -117,13 +118,14 @@ public class KmerEncodingHelper {
 		return reverse(k, complement(k, encoded));
 	}
 	public static byte encodedToPicardBase(int encoded) {
-		switch ((int)encoded & 0x03) {
-			case 3: return 'G';
-			case 1: return 'C';
-			case 0: return 'T';
-			default:
-			case 2: return 'A';
-		}
+		return ENCODED_TO_PICARD_LOOKUP[(int)encoded & 0x03];
+		//switch ((int)encoded & 0x03) {
+		//	case 3: return 'G';
+		//	case 1: return 'C';
+		//	case 0: return 'T';
+		//	default:
+		//	case 2: return 'A';
+		//}
 	}
 	public static byte encodedToPicardBase(long encoded) {
 		return encodedToPicardBase((int)encoded);

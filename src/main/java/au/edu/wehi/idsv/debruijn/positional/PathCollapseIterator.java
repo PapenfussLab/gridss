@@ -271,6 +271,8 @@ public class PathCollapseIterator implements PeekingIterator<KmerPathNode>, DeBr
 					if (tryPathCollapse(pathA, pathB, traverseForward)) return true;
 				}
 				pathA.dfsPop();
+				assert(pathAlength == pathA.pathLength());
+				assert(pathBlength == pathB.pathLength());
 			}
 			//pathA.dfsPop(); // done with this node
 		} else {
@@ -286,6 +288,8 @@ public class PathCollapseIterator implements PeekingIterator<KmerPathNode>, DeBr
 					if (tryPathCollapse(pathA, pathB, traverseForward)) return true;
 				}
 				pathB.dfsPop();
+				assert(pathAlength == pathA.pathLength());
+				assert(pathBlength == pathB.pathLength());
 			}
 		}
 		assert(pathA.pathLength() == pathAlength);
@@ -334,7 +338,7 @@ public class PathCollapseIterator implements PeekingIterator<KmerPathNode>, DeBr
 		int diff = 0;
 		final TraversalNode headNode = headPath.headNode();
 		final KmerPathNode headPathNode = headPath.headPath();
-		assert(headPathNode != headPath.rootNode().node().node());
+		assert(headNode.parent() != null);
 		final int headPathLengthExcludingHead = headNode.parent().pathLength();
 		final int headPathStartOffset = headNode.pathLength() - headPathNode.length();
 		final int headPathEndOffset = headNode.pathLength() - 1;

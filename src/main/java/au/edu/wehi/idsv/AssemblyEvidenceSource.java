@@ -349,8 +349,9 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				samHeader.setSortOrder(SortOrder.unsorted);
 				writer = getContext().getSamFileWriterFactory(false).makeSAMOrBAMWriter(samHeader, true, unsorted);
 				Iterator<SAMRecordAssemblyEvidence> assemblyIt = getAssembler(it);
+				SAMRecordAssemblyEvidence ass = null;
 				while (assemblyIt.hasNext()) {
-					SAMRecordAssemblyEvidence ass = assemblyIt.next();
+					ass = assemblyIt.next();
 					ass = fixAssembly(ass);
 					if (ass != null) {
 						SAMRecord record = ass.getBackingRecord();
@@ -361,9 +362,12 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 						writer.addAlignment(record);
 						if (System.currentTimeMillis() > nextProgress) {
 							nextProgress = System.currentTimeMillis() + 1000 * PROGRESS_UPDATE_INTERVAL_SECONDS;
-							log.info(String.format("Assembled up to %s:%d", getContext().getDictionary().getSequence(ass.getBreakendSummary().referenceIndex).getSequenceName(), ass.getBreakendSummary().start));
+							log.info(String.format("Assembly progress at %s:%d", getContext().getDictionary().getSequence(ass.getBreakendSummary().referenceIndex).getSequenceName(), ass.getBreakendSummary().start));
 						}
 					}
+				}
+				if (ass != null) {
+					log.info(String.format("Assembly complete for %s", getContext().getDictionary().getSequence(ass.getBreakendSummary().referenceIndex).getSequenceName()));
 				}
 				writer.close();
 				writer = null;

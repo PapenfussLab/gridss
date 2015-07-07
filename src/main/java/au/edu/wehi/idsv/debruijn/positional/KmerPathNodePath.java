@@ -19,11 +19,7 @@ public class KmerPathNodePath extends KmerPathNodeBasePath {
 		return (traversingForward() ? nodepath.getLast() : nodepath.getFirst()).pathLength();
 	}
 	public int pathWeight() {
-		int weight = 0;
-		for (KmerPathNode n : path) {
-			weight += n.weight();
-		}
-		return weight;
+		return headNode().pathWeight();
 	}
 	protected KmerPathNode headPath() {
 		return traversingForward() ? path.getLast() : path.getFirst();
