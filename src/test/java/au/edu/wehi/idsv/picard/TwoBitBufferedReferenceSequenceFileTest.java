@@ -38,6 +38,10 @@ public class TwoBitBufferedReferenceSequenceFileTest extends TestHelper {
 		assertEquals("N", S(b.getSubsequenceAt("test", 1, 1) .getBases()));
 		assertEquals("A", S(b.getSubsequenceAt("test", 2, 2) .getBases()));
 		assertEquals("NAN", S(b.getSubsequenceAt("test", 1, 3) .getBases()));
-		assertEquals('A', b.getBase(0, 1));
+		assertEquals('N', b.getBase(0, 1));
+		assertEquals('A', b.getBase(0, 2));
+		assertEquals('N', b.getBase(0, 3));
+		assertEquals('N', b.getBase(0, 4));
+		assertEquals('T', b.getBase(0, 5));
 	}
 }
