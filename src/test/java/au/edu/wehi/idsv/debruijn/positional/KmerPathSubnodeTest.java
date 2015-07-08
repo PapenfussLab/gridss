@@ -3,6 +3,7 @@ package au.edu.wehi.idsv.debruijn.positional;
 import static org.junit.Assert.*;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import org.junit.Test;
@@ -170,5 +171,46 @@ public class KmerPathSubnodeTest extends TestHelper {
 		assertEquals(2, paths.size());
 		assertEquals(1, new KmerPathSubnode(paths.get(0)).next().size());
 		assertEquals(1, new KmerPathSubnode(paths.get(1)).prev().size());
+	}
+	@Test
+	public void subnodesOfDegree() {
+		int k = 4;
+		List<KmerPathNode> input = new ArrayList<KmerPathNode>();
+		input.add(KPN(k, "TAAA", 0, 9, false));
+		input.add(KPN(k, "CAAA", 4, 6, false));
+		input.add(KPN(k, "AAAA", 1, 10, false));
+		input.add(KPN(k, "AAAC", 5, 9, false));
+		input.add(KPN(k, "AAAT", 10, 10, false));
+		input.add(KPN(k, "AAAG", 4, 5, false));
+		KmerPathNode.addEdge(input.get(0), input.get(2));
+		KmerPathNode.addEdge(input.get(1), input.get(2));
+		KmerPathNode.addEdge(input.get(2), input.get(3));
+		KmerPathNode.addEdge(input.get(2), input.get(4));
+		KmerPathNode.addEdge(input.get(2), input.get(5));
+		List<KmerPathSubnode> result = new KmerPathSubnode(input.get(2)).subnodesOfDegree(2, 1);
+		// 1111222111 prev
+		// ----------
+		//     456
+		// 0123456789
+		// 1234567890 (2)
+		//    56789
+		//         0
+		//   45
+		// ----------
+		// 0012111110 next
+		// 1111222111 (prev)
+		// 1234567890
+		assertEquals(1, result.size());
+		assertEquals(5, result.get(0).firstStart());
+		assertEquals(7, result.get(0).firstEnd());
+		result = new KmerPathSubnode(input.get(2)).subnodesOfDegree(1, 1);
+		assertEquals(3, result.size());
+		assertEquals(3, result.get(0).firstStart());
+		assertEquals(3, result.get(0).firstEnd());
+		// {[3,3] [8,8] [9,9]} not  {[3,3] [8,9]} since the adj nodes are different for 8 and 9
+		assertEquals(8, result.get(1).firstStart());
+		assertEquals(8, result.get(1).firstEnd());
+		assertEquals(9, result.get(2).firstStart());
+		assertEquals(9, result.get(2).firstEnd());
 	}
 }

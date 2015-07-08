@@ -3,10 +3,13 @@ package au.edu.wehi.idsv.debruijn.positional;
 import it.unimi.dsi.fastutil.ints.IntHeapPriorityQueue;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNode;
+import au.edu.wehi.idsv.util.RangeUtil;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
@@ -121,6 +124,27 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode, KmerNode {
 	 */
 	public RangeSet<Integer> prevPathRangesOfDegree(int degree) {
 		return pathRangesOfDegree(degree, false);
+	}
+	/**
+	 * Returns the position subinterval of this node for which there
+	 * exist exactly the given number of adjacent nodes 
+	 * @param prevDegree number of predecessor nodes
+	 * @param nextDegree number of successor nodes
+	 * @return Nodes with the given predecessor and successor counts
+	 */
+	public List<KmerPathSubnode> subnodesOfDegree(int prevDegree, int nextDegree) {
+		RangeSet<Integer> rsNext = nextPathRangesOfDegree(nextDegree);
+		if (rsNext.isEmpty()) return ImmutableList.of();
+		RangeSet<Integer> rsPrev = prevPathRangesOfDegree(prevDegree);
+		if (rsPrev.isEmpty()) return ImmutableList.of();
+		RangeSet<Integer> rs = RangeUtil.intersect(rsNext, rsPrev);
+		if (rsPrev.isEmpty()) return ImmutableList.of();
+		if (rs.encloses(Range.closed(start, end))) return ImmutableList.of(this);
+		List<KmerPathSubnode> list = new ArrayList<KmerPathSubnode>(rs.asRanges().size());
+		for (Range<Integer> range : rs.asRanges()) {
+			list.add(new KmerPathSubnode(n, range.lowerEndpoint(), range.upperEndpoint()));
+		}
+		return list;
 	}
 	/**
 	 * Returns the positions for which this node has the given degree 
