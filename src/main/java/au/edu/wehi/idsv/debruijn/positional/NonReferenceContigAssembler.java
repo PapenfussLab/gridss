@@ -40,6 +40,12 @@ import com.google.common.collect.Iterators;
  *
  */
 public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssemblyEvidence> {
+	/**
+	 * Positional size of the loaded subgraph before orphan calling is performed.
+	 * This is relatively high as orphaned subgraphs are relatively uncommon
+	 * This value is in multiples of maxEvidenceDistance
+	 */
+	private static final int ORPHAN_EVIDENCE_MULTIPLE = 32;
 	private Long2ObjectMap<Collection<KmerPathNodeKmerNode>> graphByKmerNode = new Long2ObjectOpenHashMap<Collection<KmerPathNodeKmerNode>>();
 	private SortedSet<KmerPathNode> graphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByLastStartEndKmerReferenceWeight);
 	private final EvidenceTracker evidenceTracker;
@@ -97,7 +103,8 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	}
 	@Override
 	protected SAMRecordAssemblyEvidence computeNext() {
-		while (!graphByPosition.isEmpty() || wrapper.hasNext()) {
+ 		while (!graphByPosition.isEmpty() || wrapper.hasNext()) {
+ 			removeOrphanedNonReferenceSubgraphs();
 			SAMRecordAssemblyEvidence contig = nextContig();
 			if (contig != null) {
 				return contig;
@@ -192,6 +199,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	 * @param evidence
 	 */
 	private void removeFromGraph(Set<KmerEvidence> evidence) {
+		assert(!evidence.isEmpty());
 		Map<KmerPathNode, List<List<KmerNode>>> toRemove = new IdentityHashMap<KmerPathNode, List<List<KmerNode>>>();
 		for (KmerEvidence e : evidence) {
 			for (int i = 0; i < e.length(); i++) {
@@ -279,6 +287,54 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		list.remove(node);
 		if (list.size() == 0) {
 			graphByKmerNode.remove(node.firstKmer());
+		}
+	}
+	/**
+	 * Detects and removes orphaned reference subgraphs.
+	 * 
+	 * Orphaned reference subgraphs can occur when all non-reference
+	 * kmers for a given evidence are merged with reference kmers.
+	 * Eg: a sequencing error causes a short soft clip leaf which
+	 * is subsequently merged with the reference allele.  
+	 * 
+	 * No contigs will be called for such evidence since no all
+	 * connected kmers are reference kmers.
+	 * 
+	 * @author cameron.d
+	 *
+	 */
+	private void removeOrphanedNonReferenceSubgraphs() {
+		if (graphByPosition.isEmpty()) return;
+		if (graphByPosition.first().firstStart() >= wrapper.lastPosition() - ORPHAN_EVIDENCE_MULTIPLE * maxEvidenceDistance) return;
+		int lastEnd = Integer.MIN_VALUE;
+		List<KmerPathNode> nonRefOrphaned = new ArrayList<KmerPathNode>();
+		List<KmerPathNode> nonRefActive = new ArrayList<KmerPathNode>();
+		// Since we're calling all non-reference contig
+		// all orphaned reference subgraph will eventually
+		// have no reference kmers with any overlapping positions
+		// This means we don't need to actually calculate the subgraph
+		// just wait until we've called all the reference contigs and
+		// we're just left the non-reference.
+		
+		// Note: this approach delays removal until all overlapping non-reference
+		// subgraphs do not overlap evidence
+		// In actual data this does not occur often so is not too much of an issue.
+		for (KmerPathNode n : graphByPosition) {
+			if (lastEnd < n.firstStart() - 1) {
+				// can't be connected since all active nodes
+				// have finished sufficiently early that
+				// they can't be connected
+				nonRefOrphaned.addAll(nonRefActive);
+				nonRefActive.clear();
+			}
+			if (!n.isReference()) break;
+			if (n.lastEnd() >= wrapper.lastPosition()) break;
+			lastEnd = Math.max(lastEnd, n.lastEnd());
+			nonRefActive.add(n);
+		}
+		if (!nonRefOrphaned.isEmpty()) {
+			Set<KmerEvidence> evidence = evidenceTracker.untrack(nonRefOrphaned.stream().map(n -> new KmerPathSubnode(n)).collect(Collectors.toList()));
+			removeFromGraph(evidence);
 		}
 	}
 	/**
