@@ -158,7 +158,7 @@ public class BestNonReferenceContigCaller {
 				called.add(new Contig(new TraversalNode(ms, rs.lowerEndpoint(), rs.upperEndpoint()), true));
 			}	
 		}
-		for (Range<Integer> rs : ms.node.nextPathRangesOfDegree(0).asRanges()) {
+		for (Range<Integer> rs : ms.node.nextPathRangesOfDegree(KmerPathSubnode.NO_EDGES).asRanges()) {
 			// path has no successors = end of path
 			called.add(new Contig(new TraversalNode(ms, rs.lowerEndpoint(), rs.upperEndpoint()), false));
 		}
@@ -177,15 +177,7 @@ public class BestNonReferenceContigCaller {
 		 */
 		public final int score;
 		public ArrayDeque<KmerPathSubnode> toSubnodePath() {
-			ArrayDeque<KmerPathSubnode> contigPath = new ArrayDeque<KmerPathSubnode>();
-			KmerPathSubnode last = node.node;
-			contigPath.add(last);
-			for (TraversalNode n = node.prev; n != null; n = n.prev) {
-				KmerPathSubnode current = n.node.givenNext(last);
-				last = current;
-				contigPath.addFirst(current);
-			}
-			return contigPath;
+			return node.toSubnodeNextPath();
 		}
 		@Override
 		public String toString() {
@@ -221,7 +213,8 @@ public class BestNonReferenceContigCaller {
 		return contigLastEnd < firstStart - maxEvidenceWidth; // evidence could overlap just contig last end
 	}
 	public ArrayDeque<KmerPathSubnode> bestContig() {
-		// FIXME: add hard bounds to the width of the loaded graph.
+		// FIXME: add hard safety bounds to the width of the loaded graph
+		// since the size is technically unbounded
 		while (underlying.hasNext() && (called.isEmpty() || !contigDoesNotShareEvidenceWithUnprocessed(called.peek()))) {
 			advance();
 		}

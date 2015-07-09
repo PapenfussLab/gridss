@@ -33,6 +33,15 @@ public class KmerNodeUtil {
 					.result();
 		}
 	};
+	public static final Ordering<KmerNode> ByFirstEndKmer = new Ordering<KmerNode>() {
+		@Override
+		public int compare(KmerNode left, KmerNode right) {
+			return ComparisonChain.start()
+					.compare(left.firstEnd(), right.firstEnd())
+					.compare(left.firstKmer(), right.firstKmer())
+					.result();
+		}
+	};
 	/**
 	 * Ordering usable as a graph node key (since duplicate nodes should not occur)  
 	 */

@@ -50,7 +50,7 @@ public abstract class KmerPathNodeBasePath {
 		 * @return first kmer positions of this node that have no successors
 		 */
 		public RangeSet<Integer> terminalRanges() {
-			return traversingForward() ? node.nextPathRangesOfDegree(0) : node.prevPathRangesOfDegree(0);
+			return traversingForward() ? node.nextPathRangesOfDegree(KmerPathSubnode.NO_EDGES) : node.prevPathRangesOfDegree(KmerPathSubnode.NO_EDGES);
 		}
 		/**
 		 * Finds all the terminal leaves that are subsets of this path
@@ -75,12 +75,12 @@ public abstract class KmerPathNodeBasePath {
 			while (tn != null && !ranges.isEmpty()) {
 				if (tn != this) {
 					// only a single successor
-					RangeSet<Integer> singleSuccessor = traversingForward() ? sn.nextPathRangesOfDegree(1) : sn.prevPathRangesOfDegree(1);
+					RangeSet<Integer> singleSuccessor = traversingForward() ? sn.nextPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE) : sn.prevPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE);
 					singleSuccessor = tn.toAnchorPosition(singleSuccessor);
 					ranges = RangeUtil.intersect(ranges, singleSuccessor);
 				}
 				// only a single ancestor
-				RangeSet<Integer> singleAncestor = traversingForward() ? sn.prevPathRangesOfDegree(1) : sn.nextPathRangesOfDegree(1);
+				RangeSet<Integer> singleAncestor = traversingForward() ? sn.prevPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE) : sn.nextPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE);
 				singleAncestor = tn.toAnchorPosition(singleAncestor);
 				ranges = RangeUtil.intersect(ranges, singleAncestor);
 				tn = tn.parent;

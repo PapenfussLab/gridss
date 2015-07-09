@@ -88,10 +88,15 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
 			pnIt = trackedIt.new PathNodeAssertionInterceptor(pnIt, "PathNodeIterator");
 		}
-		PathCollapseIterator collapseIt = null;
+		CollapseIterator collapseIt = null;
 		PathSimplificationIterator simplifyIt = null;
 		if (ap.maxBaseMismatchForCollapse > 0) {
-			collapseIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, ap.maxBaseMismatchForCollapse, ap.collapseBubblesOnly, ap.minNodeCollapseEntry); // TODO entropy parameter
+			if (!ap.collapseBubblesOnly) {
+				log.warn("Collapsing all paths is an exponential time operation. gridss is likely to hang if your genome contains repetative sequence");
+				collapseIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, ap.maxBaseMismatchForCollapse, false, 0);
+			} else {
+				collapseIt = new LeafBubbleCollapseIterator(pnIt, k, maxPathCollapseLength, ap.maxBaseMismatchForCollapse);
+			}
 			pnIt = collapseIt;
 			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
 				pnIt = trackedIt.new PathNodeAssertionInterceptor(pnIt, "PathCollapseIterator");

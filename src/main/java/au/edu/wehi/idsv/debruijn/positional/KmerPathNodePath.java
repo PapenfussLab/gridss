@@ -13,7 +13,7 @@ public class KmerPathNodePath extends KmerPathNodeBasePath {
 	private ArrayDeque<Iterator<TraversalNode>> nextPath = new ArrayDeque<Iterator<TraversalNode>>();
 	public KmerPathNodePath(KmerPathSubnode node, boolean traverseForward, int maxPathLength) {
 		super(node, maxPathLength, traverseForward);
-		dfsPush(rootNode());
+		push(rootNode());
 	}
 	public int pathLength() {
 		return (traversingForward() ? nodepath.getLast() : nodepath.getFirst()).pathLength();
@@ -36,12 +36,12 @@ public class KmerPathNodePath extends KmerPathNodeBasePath {
 	 */
 	public boolean dfsNextChild() {
 		if (headNext().hasNext()) {
-			dfsPush(headNext().next());
+			push(headNext().next());
 			return true;
 		}
 		return false;
 	}
-	private void dfsPush(TraversalNode next) {
+	public void push(TraversalNode next) {
 		if (traversingForward()) {
 			nodepath.addLast(next);
 			path.addLast(next.node().node());
@@ -57,17 +57,17 @@ public class KmerPathNodePath extends KmerPathNodeBasePath {
 	 */
 	public void dfsResetChildTraversal() {
 		TraversalNode node = headNode();
-		dfsPopUnchecked();
-		dfsPush(node);
+		popUnchecked();
+		push(node);
 	}
 	/**
 	 * Stop any further child traversal of this node and remove it from the path
 	 */
-	public void dfsPop() {
+	public void pop() {
 		if (nodepath.size() == 1) throw new IllegalStateException("Cannot remove root node from traversal path");
-		dfsPopUnchecked();
+		popUnchecked();
 	}
-	private void dfsPopUnchecked() {
+	private void popUnchecked() {
 		if (traversingForward()) {
 			nodepath.removeLast();
 			path.removeLast();
@@ -102,7 +102,7 @@ public class KmerPathNodePath extends KmerPathNodeBasePath {
 				}
 			}
 			if (best != null) {
-				dfsPush(best);
+				push(best);
 			}
 		} while (best != null);
 	}

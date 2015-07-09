@@ -8,10 +8,6 @@ import java.util.TreeSet;
 
 import au.edu.wehi.idsv.util.IntervalUtil;
 
-import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.Ordering;
-import com.google.common.primitives.Ints;
-
 /**
  * Helper class to track memoization of nodes during positional graph traversal
  * @author Daniel Cameron
@@ -24,8 +20,8 @@ public class MemoizedTraverse {
 	 * (BFS in position space) of the graph, caching the best predecessor
 	 * of each node. 
 	 */
-	private final NavigableSet<TraversalNode> memoized = new TreeSet<TraversalNode>(MemoizedNodeByKmerStartEndScore);
-	private final PriorityQueue<TraversalNode> frontier = new PriorityQueue<TraversalNode>(1024, MemoizedNodeByEnd);
+	private final NavigableSet<TraversalNode> memoized = new TreeSet<TraversalNode>(TraversalNode.ByKmerStartEnd);
+	private final PriorityQueue<TraversalNode> frontier = new PriorityQueue<TraversalNode>(1024, TraversalNode.ByEnd);
 	/**
 	 * Memoize the given score for the given position
 	 * @param score initial score
@@ -138,23 +134,6 @@ public class MemoizedTraverse {
 		}
 		return true;
 	}
-	private static Ordering<TraversalNode> MemoizedNodeByKmerStartEndScore = new Ordering<TraversalNode>() {
-		@Override
-		public int compare(TraversalNode left, TraversalNode right) {
-			return ComparisonChain.start()
-					.compare(left.node.node().firstKmer(), right.node.node().firstKmer())
-					.compare(left.node.firstStart(), right.node.firstStart())
-					.compare(left.node.firstEnd(), right.node.firstEnd())
-					.compare(left.score, right.score)
-					.result();
-		}
-	};
-	private static Ordering<TraversalNode> MemoizedNodeByEnd = new Ordering<TraversalNode>() {
-		@Override
-		public int compare(TraversalNode left, TraversalNode right) {
-			return Ints.compare(left.node.firstEnd() + left.node.length(), right.node.firstEnd() + right.node.length());
-		}
-	};
 	public int tracking_memoizedNodeCount() {
 		return memoized.size();
 	}

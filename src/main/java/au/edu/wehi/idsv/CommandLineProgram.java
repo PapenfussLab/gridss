@@ -78,8 +78,8 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     // --- De Bruijn assembly parameters ---
     @Option(doc = "Maximum of base mismatches for de bruijn kmer paths to be merged", optional=true)
     public int ASSEMBLY_DEBRUIJN_MAX_PATH_COLLAPSE_BASE_MISMATCHES = new AssemblyParameters().maxBaseMismatchForCollapse;
-    @Option(doc = "Only consider bubbles for path collapse. Bubbles are kmer paths with a single entry and exit kmer choice", optional=true)
-    public boolean ASSEMBLY_DEBRUIJN_COLLAPSE_BUBBLES_ONLY = false;
+    @Option(doc = "Only consider bubbles for path collapse. Bubbles are kmer paths with a single entry and exit kmer choice.", optional=true)
+    public boolean ASSEMBLY_DEBRUIJN_COLLAPSE_BUBBLES_ONLY = new AssemblyParameters().collapseBubblesOnly;
     @Option(doc = "Allow reuse of reference kmers when assembling subsequent contigs in an assembly iteration", optional=true)
     public boolean ASSEMBLY_DEBRUIJN_ALLOW_REFERENCE_KMER_RESUSE = new AssemblyParameters().allReferenceKmerReuse;
     @Option(doc = "Maximum number of contigs per assembly iteration", optional=true)
