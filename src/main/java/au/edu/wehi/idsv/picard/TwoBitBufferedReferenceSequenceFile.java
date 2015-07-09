@@ -1,19 +1,18 @@
 package au.edu.wehi.idsv.picard;
 
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.Log;
 
 import java.io.IOException;
+import java.util.BitSet;
 
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.PackedSequence;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Range;
-import com.google.common.collect.RangeSet;
-import com.google.common.collect.TreeRangeSet;
 
 /**
  * 2bit encodes and buffers the entire reference to enable efficient random lookup of small subsequences
@@ -26,43 +25,39 @@ public class TwoBitBufferedReferenceSequenceFile implements ReferenceSequenceFil
 	/**
 	 * Cached contigs
 	 */
-	private volatile ImmutableMap<String, PackedReferenceSequence> cache = ImmutableMap.of();
-	private PackedReferenceSequence[] referenceIndexLookup; 
-	
+	private ImmutableMap<String, PackedReferenceSequence> cache = ImmutableMap.of();
+	private PackedReferenceSequence[] referenceIndexLookup;
 	public TwoBitBufferedReferenceSequenceFile(ReferenceSequenceFile underlying) {
 		this.underlying = underlying;
 		this.referenceIndexLookup = new PackedReferenceSequence[underlying.getSequenceDictionary().getSequences().size()];
+		log.debug("Loading reference genome into memory");
+		for (SAMSequenceRecord contig : underlying.getSequenceDictionary().getSequences()) {
+			getSequence(contig.getSequenceName());
+		}
+		log.debug("Reference genome loaded");
 	}
 	public byte getBase(int referenceIndex, int position) {
 		PackedReferenceSequence seq = referenceIndexLookup[referenceIndex];
-		if (seq == null) {
-			synchronized (referenceIndexLookup) {
-				seq = addToCache(underlying.getSequenceDictionary().getSequence(referenceIndex).getSequenceName());
-			}
+		if (seq.ambiguous.get(position - 1)) {
+			return 'N';
 		}
-		return seq.get(position - 1); 
+		return seq.get(position - 1);
 	}
 	private class PackedReferenceSequence extends PackedSequence {
 		private final String name;
 	    private final int contigIndex;
 	    private final long length;
-	    /**
-	     * 1-based lookup of ambiguous bases
-	     */
-	    private final RangeSet<Integer> ambiguous = TreeRangeSet.create();
+	    private final BitSet ambiguous; 
 		public PackedReferenceSequence(ReferenceSequence seq) {
 			super(seq.getBases(), false, false);
 			this.name = seq.getName();
 			this.contigIndex = seq.getContigIndex();
 			this.length = seq.length();
+			this.ambiguous = new BitSet(seq.length());
+			byte[] seqBases = seq.getBases();
 			for (int i = 0; i < length; i++) {
-				if (KmerEncodingHelper.isAmbiguous(seq.getBases()[i])) {
-					int end = i + 1;
-					while (end < length && KmerEncodingHelper.isAmbiguous(seq.getBases()[end])) {
-						end++;
-					}
-					ambiguous.add(Range.closedOpen(i + 1, end + 1));
-					i = end - 1;
+				if (KmerEncodingHelper.isAmbiguous(seqBases[i])) {
+					ambiguous.set(i);
 				}
 			}
 		}
@@ -72,10 +67,10 @@ public class TwoBitBufferedReferenceSequenceFile implements ReferenceSequenceFil
 		public ReferenceSequence getSubsequenceAt(long start, long stop) {
 			int length = (int)(stop - start + 1);
 			ReferenceSequence seq = new ReferenceSequence(name, contigIndex, getBytes((int)(start - 1), length));
-			for (Range<Integer> r : ambiguous.subRangeSet(Range.closedOpen((int)start, (int)start + length)).asRanges()) {
-				for (int i = r.lowerEndpoint(); i < r.upperEndpoint(); i++) {
-					int offset = (int)(i - start);
-					seq.getBases()[offset] = 'N';
+			byte[] seqBases = seq.getBases();
+			for (int i = 0; i < length; i++) {
+				if (ambiguous.get((int)start - 1 + i)) {
+					seqBases[i] = 'N';
 				}
 			}
 			return seq;
@@ -101,14 +96,13 @@ public class TwoBitBufferedReferenceSequenceFile implements ReferenceSequenceFil
 	 * Updates the cache to include the new contig
 	 * @param contig
 	 */
-	private synchronized PackedReferenceSequence addToCache(String contig) {
+	private PackedReferenceSequence addToCache(String contig) {
 		PackedReferenceSequence seq = cache.get(contig);
 		if (seq != null) {
 			// already populated by another thread while we were waiting to enter
 			// this synchronized block
 			return seq;
 		}
-		log.debug("Caching reference genome contig ", contig);
 		ReferenceSequence fullContigSequence = underlying.getSequence(contig);
 		seq = new PackedReferenceSequence(fullContigSequence);
 		cache = ImmutableMap.<String, PackedReferenceSequence>builder()
