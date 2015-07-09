@@ -36,6 +36,24 @@ setwd(pwd)
 #     attr(vcf, "metadata")$CX_CALLER <- "gridss Medium"
 #     return(vcf)
 #   }))
+#Separate out GRIDSS confidence levels
+vcfs <- c(
+ vcfs,
+ lapply(vcfs, function(vcf) {
+   if (is.null(attr(vcf, "metadata")) || is.na(vcf@metadata$CX_CALLER) || vcf@metadata$CX_CALLER !="gridss") return(NULL)
+   if (!is.na(vcf@metadata$CX_CALLER_FLAGS) & vcf@metadata$CX_CALLER_FLAGS == "ASSEMBLY_ALGORITHM") {
+     attr(vcf, "metadata")$CX_CALLER <- "gridss Positional" 
+   } else {
+     attr(vcf, "metadata")$CX_CALLER <- "gridss Subgraph" 
+   }
+   return(vcf)
+ }))
+#   lapply(vcfs, function(vcf) {
+#     if (is.null(attr(vcf, "metadata")) || is.na(vcf@metadata$CX_CALLER) || vcf@metadata$CX_CALLER !="gridss") return(NULL)
+#     vcf <- vcf[gridss.vcftodf(vcf)$confidence %in% c("High", "Medium"),]
+#     attr(vcf, "metadata")$CX_CALLER <- "gridss Medium"
+#     return(vcf)
+#   }))
 vcfs[sapply(vcfs, is.null)] <- NULL
 vcfs <- lapply(vcfs, function(vcf) {
   if (all(is.na(rowRanges(vcf)$QUAL))) {
@@ -101,7 +119,7 @@ dtrocall <- TruthSummaryToROC(truthlist_passfilters, bylist=bylist)
 dtrocall$CX_CALLER <- as.character(dtrocall$CX_CALLER) # poor-man's lexical sort
 
 plot_roc <- ggplot(dtrocall[dtrocall$CX_REFERENCE_VCF_VARIANTS %in% c("homBP", "homBP_SINE") &
-                dtrocall$CX_CALLER %in% c("breakdancer-max", "gridss", "delly", "crest", "socrates"),]) + 
+                dtrocall$CX_CALLER %in% c("breakdancer-max", "gridss", "delly", "crest", "socrates", "gridss Subgraph", "gridss Positional"),]) + 
   aes(y=sens, x=fp+1, color=log(QUAL)) +
   scale_colour_gradientn(colours = rainbow(11)) +
   geom_line() + 
