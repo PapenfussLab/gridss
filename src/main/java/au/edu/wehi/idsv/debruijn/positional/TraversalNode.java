@@ -2,7 +2,6 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import java.util.ArrayDeque;
 
-import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
 
@@ -96,20 +95,16 @@ public class TraversalNode {
 		}
 		return contigPath;
 	}
-	public static Ordering<TraversalNode> ByKmerStartEnd = new Ordering<TraversalNode>() {
+	public static Ordering<TraversalNode> ByFirstStart = new Ordering<TraversalNode>() {
 		@Override
 		public int compare(TraversalNode left, TraversalNode right) {
-			return ComparisonChain.start()
-					.compare(left.node.node().firstKmer(), right.node.node().firstKmer())
-					.compare(left.node.firstStart(), right.node.firstStart())
-					.compare(left.node.firstEnd(), right.node.firstEnd())
-					.result();
+			return Ints.compare(left.node.firstStart(), right.node.firstStart());
 		}
 	};
-	public  static Ordering<TraversalNode> ByEnd = new Ordering<TraversalNode>() {
+	public  static Ordering<TraversalNode> ByLastEnd = new Ordering<TraversalNode>() {
 		@Override
 		public int compare(TraversalNode left, TraversalNode right) {
-			return Ints.compare(left.node.firstEnd() + left.node.length(), right.node.firstEnd() + right.node.length());
+			return Ints.compare(left.node.lastEnd(), right.node.lastEnd());
 		}
 	};
 }

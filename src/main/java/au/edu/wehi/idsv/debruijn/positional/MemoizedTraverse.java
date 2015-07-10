@@ -1,11 +1,14 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
 import java.util.ArrayList;
+import java.util.IdentityHashMap;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.NavigableSet;
+import java.util.ListIterator;
+import java.util.Map.Entry;
 import java.util.PriorityQueue;
-import java.util.TreeSet;
 
+import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.util.IntervalUtil;
 
 /**
@@ -20,117 +23,109 @@ public class MemoizedTraverse {
 	 * (BFS in position space) of the graph, caching the best predecessor
 	 * of each node. 
 	 */
-	private final NavigableSet<TraversalNode> memoized = new TreeSet<TraversalNode>(TraversalNode.ByKmerStartEnd);
-	private final PriorityQueue<TraversalNode> frontier = new PriorityQueue<TraversalNode>(1024, TraversalNode.ByEnd);
+	private final IdentityHashMap<KmerPathNode, List<MemoizedTraversalNode>> memoized = new IdentityHashMap<KmerPathNode, List<MemoizedTraversalNode>>();
+	private final PriorityQueue<MemoizedTraversalNode> frontier = new PriorityQueue<MemoizedTraversalNode>(MemoizedTraversalNode.ByLastEnd);
 	/**
 	 * Memoize the given score for the given position
 	 * @param score initial score
 	 * @param start starting node
 	 */
-	public void memoize(TraversalNode node) {
-		// check existing scores for the kmer interval
-		NavigableSet<TraversalNode> couldOverlap = memoized;
-		TraversalNode floorNode = memoized.floor(node);
-		if (floorNode != null) {
-			couldOverlap = memoized.tailSet(memoized.floor(node), true);
+	public void memoize(MemoizedTraversalNode node) {
+		KmerPathSubnode sn = node.node;
+		KmerPathNode pn = sn.node();
+		List<MemoizedTraversalNode> list = memoized.get(pn);
+		if (list == null) {
+			list = new LinkedList<MemoizedTraversalNode>();
+			memoized.put(pn, list);
 		}
-		List<TraversalNode> toAdd = new ArrayList<TraversalNode>(4);
-		List<TraversalNode> toRemove = new ArrayList<TraversalNode>(4);
-		for (TraversalNode existing : couldOverlap) {
-			if (existing.node.firstKmer() > node.node.firstKmer()) break;
-			if (existing.node.firstKmer() < node.node.firstKmer()) continue;
-			if (existing.node.firstEnd() < node.node.firstStart()) continue;
-			if (existing.node.firstStart() > node.node.firstEnd()) break;
-			
-			// we overlap an existing path
-			assert(existing.node.firstKmer() == node.node.firstKmer() && IntervalUtil.overlapsClosed(
-					existing.node.firstStart(), existing.node.firstEnd(),
-					node.node.firstStart(), node.node.firstEnd()));
-			
+		ListIterator<MemoizedTraversalNode> it = list.listIterator();
+		while (it.hasNext()) {
+			MemoizedTraversalNode existing = it.next();
+			KmerPathSubnode existingsn = existing.node;
+			if (existingsn.firstEnd() < sn.firstStart()) continue; // existing before
+			if (existingsn.firstStart() > sn.firstEnd()) {
+				// node is before this element
+				it.previous(); // roll back so the insertion will be before this position
+				break;
+			}
 			// ok, so now we know the nodes overlap
+			assert(existingsn.firstKmer() == sn.firstKmer() && IntervalUtil.overlapsClosed(existingsn.firstStart(), existingsn.firstEnd(), sn.firstStart(), sn.firstEnd()));
 			if (node.score > existing.score) {
 				// remove existing node in overlapping interval
-				toRemove.add(existing);
-				if (existing.node.firstStart() < node.node.firstStart()) {
+				it.remove();
+				boolean inFrontier = existing.isValid();
+				existing.invalidate();
+				if (existingsn.firstStart() < node.node.firstStart()) {
 					// still valid in earlier interval
-					TraversalNode existingBefore = new TraversalNode(existing, existing.node.firstStart(), node.node.firstStart() - 1);
-					toAdd.add(existingBefore);
+					MemoizedTraversalNode existingBefore = new MemoizedTraversalNode(existing, existingsn.firstStart(), node.node.firstStart() - 1);
+					it.add(existingBefore);
+					if (inFrontier) frontier.add(existingBefore);
 				}
-				if (existing.node.firstEnd() > node.node.firstEnd()) {
+				if (existingsn.firstEnd() > node.node.firstEnd()) {
 					// still valid in earlier interval
-					TraversalNode existingAfter = new TraversalNode(existing, node.node.firstEnd() + 1, existing.node.firstEnd());
-					toAdd.add(existingAfter);
+					MemoizedTraversalNode existingAfter = new MemoizedTraversalNode(existing, node.node.firstEnd() + 1, existingsn.firstEnd());
+					it.add(existingAfter);
+					it.previous();
+					if (inFrontier) frontier.add(existingAfter);
 				}
-			} else { // existing node scores better than us
-				int newStartPosition = existing.node.firstEnd() + 1;
-				if (node.node.firstStart() < existing.node.firstStart()) {
+			} else { // we're not better than existing node
+				int newStartPosition = existingsn.firstEnd() + 1;
+				if (node.node.firstStart() < existingsn.firstStart()) {
 					// start before this node -> we have
-					TraversalNode newBefore = new TraversalNode(node, node.node.firstStart(), existing.node.firstStart() - 1);
-					toAdd.add(newBefore);
+					MemoizedTraversalNode newBefore = new MemoizedTraversalNode(node, node.node.firstStart(), existingsn.firstStart() - 1);
+					it.previous();
+					it.add(newBefore);
+					frontier.add(newBefore);
 				}
 				if (newStartPosition > node.node.firstEnd()) {
 					// existing node is better than us for all remaining starting position
 					// -> don't memoize node
-					node = null;
-					break;
+					return;
 				} else {
-					node = new TraversalNode(node, newStartPosition, node.node.firstEnd());
+					node = new MemoizedTraversalNode(node, newStartPosition, node.node.firstEnd());
+					sn = node.node;
 				}
 			}
+			
 		}
-		if (node != null) {
-			toAdd.add(node);
+		it.add(node);
+		frontier.add(node);
+		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			sanityCheck();
 		}
-		// update now that we have finished iterating over memoized
-		memoized.removeAll(toRemove);
-		frontier.addAll(toAdd);
-		memoized.addAll(toAdd);
 	}
 	/**
 	 * Removes returns the next node for visitation
 	 * @return
 	 */
-	public TraversalNode pollFrontier() {
-		flushInvalidFrontierHead();
+	public MemoizedTraversalNode pollFrontier() {
+		ensureValidFrontierHead();
 		return frontier.poll();	
 	}
 	/**
 	 * Removes returns the next node for visitation
 	 * @return
 	 */
-	public TraversalNode peekFrontier() {
-		flushInvalidFrontierHead();
+	public MemoizedTraversalNode peekFrontier() {
+		ensureValidFrontierHead();
 		return frontier.peek();	
 	}
-	private void flushInvalidFrontierHead() {
-		while (!frontier.isEmpty() && !isValid(frontier.peek())) {
+	private void ensureValidFrontierHead() {
+		while (!frontier.isEmpty() && !frontier.peek().isValid()) {
 			frontier.poll();
 		}
-	}
-	/**
-	 * Determines whether the given node is still valid, or if it has
-	 * been replaced by a better path
-	 * @param node node to check
-	 * @return true if the given node is the highest weighted path over the given
-	 * kmer position interval, false if a superior path has been found.
-	 */
-	private boolean isValid(TraversalNode node) {
-		return node != null && memoized.contains(node);
 	}
 	@Override
 	public String toString() {
 		return String.format("%d nodes memoized, %d in frontier", memoized.size(), frontier.size());
 	}
 	public boolean sanityCheck() {
-		// memoized scores must be unique 
-		TraversalNode last = null;
-		for (TraversalNode n : memoized) {
-			if (last != null) {
-				assert(!(last.node.firstKmer() == n.node.firstKmer() && IntervalUtil.overlapsClosed(
-						last.node.firstStart(), last.node.firstStart(),
-						n.node.firstStart(), n.node.firstStart())));
-			}
-			n = last;
+		for (Entry<KmerPathNode, List<MemoizedTraversalNode>> entry : memoized.entrySet()) {
+			assert(entry.getValue().stream().allMatch(n -> n.node.node() == entry.getKey()));
+			assert(MemoizedTraversalNode.ByFirstStart.isOrdered(entry.getValue()));
+			ArrayList<MemoizedTraversalNode> list = new ArrayList<MemoizedTraversalNode>(entry.getValue());
+			list.sort(MemoizedTraversalNode.ByLastEnd);
+			assert(MemoizedTraversalNode.ByFirstStart.isOrdered(list)); // non-overlapping
 		}
 		return true;
 	}
