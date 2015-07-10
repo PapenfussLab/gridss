@@ -4,6 +4,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -319,5 +320,57 @@ public class KmerEncodingHelperTest extends TestHelper {
 		assertTrue(KmerEncodingHelper.isPrev(4, K("TACC"), K("GTAC")));
 		assertTrue(KmerEncodingHelper.isPrev(4, K("TACG"), K("GTAC")));
 		assertTrue(KmerEncodingHelper.isPrev(4, K("TACT"), K("GTAC")));
+	}
+	@Test
+	public void partialSequenceBasesDifferent_should_calc_forward_anchored() {
+		for (int k = 1; k < 4; k++) {
+			LongArrayList ref = KPN(k,                                                      "ACTGGTTAACACGTCAGGTACGTCG", 1, 1, true).pathKmers();
+			assertEquals(0, KmerEncodingHelper.partialSequenceBasesDifferent(k, ref, KPN(k, "ACTGGTTAACACGTCAGGTACGTCG", 1, 1, true).pathKmers(), 0, true));
+			assertEquals(0, KmerEncodingHelper.partialSequenceBasesDifferent(k, ref, KPN(k, "ACTGGTTAACACGTCAGGTACGTCG", 1, 1, true).pathKmers(), 0, false));
+			assertEquals(1, KmerEncodingHelper.partialSequenceBasesDifferent(k, ref, KPN(k, "ACTGGTTAACACGTCAGGTACTTCG", 1, 1, true).pathKmers(), 0, true));
+			assertEquals(1, KmerEncodingHelper.partialSequenceBasesDifferent(k, ref, KPN(k, "ACTGGTTAACACGTCAGGTACTTCG", 1, 1, true).pathKmers(), 0, false));
+			//                                                                                                    *
+			assertEquals(2, KmerEncodingHelper.partialSequenceBasesDifferent(k, ref, KPN(k, "ACTGGTTAACACGTCAGGTAGTTCG", 1, 1, true).pathKmers(), 0, true));
+			assertEquals(2, KmerEncodingHelper.partialSequenceBasesDifferent(k, ref, KPN(k, "ACTGGTTAACACGTCAGGTAGTTCG", 1, 1, true).pathKmers(), 0, false));
+			//                                                                                                   **
+			assertEquals(3, KmerEncodingHelper.partialSequenceBasesDifferent(k, ref, KPN(k, "ATTGGTTAACACGTCAGGTAGTTCG", 1, 1, true).pathKmers(), 0, true));
+			assertEquals(3, KmerEncodingHelper.partialSequenceBasesDifferent(k, ref, KPN(k, "ATTGGTTAACACGTCAGGTAGTTCG", 1, 1, true).pathKmers(), 0, false));
+			//                                                                                *                  **
+			//                                                                               ACTGGTTAACACGTCAGGTACGTCG
+			assertEquals(0, KmerEncodingHelper.partialSequenceBasesDifferent(k, ref, KPN(k,  "CTGGTTAACACGTCAGGTACGTC" , 1, 1, true).pathKmers(), 1, true));
+			assertEquals(0, KmerEncodingHelper.partialSequenceBasesDifferent(k, ref, KPN(k,  "CTGGTTAACACGTCAGGTACGTC" , 1, 1, true).pathKmers(), 1, false));
+			//                                                                               ACTG*TTAACACGTCAGGTACGTCG
+			assertEquals(1, KmerEncodingHelper.partialSequenceBasesDifferent(k, ref, KPN(k,  "CTGTTTAACACGTCAGGTACGTC" , 1, 1, true).pathKmers(), 1, true));
+			assertEquals(1, KmerEncodingHelper.partialSequenceBasesDifferent(k, ref, KPN(k,  "CTGTTTAACACGTCAGGTACGTC" , 1, 1, true).pathKmers(), 1, false));
+			//          ACTG*TTAACACGTCAGGTACGTCG
+			assertEquals(1, KmerEncodingHelper.partialSequenceBasesDifferent(k, ref, KPN(k,  "CTGTTTAACACGTCAGGTACGTC" , 1, 1, true).pathKmers(), 1, true));
+			assertEquals(1, KmerEncodingHelper.partialSequenceBasesDifferent(k, ref, KPN(k,  "CTGTTTAACACGTCAGGTACGTC" , 1, 1, true).pathKmers(), 1, false));
+		}
+	}
+	@Test
+	public void firstBaseMatches_regression_test_1() {
+		assertTrue(KmerEncodingHelper.firstBaseMatches(25, K("GTGGCAGGCACCTGTAATCCCAGTT"), K("GTGGCAGGCACCTGTAATCCCAGTT")));
+	}
+	@Test
+	public void partialSequenceBasesDifferent_regression_test_1() {
+		int k = 25;
+		LongArrayList ref = KPN(k, "TAGTGGCAGGCACCTGTAATCCCAGTTACTTGGGAGGCTGAGGCAGGAGA", 1, 1, true).pathKmers();
+		LongArrayList seq = KPN(k,  "AGTGGCAGGCACCTGTAATGCCAGCTACTTGGGAGGCTGAGGCA", 1, 1, true).pathKmers();
+		//                                              ^    ^ base different attributed to anchor
+		assertEquals(1, KmerEncodingHelper.partialSequenceBasesDifferent(k, ref, seq, 1, false));
+	}
+	@Test
+	public void partialSequenceBasesDifferent_should_allow_seq_out_of_ref_bounds_start() {
+		int k = 4;
+		LongArrayList ref = KPN(k,  "AAAACAAA", 1, 1, true).pathKmers();
+		LongArrayList seq = KPN(k, "TATAACAA", 1, 1, true).pathKmers();
+		assertEquals(1, KmerEncodingHelper.partialSequenceBasesDifferent(k, ref, seq, -1, false));
+	}
+	@Test
+	public void partialSequenceBasesDifferent_should_allow_seq_out_of_ref_bounds_end() {
+		int k = 4;
+		LongArrayList ref = KPN(k,  "AAATAACA", 1, 1, true).pathKmers();
+		LongArrayList seq = KPN(k,   "AATAACCATGC", 1, 1, true).pathKmers();
+		assertEquals(1, KmerEncodingHelper.partialSequenceBasesDifferent(k, ref, seq, 1, true));
 	}
 }

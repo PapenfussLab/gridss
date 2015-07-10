@@ -202,16 +202,17 @@ public abstract class CollapseIterator implements PeekingIterator<KmerPathNode> 
 		source = lengthSplit(kmerStartPositions, source);
 		target = lengthSplit(kmerStartPositions, target);
 		assert(DeBruijnSequenceGraphNodeUtil.basesDifferent(k, source, target) <= maxBasesMismatch);
+		assert(source.size() <= target.size());
 		// merge the common nodes
-		for (int i = 0; i < Math.min(source.size(), target.size()); i++) {
+		for (int i = 0; i < source.size(); i++) {
 			KmerPathNode toMerge = source.get(i);
 			KmerPathNode into = target.get(i);
 			merge(toMerge, into);
 		}
 		if (reprocessMergedNodes()) {
-			for (int i = 0; i < Math.min(source.size(), target.size()); i++) {
-				processed.removeAll(target);
-				unprocessed.addAll(target);
+			for (int i = 0; i < source.size(); i++) {
+				processed.remove(target.get(i));
+				unprocessed.add(target.get(i));
 			}
 		}
 	}
@@ -237,7 +238,9 @@ public abstract class CollapseIterator implements PeekingIterator<KmerPathNode> 
 				// split the underlying node
 				int splitLength = splitAfter - length;
 				KmerPathNode split = lengthSplit(n.node(), splitLength);
+				// add the split immediately before our node
 				path.add(index, new KmerPathSubnode(split, n.firstStart(), n.firstEnd()));
+				// and update the bounds on our node to their new starting position since the start position has shifted
 				path.set(index + 1, new KmerPathSubnode(n.node(), n.firstStart() + splitLength, n.firstEnd() + splitLength));
 				return;
 			}		

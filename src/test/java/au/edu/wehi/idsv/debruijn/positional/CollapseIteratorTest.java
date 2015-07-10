@@ -285,8 +285,8 @@ public abstract class CollapseIteratorTest extends TestHelper {
 		List<KmerPathNode> input = new ArrayList<KmerPathNode>();
 		input.add(KPN(k, "ATTCC", 20, 30, false));
 		input.add(KPN(k, "GGTGACCAATT", 12, 22, false));
-		input.add(KPN(k, "GATGG", 19, 27, false));
-		input.add(KPN(k, "TGGAT", 17, 25, false));
+		input.add(KPN(k, "GGATT", 19, 27, false));
+		input.add(KPN(k, "TGGGA", 17, 25, false));
 		KmerPathNode.addEdge(input.get(1), input.get(0));
 		KmerPathNode.addEdge(input.get(2), input.get(0));
 		KmerPathNode.addEdge(input.get(3), input.get(2));

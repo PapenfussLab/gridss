@@ -425,12 +425,13 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		@Override
 		public void run() {
 			try {
-				File unsorted = FileSystemContext.getWorkingFileFor(breakendOutput, "unsorted"); 
+				File unsorted = FileSystemContext.getWorkingFileFor(breakendOutput, "unsorted."); 
 				unsorted.delete();
 				int maxBreakendOffset = generateAssembles(unsorted);
 				assembliesToSortedBamAndFastq(maxBreakendOffset, unsorted);
 			} catch (Throwable e) {
 				log.error(e, "Error assembling breakend ", breakendOutput);
+				e.printStackTrace();
 				throw new RuntimeException("Error assembling breakend", e);
 			}
 		}

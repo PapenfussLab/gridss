@@ -9,6 +9,8 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Set;
 
+import au.edu.wehi.idsv.Defaults;
+import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNodeUtil;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 
 import com.google.common.collect.Range;
@@ -110,7 +112,7 @@ public class LeafBubbleCollapseIterator extends CollapseIterator {
 		}
 		for (KmerPathSubnode sn : anchor.prev()) {
 			if (!visited.contains(sn.node())) {
-				int basesDifference = backwardBasesDifferent(toCollapsePathKmers, sn.node().pathKmers(), toCollapsePathKmers.size() - sn.node().length());
+				int basesDifference = KmerEncodingHelper.partialSequenceBasesDifferent(k, toCollapsePathKmers, sn.node().pathKmers(), toCollapsePathKmers.size() - sn.node().length(), false);
 				visited.add(sn.node());
 				TraversalNode tn = new TraversalNode(sn, 0);
 				if (tryBackwardCollapse(visited, toCollapse, toCollapsePathKmers, tn, basesDifference, terminalNode)) return true;
@@ -118,31 +120,6 @@ public class LeafBubbleCollapseIterator extends CollapseIterator {
 			}
 		}
 		return false;
-	}
-	/**
-	 * Calculates the bases different between the given kmer sequences.
-	 * If the offset is such that ref and kmers end at the same position, all bases
-	 * are compared, otherwise only the first base of each kmer is compared
-	 * @param ref sequence to compare to
-	 * @param kmers sequence to compare
-	 * @param offset offset of kmers to ref. If this value is negative, only the bases for
-	 * which both sequences are defined are compared 
-	 * @return number of bases different
-	 */
-	private int backwardBasesDifferent(LongArrayList ref, LongArrayList kmers, int offset) {
-		int basesDiff = 0;
-		int loopEnd = kmers.size();
-		if (offset + kmers.size() == ref.size()) {
-			// anchored at end
-			basesDiff = KmerEncodingHelper.basesDifference(k, ref.getLong(ref.size() - 1), kmers.getLong(kmers.size() - 1));
-			loopEnd--;
-		}
-		for (int i = Math.max(0, -offset); i < loopEnd; i++) {
-			if (!KmerEncodingHelper.firstBaseMatches(k, ref.getLong(offset + i),  kmers.getLong(i))) {
-				basesDiff++;
-			}
-		}
-		return basesDiff;
 	}
 	/**
 	 * 
@@ -179,7 +156,10 @@ public class LeafBubbleCollapseIterator extends CollapseIterator {
 			if (!visited.contains(n)) {
 				visited.add(n);
 				TraversalNode childTn = new TraversalNode(tn, sn);
-				int nodeBasesDiff = backwardBasesDifferent(refKmers, n.pathKmers(), ref.pathLength - childTn.pathLength);
+				int nodeBasesDiff = KmerEncodingHelper.partialSequenceBasesDifferent(k, refKmers, n.pathKmers(), ref.pathLength - childTn.pathLength, false);
+				if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+					assert(DeBruijnSequenceGraphNodeUtil.reverseBasesDifferent(k, ref.toSubnodePrevPath(), childTn.toSubnodePrevPath()) == basesDifference + nodeBasesDiff);
+				}
 				if (tryBackwardCollapse(visited, ref, refKmers, childTn, basesDifference + nodeBasesDiff, terminalNode)) return true;
 				visited.remove(n);
 			}
@@ -227,11 +207,6 @@ public class LeafBubbleCollapseIterator extends CollapseIterator {
 			TraversalNode terminalNode = new TraversalNode(tn, range.lowerEndpoint(), range.upperEndpoint());
 			if (tryForwardCollapse(visited, terminalNode)) return true;
 		}
-		for (Range<Integer> range : node.nextPathRangesOfDegree(KmerPathSubnode.MULTIPLE_EDGES).asRanges()) {
-			// End of bubble
-			TraversalNode terminalNode = new TraversalNode(tn, range.lowerEndpoint(), range.upperEndpoint());
-			if (tryForwardCollapse(visited, terminalNode)) return true;
-		}
 		for (Range<Integer> range : node.nextPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE).asRanges()) {
 			KmerPathSubnode sn = new KmerPathSubnode(node.node(), range.lowerEndpoint(), range.upperEndpoint());
 			KmerPathSubnode adjNode = sn.next().get(0);
@@ -256,7 +231,7 @@ public class LeafBubbleCollapseIterator extends CollapseIterator {
 		KmerPathSubnode anchor = leafPath.getFirst().prev().get(0);
 		for (KmerPathSubnode sn : anchor.next()) {
 			if (!visited.contains(sn.node())) {
-				int basesDifference = forwardBasesDifferent(toCollapsePathKmers, sn.node().pathKmers(), 0);
+				int basesDifference = KmerEncodingHelper.partialSequenceBasesDifferent(k, toCollapsePathKmers, sn.node().pathKmers(), 0, true);
 				visited.add(sn.node());
 				TraversalNode tn = new TraversalNode(sn, 0);
 				if (tryForwardCollapse(visited, toCollapse, toCollapsePathKmers, tn, basesDifference)) return true;
@@ -264,30 +239,6 @@ public class LeafBubbleCollapseIterator extends CollapseIterator {
 			}
 		}
 		return false;
-	}
-	/**
-	 * Calculates the bases different between the given kmer sequences.
-	 * If the offset is such that ref and kmers end at the same position, all bases
-	 * are compared, otherwise only the first base of each kmer is compared
-	 * @param ref sequence to compare to
-	 * @param kmers sequence to compare
-	 * @param offset offset of kmers to ref. If this value is negative, only the bases for
-	 * which both sequences are defined are compared 
-	 * @return number of bases different
-	 */
-	private int forwardBasesDifferent(LongArrayList ref, LongArrayList kmers, int offset) {
-		int basesDiff = 0;
-		if (offset == 0) {
-			// anchored at end
-			basesDiff = KmerEncodingHelper.basesDifference(k, ref.getLong(0), kmers.getLong(0));
-		}
-		int loopEnd = Math.min(kmers.size(), ref.size() - offset);
-		for (int i = offset == 0 ? 1 : 0; i < loopEnd; i++) {
-			if (!KmerEncodingHelper.lastBaseMatches(k, ref.getLong(offset + i),  kmers.getLong(i))) {
-				basesDiff++;
-			}
-		}
-		return basesDiff;
 	}
 	/**
 	 * 
@@ -316,7 +267,7 @@ public class LeafBubbleCollapseIterator extends CollapseIterator {
 			if (!visited.contains(n)) {
 				visited.add(n);
 				TraversalNode childTn = new TraversalNode(tn, sn);
-				int nodeBasesDiff = forwardBasesDifferent(refKmers, n.pathKmers(), ref.pathLength - childTn.pathLength);
+				int nodeBasesDiff = KmerEncodingHelper.partialSequenceBasesDifferent(k, refKmers, n.pathKmers(), childTn.pathLength - childTn.node.length(), true);
 				if (tryForwardCollapse(visited, ref, refKmers, childTn, basesDifference + nodeBasesDiff)) return true;
 				visited.remove(n);
 			}

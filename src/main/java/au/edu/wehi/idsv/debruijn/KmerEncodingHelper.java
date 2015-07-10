@@ -306,4 +306,45 @@ public class KmerEncodingHelper {
 		}
 		return counts;
 	}
+	/**
+	 * Calculates the additional bases difference by incorporating the given
+	 * kmers to a larger sequence anchored at the start or the end of the reference
+	 * sequence 
+	 * 
+	 * If the offset is such that ref and kmers end at the same position, all bases
+	 * are compared, otherwise only the first base of each kmer is compared
+	 * @param ref sequence to compare to
+	 * @param kmers sequence to compare
+	 * @param offset offset of kmers to ref. If this value is negative, only the bases for
+	 * which both sequences are defined are compared 
+	 * @return number of bases different
+	 */
+	public static int partialSequenceBasesDifferent(int k, LongArrayList ref, LongArrayList kmers, int offset, boolean startAnchored) {
+		int basesDiff = 0;
+		if (startAnchored) {
+			if (offset == 0) {
+				// anchored at end
+				basesDiff = KmerEncodingHelper.basesDifference(k, ref.getLong(0), kmers.getLong(0));
+			}
+			int loopEnd = Math.min(kmers.size(), ref.size() - offset);
+			for (int i = offset == 0 ? 1 : 0; i < loopEnd; i++) {
+				if (!KmerEncodingHelper.lastBaseMatches(k, ref.getLong(offset + i),  kmers.getLong(i))) {
+					basesDiff++;
+				}
+			}
+		} else {
+			int loopEnd = kmers.size();
+			if (offset + kmers.size() == ref.size()) {
+				// anchored at end
+				basesDiff = KmerEncodingHelper.basesDifference(k, ref.getLong(ref.size() - 1), kmers.getLong(kmers.size() - 1));
+				loopEnd--;
+			}
+			for (int i = Math.max(0, -offset); i < loopEnd; i++) {
+				if (!KmerEncodingHelper.firstBaseMatches(k, ref.getLong(offset + i),  kmers.getLong(i))) {
+					basesDiff++;
+				}
+			}
+		}
+		return basesDiff;
+	}
 }
