@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import htsjdk.samtools.util.Log;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
@@ -40,6 +41,7 @@ import com.google.common.collect.Iterators;
  *
  */
 public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssemblyEvidence> {
+	private static final Log log = Log.getInstance(NonReferenceContigAssembler.class);
 	/**
 	 * Positional size of the loaded subgraph before orphan calling is performed.
 	 * This is relatively high as orphaned subgraphs are relatively uncommon
@@ -103,26 +105,31 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	}
 	@Override
 	protected SAMRecordAssemblyEvidence computeNext() {
- 		while (!graphByPosition.isEmpty() || wrapper.hasNext()) {
- 			removeOrphanedNonReferenceSubgraphs();
-			SAMRecordAssemblyEvidence contig = nextContig();
-			if (contig != null) {
-				return contig;
+		SAMRecordAssemblyEvidence calledContig;
+		do {
+			removeOrphanedNonReferenceSubgraphs();
+			ArrayDeque<KmerPathSubnode> bestContig = findBestContig();
+			if (bestContig == null) {
+				// no more contigs :(
+				if (wrapper.hasNext()) {
+					log.error("Sanity check failure: end of contigs called before all evidence loaded");
+				}
+				if (!graphByPosition.isEmpty()) {
+					log.error("Sanity check failure: non-empty graph with no contigs called");
+				}
+				return endOfData();
 			}
-		}
-		return endOfData();
+			calledContig = callContig(bestContig);
+		} while (calledContig == null); // if we filtered out our contig, go back 
+		return calledContig;
 	}
-	private SAMRecordAssemblyEvidence nextContig() {
+	private ArrayDeque<KmerPathSubnode> findBestContig() {
 		BestNonReferenceContigCaller bestCaller = new BestNonReferenceContigCaller(Iterators.concat(graphByPosition.iterator(), wrapper), maxEvidenceDistance);
-		ArrayDeque<KmerPathSubnode> contig = bestCaller.bestContig();
 		if (exportTracker != null) {
 			exportTracker.trackAssembly(bestCaller);
 		}
-		if (contig == null) {
-			assert(!wrapper.hasNext());
-			return null;
-		}
-		return callContig(contig);
+		ArrayDeque<KmerPathSubnode> bestContig = bestCaller.bestContig();
+		return bestContig;
 	}
 	private SAMRecordAssemblyEvidence callContig(ArrayDeque<KmerPathSubnode> contig) {
 		int targetAnchorLength = Math.max(contig.stream().mapToInt(sn -> sn.length()).sum(), maxAnchorLength);

@@ -88,7 +88,7 @@ dtsenssize_all$Filters <- "All calls"
 dtsenssize_passfilters$Filters <- "Passing"
 dtsenssize <- rbind(dtsenssize_all, dtsenssize_passfilters)
 dtsenssize$CX_CALLER <- as.character(dtsenssize$CX_CALLER) # poor-man's lexical sort
-plot_sens <- ggplot(dtsenssize[!(dtsenssize$CX_REFERENCE_VCF_VARIANTS %in% c("homBP", "homBP_SINE")),]) + # with(dtsenssize, dtsenssize[CX_CALLER %in% c("breakdancer-max", "gridss", "crest", "socrates"),])) +
+plot_sens <- ggplot(dtsenssize[!(dtsenssize$CX_REFERENCE_VCF_VARIANTS %in% c("homBP", "homBP_SINE"))+ # & dtsenssize$CX_CALLER %in% c("gridss Positional", "gridss Subgraph")
   aes(y=sens, x=SVLEN, shape=factor(CX_READ_FRAGMENT_LENGTH), color=Filters) +
   geom_line() + 
   facet_grid(CX_ALIGNER + CX_CALLER ~ CX_READ_FRAGMENT_LENGTH + CX_READ_LENGTH + CX_READ_DEPTH + CX_REFERENCE_VCF_VARIANTS) +
@@ -215,4 +215,17 @@ ggsave("assembly_rate_called_QUAL.png", width=10, height=7.5)
 
 
 
-
+### Debugging: what calls are missed by positional assembly, but picked up by subgraph assembly?
+posTruth <- truthlist_passfilters$truth[truthlist_passfilters$truth$CX_CALLER=="gridss Positional",]
+subTruth <- truthlist_passfilters$truth[truthlist_passfilters$truth$CX_CALLER=="gridss Subgraph",]
+posTruth <- posTruth[order(posTruth$vcfIndex, posTruth$CX_REFERENCE_VCF),]
+subTruth <- subTruth[order(subTruth$vcfIndex, subTruth$CX_REFERENCE_VCF),]
+missingTruth <- posTruth[!posTruth$tp & subTruth$tp,]
+dtmissing <- missingTruth[, list(count=.N), by=c("SVLEN", "SVTYPE")]
+ggplot(dtmissing) +
+  aes(y=count, x=SVLEN, color=SVTYPE) +
+  geom_line() + 
+  scale_x_log10(breaks=2**(0:16)) +  
+  theme(panel.grid.major = element_blank()) +
+  labs(y="missed events", x="Event size")
+missingTruth[missingTruth$SVTYPE=="BND",]
