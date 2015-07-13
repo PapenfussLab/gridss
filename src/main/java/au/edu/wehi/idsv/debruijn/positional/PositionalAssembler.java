@@ -35,6 +35,11 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 		this.source = source;
 		this.it = Iterators.peekingIterator(it);
 	}
+	public void exportGraph(File file) {
+		if (currentAssembler != null) {
+			currentAssembler.exportGraph(file);
+		}
+	}
 	@Override
 	public boolean hasNext() {
 		ensureAssembler();

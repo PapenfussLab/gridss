@@ -4,6 +4,8 @@ import htsjdk.samtools.util.Log;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -29,6 +31,7 @@ import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.graph.ScalingHelper;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
+import au.edu.wehi.idsv.visualisation.PositionalExporter;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
@@ -408,5 +411,12 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	}
 	public void setExportTracker(PositionalDeBruijnGraphTracker exportTracker) {
 		this.exportTracker = exportTracker;
+	}
+	public void exportGraph(File file) {
+		try {
+			PositionalExporter.exportDot(file, k, graphByPosition);
+		} catch (IOException e) {
+			log.error(e);
+		}
 	}
 }
