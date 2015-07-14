@@ -196,6 +196,36 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 				&& weight.equals(node.weight)
 				&& hasSameCollapsedKmers(node);
 	}
+	/**
+	 * Identifies a predecessor node to merge with
+	 * @return prev node that can be merged with this node. null if no predecessor can be merged
+	 */
+	public KmerPathNode prevToMergeWith() {
+		if (prevList == null || prevList.size() != 1) return null;
+		KmerPathNode prev = prevList.get(0);
+		if (prev.lastStart() + 1 != firstStart()
+				|| prev.isReference() != isReference()
+				|| prev.width() != width()
+				|| prev.next().size() != 1) {
+			return null;
+		}
+		return prev;
+	}
+	/**
+	 * Identifies a sucessor node to merge with
+	 * @return prev node that can be merged with this node. null if no predecessor can be merged
+	 */
+	public KmerPathNode nextToMergeWith() {
+		if (nextList == null || nextList.size() != 1) return null;
+		KmerPathNode next = nextList.get(0);
+		if (lastStart() + 1 != next.firstStart()
+				|| next.isReference() != isReference()
+				|| next.width() != width()
+				|| next.prev().size() != 1) {
+			return null;
+		}
+		return next;
+	}
 	private boolean hasSameCollapsedKmers(KmerPathNode node) {
 		if (collapsedKmers().size() != node.collapsedKmers().size()) return false;
 		for (int i = 0; i < node.collapsedKmers().size(); i++) {

@@ -3,6 +3,7 @@ package au.edu.wehi.idsv.debruijn.positional;
 import htsjdk.samtools.util.Log;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 
 import java.io.File;
 import java.io.IOException;
@@ -220,11 +221,41 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 				}
 			}
 		}
+		Set<KmerPathNode> simplifyCandidates = new ObjectOpenCustomHashSet<KmerPathNode>(new KmerPathNode.HashByFirstKmerStartPositionKmer<KmerPathNode>());
 		for (Entry<KmerPathNode, List<List<KmerNode>>> entry : toRemove.entrySet()) {
-			removeWeight(entry.getKey(), entry.getValue());
+			removeWeight(entry.getKey(), entry.getValue(), simplifyCandidates);
 		}
+		simplify(simplifyCandidates);
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
 			assert(sanityCheck());
+		}
+	}
+	/**
+	 * Attempts to simplify the given nodes
+	 * @param simplifyCandidates
+	 */
+	private void simplify(Set<KmerPathNode> simplifyCandidates) {
+		while (!simplifyCandidates.isEmpty()) {
+			simplify(simplifyCandidates.iterator().next(), simplifyCandidates);
+		}
+	}
+	private void simplify(KmerPathNode node, Set<KmerPathNode> simplifyCandidates) {
+		simplifyCandidates.remove(node);
+		KmerPathNode prev = node.prevToMergeWith();
+		if (prev != null && prev.lastEnd() < wrapper.lastPosition()) {
+			simplifyCandidates.remove(prev);
+			removeFromGraph(node);
+			removeFromGraph(prev);
+			node.prepend(prev);
+			addToGraph(node);
+		}
+		KmerPathNode next = node.nextToMergeWith();
+		if (next != null && next.lastEnd() < wrapper.lastPosition()) {
+			simplifyCandidates.remove(next);
+			removeFromGraph(node);
+			removeFromGraph(next);
+			next.prepend(node);
+			addToGraph(next);
 		}
 	}
 	private void updateRemovalList(Map<KmerPathNode, List<List<KmerNode>>> toRemove, KmerSupportNode support) {
@@ -252,11 +283,14 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		}
 		evidenceList.add(support);
 	}
-	private void removeWeight(KmerPathNode node, List<List<KmerNode>> toRemove) {
+	private void removeWeight(KmerPathNode node, List<List<KmerNode>> toRemove, Set<KmerPathNode> simplifyCandidates) {
 		if (node == null) return;
 		assert(node.length() >= toRemove.size());
 		// remove from graph
 		removeFromGraph(node);
+		simplifyCandidates.addAll(node.next());
+		simplifyCandidates.addAll(node.prev());
+		simplifyCandidates.remove(node);
 		Collection<KmerPathNode> replacementNodes = KmerPathNode.removeWeight(node, toRemove);
 		for (KmerPathNode split : replacementNodes) {
 			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
@@ -264,6 +298,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			}
 			addToGraph(split);
 		}
+		simplifyCandidates.addAll(replacementNodes);
 	}
 	private void addToGraph(KmerPathNode node) {
 		boolean added = graphByPosition.add(node);

@@ -136,17 +136,9 @@ public class PathSimplificationIterator implements PeekingIterator<KmerPathNode>
 		return null;
 	}
 	private KmerPathNode prevKmerToMergeWith(KmerPathNode node) {
-		if (node.prev().size() == 1) {
-			KmerPathNode prev = node.prev().get(0);
-			if (prev.lastEnd() + 1 == node.firstEnd()
-					&& prev.lastStart() + 1 == node.firstStart()
-					&& prev.isReference() == node.isReference()
-					&& prev.length() + node.length() <= maxLength
-					&& prev.next().size() == 1) {
-				return prev;
-			}
-		}
-		return null;
+		KmerPathNode prev = node.prevToMergeWith();
+		if (prev == null || prev.length() + node.length() > maxLength) return null;
+		return prev;
 	}
 	@Override
 	public boolean hasNext() {
