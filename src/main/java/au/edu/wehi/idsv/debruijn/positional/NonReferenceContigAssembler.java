@@ -52,7 +52,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	 */
 	private static final int ORPHAN_EVIDENCE_MULTIPLE = 32;
 	private Long2ObjectMap<Collection<KmerPathNodeKmerNode>> graphByKmerNode = new Long2ObjectOpenHashMap<Collection<KmerPathNodeKmerNode>>();
-	private SortedSet<KmerPathNode> graphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByLastStartEndKmerReferenceWeight);
+	private SortedSet<KmerPathNode> graphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByFirstStartKmer);
 	private final EvidenceTracker evidenceTracker;
 	private final AssemblyEvidenceSource aes;
 	/**
@@ -266,7 +266,8 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		}
 	}
 	private void addToGraph(KmerPathNode node) {
-		graphByPosition.add(node);
+		boolean added = graphByPosition.add(node);
+		assert(added);
 		for (int i = 0; i < node.length(); i++) {
 			addToGraph(new KmerPathNodeKmerNode(node, i));
 		}
@@ -275,7 +276,8 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		}
 	}
 	private void removeFromGraph(KmerPathNode node) {
-		graphByPosition.remove(node);
+		boolean removed = graphByPosition.remove(node);
+		assert(removed);
 		for (int i = 0; i < node.length(); i++) {
 			removeFromGraph(new KmerPathNodeKmerNode(node, i));
 		}
@@ -337,11 +339,15 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 				nonRefOrphaned.addAll(nonRefActive);
 				nonRefActive.clear();
 			}
-			if (!n.isReference()) break;
-			if (n.lastEnd() >= wrapper.lastPosition()) break;
+			if (!n.isReference() || n.lastEnd() >= wrapper.lastPosition()) {
+				// could connect to a reference node
+				nonRefActive.clear();
+				break;
+			}
 			lastEnd = Math.max(lastEnd, n.lastEnd());
 			nonRefActive.add(n);
 		}
+		nonRefOrphaned.addAll(nonRefActive);
 		if (!nonRefOrphaned.isEmpty()) {
 			Set<KmerEvidence> evidence = evidenceTracker.untrack(nonRefOrphaned.stream().map(n -> new KmerPathSubnode(n)).collect(Collectors.toList()));
 			removeFromGraph(evidence);
