@@ -5,17 +5,20 @@ import static org.junit.Assert.assertEquals;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.DiscordantReadPair;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
+import au.edu.wehi.idsv.util.IntervalUtil;
 
 import com.google.common.collect.Lists;
 
@@ -101,4 +104,58 @@ public class BestNonReferenceContigCallerTest extends TestHelper {
 		assertEquals("GACCTCCGGAA", result.get(1));
 		assertEquals("GACCTCCGGAA", result.get(2));
 	}
+	@Test
+	public void should_memoize_paths() {
+		List<KmerPathNode> list = new ArrayList<KmerPathNode>();
+		for (int len = 1; len <= 4; len++) {
+			for (int start = 1; start <= 4; start++) {
+				for (int end = start; end <= 5; end++) {
+					list.add(KPN(4,StringUtils.repeat("A", 3 + len), start, end, false, start));
+				}
+			}
+		}
+		//list.add(KPN(4, "AAAA", 1, 100, false, 1));
+		for (KmerPathNode prev : list) {
+			for (KmerPathNode next : list) {
+				if (IntervalUtil.overlapsClosed(prev.lastStart() + 1, prev.lastEnd() + 1, next.firstStart(), next.firstEnd())) {
+					KmerPathNode.addEdge(prev, next);
+				}
+			}
+		}
+		list.sort(KmerNodeUtil.ByFirstStart);
+		BestNonReferenceContigCaller caller = new BestNonReferenceContigCaller(list.iterator(), 3);
+		// 1 -> 2 -> 3 -> 4 -> 6[4-6]
+		ArrayDeque<KmerPathSubnode> contig = caller.bestContig();
+		assertEquals(list.size(), caller.tracking_memoizedNodeCount());
+		assertEquals(5, contig.size());
+	}
+	@Test
+	public void should_memoize_paths_random_path_test() {
+		// assertion testing
+		Random rng = new Random(0);
+		List<KmerPathNode> list = new ArrayList<KmerPathNode>();
+		for (int i = 0; i < 32; i++) {
+			int start = 1 + rng.nextInt(100);
+			int end = start + rng.nextInt(100);
+			int weight = 1 + rng.nextInt(100);
+			list.add(KPN(4, StringUtils.repeat("A", 4 + rng.nextInt(10)), start, end, false, weight));
+		}
+		//list.add(KPN(4, "AAAA", 1, 100, false, 1));
+		for (KmerPathNode prev : list) {
+			for (KmerPathNode next : list) {
+				if (IntervalUtil.overlapsClosed(prev.lastStart() + 1, prev.lastEnd() + 1, next.firstStart(), next.firstEnd())) {
+					KmerPathNode.addEdge(prev, next);
+				}
+			}
+		}
+		list.sort(KmerNodeUtil.ByFirstStart);
+		BestNonReferenceContigCaller caller = new BestNonReferenceContigCaller(list.iterator(), 3);
+		caller.bestContig();
+		assertEquals(list.size(), caller.tracking_memoizedNodeCount());
+		assertEquals(0, caller.tracking_frontierSize());
+	}
 }
+
+
+
+

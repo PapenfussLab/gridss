@@ -362,7 +362,16 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 						writer.addAlignment(record);
 						if (System.currentTimeMillis() > nextProgress) {
 							nextProgress = System.currentTimeMillis() + 1000 * PROGRESS_UPDATE_INTERVAL_SECONDS;
-							log.info(String.format("Assembly progress at %s:%d", getContext().getDictionary().getSequence(ass.getBreakendSummary().referenceIndex).getSequenceName(), ass.getBreakendSummary().start));
+							String seqname = getContext().getDictionary().getSequence(ass.getBreakendSummary().referenceIndex).getSequenceName();
+							log.info(String.format("Assembly progress at %s:%d", seqname, ass.getBreakendSummary().start));
+							if (getContext().getAssemblyParameters().visualiseAll && assemblyIt instanceof PositionalAssembler) {
+								File exportDir = getContext().getAssemblyParameters().debruijnGraphVisualisationDirectory;
+								if (exportDir != null) {
+									exportDir.mkdir();
+									File exportFilename = new File(exportDir, String.format("assembly_%s_%d.dot", seqname, ass.getBreakendSummary().start)); 
+									((PositionalAssembler)assemblyIt).exportGraph(exportFilename);
+								}
+							}
 						}
 					}
 				}
@@ -425,12 +434,13 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		@Override
 		public void run() {
 			try {
-				File unsorted = FileSystemContext.getWorkingFileFor(breakendOutput, "unsorted"); 
+				File unsorted = FileSystemContext.getWorkingFileFor(breakendOutput, "unsorted."); 
 				unsorted.delete();
 				int maxBreakendOffset = generateAssembles(unsorted);
 				assembliesToSortedBamAndFastq(maxBreakendOffset, unsorted);
 			} catch (Throwable e) {
 				log.error(e, "Error assembling breakend ", breakendOutput);
+				e.printStackTrace();
 				throw new RuntimeException("Error assembling breakend", e);
 			}
 		}

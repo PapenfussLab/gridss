@@ -36,6 +36,24 @@ setwd(pwd)
 #     attr(vcf, "metadata")$CX_CALLER <- "gridss Medium"
 #     return(vcf)
 #   }))
+#Separate out GRIDSS confidence levels
+vcfs <- c(
+ vcfs,
+ lapply(vcfs, function(vcf) {
+   if (is.null(attr(vcf, "metadata")) || is.na(vcf@metadata$CX_CALLER) || vcf@metadata$CX_CALLER !="gridss") return(NULL)
+   if (!is.na(vcf@metadata$CX_CALLER_FLAGS) & vcf@metadata$CX_CALLER_FLAGS == "ASSEMBLY_ALGORITHM") {
+     attr(vcf, "metadata")$CX_CALLER <- "gridss Positional" 
+   } else {
+     attr(vcf, "metadata")$CX_CALLER <- "gridss Subgraph" 
+   }
+   return(vcf)
+ }))
+#   lapply(vcfs, function(vcf) {
+#     if (is.null(attr(vcf, "metadata")) || is.na(vcf@metadata$CX_CALLER) || vcf@metadata$CX_CALLER !="gridss") return(NULL)
+#     vcf <- vcf[gridss.vcftodf(vcf)$confidence %in% c("High", "Medium"),]
+#     attr(vcf, "metadata")$CX_CALLER <- "gridss Medium"
+#     return(vcf)
+#   }))
 vcfs[sapply(vcfs, is.null)] <- NULL
 vcfs <- lapply(vcfs, function(vcf) {
   if (all(is.na(rowRanges(vcf)$QUAL))) {
@@ -70,7 +88,7 @@ dtsenssize_all$Filters <- "All calls"
 dtsenssize_passfilters$Filters <- "Passing"
 dtsenssize <- rbind(dtsenssize_all, dtsenssize_passfilters)
 dtsenssize$CX_CALLER <- as.character(dtsenssize$CX_CALLER) # poor-man's lexical sort
-plot_sens <- ggplot(dtsenssize[!(dtsenssize$CX_REFERENCE_VCF_VARIANTS %in% c("homBP", "homBP_SINE")),]) + # with(dtsenssize, dtsenssize[CX_CALLER %in% c("breakdancer-max", "gridss", "crest", "socrates"),])) +
+plot_sens <- ggplot(dtsenssize[!(dtsenssize$CX_REFERENCE_VCF_VARIANTS %in% c("homBP", "homBP_SINE"))+ # & dtsenssize$CX_CALLER %in% c("gridss Positional", "gridss Subgraph")
   aes(y=sens, x=SVLEN, shape=factor(CX_READ_FRAGMENT_LENGTH), color=Filters) +
   geom_line() + 
   facet_grid(CX_ALIGNER + CX_CALLER ~ CX_READ_FRAGMENT_LENGTH + CX_READ_LENGTH + CX_READ_DEPTH + CX_REFERENCE_VCF_VARIANTS) +
@@ -101,7 +119,7 @@ dtrocall <- TruthSummaryToROC(truthlist_passfilters, bylist=bylist)
 dtrocall$CX_CALLER <- as.character(dtrocall$CX_CALLER) # poor-man's lexical sort
 
 plot_roc <- ggplot(dtrocall[dtrocall$CX_REFERENCE_VCF_VARIANTS %in% c("homBP", "homBP_SINE") &
-                dtrocall$CX_CALLER %in% c("breakdancer-max", "gridss", "delly", "crest", "socrates"),]) + 
+                dtrocall$CX_CALLER %in% c("breakdancer-max", "gridss", "delly", "crest", "socrates", "gridss Subgraph", "gridss Positional"),]) + 
   aes(y=sens, x=fp+1, color=log(QUAL)) +
   scale_colour_gradientn(colours = rainbow(11)) +
   geom_line() + 
@@ -197,4 +215,17 @@ ggsave("assembly_rate_called_QUAL.png", width=10, height=7.5)
 
 
 
-
+### Debugging: what calls are missed by positional assembly, but picked up by subgraph assembly?
+posTruth <- truthlist_passfilters$truth[truthlist_passfilters$truth$CX_CALLER=="gridss Positional",]
+subTruth <- truthlist_passfilters$truth[truthlist_passfilters$truth$CX_CALLER=="gridss Subgraph",]
+posTruth <- posTruth[order(posTruth$vcfIndex, posTruth$CX_REFERENCE_VCF),]
+subTruth <- subTruth[order(subTruth$vcfIndex, subTruth$CX_REFERENCE_VCF),]
+missingTruth <- posTruth[!posTruth$tp & subTruth$tp,]
+dtmissing <- missingTruth[, list(count=.N), by=c("SVLEN", "SVTYPE")]
+ggplot(dtmissing) +
+  aes(y=count, x=SVLEN, color=SVTYPE) +
+  geom_line() + 
+  scale_x_log10(breaks=2**(0:16)) +  
+  theme(panel.grid.major = element_blank()) +
+  labs(y="missed events", x="Event size")
+missingTruth[missingTruth$SVTYPE=="BND",]

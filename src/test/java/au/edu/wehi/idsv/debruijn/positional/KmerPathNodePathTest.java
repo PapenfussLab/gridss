@@ -65,10 +65,10 @@ public class KmerPathNodePathTest extends TestHelper {
 		assertTrue(path.dfsNextChild());
 		assertEquals(2, path.currentPath().size());
 		assertEquals(input.get(2), path.headPath());
-		path.dfsPop();
+		path.pop();
 		assertTrue(path.dfsNextChild());
 		assertEquals(input.get(6), path.headPath());
-		path.dfsPop();
+		path.pop();
 		assertFalse(path.dfsNextChild());
 	}
 	@Test
@@ -99,14 +99,14 @@ public class KmerPathNodePathTest extends TestHelper {
 		assertEquals(input.get(10), path.headPath());
 		assertEquals(1, path.headNode().asSubnodes().getFirst().width()); // 10
 		assertFalse(path.dfsNextChild());
-		path.dfsPop();
+		path.pop();
 		assertFalse(path.dfsNextChild());
-		path.dfsPop();
+		path.pop();
 		assertTrue(path.dfsNextChild());
 		assertEquals(input.get(8), path.headPath());
 		assertEquals(21, path.headNode().asSubnodes().getFirst().width()); // 8
 		assertFalse(path.dfsNextChild());
-		path.dfsPop();
+		path.pop();
 	}
 	@Test
 	public void should_limit_traversal_to_max_path_length_of_entire_nodes() {
@@ -171,7 +171,7 @@ public class KmerPathNodePathTest extends TestHelper {
 		path.greedyTraverse(true, true);
 		while (path.headNode() != path.rootNode()) {
 			assertFalse(path.dfsNextChild());
-			path.dfsPop();
+			path.pop();
 		}
 	}
 }

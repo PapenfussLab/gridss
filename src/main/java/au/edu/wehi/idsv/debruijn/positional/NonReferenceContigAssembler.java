@@ -1,8 +1,11 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import htsjdk.samtools.util.Log;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,6 +31,7 @@ import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.graph.ScalingHelper;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
+import au.edu.wehi.idsv.visualisation.PositionalExporter;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
@@ -40,6 +44,13 @@ import com.google.common.collect.Iterators;
  *
  */
 public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssemblyEvidence> {
+	private static final Log log = Log.getInstance(NonReferenceContigAssembler.class);
+	/**
+	 * Positional size of the loaded subgraph before orphan calling is performed.
+	 * This is relatively high as orphaned subgraphs are relatively uncommon
+	 * This value is in multiples of maxEvidenceDistance
+	 */
+	private static final int ORPHAN_EVIDENCE_MULTIPLE = 32;
 	private Long2ObjectMap<Collection<KmerPathNodeKmerNode>> graphByKmerNode = new Long2ObjectOpenHashMap<Collection<KmerPathNodeKmerNode>>();
 	private SortedSet<KmerPathNode> graphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByLastStartEndKmerReferenceWeight);
 	private final EvidenceTracker evidenceTracker;
@@ -97,25 +108,31 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	}
 	@Override
 	protected SAMRecordAssemblyEvidence computeNext() {
-		while (!graphByPosition.isEmpty() || wrapper.hasNext()) {
-			SAMRecordAssemblyEvidence contig = nextContig();
-			if (contig != null) {
-				return contig;
+		SAMRecordAssemblyEvidence calledContig;
+		do {
+			removeOrphanedNonReferenceSubgraphs();
+			ArrayDeque<KmerPathSubnode> bestContig = findBestContig();
+			if (bestContig == null) {
+				// no more contigs :(
+				if (wrapper.hasNext()) {
+					log.error("Sanity check failure: end of contigs called before all evidence loaded");
+				}
+				if (!graphByPosition.isEmpty()) {
+					log.error("Sanity check failure: non-empty graph with no contigs called");
+				}
+				return endOfData();
 			}
-		}
-		return endOfData();
+			calledContig = callContig(bestContig);
+		} while (calledContig == null); // if we filtered out our contig, go back 
+		return calledContig;
 	}
-	private SAMRecordAssemblyEvidence nextContig() {
+	private ArrayDeque<KmerPathSubnode> findBestContig() {
 		BestNonReferenceContigCaller bestCaller = new BestNonReferenceContigCaller(Iterators.concat(graphByPosition.iterator(), wrapper), maxEvidenceDistance);
-		ArrayDeque<KmerPathSubnode> contig = bestCaller.bestContig();
 		if (exportTracker != null) {
 			exportTracker.trackAssembly(bestCaller);
 		}
-		if (contig == null) {
-			assert(!wrapper.hasNext());
-			return null;
-		}
-		return callContig(contig);
+		ArrayDeque<KmerPathSubnode> bestContig = bestCaller.bestContig();
+		return bestContig;
 	}
 	private SAMRecordAssemblyEvidence callContig(ArrayDeque<KmerPathSubnode> contig) {
 		int targetAnchorLength = Math.max(contig.stream().mapToInt(sn -> sn.length()).sum(), maxAnchorLength);
@@ -192,6 +209,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	 * @param evidence
 	 */
 	private void removeFromGraph(Set<KmerEvidence> evidence) {
+		assert(!evidence.isEmpty());
 		Map<KmerPathNode, List<List<KmerNode>>> toRemove = new IdentityHashMap<KmerPathNode, List<List<KmerNode>>>();
 		for (KmerEvidence e : evidence) {
 			for (int i = 0; i < e.length(); i++) {
@@ -282,6 +300,54 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		}
 	}
 	/**
+	 * Detects and removes orphaned reference subgraphs.
+	 * 
+	 * Orphaned reference subgraphs can occur when all non-reference
+	 * kmers for a given evidence are merged with reference kmers.
+	 * Eg: a sequencing error causes a short soft clip leaf which
+	 * is subsequently merged with the reference allele.  
+	 * 
+	 * No contigs will be called for such evidence since no all
+	 * connected kmers are reference kmers.
+	 * 
+	 * @author cameron.d
+	 *
+	 */
+	private void removeOrphanedNonReferenceSubgraphs() {
+		if (graphByPosition.isEmpty()) return;
+		if (graphByPosition.first().firstStart() >= wrapper.lastPosition() - ORPHAN_EVIDENCE_MULTIPLE * maxEvidenceDistance) return;
+		int lastEnd = Integer.MIN_VALUE;
+		List<KmerPathNode> nonRefOrphaned = new ArrayList<KmerPathNode>();
+		List<KmerPathNode> nonRefActive = new ArrayList<KmerPathNode>();
+		// Since we're calling all non-reference contig
+		// all orphaned reference subgraph will eventually
+		// have no reference kmers with any overlapping positions
+		// This means we don't need to actually calculate the subgraph
+		// just wait until we've called all the reference contigs and
+		// we're just left the non-reference.
+		
+		// Note: this approach delays removal until all overlapping non-reference
+		// subgraphs do not overlap evidence
+		// In actual data this does not occur often so is not too much of an issue.
+		for (KmerPathNode n : graphByPosition) {
+			if (lastEnd < n.firstStart() - 1) {
+				// can't be connected since all active nodes
+				// have finished sufficiently early that
+				// they can't be connected
+				nonRefOrphaned.addAll(nonRefActive);
+				nonRefActive.clear();
+			}
+			if (!n.isReference()) break;
+			if (n.lastEnd() >= wrapper.lastPosition()) break;
+			lastEnd = Math.max(lastEnd, n.lastEnd());
+			nonRefActive.add(n);
+		}
+		if (!nonRefOrphaned.isEmpty()) {
+			Set<KmerEvidence> evidence = evidenceTracker.untrack(nonRefOrphaned.stream().map(n -> new KmerPathSubnode(n)).collect(Collectors.toList()));
+			removeFromGraph(evidence);
+		}
+	}
+	/**
 	 * Intercepts the underlying stream and adds nodes to the graph as they are encountered
 	 * @author cameron.d
 	 *
@@ -345,5 +411,12 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	}
 	public void setExportTracker(PositionalDeBruijnGraphTracker exportTracker) {
 		this.exportTracker = exportTracker;
+	}
+	public void exportGraph(File file) {
+		try {
+			PositionalExporter.exportDot(file, k, graphByPosition);
+		} catch (IOException e) {
+			log.error(e);
+		}
 	}
 }

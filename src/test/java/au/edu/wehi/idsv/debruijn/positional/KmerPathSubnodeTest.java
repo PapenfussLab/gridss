@@ -1,19 +1,18 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import org.junit.Test;
+
+import au.edu.wehi.idsv.TestHelper;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
-
-import au.edu.wehi.idsv.TestHelper;
 
 
 public class KmerPathSubnodeTest extends TestHelper {
@@ -81,26 +80,26 @@ public class KmerPathSubnodeTest extends TestHelper {
 		KmerPathNode.addEdge(pn, KPN(4, "AAAC", 4, 5, true));
 		KmerPathNode.addEdge(pn, KPN(4, "AAAC", 6, 6, true));
 		
-		assertEquals(TreeRangeSet.create(), new KmerPathSubnode(pn).nextPathRangesOfDegree(0));
+		assertEquals(TreeRangeSet.create(), new KmerPathSubnode(pn).nextPathRangesOfDegree(KmerPathSubnode.NO_EDGES));
 		
-		assertEquals(TreeRangeSet.create(), new KmerPathSubnode(pn).nextPathRangesOfDegree(1));
+		assertEquals(TreeRangeSet.create(), new KmerPathSubnode(pn).nextPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE));
 		
 		RangeSet<Integer> expected2 = TreeRangeSet.create();
 		expected2.add(Range.closed(1, 1));
 		expected2.add(Range.closed(10, 10));
-		assertEquals(expected2, new KmerPathSubnode(pn).nextPathRangesOfDegree(2));
+		assertEquals(expected2, new KmerPathSubnode(pn).nextPathRangesOfDegree(x -> x == 2));
 		
 		RangeSet<Integer> expected3 = TreeRangeSet.create();
 		expected3.add(Range.closed(2, 2));
 		expected3.add(Range.closed(6, 9));
-		assertEquals(expected3, new KmerPathSubnode(pn).nextPathRangesOfDegree(3));
+		assertEquals(expected3, new KmerPathSubnode(pn).nextPathRangesOfDegree(x -> x == 3));
 		
 		RangeSet<Integer> expected4 = TreeRangeSet.create();
 		expected4.add(Range.closed(3, 4));
 		expected4.add(Range.closed(5, 5));
-		assertEquals(expected4, new KmerPathSubnode(pn).nextPathRangesOfDegree(4));
+		assertEquals(expected4, new KmerPathSubnode(pn).nextPathRangesOfDegree(x -> x == 4));
 	
-		assertEquals(TreeRangeSet.create(), new KmerPathSubnode(pn).nextPathRangesOfDegree(5));
+		assertEquals(TreeRangeSet.create(), new KmerPathSubnode(pn).nextPathRangesOfDegree(x -> x == 5));
 	}
 	@Test
 	public void prevPathRangesOfDegree() {
@@ -123,23 +122,23 @@ public class KmerPathSubnodeTest extends TestHelper {
 		RangeSet<Integer> expected0 = TreeRangeSet.create();
 		expected0.add(Range.closed(11, 15));
 		expected0.add(Range.closed(19, 20));
-		assertEquals(expected0, sn.prevPathRangesOfDegree(0));
+		assertEquals(expected0, sn.prevPathRangesOfDegree(KmerPathSubnode.NO_EDGES));
 		
 		RangeSet<Integer> expected1 = TreeRangeSet.create();
 		expected1.add(Range.closed(18, 18));
-		assertEquals(expected1, sn.prevPathRangesOfDegree(1));
+		assertEquals(expected1, sn.prevPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE));
 		
 		RangeSet<Integer> expected2 = TreeRangeSet.create();
 		expected2.add(Range.closed(10, 10));
-		assertEquals(expected2, sn.prevPathRangesOfDegree(2));
+		assertEquals(expected2, sn.prevPathRangesOfDegree(x -> x == 2));
 		
 		RangeSet<Integer> expected3 = TreeRangeSet.create();
 		expected3.add(Range.closed(16, 16));
 		expected3.add(Range.closed(17, 17));
-		assertEquals(expected3, sn.prevPathRangesOfDegree(3));
+		assertEquals(expected3, sn.prevPathRangesOfDegree(x -> x == 3));
 		
 		RangeSet<Integer> expected4 = TreeRangeSet.create();
-		assertEquals(expected4, sn.prevPathRangesOfDegree(4));
+		assertEquals(expected4, sn.prevPathRangesOfDegree(x -> x == 4));
 	}
 	@Test
 	public void width_should_match_firstKmer_width() {
@@ -163,7 +162,7 @@ public class KmerPathSubnodeTest extends TestHelper {
 		expected.add(Range.closed(1, 1));
 		expected.add(Range.closed(3, 4));
 		expected.add(Range.closed(7, 10));
-		assertEquals(expected, sn.nextPathRangesOfDegree(0));
+		assertEquals(expected, sn.nextPathRangesOfDegree(KmerPathSubnode.NO_EDGES));
 	}
 	@Test
 	public void should_traverse_simple_sc() { 
@@ -187,7 +186,7 @@ public class KmerPathSubnodeTest extends TestHelper {
 		KmerPathNode.addEdge(input.get(2), input.get(3));
 		KmerPathNode.addEdge(input.get(2), input.get(4));
 		KmerPathNode.addEdge(input.get(2), input.get(5));
-		List<KmerPathSubnode> result = new KmerPathSubnode(input.get(2)).subnodesOfDegree(2, 1);
+		List<KmerPathSubnode> result = new KmerPathSubnode(input.get(2)).subnodesOfDegree(x -> x == 2, x -> x == 1);
 		// 1111222111 prev
 		// ----------
 		//     456
@@ -203,7 +202,7 @@ public class KmerPathSubnodeTest extends TestHelper {
 		assertEquals(1, result.size());
 		assertEquals(5, result.get(0).firstStart());
 		assertEquals(7, result.get(0).firstEnd());
-		result = new KmerPathSubnode(input.get(2)).subnodesOfDegree(1, 1);
+		result = new KmerPathSubnode(input.get(2)).subnodesOfDegree(x -> x == 1, x -> x == 1);
 		assertEquals(3, result.size());
 		assertEquals(3, result.get(0).firstStart());
 		assertEquals(3, result.get(0).firstEnd());

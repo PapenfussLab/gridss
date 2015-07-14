@@ -3,8 +3,8 @@ package au.edu.wehi.idsv.debruijn.positional;
 import it.unimi.dsi.fastutil.ints.IntHeapPriorityQueue;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
+import java.util.function.IntPredicate;
 
 import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNode;
 import au.edu.wehi.idsv.util.RangeUtil;
@@ -15,6 +15,10 @@ import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
 
 public class KmerPathSubnode implements DeBruijnSequenceGraphNode, KmerNode {
+	public static final IntPredicate NO_EDGES = n -> n == 0;
+	public static final IntPredicate SINGLE_EDGE = n -> n == 1;
+	public static final IntPredicate MULTIPLE_EDGES = n -> n > 1;
+	public static final IntPredicate NOT_MULTIPLE_EDGES = n -> n <= 1;
 	private final KmerPathNode n;
 	private final int start;
 	private final int end;
@@ -114,16 +118,16 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode, KmerNode {
 	 * @param degree
 	 * @return
 	 */
-	public RangeSet<Integer> nextPathRangesOfDegree(int degree) {
-		return pathRangesOfDegree(degree, true);
+	public RangeSet<Integer> nextPathRangesOfDegree(IntPredicate expectedDegree) {
+		return pathRangesOfDegree(expectedDegree, true);
 	}
 	/**
 	 * Returns the positions for which this node has the given out-degree 
 	 * @param degree
 	 * @return
 	 */
-	public RangeSet<Integer> prevPathRangesOfDegree(int degree) {
-		return pathRangesOfDegree(degree, false);
+	public RangeSet<Integer> prevPathRangesOfDegree(IntPredicate expectedDegree) {
+		return pathRangesOfDegree(expectedDegree, false);
 	}
 	/**
 	 * Returns the position subinterval of this node for which there
@@ -132,7 +136,7 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode, KmerNode {
 	 * @param nextDegree number of successor nodes
 	 * @return Nodes with the given predecessor and successor counts
 	 */
-	public List<KmerPathSubnode> subnodesOfDegree(int prevDegree, int nextDegree) {
+	public List<KmerPathSubnode> subnodesOfDegree(IntPredicate prevDegree, IntPredicate nextDegree) {
 		RangeSet<Integer> rsNext = nextPathRangesOfDegree(nextDegree);
 		if (rsNext.isEmpty()) return ImmutableList.of();
 		RangeSet<Integer> rsPrev = prevPathRangesOfDegree(prevDegree);
@@ -152,7 +156,7 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode, KmerNode {
 	 * @param outEdges calculate out edges
 	 * @return
 	 */
-	private RangeSet<Integer> pathRangesOfDegree(int degree, boolean outEdges) {
+	private RangeSet<Integer> pathRangesOfDegree(IntPredicate degreeMatchingFunction, boolean outEdges) {
 		int start = firstStart();
 		final int scopeEnd = firstEnd();
 		IntHeapPriorityQueue unprocessedEndsAt = new IntHeapPriorityQueue();
@@ -190,7 +194,7 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode, KmerNode {
 				end = Math.min(end, unprocessedStartsAt.firstInt() - 1);
 			}
 			// matches the expected number of adjacent nodes
-			if (activeCount == degree) {
+			if (degreeMatchingFunction.test(activeCount)) {
 				result.add(Range.closed(start, end));
 			}
 			start = end + 1;

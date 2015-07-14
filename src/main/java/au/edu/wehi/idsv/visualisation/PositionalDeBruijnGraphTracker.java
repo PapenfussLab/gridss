@@ -13,10 +13,10 @@ import java.util.ArrayDeque;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.positional.AggregateNodeIterator;
 import au.edu.wehi.idsv.debruijn.positional.BestNonReferenceContigCaller;
+import au.edu.wehi.idsv.debruijn.positional.CollapseIterator;
 import au.edu.wehi.idsv.debruijn.positional.EvidenceTracker;
 import au.edu.wehi.idsv.debruijn.positional.KmerPathSubnode;
 import au.edu.wehi.idsv.debruijn.positional.NonReferenceContigAssembler;
-import au.edu.wehi.idsv.debruijn.positional.PathCollapseIterator;
 import au.edu.wehi.idsv.debruijn.positional.PathNodeIterator;
 import au.edu.wehi.idsv.debruijn.positional.PathSimplificationIterator;
 import au.edu.wehi.idsv.debruijn.positional.SupportNodeIterator;
@@ -32,7 +32,7 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 	private SupportNodeIterator support;
 	private AggregateNodeIterator aggregate;
 	private PathNodeIterator pathNode;
-	private PathCollapseIterator collapse;
+	private CollapseIterator collapse;
 	private PathSimplificationIterator simplify;
 	private EvidenceTracker tracker;
 	private NonReferenceContigAssembler assembler;
@@ -41,7 +41,7 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 			SupportNodeIterator support,
 			AggregateNodeIterator aggregate,
 			PathNodeIterator pathNode,
-			PathCollapseIterator collapse,
+			CollapseIterator collapse,
 			PathSimplificationIterator simplify,
 			EvidenceTracker tracker,
 			NonReferenceContigAssembler assembler) throws IOException {
