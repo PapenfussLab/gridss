@@ -109,4 +109,16 @@ public class PathSimplificationIteratorTest extends TestHelper {
 		assertEquals(4+5, list.get(0).weight());
 		assertEquals(weightIn, totalWeight(list));
 	}
+	/**
+	 * Not collapsing these ensures that a soft clip containing a repeated sequence
+	 * is unlikely to self-intersect
+	 */
+	@Test
+	public void should_not_collapse_adjacent_single_kmer_width() {
+		List<KmerPathNode> in = new ArrayList<KmerPathNode>();
+		in.add(new KmerPathNode(K("AAAA"), 1, 1, true, 1));
+		in.add(new KmerPathNode(K("AAAA"), 2, 2, true, 1));
+		List<KmerPathNode> list = Lists.newArrayList(new PathSimplificationIterator(in.iterator(), 64, 64));
+		assertEquals(2, list.size());
+	}
 }

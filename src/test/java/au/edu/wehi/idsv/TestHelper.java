@@ -910,7 +910,7 @@ public class TestHelper {
 			super(processContext, ImmutableList.<SAMEvidenceSource>of(), null);
 		}
 		@Override
-		public void ensureAssembled(ExecutorService threadpool) { }
+		public void ensureAssembled(ExecutorService threadpool, ExecutorService halfthreadpool) { }
 		@Override
 		public int getAssemblyWindowSize() { return assemblyWindowSize; }
 		@Override

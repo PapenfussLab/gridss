@@ -71,10 +71,10 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 		}
 		writer.write('\n');
 	}
-	public void trackAssembly(BestNonReferenceContigCaller caller) {
+	public void trackAssembly(BestNonReferenceContigCaller caller, ArrayDeque<KmerPathSubnode> bestContig) {
 		if (writer == null) return;
 		try {
-			ArrayDeque<KmerPathSubnode> called = caller.bestContig();
+			ArrayDeque<KmerPathSubnode> called = bestContig;
 			writer.write(Integer.toString(support.tracking_inputPosition()));
 			writer.write(',');
 			writer.write(Integer.toString(aggregate.tracking_inputPosition()));

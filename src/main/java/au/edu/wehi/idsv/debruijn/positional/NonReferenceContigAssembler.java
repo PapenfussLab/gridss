@@ -129,10 +129,10 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	}
 	private ArrayDeque<KmerPathSubnode> findBestContig() {
 		BestNonReferenceContigCaller bestCaller = new BestNonReferenceContigCaller(Iterators.concat(graphByPosition.iterator(), wrapper), maxEvidenceDistance);
-		if (exportTracker != null) {
-			exportTracker.trackAssembly(bestCaller);
-		}
 		ArrayDeque<KmerPathSubnode> bestContig = bestCaller.bestContig();
+		if (exportTracker != null) {
+			exportTracker.trackAssembly(bestCaller, bestContig);
+		}
 		return bestContig;
 	}
 	private SAMRecordAssemblyEvidence callContig(ArrayDeque<KmerPathSubnode> contig) {

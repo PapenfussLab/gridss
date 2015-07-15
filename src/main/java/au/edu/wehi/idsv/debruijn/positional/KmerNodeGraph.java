@@ -3,7 +3,6 @@ package au.edu.wehi.idsv.debruijn.positional;
 import java.util.Collection;
 import java.util.List;
 
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraph;
 import au.edu.wehi.idsv.graph.DirectedAcyclicGraph;
 
@@ -55,7 +54,7 @@ public class KmerNodeGraph implements DeBruijnGraph<KmerNode>, DirectedAcyclicGr
 
 	@Override
 	public String toString(Iterable<? extends KmerNode> path) {
-		throw new NotImplementedException();
+		throw new RuntimeException("NYI");
 	}
 
 	@Override

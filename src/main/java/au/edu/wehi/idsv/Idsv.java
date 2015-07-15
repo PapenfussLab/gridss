@@ -35,7 +35,7 @@ import com.google.common.collect.Lists;
 public class Idsv extends CommandLineProgram {
 	private Log log = Log.getInstance(Idsv.class);
 	@Option(doc="Number of worker threads to spawn."
-			+ "CPU usage can be higher than the number of worker thread due to additional I/O threads",
+			+ " Note that I/O threads not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
     		shortName="THREADS")
     public int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
     // The following attributes define the command-line arguments
@@ -81,6 +81,7 @@ public class Idsv extends CommandLineProgram {
     @Override
 	protected int doWork() {
     	ExecutorService threadpool = null;
+    	ExecutorService halfthreadpool = null;
     	try {
     		threadpool = Executors.newFixedThreadPool(WORKER_THREADS, new ThreadFactory() {
     			   @Override
@@ -90,6 +91,14 @@ public class Idsv extends CommandLineProgram {
     			      return thread;
     			   }
     			});
+    		halfthreadpool = Executors.newFixedThreadPool((int)Math.ceil(WORKER_THREADS/2.0), new ThreadFactory() {
+ 			   @Override
+ 			   public Thread newThread(Runnable runnable) {
+ 			      Thread thread = Executors.defaultThreadFactory().newThread(runnable);
+ 			      thread.setDaemon(true);
+ 			      return thread;
+ 			   }
+ 			});
     		log.info(String.format("Using %d worker threads", WORKER_THREADS));
 	    	ensureDictionariesMatch();
 	    	List<SAMEvidenceSource> samEvidence = createSamEvidenceSources();
@@ -143,7 +152,7 @@ public class Idsv extends CommandLineProgram {
 	    	}
 	    	
 	    	AssemblyEvidenceSource assemblyEvidence = new AssemblyEvidenceSource(getContext(), samEvidence, OUTPUT);
-	    	assemblyEvidence.ensureAssembled(threadpool);
+	    	assemblyEvidence.ensureAssembled(threadpool, halfthreadpool);
 	    	
 	    	List<EvidenceSource> allEvidence = Lists.newArrayList();
 	    	allEvidence.add(assemblyEvidence);
@@ -153,7 +162,9 @@ public class Idsv extends CommandLineProgram {
 	    		return -1;
     		}
 	    	shutdownPool(threadpool);
+	    	shutdownPool(halfthreadpool);
 			threadpool = null;
+			halfthreadpool = null;
 			
 	    	// check that all steps have been completed
 	    	for (SAMEvidenceSource sref : samEvidence) {

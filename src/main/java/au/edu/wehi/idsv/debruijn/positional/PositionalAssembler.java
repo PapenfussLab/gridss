@@ -9,6 +9,7 @@ import java.util.NoSuchElementException;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.AssemblyParameters;
+import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
@@ -26,14 +27,22 @@ import com.google.common.collect.PeekingIterator;
  */
 public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> {
 	private static final Log log = Log.getInstance(PositionalAssembler.class);
-	private ProcessingContext context;
-	private AssemblyEvidenceSource source;
-	private PeekingIterator<DirectedEvidence> it;
+	private final ProcessingContext context;
+	private final AssemblyEvidenceSource source;
+	private final PeekingIterator<DirectedEvidence> it;
+	private final BreakendDirection direction;
 	private NonReferenceContigAssembler currentAssembler = null;
-	public PositionalAssembler(ProcessingContext context, AssemblyEvidenceSource source, Iterator<DirectedEvidence> it) {
+	public PositionalAssembler(ProcessingContext context, AssemblyEvidenceSource source, Iterator<DirectedEvidence> backingIterator, BreakendDirection direction) {
 		this.context = context;
 		this.source = source;
-		this.it = Iterators.peekingIterator(it);
+		this.direction = direction;
+		if (direction != null) {
+			backingIterator = Iterators.filter(backingIterator, x -> x.getBreakendSummary() != null && x.getBreakendSummary().direction == this.direction);
+		}
+		this.it = Iterators.peekingIterator(backingIterator);
+	}
+	public PositionalAssembler(ProcessingContext context, AssemblyEvidenceSource source, Iterator<DirectedEvidence> it) {
+		this(context, source, it, null);
 	}
 	public void exportGraph(File file) {
 		if (currentAssembler != null) {
@@ -115,7 +124,7 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 		currentAssembler = new NonReferenceContigAssembler(pnIt, referenceIndex, maxEvidenceDistance, anchorAssemblyLength, k, source, trackedIt);
 		if (ap.trackAlgorithmProgress && ap.debruijnGraphVisualisationDirectory != null) {
 			ap.debruijnGraphVisualisationDirectory.mkdirs();
-			String filename = String.format("positional-%s.csv", context.getDictionary().getSequence(referenceIndex).getSequenceName());
+			String filename = String.format("positional-%s-%s.csv", context.getDictionary().getSequence(referenceIndex).getSequenceName(), direction);
 			File file = new File(ap.debruijnGraphVisualisationDirectory, filename);
 			PositionalDeBruijnGraphTracker tracker;
 			try {

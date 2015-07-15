@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import au.edu.wehi.idsv.debruijn.positional.DirectedPositionalAssembler;
 import au.edu.wehi.idsv.debruijn.positional.PositionalAssembler;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 import au.edu.wehi.idsv.pipeline.CreateAssemblyReadPair;
@@ -39,7 +40,7 @@ import com.google.common.collect.Lists;
 
 public class AssemblyEvidenceSource extends EvidenceSource {
 	private static final Log log = Log.getInstance(AssemblyEvidenceSource.class);
-	private static final int PROGRESS_UPDATE_INTERVAL_SECONDS = 10;
+	private static final int PROGRESS_UPDATE_INTERVAL_SECONDS = 60;
 	private final List<SAMEvidenceSource> source;
 	private final int maxSourceFragSize;
 	private final int minSourceFragSize;
@@ -60,11 +61,21 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		assert(maxSourceFragSize >= minSourceFragSize);
 	}
 	public void ensureAssembled() {
-		ensureAssembled(null);
+		ensureAssembled(null, null);
 	}
-	public void ensureAssembled(ExecutorService threadpool) {
+	/**
+	 * Assembles evidence
+	 * @param threadpool thread pool containing desired number of active threads
+	 * @param halfthreadpool thread pool containing half the desired number of active threads
+	 */
+	public void ensureAssembled(ExecutorService threadpool, ExecutorService halfthreadpool) {
 		if (!isProcessingComplete()) {
-			process(threadpool);
+			if (getContext().getAssemblyParameters().method == AssemblyAlgorithm.Positional) {
+				// Positional spawns a background worker thread
+				process(halfthreadpool);
+			} else {
+				process(threadpool);
+			}
 		}
 		if (isRealignmentComplete()) {
 			CreateAssemblyReadPair step = new CreateAssemblyReadPair(getContext(), this, source);
@@ -364,12 +375,22 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 							nextProgress = System.currentTimeMillis() + 1000 * PROGRESS_UPDATE_INTERVAL_SECONDS;
 							String seqname = getContext().getDictionary().getSequence(ass.getBreakendSummary().referenceIndex).getSequenceName();
 							log.info(String.format("Assembly progress at %s:%d", seqname, ass.getBreakendSummary().start));
-							if (getContext().getAssemblyParameters().visualiseAll && assemblyIt instanceof PositionalAssembler) {
-								File exportDir = getContext().getAssemblyParameters().debruijnGraphVisualisationDirectory;
-								if (exportDir != null) {
-									exportDir.mkdir();
-									File exportFilename = new File(exportDir, String.format("assembly_%s_%d.dot", seqname, ass.getBreakendSummary().start)); 
-									((PositionalAssembler)assemblyIt).exportGraph(exportFilename);
+							if (getContext().getAssemblyParameters().visualiseAll) {
+								if (assemblyIt instanceof PositionalAssembler) {
+									File exportDir = getContext().getAssemblyParameters().debruijnGraphVisualisationDirectory;
+									if (exportDir != null) {
+										exportDir.mkdir();
+										File exportFilename = new File(exportDir, String.format("assembly_%s_%d.dot", seqname, ass.getBreakendSummary().start)); 
+										((PositionalAssembler)assemblyIt).exportGraph(exportFilename);
+									}
+								} else if (assemblyIt instanceof DirectedPositionalAssembler) {
+									File exportDir = getContext().getAssemblyParameters().debruijnGraphVisualisationDirectory;
+									if (exportDir != null) {
+										exportDir.mkdir();
+										((DirectedPositionalAssembler)assemblyIt).exportGraph(
+												new File(exportDir, String.format("assemblyf_%s_%d.dot", seqname, ass.getBreakendSummary().start)),
+												new File(exportDir, String.format("assemblyb_%s_%d.dot", seqname, ass.getBreakendSummary().start)));
+									}
 								}
 							}
 						}
@@ -448,7 +469,8 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	protected Iterator<SAMRecordAssemblyEvidence> getAssembler(Iterator<DirectedEvidence> it) {
 		switch (getContext().getAssemblyParameters().method) {
 			case Positional:
-				return new PositionalAssembler(getContext(), this, it);
+				return new DirectedPositionalAssembler(getContext(), this, it);
+				//return new PositionalAssembler(getContext(), this, it);
 			case Subgraph:
 				return new ReadEvidenceAssemblyIterator(new DeBruijnSubgraphAssembler(getContext(), this), it);
 		}

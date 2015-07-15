@@ -20,7 +20,7 @@ import com.google.common.collect.AbstractIterator;
  */
 public class EvidenceClusterProcessor extends AbstractIterator<VariantContextDirectedEvidence> implements CloseableIterator<VariantContextDirectedEvidence> {
 	private static final Log log = Log.getInstance(EvidenceClusterProcessor.class);
-	private static final int EVIDENCE_BUFFER_SIZE = 32*1024;
+	private static final int EVIDENCE_BUFFER_SIZE = 1024;
 	private static final AtomicInteger threadCount = new AtomicInteger(0);
 	private final BlockingQueue<VariantContextDirectedEvidence> callBuffer = new ArrayBlockingQueue<VariantContextDirectedEvidence>(64);
 	private MaximalCliqueIteratorRunnable[] threads;

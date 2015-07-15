@@ -130,7 +130,10 @@ public class PathSimplificationIterator implements PeekingIterator<KmerPathNode>
 		KmerPathNode adj = endLookup.get(new KmerPathNode(node.lastKmer(), 0, node.lastStart() - 1, false, 0));
 		if (adj != null
 				&& node.canCoaleseBeforeAdjacent(adj)
-				&& adj.width() + node.width() <= maxWidth) {
+				&& adj.width() + node.width() <= maxWidth
+				// don't collapse a soft clip onto itself - we want to be able to traverse
+				// the SC without self-intersection
+				&& adj.width() + node.width() > 2) {
 			return adj;
 		}
 		return null;

@@ -2,7 +2,9 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import java.util.ArrayDeque;
 import java.util.Iterator;
+import java.util.List;
 import java.util.PriorityQueue;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Iterators;
@@ -229,6 +231,10 @@ public class BestNonReferenceContigCaller {
 			return null;
 		}
 		return best.toSubnodePath();
+	}
+	public List<ArrayDeque<KmerPathSubnode>> contigsFound() {
+		bestContig();
+		return called.stream().sorted(Contig.ByScoreDescPosition).map(c -> c.toSubnodePath()).collect(Collectors.toList());
 	}
 	public int tracking_contigCount() {
 		return called.size();
