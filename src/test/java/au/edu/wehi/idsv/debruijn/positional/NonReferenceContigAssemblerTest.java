@@ -28,6 +28,11 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 	private NonReferenceContigAssembler caller;
 	private EvidenceTracker trackedIt;
 	public List<SAMRecordAssemblyEvidence> go(ProcessingContext pc, boolean collapse, DirectedEvidence... input) {
+		caller = create(pc, collapse, input);
+		List<SAMRecordAssemblyEvidence> assemblies = Lists.newArrayList(caller);
+		return assemblies;
+	}
+	private NonReferenceContigAssembler create(ProcessingContext pc, boolean collapse, DirectedEvidence... input) {
 		Arrays.sort(input, DirectedEvidence.ByStartEnd);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, Arrays.stream(input).map(e -> (SAMEvidenceSource)e.getEvidenceSource()).collect(Collectors.toList()), null);
 		int maxEvidenceWidth = aes.getMaxConcordantFragmentSize() - aes.getMinConcordantFragmentSize() + 1;
@@ -44,8 +49,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 			pnIt = new PathSimplificationIterator(pnIt, maxPathLength, maxEvidenceWidth);
 		}
 		caller = new NonReferenceContigAssembler(pnIt, 0, maxEvidenceWidth, maxReadLength, k, aes, trackedIt);
-		List<SAMRecordAssemblyEvidence> assemblies = Lists.newArrayList(caller);
-		return assemblies;
+		return caller;
 	}
 	@Test
 	public void should_call_simple_fwd_SC() {
@@ -148,5 +152,22 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		assertEquals(1, output.size());
 		assertEquals("ACGTGGTCGACC", S(output.get(0).getAssemblySequence()));
 		assertEquals(0, trackedIt.tracking_supportNodeCount());
-		assertEquals(0, caller.tracking_activeNodes());	}
+		assertEquals(0, caller.tracking_activeNodes());
+	}
+	@Test
+	public void should_remove_fully_reference_evidence_before_end() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 4;
+		int n = 16;
+		DirectedEvidence[] input = new DirectedEvidence[2 * n];
+		for (int i = 0; i < n; i++) {
+			input[2*i] = SCE(FWD, withSequence("ACGTGGTCGACC", Read(0, 1000*i, "6M6S")));
+			input[2*i + 1 ] = SCE(FWD, withSequence("AACGTGG", Read(0, 1000*i-1, "6M1S")));
+		}
+		NonReferenceContigAssembler caller = create(pc, true, input);
+		for (int i = 0; i < n / 2; i++) {
+			caller.next();
+		}
+		assertTrue(caller.tracking_activeNodes() <= 3);
+	}
 }

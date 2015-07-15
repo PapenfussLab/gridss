@@ -385,7 +385,17 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		nonRefOrphaned.addAll(nonRefActive);
 		if (!nonRefOrphaned.isEmpty()) {
 			Set<KmerEvidence> evidence = evidenceTracker.untrack(nonRefOrphaned.stream().map(n -> new KmerPathSubnode(n)).collect(Collectors.toList()));
-			removeFromGraph(evidence);
+			removeFromGraph(evidence);			
+			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+				// safety check: did we remove them all?
+				for (KmerPathNode n : nonRefOrphaned) {
+					if (!n.isValid()) continue;
+					if (graphByPosition.contains(n)) {
+						log.debug("Sanity check failure: %s not removed (%d evidence found)", n, evidence.size());
+						removeFromGraph(n);
+					}
+				}
+			}
 		}
 	}
 	/**

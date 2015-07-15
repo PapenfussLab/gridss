@@ -223,7 +223,7 @@ public class BestNonReferenceContigCaller {
 			advance();
 			assert(frontier.peekFrontier() == null);
 		}
-		Contig best = called.poll();
+		Contig best = called.peek();
 		if (best == null) {
 			assert(!underlying.hasNext());
 			return null;

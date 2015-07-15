@@ -80,21 +80,25 @@ public class PositionalExporter {
 		BufferedWriter writer = null;
 		try {
 			writer = new BufferedWriter(new FileWriter(file));
-			writer.append("digraph {\n");
-			writer.append("rankdir=LR;");
-			writer.append(String.format("graph [k=%d]\n", k));
+			writer.append("digraph G {\n");
+			//writer.append("rankdir=LR;");
+			writer.append(String.format("	graph [k=%d];\n", k));
+			// nodes
 			for (KmerPathNode n : nodes) {
+				writer.append('\t');
 				writer.append(id(n, k));
-				writer.append(String.format(" [s=%d,e=%d,wid=%d,w=%d,l=%d,r=%s,alt=%d,s=\"%s\"];\n",
+				writer.append(String.format(" [s=%d,e=%d,wid=%d,w=%d,l=%d,r=%s,alt=%d,seq=\"%s\"];\n",
 						n.firstStart(), n.firstEnd(), n.width(), n.weight(), n.length(), n.isReference() ? "true" : "false", n.collapsedKmers().size(), new String(KmerEncodingHelper.baseCalls(n.pathKmers(), k))));
+			}
+			// edges
+			for (KmerPathNode n : nodes) {
 				for (KmerPathNode next : n.next()) {
+					writer.append('\t');
 					writer.append(id(n,k));
 					writer.append(" -> ");
 					writer.append(id(next,k));
-					writer.append(";");
+					writer.append(";\n");
 				}
-				writer.append(new String(KmerEncodingHelper.baseCalls(n.pathKmers(), k)));
-				
 			}
 			writer.append("}\n");
 		} finally {
