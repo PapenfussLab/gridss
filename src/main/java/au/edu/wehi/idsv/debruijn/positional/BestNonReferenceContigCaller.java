@@ -50,6 +50,7 @@ public class BestNonReferenceContigCaller {
 	private final int maxEvidenceWidth;
 	private int inputPosition;
 	private long consumed = 0;
+	private int firstContigPosition = Integer.MAX_VALUE;
 	public BestNonReferenceContigCaller(
 			Iterator<KmerPathNode> it,
 			int maxEvidenceWidth) {
@@ -157,13 +158,17 @@ public class BestNonReferenceContigCaller {
 		if (terminalAnchor != null) {
 			// path has reference successor = path is anchored to the reference here
 			for (Range<Integer> rs : terminalAnchor.asRanges()) {
-				called.add(new Contig(new TraversalNode(ms, rs.lowerEndpoint(), rs.upperEndpoint()), true));
+				callContig(new Contig(new TraversalNode(ms, rs.lowerEndpoint(), rs.upperEndpoint()), true));
 			}	
 		}
 		for (Range<Integer> rs : ms.node.nextPathRangesOfDegree(KmerPathSubnode.NO_EDGES).asRanges()) {
 			// path has no successors = end of path
-			called.add(new Contig(new TraversalNode(ms, rs.lowerEndpoint(), rs.upperEndpoint()), false));
+			callContig(new Contig(new TraversalNode(ms, rs.lowerEndpoint(), rs.upperEndpoint()), false));
 		}
+	}
+	private void callContig(Contig contig) {
+		firstContigPosition = Math.min(contig.node.node.firstStart() - (contig.node.pathLength - 1), firstContigPosition);
+		called.add(contig);
 	}
 	public static class Contig {
 		public Contig(TraversalNode node, boolean hasReferenceSuccessor) {
@@ -240,7 +245,7 @@ public class BestNonReferenceContigCaller {
 		return called.size();
 	}
 	public int tracking_contigFirstPosition() {
-		return called.stream().mapToInt(c -> c.toSubnodePath().getFirst().firstStart()).min().orElse(Integer.MAX_VALUE);
+		return firstContigPosition;
 	}
 	public long tracking_underlyingConsumed() {
 		return consumed;
