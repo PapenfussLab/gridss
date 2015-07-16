@@ -21,7 +21,7 @@ public class KmerNodeUtil {
 	public static final Ordering<KmerNode> ByFirstEnd = new Ordering<KmerNode>() {
 		@Override
 		public int compare(KmerNode left, KmerNode right) {
-			return Ints.compare(left.firstStart(), right.firstStart());
+			return Ints.compare(left.firstEnd(), right.firstEnd());
 		}
 	};
 	public static final Ordering<KmerNode> ByFirstStartKmer = new Ordering<KmerNode>() {

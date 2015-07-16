@@ -477,4 +477,27 @@ public class KmerPathNodeTest extends TestHelper {
 		assertEquals(2, node.prev().size());
 		assertEquals(1, n39.next().size());
 	}
+	@Test
+	public void asSubnodesByNext() {
+		// 01234567890
+		//  ----------
+		// AAAAAAAAAAAA
+		//  BBBBB
+		//    CCCCC
+		//     DDD
+		// -**-*-*-****
+		KmerPathNode n = KPN(4, "AAAA", 1, 10, true); // [1,1000]
+		KmerPathNode.addEdge(n, KPN(4, "AAAA", 0, 20, true)); // 0,2000
+		KmerPathNode.addEdge(n, KPN(4, "AAAA", 1, 5, true)); // [0,4]
+		KmerPathNode.addEdge(n, KPN(4, "AAAA", 3, 7, true)); // [2,6]
+		KmerPathNode.addEdge(n, KPN(4, "AAAA", 4, 6, true)); // [3,5]
+		// -> subnodes start at: 1,2,3, 5,6,7
+		List<KmerPathSubnode> result = n.asSubnodesByNext();
+		assertEquals(new KmerPathSubnode(n, 1, 1), result.get(0));
+		assertEquals(new KmerPathSubnode(n, 2, 2), result.get(1));
+		assertEquals(new KmerPathSubnode(n, 3, 4), result.get(2));
+		assertEquals(new KmerPathSubnode(n, 5, 5), result.get(3));
+		assertEquals(new KmerPathSubnode(n, 6, 6), result.get(4));
+		assertEquals(new KmerPathSubnode(n, 7, 10), result.get(5));
+	}
 }

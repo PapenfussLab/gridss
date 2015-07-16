@@ -5,6 +5,21 @@ import java.io.File;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
 public class AssemblyParameters {
+	/**
+	 * Evidence per base to assemble without filtering
+	 */
+	public double acceptDensityPortion = 0.5;
+	/**
+	 * Filter evidence to expect this maximum average evidence per base within window 
+	 */
+	public double targetEvidenceDensity = 10;
+	/**
+	 * Minimum window size for density calculation 
+	 */
+	public int minimumDensityWindowSize = 1000;
+	/**
+	 * Assembly algorithm to use
+	 */
 	public AssemblyAlgorithm method = AssemblyAlgorithm.Positional;
 	/**
 	 * Assemble soft clips at the remote realigned position as well as the read mapping location

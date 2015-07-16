@@ -85,6 +85,7 @@ public class ProcessingContext implements Closeable {
 			File ref, boolean perChr, boolean vcf41) {
 		this(fileSystemContext, metricsHeaders, softClipParameters, readPairParameters, assemblyParameters, realignmentParameters, variantCallingParameters, LoadReference(ref), ref, perChr, vcf41);
 	}
+	@SuppressWarnings("resource")
 	private static ReferenceLookup LoadReference(File ref) {
 		try {
 			ReferenceSequenceFile underlying = new IndexedFastaSequenceFile(ref);

@@ -22,6 +22,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
+import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.debruijn.positional.DirectedPositionalAssembler;
 import au.edu.wehi.idsv.debruijn.positional.PositionalAssembler;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
@@ -344,8 +345,18 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		private File breakendOutput;
 		private File realignmentFastq;
 		private FastqBreakpointWriter fastqWriter = null;
+		private IntervalBed throttled;
 		public ContigAssembler(Iterator<DirectedEvidence> it, File breakendOutput, File realignmentFastq) {
-			this.it = it;
+			AssemblyParameters ap = getContext().getAssemblyParameters();
+			this.throttled = new IntervalBed(getContext().getDictionary(), getContext().getLinear());
+			this.it = new DirectedEvidenceDensityThrottlingIterator(
+					throttled,
+					getContext().getDictionary(),
+					getContext().getLinear(),
+					it,
+					Math.max(ap.minimumDensityWindowSize, getMaxConcordantFragmentSize()),
+					ap.acceptDensityPortion * ap.targetEvidenceDensity,
+					ap.targetEvidenceDensity);
 			this.breakendOutput = breakendOutput;
 			this.realignmentFastq = realignmentFastq;
 		}
@@ -401,6 +412,12 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				}
 				writer.close();
 				writer = null;
+				String throttleFilename = breakendOutput.getAbsolutePath() + ".throttled.bed";
+				try {
+					throttled.write(new File(throttleFilename), "Regions of high coverage where only a portion of supporting reads considered for assembly");
+				} catch (IOException e) {
+					log.warn(e, "Unable to write " + throttleFilename);
+				}
 			} finally {
 				CloserUtil.close(writer);
 			}

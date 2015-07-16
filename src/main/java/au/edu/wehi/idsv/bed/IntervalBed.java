@@ -63,7 +63,7 @@ public class IntervalBed {
 	public static void addInterval(SAMSequenceDictionary dictionary, LinearGenomicCoordinate linear, RangeSet<Long> blacklisted, int referenceIndex, int start, int end) {
 		blacklisted.add(Range.closedOpen(linear.getLinearCoordinate(referenceIndex, start), linear.getLinearCoordinate(referenceIndex, end) + 1));
 	}
-	public void addInterval(int referenceIndex, int start, int end) {
+	public synchronized void addInterval(int referenceIndex, int start, int end) {
 		addInterval(dictionary, linear, intervals, referenceIndex, start, end);
 	}
 	/**
