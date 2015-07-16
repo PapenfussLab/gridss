@@ -88,7 +88,7 @@ dtsenssize_all$Filters <- "All calls"
 dtsenssize_passfilters$Filters <- "Passing"
 dtsenssize <- rbind(dtsenssize_all, dtsenssize_passfilters)
 dtsenssize$CX_CALLER <- as.character(dtsenssize$CX_CALLER) # poor-man's lexical sort
-plot_sens <- ggplot(dtsenssize[!(dtsenssize$CX_REFERENCE_VCF_VARIANTS %in% c("homBP", "homBP_SINE"))+ # & dtsenssize$CX_CALLER %in% c("gridss Positional", "gridss Subgraph")
+plot_sens <- ggplot(dtsenssize[!(dtsenssize$CX_REFERENCE_VCF_VARIANTS %in% c("homBP", "homBP_SINE"))]) + # & dtsenssize$CX_CALLER %in% c("gridss Positional", "gridss Subgraph")
   aes(y=sens, x=SVLEN, shape=factor(CX_READ_FRAGMENT_LENGTH), color=Filters) +
   geom_line() + 
   facet_grid(CX_ALIGNER + CX_CALLER ~ CX_READ_FRAGMENT_LENGTH + CX_READ_LENGTH + CX_READ_DEPTH + CX_REFERENCE_VCF_VARIANTS) +

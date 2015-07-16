@@ -84,7 +84,7 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 		int maxSupportNodeWidth = source.getMaxConcordantFragmentSize() - source.getMinConcordantFragmentSize() + 1; 		
 		int maxReadLength = source.getMaxReadLength();
 		int k = ap.k;
-		int maxEvidenceDistance = maxSupportNodeWidth + maxReadLength + 1;
+		int maxEvidenceDistance = maxSupportNodeWidth + maxReadLength + 2;
 		int maxPathLength = ap.positionalMaxPathLengthInBases(maxReadLength);
 		int maxPathCollapseLength = ap.positionalMaxPathCollapseLengthInBases(maxReadLength);
 		int anchorAssemblyLength = ap.anchorAssemblyLength;

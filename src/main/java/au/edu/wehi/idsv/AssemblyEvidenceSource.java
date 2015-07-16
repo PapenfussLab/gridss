@@ -58,7 +58,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		this.source = evidence;
 		this.maxSourceFragSize = evidence.stream().mapToInt(s -> s.getMaxConcordantFragmentSize()).max().orElse(0);
 		this.minSourceFragSize = evidence.stream().mapToInt(s -> s.getMinConcordantFragmentSize()).min().orElse(0);
-		this.maxReadLength = evidence.stream().mapToInt(s -> s.getMaxReadLength()).max().orElse(0);
+		this.maxReadLength = evidence.stream().mapToInt(s -> Math.max(s.getMaxReadLength(), s.getMaxReadMappedLength())).max().orElse(0);
 		assert(maxSourceFragSize >= minSourceFragSize);
 	}
 	public void ensureAssembled() {
@@ -410,8 +410,11 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				if (ass != null) {
 					log.info(String.format("Assembly complete for %s", getContext().getDictionary().getSequence(ass.getBreakendSummary().referenceIndex).getSequenceName()));
 				}
-				writer.close();
-				writer = null;
+				try {
+					writer.close();
+				} finally {
+					writer = null;
+				}
 				String throttleFilename = breakendOutput.getAbsolutePath() + ".throttled.bed";
 				try {
 					throttled.write(new File(throttleFilename), "Regions of high coverage where only a portion of supporting reads considered for assembly");

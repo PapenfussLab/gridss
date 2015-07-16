@@ -201,7 +201,15 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			}
 		}
 		// remove all evidence contributing to this assembly from the graph
-		removeFromGraph(evidence);
+		if (evidence.size() > 0) {
+			removeFromGraph(evidence);
+		} else {
+			log.error(String.format("Sanity check failure: found path with no support. Attempting to recover by direct node removal"));
+			for (KmerPathSubnode n : contig) {
+				removeFromGraph(n.node());
+			}
+			
+		}
 		return assembledContig;
 		
 	}
@@ -216,7 +224,10 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			for (int i = 0; i < e.length(); i++) {
 				KmerSupportNode support = e.node(i);
 				if (support != null) {
-					assert(support.lastEnd() <= wrapper.lastPosition());
+					if (support.lastEnd() > wrapper.lastPosition()) {
+						log.error(String.format("Sanity check failure: %s extending to %d removed when input at %d", e, support.lastEnd(), wrapper.lastPosition()));
+						// try to recover
+					}
 					updateRemovalList(toRemove, support);
 				}
 			}
@@ -259,9 +270,12 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		}
 	}
 	private void updateRemovalList(Map<KmerPathNode, List<List<KmerNode>>> toRemove, KmerSupportNode support) {
-		for (KmerPathNodeKmerNode n : graphByKmerNode.get(support.lastKmer())) {
-			if (IntervalUtil.overlapsClosed(support.lastStart(), support.lastEnd(), n.lastStart(), n.lastEnd())) {
-				updateRemovalList(toRemove, n, support);
+		Collection<KmerPathNodeKmerNode> kpnknList = graphByKmerNode.get(support.lastKmer());
+		if (kpnknList != null) {
+			for (KmerPathNodeKmerNode n : kpnknList) {
+				if (IntervalUtil.overlapsClosed(support.lastStart(), support.lastEnd(), n.lastStart(), n.lastEnd())) {
+					updateRemovalList(toRemove, n, support);
+				}
 			}
 		}
 	}
@@ -374,7 +388,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 				nonRefOrphaned.addAll(nonRefActive);
 				nonRefActive.clear();
 			}
-			if (!n.isReference() || n.lastEnd() >= wrapper.lastPosition()) {
+			if (!n.isReference() || n.lastEnd() >= wrapper.lastPosition() - maxEvidenceDistance) {
 				// could connect to a reference node
 				nonRefActive.clear();
 				break;
@@ -386,14 +400,12 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		if (!nonRefOrphaned.isEmpty()) {
 			Set<KmerEvidence> evidence = evidenceTracker.untrack(nonRefOrphaned.stream().map(n -> new KmerPathSubnode(n)).collect(Collectors.toList()));
 			removeFromGraph(evidence);			
-			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
-				// safety check: did we remove them all?
-				for (KmerPathNode n : nonRefOrphaned) {
-					if (!n.isValid()) continue;
-					if (graphByPosition.contains(n)) {
-						log.debug("Sanity check failure: %s not removed (%d evidence found)", n, evidence.size());
-						removeFromGraph(n);
-					}
+			// safety check: did we remove them all?
+			for (KmerPathNode n : nonRefOrphaned) {
+				if (!n.isValid()) continue;
+				if (graphByPosition.contains(n)) {
+					log.error("Sanity check failure: %s not removed when clearing orphans (%d evidence found). Attempting to recover by direct node removal", n, evidence.size());
+					removeFromGraph(n);
 				}
 			}
 		}

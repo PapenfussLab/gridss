@@ -12,7 +12,7 @@ public class AssemblyParameters {
 	/**
 	 * Filter evidence to expect this maximum average evidence per base within window 
 	 */
-	public double targetEvidenceDensity = 10;
+	public double targetEvidenceDensity = 5;
 	/**
 	 * Minimum window size for density calculation 
 	 */

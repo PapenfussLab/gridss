@@ -556,13 +556,13 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
         } else if (SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), getBreakendSummary().direction) == 0 && 
     		SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), getBreakendSummary().direction.reverse()) > 0) {
         	// medium size indel breakend is longer than the anchor causing the anchor to soft clip instead of an indel call
-        	log.debug(String.format("Realignment of assembly %s at %s converts cigar from %s to %s starting at %d. Likely to be small indel with short anchor - ignoring realignment.",
-        			getEvidenceID(),
-        			getBreakendSummary().toString(source.getContext()),
-        			r.getCigarString(),
-        			cigar,
-        			start + alignment.getStartPosition()
-        			));
+        	//log.debug(String.format("Realignment of assembly %s at %s converts cigar from %s to %s starting at %d. Likely to be small indel with short anchor - ignoring realignment.",
+        	//		getEvidenceID(),
+        	//		getBreakendSummary().toString(source.getContext()),
+        	//		r.getCigarString(),
+        	//		cigar,
+        	//		start + alignment.getStartPosition()
+        	//		));
         	return this;
         }
         
