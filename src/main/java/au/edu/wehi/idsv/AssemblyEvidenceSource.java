@@ -517,7 +517,9 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	public int getAssemblyWindowSize() {
 		switch (getContext().getAssemblyParameters().method) {
 			case Positional:
-				return getMaxConcordantFragmentSize() + getMaxMappedReadLength() + 2;
+				int maxBreakendLength = getMaxConcordantFragmentSize() + getMaxMappedReadLength() + 1;
+				int maxAnchorLength = Math.max(maxBreakendLength, getContext().getAssemblyParameters().anchorAssemblyLength);
+				return maxBreakendLength + maxAnchorLength;
 			case Subgraph:
 				return getAssemblyMaximumEvidenceDelay() + 3 * getAssemblyEvidenceWindowSize() + 2;
 		}

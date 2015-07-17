@@ -37,17 +37,18 @@ setwd(pwd)
 #     return(vcf)
 #   }))
 #Separate out GRIDSS confidence levels
-vcfs <- c(
- vcfs,
- lapply(vcfs, function(vcf) {
-   if (is.null(attr(vcf, "metadata")) || is.na(vcf@metadata$CX_CALLER) || vcf@metadata$CX_CALLER !="gridss") return(NULL)
-   if (!is.na(vcf@metadata$CX_CALLER_FLAGS) & vcf@metadata$CX_CALLER_FLAGS == "ASSEMBLY_ALGORITHM") {
-     attr(vcf, "metadata")$CX_CALLER <- "gridss Positional" 
-   } else {
-     attr(vcf, "metadata")$CX_CALLER <- "gridss Subgraph" 
-   }
-   return(vcf)
- }))
+# vcfs <- c(
+#  vcfs,
+#  lapply(vcfs, function(vcf) {
+#    if (is.null(attr(vcf, "metadata")) || is.na(vcf@metadata$CX_CALLER) || vcf@metadata$CX_CALLER !="gridss") return(NULL)
+#    if (!is.na(vcf@metadata$CX_CALLER_FLAGS) & vcf@metadata$CX_CALLER_FLAGS == "ASSEMBLY_ALGORITHM") {
+#      #attr(vcf, "metadata")$CX_CALLER <- "gridss Positional" 
+#    } else {
+#      return(NULL)
+#      #attr(vcf, "metadata")$CX_CALLER <- "gridss Subgraph" 
+#    }
+#    return(vcf)
+#  }))
 #   lapply(vcfs, function(vcf) {
 #     if (is.null(attr(vcf, "metadata")) || is.na(vcf@metadata$CX_CALLER) || vcf@metadata$CX_CALLER !="gridss") return(NULL)
 #     vcf <- vcf[gridss.vcftodf(vcf)$confidence %in% c("High", "Medium"),]
