@@ -3,8 +3,6 @@ package au.edu.wehi.idsv;
 import java.util.Iterator;
 import java.util.List;
 
-import com.google.common.collect.AbstractIterator;
-
 
 /**
  * Annotates breakends with reference allele coverage information
@@ -12,7 +10,7 @@ import com.google.common.collect.AbstractIterator;
  * @author Daniel Cameron
  *
  */
-public class SequentialCoverageAnnotator extends AbstractIterator<VariantContextDirectedEvidence> implements BreakendAnnotator {
+public class SequentialCoverageAnnotator implements Iterator<VariantContextDirectedEvidence>, BreakendAnnotator {
 	private final ProcessingContext context;
 	private final List<ReferenceCoverageLookup> reference;
 	private final Iterator<VariantContextDirectedEvidence> it;
@@ -44,8 +42,11 @@ public class SequentialCoverageAnnotator extends AbstractIterator<VariantContext
 		return (VariantContextDirectedEvidence)builder.make();
 	}
 	@Override
-	protected VariantContextDirectedEvidence computeNext() {
-		if (!it.hasNext()) return endOfData();
+	public boolean hasNext() {
+		return it.hasNext();
+	}
+	@Override
+	public VariantContextDirectedEvidence next() {
 		return annotate(it.next());
 	}
 }

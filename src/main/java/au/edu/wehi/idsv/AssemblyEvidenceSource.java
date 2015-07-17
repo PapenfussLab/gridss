@@ -515,7 +515,13 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				(int)(getContext().getAssemblyParameters().maxSubgraphFragmentWidth * getMaxConcordantFragmentSize()));
 	}
 	public int getAssemblyWindowSize() {
-		return getAssemblyMaximumEvidenceDelay() + 3 * getAssemblyEvidenceWindowSize() + 2;
+		switch (getContext().getAssemblyParameters().method) {
+			case Positional:
+				return getMaxConcordantFragmentSize() + getMaxMappedReadLength() + 2;
+			case Subgraph:
+				return getAssemblyMaximumEvidenceDelay() + 3 * getAssemblyEvidenceWindowSize() + 2;
+		}
+		throw new IllegalArgumentException(String.format("Unknown assembly method %s", getContext().getAssemblyParameters().method));
 	}
 	@Override
 	public int getMaxConcordantFragmentSize() {
