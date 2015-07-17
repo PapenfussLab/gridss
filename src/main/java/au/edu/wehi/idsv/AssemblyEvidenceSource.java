@@ -515,15 +515,10 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				(int)(getContext().getAssemblyParameters().maxSubgraphFragmentWidth * getMaxConcordantFragmentSize()));
 	}
 	public int getAssemblyWindowSize() {
-		switch (getContext().getAssemblyParameters().method) {
-			case Positional:
-				int maxBreakendLength = getMaxConcordantFragmentSize() + getMaxMappedReadLength() + 1;
-				int maxAnchorLength = Math.max(maxBreakendLength, getContext().getAssemblyParameters().anchorAssemblyLength);
-				return maxBreakendLength + maxAnchorLength;
-			case Subgraph:
-				return getAssemblyMaximumEvidenceDelay() + 3 * getAssemblyEvidenceWindowSize() + 2;
-		}
-		throw new IllegalArgumentException(String.format("Unknown assembly method %s", getContext().getAssemblyParameters().method));
+		// Positional assembly should have a smaller window size
+		// but the width of the assembly itself is unbounded
+		// in the degenerate misassembly case
+		return getAssemblyMaximumEvidenceDelay() + 3 * getAssemblyEvidenceWindowSize() + 2;
 	}
 	@Override
 	public int getMaxConcordantFragmentSize() {
