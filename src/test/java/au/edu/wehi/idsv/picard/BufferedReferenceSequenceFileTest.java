@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
-import au.edu.wehi.idsv.picard.BufferedReferenceSequenceFile;
 
 
 public class BufferedReferenceSequenceFileTest extends TestHelper {

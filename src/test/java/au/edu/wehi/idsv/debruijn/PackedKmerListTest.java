@@ -1,14 +1,14 @@
 package au.edu.wehi.idsv.debruijn;
 
+import static org.junit.Assert.assertEquals;
+
 import java.util.List;
 
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
+import au.edu.wehi.idsv.TestHelper;
 
 import com.google.common.collect.Lists;
-
-import au.edu.wehi.idsv.TestHelper;
 
 
 public class PackedKmerListTest extends TestHelper {

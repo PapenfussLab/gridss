@@ -496,7 +496,7 @@ public class AssemblyFactoryTest extends TestHelper {
 					0, 10, 2,
 					0, 15, 3,
 					B("NNAAATTTT"), B("NNAAATTTT"), new int[] {0, 0}).annotateAssembly(),
-				SmallIndelSAMRecordAssemblyEvidenceTest.create(1, "2M5D3M", "AAAAAA")
+					au.edu.wehi.idsv.SmallIndelSAMRecordAssemblyEvidenceTest.create(1, "2M5D3M", "AAAAAA")
 			}) {
 			SAMRecordAssemblyEvidence r = AssemblyFactory.hydrate(e.getEvidenceSource(), e.getBackingRecord());
 			SAMRecordAssemblyEvidenceTest.assertEvidenceEquals(e, r);

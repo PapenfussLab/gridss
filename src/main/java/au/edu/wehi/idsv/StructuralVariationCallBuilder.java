@@ -7,12 +7,12 @@ import htsjdk.variant.vcf.VCFConstants;
 import java.util.HashSet;
 import java.util.List;
 
-import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.Ordering;
-
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
+
+import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Ordering;
 
 public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private static final Log log = Log.getInstance(StructuralVariationCallBuilder.class);

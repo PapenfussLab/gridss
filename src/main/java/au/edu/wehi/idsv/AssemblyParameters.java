@@ -129,7 +129,10 @@ public class AssemblyParameters {
 	 * Perform local Smith-Waterman realignment of assemblies
 	 */
 	public boolean performLocalRealignment = true;
-	public int realignmentWindowSize = Defaults.ASSEMBLY_REALIGNMENT_WINDOW_SIZE;
+	/**
+	 * local realignment window size (in multiple of read length)
+	 */
+	public double realignmentWindowReadLengthMultiples = 0.2;
 	public boolean excludeNonSupportingEvidence = Defaults.EXCLUDE_ASSEMBLY_NON_SUPPORTING_EVIDENCE;
 	/**
 	 * Default minimum length in bases of reference sequence anchor assembly

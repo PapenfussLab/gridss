@@ -1,10 +1,6 @@
 package au.edu.wehi.idsv.graph;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
-import java.util.Iterator;
-import java.util.List;
 
 import org.junit.Test;
 
@@ -13,7 +9,6 @@ import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
 

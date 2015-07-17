@@ -1,14 +1,13 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.List;
-
-import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 
 import org.junit.Test;
 

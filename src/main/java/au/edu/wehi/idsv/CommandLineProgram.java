@@ -227,6 +227,8 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 	    			getVariantCallingParameters(),
 	    			REFERENCE, PER_CHR, VCF41_COMPATIBLE);
 		}
+		processContext.registerCategory(0, "Normal");
+		processContext.registerCategory(1, "Tumour");
     	return processContext;
 	}
 	public static String getRealignmentScript(Iterable<? extends EvidenceSource> it, int threads) {

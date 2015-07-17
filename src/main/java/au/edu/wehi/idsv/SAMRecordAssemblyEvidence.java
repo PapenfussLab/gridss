@@ -523,23 +523,36 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		return (float)qual;
 	}
 	/**
-	 * Performs local Smith-Watermann alignment of assembled contig
-	 * to remove artifacts caused by misalignment of soft clipped reads 
-	 * @return Assembly contig with aligned anchor.
+	 * Performs local Smith-Watermann alignment of assembled contig to remove artifacts caused by misalignment of soft clipped reads.
+	 * 
+	 * Realignment of the full sequence (eg 50M100S) of small events results in unintended realignment
+	 * to the far side of the event (eg 50S100M). The number of soft clipped bases aligned is capped to
+	 * prevent this.
+	 * 
+	 * @param realignmentWindowSize number of additional reference bases to include around alignment
+	 * @return includeBreakendBases include non-reference breakend bases when calculating alignment window size
 	 */
-	public SAMRecordAssemblyEvidence realign() {
+	public SAMRecordAssemblyEvidence realign(int realignmentWindowSize, boolean includeBreakendBases) {
 		if (!this.isExact) throw new RuntimeException("Sanity check failure: realignment of unanchored assemblies not yet implemented.");
 		BreakendSummary bs = getBreakendSummary();
 		if (bs == null || isReferenceAssembly()) {
 			// misassembly with no breakend - nothing to do
 			return this;
 		}
-		AssemblyParameters ap = source.getContext().getAssemblyParameters();
 		int refIndex = getBreakendSummary().referenceIndex;
 		SAMSequenceRecord refSeq = source.getContext().getDictionary().getSequence(refIndex);
 		SAMRecord r = getBackingRecord();
-		int start = Math.max(1, r.getAlignmentStart() - ap.realignmentWindowSize - (getBreakendSummary().direction == BreakendDirection.Backward ? getBreakendLength() : 0));
-		int end = Math.min(refSeq.getSequenceLength(), r.getAlignmentEnd() + ap.realignmentWindowSize + (getBreakendSummary().direction == BreakendDirection.Forward ? getBreakendLength() : 0));
+		int startBreakendLengthToInclude = 0;
+		int endBreakendLengthToInclude = 0;
+		if (includeBreakendBases) {
+			if (getBreakendSummary().direction == BreakendDirection.Backward) {
+				startBreakendLengthToInclude = getBreakendLength();
+			} else {
+				endBreakendLengthToInclude = getBreakendLength();
+			}
+		}
+		int start = Math.max(1, r.getAlignmentStart() - realignmentWindowSize - startBreakendLengthToInclude);
+		int end = Math.min(refSeq.getSequenceLength(), r.getAlignmentEnd() + realignmentWindowSize + endBreakendLengthToInclude);
 		byte[] ass = r.getReadBases();
 		byte[] ref = source.getContext().getReference().getSubsequenceAt(refSeq.getSequenceName(), start, end).getBases();
 		

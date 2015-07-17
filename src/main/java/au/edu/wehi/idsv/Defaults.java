@@ -48,10 +48,6 @@ public class Defaults {
 	 */
 	public static final int MIN_BASES_TO_ALIGN;
 	/**
-	 * Number of bases to extend the reference when realigning assemblies
-	 */
-	public static final int ASSEMBLY_REALIGNMENT_WINDOW_SIZE;
-	/**
 	 * Maximum subgraph width
 	 */
 	public static final float MAX_SUBGRAPH_WIDTH_IN_FRAGMENT_SIZE_MULTIPLES;
@@ -73,7 +69,6 @@ public class Defaults {
 		READ_PAIR_DOVETAIL_MARGIN = Integer.valueOf(System.getProperty("gridss.readpair.dovetailMargin", "4"));
 		EXCLUDE_ASSEMBLY_NON_SUPPORTING_EVIDENCE = Boolean.valueOf(System.getProperty("gridss.assembly.excludeNonSupporting", "false"));
 		MIN_BASES_TO_ALIGN = Integer.valueOf(System.getProperty("gridss.readpair.minAlignmentBases", "18"));
-		ASSEMBLY_REALIGNMENT_WINDOW_SIZE = Integer.valueOf(System.getProperty("gridss.assembly.realignment.window", "50"));
 		MAX_SUBGRAPH_WIDTH_IN_FRAGMENT_SIZE_MULTIPLES = Float.valueOf(System.getProperty("gridss.debruijn.maxSubgraphFragmentWidth", "32"));
 		ASYNC_READAHEAD_BUFFERS = Integer.valueOf(System.getProperty("gridss.readahead.buffers", "2"));
 		ASYNC_READAHEAD_BUFFER_SIZE = Integer.valueOf(System.getProperty("gridss.readahead.buffersize", "64"));

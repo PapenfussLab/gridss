@@ -9,13 +9,13 @@ import htsjdk.variant.vcf.VCFFileReader;
 import java.io.File;
 import java.io.IOException;
 
-import com.google.common.collect.Lists;
-
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import au.edu.wehi.idsv.bed.BedpeWriter;
 import au.edu.wehi.idsv.util.FileHelper;
+
+import com.google.common.collect.Lists;
 
 @CommandLineProgramProperties(
         usage = "Converts VCF breakend calls to BEDPE format. "

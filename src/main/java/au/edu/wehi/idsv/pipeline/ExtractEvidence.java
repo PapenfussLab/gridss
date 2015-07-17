@@ -28,7 +28,6 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SequentialCoverageThreshold;
 import au.edu.wehi.idsv.SoftClipEvidence;
-import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetricsCollector;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;

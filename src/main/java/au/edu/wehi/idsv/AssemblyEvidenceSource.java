@@ -46,6 +46,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	private final int maxSourceFragSize;
 	private final int minSourceFragSize;
 	private final int maxReadLength;
+	private final int maxMappedReadLength;
 	private final FileSystemContext fsc;
 	/**
 	 * Generates assembly evidence based on the given evidence
@@ -58,7 +59,8 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		this.source = evidence;
 		this.maxSourceFragSize = evidence.stream().mapToInt(s -> s.getMaxConcordantFragmentSize()).max().orElse(0);
 		this.minSourceFragSize = evidence.stream().mapToInt(s -> s.getMinConcordantFragmentSize()).min().orElse(0);
-		this.maxReadLength = evidence.stream().mapToInt(s -> Math.max(s.getMaxReadLength(), s.getMaxReadMappedLength())).max().orElse(0);
+		this.maxReadLength = evidence.stream().mapToInt(s -> s.getMaxReadLength()).max().orElse(0);
+		this.maxMappedReadLength = evidence.stream().mapToInt(s -> Math.max(s.getMaxReadLength(), s.getMaxReadMappedLength())).max().orElse(0);
 		assert(maxSourceFragSize >= minSourceFragSize);
 	}
 	public void ensureAssembled() {
@@ -428,9 +430,18 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		}
 		private SAMRecordAssemblyEvidence fixAssembly(SAMRecordAssemblyEvidence ass) {
 			if (ass == null) return null;
+			AssemblyParameters ap = getContext().getAssemblyParameters();
 			// realign
     		if (getContext().getAssemblyParameters().performLocalRealignment && ass.isBreakendExact()) {
-    			ass = ass.realign();
+    			int realignmentWindowSize = (int)(ap.realignmentWindowReadLengthMultiples * getMaxReadLength());
+    			SAMRecordAssemblyEvidence fullRealignment = ass.realign(realignmentWindowSize, true);
+    			// use full assembly realignment to find small indels and reference assemblies
+    			if (fullRealignment != null && (fullRealignment.isReferenceAssembly() || fullRealignment.isSpanningAssembly())) {
+    				ass = fullRealignment;
+    			} else {
+    				// use targeted realignment to find the correct breakend location
+    				ass = ass.realign(realignmentWindowSize, false);
+    			}
     		}
 			if (ass == null || ass.getBreakendSummary() == null) return null;
 			getContext().getAssemblyParameters().applyBasicFilters(ass);
@@ -520,5 +531,8 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	 */
 	public int getMaxReadLength() {
 		return maxReadLength;
+	}
+	public int getMaxMappedReadLength() {
+		return maxMappedReadLength;
 	}
 }
