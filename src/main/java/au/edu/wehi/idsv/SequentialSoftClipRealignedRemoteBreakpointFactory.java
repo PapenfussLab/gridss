@@ -44,4 +44,8 @@ public class SequentialSoftClipRealignedRemoteBreakpointFactory extends Sequenti
 	protected int getPosition(SAMRecord record) {
 		return record.getIntegerAttribute(SamTags.REALIGNMENT_POSITION);
 	}
+	@Override
+	protected String trackedName() {
+		return "matepairing.screaligned";
+	}
 }

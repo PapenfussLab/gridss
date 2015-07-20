@@ -63,4 +63,8 @@ public class SequentialAssemblyReadPairFactory extends SequentialSAMRecordFactor
 	protected int getPosition(SAMRecord record) {
 		return record.getMateAlignmentStart();
 	}
+	@Override
+	protected String trackedName() {
+		return "matepairing.arp";
+	}
 }

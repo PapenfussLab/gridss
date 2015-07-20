@@ -19,7 +19,7 @@ public class VariantContextWindowedSortingIterator<T extends IdsvVariantContext>
 	public VariantContextWindowedSortingIterator(final ProcessingContext processContext, final int windowSize, final Iterator<T> it) {
 		super(it, new Function<T, Long>() {
 			public Long apply(T arg) {
-				return processContext.getLinear().getLinearCoordinate(arg.getChr(), arg.getStart());
+				return processContext.getLinear().getLinearCoordinate(arg.getContig(), arg.getStart());
 			}
 		}, windowSize, (Comparator<T>)IdsvVariantContext.ByLocationStart);
 	}

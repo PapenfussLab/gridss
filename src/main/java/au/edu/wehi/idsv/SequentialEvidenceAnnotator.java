@@ -12,9 +12,11 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.PeekingIterator;
@@ -25,7 +27,7 @@ import com.google.common.collect.PeekingIterator;
  * @author Daniel Cameron
  *
  */
-public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContextDirectedEvidence> implements BreakendAnnotator {
+public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContextDirectedEvidence> implements BreakendAnnotator, TrackedBuffer {
 	private final ProcessingContext context;
 	private final int maxCallRange;
 	private final boolean assignEvidenceToSingleBreakpoint;
@@ -225,5 +227,19 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 		while (callIt.hasNext() && (variantBuffer.isEmpty() || variantBuffer.peekLast().startLocation <= position)) {
 			buffer(callIt.next());
 		}
+	}
+	private String trackedBufferName_variantBuffer = "annotate.variantBuffer";
+	private String trackedBufferName_bufferedVariantId = "annotate.bufferedVariantId";
+	@Override
+	public void setTrackedBufferContext(String context) {
+		this.trackedBufferName_variantBuffer = context + ".annotate.variantBuffer";
+		this.trackedBufferName_bufferedVariantId = context + ".annotate.bufferedVariantId";
+	}
+	@Override
+	public List<NamedTrackedBuffer> currentTrackedBufferSizes() {
+		return ImmutableList.of(
+				new NamedTrackedBuffer(trackedBufferName_variantBuffer, variantBuffer.size()),
+				new NamedTrackedBuffer(trackedBufferName_bufferedVariantId, bufferedVariantId.size())
+				);
 	}
 }

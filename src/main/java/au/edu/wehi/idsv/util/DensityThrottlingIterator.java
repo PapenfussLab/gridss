@@ -4,8 +4,12 @@ import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongPriorityQueue;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Random;
 
+import au.edu.wehi.idsv.visualisation.TrackedBuffer;
+
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.PeekingIterator;
 
 /**
@@ -20,7 +24,7 @@ import com.google.common.collect.PeekingIterator;
  *
  * @param <T>
  */
-public abstract class DensityThrottlingIterator<T> implements PeekingIterator<T> {
+public abstract class DensityThrottlingIterator<T> implements PeekingIterator<T>, TrackedBuffer {
 	private final Iterator<T> underlying;
 	private final double windowSize;
 	private final double acceptDensity;
@@ -98,5 +102,19 @@ public abstract class DensityThrottlingIterator<T> implements PeekingIterator<T>
 	@Override
 	public void remove() {
 		throw new UnsupportedOperationException();
+	}
+	private String trackedBufferName_inWindow = "densityThrottle.inWindow";
+	private String trackedBufferName_emittedInWindow = "densityThrottle.emittedInWindow";
+	@Override
+	public void setTrackedBufferContext(String context) {
+		this.trackedBufferName_inWindow = context + ".densityThrottle.inWindow";
+		this.trackedBufferName_emittedInWindow = context + ".densityThrottle.emittedInWindow";
+	}
+	@Override
+	public List<NamedTrackedBuffer> currentTrackedBufferSizes() {
+		return ImmutableList.of(
+				new NamedTrackedBuffer(trackedBufferName_inWindow, inWindow.size()),
+				new NamedTrackedBuffer(trackedBufferName_emittedInWindow, emittedInWindow.size())
+				);
 	}
 }

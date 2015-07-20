@@ -38,6 +38,7 @@ import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.vcf.VcfConstants;
+import au.edu.wehi.idsv.visualisation.BufferTracker;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -73,6 +74,7 @@ public class ProcessingContext implements Closeable {
 	private boolean filterDuplicates = true;
 	private long calculateMetricsRecordCount = Long.MAX_VALUE; 
 	private AssemblyIdGenerator assemblyIdGenerator = new SequentialIdGenerator("asm");
+	private BufferTracker bufferTracker = new BufferTracker(new File("gridss.buffers.csv"), 5 * 60); // once every 5 minutes
 	private final List<String> categories = Lists.newArrayList((String)null);
 	public ProcessingContext(
 			FileSystemContext fileSystemContext,
@@ -312,5 +314,11 @@ public class ProcessingContext implements Closeable {
 	 */
 	public int getCategoryCount() {
 		return categories.size();
+	}
+	public BufferTracker getBufferTracker() {
+		return bufferTracker;
+	}
+	public void setBufferTracker(BufferTracker bufferTracker) {
+		this.bufferTracker = bufferTracker;
 	}
 }

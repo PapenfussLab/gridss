@@ -26,6 +26,7 @@ import au.edu.wehi.idsv.validation.OrderAssertingIterator;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
 import au.edu.wehi.idsv.validation.TruthAnnotator;
 import au.edu.wehi.idsv.vcf.VcfFileUtil;
+import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
@@ -184,25 +185,30 @@ public class VariantCaller extends EvidenceProcessorBase {
 			}
 			// reorder from VCF order to breakend position order
 			breakendIt = new DirectEvidenceWindowedSortingIterator<VariantContextDirectedEvidence>(processContext, maxWindowSize, breakendIt);
+			processContext.getBufferTracker().register(output.getName(), ((TrackedBuffer)breakendIt));
 			if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
 				breakendIt = new OrderAssertingIterator<VariantContextDirectedEvidence>(breakendIt, DirectedEvidenceOrder.ByNatural);
 			}
 			evidenceIt = getAllEvidence(true, true, true, true, true);
 			evidenceIt = adjustEvidenceStream(evidenceIt);
 			breakendIt = new SequentialEvidenceAnnotator(processContext, breakendIt, evidenceIt, maxWindowSize, true, evidenceDump);
+			processContext.getBufferTracker().register(output.getName(), ((TrackedBuffer)breakendIt));
 			// breakpoint position is recalculated, so we need to resort again
 			breakendIt = new DirectEvidenceWindowedSortingIterator<VariantContextDirectedEvidence>(processContext, maxWindowSize, breakendIt);
+			processContext.getBufferTracker().register(output.getName() + ".reorder", ((TrackedBuffer)breakendIt));
 			if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
 				breakendIt = new OrderAssertingIterator<VariantContextDirectedEvidence>(breakendIt, DirectedEvidenceOrder.ByNatural);
 			}
 			//breakendIt = new AsyncBufferedIterator<VariantContextDirectedEvidence>(breakendIt, "Annotator-SV");
 			breakendIt = new SequentialCoverageAnnotator(processContext, breakendIt, coverage);
+			processContext.getBufferTracker().register(output.getName(), ((TrackedBuffer)breakendIt));
 			//breakendIt = new AsyncBufferedIterator<VariantContextDirectedEvidence>(breakendIt, "Annotator-Coverage");
 			if (truthVcf != null) {
 				breakendIt = new TruthAnnotator(processContext, breakendIt, truthVcf);
 			}
 			// Resort back into VCF sort order
 			breakendIt = new VariantContextWindowedSortingIterator<VariantContextDirectedEvidence>(processContext, maxWindowSize, breakendIt);
+			processContext.getBufferTracker().register(output.getName() + ".vcf", ((TrackedBuffer)breakendIt));
 			if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
 				breakendIt = new OrderAssertingIterator<VariantContextDirectedEvidence>(breakendIt, IdsvVariantContext.ByLocationStart);
 				breakendIt = new BreakpointFilterTracker<VariantContextDirectedEvidence>(breakendIt, false);
@@ -239,7 +245,9 @@ public class VariantCaller extends EvidenceProcessorBase {
 			CloseableIterator<SAMRecord> it = new AsyncBufferedIterator<SAMRecord>(processContext.getSamReaderIterator(s.getSourceFile(), SortOrder.coordinate), s.getSourceFile().getName() + "-Coverage");
 			it = new ProgressLoggingSAMRecordIterator(it, new ProgressLogger(log));
 			toClose.add(it);
-			lookup.add(new SequentialReferenceCoverageLookup(it, s.getMetrics().getIdsvMetrics(), s.getReadPairConcordanceCalculator(), windowSize));
+			SequentialReferenceCoverageLookup sourceLookup = new SequentialReferenceCoverageLookup(it, s.getMetrics().getIdsvMetrics(), s.getReadPairConcordanceCalculator(), windowSize);
+			processContext.getBufferTracker().register(s.getSourceFile().getName(), sourceLookup);
+			lookup.add(sourceLookup);
 		}
 		return new AggregateReferenceCoverageLookup(lookup);
 	}

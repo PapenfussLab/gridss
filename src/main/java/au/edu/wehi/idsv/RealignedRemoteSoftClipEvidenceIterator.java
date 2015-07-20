@@ -5,9 +5,12 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Queue;
+
+import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
@@ -19,7 +22,7 @@ import com.google.common.collect.Lists;
  * @author Daniel Cameron
  *
  */
-public class RealignedRemoteSoftClipEvidenceIterator extends AbstractIterator<RealignedRemoteSoftClipEvidence> implements CloseableIterator<RealignedRemoteSoftClipEvidence> {
+public class RealignedRemoteSoftClipEvidenceIterator extends AbstractIterator<RealignedRemoteSoftClipEvidence> implements CloseableIterator<RealignedRemoteSoftClipEvidence>, TrackedBuffer {
 	private final SAMEvidenceSource source;
 	private final Iterator<SAMRecord> realigned;
 	private final SequentialSoftClipRealignedRemoteBreakpointFactory ffactory;
@@ -73,5 +76,17 @@ public class RealignedRemoteSoftClipEvidenceIterator extends AbstractIterator<Re
 	@Override
 	public void close() {
 		CloserUtil.close(toClose);
+	}
+	@Override
+	public void setTrackedBufferContext(String context) {
+		ffactory.setTrackedBufferContext(context + ".rsc.f");
+		bfactory.setTrackedBufferContext(context + ".rsc.b");
+	}
+	@Override
+	public List<NamedTrackedBuffer> currentTrackedBufferSizes() {
+		List<NamedTrackedBuffer> list = new ArrayList<TrackedBuffer.NamedTrackedBuffer>();
+		list.addAll(ffactory.currentTrackedBufferSizes());
+		list.addAll(bfactory.currentTrackedBufferSizes());
+		return list;
 	}
 }

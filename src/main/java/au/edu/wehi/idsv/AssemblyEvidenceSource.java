@@ -156,11 +156,14 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		CloseableIterator<SAMRecord> it = getContext().getSamReaderIterator(assembly);
 		CloseableIterator<SAMRecord> mateIt = getContext().getSamReaderIterator(mate);
 		CloseableIterator<SAMRecordAssemblyEvidence> evidenceIt = new SAMRecordAssemblyEvidenceReadPairIterator(getContext(), this, it, mateIt, includeRemote);
+		getContext().getBufferTracker().register("assembly.rp." + chr, (SAMRecordAssemblyEvidenceReadPairIterator)evidenceIt);
 		Iterator<SAMRecordAssemblyEvidence> filteredIt = includeFiltered ? evidenceIt : new SAMRecordAssemblyEvidenceFilteringIterator(getContext(), evidenceIt);
-		CloseableIterator<SAMRecordAssemblyEvidence> sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(new DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence>(
+		DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence> dit = new DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence>(
 				getContext(),
 				getAssemblyWindowSize(),
-				filteredIt), ImmutableList.<Closeable>of(it, mateIt, evidenceIt));
+				filteredIt);
+		getContext().getBufferTracker().register("assembly.rp." + chr, dit);
+		CloseableIterator<SAMRecordAssemblyEvidence> sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(dit, ImmutableList.<Closeable>of(it, mateIt, evidenceIt));
 		if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
 			sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(new OrderAssertingIterator<SAMRecordAssemblyEvidence>(sortedIt, DirectedEvidenceOrder.ByNatural), ImmutableList.<Closeable>of(sortedIt));
 		}
@@ -199,8 +202,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		toClose.add(evidenceIt);
 		Iterator<SAMRecordAssemblyEvidence> filteredIt = includeFiltered ? evidenceIt : new SAMRecordAssemblyEvidenceFilteringIterator(getContext(), evidenceIt);
 		// Change sort order to breakend position order
-		CloseableIterator<SAMRecordAssemblyEvidence> sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(
-				new DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence>(
+		DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence> dit = new DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence>(
 				getContext(),
 				// double window size due to spanning assembly edge case: 
 				//   |--- window ---|
@@ -211,7 +213,9 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				// since our SAMRecordAssemblyEvidenceIterator returns 4 records (both breakends, both assemblies)
 				// the breakend position can be +- window size size away from the start position of the underlying SAMRecord
 				2 * getAssemblyWindowSize(),
-				filteredIt), toClose);
+				filteredIt);
+		getContext().getBufferTracker().register("assembly.sam." + chr, dit);
+		CloseableIterator<SAMRecordAssemblyEvidence> sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(dit, toClose);
 		if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
 			sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(new OrderAssertingIterator<SAMRecordAssemblyEvidence>(sortedIt, DirectedEvidenceOrder.ByNatural), ImmutableList.<Closeable>of(sortedIt));
 		}
@@ -351,7 +355,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		public ContigAssembler(Iterator<DirectedEvidence> it, File breakendOutput, File realignmentFastq) {
 			AssemblyParameters ap = getContext().getAssemblyParameters();
 			this.throttled = new IntervalBed(getContext().getDictionary(), getContext().getLinear());
-			this.it = new DirectedEvidenceDensityThrottlingIterator(
+			DirectedEvidenceDensityThrottlingIterator dit = new DirectedEvidenceDensityThrottlingIterator(
 					throttled,
 					getContext().getDictionary(),
 					getContext().getLinear(),
@@ -359,6 +363,8 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 					Math.max(ap.minimumDensityWindowSize, getMaxConcordantFragmentSize()),
 					ap.acceptDensityPortion * ap.targetEvidenceDensity,
 					ap.targetEvidenceDensity);
+			getContext().getBufferTracker().register(breakendOutput.getName(), dit);
+			this.it = dit;
 			this.breakendOutput = breakendOutput;
 			this.realignmentFastq = realignmentFastq;
 		}

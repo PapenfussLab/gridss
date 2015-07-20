@@ -4,23 +4,21 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 
+import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.Queue;
 
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
-
-import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.Queues;
 
 /**
  * Iterators over soft clip evidence in the same order as the input iterator 
  * @author Daniel Cameron
  *
  */
-public class SoftClipEvidenceIterator extends AbstractIterator<SoftClipEvidence> implements CloseableIterator<SoftClipEvidence> {
+public class SoftClipEvidenceIterator implements CloseableIterator<SoftClipEvidence> {
 	private final SAMEvidenceSource source;
 	private final Iterator<SAMRecord> it;
-	private final Queue<SoftClipEvidence> buffer = Queues.newArrayDeque();
+	private final Queue<SoftClipEvidence> buffer = new ArrayDeque<SoftClipEvidence>(2);
 	public SoftClipEvidenceIterator(SAMEvidenceSource source, Iterator<SAMRecord> it) {
 		this.source = source;
 		this.it = it;
@@ -43,11 +41,16 @@ public class SoftClipEvidenceIterator extends AbstractIterator<SoftClipEvidence>
 				}
 			}
 		}
+		assert(buffer.size() <= 2);
 	}
 	@Override
-	protected SoftClipEvidence computeNext() {
-		if (buffer.isEmpty()) fillBuffer();
-		if (buffer.isEmpty()) return endOfData();
+	public boolean hasNext() {
+		fillBuffer();
+		return !buffer.isEmpty();
+	}
+	@Override
+	public SoftClipEvidence next() {
+		fillBuffer();
 		return buffer.poll();
 	}
 	@Override

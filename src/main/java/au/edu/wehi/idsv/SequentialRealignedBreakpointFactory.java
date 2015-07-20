@@ -55,4 +55,8 @@ public class SequentialRealignedBreakpointFactory extends SequentialSAMRecordFac
 	protected int getPosition(SAMRecord record) {
 		return BreakpointFastqEncoding.getEncodedStartPosition(record.getReadName());
 	}
+	@Override
+	protected String trackedName() {
+		return "matepairing.realigned";
+	}
 }
