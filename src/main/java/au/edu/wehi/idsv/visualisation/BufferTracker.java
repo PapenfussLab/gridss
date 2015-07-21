@@ -23,7 +23,7 @@ public class BufferTracker {
 		Worker worker = new Worker();
 		worker.setName("BufferTracker");
 		worker.setDaemon(false);
-		worker.run();
+		worker.start();
 	}
 	public synchronized void register(String context, TrackedBuffer obj) {
 		obj.setTrackedBufferContext(context);
@@ -49,14 +49,18 @@ public class BufferTracker {
 	}
 	private void append() {
 		FileOutputStream os = null;
-		try {
-			os = new FileOutputStream(output, true);
-			os.write(getCsvRows().getBytes(StandardCharsets.UTF_8));
-			os.close();
-			os = null;
-		} catch (IOException e) {
-		} finally {
-			CloserUtil.close(os);
+		String str = getCsvRows();
+		if (!str.isEmpty()) {
+			try {
+				os = new FileOutputStream(output, true);
+				os.write(str.getBytes(StandardCharsets.UTF_8));
+				os.flush();
+				os.close();
+				os = null;
+			} catch (IOException e) {
+			} finally {
+				CloserUtil.close(os);
+			}
 		}
 	}
 	private class Worker extends Thread {

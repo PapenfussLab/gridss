@@ -1,12 +1,17 @@
 library(VariantAnnotation)
 library(plyr)
 
-
 gridss.annotateBreakpointHits <- function(bed, bedMate, gridssVcf, ...) {
+  return (gridss.annotateBreakpoints(bed, bedMate, gridssVcf, ...)$bed)
+}
+gridss.annotateBreakpoints <- function(bedWithMate, gridssVcf, ...) {
+  return (gridss.annotateBreakpoints(bedWithMate, bedWithMate[bedWithMate$mate,], gridssVcf))
+}
+gridss.annotateBreakpoints <- function(bed, bedMate, gridssVcf, ...) {
   # filter breakends and one-sided breakpoint calls
   gridssVcf <- gridssVcf[as.character(info(gridssVcf)$MATEID) %in% row.names(gridssVcf),]
   gridssdf <- gridss.vcftodf(gridssVcf)
-  callPos <- rowData(gridssVcf)
+  callPos <- rowRanges(gridssVcf)
   callPos$mate <- as.character(info(gridssVcf)$MATEID)
   strand(callPos) <- ifelse(str_detect(as.character(callPos$ALT), "[[:alpha:]]+(\\[|]).*(\\[|])"), "+", "-")
   callPosMate <- callPos[callPos$mate,]
@@ -17,19 +22,25 @@ gridss.annotateBreakpointHits <- function(bed, bedMate, gridssVcf, ...) {
     as.data.frame(findOverlaps(bedMate, callPos, ...)),
     as.data.frame(findOverlaps(bedMate, callPosMate, ...)))
   hits <- hits[duplicated(hits),]
-  hits$qual <- rowData(gridssVcf)$QUAL[hits[[2]]]
+  hits$qual <- rowRanges(gridssVcf)$QUAL[hits[[2]]]
   hits$hc <- gridssdf$QUAL[hits[[2]]] >= 1000 & gridssdf$AS[hits[[2]]] > 0 & gridssdf$RAS[hits[[2]]] > 0
+  hits$gridssid <- names(rowRanges(gridssVcf))[hits[[2]]]
+  hits$bedid <- names(bed)[hits[[1]]]
+  hits <- hits[order(hits$qual),]
+  
   annotatedBed <- bed
-  annotatedBed$called <- "miss"
-  annotatedBed$called[hits[[1]]] <- "hit"
-  annotatedBed$called[hits[hits$hc,][[1]]] <- "high confidence"
+  annotatedBed$gridssid <- NA
+  annotatedBed$gridssid[hits[[1]]] <- hits$gridssid
   annotatedBed$qual <- 0
-  annotatedBed$qual[aggregate(hits, FUN=max, by=list(hits$queryHits))$queryHits] <- aggregate(hits, FUN=max, by=list(hits$queryHits))$qual
-  return(annotatedBed)
+  annotatedBed$qual[hits[[1]]] <- hits$qual
+  annotatedGridss <- gridssdf
+  annotatedGridss$bedid <- NA
+  annotatedGridss$bedid[hits[[2]]] <- hits$bedid
+  return(list(bed=annotatedBed, gridss=annotatedGridss))
 }
 
 gridss.overlaps <- function(vcf, bed, ...) {
-  hits <- findOverlaps(rowData(vcf), bed, ...)
+  hits <- findOverlaps(rowRanges(vcf), bed, ...)
   result <- rep(FALSE, nrow(vcf))
   result[queryHits(hits)] <- TRUE
   return(result)
@@ -76,10 +87,10 @@ gridss.removeUnpartnerededBreakend <- function(vcf) {
 }
 gridss.vcftodf <- function(vcf, sanityCheck=TRUE) {
   i <- info(vcf)
-  df <- data.frame(variantid=names(rowData(vcf)))
-  df$POS <- paste0(seqnames(rowData(vcf)), ":", start(rowData(vcf)))
-  df$FILTER <- rowData(vcf)$FILTER
-  df$QUAL <- rowData(vcf)$QUAL
+  df <- data.frame(variantid=names(rowRanges(vcf)))
+  df$POS <- paste0(seqnames(rowRanges(vcf)), ":", start(rowRanges(vcf)))
+  df$FILTER <- rowRanges(vcf)$FILTER
+  df$QUAL <- rowRanges(vcf)$QUAL
   df$EVENT <-i$EVENT
   df$mate <- as.character(i$MATEID)
   df$SOMATIC <- i$SOMATIC
@@ -155,7 +166,7 @@ gridss.vcftodf.sanitycheck <- function(failing, desc) {
 }
 vcftoroc <- function(vcf, grtp, ...) {
   hits <- breakpointHits(vcftobpgr(vcf), grtp, ...)
-  hits$qual <- rowData(vcf)$QUAL[hits$queryHits]
+  hits$qual <- rowRanges(vcf)$QUAL[hits$queryHits]
   hits <- hits[order(hits$qual),]
   tp <- rep(0, length(grtp))
   tp[hits$subjectHits] <- hits$qual

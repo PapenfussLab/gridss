@@ -140,7 +140,7 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 		bufferVariantsBefore(variant.startLocation + 2 * (maxCallRange + 1));
 		processEvidenceBefore(variant.startLocation + maxCallRange + 1);
 		variant = variantBuffer.poll();
-		if (!StringUtils.isNotBlank(variant.id)) {
+		if (StringUtils.isNotBlank(variant.id)) {
 			bufferedVariantId.remove(variant.id);
 		}
 		return variant.callVariant();

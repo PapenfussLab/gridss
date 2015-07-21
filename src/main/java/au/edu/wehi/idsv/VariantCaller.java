@@ -201,7 +201,6 @@ public class VariantCaller extends EvidenceProcessorBase {
 			}
 			//breakendIt = new AsyncBufferedIterator<VariantContextDirectedEvidence>(breakendIt, "Annotator-SV");
 			breakendIt = new SequentialCoverageAnnotator(processContext, breakendIt, coverage);
-			processContext.getBufferTracker().register(output.getName(), ((TrackedBuffer)breakendIt));
 			//breakendIt = new AsyncBufferedIterator<VariantContextDirectedEvidence>(breakendIt, "Annotator-Coverage");
 			if (truthVcf != null) {
 				breakendIt = new TruthAnnotator(processContext, breakendIt, truthVcf);

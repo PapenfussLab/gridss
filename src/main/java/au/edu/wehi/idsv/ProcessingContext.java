@@ -74,7 +74,7 @@ public class ProcessingContext implements Closeable {
 	private boolean filterDuplicates = true;
 	private long calculateMetricsRecordCount = Long.MAX_VALUE; 
 	private AssemblyIdGenerator assemblyIdGenerator = new SequentialIdGenerator("asm");
-	private BufferTracker bufferTracker = new BufferTracker(new File("gridss.buffers.csv"), 5 * 60); // once every 5 minutes
+	private BufferTracker bufferTracker = new BufferTracker(new File("gridss.buffers.csv"), Defaults.BUFFER_TRACKING_INTERVAL_SECONDS);
 	private final List<String> categories = Lists.newArrayList((String)null);
 	public ProcessingContext(
 			FileSystemContext fileSystemContext,

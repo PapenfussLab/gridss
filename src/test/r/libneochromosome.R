@@ -38,15 +38,16 @@ getcn <- function(xlsx = "mmc4.xlsx", tabname) {
 
 go <- function(sample, vcf, rp) {
   vcf <- gridss.removeUnpartnerededBreakend(vcf)
-  vcfdf <- gridss.vcftodf(vcf)
   rpmaxgap=200 # 778 #chr1:188377591-chr1:188379026- call location is over 120
-  hitCounts <- countVcfGrBreakpointHits(vcf, rp, maxgap=rpmaxgap)
-  vcfdf$rpHits <- hitCounts$queryHitCount
-  rp$hits_all <- hitCounts$subjectHitCount
-  rp$hits_hc <- countVcfGrBreakpointHits(vcf[vcfdf$confidence=="High",], rp, maxgap=rpmaxgap)$subjectHitCount
-  rp$hits_mc <- countVcfGrBreakpointHits(vcf[vcfdf$confidence=="High" | vcfdf$confidence=="Medium",], rp, maxgap=rpmaxgap)$subjectHitCount
-  rp$hits <- as.factor((rp$hits_all > 0) + (rp$hits_mc > 0) + (rp$hits_hc > 0))
-  levels(rp$hits) <- c("None", "Low", "Medium", "High")
+  rpMate <- rp[rp$mate,]
+  matches <- gridss.annotateBreakpoints(rp, rpMate, vcf, maxgap=rpmaxgap)
+  vcfdf <- matches$gridss
+  rp <- matches$bed
+  
+  rp$hits <- vcfdf[rp$gridssid,]$confidence
+  levels(rp$hits) <- c("Low", "Medium", "High", "None")
+  rp$hits[is.na(rp$hits)] <- "None"
+  
   
   ###############
   # Read Pair variant calling concordance
@@ -73,6 +74,12 @@ go <- function(sample, vcf, rp) {
     labs(title=paste0("Sensitivity of curated RP call detection - ", sample))
   ggsave(paste0("rp_hist_", sample, ".png"), width=10, height=7.5)
   
+  ggplot(vcfdf[is.na(vcfdf$bedid) & vcfdf$confidence!="Low",], aes(x=QUAL, fill=confidence)) +
+    geom_histogram() +
+    scale_x_log10() + 
+    labs(title=paste0("Concordence with curated RP call detection - ", sample))
+  ggsave(paste0("uncalled_hist_", sample, ".png"), width=10, height=7.5)
+  
   ###############
   # Microhomology size distribution
   ###############
@@ -90,18 +97,9 @@ go <- function(sample, vcf, rp) {
   ggsave(paste0("assembly_rate_qual_", sample, ".png"), width=10, height=7.5)
   
   ###############
-  # Truth sensitivity debuggint
+  # debugging
   ###############
-  hits <- breakpointHits(vcftobpgr(vcf), rp, maxgap=rpmaxgap)
-  hits <- hits[order(-vcfdf$QUAL[hits$queryHits]),]
-  hits <- hits[!duplicated(hits$subjectHits),]
-  rp$bestMatchRow <- NULL
-  rp$bestMatchRow[hits$subjectHits] <- hits$queryHits
-  rp$qual <- vcfdf$QUAL[rp$bestMatchRow]
-  rp$variantid <- vcfdf$variantid[rp$bestMatchRow]
-  annotatedrp <- merge(as.data.frame(rp), vcfdf, by="variantid", all.x=TRUE)
-  annotatedrp$sample <- sample
-  write.csv(annotatedrp, paste0("truth_set_annotations_", sample, ".csv"))
+  return (list(bed=rp, gridss=vcfdf))
 }
 
 
