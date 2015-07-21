@@ -5,11 +5,14 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 
 import java.util.Iterator;
+import java.util.List;
+
+import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
 
-public class ReadPairEvidenceIterator extends AbstractIterator<NonReferenceReadPair> implements CloseableIterator<NonReferenceReadPair> {
+public class ReadPairEvidenceIterator extends AbstractIterator<NonReferenceReadPair> implements CloseableIterator<NonReferenceReadPair>, TrackedBuffer {
 	private final SAMEvidenceSource source;
 	private final SequentialNonReferenceReadPairFactory factory;
 	private final Iterator<SAMRecord> iterator;
@@ -35,5 +38,13 @@ public class ReadPairEvidenceIterator extends AbstractIterator<NonReferenceReadP
 			}
 		}
 		return endOfData();
+	}
+	@Override
+	public void setTrackedBufferContext(String context) {
+		factory.setTrackedBufferContext(context);
+	}
+	@Override
+	public List<NamedTrackedBuffer> currentTrackedBufferSizes() {
+		return factory.currentTrackedBufferSizes();
 	}
 }

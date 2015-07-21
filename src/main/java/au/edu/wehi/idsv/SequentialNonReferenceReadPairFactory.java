@@ -59,4 +59,8 @@ public class SequentialNonReferenceReadPairFactory extends SequentialSAMRecordFa
 	protected int getPosition(SAMRecord record) {
 		return record.getMateAlignmentStart();
 	}
+	@Override
+	protected String trackedName() {
+		return "matepairing.nrrp";
+	}
 }

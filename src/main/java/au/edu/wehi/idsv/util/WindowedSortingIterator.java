@@ -4,10 +4,14 @@ import htsjdk.samtools.util.Log;
 
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 import java.util.PriorityQueue;
+
+import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 
 import com.google.common.base.Function;
 import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.PeekingIterator;
@@ -25,7 +29,7 @@ import com.google.common.primitives.Longs;
  *
  * @param <T>
  */
-public class WindowedSortingIterator<T> extends AbstractIterator<T> {
+public class WindowedSortingIterator<T> extends AbstractIterator<T> implements TrackedBuffer {
 	private static final Log log = Log.getInstance(WindowedSortingIterator.class);
 	private final PriorityQueue<T> calls; 
 	private final long windowSize;
@@ -79,5 +83,16 @@ public class WindowedSortingIterator<T> extends AbstractIterator<T> {
 		long bufferPosition = toCoordinate.apply(calls.peek());
 		long nextPosition = toCoordinate.apply(it.peek());
 		return nextPosition <= bufferPosition + windowSize;
+	}
+	private String trackedBufferName_calls = "windowedSort";
+	@Override
+	public void setTrackedBufferContext(String context) {
+		this.trackedBufferName_calls = context + ".windowedSort";
+	}
+	@Override
+	public List<NamedTrackedBuffer> currentTrackedBufferSizes() {
+		return ImmutableList.of(
+				new NamedTrackedBuffer(trackedBufferName_calls, calls.size())
+				);
 	}
 }

@@ -3,8 +3,12 @@ package au.edu.wehi.idsv;
 import htsjdk.samtools.SAMRecord;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
+import au.edu.wehi.idsv.visualisation.TrackedBuffer;
+
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Maps;
 import com.google.common.collect.PeekingIterator;
@@ -17,7 +21,7 @@ import com.google.common.collect.PeekingIterator;
  * @param <U> type of matching key
  *
  */
-public abstract class SequentialSAMRecordFactoryBase<T> {
+public abstract class SequentialSAMRecordFactoryBase<T> implements TrackedBuffer {
 	private final PeekingIterator<SAMRecord> sequence;
 	private final Map<String, SAMRecord> currentReads = Maps.newHashMap();
 	private int currentReferenceIndex = -1; 
@@ -96,5 +100,17 @@ public abstract class SequentialSAMRecordFactoryBase<T> {
 				}
 			}
 		}
+	}
+	private String trackedBufferName = trackedName();
+	protected abstract String trackedName();
+	@Override
+	public void setTrackedBufferContext(String context) {
+		this.trackedBufferName = context + "." + trackedName();
+	}
+	@Override
+	public List<NamedTrackedBuffer> currentTrackedBufferSizes() {
+		return ImmutableList.of(
+				new NamedTrackedBuffer(trackedBufferName, currentReads.size())
+				);
 	}
 }

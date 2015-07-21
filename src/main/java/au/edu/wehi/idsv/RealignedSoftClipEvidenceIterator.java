@@ -5,6 +5,9 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 
 import java.util.Iterator;
+import java.util.List;
+
+import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
@@ -15,7 +18,7 @@ import com.google.common.collect.Iterators;
  * @author Daniel Cameron
  *
  */
-public class RealignedSoftClipEvidenceIterator extends AbstractIterator<SoftClipEvidence> implements CloseableIterator<SoftClipEvidence> {
+public class RealignedSoftClipEvidenceIterator extends AbstractIterator<SoftClipEvidence> implements CloseableIterator<SoftClipEvidence>, TrackedBuffer {
 	private final SequentialRealignedBreakpointFactory factory;
 	private final Iterator<SoftClipEvidence> breakendEvidence;
 	private final Iterator<SAMRecord> realigned;
@@ -49,5 +52,13 @@ public class RealignedSoftClipEvidenceIterator extends AbstractIterator<SoftClip
 	public void close() {
 		CloserUtil.close(breakendEvidence);
 		CloserUtil.close(realigned);
+	}
+	@Override
+	public void setTrackedBufferContext(String context) {
+		factory.setTrackedBufferContext(context);
+	}
+	@Override
+	public List<NamedTrackedBuffer> currentTrackedBufferSizes() {
+		return factory.currentTrackedBufferSizes();
 	}
 }

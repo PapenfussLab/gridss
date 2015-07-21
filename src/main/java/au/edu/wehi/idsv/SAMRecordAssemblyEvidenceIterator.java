@@ -5,11 +5,15 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 
 import java.util.Iterator;
+import java.util.List;
+
+import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 
 import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 
-public class SAMRecordAssemblyEvidenceIterator extends AbstractIterator<SAMRecordAssemblyEvidence> implements CloseableIterator<SAMRecordAssemblyEvidence> {
+public class SAMRecordAssemblyEvidenceIterator extends AbstractIterator<SAMRecordAssemblyEvidence> implements CloseableIterator<SAMRecordAssemblyEvidence>, TrackedBuffer {
 	private final ProcessingContext processContext;
 	private final AssemblyEvidenceSource source;
 	private final Iterator<SAMRecord> it;
@@ -60,5 +64,18 @@ public class SAMRecordAssemblyEvidenceIterator extends AbstractIterator<SAMRecor
 	public void close() {
 		CloserUtil.close(it);
 		CloserUtil.close(rit);
+	}
+	@Override
+	public void setTrackedBufferContext(String context) {
+		if (factory != null) {
+			factory.setTrackedBufferContext(context);
+		}
+	}
+	@Override
+	public List<NamedTrackedBuffer> currentTrackedBufferSizes() {
+		if (factory != null) {
+			return factory.currentTrackedBufferSizes();
+		}
+		return ImmutableList.of();
 	}
 }

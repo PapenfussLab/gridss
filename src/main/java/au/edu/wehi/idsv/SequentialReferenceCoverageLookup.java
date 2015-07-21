@@ -13,6 +13,7 @@ import java.util.PriorityQueue;
 
 import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import au.edu.wehi.idsv.util.SlidingWindowList;
+import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
@@ -27,13 +28,13 @@ import com.google.common.collect.Queues;
  * @author Daniel Cameron
  *
  */
-public class SequentialReferenceCoverageLookup implements Closeable, ReferenceCoverageLookup {
+public class SequentialReferenceCoverageLookup implements Closeable, ReferenceCoverageLookup, TrackedBuffer {
 	private final List<Closeable> toClose = Lists.newArrayList();
 	private final PeekingIterator<SAMRecord> reads;
 	private final ReadPairConcordanceCalculator pairing;
 	private final PriorityQueue<Integer> currentReferenceRead = Queues.newPriorityQueue();
-	private final PriorityQueue<Integer> currentStartReferencePairs = Queues.newPriorityQueue();;
-	private final PriorityQueue<Integer> currentEndReferencePairs = Queues.newPriorityQueue();;
+	private final PriorityQueue<Integer> currentStartReferencePairs = Queues.newPriorityQueue();
+	private final PriorityQueue<Integer> currentEndReferencePairs = Queues.newPriorityQueue();
 	/**
 	 * Maximum distance from read alignment start to last concordant support position 
 	 */
@@ -184,5 +185,22 @@ public class SequentialReferenceCoverageLookup implements Closeable, ReferenceCo
 				&& (read.getAlignmentStart() < read.getMateAlignmentStart()
 						|| (read.getAlignmentStart() == read.getMateAlignmentStart() && read.getFirstOfPairFlag()))
 				&& pairing.isConcordant(read);
+	}
+	private String trackedBufferName_currentReferenceRead = "coverage.currentReferenceRead";
+	private String trackedBufferName_currentStartReferencePairs = "coverage.currentStartReferencePairs";
+	private String trackedBufferName_currentEndReferencePairs = "coverage.currentEndReferencePairs";
+	@Override
+	public void setTrackedBufferContext(String context) {
+		this.trackedBufferName_currentReferenceRead = context + ".coverage.currentReferenceRead";
+		this.trackedBufferName_currentStartReferencePairs = context + ".coverage.currentStartReferencePairs";
+		this.trackedBufferName_currentEndReferencePairs = context + ".coverage.currentEndReferencePairs";
+	}
+	@Override
+	public List<NamedTrackedBuffer> currentTrackedBufferSizes() {
+		return ImmutableList.of(
+				new NamedTrackedBuffer(trackedBufferName_currentReferenceRead, currentReferenceRead.size()),
+				new NamedTrackedBuffer(trackedBufferName_currentStartReferencePairs, currentStartReferencePairs.size()),
+				new NamedTrackedBuffer(trackedBufferName_currentEndReferencePairs, currentEndReferencePairs.size())
+				);
 	}
 }
