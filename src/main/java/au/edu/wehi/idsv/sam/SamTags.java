@@ -14,17 +14,38 @@ public class SamTags {
 	 */
 	public static final String ASSEMLBY_FILTERS = "af";
 	/**
-	 * EvidenceID of assembly components
+	 * EvidenceID of uncategorised assembly components
 	 */
-	public static final String ASSEMBLY_COMPONENT_EVIDENCEID = "es";
+	public static final String ASSEMBLY_EVIDENCEID_UNCATEGORISED = "ez";
+	/**
+	 * EvidenceID of constitute discordant pair evidence
+	 */
+	public static final String ASSEMBLY_EVIDENCEID_PREFIX_DISCORDANT_PAIR = "d";
+	/**
+	 * EvidenceID of constitute unmapped mate evidence
+	 */
+	public static final String ASSEMBLY_EVIDENCEID_PREFIX_UNMAPPED_MATE = "u";
+	/**
+	 * EvidenceID of constitute split read evidence
+	 */
+	public static final String ASSEMBLY_EVIDENCEID_PREFIX_SPLIT_READ = "s";
+	/**
+	 * EvidenceID of constitute split read remote evidence
+	 */
+	public static final String ASSEMBLY_EVIDENCEID_PREFIX_SPLIT_READ_REMOTE = "t";
+	/**
+	 * EvidenceID of constitute soft clip evidence
+	 */
+	public static final String ASSEMBLY_EVIDENCEID_PREFIX_SOFT_CLIP = "c";
+	
 	public static final String ASSEMBLY_BASE_COUNT = "bc";
 	public static final String ASSEMBLY_READPAIR_COUNT = "dp";
 	public static final String ASSEMBLY_SOFTCLIP_COUNT = "sc";
 	public static final String ASSEMBLY_REMOTE_COUNT = "rc";
 	public static final String ASSEMBLY_NONSUPPORTING_COUNT = "ns";
 	public static final String ASSEMBLY_READPAIR_LENGTH_MAX = "rl";
-	public static final String ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX = "sl";
-	public static final String ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL = "st";
+	public static final String ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX = "cl";
+	public static final String ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL = "ct";
 	public static final String ASSEMBLY_READPAIR_QUAL = "qp";
 	public static final String ASSEMBLY_SOFTCLIP_QUAL = "qs";
 	public static final String ASSEMBLY_REMOTE_QUAL = "qr";

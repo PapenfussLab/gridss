@@ -107,6 +107,6 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 				getBreakendEvidenceCountSoftClip(subset);
 	}
 	public int getBreakendEvidenceCountAssembly() { return AttributeConverter.asInt(getAttribute(VcfAttributes.BREAKEND_ASSEMBLY_COUNT.attribute()), 0); }
-	public int getBreakendEvidenceCountReadPair(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.BREAKEND_READPAIR_COUNT.attribute()), subset); }
+	public int getBreakendEvidenceCountReadPair(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.BREAKEND_UNMAPPEDMATE_COUNT.attribute()), subset); }
 	public int getBreakendEvidenceCountSoftClip(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.BREAKEND_SOFTCLIP_COUNT.attribute()), subset); }
 }

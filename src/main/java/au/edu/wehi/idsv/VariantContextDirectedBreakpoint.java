@@ -126,16 +126,16 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 	public int getBreakpointEvidenceCountLocalAssembly() { return AttributeConverter.asInt(getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT.attribute()), 0); }
 	public int getBreakpointEvidenceCountRemoteAssembly() { return AttributeConverter.asInt(getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE.attribute()), 0); }
 	public int getBreakpointEvidenceCountSoftClip(EvidenceSubset subset) { return getBreakpointEvidenceCountLocalSoftClip(subset) + getBreakpointEvidenceCountRemoteSoftClip(subset); }
-	public int getBreakpointEvidenceCountLocalSoftClip(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_COUNT.attribute()), subset); }
-	public int getBreakpointEvidenceCountRemoteSoftClip(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_COUNT_REMOTE.attribute()), subset); }
+	public int getBreakpointEvidenceCountLocalSoftClip(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT.attribute()), subset); }
+	public int getBreakpointEvidenceCountRemoteSoftClip(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT_REMOTE.attribute()), subset); }
 	
 	public double getBreakpointEvidenceQualReadPair(EvidenceSubset subset) { return AttributeConverter.asDoubleSumTN(getAttribute(VcfAttributes.BREAKPOINT_READPAIR_QUAL.attribute()), subset); }
 	public double getBreakpointEvidenceQualAssembly() { return getBreakpointEvidenceQualLocalAssembly() + getBreakpointEvidenceQualRemoteAssembly(); }
 	public double getBreakpointEvidenceQualLocalAssembly() { return AttributeConverter.asDouble(getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL.attribute()), 0); }
 	public double getBreakpointEvidenceQualRemoteAssembly() { return AttributeConverter.asDouble(getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE.attribute()), 0); }
 	public double getBreakpointEvidenceQualSoftClip(EvidenceSubset subset) { return getBreakpointEvidenceQualLocalSoftClip(subset) + getBreakpointEvidenceQualRemoteSoftClip(subset); }
-	public double getBreakpointEvidenceQualLocalSoftClip(EvidenceSubset subset) { return AttributeConverter.asDoubleSumTN(getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_QUAL.attribute()), subset); }
-	public double getBreakpointEvidenceQualRemoteSoftClip(EvidenceSubset subset) { return AttributeConverter.asDoubleSumTN(getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_QUAL_REMOTE.attribute()), subset); }
+	public double getBreakpointEvidenceQualLocalSoftClip(EvidenceSubset subset) { return AttributeConverter.asDoubleSumTN(getAttribute(VcfAttributes.BREAKPOINT_SPLITREAD_QUAL.attribute()), subset); }
+	public double getBreakpointEvidenceQualRemoteSoftClip(EvidenceSubset subset) { return AttributeConverter.asDoubleSumTN(getAttribute(VcfAttributes.BREAKPOINT_SPLITREAD_QUAL_REMOTE.attribute()), subset); }
 	
 	@Override
 	public DirectedBreakpoint asRemote() {

@@ -9,7 +9,6 @@ import htsjdk.samtools.util.Log;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -219,33 +218,17 @@ public final class AssemblyFactory {
 						new CigarElement(endAnchoredBaseCount, CigarOperator.MATCH_OR_MISMATCH))));
 			}
 		}
-		setEvidenceIDs(record, evidence);
 		record.setAttribute(SamTags.ASSEMBLY_BASE_COUNT, baseCounts);
 		if (!(breakend instanceof BreakpointSummary)) {
 			record.setAttribute(SamTags.ASSEMBLY_DIRECTION, breakend.direction.toChar());
 		}
+		assert(ensureUniqueEvidenceID(evidence));
+		EvidenceIDCollection e = new EvidenceIDCollection();
+		for (String s : evidence) {
+			e.add(SamTags.ASSEMBLY_EVIDENCEID_UNCATEGORISED, s);
+		}
+		e.write(record);
 		return record;
-	}
-	private static void setEvidenceIDs(SAMRecord r, Collection<String> evidence) {
-		List<String> evidenceIDs;
-		if (evidence == null) {
-			evidenceIDs = new ArrayList<String>();
-		} else {
-			evidenceIDs = new ArrayList<String>(evidence);
-		}
-		// Set deterministic ordering of evidence to allow for SAM diff
-		Collections.sort(evidenceIDs);
-		StringBuilder sb = new StringBuilder();
-		for (String id : evidenceIDs) {
-			assert(!id.contains(SAMRecordAssemblyEvidence.COMPONENT_EVIDENCEID_SEPARATOR));
-			sb.append(id);
-			sb.append(SAMRecordAssemblyEvidence.COMPONENT_EVIDENCEID_SEPARATOR);
-		}
-		if (evidenceIDs.size() > 0) {
-			sb.deleteCharAt(sb.length() - 1);
-		}
-		r.setAttribute(SamTags.ASSEMBLY_COMPONENT_EVIDENCEID, sb.toString());
-		assert(ensureUniqueEvidenceID(evidenceIDs));
 	}
 	private static boolean ensureUniqueEvidenceID(Collection<String> evidence) {
 		boolean isUnique = true;

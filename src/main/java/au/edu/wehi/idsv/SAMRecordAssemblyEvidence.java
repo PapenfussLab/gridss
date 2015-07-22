@@ -12,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -23,15 +22,10 @@ import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.UnsignedBytes;
 
 public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
-	/*
-	 * Using space as a separator as it is reserved in FASTA so shouldn't be in read names
-	 */
-	public static final String COMPONENT_EVIDENCEID_SEPARATOR = " ";
 	private static final Log log = Log.getInstance(SAMRecordAssemblyEvidence.class);
 	private final SAMRecord record;
 	private final SAMRecord realignment;
@@ -39,9 +33,10 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	private final BreakendSummary breakend;
 	private final boolean isExact;
 	private Collection<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
+	private EvidenceIDCollection evidenceIDCollection;
 	public SAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecordAssemblyEvidence assembly, SAMRecord realignment) {
 		this(source, assembly.getSAMRecord(), realignment);
-		this.evidenceIds = assembly.evidenceIds;
+		this.evidenceIDCollection = assembly.evidenceIDCollection;
 		this.evidence = assembly.evidence;
 	}
 	public SAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecord assembly, SAMRecord realignment) {
@@ -62,24 +57,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		this.isExact = isExact;
 		this.realignment = realignment == null ? getPlaceholderRealignment() : realignment;
 		fixReadPair();
-	}
-	/**
-	 * Lazily calculated evidence IDs of the evidence contributing to this breakend
-	 * 
-	 */
-	private Set<String> evidenceIds = null;
-	@Override
-	public Collection<String> getEvidenceIDs() {
-		if (evidenceIds == null) {
-			Object value = record.getAttribute(SamTags.ASSEMBLY_COMPONENT_EVIDENCEID);
-			if (value instanceof String && StringUtils.isNotEmpty((String)value)) {
-				String[] ids = ((String)value).split(COMPONENT_EVIDENCEID_SEPARATOR);
-				evidenceIds = Sets.newHashSet(ids);
-			} else {
-				evidenceIds = Sets.newHashSet();
-			}
-		}
-		return evidenceIds;
+		this.evidenceIDCollection = new EvidenceIDCollection(assembly);
 	}
 	/**
 	 * Determines whether the given record is part of the given assembly
@@ -155,6 +133,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 				nsCount[offset]++;
 				nsQual[offset] += qual;
 			}
+			evidenceIDCollection.categorise(e);
 		}
 		annotateSAMRecord(getSAMRecord(), rpQual, scQual, rQual, nsQual, rpCount, rpMaxLen, scCount, scLenMax, scLenTotal, rCount, nsCount);
 		annotateSAMRecord(getBackingRecord(), rpQual, scQual, rQual, nsQual, rpCount, rpMaxLen, scCount, scLenMax, scLenTotal, rCount, nsCount);
@@ -178,23 +157,29 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		r.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_QUAL, scQual);
 		r.setAttribute(SamTags.ASSEMBLY_REMOTE_QUAL, rQual);
 		r.setAttribute(SamTags.ASSEMBLY_NONSUPPORTING_QUAL, nsQual);
+		evidenceIDCollection.write(r);
+	}
+	public EvidenceIDCollection getEvidenceIDCollection() {
+		return evidenceIDCollection;
+	}
+	@Override
+	public Collection<String> getEvidenceIDs() {
+		return evidenceIDCollection.get();
 	}
 	public Collection<DirectedEvidence> getEvidence() {
 		Collection<String> ids = getEvidenceIDs();
-		if (evidenceIds != null) {
-			if (evidence.size() < ids.size()) {
-				if (this instanceof RealignedRemoteSAMRecordAssemblyEvidence) {
-					// We don't expect rehydration of short SC, OEA, or alternatively mapped evidence at remote position 
-				} else {
-					log.debug(String.format("Expected %d, found %d support for %s %s%s", evidenceIds.size(), evidence.size(), getEvidenceID(), debugEvidenceMismatch(), debugEvidenceIDsMssingFromEvidence()));
-				}
+		if (evidence.size() < ids.size()) {
+			if (this instanceof RealignedRemoteSAMRecordAssemblyEvidence) {
+				// We don't expect rehydration of short SC, OEA, or alternatively mapped evidence at remote position 
+			} else {
+				log.debug(String.format("Expected %d, found %d support for %s %s%s", ids.size(), evidence.size(), getEvidenceID(), debugEvidenceMismatch(), debugEvidenceIDsMssingFromEvidence()));
 			}
-			if (evidence.size() > ids.size()) {
-				// Don't throw exception as the user can't actually do anything about this
-				// Just continue with as correct results as we can manage
-				log.debug(String.format("Expected %d, found %d support for %s %s%s", evidenceIds.size(), evidence.size(), getEvidenceID(), debugEvidenceMismatch(), debugEvidenceIDsMssingFromEvidence()));
-				//log.warn("Hash collision has resulted in evidence being incorrectly attributed to assembly " + getEvidenceID());
-			}
+		}
+		if (evidence.size() > ids.size()) {
+			// Don't throw exception as the user can't actually do anything about this
+			// Just continue with as correct results as we can manage
+			log.debug(String.format("Expected %d, found %d support for %s %s%s", ids.size(), evidence.size(), getEvidenceID(), debugEvidenceMismatch(), debugEvidenceIDsMssingFromEvidence()));
+			//log.warn("Hash collision has resulted in evidence being incorrectly attributed to assembly " + getEvidenceID());
 		}
 		return evidence;
 	}
@@ -212,7 +197,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	}
 	private List<String> debugEvidenceIDsMssingFromEvidence() {
 		List<String> result = new ArrayList<String>();
-		for (String s : evidenceIds) {
+		for (String s : getEvidenceIDs()) {
 			boolean found = false;
 			for (DirectedEvidence e : evidence) {
 				if (e.getEvidenceID().equals(s)) {
@@ -230,7 +215,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		List<String> result = new ArrayList<String>();
 		for (DirectedEvidence e : evidence) {
 			boolean found = false;
-			for (String s : evidenceIds) {
+			for (String s : getEvidenceIDs()) {
 				if (e.getEvidenceID().equals(s)) {
 					found = true;
 					break;

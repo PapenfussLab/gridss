@@ -227,18 +227,18 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_set_BREAKPOINT_SOFTCLIP() {
-		Assert.assertArrayEquals(new int[] { 3,  2, }, (int[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_COUNT.attribute()));
-		Assert.assertArrayEquals(new float[] { 3*112 + 3+4+5,  2*112 + 1+2, }, (float[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_QUAL.attribute()), 0);
+		Assert.assertArrayEquals(new int[] { 3,  2, }, (int[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT.attribute()));
+		Assert.assertArrayEquals(new float[] { 3*112 + 3+4+5,  2*112 + 1+2, }, (float[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_SPLITREAD_QUAL.attribute()), 0);
 	}
 	@Test
 	public void should_set_BREAKPOINT_SOFTCLIP_REMOTE() {
-		Assert.assertArrayEquals(new int[] { 1,  3, }, (int[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_COUNT_REMOTE.attribute()));
-		Assert.assertArrayEquals(new float[] { 1*212 + 4, 3*212 + 1+2+3, }, (float[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_QUAL_REMOTE.attribute()), 0);
+		Assert.assertArrayEquals(new int[] { 1,  3, }, (int[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT_REMOTE.attribute()));
+		Assert.assertArrayEquals(new float[] { 1*212 + 4, 3*212 + 1+2+3, }, (float[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_SPLITREAD_QUAL_REMOTE.attribute()), 0);
 	}
 	@Test
 	public void should_set_BREAKEND_READPAIR() {
-		Assert.assertArrayEquals(new int[] { 4,  1, }, (int[])complex_bp().getAttribute(VcfAttributes.BREAKEND_READPAIR_COUNT.attribute()));
-		Assert.assertArrayEquals(new float[] { 4*6 + 1+2+3+4,  1*6 + 5, }, (float[])complex_bp().getAttribute(VcfAttributes.BREAKEND_READPAIR_QUAL.attribute()), 0);
+		Assert.assertArrayEquals(new int[] { 4,  1, }, (int[])complex_bp().getAttribute(VcfAttributes.BREAKEND_UNMAPPEDMATE_COUNT.attribute()));
+		Assert.assertArrayEquals(new float[] { 4*6 + 1+2+3+4,  1*6 + 5, }, (float[])complex_bp().getAttribute(VcfAttributes.BREAKEND_UNMAPPEDMATE_QUAL.attribute()), 0);
 	}
 	@Test
 	public void should_set_BREAKPOINT_READPAIR() {
@@ -283,7 +283,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		ass.annotateAssembly();
 		cb.addEvidence(ass);
 		VariantContextDirectedBreakpoint call = (VariantContextDirectedBreakpoint)cb.make();
-		Assert.assertArrayEquals(new int[] { 0,  0, }, asIntTN(call.getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_COUNT.attribute())));
+		Assert.assertArrayEquals(new int[] { 0,  0, }, asIntTN(call.getAttribute(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT.attribute())));
 		Assert.assertArrayEquals(new int[] { 0,  0, }, asIntTN(call.getAttribute(VcfAttributes.BREAKEND_SOFTCLIP_COUNT.attribute())));
 	}
 	private int[] asIntTN(Object attrValue) {
@@ -306,9 +306,9 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		cb.addEvidence(new um(1, true));
 		VariantContextDirectedEvidence v = cb.make();
 		Assert.assertArrayEquals(new int[] { 0,  1, }, (int[])v.getAttribute(VcfAttributes.BREAKEND_SOFTCLIP_COUNT.attribute()));
-		Assert.assertArrayEquals(new int[] { 0,  1, }, (int[])v.getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_COUNT.attribute()));
-		Assert.assertArrayEquals(new int[] { 0,  1, }, (int[])v.getAttribute(VcfAttributes.BREAKPOINT_SOFTCLIP_COUNT_REMOTE.attribute()));
-		Assert.assertArrayEquals(new int[] { 0,  1, }, (int[])v.getAttribute(VcfAttributes.BREAKEND_READPAIR_COUNT.attribute()));
+		Assert.assertArrayEquals(new int[] { 0,  1, }, (int[])v.getAttribute(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT.attribute()));
+		Assert.assertArrayEquals(new int[] { 0,  1, }, (int[])v.getAttribute(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT_REMOTE.attribute()));
+		Assert.assertArrayEquals(new int[] { 0,  1, }, (int[])v.getAttribute(VcfAttributes.BREAKEND_UNMAPPEDMATE_COUNT.attribute()));
 		Assert.assertArrayEquals(new int[] { 0,  1, }, (int[])v.getAttribute(VcfAttributes.BREAKPOINT_READPAIR_COUNT.attribute()));
 	}
 	public StructuralVariationCallBuilder cb(DirectedEvidence... evidence) {

@@ -14,22 +14,36 @@ public enum VcfAttributes {
 	
 	BREAKPOINT_ASSEMBLY_COUNT("AS", 1, VCFHeaderLineType.Integer, "Count of assemblies supporting breakpoint"),
 	BREAKPOINT_READPAIR_COUNT("RP", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of read pairs supporting breakpoint per category"),
-	BREAKPOINT_SOFTCLIP_COUNT("SC", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of soft clips supporting breakpoint per category"),
+	BREAKPOINT_SPLITREAD_COUNT("SR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of split reads supporting breakpoint per category"),
 	BREAKPOINT_ASSEMBLY_COUNT_REMOTE("RAS", 1, VCFHeaderLineType.Integer, "Count of assemblies supporting breakpoint from remote breakend"),
-	BREAKPOINT_SOFTCLIP_COUNT_REMOTE("RSC", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of soft clips supporting breakpoint from remote breakend per category"),
+	BREAKPOINT_SPLITREAD_COUNT_REMOTE("RSR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of split reads supporting breakpoint from remote breakend per category"),
+	
+	BREAKPOINT_ASSEMBLY_READPAIR_COUNT("ASRP", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of read pairs incorporated into breakpoint assemblies"),
+	BREAKPOINT_ASSEMBLY_SPLITREAD_COUNT("ASSR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of split reads incorporated into breakpoint assemblies"),
+	BREAKPOINT_ASSEMBLY_REMOTE_SPLITREAD_COUNT("ASRSR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of split reads from remote breakend incorporated into breakpoint assemblies"),
+	// Omitting ASUM, ASSC since not used in SPV calculation
+	BREAKPOINT_ASSEMBLY_READPAIR_CONSCRIPTED_COUNT("ASCRP", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of conscripted read pairs (not directly supporting breakpoint) incorporated into breakpoint assemblies."),
+	BREAKPOINT_ASSEMBLY_SPLITREAD_CONSCRIPTED_COUNT("ASCSR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of conscripted split reads (not directly supporting breakpoint) incorporated into breakpoint assemblies"),
+	BREAKPOINT_ASSEMBLY_REMOTE_SPLITREAD_CONSCRIPTED_COUNT("ASCRSR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of conscripted split reads (not directly supporting breakpoint) from remote breakend incorporated into breakpoint assemblies"),
+	
+	BREAKPOINT_REMOTE_ASSEMBLY_READPAIR_COUNT("RASRP", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of read pairs incorporated into remote breakpoint assemblies"),
+	BREAKPOINT_REMOTE_ASSEMBLY_SPLITREAD_COUNT("RASSR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of split reads incorporated into remote breakpoint assemblies"),
+	BREAKPOINT_REMOTE_ASSEMBLY_REMOTE_SPLITREAD_COUNT("RASRSR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of split reads from remote breakend incorporated into remote breakpoint assemblies"),
+	BREAKPOINT_REMOTE_ASSEMBLY_READPAIR_CONSCRIPTED_COUNT("RASCRP", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of conscripted read pairs (not directly supporting breakpoint) incorporated into remote breakpoint assemblies."),
+	BREAKPOINT_REMOTE_ASSEMBLY_SPLITREAD_CONSCRIPTED_COUNT("RASCSR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of conscripted split reads (not directly supporting breakpoint) incorporated into remote breakpoint assemblies"),
+	BREAKPOINT_REMOTE_ASSEMBLY_REMOTE_SPLITREAD_CONSCRIPTED_COUNT("RASCRSR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of conscripted split reads (not directly supporting breakpoint) from remote breakend incorporated into remote breakpoint assemblies"),
 	
 	BREAKPOINT_ASSEMBLY_QUAL("ASQ", 1, VCFHeaderLineType.Float, "Quality score of assemblies supporting breakpoint"),
 	BREAKPOINT_READPAIR_QUAL("RPQ", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Float, "Quality score of read pairs supporting breakpoint per category"),
-	BREAKPOINT_SOFTCLIP_QUAL("SCQ", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Float, "Quality score of soft clips supporting breakpoint per category"),
+	BREAKPOINT_SPLITREAD_QUAL("SRQ", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Float, "Quality score of split reads supporting breakpoint per category"),
 	BREAKPOINT_ASSEMBLY_QUAL_REMOTE("RASQ", 1, VCFHeaderLineType.Float, "Quality score of assemblies supporting breakpoint from remote breakend"),
-	BREAKPOINT_SOFTCLIP_QUAL_REMOTE("RSCQ", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Float, "Quality score of soft clips supporting breakpoint from remote breakend per category"),
+	BREAKPOINT_SPLITREAD_QUAL_REMOTE("RSRQ", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Float, "Quality score of split reads supporting breakpoint from remote breakend per category"),
 
-	BREAKEND_ASSEMBLY_COUNT("BAS", 1, VCFHeaderLineType.Integer, "Count of assemblies supporting just local breakend"),
-	BREAKEND_READPAIR_COUNT("BRP", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of read pairs supporting just local breakend per category"),
+	BREAKEND_ASSEMBLY_COUNT("BA", 1, VCFHeaderLineType.Integer, "Count of assemblies supporting just local breakend"),
+	BREAKEND_UNMAPPEDMATE_COUNT("BUM", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of read pairs supporting just local breakend per category"),
 	BREAKEND_SOFTCLIP_COUNT("BSC", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of soft clips supporting just local breakend per category"),
-
-	BREAKEND_ASSEMBLY_QUAL("BASQ", 1, VCFHeaderLineType.Float, "Quality score of assemblies supporting just local breakend"),
-	BREAKEND_READPAIR_QUAL("BRPQ", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Float, "Quality score of read pairs supporting just local breakend per category"),
+	BREAKEND_ASSEMBLY_QUAL("BAQ", 1, VCFHeaderLineType.Float, "Quality score of assemblies supporting just local breakend"),
+	BREAKEND_UNMAPPEDMATE_QUAL("BUMQ", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Float, "Quality score of read pairs supporting just local breakend per category"),
 	BREAKEND_SOFTCLIP_QUAL("BSCQ", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Float, "Quality score of soft clips supporting just local breakend per category"),
 
 	CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY ("CIRPOS", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Confidence interval around remote breakend POS for imprecise variants"),

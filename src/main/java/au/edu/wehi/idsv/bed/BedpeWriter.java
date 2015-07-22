@@ -48,13 +48,13 @@ public class BedpeWriter implements Closeable {
 				VcfSvConstants.HOMOLOGY_SEQUENCE_KEY + "\t" +
 				VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT.attribute() + "\t" +
 				VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE.attribute() + "\t" +
-				VcfAttributes.BREAKPOINT_SOFTCLIP_COUNT.attribute() + "\t" +
-				VcfAttributes.BREAKPOINT_SOFTCLIP_COUNT_REMOTE.attribute() + "\t" +
+				VcfAttributes.BREAKPOINT_SPLITREAD_COUNT.attribute() + "\t" +
+				VcfAttributes.BREAKPOINT_SPLITREAD_COUNT_REMOTE.attribute() + "\t" +
 				VcfAttributes.BREAKPOINT_READPAIR_COUNT.attribute() + "\t" +
 				VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL.attribute() + "\t" +
 				VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE.attribute() + "\t" +
-				VcfAttributes.BREAKPOINT_SOFTCLIP_QUAL.attribute() + "\t" +
-				VcfAttributes.BREAKPOINT_SOFTCLIP_QUAL_REMOTE.attribute() + "\t" +
+				VcfAttributes.BREAKPOINT_SPLITREAD_QUAL.attribute() + "\t" +
+				VcfAttributes.BREAKPOINT_SPLITREAD_QUAL_REMOTE.attribute() + "\t" +
 				VcfAttributes.BREAKPOINT_READPAIR_QUAL.attribute() + "\t" +
 				VcfAttributes.REFERENCE_READ_COUNT.attribute() + "\t" +
 				VcfAttributes.REFERENCE_READPAIR_COUNT.attribute() +
