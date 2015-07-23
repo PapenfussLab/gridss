@@ -10,7 +10,7 @@ public class ArrayHelperTest {
 		assertArrayEquals(new int[] { 4, 6 }, ArrayHelper.add(new int[] { 1, 2 }, new int[] { 3, 4 }));
 		assertArrayEquals(new int[] { 3, 4 }, ArrayHelper.add(null, new int[] { 3, 4 }));
 		assertArrayEquals(new int[] { 3, 4 }, ArrayHelper.add(new int[] { 3, 4 }, null));
-		assertArrayEquals(new int[] { }, ArrayHelper.add(null, null));
+		assertArrayEquals(new int[] { }, ArrayHelper.add((int[])null, null));
 		assertArrayEquals(new int[] { 4, 6, 5 }, ArrayHelper.add(new int[] { 1, 2 }, new int[] { 3, 4, 5 }));
 		assertArrayEquals(new int[] { 5, 7, 3 }, ArrayHelper.add(new int[] { 1, 2, 3 }, new int[] { 4, 5 }));
 	}

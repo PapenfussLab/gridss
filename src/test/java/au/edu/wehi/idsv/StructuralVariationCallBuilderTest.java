@@ -91,7 +91,26 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		@Override public int getRemoteTotalBaseQual() { return 10 + offset; }
 		@Override public float getBreakendQual() { return 211 + offset; }
 		@Override public float getBreakpointQual() { return 212 + offset; }
-		@Override public String getEvidenceID() { return "rrsc" + Integer.toString(offset); }
+		@Override public String getEvidenceID() { return "Rrsc" + Integer.toString(offset); }
+		@Override
+		public RealignedSoftClipEvidence asLocal() { return new rrsclocal(); }
+		public class rrsclocal extends RealignedSoftClipEvidence {
+			protected rrsclocal() {
+				super(rrsc.this.getEvidenceSource(), FWD, rrsc.this.getSAMRecord(), rrsc.this.getRealignedSAMRecord());
+			}
+			@Override public int getLocalMapq() { return rrsc.this.getRemoteMapq(); }
+			@Override public int getLocalBaseLength() { return rrsc.this.getRemoteBaseLength(); }
+			@Override public int getLocalMaxBaseQual() { return rrsc.this.getRemoteMaxBaseQual(); }
+			@Override public int getLocalTotalBaseQual() { return rrsc.this.getRemoteTotalBaseQual(); }
+			@Override public int getRemoteMapq() { return rrsc.this.getLocalMapq(); }
+			@Override public int getRemoteBaseLength() { return rrsc.this.getLocalBaseLength(); }
+			@Override public int getRemoteBaseCount() { return rrsc.this.getLocalBaseLength(); }
+			@Override public int getRemoteMaxBaseQual() { return rrsc.this.getLocalMaxBaseQual(); }
+			@Override public int getRemoteTotalBaseQual() { return rrsc.this.getLocalTotalBaseQual(); }
+			@Override public float getBreakendQual() { return rrsc.this.getBreakendQual(); }
+			@Override public float getBreakpointQual() { return rrsc.this.getBreakpointQual(); }
+			@Override public String getEvidenceID() { return rrsc.this.getEvidenceID().substring(1); }
+		}
 	}
 	public static class um extends UnmappedMateReadPair {
 		int offset;
@@ -265,6 +284,74 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		Assert.assertEquals(5, (float)(Float)complex_bp().getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE.attribute()), 0);
 	}
 	@Test
+	public void should_set_VcfAttribute_BREAKPOINT_ASSEMBLY_READPAIR_COUNT_CONSCRIPTED() {
+		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES(pc);
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+				.breakpoint(BP, "GT").make());
+		cb.addEvidence(new dp(1, true));
+		cb.addEvidence(new dp(2, true));
+		cb.addEvidence(new dp(3, false));
+		
+		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(
+				new dp(2, true),
+				new dp(4, true)); 
+		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakend(pc, aes, BP.direction, Lists.transform(support, EID), BP.referenceIndex, BP.end, 1, B("TT"), B("TT"), new int[] { 1, 2 });
+		ass.hydrateEvidenceSet(support);
+		ass.annotateAssembly();
+		cb.addEvidence(AssemblyFactory.incorporateRealignment(getContext(), ass, withMapq(44, onNegative(Read(BP.referenceIndex2, BP.start2, "1M")))[0]));
+	
+		support = Lists.<DirectedEvidence>newArrayList(
+				new dp(3, false),
+				new dp(5, true),
+				new dp(6, true));
+		ass = AssemblyFactory.createAnchoredBreakend(pc, aes, BP.direction, Lists.transform(support, EID), BP.referenceIndex2, BP.end2, 1, B("TT"), B("TT"), new int[] { 1, 2 });
+		ass.hydrateEvidenceSet(support);
+		ass.annotateAssembly();
+		cb.addEvidence(((RealignedSAMRecordAssemblyEvidence)AssemblyFactory.incorporateRealignment(pc, ass, withMapq(44, onNegative(Read(BP.referenceIndex, BP.start, "1M")))[0])).asRemote());
+		
+		VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)cb.make();
+		
+		Assert.assertArrayEquals(new int[] { 1, 4, }, (int[])bp.getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT.attribute()));
+		Assert.assertArrayEquals(new int[] { 0, 3, }, (int[])bp.getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT.attribute()));
+	}
+	@Test
+	public void should_set_VcfAttribute_BREAKPOINT_ASSEMBLY_SPLITREAD_COUNT() {
+		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES(pc);
+		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
+				.breakpoint(BP, "GT").make());
+		cb.addEvidence(new rsc(1, true));
+		cb.addEvidence(new rsc(2, true));
+		cb.addEvidence(new rsc(3, false));
+		cb.addEvidence(new rrsc(1, false));
+		cb.addEvidence(new rrsc(7, false));
+		
+		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(
+				new rsc(2, true),
+				new rsc(4, true)); 
+		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakend(pc, aes, BP.direction, Lists.transform(support, EID), BP.referenceIndex, BP.end, 1, B("TT"), B("TT"), new int[] { 1, 2 });
+		ass.hydrateEvidenceSet(support);
+		ass.annotateAssembly();
+		cb.addEvidence(AssemblyFactory.incorporateRealignment(getContext(), ass, withMapq(44, onNegative(Read(BP.referenceIndex2, BP.start2, "1M")))[0]));
+	
+		support = Lists.<DirectedEvidence>newArrayList(
+				new rsc(3, false).asRemote(),
+				new rsc(5, true).asRemote(),
+				new rsc(6, true).asRemote(),
+				new rsc(7, false),
+				new rsc(8, false));
+		ass = AssemblyFactory.createAnchoredBreakend(pc, aes, BP.direction, Lists.transform(support, EID), BP.referenceIndex2, BP.end2, 1, B("TT"), B("TT"), new int[] { 1, 2 });
+		ass.hydrateEvidenceSet(support);
+		ass.annotateAssembly();
+		cb.addEvidence(((RealignedSAMRecordAssemblyEvidence)AssemblyFactory.incorporateRealignment(pc, ass, withMapq(44, onNegative(Read(BP.referenceIndex, BP.start, "1M")))[0])).asRemote());
+		
+		VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)cb.make();
+		
+		Assert.assertArrayEquals(new int[] { 3, 4, }, (int[])bp.getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_SPLITREAD_COUNT.attribute()));
+		Assert.assertArrayEquals(new int[] { 1, 3, }, (int[])bp.getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT.attribute()));
+	}
+	@Test
 	@Ignore() //  TODO: enchancement
 	public void how_should_we_count_spanning_assemblies() {
 		fail();
@@ -405,7 +492,9 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		VariantContextDirectedEvidence e = b(new sc(1, true));
 		assertFalse(e.hasAttribute(VCFConstants.SOMATIC_KEY));
 	}
+	
 	@Test
+	@Ignore("need better model")
 	public void should_somatic_if_tumour_BAF_greater_than_normal() {
 		StructuralVariationCallBuilder cb = cb(
 				new sc(1, true),
@@ -421,6 +510,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public void somatic_p_value_should_be_calculated_from_coverage_at_both_ends_of_the_breakend() {
 		fail();
 	}
+	@Ignore("need better model")
 	@Test
 	public void should_call_somatic_from_assembly_evidence() {
 		ProcessingContext pc = getContext();

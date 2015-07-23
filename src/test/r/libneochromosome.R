@@ -1,4 +1,5 @@
 library(openxlsx) # install.packages("openxlsx")
+library(VennDiagram) # install.packages("VennDiagram")
 library(ggplot2)
 library(scales)
 library(RColorBrewer)
@@ -35,8 +36,17 @@ getcn <- function(xlsx = "mmc4.xlsx", tabname) {
                 cn=dt$Copy.number)
   return(gr)
 }
-
-go <- function(sample, vcf, rp) {
+vreplaceNA <- function(vector, value) {
+  vector[is.na(vector)] <- value[is.na(vector)]
+  return(vector)
+}
+go <- function(sample, vcf, rp, filterBed=NULL) {
+  if (!is.null(filterBed)) {
+    # filter so that both ends are within the filterBed
+    rp <- subsetByOverlaps(rp, filterBed, maxgap=1000)
+    rp <- rp[rp$mate %in% names(rp)]
+    vcf <- vcf[overlapsAny(rowRanges(vcf), filterBed, maxgap=1000),]
+  }
   vcf <- gridss.removeUnpartnerededBreakend(vcf)
   rpmaxgap=200 # 778 #chr1:188377591-chr1:188379026- call location is over 120
   rpMate <- rp[rp$mate,]
@@ -47,6 +57,19 @@ go <- function(sample, vcf, rp) {
   rp$hits <- vcfdf[rp$gridssid,]$confidence
   levels(rp$hits) <- c("Low", "Medium", "High", "None")
   rp$hits[is.na(rp$hits)] <- "None"
+  
+  ###############
+  # Variant calling concordance
+  ###############
+  # VennDiagram requires lists of ids
+  # We'll go with the bedid if it exists, then fall back to the gridssid
+  venn.plot <- venn.diagram(
+    x = list(
+      Published=names(rp),
+      High=vreplaceNA(vcfdf[vcfdf$confidence=="High",]$bedid, rownames(vcfdf[vcfdf$confidence=="High",])),
+      Medium=vreplaceNA(vcfdf[vcfdf$confidence=="Medium",]$bedid, rownames(vcfdf[vcfdf$confidence=="Medium",])),
+      Low=vreplaceNA(vcfdf[vcfdf$confidence=="Low",]$bedid, rownames(vcfdf[vcfdf$confidence=="Low",]))),
+    filename = paste0("venn_", sample, ".png"))
   
   
   ###############

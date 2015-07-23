@@ -424,8 +424,8 @@ public class AssemblyFactoryTest extends TestHelper {
 	}
 	@Test
 	public void setEvidenceIDs_should_set_same_value_regardless_of_collection_ordering() {
-		assertEquals(AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 1, 2), Lists.newArrayList("a", "b"), B("GTAC"), new byte[] {1,2,3,4}, new int[] {0, 0}).getSAMRecord().getAttribute(SamTags.ASSEMBLY_COMPONENT_EVIDENCEID),
-					 AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 1, 2), Lists.newArrayList("b", "a"), B("GTAC"), new byte[] {1,2,3,4}, new int[] {0, 0}).getSAMRecord().getAttribute(SamTags.ASSEMBLY_COMPONENT_EVIDENCEID));
+		assertEquals(AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 1, 2), Lists.newArrayList("a", "b"), B("GTAC"), new byte[] {1,2,3,4}, new int[] {0, 0}).getSAMRecord().getAttribute(SamTags.EVIDENCEID_UNCATEGORISED),
+					 AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 1, 2), Lists.newArrayList("b", "a"), B("GTAC"), new byte[] {1,2,3,4}, new int[] {0, 0}).getSAMRecord().getAttribute(SamTags.EVIDENCEID_UNCATEGORISED));
 	}
 	@Test
 	public void should_include_untemplated_sequence_for_imprecise_breakpoint() {

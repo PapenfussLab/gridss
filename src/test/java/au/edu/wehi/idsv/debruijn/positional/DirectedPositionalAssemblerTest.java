@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.Test;
 
@@ -31,7 +32,7 @@ public class DirectedPositionalAssemblerTest extends TestHelper {
 		input.sort(DirectedEvidenceOrder.ByStartEnd);
 		ArrayList<SAMRecordAssemblyEvidence> r1 = Lists.newArrayList(new DirectedPositionalAssembler(pc, aes, input.iterator()));
 		ArrayList<SAMRecordAssemblyEvidence> r2 = Lists.newArrayList(new PositionalAssembler(pc, aes, input.iterator()));
-		assertEquals(r1, r2);
+		assertEquals(r1.stream().map(r -> r.getBreakendSummary()).collect(Collectors.toList()), r2.stream().map(r -> r.getBreakendSummary()).collect(Collectors.toList()));
 		assertEquals(4, r1.size());
 		assertEquals(4, r2.size());
 	}

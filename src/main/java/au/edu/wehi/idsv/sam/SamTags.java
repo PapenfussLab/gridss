@@ -16,27 +16,39 @@ public class SamTags {
 	/**
 	 * EvidenceID of uncategorised assembly components
 	 */
-	public static final String ASSEMBLY_EVIDENCEID_UNCATEGORISED = "ez";
+	public static final String EVIDENCEID_UNCATEGORISED = "ez";
+	/**
+	 * EvidenceID of constitute assembly evidence
+	 */
+	public static final String EVIDENCEID_ASSEMBLY = "ea";
+	/**
+	 * EvidenceID of constitute remote assembly evidence
+	 */
+	public static final String EVIDENCEID_ASSEMBLY_REMOTE = "er";
+	/**
+	 * EvidenceID of constitute breakend assembly evidence
+	 */
+	public static final String EVIDENCEID_BREAKEND_ASSEMBLY = "eb";
 	/**
 	 * EvidenceID of constitute discordant pair evidence
 	 */
-	public static final String ASSEMBLY_EVIDENCEID_PREFIX_DISCORDANT_PAIR = "d";
+	public static final String EVIDENCEID_PREFIX_DISCORDANT_PAIR = "d";
 	/**
 	 * EvidenceID of constitute unmapped mate evidence
 	 */
-	public static final String ASSEMBLY_EVIDENCEID_PREFIX_UNMAPPED_MATE = "u";
+	public static final String EVIDENCEID_PREFIX_UNMAPPED_MATE = "u";
 	/**
 	 * EvidenceID of constitute split read evidence
 	 */
-	public static final String ASSEMBLY_EVIDENCEID_PREFIX_SPLIT_READ = "s";
+	public static final String EVIDENCEID_PREFIX_SPLIT_READ = "s";
 	/**
 	 * EvidenceID of constitute split read remote evidence
 	 */
-	public static final String ASSEMBLY_EVIDENCEID_PREFIX_SPLIT_READ_REMOTE = "t";
+	public static final String EVIDENCEID_PREFIX_SPLIT_READ_REMOTE = "t";
 	/**
 	 * EvidenceID of constitute soft clip evidence
 	 */
-	public static final String ASSEMBLY_EVIDENCEID_PREFIX_SOFT_CLIP = "c";
+	public static final String EVIDENCEID_PREFIX_SOFT_CLIP = "c";
 	
 	public static final String ASSEMBLY_BASE_COUNT = "bc";
 	public static final String ASSEMBLY_READPAIR_COUNT = "dp";

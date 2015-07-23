@@ -21,7 +21,9 @@ public class ProgressLoggingSAMRecordIterator implements CloseableIterator<SAMRe
 	@Override
 	public SAMRecord next() {
 		SAMRecord n = iterator.next();
-		logger.record(n);
+		if (logger != null) {
+			logger.record(n);
+		}
 		return n;
 	}
 	@Override

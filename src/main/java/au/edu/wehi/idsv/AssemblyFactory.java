@@ -223,22 +223,26 @@ public final class AssemblyFactory {
 			record.setAttribute(SamTags.ASSEMBLY_DIRECTION, breakend.direction.toChar());
 		}
 		assert(ensureUniqueEvidenceID(evidence));
-		EvidenceIDCollection e = new EvidenceIDCollection();
-		for (String s : evidence) {
-			e.add(SamTags.ASSEMBLY_EVIDENCEID_UNCATEGORISED, s);
+		if (evidence != null) {
+			EvidenceIDCollection e = new EvidenceIDCollection();
+			for (String s : evidence) {
+				e.addUncategorised(s);
+			}
+			e.write(record);
 		}
-		e.write(record);
 		return record;
 	}
 	private static boolean ensureUniqueEvidenceID(Collection<String> evidence) {
 		boolean isUnique = true;
-		Set<String> map = new HashSet<String>();
-		for (String id : evidence) {
-			if (map.contains(id)) {
-				log.error("Found evidenceID " + id + " multiple times in assembly");
-				isUnique = false;
+		if (evidence != null) {
+			Set<String> map = new HashSet<String>();
+			for (String id : evidence) {
+				if (map.contains(id)) {
+					log.error("Found evidenceID " + id + " multiple times in assembly");
+					isUnique = false;
+				}
+				map.add(id);
 			}
-			map.add(id);
 		}
 		return isUnique;
 	}

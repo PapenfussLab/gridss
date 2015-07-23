@@ -73,8 +73,9 @@ gridss.vcftodf.flattenNumeric <- function(df, name, column, max=FALSE, allColumn
     df[[name]] <- rowSums(mat)
   }
   if (allColumns) {
-    df[c(paste(ncol(mat)))] <- mat
-    stop("Fix this code")
+    for (offset in seq_len(ncol(mat))) {
+      df[paste0(name, offset)] <- mat[,offset]
+    }
   }
   return(df)
 }
@@ -85,7 +86,7 @@ gridss.removeUnpartnerededBreakend <- function(vcf) {
   }
   return(vcf[toKeep,])
 }
-gridss.vcftodf <- function(vcf, sanityCheck=TRUE) {
+gridss.vcftodf <- function(vcf, allColumns=FALSE, sanityCheck=TRUE) {
   i <- info(vcf)
   df <- data.frame(variantid=names(rowRanges(vcf)))
   df$POS <- paste0(seqnames(rowRanges(vcf)), ":", start(rowRanges(vcf)))
@@ -101,31 +102,31 @@ gridss.vcftodf <- function(vcf, sanityCheck=TRUE) {
   df$HOMSEQ <- ifelse(is.na(as.character(i$HOMSEQ)), "", as.character(i$HOMSEQ))
   df$HOMLEN <- as.numeric(i$HOMLEN)
   df$call <- ifelse(!is.na(matchLength), "good", ifelse(!is.na(mismatchLength), "misaligned", "bad"))
-  df <- gridss.vcftodf.flattenNumeric(df, "REF", i$REF)
-  df <- gridss.vcftodf.flattenNumeric(df, "REFPAIR", i$REFPAIR)
+  df <- gridss.vcftodf.flattenNumeric(df, "REF", i$REF, allColumns=allColumns)
+  df <- gridss.vcftodf.flattenNumeric(df, "REFPAIR", i$REFPAIR, allColumns=allColumns)
   df$SPV <- i$SPV
   df$CQ <- i$CQ
   df$BQ <- i$BQ
   
   df$AS <- i$AS
-  df <- gridss.vcftodf.flattenNumeric(df, "RP", i$RP)
-  df <- gridss.vcftodf.flattenNumeric(df, "SC", i$SC)
+  df <- gridss.vcftodf.flattenNumeric(df, "RP", i$RP, allColumns=allColumns)
+  df <- gridss.vcftodf.flattenNumeric(df, "SC", i$SC, allColumns=allColumns)
   df$RAS <- i$RAS
-  df <- gridss.vcftodf.flattenNumeric(df, "RSC", i$RSC)
+  df <- gridss.vcftodf.flattenNumeric(df, "RSC", i$RSC, allColumns=allColumns)
   
   df$ASQ <- i$ASQ
-  df <- gridss.vcftodf.flattenNumeric(df, "RPQ", i$RPQ)
-  df <- gridss.vcftodf.flattenNumeric(df, "SCQ", i$SCQ)
+  df <- gridss.vcftodf.flattenNumeric(df, "RPQ", i$RPQ, allColumns=allColumns)
+  df <- gridss.vcftodf.flattenNumeric(df, "SCQ", i$SCQ, allColumns=allColumns)
   df$RASQ <- i$RASQ
-  df <- gridss.vcftodf.flattenNumeric(df, "RSCQ", i$RSCQ)
+  df <- gridss.vcftodf.flattenNumeric(df, "RSCQ", i$RSCQ, allColumns=allColumns)
   
   df$BAS <- i$BAS
-  df <- gridss.vcftodf.flattenNumeric(df, "BRP", i$BRP)
-  df <- gridss.vcftodf.flattenNumeric(df, "BSC", i$BSC)
+  df <- gridss.vcftodf.flattenNumeric(df, "BRP", i$BRP, allColumns=allColumns)
+  df <- gridss.vcftodf.flattenNumeric(df, "BSC", i$BSC, allColumns=allColumns)
   
   df$BASQ <- i$BASQ
-  df <- gridss.vcftodf.flattenNumeric(df, "BRPQ", i$BRPQ)
-  df <- gridss.vcftodf.flattenNumeric(df, "BSCQ", i$BSCQ)
+  df <- gridss.vcftodf.flattenNumeric(df, "BRPQ", i$BRPQ, allColumns=allColumns)
+  df <- gridss.vcftodf.flattenNumeric(df, "BSCQ", i$BSCQ, allColumns=allColumns)
   
   df <- replace(df, is.na(df), 0)
   rownames(df) <- df$variantid

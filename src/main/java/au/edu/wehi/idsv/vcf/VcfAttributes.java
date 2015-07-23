@@ -18,20 +18,10 @@ public enum VcfAttributes {
 	BREAKPOINT_ASSEMBLY_COUNT_REMOTE("RAS", 1, VCFHeaderLineType.Integer, "Count of assemblies supporting breakpoint from remote breakend"),
 	BREAKPOINT_SPLITREAD_COUNT_REMOTE("RSR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of split reads supporting breakpoint from remote breakend per category"),
 	
-	BREAKPOINT_ASSEMBLY_READPAIR_COUNT("ASRP", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of read pairs incorporated into breakpoint assemblies"),
-	BREAKPOINT_ASSEMBLY_SPLITREAD_COUNT("ASSR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of split reads incorporated into breakpoint assemblies"),
-	BREAKPOINT_ASSEMBLY_REMOTE_SPLITREAD_COUNT("ASRSR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of split reads from remote breakend incorporated into breakpoint assemblies"),
-	// Omitting ASUM, ASSC since not used in SPV calculation
-	BREAKPOINT_ASSEMBLY_READPAIR_CONSCRIPTED_COUNT("ASCRP", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of conscripted read pairs (not directly supporting breakpoint) incorporated into breakpoint assemblies."),
-	BREAKPOINT_ASSEMBLY_SPLITREAD_CONSCRIPTED_COUNT("ASCSR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of conscripted split reads (not directly supporting breakpoint) incorporated into breakpoint assemblies"),
-	BREAKPOINT_ASSEMBLY_REMOTE_SPLITREAD_CONSCRIPTED_COUNT("ASCRSR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of conscripted split reads (not directly supporting breakpoint) from remote breakend incorporated into breakpoint assemblies"),
-	
-	BREAKPOINT_REMOTE_ASSEMBLY_READPAIR_COUNT("RASRP", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of read pairs incorporated into remote breakpoint assemblies"),
-	BREAKPOINT_REMOTE_ASSEMBLY_SPLITREAD_COUNT("RASSR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of split reads incorporated into remote breakpoint assemblies"),
-	BREAKPOINT_REMOTE_ASSEMBLY_REMOTE_SPLITREAD_COUNT("RASRSR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of split reads from remote breakend incorporated into remote breakpoint assemblies"),
-	BREAKPOINT_REMOTE_ASSEMBLY_READPAIR_CONSCRIPTED_COUNT("RASCRP", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of conscripted read pairs (not directly supporting breakpoint) incorporated into remote breakpoint assemblies."),
-	BREAKPOINT_REMOTE_ASSEMBLY_SPLITREAD_CONSCRIPTED_COUNT("RASCSR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of conscripted split reads (not directly supporting breakpoint) incorporated into remote breakpoint assemblies"),
-	BREAKPOINT_REMOTE_ASSEMBLY_REMOTE_SPLITREAD_CONSCRIPTED_COUNT("RASCRSR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of conscripted split reads (not directly supporting breakpoint) from remote breakend incorporated into remote breakpoint assemblies"),
+	BREAKPOINT_ASSEMBLY_READPAIR_COUNT("ASRP", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of read pairs incorporated into any breakpoint assembly"),
+	BREAKPOINT_ASSEMBLY_SPLITREAD_COUNT("ASSR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of split reads incorporated into any breakpoint assemblies"),
+	BREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT("ASCRP", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of read pairs (not directly supporting breakpoint) incorporated into any breakpoint assembly"),
+	BREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT("ASCSR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of split reads (not directly supporting breakpoint) incorporated into any breakpoint assemblies"),
 	
 	BREAKPOINT_ASSEMBLY_QUAL("ASQ", 1, VCFHeaderLineType.Float, "Quality score of assemblies supporting breakpoint"),
 	BREAKPOINT_READPAIR_QUAL("RPQ", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Float, "Quality score of read pairs supporting breakpoint per category"),
