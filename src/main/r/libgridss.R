@@ -1,5 +1,6 @@
 library(VariantAnnotation)
 library(plyr)
+source("../../test/r/libvcf.R")
 
 gridss.annotateBreakpointHits <- function(bed, bedMate, gridssVcf, ...) {
   return (gridss.annotateBreakpoints(bed, bedMate, gridssVcf, ...)$bed)
@@ -157,6 +158,7 @@ gridss.vcftodf <- function(vcf, allColumns=FALSE, sanityCheck=TRUE) {
   df$hasRP <- ifelse(df$RP > 0, "Has RP", "No RP")
   df$confidence <- as.factor(ifelse(df$QUAL >= 1000 & df$hasAS == "AS Both", 3, ifelse(df$QUAL >= 500 & df$hasAS != "AS zero", 2, 1)))
   levels(df$confidence) <- c("Low", "Medium", "High")
+  df$size <- vcftobpgr(vcf)$size
   return(df)
 }
 gridss.vcftodf.sanitycheck <- function(failing, desc) {

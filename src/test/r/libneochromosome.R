@@ -4,6 +4,9 @@ library(ggplot2)
 library(scales)
 library(RColorBrewer)
 library(stringr)
+library(rtracklayer)
+source("../../main/r/libgridss.R")
+source("libvcf.R")
 
 # extracts read pair breakpoint calls from the supplementary table
 # creates a breakpoint GRanges object containing
@@ -40,23 +43,27 @@ vreplaceNA <- function(vector, value) {
   vector[is.na(vector)] <- value[is.na(vector)]
   return(vector)
 }
-go <- function(sample, vcf, rp, filterBed=NULL) {
+# matchmaxgap: 778 #chr1:188377591-chr1:188379026- call location is over 120
+go <- function(sample, vcf, rp, filterBed=NULL, minimumEventSize, cgrmaxgap=1000, matchmaxgap=200) {
   if (!is.null(filterBed)) {
     # filter so that both ends are within the filterBed
-    rp <- subsetByOverlaps(rp, filterBed, maxgap=1000)
+    rp <- subsetByOverlaps(rp, filterBed, maxgap=cgrmaxgap)
     rp <- rp[rp$mate %in% names(rp)]
-    vcf <- vcf[overlapsAny(rowRanges(vcf), filterBed, maxgap=1000),]
+    vcf <- vcf[overlapsAny(rowRanges(vcf), filterBed, maxgap=cgrmaxgap),]
   }
   vcf <- gridss.removeUnpartnerededBreakend(vcf)
-  rpmaxgap=200 # 778 #chr1:188377591-chr1:188379026- call location is over 120
   rpMate <- rp[rp$mate,]
-  matches <- gridss.annotateBreakpoints(rp, rpMate, vcf, maxgap=rpmaxgap)
+  matches <- gridss.annotateBreakpoints(rp, rpMate, vcf, maxgap=matchmaxgap)
   vcfdf <- matches$gridss
   rp <- matches$bed
   
   rp$hits <- vcfdf[rp$gridssid,]$confidence
   levels(rp$hits) <- c("Low", "Medium", "High", "None")
   rp$hits[is.na(rp$hits)] <- "None"
+  
+  # filter out small events that don't hit an existing call
+  vcf <- vcf[is.na(vcfdf$size) | vcfdf$size >= minimumEventSize,]
+  vcfdf <- vcfdf[rownames(vcf),]
   
   ###############
   # Variant calling concordance
@@ -71,25 +78,31 @@ go <- function(sample, vcf, rp, filterBed=NULL) {
       Low=vreplaceNA(vcfdf[vcfdf$confidence=="Low",]$bedid, rownames(vcfdf[vcfdf$confidence=="Low",]))),
     filename = paste0("venn_", sample, ".png"))
   
+  if (!file.exists(paste0(sample, ".additional.high.vcf"))) {
+    writeVcf(vcf[is.na(vcfdf$bedid) & vcfdf$confidence=="High",], paste0(sample, ".additional.high.vcf"))
+    writeVcf(vcf[is.na(vcfdf$bedid) & vcfdf$confidence=="Medium",], paste0(sample, ".additional.medium.vcf"))
+  }
+  #export(rowRanges(vcf)[is.na(vcfdf$bedid) & vcfdf$confidence=="High"], paste0(sample, ".additional.high.bed"))
+  
   
   ###############
   # Read Pair variant calling concordance
   ###############
   #library(pROC) #install.packages("pROC")
-  dfroc <- NULL
-  for (confidence in as.numeric(unique(vcfdf$confidence))) {
-    subset <- as.numeric(vcfdf$confidence) >= confidence
-    dftmp <- vcftoroc(vcf[subset], rp, maxgap=rpmaxgap)
-    dftmp$confidence <- levels(vcfdf$confidence)[confidence]
-    dfroc <- rbind(dfroc, dftmp)  
-  }
-  ggplot(dfroc[dfroc$qual!=0,], aes(x=log(qual+1), y=sens, color=confidence)) +
-    geom_line() +
-    scale_x_reverse() +
-    theme_bw() +
-    scale_y_continuous(limits=c(0,1)) +
-    labs(title=paste0("Sensitivity of curated RP call detection - ", sample))
-  ggsave(paste0("rp_roc_", sample, ".png"), width=10, height=7.5)
+#   dfroc <- NULL
+#   for (confidence in as.numeric(unique(vcfdf$confidence))) {
+#     subset <- as.numeric(vcfdf$confidence) >= confidence
+#     dftmp <- vcftoroc(vcf[subset], rp, maxgap=rpmaxgap)
+#     dftmp$confidence <- levels(vcfdf$confidence)[confidence]
+#     dfroc <- rbind(dfroc, dftmp)  
+#   }
+#   ggplot(dfroc[dfroc$qual!=0,], aes(x=log(qual+1), y=sens, color=confidence)) +
+#     geom_line() +
+#     scale_x_reverse() +
+#     theme_bw() +
+#     scale_y_continuous(limits=c(0,1)) +
+#     labs(title=paste0("Sensitivity of curated RP call detection - ", sample))
+#   ggsave(paste0("rp_roc_", sample, ".png"), width=10, height=7.5)
   
   ggplot(as.data.frame(mcols(rp)), aes(x=nreads, fill=hits)) +
     geom_histogram() +
@@ -122,7 +135,7 @@ go <- function(sample, vcf, rp, filterBed=NULL) {
   ###############
   # debugging
   ###############
-  return (list(bed=rp, gridss=vcfdf))
+  return (list(bed=rp, gridss=vcfdf, vcf=vcf))
 }
 
 
