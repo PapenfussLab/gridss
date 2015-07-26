@@ -67,12 +67,12 @@ public class Idsv extends CommandLineProgram {
     	int i = 0;
     	List<SAMEvidenceSource> samEvidence = Lists.newArrayList();
     	for (File f : INPUT) {
-    		log.debug("Processing normal input ", f);
+    		log.info("Processing normal input ", f);
     		SAMEvidenceSource sref = constructSamEvidenceSource(f, i++, 0);
     		samEvidence.add(sref);
     	}
     	for (File f : INPUT_TUMOUR) {
-    		log.debug("Processing tumour input ", f);
+    		log.info("Processing tumour input ", f);
     		SAMEvidenceSource sref = constructSamEvidenceSource(f, i++, 1);
     		samEvidence.add(sref);
     	}
@@ -83,6 +83,7 @@ public class Idsv extends CommandLineProgram {
     	ExecutorService threadpool = null;
     	ExecutorService halfthreadpool = null;
     	try {
+    		hackSimpleCalls();
     		threadpool = Executors.newFixedThreadPool(WORKER_THREADS, new ThreadFactory() {
     			   @Override
     			   public Thread newThread(Runnable runnable) {
@@ -102,54 +103,13 @@ public class Idsv extends CommandLineProgram {
     		log.info(String.format("Using %d worker threads", WORKER_THREADS));
 	    	ensureDictionariesMatch();
 	    	List<SAMEvidenceSource> samEvidence = createSamEvidenceSources();
-	    	log.debug("Extracting evidence.");
-	    	for (Future<Void> future : threadpool.invokeAll(Lists.transform(samEvidence, new Function<SAMEvidenceSource, Callable<Void>>() {
-					@Override
-					public Callable<Void> apply(final SAMEvidenceSource input) {
-						return new Callable<Void>() {
-							@Override
-							public Void call() throws Exception {
-								try {
-									input.completeSteps(EnumSet.of(ProcessStep.CALCULATE_METRICS, ProcessStep.EXTRACT_SOFT_CLIPS, ProcessStep.EXTRACT_READ_PAIRS));
-								} catch (Exception e) {
-									log.error(e, "Exception thrown by worker thread");
-									throw e;
-								}
-								return null;
-							}
-						};
-					}
-		    	}))) {
-	    		// throw exception from worker thread here
-	    		future.get();
-	    	}
-	    	log.debug("Evidence extraction complete.");
+	    	
+	    	extractEvidence(threadpool, samEvidence);
 	    	
 	    	if (!checkRealignment(samEvidence, WORKER_THREADS)) {
 	    		return -1;
     		}
-	    	for (Future<Void> future : threadpool.invokeAll(Lists.transform(samEvidence, new Function<SAMEvidenceSource, Callable<Void>>() {
-				@Override
-				public Callable<Void> apply(final SAMEvidenceSource input) {
-					return new Callable<Void>() {
-						@Override
-						public Void call() throws Exception {
-							try {
-								SortRealignedSoftClips sortSplitReads = new SortRealignedSoftClips(getContext(), input);
-					    		if (!sortSplitReads.isComplete()) {
-					    			sortSplitReads.process(STEPS);
-					    		}
-					    		sortSplitReads.close();
-							} catch (Exception e) {
-								log.error(e, "Exception thrown by worker thread");
-								throw e;
-							}
-							return null;
-						}
-					};}}))) {
-	    		// throw exception from worker thread here
-	    		future.get();
-	    	}
+	    	sortRealignedSoftClips(threadpool, samEvidence);
 	    	
 	    	AssemblyEvidenceSource assemblyEvidence = new AssemblyEvidenceSource(getContext(), samEvidence, OUTPUT);
 	    	assemblyEvidence.ensureAssembled(threadpool, halfthreadpool);
@@ -181,25 +141,12 @@ public class Idsv extends CommandLineProgram {
 	    		log.error("Unable to call variants: generation and breakend alignment of assemblies not complete.");
     			return -1;
 	    	}
-	    	VariantCaller caller = null;
-	    	try {
-	    		EvidenceToCsv evidenceDump = null;
-	    		if (Defaults.EXPORT_EVIDENCE_ALLOCATION) {
-	    			evidenceDump = new EvidenceToCsv(new File(getContext().getFileSystemContext().getIntermediateDirectory(OUTPUT), "evidence.csv"));
-	    		}
-	    		// Run variant caller single-threaded as we can do streaming calls
-	    		caller = new VariantCaller(
-	    			getContext(),
-	    			OUTPUT,
-	    			samEvidence,
-	    			assemblyEvidence,
-	    			evidenceDump);
-	    		caller.callBreakends(threadpool);
-	    		caller.annotateBreakpoints(TRUTH_VCF);
-	    	} finally {
-	    		if (caller != null) caller.close();
+	    	if (!OUTPUT.exists()) {
+		    	callVariants(threadpool, samEvidence, assemblyEvidence);
+	    	} else {
+	    		log.info(OUTPUT.toString() + " exists not recreating.");
 	    	}
-	    	//hackOutputIndels();
+	    	hackSimpleCalls();
     	} catch (IOException e) {
     		log.error(e);
     		throw new RuntimeException(e);
@@ -215,6 +162,82 @@ public class Idsv extends CommandLineProgram {
 		}
 		return 0;
     }
+	private void sortRealignedSoftClips(ExecutorService threadpool, List<SAMEvidenceSource> samEvidence) throws InterruptedException, ExecutionException {
+		for (Future<Void> future : threadpool.invokeAll(Lists.transform(samEvidence, new Function<SAMEvidenceSource, Callable<Void>>() {
+			@Override
+			public Callable<Void> apply(final SAMEvidenceSource input) {
+				return new Callable<Void>() {
+					@Override
+					public Void call() throws Exception {
+						try {
+							SortRealignedSoftClips sortSplitReads = new SortRealignedSoftClips(getContext(), input);
+				    		if (!sortSplitReads.isComplete()) {
+				    			sortSplitReads.process(STEPS);
+				    		}
+				    		sortSplitReads.close();
+						} catch (Exception e) {
+							log.error(e, "Exception thrown by worker thread");
+							throw e;
+						}
+						return null;
+					}
+				};}}))) {
+			// throw exception from worker thread here
+			future.get();
+		}
+	}
+	private void extractEvidence(ExecutorService threadpool, List<SAMEvidenceSource> samEvidence) throws InterruptedException, ExecutionException {
+		log.info("Extracting evidence.");
+		for (Future<Void> future : threadpool.invokeAll(Lists.transform(samEvidence, new Function<SAMEvidenceSource, Callable<Void>>() {
+				@Override
+				public Callable<Void> apply(final SAMEvidenceSource input) {
+					return new Callable<Void>() {
+						@Override
+						public Void call() throws Exception {
+							try {
+								input.completeSteps(EnumSet.of(ProcessStep.CALCULATE_METRICS, ProcessStep.EXTRACT_SOFT_CLIPS, ProcessStep.EXTRACT_READ_PAIRS));
+							} catch (Exception e) {
+								log.error(e, "Exception thrown by worker thread");
+								throw e;
+							}
+							return null;
+						}
+					};
+				}
+			}))) {
+			// throw exception from worker thread here
+			future.get();
+		}
+		log.info("Evidence extraction complete.");
+	}
+	private void callVariants(ExecutorService threadpool, List<SAMEvidenceSource> samEvidence, AssemblyEvidenceSource assemblyEvidence) throws IOException {
+		VariantCaller caller = null;
+		try {
+			EvidenceToCsv evidenceDump = null;
+			if (Defaults.EXPORT_EVIDENCE_ALLOCATION) {
+				evidenceDump = new EvidenceToCsv(new File(getContext().getFileSystemContext().getIntermediateDirectory(OUTPUT), "evidence.csv"));
+			}
+			// Run variant caller single-threaded as we can do streaming calls
+			caller = new VariantCaller(
+				getContext(),
+				OUTPUT,
+				samEvidence,
+				assemblyEvidence,
+				evidenceDump);
+			caller.callBreakends(threadpool);
+			caller.annotateBreakpoints(TRUTH_VCF);
+		} finally {
+			if (caller != null) caller.close();
+		}
+	}
+	private void hackSimpleCalls() throws IOException {
+		if (OUTPUT.exists()) {
+			File simpleHack = new File(OUTPUT.getParent(), OUTPUT.getName() + ".simple.vcf");
+			if (!simpleHack.exists()) {
+				new BreakendToSimpleCall(getContext()).convert(OUTPUT, simpleHack);
+			}
+		}
+	}
     private boolean checkRealignment(List<? extends EvidenceSource> evidence, int threads) throws IOException {
     	String instructions = getRealignmentScript(evidence, threads);
     	if (instructions != null && instructions.length() > 0) {

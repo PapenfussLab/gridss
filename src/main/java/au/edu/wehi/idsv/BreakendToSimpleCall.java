@@ -1,0 +1,231 @@
+package au.edu.wehi.idsv;
+
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.Log;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFFileReader;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.TreeSet;
+
+import picard.cmdline.CommandLineProgramProperties;
+import au.edu.wehi.idsv.util.FileHelper;
+import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
+
+import com.google.common.base.Function;
+import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Ordering;
+
+/**
+ * Calls simple variants
+ * @author Daniel Cameron
+ *
+ */
+@CommandLineProgramProperties(
+        usage = "Converts breakend calls to simple variant calls for DEL INS INV DUP events",  
+        usageShort = "Converts breakend calls to simple variant calls"
+)
+public class BreakendToSimpleCall {
+	private static final Log log = Log.getInstance(BreakendToSimpleCall.class);
+	private final ProcessingContext processContext;
+	private final int margin;
+	private List<IdsvVariantContext> outputBuffer;
+	/**
+	 * Dirty hack so we can store VariantContextDirectedBreakpoint and use BreakendSummary objects to perform lookup 
+	 */
+	private static Ordering<Object> ByStart = new Ordering<Object>() {
+		@Override
+		public int compare(Object left, Object right) {
+			BreakendSummary bsl;
+			BreakendSummary bsr;
+			if (left instanceof VariantContextDirectedBreakpoint) {
+				bsl = ((VariantContextDirectedBreakpoint)left).getBreakendSummary();
+			} else {
+				bsl = (BreakendSummary)left;
+			}
+			if (right instanceof VariantContextDirectedBreakpoint) {
+				bsr = ((VariantContextDirectedBreakpoint)right).getBreakendSummary();
+			} else {
+				bsr = (BreakendSummary)right;
+			}
+			return ComparisonChain.start()
+			        .compare(bsl.referenceIndex, bsr.referenceIndex)
+			        .compare(bsl.start, bsr.start)
+			        .result();
+		}
+	};
+	private TreeSet<Object/*VariantContextDirectedBreakpoint*/> lookup;
+	private HashMap<String, VariantContextDirectedBreakpoint> id;
+	private TreeSet<VariantContextDirectedBreakpoint> byQual;
+	private int maxWidth;
+	public BreakendToSimpleCall(ProcessingContext processContext) {
+		this.processContext = processContext;
+		this.margin = processContext.getVariantCallingParameters().breakendMargin;
+	}
+	public void convert(File breakendCalls, File simpleOutput) {
+		
+		try {
+			maxWidth = 0;
+			id = new HashMap<String, VariantContextDirectedBreakpoint>();
+			outputBuffer = new ArrayList<IdsvVariantContext>();
+			load(breakendCalls);
+			process();
+			write(simpleOutput);
+		} catch (Exception e) {
+			log.error(e);
+		}
+	}
+	private void process() {
+		byQual = new TreeSet<VariantContextDirectedBreakpoint>(IdsvVariantContext.ByQual.reverse());
+		lookup = new TreeSet<Object>(ByStart);
+		for (VariantContextDirectedBreakpoint bp : id.values()) {
+			lookup.add(bp);
+			if (bp.getID().endsWith("o")) {
+				byQual.add(bp);
+			}
+		}
+		while (!byQual.isEmpty()) {
+			process(byQual.iterator().next());
+		}
+	}
+	private Collection<VariantContextDirectedBreakpoint> findOverlaps(BreakpointSummary be) {
+		ArrayList<VariantContextDirectedBreakpoint> overlapping = new ArrayList<VariantContextDirectedBreakpoint>();
+		for (Object obj : lookup.subSet(new BreakendSummary(be.referenceIndex, be.direction, be.start - maxWidth - margin, Integer.MAX_VALUE), new BreakendSummary(be.referenceIndex, be.direction, be.start + 2 * maxWidth + margin, Integer.MAX_VALUE))) {
+			VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)obj;
+			if (processContext.getVariantCallingParameters().withMargin(processContext, bp.getBreakendSummary())
+					.overlaps(processContext.getVariantCallingParameters().withMargin(processContext, be))) {
+				overlapping.add(bp);
+			}
+		}
+		Collections.sort(overlapping, IdsvVariantContext.ByQual.reverse());
+		return overlapping;
+	}
+	/**
+	 * Process the lower of a breakpoint pair
+	 * @param bp
+	 */
+	private void process(VariantContextDirectedBreakpoint bp) {
+		assert(bp.getID().endsWith("o"));
+		remove(bp);
+		VariantContextDirectedBreakpoint mate = id.get(bp.getAttribute(VcfSvConstants.MATE_BREAKEND_ID_KEY));
+		if (mate == null) {
+			log.warn(String.format("Breakpoint %s is missing mate", bp.getID()));
+		}
+		if (bp.getBreakendSummary().referenceIndex != bp.getBreakendSummary().referenceIndex2) {
+			outputBuffer.add(bp);
+			outputBuffer.add(mate);
+			return;
+		}
+		BreakpointSummary bs = bp.getBreakendSummary();
+		assert(bs.start <= bs.start2);
+		// inversion
+		if (bs.start < bs.start2 && bs.direction != bs.direction2) {
+			for (VariantContextDirectedBreakpoint pairing : findOverlaps(new BreakpointSummary(
+					bs.referenceIndex, bs.direction.reverse(), bs.start + 1, bs.end + 1, 
+					bs.referenceIndex2, bs.direction2.reverse(), bs.start2 + 1, bs.end2 + 1))) {
+				if (pairing != bp && pairing != mate) {
+					IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(processContext, bp);
+					builder
+						.phredScore(bp.getPhredScaledQual() + pairing.getPhredScaledQual())
+						.alleles("N", "<DUP>")
+						.start(bp.getBreakendSummary().start + 1)
+						.stop(bs.start2)
+						.attribute(VCFConstants.END_KEY, bs.start2)
+						.attribute(VcfSvConstants.SV_TYPE_KEY, "DUP");
+						//.attribute(VcfSvConstants.CONFIDENCE_INTERVAL_END_POSITION_KEY, bp.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute()));
+						//.attribute(VcfSvConstants.SV_LENGTH_KEY, bs.start - bs.start2);
+					remove(bp);
+					remove(pairing);
+					return;
+				}
+			}
+		}
+		if (bs.start < bs.start2 && bs.direction == BreakendDirection.Backward && bs.direction2 == BreakendDirection.Forward) {
+			IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(processContext, bp);
+			builder.alleles("N", "<INV>")
+				.start(bp.getBreakendSummary().start)
+				.stop(bs.start2)
+				.attribute(VCFConstants.END_KEY, bs.start2)
+				.attribute(VcfSvConstants.SV_TYPE_KEY, "INV");
+				//.attribute(VcfSvConstants.CONFIDENCE_INTERVAL_END_POSITION_KEY, bp.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute()));
+				//.attribute(VcfSvConstants.SV_LENGTH_KEY, bs.start2 - bs.start);
+			outputBuffer.add(builder.make());
+			remove(bp);
+			return;
+		}
+		if (bs.start < bs.start2 && bs.direction == BreakendDirection.Forward && bs.direction2 == BreakendDirection.Backward) {
+			IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(processContext, bp);
+			builder.alleles("N", "<DEL>")
+				.start(bp.getBreakendSummary().start)
+				.stop(bs.start2)
+				.attribute(VCFConstants.END_KEY, bs.start2)
+				.attribute(VcfSvConstants.SV_TYPE_KEY, "DEL");
+				//.attribute(VcfSvConstants.CONFIDENCE_INTERVAL_END_POSITION_KEY, bp.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute()));
+				//.attribute(VcfSvConstants.SV_LENGTH_KEY, bs.start - bs.start2);
+			outputBuffer.add(builder.make());
+			remove(bp);
+			return;
+		}
+		// just write out breakend
+		outputBuffer.add(bp);
+		outputBuffer.add(mate);
+		remove(bp);
+	}
+	private void remove(VariantContextDirectedBreakpoint bp) {
+		lookup.remove(bp);
+		byQual.remove(bp);
+		VariantContextDirectedBreakpoint mate = id.get(bp.getAttribute(VcfSvConstants.MATE_BREAKEND_ID_KEY));
+		if (mate != null) {
+			lookup.remove(mate);
+			byQual.remove(mate);
+		} else {
+			log.debug(String.format("%s missing mate", bp.getID()));
+		}
+	}
+	private void write(File output) throws IOException {
+		log.info("Writing simplified variant calls to " + output.getName() + ". Only use this output if your pipeline is unable to process variants in VCF breakend notation.");
+		File working = FileSystemContext.getWorkingFileFor(output);
+		VariantContextWriter vcfWriter = processContext.getVariantContextWriter(working, true);
+		Collections.sort(outputBuffer, IdsvVariantContext.ByLocationStart);
+		for (IdsvVariantContext v : outputBuffer) {
+			vcfWriter.add(v);
+		}
+		CloserUtil.close(vcfWriter);
+		FileHelper.move(working, output, true);
+	}
+	private void load(File breakendCalls) {
+		log.info("Loading variants from " + breakendCalls.getName());
+		VCFFileReader vcfReader = new VCFFileReader(breakendCalls, false);
+		CloseableIterator<VariantContext> it = vcfReader.iterator();
+		Iterator<IdsvVariantContext> idsvIt = Iterators.transform(it, new Function<VariantContext, IdsvVariantContext>() {
+			@Override
+			public IdsvVariantContext apply(VariantContext arg) {
+				return IdsvVariantContext.create(processContext, null, arg);
+			}
+		});
+		while (idsvIt.hasNext()) {
+			IdsvVariantContext v = idsvIt.next();
+			if (v instanceof VariantContextDirectedBreakpoint) {
+				VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint) v;
+				id.put(v.getID(), bp);
+				maxWidth = Math.max(maxWidth, bp.getBreakendSummary().end - bp.getBreakendSummary().start);
+			} else {
+				outputBuffer.add(v);
+			}
+		}
+		it.close();
+		vcfReader.close();
+	}
+}

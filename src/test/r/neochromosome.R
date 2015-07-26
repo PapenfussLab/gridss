@@ -11,7 +11,8 @@ theme_set(theme_bw())
 
 sample <- "778"
 rp <- getrpcalls("C:/dev/neochromosome/mmc3.xlsx", "778 (DR)")
-rp <- rp[!(seqnames(rp) == seqnames(rp[rp$mate,]) & seqnames(rp) %in% c("chr7", "chr22")),] # remove 7 and 22 intrachromosomal arrangements that had really low limits
+# no need to explicitly remove these calls as they're not in CGRs
+#rp <- rp[!(seqnames(rp) == seqnames(rp[rp$mate,]) & seqnames(rp) %in% c("chr7", "chr22")),] # remove 7 and 22 intrachromosomal arrangements that had really low limits
 cgr <- getcgr("C:/dev/neochromosome/mmc4.xlsx", "778_CGRs")
 cn <- getcn("C:/dev/neochromosome/mmc4.xlsx", "778_CN")
 vcf <- readVcf("W:/Papenfuss_lab/projects/liposarcoma/data/gridss/778/778.vcf", "hg19")
@@ -34,15 +35,43 @@ go(sample, vcf, rp, cgr, minimumEventSize=500)
 
 
 
-
+#####################
 # Working set
+#
 df <- out$gridss
 df$size <- vcftobpgr(out$vcf)$size
-ggplot(df[df$confidence=="High" & is.na(df$bedid), ]) +
-  aes(x=size) +
+ggplot(df) +
+  aes(x=distanceToCall, y=QUAL, color=confidence) +
+  geom_point() +
+  scale_x_log10() +
+  scale_y_log10() +
+  facet_wrap( ~ found)
+table(out$bed$hits)
+ggplot(as.data.frame(out$bed)) +
+  aes(x=distanceToMedHigh, color=is.na(gridssid)) +
   geom_histogram() +
-  scale_x_log10()
+  scale_x_log10() +
+  facet_wrap( ~ hits)
+
+out$bed[out$bed$hits=="None",]
 
 table(df[is.na(df$bedid), ]$confidence)
 table(df[df$confidence=="High" & is.na(df$bedid), ]$size <= 500, useNA="ifany")
+
+distanceToClosest(rp, rowRanges(vcf))
+distanceToClosest(rowRanges(vcf), rp)
+rp$distanceToCall
+rp[distanceHits]
+
+names(head(out$gridss))
+
+
+ggplot(out$gridss[out$gridss$confidence %in% c("High", "Medium") & is.na(out$gridss$bedid),]) +
+  aes(x=RP, color=confidence) + 
+  geom_histogram() +
+  labs(title="Read Pair support for unmatched gridss calls")
+ggsave("rpsupport.png")
+  
+  
+  
 

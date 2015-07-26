@@ -111,22 +111,23 @@ gridss.vcftodf <- function(vcf, allColumns=FALSE, sanityCheck=TRUE) {
   
   df$AS <- i$AS
   df <- gridss.vcftodf.flattenNumeric(df, "RP", i$RP, allColumns=allColumns)
-  df <- gridss.vcftodf.flattenNumeric(df, "SC", i$SC, allColumns=allColumns)
+  df <- gridss.vcftodf.flattenNumeric(df, "SR", i$SR, allColumns=allColumns)
   df$RAS <- i$RAS
-  df <- gridss.vcftodf.flattenNumeric(df, "RSC", i$RSC, allColumns=allColumns)
-  
+  df <- gridss.vcftodf.flattenNumeric(df, "RSR", i$RSR, allColumns=allColumns)
+  df <- gridss.vcftodf.flattenNumeric(df, "ASRP", i$ASRP, allColumns=allColumns)
+  df <- gridss.vcftodf.flattenNumeric(df, "ASSR", i$ASSR, allColumns=allColumns)
+  df <- gridss.vcftodf.flattenNumeric(df, "ASCRP", i$ASCRP, allColumns=allColumns)
+  df <- gridss.vcftodf.flattenNumeric(df, "ASCSR", i$ASCSR, allColumns=allColumns)
   df$ASQ <- i$ASQ
   df <- gridss.vcftodf.flattenNumeric(df, "RPQ", i$RPQ, allColumns=allColumns)
-  df <- gridss.vcftodf.flattenNumeric(df, "SCQ", i$SCQ, allColumns=allColumns)
+  df <- gridss.vcftodf.flattenNumeric(df, "SRQ", i$SRQ, allColumns=allColumns)
   df$RASQ <- i$RASQ
-  df <- gridss.vcftodf.flattenNumeric(df, "RSCQ", i$RSCQ, allColumns=allColumns)
-  
+  df <- gridss.vcftodf.flattenNumeric(df, "RSRQ", i$RSRQ, allColumns=allColumns)
   df$BAS <- i$BAS
-  df <- gridss.vcftodf.flattenNumeric(df, "BRP", i$BRP, allColumns=allColumns)
+  df <- gridss.vcftodf.flattenNumeric(df, "BUM", i$BUM, allColumns=allColumns)
   df <- gridss.vcftodf.flattenNumeric(df, "BSC", i$BSC, allColumns=allColumns)
-  
   df$BASQ <- i$BASQ
-  df <- gridss.vcftodf.flattenNumeric(df, "BRPQ", i$BRPQ, allColumns=allColumns)
+  df <- gridss.vcftodf.flattenNumeric(df, "BUMQ", i$BUMQ, allColumns=allColumns)
   df <- gridss.vcftodf.flattenNumeric(df, "BSCQ", i$BSCQ, allColumns=allColumns)
   
   df <- replace(df, is.na(df), 0)
@@ -148,12 +149,12 @@ gridss.vcftodf <- function(vcf, allColumns=FALSE, sanityCheck=TRUE) {
     gridss.vcftodf.sanitycheck(df[df$CQ != mdf$CQ,], "called qual")
     gridss.vcftodf.sanitycheck(df[df$AS != mdf$RAS,], "assembly")
     gridss.vcftodf.sanitycheck(df[df$RP != mdf$RP,], "read pair")
-    gridss.vcftodf.sanitycheck(df[df$SC != mdf$RSC,], "soft clip")
+    gridss.vcftodf.sanitycheck(df[df$SR != mdf$RSC,], "soft clip")
     gridss.vcftodf.sanitycheck(df[abs(df$ASQ - mdf$RASQ) > 0.1,], "assembly qual")
     gridss.vcftodf.sanitycheck(df[abs(df$RPQ - mdf$RPQ) > 0.1,], "read pair qual")
-    gridss.vcftodf.sanitycheck(df[abs(df$SCQ - mdf$RSCQ) > 0.1,], "soft clip qual")
+    gridss.vcftodf.sanitycheck(df[abs(df$SRQ - mdf$RSCQ) > 0.1,], "soft clip qual")
   }
-  df$hasSC <- paste("SC", ifelse(df$SC > 0 & df$RSC > 0, "Both", ifelse(df$SC > 0, "local", ifelse(df$RSC > 0, "remote", "zero"))))
+  df$hasSC <- paste("SC", ifelse(df$SR > 0 & df$RSR > 0, "Both", ifelse(df$SR > 0, "local", ifelse(df$RSR > 0, "remote", "zero"))))
   df$hasAS <- paste("AS", ifelse(df$AS > 0 & df$RAS > 0, "Both", ifelse(df$AS > 0, "local", ifelse(df$RAS > 0, "remote", "zero"))))
   df$hasRP <- ifelse(df$RP > 0, "Has RP", "No RP")
   df$confidence <- as.factor(ifelse(df$QUAL >= 1000 & df$hasAS == "AS Both", 3, ifelse(df$QUAL >= 500 & df$hasAS != "AS zero", 2, 1)))

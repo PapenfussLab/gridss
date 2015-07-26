@@ -255,6 +255,14 @@ interval_distance <- function(s1, e1, s2, e2) {
           ifelse(s1 >= s2 & s1 <= e2, 0,
           ifelse(s1 < s2, s2 - e1, s1 - e2))))
 }
+distanceToClosest <- function(query, subject) {
+  distanceHits <- distanceToNearest(query, subject)
+  result <- rep(NA, length(query))
+  result[queryHits(distanceHits)] <- as.data.frame(distanceHits)$distance
+  return(result)
+}
+
+
 CalculateTruth <- function(callvcf, truthvcf, maxerrorbp, maxerrorpercent=0.25, ...) {
   if (any(!is.na(rowRanges(callvcf)$QUAL) & rowRanges(callvcf)$QUAL < 0)) {
     stop("Precondition failure: variant exists with negative quality score")

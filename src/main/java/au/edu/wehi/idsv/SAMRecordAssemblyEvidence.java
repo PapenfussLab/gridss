@@ -541,6 +541,9 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		byte[] ass = r.getReadBases();
 		byte[] ref = source.getContext().getReference().getSubsequenceAt(refSeq.getSequenceName(), start, end).getBases();
 		
+		if (ass == null || ref == null || ass.length == 0 || ref.length == 0) {
+			return this;
+		}
         Alignment alignment = AlignerFactory.create().align_smith_waterman(ass, ref);        
         Cigar cigar = TextCigarCodec.decode(alignment.getCigar());
         

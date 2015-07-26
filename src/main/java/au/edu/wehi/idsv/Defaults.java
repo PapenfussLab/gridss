@@ -55,6 +55,10 @@ public class Defaults {
 	public static final int ASYNC_READAHEAD_BUFFERS;
 	public static final boolean IGNORE_TIMESTAMPS;
 	public static final int BUFFER_TRACKING_INTERVAL_SECONDS;
+	/**
+	 * Force single threaded usage of libsswjin
+	 */
+	public static final boolean SINGLE_THREAD_LIBSSW;
 	static {
 		VISUALISE_ALL = Boolean.valueOf(System.getProperty("gridss.visualisation.saveall", "false"));
 		VISUALISE_TIMEOUTS = Boolean.valueOf(System.getProperty("gridss.visualisation.savetimeouts", "false"));
@@ -75,6 +79,7 @@ public class Defaults {
 		ASYNC_READAHEAD_BUFFER_SIZE = Integer.valueOf(System.getProperty("gridss.readahead.buffersize", "64"));
 		IGNORE_TIMESTAMPS = Boolean.valueOf(System.getProperty("gridss.ignoreTimestamps", "false"));
 		BUFFER_TRACKING_INTERVAL_SECONDS = Integer.valueOf(System.getProperty("gridss.bufferTrackingIntervalInSeconds", "60"));
+		SINGLE_THREAD_LIBSSW = Boolean.valueOf(System.getProperty("gridss.sswjni.sync", "false"));
 		
 	}
 }

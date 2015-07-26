@@ -2,8 +2,7 @@ package au.edu.wehi.idsv.vcf;
 
 import htsjdk.variant.vcf.VCFConstants;
 import htsjdk.variant.vcf.VCFHeader;
-import htsjdk.variant.vcf.VCFHeaderLineType;
-import htsjdk.variant.vcf.VCFInfoHeaderLine;
+import htsjdk.variant.vcf.VCFSimpleHeaderLine;
 import htsjdk.variant.vcf.VCFStandardHeaderLines;
 
 public class VcfConstants {
@@ -37,10 +36,14 @@ public class VcfConstants {
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.HOMOLOGY_SEQUENCE);
 		header.addMetaDataLine(VCFStandardHeaderLines.getInfoLine(VCFConstants.SOMATIC_KEY));
 		
-		// indel headers
+		// simple SV headers
 		header.addMetaDataLine(VcfStructuralVariantHeaderLines.SV_LENGTH);
 		header.addMetaDataLine(VCFStandardHeaderLines.getInfoLine(VCFConstants.END_KEY));
-		header.addMetaDataLine(new VCFInfoHeaderLine("ALT", 1, VCFHeaderLineType.String, "Alt allele sequence"));
+		header.addMetaDataLine(VcfStructuralVariantHeaderLines.CONFIDENCE_INTERVAL_END_POSITION);
+		header.addMetaDataLine(new VCFSimpleHeaderLine("ALT", "INV", "Inversion"));
+		header.addMetaDataLine(new VCFSimpleHeaderLine("ALT", "DUP", "Duplication"));
+		header.addMetaDataLine(new VCFSimpleHeaderLine("ALT", "DEL", "Deletion"));
+		header.addMetaDataLine(new VCFSimpleHeaderLine("ALT", "INS", "Insertion"));
 		
 		// Retrogene headers		
 		//header.addMetaDataLine(new VCFInfoHeaderLine(IdsvConstants.GENE_ID, 1, VCFHeaderLineType.String, "GTF gene_id of gene containing exons"));

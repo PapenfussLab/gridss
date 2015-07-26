@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv.alignment;
 
+import au.edu.wehi.idsv.Defaults;
 import htsjdk.samtools.util.SequenceUtil;
 
 public class SswJniAligner implements Aligner {
@@ -30,6 +31,13 @@ public class SswJniAligner implements Aligner {
 	}
 	@Override
 	public Alignment align_smith_waterman(byte[] seq, byte[] ref) {
+		if (Defaults.SINGLE_THREAD_LIBSSW) {
+			return sync_do_align_smith_waterman(seq, ref);
+		} else {
+			return do_align_smith_waterman(seq, ref);
+		}
+	}
+	public Alignment do_align_smith_waterman(byte[] seq, byte[] ref) {
 		ssw.Alignment result = ssw.Aligner.align(seq, ref, matrix, gapOpen, gapExtend, true);
 		String cigar = result.cigar;
 		if (result.read_begin1 != 0) {
@@ -40,5 +48,8 @@ public class SswJniAligner implements Aligner {
 			cigar += Integer.toString(endOffset) + "S";
 		}
 		return new Alignment(result.ref_begin1, cigar);
+	}
+	private synchronized Alignment sync_do_align_smith_waterman(byte[] seq, byte[] ref) {
+		return do_align_smith_waterman(seq, ref);
 	}
 }

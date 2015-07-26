@@ -65,6 +65,13 @@ go <- function(sample, vcf, rp, filterBed=NULL, minimumEventSize, cgrmaxgap=1000
   vcf <- vcf[is.na(vcfdf$size) | vcfdf$size >= minimumEventSize,]
   vcfdf <- vcfdf[rownames(vcf),]
   
+  rp$distanceToMedHigh <- distanceToClosest(rp, rowRanges(vcf[vcfdf$confidence != "Low"]))
+  vcfdf$distanceToCall <- distanceToClosest(rowRanges(vcf), rp)
+  vcfdf$found <- !is.na(vcfdf$bedid)
+  
+  rp$mhcallsWithin1kbp <- countOverlaps(rp, rowRanges(vcf[vcfdf$confidence %in% c("High", "Medium")]), maxgap=1000)
+  vcfdf$mhcallsWithin1kbp <- countOverlaps(vcf, rowRanges(vcf[vcfdf$confidence %in% c("High", "Medium")]), maxgap=1000)
+  
   ###############
   # Variant calling concordance
   ###############
@@ -77,12 +84,15 @@ go <- function(sample, vcf, rp, filterBed=NULL, minimumEventSize, cgrmaxgap=1000
       Medium=vreplaceNA(vcfdf[vcfdf$confidence=="Medium",]$bedid, rownames(vcfdf[vcfdf$confidence=="Medium",])),
       Low=vreplaceNA(vcfdf[vcfdf$confidence=="Low",]$bedid, rownames(vcfdf[vcfdf$confidence=="Low",]))),
     filename = paste0("venn_", sample, ".png"))
-  
+    
   if (!file.exists(paste0(sample, ".additional.high.vcf"))) {
+    # don't rewrite until writeVcf trailing tab bug is fixed
     writeVcf(vcf[is.na(vcfdf$bedid) & vcfdf$confidence=="High",], paste0(sample, ".additional.high.vcf"))
     writeVcf(vcf[is.na(vcfdf$bedid) & vcfdf$confidence=="Medium",], paste0(sample, ".additional.medium.vcf"))
   }
-  #export(rowRanges(vcf)[is.na(vcfdf$bedid) & vcfdf$confidence=="High"], paste0(sample, ".additional.high.bed"))
+  write.csv(vcfdf[is.na(vcfdf$bedid) & vcfdf$confidence %in% c("High", "Medium"),], paste0(sample, ".additional.csv"))
+  export(rp[rp$hits %in% c("None", "Low"),], paste0(sample, ".misses.bed"))
+  write.csv(as.data.frame(rp[rp$hits %in% c("None", "Low"),]), paste0(sample, ".missed.csv"))
   
   
   ###############

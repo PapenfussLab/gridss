@@ -11,8 +11,6 @@ public class VcfStructuralVariantHeaderLines {
 	public static final VCFInfoHeaderLine IMPRECISE = new VCFInfoHeaderLine(VcfSvConstants.IMPRECISE_KEY, 0, VCFHeaderLineType.Flag, "Imprecise structural variation");
 	/** Indicates a novel structural variation */
 	public static final VCFInfoHeaderLine NOVEL = new VCFInfoHeaderLine(VcfSvConstants.NOVEL_KEY, 0, VCFHeaderLineType.Flag, "Indicates a novel structural variation");
-	/** End position of the variant described in this record */
-	public static final VCFInfoHeaderLine END = new VCFInfoHeaderLine(VcfSvConstants.END_KEY, 1, VCFHeaderLineType.Integer, "End position of the variant described in this record");
 	/** Type of structural variant */
 	public static final VCFInfoHeaderLine SV_TYPE = new VCFInfoHeaderLine(VcfSvConstants.SV_TYPE_KEY, 1, VCFHeaderLineType.String, "Type of structural variant");
 	/** Difference in length between REF and ALT alleles */
