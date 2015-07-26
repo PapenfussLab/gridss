@@ -544,6 +544,17 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		if (ass == null || ref == null || ass.length == 0 || ref.length == 0) {
 			return this;
 		}
+		// defensive checks so we don't crash the JVM if an unexpected character is encountered
+		for (int i = 0; i < ass.length; i++) {
+			if (!htsjdk.samtools.util.SequenceUtil.isValidBase(ass[i])) {
+				ass[i] = 'N';
+			}
+		}
+		for (int i = 0; i < ref.length; i++) {
+			if (!htsjdk.samtools.util.SequenceUtil.isValidBase(ref[i])) {
+				ref[i] = 'N';
+			}
+		}
         Alignment alignment = AlignerFactory.create().align_smith_waterman(ass, ref);        
         Cigar cigar = TextCigarCodec.decode(alignment.getCigar());
         
