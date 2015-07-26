@@ -323,6 +323,7 @@ public class TestHelper {
 	public static ProcessingContext getContext(ReferenceLookup ref) {
 		ProcessingContext pc = new ProcessingContext(getFSContext(),
 				new ArrayList<Header>(), new SoftClipParameters() {{
+					minAverageQual = 0;
 					minAnchorEntropy = 0;
 				}},
 				new ReadPairParameters() {{

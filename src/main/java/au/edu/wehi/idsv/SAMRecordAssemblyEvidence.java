@@ -8,6 +8,7 @@ import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.TextCigarCodec;
 import htsjdk.samtools.util.Log;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -555,8 +556,18 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 				ref[i] = 'N';
 			}
 		}
-        Alignment alignment = AlignerFactory.create().align_smith_waterman(ass, ref);        
-        Cigar cigar = TextCigarCodec.decode(alignment.getCigar());
+		Alignment alignment =  null;
+		try {
+			alignment = AlignerFactory.create().align_smith_waterman(ass, ref);        
+		} catch (Exception e) {
+			log.error(String.format("Error performing realignment of %s. Unable to align '%s' to '%s' at %s",
+					getEvidenceID(),
+					new String(ass, StandardCharsets.US_ASCII),
+					new String(ref, StandardCharsets.US_ASCII),
+					getBreakendSummary().toString(getEvidenceSource().getContext())));
+		}
+		if (alignment == null) return this;
+		Cigar cigar = TextCigarCodec.decode(alignment.getCigar());
         
         if (isSpanningAssembly() &&
         		SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), BreakendDirection.Forward) +  

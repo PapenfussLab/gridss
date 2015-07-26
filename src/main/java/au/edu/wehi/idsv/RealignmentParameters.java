@@ -11,7 +11,7 @@ public class RealignmentParameters {
 	/**
 	 * Minimum average breakend quality score to be considered for realignment 
 	 */
-	public float minAverageQual = 5;
+	public float minAverageQual = new SoftClipParameters().minAverageQual;
 	/**
 	 * Minimum MAPQ of realigned segment to be considered uniquely aligned  
 	 */

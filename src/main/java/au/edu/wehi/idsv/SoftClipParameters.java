@@ -3,6 +3,11 @@ package au.edu.wehi.idsv;
 
 public class SoftClipParameters {
 	/**
+	 * Minimum average breakend quality score to be considered a valid soft clip
+	 * This filters out reads that are soft-clipped due to sequencing errors  
+	 */
+	public float minAverageQual = 5;
+	/**
 	 * Minimum soft clip length to be considered evidence
 	 */
 	public int minLength = 4;

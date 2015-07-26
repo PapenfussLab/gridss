@@ -65,6 +65,9 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     public double SOFT_CLIP_MIN_ENTROPY = new SoftClipParameters().minAnchorEntropy;
     @Option(doc = "Minimum sequence identity to reference. Percentage value taking a value in the range 0-100.", optional=true)
     public float SOFT_CLIP_MIN_ANCHOR_PERCENT_IDENTITY = new SoftClipParameters().minAnchorIdentity;
+    @Option(doc = "Minimum average base quality score for soft clips to be processed."
+    		+ " Soft clips below this score are considered sequencing errors and are ignored.", optional=true)
+    public float SOFT_CLIP_MIN_BASE_QUALITY = new SoftClipParameters().minAverageQual;
     @Option(doc = "Adapter sequence to exclude from analysis. Defaults to Illumina Universal Adapter, Illumina Small RNA Adapter, and Nextera Transposase sequences", optional=true)
     public List<String> ADAPTER_SEQUENCE = Lists.newArrayList(new SoftClipParameters().adapters.getAdapterSequences());
     // --- Assembly parameters ---
@@ -177,6 +180,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 	}
 	private SoftClipParameters getSoftClipParameters() {
 		SoftClipParameters scp = new SoftClipParameters();
+		scp.minAverageQual = SOFT_CLIP_MIN_BASE_QUALITY;
 	    scp.minLength = SOFT_CLIP_MIN_LENGTH;
 	    scp.minReadMapq = SOFT_CLIP_MIN_MAPQ;
 	    scp.minAnchorIdentity = SOFT_CLIP_MIN_ANCHOR_PERCENT_IDENTITY;

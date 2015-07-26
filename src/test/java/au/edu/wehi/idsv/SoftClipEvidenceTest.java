@@ -333,6 +333,7 @@ public class SoftClipEvidenceTest extends TestHelper {
 	@Test
 	public void should_filter_low_complexity_anchors() {
 		SoftClipParameters scp = new SoftClipParameters();
+		scp.minAverageQual = 0;
 		scp.minAnchorIdentity = 0;
 		scp.minAnchorEntropy = 0.5;
 		scp.minLength = 1;
@@ -367,5 +368,21 @@ public class SoftClipEvidenceTest extends TestHelper {
 		
 		assertTrue(new SoftClipEvidence(SES(), FWD, withSequence("TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGTCT", Read(0, 1, "1S40M1S"))[0]).meetsEvidenceCritera(scp)); // 37	1	1	1	0.503183732
 		assertFalse(new SoftClipEvidence(SES(), FWD, withSequence("TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGTCT", Read(0, 1, "1S41M1S"))[0]).meetsEvidenceCritera(scp)); // 38	1	1	1	0.493619187
+	}
+	@Test
+	public void should_filter_low_base_quality() {
+		SoftClipParameters scp = new SoftClipParameters();
+		scp.minAverageQual = 5;
+		scp.minAnchorIdentity = 0;
+		scp.minAnchorEntropy = 0;
+		scp.minLength = 1;
+		scp.minReadMapq = 0;
+		scp.adapters = new AdapterHelper(null);
+		
+		assertTrue(new SoftClipEvidence(SES(), FWD, withQual(new byte[] { 6, 6, }, withSequence("AT", Read(0, 1, "1M1S")))[0]).meetsEvidenceCritera(scp));
+		assertTrue(new SoftClipEvidence(SES(), FWD, withQual(new byte[] { 6, 5, }, withSequence("AT", Read(0, 1, "1M1S")))[0]).meetsEvidenceCritera(scp));
+		assertFalse(new SoftClipEvidence(SES(), FWD, withQual(new byte[] { 6, 4, }, withSequence("AT", Read(0, 1, "1M1S")))[0]).meetsEvidenceCritera(scp));
+		assertTrue(new SoftClipEvidence(SES(), FWD, withQual(new byte[] { 1, 4, 6, }, withSequence("ATT", Read(0, 1, "1M2S")))[0]).meetsEvidenceCritera(scp));
+		assertFalse(new SoftClipEvidence(SES(), FWD, withQual(new byte[] { 1, 4, 5, }, withSequence("ATT", Read(0, 1, "1M2S")))[0]).meetsEvidenceCritera(scp));
 	}
 }

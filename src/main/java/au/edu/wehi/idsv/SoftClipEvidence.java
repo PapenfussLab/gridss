@@ -188,6 +188,7 @@ public class SoftClipEvidence implements DirectedEvidence {
 		return getMappingQuality() >= p.minReadMapq
 				&& getSoftClipLength() >= p.minLength
 				&& getAlignedPercentIdentity() >= p.minAnchorIdentity
+				&& getAverageClipQuality() >= p.minAverageQual
 				&& SAMRecordUtil.alignedEntropy(getSAMRecord()) >= p.minAnchorEntropy
 				&& !isDovetailing()
 				&& !p.adapters.isAdapterSoftClip(this);
