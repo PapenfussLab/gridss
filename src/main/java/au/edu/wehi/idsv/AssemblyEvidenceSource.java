@@ -440,7 +440,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			// realign
 			byte[] be = ass.getBreakendSequence();
 			if (be != null && be.length > ap.maxExpectedBreakendAssemblyLengthInFragmentMultiples * getMaxConcordantFragmentSize()) {
-				log.debug(String.format("Filtering %s at %d due to misassembly (breakend %dbp)",
+				log.debug(String.format("Filtering %s at %s due to misassembly (breakend %dbp)",
 						ass.getEvidenceID(),
 						ass.getBreakendSummary(),
 						be.length));
