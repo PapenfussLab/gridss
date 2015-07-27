@@ -438,7 +438,15 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			if (ass == null) return null;
 			AssemblyParameters ap = getContext().getAssemblyParameters();
 			// realign
-    		if (getContext().getAssemblyParameters().performLocalRealignment && ass.isBreakendExact()) {
+			byte[] be = ass.getBreakendSequence();
+			if (be != null && be.length > ap.maxExpectedBreakendAssemblyLengthInFragmentMultiples * getMaxConcordantFragmentSize()) {
+				log.debug(String.format("Filtering %s at %d due to misassembly (breakend %dbp)",
+						ass.getEvidenceID(),
+						ass.getBreakendSummary(),
+						be.length));
+				return null;
+			}
+    		if (ap.performLocalRealignment && ass.isBreakendExact()) {
     			int realignmentWindowSize = (int)(ap.realignmentWindowReadLengthMultiples * getMaxReadLength());
     			SAMRecordAssemblyEvidence fullRealignment = ass.realign(realignmentWindowSize, true);
     			// use full assembly realignment to find small indels and reference assemblies

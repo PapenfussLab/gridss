@@ -140,6 +140,13 @@ public class AssemblyParameters {
 	 * Note: a breakend assembly longer than this length will cause reference sequence assembly to be at least as long as the breakend 
 	 */
 	public int anchorAssemblyLength = 100;
+	/**
+	 * Maximum expected length of a breakend assembly.
+	 * Assemblies larger than this size are extremely likely to be missassemblies
+	 * 
+	 * Expected max size is 1.0 for single-sided assembly and 2.0 for assembly from both directions 
+	 */
+	public float maxExpectedBreakendAssemblyLengthInFragmentMultiples = 2.5f;
 	public boolean applyFilters(SAMRecordAssemblyEvidence evidence) {
 		SAMRecordAssemblyEvidence localEvidence = evidence;
 		if (evidence instanceof RemoteEvidence) {
