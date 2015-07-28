@@ -20,7 +20,6 @@ import java.util.TreeSet;
 
 import picard.cmdline.CommandLineProgramProperties;
 import au.edu.wehi.idsv.util.FileHelper;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.base.Function;
@@ -131,34 +130,38 @@ public class BreakendToSimpleCall {
 		BreakpointSummary bs = bp.getBreakendSummary();
 		assert(bs.start <= bs.start2);
 		// inversion
-		if (bs.start < bs.start2 && bs.direction != bs.direction2) {
+		if (bs.start < bs.start2 && bs.direction == bs.direction2) {
+			VariantContextDirectedBreakpoint partner = null;
 			for (VariantContextDirectedBreakpoint pairing : findOverlaps(new BreakpointSummary(
 					bs.referenceIndex, bs.direction.reverse(), bs.start + 1, bs.end + 1, 
 					bs.referenceIndex2, bs.direction2.reverse(), bs.start2 + 1, bs.end2 + 1))) {
 				if (pairing != bp && pairing != mate) {
-					IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(processContext, bp);
-					builder
-						.phredScore(bp.getPhredScaledQual() + pairing.getPhredScaledQual())
-						.alleles("N", "<DUP>")
-						.start(bp.getBreakendSummary().start + 1)
-						.stop(bs.start2)
-						.attribute(VCFConstants.END_KEY, bs.start2)
-						.attribute(VcfSvConstants.SV_TYPE_KEY, "DUP");
-						//.attribute(VcfSvConstants.CONFIDENCE_INTERVAL_END_POSITION_KEY, bp.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute()));
-						//.attribute(VcfSvConstants.SV_LENGTH_KEY, bs.start - bs.start2);
-					remove(bp);
-					remove(pairing);
-					return;
+					partner = pairing;
+					break;
 				}
 			}
-		}
-		if (bs.start < bs.start2 && bs.direction == BreakendDirection.Backward && bs.direction2 == BreakendDirection.Forward) {
 			IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(processContext, bp);
-			builder.alleles("N", "<INV>")
-				.start(bp.getBreakendSummary().start)
+			builder
+				.phredScore(bp.getPhredScaledQual() + (partner == null ? 0 : partner.getPhredScaledQual()))
+				.alleles("N", "<INV>")
+				.start(bp.getBreakendSummary().start + 1)
 				.stop(bs.start2)
 				.attribute(VCFConstants.END_KEY, bs.start2)
 				.attribute(VcfSvConstants.SV_TYPE_KEY, "INV");
+				//.attribute(VcfSvConstants.CONFIDENCE_INTERVAL_END_POSITION_KEY, bp.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute()));
+				//.attribute(VcfSvConstants.SV_LENGTH_KEY, bs.start - bs.start2);
+			outputBuffer.add(builder.make());
+			remove(bp);
+			if (partner != null) remove(partner);
+			return;
+		}
+		if (bs.start < bs.start2 && bs.direction == BreakendDirection.Backward && bs.direction2 == BreakendDirection.Forward) {
+			IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(processContext, bp);
+			builder.alleles("N", "<DUP>")
+				.start(bp.getBreakendSummary().start)
+				.stop(bs.start2)
+				.attribute(VCFConstants.END_KEY, bs.start2)
+				.attribute(VcfSvConstants.SV_TYPE_KEY, "DUP");
 				//.attribute(VcfSvConstants.CONFIDENCE_INTERVAL_END_POSITION_KEY, bp.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute()));
 				//.attribute(VcfSvConstants.SV_LENGTH_KEY, bs.start2 - bs.start);
 			outputBuffer.add(builder.make());

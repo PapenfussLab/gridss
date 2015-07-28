@@ -36,7 +36,7 @@ public enum VcfAttributes {
 	BREAKEND_UNMAPPEDMATE_QUAL("BUMQ", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Float, "Quality score of read pairs supporting just local breakend per category"),
 	BREAKEND_SOFTCLIP_QUAL("BSCQ", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Float, "Quality score of soft clips supporting just local breakend per category"),
 
-	CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY ("CIRPOS", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Confidence interval around remote breakend POS for imprecise variants"),
+	CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY ("CIRPOS", 2, VCFHeaderLineType.Integer, "Confidence interval around remote breakend POS for imprecise variants"),
 	
 	SELF_INTERSECTING ("SELF", 1, VCFHeaderLineType.Flag, "Indicates a breakpoint is self-intersecting"),
 	

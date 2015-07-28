@@ -12,7 +12,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import picard.cmdline.CommandLineProgramProperties;
@@ -22,6 +21,7 @@ import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
  * Extracts structural variation evidence and assembles breakends
@@ -84,22 +84,8 @@ public class Idsv extends CommandLineProgram {
     	ExecutorService halfthreadpool = null;
     	try {
     		hackSimpleCalls();
-    		threadpool = Executors.newFixedThreadPool(WORKER_THREADS, new ThreadFactory() {
-    			   @Override
-    			   public Thread newThread(Runnable runnable) {
-    			      Thread thread = Executors.defaultThreadFactory().newThread(runnable);
-    			      thread.setDaemon(true);
-    			      return thread;
-    			   }
-    			});
-    		halfthreadpool = Executors.newFixedThreadPool((int)Math.ceil(WORKER_THREADS/2.0), new ThreadFactory() {
- 			   @Override
- 			   public Thread newThread(Runnable runnable) {
- 			      Thread thread = Executors.defaultThreadFactory().newThread(runnable);
- 			      thread.setDaemon(true);
- 			      return thread;
- 			   }
- 			});
+    		threadpool = Executors.newFixedThreadPool(WORKER_THREADS, new ThreadFactoryBuilder().setDaemon(false).setNameFormat("Worker-%d").build());
+    		halfthreadpool = Executors.newFixedThreadPool((int)Math.ceil(WORKER_THREADS/2.0), new ThreadFactoryBuilder().setDaemon(false).setNameFormat("HalfWorker-%d").build());
     		log.info(String.format("Using %d worker threads", WORKER_THREADS));
 	    	ensureDictionariesMatch();
 	    	List<SAMEvidenceSource> samEvidence = createSamEvidenceSources();
