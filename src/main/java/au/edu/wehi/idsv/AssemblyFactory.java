@@ -102,14 +102,21 @@ public final class AssemblyFactory {
 	 * @param processContext
 	 * @return
 	 */
-	public static SAMRecordAssemblyEvidence incorporateRealignment(ProcessingContext processContext, SAMRecordAssemblyEvidence assembly, SAMRecord realignment) {
-		if (realignment == null) return assembly;
-		SAMRecordAssemblyEvidence a = (SAMRecordAssemblyEvidence)assembly;
-		if (realignment.getReadUnmappedFlag() || !processContext.getRealignmentParameters().realignmentPositionUnique(realignment)) {
-			// Breakend did not align well enough for us to call a breakpoint
-			return new SAMRecordAssemblyEvidence(a.getEvidenceSource(), assembly, realignment);
+	public static SAMRecordAssemblyEvidence incorporateRealignment(ProcessingContext processContext, SAMRecordAssemblyEvidence assembly, List<SAMRecord> realignments) {
+		if (realignments == null || realignments.size() == 0) return assembly;
+		if (realignments.size() == 1) {
+			SAMRecord realignment = realignments.get(0);
+			SAMRecordAssemblyEvidence a = (SAMRecordAssemblyEvidence)assembly;
+			if (realignment.getReadUnmappedFlag() || !processContext.getRealignmentParameters().realignmentPositionUnique(realignment)) {
+				// Breakend did not align well enough for us to call a breakpoint
+				return new SAMRecordAssemblyEvidence(a.getEvidenceSource(), assembly, realignment);
+			} else {
+				return new RealignedSAMRecordAssemblyEvidence(a.getEvidenceSource(), assembly, realignment);
+			}
 		} else {
-			return new RealignedSAMRecordAssemblyEvidence(a.getEvidenceSource(), assembly, realignment);
+			// multiple realignments = compound breakpoint
+			// TODO: check if hydration happens before we call assemblies
+			// (since we'll loose support information for compound breakpoints)
 		}
 	}
 	/**

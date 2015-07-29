@@ -21,6 +21,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.debruijn.positional.DirectedPositionalAssembler;
@@ -62,6 +64,10 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		this.maxReadLength = evidence.stream().mapToInt(s -> s.getMaxReadLength()).max().orElse(0);
 		this.maxMappedReadLength = evidence.stream().mapToInt(s -> Math.max(s.getMaxReadLength(), s.getMaxReadMappedLength())).max().orElse(0);
 		assert(maxSourceFragSize >= minSourceFragSize);
+	}
+	@Override
+	public int getRealignmentIterationCount() {
+		return 3;
 	}
 	public void ensureAssembled() {
 		ensureAssembled(null, null);
@@ -118,7 +124,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				includeRemote,
 				includeFiltered,
 				fsc.getAssemblyRawBamForChr(input, chr),
-				fsc.getRealignmentBamForChr(input, chr),
+				IntStream.range(0, getRealignmentIterationCount()).mapToObj(i -> fsc.getRealignmentBamForChr(input, chr, i)).collect(Collectors.toList()),
 				chr);
 		} else {
 			return samReadPairIterator(
@@ -136,7 +142,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 					includeRemote,
 					includeFiltered,
 					fsc.getAssemblyRawBam(input),
-					fsc.getRealignmentBam(input),
+					IntStream.range(0, getRealignmentIterationCount()).mapToObj(i -> fsc.getRealignmentBam(input, i)).collect(Collectors.toList()),
 					"");
 		} else {
 			return samReadPairIterator(
@@ -173,7 +179,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			boolean includeRemote,
 			boolean includeFiltered,
 			File breakend,
-			File realignment,
+			List<File> realignment,
 			String chr) {
 		if (!isProcessingComplete()) {
 			log.error("Assemblies not yet generated.");

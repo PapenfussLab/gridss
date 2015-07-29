@@ -62,10 +62,10 @@ public class FileSystemContext {
 	private static final String FORMAT_IDSV_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.idsv.txt";
 	private static final String FORMAT_SOFTLCIP_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.softclip.txt";
 	private static final String FORMAT_COVERAGE_BLACKLIST_BED = "%s" + COMMON_INITIAL_SUFFIX + ".coverage.blacklist.bed";
-	private static final String FORMAT_REALIGN_FASTQ = "%s" + COMMON_INITIAL_SUFFIX + ".realign.fq";
-	private static final String FORMAT_REALIGN_FASTQ_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign.fq";
-	private static final String FORMAT_REALIGN_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".realign" + SAM_SUFFIX;
-	private static final String FORMAT_REALIGN_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign" + SAM_SUFFIX;
+	private static final String FORMAT_REALIGN_FASTQ = "%s" + COMMON_INITIAL_SUFFIX + ".realign.%d.fq";
+	private static final String FORMAT_REALIGN_FASTQ_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign.%d.fq";
+	private static final String FORMAT_REALIGN_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".realign.%d" + SAM_SUFFIX;
+	private static final String FORMAT_REALIGN_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign.%d" + SAM_SUFFIX;
 	private static final String FORMAT_ASSEMBLY_RAW = "%s" + COMMON_INITIAL_SUFFIX + ".breakend" + SAM_SUFFIX;
 	private static final String FORMAT_ASSEMBLY_RAW_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.breakend" + SAM_SUFFIX;
 	private static final String FORMAT_BREAKPOINT_VCF_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s-%s.breakpoint" + VCF_SUFFIX;
@@ -187,17 +187,17 @@ public class FileSystemContext {
 	public File getSoftClipMetrics(File input) {
 		return new File(String.format(FORMAT_SOFTLCIP_METRICS, getStem(input)));
 	}
-	public File getRealignmentBam(File input) {
-		return new File(String.format(FORMAT_REALIGN_SAM, getStem(input)));
+	public File getRealignmentBam(File input, int iteration) {
+		return new File(String.format(FORMAT_REALIGN_SAM, getStem(input), iteration));
 	}
-	public File getRealignmentBamForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_REALIGN_SAM_PER_CHR, getStem(input), chromosome));
+	public File getRealignmentBamForChr(File input, String chromosome, int iteration) {
+		return new File(String.format(FORMAT_REALIGN_SAM_PER_CHR, getStem(input), chromosome, iteration));
 	}
-	public File getRealignmentFastq(File input) {
-		return new File(String.format(FORMAT_REALIGN_FASTQ, getStem(input)));
+	public File getRealignmentFastq(File input, int iteration) {
+		return new File(String.format(FORMAT_REALIGN_FASTQ, getStem(input), iteration));
 	}
-	public File getRealignmentFastqForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_REALIGN_FASTQ_CHR, getStem(input), chromosome));
+	public File getRealignmentFastqForChr(File input, String chromosome, int iteration) {
+		return new File(String.format(FORMAT_REALIGN_FASTQ_CHR, getStem(input), chromosome, iteration));
 	}
 	public File getFlagFile(File input, String flagname) {
 		return new File(String.format(FORMAT_FLAG_FILE, getStem(input), flagname));

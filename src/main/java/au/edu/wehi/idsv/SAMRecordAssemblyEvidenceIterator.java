@@ -17,14 +17,14 @@ public class SAMRecordAssemblyEvidenceIterator extends AbstractIterator<SAMRecor
 	private final ProcessingContext processContext;
 	private final AssemblyEvidenceSource source;
 	private final Iterator<SAMRecord> it;
-	private final Iterator<SAMRecord> rit;
-	private final SequentialRealignedBreakpointFactory factory;
+	private final List<Iterator<SAMRecord>> rit;
+	private final List<SequentialRealignedBreakpointFactory> factory;
 	private boolean includeBothBreakendsOfSpanningAssemblies;
 	public SAMRecordAssemblyEvidenceIterator(
 			ProcessingContext processContext,
 			AssemblyEvidenceSource source,
 			Iterator<SAMRecord> it,
-			Iterator<SAMRecord> realignedIt,
+			List<Iterator<SAMRecord>> realignedIt,
 			boolean includeBothBreakendsOfSpanningAssemblies) {
 		this.processContext = processContext;
 		this.source = source;
@@ -63,7 +63,9 @@ public class SAMRecordAssemblyEvidenceIterator extends AbstractIterator<SAMRecor
 	@Override
 	public void close() {
 		CloserUtil.close(it);
-		CloserUtil.close(rit);
+		for (Iterator<SAMRecord> i : rit) {
+			CloserUtil.close(i);
+		}
 	}
 	@Override
 	public void setTrackedBufferContext(String context) {

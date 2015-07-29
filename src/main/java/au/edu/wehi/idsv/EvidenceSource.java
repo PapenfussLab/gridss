@@ -12,6 +12,7 @@ public abstract class EvidenceSource {
 	public abstract int getMinConcordantFragmentSize();
 	protected final File input;
 	private final ProcessingContext processContext;
+	public abstract int getRealignmentIterationCount();
 	public ProcessingContext getContext() {
 		return processContext;
 	}
@@ -34,12 +35,14 @@ public abstract class EvidenceSource {
 	private String getBowtie2Script(int threads) {
 		StringBuilder sb = new StringBuilder();
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		if (processContext.shouldProcessPerChromosome()) {
-			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				sb.append(getBowtie2Script(threads, fsc.getRealignmentFastqForChr(input, seq.getSequenceName()), fsc.getRealignmentBamForChr(input, seq.getSequenceName())));
+		for (int i = 0; i < getRealignmentIterationCount(); i++) {
+			if (processContext.shouldProcessPerChromosome()) {
+				for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
+					sb.append(getBowtie2Script(threads, fsc.getRealignmentFastqForChr(input, seq.getSequenceName(), i), fsc.getRealignmentBamForChr(input, seq.getSequenceName(), i)));
+				}
+			} else {
+				sb.append(getBowtie2Script(threads, fsc.getRealignmentFastq(input, i), fsc.getRealignmentBam(input, i)));
 			}
-		} else {
-			sb.append(getBowtie2Script(threads, fsc.getRealignmentFastq(input), fsc.getRealignmentBam(input)));
 		}
 		return sb.toString();
 	}
@@ -63,14 +66,16 @@ public abstract class EvidenceSource {
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		List<File> bamList = new ArrayList<File>();
 		List<File> fastqList = new ArrayList<File>();
-		if (processContext.shouldProcessPerChromosome()) {
-			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				bamList.add(fsc.getRealignmentBamForChr(input, seq.getSequenceName()));
-				fastqList.add(fsc.getRealignmentFastqForChr(input, seq.getSequenceName()));
+		for (int i = 0; i < getRealignmentIterationCount(); i++) {
+			if (processContext.shouldProcessPerChromosome()) {
+				for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
+					bamList.add(fsc.getRealignmentBamForChr(input, seq.getSequenceName(), i));
+					fastqList.add(fsc.getRealignmentFastqForChr(input, seq.getSequenceName(), i));
+				}
+			} else {
+				bamList.add(fsc.getRealignmentBam(input, i));
+				fastqList.add(fsc.getRealignmentFastq(input, i));
 			}
-		} else {
-			bamList.add(fsc.getRealignmentBam(input));
-			fastqList.add(fsc.getRealignmentFastq(input));
 		}
 		return isRealignmentComplete(bamList, fastqList);
 	}

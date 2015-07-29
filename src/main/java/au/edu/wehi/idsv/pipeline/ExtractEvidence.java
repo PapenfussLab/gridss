@@ -95,14 +95,18 @@ public class ExtractEvidence implements Closeable {
 		if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) tryDelete(fsc.getMateBamUnsorted(source.getSourceFile()));
 		//if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) tryDelete(fsc.getMateBam(source.getSourceFile()));
 		if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) tryDelete(fsc.getSoftClipBam(source.getSourceFile()));
-		if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) tryDelete(fsc.getRealignmentFastq(source.getSourceFile()));
+		for (int i = 0; i < source.getRealignmentIterationCount(); i++) {
+			if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) tryDelete(fsc.getRealignmentFastq(source.getSourceFile(), i));
+		}
 		for (SAMSequenceRecord seqr : processContext.getReference().getSequenceDictionary().getSequences()) {
 			String seq = seqr.getSequenceName();
 			if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) tryDelete(fsc.getReadPairBamForChr(source.getSourceFile(), seq));
 			if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) tryDelete(fsc.getMateBamUnsortedForChr(source.getSourceFile(), seq));
 			//if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) tryDelete(fsc.getMateBamForChr(source.getSourceFile(), seq));
 			if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) tryDelete(fsc.getSoftClipBamForChr(source.getSourceFile(), seq));
-			if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) tryDelete(fsc.getRealignmentFastqForChr(source.getSourceFile(), seq));
+			for (int i = 0; i < source.getRealignmentIterationCount(); i++) {
+				if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) tryDelete(fsc.getRealignmentFastqForChr(source.getSourceFile(), seq, i));
+			}
 		}
 	}
 	private void tryDelete(File f) {
@@ -325,7 +329,9 @@ public class ExtractEvidence implements Closeable {
 	private void createOutputWriterPerGenome(final EnumSet<ProcessStep> steps, final SAMFileHeader svHeader, final SAMFileHeader mateHeader) {
 		// all writers map to the same one
 		if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) scwriters.add(processContext.getSamFileWriterFactory(true).makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getSoftClipBam(source.getSourceFile())));
-		if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) realignmentWriters.add(new FastqBreakpointWriter(processContext.getFastqWriterFactory().newWriter(processContext.getFileSystemContext().getRealignmentFastq(source.getSourceFile()))));
+		for (int i = 0; i < source.getRealignmentIterationCount(); i++) {
+			if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) realignmentWriters.add(new FastqBreakpointWriter(processContext.getFastqWriterFactory().newWriter(processContext.getFileSystemContext().getRealignmentFastq(source.getSourceFile(), i))));
+		}
 		if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) rpwriters.add(processContext.getSamFileWriterFactory(true).makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getReadPairBam(source.getSourceFile())));
 		if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) matewriters.add(processContext.getSamFileWriterFactory(false).makeBAMWriter(mateHeader, true, processContext.getFileSystemContext().getMateBamUnsorted(source.getSourceFile()), 0));
 		
@@ -337,7 +343,9 @@ public class ExtractEvidence implements Closeable {
 			final SAMFileHeader mateHeader) {
 		for (SAMSequenceRecord seq : dictionary.getSequences()) {
 			if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) scwriters.add(processContext.getSamFileWriterFactory(true).makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getSoftClipBamForChr(source.getSourceFile(), seq.getSequenceName())));
-			if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) realignmentWriters.add(new FastqBreakpointWriter(processContext.getFastqWriterFactory().newWriter(processContext.getFileSystemContext().getRealignmentFastqForChr(source.getSourceFile(), seq.getSequenceName()))));
+			for (int i = 0; i < source.getRealignmentIterationCount(); i++) {
+				if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) realignmentWriters.add(new FastqBreakpointWriter(processContext.getFastqWriterFactory().newWriter(processContext.getFileSystemContext().getRealignmentFastqForChr(source.getSourceFile(), seq.getSequenceName(), i))));
+			}
 			if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) rpwriters.add(processContext.getSamFileWriterFactory(true).makeSAMOrBAMWriter(svHeader, true, processContext.getFileSystemContext().getReadPairBamForChr(source.getSourceFile(), seq.getSequenceName())));
 			if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) matewriters.add(processContext.getSamFileWriterFactory(false).makeBAMWriter(mateHeader, true, processContext.getFileSystemContext().getMateBamUnsortedForChr(source.getSourceFile(), seq.getSequenceName()), 0));
 			
