@@ -98,6 +98,10 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     public float REALIGNMENT_MIN_BASE_QUALITY = new RealignmentParameters().minAverageQual;
     @Option(doc = "Minimum mapq of a realignment to be considered uniquely mapped", optional=true)
     public int REALIGNMENT_MAPQ_UNIQUE_THRESHOLD = new RealignmentParameters().mapqUniqueThreshold;
+    @Option(doc = "Maximum number of additional assembly contig fragments to attempt to realign. "
+    		+ "Increasing this value allows for correct breakpoint calling of assemblies spanning multiple breakpoints "
+    		+ "such as those formed during chromothripis.", optional=true)
+    public int ASSEMBLY_REALIGNMENT_ITERATORS = new RealignmentParameters().assemblyIterations;
     // --- Variant calling parameters  ---
     @Option(doc = "Number bases in which nearby evidence will be considered to support the same variant.", optional=true)
     public int BREAKEND_MARGIN = new VariantCallingParameters().breakendMargin;
@@ -192,6 +196,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 		rp.minLength = REALIGNMENT_MIN_BREAKEND_LENGTH;
 		rp.minAverageQual = REALIGNMENT_MIN_BASE_QUALITY;
 		rp.mapqUniqueThreshold = REALIGNMENT_MAPQ_UNIQUE_THRESHOLD;
+		rp.assemblyIterations = ASSEMBLY_REALIGNMENT_ITERATORS;
 		return rp;
 	}
 	private ReadPairParameters getReadPairParameters() {

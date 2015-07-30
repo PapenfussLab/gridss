@@ -237,6 +237,14 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		return null;
 	}
 	@Override
+	public byte[] getAnchorSequence() {
+		return null;
+	}
+	@Override
+	public byte[] getAnchorQuality() {
+		return null;
+	}
+	@Override
 	public boolean isBreakendExact() {
 		return false;
 	}

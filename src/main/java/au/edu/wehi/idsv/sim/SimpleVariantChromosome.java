@@ -74,7 +74,7 @@ public class SimpleVariantChromosome extends SimulatedChromosome {
 				.attribute(VcfSvConstants.SV_LENGTH_KEY, e.type == SvType.DEL ? -e.size : e.size)
 				.attribute(VcfSvConstants.END_KEY, genomicPosition)
 				.attribute(VcfSvConstants.SV_TYPE_KEY, e.type)
-				.attribute("ALT", altSeq)
+				//.attribute("ALT", altSeq)
 				.alleles(refBefore, "<" + e.type + ">");
 			if (altSeq.equalsIgnoreCase(new String(seq, genomicPosition - 1, getGenomicWidth(e.type, e.size) + 1))) {
 				builder.filter(VcfFilter.REFERENCE_ALLELE.filter());

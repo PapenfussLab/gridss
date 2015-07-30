@@ -144,7 +144,7 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 		if (pc.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord chr : SMALL_FA.getSequenceDictionary().getSequences()) {
 				SAMFileWriter writer = pc.getSamFileWriterFactory(false).makeSAMOrBAMWriter(pc.getBasicSamHeader(), true,
-						pc.getFileSystemContext().getRealignmentBamForChr(base, chr.getSequenceName()));
+						pc.getFileSystemContext().getRealignmentBamForChr(base, chr.getSequenceName(), 0));
 				for (int i = 0; i < evidence.size(); i++) {
 					if (realign.get(i) != null && evidence.get(i).getBreakendSummary().referenceIndex == chr.getSequenceIndex()) {
 						writer.addAlignment(realign.get(i));
@@ -155,7 +155,7 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 			}
 		} else {
 			SAMFileWriter writer = pc.getSamFileWriterFactory(false).makeSAMOrBAMWriter(pc.getBasicSamHeader(), true,
-					pc.getFileSystemContext().getRealignmentBam(base));
+					pc.getFileSystemContext().getRealignmentBam(base, 0));
 			for (int i = 0; i < evidence.size(); i++) {
 				if (realign.get(i) != null) {
 					writer.addAlignment(realign.get(i));

@@ -166,10 +166,10 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				withReadName("r3", Read(2, 3, "15M15S")));
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		createBAM(pc.getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, 
-				withReadName("0#1#fr1", Read(2, 10, "15M"))[0],
-				withReadName("1#2#fr2", Read(1, 10, "15M"))[0],
-				withReadName("2#3#fr3", Read(0, 10, "15M"))[0]
+		createBAM(pc.getFileSystemContext().getRealignmentBam(input, 0), SortOrder.unsorted, 
+				withReadName("0#1#0#fr1", Read(2, 10, "15M"))[0],
+				withReadName("1#2#0#fr2", Read(1, 10, "15M"))[0],
+				withReadName("2#3#0#fr3", Read(0, 10, "15M"))[0]
 		);
 		List<DirectedEvidence> result = Lists.newArrayList(source.iterator(true, true, false));
 		assertEquals(3, result.size());
@@ -188,10 +188,10 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				withReadName("r3", Read(2, 3, "15M15S")));
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		createBAM(pc.getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, 
-				withReadName("0#1#fr1", Read(2, 10, "15M"))[0],
-				withReadName("1#2#fr2", Read(1, 10, "15M"))[0],
-				withReadName("2#3#fr3", Read(0, 10, "15M"))[0]
+		createBAM(pc.getFileSystemContext().getRealignmentBam(input, 0), SortOrder.unsorted, 
+				withReadName("0#1#0#fr1", Read(2, 10, "15M"))[0],
+				withReadName("1#2#0#fr2", Read(1, 10, "15M"))[0],
+				withReadName("2#3#0#fr3", Read(0, 10, "15M"))[0]
 		);
 		source.completeSteps(ProcessStep.ALL_STEPS);
 		List<DirectedEvidence> result = Lists.newArrayList(source.iterator(false, false, true));
@@ -217,13 +217,13 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				withReadName("r3", Read(2, 3, "15S15M15S")));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		createBAM(getCommandlineContext().getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, 
-				withReadName("0#1#fr1", Read(2, 10, "15M"))[0],
-				withReadName("0#1#br1", Read(1, 15, "15M"))[0],
-				withReadName("1#2#fr2", Read(1, 10, "15M"))[0],
-				withReadName("1#2#br2", Unmapped(15))[0],
-				withReadName("2#3#fr3", Read(0, 10, "15M"))[0],
-				withReadName("2#3#br3", Read(0, 100, "15M"))[0]
+		createBAM(getCommandlineContext().getFileSystemContext().getRealignmentBam(input, 0), SortOrder.unsorted, 
+				withReadName("0#1#0#fr1", Read(2, 10, "15M"))[0],
+				withReadName("0#1#0#br1", Read(1, 15, "15M"))[0],
+				withReadName("1#2#0#fr2", Read(1, 10, "15M"))[0],
+				withReadName("1#2#0#br2", Unmapped(15))[0],
+				withReadName("2#3#0#fr3", Read(0, 10, "15M"))[0],
+				withReadName("2#3#0#br3", Read(0, 100, "15M"))[0]
 		);
 		List<RealignedSoftClipEvidence> result = Lists.newArrayList(Iterators.filter(source.iterator(true, true, false), RealignedSoftClipEvidence.class));
 		
@@ -240,13 +240,13 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				withReadName("r3", Read(2, 3, "15S15M15S")));
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		createBAM(pc.getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, 
-				withReadName("0#1#fr1", Read(2, 10, "15M"))[0],
-				withReadName("0#1#br1", Read(1, 15, "15M"))[0],
-				withReadName("1#2#fr2", Read(1, 10, "15M"))[0],
-				withReadName("1#2#br2", Unmapped(15))[0],
-				withReadName("2#3#fr3", Read(0, 10, "15M"))[0],
-				withReadName("2#3#br3", Read(0, 100, "15M"))[0]);
+		createBAM(pc.getFileSystemContext().getRealignmentBam(input, 0), SortOrder.unsorted, 
+				withReadName("0#1#0#fr1", Read(2, 10, "15M"))[0],
+				withReadName("0#1#0#br1", Read(1, 15, "15M"))[0],
+				withReadName("1#2#0#fr2", Read(1, 10, "15M"))[0],
+				withReadName("1#2#0#br2", Unmapped(15))[0],
+				withReadName("2#3#0#fr3", Read(0, 10, "15M"))[0],
+				withReadName("2#3#0#br3", Read(0, 100, "15M"))[0]);
 		source.completeSteps(ProcessStep.ALL_STEPS);
 		
 		List<RealignedRemoteSoftClipEvidence> remote = Lists.newArrayList(Iterators.filter(source.iterator(true, true, true), RealignedRemoteSoftClipEvidence.class));
@@ -264,8 +264,8 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				withReadName("r2", Read(1, 2, "15M15S")));
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		createBAM(pc.getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, 
-				withReadName("1#2#fr2", Read(1, 10, "15M"))[0]);
+		createBAM(pc.getFileSystemContext().getRealignmentBam(input, 0), SortOrder.unsorted, 
+				withReadName("1#2#0#fr2", Read(1, 10, "15M"))[0]);
 		source.completeSteps(ProcessStep.ALL_STEPS);
 		
 		List<DirectedEvidence> result = Lists.newArrayList(source.iterator(true, true, true));
@@ -282,13 +282,13 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				withReadName("r3", Read(2, 3, "15S15M15S")));
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		createBAM(pc.getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, 
-				withReadName("0#1#fr1", Read(2, 10, "15M"))[0],
-				withReadName("0#1#br1", Read(1, 15, "15M"))[0],
-				withReadName("1#2#fr2", Read(1, 10, "15M"))[0],
+		createBAM(pc.getFileSystemContext().getRealignmentBam(input, 0), SortOrder.unsorted, 
+				withReadName("0#1#0#fr1", Read(2, 10, "15M"))[0],
+				withReadName("0#1#0#br1", Read(1, 15, "15M"))[0],
+				withReadName("1#2#0#fr2", Read(1, 10, "15M"))[0],
 				//withReadName("1#2#br2", Unmapped(15))[0],
-				withReadName("2#3#fr3", Read(0, 10, "15M"))[0],
-				withReadName("2#3#br3", Read(0, 100, "15M"))[0]);
+				withReadName("2#3#0#fr3", Read(0, 10, "15M"))[0],
+				withReadName("2#3#0#br3", Read(0, 100, "15M"))[0]);
 		source.completeSteps(ProcessStep.ALL_STEPS);
 		
 		Lists.newArrayList(source.iterator(true, true, true));
@@ -400,15 +400,15 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 			in.add(withReadName("b_" + Integer.toString(i), Read(0, i, "10S1M"))[0]);
 			in.add(withReadName("c_" + Integer.toString(i), withSequence("NNNNNNNNNNN", Read(0, i, "1S10M")))[0]);
 			in.add(withReadName("d_" + Integer.toString(i), withSequence("NNNNNNNNNNN", Read(0, i, "10M1S")))[0]);
-			realn.add(withReadName(String.format("0#%d#fa_%d", i, i), withSequence("N", Read(1, 10, "1M")))[0]);
-			realn.add(withReadName(String.format("0#%d#bb_%d", i, i), withSequence("NNNNNNNNNN", Read(1, 10, "10M")))[0]);
-			realn.add(withReadName(String.format("0#%d#bc_%d", i, i), withSequence("N", Read(1, 10, "1M")))[0]);
-			realn.add(withReadName(String.format("0#%d#fd_%d", i, i), withSequence("NNNNNNNNNN", Read(1, 10, "10M")))[0]);
+			realn.add(withReadName(String.format("0#%d#0#fa_%d", i, i), withSequence("N", Read(1, 10, "1M")))[0]);
+			realn.add(withReadName(String.format("0#%d#0#bb_%d", i, i), withSequence("NNNNNNNNNN", Read(1, 10, "10M")))[0]);
+			realn.add(withReadName(String.format("0#%d#0#bc_%d", i, i), withSequence("N", Read(1, 10, "1M")))[0]);
+			realn.add(withReadName(String.format("0#%d#0#fd_%d", i, i), withSequence("NNNNNNNNNN", Read(1, 10, "10M")))[0]);
 		}
 		createInput(in);
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		createBAM(pc.getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, realn.toArray(new SAMRecord[realn.size()]));
+		createBAM(pc.getFileSystemContext().getRealignmentBam(input, 0), SortOrder.unsorted, realn.toArray(new SAMRecord[realn.size()]));
 		source.completeSteps(ProcessStep.ALL_STEPS);
 		List<DirectedEvidence> result = Lists.newArrayList(source.iterator(false, true, false));
 		assertEquals(in.size(), result.size());

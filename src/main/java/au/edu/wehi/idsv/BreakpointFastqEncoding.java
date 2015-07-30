@@ -46,7 +46,9 @@ public class BreakpointFastqEncoding {
 		return Integer.parseInt(fastqid.split("#")[1]);
 	}
 	public static int getEncodedReadOffset(String fastqid) {
-		return Integer.parseInt(fastqid.split("#")[2]);
+		String[] split =  fastqid.split("#");
+		if (split.length > 2) return Integer.parseInt(split[2]);
+		return 0;
 	}
 	public static String getEncodedID(String fastqid) {
 		String[] split = fastqid.split("#");
@@ -67,8 +69,12 @@ public class BreakpointFastqEncoding {
 		return fq;
 	}
 	public static FastqRecord getRealignmentFastq(byte[] seq, byte[] qual, int referenceIndex, int startPosition, int breakendOffset, String evidenceID) {
-		String seqHeaderPrefix = String.format("%s#%d#%d#%s", referenceIndex, startPosition, breakendOffset, evidenceID);
+		String seqHeaderPrefix = getEncodedFastqID(referenceIndex, startPosition, breakendOffset, evidenceID);
 		FastqRecord fq = new FastqRecord(seqHeaderPrefix, new String(seq, Charsets.US_ASCII), "", SAMUtils.phredToFastq(qual));
 		return fq;
+	}
+	public static String getEncodedFastqID(int referenceIndex, int startPosition, int breakendOffset, String evidenceID) {
+		String seqHeaderPrefix = String.format("%s#%d#%d#%s", referenceIndex, startPosition, breakendOffset, evidenceID);
+		return seqHeaderPrefix;
 	}
 }

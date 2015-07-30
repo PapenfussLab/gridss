@@ -218,7 +218,7 @@ public class IntermediateFilesTest extends TestHelper {
 		return getRecords(getCommandlineContext().getFileSystemContext().getAssemblyRawBam(source.getFileIntermediateDirectoryBasedOn()));
 	}
 	public List<FastqRecord> getFastqRecords(final EvidenceSource source) {
-		return getFastqRecords(getCommandlineContext().getFileSystemContext().getRealignmentFastq(source.getFileIntermediateDirectoryBasedOn()));
+		return getFastqRecords(getCommandlineContext().getFileSystemContext().getRealignmentFastq(source.getFileIntermediateDirectoryBasedOn(), 0));
 	}
 	public List<SAMRecord> getRP(final SAMEvidenceSource source) {
 		return getRecords(getCommandlineContext().getFileSystemContext().getReadPairBam(source.getFileIntermediateDirectoryBasedOn()));
@@ -257,12 +257,12 @@ public class IntermediateFilesTest extends TestHelper {
 			return Lists.newArrayList(Iterables.concat(Iterables.transform(getCommandlineContext().getDictionary().getSequences(), new Function<SAMSequenceRecord, Iterable<FastqRecord>>() {
 				@Override
 				public Iterable<FastqRecord> apply(SAMSequenceRecord arg0) {
-					return IntermediateFilesTest.this.getFastqRecords(getCommandlineContext().getFileSystemContext().getRealignmentFastqForChr(source.getFileIntermediateDirectoryBasedOn(), arg0.getSequenceName()));
+					return IntermediateFilesTest.this.getFastqRecords(getCommandlineContext().getFileSystemContext().getRealignmentFastqForChr(source.getFileIntermediateDirectoryBasedOn(), arg0.getSequenceName(), 0));
 				}
 			})));
 		}
 		public List<FastqRecord> getFastqRecords(final EvidenceSource source, final String chr) {
-			return IntermediateFilesTest.this.getFastqRecords(getCommandlineContext().getFileSystemContext().getRealignmentFastqForChr(source.getFileIntermediateDirectoryBasedOn(), chr));
+			return IntermediateFilesTest.this.getFastqRecords(getCommandlineContext().getFileSystemContext().getRealignmentFastqForChr(source.getFileIntermediateDirectoryBasedOn(), chr, 0));
 		}
 		public List<SAMRecord> getRP(final SAMEvidenceSource source, String chr) {
 			return getRecords(getCommandlineContext().getFileSystemContext().getReadPairBamForChr(source.getFileIntermediateDirectoryBasedOn(), chr));

@@ -17,10 +17,10 @@ public class SequentialSoftClipRealignedRemoteBreakpointFactoryTest extends Inte
 	@Test
 	public void should_get_soft_clip_for_realignment() {
 		SAMRecord[] realigned = new SAMRecord[] {
-			withReadName("0#1#fr1", Read(2, 10, "15M"))[0],
-			withReadName("1#2#fr2", Read(1, 10, "15M"))[0],
-			withReadName("1#2#br2", Read(1, 15, "15M"))[0],
-			withReadName("2#3#fr3", Read(0, 10, "15M"))[0],
+			withReadName("0#1#0#fr1", Read(2, 10, "15M"))[0],
+			withReadName("1#2#0#fr2", Read(1, 10, "15M"))[0],
+			withReadName("1#2#0#br2", Read(1, 15, "15M"))[0],
+			withReadName("2#3#0#fr3", Read(0, 10, "15M"))[0],
 		};
 		SAMRecord[] softClip = new SAMRecord[] {
 			withReadName("r1", Read(0, 1, "15S15M15S"))[0],
@@ -31,7 +31,7 @@ public class SequentialSoftClipRealignedRemoteBreakpointFactoryTest extends Inte
 		ProcessingContext processContext = getCommandlineContext(false);
 		SAMEvidenceSource source = new SAMEvidenceSource(processContext, input, 0);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		createBAM(processContext.getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, realigned);
+		createBAM(processContext.getFileSystemContext().getRealignmentBam(input, 0), SortOrder.unsorted, realigned);
 		SortRealignedSoftClips srs = new SortRealignedSoftClips(processContext, source);
 		srs.process(EnumSet.allOf(ProcessStep.class));
 		srs.close();
@@ -42,10 +42,10 @@ public class SequentialSoftClipRealignedRemoteBreakpointFactoryTest extends Inte
 		SequentialSoftClipRealignedRemoteBreakpointFactory bfactory = new SequentialSoftClipRealignedRemoteBreakpointFactory(Iterators.peekingIterator(getRSC(source).iterator()), BWD);
 		
 		SAMRecord[] orderedRealigned = new SAMRecord[] {
-				withReadName("2#3#fr3", Read(0, 10, "15M"))[0],
-				withReadName("1#2#fr2", Read(1, 10, "15M"))[0],
-				withReadName("2#3#br2", Read(1, 15, "15M"))[0],
-				withReadName("0#1#fr1", Read(2, 10, "15M"))[0],
+				withReadName("2#3#0#fr3", Read(0, 10, "15M"))[0],
+				withReadName("1#2#0#fr2", Read(1, 10, "15M"))[0],
+				withReadName("2#3#0#br2", Read(1, 15, "15M"))[0],
+				withReadName("0#1#0#fr1", Read(2, 10, "15M"))[0],
 			};
 		assertEquals("r3", ffactory.findAssociatedSAMRecord(orderedRealigned[0]).getReadName());
 		assertEquals("r2", ffactory.findAssociatedSAMRecord(orderedRealigned[1]).getReadName());

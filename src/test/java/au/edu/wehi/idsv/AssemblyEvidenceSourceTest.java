@@ -16,7 +16,7 @@ import com.google.common.collect.Lists;
 
 public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 	private void writeRealignment(ProcessingContext pc, EvidenceSource source, SAMRecord... records) {
-		createBAM(pc.getFileSystemContext().getRealignmentBam(source.getFileIntermediateDirectoryBasedOn()), SortOrder.coordinate, records);
+		createBAM(pc.getFileSystemContext().getRealignmentBam(source.getFileIntermediateDirectoryBasedOn(), 0), SortOrder.coordinate, records);
 	}
 	@Test
 	public void should_write_fastq() {

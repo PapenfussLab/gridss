@@ -26,6 +26,10 @@ public class EvidenceSourceTest extends IntermediateFilesTest {
 		public int getMinConcordantFragmentSize() {
 			return 0;
 		}
+		@Override
+		public int getRealignmentIterationCount() {
+			return 1;
+		}
 	}
 	@Test
 	public void getFileIntermediateDirectoryBasedOn_should_be_input_file() {
@@ -44,38 +48,38 @@ public class EvidenceSourceTest extends IntermediateFilesTest {
 		FileSystemContext fsc = getCommandlineContext(false).getFileSystemContext();
 		EvidenceSource es = new TestEvidenceSource(false, input);
 		
-		Files.write(new byte[] { '>' }, fsc.getRealignmentFastq(input));
-		Files.write(new byte[] { '#' }, fsc.getRealignmentBam(input));
+		Files.write(new byte[] { '>' }, fsc.getRealignmentFastq(input, 0));
+		Files.write(new byte[] { '#' }, fsc.getRealignmentBam(input, 0));
 		assertEquals("", es.getRealignmentScript(1));
 	}
 	@Test
 	public void getRealignmentScript_should_not_write_realignment_empty_fastq() throws IOException {
 		FileSystemContext fsc = getCommandlineContext(false).getFileSystemContext();
 		EvidenceSource es = new TestEvidenceSource(false, input);		
-		Files.write(new byte[0], fsc.getRealignmentFastq(input));
+		Files.write(new byte[0], fsc.getRealignmentFastq(input, 0));
 		assertEquals("", es.getRealignmentScript(1));
 	}
 	@Test
 	public void getRealignmentScript_should_write_realignment_for_fastq_records() throws IOException {
 		FileSystemContext fsc = getCommandlineContext(false).getFileSystemContext();
 		EvidenceSource es = new TestEvidenceSource(false, input);		
-		Files.write(new byte[] { '>' }, fsc.getRealignmentFastq(input));
+		Files.write(new byte[] { '>' }, fsc.getRealignmentFastq(input, 0));
 		assertNotEquals("", es.getRealignmentScript(1));
 	}
 	@Test
 	public void getRealignmentScript_should_write_realignment_for_out_of_date_bam() throws IOException, InterruptedException {
 		FileSystemContext fsc = getCommandlineContext(false).getFileSystemContext();
 		EvidenceSource es = new TestEvidenceSource(false, input);
-		Files.write(new byte[] { '#' }, fsc.getRealignmentBam(input));
+		Files.write(new byte[] { '#' }, fsc.getRealignmentBam(input, 0));
 		Thread.sleep(1); // wait 1ms so timestamps are different
-		Files.write(new byte[] { '>' }, fsc.getRealignmentFastq(input));
+		Files.write(new byte[] { '>' }, fsc.getRealignmentFastq(input, 0));
 		assertNotEquals("", es.getRealignmentScript(1));
 	}
 	@Test
 	public void getRealignmentScript_should_default_to_bowtie2() throws IOException {
 		FileSystemContext fsc = getCommandlineContext(false).getFileSystemContext();
 		EvidenceSource es = new TestEvidenceSource(false, input);
-		Files.write(new byte[] { '>' }, fsc.getRealignmentFastq(input));
+		Files.write(new byte[] { '>' }, fsc.getRealignmentFastq(input, 0));
 		String script = es.getRealignmentScript(1);
 		assertTrue(script.contains("bowtie2"));
 	}

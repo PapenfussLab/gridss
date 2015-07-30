@@ -107,7 +107,13 @@ public class SoftClipEvidence implements DirectedEvidence {
 		return location.direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipBaseQualities(record) : SAMRecordUtil.getStartSoftClipBaseQualities(record);
 	}
 	public byte[] getAnchorSequence() {
-		byte[] data = record.getReadBases();
+		return getAnchor(record.getReadBases());
+	}
+	@Override
+	public byte[] getAnchorQuality() {
+		return getAnchor(record.getBaseQualities());
+	}
+	private byte[] getAnchor(byte[] data) {
 		int len = data.length - getSoftClipLength();
 		if (location.direction == BreakendDirection.Forward) {
 			return Arrays.copyOfRange(data, 0, len);

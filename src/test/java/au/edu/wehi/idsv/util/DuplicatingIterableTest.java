@@ -91,9 +91,9 @@ public class DuplicatingIterableTest {
 			Integer result = destination.take();
 			assert(result <= i); // no guarantees about threading order
 		}
-		Thread.sleep(1);
+		Thread.sleep(50);
 		assertTrue(destination.isEmpty());
-		Thread.sleep(1);
+		Thread.sleep(50);
 		for (int i = 0; i < producers.length; i++) {
 			assertFalse(producers[i].isAlive());
 		}

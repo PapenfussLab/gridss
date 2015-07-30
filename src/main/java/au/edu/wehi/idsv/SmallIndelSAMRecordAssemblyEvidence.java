@@ -26,6 +26,7 @@ public class SmallIndelSAMRecordAssemblyEvidence extends RealignedSAMRecordAssem
 	public SmallIndelSAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecord assembly) {
 		super(source, createFwdAnchored(assembly), ImmutableList.of(createFwdRealigned(assembly)));
 		this.assembly = assembly;
+		getRemoteSAMRecord().setMappingQuality(getSAMRecord().getMappingQuality());
 		assert(sanityCheck());
 	}
 	/**
@@ -35,6 +36,7 @@ public class SmallIndelSAMRecordAssemblyEvidence extends RealignedSAMRecordAssem
 	private SmallIndelSAMRecordAssemblyEvidence(SmallIndelSAMRecordAssemblyEvidence assembly) {
 		super(assembly.getEvidenceSource(), createBwdAnchored(assembly.getBackingRecord()), ImmutableList.of(createBwdRealigned(assembly.getBackingRecord())));
 		this.assembly = assembly.assembly;
+		getRemoteSAMRecord().setMappingQuality(getSAMRecord().getMappingQuality());
 	}
 	/**
 	 * Emulates the anchored portion as if the assembly was a split read mapping
@@ -60,12 +62,16 @@ public class SmallIndelSAMRecordAssemblyEvidence extends RealignedSAMRecordAssem
 	private static SAMRecord createFwdRealigned(final SAMRecord r) {
 		SAMRecord read = createBwdSoftClipped(r);
 		SAMRecordUtil.trimSoftClips(read, CigarUtil.readLength(CigarUtil.splitAtLargestIndel(r.getCigar().getCigarElements()).get(0)), 0);
+		//read.setReadName(BreakpointFastqEncoding.getEncodedFastqID(r.getReferenceIndex(), createFwdAnchored(r).getAlignmentStart(), 0, getEvidenceID(r, BreakendDirection.Forward)));
+		read.setMappingQuality(SAMRecord.UNKNOWN_MAPPING_QUALITY); // hack to force remote portion of assembly to not be mapq filtered
 		return read;
 	}
 	private static SAMRecord createBwdRealigned(final SAMRecord r) {
 		SAMRecord read = createFwdSoftClipped(r);
 		// Realigned read should not include bases mapped to the anchored read
 		SAMRecordUtil.trimSoftClips(read, 0, CigarUtil.readLength(CigarUtil.splitAtLargestIndel(r.getCigar().getCigarElements()).get(2)));
+		//read.setReadName(BreakpointFastqEncoding.getEncodedFastqID(r.getReferenceIndex(), createBwdAnchored(r).getAlignmentStart(), 0, getEvidenceID(r, BreakendDirection.Forward)));
+		read.setMappingQuality(SAMRecord.UNKNOWN_MAPPING_QUALITY); // hack to force remote portion of assembly to not be mapq filtered
 		return read;
 	}
 	/**

@@ -130,4 +130,24 @@ public class CigarUtil {
 		}
 		return result;
 	}
+	public static void addStartSoftClip(List<CigarElement> cigar, int softClippedBaseCount) {
+		while (cigar.get(0).getOperator() == CigarOperator.H) {
+			cigar.remove(0);
+		}
+		if (cigar.get(0).getOperator() == CigarOperator.SOFT_CLIP) {
+			cigar.set(0, new CigarElement(cigar.get(0).getLength() + softClippedBaseCount, CigarOperator.SOFT_CLIP));
+		} else {
+			cigar.add(0, new CigarElement(softClippedBaseCount, CigarOperator.SOFT_CLIP));
+		}
+	}
+	public static void addEndSoftClip(List<CigarElement> cigar, int softClippedBaseCount) {
+		while (cigar.get(cigar.size() - 1).getOperator() == CigarOperator.H) {
+			cigar.remove(cigar.size() - 1);
+		}
+		if (cigar.get(cigar.size() - 1).getOperator() == CigarOperator.SOFT_CLIP) {
+			cigar.set(cigar.size() - 1, new CigarElement(cigar.get(cigar.size() - 1).getLength() + softClippedBaseCount, CigarOperator.SOFT_CLIP));
+		} else {
+			cigar.add(new CigarElement(softClippedBaseCount, CigarOperator.SOFT_CLIP));
+		}
+	}
 }

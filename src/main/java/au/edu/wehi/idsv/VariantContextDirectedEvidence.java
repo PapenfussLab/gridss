@@ -48,6 +48,14 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 		return null;
 	}
 	@Override
+	public byte[] getAnchorSequence() {
+		return null;
+	}
+	@Override
+	public byte[] getAnchorQuality() {
+		return null;
+	}
+	@Override
 	public boolean isValid() {
 		return breakend.location != null;
 	}

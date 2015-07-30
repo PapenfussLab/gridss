@@ -9,6 +9,8 @@ import htsjdk.samtools.SAMUtils;
 
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+
 import au.edu.wehi.idsv.sam.SamTags;
 
 
@@ -22,6 +24,9 @@ public class SmallIndelSAMRecordAssemblyEvidenceTest extends TestHelper {
 		SmallIndelSAMRecordAssemblyEvidence e = new SmallIndelSAMRecordAssemblyEvidence(AES(), r);
 		e.hydrateEvidenceSet(evidence);
 		e.annotateAssembly();
+		e.getBackingRecord().setMappingQuality(50);
+		e.getSAMRecord().setMappingQuality(50);
+		e.getRemoteSAMRecord().setMappingQuality(50);
 		return e;
 	}
 	private void check_matches(int position, String cigar, String bases,
@@ -110,7 +115,7 @@ public class SmallIndelSAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertTrue(e.asRemote().isSpanningAssembly());
 		assertTrue(AssemblyFactory.hydrate(AES(), e.getBackingRecord()).isSpanningAssembly());
 		assertTrue(AssemblyFactory.hydrate(AES(), e.getSAMRecord()).isSpanningAssembly());
-		assertTrue(AssemblyFactory.incorporateRealignment(getContext(), AssemblyFactory.hydrate(AES(), e.getSAMRecord()), e.getRemoteSAMRecord()).isSpanningAssembly());
+		assertTrue(AssemblyFactory.incorporateRealignment(getContext(), AssemblyFactory.hydrate(AES(), e.getSAMRecord()), ImmutableList.of(e.getRemoteSAMRecord())).isSpanningAssembly());
 	}
 	@Test
 	public void read_pair_conversion_soft_clip_in_correct_direction() {
@@ -124,6 +129,7 @@ public class SmallIndelSAMRecordAssemblyEvidenceTest extends TestHelper {
 		r.setBaseQualities(B("_______________________________________________________________________________________________________________________________________@<<<<<<<<<>ACEGIKMOQSUWY[]_______________________________________________________________________________________________________________________________________________________________________________________________________"));
 		r.setAttribute("bc", 147);
 		r.setAttribute("es", "RbST-E00106:108:H03M0ALXX:1:1118:24253:3735/2 fST-E00106:108:H03M0ALXX:1:1205:2583:30439/1 fST-E00106:108:H03M0ALXX:1:2207:15443:7989/2");
+		r.setMappingQuality(SAMRecord.UNKNOWN_MAPPING_QUALITY);
 		SmallIndelSAMRecordAssemblyEvidence e = (SmallIndelSAMRecordAssemblyEvidence)AssemblyFactory.hydrate(AES(), r);
 		assertEquals("136M224S", e.getSAMRecord().getCigarString());
 		assertEquals(10603, e.getSAMRecord().getAlignmentStart());

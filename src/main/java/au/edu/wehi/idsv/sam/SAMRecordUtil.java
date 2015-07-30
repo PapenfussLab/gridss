@@ -344,6 +344,14 @@ public class SAMRecordUtil {
 	 * @param second second in pair
 	 */
 	public static void pairReads(SAMRecord first, SAMRecord second) {
+		// SAMv1 S2.4
+		if (first.getReadUnmappedFlag() && !second.getReadUnmappedFlag()) {
+			first.setReferenceIndex(second.getReferenceIndex());
+			first.setAlignmentStart(second.getAlignmentStart());
+		} else if (second.getReadUnmappedFlag() && !first.getReadUnmappedFlag()) {
+			second.setReferenceIndex(first.getReferenceIndex());
+			second.setAlignmentStart(first.getAlignmentStart());
+		}
 		first.setReadPairedFlag(true);
 		first.setFirstOfPairFlag(true);
 		first.setSecondOfPairFlag(false);

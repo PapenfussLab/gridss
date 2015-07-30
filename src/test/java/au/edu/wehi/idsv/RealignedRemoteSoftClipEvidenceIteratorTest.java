@@ -14,10 +14,10 @@ public class RealignedRemoteSoftClipEvidenceIteratorTest extends TestHelper {
 	@Test
 	public void should_iterate_over_remote_coordinate_as_local() {
 		SAMRecord[] orderedRealigned = new SAMRecord[] {
-			withReadName("2#3#fr3", Read(0, 10, "15M"))[0],
-			withReadName("1#2#fr2", Read(1, 10, "15M"))[0],
-			withReadName("0#1#fr1", Read(1, 15, "15M"))[0],
-			withReadName("2#3#br2", Read(2, 10, "15M"))[0],
+			withReadName("2#3#0#fr3", Read(0, 10, "15M"))[0],
+			withReadName("1#2#0#fr2", Read(1, 10, "15M"))[0],
+			withReadName("0#1#0#fr1", Read(1, 15, "15M"))[0],
+			withReadName("2#3#0#br2", Read(2, 10, "15M"))[0],
 			
 		};		
 		SAMRecord[] softClip = new SAMRecord[] {

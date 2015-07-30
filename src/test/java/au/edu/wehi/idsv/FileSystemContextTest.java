@@ -72,8 +72,8 @@ public class FileSystemContextTest {
 		testFileAssertMatch("test.bam.idsv.rpmate.bam", C().getMateBam(TEST_BAM));
 		testFileAssertMatch("test.bam.idsv.metrics.idsv.txt", C().getIdsvMetrics(TEST_BAM));
 		testFileAssertMatch("test.bam.idsv.metrics.insertsize.txt", C().getInsertSizeMetrics(TEST_BAM));
-		testFileAssertMatch("test.bam.idsv.realign.fq", C().getRealignmentFastq(TEST_BAM));
-		testFileAssertMatch("test.bam.idsv.realign.bam", C().getRealignmentBam(TEST_BAM));
+		testFileAssertMatch("test.bam.idsv.realign.0.fq", C().getRealignmentFastq(TEST_BAM, 0));
+		testFileAssertMatch("test.bam.idsv.realign.0.bam", C().getRealignmentBam(TEST_BAM, 0));
 		testFileAssertMatch("test.bam.idsv.breakend.bam", C().getAssemblyRawBam(TEST_BAM));
 		testFileAssertMatch("test.bam.idsv.breakpoint.vcf", C().getBreakpointVcf(TEST_BAM));
 	}
@@ -82,8 +82,8 @@ public class FileSystemContextTest {
 		testFileAssertMatch("test.bam.idsv.chr.rp.bam", C().getReadPairBamForChr(TEST_BAM, "chr"));
 		testFileAssertMatch("test.bam.idsv.chr.sc.bam", C().getSoftClipBamForChr(TEST_BAM, "chr"));
 		testFileAssertMatch("test.bam.idsv.chr.rpmate.bam", C().getMateBamForChr(TEST_BAM, "chr"));
-		testFileAssertMatch("test.bam.idsv.chr.realign.fq", C().getRealignmentFastqForChr(TEST_BAM, "chr"));
-		testFileAssertMatch("test.bam.idsv.chr.realign.bam", C().getRealignmentBamForChr(TEST_BAM, "chr"));
+		testFileAssertMatch("test.bam.idsv.chr.realign.0.fq", C().getRealignmentFastqForChr(TEST_BAM, "chr", 0));
+		testFileAssertMatch("test.bam.idsv.chr.realign.0.bam", C().getRealignmentBamForChr(TEST_BAM, "chr", 0));
 		testFileAssertMatch("test.bam.idsv.chr.breakend.bam", C().getAssemblyRawBamForChr(TEST_BAM, "chr"));
 		testFileAssertMatch("test.bam.idsv.chr1-chr2.breakpoint.vcf", C().getBreakpointVcf(TEST_BAM, "chr1", "chr2"));
 	}

@@ -67,7 +67,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	}
 	@Override
 	public int getRealignmentIterationCount() {
-		return 1;
+		return getContext().getRealignmentParameters().assemblyIterations;
 	}
 	public void ensureAssembled() {
 		ensureAssembled(null, null);

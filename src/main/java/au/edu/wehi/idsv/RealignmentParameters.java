@@ -21,6 +21,10 @@ public class RealignmentParameters {
 	 * if a realignment record is required a no record is found.
 	 */
 	public boolean requireRealignment = true;
+	/**
+	 * Number of realignment iterations performed
+	 */
+	public int assemblyIterations = 1;
 	public boolean shouldRealignBreakend(SoftClipEvidence evidence) {
 		if (evidence.getBreakendSummary() instanceof BreakpointSummary) return false;
 		return evidence.getSoftClipLength() >= minLength

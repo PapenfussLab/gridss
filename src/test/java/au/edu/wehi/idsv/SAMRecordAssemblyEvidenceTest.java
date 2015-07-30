@@ -278,14 +278,13 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void realign_should_turn_reference_bubble_into_reference_assembly() {
-		SmallIndelSAMRecordAssemblyEvidence ass = (SmallIndelSAMRecordAssemblyEvidence)AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), null,
+		SAMRecordAssemblyEvidence ass = (SmallIndelSAMRecordAssemblyEvidence)AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), null,
 				0, 10, 1,
 				0, 17, 1,
 				B("AAAAAAAA"),
 				B("AAAAAAAA"), new int[] {0, 0});
-		ass = (SmallIndelSAMRecordAssemblyEvidence)ass.realign(50, true);
+		ass = ass.realign(50, true);
 		assertTrue(ass.isReferenceAssembly());
-		assertEquals("8M", ass.getBackingRecord().getCigarString());
 	}
 	@Rule
     public TemporaryFolder testFolder = new TemporaryFolder();

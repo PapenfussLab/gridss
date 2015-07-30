@@ -104,8 +104,14 @@ public final class AssemblyFactory {
 	 */
 	public static SAMRecordAssemblyEvidence incorporateRealignment(ProcessingContext processContext, SAMRecordAssemblyEvidence assembly, List<SAMRecord> realignments) {
 		if (realignments == null || realignments.size() == 0) return assembly;
-		CompoundBreakendAlignment alignment = new CompoundBreakendAlignment(processContext.getRealignmentParameters(), assembly.getBreakendSummary(), assembly.getAssemblyAnchorSequence(), realignments);
-		if (alignment.getPrimaryBreakend() instanceof DirectedBreakpoint) {
+		CompoundBreakendAlignment alignment = new CompoundBreakendAlignment(processContext, assembly.getSAMRecord().getHeader(),
+				assembly.getBreakendSummary(),
+				assembly.getAnchorSequence(),
+				assembly.getAnchorQuality(),
+				assembly.getBreakendSequence(),
+				assembly.getBreakendQuality(),
+				realignments);
+		if (!alignment.getSimpleBreakendRealignment().getReadUnmappedFlag()) {
 			return new RealignedSAMRecordAssemblyEvidence(assembly.getEvidenceSource(), assembly, realignments);
 		} else {
 			return new SAMRecordAssemblyEvidence(assembly.getEvidenceSource(), assembly, realignments);
@@ -119,7 +125,7 @@ public final class AssemblyFactory {
 	 */
 	public static SAMRecordAssemblyEvidence hydrate(AssemblyEvidenceSource source, SAMRecord record) {
 		BreakendDirection dir = SAMRecordAssemblyEvidence.getBreakendDirection(record);
-		if (dir == null || SAMRecordUtil.getSoftClipLength(record, dir) == 0) {
+		if ((dir == null || SAMRecordUtil.getSoftClipLength(record, dir) == 0) && CigarUtil.containsIndel(record.getCigar())) {
 			return new SmallIndelSAMRecordAssemblyEvidence(source,  record);
 		} else {
 			return new SAMRecordAssemblyEvidence(source, record, null);
@@ -141,6 +147,7 @@ public final class AssemblyFactory {
 		assert(baseCalls.length == baseQuals.length);
 		assert(breakend != null);
 		SAMRecord record = new SAMRecord(samFileHeader);
+		record.setMappingQuality(SAMRecord.UNKNOWN_MAPPING_QUALITY);
 		record.setReferenceIndex(breakend.referenceIndex);
 		record.setReadName(source.getContext().getAssemblyIdGenerator().generate(breakend, baseCalls, startAnchoredBaseCount, endAnchoredBaseCount));
 		if (startAnchoredBaseCount == 0 && endAnchoredBaseCount == 0) {

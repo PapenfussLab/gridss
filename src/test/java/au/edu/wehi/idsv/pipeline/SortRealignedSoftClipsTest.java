@@ -35,10 +35,10 @@ public class SortRealignedSoftClipsTest extends IntermediateFilesTest {
 						return Integer.parseInt(arg0.getReadName().split("#")[0]) == seq.getSequenceIndex();
 					}
 				}));
-				createBAM(processContext.getFileSystemContext().getRealignmentBamForChr(input, seq.getSequenceName()), SortOrder.unsorted, forchr.toArray(new SAMRecord[forchr.size()]));
+				createBAM(processContext.getFileSystemContext().getRealignmentBamForChr(input, seq.getSequenceName(), 0), SortOrder.unsorted, forchr.toArray(new SAMRecord[forchr.size()]));
 			}
 		} else {
-			createBAM(processContext.getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, realign);
+			createBAM(processContext.getFileSystemContext().getRealignmentBam(input, 0), SortOrder.unsorted, realign);
 		}
 		SortRealignedSoftClips srs = new SortRealignedSoftClips(processContext, source);
 		srs.process(EnumSet.allOf(ProcessStep.class));
@@ -51,9 +51,9 @@ public class SortRealignedSoftClipsTest extends IntermediateFilesTest {
 				withReadName("r2", Read(1, 2, "15M15S")),
 				withReadName("r3", Read(2, 3, "15M15S")));
 		go(false,
-				withReadName("0#1#fr1", Read(2, 10, "15M"))[0],
-				withReadName("1#2#fr2", Read(1, 10, "15M"))[0],
-				withReadName("2#3#fr3", Read(0, 10, "15M"))[0]
+				withReadName("0#1#0#fr1", Read(2, 10, "15M"))[0],
+				withReadName("1#2#0#fr2", Read(1, 10, "15M"))[0],
+				withReadName("2#3#0#fr3", Read(0, 10, "15M"))[0]
 		);
 		assertEquals(3, getRSC(source).size());
 		assertEquals("r3", getRSC(source).get(0).getReadName());
@@ -61,17 +61,17 @@ public class SortRealignedSoftClipsTest extends IntermediateFilesTest {
 		assertEquals("r1", getRSC(source).get(2).getReadName());
 		
 		assertEquals(3, getRRR(source).size());
-		assertEquals("2#3#fr3", getRRR(source).get(0).getReadName());
-		assertEquals("1#2#fr2", getRRR(source).get(1).getReadName());
-		assertEquals("0#1#fr1", getRRR(source).get(2).getReadName());
+		assertEquals("2#3#0#fr3", getRRR(source).get(0).getReadName());
+		assertEquals("1#2#0#fr2", getRRR(source).get(1).getReadName());
+		assertEquals("0#1#0#fr1", getRRR(source).get(2).getReadName());
 	}
 	@Test
 	public void should_write_sc_for_both_forward_and_reverse_realignment() {
 		SAMRecord[] realigned = new SAMRecord[] {
-			withReadName("0#1#fr1", Read(2, 10, "15M"))[0],
-			withReadName("1#2#fr2", Read(1, 10, "15M"))[0],
-			withReadName("1#2#br2", Read(1, 15, "15M"))[0],
-			withReadName("2#3#fr3", Read(0, 10, "15M"))[0],
+			withReadName("0#1#0#fr1", Read(2, 10, "15M"))[0],
+			withReadName("1#2#0#fr2", Read(1, 10, "15M"))[0],
+			withReadName("1#2#0#br2", Read(1, 15, "15M"))[0],
+			withReadName("2#3#0#fr3", Read(0, 10, "15M"))[0],
 		};
 		SAMRecord[] softClip = new SAMRecord[] {
 			withReadName("r1", Read(0, 1, "15S15M15S"))[0],
@@ -82,7 +82,7 @@ public class SortRealignedSoftClipsTest extends IntermediateFilesTest {
 		ProcessingContext processContext = getCommandlineContext(false);
 		SAMEvidenceSource source = new SAMEvidenceSource(processContext, input, 0);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		createBAM(processContext.getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, realigned);
+		createBAM(processContext.getFileSystemContext().getRealignmentBam(input, 0), SortOrder.unsorted, realigned);
 		SortRealignedSoftClips srs = new SortRealignedSoftClips(processContext, source);
 		srs.process(EnumSet.allOf(ProcessStep.class));
 		srs.close();
@@ -95,9 +95,9 @@ public class SortRealignedSoftClipsTest extends IntermediateFilesTest {
 				withReadName("r2", Read(1, 2, "15M15S")),
 				withReadName("r3", Read(2, 3, "15M15S")));
 		go(true,
-				withReadName("0#1#fr1", Read(2, 10, "15M"))[0],
-				withReadName("1#2#fr2", Read(1, 10, "15M"))[0],
-				withReadName("2#3#fr3", Read(0, 10, "15M"))[0]
+				withReadName("0#1#0#fr1", Read(2, 10, "15M"))[0],
+				withReadName("1#2#0#fr2", Read(1, 10, "15M"))[0],
+				withReadName("2#3#0#fr3", Read(0, 10, "15M"))[0]
 		);
 		assertEquals(3, new PerChr().getRSC(source).size());
 		assertEquals("r3", new PerChr().getRSC(source).get(0).getReadName());
@@ -105,9 +105,9 @@ public class SortRealignedSoftClipsTest extends IntermediateFilesTest {
 		assertEquals("r1", new PerChr().getRSC(source).get(2).getReadName());
 		
 		assertEquals(3, new PerChr().getRRR(source).size());
-		assertEquals("2#3#fr3", new PerChr().getRRR(source).get(0).getReadName());
-		assertEquals("1#2#fr2", new PerChr().getRRR(source).get(1).getReadName());
-		assertEquals("0#1#fr1", new PerChr().getRRR(source).get(2).getReadName());
+		assertEquals("2#3#0#fr3", new PerChr().getRRR(source).get(0).getReadName());
+		assertEquals("1#2#0#fr2", new PerChr().getRRR(source).get(1).getReadName());
+		assertEquals("0#1#0#fr1", new PerChr().getRRR(source).get(2).getReadName());
 	}
 }
 

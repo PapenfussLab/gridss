@@ -43,10 +43,10 @@ public class AutoClosingMergedIteratorTest extends TestHelper {
 		AutoClosingMergedIterator<SAMRecord> merged = new AutoClosingMergedIterator<SAMRecord>(ImmutableList.of(
 				abi), new SAMRecordCoordinateComparator());
 		merged.next();
-		Thread.sleep(1);
+		Thread.sleep(50);
 		assertNotNull(AsyncBufferedIteratorTest.getThreadWithName(abi.getBackgroundThreadName()));
 		merged.close();
-		Thread.sleep(1);
+		Thread.sleep(50);
 		assertNull(AsyncBufferedIteratorTest.getThreadWithName(abi.getBackgroundThreadName()));
 	}
 	@Test

@@ -27,6 +27,8 @@ public interface DirectedEvidence {
 	 * @return 0-based phred-like quality scores, null if breakend sequence is not known
 	 */
 	public byte[] getBreakendQuality();
+	public byte[] getAnchorSequence();
+	public byte[] getAnchorQuality();
 	/**
 	 * Unique breakpoint identifier.
 	 * This identifier is used as the FASTQ sequence identifier

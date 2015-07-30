@@ -74,7 +74,7 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 		// assemble evidence
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
 		ses.completeSteps(ProcessStep.ALL_STEPS);
-		createBAM(pc.getFileSystemContext().getRealignmentBam(input), SortOrder.unsorted, splitReads.toArray(new SAMRecord[0]));
+		createBAM(pc.getFileSystemContext().getRealignmentBam(input, 0), SortOrder.unsorted, splitReads.toArray(new SAMRecord[0]));
 		ses.completeSteps(ProcessStep.ALL_STEPS);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), output);
 		aes.ensureAssembled();

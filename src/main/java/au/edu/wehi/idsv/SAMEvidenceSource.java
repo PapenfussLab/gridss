@@ -201,7 +201,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 				fsc.getReadPairBamForChr(input, chr),
 				fsc.getMateBamForChr(input, chr),
 				fsc.getSoftClipBamForChr(input, chr),
-				fsc.getRealignmentBamForChr(input, chr, 1),
+				fsc.getRealignmentBamForChr(input, chr, 0),
 				fsc.getSoftClipRemoteBamForChr(input, chr),
 				fsc.getRealignmentRemoteBamForChr(input, chr),
 				chr);
@@ -212,7 +212,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 				fsc.getReadPairBam(input),
 				fsc.getMateBam(input),
 				fsc.getSoftClipBam(input),
-				fsc.getRealignmentBam(input, 1),
+				fsc.getRealignmentBam(input, 0),
 				fsc.getSoftClipRemoteBam(input),
 				fsc.getRealignmentRemoteBam(input),
 				"");

@@ -240,7 +240,7 @@ public class TestHelper {
 		r.setReadUnmappedFlag(false);
 		r.setCigar(new Cigar(ImmutableList.of(new CigarElement(2, CigarOperator.MATCH_OR_MISMATCH))));
 		r.setMappingQuality(30);
-		return AssemblyFactory.incorporateRealignment(getContext(), abe, r);
+		return AssemblyFactory.incorporateRealignment(getContext(), abe, ImmutableList.of(r));
 	}
 
 	public static DirectedEvidence E(int referenceIndex, int start,

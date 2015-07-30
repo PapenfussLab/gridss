@@ -50,7 +50,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 		// Untemplated sequence
 		SAMRecord r = Read(0, 10, "2S3M");
 		r.setReadBases(B("GGAAT"));
-		RealignedSAMRecordAssemblyEvidence ass = (RealignedSAMRecordAssemblyEvidence) AssemblyFactory.incorporateRealignment(getContext(), be, r);
+		RealignedSAMRecordAssemblyEvidence ass = (RealignedSAMRecordAssemblyEvidence) AssemblyFactory.incorporateRealignment(getContext(), be, ImmutableList.of(r));
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());
 		builder
 			.phredScore(1)

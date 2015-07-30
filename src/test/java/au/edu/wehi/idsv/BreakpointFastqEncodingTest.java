@@ -51,6 +51,16 @@ public class BreakpointFastqEncodingTest extends TestHelper {
 		public float getBreakendQual() {
 			return 6;
 		}
+		@Override
+		public byte[] getAnchorSequence() {
+			// TODO Auto-generated method stub
+			return B("A");
+		}
+		@Override
+		public byte[] getAnchorQuality() {
+			// TODO Auto-generated method stub
+			return B("A");
+		}
 	}
 	@Test
 	public void should_round_trip_ID() {

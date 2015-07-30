@@ -51,9 +51,18 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		this.record = assembly;
 		this.isExact = isExact;
 		this.evidenceIDCollection = new EvidenceIDCollection(assembly);
-		this.realignments = new CompoundBreakendAlignment(source.getContext().getRealignmentParameters(), bs, getAssemblyAnchorSequence(), realigned);
-		this.breakend = realignments.getPrimaryBreakend();
-		this.realignment = realignments.getSimpleBreakendRealignment(assembly);
+		this.realignments = new CompoundBreakendAlignment(
+				source.getContext(),
+				assembly.getHeader(),
+				bs,
+				getAnchorBytes(record.getReadBases()),
+				getAnchorBytes(record.getBaseQualities()),
+				getBreakendBytes(record.getReadBases()),
+				getBreakendBytes(record.getBaseQualities()),
+				realigned);
+		this.breakend = bs;
+		this.realignment = realignments.getSimpleBreakendRealignment();
+		SAMRecordUtil.pairReads(this.record, this.realignment);
 	}
 	/**
 	 * Determines whether the given record is part of the given assembly
@@ -134,6 +143,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		annotateSAMRecord(getSAMRecord(), rpQual, scQual, rQual, nsQual, rpCount, rpMaxLen, scCount, scLenMax, scLenTotal, rCount, nsCount);
 		annotateSAMRecord(getBackingRecord(), rpQual, scQual, rQual, nsQual, rpCount, rpMaxLen, scCount, scLenMax, scLenTotal, rCount, nsCount);
 		annotateSAMRecord(getRemoteSAMRecord(), rpQual, scQual, rQual, nsQual, rpCount, rpMaxLen, scCount, scLenMax, scLenTotal, rCount, nsCount);
+		// TODO: proper mapq model
 		getSAMRecord().setMappingQuality(maxLocalMapq);
 		getBackingRecord().setMappingQuality(maxLocalMapq);
 		return this;
@@ -309,6 +319,14 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	@Override
 	public byte[] getBreakendQuality() {
 		return getBreakendBytes(record.getBaseQualities());
+	}
+	@Override
+	public byte[] getAnchorSequence() {
+		return getAssemblyAnchorSequence();
+	}
+	@Override
+	public byte[] getAnchorQuality() {
+		return getAssemblyAnchorQuals();
 	}
 	@Override
 	public String getEvidenceID() {

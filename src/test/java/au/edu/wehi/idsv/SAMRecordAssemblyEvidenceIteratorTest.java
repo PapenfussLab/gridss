@@ -11,6 +11,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
@@ -38,7 +39,7 @@ public class SAMRecordAssemblyEvidenceIteratorTest extends TestHelper {
 					public SAMRecord apply(SAMRecordAssemblyEvidence input) {
 						return input.getBackingRecord();
 					} })
-				, realigned.iterator(), true));
+				, ImmutableList.of(realigned.iterator()), true));
 		// check output is in order
 		//for (int i = 0; i < out.size() - 1; i++) {
 		//	BreakendSummary l0 = out.get(i).getBreakendSummary();
@@ -62,7 +63,7 @@ public class SAMRecordAssemblyEvidenceIteratorTest extends TestHelper {
 	public void should_match_assembly_with_realign() {
 		in.add(BE(1));
 		SAMRecord r = Read(1, 10, "1M");
-		r.setReadName("0#1#" + in.get(0).getEvidenceID());
+		r.setReadName("0#1#0#" + in.get(0).getEvidenceID());
 		realigned.add(r);
 		go();
 		assertEquals(1, out.size());
@@ -73,7 +74,7 @@ public class SAMRecordAssemblyEvidenceIteratorTest extends TestHelper {
 	public void should_flag_assembly_if_realign_unmapped() {
 		in.add(BE(1));
 		SAMRecord r = Unmapped(1);
-		r.setReadName("0#1#" + in.get(0).getEvidenceID());
+		r.setReadName("0#1#0#" + in.get(0).getEvidenceID());
 		realigned.add(r);
 		go();
 		assertEquals(1, out.size());
@@ -82,10 +83,10 @@ public class SAMRecordAssemblyEvidenceIteratorTest extends TestHelper {
 	}
 	@Test
 	public void should_allow_realign_in_order_at_same_position() {
-		SAMRecord f = withReadName("0#10#fReadName", Read(0, 1, "5M"))[0];
-		SAMRecord b = withReadName("0#1#bReadName", Read(0, 1, "5M"))[0];
+		SAMRecord f = withReadName("0#10#0#fReadName", Read(0, 1, "5M"))[0];
+		SAMRecord b = withReadName("0#1#0#bReadName", Read(0, 1, "5M"))[0];
 		in.add(BE(1));
-		SAMRecord assemblyRealigned = withReadName("0#1#" + in.get(0).getEvidenceID(), Read(1, 10, "1M"))[0];
+		SAMRecord assemblyRealigned = withReadName("0#1#0#" + in.get(0).getEvidenceID(), Read(1, 10, "1M"))[0];
 		realigned.add(b);
 		realigned.add(assemblyRealigned);
 		realigned.add(f);
@@ -97,9 +98,9 @@ public class SAMRecordAssemblyEvidenceIteratorTest extends TestHelper {
 	@Test
 	public void should_require_realign_in_call_position_order() {
 		in.add(BE(2));
-		realigned.add(withReadName("0#1#bReadName", Read(0, 1, "5M"))[0]);
-		realigned.add(withReadName("0#2#" + in.get(0).getEvidenceID(), Read(1, 10, "1M"))[0]);
-		realigned.add(withReadName("0#10#fReadName", Read(0, 1, "5M"))[0]);
+		realigned.add(withReadName("0#1#0#bReadName", Read(0, 1, "5M"))[0]);
+		realigned.add(withReadName("0#2#0#" + in.get(0).getEvidenceID(), Read(1, 10, "1M"))[0]);
+		realigned.add(withReadName("0#10#0#fReadName", Read(0, 1, "5M"))[0]);
 		go();
 		assertEquals(1, out.size());
 		assertTrue(out.get(0) instanceof RealignedSAMRecordAssemblyEvidence);

@@ -10,6 +10,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
@@ -66,7 +67,7 @@ public class SAMRecordAssemblyEvidenceFilteringIteratorTest extends TestHelper {
 		e.annotateAssembly();
 		SAMRecord r = Read(0, 11, "5M");
 		r.setReadName(BreakpointFastqEncoding.getRealignmentFastq(e).getReadHeader());
-		in.add(AssemblyFactory.incorporateRealignment(getContext(), e, r));
+		in.add(AssemblyFactory.incorporateRealignment(getContext(), e, ImmutableList.of(r)));
 		go();
 		assertEquals(0, out.size());
 	}
@@ -86,7 +87,7 @@ public class SAMRecordAssemblyEvidenceFilteringIteratorTest extends TestHelper {
 		e.annotateAssembly();
 		SAMRecord r = Read(0, 5, "5M");
 		r.setReadName(BreakpointFastqEncoding.getRealignmentFastq(e).getReadHeader());
-		in.add(AssemblyFactory.incorporateRealignment(getContext(), e, r));
+		in.add(AssemblyFactory.incorporateRealignment(getContext(), e, ImmutableList.of(r)));
 		go();
 		assertEquals(0, out.size());
 	}
@@ -103,7 +104,7 @@ public class SAMRecordAssemblyEvidenceFilteringIteratorTest extends TestHelper {
 		SAMRecord r = Read(0, 105, "5M");
 		r.setReadNegativeStrandFlag(true);
 		r.setReadName(BreakpointFastqEncoding.getRealignmentFastq(e).getReadHeader());
-		in.add(AssemblyFactory.incorporateRealignment(getContext(), e, r));
+		in.add(AssemblyFactory.incorporateRealignment(getContext(), e, ImmutableList.of(r)));
 		go();
 		assertEquals(1, out.size());
 	}
