@@ -4,33 +4,34 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 
 import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 
 public class SAMRecordAssemblyEvidenceIterator extends AbstractIterator<SAMRecordAssemblyEvidence> implements CloseableIterator<SAMRecordAssemblyEvidence>, TrackedBuffer {
 	private final ProcessingContext processContext;
 	private final AssemblyEvidenceSource source;
 	private final Iterator<SAMRecord> it;
-	private final List<Iterator<SAMRecord>> rit;
-	private final List<SequentialRealignedBreakpointFactory> factory;
+	private final List<? extends Iterator<SAMRecord>> rit;
+	private final List<SequentialRealignedBreakpointFactory> factories;
 	private boolean includeBothBreakendsOfSpanningAssemblies;
 	public SAMRecordAssemblyEvidenceIterator(
 			ProcessingContext processContext,
 			AssemblyEvidenceSource source,
 			Iterator<SAMRecord> it,
-			List<Iterator<SAMRecord>> realignedIt,
+			List<? extends Iterator<SAMRecord>> realignedIt,
 			boolean includeBothBreakendsOfSpanningAssemblies) {
 		this.processContext = processContext;
 		this.source = source;
 		this.it = it;
 		this.rit = realignedIt;
-		this.factory = realignedIt != null ? new SequentialRealignedBreakpointFactory(Iterators.peekingIterator(this.rit)) : null;
+		this.factories = realignedIt.stream().map(x -> new SequentialRealignedBreakpointFactory(Iterators.peekingIterator(x))).collect(Collectors.toList());
 		this.includeBothBreakendsOfSpanningAssemblies = includeBothBreakendsOfSpanningAssemblies;
 	}
 	private SAMRecordAssemblyEvidence buffer = null;
@@ -44,12 +45,20 @@ public class SAMRecordAssemblyEvidenceIterator extends AbstractIterator<SAMRecor
 		while (it.hasNext()) {
 			SAMRecord record = it.next();
 			SAMRecordAssemblyEvidence evidence = AssemblyFactory.hydrate(source, record);
-			if (factory != null && !(evidence instanceof DirectedBreakpoint)) {
+			if (!(evidence instanceof DirectedBreakpoint)) {
 				RealignmentParameters rp = evidence.getEvidenceSource().getContext().getRealignmentParameters();
-				SAMRecord realigned = factory.findAssociatedSAMRecord(evidence,
-						rp.requireRealignment && 
-						rp.shouldRealignBreakend(evidence));
-				evidence = AssemblyFactory.incorporateRealignment(processContext, evidence, realigned);
+				List<SAMRecord> realignments = new ArrayList<SAMRecord>(source.getRealignmentIterationCount());
+				for (SequentialRealignedBreakpointFactory factory : factories) {
+					SAMRecord realigned = factory.findAssociatedSAMRecord(evidence,
+							rp.requireRealignment && 
+							rp.shouldRealignBreakend(evidence));
+					if (realigned != null) {
+						realignments.add(realigned);
+					}
+				}
+				if (realignments.size() > 0) {
+					evidence = AssemblyFactory.incorporateRealignment(processContext, evidence, realignments);
+				}
 			}
 			if (includeBothBreakendsOfSpanningAssemblies && evidence.isSpanningAssembly()) {
 				buffer = ((SmallIndelSAMRecordAssemblyEvidence)evidence).asRemote();
@@ -69,15 +78,10 @@ public class SAMRecordAssemblyEvidenceIterator extends AbstractIterator<SAMRecor
 	}
 	@Override
 	public void setTrackedBufferContext(String context) {
-		if (factory != null) {
-			factory.setTrackedBufferContext(context);
-		}
+		factories.stream().forEach(factory -> factory.setTrackedBufferContext(context));
 	}
 	@Override
 	public List<NamedTrackedBuffer> currentTrackedBufferSizes() {
-		if (factory != null) {
-			return factory.currentTrackedBufferSizes();
-		}
-		return ImmutableList.of();
+		return factories.stream().flatMap(factory -> factory.currentTrackedBufferSizes().stream()).collect(Collectors.toList());
 	}
 }

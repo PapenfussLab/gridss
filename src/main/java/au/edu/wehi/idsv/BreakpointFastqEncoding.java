@@ -45,23 +45,30 @@ public class BreakpointFastqEncoding {
 	public static int getEncodedStartPosition(String fastqid) {
 		return Integer.parseInt(fastqid.split("#")[1]);
 	}
+	public static int getEncodedReadOffset(String fastqid) {
+		return Integer.parseInt(fastqid.split("#")[2]);
+	}
 	public static String getEncodedID(String fastqid) {
 		String[] split = fastqid.split("#");
-		return fastqid.substring(split[0].length() + split[1].length() + 2);
+		return fastqid.substring(split[0].length() + split[1].length() + split[2].length() + 3);
 	}
 	public static FastqRecord getRealignmentFastq(DirectedEvidence bp) {
 		byte[] sequence = bp.getBreakendSequence();
 		FastqRecord fq = null;
 		if (sequence != null) {
-			fq = new FastqRecord(
-				String.format("%s#%d#%s",
-						BreakpointFastqEncoding.getReferenceIndex(bp),
-						BreakpointFastqEncoding.getStartPosition(bp),
-						BreakpointFastqEncoding.getID(bp)),
-				new String(sequence, Charsets.US_ASCII),
-				"",
-				SAMUtils.phredToFastq(bp.getBreakendQuality()));
+			fq = getRealignmentFastq(
+					sequence,
+					bp.getBreakendQuality(),
+					BreakpointFastqEncoding.getReferenceIndex(bp),
+					BreakpointFastqEncoding.getStartPosition(bp),
+					0,
+					BreakpointFastqEncoding.getID(bp));
 		}
+		return fq;
+	}
+	public static FastqRecord getRealignmentFastq(byte[] seq, byte[] qual, int referenceIndex, int startPosition, int breakendOffset, String evidenceID) {
+		String seqHeaderPrefix = String.format("%s#%d#%d#%s", referenceIndex, startPosition, breakendOffset, evidenceID);
+		FastqRecord fq = new FastqRecord(seqHeaderPrefix, new String(seq, Charsets.US_ASCII), "", SAMUtils.phredToFastq(qual));
 		return fq;
 	}
 }

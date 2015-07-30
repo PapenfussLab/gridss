@@ -6,11 +6,13 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.lang3.ArrayUtils;
 
+import com.google.common.collect.ImmutableList;
+
 public class RealignedRemoteSAMRecordAssemblyEvidence extends RealignedSAMRecordAssemblyEvidence implements RemoteEvidence {
 	private final BreakpointSummary bs;
 	private final RealignedSAMRecordAssemblyEvidence local;
 	public RealignedRemoteSAMRecordAssemblyEvidence(RealignedSAMRecordAssemblyEvidence assembly) {
-		super(assembly.getEvidenceSource(), assembly.getSAMRecord(), assembly.getRemoteSAMRecord());
+		super(assembly.getEvidenceSource(), assembly.getSAMRecord(), ImmutableList.of(assembly.getRemoteSAMRecord()));
 		this.bs = super.getBreakendSummary().remoteBreakpoint();
 		this.local = assembly;
 	}

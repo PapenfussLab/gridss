@@ -1,11 +1,17 @@
 package au.edu.wehi.idsv;
 
 import htsjdk.samtools.SAMFileWriter;
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.util.CloseableIterator;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.google.common.collect.ImmutableList;
 
 public abstract class EvidenceSource {
 	public abstract int getMaxConcordantFragmentSize();
@@ -78,6 +84,43 @@ public abstract class EvidenceSource {
 			}
 		}
 		return isRealignmentComplete(bamList, fastqList);
+	}
+	public void iterateRealignment() throws IOException {
+		FileSystemContext fsc = processContext.getFileSystemContext();
+		for (int i = 1; i < getRealignmentIterationCount(); i++) {
+			if (processContext.shouldProcessPerChromosome()) {
+				for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
+					File lastbam = fsc.getRealignmentBamForChr(input, seq.getSequenceName(), i - 1);
+					File lastfastq = fsc.getRealignmentFastqForChr(input, seq.getSequenceName(), i - 1);
+					File bam = fsc.getRealignmentBamForChr(input, seq.getSequenceName(), i);
+					File fastq = fsc.getRealignmentFastqForChr(input, seq.getSequenceName(), i);
+					iterateRealignment(lastbam, lastfastq, bam, fastq);
+				}
+			} else {
+				File lastbam = fsc.getRealignmentBam(input, i - 1);
+				File lastfastq = fsc.getRealignmentFastq(input, i - 1);
+				File bam = fsc.getRealignmentBam(input, i);
+				File fastq = fsc.getRealignmentFastq(input, i);
+				iterateRealignment(lastbam, lastfastq, bam, fastq);
+			}
+		}
+	}
+	private void iterateRealignment(File lastbam, File lastfastq, File bam, File fastq) throws IOException {
+		if (!isRealignmentComplete(ImmutableList.of(lastbam), ImmutableList.of(lastfastq))) return;
+		if (bam.exists()) return;
+		if (fastq.exists()) return;
+		// need to create the fastq for the next iteration of realignment
+		SamReader reader = processContext.getSamReader(lastbam);
+		CloseableIterator<SAMRecord> it = processContext.getSamReaderIterator(reader);
+		FastqBreakpointWriter writer = new FastqBreakpointWriter(processContext.getFastqWriterFactory().newWriter(fastq));
+		while (it.hasNext()) {
+			SAMRecord read = it.next();
+			writer.writeRealignment(read, processContext.getRealignmentParameters().minLength);
+		}		
+		it.close();
+		reader.close();
+		writer.close();
+		if (isRealignmentComplete(ImmutableList.of(bam), ImmutableList.of(fastq))) return;
 	}
 	private boolean isRealignmentComplete(List<File> bamList, List<File> fastqList) {
 		assert(bamList.size() == fastqList.size());

@@ -11,6 +11,8 @@ import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
 
+import com.google.common.collect.ImmutableList;
+
 /**
  * Assembly spanning a small indel
  */
@@ -22,7 +24,7 @@ public class SmallIndelSAMRecordAssemblyEvidence extends RealignedSAMRecordAssem
 	 * @param assembly
 	 */
 	public SmallIndelSAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecord assembly) {
-		super(source, createFwdAnchored(assembly), createFwdRealigned(assembly));
+		super(source, createFwdAnchored(assembly), ImmutableList.of(createFwdRealigned(assembly)));
 		this.assembly = assembly;
 		assert(sanityCheck());
 	}
@@ -31,7 +33,7 @@ public class SmallIndelSAMRecordAssemblyEvidence extends RealignedSAMRecordAssem
 	 * @param assembly assembly
 	 */
 	private SmallIndelSAMRecordAssemblyEvidence(SmallIndelSAMRecordAssemblyEvidence assembly) {
-		super(assembly.getEvidenceSource(), createBwdAnchored(assembly.getBackingRecord()), createBwdRealigned(assembly.getBackingRecord()));
+		super(assembly.getEvidenceSource(), createBwdAnchored(assembly.getBackingRecord()), ImmutableList.of(createBwdRealigned(assembly.getBackingRecord())));
 		this.assembly = assembly.assembly;
 	}
 	/**

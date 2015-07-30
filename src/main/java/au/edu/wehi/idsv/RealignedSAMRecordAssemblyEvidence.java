@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv;
 
+import java.util.List;
+
 import htsjdk.samtools.SAMRecord;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
@@ -8,18 +10,16 @@ public class RealignedSAMRecordAssemblyEvidence extends SAMRecordAssemblyEvidenc
 	public RealignedSAMRecordAssemblyEvidence(
 			AssemblyEvidenceSource source,
 			SAMRecordAssemblyEvidence assembly,
-			SAMRecord realigned) {
+			List<SAMRecord> realigned) {
 		super(source, assembly, realigned);
-		this.rbp = RealignedBreakpoint.create(source.getContext().getReference(), source.getContext().getDictionary(), super.getBreakendSummary(), super.getAssemblyAnchorSequence(), realigned);
-		SAMRecordUtil.pairReads(getSAMRecord(), getRemoteSAMRecord());
+		this.rbp = RealignedBreakpoint.create(source.getContext().getReference(), source.getContext().getDictionary(), super.getBreakendSummary(), super.getAssemblyAnchorSequence(), getRemoteSAMRecord());
 	}
 	public RealignedSAMRecordAssemblyEvidence(
 			AssemblyEvidenceSource source,
 			SAMRecord assembly,
-			SAMRecord realigned) {
+			List<SAMRecord> realigned) {
 		super(source, assembly, realigned);
-		this.rbp = RealignedBreakpoint.create(source.getContext().getReference(), source.getContext().getDictionary(), super.getBreakendSummary(), super.getAssemblyAnchorSequence(), realigned);
-		SAMRecordUtil.pairReads(getSAMRecord(), getRemoteSAMRecord());
+		this.rbp = RealignedBreakpoint.create(source.getContext().getReference(), source.getContext().getDictionary(), super.getBreakendSummary(), super.getAssemblyAnchorSequence(), getRemoteSAMRecord());
 	}
 	@Override
 	public boolean isReferenceAssembly() {

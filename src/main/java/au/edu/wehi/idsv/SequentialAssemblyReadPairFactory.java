@@ -3,6 +3,7 @@ package au.edu.wehi.idsv;
 import htsjdk.samtools.SAMRecord;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.PeekingIterator;
 
 /**
@@ -34,7 +35,7 @@ public class SequentialAssemblyReadPairFactory extends SequentialSAMRecordFactor
 			realign = record;
 		}
 		SAMRecordAssemblyEvidence evidence = AssemblyFactory.hydrate(source, assembly);
-		evidence = AssemblyFactory.incorporateRealignment(processContext, evidence, realign);
+		evidence = AssemblyFactory.incorporateRealignment(processContext, evidence, ImmutableList.of(realign));
 		if (!recordIsAssembly) {
 			if (evidence instanceof RealignedSAMRecordAssemblyEvidence) {
 				evidence = ((RealignedSAMRecordAssemblyEvidence)evidence).asRemote();

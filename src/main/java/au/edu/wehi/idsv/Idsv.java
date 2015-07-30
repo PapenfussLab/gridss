@@ -123,6 +123,7 @@ public class Idsv extends CommandLineProgram {
 	    			return -1;
 	    		}
 	    	}
+	    	compoundRealignment(threadpool, ImmutableList.of(assemblyEvidence));
 	    	if (!assemblyEvidence.isRealignmentComplete()) {
 	    		log.error("Unable to call variants: generation and breakend alignment of assemblies not complete.");
     			return -1;
@@ -223,6 +224,23 @@ public class Idsv extends CommandLineProgram {
 				new BreakendToSimpleCall(getContext()).convert(OUTPUT, simpleHack);
 			}
 		}
+	}
+	private void compoundRealignment(ExecutorService threadpool, List<? extends EvidenceSource> evidence) throws InterruptedException, ExecutionException {
+		log.info("Checking for nested realignment");
+		Function<EvidenceSource, Callable<Void>> f = input -> () -> {
+			try {
+				input.iterateRealignment();
+			} catch (Exception e) {
+				log.error(e, "Exception thrown by worker thread");
+				throw e;
+			}
+			return null;
+		};
+		for (Future<Void> future : threadpool.invokeAll(Lists.transform(evidence, f))) {
+			// throw exception from worker thread here
+			future.get();
+		}
+		log.info("Checking for nested realignment");
 	}
     private boolean checkRealignment(List<? extends EvidenceSource> evidence, int threads) throws IOException {
     	String instructions = getRealignmentScript(evidence, threads);

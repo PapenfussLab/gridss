@@ -20,12 +20,12 @@ import com.google.common.collect.ImmutableList;
 public class AutoClosingIterator<T> implements Closeable, CloseableIterator<T> {
 	private static final Log log = Log.getInstance(AutoClosingIterator.class);
 	private Iterator<? extends T> underlying;
-	private List<Closeable> alsoClose;
+	private List<? extends Closeable> alsoClose;
 	private boolean closed = false;
 	public AutoClosingIterator(Iterator<? extends T> it) {
 		this(it, ImmutableList.<Closeable>of());
 	}
-	public AutoClosingIterator(Iterator<? extends T> it, Iterable<Closeable> alsoClose) {
+	public AutoClosingIterator(Iterator<? extends T> it, Iterable<? extends Closeable> alsoClose) {
 		this.underlying = it;
 		this.alsoClose = ImmutableList.copyOf(alsoClose);
 	}

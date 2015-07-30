@@ -30,35 +30,30 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	private static final Log log = Log.getInstance(SAMRecordAssemblyEvidence.class);
 	private final SAMRecord record;
 	private final SAMRecord realignment;
+	private final CompoundBreakendAlignment realignments;
 	private final AssemblyEvidenceSource source;
 	private final BreakendSummary breakend;
 	private final boolean isExact;
 	private Collection<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
 	private EvidenceIDCollection evidenceIDCollection;
-	public SAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecordAssemblyEvidence assembly, SAMRecord realignment) {
-		this(source, assembly.getSAMRecord(), realignment);
+	public SAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecordAssemblyEvidence assembly, List<SAMRecord> realigned) {
+		this(source, assembly.getSAMRecord(), realigned);
 		this.evidenceIDCollection = assembly.evidenceIDCollection;
 		this.evidence = assembly.evidence;
 	}
-	public SAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecord assembly, SAMRecord realignment) {
-		this(source, assembly, realignment,
+	public SAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecord assembly, List<SAMRecord> realigned) {
+		this(source, assembly, realigned,
 				calculateBreakend(assembly),
 				calculateIsBreakendExact(assembly.getCigar()));
 	}
-	protected SAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecord assembly, SAMRecord realignment,
-			BreakendSummary bs, boolean isExact) {
-		if (bs instanceof BreakpointSummary && realignment != null && !realignment.getReadUnmappedFlag()
-				&& !source.getContext().getRealignmentParameters().realignmentPositionUnique(realignment)) {
-			// ignore breakpoint realignment if the mapping is ambiguous
-			bs = ((BreakpointSummary)bs).localBreakend();
-		}
+	private SAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecord assembly, List<SAMRecord> realigned, BreakendSummary bs, boolean isExact) {
 		this.source = source;
 		this.record = assembly;
-		this.breakend = bs;
 		this.isExact = isExact;
-		this.realignment = realignment == null ? getPlaceholderRealignment() : realignment;
-		fixReadPair();
 		this.evidenceIDCollection = new EvidenceIDCollection(assembly);
+		this.realignments = new CompoundBreakendAlignment(source.getContext().getRealignmentParameters(), bs, getAssemblyAnchorSequence(), realigned);
+		this.breakend = realignments.getPrimaryBreakend();
+		this.realignment = realignments.getSimpleBreakendRealignment(assembly);
 	}
 	/**
 	 * Determines whether the given record is part of the given assembly
@@ -228,14 +223,6 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		}
 		return result;
 	}
-	private void fixReadPair() {
-		if (realignment.getReadUnmappedFlag()) {
-			// SAMv1 S2.4
-			realignment.setReferenceIndex(record.getReferenceIndex());
-			realignment.setAlignmentStart(record.getAlignmentStart());
-		}
-		SAMRecordUtil.pairReads(this.record, this.realignment);
-	}
 	private BreakendDirection getBreakendDirection() {
 		return getBreakendDirection(record);
 	}
@@ -243,15 +230,6 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		Character c = (Character)record.getAttribute(SamTags.ASSEMBLY_DIRECTION);
 		if (c == null) return null;
 		return BreakendDirection.fromChar((char)c);
-	}
-	private SAMRecord getPlaceholderRealignment() {
-		SAMRecord placeholder = new SAMRecord(record.getHeader());
-		placeholder.setReadUnmappedFlag(true);
-		placeholder.setReadBases(getBreakendSequence());
-		placeholder.setBaseQualities(getBreakendQuality());
-		placeholder.setReadNegativeStrandFlag(false);
-		placeholder.setMappingQuality(0);
-		return placeholder;
 	}
 	private static BreakendSummary calculateBreakend(SAMRecord record) {
 		if (SAMRecordUtil.isReferenceAlignment(record)) {

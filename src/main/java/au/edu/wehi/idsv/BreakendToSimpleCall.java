@@ -128,7 +128,7 @@ public class BreakendToSimpleCall {
 			return;
 		}
 		BreakpointSummary bs = bp.getBreakendSummary();
-		assert(bs.start <= bs.start2);
+		// assert(bs.start <= bs.start2);
 		// inversion
 		if (bs.start < bs.start2 && bs.direction == bs.direction2) {
 			VariantContextDirectedBreakpoint partner = null;

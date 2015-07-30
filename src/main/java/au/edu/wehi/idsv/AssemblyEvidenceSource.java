@@ -67,7 +67,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	}
 	@Override
 	public int getRealignmentIterationCount() {
-		return 3;
+		return 1;
 	}
 	public void ensureAssembled() {
 		ensureAssembled(null, null);
@@ -190,19 +190,21 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			throw new IllegalStateException("Remote assembly iteration requires realignment complete");
 		}
 		List<Closeable> toClose = Lists.newArrayList();
-		CloseableIterator<SAMRecord> realignedIt; 
+		List<CloseableIterator<SAMRecord>> realignedIt = new ArrayList<CloseableIterator<SAMRecord>>();
 		if (isRealignmentComplete()) {
-			realignedIt = getContext().getSamReaderIterator(realignment);
-			toClose.add(realignedIt);
+			for (File realignmenti : realignment) {
+				CloseableIterator<SAMRecord> realignmentiit = getContext().getSamReaderIterator(realignmenti); 
+				realignedIt.add(realignmentiit);
+				toClose.add(realignmentiit);
+			}
 		} else {
 			log.debug(String.format("Assembly realignment for %s not completed", breakend));
-			realignedIt = new AutoClosingIterator<SAMRecord>(ImmutableList.<SAMRecord>of().iterator());
 		}
 		CloseableIterator<SAMRecord> rawReaderIt = getContext().getSamReaderIterator(breakend, SortOrder.coordinate);
 		toClose.add(rawReaderIt);
 		CloseableIterator<SAMRecordAssemblyEvidence> evidenceIt = new SAMRecordAssemblyEvidenceIterator(
 				getContext(), this,
-				new AutoClosingIterator<SAMRecord>(rawReaderIt, ImmutableList.<Closeable>of(realignedIt)),
+				new AutoClosingIterator<SAMRecord>(rawReaderIt, realignedIt),
 				realignedIt,
 				true);
 		toClose.add(evidenceIt);
@@ -233,11 +235,11 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		if (getContext().shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : getContext().getReference().getSequenceDictionary().getSequences()) {
 				source.add(null); target.add(fsc.getAssemblyRawBamForChr(input, seq.getSequenceName()));
-				source.add(null); target.add(fsc.getRealignmentFastqForChr(input, seq.getSequenceName()));
+				source.add(null); target.add(fsc.getRealignmentFastqForChr(input, seq.getSequenceName(), 0));
 			}
 		} else {
 			source.add(null); target.add(fsc.getAssemblyRawBam(input));
-			source.add(null); target.add(fsc.getRealignmentFastq(input));
+			source.add(null); target.add(fsc.getRealignmentFastq(input, 0));
 		}
 		return IntermediateFileUtil.checkIntermediate(target, source);
 	}
@@ -271,7 +273,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				final String seq = dict.getSequence(i).getSequenceName();
 				
 				if (IntermediateFileUtil.checkIntermediate(fsc.getAssemblyRawBamForChr(input, seq))
-					&& IntermediateFileUtil.checkIntermediate(fsc.getRealignmentFastqForChr(input, seq))) {
+					&& IntermediateFileUtil.checkIntermediate(fsc.getRealignmentFastqForChr(input, seq, 0))) {
 					log.debug("Skipping assembly for ", seq, " as output already exists.");
 				} else {
 					workers.add(new Callable<Void>() {
@@ -290,7 +292,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 									toMerge.add(it);
 								}
 								merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);
-								new ContigAssembler(merged, getContext().getFileSystemContext().getAssemblyRawBamForChr(input, seq), getContext().getFileSystemContext().getRealignmentFastqForChr(input, seq)).run();
+								new ContigAssembler(merged, getContext().getFileSystemContext().getAssemblyRawBamForChr(input, seq), getContext().getFileSystemContext().getRealignmentFastqForChr(input, seq, 0)).run();
 								merged.close();
 							} catch (Exception e) {
 								log.error(e, "Error performing ", seq, " breakend assembly");
@@ -343,7 +345,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 					toMerge.add(it);
 				}
 				merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);
-				new ContigAssembler(merged, getContext().getFileSystemContext().getAssemblyRawBam(input), getContext().getFileSystemContext().getRealignmentFastq(input)).run();
+				new ContigAssembler(merged, getContext().getFileSystemContext().getAssemblyRawBam(input), getContext().getFileSystemContext().getRealignmentFastq(input, 0)).run();
 				merged.close();
 			} finally {
 				CloserUtil.close(merged);
@@ -488,7 +490,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				readerIt = getContext().getSamReaderIterator(breakendOutput, SortOrder.coordinate);
 				while (readerIt.hasNext()) {
 					SAMRecord record = readerIt.next();
-					AssemblyEvidence assembly = AssemblyFactory.hydrate(AssemblyEvidenceSource.this, record);
+					SAMRecordAssemblyEvidence assembly = AssemblyFactory.hydrate(AssemblyEvidenceSource.this, record);
 					if (getContext().getRealignmentParameters().shouldRealignBreakend(assembly)) {
 						fastqWriter.write(assembly);
 					}
