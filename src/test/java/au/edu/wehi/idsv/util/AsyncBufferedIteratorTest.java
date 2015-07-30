@@ -72,7 +72,7 @@ public class AsyncBufferedIteratorTest {
 		assertNotNull(getThreadWithName(abi.getBackgroundThreadName()));
 		abi.next();
 		abi.next(); // eos indicator can now be written to buffer
-		Thread.sleep(1);
+		Thread.sleep(50);
 		assertNull(getThreadWithName(abi.getBackgroundThreadName()));
 		abi.close();
 	}

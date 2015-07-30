@@ -107,10 +107,6 @@ public class Idsv extends CommandLineProgram {
 	    	if (!checkRealignment(ImmutableList.of(assemblyEvidence), WORKER_THREADS)) {
 	    		return -1;
     		}
-	    	shutdownPool(threadpool);
-	    	shutdownPool(halfthreadpool);
-			threadpool = null;
-			halfthreadpool = null;
 			
 	    	// check that all steps have been completed
 	    	for (SAMEvidenceSource sref : samEvidence) {
@@ -123,11 +119,18 @@ public class Idsv extends CommandLineProgram {
 	    			return -1;
 	    		}
 	    	}
+	    	
 	    	compoundRealignment(threadpool, ImmutableList.of(assemblyEvidence));
 	    	if (!assemblyEvidence.isRealignmentComplete()) {
 	    		log.error("Unable to call variants: generation and breakend alignment of assemblies not complete.");
     			return -1;
 	    	}
+	    	
+	    	shutdownPool(threadpool);
+	    	shutdownPool(halfthreadpool);
+			threadpool = null;
+			halfthreadpool = null;
+			
 	    	if (!OUTPUT.exists()) {
 		    	callVariants(threadpool, samEvidence, assemblyEvidence);
 	    	} else {
@@ -227,20 +230,27 @@ public class Idsv extends CommandLineProgram {
 	}
 	private void compoundRealignment(ExecutorService threadpool, List<? extends EvidenceSource> evidence) throws InterruptedException, ExecutionException {
 		log.info("Checking for nested realignment");
-		Function<EvidenceSource, Callable<Void>> f = input -> () -> {
-			try {
-				input.iterateRealignment();
-			} catch (Exception e) {
-				log.error(e, "Exception thrown by worker thread");
-				throw e;
+		for (Future<Void> future : threadpool.invokeAll(Lists.transform(evidence, new Function<EvidenceSource, Callable<Void>>() {
+			@Override
+			public Callable<Void> apply(final EvidenceSource input) {
+				return new Callable<Void>() {
+					@Override
+					public Void call() throws Exception {
+						try {
+							input.iterateRealignment();
+						} catch (Exception e) {
+							log.error(e, "Exception thrown by worker thread");
+							throw e;
+						}
+						return null;
+					}
+				};
 			}
-			return null;
-		};
-		for (Future<Void> future : threadpool.invokeAll(Lists.transform(evidence, f))) {
+		}))) {
 			// throw exception from worker thread here
 			future.get();
 		}
-		log.info("Checking for nested realignment");
+		log.info("Nested realignment checking complete");
 	}
     private boolean checkRealignment(List<? extends EvidenceSource> evidence, int threads) throws IOException {
     	String instructions = getRealignmentScript(evidence, threads);

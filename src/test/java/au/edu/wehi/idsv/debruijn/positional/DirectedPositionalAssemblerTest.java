@@ -32,6 +32,8 @@ public class DirectedPositionalAssemblerTest extends TestHelper {
 		input.sort(DirectedEvidenceOrder.ByStartEnd);
 		ArrayList<SAMRecordAssemblyEvidence> r1 = Lists.newArrayList(new DirectedPositionalAssembler(pc, aes, input.iterator()));
 		ArrayList<SAMRecordAssemblyEvidence> r2 = Lists.newArrayList(new PositionalAssembler(pc, aes, input.iterator()));
+		r1.sort(DirectedEvidence.ByStartEnd);
+		r2.sort(DirectedEvidence.ByStartEnd);
 		assertEquals(r1.stream().map(r -> r.getBreakendSummary()).collect(Collectors.toList()), r2.stream().map(r -> r.getBreakendSummary()).collect(Collectors.toList()));
 		assertEquals(4, r1.size());
 		assertEquals(4, r2.size());
