@@ -1,4 +1,3 @@
-#source("../../../../../dev/ws/indelappraisal/libindelappraisal.R")
 source("../../main/r/libgridss.R")
 #source("libneochromosome.R")
 source("libvcf.R")
@@ -8,15 +7,18 @@ library(ggplot2)
 library(scales)
 library(parallel)
 library(foreach)
-library(doSNOW) #install.packages("doSNOW")
+library(doParallel) #install.packages("doSNOW")
 #cl <- makeCluster(detectCores())
 #registerDoSNOW(cl)  
 
 theme_set(theme_bw())
 
-# Load simulation data
+#########################
+# Simulation Comparison Data
+########################
 pwd <- getwd()
-setwd("W:/i/data.fastcompare")
+#setwd("W:/i/data.gridss")
+setwd("C:/Temp/up")
 metadata <- LoadMetadata()
 vcfs <- LoadVcfs(metadata)
 setwd(pwd)
@@ -230,3 +232,36 @@ ggplot(dtmissing) +
   theme(panel.grid.major = element_blank()) +
   labs(y="missed events", x="Event size")
 missingTruth[missingTruth$SVTYPE=="BND",]
+
+
+
+#########################
+# gridss data
+########################
+pwd <- getwd()
+setwd("C:/Temp/up")
+metadata <- LoadMetadata()
+refvcfs <- LoadVcfs(metadata, pattern="[0-9a-f]{32}.reference.vcf$")
+gridss_truth_all <- LoadTruth(metadata, refvcfs, directory=".", pattern="[0-9a-f]{32}.vcf$", 100)
+setwd(pwd)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

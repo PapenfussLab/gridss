@@ -449,3 +449,43 @@ LoadVcfs <- function(metadata, directory=".", pattern="*.vcf$") {
   write(paste("Loaded", length(vcfs), "VCFs"), stderr())
   return(vcfs)
 }
+# Load VCFs into a list
+LoadTruth <- function(metadata, refvcfs, directory=".", pattern="*.vcf$", maxerrorbp, ...) {
+  write("Loading VCFs", stderr())
+  truthSet <- lapply(list.files(directory, pattern=pattern), function(filename) {
+    write(paste0("Loading ", filename), stderr())
+    vcf <- readVcf(filename, "unknown")
+    id <- GetMetadataId(filename)
+    md <- metadata[id, ]
+    attr(vcf, "id") <- id
+    attr(vcf, "metadata") <- md
+    attr(vcf, "filename") <- filename
+    if (is.null(md)) {
+      warning("VCF missing metadata - ignoring")
+      return(NULL)
+    }
+    if (is.null(md$CX_CALLER) || is.na(md$CX_CALLER)) {
+      return(NULL)
+    }
+    if (is.null(md$CX_REFERENCE_VCF) || is.na(md$CX_REFERENCE_VCF)) {
+      warning(paste0(md$Id, " missing reference vcf"))
+      return(NULL)
+    }
+    truthvcf <- refvcfs[[GetMetadataId(md$CX_REFERENCE_VCF)]]
+    if (is.null(truthvcf)) {
+      warning(paste0("Missing truth for", md$Id))
+      return(NULL)
+    }
+    write(paste0("Loading truth for ", md$Id), stderr())
+    callTruthPair <- CalculateTruth(vcf, truthvcf, maxerrorbp, ...)
+    if (nrow(callTruthPair$calls) > 0) {
+      callTruthPair$calls <- cbind(callTruthPair$calls, md, row.names=NULL)
+    }
+    callTruthPair$truth <- cbind(callTruthPair$truth, md, row.names=NULL)
+    return(callTruthPair)
+  })
+  truthSet[sapply(truthSet, is.null)] <- NULL # Remove NULLs
+  calls = rbindlist(lapply(truthSet, function(x) x$calls), use.names=TRUE, fill=TRUE)
+  truth = rbindlist(lapply(truthSet, function(x) x$truth), use.names=TRUE, fill=TRUE)
+  return(list(calls=calls, truth=truth))
+}
