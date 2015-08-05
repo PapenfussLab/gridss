@@ -1,26 +1,25 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.SequenceUtil;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map.Entry;
+import java.util.NavigableMap;
+import java.util.TreeMap;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
+import com.google.common.collect.ImmutableList;
+
 import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
-
-import com.google.common.collect.Range;
-import com.google.common.collect.RangeMap;
-import com.google.common.collect.TreeRangeMap;
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
 
 /**
  * Alignment of a sequence contig that spans multiple segments
@@ -30,24 +29,24 @@ import com.google.common.collect.TreeRangeMap;
 public class CompoundBreakendAlignment {
 	private final ProcessingContext processContext;
 	private final SAMFileHeader header;
-	private final RangeMap<Integer, SAMRecord> map = TreeRangeMap.create();
+	private final NavigableMap<Integer, SAMRecord> mappedStartOffset = new TreeMap<Integer, SAMRecord>();
 	private final BreakendSummary local;
 	private final byte[] anchorSequence;
 	private final byte[] anchorQual;
 	private final byte[] breakendSequence;
 	private final byte[] breakendQual;
 	public int getBreakpointCount() {
-		return map.asMapOfRanges().size();
+		return mappedStartOffset.size();
 	}
 	public SAMRecord getSimpleBreakendRealignment() {
 		SAMRecord r;
-		if (map.asMapOfRanges().size() == 0) {
+		if (mappedStartOffset.size() == 0) {
 			r = getPlaceholderRealignment();
 		} else {
 			if (local.direction == BreakendDirection.Forward) {
-				r = getSoftClipRealignment(map.getEntry(map.span().lowerEndpoint()));	
+				r = getSoftClipRealignment(mappedStartOffset.firstEntry().getValue());
 			} else {
-				r = getSoftClipRealignment(map.getEntry(map.span().upperEndpoint() - 1));
+				r = getSoftClipRealignment(mappedStartOffset.lastEntry().getValue());
 			}
 		}
 		return r;
@@ -57,67 +56,89 @@ public class CompoundBreakendAlignment {
 	 * @return
 	 */
 	public List<Pair<SAMRecord, SAMRecord>> getSubsequentBreakpointAlignmentPairs() {
+		if (getBreakpointCount() <= 1) return ImmutableList.of();
 		BreakendDirection direction = local.direction;
-		int offsetShift = 0;
 		byte[] fullSeq;
 		byte[] fullQual;
 		if (direction == BreakendDirection.Forward) {
 			fullSeq = ArrayUtils.addAll(anchorSequence, breakendSequence);
 			fullQual = ArrayUtils.addAll(anchorQual, breakendQual);
-			offsetShift = anchorSequence.length;
 		} else {
 			fullSeq = ArrayUtils.addAll(breakendSequence, anchorSequence);
 			fullQual = ArrayUtils.addAll(breakendQual, anchorQual);
 		}
 		List<Pair<SAMRecord, SAMRecord>> output = new ArrayList<Pair<SAMRecord,SAMRecord>>(getBreakpointCount() - 1);
-		Entry<Range<Integer>, SAMRecord> lastEntry = null;
-		for (Entry<Range<Integer>, SAMRecord> entry : map.asMapOfRanges().entrySet()) {
+		SAMRecord lastEntry = null;
+		int offsetDueToAnchor = (local.direction == BreakendDirection.Forward ? anchorSequence.length : 0);
+		for (SAMRecord entry : mappedStartOffset.values()) {
 			if (lastEntry != null) {
-				// process entries
-				// TODO: process these
-				throw new RuntimeException("NYI");
+				SAMRecord left = asFullSequence(fullSeq, fullQual, lastEntry, getReadOffset(lastEntry) + offsetDueToAnchor);
+				SAMRecord right = asFullSequence(fullSeq, fullQual, entry, getReadOffset(entry) + offsetDueToAnchor);
+				if (local.direction == BreakendDirection.Forward) {
+					int anchorBases = fullSeq.length - (left.getReadNegativeStrandFlag() ? SAMRecordUtil.getStartSoftClipLength(left) : SAMRecordUtil.getEndSoftClipLength(left));
+					trimSoftClip(right.getReadNegativeStrandFlag() ? 0 : anchorBases, right.getReadNegativeStrandFlag() ? anchorBases : 0, right);
+				} else {
+					int anchorBases = fullSeq.length - (right.getReadNegativeStrandFlag() ? SAMRecordUtil.getEndSoftClipLength(right) : SAMRecordUtil.getStartSoftClipLength(right));
+					trimSoftClip(left.getReadNegativeStrandFlag() ? anchorBases : 0, left.getReadNegativeStrandFlag() ? 0 : anchorBases, left);
+				}
+				output.add(Pair.of(left, right));
 			}
 			lastEntry = entry;
 		}
 		return output;
 	}
-	private SAMRecord getSoftClipRealignment(Entry<Range<Integer>, SAMRecord> entry) {
-		return getSoftClipRealignment(entry.getKey().lowerEndpoint(), entry.getValue());
-	}
-	/**
-	 * Converts the given partial realignment into an equivalent realignment
-	 * record for the full breakend sequence 
-	 * @param offsetStart
-	 * @param offsetEnd
-	 * @param r realignment record containing a subset of the breakend sequence
-	 * @return
-	 */
-	private SAMRecord getSoftClipRealignment(int offsetStart, SAMRecord r) {
-		if (r.getReadLength() == breakendSequence.length) return r;
-		r = SAMRecordUtil.clone(r);
-		assert(!r.getReadUnmappedFlag());
-		List<CigarElement> cigar = new ArrayList<CigarElement>(r.getCigar().getCigarElements());
-		int expandStartSoftClipBy = offsetStart;
-		int expandEndSoftClipBy = breakendSequence.length - r.getReadLength();
-		if (r.getReadNegativeStrandFlag()) {
-			CigarUtil.addStartSoftClip(cigar, expandEndSoftClipBy);
-			CigarUtil.addEndSoftClip(cigar, expandStartSoftClipBy);
-		} else {
-			CigarUtil.addStartSoftClip(cigar, expandStartSoftClipBy);
-			CigarUtil.addEndSoftClip(cigar, expandEndSoftClipBy);
+	private void trimSoftClip(int start, int end, SAMRecord read) {
+		int length = read.getReadLength();
+		read.setReadBases(Arrays.copyOfRange(read.getReadBases(), start, length - end));
+		read.setBaseQualities(Arrays.copyOfRange(read.getBaseQualities(), start, length - end));
+		List<CigarElement> list = new ArrayList<CigarElement>(read.getCigar().getCigarElements());
+		if (start > 0) {
+			CigarElement e = list.get(0);
+			assert(e.getOperator() == CigarOperator.SOFT_CLIP);
+			assert(e.getLength() >= start);
+			list.set(0, new CigarElement(e.getLength() - start, CigarOperator.SOFT_CLIP));
 		}
-		byte[] seq = breakendSequence;
-		byte[] qual = breakendQual;
+		if (end > 0) {
+			CigarElement e = list.get(list.size() - 1);
+			assert(e.getOperator() == CigarOperator.SOFT_CLIP);
+			assert(e.getLength() >= start);
+			list.set(list.size() - 1, new CigarElement(e.getLength() - end, CigarOperator.SOFT_CLIP));
+		}
+		if (list.get(0).getOperator() == CigarOperator.SOFT_CLIP && list.get(0).getLength() == 0) {
+			list.remove(0);
+		}
+		if (list.get(list.size() - 1).getOperator() == CigarOperator.SOFT_CLIP && list.get(list.size() - 1).getLength() == 0) {
+			list.remove(list.size() - 1);
+		}
+		read.setCigar(new Cigar(list));
+	}
+	private SAMRecord asFullSequence(byte[] fullSeq, byte[] fullQual, SAMRecord realign, int readStartOffset) {
+		SAMRecord r = SAMRecordUtil.clone(realign);
+		int length = r.getReadLength();
+		int startPad = readStartOffset;
+		int endPad = fullSeq.length - (readStartOffset + length);
+		byte[] seq = fullSeq;
+		byte[] qual = fullQual;
 		if (r.getReadNegativeStrandFlag()) {
 			seq = Arrays.copyOf(seq, seq.length);
-			SequenceUtil.reverseComplement(seq);
 			qual = Arrays.copyOf(qual, qual.length);
-			ArrayUtils.reverse(qual);
+			SequenceUtil.reverseComplement(seq);
+			SequenceUtil.reverseComplement(qual);
+			int tmp = startPad;
+			startPad = endPad;
+			endPad = tmp;
 		}
-		r.setReadBases(seq);
-		r.setBaseQualities(qual);
-		r.setCigar(new Cigar(cigar));
+		List<CigarElement> anchorCigarList = new ArrayList<CigarElement>(r.getCigar().getCigarElements());
+		CigarUtil.addStartSoftClip(anchorCigarList, startPad);
+		CigarUtil.addEndSoftClip(anchorCigarList, endPad);
+		r.setReadBases(fullSeq);
+		r.setBaseQualities(fullQual);
+		r.setCigar(new Cigar(anchorCigarList));
 		return r;
+	}
+	private SAMRecord getSoftClipRealignment(SAMRecord realign) {
+		if (realign.getReadLength() == breakendSequence.length) return realign;
+		return asFullSequence(breakendSequence, breakendQual, realign, getReadOffset(realign));
 	}
 	private SAMRecord getPlaceholderRealignment() {
 		SAMRecord placeholder = new SAMRecord(header);
@@ -150,21 +171,34 @@ public class CompoundBreakendAlignment {
 		this.breakendSequence = breakendSequence;
 		this.breakendQual = breakendQual;
 		if (realignments != null) {
-			if (realignments.size() == 1) {
-				// simple realignment
-				SAMRecord r = realignments.iterator().next();
+			for (SAMRecord r : realignments) {
 				if (r != null && !isFiltered(r)) {
-					map.put(Range.closedOpen(0, r.getReadLength()), r);
-				}
-			} else {
-				// compound realignment
-				for (SAMRecord r : realignments) {
-					if (r != null && !isFiltered(r)) {
-						int offset = BreakpointFastqEncoding.getEncodedReadOffset(r.getReadName());
-						map.put(Range.closedOpen(offset, offset + r.getReadLength()), r);
-					}
+					mappedStartOffset.put(getMappedOffset(r), r);
 				}
 			}
 		}
+	}
+	/**
+	 * Gets the breakend offset of the first base
+	 * @param r realignment
+	 * @return breakend offset of the first read base
+	 */
+	private int getReadOffset(SAMRecord r) {
+		if (r.getReadLength() == breakendSequence.length) return 0;
+		return BreakpointFastqEncoding.getEncodedBreakendOffset(r.getReadName());
+	}
+	/**
+	 * Gets the breakend offset of the first mapped base
+	 * @param r realignment
+	 * @return breakend offset of the first mapped read base
+	 */
+	private int getMappedOffset(SAMRecord r) {
+		int offset = getReadOffset(r);
+		if (r.getReadNegativeStrandFlag()) {
+			offset += SAMRecordUtil.getEndSoftClipLength(r);
+		} else {
+			offset += SAMRecordUtil.getStartSoftClipLength(r);
+		}
+		return offset;
 	}
 }

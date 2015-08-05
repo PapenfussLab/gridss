@@ -54,9 +54,9 @@ public class FastqBreakpointWriterTest extends TestHelper {
 		fw.writeRealignment(realigned, 1);
 		assertEquals(3, w.list.size());
 		assertEquals("A", w.list.get(1).getReadString());
-		assertEquals(0, BreakpointFastqEncoding.getEncodedReadOffset(w.list.get(1).getReadHeader()));
+		assertEquals(0, BreakpointFastqEncoding.getEncodedBreakendOffset(w.list.get(1).getReadHeader()));
 		assertEquals("GGGT", w.list.get(2).getReadString());
-		assertEquals(6, BreakpointFastqEncoding.getEncodedReadOffset(w.list.get(2).getReadHeader()));
+		assertEquals(6, BreakpointFastqEncoding.getEncodedBreakendOffset(w.list.get(2).getReadHeader()));
 		fw.close();
 	}
 	@Test
@@ -90,9 +90,9 @@ public class FastqBreakpointWriterTest extends TestHelper {
 		assertEquals(3, w.list.size());
 		assertEquals(3, w.list.size());
 		assertEquals("ACCC", w.list.get(1).getReadString());
-		assertEquals(0, BreakpointFastqEncoding.getEncodedReadOffset(w.list.get(1).getReadHeader()));
+		assertEquals(0, BreakpointFastqEncoding.getEncodedBreakendOffset(w.list.get(1).getReadHeader()));
 		assertEquals("T", w.list.get(2).getReadString());
-		assertEquals(9, BreakpointFastqEncoding.getEncodedReadOffset(w.list.get(2).getReadHeader()));
+		assertEquals(9, BreakpointFastqEncoding.getEncodedBreakendOffset(w.list.get(2).getReadHeader()));
 		fw.close();
 	}
 }

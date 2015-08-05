@@ -45,7 +45,7 @@ public class BreakpointFastqEncoding {
 	public static int getEncodedStartPosition(String fastqid) {
 		return Integer.parseInt(fastqid.split("#")[1]);
 	}
-	public static int getEncodedReadOffset(String fastqid) {
+	public static int getEncodedBreakendOffset(String fastqid) {
 		String[] split =  fastqid.split("#");
 		if (split.length > 2) return Integer.parseInt(split[2]);
 		return 0;
@@ -68,6 +68,16 @@ public class BreakpointFastqEncoding {
 		}
 		return fq;
 	}
+	/**
+	 * Gets the FASTQ record for realigning the given breakend sequence
+	 * @param seq (partial) breakend sequence
+	 * @param qual base qualities
+	 * @param referenceIndex breakend contig
+	 * @param startPosition breakend anchor position
+	 * @param breakendOffset start offset relative to start of full breakend sequence
+	 * @param evidenceID evidenceID of breakend
+	 * @return FASTQ record for breakend
+	 */
 	public static FastqRecord getRealignmentFastq(byte[] seq, byte[] qual, int referenceIndex, int startPosition, int breakendOffset, String evidenceID) {
 		String seqHeaderPrefix = getEncodedFastqID(referenceIndex, startPosition, breakendOffset, evidenceID);
 		FastqRecord fq = new FastqRecord(seqHeaderPrefix, new String(seq, Charsets.US_ASCII), "", SAMUtils.phredToFastq(qual));

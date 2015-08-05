@@ -15,6 +15,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
 import au.edu.wehi.idsv.alignment.AlignerFactory;
 import au.edu.wehi.idsv.alignment.Alignment;
@@ -22,6 +23,7 @@ import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Bytes;
 import com.google.common.primitives.UnsignedBytes;
@@ -63,6 +65,40 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		this.breakend = bs;
 		this.realignment = realignments.getSimpleBreakendRealignment();
 		SAMRecordUtil.pairReads(this.record, this.realignment);
+	}
+	public List<SAMRecordAssemblyEvidence> getAllRealignments() {
+		if (realignments.getBreakpointCount() <= 1) {
+			return ImmutableList.of(this);
+		}
+		int i = 0;
+		List<SAMRecordAssemblyEvidence> list = new ArrayList<SAMRecordAssemblyEvidence>(realignments.getBreakpointCount());
+		for (Pair<SAMRecord, SAMRecord> pair : realignments.getSubsequentBreakpointAlignmentPairs()) {
+			SAMRecord anchor = pair.getLeft();
+			SAMRecord realign = pair.getRight();
+			if (breakend.direction == BreakendDirection.Backward) {
+				realign = pair.getLeft();
+				anchor = pair.getRight();
+			}
+			SAMRecord asAnchor = SAMRecordUtil.clone(getSAMRecord());
+			asAnchor.setReadName(getEvidenceID() + "_" + Integer.toString(i));
+			asAnchor.setReferenceIndex(anchor.getReferenceIndex());
+			asAnchor.setAlignmentStart(anchor.getAlignmentStart());
+			asAnchor.setReadBases(anchor.getReadBases());
+			asAnchor.setBaseQualities(anchor.getBaseQualities());
+			asAnchor.setCigar(anchor.getCigar());
+			asAnchor.setMappingQuality(Math.min(anchor.getMappingQuality(), asAnchor.getMappingQuality()));
+			if (anchor.getReadNegativeStrandFlag()) {
+				asAnchor.setAttribute(SamTags.ASSEMBLY_DIRECTION, breakend.direction.reverse().toChar());
+				// since direction of anchor is reversed, we also need to replicate
+				// the alignment of the reverse-comp of the sequence. Fortunately, the SAM format makes
+				// this simple and we just flip the aligned strand
+				realign.setReadNegativeStrandFlag(!realign.getReadNegativeStrandFlag());
+			}
+			SAMRecordAssemblyEvidence be = AssemblyFactory.hydrate(getEvidenceSource(), asAnchor);
+			SAMRecordAssemblyEvidence bp = AssemblyFactory.incorporateRealignment(getEvidenceSource().getContext(), be, ImmutableList.of(realign));
+			list.add(bp);
+		}
+		return list;
 	}
 	/**
 	 * Determines whether the given record is part of the given assembly

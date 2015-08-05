@@ -6,8 +6,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.metrics.Header;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -18,7 +16,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.metrics.Header;
 
 
 public class SAMRecordAssemblyEvidenceTest extends TestHelper {
@@ -407,5 +409,38 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals("2M3I4D4M", r.getCigarString());
 		assertEquals("ABCDEFGHI", S(r.getBaseQualities()));
 		assertEquals("NNAAATTTT", S(r.getReadBases()));
+	}
+	@Test
+	public void getAllRealignments_should_return_all_breakpoints_bwd() {
+		//          1         2         3         4         5         6         7      
+		// 123456789012345678901234567890123456789012345678901234567890123456789012345
+		// CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAA
+		//                                                                       *****
+		// SSSSSSSSSSSSSSSSSSSSSSSSSSSSSMMMMMSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
+		//     SSSSSSSSSSSMMMMMMMMSSSSSSSSSSSSSSSSS
+		// M
+		
+		SAMRecordAssemblyEvidence be = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, null,
+				0, 71, 5, B("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAA"), B(40,75), new int[] {0, 0});
+		RealignedSAMRecordAssemblyEvidence e = (RealignedSAMRecordAssemblyEvidence)AssemblyFactory.incorporateRealignment(getContext(), be, ImmutableList.of(
+				withReadName("0#0#0#readname", onNegative(withSequence(B(htsjdk.samtools.util.SequenceUtil.reverseComplement("CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATAT")),
+						withQual(B(40,"CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATAT".length()), Read(1, 100, "36S5M29S")))))[0],
+				withReadName("0#0#4#readname", onNegative(withSequence(B(htsjdk.samtools.util.SequenceUtil.reverseComplement("AATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAG")),
+						withQual(B(40,"AATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAG".length()), Read(2, 200, "17S8M11S")))))[0],
+				withReadName("0#0#0#readname", withQual(B("1"), withSequence("C", Read(0, 1, "1M"))))[0]
+				));
+		assertEquals(new BreakpointSummary(0, BWD, 71, 71, 1, BWD, 100, 100), e.getBreakendSummary());
+		assertEquals("AGTCAGCTGAAGCACCATTACCCGATCAAAACATAT", e.getUntemplatedSequence());
+		List<SAMRecordAssemblyEvidence> rl = e.getAllRealignments();
+		assertEquals(2, rl.size());
+		
+		RealignedSAMRecordAssemblyEvidence r0 = (RealignedSAMRecordAssemblyEvidence)rl.get(0);
+		assertEquals(new BreakpointSummary(2, FWD, 207, 207, 0, FWD, 1, 1), r0.getBreakendSummary());
+		assertEquals(htsjdk.samtools.util.SequenceUtil.reverseComplement("ATTAATCGCAAGAG"), r0.getUntemplatedSequence());
+		
+		RealignedSAMRecordAssemblyEvidence r1 = (RealignedSAMRecordAssemblyEvidence)rl.get(1);
+		assertEquals(new BreakpointSummary(1, FWD, 104, 104, 2, BWD, 200, 200), r1.getBreakendSummary());
+		assertEquals(htsjdk.samtools.util.SequenceUtil.reverseComplement("CGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAA"), S(r1.getAnchorSequence()));
+		assertEquals(htsjdk.samtools.util.SequenceUtil.reverseComplement("ATTCGA"), r1.getUntemplatedSequence()); // off by one
 	}
 }

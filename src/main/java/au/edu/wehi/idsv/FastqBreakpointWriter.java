@@ -44,7 +44,7 @@ public class FastqBreakpointWriter implements Closeable {
 		String fastqid = breakend.getReadName();
 		int refIndex = BreakpointFastqEncoding.getEncodedReferenceIndex(fastqid);
 		int start = BreakpointFastqEncoding.getEncodedStartPosition(fastqid);
-		int offset = BreakpointFastqEncoding.getEncodedReadOffset(fastqid);
+		int offset = BreakpointFastqEncoding.getEncodedBreakendOffset(fastqid);
 		String id = BreakpointFastqEncoding.getEncodedID(fastqid);
 		byte[] seq = breakend.getReadBases();
 		byte[] qual = breakend.getBaseQualities();

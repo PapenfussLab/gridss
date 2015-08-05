@@ -131,9 +131,11 @@ public class CigarUtil {
 		return result;
 	}
 	public static void addStartSoftClip(List<CigarElement> cigar, int softClippedBaseCount) {
+		assert(softClippedBaseCount >= 0);
 		while (cigar.get(0).getOperator() == CigarOperator.H) {
 			cigar.remove(0);
 		}
+		if (softClippedBaseCount == 0) return;
 		if (cigar.get(0).getOperator() == CigarOperator.SOFT_CLIP) {
 			cigar.set(0, new CigarElement(cigar.get(0).getLength() + softClippedBaseCount, CigarOperator.SOFT_CLIP));
 		} else {
@@ -141,9 +143,11 @@ public class CigarUtil {
 		}
 	}
 	public static void addEndSoftClip(List<CigarElement> cigar, int softClippedBaseCount) {
+		assert(softClippedBaseCount >= 0);
 		while (cigar.get(cigar.size() - 1).getOperator() == CigarOperator.H) {
 			cigar.remove(cigar.size() - 1);
 		}
+		if (softClippedBaseCount == 0) return;
 		if (cigar.get(cigar.size() - 1).getOperator() == CigarOperator.SOFT_CLIP) {
 			cigar.set(cigar.size() - 1, new CigarElement(cigar.get(cigar.size() - 1).getLength() + softClippedBaseCount, CigarOperator.SOFT_CLIP));
 		} else {
