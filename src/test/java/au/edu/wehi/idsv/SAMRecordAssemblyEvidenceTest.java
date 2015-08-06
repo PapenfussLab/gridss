@@ -49,6 +49,10 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals(10, bwd.getSAMRecord().getAlignmentStart());
 		assertEquals("3M4S", fwd.getSAMRecord().getCigarString());
 		assertEquals("4S3M", bwd.getSAMRecord().getCigarString());
+		assertEquals("CCCA", S(fwd.getBreakendSequence()));
+		assertEquals("GTAC", S(bwd.getBreakendSequence()));
+		assertEquals("GTA", S(fwd.getAnchorSequence()));
+		assertEquals("CCA", S(bwd.getAnchorSequence()));
 	}
 	@Test
 	public void unanchor_positions_should_match_genomic() {
@@ -62,6 +66,26 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals(10, bwd.getSAMRecord().getAlignmentEnd());
 		assertEquals("1X4N1X3S", fwd.getSAMRecord().getCigarString());
 		assertEquals("3S1X4N1X", bwd.getSAMRecord().getCigarString());
+		assertEquals("AAA", S(fwd.getBreakendSequence()));
+		assertEquals("AAA", S(bwd.getBreakendSequence()));
+		assertEquals("", S(fwd.getAnchorSequence()));
+		assertEquals("", S(bwd.getAnchorSequence()));
+	}
+	@Test
+	public void unanchor_sequences_should_match_assembly() {
+		for (SAMRecordAssemblyEvidence e : new SAMRecordAssemblyEvidence[] {
+				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(1, FWD, 1, 1), null, B("AAA"), B("AAA"), new int[] {2, 0}),
+				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(1, FWD, 1, 2), null, B("AAA"), B("AAA"), new int[] {2, 0}),
+				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(1, FWD, 1, 3), null, B("AAA"), B("AAA"), new int[] {2, 0}),
+				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(1, FWD, 1, 4), null, B("AAA"), B("AAA"), new int[] {2, 0}),
+				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(1, BWD, 1, 1), null, B("AAA"), B("AAA"), new int[] {2, 0}),
+				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(1, BWD, 1, 2), null, B("AAA"), B("AAA"), new int[] {2, 0}),
+				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(1, BWD, 1, 3), null, B("AAA"), B("AAA"), new int[] {2, 0}),
+				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(1, BWD, 1, 4), null, B("AAA"), B("AAA"), new int[] {2, 0})
+		}) {
+			assertEquals("AAA", S(e.getBreakendSequence()));
+			assertEquals("", S(e.getAnchorSequence()));
+		}
 	}
 	private void assertPairing(SAMRecord assembly, SAMRecord realign) {
 		assertNotNull(assembly);

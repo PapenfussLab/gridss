@@ -7,6 +7,8 @@ import htsjdk.samtools.util.SequenceUtil;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.junit.Ignore;
@@ -17,11 +19,13 @@ import org.junit.rules.TemporaryFolder;
 import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.BreakpointSummary;
+import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SmallIndelSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 
@@ -268,5 +272,26 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		// no actual variant support - artifact of tracking reference/non-reference at kmer resolution, not base pair resolution  
 		assertEquals(0, results.size());
+	}
+	@Test
+	public void should_use_expected_read_pair_orientation() {
+		DeBruijnSubgraphAssembler ass = DSA(5);
+		List<DirectedEvidence> in = new ArrayList<DirectedEvidence>();
+		in.add(SCE(FWD, withSequence("AACCGGTTC", Read(0, 1, "5M4S"))));
+		in.add(SCE(FWD, withSequence("AACCGGTTC", Read(0, 2, "4M5S"))));
+		in.add(NRRP(withSequence("AACCGGTTCC", DP(0, 1, "10M", false, 1, 100, "10M", true))));
+		in.add(NRRP(withSequence("AACCGGTTCC", DP(0, 2, "10M", false, 1, 100, "10M", true))));
+		in.add(NRRP(withSequence("GTACGATT", DP(0, 1, "8M", false, 1, 100, "8M", false))));
+		in.add(NRRP(withSequence("GTACGATT", DP(0, 2, "8M", false, 1, 100, "8M", false))));
+		in.sort(DirectedEvidence.ByStartEnd);
+		
+		List<AssemblyEvidence> results = Lists.newArrayList();
+		for (DirectedEvidence e : in) {
+			results.addAll(Lists.newArrayList(ass.addEvidence(e)));
+		}
+		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
+		assertEquals(2, results.size());
+		assertEquals("AACCGGTTCC", S(results.get(1).getAssemblySequence()));
+		assertEquals(SequenceUtil.reverseComplement("GTACGATT"), S(results.get(0).getAssemblySequence()));
 	}
 }

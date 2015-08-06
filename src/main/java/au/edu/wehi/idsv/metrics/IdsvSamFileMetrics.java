@@ -44,11 +44,13 @@ public class IdsvSamFileMetrics {
 		}
 		return metric;
 	}
-	private static InsertSizeMetrics getInsertSizeMetrics(File insertSizeMetricsFile) {
+	public static InsertSizeMetrics getInsertSizeMetrics(File insertSizeMetricsFile) {
 		InsertSizeMetrics insertSize = null;
 		for (InsertSizeMetrics metric : Iterables.filter(MetricsFile.readBeans(insertSizeMetricsFile), InsertSizeMetrics.class)) {
 			if (metric.SAMPLE == null && metric.LIBRARY == null && metric.READ_GROUP == null) {
-				insertSize = metric;
+				if (insertSize == null || insertSize.READ_PAIRS < metric.READ_PAIRS) {
+					insertSize = metric;
+				}
 			}
 		}
 		if (insertSize == null) {

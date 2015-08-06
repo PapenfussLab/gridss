@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.util.Log;
 
 import java.io.File;
@@ -14,6 +15,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import picard.analysis.InsertSizeMetrics;
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
 import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
@@ -91,6 +93,14 @@ public class Idsv extends CommandLineProgram {
 	    	List<SAMEvidenceSource> samEvidence = createSamEvidenceSources();
 	    	
 	    	extractEvidence(threadpool, samEvidence);
+	    	
+	    	for (SAMEvidenceSource e : samEvidence) {
+	    		InsertSizeMetrics ism = e.getMetrics().getInsertSizeMetrics();
+	    		if (ism != null && ism.PAIR_ORIENTATION != PairOrientation.FR) {
+	    			log.error("gridss currently supports only FR read pair orientation. If usage with other read pair orientations is required, please raise an issue at https://github.com/PapenfussLab/gridss/issues");
+	    			return -1;
+	    		}
+	    	}
 	    	
 	    	if (!checkRealignment(samEvidence, WORKER_THREADS)) {
 	    		return -1;

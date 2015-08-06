@@ -1,7 +1,9 @@
 package au.edu.wehi.idsv.metrics;
 
 import static org.junit.Assert.assertEquals;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,6 +24,11 @@ public class IdsvSamFileMetricsTest extends TestHelper {
 		assertEquals(isd, metrics.getInsertSizeDistribution());
 		assertEquals(ism, metrics.getInsertSizeMetrics());
 		assertEquals(sc, metrics.getSoftClipDetailMetrics());
+	}
+	@Test
+	public void getInsertSizeMetrics_should_use_most_plentiful_orientation() {
+		InsertSizeMetrics metrics = IdsvSamFileMetrics.getInsertSizeMetrics(new File("src/test/resources/multiple.idsv.metrics.insertsize.txt"));
+		assertEquals(PairOrientation.FR, metrics.PAIR_ORIENTATION);
 	}
 	/*
 	@Test

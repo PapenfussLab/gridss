@@ -513,5 +513,27 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertTrue(e.isReferenceAssembly());
 		assertNull(e.getBreakendSummary());
 	}
+	@Test
+	public void imprecise_should_include_ci_interval_on_both_sides() {
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, BWD, 1, 10), null, B("AA"), B("AA"), new int[] {2, 0});
+		RealignedSAMRecordAssemblyEvidence re = (RealignedSAMRecordAssemblyEvidence)AssemblyFactory.incorporateRealignment(getContext(), e, ImmutableList.of(
+				withReadName("0#1#0#ReadName", Read(1, 100, "2M"))[0]));
+		assertEquals(new BreakpointSummary(0, BWD, 1, 10, 1, FWD, 101, 110), re.getBreakendSummary());
+		assertEquals(new BreakpointSummary(1, FWD, 101, 110, 0, BWD, 1, 10), re.asRemote().getBreakendSummary());
+		
+		RealignedSAMRecordAssemblyEvidence roundtrip = (RealignedSAMRecordAssemblyEvidence)AssemblyFactory.incorporateRealignment(getContext(), AssemblyFactory.hydrate(AES(), re.getSAMRecord()), ImmutableList.of(re.getRemoteSAMRecord()));
+		assertEquals(new BreakpointSummary(0, BWD, 1, 10, 1, FWD, 101, 110), roundtrip.getBreakendSummary());
+		assertEquals(new BreakpointSummary(1, FWD, 101, 110, 0, BWD, 1, 10), roundtrip.asRemote().getBreakendSummary());
+	}
+	@Test
+	public void realignment_to_negative_strand_should_change_anchor_position() {
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, BWD, 1, 10), null, B("AAAAAAAAAA"), B("0000000000"), new int[] {2, 0});
+		RealignedSAMRecordAssemblyEvidence re = (RealignedSAMRecordAssemblyEvidence)AssemblyFactory.incorporateRealignment(getContext(), e, ImmutableList.of(
+				onNegative(withReadName("0#1#0#ReadName", Read(1, 200, "10M")))[0]));
+		assertEquals(new BreakpointSummary(0, BWD, 1, 10, 1, BWD, 191, 200), re.getBreakendSummary());
+		
+		RealignedSAMRecordAssemblyEvidence roundtrip = (RealignedSAMRecordAssemblyEvidence)AssemblyFactory.incorporateRealignment(getContext(), AssemblyFactory.hydrate(AES(), re.getSAMRecord()), ImmutableList.of(re.getRemoteSAMRecord()));
+		assertEquals(new BreakpointSummary(0, BWD, 1, 10, 1, BWD, 191, 200), roundtrip.getBreakendSummary());
+	}
 }
 

@@ -2,16 +2,24 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
+import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
+
 import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
@@ -96,5 +104,49 @@ public class IdsvTest extends IntermediateFilesTest {
 		// Should have generated two breakpoints
 		List<SAMRecordAssemblyEvidence> ass = Lists.newArrayList(new AssemblyEvidenceSource(firstPass.getContext(), firstPass.createSamEvidenceSources(), firstPass.OUTPUT).iterator(false, false));
 		assertEquals(2, ass.size());
+	}
+	@Test
+	public void test_sr_rp_assembly() {
+		List<DirectedEvidence> in = new ArrayList<DirectedEvidence>();
+		in.add(SCE(FWD, withSequence("AACCGGTTCTA", Read(0, 15, "5M6S"))));
+		in.add(SCE(FWD, withSequence("AACCGGTTCTA", Read(0, 15, "6M5S"))));
+		in.add(NRRP(withSequence("AACCGGTTCTA", DP(0, 1, "11M", true, 1, 100, "11M", false))));
+		in.add(NRRP(withSequence("AACCGGTTCTA", DP(0, 2, "11M", true, 1, 100, "11M", false))));
+		
+		List<SAMRecord> insam = in.stream().flatMap(de -> {
+			if (de instanceof SoftClipEvidence) return ImmutableList.<SAMRecord>of(((SoftClipEvidence)de).getSAMRecord()).stream();
+			if (de instanceof NonReferenceReadPair) return ImmutableList.<SAMRecord>of(
+					((NonReferenceReadPair)de).getNonReferenceRead(),
+					((NonReferenceReadPair)de).getLocalledMappedRead()).stream();
+			throw new RuntimeException("NYI");
+		}).collect(Collectors.toList());
+		insam.addAll(Lists.newArrayList(RP(0, 1, 100, 10)));
+		createInput(insam);
+		String[] args = new String[] {
+				"INPUT=" + input.toString(),
+				"REFERENCE=" + reference.toString(),
+				"OUTPUT=" + output.toString(),
+				"TMP_DIR=" + super.testFolder.getRoot().toString(),
+				"WORKING_DIR=" + super.testFolder.getRoot().toString(),
+				"PER_CHR=false",
+				"K=5",
+				"SOFT_CLIP_MIN_LENGTH=1",
+				"READ_PAIR_ANCHOR_MIN_MAPQ=0",
+				"SOFT_CLIP_MIN_MAPQ=0",
+				"READ_PAIR_MIN_ENTROPY=0",
+				"SOFT_CLIP_MIN_ENTROPY=0",
+				"SOFT_CLIP_MIN_ANCHOR_PERCENT_IDENTITY=0",
+				"SOFT_CLIP_MIN_BASE_QUALITY=0",
+				"INPUT_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE=10",
+				"INPUT_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE=100",
+		};
+		Idsv pass1 = new Idsv();
+		pass1.instanceMain(args);
+		createBAM(new File(input.getAbsoluteFile() + ".idsv.working/" + input.getName() + ".idsv.realign.0.bam"), SortOrder.unsorted, new SAMRecord[0]);
+		Idsv pass2 = new Idsv();
+		pass2.instanceMain(args);
+		
+		List<SAMRecord> breakendAssemblies = getRecords(new File(output.getAbsoluteFile() + ".idsv.working/" + output.getName() + ".idsv.breakend.bam"));
+		assertEquals(1, breakendAssemblies.size());
 	}
 }
