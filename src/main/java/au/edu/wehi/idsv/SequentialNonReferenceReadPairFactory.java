@@ -1,9 +1,9 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMRecord;
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
-
 import com.google.common.collect.PeekingIterator;
+
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import htsjdk.samtools.SAMRecord;
 
 /**
  * Iterates over read pairs ordered according to the start position of the locally mapped read in the pair
@@ -23,7 +23,7 @@ public class SequentialNonReferenceReadPairFactory extends SequentialSAMRecordFa
 	}
 	public NonReferenceReadPair createNonReferenceReadPair(SAMRecord record, SAMEvidenceSource source) {
 		if (!record.getReadPairedFlag()) return null;
-		SAMRecord mate = findAssociatedSAMRecord(record);
+		SAMRecord mate = findFirstAssociatedSAMRecord(record);
 		NonReferenceReadPair rp = NonReferenceReadPair.create(record, mate, source);
 		assert(sanityCheckEvidencePairing(rp, record, mate, source));
 		return rp;
@@ -41,11 +41,10 @@ public class SequentialNonReferenceReadPairFactory extends SequentialSAMRecordFa
 				|| (rpLocal instanceof UnmappedMateReadPair && rpRemote == null)
 				|| (rpRemote instanceof UnmappedMateReadPair && rpLocal == null);
 	}
-	@Override
-	public SAMRecord findAssociatedSAMRecord(SAMRecord record) {
+	public SAMRecord findFirstAssociatedSAMRecord(SAMRecord record) {
 		if (record == null) return null;
 		if (record.getReadUnmappedFlag()) return null;
-		return findMatching(record.getReferenceIndex(), record.getAlignmentStart(), record.getReadName() + (record.getFirstOfPairFlag() ? SAMRecordUtil.FIRST_OF_PAIR_NAME_SUFFIX : SAMRecordUtil.SECOND_OF_PAIR_NAME_SUFFIX));
+		return findFirstMatching(record.getReferenceIndex(), record.getAlignmentStart(), record.getReadName() + (record.getFirstOfPairFlag() ? SAMRecordUtil.FIRST_OF_PAIR_NAME_SUFFIX : SAMRecordUtil.SECOND_OF_PAIR_NAME_SUFFIX));
 	}
 	@Override
 	protected String getMatchingKey(SAMRecord record) {

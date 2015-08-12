@@ -1,17 +1,17 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMRecord;
-
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
-import au.edu.wehi.idsv.visualisation.TrackedBuffer;
-
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Maps;
 import com.google.common.collect.PeekingIterator;
+
+import au.edu.wehi.idsv.visualisation.TrackedBuffer;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.Log;
 
 /**
  * Common base class for supplying matching SAMRecords from SAMRecord sequence in
@@ -22,8 +22,9 @@ import com.google.common.collect.PeekingIterator;
  *
  */
 public abstract class SequentialSAMRecordFactoryBase<T> implements TrackedBuffer {
+	private static final Log log = Log.getInstance(SequentialSAMRecordFactoryBase.class);
 	private final PeekingIterator<SAMRecord> sequence;
-	private final Map<String, SAMRecord> currentReads = Maps.newHashMap();
+	private final HashMultimap<String, SAMRecord> currentReads = HashMultimap.create();
 	private int currentReferenceIndex = -1; 
 	private long currentPosition = -1;
 	protected SequentialSAMRecordFactoryBase(PeekingIterator<SAMRecord> sequence) {
@@ -32,7 +33,11 @@ public abstract class SequentialSAMRecordFactoryBase<T> implements TrackedBuffer
 		}
 		this.sequence = sequence;
 	}
-	public abstract SAMRecord findAssociatedSAMRecord(T record);
+	protected SAMRecord findFirstMatching(int referenceIndex, int position, String key) {
+		Set<SAMRecord> records = findMatching(referenceIndex, position, key);
+		if (records == null || records.isEmpty()) return null;
+		return records.iterator().next();
+	}
 	/**
 	 * 
 	 * @param referenceIndex expected reference index (according to the non-standard sort order) of matching SAMRecord
@@ -40,7 +45,7 @@ public abstract class SequentialSAMRecordFactoryBase<T> implements TrackedBuffer
 	 * @param key key of matching SAMRecord
 	 * @return matching SAMRecord if it exists, null otherwise
 	 */
-	protected SAMRecord findMatching(int referenceIndex, int position, String key) {
+	protected Set<SAMRecord> findMatching(int referenceIndex, int position, String key) {
 		load(referenceIndex, position);
 		if (currentReads.containsKey(key)) {
 			return currentReads.get(key);
@@ -70,6 +75,8 @@ public abstract class SequentialSAMRecordFactoryBase<T> implements TrackedBuffer
 			throw new IllegalStateException(String.format("Sanity check failure: cannot rewind source iterator from %d:%d to %d:%d", currentReferenceIndex, currentPosition, referenceIndex, alignmentStart));
 		}
 		if (referenceIndex != currentReferenceIndex || currentPosition != alignmentStart) {
+			int lastReferenceIndex = currentReferenceIndex;
+			long lastPosition = currentPosition;
 			currentReads.clear();
 			currentReferenceIndex = referenceIndex;
 			currentPosition = alignmentStart;
@@ -80,10 +87,12 @@ public abstract class SequentialSAMRecordFactoryBase<T> implements TrackedBuffer
 				if (sourceReferenceIndex < currentReferenceIndex) {
 					// skip reads that are on earlier chromosome
 					sequence.next();
+					checkSorted(lastReferenceIndex, lastPosition, currentReferenceIndex, currentPosition, r.getReadName());
 					continue;
 				} else if (sourceReferenceIndex == currentReferenceIndex) {
 					if (sourcePosition < currentPosition) {
 						// skip reads that are before our position
+						checkSorted(lastReferenceIndex, lastPosition, currentReferenceIndex, currentPosition, r.getReadName());
 						sequence.next();
 						continue;
 					} else if (sourcePosition == currentPosition) {
@@ -99,6 +108,17 @@ public abstract class SequentialSAMRecordFactoryBase<T> implements TrackedBuffer
 					break;
 				}
 			}
+		}
+	}
+	private void checkSorted(int lastReferenceIndex, long lastPosition, int referenceIndex, long position, String evidenceID) {
+		if (referenceIndex < lastReferenceIndex || (referenceIndex == lastReferenceIndex && position < lastPosition)) {
+			String msg = String.format("Unable to find realignment record for %s. This is likely due to either " 
+					+ "a) alignment not completed successfully or "
+					+ "b) chosen aligner writing records out of order."
+					+ "The aligner is required to write records in same order as the input fastq. "
+					+ "Please raise a github enhancement request if use by an aligner with no capability to ensure this ordering is required. ", evidenceID);
+			log.equals(msg);
+			throw new RuntimeException(msg);
 		}
 	}
 	private String trackedBufferName = trackedName();

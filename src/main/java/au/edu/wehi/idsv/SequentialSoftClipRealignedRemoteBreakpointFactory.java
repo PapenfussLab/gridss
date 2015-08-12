@@ -25,9 +25,9 @@ public class SequentialSoftClipRealignedRemoteBreakpointFactory extends Sequenti
 		super(softclipsSortedByRealignmentLocation);
 		this.direction = direction;
 	}
-	public SAMRecord findAssociatedSAMRecord(SAMRecord realignedClippedBases) {
+	public SAMRecord findFirstAssociatedSAMRecord(SAMRecord realignedClippedBases) {
 		if (realignedClippedBases == null) return null;
-		return findMatching(
+		return findFirstMatching(
 				realignedClippedBases.getReferenceIndex(),
 				realignedClippedBases.getAlignmentStart(),
 				BreakpointFastqEncoding.getEncodedID(realignedClippedBases.getReadName()));

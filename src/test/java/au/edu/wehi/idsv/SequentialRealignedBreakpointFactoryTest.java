@@ -17,7 +17,7 @@ public class SequentialRealignedBreakpointFactoryTest extends TestHelper {
 	@Test
 	public void should_match_by_read_name() {
 		SequentialRealignedBreakpointFactory factory = getFactory(L(withReadName("0#1#0#n1", Read(0, 1, 1))));
-		SAMRecord r = factory.findAssociatedSAMRecord(new MockDirectedEvidence(0, 1, "n1"));
+		SAMRecord r = factory.findFirstAssociatedSAMRecord(new MockDirectedEvidence(0, 1, "n1"));
 		assertNotNull(r);
 	}
 	@Test
@@ -29,11 +29,11 @@ public class SequentialRealignedBreakpointFactoryTest extends TestHelper {
 			withReadName("0#2#0#n4", Read(0, 1, "1M")),
 			withReadName("1#1#0#n5", Read(0, 1, "1M"))
 			));
-		assertNotNull(factory.findAssociatedSAMRecord(new MockDirectedEvidence(0, 1, "n1")));
-		assertNotNull(factory.findAssociatedSAMRecord(new MockDirectedEvidence(0, 1, "n3")));
-		assertNotNull(factory.findAssociatedSAMRecord(new MockDirectedEvidence(0, 1, "n2")));
-		assertNotNull(factory.findAssociatedSAMRecord(new MockDirectedEvidence(0, 2, "n4")));
-		assertNotNull(factory.findAssociatedSAMRecord(new MockDirectedEvidence(1, 1, "n5")));
+		assertNotNull(factory.findFirstAssociatedSAMRecord(new MockDirectedEvidence(0, 1, "n1")));
+		assertNotNull(factory.findFirstAssociatedSAMRecord(new MockDirectedEvidence(0, 1, "n3")));
+		assertNotNull(factory.findFirstAssociatedSAMRecord(new MockDirectedEvidence(0, 1, "n2")));
+		assertNotNull(factory.findFirstAssociatedSAMRecord(new MockDirectedEvidence(0, 2, "n4")));
+		assertNotNull(factory.findFirstAssociatedSAMRecord(new MockDirectedEvidence(1, 1, "n5")));
 	}
 	@Test(expected=IllegalStateException.class)
 	public void should_fail_during_non_sequential_traversal() {
@@ -41,14 +41,14 @@ public class SequentialRealignedBreakpointFactoryTest extends TestHelper {
 				withReadName("0#1#0#n1", Read(0, 1, 1)),
 				withReadName("1#1#0#n5", Read(0, 1, 1))
 				));
-		assertNotNull(factory.findAssociatedSAMRecord(new MockDirectedEvidence(1, 1, "n5")));
-		assertNull(factory.findAssociatedSAMRecord(new MockDirectedEvidence(0, 1, "n1")));
+		assertNotNull(factory.findFirstAssociatedSAMRecord(new MockDirectedEvidence(1, 1, "n5")));
+		assertNull(factory.findFirstAssociatedSAMRecord(new MockDirectedEvidence(0, 1, "n1")));
 	}
 	@Test(expected=RuntimeException.class)
 	public void should_error_if_expected_record_not_found() {
 		SequentialRealignedBreakpointFactory factory = getFactory(L(
 			withReadName("0#1#0#n1", Read(0, 1, "1M"))
 			));
-		factory.findAssociatedSAMRecord(new MockDirectedEvidence(0, 1, "n2"), true);
+		factory.findFirstAssociatedSAMRecord(new MockDirectedEvidence(0, 1, "n2"), true);
 	}
 }

@@ -114,9 +114,10 @@ public class CompoundBreakendAlignment {
 	}
 	private SAMRecord asFullSequence(byte[] fullSeq, byte[] fullQual, SAMRecord realign, int readStartOffset) {
 		SAMRecord r = SAMRecordUtil.clone(realign);
-		int length = r.getReadLength();
-		int startPad = readStartOffset;
-		int endPad = fullSeq.length - (readStartOffset + length);
+		assert(r.getReadLength() == r.getCigar().getReadLength()); // sanity check cigar matches read base count
+		int length = r.getReadLength() - SAMRecordUtil.getStartSoftClipLength(r) - SAMRecordUtil.getEndSoftClipLength(r);
+		int startPad;
+		int endPad;
 		byte[] seq = fullSeq;
 		byte[] qual = fullQual;
 		if (r.getReadNegativeStrandFlag()) {
@@ -124,16 +125,20 @@ public class CompoundBreakendAlignment {
 			qual = Arrays.copyOf(qual, qual.length);
 			SequenceUtil.reverseComplement(seq);
 			SequenceUtil.reverseComplement(qual);
-			int tmp = startPad;
-			startPad = endPad;
-			endPad = tmp;
+			endPad = readStartOffset + SAMRecordUtil.getEndSoftClipLength(r);
+			startPad = fullSeq.length - length - endPad;
+		} else {
+			startPad = readStartOffset + SAMRecordUtil.getStartSoftClipLength(r);
+			endPad = fullSeq.length - length - startPad;
 		}
 		List<CigarElement> anchorCigarList = new ArrayList<CigarElement>(r.getCigar().getCigarElements());
+		CigarUtil.trimClipping(anchorCigarList);
 		CigarUtil.addStartSoftClip(anchorCigarList, startPad);
 		CigarUtil.addEndSoftClip(anchorCigarList, endPad);
-		r.setReadBases(fullSeq);
-		r.setBaseQualities(fullQual);
+		r.setReadBases(seq);
+		r.setBaseQualities(qual);
 		r.setCigar(new Cigar(anchorCigarList));
+		assert(r.getCigar().getReadLength() == fullSeq.length);
 		return r;
 	}
 	private SAMRecord getSoftClipRealignment(SAMRecord realign) {

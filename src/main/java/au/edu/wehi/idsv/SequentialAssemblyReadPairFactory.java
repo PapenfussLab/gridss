@@ -23,7 +23,7 @@ public class SequentialAssemblyReadPairFactory extends SequentialSAMRecordFactor
 	}
 	public SAMRecordAssemblyEvidence createAssembly(SAMRecord record, ProcessingContext processContext, AssemblyEvidenceSource source) {
 		if (record.getReadUnmappedFlag()) return null;
-		SAMRecord mate = findAssociatedSAMRecord(record);
+		SAMRecord mate = findFirstAssociatedSAMRecord(record);
 		SAMRecord assembly;
 		SAMRecord realign;
 		boolean recordIsAssembly = record.getFirstOfPairFlag(); 
@@ -46,11 +46,10 @@ public class SequentialAssemblyReadPairFactory extends SequentialSAMRecordFactor
 		}
 		return evidence;
 	}
-	@Override
-	public SAMRecord findAssociatedSAMRecord(SAMRecord record) {
+	public SAMRecord findFirstAssociatedSAMRecord(SAMRecord record) {
 		if (record == null) return null;
 		if (record.getReadUnmappedFlag()) return null;
-		return findMatching(record.getReferenceIndex(), record.getAlignmentStart(), record.getReadName() + (record.getFirstOfPairFlag() ? SAMRecordUtil.FIRST_OF_PAIR_NAME_SUFFIX : SAMRecordUtil.SECOND_OF_PAIR_NAME_SUFFIX));
+		return findFirstMatching(record.getReferenceIndex(), record.getAlignmentStart(), record.getReadName() + (record.getFirstOfPairFlag() ? SAMRecordUtil.FIRST_OF_PAIR_NAME_SUFFIX : SAMRecordUtil.SECOND_OF_PAIR_NAME_SUFFIX));
 	}
 	@Override
 	protected String getMatchingKey(SAMRecord record) {

@@ -154,4 +154,15 @@ public class CigarUtil {
 			cigar.add(new CigarElement(softClippedBaseCount, CigarOperator.SOFT_CLIP));
 		}
 	}
+	public static void trimClipping(List<CigarElement> cigar) {
+		while (trimClippingAt(cigar, 0));
+		while (trimClippingAt(cigar, cigar.size() - 1));
+	}
+	private static boolean trimClippingAt(List<CigarElement> cigar, int offset) {
+		if (cigar.get(offset).getOperator() == CigarOperator.HARD_CLIP || cigar.get(offset).getOperator() == CigarOperator.SOFT_CLIP) {
+			cigar.remove(offset);
+			return true;
+		}
+		return false;
+	}
 }

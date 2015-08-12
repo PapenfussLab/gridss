@@ -15,6 +15,7 @@ import java.util.List;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import au.edu.wehi.idsv.vcf.VcfConstants;
+import au.edu.wehi.idsv.visualisation.BufferTracker;
 
 import com.google.common.collect.Lists;
 
@@ -235,6 +236,7 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 	    			getRealignmentParameters(),
 	    			getVariantCallingParameters(),
 	    			REFERENCE, PER_CHR, VCF41_COMPATIBLE);
+	    	processContext.getBufferTracker().start();
 		}
 		processContext.registerCategory(0, "Normal");
 		processContext.registerCategory(1, "Tumour");

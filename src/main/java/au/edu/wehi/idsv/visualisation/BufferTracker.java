@@ -9,21 +9,42 @@ import java.lang.ref.WeakReference;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import au.edu.wehi.idsv.visualisation.TrackedBuffer.NamedTrackedBuffer;
 
+/**
+ * Tracks intermediate buffer sizes for memory tracking purposes. 
+ * @author Daniel Cameron
+ *
+ */
 public class BufferTracker {
-	private final List<WeakReference<TrackedBuffer>> bufferObjects = new ArrayList<WeakReference<TrackedBuffer>>();
+	private final List<WeakReference<TrackedBuffer>> bufferObjects = Collections.synchronizedList(new ArrayList<WeakReference<TrackedBuffer>>());
 	private final File output;
 	private final int writeIntervalInSeconds;
+	private volatile Worker worker = null;
+	/**
+	 * Tracking
+	 * @param owner owning object. If the owning object is garbage collected, tracking stops
+	 * @param output output file
+	 * @param writeIntervalInSeconds interval between 
+	 */
 	public BufferTracker(File output, int writeIntervalInSeconds) {
 		this.output = output;
 		this.writeIntervalInSeconds = writeIntervalInSeconds;
+	}
+	public void start() {
 		Worker worker = new Worker();
 		worker.setName("BufferTracker");
 		worker.setDaemon(false);
 		worker.start();
+	}
+	public void stop() {
+		if (worker == null) return;
+		Worker currentWorker = worker;
+		worker = null;
+		currentWorker.interrupt();
 	}
 	public synchronized void register(String context, TrackedBuffer obj) {
 		obj.setTrackedBufferContext(context);
@@ -71,7 +92,10 @@ public class BufferTracker {
 					Thread.sleep(writeIntervalInSeconds * 1000);
 					append();
 				} catch (InterruptedException e) {
-					// swallow
+				} finally {
+					if (worker != this) {
+						return;
+					}
 				}
 			}
 		}

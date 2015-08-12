@@ -3,6 +3,8 @@ package au.edu.wehi.idsv;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
 
+import java.util.Set;
+
 import com.google.common.collect.PeekingIterator;
 
 /**
@@ -23,16 +25,22 @@ public class SequentialRealignedBreakpointFactory extends SequentialSAMRecordFac
 			PeekingIterator<SAMRecord> realigned) {
 		super(realigned);
 	}
-	public SAMRecord findAssociatedSAMRecord(DirectedEvidence source) {
-		return findAssociatedSAMRecord(source, false);
+	public SAMRecord findFirstAssociatedSAMRecord(DirectedEvidence source) {
+		return findFirstAssociatedSAMRecord(source, false);
 	}
-	public SAMRecord findAssociatedSAMRecord(DirectedEvidence source, boolean expected) {
+	public SAMRecord findFirstAssociatedSAMRecord(DirectedEvidence source, boolean expected) {
 		if (source == null) return null;
-		SAMRecord record = findMatching(
+		Set<SAMRecord> records = findAllAssociatedSAMRecords(source, expected);
+		if (records == null) return null;
+		return records.iterator().next();
+	}
+	public Set<SAMRecord> findAllAssociatedSAMRecords(DirectedEvidence source, boolean expected) {
+		if (source == null) return null;
+		Set<SAMRecord> record = findMatching(
 				BreakpointFastqEncoding.getReferenceIndex(source),
 				BreakpointFastqEncoding.getStartPosition(source),
 				BreakpointFastqEncoding.getID(source));
-		if (record == null && expected) {
+		if (expected && (record == null || record.isEmpty())) {
 			String msg = String.format("Unable to find realignment record for %s. This is likely due to either " 
 					+ "a) alignment not completed successfully or "
 					+ "b) chosen aligner writing records out of order."

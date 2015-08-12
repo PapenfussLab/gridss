@@ -245,4 +245,11 @@ public class RealignedBreakpointTest extends TestHelper {
 		RealignedBreakpoint bp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, FWD, 15, 15), "CATTAATCGCAATAA", R(0, 25, "25M", "AACGACGCCAAGTCA", false));
 		assertEquals("AAAA", bp.getHomologySequence());
 	}
+	@Test
+	public void inserted_sequence_should_be_local_breakend_strand() {
+		String contig = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+		InMemoryReferenceSequenceFile ref = new InMemoryReferenceSequenceFile(new String[] { "Contig" }, new byte[][] { B(contig) });
+		RealignedBreakpoint rbp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, FWD, 15, 15), "N", onNegative(R(0, 1, "5M5S", "AAAAGGTTA", false))[0]);
+		assertEquals("TAACC", rbp.getInsertedSequence());
+	}
 }

@@ -7,6 +7,7 @@ import htsjdk.samtools.util.CloserUtil;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import au.edu.wehi.idsv.visualisation.TrackedBuffer;
@@ -49,11 +50,12 @@ public class SAMRecordAssemblyEvidenceIterator extends AbstractIterator<SAMRecor
 				RealignmentParameters rp = evidence.getEvidenceSource().getContext().getRealignmentParameters();
 				List<SAMRecord> realignments = new ArrayList<SAMRecord>(source.getRealignmentIterationCount());
 				for (SequentialRealignedBreakpointFactory factory : factories) {
-					SAMRecord realigned = factory.findAssociatedSAMRecord(evidence,
+					Set<SAMRecord> realigned = factory.findAllAssociatedSAMRecords(evidence,
 							rp.requireRealignment && 
-							rp.shouldRealignBreakend(evidence));
+							rp.shouldRealignBreakend(evidence) &&
+							factory == factories.get(0)); // only primary realignment is required
 					if (realigned != null) {
-						realignments.add(realigned);
+						realignments.addAll(realigned);
 					}
 				}
 				if (realignments.size() > 0) {

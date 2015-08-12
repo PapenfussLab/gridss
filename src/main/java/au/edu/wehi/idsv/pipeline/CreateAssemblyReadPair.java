@@ -212,16 +212,20 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 			Iterator<SAMRecordAssemblyEvidence> it = new SAMRecordAssemblyEvidenceFilteringIterator(processContext, cit);
 			while (it.hasNext()) {
 				SAMRecordAssemblyEvidence e = it.next();
-				SAMRecord assembly = e.getSAMRecord();
-				SAMRecord realign = e.getRemoteSAMRecord();
-				sortedWriters.get(assembly.getReferenceIndex() % sortedWriters.size()).addAlignment(assembly);
-				sortedWriters.get(realign.getReferenceIndex() % sortedWriters.size()).addAlignment(realign);
-				mateWriters.get(assembly.getMateReferenceIndex() % mateWriters.size()).addAlignment(assembly);
-				mateWriters.get(realign.getMateReferenceIndex() % mateWriters.size()).addAlignment(realign);
+				writeUnsortedOutput(e.getSAMRecord(), e.getRemoteSAMRecord());
+				for (SAMRecordAssemblyEvidence en : e.getSubsequentRealignments()) {
+					writeUnsortedOutput(en.getSAMRecord(), en.getRemoteSAMRecord());
+				}
 			}
 		} finally {
 			cit.close();
 		}
+	}
+	private void writeUnsortedOutput(SAMRecord assembly, SAMRecord realign) {
+		sortedWriters.get(assembly.getReferenceIndex() % sortedWriters.size()).addAlignment(assembly);
+		sortedWriters.get(realign.getReferenceIndex() % sortedWriters.size()).addAlignment(realign);
+		mateWriters.get(assembly.getMateReferenceIndex() % mateWriters.size()).addAlignment(assembly);
+		mateWriters.get(realign.getMateReferenceIndex() % mateWriters.size()).addAlignment(realign);
 	}
 	private void createUnsortedOutputWriters() {
 		FileSystemContext fsc = processContext.getFileSystemContext();

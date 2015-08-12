@@ -47,14 +47,14 @@ public class SequentialSoftClipRealignedRemoteBreakpointFactoryTest extends Inte
 				withReadName("2#3#0#br2", Read(1, 15, "15M"))[0],
 				withReadName("0#1#0#fr1", Read(2, 10, "15M"))[0],
 			};
-		assertEquals("r3", ffactory.findAssociatedSAMRecord(orderedRealigned[0]).getReadName());
-		assertEquals("r2", ffactory.findAssociatedSAMRecord(orderedRealigned[1]).getReadName());
-		assertEquals(null, ffactory.findAssociatedSAMRecord(orderedRealigned[2]));
-		assertEquals("r1", ffactory.findAssociatedSAMRecord(orderedRealigned[3]).getReadName());
+		assertEquals("r3", ffactory.findFirstAssociatedSAMRecord(orderedRealigned[0]).getReadName());
+		assertEquals("r2", ffactory.findFirstAssociatedSAMRecord(orderedRealigned[1]).getReadName());
+		assertEquals(null, ffactory.findFirstAssociatedSAMRecord(orderedRealigned[2]));
+		assertEquals("r1", ffactory.findFirstAssociatedSAMRecord(orderedRealigned[3]).getReadName());
 		
-		assertEquals(null, bfactory.findAssociatedSAMRecord(orderedRealigned[0]));
-		assertEquals(null, bfactory.findAssociatedSAMRecord(orderedRealigned[1]));
-		assertEquals("r2", bfactory.findAssociatedSAMRecord(orderedRealigned[2]).getReadName());
-		assertEquals(null, bfactory.findAssociatedSAMRecord(orderedRealigned[3]));
+		assertEquals(null, bfactory.findFirstAssociatedSAMRecord(orderedRealigned[0]));
+		assertEquals(null, bfactory.findFirstAssociatedSAMRecord(orderedRealigned[1]));
+		assertEquals("r2", bfactory.findFirstAssociatedSAMRecord(orderedRealigned[2]).getReadName());
+		assertEquals(null, bfactory.findFirstAssociatedSAMRecord(orderedRealigned[3]));
 	}
 }

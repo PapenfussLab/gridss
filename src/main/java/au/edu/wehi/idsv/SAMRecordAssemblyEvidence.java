@@ -66,9 +66,9 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		this.realignment = realignments.getSimpleBreakendRealignment();
 		SAMRecordUtil.pairReads(this.record, this.realignment);
 	}
-	public List<SAMRecordAssemblyEvidence> getAllRealignments() {
+	public List<SAMRecordAssemblyEvidence> getSubsequentRealignments() {
 		if (realignments.getBreakpointCount() <= 1) {
-			return ImmutableList.of(this);
+			return ImmutableList.of();
 		}
 		int i = 0;
 		List<SAMRecordAssemblyEvidence> list = new ArrayList<SAMRecordAssemblyEvidence>(realignments.getBreakpointCount());
@@ -97,6 +97,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 			SAMRecordAssemblyEvidence be = AssemblyFactory.hydrate(getEvidenceSource(), asAnchor);
 			SAMRecordAssemblyEvidence bp = AssemblyFactory.incorporateRealignment(getEvidenceSource().getContext(), be, ImmutableList.of(realign));
 			list.add(bp);
+			i++;
 		}
 		return list;
 	}
