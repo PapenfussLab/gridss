@@ -158,7 +158,10 @@ vcftobpgr <- function(vcf) {
       grcall[rows,]$mateIndex <- match(info(vcf)$PARID[rows], names(rowRanges(vcf)))
     }
     grcall[rows,]$untemplated <- str_length(preBases) + str_length(postBases) - str_length(as.character(rowRanges(vcf)$REF)[rows])
-    
+    if (any(rows & is.na(grcall$mateIndex))) {
+      warning(paste0("Unpaired breakends ", as.character(paste(names(grcall[is.na(grcall[rows,]$mateIndex),]), collapse=", "))))
+      grcall[rows & is.na(grcall$mateIndex),]$mateIndex <- seq_along(grcall)[rows & is.na(grcall$mateIndex)]
+    }
     mateBnd <- grcall[grcall[rows,]$mateIndex,]
     grcall[rows,]$size <- ifelse(seqnames(mateBnd)==seqnames(grcall[rows,]), abs(start(grcall[rows,]) - start(mateBnd)) + grcall[rows,]$untemplated, NA_integer_)
   }
@@ -245,8 +248,8 @@ vcftobpgr <- function(vcf) {
     stop("Breakends are not uniquely paired.")
   }
   if (any(grcall$mateIndex == seq_along(grcall))) {
-    browser()
-    stop("Breakend cannot be partner of itself - have all appropriate SV types been handled?")
+    #browser()
+    warning("Breakend has been partnered with itself - have all appropriate SV types been handled?")
   }
   return(grcall)
 }
@@ -263,10 +266,15 @@ distanceToClosest <- function(query, subject) {
 }
 
 
-CalculateTruth <- function(callvcf, truthvcf, maxerrorbp, maxerrorpercent=0.25, ...) {
+CalculateTruth <- function(callvcf, truthvcf, maxerrorbp, ignoreFilters, maxerrorpercent=0.25, ...) {
   if (any(!is.na(rowRanges(callvcf)$QUAL) & rowRanges(callvcf)$QUAL < 0)) {
     stop("Precondition failure: variant exists with negative quality score")
   }
+  if (!ignoreFilters) {
+    callvcf <- callvcf[rowRanges(callvcf)$FILTER %in% c(".", "PASS"),]
+    truthvcf <- truthvcf[rowRanges(truthvcf)$FILTER %in% c(".", "PASS"),]
+  }
+  
   grcall <- vcftobpgr(callvcf)
   grtruth <- vcftobpgr(truthvcf)
   #TMPDEBUG: grtruth[overlapsAny(grtruth, GRanges("chr12", IRanges(148000, width=1000))),]
@@ -348,9 +356,9 @@ CalculateTruth <- function(callvcf, truthvcf, maxerrorbp, maxerrorpercent=0.25, 
   calldf$tp <- calldf$expectedbehits == calldf$behits
   calldf$partialtp <- !calldf$tp & calldf$behits > 0
   calldf$fp <- !calldf$tp
-  return(list(calls=calldf, truth=truthdf))
+  return(list(calls=calldf, truth=truthdf, vcf=callvcf, truthvcf=truthvcf))
 }
-CalculateTruthSummary <- function(vcfs, maxerrorbp, ...) {
+CalculateTruthSummary <- function(vcfs, maxerrorbp, ignoreFilters=TRUE, ...) {
   truthSet <- lapply(vcfs, function(vcf) {
     md <- attr(vcf, "metadata")
     if (is.null(md)) {
@@ -370,7 +378,7 @@ CalculateTruthSummary <- function(vcfs, maxerrorbp, ...) {
       return(NULL)
     }
     write(paste0("Loading truth for ", md$Id), stderr())
-    callTruthPair <- CalculateTruth(vcf, truthvcf, maxerrorbp, ...)
+    callTruthPair <- CalculateTruth(vcf, truthvcf, maxerrorbp, ignoreFilters, ...)
     if (nrow(callTruthPair$calls) > 0) {
       callTruthPair$calls <- cbind(callTruthPair$calls, md, row.names=NULL)
     }
@@ -450,9 +458,21 @@ LoadVcfs <- function(metadata, directory=".", pattern="*.vcf$") {
   return(vcfs)
 }
 # Load VCFs into a list
-LoadTruth <- function(metadata, refvcfs, directory=".", pattern="*.vcf$", maxerrorbp, ...) {
-  write("Loading VCFs", stderr())
-  truthSet <- lapply(list.files(directory, pattern=pattern), function(filename) {
+LoadTruth <- function(metadata, refvcfs, directory=".", pattern="*.vcf$", maxerrorbp, useCache=FALSE, ignoreFilters=TRUE, ...) {
+  write("Loading truth from VCF", stderr())
+  #truthSet <- lapply(list.files(directory, pattern=pattern), function(filename) {
+  truthSet <- foreach(filename=list.files(directory, pattern=pattern)) %do% {
+    source(paste0(ifelse(as.character(Sys.info())[1] == "Windows", "W:/", "~/"), "/dev/gridss/src/test/r/libvcf.R"))
+    if (useCache) {
+      cachefile <- paste0(filename, ".CalculateTruth.RData")
+      if (!is.na(file.info(cachefile)$mtime) && file.info(cachefile)$mtime > file.info(filename)$mtime) {
+        write(paste0("Loading ", cachefile), stderr())
+        load(file=cachefile)
+        if (!is.null(callTruthPair)) {
+          return(callTruthPair)
+        }
+      }
+    }
     write(paste0("Loading ", filename), stderr())
     vcf <- readVcf(filename, "unknown")
     id <- GetMetadataId(filename)
@@ -477,15 +497,43 @@ LoadTruth <- function(metadata, refvcfs, directory=".", pattern="*.vcf$", maxerr
       return(NULL)
     }
     write(paste0("Loading truth for ", md$Id), stderr())
-    callTruthPair <- CalculateTruth(vcf, truthvcf, maxerrorbp, ...)
+    callTruthPair <- CalculateTruth(vcf, truthvcf, maxerrorbp, ignoreFilters,...)
     if (nrow(callTruthPair$calls) > 0) {
       callTruthPair$calls <- cbind(callTruthPair$calls, md, row.names=NULL)
     }
     callTruthPair$truth <- cbind(callTruthPair$truth, md, row.names=NULL)
+    if (useCache) {
+      save(callTruthPair, file=cachefile)
+    }
     return(callTruthPair)
-  })
+  }
   truthSet[sapply(truthSet, is.null)] <- NULL # Remove NULLs
   calls = rbindlist(lapply(truthSet, function(x) x$calls), use.names=TRUE, fill=TRUE)
   truth = rbindlist(lapply(truthSet, function(x) x$truth), use.names=TRUE, fill=TRUE)
   return(list(calls=calls, truth=truth))
+}
+# Identifies query A-C calls that are actually intervening A-B-C calls according
+# to the subject
+#      _______
+#  ___/       \____
+# AAAAA-BBBB-CCCCCCC
+FindFragmentSpanningEvents <- function(querygr, subjectgr, querymate=querygr[querygr$mate,], subjectmate=subjectgr[subjectgr$mate,], maxfragmentsize=500, maxgap=100, ...) {
+  
+  
+  
+  # identify small fragments
+  # look for pairing of gr- and gr+
+  hits <- findOverlaps(subjectgr, subjectgr, ignore.strand=TRUE, maxgap=maxfragmentsize, ...)
+  hits <- hits[strand(gr[queryHits(hits),]) != strand(gr[subjectHits(hits),]) &
+    ((start(gr[queryHits(hits),]) < end(gr[subjectHits(hits),]) & strand(gr[queryHits(hits),]) == "+") |
+     (start(gr[subjectHits(hits),]) < end(gr[queryHits(hits),]) & strand(gr[subjectHits(hits),]) == "+"))
+    ,]
+  
+  transgr <- grmate[queryHits(hits),]
+  transgrmate <- grmate[subjectHits(hits),]
+  
+  findOverlaps(gr, transgr, maxgap=maxgap, ...)
+  findOverlaps(gr, transgrmate, maxgap=maxgap, ...)
+  # tag matches as the same event
+  # calculate transitive breakpoint
 }
