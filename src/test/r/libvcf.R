@@ -8,6 +8,7 @@ library(plyr)
 library(data.table)
 library(VariantAnnotation)
 library(GenomicFeatures)
+library(testthat)
 
 GetMetadataId <- function(filenames) {
   return (regmatches(as.character(filenames), regexpr("[0-9a-f]{32}", as.character(filenames))))
@@ -512,28 +513,78 @@ LoadTruth <- function(metadata, refvcfs, directory=".", pattern="*.vcf$", maxerr
   truth = rbindlist(lapply(truthSet, function(x) x$truth), use.names=TRUE, fill=TRUE)
   return(list(calls=calls, truth=truth))
 }
+# ensures all records have a matching mate
+ensure_bp_mate <- function(gr) {
+  if (is.null(names(gr))) {
+    stop("both query and subject must have names defined")
+  }
+  if (is.null(gr$mate) && !is.null(gr$mateIndex)) {
+    gr$mate <- names(gr)[gr$mateIndex]
+  }
+  if (is.null(gr$mate)) {
+    stop("both query and subject must have mate defined")
+  }
+  return(gr)
+}
+# finds putative short SV fragments
+FindFragments <- function(gr, maxfragmentsize=500) {
+  gr <- ensure_bp_mate(gr)
+  # find all fragments [(start_local, end_local) pairings] in subject
+  hits <- findOverlaps(gr, gr, ignore.strand=TRUE, maxgap=maxfragmentsize)
+  hits <- hits[queryHits(hits) != subjectHits(hits) &
+                 strand(gr[queryHits(hits),]) == '-' &
+                 strand(gr[subjectHits(hits),]) == "+" &
+                 end(gr[queryHits(hits),]) < start(gr[subjectHits(hits),]),]
+  fragments <- data.frame(
+    start_remote=gr[names(gr)[queryHits(hits)],]$mate,
+    start_local=names(gr)[queryHits(hits)],
+    end_remote=gr[names(gr)[subjectHits(hits)],]$mate,
+    end_local=names(gr)[subjectHits(hits)],
+    size=(start(gr[subjectHits(hits),]) + end(gr[subjectHits(hits),]) - start(gr[queryHits(hits),]) - end(gr[queryHits(hits),])) / 2,
+    simpleEvent=seqnames(gr[subjectHits(hits),])==seqnames(gr[queryHits(hits),]) & abs(start(gr[subjectHits(hits),]) - start(gr[queryHits(hits),])) < maxfragmentsize
+  )
+  return(fragments)
+}
 # Identifies query A-C calls that are actually intervening A-B-C calls according
 # to the subject
 #      _______
 #  ___/       \____
-# AAAAA-BBBB-CCCCCCC
-FindFragmentSpanningEvents <- function(querygr, subjectgr, querymate=querygr[querygr$mate,], subjectmate=subjectgr[subjectgr$mate,], maxfragmentsize=500, maxgap=100, ...) {
+# aaaaa-bbbb-ccccccc
+#     A B  D C
+# find query AC such that subject start_remote end_local exists for fragment B-D
+FindFragmentSpanningEvents <- function(querygr, subjectgr, maxfragmentsize=500, maxgap=100) {
+  querygr <- ensure_bp_mate(querygr)
+  subjectgr <- ensure_bp_mate(subjectgr)
+  # find all fragments [(start_local, end_local) pairings] in subject
+  fragments <- FindFragments(subjectgr, maxfragmentsize + maxgap)
+  startHits <- findOverlaps(querygr, subjectgr[fragments$start_remote,], ignore.strand=FALSE, maxgap=maxgap)
+  endHits <- findOverlaps(querygr[querygr$mate,], subjectgr[fragments$end_remote,], ignore.strand=FALSE, maxgap=maxgap)
+  spanningHits <- rbind(as.data.frame(startHits), as.data.frame(endHits))
+  spanningHits <- spanningHits[duplicated(spanningHits),] # require an start_remote match and a end_remote match
   
-  
-  
-  # identify small fragments
-  # look for pairing of gr- and gr+
-  hits <- findOverlaps(subjectgr, subjectgr, ignore.strand=TRUE, maxgap=maxfragmentsize, ...)
-  hits <- hits[strand(gr[queryHits(hits),]) != strand(gr[subjectHits(hits),]) &
-    ((start(gr[queryHits(hits),]) < end(gr[subjectHits(hits),]) & strand(gr[queryHits(hits),]) == "+") |
-     (start(gr[subjectHits(hits),]) < end(gr[queryHits(hits),]) & strand(gr[subjectHits(hits),]) == "+"))
-    ,]
-  
-  transgr <- grmate[queryHits(hits),]
-  transgrmate <- grmate[subjectHits(hits),]
-  
-  findOverlaps(gr, transgr, maxgap=maxgap, ...)
-  findOverlaps(gr, transgrmate, maxgap=maxgap, ...)
-  # tag matches as the same event
-  # calculate transitive breakpoint
+  return(data.frame(
+    query=as.character(names(querygr)[spanningHits$queryHits]),
+    subjectAlt1=as.character(fragments$start_remote[spanningHits$subjectHits]),
+    subjectAlt2=as.character(fragments$end_remote[spanningHits$subjectHits]),
+    size=fragments$size[spanningHits$subjectHits],
+    simpleEvent=fragments$simpleEvent[spanningHits$subjectHits]))
 }
+test_that("spanning events identified", {
+  querygr <- GRanges(seqnames=c('chr1','chr1'), IRanges(start=c(10, 20), width=1), strand=c('+', '-'))
+  names(querygr) <- c("AC", "CA")
+  querygr$mate <- reverse(names(querygr))
+  subjectgr <- GRanges(
+    seqnames=c('chr1','chr2','chr2','chr1'),
+    IRanges(start=c(10, 100, 200, 20), width=1),
+    strand=c('+', '-', '+', '-'))
+  names(subjectgr) <- c("AB", "BA", "DC", "CD")
+  subjectgr$mate <- reverse(names(subjectgr))
+  expect_equal(data.frame(
+    query=c("AC"),
+    subjectAlt1=c("AB"),
+    subjectAlt2=c("CD"),
+    size=c(100),
+    simpleEvent=c(TRUE)
+    ), FindFragmentSpanningEvents(querygr, subjectgr))
+})
+

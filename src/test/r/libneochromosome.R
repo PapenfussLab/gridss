@@ -60,10 +60,15 @@ go <- function(sample, vcf, rp, filterBed=NULL, minimumEventSize, cgrmaxgap=1000
   rp$hits <- vcfdf[rp$gridssid,]$confidence
   levels(rp$hits) <- c("Low", "Medium", "High", "None")
   rp$hits[is.na(rp$hits)] <- "None"
+  rp$spanning <- FALSE
   
   # filter out small events that don't hit an existing call
   vcf <- vcf[is.na(vcfdf$size) | vcfdf$size >= minimumEventSize,]
   vcfdf <- vcfdf[rownames(vcf),]
+  
+  spanning <- FindFragmentSpanningEvents(rp, vcftobpgr(vcf))
+  rp[spanning$query,]$spanning <- TRUE
+  rp[rp[spanning$query,]$mate,]$spanning <- TRUE
   
   rp$distanceToMedHigh <- distanceToClosest(rp, rowRanges(vcf[vcfdf$confidence != "Low"]))
   vcfdf$distanceToCall <- distanceToClosest(rowRanges(vcf), rp)
