@@ -110,20 +110,19 @@ public class Idsv extends CommandLineProgram {
 	    	AssemblyEvidenceSource assemblyEvidence = new AssemblyEvidenceSource(getContext(), samEvidence, OUTPUT);
 	    	assemblyEvidence.ensureAssembled(threadpool, halfthreadpool);
 	    	
-	    	List<EvidenceSource> allEvidence = Lists.newArrayList();
-	    	allEvidence.add(assemblyEvidence);
-	    	allEvidence.addAll(samEvidence);
-	    	
 	    	compoundRealignment(threadpool, ImmutableList.of(assemblyEvidence));
 	    	if (!checkRealignment(ImmutableList.of(assemblyEvidence), WORKER_THREADS)) {
 	    		return -1;
     		}
+	    	// edge case: need to ensure assembled again since realignment could have completed
+	    	// without invoking external aligner (0 records to realign). 
+	    	assemblyEvidence.ensureAssembled(threadpool, halfthreadpool);
 	    	
 	    	shutdownPool(threadpool);
 	    	shutdownPool(halfthreadpool);
 			threadpool = null;
 			halfthreadpool = null;
-			
+			    	
 			// check that all steps have been completed
 	    	for (SAMEvidenceSource sref : samEvidence) {
 	    		if (!sref.isComplete(ProcessStep.CALCULATE_METRICS)
