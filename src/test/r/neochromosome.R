@@ -23,14 +23,14 @@ rp <- getrpcalls("C:/dev/neochromosome/mmc3.xlsx", "T1000 (DR)")
 cgr <- getcgr("C:/dev/neochromosome/mmc4.xlsx", "T1000_CGRs")
 cn <- getcn("C:/dev/neochromosome/mmc4.xlsx", "T1000_CN")
 vcf <- readVcf("Z:/projects/liposarcoma/data/gridss/T1000/T1000.vcf", "hg19")
-go(sample, vcf, rp, cgr, minimumEventSize=500)
+out <- go(sample, vcf, rp, cgr, minimumEventSize=500)
 
 sample <- "GOT3"
 rp <- getrpcalls("C:/dev/neochromosome/mmc3.xlsx", "GOT3 (DR)")
 cgr <- getcgr("C:/dev/neochromosome/mmc4.xlsx", "GOT3_CGRs")
 cn <- getcn("C:/dev/neochromosome/mmc4.xlsx", "GOT3_CN")
-vcf <- readVcf("W:/Papenfuss_lab/projects/liposarcoma/data/gridss/GOT3/GOT3.vcf", "hg19")
-go(sample, vcf, rp, cgr, minimumEventSize=500)
+vcf <- readVcf("W:/Papenfuss_lab/projects/liposarcoma/data/gridss/GOT3/bt2/GOT3-bt2.vcf", "hg19")
+out <- go(sample, vcf, rp, cgr, minimumEventSize=500)
 
 
 
@@ -63,7 +63,9 @@ distanceToClosest(rowRanges(vcf), rp)
 rp$distanceToCall
 rp[distanceHits]
 
-names(head(out$gridss))
+# Breakdown of small fragment spanning calls by call type
+table(out$bed$spanning, out$bed$hits)
+print("gridss found ", FindFragments(vcftobpgr(vcf)), "fragments")
 
 
 ggplot(out$gridss[out$gridss$confidence %in% c("High", "Medium") & is.na(out$gridss$bedid),]) +

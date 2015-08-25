@@ -24,7 +24,7 @@ public class RealignmentParameters {
 	/**
 	 * Number of realignment iterations performed
 	 */
-	public int assemblyIterations = 1;
+	public int assemblyIterations = 3;
 	public boolean shouldRealignBreakend(SoftClipEvidence evidence) {
 		if (evidence.getBreakendSummary() instanceof BreakpointSummary) return false;
 		return evidence.getSoftClipLength() >= minLength

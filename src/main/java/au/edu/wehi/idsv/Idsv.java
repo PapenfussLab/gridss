@@ -110,15 +110,20 @@ public class Idsv extends CommandLineProgram {
 	    	AssemblyEvidenceSource assemblyEvidence = new AssemblyEvidenceSource(getContext(), samEvidence, OUTPUT);
 	    	assemblyEvidence.ensureAssembled(threadpool, halfthreadpool);
 	    	
-	    	List<EvidenceSource> allEvidence = Lists.newArrayList();
-	    	allEvidence.add(assemblyEvidence);
-	    	allEvidence.addAll(samEvidence);
-	    	
+	    	compoundRealignment(threadpool, ImmutableList.of(assemblyEvidence));
 	    	if (!checkRealignment(ImmutableList.of(assemblyEvidence), WORKER_THREADS)) {
 	    		return -1;
     		}
-			
-	    	// check that all steps have been completed
+	    	// edge case: need to ensure assembled again since realignment could have completed
+	    	// without invoking external aligner (0 records to realign). 
+	    	assemblyEvidence.ensureAssembled(threadpool, halfthreadpool);
+	    	
+	    	shutdownPool(threadpool);
+	    	shutdownPool(halfthreadpool);
+			threadpool = null;
+			halfthreadpool = null;
+			    	
+			// check that all steps have been completed
 	    	for (SAMEvidenceSource sref : samEvidence) {
 	    		if (!sref.isComplete(ProcessStep.CALCULATE_METRICS)
 	    			|| !sref.isComplete(ProcessStep.EXTRACT_SOFT_CLIPS)
@@ -129,17 +134,10 @@ public class Idsv extends CommandLineProgram {
 	    			return -1;
 	    		}
 	    	}
-	    	
-	    	compoundRealignment(threadpool, ImmutableList.of(assemblyEvidence));
 	    	if (!assemblyEvidence.isRealignmentComplete()) {
-	    		log.error("Unable to call variants: generation and breakend alignment of assemblies not complete.");
+	    		log.error("Unable to call variants: generation of breakend alignment of assemblies not complete.");
     			return -1;
 	    	}
-	    	
-	    	shutdownPool(threadpool);
-	    	shutdownPool(halfthreadpool);
-			threadpool = null;
-			halfthreadpool = null;
 			
 	    	if (!OUTPUT.exists()) {
 		    	callVariants(threadpool, samEvidence, assemblyEvidence);

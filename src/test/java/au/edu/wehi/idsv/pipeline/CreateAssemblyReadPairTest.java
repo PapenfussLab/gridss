@@ -180,6 +180,12 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 		go(getCommandlineContext(false));
 		go(getCommandlineContext(true));
 	}
+	@Override
+	public ProcessingContext getCommandlineContext(boolean perChr) {
+		ProcessingContext pc = super.getCommandlineContext(perChr);
+		pc.getRealignmentParameters().assemblyIterations = 1;
+		return pc;
+	}
 	private void go(ProcessingContext pc) { go(pc, true); }
 	private void go(ProcessingContext pc, boolean writefiltered) {
 		pc.getAssemblyParameters().writeFilteredAssemblies = writefiltered;

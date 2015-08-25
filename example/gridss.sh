@@ -5,6 +5,8 @@
 INPUT=chr12.1527326.DEL1024.bam
 OUTPUT=${INPUT/.bam/.vcf}
 REFERENCE=~/reference_genomes/human/hg19.fa
+JAVA_ARGS="-ea -Xmx16g -cp ../target/gridss-*-SNAPSHOT-jar-with-dependencies.jar"
+CORES=$(nproc 2>/dev/null || echo 1)
 
 # ensure libsswjni.so can be loaded
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PWD/../lib
@@ -31,11 +33,7 @@ exec_gridss() {
 		return
 	fi
 	rm -f realign.sh
-	java \
-		-ea \
-		-Xmx16g \
-		-cp ../target/gridss-*-SNAPSHOT-jar-with-dependencies.jar \
-		au.edu.wehi.idsv.Idsv \
+	java $JAVA_ARGS au.edu.wehi.idsv.Idsv \
 		TMP_DIR=. \
 		WORKING_DIR=. \
 		INPUT="$INPUT" \
@@ -43,25 +41,20 @@ exec_gridss() {
 		REFERENCE="$REFERENCE" \
 		SCRIPT=realign.sh \
 		VERBOSITY=INFO \
-		WORKER_THREADS=$(nproc 2>/dev/null || echo 1) \
-		2>&1 | tee gridss.$1.log
-		
+		WORKER_THREADS=$CORES \
+		2>&1 | tee -a gridss.$1.log
+	
 	if [[ -f realign.sh ]] ; then
 		chmod a+x realign.sh
-		./realign.sh
+		./realign.sh 2>&1 | tee -a gridss.$1.log
+		exec_gridss
 	fi
 }
 
-exec_gridss pass1
-exec_gridss pass2
-exec_gridss pass3
+exec_gridss
 
 if [[ -f $OUTPUT ]] ; then
-	java \
-		-ea \
-		-Xmx16g \
-		-cp ../target/gridss-*-SNAPSHOT-jar-with-dependencies.jar \
-		au.edu.wehi.idsv.VcfBreakendToBedpe \
+	java $JAVA_ARGS au.edu.wehi.idsv.VcfBreakendToBedpe \
 		INPUT="$OUTPUT" \
 		OUTPUT="${OUTPUT/.vcf/.bedpe}" \
 		REFERENCE="$REFERENCE"

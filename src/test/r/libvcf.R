@@ -8,6 +8,7 @@ library(plyr)
 library(data.table)
 library(VariantAnnotation)
 library(GenomicFeatures)
+library(testthat)
 
 GetMetadataId <- function(filenames) {
   return (regmatches(as.character(filenames), regexpr("[0-9a-f]{32}", as.character(filenames))))
@@ -158,7 +159,10 @@ vcftobpgr <- function(vcf) {
       grcall[rows,]$mateIndex <- match(info(vcf)$PARID[rows], names(rowRanges(vcf)))
     }
     grcall[rows,]$untemplated <- str_length(preBases) + str_length(postBases) - str_length(as.character(rowRanges(vcf)$REF)[rows])
-    
+    if (any(rows & is.na(grcall$mateIndex))) {
+      warning(paste0("Unpaired breakends ", as.character(paste(names(grcall[is.na(grcall[rows,]$mateIndex),]), collapse=", "))))
+      grcall[rows & is.na(grcall$mateIndex),]$mateIndex <- seq_along(grcall)[rows & is.na(grcall$mateIndex)]
+    }
     mateBnd <- grcall[grcall[rows,]$mateIndex,]
     grcall[rows,]$size <- ifelse(seqnames(mateBnd)==seqnames(grcall[rows,]), abs(start(grcall[rows,]) - start(mateBnd)) + grcall[rows,]$untemplated, NA_integer_)
   }
@@ -245,8 +249,8 @@ vcftobpgr <- function(vcf) {
     stop("Breakends are not uniquely paired.")
   }
   if (any(grcall$mateIndex == seq_along(grcall))) {
-    browser()
-    stop("Breakend cannot be partner of itself - have all appropriate SV types been handled?")
+    #browser()
+    warning("Breakend has been partnered with itself - have all appropriate SV types been handled?")
   }
   return(grcall)
 }
@@ -263,10 +267,15 @@ distanceToClosest <- function(query, subject) {
 }
 
 
-CalculateTruth <- function(callvcf, truthvcf, maxerrorbp, maxerrorpercent=0.25, ...) {
+CalculateTruth <- function(callvcf, truthvcf, maxerrorbp, ignoreFilters, maxerrorpercent=0.25, ...) {
   if (any(!is.na(rowRanges(callvcf)$QUAL) & rowRanges(callvcf)$QUAL < 0)) {
     stop("Precondition failure: variant exists with negative quality score")
   }
+  if (!ignoreFilters) {
+    callvcf <- callvcf[rowRanges(callvcf)$FILTER %in% c(".", "PASS"),]
+    truthvcf <- truthvcf[rowRanges(truthvcf)$FILTER %in% c(".", "PASS"),]
+  }
+  
   grcall <- vcftobpgr(callvcf)
   grtruth <- vcftobpgr(truthvcf)
   #TMPDEBUG: grtruth[overlapsAny(grtruth, GRanges("chr12", IRanges(148000, width=1000))),]
@@ -348,9 +357,9 @@ CalculateTruth <- function(callvcf, truthvcf, maxerrorbp, maxerrorpercent=0.25, 
   calldf$tp <- calldf$expectedbehits == calldf$behits
   calldf$partialtp <- !calldf$tp & calldf$behits > 0
   calldf$fp <- !calldf$tp
-  return(list(calls=calldf, truth=truthdf))
+  return(list(calls=calldf, truth=truthdf, vcf=callvcf, truthvcf=truthvcf))
 }
-CalculateTruthSummary <- function(vcfs, maxerrorbp, ...) {
+CalculateTruthSummary <- function(vcfs, maxerrorbp, ignoreFilters=TRUE, ...) {
   truthSet <- lapply(vcfs, function(vcf) {
     md <- attr(vcf, "metadata")
     if (is.null(md)) {
@@ -370,7 +379,7 @@ CalculateTruthSummary <- function(vcfs, maxerrorbp, ...) {
       return(NULL)
     }
     write(paste0("Loading truth for ", md$Id), stderr())
-    callTruthPair <- CalculateTruth(vcf, truthvcf, maxerrorbp, ...)
+    callTruthPair <- CalculateTruth(vcf, truthvcf, maxerrorbp, ignoreFilters, ...)
     if (nrow(callTruthPair$calls) > 0) {
       callTruthPair$calls <- cbind(callTruthPair$calls, md, row.names=NULL)
     }
@@ -450,9 +459,21 @@ LoadVcfs <- function(metadata, directory=".", pattern="*.vcf$") {
   return(vcfs)
 }
 # Load VCFs into a list
-LoadTruth <- function(metadata, refvcfs, directory=".", pattern="*.vcf$", maxerrorbp, ...) {
-  write("Loading VCFs", stderr())
-  truthSet <- lapply(list.files(directory, pattern=pattern), function(filename) {
+LoadTruth <- function(metadata, refvcfs, directory=".", pattern="*.vcf$", maxerrorbp, useCache=FALSE, ignoreFilters=TRUE, ...) {
+  write("Loading truth from VCF", stderr())
+  #truthSet <- lapply(list.files(directory, pattern=pattern), function(filename) {
+  truthSet <- foreach(filename=list.files(directory, pattern=pattern)) %do% {
+    source(paste0(ifelse(as.character(Sys.info())[1] == "Windows", "W:/", "~/"), "/dev/gridss/src/test/r/libvcf.R"))
+    if (useCache) {
+      cachefile <- paste0(filename, ".CalculateTruth.RData")
+      if (!is.na(file.info(cachefile)$mtime) && file.info(cachefile)$mtime > file.info(filename)$mtime) {
+        write(paste0("Loading ", cachefile), stderr())
+        load(file=cachefile)
+        if (!is.null(callTruthPair)) {
+          return(callTruthPair)
+        }
+      }
+    }
     write(paste0("Loading ", filename), stderr())
     vcf <- readVcf(filename, "unknown")
     id <- GetMetadataId(filename)
@@ -477,15 +498,93 @@ LoadTruth <- function(metadata, refvcfs, directory=".", pattern="*.vcf$", maxerr
       return(NULL)
     }
     write(paste0("Loading truth for ", md$Id), stderr())
-    callTruthPair <- CalculateTruth(vcf, truthvcf, maxerrorbp, ...)
+    callTruthPair <- CalculateTruth(vcf, truthvcf, maxerrorbp, ignoreFilters,...)
     if (nrow(callTruthPair$calls) > 0) {
       callTruthPair$calls <- cbind(callTruthPair$calls, md, row.names=NULL)
     }
     callTruthPair$truth <- cbind(callTruthPair$truth, md, row.names=NULL)
+    if (useCache) {
+      save(callTruthPair, file=cachefile)
+    }
     return(callTruthPair)
-  })
+  }
   truthSet[sapply(truthSet, is.null)] <- NULL # Remove NULLs
   calls = rbindlist(lapply(truthSet, function(x) x$calls), use.names=TRUE, fill=TRUE)
   truth = rbindlist(lapply(truthSet, function(x) x$truth), use.names=TRUE, fill=TRUE)
   return(list(calls=calls, truth=truth))
 }
+# ensures all records have a matching mate
+ensure_bp_mate <- function(gr) {
+  if (is.null(names(gr))) {
+    stop("both query and subject must have names defined")
+  }
+  if (is.null(gr$mate) && !is.null(gr$mateIndex)) {
+    gr$mate <- names(gr)[gr$mateIndex]
+  }
+  if (is.null(gr$mate)) {
+    stop("both query and subject must have mate defined")
+  }
+  return(gr)
+}
+# finds putative short SV fragments
+FindFragments <- function(gr, maxfragmentsize=500) {
+  gr <- ensure_bp_mate(gr)
+  # find all fragments [(start_local, end_local) pairings] in subject
+  hits <- findOverlaps(gr, gr, ignore.strand=TRUE, maxgap=maxfragmentsize)
+  hits <- hits[queryHits(hits) != subjectHits(hits) &
+                 strand(gr[queryHits(hits),]) == '-' &
+                 strand(gr[subjectHits(hits),]) == "+" &
+                 end(gr[queryHits(hits),]) < start(gr[subjectHits(hits),]),]
+  fragments <- data.frame(
+    start_remote=gr[names(gr)[queryHits(hits)],]$mate,
+    start_local=names(gr)[queryHits(hits)],
+    end_remote=gr[names(gr)[subjectHits(hits)],]$mate,
+    end_local=names(gr)[subjectHits(hits)],
+    size=(start(gr[subjectHits(hits),]) + end(gr[subjectHits(hits),]) - start(gr[queryHits(hits),]) - end(gr[queryHits(hits),])) / 2,
+    simpleEvent=seqnames(gr[subjectHits(hits),])==seqnames(gr[queryHits(hits),]) & abs(start(gr[subjectHits(hits),]) - start(gr[queryHits(hits),])) < maxfragmentsize
+  )
+  return(fragments)
+}
+# Identifies query A-C calls that are actually intervening A-B-C calls according
+# to the subject
+#      _______
+#  ___/       \____
+# aaaaa-bbbb-ccccccc
+#     A B  D C
+# find query AC such that subject start_remote end_local exists for fragment B-D
+FindFragmentSpanningEvents <- function(querygr, subjectgr, maxfragmentsize=500, maxgap=100) {
+  querygr <- ensure_bp_mate(querygr)
+  subjectgr <- ensure_bp_mate(subjectgr)
+  # find all fragments [(start_local, end_local) pairings] in subject
+  fragments <- FindFragments(subjectgr, maxfragmentsize + maxgap)
+  startHits <- findOverlaps(querygr, subjectgr[fragments$start_remote,], ignore.strand=FALSE, maxgap=maxgap)
+  endHits <- findOverlaps(querygr[querygr$mate,], subjectgr[fragments$end_remote,], ignore.strand=FALSE, maxgap=maxgap)
+  spanningHits <- rbind(as.data.frame(startHits), as.data.frame(endHits))
+  spanningHits <- spanningHits[duplicated(spanningHits),] # require an start_remote match and a end_remote match
+  
+  return(data.frame(
+    query=as.character(names(querygr)[spanningHits$queryHits]),
+    subjectAlt1=as.character(fragments$start_remote[spanningHits$subjectHits]),
+    subjectAlt2=as.character(fragments$end_remote[spanningHits$subjectHits]),
+    size=fragments$size[spanningHits$subjectHits],
+    simpleEvent=fragments$simpleEvent[spanningHits$subjectHits]))
+}
+test_that("spanning events identified", {
+  querygr <- GRanges(seqnames=c('chr1','chr1'), IRanges(start=c(10, 20), width=1), strand=c('+', '-'))
+  names(querygr) <- c("AC", "CA")
+  querygr$mate <- reverse(names(querygr))
+  subjectgr <- GRanges(
+    seqnames=c('chr1','chr2','chr2','chr1'),
+    IRanges(start=c(10, 100, 200, 20), width=1),
+    strand=c('+', '-', '+', '-'))
+  names(subjectgr) <- c("AB", "BA", "DC", "CD")
+  subjectgr$mate <- reverse(names(subjectgr))
+  expect_equal(data.frame(
+    query=c("AC"),
+    subjectAlt1=c("AB"),
+    subjectAlt2=c("CD"),
+    size=c(100),
+    simpleEvent=c(TRUE)
+    ), FindFragmentSpanningEvents(querygr, subjectgr))
+})
+
