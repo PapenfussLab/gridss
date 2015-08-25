@@ -62,6 +62,10 @@ public class KmerEvidence extends PackedKmerList {
 		if (anchor == null) return false;
 		return anchor.get(offset);
 	}
+	public boolean isAnchored() {
+		if (anchor == null) return false;
+		return !anchor.isEmpty();
+	}
 	private static BitSet ambiguousKmers(int k, byte[] bases) {
 		BitSet ambiguous = null;
 		for (int i = 0; i < bases.length; i++) {

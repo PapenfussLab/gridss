@@ -1,8 +1,11 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
 import htsjdk.samtools.util.Log;
+import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 
 import java.io.File;
@@ -136,6 +139,11 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		return bestContig;
 	}
 	private SAMRecordAssemblyEvidence callContig(ArrayDeque<KmerPathSubnode> contig) {
+		Set<KmerEvidence> evidence = evidenceTracker.untrack(contig);
+		if (containsKmerRepeat(contig)) {
+			reassembleFromEvidence(contig, evidence);
+		}
+		
 		int targetAnchorLength = Math.max(contig.stream().mapToInt(sn -> sn.length()).sum(), maxAnchorLength);
 		KmerPathNodePath startAnchorPath = new KmerPathNodePath(contig.getFirst(), false, targetAnchorLength);
 		startAnchorPath.greedyTraverse(true, false);
@@ -159,8 +167,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		byte[] bases = KmerEncodingHelper.baseCalls(fullContig.stream().flatMap(sn -> sn.node().pathKmers().stream()).collect(Collectors.toList()), k);
 		byte[] quals = DeBruijnGraphBase.kmerWeightsToBaseQuals(k, fullContig.stream().flatMapToInt(sn -> sn.node().pathWeights().stream().mapToInt(Integer::intValue)).toArray());
 		assert(quals.length == bases.length);
-		// need to rehydrate evidence
-		Set<KmerEvidence> evidence = evidenceTracker.untrack(contig);
+		
 		List<String> evidenceIds = evidence.stream().map(e -> e.evidenceId()).collect(Collectors.toList());
 		SAMRecordAssemblyEvidence assembledContig;
 		if (startingAnchor.size() == 0 && endingAnchor.size() == 0) {
@@ -212,6 +219,44 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		}
 		return assembledContig;
 		
+	}
+	/**
+	 * Reassembles the given contig ensuring a valid traversal path
+	 * @param contig
+	 * @param evidence
+	 */
+	private void reassembleFromEvidence(Collection<KmerPathSubnode> contig, Set<KmerEvidence> evidence) {
+		// conditions for misassembly
+		// * repeat kmer with evidence width overlap interval
+		// * only supported by unanchored evidence
+		// simple solution: truncate assembly
+		// improved solution:
+	}
+	private void greedyTruncate(ArrayDeque<KmerPathSubnode> contig, Set<KmerEvidence> evidence) {
+		int offset = contig.getFirst().firstStart();
+		Long2IntOpenHashMap kmerToOffset = new Long2IntOpenHashMap();
+		for (KmerEvidence e : evidence) {
+			if (e.isAnchored()) {
+				for (int i = 0; i < e.length(); i++) {
+					KmerSupportNode sn = e.node(i);
+					if (sn.isReference()) continue;
+					e.isAnchored(offset)
+					// TODO: track
+				}
+			}
+		}
+	}
+	private boolean containsKmerRepeat(Collection<KmerPathSubnode> contig) {
+		LongSet existing = new LongOpenHashSet(2048);
+		for (KmerPathSubnode n : contig) {
+			for (int i = 0; i < n.length(); i++) {
+				if (existing.add(n.node().kmer(i))) return true;
+			}
+			for (long kmer : n.node().collapsedKmers()) {
+				if (existing.add(kmer)) return true;
+			}
+		}
+		return false;
 	}
 	/**
 	 * Removes all evidence from the current graph
