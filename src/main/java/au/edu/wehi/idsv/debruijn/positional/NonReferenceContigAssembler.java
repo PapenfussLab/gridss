@@ -1,9 +1,10 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
 import htsjdk.samtools.util.Log;
-import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
@@ -15,13 +16,18 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.NavigableMap;
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.tuple.ImmutableTriple;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.AssemblyFactory;
@@ -39,6 +45,13 @@ import au.edu.wehi.idsv.visualisation.PositionalExporter;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Multiset;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeMap;
+import com.google.common.collect.SortedMultiset;
+import com.google.common.collect.TreeMultiset;
+import com.google.common.collect.TreeRangeMap;
 
 
 /**
@@ -141,7 +154,8 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	private SAMRecordAssemblyEvidence callContig(ArrayDeque<KmerPathSubnode> contig) {
 		Set<KmerEvidence> evidence = evidenceTracker.untrack(contig);
 		if (containsKmerRepeat(contig)) {
-			reassembleFromEvidence(contig, evidence);
+			MisassemblyFixer fixed = new MisassemblyFixer(contig);
+			contig = new ArrayDeque<KmerPathSubnode>(fixed.correctMisassignedEvidence(evidence));
 		}
 		
 		int targetAnchorLength = Math.max(contig.stream().mapToInt(sn -> sn.length()).sum(), maxAnchorLength);
@@ -221,33 +235,167 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		
 	}
 	/**
-	 * Reassembles the given contig ensuring a valid traversal path
-	 * @param contig
-	 * @param evidence
+	 * Corrects misassembly due to incorporation of read pair evidence at multiple positions
+	 * @author cameron.d
+	 *
 	 */
-	private void reassembleFromEvidence(Collection<KmerPathSubnode> contig, Set<KmerEvidence> evidence) {
-		// conditions for misassembly
-		// * repeat kmer with evidence width overlap interval
-		// * only supported by unanchored evidence
-		// simple solution: truncate assembly
-		// improved solution:
-	}
-	private void greedyTruncate(ArrayDeque<KmerPathSubnode> contig, Set<KmerEvidence> evidence) {
-		int offset = contig.getFirst().firstStart();
-		Long2IntOpenHashMap kmerToOffset = new Long2IntOpenHashMap();
-		for (KmerEvidence e : evidence) {
-			if (e.isAnchored()) {
-				for (int i = 0; i < e.length(); i++) {
-					KmerSupportNode sn = e.node(i);
-					if (sn.isReference()) continue;
-					e.isAnchored(offset)
-					// TODO: track
+	private static class MisassemblyFixer {
+		private final List<KmerPathSubnode> contig;
+		private final NavigableMap<Integer, ImmutableTriple<Integer, LongList, LongList>> contigTransitionOffsetLookup;
+		private final Long2ObjectMap<RangeMap<Integer, Integer>> contigOffsetLookup;
+		public MisassemblyFixer(Collection<KmerPathSubnode> contig) {
+			this.contig = Lists.newArrayList(contig);
+			this.contigTransitionOffsetLookup = createContigTransitionOffsetLookup(this.contig);
+			this.contigOffsetLookup = createContigOffsetLookup(this.contig);
+		}
+		private static NavigableMap<Integer, ImmutableTriple<Integer, LongList, LongList>> createContigTransitionOffsetLookup(List<KmerPathSubnode> contig) {
+			NavigableMap<Integer, ImmutableTriple<Integer, LongList, LongList>> lookup = new TreeMap<Integer, ImmutableTriple<Integer, LongList, LongList>>();
+			int snoffset = 0;
+			for (int i = 0; i < contig.size() - 1; i++) {
+				KmerPathSubnode sn = contig.get(i);
+				LongArrayList snendkmers = new LongArrayList();
+				snendkmers.add(sn.lastKmer());
+				for (int j = 0; j < sn.node().collapsedKmerOffsets().size(); j++) {
+					int offset = sn.node().collapsedKmerOffsets().getInt(j);
+					if (offset == sn.length() - 1) {
+						snendkmers.add(sn.node().collapsedKmers().getLong(offset));
+					}
+				}
+				KmerPathSubnode snext = contig.get(i + 1);
+				LongArrayList snextstartkmers = new LongArrayList();
+				snextstartkmers.add(snext.firstKmer());
+				for (int j = 0; j < snext.node().collapsedKmerOffsets().size(); j++) {
+					int offset = snext.node().collapsedKmerOffsets().getInt(j);
+					if (offset == 0) {
+						snextstartkmers.add(snext.node().collapsedKmers().getLong(offset));
+					}
+				}
+				lookup.put(snoffset + sn.length() - 1, new ImmutableTriple<Integer, LongList, LongList>(i, snendkmers, snextstartkmers));
+			}
+			return lookup;
+		}
+		private static Long2ObjectMap<RangeMap<Integer, Integer>> createContigOffsetLookup(Collection<KmerPathSubnode> contig) {
+			Long2ObjectMap<RangeMap<Integer, Integer>> contigOffsetLookup = new Long2ObjectOpenHashMap<RangeMap<Integer,Integer>>();
+			int snoffset = 0;
+			for (KmerPathSubnode sn : contig) {
+				for (int i = 0; i < sn.length(); i++) {
+					contigOffsetLookupAdd(contigOffsetLookup, snoffset + i, sn.node().kmer(i), sn.firstStart() + i, sn.firstEnd() + i);
+				}
+				for (int j = 0; j < sn.node().collapsedKmerOffsets().size(); j++) {
+					int i = sn.node().collapsedKmerOffsets().getInt(j);
+					contigOffsetLookupAdd(contigOffsetLookup, snoffset + i, sn.node().collapsedKmers().getLong(j), sn.firstStart() + i, sn.firstEnd() + i);
+				}
+			}
+			return contigOffsetLookup;
+		}
+		private static void contigOffsetLookupAdd(Long2ObjectMap<RangeMap<Integer, Integer>> contigOffsetLookup, int offset, long kmer, int start, int end) {
+			RangeMap<Integer, Integer> rm = contigOffsetLookup.get(offset);
+			if (rm == null) {
+				rm = TreeRangeMap.create();
+				contigOffsetLookup.put(kmer, rm);
+			}
+			Range<Integer> r = Range.closed(start, end);
+			assert(rm.subRangeMap(r).asMapOfRanges().isEmpty());
+			rm.put(r, offset);
+		}
+		/**
+		 * Reassembles the given contig ensuring a valid traversal path
+		 * @param contig
+		 * @param evidence
+		 */
+		public List<KmerPathSubnode> correctMisassignedEvidence(Collection<KmerEvidence> evidence) {
+			// we're only concerned about misassembly of read pairs
+			// as a conservative approximation to full OLC reassembly
+			// we naively left/right align everything and truncate if we have
+			// zero support for a node transition.
+			List<KmerPathSubnode> left = asLeftAligned(evidence);
+			List<KmerPathSubnode> right = asRightAligned(evidence);
+			boolean leftAnchored = left.get(0).prev().stream().anyMatch(sn -> sn.node().isReference());
+			boolean rightAnchored = right.get(0).next().stream().anyMatch(sn -> sn.node().isReference());
+			if (leftAnchored && !rightAnchored) return left;
+			if (rightAnchored && !leftAnchored) return right;
+			int leftWeight = left.stream().mapToInt(sn -> sn.weight()).sum();
+			int rightWeight = right.stream().mapToInt(sn -> sn.weight()).sum();
+			if (leftWeight >= rightWeight) return left;
+			else return right;
+		}
+		private List<KmerPathSubnode> asLeftAligned(Collection<KmerEvidence> evidence) {
+			int[] transitionSupport = transitionSupport(evidence, true);
+			List<KmerPathSubnode> newContig = new ArrayList<KmerPathSubnode>(contig.size());
+			newContig.add(contig.get(0));
+			for (int i = 0; i < transitionSupport.length; i++) {
+				if (transitionSupport[i] > 0) {
+					newContig.add(contig.get(i + 1));
+				} else {
+					break;
+				}
+			}
+			return newContig;
+		}
+		private List<KmerPathSubnode> asRightAligned(Collection<KmerEvidence> evidence) {
+			int[] transitionSupport = transitionSupport(evidence, false);
+			LinkedList<KmerPathSubnode> newContig = new LinkedList<KmerPathSubnode>();
+			newContig.add(contig.get(contig.size() - 1));
+			for (int i = contig.size() - 2; i >= 0; i--) {
+				if (transitionSupport[i] > 0) {
+					newContig.addFirst(contig.get(i));
+				} else {
+					break;
+				}
+			}
+			return newContig;
+		}
+		private int[] transitionSupport(Collection<KmerEvidence> evidence, boolean leftAlign) {
+			int[] transitionSupport = new int[contig.size() - 1];
+			for (KmerEvidence e : evidence) {
+				int[] offsets = matchingOffsets(e);
+				int offset = leftAlign ? offsets[0] : offsets[1];
+				addSupport(transitionSupport, e, offset);
+			}
+			return transitionSupport;
+		}
+		private void addSupport(int[] transitionSupport, KmerEvidence evidence, int offset) {
+			for (Entry<Integer, ImmutableTriple<Integer, LongList, LongList>> entry : contigTransitionOffsetLookup.subMap(offset, offset + evidence.length() - 1).entrySet()) {
+				long readKmerPreTransition = evidence.kmer(entry.getKey() - offset);
+				long readKmerPostTransition = evidence.kmer(entry.getKey() - offset + 1);
+				ImmutableTriple<Integer, LongList, LongList> transition = entry.getValue();
+				if (transition.middle.contains(readKmerPreTransition) && transition.right.contains(readKmerPostTransition)) {
+					transitionSupport[transition.left]++;
 				}
 			}
 		}
+		/**
+		 * Returns the inferred contig offset of the starting read kmer for every kmer match  
+		 * @param e read
+		 * @return max and min best read starting kmer offset   
+		 */
+		private int[] matchingOffsets(KmerEvidence evidence) {
+			SortedMultiset<Integer> counts = TreeMultiset.create();
+			for (int i = 0; i < evidence.length(); i++) {
+				KmerSupportNode n = evidence.node(i);
+				offsetLookup(counts, i, n.firstKmer(), n.firstStart(), n.firstEnd());
+			}
+			int maxCount = counts.entrySet().stream()
+					.mapToInt(e -> e.getCount())
+					.max()
+					.getAsInt();
+			List<Integer> best = counts.entrySet().stream()
+					.filter(e -> e.getCount() == maxCount)
+					.map(e -> e.getElement())
+					.collect(Collectors.toList());
+			return new int[] { best.get(0), best.get(best.size() - 1) };
+		}
+		private void offsetLookup(Multiset<Integer> counts, int readOffset, long kmer, int positionStart, int positionEnd) {
+			RangeMap<Integer, Integer> validPositionRanges = contigOffsetLookup.get(kmer);
+			if (validPositionRanges != null) {
+				for (Integer offset : validPositionRanges.subRangeMap(Range.closed(positionStart, positionEnd)).asMapOfRanges().values()) {
+					counts.add(offset - readOffset);
+				}
+			}
+		} 
 	}
 	private boolean containsKmerRepeat(Collection<KmerPathSubnode> contig) {
-		LongSet existing = new LongOpenHashSet(2048);
+		LongSet existing = new LongOpenHashSet();
 		for (KmerPathSubnode n : contig) {
 			for (int i = 0; i < n.length(); i++) {
 				if (existing.add(n.node().kmer(i))) return true;
