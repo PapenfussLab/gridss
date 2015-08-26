@@ -540,8 +540,7 @@ FindFragments <- function(gr, maxfragmentsize=500) {
     start_local=names(gr)[queryHits(hits)],
     end_remote=gr[names(gr)[subjectHits(hits)],]$mate,
     end_local=names(gr)[subjectHits(hits)],
-    size=(start(gr[subjectHits(hits),]) + end(gr[subjectHits(hits),]) - start(gr[queryHits(hits),]) - end(gr[queryHits(hits),])) / 2,
-    simpleEvent=seqnames(gr[subjectHits(hits),])==seqnames(gr[queryHits(hits),]) & abs(start(gr[subjectHits(hits),]) - start(gr[queryHits(hits),])) < maxfragmentsize
+    fragmentLength=(start(gr[subjectHits(hits),]) + end(gr[subjectHits(hits),]) - start(gr[queryHits(hits),]) - end(gr[queryHits(hits),])) / 2
   )
   return(fragments)
 }
@@ -566,8 +565,10 @@ FindFragmentSpanningEvents <- function(querygr, subjectgr, maxfragmentsize=500, 
     query=as.character(names(querygr)[spanningHits$queryHits]),
     subjectAlt1=as.character(fragments$start_remote[spanningHits$subjectHits]),
     subjectAlt2=as.character(fragments$end_remote[spanningHits$subjectHits]),
-    size=fragments$size[spanningHits$subjectHits],
-    simpleEvent=fragments$simpleEvent[spanningHits$subjectHits]))
+    fragmentLength=fragments$fragmentLength[spanningHits$subjectHits],
+    eventSize=ifelse(seqnames(querygr[spanningHits$queryHits]) != seqnames(querygr[querygr$mate,][spanningHits$queryHits]), NA_integer_,
+      abs(start(querygr[spanningHits$queryHits]) + end(querygr[spanningHits$queryHits])
+          - start(querygr[querygr$mate,][spanningHits$queryHits]) - end(querygr[querygr$mate,][spanningHits$queryHits])) / 2)))
 }
 test_that("spanning events identified", {
   querygr <- GRanges(seqnames=c('chr1','chr1'), IRanges(start=c(10, 20), width=1), strand=c('+', '-'))
@@ -583,8 +584,8 @@ test_that("spanning events identified", {
     query=c("AC"),
     subjectAlt1=c("AB"),
     subjectAlt2=c("CD"),
-    size=c(100),
-    simpleEvent=c(TRUE)
+    fragmentLength=c(100),
+    eventSize=c(10)
     ), FindFragmentSpanningEvents(querygr, subjectgr))
 })
 
