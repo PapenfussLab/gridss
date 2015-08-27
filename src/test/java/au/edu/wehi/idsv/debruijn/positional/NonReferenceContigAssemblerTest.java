@@ -175,8 +175,8 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 	public void should_truncate_anchored_polyA_expansion_fwd() {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
-		SoftClipEvidence sce = SCE(FWD, withSequence("GTACAAAA", Read(0, 5, "4M4S")));
-		DiscordantReadPair dp = (DiscordantReadPair)NRRP(SES(0, 100), withSequence("CAAAAT", DP(0, 1, "6M", true, 1, 1, "6M", false)));
+		SoftClipEvidence sce = SCE(FWD, withSequence("GTACAAAA", Read(0, 10, "4M4S")));
+		DiscordantReadPair dp = (DiscordantReadPair)NRRP(SES(1, 100), withSequence("CAAAAT", DP(0, 1, "6M", true, 1, 1, "6M", false)));
 		List<SAMRecordAssemblyEvidence> output = go(pc, true, sce, dp);
 		assertEquals(1, output.size());
 		assertEquals("GTACAAAA", S(output.get(0).getAssemblySequence()));
@@ -186,7 +186,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
 		SoftClipEvidence sce = SCE(BWD, withSequence("AAAAGTAC", Read(0, 100, "4S4M")));
-		DiscordantReadPair dp = (DiscordantReadPair)NRRP(SES(0, 100), withSequence("CAAAAG", DP(0, 110, "6M", false, 1, 1, "6M", true)));
+		DiscordantReadPair dp = (DiscordantReadPair)NRRP(SES(1, 100), withSequence("CAAAAG", DP(0, 110, "6M", false, 1, 1, "6M", true)));
 		List<SAMRecordAssemblyEvidence> output = go(pc, true, sce, dp);
 		assertEquals(1, output.size());
 		assertEquals("AAAAGTAC", S(output.get(0).getAssemblySequence()));
@@ -195,9 +195,10 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 	public void should_take_higher_weight_unanchored_assembly() {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
-		DiscordantReadPair dp = (DiscordantReadPair)NRRP(SES(0, 100), withSequence("CAAAAAAAAAAAGT", DP(0, 100, "6M", false, 1, 1, "6M", true)));
-		List<SAMRecordAssemblyEvidence> output = go(pc, true, dp);
+		List<SAMRecordAssemblyEvidence> output = go(pc, true,
+				NRRP(SES(1, 100), withSequence("CAAAAAAAAAAAGT", DP(1, 100, "14M", false, 1, 1, "14M", true))),
+				NRRP(SES(1, 100), withSequence("CAAAAAAAAAAGTC", DP(1, 101, "14M", false, 1, 1, "14M", true))));
 		assertEquals(1, output.size());
-		assertEquals("AAAAGT", S(output.get(0).getAssemblySequence()));
+		assertEquals("AAAAAAAAAAAGTC", S(output.get(0).getAssemblySequence()));
 	}
 }

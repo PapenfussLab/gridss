@@ -258,7 +258,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 				for (int j = 0; j < sn.node().collapsedKmerOffsets().size(); j++) {
 					int offset = sn.node().collapsedKmerOffsets().getInt(j);
 					if (offset == sn.length() - 1) {
-						snendkmers.add(sn.node().collapsedKmers().getLong(offset));
+						snendkmers.add(sn.node().collapsedKmers().getLong(j));
 					}
 				}
 				KmerPathSubnode snext = contig.get(i + 1);
@@ -267,10 +267,11 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 				for (int j = 0; j < snext.node().collapsedKmerOffsets().size(); j++) {
 					int offset = snext.node().collapsedKmerOffsets().getInt(j);
 					if (offset == 0) {
-						snextstartkmers.add(snext.node().collapsedKmers().getLong(offset));
+						snextstartkmers.add(snext.node().collapsedKmers().getLong(j));
 					}
 				}
 				lookup.put(snoffset + sn.length() - 1, new ImmutableTriple<Integer, LongList, LongList>(i, snendkmers, snextstartkmers));
+				snoffset += sn.length();
 			}
 			return lookup;
 		}
@@ -285,11 +286,12 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 					int i = sn.node().collapsedKmerOffsets().getInt(j);
 					contigOffsetLookupAdd(contigOffsetLookup, snoffset + i, sn.node().collapsedKmers().getLong(j), sn.firstStart() + i, sn.firstEnd() + i);
 				}
+				snoffset += sn.length();
 			}
 			return contigOffsetLookup;
 		}
 		private static void contigOffsetLookupAdd(Long2ObjectMap<RangeMap<Integer, Integer>> contigOffsetLookup, int offset, long kmer, int start, int end) {
-			RangeMap<Integer, Integer> rm = contigOffsetLookup.get(offset);
+			RangeMap<Integer, Integer> rm = contigOffsetLookup.get(kmer);
 			if (rm == null) {
 				rm = TreeRangeMap.create();
 				contigOffsetLookup.put(kmer, rm);
@@ -398,10 +400,14 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		LongSet existing = new LongOpenHashSet();
 		for (KmerPathSubnode n : contig) {
 			for (int i = 0; i < n.length(); i++) {
-				if (existing.add(n.node().kmer(i))) return true;
+				if (!existing.add(n.node().kmer(i))) {
+					return true;
+				}
 			}
 			for (long kmer : n.node().collapsedKmers()) {
-				if (existing.add(kmer)) return true;
+				if (!existing.add(kmer)) {
+					return true;
+				}
 			}
 		}
 		return false;
