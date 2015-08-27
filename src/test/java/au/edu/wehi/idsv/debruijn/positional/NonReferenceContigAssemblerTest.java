@@ -201,4 +201,23 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		assertEquals(1, output.size());
 		assertEquals("AAAAAAAAAAAGTC", S(output.get(0).getAssemblySequence()));
 	}
+	@Test
+	public void should_handle_ambigious_bases() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 4;
+		List<SAMRecordAssemblyEvidence> output = go(pc, true,
+				NRRP(SES(1, 100), withSequence("CAAAAAAAAAAAGT", DP(1, 100, "14M", false, 1, 1, "14M", true))),
+				NRRP(SES(1, 100), withSequence("CAAAAANAAAAGTC", DP(1, 101, "14M", false, 1, 1, "14M", true))));
+		assertEquals(1, output.size());
+		assertEquals("AAAAAAAAAAAGTC", S(output.get(0).getAssemblySequence()));
+	}
+	@Test
+	public void should_handle_multiple_candidate_offsets_for_a_single_kmer_position() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 4;
+		List<SAMRecordAssemblyEvidence> output = go(pc, true,
+				NRRP(SES(1, 100), withSequence("TAAAAA", DP(1, 100, "6M", false, 1, 1, "6M", true))));
+		assertEquals(1, output.size());
+		assertEquals("TAAAAA", S(output.get(0).getAssemblySequence()));
+	}
 }

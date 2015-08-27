@@ -35,7 +35,7 @@ import java.io.IOException;
 import java.util.List;
 
 import au.edu.wehi.idsv.picard.ReferenceLookup;
-import au.edu.wehi.idsv.picard.ReferenceLookupAdapter;
+import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
 import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.vcf.VcfConstants;
@@ -87,27 +87,32 @@ public class ProcessingContext implements Closeable {
 			VariantCallingParameters variantCallingParameters,
 			File ref, boolean perChr, boolean vcf41) {
 		this(fileSystemContext, metricsHeaders, softClipParameters, readPairParameters, assemblyParameters, realignmentParameters, variantCallingParameters, LoadReference(ref), ref, perChr, vcf41);
-		BackgroundCacheReference();
+		BackgroundCacheReference(ref);
 	}
-	private void BackgroundCacheReference() {
+	private void BackgroundCacheReference(final File ref) {
 		Thread thread = new Thread(() -> {
-			log.debug("Starting 2-bit reference sequence encoding");
-			this.reference = new TwoBitBufferedReferenceSequenceFile(this.reference);
-			log.debug("Completed 2-bit reference sequence reference");
+			try {
+				log.debug("Loading reference genome cache on background thread.");
+				this.reference = new TwoBitBufferedReferenceSequenceFile(new IndexedFastaSequenceFile(ref));
+				log.debug("Reference genome cache loaded.");
+			} catch (Exception e) {
+				log.error(e, "Background caching of reference genome failed.");
+				System.exit(1);
+			}
 	    });
 		thread.setDaemon(true);
 		thread.setName("LoadReference");
 		thread.start();
 	}
 	@SuppressWarnings("resource")
-	private static ReferenceLookupAdapter LoadReference(File ref) {
+	private static SynchronousReferenceLookupAdapter LoadReference(File ref) {
 		try {
 			ReferenceSequenceFile underlying = new IndexedFastaSequenceFile(ref);
 			if (ref.length() > Runtime.getRuntime().maxMemory()) {
 				log.error("Caching reference fasta in memory would require more than 50% of the memory allocated to the JVM. Allocate more heap memory to the JVM..");
 				throw new RuntimeException("Not enough memory to cache reference fasta.");
 			}
-			return new ReferenceLookupAdapter(underlying);
+			return new SynchronousReferenceLookupAdapter(underlying);
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException("Unabled load fasta " + ref, e);
 		}

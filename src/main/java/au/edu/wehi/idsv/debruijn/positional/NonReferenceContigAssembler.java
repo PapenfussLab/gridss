@@ -47,11 +47,8 @@ import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Multiset;
-import com.google.common.collect.Range;
-import com.google.common.collect.RangeMap;
 import com.google.common.collect.SortedMultiset;
 import com.google.common.collect.TreeMultiset;
-import com.google.common.collect.TreeRangeMap;
 
 
 /**
@@ -241,8 +238,15 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	 */
 	private static class MisassemblyFixer {
 		private final List<KmerPathSubnode> contig;
+		/**
+		 * path kmer offset -> { path node offset, pretransition kmers, posttransition kmers }
+		 */
 		private final NavigableMap<Integer, ImmutableTriple<Integer, LongList, LongList>> contigTransitionOffsetLookup;
-		private final Long2ObjectMap<RangeMap<Integer, Integer>> contigOffsetLookup;
+		/**
+		 * kmer -> { start, end, path kmer offset }
+		 * unordered for now: ideally this should be an IntIntervalTreeMultimap
+		 */
+		private final Long2ObjectMap<List<ImmutableTriple<Integer, Integer, Integer>>> contigOffsetLookup;
 		public MisassemblyFixer(Collection<KmerPathSubnode> contig) {
 			this.contig = Lists.newArrayList(contig);
 			this.contigTransitionOffsetLookup = createContigTransitionOffsetLookup(this.contig);
@@ -275,8 +279,8 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			}
 			return lookup;
 		}
-		private static Long2ObjectMap<RangeMap<Integer, Integer>> createContigOffsetLookup(Collection<KmerPathSubnode> contig) {
-			Long2ObjectMap<RangeMap<Integer, Integer>> contigOffsetLookup = new Long2ObjectOpenHashMap<RangeMap<Integer,Integer>>();
+		private static Long2ObjectMap<List<ImmutableTriple<Integer, Integer, Integer>>> createContigOffsetLookup(Collection<KmerPathSubnode> contig) {
+			Long2ObjectMap<List<ImmutableTriple<Integer, Integer, Integer>>> contigOffsetLookup = new Long2ObjectOpenHashMap<List<ImmutableTriple<Integer, Integer, Integer>>>();
 			int snoffset = 0;
 			for (KmerPathSubnode sn : contig) {
 				for (int i = 0; i < sn.length(); i++) {
@@ -290,15 +294,13 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			}
 			return contigOffsetLookup;
 		}
-		private static void contigOffsetLookupAdd(Long2ObjectMap<RangeMap<Integer, Integer>> contigOffsetLookup, int offset, long kmer, int start, int end) {
-			RangeMap<Integer, Integer> rm = contigOffsetLookup.get(kmer);
-			if (rm == null) {
-				rm = TreeRangeMap.create();
-				contigOffsetLookup.put(kmer, rm);
+		private static void contigOffsetLookupAdd(Long2ObjectMap<List<ImmutableTriple<Integer, Integer, Integer>>> contigOffsetLookup, int offset, long kmer, int start, int end) {
+			List<ImmutableTriple<Integer, Integer, Integer>> list = contigOffsetLookup.get(kmer);
+			if (list == null) {
+				list = new ArrayList<ImmutableTriple<Integer,Integer,Integer>>();
+				contigOffsetLookup.put(kmer, list);
 			}
-			Range<Integer> r = Range.closed(start, end);
-			assert(rm.subRangeMap(r).asMapOfRanges().isEmpty());
-			rm.put(r, offset);
+			list.add(new ImmutableTriple<Integer, Integer, Integer>(start, end, offset));
 		}
 		/**
 		 * Reassembles the given contig ensuring a valid traversal path
@@ -375,7 +377,9 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			SortedMultiset<Integer> counts = TreeMultiset.create();
 			for (int i = 0; i < evidence.length(); i++) {
 				KmerSupportNode n = evidence.node(i);
-				offsetLookup(counts, i, n.firstKmer(), n.firstStart(), n.firstEnd());
+				if (n != null) {
+					offsetLookup(counts, i, n.firstKmer(), n.firstStart(), n.firstEnd());
+				}
 			}
 			int maxCount = counts.entrySet().stream()
 					.mapToInt(e -> e.getCount())
@@ -388,10 +392,12 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			return new int[] { best.get(0), best.get(best.size() - 1) };
 		}
 		private void offsetLookup(Multiset<Integer> counts, int readOffset, long kmer, int positionStart, int positionEnd) {
-			RangeMap<Integer, Integer> validPositionRanges = contigOffsetLookup.get(kmer);
+			List<ImmutableTriple<Integer, Integer, Integer>> validPositionRanges = contigOffsetLookup.get(kmer);
 			if (validPositionRanges != null) {
-				for (Integer offset : validPositionRanges.subRangeMap(Range.closed(positionStart, positionEnd)).asMapOfRanges().values()) {
-					counts.add(offset - readOffset);
+				for (ImmutableTriple<Integer, Integer, Integer> entry : validPositionRanges)  {
+					if (IntervalUtil.overlapsClosed(entry.left, entry.middle, positionStart, positionEnd)) {
+						counts.add(entry.right - readOffset);	
+					}
 				}
 			}
 		} 
