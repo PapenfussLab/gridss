@@ -33,7 +33,7 @@ exec_gridss() {
 		return
 	fi
 	rm -f realign.sh
-	java $JAVA_ARGS au.edu.wehi.idsv.Idsv \
+	java $JAVA_ARGS \
 		TMP_DIR=. \
 		WORKING_DIR=. \
 		INPUT="$INPUT" \
