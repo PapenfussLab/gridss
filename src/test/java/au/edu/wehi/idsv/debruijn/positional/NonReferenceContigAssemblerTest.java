@@ -171,4 +171,53 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		}
 		assertTrue(caller.tracking_activeNodes() <= 3);
 	}
+	@Test
+	public void should_truncate_anchored_polyA_expansion_fwd() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 4;
+		SoftClipEvidence sce = SCE(FWD, withSequence("GTACAAAA", Read(0, 10, "4M4S")));
+		DiscordantReadPair dp = (DiscordantReadPair)NRRP(SES(1, 100), withSequence("CAAAAT", DP(0, 1, "6M", true, 1, 1, "6M", false)));
+		List<SAMRecordAssemblyEvidence> output = go(pc, true, sce, dp);
+		assertEquals(1, output.size());
+		assertEquals("GTACAAAA", S(output.get(0).getAssemblySequence()));
+	}
+	@Test
+	public void should_truncate_anchored_polyA_expansion_bwd() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 4;
+		SoftClipEvidence sce = SCE(BWD, withSequence("AAAAGTAC", Read(0, 100, "4S4M")));
+		DiscordantReadPair dp = (DiscordantReadPair)NRRP(SES(1, 100), withSequence("CAAAAG", DP(0, 110, "6M", false, 1, 1, "6M", true)));
+		List<SAMRecordAssemblyEvidence> output = go(pc, true, sce, dp);
+		assertEquals(1, output.size());
+		assertEquals("AAAAGTAC", S(output.get(0).getAssemblySequence()));
+	}
+	@Test
+	public void should_take_higher_weight_unanchored_assembly() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 4;
+		List<SAMRecordAssemblyEvidence> output = go(pc, true,
+				NRRP(SES(1, 100), withSequence("CAAAAAAAAAAAGT", DP(1, 100, "14M", false, 1, 1, "14M", true))),
+				NRRP(SES(1, 100), withSequence("CAAAAAAAAAAGTC", DP(1, 101, "14M", false, 1, 1, "14M", true))));
+		assertEquals(1, output.size());
+		assertEquals("AAAAAAAAAAAGTC", S(output.get(0).getAssemblySequence()));
+	}
+	@Test
+	public void should_handle_ambigious_bases() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 4;
+		List<SAMRecordAssemblyEvidence> output = go(pc, true,
+				NRRP(SES(1, 100), withSequence("CAAAAAAAAAAAGT", DP(1, 100, "14M", false, 1, 1, "14M", true))),
+				NRRP(SES(1, 100), withSequence("CAAAAANAAAAGTC", DP(1, 101, "14M", false, 1, 1, "14M", true))));
+		assertEquals(1, output.size());
+		assertEquals("AAAAAAAAAAAGTC", S(output.get(0).getAssemblySequence()));
+	}
+	@Test
+	public void should_handle_multiple_candidate_offsets_for_a_single_kmer_position() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 4;
+		List<SAMRecordAssemblyEvidence> output = go(pc, true,
+				NRRP(SES(1, 100), withSequence("TAAAAA", DP(1, 100, "6M", false, 1, 1, "6M", true))));
+		assertEquals(1, output.size());
+		assertEquals("TAAAAA", S(output.get(0).getAssemblySequence()));
+	}
 }

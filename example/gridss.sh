@@ -5,7 +5,7 @@
 INPUT=chr12.1527326.DEL1024.bam
 OUTPUT=${INPUT/.bam/.vcf}
 REFERENCE=~/reference_genomes/human/hg19.fa
-JAVA_ARGS="-ea -Xmx16g -cp ../target/gridss-*-SNAPSHOT-jar-with-dependencies.jar"
+JAVA_ARGS="-ea -Xmx16g -cp ../target/gridss-*-jar-with-dependencies.jar"
 CORES=$(nproc 2>/dev/null || echo 1)
 
 # ensure libsswjni.so can be loaded
@@ -33,7 +33,7 @@ exec_gridss() {
 		return
 	fi
 	rm -f realign.sh
-	java $JAVA_ARGS au.edu.wehi.idsv.Idsv \
+	java $JAVA_ARGS \
 		TMP_DIR=. \
 		WORKING_DIR=. \
 		INPUT="$INPUT" \
