@@ -123,10 +123,10 @@ gridss.vcftodf <- function(vcf, allColumns=FALSE, sanityCheck=TRUE) {
   df <- gridss.vcftodf.flattenNumeric(df, "SRQ", i$SRQ, allColumns=allColumns)
   df$RASQ <- i$RASQ
   df <- gridss.vcftodf.flattenNumeric(df, "RSRQ", i$RSRQ, allColumns=allColumns)
-  df$BAS <- i$BAS
+  df$BA <- i$BA
   df <- gridss.vcftodf.flattenNumeric(df, "BUM", i$BUM, allColumns=allColumns)
   df <- gridss.vcftodf.flattenNumeric(df, "BSC", i$BSC, allColumns=allColumns)
-  df$BASQ <- i$BASQ
+  df$BAQ <- i$BAQ
   df <- gridss.vcftodf.flattenNumeric(df, "BUMQ", i$BUMQ, allColumns=allColumns)
   df <- gridss.vcftodf.flattenNumeric(df, "BSCQ", i$BSCQ, allColumns=allColumns)
   
@@ -157,6 +157,7 @@ gridss.vcftodf <- function(vcf, allColumns=FALSE, sanityCheck=TRUE) {
   df$hasSC <- paste("SC", ifelse(df$SR > 0 & df$RSR > 0, "Both", ifelse(df$SR > 0, "local", ifelse(df$RSR > 0, "remote", "zero"))))
   df$hasAS <- paste("AS", ifelse(df$AS > 0 & df$RAS > 0, "Both", ifelse(df$AS > 0, "local", ifelse(df$RAS > 0, "remote", "zero"))))
   df$hasRP <- ifelse(df$RP > 0, "Has RP", "No RP")
+  df$assembly <- ifelse(df$AS > 0 & df$RAS > 0, "Both", ifelse(df$AS + df$RAS > 0, "Single", "No assembly"))
   df$confidence <- as.factor(ifelse(df$QUAL >= 1000 & df$hasAS == "AS Both", 3, ifelse(df$QUAL >= 500 & df$hasAS != "AS zero", 2, 1)))
   levels(df$confidence) <- c("Low", "Medium", "High")
   df$size <- vcftobpgr(vcf)$size

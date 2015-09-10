@@ -5,7 +5,7 @@ source("../../main/r/libgridss.R")
 source("libneochromosome.R")
 source("libvcf.R")
 
-#setwd("C:/dev/idsv/src/test/R/")
+#setwd("W:/dev/gridss/src/test/R/")
 
 theme_set(theme_bw())
 
@@ -32,7 +32,10 @@ cn <- getcn("C:/dev/neochromosome/mmc4.xlsx", "GOT3_CN")
 vcf <- readVcf("W:/Papenfuss_lab/projects/liposarcoma/data/gridss/GOT3/bt2/GOT3-bt2.vcf", "hg19")
 out <- go(sample, vcf, rp, cgr, minimumEventSize=500)
 
+  
 
+#####################
+# realignment rates
 
 
 #####################
@@ -74,6 +77,10 @@ ggplot(out$gridss[out$gridss$confidence %in% c("High", "Medium") & is.na(out$gri
   labs(title="Read Pair support for unmatched gridss calls")
 ggsave("rpsupport.png")
   
-  
-  
 
+
+# Spanning
+spanning <- FindFragmentSpanningEvents(vcftobpgr(out$vcf), vcftobpgr(out$vcf))
+spanning <- spanning[substr(as.character(spanning$query), 1, nchar(as.character(spanning$query)) - 1) != substr(as.character(spanning$subjectAlt1), 1, nchar(as.character(spanning$subjectAlt1)) - 1) &
+                       substr(as.character(spanning$query), 1, nchar(as.character(spanning$query)) - 1) != substr(as.character(spanning$subjectAlt2), 1, nchar(as.character(spanning$subjectAlt2)) - 1),]
+table(out$gridss[as.character(spanning$query),]$confidence)

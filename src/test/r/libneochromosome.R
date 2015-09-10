@@ -57,47 +57,53 @@ go <- function(sample, vcf, rp, filterBed=NULL, minimumEventSize, cgrmaxgap=1000
   vcfdf <- matches$gridss
   rp <- matches$bed
   
-  rp$hits <- vcfdf[rp$gridssid,]$confidence
+  rp$hits <- vcfdf[rp$gridssid,]$assembly
   levels(rp$hits) <- c("Low", "Medium", "High", "None")
   rp$hits[is.na(rp$hits)] <- "None"
-  rp$spanning <- FALSE
+  
+  rp$assembly <- vcfdf[rp$gridssid,]$assembly
+  levels(rp$assembly) <- c("No assembly", "Single", "Both", "None")
+  rp$assembly[is.na(rp$assembly)] <- "None"
   
   # filter out small events that don't hit an existing call
   vcf <- vcf[is.na(vcfdf$size) | vcfdf$size >= minimumEventSize,]
   vcfdf <- vcfdf[rownames(vcf),]
-  
+
+  rp$spanning <- FALSE
   spanning <- FindFragmentSpanningEvents(rp, vcftobpgr(vcf))
   rp[spanning$query,]$spanning <- TRUE
   rp[rp[spanning$query,]$mate,]$spanning <- TRUE
   
-  rp$distanceToMedHigh <- distanceToClosest(rp, rowRanges(vcf[vcfdf$confidence != "Low"]))
+  rp$distanceToas <- distanceToClosest(rp, rowRanges(vcf[vcfdf$assembly != "No assembly"]))
   vcfdf$distanceToCall <- distanceToClosest(rowRanges(vcf), rp)
   vcfdf$found <- !is.na(vcfdf$bedid)
   
-  rp$mhcallsWithin1kbp <- countOverlaps(rp, rowRanges(vcf[vcfdf$confidence %in% c("High", "Medium")]), maxgap=1000)
-  vcfdf$mhcallsWithin1kbp <- countOverlaps(vcf, rowRanges(vcf[vcfdf$confidence %in% c("High", "Medium")]), maxgap=1000)
+  rp$asWithin1kbp <- countOverlaps(rp, rowRanges(vcf[vcfdf$assembly %in% c("Single", "Both")]), maxgap=1000)
+  vcfdf$asWithin1kbp <- countOverlaps(vcf, rowRanges(vcf[vcfdf$assembly %in% c("Single", "Both")]), maxgap=1000)
   
   ###############
   # Variant calling concordance
   ###############
   # VennDiagram requires lists of ids
   # We'll go with the bedid if it exists, then fall back to the gridssid
+  # TODO: halve all Venn Diagram counts so we're counting breakpoints, not breakends
   venn.plot <- venn.diagram(
     x = list(
       Published=names(rp),
-      High=vreplaceNA(vcfdf[vcfdf$confidence=="High",]$bedid, rownames(vcfdf[vcfdf$confidence=="High",])),
-      Medium=vreplaceNA(vcfdf[vcfdf$confidence=="Medium",]$bedid, rownames(vcfdf[vcfdf$confidence=="Medium",])),
-      Low=vreplaceNA(vcfdf[vcfdf$confidence=="Low",]$bedid, rownames(vcfdf[vcfdf$confidence=="Low",]))),
-    filename = paste0("venn_", sample, ".png"))
+      Spanning=names(rp[rp$spanning,]),
+      Both=vreplaceNA(vcfdf[vcfdf$assembly=="Both",]$bedid, rownames(vcfdf[vcfdf$assembly=="Both",])),
+      Single=vreplaceNA(vcfdf[vcfdf$assembly=="Single",]$bedid, rownames(vcfdf[vcfdf$assembly=="Single",])),
+      NoAssembly=vreplaceNA(vcfdf[vcfdf$assembly=="No assembly",]$bedid, rownames(vcfdf[vcfdf$assembly=="No assembly",]))),
+    filename = paste0("neo_", "venn_", sample, ".png"))
     
-  if (!file.exists(paste0(sample, ".additional.high.vcf"))) {
+  if (!file.exists(paste0("neo_", sample, ".additional.both.vcf"))) {
     # don't rewrite until writeVcf trailing tab bug is fixed
-    writeVcf(vcf[is.na(vcfdf$bedid) & vcfdf$confidence=="High",], paste0(sample, ".additional.high.vcf"))
-    writeVcf(vcf[is.na(vcfdf$bedid) & vcfdf$confidence=="Medium",], paste0(sample, ".additional.medium.vcf"))
+    writeVcf(vcf[is.na(vcfdf$bedid) & vcfdf$assembly=="Both",], paste0("neo_", sample, ".additional.both.vcf"))
+    writeVcf(vcf[is.na(vcfdf$bedid) & vcfdf$assembly=="Single",], paste0("neo_", sample, ".additional.single.vcf"))
   }
-  write.csv(vcfdf[is.na(vcfdf$bedid) & vcfdf$confidence %in% c("High", "Medium"),], paste0(sample, ".additional.csv"))
-  export(rp[rp$hits %in% c("None", "Low"),], paste0(sample, ".misses.bed"))
-  write.csv(as.data.frame(rp[rp$hits %in% c("None", "Low"),]), paste0(sample, ".missed.csv"))
+  write.csv(vcfdf[is.na(vcfdf$bedid) & vcfdf$assembly %in% c("Single", "Both"),], paste0("neo_", sample, ".additional.csv"))
+  export(rp[rp$assembly %in% c("None", "No assembly"),], paste0("neo_", sample, ".misses.bed"))
+  write.csv(as.data.frame(rp[rp$assembly %in% c("None", "No assembly"),]), paste0("neo_", sample, ".missed.csv"))
   
   
   ###############
@@ -105,47 +111,62 @@ go <- function(sample, vcf, rp, filterBed=NULL, minimumEventSize, cgrmaxgap=1000
   ###############
   #library(pROC) #install.packages("pROC")
 #   dfroc <- NULL
-#   for (confidence in as.numeric(unique(vcfdf$confidence))) {
-#     subset <- as.numeric(vcfdf$confidence) >= confidence
+#   for (assembly in as.numeric(unique(vcfdf$assembly))) {
+#     subset <- as.numeric(vcfdf$assembly) >= assembly
 #     dftmp <- vcftoroc(vcf[subset], rp, maxgap=rpmaxgap)
-#     dftmp$confidence <- levels(vcfdf$confidence)[confidence]
+#     dftmp$assembly <- levels(vcfdf$assembly)[assembly]
 #     dfroc <- rbind(dfroc, dftmp)  
 #   }
-#   ggplot(dfroc[dfroc$qual!=0,], aes(x=log(qual+1), y=sens, color=confidence)) +
+#   ggplot(dfroc[dfroc$qual!=0,], aes(x=log(qual+1), y=sens, color=assembly)) +
 #     geom_line() +
 #     scale_x_reverse() +
 #     theme_bw() +
 #     scale_y_continuous(limits=c(0,1)) +
 #     labs(title=paste0("Sensitivity of curated RP call detection - ", sample))
-#   ggsave(paste0("rp_roc_", sample, ".png"), width=10, height=7.5)
+#   ggsave(paste0("neo_", "rp_roc_", sample, ".png"), width=10, height=7.5)
   
   ggplot(as.data.frame(mcols(rp)), aes(x=nreads, fill=hits)) +
     geom_histogram() +
     scale_x_log10() + 
     labs(title=paste0("Sensitivity of curated RP call detection - ", sample))
-  ggsave(paste0("rp_hist_", sample, ".png"), width=10, height=7.5)
+  ggsave(paste0("neo_rp_hist_", sample, ".png"), width=10, height=7.5)
   
-  ggplot(vcfdf[is.na(vcfdf$bedid) & vcfdf$confidence!="Low",], aes(x=QUAL, fill=confidence)) +
+  ggplot(vcfdf[is.na(vcfdf$bedid) & vcfdf$assembly!="No assembly",], aes(x=QUAL, fill=assembly)) +
     geom_histogram() +
     scale_x_log10() + 
     labs(title=paste0("Concordence with curated RP call detection - ", sample))
-  ggsave(paste0("uncalled_hist_", sample, ".png"), width=10, height=7.5)
+  ggsave(paste0("neo_uncalled_hist_", sample, ".png"), width=10, height=7.5)
   
   ###############
   # Microhomology size distribution
   ###############
-  ggplot(vcfdf, aes(x=HOMLEN, color=confidence)) + geom_density(adjust=2) + scale_x_continuous(limits=c(0, 25))
-  ggsave(paste0("homlen_", sample, ".png"), width=10, height=7.5)
+  ggplot(vcfdf, aes(x=HOMLEN, color=assembly)) + geom_density(adjust=2) + scale_x_continuous(limits=c(0, 25))
+  ggsave(paste0("neo_homlen_", sample, ".png"), width=10, height=7.5)
   
   ###############
   # Assembly rate
   ###############
-  ggplot(vcfdf, aes(x=QUAL-ASQ-RASQ, fill=hasAS)) +
+  ggplot(vcfdf, aes(x=QUAL-ASQ-RASQ, fill=assembly)) +
     geom_bar(position='fill') +
     scale_x_log10(limits=c(25, 10000), expand=c(0, 0)) +
     scale_y_continuous(labels=percent, expand=c(0, 0)) +
     labs(title="Assembly rate", x="Quality of read pair and split read evidence", y="")
-  ggsave(paste0("assembly_rate_qual_", sample, ".png"), width=10, height=7.5)
+  ggsave(paste0("neo_assembly_rate_qual_", sample, ".png"), width=10, height=7.5)
+
+  ###############
+  # Coverage of gridss-only both assembly
+  ###############
+  assnocall <- vcfdf[is.na(vcfdf$bedid) & vcfdf$assembly=="Both",]
+  ggplot(assnocall) +
+    aes(x=RP) + 
+    geom_histogram() +
+    labs("Read Pair coverage, mutual breakend assembly, no published call")
+  ggsave(paste0("neo_both_nocall_rp_", sample, ".png"), width=10, height=7.5)
+  ggplot(assnocall) +
+    aes(x=asWithin1kbp-1) +
+    geom_histogram() +
+    labs("Breakends with 1kbp, mutual breakend assembly, no published call")
+  ggsave(paste0("neo_both_nocall_calldensity_", sample, ".png"), width=10, height=7.5)
   
   ###############
   # debugging
@@ -158,7 +179,52 @@ go <- function(sample, vcf, rp, filterBed=NULL, minimumEventSize, cgrmaxgap=1000
 
 
 
-
+# http://www.cookbook-r.com/Graphs/Multiple_graphs_on_one_page_(ggplot2)/
+# Multiple plot function
+#
+# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+# - cols:   Number of columns in layout
+# - layout: A matrix specifying the layout. If present, 'cols' is ignored.
+#
+# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
+# then plot 1 will go in the upper left, 2 will go in the upper right, and
+# 3 will go all the way across the bottom.
+#
+multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
+  library(grid)
+  
+  # Make a list from the ... arguments and plotlist
+  plots <- c(list(...), plotlist)
+  
+  numPlots = length(plots)
+  
+  # If layout is NULL, then use 'cols' to determine layout
+  if (is.null(layout)) {
+    # Make the panel
+    # ncol: Number of columns of plots
+    # nrow: Number of rows needed, calculated from # of cols
+    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
+                     ncol = cols, nrow = ceiling(numPlots/cols))
+  }
+  
+  if (numPlots==1) {
+    print(plots[[1]])
+    
+  } else {
+    # Set up the page
+    grid.newpage()
+    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
+    
+    # Make each plot, in the correct location
+    for (i in 1:numPlots) {
+      # Get the i,j matrix positions of the regions that contain this subplot
+      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
+      
+      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
+                                      layout.pos.col = matchidx$col))
+    }
+  }
+}
 
 
 

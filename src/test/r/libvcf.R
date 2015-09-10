@@ -428,7 +428,7 @@ FilterOutSNV <- function(vcf, caller) {
   return(vcf)
 }
 # Load VCFs into a list
-LoadVcfs <- function(metadata, directory=".", pattern="*.vcf$") {
+LoadVcfs <- function(metadata, directory=".", pattern="*.vcf$", existingVcfs=NULL) {
   write("Loading VCFs", stderr())
   fileList <- list.files(directory, pattern=pattern)
   zeroSizeFiles = file.info(fileList)$size == 0
@@ -437,8 +437,9 @@ LoadVcfs <- function(metadata, directory=".", pattern="*.vcf$") {
     warning(paste("Skipping files", paste(fileList[zeroSizeFiles]), "due to 0 size.\n"))
     fileList <- fileList[!zeroSizeFiles]
   }
-  # Parallel load of VCFs
-  #vcfs <- foreach (filename=fileList, .packages="VariantAnnotation") %dopar% {
+  # exclude already loaded VCFs
+  fileList <- fileList[!(GetMetadataId(fileList) %in% names(existingVcfs))]
+  #vcfs <- foreach (filename=fileList, .packages="VariantAnnotation") %dopar% { # Parallel load of VCFs
   vcfs <- lapply(fileList, function(filename) {
     write(paste0("Loading ", filename), stderr())
     vcf <- readVcf(filename, "unknown")
@@ -456,62 +457,7 @@ LoadVcfs <- function(metadata, directory=".", pattern="*.vcf$") {
   names(vcfs) <- GetMetadataId(fileList)
   vcfs[sapply(vcfs, is.null)] <- NULL # Remove NULL VCFs list
   write(paste("Loaded", length(vcfs), "VCFs"), stderr())
-  return(vcfs)
-}
-# Load VCFs into a list
-LoadTruth <- function(metadata, refvcfs, directory=".", pattern="*.vcf$", maxerrorbp, useCache=FALSE, ignoreFilters=TRUE, ...) {
-  write("Loading truth from VCF", stderr())
-  #truthSet <- lapply(list.files(directory, pattern=pattern), function(filename) {
-  truthSet <- foreach(filename=list.files(directory, pattern=pattern)) %do% {
-    source(paste0(ifelse(as.character(Sys.info())[1] == "Windows", "W:/", "~/"), "/dev/gridss/src/test/r/libvcf.R"))
-    if (useCache) {
-      cachefile <- paste0(filename, ".CalculateTruth.RData")
-      if (!is.na(file.info(cachefile)$mtime) && file.info(cachefile)$mtime > file.info(filename)$mtime) {
-        write(paste0("Loading ", cachefile), stderr())
-        load(file=cachefile)
-        if (!is.null(callTruthPair)) {
-          return(callTruthPair)
-        }
-      }
-    }
-    write(paste0("Loading ", filename), stderr())
-    vcf <- readVcf(filename, "unknown")
-    id <- GetMetadataId(filename)
-    md <- metadata[id, ]
-    attr(vcf, "id") <- id
-    attr(vcf, "metadata") <- md
-    attr(vcf, "filename") <- filename
-    if (is.null(md)) {
-      warning("VCF missing metadata - ignoring")
-      return(NULL)
-    }
-    if (is.null(md$CX_CALLER) || is.na(md$CX_CALLER)) {
-      return(NULL)
-    }
-    if (is.null(md$CX_REFERENCE_VCF) || is.na(md$CX_REFERENCE_VCF)) {
-      warning(paste0(md$Id, " missing reference vcf"))
-      return(NULL)
-    }
-    truthvcf <- refvcfs[[GetMetadataId(md$CX_REFERENCE_VCF)]]
-    if (is.null(truthvcf)) {
-      warning(paste0("Missing truth for", md$Id))
-      return(NULL)
-    }
-    write(paste0("Loading truth for ", md$Id), stderr())
-    callTruthPair <- CalculateTruth(vcf, truthvcf, maxerrorbp, ignoreFilters,...)
-    if (nrow(callTruthPair$calls) > 0) {
-      callTruthPair$calls <- cbind(callTruthPair$calls, md, row.names=NULL)
-    }
-    callTruthPair$truth <- cbind(callTruthPair$truth, md, row.names=NULL)
-    if (useCache) {
-      save(callTruthPair, file=cachefile)
-    }
-    return(callTruthPair)
-  }
-  truthSet[sapply(truthSet, is.null)] <- NULL # Remove NULLs
-  calls = rbindlist(lapply(truthSet, function(x) x$calls), use.names=TRUE, fill=TRUE)
-  truth = rbindlist(lapply(truthSet, function(x) x$truth), use.names=TRUE, fill=TRUE)
-  return(list(calls=calls, truth=truth))
+  return(c(existingVcfs, vcfs))
 }
 # ensures all records have a matching mate
 ensure_bp_mate <- function(gr) {
@@ -540,8 +486,7 @@ FindFragments <- function(gr, maxfragmentsize=500) {
     start_local=names(gr)[queryHits(hits)],
     end_remote=gr[names(gr)[subjectHits(hits)],]$mate,
     end_local=names(gr)[subjectHits(hits)],
-    size=(start(gr[subjectHits(hits),]) + end(gr[subjectHits(hits),]) - start(gr[queryHits(hits),]) - end(gr[queryHits(hits),])) / 2,
-    simpleEvent=seqnames(gr[subjectHits(hits),])==seqnames(gr[queryHits(hits),]) & abs(start(gr[subjectHits(hits),]) - start(gr[queryHits(hits),])) < maxfragmentsize
+    size=(start(gr[subjectHits(hits),]) + end(gr[subjectHits(hits),]) - start(gr[queryHits(hits),]) - end(gr[queryHits(hits),])) / 2
   )
   return(fragments)
 }
@@ -567,7 +512,8 @@ FindFragmentSpanningEvents <- function(querygr, subjectgr, maxfragmentsize=500, 
     subjectAlt1=as.character(fragments$start_remote[spanningHits$subjectHits]),
     subjectAlt2=as.character(fragments$end_remote[spanningHits$subjectHits]),
     size=fragments$size[spanningHits$subjectHits],
-    simpleEvent=fragments$simpleEvent[spanningHits$subjectHits]))
+    simpleEvent=seqnames(querygr[spanningHits$queryHits,])==seqnames(querygr[querygr$mate,][spanningHits$queryHits,]) & abs(start(querygr[spanningHits$queryHits,]) - start(querygr[querygr$mate,][spanningHits$queryHits,])) < maxfragmentsize
+  ))
 }
 test_that("spanning events identified", {
   querygr <- GRanges(seqnames=c('chr1','chr1'), IRanges(start=c(10, 20), width=1), strand=c('+', '-'))
@@ -587,4 +533,21 @@ test_that("spanning events identified", {
     simpleEvent=c(TRUE)
     ), FindFragmentSpanningEvents(querygr, subjectgr))
 })
-
+test_that("interchromsomal event not considered simple", {
+  querygr <- GRanges(seqnames=c('chr1','chr3'), IRanges(start=c(10, 20), width=1), strand=c('+', '-'))
+  names(querygr) <- c("AC", "CA")
+  querygr$mate <- reverse(names(querygr))
+  subjectgr <- GRanges(
+    seqnames=c('chr1','chr2','chr2','chr3'),
+    IRanges(start=c(10, 100, 200, 20), width=1),
+    strand=c('+', '-', '+', '-'))
+  names(subjectgr) <- c("AB", "BA", "DC", "CD")
+  subjectgr$mate <- reverse(names(subjectgr))
+  expect_equal(data.frame(
+    query=c("AC"),
+    subjectAlt1=c("AB"),
+    subjectAlt2=c("CD"),
+    size=c(100),
+    simpleEvent=c(FALSE)
+  ), FindFragmentSpanningEvents(querygr, subjectgr))
+})
