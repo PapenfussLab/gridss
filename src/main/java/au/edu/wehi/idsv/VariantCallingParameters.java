@@ -12,7 +12,7 @@ public class VariantCallingParameters {
 	/**
 	 * Minimum score for variant to be called
 	 */
-	public double minScore = 25;
+	public double minScore = 38;
 	/**
 	 * Maximum somatic p-value for flagging a variant as somatic
 	 */
@@ -62,6 +62,9 @@ public class VariantCallingParameters {
 		if (call.getBreakpointQual() < minScore || call.getBreakpointEvidenceCount(EvidenceSubset.ALL) == 0) {
 			filters.add(VcfFilter.LOW_BREAKPOINT_SUPPORT);
 		}
+		if (call.getBreakpointEvidenceCountAssembly() == 0 && call.getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL) + call.getBreakpointEvidenceCountSoftClip(EvidenceSubset.ALL) == 1) {
+			filters.add(VcfFilter.SINGLE_SUPPORT);
+		}
 		return filters;
 	}
 	public VariantContextDirectedEvidence applyConfidenceFilter(VariantContextDirectedEvidence variant) {
@@ -71,7 +74,7 @@ public class VariantCallingParameters {
 			if (v.getBreakpointEvidenceCountLocalAssembly() == 0 && v.getBreakpointEvidenceCountRemoteAssembly() == 0) { 
 				filteredVariant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(filteredVariant.processContext, filteredVariant).filter(VcfFilter.NO_ASSEMBLY.filter()).make();
 			} else if (v.getBreakpointEvidenceCountLocalAssembly() == 0 || v.getBreakpointEvidenceCountRemoteAssembly() == 0) {
-				//variant = (VariantContextDirectedEvidence)new VariantContextBuilder(variant).filter(VcfFilter.SINGLE_ASSEMBLY.filter()).make();
+				variant = (VariantContextDirectedEvidence)new VariantContextBuilder(variant).filter(VcfFilter.SINGLE_ASSEMBLY.filter()).make();
 			}
 		} else {
 			if (filteredVariant.getBreakendEvidenceCountAssembly() == 0) {
