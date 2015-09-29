@@ -50,7 +50,6 @@ public class SamTags {
 	 */
 	public static final String EVIDENCEID_PREFIX_SOFT_CLIP = "c";
 	
-	public static final String ASSEMBLY_BASE_COUNT = "bc";
 	public static final String ASSEMBLY_READPAIR_COUNT = "dp";
 	public static final String ASSEMBLY_SOFTCLIP_COUNT = "sc";
 	public static final String ASSEMBLY_REMOTE_COUNT = "rc";

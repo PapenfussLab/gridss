@@ -49,7 +49,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 			pnIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, pc.getAssemblyParameters().maxBaseMismatchForCollapse, pc.getAssemblyParameters().collapseBubblesOnly, 0);
 			pnIt = new PathSimplificationIterator(pnIt, maxPathLength, maxEvidenceWidth);
 		}
-		caller = new NonReferenceContigAssembler(pnIt, 0, maxEvidenceWidth, maxReadLength, k, aes, trackedIt);
+		caller = new NonReferenceContigAssembler(pnIt, 0, maxEvidenceWidth + maxReadLength + 2, maxReadLength, k, aes, trackedIt);
 		return caller;
 	}
 	@Test
@@ -219,5 +219,47 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 				NRRP(SES(1, 100), withSequence("TAAAAA", DP(1, 100, "6M", false, 1, 1, "6M", true))));
 		assertEquals(1, output.size());
 		assertEquals("TAAAAA", S(output.get(0).getAssemblySequence()));
+	}
+	@Test
+	public void fwd_anchor_length_calculation_should_not_include_any_nonreference_bases() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 2;
+		List<SAMRecordAssemblyEvidence> output = go(pc, true,
+				SCE(FWD, withSequence("AAAAAAAAAT", Read(0, 1, "9M1S"))),
+				SCE(FWD, withSequence(        "ATTTTTTTTT", Read(0, 9, "1M9S"))));
+		assertEquals(1, output.size());
+		assertEquals("AAAAAAAAATTTTTTTTT", S(output.get(0).getAssemblySequence()));
+	}
+	@Test
+	public void bwd_anchor_length_calculation_should_not_include_any_nonreference_bases() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 2;
+		List<SAMRecordAssemblyEvidence> output = go(pc, true,
+				SCE(BWD, withSequence("AAAAAAAAAT", Read(0, 10, "9S1M"))),
+				SCE(BWD, withSequence(        "ATTTTTTTTT", Read(0, 10, "1S9M"))));
+		assertEquals(1, output.size());
+		assertEquals("AAAAAAAAATTTTTTTTT", S(output.get(0).getAssemblySequence()));
+	}
+	@Test
+	public void anchor_should_be_trimmed_at_max_length() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 3;
+		List<SAMRecordAssemblyEvidence> output = go(pc, true,
+				SCE(FWD, withSequence("AAAAAAAAAT", Read(0, 1, "9M1S"))),
+				SCE(FWD, withSequence("AAAAAAAAAT", Read(0, 2, "9M1S"))),
+				SCE(FWD, withSequence("AAAAAAAAAT", Read(0, 3, "9M1S"))),
+				SCE(FWD, withSequence("AAAAAAAAAT", Read(0, 4, "9M1S"))),
+				SCE(FWD, withSequence("AAAAAAAAAT", Read(0, 5, "9M1S"))),
+				SCE(FWD, withSequence("AAAAAAAAAT", Read(0, 6, "9M1S"))),
+				SCE(FWD, withSequence("AAAAAAAAAT", Read(0, 7, "9M1S"))),
+				SCE(FWD, withSequence("AAAAAAAAAT", Read(0, 8, "9M1S"))),
+				SCE(FWD, withSequence("AAAAAAAAAT", Read(0, 9, "9M1S"))),
+				SCE(FWD, withSequence("AAAAAAAAAT", Read(0, 10, "9M1S"))),
+				SCE(FWD, withSequence("AAAAAAAAAT", Read(0, 11, "9M1S"))),
+				SCE(FWD, withSequence("AAAAAAAAAT", Read(0, 12, "9M1S"))),
+				SCE(FWD, withSequence("AAAAAAAAAT", Read(0, 13, "9M1S"))),
+				SCE(FWD, withSequence("AAAAAAAAAT", Read(0, 14, "9M1S"))),
+				SCE(FWD, withSequence(       "AATTTTTTTTT", Read(0, 18, "2M9S"))));
+		assertEquals("AAAAAAAAAAATTTTTTTTT", S(output.get(0).getAssemblySequence()));
 	}
 }

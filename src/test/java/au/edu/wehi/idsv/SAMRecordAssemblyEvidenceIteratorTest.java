@@ -49,7 +49,7 @@ public class SAMRecordAssemblyEvidenceIteratorTest extends TestHelper {
 	}
 	public SAMRecordAssemblyEvidence BE(int position) {
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, null,
-				0, position, 1 , B("AA"), new byte[] { 7,7 }, new int[] {5, 6}).annotateAssembly();
+				0, position, 1 , B("AA"), new byte[] { 7,7 }).annotateAssembly();
 		return e;
 	}
 	@Test

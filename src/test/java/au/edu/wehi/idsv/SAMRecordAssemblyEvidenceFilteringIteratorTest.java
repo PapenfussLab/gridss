@@ -49,7 +49,7 @@ public class SAMRecordAssemblyEvidenceFilteringIteratorTest extends TestHelper {
 		//evidence.add(SCE(FWD, Read(0, 5, "5M6S")));
 		//evidence.add(SCE(FWD, Read(0, 5, "5M7S")));
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Lists.transform(evidence, EID),
-				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), new int[] { 5, 6});
+				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"));
 		e.hydrateEvidenceSet(evidence);
 		e.annotateAssembly();
 		in.add(e);
@@ -62,7 +62,7 @@ public class SAMRecordAssemblyEvidenceFilteringIteratorTest extends TestHelper {
 		evidence.add(SCE(FWD, Read(0, 5, "5M6S")));
 		evidence.add(SCE(FWD, Read(0, 5, "5M7S")));
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Lists.transform(evidence, EID),
-				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), new int[] { 5, 6});
+				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"));
 		e.hydrateEvidenceSet(evidence);
 		e.annotateAssembly();
 		SAMRecord r = Read(0, 11, "5M");
@@ -82,7 +82,7 @@ public class SAMRecordAssemblyEvidenceFilteringIteratorTest extends TestHelper {
 		evidence.add(SCE(FWD, Read(0, 10, "6S5M6S")));
 		evidence.add(SCE(FWD, Read(0, 10, "7S5M7S")));
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, Lists.transform(evidence, EID),
-				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), new int[] { 5, 6});
+				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"));
 		e.hydrateEvidenceSet(evidence);
 		e.annotateAssembly();
 		SAMRecord r = Read(0, 5, "5M");
@@ -98,7 +98,7 @@ public class SAMRecordAssemblyEvidenceFilteringIteratorTest extends TestHelper {
 		evidence.add(SCE(FWD, Read(0, 10, "6S5M6S")));
 		evidence.add(SCE(FWD, Read(0, 10, "7S5M7S")));
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, Lists.transform(evidence, EID),
-				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"), new int[] { 5, 6});
+				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"));
 		e.hydrateEvidenceSet(evidence);
 		e.annotateAssembly();
 		SAMRecord r = Read(0, 105, "5M");

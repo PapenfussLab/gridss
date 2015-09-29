@@ -44,13 +44,12 @@ public final class AssemblyFactory {
 			AssemblyEvidenceSource source, BreakendDirection direction,
 			Collection<String> evidence,
 			int anchorReferenceIndex, int anchorBreakendPosition, int anchoredBaseCount,
-			byte[] baseCalls, byte[] baseQuals,
-			int[] baseCounts) {
+			byte[] baseCalls, byte[] baseQuals) {
 		BreakendSummary breakend = new BreakendSummary(anchorReferenceIndex, direction, anchorBreakendPosition, anchorBreakendPosition);
 		SAMRecord r = createAssemblySAMRecord(evidence, processContext.getBasicSamHeader(), source, breakend,
 				breakend.direction == BreakendDirection.Forward ? anchoredBaseCount : 0,
 				breakend.direction == BreakendDirection.Backward ? anchoredBaseCount : 0,
-				baseCalls, baseQuals, baseCounts);
+				baseCalls, baseQuals);
 		SAMRecordAssemblyEvidence assembly = hydrate(source, r);
 		return assembly;
 	}
@@ -59,7 +58,7 @@ public final class AssemblyFactory {
 			Collection<String> evidence,
 			int startAnchorReferenceIndex, int startAnchorPosition, int startAnchorBaseCount,
 			int endAnchorReferenceIndex, int endAnchorPosition, int endAnchorBaseCount,
-			byte[] baseCalls, byte[] baseQuals, int[] baseCounts) {
+			byte[] baseCalls, byte[] baseQuals) {
 		BreakpointSummary bp = new BreakpointSummary(
 				startAnchorReferenceIndex, BreakendDirection.Forward, startAnchorPosition, startAnchorPosition,
 				endAnchorReferenceIndex, BreakendDirection.Backward, endAnchorPosition, endAnchorPosition);
@@ -68,7 +67,7 @@ public final class AssemblyFactory {
 		SAMRecord r = createAssemblySAMRecord(evidence, processContext.getBasicSamHeader(), source, bp,
 				startAnchorBaseCount,
 				endAnchorBaseCount,
-				baseCalls, baseQuals, baseCounts);
+				baseCalls, baseQuals);
 		SAMRecordAssemblyEvidence assembly = hydrate(source, r);
 		return assembly;
 	}
@@ -93,7 +92,7 @@ public final class AssemblyFactory {
 			int[] baseCounts) {
 		SAMRecord r = createAssemblySAMRecord(evidence, processContext.getBasicSamHeader(), source, breakend,
 				0, 0,
-				baseCalls, baseQuals, baseCounts);
+				baseCalls, baseQuals);
 		SAMRecordAssemblyEvidence assembly = hydrate(source, r);
 		return assembly;
 	}
@@ -139,8 +138,7 @@ public final class AssemblyFactory {
 			BreakendSummary breakend,
 			int startAnchoredBaseCount,
 			int endAnchoredBaseCount,
-			byte[] baseCalls, byte[] baseQuals,
-			int[] baseCounts) {
+			byte[] baseCalls, byte[] baseQuals) {
 		assert(startAnchoredBaseCount >= 0);
 		assert(endAnchoredBaseCount >= 0);
 		assert(startAnchoredBaseCount + endAnchoredBaseCount <= baseCalls.length);
@@ -224,7 +222,6 @@ public final class AssemblyFactory {
 						new CigarElement(endAnchoredBaseCount, CigarOperator.MATCH_OR_MISMATCH))));
 			}
 		}
-		record.setAttribute(SamTags.ASSEMBLY_BASE_COUNT, baseCounts);
 		if (!(breakend instanceof BreakpointSummary)) {
 			record.setAttribute(SamTags.ASSEMBLY_DIRECTION, breakend.direction.toChar());
 		}

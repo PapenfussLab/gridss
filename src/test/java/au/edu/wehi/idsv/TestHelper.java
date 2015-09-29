@@ -233,7 +233,7 @@ public class TestHelper {
 		assert(bs.start == bs.end);
 		assert(bs.start2 == bs.end2);
 		assert(bs.direction2 == BWD);
-		SAMRecordAssemblyEvidence abe = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), bs.direction, null, bs.referenceIndex, bs.start, 1, B("TT"), B("TT"), new int[] {0, 0});
+		SAMRecordAssemblyEvidence abe = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), bs.direction, null, bs.referenceIndex, bs.start, 1, B("TT"), B("TT"));
 		SAMRecord r = new SAMRecord(getContext().getBasicSamHeader());
 		r.setReferenceIndex(bs.referenceIndex2);
 		r.setAlignmentStart(bs.start2);
@@ -273,8 +273,7 @@ public class TestHelper {
 				FWD,
 				null,
 				0, 1,
-				1, B("ATT"), new byte[] { 7, 7, 7 },
-				new int[] {6, 8}).annotateAssembly();
+				1, B("ATT"), new byte[] { 7, 7, 7 }).annotateAssembly();
 	}
 	public static class MockSoftClipSizeDistribution extends SoftClipSizeDistribution {
 		public MockSoftClipSizeDistribution() {
