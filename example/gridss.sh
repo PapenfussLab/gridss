@@ -3,7 +3,7 @@
 # Example gridss pipeline
 #
 INPUT=chr12.1527326.DEL1024.bam
-OUTPUT=${INPUT/.bam/.vcf}
+OUTPUT=${INPUT/.bam/.gridss.vcf}
 REFERENCE=~/reference_genomes/human/hg19.fa
 JAVA_ARGS="-ea -Xmx16g -cp ../target/gridss-*-jar-with-dependencies.jar"
 CORES=$(nproc 2>/dev/null || echo 1)
@@ -29,7 +29,7 @@ if [[ ! -f "$REFERENCE.1.bt2" ]] ; then
 fi
 
 exec_gridss() {
-	if [[ -f $OUTPUT ]] ; then
+	if [[ -f "$OUTPUT" ]] ; then
 		return
 	fi
 	rm -f realign.sh
@@ -42,18 +42,18 @@ exec_gridss() {
 		SCRIPT=realign.sh \
 		VERBOSITY=INFO \
 		WORKER_THREADS=$CORES \
-		2>&1 | tee -a gridss.$1.log
+		2>&1 | tee -a gridss.$$.log
 	
 	if [[ -f realign.sh ]] ; then
 		chmod a+x realign.sh
-		./realign.sh 2>&1 | tee -a gridss.$1.log
+		./realign.sh 2>&1 | tee -a gridss.$$.log
 		exec_gridss
 	fi
 }
 
 exec_gridss
 
-if [[ -f $OUTPUT ]] ; then
+if [[ -f "$OUTPUT" ]] ; then
 	java $JAVA_ARGS au.edu.wehi.idsv.VcfBreakendToBedpe \
 		INPUT="$OUTPUT" \
 		OUTPUT="${OUTPUT/.vcf/.bedpe}" \
