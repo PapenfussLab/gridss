@@ -6,6 +6,7 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.fastq.FastqRecord;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -15,8 +16,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
-	private void writeRealignment(ProcessingContext pc, EvidenceSource source, SAMRecord... records) {
-		createBAM(pc.getFileSystemContext().getRealignmentBam(source.getFileIntermediateDirectoryBasedOn(), 0), SortOrder.coordinate, records);
+	private void writeRealignment(ProcessingContext pc, EvidenceSource source, int index, SAMRecord... records) {
+		createBAM(pc.getFileSystemContext().getRealignmentBam(source.getFileIntermediateDirectoryBasedOn(), index), SortOrder.coordinate, records);
 	}
 	@Test
 	public void should_write_fastq() {
@@ -48,7 +49,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		assertEquals("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", getFastqRecords(aes).get(0).getReadString());
 	}
 	@Test
-	public void iterator_should_return_in_chr_order() {
+	public void iterator_should_return_in_chr_order() throws IOException {
 		createInput(
 				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGA", Read(0, 1, "1M98S")),
 				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", Read(0, 1, "1M99S")),
@@ -63,11 +64,12 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		pc.getRealignmentParameters().requireRealignment = false;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
 		ses.completeSteps(EnumSet.allOf(ProcessStep.class));
-		writeRealignment(pc, ses);
+		writeRealignment(pc, ses, 0);
 		ses.completeSteps(EnumSet.allOf(ProcessStep.class));
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
 		aes.ensureAssembled(); // assemble
-		writeRealignment(pc, aes);
+		writeRealignment(pc, aes, 0);
+		aes.iterateRealignment();
 		aes.ensureAssembled(); // transform to annotated read pair
 
 		List<SAMRecordAssemblyEvidence> list = Lists.newArrayList(aes.iterator(false, false));
@@ -77,7 +79,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		}
 	}
 	@Test
-	public void iterator_chr_should_return_only_chr_assemblies() {
+	public void iterator_chr_should_return_only_chr_assemblies() throws IOException {
 		createInput(
 				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAC", Read(0, 1, "50M50S")),
 				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", Read(0, 1, "49M51S")),
@@ -93,11 +95,12 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		pc.getRealignmentParameters().requireRealignment = false;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
 		ses.completeSteps(EnumSet.allOf(ProcessStep.class));
-		writeRealignment(pc, ses);
+		writeRealignment(pc, ses, 0);
 		ses.completeSteps(EnumSet.allOf(ProcessStep.class));
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
 		aes.ensureAssembled(); // assemble
-		writeRealignment(pc, aes);
+		writeRealignment(pc, aes, 0);
+		aes.iterateRealignment();
 		aes.ensureAssembled(); // transform to annotated read pair
 
 		List<SAMRecordAssemblyEvidence> list = Lists.newArrayList(aes.iterator(false, false, "polyA"));

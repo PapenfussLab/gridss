@@ -87,7 +87,6 @@ public class Idsv extends CommandLineProgram {
     	try {
     		hackSimpleCalls();
     		threadpool = Executors.newFixedThreadPool(WORKER_THREADS, new ThreadFactoryBuilder().setDaemon(false).setNameFormat("Worker-%d").build());
-    		halfthreadpool = Executors.newFixedThreadPool((int)Math.ceil(WORKER_THREADS/2.0), new ThreadFactoryBuilder().setDaemon(false).setNameFormat("HalfWorker-%d").build());
     		log.info(String.format("Using %d worker threads", WORKER_THREADS));
 	    	ensureDictionariesMatch();
 	    	List<SAMEvidenceSource> samEvidence = createSamEvidenceSources();
@@ -108,7 +107,7 @@ public class Idsv extends CommandLineProgram {
 	    	sortRealignedSoftClips(threadpool, samEvidence);
 	    	
 	    	AssemblyEvidenceSource assemblyEvidence = new AssemblyEvidenceSource(getContext(), samEvidence, OUTPUT);
-	    	assemblyEvidence.ensureAssembled(threadpool, halfthreadpool);
+	    	assemblyEvidence.ensureAssembled(threadpool);
 	    	
 	    	compoundRealignment(threadpool, ImmutableList.of(assemblyEvidence));
 	    	if (!checkRealignment(ImmutableList.of(assemblyEvidence), WORKER_THREADS)) {
@@ -116,12 +115,10 @@ public class Idsv extends CommandLineProgram {
     		}
 	    	// edge case: need to ensure assembled again since realignment could have completed
 	    	// without invoking external aligner (0 records to realign). 
-	    	assemblyEvidence.ensureAssembled(threadpool, halfthreadpool);
+	    	assemblyEvidence.ensureAssembled(threadpool);
 	    	
 	    	shutdownPool(threadpool);
-	    	shutdownPool(halfthreadpool);
 			threadpool = null;
-			halfthreadpool = null;
 			    	
 			// check that all steps have been completed
 	    	for (SAMEvidenceSource sref : samEvidence) {
