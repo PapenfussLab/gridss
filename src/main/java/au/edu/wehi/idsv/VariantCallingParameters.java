@@ -67,18 +67,18 @@ public class VariantCallingParameters {
 		}
 		return filters;
 	}
-	public VariantContextDirectedEvidence applyConfidenceFilter(VariantContextDirectedEvidence variant) {
+	public VariantContextDirectedEvidence applyConfidenceFilter(final VariantContextDirectedEvidence variant) {
 		VariantContextDirectedEvidence filteredVariant = variant;
 		if (variant instanceof VariantContextDirectedBreakpoint) {
 			VariantContextDirectedBreakpoint v = (VariantContextDirectedBreakpoint)filteredVariant;
 			if (v.getBreakpointEvidenceCountLocalAssembly() == 0 && v.getBreakpointEvidenceCountRemoteAssembly() == 0) { 
 				filteredVariant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(filteredVariant.processContext, filteredVariant).filter(VcfFilter.NO_ASSEMBLY.filter()).make();
 			} else if (v.getBreakpointEvidenceCountLocalAssembly() == 0 || v.getBreakpointEvidenceCountRemoteAssembly() == 0) {
-				variant = (VariantContextDirectedEvidence)new VariantContextBuilder(variant).filter(VcfFilter.SINGLE_ASSEMBLY.filter()).make();
+				filteredVariant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(filteredVariant.processContext, filteredVariant).filter(VcfFilter.SINGLE_ASSEMBLY.filter()).make();
 			}
 		} else {
 			if (filteredVariant.getBreakendEvidenceCountAssembly() == 0) {
-				filteredVariant = (VariantContextDirectedEvidence)new VariantContextBuilder(filteredVariant).filter(VcfFilter.NO_ASSEMBLY.filter()).make();
+				filteredVariant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(filteredVariant.processContext, filteredVariant).filter(VcfFilter.NO_ASSEMBLY.filter()).make();
 			}
 		}
 		return filteredVariant;
