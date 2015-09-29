@@ -116,6 +116,12 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 	public float getBreakpointQual() {
 		return (float)getPhredScaledQual();
 	}
+	public boolean hasBreakpointSupport(EvidenceSubset subset) {
+		return getBreakpointEvidenceCountReadPair(subset) > 0 ||
+				getBreakpointEvidenceCountSoftClip(subset) > 0 ||
+				getBreakpointEvidenceCountAssemblyReadPair(subset) > 0 ||
+				getBreakpointEvidenceCountAssemblySoftClip(subset) > 0;
+	}
 	public int getBreakpointEvidenceCount(EvidenceSubset subset) {
 		return getBreakpointEvidenceCountAssembly() +
 				getBreakpointEvidenceCountReadPair(subset) +
@@ -128,6 +134,8 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 	public int getBreakpointEvidenceCountSoftClip(EvidenceSubset subset) { return getBreakpointEvidenceCountLocalSoftClip(subset) + getBreakpointEvidenceCountRemoteSoftClip(subset); }
 	public int getBreakpointEvidenceCountLocalSoftClip(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT.attribute()), subset); }
 	public int getBreakpointEvidenceCountRemoteSoftClip(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT_REMOTE.attribute()), subset); }
+	public int getBreakpointEvidenceCountAssemblyReadPair(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT.attribute()), subset); }
+	public int getBreakpointEvidenceCountAssemblySoftClip(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_SPLITREAD_COUNT.attribute()), subset); }
 	
 	public double getBreakpointEvidenceQualReadPair(EvidenceSubset subset) { return AttributeConverter.asDoubleSumTN(getAttribute(VcfAttributes.BREAKPOINT_READPAIR_QUAL.attribute()), subset); }
 	public double getBreakpointEvidenceQualAssembly() { return getBreakpointEvidenceQualLocalAssembly() + getBreakpointEvidenceQualRemoteAssembly(); }

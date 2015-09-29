@@ -15,7 +15,6 @@ import java.util.List;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import au.edu.wehi.idsv.vcf.VcfConstants;
-import au.edu.wehi.idsv.visualisation.BufferTracker;
 
 import com.google.common.collect.Lists;
 

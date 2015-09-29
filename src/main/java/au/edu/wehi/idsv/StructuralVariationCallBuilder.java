@@ -152,6 +152,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		// id(parent.getID()); // can't change from parent ID as the id is already referenced in the MATEID of the other breakend  
 		VariantContextDirectedEvidence variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(processContext, null, super.make());
 		variant = applyFilters(variant);
+		variant = Models.calculateSomatic(variant);
 		//assert(sanitycheck(variant));
 		return variant;
 	}
