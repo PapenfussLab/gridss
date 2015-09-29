@@ -225,7 +225,7 @@ public final class AssemblyFactory {
 		if (!(breakend instanceof BreakpointSummary)) {
 			record.setAttribute(SamTags.ASSEMBLY_DIRECTION, breakend.direction.toChar());
 		}
-		assert(ensureUniqueEvidenceID(evidence));
+		ensureUniqueEvidenceID(evidence);
 		if (evidence != null) {
 			EvidenceIDCollection e = new EvidenceIDCollection();
 			for (String s : evidence) {
