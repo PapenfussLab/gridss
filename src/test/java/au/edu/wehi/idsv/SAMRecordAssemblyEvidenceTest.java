@@ -142,9 +142,6 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals(e.getAssemblyAnchorLength(), r.getAssemblyAnchorLength());
 		//assertArrayEquals(e.getAssemblyAnchorQuals() , r.getAssemblyAnchorQuals());
 		assertEquals(S(e.getAssemblyAnchorSequence()) , S(r.getAssemblyAnchorSequence()));
-		assertEquals(e.getAssemblyBaseCount(EvidenceSubset.NORMAL) , r.getAssemblyBaseCount(EvidenceSubset.NORMAL));
-		assertEquals(e.getAssemblyBaseCount(EvidenceSubset.TUMOUR) , r.getAssemblyBaseCount(EvidenceSubset.TUMOUR));
-		assertEquals(e.getAssemblyBaseCount(EvidenceSubset.ALL) , r.getAssemblyBaseCount(EvidenceSubset.ALL));
 		assertEquals(e.getAssemblyReadPairLengthMax(EvidenceSubset.NORMAL) , r.getAssemblyReadPairLengthMax(EvidenceSubset.NORMAL));
 		assertEquals(e.getAssemblyReadPairLengthMax(EvidenceSubset.TUMOUR) , r.getAssemblyReadPairLengthMax(EvidenceSubset.TUMOUR));
 		assertEquals(e.getAssemblyReadPairLengthMax(EvidenceSubset.ALL) , r.getAssemblyReadPairLengthMax(EvidenceSubset.ALL));

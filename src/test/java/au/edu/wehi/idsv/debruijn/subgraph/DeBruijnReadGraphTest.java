@@ -58,14 +58,6 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		assertEquals("TTATG", S(bp.getAssemblySequence()));
 	}
 	@Test
-	public void should_set_base_count_attributes() {
-		DeBruijnReadGraph g = G(0, 3);
-		g.addEvidence(SCE(FWD, withQual(new byte[] { 4,4,4,4,4,4,4}, withSequence("AAAGTCT", Read(0, 10, "3M4S")))));
-		List<SAMRecordAssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(LCCB + 10000));
-		AssemblyEvidence bp = result.get(0);
-		assertEquals(4, bp.getAssemblyBaseCount(null));
-	}
-	@Test
 	public void should_track_evidence() {
 		List<SoftClipEvidence> evidence = Lists.newArrayList(
 				SCE(FWD, withQual(new byte[] { 4,4,4,4,4,4,4}, withSequence("AAAGTCT", Read(0, 10, "3M4S")))),
@@ -167,7 +159,6 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		for (DirectedEvidence e : evidence) g.addEvidence(e);
 		List<SAMRecordAssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(LCCB + 10000));
 		result.get(0).hydrateEvidenceSet(evidence).annotateAssembly();
-		assertEquals(5 + 6 + 7, result.get(0).getAssemblyBaseCount(EvidenceSubset.ALL));
 		assertEquals(3, result.get(0).getAssemblySupportCountSoftClip(EvidenceSubset.ALL));
 		assertEquals(3, result.get(0).getAssemblyAnchorLength());
 	}

@@ -18,7 +18,6 @@ public interface AssemblyEvidence extends DirectedEvidence {
 	byte[] getAssemblySequence();
 	byte[] getAssemblyAnchorSequence();
 	int getAssemblyAnchorLength();
-	int getAssemblyBaseCount(EvidenceSubset subset);
 	int getAssemblySupportCountReadPair(EvidenceSubset subset);
 	int getAssemblyReadPairLengthMax(EvidenceSubset subset);
 	int getAssemblySupportCountSoftClip(EvidenceSubset subset);

@@ -94,13 +94,6 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals(3, bigr().getBreakendSequence().length);
 	}
 	@Test
-	public void should_set_assembly_attribute_ASSEMBLY_BASE_COUNT() {	
-		assertEquals(513, big().getAssemblyBaseCount(EvidenceSubset.NORMAL));
-		assertEquals(745, big().getAssemblyBaseCount(EvidenceSubset.TUMOUR));
-		assertEquals(513, bigr().getAssemblyBaseCount(EvidenceSubset.NORMAL));
-		assertEquals(745, bigr().getAssemblyBaseCount(EvidenceSubset.TUMOUR));
-	}
-	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_READPAIR_COUNT() {
 		assertEquals(2, bigr().getAssemblySupportCountReadPair(EvidenceSubset.NORMAL));
 		assertEquals(4, bigr().getAssemblySupportCountReadPair(EvidenceSubset.TUMOUR));
