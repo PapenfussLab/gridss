@@ -4,7 +4,6 @@ source("libvcf.R")
 library(data.table)
 library(stringr)
 library(ggplot2)
-library(colorbrewer)
 library(scales)
 library(parallel)
 library(foreach)
@@ -171,129 +170,6 @@ for (variant in unique(dtrocall$CX_REFERENCE_VCF_VARIANTS)) {
     labs(x="false discovery rate", y="sensitivity", title="ROC curve by fragment size 100x 2x100bp")
   ggsave(paste0("roc_fragsize_", variant, ".png"), width=10, height=7.5)
 }
-
-############
-# GRIDSS
-#
-
-calls <- truthlist_all$calls[truthlist_all$calls$CX_CALLER=="gridss", cbind(gridss.vcftodf(vcfs[[Id]])[vcfIndex,], .SD), by="Id"]
-
-# assembly rate
-ggplot(calls[calls$CX_READ_FRAGMENT_LENGTH==300 & calls$CX_READ_DEPTH==100,]) +
-  aes(x=QUAL-ASQ-RASQ, fill=paste(pmin(AS, RAS), "/", pmax(AS, RAS), "assemblies")) +
-  geom_histogram() +
-  facet_wrap(~CX_READ_LENGTH) +
-  scale_x_log10(limits=c(20, max(calls$QUAL-calls$ASQ-calls$RASQ))) +
-  labs(title="Assembly rate 100x 300bp fragment", x="Evidence QUALity")
-ggsave(paste0("roc_fragsize_", variant, ".png"), width=10, height=7.5)
-ggsave("assembly_rate_QUAL.png", width=10, height=7.5)
-ggplot(calls) +
-  aes(x=SC+RSC+RP+BRP+BSC, fill=factor(AS+BAS)) +
-  scale_y_continuous(labels=percent, expand=c(0, 0)) +  
-  geom_bar(position='fill', binwidth=0.15) + 
-  scale_x_log10() + 
-  facet_grid(CX_READ_FRAGMENT_LENGTH ~ CX_READ_LENGTH) +
-  labs(title="Assembly rate k=25", x="Reads supporting variant", fill="Assembled contigs")
-ggsave("assembly_rate_reads.png", width=10, height=7.5)
-
-ggplot(calls[calls$CX_READ_LENGTH==100,]) +
-  aes(x=SC+RSC+RP+BRP+BSC, fill=paste(AS+BAS, "assemblies"), alpha=tp) +
-  scale_y_continuous(labels=percent, expand=c(0, 0)) +  
-  geom_bar(position='fill', binwidth=0.15) + 
-  scale_x_log10() +  
-  labs(title="Assembly rate 2x100bp", x="Reads supporting variant", y="Assembly rate", fill="Assembly contigs")
-ggsave("assembly_rate_100bp.png", width=10, height=7.5)
-
-# call QUAL
-ggplot(calls) +
-  aes(x=QUAL, y=BQ, color=hasAS, shape=tp, alpha=0.1) +
-  geom_point() +
-  facet_grid(CX_READ_DEPTH ~ CX_READ_FRAGMENT_LENGTH) +
-  scale_x_log10() +
-  scale_y_log10() + 
-  labs(x="Called QUAL (including assembly)", y="Breakend QUAL", title="Assembly rate")
-ggsave("assembly_rate_called_QUAL.png", width=10, height=7.5)
-
-
-### Debugging: what calls are missed by positional assembly, but picked up by subgraph assembly?
-posTruth <- truthlist_passfilters$truth[truthlist_passfilters$truth$CX_CALLER=="gridss Positional",]
-subTruth <- truthlist_passfilters$truth[truthlist_passfilters$truth$CX_CALLER=="gridss Subgraph",]
-posTruth <- posTruth[order(posTruth$vcfIndex, posTruth$CX_REFERENCE_VCF),]
-subTruth <- subTruth[order(subTruth$vcfIndex, subTruth$CX_REFERENCE_VCF),]
-missingTruth <- posTruth[!posTruth$tp & subTruth$tp,]
-dtmissing <- missingTruth[, list(count=.N), by=c("SVLEN", "SVTYPE")]
-ggplot(dtmissing) +
-  aes(y=count, x=SVLEN, color=SVTYPE) +
-  geom_line() + 
-  scale_x_log10(breaks=2**(0:16)) +  
-  theme(panel.grid.major = element_blank()) +
-  labs(y="missed events", x="Event size")
-missingTruth[missingTruth$SVTYPE=="BND",]
-
-
-
-
-
-
-
-
-
-#########################
-# gridss data
-########################
-pwd <- getwd()
-setwd(paste0(ifelse(as.character(Sys.info())[1] == "Windows", "W:/", "~/"), "i/data.gridss"))
-#setwd(paste0(ifelse(as.character(Sys.info())[1] == "Windows", "W:/", "~/"), "i/data.gridss/100"))
-metadata <- LoadMetadata()
-refvcfs <- LoadVcfs(metadata, pattern="[0-9a-f]{32}.reference.vcf$")
-gridss_truth_all <- LoadTruth(metadata, refvcfs, directory=".", pattern="[0-9a-f]{32}.vcf$", 100)
-gridss_truth_all$truth$Id <- factor(gridss_truth_all$truth$Id)
-gridss_truth_all$truth$File <- factor(gridss_truth_all$truth$File)
-gridss_truth_all$calls$Id <- factor(gridss_truth_all$calls$Id)
-gridss_truth_all$calls$File <- factor(gridss_truth_all$calls$File)
-setwd(pwd)
-#save(gridss_truth_all, file="gridss_truth_all.RData")
-
-gridss_sens_all <- gridss_truth_all$truth[, list(sens=sum(tp)/.N), by=c("SVLEN", "SVTYPE", "CX_ALIGNER", "CX_ALIGNER_SOFTCLIP", "CX_CALLER", "CX_READ_DEPTH", "CX_READ_FRAGMENT_LENGTH", "CX_READ_LENGTH", "CX_REFERENCE_VCF_VARIANTS")]
-
-ggplot(gridss_sens_all) +
-  aes(x=CX_READ_DEPTH, y=sens, color=CX_ALIGNER) +
-  geom_line() + 
-  geom_point() + 
-  facet_grid(CX_READ_FRAGMENT_LENGTH ~ CX_REFERENCE_VCF_VARIANTS)
-
-gridssby <- c("CX_ALIGNER", "CX_ALIGNER_SOFTCLIP", "CX_READ_DEPTH", "CX_READ_FRAGMENT_LENGTH", "CX_READ_LENGTH", "CX_REFERENCE_VCF_VARIANTS")
-gridss_roc_all <- TruthSummaryToROC(gridss_truth_all, bylist=gridssby)
-gridss_roc_all$f1 <- 2 * gridss_roc_all$prec * gridss_roc_all$sens / (gridss_roc_all$prec + gridss_roc_all$sens)
-
-ggplot(gridss_roc_all) + 
-  aes(y=sens, x=fdr, color=factor(CX_READ_DEPTH)) + #aes(color=log(QUAL)) + scale_colour_gradientn(colours = rainbow(11)) +
-  geom_point(size=0.25) + 
-  facet_grid(CX_REFERENCE_VCF_VARIANTS + CX_ALIGNER ~ CX_READ_FRAGMENT_LENGTH + CX_READ_LENGTH) +
-  labs(y="sensitivity", title="ROC by call quality threshold")
-ggsave("gridss_roc.png", width=10, height=7.5)
-
-gridss_f1_all <- data.table(gridss_roc_all)[, j=list(f1=max(f1)), by=gridssby]
-gridss_f1_all$QUAL <- merge(gridss_roc_all, gridss_f1_all, by=c(gridssby, "f1"))[, j=list(QUAL=max(QUAL)), by=gridssby]$QUAL
-
-ggplot(gridss_f1_all) +
-  aes(y=f1, x=CX_READ_DEPTH, color=factor(CX_READ_FRAGMENT_LENGTH), shape=CX_ALIGNER) +
-  geom_line() + geom_point() +
-  scale_y_log10() + 
-  facet_grid(CX_READ_LENGTH ~ CX_REFERENCE_VCF_VARIANTS) +
-  labs(y="Maximum F1 score", x="Read Depth", title="gridss breakpoint F-score", shape="aligner", color="Fragment Size")
-ggsave("gridss_maxf1.png", width=10, height=7.5)
-
-
-
-
-
-
-
-
-
-
-
 
 
 
