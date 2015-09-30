@@ -25,21 +25,21 @@ public class AssemblyFactoryTest extends TestHelper {
 	public void should_set_breakend_anchored_bwd() {
 		AssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(
 				getContext(), AES(), BWD, null,
-				0, 1, 2, B("GTACCC"), new byte[] { 1, 2, 3, 4, 4, 8 }, new int[] {2, 0});
+				0, 1, 2, B("GTACCC"), new byte[] { 1, 2, 3, 4, 4, 8 });
 		assertEquals(new BreakendSummary(0, BWD, 1, 1), e.getBreakendSummary());
 	}
 	@Test
 	public void should_set_breakend_anchored_fwd() {
 		AssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(
 				getContext(), AES(), FWD, null,
-				0, 10, 2, B("GTACCC"), new byte[] { 1, 2, 3, 4, 4, 8 }, new int[] {2, 0});
+				0, 10, 2, B("GTACCC"), new byte[] { 1, 2, 3, 4, 4, 8 });
 		assertEquals(new BreakendSummary(0, FWD, 10, 10), e.getBreakendSummary());
 	}
 	@Test
 	public void should_set_assembly_properties_bwd() {
 		AssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(
 				getContext(), AES(), BWD, null,
-				0, 1, 2, B("GTACCC"), new byte[] { 1, 2, 3, 4, 4, 8}, new int[] { 2, 0});
+				0, 1, 2, B("GTACCC"), new byte[] { 1, 2, 3, 4, 4, 8});
 		assertArrayEquals(new byte[] { 1, 2, 3, 4, }, e.getBreakendQuality());
 		assertEquals("GTAC", S(e.getBreakendSequence()));
 		assertEquals("CC", S(e.getAssemblyAnchorSequence()));
@@ -52,7 +52,7 @@ public class AssemblyFactoryTest extends TestHelper {
 	public void should_set_assembly_properties_fwd() {
 		AssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(
 				getContext(), AES(), FWD, null,
-				0, 1, 2, B("GTACCC"), new byte[] { 1, 3, 3, 4, 4, 8}, new int[] { 2, 0});
+				0, 1, 2, B("GTACCC"), new byte[] { 1, 3, 3, 4, 4, 8});
 		assertArrayEquals(new byte[] { 3, 4, 4, 8, }, e.getBreakendQuality());
 		assertEquals("ACCC", S(e.getBreakendSequence()));
 		assertEquals("GT", S(e.getAssemblyAnchorSequence()));
@@ -65,7 +65,7 @@ public class AssemblyFactoryTest extends TestHelper {
 	public void should_set_getAssemblySequence() {
 		AssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(
 				getContext(), AES(), FWD, null,
-				0, 1, 2, B("GTACCC"), new byte[] { 1, 3, 3, 4, 4, 8}, new int[] { 2, 0});
+				0, 1, 2, B("GTACCC"), new byte[] { 1, 3, 3, 4, 4, 8});
 		assertEquals("GTACCC", S(e.getAssemblySequence()));
 	}
 	@Test
@@ -92,13 +92,6 @@ public class AssemblyFactoryTest extends TestHelper {
 	public void should_set_assembly_attribute_ASSEMBLY_LENGTH_REMOTE_MAX() {
 		assertEquals(3, big().getBreakendSequence().length);
 		assertEquals(3, bigr().getBreakendSequence().length);
-	}
-	@Test
-	public void should_set_assembly_attribute_ASSEMBLY_BASE_COUNT() {	
-		assertEquals(513, big().getAssemblyBaseCount(EvidenceSubset.NORMAL));
-		assertEquals(745, big().getAssemblyBaseCount(EvidenceSubset.TUMOUR));
-		assertEquals(513, bigr().getAssemblyBaseCount(EvidenceSubset.NORMAL));
-		assertEquals(745, bigr().getAssemblyBaseCount(EvidenceSubset.TUMOUR));
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_READPAIR_COUNT() {
@@ -132,7 +125,7 @@ public class AssemblyFactoryTest extends TestHelper {
 		tes.category = 1;
 		Set<DirectedEvidence> support = Sets.newHashSet();
 		support.add(((RealignedSoftClipEvidence)SoftClipEvidence.create(SCE(BWD, tes, Read(1, 10, "4S1M")), Read(0, 10, "4M"))).asRemote());
-		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakend(pc, AES(), BWD, Lists.newArrayList(support.iterator().next().getEvidenceID()), 0, 10, 5, B("CGTAAAAT"), new byte[] { 0,1,2,3,4,5,6,7},new int[] {  513, 745});
+		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakend(pc, AES(), BWD, Lists.newArrayList(support.iterator().next().getEvidenceID()), 0, 10, 5, B("CGTAAAAT"), new byte[] { 0,1,2,3,4,5,6,7});
 		ass.hydrateEvidenceSet(support);
 		ass.annotateAssembly();
 		assertEquals(1, ass.getAssemblySupportCountRemote(EvidenceSubset.ALL));
@@ -157,7 +150,7 @@ public class AssemblyFactoryTest extends TestHelper {
 		AssemblyEvidenceSource es = AES();
 		AssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(
 				getContext(), es, FWD, null,
-				0, 1, 2, B("GTACCC"), new byte[] { 1, 3, 3, 4, 4, 8}, new int[] { 2, 0});
+				0, 1, 2, B("GTACCC"), new byte[] { 1, 3, 3, 4, 4, 8});
 		assertEquals(es, e.getEvidenceSource());
 	}
 	public SAMRecordAssemblyEvidence big() {
@@ -175,7 +168,7 @@ public class AssemblyFactoryTest extends TestHelper {
 		support.add(NRRP(tes, DP(0, 1, "2M", true, 0, 15, "5M", false)));
 		support.add(NRRP(tes, DP(0, 2, "2M", true, 0, 16, "5M", false)));
 		support.add(NRRP(nes, DP(0, 3, "2M", true, 0, 17, "10M", false)));
-		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakend(pc, AES(), BWD, Lists.transform(support, EID), 0, 10, 5, B("CGTAAAAT"), new byte[] { 0,1,2,3,4,5,6,7}, new int[] { 513, 745 });
+		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakend(pc, AES(), BWD, Lists.transform(support, EID), 0, 10, 5, B("CGTAAAAT"), new byte[] { 0,1,2,3,4,5,6,7});
 		ass.hydrateEvidenceSet(support);
 		ass.annotateAssembly();
 		return ass;
@@ -200,7 +193,7 @@ public class AssemblyFactoryTest extends TestHelper {
 		
 		assertEquals(new BreakpointSummary(0, FWD, 100, 100, 1, BWD, 200, 200),
 				AssemblyFactory.incorporateRealignment(pc,
-					AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 0, 100, 1, B("NNN"), B("NNN"), new int[] {0, 0}),
+					AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 0, 100, 1, B("NNN"), B("NNN")),
 					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {{
 						setMappingQuality(40);
 						setReferenceIndex(1);
@@ -212,7 +205,7 @@ public class AssemblyFactoryTest extends TestHelper {
 		
 		assertEquals(new BreakpointSummary(0, FWD, 100, 100, 1, FWD, 200, 200),
 				AssemblyFactory.incorporateRealignment(pc,
-					AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 0, 100, 1, B("NNN"), B("NNN"), new int[] {0, 0}),
+					AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 0, 100, 1, B("NNN"), B("NNN")),
 					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {{
 						setMappingQuality(40);
 						setReferenceIndex(1);
@@ -224,7 +217,7 @@ public class AssemblyFactoryTest extends TestHelper {
 		
 		assertEquals(new BreakpointSummary(0, BWD, 100, 100, 1, FWD, 200, 200),
 				AssemblyFactory.incorporateRealignment(pc,
-					AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 100, 1, B("NNN"), B("NNN"), new int[] {0, 0}),
+					AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 100, 1, B("NNN"), B("NNN")),
 					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {{
 						setMappingQuality(40);
 						setReferenceIndex(1);
@@ -236,7 +229,7 @@ public class AssemblyFactoryTest extends TestHelper {
 		
 		assertEquals(new BreakpointSummary(0, BWD, 100, 100, 1, BWD, 200, 200),
 				AssemblyFactory.incorporateRealignment(pc,
-					AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 100, 1, B("NNN"), B("NNN"), new int[] {0, 0}),
+					AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 100, 1, B("NNN"), B("NNN")),
 					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {{
 						setMappingQuality(40);
 						setReferenceIndex(1);
@@ -253,7 +246,7 @@ public class AssemblyFactoryTest extends TestHelper {
 		
 		assertEquals(new BreakpointSummary(0, FWD, 100, 100, 1, BWD, 200, 200),
 				AssemblyFactory.incorporateRealignment(pc,
-					AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 0, 100, 1, B("CCCCC"), B("CCCCC"), new int[] {0, 0}),
+					AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 0, 100, 1, B("CCCCC"), B("CCCCC")),
 					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {{
 						setMappingQuality(40);
 						setReferenceIndex(1);
@@ -265,7 +258,7 @@ public class AssemblyFactoryTest extends TestHelper {
 		
 		assertEquals(new BreakpointSummary(0, FWD, 100, 100, 1, FWD, 200, 200),
 				AssemblyFactory.incorporateRealignment(pc,
-					AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 0, 100, 1, B("CCCCC"), B("CCCCC"), new int[] {0, 0}),
+					AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 0, 100, 1, B("CCCCC"), B("CCCCC")),
 					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {{
 						setMappingQuality(40);
 						setReferenceIndex(1);
@@ -277,7 +270,7 @@ public class AssemblyFactoryTest extends TestHelper {
 		
 		assertEquals(new BreakpointSummary(0, BWD, 100, 100, 1, FWD, 200, 200),
 				AssemblyFactory.incorporateRealignment(pc,
-					AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 100, 1, B("CCCCC"), B("CCCCC"), new int[] {0, 0}),
+					AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 100, 1, B("CCCCC"), B("CCCCC")),
 					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {{
 						setMappingQuality(40);
 						setReferenceIndex(1);
@@ -290,7 +283,7 @@ public class AssemblyFactoryTest extends TestHelper {
 		
 		assertEquals(new BreakpointSummary(0, BWD, 100, 100, 1, BWD, 200, 200),
 				AssemblyFactory.incorporateRealignment(pc,
-					AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 100, 1, B("CCCCC"), B("CCCCC"), new int[] {0, 0}),
+					AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 100, 1, B("CCCCC"), B("CCCCC")),
 					ImmutableList.of(new SAMRecord(pc.getBasicSamHeader()) {{
 						setMappingQuality(40);
 						setReferenceIndex(1);
@@ -368,7 +361,7 @@ public class AssemblyFactoryTest extends TestHelper {
 	@Test
 	public void breakpoint_should_retain_base_quals() {
 		ProcessingContext pc = getContext();
-		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(pc, AES(), BWD, null, 0, 10, 5, B("GGTAAAAC"), new byte[] { 7,6,5,4,3,2,1,0}, new int[] { 21, 23});
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(pc, AES(), BWD, null, 0, 10, 5, B("GGTAAAAC"), new byte[] { 7,6,5,4,3,2,1,0});
 		assertArrayEquals(new byte[] { 7,6,5 }, e.getBreakendQuality());
 		SAMRecord ra = Read(1, 102, "1S1M1S");
 		ra.setReadBases(B("GGT"));
@@ -413,15 +406,15 @@ public class AssemblyFactoryTest extends TestHelper {
 	public void id_be_assembly_unique() {
 		ProcessingContext context = getContext();
 		AssemblyEvidenceSource aes = AES();
-		AssemblyEvidence e1a = AssemblyFactory.createAnchoredBreakend(context, aes, FWD, null, 0, 1, 1, B("AAAAA"), B("AAAAA"), new int[] { 0, 0});
-		AssemblyEvidence e1b = AssemblyFactory.createAnchoredBreakend(context, aes, FWD, null, 0, 1, 1, B("AAAAA"), B("AAAAA"), new int[] { 0, 0});
+		AssemblyEvidence e1a = AssemblyFactory.createAnchoredBreakend(context, aes, FWD, null, 0, 1, 1, B("AAAAA"), B("AAAAA"));
+		AssemblyEvidence e1b = AssemblyFactory.createAnchoredBreakend(context, aes, FWD, null, 0, 1, 1, B("AAAAA"), B("AAAAA"));
 		assertNotEquals(e1a.getEvidenceID(), e1b.getEvidenceID());
 		for (AssemblyEvidence e : new AssemblyEvidence[] {
-				AssemblyFactory.createAnchoredBreakend(context, aes, BWD, null, 0, 1, 1, B("AAAAA"), B("AAAAA"), new int[] {0, 0}),
-				AssemblyFactory.createAnchoredBreakend(context, aes, FWD, null, 1, 1, 1, B("AAAAA"), B("AAAAA"), new int[] {0, 0}),
-				AssemblyFactory.createAnchoredBreakend(context, aes, FWD, null, 0, 2, 1, B("AAAAA"), B("AAAAA"), new int[] {0, 0}),
-				AssemblyFactory.createAnchoredBreakend(context, aes, FWD, null, 0, 1, 3, B("AAAAA"), B("AAAAA"), new int[] {0, 0}),
-				AssemblyFactory.createAnchoredBreakend(context, aes, FWD, null, 0, 1, 1, B("AAAAT"), B("AAAAA"), new int[] {0, 0}),
+				AssemblyFactory.createAnchoredBreakend(context, aes, BWD, null, 0, 1, 1, B("AAAAA"), B("AAAAA")),
+				AssemblyFactory.createAnchoredBreakend(context, aes, FWD, null, 1, 1, 1, B("AAAAA"), B("AAAAA")),
+				AssemblyFactory.createAnchoredBreakend(context, aes, FWD, null, 0, 2, 1, B("AAAAA"), B("AAAAA")),
+				AssemblyFactory.createAnchoredBreakend(context, aes, FWD, null, 0, 1, 3, B("AAAAA"), B("AAAAA")),
+				AssemblyFactory.createAnchoredBreakend(context, aes, FWD, null, 0, 1, 1, B("AAAAT"), B("AAAAA")),
 		}) {
 			assertNotEquals(e1a.getEvidenceID(), e.getEvidenceID());
 		}
@@ -449,7 +442,7 @@ public class AssemblyFactoryTest extends TestHelper {
 	}
 	@Test
 	public void should_set_breakend_exact() {
-		assertTrue(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null, 0, 1, 1, B("AAAAA"), B("AAAAA"), new int[] { 0, 0}).isBreakendExact());
+		assertTrue(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null, 0, 1, 1, B("AAAAA"), B("AAAAA")).isBreakendExact());
 		assertFalse(AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 100, 200), null, B("AAAAA"), B("AAAAA"), new int[] { 2, 0}).isBreakendExact());
 	}
 	@Test
@@ -457,7 +450,7 @@ public class AssemblyFactoryTest extends TestHelper {
 		SmallIndelSAMRecordAssemblyEvidence e = (SmallIndelSAMRecordAssemblyEvidence)AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(),
 				null,
 				0, 1, 1, 0, 2, 1,
-				B("NAAAN"), B("AAAAA"), new int[] { 0, 0});
+				B("NAAAN"), B("AAAAA"));
 		assertTrue(e.getBreakendSummary() instanceof BreakpointSummary);
 		BreakpointSummary bp = (BreakpointSummary)e.getBreakendSummary();
 		assertEquals(0, bp.referenceIndex);
@@ -475,7 +468,7 @@ public class AssemblyFactoryTest extends TestHelper {
 		SmallIndelSAMRecordAssemblyEvidence e = (SmallIndelSAMRecordAssemblyEvidence)AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(),
 				null,
 				0, 10, 1, 0, 1, 1,
-				B("NAAAN"), B("AAAAA"), new int[] { 0, 0});
+				B("NAAAN"), B("AAAAA"));
 		assertTrue(e.getBreakendSummary() instanceof BreakpointSummary);
 		BreakpointSummary bp = (BreakpointSummary)e.getBreakendSummary();
 		assertEquals(0, bp.referenceIndex);
@@ -493,13 +486,13 @@ public class AssemblyFactoryTest extends TestHelper {
 		for (SAMRecordAssemblyEvidence e : new SAMRecordAssemblyEvidence[] {
 				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 1, 12), null, B("GTAC"), new byte[] {1,2,3,4}, new int[] { 6, 7 }).annotateAssembly(),
 				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 1, 11), null, B("GTAC"), new byte[] {1,2,3,4}, new int[] { 8, 9 }).annotateAssembly(),
-				AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null, 1, 2, 1, B("GTAC"), new byte[] {1,2,3,4}, new int[] { 10, 11}).annotateAssembly(),
-				AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, null, 1, 2, 1, B("GTAC"), new byte[] {1,2,3,4}, new int[] { 12, 13}).annotateAssembly(),
+				AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null, 1, 2, 1, B("GTAC"), new byte[] {1,2,3,4}).annotateAssembly(),
+				AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, null, 1, 2, 1, B("GTAC"), new byte[] {1,2,3,4}).annotateAssembly(),
 				big(),
 				AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), null,
 					0, 10, 2,
 					0, 15, 3,
-					B("NNAAATTTT"), B("NNAAATTTT"), new int[] {0, 0}).annotateAssembly(),
+					B("NNAAATTTT"), B("NNAAATTTT")).annotateAssembly(),
 					au.edu.wehi.idsv.SmallIndelSAMRecordAssemblyEvidenceTest.create(1, "2M5D3M", "AAAAAA")
 			}) {
 			SAMRecordAssemblyEvidence r = AssemblyFactory.hydrate(e.getEvidenceSource(), e.getBackingRecord());
@@ -509,7 +502,7 @@ public class AssemblyFactoryTest extends TestHelper {
 	@Test
 	public void createAnchoredBreakpoint_should_not_crash_on_ref_allele_breakpoint() {
 		// 1M1M
-		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), Lists.<String>newArrayList(), 0, 10, 1, 0, 11, 1, B("AA"), B("AA"), new int[] { 1, 1});
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), Lists.<String>newArrayList(), 0, 10, 1, 0, 11, 1, B("AA"), B("AA"));
 		assertTrue(e.isReferenceAssembly());
 		assertNull(e.getBreakendSummary());
 	}

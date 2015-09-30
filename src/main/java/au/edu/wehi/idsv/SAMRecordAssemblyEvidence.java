@@ -412,10 +412,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	public int getAssemblyAnchorLength() {
 		return getAnchorLength();
 	}
-	@Override
-	public int getAssemblyBaseCount(EvidenceSubset subset) {
-		return AttributeConverter.asIntSumTN(record.getAttribute(SamTags.ASSEMBLY_BASE_COUNT), subset);
-	}
+	
 	public int getAssemblySupportCount() {
 		return getEvidenceIDs().size();
 	}

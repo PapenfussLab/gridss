@@ -13,6 +13,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
@@ -156,19 +157,19 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		}
 		
 		int targetAnchorLength = Math.max(contig.stream().mapToInt(sn -> sn.length()).sum(), maxAnchorLength);
-		KmerPathNodePath startAnchorPath = new KmerPathNodePath(contig.getFirst(), false, targetAnchorLength);
+		KmerPathNodePath startAnchorPath = new KmerPathNodePath(contig.getFirst(), false, targetAnchorLength + maxEvidenceDistance + contig.getFirst().length());
 		startAnchorPath.greedyTraverse(true, false);
 		ArrayDeque<KmerPathSubnode> startingAnchor = startAnchorPath.headNode().asSubnodes();
-		startingAnchor.remove(contig.getFirst());
-		while (wrapper.hasNext() && contig.getLast().lastEnd() + targetAnchorLength > wrapper.lastPosition()) {
+		startingAnchor.removeLast();
+		while (wrapper.hasNext() && contig.getLast().lastEnd() + targetAnchorLength + maxEvidenceDistance > wrapper.lastPosition()) {
 			// make sure we have enough of the graph loaded so that when
 			// we traverse forward, our anchor sequence will be fully defined
 			wrapper.next();
 		}
-		KmerPathNodePath endAnchorPath = new KmerPathNodePath(contig.getLast(), true, targetAnchorLength);
+		KmerPathNodePath endAnchorPath = new KmerPathNodePath(contig.getLast(), true, targetAnchorLength + maxEvidenceDistance + contig.getLast().length());
 		endAnchorPath.greedyTraverse(true, false);
 		ArrayDeque<KmerPathSubnode> endingAnchor = endAnchorPath.headNode().asSubnodes();
-		endingAnchor.remove(contig.getLast());
+		endingAnchor.removeFirst();
 		
 		List<KmerPathSubnode> fullContig = new ArrayList<KmerPathSubnode>(contig.size() + startingAnchor.size() + endingAnchor.size());
 		fullContig.addAll(startingAnchor);
@@ -178,10 +179,21 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		byte[] bases = KmerEncodingHelper.baseCalls(fullContig.stream().flatMap(sn -> sn.node().pathKmers().stream()).collect(Collectors.toList()), k);
 		byte[] quals = DeBruijnGraphBase.kmerWeightsToBaseQuals(k, fullContig.stream().flatMapToInt(sn -> sn.node().pathWeights().stream().mapToInt(Integer::intValue)).toArray());
 		assert(quals.length == bases.length);
+		// left aligned anchor position although it shouldn't matter since anchoring should be a single base wide
+		int startAnchorPosition = startingAnchor.size() == 0 ? 0 : startingAnchor.getLast().lastStart() + k - 1;
+		int endAnchorPosition = endingAnchor.size() == 0 ? 0 : endingAnchor.getFirst().firstStart();
+		int startAnchorBaseCount = startingAnchor.size() == 0 ? 0 : startingAnchor.stream().mapToInt(n -> n.length()).sum() + k - 1;
+		int endAnchorBaseCount = endingAnchor.size() == 0 ? 0 : endingAnchor.stream().mapToInt(n -> n.length()).sum() + k - 1;
+		int startBasesToTrim = Math.max(0, startAnchorBaseCount - targetAnchorLength);
+		int endingBasesToTrim = Math.max(0, endAnchorBaseCount - targetAnchorLength);
+		bases = Arrays.copyOfRange(bases, startBasesToTrim, bases.length - endingBasesToTrim);
+		quals = Arrays.copyOfRange(quals, startBasesToTrim, quals.length - endingBasesToTrim);
 		
 		List<String> evidenceIds = evidence.stream().map(e -> e.evidenceId()).collect(Collectors.toList());
 		SAMRecordAssemblyEvidence assembledContig;
 		if (startingAnchor.size() == 0 && endingAnchor.size() == 0) {
+			assert(startBasesToTrim == 0);
+			assert(endingBasesToTrim == 0);
 			// unanchored
 			BreakendSummary be = Models.calculateBreakend(aes.getContext().getLinear(),
 					evidence.stream().map(e -> e.breakend()).collect(Collectors.toList()),
@@ -190,32 +202,30 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 					be,
 					evidenceIds,
 					bases, quals, new int[] { 0, 0 });
+			if (evidence.stream().anyMatch(e -> e.isAnchored())) {
+				log.debug(String.format("Unanchored assembly %s contains anchored evidence", assembledContig.getEvidenceID()));
+			}
 		} else if (startingAnchor.size() == 0) {
 			// end anchored
 			assembledContig = AssemblyFactory.createAnchoredBreakend(aes.getContext(), aes,
 					BreakendDirection.Backward, evidenceIds,
-					referenceIndex, endingAnchor.getFirst().firstStart(), endingAnchor.stream().mapToInt(n -> n.length()).sum() + k - 1,
-					bases, quals, new int[] { 0, 0 });
+					referenceIndex, endAnchorPosition, endAnchorBaseCount - endingBasesToTrim,
+					bases, quals);
 		} else if (endingAnchor.size() == 0) {
 			// start anchored
 			assembledContig = AssemblyFactory.createAnchoredBreakend(aes.getContext(), aes,
 					BreakendDirection.Forward, evidenceIds,
-					referenceIndex, startingAnchor.getLast().lastStart() + k - 1, startingAnchor.stream().mapToInt(n -> n.length()).sum() + k - 1,
-					bases, quals, new int[] { 0, 0 });
+					referenceIndex, startAnchorPosition, startAnchorBaseCount - startBasesToTrim,
+					bases, quals);
 		} else {
-			// left aligned
-			int startAnchorPosition = startingAnchor.getLast().lastStart() + k - 1;
-			int startAnchorBaseCount = startingAnchor.stream().mapToInt(n -> n.length()).sum() + k - 1;
-			int endAnchorPosition = endingAnchor.getFirst().firstStart();
-			int endAnchorBaseCount = endingAnchor.stream().mapToInt(n -> n.length()).sum() + k - 1;
 			if (startAnchorBaseCount + endAnchorBaseCount >= quals.length) {
 				// no unanchored bases - not an SV assembly
 				assembledContig = null;
 			} else {
 				assembledContig = AssemblyFactory.createAnchoredBreakpoint(aes.getContext(), aes, evidenceIds,
-						referenceIndex, startAnchorPosition, startAnchorBaseCount,
-						referenceIndex, endAnchorPosition, endAnchorBaseCount,
-						bases, quals, new int[] { 0, 0 });
+						referenceIndex, startAnchorPosition, startAnchorBaseCount - startBasesToTrim,
+						referenceIndex, endAnchorPosition, endAnchorBaseCount - endingBasesToTrim,
+						bases, quals);
 			}
 		}
 		// remove all evidence contributing to this assembly from the graph
@@ -226,10 +236,8 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			for (KmerPathSubnode n : contig) {
 				removeFromGraph(n.node());
 			}
-			
 		}
 		return assembledContig;
-		
 	}
 	/**
 	 * Corrects misassembly due to incorporation of read pair evidence at multiple positions

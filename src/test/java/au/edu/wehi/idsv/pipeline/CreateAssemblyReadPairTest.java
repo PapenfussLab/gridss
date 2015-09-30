@@ -276,40 +276,40 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	public void read_pair_should_match_assembly_realign_iterator() {
 		ProcessingContext pc = getContext();
 		AssemblyEvidenceSource aes = AES(pc);
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 0, 1, 1, B("AA"), B("AA"), new int[] {0, 0}));
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 1, 1, B("AA"), B("AA"), new int[] {0, 0}));
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 0, 2, 1, B("AA"), B("AA"), new int[] {0, 0}));
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 2, 1, B("AA"), B("AA"), new int[] {0, 0}));
-		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 3, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 2, true);
-		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 4, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 2, false);
-		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 0, 5, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 2, true);
-		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 0, 6, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 2, false);
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 1, 1, 1, B("AA"), B("AA"), new int[] {0, 0}));
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 1, 1, 1, B("AA"), B("AA"), new int[] {0, 0}));
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 1, 2, 1, B("AA"), B("AA"), new int[] {0, 0}));
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 1, 2, 1, B("AA"), B("AA"), new int[] {0, 0}));
-		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 1, 3, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 12, true);
-		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 1, 4, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 12, false);
-		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 1, 5, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 12, true);
-		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 1, 6, 1, B("AA"), B("AA"), new int[] {0, 0}), 1, 12, false);
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 0, 1, 1, B("AA"), B("AA")));
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 1, 1, B("AA"), B("AA")));
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 0, 2, 1, B("AA"), B("AA")));
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 2, 1, B("AA"), B("AA")));
+		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 3, 1, B("AA"), B("AA")), 1, 2, true);
+		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 4, 1, B("AA"), B("AA")), 1, 2, false);
+		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 0, 5, 1, B("AA"), B("AA")), 1, 2, true);
+		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 0, 6, 1, B("AA"), B("AA")), 1, 2, false);
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 1, 1, 1, B("AA"), B("AA")));
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 1, 1, 1, B("AA"), B("AA")));
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 1, 2, 1, B("AA"), B("AA")));
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 1, 2, 1, B("AA"), B("AA")));
+		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 1, 3, 1, B("AA"), B("AA")), 1, 12, true);
+		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 1, 4, 1, B("AA"), B("AA")), 1, 12, false);
+		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 1, 5, 1, B("AA"), B("AA")), 1, 12, true);
+		orderedAdd(AssemblyFactory.createAnchoredBreakend(pc, aes, FWD, null, 1, 6, 1, B("AA"), B("AA")), 1, 12, false);
 		go();
 	}
 	@Test
 	public void should_have_realign() {
 		orderedAdd(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null,
-				0, 6, 1, B("TT"), B("TT"), new int[] {0, 0}), 1, 2, false);
+				0, 6, 1, B("TT"), B("TT")), 1, 2, false);
 		go();
 	}
 	@Test
 	public void read_pair_should_match_assembly_realign_iterator_simple() {
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null, 0, 1, 1, B("AA"), B("AA"), new int[] {0, 0}));
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null, 0, 1, 1, B("AA"), B("AA")));
 		go();
 	}
 	@Test
 	public void assembly_evidence_source_should_resort_to_evidence_order() {
 		AssemblyEvidenceSource aes = AES();
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(getContext(), aes, FWD, null, 0, 10, 5, B("AACCCCCCCC"), B("CCCCCCCCCC"), new int[] {0, 0})); // alignment starts at 5
-		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(getContext(), aes, BWD, null, 0, 6, 5,  B("TTTTTTTTAA"), B("TTTTTTTTTT"), new int[] {0, 0})); // alignment starts at 6
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(getContext(), aes, FWD, null, 0, 10, 5, B("AACCCCCCCC"), B("CCCCCCCCCC"))); // alignment starts at 5
+		orderedAddNoRealign(AssemblyFactory.createAnchoredBreakend(getContext(), aes, BWD, null, 0, 6, 5,  B("TTTTTTTTAA"), B("TTTTTTTTTT"))); // alignment starts at 6
 		go();
 	}
 	@Test
@@ -320,7 +320,7 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	@Test
 	public void should_filter_breakpoints() {
 		orderedAdd(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null,
-				0, 5, 1, B("ATA"), B("ATA"), new int[] {0, 0}),
+				0, 5, 1, B("ATA"), B("ATA")),
 				0, 10, false);
 		ProcessingContext pc = getCommandlineContext(false);
 		pc.getAssemblyParameters().writeFilteredAssemblies = false;

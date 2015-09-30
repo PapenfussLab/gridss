@@ -17,7 +17,7 @@ public class AssemblyParametersTest extends TestHelper {
 	public void should_filter_fully_reference_assemblies() {
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(
 				getContext(), AES(), BWD, null,
-				0, 1, 2, B("AA"), B("AA"), new int[] { 2, 0 })
+				0, 1, 2, B("AA"), B("AA"))
 				.annotateAssembly();
 		getContext().getAssemblyParameters().applyFilters(e);
 		assertTrue(e.isAssemblyFiltered());
@@ -26,7 +26,7 @@ public class AssemblyParametersTest extends TestHelper {
 	@Test
 	public void should_filter_single_read_assemblies() {
 		MockDirectedEvidence ev = new MockDirectedEvidence(new BreakendSummary(0, FWD, 1, 2));
-		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Lists.newArrayList(ev.getEvidenceID()), 0, 1, 1, B("AA"), B("AA"), new int[] { 2, 0 })
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Lists.newArrayList(ev.getEvidenceID()), 0, 1, 1, B("AA"), B("AA"))
 				.hydrateEvidenceSet(ev)
 				.annotateAssembly();
 		getContext().getAssemblyParameters().applyFilters(e);
@@ -52,7 +52,7 @@ public class AssemblyParametersTest extends TestHelper {
 				NRRP(OEA(0, 1, "4M", true)));
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(
 				getContext(), AES(), FWD, Lists.transform(support, EID),
-				0, 1, 1, B("AAA"), B("AAA"), new int[] { 2, 0 });
+				0, 1, 1, B("AAA"), B("AAA"));
 		e.hydrateEvidenceSet(support);
 		e.annotateAssembly();
 		getContext().getAssemblyParameters().applyFilters(e);
@@ -79,7 +79,7 @@ public class AssemblyParametersTest extends TestHelper {
 				NRRP(OEA(0, 1, "4M", false)));
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(
 				getContext(), AES(), BWD, Lists.transform(support, EID),
-				0, 1, 2, B("AA"), B("AA"), new int[] { 2, 0 });
+				0, 1, 2, B("AA"), B("AA"));
 		e.hydrateEvidenceSet(support);
 		e.annotateAssembly();
 		assertTrue(getContext().getAssemblyParameters().applyFilters(e));
@@ -100,7 +100,7 @@ public class AssemblyParametersTest extends TestHelper {
 	public void should_filter_too_few_reads() {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().minReads = 3;
-		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(pc, AES(), BWD, null, 0, 1, 5, B("AACGTG"), B("AACGTG"), new int[] { 2, 0});
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(pc, AES(), BWD, null, 0, 1, 5, B("AACGTG"), B("AACGTG"));
 		e.annotateAssembly();
 		assertTrue(pc.getAssemblyParameters().applyFilters(e));
 		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_FEW_READ));
@@ -109,7 +109,7 @@ public class AssemblyParametersTest extends TestHelper {
 				SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5 }, withSequence("AACGTG", Read(0, 1, "1M5S")))));
 		e = AssemblyFactory.createAnchoredBreakend(
 				getContext(), AES(), BWD, Lists.transform(support, EID),
-				0, 1, 5, B("AACGTG"), B("AACGTG"), new int[] { 2, 0});
+				0, 1, 5, B("AACGTG"), B("AACGTG"));
 		e.hydrateEvidenceSet(support);
 		e.annotateAssembly();
 		assertTrue(pc.getAssemblyParameters().applyFilters(e));
@@ -120,7 +120,7 @@ public class AssemblyParametersTest extends TestHelper {
 				NRRP(OEA(0, 1, "4M", false)));
 		e = AssemblyFactory.createAnchoredBreakend(
 				pc, AES(), BWD, Lists.transform(support, EID),
-				0, 1, 5, B("AACGTG"), B("AACGTG"), new int[] { 2, 0 });
+				0, 1, 5, B("AACGTG"), B("AACGTG"));
 		e.hydrateEvidenceSet(support);
 		e.annotateAssembly();
 		assertTrue(pc.getAssemblyParameters().applyFilters(e));
@@ -132,7 +132,7 @@ public class AssemblyParametersTest extends TestHelper {
 				NRRP(OEA(0, 1, "5M", false)));
 		e = AssemblyFactory.createAnchoredBreakend(
 				pc, AES(), BWD, Lists.transform(support, EID),
-				0, 1, 5, B("AACGTG"), B("AACGTG"), new int[] { 2, 0 });
+				0, 1, 5, B("AACGTG"), B("AACGTG"));
 		e.hydrateEvidenceSet(support);
 		e.annotateAssembly();
 		assertFalse(e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_FEW_READ));

@@ -70,21 +70,15 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		return getContext().getRealignmentParameters().assemblyIterations;
 	}
 	public void ensureAssembled() {
-		ensureAssembled(null, null);
+		ensureAssembled(null);
 	}
 	/**
 	 * Assembles evidence
 	 * @param threadpool thread pool containing desired number of active threads
-	 * @param halfthreadpool thread pool containing half the desired number of active threads
 	 */
-	public void ensureAssembled(ExecutorService threadpool, ExecutorService halfthreadpool) {
+	public void ensureAssembled(ExecutorService threadpool) {
 		if (!isProcessingComplete()) {
-			if (getContext().getAssemblyParameters().method == AssemblyAlgorithm.Positional) {
-				// Positional spawns a background worker thread
-				process(halfthreadpool);
-			} else {
-				process(threadpool);
-			}
+			process(threadpool);
 		}
 		if (isRealignmentComplete()) {
 			CreateAssemblyReadPair step = new CreateAssemblyReadPair(getContext(), this, source);

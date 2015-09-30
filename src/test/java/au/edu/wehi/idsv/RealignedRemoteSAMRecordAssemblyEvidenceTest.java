@@ -12,7 +12,7 @@ public class RealignedRemoteSAMRecordAssemblyEvidenceTest extends RemoteEvidence
 	}
 	@Override
 	public RealignedSAMRecordAssemblyEvidence makeLocal(BreakendSummary bs, String allBases, String realignCigar, boolean realignNegativeStrand) {
-		return new RealignedSAMRecordAssemblyEvidence(AES(), AssemblyFactory.createAnchoredBreakend(getContext(), AES(), bs.direction, null, bs.referenceIndex, bs.start, anchorLength(allBases, realignCigar), B(allBases), B(allBases), new int[] {0, 0}).annotateAssembly().getSAMRecord(),
+		return new RealignedSAMRecordAssemblyEvidence(AES(), AssemblyFactory.createAnchoredBreakend(getContext(), AES(), bs.direction, null, bs.referenceIndex, bs.start, anchorLength(allBases, realignCigar), B(allBases), B(allBases)).annotateAssembly().getSAMRecord(),
 				ImmutableList.of(realignSAM(bs, allBases, realignCigar, realignNegativeStrand)));
 	}
 }
