@@ -90,17 +90,17 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 		int anchorAssemblyLength = ap.anchorAssemblyLength;
 		int referenceIndex = it.peek().getBreakendSummary().referenceIndex;
 		ReferenceIndexIterator evidenceIt = new ReferenceIndexIterator(it, referenceIndex);
-		SupportNodeIterator supportIt = new SupportNodeIterator(k, evidenceIt, source.getMaxConcordantFragmentSize());
-		EvidenceTracker trackedIt = new EvidenceTracker(supportIt);
-		AggregateNodeIterator agIt = new AggregateNodeIterator(trackedIt);
+		EvidenceTracker evidenceTracker = new EvidenceTracker();
+		SupportNodeIterator supportIt = new SupportNodeIterator(k, evidenceIt, source.getMaxConcordantFragmentSize(), evidenceTracker);
+		AggregateNodeIterator agIt = new AggregateNodeIterator(supportIt);
 		Iterator<KmerNode> knIt = agIt;
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
-			knIt = trackedIt.new AggregateNodeAssertionInterceptor(knIt);
+			knIt = evidenceTracker.new AggregateNodeAssertionInterceptor(knIt);
 		}
 		PathNodeIterator pathNodeIt = new PathNodeIterator(knIt, maxPathLength, k); 
 		Iterator<KmerPathNode> pnIt = pathNodeIt;
 		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
-			pnIt = trackedIt.new PathNodeAssertionInterceptor(pnIt, "PathNodeIterator");
+			pnIt = evidenceTracker.new PathNodeAssertionInterceptor(pnIt, "PathNodeIterator");
 		}
 		CollapseIterator collapseIt = null;
 		PathSimplificationIterator simplifyIt = null;
@@ -113,24 +113,24 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 			}
 			pnIt = collapseIt;
 			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
-				pnIt = trackedIt.new PathNodeAssertionInterceptor(pnIt, "PathCollapseIterator");
+				pnIt = evidenceTracker.new PathNodeAssertionInterceptor(pnIt, "PathCollapseIterator");
 			}
 			simplifyIt = new PathSimplificationIterator(pnIt, maxPathLength, maxSupportNodeWidth);
 			pnIt = simplifyIt;
 			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
-				pnIt = trackedIt.new PathNodeAssertionInterceptor(pnIt, "PathSimplificationIterator");
+				pnIt = evidenceTracker.new PathNodeAssertionInterceptor(pnIt, "PathSimplificationIterator");
 			}
 		}
-		currentAssembler = new NonReferenceContigAssembler(pnIt, referenceIndex, maxEvidenceDistance, anchorAssemblyLength, k, source, trackedIt);
+		currentAssembler = new NonReferenceContigAssembler(pnIt, referenceIndex, maxEvidenceDistance, anchorAssemblyLength, k, source, evidenceTracker);
 		if (ap.trackAlgorithmProgress && ap.debruijnGraphVisualisationDirectory != null) {
 			ap.debruijnGraphVisualisationDirectory.mkdirs();
 			String filename = String.format("positional-%s-%s.csv", context.getDictionary().getSequence(referenceIndex).getSequenceName(), direction);
 			File file = new File(ap.debruijnGraphVisualisationDirectory, filename);
-			PositionalDeBruijnGraphTracker tracker;
+			PositionalDeBruijnGraphTracker exportTracker;
 			try {
-				tracker = new PositionalDeBruijnGraphTracker(file, supportIt, agIt, pathNodeIt, collapseIt, simplifyIt, trackedIt, currentAssembler);
-				tracker.writeHeader();
-				currentAssembler.setExportTracker(tracker);
+				exportTracker = new PositionalDeBruijnGraphTracker(file, supportIt, agIt, pathNodeIt, collapseIt, simplifyIt, evidenceTracker, currentAssembler);
+				exportTracker.writeHeader();
+				currentAssembler.setExportTracker(exportTracker);
 			} catch (IOException e) {
 				log.debug(e);
 			}

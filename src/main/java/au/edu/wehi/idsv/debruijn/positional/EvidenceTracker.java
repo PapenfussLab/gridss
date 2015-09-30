@@ -3,6 +3,7 @@ package au.edu.wehi.idsv.debruijn.positional;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -21,18 +22,16 @@ import au.edu.wehi.idsv.util.IntervalUtil;
  * @author cameron.d
  *
  */
-public class EvidenceTracker implements Iterator<KmerSupportNode> {
+public class EvidenceTracker {
 	//public static EvidenceTracker TEMP_HACK_CURRENT_TRACKER = null;
 	private final Long2ObjectOpenHashMap<LinkedList<KmerSupportNode>> lookup = new Long2ObjectOpenHashMap<LinkedList<KmerSupportNode>>();
-	private final Iterator<KmerSupportNode> underlying;
-	private long consumed = 0;
+	private final ObjectOpenHashSet<String> id = new ObjectOpenHashSet<String>();
+	private long evidenceTotal = 0;
 	/**
 	 * Tracks evidence emitted from the given iterator
 	 * @param it iterator to track
 	 */
-	public EvidenceTracker(Iterator<KmerSupportNode> it) {
-		this.underlying = it;
-		//TEMP_HACK_CURRENT_TRACKER = this;
+	public EvidenceTracker() {
 	}
 	/**
 	 * Tracks the given evidence
@@ -46,6 +45,9 @@ public class EvidenceTracker implements Iterator<KmerSupportNode> {
 			lookup.put(kmer, list);
 		}
 		list.add(support);
+		if (id.add(support.evidence().evidenceId())) {
+			evidenceTotal++;
+		}
 		return support;
 	}
 	/**
@@ -57,12 +59,13 @@ public class EvidenceTracker implements Iterator<KmerSupportNode> {
 			long kmer = evidence.kmer(i);
 			remove(kmer, evidence);
 		}
+		id.remove(evidence.evidenceId());
 	}
 	/**
 	 * Stops tracking all nodes associated with the given evidence 
 	 * @param evidence
 	 */
-	public void remove(long kmer, KmerEvidence evidence) {
+	private void remove(long kmer, KmerEvidence evidence) {
 		LinkedList<KmerSupportNode> list = lookup.get(kmer);
 		if (list != null) {
 			ListIterator<KmerSupportNode> it = list.listIterator();
@@ -152,14 +155,8 @@ public class EvidenceTracker implements Iterator<KmerSupportNode> {
 		assert(evidenceWeight == expectedWidthWeight);
 		return evidenceWeight == expectedWidthWeight;
 	}
-	@Override
-	public boolean hasNext() {
-		return underlying.hasNext();
-	}
-	@Override
-	public KmerSupportNode next() {
-		consumed++;
-		return track(underlying.next());
+	public boolean isTracked(String evidenceId) {
+		return id.contains(evidenceId);
 	}
 	public class PathNodeAssertionInterceptor implements Iterator<KmerPathNode> {
 		private final Iterator<KmerPathNode> underlying;
@@ -199,8 +196,11 @@ public class EvidenceTracker implements Iterator<KmerSupportNode> {
 			return node;
 		}
 	}
-	public long tracking_underlyingConsumed() {
-		return consumed;
+	public long tracking_evidenceTotal() {
+		return evidenceTotal;
+	}
+	public long tracking_evidenceActive() {
+		return id.size();
 	}
 	public int tracking_kmerCount() {
 		return lookup.size();

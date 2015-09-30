@@ -58,6 +58,7 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 		if (writer == null) return;
 		writer.write("supportPosition,aggregatePosition,pathNodePosition,collapsePosition,simplifyPosition,firstContigPosition,calledContigPosition,assemblerPosition,assemblerFirstPosition");
 		writer.write(",supportConsumed,aggregateConsumed,pathNodeConsumed,collapseConsumed,simplifyConsumed,contigConsumed,assemblerConsumed,trackerConsumed");
+		writer.write(",trackerActive");
 		writer.write(",supportProcessedSize");
 		writer.write(",aggregateProcessedSize,aggregateQueueSize,aggregateActiveSize");
 		writer.write(",pathNodeProcessedSize,pathNodeActiveSize,pathNodeEdgeLookupSize,pathNodePathLookupSize");
@@ -107,7 +108,9 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 			writer.write(',');
 			writer.write(Long.toString(assembler.tracking_underlyingConsumed()));
 			writer.write(',');
-			writer.write(Long.toString(tracker.tracking_underlyingConsumed()));
+			writer.write(Long.toString(tracker.tracking_evidenceTotal()));
+			writer.write(',');
+			writer.write(Long.toString(tracker.tracking_evidenceActive()));
 			writer.write(',');
 			writer.write(Integer.toString(support.tracking_processedSize()));
 			writer.write(',');

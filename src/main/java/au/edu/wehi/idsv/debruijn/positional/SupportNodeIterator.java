@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import htsjdk.samtools.util.Log;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -19,6 +21,7 @@ import com.google.common.collect.PeekingIterator;
  *
  */
 public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
+	private static final Log log = Log.getInstance(SupportNodeIterator.class);
 	private final PeekingIterator<DirectedEvidence> underlying;
 	private final int k;
 	/**
@@ -33,12 +36,12 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 	private final int emitOffset;
 	private final int maxSupportStartPositionOffset;
 	private final PriorityQueue<KmerSupportNode> buffer = new PriorityQueue<KmerSupportNode>(1024, KmerNodeUtil.ByFirstStart);
+	private final EvidenceTracker tracker;
 	private int inputPosition = Integer.MIN_VALUE;
 	private int firstReferenceIndex;
 	private int lastPosition = Integer.MIN_VALUE;
 	private long consumed = 0;
 	private DirectedEvidence lastEvidence = null;
-	
 	/**
 	 * Iterator that converts evidence to kmer nodes 
 	 * @param k kmer
@@ -52,7 +55,7 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 	 * as max frag size from the mapping position (which in this scenario is also the breakend
 	 * position).
 	 */
-	public SupportNodeIterator(int k, Iterator<DirectedEvidence> it, int maxFragmentSize) {
+	public SupportNodeIterator(int k, Iterator<DirectedEvidence> it, int maxFragmentSize, EvidenceTracker tracker) {
 		this.underlying = Iterators.peekingIterator(it);
 		this.k = k;
 		this.maxSupportStartPositionOffset = maxFragmentSize;
@@ -60,8 +63,16 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 		if (underlying.hasNext()) {
 			firstReferenceIndex = underlying.peek().getBreakendSummary().referenceIndex;
 		}
+		this.tracker = tracker;
 	}
 	private void process(DirectedEvidence de) {
+		if (tracker != null && tracker.isTracked(de.getEvidenceID())) {
+			log.error(String.format("Attempting to add %s to assembly when already present. "
+					+ "Possible causes are: duplicate read name, alignment with bwa mem without -M flag. "
+					+ "Please ensure read names are unique across all inpuut files and there exists only one primary alignment record per read.",
+					de.getEvidenceID()));
+			return;
+		}
 		assert(de.getBreakendSummary().referenceIndex == firstReferenceIndex);
 		assert(lastEvidence == null || DirectedEvidence.ByStartEnd.compare(lastEvidence, de) <= 0);
 		lastEvidence = de;
@@ -97,6 +108,11 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 			// SC or RPs with no non-reference kmers can occur when
 			// an ambiguous base case exist in the soft clip/mate  
 			buffer.addAll(supportNodes);
+			if (tracker != null) {
+				for (KmerSupportNode sn : supportNodes) {
+					tracker.track(sn);
+				}
+			}
 		}
 	}
 	@Override

@@ -37,7 +37,7 @@ public class SupportNodeIteratorTest extends TestHelper {
 	public void should_return_kmernodes_in_start_position_order() {
 		int k = 4;
 		List<DirectedEvidence> input = scrp(k, "ACGTTATACCG", 30, 60);
-		List<KmerSupportNode> output = Lists.newArrayList(new SupportNodeIterator(k, input.iterator(), 60));
+		List<KmerSupportNode> output = Lists.newArrayList(new SupportNodeIterator(k, input.iterator(), 60, null));
 		assertTrue(KmerNodeUtil.ByLastStart.isOrdered(output));
 		assertEquals(100 * ( 10-3 + 5-3 + 11-3 + 11-3 ), output.size());
 	}

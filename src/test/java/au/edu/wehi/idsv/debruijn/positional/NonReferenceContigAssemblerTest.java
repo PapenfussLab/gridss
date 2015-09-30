@@ -27,7 +27,7 @@ import com.google.common.collect.Lists;
 
 public class NonReferenceContigAssemblerTest extends TestHelper {
 	private NonReferenceContigAssembler caller;
-	private EvidenceTracker trackedIt;
+	private EvidenceTracker tracker;
 	public List<SAMRecordAssemblyEvidence> go(ProcessingContext pc, boolean collapse, DirectedEvidence... input) {
 		caller = create(pc, collapse, input);
 		List<SAMRecordAssemblyEvidence> assemblies = Lists.newArrayList(caller);
@@ -41,15 +41,15 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		int k = pc.getAssemblyParameters().k;
 		int maxPathLength = pc.getAssemblyParameters().positionalMaxPathLengthInBases(maxReadLength);
 		int maxPathCollapseLength = pc.getAssemblyParameters().positionalMaxPathCollapseLengthInBases(maxReadLength);
-		SupportNodeIterator supportIt = new SupportNodeIterator(k, Arrays.stream(input).iterator(), aes.getMaxConcordantFragmentSize());
-		trackedIt = new EvidenceTracker(supportIt);
-		AggregateNodeIterator agIt = new AggregateNodeIterator(trackedIt);
+		tracker = new EvidenceTracker();
+		SupportNodeIterator supportIt = new SupportNodeIterator(k, Arrays.stream(input).iterator(), aes.getMaxConcordantFragmentSize(), tracker);
+		AggregateNodeIterator agIt = new AggregateNodeIterator(supportIt);
 		Iterator<KmerPathNode> pnIt = new PathNodeIterator(agIt, maxPathLength, k);
 		if (collapse) {
 			pnIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, pc.getAssemblyParameters().maxBaseMismatchForCollapse, pc.getAssemblyParameters().collapseBubblesOnly, 0);
 			pnIt = new PathSimplificationIterator(pnIt, maxPathLength, maxEvidenceWidth);
 		}
-		caller = new NonReferenceContigAssembler(pnIt, 0, maxEvidenceWidth, maxReadLength, k, aes, trackedIt);
+		caller = new NonReferenceContigAssembler(pnIt, 0, maxEvidenceWidth, maxReadLength, k, aes, tracker);
 		return caller;
 	}
 	@Test
@@ -152,7 +152,8 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		List<SAMRecordAssemblyEvidence> output = go(pc, true, sce, fullref);
 		assertEquals(1, output.size());
 		assertEquals("ACGTGGTCGACC", S(output.get(0).getAssemblySequence()));
-		assertEquals(0, trackedIt.tracking_supportNodeCount());
+		assertEquals(2, tracker.tracking_evidenceTotal());
+		assertEquals(0, tracker.tracking_evidenceActive());
 		assertEquals(0, caller.tracking_activeNodes());
 	}
 	@Test
