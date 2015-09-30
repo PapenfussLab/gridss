@@ -439,6 +439,8 @@ LoadVcfs <- function(metadata, directory=".", pattern="*.vcf$", existingVcfs=NUL
   }
   # exclude already loaded VCFs
   fileList <- fileList[!(GetMetadataId(fileList) %in% names(existingVcfs))]
+  # only load VCFS that have metadata
+  fileList <- fileList[GetMetadataId(fileList) %in% metadata$Id]
   #vcfs <- foreach (filename=fileList, .packages="VariantAnnotation") %dopar% { # Parallel load of VCFs
   vcfs <- lapply(fileList, function(filename) {
     write(paste0("Loading ", filename), stderr())
@@ -486,7 +488,10 @@ FindFragments <- function(gr, maxfragmentsize=500) {
     start_local=names(gr)[queryHits(hits)],
     end_remote=gr[names(gr)[subjectHits(hits)],]$mate,
     end_local=names(gr)[subjectHits(hits)],
-    size=(start(gr[subjectHits(hits),]) + end(gr[subjectHits(hits),]) - start(gr[queryHits(hits),]) - end(gr[queryHits(hits),])) / 2
+    size=(start(gr[subjectHits(hits),]) + end(gr[subjectHits(hits),]) - start(gr[queryHits(hits),]) - end(gr[queryHits(hits),])) / 2,
+    maxsize=end(gr[subjectHits(hits),]) - start(gr[queryHits(hits),]),
+    minsize=start(gr[subjectHits(hits),]) - end(gr[queryHits(hits),]),
+    stringsAsFactors=FALSE
   )
   return(fragments)
 }
@@ -508,11 +513,12 @@ FindFragmentSpanningEvents <- function(querygr, subjectgr, maxfragmentsize=500, 
   spanningHits <- spanningHits[duplicated(spanningHits),] # require an start_remote match and a end_remote match
   
   return(data.frame(
-    query=as.character(names(querygr)[spanningHits$queryHits]),
-    subjectAlt1=as.character(fragments$start_remote[spanningHits$subjectHits]),
-    subjectAlt2=as.character(fragments$end_remote[spanningHits$subjectHits]),
+    query=names(querygr)[spanningHits$queryHits],
+    subjectAlt1=fragments$start_remote[spanningHits$subjectHits],
+    subjectAlt2=fragments$end_remote[spanningHits$subjectHits],
     size=fragments$size[spanningHits$subjectHits],
-    simpleEvent=seqnames(querygr[spanningHits$queryHits,])==seqnames(querygr[querygr$mate,][spanningHits$queryHits,]) & abs(start(querygr[spanningHits$queryHits,]) - start(querygr[querygr$mate,][spanningHits$queryHits,])) < maxfragmentsize
+    simpleEvent=seqnames(querygr[spanningHits$queryHits,])==seqnames(querygr[querygr$mate,][spanningHits$queryHits,]) & abs(start(querygr[spanningHits$queryHits,]) - start(querygr[querygr$mate,][spanningHits$queryHits,])) < maxfragmentsize,
+    stringsAsFactors=FALSE
   ))
 }
 test_that("spanning events identified", {
@@ -530,7 +536,8 @@ test_that("spanning events identified", {
     subjectAlt1=c("AB"),
     subjectAlt2=c("CD"),
     size=c(100),
-    simpleEvent=c(TRUE)
+    simpleEvent=c(TRUE),
+    stringsAsFactors=FALSE
     ), FindFragmentSpanningEvents(querygr, subjectgr))
 })
 test_that("interchromsomal event not considered simple", {
@@ -548,6 +555,25 @@ test_that("interchromsomal event not considered simple", {
     subjectAlt1=c("AB"),
     subjectAlt2=c("CD"),
     size=c(100),
-    simpleEvent=c(FALSE)
+    simpleEvent=c(FALSE),
+    stringsAsFactors=FALSE
   ), FindFragmentSpanningEvents(querygr, subjectgr))
 })
+
+bedpe2grpair <- function(filename, header=FALSE) {
+  tsv <- read.csv(filename, sep="\t", stringsAsFactors=FALSE, header=FALSE)
+  names(tsv) <- c("chrom1", "start1", "end1", "chrom2", "start2", "end2", "name", "score", "strand1", "strand2", tail(names(tsv), -10))
+  gr1 <- GRanges(seqnames=tsv$chrom1, ranges=IRanges(start=tsv$start1, end=tsv$end1, name=tsv$name), strand=tsv$strand1, tsv[c(8, seq(from=11, length.out=length(tsv) - 10))])
+  gr2 <- GRanges(seqnames=tsv$chrom2, ranges=IRanges(start=tsv$start2, end=tsv$end2, name=tsv$name), strand=tsv$strand2, tsv[c(8, seq(from=11, length.out=length(tsv) - 10))])
+  return(list(gr1=gr1, gr2=gr2))
+}
+bedpe2grmate <- function(filename, header=FALSE) {
+  out <- bedpe2grpair(filename, header)
+  out$gr1$mate <- paste0(names(out$gr1), "/2")
+  names(out$gr1) <- paste0(names(out$gr1), "/1")
+  out$gr2$mate <- paste0(names(out$gr2), "/1")
+  names(out$gr2) <- paste0(names(out$gr2), "/2")
+  return(c(out$gr1, out$gr2))
+}
+
+

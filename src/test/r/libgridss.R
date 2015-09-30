@@ -1,6 +1,6 @@
 library(VariantAnnotation)
 library(plyr)
-source("../../test/r/libvcf.R")
+source("libvcf.R")
 
 gridss.annotateBreakpointHits <- function(bed, bedMate, gridssVcf, ...) {
   return (gridss.annotateBreakpoints(bed, bedMate, gridssVcf, ...)$bed)
@@ -23,11 +23,12 @@ gridss.annotateBreakpoints <- function(bed, bedMate, gridssVcf, ...) {
     as.data.frame(findOverlaps(bedMate, callPos, ...)),
     as.data.frame(findOverlaps(bedMate, callPosMate, ...)))
   hits <- hits[duplicated(hits),]
-  hits$qual <- rowRanges(gridssVcf)$QUAL[hits[[2]]]
-  hits$hc <- gridssdf$QUAL[hits[[2]]] >= 1000 & gridssdf$AS[hits[[2]]] > 0 & gridssdf$RAS[hits[[2]]] > 0
+  hits$qual <- gridssdf$QUAL[hits[[2]]]
+  hits$assemblyboth <- gridssdf$AS[hits[[2]]] > 0 & gridssdf$RAS[hits[[2]]] > 0
+  hits$assemblyany <- gridssdf$AS[hits[[2]]] > 0 | gridssdf$RAS[hits[[2]]] > 0
   hits$gridssid <- names(rowRanges(gridssVcf))[hits[[2]]]
   hits$bedid <- names(bed)[hits[[1]]]
-  hits <- hits[order(hits$qual),]
+  hits <- hits[order(hits$assemblyboth, hits$assemblyany, hits$qual),]
   
   annotatedBed <- bed
   annotatedBed$gridssid <- NA
@@ -102,6 +103,8 @@ gridss.vcftodf <- function(vcf, allColumns=FALSE, sanityCheck=TRUE) {
   df$SVTYPE <- i$SVTYPE
   df$HOMSEQ <- ifelse(is.na(as.character(i$HOMSEQ)), "", as.character(i$HOMSEQ))
   df$HOMLEN <- as.numeric(i$HOMLEN)
+  anchorseq <- str_match(as.character(rowRanges(vcf)$ALT), "(.(.*))?[\\[\\]].*[\\[\\]]((.*).)?")[,c(3,5)]
+  df$INSSEQ <- ifelse(is.na(anchorseq[,1]), anchorseq[,2], anchorseq[,1])
   df$call <- ifelse(!is.na(matchLength), "good", ifelse(!is.na(mismatchLength), "misaligned", "bad"))
   df <- gridss.vcftodf.flattenNumeric(df, "REF", i$REF, allColumns=allColumns)
   df <- gridss.vcftodf.flattenNumeric(df, "REFPAIR", i$REFPAIR, allColumns=allColumns)
@@ -181,5 +184,4 @@ vcftoroc <- function(vcf, grtp, ...) {
   df <- df[!duplicated(df$qual),]
   return(df)
 }
-
 

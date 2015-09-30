@@ -5,7 +5,7 @@ library(scales)
 library(RColorBrewer)
 library(stringr)
 library(rtracklayer)
-source("../../main/r/libgridss.R")
+source("libgridss.R")
 source("libvcf.R")
 
 # extracts read pair breakpoint calls from the supplementary table
@@ -44,12 +44,13 @@ vreplaceNA <- function(vector, value) {
   return(vector)
 }
 # matchmaxgap: 778 #chr1:188377591-chr1:188379026- call location is over 120
-go <- function(sample, vcf, rp, filterBed=NULL, minimumEventSize, cgrmaxgap=1000, matchmaxgap=200) {
+go <- function(sample, vcf, rp, filterBed=NULL, minimumEventSize, cgrmaxgap=1000, matchmaxgap=200, graphs=TRUE, minqual=0) {
   if (!is.null(filterBed)) {
     # filter so that both ends are within the filterBed
     rp <- subsetByOverlaps(rp, filterBed, maxgap=cgrmaxgap)
     rp <- rp[rp$mate %in% names(rp)]
     vcf <- vcf[overlapsAny(rowRanges(vcf), filterBed, maxgap=cgrmaxgap),]
+    vcf <- vcf[rowRanges(vcf)$QUAL >= minqual,]
   }
   vcf <- gridss.removeUnpartnerededBreakend(vcf)
   rpMate <- rp[rp$mate,]
@@ -85,25 +86,31 @@ go <- function(sample, vcf, rp, filterBed=NULL, minimumEventSize, cgrmaxgap=1000
   # Variant calling concordance
   ###############
   # VennDiagram requires lists of ids
+  # since 
   # We'll go with the bedid if it exists, then fall back to the gridssid
-  # TODO: halve all Venn Diagram counts so we're counting breakpoints, not breakends
-  venn.plot <- venn.diagram(
-    x = list(
-      Published=names(rp),
-      Spanning=names(rp[rp$spanning,]),
-      Both=vreplaceNA(vcfdf[vcfdf$assembly=="Both",]$bedid, rownames(vcfdf[vcfdf$assembly=="Both",])),
-      Single=vreplaceNA(vcfdf[vcfdf$assembly=="Single",]$bedid, rownames(vcfdf[vcfdf$assembly=="Single",])),
-      NoAssembly=vreplaceNA(vcfdf[vcfdf$assembly=="No assembly",]$bedid, rownames(vcfdf[vcfdf$assembly=="No assembly",]))),
-    filename = paste0("neo_", "venn_", sample, ".png"))
+  vennlist=list(
+    Published=names(rp),
+    Spanning=names(rp[rp$spanning,]),
+    Both=unique(c(names(rp)[rp$assembly=="Both"], vreplaceNA(vcfdf[vcfdf$assembly=="Both",]$bedid, rownames(vcfdf[vcfdf$assembly=="Both",])))),
+    Single=unique(c(names(rp)[rp$assembly=="Single"], vreplaceNA(vcfdf[vcfdf$assembly=="Single",]$bedid, rownames(vcfdf[vcfdf$assembly=="Single",])))),
+    NoAssembly=unique(c(names(rp)[rp$assembly=="No assembly"], vreplaceNA(vcfdf[vcfdf$assembly=="No assembly",]$bedid, rownames(vcfdf[vcfdf$assembly=="No assembly",])))))
+  # halve all Venn Diagram counts so we're counting breakpoints, not breakends
+  vennlist$Published <- vennlist$Published[str_detect(vennlist$Published, "((/1)|(o))$")]
+  vennlist$Spanning <- vennlist$Spanning[str_detect(vennlist$Spanning, "((/1)|(o))$")]
+  vennlist$Both <- vennlist$Both[str_detect(vennlist$Both, "((/1)|(o))$")]
+  vennlist$Single <- vennlist$Single[str_detect(vennlist$Single, "((/1)|(o))$")]
+  vennlist$NoAssembly <- vennlist$NoAssembly[str_detect(vennlist$NoAssembly, "((/1)|(o))$")]
+  if (graphs) {
+    venn.plot <- venn.diagram(x=vennlist, filename = paste0("neo_maxgap", matchmaxgap, "_", "venn_", sample, ".png"))
     
-  if (!file.exists(paste0("neo_", sample, ".additional.both.vcf"))) {
-    # don't rewrite until writeVcf trailing tab bug is fixed
-    writeVcf(vcf[is.na(vcfdf$bedid) & vcfdf$assembly=="Both",], paste0("neo_", sample, ".additional.both.vcf"))
-    writeVcf(vcf[is.na(vcfdf$bedid) & vcfdf$assembly=="Single",], paste0("neo_", sample, ".additional.single.vcf"))
-  }
-  write.csv(vcfdf[is.na(vcfdf$bedid) & vcfdf$assembly %in% c("Single", "Both"),], paste0("neo_", sample, ".additional.csv"))
-  export(rp[rp$assembly %in% c("None", "No assembly"),], paste0("neo_", sample, ".misses.bed"))
-  write.csv(as.data.frame(rp[rp$assembly %in% c("None", "No assembly"),]), paste0("neo_", sample, ".missed.csv"))
+    if (!file.exists(paste0("neo_maxgap", matchmaxgap, "_",sample, ".additional.both.vcf"))) {
+      # don't rewrite until writeVcf trailing tab bug is fixed
+      writeVcf(vcf[is.na(vcfdf$bedid) & vcfdf$assembly=="Both",], paste0("neo_maxgap", matchmaxgap, "_",sample, ".additional.both.vcf"))
+      writeVcf(vcf[is.na(vcfdf$bedid) & vcfdf$assembly=="Single",], paste0("neo_maxgap", matchmaxgap, "_",sample, ".additional.single.vcf"))
+    }
+    write.csv(vcfdf[is.na(vcfdf$bedid) & vcfdf$assembly %in% c("Single", "Both"),], paste0("neo_maxgap", matchmaxgap, "_",sample, ".additional.csv"))
+    export(rp[rp$assembly %in% c("None", "No assembly"),], paste0("neo_maxgap", matchmaxgap, "_",sample, ".misses.bed"))
+    write.csv(as.data.frame(rp[rp$assembly %in% c("None", "No assembly"),]), paste0("neo_maxgap", matchmaxgap, "_",sample, ".missed.csv"))
   
   
   ###############
@@ -123,114 +130,67 @@ go <- function(sample, vcf, rp, filterBed=NULL, minimumEventSize, cgrmaxgap=1000
 #     theme_bw() +
 #     scale_y_continuous(limits=c(0,1)) +
 #     labs(title=paste0("Sensitivity of curated RP call detection - ", sample))
-#   ggsave(paste0("neo_", "rp_roc_", sample, ".png"), width=10, height=7.5)
+#   ggsave(paste0("neo_maxgap", matchmaxgap, "_","rp_roc_", sample, ".png"), width=10, height=7.5)
   
-  ggplot(as.data.frame(mcols(rp)), aes(x=nreads, fill=hits)) +
-    geom_histogram() +
-    scale_x_log10() + 
-    labs(title=paste0("Sensitivity of curated RP call detection - ", sample))
-  ggsave(paste0("neo_rp_hist_", sample, ".png"), width=10, height=7.5)
+    ggplot(as.data.frame(mcols(rp)), aes(x=nreads, fill=hits)) +
+      geom_histogram() +
+      scale_x_log10() + 
+      labs(title=paste0("Sensitivity of curated RP call detection - ", sample))
+    ggsave(paste0("neo_rp_hist_", sample, ".png"), width=10, height=7.5)
+    
+    ggplot(vcfdf[is.na(vcfdf$bedid) & vcfdf$assembly!="No assembly",], aes(x=QUAL, fill=assembly)) +
+      geom_histogram() +
+      scale_x_log10() + 
+      labs(title=paste0("Concordence with curated RP call detection - ", sample))
+    ggsave(paste0("neo_uncalled_hist_", sample, ".png"), width=10, height=7.5)
+    
+    ###############
+    # Microhomology size distribution
+    ###############
+    ggplot(vcfdf, aes(x=HOMLEN, color=assembly)) + geom_density(adjust=2) + scale_x_continuous(limits=c(0, 25))
+    ggsave(paste0("neo_homlen_", sample, ".png"), width=10, height=7.5)
+    
+    ###############
+    # Assembly rate
+    ###############
+    ggplot(vcfdf, aes(x=QUAL-ASQ-RASQ, fill=assembly)) +
+      geom_bar(position='fill') +
+      scale_x_log10(limits=c(25, 10000), expand=c(0, 0)) +
+      scale_y_continuous(labels=percent, expand=c(0, 0)) +
+      labs(title="Assembly rate", x="Quality of read pair and split read evidence", y="")
+    ggsave(paste0("neo_assembly_rate_qual_", sample, ".png"), width=10, height=7.5)
   
-  ggplot(vcfdf[is.na(vcfdf$bedid) & vcfdf$assembly!="No assembly",], aes(x=QUAL, fill=assembly)) +
-    geom_histogram() +
-    scale_x_log10() + 
-    labs(title=paste0("Concordence with curated RP call detection - ", sample))
-  ggsave(paste0("neo_uncalled_hist_", sample, ".png"), width=10, height=7.5)
-  
-  ###############
-  # Microhomology size distribution
-  ###############
-  ggplot(vcfdf, aes(x=HOMLEN, color=assembly)) + geom_density(adjust=2) + scale_x_continuous(limits=c(0, 25))
-  ggsave(paste0("neo_homlen_", sample, ".png"), width=10, height=7.5)
-  
-  ###############
-  # Assembly rate
-  ###############
-  ggplot(vcfdf, aes(x=QUAL-ASQ-RASQ, fill=assembly)) +
-    geom_bar(position='fill') +
-    scale_x_log10(limits=c(25, 10000), expand=c(0, 0)) +
-    scale_y_continuous(labels=percent, expand=c(0, 0)) +
-    labs(title="Assembly rate", x="Quality of read pair and split read evidence", y="")
-  ggsave(paste0("neo_assembly_rate_qual_", sample, ".png"), width=10, height=7.5)
+    ###############
+    # Coverage of gridss-only both assembly
+    ###############
+    assnocall <- vcfdf[is.na(vcfdf$bedid) & vcfdf$assembly=="Both",]
+    ggplot(assnocall) +
+      aes(x=RP) + 
+      geom_histogram() +
+      labs("Read Pair coverage, mutual breakend assembly, no published call")
+    ggsave(paste0("neo_both_nocall_rp_", sample, ".png"), width=10, height=7.5)
+    ggplot(assnocall) +
+      aes(x=asWithin1kbp-1) +
+      geom_histogram() +
+      labs("Breakends with 1kbp, mutual breakend assembly, no published call")
+    ggsave(paste0("neo_both_nocall_calldensity_", sample, ".png"), width=10, height=7.5)
+  }
 
   ###############
-  # Coverage of gridss-only both assembly
+  # prevalence of microhomology and untemplated sequence
   ###############
-  assnocall <- vcfdf[is.na(vcfdf$bedid) & vcfdf$assembly=="Both",]
-  ggplot(assnocall) +
-    aes(x=RP) + 
-    geom_histogram() +
-    labs("Read Pair coverage, mutual breakend assembly, no published call")
-  ggsave(paste0("neo_both_nocall_rp_", sample, ".png"), width=10, height=7.5)
-  ggplot(assnocall) +
-    aes(x=asWithin1kbp-1) +
-    geom_histogram() +
-    labs("Breakends with 1kbp, mutual breakend assembly, no published call")
-  ggsave(paste0("neo_both_nocall_calldensity_", sample, ".png"), width=10, height=7.5)
-  
+  dfboth <- vcfdf[vcfdf$assembly=="Both",]
+  insmicro <- data.frame(sample=sample, matchmaxgap=matchmaxgap, total=nrow(dfboth), hom=sum(dfboth$HOMLEN>0), ins=sum(nchar(dfboth$INSSEQ)>0))
+
   ###############
   # debugging
   ###############
-  return (list(bed=rp, gridss=vcfdf, vcf=vcf))
+  rp$sample <- sample
+  rp$matchmaxgap <- matchmaxgap
+  vcfdf$sample <- sample
+  vcfdf$matchmaxgap <- matchmaxgap
+  return (list(bed=rp, gridss=vcfdf, vcf=vcf, insmicro=insmicro))
 }
-
-
-
-
-
-
-# http://www.cookbook-r.com/Graphs/Multiple_graphs_on_one_page_(ggplot2)/
-# Multiple plot function
-#
-# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
-# - cols:   Number of columns in layout
-# - layout: A matrix specifying the layout. If present, 'cols' is ignored.
-#
-# If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
-# then plot 1 will go in the upper left, 2 will go in the upper right, and
-# 3 will go all the way across the bottom.
-#
-multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
-  library(grid)
-  
-  # Make a list from the ... arguments and plotlist
-  plots <- c(list(...), plotlist)
-  
-  numPlots = length(plots)
-  
-  # If layout is NULL, then use 'cols' to determine layout
-  if (is.null(layout)) {
-    # Make the panel
-    # ncol: Number of columns of plots
-    # nrow: Number of rows needed, calculated from # of cols
-    layout <- matrix(seq(1, cols * ceiling(numPlots/cols)),
-                     ncol = cols, nrow = ceiling(numPlots/cols))
-  }
-  
-  if (numPlots==1) {
-    print(plots[[1]])
-    
-  } else {
-    # Set up the page
-    grid.newpage()
-    pushViewport(viewport(layout = grid.layout(nrow(layout), ncol(layout))))
-    
-    # Make each plot, in the correct location
-    for (i in 1:numPlots) {
-      # Get the i,j matrix positions of the regions that contain this subplot
-      matchidx <- as.data.frame(which(layout == i, arr.ind = TRUE))
-      
-      print(plots[[i]], vp = viewport(layout.pos.row = matchidx$row,
-                                      layout.pos.col = matchidx$col))
-    }
-  }
-}
-
-
-
-
-
-
 
 
 
