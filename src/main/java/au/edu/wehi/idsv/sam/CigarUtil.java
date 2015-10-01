@@ -5,6 +5,7 @@ import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 import com.google.common.collect.Iterables;
@@ -164,5 +165,65 @@ public class CigarUtil {
 			return true;
 		}
 		return false;
+	}
+	public static int countMappedBases(List<CigarElement> cigar) {
+		int mapped = 0;
+		for (CigarElement e : cigar) {
+			if (e.getOperator().consumesReferenceBases() && e.getOperator().consumesReadBases()) {
+				mapped += e.getLength();
+			}
+		}
+		return mapped;
+	}
+	/**
+	 * Counts the number of bases mapped to any reference position in both alignment
+	 * @param cigar1
+	 * @param cigar2
+	 * @return number of bases mapped to reference in both alignments
+	 */
+	public static int commonReferenceBases(Cigar cigar1, Cigar cigar2) {
+		int count = 0;
+		int readLength = cigar1.getReadLength();
+		assert(readLength == cigar2.getReadLength());
+		CigarOperatorIterator it1 = new CigarOperatorIterator(cigar1);
+		CigarOperatorIterator it2 = new CigarOperatorIterator(cigar2);
+		for (int readBaseOffset = 0; readBaseOffset < readLength; readBaseOffset++) {
+			CigarOperator op1;
+			CigarOperator op2;
+			do {
+				op1 = it1.next();
+			} while (!op1.consumesReadBases());
+			do {
+				op2 = it2.next();
+			} while (!op2.consumesReadBases());
+			if (op1.consumesReferenceBases() && op2.consumesReferenceBases()) {
+				count++;
+			}
+		}
+		return count;
+	}
+	public static class CigarOperatorIterator implements Iterator<CigarOperator> {
+		private Iterator<CigarElement> it;
+		private CigarElement currentElement = null;
+		private int currentIndex;
+		public CigarOperatorIterator(Cigar cigar) {
+			this(cigar.getCigarElements());
+		}
+		public CigarOperatorIterator(List<CigarElement> cigar) {
+			it = cigar.iterator();
+		}
+		@Override
+		public boolean hasNext() {
+			return it.hasNext() || currentElement != null && currentIndex < currentElement.getLength();
+		}
+		@Override
+		public CigarOperator next() {
+			if (currentElement == null || currentIndex >= currentElement.getLength()) {
+				currentElement = it.next();
+				currentIndex = 0;
+			}
+			currentIndex++;
+			return currentElement.getOperator();
+		}
 	}
 }

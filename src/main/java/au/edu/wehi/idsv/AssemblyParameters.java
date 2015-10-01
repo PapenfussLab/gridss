@@ -147,6 +147,18 @@ public class AssemblyParameters {
 	 * Expected max size is 1.0 for single-sided assembly and 2.0 for assembly from both directions 
 	 */
 	public float maxExpectedBreakendAssemblyLengthInFragmentMultiples = 2.5f;
+	/**
+	 * Minimum portion of the anchored bases that remained anchored
+	 * 
+	 * When performing realignment around small indels and tandem duplications,
+	 * if the breakend sequence is significantly longer than the anchor sequence
+	 * then realignment will align the breakend to the other side of the SV, and
+	 * consider the anchor to be the new breakend sequence. To prevent this,
+	 * realignment is aborted if more than this portion of the initial reference
+	 * bases are no longer aligned to the reference after realignment.
+	 * 
+	 */
+	public float realignmentMinimumAnchorRetainment = 0.5f;
 	public boolean applyFilters(SAMRecordAssemblyEvidence evidence) {
 		SAMRecordAssemblyEvidence localEvidence = evidence;
 		if (evidence instanceof RemoteEvidence) {

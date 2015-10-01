@@ -450,13 +450,13 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			}
     		if (ap.performLocalRealignment && ass.isBreakendExact()) {
     			int realignmentWindowSize = (int)(ap.realignmentWindowReadLengthMultiples * getMaxReadLength());
-    			SAMRecordAssemblyEvidence fullRealignment = ass.realign(realignmentWindowSize, true);
+    			SAMRecordAssemblyEvidence fullRealignment = ass.realign(realignmentWindowSize, true, ap.realignmentMinimumAnchorRetainment);
     			// use full assembly realignment to find small indels and reference assemblies
     			if (fullRealignment != null && (fullRealignment.isReferenceAssembly() || fullRealignment.isSpanningAssembly())) {
     				ass = fullRealignment;
     			} else {
     				// use targeted realignment to find the correct breakend location
-    				ass = ass.realign(realignmentWindowSize, false);
+    				ass = ass.realign(realignmentWindowSize, false, ap.realignmentMinimumAnchorRetainment);
     			}
     		}
 			if (ass == null || ass.getBreakendSummary() == null) return null;

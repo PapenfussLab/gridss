@@ -6,6 +6,7 @@ import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.TextCigarCodec;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
@@ -67,5 +68,30 @@ public class CigarUtilTest {
 		List<List<CigarElement>> split = CigarUtil.splitAtLargestIndel(C("10M"));
 		assertEquals("10M", new Cigar(split.get(0)).toString());
 		assertEquals("0M", new Cigar(split.get(2)).toString());
+	}
+	@Test
+	public void countMappedBases_should_count_MEX() {
+		assertEquals(4 + 128 + 256, CigarUtil.countMappedBases(C("1H2H4M8I16D32N64P128=256X")));
+	}
+	@Test
+	public void commonReferenceBases_should_count_overlap() {
+		assertEquals(1, CigarUtil.commonReferenceBases(new Cigar(C("5M4S")), new Cigar(C("4S5M"))));
+		assertEquals(7, CigarUtil.commonReferenceBases(new Cigar(C("1M2=4X")), new Cigar(C("1M2=4X"))));
+	}
+	@Test
+	public void CigarOperatorIterator_should_match_cigar() {
+		CigarOperatorIterator_test(C("1M"));
+		CigarOperatorIterator_test(C("1M2M"));
+		CigarOperatorIterator_test(C("1H2H4M8I16D32N64P128=256X"));
+	}
+	private void CigarOperatorIterator_test(List<CigarElement> l) {
+		List<CigarOperator> co = new ArrayList<CigarOperator>();
+		for (CigarElement e : l) {
+			for (int i = 0; i < e.getLength(); i++) {
+				co.add(e.getOperator());
+			}
+		}
+		List<CigarOperator> result = Lists.newArrayList(new CigarUtil.CigarOperatorIterator(l));
+		assertEquals(co, result);
 	}
 }
