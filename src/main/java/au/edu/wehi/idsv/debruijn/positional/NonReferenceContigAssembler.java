@@ -150,11 +150,12 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		return bestContig;
 	}
 	private SAMRecordAssemblyEvidence callContig(ArrayDeque<KmerPathSubnode> contig) {
-		Set<KmerEvidence> evidence = evidenceTracker.untrack(contig);
 		if (containsKmerRepeat(contig)) {
+			// recalculate the called contig, this may break the contig at the repeated kmer
 			MisassemblyFixer fixed = new MisassemblyFixer(contig);
-			contig = new ArrayDeque<KmerPathSubnode>(fixed.correctMisassignedEvidence(evidence));
+			contig = new ArrayDeque<KmerPathSubnode>(fixed.correctMisassignedEvidence(evidenceTracker.support(contig)));
 		}
+		Set<KmerEvidence> evidence = evidenceTracker.untrack(contig);
 		
 		int targetAnchorLength = Math.max(contig.stream().mapToInt(sn -> sn.length()).sum(), maxAnchorLength);
 		KmerPathNodePath startAnchorPath = new KmerPathNodePath(contig.getFirst(), false, targetAnchorLength + maxEvidenceDistance + contig.getFirst().length());
@@ -323,7 +324,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			List<KmerPathSubnode> left = asLeftAligned(evidence);
 			List<KmerPathSubnode> right = asRightAligned(evidence);
 			boolean leftAnchored = left.get(0).prev().stream().anyMatch(sn -> sn.node().isReference());
-			boolean rightAnchored = right.get(0).next().stream().anyMatch(sn -> sn.node().isReference());
+			boolean rightAnchored = right.get(right.size() - 1).next().stream().anyMatch(sn -> sn.node().isReference());
 			if (leftAnchored && !rightAnchored) return left;
 			if (rightAnchored && !leftAnchored) return right;
 			int leftWeight = left.stream().mapToInt(sn -> sn.weight()).sum();

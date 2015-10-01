@@ -81,28 +81,41 @@ public class EvidenceTracker {
 		}
 	}
 	/**
+	 * Identifies evidence supporting the given path
+	 * @param contig path
+	 * @return all evidence supporting the given path
+	 */
+	public Set<KmerEvidence> support(Collection<KmerPathSubnode> contig) {
+		return traverse(contig, false);
+	}
+	/**
 	 * Stops tracking all evidence overlapping the given contig
 	 * @param contig contig to stop tracking
-	 * @return matching evidence
+	 * @return removed evidence 
 	 */
 	public Set<KmerEvidence> untrack(Collection<KmerPathSubnode> contig) {
+		return traverse(contig, true);
+	}
+	public Set<KmerEvidence> traverse(Collection<KmerPathSubnode> contig, boolean remove) {
 		Set<KmerEvidence> evidence = Collections.newSetFromMap(new IdentityHashMap<KmerEvidence, Boolean>());
 		for (KmerPathSubnode sn : contig) {
 			int start = sn.firstStart();
 			int end = sn.firstEnd();
 			for (int i = 0; i < sn.length(); i++) {
-				removeToCollection(evidence, sn.kmer(i), start + i, end + i);
+				toCollection(evidence, sn.kmer(i), start + i, end + i, remove);
 			}
 			LongArrayList collapsed = sn.node().collapsedKmers();
 			IntArrayList collapsedOffset = sn.node().collapsedKmerOffsets();
 			for (int i = 0; i < collapsed.size(); i++) {
 				int offset = collapsedOffset.getInt(i);
-				removeToCollection(evidence, collapsed.getLong(i), start + offset, end + offset);
+				toCollection(evidence, collapsed.getLong(i), start + offset, end + offset, remove);
 			}
 		}
-		for (KmerEvidence e : evidence) {
-			// remove any leftover evidence kmers not on the called path   
-			remove(e);
+		if (remove) {
+			for (KmerEvidence e : evidence) {
+				// remove any leftover evidence kmers not on the called path   
+				remove(e);
+			}
 		}
 		return evidence;
 	}
@@ -114,14 +127,16 @@ public class EvidenceTracker {
 	 * @param start
 	 * @param end
 	 */
-	public void removeToCollection(Collection<KmerEvidence> collection, long kmer, int start, int end) {
+	private void toCollection(Collection<KmerEvidence> collection, long kmer, int start, int end, boolean remove) {
 		LinkedList<KmerSupportNode> list = lookup.get(kmer);
 		if (list != null) {
 			ListIterator<KmerSupportNode> it = list.listIterator();
 			while (it.hasNext()) {
 				KmerSupportNode n = it.next();
 				if (IntervalUtil.overlapsClosed(start, end, n.lastStart(), n.lastEnd())) {
-					it.remove();
+					if (remove) {
+						it.remove();
+					}
 					collection.add(n.evidence());
 				}
 			}
