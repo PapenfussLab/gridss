@@ -1,4 +1,4 @@
-source("../../main/r/libgridss.R")
+source("libgridss.R")
 #source("libneochromosome.R")
 source("libvcf.R")
 library(data.table)
@@ -117,7 +117,7 @@ plot_f1_roc <- function(truthcalls, title, filename) {
   ggplot(f1) +
     aes(y=f1^4, x=CX_READ_DEPTH, color=factor(CX_READ_FRAGMENT_LENGTH), shape=CX_ALIGNER) +
     geom_line() + geom_point() +
-    scale_y_continuous(limits=c(0,1), breaks=seq(0, 1, 0.1)^4, labels=c("0", "", "", "", "", "", "0.6", "0.7", "0.8", "0.9", "1.0")) +
+    scale_y_continuous(limits=c(0,1), breaks=seq(0, 1, 0.1)^4, labels=c("0", "", "", "", "", "0.5", "", "0.7", "0.8", "0.9", "1.0")) +
     scale_x_continuous(limits=c(0, 100), breaks=c(4,8,15,30,60)) + 
     facet_grid(CX_READ_LENGTH ~ CX_REFERENCE_VCF_VARIANTS) +
     labs(y="Maximum F1 score", x="Read Depth", title=paste("gridss F-score", title), shape="aligner", color="Fragment Size")
