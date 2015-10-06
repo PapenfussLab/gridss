@@ -131,6 +131,39 @@ Gridss supports conversion of VCF to BEDPE format using the VcfBreakendToBedpe u
 
 Calling VcfBreakendToBedpe with `INCLUDE_HEADER=true` will include a header containing column names in the bedpe file. These fields match the VCF INFO fields of the same name. For bedpe output, breakend information is not exported and per category totals (such as split read counts) are aggregrated to a single value.
 
+## Intermediate Files
+
+Gridss write a large number of intermediate files. If rerunning gridss with parametere on the same input, the intermediate files should be deleted. All intermediate files are written to the WORKING_DIR directory tree, with the exception of temporary sort buffers written to TMP_DIR and automatically deleted at the conclusion of the sort operation.
+
+File | Description
+------- | ---------
+tmp.* | Temporary intermediate file
+unsorted.* | Temporary intermediate file
+*.bai | BAM index for coordinate sorted intermediate BAM file
+*input*.idsv.working | Working directory for files related to the given input file.
+*input*.idsv.working/*input*.idsv.metrics.insersize.txt | Picard tools CollectInsertSizeMetrics output 
+*input*.idsv.working/*input*.idsv.metrics.idsv.txt | High-level read/read pair metrics
+*input*.idsv.working/*input*.idsv.metrics.softclip.txt | Soft clip length distribution
+*input*.idsv.working/*input*.idsv.coverage.blacklist.bed | Intervals of extreme coverage excluded from variant calling
+*input*.idsv.working/*input*.idsv.*chr*.sc.bam | soft clipped reads (coordinate sort order)
+*input*.idsv.working/*input*.idsv.*chr*.realign.0.fq | soft clipped bases requiring realignment. The source soft clip is encoded in the read bam
+*input*.idsv.working/*input*.idsv.*chr*.realign.0.bam | soft clipped bases aligned by external aligner. **Record order must match the fastq record order**
+*input*.idsv.working/*input*.idsv.*chr*.scremote.bam | soft clipped reads (realignment position sort order)
+*input*.idsv.working/*input*.idsv.*chr*.realignremote.bam | soft clipped reads (realignment position sort order)
+*input*.idsv.working/*input*.idsv.*chr*.rp.bam | discordant read pairs
+*input*.idsv.working/*input*.idsv.*chr*.rpmate.bam | discordant read pairs, sorted by alignment position of the other read in the pair
+*output*.idsv.working | Working directory for assembly and variant calling
+*output*.idsv.working/*output*.idsv.breakpoint.vcf | Raw maximal clique variant calls not requiring unique evidence assignment
+*output*.idsv.working/*output*.idsv.assembly.bam | Assembly contigs represented as paired reads. The first read in the read pair is the assembly, with the second corresponding to the realignment of the breakend bases. Note that the assembly is always on the positive strand so an assembly of a simple indel result in a read pair with FF read alignment orientation. Assemblies with read names of the form asm*n*_*i* are compound realignment records, with the actual assembly in the asm*n* record.
+*output*.idsv.working/*output*.idsv.*chr*.assembly.bam | *chr* subset of above
+*output*.idsv.working/*output*.idsv.*chr*.assemblymate.bam | above sorted by mate position
+*output*.idsv.working/*output*.idsv.*chr*.realign.*n*.fq | breakend realignment iteration *n*. Breakends that span events (such as small translocations or chromothripsis), are realigned multiple times to identify all fusions spanned by the assembly
+*output*.idsv.working/*output*.idsv.*chr*.realign.*n*.bam | External realigner alignments of above. **Record order must match the fastq record order**
+*output*.idsv.working/*output*.idsv.*chr*.breakend.bam | Raw assembly contigs before realignment
+*output*.idsv.working/*output*.idsv.*chr*.breakend.throttled.bam | Regions of high coverage where only a portion of supporting reads are considered for assembly
+
+
+
 
 
 
