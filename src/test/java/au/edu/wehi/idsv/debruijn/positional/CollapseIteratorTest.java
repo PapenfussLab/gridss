@@ -22,10 +22,10 @@ public abstract class CollapseIteratorTest extends TestHelper {
 		return result;
 	}
 	public static Iterator<KmerPathNode> toPathNodeIterator(List<DirectedEvidence> input, int k, int maxWidth, int maxLength) {
-		return new PathNodeIterator(new AggregateNodeIterator(new SupportNodeIterator(k, input.iterator(), 10000)), maxLength, k);
+		return new PathNodeIterator(new AggregateNodeIterator(new SupportNodeIterator(k, input.iterator(), 10000, null)), maxLength, k);
 	}
 	public static List<KmerPathNode> toPathNode(List<DirectedEvidence> input, int k, int maxWidth, int maxLength) {
-		List<KmerNode> snList = Lists.newArrayList(new SupportNodeIterator(k, input.iterator(), 10000));
+		List<KmerNode> snList = Lists.newArrayList(new SupportNodeIterator(k, input.iterator(), 10000, null));
 		List<KmerNode> anList = Lists.newArrayList(new AggregateNodeIterator(snList.iterator()));
 		List<KmerPathNode> pnList = Lists.newArrayList(new PathNodeIterator(anList.iterator(), maxWidth, k));
 		assertSameNodes(anList, pnList);

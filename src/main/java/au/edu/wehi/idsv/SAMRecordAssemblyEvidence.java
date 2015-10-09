@@ -19,6 +19,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import au.edu.wehi.idsv.alignment.AlignerFactory;
 import au.edu.wehi.idsv.alignment.Alignment;
+import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.vcf.VcfFilter;
@@ -546,9 +547,11 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 * prevent this.
 	 * 
 	 * @param realignmentWindowSize number of additional reference bases to include around alignment
+	 * @param includeBreakendBases include room for alignment of the breakend bases when calculating the window to align to
+	 * @param portionOfAnchorRetained minimum portion of anchor bases that remain anchored to the reference after realignment
 	 * @return includeBreakendBases include non-reference breakend bases when calculating alignment window size
 	 */
-	public SAMRecordAssemblyEvidence realign(int realignmentWindowSize, boolean includeBreakendBases) {
+	public SAMRecordAssemblyEvidence realign(int realignmentWindowSize, boolean includeBreakendBases, float portionOfAnchorRetained) {
 		if (!this.isExact) throw new RuntimeException("Sanity check failure: realignment of unanchored assemblies not yet implemented.");
 		BreakendSummary bs = getBreakendSummary();
 		if (bs == null || isReferenceAssembly()) {
@@ -597,6 +600,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 					getBreakendSummary().toString(getEvidenceSource().getContext())));
 		}
 		if (alignment == null) return this;
+		Cigar original = getSAMRecord().getCigar();
 		Cigar cigar = TextCigarCodec.decode(alignment.getCigar());
         
         if (isSpanningAssembly() &&
@@ -606,19 +610,23 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
         	// so we're going to ignore it
         	// (spanning realignment is currently used to remove reference bubble assemblies with alignment such as 10M5I5D10M)
         	return this;
-        } else if (SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), getBreakendSummary().direction) == 0 && 
-    		SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), getBreakendSummary().direction.reverse()) > 0) {
-        	// medium size indel breakend is longer than the anchor causing the anchor to soft clip instead of an indel call
-        	//log.debug(String.format("Realignment of assembly %s at %s converts cigar from %s to %s starting at %d. Likely to be small indel with short anchor - ignoring realignment.",
-        	//		getEvidenceID(),
-        	//		getBreakendSummary().toString(source.getContext()),
-        	//		r.getCigarString(),
-        	//		cigar,
-        	//		start + alignment.getStartPosition()
-        	//		));
+        }
+        if (CigarUtil.commonReferenceBases(cigar, original) < CigarUtil.countMappedBases(original.getCigarElements()) * portionOfAnchorRetained) {
+        	// ignore realignment if we have less than half of our nominal reference bases actually mapped to the reference
         	return this;
         }
-        
+        if (SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), getBreakendSummary().direction) == 0 && 
+        		SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), getBreakendSummary().direction.reverse()) > 0) {
+        	// ignore realignment if it flips the direction of the breakend
+        	log.debug(String.format("Realignment of assembly %s at %s converts cigar from %s to %s starting at %d. Is this a FP reference event in close proximity to a real SV in the opposite direction.",
+				getEvidenceID(),
+				getBreakendSummary().toString(source.getContext()),
+				r.getCigarString(),
+				cigar,
+				start + alignment.getStartPosition()
+				));
+        	return this;
+        }
         SAMRecord newAssembly = SAMRecordUtil.clone(getBackingRecord());
 		newAssembly.setReadName(newAssembly.getReadName() + "_r");
         newAssembly.setAlignmentStart(start + alignment.getStartPosition());
