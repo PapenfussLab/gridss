@@ -15,8 +15,8 @@ theme_set(theme_bw())
 
 pwd <- getwd()
 vcfs_all <- NULL
-setwd(paste0(ifelse(as.character(Sys.info())[1] == "Windows", "W:/", "~/"), "i/data.gridss"))
-#setwd(paste0(ifelse(as.character(Sys.info())[1] == "Windows", "W:/", "~/"), "i/data.gridss/test"))
+setwd(paste0(ifelse(as.character(Sys.info())[1] == "Windows", "W:/", "~/"), "i/data.fullmatrix"))
+#setwd(paste0(ifelse(as.character(Sys.info())[1] == "Windows", "W:/", "~/"), "i/data.fullmatrix/test"))
 metadata <- LoadMetadata()
 vcfs_all <- LoadVcfs(metadata, existingVcfs=vcfs_all)
 setwd(pwd)
@@ -129,9 +129,10 @@ plot_f1_roc(truth_assembly_both, " (reciprocal assembly support)", "assembly_bot
 
 
 
-# TODO: compare sensitivity/specificity for all calls, assembly, reciprocal assembly
+# sens/prec by assembly
+bylistsensprec <- c("CX_ALIGNER", "CX_ALIGNER_SOFTCLIP", "CX_CALLER", "CX_READ_DEPTH", "CX_READ_FRAGMENT_LENGTH", "CX_READ_LENGTH", "CX_REFERENCE_VCF_VARIANTS") #"SVLEN", "SVTYPE", 
 calls_all$assembly <- ifelse(calls_all$AS>0 & calls_all$RAS>0, "Both Breakends", ifelse(calls_all$AS>0, "Single Breakend", "No Assembly"))
-dtprecision <- calls_all[, list(precision=sum(tp)/.N), by=c("assembly", "SVLEN", "SVTYPE", "CX_ALIGNER", "CX_ALIGNER_SOFTCLIP", "CX_CALLER", "CX_READ_DEPTH", "CX_READ_FRAGMENT_LENGTH", "CX_READ_LENGTH", "CX_REFERENCE_VCF_VARIANTS")]
+dtprecision <- calls_all[, list(precision=sum(tp)/.N), by=c("assembly", bylistsensprec)]
 save(dtprecision, file = "dtprecision.RData")
 
 for (rl in unique(dtprecision$CX_READ_LENGTH)) {
@@ -139,9 +140,23 @@ for (rl in unique(dtprecision$CX_READ_LENGTH)) {
     aes(y=precision, x=CX_READ_DEPTH, color=assembly, shape=CX_ALIGNER, linetype=CX_ALIGNER) +
     geom_line() + geom_point() +
     facet_grid(CX_READ_LENGTH + CX_READ_FRAGMENT_LENGTH ~ CX_REFERENCE_VCF_VARIANTS) +
-    labs(title=paste("Precision by assembly status 2x", rl, "bp"), y="Read Depth")
+    labs(title=paste("Precision by assembly status 2x", rl, "bp"), y="Read Depth") + scale_x_log10()
   ggsave(paste0("gridss_assembly_precision_rl", rl, ".png"), width=10, height=7.5)
 }
+
+dtsens <- calls_all[, list(count=sum(tp)), by=c("assembly", bylistsensprec)]
+dtsens <- merge(dtsens, truth_all$truth[, list(total=.N), bylistsensprec], by=bylistsensprec)
+dtsens$sensitivity <- dtsens$count / dtsens$total
+
+for (rl in unique(dtsens$CX_READ_LENGTH)) {
+  ggplot(dtsens[dtsens$CX_READ_LENGTH==rl,]) +
+    aes(y=sensitivity, x=CX_READ_DEPTH, color=assembly, shape=CX_ALIGNER, linetype=CX_ALIGNER) +
+    geom_line() + geom_point() +
+    facet_grid(CX_READ_LENGTH + CX_READ_FRAGMENT_LENGTH ~ CX_REFERENCE_VCF_VARIANTS) +
+    labs(title=paste("Sensitivity by assembly status 2x", rl, "bp"), y="Read Depth") + scale_x_log10()
+  ggsave(paste0("gridss_assembly_sensitivity_rl", rl, ".png"), width=10, height=7.5)
+}
+
 
 
 

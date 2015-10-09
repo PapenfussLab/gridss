@@ -85,10 +85,14 @@ svlentype <- function(vcf) {
   return(list(len=len, type=type))
 }
 breakendCount <- function(type) {
-  return (ifelse(type=="BND", 1,
-          ifelse(type %in% c("INS", "DEL", "DUP"), 2,
-          ifelse(type=="INV", 4,
-          NA_integer_))))
+  typecounts <- ifelse(type %in% c("BND"), 1,
+                ifelse(type %in% c("INS", "DEL", "DUP", "TRA"), 2,
+                ifelse(type %in% c("INV"), 4,
+                NA_integer_)))
+  if (any(is.na(typecounts))) {
+    stop(paste("Unhandled event type in ", paste(unique(type))))
+  }
+  return (typecounts)
 }
 # lists overlapping breakpoints
 breakpointHits <- function(queryGr, subjectGr, mateQueryGr=queryGr[queryGr$mateIndex,], mateSubjectGr=subjectGr[subjectGr$mateIndex,], ...) {
@@ -170,6 +174,7 @@ vcftobpgr <- function(vcf) {
   rows <- grcall$SVTYPE=="TRA"
   if (any(rows)) {
     strand(grcall[rows,]) <- ifelse(substr(info(vcf)$CT[rows], 1, 1) == "3", "+", "-")
+    grcall[rows,]$size <- NA
     grcall[rows]$mateIndex <- length(grcall) + seq_len(sum(rows))
     eventgr <- grcall[rows]
     eventgr$mateIndex <- seq_len(length(grcall))[rows]
@@ -179,7 +184,7 @@ vcftobpgr <- function(vcf) {
       ranges=IRanges(start=info(vcf)$END[rows], width=1),
       strand=ifelse(substr(info(vcf)$CT[rows], 4, 4) == "3", "+", "-"))
     mcols(bareeventgr) <- mcols(eventgr)
-    grcall <- c(grcall, eventgr)
+    grcall <- c(grcall, bareeventgr)
   }
   rows <- grcall$SVTYPE=="DEL"
   if (any(rows)) {
@@ -265,6 +270,11 @@ distanceToClosest <- function(query, subject) {
   result[queryHits(distanceHits)] <- as.data.frame(distanceHits)$distance
   return(result)
 }
+TrimInterChromosmalEvents <- function(vcf, minSize=1) {
+  gr <- vcftobpgr(vcf)
+  gr <- gr[seqnames(gr) == seqnames(gr[gr$mateIndex,]),]
+  return(vcf[unique(gr$vcfIndex),])
+}
 
 
 CalculateTruth <- function(callvcf, truthvcf, maxerrorbp, ignoreFilters, maxerrorpercent=0.25, ...) {
@@ -289,7 +299,10 @@ CalculateTruth <- function(callvcf, truthvcf, maxerrorbp, ignoreFilters, maxerro
   hits$percentsize <- hits$calledsize / hits$expectedsize
   # TODO: add untemplated into sizerror calculation for insertions
   hits <- hits[is.na(hits$poserror) | hits$poserror <= maxerrorbp, ] # position must be within margin
-  hits <- hits[is.na(hits$expectedsize) | is.na(hits$calledsize) | (hits$percentsize >= 1 - maxerrorpercent & hits$percentsize <= 1 + maxerrorpercent), ] # size must approximately match
+  if (!is.null(maxerrorpercent)) {
+    # size must approximately match
+    hits <- hits[is.na(hits$expectedsize) | is.na(hits$calledsize) | (hits$percentsize >= 1 - maxerrorpercent & hits$percentsize <= 1 + maxerrorpercent), ]
+  }
   # TODO: filter mismatched event types (eg: DEL called for INS)
   
   # per truth variant
