@@ -14,62 +14,92 @@ source("libvcf.R")
 
 theme_set(theme_bw())
 
+minsize <- 51 # minimum Mills 2012 event size
+encodeblacklist <- import("consensusBlacklist.bed")
+altassembly <- GRanges(seqnames=c("chr11_gl000202_random","chr17_gl000203_random","chr17_gl000204_random","chr17_gl000205_random","chr17_gl000206_random","chr18_gl000207_random","chr19_gl000208_random","chr19_gl000209_random","chr1_gl000191_random","chr1_gl000192_random","chr21_gl000210_random","chr4_gl000193_random","chr4_gl000194_random","chr7_gl000195_random","chr8_gl000196_random","chr8_gl000197_random","chr9_gl000198_random","chr9_gl000199_random","chr9_gl000200_random","chr9_gl000201_random","chrM","chrUn_gl000211","chrUn_gl000212","chrUn_gl000213","chrUn_gl000214","chrUn_gl000215","chrUn_gl000216","chrUn_gl000217","chrUn_gl000218","chrUn_gl000219","chrUn_gl000220","chrUn_gl000221","chrUn_gl000222","chrUn_gl000223","chrUn_gl000224","chrUn_gl000225","chrUn_gl000226","chrUn_gl000227","chrUn_gl000228","chrUn_gl000229","chrUn_gl000230","chrUn_gl000231","chrUn_gl000232","chrUn_gl000233","chrUn_gl000234","chrUn_gl000235","chrUn_gl000236","chrUn_gl000237","chrUn_gl000238","chrUn_gl000239","chrUn_gl000240","chrUn_gl000241","chrUn_gl000242","chrUn_gl000243","chrUn_gl000244","chrUn_gl000245","chrUn_gl000246","chrUn_gl000247","chrUn_gl000248","chrUn_gl000249"),
+                       ranges=IRanges(start=0, end=1000000000))
+altassembly$name <- as.character(seqnames(altassembly))
+altassembly$score <- 1000
+blacklist <- as(rbind(as(encodeblacklist, "RangedData"), as(altassembly, "RangedData")), "GRanges")
+
+
 pwd <- getwd()
 setwd(paste0(ifelse(as.character(Sys.info())[1] == "Windows", "W:/", "~/"), "i/data.na12878"))
 metadata <- LoadMetadata()
-vcfs <- LoadVcfs(metadata)
+vcfs <- LoadVcfs(metadata, existingVcfs=vcfs)
 setwd(pwd)
 
+truth <- "lumpyPacBioMoleculo"
+vcfs <- lapply(vcfs, function(vcf) {
+  attr(vcf, "metadata")$CX_REFERENCE_VCF <- "00000000000000000000000000000001.reference.vcf"
+  return(vcf)
+})
+truth <- "Mills"
+vcfs <- lapply(vcfs, function(vcf) {
+  attr(vcf, "metadata")$CX_REFERENCE_VCF <- "00000000000000000000000000000002.reference.vcf"
+  return(vcf)
+})
+truth <- "merged"
 vcfs <- lapply(vcfs, function(vcf) {
   attr(vcf, "metadata")$CX_REFERENCE_VCF <- "00000000000000000000000000000000.reference.vcf"
-  vcf <- TrimInterChromosmalEvents(vcf)
   return(vcf)
 })
-garvan <- readVcf("W:/na12878/garvan/garvan-na12878.vcf", "unknown")
-seqlevels(garvan) <- paste0("chr", seqlevels(garvan))
-attr(garvan, "metadata") <- attr(vcfs[["a136cfee2d40e62b4fd4be194366f291"]], "metadata")
-attr(garvan, "metadata")$CX_READ_LENGTH <- 150
-attr(garvan, "metadata")$CX_CALLER <- "gridss_garvan"
-attr(garvan, "metadata")$Id <- "10000000000000000000000000000000"
-attr(garvan, "metadata")$File <- "10000000000000000000000000000000"
-rownames(attr(garvan, "metadata")) <- "10000000000000000000000000000000"
-vcfs[["10000000000000000000000000000000"]] <- garvan
+
+# garvan <- readVcf("W:/na12878/garvan/garvan-na12878.vcf", "unknown")
+# seqlevels(garvan) <- paste0("chr", seqlevels(garvan))
+# attr(garvan, "metadata") <- attr(vcfs[["a136cfee2d40e62b4fd4be194366f291"]], "metadata")
+# attr(garvan, "metadata")$CX_READ_LENGTH <- 150
+# attr(garvan, "metadata")$CX_CALLER <- "gridss_garvan"
+# attr(garvan, "metadata")$Id <- "10000000000000000000000000000000"
+# attr(garvan, "metadata")$File <- "10000000000000000000000000000000"
+# rownames(attr(garvan, "metadata")) <- "10000000000000000000000000000000"
+# vcfs[["10000000000000000000000000000000"]] <- garvan
 
 vcfs <- lapply(vcfs, function(vcf) {
-  caller <- attr(vcf, "metadata")$CX_CALLER
-  if (all(is.na(rowRanges(vcf)$QUAL)) && !is.na(caller)) {
-    # use total read support as a qual proxy
-    if (caller %in% c("delly", "delly/0.6.8")) {
-      rowRanges(vcf)$QUAL <- ifelse(is.na(info(vcf)$PE), 0, info(vcf)$PE) + ifelse(is.na(info(vcf)$SR), 0, info(vcf)$SR)
-    } else if (caller %in% c("crest")) {
-      rowRanges(vcf)$QUAL <- ifelse(is.na(info(vcf)$right_softclipped_read_count), 0, info(vcf)$right_softclipped_read_count) + ifelse(is.na(info(vcf)$left_softclipped_read_count), 0, info(vcf)$left_softclipped_read_count)
-    } else if (caller %in% c("pindel")) {
-      rowRanges(vcf)$QUAL <- geno(vcf)$AD[,1,2]
-    } else {
-      warning(paste("No QUAL scores for ", caller))
-    }
-  }
+  #vcf <- vcf[!isInterChromosmal(vcf),]
+  vcf <- vcf[isDeletionLike(vcf, minsize), ]
   return(vcf)
 })
+vcfs <- lapply(vcfs, function(vcf) {
+  withqual(vcf, attr(vcf, "metadata")$CX_CALLER)
+})
 
-truthlist_all <- CalculateTruthSummary(vcfs, maxerrorbp=100, maxerrorpercent=NULL, ignoreFilters=FALSE, ignore.strand=TRUE) # breakdancer does not specify strand
+truthlist_filtered <- CalculateTruthSummary(vcfs, blacklist=blacklist, maxerrorbp=100, maxerrorpercent=NULL, ignoreFilters=FALSE, ignore.strand=TRUE) # breakdancer does not specify strand
+truthlist_all <- CalculateTruthSummary(vcfs, blacklist=blacklist, maxerrorbp=100, maxerrorpercent=NULL, ignoreFilters=TRUE, ignore.strand=TRUE) # breakdancer does not specify strand
 
-dtroc <- TruthSummaryToROC(truthlist_all, bylist=c("CX_CALLER"))
+dtroc_filtered <- TruthSummaryToROC(truthlist_filtered, bylist=c("CX_CALLER"))
+dtroc_filtered$Filter <- "Default"
+dtroc_all <- TruthSummaryToROC(truthlist_all, bylist=c("CX_CALLER"))
+dtroc_all$Filter <- "Including Filtered"
+dtroc <- rbind(dtroc_all, dtroc_filtered)
 
 ggplot(dtroc) + 
-  aes(y=tp/2, x=fp/2, color=CX_CALLER) +
+  aes(y=tp/2, x=fp/2, color=CX_CALLER, linetype=Filter) +
   geom_line() + 
-  geom_point(size=0.25) +
+  scale_color_brewer(palette="Set1") + 
   scale_x_log10() + 
   scale_x_continuous(limits=c(0, 1000)) + 
-  labs(y="tp", x="fp", title="All intrachromosomal calls vs Mills deletion calls")
+  labs(y="tp", x="fp", title=paste("ROC curve NA12878 deletions", truth))
+ggsave(paste0("na12878_roc_tp_fp_", truth, ".pdf"))
 
+ggplot(dtroc) + 
+  aes(y=prec, x=sens, color=CX_CALLER, linetype=Filter) +
+  scale_color_brewer(palette="Set2") + 
+  geom_line() + 
+  labs(title=paste("Precision-Recall curve NA12878 deletions", truth))
+ggsave(paste0("na12878_prec_recall_", truth, ".pdf"))
 
 ##########################
 ## GRIDSS single sample
 
-millsgr <- bedpe2grmate("~/na12878/lumpy-Mills2012-call-set.bedpe")
-pacbiogr <- bedpe2grmate("~/na12878/lumpy-PacBioMoleculo-call-set.bedpe")
+millsgr <- bedpe2grmate(paste0(ifelse(as.character(Sys.info())[1] == "Windows", "W:/", "~/"), "na12878/lumpy-Mills2012-call-set.bedpe"))
+pacbiogr <- bedpe2grmate(paste0(ifelse(as.character(Sys.info())[1] == "Windows", "W:/", "~/"), "na12878/lumpy-PacBioMoleculo-call-set.bedpe"))
+mcols(millsgr) <- NULL
+mcols(pacbiogr) <- NULL
+write.csv(names(millsgr[overlapsAny(millsgr, pacbiogr),]), "W:/na12878/millsoverlappingpacbio.csv")
+
+millsgr <- bedpe2grmate(paste0(ifelse(as.character(Sys.info())[1] == "Windows", "W:/", "~/"), "na12878/lumpy-Mills2012-call-set.bedpe"))
+pacbiogr <- bedpe2grmate(paste0(ifelse(as.character(Sys.info())[1] == "Windows", "W:/", "~/"), "na12878/lumpy-PacBioMoleculo-call-set.bedpe"))
 vcf <- readVcf("~/na12878/platinum-na12878.vcf", "hg19")
 gvcf <- readVcf("~/garvan-na12878.vcf")
 

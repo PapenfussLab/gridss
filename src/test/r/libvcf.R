@@ -73,7 +73,8 @@ svlentype <- function(vcf) {
     len2 <- unlist(svcol)[c(1, 1 + head(cumsum(elementLengths(svcol)), -1))]
     len2[elementLengths(svcol) == 0] <- NA_integer_
     len <- ifelse(is.na(len2), len, len2)
-  } else if (!is.null(info(vcf)$END)) {
+  }
+  if (!is.null(info(vcf)$END) & any(is.na(len))) {
     # Delly "INFO:SVLEN was a redundant tag because it's just INFO:END - POS for Delly. Since SVLEN is kind of ill-defined in the VCF-Specification I decided to remove it. If you need it for filtering just use end - start."
     len2 <- info(vcf)$END - start(rowRanges(vcf))
     len <- ifelse(is.na(len2), len, len2)
@@ -86,7 +87,7 @@ svlentype <- function(vcf) {
 }
 breakendCount <- function(type) {
   typecounts <- ifelse(type %in% c("BND"), 1,
-                ifelse(type %in% c("INS", "DEL", "DUP", "TRA"), 2,
+                ifelse(type %in% c("INS", "DEL", "DUP", "DUP:TANDEM", "TRA", "RPL"), 2,
                 ifelse(type %in% c("INV"), 4,
                 NA_integer_)))
   if (any(is.na(typecounts))) {
@@ -115,6 +116,20 @@ countBreakpointHits <- function(queryGr, subjectGr, mateQueryGr=queryGr[queryGr$
   subjectHits <- rep(0, length(subjectGr))
   subjectHits[count(dfhits, "subjectHits")$subjectHits] <- count(dfhits, "subjectHits")$freq
   return(list(queryHitCount=queryHits, subjectHitCount=subjectHits))
+}
+isUnpairedBreakend <- function(vcf) {
+  if (is.null(info(vcf)$SVTYPE)) {
+    return(rep(FALSE, nrow(vcf)))
+  }
+  isbnd <- info(vcf)$SVTYPE=="BND"
+  if (!is.null(info(vcf)$MATEID)) {
+    isunpaired <- !(as.character(info(vcf)$MATEID) %in% rownames(vcf))
+  } else if (!is.null(info(vcf)$PARID)) {
+    isunpaired <- !(as.character(info(vcf)$PARID) %in% rownames(vcf))
+  } else {
+    isunpaired <- rep(TRUE, nrow(vcf))
+  }
+  return(isbnd & isunpaired)
 }
 # converts a VCF to a GRanges containing the paired variant breakends with the following fields:
 # vcfIndex: index of variant in VCF
@@ -270,14 +285,7 @@ distanceToClosest <- function(query, subject) {
   result[queryHits(distanceHits)] <- as.data.frame(distanceHits)$distance
   return(result)
 }
-TrimInterChromosmalEvents <- function(vcf, minSize=1) {
-  gr <- vcftobpgr(vcf)
-  gr <- gr[seqnames(gr) == seqnames(gr[gr$mateIndex,]),]
-  return(vcf[unique(gr$vcfIndex),])
-}
-
-
-CalculateTruth <- function(callvcf, truthvcf, maxerrorbp, ignoreFilters, maxerrorpercent=0.25, ...) {
+CalculateTruth <- function(callvcf, truthvcf, blacklist=NULL, maxerrorbp, ignoreFilters, maxerrorpercent=0.25, ...) {
   if (any(!is.na(rowRanges(callvcf)$QUAL) & rowRanges(callvcf)$QUAL < 0)) {
     stop("Precondition failure: variant exists with negative quality score")
   }
@@ -285,7 +293,13 @@ CalculateTruth <- function(callvcf, truthvcf, maxerrorbp, ignoreFilters, maxerro
     callvcf <- callvcf[rowRanges(callvcf)$FILTER %in% c(".", "PASS"),]
     truthvcf <- truthvcf[rowRanges(truthvcf)$FILTER %in% c(".", "PASS"),]
   }
-  
+  # filter all events that start in a blacklisted region
+  if (!is.null(blacklist)) {
+    callvcf <- callvcf[!overlapsAny(rowRanges(callvcf), blacklist),]
+    callvcf <- callvcf[!isUnpairedBreakend(callvcf),]
+    truthvcf <- truthvcf[!overlapsAny(rowRanges(truthvcf), blacklist),]
+    truthvcf <- truthvcf[!isUnpairedBreakend(truthvcf),]
+  }
   grcall <- vcftobpgr(callvcf)
   grtruth <- vcftobpgr(truthvcf)
   #TMPDEBUG: grtruth[overlapsAny(grtruth, GRanges("chr12", IRanges(148000, width=1000))),]
@@ -372,7 +386,7 @@ CalculateTruth <- function(callvcf, truthvcf, maxerrorbp, ignoreFilters, maxerro
   calldf$fp <- !calldf$tp
   return(list(calls=calldf, truth=truthdf, vcf=callvcf, truthvcf=truthvcf))
 }
-CalculateTruthSummary <- function(vcfs, maxerrorbp, ignoreFilters=TRUE, ...) {
+CalculateTruthSummary <- function(vcfs, blacklist=NULL, maxerrorbp, ignoreFilters=TRUE, ...) {
   truthSet <- lapply(vcfs, function(vcf) {
     md <- attr(vcf, "metadata")
     if (is.null(md)) {
@@ -392,7 +406,7 @@ CalculateTruthSummary <- function(vcfs, maxerrorbp, ignoreFilters=TRUE, ...) {
       return(NULL)
     }
     write(paste0("Loading truth for ", md$Id), stderr())
-    callTruthPair <- CalculateTruth(vcf, truthvcf, maxerrorbp, ignoreFilters, ...)
+    callTruthPair <- CalculateTruth(vcf, truthvcf, blacklist, maxerrorbp, ignoreFilters, ...)
     if (nrow(callTruthPair$calls) > 0) {
       callTruthPair$calls <- cbind(callTruthPair$calls, md, row.names=NULL)
     }
@@ -404,14 +418,20 @@ CalculateTruthSummary <- function(vcfs, maxerrorbp, ignoreFilters=TRUE, ...) {
   truth = rbindlist(lapply(truthSet, function(x) x$truth), use.names=TRUE, fill=TRUE)
   return(list(calls=calls, truth=truth))
 }
+# Calculate ROC curve. Units of matching are breakend counts so should be halved to get breakpoint counts
 TruthSummaryToROC <- function(ts, bylist=c("CX_ALIGNER", "CX_ALIGNER_SOFTCLIP", "CX_CALLER", "CX_READ_DEPTH", "CX_READ_FRAGMENT_LENGTH", "CX_READ_LENGTH", "CX_REFERENCE_VCF_VARIANTS", "SVTYPE")) {
-  callset <- ts$calls[, c(bylist, "QUAL", "tp", "fp"), with=FALSE]
-  callset$fn <- FALSE
-  callset$QUAL[is.na(callset$QUAL)] <- 0
-  callset[callset$tp==FALSE,] # TPs are in both call and truth sets - drop the call set version
-  truthset <- ts$truth[, c(bylist, "QUAL", "tp", "fn"), with=FALSE]
-  truthset$fp <- FALSE
+  truthset <- ts$truth[, c(bylist, "QUAL", "expectedbehits", "tp", "fn"), with=FALSE]
   truthset$QUAL[is.na(truthset$QUAL)] <- -1
+  truthset$tp <- ifelse(truthset$tp, truthset$expectedbehits, 0)
+  truthset$fn <- ifelse(!truthset$tp, truthset$expectedbehits, 0)
+  truthset$fp <- 0
+  truthset$expectedbehits <- NULL
+  callset <- ts$calls[!ts$calls$tp,][, c(bylist, "QUAL", "expectedbehits", "fp"), with=FALSE]
+  callset$QUAL[is.na(callset$QUAL)] <- 0
+  callset$fp <- callset$expectedbehits
+  callset$tp <- 0 # since we have removed them since they're in truthset as well
+  callset$fn <- 0
+  callset$expectedbehits <- NULL
   combined <- rbind(callset, truthset)
   combined$tp <- as.integer(combined$tp)
   combined$fn <- as.integer(combined$fn)
@@ -588,5 +608,46 @@ bedpe2grmate <- function(filename, header=FALSE) {
   names(out$gr2) <- paste0(names(out$gr2), "/2")
   return(c(out$gr1, out$gr2))
 }
-
+# infer proxy quality scores for ROC purposes based on strength of support
+withqual <- function(vcf, caller) {
+  if (is.null(rowRanges(vcf)$QUAL)) {
+    rowRanges(vcf)$QUAL <- NA_real_
+  }
+  if (!is.na(caller) && !is.null(caller) && all(is.na(rowRanges(vcf)$QUAL))) {
+    caller <- str_extract(caller, "^[^/]+") # strip version
+    # use total read support as a qual proxy
+    if (caller %in% c("delly")) {
+      rowRanges(vcf)$QUAL <- ifelse(is.na(info(vcf)$PE), 0, info(vcf)$PE) + ifelse(is.na(info(vcf)$SR), 0, info(vcf)$SR)
+    } else if (caller %in% c("crest")) {
+      rowRanges(vcf)$QUAL <- ifelse(is.na(info(vcf)$right_softclipped_read_count), 0, info(vcf)$right_softclipped_read_count) + ifelse(is.na(info(vcf)$left_softclipped_read_count), 0, info(vcf)$left_softclipped_read_count)
+    } else if (caller %in% c("pindel")) {
+      rowRanges(vcf)$QUAL <- geno(vcf)$AD[,1,2]
+    } else if (caller %in% c("lumpy")) {
+      rowRanges(vcf)$QUAL <- unlist(info(vcf)$SU)
+    }
+  }
+  if (any(is.na(rowRanges(vcf)$QUAL))) {
+    warning(paste("Missing QUAL scores for", caller))
+  }
+  return(vcf)
+}
+isInterChromosmal <- function(vcf) {
+  gr <- vcftobpgr(vcf)
+  gri <- gr[!duplicated(gr$vcfIndex),]
+  gr <- gr[seqnames(gr) == seqnames(gr[gr$mateIndex,]),]
+  return(seqnames(gri) != seqnames(gr[gri$mateIndex]))
+}
+# Event looks like a deletion.
+# this does not yet handle multi-breakpoint events reported in BND format (eg gridss translocations)
+isDeletionLike <- function(vcf, minsize=0) {
+  lentype <- svlentype(vcf)
+  len <- abs(lentype$len)
+  type <- lentype$type
+  gr <- vcftobpgr(vcf)
+  gri <- gr[!duplicated(gr$vcfIndex),]
+  return(seqnames(gri) == seqnames(gr[gri$mateIndex]) & 
+      ((type == "DEL" & len >= minsize) | (type == "BND" & abs(start(gri) - start(gr[gri$mateIndex])) > minsize & (
+        (strand(gri) == "+" & strand(gr[gri$mateIndex]) == "-" & start(gri) < start(gr[gri$mateIndex])) |
+        (strand(gri) == "-" & strand(gr[gri$mateIndex]) == "+" & start(gri) > start(gr[gri$mateIndex]))))))
+}
 

@@ -40,13 +40,6 @@ gridss.annotateBreakpoints <- function(bed, bedMate, gridssVcf, ...) {
   annotatedGridss$bedid[hits[[2]]] <- hits$bedid
   return(list(bed=annotatedBed, gridss=annotatedGridss))
 }
-
-gridss.overlaps <- function(vcf, bed, ...) {
-  hits <- findOverlaps(rowRanges(vcf), bed, ...)
-  result <- rep(FALSE, nrow(vcf))
-  result[queryHits(hits)] <- TRUE
-  return(result)
-}
 #CompressedIntegerList to array
 ciltoarray <- function(cil, column) {
   if (length(cil) == 0) return(NULL)
