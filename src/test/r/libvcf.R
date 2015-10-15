@@ -140,6 +140,7 @@ vcftobpgr <- function(vcf) {
   lentype <- svlentype(vcf)
   grcall <- rowRanges(vcf)
   grcall$vcfIndex <- seq_along(grcall)
+  grcall$vcfid <- row.names(vcf)
   grcall$mateIndex <- rep(NA_integer_, length(grcall))
   grcall$SVTYPE <- lentype$type
   grcall$size <- lentype$len
@@ -157,6 +158,15 @@ vcftobpgr <- function(vcf) {
     offsets[is.na(offsets)] <- 0
     grcall$cistartoffset <- offsets[,1]
     grcall$ciwidth <- offsets[,2] - offsets[,1]
+  }
+  grcall$ciendstartoffset <- rep(0, length(grcall))
+  grcall$ciendwidth <- rep(0, length(grcall))
+  grcall$isend <- rep(FALSE, length(grcall))
+  if ("CIEND" %in% names(info(vcf))) {
+    offsets <- matrix(unlist(info(vcf)$CIEND), ncol = 2, byrow = TRUE)
+    offsets[is.na(offsets)] <- 0
+    grcall$ciendstartoffset <- offsets[,1]
+    grcall$ciendwidth <- offsets[,2] - offsets[,1]
   }
   if (any(rows)) {
     # non-symbolic VCF record
@@ -188,6 +198,7 @@ vcftobpgr <- function(vcf) {
   # non-standard event type used by DELLY
   rows <- grcall$SVTYPE=="TRA"
   if (any(rows)) {
+    # TODO: recheck this matches the delly representation of the event
     strand(grcall[rows,]) <- ifelse(substr(info(vcf)$CT[rows], 1, 1) == "3", "+", "-")
     grcall[rows,]$size <- NA
     grcall[rows]$mateIndex <- length(grcall) + seq_len(sum(rows))
@@ -206,6 +217,7 @@ vcftobpgr <- function(vcf) {
     grcall[rows]$mateIndex <- length(grcall) + seq_len(sum(rows))
     eventgr <- grcall[rows]
     strand(eventgr) <- "-"
+    eventgr$isend <- TRUE
     ranges(eventgr) <- IRanges(start=start(eventgr) + abs(grcall$size[rows]), width=1)
     eventgr$mateIndex <- seq_len(length(grcall))[rows]
     grcall <- c(grcall, eventgr)
@@ -215,6 +227,7 @@ vcftobpgr <- function(vcf) {
     grcall[rows]$mateIndex <- length(grcall) + seq_len(sum(rows))
     eventgr <- grcall[rows]
     strand(eventgr) <- "-"
+    eventgr$isend <- TRUE
     ranges(eventgr) <-IRanges(start=start(eventgr) + 1, width=1)
     eventgr$mateIndex <- seq_len(length(grcall))[rows]
     grcall <- c(grcall, eventgr)
@@ -227,6 +240,8 @@ vcftobpgr <- function(vcf) {
     eventgr3 <- grcall[rows]
     strand(eventgr2) <- "-"
     strand(eventgr3) <- "-"
+    eventgr2$isend <- TRUE
+    eventgr3$isend <- TRUE
     ranges(eventgr1) <- IRanges(start=start(eventgr1) + abs(grcall[rows]$size), width=1)
     ranges(eventgr3) <- IRanges(start=start(eventgr3) + abs(grcall[rows]$size), width=1)
     eventgr1$mateIndex <- seq_len(length(grcall))[rows]
@@ -240,6 +255,7 @@ vcftobpgr <- function(vcf) {
     grcall[rows]$mateIndex <- length(grcall) + seq_len(sum(rows))
     eventgr <- grcall[rows]
     strand(grcall[rows]) <- "-"
+    eventgr$isend <- TRUE
     ranges(eventgr) <- IRanges(start=start(eventgr) + abs(grcall[rows]$size), width=1)
     eventgr$mateIndex <- seq_len(length(grcall))[rows]
     grcall <- c(grcall, eventgr)
@@ -252,13 +268,15 @@ vcftobpgr <- function(vcf) {
     grcall[rows]$mateIndex <- length(grcall) + seq_len(sum(rows))
     eventgr <- grcall[rows]
     strand(eventgr) <- "-"
+    eventgr$isend <- TRUE
     ranges(eventgr) <- IRanges(start=start(eventgr) + abs(elementLengths(ref(vcf))[rows]), width=1)
     eventgr$mateIndex <- seq_len(length(grcall))[rows]
     grcall <- c(grcall, eventgr)
   }
   width(grcall) <- rep(1, length(grcall))
-  start(grcall) <- start(grcall) + grcall$cistartoffset
-  end(grcall) <- start(grcall) + grcall$ciwidth
+  grcall$callPosition <- start(grcall)
+  start(grcall) <- start(grcall) + ifelse(grcall$isend, grcall$ciendstartoffset, grcall$cistartoffset)
+  end(grcall) <- start(grcall) + ifelse(grcall$isend, grcall$ciendwidth, grcall$ciwidth)
   if (any(is.na(grcall$mateIndex))) {
     browser()
     stop(paste0("Unhandled SVTYPE ", unique(grcall$SVTYPE[is.na(grcall$mateIndex)])))

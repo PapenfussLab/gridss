@@ -15,19 +15,30 @@ source("libvcf.R")
 theme_set(theme_bw())
 
 minsize <- 51 # minimum Mills 2012 event size
-encodeblacklist <- import("consensusBlacklist.bed")
-altassembly <- GRanges(seqnames=c("chr11_gl000202_random","chr17_gl000203_random","chr17_gl000204_random","chr17_gl000205_random","chr17_gl000206_random","chr18_gl000207_random","chr19_gl000208_random","chr19_gl000209_random","chr1_gl000191_random","chr1_gl000192_random","chr21_gl000210_random","chr4_gl000193_random","chr4_gl000194_random","chr7_gl000195_random","chr8_gl000196_random","chr8_gl000197_random","chr9_gl000198_random","chr9_gl000199_random","chr9_gl000200_random","chr9_gl000201_random","chrM","chrUn_gl000211","chrUn_gl000212","chrUn_gl000213","chrUn_gl000214","chrUn_gl000215","chrUn_gl000216","chrUn_gl000217","chrUn_gl000218","chrUn_gl000219","chrUn_gl000220","chrUn_gl000221","chrUn_gl000222","chrUn_gl000223","chrUn_gl000224","chrUn_gl000225","chrUn_gl000226","chrUn_gl000227","chrUn_gl000228","chrUn_gl000229","chrUn_gl000230","chrUn_gl000231","chrUn_gl000232","chrUn_gl000233","chrUn_gl000234","chrUn_gl000235","chrUn_gl000236","chrUn_gl000237","chrUn_gl000238","chrUn_gl000239","chrUn_gl000240","chrUn_gl000241","chrUn_gl000242","chrUn_gl000243","chrUn_gl000244","chrUn_gl000245","chrUn_gl000246","chrUn_gl000247","chrUn_gl000248","chrUn_gl000249"),
-                       ranges=IRanges(start=0, end=1000000000))
-altassembly$name <- as.character(seqnames(altassembly))
-altassembly$score <- 1000
-blacklist <- as(rbind(as(encodeblacklist, "RangedData"), as(altassembly, "RangedData")), "GRanges")
 
-
+vcfs <- NULL
 pwd <- getwd()
 setwd(paste0(ifelse(as.character(Sys.info())[1] == "Windows", "W:/", "~/"), "i/data.na12878"))
 metadata <- LoadMetadata()
 vcfs <- LoadVcfs(metadata, existingVcfs=vcfs)
 setwd(pwd)
+
+ucscgapblacklist <- import(paste0(ifelse(as.character(Sys.info())[1] == "Windows", "W:/", "~/"), "projects/reference_genomes/human/blacklist_annotations/hg19_ucsc_gap_table.bed"))
+mappabilityblacklist <- import(paste0(ifelse(as.character(Sys.info())[1] == "Windows", "W:/", "~/"), "projects/reference_genomes/human/blacklist_annotations/wgEncodeDukeMapabilityRegionsExcludable.bed"))
+encodeblacklist <- import(paste0(ifelse(as.character(Sys.info())[1] == "Windows", "W:/", "~/"), "projects/reference_genomes/human/blacklist_annotations/wgEncodeDacMapabilityConsensusExcludable.bed"))
+altassembly <- GRanges(seqnames=c("chr11_gl000202_random","chr17_gl000203_random","chr17_gl000204_random","chr17_gl000205_random","chr17_gl000206_random","chr18_gl000207_random","chr19_gl000208_random","chr19_gl000209_random","chr1_gl000191_random","chr1_gl000192_random","chr21_gl000210_random","chr4_gl000193_random","chr4_gl000194_random","chr7_gl000195_random","chr8_gl000196_random","chr8_gl000197_random","chr9_gl000198_random","chr9_gl000199_random","chr9_gl000200_random","chr9_gl000201_random","chrM","chrUn_gl000211","chrUn_gl000212","chrUn_gl000213","chrUn_gl000214","chrUn_gl000215","chrUn_gl000216","chrUn_gl000217","chrUn_gl000218","chrUn_gl000219","chrUn_gl000220","chrUn_gl000221","chrUn_gl000222","chrUn_gl000223","chrUn_gl000224","chrUn_gl000225","chrUn_gl000226","chrUn_gl000227","chrUn_gl000228","chrUn_gl000229","chrUn_gl000230","chrUn_gl000231","chrUn_gl000232","chrUn_gl000233","chrUn_gl000234","chrUn_gl000235","chrUn_gl000236","chrUn_gl000237","chrUn_gl000238","chrUn_gl000239","chrUn_gl000240","chrUn_gl000241","chrUn_gl000242","chrUn_gl000243","chrUn_gl000244","chrUn_gl000245","chrUn_gl000246","chrUn_gl000247","chrUn_gl000248","chrUn_gl000249"),
+                       ranges=IRanges(start=0, end=1000000000))
+altassembly$name <- as.character(seqnames(altassembly))
+altassembly$score <- 1000
+ucscgapblacklist$score <- 1000
+blacklist <- as(rbind(
+  as(ucscgapblacklist, "RangedData"),
+  as(mappabilityblacklist, "RangedData"),
+  as(encodeblacklist, "RangedData"),
+  as(altassembly, "RangedData")), "GRanges")
+
+
+
 
 truth <- "lumpyPacBioMoleculo"
 vcfs <- lapply(vcfs, function(vcf) {
@@ -58,6 +69,11 @@ vcfs <- lapply(vcfs, function(vcf) {
 vcfs <- lapply(vcfs, function(vcf) {
   #vcf <- vcf[!isInterChromosmal(vcf),]
   vcf <- vcf[isDeletionLike(vcf, minsize), ]
+  caller <- str_extract(attr(vcf, "metadata")$CX_CALLER, "^[^/]+")
+  if (!is.na(caller) && !is.null(caller) && caller %in% c("breakdancer")) {
+    # strip all BND events since they are non-deletion events such as translocations
+    vcf <- vcf[info(vcf)$SVTYPE == "DEL",]
+  }
   return(vcf)
 })
 vcfs <- lapply(vcfs, function(vcf) {
@@ -76,7 +92,7 @@ dtroc <- rbind(dtroc_all, dtroc_filtered)
 ggplot(dtroc) + 
   aes(y=tp/2, x=fp/2, color=CX_CALLER, linetype=Filter) +
   geom_line() + 
-  scale_color_brewer(palette="Set1") + 
+  scale_color_brewer(palette="Set2") + 
   scale_x_log10() + 
   scale_x_continuous(limits=c(0, 1000)) + 
   labs(y="tp", x="fp", title=paste("ROC curve NA12878 deletions", truth))
@@ -88,6 +104,28 @@ ggplot(dtroc) +
   geom_line() + 
   labs(title=paste("Precision-Recall curve NA12878 deletions", truth))
 ggsave(paste0("na12878_prec_recall_", truth, ".pdf"))
+
+
+
+#####################################
+# extract deletion calls from VCFs
+dfdelcalls <- rbindlist(lapply(names(vcfs)[!(names(vcfs) %in% c("00000000000000000000000000000000", "00000000000000000000000000000001", "00000000000000000000000000000002"))], function(id) {
+  gr <- vcftobpgr(vcfs[[id]])
+  gro <- gr[seq_along(gr) < gr$mateIndex,]
+  grh <- gr[gro$mateIndex,]
+  df <- data.frame(
+    chrom1=seqnames(gro), start1=start(gro), end1=end(gro),
+    chrom2=seqnames(grh), start2=start(grh), end2=end(grh),
+    name=rep(attr(vcfs[[id]], "metadata")$CX_CALLER, length(gro)), score=gro$QUAL,
+    strand1=rep("+", length(gro)), strand2=rep("-", length(gro)),
+    length=gro$size,
+    pos1=gro$callPosition,
+    pos2=grh$callPosition,
+    id=gro$vcfid,
+    row.names=NULL)
+  return(df)
+}))
+write.table(dfdelcalls, paste0(ifelse(as.character(Sys.info())[1] == "Windows", "W:/", "~/"), "i/data.na12878/tovalidate.bedpe"), sep='\t', quote=FALSE, row.names=FALSE)
 
 ##########################
 ## GRIDSS single sample
