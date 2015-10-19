@@ -668,4 +668,7 @@ isDeletionLike <- function(vcf, minsize=0) {
         (strand(gri) == "+" & strand(gr[gri$mateIndex]) == "-" & start(gri) < start(gr[gri$mateIndex])) |
         (strand(gri) == "-" & strand(gr[gri$mateIndex]) == "+" & start(gri) > start(gr[gri$mateIndex]))))))
 }
-
+withChr <- function(gr) {
+  seqlevels(gr) <- ifelse(str_detect(seqlevels(gr), "chr"), seqlevels(gr), paste0("chr", seqlevels(gr)))
+  return(gr)
+}
