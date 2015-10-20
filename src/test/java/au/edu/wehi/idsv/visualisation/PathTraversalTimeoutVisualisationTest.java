@@ -33,11 +33,11 @@ public class PathTraversalTimeoutVisualisationTest extends IntermediateFilesTest
 	@Override
 	public ProcessingContext getCommandlineContext(boolean perChr) {
 		ProcessingContext pc = super.getCommandlineContext(perChr);
-		pc.getAssemblyParameters().maxBaseMismatchForCollapse = 1;
-		pc.getAssemblyParameters().collapseBubblesOnly = false;
+		pc.getAssemblyParameters().errorCorrection.maxBaseMismatchForCollapse = 1;
+		pc.getAssemblyParameters().errorCorrection.collapseBubblesOnly = false;
 		pc.getAssemblyParameters().debruijnGraphVisualisationDirectory = new File(super.testFolder.getRoot(), "visualisation");
 		pc.getAssemblyParameters().visualiseTimeouts = true;
-		pc.getAssemblyParameters().subgraphMaxPathTraversalNodes = 1;
+		pc.getAssemblyParameters().subgraph.subgraphMaxPathTraversalNodes = 1;
 		return pc;
 	}
 }

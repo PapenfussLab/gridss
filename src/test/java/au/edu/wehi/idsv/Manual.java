@@ -8,6 +8,12 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
+import au.edu.wehi.idsv.configuration.ReadPairConfiguration;
+import au.edu.wehi.idsv.configuration.RealignmentConfiguration;
+import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
+import au.edu.wehi.idsv.configuration.VariantCallingConfiguration;
+
 /**
  * Ad-hoc debugging tests
  * @author cameron.d
@@ -22,11 +28,11 @@ public class Manual extends TestHelper {
 		ProcessingContext pc = new ProcessingContext(
 			new FileSystemContext(new File("W:\\778\\idsv"), new File("W:\\778\\idsv"), 500000),
 			new ArrayList<Header>(),
-			new SoftClipParameters(),
-			new ReadPairParameters(),
-			new AssemblyParameters(),
-			new RealignmentParameters(),
-			new VariantCallingParameters(),
+			new SoftClipConfiguration(),
+			new ReadPairConfiguration(),
+			new AssemblyConfiguration(),
+			new RealignmentConfiguration(),
+			new VariantCallingConfiguration(),
 			new File("C:\\dev\\hg19_karyotypic.fa"), true, false);
 		List<SAMEvidenceSource> samEvidence = new ArrayList<SAMEvidenceSource>();
 		for (String s : new String[] {

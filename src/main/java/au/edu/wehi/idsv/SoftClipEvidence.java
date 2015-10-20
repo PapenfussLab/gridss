@@ -8,6 +8,7 @@ import java.util.Arrays;
 
 import org.apache.commons.lang3.StringUtils;
 
+import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 public class SoftClipEvidence implements DirectedEvidence {
@@ -190,7 +191,7 @@ public class SoftClipEvidence implements DirectedEvidence {
 	 * @param rm metrics
 	 * @return true if the soft clip provides support, false otherwise
 	 */
-	public boolean meetsEvidenceCritera(SoftClipParameters p) {
+	public boolean meetsEvidenceCritera(SoftClipConfiguration p) {
 		return getMappingQuality() >= p.minReadMapq
 				&& getSoftClipLength() >= p.minLength
 				&& getAlignedPercentIdentity() >= p.minAnchorIdentity

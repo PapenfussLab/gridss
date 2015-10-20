@@ -9,11 +9,11 @@ import java.util.List;
 import java.util.Set;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
-import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
+import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathNodeFactory;
 import au.edu.wehi.idsv.debruijn.DeBruijnVariantGraph;
@@ -38,7 +38,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 	 */
 	private final Set<SubgraphSummary> subgraphs = Sets.newHashSet();
 	private final int referenceIndex;
-	private final AssemblyParameters parameters;
+	private final AssemblyConfiguration parameters;
 	private int graphsExported = 0;	
 	/**
 	 * 
@@ -51,7 +51,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 			ProcessingContext processContext,
 			AssemblyEvidenceSource source,
 			int referenceIndex,
-			AssemblyParameters parameters,
+			AssemblyConfiguration parameters,
 			SubgraphAssemblyAlgorithmTrackerBEDWriter<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> trackingWriter) {
 		super(processContext, source, parameters.k);
 		this.referenceIndex = referenceIndex;
@@ -177,13 +177,13 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 						seed,
 						new DeBruijnPathNodeFactory<DeBruijnSubgraphNode>(this),
 						tracker);
-				if (parameters.maxBaseMismatchForCollapse > 0) {
+				if (parameters.errorCorrection.maxBaseMismatchForCollapse > 0) {
 					if (shouldVisualise(timeoutExceeded)) {
 						visualisePrecollapsePathGraph(ss, pga);
 					}
 					try {
 						// simplify graph
-						pga.collapse(parameters.maxBaseMismatchForCollapse, parameters.collapseBubblesOnly);
+						pga.collapse(parameters.errorCorrection.maxBaseMismatchForCollapse, parameters.errorCorrection.collapseBubblesOnly);
 					} catch (AlgorithmRuntimeSafetyLimitExceededException e) {
 						timeoutExceeded = true;
 					}

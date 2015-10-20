@@ -11,8 +11,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Stack;
 
-import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.Defaults;
+import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraph;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphUtil;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
@@ -39,7 +39,7 @@ import com.google.common.primitives.Ints;
  */
 public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBruijnPathGraph<T, PN> {
 	private static final Log log = Log.getInstance(PathGraphAssembler.class);
-	private final AssemblyParameters parameters;
+	private final AssemblyConfiguration parameters;
 	private final List<NonReferenceSubgraph> subgraphs = Lists.newArrayList();
 	private static int timeoutGraphsWritten = 0;
 	private boolean timeoutReached = false;
@@ -105,10 +105,10 @@ public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBru
 				) {
 			PathGraphTraverse<T, PN> trav = new PathGraphTraverse<T, PN>(
 					PathGraphAssembler.this,
-					parameters.subgraphMaxPathTraversalNodes,
+					parameters.subgraph.subgraphMaxPathTraversalNodes,
 					traverseForward,
 					false,
-					parameters.subgraphAssemblyTraversalMaximumBranchingFactor,
+					parameters.subgraph.subgraphAssemblyTraversalMaximumBranchingFactor,
 					Integer.MAX_VALUE);
 			List<PN> best;
 			if (endNodes != null) {
@@ -117,7 +117,7 @@ public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBru
 				best = trav.traverse(startNodes);
 			}
 			totalNodesTraversed += trav.getNodesTraversed();
-			timeoutReached |= trav.getNodesTraversed() >= parameters.subgraphMaxPathTraversalNodes;
+			timeoutReached |= trav.getNodesTraversed() >= parameters.subgraph.subgraphMaxPathTraversalNodes;
 			return best;
 		}
 		/**
@@ -129,16 +129,16 @@ public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBru
 		 */
 		private List<PN> traverseReference(PN node, boolean traverseForward, int targetLength) {
 			assert(!isReference(node));
-			PathGraphTraverse<T, PN> trav = new PathGraphTraverse<T, PN>(PathGraphAssembler.this, parameters.subgraphMaxPathTraversalNodes,
+			PathGraphTraverse<T, PN> trav = new PathGraphTraverse<T, PN>(PathGraphAssembler.this, parameters.subgraph.subgraphMaxPathTraversalNodes,
 					traverseForward, true,
 					// if anchor has previously timed out on a different breakend subgraph
 					// just do a greedy traversal as we're likely to time out again
-					anchorTimeoutReached ? 1 : parameters.subgraphAssemblyTraversalMaximumBranchingFactor,
+					anchorTimeoutReached ? 1 : parameters.subgraph.subgraphAssemblyTraversalMaximumBranchingFactor,
 					// assemble anchorAssemblyLength bases / at least the length of the breakend
 					node.length() + targetLength);
 			List<PN> anchor = trav.traverse(ImmutableList.of(node));
 			totalNodesTraversed += trav.getNodesTraversed();
-			anchorTimeoutReached |= trav.getNodesTraversed() >= parameters.subgraphMaxPathTraversalNodes; 
+			anchorTimeoutReached |= trav.getNodesTraversed() >= parameters.subgraph.subgraphMaxPathTraversalNodes; 
 			timeoutReached |= anchorTimeoutReached;
 			assert(anchor != null); // assembly includes starting node so must include that
 			assert(anchor.size() > 0); // assembly includes starting node so must include that
@@ -196,7 +196,7 @@ public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBru
 			return result;
 		}
 	}
-	public PathGraphAssembler(DeBruijnGraph<T> graph, AssemblyParameters parameters, Collection<T> seeds, PathNodeFactory<T, PN> factory, SubgraphAssemblyAlgorithmTracker<T, PN> tracker) {
+	public PathGraphAssembler(DeBruijnGraph<T> graph, AssemblyConfiguration parameters, Collection<T> seeds, PathNodeFactory<T, PN> factory, SubgraphAssemblyAlgorithmTracker<T, PN> tracker) {
 		super(graph, seeds, factory, tracker);
 		this.parameters = parameters;
 	}

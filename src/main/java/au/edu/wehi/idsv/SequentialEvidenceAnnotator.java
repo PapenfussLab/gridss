@@ -158,7 +158,7 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 		// TODO: replace overlap implementation with interval tree
 		boolean evidenceCalled = false;
 		BreakendSummary bs = evidence.getBreakendSummary();
-		bs = context.getVariantCallingParameters().withMargin(context, bs);
+		bs = context.getVariantCallingParameters().withMargin(bs);
 		long endLocation = context.getLinear().getEndLinearCoordinate(bs);
 		if (assignEvidenceToSingleBreakpoint) {
 			ActiveVariant best = null;

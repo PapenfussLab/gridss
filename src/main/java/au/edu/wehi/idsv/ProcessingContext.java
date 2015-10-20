@@ -34,6 +34,11 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 
+import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
+import au.edu.wehi.idsv.configuration.ReadPairConfiguration;
+import au.edu.wehi.idsv.configuration.RealignmentConfiguration;
+import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
+import au.edu.wehi.idsv.configuration.VariantCallingConfiguration;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
 import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
@@ -65,11 +70,11 @@ public class ProcessingContext implements Closeable {
 	private final FileSystemContext fsContext;
 	private final boolean vcf41mode;
 	private final boolean perChr;
-	private final AssemblyParameters ap;
-	private final SoftClipParameters scp;
-	private final ReadPairParameters rrp;
-	private final RealignmentParameters rp;
-	private final VariantCallingParameters vcp;
+	private final AssemblyConfiguration ap;
+	private final SoftClipConfiguration scp;
+	private final ReadPairConfiguration rrp;
+	private final RealignmentConfiguration rp;
+	private final VariantCallingConfiguration vcp;
 	private final List<Header> metricsHeaders;
 	private final SAMFileHeader basicHeader;
 	private boolean filterDuplicates = true;
@@ -80,11 +85,11 @@ public class ProcessingContext implements Closeable {
 	public ProcessingContext(
 			FileSystemContext fileSystemContext,
 			List<Header> metricsHeaders,
-			SoftClipParameters softClipParameters,
-			ReadPairParameters readPairParameters,
-			AssemblyParameters assemblyParameters,
-			RealignmentParameters realignmentParameters,
-			VariantCallingParameters variantCallingParameters,
+			SoftClipConfiguration softClipParameters,
+			ReadPairConfiguration readPairParameters,
+			AssemblyConfiguration assemblyParameters,
+			RealignmentConfiguration realignmentParameters,
+			VariantCallingConfiguration variantCallingParameters,
 			File ref, boolean perChr, boolean vcf41) {
 		this(fileSystemContext, metricsHeaders, softClipParameters, readPairParameters, assemblyParameters, realignmentParameters, variantCallingParameters, LoadReference(ref), ref, perChr, vcf41);
 		BackgroundCacheReference(ref);
@@ -120,11 +125,11 @@ public class ProcessingContext implements Closeable {
 	public ProcessingContext(
 			FileSystemContext fileSystemContext,
 			List<Header> metricsHeaders,
-			SoftClipParameters softClipParameters,
-			ReadPairParameters readPairParameters,
-			AssemblyParameters assemblyParameters,
-			RealignmentParameters realignmentParameters,
-			VariantCallingParameters variantCallingParameters,
+			SoftClipConfiguration softClipParameters,
+			ReadPairConfiguration readPairParameters,
+			AssemblyConfiguration assemblyParameters,
+			RealignmentConfiguration realignmentParameters,
+			VariantCallingConfiguration variantCallingParameters,
 			ReferenceLookup reference, File ref, boolean perChr, boolean vcf41) {
 		this.fsContext = fileSystemContext;
 		this.metricsHeaders = metricsHeaders;
@@ -287,19 +292,19 @@ public class ProcessingContext implements Closeable {
 	public void close() throws IOException {
 		if (reference != null) reference.close();
 	}
-	public AssemblyParameters getAssemblyParameters() {
+	public AssemblyConfiguration getAssemblyParameters() {
 		return ap;
 	}
-	public SoftClipParameters getSoftClipParameters() {
+	public SoftClipConfiguration getSoftClipParameters() {
 		return scp;
 	}
-	public RealignmentParameters getRealignmentParameters() {
+	public RealignmentConfiguration getRealignmentParameters() {
 		return rp;
 	}
-	public VariantCallingParameters getVariantCallingParameters() {
+	public VariantCallingConfiguration getVariantCallingParameters() {
 		return vcp;
 	}
-	public ReadPairParameters getReadPairParameters() {
+	public ReadPairConfiguration getReadPairParameters() {
 		return rrp;
 	}
 	public boolean isFilterDuplicates() {

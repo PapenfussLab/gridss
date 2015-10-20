@@ -108,6 +108,18 @@ Due to relatively poor performance of existing Java-based Smith-Waterman alignme
 
 If libsswjni.so cannot be loaded, gridss will fall back to a slower java implementation. To ensure libsswjni.so is loaded, add the library using -Djava.library.path, or the LD_LIBRARY_PATH environment variable as per the JNI documentation.
 
+### GRIDSS_CONFIG
+
+Gridss uses a large number of configurable settings and thresholds which are, by default, hidden from the user.
+These settings can be overriden by specifying a configuration file to use instead. Note that this configuration
+file uses a different format to the Picard tools-compatable configuration file that is used instead of the
+standard command-line arguments
+
+When supplying a custom configuration, gridss will use the overriding settings for all properties specified
+and fall back to the default for all properties that have not been overridden. Packaged within the gridss jar
+is resources/gridss.properties (src/main/resource/gridss.properties in the gridss source code) which contains
+a detailed listing of all configurable gridss settings.
+
 # Output
 
 Gridss is fundamentally a structural variation breakpoint caller. Variants are output as VCF breakends. Each call is a breakpoint consisting of two breakends, one from location A to location B, and a reciprocal record from location B back to A. Note that although each record fully defines the call, the VCF format required both breakend to be written as separate record.

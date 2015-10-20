@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import au.edu.wehi.idsv.configuration.RealignmentConfiguration;
 import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 
 import com.google.common.collect.AbstractIterator;
@@ -47,7 +48,7 @@ public class SAMRecordAssemblyEvidenceIterator extends AbstractIterator<SAMRecor
 			SAMRecord record = it.next();
 			SAMRecordAssemblyEvidence evidence = AssemblyFactory.hydrate(source, record);
 			if (!(evidence instanceof DirectedBreakpoint)) {
-				RealignmentParameters rp = evidence.getEvidenceSource().getContext().getRealignmentParameters();
+				RealignmentConfiguration rp = evidence.getEvidenceSource().getContext().getRealignmentParameters();
 				List<SAMRecord> realignments = new ArrayList<SAMRecord>(source.getRealignmentIterationCount());
 				for (SequentialRealignedBreakpointFactory factory : factories) {
 					Set<SAMRecord> realigned = factory.findAllAssociatedSAMRecords(evidence,

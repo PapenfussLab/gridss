@@ -1,4 +1,4 @@
-package au.edu.wehi.idsv;
+package au.edu.wehi.idsv.configuration;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -7,12 +7,20 @@ import java.util.ArrayList;
 
 import org.junit.Test;
 
+import au.edu.wehi.idsv.AssemblyFactory;
+import au.edu.wehi.idsv.BreakendDirection;
+import au.edu.wehi.idsv.BreakendSummary;
+import au.edu.wehi.idsv.DirectedEvidence;
+import au.edu.wehi.idsv.MockDirectedEvidence;
+import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
+import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
 import com.google.common.collect.Lists;
 
 
-public class AssemblyParametersTest extends TestHelper {
+public class AssemblyConfigurationTest extends TestHelper {
 	@Test
 	public void should_filter_fully_reference_assemblies() {
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(

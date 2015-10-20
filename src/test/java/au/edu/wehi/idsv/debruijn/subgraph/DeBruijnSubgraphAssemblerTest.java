@@ -17,12 +17,12 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import au.edu.wehi.idsv.AssemblyEvidence;
-import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SmallIndelSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.TestHelper;
+import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
 
 import com.google.common.collect.ImmutableList;
@@ -34,7 +34,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
     public TemporaryFolder testFolder = new TemporaryFolder();
 	private DeBruijnSubgraphAssembler DSA(int k) {
 		ProcessingContext pc = getContext();
-		AssemblyParameters p = pc.getAssemblyParameters();
+		AssemblyConfiguration p = pc.getAssemblyParameters();
 		p.k = k;
 		p.debruijnGraphVisualisationDirectory = new File(testFolder.getRoot(), "visualisation");
 		p.visualiseAll = true;

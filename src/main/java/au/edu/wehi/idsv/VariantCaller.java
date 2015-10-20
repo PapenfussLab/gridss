@@ -217,7 +217,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 				assert(variant.isValid());
 				if (variant.isNotFiltered() || processContext.getVariantCallingParameters().writeFilteredCalls) {
 					// add confidence filter
-					variant = processContext.getVariantCallingParameters().applyConfidenceFilter(variant);
+					variant = processContext.getVariantCallingParameters().applyConfidenceFilter(processContext, variant);
 					vcfWriter.add(variant);
 				}
 			}

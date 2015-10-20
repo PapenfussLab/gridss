@@ -44,6 +44,11 @@ import java.util.stream.StreamSupport;
 import org.apache.commons.lang3.StringUtils;
 
 import picard.analysis.InsertSizeMetrics;
+import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
+import au.edu.wehi.idsv.configuration.ReadPairConfiguration;
+import au.edu.wehi.idsv.configuration.RealignmentConfiguration;
+import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
+import au.edu.wehi.idsv.configuration.VariantCallingConfiguration;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraph;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
@@ -321,18 +326,18 @@ public class TestHelper {
 
 	public static ProcessingContext getContext(ReferenceLookup ref) {
 		ProcessingContext pc = new ProcessingContext(getFSContext(),
-				new ArrayList<Header>(), new SoftClipParameters() {{
+				new ArrayList<Header>(), new SoftClipConfiguration() {{
 					minAverageQual = 0;
 					minAnchorEntropy = 0;
 				}},
-				new ReadPairParameters() {{
+				new ReadPairConfiguration() {{
 					minAnchorEntropy = 0;
-				}}, new AssemblyParameters() {{
+				}}, new AssemblyConfiguration() {{
 					minReads = 2;
-					assemble_remote_soft_clips = false;
-					performLocalRealignment = false;
+					includeRemoteSplitReads = false;
+					anchorRealignment.perform = false;
 					}},
-				new RealignmentParameters(), new VariantCallingParameters() {{
+				new RealignmentConfiguration(), new VariantCallingConfiguration() {{
 					breakendMargin = 3;
 					}},
 				ref, null, false, false);
@@ -612,6 +617,10 @@ public class TestHelper {
 		public void add(VariantContext vc) {
 			this.data.add(vc);
 		}
+		@Override
+		public boolean checkError() {
+			return false;
+		}
 	}
 
 	static public SAMRecord Unmapped(int readLength) {
@@ -791,7 +800,7 @@ public class TestHelper {
 	}
 
 	public static DeBruijnReadGraph RG(int k) {
-		AssemblyParameters p = new AssemblyParameters();
+		AssemblyConfiguration p = new AssemblyConfiguration();
 		p.k = k;
 		return new DeBruijnReadGraph(getContext(), AES(), 0, p, null);
 	}

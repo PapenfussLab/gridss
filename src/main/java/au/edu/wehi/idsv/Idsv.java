@@ -43,8 +43,9 @@ public class Idsv extends CommandLineProgram {
     // The following attributes define the command-line arguments
 	@Option(doc="VCF containing true calls. Called variants will be annotated as true/false positive calls based on this truth file.", optional=true)
     public File TRUTH_VCF = null;
-    @Option(doc = "Processing steps to execute",
-            optional = true)
+	@Option(doc="gridss configuration setting override", optional=true)
+	public File GRIDSS_CONFIG = null;
+    @Option(doc = "Processing steps to execute", optional = true)
     public EnumSet<ProcessStep> STEPS = ProcessStep.ALL_STEPS;
     private SAMEvidenceSource constructSamEvidenceSource(File file, int index, int category) throws IOException { 
     	List<Integer> maxFragSizeList = category == 1 ? INPUT_TUMOUR_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE : INPUT_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE;

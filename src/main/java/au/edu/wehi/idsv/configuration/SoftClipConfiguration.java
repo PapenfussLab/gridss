@@ -1,7 +1,9 @@
-package au.edu.wehi.idsv;
+package au.edu.wehi.idsv.configuration;
+
+import au.edu.wehi.idsv.AdapterHelper;
 
 
-public class SoftClipParameters {
+public class SoftClipConfiguration {
 	/**
 	 * Minimum average breakend quality score to be considered a valid soft clip
 	 * This filters out reads that are soft-clipped due to sequencing errors  

@@ -42,7 +42,7 @@ public class SubgraphSizeTimeoutVisualisationTest extends IntermediateFilesTest 
 	public void should_export_on_path_timeout_gexf() throws IOException {
 		int k = 6;
 		ProcessingContext pc = getCommandlineContext(false);
-		pc.getAssemblyParameters().subgraphMaxPathTraversalNodes = 1024;
+		pc.getAssemblyParameters().subgraph.subgraphMaxPathTraversalNodes = 1024;
 		pc.getAssemblyParameters().k = k;
 		pc.getAssemblyParameters().method = AssemblyAlgorithm.Subgraph;
 		pc.getSoftClipParameters().minLength = 1;
@@ -70,11 +70,11 @@ public class SubgraphSizeTimeoutVisualisationTest extends IntermediateFilesTest 
 	@Override
 	public ProcessingContext getCommandlineContext(boolean perChr) {
 		ProcessingContext pc = super.getCommandlineContext(perChr);
-		pc.getAssemblyParameters().maxBaseMismatchForCollapse = 1;
-		pc.getAssemblyParameters().collapseBubblesOnly = true;
+		pc.getAssemblyParameters().errorCorrection.maxBaseMismatchForCollapse = 1;
+		pc.getAssemblyParameters().errorCorrection.collapseBubblesOnly = true;
 		pc.getAssemblyParameters().debruijnGraphVisualisationDirectory = new File(super.testFolder.getRoot(), "visualisation");
 		pc.getAssemblyParameters().visualiseTimeouts = true;
-		pc.getAssemblyParameters().maxSubgraphFragmentWidth = 1;
+		pc.getAssemblyParameters().subgraph.maxSubgraphFragmentWidth = 1;
 		return pc;
 	}
 }

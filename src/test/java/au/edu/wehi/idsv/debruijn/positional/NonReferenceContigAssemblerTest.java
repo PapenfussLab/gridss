@@ -46,7 +46,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		AggregateNodeIterator agIt = new AggregateNodeIterator(supportIt);
 		Iterator<KmerPathNode> pnIt = new PathNodeIterator(agIt, maxPathLength, k);
 		if (collapse) {
-			pnIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, pc.getAssemblyParameters().maxBaseMismatchForCollapse, pc.getAssemblyParameters().collapseBubblesOnly, 0);
+			pnIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, pc.getAssemblyParameters().errorCorrection.maxBaseMismatchForCollapse, pc.getAssemblyParameters().errorCorrection.collapseBubblesOnly, 0);
 			pnIt = new PathSimplificationIterator(pnIt, maxPathLength, maxEvidenceWidth);
 		}
 		caller = new NonReferenceContigAssembler(pnIt, 0, maxEvidenceWidth + maxReadLength + 2, maxReadLength, k, aes, tracker);

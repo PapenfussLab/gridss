@@ -1,9 +1,12 @@
-package au.edu.wehi.idsv;
+package au.edu.wehi.idsv.configuration;
 
+import au.edu.wehi.idsv.AssemblyEvidence;
+import au.edu.wehi.idsv.BreakpointSummary;
+import au.edu.wehi.idsv.SoftClipEvidence;
 import htsjdk.samtools.SAMRecord;
 
 
-public class RealignmentParameters {
+public class RealignmentConfiguration {
 	/**
 	 * Minimum breakend length to be considered for realignment
 	 */
@@ -11,7 +14,7 @@ public class RealignmentParameters {
 	/**
 	 * Minimum average breakend quality score to be considered for realignment 
 	 */
-	public float minAverageQual = new SoftClipParameters().minAverageQual;
+	public float minAverageQual = new SoftClipConfiguration().minAverageQual;
 	/**
 	 * Minimum MAPQ of realigned segment to be considered uniquely aligned  
 	 */

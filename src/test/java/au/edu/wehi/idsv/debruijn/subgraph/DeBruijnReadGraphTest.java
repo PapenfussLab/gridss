@@ -11,21 +11,21 @@ import java.util.List;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.AssemblyEvidence;
-import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.EvidenceSubset;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
+import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 
 import com.google.common.collect.Lists;
 
 
 public class DeBruijnReadGraphTest extends TestHelper {
 	public DeBruijnReadGraph G(int referenceIndex, int k) {
-		AssemblyParameters p = new AssemblyParameters();
-		p.maxBaseMismatchForCollapse = 0;
-		p.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
+		AssemblyConfiguration p = new AssemblyConfiguration();
+		p.errorCorrection.maxBaseMismatchForCollapse = 0;
+		p.subgraph.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
 		p.k = k;
 		return new DeBruijnReadGraph(getContext(), AES(), referenceIndex, p, null);
 	}

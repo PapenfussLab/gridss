@@ -6,17 +6,17 @@ import java.io.File;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.TestHelper;
+import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
 import au.edu.wehi.idsv.visualisation.DeBruijnSubgraphGexfExporter;
 
 public class DeBruijnGraphBaseTest extends TestHelper {
 	@Test
 	public void should_write_gexf_() {
-		AssemblyParameters ap = new AssemblyParameters();
-		ap.maxBaseMismatchForCollapse = 0;
-		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 10;
+		AssemblyConfiguration ap = new AssemblyConfiguration();
+		ap.errorCorrection.maxBaseMismatchForCollapse = 0;
+		ap.subgraph.subgraphAssemblyTraversalMaximumBranchingFactor = 10;
 		ap.k = 5;
 		DeBruijnReadGraph g = new DeBruijnReadGraph(getContext(), AES(), 0, ap, null);
 		g.setGraphExporter(new DeBruijnSubgraphGexfExporter(ap.k));

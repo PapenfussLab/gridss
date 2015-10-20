@@ -16,6 +16,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
+import au.edu.wehi.idsv.configuration.ReadPairConfiguration;
+import au.edu.wehi.idsv.configuration.RealignmentConfiguration;
+import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
+import au.edu.wehi.idsv.configuration.VariantCallingConfiguration;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -303,7 +309,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	@Test
 	public void realign_should_not_flip_tandem_duplication() {
 		ProcessingContext pc = getContext();
-		pc.getAssemblyParameters().realignmentMinimumAnchorRetainment = 0;
+		pc.getAssemblyParameters().anchorRealignment.realignmentMinimumAnchorRetainment = 0;
 		String seq = S(Arrays.copyOfRange(RANDOM, 150, 200)) + S(Arrays.copyOfRange(RANDOM, 100, 200)) + S(Arrays.copyOfRange(RANDOM, 100, 150));
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, null,
 				2, 100, 50, B(seq), B(40, seq.length()));
@@ -334,9 +340,9 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 				+ "GATTATTATATTTTCATGTTCTTGCTAATCTATATCATGGTTAGAAATCAAAGCATGCCGAAATTTCTCTCTTACTTTTTTTGCTGTT";
 		File ref = new File("src/test/resources/chr1_170849600_170849850.fa");
 		ProcessingContext context = new ProcessingContext(getFSContext(),
-				new ArrayList<Header>(), new SoftClipParameters(),
-				new ReadPairParameters(), new AssemblyParameters(),
-				new RealignmentParameters(), new VariantCallingParameters(),
+				new ArrayList<Header>(), new SoftClipConfiguration(),
+				new ReadPairConfiguration(), new AssemblyConfiguration(),
+				new RealignmentConfiguration(), new VariantCallingConfiguration(),
 				ref, false, false);
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(context, AES(context), BWD, null,
 				0, 170849702-170849600+1, 97, B(assembly), B(40, assembly.length())).realign(50, true, 0.5f);

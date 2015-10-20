@@ -62,7 +62,7 @@ public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends D
 		addEvidenceKmers(graphEvidence);
 	}
 	public void addEvidence(SoftClipEvidence read) {
-		if (read instanceof RemoteEvidence && !processContext.getAssemblyParameters().includeRemoteSoftClips) {
+		if (read instanceof RemoteEvidence && !processContext.getAssemblyParameters().includeRemoteSplitReads) {
 			// ignore remote soft clips
 			return;
 		}

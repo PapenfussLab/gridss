@@ -29,6 +29,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
+import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
+import au.edu.wehi.idsv.configuration.ReadPairConfiguration;
+import au.edu.wehi.idsv.configuration.RealignmentConfiguration;
+import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
+import au.edu.wehi.idsv.configuration.VariantCallingConfiguration;
+
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -62,19 +68,19 @@ public class IntermediateFilesTest extends TestHelper {
 		ProcessingContext pc = new ProcessingContext(
 				new FileSystemContext(testFolder.getRoot(), 500000),
 				headers,
-				new SoftClipParameters() {{
+				new SoftClipConfiguration() {{
 					minAnchorEntropy = 0;
 				}},
-				new ReadPairParameters() {{
+				new ReadPairConfiguration() {{
 					minAnchorEntropy = 0;
 				}},
-				new AssemblyParameters() {{
+				new AssemblyConfiguration() {{
 					minReads = 2;
-					assemble_remote_soft_clips = false;
-					performLocalRealignment = false;
+					includeRemoteSplitReads = false;
+					anchorRealignment.perform = false;
 					}},
-				new RealignmentParameters(),
-				new VariantCallingParameters(),
+				new RealignmentConfiguration(),
+				new VariantCallingConfiguration(),
 				reference,
 				perChr, false);
 		pc.registerCategory(0, "Normal");

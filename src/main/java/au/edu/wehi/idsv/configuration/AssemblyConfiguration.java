@@ -1,47 +1,25 @@
-package au.edu.wehi.idsv;
+package au.edu.wehi.idsv.configuration;
 
 import java.io.File;
 
+import au.edu.wehi.idsv.AssemblyAlgorithm;
+import au.edu.wehi.idsv.Defaults;
+import au.edu.wehi.idsv.EvidenceSubset;
+import au.edu.wehi.idsv.RealignedRemoteSAMRecordAssemblyEvidence;
+import au.edu.wehi.idsv.RemoteEvidence;
+import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
-public class AssemblyParameters {
-	/**
-	 * Evidence per base to assemble without filtering
-	 */
-	public double acceptDensityPortion = 0.5;
-	/**
-	 * Filter evidence to expect this maximum average evidence per base within window 
-	 */
-	public double targetEvidenceDensity = 5;
-	/**
-	 * Minimum window size for density calculation 
-	 */
-	public int minimumDensityWindowSize = 1000;
+public class AssemblyConfiguration {
+	public DownsamplingConfiguration downsampling = new DownsamplingConfiguration();
 	/**
 	 * Assembly algorithm to use
 	 */
 	public AssemblyAlgorithm method = AssemblyAlgorithm.Positional;
 	/**
-	 * Assemble soft clips at the remote realigned position as well as the read mapping location
-	 */
-	public boolean includeRemoteSoftClips = true;
-	/**
 	 * De Bruijn graph kmer size
 	 */
 	public int k = 25;
-	/**
-	 * Maximum of base mismatches for de bruijn kmer paths to be merged   
-	 */
-	public int maxBaseMismatchForCollapse = 4;
-	/**
-	 * Only collapse bubble path with a single entry and exit kmer choice
-	 */
-	public boolean collapseBubblesOnly = true;
-	/**
-	 * Allow reuse of reference kmers when assembling subsequent
-	 * contigs in an assembly iteration
-	 */
-	public boolean allReferenceKmerReuse = true;
 	/**
 	 * Directory to save debruijn graph visualisation information to.
 	 */
@@ -54,45 +32,8 @@ public class AssemblyParameters {
 	 * Directory to save debruijn graph visualisation information to.
 	 */
 	public boolean visualiseTimeouts = Defaults.VISUALISE_TIMEOUTS;
-	/**
-	 * Maximum width (in multiples of maximum fragment size) of subgraph
-	 */
-	public float maxSubgraphFragmentWidth = Defaults.MAX_SUBGRAPH_WIDTH_IN_FRAGMENT_SIZE_MULTIPLES;
-	/**
-	 * Minimum number of bases before immediate assembly is forced
-	 */
-	public int minSubgraphWidthForTimeout = 20000; // mammalian mitochondrial size is 15-17kb
-	/**
-	 * Maximum number of contigs per assembly iteration
-	 */
-	public int subgraphMaxContigsPerAssembly = 1024;
-	/**
-	 * Subgraph assembly margin in multiples of max fragment size
-	 * 
-	 * This determines how long to wait before assembling a subgraph 
-	 * Too short and we will assemble a subgraph before all evidence has been added to it
-	 * Too long and we will have a greater misassembly rate in repetitive regions
-	 * 
-	 * Evidence can be up to 1 read length (SC) or 1 fragment size (read pair) from
-	 * breakend position. Maximum detectable breakend size is (twice fragment size - kmer size)
-	 * = 4 * fragment size for maximal indel breakpoint
-	 */
-	public float subgraphAssemblyMargin = 4f;
-	/**
-	 * Maximum number of branches consider at kmer branches.
-	 * A value of 1 indicates a greedy traversal
-	 */
-	public int subgraphAssemblyTraversalMaximumBranchingFactor = Integer.MAX_VALUE;
-	/**
-	 * Maximum nodes when finding the best path
-	 */
-	public int subgraphMaxPathTraversalNodes = Defaults.BEST_PATH_MAX_TRAVERSAL;
-	/**
-	 * Maximum length of path to collapse
-	 * Units are multiples of max support width (ie largest max fragment size)
-	 */
-	public float positionalMaxPathCollapseLength = 2f;
-	public int positionalMaxPathCollapseLengthInBases(int readLength) { return (int)(positionalMaxPathCollapseLength * readLength); }
+	public SubgraphAssemblyConfiguration subgraph = new SubgraphAssemblyConfiguration();
+	public ErrorCorrectionConfiguration errorCorrection = new ErrorCorrectionConfiguration();
 	/**
 	 * Maximum length of a single path node. Leaves longer that this length will not be collapsed.
 	 * 
@@ -108,15 +49,15 @@ public class AssemblyParameters {
 	/**
 	 * Include soft clipped reads in assembly
 	 */
-	public boolean assemble_soft_clips = true;
+	public boolean includeSoftClips = true;
 	/**
 	 * Include the mate of reads that map to this location and whose mate is not mapped to the expected location
 	 */
-	public boolean assemble_read_pairs = true;
+	public boolean includeAnomalousPairs = true;
 	/**
 	 * Include reads with a soft clip that maps to this location
 	 */
-	public boolean assemble_remote_soft_clips = true;
+	public boolean includeRemoteSplitReads = true;
 	/**
 	 * Output internal assembly state information for debugging purposes
 	 */
@@ -125,14 +66,6 @@ public class AssemblyParameters {
 	 * Determines whether filtered assemblies are written to intermediate files
 	 */
 	public boolean writeFilteredAssemblies = Defaults.WRITE_FILTERED_ASSEMBLIES;
-	/**
-	 * Perform local Smith-Waterman realignment of assemblies
-	 */
-	public boolean performLocalRealignment = true;
-	/**
-	 * local realignment window size (in multiple of read length)
-	 */
-	public double realignmentWindowReadLengthMultiples = 0.2;
 	public boolean excludeNonSupportingEvidence = Defaults.EXCLUDE_ASSEMBLY_NON_SUPPORTING_EVIDENCE;
 	/**
 	 * Default minimum length in bases of reference sequence anchor assembly
@@ -147,18 +80,7 @@ public class AssemblyParameters {
 	 * Expected max size is 1.0 for single-sided assembly and 2.0 for assembly from both directions 
 	 */
 	public float maxExpectedBreakendAssemblyLengthInFragmentMultiples = 2.5f;
-	/**
-	 * Minimum portion of the anchored bases that remained anchored
-	 * 
-	 * When performing realignment around small indels and tandem duplications,
-	 * if the breakend sequence is significantly longer than the anchor sequence
-	 * then realignment will align the breakend to the other side of the SV, and
-	 * consider the anchor to be the new breakend sequence. To prevent this,
-	 * realignment is aborted if more than this portion of the initial reference
-	 * bases are no longer aligned to the reference after realignment.
-	 * 
-	 */
-	public float realignmentMinimumAnchorRetainment = 0.5f;
+	public AnchorRealignmentConfiguration anchorRealignment = new AnchorRealignmentConfiguration();
 	public boolean applyFilters(SAMRecordAssemblyEvidence evidence) {
 		SAMRecordAssemblyEvidence localEvidence = evidence;
 		if (evidence instanceof RemoteEvidence) {

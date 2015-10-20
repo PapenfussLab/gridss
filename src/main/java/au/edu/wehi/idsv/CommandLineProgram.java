@@ -14,6 +14,11 @@ import java.util.List;
 
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
+import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
+import au.edu.wehi.idsv.configuration.ReadPairConfiguration;
+import au.edu.wehi.idsv.configuration.RealignmentConfiguration;
+import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
+import au.edu.wehi.idsv.configuration.VariantCallingConfiguration;
 import au.edu.wehi.idsv.vcf.VcfConstants;
 
 import com.google.common.collect.Lists;
@@ -54,67 +59,67 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
     @Option(doc = "Percent of read pairs considered concorant (0.0-1.0). If this is not set, the SAM proper pair flag is used to determine whether a read is discordantly aligned.", optional=true)
     public Float READ_PAIR_CONCORDANT_PERCENT = 0.995f;
     @Option(doc = "Minimum length of a soft-clip to be considered for analysis. Local aligners tend to produce many reads with very short soft clips.", optional=true)
-    public int SOFT_CLIP_MIN_LENGTH = new SoftClipParameters().minLength;
+    public int SOFT_CLIP_MIN_LENGTH = new SoftClipConfiguration().minLength;
     @Option(doc = "Minimum read MAPQ for a read pair to be considerd anchored", optional=true)
-    public int READ_PAIR_ANCHOR_MIN_MAPQ = new ReadPairParameters().minMapq;
+    public int READ_PAIR_ANCHOR_MIN_MAPQ = new ReadPairConfiguration().minMapq;
     @Option(doc = "Minimum read MAPQ for soft clip realignment to be performed", optional=true)
-    public int SOFT_CLIP_MIN_MAPQ = new SoftClipParameters().minReadMapq;
+    public int SOFT_CLIP_MIN_MAPQ = new SoftClipConfiguration().minReadMapq;
     @Option(doc = "Minimum Shannon entropy (in bits) of read pairs. Both reads in pair must be above the entropy minimum.", optional=true)
-    public double READ_PAIR_MIN_ENTROPY = new ReadPairParameters().minAnchorEntropy;
+    public double READ_PAIR_MIN_ENTROPY = new ReadPairConfiguration().minAnchorEntropy;
     @Option(doc = "Minimum Shannon entropy (in bits) of anchored bases", optional=true)
-    public double SOFT_CLIP_MIN_ENTROPY = new SoftClipParameters().minAnchorEntropy;
+    public double SOFT_CLIP_MIN_ENTROPY = new SoftClipConfiguration().minAnchorEntropy;
     @Option(doc = "Minimum sequence identity to reference. Percentage value taking a value in the range 0-100.", optional=true)
-    public float SOFT_CLIP_MIN_ANCHOR_PERCENT_IDENTITY = new SoftClipParameters().minAnchorIdentity;
+    public float SOFT_CLIP_MIN_ANCHOR_PERCENT_IDENTITY = new SoftClipConfiguration().minAnchorIdentity;
     @Option(doc = "Minimum average base quality score for soft clips to be processed."
     		+ " Soft clips below this score are considered sequencing errors and are ignored.", optional=true)
-    public float SOFT_CLIP_MIN_BASE_QUALITY = new SoftClipParameters().minAverageQual;
+    public float SOFT_CLIP_MIN_BASE_QUALITY = new SoftClipConfiguration().minAverageQual;
     @Option(doc = "Adapter sequence to exclude from analysis. Defaults to Illumina Universal Adapter, Illumina Small RNA Adapter, and Nextera Transposase sequences", optional=true)
-    public List<String> ADAPTER_SEQUENCE = Lists.newArrayList(new SoftClipParameters().adapters.getAdapterSequences());
+    public List<String> ADAPTER_SEQUENCE = Lists.newArrayList(new SoftClipConfiguration().adapters.getAdapterSequences());
     // --- Assembly parameters ---
     @Option(doc = "Algorithm used to perform assembly of all reads supporting any putative structural variant", optional=true)
     public AssemblyAlgorithm ASSEMBLY_ALGORITHM = AssemblyAlgorithm.Positional;
     @Option(shortName="K", doc = "k-mer used for de bruijn graph construction", optional=true)
     // --- De Bruijn assembly parameters ---
-    public int ASSEMBLY_DEBRUIJN_KMER = new AssemblyParameters().k;
+    public int ASSEMBLY_DEBRUIJN_KMER = new AssemblyConfiguration().k;
     @Option(doc = "Assemble split reads at both the read mapping location and the soft clip realignment location.", optional=true)
-    public boolean ASSEMBLY_INCLUDE_REMOTE_SOFT_CLIPS = new AssemblyParameters().includeRemoteSoftClips;
+    public boolean ASSEMBLY_INCLUDE_REMOTE_SOFT_CLIPS = new AssemblyConfiguration().includeRemoteSplitReads;
     // --- De Bruijn assembly parameters ---
     @Option(doc = "Maximum of base mismatches for de bruijn kmer paths to be merged", optional=true)
-    public int ASSEMBLY_DEBRUIJN_MAX_PATH_COLLAPSE_BASE_MISMATCHES = new AssemblyParameters().maxBaseMismatchForCollapse;
+    public int ASSEMBLY_DEBRUIJN_MAX_PATH_COLLAPSE_BASE_MISMATCHES = new AssemblyConfiguration().errorCorrection.maxBaseMismatchForCollapse;
     @Option(doc = "Only consider bubbles for path collapse. Bubbles are kmer paths with a single entry and exit kmer choice.", optional=true)
-    public boolean ASSEMBLY_DEBRUIJN_COLLAPSE_BUBBLES_ONLY = new AssemblyParameters().collapseBubblesOnly;
+    public boolean ASSEMBLY_DEBRUIJN_COLLAPSE_BUBBLES_ONLY = new AssemblyConfiguration().errorCorrection.collapseBubblesOnly;
     @Option(doc = "Allow reuse of reference kmers when assembling subsequent contigs in an assembly iteration", optional=true)
-    public boolean ASSEMBLY_DEBRUIJN_ALLOW_REFERENCE_KMER_RESUSE = new AssemblyParameters().allReferenceKmerReuse;
+    public boolean ASSEMBLY_DEBRUIJN_ALLOW_REFERENCE_KMER_RESUSE = new AssemblyConfiguration().subgraph.allReferenceKmerReuse;
     @Option(doc = "Maximum number of contigs per assembly iteration", optional=true)
-    public int ASSEMBLY_DEBRUIJN_MAX_CONTIGS_PER_ITERATION = new AssemblyParameters().subgraphMaxContigsPerAssembly;
+    public int ASSEMBLY_DEBRUIJN_MAX_CONTIGS_PER_ITERATION = new AssemblyConfiguration().subgraph.subgraphMaxContigsPerAssembly;
     @Option(doc = "Number of branches to consider at each kmer branch", optional=true)
     public int ASSEMBLY_DEBRUIJN_SUBGRAPH_BRANCHING_FACTOR = 16; // new AssemblyParameters().subgraphAssemblyTraversalMaximumBranchingFactor;
     @Option(doc = "Number of bases (in multiples of maximum fragment size) of no contributing evidence before subgraph assembly.", optional=true)
-    public float ASSEMBLY_DEBRUIJN_SUBGRAPH_ASSEMBLY_FRAGMENT_DELAY = new AssemblyParameters().subgraphAssemblyMargin;
+    public float ASSEMBLY_DEBRUIJN_SUBGRAPH_ASSEMBLY_FRAGMENT_DELAY = new AssemblyConfiguration().subgraph.subgraphAssemblyMargin;
     // --- Realignment parameters ---
     @Option(doc = "Minimum length of a breakend to be considered for realignment", optional=true)
-    public int REALIGNMENT_MIN_BREAKEND_LENGTH = new RealignmentParameters().minLength;
+    public int REALIGNMENT_MIN_BREAKEND_LENGTH = new RealignmentConfiguration().minLength;
     @Option(doc = "Minimum average base quality score for realignment", optional=true)
-    public float REALIGNMENT_MIN_BASE_QUALITY = new RealignmentParameters().minAverageQual;
+    public float REALIGNMENT_MIN_BASE_QUALITY = new RealignmentConfiguration().minAverageQual;
     @Option(doc = "Minimum mapq of a realignment to be considered uniquely mapped", optional=true)
-    public int REALIGNMENT_MAPQ_UNIQUE_THRESHOLD = new RealignmentParameters().mapqUniqueThreshold;
+    public int REALIGNMENT_MAPQ_UNIQUE_THRESHOLD = new RealignmentConfiguration().mapqUniqueThreshold;
     @Option(doc = "Maximum number of additional assembly contig fragments to attempt to realign. "
     		+ "Increasing this value allows for correct breakpoint calling of assemblies spanning multiple breakpoints "
     		+ "such as those formed during chromothripis.", optional=true)
-    public int ASSEMBLY_REALIGNMENT_ITERATORS = new RealignmentParameters().assemblyIterations;
+    public int ASSEMBLY_REALIGNMENT_ITERATORS = new RealignmentConfiguration().assemblyIterations;
     // --- Variant calling parameters  ---
     @Option(doc = "Number bases in which nearby evidence will be considered to support the same variant.", optional=true)
-    public int BREAKEND_MARGIN = new VariantCallingParameters().breakendMargin;
+    public int BREAKEND_MARGIN = new VariantCallingConfiguration().breakendMargin;
     @Option(doc = "Maximum per-input coverage after which reads falling within regions exceeding this coverage are excluded from assembly and variant calling", optional=true)
-    public int MAX_COVERAGE = new VariantCallingParameters().maxCoverage;
+    public int MAX_COVERAGE = new VariantCallingConfiguration().maxCoverage;
     @Option(doc = "Maximum somatic p-value for a variant to be called somatic", optional=true)
-    private double SOMATIC_THRESHOLD = new VariantCallingParameters().somaticPvalueThreshold;
+    private double SOMATIC_THRESHOLD = new VariantCallingConfiguration().somaticPvalueThreshold;
     @Option(doc = "Use only assembled evidence when calling variants", optional=true)
 	private boolean CALL_ONLY_ASSEMBLIES = false;
     @Option(doc = "Ignore indel variants smaller than this size.", optional=true)
-	private int MIN_INDEL_SIZE = new VariantCallingParameters().minIndelSize;
+	private int MIN_INDEL_SIZE = new VariantCallingConfiguration().minIndelSize;
     @Option(doc = "Minimum variant score", optional=true)
-	private double MIN_SCORE = new VariantCallingParameters().minScore;
+	private double MIN_SCORE = new VariantCallingConfiguration().minScore;
     // --- output format parameters ---
 	@Option(shortName = "VCF41", doc = "Breakends are written to VCF files as VCF v4.1 compatible breakpoints to a placeholder contig " + VcfConstants.VCF41BREAKEND_REPLACEMENT, optional = true)
 	public boolean VCF41_COMPATIBLE = true;
@@ -169,21 +174,21 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 			if (ref != null) ref.close();
 		}
 	}
-	private AssemblyParameters getAssemblyParameters() {
-		AssemblyParameters ap = new AssemblyParameters();
-		ap.includeRemoteSoftClips = ASSEMBLY_INCLUDE_REMOTE_SOFT_CLIPS;
+	private AssemblyConfiguration getAssemblyParameters() {
+		AssemblyConfiguration ap = new AssemblyConfiguration();
+		ap.includeRemoteSplitReads = ASSEMBLY_INCLUDE_REMOTE_SOFT_CLIPS;
 		ap.k = ASSEMBLY_DEBRUIJN_KMER;
-		ap.maxBaseMismatchForCollapse = ASSEMBLY_DEBRUIJN_MAX_PATH_COLLAPSE_BASE_MISMATCHES;
-		ap.collapseBubblesOnly = ASSEMBLY_DEBRUIJN_COLLAPSE_BUBBLES_ONLY;
-		ap.allReferenceKmerReuse = ASSEMBLY_DEBRUIJN_ALLOW_REFERENCE_KMER_RESUSE;
-		ap.subgraphMaxContigsPerAssembly = ASSEMBLY_DEBRUIJN_MAX_CONTIGS_PER_ITERATION;
-		ap.subgraphAssemblyTraversalMaximumBranchingFactor = ASSEMBLY_DEBRUIJN_SUBGRAPH_BRANCHING_FACTOR;
-		ap.subgraphAssemblyMargin = ASSEMBLY_DEBRUIJN_SUBGRAPH_ASSEMBLY_FRAGMENT_DELAY;
+		ap.errorCorrection.maxBaseMismatchForCollapse = ASSEMBLY_DEBRUIJN_MAX_PATH_COLLAPSE_BASE_MISMATCHES;
+		ap.errorCorrection.collapseBubblesOnly = ASSEMBLY_DEBRUIJN_COLLAPSE_BUBBLES_ONLY;
+		ap.subgraph.allReferenceKmerReuse = ASSEMBLY_DEBRUIJN_ALLOW_REFERENCE_KMER_RESUSE;
+		ap.subgraph.subgraphMaxContigsPerAssembly = ASSEMBLY_DEBRUIJN_MAX_CONTIGS_PER_ITERATION;
+		ap.subgraph.subgraphAssemblyTraversalMaximumBranchingFactor = ASSEMBLY_DEBRUIJN_SUBGRAPH_BRANCHING_FACTOR;
+		ap.subgraph.subgraphAssemblyMargin = ASSEMBLY_DEBRUIJN_SUBGRAPH_ASSEMBLY_FRAGMENT_DELAY;
 		ap.debruijnGraphVisualisationDirectory = WORKING_DIR != null ? new File(WORKING_DIR, "gridss_vis") : new File("gridss_vis");
 		return ap;
 	}
-	private SoftClipParameters getSoftClipParameters() {
-		SoftClipParameters scp = new SoftClipParameters();
+	private SoftClipConfiguration getSoftClipParameters() {
+		SoftClipConfiguration scp = new SoftClipConfiguration();
 		scp.minAverageQual = SOFT_CLIP_MIN_BASE_QUALITY;
 	    scp.minLength = SOFT_CLIP_MIN_LENGTH;
 	    scp.minReadMapq = SOFT_CLIP_MIN_MAPQ;
@@ -191,16 +196,16 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 	    scp.adapters = new AdapterHelper((String[])ADAPTER_SEQUENCE.toArray(new String[ADAPTER_SEQUENCE.size()]));
 	    return scp;
 	}
-	private RealignmentParameters getRealignmentParameters() {
-		RealignmentParameters rp = new RealignmentParameters();
+	private RealignmentConfiguration getRealignmentParameters() {
+		RealignmentConfiguration rp = new RealignmentConfiguration();
 		rp.minLength = REALIGNMENT_MIN_BREAKEND_LENGTH;
 		rp.minAverageQual = REALIGNMENT_MIN_BASE_QUALITY;
 		rp.mapqUniqueThreshold = REALIGNMENT_MAPQ_UNIQUE_THRESHOLD;
 		rp.assemblyIterations = ASSEMBLY_REALIGNMENT_ITERATORS;
 		return rp;
 	}
-	private ReadPairParameters getReadPairParameters() {
-		ReadPairParameters rpp = new ReadPairParameters();
+	private ReadPairConfiguration getReadPairParameters() {
+		ReadPairConfiguration rpp = new ReadPairConfiguration();
 		rpp.minMapq = READ_PAIR_ANCHOR_MIN_MAPQ;
 		rpp.adapters = new AdapterHelper((String[])ADAPTER_SEQUENCE.toArray(new String[ADAPTER_SEQUENCE.size()]));
 	    return rpp;
@@ -208,8 +213,8 @@ public abstract class CommandLineProgram extends picard.cmdline.CommandLineProgr
 	private FileSystemContext getFileSystemContext() {
 		return new FileSystemContext(TMP_DIR.get(0), WORKING_DIR, MAX_RECORDS_IN_RAM);
 	}
-	private VariantCallingParameters getVariantCallingParameters() {
-		VariantCallingParameters vcp = new VariantCallingParameters();
+	private VariantCallingConfiguration getVariantCallingParameters() {
+		VariantCallingConfiguration vcp = new VariantCallingConfiguration();
 		vcp.somaticPvalueThreshold = SOMATIC_THRESHOLD;
 		vcp.callOnlyAssemblies = CALL_ONLY_ASSEMBLIES;
 		vcp.minIndelSize = MIN_INDEL_SIZE;

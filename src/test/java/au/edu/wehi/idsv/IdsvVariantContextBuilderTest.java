@@ -16,6 +16,11 @@ import java.util.Collection;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
+import au.edu.wehi.idsv.configuration.ReadPairConfiguration;
+import au.edu.wehi.idsv.configuration.RealignmentConfiguration;
+import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
+import au.edu.wehi.idsv.configuration.VariantCallingConfiguration;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
@@ -199,11 +204,11 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		ProcessingContext context = new ProcessingContext(
 				getFSContext(),
 				new ArrayList<Header>(),
-				new SoftClipParameters(),
-				new ReadPairParameters(),
-				new AssemblyParameters(),
-				new RealignmentParameters(),
-				new VariantCallingParameters(),
+				new SoftClipConfiguration(),
+				new ReadPairConfiguration(),
+				new AssemblyConfiguration(),
+				new RealignmentConfiguration(),
+				new VariantCallingConfiguration(),
 				SMALL_FA, null, false, true);
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
 		builder.breakend(new BreakendSummary(0,  FWD,  1,  1), "ACGT");
@@ -215,11 +220,11 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		ProcessingContext context = new ProcessingContext(
 				getFSContext(),
 				new ArrayList<Header>(),
-				new SoftClipParameters(),
-				new ReadPairParameters(),
-				new AssemblyParameters(),
-				new RealignmentParameters(),
-				new VariantCallingParameters(),
+				new SoftClipConfiguration(),
+				new ReadPairConfiguration(),
+				new AssemblyConfiguration(),
+				new RealignmentConfiguration(),
+				new VariantCallingConfiguration(),
 				SMALL_FA, null, false, true);
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
 		builder.breakend(new BreakendSummary(0,  FWD,  1,  2), "ACGT");

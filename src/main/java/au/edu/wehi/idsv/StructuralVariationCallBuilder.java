@@ -60,7 +60,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	}
 	private BreakendSummary getBreakendSummaryWithMargin(DirectedEvidence evidence) {
 		BreakendSummary bs = evidence.getBreakendSummary();
-		bs = processContext.getVariantCallingParameters().withMargin(processContext, bs);
+		bs = processContext.getVariantCallingParameters().withMargin(bs);
 		return bs;
 	}
 	private boolean isSupportingEvidence(DirectedEvidence evidence) {

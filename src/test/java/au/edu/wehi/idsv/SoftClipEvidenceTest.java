@@ -11,6 +11,7 @@ import java.io.File;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 
 public class SoftClipEvidenceTest extends TestHelper {
@@ -194,7 +195,7 @@ public class SoftClipEvidenceTest extends TestHelper {
 	}
 	
 	private void adapter(String seq, int scLen, boolean keep) {
-		SoftClipParameters scp = new SoftClipParameters();
+		SoftClipConfiguration scp = new SoftClipConfiguration();
 		scp.minAnchorIdentity = 0;
 		scp.minLength = 1;
 		scp.minReadMapq = 0;
@@ -260,7 +261,7 @@ public class SoftClipEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void should_filter_dovetailing_reads() {
-		SoftClipParameters scp = new SoftClipParameters();
+		SoftClipConfiguration scp = new SoftClipConfiguration();
 		scp.minAnchorIdentity = 0;
 		scp.minLength = 1;
 		scp.minReadMapq = 0;
@@ -281,7 +282,7 @@ public class SoftClipEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void should_allow_4_bp_dovetail_margin() {
-		SoftClipParameters scp = new SoftClipParameters();
+		SoftClipConfiguration scp = new SoftClipConfiguration();
 		scp.minAnchorIdentity = 0;
 		scp.minLength = 1;
 		scp.minReadMapq = 0;
@@ -302,7 +303,7 @@ public class SoftClipEvidenceTest extends TestHelper {
 				new File("src/test/resources/testmetrics.metrics.idsv.txt"),
 				new File("src/test/resources/testmetrics.metrics.insertsize.txt"),
 				new File("src/test/resources/testmetrics.metrics.softclip.txt"));
-		SoftClipParameters scp = new SoftClipParameters();
+		SoftClipConfiguration scp = new SoftClipConfiguration();
 		scp.minAnchorIdentity = 0;
 		scp.minLength = 1;
 		scp.minReadMapq = 0;
@@ -332,7 +333,7 @@ public class SoftClipEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void should_filter_low_complexity_anchors() {
-		SoftClipParameters scp = new SoftClipParameters();
+		SoftClipConfiguration scp = new SoftClipConfiguration();
 		scp.minAverageQual = 0;
 		scp.minAnchorIdentity = 0;
 		scp.minAnchorEntropy = 0.5;
@@ -371,7 +372,7 @@ public class SoftClipEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void should_filter_low_base_quality() {
-		SoftClipParameters scp = new SoftClipParameters();
+		SoftClipConfiguration scp = new SoftClipConfiguration();
 		scp.minAverageQual = 5;
 		scp.minAnchorIdentity = 0;
 		scp.minAnchorEntropy = 0;

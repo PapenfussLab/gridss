@@ -37,12 +37,12 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 	@Override
 	public ProcessingContext getCommandlineContext(boolean perChr) {
 		ProcessingContext pc = super.getCommandlineContext(perChr);
-		pc.getAssemblyParameters().maxBaseMismatchForCollapse = 1;
-		pc.getAssemblyParameters().collapseBubblesOnly = true;
+		pc.getAssemblyParameters().errorCorrection.maxBaseMismatchForCollapse = 1;
+		pc.getAssemblyParameters().errorCorrection.collapseBubblesOnly = true;
 		pc.getAssemblyParameters().debruijnGraphVisualisationDirectory = new File(super.testFolder.getRoot(), "visualisation");
 		pc.getAssemblyParameters().visualiseAll = true;
 		pc.getAssemblyParameters().method = AssemblyAlgorithm.Positional;
-		pc.getAssemblyParameters().includeRemoteSoftClips = false;
+		pc.getAssemblyParameters().includeRemoteSplitReads = false;
 		return pc;
 	}
 }

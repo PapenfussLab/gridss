@@ -8,12 +8,12 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
-import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
+import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
 
 import com.google.common.collect.Iterators;
@@ -80,13 +80,13 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 		}
 	}
 	private NonReferenceContigAssembler createAssembler() {
-		AssemblyParameters ap = context.getAssemblyParameters();
+		AssemblyConfiguration ap = context.getAssemblyParameters();
 		int maxSupportNodeWidth = source.getMaxConcordantFragmentSize() - source.getMinConcordantFragmentSize() + 1; 		
 		int maxReadLength = source.getMaxMappedReadLength();
 		int k = ap.k;
 		int maxEvidenceDistance = maxSupportNodeWidth + maxReadLength + 2;
 		int maxPathLength = ap.positionalMaxPathLengthInBases(maxReadLength);
-		int maxPathCollapseLength = ap.positionalMaxPathCollapseLengthInBases(maxReadLength);
+		int maxPathCollapseLength = ap.errorCorrection.maxPathCollapseLengthInBases(maxReadLength);
 		int anchorAssemblyLength = ap.anchorAssemblyLength;
 		int referenceIndex = it.peek().getBreakendSummary().referenceIndex;
 		ReferenceIndexIterator evidenceIt = new ReferenceIndexIterator(it, referenceIndex);
@@ -104,12 +104,12 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 		}
 		CollapseIterator collapseIt = null;
 		PathSimplificationIterator simplifyIt = null;
-		if (ap.maxBaseMismatchForCollapse > 0) {
-			if (!ap.collapseBubblesOnly) {
+		if (ap.errorCorrection.maxBaseMismatchForCollapse > 0) {
+			if (!ap.errorCorrection.collapseBubblesOnly) {
 				log.warn("Collapsing all paths is an exponential time operation. gridss is likely to hang if your genome contains repetative sequence");
-				collapseIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, ap.maxBaseMismatchForCollapse, false, 0);
+				collapseIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, ap.errorCorrection.maxBaseMismatchForCollapse, false, 0);
 			} else {
-				collapseIt = new LeafBubbleCollapseIterator(pnIt, k, maxPathCollapseLength, ap.maxBaseMismatchForCollapse);
+				collapseIt = new LeafBubbleCollapseIterator(pnIt, k, maxPathCollapseLength, ap.errorCorrection.maxBaseMismatchForCollapse);
 			}
 			pnIt = collapseIt;
 			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {

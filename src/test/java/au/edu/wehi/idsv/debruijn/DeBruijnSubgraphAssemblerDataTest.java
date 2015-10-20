@@ -9,17 +9,17 @@ import java.util.ArrayList;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.ReadPairParameters;
-import au.edu.wehi.idsv.RealignmentParameters;
 import au.edu.wehi.idsv.SAMEvidenceSource;
-import au.edu.wehi.idsv.SoftClipParameters;
-import au.edu.wehi.idsv.VariantCallingParameters;
+import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
+import au.edu.wehi.idsv.configuration.ReadPairConfiguration;
+import au.edu.wehi.idsv.configuration.RealignmentConfiguration;
+import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
+import au.edu.wehi.idsv.configuration.VariantCallingConfiguration;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 
 /**
@@ -35,15 +35,15 @@ public class DeBruijnSubgraphAssemblerDataTest extends IntermediateFilesTest {
 		ProcessingContext pc = new ProcessingContext(
 				new FileSystemContext(testFolder.getRoot(), 500000),
 				new ArrayList<Header>(),
-				new SoftClipParameters(),
-				new ReadPairParameters(),
-				new AssemblyParameters() {{
+				new SoftClipConfiguration(),
+				new ReadPairConfiguration(),
+				new AssemblyConfiguration() {{
 					debruijnGraphVisualisationDirectory = new File(testFolder.getRoot(), "visualisation");
 					//visualiseAll = true;
 					trackAlgorithmProgress = true;
 					}},
-				new RealignmentParameters(),
-				new VariantCallingParameters(),
+				new RealignmentConfiguration(),
+				new VariantCallingConfiguration(),
 				hg19decoy,
 				true, false);
 		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(pc, AES(pc));
@@ -51,11 +51,11 @@ public class DeBruijnSubgraphAssemblerDataTest extends IntermediateFilesTest {
 		SAMEvidenceSource ses = new SAMEvidenceSource(new ProcessingContext(
 				new FileSystemContext(new File("W:\\na12878"), 500000),
 				new ArrayList<Header>(),
-				new SoftClipParameters(),
-				new ReadPairParameters(),
-				new AssemblyParameters(),
-				new RealignmentParameters(),
-				new VariantCallingParameters(),
+				new SoftClipConfiguration(),
+				new ReadPairConfiguration(),
+				new AssemblyConfiguration(),
+				new RealignmentConfiguration(),
+				new VariantCallingConfiguration(),
 				hg19decoy,
 				true, false), new File("W:\\na12878\\NA12878D_HiSeqX_R1.bam"), 0);
 		ses.completeSteps(ProcessStep.ALL_STEPS); 
