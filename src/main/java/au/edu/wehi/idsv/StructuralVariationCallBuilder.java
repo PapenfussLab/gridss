@@ -3,6 +3,7 @@ package au.edu.wehi.idsv;
 import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
+import java.util.Arrays;
 import java.util.List;
 
 import au.edu.wehi.idsv.util.ArrayHelper;
@@ -66,26 +67,31 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		BreakendSummary bs = getBreakendSummaryWithMargin(evidence);
 		return parent.getBreakendSummary().overlaps(bs);
 	}
-	private static float sum(float[] array) {
-		float total = 0;
-		for (float x : array) total += x;
-		return total;
+	private static float sumPositiveValues(float[] array) {
+		// Sorting ascending since all values are positive to minimise error
+		Arrays.sort(array);
+		// and use doubles to give us extra precision
+		double total = 0;
+		for (double x : array) {
+			total += x;
+		}
+		return (float)total;
 	}
 	public VariantContextDirectedEvidence make() {
 		int categoryCount = processContext.getCategoryCount();
 		//extractAssemblySupport(); // don't extract - as extraction inflates evidence beyond original call
 		attribute(VcfAttributes.CALLED_QUAL.attribute(), parent.getPhredScaledQual());
 		attribute(VcfAttributes.BREAKEND_QUAL.attribute(),
-				sum(localEvidence.getQual(VcfAttributes.BREAKEND_ASSEMBLY_QUAL, categoryCount))
-				+ sum(localEvidence.getQual(VcfAttributes.BREAKEND_SOFTCLIP_QUAL, categoryCount))
-				+ sum(localEvidence.getQual(VcfAttributes.BREAKEND_UNMAPPEDMATE_QUAL, categoryCount))
+				sumPositiveValues(localEvidence.getQual(VcfAttributes.BREAKEND_ASSEMBLY_QUAL, categoryCount))
+				+ sumPositiveValues(localEvidence.getQual(VcfAttributes.BREAKEND_SOFTCLIP_QUAL, categoryCount))
+				+ sumPositiveValues(localEvidence.getQual(VcfAttributes.BREAKEND_UNMAPPEDMATE_QUAL, categoryCount))
 				);
 		phredScore(
-				sum(localEvidence.getQual(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL, categoryCount))
-				+ sum(localEvidence.getQual(VcfAttributes.BREAKPOINT_SPLITREAD_QUAL, categoryCount))
-				+ sum(localEvidence.getQual(VcfAttributes.BREAKPOINT_READPAIR_QUAL, categoryCount))
-				+ sum(localEvidence.getQual(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE, categoryCount))
-				+ sum(localEvidence.getQual(VcfAttributes.BREAKPOINT_SPLITREAD_QUAL_REMOTE, categoryCount))
+				sumPositiveValues(localEvidence.getQual(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL, categoryCount))
+				+ sumPositiveValues(localEvidence.getQual(VcfAttributes.BREAKPOINT_SPLITREAD_QUAL, categoryCount))
+				+ sumPositiveValues(localEvidence.getQual(VcfAttributes.BREAKPOINT_READPAIR_QUAL, categoryCount))
+				+ sumPositiveValues(localEvidence.getQual(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE, categoryCount))
+				+ sumPositiveValues(localEvidence.getQual(VcfAttributes.BREAKPOINT_SPLITREAD_QUAL_REMOTE, categoryCount))
 				);
 		for (VcfAttributes attr : new VcfAttributes[] {
 				VcfAttributes.BREAKPOINT_SPLITREAD_COUNT,
