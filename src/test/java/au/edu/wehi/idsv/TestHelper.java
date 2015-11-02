@@ -332,6 +332,7 @@ public class TestHelper {
 		config.getAssembly().includeRemoteSplitReads = false;
 		config.getAssembly().anchorRealignment.perform = false;
 		config.getVariantCalling().breakendMargin = 3;
+		config.getRealignment().aligner = null;
 		return config;
 	}
 	public static GridssConfiguration getConfig() {
@@ -886,7 +887,7 @@ public class TestHelper {
 		@Override
 		public int getMaxReadMappedLength() { return maxReadLength; }
 		@Override
-		public String getRealignmentScript(int threads) { return ""; }
+		public String getRealignmentScript() { return ""; }
 		@Override
 		public boolean isComplete(ProcessStep step) { return true; }
 		@Override
@@ -925,7 +926,7 @@ public class TestHelper {
 		@Override
 		public int getMaxConcordantFragmentSize() { return fragSize; }
 		@Override
-		public String getRealignmentScript(int threads) { return ""; }
+		public String getRealignmentScript() { return ""; }
 		@Override
 		public boolean isRealignmentComplete() { return realigned; }
 		@Override

@@ -40,7 +40,7 @@ public class EvidenceSourceTest extends IntermediateFilesTest {
 	public void getRealignmentScript_should_not_write_realignment_for_missing_fastq() {
 		for (boolean perChr : new boolean[] {true, false} ) {
 			EvidenceSource es = new TestEvidenceSource(perChr, input);
-			assertEquals("", es.getRealignmentScript(1));
+			assertEquals("", es.getRealignmentScript());
 		}
 	}
 	@Test
@@ -50,28 +50,28 @@ public class EvidenceSourceTest extends IntermediateFilesTest {
 		
 		Files.write(new byte[] { '>' }, fsc.getRealignmentFastq(input, 0));
 		Files.write(new byte[] { '#' }, fsc.getRealignmentBam(input, 0));
-		assertEquals("", es.getRealignmentScript(1));
+		assertEquals("", es.getRealignmentScript());
 	}
 	@Test
 	public void getRealignmentScript_should_not_write_realignment_empty_fastq() throws IOException {
 		FileSystemContext fsc = getCommandlineContext(false).getFileSystemContext();
 		EvidenceSource es = new TestEvidenceSource(false, input);		
 		Files.write(new byte[0], fsc.getRealignmentFastq(input, 0));
-		assertEquals("", es.getRealignmentScript(1));
+		assertEquals("", es.getRealignmentScript());
 	}
 	@Test
 	public void getRealignmentScript_should_write_realignment_for_fastq_records() throws IOException {
 		FileSystemContext fsc = getCommandlineContext(false).getFileSystemContext();
 		EvidenceSource es = new TestEvidenceSource(false, input);		
 		Files.write(new byte[] { '>' }, fsc.getRealignmentFastq(input, 0));
-		assertNotEquals("", es.getRealignmentScript(1));
+		assertNotEquals("", es.getRealignmentScript());
 	}
 	@Test
 	public void getRealignmentScript_should_default_to_bowtie2() throws IOException {
 		FileSystemContext fsc = getCommandlineContext(false).getFileSystemContext();
 		EvidenceSource es = new TestEvidenceSource(false, input);
 		Files.write(new byte[] { '>' }, fsc.getRealignmentFastq(input, 0));
-		String script = es.getRealignmentScript(1);
+		String script = es.getRealignmentScript();
 		assertTrue(script.contains("bowtie2"));
 	}
 }

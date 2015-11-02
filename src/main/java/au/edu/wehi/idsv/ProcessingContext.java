@@ -76,6 +76,7 @@ public class ProcessingContext implements Closeable {
 	private long calculateMetricsRecordCount = Long.MAX_VALUE; 
 	private AssemblyIdGenerator assemblyIdGenerator = new SequentialIdGenerator("asm");
 	private BufferTracker bufferTracker = null;
+	private int workerThreads = 1;
 	private final List<String> categories = Lists.newArrayList((String)null);
 	public ProcessingContext(
 			FileSystemContext fileSystemContext,
@@ -326,5 +327,11 @@ public class ProcessingContext implements Closeable {
 		if (bufferTracker != null) {
 			bufferTracker.register(context, obj);
 		}
+	}
+	public int getWorkerThreadCount() {
+		return workerThreads;
+	}
+	public void setWorkerThreadCount(int workerThreads) {
+		this.workerThreads = workerThreads;
 	}
 }

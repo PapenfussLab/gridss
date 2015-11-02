@@ -129,6 +129,7 @@ public class IdsvTest extends IntermediateFilesTest {
 			writer.write("minAnchorShannonEntropy=0\n");
 			writer.write("softclip.minAnchorIdentity=0\n");
 			writer.write("softclip.minAverageQual=0\n");
+			writer.write("realignment.aligner=\n");
 		}
 		String[] args = new String[] {
 				"INPUT=" + input.toString(),

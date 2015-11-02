@@ -46,7 +46,7 @@ import picard.cmdline.StandardOptionDefinitions;
         usageShort = "Calls structural variations from NGS sequencing data"
 )
 public class Idsv extends CommandLineProgram {
-	private Log log = Log.getInstance(Idsv.class);
+	private static final Log log = Log.getInstance(Idsv.class);
 	@Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Coordinate-sorted input BAM file.")
     public List<File> INPUT;
 	@Option(shortName="IC", doc="Input category. Variant calling evidence is reported for categories 0 (default) to the maximum category specified. "
@@ -147,11 +147,11 @@ public class Idsv extends CommandLineProgram {
 			if (ref != null) ref.close();
 		}
 	}
-	public static String getRealignmentScript(Iterable<? extends EvidenceSource> it, int threads) {
+	public static String getRealignmentScript(Iterable<? extends EvidenceSource> it) {
     	StringBuilder sb = new StringBuilder();
     	for (EvidenceSource source : it) {
     		if (!source.isRealignmentComplete()) {
-    			sb.append(source.getRealignmentScript(threads));
+    			sb.append(source.getRealignmentScript());
     		}
     	}
     	return sb.toString();
@@ -162,7 +162,7 @@ public class Idsv extends CommandLineProgram {
     	ExecutorService threadpool = null;
     	try {
     		//hackSimpleCalls(processContext);
-    		threadpool = Executors.newFixedThreadPool(WORKER_THREADS, new ThreadFactoryBuilder().setDaemon(false).setNameFormat("Worker-%d").build());
+    		threadpool = Executors.newFixedThreadPool(getContext().getWorkerThreadCount(), new ThreadFactoryBuilder().setDaemon(false).setNameFormat("Worker-%d").build());
     		log.info(String.format("Using %d worker threads", WORKER_THREADS));
 	    	ensureDictionariesMatch();
 	    	List<SAMEvidenceSource> samEvidence = createSamEvidenceSources();
@@ -177,7 +177,7 @@ public class Idsv extends CommandLineProgram {
 	    		}
 	    	}
 	    	
-	    	if (!checkRealignment(samEvidence, WORKER_THREADS)) {
+	    	if (!checkRealignment(samEvidence)) {
 	    		return -1;
     		}
 	    	sortRealignedSoftClips(threadpool, samEvidence);
@@ -186,7 +186,7 @@ public class Idsv extends CommandLineProgram {
 	    	assemblyEvidence.ensureAssembled(threadpool);
 	    	
 	    	compoundRealignment(threadpool, ImmutableList.of(assemblyEvidence));
-	    	if (!checkRealignment(ImmutableList.of(assemblyEvidence), WORKER_THREADS)) {
+	    	if (!checkRealignment(ImmutableList.of(assemblyEvidence))) {
 	    		return -1;
     		}
 	    	// edge case: need to ensure assembled again since realignment could have completed
@@ -249,6 +249,7 @@ public class Idsv extends CommandLineProgram {
 			}
 			processContext = new ProcessingContext(fsc, getDefaultHeaders(), config, REFERENCE, PER_CHR);
 			processContext.registerCategories(INPUT_CATEGORY.stream().mapToInt(x -> (x == null ? 0 : x)).max().orElse(0));
+			processContext.setWorkerThreadCount(WORKER_THREADS);
 		}
 		return processContext;
 	}
@@ -352,8 +353,8 @@ public class Idsv extends CommandLineProgram {
 		}
 		log.info("Nested realignment checking complete");
 	}
-    private boolean checkRealignment(List<? extends EvidenceSource> evidence, int threads) throws IOException {
-    	String instructions = getRealignmentScript(evidence, threads);
+    private boolean checkRealignment(List<? extends EvidenceSource> evidence) throws IOException {
+    	String instructions = getRealignmentScript(evidence);
     	if (instructions != null && instructions.length() > 0) {
     		log.error("Please realign intermediate fastq files. Suggested command-line for alignment is:\n" +
     				"##################################\n"+
