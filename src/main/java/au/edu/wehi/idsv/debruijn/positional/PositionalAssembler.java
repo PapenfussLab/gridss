@@ -22,7 +22,7 @@ import htsjdk.samtools.util.Log;
 /**
  * Assemblies non-reference breakend contigs
  * 
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> {

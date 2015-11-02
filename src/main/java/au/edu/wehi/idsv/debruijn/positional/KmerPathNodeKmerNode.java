@@ -5,7 +5,7 @@ import com.google.common.collect.Ordering;
 
 /**
  * KmerNode representing an individual kmer of a KmerPathNode
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class KmerPathNodeKmerNode implements KmerNode {

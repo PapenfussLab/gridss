@@ -12,7 +12,7 @@ import au.edu.wehi.idsv.graph.PathNode;
 
 /**
  * Tracks algorithm metrics for each de Bruijn subgraph assembly 
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class SubgraphAlgorithmMetrics<T, PN extends PathNode<T>> implements SubgraphAssemblyAlgorithmTracker<T, PN> {

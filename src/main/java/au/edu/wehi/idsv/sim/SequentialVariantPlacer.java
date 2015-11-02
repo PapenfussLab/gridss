@@ -2,7 +2,7 @@ package au.edu.wehi.idsv.sim;
 
 /**
  * Places variants sequentially, with a padding distance between them.
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class SequentialVariantPlacer {

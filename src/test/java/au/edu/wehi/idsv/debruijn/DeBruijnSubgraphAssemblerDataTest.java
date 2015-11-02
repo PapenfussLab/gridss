@@ -20,7 +20,7 @@ import htsjdk.samtools.util.CloseableIterator;
 
 /**
  * Tests against external data sets.
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class DeBruijnSubgraphAssemblerDataTest extends IntermediateFilesTest {

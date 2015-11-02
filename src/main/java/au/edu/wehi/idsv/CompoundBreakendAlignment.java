@@ -23,7 +23,7 @@ import htsjdk.samtools.util.SequenceUtil;
 
 /**
  * Alignment of a sequence contig that spans multiple segments
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class CompoundBreakendAlignment {

@@ -8,7 +8,7 @@ import it.unimi.dsi.fastutil.Hash;
 
 /**
  * KmerNode utility classes
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class KmerNodeUtil {

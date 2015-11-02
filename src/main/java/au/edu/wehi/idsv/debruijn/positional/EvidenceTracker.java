@@ -18,7 +18,7 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
  * Tracks evidence provided to a given graph by wrapping a source iterator
  * and tracking evidence emitted by the iterator 
  * 
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class EvidenceTracker {

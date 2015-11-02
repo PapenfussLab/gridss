@@ -10,7 +10,7 @@ import htsjdk.samtools.reference.ReferenceSequence;
 /**
  * Reference genome stored only in memory and not backed by a fasta file.
  * 
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class InMemoryReferenceSequenceFile implements ReferenceLookup {

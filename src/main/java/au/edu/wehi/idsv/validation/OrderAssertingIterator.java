@@ -12,7 +12,7 @@ import htsjdk.samtools.util.Log;
  * 
  * No checking is performed if assertions are not enabled. 
  * 
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class OrderAssertingIterator<T> implements CloseableIterator<T> {

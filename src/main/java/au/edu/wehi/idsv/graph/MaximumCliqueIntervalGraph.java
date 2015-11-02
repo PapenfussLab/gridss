@@ -9,7 +9,7 @@ import com.google.common.primitives.Longs;
 
 /**
  * Calculates the maximum clique of an interval graph
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class MaximumCliqueIntervalGraph {

@@ -14,7 +14,7 @@ import htsjdk.variant.vcf.VCFConstants;
 /**
  * variant/reference Log-likelihood statistical model
  * 
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class Models {

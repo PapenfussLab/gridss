@@ -2,7 +2,7 @@ package au.edu.wehi.idsv.alignment;
 
 /**
  * Alignment of a sequence relative to a reference
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class Alignment {

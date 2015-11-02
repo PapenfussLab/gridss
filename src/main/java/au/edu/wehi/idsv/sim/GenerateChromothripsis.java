@@ -9,7 +9,7 @@ import picard.cmdline.Option;
 
 /**
  * Simulates chromothripsis through random translocation
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 @CommandLineProgramProperties(

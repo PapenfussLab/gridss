@@ -16,7 +16,7 @@ import htsjdk.samtools.util.Log;
  * 
  * Simple model of chromothripsis
  * 
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class FragmentedChromosome extends SimulatedChromosome {

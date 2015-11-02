@@ -9,7 +9,7 @@ import htsjdk.samtools.util.Log;
 
 /**
  * Utility helper class for intermediate files
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public abstract class IntermediateFileUtil {

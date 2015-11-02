@@ -11,7 +11,7 @@ import htsjdk.samtools.util.Log;
 
 /**
  * Buffers entire reference to enable efficient random lookup of sequences
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class BufferedReferenceSequenceFile implements ReferenceSequenceFile, ReferenceLookup {

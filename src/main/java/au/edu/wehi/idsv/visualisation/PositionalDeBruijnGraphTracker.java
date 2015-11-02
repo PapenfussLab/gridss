@@ -22,7 +22,7 @@ import htsjdk.samtools.util.Log;
 
 /**
  * Tracks information associated with positional de Bruijn graph calling
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class PositionalDeBruijnGraphTracker implements Closeable {

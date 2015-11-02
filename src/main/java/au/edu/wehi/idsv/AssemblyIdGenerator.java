@@ -3,7 +3,7 @@ package au.edu.wehi.idsv;
 /**
  * Generates unique variant identifiers
  * 
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public interface AssemblyIdGenerator {

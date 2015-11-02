@@ -34,7 +34,7 @@ import htsjdk.variant.vcf.VCFFileReader;
 
 /**
  * Calls structural variant
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class VariantCaller extends EvidenceProcessorBase {

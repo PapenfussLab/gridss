@@ -31,7 +31,7 @@ import htsjdk.samtools.util.Log;
 
 /**
  * Structural variation evidence based on read pairs from a single SAM/BAM.  
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class SAMEvidenceSource extends EvidenceSource {

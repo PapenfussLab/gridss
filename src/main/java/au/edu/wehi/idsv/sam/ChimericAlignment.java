@@ -14,7 +14,7 @@ import htsjdk.samtools.TextCigarCodec;
  * list: (rname,pos,strand,CIGAR,mapQ,NM ;)+. Each element in the list represents a
  * part of the chimeric alignment. Conventionally, at a supplementary line, the first element
  * points to the primary line.
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class ChimericAlignment {

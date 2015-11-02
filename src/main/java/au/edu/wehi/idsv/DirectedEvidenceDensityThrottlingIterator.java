@@ -9,7 +9,7 @@ import htsjdk.samtools.util.Log;
 
 /**
  * Reduces
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class DirectedEvidenceDensityThrottlingIterator extends DensityThrottlingIterator<DirectedEvidence> {

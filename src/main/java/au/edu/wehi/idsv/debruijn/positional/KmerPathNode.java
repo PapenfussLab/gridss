@@ -24,7 +24,7 @@ import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 /**
  * Total support for the given kmer over the given interval
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {

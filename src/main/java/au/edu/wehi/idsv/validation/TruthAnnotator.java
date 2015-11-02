@@ -26,7 +26,7 @@ import htsjdk.variant.vcf.VCFFileReader;
 
 /**
  * Annotates breakends based on a reference truth file
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class TruthAnnotator extends AbstractIterator<VariantContextDirectedEvidence> implements BreakendAnnotator {

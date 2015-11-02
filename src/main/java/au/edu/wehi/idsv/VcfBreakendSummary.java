@@ -12,7 +12,7 @@ import htsjdk.variant.variantcontext.VariantContext;
 
 /**
  * Extracts breakend/breakpoint information from a VCF variant
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class VcfBreakendSummary {

@@ -64,7 +64,7 @@ public class SAMFileUtil {
 	}
 	/**
 	 * SAM sorting task
-	 * @author cameron.d
+	 * @author Daniel Cameron
 	 *
 	 */
 	public static class SortCallable implements Callable<Void> {

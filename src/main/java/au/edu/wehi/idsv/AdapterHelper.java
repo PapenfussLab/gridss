@@ -12,7 +12,7 @@ import htsjdk.samtools.util.SequenceUtil;
 
 /**
  * Provides adapter related utilities
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class AdapterHelper {

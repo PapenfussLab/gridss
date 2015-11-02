@@ -14,7 +14,7 @@ import gnu.trove.map.hash.TIntDoubleHashMap;
 /**
  * Caches results so the underlying distribution is not converted
  * to/from an array for every function call
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class CachedEnumeratedIntegerDistribution extends EnumeratedIntegerDistribution {

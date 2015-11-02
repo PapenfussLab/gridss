@@ -53,7 +53,7 @@ public class VcfFileUtil {
 	}
 	/**
 	 * VCF Sort task
-	 * @author cameron.d
+	 * @author Daniel Cameron
 	 *
 	 */
 	public static class SortCallable implements Callable<Void> {

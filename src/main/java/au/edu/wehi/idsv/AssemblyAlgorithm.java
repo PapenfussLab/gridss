@@ -2,7 +2,7 @@ package au.edu.wehi.idsv;
 
 /**
  * Assembly algorithm to use
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public enum AssemblyAlgorithm {

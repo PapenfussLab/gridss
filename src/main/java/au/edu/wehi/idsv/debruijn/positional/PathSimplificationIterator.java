@@ -46,7 +46,7 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
  * The number of possible merges is unbounded, but since each merge results in a node containing N_1,
  * width and length of the merge is bounded by maxSupportWidth and maxPathLength
  * 
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class PathSimplificationIterator implements PeekingIterator<KmerPathNode> {

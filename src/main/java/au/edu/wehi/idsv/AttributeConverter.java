@@ -19,7 +19,7 @@ import htsjdk.variant.vcf.VCFConstants;
  * as per Picard SAM tag and VCF attribute persistence APIs.
  * 
  * Note that when reading numeric attributes from a VCF, Picard does not perform string conversion.
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class AttributeConverter {

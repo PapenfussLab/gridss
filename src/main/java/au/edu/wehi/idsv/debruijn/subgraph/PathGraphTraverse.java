@@ -24,7 +24,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 /**
  * Dynamic programming traversal of subgraph of path graph
  * 
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 class PathGraphTraverse<T, PN extends DeBruijnPathNode<T>> {

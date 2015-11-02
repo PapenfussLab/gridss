@@ -13,7 +13,7 @@ import htsjdk.samtools.util.CloserUtil;
 
 /**
  * Exports a positional graph to a collection of FASTG files
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class PositionalExporter {

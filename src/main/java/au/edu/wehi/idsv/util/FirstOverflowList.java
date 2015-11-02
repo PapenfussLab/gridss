@@ -7,7 +7,7 @@ import java.util.List;
 
 /**
  * Creates a collection of collections that usually contain a single element
- * @author cameron.d
+ * @author Daniel Cameron
  *
  * @param <T>
  */

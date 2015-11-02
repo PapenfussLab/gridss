@@ -20,7 +20,7 @@ import picard.analysis.directed.InsertSizeMetricsCollector;
 /**
  * Collects metrics required by gridss
  * 
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class IdsvSamFileMetricsCollector {

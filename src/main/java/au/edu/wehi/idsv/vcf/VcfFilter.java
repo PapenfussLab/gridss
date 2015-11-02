@@ -4,7 +4,7 @@ import htsjdk.variant.vcf.VCFFilterHeaderLine;
 
 /**
  * VCF filters used by idsv
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public enum VcfFilter {

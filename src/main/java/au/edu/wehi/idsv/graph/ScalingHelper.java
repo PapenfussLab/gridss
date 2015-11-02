@@ -2,7 +2,7 @@ package au.edu.wehi.idsv.graph;
 
 /**
  * Converts floating point to exact representation
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class ScalingHelper {

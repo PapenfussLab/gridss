@@ -15,7 +15,7 @@ import htsjdk.samtools.util.Log;
 
 /**
  * 2bit encodes and buffers the entire reference to enable efficient random lookup of small subsequences
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class TwoBitBufferedReferenceSequenceFile implements ReferenceSequenceFile, ReferenceLookup {

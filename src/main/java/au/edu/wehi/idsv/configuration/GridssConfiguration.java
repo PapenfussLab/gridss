@@ -12,7 +12,7 @@ import au.edu.wehi.idsv.AdapterHelper;
 
 /**
  * Configuration settings container for gridss
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class GridssConfiguration {

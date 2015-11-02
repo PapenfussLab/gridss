@@ -8,7 +8,7 @@ import java.util.RandomAccess;
  * 
  * Only the maxCapacity elements with the highest index are retained. All other elements are null
  * 
- * @author cameron.d
+ * @author Daniel Cameron
  *
  * @param <T>
  */

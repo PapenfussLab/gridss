@@ -18,7 +18,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 
 /**
  * Outputs variant calls to BEDPE
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class BedpeWriter implements Closeable {

@@ -13,7 +13,7 @@ import htsjdk.samtools.util.CloseableIterator;
 
 /**
  * Ad-hoc debugging tests
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class Manual extends TestHelper {

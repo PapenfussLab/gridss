@@ -4,7 +4,7 @@ import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 
 /**
  * Evidence contribution to the given kmer position of a single piece of evidence
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class KmerSupportNode implements KmerNode {

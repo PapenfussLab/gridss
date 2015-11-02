@@ -4,7 +4,7 @@ import java.util.Iterator;
 
 /**
  * Adds additional VCF attributes to the given breakend
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public interface BreakendAnnotator extends Iterator<VariantContextDirectedEvidence> {

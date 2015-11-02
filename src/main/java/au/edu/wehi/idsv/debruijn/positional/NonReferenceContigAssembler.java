@@ -241,7 +241,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	}
 	/**
 	 * Corrects misassembly due to incorporation of read pair evidence at multiple positions
-	 * @author cameron.d
+	 * @author Daniel Cameron
 	 *
 	 */
 	private static class MisassemblyFixer {
@@ -574,7 +574,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	 * No contigs will be called for such evidence since no all
 	 * connected kmers are reference kmers.
 	 * 
-	 * @author cameron.d
+	 * @author Daniel Cameron
 	 *
 	 */
 	private void removeOrphanedNonReferenceSubgraphs() {
@@ -625,7 +625,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	}
 	/**
 	 * Intercepts the underlying stream and adds nodes to the graph as they are encountered
-	 * @author cameron.d
+	 * @author Daniel Cameron
 	 *
 	 */
 	private class KmerPathNodeIteratorInterceptor implements Iterator<KmerPathNode> {
