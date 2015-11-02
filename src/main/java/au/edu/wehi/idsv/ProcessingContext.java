@@ -35,7 +35,7 @@ import java.io.IOException;
 import java.util.List;
 
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
-import au.edu.wehi.idsv.configuration.ReadPairConfiguration;
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.configuration.RealignmentConfiguration;
 import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
 import au.edu.wehi.idsv.configuration.VariantCallingConfiguration;
@@ -45,6 +45,7 @@ import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.vcf.VcfConstants;
 import au.edu.wehi.idsv.visualisation.BufferTracker;
+import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -68,30 +69,21 @@ public class ProcessingContext implements Closeable {
 	private final SAMSequenceDictionary dictionary;
 	private final LinearGenomicCoordinate linear;
 	private final FileSystemContext fsContext;
-	private final boolean vcf41mode;
 	private final boolean perChr;
-	private final AssemblyConfiguration ap;
-	private final SoftClipConfiguration scp;
-	private final ReadPairConfiguration rrp;
-	private final RealignmentConfiguration rp;
-	private final VariantCallingConfiguration vcp;
+	private final GridssConfiguration config;
 	private final List<Header> metricsHeaders;
 	private final SAMFileHeader basicHeader;
 	private boolean filterDuplicates = true;
 	private long calculateMetricsRecordCount = Long.MAX_VALUE; 
 	private AssemblyIdGenerator assemblyIdGenerator = new SequentialIdGenerator("asm");
-	private BufferTracker bufferTracker = new BufferTracker(new File("gridss.buffers.csv"), Defaults.BUFFER_TRACKING_INTERVAL_SECONDS);
+	private BufferTracker bufferTracker = null;
 	private final List<String> categories = Lists.newArrayList((String)null);
 	public ProcessingContext(
 			FileSystemContext fileSystemContext,
 			List<Header> metricsHeaders,
-			SoftClipConfiguration softClipParameters,
-			ReadPairConfiguration readPairParameters,
-			AssemblyConfiguration assemblyParameters,
-			RealignmentConfiguration realignmentParameters,
-			VariantCallingConfiguration variantCallingParameters,
-			File ref, boolean perChr, boolean vcf41) {
-		this(fileSystemContext, metricsHeaders, softClipParameters, readPairParameters, assemblyParameters, realignmentParameters, variantCallingParameters, LoadReference(ref), ref, perChr, vcf41);
+			GridssConfiguration config,
+			File ref, boolean perChr) {
+		this(fileSystemContext, metricsHeaders, config, LoadReference(ref), ref, perChr);
 		BackgroundCacheReference(ref);
 	}
 	private void BackgroundCacheReference(final File ref) {
@@ -125,21 +117,12 @@ public class ProcessingContext implements Closeable {
 	public ProcessingContext(
 			FileSystemContext fileSystemContext,
 			List<Header> metricsHeaders,
-			SoftClipConfiguration softClipParameters,
-			ReadPairConfiguration readPairParameters,
-			AssemblyConfiguration assemblyParameters,
-			RealignmentConfiguration realignmentParameters,
-			VariantCallingConfiguration variantCallingParameters,
-			ReferenceLookup reference, File ref, boolean perChr, boolean vcf41) {
+			GridssConfiguration config,
+			ReferenceLookup reference, File ref, boolean perChr) {
 		this.fsContext = fileSystemContext;
 		this.metricsHeaders = metricsHeaders;
-		this.scp = softClipParameters;
-		this.rrp = readPairParameters;
-		this.ap = assemblyParameters;
-		this.rp = realignmentParameters;
-		this.vcp = variantCallingParameters;
+		this.config = config;
 		this.perChr = perChr;
-		this.vcf41mode = vcf41;
 		this.referenceFile = ref;
 		this.reference = reference;
 		if (this.reference.getSequenceDictionary() == null) {
@@ -149,6 +132,10 @@ public class ProcessingContext implements Closeable {
 		this.linear = new PaddedLinearGenomicCoordinate(this.dictionary, LINEAR_COORDINATE_CHROMOSOME_BUFFER, true);
 		this.basicHeader = new SAMFileHeader();
 		this.basicHeader.setSequenceDictionary(this.reference.getSequenceDictionary());
+		if (config.getVisualisation().buffers) {
+			bufferTracker = new BufferTracker(new File(config.getVisualisation().directory, "gridss.buffers.csv"), config.getVisualisation().bufferTrackingItervalInSeconds);
+			bufferTracker.start();
+		}
 	}
 	/**
 	 * Creates a new metrics file with appropriate headers for this context 
@@ -282,30 +269,24 @@ public class ProcessingContext implements Closeable {
 	public boolean shouldProcessPerChromosome() {
 		return perChr;
 	}
-	/**
-	 * Determines whether VCF records should be compatible with VCF v4.1
-	 */
-	public boolean getVcf41Mode() {
-		return vcf41mode;
-	}
 	@Override
 	public void close() throws IOException {
 		if (reference != null) reference.close();
 	}
+	public GridssConfiguration getConfig() {
+		return config;
+	}
 	public AssemblyConfiguration getAssemblyParameters() {
-		return ap;
+		return getConfig().getAssembly();
 	}
 	public SoftClipConfiguration getSoftClipParameters() {
-		return scp;
+		return getConfig().getSoftClip();
 	}
 	public RealignmentConfiguration getRealignmentParameters() {
-		return rp;
+		return getConfig().getRealignment();
 	}
 	public VariantCallingConfiguration getVariantCallingParameters() {
-		return vcp;
-	}
-	public ReadPairConfiguration getReadPairParameters() {
-		return rrp;
+		return getConfig().getVariantCalling();
 	}
 	public boolean isFilterDuplicates() {
 		return filterDuplicates;
@@ -337,10 +318,9 @@ public class ProcessingContext implements Closeable {
 	public int getCategoryCount() {
 		return categories.size();
 	}
-	public BufferTracker getBufferTracker() {
-		return bufferTracker;
-	}
-	public void setBufferTracker(BufferTracker bufferTracker) {
-		this.bufferTracker = bufferTracker;
+	public void registerBuffer(String context, TrackedBuffer obj) {
+		if (bufferTracker != null) {
+			bufferTracker.register(context, obj);
+		}
 	}
 }

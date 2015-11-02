@@ -188,7 +188,7 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	}
 	private void go(ProcessingContext pc) { go(pc, true); }
 	private void go(ProcessingContext pc, boolean writefiltered) {
-		pc.getAssemblyParameters().writeFilteredAssemblies = writefiltered;
+		pc.getAssemblyParameters().writeFiltered = writefiltered;
 		pc.getAssemblyParameters().minReads = 0;
 		pc.getRealignmentParameters().minLength = 0;
 		pc.getRealignmentParameters().mapqUniqueThreshold = 0;
@@ -323,7 +323,7 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 				0, 5, 1, B("ATA"), B("ATA")),
 				0, 10, false);
 		ProcessingContext pc = getCommandlineContext(false);
-		pc.getAssemblyParameters().writeFilteredAssemblies = false;
+		pc.getAssemblyParameters().writeFiltered = false;
 		pc.getAssemblyParameters().minReads = 1000;
 		pc.getRealignmentParameters().minLength = 0;
 		pc.getRealignmentParameters().mapqUniqueThreshold = 0;

@@ -61,7 +61,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", Read(3, 1, "1M99S"))
 				);
 		ProcessingContext pc = getCommandlineContext();
-		pc.getRealignmentParameters().requireRealignment = false;
+		//pc.getRealignmentParameters().requireRealignment = false;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
 		ses.completeSteps(EnumSet.allOf(ProcessStep.class));
 		writeRealignment(pc, ses, 0);
@@ -92,7 +92,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 				);
 		ProcessingContext pc = getCommandlineContext();
 		pc.getAssemblyParameters().subgraph.maxSubgraphFragmentWidth = -1;
-		pc.getRealignmentParameters().requireRealignment = false;
+		//pc.getRealignmentParameters().requireRealignment = false;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
 		ses.completeSteps(EnumSet.allOf(ProcessStep.class));
 		writeRealignment(pc, ses, 0);
@@ -160,7 +160,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 				OEA(0, 1, "100M", true)
 				);
 		ProcessingContext pc = getCommandlineContext();
-		pc.getAssemblyParameters().writeFilteredAssemblies = false;
+		pc.getAssemblyParameters().writeFiltered = false;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
 		ses.completeSteps(EnumSet.allOf(ProcessStep.class));
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));

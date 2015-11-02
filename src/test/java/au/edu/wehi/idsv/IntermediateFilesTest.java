@@ -29,12 +29,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
-import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
-import au.edu.wehi.idsv.configuration.ReadPairConfiguration;
-import au.edu.wehi.idsv.configuration.RealignmentConfiguration;
-import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
-import au.edu.wehi.idsv.configuration.VariantCallingConfiguration;
-
 import com.google.common.base.Function;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -68,21 +62,9 @@ public class IntermediateFilesTest extends TestHelper {
 		ProcessingContext pc = new ProcessingContext(
 				new FileSystemContext(testFolder.getRoot(), 500000),
 				headers,
-				new SoftClipConfiguration() {{
-					minAnchorEntropy = 0;
-				}},
-				new ReadPairConfiguration() {{
-					minAnchorEntropy = 0;
-				}},
-				new AssemblyConfiguration() {{
-					minReads = 2;
-					includeRemoteSplitReads = false;
-					anchorRealignment.perform = false;
-					}},
-				new RealignmentConfiguration(),
-				new VariantCallingConfiguration(),
+				getConfig(),
 				reference,
-				perChr, false);
+				perChr);
 		pc.registerCategory(0, "Normal");
 		pc.registerCategory(1, "Tumour");
 		return pc;

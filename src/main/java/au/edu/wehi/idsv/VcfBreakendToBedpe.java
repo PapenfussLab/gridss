@@ -45,7 +45,7 @@ public class VcfBreakendToBedpe extends picard.cmdline.CommandLineProgram {
 			TMP_DIR = Lists.newArrayList(new File("."));
 		}
 		try {
-			ProcessingContext pc = new ProcessingContext(new FileSystemContext(TMP_DIR.get(0), MAX_RECORDS_IN_RAM), null, null, null, null, null, null, REFERENCE, false, false);
+			ProcessingContext pc = new ProcessingContext(new FileSystemContext(TMP_DIR.get(0), MAX_RECORDS_IN_RAM), null, null, REFERENCE, false);
 			writeBreakpointBedpe(pc, INPUT, OUTPUT, INCLUDE_FILTERED, INCLUDE_HEADER, INCLUDE_LOW_BREAKEND, INCLUDE_HIGH_BREAKEND);
 		} catch (IOException e) {
 			log.error(e);

@@ -1,29 +1,35 @@
 package au.edu.wehi.idsv.configuration;
 
+import htsjdk.samtools.SAMRecord;
+
+import org.apache.commons.configuration.Configuration;
+
 import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.SoftClipEvidence;
-import htsjdk.samtools.SAMRecord;
 
 
 public class RealignmentConfiguration {
+	public static final String CONFIGURATION_PREFIX = "realignment";
+	public RealignmentConfiguration(Configuration config) {
+		config = config.subset(CONFIGURATION_PREFIX);
+		minLength = config.getInt("minLength");
+		minAverageQual = config.getFloat("minAverageQual");
+		mapqUniqueThreshold = config.getInt("mapqUniqueThreshold");
+		assemblyIterations = config.getInt("assemblyIterations");
+	}
 	/**
 	 * Minimum breakend length to be considered for realignment
 	 */
-	public int minLength = 25;
+	public int minLength;
 	/**
 	 * Minimum average breakend quality score to be considered for realignment 
 	 */
-	public float minAverageQual = new SoftClipConfiguration().minAverageQual;
+	public float minAverageQual;
 	/**
 	 * Minimum MAPQ of realigned segment to be considered uniquely aligned  
 	 */
-	public int mapqUniqueThreshold = 10;
-	/**
-	 * Flag indicating if realignment is required. If true, an error is raised
-	 * if a realignment record is required a no record is found.
-	 */
-	public boolean requireRealignment = true;
+	public int mapqUniqueThreshold;
 	/**
 	 * Number of realignment iterations performed
 	 */

@@ -9,9 +9,9 @@ import htsjdk.samtools.SAMUtils;
 
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-
 import au.edu.wehi.idsv.sam.SamTags;
+
+import com.google.common.collect.ImmutableList;
 
 
 public class SmallIndelSAMRecordAssemblyEvidenceTest extends TestHelper {

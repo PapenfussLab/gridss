@@ -12,8 +12,6 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import au.edu.wehi.idsv.Defaults;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
@@ -43,12 +41,12 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
 	 * @param batchSize size of each read-ahead buffer. A larger batch size will increase throughput and latency.
 	 */
 	public AsyncBufferedIterator(Iterator<T> iterator, int bufferCount, int batchSize) {
-		this(iterator, bufferCount, batchSize, null);
+		this(iterator, null, bufferCount, batchSize);
 	}
-	public AsyncBufferedIterator(Iterator<T> iterator, String description) {
-		this(iterator, Defaults.ASYNC_READAHEAD_BUFFERS, Defaults.ASYNC_READAHEAD_BUFFER_SIZE, description);
-	}
-	public AsyncBufferedIterator(Iterator<T> iterator, int bufferCount, int batchSize, String description) {
+	//public AsyncBufferedIterator(Iterator<T> iterator, String description) {
+	//	this(iterator, Defaults.ASYNC_READAHEAD_BUFFERS, Defaults.ASYNC_READAHEAD_BUFFER_SIZE, description);
+	//}
+	public AsyncBufferedIterator(Iterator<T> iterator, String description, int bufferCount, int batchSize) {
 		if (iterator == null) throw new IllegalArgumentException();
 		if (bufferCount <= 0 || batchSize <= 0) throw new IllegalArgumentException("Buffer size must be at least 1.");
 		this.underlying = iterator;

@@ -26,15 +26,9 @@ public abstract class SimulationGenerator extends CommandLineProgram {
     protected ProcessingContext getProcessingContext() {
     	ProcessingContext pc = new ProcessingContext(
     			new FileSystemContext(TMP_DIR.get(0), new File("."), MAX_RECORDS_IN_RAM),
-    			null,
-    			null,
-    			null,
-    			null,
-    			null,
-    			null,
+    			null, null,
     			REFERENCE,
-    			false,
-    			true);
+    			false);
     	return pc;
     }
 }

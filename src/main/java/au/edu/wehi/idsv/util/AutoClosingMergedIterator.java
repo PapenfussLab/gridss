@@ -39,7 +39,7 @@ public class AutoClosingMergedIterator<T> implements Closeable, CloseableIterato
 			@Override
 			public AutoClosingIterator<T> apply(Iterator<? extends T> input) {
 				AutoClosingIterator<T> it = new AutoClosingIterator<T>(input);
-				if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
+				if (Defaults.SANITY_CHECK_ITERATORS) {
 					CountingIterator<T> cit = new CountingIterator<T>(it);
 					it = new AutoClosingIterator<T>(new OrderAssertingIterator<T>(cit, comparator), ImmutableList.<Closeable>of(it));
 					counts.add(cit);
@@ -52,7 +52,7 @@ public class AutoClosingMergedIterator<T> implements Closeable, CloseableIterato
 	@Override
 	public boolean hasNext() {
 		if (closed) return false;
-		if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS && !merged.hasNext()) {
+		if (Defaults.SANITY_CHECK_ITERATORS && !merged.hasNext()) {
 			int underlyingCounts = 0;
 			for (CountingIterator<T> cit : counts) {
 				underlyingCounts += cit.emitted();

@@ -1,6 +1,6 @@
 package au.edu.wehi.validation;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 

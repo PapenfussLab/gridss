@@ -131,7 +131,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		weight.add(node.weight());
 		totalWeight += node.weight();
 		reference |= node.isReference();
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			sanityCheck();
 		}
 	}
@@ -183,7 +183,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		node.prevList = null;
 		node.nextList = null;
 		node.invalidate();
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			sanityCheck();
 		}
 	}
@@ -256,7 +256,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		replaceEdges(node, this);
 		start = node.start;
 		node.invalidate();
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			sanityCheck();
 		}
 	}
@@ -291,7 +291,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 			weight.set(i, weight.get(i) + toMerge.weight.get(i));
 		}
 		replaceEdges(toMerge, this);
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			sanityCheck();
 		}
 		toMerge.invalidate();
@@ -407,7 +407,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	}
 	public static void addEdge(KmerPathNode from, KmerPathNode to) {
 		addEdgeImpl(from, to);
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			from.sanityCheck();
 			to.sanityCheck();
 		}
@@ -564,7 +564,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 			split.additionalKmers = splitKmers;
 			split.additionalKmerOffsets = splitOffsets;
 		}
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			this.sanityCheck();
 			split.sanityCheck();
 		}
@@ -638,7 +638,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 			split.additionalKmers = new LongArrayList(this.additionalKmers);
 			split.additionalKmerOffsets = new IntArrayList(this.additionalKmerOffsets);
 		}
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			this.sanityCheck();
 			split.sanityCheck();
 		}
@@ -706,7 +706,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 			assert(additionalSplit == null);
 			this.prevList = null;
 			split.nextList = null;
-			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 				assert(sanityCheck());
 				assert(split.sanityCheck());
 			}
@@ -757,7 +757,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		if (length() == 0) {
 			invalidate();
 		}
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			if (kmers != null) {
 				assert(sanityCheck());
 			}
@@ -775,7 +775,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		//ArrayList<? extends List<? extends KmerNode>> debugCloneToRemove = Lists.newArrayList(toRemove);
 		int preWeight = 0;
 		int deltaWeight = 0;
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			preWeight = node.weight() * node.width();
 			for (int i = 0; i < toRemove.size(); i++) {
 				List<? extends KmerNode> list = toRemove.get(i);
@@ -814,7 +814,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 			if (collection != null) {
 				collection.sort(KmerNodeUtil.ByLastStart);
 				node = removeWeight(replacement, node, index, collection);
-				if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+				if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 					assert(replacement.stream().allMatch(n -> n.isValid()));
 					if (node != null) {
 						assert(node.sanityCheck());
@@ -826,7 +826,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 			assert(node.isValid());
 			replacement.addFirst(node);
 		}
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			assert(replacement.stream().allMatch(n -> n.isValid()));
 			replacement.stream().forEach(n -> n.sanityCheck());
 			int postWeight = replacement.stream().mapToInt(n -> n.weight() * n.width()).sum();
@@ -918,7 +918,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 				node = after;
 			}
 			start = end + 1;
-			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 				if (node != null) {
 					assert(node.sanityCheck());
 				}

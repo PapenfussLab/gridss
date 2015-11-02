@@ -39,10 +39,11 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 		ProcessingContext pc = super.getCommandlineContext(perChr);
 		pc.getAssemblyParameters().errorCorrection.maxBaseMismatchForCollapse = 1;
 		pc.getAssemblyParameters().errorCorrection.collapseBubblesOnly = true;
-		pc.getAssemblyParameters().debruijnGraphVisualisationDirectory = new File(super.testFolder.getRoot(), "visualisation");
-		pc.getAssemblyParameters().visualiseAll = true;
 		pc.getAssemblyParameters().method = AssemblyAlgorithm.Positional;
 		pc.getAssemblyParameters().includeRemoteSplitReads = false;
+		pc.getConfig().getVisualisation().directory = new File(super.testFolder.getRoot(), "visualisation");
+		pc.getConfig().getVisualisation().assembly = true;
+		pc.getConfig().getVisualisation().directory.mkdir();
 		return pc;
 	}
 }

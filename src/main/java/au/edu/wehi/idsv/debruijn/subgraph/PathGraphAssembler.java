@@ -13,6 +13,7 @@ import java.util.Stack;
 
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraph;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphUtil;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
@@ -39,6 +40,7 @@ import com.google.common.primitives.Ints;
  */
 public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBruijnPathGraph<T, PN> {
 	private static final Log log = Log.getInstance(PathGraphAssembler.class);
+	private final GridssConfiguration config;
 	private final AssemblyConfiguration parameters;
 	private final List<NonReferenceSubgraph> subgraphs = Lists.newArrayList();
 	private static int timeoutGraphsWritten = 0;
@@ -105,10 +107,10 @@ public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBru
 				) {
 			PathGraphTraverse<T, PN> trav = new PathGraphTraverse<T, PN>(
 					PathGraphAssembler.this,
-					parameters.subgraph.subgraphMaxPathTraversalNodes,
+					parameters.subgraph.traveralMaximumPathNodes,
 					traverseForward,
 					false,
-					parameters.subgraph.subgraphAssemblyTraversalMaximumBranchingFactor,
+					parameters.subgraph.traversalMaximumBranchingFactor,
 					Integer.MAX_VALUE);
 			List<PN> best;
 			if (endNodes != null) {
@@ -117,7 +119,7 @@ public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBru
 				best = trav.traverse(startNodes);
 			}
 			totalNodesTraversed += trav.getNodesTraversed();
-			timeoutReached |= trav.getNodesTraversed() >= parameters.subgraph.subgraphMaxPathTraversalNodes;
+			timeoutReached |= trav.getNodesTraversed() >= parameters.subgraph.traveralMaximumPathNodes;
 			return best;
 		}
 		/**
@@ -129,16 +131,16 @@ public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBru
 		 */
 		private List<PN> traverseReference(PN node, boolean traverseForward, int targetLength) {
 			assert(!isReference(node));
-			PathGraphTraverse<T, PN> trav = new PathGraphTraverse<T, PN>(PathGraphAssembler.this, parameters.subgraph.subgraphMaxPathTraversalNodes,
+			PathGraphTraverse<T, PN> trav = new PathGraphTraverse<T, PN>(PathGraphAssembler.this, parameters.subgraph.traveralMaximumPathNodes,
 					traverseForward, true,
 					// if anchor has previously timed out on a different breakend subgraph
 					// just do a greedy traversal as we're likely to time out again
-					anchorTimeoutReached ? 1 : parameters.subgraph.subgraphAssemblyTraversalMaximumBranchingFactor,
+					anchorTimeoutReached ? 1 : parameters.subgraph.traversalMaximumBranchingFactor,
 					// assemble anchorAssemblyLength bases / at least the length of the breakend
 					node.length() + targetLength);
 			List<PN> anchor = trav.traverse(ImmutableList.of(node));
 			totalNodesTraversed += trav.getNodesTraversed();
-			anchorTimeoutReached |= trav.getNodesTraversed() >= parameters.subgraph.subgraphMaxPathTraversalNodes; 
+			anchorTimeoutReached |= trav.getNodesTraversed() >= parameters.subgraph.traveralMaximumPathNodes; 
 			timeoutReached |= anchorTimeoutReached;
 			assert(anchor != null); // assembly includes starting node so must include that
 			assert(anchor.size() > 0); // assembly includes starting node so must include that
@@ -185,7 +187,7 @@ public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBru
 			assert(best != null); // subgraphs contain at least one node
 			assert(best.size() > 0);
 			
-			int targetAnchorAssemblyLength = Math.max(parameters.anchorAssemblyLength, WeightedSequenceGraphNodeUtil.nodeLength(best));
+			int targetAnchorAssemblyLength = Math.max(parameters.anchorLength, WeightedSequenceGraphNodeUtil.nodeLength(best));
 			List<PN> preAnchor = traverseReference(best.get(0), false, targetAnchorAssemblyLength);			
 			List<PN> postAnchor = traverseReference(best.get(best.size() - 1), true, targetAnchorAssemblyLength);
 			ArrayList<PN> result = new ArrayList<PN>(best.size() + preAnchor.size() + postAnchor.size());
@@ -196,9 +198,10 @@ public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBru
 			return result;
 		}
 	}
-	public PathGraphAssembler(DeBruijnGraph<T> graph, AssemblyConfiguration parameters, Collection<T> seeds, PathNodeFactory<T, PN> factory, SubgraphAssemblyAlgorithmTracker<T, PN> tracker) {
+	public PathGraphAssembler(DeBruijnGraph<T> graph, GridssConfiguration config, Collection<T> seeds, PathNodeFactory<T, PN> factory, SubgraphAssemblyAlgorithmTracker<T, PN> tracker) {
 		super(graph, seeds, factory, tracker);
-		this.parameters = parameters;
+		this.config = config;
+		this.parameters = config.getAssembly();
 	}
 	public List<List<PN>> assembleContigs() {
 		return assembleContigs(null);
@@ -237,14 +240,13 @@ public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBru
 			graphExporter.snapshot(this);
 			//graphExporter.annotateStartingPaths(startingPaths);
 			graphExporter.contigs(result);
-		} else if ((misassemblyDetected || timeoutReached) && parameters.debruijnGraphVisualisationDirectory != null) {
+		} else if ((misassemblyDetected || timeoutReached)) {
 			// weren't planning to export but we encountering something worth logging
-			parameters.debruijnGraphVisualisationDirectory.mkdirs();
 			graphExporter = new StaticDeBruijnPathGraphGexfExporter<T, PN>();
 			graphExporter.snapshot(this);
 			//graphExporter.annotateStartingPaths(startingPaths);
 			graphExporter.contigs(result);
-			graphExporter.saveTo(new File(parameters.debruijnGraphVisualisationDirectory,
+			graphExporter.saveTo(new File(config.getVisualisation().directory,
 					String.format("pathTraversalTimeout-%d.subgraph.gexf", ++timeoutGraphsWritten)));
 		}
 		tracker.assemblyNonReferenceContigs(result, totalNodesTraversed);
@@ -262,7 +264,7 @@ public class PathGraphAssembler<T, PN extends DeBruijnPathNode<T>> extends DeBru
 				subgraphs.add(nrsg);
 			}
 		}
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			assert(sanityCheckSubgraphs());
 		}
 		//tracker.calcNonReferenceSubgraphs(subgraphs, startingPaths);

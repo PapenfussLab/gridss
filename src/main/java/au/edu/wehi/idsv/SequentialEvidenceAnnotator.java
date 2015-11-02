@@ -125,7 +125,7 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 	protected VariantContextDirectedEvidence computeNext() {
 		if (variantBuffer.isEmpty()) {
 			if (!callIt.hasNext()) {
-				if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
+				if (Defaults.SANITY_CHECK_ITERATORS) {
 					// we have no more calls to make so this doesn't actually need to be done
 					// unless we're sanity checking
 					while (evidenceIt.hasNext()) {

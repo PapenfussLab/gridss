@@ -149,7 +149,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 				done = false;
 				break;
 		}
-		return done && IntermediateFileUtil.checkIntermediate(target, source);
+		return done && IntermediateFileUtil.checkIntermediate(target, source, getContext().getConfig().ignoreFileTimestamps);
 	}
 	protected IdsvSamFileMetrics getMetrics() {
 		if (metrics == null) {
@@ -180,7 +180,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		} else {
 			CloseableIterator<DirectedEvidence> it = singleFileIterator(includeReadPair, includeSoftClip, includeSoftClipRemote);
 			// can only check pairing if we are iterating over the entire record set
-			if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
+			if (Defaults.SANITY_CHECK_ITERATORS) {
 				if (includeSoftClip == includeSoftClipRemote) {
 					it = new AutoClosingIterator<DirectedEvidence>(new PairedEvidenceTracker<DirectedEvidence>(it), ImmutableList.<Closeable>of(it));
 				}
@@ -249,9 +249,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 			final CloseableIterator<SAMRecord> rawPairIt = getContext().getSamReaderIterator(readPair);
 			final CloseableIterator<SAMRecord> rawMateIt = getContext().getSamReaderIterator(pairMate);
 			final ReadPairEvidenceIterator rawRpIt = new ReadPairEvidenceIterator(this, rawPairIt, rawMateIt);
-			getContext().getBufferTracker().register(getSourceFile().getName() + "." + chr + ".rp", rawRpIt);
+			getContext().registerBuffer(getSourceFile().getName() + "." + chr + ".rp", rawRpIt);
 			final DirectEvidenceWindowedSortingIterator<NonReferenceReadPair> sortedRpIt = new DirectEvidenceWindowedSortingIterator<NonReferenceReadPair>(getContext(), getReadPairSortWindowSize(), applyBlacklistFilter(rawRpIt));
-			getContext().getBufferTracker().register(getSourceFile().getName() + "." + chr + ".rp", sortedRpIt);
+			getContext().registerBuffer(getSourceFile().getName() + "." + chr + ".rp", sortedRpIt);
 			final CloseableIterator<NonReferenceReadPair> finalrpIt = new AutoClosingIterator<NonReferenceReadPair>(sortedRpIt,
 					Lists.<Closeable>newArrayList(rawRpIt, rawPairIt, rawMateIt));
 			itList.add((CloseableIterator<DirectedEvidence>)(Object)finalrpIt);
@@ -267,14 +267,14 @@ public class SAMEvidenceSource extends EvidenceSource {
 				CloseableIterator<SAMRecord> rawRealignIt = getContext().getSamReaderIterator(realigned);
 				scToClose.add(rawRealignIt);
 				scIt = new RealignedSoftClipEvidenceIterator(scIt, rawRealignIt);
-				getContext().getBufferTracker().register(getSourceFile().getName() + "." + chr + ".sc.ra", (RealignedSoftClipEvidenceIterator)scIt);
+				getContext().registerBuffer(getSourceFile().getName() + "." + chr + ".sc.ra", (RealignedSoftClipEvidenceIterator)scIt);
 				scToClose.add(scIt);
 			} else {
 				//log.info("Realigned soft clip evidence not present due to missing realignment bam ", realigned);
 			}
 			// sort into evidence order
 			DirectEvidenceWindowedSortingIterator<SoftClipEvidence> dit = new DirectEvidenceWindowedSortingIterator<SoftClipEvidence>(getContext(), getSoftClipSortWindowSize(), applyBlacklistFilter(scIt));
-			getContext().getBufferTracker().register(getSourceFile().getName() + "." + chr + ".sc", dit);
+			getContext().registerBuffer(getSourceFile().getName() + "." + chr + ".sc", dit);
 			scIt =  new AutoClosingIterator<SoftClipEvidence>(dit, scToClose);
 			itList.add((CloseableIterator<DirectedEvidence>)(Object)scIt);
 		}
@@ -286,17 +286,17 @@ public class SAMEvidenceSource extends EvidenceSource {
 			CloseableIterator<SAMRecord> sssRawItf = getContext().getSamReaderIterator(remoteSoftClip);
 			CloseableIterator<SAMRecord> sssRawItb = getContext().getSamReaderIterator(remoteSoftClip);
 			RealignedRemoteSoftClipEvidenceIterator remoteScIt = new RealignedRemoteSoftClipEvidenceIterator(this, rsrRawIt, sssRawItf, sssRawItb);
-			getContext().getBufferTracker().register(getSourceFile().getName() + "." + chr + ".scr", remoteScIt);
+			getContext().registerBuffer(getSourceFile().getName() + "." + chr + ".scr", remoteScIt);
 			DirectEvidenceWindowedSortingIterator<RealignedRemoteSoftClipEvidence> dit = new DirectEvidenceWindowedSortingIterator<RealignedRemoteSoftClipEvidence>(getContext(), getSoftClipSortWindowSize(), applyBlacklistFilter(remoteScIt));
-			getContext().getBufferTracker().register(getSourceFile().getName() + "." + chr + ".scr", dit);
+			getContext().registerBuffer(getSourceFile().getName() + "." + chr + ".scr", dit);
 			CloseableIterator<RealignedRemoteSoftClipEvidence> sortedRemoteScIt = new AutoClosingIterator<RealignedRemoteSoftClipEvidence>(dit, ImmutableList.<Closeable>of(remoteScIt, rsrRawIt, sssRawItf, sssRawItb));
 			itList.add((CloseableIterator<DirectedEvidence>)(Object)sortedRemoteScIt);
 		}
 		CloseableIterator<DirectedEvidence> mergedIt = new AutoClosingMergedIterator<DirectedEvidence>(itList, DirectedEvidenceOrder.ByNatural);
-		if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_ITERATORS) {
 			mergedIt = new AutoClosingIterator<DirectedEvidence>(new OrderAssertingIterator<DirectedEvidence>(mergedIt, DirectedEvidenceOrder.ByNatural), ImmutableList.<Closeable>of(mergedIt));
 		}
-		return new AsyncBufferedIterator<DirectedEvidence>(mergedIt, input.getName() + "-" + chr);
+		return new AsyncBufferedIterator<DirectedEvidence>(mergedIt, input.getName() + "-" + chr, getContext().getConfig().async_bufferCount, getContext().getConfig().async_bufferSize);
 	}
 	private <T extends DirectedEvidence> IntervalBedFilteringIterator<T> applyBlacklistFilter(Iterator<T> it) {
 		return new IntervalBedFilteringIterator<T>(getBlacklistedRegions(), it, getBlacklistFilterMargin());

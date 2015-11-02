@@ -451,7 +451,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			removeWeight(entry.getKey(), entry.getValue(), simplifyCandidates);
 		}
 		simplify(simplifyCandidates);
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			assert(sanityCheck());
 		}
 	}
@@ -521,7 +521,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		simplifyCandidates.remove(node);
 		Collection<KmerPathNode> replacementNodes = KmerPathNode.removeWeight(node, toRemove);
 		for (KmerPathNode split : replacementNodes) {
-			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 				assert(evidenceTracker.matchesExpected(new KmerPathSubnode(split)));
 			}
 			addToGraph(split);
@@ -648,7 +648,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		public KmerPathNode next() {
 			KmerPathNode node = underlying.next();
 			consumed++;
-			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 				assert(evidenceTracker.matchesExpected(new KmerPathSubnode(node)));
 			}
 			addToGraph(node);

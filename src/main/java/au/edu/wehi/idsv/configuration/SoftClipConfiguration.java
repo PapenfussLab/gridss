@@ -1,34 +1,26 @@
 package au.edu.wehi.idsv.configuration;
 
-import au.edu.wehi.idsv.AdapterHelper;
-
+import org.apache.commons.configuration.Configuration;
 
 public class SoftClipConfiguration {
+	public static final String CONFIGURATION_PREFIX = "softclip";
+	public SoftClipConfiguration(Configuration config) {
+		config = config.subset(CONFIGURATION_PREFIX);
+		minAverageQual = config.getFloat("minAverageQual");
+		minLength = config.getInt("minLength");
+		minAnchorIdentity = config.getFloat("minAnchorIdentity");
+	}
 	/**
 	 * Minimum average breakend quality score to be considered a valid soft clip
 	 * This filters out reads that are soft-clipped due to sequencing errors  
 	 */
-	public float minAverageQual = 5;
+	public float minAverageQual;
 	/**
 	 * Minimum soft clip length to be considered evidence
 	 */
-	public int minLength = 4;
+	public int minLength;
 	/**
-	 * Minimum MAPQ of read to considered evidence
+	 * Minimum anchor identity to considered evidence
 	 */
-	public int minReadMapq = 5;
-	/**
-	 * Minimum anchor percent identity to considered evidence
-	 * 0-100
-	 */
-	public float minAnchorIdentity = 95;
-	/**
-	 * Minimum entropy of anchored sequence (in bits) (Shannon entropy)
-	 */
-	public double minAnchorEntropy = 0.5;
-	public AdapterHelper adapters = new AdapterHelper(new String[] {
-			"AGATCGGAAGAG", // Illumina Universal Adapter
-			"ATGGAATTCTCG", // Illumina Small RNA Adapter
-			"CTGTCTCTTATA", // Nextera Transposase Sequence
-	});
+	public float minAnchorIdentity;
 }

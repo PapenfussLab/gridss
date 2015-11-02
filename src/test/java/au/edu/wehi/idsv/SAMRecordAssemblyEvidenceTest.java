@@ -6,28 +6,24 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.metrics.Header;
+import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
-import au.edu.wehi.idsv.configuration.ReadPairConfiguration;
-import au.edu.wehi.idsv.configuration.RealignmentConfiguration;
-import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
-import au.edu.wehi.idsv.configuration.VariantCallingConfiguration;
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.metrics.Header;
-import htsjdk.samtools.util.SequenceUtil;
 
 
 public class SAMRecordAssemblyEvidenceTest extends TestHelper {
@@ -335,15 +331,13 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	@Rule
     public TemporaryFolder testFolder = new TemporaryFolder();
 	@Test
-	public void realign_should_fix_778_chr1_170849702_misalignment() {
+	public void realign_should_fix_778_chr1_170849702_misalignment() throws ConfigurationException {
 		String assembly = "ATCCATCCCTATGACCCAAACATCTCCCACCAGGCCTCATGTTCAATATTAAAGATCACATTTCAACTTGAGATTTGGAGGGGACAAACATACAAATCATATCATTATCTCTCTCCCCACTTCTCTCTTTATCAATCCCTCCCTCTTTGTCAATCTTAGCCTTGGCCTTCAGATTTTACCACTTGATTTTTCACATTTTCTGTATTCTTAAT"
 				+ "GATTATTATATTTTCATGTTCTTGCTAATCTATATCATGGTTAGAAATCAAAGCATGCCGAAATTTCTCTCTTACTTTTTTTGCTGTT";
 		File ref = new File("src/test/resources/chr1_170849600_170849850.fa");
 		ProcessingContext context = new ProcessingContext(getFSContext(),
-				new ArrayList<Header>(), new SoftClipConfiguration(),
-				new ReadPairConfiguration(), new AssemblyConfiguration(),
-				new RealignmentConfiguration(), new VariantCallingConfiguration(),
-				ref, false, false);
+				new ArrayList<Header>(), new GridssConfiguration(),
+				ref, false);
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(context, AES(context), BWD, null,
 				0, 170849702-170849600+1, 97, B(assembly), B(40, assembly.length())).realign(50, true, 0.5f);
 		// anchor location is 11bp off

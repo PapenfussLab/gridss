@@ -8,11 +8,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
-import au.edu.wehi.idsv.configuration.ReadPairConfiguration;
-import au.edu.wehi.idsv.configuration.RealignmentConfiguration;
-import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
-import au.edu.wehi.idsv.configuration.VariantCallingConfiguration;
+import org.apache.commons.configuration.ConfigurationException;
+
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
 
 /**
  * Ad-hoc debugging tests
@@ -24,16 +22,12 @@ public class Manual extends TestHelper {
 	 * Test our iterators are behaving correctly
 	 */
 	//@Test
-	public void debug778sorting() {
+	public void debug778sorting() throws ConfigurationException {
 		ProcessingContext pc = new ProcessingContext(
 			new FileSystemContext(new File("W:\\778\\idsv"), new File("W:\\778\\idsv"), 500000),
 			new ArrayList<Header>(),
-			new SoftClipConfiguration(),
-			new ReadPairConfiguration(),
-			new AssemblyConfiguration(),
-			new RealignmentConfiguration(),
-			new VariantCallingConfiguration(),
-			new File("C:\\dev\\hg19_karyotypic.fa"), true, false);
+			new GridssConfiguration(),
+			new File("C:\\dev\\hg19_karyotypic.fa"), true);
 		List<SAMEvidenceSource> samEvidence = new ArrayList<SAMEvidenceSource>();
 		for (String s : new String[] {
 				"W:\\778\\DNA_778_HiSeq_35nt_PE1_bt2_s_rg_cleaned.bam",

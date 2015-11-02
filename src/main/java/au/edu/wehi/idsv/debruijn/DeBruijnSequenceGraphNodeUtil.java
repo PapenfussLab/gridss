@@ -115,7 +115,7 @@ public class DeBruijnSequenceGraphNodeUtil {
 				}
 			}
 		}
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			int streamDiff = basesDifferent(k,
 					StreamSupport.stream(pathA.spliterator(), false).flatMapToLong(n -> IntStream.range(0, n.length()).mapToLong(i -> n.kmer(i))).skip(initialSkipCountA),
 					StreamSupport.stream(pathB.spliterator(), false).flatMapToLong(n -> IntStream.range(0, n.length()).mapToLong(i -> n.kmer(i))).skip(initialSkipCountB),

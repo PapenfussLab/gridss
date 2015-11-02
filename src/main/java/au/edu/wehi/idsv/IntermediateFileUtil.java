@@ -24,12 +24,12 @@ public abstract class IntermediateFileUtil {
 	 * @param source source file intermediate has been generated from
 	 * @return true if intermediate file appears to be valid
 	 */
-	public static boolean checkIntermediate(File file, File source) {
+	public static boolean checkIntermediate(File file, File source, boolean ignoreTimestamps) {
 		if (!file.exists()) {
 			//log.debug("Missing intermediate ", file);
 			return false;
 		}
-		if (!Defaults.IGNORE_TIMESTAMPS && source != null && source.exists() && file.lastModified() < source.lastModified() + TIMESTAMP_MS_ALLOWABLE_ERROR) {
+		if (!ignoreTimestamps && source != null && source.exists() && file.lastModified() < source.lastModified() + TIMESTAMP_MS_ALLOWABLE_ERROR) {
 			log.info(source, " has a more recent timestamp than ", file, ". Considering the latter out of date.");
 			return false;
 		}
@@ -40,27 +40,27 @@ public abstract class IntermediateFileUtil {
 	 * @param file file to check
 	 * @return true if intermediate file appears to be valid
 	 */
-	public static boolean checkIntermediate(File file) {
-		return checkIntermediate(file, null);
+	public static boolean checkIntermediate(File file, boolean ignoreTimestamps) {
+		return checkIntermediate(file, null, ignoreTimestamps);
 	}
-	public static boolean checkIntermediate(List<File> fileList, List<File> sourceList) {
+	public static boolean checkIntermediate(List<File> fileList, List<File> sourceList, boolean ignoreTimestamps) {
 		assert(fileList.size() == sourceList.size());
 		Map<String, File[]> dirList = new HashMap<String, File[]>();
 		for (int i = 0; i < fileList.size(); i++) {
 			File file = fileList.get(i);
 			File source = sourceList.get(i);
-			if (!checkIntermediateCached(dirList, file, source)) {
+			if (!checkIntermediateCached(dirList, file, source, ignoreTimestamps)) {
 				return false;
 			}
 		}
 		return true;
 	}
-	private static boolean checkIntermediateCached(Map<String, File[]> dirList, File file, File source) {
+	private static boolean checkIntermediateCached(Map<String, File[]> dirList, File file, File source, boolean ignoreTimestamps) {
 		file = cacheLookup(dirList, file); 
 		if (file == null) return false;
 		if (source != null) {
 			source = cacheLookup(dirList, source);
-			if (!Defaults.IGNORE_TIMESTAMPS && source != null && source.exists() && file.lastModified() < source.lastModified()) {
+			if (!ignoreTimestamps && source != null && source.exists() && file.lastModified() < source.lastModified()) {
 				log.info(source, " has a more recent timestamp than ", file, ". Considering ", file, " out of date.");
 				return false;
 			}

@@ -2,9 +2,8 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.samtools.SAMRecord;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,8 +14,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 
 import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;

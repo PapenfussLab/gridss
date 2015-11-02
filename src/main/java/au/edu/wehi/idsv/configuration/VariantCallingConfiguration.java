@@ -2,9 +2,10 @@ package au.edu.wehi.idsv.configuration;
 
 import java.util.List;
 
+import org.apache.commons.configuration.Configuration;
+
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.BreakpointSummary;
-import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.EvidenceSubset;
 import au.edu.wehi.idsv.IdsvVariantContextBuilder;
 import au.edu.wehi.idsv.ProcessingContext;
@@ -15,32 +16,44 @@ import au.edu.wehi.idsv.vcf.VcfFilter;
 import com.google.common.collect.Lists;
 
 public class VariantCallingConfiguration {
+	public static final String CONFIGURATION_PREFIX = "variantcalling";
+	public VariantCallingConfiguration(Configuration config) {
+		config = config.subset(CONFIGURATION_PREFIX);
+		minScore = config.getDouble("minScore");
+		callOnlyAssemblies = config.getBoolean("callOnlyAssemblies");
+		minIndelSize = config.getInt("minIndelSize");
+		breakendMargin = config.getInt("breakendMargin");
+		writeFiltered = config.getBoolean("writeFiltered");
+		switch (config.getString("format")) {
+			case "vcf4.2":
+				placeholderBreakend = false;
+				break;
+			case "vcf4.1":
+				placeholderBreakend = true;
+				break;
+			default:
+				throw new IllegalArgumentException(String.format("Unrecognised output format \"%d\"", config.getString("format")));
+		}
+	}
 	/**
 	 * Minimum score for variant to be called
 	 */
-	public double minScore = 38;
-	/**
-	 * Maximum somatic p-value for flagging a variant as somatic
-	 */
-	public double somaticPvalueThreshold = 0.001;
+	public double minScore;
 	/**
 	 * Call breakends only on assembled contigs
 	 */
-	public boolean callOnlyAssemblies = false;
+	public boolean callOnlyAssemblies;
 	/**
 	 * Minimum indel size
 	 */
-	public int minIndelSize = 16;
+	public int minIndelSize;
 	/**
-	 * Margin of error around breakends
-	 * This margin is used to mitigate alignment errors around breakend coordinates
+	 * Number bases in which nearby evidence will be considered to support the same variant.
+	 * This margin is used to mitigate soft clip alignment errors and microhomologies around breakend coordinates
 	 */
-	public int breakendMargin = 10;
-	/**
-	 * Maximum coverage before evidence is filtered
-	 */
-	public int maxCoverage = 100000;
-	public boolean writeFilteredCalls = Defaults.WRITE_FILTERED_CALLS;
+	public int breakendMargin;
+	public boolean writeFiltered;
+	public boolean placeholderBreakend;
 	public BreakendSummary withMargin(BreakendSummary bp) {
 		if (bp == null) return null;
 		return bp.expandBounds(breakendMargin);

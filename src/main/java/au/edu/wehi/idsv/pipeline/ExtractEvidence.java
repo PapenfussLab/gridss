@@ -137,7 +137,7 @@ public class ExtractEvidence implements Closeable {
 			reader = processContext.getSamReader(source.getSourceFile());
 			final SAMFileHeader header = reader.getFileHeader();
 			final IdsvSamFileMetricsCollector collector = new IdsvSamFileMetricsCollector(header);
-			final SequentialCoverageThreshold coverageThresholdBlacklist = new SequentialCoverageThreshold(processContext.getDictionary(), processContext.getLinear(), processContext.getVariantCallingParameters().maxCoverage + 1);
+			final SequentialCoverageThreshold coverageThresholdBlacklist = new SequentialCoverageThreshold(processContext.getDictionary(), processContext.getLinear(), processContext.getConfig().maxCoverage + 1);
 	    	
 	    	long recordsProcessed = processMetrics(collector, maxRecords, coverageThresholdBlacklist);
 	    	writeMetrics(collector);
@@ -243,7 +243,7 @@ public class ExtractEvidence implements Closeable {
 		final ProgressLogger progress = new ProgressLogger(log);
 		CloseableIterator<SAMRecord> iter = null;
 		try {
-			iter = new AsyncBufferedIterator<SAMRecord>(processContext.getSamReaderIterator(reader), source.getSourceFile().getName() + "-Metrics"); 
+			iter = new AsyncBufferedIterator<SAMRecord>(processContext.getSamReaderIterator(reader), source.getSourceFile().getName() + "-Metrics", processContext.getConfig().async_bufferCount, processContext.getConfig().async_bufferSize); 
 			while (iter.hasNext() && recordsProcessed++ < maxRecords) {
 				SAMRecord record = iter.next();
 				collector.acceptRecord(record, null);
@@ -265,7 +265,7 @@ public class ExtractEvidence implements Closeable {
 		final ProgressLogger progress = new ProgressLogger(log);
 		CloseableIterator<SAMRecord> iter = null;
 		try {
-			iter = new AsyncBufferedIterator<SAMRecord>(processContext.getSamReaderIterator(reader), source.getSourceFile().getName() + "-Extract");
+			iter = new AsyncBufferedIterator<SAMRecord>(processContext.getSamReaderIterator(reader), source.getSourceFile().getName() + "-Extract", processContext.getConfig().async_bufferCount, processContext.getConfig().async_bufferSize);
 			while (iter.hasNext()) {
 				SAMRecord record = iter.next();
 				SAMRecordUtil.ensureNmTag(referenceWalker, record);
@@ -276,7 +276,7 @@ public class ExtractEvidence implements Closeable {
 						SoftClipEvidence endEvidence = null;
 						if (SAMRecordUtil.getStartSoftClipLength(record) > 0) {
 							startEvidence = SoftClipEvidence.create(source, BreakendDirection.Backward, record);
-							if (startEvidence.meetsEvidenceCritera(processContext.getSoftClipParameters())) {
+							if (startEvidence.meetsEvidenceCritera()) {
 								if (processContext.getRealignmentParameters().shouldRealignBreakend(startEvidence)) {
 									realignmentWriters.get(offset % realignmentWriters.size()).write(startEvidence);
 								}
@@ -286,7 +286,7 @@ public class ExtractEvidence implements Closeable {
 						}
 						if (SAMRecordUtil.getEndSoftClipLength(record) > 0) {
 							endEvidence = SoftClipEvidence.create(source, BreakendDirection.Forward, record);
-							if (endEvidence.meetsEvidenceCritera(processContext.getSoftClipParameters())) {
+							if (endEvidence.meetsEvidenceCritera()) {
 								if (processContext.getRealignmentParameters().shouldRealignBreakend(endEvidence)) {
 									realignmentWriters.get(offset % realignmentWriters.size()).write(endEvidence);
 								}

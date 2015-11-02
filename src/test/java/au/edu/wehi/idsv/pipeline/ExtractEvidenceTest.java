@@ -156,7 +156,7 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 	public void realign_min_mapq_should_filter_sc() {
 		createInput(ValidSC());
 		ProcessingContext pc = getCommandlineContext();
-		pc.getSoftClipParameters().minReadMapq = 6;
+		pc.getConfig().minReadMapq = 6;
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
 		ExtractEvidence e = new ExtractEvidence(pc, source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
 		
@@ -183,7 +183,7 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 		r.setReadBases(readBases);
 		createInput(RP(0, 1, 2, 1));
 		ProcessingContext pc = getCommandlineContext();
-		pc.getSoftClipParameters().minAnchorIdentity = 50;
+		pc.getSoftClipParameters().minAnchorIdentity = 0.5f;
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
 		ExtractEvidence e = new ExtractEvidence(pc, source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
 		

@@ -8,7 +8,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.junit.Ignore;
@@ -25,7 +24,6 @@ import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 
@@ -36,9 +34,10 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		ProcessingContext pc = getContext();
 		AssemblyConfiguration p = pc.getAssemblyParameters();
 		p.k = k;
-		p.debruijnGraphVisualisationDirectory = new File(testFolder.getRoot(), "visualisation");
-		p.visualiseAll = true;
-		p.trackAlgorithmProgress = true;
+		pc.getConfig().getVisualisation().assembly = true;
+		pc.getConfig().getVisualisation().assemblyProgress = true;
+		pc.getConfig().getVisualisation().directory = new File(testFolder.getRoot(), "visualisation");
+		pc.getConfig().getVisualisation().directory.mkdir();
 		return new DeBruijnSubgraphAssembler(pc, AES());
 	}
 	@Test

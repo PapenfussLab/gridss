@@ -52,7 +52,6 @@ public class SAMRecordAssemblyEvidenceIterator extends AbstractIterator<SAMRecor
 				List<SAMRecord> realignments = new ArrayList<SAMRecord>(source.getRealignmentIterationCount());
 				for (SequentialRealignedBreakpointFactory factory : factories) {
 					Set<SAMRecord> realigned = factory.findAllAssociatedSAMRecords(evidence,
-							rp.requireRealignment && 
 							rp.shouldRealignBreakend(evidence) &&
 							factory == factories.get(0)); // only primary realignment is required
 					if (realigned != null) {

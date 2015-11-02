@@ -65,7 +65,7 @@ public class RealignedRemoteSoftClipEvidenceIterator extends AbstractIterator<Re
 	private RealignedRemoteSoftClipEvidence createRemote(BreakendDirection direction, SAMRecord sc, SAMRecord realign) {
 		if (sc == null || realign == null) return null;
 		SoftClipEvidence breakendEvidence = SoftClipEvidence.create(source, direction, sc);
-		if (breakendEvidence.meetsEvidenceCritera(source.getContext().getSoftClipParameters())) {
+		if (breakendEvidence.meetsEvidenceCritera()) {
 			SoftClipEvidence breakpointEvidence = SoftClipEvidence.create(breakendEvidence, realign);
 			if (breakpointEvidence instanceof RealignedSoftClipEvidence) {
 				return ((RealignedSoftClipEvidence)breakpointEvidence).asRemote();

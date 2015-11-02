@@ -5,22 +5,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
-import java.util.ArrayList;
 import java.util.Collection;
 
 import org.junit.Ignore;
 import org.junit.Test;
 
-import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
-import au.edu.wehi.idsv.configuration.ReadPairConfiguration;
-import au.edu.wehi.idsv.configuration.RealignmentConfiguration;
-import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
-import au.edu.wehi.idsv.configuration.VariantCallingConfiguration;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
@@ -201,15 +194,8 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_write_breakpoint_in_vcf41_mode() {
-		ProcessingContext context = new ProcessingContext(
-				getFSContext(),
-				new ArrayList<Header>(),
-				new SoftClipConfiguration(),
-				new ReadPairConfiguration(),
-				new AssemblyConfiguration(),
-				new RealignmentConfiguration(),
-				new VariantCallingConfiguration(),
-				SMALL_FA, null, false, true);
+		ProcessingContext context = getContext();
+		context.getConfig().getVariantCalling().placeholderBreakend = true;
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
 		builder.breakend(new BreakendSummary(0,  FWD,  1,  1), "ACGT");
 		VariantContextDirectedEvidence vc = (VariantContextDirectedEvidence)builder.make();
@@ -217,15 +203,8 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	}
 	@Test
 	public void vcf41_breakend_should_round_trip() {
-		ProcessingContext context = new ProcessingContext(
-				getFSContext(),
-				new ArrayList<Header>(),
-				new SoftClipConfiguration(),
-				new ReadPairConfiguration(),
-				new AssemblyConfiguration(),
-				new RealignmentConfiguration(),
-				new VariantCallingConfiguration(),
-				SMALL_FA, null, false, true);
+		ProcessingContext context = getContext();
+		context.getConfig().getVariantCalling().placeholderBreakend = true;
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
 		builder.breakend(new BreakendSummary(0,  FWD,  1,  2), "ACGT");
 		VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(context, builder.make()).make();

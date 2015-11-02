@@ -41,14 +41,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.lang3.StringUtils;
 
 import picard.analysis.InsertSizeMetrics;
-import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
-import au.edu.wehi.idsv.configuration.ReadPairConfiguration;
-import au.edu.wehi.idsv.configuration.RealignmentConfiguration;
-import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
-import au.edu.wehi.idsv.configuration.VariantCallingConfiguration;
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraph;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
@@ -323,24 +320,25 @@ public class TestHelper {
 		return new FileSystemContext(new File(
 				System.getProperty("java.io.tmpdir")), 500000);
 	}
-
+	public static GridssConfiguration getConfig() {
+		GridssConfiguration config;
+		try {
+			config = new GridssConfiguration();
+		} catch (ConfigurationException e) {
+			throw new RuntimeException(e);
+		}
+		config.getSoftClip().minAverageQual = 0;
+		config.minAnchorShannonEntropy = 0;
+		config.getAssembly().minReads = 2;
+		config.getAssembly().includeRemoteSplitReads = false;
+		config.getAssembly().anchorRealignment.perform = false;
+		config.getVariantCalling().breakendMargin = 3;
+		return config;
+	}
 	public static ProcessingContext getContext(ReferenceLookup ref) {
 		ProcessingContext pc = new ProcessingContext(getFSContext(),
-				new ArrayList<Header>(), new SoftClipConfiguration() {{
-					minAverageQual = 0;
-					minAnchorEntropy = 0;
-				}},
-				new ReadPairConfiguration() {{
-					minAnchorEntropy = 0;
-				}}, new AssemblyConfiguration() {{
-					minReads = 2;
-					includeRemoteSplitReads = false;
-					anchorRealignment.perform = false;
-					}},
-				new RealignmentConfiguration(), new VariantCallingConfiguration() {{
-					breakendMargin = 3;
-					}},
-				ref, null, false, false);
+				new ArrayList<Header>(), getConfig(),
+				ref, null, false);
 		pc.registerCategory(0, "Normal");
 		pc.registerCategory(1, "Tumour");
 		return pc;
@@ -800,9 +798,9 @@ public class TestHelper {
 	}
 
 	public static DeBruijnReadGraph RG(int k) {
-		AssemblyConfiguration p = new AssemblyConfiguration();
-		p.k = k;
-		return new DeBruijnReadGraph(getContext(), AES(), 0, p, null);
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = k;
+		return new DeBruijnReadGraph(AES(pc), 0, null);
 	}
 
 	public static class MockSAMEvidenceSource extends SAMEvidenceSource {

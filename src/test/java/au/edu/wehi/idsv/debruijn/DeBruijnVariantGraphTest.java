@@ -24,7 +24,6 @@ import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.SmallIndelSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
-import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 
@@ -45,7 +44,7 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		context.getAssemblyParameters().minReads = 0;
 		context.getAssemblyParameters().errorCorrection.maxBaseMismatchForCollapse = 0;
 		context.getAssemblyParameters().errorCorrection.collapseBubblesOnly = true;
-		context.getAssemblyParameters().writeFilteredAssemblies = true;
+		context.getAssemblyParameters().writeFiltered = true;
 		aes = AES(context);
 		ass = new DeBruijnSubgraphAssembler(context, aes);
 		result = Lists.newArrayList(); 
@@ -56,8 +55,8 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		context.getAssemblyParameters().minReads = 0;
 		context.getAssemblyParameters().errorCorrection.maxBaseMismatchForCollapse = 0;
 		context.getAssemblyParameters().errorCorrection.collapseBubblesOnly = true;
-		context.getAssemblyParameters().writeFilteredAssemblies = true;
-		context.getAssemblyParameters().subgraph.subgraphMaxPathTraversalNodes = 0;
+		context.getAssemblyParameters().writeFiltered = true;
+		context.getAssemblyParameters().subgraph.traveralMaximumPathNodes = 0;
 		aes = AES(context);
 		ass = new DeBruijnSubgraphAssembler(context, aes);
 		result = Lists.newArrayList(); 
@@ -68,7 +67,7 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		context.getAssemblyParameters().minReads = 0;
 		context.getAssemblyParameters().errorCorrection.maxBaseMismatchForCollapse = 1;
 		context.getAssemblyParameters().errorCorrection.collapseBubblesOnly = false;
-		context.getAssemblyParameters().writeFilteredAssemblies = true;
+		context.getAssemblyParameters().writeFiltered = true;
 		aes = AES(context);
 		ass = new DeBruijnSubgraphAssembler(context, aes);
 		result = Lists.newArrayList(); 
@@ -405,7 +404,9 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		//        12345678         12345678
 		// start anchor position = 8 -> 8 + k-1 = 15
 		// end anchor position = 25
-		DeBruijnReadGraph g = new DeBruijnReadGraph(getContext(), AES(), 2, new AssemblyConfiguration() {{ k = 8; }}, null);
+		aes = AES();
+		aes.getContext().getConfig().getAssembly().k = 8;
+		DeBruijnReadGraph g = new DeBruijnReadGraph(aes, 2, null);
 		String seq = S(RANDOM).substring(0, 0+15) + S(RANDOM).substring(24, 24+15);
 		SoftClipEvidence f = SCE(FWD, withSequence(seq, Read(2, 1, "15M15S")));
 		SoftClipEvidence b = SCE(BWD, withSequence(seq, Read(2, 25, "15S15M")));

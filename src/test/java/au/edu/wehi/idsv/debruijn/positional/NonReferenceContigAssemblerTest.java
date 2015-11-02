@@ -39,8 +39,8 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		int maxEvidenceWidth = aes.getMaxConcordantFragmentSize() - aes.getMinConcordantFragmentSize() + 1;
 		int maxReadLength = maxReadLength(input);
 		int k = pc.getAssemblyParameters().k;
-		int maxPathLength = pc.getAssemblyParameters().positionalMaxPathLengthInBases(maxReadLength);
-		int maxPathCollapseLength = pc.getAssemblyParameters().positionalMaxPathCollapseLengthInBases(maxReadLength);
+		int maxPathLength = pc.getAssemblyParameters().positional.maxPathLengthInBases(maxReadLength);
+		int maxPathCollapseLength = pc.getAssemblyParameters().errorCorrection.maxPathCollapseLengthInBases(maxReadLength);
 		tracker = new EvidenceTracker();
 		SupportNodeIterator supportIt = new SupportNodeIterator(k, Arrays.stream(input).iterator(), aes.getMaxConcordantFragmentSize(), tracker);
 		AggregateNodeIterator agIt = new AggregateNodeIterator(supportIt);

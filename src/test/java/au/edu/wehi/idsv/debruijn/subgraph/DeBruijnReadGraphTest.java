@@ -11,6 +11,7 @@ import java.util.List;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.AssemblyEvidence;
+import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.EvidenceSubset;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
@@ -23,11 +24,12 @@ import com.google.common.collect.Lists;
 
 public class DeBruijnReadGraphTest extends TestHelper {
 	public DeBruijnReadGraph G(int referenceIndex, int k) {
-		AssemblyConfiguration p = new AssemblyConfiguration();
+		AssemblyEvidenceSource aes = AES();
+		AssemblyConfiguration p = aes.getContext().getConfig().getAssembly();
 		p.errorCorrection.maxBaseMismatchForCollapse = 0;
-		p.subgraph.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
+		p.subgraph.traversalMaximumBranchingFactor = 1;
 		p.k = k;
-		return new DeBruijnReadGraph(getContext(), AES(), referenceIndex, p, null);
+		return new DeBruijnReadGraph(aes, referenceIndex, null);
 	}
 	@Test
 	public void should_exclude_kmers_containing_ambiguous_base() {

@@ -88,7 +88,7 @@ public abstract class EvidenceSource {
 				alignIfEmpty(fastq, bam);
 			}
 		}
-		return IntermediateFileUtil.checkIntermediate(bamList, fastqList);
+		return IntermediateFileUtil.checkIntermediate(bamList, fastqList, getContext().getConfig().ignoreFileTimestamps);
 	}
 	public void iterateRealignment() throws IOException {
 		FileSystemContext fsc = processContext.getFileSystemContext();

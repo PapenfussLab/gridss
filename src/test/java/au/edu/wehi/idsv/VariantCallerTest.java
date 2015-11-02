@@ -20,7 +20,7 @@ public class VariantCallerTest extends IntermediateFilesTest {
 		final int testSize = 64;
 		final List<SAMRecord> in = new ArrayList<SAMRecord>();
 		final ProcessingContext pc = getCommandlineContext();
-		pc.getVariantCallingParameters().writeFilteredCalls = true;
+		pc.getVariantCallingParameters().writeFiltered = true;
 		StubSAMEvidenceSource ses = new StubSAMEvidenceSource(pc, input, 0, 0, fragSize);
 		for (int i = 1; i < testSize; i++) {
 			for (int j = 1; j < testSize; j++) {

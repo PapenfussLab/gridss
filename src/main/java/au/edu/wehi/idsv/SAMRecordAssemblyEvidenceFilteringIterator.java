@@ -20,7 +20,7 @@ public class SAMRecordAssemblyEvidenceFilteringIterator extends AbstractIterator
 		while (it.hasNext()) {
 			SAMRecordAssemblyEvidence evidence = it.next();
 			processContext.getAssemblyParameters().applyFilters(evidence);
-			if (!evidence.isAssemblyFiltered() || processContext.getAssemblyParameters().writeFilteredAssemblies) {
+			if (!evidence.isAssemblyFiltered() || processContext.getAssemblyParameters().writeFiltered) {
 				return evidence;
 			}
 		}

@@ -71,7 +71,7 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 		}
 		public CloseableIterator<SAMRecordAssemblyEvidence> annotatedAssembliesIterator() {
 			CloseableIterator<DirectedEvidence> rawit = getAllEvidence(true, false, true, true, processContext.getAssemblyParameters().includeRemoteSplitReads, true);
-			AsyncBufferedIterator<DirectedEvidence> asyncIt = new AsyncBufferedIterator<DirectedEvidence>(rawit, "AssemblyEvidenceRehydration");
+			AsyncBufferedIterator<DirectedEvidence> asyncIt = new AsyncBufferedIterator<DirectedEvidence>(rawit, "AssemblyEvidenceRehydration", source.getContext().getConfig().async_bufferCount, source.getContext().getConfig().async_bufferSize);
 			OrthogonalEvidenceIterator annotatedIt = new OrthogonalEvidenceIterator(processContext.getLinear(), asyncIt, source.getAssemblyWindowSize(), true);
 			UnmodifiableIterator<SAMRecordAssemblyEvidence> filteredIt = Iterators.filter(annotatedIt, SAMRecordAssemblyEvidence.class);
 			Iterator<SAMRecordAssemblyEvidence> it = Iterators.transform(filteredIt, new Function<SAMRecordAssemblyEvidence, SAMRecordAssemblyEvidence> () {

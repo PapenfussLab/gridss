@@ -4,6 +4,7 @@ import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.fastq.FastqRecord;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,13 +33,13 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 		int readLength = 25;
 		int fragSize = 75;
 		ProcessingContext pc = getCommandlineContext(false);
+		
 		pc.getAssemblyParameters().k = k;
-		
-		pc.getAssemblyParameters().debruijnGraphVisualisationDirectory = testFolder.newFolder("vis").getAbsoluteFile();
-		pc.getAssemblyParameters().visualiseTimeouts = true;
-		pc.getAssemblyParameters().visualiseAll = true;
-		pc.getAssemblyParameters().trackAlgorithmProgress = true;
-		
+		pc.getConfig().getVisualisation().directory = new File(super.testFolder.getRoot(), "visualisation");
+		pc.getConfig().getVisualisation().assembly = true;
+		pc.getConfig().getVisualisation().assemblyProgress = true;
+		pc.getConfig().getVisualisation().directory.mkdir();
+				
 		// Default 
 		List<SAMRecord> reads = new ArrayList<SAMRecord>();
 		List<SAMRecord> splitReads = new ArrayList<SAMRecord>();

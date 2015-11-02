@@ -50,7 +50,7 @@ public class SortRealignedSoftClips extends DataTransformStep {
 			sourceFile.add(null); targetFile.add(fsc.getSoftClipRemoteBam(source.getSourceFile()));
 			sourceFile.add(null); targetFile.add(fsc.getRealignmentRemoteBam(source.getSourceFile()));
 		}
-		return IntermediateFileUtil.checkIntermediate(targetFile, sourceFile);
+		return IntermediateFileUtil.checkIntermediate(targetFile, sourceFile, processContext.getConfig().ignoreFileTimestamps);
 	}
 	@Override
 	public synchronized void process(EnumSet<ProcessStep> steps) {

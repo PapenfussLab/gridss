@@ -6,13 +6,11 @@ import htsjdk.samtools.SAMRecord;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
-
 
 public class AdapterHelperTest extends TestHelper {
 	@Test
 	public void containsAdapter() {
-		AdapterHelper ah = new SoftClipConfiguration().adapters;
+		AdapterHelper ah = getConfig().adapters;
 		SAMRecord r = Read(0,  1,  101);
 		r.setReadBases(B("CATGCCTGGCGTCCACTTTCTTGACTATTTCCTGAAGACCAGCGTTTCCCGGGTGGGTTCACAGCTGCGGAAGCTGCCTGTGTCAAGATCGGAAGAGCGTC"));
 		assertTrue(ah.containsAdapter(r));

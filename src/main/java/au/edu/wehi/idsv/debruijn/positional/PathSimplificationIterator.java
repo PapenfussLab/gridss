@@ -172,7 +172,7 @@ public class PathSimplificationIterator implements PeekingIterator<KmerPathNode>
 			advance();
 			process();
 		}
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			assert(sanityCheck());
 			if (inputPosition == Integer.MAX_VALUE) {
 				assert(!underlying.hasNext());
@@ -188,7 +188,7 @@ public class PathSimplificationIterator implements PeekingIterator<KmerPathNode>
 	}
 	private void process(KmerPathNode node) {
 		int beforeTotalWeight = 0;
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			beforeTotalWeight = node.width() * node.weight() + processed.stream().mapToInt(n -> n.width() * n.weight()).sum();
 			assert(!processed.contains(node));
 		}
@@ -197,14 +197,14 @@ public class PathSimplificationIterator implements PeekingIterator<KmerPathNode>
 			// loop until we can't merge any more nodes into this one
 			simplified++;
 		}
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			int afterTotalWeight = node.width() * node.weight() + processed.stream().mapToInt(n -> n.width() * n.weight()).sum();
 			assert(beforeTotalWeight == afterTotalWeight);
 			assert(!processed.contains(node));
 		}
 		processed.add(node);
 		endLookup.add(node);
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			assert(sanityCheck());
 		}
 	}
@@ -219,7 +219,7 @@ public class PathSimplificationIterator implements PeekingIterator<KmerPathNode>
 			assert(nextRecord.length() <= maxLength);
 			unprocessed.add(nextRecord);
 		}
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			assert(sanityCheck());
 		}
 	}

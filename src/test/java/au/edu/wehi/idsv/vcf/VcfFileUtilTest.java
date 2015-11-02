@@ -1,17 +1,9 @@
 package au.edu.wehi.idsv.vcf;
 
-import java.io.File;
-import java.io.IOException;
-
-import au.edu.wehi.idsv.CommandLineProgram;
-import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
-import au.edu.wehi.idsv.vcf.VcfFileUtil.SortCallable;
-
-import com.google.common.collect.ImmutableList;
 
 
 public class VcfFileUtilTest {
+	/*
 	public class TestCommandLineProgram extends CommandLineProgram {
 		public TestCommandLineProgram() {
 			TMP_DIR = ImmutableList.of(new File("C:/Temp"));
@@ -24,7 +16,7 @@ public class VcfFileUtilTest {
 			return 0;
 		}
 	}
-	//@Test
+	@Test
 	public void sort_should_not_leak_memory() throws IOException {
 		// Technically it's not a memory leak: it's an insanely massive index file due to
 		// out of order records on the same contig
@@ -34,4 +26,5 @@ public class VcfFileUtilTest {
 				new File("C:/Temp/testout.vcf"),
 				VariantContextDirectedBreakpoint.ByRemoteBreakendLocationStartRaw(pc)).call();
 	}
+	*/
 }

@@ -157,7 +157,7 @@ public class LeafBubbleCollapseIterator extends CollapseIterator {
 				visited.add(n);
 				TraversalNode childTn = new TraversalNode(tn, sn);
 				int nodeBasesDiff = KmerEncodingHelper.partialSequenceBasesDifferent(k, refKmers, n.pathKmers(), ref.pathLength - childTn.pathLength, false);
-				if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+				if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 					assert(DeBruijnSequenceGraphNodeUtil.reverseBasesDifferent(k, ref.toSubnodePrevPath(), childTn.toSubnodePrevPath()) == basesDifference + nodeBasesDiff);
 				}
 				if (tryBackwardCollapse(visited, ref, refKmers, childTn, basesDifference + nodeBasesDiff, terminalNode)) return true;

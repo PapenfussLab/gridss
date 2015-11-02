@@ -176,7 +176,7 @@ public class RectangleGraphMaximalCliqueCalculator {
 		}
 	}
 	private boolean sanityCheckScanlineActive() {
-		if (!Defaults.PERFORM_EXPENSIVE_CLIQUE_SANITY_CHECKS) return true;
+		if (!Defaults.SANITY_CHECK_CLIQUE) return true;
 		assert(sanityCheck());
 		assert(!activeScanlineEndingY.isEmpty());
 		assert(activeScanlineActiveWeight > 0);
@@ -186,7 +186,7 @@ public class RectangleGraphMaximalCliqueCalculator {
 		return true;
 	}
 	private boolean sanityCheckScanlineComplete() {
-		if (!Defaults.PERFORM_EXPENSIVE_CLIQUE_SANITY_CHECKS) return true;
+		if (!Defaults.SANITY_CHECK_CLIQUE) return true;
 		assert(sanityCheck());
 		assert(activeScanlineCurrentPosition == activeScanlineStart);
 		assert(activeScanlineEndingY.isEmpty());
@@ -200,7 +200,7 @@ public class RectangleGraphMaximalCliqueCalculator {
 		return true;
 	}
 	private boolean sanityCheck() {
-		if (!Defaults.PERFORM_EXPENSIVE_CLIQUE_SANITY_CHECKS) return true;
+		if (!Defaults.SANITY_CHECK_CLIQUE) return true;
 		assert(activeScanlineStart != null);
 		assert(activeScanlineStart.getStartY() == Long.MIN_VALUE);
 		assert(activeScanlineStart.weight == 0);
