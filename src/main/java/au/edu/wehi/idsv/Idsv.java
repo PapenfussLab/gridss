@@ -49,16 +49,17 @@ public class Idsv extends CommandLineProgram {
 	private Log log = Log.getInstance(Idsv.class);
 	@Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Coordinate-sorted input BAM file.")
     public List<File> INPUT;
-    @Option(doc = "Per input maximum concordant read pair size.", optional=true)
-    public List<Integer> INPUT_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE;
+	@Option(shortName="IC", doc="Input category. Variant calling evidence is reported for categories 0 (default) to the maximum category specified. "
+			+ "Specify categories when you require a breakdown of support (eg tumour/normal or multi-sample variant calling). ", optional=true)
+    public List<Integer> INPUT_CATEGORY;	
+    @Option(doc = "Per input maximum concordant fragment size.", optional=true)
+    public List<Integer> INPUT_MAX_FRAGMENT_SIZE;
     @Option(doc = "Per input minimum concordant fragment size.", optional=true)
-    public List<Integer> INPUT_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE;
-	@Option(shortName="T", doc="Coordinate-sorted tumour BAM file.", optional=true)
-    public List<File> INPUT_TUMOUR = Lists.newArrayList();
-	@Option(doc = "Per input maximum concordant fragment size.", optional=true)
-    public List<Integer> INPUT_TUMOUR_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE;
-	@Option(doc = "Per input minimum concordant fragment size.", optional=true)
-    public List<Integer> INPUT_TUMOUR_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE;
+    public List<Integer> INPUT_MIN_FRAGMENT_SIZE;
+    @Option(doc = "Percent of read pairs considered concorant (0.0-1.0). "
+    		+ "If this is unset, the SAM proper pair flag is used to determine whether a read is discordantly aligned. "
+    		+ "Explicit fragment size specification overrides this setting.", optional=true)
+    public Float READ_PAIR_CONCORDANT_PERCENT = 0.995f;
 	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="VCF structural variation calls.")
     public File OUTPUT;
     @Option(shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME, doc="Reference used for alignment")
@@ -73,12 +74,10 @@ public class Idsv extends CommandLineProgram {
     		+ " but allows a greater level of parallelisation.", optional = true)
     public File WORKING_DIR = null;
     // --- evidence filtering parameters ---
-    @Option(doc = "Percent of read pairs considered concorant (0.0-1.0). If this is unset, the SAM proper pair flag is used to determine whether a read is discordantly aligned.", optional=true)
-    public Float READ_PAIR_CONCORDANT_PERCENT = 0.995f;
     @Option(shortName="C", doc = "gridss configuration file containing overrides", optional=true)
     public File CONFIGURATION_FILE = null;
-	@Option(doc="Number of worker threads to spawn."
-			+ " Note that I/O threads not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
+	@Option(doc="Number of worker threads to spawn. Defaults to number of cores available."
+			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
     		shortName="THREADS")
     public int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
     // The following attributes define the command-line arguments
@@ -86,17 +85,7 @@ public class Idsv extends CommandLineProgram {
     public File TRUTH_VCF = null;
     @Option(doc = "Processing steps to execute", optional = true)
     public EnumSet<ProcessStep> STEPS = ProcessStep.ALL_STEPS;
-    private SAMEvidenceSource constructSamEvidenceSource(File file, int index, int category) { 
-    	List<Integer> maxFragSizeList = category == 1 ? INPUT_TUMOUR_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE : INPUT_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE;
-    	List<Integer> minFragSizeList = category == 1 ? INPUT_TUMOUR_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE : INPUT_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE;
-    	int maxFragSize = 0;
-    	int minFragSize = 0;
-    	if (maxFragSizeList != null && maxFragSizeList.size() > index && maxFragSizeList.get(index) != null) {
-    		maxFragSize = maxFragSizeList.get(index);
-    	}
-    	if (minFragSizeList != null && minFragSizeList.size() > index && minFragSizeList.get(index) != null) {
-    		minFragSize = minFragSizeList.get(index);
-    	}
+    private SAMEvidenceSource constructSamEvidenceSource(File file, int category, int minFragSize, int maxFragSize) {
     	if (maxFragSize > 0) {
     		return new SAMEvidenceSource(getContext(), file, category, minFragSize, maxFragSize);
     	} else if (READ_PAIR_CONCORDANT_PERCENT != null) {
@@ -105,18 +94,20 @@ public class Idsv extends CommandLineProgram {
     		return new SAMEvidenceSource(getContext(), file, category);
     	}
     }
+    private <T> T getOffset(List<T> list, int offset, T defaultValue) {
+    	if (offset >= list.size()) return defaultValue;
+    	T obj = list.get(offset);
+    	if (obj == null) return defaultValue;
+    	return obj;
+    }
     public List<SAMEvidenceSource> createSamEvidenceSources() {
-    	int i = 0;
     	List<SAMEvidenceSource> samEvidence = Lists.newArrayList();
-    	for (File f : INPUT) {
-    		log.info("Processing normal input ", f);
-    		SAMEvidenceSource sref = constructSamEvidenceSource(f, i++, 0);
-    		samEvidence.add(sref);
-    	}
-    	for (File f : INPUT_TUMOUR) {
-    		log.info("Processing tumour input ", f);
-    		SAMEvidenceSource sref = constructSamEvidenceSource(f, i++, 1);
-    		samEvidence.add(sref);
+    	for (int i = 0; i < INPUT.size(); i++) {
+    		samEvidence.add(constructSamEvidenceSource(
+    				getOffset(INPUT, i, null),
+    				getOffset(INPUT_CATEGORY, i, 0),
+    				getOffset(INPUT_MIN_FRAGMENT_SIZE, i, 0),
+    				getOffset(INPUT_MAX_FRAGMENT_SIZE, i, 0)));
     	}
     	return samEvidence;
     }
@@ -130,11 +121,6 @@ public class Idsv extends CommandLineProgram {
 		IOUtil.assertFileIsReadable(REFERENCE);
 		for (File f : INPUT) {
 			IOUtil.assertFileIsReadable(f);
-		}
-		if (INPUT_TUMOUR != null) {
-			for (File f : INPUT_TUMOUR) {
-				IOUtil.assertFileIsReadable(f);
-			}
 		}
 		IOUtil.assertFileIsWritable(OUTPUT);
 		if (WORKING_DIR == null) {
@@ -155,17 +141,6 @@ public class Idsv extends CommandLineProgram {
 					SequenceUtil.assertSequenceDictionariesEqual(reader.getFileHeader().getSequenceDictionary(), dictionary, f, REFERENCE);
 				} finally {
 					if (reader != null) reader.close();
-				}
-			}
-			if (INPUT_TUMOUR != null) {
-				for (File f : INPUT_TUMOUR) {
-					SamReader reader = null;
-					try {
-						reader = samFactory.open(f);
-						SequenceUtil.assertSequenceDictionariesEqual(reader.getFileHeader().getSequenceDictionary(), dictionary, f, REFERENCE);
-					} finally {
-						if (reader != null) reader.close();
-					}
 				}
 			}
 		} finally {
@@ -273,9 +248,7 @@ public class Idsv extends CommandLineProgram {
 				throw new RuntimeException(e);
 			}
 			processContext = new ProcessingContext(fsc, getDefaultHeaders(), config, REFERENCE, PER_CHR);
-			
-			processContext.registerCategory(0, "Normal");
-			processContext.registerCategory(1, "Tumour");
+			processContext.registerCategories(INPUT_CATEGORY.stream().mapToInt(x -> (x == null ? 0 : x)).max().orElse(0));
 		}
 		return processContext;
 	}

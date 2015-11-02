@@ -305,6 +305,11 @@ public class ProcessingContext implements Closeable {
 	public void setAssemblyIdGenerator(AssemblyIdGenerator generator) {
 		this.assemblyIdGenerator = generator;
 	}
+	public void registerCategories(int categoryCount) {
+		for (int i = 0; i < categoryCount; i++) {
+			registerCategory(categoryCount, "");
+		}
+	}
 	public void registerCategory(int category, String description) {
 		if (category < 0) throw new IllegalArgumentException("Category cannot be negative");
 		while (categories.size() <= category) categories.add(null);

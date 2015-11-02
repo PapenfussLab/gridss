@@ -132,14 +132,15 @@ public class IdsvTest extends IntermediateFilesTest {
 		}
 		String[] args = new String[] {
 				"INPUT=" + input.toString(),
+				"INPUT_CATEGORY=5",
 				"REFERENCE=" + reference.toString(),
 				"OUTPUT=" + output.toString(),
 				"TMP_DIR=" + super.testFolder.getRoot().toString(),
 				"WORKING_DIR=" + super.testFolder.getRoot().toString(),
 				"PER_CHR=false",
 				"CONFIGURATION_FILE=" + propfile.toString(),
-				"INPUT_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE=10",
-				"INPUT_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE=100",
+				"INPUT_MIN_FRAGMENT_SIZE=10",
+				"INPUT_MAX_FRAGMENT_SIZE=100",
 		};
 		Idsv pass1 = new Idsv();
 		pass1.instanceMain(args);

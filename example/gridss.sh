@@ -6,7 +6,6 @@ INPUT=chr12.1527326.DEL1024.bam
 OUTPUT=${INPUT/.bam/.gridss.vcf}
 REFERENCE=~/reference_genomes/human/hg19.fa
 JAVA_ARGS="-ea -Xmx16g -cp ../target/gridss-*-jar-with-dependencies.jar"
-CORES=$(nproc 2>/dev/null || echo 1)
 
 # ensure libsswjni.so can be loaded
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PWD/../lib
@@ -41,7 +40,6 @@ exec_gridss() {
 		REFERENCE="$REFERENCE" \
 		SCRIPT=realign.sh \
 		VERBOSITY=INFO \
-		WORKER_THREADS=$CORES \
 		2>&1 | tee -a gridss.$$.log
 	
 	if [[ -f realign.sh ]] ; then
