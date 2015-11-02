@@ -1,14 +1,13 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
-
 import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.Queue;
 
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
 
 /**
  * Iterators over soft clip evidence in the same order as the input iterator 

@@ -1,12 +1,11 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceDictionary;
-
 import java.util.PriorityQueue;
 
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.sam.SAMRecordEndCoordinateComparator;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
 
 public class SequentialCoverageThreshold {
 	private final int threshold;

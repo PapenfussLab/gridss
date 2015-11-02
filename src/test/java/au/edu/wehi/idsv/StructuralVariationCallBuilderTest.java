@@ -4,8 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.variant.vcf.VCFConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,12 +12,14 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.variant.vcf.VCFConstants;
 
 public class StructuralVariationCallBuilderTest extends TestHelper {
 	public final static BreakpointSummary BP = new BreakpointSummary(0, BWD, 10, 10, 1, BWD, 100, 100);

@@ -4,14 +4,14 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.SequenceUtil;
 
 import java.util.List;
 
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
@@ -26,8 +26,8 @@ import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
-
-import com.google.common.collect.Lists;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
 
 public class DeBruijnVariantGraphTest extends TestHelper {
 	private List<AssemblyEvidence> result;
@@ -46,7 +46,7 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		context.getAssemblyParameters().errorCorrection.collapseBubblesOnly = true;
 		context.getAssemblyParameters().writeFiltered = true;
 		aes = AES(context);
-		ass = new DeBruijnSubgraphAssembler(context, aes);
+		ass = new DeBruijnSubgraphAssembler(aes);
 		result = Lists.newArrayList(); 
 	}
 	public void setup(int k, int maxPathTraversalNodes) {
@@ -58,7 +58,7 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		context.getAssemblyParameters().writeFiltered = true;
 		context.getAssemblyParameters().subgraph.traveralMaximumPathNodes = 0;
 		aes = AES(context);
-		ass = new DeBruijnSubgraphAssembler(context, aes);
+		ass = new DeBruijnSubgraphAssembler(aes);
 		result = Lists.newArrayList(); 
 	}
 	public void setupWithGraphReduction(int k) {
@@ -69,7 +69,7 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		context.getAssemblyParameters().errorCorrection.collapseBubblesOnly = false;
 		context.getAssemblyParameters().writeFiltered = true;
 		aes = AES(context);
-		ass = new DeBruijnSubgraphAssembler(context, aes);
+		ass = new DeBruijnSubgraphAssembler(aes);
 		result = Lists.newArrayList(); 
 	}
 	private static SAMRecord R(String read) {
@@ -312,7 +312,7 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		MockSAMEvidenceSource normal = SES(false);
 		MockSAMEvidenceSource tumour = SES(true);
 		pc.getAssemblyParameters().k = 4;
-		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(pc, aes);
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(aes);
 		List<DirectedEvidence> e = Lists.newArrayList();
 		e.add(SCE(FWD, normal, withSequence("TTCTT", Read(0, 9, "4M1S")))); // only on ref path
 		e.add(SCE(FWD, normal, withSequence("TCTTA", Read(0, 10, "4M1S"))));

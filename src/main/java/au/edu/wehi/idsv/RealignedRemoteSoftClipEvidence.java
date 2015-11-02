@@ -1,17 +1,16 @@
 package au.edu.wehi.idsv;
 
+import java.util.Arrays;
+import java.util.List;
+
+import com.google.common.collect.Lists;
+
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
-
-import java.util.Arrays;
-import java.util.List;
-
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
-
-import com.google.common.collect.Lists;
 
 /**
  * Soft clip split read in which the realigned soft clip maps to a local coordinate

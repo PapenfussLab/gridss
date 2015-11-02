@@ -1,11 +1,11 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordComparator;
+import com.google.common.collect.ComparisonChain;
+
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
-
-import com.google.common.collect.ComparisonChain;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordComparator;
 
 public class RealignedSoftClipEvidence extends SoftClipEvidence implements DirectedBreakpoint {
 	private final RealignedBreakpoint rbp;

@@ -1,7 +1,7 @@
 package au.edu.wehi.idsv.alignment;
 
-import htsjdk.samtools.util.Log;
 import au.edu.wehi.idsv.Idsv;
+import htsjdk.samtools.util.Log;
 
 public class AlignerFactory {
 	private static final Log log = Log.getInstance(Idsv.class);

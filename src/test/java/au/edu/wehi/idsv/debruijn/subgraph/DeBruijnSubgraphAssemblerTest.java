@@ -2,7 +2,6 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,22 +14,24 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.google.common.collect.Lists;
+
 import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SmallIndelSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
-
-import com.google.common.collect.Lists;
+import htsjdk.samtools.util.SequenceUtil;
 
 
 public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 	@Rule
     public TemporaryFolder testFolder = new TemporaryFolder();
-	private DeBruijnSubgraphAssembler DSA(int k) {
+	private ProcessingContext PC(int k) {
 		ProcessingContext pc = getContext();
 		AssemblyConfiguration p = pc.getAssemblyParameters();
 		p.k = k;
@@ -38,51 +39,59 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		pc.getConfig().getVisualisation().assemblyProgress = true;
 		pc.getConfig().getVisualisation().directory = new File(testFolder.getRoot(), "visualisation");
 		pc.getConfig().getVisualisation().directory.mkdir();
-		return new DeBruijnSubgraphAssembler(pc, AES());
+		return pc;
 	}
 	@Test
 	public void should_assemble_all_contigs() {
-		DeBruijnSubgraphAssembler ass = DSA(3);
+		ProcessingContext pc = PC(3);
+		SAMEvidenceSource ses = SES(pc);
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(AES(pc));
 		List<AssemblyEvidence> results = Lists.newArrayList();
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(0, 1, "4M3S"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(0, 2, "3M4S"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(1, 1, "4M3S"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(1, 2, "3M4S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence("TAAAGTC", Read(0, 1, "4M3S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence("AAAGTCT", Read(0, 2, "3M4S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence("TAAAGTC", Read(1, 1, "4M3S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence("AAAGTCT", Read(1, 2, "3M4S"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(2, results.size());
 	}
 	@Test
 	public void should_assemble_RP_with_SC_anchor() {
-		DeBruijnSubgraphAssembler ass = DSA(3);
+		ProcessingContext pc = PC(3);
+		SAMEvidenceSource ses = SES(pc);
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(AES(pc));
 		List<AssemblyEvidence> results = Lists.newArrayList();
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAT", Read(0, 15, "3M1S"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(withSequence(SequenceUtil.reverseComplement("TAAAGTC"), OEA(0, 1, "7M", true))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence("TAAT", Read(0, 15, "3M1S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(ses, withSequence(SequenceUtil.reverseComplement("TAAAGTC"), OEA(0, 1, "7M", true))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, results.size());
 		assertEquals(3, results.get(0).getAssemblyAnchorLength());
 	}
 	@Test
 	public void should_export_debruijn_graph() {
-		DeBruijnSubgraphAssembler ass = DSA(3);
+		ProcessingContext pc = PC(3);
+		SAMEvidenceSource ses = SES(pc);
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(AES(pc));
 		List<AssemblyEvidence> results = Lists.newArrayList();
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(0, 1, "4M3S"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(0, 2, "3M4S"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(1, 1, "4M3S"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(1, 2, "3M4S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence("TAAAGTC", Read(0, 1, "4M3S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence("AAAGTCT", Read(0, 2, "3M4S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence("TAAAGTC", Read(1, 1, "4M3S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence("AAAGTCT", Read(1, 2, "3M4S"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertTrue(new File(new File(testFolder.getRoot(), "visualisation"), "debruijn.kmers.polyA.gexf").exists());
 		assertTrue(new File(new File(testFolder.getRoot(), "visualisation"), "debruijn.kmers.polyACGT.gexf").exists());
 	}
 	@Test
 	public void should_track_progress() throws IOException {
-		DeBruijnSubgraphAssembler ass = DSA(5);
+		ProcessingContext pc = PC(5);
+		SAMEvidenceSource ses = SES(pc);
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(AES(pc));
 		List<AssemblyEvidence> results = Lists.newArrayList();
-		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(withSequence("GTCTTA", DP(0, 1, "6M", true, 0, 500, "6M", false))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("CTTAGA", Read(0, 100, "1M5S"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("CTTAGA", Read(0, 101, "1M5S"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(0, 1, "4M3S"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(0, 2, "3M4S"))))));
-		//results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("TAAAGTCATGTATT", Read(0, 1, "5S9M"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(ses, withSequence("GTCTTA", DP(0, 1, "6M", true, 0, 500, "6M", false))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence("CTTAGA", Read(0, 100, "1M5S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence("CTTAGA", Read(0, 101, "1M5S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence("TAAAGTC", Read(0, 1, "4M3S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence("AAAGTCT", Read(0, 2, "3M4S"))))));
+		//results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, ses, withSequence("TAAAGTCATGTATT", Read(0, 1, "5S9M"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		File file = new File(new File(testFolder.getRoot(), "visualisation"), "debruijn.assembly.metrics.polyA.bed");
 		assertTrue(file.exists());
@@ -95,23 +104,27 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 	}
 	@Test
 	public void should_assemble_both_directions() {
-		DeBruijnSubgraphAssembler ass = DSA(3);
+		ProcessingContext pc = PC(3);
+		SAMEvidenceSource ses = SES(pc);
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(AES(pc));
 		List<AssemblyEvidence> results = Lists.newArrayList();
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(0, 1, "4M3S"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(0, 2, "3M4S"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("TATG", Read(0, 10, "1S3M"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("TTATG", Read(0, 10, "2S3M"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence("TAAAGTC", Read(0, 1, "4M3S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence("AAAGTCT", Read(0, 2, "3M4S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, ses, withSequence("TATG", Read(0, 10, "1S3M"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, ses, withSequence("TTATG", Read(0, 10, "2S3M"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(2, results.size());
 	}
 	@Test
 	public void should_anchor_at_reference_kmer() {
-		DeBruijnSubgraphAssembler ass = DSA(3);
+		ProcessingContext pc = PC(3);
+		SAMEvidenceSource ses = SES(pc);
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(AES(pc));
 		List<AssemblyEvidence> results = Lists.newArrayList();
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(0, 1, "4M3S"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(0, 2, "3M4S"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("CCGACAT", Read(0, 10, "3S4M"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("GCCGACA", Read(0, 10, "4S3M"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence("TAAAGTC", Read(0, 1, "4M3S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence("AAAGTCT", Read(0, 2, "3M4S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, ses, withSequence("CCGACAT", Read(0, 10, "3S4M"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, ses, withSequence("GCCGACA", Read(0, 10, "4S3M"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(2, results.size());
 		assertEquals(4, results.get(0).getBreakendSequence().length);
@@ -119,21 +132,25 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 	}
 	@Test
 	public void should_assemble_() {
-		DeBruijnSubgraphAssembler ass = DSA(3);
+		ProcessingContext pc = PC(3);
+		SAMEvidenceSource ses = SES(pc);
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(AES(pc));
 		List<AssemblyEvidence> results = Lists.newArrayList();
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("TAAAGTC", Read(0, 1, "4M3S"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("AAAGTCT", Read(0, 2, "3M4S"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("CCGACAT", Read(0, 10, "3S4M"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("GCCGACA", Read(0, 10, "4S3M"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence("TAAAGTC", Read(0, 1, "4M3S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence("AAAGTCT", Read(0, 2, "3M4S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, ses, withSequence("CCGACAT", Read(0, 10, "3S4M"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, ses, withSequence("GCCGACA", Read(0, 10, "4S3M"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(2, results.size());
 		assertEquals(4, results.get(0).getBreakendSequence().length);
 	}
 	@Test
 	public void should_anchor_at_reference_kmer_large_kmer() {
-		DeBruijnSubgraphAssembler ass = DSA(32);
+		ProcessingContext pc = PC(32);
+		SAMEvidenceSource ses = SES(pc);
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(AES(pc));
 		List<AssemblyEvidence> results = Lists.newArrayList();
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence(S(RANDOM).substring(0, 200), Read(0, 1, "100M100S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence(S(RANDOM).substring(0, 200), Read(0, 1, "100M100S"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, results.size());
 		assertEquals(100, results.get(0).getBreakendSequence().length);
@@ -141,12 +158,14 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 	}
 	@Test
 	public void soft_clip_assembly_should_anchor_at_reference_kmer() {
-		DeBruijnSubgraphAssembler ass = DSA(4);
+		ProcessingContext pc = PC(4);
+		SAMEvidenceSource ses = SES(pc);
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(AES(pc));
 		List<AssemblyEvidence> results = Lists.newArrayList();
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("TTGCTCAAAA", Read(0, 1, "6S4M"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(withSequence("TGCTG", OEA(0, 4, "5M", false))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(withSequence("TGCTG", OEA(0, 5, "5M", false))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(withSequence("TGCTG", OEA(0, 6, "5M", false))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, ses, withSequence("TTGCTCAAAA", Read(0, 1, "6S4M"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(ses, withSequence("TGCTG", OEA(0, 4, "5M", false))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(ses, withSequence("TGCTG", OEA(0, 5, "5M", false))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(ses, withSequence("TGCTG", OEA(0, 6, "5M", false))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, results.size());
 		assertEquals("TTGCTCAAAA", S(results.get(0).getAssemblySequence()));
@@ -156,21 +175,25 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 	@Test
 	@Ignore("TODO: NYI: Not Yet Implemented")
 	public void should_assemble_anchor_shorter_than_kmer() {
-		DeBruijnSubgraphAssembler ass = DSA(5);
+		ProcessingContext pc = PC(5);
+		SAMEvidenceSource ses = SES(pc);
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(AES(pc));
 		List<AssemblyEvidence> results = Lists.newArrayList();
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("ATTAGA", Read(0, 1, "1M5S"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("ATTAGA", Read(0, 1, "1M5S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence("ATTAGA", Read(0, 1, "1M5S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence("ATTAGA", Read(0, 1, "1M5S"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, results.size());
 	}
 	@Test
 	@Ignore("TODO: NYI: Not Yet Implemented")
 	public void should_assemble_anchor_shorter_than_kmer_with_indel_rp_support() {
-		DeBruijnSubgraphAssembler ass = DSA(5);
+		ProcessingContext pc = PC(5);
+		SAMEvidenceSource ses = SES(pc);
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(AES(pc));
 		List<AssemblyEvidence> results = Lists.newArrayList();
-		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(withSequence("GTCTTA", DP(0, 1, "8M", true, 0, 500, "8M", false))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("CTTAGA", Read(0, 100, "1M5S"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence("CTTAGA", Read(0, 100, "1M5S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(NRRP(ses, withSequence("GTCTTA", DP(0, 1, "8M", true, 0, 500, "8M", false))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence("CTTAGA", Read(0, 100, "1M5S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence("CTTAGA", Read(0, 100, "1M5S"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, results.size());
 		assertEquals(3, results.get(0).getBreakendSummary().start);
@@ -185,10 +208,12 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		// start anchor position = 8 -> 8 + k-1 = 15
 		// end anchor position = 25
 		String seq = S(RANDOM).substring(0, 0+15) + S(RANDOM).substring(24, 24+15);
-		DeBruijnSubgraphAssembler ass = DSA(8);
+		ProcessingContext pc = PC(8);
+		SAMEvidenceSource ses = SES(pc);
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(AES(pc));
 		List<AssemblyEvidence> results = Lists.newArrayList();
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence(seq, Read(2, 1, "15M15S"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence(seq, Read(2, 25, "15S15M"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence(seq, Read(2, 1, "15M15S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, ses, withSequence(seq, Read(2, 25, "15S15M"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, results.size());
 		SmallIndelSAMRecordAssemblyEvidence e = (SmallIndelSAMRecordAssemblyEvidence)results.get(0);
@@ -212,7 +237,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		// start anchor position = 8 -> 8 + k-1 = 15
 		// end anchor position = 25
 		String seq = contig.substring(0, 0+15) + contig.substring(24, 24+15);
-		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(context, AES(context));
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(AES(context));
 		List<AssemblyEvidence> results = Lists.newArrayList();
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence(seq, Read(0, 1, "15M15S"))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, ses, withSequence(seq, Read(0, 25, "15S15M"))))));
@@ -243,7 +268,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		// start anchor position = 8 -> 8 + k-1 = 15
 		// end anchor position = 25
 		String seq = contig.substring(0, 0+15) + contig.substring(24, 24+15);
-		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(context, AES(context));
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(AES(context));
 		List<AssemblyEvidence> results = Lists.newArrayList();
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence(seq, Read(0, 1, "17M13S"))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, ses, withSequence(seq, Read(0, 23, "13S17M"))))));
@@ -264,24 +289,28 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 	@Ignore() //  TODO: special case these?
 	public void should_not_call_reference_bubble() {
 		String seq = S(RANDOM).substring(0, 10);
-		DeBruijnSubgraphAssembler ass = DSA(5);
+		ProcessingContext pc = PC(5);
+		SAMEvidenceSource ses = SES(pc);
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(AES(pc));
 		List<AssemblyEvidence> results = Lists.newArrayList();
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, withSequence(seq, Read(0, 1, "5M5S"))))));
-		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence(seq, Read(0, 6, "5S5M"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence(seq, Read(0, 1, "5M5S"))))));
+		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, ses, withSequence(seq, Read(0, 6, "5S5M"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		// no actual variant support - artifact of tracking reference/non-reference at kmer resolution, not base pair resolution  
 		assertEquals(0, results.size());
 	}
 	@Test
 	public void should_use_expected_read_pair_orientation() {
-		DeBruijnSubgraphAssembler ass = DSA(5);
+		ProcessingContext pc = PC(5);
+		SAMEvidenceSource ses = SES(pc);
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(AES(pc));
 		List<DirectedEvidence> in = new ArrayList<DirectedEvidence>();
-		in.add(SCE(FWD, withSequence("AACCGGTTC", Read(0, 1, "5M4S"))));
-		in.add(SCE(FWD, withSequence("AACCGGTTC", Read(0, 2, "4M5S"))));
-		in.add(NRRP(withSequence("AACCGGTTCC", DP(0, 1, "10M", false, 1, 100, "10M", true))));
-		in.add(NRRP(withSequence("AACCGGTTCC", DP(0, 2, "10M", false, 1, 100, "10M", true))));
-		in.add(NRRP(withSequence("GTACGATT", DP(0, 1, "8M", false, 1, 100, "8M", false))));
-		in.add(NRRP(withSequence("GTACGATT", DP(0, 2, "8M", false, 1, 100, "8M", false))));
+		in.add(SCE(FWD, ses, withSequence("AACCGGTTC", Read(0, 1, "5M4S"))));
+		in.add(SCE(FWD, ses, withSequence("AACCGGTTC", Read(0, 2, "4M5S"))));
+		in.add(NRRP(ses, withSequence("AACCGGTTCC", DP(0, 1, "10M", false, 1, 100, "10M", true))));
+		in.add(NRRP(ses, withSequence("AACCGGTTCC", DP(0, 2, "10M", false, 1, 100, "10M", true))));
+		in.add(NRRP(ses, withSequence("GTACGATT", DP(0, 1, "8M", false, 1, 100, "8M", false))));
+		in.add(NRRP(ses, withSequence("GTACGATT", DP(0, 2, "8M", false, 1, 100, "8M", false))));
 		in.sort(DirectedEvidence.ByStartEnd);
 		
 		List<AssemblyEvidence> results = Lists.newArrayList();

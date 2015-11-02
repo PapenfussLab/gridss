@@ -1,5 +1,18 @@
 package au.edu.wehi.idsv.visualisation;
 
+import java.io.File;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
+
+import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
+import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
 import it.uniroma1.dis.wsngroup.gexf4j.core.Edge;
 import it.uniroma1.dis.wsngroup.gexf4j.core.EdgeType;
 import it.uniroma1.dis.wsngroup.gexf4j.core.Gexf;
@@ -17,20 +30,6 @@ import it.uniroma1.dis.wsngroup.gexf4j.core.dynamic.TimeFormat;
 import it.uniroma1.dis.wsngroup.gexf4j.core.impl.GexfImpl;
 import it.uniroma1.dis.wsngroup.gexf4j.core.impl.SpellImpl;
 import it.uniroma1.dis.wsngroup.gexf4j.core.impl.data.AttributeListImpl;
-
-import java.io.File;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
-import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
-
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Multimap;
 
 public class DynamicDeBruijnPathGraphGexfExporter<T, PN extends DeBruijnPathNode<T>> implements DeBruijnPathGraphExporter<T, PN> {
 	//private static final Log log = Log.getInstance(DeBruijnPathGraphGexfExporter.class);

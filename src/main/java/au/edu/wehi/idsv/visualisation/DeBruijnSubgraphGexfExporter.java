@@ -1,5 +1,15 @@
 package au.edu.wehi.idsv.visualisation;
 
+import java.io.File;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+
+import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
+import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphNode;
 import htsjdk.samtools.util.Log;
 import it.uniroma1.dis.wsngroup.gexf4j.core.Edge;
 import it.uniroma1.dis.wsngroup.gexf4j.core.EdgeType;
@@ -15,17 +25,6 @@ import it.uniroma1.dis.wsngroup.gexf4j.core.data.AttributeType;
 import it.uniroma1.dis.wsngroup.gexf4j.core.dynamic.TimeFormat;
 import it.uniroma1.dis.wsngroup.gexf4j.core.impl.GexfImpl;
 import it.uniroma1.dis.wsngroup.gexf4j.core.impl.data.AttributeListImpl;
-
-import java.io.File;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-
-import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
-import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphNode;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 public class DeBruijnSubgraphGexfExporter implements DeBruijnGraphExporter<DeBruijnSubgraphNode> {
 	/**

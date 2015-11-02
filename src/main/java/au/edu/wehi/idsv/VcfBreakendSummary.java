@@ -1,8 +1,5 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.variant.variantcontext.Allele;
-import htsjdk.variant.variantcontext.VariantContext;
-
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
@@ -10,6 +7,8 @@ import org.apache.commons.lang3.StringUtils;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfConstants;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import htsjdk.variant.variantcontext.Allele;
+import htsjdk.variant.variantcontext.VariantContext;
 
 /**
  * Extracts breakend/breakpoint information from a VCF variant

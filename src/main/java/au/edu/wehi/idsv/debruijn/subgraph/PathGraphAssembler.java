@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
-import htsjdk.samtools.util.Log;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.BitSet;
@@ -10,6 +8,15 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Stack;
+
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
+import com.google.common.collect.Sets;
+import com.google.common.primitives.Ints;
 
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
@@ -23,15 +30,7 @@ import au.edu.wehi.idsv.graph.WeightedSequenceGraphNodeUtil;
 import au.edu.wehi.idsv.visualisation.DeBruijnPathGraphExporter;
 import au.edu.wehi.idsv.visualisation.StaticDeBruijnPathGraphGexfExporter;
 import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTracker;
-
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.Sets;
-import com.google.common.primitives.Ints;
+import htsjdk.samtools.util.Log;
 
 /**
  * Reduces the de bruijn graph to a set of paths before assembling

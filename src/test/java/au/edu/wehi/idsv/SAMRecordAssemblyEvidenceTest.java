@@ -6,9 +6,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.metrics.Header;
-import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -20,10 +17,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import au.edu.wehi.idsv.configuration.GridssConfiguration;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.metrics.Header;
+import htsjdk.samtools.util.SequenceUtil;
 
 
 public class SAMRecordAssemblyEvidenceTest extends TestHelper {

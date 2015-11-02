@@ -1,12 +1,12 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.SequenceUtil;
 
 import org.junit.Test;
 
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
 
 
 public class RealignedBreakpointTest extends TestHelper {

@@ -3,8 +3,6 @@ package au.edu.wehi.idsv;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.SequenceUtil;
 
 import java.util.List;
 
@@ -12,6 +10,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
+
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
 
 public class CompoundBreakendAlignmentTest extends TestHelper {
 	@Test

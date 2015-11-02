@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv.util;
 
-import htsjdk.samtools.util.Log;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -10,6 +8,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.collect.AbstractIterator;
+
+import htsjdk.samtools.util.Log;
 
 /**
  * Duplicates the given iterator, feeding internal buffers from a background thread

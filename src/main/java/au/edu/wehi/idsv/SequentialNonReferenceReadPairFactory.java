@@ -1,9 +1,9 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMRecord;
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
-
 import com.google.common.collect.PeekingIterator;
+
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import htsjdk.samtools.SAMRecord;
 
 /**
  * Iterates over read pairs ordered according to the start position of the locally mapped read in the pair

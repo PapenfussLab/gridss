@@ -3,6 +3,12 @@
  */
 package au.edu.wehi.idsv.sam;
 
+import java.util.Arrays;
+import java.util.List;
+
+import com.google.common.collect.Lists;
+
+import au.edu.wehi.idsv.BreakendDirection;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
@@ -14,13 +20,6 @@ import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 import htsjdk.samtools.util.SequenceUtil;
-
-import java.util.Arrays;
-import java.util.List;
-
-import au.edu.wehi.idsv.BreakendDirection;
-
-import com.google.common.collect.Lists;
 
 /**
  * @author Daniel Cameron

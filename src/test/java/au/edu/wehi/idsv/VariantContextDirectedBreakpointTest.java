@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
-import htsjdk.variant.variantcontext.VariantContext;
 
 import java.util.Collections;
 import java.util.List;
@@ -9,6 +8,8 @@ import java.util.List;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
+
+import htsjdk.variant.variantcontext.VariantContext;
 
 
 public class VariantContextDirectedBreakpointTest extends TestHelper {

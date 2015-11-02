@@ -1,12 +1,13 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
-import gnu.trove.procedure.TLongObjectProcedure;
-import htsjdk.samtools.util.Log;
-
 import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.Defaults;
@@ -24,10 +25,8 @@ import au.edu.wehi.idsv.visualisation.StaticDeBruijnPathGraphGexfExporter;
 import au.edu.wehi.idsv.visualisation.SubgraphAlgorithmMetrics;
 import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTracker;
 import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTrackerBEDWriter;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import gnu.trove.procedure.TLongObjectProcedure;
+import htsjdk.samtools.util.Log;
 
 public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode> {
 	private static final Log log = Log.getInstance(DeBruijnReadGraph.class);

@@ -1,10 +1,10 @@
 package au.edu.wehi.idsv;
 
+import com.google.common.base.Charsets;
+
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.fastq.FastqRecord;
-
-import com.google.common.base.Charsets;
 
 /**
  * Determines the ID encoding of a breakpoint when performing FASTQ realignment

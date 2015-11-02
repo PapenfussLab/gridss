@@ -1,8 +1,8 @@
 package au.edu.wehi.idsv;
 
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 public class FixedSizeReadPairConcordanceCalculator extends ReadPairConcordanceCalculator {
 	private final int minFragmentSize;

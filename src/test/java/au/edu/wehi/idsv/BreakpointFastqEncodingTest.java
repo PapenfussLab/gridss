@@ -1,9 +1,10 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
-import htsjdk.samtools.fastq.FastqRecord;
 
 import org.junit.Test;
+
+import htsjdk.samtools.fastq.FastqRecord;
 
 public class BreakpointFastqEncodingTest extends TestHelper {
 	public class StubDirectedBreakend implements DirectedEvidence {

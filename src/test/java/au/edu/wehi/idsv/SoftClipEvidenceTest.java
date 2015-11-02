@@ -3,15 +3,17 @@ package au.edu.wehi.idsv;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.File;
 
+import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
 
 public class SoftClipEvidenceTest extends TestHelper {
 	@Test(expected=IllegalArgumentException.class)
@@ -137,11 +139,11 @@ public class SoftClipEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void getAlignedPercentIdentity_should_match_only_mapped_bases() {
-		assertEquals(100, SoftClipEvidence.create(SES(), BreakendDirection.Backward, withNM(withSequence("NAAAAA", Read(0, 1, "1S5M")))[0]).getAlignedIdentity(), 0);
-		assertEquals(100, SoftClipEvidence.create(SES(), BreakendDirection.Backward, withNM(withSequence("NTAAAT", Read(0, 1, "2S3M1S")))[0]).getAlignedIdentity(), 0);
-		assertEquals(100, SoftClipEvidence.create(SES(), BreakendDirection.Backward, withNM(withSequence("NATTTA", Read(0, 1, "1S1M3I1M")))[0]).getAlignedIdentity(), 0);
-		assertEquals(100, SoftClipEvidence.create(SES(), BreakendDirection.Backward, withNM(withSequence("NAGTAC", Read(1, 1, "1S1M1D4M")))[0]).getAlignedIdentity(), 0);
-		assertEquals(50, SoftClipEvidence.create(SES(), BreakendDirection.Backward, withNM(withSequence("NAATT", Read(0, 1, "1S4M")))[0]).getAlignedIdentity(), 0);
+		assertEquals(1, SoftClipEvidence.create(SES(), BreakendDirection.Backward, withNM(withSequence("NAAAAA", Read(0, 1, "1S5M")))[0]).getAlignedIdentity(), 0);
+		assertEquals(1, SoftClipEvidence.create(SES(), BreakendDirection.Backward, withNM(withSequence("NTAAAT", Read(0, 1, "2S3M1S")))[0]).getAlignedIdentity(), 0);
+		assertEquals(1, SoftClipEvidence.create(SES(), BreakendDirection.Backward, withNM(withSequence("NATTTA", Read(0, 1, "1S1M3I1M")))[0]).getAlignedIdentity(), 0);
+		assertEquals(1, SoftClipEvidence.create(SES(), BreakendDirection.Backward, withNM(withSequence("NAGTAC", Read(1, 1, "1S1M1D4M")))[0]).getAlignedIdentity(), 0);
+		assertEquals(0.5, SoftClipEvidence.create(SES(), BreakendDirection.Backward, withNM(withSequence("NAATT", Read(0, 1, "1S4M")))[0]).getAlignedIdentity(), 0);
 		assertEquals(0, SoftClipEvidence.create(SES(), BreakendDirection.Backward, withNM(withSequence("ACCCCA", Read(0, 1, "1S4M1S")))[0]).getAlignedIdentity(), 0);
 	}
 	@Test(expected=IllegalArgumentException.class)
@@ -203,6 +205,10 @@ public class SoftClipEvidenceTest extends TestHelper {
 	}
 	private void adapter(String seq, int scLen, boolean keep) {
 		SAMEvidenceSource ses = permissiveSES();
+		try {
+			ses.getContext().getConfig().adapters = new GridssConfiguration().adapters;
+		} catch (ConfigurationException e) {
+		}
 		SAMRecord r = Read(0, 1000, String.format("%dM%dS", seq.length() - scLen, scLen));
 		r.setReadBases(B(seq));
 		r.setReadNegativeStrandFlag(false);

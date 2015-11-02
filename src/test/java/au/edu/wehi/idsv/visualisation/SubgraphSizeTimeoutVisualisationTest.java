@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv.visualisation;
 
 import static org.junit.Assert.assertTrue;
-import htsjdk.samtools.SAMRecord;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -11,6 +10,9 @@ import java.util.List;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+
 import au.edu.wehi.idsv.AssemblyAlgorithm;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.IntermediateFilesTest;
@@ -18,9 +20,7 @@ import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import htsjdk.samtools.SAMRecord;
 
 
 public class SubgraphSizeTimeoutVisualisationTest extends IntermediateFilesTest {
@@ -46,6 +46,8 @@ public class SubgraphSizeTimeoutVisualisationTest extends IntermediateFilesTest 
 		pc.getAssemblyParameters().k = k;
 		pc.getAssemblyParameters().method = AssemblyAlgorithm.Subgraph;
 		pc.getSoftClipParameters().minLength = 1;
+		pc.getConfig().getVisualisation().timeouts = true;
+		pc.getConfig().getVisualisation().directory.mkdirs();
 		File output = new File(super.testFolder.getRoot(), "test_path_timeout_gexf.vcf");
 		List<SAMRecord> list = Lists.newArrayList();
 		for (int i = 0; i < 1 << (2*k); i++) {

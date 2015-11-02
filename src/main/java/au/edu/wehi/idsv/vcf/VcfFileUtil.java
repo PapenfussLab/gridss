@@ -1,20 +1,12 @@
 package au.edu.wehi.idsv.vcf;
 
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.SortingCollection;
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.writer.VariantContextWriter;
-import htsjdk.variant.vcf.VCFFileReader;
-import htsjdk.variant.vcf.VCFHeader;
-import htsjdk.variant.vcf.VCFRecordCodec;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.concurrent.Callable;
+
+import com.google.common.collect.ImmutableList;
 
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.FileSystemContext;
@@ -24,8 +16,15 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.validation.OrderAssertingIterator;
-
-import com.google.common.collect.ImmutableList;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.SortingCollection;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.vcf.VCFFileReader;
+import htsjdk.variant.vcf.VCFHeader;
+import htsjdk.variant.vcf.VCFRecordCodec;
 
 public class VcfFileUtil {
 	private static final Log log = Log.getInstance(VcfFileUtil.class);

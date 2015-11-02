@@ -10,6 +10,8 @@ import java.util.List;
 
 import org.junit.Test;
 
+import com.google.common.collect.Lists;
+
 import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.DirectedEvidence;
@@ -18,8 +20,6 @@ import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
-
-import com.google.common.collect.Lists;
 
 
 public class DeBruijnReadGraphTest extends TestHelper {

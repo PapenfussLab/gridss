@@ -1,12 +1,11 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SamPairUtil.PairOrientation;
-
 import org.apache.commons.lang3.StringUtils;
 
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
 
 /**
  * A read pair that does not support the reference sequence. This can be an OEA, or DP read pair.

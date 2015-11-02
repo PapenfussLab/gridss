@@ -11,16 +11,16 @@ import java.util.List;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.ImmutableSortedSet;
+
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphNode;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
 import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
 import au.edu.wehi.idsv.visualisation.StaticDeBruijnPathGraphGexfExporter;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.ImmutableSortedSet;
 
 
 public class DeBruijnPathGraphTest extends TestHelper {

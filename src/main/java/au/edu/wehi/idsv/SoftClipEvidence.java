@@ -1,15 +1,14 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMTag;
-import htsjdk.samtools.util.SequenceUtil;
-
 import java.util.Arrays;
 
 import org.apache.commons.lang3.StringUtils;
 
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMTag;
+import htsjdk.samtools.util.SequenceUtil;
 
 public class SoftClipEvidence implements DirectedEvidence {
 	private final SAMEvidenceSource source;

@@ -2,10 +2,10 @@ package au.edu.wehi.idsv.debruijn;
 
 import java.util.Collection;
 
+import com.google.common.collect.ImmutableList;
+
 import au.edu.wehi.idsv.graph.PathNodeFactory;
 import au.edu.wehi.idsv.graph.WeightedSequenceGraphNodeUtil;
-
-import com.google.common.collect.ImmutableList;
 
 public class DeBruijnPathNodeFactory<T> implements PathNodeFactory<T, DeBruijnPathNode<T>> {
 	public final DeBruijnGraph<T> graph;

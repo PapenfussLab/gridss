@@ -1,8 +1,5 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMRecord;
-import it.unimi.dsi.fastutil.objects.Object2FloatOpenHashMap;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -17,12 +14,14 @@ import java.util.stream.Stream;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
+import htsjdk.samtools.SAMRecord;
+import it.unimi.dsi.fastutil.objects.Object2FloatOpenHashMap;
 
 /**
  * Tracks evidenceID and qualities

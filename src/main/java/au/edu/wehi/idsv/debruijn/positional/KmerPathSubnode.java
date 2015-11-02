@@ -1,18 +1,17 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import it.unimi.dsi.fastutil.ints.IntHeapPriorityQueue;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.IntPredicate;
-
-import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNode;
-import au.edu.wehi.idsv.util.RangeUtil;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
+
+import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNode;
+import au.edu.wehi.idsv.util.RangeUtil;
+import it.unimi.dsi.fastutil.ints.IntHeapPriorityQueue;
 
 public class KmerPathSubnode implements DeBruijnSequenceGraphNode, KmerNode {
 	public static final IntPredicate NO_EDGES = n -> n == 0;

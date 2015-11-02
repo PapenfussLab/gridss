@@ -1,15 +1,5 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SamPairUtil.PairOrientation;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.reference.ReferenceSequenceFile;
-import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
-import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.SequenceUtil;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -24,18 +14,27 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration.ConfigurationException;
 
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
+import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.SequenceUtil;
 import picard.analysis.InsertSizeMetrics;
 import picard.cmdline.CommandLineProgram;
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
-import au.edu.wehi.idsv.configuration.GridssConfiguration;
-import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
-
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
  * Extracts structural variation evidence and assembles breakends
@@ -85,8 +84,6 @@ public class Idsv extends CommandLineProgram {
     // The following attributes define the command-line arguments
 	@Option(doc="VCF containing true calls. Called variants will be annotated as true/false positive calls based on this truth file.", optional=true)
     public File TRUTH_VCF = null;
-	@Option(doc="gridss configuration setting override", optional=true)
-	public File GRIDSS_CONFIG = null;
     @Option(doc = "Processing steps to execute", optional = true)
     public EnumSet<ProcessStep> STEPS = ProcessStep.ALL_STEPS;
     private SAMEvidenceSource constructSamEvidenceSource(File file, int index, int category) { 

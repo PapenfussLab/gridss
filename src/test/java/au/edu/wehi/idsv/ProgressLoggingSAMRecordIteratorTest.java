@@ -1,8 +1,6 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.ProgressLoggerInterface;
 
 import java.util.Iterator;
 import java.util.List;
@@ -10,6 +8,9 @@ import java.util.List;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
+
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.ProgressLoggerInterface;
 
 public class ProgressLoggingSAMRecordIteratorTest extends TestHelper {
 	public class StubProgressLoggerInterface implements ProgressLoggerInterface {

@@ -1,24 +1,22 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
-import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.fastq.FastqRecord;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.fastq.FastqRecord;
+
 public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
-	private void writeRealignment(ProcessingContext pc, EvidenceSource source, int index, SAMRecord... records) {
-		createBAM(pc.getFileSystemContext().getRealignmentBam(source.getFileIntermediateDirectoryBasedOn(), index), SortOrder.coordinate, records);
-	}
 	@Test
 	public void should_write_fastq() {
 		createInput(RP(0, 1, 2, 1));
@@ -63,12 +61,12 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		ProcessingContext pc = getCommandlineContext();
 		//pc.getRealignmentParameters().requireRealignment = false;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
-		ses.completeSteps(EnumSet.allOf(ProcessStep.class));
-		writeRealignment(pc, ses, 0);
-		ses.completeSteps(EnumSet.allOf(ProcessStep.class));
+		ses.completeSteps(ProcessStep.ALL_STEPS);
+		writeUnmappedRealignments(pc, ses, 0);
+		ses.completeSteps(ProcessStep.ALL_STEPS);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
 		aes.ensureAssembled(); // assemble
-		writeRealignment(pc, aes, 0);
+		writeUnmappedRealignments(pc, aes, 0);
 		aes.iterateRealignment();
 		aes.ensureAssembled(); // transform to annotated read pair
 
@@ -94,12 +92,12 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		pc.getAssemblyParameters().subgraph.maxSubgraphFragmentWidth = -1;
 		//pc.getRealignmentParameters().requireRealignment = false;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
-		ses.completeSteps(EnumSet.allOf(ProcessStep.class));
-		writeRealignment(pc, ses, 0);
-		ses.completeSteps(EnumSet.allOf(ProcessStep.class));
+		ses.completeSteps(ProcessStep.ALL_STEPS);
+		writeUnmappedRealignments(pc, ses, 0);
+		ses.completeSteps(ProcessStep.ALL_STEPS);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
 		aes.ensureAssembled(); // assemble
-		writeRealignment(pc, aes, 0);
+		writeUnmappedRealignments(pc, aes, 0);
 		aes.iterateRealignment();
 		aes.ensureAssembled(); // transform to annotated read pair
 
@@ -145,7 +143,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		ProcessingContext pc = getCommandlineContext();
 		pc.getAssemblyParameters().subgraph.maxSubgraphFragmentWidth = -1;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
-		ses.completeSteps(EnumSet.allOf(ProcessStep.class));
+		ses.completeSteps(ProcessStep.ALL_STEPS);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
 		aes.ensureAssembled();
 		assertEquals(2, getAssemblyRaw(aes).size());
@@ -162,7 +160,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		ProcessingContext pc = getCommandlineContext();
 		pc.getAssemblyParameters().writeFiltered = false;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
-		ses.completeSteps(EnumSet.allOf(ProcessStep.class));
+		ses.completeSteps(ProcessStep.ALL_STEPS);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
 		aes.ensureAssembled();
 		assertEquals(0, getAssemblyRaw(aes).size());

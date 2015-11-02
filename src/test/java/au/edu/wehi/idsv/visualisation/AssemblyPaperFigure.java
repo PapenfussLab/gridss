@@ -1,9 +1,5 @@
 package au.edu.wehi.idsv.visualisation;
 
-import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.fastq.FastqRecord;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -11,6 +7,10 @@ import java.util.Collections;
 import java.util.List;
 
 import org.junit.Test;
+
+import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Ordering;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.BreakpointFastqEncoding;
@@ -20,10 +20,9 @@ import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SoftClipEvidence;
-
-import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Ordering;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.fastq.FastqRecord;
 
 public class AssemblyPaperFigure extends IntermediateFilesTest {
 	@Test
@@ -35,7 +34,7 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 		ProcessingContext pc = getCommandlineContext(false);
 		
 		pc.getAssemblyParameters().k = k;
-		pc.getConfig().getVisualisation().directory = new File(super.testFolder.getRoot(), "visualisation");
+		pc.getConfig().getVisualisation().directory = new File(super.testFolder.getRoot().getAbsoluteFile(), "visualisation");
 		pc.getConfig().getVisualisation().assembly = true;
 		pc.getConfig().getVisualisation().assemblyProgress = true;
 		pc.getConfig().getVisualisation().directory.mkdir();
@@ -142,5 +141,10 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 				+ S(getRef(bs.remoteBreakend().referenceIndex, fragBasesAtRemote, bs.remoteBreakend().start, bs.remoteBreakend().direction, fragBasesAtRemote))));
 		reads.add(dp[0]);
 		reads.add(dp[1]);
+	}
+	//@Test
+	public void generateMissassemblyGraph() throws IOException {
+		// [1,10] GTAAAAAC
+		//fail();
 	}
 }

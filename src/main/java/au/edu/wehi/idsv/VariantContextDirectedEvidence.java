@@ -1,17 +1,16 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.variant.variantcontext.VariantContext;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
-
-import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
+
+import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import htsjdk.variant.variantcontext.VariantContext;
 
 /**
  * VCF Breakend record

@@ -2,26 +2,6 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMFileWriter;
-import htsjdk.samtools.SAMReadGroupRecord;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordCoordinateComparator;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMTag;
-import htsjdk.samtools.SamPairUtil;
-import htsjdk.samtools.metrics.Header;
-import htsjdk.samtools.metrics.MetricsFile;
-import htsjdk.samtools.reference.ReferenceSequenceFile;
-import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.ProgressLoggerInterface;
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.writer.VariantContextWriter;
-import htsjdk.variant.vcf.VCFHeader;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -44,7 +24,12 @@ import java.util.stream.StreamSupport;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.lang3.StringUtils;
 
-import picard.analysis.InsertSizeMetrics;
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraph;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
@@ -81,12 +66,27 @@ import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
-
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileWriter;
+import htsjdk.samtools.SAMReadGroupRecord;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordCoordinateComparator;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMTag;
+import htsjdk.samtools.SamPairUtil;
+import htsjdk.samtools.metrics.Header;
+import htsjdk.samtools.metrics.MetricsFile;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.ProgressLoggerInterface;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.vcf.VCFHeader;
+import picard.analysis.InsertSizeMetrics;
 
 public class TestHelper {
 	public static final long LCCB = ProcessingContext.LINEAR_COORDINATE_CHROMOSOME_BUFFER;
@@ -317,13 +317,12 @@ public class TestHelper {
 	}
 
 	public static FileSystemContext getFSContext() {
-		return new FileSystemContext(new File(
-				System.getProperty("java.io.tmpdir")), 500000);
+		return new FileSystemContext(new File(System.getProperty("java.io.tmpdir")), 500000);
 	}
-	public static GridssConfiguration getConfig() {
+	public static GridssConfiguration getConfig(File workingDirectory) {
 		GridssConfiguration config;
 		try {
-			config = new GridssConfiguration();
+			config = new GridssConfiguration((File)null, workingDirectory);
 		} catch (ConfigurationException e) {
 			throw new RuntimeException(e);
 		}
@@ -334,6 +333,9 @@ public class TestHelper {
 		config.getAssembly().anchorRealignment.perform = false;
 		config.getVariantCalling().breakendMargin = 3;
 		return config;
+	}
+	public static GridssConfiguration getConfig() {
+		return getConfig(new File(System.getProperty("java.io.tmpdir")));
 	}
 	public static ProcessingContext getContext(ReferenceLookup ref) {
 		ProcessingContext pc = new ProcessingContext(getFSContext(),

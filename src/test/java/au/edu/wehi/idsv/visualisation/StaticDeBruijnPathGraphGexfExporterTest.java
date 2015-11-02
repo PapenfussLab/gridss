@@ -9,14 +9,14 @@ import java.io.IOException;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+
 import au.edu.wehi.idsv.AssemblyAlgorithm;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
-
-import com.google.common.collect.ImmutableList;
 
 
 public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTest {
@@ -25,9 +25,10 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 		File output = new File(super.testFolder.getRoot(), "chr12-244000.vcf");
 		setReference(new File("C:/dev/chr12.fa"));
 		createInput(new File("src/test/resources/chr12-244000.bam"));
-		SAMEvidenceSource ses = new SAMEvidenceSource(getCommandlineContext(), input, 0);
+		ProcessingContext pc = getCommandlineContext(false);
+		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
 		ses.completeSteps(ProcessStep.ALL_STEPS);
-		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), output);
+		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), output);
 		aes.ensureAssembled();
 		File dir = new File(super.testFolder.getRoot(), "visualisation");
 		File[] export = dir.listFiles((FileFilter)new WildcardFileFilter("*.dot"));
@@ -41,9 +42,8 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 		pc.getAssemblyParameters().errorCorrection.collapseBubblesOnly = true;
 		pc.getAssemblyParameters().method = AssemblyAlgorithm.Positional;
 		pc.getAssemblyParameters().includeRemoteSplitReads = false;
-		pc.getConfig().getVisualisation().directory = new File(super.testFolder.getRoot(), "visualisation");
 		pc.getConfig().getVisualisation().assembly = true;
-		pc.getConfig().getVisualisation().directory.mkdir();
+		pc.getConfig().getVisualisation().directory.mkdirs();
 		return pc;
 	}
 }

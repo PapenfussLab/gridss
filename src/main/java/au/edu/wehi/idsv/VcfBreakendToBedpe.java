@@ -1,21 +1,23 @@
 package au.edu.wehi.idsv;
 
+import java.io.File;
+import java.io.IOException;
+
+import org.apache.commons.configuration.ConfigurationException;
+
+import com.google.common.collect.Lists;
+
+import au.edu.wehi.idsv.bed.BedpeWriter;
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
+import au.edu.wehi.idsv.util.FileHelper;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
-
-import java.io.File;
-import java.io.IOException;
-
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
-import au.edu.wehi.idsv.bed.BedpeWriter;
-import au.edu.wehi.idsv.util.FileHelper;
-
-import com.google.common.collect.Lists;
 
 @CommandLineProgramProperties(
         usage = "Converts VCF breakend calls to BEDPE format. "
@@ -45,9 +47,9 @@ public class VcfBreakendToBedpe extends picard.cmdline.CommandLineProgram {
 			TMP_DIR = Lists.newArrayList(new File("."));
 		}
 		try {
-			ProcessingContext pc = new ProcessingContext(new FileSystemContext(TMP_DIR.get(0), MAX_RECORDS_IN_RAM), null, null, REFERENCE, false);
+			ProcessingContext pc = new ProcessingContext(new FileSystemContext(TMP_DIR.get(0), MAX_RECORDS_IN_RAM), null, new GridssConfiguration(), REFERENCE, false);
 			writeBreakpointBedpe(pc, INPUT, OUTPUT, INCLUDE_FILTERED, INCLUDE_HEADER, INCLUDE_LOW_BREAKEND, INCLUDE_HIGH_BREAKEND);
-		} catch (IOException e) {
+		} catch (IOException | ConfigurationException e) {
 			log.error(e);
 			return -1;
 		}

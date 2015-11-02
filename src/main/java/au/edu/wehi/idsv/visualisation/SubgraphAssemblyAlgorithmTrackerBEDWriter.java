@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv.visualisation;
 
-import htsjdk.samtools.util.Log;
-
 import java.io.BufferedWriter;
 import java.io.Closeable;
 import java.io.File;
@@ -10,10 +8,11 @@ import java.util.PriorityQueue;
 
 import org.apache.commons.lang3.StringUtils;
 
-import au.edu.wehi.idsv.graph.PathNode;
-
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
+
+import au.edu.wehi.idsv.graph.PathNode;
+import htsjdk.samtools.util.Log;
 
 /**
  * Writes algorithm tracking information to a BED file

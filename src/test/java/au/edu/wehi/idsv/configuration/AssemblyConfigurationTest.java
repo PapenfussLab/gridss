@@ -7,6 +7,8 @@ import java.util.ArrayList;
 
 import org.junit.Test;
 
+import com.google.common.collect.Lists;
+
 import au.edu.wehi.idsv.AssemblyFactory;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
@@ -16,8 +18,6 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.vcf.VcfFilter;
-
-import com.google.common.collect.Lists;
 
 
 public class AssemblyConfigurationTest extends TestHelper {

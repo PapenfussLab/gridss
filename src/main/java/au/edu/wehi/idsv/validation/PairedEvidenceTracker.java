@@ -1,11 +1,9 @@
 package au.edu.wehi.idsv.validation;
 
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.Log;
-
 import java.util.HashMap;
 import java.util.Iterator;
+
+import com.google.common.collect.AbstractIterator;
 
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.DirectedBreakpoint;
@@ -18,8 +16,9 @@ import au.edu.wehi.idsv.RealignedSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.RealignedSoftClipEvidence;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
-
-import com.google.common.collect.AbstractIterator;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.Log;
 
 /**
  * Pass-through iterator that tracks evidence

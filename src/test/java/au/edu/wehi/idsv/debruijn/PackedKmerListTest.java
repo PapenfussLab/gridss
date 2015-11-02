@@ -6,9 +6,9 @@ import java.util.List;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.TestHelper;
-
 import com.google.common.collect.Lists;
+
+import au.edu.wehi.idsv.TestHelper;
 
 
 public class PackedKmerListTest extends TestHelper {

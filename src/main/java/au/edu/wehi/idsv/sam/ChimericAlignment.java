@@ -1,13 +1,13 @@
 package au.edu.wehi.idsv.sam;
 
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.TextCigarCodec;
-
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.TextCigarCodec;
 
 /**
  * SA Z Other canonical alignments in a chimeric alignment, formatted as a semicolon-delimited

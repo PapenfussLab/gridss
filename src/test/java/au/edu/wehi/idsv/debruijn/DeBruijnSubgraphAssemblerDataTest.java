@@ -1,8 +1,5 @@
 package au.edu.wehi.idsv.debruijn;
 
-import htsjdk.samtools.metrics.Header;
-import htsjdk.samtools.util.CloseableIterator;
-
 import java.io.File;
 import java.util.ArrayList;
 
@@ -18,6 +15,8 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
+import htsjdk.samtools.metrics.Header;
+import htsjdk.samtools.util.CloseableIterator;
 
 /**
  * Tests against external data sets.
@@ -32,12 +31,12 @@ public class DeBruijnSubgraphAssemblerDataTest extends IntermediateFilesTest {
 		ProcessingContext pc = new ProcessingContext(
 				new FileSystemContext(testFolder.getRoot(), 500000),
 				new ArrayList<Header>(),
-				new GridssConfiguration(null, testFolder.getRoot()),
+				new GridssConfiguration((File)null, testFolder.getRoot()),
 				hg19decoy,
 				true);
 		pc.getConfig().getVisualisation().assemblyProgress = true;
 		
-		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(pc, AES(pc));
+		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(AES(pc));
 		
 		SAMEvidenceSource ses = new SAMEvidenceSource(new ProcessingContext(
 				new FileSystemContext(new File("W:\\na12878"), 500000),

@@ -2,11 +2,11 @@ package au.edu.wehi.idsv;
 
 import java.math.RoundingMode;
 
-import au.edu.wehi.idsv.util.IntervalUtil;
-
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 import com.google.common.math.IntMath;
+
+import au.edu.wehi.idsv.util.IntervalUtil;
 
 /**
  * Positional locations on source and target chromosomes

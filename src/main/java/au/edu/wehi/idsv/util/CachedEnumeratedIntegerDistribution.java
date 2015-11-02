@@ -1,8 +1,5 @@
 package au.edu.wehi.idsv.util;
 
-import gnu.trove.map.TIntDoubleMap;
-import gnu.trove.map.hash.TIntDoubleHashMap;
-
 import org.apache.commons.math3.distribution.EnumeratedIntegerDistribution;
 import org.apache.commons.math3.exception.DimensionMismatchException;
 import org.apache.commons.math3.exception.MathArithmeticException;
@@ -10,6 +7,9 @@ import org.apache.commons.math3.exception.NotANumberException;
 import org.apache.commons.math3.exception.NotFiniteNumberException;
 import org.apache.commons.math3.exception.NotPositiveException;
 import org.apache.commons.math3.random.RandomGenerator;
+
+import gnu.trove.map.TIntDoubleMap;
+import gnu.trove.map.hash.TIntDoubleHashMap;
 
 /**
  * Caches results so the underlying distribution is not converted

@@ -2,13 +2,13 @@ package au.edu.wehi.idsv.visualisation;
 
 import java.util.List;
 
+import com.google.common.collect.Lists;
+
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.graph.PathNode;
-
-import com.google.common.collect.Lists;
 
 /**
  * Tracks algorithm metrics for each de Bruijn subgraph assembly 

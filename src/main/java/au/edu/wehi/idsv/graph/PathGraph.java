@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv.graph;
 
-import htsjdk.samtools.util.Log;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -15,9 +13,6 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.SortedSet;
 
-import au.edu.wehi.idsv.Defaults;
-import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTracker;
-
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -30,6 +25,10 @@ import com.google.common.collect.Queues;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
+
+import au.edu.wehi.idsv.Defaults;
+import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTracker;
+import htsjdk.samtools.util.Log;
 
 /**
  * Compressed graph in which each node is a path with no branches 

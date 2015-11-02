@@ -1,15 +1,15 @@
 package au.edu.wehi.idsv.sam;
 
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
 
 public class CigarUtil {
 	private CigarUtil() {

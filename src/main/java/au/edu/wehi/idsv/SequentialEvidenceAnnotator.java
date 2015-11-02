@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMRecord;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -11,15 +9,16 @@ import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
-import au.edu.wehi.idsv.visualisation.TrackedBuffer;
-
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.PeekingIterator;
+
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import au.edu.wehi.idsv.visualisation.TrackedBuffer;
+import htsjdk.samtools.SAMRecord;
 
 /**
  * Annotates sorted breakends with the evidence supporting the call

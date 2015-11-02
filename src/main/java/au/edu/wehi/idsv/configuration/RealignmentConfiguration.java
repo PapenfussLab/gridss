@@ -1,12 +1,11 @@
 package au.edu.wehi.idsv.configuration;
 
-import htsjdk.samtools.SAMRecord;
-
 import org.apache.commons.configuration.Configuration;
 
 import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.SoftClipEvidence;
+import htsjdk.samtools.SAMRecord;
 
 
 public class RealignmentConfiguration {

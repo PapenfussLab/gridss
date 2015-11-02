@@ -1,6 +1,22 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertTrue;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TemporaryFolder;
+
+import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.io.Files;
+
 import htsjdk.samtools.BAMRecordCodec;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
@@ -19,20 +35,6 @@ import htsjdk.samtools.util.SortingCollection;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFFileReader;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.List;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.rules.TemporaryFolder;
-
-import com.google.common.base.Function;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.io.Files;
 
 /**
  * Helper class for testing command-line programs
@@ -62,7 +64,7 @@ public class IntermediateFilesTest extends TestHelper {
 		ProcessingContext pc = new ProcessingContext(
 				new FileSystemContext(testFolder.getRoot(), 500000),
 				headers,
-				getConfig(),
+				getConfig(testFolder.getRoot()),
 				reference,
 				perChr);
 		pc.registerCategory(0, "Normal");
@@ -138,6 +140,24 @@ public class IntermediateFilesTest extends TestHelper {
 			writer.add(vc);
 		}
 		writer.close();
+	}
+	public void writeRealignment(ProcessingContext pc, EvidenceSource source, int index, SAMRecord... records) {
+		createBAM(pc.getFileSystemContext().getRealignmentBam(source.getFileIntermediateDirectoryBasedOn(), index), SortOrder.coordinate, records);
+	}
+	public void writeUnmappedRealignments(ProcessingContext pc, AssemblyEvidenceSource source, int index) {
+		writeRealignment(pc, source, 0, Lists.newArrayList(source.iterator(false, true)).stream().map(e -> {
+			SAMRecord r = new SAMRecord(null);
+			r.setReadName(BreakpointFastqEncoding.getRealignmentFastq(e).getReadHeader());
+			return r;
+			}).collect(Collectors.toList()).toArray(new SAMRecord[0]));
+	}
+	public void writeUnmappedRealignments(ProcessingContext pc, SAMEvidenceSource source, int index) {
+		writeRealignment(pc, source, 0, Lists.newArrayList(source.iterator(false, true, false)).stream().map(e -> {
+			SoftClipEvidence sc = (SoftClipEvidence)e;
+			SAMRecord r = new SAMRecord(null);
+			r.setReadName(BreakpointFastqEncoding.getRealignmentFastq(sc).getReadHeader());
+			return r;
+			}).collect(Collectors.toList()).toArray(new SAMRecord[0]));
 	}
 	public static List<SAMRecord> getRecords(File file) {
 		assertTrue(file.exists());

@@ -1,10 +1,5 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMRecord;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -17,6 +12,10 @@ import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.PackedKmerList;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.SAMRecord;
 
 /**
  * Minimal evidence for incorporating soft clip and

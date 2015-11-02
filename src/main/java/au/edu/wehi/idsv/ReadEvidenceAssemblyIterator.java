@@ -1,14 +1,14 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.ProgressLogger;
-
 import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.Queue;
 
 import com.google.common.collect.Iterables;
+
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.ProgressLogger;
 
 /**
  * Converts a ReadEvidenceAssembler to an iterator

@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
-import htsjdk.samtools.SAMRecord;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -11,6 +10,8 @@ import java.util.List;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
+
+import htsjdk.samtools.SAMRecord;
 
 
 public class VariantCallerTest extends IntermediateFilesTest {

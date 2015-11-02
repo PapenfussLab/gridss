@@ -9,9 +9,9 @@ import java.util.List;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.vcf.VcfFilter;
-
 import com.google.common.collect.Lists;
+
+import au.edu.wehi.idsv.vcf.VcfFilter;
 
 
 public class OrthogonalEvidenceIteratorTest extends TestHelper {

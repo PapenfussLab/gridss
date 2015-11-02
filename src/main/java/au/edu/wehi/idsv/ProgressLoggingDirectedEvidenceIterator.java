@@ -1,10 +1,10 @@
 package au.edu.wehi.idsv;
 
+import java.util.Iterator;
+
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.ProgressLoggerInterface;
-
-import java.util.Iterator;
 
 public class ProgressLoggingDirectedEvidenceIterator<T extends DirectedEvidence> implements CloseableIterator<T> {
 	private final ProgressLoggerInterface logger;

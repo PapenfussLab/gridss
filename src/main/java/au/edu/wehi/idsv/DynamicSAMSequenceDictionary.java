@@ -1,9 +1,9 @@
 package au.edu.wehi.idsv;
 
+import com.google.common.collect.Lists;
+
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
-
-import com.google.common.collect.Lists;
 
 /**
  * Creates a SAMSequenceDictionary that lazily adds contigs as they are referenced. 

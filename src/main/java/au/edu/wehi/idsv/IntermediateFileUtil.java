@@ -1,11 +1,11 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.util.Log;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import htsjdk.samtools.util.Log;
 
 /**
  * Utility helper class for intermediate files

@@ -1,15 +1,5 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMFileWriter;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.Log;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -24,6 +14,10 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.debruijn.positional.DirectedPositionalAssembler;
@@ -36,10 +30,15 @@ import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.validation.OrderAssertingIterator;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
-
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
+import htsjdk.samtools.SAMFileWriter;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.Log;
 
 
 public class AssemblyEvidenceSource extends EvidenceSource {
@@ -400,16 +399,12 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 							if (getContext().getConfig().getVisualisation().assembly) {
 								File exportDir = getContext().getConfig().getVisualisation().directory;
 								if (assemblyIt instanceof PositionalAssembler) {
-									if (exportDir != null) {
-										File exportFilename = new File(exportDir, String.format("assembly_%s_%d.dot", seqname, ass.getBreakendSummary().start)); 
-										((PositionalAssembler)assemblyIt).exportGraph(exportFilename);
-									}
+									File exportFilename = new File(exportDir, String.format("assembly_%s_%d.dot", seqname, ass.getBreakendSummary().start)); 
+									((PositionalAssembler)assemblyIt).exportGraph(exportFilename);
 								} else if (assemblyIt instanceof DirectedPositionalAssembler) {
-									if (exportDir != null) {
-										((DirectedPositionalAssembler)assemblyIt).exportGraph(
-												new File(exportDir, String.format("assemblyf_%s_%d.dot", seqname, ass.getBreakendSummary().start)),
-												new File(exportDir, String.format("assemblyb_%s_%d.dot", seqname, ass.getBreakendSummary().start)));
-									}
+									((DirectedPositionalAssembler)assemblyIt).exportGraph(
+											new File(exportDir, String.format("assemblyf_%s_%d.dot", seqname, ass.getBreakendSummary().start)),
+											new File(exportDir, String.format("assemblyb_%s_%d.dot", seqname, ass.getBreakendSummary().start)));
 								}
 							}
 						}
@@ -517,7 +512,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				return new DirectedPositionalAssembler(getContext(), this, it);
 				//return new PositionalAssembler(getContext(), this, it);
 			case Subgraph:
-				return new ReadEvidenceAssemblyIterator(new DeBruijnSubgraphAssembler(getContext(), this), it);
+				return new ReadEvidenceAssemblyIterator(new DeBruijnSubgraphAssembler(this), it);
 		}
 		throw new IllegalArgumentException("Assembly algorithm has not been set");
     }
