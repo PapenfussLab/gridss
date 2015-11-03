@@ -13,6 +13,7 @@ import java.util.List;
 
 import org.junit.Test;
 
+import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.util.AsyncBufferedIteratorTest;
 
 import com.google.common.collect.Iterators;
@@ -413,5 +414,23 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		List<DirectedEvidence> result = Lists.newArrayList(source.iterator(false, true, false));
 		assertEquals(in.size(), result.size());
 		// should be sorted correctly
+	}
+	@Test
+	public void should_filter_blacklisted_regions() {
+		ProcessingContext pc = getCommandlineContext(true);
+		IntervalBed blacklist = new IntervalBed(pc.getDictionary(), pc.getLinear());
+		blacklist.addInterval(2, 1, 1000);
+		pc.setBlacklistedRegions(blacklist);
+		createInput(
+				new SAMRecord[] {Read(1, 1, "50M50S") },
+				RP(0, 200, 100), // max frag size
+				DP(1, 1, "100M", true, 2, 5, "100M", true),
+			   DP(1, 2, "100M", true, 2, 4, "100M", true),
+			   DP(1, 3, "100M", true, 2, 6, "100M", true),
+			   OEA(1, 4, "100M", false));
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
+		source.completeSteps(ProcessStep.ALL_STEPS);
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(true, true, false));
+		assertEquals(2, list.size()); // SC & OEA not on (2)
 	}
 }
