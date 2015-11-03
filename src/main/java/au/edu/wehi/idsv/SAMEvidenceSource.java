@@ -390,6 +390,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			}
+			blacklist = IntervalBed.merge(getContext().getDictionary(), getContext().getLinear(), ImmutableList.of(blacklist, getContext().getBlacklistedRegions()));
 		}
 		return blacklist;
 	}

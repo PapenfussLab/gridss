@@ -34,6 +34,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.List;
 
+import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.configuration.RealignmentConfiguration;
@@ -73,6 +74,7 @@ public class ProcessingContext implements Closeable {
 	private final GridssConfiguration config;
 	private final List<Header> metricsHeaders;
 	private final SAMFileHeader basicHeader;
+	private IntervalBed blacklist;
 	private boolean filterDuplicates = true;
 	private long calculateMetricsRecordCount = Long.MAX_VALUE; 
 	private AssemblyIdGenerator assemblyIdGenerator = new SequentialIdGenerator("asm");
@@ -137,6 +139,7 @@ public class ProcessingContext implements Closeable {
 			bufferTracker = new BufferTracker(new File(config.getVisualisation().directory, "gridss.buffers.csv"), config.getVisualisation().bufferTrackingItervalInSeconds);
 			bufferTracker.start();
 		}
+		this.blacklist = new IntervalBed(this.dictionary, this.linear);
 	}
 	/**
 	 * Creates a new metrics file with appropriate headers for this context 
@@ -334,5 +337,13 @@ public class ProcessingContext implements Closeable {
 	}
 	public void setWorkerThreadCount(int workerThreads) {
 		this.workerThreads = workerThreads;
+	}
+	public IntervalBed getBlacklistedRegions() {
+		return blacklist;
+	}
+	public void setBlacklistedRegions(IntervalBed blacklist) {
+		if (blacklist != null) {
+			this.blacklist = blacklist;
+		}
 	}
 }

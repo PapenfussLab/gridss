@@ -11,7 +11,6 @@ import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.List;
@@ -30,6 +29,7 @@ import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import au.edu.wehi.idsv.alignment.AlignerFactory;
+import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
 
@@ -62,12 +62,14 @@ public class Idsv extends CommandLineProgram {
     		+ "If this is unset, the SAM proper pair flag is used to determine whether a read is discordantly aligned. "
     		+ "Explicit fragment size specification overrides this setting.", optional=true)
     public Float READ_PAIR_CONCORDANT_PERCENT = 0.995f;
+    @Option(shortName="BL", doc = "BED blacklist of regions to ignore. Assembly of high-coverage centromeric repeat region is slow, "
+    		+ "and if such regions are to be filtered in downstream analysis, blacklisting those region will improve assembly runtime"
+    		+ "performance. For human WGS, the ENCODE DAC blacklist is recommended.", optional=true)
+    public File BLACKLIST = null;
 	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="VCF structural variation calls.")
     public File OUTPUT;
     @Option(shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME, doc="Reference used for alignment")
-    public File REFERENCE;
-    @Option(doc="File to write recommended realignment script to", optional=true)
-    public File SCRIPT;
+    public File REFERENCE;    
     // --- intermediate file parameters ---
     @Option(doc = "Save intermediate results into separate files for each chromosome."
     		+ " Increases the number of intermediate files but allows a greater level of parallelisation.", optional = true)
@@ -248,6 +250,14 @@ public class Idsv extends CommandLineProgram {
 			processContext = new ProcessingContext(fsc, getDefaultHeaders(), config, REFERENCE, PER_CHR);
 			processContext.registerCategories(INPUT_CATEGORY.stream().mapToInt(x -> (x == null ? 0 : x)).max().orElse(0));
 			processContext.setWorkerThreadCount(WORKER_THREADS);
+			if (BLACKLIST != null) {
+				try {
+					processContext.setBlacklistedRegions(new IntervalBed(processContext.getDictionary(), processContext.getLinear(), BLACKLIST));
+				} catch (IOException e) {
+					log.error(e, "Error loading BED blacklist. ", BLACKLIST);
+					throw new RuntimeException(e);
+				}
+			}
 		}
 		return processContext;
 	}
@@ -335,16 +345,6 @@ public class Idsv extends CommandLineProgram {
     				instructions +
     				"##################################");
 	    	log.error("Please rerun after alignments have been performed.");
-	    	if (SCRIPT != null) {
-	    		FileWriter writer = null;
-	    		try {
-	    			writer = new FileWriter(SCRIPT);
-	    			writer.write(instructions);
-	    		} finally {
-	    			if (writer != null) writer.close(); 
-	    		}
-	    		log.error("Realignment script has been written to ", SCRIPT);
-	    	}
 	    	return false;
     	}
     	return true;
