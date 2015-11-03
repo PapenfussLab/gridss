@@ -1,16 +1,17 @@
 package au.edu.wehi.idsv.sim;
 
+import htsjdk.samtools.util.Log;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import au.edu.wehi.idsv.ProcessingContext;
+
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
-
-import au.edu.wehi.idsv.ProcessingContext;
-import htsjdk.samtools.util.Log;
 
 /**
  * 

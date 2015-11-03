@@ -1,21 +1,22 @@
 package au.edu.wehi.idsv.validation;
 
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.Log;
+
 import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
-
-import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.Maps;
 
 import au.edu.wehi.idsv.DirectedBreakpoint;
 import au.edu.wehi.idsv.EvidenceSubset;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.Log;
+
+import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.Maps;
 
 /**
  * Pass-through iterator that tracks filters applied to breakpoints 

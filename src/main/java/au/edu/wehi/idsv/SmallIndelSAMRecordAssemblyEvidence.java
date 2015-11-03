@@ -1,16 +1,17 @@
 package au.edu.wehi.idsv;
 
-import java.util.List;
-
-import com.google.common.collect.ImmutableList;
-
-import au.edu.wehi.idsv.sam.CigarUtil;
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import au.edu.wehi.idsv.sam.SamTags;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
+
+import java.util.List;
+
+import au.edu.wehi.idsv.sam.CigarUtil;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.SamTags;
+
+import com.google.common.collect.ImmutableList;
 
 /**
  * Assembly spanning a small indel

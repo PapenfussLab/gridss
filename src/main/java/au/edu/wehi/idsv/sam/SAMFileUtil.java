@@ -1,20 +1,5 @@
 package au.edu.wehi.idsv.sam;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
-import java.util.concurrent.Callable;
-import java.util.function.Function;
-
-import com.google.common.collect.ImmutableList;
-
-import au.edu.wehi.idsv.Defaults;
-import au.edu.wehi.idsv.FileSystemContext;
-import au.edu.wehi.idsv.IntermediateFileUtil;
-import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.util.AutoClosingIterator;
-import au.edu.wehi.idsv.util.FileHelper;
-import au.edu.wehi.idsv.validation.OrderAssertingIterator;
 import htsjdk.samtools.BAMRecordCodec;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
@@ -29,6 +14,22 @@ import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.samtools.util.SortingCollection;
+
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.util.concurrent.Callable;
+import java.util.function.Function;
+
+import au.edu.wehi.idsv.Defaults;
+import au.edu.wehi.idsv.FileSystemContext;
+import au.edu.wehi.idsv.IntermediateFileUtil;
+import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.util.AutoClosingIterator;
+import au.edu.wehi.idsv.util.FileHelper;
+import au.edu.wehi.idsv.validation.OrderAssertingIterator;
+
+import com.google.common.collect.ImmutableList;
 
 public class SAMFileUtil {
 	private static final Log log = Log.getInstance(SAMFileUtil.class);

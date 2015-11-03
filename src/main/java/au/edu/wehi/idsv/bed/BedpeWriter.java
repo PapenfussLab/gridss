@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.bed;
 
+import htsjdk.samtools.SAMSequenceDictionary;
+
 import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.File;
@@ -14,7 +16,6 @@ import au.edu.wehi.idsv.EvidenceSubset;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
-import htsjdk.samtools.SAMSequenceDictionary;
 
 /**
  * Outputs variant calls to BEDPE

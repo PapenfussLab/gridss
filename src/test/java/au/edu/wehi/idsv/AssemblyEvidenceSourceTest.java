@@ -1,20 +1,18 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.fastq.FastqRecord;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.fastq.FastqRecord;
 
 public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 	@Test
@@ -67,7 +65,6 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
 		aes.ensureAssembled(); // assemble
 		writeUnmappedRealignments(pc, aes, 0);
-		aes.iterateRealignment();
 		aes.ensureAssembled(); // transform to annotated read pair
 
 		List<SAMRecordAssemblyEvidence> list = Lists.newArrayList(aes.iterator(false, false));
@@ -98,7 +95,6 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
 		aes.ensureAssembled(); // assemble
 		writeUnmappedRealignments(pc, aes, 0);
-		aes.iterateRealignment();
 		aes.ensureAssembled(); // transform to annotated read pair
 
 		List<SAMRecordAssemblyEvidence> list = Lists.newArrayList(aes.iterator(false, false, "polyA"));

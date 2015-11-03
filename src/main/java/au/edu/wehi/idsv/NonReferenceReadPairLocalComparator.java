@@ -1,8 +1,8 @@
 package au.edu.wehi.idsv;
 
-import java.util.Comparator;
-
 import htsjdk.samtools.SAMRecord;
+
+import java.util.Comparator;
 
 /**
  * Comparator for sorting NonReferenceReadPairs according to the local read

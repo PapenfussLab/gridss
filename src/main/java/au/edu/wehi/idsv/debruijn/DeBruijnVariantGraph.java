@@ -1,13 +1,10 @@
 package au.edu.wehi.idsv.debruijn;
 
+import htsjdk.samtools.util.Log;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-
-import com.google.common.base.Function;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.AssemblyFactory;
@@ -21,7 +18,11 @@ import au.edu.wehi.idsv.RemoteEvidence;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.util.ArrayHelper;
-import htsjdk.samtools.util.Log;
+
+import com.google.common.base.Function;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 public abstract class DeBruijnVariantGraph<T extends DeBruijnNodeBase> extends DeBruijnGraphBase<T> {
 	/**

@@ -3,6 +3,8 @@ package au.edu.wehi.idsv.debruijn.positional;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import it.unimi.dsi.fastutil.ints.IntArrayList;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,11 +12,9 @@ import java.util.stream.IntStream;
 
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-
 import au.edu.wehi.idsv.TestHelper;
-import it.unimi.dsi.fastutil.ints.IntArrayList;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
+
+import com.google.common.collect.ImmutableList;
 
 
 public class KmerPathNodeTest extends TestHelper {

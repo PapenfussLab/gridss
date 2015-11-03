@@ -1,10 +1,9 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
+import htsjdk.samtools.SAMSequenceRecord;
 
 import org.junit.Test;
-
-import htsjdk.samtools.SAMSequenceRecord;
 
 public class DynamicSAMSequenceDictionaryTest extends TestHelper {
 	@Test

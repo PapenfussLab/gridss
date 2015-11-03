@@ -1,15 +1,16 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.variant.vcf.VCFConstants;
+
 import java.util.ArrayList;
 import java.util.List;
-
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.graph.MaximumCliqueIntervalGraph;
 import au.edu.wehi.idsv.graph.MaximumCliqueIntervalGraph.Node;
 import au.edu.wehi.idsv.graph.ScalingHelper;
-import htsjdk.variant.vcf.VCFConstants;
+
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 
 /**
  * variant/reference Log-likelihood statistical model

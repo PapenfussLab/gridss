@@ -1,21 +1,22 @@
 package au.edu.wehi.idsv.util;
 
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
+
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
+import au.edu.wehi.idsv.Defaults;
+import au.edu.wehi.idsv.validation.OrderAssertingIterator;
+
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
-
-import au.edu.wehi.idsv.Defaults;
-import au.edu.wehi.idsv.validation.OrderAssertingIterator;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
 
 /**
  * Iterator that automatically closes the the underlying resources when their respective end of stream has been reached.

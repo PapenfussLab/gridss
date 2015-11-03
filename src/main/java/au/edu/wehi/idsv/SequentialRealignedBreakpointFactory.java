@@ -1,11 +1,11 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.Log;
+
 import java.util.Set;
 
 import com.google.common.collect.PeekingIterator;
-
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.Log;
 
 /**
  * Finds corresponding realigned breakpoint sequence SAMRecords

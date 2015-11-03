@@ -1,9 +1,5 @@
 package au.edu.wehi.validation;
 
-import java.io.File;
-
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import au.edu.wehi.idsv.util.IntervalUtil;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
@@ -13,6 +9,11 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.SamReaderFactory.Option;
 import htsjdk.samtools.ValidationStringency;
+
+import java.io.File;
+
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.util.IntervalUtil;
 
 public class LongReadSupportFinder {
 	private final SamReader reader;

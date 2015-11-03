@@ -1,11 +1,11 @@
 package au.edu.wehi.idsv.validation;
 
-import java.util.Comparator;
-import java.util.Iterator;
-
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
+
+import java.util.Comparator;
+import java.util.Iterator;
 
 /**
  * Asserts that the iterator is in the specified order.

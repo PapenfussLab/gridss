@@ -1,7 +1,7 @@
 package au.edu.wehi.idsv;
 
-import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import htsjdk.samtools.SAMRecord;
+import au.edu.wehi.idsv.metrics.IdsvMetrics;
 
 public class SAMFlagReadPairConcordanceCalculator extends ReadPairConcordanceCalculator {
 	private final IdsvMetrics metrics;

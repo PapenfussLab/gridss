@@ -1,13 +1,14 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.SequenceUtil;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.util.SequenceUtil;
 
 public class RealignedBreakpoint {
 	private final BreakpointSummary summary;

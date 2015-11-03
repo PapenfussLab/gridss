@@ -2,9 +2,6 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 
 import java.io.File;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.DirectedEvidence;
@@ -13,6 +10,9 @@ import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
 import au.edu.wehi.idsv.visualisation.DeBruijnSubgraphGexfExporter;
 import au.edu.wehi.idsv.visualisation.SubgraphAssemblyAlgorithmTrackerBEDWriter;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
 /**
  * Generates local breakpoint read de bruijn graph assemblies of SV-supporting reads

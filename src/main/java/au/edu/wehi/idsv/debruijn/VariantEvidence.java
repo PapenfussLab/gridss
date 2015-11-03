@@ -1,5 +1,9 @@
 package au.edu.wehi.idsv.debruijn;
 
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
+
 import java.util.BitSet;
 import java.util.List;
 
@@ -9,9 +13,6 @@ import au.edu.wehi.idsv.LinearGenomicCoordinate;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.SequenceUtil;
 
 /**
  * Helper wrapper exposing information on both the raw evidence read and

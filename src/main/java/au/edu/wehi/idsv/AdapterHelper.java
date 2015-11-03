@@ -1,14 +1,15 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
+
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import com.google.common.collect.ImmutableList;
-
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.PackedKmerList;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.SequenceUtil;
+
+import com.google.common.collect.ImmutableList;
 
 /**
  * Provides adapter related utilities

@@ -1,12 +1,12 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.util.SequenceUtil;
+
 import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.lang3.ArrayUtils;
 
 import com.google.common.collect.ImmutableList;
-
-import htsjdk.samtools.util.SequenceUtil;
 
 public class RealignedRemoteSAMRecordAssemblyEvidence extends RealignedSAMRecordAssemblyEvidence implements RemoteEvidence {
 	private final BreakpointSummary bs;

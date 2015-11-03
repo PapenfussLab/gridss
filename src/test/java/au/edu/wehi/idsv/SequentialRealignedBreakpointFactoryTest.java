@@ -2,14 +2,13 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import htsjdk.samtools.SAMRecord;
 
 import java.util.List;
 
 import org.junit.Test;
 
 import com.google.common.collect.Iterators;
-
-import htsjdk.samtools.SAMRecord;
 
 public class SequentialRealignedBreakpointFactoryTest extends TestHelper {
 	public SequentialRealignedBreakpointFactory getFactory(List<SAMRecord> data) {

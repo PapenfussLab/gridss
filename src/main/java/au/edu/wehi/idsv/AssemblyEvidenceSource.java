@@ -1,5 +1,15 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
+import htsjdk.samtools.SAMFileWriter;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.Log;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -14,10 +24,6 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.debruijn.positional.DirectedPositionalAssembler;
@@ -30,15 +36,10 @@ import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.validation.OrderAssertingIterator;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMFileWriter;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.Log;
+
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 
 public class AssemblyEvidenceSource extends EvidenceSource {
@@ -80,7 +81,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		if (!isProcessingComplete()) {
 			process(threadpool);
 		}
-		if (isRealignmentComplete()) {
+		if (isRealignmentComplete(true)) {
 			CreateAssemblyReadPair step = new CreateAssemblyReadPair(getContext(), this, source);
 			step.process(EnumSet.of(ProcessStep.SORT_REALIGNED_ASSEMBLIES), threadpool);
 			step.close();
@@ -185,7 +186,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		}
 		List<Closeable> toClose = Lists.newArrayList();
 		List<CloseableIterator<SAMRecord>> realignedIt = new ArrayList<CloseableIterator<SAMRecord>>();
-		if (isRealignmentComplete()) {
+		if (isRealignmentComplete(false)) {
 			for (File realignmenti : realignment) {
 				CloseableIterator<SAMRecord> realignmentiit = getContext().getSamReaderIterator(realignmenti); 
 				realignedIt.add(realignmentiit);

@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv.visualisation;
 
 import static org.junit.Assert.assertTrue;
+import htsjdk.samtools.SAMRecord;
 
 import java.io.File;
 import java.io.FileFilter;
@@ -10,9 +11,6 @@ import java.util.List;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-
 import au.edu.wehi.idsv.AssemblyAlgorithm;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.IntermediateFilesTest;
@@ -20,7 +18,9 @@ import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
-import htsjdk.samtools.SAMRecord;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 
 public class SubgraphSizeTimeoutVisualisationTest extends IntermediateFilesTest {

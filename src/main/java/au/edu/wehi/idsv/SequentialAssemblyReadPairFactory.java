@@ -1,10 +1,10 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMRecord;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.PeekingIterator;
-
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import htsjdk.samtools.SAMRecord;
 
 /**
  * Iterates over GRIDSS assemblies

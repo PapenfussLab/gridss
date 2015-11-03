@@ -1,13 +1,13 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
+
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
-
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
 
 /**
  * Filters the iterable to only results on the given chromsome

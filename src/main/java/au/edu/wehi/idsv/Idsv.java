@@ -1,5 +1,15 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.SequenceUtil;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -14,27 +24,19 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.configuration.ConfigurationException;
 
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
-import au.edu.wehi.idsv.configuration.GridssConfiguration;
-import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SamPairUtil.PairOrientation;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.reference.ReferenceSequenceFile;
-import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
-import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.SequenceUtil;
 import picard.analysis.InsertSizeMetrics;
 import picard.cmdline.CommandLineProgram;
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
+import au.edu.wehi.idsv.alignment.AlignerFactory;
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
+import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
+
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
  * Extracts structural variation evidence and assembles breakends
@@ -67,11 +69,11 @@ public class Idsv extends CommandLineProgram {
     @Option(doc="File to write recommended realignment script to", optional=true)
     public File SCRIPT;
     // --- intermediate file parameters ---
-    @Option(doc = "Save intermediate results into separate files for each chromosome.", optional = true)
+    @Option(doc = "Save intermediate results into separate files for each chromosome."
+    		+ " Increases the number of intermediate files but allows a greater level of parallelisation.", optional = true)
     public boolean PER_CHR = true;
     @Option(doc = "Directory to place intermediate results directories. Default location is the same directory"
-    		+ " as the associated input or output file. Increases the number of intermediate files"
-    		+ " but allows a greater level of parallelisation.", optional = true)
+    		+ " as the associated input or output file.", optional = true)
     public File WORKING_DIR = null;
     // --- evidence filtering parameters ---
     @Option(shortName="C", doc = "gridss configuration file containing overrides", optional=true)
@@ -80,10 +82,7 @@ public class Idsv extends CommandLineProgram {
 			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
     		shortName="THREADS")
     public int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
-    // The following attributes define the command-line arguments
-	@Option(doc="VCF containing true calls. Called variants will be annotated as true/false positive calls based on this truth file.", optional=true)
-    public File TRUTH_VCF = null;
-    @Option(doc = "Processing steps to execute", optional = true)
+    //@Option(doc = "Processing steps to execute", optional = true)
     public EnumSet<ProcessStep> STEPS = ProcessStep.ALL_STEPS;
     private SAMEvidenceSource constructSamEvidenceSource(File file, int category, int minFragSize, int maxFragSize) {
     	if (maxFragSize > 0) {
@@ -110,12 +109,6 @@ public class Idsv extends CommandLineProgram {
     				getOffset(INPUT_MAX_FRAGMENT_SIZE, i, 0)));
     	}
     	return samEvidence;
-    }
-    private File ensureFileExists(final File file) {
-    	if (!file.exists()) {
-    		throw new RuntimeException(String.format("Required input file %s is missing. Have the earlier pipeline commands executed successfully?", file));
-    	}
-    	return file;
     }
     private void ensureArgs() {
 		IOUtil.assertFileIsReadable(REFERENCE);
@@ -150,7 +143,7 @@ public class Idsv extends CommandLineProgram {
 	public static String getRealignmentScript(Iterable<? extends EvidenceSource> it) {
     	StringBuilder sb = new StringBuilder();
     	for (EvidenceSource source : it) {
-    		if (!source.isRealignmentComplete()) {
+    		if (!source.isRealignmentComplete(true)) {
     			sb.append(source.getRealignmentScript());
     		}
     	}
@@ -161,6 +154,12 @@ public class Idsv extends CommandLineProgram {
     	ensureArgs();
     	ExecutorService threadpool = null;
     	try {
+    		// Spam output with gridss parameters used
+    		getContext();
+    		// Force loading of aligner up-front
+    		log.info("Loading aligner");
+    		AlignerFactory.create();
+    		
     		//hackSimpleCalls(processContext);
     		threadpool = Executors.newFixedThreadPool(getContext().getWorkerThreadCount(), new ThreadFactoryBuilder().setDaemon(false).setNameFormat("Worker-%d").build());
     		log.info(String.format("Using %d worker threads", WORKER_THREADS));
@@ -185,7 +184,6 @@ public class Idsv extends CommandLineProgram {
 	    	AssemblyEvidenceSource assemblyEvidence = new AssemblyEvidenceSource(getContext(), samEvidence, OUTPUT);
 	    	assemblyEvidence.ensureAssembled(threadpool);
 	    	
-	    	compoundRealignment(threadpool, ImmutableList.of(assemblyEvidence));
 	    	if (!checkRealignment(ImmutableList.of(assemblyEvidence))) {
 	    		return -1;
     		}
@@ -207,7 +205,7 @@ public class Idsv extends CommandLineProgram {
 	    			return -1;
 	    		}
 	    	}
-	    	if (!assemblyEvidence.isRealignmentComplete()) {
+	    	if (!assemblyEvidence.isRealignmentComplete(true)) {
 	    		log.error("Unable to call variants: generation of breakend alignment of assemblies not complete.");
     			return -1;
 	    	}
@@ -316,43 +314,19 @@ public class Idsv extends CommandLineProgram {
 				assemblyEvidence,
 				evidenceDump);
 			caller.callBreakends(threadpool);
-			caller.annotateBreakpoints(TRUTH_VCF);
+			caller.annotateBreakpoints();
 		} finally {
 			if (caller != null) caller.close();
 		}
 	}
-	private void hackSimpleCalls() throws IOException, ConfigurationException {
-		if (OUTPUT.exists()) {
-			File simpleHack = new File(OUTPUT.getParent(), OUTPUT.getName() + ".simple.vcf");
-			if (!simpleHack.exists()) {
-				new BreakendToSimpleCall(getContext()).convert(OUTPUT, simpleHack);
-			}
-		}
-	}
-	private void compoundRealignment(ExecutorService threadpool, List<? extends EvidenceSource> evidence) throws InterruptedException, ExecutionException {
-		log.info("Checking for nested realignment");
-		for (Future<Void> future : threadpool.invokeAll(Lists.transform(evidence, new Function<EvidenceSource, Callable<Void>>() {
-			@Override
-			public Callable<Void> apply(final EvidenceSource input) {
-				return new Callable<Void>() {
-					@Override
-					public Void call() throws Exception {
-						try {
-							input.iterateRealignment();
-						} catch (Exception e) {
-							log.error(e, "Exception thrown by worker thread");
-							throw e;
-						}
-						return null;
-					}
-				};
-			}
-		}))) {
-			// throw exception from worker thread here
-			future.get();
-		}
-		log.info("Nested realignment checking complete");
-	}
+//	private void hackSimpleCalls() throws IOException, ConfigurationException {
+//		if (OUTPUT.exists()) {
+//			File simpleHack = new File(OUTPUT.getParent(), OUTPUT.getName() + ".simple.vcf");
+//			if (!simpleHack.exists()) {
+//				new BreakendToSimpleCall(getContext()).convert(OUTPUT, simpleHack);
+//			}
+//		}
+//	}
     private boolean checkRealignment(List<? extends EvidenceSource> evidence) throws IOException {
     	String instructions = getRealignmentScript(evidence);
     	if (instructions != null && instructions.length() > 0) {

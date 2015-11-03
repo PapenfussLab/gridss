@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -7,12 +9,11 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.Set;
 
-import com.google.common.collect.Range;
-
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNodeUtil;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
+
+import com.google.common.collect.Range;
 
 /**
  * Collapses leaves and bubbles

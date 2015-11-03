@@ -1,18 +1,19 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Set;
-
-import com.google.common.collect.Sets;
 
 import au.edu.wehi.idsv.vcf.SvType;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfConstants;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
-import htsjdk.samtools.util.SequenceUtil;
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.VariantContextBuilder;
+
+import com.google.common.collect.Sets;
 
 /**
  * Builder for generating VCF structural variation calls with appropriate attributes

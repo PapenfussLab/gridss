@@ -1,11 +1,13 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.util.Log;
+
 import java.io.File;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import htsjdk.samtools.util.Log;
 
 /**
  * Utility helper class for intermediate files
@@ -17,7 +19,8 @@ public abstract class IntermediateFileUtil {
 	/**
 	 * Timestamps this close together are consider written at the same time.
 	 */
-	private static final int TIMESTAMP_MS_ALLOWABLE_ERROR = 2000;
+	private static final int TIMESTAMP_MS_ALLOWABLE_ERROR = 0;
+	private static final SimpleDateFormat logDateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 	/**
 	 * Checks that the given intermediate file is valid
 	 * @param file file to check
@@ -29,8 +32,12 @@ public abstract class IntermediateFileUtil {
 			//log.debug("Missing intermediate ", file);
 			return false;
 		}
-		if (!ignoreTimestamps && source != null && source.exists() && file.lastModified() < source.lastModified() + TIMESTAMP_MS_ALLOWABLE_ERROR) {
-			log.info(source, " has a more recent timestamp than ", file, ". Considering the latter out of date.");
+		if (!ignoreTimestamps && source != null && source.exists() && file.lastModified() < source.lastModified() - TIMESTAMP_MS_ALLOWABLE_ERROR) {
+			log.info(source, " has a more recent timestamp (",
+					logDateFormat.format(new Date(source.lastModified())),") than ",
+					file, " (",
+					logDateFormat.format(new Date(file.lastModified())),
+					"). Considering the latter out of date.");
 			return false;
 		}
 		return true;

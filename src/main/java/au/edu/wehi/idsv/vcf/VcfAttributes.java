@@ -38,10 +38,7 @@ public enum VcfAttributes {
 
 	CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY ("CIRPOS", 2, VCFHeaderLineType.Integer, "Confidence interval around remote breakend POS for imprecise variants"),
 	
-	SELF_INTERSECTING ("SELF", 1, VCFHeaderLineType.Flag, "Indicates a breakpoint is self-intersecting"),
-	
-	TRUTH_MATCHES ("TRUTH_MATCHES", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Variant ID of all true variants as defined in the supplied truth set"),
-	TRUTH_MISREALIGN ("TRUTH_MISREALIGN", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Variant ID of the true variant for all variants where the remote breakend location does not match the true variant as defined in the supplied truth set");
+	SELF_INTERSECTING ("SELF", 1, VCFHeaderLineType.Flag, "Indicates a breakpoint is self-intersecting");
 	private final VCFInfoHeaderLine header;
 	private final String tag;
 	VcfAttributes(String name, String samTag, int count, VCFHeaderLineType type, String description) {

@@ -1,17 +1,18 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.util.Log;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
+
 import java.util.Arrays;
 import java.util.List;
-
-import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.Ordering;
 
 import au.edu.wehi.idsv.util.ArrayHelper;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
-import htsjdk.samtools.util.Log;
-import htsjdk.variant.variantcontext.VariantContextBuilder;
+
+import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Ordering;
 
 public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private static final Log log = Log.getInstance(StructuralVariationCallBuilder.class);

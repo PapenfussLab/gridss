@@ -14,13 +14,13 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 
-import com.google.common.collect.Lists;
-
 import au.edu.wehi.idsv.DiscordantReadPair;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.util.IntervalUtil;
+
+import com.google.common.collect.Lists;
 
 
 public class BestNonReferenceContigCallerTest extends TestHelper {

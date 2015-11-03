@@ -1,19 +1,20 @@
 package au.edu.wehi.idsv.metrics;
 
+import htsjdk.samtools.metrics.MetricsFile;
+import htsjdk.samtools.util.Log;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import picard.analysis.InsertSizeMetrics;
+import au.edu.wehi.idsv.ProcessingContext;
+
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Longs;
-
-import au.edu.wehi.idsv.ProcessingContext;
-import htsjdk.samtools.metrics.MetricsFile;
-import htsjdk.samtools.util.Log;
-import picard.analysis.InsertSizeMetrics;
 
 public class IdsvSamFileMetrics {
 	private static final Log log = Log.getInstance(IdsvSamFileMetrics.class);

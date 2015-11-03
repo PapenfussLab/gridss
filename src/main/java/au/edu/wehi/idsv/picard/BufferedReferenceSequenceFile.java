@@ -1,13 +1,13 @@
 package au.edu.wehi.idsv.picard;
 
-import java.io.IOException;
-
-import com.google.common.collect.ImmutableMap;
-
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.Log;
+
+import java.io.IOException;
+
+import com.google.common.collect.ImmutableMap;
 
 /**
  * Buffers entire reference to enable efficient random lookup of sequences

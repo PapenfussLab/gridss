@@ -1,26 +1,5 @@
 package au.edu.wehi.idsv;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-
-import com.google.common.base.Function;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
-
-import au.edu.wehi.idsv.util.AsyncBufferedIterator;
-import au.edu.wehi.idsv.util.AutoClosingIterator;
-import au.edu.wehi.idsv.util.FileHelper;
-import au.edu.wehi.idsv.validation.BreakpointFilterTracker;
-import au.edu.wehi.idsv.validation.OrderAssertingIterator;
-import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
-import au.edu.wehi.idsv.validation.TruthAnnotator;
-import au.edu.wehi.idsv.vcf.VcfFileUtil;
-import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.CloseableIterator;
@@ -30,6 +9,27 @@ import htsjdk.samtools.util.ProgressLogger;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.vcf.VCFFileReader;
+
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+
+import au.edu.wehi.idsv.util.AsyncBufferedIterator;
+import au.edu.wehi.idsv.util.AutoClosingIterator;
+import au.edu.wehi.idsv.util.FileHelper;
+import au.edu.wehi.idsv.validation.BreakpointFilterTracker;
+import au.edu.wehi.idsv.validation.OrderAssertingIterator;
+import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
+import au.edu.wehi.idsv.vcf.VcfFileUtil;
+import au.edu.wehi.idsv.visualisation.TrackedBuffer;
+
+import com.google.common.base.Function;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 
 
 /**
@@ -47,7 +47,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 	@Override
 	public void process() {
 		callBreakends(null);
-		annotateBreakpoints(null);
+		annotateBreakpoints();
 	}
 	public void callBreakends(ExecutorService threadpool) {
 		log.info("Identifying Breakpoints");
@@ -157,7 +157,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 		maxSize = Math.max(maxSize, assemblyEvidence.getAssemblyWindowSize());
 		return maxSize + 2 * (processContext.getVariantCallingParameters().breakendMargin + 1);
 	}
-	public void annotateBreakpoints(File truthVcf) {
+	public void annotateBreakpoints() {
 		log.info("Annotating Calls");
 		List<List<SAMEvidenceSource>> byCategory = Lists.newArrayList();
 		while (byCategory.size() < processContext.getCategoryCount()) {
@@ -201,9 +201,6 @@ public class VariantCaller extends EvidenceProcessorBase {
 			//breakendIt = new AsyncBufferedIterator<VariantContextDirectedEvidence>(breakendIt, "Annotator-SV");
 			breakendIt = new SequentialCoverageAnnotator(processContext, breakendIt, coverage);
 			//breakendIt = new AsyncBufferedIterator<VariantContextDirectedEvidence>(breakendIt, "Annotator-Coverage");
-			if (truthVcf != null) {
-				breakendIt = new TruthAnnotator(processContext, breakendIt, truthVcf);
-			}
 			// Resort back into VCF sort order
 			breakendIt = new VariantContextWindowedSortingIterator<VariantContextDirectedEvidence>(processContext, maxWindowSize, breakendIt);
 			processContext.registerBuffer(output.getName() + ".vcf", ((TrackedBuffer)breakendIt));

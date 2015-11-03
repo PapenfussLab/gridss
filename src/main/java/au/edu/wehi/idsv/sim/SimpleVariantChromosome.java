@@ -1,21 +1,22 @@
 package au.edu.wehi.idsv.sim;
 
+import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.google.common.io.Files;
-
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.sim.SequentialVariantPlacer.ContigExhaustedException;
 import au.edu.wehi.idsv.vcf.SvType;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
-import htsjdk.samtools.util.SequenceUtil;
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.VariantContextBuilder;
+
+import com.google.common.io.Files;
 
 public class SimpleVariantChromosome extends SimulatedChromosome {
 	private static class Event {

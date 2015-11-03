@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
+import htsjdk.samtools.SAMRecord;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -10,8 +11,6 @@ import java.util.List;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
-
-import htsjdk.samtools.SAMRecord;
 
 
 public class VariantCallerTest extends IntermediateFilesTest {
@@ -38,7 +37,7 @@ public class VariantCallerTest extends IntermediateFilesTest {
 		createInput(in);
 		VariantCaller vc = new VariantCaller(pc, output, ImmutableList.<SAMEvidenceSource>of(ses), aes, null);
 		vc.callBreakends(null);
-		vc.annotateBreakpoints(null);
+		vc.annotateBreakpoints();
 		List<IdsvVariantContext> annotated = getVcf(new File(testFolder.getRoot(), "out.vcf"), null);
 		List<IdsvVariantContext> calls = getVcf(new File(new File(testFolder.getRoot(), "out.vcf.idsv.working"), "out.vcf.idsv.breakpoint.vcf"), null);
 		// with no filtering, annotation should not change call set

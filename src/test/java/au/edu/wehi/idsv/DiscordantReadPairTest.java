@@ -1,10 +1,9 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
+import htsjdk.samtools.SAMRecord;
 
 import org.junit.Test;
-
-import htsjdk.samtools.SAMRecord;
 
 
 public class DiscordantReadPairTest extends TestHelper {

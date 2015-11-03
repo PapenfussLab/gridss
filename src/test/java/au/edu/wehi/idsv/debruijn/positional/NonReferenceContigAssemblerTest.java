@@ -10,8 +10,6 @@ import java.util.stream.Collectors;
 
 import org.junit.Test;
 
-import com.google.common.collect.Lists;
-
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.BreakpointSummary;
@@ -23,6 +21,8 @@ import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.SmallIndelSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
+
+import com.google.common.collect.Lists;
 
 
 public class NonReferenceContigAssemblerTest extends TestHelper {

@@ -1,11 +1,12 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.Log;
+
 import java.util.Iterator;
 
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.util.DensityThrottlingIterator;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.util.Log;
 
 /**
  * Reduces

@@ -7,11 +7,6 @@ import java.util.List;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
@@ -20,6 +15,11 @@ import au.edu.wehi.idsv.debruijn.DeBruijnPathNodeFactory;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.graph.PathNode;
 import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
+
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 
 
 public class PathGraphAssemblerTest extends TestHelper {

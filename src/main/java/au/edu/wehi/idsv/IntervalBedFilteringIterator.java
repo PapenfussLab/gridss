@@ -2,9 +2,9 @@ package au.edu.wehi.idsv;
 
 import java.util.Iterator;
 
-import com.google.common.collect.AbstractIterator;
-
 import au.edu.wehi.idsv.bed.IntervalBed;
+
+import com.google.common.collect.AbstractIterator;
 
 public class IntervalBedFilteringIterator<T extends DirectedEvidence> extends AbstractIterator<T> {
 	private final IntervalBed filterOutRegions;

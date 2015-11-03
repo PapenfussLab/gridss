@@ -6,10 +6,10 @@ import java.io.IOException;
 
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-
 import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.debruijn.positional.KmerPathNode;
+
+import com.google.common.collect.ImmutableList;
 
 
 public class PositionalExporterTest extends IntermediateFilesTest {

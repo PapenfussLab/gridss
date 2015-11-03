@@ -8,17 +8,7 @@ gridss calls variants based on alignment-guided positional de Bruijn graph break
 To run, gridss the following must be installed:
 
 * Java 1.8 or later
-* maven (if building from source)
-* NGS aligner. bowtie2 (default), bwa, novoalign, and subread are currently supported
-
-## Building from source
-
-Maven is used for build and dependency management which simplifies compile to the following steps:
-
-* git clone https://github.com/PapenfussLab/gridss
-* `mvn package -DskipTests`
-
-If gridss was built successfully, a combined jar containing gridss and all required library located at target/gridss-*-jar-with-dependencies.jar
+* NGS aligner. bowtie2 (default) and bwa are currently supported
 
 # Running
 
@@ -39,10 +29,7 @@ example/gridss.sh contains an example pipeline of how gridss is invoked.
 
 ## Parameters
 
-Gridss has a large number of parameters that can be be adjusted. The default parameter set has been tested with paired-end illumina data ranging from 2x36bp to 2x250bp and should give a reasonably good.
-
-Commonly used parameter are listed below, a full list and description of all command-line parameters available with the -h or --help flags.
-Debugging/internal usage parameters (for operations such as export of de Bruijn graphs to .gexf) are documented in `Defaults.java`.
+Gridss has a large number of parameters that can be be adjusted. The default parameter set has been tested with paired-end illumina data ranging from 2x36bp to 2x250bp and should give a reasonably good. Command line used parameter are listed below.
 
 ### OUTPUT (Required)
 
@@ -52,30 +39,28 @@ Variant calling output file. Can be VCF or BCF.
 
 Reference genome fasta file. Note that gridss caches the entire reference genome in memory so ensure
 that the working memory available to gridss comfortably exceeds the reference genome size.
-16GB is recommended for multithreaded processing of whole-genome sequencing of mammalian genomes.
+8GB + 2GB per thread is recommended for multithreaded processing of whole-genome sequencing of mammalian genomes.
 
 ### INPUT (Required)
 
-Input libraries. Specify multiple times (ie INPUT=file1.bam INPUT=file2.bam INPUT=file3.bam ) to process multiple libraries together.
+Input libraries. Specify multiple times (ie `INPUT=file1.bam INPUT=file2.bam INPUT=file3.bam` ) to process multiple libraries together.
 Gridss considers all reads in each file to come from a single library.
 Input files containing read groups from multiple different libraries should be split into an input file per-library.
 
-### INPUT_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE, INPUT_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE
+### INPUT_CATEGORY
 
-Per INPUT overrides of the default concordant fragment size calculation.
-If your fragment size distribution is unusual, this option can be used to override the default value.
+Numeric category (starting at zero) to allocate the corresponding input file to. Per-category variant support is output so
+a category should be specified for each input file when performing analysis on multiple samples at once. (eg `INPUT=normal75bp.bam INPUT_CATEGORY=0 INPUT=normal100bp.bam INPUT_CATEGORY=0 INPUT=tumour100bp.bam INPUT_CATEGORY=1` ).
 
-### INPUT_TUMOUR
+### READ_PAIR_CONCORDANT_PERCENT
 
-Same as INPUT, but used for tumour/normal processing. The somatic P-value (SPV INFO field) is calculated based on total INPUT evidence vs INPUT_TUMOUR evidence.
+Portion (0.0-1.0) of read pairs to be considered concordant. Concordant read pairs are considered to provide no support for structural variation.  
 
-### INPUT_TUMOUR_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE, INPUT_TUMOUR_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE
+### INPUT_MIN_FRAGMENT_SIZE, INPUT_MAX_FRAGMENT_SIZE
 
-Matching INPUT_TUMOUR overrides for INPUT_READ_PAIR_MIN/MAX_CONCORDANT_FRAGMENT_SIZE.
-
-### SCRIPT
-
-When alignment is required to continue processing, gridss will write a script for the alignments required to this file as well as stderr.
+Per input overrides for explicitly specifying fragment size interval to be considered concordant. As with INPUT_CATEGORY, these must be specified
+for all input files. Use null to indicate an override is not required for a particular input (eg
+`INPUT=autocalc.bam INPUT_MIN_FRAGMENT_SIZE=null INPUT_MAX_FRAGMENT_SIZE=null INPUT=manual.bam INPUT_MIN_FRAGMENT_SIZE=100 INPUT_MAX_FRAGMENT_SIZE=300` )
 
 ### PER_CHR
 
@@ -101,19 +86,16 @@ This field is a standard Picard tools argument and carries the usual meaning. Te
 
 ## libsswjni.so
 
-Due to relatively poor performance of existing Java-based Smith-Waterman alignment packages, gridss incorporates a JNI wrapper to the striped Smith-Waterman alignment library [SSW](https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library). lib/libsswjni.so is a precompiled linux version included in gridss If the precompiled version is not compatable with your linux distribution, the wrapper can be compiled by:
+Due to relatively poor performance of existing Java-based Smith-Waterman alignment packages, gridss incorporates a JNI wrapper to the striped Smith-Waterman alignment library [SSW](https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library). Gridss will attempt to load a precompiled version. If the precompiled version is not compatible with your linux distribution, or you are running a different operating system, recompilation of the wrapper from source will be required. When recompiling, ensure the correct libsswjni.so is loaded using -Djava.library.path, or the LD_LIBRARY_PATH environment variable as per the JNI documentation.
 
-* git clone https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library
-* make java
+If your CPU does not support SSE, gridss will terminate with a fatal error when loading the library. Library loading can be disabled by added `-Dsswjni.disable=true` to the gridss command line. If libsswjni.so cannot be loaded, gridss will fall back to a (50x) slower java implementation. 
 
-If libsswjni.so cannot be loaded, gridss will fall back to a slower java implementation. To ensure libsswjni.so is loaded, add the library using -Djava.library.path, or the LD_LIBRARY_PATH environment variable as per the JNI documentation.
+### CONFIGURATION_FILE
 
-### GRIDSS_CONFIG
-
-Gridss uses a large number of configurable settings and thresholds which are, by default, hidden from the user.
-These settings can be overriden by specifying a configuration file to use instead. Note that this configuration
-file uses a different format to the Picard tools-compatable configuration file that is used instead of the
-standard command-line arguments
+Gridss uses a large number of configurable settings and thresholds which for easy of use are not included
+as command line arguments. Any of these individual settings can be overriden by specifying a configuration
+file to use instead. Note that this configuration file uses a different format to the Picard tools-compatable
+configuration file that is used instead of the standard command-line arguments.
 
 When supplying a custom configuration, gridss will use the overriding settings for all properties specified
 and fall back to the default for all properties that have not been overridden. Packaged within the gridss jar
@@ -127,11 +109,10 @@ Gridss is fundamentally a structural variation breakpoint caller. Variants are o
 ## Quality score
 
 Gridss calculates quality scores according to the model outlined in [paper].
-As gridss does not yet perform multiple test correction or score recalibration, **QUAL scores are vastly overestimated for all variants**.
-As a rule of thumb, variants with QUAL >= 1000 and have assembles from both sides of the breakpoint (AS > 0 & RAS > 0) are considered HIGH quality,
-variant with QUAL >= 500 but can only be assembled from one breakend (AS > 0 | RAS > 0) are considered MEDIUM quality,
-and variants with low QUAL score or lack any supporting assemblies are considered LOW quality. By default, the NO_ASSEMBLY filter is applied to all variants
-without assembly support.
+As gridss does not yet perform multiple test correction or score recalibration, QUAL scores are vastly overestimated for all variants.
+As a rule of thumb, variants with QUAL >= 1000 and have assembles from both sides of the breakpoint (AS > 0 & RAS > 0) are considered high quality,
+variant with QUAL >= 500 but can only be assembled from one breakend (AS > 0 | RAS > 0) are considered medium quality,
+and variants with low QUAL score or lack any supporting assemblies are considered low quality.
 
 ## Non-standard INFO fields
 
@@ -141,8 +122,16 @@ Gridss writes a number of non-standard VCF fields. These fields are described in
 
 Gridss supports conversion of VCF to BEDPE format using the VcfBreakendToBedpe utility program included in the gridss jar.
 
-Calling VcfBreakendToBedpe with `INCLUDE_HEADER=true` will include a header containing column names in the bedpe file. These fields match the VCF INFO fields of the same name. For bedpe output, breakend information is not exported and per category totals (such as split read counts) are aggregrated to a single value.
+Calling VcfBreakendToBedpe with `INCLUDE_HEADER=true` will include a header containing column names in the bedpe file. These fields match the VCF INFO fields of the same name. For bedpe output, breakend information is not exported and per category totals (such as split read counts) are aggregated to a single value.
 
+## Building from source
+
+Maven is used for build and dependency management which simplifies compile to the following steps:
+
+* `git clone https://github.com/PapenfussLab/gridss`
+* `mvn package -DskipTests`
+
+If gridss was built successfully, a combined jar containing gridss and all required library located at target/gridss-*-jar-with-dependencies.jar will have been created.
 
 
 

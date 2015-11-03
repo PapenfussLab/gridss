@@ -1,24 +1,25 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.filter.AggregateFilter;
+import htsjdk.samtools.filter.AlignedFilter;
+import htsjdk.samtools.filter.DuplicateReadFilter;
+import htsjdk.samtools.filter.FilteringIterator;
+
 import java.io.Closeable;
 import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
+
+import au.edu.wehi.idsv.metrics.IdsvMetrics;
+import au.edu.wehi.idsv.util.SlidingWindowList;
+import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.Queues;
-
-import au.edu.wehi.idsv.metrics.IdsvMetrics;
-import au.edu.wehi.idsv.util.SlidingWindowList;
-import au.edu.wehi.idsv.visualisation.TrackedBuffer;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.filter.AggregateFilter;
-import htsjdk.samtools.filter.AlignedFilter;
-import htsjdk.samtools.filter.DuplicateReadFilter;
-import htsjdk.samtools.filter.FilteringIterator;
 
 /**
  * Counts the number of reads and read pairs providing support for the

@@ -1,17 +1,18 @@
 package au.edu.wehi.idsv.metrics;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.util.Map.Entry;
-
-import au.edu.wehi.idsv.util.CachedEnumeratedIntegerDistribution;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Histogram;
 import htsjdk.samtools.util.Histogram.Bin;
 import htsjdk.samtools.util.Log;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.util.Map.Entry;
+
 import picard.analysis.InsertSizeMetrics;
+import au.edu.wehi.idsv.util.CachedEnumeratedIntegerDistribution;
 
 public class InsertSizeDistribution extends CachedEnumeratedIntegerDistribution {
 	private static final Log log = Log.getInstance(InsertSizeDistribution.class);

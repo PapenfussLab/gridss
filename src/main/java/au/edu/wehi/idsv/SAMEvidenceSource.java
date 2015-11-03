@@ -1,5 +1,13 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.Log;
+
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -7,10 +15,6 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
-
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
@@ -21,13 +25,10 @@ import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.validation.OrderAssertingIterator;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.Log;
+
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 /**
  * Structural variation evidence based on read pairs from a single SAM/BAM.  
@@ -78,7 +79,6 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	/**
 	 * Ensures that all structural variation evidence has been extracted from the input file 
-	 * @return returns steps that could not be performed
 	 */
 	public void completeSteps(EnumSet<ProcessStep> steps) {
 		ExtractEvidence extract = null;
@@ -98,7 +98,10 @@ public class SAMEvidenceSource extends EvidenceSource {
 		} finally {
 			if (extract != null) extract.close();
 		}
-		if (isRealignmentComplete() && steps.contains(ProcessStep.SORT_REALIGNED_SOFT_CLIPS)) {
+		if (steps.contains(ProcessStep.REALIGN_SOFT_CLIPS)) {
+			isRealignmentComplete(true);
+		}
+		if (isRealignmentComplete(false) && steps.contains(ProcessStep.SORT_REALIGNED_SOFT_CLIPS)) {
 			SortRealignedSoftClips srsc = new SortRealignedSoftClips(getContext(), this);
 			if (!srsc.isComplete()) {
 				srsc.process(steps);
@@ -139,7 +142,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 				}
 				break;
 			case REALIGN_SOFT_CLIPS:
-				done = isRealignmentComplete();
+				done = isRealignmentComplete(false);
 				break;
 			case SORT_REALIGNED_SOFT_CLIPS:
 				done = new SortRealignedSoftClips(getContext(), this).isComplete();
@@ -261,7 +264,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			scToClose.add(rawScIt);
 			CloseableIterator<SoftClipEvidence> scIt = new SoftClipEvidenceIterator(this, rawScIt);
 			scToClose.add(scIt);
-			if (isRealignmentComplete()) {
+			if (isRealignmentComplete(false)) {
 				//log.debug("Realignment is complete for ", input);
 				CloseableIterator<SAMRecord> rawRealignIt = getContext().getSamReaderIterator(realigned);
 				scToClose.add(rawRealignIt);
@@ -278,7 +281,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			itList.add((CloseableIterator<DirectedEvidence>)(Object)scIt);
 		}
 		if (includeSoftClipRemote) {
-			if (!isRealignmentComplete()) {
+			if (!isRealignmentComplete(false)) {
 				throw new IllegalArgumentException(String.format("Realignment resorting not complete for ", input));
 			}
 			CloseableIterator<SAMRecord> rsrRawIt = getContext().getSamReaderIterator(remoteRealigned);

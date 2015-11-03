@@ -8,14 +8,14 @@ import java.util.stream.Collectors;
 
 import org.junit.Test;
 
-import com.google.common.collect.Lists;
-
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.DirectedEvidenceOrder;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.TestHelper;
+
+import com.google.common.collect.Lists;
 
 
 public class DirectedPositionalAssemblerTest extends TestHelper {

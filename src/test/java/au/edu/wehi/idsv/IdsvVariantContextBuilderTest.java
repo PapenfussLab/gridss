@@ -4,22 +4,22 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 import java.util.Collection;
 
 import org.junit.Ignore;
 import org.junit.Test;
 
+import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-
-import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.SequenceUtil;
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 public class IdsvVariantContextBuilderTest extends TestHelper {
 	@Test
@@ -239,36 +239,36 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_not_write_empty_properties() {
-		assertFalse( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), null).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
-		assertFalse( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), "").make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
-		assertFalse( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), 0).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
-		assertFalse( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), 0L).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
-		assertFalse( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), 0f).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
-		assertFalse( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), 0d).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
-		assertFalse( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), new int[0]).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
-		assertFalse( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), new float[0]).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
-		assertFalse( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), new double[0]).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
-		assertFalse( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), new String[0]).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
-		assertFalse( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), Lists.newArrayList()).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
-		assertFalse( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), Sets.newHashSet()).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
+		assertFalse( minimalVariant().attribute("TEST", null).make().hasAttribute("TEST"));
+		assertFalse( minimalVariant().attribute("TEST", "").make().hasAttribute("TEST"));
+		assertFalse( minimalVariant().attribute("TEST", 0).make().hasAttribute("TEST"));
+		assertFalse( minimalVariant().attribute("TEST", 0L).make().hasAttribute("TEST"));
+		assertFalse( minimalVariant().attribute("TEST", 0f).make().hasAttribute("TEST"));
+		assertFalse( minimalVariant().attribute("TEST", 0d).make().hasAttribute("TEST"));
+		assertFalse( minimalVariant().attribute("TEST", new int[0]).make().hasAttribute("TEST"));
+		assertFalse( minimalVariant().attribute("TEST", new float[0]).make().hasAttribute("TEST"));
+		assertFalse( minimalVariant().attribute("TEST", new double[0]).make().hasAttribute("TEST"));
+		assertFalse( minimalVariant().attribute("TEST", new String[0]).make().hasAttribute("TEST"));
+		assertFalse( minimalVariant().attribute("TEST", Lists.newArrayList()).make().hasAttribute("TEST"));
+		assertFalse( minimalVariant().attribute("TEST", Sets.newHashSet()).make().hasAttribute("TEST"));
 		
-		assertTrue( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), "A").make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
-		assertTrue( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), new int[] { 1 }).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
-		assertTrue( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), new float[] { 1 }).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
-		assertTrue( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), new double[] { 1 }).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
-		assertTrue( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), new String[] { "s" }).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
-		assertTrue( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), Lists.newArrayList("s")).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
-		assertTrue( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), Sets.newHashSet("s")).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
+		assertTrue( minimalVariant().attribute("TEST", "A").make().hasAttribute("TEST"));
+		assertTrue( minimalVariant().attribute("TEST", new int[] { 1 }).make().hasAttribute("TEST"));
+		assertTrue( minimalVariant().attribute("TEST", new float[] { 1 }).make().hasAttribute("TEST"));
+		assertTrue( minimalVariant().attribute("TEST", new double[] { 1 }).make().hasAttribute("TEST"));
+		assertTrue( minimalVariant().attribute("TEST", new String[] { "s" }).make().hasAttribute("TEST"));
+		assertTrue( minimalVariant().attribute("TEST", Lists.newArrayList("s")).make().hasAttribute("TEST"));
+		assertTrue( minimalVariant().attribute("TEST", Sets.newHashSet("s")).make().hasAttribute("TEST"));
 	}
 	@Test
 	public void should_not_write_empty_array_properties() {
-		assertFalse( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), new int[] { 0,0 }).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
-		assertFalse( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), new float[] { 0,0 }).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
-		assertFalse( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), new double[] { 0,0 }).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
-		assertFalse( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), new String[] { "", null }).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
-		assertFalse( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), new Object[] { 0, 0f, 0d, "", null }).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
-		assertFalse( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), Lists.newArrayList("")).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
-		assertFalse( minimalVariant().attribute(VcfAttributes.TRUTH_MATCHES.attribute(), Lists.<Object>newArrayList(0, 0L, 0f, 0d, "", null)).make().hasAttribute(VcfAttributes.TRUTH_MATCHES.attribute()));
+		assertFalse( minimalVariant().attribute("TEST", new int[] { 0,0 }).make().hasAttribute("TEST"));
+		assertFalse( minimalVariant().attribute("TEST", new float[] { 0,0 }).make().hasAttribute("TEST"));
+		assertFalse( minimalVariant().attribute("TEST", new double[] { 0,0 }).make().hasAttribute("TEST"));
+		assertFalse( minimalVariant().attribute("TEST", new String[] { "", null }).make().hasAttribute("TEST"));
+		assertFalse( minimalVariant().attribute("TEST", new Object[] { 0, 0f, 0d, "", null }).make().hasAttribute("TEST"));
+		assertFalse( minimalVariant().attribute("TEST", Lists.newArrayList("")).make().hasAttribute("TEST"));
+		assertFalse( minimalVariant().attribute("TEST", Lists.<Object>newArrayList(0, 0L, 0f, 0d, "", null)).make().hasAttribute("TEST"));
 	}
 	@SuppressWarnings("unchecked")
 	@Test

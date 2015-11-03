@@ -5,13 +5,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
+import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 
 import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SamPairUtil.PairOrientation;
-import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 
 
 public class SAMRecordUtilTest extends TestHelper {

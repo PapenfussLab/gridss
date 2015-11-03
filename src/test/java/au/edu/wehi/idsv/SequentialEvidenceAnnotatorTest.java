@@ -2,6 +2,7 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import htsjdk.samtools.SAMRecord;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -11,8 +12,6 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-
-import htsjdk.samtools.SAMRecord;
 
 
 

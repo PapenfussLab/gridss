@@ -8,9 +8,9 @@ import java.util.List;
 
 import org.junit.Test;
 
-import com.google.common.collect.Lists;
-
 import au.edu.wehi.idsv.TestHelper;
+
+import com.google.common.collect.Lists;
 
 
 public class PathSimplificationIteratorTest extends TestHelper {

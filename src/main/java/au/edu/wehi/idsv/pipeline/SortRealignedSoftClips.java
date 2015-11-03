@@ -1,15 +1,17 @@
 package au.edu.wehi.idsv.pipeline;
 
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
+import htsjdk.samtools.SAMFileWriter;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.Log;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.FileSystemContext;
@@ -21,11 +23,10 @@ import au.edu.wehi.idsv.RealignedSoftClipEvidence;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMFileUtil.SortCallable;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMFileWriter;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.util.Log;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 
 public class SortRealignedSoftClips extends DataTransformStep {
 	private static final Log log = Log.getInstance(SortRealignedSoftClips.class);

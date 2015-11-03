@@ -1,17 +1,18 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.variant.variantcontext.VariantContext;
+
 import java.util.List;
+
+import au.edu.wehi.idsv.util.CollectionUtil;
+import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Bytes;
-
-import au.edu.wehi.idsv.util.CollectionUtil;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
-import htsjdk.variant.variantcontext.VariantContext;
 
 public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvidence implements DirectedBreakpoint {
 	/**

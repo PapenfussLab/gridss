@@ -1,15 +1,14 @@
 package au.edu.wehi.idsv.configuration;
 
-import java.util.List;
+import htsjdk.samtools.SAMRecord;
 
 import org.apache.commons.configuration.Configuration;
-
-import com.google.common.collect.ImmutableList;
 
 import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.SoftClipEvidence;
-import htsjdk.samtools.SAMRecord;
+
+import com.google.common.collect.ImmutableList;
 
 
 public class RealignmentConfiguration {
@@ -21,6 +20,7 @@ public class RealignmentConfiguration {
 		mapqUniqueThreshold = config.getInt("mapqUniqueThreshold");
 		assemblyIterations = config.getInt("assemblyIterations");
 		aligner = config.getString("aligner");
+		commandline = ImmutableList.copyOf(config.subset("commandline").getStringArray(aligner));
 	}
 	/**
 	 * Minimum breakend length to be considered for realignment
@@ -44,34 +44,7 @@ public class RealignmentConfiguration {
 	 * fastq, reference, thread count
 	 * @return Aligner command line to execute
 	 */
-	public List<String> getAlignerCommandLine() {
-		if (aligner == null) return null;
-		switch (aligner) {
-			case "bowtie2":
-				return ImmutableList.of(
-						"bowtie2",
-						"--threads",
-						"%3$d",
-						"--local",
-						"--mm",
-						"--reorder",
-						"-x",
-						"%2$s",
-						"-U",
-						"%1$s");
-			case "bwa":
-				return ImmutableList.of(
-						"bwa",
-						"mem",
-						"-t",
-						"%3$d",
-						"-M",
-						"%2$s",
-						"%1$s");
-			default:
-				return null;
-		}
-	}
+	public ImmutableList<String> commandline;
 	public boolean shouldRealignBreakend(SoftClipEvidence evidence) {
 		if (evidence.getBreakendSummary() instanceof BreakpointSummary) return false;
 		return evidence.getSoftClipLength() >= minLength

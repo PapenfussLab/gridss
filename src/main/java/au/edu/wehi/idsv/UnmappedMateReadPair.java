@@ -1,7 +1,7 @@
 package au.edu.wehi.idsv;
 
-import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import htsjdk.samtools.SAMRecord;
+import au.edu.wehi.idsv.metrics.IdsvMetrics;
 
 public class UnmappedMateReadPair extends NonReferenceReadPair {
 	protected UnmappedMateReadPair(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {

@@ -8,12 +8,12 @@ import java.util.List;
 
 import org.junit.Test;
 
+import au.edu.wehi.idsv.TestHelper;
+import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
-
-import au.edu.wehi.idsv.TestHelper;
-import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
 
 
 public class WeightedSequenceGraphNodeUtilTest extends TestHelper {

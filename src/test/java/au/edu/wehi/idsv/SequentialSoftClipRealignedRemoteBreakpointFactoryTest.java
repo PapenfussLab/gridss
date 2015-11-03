@@ -1,16 +1,16 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
+import htsjdk.samtools.SAMRecord;
 
 import java.util.EnumSet;
 
 import org.junit.Test;
 
-import com.google.common.collect.Iterators;
-
 import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
-import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMRecord;
+
+import com.google.common.collect.Iterators;
 
 
 public class SequentialSoftClipRealignedRemoteBreakpointFactoryTest extends IntermediateFilesTest {

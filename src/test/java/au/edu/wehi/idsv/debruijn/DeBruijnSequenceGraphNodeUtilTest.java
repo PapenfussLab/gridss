@@ -4,10 +4,10 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.positional.KmerPathNode;
+
+import com.google.common.collect.ImmutableList;
 
 
 public class DeBruijnSequenceGraphNodeUtilTest extends TestHelper {

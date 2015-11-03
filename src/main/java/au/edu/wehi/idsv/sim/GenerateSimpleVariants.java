@@ -1,14 +1,15 @@
 package au.edu.wehi.idsv.sim;
 
+import htsjdk.samtools.util.IOUtil;
+
 import java.util.List;
 
-import com.google.common.collect.Lists;
-
-import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.vcf.SvType;
-import htsjdk.samtools.util.IOUtil;
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
+import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.vcf.SvType;
+
+import com.google.common.collect.Lists;
 
 @CommandLineProgramProperties(
         usage = "Create a fasta containing structural variants of the requested types. Can simulate, insertion of random sequence, deletion, inversion, and tandem duplication.",  

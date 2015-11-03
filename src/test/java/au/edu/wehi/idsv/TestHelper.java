@@ -2,6 +2,26 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileWriter;
+import htsjdk.samtools.SAMReadGroupRecord;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordCoordinateComparator;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMTag;
+import htsjdk.samtools.SamPairUtil;
+import htsjdk.samtools.metrics.Header;
+import htsjdk.samtools.metrics.MetricsFile;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.ProgressLoggerInterface;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.vcf.VCFHeader;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -21,15 +41,11 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.lang3.StringUtils;
 
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-
+import picard.analysis.InsertSizeMetrics;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraph;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
@@ -66,27 +82,12 @@ import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMFileWriter;
-import htsjdk.samtools.SAMReadGroupRecord;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordCoordinateComparator;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMTag;
-import htsjdk.samtools.SamPairUtil;
-import htsjdk.samtools.metrics.Header;
-import htsjdk.samtools.metrics.MetricsFile;
-import htsjdk.samtools.reference.ReferenceSequenceFile;
-import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.ProgressLoggerInterface;
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.writer.VariantContextWriter;
-import htsjdk.variant.vcf.VCFHeader;
-import picard.analysis.InsertSizeMetrics;
+
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 
 public class TestHelper {
 	public static final long LCCB = ProcessingContext.LINEAR_COORDINATE_CHROMOSOME_BUFFER;
@@ -319,13 +320,20 @@ public class TestHelper {
 	public static FileSystemContext getFSContext() {
 		return new FileSystemContext(new File(System.getProperty("java.io.tmpdir")), 500000);
 	}
+	private static Configuration defaultConfig;
+	public static Configuration getDefaultConfig() {
+		if (defaultConfig == null) {
+			try {
+				defaultConfig = GridssConfiguration.LoadConfiguration(null);
+			} catch (ConfigurationException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		return defaultConfig;
+	}
 	public static GridssConfiguration getConfig(File workingDirectory) {
 		GridssConfiguration config;
-		try {
-			config = new GridssConfiguration((File)null, workingDirectory);
-		} catch (ConfigurationException e) {
-			throw new RuntimeException(e);
-		}
+		config = new GridssConfiguration(getDefaultConfig(), workingDirectory);
 		config.getSoftClip().minAverageQual = 0;
 		config.minAnchorShannonEntropy = 0;
 		config.getAssembly().minReads = 2;
@@ -333,6 +341,7 @@ public class TestHelper {
 		config.getAssembly().anchorRealignment.perform = false;
 		config.getVariantCalling().breakendMargin = 3;
 		config.getRealignment().aligner = null;
+		config.getRealignment().commandline = ImmutableList.of();
 		return config;
 	}
 	public static GridssConfiguration getConfig() {
@@ -928,7 +937,7 @@ public class TestHelper {
 		@Override
 		public String getRealignmentScript() { return ""; }
 		@Override
-		public boolean isRealignmentComplete() { return realigned; }
+		public boolean isRealignmentComplete(boolean performRealignment) { return realigned; }
 		@Override
 		public CloseableIterator<SAMRecordAssemblyEvidence> iterator(
 				boolean includeRemote, boolean includeFiltered) {

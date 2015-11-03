@@ -1,11 +1,10 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
-
-import org.junit.Test;
-
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
+
+import org.junit.Test;
 
 
 public class RealignedSoftClipEvidenceTest extends TestHelper {

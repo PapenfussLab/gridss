@@ -1,5 +1,8 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.metrics.Header;
+import htsjdk.samtools.util.CloseableIterator;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -8,8 +11,6 @@ import java.util.List;
 import org.apache.commons.configuration.ConfigurationException;
 
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
-import htsjdk.samtools.metrics.Header;
-import htsjdk.samtools.util.CloseableIterator;
 
 /**
  * Ad-hoc debugging tests

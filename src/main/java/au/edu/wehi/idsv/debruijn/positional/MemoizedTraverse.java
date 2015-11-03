@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
+
 import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
@@ -7,7 +9,6 @@ import java.util.List;
 import java.util.PriorityQueue;
 
 import au.edu.wehi.idsv.util.IntervalUtil;
-import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
 
 /**
  * Helper class to track memoization of nodes during positional graph traversal

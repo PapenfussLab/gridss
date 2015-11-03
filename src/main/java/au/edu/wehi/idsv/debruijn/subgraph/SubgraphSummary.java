@@ -3,11 +3,11 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
+
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Longs;
-
-import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 
 /**
  * De bruijn subgraph

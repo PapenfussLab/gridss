@@ -1,13 +1,12 @@
 package au.edu.wehi.idsv.picard;
 
 import static org.junit.Assert.assertEquals;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 
 import java.io.File;
 import java.util.Random;
 
 import org.junit.Test;
-
-import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 
 public class SynchronousReferenceLookupAdapterTest {
 	private Exception e;

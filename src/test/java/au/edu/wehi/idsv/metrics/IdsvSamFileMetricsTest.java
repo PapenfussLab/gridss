@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv.metrics;
 
 import static org.junit.Assert.assertEquals;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -8,9 +9,8 @@ import java.util.List;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.TestHelper;
-import htsjdk.samtools.SamPairUtil.PairOrientation;
 import picard.analysis.InsertSizeMetrics;
+import au.edu.wehi.idsv.TestHelper;
 
 public class IdsvSamFileMetricsTest extends TestHelper {
 	@Test

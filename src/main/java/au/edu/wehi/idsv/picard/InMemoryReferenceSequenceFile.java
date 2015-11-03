@@ -1,11 +1,11 @@
 package au.edu.wehi.idsv.picard;
 
-import java.io.IOException;
-import java.util.Arrays;
-
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.reference.ReferenceSequence;
+
+import java.io.IOException;
+import java.util.Arrays;
 
 /**
  * Reference genome stored only in memory and not backed by a fasta file.

@@ -7,9 +7,6 @@ OUTPUT=${INPUT/.bam/.gridss.vcf}
 REFERENCE=~/reference_genomes/human/hg19.fa
 JAVA_ARGS="-ea -Xmx16g -cp ../target/gridss-*-jar-with-dependencies.jar"
 
-# ensure libsswjni.so can be loaded
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PWD/../lib
-
 if [[ ! -f "$INPUT" ]] ; then
 	echo "Missing $INPUT input file."
 	exit 1
@@ -27,29 +24,14 @@ if [[ ! -f "$REFERENCE.1.bt2" ]] ; then
 	exit 1
 fi
 
-exec_gridss() {
-	if [[ -f "$OUTPUT" ]] ; then
-		return
-	fi
-	rm -f realign.sh
-	java $JAVA_ARGS au.edu.wehi.idsv.Idsv \
-		TMP_DIR=. \
-		WORKING_DIR=. \
-		INPUT="$INPUT" \
-		OUTPUT="$OUTPUT" \
-		REFERENCE="$REFERENCE" \
-		SCRIPT=realign.sh \
-		VERBOSITY=INFO \
-		2>&1 | tee -a gridss.$$.log
-	
-	if [[ -f realign.sh ]] ; then
-		chmod a+x realign.sh
-		./realign.sh 2>&1 | tee -a gridss.$$.log
-		exec_gridss
-	fi
-}
-
-exec_gridss
+java $JAVA_ARGS au.edu.wehi.idsv.Idsv \
+	TMP_DIR=. \
+	WORKING_DIR=. \
+	INPUT="$INPUT" \
+	OUTPUT="$OUTPUT" \
+	REFERENCE="$REFERENCE" \
+	VERBOSITY=INFO \
+	2>&1 | tee -a gridss.$$.log
 
 if [[ -f "$OUTPUT" ]] ; then
 	java $JAVA_ARGS au.edu.wehi.idsv.VcfBreakendToBedpe \

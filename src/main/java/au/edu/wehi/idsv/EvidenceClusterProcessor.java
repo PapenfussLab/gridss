@@ -1,17 +1,18 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.Log;
+
 import java.util.Iterator;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.google.common.collect.AbstractIterator;
-
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.DuplicatingIterable;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.Log;
+
+import com.google.common.collect.AbstractIterator;
 /**
  * Calls breakpoints from the given evidence
  * 

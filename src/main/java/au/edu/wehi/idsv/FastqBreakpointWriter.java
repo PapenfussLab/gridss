@@ -1,15 +1,16 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.fastq.FastqRecord;
+import htsjdk.samtools.fastq.FastqWriter;
+import htsjdk.samtools.util.SequenceUtil;
+
 import java.io.Closeable;
 import java.util.Arrays;
 
 import org.apache.commons.lang3.ArrayUtils;
 
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.fastq.FastqRecord;
-import htsjdk.samtools.fastq.FastqWriter;
-import htsjdk.samtools.util.SequenceUtil;
 
 /**
  * Writes breakpoint realignment records

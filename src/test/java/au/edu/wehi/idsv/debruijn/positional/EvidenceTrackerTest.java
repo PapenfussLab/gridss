@@ -10,9 +10,9 @@ import java.util.Set;
 
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-
 import au.edu.wehi.idsv.TestHelper;
+
+import com.google.common.collect.ImmutableList;
 
 
 public class EvidenceTrackerTest extends TestHelper {

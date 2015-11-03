@@ -1,21 +1,22 @@
 package au.edu.wehi.idsv.bed;
 
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.tribble.AbstractFeatureReader;
+import htsjdk.tribble.bed.BEDCodec;
+import htsjdk.tribble.bed.BEDFeature;
+import htsjdk.tribble.readers.LineIterator;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
+import au.edu.wehi.idsv.LinearGenomicCoordinate;
+
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
-
-import au.edu.wehi.idsv.LinearGenomicCoordinate;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.tribble.AbstractFeatureReader;
-import htsjdk.tribble.bed.BEDCodec;
-import htsjdk.tribble.bed.BEDFeature;
-import htsjdk.tribble.readers.LineIterator;
 
 /**
  * Minimal bed wrapper retaining only interval information

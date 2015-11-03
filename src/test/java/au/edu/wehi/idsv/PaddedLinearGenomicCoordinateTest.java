@@ -1,11 +1,10 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
-
-import org.junit.Test;
-
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
+
+import org.junit.Test;
 
 
 public class PaddedLinearGenomicCoordinateTest {

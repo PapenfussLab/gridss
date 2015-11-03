@@ -6,18 +6,18 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import htsjdk.samtools.SAMRecord;
 
 import java.util.List;
 import java.util.Set;
 
 import org.junit.Test;
 
+import au.edu.wehi.idsv.sam.SamTags;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-
-import au.edu.wehi.idsv.sam.SamTags;
-import htsjdk.samtools.SAMRecord;
 
 
 public class AssemblyFactoryTest extends TestHelper {
