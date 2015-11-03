@@ -13,11 +13,12 @@ public enum VcfFilter {
 	ASSEMBLY_INCORRECT_DIRECTION ("ASSEMBLY_INCORRECT_DIRECTION", "The breakend direction does not match the breakend direction of the assembled reads."),
 	REFERENCE_ALLELE ("REF", "Breakpoint corresponds to reference allele"),
 	SMALL_INDEL ("SMALL_INDEL", "Variant is a small indel that is possibly an alignment artefact."),
-	LOW_BREAKPOINT_SUPPORT ("LOW_BREAKPOINT_SUPPORT", "Quality of support does not reach the required threshold quality"),
+	LOW_BREAKPOINT_SUPPORT ("LOW_BREAKPOINT_SUPPORT", "Does not reach the required threshold quality for calling."),
 	SINGLE_SUPPORT ("SINGLE_SUPPORT", "Supported by a single read or read pair only."),
 	ASSEMBLY_REMOTE ("ASSEMBLY_REMOTE", "All support for the given breakpoint comes from elsewhere."),
-	NO_ASSEMBLY ("NO_ASSEMBLY", "No assembly supporting this variant could be found. This variant is of low confidence."),
-	SINGLE_ASSEMBLY ("SINGLE_ASSEMBLY", "Only one side of the breakpoint could be assembled. This variant is of medium confidence.");
+	NO_ASSEMBLY ("NO_ASSEMBLY", "No assembly supporting this variant could be found."),
+	SINGLE_ASSEMBLY ("SINGLE_ASSEMBLY", "Only one side of the breakpoint could be assembled."),
+	LOW_QUAL ("LOW_QUAL", "Low quality call.");
 
     private final VCFFilterHeaderLine filterheader;
 	VcfFilter(String name, String description) {

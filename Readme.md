@@ -98,9 +98,8 @@ file to use instead. Note that this configuration file uses a different format t
 configuration file that is used instead of the standard command-line arguments.
 
 When supplying a custom configuration, gridss will use the overriding settings for all properties specified
-and fall back to the default for all properties that have not been overridden. Packaged within the gridss jar
-is resources/gridss.properties (src/main/resource/gridss.properties in the gridss source code) which contains
-a detailed listing of all configurable gridss settings.
+and fall back to the default for all properties that have not been overridden. Details on the meaning
+of each parameter can be found in the javadoc documentation of the au.edu.wehi.idsv.configuration classes.
 
 # Output
 

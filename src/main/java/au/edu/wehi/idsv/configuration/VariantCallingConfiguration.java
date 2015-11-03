@@ -24,6 +24,7 @@ public class VariantCallingConfiguration {
 		minIndelSize = config.getInt("minIndelSize");
 		breakendMargin = config.getInt("breakendMargin");
 		writeFiltered = config.getBoolean("writeFiltered");
+		lowQuality = config.getDouble("lowQuality");
 		switch (config.getString("format")) {
 			case "vcf4.2":
 				placeholderBreakend = false;
@@ -54,6 +55,7 @@ public class VariantCallingConfiguration {
 	public int breakendMargin;
 	public boolean writeFiltered;
 	public boolean placeholderBreakend;
+	public double lowQuality;
 	public BreakendSummary withMargin(BreakendSummary bp) {
 		if (bp == null) return null;
 		return bp.expandBounds(breakendMargin);
@@ -99,6 +101,9 @@ public class VariantCallingConfiguration {
 			if (filteredVariant.getBreakendEvidenceCountAssembly() == 0) {
 				filteredVariant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(processContext, filteredVariant).filter(VcfFilter.NO_ASSEMBLY.filter()).make();
 			}
+		}
+		if (filteredVariant.getPhredScaledQual() < processContext.getVariantCallingParameters().lowQuality) {
+			filteredVariant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(processContext, filteredVariant).filter(VcfFilter.LOW_QUAL.filter()).make();
 		}
 		return filteredVariant;
 	}
