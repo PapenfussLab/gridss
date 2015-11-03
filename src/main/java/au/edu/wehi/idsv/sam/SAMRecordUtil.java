@@ -27,8 +27,8 @@ import com.google.common.collect.Lists;
  *
  */
 public class SAMRecordUtil {
-	public static final String FIRST_OF_PAIR_NAME_SUFFIX = "/1";
-	public static final String SECOND_OF_PAIR_NAME_SUFFIX = "/2";
+	public static final String FIRST_OF_PAIR_NAME_SUFFIX = "\\1";
+	public static final String SECOND_OF_PAIR_NAME_SUFFIX = "\\2";
 	/**
 	 * Determines whether the given record is soft-clipped
 	 * 
