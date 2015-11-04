@@ -54,7 +54,10 @@ a category should be specified for each input file when performing analysis on m
 
 ### READ_PAIR_CONCORDANT_PERCENT
 
-Portion (0.0-1.0) of read pairs to be considered concordant. Concordant read pairs are considered to provide no support for structural variation.  
+Portion (0.0-1.0) of read pairs to be considered concordant. Concordant read pairs are considered to provide no support for structural variation.
+Clearing this value will cause gridss to use the 0x02 proper pair SAM flag written by the aligner to detemine concordant pairing.
+Note that some aligner set this flag in a manner inappropriate for SV calling and set the flag for all reads with the expected orientation
+and strand regardless of the inferred fragment size.
 
 ### INPUT_MIN_FRAGMENT_SIZE, INPUT_MAX_FRAGMENT_SIZE
 
@@ -109,9 +112,9 @@ Gridss is fundamentally a structural variation breakpoint caller. Variants are o
 
 Gridss calculates quality scores according to the model outlined in [paper].
 As gridss does not yet perform multiple test correction or score recalibration, QUAL scores are vastly overestimated for all variants.
-As a rule of thumb, variants with QUAL >= 1000 and have assembles from both sides of the breakpoint (AS > 0 & RAS > 0) are considered high quality,
-variant with QUAL >= 500 but can only be assembled from one breakend (AS > 0 | RAS > 0) are considered medium quality,
-and variants with low QUAL score or lack any supporting assemblies are considered low quality.
+As a rule of thumb, variants with QUAL >= 1000 and have assembles from both sides of the breakpoint (AS > 0 & RAS > 0) are considered of high quality,
+variant with QUAL >= 500 but can only be assembled from one breakend (AS > 0 | RAS > 0) are considered of intermediate quality,
+and variants with low QUAL score or lack any supporting assemblies are considered the be of low quality.
 
 ## Non-standard INFO fields
 
@@ -120,17 +123,55 @@ Gridss writes a number of non-standard VCF fields. These fields are described in
 ## BEDPE
 
 Gridss supports conversion of VCF to BEDPE format using the VcfBreakendToBedpe utility program included in the gridss jar.
+An working example of this conversion utility is provided in example/gridss.sh
 
-Calling VcfBreakendToBedpe with `INCLUDE_HEADER=true` will include a header containing column names in the bedpe file. These fields match the VCF INFO fields of the same name. For bedpe output, breakend information is not exported and per category totals (such as split read counts) are aggregated to a single value.
+Calling VcfBreakendToBedpe with `INCLUDE_HEADER=true` will include a header containing column names in the bedpe file.
+These fields match the VCF INFO fields of the same name.
+For bedpe output, breakend information is not exported and per category totals (such as split read counts) are aggregated to a single value.
+
+## Intermediate Files
+
+File | Description
+------- | ---------
+tmp.* | Temporary intermediate file
+unsorted.* | Temporary intermediate file
+*.bai | BAM index for coordinate sorted intermediate BAM file
+*input*.idsv.working | Working directory for files related to the given input file.
+*input*.idsv.working/*input*.idsv.metrics.insersize.txt | Picard tools CollectInsertSizeMetrics output 
+*input*.idsv.working/*input*.idsv.metrics.idsv.txt | High-level read/read pair metrics
+*input*.idsv.working/*input*.idsv.metrics.softclip.txt | Soft clip length distribution
+*input*.idsv.working/*input*.idsv.coverage.blacklist.bed | Intervals of extreme coverage excluded from variant calling
+*input*.idsv.working/*input*.idsv.*chr*.sc.bam | soft clipped reads (coordinate sort order)
+*input*.idsv.working/*input*.idsv.*chr*.realign.0.fq | soft clipped bases requiring realignment. The source soft clip is encoded in the read bam
+*input*.idsv.working/*input*.idsv.*chr*.realign.0.bam | soft clipped bases aligned by external aligner. **Record order must match the fastq record order**
+*input*.idsv.working/*input*.idsv.*chr*.scremote.bam | soft clipped reads (realignment position sort order)
+*input*.idsv.working/*input*.idsv.*chr*.realignremote.bam | soft clipped reads (realignment position sort order)
+*input*.idsv.working/*input*.idsv.*chr*.rp.bam | discordant read pairs
+*input*.idsv.working/*input*.idsv.*chr*.rpmate.bam | discordant read pairs, sorted by alignment position of the other read in the pair
+*output*.idsv.working | Working directory for assembly and variant calling
+*output*.idsv.working/*output*.idsv.breakpoint.vcf | Raw maximal clique variant calls not requiring unique evidence assignment
+*output*.idsv.working/*output*.idsv.assembly.bam | Assembly contigs represented as paired reads. The first read in the read pair is the assembly, with the second corresponding to the realignment of the breakend bases. Note that the assembly is always on the positive strand so an assembly of a simple indel result in a read pair with FF read alignment orientation. Assemblies with read names of the form asm*n*_*i* are compound realignment records, with the actual assembly in the asm*n* record.
+*output*.idsv.working/*output*.idsv.*chr*.assembly.bam | *chr* subset of above
+*output*.idsv.working/*output*.idsv.*chr*.assemblymate.bam | above sorted by mate position
+*output*.idsv.working/*output*.idsv.*chr*.realign.*n*.fq | breakend realignment iteration *n*. Breakends that span events (such as small translocations or chromothripsis), are realigned multiple times to identify all fusions spanned by the assembly
+*output*.idsv.working/*output*.idsv.*chr*.realign.*n*.bam | External realigner alignments of above. **Record order must match the fastq record order**
+*output*.idsv.working/*output*.idsv.*chr*.breakend.bam | Raw assembly contigs before realignment
+*output*.idsv.working/*output*.idsv.*chr*.breakend.throttled.bam | Regions of high coverage where only a portion of supporting reads are considered for assembly
 
 ## Building from source
 
 Maven is used for build and dependency management which simplifies compile to the following steps:
+Gridss write a large number of intermediate files. If rerunning gridss with parametere on the same input, the intermediate files should be deleted. All intermediate files are written to the WORKING_DIR directory tree, with the exception of temporary sort buffers written to TMP_DIR and automatically deleted at the conclusion of the sort operation.
 
 * `git clone https://github.com/PapenfussLab/gridss`
 * `mvn package -DskipTests`
 
 If gridss was built successfully, a combined jar containing gridss and all required library located at target/gridss-*-jar-with-dependencies.jar will have been created.
+
+
+
+
+
 
 
 
