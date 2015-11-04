@@ -13,9 +13,14 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.ProcessBuilder.Redirect;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class ExternalProcessFastqAligner implements FastqAligner {
+	/**
+	 * Number of seconds to wait for the external aligner to shut down
+	 */
+	private static final int SHUTDOWN_GRACE_PERIOD = 10;
 	private static final Log log = Log.getInstance(ExternalProcessFastqAligner.class);
 	private final List<String> template;
 	private final SamReaderFactory readerFactory;
@@ -46,6 +51,12 @@ public class ExternalProcessFastqAligner implements FastqAligner {
 			while (it.hasNext()) {
 				writer.addAlignment(it.next());
 			}
+		}
+		try {
+			aligner.waitFor(SHUTDOWN_GRACE_PERIOD, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			// Restore the interrupted status
+            Thread.currentThread().interrupt();
 		}
 		if (aligner.isAlive()) {
 			log.error("External process still alive after alignment");
