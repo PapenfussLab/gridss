@@ -30,11 +30,11 @@ public class TwoBitBufferedReferenceSequenceFile implements ReferenceSequenceFil
 	public TwoBitBufferedReferenceSequenceFile(ReferenceSequenceFile underlying) {
 		this.underlying = underlying;
 		this.referenceIndexLookup = new PackedReferenceSequence[underlying.getSequenceDictionary().getSequences().size()];
-		log.info("Loading entire reference genome into memory");
+		log.debug("Loading entire reference genome into memory");
 		for (SAMSequenceRecord contig : underlying.getSequenceDictionary().getSequences()) {
 			getSequence(contig.getSequenceName());
 		}
-		log.info("Reference genome loaded");
+		log.debug("Reference genome loaded");
 	}
 	public byte getBase(int referenceIndex, int position) {
 		PackedReferenceSequence seq = referenceIndexLookup[referenceIndex];

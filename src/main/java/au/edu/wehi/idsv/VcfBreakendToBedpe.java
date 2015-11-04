@@ -32,8 +32,8 @@ public class VcfBreakendToBedpe extends picard.cmdline.CommandLineProgram {
     public File INPUT;
 	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="BEDPE output file")
     public File OUTPUT;
-	@Option(doc="Include VCF filtered calls in output.")
-	public boolean INCLUDE_FILTERED = false;
+	@Option(shortName="OF", doc="BEDPE output file of filtered calls")
+    public File OUTPUT_FILTERED;
 	@Option(shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME, doc="Reference used for alignment")
     public File REFERENCE;
 	@Option(doc="Inlcude header line with column names.")
@@ -49,48 +49,59 @@ public class VcfBreakendToBedpe extends picard.cmdline.CommandLineProgram {
 		}
 		try {
 			ProcessingContext pc = new ProcessingContext(new FileSystemContext(TMP_DIR.get(0), MAX_RECORDS_IN_RAM), null, new GridssConfiguration(), REFERENCE, false);
-			writeBreakpointBedpe(pc, INPUT, OUTPUT, INCLUDE_FILTERED, INCLUDE_HEADER, INCLUDE_LOW_BREAKEND, INCLUDE_HIGH_BREAKEND);
+			writeBreakpointBedpe(pc, INPUT, OUTPUT, OUTPUT_FILTERED, INCLUDE_HEADER, INCLUDE_LOW_BREAKEND, INCLUDE_HIGH_BREAKEND);
 		} catch (IOException | ConfigurationException e) {
 			log.error(e);
 			return -1;
 		}
 		return 0;
 	}
-	public static void writeBreakpointBedpe(ProcessingContext pc, File vcf, File bedpe, boolean includeFiltered, boolean includeHeader, boolean writeLow, boolean writeHigh) throws IOException {
+	public static void writeBreakpointBedpe(ProcessingContext pc, File vcf, File bedpe, File bedpeFiltered, boolean includeHeader, boolean writeLow, boolean writeHigh) throws IOException {
 		if (!writeLow && !writeHigh) {
 			throw new IllegalArgumentException("No breakends to be written. At least one of {LOW, HIGH} breakends should be specified");
 		}
 		File working = FileSystemContext.getWorkingFileFor(bedpe);
+		File workingFiltered = FileSystemContext.getWorkingFileFor(bedpeFiltered);
 		VCFFileReader vcfReader = null;
 		CloseableIterator<VariantContext> it = null; 
 		BedpeWriter writer = null;
+		BedpeWriter writerFiltered = null;
 		try {
 			vcfReader = new VCFFileReader(vcf, false);
 			it = vcfReader.iterator();
 			writer = new BedpeWriter(pc.getDictionary(), working);
+			writerFiltered = new BedpeWriter(pc.getDictionary(), workingFiltered);
 			if (includeHeader) {
 				writer.writeHeader();
+				writerFiltered.writeHeader();
 			}
 			while (it.hasNext()) {
 				IdsvVariantContext variant = IdsvVariantContext.create(pc, null, it.next());
 				if (variant instanceof VariantContextDirectedBreakpoint) {
 					VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)variant;
 					if (bp.getBreakendSummary().isLowBreakend() && writeLow) {
-						if (!bp.isFiltered() || includeFiltered) {
+						if (bp.isFiltered()) {
+							writerFiltered.write(bp);
+						} else {
 							writer.write(bp);
 						}
 					}
 					if (bp.getBreakendSummary().isHighBreakend() && writeHigh) {
-						if (!bp.isFiltered() || includeFiltered) {
+						if (bp.isFiltered()) {
+							writerFiltered.write(bp);
+						} else {
 							writer.write(bp);
 						}
 					}
 				}
 			}
 			writer.close();
+			writerFiltered.close();
 			FileHelper.move(working, bedpe, false);
+			FileHelper.move(workingFiltered, bedpeFiltered, false);
 		} finally {
 			CloserUtil.close(writer);
+			CloserUtil.close(writerFiltered);
 			CloserUtil.close(it);
 			CloserUtil.close(vcfReader);
 		}

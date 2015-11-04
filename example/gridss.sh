@@ -37,6 +37,7 @@ if [[ -f "$OUTPUT" ]] ; then
 	java $JAVA_ARGS au.edu.wehi.idsv.VcfBreakendToBedpe \
 		INPUT="$OUTPUT" \
 		OUTPUT="${OUTPUT/.vcf/.bedpe}" \
+		OUTPUT_FILTERED="${OUTPUT/.vcf/.filtered.bedpe}" \
 		REFERENCE="$REFERENCE"
 		
 fi
