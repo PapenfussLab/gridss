@@ -14,18 +14,19 @@ To run, gridss the following must be installed:
 
 Pre-compiled binaries are available at https://github.com/PapenfussLab/gridss/releases.
 
-Gridss is built using htsjdk, so is invoked in the same manner as Picard tools utilities. Gridss invokes an external alignment tools at multiple point during processing. When external alignment is required, gridss stops processing and waits for the user to perform the alignment.
-The gridss processing pipeline performs the following steps:
-
-* gridss: calculate metrics, extract soft clipped reads and discordant read pairs
-* aligner: align soft clips
-* gridss: generate putative SV assemblies
-* aligner: align assemblies (x3 to handle compound breakpoints)
-* gridss: call variants
+Gridss is built using htsjdk, so is invoked in the same manner as Picard tools utilities. Gridss invokes an external alignment tools at multiple point during processing. By default this is bowtie2, but can be configured to use bwa mem.
 
 ## example/gridss.sh
 
 example/gridss.sh contains an example pipeline of how gridss is invoked.
+
+## Memory usage
+
+It is recommended to run gridss with max heap memory of 8GB + 2GB per worker thread.
+For example, with 4 worker threads, it is recommended to run gridss with is -Xmx16g.
+Note that if a BED blacklist file excluding problematic centromeric and telomeric
+sequences (the ENCODE DAC blacklist is recommended when aligning against hg19),
+additional memory is recommended.
 
 ## Parameters
 
@@ -37,9 +38,27 @@ Variant calling output file. Can be VCF or BCF.
 
 ### REFERENCE (Required)
 
-Reference genome fasta file. Note that gridss caches the entire reference genome in memory so ensure
-that the working memory available to gridss comfortably exceeds the reference genome size.
-8GB + 2GB per thread is recommended for multithreaded processing of whole-genome sequencing of mammalian genomes.
+Reference genome fasta file. Gridss requires the reference genome supplied exactly matches
+the reference genome all input files.
+The reference genome must be be fasta format and must have a tabix (.fai) index and an
+index for the NGS aligner (by default bowtie2). The NGS aligner index prefix must match
+the reference genome filename. For example, using the default setting against the reference
+file reference.fa, the following files must be present and readable:
+
+File | Description
+------- | ---------
+reference.fa | reference genome
+reference.fa.fai | Tabix index
+reference.fa.1.bt2 | Bowtie2 index
+reference.fa.2.bt2 | Bowtie2 index
+reference.fa.3.bt2 | Bowtie2 index
+reference.fa.4.bt2 | Bowtie2 index
+reference.fa.rev.1.bt2 | Bowtie2 index
+reference.fa.rev.1.bt2 | Bowtie2 index
+
+These can be created using `samtools faidx reference.fa` and  `bowtie2-build reference.fa reference.fa`
+
+A .dict sequence dictionary is also required but gridss will automatically create one if not found. 
 
 ### INPUT (Required)
 
@@ -169,9 +188,19 @@ Gridss write a large number of intermediate files. If rerunning gridss with para
 If gridss was built successfully, a combined jar containing gridss and all required library located at target/gridss-*-jar-with-dependencies.jar will have been created.
 
 
+# Error Messages
 
+For some error messages, it is difficult to determine the root cause and what to do to fix it.
+Here is a list of key phrases of errors encountered by users and their solution
 
+###  (Too many open files)
 
+Gridss has attempted to open too many files at once and the OS file handle limit has been reached.
+On linux 'ulimit -n' displays your current limit. This error likely to be encountered on reference
+genome has many contigs, or if you have specified a large number of input files. Solutions are:
+* add `PER_CHR=false` to the command line. Files will be written per-input instead of per-input per-chromosome.
+* Reduce number of worker threads. A large number of input files being processed in parallel results in a large number of files open at the same time.
+* Increase your OS limit on open file handles (eg `ulimit -n _<larger number>_`)
 
 
 
