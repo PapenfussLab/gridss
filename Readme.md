@@ -188,7 +188,19 @@ Gridss write a large number of intermediate files. If rerunning gridss with para
 If gridss was built successfully, a combined jar containing gridss and all required library located at target/gridss-*-jar-with-dependencies.jar will have been created.
 
 
+# Error Messages
 
+For some error messages, it is difficult to determine the root cause and what to do to fix it.
+Here is a list of key phrases of errors encountered by users and their solution
+
+###  (Too many open files)
+
+Gridss has attempted to open too many files at once and the OS file handle limit has been reached.
+On linux 'ulimit -n' displays your current limit. This error likely to be encountered on reference
+genome has many contigs, or if you have specified a large number of input files. Solutions are:
+* add `PER_CHR=false` to the command line. Files will be written per-input instead of per-input per-chromosome.
+* Reduce number of worker threads. A large number of input files being processed in parallel results in a large number of files open at the same time.
+* Increase your OS limit on open file handles (eg `ulimit -n _<larger number>_`)
 
 
 
