@@ -1039,10 +1039,7 @@ public class TestHelper {
 		return stream.mapToInt(n -> n.weight() * n.width()).sum();
 	}
 	private static List<KmerNode> split(List<? extends KmerNode> in) {
-		return in.stream().flatMap(n -> {
-			if (n instanceof KmerPathNode) return ImmutableKmerNode.copyPath((KmerPathNode)n).flatMap(x -> ImmutableKmerNode.fragment(x));
-			return ImmutableKmerNode.fragment(n);
-		}).collect(Collectors.toList());
+		return ImmutableKmerNode.split(in).collect(Collectors.toList());
 	}
 	public static void assertSameNodes(List<? extends KmerNode> expected, List<? extends KmerNode> actual) {
 		List<KmerNode> splitExpected = split(expected);
@@ -1117,7 +1114,7 @@ public class TestHelper {
 		int aggregateWeight = aggregate.stream().mapToInt(n -> n.weight() * n.width()).sum();
 		assertEquals(supportWeight, aggregateWeight);
 		List<KmerPathNode> pnList = Lists.newArrayList(new PathNodeIterator(aggregate.iterator(), maxPathLength, k));
-		int pathWeight = pnList.stream().flatMap(pn -> ImmutableKmerNode.copyPath(pn)).mapToInt(n -> n.weight() * n.width()).sum();
+		int pathWeight = pnList.stream().flatMap(pn -> ImmutableKmerNode.splitKmers(pn)).mapToInt(n -> n.weight() * n.width()).sum();
 		assertEquals(supportWeight, pathWeight);
 		assertTrue(KmerNodeUtil.ByFirstStart.isOrdered(pnList));
 		PathNodeIteratorTest.assertCompleteGraph(pnList, k);

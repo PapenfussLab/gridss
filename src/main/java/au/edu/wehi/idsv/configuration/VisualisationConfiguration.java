@@ -11,17 +11,22 @@ public class VisualisationConfiguration {
 		directory = new File(workingDirectory, config.getString("directory"));
 		timeouts = config.getBoolean("timeouts");
 		assembly = config.getBoolean("assembly");
+		fullSizeAssembly = config.getBoolean("assemblyFullSize");
 		assemblyProgress = config.getBoolean("assemblyProgress");
 		evidenceAllocation = config.getBoolean("evidenceAllocation");
 		buffers = config.getBoolean("buffers");
 		bufferTrackingItervalInSeconds = config.getInt("bufferTrackingItervalInSeconds");
-		if (!directory.exists() && (timeouts || assembly || assemblyProgress || evidenceAllocation || buffers)) {
+		if (!directory.exists() && (timeouts || assembly || fullSizeAssembly || assemblyProgress || evidenceAllocation || buffers)) {
 			directory.mkdir();
 		}
 	}
 	public File directory;
 	public boolean timeouts;
 	public boolean assembly;
+	/**
+	 * Full-size positional de Bruijn assembly graph. This is a very large graph 
+	 */
+	public boolean fullSizeAssembly;
 	/**
 	 * Output information on assembly progress and buffer sizes 
 	 */

@@ -97,8 +97,8 @@ public class GridssConfiguration {
 			config.addConfiguration(configurationOverride);
 		}
 		config.addConfiguration(getDefaultPropertiesConfiguration());
-		for (String key : Lists.newArrayList(defaultConfigFromJar.getKeys())) {
-			for (String value : defaultConfigFromJar.getStringArray(key)) {
+		for (String key : Lists.newArrayList(config.getKeys())) {
+			for (String value : config.getStringArray(key)) {
 				log.info(String.format("%s=%s", key, value));
 			}
 		}

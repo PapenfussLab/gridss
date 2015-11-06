@@ -85,8 +85,8 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 		int localLength = readLength - splitLength;
 		assert(localledOvermappedBases == 0);
 		SAMRecord r = Read(bs.referenceIndex, getStartBasePos(bs, localLength), bs.direction == FWD ? String.format("%dM%dS", localLength, splitLength) : String.format("%dS%dM", splitLength, localLength));
-		String localBases = S(getRef(bs.referenceIndex, localLength, getStartBasePos(bs, localLength), bs.direction, localLength));
-		String remoteBases = S(getRef(bs.remoteBreakend().referenceIndex, splitLength, getStartBasePos(bs.remoteBreakend(), splitLength), bs.remoteBreakend().direction, splitLength));
+		String localBases = S(getRef(bs.referenceIndex, localLength, bs.start, bs.direction, localLength));
+		String remoteBases = S(getRef(bs.remoteBreakend().referenceIndex, splitLength, bs.remoteBreakend().start, bs.remoteBreakend().direction, splitLength));
 		if (bs.direction == FWD) r.setReadBases(B(localBases + remoteBases)); 
 		else r.setReadBases(B(remoteBases + localBases));
 		FastqRecord fq = BreakpointFastqEncoding.getRealignmentFastq(SoftClipEvidence.create(SES(), bs.direction, r, null));
@@ -148,4 +148,51 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 		// [1,10] GTAAAAAC
 		//fail();
 	}
+	@Test
+	public void tiny4merExample() throws IOException {
+		BreakpointSummary bs = new BreakpointSummary(2, FWD, 10, 10, 2, BWD, 150, 150);
+		int k = 4;
+		int readLength = 10;
+		int fragSize = 20;
+		ProcessingContext pc = getCommandlineContext(false);
+		
+		pc.getConfig().getAssembly().k = k;
+		pc.getConfig().getAssembly().writeFiltered = true;
+		pc.getConfig().getAssembly().errorCorrection.maxBaseMismatchForCollapse = 0;
+		pc.getConfig().getVariantCalling().writeFiltered = true;
+		pc.getConfig().getVisualisation().directory = new File(super.testFolder.getRoot().getAbsoluteFile(), "visualisation");
+		pc.getConfig().getVisualisation().assembly = true;
+		pc.getConfig().getVisualisation().fullSizeAssembly = true;
+		pc.getConfig().getVisualisation().assemblyProgress = true;
+		pc.getConfig().getVisualisation().directory.mkdir();
+				
+		// Default 
+		List<SAMRecord> reads = new ArrayList<SAMRecord>();
+		List<SAMRecord> splitReads = new ArrayList<SAMRecord>();
+		addDP(reads, bs, readLength, 0, fragSize);
+		
+		addSR(reads, splitReads, bs, readLength, 4, 0);
+		addSR(reads, splitReads, bs, readLength, 6, 0);
+		reads.get(reads.size()-1).getReadBases()[4] = 't';
+		splitReads.get(splitReads.size()-1).getReadBases()[4] = 't';
+		
+		createInput(reads);
+		Collections.sort(splitReads, new Ordering<SAMRecord>() {
+			@Override
+			public int compare(SAMRecord left, SAMRecord right) {
+				return ComparisonChain.start()
+				.compare(BreakpointFastqEncoding.getEncodedReferenceIndex(left.getReadName()), BreakpointFastqEncoding.getEncodedReferenceIndex(right.getReadName()))
+				.compare(BreakpointFastqEncoding.getEncodedStartPosition(left.getReadName()), BreakpointFastqEncoding.getEncodedStartPosition(right.getReadName()))
+				.result();
+			}
+		});
+		// assemble evidence
+		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0, fragSize - 1, fragSize + 1);
+		ses.completeSteps(ProcessStep.ALL_STEPS);
+		createBAM(pc.getFileSystemContext().getRealignmentBam(input, 0), SortOrder.unsorted, splitReads.toArray(new SAMRecord[0]));
+		ses.completeSteps(ProcessStep.ALL_STEPS);
+		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), output);
+		aes.ensureAssembled();
+		System.err.append("tiny4merExample written to " + output.toString());
+	}		
 }
