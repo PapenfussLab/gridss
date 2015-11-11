@@ -196,6 +196,10 @@ public class Idsv extends CommandLineProgram {
     @Override
 	protected int doWork() {
     	ensureArgs();
+    	if (INPUT_CATEGORY != null && INPUT_CATEGORY.size() > 0 && INPUT_CATEGORY.size() != INPUT.size()) {
+    		log.error("INPUT_CATEGORY must omitted or specified for every INPUT.");
+    		return -1;
+    	}
     	ExecutorService threadpool = null;
     	try {
     		ensureIndexed(REFERENCE);
