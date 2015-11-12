@@ -7,12 +7,18 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.function.Predicate;
 
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNodeUtil;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 
+import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Ordering;
 import com.google.common.collect.Range;
 
 /**
@@ -94,6 +100,122 @@ public class LeafBubbleCollapseIterator extends CollapseIterator {
 					visited.add(adjNode.node());
 					if (tryBackwardCollapse(visited, adjTraveral, adjTraveral.node.node())) return true;
 					visited.remove(adjNode.node());
+				}
+			}
+		}
+		return false;
+	}
+	private static class MemoizedPath {
+		public final int basesDifferent;
+		public final TraversalNode path;
+		public MemoizedPath(TraversalNode path, int basesDifferent) {
+			this.path = path;
+			this.basesDifferent = basesDifferent;
+		}
+	}
+	private void merge(TraversalNode toCollapse, TraversalNode into, boolean traversalForward) {
+		if (traversalForward) {
+			int commonStart = Math.max(toCollapse.node.lastStart() - toCollapse.pathLength, into.node.lastStart() - into.pathLength);
+			int commonEnd = Math.min(toCollapse.node.lastEnd() - toCollapse.pathLength, into.node.lastEnd() - into.pathLength);
+			leavesCollapsed++;
+			mergeForward(new TraversalNode(toCollapse, commonStart + toCollapse.pathLength - toCollapse.node.length() + 1, commonEnd + toCollapse.pathLength - toCollapse.node.length() + 1),
+					new TraversalNode(into, commonStart + into.pathLength - into.node.length() + 1, commonEnd + into.pathLength - into.node.length() + 1));
+		} else {
+			// take the minimal overlap
+			int anchorStart = Math.max(toCollapse.node.firstStart() + toCollapse.pathLength, into.node.firstStart() + into.pathLength);
+			int anchorEnd = Math.min(toCollapse.node.firstEnd() + toCollapse.pathLength, into.node.firstEnd() + into.pathLength);
+			mergeBackward(new TraversalNode(toCollapse, anchorStart - toCollapse.pathLength, anchorEnd - toCollapse.pathLength),
+					new TraversalNode(into, anchorStart - into.pathLength, anchorEnd - into.pathLength));
+		}
+	}
+	private List<TraversalNode> successors(Set<KmerPathNode> refnodes, TraversalNode node, boolean traversalForward) {
+		List<TraversalNode> succ = new ArrayList<TraversalNode>(4);
+		for (KmerPathSubnode sn : traversalForward ? node.node.next() : node.node.prev()) {
+			if (!refnodes.contains(sn.node()) && !node.contains(sn.node())) {
+				TraversalNode succtn = new TraversalNode(node, sn);
+				succ.add(succtn);
+			}
+		}
+		return succ;
+	}
+	private int partialSequenceBasesDifferent(LongArrayList toCollapsePathKmers, TraversalNode tn, boolean traversalForward) {
+		LongArrayList nodeKmers = tn.node.node().pathKmers();
+		int basesDifference;
+		if (traversalForward) {
+			basesDifference = KmerEncodingHelper.partialSequenceBasesDifferent(k, toCollapsePathKmers, nodeKmers, tn.pathLength - tn.node.length(), true);
+		} else {
+			basesDifference = KmerEncodingHelper.partialSequenceBasesDifferent(k, toCollapsePathKmers, nodeKmers, toCollapsePathKmers.size() - tn.pathLength, false);
+		}
+		return basesDifference;
+	}
+	private static List<MemoizedPath> frontierPop(SortedMap<KmerPathSubnode, List<MemoizedPath>> frontier) {
+		KmerPathSubnode key = frontier.firstKey();
+		List<MemoizedPath> values = frontier.get(key);
+		frontier.remove(key);
+		return values;
+	}
+	private static void frontierAdd(SortedMap<KmerPathSubnode, List<MemoizedPath>> frontier, MemoizedPath mp) {
+		List<MemoizedPath> mpl = frontier.get(mp.path.node);
+		if (mpl == null) {
+			mpl = new ArrayList<MemoizedPath>(3);
+			frontier.put(mp.path.node, mpl);
+		}
+		for (int i = 0; i < mpl.size(); i++) {
+			MemoizedPath n = mpl.get(i);
+			if (n.basesDifferent >= mp.basesDifferent && n.path.score < mp.path.score) {
+				// existing path is more different, with less weight = ours is better
+				mpl.remove(i);
+				i--;
+			} else if (n.basesDifferent <= mp.basesDifferent && n.path.score >= mp.path.score) {
+				// existing path is less different, with better score = ours is worse
+				return;
+			}
+		}
+		mpl.add(mp);
+	}
+	/**
+	 * Use a memoized breadth first search to find a similar path
+	 * @param collapseNodes lookup of collapse path
+	 * @param toCollapse path to attempt to collapse
+	 * @param traversalForward traversal direction
+	 * @param terminalNode node our path must finish on
+	 * @return true if the path was collapsed, false otherwise
+	 */
+	private boolean memoizedCollapse(Set<KmerPathNode> collapseNodes, TraversalNode toCollapse, boolean traversalForward, KmerPathNode terminalNode) {
+		LongArrayList toCollapsePathKmers = new LongArrayList(toCollapse.pathLength);
+		for (KmerPathSubnode sn : traversalForward ? toCollapse.toSubnodeNextPath() : toCollapse.toSubnodePrevPath()) {
+			toCollapsePathKmers.addAll(sn.node().pathKmers());
+		}
+		assert(toCollapsePathKmers.size() == toCollapse.pathLength);
+		SortedMap<KmerPathSubnode, List<MemoizedPath>> frontier = new TreeMap<KmerPathSubnode, List<MemoizedPath>>(KmerNodeUtil.ByFirstStartKmer);
+		// set up frontier
+		for (TraversalNode tn : successors(collapseNodes, new TraversalNode(toCollapse.getRoot(), 0), traversalForward)) {
+			MemoizedPath mp = new MemoizedPath(tn, partialSequenceBasesDifferent(toCollapsePathKmers, tn, traversalForward));
+			frontierAdd(frontier, mp);
+		}
+		while (!frontier.isEmpty()) {
+			for (MemoizedPath mp : frontierPop(frontier)) {
+				for (TraversalNode tn : successors(collapseNodes, mp.path, traversalForward)) {
+					int basesDifferent = mp.basesDifferent + partialSequenceBasesDifferent(toCollapsePathKmers, tn, traversalForward);
+					if (basesDifferent > maxBasesMismatch) continue;
+					if (tn.pathLength >= toCollapse.pathLength) {
+						// terminal node
+						if (tn.score < toCollapse.score) continue;
+						// leaf = collapse
+						// branch = must end at same node
+						if (terminalNode != null && (tn.node.node() != terminalNode || tn.pathLength != toCollapse.pathLength)) {
+							// bubble must end at the correct node with matching path length
+							continue;
+						}
+						if (terminalNode == null) {
+							leavesCollapsed++;
+						} else {
+							branchesCollapsed++;
+						}
+						merge(toCollapse, tn, traversalForward);
+						return true;
+					}
+					frontierAdd(frontier, new MemoizedPath(tn, basesDifferent));
 				}
 			}
 		}
@@ -205,7 +327,7 @@ public class LeafBubbleCollapseIterator extends CollapseIterator {
 		for (Range<Integer> range : node.nextPathRangesOfDegree(KmerPathSubnode.NO_EDGES).asRanges()) {
 			// Terminal leaf
 			TraversalNode terminalNode = new TraversalNode(tn, range.lowerEndpoint(), range.upperEndpoint());
-			if (tryForwardCollapse(visited, terminalNode)) return true;
+			if (memoizedCollapse(visited, terminalNode, true, null)) return true;
 		}
 		for (Range<Integer> range : node.nextPathRangesOfDegree(KmerPathSubnode.SINGLE_EDGE).asRanges()) {
 			KmerPathSubnode sn = new KmerPathSubnode(node.node(), range.lowerEndpoint(), range.upperEndpoint());

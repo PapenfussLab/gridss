@@ -8,6 +8,9 @@ import com.google.common.primitives.Ints;
 public class TraversalNode {
 	public final KmerPathSubnode node;
 	public final int score;
+	/**
+	 * Length of path in kmers
+	 */
 	public final int pathLength;
 	public final TraversalNode parent;
 	public TraversalNode(KmerPathSubnode node, int baseScore) {
@@ -34,7 +37,7 @@ public class TraversalNode {
 		}
 		return s;
 	}
-	private KmerPathSubnode getRoot() {
+	public KmerPathSubnode getRoot() {
 		TraversalNode n = this;
 		while (n.parent != null) n = n.parent;
 		return n.node;
@@ -62,6 +65,18 @@ public class TraversalNode {
 		this.parent = node.parent;
 		this.score = node.score;
 		this.pathLength = node.pathLength;
+	}
+	/**
+	 * Determines whether this path traverses through the given node
+	 * @param node node to check traversal
+	 * @return true if the path traverses this found, false otherwise
+	 */
+	public boolean contains(KmerPathNode node) {
+		TraversalNode n = this;
+		while (n.parent != null) {
+			if (n.node.node() == node) return true;
+		}
+		return false;
 	}
 	/**
 	 * Converts to a Subnode path under the assumption that the traversal was
