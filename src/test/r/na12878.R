@@ -8,13 +8,29 @@ library(scales)
 library(parallel)
 library(foreach)
 library(doParallel)
+library(testthat)
 source("libgridss.R")
 source("libneochromosome.R")
 source("libvcf.R")
 
 theme_set(theme_bw())
+power4 <- function(x) x^4
+power4_trans <- function () {
+  trans_new("power4", "power4", function(x) x^(1/4), domain = c(0, Inf))
+}
+scale_y_power4 <- function(...) {
+  scale_y_continuous(..., trans = power4_trans())
+}
 
 minsize <- 51 # minimum Mills 2012 event size
+# Strict matching
+maxLengthRelativeDifference <- 0.25
+maxPositionDifference_LengthOrEndpoint <- 25
+# Permissive matching
+libstddev <- 72
+maxLengthRelativeDifference <- 0.5
+maxPositionDifference_LengthOrEndpoint <- 2.5*libstddev
+
 rootdir <- ifelse(as.character(Sys.info())[1] == "Windows", "W:/", "~/")
 
 vcfs <- NULL
@@ -33,8 +49,8 @@ altassembly$name <- as.character(seqnames(altassembly))
 altassembly$score <- 1000
 ucscgapblacklist$score <- 1000
 blacklist <- as(rbind(
-  as(ucscgapblacklist, "RangedData"),
-  as(mappabilityblacklist, "RangedData"),
+#  as(ucscgapblacklist, "RangedData"),
+#  as(mappabilityblacklist, "RangedData"),
   as(encodeblacklist, "RangedData"),
   as(altassembly, "RangedData")), "GRanges")
 
@@ -46,14 +62,14 @@ vcfs <- lapply(vcfs, function(vcf) {
   attr(vcf, "metadata")$CX_REFERENCE_VCF <- "00000000000000000000000000000001.reference.vcf"
   return(vcf)
 })
-truth <- "Mills"
-vcfs <- lapply(vcfs, function(vcf) {
-  attr(vcf, "metadata")$CX_REFERENCE_VCF <- "00000000000000000000000000000002.reference.vcf"
-  return(vcf)
-})
 truth <- "merged"
 vcfs <- lapply(vcfs, function(vcf) {
   attr(vcf, "metadata")$CX_REFERENCE_VCF <- "00000000000000000000000000000000.reference.vcf"
+  return(vcf)
+})
+truth <- "Mills"
+vcfs <- lapply(vcfs, function(vcf) {
+  attr(vcf, "metadata")$CX_REFERENCE_VCF <- "00000000000000000000000000000002.reference.vcf"
   return(vcf)
 })
 
@@ -62,11 +78,11 @@ vcfs <- lapply(vcfs, function(vcf) {
 # attr(garvan, "metadata") <- attr(vcfs[["a136cfee2d40e62b4fd4be194366f291"]], "metadata")
 # attr(garvan, "metadata")$CX_READ_LENGTH <- 150
 # attr(garvan, "metadata")$CX_CALLER <- "gridss_garvan"
-# attr(garvan, "metadata")$Id <- "10000000000000000000000000000000"
-# attr(garvan, "metadata")$File <- "10000000000000000000000000000000"
-# rownames(attr(garvan, "metadata")) <- "10000000000000000000000000000000"
-# vcfs[["10000000000000000000000000000000"]] <- garvan
-
+# attr(garvan, "metadata")$Id <- "11111111111111111111111111111111"
+# attr(garvan, "metadata")$File <- "11111111111111111111111111111111"
+# rownames(attr(garvan, "metadata")) <- "11111111111111111111111111111111"
+# vcfs[["11111111111111111111111111111111"]] <- garvan
+# Separate out GRIDSS confidence levels
 vcfs <- lapply(vcfs, function(vcf) {
   #vcf <- vcf[!isInterChromosmal(vcf),]
   vcf <- vcf[isDeletionLike(vcf, minsize), ]
@@ -80,9 +96,49 @@ vcfs <- lapply(vcfs, function(vcf) {
 vcfs <- lapply(vcfs, function(vcf) {
   withqual(vcf, attr(vcf, "metadata")$CX_CALLER)
 })
+# split out gridss subgraph
+vcfs <- lapply(vcfs, function(vcf) {
+  if (is.na(vcf@metadata$CX_CALLER_ARGS) || is.null(vcf@metadata$CX_CALLER_ARGS) || vcf@metadata$CX_CALLER_ARGS != "assembly.method") return (vcf)
+  attr(vcf, "metadata")$CX_CALLER <- "gridss/0.9.0/subgraph"
+  return(vcf)
+})
+# gridss evidence breakdown
+gridssvcfs <- c(
+  lapply(vcfs, function(vcf) {
+    if (is.na(vcf@metadata$CX_CALLER_ARGS) || is.null(vcf@metadata$CX_CALLER_ARGS) || vcf@metadata$CX_CALLER_ARGS != "assembly.method") return (NULL)
+    attr(vcf, "metadata")$CX_CALLER <- "Windowed de Bruijn graph assembly"
+    df <- gridss.vcftodf(vcf)
+    rowRanges(vcf)$FILTER <- "."
+    rowRanges(vcf)$QUAL <- df$ASQ + df$RASQ
+    #vcf <- vcf[df$RP + df$SR + df$RSR > 0,] # filter assembly-only variants due to high FP rate
+    vcf <- vcf[df$ASCSR / df$ASSR < 0.8 & df$ASCRP / df$ASRP < 0.8,] # filter assembly variants with little actual support due to high FP rate
+    return(vcf)
+  }), unlist(recursive=FALSE, lapply(vcfs, function(vcf) {
+    if (is.null(attr(vcf, "metadata")) || is.na(vcf@metadata$CX_CALLER) || str_split(vcf@metadata$CX_CALLER, "/")[[1]][1] !="gridss") return(NULL)
+    if (!is.na(vcf@metadata$CX_CALLER_ARGS) && !is.null(vcf@metadata$CX_CALLER_ARGS) && vcf@metadata$CX_CALLER_ARGS == "assembly.method") return (NULL) # exclude subgraph assembly
+    df <- gridss.vcftodf(vcf)
+    return (lapply(list(
+      list(f=function(df) df$QUAL, label="Combined"),
+      list(f=function(df) df$ASQ + df$RASQ, label="Positional de Bruijn assembly"),
+      list(f=function(df) df$RPQ + df$SRQ + df$RSRQ, label="RP SR"),
+      list(f=function(df) df$RPQ, label="RP"),
+      list(f=function(df) df$SRQ + df$RSRQ, label="SR"),
+      list(f=function(df) df$ASRP + df$ASSR, label="Positional de Bruijn assembly$count"),
+      list(f=function(df) df$RP + df$SR + df$RSR, label="RP SR$count"),
+      list(f=function(df) df$RP, label="RP$count"),
+      list(f=function(df) df$SR + df$RSR, label="SR$count")),
+      function(scoring) {
+        ovcf <- vcf
+        rowRanges(ovcf)$QUAL <- scoring$f(df)
+        rowRanges(ovcf)$FILTER <- "."
+        attr(ovcf, "metadata")$CX_CALLER <- scoring$label
+        return(ovcf)
+      }))
+  })))
+gridssvcfs[sapply(gridssvcfs, is.null)] <- NULL
 
-truthlist_filtered <- CalculateTruthSummary(vcfs, blacklist=blacklist, maxerrorbp=100, maxerrorpercent=NULL, ignoreFilters=FALSE, ignore.strand=TRUE) # breakdancer does not specify strand
-truthlist_all <- CalculateTruthSummary(vcfs, blacklist=blacklist, maxerrorbp=100, maxerrorpercent=NULL, ignoreFilters=TRUE, ignore.strand=TRUE) # breakdancer does not specify strand
+truthlist_filtered <- CalculateTruthSummary(vcfs, blacklist=blacklist, maxerrorbp=maxPositionDifference_LengthOrEndpoint, maxerrorpercent=maxLengthRelativeDifference, ignoreFilters=FALSE, ignore.strand=TRUE) # breakdancer does not specify strand
+truthlist_all <- CalculateTruthSummary(vcfs, blacklist=blacklist, maxerrorbp=maxPositionDifference_LengthOrEndpoint, maxerrorpercent=maxLengthRelativeDifference, ignoreFilters=TRUE, ignore.strand=TRUE) # breakdancer does not specify strand
 
 dtroc_filtered <- TruthSummaryToROC(truthlist_filtered, bylist=c("CX_CALLER"))
 dtroc_filtered$Filter <- "Default"
@@ -93,47 +149,22 @@ dtroc <- rbind(dtroc_all, dtroc_filtered)
 ggplot(dtroc) + 
   aes(y=tp/2, x=fp/2, color=CX_CALLER, linetype=Filter) +
   geom_line() + 
-  scale_color_brewer(palette="Set2") + 
-  scale_x_log10() + 
-  scale_x_continuous(limits=c(0, 1000)) + 
+#  scale_color_brewer(palette="Set2") + 
+  coord_cartesian(xlim=c(0, 1000), ylim=c(0, 3000)) + 
   labs(y="tp", x="fp", title=paste("ROC curve NA12878 deletions", truth))
-ggsave(paste0("na12878_roc_tp_fp_", truth, ".pdf"))
-
+ggsave(paste0("na12878_tp_fp_", truth, "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ".pdf"), width=7, height=5)
 ggplot(dtroc) + 
-  aes(y=prec, x=sens, color=CX_CALLER, linetype=Filter) +
-  scale_color_brewer(palette="Set2") + 
+  aes(y=prec, x=tp/2, color=CX_CALLER, linetype=Filter) +
+#  scale_color_brewer(palette="Set2") + 
   geom_line() + 
-  labs(title=paste("Precision-Recall curve NA12878 deletions", truth))
-ggsave(paste0("na12878_prec_recall_", truth, ".pdf"))
+  labs(y="Precision", x="True positives", title=paste("Precision-Recall curve NA12878 deletions", truth))
+ggsave(paste0("na12878_prec_", truth, "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ".pdf"), width=7, height=5)
 
+dtroc[dtroc$prec > 0.75,][!duplicated(paste(dtroc[dtroc$prec > 0.75,]$CX_CALLER, dtroc[dtroc$prec > 0.75,]$Filter), fromLast=TRUE),]
 
 
 #####################################
-# extract deletion calls from VCFs
-dfdelcalls <- rbindlist(lapply(names(vcfs)[!(names(vcfs) %in% c("00000000000000000000000000000000", "00000000000000000000000000000001", "00000000000000000000000000000002"))], function(id) {
-  gr <- vcftobpgr(vcfs[[id]])
-  gro <- gr[seq_along(gr) < gr$mateIndex,]
-  grh <- gr[gro$mateIndex,]
-  df <- data.frame(
-    chrom1=seqnames(gro), start1=start(gro), end1=end(gro),
-    chrom2=seqnames(grh), start2=start(grh), end2=end(grh),
-    name=rep(attr(vcfs[[id]], "metadata")$CX_CALLER, length(gro)), score=gro$QUAL,
-    strand1=rep("+", length(gro)), strand2=rep("-", length(gro)),
-    length=gro$size,
-    pos1=gro$callPosition,
-    pos2=grh$callPosition,
-    id=gro$vcfid,
-    filtered=!(gr$FILTER %in% c(".", "PASS")),
-    row.names=NULL)
-  return(df)
-}))
-write.table(dfdelcalls, paste0(rootdir, "i/data.na12878/tovalidate.bedpe"), sep='\t', quote=FALSE, row.names=FALSE)
-
-delbed <- GRanges(seqnames=dfdelcalls$chrom2,ranges=IRanges(start=pmin(dfdelcalls$pos1, dfdelcalls$pos2), end=pmax(dfdelcalls$pos1, dfdelcalls$pos2)), caller=dfdelcalls$name, QUAL=dfdelcalls$score, length=dfdelcalls$length, filtered=dfdelcalls$filtered)
-delbed <- delbed[abs(delbed$length) >= minsize,]
-# should we blacklist if either breakend is within the interval? Should we add error margin to blacklisted regions?
-delbed$blacklisted <- overlapsAny(delbed, blacklist, type="within")
-
+# Moleculo/PacBio truth
 srpacbio <- c(
   withChr(import.bed(con=paste0(rootdir, "na12878/longread/chemistry1.sorted.bam.sr.bam.sr.bed"))),
   withChr(import.bed(con=paste0(rootdir, "na12878/longread/chemistry_2_picard.bam.sr.bam.sr.bed"))),
@@ -147,145 +178,106 @@ sppacbio <- c(
   withChr(import.bed(con=paste0(rootdir, "na12878/longread/NA12878.pacbio_fr_MountSinai.bwa-sw.20140211.bam.sp.bed"))))
 spmoleculo <- withChr(import.bed(con=paste0(rootdir, "na12878/longread/NA12878.moleculo.bwa-mem.20140110.bam.sp.bed")))
 # Split read validation
-delbed$srmoleculo <- countOverlaps(delbed, delbedmoleculo, type="equal", maxgap=2.5*72, algorithm="intervaltree")
-delbed$srpacbio <- countOverlaps(delbed, delbedpacbio, type="equal", maxgap=2.5*72, algorithm="intervaltree")
-delbed$sr <- delbed$srmoleculo + delbed$srpacbio
-
-# filter blacklisted
-
-delroc <- data.table(as.data.frame(mcols(delbed[order(-delbed$QUAL),])))
-delroc <- delroc[!delroc$blacklisted,]
-delroc$tp <- ifelse(delroc$sr >= 3, 1, 0)
-delroc$fp <- 1 - delroc$tp
-delroc[,`:=`(tp=cumsum(tp), fp=cumsum(fp), QUAL=cummin(QUAL)), by=c("caller")]
-delroc <- delroc[!duplicated(delroc[, c("caller", "QUAL"), with=FALSE], fromLast=TRUE),] # take only one data point per QUAL
-ggplot(delroc) + aes(x=fp, y=tp, color=caller) + geom_line() + scale_x_continuous(limits=c(0, 1000))
-ggplot(delroc) + aes(x=tp, y=tp/(tp+fp), color=caller) + geom_line() + geom_point()
-
-
-# run na12878_validate.sh to extract moleculo & pacbio support
-dtann <- read.delim(paste0(rootdir, "i/data.na12878/tovalidate.annotated.bedpe"), stringsAsFactors=FALSE)
-minSpanningSizeMultiple <- 0.5
-maxSpanningSizeMultiple <- 1.5
-maxSpanningLengthDifference
-unpack <- function(charvector) {
-  charlist <- str_split(charvector, "[\\[\\],]")
-  df <- data.frame(ordinal=rep(seq_along(charlist), times=elementLengths(charlist)), value=as.integer(unlist(charlist)))
-  df <- df[!is.na(df$value),]
-  return(df)
+countBedHits <- function(gr, bed) {
+  hits <- data.table(data.frame(findOverlaps(gr, bed, type="equal", maxgap=maxPositionDifference_LengthOrEndpoint, algorithm="intervaltree")))
+  hits$reflength <- end(bed[hits$subjectHits]) - start(bed[hits$subjectHits])
+  hits$calllength <- end(gr[hits$queryHits]) - start(gr[hits$queryHits])
+  hits$percentsize <- abs(hits$calllength / hits$reflength)
+  hits <- hits[abs(hits$reflength - hits$calllength) <= maxPositionDifference_LengthOrEndpoint,]
+  if (!is.null(maxLengthRelativeDifference)) {
+    hits <- hits[hits$percentsize >= 1 - maxLengthRelativeDifference & hits$percentsize <= 1 + maxLengthRelativeDifference,]
+  }
+  counts <- hits[, list(hitcount=.N), by=c("queryHits")]
+  result <- rep(0, length(gr))
+  result[counts$queryHits] <- counts$hitcount
+  return(result)
 }
-countSpanningDeletions <- function(dtann, spans, columnName) {
-  spans$calllength <- abs(dtann$length[spans$ordinal])
-  spans$name <- dtann$name[spans$ordinal]
-  spans$spanlength <- spans$value
-  spans$offby <- spans$spanlength / spans$calllength
-  # lax matching requirements
-  hitspans <- spans[spans$offby >= minSpanningSizeMultiple & spans$offby <= maxSpanningSizeMultiple & abs(spans$calllength - spans$spanlength) <= maxSpanningLengthDifference,]
-  hitspans <- data.table(hitspans)[, list(spanCount=.N), by=c("ordinal", "name")] # TODO: split out pacbio & moleculo"src", 
-  hitspans[, columnName] <- hitspans$spanCount
-  hitspans$spanCount <- NULL
-  dtann$ordinal <- seq_len(nrow(dtann))
-  dtann <- merge(data.table(dtann), hitspans, by=c("ordinal", "name"), all.x=TRUE)
-  dtann$ordinal <- NULL
-  return(dtann)
+longReadRoc <- function(vcflist) {
+  # extract deletion calls from VCFs
+  dfdelcalls <- rbindlist(lapply(vcflist, function(vcf) {
+    caller <- attr(vcf, "metadata")$CX_CALLER
+    if (is.na(caller) || is.null(caller)) return(NULL)
+    gr <- vcftobpgr(vcf)
+    gro <- gr[seq_along(gr) < gr$mateIndex,]
+    grh <- gr[gro$mateIndex,]
+    df <- data.frame(
+      chrom1=seqnames(gro), start1=start(gro), end1=end(gro),
+      chrom2=seqnames(grh), start2=start(grh), end2=end(grh),
+      name=rep(caller, length(gro)), score=gro$QUAL,
+      strand1=rep("+", length(gro)), strand2=rep("-", length(gro)),
+      length=gro$size,
+      pos1=gro$callPosition,
+      pos2=grh$callPosition,
+      id=gro$vcfid,
+      filtered=!(gro$FILTER %in% c(".", "PASS")),
+      row.names=NULL)
+    return(df)
+  }))
+  #write.table(dfdelcalls, paste0(rootdir, "i/data.na12878/tovalidate.bedpe"), sep='\t', quote=FALSE, row.names=FALSE)
+  delbed <- GRanges(seqnames=dfdelcalls$chrom2,ranges=IRanges(start=pmin(dfdelcalls$pos1, dfdelcalls$pos2), end=pmax(dfdelcalls$pos1, dfdelcalls$pos2)), caller=dfdelcalls$name, QUAL=dfdelcalls$score, length=dfdelcalls$length, filtered=dfdelcalls$filtered)
+  delbed <- delbed[abs(delbed$length) >= minsize,]
+  # match CalculateTruth blacklisting
+  # any overlap
+  #delbed$blacklisted <- overlapsAny(GRanges(seqnames=seqnames(delbed), ranges=IRanges(start=start(delbed), end=end(delbed))), blacklist, type="any", maxgap=maxPositionDifference_LengthOrEndpoint)
+  # breakend overlap
+  delbed$blacklisted <- overlapsAny(GRanges(seqnames=seqnames(delbed), ranges=IRanges(start=start(delbed), width=1)), blacklist, type="any", maxgap=maxPositionDifference_LengthOrEndpoint) |
+    overlapsAny(GRanges(seqnames=seqnames(delbed), ranges=IRanges(end=end(delbed), width=1)), blacklist, type="any", maxgap=maxPositionDifference_LengthOrEndpoint)
+  
+  delbed$srmoleculo <- countBedHits(delbed, srmoleculo)
+  delbed$srpacbio <- countBedHits(delbed, srpacbio)
+  delbed$sr <- delbed$srmoleculo + delbed$srpacbio
+  delbed$spmoleculo <- countBedHits(delbed, spmoleculo)
+  delbed$sppacbio <- countBedHits(delbed, sppacbio)
+  delbed$sp <- delbed$spmoleculo + delbed$sppacbio
+  delbed$tp <- ifelse(delbed$sr >= 3 | delbed$sp >= 7, 1, 0)
+  delbed$fp <- 1 - delbed$tp
+  delbed <- delbed[order(-delbed$QUAL),]
+  delroc <- data.table(as.data.frame(mcols(delbed)))
+  delroc <- delroc[!delroc$blacklisted,]
+  tmp <- delroc[!delroc$filtered & delroc$caller %in% unique(delroc[delroc$filtered,]$caller),]
+  tmp$filtered <- TRUE
+  delroc <- rbind(delroc, tmp)
+  delroc <- delroc[order(-delroc$QUAL),]
+  delroc[,`:=`(tp=cumsum(tp), fp=cumsum(fp), QUAL=cummin(QUAL)), by=c("caller", "filtered")]
+  delroc <- delroc[!duplicated(delroc[, c("caller", "filtered", "QUAL"), with=FALSE], fromLast=TRUE),] # take only one data point per QUAL
+  delroc$Filter <- ifelse(delroc$filtered, "Including Filtered", "Default")
+  delroc$precision <- delroc$tp/(delroc$tp+delroc$fp)
+  return (delroc)
 }
-# spans <- rbind(
-#   unpack(dtann$SpanningDeletionSize, "moleculo"),
-#   unpack(dtann$SpanningDeletionSize.1, "pacbio chemistry1"),
-#   unpack(dtann$SpanningDeletionSize.2, "pacbio chemistry2"),
-#   unpack(dtann$SpanningDeletionSize.3, "pacbio chemistry3"),
-#   unpack(dtann$SpanningDeletionSize.4, "pacbio MountSinai"))
-# spans$calllength <- abs(dtann$length[spans$ordinal])
-# spans$caller <- dtann$name[spans$ordinal]
-# spans$spanlength <- spans$value
-# spans$offby <- spans$spanlength / spans$calllength
-# spans2 <- spans[spans$offby > 0.4,]
-# ggplot(spans[sample.int(nrow(spans), size=10000),]) + aes(y=calllength, x=spanlength, color=src, size=0.1) + geom_point() + scale_x_log10(limits=c(10, 10000)) + scale_y_log10(limits=c(10, 10000))
-# ggplot(spans[sample.int(nrow(spans), size=10000),]) + aes(y=spanlength, x=calllength, color=src, shape=caller) + geom_point()
-# ggplot(spans2[sample.int(nrow(spans2), size=100000),]) + aes(y=spanlength, x=offby, color=caller, alpha=0.1) + geom_point(size=0.1) + scale_x_continuous(limits=c(0, 1.7)) + scale_y_log10() + facet_wrap(~ src)
-# ggplot(dtann) + aes(color=name, x=-length) + geom_histogram() + scale_x_log10()
-#hitspans <- spans[spans$offby >= 0.5 & spans$offby <= 1.5 & abs(spans$calllength - spans$spanlength) <= 212,]
-#hitspans <- data.table(hitspans)[, list(spanCount=.N), by=c("ordinal", "caller")] # TODO: split out pacbio & moleculo"src", 
-#ggplot(hitspans) + aes(x=spanCount) + geom_histogram(binwidth=1)
+delroc <- longReadRoc(vcfs)
+ggplot(delroc) + aes(x=fp, y=tp, color=caller, linetype=Filter) + geom_line() +
+  coord_cartesian(xlim=c(0, 1000), ylim=c(0, 3000))
+  labs(x="False Positives", y="True Positives", title="NA12878 deletions PacBio/Moleculo validated")
+#  scale_color_brewer(palette="Set2") +
+ggsave(paste0("na12878_tp_fp_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ".pdf"), width=7, height=5)
+ggplot(delroc) + aes(x=tp, y=precision, color=caller, linetype=Filter) + geom_line() +
+  labs(x="True Positives", y="Precision", title="NA12878 deletions PacBio/Moleculo validated")
+#  scale_color_brewer(palette="Set2") +
+ggsave(paste0("na12878_prec_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ".pdf"), width=7, height=5)
 
-dtann <- countSpanningDeletions(dtann, unpack(dtann$SpanningDeletionSize), "spanning_moleculo")
-dtann <- countSpanningDeletions(dtann, c(
-  unpack(dtann$SpanningDeletionSize.1), # chem1
-  unpack(dtann$SpanningDeletionSize.2), # chem2
-  unpack(dtann$SpanningDeletionSize.3), # chem3
-  unpack(dtann$SpanningDeletionSize.4)), # Mount Sinai
-  "spanning_pacbio")
+gdelroc <- longReadRoc(gridssvcfs)
+gdelroc$Scoring <- ifelse(str_detect(gdelroc$caller, "[$]"), "Read Count", "Bayesian")
+gdelroc$caller <- str_extract(gdelroc$caller, "[^$]*")
+gdelroc <- gdelroc[gdelroc$QUAL > 0,] # filter out calls that wouldn't have been called according to that particular scoring scheme
+ggplot(gdelroc) + aes(x=fp, y=tp, color=caller, linetype=Scoring) + geom_line(size=3) +
+  coord_cartesian(xlim=c(0, 1000), ylim=c(0, 3000)) + 
+  scale_color_brewer(palette="Set2") +
+  labs(x="False Positives", y="True Positives", title="gridss support breakdown")
+ggsave(paste0("na12878_gridss_tp_fp_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ".pdf"), width=7, height=5)
 
+ggplot(gdelroc) + aes(x=tp, y=precision, color=caller, linetype=Scoring) + geom_line(size=2) + 
+  scale_color_brewer(palette="Set2") +
+  labs(x="True Positives", y="Precision", title="gridss support breakdown")
+ggsave(paste0("na12878_gridss_prec_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ".pdf"), width=7, height=5)
 
 
+# precision thresholds
+delroc[delroc$precision > 0.95,][!duplicated(paste(delroc[delroc$precision > 0.95,]$caller, delroc[delroc$precision > 0.95,]$Filter), fromLast=TRUE),]
+
+ggplot(as.data.frame(delbed[delbed$caller=="gridss" & !delbed$filtered,])) + aes(x=QUAL, fill=ifelse(tp, "_tp", "fp")) + geom_histogram(binwidth=100) + scale_x_continuous(limits=c(0, 3000))
+ggsave("na12878_gridss_hq_treshold.png")
 
 
-
-
-
-
-
-
-
-
-##########################
-## GRIDSS single sample
-# 
-# millsgr <- bedpe2grmate(paste0(rootdir, "na12878/lumpy-Mills2012-call-set.bedpe"))
-# pacbiogr <- bedpe2grmate(paste0(rootdir, "na12878/lumpy-PacBioMoleculo-call-set.bedpe"))
-# mcols(millsgr) <- NULL
-# mcols(pacbiogr) <- NULL
-# write.csv(names(millsgr[overlapsAny(millsgr, pacbiogr),]), "W:/na12878/millsoverlappingpacbio.csv")
-# 
-# millsgr <- bedpe2grmate(paste0(rootdir, "na12878/lumpy-Mills2012-call-set.bedpe"))
-# pacbiogr <- bedpe2grmate(paste0(rootdir, "na12878/lumpy-PacBioMoleculo-call-set.bedpe"))
-# vcf <- readVcf("~/na12878/platinum-na12878.vcf", "hg19")
-# gvcf <- readVcf("~/garvan-na12878.vcf")
-# 
-# vcf <- vcf[rowRanges(vcf)$QUAL >= 100,]
-# vcf <- vcf[rowRanges(vcf)$FILTER %in% c(".", "PASS"),]
-# vcf <- vcf[gridss.vcftodf(vcf)$assembly %in% c("Both"), ] # high qual
-# vcf <- vcf[(str_detect(as.character(alt(vcf)), "\\[") & str_detect(names(rowRanges(vcf)), "o$")) |
-#              (str_detect(as.character(alt(vcf)), "]") & str_detect(names(rowRanges(vcf)), "h$")),]
-# # more bases deleted than added
-# vcf <- gridss.removeUnpartnerededBreakend(vcf)
-# vcf <- vcf[abs(start(rowRanges(vcf)) - start(rowRanges(vcf)[as.character(info(vcf)$MATEID),])) > nchar(gridss.vcftodf(vcf)$INSSEQ),]
-# vcf <- gridss.removeUnpartnerededBreakend(vcf)
-# vcf <- vcf[seqnames(rowRanges(vcf)) == seqnames(rowRanges(vcf)[as.character(info(vcf)$MATEID),]),] # intra-chromsomal events
-# vcf <- gridss.removeUnpartnerededBreakend(vcf)
-# 
-# #seqlevels(millsgr) <- sub("chr", "", seqlevels(millsgr))
-# mills <- gridss.annotateBreakpoints(millsgr, millsgr[millsgr$mate,], vcf, maxgap=100, ignore.strand=TRUE)
-# mills$bed$truth <- "Mills"
-# mills$gridss$truth <- "Mills"
-# 
-# #seqlevels(pacbiogr) <- sub("chr", "", seqlevels(pacbiogr))
-# pb <- gridss.annotateBreakpoints(pacbiogr, pacbiogr[pacbiogr$mate,], vcf, maxgap=100)
-# pb$bed$truth <- "PacBioOverlap"
-# pb$gridss$truth <- "PacBioOverlap"
-# 
-# mills$bed$V11 <- NULL
-# out <- list(bed=c(mills$bed, pb$bed), gridss=rbind(mills$gridss, pb$gridss))
-# out$bed$size <- abs(start(out$bed) - start(out$bed[out$bed$mate,]))
-# 
-# out$gridss <- out$gridss[order(-out$gridss$QUAL),]
-# roc <- data.table(out$gridss)[, list(cumtp=cumsum(!is.na(bedid)), cumfp=cumsum(is.na(bedid))), by=list(truth)]
-# ggplot(roc) + aes(x=cumfp/2, y=cumtp/2, color=truth) + geom_point() + geom_line()
-# ggsave("na12878_lumpy_fig3_roc.png")
-# 
-# sum(!is.na(out$bed$gridssid)) / length(out$bed) # sens
-# sum(!is.na(out$gridss$bedid)) / nrow(out$gridss) # prec
-# ggplot(as.data.frame(out$bed)) + aes(x=size, fill=ifelse(is.na(gridssid), "FN", "TP")) + geom_histogram() + scale_x_log10() + facet_grid(truth ~ . ) +
-#   labs(fill="", title="Gridss NA12878 Sensitivity")
-# ggsave("na12878_sens.png")
-# ggplot(as.data.frame(out$gridss)) + aes(x=size, fill=ifelse(is.na(bedid), "FP", "TP")) + geom_histogram() + scale_x_log10() + facet_grid(truth ~ . ) +
-#   labs(fill="", title="Gridss NA12878 Precision by event size")
-# ggsave("na12878_prec_size.png")
-# ggplot(as.data.frame(out$gridss)) + aes(x=QUAL, fill=!is.na(bedid)) + geom_histogram() + scale_x_log10() + facet_grid(truth ~ . ) +
-#   labs(fill="", title="Gridss NA12878 Precision by called qual")
-# ggsave("na12878_prec_qual.png")
-# 
-# ggplot(aes(data=as.data.frame(out$bed), x=size, fill=!is.na(bedid))) + geom_histogram() + scale_x_log10()
 
 
 # buffer sizes

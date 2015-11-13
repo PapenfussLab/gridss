@@ -311,16 +311,13 @@ CalculateTruth <- function(callvcf, truthvcf, blacklist=NULL, maxerrorbp, ignore
     callvcf <- callvcf[rowRanges(callvcf)$FILTER %in% c(".", "PASS"),]
     truthvcf <- truthvcf[rowRanges(truthvcf)$FILTER %in% c(".", "PASS"),]
   }
-  # filter all events that start in a blacklisted region
   if (!is.null(blacklist)) {
-    callvcf <- callvcf[!overlapsAny(rowRanges(callvcf), blacklist),]
-    callvcf <- callvcf[!isUnpairedBreakend(callvcf),]
-    truthvcf <- truthvcf[!overlapsAny(rowRanges(truthvcf), blacklist),]
-    truthvcf <- truthvcf[!isUnpairedBreakend(truthvcf),]
+    callvcf <- callvcf[!endpointOverlapsBed(callvcf, blacklist, maxgap=maxerrorbp)]
+    truthvcf <- truthvcf[!endpointOverlapsBed(truthvcf, blacklist, maxgap=maxerrorbp)]
   }
   grcall <- vcftobpgr(callvcf)
   grtruth <- vcftobpgr(truthvcf)
-  #TMPDEBUG: grtruth[overlapsAny(grtruth, GRanges("chr12", IRanges(148000, width=1000))),]
+  
   hits <- breakpointHits(query=grcall, subject=grtruth, maxgap=maxerrorbp + max(0, grcall$ciwidth), ...)
   hits$QUAL <- grcall$QUAL[hits$queryHits]
   hits$QUAL[is.na(hits$QUAL)] <- 0
@@ -388,7 +385,13 @@ CalculateTruth <- function(callvcf, truthvcf, blacklist=NULL, maxerrorbp, ignore
     SVLEN=svlen(callvcf),
     expectedbehits=breakendCount(svtype(callvcf))
   )
-  cdfbe <- data.table(as.data.frame(mcols(grcall)), key="vcfIndex")[, list(
+  #data.frame(mcols(grcall))
+  cdfbe <- data.table(
+    vcfIndex=mcols(grcall)$vcfIndex,
+    tp=mcols(grcall)$tp,
+    poserror=mcols(grcall)$poserror,
+    errorsize=mcols(grcall)$errorsize
+    , key="vcfIndex")[, list(
     behits=sum(tp),
     poserror=mean(poserror),
     errorsize=min(errorsize),
@@ -402,7 +405,16 @@ CalculateTruth <- function(callvcf, truthvcf, blacklist=NULL, maxerrorbp, ignore
   calldf$tp <- calldf$expectedbehits == calldf$behits
   calldf$partialtp <- !calldf$tp & calldf$behits > 0
   calldf$fp <- !calldf$tp
-  return(list(calls=calldf, truth=truthdf, vcf=callvcf, truthvcf=truthvcf))
+  result <- list(calls=calldf, truth=truthdf, vcf=callvcf, truthvcf=truthvcf)
+  test_that("sanity check result counts", {
+    expect_equal(sum(result$calls$expectedbehits), sum(breakendCount(info(result$vcf)$SVTYPE)))
+    expect_equal(sum(result$truth$expectedbehits), sum(breakendCount(info(result$truthvcf)$SVTYPE)))
+    # multiple calls matching the same event are both called as TPs
+    # Also, a single call can match multiple truth events
+    #expect_equal(sum(result$calls$tp) = sum(result$truth$tp))
+    #expect_equal(sum(result$calls$behits), sum(result$truth$behits))
+  })
+  return(result)
 }
 CalculateTruthSummary <- function(vcfs, blacklist=NULL, maxerrorbp, ignoreFilters=TRUE, ...) {
   truthSet <- lapply(vcfs, function(vcf) {
@@ -437,7 +449,7 @@ CalculateTruthSummary <- function(vcfs, blacklist=NULL, maxerrorbp, ignoreFilter
   return(list(calls=calls, truth=truth))
 }
 # Calculate ROC curve. Units of matching are breakend counts so should be halved to get breakpoint counts
-TruthSummaryToROC <- function(ts, bylist=c("CX_ALIGNER", "CX_ALIGNER_SOFTCLIP", "CX_CALLER", "CX_READ_DEPTH", "CX_READ_FRAGMENT_LENGTH", "CX_READ_LENGTH", "CX_REFERENCE_VCF_VARIANTS", "SVTYPE")) {
+TruthSummaryToROC <- function(ts, bylist=c("CX_ALIGNER", "CX_ALIGNER_SOFTCLIP", "CX_CALLER", "CX_READ_DEPTH", "CX_READ_FRAGMENT_LENGTH", "CX_READ_LENGTH", "CX_REFERENCE_VCF_VARIANTS", "SVTYPE"), ignore.zero.calls=TRUE) {
   truthset <- ts$truth[, c(bylist, "QUAL", "expectedbehits", "tp", "fn"), with=FALSE]
   truthset$QUAL[is.na(truthset$QUAL)] <- -1
   truthset$tp <- ifelse(truthset$tp, truthset$expectedbehits, 0)
@@ -460,6 +472,21 @@ TruthSummaryToROC <- function(ts, bylist=c("CX_ALIGNER", "CX_ALIGNER_SOFTCLIP", 
   combined[,`:=`(ntruth=sum(tp)+sum(fn), ncalls=sum(tp)+sum(fp), tp=cumsum(tp), fp=cumsum(fp), fn=cumsum(fn), QUAL=cummin(QUAL)), by=bylist]
   combined <- combined[!duplicated(combined[, c(bylist, "QUAL"), with=FALSE], fromLast=TRUE),] # take only one data point per QUAL
   combined[,`:=`(sens=tp/ntruth, prec=tp/(tp+fp), fdr=fp/(tp+fp))]
+  test_that("sanity check", {
+    allcalls <- combined[order(combined$QUAL),]
+    allcalls <- allcalls[!duplicated(allcalls, by=bylist),]
+    expect_equal(allcalls$tp + allcalls$fp, allcalls$ncalls)
+    expect_equal(allcalls$tp + allcalls$fn, allcalls$ntruth)
+    expect_equal(sum(allcalls$tp), sum(ts$truth[ts$truth$tp]$behits))
+    # multiple calls matching the same event will result in different truth counts for calls, and truth
+    #expect_equal(sum(allcalls$tp), sum(ts$calls[ts$calls$tp]$behits))
+    expect_equal(sum(allcalls$fp), sum(ts$calls[!ts$calls$tp]$expectedbehits))
+    expect_equal(sum(allcalls$fn), sum(ts$truth[!ts$truth$tp]$expectedbehits))
+  })
+  if (ignore.zero.calls) {
+    # ignore empty VCFs as these were likely due to variant caller crash
+    combined <- combined[combined$ncalls > 0,]
+  }
   return(combined)
 }
 FilterOutSNV <- function(vcf, caller) {
@@ -671,4 +698,12 @@ isDeletionLike <- function(vcf, minsize=0) {
 withChr <- function(gr) {
   seqlevels(gr) <- ifelse(str_detect(seqlevels(gr), "chr"), seqlevels(gr), paste0("chr", seqlevels(gr)))
   return(gr)
+}
+endpointOverlapsBed <- function(vcf, bed, ...) {
+  gr <- vcftobpgr(vcf)
+  gr$overlaps <- overlapsAny(GRanges(seqnames=seqnames(gr), ranges=IRanges(start=start(gr), width=1)), blacklist, type="any", ...) |
+    overlapsAny(GRanges(seqnames=seqnames(gr), ranges=IRanges(end=end(gr), width=1)), blacklist, type="any", ...)
+  result <- rep(FALSE, nrow(vcf))
+  result[gr[gr$overlaps]$vcfIndex] <- TRUE
+  return(result)
 }
