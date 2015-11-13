@@ -5,6 +5,8 @@ import java.util.ArrayDeque;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
 
+import au.edu.wehi.idsv.util.IntervalUtil;
+
 public class TraversalNode {
 	public final KmerPathSubnode node;
 	public final int score;
@@ -27,29 +29,17 @@ public class TraversalNode {
 	}
 	@Override
 	public String toString() {
-		String s = String.format("Score %d, %s", score, node);
-		int length = getNodeCount();
-		if (length > 2) {
-			s = s + String.format(" -> (%d)", length);
+		StringBuilder sb = new StringBuilder(String.format("score=%d pathlength=%d\n", score, pathLength));
+		for (TraversalNode n = this; n != null; n = n.parent) {
+			sb.append(n.node.toString());
+			//sb.append('\n');
 		}
-		if (length > 1) {
-			s = s + getRoot().node().toString();
-		}
-		return s;
+		return sb.toString();
 	}
 	public KmerPathSubnode getRoot() {
 		TraversalNode n = this;
 		while (n.parent != null) n = n.parent;
 		return n.node;
-	}
-	private int getNodeCount() {
-		int count = 1;
-		TraversalNode n = this;
-		while (n.parent != null) {
-			n = n.parent;
-			count++;
-		}
-		return count;
 	}
 	/**
 	 * Restricts the interval of an existing node to the given interval
@@ -72,9 +62,12 @@ public class TraversalNode {
 	 * @return true if the path traverses this found, false otherwise
 	 */
 	public boolean contains(KmerPathNode node) {
-		TraversalNode n = this;
-		while (n.parent != null) {
-			if (n.node.node() == node) return true;
+		for (TraversalNode n = parent; n != null; n = n.parent) {
+			KmerPathNode pn = n.node.node();
+			if (pn == node) return true;
+			if (IntervalUtil.overlapsClosed(pn.firstStart(), pn.firstEnd(), node.firstStart(), node.firstEnd())) {
+				return false;
+			}
 		}
 		return false;
 	}

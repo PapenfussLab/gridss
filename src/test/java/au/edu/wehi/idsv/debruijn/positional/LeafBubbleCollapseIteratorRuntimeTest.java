@@ -8,9 +8,25 @@ import java.util.List;
 
 import org.junit.Test;
 
+import com.google.common.collect.Lists;
 
-public class LeafBubbleCollapseIteratorRuntimeTest extends CollapseIteratorTest {
-	@Override
+import au.edu.wehi.idsv.DirectedEvidence;
+import au.edu.wehi.idsv.TestHelper;
+
+
+public class LeafBubbleCollapseIteratorRuntimeTest extends TestHelper {
+	protected List<KmerPathNode> go(List<DirectedEvidence> input, int k, int maxLength, int maxPathCollapseLength, int maxBasesMismatch) {
+		List<KmerPathNode> pnList = CollapseIteratorTest.asCheckedKPN(k, maxLength, input.toArray(new DirectedEvidence[0]));
+		return go(k, maxPathCollapseLength, maxBasesMismatch, pnList);
+	}
+	protected List<KmerPathNode> go(int k, int maxPathCollapseLength, int maxBasesMismatch, List<KmerPathNode> pnList) {
+		assertDisjoint(pnList); // precondition: is the test case well formed
+		int pnTotalWeight = totalWeight(pnList);
+		CollapseIterator pcit = create(pnList.iterator(), k, maxPathCollapseLength, maxBasesMismatch, false, 0);
+		ArrayList<KmerPathNode> result = Lists.newArrayList(pcit);
+		assertEquals(pnTotalWeight, totalWeight(result));
+		return result;
+	}
 	protected CollapseIterator create(Iterator<KmerPathNode> it, int k,
 			int maxPathCollapseLength, int maxBasesMismatch,
 			boolean bubblesAndLeavesOnly, double minimumPathNodeEntropy) {

@@ -81,11 +81,11 @@ public class SoftClipEvidenceTest extends TestHelper {
 		r.setReadName("ReadName");
 		r.setCigarString("1S2M3S");
 		r.setFirstOfPairFlag(true);
-		assertEquals("fReadName/1", SoftClipEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID());
-		assertEquals("bReadName/1", SoftClipEvidence.create(SES(), BreakendDirection.Backward, r).getEvidenceID());
+		assertEquals("fReadName\\1", SoftClipEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID());
+		assertEquals("bReadName\\1", SoftClipEvidence.create(SES(), BreakendDirection.Backward, r).getEvidenceID());
 		r.setFirstOfPairFlag(false);
-		assertEquals("fReadName/2", SoftClipEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID());
-		assertEquals("bReadName/2", SoftClipEvidence.create(SES(), BreakendDirection.Backward, r).getEvidenceID());
+		assertEquals("fReadName\\2", SoftClipEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID());
+		assertEquals("bReadName\\2", SoftClipEvidence.create(SES(), BreakendDirection.Backward, r).getEvidenceID());
 	}
 	@Test
 	public void getEvidenceID_unpaired_should_encode_read_direction() {
