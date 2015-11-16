@@ -28,6 +28,6 @@ info(vcf)$SOMATIC2 <- isSomatic & df$Q2 / df$QUAL >= 0.10
 # note: this just checks that breakends are close to each other, not the orientation
 # of the breakends and will filter large-scale events that just happen to have
 # nearby breakend
-isSmallEvent <- seqnames(vcf) == seqnames(matevcf) & start(vcf) - start(matevcf) <= 50
+isSmallEvent <- seqnames(vcf) == seqnames(matevcf) & abs(start(vcf) - start(matevcf)) <= 50
 
-writeVcf(vcf[isSomatic & isSmallEvent], "FR07935989_dups.gridss.filt.somatic.vcf")
+writeVcf(vcf[isSomatic & !isSmallEvent], "FR07935989_dups.gridss.filt.somatic.vcf")
