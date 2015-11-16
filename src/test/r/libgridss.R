@@ -90,15 +90,15 @@ gridss.vcftodf <- function(vcf, allColumns=FALSE, sanityCheck=TRUE) {
   df$EVENT <-i$EVENT
   df$mate <- as.character(i$MATEID)
   df$SOMATIC <- i$SOMATIC
-  matchLength <- as.integer(gsub(".*_", "", as.character(i$TRUTH_MATCHES)))
-  mismatchLength <- as.integer(gsub(".*_", "", as.character(i$TRUTH_MISREALIGN)))
-  df$SVLEN <- ifelse(is.na(matchLength), mismatchLength, matchLength)
+  #matchLength <- as.integer(gsub(".*_", "", as.character(i$TRUTH_MATCHES)))
+  #mismatchLength <- as.integer(gsub(".*_", "", as.character(i$TRUTH_MISREALIGN)))
+  #df$call <- ifelse(!is.na(matchLength), "good", ifelse(!is.na(mismatchLength), "misaligned", "bad"))
+  #df$SVLEN <- ifelse(is.na(matchLength), mismatchLength, matchLength)
   df$SVTYPE <- i$SVTYPE
   df$HOMSEQ <- ifelse(is.na(as.character(i$HOMSEQ)), "", as.character(i$HOMSEQ))
   df$HOMLEN <- as.numeric(i$HOMLEN)
   anchorseq <- str_match(as.character(rowRanges(vcf)$ALT), "(.(.*))?[\\[\\]].*[\\[\\]]((.*).)?")[,c(3,5)]
   df$INSSEQ <- ifelse(is.na(anchorseq[,1]), anchorseq[,2], anchorseq[,1])
-  df$call <- ifelse(!is.na(matchLength), "good", ifelse(!is.na(mismatchLength), "misaligned", "bad"))
   df <- gridss.vcftodf.flattenNumeric(df, "REF", i$REF, allColumns=allColumns)
   df <- gridss.vcftodf.flattenNumeric(df, "REFPAIR", i$REFPAIR, allColumns=allColumns)
   df$SPV <- i$SPV
