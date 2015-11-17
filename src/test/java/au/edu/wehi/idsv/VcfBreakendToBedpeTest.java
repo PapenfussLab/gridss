@@ -34,25 +34,25 @@ public class VcfBreakendToBedpeTest extends IntermediateFilesTest {
 		});
 	}
 	private File bedpe() { return new File(output.toString() + ".bedpe"); }
-	@Test
-	public void should_write_only_lower_breakend() throws IOException {
-		create();
+	private File bedpeFiltered() { return new File(output.toString() + ".filtered.bedpe"); }
+	private VcfBreakendToBedpe getCmd() {
 		VcfBreakendToBedpe cmd = new VcfBreakendToBedpe();
 		cmd.INPUT = output;
 		cmd.OUTPUT = bedpe();
+		cmd.OUTPUT_FILTERED = bedpeFiltered();
 		cmd.REFERENCE = getCommandlineContext().getReferenceFile();
-		cmd.doWork();
+		return cmd;
+	}
+	@Test
+	public void should_write_only_lower_breakend() throws IOException {
+		create();
+		getCmd().doWork();
 		assertEquals(2, parse().size());
 	}
 	@Test
 	public void should_write_chromosome_name() throws IOException {
-		File bedpe = new File(output.toString() + ".bedpe");
 		create();
-		VcfBreakendToBedpe cmd = new VcfBreakendToBedpe();
-		cmd.INPUT = output;
-		cmd.OUTPUT = bedpe;
-		cmd.REFERENCE = getCommandlineContext().getReferenceFile();
-		cmd.doWork();
+		getCmd().doWork();
 		List<List<String>> result = parse();
 		assertEquals("polyA", result.get(0).get(0));
 		assertEquals("Npower2", result.get(0).get(3));
@@ -61,13 +61,8 @@ public class VcfBreakendToBedpeTest extends IntermediateFilesTest {
 	}
 	@Test
 	public void should_write_zero_based_coordinates() throws IOException {
-		File bedpe = new File(output.toString() + ".bedpe");
 		create();
-		VcfBreakendToBedpe cmd = new VcfBreakendToBedpe();
-		cmd.INPUT = output;
-		cmd.OUTPUT = bedpe;
-		cmd.REFERENCE = getCommandlineContext().getReferenceFile();
-		cmd.doWork();
+		getCmd().doWork();
 		List<List<String>> result = parse();
 		assertEquals(1 - 1, Integer.parseInt(result.get(0).get(1)));
 		assertEquals(2 - 1, Integer.parseInt(result.get(0).get(2)));
@@ -80,38 +75,24 @@ public class VcfBreakendToBedpeTest extends IntermediateFilesTest {
 	}
 	@Test
 	public void should_write_qual_score() throws IOException {
-		File bedpe = new File(output.toString() + ".bedpe");
 		create();
-		VcfBreakendToBedpe cmd = new VcfBreakendToBedpe();
-		cmd.INPUT = output;
-		cmd.OUTPUT = bedpe;
-		cmd.REFERENCE = getCommandlineContext().getReferenceFile();
-		cmd.doWork();
+		getCmd().doWork();
 		List<List<String>> result = parse();
 		assertEquals(6, Double.parseDouble(result.get(0).get(7)), 0);
 		assertEquals(100, Double.parseDouble(result.get(1).get(7)), 0);
 	}
+	@Test
 	public void should_use_vcf_id_as_id() throws IOException {
-		File bedpe = new File(output.toString() + ".bedpe");
 		create();
-		VcfBreakendToBedpe cmd = new VcfBreakendToBedpe();
-		cmd.INPUT = output;
-		cmd.OUTPUT = bedpe;
-		cmd.REFERENCE = getCommandlineContext().getReferenceFile();
-		cmd.doWork();
+		getCmd().doWork();
 		List<List<String>> result = parse();
-		assertEquals("ao", result.get(1).get(6));
-		assertEquals("bo", result.get(2).get(6));
+		assertEquals("ao", result.get(0).get(6));
+		assertEquals("bo", result.get(1).get(6));
 	}
+	@Test
 	public void positive_strand_should_indicate_forward_breakend() throws IOException {
-		File bedpe = new File(output.toString() + ".bedpe");
 		create();
-		VcfBreakendToBedpe cmd = new VcfBreakendToBedpe();
-		cmd.INPUT = output;
-		cmd.OUTPUT = bedpe;
-		cmd.REFERENCE = getCommandlineContext().getReferenceFile();
-		cmd.doWork();
-		List<List<String>> result = parse();
+		getCmd().doWork();		List<List<String>> result = parse();
 		assertEquals("+", result.get(0).get(8));
 		assertEquals("-", result.get(0).get(9));
 		assertEquals("-", result.get(1).get(8));

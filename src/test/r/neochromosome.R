@@ -9,7 +9,7 @@ source("libvcf.R")
 
 theme_set(theme_bw())
 
-minqual <- 140 # 20 QUAL * 7 reads
+minqual <- 250 # 140 # 35 QUAL * 7 reads
 matchmaxgaps <- c(200) #c(1, 10, 50, 100, 200))
 bed <- NULL
 gridss <- NULL
@@ -43,28 +43,42 @@ sample <- "GOT3"
 rp <- getrpcalls("C:/dev/neochromosome/mmc3.xlsx", "GOT3 (DR)")
 cgr <- getcgr("C:/dev/neochromosome/mmc4.xlsx", "GOT3_CGRs")
 cn <- getcn("C:/dev/neochromosome/mmc4.xlsx", "GOT3_CN")
-vcf <- readVcf("W:/Papenfuss_lab/projects/liposarcoma/data/gridss/GOT3/bt2/GOT3-bt2.vcf", "hg19")
+vcf <- readVcf("W:/Papenfuss_lab/projects/liposarcoma/data/gridss/GOT3/bwa/GOT3-bwa.vcf", "hg19")
 for (matchmaxgap in matchmaxgaps) {
   out <- go(sample, vcf, rp, cgr, minimumEventSize=500, matchmaxgap=matchmaxgap, graphs=graphs, minqual=minqual)
   bed <- rbind(bed, as.data.frame(out$bed))
   gridss <- rbind(gridss, out$gridss)
 }
 
+dtcalls <- rbind(data.frame(sample=bed$sample, assembly=ifelse(bed$spanning, "Spanning assembly", as.character(bed$assembly)), hit="Published"),
+                 data.frame(sample=gridss[is.na(gridss$bedid),]$sample, assembly=gridss[is.na(gridss$bedid),]$assembly, hit="gridss additional"))
+# convert from breakend to breakpoint counts by trimming every second row
+dtcalls <- dtcalls[order(dtcalls$sample, dtcalls$assembly, dtcalls$hit),][seq(from=1, to=nrow(dtcalls), by=2),]
+ggplot(dtcalls) +
+  aes(x=hit, fill=assembly) +
+  facet_wrap(~ sample) +
+  geom_bar() +
+  labs("Concordance with neochromosome", x="", y="Count", fill="Support")
+ggsave(paste0("neo_summarised_", matchmaxgap, ".png"))
+
 dtsummarised <- rbind(
   data.table(bed)[, list(count=.N, hit=TRUE), by=list(sample, matchmaxgap, assembly, spanning)],
   data.table(gridss[is.na(gridss$bedid),])[, list(count=.N, hit=FALSE, spanning=NA), by=list(sample, matchmaxgap, assembly)])
 dtsummarised$count <- dtsummarised$count / 2 # breakend -> breakpoint conversion
 write.csv(dtsummarised, file=paste0("neo_summarised_", matchmaxgap, ".csv"))
+ggplot(dtsummarised) + aes(x=hit, y=count, fill=assembly, color=spanning) + geom_bar()
 
 # portion less than RP threshold = most
 table(gridss[is.na(gridss$bedid),]$RP >= 7, gridss[is.na(gridss$bedid),]$assembly)
 table(gridss[is.na(gridss$bedid),]$RP >= 7, gridss[is.na(gridss$bedid),]$sample) # breakdown by sample -> most less than threshold
 table(gridss[is.na(gridss$bedid) & gridss$RP >= 7,]$assembly, gridss[is.na(gridss$bedid) & gridss$RP >= 7,]$sample)
 data.table(gridss[gridss$assembly=="Both" & !is.na(gridss$bedid),])[, list(count=.N, homology=sum(HOMLEN>0), untemplated=sum(nchar(INSSEQ)>0)), by=list(sample, matchmaxgap, assembly)]
+length(gridss[nchar(gridss$INSSEQ)>50,]$INSSEQ)
 
 #####################
-# realignment rates
-
+# assembly-only identification
+gr <- gridss[!gridss$found & gridss$RP<1 & gridss$SR < 1 & gridss$RSR < 1,]$POS
+gr <- GRanges(unlist(lapply(str_split(gr, ":"), function (x) x[1])), IRanges(width=1, start=unlist(lapply(str_split(gr, ":"), function (x) as.integer(x[2])))))
 
 #####################
 # Working set

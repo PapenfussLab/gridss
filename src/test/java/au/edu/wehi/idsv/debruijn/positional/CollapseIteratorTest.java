@@ -213,8 +213,8 @@ public abstract class CollapseIteratorTest extends TestHelper {
 	}
 	@Test
 	public void should_collapse_bubbles() {
-		int k = 25;
-		int sclen = 50;
+		int k = 10;
+		int sclen = 20;
 		int anchorlen = 100;
 		boolean twoBasesDifferent = false;
 		String seq = S(RANDOM).substring(0, sclen + anchorlen);
@@ -307,5 +307,17 @@ public abstract class CollapseIteratorTest extends TestHelper {
 		KmerPathNode.addEdge(input.get(2), input.get(3));
 		List<KmerPathNode> result = simplify(go(k, 100, 100, input));
 		assertEquals(1, result.size());
+	}
+	@Test
+	public void should_not_collapse_nonoverlapping() {
+		int k = 4;
+		List<KmerPathNode> input = new ArrayList<KmerPathNode>();
+		input.add(KPN(k, "GTAC", 2, 10, false)); 
+		input.add(KPN(k, "TACTAAA", 3, 4, false));
+		input.add(KPN(k, "TACGAAA", 5, 6, false));
+		KmerPathNode.addEdge(input.get(0), input.get(1));
+		KmerPathNode.addEdge(input.get(0), input.get(2));
+		List<KmerPathNode> result = simplify(go(k, 100, 100, input));
+		assertEquals(3, result.size());
 	}
 }

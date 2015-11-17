@@ -92,14 +92,19 @@ truthlist_all$truth$CX_CALLER <- gridssfirst(truthlist_all$truth$CX_CALLER)
 truthlist_passfilters$calls$CX_CALLER <- gridssfirst(truthlist_passfilters$calls$CX_CALLER)
 truthlist_passfilters$truth$CX_CALLER <- gridssfirst(truthlist_passfilters$truth$CX_CALLER)
 
-############
 # Sensitivity
-#
 dtsenssize_all <- truthlist_all$truth[, list(sens=sum(tp)/.N), by=c("SVLEN", "SVTYPE", "CX_ALIGNER", "CX_ALIGNER_SOFTCLIP", "CX_CALLER", "CX_READ_DEPTH", "CX_READ_FRAGMENT_LENGTH", "CX_READ_LENGTH", "CX_REFERENCE_VCF_VARIANTS")]
 dtsenssize_passfilters <- truthlist_passfilters$truth[, list(sens=sum(tp)/.N), by=c("SVLEN", "SVTYPE", "CX_ALIGNER", "CX_ALIGNER_SOFTCLIP", "CX_CALLER", "CX_READ_DEPTH", "CX_READ_FRAGMENT_LENGTH", "CX_READ_LENGTH", "CX_REFERENCE_VCF_VARIANTS")]
 dtsenssize_all$Filter <- "Unfiltered"
 dtsenssize_passfilters$Filter <- "Pass"
 dtsenssize <- rbind(dtsenssize_all, dtsenssize_passfilters)
+# Precision
+dtprec_all <- truthlist_all$truth[, list(prec=sum(tp)/.N), by=c("CX_ALIGNER", "CX_ALIGNER_SOFTCLIP", "CX_CALLER", "CX_READ_DEPTH", "CX_READ_FRAGMENT_LENGTH", "CX_READ_LENGTH", "CX_REFERENCE_VCF_VARIANTS")]
+dtprec_passfilters <- truthlist_passfilters$truth[, list(prec=sum(tp)/.N), by=c("CX_ALIGNER", "CX_ALIGNER_SOFTCLIP", "CX_CALLER", "CX_READ_DEPTH", "CX_READ_FRAGMENT_LENGTH", "CX_READ_LENGTH", "CX_REFERENCE_VCF_VARIANTS")]
+dtprec_all$Filter <- "Unfiltered"
+dtprec_passfilters$Filter <- "Pass"
+dtprec <- rbind(dtprec_all, dtprec_passfilters)
+
 plot_sens <- ggplot(dtsenssize[!(dtsenssize$CX_REFERENCE_VCF_VARIANTS %in% c("homBP", "homBP_SINE"))]) + # & dtsenssize$CX_CALLER %in% c("gridss Positional", "gridss Subgraph")
   aes(y=sens, x=SVLEN, shape=factor(CX_READ_FRAGMENT_LENGTH), color=Filter) +
   geom_line() + 
@@ -117,7 +122,7 @@ ggplot(truthlist_all$calls) + aes(x=partialtp) + facet_grid(CX_REFERENCE_VCF_VAR
 for (rl in unique(dtsenssize$CX_READ_LENGTH)) {
 for (rd in unique(dtsenssize$CX_READ_DEPTH)) {
 for (fragsize in unique(dtsenssize$CX_READ_FRAGMENT_LENGTH)) {
-  dt <- rbind(dtsenssize, dtsenssize_passfilters)
+  dt <- dtsenssize
   dt <- dt[dt$CX_READ_DEPTH==rd & dt$CX_READ_FRAGMENT_LENGTH==fragsize & dt$CX_READ_LENGTH==rl,]
   dt[dt$CX_REFERENCE_VCF_VARIANTS=="hetDEL",]$CX_REFERENCE_VCF_VARIANTS <- "Deletion"
   dt[dt$CX_REFERENCE_VCF_VARIANTS=="hetINS",]$CX_REFERENCE_VCF_VARIANTS <- "Insertion"
@@ -135,6 +140,25 @@ for (fragsize in unique(dtsenssize$CX_READ_FRAGMENT_LENGTH)) {
     theme(panel.grid.major = element_blank()) +
     labs(y="Sensitivity", x="Event size", title=paste0("Sensitivity ", rd, "x coverage"))
   ggsave(file=paste0("sens_simple_rl", rl, "_", fragsize, "_", rd, "x.pdf"), width=300, height=150, units=c("mm"))
+}}}
+for (rl in unique(dtsenssize$CX_READ_LENGTH)) {
+for (rd in unique(dtsenssize$CX_READ_DEPTH)) {
+for (fragsize in unique(dtsenssize$CX_READ_FRAGMENT_LENGTH)) {
+  # bar graph for precisions
+  dt <- dtprec_passfilters
+  dt <- dt[dt$CX_READ_DEPTH==rd & dt$CX_READ_FRAGMENT_LENGTH==fragsize & dt$CX_READ_LENGTH==rl,]
+  dt <- dt[dt$CX_REFERENCE_VCF_VARIANTS %in% c("hetDEL", "hetINS", "hetDUP", "hetINV")]
+  dt[dt$CX_REFERENCE_VCF_VARIANTS=="hetDEL",]$CX_REFERENCE_VCF_VARIANTS <- "Deletion"
+  dt[dt$CX_REFERENCE_VCF_VARIANTS=="hetINS",]$CX_REFERENCE_VCF_VARIANTS <- "Insertion"
+  dt[dt$CX_REFERENCE_VCF_VARIANTS=="hetDUP",]$CX_REFERENCE_VCF_VARIANTS <- "Tandem Duplication"
+  dt[dt$CX_REFERENCE_VCF_VARIANTS=="hetINV",]$CX_REFERENCE_VCF_VARIANTS <- "Inversion"
+  ggplot(dt) +
+    aes(y=prec, x=CX_CALLER, fill=CX_CALLER) +
+    geom_bar(stat="identity") + 
+    facet_wrap( ~ CX_REFERENCE_VCF_VARIANTS) +
+    scale_color_brewer(type="qual", palette=2) +
+    labs(y="Precision", title=paste0("Precision ", rd, "x coverage"))
+  ggsave(file=paste0("prec_simple_rl", rl, "_", fragsize, "_", rd, "x.pdf"), width=300, height=150, units=c("mm"))
 }}}
 
 ############
@@ -161,7 +185,7 @@ plot_roc <- ggplot(dtrocall[dtrocall$CX_REFERENCE_VCF_VARIANTS %in% c("homBP", "
   scale_colour_gradientn(colours = rainbow(11)) +
   geom_line() + 
   geom_point(size=0.25) + 
-  facet_grid(CX_ALIGNER + CX_CALLER ~ CX_READ_FRAGMENT_LENGTH + CX_READ_LENGTH + CX_READ_DEPTH + CX_REFERENCE_VCF_VARIANTS) +
+  facet_grid(CX_ALIGNER + CX_CALLER ~ CX_REFERENCE_VCF_VARIANTS + CX_READ_FRAGMENT_LENGTH + CX_READ_LENGTH + CX_READ_DEPTH) +
   scale_x_log10() + 
   labs(y="sensitivity", title="ROC by call quality threshold")
 ggsave("roc_full.png", plot_roc, width=10, height=7.5)
@@ -172,7 +196,7 @@ for (variant in unique(dtrocall$CX_REFERENCE_VCF_VARIANTS)) {
   plot_roc_all <- ggplot(dtroc) +
     aes(y=sens, shape=factor(CX_READ_FRAGMENT_LENGTH), color=factor(CX_READ_DEPTH), linetype=Filter) +
     geom_point(size=1) + 
-    facet_grid(CX_ALIGNER + CX_CALLER ~ CX_READ_LENGTH + CX_REFERENCE_VCF_VARIANTS) +
+    facet_grid(CX_ALIGNER + CX_CALLER ~ CX_REFERENCE_VCF_VARIANTS + CX_READ_LENGTH) +
     labs(y="sensitivity", title="ROC by call quality threshold")
   plot_roc_all + aes(x=prec) + labs(x="precision") + scale_x_reverse()
   ggsave(paste0("roc_full_precision_", variant, ".png"), width=10, height=7.5)
