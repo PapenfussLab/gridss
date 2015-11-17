@@ -42,17 +42,31 @@ for VARIANT_TYPE in INS DEL DUP INV ; do
 		"
 done
 
-sim "homBP" au.edu.wehi.idsv.sim.GenerateChromothripsis "\
-	INCLUDE_REFERENCE=false \
+sim "hetBP" au.edu.wehi.idsv.sim.GenerateChromothripsis "\
+	INCLUDE_REFERENCE=true \
 	FRAGMENT_SIZE=2000 \
-	FRAGMENTS=10000 \
+	FRAGMENTS=15000 \
 	"
 	
-sim "homBP_SINE" au.edu.wehi.idsv.sim.GenerateChromothripsis "\
-	INCLUDE_REFERENCE=false \
+sim "hetBP_SINE" au.edu.wehi.idsv.sim.GenerateChromothripsis "\
+	INCLUDE_REFERENCE=true \
 	FRAGMENT_SIZE=2000 \
-	FRAGMENTS=10000 \
+	FRAGMENTS=15000 \
 	RM=~/Papenfuss_lab/projects/reference_genomes/human/hg19/UCSC/chromOut/12/chr12.fa.out \
 	CLASS_FAMILY=SINE/Alu \
 	"
+
+# sim "homBP" au.edu.wehi.idsv.sim.GenerateChromothripsis "\
+	# INCLUDE_REFERENCE=false \
+	# FRAGMENT_SIZE=2000 \
+	# FRAGMENTS=10000 \
+	# "
+	
+# sim "homBP_SINE" au.edu.wehi.idsv.sim.GenerateChromothripsis "\
+	# INCLUDE_REFERENCE=false \
+	# FRAGMENT_SIZE=2000 \
+	# FRAGMENTS=10000 \
+	# RM=~/Papenfuss_lab/projects/reference_genomes/human/hg19/UCSC/chromOut/12/chr12.fa.out \
+	# CLASS_FAMILY=SINE/Alu \
+	# "
 

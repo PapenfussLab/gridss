@@ -183,6 +183,16 @@ go <- function(sample, vcf, rp, filterBed=NULL, minimumEventSize, cgrmaxgap=1000
   insmicro <- data.frame(sample=sample, matchmaxgap=matchmaxgap, total=nrow(dfboth), hom=sum(dfboth$HOMLEN>0), ins=sum(nchar(dfboth$INSSEQ)>0))
 
   ###############
+  # 
+  ###############
+  #dtsummarised <- rbind(
+  #  data.table(rp)[, list(count=.N, hit=TRUE), by=list(sample, matchmaxgap, assembly, spanning)],
+  #  data.table(vcfdf[is.na(vcfdf$bedid),])[, list(count=.N, hit=FALSE, spanning=NA), by=list(sample, matchmaxgap, assembly)])
+  #dtsummarised$count <- dtsummarised$count / 2 # breakend -> breakpoint conversion
+  #ggplot()
+
+
+  ###############
   # debugging
   ###############
   rp$sample <- sample

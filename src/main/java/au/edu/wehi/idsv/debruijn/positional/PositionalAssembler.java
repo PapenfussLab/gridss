@@ -45,11 +45,6 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 	public PositionalAssembler(ProcessingContext context, AssemblyEvidenceSource source, Iterator<DirectedEvidence> it) {
 		this(context, source, it, null);
 	}
-	public void exportGraph(File file) {
-		if (currentAssembler != null) {
-			currentAssembler.exportGraph(file);
-		}
-	}
 	@Override
 	public boolean hasNext() {
 		ensureAssembler();
@@ -107,7 +102,7 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 		PathSimplificationIterator simplifyIt = null;
 		if (ap.errorCorrection.maxBaseMismatchForCollapse > 0) {
 			if (!ap.errorCorrection.collapseBubblesOnly) {
-				log.warn("Collapsing all paths is an exponential time operation. gridss is likely to hang if your genome contains repetative sequence");
+				log.warn("Collapsing all paths is an exponential time operation. Gridss is likely to hang if your genome contains repetative sequence");
 				collapseIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, ap.errorCorrection.maxBaseMismatchForCollapse, false, 0);
 			} else {
 				collapseIt = new LeafBubbleCollapseIterator(pnIt, k, maxPathCollapseLength, ap.errorCorrection.maxBaseMismatchForCollapse);

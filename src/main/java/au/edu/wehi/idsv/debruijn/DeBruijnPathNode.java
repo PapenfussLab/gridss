@@ -2,15 +2,18 @@ package au.edu.wehi.idsv.debruijn;
 
 import java.util.Collection;
 
+import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.graph.PathNode;
 import au.edu.wehi.idsv.graph.WeightedDirectedGraph;
 
 public class DeBruijnPathNode<T> extends PathNode<T> implements DeBruijnSequenceGraphNode {
 	private int refCount = 0;
 	private void addRefCounts(Iterable<T> nodes) {
-		refCount = 0;
 		for (T n : nodes) {
 			addRefCounts(n);
+		}
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
+			sanityCheck();
 		}
 	}
 	private void addRefCounts(T node) {
@@ -38,5 +41,9 @@ public class DeBruijnPathNode<T> extends PathNode<T> implements DeBruijnSequence
 	@Override
 	public long kmer(int offset) {
 		return getGraph().getKmer(this.getPath().get(offset));
+	}
+	private void sanityCheck() {
+		long actualRefCount = getPathAllNodes().stream().flatMap(l -> l.stream()).filter(n -> getGraph().isReference(n)).count();
+		assert(refCount == actualRefCount);
 	}
 }

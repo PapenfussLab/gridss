@@ -27,7 +27,6 @@ import java.util.stream.IntStream;
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.debruijn.positional.DirectedPositionalAssembler;
-import au.edu.wehi.idsv.debruijn.positional.PositionalAssembler;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 import au.edu.wehi.idsv.pipeline.CreateAssemblyReadPair;
 import au.edu.wehi.idsv.sam.SAMFileUtil.SortCallable;
@@ -397,17 +396,6 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 							nextProgress = System.currentTimeMillis() + 1000 * PROGRESS_UPDATE_INTERVAL_SECONDS;
 							String seqname = getContext().getDictionary().getSequence(ass.getBreakendSummary().referenceIndex).getSequenceName();
 							log.info(String.format("Assembly progress at %s:%d", seqname, ass.getBreakendSummary().start));
-							if (getContext().getConfig().getVisualisation().assembly) {
-								File exportDir = getContext().getConfig().getVisualisation().directory;
-								if (assemblyIt instanceof PositionalAssembler) {
-									File exportFilename = new File(exportDir, String.format("assembly_%s_%d.dot", seqname, ass.getBreakendSummary().start)); 
-									((PositionalAssembler)assemblyIt).exportGraph(exportFilename);
-								} else if (assemblyIt instanceof DirectedPositionalAssembler) {
-									((DirectedPositionalAssembler)assemblyIt).exportGraph(
-											new File(exportDir, String.format("assemblyf_%s_%d.dot", seqname, ass.getBreakendSummary().start)),
-											new File(exportDir, String.format("assemblyb_%s_%d.dot", seqname, ass.getBreakendSummary().start)));
-								}
-							}
 						}
 					}
 				}

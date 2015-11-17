@@ -100,10 +100,8 @@ public class DirectedPositionalAssembler implements Iterator<SAMRecordAssemblyEv
 				while (assembler.hasNext()) {
 					SAMRecordAssemblyEvidence assembly = assembler.next();
 					if (forwardExport != null && direction == BreakendDirection.Forward) {
-						assembler.exportGraph(forwardExport);
 						forwardExport = null;
 					} else if (backwardExport != null && direction == BreakendDirection.Backward) {
-						assembler.exportGraph(backwardExport);
 						backwardExport = null;
 					}
 					if (!assembly.isSpanningAssembly() && assembly.getBreakendSummary() != null && assembly.getBreakendSummary().direction != direction) {

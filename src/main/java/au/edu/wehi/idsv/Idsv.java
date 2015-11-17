@@ -1,5 +1,8 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileWriter;
+import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.SamReader;
@@ -28,6 +31,7 @@ import picard.cmdline.CommandLineProgram;
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
+import picard.sam.CreateSequenceDictionary;
 import au.edu.wehi.idsv.alignment.AlignerFactory;
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
@@ -123,6 +127,40 @@ public class Idsv extends CommandLineProgram {
 		}
 		IOUtil.assertDirectoryIsWritable(WORKING_DIR);
 	}
+    public static void ensureIndexed(File fa) throws IOException {
+    	try (ReferenceSequenceFile reference = ReferenceSequenceFileFactory.getReferenceSequenceFile(fa)) {
+    		if (!reference.isIndexed()) {
+    			String msg = String.format("Unable to find index for %1$s. Please run 'samtools faidx %1$s' to generate an index file.", fa);
+    			log.error(msg);
+    			throw new IOException(msg);
+    		} else {
+    			log.debug(fa, " is indexed.");
+    		}
+    	}
+    }
+    public static void ensureSequenceDictionary(File fa) throws IOException {
+    	File output = new File(fa.getAbsolutePath() + ".dict");
+    	try (ReferenceSequenceFile reference = ReferenceSequenceFileFactory.getReferenceSequenceFile(fa)) {
+	    	SAMSequenceDictionary dictionary = reference.getSequenceDictionary();
+	    	if (dictionary == null) {
+	    		log.info("Attempting to generate missing sequence dictionary for ", fa);
+	    		try {
+		    		final SAMSequenceDictionary sequences = new CreateSequenceDictionary().makeSequenceDictionary(fa);
+		            final SAMFileHeader samHeader = new SAMFileHeader();
+		            samHeader.setSequenceDictionary(sequences);
+		            try (SAMFileWriter samWriter = new SAMFileWriterFactory().makeSAMWriter(samHeader, false, output)) {
+		            }
+	    		} catch (Exception e) {
+	    			log.error("Missing sequence dictionary for ", fa, " and creation of sequencing dictionary failed.",
+	    					"Please run the Picard tools CreateSequenceDictionary utility to create", output);
+	    			throw e;
+	    		}
+	    		log.info("Created sequence dictionary ", output);
+	    	} else {
+	    		log.debug("Found sequence dictionary for ", fa);
+	    	}
+    	}
+    }
 	public void ensureDictionariesMatch() throws IOException {
 		ReferenceSequenceFile ref = null;
 		try {
@@ -134,6 +172,10 @@ public class Idsv extends CommandLineProgram {
 				try {
 					reader = samFactory.open(f);
 					SequenceUtil.assertSequenceDictionariesEqual(reader.getFileHeader().getSequenceDictionary(), dictionary, f, REFERENCE);
+				} catch (htsjdk.samtools.util.SequenceUtil.SequenceListsDifferException e) {
+					log.error("Reference genome used by ", f, " does not match reference genome ", REFERENCE, ". ",
+							"The reference supplied must match the reference used for every input.");
+					throw e;
 				} finally {
 					if (reader != null) reader.close();
 				}
@@ -154,18 +196,26 @@ public class Idsv extends CommandLineProgram {
     @Override
 	protected int doWork() {
     	ensureArgs();
+    	if (INPUT_CATEGORY != null && INPUT_CATEGORY.size() > 0 && INPUT_CATEGORY.size() != INPUT.size()) {
+    		log.error("INPUT_CATEGORY must omitted or specified for every INPUT.");
+    		return -1;
+    	}
     	ExecutorService threadpool = null;
     	try {
+    		ensureIndexed(REFERENCE);
+    		ensureSequenceDictionary(REFERENCE);
+    		ensureDictionariesMatch();
     		// Spam output with gridss parameters used
     		getContext();
     		// Force loading of aligner up-front
     		log.info("Loading aligner");
     		AlignerFactory.create();
+    		log.info("Testing for presence of external aligner");
     		
     		//hackSimpleCalls(processContext);
     		threadpool = Executors.newFixedThreadPool(getContext().getWorkerThreadCount(), new ThreadFactoryBuilder().setDaemon(false).setNameFormat("Worker-%d").build());
     		log.info(String.format("Using %d worker threads", WORKER_THREADS));
-	    	ensureDictionariesMatch();
+	    	
 	    	List<SAMEvidenceSource> samEvidence = createSamEvidenceSources();
 	    	
 	    	extractEvidence(threadpool, samEvidence);

@@ -62,7 +62,7 @@ public class ExternalProcessFastqAligner implements FastqAligner {
 			log.error("External process still alive after alignment");
 		}
 		if (aligner.exitValue() != 0) {
-			String msg = String.format("Subprocess terminated with with exit status %1$d. Alignment failed for %2$s. Did you build an index with prefix %s?", aligner.exitValue(), fastq, reference);
+			String msg = String.format("Subprocess terminated with with exit status %1$d. Alignment failed for %2$s. Did you build an index with prefix %3$s?", aligner.exitValue(), fastq, reference);
 			log.error(msg);
 			throw new RuntimeException(msg);
 		}

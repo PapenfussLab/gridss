@@ -69,7 +69,7 @@ gridss.vcftodf.flattenNumeric <- function(df, name, column, max=FALSE, allColumn
   }
   if (allColumns) {
     for (offset in seq_len(ncol(mat))) {
-      df[paste0(name, offset)] <- mat[,offset]
+      df[paste0(name, offset - 1)] <- mat[,offset]
     }
   }
   return(df)
@@ -90,15 +90,15 @@ gridss.vcftodf <- function(vcf, allColumns=FALSE, sanityCheck=TRUE) {
   df$EVENT <-i$EVENT
   df$mate <- as.character(i$MATEID)
   df$SOMATIC <- i$SOMATIC
-  matchLength <- as.integer(gsub(".*_", "", as.character(i$TRUTH_MATCHES)))
-  mismatchLength <- as.integer(gsub(".*_", "", as.character(i$TRUTH_MISREALIGN)))
-  df$SVLEN <- ifelse(is.na(matchLength), mismatchLength, matchLength)
+  #matchLength <- as.integer(gsub(".*_", "", as.character(i$TRUTH_MATCHES)))
+  #mismatchLength <- as.integer(gsub(".*_", "", as.character(i$TRUTH_MISREALIGN)))
+  #df$call <- ifelse(!is.na(matchLength), "good", ifelse(!is.na(mismatchLength), "misaligned", "bad"))
+  #df$SVLEN <- ifelse(is.na(matchLength), mismatchLength, matchLength)
   df$SVTYPE <- i$SVTYPE
   df$HOMSEQ <- ifelse(is.na(as.character(i$HOMSEQ)), "", as.character(i$HOMSEQ))
   df$HOMLEN <- as.numeric(i$HOMLEN)
   anchorseq <- str_match(as.character(rowRanges(vcf)$ALT), "(.(.*))?[\\[\\]].*[\\[\\]]((.*).)?")[,c(3,5)]
   df$INSSEQ <- ifelse(is.na(anchorseq[,1]), anchorseq[,2], anchorseq[,1])
-  df$call <- ifelse(!is.na(matchLength), "good", ifelse(!is.na(mismatchLength), "misaligned", "bad"))
   df <- gridss.vcftodf.flattenNumeric(df, "REF", i$REF, allColumns=allColumns)
   df <- gridss.vcftodf.flattenNumeric(df, "REFPAIR", i$REFPAIR, allColumns=allColumns)
   df$SPV <- i$SPV
@@ -128,6 +128,38 @@ gridss.vcftodf <- function(vcf, allColumns=FALSE, sanityCheck=TRUE) {
   
   df <- replace(df, is.na(df), 0)
   rownames(df) <- df$variantid
+  if (allColumns) {
+    # output aggregate per-category quality scores
+    numericSuffix <- 0
+    while (length(intersect(c(paste0("RPQ", numericSuffix),
+                       paste0("SRQ", numericSuffix),
+                       paste0("RSRQ", numericSuffix),
+                       paste0("ASCRP", numericSuffix),
+                       paste0("ASSR", numericSuffix)),
+                       names(df)))) {
+      qcolname <- paste0("Q", numericSuffix)
+      df[qcolname]  <- 0
+      for (prefix in c("RPQ", "SRQ", "RSRQ")) {
+        colname <- paste0(prefix, numericSuffix)
+        if (colname %in% names(df)) {
+          df[qcolname] <- df[qcolname] + df[colname]
+        }
+      }
+      assemblyQual <- (df$ASQ + df$RASQ) * ((df[paste0("ASCRP", numericSuffix)] + df[paste0("ASSR", numericSuffix)]) / (df$ASCRP + df$ASSR))
+      assemblyQual[is.na(assemblyQual)] <- 0
+      df[qcolname] <- df[qcolname] + assemblyQual
+        
+      qcolname <- paste0("Count", numericSuffix)
+      df[qcolname]  <- 0
+      for (prefix in c("RP", "SR", "RSR")) {
+        colname <- paste0(prefix, numericSuffix)
+        if (colname %in% names(df)) {
+          df[qcolname] <- df[qcolname] + df[colname]
+        }
+      }
+      numericSuffix <- numericSuffix + 1
+    }
+  }
   if (sanityCheck) {
     # should all have mates
     if (!all(df$mate %in% row.names(df))) {

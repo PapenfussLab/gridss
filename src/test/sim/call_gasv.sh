@@ -28,8 +28,10 @@ for BAM in $DATA_DIR/*.sc.bam ; do
 	GASVPro-CC out.gasvpro.in out.gasv.in.clusters && \
 	GASVPruneClusters.pl out.gasv.in.clusters.GASVPro.clusters && \
 	cp out.gasv.in.clusters.GASVPro.clusters out.gasv.in.clusters.GASVPro.clusters.unconverted && \
+	cp out.gasv.in.clusters.GASVPro.clusters.pruned.clusters out.gasv.in.clusters.GASVPro.clusters.pruned.clusters.unconverted && \
 	convertClusters out.gasv.in.clusters.GASVPro.clusters.pruned.clusters && \
-	$BASE_DIR/gasv2vcf.py < out.gasv.in.clusters.GASVPro.clusters.pruned.clusters CHROMOSOME_NAMING > $CX.vcf"
+	convertClusters out.gasv.in.clusters.GASVPro.clusters && \
+	$BASE_DIR/gasv2vcf.py < out.gasv.in.clusters.GASVPro.clusters CHROMOSOME_NAMING > $CX.vcf"
 	xc_exec
 done
 

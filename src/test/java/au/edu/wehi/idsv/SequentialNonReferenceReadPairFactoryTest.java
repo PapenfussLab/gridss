@@ -55,14 +55,14 @@ public class SequentialNonReferenceReadPairFactoryTest extends TestHelper {
 			withReadName("r7", OEA(3, 3, "100M", true))[1], // equivalence class up pos
 		};
 		SequentialNonReferenceReadPairFactory factory = getFactory(L(mates));
-		assertEquals("r1/1", factory.createNonReferenceReadPair(withReadName("r1", OEA(0, 1, "100M", true))[0], SES(300)).getEvidenceID());
+		assertEquals("r1\\1", factory.createNonReferenceReadPair(withReadName("r1", OEA(0, 1, "100M", true))[0], SES(300)).getEvidenceID());
 		// r2 and r3 should be retrievable since they are 
-		assertEquals("r2/1", factory.createNonReferenceReadPair(withReadName("r2", OEA(0, 1, "100M", true))[0], SES(300)).getEvidenceID());
-		assertEquals("r3/1", factory.createNonReferenceReadPair(withReadName("r3", OEA(0, 1, "100M", true))[0], SES(300)).getEvidenceID());
-		assertEquals("r4/1", factory.createNonReferenceReadPair(withReadName("r4", OEA(0, 10, "100M", true))[0], SES(300)).getEvidenceID());
-		assertEquals("r5/1", factory.createNonReferenceReadPair(withReadName("r5", OEA(1, 1, "100M", true))[0], SES(300)).getEvidenceID());
-		assertEquals("r6/1", factory.createNonReferenceReadPair(withReadName("r6", OEA(2, 1, "100M", true))[0], SES(300)).getEvidenceID());
-		assertEquals("r7/1", factory.createNonReferenceReadPair(withReadName("r7", OEA(3, 3, "100M", true))[0], SES(300)).getEvidenceID());
+		assertEquals("r2\\1", factory.createNonReferenceReadPair(withReadName("r2", OEA(0, 1, "100M", true))[0], SES(300)).getEvidenceID());
+		assertEquals("r3\\1", factory.createNonReferenceReadPair(withReadName("r3", OEA(0, 1, "100M", true))[0], SES(300)).getEvidenceID());
+		assertEquals("r4\\1", factory.createNonReferenceReadPair(withReadName("r4", OEA(0, 10, "100M", true))[0], SES(300)).getEvidenceID());
+		assertEquals("r5\\1", factory.createNonReferenceReadPair(withReadName("r5", OEA(1, 1, "100M", true))[0], SES(300)).getEvidenceID());
+		assertEquals("r6\\1", factory.createNonReferenceReadPair(withReadName("r6", OEA(2, 1, "100M", true))[0], SES(300)).getEvidenceID());
+		assertEquals("r7\\1", factory.createNonReferenceReadPair(withReadName("r7", OEA(3, 3, "100M", true))[0], SES(300)).getEvidenceID());
 	}
 	@Test(expected=IllegalStateException.class)
 	public void should_fail_during_non_sequential_traversal() {
@@ -71,7 +71,7 @@ public class SequentialNonReferenceReadPairFactoryTest extends TestHelper {
 			withReadName("r2", OEA(0, 1, "100M", true))[1],
 		};
 		SequentialNonReferenceReadPairFactory factory = getFactory(L(mates));
-		assertEquals("r1/1", factory.createNonReferenceReadPair(withReadName("r1", OEA(0, 2, "100M", true))[0], SES(300)).getEvidenceID()); 
+		assertEquals("r1\\1", factory.createNonReferenceReadPair(withReadName("r1", OEA(0, 2, "100M", true))[0], SES(300)).getEvidenceID()); 
 		assertNull(factory.createNonReferenceReadPair(withReadName("r2", OEA(0, 1, "100M", true))[0], SES(300)));
 	}
 }

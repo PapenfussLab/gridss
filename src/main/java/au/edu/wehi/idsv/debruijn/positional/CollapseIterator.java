@@ -180,14 +180,26 @@ public abstract class CollapseIterator implements PeekingIterator<KmerPathNode> 
 		}
 		assert(kmerCount == 0);
 	}
+	/**
+	 * Trims common path prefix and suffix nodes from both paths 
+	 * @param path1
+	 * @param path2
+	 */
+	private void trimCommon(List<KmerPathSubnode> sourcePath, List<KmerPathSubnode> targetPath) {
+		while (!sourcePath.isEmpty() && !targetPath.isEmpty() && sourcePath.get(0).equals(targetPath.get(0))) {
+			sourcePath.remove(0);
+			targetPath.remove(0);
+		}
+		while (!sourcePath.isEmpty() && !targetPath.isEmpty() && sourcePath.get(sourcePath.size() - 1).equals(targetPath.get(targetPath.size() - 1))) {
+			sourcePath.remove(sourcePath.size() - 1);
+			targetPath.remove(targetPath.size() - 1);
+		}
+	}
 	private void merge(List<KmerPathSubnode> sourcePath, List<KmerPathSubnode> targetPath) {
 		assert(sourcePath.get(0).width() == targetPath.get(0).width());
 		assert(sourcePath.get(0).firstStart() == targetPath.get(0).firstStart());
 		assert(DeBruijnSequenceGraphNodeUtil.basesDifferent(k, sourcePath, targetPath) <= maxBasesMismatch);
-		if (sourcePath.get(0).equals(targetPath.get(0))) {
-			sourcePath.remove(0);
-			targetPath.remove(0);
-		}
+		trimCommon(sourcePath, targetPath);
 		List<KmerPathNode> source = positionSplit(sourcePath);
 		List<KmerPathNode> target = positionSplit(targetPath);
 		IntSortedSet kmerStartPositions = new IntRBTreeSet();
