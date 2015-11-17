@@ -2,7 +2,7 @@
 #
 #
 . common.sh
-CALLER=gridss/0.8.1-SNAPSHOT
+CALLER=gridss/0.9.0
 FULL_JAR=~/bin/${CALLER/\//-}-jar-with-dependencies.jar
 
 for BAM in $DATA_DIR/*.sc.bam ; do
@@ -15,49 +15,44 @@ for BAM in $DATA_DIR/*.sc.bam ; do
 		echo "GRIDSS: skipping end-to-end aligned $BAM"
 		continue
 	fi
-
+	BLACKLIST=$CX_BLACKLIST
+	if [[ "$BLACKLIST" == "" ]] ; then
+		BLACKLIST=null
+	fi
 	CX_BAM=$BAM
 	CX_CALLER=$CALLER
-	CX_CALLER_FLAGS=""
+	#CX_CALLER_ARGS="assembly.method=Subgraph"
 	cx_save
 	XC_OUTPUT=$CX.vcf
-	# TRUTH_VCF=$CX_REFERENCE_VCF \
-	# first invokation fails since realignment not done
-	# don't clean up generated files for now
 	XC_SCRIPT="rm -rf $CX; mkdir $CX 2>/dev/null; cd $CX;
-exec_gridss() {
-	if [[ -f $CX/breakend.vcf ]] ; then
-		return
-	fi
-	rm -f $CX/realign.sh
+cat > $CX/gridss_custom.properties << EOF
+#variantcalling.minIndelSize = 1
+visualisation.assemblyProgress = true
+visualisation.buffers = true
+visualisation.bufferTrackingItervalInSeconds = 10
+$CX_CALLER_ARGS
+EOF
 	java \
 		-ea \
-		-Xmx32g \
+		-Xmx64g \
 		-cp $FULL_JAR \
-		-Dgridss.visualisation.saveall=false \
-		-Dgridss.visualisation.savetimeouts=true \
-		-Dgridss.visualisation.trackAssemblyProgress=true \
 		au.edu.wehi.idsv.Idsv \
 		TMP_DIR=$CX \
 		WORKING_DIR=$CX \
 		INPUT=$BAM \
-		INPUT_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE=$(( CX_READ_FRAGMENT_LENGTH + 3 * CX_READ_FRAGMENT_STDDEV )) \
-		INPUT_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE=$(( CX_READ_FRAGMENT_LENGTH - 3 * CX_READ_FRAGMENT_STDDEV )) \
-		MIN_INDEL_SIZE=0 \
+		INPUT_MIN_FRAGMENT_SIZE=$(( CX_READ_FRAGMENT_LENGTH - 3 * CX_READ_FRAGMENT_STDDEV )) \
+		INPUT_MAX_FRAGMENT_SIZE=$(( CX_READ_FRAGMENT_LENGTH + 3 * CX_READ_FRAGMENT_STDDEV )) \
 		OUTPUT=$CX/breakend.vcf \
 		REFERENCE=$CX_REFERENCE \
-		SCRIPT=$CX/realign.sh \
+		CONFIGURATION_FILE=$CX/gridss_custom.properties \
 		PER_CHR=false \
 		VERBOSITY=DEBUG \
-		$CX_CALLER_FLAGS
-	
-	if [[ -f $CX/realign.sh ]] ; then
-		source $CX/realign.sh
-		exec_gridss
-	fi
-}
-exec_gridss
-cp $CX/breakend.vcf $CX.vcf
+		BLACKLIST=$BLACKLIST \
+		&& \
+	cp $CX/breakend.vcf $CX.vcf
+
+
+
 	"
 	xc_exec
 done
