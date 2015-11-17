@@ -87,6 +87,13 @@ public class IdsvSamFileMetrics {
 	public SoftClipSizeDistribution getSoftClipDistribution() {
 		return softClipDistribution;
 	}
+	private int maxSoftClipLength = -1;
+	public int getMaxSoftClipLength() {
+		if (maxSoftClipLength < 0) {
+			maxSoftClipLength = getSoftClipDetailMetrics().stream().mapToInt(m -> m.LENGTH).max().orElse(0);
+		}
+		return maxSoftClipLength;
+	}
 	/**
 	 * Sort order of soft clips by soft clip length
 	 */

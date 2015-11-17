@@ -59,7 +59,7 @@ public class AggregateNodeIterator implements PeekingIterator<KmerNode> {
 			inputPosition = Integer.MAX_VALUE;
 			flush();
 		}
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			assert(sanityCheck());
 		}
 	}

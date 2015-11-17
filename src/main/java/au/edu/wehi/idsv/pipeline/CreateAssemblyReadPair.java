@@ -70,8 +70,8 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 			throw new UnsupportedOperationException("We're just using this as a helper class for getting an iterator of annotated assemblies");
 		}
 		public CloseableIterator<SAMRecordAssemblyEvidence> annotatedAssembliesIterator() {
-			CloseableIterator<DirectedEvidence> rawit = getAllEvidence(true, false, true, true, processContext.getAssemblyParameters().includeRemoteSoftClips, true);
-			AsyncBufferedIterator<DirectedEvidence> asyncIt = new AsyncBufferedIterator<DirectedEvidence>(rawit, "AssemblyEvidenceRehydration");
+			CloseableIterator<DirectedEvidence> rawit = getAllEvidence(true, false, true, true, processContext.getAssemblyParameters().includeRemoteSplitReads, true);
+			AsyncBufferedIterator<DirectedEvidence> asyncIt = new AsyncBufferedIterator<DirectedEvidence>(rawit, "AssemblyEvidenceRehydration", source.getContext().getConfig().async_bufferCount, source.getContext().getConfig().async_bufferSize);
 			OrthogonalEvidenceIterator annotatedIt = new OrthogonalEvidenceIterator(processContext.getLinear(), asyncIt, source.getAssemblyWindowSize(), true);
 			UnmodifiableIterator<SAMRecordAssemblyEvidence> filteredIt = Iterators.filter(annotatedIt, SAMRecordAssemblyEvidence.class);
 			Iterator<SAMRecordAssemblyEvidence> it = Iterators.transform(filteredIt, new Function<SAMRecordAssemblyEvidence, SAMRecordAssemblyEvidence> () {
@@ -253,7 +253,7 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 	}
 	@Override
 	public boolean canProcess() {
-		return source.isRealignmentComplete();
+		return source.isRealignmentComplete(false);
 	}
 	@Override
 	public List<File> getOutput() {

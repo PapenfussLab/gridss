@@ -139,7 +139,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 */
 	public SAMRecordAssemblyEvidence annotateAssembly() {
 		int n = source.getContext().getCategoryCount();
-		BreakendSummary breakendWithMargin = source.getContext().getVariantCallingParameters().withMargin(source.getContext(), breakend);
+		BreakendSummary breakendWithMargin = source.getContext().getVariantCallingParameters().withMargin(breakend);
 		float[] rpQual = new float[n];
 		float[] scQual = new float[n];
 		float[] rQual = new float[n];

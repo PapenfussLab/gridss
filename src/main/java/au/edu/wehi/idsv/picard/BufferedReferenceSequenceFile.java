@@ -11,7 +11,7 @@ import com.google.common.collect.ImmutableMap;
 
 /**
  * Buffers entire reference to enable efficient random lookup of sequences
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class BufferedReferenceSequenceFile implements ReferenceSequenceFile, ReferenceLookup {

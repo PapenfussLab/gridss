@@ -17,7 +17,7 @@ import com.google.common.collect.RangeSet;
  * 
  * Simple model of chromothripsis
  * 
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class FragmentedChromosome extends SimulatedChromosome {

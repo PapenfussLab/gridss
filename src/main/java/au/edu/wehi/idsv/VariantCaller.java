@@ -24,7 +24,6 @@ import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.validation.BreakpointFilterTracker;
 import au.edu.wehi.idsv.validation.OrderAssertingIterator;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
-import au.edu.wehi.idsv.validation.TruthAnnotator;
 import au.edu.wehi.idsv.vcf.VcfFileUtil;
 import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 
@@ -35,7 +34,7 @@ import com.google.common.collect.Lists;
 
 /**
  * Calls structural variant
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class VariantCaller extends EvidenceProcessorBase {
@@ -48,7 +47,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 	@Override
 	public void process() {
 		callBreakends(null);
-		annotateBreakpoints(null);
+		annotateBreakpoints();
 	}
 	public void callBreakends(ExecutorService threadpool) {
 		log.info("Identifying Breakpoints");
@@ -86,7 +85,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 		}
 	}
 	private CloseableIterator<DirectedEvidence> adjustEvidenceStream(CloseableIterator<DirectedEvidence> evidenceIt) {
-		if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_ITERATORS) {
 			evidenceIt = new PairedEvidenceTracker<DirectedEvidence>(evidenceIt);
 			evidenceIt = new OrderAssertingIterator<DirectedEvidence>(evidenceIt, DirectedEvidenceOrder.ByNatural);
 		}
@@ -136,7 +135,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 			log.info("Start calling maximal cliques for ", vcf);
 			while (it.hasNext()) {
 				VariantContextDirectedEvidence loc = it.next();
-				if (loc.getPhredScaledQual() >= processContext.getVariantCallingParameters().minScore || processContext.getVariantCallingParameters().writeFilteredCalls) {
+				if (loc.getPhredScaledQual() >= processContext.getVariantCallingParameters().minScore || processContext.getVariantCallingParameters().writeFiltered) {
 					// If we're under min score with all possible evidence allocated, we're definitely going to fail
 					// when we restrict evidence to single breakpoint support
 					vcfWriter.add(loc);
@@ -158,7 +157,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 		maxSize = Math.max(maxSize, assemblyEvidence.getAssemblyWindowSize());
 		return maxSize + 2 * (processContext.getVariantCallingParameters().breakendMargin + 1);
 	}
-	public void annotateBreakpoints(File truthVcf) {
+	public void annotateBreakpoints() {
 		log.info("Annotating Calls");
 		List<List<SAMEvidenceSource>> byCategory = Lists.newArrayList();
 		while (byCategory.size() < processContext.getCategoryCount()) {
@@ -180,44 +179,41 @@ public class VariantCaller extends EvidenceProcessorBase {
 			vcfWriter = processContext.getVariantContextWriter(working, true);
 			it = getAllCalledVariants();
 			Iterator<VariantContextDirectedEvidence> breakendIt = Iterators.filter(it, VariantContextDirectedEvidence.class);
-			if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
+			if (Defaults.SANITY_CHECK_ITERATORS) {
 				breakendIt = new OrderAssertingIterator<VariantContextDirectedEvidence>(breakendIt, IdsvVariantContext.ByLocationStart);
 			}
 			// reorder from VCF order to breakend position order
 			breakendIt = new DirectEvidenceWindowedSortingIterator<VariantContextDirectedEvidence>(processContext, maxWindowSize, breakendIt);
-			processContext.getBufferTracker().register(output.getName(), ((TrackedBuffer)breakendIt));
-			if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
+			processContext.registerBuffer(output.getName(), ((TrackedBuffer)breakendIt));
+			if (Defaults.SANITY_CHECK_ITERATORS) {
 				breakendIt = new OrderAssertingIterator<VariantContextDirectedEvidence>(breakendIt, DirectedEvidenceOrder.ByNatural);
 			}
 			evidenceIt = getAllEvidence(true, true, true, true, true);
 			evidenceIt = adjustEvidenceStream(evidenceIt);
 			breakendIt = new SequentialEvidenceAnnotator(processContext, breakendIt, evidenceIt, maxWindowSize, true, evidenceDump);
-			processContext.getBufferTracker().register(output.getName(), ((TrackedBuffer)breakendIt));
+			processContext.registerBuffer(output.getName(), ((TrackedBuffer)breakendIt));
 			// breakpoint position is recalculated, so we need to resort again
 			breakendIt = new DirectEvidenceWindowedSortingIterator<VariantContextDirectedEvidence>(processContext, maxWindowSize, breakendIt);
-			processContext.getBufferTracker().register(output.getName() + ".reorder", ((TrackedBuffer)breakendIt));
-			if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
+			processContext.registerBuffer(output.getName() + ".reorder", ((TrackedBuffer)breakendIt));
+			if (Defaults.SANITY_CHECK_ITERATORS) {
 				breakendIt = new OrderAssertingIterator<VariantContextDirectedEvidence>(breakendIt, DirectedEvidenceOrder.ByNatural);
 			}
 			//breakendIt = new AsyncBufferedIterator<VariantContextDirectedEvidence>(breakendIt, "Annotator-SV");
 			breakendIt = new SequentialCoverageAnnotator(processContext, breakendIt, coverage);
 			//breakendIt = new AsyncBufferedIterator<VariantContextDirectedEvidence>(breakendIt, "Annotator-Coverage");
-			if (truthVcf != null) {
-				breakendIt = new TruthAnnotator(processContext, breakendIt, truthVcf);
-			}
 			// Resort back into VCF sort order
 			breakendIt = new VariantContextWindowedSortingIterator<VariantContextDirectedEvidence>(processContext, maxWindowSize, breakendIt);
-			processContext.getBufferTracker().register(output.getName() + ".vcf", ((TrackedBuffer)breakendIt));
-			if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
+			processContext.registerBuffer(output.getName() + ".vcf", ((TrackedBuffer)breakendIt));
+			if (Defaults.SANITY_CHECK_ITERATORS) {
 				breakendIt = new OrderAssertingIterator<VariantContextDirectedEvidence>(breakendIt, IdsvVariantContext.ByLocationStart);
 				breakendIt = new BreakpointFilterTracker<VariantContextDirectedEvidence>(breakendIt, false);
 			}
 			while (breakendIt.hasNext()) {
 				VariantContextDirectedEvidence variant = breakendIt.next();
 				assert(variant.isValid());
-				if (variant.isNotFiltered() || processContext.getVariantCallingParameters().writeFilteredCalls) {
+				if (variant.isNotFiltered() || processContext.getVariantCallingParameters().writeFiltered) {
 					// add confidence filter
-					variant = processContext.getVariantCallingParameters().applyConfidenceFilter(variant);
+					variant = processContext.getVariantCallingParameters().applyConfidenceFilter(processContext, variant);
 					vcfWriter.add(variant);
 				}
 			}
@@ -241,11 +237,11 @@ public class VariantCaller extends EvidenceProcessorBase {
 		List<ReferenceCoverageLookup> lookup = Lists.newArrayList();
 		for (SAMEvidenceSource s : input) {
 			// one read-ahead thread per input file
-			CloseableIterator<SAMRecord> it = new AsyncBufferedIterator<SAMRecord>(processContext.getSamReaderIterator(s.getSourceFile(), SortOrder.coordinate), s.getSourceFile().getName() + "-Coverage");
+			CloseableIterator<SAMRecord> it = new AsyncBufferedIterator<SAMRecord>(processContext.getSamReaderIterator(s.getSourceFile(), SortOrder.coordinate), s.getSourceFile().getName() + "-Coverage", s.getContext().getConfig().async_bufferCount, s.getContext().getConfig().async_bufferSize);
 			it = new ProgressLoggingSAMRecordIterator(it, new ProgressLogger(log));
 			toClose.add(it);
 			SequentialReferenceCoverageLookup sourceLookup = new SequentialReferenceCoverageLookup(it, s.getMetrics().getIdsvMetrics(), s.getReadPairConcordanceCalculator(), windowSize);
-			processContext.getBufferTracker().register(s.getSourceFile().getName(), sourceLookup);
+			processContext.registerBuffer(s.getSourceFile().getName(), sourceLookup);
 			lookup.add(sourceLookup);
 		}
 		return new AggregateReferenceCoverageLookup(lookup);

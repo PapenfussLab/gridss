@@ -68,7 +68,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 	}
 	private RectangleGraphNode toGraphNode(DirectedEvidence e) {
 		BreakendSummary loc = e.getBreakendSummary();
-		loc = context.getVariantCallingParameters().withMargin(context, loc);
+		loc = context.getVariantCallingParameters().withMargin(loc);
 		if (!(loc instanceof BreakpointSummary)) return null;		
 		BreakpointSummary bp = (BreakpointSummary)loc;
 		long startX = context.getLinear().getLinearCoordinate(bp.referenceIndex, bp.start);

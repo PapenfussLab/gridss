@@ -8,7 +8,7 @@ import com.google.common.collect.Iterables;
 
 /**
  * List helper utility functions
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class CollectionUtil {

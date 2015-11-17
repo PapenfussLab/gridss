@@ -18,7 +18,6 @@ import au.edu.wehi.idsv.IdsvVariantContext;
 import au.edu.wehi.idsv.IdsvVariantContextBuilder;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.collect.AbstractIterator;
@@ -27,7 +26,7 @@ import com.google.common.collect.Sets;
 
 /**
  * Annotates breakends based on a reference truth file
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class TruthAnnotator extends AbstractIterator<VariantContextDirectedEvidence> implements BreakendAnnotator {
@@ -85,13 +84,13 @@ public class TruthAnnotator extends AbstractIterator<VariantContextDirectedEvide
 					breakendHits.add(truthVariant.getID());
 				}
 			} else {
-				throw new RuntimeException(String.format("Matching of truth variant at %s:%d not yet implemented.", truthVariant.getChr(), truthVariant.getStart()));
+				throw new RuntimeException(String.format("Matching of truth variant at %s:%d not yet implemented.", truthVariant.getContig(), truthVariant.getStart()));
 			}
 		}
 		if (!breakpointHits.isEmpty() || !breakendHits.isEmpty()) {
 			IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(processContext, variant);
-			builder.attribute(VcfAttributes.TRUTH_MATCHES.attribute(), Lists.newArrayList(breakpointHits));
-			builder.attribute(VcfAttributes.TRUTH_MISREALIGN.attribute(), Lists.newArrayList(breakendHits));
+			builder.attribute("TRUTH_MATCHES", Lists.newArrayList(breakpointHits));
+			builder.attribute("TRUTH_MISREALIGN", Lists.newArrayList(breakendHits));
 			return (VariantContextDirectedEvidence) builder.make();
 		}
 		return variant;

@@ -8,7 +8,7 @@ import com.google.common.collect.HashMultimap;
 
 /**
  * Hydrates assemblies and filters evidence contributing to an assembly
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class OrthogonalEvidenceIterator extends AbstractIterator<DirectedEvidence> {

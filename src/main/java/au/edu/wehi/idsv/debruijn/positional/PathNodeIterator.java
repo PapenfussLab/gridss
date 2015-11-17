@@ -186,7 +186,7 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 			activeNodes.add(node);
 			maxNodeWidth = Math.max(maxNodeWidth, node.width());
 		}
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			sanityCheck();
 		}
 	}
@@ -195,7 +195,7 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 			KmerNode node = activeNodes.poll();
 			merge(node);
 		}
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			sanityCheck();
 		}
 	}
@@ -257,7 +257,7 @@ public class PathNodeIterator implements Iterator<KmerPathNode> {
 		lookupRemove(pn);
 		firstKmerLookupRemove(pn);
 		assert(pn.length() <= maxNodeLength);
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			sanityCheck();
 		}
 		return pn;

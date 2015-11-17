@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * Distribution of soft clip lengths
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class SoftClipSizeDistribution {

@@ -41,9 +41,12 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.lang3.StringUtils;
 
 import picard.analysis.InsertSizeMetrics;
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraph;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
@@ -315,27 +318,39 @@ public class TestHelper {
 	}
 
 	public static FileSystemContext getFSContext() {
-		return new FileSystemContext(new File(
-				System.getProperty("java.io.tmpdir")), 500000);
+		return new FileSystemContext(new File(System.getProperty("java.io.tmpdir")), 500000);
 	}
-
+	private static Configuration defaultConfig;
+	public static Configuration getDefaultConfig() {
+		if (defaultConfig == null) {
+			try {
+				defaultConfig = GridssConfiguration.LoadConfiguration(null);
+			} catch (ConfigurationException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		return defaultConfig;
+	}
+	public static GridssConfiguration getConfig(File workingDirectory) {
+		GridssConfiguration config;
+		config = new GridssConfiguration(getDefaultConfig(), workingDirectory);
+		config.getSoftClip().minAverageQual = 0;
+		config.minAnchorShannonEntropy = 0;
+		config.getAssembly().minReads = 2;
+		config.getAssembly().includeRemoteSplitReads = false;
+		config.getAssembly().anchorRealignment.perform = false;
+		config.getVariantCalling().breakendMargin = 3;
+		config.getRealignment().aligner = null;
+		config.getRealignment().commandline = ImmutableList.of();
+		return config;
+	}
+	public static GridssConfiguration getConfig() {
+		return getConfig(new File(System.getProperty("java.io.tmpdir")));
+	}
 	public static ProcessingContext getContext(ReferenceLookup ref) {
 		ProcessingContext pc = new ProcessingContext(getFSContext(),
-				new ArrayList<Header>(), new SoftClipParameters() {{
-					minAverageQual = 0;
-					minAnchorEntropy = 0;
-				}},
-				new ReadPairParameters() {{
-					minAnchorEntropy = 0;
-				}}, new AssemblyParameters() {{
-					minReads = 2;
-					assemble_remote_soft_clips = false;
-					performLocalRealignment = false;
-					}},
-				new RealignmentParameters(), new VariantCallingParameters() {{
-					breakendMargin = 3;
-					}},
-				ref, null, false, false);
+				new ArrayList<Header>(), getConfig(),
+				ref, null, false);
 		pc.registerCategory(0, "Normal");
 		pc.registerCategory(1, "Tumour");
 		return pc;
@@ -612,6 +627,10 @@ public class TestHelper {
 		public void add(VariantContext vc) {
 			this.data.add(vc);
 		}
+		@Override
+		public boolean checkError() {
+			return false;
+		}
 	}
 
 	static public SAMRecord Unmapped(int readLength) {
@@ -791,9 +810,9 @@ public class TestHelper {
 	}
 
 	public static DeBruijnReadGraph RG(int k) {
-		AssemblyParameters p = new AssemblyParameters();
-		p.k = k;
-		return new DeBruijnReadGraph(getContext(), AES(), 0, p, null);
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = k;
+		return new DeBruijnReadGraph(AES(pc), 0, null);
 	}
 
 	public static class MockSAMEvidenceSource extends SAMEvidenceSource {
@@ -877,7 +896,7 @@ public class TestHelper {
 		@Override
 		public int getMaxReadMappedLength() { return maxReadLength; }
 		@Override
-		public String getRealignmentScript(int threads) { return ""; }
+		public String getRealignmentScript() { return ""; }
 		@Override
 		public boolean isComplete(ProcessStep step) { return true; }
 		@Override
@@ -916,9 +935,9 @@ public class TestHelper {
 		@Override
 		public int getMaxConcordantFragmentSize() { return fragSize; }
 		@Override
-		public String getRealignmentScript(int threads) { return ""; }
+		public String getRealignmentScript() { return ""; }
 		@Override
-		public boolean isRealignmentComplete() { return realigned; }
+		public boolean isRealignmentComplete(boolean performRealignment) { return realigned; }
 		@Override
 		public CloseableIterator<SAMRecordAssemblyEvidence> iterator(
 				boolean includeRemote, boolean includeFiltered) {
@@ -1020,10 +1039,7 @@ public class TestHelper {
 		return stream.mapToInt(n -> n.weight() * n.width()).sum();
 	}
 	private static List<KmerNode> split(List<? extends KmerNode> in) {
-		return in.stream().flatMap(n -> {
-			if (n instanceof KmerPathNode) return ImmutableKmerNode.copyPath((KmerPathNode)n).flatMap(x -> ImmutableKmerNode.fragment(x));
-			return ImmutableKmerNode.fragment(n);
-		}).collect(Collectors.toList());
+		return ImmutableKmerNode.split(in).collect(Collectors.toList());
 	}
 	public static void assertSameNodes(List<? extends KmerNode> expected, List<? extends KmerNode> actual) {
 		List<KmerNode> splitExpected = split(expected);
@@ -1098,7 +1114,7 @@ public class TestHelper {
 		int aggregateWeight = aggregate.stream().mapToInt(n -> n.weight() * n.width()).sum();
 		assertEquals(supportWeight, aggregateWeight);
 		List<KmerPathNode> pnList = Lists.newArrayList(new PathNodeIterator(aggregate.iterator(), maxPathLength, k));
-		int pathWeight = pnList.stream().flatMap(pn -> ImmutableKmerNode.copyPath(pn)).mapToInt(n -> n.weight() * n.width()).sum();
+		int pathWeight = pnList.stream().flatMap(pn -> ImmutableKmerNode.splitKmers(pn)).mapToInt(n -> n.weight() * n.width()).sum();
 		assertEquals(supportWeight, pathWeight);
 		assertTrue(KmerNodeUtil.ByFirstStart.isOrdered(pnList));
 		PathNodeIteratorTest.assertCompleteGraph(pnList, k);

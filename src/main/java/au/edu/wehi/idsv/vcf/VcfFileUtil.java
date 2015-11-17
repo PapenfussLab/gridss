@@ -54,7 +54,7 @@ public class VcfFileUtil {
 	}
 	/**
 	 * VCF Sort task
-	 * @author cameron.d
+	 * @author Daniel Cameron
 	 *
 	 */
 	public static class SortCallable implements Callable<Void> {
@@ -78,7 +78,7 @@ public class VcfFileUtil {
 		}
 		@Override
 		public Void call() throws IOException {
-			if (IntermediateFileUtil.checkIntermediate(output, input)) {
+			if (IntermediateFileUtil.checkIntermediate(output, input, processContext.getConfig().ignoreFileTimestamps)) {
 				log.info("Not sorting as output already exists: " + output);
 				return null;
 			}
@@ -109,7 +109,7 @@ public class VcfFileUtil {
 				collection.doneAdding();
 				writer = processContext.getVariantContextWriter(FileSystemContext.getWorkingFileFor(output), indexed);
 		    	wit = collection.iterator();
-		    	if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
+		    	if (Defaults.SANITY_CHECK_ITERATORS) {
 					wit = new AutoClosingIterator<VariantContext>(new OrderAssertingIterator<VariantContext>(wit, sortComparator), ImmutableList.<Closeable>of(wit));
 				}
 				while (wit.hasNext()) {

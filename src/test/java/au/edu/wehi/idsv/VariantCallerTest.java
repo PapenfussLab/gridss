@@ -20,7 +20,7 @@ public class VariantCallerTest extends IntermediateFilesTest {
 		final int testSize = 64;
 		final List<SAMRecord> in = new ArrayList<SAMRecord>();
 		final ProcessingContext pc = getCommandlineContext();
-		pc.getVariantCallingParameters().writeFilteredCalls = true;
+		pc.getVariantCallingParameters().writeFiltered = true;
 		StubSAMEvidenceSource ses = new StubSAMEvidenceSource(pc, input, 0, 0, fragSize);
 		for (int i = 1; i < testSize; i++) {
 			for (int j = 1; j < testSize; j++) {
@@ -37,7 +37,7 @@ public class VariantCallerTest extends IntermediateFilesTest {
 		createInput(in);
 		VariantCaller vc = new VariantCaller(pc, output, ImmutableList.<SAMEvidenceSource>of(ses), aes, null);
 		vc.callBreakends(null);
-		vc.annotateBreakpoints(null);
+		vc.annotateBreakpoints();
 		List<IdsvVariantContext> annotated = getVcf(new File(testFolder.getRoot(), "out.vcf"), null);
 		List<IdsvVariantContext> calls = getVcf(new File(new File(testFolder.getRoot(), "out.vcf.idsv.working"), "out.vcf.idsv.breakpoint.vcf"), null);
 		// with no filtering, annotation should not change call set

@@ -10,7 +10,7 @@ import java.util.Arrays;
 /**
  * Reference genome stored only in memory and not backed by a fasta file.
  * 
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class InMemoryReferenceSequenceFile implements ReferenceLookup {

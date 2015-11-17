@@ -15,7 +15,7 @@ import java.util.TreeMap;
  * 
  * Results for positions before a given sliding window are discarded. 
  * 
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class SlidingWindowIntervalAccumulator {

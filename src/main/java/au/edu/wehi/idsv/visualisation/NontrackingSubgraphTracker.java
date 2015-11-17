@@ -7,7 +7,7 @@ import au.edu.wehi.idsv.graph.PathNode;
 
 /**
  * Does not perform any algorithm tracking
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class NontrackingSubgraphTracker<T, PN extends PathNode<T>> implements SubgraphAssemblyAlgorithmTracker<T, PN> {

@@ -10,7 +10,7 @@ import au.edu.wehi.idsv.ProcessingContext;
 
 /**
  * Simulates chromothripsis through random translocation
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 @CommandLineProgramProperties(

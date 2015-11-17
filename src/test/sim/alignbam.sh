@@ -37,7 +37,7 @@ function align_bwa {
 	CX_FQ1=$1
 	CX_FQ2=$2
 	CX_ALIGNER=bwamem
-	CX_ALIGNER_FLAGS="-M -Y" 
+	CX_ALIGNER_FLAGS=$3
 	CX_ALIGNER_SOFTCLIP=1
 	cx_save
 	INDEX=$(ls -1 ${CX_REFERENCE/.fa/}*.bwt)
@@ -50,7 +50,7 @@ function align_bwa {
 	XC_MULTICORE=1
 	XC_OUTPUT=$CX.su.bam
 	XC_SCRIPT="
-	bwa mem -t $XC_CORES $INDEX $1 $2 \
+	bwa mem -t $XC_CORES $3 $INDEX $1 $2 \
 	| AddOrReplaceReadGroups I=/dev/stdin O=$CX.tmp.bam $READ_GROUP_PARAMS && \
 	mv $CX.tmp.bam $XC_OUTPUT
 	"
@@ -181,6 +181,7 @@ for FQ1 in $(ls -1 $DATA_DIR/*.1.fastq.gz $DATA_DIR/*.1.fq 2>/dev/null) ; do
 	else
 		align_bwa $FQ1 $FQ2
 		if [[ $FULL_MATRIX -eq 1 ]] ; then
+			align_bwa $FQ1 $FQ2 "-M -Y"
 			align_novoalign $FQ1 $FQ2
 			#align_subread $FQ1 $FQ2 # exclude subread until MAPQ & SC issues resolved
 			align_bowtie2 $FQ1 $FQ2

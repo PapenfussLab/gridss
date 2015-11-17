@@ -1,10 +1,19 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileWriter;
+import htsjdk.samtools.SAMFileWriterFactory;
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.List;
@@ -15,9 +24,17 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.configuration.ConfigurationException;
+
 import picard.analysis.InsertSizeMetrics;
+import picard.cmdline.CommandLineProgram;
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
+import picard.cmdline.StandardOptionDefinitions;
+import picard.sam.CreateSequenceDictionary;
+import au.edu.wehi.idsv.alignment.AlignerFactory;
+import au.edu.wehi.idsv.bed.IntervalBed;
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
 
 import com.google.common.base.Function;
@@ -35,28 +52,45 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
         usageShort = "Calls structural variations from NGS sequencing data"
 )
 public class Idsv extends CommandLineProgram {
-	private Log log = Log.getInstance(Idsv.class);
-	@Option(doc="Number of worker threads to spawn."
-			+ " Note that I/O threads not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
+	private static final Log log = Log.getInstance(Idsv.class);
+	@Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Coordinate-sorted input BAM file.")
+    public List<File> INPUT;
+	@Option(shortName="IC", doc="Input category. Variant calling evidence is reported for categories 0 (default) to the maximum category specified. "
+			+ "Specify categories when you require a breakdown of support (eg tumour/normal or multi-sample variant calling). ", optional=true)
+    public List<Integer> INPUT_CATEGORY;	
+    @Option(doc = "Per input maximum concordant fragment size.", optional=true)
+    public List<Integer> INPUT_MAX_FRAGMENT_SIZE;
+    @Option(doc = "Per input minimum concordant fragment size.", optional=true)
+    public List<Integer> INPUT_MIN_FRAGMENT_SIZE;
+    @Option(doc = "Percent of read pairs considered concorant (0.0-1.0). "
+    		+ "If this is unset, the SAM proper pair flag is used to determine whether a read is discordantly aligned. "
+    		+ "Explicit fragment size specification overrides this setting.", optional=true)
+    public Float READ_PAIR_CONCORDANT_PERCENT = 0.995f;
+    @Option(shortName="BL", doc = "BED blacklist of regions to ignore. Assembly of high-coverage centromeric repeat region is slow, "
+    		+ "and if such regions are to be filtered in downstream analysis, blacklisting those region will improve assembly runtime"
+    		+ "performance. For human WGS, the ENCODE DAC blacklist is recommended.", optional=true)
+    public File BLACKLIST = null;
+	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="VCF structural variation calls.")
+    public File OUTPUT;
+    @Option(shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME, doc="Reference used for alignment")
+    public File REFERENCE;    
+    // --- intermediate file parameters ---
+    @Option(doc = "Save intermediate results into separate files for each chromosome."
+    		+ " Increases the number of intermediate files but allows a greater level of parallelisation.", optional = true)
+    public boolean PER_CHR = true;
+    @Option(doc = "Directory to place intermediate results directories. Default location is the same directory"
+    		+ " as the associated input or output file.", optional = true)
+    public File WORKING_DIR = null;
+    // --- evidence filtering parameters ---
+    @Option(shortName="C", doc = "gridss configuration file containing overrides", optional=true)
+    public File CONFIGURATION_FILE = null;
+	@Option(doc="Number of worker threads to spawn. Defaults to number of cores available."
+			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
     		shortName="THREADS")
     public int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
-    // The following attributes define the command-line arguments
-	@Option(doc="VCF containing true calls. Called variants will be annotated as true/false positive calls based on this truth file.", optional=true)
-    public File TRUTH_VCF = null;
-    @Option(doc = "Processing steps to execute",
-            optional = true)
+    //@Option(doc = "Processing steps to execute", optional = true)
     public EnumSet<ProcessStep> STEPS = ProcessStep.ALL_STEPS;
-    private SAMEvidenceSource constructSamEvidenceSource(File file, int index, int category) throws IOException { 
-    	List<Integer> maxFragSizeList = category == 1 ? INPUT_TUMOUR_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE : INPUT_READ_PAIR_MAX_CONCORDANT_FRAGMENT_SIZE;
-    	List<Integer> minFragSizeList = category == 1 ? INPUT_TUMOUR_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE : INPUT_READ_PAIR_MIN_CONCORDANT_FRAGMENT_SIZE;
-    	int maxFragSize = 0;
-    	int minFragSize = 0;
-    	if (maxFragSizeList != null && maxFragSizeList.size() > index && maxFragSizeList.get(index) != null) {
-    		maxFragSize = maxFragSizeList.get(index);
-    	}
-    	if (minFragSizeList != null && minFragSizeList.size() > index && minFragSizeList.get(index) != null) {
-    		minFragSize = minFragSizeList.get(index);
-    	}
+    private SAMEvidenceSource constructSamEvidenceSource(File file, int category, int minFragSize, int maxFragSize) {
     	if (maxFragSize > 0) {
     		return new SAMEvidenceSource(getContext(), file, category, minFragSize, maxFragSize);
     	} else if (READ_PAIR_CONCORDANT_PERCENT != null) {
@@ -65,30 +99,123 @@ public class Idsv extends CommandLineProgram {
     		return new SAMEvidenceSource(getContext(), file, category);
     	}
     }
-    public List<SAMEvidenceSource> createSamEvidenceSources() throws IOException {
-    	int i = 0;
+    private <T> T getOffset(List<T> list, int offset, T defaultValue) {
+    	if (offset >= list.size()) return defaultValue;
+    	T obj = list.get(offset);
+    	if (obj == null) return defaultValue;
+    	return obj;
+    }
+    public List<SAMEvidenceSource> createSamEvidenceSources() {
     	List<SAMEvidenceSource> samEvidence = Lists.newArrayList();
-    	for (File f : INPUT) {
-    		log.info("Processing normal input ", f);
-    		SAMEvidenceSource sref = constructSamEvidenceSource(f, i++, 0);
-    		samEvidence.add(sref);
-    	}
-    	for (File f : INPUT_TUMOUR) {
-    		log.info("Processing tumour input ", f);
-    		SAMEvidenceSource sref = constructSamEvidenceSource(f, i++, 1);
-    		samEvidence.add(sref);
+    	for (int i = 0; i < INPUT.size(); i++) {
+    		samEvidence.add(constructSamEvidenceSource(
+    				getOffset(INPUT, i, null),
+    				getOffset(INPUT_CATEGORY, i, 0),
+    				getOffset(INPUT_MIN_FRAGMENT_SIZE, i, 0),
+    				getOffset(INPUT_MAX_FRAGMENT_SIZE, i, 0)));
     	}
     	return samEvidence;
     }
+    private void ensureArgs() {
+		IOUtil.assertFileIsReadable(REFERENCE);
+		for (File f : INPUT) {
+			IOUtil.assertFileIsReadable(f);
+		}
+		IOUtil.assertFileIsWritable(OUTPUT);
+		if (WORKING_DIR == null) {
+			WORKING_DIR = new File(".");
+		}
+		IOUtil.assertDirectoryIsWritable(WORKING_DIR);
+	}
+    public static void ensureIndexed(File fa) throws IOException {
+    	try (ReferenceSequenceFile reference = ReferenceSequenceFileFactory.getReferenceSequenceFile(fa)) {
+    		if (!reference.isIndexed()) {
+    			String msg = String.format("Unable to find index for %1$s. Please run 'samtools faidx %1$s' to generate an index file.", fa);
+    			log.error(msg);
+    			throw new IOException(msg);
+    		} else {
+    			log.debug(fa, " is indexed.");
+    		}
+    	}
+    }
+    public static void ensureSequenceDictionary(File fa) throws IOException {
+    	File output = new File(fa.getAbsolutePath() + ".dict");
+    	try (ReferenceSequenceFile reference = ReferenceSequenceFileFactory.getReferenceSequenceFile(fa)) {
+	    	SAMSequenceDictionary dictionary = reference.getSequenceDictionary();
+	    	if (dictionary == null) {
+	    		log.info("Attempting to generate missing sequence dictionary for ", fa);
+	    		try {
+		    		final SAMSequenceDictionary sequences = new CreateSequenceDictionary().makeSequenceDictionary(fa);
+		            final SAMFileHeader samHeader = new SAMFileHeader();
+		            samHeader.setSequenceDictionary(sequences);
+		            try (SAMFileWriter samWriter = new SAMFileWriterFactory().makeSAMWriter(samHeader, false, output)) {
+		            }
+	    		} catch (Exception e) {
+	    			log.error("Missing sequence dictionary for ", fa, " and creation of sequencing dictionary failed.",
+	    					"Please run the Picard tools CreateSequenceDictionary utility to create", output);
+	    			throw e;
+	    		}
+	    		log.info("Created sequence dictionary ", output);
+	    	} else {
+	    		log.debug("Found sequence dictionary for ", fa);
+	    	}
+    	}
+    }
+	public void ensureDictionariesMatch() throws IOException {
+		ReferenceSequenceFile ref = null;
+		try {
+			ref = ReferenceSequenceFileFactory.getReferenceSequenceFile(REFERENCE);
+			SAMSequenceDictionary dictionary = ref.getSequenceDictionary();
+			final SamReaderFactory samFactory = SamReaderFactory.makeDefault();
+			for (File f : INPUT) {
+				SamReader reader = null;
+				try {
+					reader = samFactory.open(f);
+					SequenceUtil.assertSequenceDictionariesEqual(reader.getFileHeader().getSequenceDictionary(), dictionary, f, REFERENCE);
+				} catch (htsjdk.samtools.util.SequenceUtil.SequenceListsDifferException e) {
+					log.error("Reference genome used by ", f, " does not match reference genome ", REFERENCE, ". ",
+							"The reference supplied must match the reference used for every input.");
+					throw e;
+				} finally {
+					if (reader != null) reader.close();
+				}
+			}
+		} finally {
+			if (ref != null) ref.close();
+		}
+	}
+	public static String getRealignmentScript(Iterable<? extends EvidenceSource> it) {
+    	StringBuilder sb = new StringBuilder();
+    	for (EvidenceSource source : it) {
+    		if (!source.isRealignmentComplete(true)) {
+    			sb.append(source.getRealignmentScript());
+    		}
+    	}
+    	return sb.toString();
+    }
     @Override
 	protected int doWork() {
+    	ensureArgs();
+    	if (INPUT_CATEGORY != null && INPUT_CATEGORY.size() > 0 && INPUT_CATEGORY.size() != INPUT.size()) {
+    		log.error("INPUT_CATEGORY must omitted or specified for every INPUT.");
+    		return -1;
+    	}
     	ExecutorService threadpool = null;
-    	ExecutorService halfthreadpool = null;
     	try {
-    		hackSimpleCalls();
-    		threadpool = Executors.newFixedThreadPool(WORKER_THREADS, new ThreadFactoryBuilder().setDaemon(false).setNameFormat("Worker-%d").build());
+    		ensureIndexed(REFERENCE);
+    		ensureSequenceDictionary(REFERENCE);
+    		ensureDictionariesMatch();
+    		// Spam output with gridss parameters used
+    		getContext();
+    		// Force loading of aligner up-front
+    		log.info("Loading aligner");
+    		AlignerFactory.create();
+    		log.info("Testing for presence of external aligner");
+    		
+    		//hackSimpleCalls(processContext);
+    		threadpool = Executors.newFixedThreadPool(getContext().getWorkerThreadCount(), new ThreadFactoryBuilder().setDaemon(false).setNameFormat("Worker-%d").build());
     		log.info(String.format("Using %d worker threads", WORKER_THREADS));
-	    	ensureDictionariesMatch();
+	    	
 	    	List<SAMEvidenceSource> samEvidence = createSamEvidenceSources();
 	    	
 	    	extractEvidence(threadpool, samEvidence);
@@ -101,7 +228,7 @@ public class Idsv extends CommandLineProgram {
 	    		}
 	    	}
 	    	
-	    	if (!checkRealignment(samEvidence, WORKER_THREADS)) {
+	    	if (!checkRealignment(samEvidence)) {
 	    		return -1;
     		}
 	    	sortRealignedSoftClips(threadpool, samEvidence);
@@ -109,8 +236,7 @@ public class Idsv extends CommandLineProgram {
 	    	AssemblyEvidenceSource assemblyEvidence = new AssemblyEvidenceSource(getContext(), samEvidence, OUTPUT);
 	    	assemblyEvidence.ensureAssembled(threadpool);
 	    	
-	    	compoundRealignment(threadpool, ImmutableList.of(assemblyEvidence));
-	    	if (!checkRealignment(ImmutableList.of(assemblyEvidence), WORKER_THREADS)) {
+	    	if (!checkRealignment(ImmutableList.of(assemblyEvidence))) {
 	    		return -1;
     		}
 	    	// edge case: need to ensure assembled again since realignment could have completed
@@ -131,7 +257,7 @@ public class Idsv extends CommandLineProgram {
 	    			return -1;
 	    		}
 	    	}
-	    	if (!assemblyEvidence.isRealignmentComplete()) {
+	    	if (!assemblyEvidence.isRealignmentComplete(true)) {
 	    		log.error("Unable to call variants: generation of breakend alignment of assemblies not complete.");
     			return -1;
 	    	}
@@ -141,7 +267,8 @@ public class Idsv extends CommandLineProgram {
 	    	} else {
 	    		log.info(OUTPUT.toString() + " exists not recreating.");
 	    	}
-	    	hackSimpleCalls();
+	    	//hackSimpleCalls(processContext);
+	    	processContext.close();
     	} catch (IOException e) {
     		log.error(e);
     		throw new RuntimeException(e);
@@ -151,12 +278,39 @@ public class Idsv extends CommandLineProgram {
 		} catch (ExecutionException e) {
 			log.error("Exception thrown from background task", e.getCause());
     		throw new RuntimeException("Exception thrown from background task", e.getCause());
+		} catch (ConfigurationException e) {
+			log.error(e);
+    		throw new RuntimeException(e);
 		} finally {
 			shutdownPool(threadpool);
 			threadpool = null;
 		}
 		return 0;
     }
+    private ProcessingContext processContext = null;
+	public ProcessingContext getContext() {
+		if (processContext == null) {
+			FileSystemContext fsc = new FileSystemContext(TMP_DIR.get(0), WORKING_DIR, MAX_RECORDS_IN_RAM);
+			GridssConfiguration config;
+			try {
+				config = new GridssConfiguration(CONFIGURATION_FILE, fsc.getIntermediateDirectory(OUTPUT));
+			} catch (ConfigurationException e) {
+				throw new RuntimeException(e);
+			}
+			processContext = new ProcessingContext(fsc, getDefaultHeaders(), config, REFERENCE, PER_CHR);
+			processContext.registerCategories(INPUT_CATEGORY.stream().mapToInt(x -> (x == null ? 0 : x)).max().orElse(0));
+			processContext.setWorkerThreadCount(WORKER_THREADS);
+			if (BLACKLIST != null) {
+				try {
+					processContext.setBlacklistedRegions(new IntervalBed(processContext.getDictionary(), processContext.getLinear(), BLACKLIST));
+				} catch (IOException e) {
+					log.error(e, "Error loading BED blacklist. ", BLACKLIST);
+					throw new RuntimeException(e);
+				}
+			}
+		}
+		return processContext;
+	}
 	private void sortRealignedSoftClips(ExecutorService threadpool, List<SAMEvidenceSource> samEvidence) throws InterruptedException, ExecutionException {
 		for (Future<Void> future : threadpool.invokeAll(Lists.transform(samEvidence, new Function<SAMEvidenceSource, Callable<Void>>() {
 			@Override
@@ -205,76 +359,42 @@ public class Idsv extends CommandLineProgram {
 		}
 		log.info("Evidence extraction complete.");
 	}
-	private void callVariants(ExecutorService threadpool, List<SAMEvidenceSource> samEvidence, AssemblyEvidenceSource assemblyEvidence) throws IOException {
+	private void callVariants(ExecutorService threadpool, List<SAMEvidenceSource> samEvidence, AssemblyEvidenceSource assemblyEvidence) throws IOException, ConfigurationException {
 		VariantCaller caller = null;
 		try {
 			EvidenceToCsv evidenceDump = null;
-			if (Defaults.EXPORT_EVIDENCE_ALLOCATION) {
-				evidenceDump = new EvidenceToCsv(new File(getContext().getFileSystemContext().getIntermediateDirectory(OUTPUT), "evidence.csv"));
+			if (getContext().getConfig().getVisualisation().evidenceAllocation) {
+				evidenceDump = new EvidenceToCsv(new File(getContext().getConfig().getVisualisation().directory, "evidence.csv"));
 			}
 			// Run variant caller single-threaded as we can do streaming calls
 			caller = new VariantCaller(
-				getContext(),
+					getContext(),
 				OUTPUT,
 				samEvidence,
 				assemblyEvidence,
 				evidenceDump);
 			caller.callBreakends(threadpool);
-			caller.annotateBreakpoints(TRUTH_VCF);
+			caller.annotateBreakpoints();
 		} finally {
 			if (caller != null) caller.close();
 		}
 	}
-	private void hackSimpleCalls() throws IOException {
-		if (OUTPUT.exists()) {
-			File simpleHack = new File(OUTPUT.getParent(), OUTPUT.getName() + ".simple.vcf");
-			if (!simpleHack.exists()) {
-				new BreakendToSimpleCall(getContext()).convert(OUTPUT, simpleHack);
-			}
-		}
-	}
-	private void compoundRealignment(ExecutorService threadpool, List<? extends EvidenceSource> evidence) throws InterruptedException, ExecutionException {
-		log.info("Checking for nested realignment");
-		for (Future<Void> future : threadpool.invokeAll(Lists.transform(evidence, new Function<EvidenceSource, Callable<Void>>() {
-			@Override
-			public Callable<Void> apply(final EvidenceSource input) {
-				return new Callable<Void>() {
-					@Override
-					public Void call() throws Exception {
-						try {
-							input.iterateRealignment();
-						} catch (Exception e) {
-							log.error(e, "Exception thrown by worker thread");
-							throw e;
-						}
-						return null;
-					}
-				};
-			}
-		}))) {
-			// throw exception from worker thread here
-			future.get();
-		}
-		log.info("Nested realignment checking complete");
-	}
-    private boolean checkRealignment(List<? extends EvidenceSource> evidence, int threads) throws IOException {
-    	String instructions = getRealignmentScript(evidence, threads);
+//	private void hackSimpleCalls() throws IOException, ConfigurationException {
+//		if (OUTPUT.exists()) {
+//			File simpleHack = new File(OUTPUT.getParent(), OUTPUT.getName() + ".simple.vcf");
+//			if (!simpleHack.exists()) {
+//				new BreakendToSimpleCall(getContext()).convert(OUTPUT, simpleHack);
+//			}
+//		}
+//	}
+    private boolean checkRealignment(List<? extends EvidenceSource> evidence) throws IOException {
+    	String instructions = getRealignmentScript(evidence);
     	if (instructions != null && instructions.length() > 0) {
     		log.error("Please realign intermediate fastq files. Suggested command-line for alignment is:\n" +
     				"##################################\n"+
     				instructions +
     				"##################################");
 	    	log.error("Please rerun after alignments have been performed.");
-	    	if (SCRIPT != null) {
-	    		FileWriter writer = null;
-	    		try {
-	    			writer = new FileWriter(SCRIPT);
-	    			writer.write(instructions);
-	    		} finally {
-	    			if (writer != null) writer.close(); 
-	    		}
-	    		log.error("Realignment script has been written to ", SCRIPT);
-	    	}
 	    	return false;
     	}
     	return true;

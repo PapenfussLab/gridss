@@ -25,9 +25,10 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 		File output = new File(super.testFolder.getRoot(), "chr12-244000.vcf");
 		setReference(new File("C:/dev/chr12.fa"));
 		createInput(new File("src/test/resources/chr12-244000.bam"));
-		SAMEvidenceSource ses = new SAMEvidenceSource(getCommandlineContext(), input, 0);
+		ProcessingContext pc = getCommandlineContext(false);
+		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
 		ses.completeSteps(ProcessStep.ALL_STEPS);
-		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), output);
+		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), output);
 		aes.ensureAssembled();
 		File dir = new File(super.testFolder.getRoot(), "visualisation");
 		File[] export = dir.listFiles((FileFilter)new WildcardFileFilter("*.dot"));
@@ -37,12 +38,12 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 	@Override
 	public ProcessingContext getCommandlineContext(boolean perChr) {
 		ProcessingContext pc = super.getCommandlineContext(perChr);
-		pc.getAssemblyParameters().maxBaseMismatchForCollapse = 1;
-		pc.getAssemblyParameters().collapseBubblesOnly = true;
-		pc.getAssemblyParameters().debruijnGraphVisualisationDirectory = new File(super.testFolder.getRoot(), "visualisation");
-		pc.getAssemblyParameters().visualiseAll = true;
+		pc.getAssemblyParameters().errorCorrection.maxBaseMismatchForCollapse = 1;
+		pc.getAssemblyParameters().errorCorrection.collapseBubblesOnly = true;
 		pc.getAssemblyParameters().method = AssemblyAlgorithm.Positional;
-		pc.getAssemblyParameters().includeRemoteSoftClips = false;
+		pc.getAssemblyParameters().includeRemoteSplitReads = false;
+		pc.getConfig().getVisualisation().assembly = true;
+		pc.getConfig().getVisualisation().directory.mkdirs();
 		return pc;
 	}
 }

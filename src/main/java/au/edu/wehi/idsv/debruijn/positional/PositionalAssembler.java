@@ -8,12 +8,13 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
-import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
+import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
+import au.edu.wehi.idsv.configuration.VisualisationConfiguration;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
 
 import com.google.common.collect.Iterators;
@@ -22,7 +23,7 @@ import com.google.common.collect.PeekingIterator;
 /**
  * Assemblies non-reference breakend contigs
  * 
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> {
@@ -43,11 +44,6 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 	}
 	public PositionalAssembler(ProcessingContext context, AssemblyEvidenceSource source, Iterator<DirectedEvidence> it) {
 		this(context, source, it, null);
-	}
-	public void exportGraph(File file) {
-		if (currentAssembler != null) {
-			currentAssembler.exportGraph(file);
-		}
 	}
 	@Override
 	public boolean hasNext() {
@@ -80,52 +76,52 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 		}
 	}
 	private NonReferenceContigAssembler createAssembler() {
-		AssemblyParameters ap = context.getAssemblyParameters();
+		AssemblyConfiguration ap = context.getAssemblyParameters();
 		int maxSupportNodeWidth = source.getMaxConcordantFragmentSize() - source.getMinConcordantFragmentSize() + 1; 		
 		int maxReadLength = source.getMaxMappedReadLength();
 		int k = ap.k;
 		int maxEvidenceDistance = maxSupportNodeWidth + maxReadLength + 2;
-		int maxPathLength = ap.positionalMaxPathLengthInBases(maxReadLength);
-		int maxPathCollapseLength = ap.positionalMaxPathCollapseLengthInBases(maxReadLength);
-		int anchorAssemblyLength = ap.anchorAssemblyLength;
+		int maxPathLength = ap.positional.maxPathLengthInBases(maxReadLength);
+		int maxPathCollapseLength = ap.errorCorrection.maxPathCollapseLengthInBases(maxReadLength);
+		int anchorAssemblyLength = ap.anchorLength;
 		int referenceIndex = it.peek().getBreakendSummary().referenceIndex;
 		ReferenceIndexIterator evidenceIt = new ReferenceIndexIterator(it, referenceIndex);
 		EvidenceTracker evidenceTracker = new EvidenceTracker();
 		SupportNodeIterator supportIt = new SupportNodeIterator(k, evidenceIt, source.getMaxConcordantFragmentSize(), evidenceTracker);
 		AggregateNodeIterator agIt = new AggregateNodeIterator(supportIt);
 		Iterator<KmerNode> knIt = agIt;
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			knIt = evidenceTracker.new AggregateNodeAssertionInterceptor(knIt);
 		}
 		PathNodeIterator pathNodeIt = new PathNodeIterator(knIt, maxPathLength, k); 
 		Iterator<KmerPathNode> pnIt = pathNodeIt;
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			pnIt = evidenceTracker.new PathNodeAssertionInterceptor(pnIt, "PathNodeIterator");
 		}
 		CollapseIterator collapseIt = null;
 		PathSimplificationIterator simplifyIt = null;
-		if (ap.maxBaseMismatchForCollapse > 0) {
-			if (!ap.collapseBubblesOnly) {
-				log.warn("Collapsing all paths is an exponential time operation. gridss is likely to hang if your genome contains repetative sequence");
-				collapseIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, ap.maxBaseMismatchForCollapse, false, 0);
+		if (ap.errorCorrection.maxBaseMismatchForCollapse > 0) {
+			if (!ap.errorCorrection.collapseBubblesOnly) {
+				log.warn("Collapsing all paths is an exponential time operation. Gridss is likely to hang if your genome contains repetative sequence");
+				collapseIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, ap.errorCorrection.maxBaseMismatchForCollapse, false, 0);
 			} else {
-				collapseIt = new LeafBubbleCollapseIterator(pnIt, k, maxPathCollapseLength, ap.maxBaseMismatchForCollapse);
+				collapseIt = new LeafBubbleCollapseIterator(pnIt, k, maxPathCollapseLength, ap.errorCorrection.maxBaseMismatchForCollapse);
 			}
 			pnIt = collapseIt;
-			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 				pnIt = evidenceTracker.new PathNodeAssertionInterceptor(pnIt, "PathCollapseIterator");
 			}
 			simplifyIt = new PathSimplificationIterator(pnIt, maxPathLength, maxSupportNodeWidth);
 			pnIt = simplifyIt;
-			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 				pnIt = evidenceTracker.new PathNodeAssertionInterceptor(pnIt, "PathSimplificationIterator");
 			}
 		}
 		currentAssembler = new NonReferenceContigAssembler(pnIt, referenceIndex, maxEvidenceDistance, anchorAssemblyLength, k, source, evidenceTracker);
-		if (ap.trackAlgorithmProgress && ap.debruijnGraphVisualisationDirectory != null) {
-			ap.debruijnGraphVisualisationDirectory.mkdirs();
+		VisualisationConfiguration vis = context.getConfig().getVisualisation();
+		if (vis.assemblyProgress) {
 			String filename = String.format("positional-%s-%s.csv", context.getDictionary().getSequence(referenceIndex).getSequenceName(), direction);
-			File file = new File(ap.debruijnGraphVisualisationDirectory, filename);
+			File file = new File(vis.directory, filename);
 			PositionalDeBruijnGraphTracker exportTracker;
 			try {
 				exportTracker = new PositionalDeBruijnGraphTracker(file, supportIt, agIt, pathNodeIt, collapseIt, simplifyIt, evidenceTracker, currentAssembler);

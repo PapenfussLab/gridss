@@ -8,6 +8,7 @@ import java.util.Arrays;
 
 import org.apache.commons.lang3.StringUtils;
 
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 public class SoftClipEvidence implements DirectedEvidence {
@@ -128,10 +129,10 @@ public class SoftClipEvidence implements DirectedEvidence {
 		return getSoftClipLength(location.direction, record); 
 	}
 	/**
-	 * 0-100 scaled percentage identity of mapped read bases.
-	 * @return percentage of reference-aligned bases that match reference 
+	 * 0-1 scaled percentage identity of mapped read bases.
+	 * @return portion of reference-aligned bases that match reference 
 	 */
-	public float getAlignedPercentIdentity() {
+	public float getAlignedIdentity() {
 		// final byte[] referenceBases = refSeq.get(sequenceDictionary.getSequenceIndex(rec.getReferenceName())).getBases();
         // rec.setAttribute(SAMTag.NM.name(), SequenceUtil.calculateSamNmTag(rec, referenceBases, 0, bisulfiteSequence));
         //if (rec.getBaseQualities() != SAMRecord.NULL_QUALS) {
@@ -140,7 +141,7 @@ public class SoftClipEvidence implements DirectedEvidence {
 		if (nm != null) {
 			int refBasesToConsider = record.getReadLength() - SAMRecordUtil.getStartSoftClipLength(record) - SAMRecordUtil.getEndSoftClipLength(record); 
 			int refBaseMatches = refBasesToConsider - nm + SequenceUtil.countInsertedBases(record) + SequenceUtil.countDeletedBases(record); 
-			return 100.0f * refBaseMatches / (float)refBasesToConsider;
+			return refBaseMatches / (float)refBasesToConsider;
 		}
 		String md = record.getStringAttribute(SAMTag.MD.name());
 		if (StringUtils.isNotEmpty(md)) {
@@ -190,14 +191,15 @@ public class SoftClipEvidence implements DirectedEvidence {
 	 * @param rm metrics
 	 * @return true if the soft clip provides support, false otherwise
 	 */
-	public boolean meetsEvidenceCritera(SoftClipParameters p) {
-		return getMappingQuality() >= p.minReadMapq
-				&& getSoftClipLength() >= p.minLength
-				&& getAlignedPercentIdentity() >= p.minAnchorIdentity
-				&& getAverageClipQuality() >= p.minAverageQual
-				&& SAMRecordUtil.alignedEntropy(getSAMRecord()) >= p.minAnchorEntropy
+	public boolean meetsEvidenceCritera() {
+		GridssConfiguration config = source.getContext().getConfig();
+		return getMappingQuality() >= config.minReadMapq
+				&& getSoftClipLength() >= config.getSoftClip().minLength
+				&& getAlignedIdentity() >= config.getSoftClip().minAnchorIdentity
+				&& getAverageClipQuality() >= config.getSoftClip().minAverageQual
+				&& SAMRecordUtil.alignedEntropy(getSAMRecord()) >= config.minAnchorShannonEntropy
 				&& !isDovetailing()
-				&& !p.adapters.isAdapterSoftClip(this);
+				&& !config.adapters.isAdapterSoftClip(this);
 	}
 	/**
 	 * Dovetailing reads do not support SVs, they are caused by fragment size
@@ -217,7 +219,7 @@ public class SoftClipEvidence implements DirectedEvidence {
 			return false;
 		return record.getMateReferenceIndex() == record.getReferenceIndex()
 				&& Math.abs(record.getAlignmentStart()
-						- record.getMateAlignmentStart()) <= Defaults.READ_PAIR_DOVETAIL_MARGIN
+						- record.getMateAlignmentStart()) <= source.getContext().getConfig().dovetailMargin
 				// dovetails happen on the 3' end of the read for FR
 				&& ((location.direction == BreakendDirection.Forward && !record
 						.getReadNegativeStrandFlag()) || (location.direction == BreakendDirection.Backward && record

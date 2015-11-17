@@ -7,7 +7,7 @@ import au.edu.wehi.idsv.graph.PathNode;
 
 /**
  * Tracks de Bruijn subgraph assembly progress for a single subgraph
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public interface SubgraphAssemblyAlgorithmTracker<T, PN extends PathNode<T>> {

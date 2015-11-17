@@ -211,7 +211,7 @@ public class PathCollapseIterator extends CollapseIterator implements DeBruijnGr
 		return false;
 	}
 	private boolean couldMatch(KmerPathNodePath pathA, KmerPathNodePath pathB, int basesDifferent, boolean traverseForward) {
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			// can't actually do this assertion as the path difference may actually be violated when a non-bubble path is merged
 			//      F - -
 			//     /     \

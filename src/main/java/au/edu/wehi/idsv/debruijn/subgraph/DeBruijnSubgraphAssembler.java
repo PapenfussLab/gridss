@@ -5,7 +5,6 @@ import java.io.File;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.ReadEvidenceAssembler;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
@@ -26,14 +25,12 @@ import com.google.common.collect.Iterables;
  *
  */
 public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
-	private final ProcessingContext processContext;
 	private final AssemblyEvidenceSource source;
 	private DeBruijnReadGraph graph;
 	private int currentReferenceIndex = -1;
 	private SubgraphAssemblyAlgorithmTrackerBEDWriter<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> currentTracker = null;
 	private int processStep = 0;
-	public DeBruijnSubgraphAssembler(ProcessingContext processContext, AssemblyEvidenceSource source) {
-		this.processContext = processContext;
+	public DeBruijnSubgraphAssembler(AssemblyEvidenceSource source) {
 		this.source = source;
 	}
 	@Override
@@ -46,12 +43,12 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 		}
 		// Assemble old evidence that couldn't have anything to do with us
 		assert(evidence.getBreakendSummary().referenceIndex == currentReferenceIndex);
-		long startpos = processContext.getLinear().getLinearCoordinate(currentReferenceIndex, evidence.getBreakendSummary().start);
+		long startpos = source.getContext().getLinear().getLinearCoordinate(currentReferenceIndex, evidence.getBreakendSummary().start);
 		long shouldBeCompletedPos = startpos - source.getAssemblyEvidenceWindowSize();
 		it = Iterables.concat(it, assembleBefore(shouldBeCompletedPos));
 		startingNextProcessingStep();
 		graph.addEvidence(evidence);
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			assert(graph.sanityCheckSubgraphs());
 		}
 		return it;
@@ -66,25 +63,23 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 		if (currentTracker != null) {
 			currentTracker.close();
 		}
-		if (processContext.getAssemblyParameters().trackAlgorithmProgress) {
+		if (source.getContext().getConfig().getVisualisation().assemblyProgress) {
 			currentTracker = new SubgraphAssemblyAlgorithmTrackerBEDWriter<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>(
-					(int)(processContext.getAssemblyParameters().subgraphAssemblyMargin * source.getMaxConcordantFragmentSize()),
-				new File(processContext.getAssemblyParameters().debruijnGraphVisualisationDirectory,
-					String.format("debruijn.assembly.metrics.%s.bed", processContext.getDictionary().getSequence(currentReferenceIndex).getSequenceName())));
+					(int)(source.getContext().getAssemblyParameters().subgraph.assemblyMargin * source.getMaxConcordantFragmentSize()),
+				new File(source.getContext().getConfig().getVisualisation().directory,
+					String.format("debruijn.assembly.metrics.%s.bed", source.getContext().getDictionary().getSequence(currentReferenceIndex).getSequenceName())));
 		}
-		graph = new DeBruijnReadGraph(processContext, source, referenceIndex, processContext.getAssemblyParameters(), currentTracker);
-		if (processContext.getAssemblyParameters().debruijnGraphVisualisationDirectory != null && processContext.getAssemblyParameters().visualiseAll) {
-			graph.setGraphExporter(new DeBruijnSubgraphGexfExporter(processContext.getAssemblyParameters().k));
+		graph = new DeBruijnReadGraph(source, referenceIndex, currentTracker);
+		if (source.getContext().getConfig().getVisualisation().assembly) {
+			graph.setGraphExporter(new DeBruijnSubgraphGexfExporter(source.getContext().getAssemblyParameters().k));
 		
 		}
 	}
 	private Iterable<SAMRecordAssemblyEvidence> assembleAll() {
 		Iterable<SAMRecordAssemblyEvidence> assemblies = assembleBefore(Long.MAX_VALUE);
-		File exportDir = processContext.getAssemblyParameters().debruijnGraphVisualisationDirectory;
-		if (exportDir != null && processContext.getAssemblyParameters().visualiseAll) {
-			exportDir.mkdir();
+		if (source.getContext().getConfig().getVisualisation().assembly) {
 			if (graph != null) {
-				graph.getGraphExporter().saveTo(new File(exportDir, String.format("debruijn.kmers.%s.gexf", processContext.getDictionary().getSequence(currentReferenceIndex).getSequenceName())));
+				graph.getGraphExporter().saveTo(new File(source.getContext().getConfig().getVisualisation().directory, String.format("debruijn.kmers.%s.gexf", source.getContext().getDictionary().getSequence(currentReferenceIndex).getSequenceName())));
 			}
 		}
 		graph = null;

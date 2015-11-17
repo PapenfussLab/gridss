@@ -42,13 +42,13 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	 */
 	public static NonReferenceReadPair create(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {
 		if (local == null || remote == null) return null;
-		if (SAMRecordUtil.entropy(local) < source.getContext().getReadPairParameters().minAnchorEntropy) return null;
-		if (SAMRecordUtil.entropy(remote) < source.getContext().getReadPairParameters().minAnchorEntropy) return null;
+		if (SAMRecordUtil.entropy(local) < source.getContext().getConfig().minAnchorShannonEntropy) return null;
+		if (SAMRecordUtil.entropy(remote) < source.getContext().getConfig().minAnchorShannonEntropy) return null;
 		if (!meetsAnchorCriteria(source, local)) return null;
-		if (SAMRecordUtil.isDovetailing(local,  remote, PairOrientation.FR)) return null; 
+		if (SAMRecordUtil.isDovetailing(local,  remote, PairOrientation.FR, source.getContext().getConfig().dovetailMargin)) return null; 
 		// should only need to check for adapters in OEA as DP with adapter should be dovetailing
-		if (source.getContext().getReadPairParameters().adapters.containsAdapter(local)) return null;
-		if (source.getContext().getReadPairParameters().adapters.containsAdapter(remote)) return null;
+		if (source.getContext().getConfig().adapters.containsAdapter(local)) return null;
+		if (source.getContext().getConfig().adapters.containsAdapter(remote)) return null;
 		assert(source.getReadPairConcordanceCalculator().isConcordant(local, remote) == source.getReadPairConcordanceCalculator().isConcordant(remote, local));
 		if (source.getReadPairConcordanceCalculator().isConcordant(local, remote)) return null;
 		if (pairSeparation(local, remote, PairOrientation.FR) < 0) return null; // discordant because the pairs overlap = no SV evidence
@@ -73,8 +73,8 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		return read.getReadPairedFlag()
 				&& !read.getReadUnmappedFlag()
 				&& !read.getReadFailsVendorQualityCheckFlag()
-				&& read.getMappingQuality() >= source.getContext().getReadPairParameters().minMapq
-				&& !SAMRecordUtil.estimatedReadsOverlap(read, PairOrientation.FR)
+				&& read.getMappingQuality() >= source.getContext().getConfig().minReadMapq
+				&& !SAMRecordUtil.estimatedReadsOverlap(read, PairOrientation.FR, source.getMetrics().getIdsvMetrics().MAX_READ_LENGTH - source.getMetrics().getMaxSoftClipLength())
 				&& !source.getReadPairConcordanceCalculator().isConcordant(read);
 	}
 	public static boolean meetsRemoteCriteria(SAMEvidenceSource source, SAMRecord read) {
@@ -82,13 +82,13 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 				&& !read.getMateUnmappedFlag() // other side has to be an anchor
 				&& !read.getReadFailsVendorQualityCheckFlag()
 				&& (meetsDPRemoteCriteria(source, read) || meetsOEARemoteCriteria(source, read))
-				&& !source.getContext().getReadPairParameters().adapters.containsAdapter(read);
+				&& !source.getContext().getConfig().adapters.containsAdapter(read);
 	}
 	private static boolean meetsDPRemoteCriteria(SAMEvidenceSource source, SAMRecord read) {
 		return read.getReadPairedFlag()
 			&& !read.getReadUnmappedFlag()
 			&& !read.getReadFailsVendorQualityCheckFlag()
-			&& !SAMRecordUtil.estimatedReadsOverlap(read, PairOrientation.FR)
+			&& !SAMRecordUtil.estimatedReadsOverlap(read, PairOrientation.FR, source.getMetrics().getIdsvMetrics().MAX_READ_LENGTH - source.getMetrics().getMaxSoftClipLength())
 			&& !source.getReadPairConcordanceCalculator().isConcordant(read);
 	}
 	private static boolean meetsOEARemoteCriteria(SAMEvidenceSource source, SAMRecord read) {

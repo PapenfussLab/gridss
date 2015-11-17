@@ -1,5 +1,12 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -10,20 +17,14 @@ import java.util.TreeMap;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.google.common.collect.ImmutableList;
-
 import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.SequenceUtil;
+
+import com.google.common.collect.ImmutableList;
 
 /**
  * Alignment of a sequence contig that spans multiple segments
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class CompoundBreakendAlignment {

@@ -7,6 +7,7 @@ import htsjdk.samtools.util.CloserUtil;
 import java.util.Iterator;
 import java.util.List;
 
+import au.edu.wehi.idsv.configuration.RealignmentConfiguration;
 import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 
 import com.google.common.collect.AbstractIterator;
@@ -38,10 +39,8 @@ public class RealignedSoftClipEvidenceIterator extends AbstractIterator<SoftClip
 	protected SoftClipEvidence computeNext() {
 		if (!breakendEvidence.hasNext()) return endOfData();
 		SoftClipEvidence evidence = breakendEvidence.next();
-		RealignmentParameters rp = evidence.getEvidenceSource().getContext().getRealignmentParameters();
-		SAMRecord realigned = factory.findFirstAssociatedSAMRecord(evidence,
-				rp.requireRealignment && 
-				rp.shouldRealignBreakend(evidence));
+		RealignmentConfiguration rp = evidence.getEvidenceSource().getContext().getRealignmentParameters();
+		SAMRecord realigned = factory.findFirstAssociatedSAMRecord(evidence, rp.shouldRealignBreakend(evidence));
 		if (realigned != null) {
 			return SoftClipEvidence.create(evidence, realigned);
 		} else {

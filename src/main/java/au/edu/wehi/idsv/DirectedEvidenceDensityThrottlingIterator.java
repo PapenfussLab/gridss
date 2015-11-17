@@ -10,7 +10,7 @@ import au.edu.wehi.idsv.util.DensityThrottlingIterator;
 
 /**
  * Reduces
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class DirectedEvidenceDensityThrottlingIterator extends DensityThrottlingIterator<DirectedEvidence> {

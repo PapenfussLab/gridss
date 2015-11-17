@@ -66,7 +66,7 @@ public class PathGraph<T, PN extends PathNode<T>> implements WeightedDirectedGra
 	public boolean sanityCheck() {
 		assert(pathNext.size() == pathList.size());
 		assert(pathPrev.size() == pathList.size());
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			int weight = 0;
 			int validCount = 0;
 			for (int i = 0; i < pathList.size(); i++) {

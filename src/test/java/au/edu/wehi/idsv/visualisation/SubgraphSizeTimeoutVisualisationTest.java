@@ -42,10 +42,12 @@ public class SubgraphSizeTimeoutVisualisationTest extends IntermediateFilesTest 
 	public void should_export_on_path_timeout_gexf() throws IOException {
 		int k = 6;
 		ProcessingContext pc = getCommandlineContext(false);
-		pc.getAssemblyParameters().subgraphMaxPathTraversalNodes = 1024;
+		pc.getAssemblyParameters().subgraph.traveralMaximumPathNodes = 1024;
 		pc.getAssemblyParameters().k = k;
 		pc.getAssemblyParameters().method = AssemblyAlgorithm.Subgraph;
 		pc.getSoftClipParameters().minLength = 1;
+		pc.getConfig().getVisualisation().timeouts = true;
+		pc.getConfig().getVisualisation().directory.mkdirs();
 		File output = new File(super.testFolder.getRoot(), "test_path_timeout_gexf.vcf");
 		List<SAMRecord> list = Lists.newArrayList();
 		for (int i = 0; i < 1 << (2*k); i++) {
@@ -70,11 +72,12 @@ public class SubgraphSizeTimeoutVisualisationTest extends IntermediateFilesTest 
 	@Override
 	public ProcessingContext getCommandlineContext(boolean perChr) {
 		ProcessingContext pc = super.getCommandlineContext(perChr);
-		pc.getAssemblyParameters().maxBaseMismatchForCollapse = 1;
-		pc.getAssemblyParameters().collapseBubblesOnly = true;
-		pc.getAssemblyParameters().debruijnGraphVisualisationDirectory = new File(super.testFolder.getRoot(), "visualisation");
-		pc.getAssemblyParameters().visualiseTimeouts = true;
-		pc.getAssemblyParameters().maxSubgraphFragmentWidth = 1;
+		pc.getAssemblyParameters().errorCorrection.maxBaseMismatchForCollapse = 1;
+		pc.getAssemblyParameters().errorCorrection.collapseBubblesOnly = true;
+		pc.getAssemblyParameters().subgraph.maxSubgraphFragmentWidth = 1;
+		pc.getConfig().getVisualisation().directory = new File(super.testFolder.getRoot(), "visualisation");
+		pc.getConfig().getVisualisation().timeouts = true;
+		pc.getConfig().getVisualisation().directory.mkdir();
 		return pc;
 	}
 }

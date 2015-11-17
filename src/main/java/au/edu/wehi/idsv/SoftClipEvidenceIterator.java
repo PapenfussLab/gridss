@@ -29,13 +29,13 @@ public class SoftClipEvidenceIterator implements CloseableIterator<SoftClipEvide
 			if (!record.getReadUnmappedFlag()) {
 				if (SAMRecordUtil.getStartSoftClipLength(record) > 0) {
 					SoftClipEvidence sce = SoftClipEvidence.create(source, BreakendDirection.Backward, record);
-					if (sce.meetsEvidenceCritera(source.getContext().getSoftClipParameters())) {
+					if (sce.meetsEvidenceCritera()) {
 						buffer.add(sce);
 					}
 				}
 				if (SAMRecordUtil.getEndSoftClipLength(record) > 0) {
 					SoftClipEvidence sce = SoftClipEvidence.create(source, BreakendDirection.Forward, record);
-					if (sce.meetsEvidenceCritera(source.getContext().getSoftClipParameters())) {
+					if (sce.meetsEvidenceCritera()) {
 						buffer.add(sce);
 					}
 				}

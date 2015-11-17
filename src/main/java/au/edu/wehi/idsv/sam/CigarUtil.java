@@ -202,6 +202,40 @@ public class CigarUtil {
 		}
 		return count;
 	}
+	public static int getEndClipLength(List<CigarElement> elements) {
+		if (elements == null) return 0;
+		int length = 0;
+		int i = elements.size() - 1;
+		while (i >= 0) {
+			switch (elements.get(i).getOperator()) {
+			case S:
+			case H:
+				length += elements.get(i).getLength();	
+				i--;
+				break;
+			default:
+				return length;
+			}
+		}
+		return length;
+	}
+	public static int getStartClipLength(List<CigarElement> elements) {
+		if (elements == null) return 0;
+		int length = 0;
+		int i = 0;
+		while (i < elements.size()) {
+			switch (elements.get(i).getOperator()) {
+			case S:
+			case H:
+				length += elements.get(i).getLength();	
+				i++;
+				break;
+			default:
+				return length;
+			}
+		}
+		return length;
+	}
 	public static class CigarOperatorIterator implements Iterator<CigarOperator> {
 		private Iterator<CigarElement> it;
 		private CigarElement currentElement = null;

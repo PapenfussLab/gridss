@@ -19,7 +19,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.Defaults;
 
 import com.google.common.collect.Lists;
 
@@ -28,8 +27,8 @@ import com.google.common.collect.Lists;
  *
  */
 public class SAMRecordUtil {
-	public static final String FIRST_OF_PAIR_NAME_SUFFIX = "/1";
-	public static final String SECOND_OF_PAIR_NAME_SUFFIX = "/2";
+	public static final String FIRST_OF_PAIR_NAME_SUFFIX = "\\1";
+	public static final String SECOND_OF_PAIR_NAME_SUFFIX = "\\2";
 	/**
 	 * Determines whether the given record is soft-clipped
 	 * 
@@ -227,7 +226,7 @@ public class SAMRecordUtil {
 	 * @return true if the soft clip is due to a fragment size smaller than the
 	 *         read length
 	 */
-	public static boolean isDovetailing(SAMRecord record1, SAMRecord record2, PairOrientation expectedOrientation) {
+	public static boolean isDovetailing(SAMRecord record1, SAMRecord record2, PairOrientation expectedOrientation, int margin) {
 		if (expectedOrientation != PairOrientation.FR) throw new RuntimeException("NYI");
 		return !record1.getReadUnmappedFlag()
 				&& !record2.getReadUnmappedFlag()
@@ -235,9 +234,9 @@ public class SAMRecordUtil {
 				&& record1.getReadNegativeStrandFlag() != record2.getReadNegativeStrandFlag() // FR
 				&& overlap(record1, record2)
 				&& Math.abs(record1.getAlignmentStart()
-						- record2.getAlignmentStart()) <= Defaults.READ_PAIR_DOVETAIL_MARGIN
+						- record2.getAlignmentStart()) <= margin
 				&& Math.abs(record1.getAlignmentEnd()
-						- record2.getAlignmentEnd()) <= Defaults.READ_PAIR_DOVETAIL_MARGIN;
+						- record2.getAlignmentEnd()) <= margin;
 	}
 	public static boolean overlap(SAMRecord r1, SAMRecord r2) {
 		boolean result = r1 != null
@@ -284,7 +283,7 @@ public class SAMRecordUtil {
 	 * @return number possible breakpoints between the read pair mapped in the expected orientation,
 	 *  or Integer.MAX_VALUE if placement is not as expected
 	 */
-	public static boolean estimatedReadsOverlap(SAMRecord record, PairOrientation expectedOrientation) {
+	public static boolean estimatedReadsOverlap(SAMRecord record, PairOrientation expectedOrientation, int minExpectedAnchorBases) {
 		if (expectedOrientation != PairOrientation.FR) throw new RuntimeException("NYI");
 		if (record.getReadUnmappedFlag() ||
 				record.getReadUnmappedFlag() ||
@@ -305,7 +304,7 @@ public class SAMRecordUtil {
 			// and our mate has an inner soft clip or non-reference CIGAR
 			// so we make a conservative guess based on the min bases aligners
 			// will return a alignment for
-			int offset = Math.min(Defaults.MIN_BASES_TO_ALIGN, record.getReadLength()) - 1;
+			int offset = Math.min(minExpectedAnchorBases, record.getReadLength()) - 1;
 			return record.getMateAlignmentStart() + offset >= record.getAlignmentStart() &&
 					record.getMateAlignmentStart() + offset <= record.getAlignmentEnd();
 			

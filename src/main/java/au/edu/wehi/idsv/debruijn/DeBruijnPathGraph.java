@@ -63,8 +63,8 @@ public class DeBruijnPathGraph<T, PN extends DeBruijnPathNode<T>> extends PathGr
 	 *  @param bubblesOnly only collapse bubbles. No other paths will be affected
 	 *  @return number of paths collapsed
 	 */
-	public int collapseSimilarPaths(int maxDifference, boolean bubblesOnly) throws AlgorithmRuntimeSafetyLimitExceededException {
-		collapseTimeout = new TimeoutNodeTraversalTracker<PN>();
+	public int collapseSimilarPaths(int maxDifference, boolean bubblesOnly, int maxTraversalNodes) throws AlgorithmRuntimeSafetyLimitExceededException {
+		collapseTimeout = new TimeoutNodeTraversalTracker<PN>(maxTraversalNodes);
 		int collapseCount = 0;
 		// Keep collapsing until we can't anymore
 		boolean collapsed = true;
@@ -88,8 +88,8 @@ public class DeBruijnPathGraph<T, PN extends DeBruijnPathNode<T>> extends PathGr
 	 * @return number of leaves collapsed
 	 * @throws AlgorithmRuntimeSafetyLimitExceededException
 	 */
-	public int collapseLeaves(int maxDifference) throws AlgorithmRuntimeSafetyLimitExceededException {
-		collapseTimeout = new TimeoutNodeTraversalTracker<PN>();
+	public int collapseLeaves(int maxDifference, int maxTraversalNodes) throws AlgorithmRuntimeSafetyLimitExceededException {
+		collapseTimeout = new TimeoutNodeTraversalTracker<PN>(maxTraversalNodes);
 		int collapseCount = 0;
 		int collapsedThisRound;
 		do {
@@ -129,20 +129,20 @@ public class DeBruijnPathGraph<T, PN extends DeBruijnPathNode<T>> extends PathGr
 	 * @param bubblesOnly collapse bubbles only
 	 * @return total collapses performed
 	 */
-	public int collapse(int maxBaseMismatchForCollapse, boolean bubblesOnly) throws AlgorithmRuntimeSafetyLimitExceededException {
+	public int collapse(int maxBaseMismatchForCollapse, boolean bubblesOnly, int maxTraversalNodes) throws AlgorithmRuntimeSafetyLimitExceededException {
 		int nodesBefore = getPathCount();
 		int totalPathsCollapsed = 0;
 		int totalLeavesCollapsed = 0;
 		int collapseIterations = 0;
-		totalPathsCollapsed = collapseSimilarPaths(maxBaseMismatchForCollapse, true);
+		totalPathsCollapsed = collapseSimilarPaths(maxBaseMismatchForCollapse, true, maxTraversalNodes);
 		int collapseLeafCount = 0, collapsePathCount = 0;
 		do {
 			collapseIterations++;
 			if (!bubblesOnly) {
-				collapseLeafCount = collapseLeaves(maxBaseMismatchForCollapse);
+				collapseLeafCount = collapseLeaves(maxBaseMismatchForCollapse, maxTraversalNodes);
 				totalLeavesCollapsed += collapseLeafCount;
 			}
-			collapsePathCount = collapseSimilarPaths(maxBaseMismatchForCollapse, bubblesOnly);
+			collapsePathCount = collapseSimilarPaths(maxBaseMismatchForCollapse, bubblesOnly, maxTraversalNodes);
 			totalPathsCollapsed += collapsePathCount;
 		} while (collapseLeafCount + collapsePathCount > 0);
 		tracker.collapse(collapseIterations, totalPathsCollapsed, totalLeavesCollapsed, collapseTimeout.count(), nodesBefore - getPathCount());
@@ -289,7 +289,7 @@ public class DeBruijnPathGraph<T, PN extends DeBruijnPathNode<T>> extends PathGr
 			split(n, lengths);
 			referencePathsSplit += lengths.size() - 1;
 		}
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			assert(assertReferenceKmersSplit());
 		}
 	}

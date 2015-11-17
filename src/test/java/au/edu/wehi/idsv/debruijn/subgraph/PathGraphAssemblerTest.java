@@ -7,8 +7,9 @@ import java.util.List;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import au.edu.wehi.idsv.AssemblyParameters;
 import au.edu.wehi.idsv.TestHelper;
+import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathNodeFactory;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
@@ -22,11 +23,11 @@ import com.google.common.collect.Lists;
 
 
 public class PathGraphAssemblerTest extends TestHelper {
-	PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> PGA(DeBruijnReadGraph g, AssemblyParameters ap, String seed) {
-		DeBruijnSubgraphNode seedNode = g.getKmer(KmerEncodingHelper.picardBaseToEncoded(ap.k, B(seed)));
+	PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> PGA(DeBruijnReadGraph g, GridssConfiguration config, String seed) {
+		DeBruijnSubgraphNode seedNode = g.getKmer(KmerEncodingHelper.picardBaseToEncoded(config.getAssembly().k, B(seed)));
 		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = new PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>(
 			g,
-			ap,
+			config,
 			ImmutableList.of(seedNode),
 			new DeBruijnPathNodeFactory<DeBruijnSubgraphNode>(g),
 			new NontrackingSubgraphTracker<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>());
@@ -43,10 +44,11 @@ public class PathGraphAssemblerTest extends TestHelper {
 	}
 	@Test
 	public void anchor_should_not_diverge_from_reference() {
-		AssemblyParameters ap = new AssemblyParameters();
+		GridssConfiguration config = getConfig();
+		AssemblyConfiguration ap = config.getAssembly();
 		ap.k = 4;
-		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
-		ap.subgraphMaxContigsPerAssembly = 1;
+		ap.subgraph.traversalMaximumBranchingFactor = 1;
+		ap.subgraph.maxContigsPerAssembly = 1;
 		
 		DeBruijnReadGraph g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
@@ -57,7 +59,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		//   GGTTAACC
 		// TTGGT
 		// ^   ^^^^ <- starts of reference kmers
-		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "AATT");
+		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, config, "AATT");
 		List<List<DeBruijnSubgraphNode>> result = flatten(pga.assembleContigs());
 		assertEquals(2, result.size());
 		assertEquals("TTAACCGGCCAATT", S(g, result.get(0)));
@@ -65,11 +67,12 @@ public class PathGraphAssemblerTest extends TestHelper {
 	@Ignore("now removing entire non-reference subgraph after each assembly")
 	//@Test
 	public void should_assemble_excluding_used_non_reference_kmers() {
-		AssemblyParameters ap = new AssemblyParameters();
+		GridssConfiguration config = getConfig();
+		AssemblyConfiguration ap = config.getAssembly();
 		ap.k = 4;
-		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
-		ap.subgraphMaxContigsPerAssembly = 1000;
-		ap.maxBaseMismatchForCollapse = 0;
+		ap.subgraph.traversalMaximumBranchingFactor = 1;
+		ap.subgraph.maxContigsPerAssembly = 1000;
+		ap.errorCorrection.maxBaseMismatchForCollapse = 0;
 		
 		DeBruijnReadGraph g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
@@ -77,7 +80,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		g.addEvidence(NRRP(withSequence(           "GCCAATC", OEA(0, 10, "7M", true)))); // not on main patch, but reachable
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGAGTCCTG", Read(0, 10, "7M7S"))));
 		
-		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "AATT");
+		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, config, "AATT");
 		List<List<DeBruijnSubgraphNode>> result = flatten(pga.assembleContigs());
 		assertEquals(3, result.size());
 		assertEquals("TTAACCGGCCAATT", S(g, result.get(0)));
@@ -85,11 +88,12 @@ public class PathGraphAssemblerTest extends TestHelper {
 	}
 	@Test
 	public void should_assemble_excluding_all_reachable_non_reference_kmers() {
-		AssemblyParameters ap = new AssemblyParameters();
+		GridssConfiguration config = getConfig();
+		AssemblyConfiguration ap = config.getAssembly();
 		ap.k = 4;
-		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
-		ap.subgraphMaxContigsPerAssembly = 1000;
-		ap.maxBaseMismatchForCollapse = 0;
+		ap.subgraph.traversalMaximumBranchingFactor = 1;
+		ap.subgraph.maxContigsPerAssembly = 1000;
+		ap.errorCorrection.maxBaseMismatchForCollapse = 0;
 		
 		
 		DeBruijnReadGraph g = RG(ap.k);
@@ -98,7 +102,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		g.addEvidence(NRRP(withSequence(              "AATC", OEA(0, 10, "4M", true)))); // not on main path, but reachable
 		g.addEvidence(SCE(FWD, withSequence("TTAACCGAGTCCTG", Read(0, 10, "7M7S"))));
 		
-		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "AATT");
+		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, config, "AATT");
 		List<List<DeBruijnSubgraphNode>> result = flatten(pga.assembleContigs());
 		assertEquals(2, result.size());
 		assertEquals("TTAACCGGCCAATT", S(g, result.get(0)));
@@ -106,27 +110,29 @@ public class PathGraphAssemblerTest extends TestHelper {
 	}
 	@Test
 	public void should_maximise_non_reference_weight() {
-		AssemblyParameters ap = new AssemblyParameters();
+		GridssConfiguration config = getConfig();
+		AssemblyConfiguration ap = config.getAssembly();
 		ap.k = 4;
-		ap.subgraphMaxContigsPerAssembly = 1000;
-		ap.maxBaseMismatchForCollapse = 0;
+		ap.subgraph.maxContigsPerAssembly = 1000;
+		ap.errorCorrection.maxBaseMismatchForCollapse = 0;
 		
 		DeBruijnReadGraph g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence("AAATGGGG", Read(0, 10, "6M2S"))));
 		g.addEvidence(SCE(FWD, withSequence("GTACCCGGGG", Read(0, 10, "9M1S"))));
 		// should take the shorter assembly that has a longer soft clip
-		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "GGGG");
+		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, config, "GGGG");
 		List<List<DeBruijnSubgraphNode>> result = flatten(pga.assembleContigs());
 		assertEquals(1, result.size());
 		assertEquals("AAATGGGG", S(g, result.get(0)));
 	}
 	@Test
 	public void greedy_should_maximise_reference_weight() {
-		AssemblyParameters ap = new AssemblyParameters();
+		GridssConfiguration config = getConfig();
+		AssemblyConfiguration ap = config.getAssembly();
 		ap.k = 4;
-		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
-		ap.subgraphMaxContigsPerAssembly = 1000;
-		ap.maxBaseMismatchForCollapse = 0;
+		ap.subgraph.traversalMaximumBranchingFactor = 1;
+		ap.subgraph.maxContigsPerAssembly = 1000;
+		ap.errorCorrection.maxBaseMismatchForCollapse = 0;
 		
 		DeBruijnReadGraph g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence( "TAAATGGG", Read(0, 10, "7M1S"))));
@@ -138,22 +144,23 @@ public class PathGraphAssemblerTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withSequence("CCAAATGGG", Read(0, 10, "8M1S")))); // worst weight at the immediate next kmer
 		g.addEvidence(SCE(FWD, withSequence("GGTACCCAAATGGG", Read(0, 10, "13M1S")))); // but best overall path node
 		// should take the shorter assembly that has a longer soft clip
-		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "TGGG");
+		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, config, "TGGG");
 		List<List<DeBruijnSubgraphNode>> result = flatten(pga.assembleContigs());
 		assertEquals(1, result.size());
 		assertEquals("GGTACCCAAATGGG", S(g, result.get(0)));
 	}
 	@Test
 	public void should_assemble_simple_sequence() {
-		AssemblyParameters ap = new AssemblyParameters();
+		GridssConfiguration config = getConfig();
+		AssemblyConfiguration ap = config.getAssembly();
 		ap.k = 4;
-		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 16;
-		ap.subgraphMaxContigsPerAssembly = 1000;
-		ap.maxBaseMismatchForCollapse = 0;
+		ap.subgraph.traversalMaximumBranchingFactor = 16;
+		ap.subgraph.maxContigsPerAssembly = 1000;
+		ap.errorCorrection.maxBaseMismatchForCollapse = 0;
 		
 		DeBruijnReadGraph g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence("GGTACCCAAATGGG", Read(0, 10, "10M4S"))));
-		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "TGGG");
+		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, config, "TGGG");
 		List<List<DeBruijnSubgraphNode>> result = flatten(pga.assembleContigs());
 		assertEquals(1, result.size());
 		assertEquals("GGTACCCAAATGGG", S(g, result.get(0)));
@@ -163,17 +170,18 @@ public class PathGraphAssemblerTest extends TestHelper {
 	 */
 	@Test
 	public void should_assemble_viable_breakpoint() {
-		AssemblyParameters ap = new AssemblyParameters();
+		GridssConfiguration config = getConfig();
+		AssemblyConfiguration ap = config.getAssembly();
 		ap.k = 3;
-		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 16;
-		ap.subgraphMaxContigsPerAssembly = 1000;
-		ap.maxBaseMismatchForCollapse = 0;
+		ap.subgraph.traversalMaximumBranchingFactor = 16;
+		ap.subgraph.maxContigsPerAssembly = 1000;
+		ap.errorCorrection.maxBaseMismatchForCollapse = 0;
 		
 		DeBruijnReadGraph g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence("ACTGT", Read(0, 10, "3M2S"))));
 		g.addEvidence(SCE(FWD, withSequence("GTCA", Read(0, 10, "3M1S"))));
 		
-		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "ACT");
+		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, config, "ACT");
 		List<List<DeBruijnSubgraphNode>> result = flatten(pga.assembleContigs());
 		assertEquals(2, result.size());
 		assertEquals("ACTGTC", S(g, result.get(0)));
@@ -185,18 +193,19 @@ public class PathGraphAssemblerTest extends TestHelper {
 	}
 	@Test
 	public void should_order_assembly_by_breakend_weight() {
-		AssemblyParameters ap = new AssemblyParameters();
+		GridssConfiguration config = getConfig();
+		AssemblyConfiguration ap = config.getAssembly();
 		ap.k = 4;
-		ap.subgraphAssemblyTraversalMaximumBranchingFactor = 1;
-		ap.subgraphMaxContigsPerAssembly = 4;
-		ap.maxBaseMismatchForCollapse = 0;
+		ap.subgraph.traversalMaximumBranchingFactor = 1;
+		ap.subgraph.maxContigsPerAssembly = 4;
+		ap.errorCorrection.maxBaseMismatchForCollapse = 0;
 		
 		DeBruijnReadGraph g = RG(ap.k);
 		//                                    RRRRRR
 		g.addEvidence(SCE(FWD, withSequence( "TTTTCGAGAT", Read(0, 10, "8M2S"))));
 		g.addEvidence(SCE(FWD, withSequence( "TTTTCGCCGGT", Read(0, 10, "8M3S"))));
 		g.addEvidence(SCE(FWD, withSequence( "TTTTCGTTAACC", Read(0, 10, "8M4S"))));
-		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap,"TTTT");
+		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, config,"TTTT");
 		List<List<DeBruijnSubgraphNode>> result = flatten(pga.assembleContigs());
 		assertEquals(3, result.size());
 		assertEquals("TTTTCGTTAACC", S(g, result.get(0)));
@@ -205,11 +214,12 @@ public class PathGraphAssemblerTest extends TestHelper {
 	}
 	@Test
 	public void should_fall_back_to_greedy_assemble() {
-		AssemblyParameters ap = new AssemblyParameters();
+		GridssConfiguration config = getConfig();
+		AssemblyConfiguration ap = config.getAssembly();
 		ap.k = 4;
-		ap.subgraphMaxContigsPerAssembly = 1000;
-		ap.maxBaseMismatchForCollapse = 0;
-		ap.subgraphMaxPathTraversalNodes = 2;
+		ap.subgraph.maxContigsPerAssembly = 1000;
+		ap.errorCorrection.maxBaseMismatchForCollapse = 0;
+		ap.subgraph.traveralMaximumPathNodes = 2;
 		
 		DeBruijnReadGraph g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence("AAATGGGGGGGGGGG", Read(0, 10, "6M9S"))));
@@ -223,7 +233,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withSequence("AAATGGGA", Read(0, 10, "6M2S"))));
 		g.addEvidence(SCE(FWD, withSequence("AAATGGGA", Read(0, 10, "6M2S"))));
 		// greedy traversal
-		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "GGGG");
+		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, config, "GGGG");
 		//new StaticDeBruijnSubgraphPathGraphGexfExporter(ap.k)
 		//	.snapshot(pga)
 		//	.saveTo(new File("C:\\temp\\test.gexf"));
@@ -233,12 +243,13 @@ public class PathGraphAssemblerTest extends TestHelper {
 	}
 	@Test
 	public void should_limit_anchor_assembly_length() {
-		AssemblyParameters ap = new AssemblyParameters();
+		GridssConfiguration config = getConfig();
+		AssemblyConfiguration ap = config.getAssembly();
 		ap.k = 5;
-		ap.subgraphMaxContigsPerAssembly = 1000;
-		ap.maxBaseMismatchForCollapse = 0;
-		ap.subgraphMaxPathTraversalNodes = 2;
-		ap.anchorAssemblyLength = 2;
+		ap.subgraph.maxContigsPerAssembly = 1000;
+		ap.errorCorrection.maxBaseMismatchForCollapse = 0;
+		ap.subgraph.traveralMaximumPathNodes = 2;
+		ap.anchorLength = 2;
 		DeBruijnReadGraph g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence( "AACCGGACAGCGCAGAGCATT", Read(0, 1, "20M1S"))));
 		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAGAgGCATT", Read(0, 1, "21M1S"))));
@@ -249,13 +260,13 @@ public class PathGraphAssemblerTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCgGCAGAGCATT", Read(0, 1, "21M1S"))));
 		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGgCGCAGAGCATT", Read(0, 1, "21M1S"))));
 		g.addEvidence(SCE(FWD, withSequence("AACCGGACAgGCGCAGAGCATT", Read(0, 1, "21M1S"))));
-		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, ap, "GCATT");
+		PathGraphAssembler<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pga = PGA(g, config, "GCATT");
 		List<List<DeBruijnSubgraphNode>> result = flatten(pga.assembleContigs());
 		assertEquals(1, result.size());
 		assertEquals("GAGCATT", S(g, result.get(0))); 
 		
 		// above limit should fully assemble
-		ap.anchorAssemblyLength = 1000;
+		ap.anchorLength = 1000;
 		g = RG(ap.k);
 		g.addEvidence(SCE(FWD, withSequence( "AACCGGACAGCGCAGAGCATT", Read(0, 1, "20M1S"))));
 		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCGCAGAgGCATT", Read(0, 1, "21M1S"))));
@@ -266,7 +277,7 @@ public class PathGraphAssemblerTest extends TestHelper {
 		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGCgGCAGAGCATT", Read(0, 1, "21M1S"))));
 		g.addEvidence(SCE(FWD, withSequence("AACCGGACAGgCGCAGAGCATT", Read(0, 1, "21M1S"))));
 		g.addEvidence(SCE(FWD, withSequence("AACCGGACAgGCGCAGAGCATT", Read(0, 1, "21M1S"))));
-		pga = PGA(g, ap, "GCATT");
+		pga = PGA(g, config, "GCATT");
 		result = flatten(pga.assembleContigs());
 		assertEquals(1, result.size());
 		assertEquals(17, result.get(0).size());

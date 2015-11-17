@@ -1,14 +1,18 @@
-package au.edu.wehi.idsv;
+package au.edu.wehi.idsv.configuration;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import au.edu.wehi.idsv.BreakpointSummary;
+import au.edu.wehi.idsv.IdsvVariantContextBuilder;
+import au.edu.wehi.idsv.TestHelper;
+import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
 
-public class VariantCallingParametersTest extends TestHelper {
+public class VariantCallingConfigurationTest extends TestHelper {
 	public VariantContextDirectedBreakpoint V(BreakpointSummary bs, String untemplated) {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());
 		builder.breakpoint(bs, untemplated);
@@ -16,7 +20,7 @@ public class VariantCallingParametersTest extends TestHelper {
 	}
 	@Test
 	public void breakpointFilters_should_filter_small_indels() {
-		VariantCallingParameters p = new VariantCallingParameters();
+		VariantCallingConfiguration p = getConfig().getVariantCalling();
 		p.minIndelSize = 3;
 		assertFalse(p.calculateBreakpointFilters(V(new BreakpointSummary(0, FWD, 1, 1, 0, BWD, 1, 1), "")).contains(VcfFilter.SMALL_INDEL)); // not an indel
 		assertFalse(p.calculateBreakpointFilters(V(new BreakpointSummary(0, FWD, 1, 1, 0, BWD, 2, 2), "")).contains(VcfFilter.SMALL_INDEL)); // indel size of 0 - ie: no variant
@@ -26,7 +30,7 @@ public class VariantCallingParametersTest extends TestHelper {
 	}
 	@Test
 	public void breakpointFilters_should_filter_if_possibly_small_indel() {
-		VariantCallingParameters p = new VariantCallingParameters();
+		VariantCallingConfiguration p = getConfig().getVariantCalling();
 		p.minIndelSize = 10;
 		assertTrue(p.calculateBreakpointFilters(V(new BreakpointSummary(0, FWD, 100, 200, 0, BWD, 1, 102), "")).contains(VcfFilter.SMALL_INDEL)); // possibly 1bp del of base 101
 		assertTrue(p.calculateBreakpointFilters(V(new BreakpointSummary(0, FWD, 1, 100, 0, BWD, 110, 200), "")).contains(VcfFilter.SMALL_INDEL)); // possibly 9bp
@@ -35,7 +39,7 @@ public class VariantCallingParametersTest extends TestHelper {
 	}
 	@Test
 	public void breakpointFilters_should_filter_reference_allele() {
-		VariantCallingParameters p = new VariantCallingParameters();
+		VariantCallingConfiguration p = getConfig().getVariantCalling();
 		p.minIndelSize = 10;
 		assertTrue(p.calculateBreakpointFilters(V(new BreakpointSummary(0, FWD, 100, 200, 0, BWD, 100, 200), "")).contains(VcfFilter.REFERENCE_ALLELE));
 		assertTrue(p.calculateBreakpointFilters(V(new BreakpointSummary(0, FWD, 1, 1, 0, BWD, 2, 2), "")).contains(VcfFilter.REFERENCE_ALLELE));
@@ -44,7 +48,7 @@ public class VariantCallingParametersTest extends TestHelper {
 	}
 	@Test
 	public void breakpointFilters_should_filter_insertion() {
-		VariantCallingParameters p = new VariantCallingParameters();
+		VariantCallingConfiguration p = getConfig().getVariantCalling();
 		assertFalse(p.calculateBreakpointFilters(V(new BreakpointSummary(0, FWD, 100, 200, 0, BWD, 100, 200), "A")).contains(VcfFilter.REFERENCE_ALLELE));
 		assertFalse(p.calculateBreakpointFilters(V(new BreakpointSummary(0, FWD, 1, 1, 0, BWD, 2, 2), "A")).contains(VcfFilter.REFERENCE_ALLELE));
 	}

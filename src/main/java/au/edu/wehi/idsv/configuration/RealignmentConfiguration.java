@@ -1,30 +1,50 @@
-package au.edu.wehi.idsv;
+package au.edu.wehi.idsv.configuration;
 
 import htsjdk.samtools.SAMRecord;
 
+import org.apache.commons.configuration.Configuration;
 
-public class RealignmentParameters {
+import au.edu.wehi.idsv.AssemblyEvidence;
+import au.edu.wehi.idsv.BreakpointSummary;
+import au.edu.wehi.idsv.SoftClipEvidence;
+
+import com.google.common.collect.ImmutableList;
+
+
+public class RealignmentConfiguration {
+	public static final String CONFIGURATION_PREFIX = "realignment";
+	public RealignmentConfiguration(Configuration config) {
+		config = config.subset(CONFIGURATION_PREFIX);
+		minLength = config.getInt("minLength");
+		minAverageQual = config.getFloat("minAverageQual");
+		mapqUniqueThreshold = config.getInt("mapqUniqueThreshold");
+		assemblyIterations = config.getInt("assemblyIterations");
+		aligner = config.getString("aligner");
+		commandline = ImmutableList.copyOf(config.subset("commandline").getStringArray(aligner));
+	}
 	/**
 	 * Minimum breakend length to be considered for realignment
 	 */
-	public int minLength = 25;
+	public int minLength;
 	/**
 	 * Minimum average breakend quality score to be considered for realignment 
 	 */
-	public float minAverageQual = new SoftClipParameters().minAverageQual;
+	public float minAverageQual;
 	/**
 	 * Minimum MAPQ of realigned segment to be considered uniquely aligned  
 	 */
-	public int mapqUniqueThreshold = 10;
-	/**
-	 * Flag indicating if realignment is required. If true, an error is raised
-	 * if a realignment record is required a no record is found.
-	 */
-	public boolean requireRealignment = true;
+	public int mapqUniqueThreshold;
 	/**
 	 * Number of realignment iterations performed
 	 */
 	public int assemblyIterations = 3;
+	public String aligner;
+	/**
+	 * Aligner command line argument. String substitution assumes parameters are
+	 * fastq, reference, thread count
+	 * @return Aligner command line to execute
+	 */
+	public ImmutableList<String> commandline;
 	public boolean shouldRealignBreakend(SoftClipEvidence evidence) {
 		if (evidence.getBreakendSummary() instanceof BreakpointSummary) return false;
 		return evidence.getSoftClipLength() >= minLength

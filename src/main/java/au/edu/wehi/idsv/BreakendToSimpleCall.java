@@ -103,8 +103,8 @@ public class BreakendToSimpleCall {
 		ArrayList<VariantContextDirectedBreakpoint> overlapping = new ArrayList<VariantContextDirectedBreakpoint>();
 		for (Object obj : lookup.subSet(new BreakendSummary(be.referenceIndex, be.direction, be.start - maxWidth - margin, Integer.MAX_VALUE), new BreakendSummary(be.referenceIndex, be.direction, be.start + 2 * maxWidth + margin, Integer.MAX_VALUE))) {
 			VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)obj;
-			if (processContext.getVariantCallingParameters().withMargin(processContext, bp.getBreakendSummary())
-					.overlaps(processContext.getVariantCallingParameters().withMargin(processContext, be))) {
+			if (processContext.getVariantCallingParameters().withMargin(bp.getBreakendSummary())
+					.overlaps(processContext.getVariantCallingParameters().withMargin(be))) {
 				overlapping.add(bp);
 			}
 		}

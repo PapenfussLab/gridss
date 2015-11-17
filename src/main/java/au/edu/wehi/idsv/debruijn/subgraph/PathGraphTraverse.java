@@ -25,7 +25,7 @@ import com.google.common.primitives.Ints;
 /**
  * Dynamic programming traversal of subgraph of path graph
  * 
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 class PathGraphTraverse<T, PN extends DeBruijnPathNode<T>> {
@@ -163,7 +163,7 @@ class PathGraphTraverse<T, PN extends DeBruijnPathNode<T>> {
 			// maxNextStates = 1 is a greedy traversal - no need for a timeout as it is max n nodes traversed even in a fully connected graph
 			throw new AlgorithmRuntimeSafetyLimitExceededException();
 		}
-		assert(!Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS || sanityCheck());
+		assert(!Defaults.SANITY_CHECK_DE_BRUIJN || sanityCheck());
 		List<PN> nextStates = traverseForward ? pg.next(node.node) : pg.prev(node.node);
 		if (nextStates.size() > currentNextStates) {
 			// only sort if we're not going to visit all the nodes

@@ -146,6 +146,7 @@ gridssbreakdownvcfs <- unlist(recursive=FALSE, lapply(vcfs, function(vcf) {
   }))
 gridssbreakdownvcfs <- gridssbreakdownvcfs[!sapply(gridssbreakdownvcfs, is.null)] 
 
+
 truthlist_filtered <- CalculateTruthSummary(vcfs, blacklist=blacklist, maxerrorbp=maxPositionDifference_LengthOrEndpoint, maxerrorpercent=maxLengthRelativeDifference, ignoreFilters=FALSE, ignore.strand=TRUE) # breakdancer does not specify strand
 truthlist_all <- CalculateTruthSummary(vcfs, blacklist=blacklist, maxerrorbp=maxPositionDifference_LengthOrEndpoint, maxerrorpercent=maxLengthRelativeDifference, ignoreFilters=TRUE, ignore.strand=TRUE) # breakdancer does not specify strand
 
@@ -294,15 +295,15 @@ ggplot(assdelroc) + aes(x=tp, y=precision, color=caller, linetype=Filter) + geom
 ggsave(paste0("na12878_assembly_prec_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ".pdf"), width=7, height=5)
 
 
+ggplot(as.data.frame(delbed[delbed$caller=="gridss" & !delbed$filtered,])) + aes(x=QUAL, fill=ifelse(tp, "_tp", "fp")) + geom_histogram(binwidth=100) + scale_x_continuous(limits=c(0, 3000))
+ggsave("na12878_gridss_hq_treshold.png")
+>>>>>>> .theirs
+
 
 # precision thresholds
 delroc[delroc$precision > 0.95,][!duplicated(paste(delroc[delroc$precision > 0.95,]$caller, delroc[delroc$precision > 0.95,]$Filter), fromLast=TRUE),]
-
 ggplot(as.data.frame(delbed[delbed$caller=="gridss" & !delbed$filtered,])) + aes(x=QUAL, fill=ifelse(tp, "_tp", "fp")) + geom_histogram(binwidth=100) + scale_x_continuous(limits=c(0, 3000))
 ggsave("na12878_gridss_hq_treshold.png")
-
-
-
 
 # buffer sizes
 library(reshape2)

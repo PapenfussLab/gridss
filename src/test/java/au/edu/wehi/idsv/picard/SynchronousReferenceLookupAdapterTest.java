@@ -10,9 +10,20 @@ import org.junit.Test;
 
 public class SynchronousReferenceLookupAdapterTest {
 	private Exception e;
+	private File findBigReference() {
+		for (String path : new String[] {
+				"C:/dev/hg19_karyotypic.fa",
+				"C:/dev/hg19.fa",
+				"~/projects/reference_genomes/human/hg19.fa",
+			}) {
+			File f = new File(path);
+			if (f.exists()) return f;
+		}
+		throw new RuntimeException("Cannot file large reference genome to use for testing.");
+	}
 	@Test
 	public void multi_threaded_read() throws Exception {
-		File ref = new File("C:/dev/hg19_karyotypic.fa");
+		File ref = findBigReference();
 		IndexedFastaSequenceFile indexed = new IndexedFastaSequenceFile(ref);
 		SynchronousReferenceLookupAdapter a = new SynchronousReferenceLookupAdapter(indexed);
 		e = null;
@@ -25,7 +36,6 @@ public class SynchronousReferenceLookupAdapterTest {
 						int pos = rng.nextInt(100000000);
 						assertEquals(a.getBase(indexed.getSequenceDictionary().getSequence("chr4").getSequenceIndex(),pos),
 								indexed.getSubsequenceAt("chr4", pos, pos).getBases()[0]);
-						;
 					}
 				} catch (Exception ex) {
 					e = ex;
@@ -37,5 +47,6 @@ public class SynchronousReferenceLookupAdapterTest {
 			th[t].join();
 		}
 		if (e != null) throw e;
+		a.close();
 	}
 }

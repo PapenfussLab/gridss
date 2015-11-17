@@ -6,22 +6,24 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.metrics.Header;
+import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.metrics.Header;
-import htsjdk.samtools.util.SequenceUtil;
 
 
 public class SAMRecordAssemblyEvidenceTest extends TestHelper {
@@ -303,7 +305,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	@Test
 	public void realign_should_not_flip_tandem_duplication() {
 		ProcessingContext pc = getContext();
-		pc.getAssemblyParameters().realignmentMinimumAnchorRetainment = 0;
+		pc.getAssemblyParameters().anchorRealignment.realignmentMinimumAnchorRetainment = 0;
 		String seq = S(Arrays.copyOfRange(RANDOM, 150, 200)) + S(Arrays.copyOfRange(RANDOM, 100, 200)) + S(Arrays.copyOfRange(RANDOM, 100, 150));
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, null,
 				2, 100, 50, B(seq), B(40, seq.length()));
@@ -329,15 +331,13 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	@Rule
     public TemporaryFolder testFolder = new TemporaryFolder();
 	@Test
-	public void realign_should_fix_778_chr1_170849702_misalignment() {
+	public void realign_should_fix_778_chr1_170849702_misalignment() throws ConfigurationException {
 		String assembly = "ATCCATCCCTATGACCCAAACATCTCCCACCAGGCCTCATGTTCAATATTAAAGATCACATTTCAACTTGAGATTTGGAGGGGACAAACATACAAATCATATCATTATCTCTCTCCCCACTTCTCTCTTTATCAATCCCTCCCTCTTTGTCAATCTTAGCCTTGGCCTTCAGATTTTACCACTTGATTTTTCACATTTTCTGTATTCTTAAT"
 				+ "GATTATTATATTTTCATGTTCTTGCTAATCTATATCATGGTTAGAAATCAAAGCATGCCGAAATTTCTCTCTTACTTTTTTTGCTGTT";
 		File ref = new File("src/test/resources/chr1_170849600_170849850.fa");
 		ProcessingContext context = new ProcessingContext(getFSContext(),
-				new ArrayList<Header>(), new SoftClipParameters(),
-				new ReadPairParameters(), new AssemblyParameters(),
-				new RealignmentParameters(), new VariantCallingParameters(),
-				ref, false, false);
+				new ArrayList<Header>(), new GridssConfiguration(),
+				ref, false);
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(context, AES(context), BWD, null,
 				0, 170849702-170849600+1, 97, B(assembly), B(40, assembly.length())).realign(50, true, 0.5f);
 		// anchor location is 11bp off

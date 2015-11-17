@@ -10,7 +10,6 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -229,6 +228,20 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 						bases, quals);
 			}
 		}
+		if (aes.getContext().getConfig().getVisualisation().assembly) {
+			try {
+				PositionalExporter.exportDot(new File(aes.getContext().getConfig().getVisualisation().directory, "assembly." + assembledContig.getEvidenceID() + ".dot"), k, graphByPosition, fullContig);
+			} catch (Exception ex) {
+				log.debug(ex, "Error exporting assembly ", assembledContig != null ? assembledContig.getEvidenceID() : "(null)");
+			}
+		}
+		if (aes.getContext().getConfig().getVisualisation().fullSizeAssembly) {
+			try {
+				PositionalExporter.exportNodeDot(new File(aes.getContext().getConfig().getVisualisation().directory, "assembly.fullsize." + assembledContig.getEvidenceID() + ".dot"), k, graphByPosition, fullContig);
+			} catch (Exception ex) {
+				log.debug(ex, "Error exporting assembly ", assembledContig != null ? assembledContig.getEvidenceID() : "(null)");
+			}
+		}
 		// remove all evidence contributing to this assembly from the graph
 		if (evidence.size() > 0) {
 			removeFromGraph(evidence);
@@ -242,7 +255,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	}
 	/**
 	 * Corrects misassembly due to incorporation of read pair evidence at multiple positions
-	 * @author cameron.d
+	 * @author Daniel Cameron
 	 *
 	 */
 	private static class MisassemblyFixer {
@@ -451,7 +464,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			removeWeight(entry.getKey(), entry.getValue(), simplifyCandidates);
 		}
 		simplify(simplifyCandidates);
-		if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			assert(sanityCheck());
 		}
 	}
@@ -521,7 +534,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		simplifyCandidates.remove(node);
 		Collection<KmerPathNode> replacementNodes = KmerPathNode.removeWeight(node, toRemove);
 		for (KmerPathNode split : replacementNodes) {
-			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 				assert(evidenceTracker.matchesExpected(new KmerPathSubnode(split)));
 			}
 			addToGraph(split);
@@ -575,7 +588,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	 * No contigs will be called for such evidence since no all
 	 * connected kmers are reference kmers.
 	 * 
-	 * @author cameron.d
+	 * @author Daniel Cameron
 	 *
 	 */
 	private void removeOrphanedNonReferenceSubgraphs() {
@@ -626,7 +639,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	}
 	/**
 	 * Intercepts the underlying stream and adds nodes to the graph as they are encountered
-	 * @author cameron.d
+	 * @author Daniel Cameron
 	 *
 	 */
 	private class KmerPathNodeIteratorInterceptor implements Iterator<KmerPathNode> {
@@ -648,7 +661,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		public KmerPathNode next() {
 			KmerPathNode node = underlying.next();
 			consumed++;
-			if (Defaults.PERFORM_EXPENSIVE_DE_BRUIJN_SANITY_CHECKS) {
+			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 				assert(evidenceTracker.matchesExpected(new KmerPathSubnode(node)));
 			}
 			addToGraph(node);
@@ -688,12 +701,5 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	}
 	public void setExportTracker(PositionalDeBruijnGraphTracker exportTracker) {
 		this.exportTracker = exportTracker;
-	}
-	public void exportGraph(File file) {
-		try {
-			PositionalExporter.exportDot(file, k, graphByPosition);
-		} catch (IOException e) {
-			log.error(e);
-		}
 	}
 }

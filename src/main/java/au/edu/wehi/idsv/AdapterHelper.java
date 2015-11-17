@@ -13,7 +13,7 @@ import com.google.common.collect.ImmutableList;
 
 /**
  * Provides adapter related utilities
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class AdapterHelper {

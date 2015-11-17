@@ -10,7 +10,7 @@ import org.junit.Test;
 public class AdapterHelperTest extends TestHelper {
 	@Test
 	public void containsAdapter() {
-		AdapterHelper ah = new SoftClipParameters().adapters;
+		AdapterHelper ah = getConfig().adapters;
 		SAMRecord r = Read(0,  1,  101);
 		r.setReadBases(B("CATGCCTGGCGTCCACTTTCTTGACTATTTCCTGAAGACCAGCGTTTCCCGGGTGGGTTCACAGCTGCGGAAGCTGCCTGTGTCAAGATCGGAAGAGCGTC"));
 		assertTrue(ah.containsAdapter(r));

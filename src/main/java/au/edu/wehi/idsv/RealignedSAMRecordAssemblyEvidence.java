@@ -1,8 +1,9 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMRecord;
+
 import java.util.List;
 
-import htsjdk.samtools.SAMRecord;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 public class RealignedSAMRecordAssemblyEvidence extends SAMRecordAssemblyEvidence implements DirectedBreakpoint {

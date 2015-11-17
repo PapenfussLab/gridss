@@ -7,7 +7,7 @@ import htsjdk.variant.vcf.VCFInfoHeaderLine;
 public enum VcfAttributes {
 	REFERENCE_READ_COUNT ("REF", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of reads mapping across this breakend per category"),
 	REFERENCE_READPAIR_COUNT ("REFPAIR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of reference read pairs spanning this breakpoint supporting the reference allele per category"),
-	SOMATIC_P_VALUE ("SPV", 1, VCFHeaderLineType.Float, "Somatic p-value. Assume first category is normal, second is tumour"),
+	//SOMATIC_P_VALUE ("SPV", 1, VCFHeaderLineType.Float, "Somatic p-value. Assume first category is normal, second is tumour"),
 	CALLED_QUAL ("CQ", 1, VCFHeaderLineType.Float, "Breakpoint quality score before evidence reallocation"),
 	//BREAKPOINT_QUAL ("BPQUAL", 1, VCFHeaderLineType.Float, "Quality score of breakpoint evidence after evidence reallocation"), // QUAL field
 	BREAKEND_QUAL ("BQ", 1, VCFHeaderLineType.Float, "Quality score of breakend evidence after evidence reallocation"),
@@ -39,9 +39,7 @@ public enum VcfAttributes {
 	CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY ("CIRPOS", 2, VCFHeaderLineType.Integer, "Confidence interval around remote breakend POS for imprecise variants"),
 	
 	SELF_INTERSECTING ("SELF", 1, VCFHeaderLineType.Flag, "Indicates a breakpoint is self-intersecting"),
-	
-	TRUTH_MATCHES ("TRUTH_MATCHES", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Variant ID of all true variants as defined in the supplied truth set"),
-	TRUTH_MISREALIGN ("TRUTH_MISREALIGN", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Variant ID of the true variant for all variants where the remote breakend location does not match the true variant as defined in the supplied truth set");
+	TEST ("TEST", 1, VCFHeaderLineType.String, "Placeholder field used for regression testing.");
 	private final VCFInfoHeaderLine header;
 	private final String tag;
 	VcfAttributes(String name, String samTag, int count, VCFHeaderLineType type, String description) {

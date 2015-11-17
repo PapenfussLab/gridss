@@ -8,7 +8,7 @@ import com.google.common.primitives.Ints;
 
 /**
  * KmerNode utility classes
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class KmerNodeUtil {

@@ -39,14 +39,14 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		int maxEvidenceWidth = aes.getMaxConcordantFragmentSize() - aes.getMinConcordantFragmentSize() + 1;
 		int maxReadLength = maxReadLength(input);
 		int k = pc.getAssemblyParameters().k;
-		int maxPathLength = pc.getAssemblyParameters().positionalMaxPathLengthInBases(maxReadLength);
-		int maxPathCollapseLength = pc.getAssemblyParameters().positionalMaxPathCollapseLengthInBases(maxReadLength);
+		int maxPathLength = pc.getAssemblyParameters().positional.maxPathLengthInBases(maxReadLength);
+		int maxPathCollapseLength = pc.getAssemblyParameters().errorCorrection.maxPathCollapseLengthInBases(maxReadLength);
 		tracker = new EvidenceTracker();
 		SupportNodeIterator supportIt = new SupportNodeIterator(k, Arrays.stream(input).iterator(), aes.getMaxConcordantFragmentSize(), tracker);
 		AggregateNodeIterator agIt = new AggregateNodeIterator(supportIt);
 		Iterator<KmerPathNode> pnIt = new PathNodeIterator(agIt, maxPathLength, k);
 		if (collapse) {
-			pnIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, pc.getAssemblyParameters().maxBaseMismatchForCollapse, pc.getAssemblyParameters().collapseBubblesOnly, 0);
+			pnIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, pc.getAssemblyParameters().errorCorrection.maxBaseMismatchForCollapse, pc.getAssemblyParameters().errorCorrection.collapseBubblesOnly, 0);
 			pnIt = new PathSimplificationIterator(pnIt, maxPathLength, maxEvidenceWidth);
 		}
 		caller = new NonReferenceContigAssembler(pnIt, 0, maxEvidenceWidth + maxReadLength + 2, maxReadLength, k, aes, tracker);

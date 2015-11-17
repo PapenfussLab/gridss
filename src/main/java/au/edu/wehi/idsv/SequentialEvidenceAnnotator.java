@@ -125,7 +125,7 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 	protected VariantContextDirectedEvidence computeNext() {
 		if (variantBuffer.isEmpty()) {
 			if (!callIt.hasNext()) {
-				if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
+				if (Defaults.SANITY_CHECK_ITERATORS) {
 					// we have no more calls to make so this doesn't actually need to be done
 					// unless we're sanity checking
 					while (evidenceIt.hasNext()) {
@@ -158,7 +158,7 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 		// TODO: replace overlap implementation with interval tree
 		boolean evidenceCalled = false;
 		BreakendSummary bs = evidence.getBreakendSummary();
-		bs = context.getVariantCallingParameters().withMargin(context, bs);
+		bs = context.getVariantCallingParameters().withMargin(bs);
 		long endLocation = context.getLinear().getEndLinearCoordinate(bs);
 		if (assignEvidenceToSingleBreakpoint) {
 			ActiveVariant best = null;

@@ -19,7 +19,7 @@ import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 /**
  * Outputs variant calls to BEDPE
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class BedpeWriter implements Closeable {

@@ -1,13 +1,15 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import java.util.Collection;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNode;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 
 /**
  * Total support for the given kmer over the given interval
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class ImmutableKmerNode implements KmerNode {
@@ -72,18 +74,30 @@ public class ImmutableKmerNode implements KmerNode {
 	 * @param node
 	 * @return
 	 */
-	public static Stream<ImmutableKmerNode> copyPath(KmerPathNode node) {
+	public static Stream<ImmutableKmerNode> splitKmers(KmerNode node) {
+		DeBruijnSequenceGraphNode sgn = (DeBruijnSequenceGraphNode)node;
 		return IntStream.range(0, node.length())
-				.mapToObj(i -> new ImmutableKmerNode(node.kmer(i), node.startPosition(i), node.endPosition(i), node.isReference(), node.weight(i)));
+				.mapToObj(i -> new ImmutableKmerNode(sgn.kmer(i), node.firstStart() + i, node.firstEnd() + i, node.isReference(), sgn.weight(i)));
 	}
 	/**
 	 * Splits the given node into each individual position
 	 * @param node
 	 * @return
 	 */
-	public static Stream<ImmutableKmerNode> fragment(KmerNode node) {
-		if (node instanceof KmerPathNode) throw new IllegalArgumentException("copyPath() should be called before fragment()");
+	public static Stream<ImmutableKmerNode> splitPositions(KmerNode node) {
+		if (node instanceof DeBruijnSequenceGraphNode) throw new IllegalArgumentException("copyPath() should be called before fragment()");
 		return IntStream.range(node.lastStart(), node.lastEnd() + 1)
 				.mapToObj(p -> new ImmutableKmerNode(node.lastKmer(), p, p, node.isReference(), node.weight()));
+	}
+	/**
+	 * Splits the given node into position de Bruijn graph nodes 
+	 * @param list nodes
+	 * @return individual constituent position de Bruijn graph nodes
+	 */
+	public static Stream<KmerNode> split(Collection<? extends KmerNode> list) {
+		return list.stream().flatMap(n -> {
+			if (n instanceof DeBruijnSequenceGraphNode) return ImmutableKmerNode.splitKmers(n).flatMap(x -> ImmutableKmerNode.splitPositions(x));
+			return ImmutableKmerNode.splitPositions(n);
+		});
 	}
 }

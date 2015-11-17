@@ -4,7 +4,7 @@ import java.util.Iterator;
 
 /**
  * Counts the number of elements that have been consumed
- * @author cameron.d
+ * @author Daniel Cameron
  *
  * @param <T>
  */

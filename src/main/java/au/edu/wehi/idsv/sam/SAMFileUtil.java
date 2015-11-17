@@ -65,7 +65,7 @@ public class SAMFileUtil {
 	}
 	/**
 	 * SAM sorting task
-	 * @author cameron.d
+	 * @author Daniel Cameron
 	 *
 	 */
 	public static class SortCallable implements Callable<Void> {
@@ -98,7 +98,7 @@ public class SAMFileUtil {
 		}
 		@Override
 		public Void call() throws IOException {
-			if (IntermediateFileUtil.checkIntermediate(output, unsorted)) {
+			if (IntermediateFileUtil.checkIntermediate(output, unsorted, processContext.getConfig().ignoreFileTimestamps)) {
 				log.info("Not sorting as output already exists: " + output);
 				return null;
 			}
@@ -135,7 +135,7 @@ public class SAMFileUtil {
 				writer = processContext.getSamFileWriterFactory(sortOrder == SortOrder.coordinate).makeSAMOrBAMWriter(header, true, tmpFile);
 				writer.setProgressLogger(new ProgressLogger(log));
 		    	wit = collection.iterator();
-		    	if (Defaults.PERFORM_ITERATOR_SANITY_CHECKS) {
+		    	if (Defaults.SANITY_CHECK_ITERATORS) {
 					wit = new AutoClosingIterator<SAMRecord>(new OrderAssertingIterator<SAMRecord>(wit, sortComparator), ImmutableList.<Closeable>of(wit));
 				}
 				while (wit.hasNext()) {
