@@ -103,39 +103,48 @@ vcfs <- lapply(vcfs, function(vcf) {
   return(vcf)
 })
 # gridss evidence breakdown
-gridssvcfs <- c(
-  lapply(vcfs, function(vcf) {
-    if (is.na(vcf@metadata$CX_CALLER_ARGS) || is.null(vcf@metadata$CX_CALLER_ARGS) || vcf@metadata$CX_CALLER_ARGS != "assembly.method") return (NULL)
-    attr(vcf, "metadata")$CX_CALLER <- "Windowed de Bruijn graph assembly"
-    df <- gridss.vcftodf(vcf)
-    rowRanges(vcf)$FILTER <- "."
-    rowRanges(vcf)$QUAL <- df$ASQ + df$RASQ
-    #vcf <- vcf[df$RP + df$SR + df$RSR > 0,] # filter assembly-only variants due to high FP rate
-    vcf <- vcf[df$ASCSR / df$ASSR < 0.8 & df$ASCRP / df$ASRP < 0.8,] # filter assembly variants with little actual support due to high FP rate
-    return(vcf)
-  }), unlist(recursive=FALSE, lapply(vcfs, function(vcf) {
+gridssassemblyvcfs <- unlist(recursive=FALSE, lapply(vcfs, function(vcf) {
     if (is.null(attr(vcf, "metadata")) || is.na(vcf@metadata$CX_CALLER) || str_split(vcf@metadata$CX_CALLER, "/")[[1]][1] !="gridss") return(NULL)
-    if (!is.na(vcf@metadata$CX_CALLER_ARGS) && !is.null(vcf@metadata$CX_CALLER_ARGS) && vcf@metadata$CX_CALLER_ARGS == "assembly.method") return (NULL) # exclude subgraph assembly
+    if (!is.na(vcf@metadata$CX_CALLER_ARGS) && !is.null(vcf@metadata$CX_CALLER_ARGS) && vcf@metadata$CX_CALLER_ARGS == "assembly.method") {
+      attr(vcf, "metadata")$CX_CALLER <- "Windowed de Bruijn graph"  
+    } else {
+      attr(vcf, "metadata")$CX_CALLER <- "Positional de Bruijn graph"  
+    }
     df <- gridss.vcftodf(vcf)
     return (lapply(list(
-      list(f=function(df) df$QUAL, label="Combined"),
-      list(f=function(df) df$ASQ + df$RASQ, label="Positional de Bruijn assembly"),
-      list(f=function(df) df$RPQ + df$SRQ + df$RSRQ, label="RP SR"),
-      list(f=function(df) df$RPQ, label="RP"),
-      list(f=function(df) df$SRQ + df$RSRQ, label="SR"),
-      list(f=function(df) df$ASRP + df$ASSR, label="Positional de Bruijn assembly$count"),
-      list(f=function(df) df$RP + df$SR + df$RSR, label="RP SR$count"),
-      list(f=function(df) df$RP, label="RP$count"),
-      list(f=function(df) df$SR + df$RSR, label="SR$count")),
-      function(scoring) {
-        ovcf <- vcf
-        rowRanges(ovcf)$QUAL <- scoring$f(df)
-        rowRanges(ovcf)$FILTER <- "."
-        attr(ovcf, "metadata")$CX_CALLER <- scoring$label
-        return(ovcf)
-      }))
-  })))
-gridssvcfs[sapply(gridssvcfs, is.null)] <- NULL
+      list(f=function(df) df$AS + df$RAS > 0 & df$RP + df$SR + df$RSR > 0, label = "RP/SR supported assemblies"),
+      list(f=function(df) df$AS + df$RAS > 0, label = "All assemblies")
+      ), function(tuple) {
+      ovcf <- vcf[tuple$f(df)]
+      rowRanges(ovcf)$FILTER <- "."
+      attr(ovcf, "metadata")$CX_CALLER <- paste0(attr(ovcf, "metadata")$CX_CALLER, "$", tuple$label)
+      return(ovcf)
+    }))
+  }))
+gridssassemblyvcfs <- gridssassemblyvcfs[!sapply(gridssassemblyvcfs, is.null)] 
+gridssbreakdownvcfs <- unlist(recursive=FALSE, lapply(vcfs, function(vcf) {
+  if (is.null(attr(vcf, "metadata")) || is.na(vcf@metadata$CX_CALLER) || str_split(vcf@metadata$CX_CALLER, "/")[[1]][1] !="gridss") return(NULL)
+  if (!is.na(vcf@metadata$CX_CALLER_ARGS) && !is.null(vcf@metadata$CX_CALLER_ARGS) && vcf@metadata$CX_CALLER_ARGS == "assembly.method") return (NULL) # exclude subgraph assembly
+  df <- gridss.vcftodf(vcf)
+  return (lapply(list(
+    list(f=function(df) df$QUAL, label="RP SR Assembly"),
+    list(f=function(df) df$ASQ + df$RASQ, label="Assembly only"),
+    list(f=function(df) df$RPQ + df$SRQ + df$RSRQ, label="RP SR"),
+    list(f=function(df) df$RPQ, label="RP only"),
+    list(f=function(df) df$SRQ + df$RSRQ, label="SR only"),
+    list(f=function(df) df$ASRP + df$ASSR, label="Assembly only$count"),
+    list(f=function(df) df$RP + df$SR + df$RSR, label="RP SR$count"),
+    list(f=function(df) df$RP, label="RP only$count"),
+    list(f=function(df) df$SR + df$RSR, label="SR only$count")),
+    function(scoring) {
+      ovcf <- vcf
+      rowRanges(ovcf)$QUAL <- scoring$f(df)
+      rowRanges(ovcf)$FILTER <- "."
+      attr(ovcf, "metadata")$CX_CALLER <- scoring$label
+      return(ovcf)
+    }))
+  }))
+gridssbreakdownvcfs <- gridssbreakdownvcfs[!sapply(gridssbreakdownvcfs, is.null)] 
 
 truthlist_filtered <- CalculateTruthSummary(vcfs, blacklist=blacklist, maxerrorbp=maxPositionDifference_LengthOrEndpoint, maxerrorpercent=maxLengthRelativeDifference, ignoreFilters=FALSE, ignore.strand=TRUE) # breakdancer does not specify strand
 truthlist_all <- CalculateTruthSummary(vcfs, blacklist=blacklist, maxerrorbp=maxPositionDifference_LengthOrEndpoint, maxerrorpercent=maxLengthRelativeDifference, ignoreFilters=TRUE, ignore.strand=TRUE) # breakdancer does not specify strand
@@ -232,17 +241,17 @@ longReadRoc <- function(vcflist) {
   delbed$tp <- ifelse(delbed$sr >= 3 | delbed$sp >= 7, 1, 0)
   delbed$fp <- 1 - delbed$tp
   delbed <- delbed[order(-delbed$QUAL),]
-  delroc <- data.table(as.data.frame(mcols(delbed)))
-  delroc <- delroc[!delroc$blacklisted,]
-  tmp <- delroc[!delroc$filtered & delroc$caller %in% unique(delroc[delroc$filtered,]$caller),]
+  longReadRoc_delroc <- data.table(as.data.frame(mcols(delbed)))
+  longReadRoc_delroc <- longReadRoc_delroc[!longReadRoc_delroc$blacklisted,]
+  tmp <- longReadRoc_delroc[!longReadRoc_delroc$filtered & longReadRoc_delroc$caller %in% unique(longReadRoc_delroc[longReadRoc_delroc$filtered,]$caller),]
   tmp$filtered <- TRUE
-  delroc <- rbind(delroc, tmp)
-  delroc <- delroc[order(-delroc$QUAL),]
-  delroc[,`:=`(tp=cumsum(tp), fp=cumsum(fp), QUAL=cummin(QUAL)), by=c("caller", "filtered")]
-  delroc <- delroc[!duplicated(delroc[, c("caller", "filtered", "QUAL"), with=FALSE], fromLast=TRUE),] # take only one data point per QUAL
-  delroc$Filter <- ifelse(delroc$filtered, "Including Filtered", "Default")
-  delroc$precision <- delroc$tp/(delroc$tp+delroc$fp)
-  return (delroc)
+  longReadRoc_delroc <- rbind(longReadRoc_delroc, tmp)
+  longReadRoc_delroc <- longReadRoc_delroc[order(-longReadRoc_delroc$QUAL),]
+  longReadRoc_delroc[,`:=`(tp=cumsum(tp), fp=cumsum(fp), QUAL=cummin(QUAL)), by=c("caller", "filtered")]
+  longReadRoc_delroc <- longReadRoc_delroc[!duplicated(longReadRoc_delroc[, c("caller", "filtered", "QUAL"), with=FALSE], fromLast=TRUE),] # take only one data point per QUAL
+  longReadRoc_delroc$Filter <- ifelse(longReadRoc_delroc$filtered, "Including Filtered", "Default")
+  longReadRoc_delroc$precision <- longReadRoc_delroc$tp/(longReadRoc_delroc$tp+longReadRoc_delroc$fp)
+  return (longReadRoc_delroc)
 }
 delroc <- longReadRoc(vcfs)
 ggplot(delroc) + aes(x=fp, y=tp, color=caller, linetype=Filter) + geom_line() +
@@ -255,20 +264,35 @@ ggplot(delroc) + aes(x=tp, y=precision, color=caller, linetype=Filter) + geom_li
 #  scale_color_brewer(palette="Set2") +
 ggsave(paste0("na12878_prec_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ".pdf"), width=7, height=5)
 
-gdelroc <- longReadRoc(gridssvcfs)
-gdelroc$Scoring <- ifelse(str_detect(gdelroc$caller, "[$]"), "Read Count", "Bayesian")
-gdelroc$caller <- str_extract(gdelroc$caller, "[^$]*")
-gdelroc <- gdelroc[gdelroc$QUAL > 0,] # filter out calls that wouldn't have been called according to that particular scoring scheme
-ggplot(gdelroc) + aes(x=fp, y=tp, color=caller, linetype=Scoring) + geom_line(size=3) +
+bddelroc <- longReadRoc(gridssbreakdownvcfs)
+bddelroc$Scoring <- ifelse(str_detect(bddelroc$caller, "[$]"), "Read Count", "Bayesian")
+bddelroc$caller <- str_extract(bddelroc$caller, "[^$]*")
+bddelroc <- bddelroc[bddelroc$QUAL > 0,] # filter out calls that wouldn't have been called according to that particular scoring scheme
+ggplot(bddelroc) + aes(x=fp, y=tp, color=caller, linetype=Scoring) + geom_line(size=3) +
   coord_cartesian(xlim=c(0, 1000), ylim=c(0, 3000)) + 
   scale_color_brewer(palette="Set2") +
   labs(x="False Positives", y="True Positives", title="gridss support breakdown")
 ggsave(paste0("na12878_gridss_tp_fp_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ".pdf"), width=7, height=5)
 
-ggplot(gdelroc) + aes(x=tp, y=precision, color=caller, linetype=Scoring) + geom_line(size=2) + 
+ggplot(bddelroc) + aes(x=tp, y=precision, color=caller, linetype=Scoring) + geom_line(size=2) + 
   scale_color_brewer(palette="Set2") +
   labs(x="True Positives", y="Precision", title="gridss support breakdown")
 ggsave(paste0("na12878_gridss_prec_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ".pdf"), width=7, height=5)
+
+assdelroc <- longReadRoc(gridssassemblyvcfs)
+assdelroc$Filter <- str_extract(assdelroc$caller, "[^$]*$")
+assdelroc$caller <- str_extract(assdelroc$caller, "[^$]*")
+ggplot(assdelroc) + aes(x=fp, y=tp, color=caller, linetype=Filter) + geom_line(size=3) +
+  coord_cartesian(xlim=c(0, 1000), ylim=c(0, 3000)) + 
+  scale_color_brewer(palette="Set2") +
+  labs(x="False Positives", y="True Positives", title="gridss assembly comparison")
+ggsave(paste0("na12878_assembly_tp_fp_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ".pdf"), width=7, height=5)
+
+ggplot(assdelroc) + aes(x=tp, y=precision, color=caller, linetype=Filter) + geom_line(size=2) + 
+  scale_color_brewer(palette="Set2") +
+  labs(x="True Positives", y="Precision", title="gridss assembly comparison")
+ggsave(paste0("na12878_assembly_prec_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ".pdf"), width=7, height=5)
+
 
 
 # precision thresholds
@@ -298,4 +322,28 @@ ggsave("na12878_assembly_buffers.png")
 
 mean(dtbuffer$trackerActive)
 mean(dtbuffer$trackerLookupSize)
+
+
+# gridss FPR by QUAL
+gridssvcf_only <- lapply(vcfs, function(vcf) {
+  if (is.na(attr(vcf, "metadata")$CX_CALLER)) return(vcf)
+  if (attr(vcf, "metadata")$CX_CALLER == "gridss/0.9.0") {
+    rowRanges(vcf)$QUAL <- floor(rowRanges(vcf)$QUAL / 100) * 100
+    return (vcf)
+  }
+  return(NULL)
+})
+gridssvcf_only <- gridssvcf_only[!sapply(gridssvcf_only, is.null)]
+bindelroc <- longReadRoc(gridssvcf_only)
+bindelroc <- bindelroc[bindelroc$Filter == "Default",]
+
+bindelroclookup <- bindelroc
+bindelroclookup[nrow(bindelroclookup)]$QUAL <- 1000000
+bindelroclookup <- bindelroclookup[order(-bindelroclookup$QUAL),]
+bindelroc$dtp <- bindelroc$tp - bindelroclookup$tp
+bindelroc$dfp <- bindelroc$fp - bindelroclookup$fp
+bindelroc$tpr <- bindelroc$dtp / (bindelroc$dtp  + bindelroc$dfp )
+ggplot(bindelroc) + aes(y=tpr, x=QUAL) + geom_line() + scale_x_continuous(limits=c(500, 5000)) +
+  labs(title="Gridss TPR by QUAL score", y="True Positive Rate", x="QUAL score")
+ggsave("gridss_tpr_by_qual.png")
 
