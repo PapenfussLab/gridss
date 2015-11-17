@@ -25,8 +25,8 @@ example/gridss.sh contains an example pipeline of how gridss is invoked.
 It is recommended to run gridss with max heap memory of 8GB + 2GB per worker thread.
 For example, with 4 worker threads, it is recommended to run gridss with is -Xmx16g.
 Note that if a BED blacklist file excluding problematic centromeric and telomeric
-sequences (the ENCODE DAC blacklist is recommended when aligning against hg19),
-additional memory is recommended.
+sequences is not used, additional memory is recommended. The [ENCODE DAC blacklist](https://www.encodeproject.org/annotations/ENCSR636HFF/)
+is recommended when aligning against hg19.
 
 ## Parameters
 
