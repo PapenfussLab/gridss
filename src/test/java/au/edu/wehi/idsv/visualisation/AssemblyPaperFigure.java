@@ -150,7 +150,7 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 	}
 	@Test
 	public void tiny4merExample() throws IOException {
-		BreakpointSummary bs = new BreakpointSummary(2, FWD, 10, 10, 2, BWD, 150, 150);
+		BreakpointSummary bs = new BreakpointSummary(2, FWD, 10, 10, 2, BWD, 50, 50);
 		int k = 4;
 		int readLength = 10;
 		int fragSize = 20;
@@ -170,6 +170,7 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 		List<SAMRecord> reads = new ArrayList<SAMRecord>();
 		List<SAMRecord> splitReads = new ArrayList<SAMRecord>();
 		addDP(reads, bs, readLength, 0, fragSize);
+		//addDP(reads, bs, readLength, 1, fragSize);
 		
 		addSR(reads, splitReads, bs, readLength, 4, 0);
 		addSR(reads, splitReads, bs, readLength, 6, 0);

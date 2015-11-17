@@ -168,7 +168,7 @@ public class PositionalExporter {
 						writer.append(id(n,k));
 						writer.append(" -> ");
 						writer.append(id(next, k));
-						writer.append(String.format(" [seq=\"%s\"];\n", KmerEncodingHelper.lastBaseEncodedToPicardBase(next.firstKmer())));
+						writer.append(String.format(" [ label = \"%c\" ]", KmerEncodingHelper.lastBaseEncodedToPicardBase(next.firstKmer())));
 						writer.append(";\n");
 					}
 				}
