@@ -25,8 +25,8 @@ example/gridss.sh contains an example pipeline of how gridss is invoked.
 It is recommended to run gridss with max heap memory of 8GB + 2GB per worker thread.
 For example, with 4 worker threads, it is recommended to run gridss with is -Xmx16g.
 Note that if a BED blacklist file excluding problematic centromeric and telomeric
-sequences (the ENCODE DAC blacklist is recommended when aligning against hg19),
-additional memory is recommended.
+sequences is not used, additional memory is recommended. The [ENCODE DAC blacklist](https://www.encodeproject.org/annotations/ENCSR636HFF/)
+is recommended when aligning against hg19.
 
 ## Parameters
 
@@ -150,6 +150,8 @@ For bedpe output, breakend information is not exported and per category totals (
 
 ## Intermediate Files
 
+Gridss writes a large number of intermediate files. If rerunning gridss with different parameters on the same input, all intermediate files must be deleted. All intermediate files are written to the WORKING_DIR directory tree, with the exception of temporary sort buffers which are written to TMP_DIR and automatically deleted at the conclusion of the sort operation.
+
 File | Description
 ------- | ---------
 tmp.* | Temporary intermediate file
@@ -180,12 +182,11 @@ unsorted.* | Temporary intermediate file
 ## Building from source
 
 Maven is used for build and dependency management which simplifies compile to the following steps:
-Gridss write a large number of intermediate files. If rerunning gridss with parametere on the same input, the intermediate files should be deleted. All intermediate files are written to the WORKING_DIR directory tree, with the exception of temporary sort buffers written to TMP_DIR and automatically deleted at the conclusion of the sort operation.
 
 * `git clone https://github.com/PapenfussLab/gridss`
 * `mvn package -DskipTests`
 
-If gridss was built successfully, a combined jar containing gridss and all required library located at target/gridss-*-jar-with-dependencies.jar will have been created.
+If gridss was built successfully, a combined jar containing gridss and all required library located at target/gridss-_VERSION_-jar-with-dependencies.jar will have been created.
 
 
 # Error Messages
