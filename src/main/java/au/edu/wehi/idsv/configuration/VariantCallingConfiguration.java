@@ -96,6 +96,9 @@ public class VariantCallingConfiguration {
 				filteredVariant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(processContext, filteredVariant).filter(VcfFilter.NO_ASSEMBLY.filter()).make();
 			} else if (v.getBreakpointEvidenceCountLocalAssembly() == 0 || v.getBreakpointEvidenceCountRemoteAssembly() == 0) {
 				filteredVariant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(processContext, filteredVariant).filter(VcfFilter.SINGLE_ASSEMBLY.filter()).make();
+			} else if (v.getBreakpointEvidenceCountLocalAssembly() + v.getBreakpointEvidenceCountRemoteAssembly() > 0 &&
+					v.getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL) + v.getBreakpointEvidenceCountSoftClip(EvidenceSubset.ALL) == 0) {
+				filteredVariant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(processContext, filteredVariant).filter(VcfFilter.ASSEMBLY_ONLY.filter()).make();
 			}
 		} else {
 			if (filteredVariant.getBreakendEvidenceCountAssembly() == 0) {
