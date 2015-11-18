@@ -170,7 +170,7 @@ public class LeafBubbleCollapseIterator extends CollapseIterator {
 	}
 	private static boolean intersects(Set<KmerPathNode> refnodes, TraversalNode node, KmerPathSubnode sn) {
 		if (refnodes.contains(sn.node())) return true;
-		return refnodes.contains(sn.node());
+		return node.traversingWouldCauseSelfIntersection(sn.node());
 	}
 	private int partialSequenceBasesDifferent(LongArrayList toCollapsePathKmers, TraversalNode tn, boolean traversalForward) {
 		LongArrayList nodeKmers = tn.node.node().pathKmers();
@@ -239,7 +239,7 @@ public class LeafBubbleCollapseIterator extends CollapseIterator {
 	 * @param collapseNodes lookup of collapse path
 	 * @param toCollapse path to attempt to collapse
 	 * @param traversalForward traversal direction
-	 * @param terminalNode node our path must finish on
+	 * @param terminalNode node our path must finish on, null if collapsing leaf
 	 * @return true if the path was collapsed, false otherwise
 	 */
 	private boolean memoizedCollapse(Set<KmerPathNode> collapseNodes, TraversalNode toCollapse, boolean traversalForward, KmerPathNode terminalNode) {
@@ -252,8 +252,9 @@ public class LeafBubbleCollapseIterator extends CollapseIterator {
 			collapseNodes.remove(terminalNode);
 		}
 		SortedMap<KmerPathSubnode, List<MemoizedPath>> frontier = new TreeMap<KmerPathSubnode, List<MemoizedPath>>(KmerNodeUtil.ByFirstStartKmer);
+		KmerPathSubnode root = traversalForward ? toCollapse.toSubnodeNextPath().getFirst() : toCollapse.toSubnodePrevPath().getLast();
 		// set up frontier
-		for (TraversalNode tn : successors(collapseNodes, new TraversalNode(toCollapse.getRoot(), 0), traversalForward)) {
+		for (TraversalNode tn : successors(collapseNodes, new TraversalNode(root, 0), traversalForward)) {
 			MemoizedPath mp = new MemoizedPath(tn, partialSequenceBasesDifferent(toCollapsePathKmers, tn, traversalForward));
 			if (frontierProcess(frontier, mp, toCollapse, traversalForward, terminalNode)) return true;
 		}

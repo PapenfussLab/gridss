@@ -314,10 +314,62 @@ public abstract class CollapseIteratorTest extends TestHelper {
 		List<KmerPathNode> input = new ArrayList<KmerPathNode>();
 		input.add(KPN(k, "GTAC", 2, 10, false)); 
 		input.add(KPN(k, "TACTAAA", 3, 4, false));
-		input.add(KPN(k, "TACGAAA", 5, 6, false));
+		input.add(KPN(k, "TACGAAA", 5, 6, false, 2));
 		KmerPathNode.addEdge(input.get(0), input.get(1));
 		KmerPathNode.addEdge(input.get(0), input.get(2));
 		List<KmerPathNode> result = simplify(go(k, 100, 100, input));
 		assertEquals(3, result.size());
+	}
+	@Test
+	public void should_not_collapse_nonoverlapping_with_common_path() {
+		int k = 4;
+		List<KmerPathNode> input = new ArrayList<KmerPathNode>();
+		input.add(KPN(k, "GTAC", 2, 10, false)); 
+		input.add(KPN(k, "TACTAAA", 3, 4, false));
+		input.add(KPN(k, "TACGAAA", 5, 6, false, 2));
+		input.add(KPN(k, "TACCCTG", 3, 11, false, 2));
+		KmerPathNode.addEdge(input.get(0), input.get(1));
+		KmerPathNode.addEdge(input.get(0), input.get(2));
+		KmerPathNode.addEdge(input.get(0), input.get(3));
+		List<KmerPathNode> result = simplify(go(k, 100, 3, input));
+		assertEquals(4, result.size());
+	}
+	@Test
+	public void should_collapse_narrowed_interval() {
+		int k = 4;
+		List<KmerPathNode> input = new ArrayList<KmerPathNode>();
+		input.add(KPN(k, "GTAC", 2, 10, false)); 
+		input.add(KPN(k, "TACT", 5, 6, false)); // gets removed -1 
+		input.add(KPN(k, "ACTG", 4, 12, false)); // gets split into three separate nodes with the middle one removed + 1
+		input.add(KPN(k, "TACCG", 3, 11, false, 2)); // gets split into three separate nodes with the middle one having added weight + 2
+		KmerPathNode.addEdge(input.get(0), input.get(1));
+		KmerPathNode.addEdge(input.get(1), input.get(2));
+		KmerPathNode.addEdge(input.get(0), input.get(3));
+		List<KmerPathNode> result = simplify(go(k, 100, 3, input));
+		assertEquals(6, result.size());
+	}
+	@Test
+	public void should_not_collapse_non_overlapping_end_paths() {
+		int k = 4;
+		List<KmerPathNode> input = new ArrayList<KmerPathNode>();
+		input.add(KPN(k, "GTAC", 2, 10, false)); 
+		input.add(KPN(k, "TACT", 3, 11, false)); 
+		input.add(KPN(k, "ACTG", 4, 12, false));
+		input.add(KPN(k, "CTGATT", 10, 13, false));
+		input.add(KPN(k, "TACC", 3, 11, false, 2)); 
+		input.add(KPN(k, "ACCG", 4, 12, false, 2));
+		input.add(KPN(k, "CCGTTT", 5, 9, false, 2));
+		// add these so we don't have overlapping shorter paths
+		input.add(KPN(k, "CTGGCGTAGA", 5, 9, false));
+		input.add(KPN(k, "CCGGGCAACT", 10, 13, false));
+		KmerPathNode.addEdge(input.get(0), input.get(1));
+		KmerPathNode.addEdge(input.get(1), input.get(2));
+		KmerPathNode.addEdge(input.get(2), input.get(3));
+		KmerPathNode.addEdge(input.get(0), input.get(4));
+		KmerPathNode.addEdge(input.get(4), input.get(5));
+		KmerPathNode.addEdge(input.get(2), input.get(7));
+		KmerPathNode.addEdge(input.get(5), input.get(8));
+		List<KmerPathNode> result = go(k, 100, 2, input);
+		assertEquals(9, result.size());
 	}
 }
