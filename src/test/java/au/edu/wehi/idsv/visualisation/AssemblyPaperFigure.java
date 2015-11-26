@@ -57,10 +57,10 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 		addOEA(reads, bs, readLength, fragSize - readLength - 5, fragSize);
 		addOEA(reads, bs, readLength, fragSize - readLength - 5, fragSize);
 		
-		addSR(reads, splitReads, bs, readLength, 10, 0);
-		addSR(reads, splitReads, bs, readLength, 5, 0);
-		addSR(reads, splitReads, bs, readLength, 13, 0);
-		addSR(reads, splitReads, bs, readLength, 15, 0);
+		addSR(reads, splitReads, null, bs, readLength, 10, 0);
+		addSR(reads, splitReads, null, bs, readLength, 5, 0);
+		addSR(reads, splitReads, null, bs, readLength, 13, 0);
+		addSR(reads, splitReads, null, bs, readLength, 15, 0);
 		
 		createInput(reads);
 		Collections.sort(splitReads, new Ordering<SAMRecord>() {
@@ -81,20 +81,28 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 		aes.ensureAssembled();
 		// done
 	}		
-	private void addSR(List<SAMRecord> reads, List<SAMRecord> splitReads, BreakpointSummary bs, int readLength, int splitLength, int localledOvermappedBases) {
+	private void addSR(List<SAMRecord> reads, List<SAMRecord> splitReads, List<SAMRecord> fullSplitReads, BreakpointSummary bs, int readLength, int splitLength, int localledOvermappedBases) {
 		int localLength = readLength - splitLength;
 		assert(localledOvermappedBases == 0);
-		SAMRecord r = Read(bs.referenceIndex, getStartBasePos(bs, localLength), bs.direction == FWD ? String.format("%dM%dS", localLength, splitLength) : String.format("%dS%dM", splitLength, localLength));
-		String localBases = S(getRef(bs.referenceIndex, localLength, bs.start, bs.direction, localLength));
-		String remoteBases = S(getRef(bs.remoteBreakend().referenceIndex, splitLength, bs.remoteBreakend().start, bs.remoteBreakend().direction, splitLength));
-		if (bs.direction == FWD) r.setReadBases(B(localBases + remoteBases)); 
-		else r.setReadBases(B(remoteBases + localBases));
+		SAMRecord r = sr(bs, localLength, splitLength); 
 		FastqRecord fq = BreakpointFastqEncoding.getRealignmentFastq(SoftClipEvidence.create(SES(), bs.direction, r, null));
 		assert(splitLength == fq.length());
 		SAMRecord realign = Read(bs.remoteBreakend().referenceIndex, getStartBasePos(bs.remoteBreakend(), splitLength), String.format("%dM", splitLength));
 		realign.setReadName(fq.getReadHeader());
 		reads.add(r);
 		splitReads.add(realign);
+		if (fullSplitReads != null) {
+			SAMRecord remote = sr(bs.remoteBreakpoint(), splitLength, localLength);
+			fullSplitReads.add(remote);
+		}
+	}
+	private SAMRecord sr(BreakpointSummary bs, int localLength, int splitLength) {
+		SAMRecord r = Read(bs.referenceIndex, getStartBasePos(bs, localLength), bs.direction == FWD ? String.format("%dM%dS", localLength, splitLength) : String.format("%dS%dM", splitLength, localLength));
+		String localBases = S(getRef(bs.referenceIndex, localLength, bs.start, bs.direction, localLength));
+		String remoteBases = S(getRef(bs.remoteBreakend().referenceIndex, splitLength, bs.remoteBreakend().start, bs.remoteBreakend().direction, splitLength));
+		if (bs.direction == FWD) r.setReadBases(B(localBases + remoteBases)); 
+		else r.setReadBases(B(remoteBases + localBases));
+		return r;
 	}
 	/**
 	 * Adds discordant read pairs to the evidence set
@@ -127,6 +135,20 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 	 * @param offset offset from bp, zero indicates that the read aligns right up to the breakpoint
 	 * @param fragSize
 	 */
+	private void addRP(List<SAMRecord> reads, int readLength, int fragSize, int referenceIndex, int startPos) {
+		SAMRecord[] rp = RP(referenceIndex, startPos, startPos + fragSize - readLength, readLength);
+		rp[0].setReadBases(B(S(RANDOM).substring(rp[0].getAlignmentStart() - 1,  rp[0].getAlignmentEnd())));
+		rp[1].setReadBases(B(S(RANDOM).substring(rp[1].getAlignmentStart() - 1,  rp[1].getAlignmentEnd())));
+		reads.add(rp[0]);
+		reads.add(rp[1]);
+	}
+	/**
+	 * Adds discordant read pairs to the evidence set
+	 * @param reads output list
+	 * @param readLength
+	 * @param offset offset from bp, zero indicates that the read aligns right up to the breakpoint
+	 * @param fragSize
+	 */
 	private void addOEA(List<SAMRecord> reads, BreakpointSummary bs, int readLength, int offset, int fragSize) {
 		assert(bs.referenceIndex == bs.referenceIndex2);
 		int fragBasesAtLocal = readLength + offset;
@@ -149,11 +171,11 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 		//fail();
 	}
 	@Test
-	public void tiny4merExample() throws IOException {
-		BreakpointSummary bs = new BreakpointSummary(2, FWD, 10, 10, 2, BWD, 50, 50);
+	public void small4merExample() throws IOException {
+		BreakpointSummary bs = new BreakpointSummary(2, FWD, 15, 15, 2, BWD, 35, 35);
 		int k = 4;
 		int readLength = 10;
-		int fragSize = 20;
+		int fragSize = 25;
 		ProcessingContext pc = getCommandlineContext(false);
 		
 		pc.getConfig().getAssembly().k = k;
@@ -167,16 +189,36 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 		pc.getConfig().getVisualisation().directory.mkdir();
 				
 		// Default 
-		List<SAMRecord> reads = new ArrayList<SAMRecord>();
+		List<SAMRecord> variantReads = new ArrayList<SAMRecord>();
 		List<SAMRecord> splitReads = new ArrayList<SAMRecord>();
-		addDP(reads, bs, readLength, 0, fragSize);
+		List<SAMRecord> fullSplitReads = new ArrayList<SAMRecord>();
+		addDP(variantReads, bs, readLength, 0, fragSize);
 		//addDP(reads, bs, readLength, 1, fragSize);
 		
-		addSR(reads, splitReads, bs, readLength, 4, 0);
-		addSR(reads, splitReads, bs, readLength, 6, 0);
-		reads.get(reads.size()-1).getReadBases()[4] = 't';
+		addSR(variantReads, splitReads, fullSplitReads, bs, readLength, 4, 0);
+		addSR(variantReads, splitReads, fullSplitReads, bs, readLength, 5, 0);
+		addSR(variantReads, splitReads, fullSplitReads, bs, readLength, 6, 0);
+		variantReads.get(variantReads.size()-1).getReadBases()[4] = 't';
 		splitReads.get(splitReads.size()-1).getReadBases()[4] = 't';
 		
+		List<SAMRecord> baseReads = new ArrayList<SAMRecord>();
+		addRP(baseReads, readLength, fragSize, 2, 1);
+		addRP(baseReads, readLength, fragSize + 1, 2, 2);
+		addRP(baseReads, readLength, fragSize - 1, 2, 3);
+		addRP(baseReads, readLength, fragSize, 2, 6);
+		addRP(baseReads, readLength, fragSize + 1, 2, 10);
+		addRP(baseReads, readLength, fragSize - 1, 2, 13);
+		addRP(baseReads, readLength, fragSize, 2, 16);
+		addRP(baseReads, readLength, fragSize, 2, 19);
+		addRP(baseReads, readLength, fragSize + 1, 2, 23);
+		addRP(baseReads, readLength, fragSize - 1, 2, 26);
+		addRP(baseReads, readLength, fragSize - 1, 2, 29);
+		addRP(baseReads, readLength, fragSize, 2, 33);
+		addRP(baseReads, readLength, fragSize + 1, 2, 35);
+		
+		List<SAMRecord> reads = new ArrayList<SAMRecord>();
+		reads.addAll(baseReads);
+		reads.addAll(variantReads);
 		createInput(reads);
 		Collections.sort(splitReads, new Ordering<SAMRecord>() {
 			@Override
@@ -194,6 +236,9 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 		ses.completeSteps(ProcessStep.ALL_STEPS);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), output);
 		aes.ensureAssembled();
+		
+		createBAM(new File(input.getParentFile(), "variant.bam"), SortOrder.coordinate, variantReads);
+		createBAM(new File(input.getParentFile(), "srremote.bam"), SortOrder.coordinate, fullSplitReads);
 		System.err.append("tiny4merExample written to " + output.toString());
-	}		
+	}
 }

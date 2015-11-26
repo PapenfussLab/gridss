@@ -113,6 +113,9 @@ public class IntermediateFilesTest extends TestHelper {
 	public void createInput(List<SAMRecord> data) {
 		createInput(data.toArray(new SAMRecord[data.size()]));
 	}
+	public void createBAM(File file, SortOrder sortOrder, List<SAMRecord> data) {
+		createBAM(file, sortOrder, data.toArray(new SAMRecord[data.size()]));
+	}
 	public void createBAM(File file, SortOrder sortOrder, SAMRecord... data) {
 		SAMFileHeader header = getHeader();
 		header.setSortOrder(sortOrder);
