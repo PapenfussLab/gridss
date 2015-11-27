@@ -91,7 +91,7 @@ public class Idsv extends CommandLineProgram {
     //@Option(doc = "Processing steps to execute", optional = true)
     public EnumSet<ProcessStep> STEPS = ProcessStep.ALL_STEPS;
     private SAMEvidenceSource constructSamEvidenceSource(File file, int category, int minFragSize, int maxFragSize) {
-    	if (category > 9) {
+    	if (category > 9 || category < 0) {
     		// TODO: change EvidenceIDCollection to use double space as a category separator
     		// instead of using a single digit sam tag numeric suffix as category 
     		throw new IllegalArgumentException("Only categories 0-9 are currently supported. Please raise a github enchancement request if more categories are required.");
