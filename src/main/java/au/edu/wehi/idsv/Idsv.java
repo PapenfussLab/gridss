@@ -73,7 +73,7 @@ public class Idsv extends CommandLineProgram {
 	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="VCF structural variation calls.")
     public File OUTPUT;
     @Option(shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME, doc="Reference used for alignment")
-    public File REFERENCE;    
+    public File REFERENCE;
     // --- intermediate file parameters ---
     @Option(doc = "Save intermediate results into separate files for each chromosome."
     		+ " Increases the number of intermediate files but allows a greater level of parallelisation.", optional = true)
