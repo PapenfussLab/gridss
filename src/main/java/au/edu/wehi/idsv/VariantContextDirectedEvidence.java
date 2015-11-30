@@ -1,17 +1,16 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.variant.variantcontext.VariantContext;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
-
-import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.base.Function;
 import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
+
+import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import htsjdk.variant.variantcontext.VariantContext;
 
 /**
  * VCF Breakend record
@@ -20,6 +19,10 @@ import com.google.common.collect.Ordering;
  *
  */
 public class VariantContextDirectedEvidence extends IdsvVariantContext implements DirectedEvidence {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	private final VcfBreakendSummary breakend;
 	//private static Log LOG = Log.getInstance(VariantContextDirectedBreakpoint.class);
 	public VariantContextDirectedEvidence(ProcessingContext processContext, EvidenceSource source, VariantContext context) {
@@ -59,8 +62,6 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 	public boolean isValid() {
 		return breakend.location != null;
 	}
-	public int getReferenceReadCount(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.REFERENCE_READ_COUNT.attribute()), subset); }
-	public int getReferenceReadPairCount(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.REFERENCE_READPAIR_COUNT.attribute()), subset); }
 	/**
 	 * Returns an iterator containing only the breakend variants from the given iterator
 	 * @param context processing context
@@ -109,12 +110,13 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 	public float getBreakendQual() {
 		return (float)getPhredScaledQual();
 	}
-	public int getBreakendEvidenceCount(EvidenceSubset subset) {
-		return getBreakendEvidenceCountAssembly() +
-				getBreakendEvidenceCountReadPair(subset) +
-				getBreakendEvidenceCountSoftClip(subset);
-	}
 	public int getBreakendEvidenceCountAssembly() { return AttributeConverter.asInt(getAttribute(VcfAttributes.BREAKEND_ASSEMBLY_COUNT.attribute()), 0); }
-	public int getBreakendEvidenceCountReadPair(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.BREAKEND_UNMAPPEDMATE_COUNT.attribute()), subset); }
-	public int getBreakendEvidenceCountSoftClip(EvidenceSubset subset) { return AttributeConverter.asIntSumTN(getAttribute(VcfAttributes.BREAKEND_SOFTCLIP_COUNT.attribute()), subset); }
+	public int getBreakendEvidenceCountReadPair() { return getAttributeIntSum(VcfAttributes.BREAKEND_UNMAPPEDMATE_COUNT); }
+	public int getBreakendEvidenceCountReadPair(int category) { return getAttributeIntOffset(VcfAttributes.BREAKEND_UNMAPPEDMATE_COUNT, category); } 
+	public int getBreakendEvidenceCountSoftClip() { return getAttributeIntSum(VcfAttributes.BREAKEND_SOFTCLIP_COUNT); }
+	public int getBreakendEvidenceCountSoftClip(int category) { return getAttributeIntOffset(VcfAttributes.BREAKEND_SOFTCLIP_COUNT, category); }
+	public int getReferenceReadCount() { return getAttributeIntSum(VcfAttributes.REFERENCE_READ_COUNT); }
+	public int getReferenceReadCount(int category) { return getAttributeIntOffset(VcfAttributes.REFERENCE_READ_COUNT, category); }	
+	public int getReferenceReadPairCount() { return getAttributeIntSum(VcfAttributes.REFERENCE_READPAIR_COUNT); }
+	public int getReferenceReadPairCount(int category) { return getAttributeIntOffset(VcfAttributes.REFERENCE_READPAIR_COUNT, category); }
 }

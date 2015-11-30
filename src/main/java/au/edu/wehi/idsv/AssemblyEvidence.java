@@ -18,11 +18,18 @@ public interface AssemblyEvidence extends DirectedEvidence {
 	byte[] getAssemblySequence();
 	byte[] getAssemblyAnchorSequence();
 	int getAssemblyAnchorLength();
-	int getAssemblySupportCountReadPair(EvidenceSubset subset);
-	int getAssemblyReadPairLengthMax(EvidenceSubset subset);
-	int getAssemblySupportCountSoftClip(EvidenceSubset subset);
-	int getAssemblySoftClipLengthTotal(EvidenceSubset subset);
-	int getAssemblySoftClipLengthMax(EvidenceSubset subset);
+	int getAssemblySupportCountReadPair();
+	int getAssemblySupportCountSoftClip();
+	int getAssemblySupportCountSoftClipRemote();
+	int getAssemblyReadPairLengthMax();
+	int getAssemblySoftClipLengthTotal();
+	int getAssemblySoftClipLengthMax();
+	int getAssemblySupportCountReadPair(int category);
+	int getAssemblySupportCountSoftClip(int category);
+	int getAssemblySupportCountSoftClipRemote(int category);
+	int getAssemblyReadPairLengthMax(int category);
+	int getAssemblySoftClipLengthTotal(int category);
+	int getAssemblySoftClipLengthMax(int category);
 	boolean isAssemblyFiltered();
 	List<VcfFilter> getFilters();
 	void filterAssembly(VcfFilter reason);
@@ -33,5 +40,4 @@ public interface AssemblyEvidence extends DirectedEvidence {
 	 * @return
 	 */
 	Collection<String> getEvidenceIDs();
-	int getAssemblySupportCountRemote(EvidenceSubset subset);
 }

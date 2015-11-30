@@ -34,8 +34,8 @@ public class SequentialCoverageAnnotatorTest extends TestHelper {
 			(VariantContextDirectedEvidence)minimalBreakend()
 				.breakpoint(new BreakpointSummary(0, FWD, 10, 10, 1, BWD, 100, 100), "")
 				.make());
-		assertEquals(1, result.getReferenceReadCount(EvidenceSubset.NORMAL));
-		assertEquals(2, result.getReferenceReadPairCount(EvidenceSubset.NORMAL));
+		assertEquals(1, result.getReferenceReadCount(0));
+		assertEquals(2, result.getReferenceReadPairCount(0));
 	}
 	@Test
 	public void should_count_reference_support_spanning_breakend_position() {
@@ -46,28 +46,28 @@ public class SequentialCoverageAnnotatorTest extends TestHelper {
 				(VariantContextDirectedEvidence)minimalBreakend()
 					.breakend(new BreakendSummary(0, FWD, i, i), "")
 					.make());
-			assertEquals(0, result.getReferenceReadCount(EvidenceSubset.NORMAL));
+			assertEquals(0, result.getReferenceReadCount(0));
 			
 			result = go(L(
 					Read(0, 2, 1)),
 				(VariantContextDirectedEvidence)minimalBreakend()
 					.breakend(new BreakendSummary(0, BWD, i, i), "")
 					.make());
-			assertEquals(0, result.getReferenceReadCount(EvidenceSubset.NORMAL));
+			assertEquals(0, result.getReferenceReadCount(0));
 			
 			result = go(L(
 					Read(0, 2, 2)),
 				(VariantContextDirectedEvidence)minimalBreakend()
 					.breakend(new BreakendSummary(0, FWD, i, i), "")
 					.make());
-			assertEquals(i == 2 ? 1 : 0, result.getReferenceReadCount(EvidenceSubset.NORMAL));
+			assertEquals(i == 2 ? 1 : 0, result.getReferenceReadCount(0));
 			
 			result = go(L(
 					Read(0, 2, 2)),
 				(VariantContextDirectedEvidence)minimalBreakend()
 					.breakend(new BreakendSummary(0, BWD, i, i), "")
 					.make());
-			assertEquals(Integer.toString(i), i == 3 ? 1 : 0, result.getReferenceReadCount(EvidenceSubset.NORMAL));
+			assertEquals(Integer.toString(i), i == 3 ? 1 : 0, result.getReferenceReadCount(0));
 		}
 	}
 	@Test

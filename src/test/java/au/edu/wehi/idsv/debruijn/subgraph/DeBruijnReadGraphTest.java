@@ -10,16 +10,15 @@ import java.util.List;
 
 import org.junit.Test;
 
+import com.google.common.collect.Lists;
+
 import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.EvidenceSubset;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
-
-import com.google.common.collect.Lists;
 
 
 public class DeBruijnReadGraphTest extends TestHelper {
@@ -161,7 +160,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		for (DirectedEvidence e : evidence) g.addEvidence(e);
 		List<SAMRecordAssemblyEvidence> result = Lists.newArrayList(g.assembleContigsBefore(LCCB + 10000));
 		result.get(0).hydrateEvidenceSet(evidence).annotateAssembly();
-		assertEquals(3, result.get(0).getAssemblySupportCountSoftClip(EvidenceSubset.ALL));
+		assertEquals(3, result.get(0).getAssemblySupportCountSoftClip());
 		assertEquals(3, result.get(0).getAssemblyAnchorLength());
 	}
 	@Test
@@ -279,7 +278,7 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		assertEquals(1, result.size());
 		SAMRecordAssemblyEvidence bp = result.get(0).hydrateEvidenceSet(evidence).annotateAssembly();
 		// CTG becomes unanchored & we can't make a contig out of it
-		assertEquals(1, bp.getAssemblySupportCountSoftClip(null));
+		assertEquals(1, bp.getAssemblySupportCountSoftClip());
 	}
 	@Test
 	public void should_exclude_sc_nrrp_without_ref_anchor() {
@@ -337,8 +336,8 @@ public class DeBruijnReadGraphTest extends TestHelper {
 		assertEquals(2, result.size());
 		result.get(0).hydrateEvidenceSet(evidence).annotateAssembly();
 		result.get(1).hydrateEvidenceSet(evidence).annotateAssembly();
-		assertEquals(1, result.get(0).getAssemblySupportCountSoftClip(EvidenceSubset.ALL));
-		assertEquals(1, result.get(1).getAssemblySupportCountSoftClip(EvidenceSubset.ALL));
+		assertEquals(1, result.get(0).getAssemblySupportCountSoftClip());
+		assertEquals(1, result.get(1).getAssemblySupportCountSoftClip());
 	}
 	@Test
 	public void removeBefore_should_clear_unanchored_subgraphs_SC_N_bases() {

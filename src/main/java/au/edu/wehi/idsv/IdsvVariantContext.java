@@ -7,6 +7,8 @@ import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
 
+import au.edu.wehi.idsv.vcf.VcfAttributes;
+
 /**
  * Generates variant context records from the underlying @link {@link VariantContext}
  * @author Daniel Cameron
@@ -20,6 +22,10 @@ public class IdsvVariantContext extends VariantContext {
 		this.processContext = processContext;
 		this.source = source;
 	}
+	protected int getAttributeIntSum(VcfAttributes attr) { return AttributeConverter.asIntList(getAttribute(attr.attribute())).stream().mapToInt(x -> x).sum(); }
+	protected int getAttributeIntOffset(VcfAttributes attr, int offset) { return AttributeConverter.asIntListOffset(getAttribute(attr.attribute()), offset, 0); }
+	protected double getAttributeDoubleSum(VcfAttributes attr) { return AttributeConverter.asDoubleList(getAttribute(attr.attribute())).stream().mapToDouble(x -> x).sum(); }
+	protected double getAttributeDoubleOffset(VcfAttributes attr, int offset) { return AttributeConverter.asDoubleListOffset(getAttribute(attr.attribute()), offset, 0); }
 	/**
      * @return reference index for the given sequence name, or -1 if the variant is not on a reference contig
      */

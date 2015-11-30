@@ -1,25 +1,26 @@
 package au.edu.wehi.idsv;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.primitives.Bytes;
+
+import au.edu.wehi.idsv.sam.CigarUtil;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.SamTags;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-
-import au.edu.wehi.idsv.sam.CigarUtil;
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import au.edu.wehi.idsv.sam.SamTags;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.primitives.Bytes;
 
 public final class AssemblyFactory {
 	private static final Log log = Log.getInstance(AssemblyFactory.class);
@@ -226,13 +227,13 @@ public final class AssemblyFactory {
 			record.setAttribute(SamTags.ASSEMBLY_DIRECTION, breakend.direction.toChar());
 		}
 		ensureUniqueEvidenceID(evidence);
+		String evidenceString = "";
 		if (evidence != null) {
-			EvidenceIDCollection e = new EvidenceIDCollection();
-			for (String s : evidence) {
-				e.addUncategorised(s);
-			}
-			e.write(record);
+			List<String> list = new ArrayList<String>(evidence);
+			Collections.sort(list);
+			evidenceString = list.stream().collect(Collectors.joining(SAMRecordAssemblyEvidence.COMPONENT_EVIDENCEID_SEPARATOR));
 		}
+		record.setAttribute(SamTags.EVIDENCEID, evidenceString);
 		return record;
 	}
 	private static boolean ensureUniqueEvidenceID(Collection<String> evidence) {
