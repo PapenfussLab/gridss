@@ -213,7 +213,7 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 	}
 	@Test
 	public void small4merExample() throws IOException {
-		BreakpointSummary bs = new BreakpointSummary(2, FWD, 100, 100, 2, BWD, 125, 125);
+		BreakpointSummary bs = new BreakpointSummary(2, FWD, 96, 96, 2, BWD, 125, 125);
 		int k = 4;
 		int readLength = 10;
 		int fragSize = 25;
@@ -223,6 +223,13 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 		pc.getConfig().getAssembly().k = k;
 		pc.getConfig().getAssembly().writeFiltered = true;
 		pc.getConfig().getAssembly().errorCorrection.maxBaseMismatchForCollapse = 0;
+		pc.getConfig().getAssembly().includeRemoteSplitReads = true;
+		pc.getConfig().getRealignment().minLength = 0;
+		pc.getConfig().getRealignment().minAverageQual = 0;
+		pc.getConfig().getRealignment().mapqUniqueThreshold = 0;
+		pc.getConfig().getSoftClip().minAnchorIdentity = 0;
+		pc.getConfig().getSoftClip().minAverageQual = 0;
+		pc.getConfig().getSoftClip().minLength =  0;
 		pc.getConfig().getVariantCalling().writeFiltered = true;
 		pc.getConfig().getVisualisation().directory = new File(super.testFolder.getRoot().getAbsoluteFile(), "visualisation");
 		pc.getConfig().getVisualisation().assembly = true;
@@ -243,8 +250,8 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 		addSR(variantReads, splitReadsRealignment, fullSplitReads, bs, readLength, 5, 0);
 		addSR(variantReads, splitReadsRealignment, fullSplitReads, bs, readLength, 6, 0);
 		// TODO: change soft clip position of read with sequencing error
-		variantReads.get(variantReads.size()-1).getReadBases()[4] = 't';
-		splitReadsRealignment.get(splitReadsRealignment.size()-1).getReadBases()[4] = 't';
+		//variantReads.get(variantReads.size()-1).getReadBases()[4] = 't';
+		//splitReadsRealignment.get(splitReadsRealignment.size()-1).getReadBases()[4] = 't';
 		
 		List<SAMRecord> baseReads = new ArrayList<SAMRecord>();
 		Random random = new Random(0);

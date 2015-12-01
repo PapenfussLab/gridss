@@ -2,17 +2,22 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import htsjdk.samtools.BAMRecord;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.DefaultSAMRecordFactory;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileWriter;
+import htsjdk.samtools.SAMLineParser;
 import htsjdk.samtools.SAMReadGroupRecord;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
+import htsjdk.samtools.SAMRecordFactory;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SamPairUtil;
+import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
@@ -176,6 +181,11 @@ public class TestHelper {
 		rg.setSample("sample");
 		header.addReadGroup(rg);
 		return header;
+	}
+	
+	static public SAMLineParser getParser() {
+		SAMLineParser parser = new SAMLineParser(new DefaultSAMRecordFactory(), ValidationStringency.LENIENT, getHeader(), null, null);
+		return parser;
 	}
 
 	static public SAMSequenceDictionary getSequenceDictionary() {
@@ -632,7 +642,7 @@ public class TestHelper {
 			return false;
 		}
 	}
-
+	
 	static public SAMRecord Unmapped(int readLength) {
 		SAMRecord record = new SAMRecord(getHeader());
 		record.setReadUnmappedFlag(true);

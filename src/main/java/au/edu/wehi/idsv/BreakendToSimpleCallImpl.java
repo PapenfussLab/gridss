@@ -56,6 +56,7 @@ public class BreakendToSimpleCallImpl {
 			return ComparisonChain.start()
 			        .compare(bsl.referenceIndex, bsr.referenceIndex)
 			        .compare(bsl.start, bsr.start)
+			        .compare(left.toString(), right.toString())
 			        .result();
 		}
 	};
@@ -68,7 +69,6 @@ public class BreakendToSimpleCallImpl {
 		this.margin = processContext.getVariantCallingParameters().breakendMargin;
 	}
 	public void convert(File breakendCalls, File simpleOutput) {
-		
 		try {
 			maxWidth = 0;
 			id = new HashMap<String, VariantContextDirectedBreakpoint>();
@@ -81,21 +81,24 @@ public class BreakendToSimpleCallImpl {
 		}
 	}
 	private void process() {
-		byQual = new TreeSet<VariantContextDirectedBreakpoint>(IdsvVariantContext.ByQual.reverse());
+		byQual = new TreeSet<VariantContextDirectedBreakpoint>(IdsvVariantContext.ByQual.reverse().thenComparing(IdsvVariantContext.ByID));
 		lookup = new TreeSet<Object>(ByStart);
 		for (VariantContextDirectedBreakpoint bp : id.values()) {
 			lookup.add(bp);
 			if (bp.getID().endsWith("o")) {
 				byQual.add(bp);
+			} else {
+				assert(bp.getID().endsWith("h"));
 			}
 		}
 		while (!byQual.isEmpty()) {
-			process(byQual.iterator().next());
+			VariantContextDirectedBreakpoint bp = byQual.iterator().next(); 
+			process(bp);
 		}
 	}
 	private Collection<VariantContextDirectedBreakpoint> findOverlaps(BreakpointSummary be) {
 		ArrayList<VariantContextDirectedBreakpoint> overlapping = new ArrayList<VariantContextDirectedBreakpoint>();
-		for (Object obj : lookup.subSet(new BreakendSummary(be.referenceIndex, be.direction, be.start - maxWidth - margin, Integer.MAX_VALUE), new BreakendSummary(be.referenceIndex, be.direction, be.start + 2 * maxWidth + margin, Integer.MAX_VALUE))) {
+		for (Object obj : lookup.subSet(new BreakendSummary(be.referenceIndex, be.direction, be.start - maxWidth - margin - 1, Integer.MAX_VALUE), new BreakendSummary(be.referenceIndex, be.direction, be.start + 2 * maxWidth + margin + 1, Integer.MAX_VALUE))) {
 			VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)obj;
 			if (processContext.getVariantCallingParameters().withMargin(bp.getBreakendSummary())
 					.overlaps(processContext.getVariantCallingParameters().withMargin(be))) {
@@ -118,7 +121,9 @@ public class BreakendToSimpleCallImpl {
 		}
 		if (bp.getBreakendSummary().referenceIndex != bp.getBreakendSummary().referenceIndex2) {
 			outputBuffer.add(bp);
-			outputBuffer.add(mate);
+			if (mate != null) {
+				outputBuffer.add(mate);
+			}
 			return;
 		}
 		BreakpointSummary bs = bp.getBreakendSummary();
@@ -144,7 +149,9 @@ public class BreakendToSimpleCallImpl {
 				.attribute(VcfSvConstants.SV_TYPE_KEY, "INV");
 				//.attribute(VcfSvConstants.CONFIDENCE_INTERVAL_END_POSITION_KEY, bp.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute()));
 				//.attribute(VcfSvConstants.SV_LENGTH_KEY, bs.start - bs.start2);
-			outputBuffer.add(builder.make());
+			IdsvVariantContext v = builder.make();
+			assert(v != null);
+			outputBuffer.add(v);
 			remove(bp);
 			if (partner != null) remove(partner);
 			return;
@@ -158,7 +165,9 @@ public class BreakendToSimpleCallImpl {
 				.attribute(VcfSvConstants.SV_TYPE_KEY, "DUP");
 				//.attribute(VcfSvConstants.CONFIDENCE_INTERVAL_END_POSITION_KEY, bp.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute()));
 				//.attribute(VcfSvConstants.SV_LENGTH_KEY, bs.start2 - bs.start);
-			outputBuffer.add(builder.make());
+			IdsvVariantContext v = builder.make();
+			assert(v != null);
+			outputBuffer.add(v);
 			remove(bp);
 			return;
 		}
@@ -171,13 +180,17 @@ public class BreakendToSimpleCallImpl {
 				.attribute(VcfSvConstants.SV_TYPE_KEY, "DEL");
 				//.attribute(VcfSvConstants.CONFIDENCE_INTERVAL_END_POSITION_KEY, bp.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute()));
 				//.attribute(VcfSvConstants.SV_LENGTH_KEY, bs.start - bs.start2);
-			outputBuffer.add(builder.make());
+			IdsvVariantContext v = builder.make();
+			assert(v != null);
+			outputBuffer.add(v);
 			remove(bp);
 			return;
 		}
 		// just write out breakend
 		outputBuffer.add(bp);
-		outputBuffer.add(mate);
+		if (mate != null) {
+			outputBuffer.add(mate);
+		}
 		remove(bp);
 	}
 	private void remove(VariantContextDirectedBreakpoint bp) {
@@ -204,6 +217,7 @@ public class BreakendToSimpleCallImpl {
 	}
 	private void load(File breakendCalls) {
 		log.info("Loading variants from " + breakendCalls.getName());
+		int ignored = 0;
 		VCFFileReader vcfReader = new VCFFileReader(breakendCalls, false);
 		CloseableIterator<VariantContext> it = vcfReader.iterator();
 		Iterator<IdsvVariantContext> idsvIt = Iterators.transform(it, new Function<VariantContext, IdsvVariantContext>() {
@@ -219,10 +233,15 @@ public class BreakendToSimpleCallImpl {
 				id.put(v.getID(), bp);
 				maxWidth = Math.max(maxWidth, bp.getBreakendSummary().end - bp.getBreakendSummary().start);
 			} else {
+				ignored++;
+				assert(v != null);
 				outputBuffer.add(v);
 			}
 		}
 		it.close();
 		vcfReader.close();
+		if (ignored > 0) {
+			log.warn(String.format("Ignored %d variants", ignored));
+		}
 	}
 }

@@ -152,7 +152,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		int[] rCount = new int[n];
 		int[] nsCount = new int[n];
 		int maxLocalMapq = 0;
-		for (DirectedEvidence e : evidence) {
+		for (DirectedEvidence e : getEvidence()) {
 			maxLocalMapq = Math.max(maxLocalMapq, e.getLocalMapq());
 			int offset = ((SAMEvidenceSource)e.getEvidenceSource()).getSourceCategory();
 			float qual = e.getBreakendQual();

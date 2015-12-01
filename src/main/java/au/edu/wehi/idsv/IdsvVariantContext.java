@@ -13,6 +13,10 @@ import com.google.common.primitives.Doubles;
  *
  */
 public class IdsvVariantContext extends VariantContext {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
 	protected final ProcessingContext processContext;
 	protected final EvidenceSource source;
 	public IdsvVariantContext(ProcessingContext processContext, EvidenceSource source, VariantContext context) {
@@ -77,6 +81,13 @@ public class IdsvVariantContext extends VariantContext {
 	public static Ordering<IdsvVariantContext> ByQual = new Ordering<IdsvVariantContext>() {
 		public int compare(IdsvVariantContext o1, IdsvVariantContext o2) {
 			return Doubles.compare(o1.getPhredScaledQual(), o2.getPhredScaledQual());
+		  }
+	};
+	public static Ordering<IdsvVariantContext> ByID = new Ordering<IdsvVariantContext>() {
+		public int compare(IdsvVariantContext o1, IdsvVariantContext o2) {
+			return ComparisonChain.start()
+					.compare(o1.getID(), o2.getID())
+					.result();
 		  }
 	};
 	public static Ordering<VariantContext> VariantContextByLocationStart(final SAMSequenceDictionary dictionary) {
