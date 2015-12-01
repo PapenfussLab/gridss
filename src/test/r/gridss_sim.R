@@ -1,3 +1,4 @@
+# http://www.nature.com/nmeth/authors/submit/index.html#formats
 source("libgridss.R")
 #source("libneochromosome.R")
 source("libvcf.R")

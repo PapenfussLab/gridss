@@ -25,6 +25,7 @@ hasNoDirectSupport <- is.nan(df$refAF) | is.infinite(df$refAF)
 hasSuspiciousFilter <- df$FILTER %in% c("ASSEMBLY_ONLY;LOW_QUAL", "SINGLE_ASSEMBLY")
 isUnexpectedSize <- df$size < 400 | df$size > 40000
 hasHighRefCoverage <- df$REF1 + df$REFPAIR1 >= 200
+isNotPrimaryCall <- df$QUAL < 0.8 * df$CQ
 
 for (qual in c(0, 100, 150, 175, 200, 225, 250, 300, 400, 500, 600, 700, 800, 900, 1000)) {
   vcf2 <- vcf[isPrimary &
@@ -36,6 +37,7 @@ for (qual in c(0, 100, 150, 175, 200, 225, 250, 300, 400, 500, 600, 700, 800, 90
                 !hasSuspiciousFilter &
                 !isUnexpectedSize &
                 !hasHighRefCoverage &
+                !isNotPrimaryCall &
                 df$QUAL>=qual,]
   rowRanges(vcf2)$FILTER <- "."
   vcf2 <- gridss.removeUnpartnerededBreakend(vcf2)
