@@ -64,7 +64,7 @@ public class RealignedSAMRecordAssemblyEvidence extends SAMRecordAssemblyEvidenc
 		return SAMRecordUtil.getTotalReferenceBaseQual(getRemoteSAMRecord());
 	}
 	public float getBreakpointQual() {
-		int evidenceCount = getAssemblySupportCountReadPair(EvidenceSubset.ALL) + getAssemblySupportCountSoftClip(EvidenceSubset.ALL);
+		int evidenceCount = getAssemblySupportCountReadPair() + getAssemblySupportCountSoftClip();
 		// cap quality by mapq score of assembly alignment per evidence
 		double qual = Math.min(getRemoteMapq() * evidenceCount, getBreakendQual());
 		if (isSpanningAssembly()) {

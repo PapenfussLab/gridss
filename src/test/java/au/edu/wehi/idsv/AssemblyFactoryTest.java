@@ -95,28 +95,28 @@ public class AssemblyFactoryTest extends TestHelper {
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_READPAIR_COUNT() {
-		assertEquals(2, bigr().getAssemblySupportCountReadPair(EvidenceSubset.NORMAL));
-		assertEquals(4, bigr().getAssemblySupportCountReadPair(EvidenceSubset.TUMOUR));
+		assertEquals(2, bigr().getAssemblySupportCountReadPair(0));
+		assertEquals(4, bigr().getAssemblySupportCountReadPair(1));
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_READPAIR_LENGTH_MAX() {
-		assertEquals(10, bigr().getAssemblyReadPairLengthMax(EvidenceSubset.NORMAL));
-		assertEquals(5, bigr().getAssemblyReadPairLengthMax(EvidenceSubset.TUMOUR));
+		assertEquals(10, bigr().getAssemblyReadPairLengthMax(0));
+		assertEquals(5, bigr().getAssemblyReadPairLengthMax(1));
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_SOFTCLIP_COUNT() {
-		assertEquals(1, bigr().getAssemblySupportCountSoftClip(EvidenceSubset.NORMAL));
-		assertEquals(2, bigr().getAssemblySupportCountSoftClip(EvidenceSubset.TUMOUR));
+		assertEquals(1, bigr().getAssemblySupportCountSoftClip(0));
+		assertEquals(2, bigr().getAssemblySupportCountSoftClip(1));
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL() {	
-		assertEquals(4, bigr().getAssemblySoftClipLengthTotal(EvidenceSubset.NORMAL));
-		assertEquals(6, bigr().getAssemblySoftClipLengthTotal(EvidenceSubset.TUMOUR));
+		assertEquals(4, bigr().getAssemblySoftClipLengthTotal(0));
+		assertEquals(6, bigr().getAssemblySoftClipLengthTotal(1));
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX() {
-		assertEquals(4, bigr().getAssemblySoftClipLengthMax(EvidenceSubset.NORMAL));
-		assertEquals(3, bigr().getAssemblySoftClipLengthMax(EvidenceSubset.TUMOUR));
+		assertEquals(4, bigr().getAssemblySoftClipLengthMax(0));
+		assertEquals(3, bigr().getAssemblySoftClipLengthMax(1));
 	}
 	@Test
 	public void should_set_assembly_attribute_ASSEMBLY_REMOTE_COUNT() {
@@ -128,9 +128,8 @@ public class AssemblyFactoryTest extends TestHelper {
 		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakend(pc, AES(), BWD, Lists.newArrayList(support.iterator().next().getEvidenceID()), 0, 10, 5, B("CGTAAAAT"), new byte[] { 0,1,2,3,4,5,6,7});
 		ass.hydrateEvidenceSet(support);
 		ass.annotateAssembly();
-		assertEquals(1, ass.getAssemblySupportCountRemote(EvidenceSubset.ALL));
-		assertEquals(0, ass.getAssemblySupportCountRemote(EvidenceSubset.NORMAL));
-		assertEquals(1, ass.getAssemblySupportCountRemote(EvidenceSubset.TUMOUR));
+		assertEquals(0, ass.getAssemblySupportCountSoftClipRemote(0));
+		assertEquals(1, ass.getAssemblySupportCountSoftClipRemote(1));
 	}
 	@Test
 	public void should_set_assembly_getLocalMapq() {
@@ -421,8 +420,8 @@ public class AssemblyFactoryTest extends TestHelper {
 	}
 	@Test
 	public void setEvidenceIDs_should_set_same_value_regardless_of_collection_ordering() {
-		assertEquals(AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 1, 2), Lists.newArrayList("a", "b"), B("GTAC"), new byte[] {1,2,3,4}, new int[] {0, 0}).getSAMRecord().getAttribute(SamTags.EVIDENCEID_UNCATEGORISED),
-					 AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 1, 2), Lists.newArrayList("b", "a"), B("GTAC"), new byte[] {1,2,3,4}, new int[] {0, 0}).getSAMRecord().getAttribute(SamTags.EVIDENCEID_UNCATEGORISED));
+		assertEquals(AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 1, 2), Lists.newArrayList("a", "b"), B("GTAC"), new byte[] {1,2,3,4}, new int[] {0, 0}).getSAMRecord().getAttribute(SamTags.EVIDENCEID),
+					 AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 1, 2), Lists.newArrayList("b", "a"), B("GTAC"), new byte[] {1,2,3,4}, new int[] {0, 0}).getSAMRecord().getAttribute(SamTags.EVIDENCEID));
 	}
 	@Test
 	public void should_include_untemplated_sequence_for_imprecise_breakpoint() {

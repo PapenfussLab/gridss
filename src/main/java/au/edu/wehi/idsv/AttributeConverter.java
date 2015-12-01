@@ -1,18 +1,16 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.variant.vcf.VCFConstants;
-
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.List;
-
-import au.edu.wehi.idsv.util.CollectionUtil;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.UnsignedBytes;
+
+import htsjdk.variant.vcf.VCFConstants;
 
 /**
  * Helper functions to extract an object or list of objects of the desired type
@@ -162,49 +160,6 @@ public class AttributeConverter {
 			return list;
 		} else {
 			return ImmutableList.of(obj.toString());
-		}
-	}
-	/**
-	 * Safely get the sum of the tumour and normal values associated with the given object
-	 * @param record
-	 * @param attr
-	 * @param subset
-	 * @return
-	 */
-	public static int asIntSumTN(Object obj, EvidenceSubset subset) {
-		if (subset == null) subset = EvidenceSubset.ALL;
-		switch (subset) {
-			case NORMAL:
-				return asIntListOffset(obj, 0, 0);
-			case TUMOUR:
-				return asIntListOffset(obj, 1, 0);
-			case ALL:
-			default:
-				return CollectionUtil.sumInt(asIntList(obj));
-		}
-	}
-	public static double asDoubleSumTN(Object obj, EvidenceSubset subset) {
-		if (subset == null) subset = EvidenceSubset.ALL;
-		switch (subset) {
-			case NORMAL:
-				return asDoubleListOffset(obj, 0, 0);
-			case TUMOUR:
-				return asDoubleListOffset(obj, 1, 0);
-			case ALL:
-			default:
-				return CollectionUtil.sumDouble(asDoubleList(obj));
-		}
-	}
-	public static int asIntMaxTN(Object obj, EvidenceSubset subset) {
-		if (subset == null) subset = EvidenceSubset.ALL;
-		switch (subset) {
-		case NORMAL:
-			return asIntListOffset(obj, 0, 0);
-		case TUMOUR:
-			return asIntListOffset(obj, 1, 0);
-			case ALL:
-			default:
-				return CollectionUtil.maxInt(asIntList(obj), 0);
 		}
 	}
 }

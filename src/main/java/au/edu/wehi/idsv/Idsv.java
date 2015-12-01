@@ -91,11 +91,6 @@ public class Idsv extends CommandLineProgram {
     //@Option(doc = "Processing steps to execute", optional = true)
     public EnumSet<ProcessStep> STEPS = ProcessStep.ALL_STEPS;
     private SAMEvidenceSource constructSamEvidenceSource(File file, int category, int minFragSize, int maxFragSize) {
-    	if (category > 9 || category < 0) {
-    		// TODO: change EvidenceIDCollection to use double space as a category separator
-    		// instead of using a single digit sam tag numeric suffix as category 
-    		throw new IllegalArgumentException("Only categories 0-9 are currently supported. Please raise a github enchancement request if more categories are required.");
-    	}
     	if (maxFragSize > 0) {
     		return new SAMEvidenceSource(getContext(), file, category, minFragSize, maxFragSize);
     	} else if (READ_PAIR_CONCORDANT_PERCENT != null) {
@@ -212,6 +207,10 @@ public class Idsv extends CommandLineProgram {
     		ensureDictionariesMatch();
     		// Spam output with gridss parameters used
     		getContext();
+    		if (INPUT_CATEGORY != null && INPUT_CATEGORY.stream().mapToInt(x -> x).distinct().count() <
+    				 INPUT_CATEGORY.stream().mapToInt(x -> x).max().orElse(0) - 8) {
+        		log.warn("Missing more than 8 INPUT_CATEGORY indicies. Performance is likely to be degraded.");
+        	}
     		// Force loading of aligner up-front
     		log.info("Loading aligner");
     		AlignerFactory.create();
@@ -228,7 +227,7 @@ public class Idsv extends CommandLineProgram {
 	    	for (SAMEvidenceSource e : samEvidence) {
 	    		InsertSizeMetrics ism = e.getMetrics().getInsertSizeMetrics();
 	    		if (ism != null && ism.PAIR_ORIENTATION != PairOrientation.FR) {
-	    			log.error("gridss currently supports only FR read pair orientation. If usage with other read pair orientations is required, please raise an issue at https://github.com/PapenfussLab/gridss/issues");
+	    			log.error("gridss currently supports only FR read pair orientation. If usage with other read pair orientations is required, please raise an enchancement request at https://github.com/PapenfussLab/gridss/issues");
 	    			return -1;
 	    		}
 	    	}

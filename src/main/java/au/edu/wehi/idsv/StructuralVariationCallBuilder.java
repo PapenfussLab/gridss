@@ -1,27 +1,46 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.util.Log;
-import htsjdk.variant.variantcontext.VariantContextBuilder;
-
-import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
-
-import au.edu.wehi.idsv.util.ArrayHelper;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfFilter;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import java.util.Set;
 
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
+
+import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfFilter;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import htsjdk.samtools.util.Log;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private static final Log log = Log.getInstance(StructuralVariationCallBuilder.class);
 	private final ProcessingContext processContext;
 	private final VariantContextDirectedEvidence parent;
-	private final boolean deduplicateEvidence;
+	private final Set<String> encounteredEvidence;
+	private final int categories;
 	private DirectedBreakpoint bestExactBreakpoint = null;
-	private EvidenceIDCollection localEvidence = new EvidenceIDCollection();
-	private EvidenceIDCollection assemblyEvidence = new EvidenceIDCollection();
+	private int fBREAKPOINT_ASSEMBLY_COUNT;
+	private int[] fBREAKPOINT_READPAIR_COUNT;
+	private int[] fBREAKPOINT_SPLITREAD_COUNT;
+	private int fBREAKPOINT_ASSEMBLY_COUNT_REMOTE;
+	private int[] fBREAKPOINT_SPLITREAD_COUNT_REMOTE;
+	private int[] fBREAKPOINT_ASSEMBLY_READPAIR_COUNT;
+	private int[] fBREAKPOINT_ASSEMBLY_SPLITREAD_COUNT;
+	private int[] fBREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT;
+	private int[] fBREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT;	
+	private double fBREAKPOINT_ASSEMBLY_QUAL;
+	private double[] fBREAKPOINT_READPAIR_QUAL;
+	private double[] fBREAKPOINT_SPLITREAD_QUAL;
+	private double fBREAKPOINT_ASSEMBLY_QUAL_REMOTE;
+	private double[] fBREAKPOINT_SPLITREAD_QUAL_REMOTE;
+	private int fBREAKEND_ASSEMBLY_COUNT;
+	private int[] fBREAKEND_UNMAPPEDMATE_COUNT;
+	private int[] fBREAKEND_SOFTCLIP_COUNT;
+	private double fBREAKEND_ASSEMBLY_QUAL;
+	private double[] fBREAKEND_UNMAPPEDMATE_QUAL;
+	private double[] fBREAKEND_SOFTCLIP_QUAL;
+
 	public StructuralVariationCallBuilder(ProcessingContext processContext, VariantContextDirectedEvidence parent) {
 		this(processContext, parent, true);
 	}
@@ -29,7 +48,28 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		super(processContext, parent);
 		this.processContext = processContext;
 		this.parent = parent;
-		this.deduplicateEvidence = deduplicateEvidence;
+		this.categories = processContext.getCategoryCount();
+		this.encounteredEvidence = deduplicateEvidence ? new HashSet<String>() : null;
+		fBREAKPOINT_ASSEMBLY_COUNT = 0;
+		fBREAKPOINT_READPAIR_COUNT = new int[categories];
+		fBREAKPOINT_SPLITREAD_COUNT = new int[categories];
+		fBREAKPOINT_ASSEMBLY_COUNT_REMOTE = 0;
+		fBREAKPOINT_SPLITREAD_COUNT_REMOTE = new int[categories];
+		fBREAKPOINT_ASSEMBLY_READPAIR_COUNT = new int[categories];
+		fBREAKPOINT_ASSEMBLY_SPLITREAD_COUNT = new int[categories];
+		fBREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT = new int[categories];
+		fBREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT = new int[categories];
+		fBREAKPOINT_ASSEMBLY_QUAL = 0;
+		fBREAKPOINT_READPAIR_QUAL = new double[categories];
+		fBREAKPOINT_SPLITREAD_QUAL = new double[categories];
+		fBREAKPOINT_ASSEMBLY_QUAL_REMOTE = 0;
+		fBREAKPOINT_SPLITREAD_QUAL_REMOTE = new double[categories];
+		fBREAKEND_ASSEMBLY_COUNT = 0;
+		fBREAKEND_UNMAPPEDMATE_COUNT = new int[categories];
+		fBREAKEND_SOFTCLIP_COUNT = new int[categories];
+		fBREAKEND_ASSEMBLY_QUAL = 0;
+		fBREAKEND_UNMAPPEDMATE_QUAL = new double[categories];
+		fBREAKEND_SOFTCLIP_QUAL = new double[categories];
 	}
 	public StructuralVariationCallBuilder addEvidence(DirectedEvidence evidence) {
 		if (evidence == null) throw new NullPointerException();
@@ -37,26 +77,86 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			throw new IllegalArgumentException(String.format("Sanity check failure: Evidence %s does not provide support for call at %s", evidence.getBreakendSummary(), parent.getBreakendSummary()));
 		}
 		String eid = evidence.getEvidenceID();
-		if (localEvidence.get().contains(eid) && deduplicateEvidence) {
-			log.debug(String.format("Deduplicating %s from %s", eid, parent.getID()));
-			return this;
+		if (encounteredEvidence != null) {
+			if (encounteredEvidence.contains(eid)) {
+				log.debug(String.format("Deduplicating %s from %s", eid, parent.getID()));
+				return this;
+			}
+			encounteredEvidence.add(eid);
 		}
-		localEvidence.categorise(evidence);
 		if (evidence instanceof DirectedBreakpoint && evidence.isBreakendExact()) {
 			DirectedBreakpoint bp = (DirectedBreakpoint)evidence;
 			if (ByBestBreakpointDesc.compare(bp, bestExactBreakpoint) < 0) {
 				bestExactBreakpoint = (DirectedBreakpoint)evidence;
 			}
 		}
-		localEvidence.categorise(evidence);
-		if (evidence instanceof SAMRecordAssemblyEvidence) {
-			if (evidence instanceof RemoteEvidence) {
-				assemblyEvidence.addRemote(((SAMRecordAssemblyEvidence)evidence).getEvidenceIDCollection());
-			} else {
-				assemblyEvidence.add(((SAMRecordAssemblyEvidence)evidence).getEvidenceIDCollection());
-			}
+		int category = evidence.getEvidenceSource() instanceof SAMEvidenceSource ? ((SAMEvidenceSource)evidence.getEvidenceSource()).getSourceCategory() : -1;
+		if (evidence instanceof RealignedRemoteSAMRecordAssemblyEvidence) {
+			add((RealignedRemoteSAMRecordAssemblyEvidence)evidence);
+		} else if (evidence instanceof RealignedSAMRecordAssemblyEvidence) {
+			add((RealignedSAMRecordAssemblyEvidence)evidence);
+		} else if (evidence instanceof SAMRecordAssemblyEvidence) {
+			add((SAMRecordAssemblyEvidence)evidence);
+		} else if (evidence instanceof DiscordantReadPair) {
+			add((DiscordantReadPair)evidence, category);
+		} else if (evidence instanceof UnmappedMateReadPair) {
+			add((UnmappedMateReadPair)evidence, category);
+		} else if (evidence instanceof RealignedRemoteSoftClipEvidence) {
+			add((RealignedRemoteSoftClipEvidence)evidence, category);
+		} else if (evidence instanceof RealignedSoftClipEvidence) {
+			add((RealignedSoftClipEvidence)evidence, category);
+		} else if (evidence instanceof SoftClipEvidence) {
+			add((SoftClipEvidence)evidence, category);
+		} else {
+			throw new IllegalArgumentException(String.format("Unknown evidence type %s", evidence.getClass()));
 		}
 		return this;
+	}
+	private void add(RealignedRemoteSAMRecordAssemblyEvidence evidence) {
+		fBREAKPOINT_ASSEMBLY_COUNT_REMOTE++;
+		fBREAKPOINT_ASSEMBLY_QUAL_REMOTE += evidence.getBreakpointQual();
+		for (int i = 0; i < categories; i++) {
+			fBREAKPOINT_ASSEMBLY_READPAIR_COUNT[i] += evidence.getAssemblySupportCountReadPair(i);
+			fBREAKPOINT_ASSEMBLY_SPLITREAD_COUNT[i] += evidence.getAssemblySupportCountSoftClip(i);
+			fBREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT[i] += evidence.getAssemblyNonSupportingReadPairCount(i);
+			fBREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT[i]  += evidence.getAssemblyNonSupportingSoftClipCount(i);
+			// TODO quals, remotes, etc
+		}
+	}
+	private void add(RealignedSAMRecordAssemblyEvidence evidence) {
+		fBREAKPOINT_ASSEMBLY_COUNT++;
+		fBREAKPOINT_ASSEMBLY_QUAL += evidence.getBreakpointQual();
+		for (int i = 0; i < categories; i++) {
+			fBREAKPOINT_ASSEMBLY_READPAIR_COUNT[i] += evidence.getAssemblySupportCountReadPair(i);
+			fBREAKPOINT_ASSEMBLY_SPLITREAD_COUNT[i] += evidence.getAssemblySupportCountSoftClip(i);
+			fBREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT[i] += evidence.getAssemblyNonSupportingReadPairCount(i);
+			fBREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT[i]  += evidence.getAssemblyNonSupportingSoftClipCount(i);
+			// TODO quals, remotes, etc
+		}
+	}
+	private void add(SAMRecordAssemblyEvidence evidence) {
+		fBREAKEND_ASSEMBLY_COUNT++;
+		fBREAKEND_ASSEMBLY_QUAL += evidence.getBreakendQual();
+	}
+	private void add(DiscordantReadPair evidence, int category) {
+		fBREAKPOINT_READPAIR_COUNT[category]++;
+		fBREAKPOINT_READPAIR_QUAL[category] += evidence.getBreakpointQual();
+	}
+	private void add(UnmappedMateReadPair evidence, int category) {
+		fBREAKEND_UNMAPPEDMATE_COUNT[category]++;
+		fBREAKEND_UNMAPPEDMATE_QUAL[category] += evidence.getBreakendQual();
+	}
+	private void add(RealignedRemoteSoftClipEvidence evidence, int category) {
+		fBREAKPOINT_SPLITREAD_COUNT_REMOTE[category]++;
+		fBREAKPOINT_SPLITREAD_QUAL_REMOTE[category] += evidence.getBreakpointQual();
+	}
+	private void add(RealignedSoftClipEvidence evidence, int category) {
+		fBREAKPOINT_SPLITREAD_COUNT[category]++;
+		fBREAKPOINT_SPLITREAD_QUAL[category] += evidence.getBreakpointQual();
+	}
+	private void add(SoftClipEvidence evidence, int category) {
+		fBREAKEND_SOFTCLIP_COUNT[category]++;
+		fBREAKEND_SOFTCLIP_QUAL[category] += evidence.getBreakendQual();
 	}
 	private BreakendSummary getBreakendSummaryWithMargin(DirectedEvidence evidence) {
 		BreakendSummary bs = evidence.getBreakendSummary();
@@ -67,77 +167,53 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		BreakendSummary bs = getBreakendSummaryWithMargin(evidence);
 		return parent.getBreakendSummary().overlaps(bs);
 	}
-	private static float sumPositiveValues(float[] array) {
-		// Sorting ascending since all values are positive to minimise error
-		Arrays.sort(array);
-		// and use doubles to give us extra precision
+	private double sum(double[] v) {
 		double total = 0;
-		for (double x : array) {
+		for (double x : v) {
 			total += x;
 		}
-		return (float)total;
+		return total;
+	}
+	private float[] tof(double[] v) {
+		float[] f = new float[v.length];
+		for (int i = 0; i < v.length; i++) {
+			f[i] = (float)v[i];
+		}
+		return f;
 	}
 	public VariantContextDirectedEvidence make() {
-		int categoryCount = processContext.getCategoryCount();
 		//extractAssemblySupport(); // don't extract - as extraction inflates evidence beyond original call
 		attribute(VcfAttributes.CALLED_QUAL.attribute(), parent.getPhredScaledQual());
 		attribute(VcfAttributes.BREAKEND_QUAL.attribute(),
-				sumPositiveValues(localEvidence.getQual(VcfAttributes.BREAKEND_ASSEMBLY_QUAL, categoryCount))
-				+ sumPositiveValues(localEvidence.getQual(VcfAttributes.BREAKEND_SOFTCLIP_QUAL, categoryCount))
-				+ sumPositiveValues(localEvidence.getQual(VcfAttributes.BREAKEND_UNMAPPEDMATE_QUAL, categoryCount))
-				);
+				fBREAKEND_ASSEMBLY_QUAL
+				+ sum(fBREAKEND_SOFTCLIP_QUAL)
+				+ sum(fBREAKEND_UNMAPPEDMATE_QUAL));
 		phredScore(
-				sumPositiveValues(localEvidence.getQual(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL, categoryCount))
-				+ sumPositiveValues(localEvidence.getQual(VcfAttributes.BREAKPOINT_SPLITREAD_QUAL, categoryCount))
-				+ sumPositiveValues(localEvidence.getQual(VcfAttributes.BREAKPOINT_READPAIR_QUAL, categoryCount))
-				+ sumPositiveValues(localEvidence.getQual(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE, categoryCount))
-				+ sumPositiveValues(localEvidence.getQual(VcfAttributes.BREAKPOINT_SPLITREAD_QUAL_REMOTE, categoryCount))
-				);
-		for (VcfAttributes attr : new VcfAttributes[] {
-				VcfAttributes.BREAKPOINT_SPLITREAD_COUNT,
-				VcfAttributes.BREAKPOINT_READPAIR_COUNT,
-				VcfAttributes.BREAKPOINT_SPLITREAD_COUNT_REMOTE,
-				VcfAttributes.BREAKEND_SOFTCLIP_COUNT,
-				VcfAttributes.BREAKEND_UNMAPPEDMATE_COUNT
-			}) {
-			attribute(attr, localEvidence.getCount(attr, categoryCount));
-		}
-		for (VcfAttributes attr : new VcfAttributes[] {
-				VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT,
-				VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE,
-				VcfAttributes.BREAKEND_ASSEMBLY_COUNT,
-			}) {
-			attribute(attr, localEvidence.getCount(attr, categoryCount)[0]);
-		}
-		for (VcfAttributes attr : new VcfAttributes[] {
-				VcfAttributes.BREAKPOINT_SPLITREAD_QUAL,
-				VcfAttributes.BREAKPOINT_READPAIR_QUAL,
-				VcfAttributes.BREAKPOINT_SPLITREAD_QUAL_REMOTE,
-				VcfAttributes.BREAKEND_SOFTCLIP_QUAL,
-				VcfAttributes.BREAKEND_UNMAPPEDMATE_QUAL
-			}) {
-			attribute(attr, localEvidence.getQual(attr, categoryCount));
-		}
-		for (VcfAttributes attr : new VcfAttributes[] {
-				VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL,
-				VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE,
-				VcfAttributes.BREAKEND_ASSEMBLY_QUAL,
-			}) {
-			attribute(attr, localEvidence.getQual(attr, categoryCount)[0]);
-		}
-		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT, assemblyEvidence.getCount(VcfAttributes.BREAKPOINT_READPAIR_COUNT, categoryCount));
-		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_SPLITREAD_COUNT, ArrayHelper.add(
-				assemblyEvidence.getCount(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT, categoryCount),
-				assemblyEvidence.getCount(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT_REMOTE, categoryCount)));
-		EvidenceIDCollection assemblyUniqueEvidence = new EvidenceIDCollection();
-		assemblyUniqueEvidence.add(assemblyEvidence);
-		for (String e : localEvidence.get()) {
-			assemblyUniqueEvidence.remove(e);
-		}
-		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT, assemblyUniqueEvidence.getCount(VcfAttributes.BREAKPOINT_READPAIR_COUNT, categoryCount));
-		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT, ArrayHelper.add(
-				assemblyUniqueEvidence.getCount(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT, categoryCount),
-				assemblyUniqueEvidence.getCount(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT_REMOTE, categoryCount)));
+				fBREAKPOINT_ASSEMBLY_QUAL
+				+ fBREAKPOINT_ASSEMBLY_QUAL_REMOTE
+				+ sum(fBREAKPOINT_READPAIR_QUAL)
+				+ sum(fBREAKPOINT_SPLITREAD_QUAL)
+				+ sum(fBREAKPOINT_SPLITREAD_QUAL_REMOTE));
+		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT, fBREAKPOINT_ASSEMBLY_COUNT);
+		attribute(VcfAttributes.BREAKPOINT_READPAIR_COUNT, fBREAKPOINT_READPAIR_COUNT);
+		attribute(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT, fBREAKPOINT_SPLITREAD_COUNT);
+		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE, fBREAKPOINT_ASSEMBLY_COUNT_REMOTE);
+		attribute(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT_REMOTE, fBREAKPOINT_SPLITREAD_COUNT_REMOTE);
+		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT, fBREAKPOINT_ASSEMBLY_READPAIR_COUNT);
+		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_SPLITREAD_COUNT, fBREAKPOINT_ASSEMBLY_SPLITREAD_COUNT);
+		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT, fBREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT);
+		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT, fBREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT);
+		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL, (float)fBREAKPOINT_ASSEMBLY_QUAL);
+		attribute(VcfAttributes.BREAKPOINT_READPAIR_QUAL, tof(fBREAKPOINT_READPAIR_QUAL));
+		attribute(VcfAttributes.BREAKPOINT_SPLITREAD_QUAL, tof(fBREAKPOINT_SPLITREAD_QUAL));
+		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE, (float)fBREAKPOINT_ASSEMBLY_QUAL_REMOTE);
+		attribute(VcfAttributes.BREAKPOINT_SPLITREAD_QUAL_REMOTE, tof(fBREAKPOINT_SPLITREAD_QUAL_REMOTE));
+		attribute(VcfAttributes.BREAKEND_ASSEMBLY_COUNT, fBREAKEND_ASSEMBLY_COUNT);
+		attribute(VcfAttributes.BREAKEND_UNMAPPEDMATE_COUNT, fBREAKEND_UNMAPPEDMATE_COUNT);
+		attribute(VcfAttributes.BREAKEND_SOFTCLIP_COUNT, fBREAKEND_SOFTCLIP_COUNT);
+		attribute(VcfAttributes.BREAKEND_ASSEMBLY_QUAL, (float)fBREAKEND_ASSEMBLY_QUAL);
+		attribute(VcfAttributes.BREAKEND_UNMAPPEDMATE_QUAL, tof(fBREAKEND_UNMAPPEDMATE_QUAL));
+		attribute(VcfAttributes.BREAKEND_SOFTCLIP_QUAL, tof(fBREAKEND_SOFTCLIP_QUAL));
 		
 		String homo = "";
 		if (bestExactBreakpoint != null) {
@@ -158,7 +234,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		// id(parent.getID()); // can't change from parent ID as the id is already referenced in the MATEID of the other breakend  
 		VariantContextDirectedEvidence variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(processContext, null, super.make());
 		variant = applyFilters(variant);
-		variant = Models.calculateSomatic(variant);
+		//variant = Models.calculateSomatic(variant);
 		//assert(sanitycheck(variant));
 		return variant;
 	}

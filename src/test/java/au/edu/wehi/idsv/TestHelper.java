@@ -363,6 +363,7 @@ public class TestHelper {
 				ref, null, false);
 		pc.registerCategory(0, "Normal");
 		pc.registerCategory(1, "Tumour");
+		pc.getAssemblyParameters().trackEvidenceID = true;
 		return pc;
 	}
 	public static ProcessingContext getContext() {

@@ -1,22 +1,20 @@
 package au.edu.wehi.idsv.validation;
 
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.Log;
-
 import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.Maps;
+
 import au.edu.wehi.idsv.DirectedBreakpoint;
-import au.edu.wehi.idsv.EvidenceSubset;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
-
-import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.Maps;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.Log;
 
 /**
  * Pass-through iterator that tracks filters applied to breakpoints 
@@ -91,13 +89,13 @@ public class BreakpointFilterTracker<T extends VariantContextDirectedEvidence> e
 				be1value += " AS:" + bp1.getBreakpointEvidenceCountLocalAssembly() + " RAS:" + bp1.getBreakpointEvidenceCountRemoteAssembly();
 				be2value += " AS:" + bp2.getBreakpointEvidenceCountLocalAssembly() + " RAS:" + bp2.getBreakpointEvidenceCountRemoteAssembly();
 			}
-			if (bp1.getBreakpointEvidenceCountSoftClip(EvidenceSubset.ALL) != bp2.getBreakpointEvidenceCountSoftClip(EvidenceSubset.ALL)) {
-				be1value += " SC:" + bp1.getBreakpointEvidenceCountLocalSoftClip(EvidenceSubset.ALL) + " RSC:" + bp1.getBreakpointEvidenceCountRemoteSoftClip(EvidenceSubset.ALL);
-				be2value += " SC:" + bp2.getBreakpointEvidenceCountLocalSoftClip(EvidenceSubset.ALL) + " RSC:" + bp2.getBreakpointEvidenceCountRemoteSoftClip(EvidenceSubset.ALL);
+			if (bp1.getBreakpointEvidenceCountSoftClip() != bp2.getBreakpointEvidenceCountSoftClip()) {
+				be1value += " SC:" + bp1.getBreakpointEvidenceCountLocalSoftClip() + " RSC:" + bp1.getBreakpointEvidenceCountRemoteSoftClip();
+				be2value += " SC:" + bp2.getBreakpointEvidenceCountLocalSoftClip() + " RSC:" + bp2.getBreakpointEvidenceCountRemoteSoftClip();
 			}
-			if (bp1.getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL) != bp2.getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL)) {
-				be1value += " RP:" + bp1.getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL);
-				be2value += " RP:" + bp2.getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL);
+			if (bp1.getBreakpointEvidenceCountReadPair() != bp2.getBreakpointEvidenceCountReadPair()) {
+				be1value += " RP:" + bp1.getBreakpointEvidenceCountReadPair();
+				be2value += " RP:" + bp2.getBreakpointEvidenceCountReadPair();
 			}
 			if (bp1.getHomologySequence().length() != bp2.getHomologySequence().length()) {
 				be1value += " HOMSEQ:" + bp1.getHomologySequence();

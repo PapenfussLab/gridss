@@ -31,5 +31,10 @@ public class TestHelperTest extends TestHelper {
 		assertEquals(11, getLeftmostBasePos(10, BWD, 2, 1));
 		assertEquals(11, getLeftmostBasePos(10, BWD, 3, 1));
 	}
+	@Test
+	public void SES_category() {
+		assertEquals(0, SES(false).getSourceCategory());
+		assertEquals(1, SES(true).getSourceCategory());
+	}
 }
 
