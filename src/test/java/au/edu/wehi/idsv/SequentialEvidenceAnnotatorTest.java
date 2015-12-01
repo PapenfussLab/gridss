@@ -29,7 +29,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 		VariantContextDirectedBreakpoint result = (VariantContextDirectedBreakpoint)go(L(
 				(DirectedEvidence)SoftClipEvidence.create(SES(), FWD, Read(0, 1, "1M3S"), Read(0, 10, "3M"))
 			), (VariantContextDirectedEvidence)builder.make());
-		assertEquals(1, result.getBreakpointEvidenceCountSoftClip(null));
+		assertEquals(1, result.getBreakpointEvidenceCountSoftClip());
 	}
 	@Test
 	public void should_add_breakend_supporting_evidence() {
@@ -41,7 +41,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 		VariantContextDirectedEvidence result = go(L(
 				(DirectedEvidence)SoftClipEvidence.create(SES(), FWD, Read(0, 1, "1M3S"))
 			), (VariantContextDirectedEvidence)builder.make());
-		assertEquals(1, result.getBreakendEvidenceCountSoftClip(null));
+		assertEquals(1, result.getBreakendEvidenceCountSoftClip());
 	}
 	@Test
 	public void should_use_breakpoint_assembly_sequence() {
@@ -72,7 +72,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 				(DirectedEvidence)SoftClipEvidence.create(SES(), FWD, Read(0, 1, "1M2S"), Read(0, 10, "3M")),
 				(DirectedEvidence)SoftClipEvidence.create(SES(), FWD, Read(0, 1, "1M3S"), Read(0, 10, "3M"))
 			), (VariantContextDirectedEvidence)builder.make());
-		assertEquals(2, result.getBreakpointEvidenceCountSoftClip(null));
+		assertEquals(2, result.getBreakpointEvidenceCountSoftClip());
 	}
 	@Test
 	public void should_incorporate_sc_margin_when_adding_evidence() {
@@ -84,7 +84,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 		VariantContextDirectedBreakpoint result = (VariantContextDirectedBreakpoint)go(L(
 				(DirectedEvidence)SoftClipEvidence.create(SES(), FWD, Read(0, 1, "1M3S"))
 			), (VariantContextDirectedEvidence)builder.make());
-		assertEquals(1, result.getBreakendEvidenceCountSoftClip(null));
+		assertEquals(1, result.getBreakendEvidenceCountSoftClip());
 	}
 	@Test
 	public void should_output_variants_in_order() {
@@ -121,14 +121,14 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(new SequentialEvidenceAnnotator(getContext(), calls.iterator(), evidence.iterator(), 300, true, null));
 		assertNotEquals(bp, result.get(0).getBreakendSummary());
 		assertEquals(bp, result.get(1).getBreakendSummary());
-		assertEquals(0, ((VariantContextDirectedBreakpoint)result.get(0)).getBreakpointEvidenceCountSoftClip(null));
-		assertEquals(2, ((VariantContextDirectedBreakpoint)result.get(1)).getBreakpointEvidenceCountSoftClip(null));
+		assertEquals(0, ((VariantContextDirectedBreakpoint)result.get(0)).getBreakpointEvidenceCountSoftClip());
+		assertEquals(2, ((VariantContextDirectedBreakpoint)result.get(1)).getBreakpointEvidenceCountSoftClip());
 		
 		result = Lists.newArrayList(new SequentialEvidenceAnnotator(getContext(), calls.iterator(), evidence.iterator(), 300, false, null));
 		assertEquals(bp, result.get(0).getBreakendSummary());
 		assertEquals(bp, result.get(1).getBreakendSummary());
-		assertEquals(2, ((VariantContextDirectedBreakpoint)result.get(0)).getBreakpointEvidenceCountSoftClip(null));
-		assertEquals(2, ((VariantContextDirectedBreakpoint)result.get(1)).getBreakpointEvidenceCountSoftClip(null));
+		assertEquals(2, ((VariantContextDirectedBreakpoint)result.get(0)).getBreakpointEvidenceCountSoftClip());
+		assertEquals(2, ((VariantContextDirectedBreakpoint)result.get(1)).getBreakpointEvidenceCountSoftClip());
 	}
 	@Test
 	public void should_not_add_breakend_nonsupporting_evidence() {
@@ -140,8 +140,8 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 		VariantContextDirectedBreakpoint result = (VariantContextDirectedBreakpoint)go(L(
 				(DirectedEvidence)SoftClipEvidence.create(SES(), BWD, Read(0, 1, "3S1M"), Read(0, 10, "3M"))
 			), (VariantContextDirectedEvidence)builder.make());
-		assertEquals(0, result.getBreakpointEvidenceCountSoftClip(null));
-		assertEquals(0, result.getBreakendEvidenceCountSoftClip(null));
+		assertEquals(0, result.getBreakpointEvidenceCountSoftClip());
+		assertEquals(0, result.getBreakendEvidenceCountSoftClip());
 	}
 	@Test
 	public void should_not_add_breakpoint_nonsupporting_evidence() {
@@ -153,8 +153,8 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 		VariantContextDirectedBreakpoint result = (VariantContextDirectedBreakpoint)go(L(
 				(DirectedEvidence)SoftClipEvidence.create(SES(), FWD, withSequence("TTTTTTT", Read(0, 5, "3S1M3S"))[0], withSequence("TTT", Read(0, 22, "3M"))[0])
 			), (VariantContextDirectedEvidence)builder.make());
-		assertEquals(0, result.getBreakpointEvidenceCountSoftClip(null));
-		assertEquals(0, result.getBreakendEvidenceCountSoftClip(null));
+		assertEquals(0, result.getBreakpointEvidenceCountSoftClip());
+		assertEquals(0, result.getBreakendEvidenceCountSoftClip());
 	}
 	@Test
 	public void should_allocate_in_order() {
@@ -236,8 +236,8 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 		Collections.sort(evidence, DirectedEvidenceOrder.ByNatural);
 		ArrayList<VariantContextDirectedEvidence> result = Lists.newArrayList(new SequentialEvidenceAnnotator(pc, calls.iterator(), evidence.iterator(), 10, true, null));
 		assertEquals(calls.size(), result.size());
-		assertEquals(1, ((VariantContextDirectedBreakpoint)result.get(0)).getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL));
-		assertEquals(1, ((VariantContextDirectedBreakpoint)result.get(1)).getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL));
+		assertEquals(1, ((VariantContextDirectedBreakpoint)result.get(0)).getBreakpointEvidenceCountReadPair());
+		assertEquals(1, ((VariantContextDirectedBreakpoint)result.get(1)).getBreakpointEvidenceCountReadPair());
 	}
 	private List<VariantContextDirectedBreakpoint> buildPair(ProcessingContext pc, BreakpointSummary bs, String eventid) {
 		return buildPair(pc, bs, eventid, 1);
@@ -280,10 +280,10 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 		Collections.sort(evidence, DirectedEvidenceOrder.ByNatural);
 		ArrayList<VariantContextDirectedEvidence> result = Lists.newArrayList(new SequentialEvidenceAnnotator(pc, calls.iterator(), evidence.iterator(), 20, true, null));
 		assertEquals(calls.size(), result.size());
-		assertEquals(1, ((VariantContextDirectedBreakpoint)result.get(0)).getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL)); // low1
-		assertEquals(0, ((VariantContextDirectedBreakpoint)result.get(1)).getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL)); // low2
-		assertEquals(0, ((VariantContextDirectedBreakpoint)result.get(2)).getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL)); // high2
-		assertEquals(1, ((VariantContextDirectedBreakpoint)result.get(3)).getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL)); // high1
+		assertEquals(1, ((VariantContextDirectedBreakpoint)result.get(0)).getBreakpointEvidenceCountReadPair()); // low1
+		assertEquals(0, ((VariantContextDirectedBreakpoint)result.get(1)).getBreakpointEvidenceCountReadPair()); // low2
+		assertEquals(0, ((VariantContextDirectedBreakpoint)result.get(2)).getBreakpointEvidenceCountReadPair()); // high2
+		assertEquals(1, ((VariantContextDirectedBreakpoint)result.get(3)).getBreakpointEvidenceCountReadPair()); // high1
 	}
 	@Test
 	public void should_disambiguate_calls_by_weight() {
@@ -303,9 +303,9 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 		Collections.sort(evidence, DirectedEvidenceOrder.ByNatural);
 		ArrayList<VariantContextDirectedEvidence> result = Lists.newArrayList(new SequentialEvidenceAnnotator(pc, calls.iterator(), evidence.iterator(), 20, true, null));
 		assertEquals(calls.size(), result.size());
-		assertEquals(0, ((VariantContextDirectedBreakpoint)result.get(0)).getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL)); // low1
-		assertEquals(1, ((VariantContextDirectedBreakpoint)result.get(1)).getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL)); // low2
-		assertEquals(1, ((VariantContextDirectedBreakpoint)result.get(2)).getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL)); // high2
-		assertEquals(0, ((VariantContextDirectedBreakpoint)result.get(3)).getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL)); // high1
+		assertEquals(0, ((VariantContextDirectedBreakpoint)result.get(0)).getBreakpointEvidenceCountReadPair()); // low1
+		assertEquals(1, ((VariantContextDirectedBreakpoint)result.get(1)).getBreakpointEvidenceCountReadPair()); // low2
+		assertEquals(1, ((VariantContextDirectedBreakpoint)result.get(2)).getBreakpointEvidenceCountReadPair()); // high2
+		assertEquals(0, ((VariantContextDirectedBreakpoint)result.get(3)).getBreakpointEvidenceCountReadPair()); // high1
 	}
 }

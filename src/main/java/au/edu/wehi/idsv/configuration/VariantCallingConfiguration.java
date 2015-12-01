@@ -4,16 +4,15 @@ import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
 
+import com.google.common.collect.Lists;
+
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.BreakpointSummary;
-import au.edu.wehi.idsv.EvidenceSubset;
 import au.edu.wehi.idsv.IdsvVariantContextBuilder;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.vcf.VcfFilter;
-
-import com.google.common.collect.Lists;
 
 public class VariantCallingConfiguration {
 	public static final String CONFIGURATION_PREFIX = "variantcalling";
@@ -80,10 +79,10 @@ public class VariantCallingConfiguration {
 		if (bp.couldBeReferenceAllele() && call.getUntemplatedSequence().length() == 0) {
 			filters.add(VcfFilter.REFERENCE_ALLELE);
 		}
-		if (call.getBreakpointQual() < minScore || call.getBreakpointEvidenceCount(EvidenceSubset.ALL) == 0) {
+		if (call.getBreakpointQual() < minScore || call.getBreakpointEvidenceCount() == 0) {
 			filters.add(VcfFilter.LOW_BREAKPOINT_SUPPORT);
 		}
-		if (call.getBreakpointEvidenceCountAssembly() == 0 && call.getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL) + call.getBreakpointEvidenceCountSoftClip(EvidenceSubset.ALL) == 1) {
+		if (call.getBreakpointEvidenceCountAssembly() == 0 && call.getBreakpointEvidenceCountReadPair() + call.getBreakpointEvidenceCountSoftClip() == 1) {
 			filters.add(VcfFilter.SINGLE_SUPPORT);
 		}
 		return filters;
@@ -96,6 +95,9 @@ public class VariantCallingConfiguration {
 				filteredVariant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(processContext, filteredVariant).filter(VcfFilter.NO_ASSEMBLY.filter()).make();
 			} else if (v.getBreakpointEvidenceCountLocalAssembly() == 0 || v.getBreakpointEvidenceCountRemoteAssembly() == 0) {
 				filteredVariant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(processContext, filteredVariant).filter(VcfFilter.SINGLE_ASSEMBLY.filter()).make();
+			} else if (v.getBreakpointEvidenceCountLocalAssembly() + v.getBreakpointEvidenceCountRemoteAssembly() > 0 &&
+					v.getBreakpointEvidenceCountReadPair() + v.getBreakpointEvidenceCountSoftClip() == 0) {
+				filteredVariant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(processContext, filteredVariant).filter(VcfFilter.ASSEMBLY_ONLY.filter()).make();
 			}
 		} else {
 			if (filteredVariant.getBreakendEvidenceCountAssembly() == 0) {

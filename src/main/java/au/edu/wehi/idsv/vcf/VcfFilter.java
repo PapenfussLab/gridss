@@ -18,6 +18,7 @@ public enum VcfFilter {
 	ASSEMBLY_REMOTE ("ASSEMBLY_REMOTE", "All support for the given breakpoint comes from elsewhere."),
 	NO_ASSEMBLY ("NO_ASSEMBLY", "No assembly supporting this variant could be found."),
 	SINGLE_ASSEMBLY ("SINGLE_ASSEMBLY", "Only one side of the breakpoint could be assembled."),
+	ASSEMBLY_ONLY ("ASSEMBLY_ONLY", "Variant is supported only by assembly evidence."),
 	LOW_QUAL ("LOW_QUAL", "Low quality call.");
 
     private final VCFFilterHeaderLine filterheader;

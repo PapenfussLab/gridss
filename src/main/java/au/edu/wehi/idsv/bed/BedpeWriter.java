@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv.bed;
 
-import htsjdk.samtools.SAMSequenceDictionary;
-
 import java.io.BufferedOutputStream;
 import java.io.Closeable;
 import java.io.File;
@@ -12,10 +10,10 @@ import java.nio.charset.StandardCharsets;
 
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakpointSummary;
-import au.edu.wehi.idsv.EvidenceSubset;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import htsjdk.samtools.SAMSequenceDictionary;
 
 /**
  * Outputs variant calls to BEDPE
@@ -78,17 +76,17 @@ public class BedpeWriter implements Closeable {
 		sb.append('\t'); sb.append(variant.getHomologySequence());
 		sb.append('\t'); sb.append(Integer.toString(variant.getBreakpointEvidenceCountLocalAssembly()));
 		sb.append('\t'); sb.append(Integer.toString(variant.getBreakpointEvidenceCountRemoteAssembly()));
-		sb.append('\t'); sb.append(Integer.toString(variant.getBreakpointEvidenceCountLocalSoftClip(EvidenceSubset.ALL)));
-		sb.append('\t'); sb.append(Integer.toString(variant.getBreakpointEvidenceCountRemoteSoftClip(EvidenceSubset.ALL)));
-		sb.append('\t'); sb.append(Integer.toString(variant.getBreakpointEvidenceCountReadPair(EvidenceSubset.ALL)));
+		sb.append('\t'); sb.append(Integer.toString(variant.getBreakpointEvidenceCountLocalSoftClip()));
+		sb.append('\t'); sb.append(Integer.toString(variant.getBreakpointEvidenceCountRemoteSoftClip()));
+		sb.append('\t'); sb.append(Integer.toString(variant.getBreakpointEvidenceCountReadPair()));
 
 		sb.append('\t'); sb.append(Double.toString(variant.getBreakpointEvidenceQualLocalAssembly()));
 		sb.append('\t'); sb.append(Double.toString(variant.getBreakpointEvidenceQualRemoteAssembly()));
-		sb.append('\t'); sb.append(Double.toString(variant.getBreakpointEvidenceQualLocalSoftClip(EvidenceSubset.ALL)));
-		sb.append('\t'); sb.append(Double.toString(variant.getBreakpointEvidenceQualRemoteSoftClip(EvidenceSubset.ALL)));
-		sb.append('\t'); sb.append(Double.toString(variant.getBreakpointEvidenceQualReadPair(EvidenceSubset.ALL)));
-		sb.append('\t'); sb.append(Integer.toString(variant.getReferenceReadCount(EvidenceSubset.ALL)));
-		sb.append('\t'); sb.append(Integer.toString(variant.getReferenceReadPairCount(EvidenceSubset.ALL)));
+		sb.append('\t'); sb.append(Double.toString(variant.getBreakpointEvidenceQualLocalSoftClip()));
+		sb.append('\t'); sb.append(Double.toString(variant.getBreakpointEvidenceQualRemoteSoftClip()));
+		sb.append('\t'); sb.append(Double.toString(variant.getBreakpointEvidenceQualReadPair()));
+		sb.append('\t'); sb.append(Integer.toString(variant.getReferenceReadCount()));
+		sb.append('\t'); sb.append(Integer.toString(variant.getReferenceReadPairCount()));
 		sb.append('\n');
 		os.write(sb.toString().getBytes(StandardCharsets.UTF_8));
 	}

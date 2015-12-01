@@ -165,13 +165,13 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_set_VcfAttribute_REFERENCE_COUNT_READ() {
-		assertEquals(7, big().getReferenceReadCount(EvidenceSubset.NORMAL));
-		assertEquals(8, big().getReferenceReadCount(EvidenceSubset.TUMOUR));
+		assertEquals(7, big().getReferenceReadCount(0));
+		assertEquals(8, big().getReferenceReadCount(1));
 	}
 	@Test
 	public void should_set_VcfAttribute_REFERENCE_COUNT_READPAIR() {
-		assertEquals(9, big().getReferenceReadPairCount(EvidenceSubset.NORMAL));
-		assertEquals(10, big().getReferenceReadPairCount(EvidenceSubset.TUMOUR));
+		assertEquals(9, big().getReferenceReadPairCount(0));
+		assertEquals(10, big().getReferenceReadPairCount(1));
 	}
 	@Test
 	public void should_set_read_pair_evidence_by_breakendpoint_tumournormal() {
@@ -184,10 +184,10 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			new um(5, true),
 			new um(6, true),
 			new um(7, false));
-		assertEquals(1, e.getBreakendEvidenceCountReadPair(EvidenceSubset.NORMAL));
-		assertEquals(3, e.getBreakendEvidenceCountReadPair(EvidenceSubset.TUMOUR));
-		assertEquals(2, e.getBreakpointEvidenceCountReadPair(EvidenceSubset.NORMAL));
-		assertEquals(2, e.getBreakpointEvidenceCountReadPair(EvidenceSubset.TUMOUR));
+		assertEquals(1, e.getBreakendEvidenceCountReadPair(0));
+		assertEquals(3, e.getBreakendEvidenceCountReadPair(1));
+		assertEquals(2, e.getBreakpointEvidenceCountReadPair(0));
+		assertEquals(2, e.getBreakpointEvidenceCountReadPair(1));
 	}
 	public VariantContextDirectedBreakpoint complex_bp() {
 		ProcessingContext pc = getContext();
@@ -296,13 +296,14 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		
 		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(
 				new dp(2, true),
-				new dp(4, true)); 
+				new dp(4, true).asRemote()); 
 		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakend(pc, aes, BP.direction, Lists.transform(support, EID), BP.referenceIndex, BP.end, 1, B("TT"), B("TT"));
 		ass.hydrateEvidenceSet(support);
 		ass.annotateAssembly();
 		cb.addEvidence(AssemblyFactory.incorporateRealignment(getContext(), ass, ImmutableList.of(withMapq(44, onNegative(Read(BP.referenceIndex2, BP.start2, "1M")))[0])));
 	
 		support = Lists.<DirectedEvidence>newArrayList(
+				// none support since this is the remote breakend
 				new dp(3, false),
 				new dp(5, true),
 				new dp(6, true));
@@ -314,7 +315,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)cb.make();
 		
 		Assert.assertArrayEquals(new int[] { 1, 4, }, (int[])bp.getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT.attribute()));
-		Assert.assertArrayEquals(new int[] { 0, 3, }, (int[])bp.getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT.attribute()));
+		Assert.assertArrayEquals(new int[] { 1, 3, }, (int[])bp.getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT.attribute()));
 	}
 	@Test
 	public void should_set_VcfAttribute_BREAKPOINT_ASSEMBLY_SPLITREAD_COUNT() {
@@ -329,7 +330,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		cb.addEvidence(new rrsc(7, false));
 		
 		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(
-				new rsc(2, true),
+				new rsc(2, true).asRemote(), // not supporting
 				new rsc(4, true)); 
 		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakend(pc, aes, BP.direction, Lists.transform(support, EID), BP.referenceIndex, BP.end, 1, B("TT"), B("TT"));
 		ass.hydrateEvidenceSet(support);
@@ -340,8 +341,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				new rsc(3, false).asRemote(),
 				new rsc(5, true).asRemote(),
 				new rsc(6, true).asRemote(),
-				new rsc(7, false),
-				new rsc(8, false));
+				new rsc(7, false),  // not supporting
+				new rsc(8, false));  // not supporting
 		ass = AssemblyFactory.createAnchoredBreakend(pc, aes, BP.direction, Lists.transform(support, EID), BP.referenceIndex2, BP.end2, 1, B("TT"), B("TT"));
 		ass.hydrateEvidenceSet(support);
 		ass.annotateAssembly();
@@ -350,7 +351,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)cb.make();
 		
 		Assert.assertArrayEquals(new int[] { 3, 4, }, (int[])bp.getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_SPLITREAD_COUNT.attribute()));
-		Assert.assertArrayEquals(new int[] { 1, 3, }, (int[])bp.getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT.attribute()));
+		Assert.assertArrayEquals(new int[] { 2, 1, }, (int[])bp.getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT.attribute()));
 	}
 	@Test
 	@Ignore() //  TODO: enchancement

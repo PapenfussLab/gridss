@@ -20,7 +20,7 @@ public class SmallIndelSAMRecordAssemblyEvidenceTest extends TestHelper {
 		r.setReadBases(B(bases));
 		r.setBaseQualityString(bases);
 		MockDirectedEvidence evidence = new MockDirectedEvidence(new BreakendSummary(0, FWD, 1, 2));
-		r.setAttribute(SamTags.EVIDENCEID_UNCATEGORISED, evidence.getEvidenceID());
+		r.setAttribute(SamTags.EVIDENCEID, evidence.getEvidenceID());
 		SmallIndelSAMRecordAssemblyEvidence e = new SmallIndelSAMRecordAssemblyEvidence(AES(), r);
 		e.hydrateEvidenceSet(evidence);
 		e.annotateAssembly();

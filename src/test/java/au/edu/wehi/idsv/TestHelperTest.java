@@ -8,24 +8,33 @@ import org.junit.Test;
 public class TestHelperTest extends TestHelper {
 	@Test
 	public void test_getRef() {
-		assertEquals("CATT", S(getRef(RANDOM, 4, 5, FWD, 5)));
+		assertEquals("ATTAA", S(getRef(RANDOM, 5, 6, FWD)));
+		assertEquals("CTGAA", S(getRef(RANDOM, 5, 125, BWD)));
 	}
 	@Test
 	public void test_getBasePos() {
-		assertEquals(1, getBasePos(1, FWD, 1));
+		assertEquals(1, getLeftmostBasePos(1, FWD, 1, 0));
 		
-		assertEquals(10, getBasePos(10, FWD, 1));
-		assertEquals(9, getBasePos(10, FWD, 2));
-		assertEquals(8, getBasePos(10, FWD, 3));
+		assertEquals(10, getLeftmostBasePos(10, FWD, 1, 0));
+		assertEquals(9, getLeftmostBasePos(10, FWD, 2, 0));
+		assertEquals(8, getLeftmostBasePos(10, FWD, 3, 0));
 		
-		assertEquals(10, getBasePos(10, BWD, 1));
-		assertEquals(11, getBasePos(10, BWD, 2));
-		assertEquals(12, getBasePos(10, BWD, 3));
+		assertEquals(9, getLeftmostBasePos(10, FWD, 1, 1));
+		assertEquals(8, getLeftmostBasePos(10, FWD, 2, 1));
+		assertEquals(7, getLeftmostBasePos(10, FWD, 3, 1));
+		
+		assertEquals(10, getLeftmostBasePos(10, BWD, 1, 0));
+		assertEquals(10, getLeftmostBasePos(10, BWD, 2, 0));
+		assertEquals(10, getLeftmostBasePos(10, BWD, 3, 0));
+		
+		assertEquals(11, getLeftmostBasePos(10, BWD, 1, 1));
+		assertEquals(11, getLeftmostBasePos(10, BWD, 2, 1));
+		assertEquals(11, getLeftmostBasePos(10, BWD, 3, 1));
 	}
 	@Test
-	public void test_getStartBasePos() {
-		assertEquals(10, getStartBasePos(new BreakendSummary(0, FWD, 10, 20), 1));
-		assertEquals(9, getStartBasePos(new BreakendSummary(0, FWD, 10, 20), 2));
+	public void SES_category() {
+		assertEquals(0, SES(false).getSourceCategory());
+		assertEquals(1, SES(true).getSourceCategory());
 	}
 }
 

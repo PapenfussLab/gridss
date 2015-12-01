@@ -36,11 +36,6 @@ public class TraversalNode {
 		}
 		return sb.toString();
 	}
-	public KmerPathSubnode getRoot() {
-		TraversalNode n = this;
-		while (n.parent != null) n = n.parent;
-		return n.node;
-	}
 	/**
 	 * Restricts the interval of an existing node to the given interval
 	 * @param node existing node
@@ -57,15 +52,15 @@ public class TraversalNode {
 		this.pathLength = node.pathLength;
 	}
 	/**
-	 * Determines whether this path traverses through the given node
+	 * Determines whether this path already traverses through the given node
 	 * @param node node to check traversal
 	 * @return true if the path traverses this found, false otherwise
 	 */
-	public boolean contains(KmerPathNode node) {
-		for (TraversalNode n = parent; n != null; n = n.parent) {
+	public boolean traversingWouldCauseSelfIntersection(KmerPathNode node) {
+		for (TraversalNode n = this; n != null; n = n.parent) {
 			KmerPathNode pn = n.node.node();
 			if (pn == node) return true;
-			if (IntervalUtil.overlapsClosed(pn.firstStart(), pn.firstEnd(), node.firstStart(), node.firstEnd())) {
+			if (!IntervalUtil.overlapsClosed(pn.firstStart(), pn.firstEnd(), node.firstStart(), node.firstEnd())) {
 				return false;
 			}
 		}

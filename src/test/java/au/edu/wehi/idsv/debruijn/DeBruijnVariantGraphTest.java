@@ -4,8 +4,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.SequenceUtil;
 
 import java.util.List;
 
@@ -13,12 +11,13 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import com.google.common.collect.Lists;
+
 import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.EvidenceSubset;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.SmallIndelSAMRecordAssemblyEvidence;
@@ -26,8 +25,8 @@ import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
-
-import com.google.common.collect.Lists;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
 
 public class DeBruijnVariantGraphTest extends TestHelper {
 	private List<AssemblyEvidence> result;
@@ -327,12 +326,12 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		AssemblyEvidence result = ass.endOfEvidence().iterator().next().hydrateEvidenceSet(e).annotateAssembly();
 		
 		assertEquals("test assumes this contruction - did I get the test case wrong?", "TTCTTAAACGG", S(result.getAssemblySequence()));
-		assertEquals(1, result.getAssemblySupportCountReadPair(EvidenceSubset.NORMAL));
-		assertEquals(1, result.getAssemblySupportCountReadPair(EvidenceSubset.TUMOUR));
-		assertEquals(2, result.getAssemblySupportCountReadPair(EvidenceSubset.ALL));
-		assertEquals(4, result.getAssemblySupportCountSoftClip(EvidenceSubset.NORMAL));
-		assertEquals(2, result.getAssemblySupportCountSoftClip(EvidenceSubset.TUMOUR));
-		assertEquals(6, result.getAssemblySupportCountSoftClip(EvidenceSubset.ALL));
+		assertEquals(1, result.getAssemblySupportCountReadPair(0));
+		assertEquals(1, result.getAssemblySupportCountReadPair(1));
+		assertEquals(2, result.getAssemblySupportCountReadPair());
+		assertEquals(4, result.getAssemblySupportCountSoftClip(0));
+		assertEquals(2, result.getAssemblySupportCountSoftClip(1));
+		assertEquals(6, result.getAssemblySupportCountSoftClip());
 	}
 	@Test
 	public void should_assemble_spanning_breakend_with_insertion() {

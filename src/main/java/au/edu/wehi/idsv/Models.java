@@ -1,16 +1,14 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.variant.vcf.VCFConstants;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.graph.MaximumCliqueIntervalGraph;
 import au.edu.wehi.idsv.graph.MaximumCliqueIntervalGraph.Node;
 import au.edu.wehi.idsv.graph.ScalingHelper;
-
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
 
 /**
  * variant/reference Log-likelihood statistical model
@@ -85,15 +83,15 @@ public class Models {
 		if (nodes.size() == 0) return null;
 		return calc.calculateMaximumClique(nodes);
 	}
-	public static VariantContextDirectedEvidence calculateSomatic(VariantContextDirectedEvidence variant) {
-		if (variant instanceof VariantContextDirectedBreakpoint) {
-			VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)variant;
-			if (!bp.hasBreakpointSupport(EvidenceSubset.NORMAL) && bp.hasBreakpointSupport(EvidenceSubset.TUMOUR)) {
-				IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(variant.processContext, variant);
-				builder.attribute(VCFConstants.SOMATIC_KEY, true);
-				variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(variant.processContext, variant.source, builder.make());
-			}
-		}
-		return variant;
-	}
+//	public static VariantContextDirectedEvidence calculateSomatic(VariantContextDirectedEvidence variant) {
+//		if (variant instanceof VariantContextDirectedBreakpoint) {
+//			VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)variant;
+//			if (!bp.hasBreakpointSupport(EvidenceSubset.NORMAL) && bp.hasBreakpointSupport(EvidenceSubset.TUMOUR)) {
+//				IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(variant.processContext, variant);
+//				builder.attribute(VCFConstants.SOMATIC_KEY, true);
+//				variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(variant.processContext, variant.source, builder.make());
+//			}
+//		}
+//		return variant;
+//	}
 }

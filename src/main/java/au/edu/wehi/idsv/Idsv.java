@@ -73,7 +73,7 @@ public class Idsv extends CommandLineProgram {
 	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="VCF structural variation calls.")
     public File OUTPUT;
     @Option(shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME, doc="Reference used for alignment")
-    public File REFERENCE;    
+    public File REFERENCE;
     // --- intermediate file parameters ---
     @Option(doc = "Save intermediate results into separate files for each chromosome."
     		+ " Increases the number of intermediate files but allows a greater level of parallelisation.", optional = true)
@@ -207,6 +207,10 @@ public class Idsv extends CommandLineProgram {
     		ensureDictionariesMatch();
     		// Spam output with gridss parameters used
     		getContext();
+    		if (INPUT_CATEGORY != null && INPUT_CATEGORY.stream().mapToInt(x -> x).distinct().count() <
+    				 INPUT_CATEGORY.stream().mapToInt(x -> x).max().orElse(0) - 8) {
+        		log.warn("Missing more than 8 INPUT_CATEGORY indicies. Performance is likely to be degraded.");
+        	}
     		// Force loading of aligner up-front
     		log.info("Loading aligner");
     		AlignerFactory.create();
@@ -223,7 +227,7 @@ public class Idsv extends CommandLineProgram {
 	    	for (SAMEvidenceSource e : samEvidence) {
 	    		InsertSizeMetrics ism = e.getMetrics().getInsertSizeMetrics();
 	    		if (ism != null && ism.PAIR_ORIENTATION != PairOrientation.FR) {
-	    			log.error("gridss currently supports only FR read pair orientation. If usage with other read pair orientations is required, please raise an issue at https://github.com/PapenfussLab/gridss/issues");
+	    			log.error("gridss currently supports only FR read pair orientation. If usage with other read pair orientations is required, please raise an enchancement request at https://github.com/PapenfussLab/gridss/issues");
 	    			return -1;
 	    		}
 	    	}

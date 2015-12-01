@@ -16,11 +16,14 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.configuration.ConfigurationException;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import au.edu.wehi.idsv.StructuralVariationCallBuilderTest.dp;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
+import au.edu.wehi.idsv.vcf.VcfAttributes;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -140,26 +143,46 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 			assertEvidenceEquals(e, r);
 		}
 	}
+	@Test
+	public void SAMRecord_evidence_should_be_removed_after_annotation_if_assembly_trackEvidenceID_if_false() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().trackEvidenceID = false;
+		for (SAMRecordAssemblyEvidence e : new SAMRecordAssemblyEvidence[] {
+				AssemblyFactory.createUnanchoredBreakend(pc, AES(pc), new BreakendSummary(0, FWD, 1000, 1299), null, B("GTAC"), new byte[] {1,2,3,4}, new int[] {0, 0}).annotateAssembly(),
+				AssemblyFactory.createUnanchoredBreakend(pc, AES(pc), new BreakendSummary(0, FWD, 701, 1000), null, B("GTAC"), new byte[] {1,2,3,4}, new int[] {0, 0}).annotateAssembly(),
+				AssemblyFactory.createAnchoredBreakend(pc, AES(pc), FWD, null, 1, 2, 1, B("GTAC"), new byte[] {1,2,3,4}).annotateAssembly(),
+				AssemblyFactory.createAnchoredBreakend(pc, AES(pc), BWD, null, 1, 2, 1, B("GTAC"), new byte[] {1,2,3,4}).annotateAssembly(),
+			}) {
+			SAMRecordAssemblyEvidence r = new SAMRecordAssemblyEvidence(e.getEvidenceSource(), e.getSAMRecord(), null);
+			boolean thrown = false;
+			try {
+				assertEquals(0, r.getEvidence().size());
+			} catch (IllegalStateException ex) {
+				thrown = true;
+			}
+			assertTrue(thrown);
+		}
+	}
 	public static void assertEvidenceEquals(AssemblyEvidence e, AssemblyEvidence r) {
 		assertEquals(e.getAssemblyAnchorLength(), r.getAssemblyAnchorLength());
 		//assertArrayEquals(e.getAssemblyAnchorQuals() , r.getAssemblyAnchorQuals());
 		assertEquals(S(e.getAssemblyAnchorSequence()) , S(r.getAssemblyAnchorSequence()));
-		assertEquals(e.getAssemblyReadPairLengthMax(EvidenceSubset.NORMAL) , r.getAssemblyReadPairLengthMax(EvidenceSubset.NORMAL));
-		assertEquals(e.getAssemblyReadPairLengthMax(EvidenceSubset.TUMOUR) , r.getAssemblyReadPairLengthMax(EvidenceSubset.TUMOUR));
-		assertEquals(e.getAssemblyReadPairLengthMax(EvidenceSubset.ALL) , r.getAssemblyReadPairLengthMax(EvidenceSubset.ALL));
+		assertEquals(e.getAssemblyReadPairLengthMax(0) , r.getAssemblyReadPairLengthMax(0));
+		assertEquals(e.getAssemblyReadPairLengthMax(1) , r.getAssemblyReadPairLengthMax(1));
+		assertEquals(e.getAssemblyReadPairLengthMax() , r.getAssemblyReadPairLengthMax());
 		assertEquals(S(e.getAssemblySequence()) , S(r.getAssemblySequence()));
-		assertEquals(e.getAssemblySoftClipLengthMax(EvidenceSubset.NORMAL) , r.getAssemblySoftClipLengthMax(EvidenceSubset.NORMAL));
-		assertEquals(e.getAssemblySoftClipLengthMax(EvidenceSubset.TUMOUR) , r.getAssemblySoftClipLengthMax(EvidenceSubset.TUMOUR));
-		assertEquals(e.getAssemblySoftClipLengthMax(EvidenceSubset.ALL) , r.getAssemblySoftClipLengthMax(EvidenceSubset.ALL));
-		assertEquals(e.getAssemblySoftClipLengthTotal(EvidenceSubset.NORMAL) , r.getAssemblySoftClipLengthTotal(EvidenceSubset.NORMAL));
-		assertEquals(e.getAssemblySoftClipLengthTotal(EvidenceSubset.TUMOUR) , r.getAssemblySoftClipLengthTotal(EvidenceSubset.TUMOUR));
-		assertEquals(e.getAssemblySoftClipLengthTotal(EvidenceSubset.ALL) , r.getAssemblySoftClipLengthTotal(EvidenceSubset.ALL));
-		assertEquals(e.getAssemblySupportCountReadPair(EvidenceSubset.NORMAL) , r.getAssemblySupportCountReadPair(EvidenceSubset.NORMAL));
-		assertEquals(e.getAssemblySupportCountReadPair(EvidenceSubset.TUMOUR) , r.getAssemblySupportCountReadPair(EvidenceSubset.TUMOUR));
-		assertEquals(e.getAssemblySupportCountReadPair(EvidenceSubset.ALL) , r.getAssemblySupportCountReadPair(EvidenceSubset.ALL));
-		assertEquals(e.getAssemblySupportCountSoftClip(EvidenceSubset.NORMAL) , r.getAssemblySupportCountSoftClip(EvidenceSubset.NORMAL));
-		assertEquals(e.getAssemblySupportCountSoftClip(EvidenceSubset.TUMOUR) , r.getAssemblySupportCountSoftClip(EvidenceSubset.TUMOUR));
-		assertEquals(e.getAssemblySupportCountSoftClip(EvidenceSubset.ALL) , r.getAssemblySupportCountSoftClip(EvidenceSubset.ALL));
+		assertEquals(e.getAssemblySoftClipLengthMax(0) , r.getAssemblySoftClipLengthMax(0));
+		assertEquals(e.getAssemblySoftClipLengthMax(1) , r.getAssemblySoftClipLengthMax(1));
+		assertEquals(e.getAssemblySoftClipLengthMax() , r.getAssemblySoftClipLengthMax());
+		assertEquals(e.getAssemblySoftClipLengthTotal(0) , r.getAssemblySoftClipLengthTotal(0));
+		assertEquals(e.getAssemblySoftClipLengthTotal(1) , r.getAssemblySoftClipLengthTotal(1));
+		assertEquals(e.getAssemblySoftClipLengthTotal() , r.getAssemblySoftClipLengthTotal());
+		assertEquals(e.getAssemblySupportCountReadPair(0) , r.getAssemblySupportCountReadPair(0));
+		assertEquals(e.getAssemblySupportCountReadPair(1) , r.getAssemblySupportCountReadPair(1));
+		assertEquals(e.getAssemblySupportCountReadPair() , r.getAssemblySupportCountReadPair());
+		assertEquals(e.getAssemblySupportCountSoftClip(0) , r.getAssemblySupportCountSoftClip(0));
+		assertEquals(e.getAssemblySupportCountSoftClip(1) , r.getAssemblySupportCountSoftClip(1));
+		assertEquals(e.getAssemblySupportCountSoftClip() , r.getAssemblySupportCountSoftClip());
 		assertArrayEquals(e.getBreakendQuality() , r.getBreakendQuality());
 		assertEquals(S(e.getBreakendSequence()) , S(r.getBreakendSequence()));
 		assertEquals(e.getBreakendSummary(), r.getBreakendSummary());
@@ -204,6 +227,11 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertTrue(e.isPartOfAssembly(e2));
 		assertTrue(e.isPartOfAssembly(e3));
 		assertFalse(e.isPartOfAssembly(b1));
+		
+		e.hydrateEvidenceSet(Lists.newArrayList(e1, e2, e3));
+		e.annotateAssembly();
+		assertEquals(2, e.getAssemblySupportCountSoftClip());
+		assertEquals(1, e.getAssemblySupportCountReadPair());
 	}
 	@Test
 	public void should_rehydrate_breakend_evidence() {

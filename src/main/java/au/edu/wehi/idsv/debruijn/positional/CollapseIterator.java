@@ -7,12 +7,15 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.NavigableSet;
+import java.util.Set;
 import java.util.TreeSet;
 
 import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNodeUtil;
 
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
+import com.google.common.collect.Sets;
 
 /**
  * Base class for path collapse logic
@@ -200,6 +203,7 @@ public abstract class CollapseIterator implements PeekingIterator<KmerPathNode> 
 		assert(sourcePath.get(0).firstStart() == targetPath.get(0).firstStart());
 		assert(DeBruijnSequenceGraphNodeUtil.basesDifferent(k, sourcePath, targetPath) <= maxBasesMismatch);
 		trimCommon(sourcePath, targetPath);
+		assertKmerPathNodesUnique(sourcePath, targetPath);
 		List<KmerPathNode> source = positionSplit(sourcePath);
 		List<KmerPathNode> target = positionSplit(targetPath);
 		IntSortedSet kmerStartPositions = new IntRBTreeSet();
@@ -227,6 +231,13 @@ public abstract class CollapseIterator implements PeekingIterator<KmerPathNode> 
 				unprocessed.add(target.get(i));
 			}
 		}
+	}
+	private void assertKmerPathNodesUnique(List<KmerPathSubnode> sourcePath, List<KmerPathSubnode> targetPath) {
+		Set<KmerPathNode> unique = Sets.newIdentityHashSet();
+		for (KmerPathSubnode sn : Iterables.concat(sourcePath, targetPath)) {
+			unique.add(sn.node());
+		}
+		assert(unique.size() == sourcePath.size() + targetPath.size());
 	}
 	/**
 	 * Ensures that the 

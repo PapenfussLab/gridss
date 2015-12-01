@@ -3,7 +3,6 @@ package au.edu.wehi.idsv.configuration;
 import org.apache.commons.configuration.Configuration;
 
 import au.edu.wehi.idsv.AssemblyAlgorithm;
-import au.edu.wehi.idsv.EvidenceSubset;
 import au.edu.wehi.idsv.RealignedRemoteSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.RemoteEvidence;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
@@ -28,6 +27,7 @@ public class AssemblyConfiguration {
 		excludeNonSupportingEvidence = config.getBoolean("excludeNonSupportingEvidence");
 		anchorLength = config.getInt("anchorLength");
 		maxExpectedBreakendLengthMultiple = config.getFloat("maxExpectedBreakendLengthMultiple");
+		trackEvidenceID = config.getBoolean("trackEvidenceID");
 	}
 	public AnchorRealignmentConfiguration anchorRealignment;
 	public SubgraphAssemblyConfiguration subgraph;
@@ -76,6 +76,10 @@ public class AssemblyConfiguration {
 	 * Expected max size is 1.0 for single-sided assembly and 2.0 for assembly from both directions 
 	 */
 	public float maxExpectedBreakendLengthMultiple = 2.5f;
+	/**
+	 * Retains evidenceID tracking information after evidence rehydration
+	 */
+	public boolean trackEvidenceID;
 	public boolean applyFilters(SAMRecordAssemblyEvidence evidence) {
 		SAMRecordAssemblyEvidence localEvidence = evidence;
 		if (evidence instanceof RemoteEvidence) {
@@ -83,12 +87,12 @@ public class AssemblyConfiguration {
 			localEvidence = ((RealignedRemoteSAMRecordAssemblyEvidence)evidence).asLocal();
 		}
 		boolean filtered = applyBasicFilters(evidence);
-		if (localEvidence.getAssemblyAnchorLength() == 0 && localEvidence.getBreakendSequence().length <= localEvidence.getAssemblyReadPairLengthMax(EvidenceSubset.ALL)) {
+		if (localEvidence.getAssemblyAnchorLength() == 0 && localEvidence.getBreakendSequence().length <= localEvidence.getAssemblyReadPairLengthMax()) {
 			evidence.filterAssembly(VcfFilter.ASSEMBLY_TOO_SHORT); // assembly length = 1 read
 			filtered = true;
 		}
-		if (localEvidence.getAssemblySupportCountRemote(EvidenceSubset.ALL) > 0 &&
-				localEvidence.getAssemblySupportCountRemote(EvidenceSubset.ALL) == localEvidence.getAssemblySupportCountSoftClip(EvidenceSubset.ALL) + localEvidence.getAssemblySupportCountReadPair(EvidenceSubset.ALL)) {
+		if (localEvidence.getAssemblySupportCountReadPair() == 0 &&
+				localEvidence.getAssemblySupportCountSoftClipRemote() == localEvidence.getAssemblySupportCountSoftClip()) { 
 			// assembly is entirely made of remote support with no reads mapping to our location at all
 			evidence.filterAssembly(VcfFilter.ASSEMBLY_REMOTE);
 			filtered = true;
