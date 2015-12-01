@@ -33,11 +33,15 @@ maxPositionDifference_LengthOrEndpoint <- 2.5*libstddev
 
 rootdir <- ifelse(as.character(Sys.info())[1] == "Windows", "W:/", "~/")
 
+kvcfs <- NULL
 vcfs <- NULL
 pwd <- getwd()
 setwd(paste0(rootdir, "i/data.na12878"))
 metadata <- LoadMetadata()
 vcfs <- LoadVcfs(metadata, existingVcfs=vcfs)
+setwd(paste0(rootdir, "i/data.assembly"))
+kmetadata <- LoadMetadata()
+kvcfs <- LoadVcfs(kmetadata, existingVcfs=kvcfs)
 setwd(pwd)
 
 ucscgapblacklist <- import(paste0(rootdir, "projects/reference_genomes/human/blacklist_annotations/hg19_ucsc_gap_table.bed"))
@@ -103,25 +107,25 @@ vcfs <- lapply(vcfs, function(vcf) {
   return(vcf)
 })
 # gridss evidence breakdown
-gridssassemblyvcfs <- unlist(recursive=FALSE, lapply(vcfs, function(vcf) {
-    if (is.null(attr(vcf, "metadata")) || is.na(vcf@metadata$CX_CALLER) || str_split(vcf@metadata$CX_CALLER, "/")[[1]][1] !="gridss") return(NULL)
-    if (!is.na(vcf@metadata$CX_CALLER_ARGS) && !is.null(vcf@metadata$CX_CALLER_ARGS) && vcf@metadata$CX_CALLER_ARGS == "assembly.method") {
-      attr(vcf, "metadata")$CX_CALLER <- "Windowed de Bruijn graph"  
-    } else {
-      attr(vcf, "metadata")$CX_CALLER <- "Positional de Bruijn graph"  
-    }
-    df <- gridss.vcftodf(vcf)
-    return (lapply(list(
-      list(f=function(df) df$AS + df$RAS > 0 & df$RP + df$SR + df$RSR > 0, label = "RP/SR supported assemblies"),
-      list(f=function(df) df$AS + df$RAS > 0, label = "All assemblies")
-      ), function(tuple) {
-      ovcf <- vcf[tuple$f(df)]
-      rowRanges(ovcf)$FILTER <- "."
-      attr(ovcf, "metadata")$CX_CALLER <- paste0(attr(ovcf, "metadata")$CX_CALLER, "$", tuple$label)
-      return(ovcf)
-    }))
-  }))
-gridssassemblyvcfs <- gridssassemblyvcfs[!sapply(gridssassemblyvcfs, is.null)] 
+# gridssassemblyvcfs <- unlist(recursive=FALSE, lapply(vcfs, function(vcf) {
+#     if (is.null(attr(vcf, "metadata")) || is.na(vcf@metadata$CX_CALLER) || str_split(vcf@metadata$CX_CALLER, "/")[[1]][1] !="gridss") return(NULL)
+#     if (!is.na(vcf@metadata$CX_CALLER_ARGS) && !is.null(vcf@metadata$CX_CALLER_ARGS) && vcf@metadata$CX_CALLER_ARGS == "assembly.method") {
+#       attr(vcf, "metadata")$CX_CALLER <- "Windowed de Bruijn graph"  
+#     } else {
+#       attr(vcf, "metadata")$CX_CALLER <- "Positional de Bruijn graph"  
+#     }
+#     df <- gridss.vcftodf(vcf)
+#     return (lapply(list(
+#       list(f=function(df) df$AS + df$RAS > 0 & df$RP + df$SR + df$RSR > 0, label = "RP/SR supported assemblies"),
+#       list(f=function(df) df$AS + df$RAS > 0, label = "All assemblies")
+#       ), function(tuple) {
+#       ovcf <- vcf[tuple$f(df)]
+#       rowRanges(ovcf)$FILTER <- "."
+#       attr(ovcf, "metadata")$CX_CALLER <- paste0(attr(ovcf, "metadata")$CX_CALLER, "$", tuple$label)
+#       return(ovcf)
+#     }))
+#   }))
+# gridssassemblyvcfs <- gridssassemblyvcfs[!sapply(gridssassemblyvcfs, is.null)] 
 gridssbreakdownvcfs <- unlist(recursive=FALSE, lapply(vcfs, function(vcf) {
   if (is.null(attr(vcf, "metadata")) || is.na(vcf@metadata$CX_CALLER) || str_split(vcf@metadata$CX_CALLER, "/")[[1]][1] !="gridss") return(NULL)
   if (!is.na(vcf@metadata$CX_CALLER_ARGS) && !is.null(vcf@metadata$CX_CALLER_ARGS) && vcf@metadata$CX_CALLER_ARGS == "assembly.method") return (NULL) # exclude subgraph assembly
@@ -144,7 +148,16 @@ gridssbreakdownvcfs <- unlist(recursive=FALSE, lapply(vcfs, function(vcf) {
       return(ovcf)
     }))
   }))
-gridssbreakdownvcfs <- gridssbreakdownvcfs[!sapply(gridssbreakdownvcfs, is.null)] 
+kvcfs <- lapply(kvcfs, function(vcf) {
+  vcf <- vcf[isDeletionLike(vcf, minsize), ]
+  if (is.null(attr(vcf, "metadata")) || is.na(vcf@metadata$CX_CALLER) || str_split(vcf@metadata$CX_CALLER, "/")[[1]][1] !="gridss") return(vcf)
+  # assembly calls only
+  df <- gridss.vcftodf(vcf)
+  score <- df$ASQ + df$RASQ
+  rowRanges(vcf)$QUAL <- score
+  vcf <- vcf[score > 0,]
+  return(vcf)
+})
 
 
 truthlist_filtered <- CalculateTruthSummary(vcfs, blacklist=blacklist, maxerrorbp=maxPositionDifference_LengthOrEndpoint, maxerrorpercent=maxLengthRelativeDifference, ignoreFilters=FALSE, ignore.strand=TRUE) # breakdancer does not specify strand
@@ -202,7 +215,7 @@ countBedHits <- function(gr, bed) {
   result[counts$queryHits] <- counts$hitcount
   return(result)
 }
-longReadRoc <- function(vcflist) {
+longReadBed <- function(vcflist) {
   # extract deletion calls from VCFs
   dfdelcalls <- rbindlist(lapply(vcflist, function(vcf) {
     caller <- attr(vcf, "metadata")$CX_CALLER
@@ -220,11 +233,21 @@ longReadRoc <- function(vcflist) {
       pos2=grh$callPosition,
       id=gro$vcfid,
       filtered=!(gro$FILTER %in% c(".", "PASS")),
+      assembly=attr(vcf, "metadata")$CX_ASSEMBLY_METHOD,
+      kmer=attr(vcf, "metadata")$CX_K,
       row.names=NULL)
     return(df)
   }))
   #write.table(dfdelcalls, paste0(rootdir, "i/data.na12878/tovalidate.bedpe"), sep='\t', quote=FALSE, row.names=FALSE)
-  delbed <- GRanges(seqnames=dfdelcalls$chrom2,ranges=IRanges(start=pmin(dfdelcalls$pos1, dfdelcalls$pos2), end=pmax(dfdelcalls$pos1, dfdelcalls$pos2)), caller=dfdelcalls$name, QUAL=dfdelcalls$score, length=dfdelcalls$length, filtered=dfdelcalls$filtered)
+  delbed <- GRanges(seqnames=dfdelcalls$chrom2,
+                    ranges=IRanges(start=pmin(dfdelcalls$pos1, dfdelcalls$pos2), end=pmax(dfdelcalls$pos1, dfdelcalls$pos2)),
+                    caller=dfdelcalls$name,
+                    QUAL=dfdelcalls$score,
+                    length=dfdelcalls$length,
+                    filtered=dfdelcalls$filtered,
+                    id=dfdelcalls$id,
+                    assembly=dfdelcalls$assembly,
+                    kmer=dfdelcalls$kmer)
   delbed <- delbed[abs(delbed$length) >= minsize,]
   # match CalculateTruth blacklisting
   # any overlap
@@ -242,19 +265,25 @@ longReadRoc <- function(vcflist) {
   delbed$tp <- ifelse(delbed$sr >= 3 | delbed$sp >= 7, 1, 0)
   delbed$fp <- 1 - delbed$tp
   delbed <- delbed[order(-delbed$QUAL),]
-  longReadRoc_delroc <- data.table(as.data.frame(mcols(delbed)))
-  longReadRoc_delroc <- longReadRoc_delroc[!longReadRoc_delroc$blacklisted,]
-  tmp <- longReadRoc_delroc[!longReadRoc_delroc$filtered & longReadRoc_delroc$caller %in% unique(longReadRoc_delroc[longReadRoc_delroc$filtered,]$caller),]
-  tmp$filtered <- TRUE
-  longReadRoc_delroc <- rbind(longReadRoc_delroc, tmp)
-  longReadRoc_delroc <- longReadRoc_delroc[order(-longReadRoc_delroc$QUAL),]
-  longReadRoc_delroc[,`:=`(tp=cumsum(tp), fp=cumsum(fp), QUAL=cummin(QUAL)), by=c("caller", "filtered")]
-  longReadRoc_delroc <- longReadRoc_delroc[!duplicated(longReadRoc_delroc[, c("caller", "filtered", "QUAL"), with=FALSE], fromLast=TRUE),] # take only one data point per QUAL
-  longReadRoc_delroc$Filter <- ifelse(longReadRoc_delroc$filtered, "Including Filtered", "Default")
-  longReadRoc_delroc$precision <- longReadRoc_delroc$tp/(longReadRoc_delroc$tp+longReadRoc_delroc$fp)
-  return (longReadRoc_delroc)
+  return(delbed)
 }
-delroc <- longReadRoc(vcfs)
+bedToROC <- function(delbed) {
+  longReadBed_delroc <- data.table(as.data.frame(mcols(delbed)))
+  longReadBed_delroc <- longReadBed_delroc[!longReadBed_delroc$blacklisted,]
+  tmp <- longReadBed_delroc[!longReadBed_delroc$filtered & longReadBed_delroc$caller %in% unique(longReadBed_delroc[longReadBed_delroc$filtered,]$caller),]
+  tmp$filtered <- TRUE
+  longReadBed_delroc <- rbind(longReadBed_delroc, tmp)
+  longReadBed_delroc <- longReadBed_delroc[order(-longReadBed_delroc$QUAL),]
+  longReadBed_delroc_bylist = c("caller", "filtered", "assembly", "kmer")
+  longReadBed_delroc[,`:=`(tp=cumsum(tp), fp=cumsum(fp), QUAL=cummin(QUAL)), longReadBed_delroc_bylist]
+  longReadBed_delroc <- longReadBed_delroc[!duplicated(longReadBed_delroc[, c(longReadBed_delroc_bylist, "QUAL"), with=FALSE], fromLast=TRUE),] # take only one data point per QUAL
+  longReadBed_delroc$Filter <- ifelse(longReadBed_delroc$filtered, "Including Filtered", "Default")
+  longReadBed_delroc$precision <- longReadBed_delroc$tp/(longReadBed_delroc$tp+longReadBed_delroc$fp)
+  return (longReadBed_delroc)
+}
+###########
+# Moleculo/PacBio truth set
+delroc <- bedToROC(longReadBed(vcfs))
 ggplot(delroc) + aes(x=fp, y=tp, color=caller, linetype=Filter) + geom_line() +
   coord_cartesian(xlim=c(0, 1000), ylim=c(0, 3000))
   labs(x="False Positives", y="True Positives", title="NA12878 deletions PacBio/Moleculo validated")
@@ -265,7 +294,9 @@ ggplot(delroc) + aes(x=tp, y=precision, color=caller, linetype=Filter) + geom_li
 #  scale_color_brewer(palette="Set2") +
 ggsave(paste0("na12878_prec_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ".pdf"), width=7, height=5)
 
-bddelroc <- longReadRoc(gridssbreakdownvcfs)
+###########
+# Gridss breakdown by support type
+bddelroc <- bedToROC(longReadBed(gridssbreakdownvcfs))
 bddelroc$Scoring <- ifelse(str_detect(bddelroc$caller, "[$]"), "Read Count", "Bayesian")
 bddelroc$caller <- str_extract(bddelroc$caller, "[^$]*")
 bddelroc <- bddelroc[bddelroc$QUAL > 0,] # filter out calls that wouldn't have been called according to that particular scoring scheme
@@ -280,26 +311,39 @@ ggplot(bddelroc) + aes(x=tp, y=precision, color=caller, linetype=Scoring) + geom
   labs(x="True Positives", y="Precision", title="gridss support breakdown")
 ggsave(paste0("na12878_gridss_prec_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ".pdf"), width=7, height=5)
 
-assdelroc <- longReadRoc(gridssassemblyvcfs)
-assdelroc$Filter <- str_extract(assdelroc$caller, "[^$]*$")
-assdelroc$caller <- str_extract(assdelroc$caller, "[^$]*")
-ggplot(assdelroc) + aes(x=fp, y=tp, color=caller, linetype=Filter) + geom_line(size=3) +
+###########
+# Gridss assembly approaches
+#assdelroc <- bedToROC(longReadBed(gridssassemblyvcfs))
+#assdelroc$Filter <- str_extract(assdelroc$caller, "[^$]*$")
+#assdelroc$caller <- str_extract(assdelroc$caller, "[^$]*")
+#ggplot(assdelroc) + aes(x=fp, y=tp, color=caller, linetype=Filter) + geom_line(size=3) +
+#coord_cartesian(xlim=c(0, 1000), ylim=c(0, 3000)) + 
+# scale_color_brewer(palette="Set2") +
+#  labs(x="False Positives", y="True Positives", title="gridss assembly comparison")
+#ggsave(paste0("na12878_assembly_tp_fp_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ".pdf"), width=7, height=5)
+#ggplot(assdelroc) + aes(x=tp, y=precision, color=caller, linetype=Filter) + geom_line(size=2) + 
+#  scale_color_brewer(palette="Set2") +
+#  labs(x="True Positives", y="Precision", title="gridss assembly comparison")
+#ggsave(paste0("na12878_assembly_prec_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ".pdf"), width=7, height=5)
+
+
+###########
+# Gridss assembly and kmer length comparison
+kdelroc <- bedToROC(longReadBed(kvcfs))
+ggplot(kdelroc[kdelroc$Filter=="Including Filtered"]) + aes(x=fp, y=tp, color=kmer, linetype=assembly) + geom_line() +
   coord_cartesian(xlim=c(0, 1000), ylim=c(0, 3000)) + 
   scale_color_brewer(palette="Set2") +
-  labs(x="False Positives", y="True Positives", title="gridss assembly comparison")
-ggsave(paste0("na12878_assembly_tp_fp_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ".pdf"), width=7, height=5)
+  labs(x="False Positives", y="True Positives", title="gridss assembly kmer size comparison")
+ggsave(paste0("na12878_gridss_kmer_tp_fp_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ".pdf"), width=7, height=5)
 
-ggplot(assdelroc) + aes(x=tp, y=precision, color=caller, linetype=Filter) + geom_line(size=2) + 
+ggplot(kdelroc[kdelroc$Filter=="Including Filtered"]) + aes(x=tp, y=precision, color=kmer, linetype=assembly) + 
+  geom_line() + 
   scale_color_brewer(palette="Set2") +
-  labs(x="True Positives", y="Precision", title="gridss assembly comparison")
-ggsave(paste0("na12878_assembly_prec_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ".pdf"), width=7, height=5)
+  labs(x="True Positives", y="Precision", title="gridss assembly kmer size comparison")
+ggsave(paste0("na12878_gridss_kmer_prec_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ".pdf"), width=7, height=5)
 
 
-ggplot(as.data.frame(delbed[delbed$caller=="gridss" & !delbed$filtered,])) + aes(x=QUAL, fill=ifelse(tp, "_tp", "fp")) + geom_histogram(binwidth=100) + scale_x_continuous(limits=c(0, 3000))
-ggsave("na12878_gridss_hq_treshold.png")
->>>>>>> .theirs
-
-
+###########
 # precision thresholds
 delroc[delroc$precision > 0.95,][!duplicated(paste(delroc[delroc$precision > 0.95,]$caller, delroc[delroc$precision > 0.95,]$Filter), fromLast=TRUE),]
 ggplot(as.data.frame(delbed[delbed$caller=="gridss" & !delbed$filtered,])) + aes(x=QUAL, fill=ifelse(tp, "_tp", "fp")) + geom_histogram(binwidth=100) + scale_x_continuous(limits=c(0, 3000))
@@ -325,19 +369,21 @@ mean(dtbuffer$trackerActive)
 mean(dtbuffer$trackerLookupSize)
 
 
+
 # gridss FPR by QUAL
-gridssvcf_only <- lapply(vcfs, function(vcf) {
-  if (is.na(attr(vcf, "metadata")$CX_CALLER)) return(vcf)
+gridssvcf_binned <- lapply(vcfs, function(vcf) {
+  if (is.na(attr(vcf, "metadata")$CX_CALLER)) return(NULL)
   if (attr(vcf, "metadata")$CX_CALLER == "gridss/0.9.0") {
     rowRanges(vcf)$QUAL <- floor(rowRanges(vcf)$QUAL / 100) * 100
     return (vcf)
   }
   return(NULL)
 })
-gridssvcf_only <- gridssvcf_only[!sapply(gridssvcf_only, is.null)]
-bindelroc <- longReadRoc(gridssvcf_only)
+gridssvcf_binned <- gridssvcf_binned[!sapply(gridssvcf_binned, is.null)]
+expect_that(length(gridssvcf_binned), equals(1))
+bindelroc <- longReadBed(gridssvcf_binned)
+bindelroc <- bedToROC(bindelroc)
 bindelroc <- bindelroc[bindelroc$Filter == "Default",]
-
 bindelroclookup <- bindelroc
 bindelroclookup[nrow(bindelroclookup)]$QUAL <- 1000000
 bindelroclookup <- bindelroclookup[order(-bindelroclookup$QUAL),]
@@ -347,4 +393,72 @@ bindelroc$tpr <- bindelroc$dtp / (bindelroc$dtp  + bindelroc$dfp )
 ggplot(bindelroc) + aes(y=tpr, x=QUAL) + geom_line() + scale_x_continuous(limits=c(500, 5000)) +
   labs(title="Gridss TPR by QUAL score", y="True Positive Rate", x="QUAL score")
 ggsave("gridss_tpr_by_qual.png")
+
+###########
+# Logicistic regression of gridss calls
+# http://www.r-bloggers.com/how-to-perform-a-logistic-regression-in-r/
+library(ROCR) # install.packages("ROCR")
+library(arm)
+gridssvcf <- lapply(vcfs, function(vcf) {
+  if (is.na(attr(vcf, "metadata")$CX_CALLER)) return(NULL)
+  if (attr(vcf, "metadata")$CX_CALLER == "gridss/0.9.0") {
+    return (vcf)
+  }
+  return(NULL)
+})
+gridssvcf <- gridssvcf[!sapply(gridssvcf, is.null)]
+expect_that(length(gridssvcf), equals(1))
+gridsslrbed <- longReadBed(gridssvcf)
+gridssdf <- gridss.vcftodf(gridssvcf[[1]])
+gridssdf <- gridssdf[as.character(gridsslrbed$id),]
+gridssdf$blacklisted <- gridsslrbed$blacklisted
+gridssdf$LongReadSupport <- gridsslrbed$tp
+gridssdf$rp <- gridssdf$RP > 0
+gridssdf$sr <- gridssdf$SR + gridssdf$RSR > 0
+gridssdf$AQ <- gridssdf$ASQ + gridssdf$RASQ
+gridssdf$SQ <- gridssdf$SRQ + gridssdf$RSRQ
+gridssdf$LOW_QUAL <- gridssdf$QUAL < 1000
+gridssdf$SPV <- NULL
+modeldf <- gridssdf[,!(names(gridssdf) %in% c("variantid","POS","FILTER","EVENT","mate","SOMATIC","SVTYPE","HOMSEQ", "INSSEQ", "confidence"))]
+#modeldf <- modeldf[modeldf$QUAL > 1000,]
+for (col in c("QUAL","HOMLEN","REF","REFPAIR","SPV","CQ","BQ","AS","RP","SR","RAS","RSR","ASRP","ASSR","ASCRP","ASCSR","ASQ","RPQ","SRQ","RASQ","RSRQ","BA","BUM","BSC","BAQ","BUMQ","BSCQ","size")) {
+  modeldf[col] <- (modeldf[col] - mean(unlist(modeldf[col]))) / sd(unlist(modeldf[col]))
+}
+traindf <- modeldf[seq.int(1, nrow(modeldf), 2),]
+testdf <- modeldf[seq.int(2, nrow(modeldf), 2),]
+# Try a bunch of models
+baseline <- NULL
+for (modelpara in c(
+  LongReadSupport ~ QUAL, # 0.968486742605028 baseline area under curve # 50% QUAL threshold is 1147
+  LongReadSupport ~ ASQ + RASQ,  # worse since no low quality tail
+  #LongReadSupport ~ QUAL + blacklisted, # not meaningful as the blacklisted filter was already applied at runtime
+  LongReadSupport ~ CQ,  # strangely better than QUAL
+  LongReadSupport ~ assembly, # (only two points)
+  LongReadSupport ~ QUAL + assembly,
+  LongReadSupport ~ AQ + RPQ + SQ,
+  LongReadSupport ~ AQ + RPQ + SQ + BUMQ + BSCQ,
+  LongReadSupport ~ RP,
+  LongReadSupport ~ SR + RSR,
+  LongReadSupport ~ RP + SR + RSR,
+  LongReadSupport ~ ASSR + ASRP,
+  LongReadSupport ~ ASSR + ASRP + ASCRP + ASCSR,
+  LongReadSupport ~ ASSR + ASRP + RP + SR + RSR + BUM + BSC + ASCRP + ASCSR,
+  LongReadSupport ~ QUAL + BUMQ + BSCQ + rp + sr + rp + assembly,
+  LongReadSupport ~ LOW_QUAL * .,
+  LongReadSupport ~ ., # prediction from a rank-deficient fit may be misleading
+  LongReadSupport ~ QUAL + HOMLEN + REF + REFPAIR + AS + RP + SR + ASRP + ASSR + ASCRP + ASCSR + ASQ + RPQ + SQ + BUM + BUMQ + BSC + BSCQ + rp + sr + assembly,
+  LongReadSupport ~ sr * QUAL,
+  LongReadSupport ~ sr * (AQ + RPQ + SQ),
+  LongReadSupport ~ (assembly + sr) * (AQ + RPQ + SQ),
+  LongReadSupport ~ QUAL + assembly + sr + (QUAL + assembly + sr)^2
+  )) { 
+  model <- glm(formula=modelpara, family=binomial(link='logit'), data=traindf)
+  testdf$response <- predict(model, newdata=testdf, type='response')
+  plot(performance(prediction(testdf$response, testdf$LongReadSupport), measure = "tpr", x.measure = "fpr"))
+  auc <- performance(prediction(testdf$response, testdf$LongReadSupport), measure = "auc")@y.values[[1]]
+  if (is.null(baseline)) { baseline <- auc }
+  print(paste(paste(as.character(modelpara), collapse=" "), auc, auc - baseline))
+}
+coefplot(model)
+
 
