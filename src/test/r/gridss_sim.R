@@ -1,3 +1,17 @@
+##################
+# Processing steps (approximate runtime: 300h wall, 3300h CPU)
+##################
+# - Follow common.R processing steps
+# - Edit gehumanchr12variants.sh to only generate homBP & homBP_SINE simulations
+# - ./gehumanchr12variants.sh fullmatrix
+# - ./genreads.sh fullmatrix
+# - ./alignbam.sh fullmatrix
+# - ./sortbam.sh fullmatrix
+# - ./gendownsample.sh fullmatrix
+# - ./call_gridss.sh fullmatrix
+# - Run this script (R requires approximately 130GB of memory for this script)
+
+# http://www.nature.com/nmeth/authors/submit/index.html#formats
 source("libgridss.R")
 #source("libneochromosome.R")
 source("libvcf.R")
@@ -10,8 +24,11 @@ library(foreach)
 library(doParallel) #install.packages("doSNOW")
 #cl <- makeCluster(detectCores(), outfile="")
 #registerDoParallel(cl)
+source("common.R")
 
-theme_set(theme_bw())
+#########################
+# GRIDSS Simulation Data
+########################
 
 pwd <- getwd()
 vcfs_all <- NULL
@@ -23,7 +40,7 @@ setwd(pwd)
 
 vcfs_filtered <- lapply(vcfs_all, function(vcf) vcf[rowRanges(vcf)$FILTER %in% c(".", "PASS")])
 vcfs_assembly_both <- lapply(vcfs_all, function(vcf) {
-	if (is.na(vcf@metadata$CX_CALLER)) return(vcf)
+	if (is.na(attr(vcf, "sourceMetadata")$CX_CALLER)) return(vcf)
 	return(vcf[!is.na(info(vcf)$AS) & !is.na(info(vcf)$RAS),])
 })
 
@@ -53,22 +70,22 @@ be_assembly_rate <- ggplot(calls[calls$tp,]) +
   facet_grid(CX_READ_FRAGMENT_LENGTH ~ CX_READ_LENGTH) +
   scale_y_continuous(labels=percent, expand=c(0, 0)) +  
   labs(title="Breakend assembly rate, k=25", y="", fill="Breakend assembly count")
-ggsave("gridss_breakpoint_assembly_rate_reads.png", width=10, height=7.5, plot=bp_assembly_rate +
+saveplot("sim_gridss_breakpoint_assembly_rate_reads", width=10, height=7.5, plot=bp_assembly_rate +
          geom_bar(position='fill', binwidth=1) +
          aes(x=SR+RSR+RP+BUM+BSC) + 
          scale_x_continuous(limits=c(1, 100)) + 
          labs(x="Supporting reads"))
-ggsave("gridss_breakpoint_assembly_rate_qual.png", width=10, height=7.5, plot=bp_assembly_rate +
+saveplot("sim_gridss_breakpoint_assembly_rate_qual", width=10, height=7.5, plot=bp_assembly_rate +
          geom_bar(position='fill') + 
          aes(x=QUAL-ASQ-RASQ) + 
          scale_x_log10(limits=c(25, max(calls$QUAL-calls$ASQ-calls$RASQ))) +
          labs(x="Total evidence quality"))
-ggsave("gridss_assembly_rate_reads.png", width=10, height=7.5, plot=be_assembly_rate +
+saveplot("sim_gridss_assembly_rate_reads", width=10, height=7.5, plot=be_assembly_rate +
          geom_bar(position='fill', binwidth=1) +
          aes(x=SR+RSR+RP+BUM+BSC) + 
          scale_x_continuous(limits=c(1, 100)) + 
          labs(x="Supporting reads"))
-ggsave("gridss_assembly_rate_qual.png", width=10, height=7.5, plot=be_assembly_rate +
+saveplot("sim_gridss_assembly_rate_qual", width=10, height=7.5, plot=be_assembly_rate +
          geom_bar(position='fill') + 
          aes(x=QUAL-ASQ-RASQ) + 
          scale_x_log10(limits=c(25, max(calls$QUAL-calls$ASQ-calls$RASQ))) +
@@ -81,7 +98,7 @@ ggplot(calls) +
   scale_x_log10() +
   scale_y_log10() + 
   labs(x="Called QUAL (including assembly)", y="Breakend QUAL", title="Assembly rate")
-ggsave("assembly_rate_called_QUAL.png", width=10, height=7.5)
+saveplot("sim_gridss_assembly_rate_called_QUAL", width=10, height=7.5)
 
 ### Debugging: what calls are missed by positional assembly, but picked up by subgraph assembly?
 # posTruth <- truthlist_passfilters$truth[truthlist_passfilters$truth$CX_CALLER=="gridss Positional",]
@@ -110,7 +127,7 @@ plot_f1_roc <- function(truthcalls, title, filename) {
       facet_grid(CX_REFERENCE_VCF_VARIANTS + CX_ALIGNER ~ CX_READ_FRAGMENT_LENGTH) +
       scale_x_continuous(limits=c(0, 0.05)) + 
       labs(y="sensitivity", title=paste("ROC by call quality threshold 2x", rl, "bp", title), color="read depth")
-    ggsave(paste0("gridss_roc_rl", rl, "_", filename, ".png"), width=10, height=7.5)
+    saveplot(paste0("sim_gridss_roc_rl", rl, "_", filename, ""), width=10, height=7.5)
   }
   f1 <- data.table(roc)[, j=list(f1=max(f1)), by=bylist]
   f1$QUAL <- merge(roc, f1, by=c(bylist, "f1"))[, j=list(QUAL=max(QUAL)), by=bylist]$QUAL
@@ -121,7 +138,7 @@ plot_f1_roc <- function(truthcalls, title, filename) {
     scale_x_continuous(limits=c(0, 100), breaks=c(4,8,15,30,60)) + 
     facet_grid(CX_READ_LENGTH ~ CX_REFERENCE_VCF_VARIANTS) +
     labs(y="Maximum F1 score", x="Read Depth", title=paste("gridss F-score", title), shape="aligner", color="Fragment Size")
-  ggsave(paste0("gridss_maxf1_", filename, ".png"), width=10, height=7.5)
+  saveplot(paste0("sim_gridss_maxf1_", filename, ""), width=10, height=7.5)
 }
 plot_f1_roc(truth_all, " (all calls)", "all")
 plot_f1_roc(truth_filtered, " (assembly support)", "assembly")
@@ -141,7 +158,7 @@ for (rl in unique(dtprecision$CX_READ_LENGTH)) {
     geom_line() + geom_point() +
     facet_grid(CX_READ_LENGTH + CX_READ_FRAGMENT_LENGTH ~ CX_REFERENCE_VCF_VARIANTS) +
     labs(title=paste("Precision by assembly status 2x", rl, "bp"), y="Read Depth") + scale_x_log10()
-  ggsave(paste0("gridss_assembly_precision_rl", rl, ".png"), width=10, height=7.5)
+  saveplot(paste0("sim_gridss_assembly_precision_rl", rl, ""), width=10, height=7.5)
 }
 
 dtsens <- calls_all[, list(count=sum(tp)), by=c("assembly", bylistsensprec)]
@@ -154,11 +171,11 @@ for (rl in unique(dtsens$CX_READ_LENGTH)) {
     geom_line() + geom_point() +
     facet_grid(CX_READ_LENGTH + CX_READ_FRAGMENT_LENGTH ~ CX_REFERENCE_VCF_VARIANTS) +
     labs(title=paste("Sensitivity by assembly status 2x", rl, "bp"), y="Read Depth") + scale_x_log10()
-  ggsave(paste0("gridss_assembly_sensitivity_rl", rl, ".png"), width=10, height=7.5)
+  saveplot(paste0("sim_gridss_assembly_sensitivity_rl", rl, ""), width=10, height=7.5)
 }
 
 
-
+#save.image("~/gridss_sim.RData")
 
 
 

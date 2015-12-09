@@ -27,6 +27,8 @@ READ_DEPTHS="$STARTING_DEPTH 60 30 15 8 4"
 READ_LENGTHS="36 50 75 100 150 250"
 FRAGMENT_SIZE="500 400 300 250 200 150"
 FULL_MATRIX=0
+GRIDSS_METHODS=Positional
+GRIDSS_KMER=25
 
 MIN_EXCLUDED_CALL_DEPTH=130 #temp hack so we're not waiting 3 weeks for full 100x runs of everything
 # override default settings

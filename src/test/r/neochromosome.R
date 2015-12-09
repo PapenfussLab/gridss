@@ -1,53 +1,45 @@
+##################
+# Processing steps
+##################
+# 1) download Socrates supplementary materials spreadsheets # PMID: 25517748
+# 2) download fastq http://www.ebi.ac.uk/ena/data/view/ERP004006 # PMID: 25517748
+# 3) Align against hg19. 778, T1000 aligned using bowtie2, GOT3 aligned with bwa. One BAM per library
+# 4) Remove duplicates using picard tools.
+# 5) run gridss with one input file per library. Explicit fragment size threshold for 778 were {500,350,350,750,700,700}
+# 6) run this script
+# 7) generate excel pivot table from dtsummarised (neo_summarised_200.csv)
+
 #source("http://bioconductor.org/biocLite.R")
 #biocLite("rtracklayer")
 library(rtracklayer)
+#setwd("W:/dev/gridss/src/test/R/") # location of this script
 source("libgridss.R")
 source("libneochromosome.R")
 source("libvcf.R")
+source("common.R")
 
-#setwd("W:/dev/gridss/src/test/R/")
+socratesSupplementaryMaterialsLocation <- "C:/dev/neochromosome/"
+location <- list(
+  sample778="W:/Papenfuss_lab/projects/liposarcoma/data/gridss/778/778.vcf",
+  sampleT1000="W:/Papenfuss_lab/projects/liposarcoma/data/gridss/T1000/T1000.vcf",
+  sampleGOT3="W:/Papenfuss_lab/projects/liposarcoma/data/gridss/778/778.vcf")
 
-theme_set(theme_bw())
-
-minqual <- 250 # 140 # 35 QUAL * 7 reads
+minqual <- 250
 matchmaxgaps <- c(200) #c(1, 10, 50, 100, 200))
 bed <- NULL
 gridss <- NULL
 graphs <- TRUE
 
-sample <- "778"
-rp <- getrpcalls("C:/dev/neochromosome/mmc3.xlsx", "778 (DR)")
-# no need to explicitly remove these calls as they're not in CGRs
-#rp <- rp[!(seqnames(rp) == seqnames(rp[rp$mate,]) & seqnames(rp) %in% c("chr7", "chr22")),] # remove 7 and 22 intrachromosomal arrangements that had really low limits
-cgr <- getcgr("C:/dev/neochromosome/mmc4.xlsx", "778_CGRs")
-cn <- getcn("C:/dev/neochromosome/mmc4.xlsx", "778_CN")
-vcf <- readVcf("W:/Papenfuss_lab/projects/liposarcoma/data/gridss/778/778.vcf", "hg19")
-for (matchmaxgap in matchmaxgaps) {
-  out <- go(sample, vcf, rp, cgr, minimumEventSize=500, matchmaxgap=matchmaxgap, graphs=graphs, minqual=minqual)
-  bed <- rbind(bed, as.data.frame(out$bed))
-  gridss <- rbind(gridss, out$gridss)
-}
-
-sample <- "T1000"
-rp <- getrpcalls("C:/dev/neochromosome/mmc3.xlsx", "T1000 (DR)")
-cgr <- getcgr("C:/dev/neochromosome/mmc4.xlsx", "T1000_CGRs")
-cn <- getcn("C:/dev/neochromosome/mmc4.xlsx", "T1000_CN")
-vcf <- readVcf("Z:/projects/liposarcoma/data/gridss/T1000/T1000.vcf", "hg19")
-for (matchmaxgap in matchmaxgaps) {
-  out <- go(sample, vcf, rp, cgr, minimumEventSize=500, matchmaxgap=matchmaxgap, graphs=graphs, minqual=minqual)
-  bed <- rbind(bed, as.data.frame(out$bed))
-  gridss <- rbind(gridss, out$gridss)
-}
-
-sample <- "GOT3"
-rp <- getrpcalls("C:/dev/neochromosome/mmc3.xlsx", "GOT3 (DR)")
-cgr <- getcgr("C:/dev/neochromosome/mmc4.xlsx", "GOT3_CGRs")
-cn <- getcn("C:/dev/neochromosome/mmc4.xlsx", "GOT3_CN")
-vcf <- readVcf("W:/Papenfuss_lab/projects/liposarcoma/data/gridss/GOT3/bwa/GOT3-bwa.vcf", "hg19")
-for (matchmaxgap in matchmaxgaps) {
-  out <- go(sample, vcf, rp, cgr, minimumEventSize=500, matchmaxgap=matchmaxgap, graphs=graphs, minqual=minqual)
-  bed <- rbind(bed, as.data.frame(out$bed))
-  gridss <- rbind(gridss, out$gridss)
+for (sample in c("778", "T1000", "GOT3")) {
+  rp <- getrpcalls(paste0(socratesSupplementaryMaterialsLocation, "mmc3.xlsx"), paste0(sample," (DR)")) 
+  cgr <- getcgr(paste0(socratesSupplementaryMaterialsLocation, "mmc4.xlsx"), paste0(sample,"_CGRs"))
+  cn <- getcn(paste0(socratesSupplementaryMaterialsLocation, "mmc4.xlsx"), paste0(sample,"_CN"))
+  vcf <- readVcf(location[[paste0("sample", sample)]], "hg19")
+  for (matchmaxgap in matchmaxgaps) {
+    out <- go(sample, vcf, rp, cgr, minimumEventSize=500, matchmaxgap=matchmaxgap, graphs=graphs, minqual=minqual)
+    bed <- rbind(bed, as.data.frame(out$bed))
+    gridss <- rbind(gridss, out$gridss)
+  }
 }
 
 dtcalls <- rbind(data.frame(sample=bed$sample, assembly=ifelse(bed$spanning, "Spanning assembly", as.character(bed$assembly)), hit="Published"),
@@ -59,7 +51,7 @@ ggplot(dtcalls) +
   facet_wrap(~ sample) +
   geom_bar() +
   labs("Concordance with neochromosome", x="", y="Count", fill="Support")
-ggsave(paste0("neo_summarised_", matchmaxgap, ".png"))
+saveplot(paste0("neo_summarised_", matchmaxgap, ""))
 
 dtsummarised <- rbind(
   data.table(bed)[, list(count=.N, hit=TRUE), by=list(sample, matchmaxgap, assembly, spanning)],
@@ -117,7 +109,7 @@ ggplot(out$gridss[out$gridss$confidence %in% c("High", "Medium") & is.na(out$gri
   aes(x=RP, color=confidence) + 
   geom_histogram() +
   labs(title="Read Pair support for unmatched gridss calls")
-ggsave("rpsupport.png")
+saveplot("neo_rpsupport")
   
 
 

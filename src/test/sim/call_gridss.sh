@@ -2,7 +2,7 @@
 #
 #
 . common.sh
-CALLER=gridss/0.9.0
+CALLER=gridss/0.9.2
 FULL_JAR=~/bin/${CALLER/\//-}-jar-with-dependencies.jar
 
 for BAM in $DATA_DIR/*.sc.bam ; do
@@ -21,16 +21,18 @@ for BAM in $DATA_DIR/*.sc.bam ; do
 	fi
 	CX_BAM=$BAM
 	CX_CALLER=$CALLER
-	#CX_CALLER_ARGS="assembly.method=Subgraph"
-	cx_save
-	XC_OUTPUT=$CX.vcf
-	XC_SCRIPT="rm -rf $CX; mkdir $CX 2>/dev/null; cd $CX;
+	for CX_ASSEMBLY_METHOD in $GRIDSS_METHODS ; do
+		for CX_K in $GRIDSS_KMER ; do
+			cx_save
+			XC_OUTPUT=$CX.vcf
+			XC_SCRIPT="rm -rf $CX; mkdir $CX 2>/dev/null; cd $CX;
 cat > $CX/gridss_custom.properties << EOF
 #variantcalling.minIndelSize = 1
 visualisation.assemblyProgress = true
 visualisation.buffers = true
 visualisation.bufferTrackingItervalInSeconds = 10
-$CX_CALLER_ARGS
+assembly.method=$CX_ASSEMBLY_METHOD
+assembly.k=$CX_K
 EOF
 	java \
 		-ea \
@@ -50,10 +52,9 @@ EOF
 		BLACKLIST=$BLACKLIST \
 		&& \
 	cp $CX/breakend.vcf $CX.vcf
-
-
-
-	"
-	xc_exec
+			"
+			xc_exec
+		done
+	done
 done
 

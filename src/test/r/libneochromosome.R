@@ -7,6 +7,7 @@ library(stringr)
 library(rtracklayer)
 source("libgridss.R")
 source("libvcf.R")
+source("common.R")
 
 # extracts read pair breakpoint calls from the supplementary table
 # creates a breakpoint GRanges object containing
@@ -101,7 +102,7 @@ go <- function(sample, vcf, rp, filterBed=NULL, minimumEventSize, cgrmaxgap=1000
   vennlist$Single <- vennlist$Single[str_detect(vennlist$Single, "((/1)|(o))$")]
   vennlist$NoAssembly <- vennlist$NoAssembly[str_detect(vennlist$NoAssembly, "((/1)|(o))$")]
   if (graphs) {
-    venn.plot <- venn.diagram(x=vennlist, filename = paste0("neo_maxgap", matchmaxgap, "_", "venn_", sample, ".png"))
+    venn.plot <- venn.diagram(x=vennlist, filename = paste0("neo_maxgap", matchmaxgap, "_", "venn_", sample, ""))
     
     if (!file.exists(paste0("neo_maxgap", matchmaxgap, "_",sample, ".additional.both.vcf"))) {
       # don't rewrite until writeVcf trailing tab bug is fixed
@@ -130,25 +131,25 @@ go <- function(sample, vcf, rp, filterBed=NULL, minimumEventSize, cgrmaxgap=1000
 #     theme_bw() +
 #     scale_y_continuous(limits=c(0,1)) +
 #     labs(title=paste0("Sensitivity of curated RP call detection - ", sample))
-#   ggsave(paste0("neo_maxgap", matchmaxgap, "_","rp_roc_", sample, ".png"), width=10, height=7.5)
+#   saveplot(paste0("neo_maxgap", matchmaxgap, "_","rp_roc_", sample, ""), width=10, height=7.5)
   
     ggplot(as.data.frame(mcols(rp)), aes(x=nreads, fill=hits)) +
       geom_histogram() +
       scale_x_log10() + 
       labs(title=paste0("Sensitivity of curated RP call detection - ", sample))
-    ggsave(paste0("neo_rp_hist_", sample, ".png"), width=10, height=7.5)
+    saveplot(paste0("neo_rp_hist_", sample, ""), width=10, height=7.5)
     
     ggplot(vcfdf[is.na(vcfdf$bedid) & vcfdf$assembly!="No assembly",], aes(x=QUAL, fill=assembly)) +
       geom_histogram() +
       scale_x_log10() + 
       labs(title=paste0("Concordence with curated RP call detection - ", sample))
-    ggsave(paste0("neo_uncalled_hist_", sample, ".png"), width=10, height=7.5)
+    saveplot(paste0("neo_uncalled_hist_", sample, ""), width=10, height=7.5)
     
     ###############
     # Microhomology size distribution
     ###############
     ggplot(vcfdf, aes(x=HOMLEN, color=assembly)) + geom_density(adjust=2) + scale_x_continuous(limits=c(0, 25))
-    ggsave(paste0("neo_homlen_", sample, ".png"), width=10, height=7.5)
+    saveplot(paste0("neo_homlen_", sample, ""), width=10, height=7.5)
     
     ###############
     # Assembly rate
@@ -158,7 +159,7 @@ go <- function(sample, vcf, rp, filterBed=NULL, minimumEventSize, cgrmaxgap=1000
       scale_x_log10(limits=c(25, 10000), expand=c(0, 0)) +
       scale_y_continuous(labels=percent, expand=c(0, 0)) +
       labs(title="Assembly rate", x="Quality of read pair and split read evidence", y="")
-    ggsave(paste0("neo_assembly_rate_qual_", sample, ".png"), width=10, height=7.5)
+    saveplot(paste0("neo_assembly_rate_qual_", sample, ""), width=10, height=7.5)
   
     ###############
     # Coverage of gridss-only both assembly
@@ -168,12 +169,12 @@ go <- function(sample, vcf, rp, filterBed=NULL, minimumEventSize, cgrmaxgap=1000
       aes(x=RP) + 
       geom_histogram() +
       labs("Read Pair coverage, mutual breakend assembly, no published call")
-    ggsave(paste0("neo_both_nocall_rp_", sample, ".png"), width=10, height=7.5)
+    saveplot(paste0("neo_both_nocall_rp_", sample, ""), width=10, height=7.5)
     ggplot(assnocall) +
       aes(x=asWithin1kbp-1) +
       geom_histogram() +
       labs("Breakends with 1kbp, mutual breakend assembly, no published call")
-    ggsave(paste0("neo_both_nocall_calldensity_", sample, ".png"), width=10, height=7.5)
+    saveplot(paste0("neo_both_nocall_calldensity_", sample, ""), width=10, height=7.5)
   }
 
   ###############

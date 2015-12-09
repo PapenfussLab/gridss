@@ -418,7 +418,7 @@ CalculateTruth <- function(callvcf, truthvcf, blacklist=NULL, maxerrorbp, ignore
 }
 CalculateTruthSummary <- function(vcfs, blacklist=NULL, maxerrorbp, ignoreFilters=TRUE, ...) {
   truthSet <- lapply(vcfs, function(vcf) {
-    md <- attr(vcf, "metadata")
+    md <- attr(vcf, "sourceMetadata")
     if (is.null(md)) {
       warning("VCF missing metadata - ignoring")
       return(NULL)
@@ -531,7 +531,7 @@ LoadVcfs <- function(metadata, directory=".", pattern="*.vcf$", existingVcfs=NUL
     id <- GetMetadataId(filename)
     md <- metadata[id, ]
     attr(vcf, "id") <- id
-    attr(vcf, "metadata") <- md
+    attr(vcf, "sourceMetadata") <- md
     vcf
   })
   names(vcfs) <- GetMetadataId(fileList)

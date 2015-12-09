@@ -1,7 +1,15 @@
+##################
+# Processing steps
+##################
+# - Follow na12878.R processing steps
+# - Run this script (updating to the correct timings.csv location)
+
+
 library(ggplot2)
 require(reshape)
 # generate input with
 # cut -d";" -f 8 gridss_vis/debruijn.assembly.metrics.* | cut -b 8- | grep -Ev '[^0-9,]' > timings.csv
+
 
 timings <- c(
   "KmerConstruction",
