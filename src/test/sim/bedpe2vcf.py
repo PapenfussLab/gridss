@@ -10,7 +10,7 @@ print """##fileformat=VCFv4.1
 ##INFO=<ID=SVLEN,Number=.,Type=Integer,Description="Difference in length between REF and ALT alleles">
 ##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
 ##INFO=<ID=CIPOS,Number=2,Type=Integer>
-##INFO=<ID=CIRPOS,Number=2,Type=Integer>
+##INFO=<ID=CIEND,Number=2,Type=Integer>
 #CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO"""
 
 i = 0
@@ -30,7 +30,7 @@ for line in sys.stdin:
 	strand2 = input[9]
 	type = "TYPE:DELETION" #input[10]
 	if type.startswith("TYPE:DELETION") :
-		print "{0}	{1}	{2}	{3}	{4}	{5}	PASS	END={6};SVLEN={7};SVTYPE=DEL;CIPOS={8},{9};CIRPOS={10},{11}".format(
+		print "{0}	{1}	{2}	{3}	{4}	{5}	PASS	END={6};SVLEN={7};SVTYPE=DEL;CIPOS={8},{9};CIEND={10},{11}".format(
 			chr1,
 			start1,
 			id,

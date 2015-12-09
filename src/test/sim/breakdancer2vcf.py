@@ -69,10 +69,10 @@ for line in sys.stdin:
 	numreads = int(input[9])
 	if type == "ITX":
 		print (
-			"{0}	{1}	{10}a	N	N[{3}:{4}[	{8}	PASS	IMPRECISE;UNKNOWN_ORIENTATION;SVLEN={7};SVTYPE=BND;PARID={10}b;EVENT={6}{10}\n" +
-			"{3}	{4}	{10}b	N	]{0}:{11}]N	{8}	PASS	IMPRECISE;UNKNOWN_ORIENTATION;SVLEN={7};SVTYPE=BND;PARID={10}a;EVENT={6}{10}\n" + 
-			"{3}	{4}	{10}c	N	N[{0}:{1}[	{8}	PASS	IMPRECISE;UNKNOWN_ORIENTATION;SVLEN={7};SVTYPE=BND;PARID={10}d;EVENT={6}{10}\n" +
-			"{0}	{11}	{10}d	N	]{3}:{4}]N	{8}	PASS	IMPRECISE;UNKNOWN_ORIENTATION;SVLEN={7};SVTYPE=BND;PARID={10}c;EVENT={6}{10}" +
+			"{0}	{1}	{10}a	N	N[{3}:{4}[	{9}	PASS	IMPRECISE;UNKNOWN_ORIENTATION;SVLEN={7};SVTYPE=BND;PARID={10}b;EVENT={6}{10}\n" +
+			"{3}	{4}	{10}b	N	]{0}:{11}]N	{9}	PASS	IMPRECISE;UNKNOWN_ORIENTATION;SVLEN={7};SVTYPE=BND;PARID={10}a;EVENT={6}{10}\n" + 
+			"{3}	{4}	{10}c	N	N[{0}:{1}[	{9}	PASS	IMPRECISE;UNKNOWN_ORIENTATION;SVLEN={7};SVTYPE=BND;PARID={10}d;EVENT={6}{10}\n" +
+			"{0}	{11}	{10}d	N	]{3}:{4}]N	{9}	PASS	IMPRECISE;UNKNOWN_ORIENTATION;SVLEN={7};SVTYPE=BND;PARID={10}c;EVENT={6}{10}" +
 			commonInfo
 			).format(
 			leftChr, leftPos, leftOrientation, rightChr, rightPos, rightOrientation, type, size, score, numreads, # 0-9
@@ -80,8 +80,8 @@ for line in sys.stdin:
 			leftPos + size) # 11
 	elif type == "CTX":
 		print (
-			"{0}	{1}	{10}o	N	{11}	{8}	PASS	IMPRECISE;UNKNOWN_ORIENTATION;SVLEN={7};SVTYPE=BND;PARID={10}h;EVENT={6}{10}\n" +
-			"{3}	{4}	{10}h	N	{12}	{8}	PASS	IMPRECISE;UNKNOWN_ORIENTATION;SVLEN={7};SVTYPE=BND;PARID={10}o;EVENT={6}{10}" +
+			"{0}	{1}	{10}o	N	{11}	{9}	PASS	IMPRECISE;UNKNOWN_ORIENTATION;SVLEN={7};SVTYPE=BND;PARID={10}h;EVENT={6}{10}\n" +
+			"{3}	{4}	{10}h	N	{12}	{9}	PASS	IMPRECISE;UNKNOWN_ORIENTATION;SVLEN={7};SVTYPE=BND;PARID={10}o;EVENT={6}{10}" +
 			commonInfo).format(
 			leftChr, leftPos, leftOrientation, rightChr, rightPos, rightOrientation, type, size, score, numreads, # 0-9
 			id, #10
@@ -89,7 +89,7 @@ for line in sys.stdin:
 			toVcfBreakend(rightChr, rightPos, isRefToBreakend(rightOrientation), leftChr, leftPos, isRefToBreakend(leftOrientation))) # 12
 	elif type == "INS":
 		print (
-			"{0}	{1}	{10}	N	<{6}>	{8}	PASS	IMPRECISE;END={1};SVLEN={11};SVTYPE={6}" + commonInfo # ;CIPOS=0,{12}
+			"{0}	{1}	{10}	N	<{6}>	{9}	PASS	IMPRECISE;END={1};SVLEN={11};SVTYPE={6}" + commonInfo # ;CIPOS=0,{12}
 			).format(
 			leftChr, leftPos, leftOrientation, rightChr, rightPos, rightOrientation, type, size, score, numreads, # 0-9
 			id, #10
@@ -98,7 +98,7 @@ for line in sys.stdin:
 			)
 	elif type == "DEL":
 		print (
-			"{0}	{1}	{10}	N	<{6}>	{8}	PASS	IMPRECISE;END={14};SVLEN={11};SVTYPE={6}" + commonInfo # ;CIPOS={12},{13}
+			"{0}	{1}	{10}	N	<{6}>	{9}	PASS	IMPRECISE;END={14};SVLEN={11};SVTYPE={6}" + commonInfo # ;CIPOS={12},{13}
 			).format(
 			leftChr, leftPos, leftOrientation, rightChr, rightPos, rightOrientation, type, size, score, numreads, # 0-9
 			id, #10
@@ -119,7 +119,7 @@ for line in sys.stdin:
 		size += fragSize
 		print (
 			#chr12	512749	0+2-	chr12	512812	0+2-	INV	74454768	41	2	/home/users/allstaff/cameron.d/i/data.fastcompare/3b57e681753bebdbde7eec2eb9da6510.sc.bam|2	NA
-			"{0}	{1}	{10}	N	<{6}>	{8}	PASS	IMPRECISE;END={4};SVLEN={7};SVTYPE={6}" + commonInfo # ;CIPOS={12},{13}
+			"{0}	{1}	{10}	N	<{6}>	{9}	PASS	IMPRECISE;END={4};SVLEN={7};SVTYPE={6}" + commonInfo # ;CIPOS={12},{13}
 			).format(
 			leftChr, leftPos, leftOrientation, rightChr, rightPos, rightOrientation, type, size, score, numreads, # 0-9
 			id, #10
