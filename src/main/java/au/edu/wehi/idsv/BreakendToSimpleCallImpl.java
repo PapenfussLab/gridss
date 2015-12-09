@@ -16,6 +16,7 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
 
 import au.edu.wehi.idsv.util.FileHelper;
+import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
@@ -147,8 +148,8 @@ public class BreakendToSimpleCallImpl {
 				.stop(bs.start2)
 				.attribute(VCFConstants.END_KEY, bs.start2)
 				.attribute(VcfSvConstants.SV_TYPE_KEY, "INV");
-				//.attribute(VcfSvConstants.CONFIDENCE_INTERVAL_END_POSITION_KEY, bp.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute()));
 				//.attribute(VcfSvConstants.SV_LENGTH_KEY, bs.start - bs.start2);
+			setAttributes(bp, builder);
 			IdsvVariantContext v = builder.make();
 			assert(v != null);
 			outputBuffer.add(v);
@@ -163,8 +164,8 @@ public class BreakendToSimpleCallImpl {
 				.stop(bs.start2)
 				.attribute(VCFConstants.END_KEY, bs.start2)
 				.attribute(VcfSvConstants.SV_TYPE_KEY, "DUP");
-				//.attribute(VcfSvConstants.CONFIDENCE_INTERVAL_END_POSITION_KEY, bp.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute()));
 				//.attribute(VcfSvConstants.SV_LENGTH_KEY, bs.start2 - bs.start);
+			setAttributes(bp, builder);
 			IdsvVariantContext v = builder.make();
 			assert(v != null);
 			outputBuffer.add(v);
@@ -178,8 +179,8 @@ public class BreakendToSimpleCallImpl {
 				.stop(bs.start2)
 				.attribute(VCFConstants.END_KEY, bs.start2)
 				.attribute(VcfSvConstants.SV_TYPE_KEY, "DEL");
-				//.attribute(VcfSvConstants.CONFIDENCE_INTERVAL_END_POSITION_KEY, bp.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute()));
 				//.attribute(VcfSvConstants.SV_LENGTH_KEY, bs.start - bs.start2);
+			setAttributes(bp, builder);
 			IdsvVariantContext v = builder.make();
 			assert(v != null);
 			outputBuffer.add(v);
@@ -192,6 +193,13 @@ public class BreakendToSimpleCallImpl {
 			outputBuffer.add(mate);
 		}
 		remove(bp);
+	}
+	private IdsvVariantContextBuilder setAttributes(VariantContextDirectedBreakpoint bp, IdsvVariantContextBuilder builder) {
+		Object cirpos = bp.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute());
+		if (cirpos != null) {
+			builder.attribute(VcfSvConstants.CONFIDENCE_INTERVAL_END_POSITION_KEY, cirpos);
+		}
+		return builder;
 	}
 	private void remove(VariantContextDirectedBreakpoint bp) {
 		lookup.remove(bp);
