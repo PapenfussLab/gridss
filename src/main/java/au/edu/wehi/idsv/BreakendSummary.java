@@ -1,8 +1,12 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMSequenceDictionary;
 
 import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.List;
 
 import au.edu.wehi.idsv.util.IntervalUtil;
 
@@ -136,6 +140,23 @@ public class BreakendSummary {
 		return referenceIndex >= 0 && referenceIndex < dictionary.size()
 				&& start <= end
 				&& start > 0 && end <= dictionary.getSequence(referenceIndex).getSequenceLength();
+	}
+	/**
+	 * Gets a minimal CIGAR representing this breakend.
+	 * @return
+	 */
+	public List<CigarElement> getCigarRepresentation() {
+		List<CigarElement> breakcigar = new ArrayList<CigarElement>(3);
+		if (start == end) {
+			breakcigar.add(new CigarElement(1, CigarOperator.X));
+		} else if (end - start == 1) {
+			breakcigar.add(new CigarElement(2, CigarOperator.X));
+		} else {
+			breakcigar.add(new CigarElement(1, CigarOperator.X));
+			breakcigar.add(new CigarElement(end - start - 1, CigarOperator.N));
+			breakcigar.add(new CigarElement(1, CigarOperator.X));
+		}
+		return breakcigar;
 	}
 	@Override
 	public String toString() {

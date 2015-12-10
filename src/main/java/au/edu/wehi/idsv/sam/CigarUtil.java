@@ -236,6 +236,27 @@ public class CigarUtil {
 		}
 		return length;
 	}
+	/**
+	 * Cleans up a cigar by removing zero width events and merging adjacent elements containing the same operator
+	 * @param list cigar to clean
+	 * @return copy of cleaned list 
+	 */
+	public static List<CigarElement> clean(List<CigarElement> list) {
+		list = new ArrayList<CigarElement>(list);
+		for (int i = list.size() - 1; i >= 0; i--) {
+			if (list.get(i).getLength() == 0) {
+				list.remove(i);
+			}
+		}
+		for (int i = list.size() - 1; i > 0; i--) {
+			if (list.get(i).getOperator() == list.get(i - 1).getOperator()) {
+				CigarElement replacement = new CigarElement(list.get(i).getLength() + list.get(i - 1).getLength(), list.get(i).getOperator());
+				list.set(i - 1, replacement);
+				list.remove(i);
+			}
+		}
+		return list;
+	}
 	public static class CigarOperatorIterator implements Iterator<CigarOperator> {
 		private Iterator<CigarElement> it;
 		private CigarElement currentElement = null;

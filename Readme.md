@@ -203,9 +203,47 @@ genome has many contigs, or if you have specified a large number of input files.
 * Reduce number of worker threads. A large number of input files being processed in parallel results in a large number of files open at the same time.
 * Increase your OS limit on open file handles (eg `ulimit -n _<larger number>_`)
 
+# Visualisation of results
 
+## VcfBreakendToReadPair
 
+IGV support for VCF breakend notation is quite poor. As a workaround, GRIDSS includes
+VcfBreakendToReadPair - a utility for converting VCF breakends to repsentative read pairs.
+Each breakpoint is represented by a pair of reads, one for each breakend. The 
+breakend location is at the end of the read so when viewing in IGV, the read will
+point in the direction of the breakend location.
+Anchored bases from split reads, assembly, or read pairs are shown using CIGAR M
+operators with gaps in support encoded as D.
+Note that this currently does not include anchored read pairs supporting an assembly
+that supports the breakpoint, only direct read pair support.
 
+Breakend positions are marked with X CIGAR operators and imprecise breakend locations,
+due to either a microhomology or assembly of read pairs, using XNX CIGAR operators to
+show the range of possible breakend location. This gap does look unfortantely similar
+to a D gap in support. Ideally, the visualisation issues around fusion calls will be
+resolved by proper VCF breakend in IGV.
 
+## *output*.idsv.working/*output*.idsv.assembly.bam
+
+The file contains all successfully realigned assemblies. Each assembly is encoded
+as a read pair, the first read on the pair containing the assembly at the assemblied
+location, the second containing the alignment of the unanchored breakpoint bases. All
+anchoring assemblies are mapped to the positive strand regardless of breakpoint
+orientation (this can usually be inferred by the soft clip location).
+Assemblies with untemplated sequence in the breakpoint are represented by
+soft clipped bases at the start of the second read.
+
+For aassemblies spanning multiple fusions, an assembly read pair is written for each
+spanning fusion. The name of the assembly read pair is suffixed with a number at each
+remote location (eg asm1_r_0, asm_r_1, ...) to indicate that the assembly originates
+from a remote location.
+
+For example, an A-B-C fusion pair spanning by an assembly originating from A would have
+a read pair asm1_r, the first of the pair containing the full assembly with a soft clip
+starting at the end of a, the second of the pair would align to the start of B to the end
+of B, contain the unanchored bases of the assembly, and have additional soft clipped bases
+after the end of B indicating. A second read pair labelled asm1_r_0 represents the spanning
+of the second fusion and the first read could map to B with soft clips on both side, with
+the second in the pair mapping to C indicating the fusion event.
 
 

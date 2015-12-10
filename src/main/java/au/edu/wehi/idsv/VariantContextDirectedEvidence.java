@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Iterator;
 
 import com.google.common.base.Function;
@@ -10,6 +11,10 @@ import com.google.common.collect.Ordering;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.TextCigarCodec;
 import htsjdk.variant.variantcontext.VariantContext;
 
 /**
@@ -109,6 +114,45 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 	@Override
 	public float getBreakendQual() {
 		return (float)getPhredScaledQual();
+	}
+	/**
+	 * Converts to SAMRecord representation.
+	 * @param header
+	 * @return SAMRecord
+	 */
+	public SAMRecord asSamRecord(SAMFileHeader header) {
+		BreakendSummary be = getBreakendSummary();
+		SAMRecord r = new SAMRecord(header);
+		Cigar cigar = new Cigar(be.getCigarRepresentation());
+		if (hasAttribute(VcfAttributes.ANCHOR_CIGAR.attribute())) {
+			cigar = TextCigarCodec.decode(getAttributeAsString(VcfAttributes.ANCHOR_CIGAR.attribute(), null));
+		}
+		r.setCigar(cigar);
+		r.setReadName(getAttributeAsString(VcfSvConstants.BREAKEND_EVENT_ID_KEY, getID()));
+		byte[] bases = new byte[cigar.getReadLength()];
+		Arrays.fill(bases, (byte)'N');
+		r.setReadBases(bases);
+		r.setBaseQualities(SAMRecord.NULL_SEQUENCE);
+		r.setReferenceIndex(be.referenceIndex);
+		if (be.direction == BreakendDirection.Forward) {
+			r.setReadNegativeStrandFlag(false);
+			r.setAlignmentStart(be.end - cigar.getReadLength() + 1);
+		} else {
+			r.setReadNegativeStrandFlag(true);
+			r.setAlignmentStart(getBreakendSummary().start);
+		}
+		if (be instanceof BreakpointSummary) {
+			BreakendSummary rbe = ((BreakpointSummary)be).remoteBreakend();
+			r.setReadPairedFlag(true);
+			r.setMateNegativeStrandFlag(getBreakendSummary().direction == BreakendDirection.Backward);
+			r.setMateReferenceIndex(rbe.referenceIndex);
+			// incorrect if mate is FWD and has an ANCHOR_CIGAR defined
+			r.setMateAlignmentStart(rbe.start);
+			r.setMateUnmappedFlag(false);
+			r.setFirstOfPairFlag(getID().endsWith("o"));
+			r.setSecondOfPairFlag(getID().endsWith("h"));
+		}
+		return r;
 	}
 	public int getBreakendEvidenceCountAssembly() { return AttributeConverter.asInt(getAttribute(VcfAttributes.BREAKEND_ASSEMBLY_COUNT.attribute()), 0); }
 	public int getBreakendEvidenceCountReadPair() { return getAttributeIntSum(VcfAttributes.BREAKEND_UNMAPPEDMATE_COUNT); }

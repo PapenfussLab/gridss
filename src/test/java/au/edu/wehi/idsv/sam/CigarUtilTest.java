@@ -94,4 +94,8 @@ public class CigarUtilTest {
 		List<CigarOperator> result = Lists.newArrayList(new CigarUtil.CigarOperatorIterator(l));
 		assertEquals(co, result);
 	}
+	@Test
+	public void clean_should_merge_adjacent_and_trim_zero_size_operators() {
+		assertEquals("4M", new Cigar(CigarUtil.clean(C("1M0I0D1M0M2M0S"))).toString());
+	}
 }

@@ -682,4 +682,67 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		}}.make());
 		builder.addEvidence(NRRP(DP(0, 10, "1M", true, 0, 2, "1M", false)));
 	}
+	@Test
+	public void anchor_cigar_should_use_X_for_exact() {
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(0, FWD, 11, 11, 0, BWD, 10, 10), "");
+			phredScore(10);
+		}}.make());
+		VariantContextDirectedEvidence vc = builder.make();
+		assertEquals("1X", vc.getAttribute(VcfAttributes.ANCHOR_CIGAR.attribute()));
+	}
+	@Test
+	public void anchor_cigar_should_use_2X_for_single_bp_imprecision() {
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(0, FWD, 11, 12, 0, BWD, 10, 10), "");
+			phredScore(10);
+		}}.make());
+		VariantContextDirectedEvidence vc = builder.make();
+		assertEquals("2X", vc.getAttribute(VcfAttributes.ANCHOR_CIGAR.attribute()));
+	}
+	@Test
+	public void anchor_cigar_should_use_xnx_for_large_imprecision() {
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(0, FWD, 10, 15, 0, BWD, 10, 10), "");
+			phredScore(10);
+		}}.make());
+		VariantContextDirectedEvidence vc = builder.make();
+		assertEquals("1X4N1X", vc.getAttribute(VcfAttributes.ANCHOR_CIGAR.attribute()));
+	}
+	@Test
+	public void anchor_cigar_should_include_anchoring_bases_fwd() {
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(0, FWD, 10, 15, 0, FWD, 100, 100), "");
+			phredScore(10);
+		}}.make());
+		builder.addEvidence(SCE(FWD, Read(0, 5, "8M7S")));
+		builder.addEvidence(NRRP(DP(0, 2, "2M", true, 0, 100, "1M", true)));
+		VariantContextDirectedEvidence vc = builder.make();
+		// 12345678901234567890
+		//     MMMMMMMMSSSSSSS
+		//  MM
+		//          XNNNNX
+		assertEquals("2M1D5M1X4N1X", vc.getAttribute(VcfAttributes.ANCHOR_CIGAR.attribute()));
+	}
+	@Test
+	public void anchor_cigar_should_include_anchoring_bases_bwd() {
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(0, BWD, 10, 15, 0, FWD, 100, 100), "");
+			phredScore(10);
+		}}.make());
+		builder.addEvidence(NRRP(DP(0, 17, "2M", false, 0, 100, "1M", true)));
+		builder.addEvidence(NRRP(DP(0, 18, "2M", false, 0, 100, "1M", true)));
+		builder.addEvidence(NRRP(DP(0, 19, "2M", false, 0, 100, "1M", true)));
+		builder.addEvidence(NRRP(DP(0, 25, "1M", false, 0, 100, "1M", true)));
+		builder.addEvidence(NRRP(DP(0, 26, "1M", false, 0, 100, "1M", true)));
+		builder.addEvidence(NRRP(DP(0, 28, "1M", false, 0, 100, "1M", true)));
+		VariantContextDirectedEvidence vc = builder.make();
+		//          1         2         3         4         5
+		// 123456789012345678901234567890123456789012345678901234567890
+		//          XNNNNX MM      M  M
+		//                  MM      M
+		//                   MM      
+		// =        XNNNNXDMMMMDDDDMMDM
+		assertEquals("1X4N1X1D4M4D2M1D1M", vc.getAttribute(VcfAttributes.ANCHOR_CIGAR.attribute()));
+	}
 }

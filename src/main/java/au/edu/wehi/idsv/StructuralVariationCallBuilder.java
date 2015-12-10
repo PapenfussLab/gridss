@@ -1,15 +1,25 @@
 package au.edu.wehi.idsv;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.google.common.collect.BoundType;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeRangeSet;
 
+import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
@@ -17,7 +27,8 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private static final Log log = Log.getInstance(StructuralVariationCallBuilder.class);
 	private final ProcessingContext processContext;
 	private final VariantContextDirectedEvidence parent;
-	private final Set<String> encounteredEvidence;
+	private final Set<String> encounteredEvidenceIDs;
+	private final RangeSet<Integer> anchoredBases = TreeRangeSet.create();
 	private final int categories;
 	private DirectedBreakpoint bestExactBreakpoint = null;
 	private int fBREAKPOINT_ASSEMBLY_COUNT;
@@ -49,7 +60,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		this.processContext = processContext;
 		this.parent = parent;
 		this.categories = processContext.getCategoryCount();
-		this.encounteredEvidence = deduplicateEvidence ? new HashSet<String>() : null;
+		this.encounteredEvidenceIDs = deduplicateEvidence ? new HashSet<String>() : null;
 		fBREAKPOINT_ASSEMBLY_COUNT = 0;
 		fBREAKPOINT_READPAIR_COUNT = new int[categories];
 		fBREAKPOINT_SPLITREAD_COUNT = new int[categories];
@@ -77,12 +88,12 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			throw new IllegalArgumentException(String.format("Sanity check failure: Evidence %s does not provide support for call at %s", evidence.getBreakendSummary(), parent.getBreakendSummary()));
 		}
 		String eid = evidence.getEvidenceID();
-		if (encounteredEvidence != null) {
-			if (encounteredEvidence.contains(eid)) {
+		if (encounteredEvidenceIDs != null) {
+			if (encounteredEvidenceIDs.contains(eid)) {
 				log.debug(String.format("Deduplicating %s from %s", eid, parent.getID()));
 				return this;
 			}
-			encounteredEvidence.add(eid);
+			encounteredEvidenceIDs.add(eid);
 		}
 		if (evidence instanceof DirectedBreakpoint && evidence.isBreakendExact()) {
 			DirectedBreakpoint bp = (DirectedBreakpoint)evidence;
@@ -122,6 +133,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			fBREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT[i]  += evidence.getAssemblyNonSupportingSoftClipCount(i);
 			// TODO quals, remotes, etc
 		}
+		processAnchor(evidence.getSAMRecord());
 	}
 	private void add(RealignedSAMRecordAssemblyEvidence evidence) {
 		fBREAKPOINT_ASSEMBLY_COUNT++;
@@ -133,30 +145,96 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			fBREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT[i]  += evidence.getAssemblyNonSupportingSoftClipCount(i);
 			// TODO quals, remotes, etc
 		}
+		processAnchor(evidence.getSAMRecord());
 	}
 	private void add(SAMRecordAssemblyEvidence evidence) {
 		fBREAKEND_ASSEMBLY_COUNT++;
 		fBREAKEND_ASSEMBLY_QUAL += evidence.getBreakendQual();
+		processAnchor(evidence.getSAMRecord());
 	}
 	private void add(DiscordantReadPair evidence, int category) {
 		fBREAKPOINT_READPAIR_COUNT[category]++;
 		fBREAKPOINT_READPAIR_QUAL[category] += evidence.getBreakpointQual();
+		processAnchor(evidence.getLocalledMappedRead());
 	}
 	private void add(UnmappedMateReadPair evidence, int category) {
 		fBREAKEND_UNMAPPEDMATE_COUNT[category]++;
 		fBREAKEND_UNMAPPEDMATE_QUAL[category] += evidence.getBreakendQual();
+		processAnchor(evidence.getLocalledMappedRead());
 	}
 	private void add(RealignedRemoteSoftClipEvidence evidence, int category) {
 		fBREAKPOINT_SPLITREAD_COUNT_REMOTE[category]++;
 		fBREAKPOINT_SPLITREAD_QUAL_REMOTE[category] += evidence.getBreakpointQual();
+		processAnchor(evidence.getSAMRecord());
 	}
 	private void add(RealignedSoftClipEvidence evidence, int category) {
 		fBREAKPOINT_SPLITREAD_COUNT[category]++;
 		fBREAKPOINT_SPLITREAD_QUAL[category] += evidence.getBreakpointQual();
+		processAnchor(evidence.getSAMRecord());
 	}
 	private void add(SoftClipEvidence evidence, int category) {
 		fBREAKEND_SOFTCLIP_COUNT[category]++;
 		fBREAKEND_SOFTCLIP_QUAL[category] += evidence.getBreakendQual();
+		processAnchor(evidence.getSAMRecord());
+	}
+	private void processAnchor(SAMRecord record) {
+		if (record.getReadUnmappedFlag()) return;
+		int pos = record.getAlignmentStart();
+		for (CigarElement ce : record.getCigar().getCigarElements()) {
+			switch (ce.getOperator()) {
+				case M:
+				case EQ:
+				case X:
+					anchoredBases.add(Range.closedOpen(pos, pos + ce.getLength()));
+					break;
+				default:
+					break;
+			}
+			if (ce.getOperator().consumesReferenceBases()) {
+				pos += ce.getLength();
+			}
+		}
+	}
+	/**
+	 * Creates a cigar for alignment to given breakend anchored bases, with an XNX alignment to the breakend interval
+	 * @param anchors anchored bases
+	 * @param bp breakend
+	 * @return Cigar representing breakend with anchored bases
+	 */
+	private static Cigar makeCigar(RangeSet<Integer> anchors, BreakendSummary bp) {
+		if (bp.direction == BreakendDirection.Forward) {
+			anchors = anchors.subRangeSet(Range.closedOpen(Integer.MIN_VALUE, bp.end + 1));
+		} else {
+			anchors = anchors.subRangeSet(Range.closedOpen(bp.start, Integer.MAX_VALUE));
+		}
+		anchors = TreeRangeSet.create(anchors);
+		anchors.add(Range.closed(bp.start, bp.end + 1));
+		List<CigarElement> cigar = new ArrayList<CigarElement>();
+		int lastEndPos = anchors.span().lowerEndpoint();
+		for (Range<Integer> span : anchors.asRanges()) {
+			cigar.add(new CigarElement(span.lowerEndpoint() - lastEndPos, CigarOperator.D));
+			cigar.add(new CigarElement(span.upperEndpoint() - span.lowerEndpoint(), CigarOperator.M));
+			lastEndPos = span.upperEndpoint();
+		}
+		cigar.remove(0); //cigar = CigarUtil.clean(cigar);
+		// replace the placeholder homology alignment with XNX notation
+		List<CigarElement> breakcigar = bp.getCigarRepresentation();
+		int width = bp.end - bp.start + 1;
+		if (bp.direction == BreakendDirection.Forward) {
+			// trim 
+			CigarElement e = cigar.remove(cigar.size() - 1);
+			if (e.getLength() > width) {
+				cigar.add(new CigarElement(e.getLength() - width, e.getOperator()));
+			}
+			cigar.addAll(breakcigar);
+		} else {
+			CigarElement e = cigar.remove(0);
+			if (e.getLength() > width) {
+				cigar.add(0, new CigarElement(e.getLength() - width, e.getOperator()));
+			}
+			cigar.addAll(0, breakcigar);
+		}
+		return new Cigar(cigar);
 	}
 	private BreakendSummary getBreakendSummaryWithMargin(DirectedEvidence evidence) {
 		BreakendSummary bs = evidence.getBreakendSummary();
@@ -230,6 +308,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			rmAttribute(VcfSvConstants.HOMOLOGY_SEQUENCE_KEY);
 			rmAttribute(VcfSvConstants.HOMOLOGY_LENGTH_KEY);
 		}
+		attribute(VcfAttributes.ANCHOR_CIGAR, makeCigar(anchoredBases, bestExactBreakpoint != null ? bestExactBreakpoint.getBreakendSummary() : parent.getBreakendSummary()).toString());
 
 		// id(parent.getID()); // can't change from parent ID as the id is already referenced in the MATEID of the other breakend  
 		VariantContextDirectedEvidence variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(processContext, null, super.make());
