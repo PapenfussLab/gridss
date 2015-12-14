@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -93,6 +94,9 @@ public class CompoundBreakendAlignmentTest extends TestHelper {
 						withName("0#0#2#readName", withMapq(40, withQual(B("G"), withSequence(B("3"), Read(0, 10, "1M")))))[0],
 						withName("0#0#3#readName", withMapq(40, withQual(B("T"), withSequence(B("4"), Read(0, 10, "1M")))))[0]
 				));
+		// 12345678
+		//  NN C T
+		//    A G
 		List<Pair<SAMRecord, SAMRecord>> pairs = cba.getSubsequentBreakpointAlignmentPairs();
 		assertEquals(3, pairs.size());
 		assertEquals("NNACGT", S(pairs.get(0).getLeft().getReadBases()));
@@ -114,7 +118,7 @@ public class CompoundBreakendAlignmentTest extends TestHelper {
 	public void getSubsequentBreakpointAlignmentPairs_single_bases_BWD() {
 		ProcessingContext pc = getContext();
 		CompoundBreakendAlignment cba = new CompoundBreakendAlignment(pc, null,
-				new BreakendSummary(0, BWD, 2, 2),
+				new BreakendSummary(0, BWD, 5, 5),
 				B("NN"),
 				B("12"),
 				B("ACGT"),
@@ -125,23 +129,26 @@ public class CompoundBreakendAlignmentTest extends TestHelper {
 						withName("0#0#2#readName", withMapq(40, withQual(B("G"), withSequence(B("3"), Read(0, 10, "1M")))))[0],
 						withName("0#0#3#readName", withMapq(40, withQual(B("T"), withSequence(B("4"), Read(0, 10, "1M")))))[0]
 				));
+		// 1234567890
+		// A G NN
+		//  C T
 		List<Pair<SAMRecord, SAMRecord>> pairs = cba.getSubsequentBreakpointAlignmentPairs();
 		assertEquals(3, pairs.size());
 		
-		assertEquals("ACGTNN", S(pairs.get(0).getRight().getReadBases()));
-		assertEquals("1S1M4S", pairs.get(0).getRight().getCigarString());
-		assertEquals("A", S(pairs.get(0).getLeft().getReadBases()));
-		assertEquals("1M", pairs.get(0).getLeft().getCigarString());
+		assertEquals("ACGTNN", S(pairs.get(2).getLeft().getReadBases()));
+		assertEquals("1S1M4S", pairs.get(2).getLeft().getCigarString());
+		assertEquals("A", S(pairs.get(2).getRight().getReadBases()));
+		assertEquals("1M", pairs.get(2).getRight().getCigarString());
 		
-		assertEquals("ACGTNN", S(pairs.get(1).getRight().getReadBases()));
-		assertEquals("2S1M3S", pairs.get(1).getRight().getCigarString());
-		assertEquals("AC", S(pairs.get(1).getLeft().getReadBases()));
-		assertEquals("1S1M", pairs.get(1).getLeft().getCigarString());
+		assertEquals("ACGTNN", S(pairs.get(1).getLeft().getReadBases()));
+		assertEquals("2S1M3S", pairs.get(1).getLeft().getCigarString());
+		assertEquals("AC", S(pairs.get(1).getRight().getReadBases()));
+		assertEquals("1S1M", pairs.get(1).getRight().getCigarString());
 		
-		assertEquals("ACGTNN", S(pairs.get(2).getRight().getReadBases()));
-		assertEquals("3S1M2S", pairs.get(2).getRight().getCigarString());
-		assertEquals("ACG", S(pairs.get(2).getLeft().getReadBases()));
-		assertEquals("2S1M", pairs.get(2).getLeft().getCigarString());
+		assertEquals("ACGTNN", S(pairs.get(0).getLeft().getReadBases()));
+		assertEquals("3S1M2S", pairs.get(0).getLeft().getCigarString());
+		assertEquals("ACG", S(pairs.get(0).getRight().getReadBases()));
+		assertEquals("2S1M", pairs.get(0).getRight().getCigarString());
 	}
 	@Test
 	public void getSubsequentBreakpointAlignmentPairs_overlapping_single_bases_FWD() {
@@ -223,8 +230,13 @@ public class CompoundBreakendAlignmentTest extends TestHelper {
 		assertFalse(cba.getSubsequentBreakpointAlignmentPairs().get(1).getRight().getReadNegativeStrandFlag());
 	}
 	@Test
-	public void compound_test_fwd_fwd_bwd() {
-		//          1         2         3         4      
+	public void compound_test_fb_ff() {
+		//      0123456789012345678901234567890 breakend offset
+		// AAAAA----------------------------------- anchor
+		//          SSSSMMMMMSSSSSS #4 realignment
+		//                SSSSSSSMMMMMMMMSSSSSSSSS (revered cigar)
+		//
+		//          1         2         3         4
 		// 1234567890123456789012345678901234567890
 		// CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAG
 		// *****    SSSSMMMMMSSSSSS
@@ -258,5 +270,48 @@ public class CompoundBreakendAlignmentTest extends TestHelper {
 		assertEquals("10S8M4S", cba.getSubsequentBreakpointAlignmentPairs().get(0).getRight().getCigarString());
 		assertEquals(SequenceUtil.reverseComplement("GTTGTATTCGACGCCAAGTCAG"), S(cba.getSubsequentBreakpointAlignmentPairs().get(0).getRight().getReadBases()));
 		assertTrue(cba.getSubsequentBreakpointAlignmentPairs().get(0).getRight().getReadNegativeStrandFlag());
+	}
+	@Test
+	public void compound_test_bf4() {
+		//          1         2         3         4         5         6         7         8         9         0
+		// 123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
+		//          MMMMMMMMMM          MMMMMMMMMM          MMMMMMMMMM          MMMMMMMMMM          MMMMMMMMMM
+		//                                                  SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSMMMMMMMMMM
+		//                    SSSSSSSSSSMMMMMMMMMMSSSSSSSSSSSSSSSSSSSS offset = 0
+		//          MMMMMMMMMM offset = 0
+		//                                                            SSSSSSSSSSMMMMMMMMMM offset = 20
+		//                                                  MMMMMMMMMM offset = 20
+		CompoundBreakendAlignment cba = new CompoundBreakendAlignment(getContext(), null,
+				new BreakendSummary(0, BWD, 70, 70),
+				B("NNNNNNNNNN"),
+				B("0000000000"),
+				B("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN"),
+				B("0000000000000000000000000000000000000000"),
+				ImmutableList.of(
+						withSequence("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN", withReadName("0#70#0#ReadName", Read(0, 30, "10S10M20S")))[0],
+						withSequence("NNNNNNNNNN", withReadName("0#70#0#ReadName", Read(0, 10, "10M")))[0],
+						withSequence("NNNNNNNNNNNNNNNNNNNN", withReadName("0#70#20#ReadName", Read(0, 70, "10S10M")))[0],
+						withSequence("NNNNNNNNNN", withReadName("0#70#20#ReadName", Read(0, 50, "10M")))[0]
+					));
+		SAMRecord r = cba.getSimpleBreakendRealignment();
+		assertEquals(70, r.getAlignmentStart());
+		assertFalse(r.getReadNegativeStrandFlag());
+		
+		assertEquals(4, cba.getBreakpointCount());
+		
+		SAMRecord a = cba.getSubsequentBreakpointAlignmentPairs().get(0).getLeft();
+		r = cba.getSubsequentBreakpointAlignmentPairs().get(0).getRight();
+		assertEquals(70, a.getAlignmentStart());
+		assertEquals(50, r.getAlignmentStart());
+		
+		a = cba.getSubsequentBreakpointAlignmentPairs().get(1).getLeft();
+		r = cba.getSubsequentBreakpointAlignmentPairs().get(1).getRight();
+		assertEquals(50, a.getAlignmentStart());
+		assertEquals(30, r.getAlignmentStart());
+		
+		a = cba.getSubsequentBreakpointAlignmentPairs().get(2).getLeft();
+		r = cba.getSubsequentBreakpointAlignmentPairs().get(2).getRight();
+		assertEquals(30, a.getAlignmentStart());
+		assertEquals(10, r.getAlignmentStart());
 	}
 }

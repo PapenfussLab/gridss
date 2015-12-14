@@ -19,6 +19,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.SamTags;
 
 import com.google.common.collect.ImmutableList;
 
@@ -54,7 +55,7 @@ public class CompoundBreakendAlignment {
 	}
 	/**
 	 * Gets the set of subsequent breakpoints that the breakend sequence spans
-	 * @return
+	 * @return pair of SAMRecords with the left being the anchored alignment and the right the realigned 
 	 */
 	public List<Pair<SAMRecord, SAMRecord>> getSubsequentBreakpointAlignmentPairs() {
 		if (getBreakpointCount() <= 1) return ImmutableList.of();
@@ -70,19 +71,32 @@ public class CompoundBreakendAlignment {
 		}
 		List<Pair<SAMRecord, SAMRecord>> output = new ArrayList<Pair<SAMRecord,SAMRecord>>(getBreakpointCount() - 1);
 		SAMRecord lastEntry = null;
-		int offsetDueToAnchor = (local.direction == BreakendDirection.Forward ? anchorSequence.length : 0);
-		for (SAMRecord entry : mappedStartOffset.values()) {
+		for (SAMRecord entry : local.direction == BreakendDirection.Forward ? mappedStartOffset.values() : mappedStartOffset.descendingMap().values()) {
 			if (lastEntry != null) {
-				SAMRecord left = asFullSequence(fullSeq, fullQual, lastEntry, getReadOffset(lastEntry) + offsetDueToAnchor);
-				SAMRecord right = asFullSequence(fullSeq, fullQual, entry, getReadOffset(entry) + offsetDueToAnchor);
-				if (local.direction == BreakendDirection.Forward) {
-					int anchorBases = fullSeq.length - (left.getReadNegativeStrandFlag() ? SAMRecordUtil.getStartSoftClipLength(left) : SAMRecordUtil.getEndSoftClipLength(left));
-					trimSoftClip(right.getReadNegativeStrandFlag() ? 0 : anchorBases, right.getReadNegativeStrandFlag() ? anchorBases : 0, right);
-				} else {
-					int anchorBases = fullSeq.length - (right.getReadNegativeStrandFlag() ? SAMRecordUtil.getEndSoftClipLength(right) : SAMRecordUtil.getStartSoftClipLength(right));
-					trimSoftClip(left.getReadNegativeStrandFlag() ? anchorBases : 0, left.getReadNegativeStrandFlag() ? 0 : anchorBases, left);
+				SAMRecord anchor = asFullSequence(fullSeq, fullQual, lastEntry, getReadOffset(lastEntry));
+				SAMRecord realign = asFullSequence(fullSeq, fullQual, entry, getReadOffset(entry));
+				anchor.setAttribute(SamTags.ASSEMBLY_DIRECTION, local.direction.toChar());
+				if (anchor.getReadNegativeStrandFlag()) {
+					anchor.setReadNegativeStrandFlag(false); // assemblies are always considered to be +ve strand
+					anchor.setAttribute(SamTags.ASSEMBLY_DIRECTION, local.direction.reverse().toChar());
 				}
-				output.add(Pair.of(left, right));
+				Object anchorDirectionObject = anchor.getAttribute(SamTags.ASSEMBLY_DIRECTION);
+				assert(anchorDirectionObject instanceof Character);
+				BreakendDirection anchorDirection = BreakendDirection.fromChar((char)(Character)anchorDirectionObject); 
+				int anchorSoftClipLength = anchorDirection == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipLength(anchor) : SAMRecordUtil.getStartSoftClipLength(anchor);
+				int anchorBases = fullSeq.length - anchorSoftClipLength;
+				assert(anchorSoftClipLength > 0);
+				if ((anchorDirection == BreakendDirection.Backward && !realign.getReadNegativeStrandFlag()) || 
+					(anchorDirection == BreakendDirection.Forward && realign.getReadNegativeStrandFlag())) {
+					// BWD -> anchor comes from end
+					// FWD + -ve
+					trimSoftClip(0, anchorBases, realign);
+				} else {
+					// FWD -> anchor comes from start
+					// BWD + -ve
+					trimSoftClip(anchorBases, 0, realign);
+				}
+				output.add(Pair.of(anchor, realign));
 			}
 			lastEntry = entry;
 		}
@@ -102,7 +116,7 @@ public class CompoundBreakendAlignment {
 		if (end > 0) {
 			CigarElement e = list.get(list.size() - 1);
 			assert(e.getOperator() == CigarOperator.SOFT_CLIP);
-			assert(e.getLength() >= start);
+			assert(e.getLength() >= end);
 			list.set(list.size() - 1, new CigarElement(e.getLength() - end, CigarOperator.SOFT_CLIP));
 		}
 		if (list.get(0).getOperator() == CigarOperator.SOFT_CLIP && list.get(0).getLength() == 0) {
@@ -116,7 +130,9 @@ public class CompoundBreakendAlignment {
 	private SAMRecord asFullSequence(byte[] fullSeq, byte[] fullQual, SAMRecord realign, int readStartOffset) {
 		SAMRecord r = SAMRecordUtil.clone(realign);
 		assert(r.getReadLength() == r.getCigar().getReadLength()); // sanity check cigar matches read base count
-		int length = r.getReadLength() - SAMRecordUtil.getStartSoftClipLength(r) - SAMRecordUtil.getEndSoftClipLength(r);
+		int startClipLength = SAMRecordUtil.getStartSoftClipLength(r);
+		int endClipLength = SAMRecordUtil.getEndSoftClipLength(r);
+		int length = r.getReadLength() - startClipLength - endClipLength;
 		int startPad;
 		int endPad;
 		byte[] seq = fullSeq;
@@ -126,12 +142,33 @@ public class CompoundBreakendAlignment {
 			qual = Arrays.copyOf(qual, qual.length);
 			SequenceUtil.reverseComplement(seq);
 			SequenceUtil.reverseComplement(qual);
-			endPad = readStartOffset + SAMRecordUtil.getEndSoftClipLength(r);
-			startPad = fullSeq.length - length - endPad;
-		} else {
-			startPad = readStartOffset + SAMRecordUtil.getStartSoftClipLength(r);
-			endPad = fullSeq.length - length - startPad;
 		}
+		// A = anchor bases
+		// # = start offset bases
+		// S = start soft clip
+		// E = end soft clip
+		// ? = base counts that must be inferred
+		if (!r.getReadNegativeStrandFlag()) {
+			if (local.direction == BreakendDirection.Forward) {
+				// AA####SSSMMMEEE????
+				startPad = anchorSequence.length + readStartOffset + startClipLength;
+			} else {
+				// ####SSSMMMEEE????AA
+				startPad = readStartOffset + startClipLength;
+			}
+			endPad = fullSeq.length - startPad - length;
+		} else {
+			if (local.direction == BreakendDirection.Forward) {
+				// AA????SSSMMMEEE####
+				endPad = readStartOffset + endClipLength;
+			} else {
+				// ????SSMMEE####AA
+				endPad = anchorSequence.length + readStartOffset + endClipLength;
+			}
+			startPad = fullSeq.length - endPad - length;
+		}
+		assert(startPad >= 0);
+		assert(endPad >= 0);
 		List<CigarElement> anchorCigarList = new ArrayList<CigarElement>(r.getCigar().getCigarElements());
 		CigarUtil.trimClipping(anchorCigarList);
 		CigarUtil.addStartSoftClip(anchorCigarList, startPad);
