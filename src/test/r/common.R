@@ -34,10 +34,11 @@
 # - cd src/test/sim
 # - create symbolic link from src/test/sim to ~/i
 # - Download art 1.51 to ~/i/tools/art
-
-
 library(ggplot2)
+
 theme_set(theme_bw())
+
+rootdir <- ifelse(as.character(Sys.info())[1] == "Windows", "W:/", "~/")
 
 scale_y_power4 <- scale_y_continuous(limits=c(0,1), breaks=seq(0, 1, 0.1)^4, labels=c("0", "", "", "", "", "0.5", "0.6", "0.7", "0.8", "0.9", "1.0"))
 scale_y_power5 <- scale_y_continuous(limits=c(0,1), breaks=seq(0, 1, 0.1)^5, labels=c("0", "", "", "", "", "0.5", "", "0.7", "0.8", "0.9", "1.0"))

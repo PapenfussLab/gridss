@@ -145,7 +145,7 @@ gridss.vcftodf <- function(vcf, allColumns=FALSE, sanityCheck=TRUE) {
           df[qcolname] <- df[qcolname] + df[colname]
         }
       }
-      assemblyQual <- (df$ASQ + df$RASQ) * ((df[paste0("ASCRP", numericSuffix)] + df[paste0("ASSR", numericSuffix)]) / (df$ASCRP + df$ASSR))
+      assemblyQual <- (df$ASQ + df$RASQ) * ((df[paste0("ASRP", numericSuffix)] + df[paste0("ASSR", numericSuffix)]) / (df$ASRP + df$ASSR))
       assemblyQual[is.na(assemblyQual)] <- 0
       df[qcolname] <- df[qcolname] + assemblyQual
         
