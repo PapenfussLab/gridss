@@ -3,12 +3,12 @@ package au.edu.wehi.idsv;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
-
 import au.edu.wehi.idsv.graph.MaximumCliqueIntervalGraph;
 import au.edu.wehi.idsv.graph.MaximumCliqueIntervalGraph.Node;
 import au.edu.wehi.idsv.graph.ScalingHelper;
+
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 
 /**
  * variant/reference Log-likelihood statistical model

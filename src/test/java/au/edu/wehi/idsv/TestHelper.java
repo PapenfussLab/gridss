@@ -2,7 +2,6 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import htsjdk.samtools.BAMRecord;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
@@ -13,7 +12,6 @@ import htsjdk.samtools.SAMLineParser;
 import htsjdk.samtools.SAMReadGroupRecord;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
-import htsjdk.samtools.SAMRecordFactory;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SamPairUtil;

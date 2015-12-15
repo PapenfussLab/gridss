@@ -6,7 +6,6 @@ import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
 
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
@@ -314,4 +313,92 @@ public class CompoundBreakendAlignmentTest extends TestHelper {
 		assertEquals(30, a.getAlignmentStart());
 		assertEquals(10, r.getAlignmentStart());
 	}
+	@Test
+	public void simple_fb() {
+		CompoundBreakendAlignment cba = new CompoundBreakendAlignment(getContext(), null,
+				new BreakendSummary(0, FWD, 1, 1),
+				B("NACGT"),
+				B("12345"),
+				B("NNAACCGGTT"),
+				B("6789012345"),
+				ImmutableList.of(
+						withSequence("AACCGGTT", withReadName("0#70#2#ReadName", Read(1, 10, "2S5M1S")))[0]
+					));
+		SAMRecord r = cba.getSimpleBreakendRealignment();
+		assertEquals(1, (int)r.getReferenceIndex());
+		assertEquals(10, r.getAlignmentStart());
+		assertFalse(r.getReadNegativeStrandFlag());
+		assertEquals("4S5M1S", r.getCigarString());
+		assertEquals("NNAACCGGTT", S(r.getReadBases()));
+		assertEquals("6789012345", S(r.getBaseQualities()));
+	}
+	@Test
+	public void simple_ff() {
+		CompoundBreakendAlignment cba = new CompoundBreakendAlignment(getContext(), null,
+				new BreakendSummary(0, FWD, 1, 1),
+				B("NACGT"),
+				B("12345"),
+				B("NNAATTCCGG"),
+				B("6789012345"),
+				ImmutableList.of(
+						onNegative(withSequence("CGGAATT", withReadName("0#70#2#ReadName", Read(1, 10, "1S5M1S"))))[0]
+					));
+		SAMRecord r = cba.getSimpleBreakendRealignment();
+		assertEquals(1, (int)r.getReferenceIndex());
+		assertEquals(10, r.getAlignmentStart());
+		assertTrue(r.getReadNegativeStrandFlag());
+		assertEquals("2S5M3S", r.getCigarString());
+		assertEquals("CCGGAATTNN", S(r.getReadBases()));
+		assertEquals("5432109876", S(r.getBaseQualities()));
+	}
+	@Test
+	public void simple_bf() {
+		// 12345678901234567890
+		// NNAATTCCGG        <NACGT
+		//   *****
+		//   M
+		CompoundBreakendAlignment cba = new CompoundBreakendAlignment(getContext(), null,
+				new BreakendSummary(0, BWD, 20, 20),
+				B("NACGT"),
+				B("12345"),
+				B("NNAATTCCGG"),
+				B("6789012345"),
+				ImmutableList.of(
+						withSequence("AATTC", withReadName("0#70#2#ReadName", Read(1, 1, "1M4S")))[0]
+					));
+		SAMRecord r = cba.getSimpleBreakendRealignment();
+		assertEquals(1, (int)r.getReferenceIndex());
+		assertEquals(1, r.getAlignmentStart());
+		assertFalse(r.getReadNegativeStrandFlag());
+		assertEquals("2S1M7S", r.getCigarString());
+		assertEquals("NNAATTCCGG", S(r.getReadBases()));
+		assertEquals("6789012345", S(r.getBaseQualities()));
+	}
+	@Test
+	public void simple_bb() {
+		CompoundBreakendAlignment cba = new CompoundBreakendAlignment(getContext(), null,
+				new BreakendSummary(0, BWD, 20, 20),
+				B("NACGT"),
+				B("12345"),
+				B("NNAATTCCGG"),
+				B("6789012345"),
+				ImmutableList.of(
+						onNegative(withSequence("GAATT", withReadName("0#70#2#ReadName", Read(1, 1, "1M4S"))))[0]
+					));
+		SAMRecord r = cba.getSimpleBreakendRealignment();
+		assertEquals(1, (int)r.getReferenceIndex());
+		assertEquals(1, r.getAlignmentStart());
+		assertTrue(r.getReadNegativeStrandFlag());
+		assertEquals("3S1M6S", r.getCigarString());
+		assertEquals("CCGGAATTNN", S(r.getReadBases()));
+		assertEquals("5432109876", S(r.getBaseQualities()));
+	}
 }
+
+
+
+
+
+
+
+

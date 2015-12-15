@@ -155,9 +155,10 @@ public class CigarUtil {
 			cigar.add(new CigarElement(softClippedBaseCount, CigarOperator.SOFT_CLIP));
 		}
 	}
-	public static void trimClipping(List<CigarElement> cigar) {
+	public static List<CigarElement> trimClipping(List<CigarElement> cigar) {
 		while (trimClippingAt(cigar, 0));
 		while (trimClippingAt(cigar, cigar.size() - 1));
+		return cigar;
 	}
 	private static boolean trimClippingAt(List<CigarElement> cigar, int offset) {
 		if (cigar.get(offset).getOperator() == CigarOperator.HARD_CLIP || cigar.get(offset).getOperator() == CigarOperator.SOFT_CLIP) {
@@ -280,5 +281,73 @@ public class CigarUtil {
 			currentIndex++;
 			return currentElement.getOperator();
 		}
+	}
+	/**
+	 * Removes the given number of read bases from the given cigar
+	 * @param cigar CIGAR to trim
+	 * @param startCount number of starting reads to trim
+	 * @param endCount number of ending reads to trim
+	 * @return trimmed cigar
+	 */
+	public static Cigar trimReadBases(Cigar cigar, int startCount, int endCount) {
+		List<CigarElement> cl = Lists.newArrayList(cigar.getCigarElements());
+		for (int i = 0; i < cl.size(); i++) {
+			CigarElement ce = cl.get(i);
+			if (!ce.getOperator().consumesReadBases()) {
+				cl.remove(i);
+				i--;
+			} else {
+				if (startCount < ce.getLength()) {
+					cl.set(i, new CigarElement(ce.getLength() - startCount, ce.getOperator()));
+					break;
+				} else {
+					cl.remove(i);
+					i--;
+					startCount -= ce.getLength();
+				}
+			}
+		}
+		for (int i = cl.size() - 1; i >= 0; i--) {
+			CigarElement ce = cl.get(i);
+			if (!ce.getOperator().consumesReadBases()) {
+				cl.remove(i);
+			} else {
+				if (endCount < ce.getLength()) {
+					cl.set(i, new CigarElement(ce.getLength() - endCount, ce.getOperator()));
+					break;
+				} else {
+					cl.remove(i);
+					endCount -= ce.getLength();
+				}
+			}
+		}
+		clean(cl);
+		return new Cigar(cl);
+	}
+	/**
+	 * Returns the alignment offset of the given base relative to the starting alignment
+	 * @param cigar alignment CIGAR
+	 * @param readBaseOffset base offset
+	 * @return offset relative to first alignment
+	 */
+	public static int offsetOf(Cigar cigar, int readBaseOffset) {
+		List<CigarElement> cl = Lists.newArrayList(cigar.getCigarElements());
+		int basesLeft = readBaseOffset;
+		int currentAlignmentOffset = 0;
+		for (int i = 0; i < cl.size(); i++) {
+			CigarElement ce = cl.get(i);
+			if (ce.getOperator().consumesReadBases() && ce.getOperator().consumesReferenceBases()) {
+				if (basesLeft < ce.getLength()) {
+					return currentAlignmentOffset + basesLeft;
+				}
+			}
+			if (ce.getOperator().consumesReferenceBases()) {
+				currentAlignmentOffset += ce.getLength();
+			}
+			if (ce.getOperator().consumesReadBases()) {
+				basesLeft = Math.max(0, basesLeft - ce.getLength());
+			}
+		}
+		throw new IllegalArgumentException(String.format("Offset of %d base not defined for %s", readBaseOffset, cigar));
 	}
 }

@@ -3,6 +3,7 @@ package au.edu.wehi.idsv;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.fastq.FastqRecord;
+import htsjdk.samtools.util.StringUtil;
 
 import com.google.common.base.Charsets;
 
@@ -46,6 +47,7 @@ public class BreakpointFastqEncoding {
 		return Integer.parseInt(fastqid.split("#")[1]);
 	}
 	public static int getEncodedBreakendOffset(String fastqid) {
+		if (StringUtil.isBlank(fastqid)) return 0;
 		String[] split =  fastqid.split("#");
 		if (split.length > 2) return Integer.parseInt(split[2]);
 		return 0;

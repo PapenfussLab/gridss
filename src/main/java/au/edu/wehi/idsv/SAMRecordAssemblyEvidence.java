@@ -1,5 +1,13 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.TextCigarCodec;
+import htsjdk.samtools.util.Log;
+
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,24 +18,17 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.primitives.Bytes;
-import com.google.common.primitives.UnsignedBytes;
-
 import au.edu.wehi.idsv.alignment.AlignerFactory;
 import au.edu.wehi.idsv.alignment.Alignment;
 import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.vcf.VcfFilter;
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.TextCigarCodec;
-import htsjdk.samtools.util.Log;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.primitives.Bytes;
+import com.google.common.primitives.UnsignedBytes;
 
 public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	private static final Log log = Log.getInstance(SAMRecordAssemblyEvidence.class);
@@ -54,15 +55,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		this.source = source;
 		this.record = assembly;
 		this.isExact = isExact;
-		this.realignments = new CompoundBreakendAlignment(
-				source.getContext(),
-				assembly.getHeader(),
-				bs,
-				getAnchorBytes(record.getReadBases()),
-				getAnchorBytes(record.getBaseQualities()),
-				getBreakendBytes(record.getReadBases()),
-				getBreakendBytes(record.getBaseQualities()),
-				realigned);
+		this.realignments = new CompoundBreakendAlignment(source.getContext(), assembly, realigned);
 		this.breakend = bs;
 		this.realignment = realignments.getSimpleBreakendRealignment();
 		SAMRecordUtil.pairReads(this.record, this.realignment);
@@ -76,26 +69,10 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		for (Pair<SAMRecord, SAMRecord> pair : realignments.getSubsequentBreakpointAlignmentPairs()) {
 			SAMRecord anchor = pair.getLeft();
 			SAMRecord realign = pair.getRight();
-			if (breakend.direction == BreakendDirection.Backward) {
-				realign = pair.getLeft();
-				anchor = pair.getRight();
-			}
-			SAMRecord asAnchor = SAMRecordUtil.clone(getSAMRecord());
-			asAnchor.setReadName(getEvidenceID() + "_" + Integer.toString(i));
-			asAnchor.setReferenceIndex(anchor.getReferenceIndex());
-			asAnchor.setAlignmentStart(anchor.getAlignmentStart());
-			asAnchor.setReadBases(anchor.getReadBases());
-			asAnchor.setBaseQualities(anchor.getBaseQualities());
-			asAnchor.setCigar(anchor.getCigar());
-			asAnchor.setMappingQuality(Math.min(anchor.getMappingQuality(), asAnchor.getMappingQuality()));
-			if (anchor.getReadNegativeStrandFlag()) {
-				asAnchor.setAttribute(SamTags.ASSEMBLY_DIRECTION, breakend.direction.reverse().toChar());
-				// since direction of anchor is reversed, we also need to replicate
-				// the alignment of the reverse-comp of the sequence. Fortunately, the SAM format makes
-				// this simple and we just flip the aligned strand
-				realign.setReadNegativeStrandFlag(!realign.getReadNegativeStrandFlag());
-			}
-			SAMRecordAssemblyEvidence be = AssemblyFactory.hydrate(getEvidenceSource(), asAnchor);
+			anchor.setReadName(getEvidenceID() + "_" + Integer.toString(i));
+			realign.setReadName(getEvidenceID() + "_" + Integer.toString(i));
+			anchor.setMappingQuality(Math.min(anchor.getMappingQuality(), getLocalMapq()));
+			SAMRecordAssemblyEvidence be = AssemblyFactory.hydrate(getEvidenceSource(), anchor);
 			SAMRecordAssemblyEvidence bp = AssemblyFactory.incorporateRealignment(getEvidenceSource().getContext(), be, ImmutableList.of(realign));
 			list.add(bp);
 			i++;

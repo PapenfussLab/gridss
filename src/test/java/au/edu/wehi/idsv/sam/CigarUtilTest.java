@@ -98,4 +98,26 @@ public class CigarUtilTest {
 	public void clean_should_merge_adjacent_and_trim_zero_size_operators() {
 		assertEquals("4M", new Cigar(CigarUtil.clean(C("1M0I0D1M0M2M0S"))).toString());
 	}
+	@Test
+	public void offsetOf_should_use_first_alignment_at_or_after_offset_position() {
+		assertEquals(0, CigarUtil.offsetOf(new Cigar(C("3S3M")), 0));
+		assertEquals(0, CigarUtil.offsetOf(new Cigar(C("3S3M")), 1));
+		assertEquals(0, CigarUtil.offsetOf(new Cigar(C("3S3M")), 2));
+		assertEquals(0, CigarUtil.offsetOf(new Cigar(C("3S3M")), 3));
+		assertEquals(1, CigarUtil.offsetOf(new Cigar(C("3S3M")), 4));
+		assertEquals(2, CigarUtil.offsetOf(new Cigar(C("3S3M")), 5));
+		assertEquals(3, CigarUtil.offsetOf(new Cigar(C("3S3M1I1M")), 6));
+		assertEquals(3, CigarUtil.offsetOf(new Cigar(C("3S3M1I1M")), 7));
+		assertEquals(6, CigarUtil.offsetOf(new Cigar(C("3S3M1I1M2D1M")), 8));
+	}
+	@Test
+	public void offsetOf_should_respect_indels() {
+		assertEquals(2, CigarUtil.offsetOf(new Cigar(C("1M1D1M")), 1));
+	}
+	@Test
+	public void trimReadBases_should_remove_bases() {
+		assertEquals("1S2M", CigarUtil.trimReadBases(new Cigar(C("3S3M")), 2, 1).toString());
+		assertEquals("3M", CigarUtil.trimReadBases(new Cigar(C("4S1M2D3M")), 5, 0).toString());
+		assertEquals("2S1M", CigarUtil.trimReadBases(new Cigar(C("4S1M2D3M")), 2, 3).toString());
+	}
 }

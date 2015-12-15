@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import it.unimi.dsi.fastutil.longs.LongArrayList;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.IdentityHashMap;
@@ -9,10 +11,9 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
-import com.google.common.collect.Range;
-
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
+
+import com.google.common.collect.Range;
 
 /**
  * Collapses leaves and bubbles

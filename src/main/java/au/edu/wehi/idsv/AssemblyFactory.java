@@ -1,5 +1,12 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.Log;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -9,18 +16,12 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.primitives.Bytes;
-
 import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.Log;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.primitives.Bytes;
 
 public final class AssemblyFactory {
 	private static final Log log = Log.getInstance(AssemblyFactory.class);
@@ -104,13 +105,7 @@ public final class AssemblyFactory {
 	 */
 	public static SAMRecordAssemblyEvidence incorporateRealignment(ProcessingContext processContext, SAMRecordAssemblyEvidence assembly, List<SAMRecord> realignments) {
 		if (realignments == null || realignments.size() == 0) return assembly;
-		CompoundBreakendAlignment alignment = new CompoundBreakendAlignment(processContext, assembly.getSAMRecord().getHeader(),
-				assembly.getBreakendSummary(),
-				assembly.getAnchorSequence(),
-				assembly.getAnchorQuality(),
-				assembly.getBreakendSequence(),
-				assembly.getBreakendQuality(),
-				realignments);
+		CompoundBreakendAlignment alignment = new CompoundBreakendAlignment(processContext, assembly.getSAMRecord(), realignments);
 		if (!alignment.getSimpleBreakendRealignment().getReadUnmappedFlag()) {
 			return new RealignedSAMRecordAssemblyEvidence(assembly.getEvidenceSource(), assembly, realignments);
 		} else {

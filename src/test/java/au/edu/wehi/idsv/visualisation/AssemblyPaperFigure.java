@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv.visualisation;
 
+import static org.junit.Assert.assertEquals;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.fastq.FastqRecord;
@@ -15,7 +16,6 @@ import java.util.Random;
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.BreakpointFastqEncoding;
 import au.edu.wehi.idsv.BreakpointSummary;
