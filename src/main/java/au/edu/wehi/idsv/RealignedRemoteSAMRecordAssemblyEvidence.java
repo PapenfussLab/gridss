@@ -1,60 +1,93 @@
 package au.edu.wehi.idsv;
 
+import java.util.List;
+
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
 
-import java.nio.charset.StandardCharsets;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.tuple.Pair;
 
-import org.apache.commons.lang3.ArrayUtils;
+import au.edu.wehi.idsv.sam.CigarUtil;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.SamTags;
 
+import com.google.api.client.util.Lists;
 import com.google.common.collect.ImmutableList;
 
 public class RealignedRemoteSAMRecordAssemblyEvidence extends RealignedSAMRecordAssemblyEvidence implements RemoteEvidence {
-	private final BreakpointSummary bs;
 	private final RealignedSAMRecordAssemblyEvidence local;
 	public RealignedRemoteSAMRecordAssemblyEvidence(RealignedSAMRecordAssemblyEvidence assembly) {
-		super(assembly.getEvidenceSource(), assembly.getSAMRecord(), ImmutableList.of(assembly.getRemoteSAMRecord()));
-		this.bs = super.getBreakendSummary().remoteBreakpoint();
+		this(assembly, remoteRecords(assembly));
+	}
+	private RealignedRemoteSAMRecordAssemblyEvidence(RealignedSAMRecordAssemblyEvidence assembly, Pair<SAMRecord, SAMRecord> remotes) {
+		super(assembly.getEvidenceSource(), remotes.getLeft(), ImmutableList.of(remotes.getRight()));
 		this.local = assembly;
+	}
+	/**
+	 * Translate assembly SAMRecord so the realigned record is considered the anchored one
+	 * @param assembly
+	 * @return
+	 */
+	private static Pair<SAMRecord, SAMRecord> remoteRecords(RealignedSAMRecordAssemblyEvidence assembly) {
+		SAMRecord realign = SAMRecordUtil.clone(assembly.getRemoteSAMRecord());
+		SAMRecord anchor = SAMRecordUtil.clone(assembly.getSAMRecord());
+		assert(!realign.getReadUnmappedFlag());
+		int realignLength = realign.getReadLength();
+		int anchorLength = anchor.getReadLength();
+		BreakendDirection direction;
+		if ((assembly.getBreakendSummary().direction == BreakendDirection.Forward && realign.getReadNegativeStrandFlag()) || 
+				(assembly.getBreakendSummary().direction == BreakendDirection.Backward && !realign.getReadNegativeStrandFlag())) {
+			direction = BreakendDirection.Forward;
+		} else {
+			direction = BreakendDirection.Backward;
+		}
+		realign.setAttribute(SamTags.ASSEMBLY_DIRECTION, direction.toChar());
+		anchor.setAttribute(SamTags.ASSEMBLY_DIRECTION, null);
+		if (realign.getReadNegativeStrandFlag()) {
+			// assembly anchors are always +ve strand
+			realign.setReadNegativeStrandFlag(!realign.getReadNegativeStrandFlag());
+			anchor.setReadNegativeStrandFlag(!anchor.getReadNegativeStrandFlag());
+		}
+		// swap sequences (AAARRR, RRR) -> (RRR, AAARRR)
+		byte[] tmp = realign.getReadBases();
+		realign.setReadBases(anchor.getReadBases());
+		anchor.setReadBases(tmp);
+		tmp = realign.getBaseQualities();
+		realign.setBaseQualities(anchor.getBaseQualities());
+		anchor.setBaseQualities(tmp);
+		if (anchor.getReadNegativeStrandFlag()) {
+			// adjust for revcomp 
+			SequenceUtil.reverseComplement(realign.getReadBases());
+			SequenceUtil.reverseComplement(anchor.getReadBases());
+			ArrayUtils.reverse(realign.getBaseQualities());
+			ArrayUtils.reverse(anchor.getBaseQualities());
+		}
+		// update CIGARS:
+		List<CigarElement> cl = Lists.newArrayList(realign.getCigar().getCigarElements());
+		cl.add(direction == BreakendDirection.Forward ? cl.size() : 0, new CigarElement(anchorLength - realignLength, CigarOperator.S));
+		CigarUtil.clean(cl);
+		realign.setCigar(new Cigar(cl));
+		Cigar anchorCigar = anchor.getCigar();
+		if ((direction == BreakendDirection.Forward && !anchor.getReadNegativeStrandFlag()) || 
+			direction == BreakendDirection.Backward && anchor.getReadNegativeStrandFlag()) {
+			anchorCigar = CigarUtil.trimReadBases(anchorCigar, realignLength, 0);
+		} else {
+			anchorCigar = CigarUtil.trimReadBases(anchorCigar, 0, realignLength);
+		}
+		anchor.setCigar(anchorCigar);
+		
+		// TODO: fix read names so realign has an offset (presumably of zero)
+		assert(BreakpointFastqEncoding.getEncodedBreakendOffset(anchor.getReadName()) == 0);
+		
+		// realign is now the anchor
+		return Pair.of(realign, anchor);
 	}
 	public RealignedSAMRecordAssemblyEvidence asLocal() {
 		return local;
-	}
-	@Override
-	public BreakpointSummary getBreakendSummary() {
-		return bs;
-	}
-	public String getUntemplatedSequence() {
-		String seq = super.getUntemplatedSequence();
-		if (getRemoteSAMRecord().getReadNegativeStrandFlag()) {
-			seq = SequenceUtil.reverseComplement(seq);
-		}
-		return seq;
-	}
-	@Override
-	public byte[] getBreakendSequence() {
-		// breakend sequence from this side is untemplated + anchor
-		byte[] untemplated = getUntemplatedSequence().getBytes(StandardCharsets.US_ASCII);
-		byte[] anchor = getAssemblyAnchorSequence();
-		if (getRemoteSAMRecord().getReadNegativeStrandFlag()) {
-			SequenceUtil.reverseComplement(anchor);
-		}
-		if (bs.direction == BreakendDirection.Forward) {
-			return ArrayUtils.addAll(untemplated, anchor);
-		} else {
-			return ArrayUtils.addAll(anchor, untemplated);
-		}
-	}
-	@Override
-	public int getHomologyAnchoredBaseCount() {
-		return super.getHomologySequence().length() - super.getHomologyAnchoredBaseCount();
-	}
-	@Override
-	public String getHomologySequence() {
-		String seq = super.getHomologySequence();
-		if (getRemoteSAMRecord().getReadNegativeStrandFlag()) {
-			seq = SequenceUtil.reverseComplement(seq);
-		}
-		return seq;
 	}
 	@Override
 	public String getEvidenceID() {
@@ -63,49 +96,5 @@ public class RealignedRemoteSAMRecordAssemblyEvidence extends RealignedSAMRecord
 	@Override
 	public String toString() {
 		return "R" + super.toString();
-	}
-	@Override
-	public int getLocalBaseLength() {
-		return super.getRemoteBaseLength();
-	}
-	@Override
-	public int getLocalMapq() {
-		return super.getRemoteMapq();
-	}
-	@Override
-	public int getLocalMaxBaseQual() {
-		return super.getRemoteMaxBaseQual();
-	}
-	@Override
-	public int getLocalTotalBaseQual() {
-		return super.getRemoteTotalBaseQual();
-	}
-	@Override
-	public int getRemoteBaseCount() {
-		return super.getLocalBaseLength();
-	}
-	@Override
-	public int getRemoteBaseLength() {
-		return super.getLocalBaseLength();
-	}
-	@Override
-	public int getRemoteMapq() {
-		return super.getLocalMapq();
-	}
-	@Override
-	public int getRemoteMaxBaseQual() {
-		return super.getLocalMaxBaseQual();
-	}
-	@Override
-	public int getRemoteTotalBaseQual() {
-		return super.getLocalTotalBaseQual();
-	}
-	@Override
-	public float getBreakpointQual() {
-		return local.getBreakpointQual();
-	}
-	@Override
-	public float getBreakendQual() {
-		return local.getBreakendQual();
 	}
 }
