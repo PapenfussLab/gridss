@@ -745,4 +745,20 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		// =        XNNNNXDMMMMDDDDMMDM
 		assertEquals("1X4N1X1D4M4D2M1D1M", vc.getAttribute(VcfAttributes.ANCHOR_CIGAR.attribute()));
 	}
+	@Test
+	public void anchor_cigar_should_use_local_coordinates() {
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(0, FWD, 100, 100, 0, BWD, 10, 10), "");
+			phredScore(10);
+		}}.make());
+		builder.addEvidence(((RealignedSoftClipEvidence)SCE(FWD, SES(), Read(0, 91, "10M10S"), Read(0, 10, "10S10M"))));
+		builder.addEvidence(((RealignedSoftClipEvidence)SCE(BWD, SES(), Read(0, 10, "10S10M"), Read(0, 91, "10M10S"))).asRemote());
+		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, null, 0, 10, 10, B("NNNNNNNNNNNNNNNNNNNN"), B("00000000001111111111"));
+		ass.annotateAssembly();
+		ass = AssemblyFactory.incorporateRealignment(getContext(), ass, ImmutableList.of(Read(0, 91, "10M")));
+		ass = ((RealignedSAMRecordAssemblyEvidence)ass).asRemote();
+		builder.addEvidence(ass);
+		VariantContextDirectedEvidence vc = builder.make();
+		assertEquals("9M1X", vc.getAttribute(VcfAttributes.ANCHOR_CIGAR.attribute()));
+	}
 }

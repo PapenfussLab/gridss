@@ -1,29 +1,29 @@
-# gridss
+# GRIDSS
 
 A high-speed next-gen sequencing structural variation caller.
-gridss calls variants based on alignment-guided positional de Bruijn graph breakpoint assembly, split read, and read pair evidence.
+GRIDSS calls variants based on alignment-guided positional de Bruijn graph breakpoint assembly, split read, and read pair evidence.
 
 # Pre-requisities
 
-To run, gridss the following must be installed:
+To run, GRIDSS the following must be installed:
 
 * Java 1.8 or later
 * NGS aligner. bowtie2 (default) and bwa are currently supported
 
 # Running
 
-Pre-compiled binaries are available at https://github.com/PapenfussLab/gridss/releases.
+Pre-compiled binaries are available at https://github.com/PapenfussLab/GRIDSS/releases.
 
 Gridss is built using htsjdk, so is invoked in the same manner as Picard tools utilities. Gridss invokes an external alignment tools at multiple point during processing. By default this is bowtie2, but can be configured to use bwa mem.
 
-## example/gridss.sh
+## example/GRIDSS.sh
 
-example/gridss.sh contains an example pipeline of how gridss is invoked.
+example/GRIDSS.sh contains an example pipeline of how GRIDSS is invoked.
 
 ## Memory usage
 
-It is recommended to run gridss with max heap memory of 8GB + 2GB per worker thread.
-For example, with 4 worker threads, it is recommended to run gridss with is -Xmx16g.
+It is recommended to run GRIDSS with max heap memory of 8GB + 2GB per worker thread.
+For example, with 4 worker threads, it is recommended to run GRIDSS with is -Xmx16g.
 Note that if a BED blacklist file excluding problematic centromeric and telomeric
 sequences is not used, additional memory is recommended. The [ENCODE DAC blacklist](https://www.encodeproject.org/annotations/ENCSR636HFF/)
 is recommended when aligning against hg19.
@@ -58,7 +58,7 @@ reference.fa.rev.1.bt2 | Bowtie2 index
 
 These can be created using `samtools faidx reference.fa` and  `bowtie2-build reference.fa reference.fa`
 
-A .dict sequence dictionary is also required but gridss will automatically create one if not found. 
+A .dict sequence dictionary is also required but GRIDSS will automatically create one if not found. 
 
 ### INPUT (Required)
 
@@ -74,7 +74,7 @@ a category should be specified for each input file when performing analysis on m
 ### READ_PAIR_CONCORDANT_PERCENT
 
 Portion (0.0-1.0) of read pairs to be considered concordant. Concordant read pairs are considered to provide no support for structural variation.
-Clearing this value will cause gridss to use the 0x02 proper pair SAM flag written by the aligner to detemine concordant pairing.
+Clearing this value will cause GRIDSS to use the 0x02 proper pair SAM flag written by the aligner to detemine concordant pairing.
 Note that some aligner set this flag in a manner inappropriate for SV calling and set the flag for all reads with the expected orientation
 and strand regardless of the inferred fragment size.
 
@@ -87,13 +87,14 @@ for all input files. Use null to indicate an override is not required for a part
 ### PER_CHR
 
 Flags whether processing should be performed in parallel for each chromosome, or serially for each file.
-If your input files are small, or you have a limited number of file handles available, `PER_CHR=false` will
-reduce the number of intermediate files created, at the cost of reduced parallelism.
+Setting `PER_CHR=false` will reduce the number of intermediate files created, at the cost of reduced parallelism.
+This can be useful for small input files small, many reference contigs (such as occurs in heavily fragmented genome
+assemblies), or you have a limited number of file handles available.
 
 ### WORKER_THREADS
 
 Number of processing threads to use, including number of thread to use when invoking the aligner.
-Note that the number of threads spawned by gridss is typically 2-3 times the number of worker threads due to asynchronous I/O threads
+Note that the number of threads spawned by GRIDSS is typically 2-3 times the number of worker threads due to asynchronous I/O threads
 thus it is not uncommon to see over 100% CPU usage when WORKER_THREADS=1 as bam compression/decompression is a computationally expensive operation.
 This parameter defaults to the number of cores available.
 
@@ -108,9 +109,9 @@ This field is a standard Picard tools argument and carries the usual meaning. Te
 
 ## libsswjni.so
 
-Due to relatively poor performance of existing Java-based Smith-Waterman alignment packages, gridss incorporates a JNI wrapper to the striped Smith-Waterman alignment library [SSW](https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library). Gridss will attempt to load a precompiled version. If the precompiled version is not compatible with your linux distribution, or you are running a different operating system, recompilation of the wrapper from source will be required. When recompiling, ensure the correct libsswjni.so is loaded using -Djava.library.path, or the LD_LIBRARY_PATH environment variable as per the JNI documentation.
+Due to relatively poor performance of existing Java-based Smith-Waterman alignment packages, GRIDSS incorporates a JNI wrapper to the striped Smith-Waterman alignment library [SSW](https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library). Gridss will attempt to load a precompiled version. If the precompiled version is not compatible with your linux distribution, or you are running a different operating system, recompilation of the wrapper from source will be required. When recompiling, ensure the correct libsswjni.so is loaded using -Djava.library.path, or the LD_LIBRARY_PATH environment variable as per the JNI documentation.
 
-If your CPU does not support SSE, gridss will terminate with a fatal error when loading the library. Library loading can be disabled by added `-Dsswjni.disable=true` to the gridss command line. If libsswjni.so cannot be loaded, gridss will fall back to a (50x) slower java implementation. 
+If your CPU does not support SSE, GRIDSS will terminate with a fatal error when loading the library. Library loading can be disabled by added `-Dsswjni.disable=true` to the GRIDSS command line. If libsswjni.so cannot be loaded, GRIDSS will fall back to a (50x) slower java implementation. 
 
 ### CONFIGURATION_FILE
 
@@ -119,7 +120,7 @@ as command line arguments. Any of these individual settings can be overriden by 
 file to use instead. Note that this configuration file uses a different format to the Picard tools-compatable
 configuration file that is used instead of the standard command-line arguments.
 
-When supplying a custom configuration, gridss will use the overriding settings for all properties specified
+When supplying a custom configuration, GRIDSS will use the overriding settings for all properties specified
 and fall back to the default for all properties that have not been overridden. Details on the meaning
 of each parameter can be found in the javadoc documentation of the au.edu.wehi.idsv.configuration classes.
 
@@ -130,7 +131,7 @@ Gridss is fundamentally a structural variation breakpoint caller. Variants are o
 ## Quality score
 
 Gridss calculates quality scores according to the model outlined in [paper].
-As gridss does not yet perform multiple test correction or score recalibration, QUAL scores are vastly overestimated for all variants.
+As GRIDSS does not yet perform multiple test correction or score recalibration, QUAL scores are vastly overestimated for all variants.
 As a rule of thumb, variants with QUAL >= 1000 and have assembles from both sides of the breakpoint (AS > 0 & RAS > 0) are considered of high quality,
 variant with QUAL >= 500 but can only be assembled from one breakend (AS > 0 | RAS > 0) are considered of intermediate quality,
 and variants with low QUAL score or lack any supporting assemblies are considered the be of low quality.
@@ -141,8 +142,8 @@ Gridss writes a number of non-standard VCF fields. These fields are described in
 
 ## BEDPE
 
-Gridss supports conversion of VCF to BEDPE format using the VcfBreakendToBedpe utility program included in the gridss jar.
-An working example of this conversion utility is provided in example/gridss.sh
+Gridss supports conversion of VCF to BEDPE format using the VcfBreakendToBedpe utility program included in the GRIDSS jar.
+An working example of this conversion utility is provided in example/GRIDSS.sh
 
 Calling VcfBreakendToBedpe with `INCLUDE_HEADER=true` will include a header containing column names in the bedpe file.
 These fields match the VCF INFO fields of the same name.
@@ -150,7 +151,7 @@ For bedpe output, breakend information is not exported and per category totals (
 
 ## Intermediate Files
 
-Gridss writes a large number of intermediate files. If rerunning gridss with different parameters on the same input, all intermediate files must be deleted. All intermediate files are written to the WORKING_DIR directory tree, with the exception of temporary sort buffers which are written to TMP_DIR and automatically deleted at the conclusion of the sort operation.
+Gridss writes a large number of intermediate files. If rerunning GRIDSS with different parameters on the same input, all intermediate files must be deleted. All intermediate files are written to the WORKING_DIR directory tree, with the exception of temporary sort buffers which are written to TMP_DIR and automatically deleted at the conclusion of the sort operation.
 
 File | Description
 ------- | ---------
@@ -183,10 +184,10 @@ unsorted.* | Temporary intermediate file
 
 Maven is used for build and dependency management which simplifies compile to the following steps:
 
-* `git clone https://github.com/PapenfussLab/gridss`
+* `git clone https://github.com/PapenfussLab/GRIDSS`
 * `mvn package -DskipTests`
 
-If gridss was built successfully, a combined jar containing gridss and all required library located at target/gridss-_VERSION_-jar-with-dependencies.jar will have been created.
+If GRIDSS was built successfully, a combined jar containing GRIDSS and all required library located at target/GRIDSS-_VERSION_-jar-with-dependencies.jar will have been created.
 
 
 # Error Messages

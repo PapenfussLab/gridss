@@ -2,7 +2,6 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import htsjdk.samtools.BAMRecord;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
@@ -13,7 +12,6 @@ import htsjdk.samtools.SAMLineParser;
 import htsjdk.samtools.SAMReadGroupRecord;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
-import htsjdk.samtools.SAMRecordFactory;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SamPairUtil;
@@ -1046,14 +1044,14 @@ public class TestHelper {
 		Stream<KmerNode> stream = StreamSupport.stream(Spliterators.spliteratorUnknownSize(it, Spliterator.ORDERED), false);
 		return stream.mapToInt(n -> n.weight() * n.width()).sum();
 	}
-	private static List<KmerNode> split(List<? extends KmerNode> in) {
-		return ImmutableKmerNode.split(in).collect(Collectors.toList());
+	public static List<KmerNode> split(List<? extends KmerNode> in) {
+		List<KmerNode> list = ImmutableKmerNode.split(in).collect(Collectors.toList());
+		list.sort(KmerNodeUtil.ByLastStartEndKmerReferenceWeight);
+		return list;
 	}
 	public static void assertSameNodes(List<? extends KmerNode> expected, List<? extends KmerNode> actual) {
 		List<KmerNode> splitExpected = split(expected);
 		List<KmerNode> splitActual = split(actual);
-		splitExpected.sort(KmerNodeUtil.ByLastStartEndKmerReferenceWeight);
-		splitActual.sort(KmerNodeUtil.ByLastStartEndKmerReferenceWeight);
 		assertEquals(totalWeight(expected), totalWeight(splitExpected));
 		assertEquals(totalWeight(actual), totalWeight(splitActual));
 		assertEquals(splitExpected, splitActual);

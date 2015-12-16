@@ -13,17 +13,15 @@ import htsjdk.samtools.util.SequenceUtil;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.configuration.ConfigurationException;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-import au.edu.wehi.idsv.StructuralVariationCallBuilderTest.dp;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -478,6 +476,17 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void getAllRealignments_should_return_all_breakpoints_fwd() {
+		//                1         2         3         4
+		//      012345678901234567890123456789012345678901234567890123456789012345
+		// CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAA anchor
+		//      ATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAA realign 1
+		//      SSSSSSSSSSSSSSSSSSSSSSSSSMMMMMSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS
+		//          CAAGAGCGGGTTGTATTCGACGCCAAGTCAGCT realign 2
+		//          SSSSSSSSMMMMMMMMSSSSSSSSSSSSSSSSS
+		//                                        G realign 3
+		//                                        M
+		//
+		//
 		//          1         2         3         4         5         6         7      
 		// 123456789012345678901234567890123456789012345678901234567890123456789012345
 		// CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAA
@@ -544,4 +553,31 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals("GTCA", r1.getUntemplatedSequence());
 		assertEquals(be.getEvidenceID() + "_1", r1.getEvidenceID());
 	}
+	@Test
+	public void getAllRealignments_should_return_all_breakpoints_bwd4() {
+		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES();
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 70, 10, B("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN"), B("00000000000000000000000000000000000000000000000000"));
+		//          1         2         3         4         5         6         7         8         9         0
+		// 123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890
+		//          MMMMMMMMMM          MMMMMMMMMM          MMMMMMMMMM          MMMMMMMMMM          MMMMMMMMMM
+		//                                                  SSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSMMMMMMMMMM
+		//                    SSSSSSSSSSMMMMMMMMMMSSSSSSSSSSSSSSSSSSSS offset = 0
+		//          MMMMMMMMMM offset = 0
+		//                                                            SSSSSSSSSSMMMMMMMMMM offset = 20
+		//                                                  MMMMMMMMMM offset = 20                  
+		RealignedSAMRecordAssemblyEvidence re = (RealignedSAMRecordAssemblyEvidence)AssemblyFactory.incorporateRealignment(getContext(), e, ImmutableList.of(
+				withSequence("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN", withReadName("0#70#0#ReadName", Read(0, 30, "10S10M20S")))[0],
+				withSequence("NNNNNNNNNN", withReadName("0#70#0#ReadName", Read(0, 10, "10M")))[0],
+				withSequence("NNNNNNNNNNNNNNNNNNNN", withReadName("0#70#20#ReadName", Read(0, 70, "10S10M")))[0],
+				withSequence("NNNNNNNNNN", withReadName("0#70#20#ReadName", Read(0, 50, "10M")))[0]
+				));
+		assertEquals(new BreakpointSummary(0, BWD, 70, 70, 0, FWD, 79, 79), re.getBreakendSummary());
+		List<SAMRecordAssemblyEvidence> list = re.getSubsequentRealignments();
+		Collections.sort(list, DirectedEvidenceOrder.ByStartEnd);
+		assertEquals(new BreakpointSummary(0, BWD, 30, 30, 0, FWD, 19, 19), list.get(0).getBreakendSummary());
+		assertEquals(new BreakpointSummary(0, BWD, 50, 50, 0, FWD, 39, 39), list.get(1).getBreakendSummary());
+		assertEquals(new BreakpointSummary(0, BWD, 70, 70, 0, FWD, 59, 59), list.get(2).getBreakendSummary());
+	}
 }
+

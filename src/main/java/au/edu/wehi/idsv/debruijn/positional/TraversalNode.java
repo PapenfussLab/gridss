@@ -2,10 +2,10 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import java.util.ArrayDeque;
 
+import au.edu.wehi.idsv.util.IntervalUtil;
+
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Ints;
-
-import au.edu.wehi.idsv.util.IntervalUtil;
 
 public class TraversalNode {
 	public final KmerPathSubnode node;

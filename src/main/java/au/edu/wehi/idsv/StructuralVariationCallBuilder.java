@@ -1,27 +1,26 @@
 package au.edu.wehi.idsv;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import com.google.common.collect.BoundType;
-import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.Range;
-import com.google.common.collect.RangeSet;
-import com.google.common.collect.TreeRangeSet;
-
-import au.edu.wehi.idsv.sam.CigarUtil;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfFilter;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
+
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfFilter;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
+
+import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Ordering;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeRangeSet;
 
 public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private static final Log log = Log.getInstance(StructuralVariationCallBuilder.class);
@@ -133,7 +132,9 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			fBREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT[i]  += evidence.getAssemblyNonSupportingSoftClipCount(i);
 			// TODO quals, remotes, etc
 		}
-		processAnchor(evidence.getSAMRecord());
+		if (evidence.isBreakendExact()) {
+			processAnchor(evidence.getRemoteSAMRecord());
+		}
 	}
 	private void add(RealignedSAMRecordAssemblyEvidence evidence) {
 		fBREAKPOINT_ASSEMBLY_COUNT++;

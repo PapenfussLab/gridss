@@ -401,7 +401,7 @@ public class SAMRecordUtil {
 	 * Removes soft-clipped bases from the ends of read
 	 */
 	public static void trimSoftClips(SAMRecord read, int startCount, int endCount) {
-		assert(read.getReadLength() == read.getCigar().getReadLength());
+		assert(read.getReadUnmappedFlag() || read.getReadLength() == read.getCigar().getReadLength());
 		List<CigarElement> cigar = Lists.newArrayList(read.getCigar().getCigarElements());
 		if (startCount > 0) {
 			CigarElement sc = cigar.get(0);
@@ -430,6 +430,16 @@ public class SAMRecordUtil {
 		read.setReadBases(Arrays.copyOfRange(read.getReadBases(), startCount, readLength - endCount));
 		read.setBaseQualities(Arrays.copyOfRange(read.getBaseQualities(), startCount, readLength - endCount));
 		assert(read.getReadLength() == read.getCigar().getReadLength());
+	}
+	public static void trim(SAMRecord read, int startCount, int endCount) {
+		int readLength = read.getReadLength();
+		read.setReadBases(Arrays.copyOfRange(read.getReadBases(), startCount, readLength - endCount));
+		read.setBaseQualities(Arrays.copyOfRange(read.getBaseQualities(), startCount, readLength - endCount));
+		if (read.getCigar() != null && read.getCigar().getCigarElements().size() > 0) {
+			read.setAlignmentStart(read.getAlignmentStart() + CigarUtil.offsetOf(read.getCigar(), startCount));
+			read.setCigar(CigarUtil.trimReadBases(read.getCigar(), startCount, endCount));
+			assert(read.getReadLength() == read.getCigar().getReadLength());
+		}
 	}
 	public static boolean isReferenceAlignment(SAMRecord r) {
 		if (r.getCigar() == null) return true;

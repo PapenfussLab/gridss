@@ -1,21 +1,22 @@
 package au.edu.wehi.idsv;
 
-import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Iterator;
-
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Ordering;
-
-import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.TextCigarCodec;
 import htsjdk.variant.variantcontext.VariantContext;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Iterator;
+
+import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
+
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Ordering;
 
 /**
  * VCF Breakend record
@@ -144,7 +145,7 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 		if (be instanceof BreakpointSummary) {
 			BreakendSummary rbe = ((BreakpointSummary)be).remoteBreakend();
 			r.setReadPairedFlag(true);
-			r.setMateNegativeStrandFlag(getBreakendSummary().direction == BreakendDirection.Backward);
+			r.setMateNegativeStrandFlag(rbe.direction == BreakendDirection.Backward);
 			r.setMateReferenceIndex(rbe.referenceIndex);
 			// incorrect if mate is FWD and has an ANCHOR_CIGAR defined
 			r.setMateAlignmentStart(rbe.start);

@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.variant.vcf.VCFConstants;
+
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.List;
@@ -9,8 +11,6 @@ import com.google.common.collect.Lists;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.UnsignedBytes;
-
-import htsjdk.variant.vcf.VCFConstants;
 
 /**
  * Helper functions to extract an object or list of objects of the desired type
