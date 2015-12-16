@@ -393,6 +393,28 @@ public class CompoundBreakendAlignmentTest extends TestHelper {
 		assertEquals("CCGGAATTNN", S(r.getReadBases()));
 		assertEquals("5432109876", S(r.getBaseQualities()));
 	}
+	@Test
+	public void should_copy_assembly_annotations_to_constructed_anchors() {
+		ProcessingContext pc = getContext();
+		SoftClipEvidence sc = SCE(FWD, Read(0,2, "2M4S"));
+		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakend(pc, AES(pc), FWD, ImmutableList.of(sc.getEvidenceID()), 0, 2, 2, B("NNACGT"), B("121234"));
+		ass.hydrateEvidenceSet(sc);
+		ass.annotateAssembly();
+		assertEquals(1, ass.getAssemblySupportCount());
+		CompoundBreakendAlignment cba = new CompoundBreakendAlignment(pc,
+				ass.getSAMRecord(),
+				ImmutableList.of(
+						withName("0#1#0#asm1", withMapq(40, withQual(B("A"), withSequence(B("1"), Read(0, 10, "1M")))))[0],
+						withName("0#1#1#asm1", withMapq(40, withQual(B("C"), withSequence(B("2"), Read(0, 10, "1M")))))[0],
+						withName("0#1#2#asm1", withMapq(40, withQual(B("G"), withSequence(B("3"), Read(0, 10, "1M")))))[0],
+						withName("0#1#3#asm1", withMapq(40, withQual(B("T"), withSequence(B("4"), Read(0, 10, "1M")))))[0]
+				));
+		List<Pair<SAMRecord, SAMRecord>> pairs = cba.getSubsequentBreakpointAlignmentPairs();
+		assertEquals(3, pairs.size());
+		for (Pair<SAMRecord, SAMRecord> pair : pairs) {
+			assertEquals(1, new RealignedSAMRecordAssemblyEvidence(AES(pc), pair.getLeft(), ImmutableList.of(pair.getRight())).getAssemblySupportCount());
+		}
+	}
 }
 
 

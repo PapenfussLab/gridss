@@ -124,11 +124,21 @@ public class CompoundBreakendAlignment {
 					anchor.setAttribute(SamTags.ASSEMBLY_DIRECTION, getBreakendDirection(firstanchor).toChar());
 				}
 				trimRealignment(anchor, realign);
+				copyAssemblyAnnotations(anchor);
+				anchor.setReadName(firstanchor.getReadName() + "_" + Integer.toString(output.size()));
+				realign.setReadName(firstanchor.getReadName() + "_" + Integer.toString(output.size()));
+				anchor.setMappingQuality(Math.min(anchor.getMappingQuality(), firstanchor.getMappingQuality()));
 				output.add(Pair.of(anchor, realign));
 			}
 			lastEntry = entry;
 		}
 		return output;
+	}
+	private void copyAssemblyAnnotations(SAMRecord anchor) {
+		for (String field: SamTags.ASSEMBLY_ANNOTATIONS) {
+			if (field.equals(SamTags.ASSEMBLY_DIRECTION)) continue;
+			anchor.setAttribute(field, firstanchor.getAttribute(field));
+		}
 	}
 	private SAMRecord asFullSequence(SAMRecord realign) {
 		SAMRecord r = SAMRecordUtil.clone(realign);

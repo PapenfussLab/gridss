@@ -5,6 +5,7 @@ import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.TextCigarCodec;
 import htsjdk.samtools.util.Log;
 
@@ -69,9 +70,6 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		for (Pair<SAMRecord, SAMRecord> pair : realignments.getSubsequentBreakpointAlignmentPairs()) {
 			SAMRecord anchor = pair.getLeft();
 			SAMRecord realign = pair.getRight();
-			anchor.setReadName(getEvidenceID() + "_" + Integer.toString(i));
-			realign.setReadName(getEvidenceID() + "_" + Integer.toString(i));
-			anchor.setMappingQuality(Math.min(anchor.getMappingQuality(), getLocalMapq()));
 			SAMRecordAssemblyEvidence be = AssemblyFactory.hydrate(getEvidenceSource(), anchor);
 			SAMRecordAssemblyEvidence bp = AssemblyFactory.incorporateRealignment(getEvidenceSource().getContext(), be, ImmutableList.of(realign));
 			list.add(bp);
@@ -696,10 +694,10 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
         newAssembly.setAlignmentStart(start + alignment.getStartPosition());
         if (!cigar.equals(getBackingRecord().getCigar())) {
         	newAssembly.setCigar(cigar);
-        	newAssembly.setAttribute(SamTags.ORIGINAL_CIGAR, r.getCigarString());
+        	newAssembly.setAttribute(SAMTag.OC.name(), r.getCigarString());
         }
         if (newAssembly.getAlignmentStart() != r.getAlignmentStart()) {
-        	newAssembly.setAttribute(SamTags.ORIGINAL_POSITION, r.getAlignmentStart());
+        	newAssembly.setAttribute(SAMTag.OP.name(), r.getAlignmentStart());
         }
         SAMRecordAssemblyEvidence realigned = AssemblyFactory.hydrate(getEvidenceSource(), newAssembly);
         return realigned;

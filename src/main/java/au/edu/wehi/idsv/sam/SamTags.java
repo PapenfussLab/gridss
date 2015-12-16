@@ -1,6 +1,8 @@
 package au.edu.wehi.idsv.sam;
 
-import htsjdk.samtools.SAMTag;
+import java.util.List;
+
+import com.google.common.collect.ImmutableList;
 
 public class SamTags {
 	/**
@@ -20,8 +22,6 @@ public class SamTags {
 	 */
 	public static final String EVIDENCEID = "ez";
 	public static final String ASSEMBLY_DIRECTION = "ad";
-	public static final String ORIGINAL_CIGAR = SAMTag.OC.name();
-	public static final String ORIGINAL_POSITION = SAMTag.OP.name();
 	public static final String SPANNING_ASSEMBLY = "sp";
 	// Per category aggregations
 	public static final String ASSEMBLY_READPAIR_COUNT = "dc";
@@ -38,4 +38,23 @@ public class SamTags {
 	public static final String ASSEMBLY_READPAIR_LENGTH_MAX = "dl";
 	public static final String ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX = "ds";
 	public static final String ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL = "ms";
+	public static final List<String> ASSEMBLY_ANNOTATIONS = ImmutableList.of(
+			ASSEMLBY_FILTERS,
+			EVIDENCEID,
+			ASSEMBLY_DIRECTION,
+			SPANNING_ASSEMBLY,
+			ASSEMBLY_READPAIR_COUNT,
+			ASSEMBLY_SOFTCLIP_COUNT,
+			ASSEMBLY_SOFTCLIP_REMOTE_COUNT,
+			ASSEMBLY_NONSUPPORTING_READPAIR_COUNT,
+			ASSEMBLY_NONSUPPORTING_SOFTCLIP_COUNT,
+			ASSEMBLY_READPAIR_QUAL,
+			ASSEMBLY_SOFTCLIP_QUAL,
+			ASSEMBLY_SOFTCLIP_REMOTE_QUAL,
+			ASSEMBLY_NONSUPPORTING_READPAIR_QUAL,
+			ASSEMBLY_NONSUPPORTING_SOFTCLIP_QUAL,
+			ASSEMBLY_READPAIR_LENGTH_MAX,
+			ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX,
+			ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL
+			);
 }
