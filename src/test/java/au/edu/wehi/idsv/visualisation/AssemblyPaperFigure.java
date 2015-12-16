@@ -219,13 +219,14 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 		int fragSize = 25;
 		int fragSpan = 1;
 		ProcessingContext pc = getCommandlineContext(false);
-		pc.getConfig().minReadMapq = 0;
+		
 		pc.getConfig().getAssembly().k = k;
 		pc.getConfig().getAssembly().writeFiltered = true;
 		pc.getConfig().getAssembly().errorCorrection.maxBaseMismatchForCollapse = 0;
 		pc.getConfig().getAssembly().includeRemoteSplitReads = true;
 		pc.getConfig().getRealignment().minLength = 0;
 		pc.getConfig().getRealignment().minAverageQual = 0;
+		pc.getConfig().getRealignment().mapqUniqueThreshold = 0;
 		pc.getConfig().getSoftClip().minAnchorIdentity = 0;
 		pc.getConfig().getSoftClip().minAverageQual = 0;
 		pc.getConfig().getSoftClip().minLength =  0;

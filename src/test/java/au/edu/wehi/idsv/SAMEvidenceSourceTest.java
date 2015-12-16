@@ -392,6 +392,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		pc.getSoftClipParameters().minAnchorIdentity = 0;
 		pc.getConfig().adapters = new AdapterHelper(new String[0]);
 		pc.getRealignmentParameters().minLength = 1;
+		pc.getRealignmentParameters().mapqUniqueThreshold = 0;
 		pc.getRealignmentParameters().minAverageQual = 0;
 		List<SAMRecord> in = Lists.newArrayList();
 		List<SAMRecord> realn = Lists.newArrayList();

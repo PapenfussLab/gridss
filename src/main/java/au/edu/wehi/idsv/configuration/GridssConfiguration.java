@@ -27,9 +27,6 @@ public class GridssConfiguration {
 	public AdapterHelper adapters;
 	/**
 	 * Minimum MAPQ of read to considered evidence
-	 * 
-	 * This threshold is also used for determining whether an realignment is uniquely mapped
-	 * (this is required due to the required symmetry when processing remote evidence).
 	 */
 	public int minReadMapq;
 	/**

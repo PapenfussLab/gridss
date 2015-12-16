@@ -342,7 +342,6 @@ public class TestHelper {
 	public static GridssConfiguration getConfig(File workingDirectory) {
 		GridssConfiguration config;
 		config = new GridssConfiguration(getDefaultConfig(), workingDirectory);
-		config.minReadMapq = 5;
 		config.getSoftClip().minAverageQual = 0;
 		config.minAnchorShannonEntropy = 0;
 		config.getAssembly().minReads = 2;
