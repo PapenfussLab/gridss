@@ -52,6 +52,7 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 	private final AssemblyEvidenceSource source;
 	private final List<SAMFileWriter> sortedWriters = Lists.newArrayList();
 	private final List<SAMFileWriter> mateWriters = Lists.newArrayList();
+	private final List<File> unsortedIntermediateFiles = Lists.newArrayList();
 	private final SAMFileHeader header;
 	private final AssemblyAnnotator aa;
 	public CreateAssemblyReadPair(final ProcessingContext processContext, final AssemblyEvidenceSource source, final List<SAMEvidenceSource> samEvidence) {
@@ -103,8 +104,9 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 			writeUnsortedOutput();
 			closeUnsortedWriters();
 			sort(threadpool);
+			removeUnsortedIntermediateFiles();
 			if (processContext.shouldProcessPerChromosome()) {
-				// write out single file for debugging purposes
+				// write out combined file for debugging purposes
 				assemblyPerChrToAssembly();
 			}
 			deleteTemp();
@@ -227,20 +229,30 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 		mateWriters.get(assembly.getMateReferenceIndex() % mateWriters.size()).addAlignment(assembly);
 		mateWriters.get(realign.getMateReferenceIndex() % mateWriters.size()).addAlignment(realign);
 	}
+	private File getUnsortedWorkingFileFor(File file) {
+		File unsorted = FileSystemContext.getWorkingFileFor(file, UNSORTED_FILE_PREFIX);
+		unsortedIntermediateFiles.add(unsorted);
+		return unsorted;
+	}
+	private void removeUnsortedIntermediateFiles() {
+		for (File f : unsortedIntermediateFiles) {
+			f.delete();
+		}
+	}
 	private void createUnsortedOutputWriters() {
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
 				sortedWriters.add(processContext.getSamFileWriterFactory(true).makeSAMOrBAMWriter(header, true,
-						FileSystemContext.getWorkingFileFor((fsc.getAssemblyForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName())), UNSORTED_FILE_PREFIX)));
+						getUnsortedWorkingFileFor((fsc.getAssemblyForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName())))));
 				mateWriters.add(processContext.getSamFileWriterFactory(false).makeSAMOrBAMWriter(header, true,
-						FileSystemContext.getWorkingFileFor((fsc.getAssemblyMateForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName())), UNSORTED_FILE_PREFIX)));
+						getUnsortedWorkingFileFor((fsc.getAssemblyMateForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName())))));
 			}
 		} else {
 			sortedWriters.add(processContext.getSamFileWriterFactory(true).makeSAMOrBAMWriter(header, true,
-					FileSystemContext.getWorkingFileFor((fsc.getAssembly(source.getFileIntermediateDirectoryBasedOn())), UNSORTED_FILE_PREFIX)));
+					getUnsortedWorkingFileFor((fsc.getAssembly(source.getFileIntermediateDirectoryBasedOn())))));
 			mateWriters.add(processContext.getSamFileWriterFactory(false).makeSAMOrBAMWriter(header, true,
-					FileSystemContext.getWorkingFileFor((fsc.getAssemblyMate(source.getFileIntermediateDirectoryBasedOn())), UNSORTED_FILE_PREFIX)));
+					getUnsortedWorkingFileFor((fsc.getAssemblyMate(source.getFileIntermediateDirectoryBasedOn())))));
 		}
 	}
 	@Override
