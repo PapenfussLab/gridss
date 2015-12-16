@@ -60,8 +60,12 @@ public class VcfBreakendToReadPairTest extends IntermediateFilesTest {
 		assertEquals(1, list.get(0).getAlignmentStart());
 		assertEquals(2, list.get(0).getAlignmentEnd());
 		assertFalse(list.get(0).getReadNegativeStrandFlag());
-		assertTrue(list.get(2).getReadNegativeStrandFlag());
 		assertTrue(list.get(0).getReadPairedFlag());
+		assertEquals(4, list.get(0).getMateAlignmentStart());
+		assertEquals(3, (int)list.get(0).getMateReferenceIndex());
+		assertTrue(list.get(0).getMateNegativeStrandFlag());
+		
+		assertTrue(list.get(1).getReadNegativeStrandFlag());
 	}
 	@Test
 	public void should_match_breakends_using_event() throws IOException {

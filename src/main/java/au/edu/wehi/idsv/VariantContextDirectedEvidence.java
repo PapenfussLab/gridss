@@ -145,7 +145,7 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 		if (be instanceof BreakpointSummary) {
 			BreakendSummary rbe = ((BreakpointSummary)be).remoteBreakend();
 			r.setReadPairedFlag(true);
-			r.setMateNegativeStrandFlag(getBreakendSummary().direction == BreakendDirection.Backward);
+			r.setMateNegativeStrandFlag(rbe.direction == BreakendDirection.Backward);
 			r.setMateReferenceIndex(rbe.referenceIndex);
 			// incorrect if mate is FWD and has an ANCHOR_CIGAR defined
 			r.setMateAlignmentStart(rbe.start);
