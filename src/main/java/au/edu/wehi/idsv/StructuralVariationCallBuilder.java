@@ -132,7 +132,9 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			fBREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT[i]  += evidence.getAssemblyNonSupportingSoftClipCount(i);
 			// TODO quals, remotes, etc
 		}
-		processAnchor(evidence.getSAMRecord());
+		if (evidence.isBreakendExact()) {
+			processAnchor(evidence.getRemoteSAMRecord());
+		}
 	}
 	private void add(RealignedSAMRecordAssemblyEvidence evidence) {
 		fBREAKPOINT_ASSEMBLY_COUNT++;
