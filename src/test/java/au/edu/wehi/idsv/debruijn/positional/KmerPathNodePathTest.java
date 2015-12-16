@@ -174,4 +174,21 @@ public class KmerPathNodePathTest extends TestHelper {
 			path.pop();
 		}
 	}
+	@Test
+	public void terminalLeafAnchorRanges_should_not_list_non_terminal_paths() {
+		int k = 4;
+		List<KmerPathNode> input = new ArrayList<KmerPathNode>();
+		input.add(KPN(k, "GTAC", 1, 2, false)); 
+		input.add(KPN(k, "TACT", 2, 3, false)); 
+		input.add(KPN(k, "ACTG", 3, 4, false));
+		input.add(KPN(k, "CTGATT", 5, 5, false));
+		input.add(KPN(k, "CTGGCGTAGA", 4, 4, false));
+		KmerPathNode.addEdge(input.get(0), input.get(1));
+		KmerPathNode.addEdge(input.get(1), input.get(2));
+		KmerPathNode.addEdge(input.get(2), input.get(3));
+		KmerPathNode.addEdge(input.get(2), input.get(4));
+		
+		KmerPathNodePath p = new KmerPathNodePath(new KmerPathSubnode(input.get(1)), true, 1000);
+		assertEquals(0, p.terminalLeafRanges().asRanges().size());
+	}
 }
