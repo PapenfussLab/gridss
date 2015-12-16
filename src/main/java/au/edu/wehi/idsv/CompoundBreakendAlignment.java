@@ -200,7 +200,7 @@ public class CompoundBreakendAlignment {
 	private boolean isFiltered(SAMRecord realignment) {
 		return realignment == null ||
 				realignment.getReadUnmappedFlag() ||
-				realignment.getMappingQuality() < processContext.getRealignmentParameters().mapqUniqueThreshold;
+				realignment.getMappingQuality() < processContext.getConfig().minReadMapq;
 	}
 	public CompoundBreakendAlignment(
 			ProcessingContext processContext,

@@ -747,15 +747,17 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void anchor_cigar_should_use_local_coordinates() {
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+		ProcessingContext pc = getContext();
+		pc.getConfig().minReadMapq = 0;
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(0, FWD, 100, 100, 0, BWD, 10, 10), "");
 			phredScore(10);
 		}}.make());
-		builder.addEvidence(((RealignedSoftClipEvidence)SCE(FWD, SES(), Read(0, 91, "10M10S"), Read(0, 10, "10S10M"))));
-		builder.addEvidence(((RealignedSoftClipEvidence)SCE(BWD, SES(), Read(0, 10, "10S10M"), Read(0, 91, "10M10S"))).asRemote());
-		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, null, 0, 10, 10, B("NNNNNNNNNNNNNNNNNNNN"), B("00000000001111111111"));
+		builder.addEvidence(((RealignedSoftClipEvidence)SCE(FWD, SES(pc), Read(0, 91, "10M10S"), Read(0, 10, "10S10M"))));
+		builder.addEvidence(((RealignedSoftClipEvidence)SCE(BWD, SES(pc), Read(0, 10, "10S10M"), Read(0, 91, "10M10S"))).asRemote());
+		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakend(getContext(), AES(pc), BWD, null, 0, 10, 10, B("NNNNNNNNNNNNNNNNNNNN"), B("00000000001111111111"));
 		ass.annotateAssembly();
-		ass = AssemblyFactory.incorporateRealignment(getContext(), ass, ImmutableList.of(Read(0, 91, "10M")));
+		ass = AssemblyFactory.incorporateRealignment(pc, ass, ImmutableList.of(Read(0, 91, "10M")));
 		ass = ((RealignedSAMRecordAssemblyEvidence)ass).asRemote();
 		builder.addEvidence(ass);
 		VariantContextDirectedEvidence vc = builder.make();

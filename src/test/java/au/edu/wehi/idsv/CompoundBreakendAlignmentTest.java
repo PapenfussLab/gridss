@@ -40,13 +40,11 @@ public class CompoundBreakendAlignmentTest extends TestHelper {
 	public void should_apply_realignment_mapq_filter() {
 		ProcessingContext pc = getContext();
 		CompoundBreakendAlignment cba = new CompoundBreakendAlignment(pc, null, new BreakendSummary(0, FWD, 2, 2), B("AT"), B("12"), B("CGT"), B("123"), ImmutableList.of(
-				withMapq(5, Read(0, 3, "3M"))[0]));
+				withMapq(4, Read(0, 3, "3M"))[0]));
 		assertTrue(cba.getSimpleBreakendRealignment().getReadUnmappedFlag());
 		
-		pc.getRealignmentParameters().mapqUniqueThreshold = 5;
-		
 		cba = new CompoundBreakendAlignment(pc, null, new BreakendSummary(0, FWD, 2, 2), B("AT"), B("12"), B("CGT"), B("123"), ImmutableList.of(
-				withMapq(5, Read(0, 3, "3M"))[0]));
+				withMapq(4, Read(0, 3, "3M"))[0]));
 		assertFalse(cba.getSimpleBreakendRealignment().getReadUnmappedFlag());
 	}
 	@Test
