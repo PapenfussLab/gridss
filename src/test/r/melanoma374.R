@@ -5,10 +5,13 @@ source("libgridss.R")
 library(VariantAnnotation)
 library(stringr)
 
-vcf <- readVcf(paste0(rootdir, "374/374.gridss.vcf"), "hg19")
+vcf <- readVcf(paste0(rootdir, "374/bt2/374.gridss.vcf"), "hg19")
 vcf <- gridss.removeUnpartnerededBreakend(vcf)
 df <- gridss.vcftodf(vcf, allColumns=TRUE)
 bpgr <- vcftobpgr(vcf)
+table(df$RSR + df$SR + df$RP <= 3)
+sdf <- df[df$Q0==0,]
+hqdf <- sdf[sdf$FILTER==".",]
 
 vdf <- read.table(paste0(rootdir, "374/socrates_validated.tsv"))
 vleftgr <- GRanges(
@@ -39,9 +42,6 @@ hitgr <- bpgr[,]
 vgr[c(5,17,23,35)]
 
 
-
-sdf <- df[df$Q0==0,]
-hqdf <- sdf[sdf$FILTER==".",]
 
 writeVcf(vcf[df$Q0==0,], "W:/374/somatic.vcf")
 ggplot(sdf) + aes(x=QUAL) + geom_histogram(binwidth=25) + scale_x_continuous(lim=c(200, 1000))
