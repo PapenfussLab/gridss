@@ -20,7 +20,7 @@ import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
-import au.edu.wehi.idsv.SmallIndelSAMRecordAssemblyEvidence;
+import au.edu.wehi.idsv.SpanningSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
@@ -216,7 +216,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, ses, withSequence(seq, Read(2, 25, "15S15M"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, results.size());
-		SmallIndelSAMRecordAssemblyEvidence e = (SmallIndelSAMRecordAssemblyEvidence)results.get(0);
+		SpanningSAMRecordAssemblyEvidence e = (SpanningSAMRecordAssemblyEvidence)results.get(0);
 		assertEquals(seq, S(e.getAssemblySequence()));
 		assertEquals("15M9D15M", e.getBackingRecord().getCigarString());
 		assertEquals(1, e.getBackingRecord().getAlignmentStart());
@@ -243,7 +243,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, ses, withSequence(seq, Read(0, 25, "15S15M"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, results.size());
-		SmallIndelSAMRecordAssemblyEvidence e = (SmallIndelSAMRecordAssemblyEvidence)results.get(0);
+		SpanningSAMRecordAssemblyEvidence e = (SpanningSAMRecordAssemblyEvidence)results.get(0);
 		assertEquals(seq, S(e.getAssemblySequence()));
 		assertEquals("15M9D15M", e.getBackingRecord().getCigarString());
 		assertEquals(1, e.getBackingRecord().getAlignmentStart());
@@ -274,7 +274,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, ses, withSequence(seq, Read(0, 23, "13S17M"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, results.size());
-		SmallIndelSAMRecordAssemblyEvidence e = (SmallIndelSAMRecordAssemblyEvidence)results.get(0);
+		SpanningSAMRecordAssemblyEvidence e = (SpanningSAMRecordAssemblyEvidence)results.get(0);
 		assertEquals(seq, S(e.getAssemblySequence()));
 		assertEquals("15M9D15M", e.getBackingRecord().getCigarString());
 		assertEquals(1, e.getBackingRecord().getAlignmentStart());

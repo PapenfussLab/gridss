@@ -446,7 +446,7 @@ public class AssemblyFactoryTest extends TestHelper {
 	}
 	@Test
 	public void should_assemble_breakpoint() {
-		SmallIndelSAMRecordAssemblyEvidence e = (SmallIndelSAMRecordAssemblyEvidence)AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(),
+		SpanningSAMRecordAssemblyEvidence e = (SpanningSAMRecordAssemblyEvidence)AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(),
 				null,
 				0, 1, 1, 0, 2, 1,
 				B("NAAAN"), B("AAAAA"));
@@ -464,7 +464,7 @@ public class AssemblyFactoryTest extends TestHelper {
 	}
 	@Test
 	public void breakpoint_assembly_should_allow_BWD_breakend_before_FWD() {
-		SmallIndelSAMRecordAssemblyEvidence e = (SmallIndelSAMRecordAssemblyEvidence)AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(),
+		SpanningSAMRecordAssemblyEvidence e = (SpanningSAMRecordAssemblyEvidence)AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(),
 				null,
 				0, 10, 1, 0, 1, 1,
 				B("NAAAN"), B("AAAAA"));
@@ -492,7 +492,7 @@ public class AssemblyFactoryTest extends TestHelper {
 					0, 10, 2,
 					0, 15, 3,
 					B("NNAAATTTT"), B("NNAAATTTT")).annotateAssembly(),
-					au.edu.wehi.idsv.SmallIndelSAMRecordAssemblyEvidenceTest.create(1, "2M5D3M", "AAAAAA")
+					au.edu.wehi.idsv.SmallIndSpanningSAMRecordAssemblyEvidenceTest1, "2M5D3M", "AAAAAA")
 			}) {
 			SAMRecordAssemblyEvidence r = AssemblyFactory.hydrate(e.getEvidenceSource(), e.getBackingRecord());
 			SAMRecordAssemblyEvidenceTest.assertEvidenceEquals(e, r);

@@ -18,6 +18,8 @@ import htsjdk.samtools.util.SequenceUtil;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.lang3.tuple.Pair;
+
 import au.edu.wehi.idsv.BreakendDirection;
 
 import com.google.common.collect.Lists;
@@ -481,5 +483,20 @@ public class SAMRecordUtil {
 	public static double entropy(SAMRecord read) {
 		double bits = au.edu.wehi.idsv.util.SequenceUtil.shannonEntropy(read.getReadBases(), 0, read.getReadLength());
 		return bits;
+	}
+	/**
+	 * Splits the read alignment at the given read base position 
+	 * @param read read to split
+	 * @param readBaseOffset 0-based offset of base to split immediately after
+	 * @return left and right split reads 
+	 */
+	public static Pair<SAMRecord, SAMRecord> splitAfter(SAMRecord read, int readBaseOffset) {
+		Pair<Cigar, Cigar> cigars = CigarUtil.splitAfterReadPosition(read.getCigar().getCigarElements(), readBaseOffset);
+		SAMRecord left = SAMRecordUtil.clone(read);
+		left.setCigar(cigars.getLeft());
+		SAMRecord right = SAMRecordUtil.clone(read);
+		right.setAlignmentStart(read.getAlignmentStart() + CigarUtil.offsetOf(read.getCigar(), readBaseOffset + 1));
+		right.setCigar(cigars.getRight());
+		return Pair.of(left, right);
 	}
 }

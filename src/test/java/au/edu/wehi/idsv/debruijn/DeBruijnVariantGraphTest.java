@@ -20,7 +20,7 @@ import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
-import au.edu.wehi.idsv.SmallIndelSAMRecordAssemblyEvidence;
+import au.edu.wehi.idsv.SpanningSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
@@ -344,8 +344,8 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		result.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, b))));
 		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, result.size());
-		assertTrue(result.get(0) instanceof SmallIndelSAMRecordAssemblyEvidence);
-		SmallIndelSAMRecordAssemblyEvidence e = (SmallIndelSAMRecordAssemblyEvidence) result.get(0);
+		assertTrue(result.get(0) instanceof SpanningSAMRecordAssemblyEvidence);
+		SpanningSAMRecordAssemblyEvidence e = (SpanningSAMRecordAssemblyEvidence) result.get(0);
 		assertEquals(S(RANDOM).substring(500, 650), e.getUntemplatedSequence());
 		assertEquals(new BreakpointSummary(0, FWD, 50, 50, 0, BWD, 100, 100), e.getBreakendSummary());
 	}
@@ -360,8 +360,8 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		result.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, b))));
 		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, result.size());
-		assertTrue(result.get(0) instanceof SmallIndelSAMRecordAssemblyEvidence);
-		SmallIndelSAMRecordAssemblyEvidence e = (SmallIndelSAMRecordAssemblyEvidence) result.get(0);
+		assertTrue(result.get(0) instanceof SpanningSAMRecordAssemblyEvidence);
+		SpanningSAMRecordAssemblyEvidence e = (SpanningSAMRecordAssemblyEvidence) result.get(0);
 		assertEquals("", e.getUntemplatedSequence());
 		assertEquals(new BreakpointSummary(0, FWD, 50, 50, 0, BWD, 100, 100), e.getBreakendSummary());
 		assertEquals("50M49D50M", e.getBackingRecord().getCigarString());
@@ -426,8 +426,8 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		result.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, withSequence("GCTAGGTATCTCG", Read(0, 10, "9S4M"))[0]))));
 		result.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, result.size());
-		assertTrue(result.get(0) instanceof SmallIndelSAMRecordAssemblyEvidence);
-		SmallIndelSAMRecordAssemblyEvidence e = (SmallIndelSAMRecordAssemblyEvidence)result.get(0);
+		assertTrue(result.get(0) instanceof SpanningSAMRecordAssemblyEvidence);
+		SpanningSAMRecordAssemblyEvidence e = (SpanningSAMRecordAssemblyEvidence)result.get(0);
 		assertEquals("GCTAGGTATCTCG", S(e.getAssemblySequence()));
 		assertEquals("4M5I5D4M", e.getBackingRecord().getCigarString());
 		assertEquals(1, e.getSAMRecord().getAlignmentStart());

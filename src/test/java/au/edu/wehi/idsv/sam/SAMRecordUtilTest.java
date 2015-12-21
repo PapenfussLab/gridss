@@ -9,6 +9,7 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
@@ -222,5 +223,36 @@ public class SAMRecordUtilTest extends TestHelper {
 	@Test
 	public void entropy_should_ignore_cigar_and_alignment() {
 		assertEquals(2, SAMRecordUtil.entropy(withSequence("ACGT", Read(0, 1, "3S1M"))[0]), 0);
+	}
+	@Test
+	public void splitAfter_should_make_two_full_length_reads() {
+		Pair<SAMRecord, SAMRecord> p = SAMRecordUtil.splitAfter(Read(0, 1, "10M"), 1);
+		assertEquals(1, p.getLeft().getAlignmentStart());
+		assertEquals("2M8S", p.getLeft().getCigarString());
+		assertEquals(10, p.getLeft().getReadLength());
+		
+		assertEquals(3, p.getRight().getAlignmentStart());
+		assertEquals("2S8M", p.getRight().getCigarString());
+		assertEquals(10, p.getRight().getReadLength());
+	}
+	@Test
+	public void splitAfter_should_clean_break() {
+		Pair<SAMRecord, SAMRecord> p = SAMRecordUtil.splitAfter(Read(0, 1, "4M4I4M"), 6);
+		assertEquals(1, p.getLeft().getAlignmentStart());
+		assertEquals("4M8S", p.getLeft().getCigarString());
+		assertEquals(12, p.getLeft().getReadLength());
+		
+		assertEquals(5, p.getRight().getAlignmentStart());
+		assertEquals("8S4M", p.getRight().getCigarString());
+		assertEquals(12, p.getRight().getReadLength());
+	}
+	@Test
+	public void splitAfter_should_not_alter_base_alignments() {
+		Pair<SAMRecord, SAMRecord> p = SAMRecordUtil.splitAfter(Read(0, 1, "4M4D4M"), 3);
+		assertEquals(1, p.getLeft().getAlignmentStart());
+		assertEquals("4M4S", p.getLeft().getCigarString());
+		
+		assertEquals(9, p.getRight().getAlignmentStart());
+		assertEquals("4S4M", p.getRight().getCigarString());
 	}
 }

@@ -80,7 +80,7 @@ public class AssemblyConfiguration {
 	 * Retains evidenceID tracking information after evidence rehydration
 	 */
 	public boolean trackEvidenceID;
-	public boolean applyFilters(SAMRecordAssemblyEvidence evidence) {
+	public boolean applyAnnotationFilters(SAMRecordAssemblyEvidence evidence) {
 		SAMRecordAssemblyEvidence localEvidence = evidence;
 		if (evidence instanceof RemoteEvidence) {
 			// ensures assembly & matching remote always get filtered in/out together
@@ -111,9 +111,7 @@ public class AssemblyConfiguration {
 			localEvidence = ((RealignedRemoteSAMRecordAssemblyEvidence)evidence).asLocal();
 		}
 		boolean filtered = false;
-		if (localEvidence.isReferenceAssembly() ||
-				localEvidence.getBreakendSummary() == null ||
-				localEvidence.getBreakendSequence().length == 0) {
+		if (localEvidence.isReferenceAssembly()) {
 			evidence.filterAssembly(VcfFilter.REFERENCE_ALLELE);
 			filtered = true;
 		}

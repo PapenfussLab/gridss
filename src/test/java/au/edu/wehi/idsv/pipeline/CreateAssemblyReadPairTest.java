@@ -35,8 +35,8 @@ import au.edu.wehi.idsv.RealignedSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.RemoteEvidence;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
-import au.edu.wehi.idsv.SmallIndelSAMRecordAssemblyEvidence;
-import au.edu.wehi.idsv.SmallIndelSAMRecordAssemblyEvidenceTest;
+import au.edu.wehi.idsv.SpanningSAMRecordAssemblyEvidence;
+import au.edu.wehi.idsv.SmSpanningSAMRecordAssemblyEvidenceTest
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 
 import com.google.common.base.Function;
@@ -166,7 +166,7 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 		}
 		spanningCount = 0;
 		for (SAMRecordAssemblyEvidence e : evidence) {
-			if (e instanceof SmallIndelSAMRecordAssemblyEvidence) {
+			if (e instanceof SpanningSAMRecordAssemblyEvidence) {
 				// considered realigned already
 				realignCount++;
 				spanningCount++;
@@ -346,7 +346,7 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	}
 	@Test
 	public void should_include_small_indel_remote_breakends() {
-		orderedAddNoRealign(SmallIndelSAMRecordAssemblyEvidenceTest.create(1, "10M10D10M", "NNNNNNNNNNATATATATAT"));
+		orderedAddNoRealign(SmalSpanningSAMRecordAssemblyEvidenceTestate(1, "10M10D10M", "NNNNNNNNNNATATATATAT"));
 		go();
 	}
 }

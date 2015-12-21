@@ -27,7 +27,7 @@ public class AssemblyConfigurationTest extends TestHelper {
 				getContext(), AES(), BWD, null,
 				0, 1, 2, B("AA"), B("AA"))
 				.annotateAssembly();
-		getContext().getAssemblyParameters().applyFilters(e);
+		getContext().getAssemblyParameters().applyAnnotationFilters(e);
 		assertTrue(e.isAssemblyFiltered());
 		assertTrue(e.getFilters().contains(VcfFilter.REFERENCE_ALLELE));
 	}
@@ -37,7 +37,7 @@ public class AssemblyConfigurationTest extends TestHelper {
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Lists.newArrayList(ev.getEvidenceID()), 0, 1, 1, B("AA"), B("AA"))
 				.hydrateEvidenceSet(ev)
 				.annotateAssembly();
-		getContext().getAssemblyParameters().applyFilters(e);
+		getContext().getAssemblyParameters().applyAnnotationFilters(e);
 		assertTrue(e.isAssemblyFiltered());
 		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_FEW_READ));
 	}
@@ -49,7 +49,7 @@ public class AssemblyConfigurationTest extends TestHelper {
 				B("AAA"), B("AAA"), new int[] { 2, 0 });
 		e.hydrateEvidenceSet(support);
 		e.annotateAssembly();
-		getContext().getAssemblyParameters().applyFilters(e);
+		getContext().getAssemblyParameters().applyAnnotationFilters(e);
 		assertTrue(e.isAssemblyFiltered());
 		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_SHORT));
 	}
@@ -63,7 +63,7 @@ public class AssemblyConfigurationTest extends TestHelper {
 				0, 1, 1, B("AAA"), B("AAA"));
 		e.hydrateEvidenceSet(support);
 		e.annotateAssembly();
-		getContext().getAssemblyParameters().applyFilters(e);
+		getContext().getAssemblyParameters().applyAnnotationFilters(e);
 		assertTrue(!e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_SHORT));
 	}
 	@Test
@@ -76,7 +76,7 @@ public class AssemblyConfigurationTest extends TestHelper {
 				B("AAAAAA"), B("AAAAAA"), new int[] { 2, 0 });
 		e.hydrateEvidenceSet(support);
 		e.annotateAssembly();
-		getContext().getAssemblyParameters().applyFilters(e);
+		getContext().getAssemblyParameters().applyAnnotationFilters(e);
 		assertFalse(e.isAssemblyFiltered());
 	}
 	@Test
@@ -90,7 +90,7 @@ public class AssemblyConfigurationTest extends TestHelper {
 				0, 1, 2, B("AA"), B("AA"));
 		e.hydrateEvidenceSet(support);
 		e.annotateAssembly();
-		assertTrue(getContext().getAssemblyParameters().applyFilters(e));
+		assertTrue(getContext().getAssemblyParameters().applyAnnotationFilters(e));
 		assertTrue(e.getFilters().contains(VcfFilter.REFERENCE_ALLELE));
 	}
 	@Test
@@ -101,7 +101,7 @@ public class AssemblyConfigurationTest extends TestHelper {
 				B("AA"), B("AA"), new int[] { 2, 0});
 		e.hydrateEvidenceSet(support);
 		e.annotateAssembly();
-		getContext().getAssemblyParameters().applyFilters(e);
+		getContext().getAssemblyParameters().applyAnnotationFilters(e);
 		assertFalse(e.getFilters().contains(VcfFilter.REFERENCE_ALLELE));
 	}
 	@Test
@@ -110,7 +110,7 @@ public class AssemblyConfigurationTest extends TestHelper {
 		pc.getAssemblyParameters().minReads = 3;
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(pc, AES(), BWD, null, 0, 1, 5, B("AACGTG"), B("AACGTG"));
 		e.annotateAssembly();
-		assertTrue(pc.getAssemblyParameters().applyFilters(e));
+		assertTrue(pc.getAssemblyParameters().applyAnnotationFilters(e));
 		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_FEW_READ));
 		
 		ArrayList<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(
@@ -120,7 +120,7 @@ public class AssemblyConfigurationTest extends TestHelper {
 				0, 1, 5, B("AACGTG"), B("AACGTG"));
 		e.hydrateEvidenceSet(support);
 		e.annotateAssembly();
-		assertTrue(pc.getAssemblyParameters().applyFilters(e));
+		assertTrue(pc.getAssemblyParameters().applyAnnotationFilters(e));
 		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_FEW_READ));
 		
 		support = Lists.<DirectedEvidence>newArrayList(
@@ -131,7 +131,7 @@ public class AssemblyConfigurationTest extends TestHelper {
 				0, 1, 5, B("AACGTG"), B("AACGTG"));
 		e.hydrateEvidenceSet(support);
 		e.annotateAssembly();
-		assertTrue(pc.getAssemblyParameters().applyFilters(e));
+		assertTrue(pc.getAssemblyParameters().applyAnnotationFilters(e));
 		assertTrue(e.getFilters().contains(VcfFilter.ASSEMBLY_TOO_FEW_READ));
 		
 		support = Lists.<DirectedEvidence>newArrayList(

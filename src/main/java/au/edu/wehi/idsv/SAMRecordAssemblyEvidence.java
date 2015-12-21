@@ -24,6 +24,7 @@ import au.edu.wehi.idsv.alignment.Alignment;
 import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
+import au.edu.wehi.idsv.sam.SplitIndel;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
 import com.google.common.collect.ImmutableList;
@@ -65,7 +66,6 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		if (realignments.getBreakpointCount() <= 1) {
 			return ImmutableList.of();
 		}
-		int i = 0;
 		List<SAMRecordAssemblyEvidence> list = new ArrayList<SAMRecordAssemblyEvidence>(realignments.getBreakpointCount());
 		for (Pair<SAMRecord, SAMRecord> pair : realignments.getSubsequentBreakpointAlignmentPairs()) {
 			SAMRecord anchor = pair.getLeft();
@@ -73,6 +73,25 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 			SAMRecordAssemblyEvidence be = AssemblyFactory.hydrate(getEvidenceSource(), anchor);
 			SAMRecordAssemblyEvidence bp = AssemblyFactory.incorporateRealignment(getEvidenceSource().getContext(), be, ImmutableList.of(realign));
 			list.add(bp);
+		}
+		return list;
+	}
+	/**
+	 * Gets all indels spanned by this event
+	 * @return
+	 */
+	public List<SpanningSAMRecordAssemblyEvidence> getSpannedIndels() {
+		List<SplitIndel> indels = SplitIndel.getIndelsAsSplitReads(getSAMRecord());
+		List<SpanningSAMRecordAssemblyEvidence> list = new ArrayList<SpanningSAMRecordAssemblyEvidence>(indels.size() * 2);
+		int i = 0;
+		for (SplitIndel indel : indels) {
+			indel.leftAnchored.setAttribute(SamTags.ASSEMBLY_DIRECTION, BreakendDirection.Forward.toChar());
+			indel.leftRealigned.setMappingQuality(SAMRecord.UNKNOWN_MAPPING_QUALITY); // hack to force remote portion of assembly to not be mapq filtered
+			list.add(new SpanningSAMRecordAssemblyEvidence(this, indel.leftAnchored, indel.leftRealigned, i));
+			
+			indel.rightAnchored.setAttribute(SamTags.ASSEMBLY_DIRECTION, BreakendDirection.Backward.toChar());
+			indel.rightRealigned.setMappingQuality(SAMRecord.UNKNOWN_MAPPING_QUALITY); // hack to force remote portion of assembly to not be mapq filtered
+			list.add(new SpanningSAMRecordAssemblyEvidence(this, indel.rightAnchored, indel.rightRealigned, i));
 			i++;
 		}
 		return list;
@@ -269,16 +288,14 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	private BreakendDirection getBreakendDirection() {
 		return getBreakendDirection(record);
 	}
-	protected static BreakendDirection getBreakendDirection(SAMRecord record) {
+	private static BreakendDirection getBreakendDirection(SAMRecord record) {
 		Character c = (Character)record.getAttribute(SamTags.ASSEMBLY_DIRECTION);
 		if (c == null) return null;
 		return BreakendDirection.fromChar((char)c);
 	}
 	private static BreakendSummary calculateBreakend(SAMRecord record) {
-		if (SAMRecordUtil.isReferenceAlignment(record)) {
-			return null;
-		}
 		BreakendDirection direction = getBreakendDirection(record);
+		if (direction == null) return null;
 		int beStart;
 		int beEnd;
 		if (!calculateIsBreakendExact(record.getCigar())) {
@@ -616,8 +633,12 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	public SAMRecordAssemblyEvidence realign(int realignmentWindowSize, boolean includeBreakendBases, float portionOfAnchorRetained) {
 		if (!this.isExact) throw new RuntimeException("Sanity check failure: realignment of unanchored assemblies not yet implemented.");
 		BreakendSummary bs = getBreakendSummary();
-		if (bs == null || isReferenceAssembly()) {
+		if (bs == null) {
 			// misassembly with no breakend - nothing to do
+			return this;
+		}
+		if (bs instanceof BreakpointSummary && !includeBreakendBases) {
+			// don't do single-sided realignment when we have two anchors
 			return this;
 		}
 		int refIndex = getBreakendSummary().referenceIndex;
@@ -665,30 +686,33 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		Cigar original = getSAMRecord().getCigar();
 		Cigar cigar = TextCigarCodec.decode(alignment.getCigar());
         
-        if (isSpanningAssembly() &&
-        		SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), BreakendDirection.Forward) +  
-    			SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), BreakendDirection.Backward) > 0) {
-        	// Realignment of small indel assembly transformed breakpoint assembly to breakend
-        	// so we're going to ignore it
-        	// (spanning realignment is currently used to remove reference bubble assemblies with alignment such as 10M5I5D10M)
-        	return this;
-        }
-        if (CigarUtil.commonReferenceBases(cigar, original) < CigarUtil.countMappedBases(original.getCigarElements()) * portionOfAnchorRetained) {
+		if (CigarUtil.commonReferenceBases(cigar, original) < CigarUtil.countMappedBases(original.getCigarElements()) * portionOfAnchorRetained) {
         	// ignore realignment if we have less than half of our nominal reference bases actually mapped to the reference
         	return this;
         }
-        if (SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), getBreakendSummary().direction) == 0 && 
-        		SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), getBreakendSummary().direction.reverse()) > 0) {
-        	// ignore realignment if it flips the direction of the breakend
-        	log.debug(String.format("Realignment of assembly %s at %s converts cigar from %s to %s starting at %d. Is this a FP reference event in close proximity to a real SV in the opposite direction.",
-				getEvidenceID(),
-				getBreakendSummary().toString(source.getContext()),
-				r.getCigarString(),
-				cigar,
-				start + alignment.getStartPosition()
-				));
-        	return this;
-        }
+		// Indels in assembly alignment are now called regardless
+		// of the assembly soft clip status so neither of these
+		// checks are required.
+//        if (isSpanningAssembly() &&
+//        		SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), BreakendDirection.Forward) +  
+//    			SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), BreakendDirection.Backward) > 0) {
+//        	// Realignment of small indel assembly transformed breakpoint assembly to breakend
+//        	// so we're going to ignore it
+//        	// (spanning realignment is currently used to remove reference bubble assemblies with alignment such as 10M5I5D10M)
+//        	return this;
+//        }
+//        if (SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), getBreakendSummary().direction) == 0 && 
+//        		SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), getBreakendSummary().direction.reverse()) > 0) {
+//        	// ignore realignment if it flips the direction of the breakend
+//        	log.debug(String.format("Realignment of assembly %s at %s converts cigar from %s to %s starting at %d. Is this a FP reference event in close proximity to a real SV in the opposite direction.",
+//				getEvidenceID(),
+//				getBreakendSummary().toString(source.getContext()),
+//				r.getCigarString(),
+//				cigar,
+//				start + alignment.getStartPosition()
+//				));
+//        	return this;
+//        }
         SAMRecord newAssembly = SAMRecordUtil.clone(getBackingRecord());
 		newAssembly.setReadName(newAssembly.getReadName() + "_r");
         newAssembly.setAlignmentStart(start + alignment.getStartPosition());
@@ -707,7 +731,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 * @return
 	 */
 	public boolean isReferenceAssembly() {
-		return SAMRecordUtil.isReferenceAlignment(record) || (isExact && getBreakendLength() == 0);
+		return getBreakendLength() == 0 && CigarUtil.countIndels(getSAMRecord().getCigar()) == 0;
 	}
 	/**
 	 * Assembly spans entire breakpoint

@@ -346,7 +346,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void realign_should_turn_reference_bubble_into_reference_assembly() {
-		SAMRecordAssemblyEvidence ass = (SmallIndelSAMRecordAssemblyEvidence)AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), null,
+		SAMRecordAssemblyEvidence ass = (SpanningSAMRecordAssemblyEvidence)AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), null,
 				0, 10, 1,
 				0, 17, 1,
 				B("AAAAAAAA"),
@@ -375,7 +375,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		String assembly = "AAAAAAAAAATTAAAAAAAAAA";
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null,
 				0, 1, 10, B(assembly), B(40, assembly.length())).realign(50, true, 0.5f);
-		assertEquals("10M2I10M", ((SmallIndelSAMRecordAssemblyEvidence)e).getBackingRecord().getCigarString());
+		assertEquals("10M2I10M", ((SpanningSAMRecordAssemblyEvidence)e).getBackingRecord().getCigarString());
 		assertEquals(new BreakpointSummary(0, FWD, 10, 10, 0, BWD, 11, 11), e.getBreakendSummary());
 		assertTrue(e instanceof DirectedBreakpoint);
 	}

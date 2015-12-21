@@ -17,7 +17,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import au.edu.wehi.idsv.sam.CigarUtil;
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
 
 import com.google.common.collect.ImmutableList;
@@ -119,12 +118,7 @@ public final class AssemblyFactory {
 	 * @return Assembly evidence
 	 */
 	public static SAMRecordAssemblyEvidence hydrate(AssemblyEvidenceSource source, SAMRecord record) {
-		BreakendDirection dir = SAMRecordAssemblyEvidence.getBreakendDirection(record);
-		if ((dir == null || SAMRecordUtil.getSoftClipLength(record, dir) == 0) && CigarUtil.containsIndel(record.getCigar())) {
-			return new SmallIndelSAMRecordAssemblyEvidence(source,  record);
-		} else {
-			return new SAMRecordAssemblyEvidence(source, record, null);
-		}
+		return new SAMRecordAssemblyEvidence(source, record, null);
 	}
 	private static final byte[][] PAD_BASES = new byte[][] { new byte[] {}, new byte[] { 'N' }, new byte[] { 'N', 'N' } };
 	private static final byte[][] PAD_QUALS = new byte[][] { new byte[] {}, new byte[] { 0 }, new byte[] { 0, 0 } };

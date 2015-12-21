@@ -8,7 +8,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import com.google.common.collect.Iterables;
+import org.apache.commons.lang3.tuple.Pair;
+
 import com.google.common.collect.Lists;
 
 public class CigarUtil {
@@ -82,54 +83,51 @@ public class CigarUtil {
 		return length;
 	}
 	/**
-	 * Contains indel
+	 * Number of indels in the given cigar
 	 * @param list
 	 * @return
 	 */
-	public static boolean containsIndel(Cigar c) {
+	public static int countIndels(Cigar c) {
+		int n = 0;
 		for (CigarElement e : decodeNegativeDeletion(c.getCigarElements())) {
 			if (e.getOperator() == CigarOperator.DELETION || e.getOperator() == CigarOperator.INSERTION) {
-				return true;
+				n++;
 			}
 		}
-		return false;
+		return n;
 	}
 	/**
-	 * Splits a CIGAR list at the largest indel event
+	 * Split a cigar immediately after the given read base
 	 * @param list cigar
-	 * @return
+	 * @param readBaseOffset 0-based read offset
+	 * @return left and right Cigars for corresponding split read alignment
 	 */
-	public static List<List<CigarElement>> splitAtLargestIndel(List<CigarElement> list) {
-		list = decodeNegativeDeletion(list);
-		int bestOpCount = 0;
-		int bestOffset = list.size();
-		int bestLength = 0;
-		for (int i = 0; i < list.size(); i++) {
-			int size = 0;
-			int length = 0;
-			for (int j = i; j < list.size(); j++) {
-				CigarElement e = list.get(j);
-				if (e.getOperator() == CigarOperator.DELETION || e.getOperator() == CigarOperator.INSERTION) {
-					size += Math.abs(e.getLength());
-					length = j - i + 1;
-				} else {
-					break;
-				}
+	public static Pair<Cigar, Cigar> splitAfterReadPosition(final List<CigarElement> list, final int readBaseOffset) {
+		int length = readLength(list);
+		if (readBaseOffset >= length) throw new IllegalArgumentException(String.format("Offset %d outside of bounds of read with length %d", readBaseOffset, length));
+		List<CigarElement> current = new ArrayList<CigarElement>(list.size());
+		List<CigarElement> left = current;
+		int elementOffset = readBaseOffset;
+		for (CigarElement ce : decodeNegativeDeletion(list)) {
+			if (ce.getOperator().consumesReadBases() && elementOffset >= 0 && elementOffset < ce.getLength()) {
+				// split this element
+				current.add(new CigarElement(elementOffset + 1, ce.getOperator()));
+				clean(current, false);
+				current = new ArrayList<CigarElement>(list.size() - current.size() + 2);
+				current.add(new CigarElement(ce.getLength() - elementOffset - 1, ce.getOperator()));
+			} else {
+				// add to current element
+				current.add(ce);
 			}
-			if (size > bestOpCount) {
-				bestOffset = i;
-				bestOpCount = size;
-				bestLength = length;
+			if (ce.getOperator().consumesReadBases()) {
+				elementOffset -= ce.getLength();
 			}
 		}
-		List<List<CigarElement>> result = new ArrayList<List<CigarElement>>(3);
-		result.add(Lists.newArrayList(Iterables.limit(list, bestOffset)));
-		result.add(Lists.newArrayList(Iterables.limit(Iterables.skip(list, bestOffset), bestLength)));
-		result.add(Lists.newArrayList(Iterables.skip(list, bestOffset + bestLength)));
-		if (result.get(2).size() == 0) {
-			result.get(2).add(new CigarElement(0, CigarOperator.MATCH_OR_MISMATCH));
-		}
-		return result;
+		left.add(new CigarElement(length - readBaseOffset - 1, CigarOperator.SOFT_CLIP));
+		current.add(0, new CigarElement(readBaseOffset + 1, CigarOperator.SOFT_CLIP));
+		clean(left, false);
+		clean(current, false);
+		return Pair.of(new Cigar(left), new Cigar(current));
 	}
 	public static void addStartSoftClip(List<CigarElement> cigar, int softClippedBaseCount) {
 		assert(softClippedBaseCount >= 0);
@@ -243,12 +241,61 @@ public class CigarUtil {
 	 * @return copy of cleaned list 
 	 */
 	public static List<CigarElement> clean(List<CigarElement> list) {
-		list = new ArrayList<CigarElement>(list);
+		return clean(list, true);
+	}
+	/**
+	 * Cleans up a cigar by removing zero width events and merging adjacent elements containing the same operator
+	 * @param list cigar to clean
+	 * @param copy determines whether to copy the list before cleaning
+	 * @return copy of cleaned list 
+	 */
+	public static List<CigarElement> clean(List<CigarElement> list, boolean copy) {
+		if (copy) {
+			list = new ArrayList<CigarElement>(list);
+		}
+		removeZeroWidthElements(list);
+		convertOpenEndedOperations(list);
+		mergeAdjacent(list);
+		return list;
+	}
+	/**
+	 * Converts indel operations that do not contain anchoring alignments on both sides to
+	 * a soft cliped version of the operator 
+	 * @param list
+	 */
+	private static void convertOpenEndedOperations(List<CigarElement> list) {
+		for (int i = list.size() - 1; i >= 0; i--) {
+			CigarElement ce = list.get(i);
+			if (ce.getOperator() == CigarOperator.SOFT_CLIP || ce.getOperator() == CigarOperator.HARD_CLIP) {
+			} else if (ce.getOperator() == CigarOperator.INSERTION) {
+				list.set(i, new CigarElement(ce.getLength(), CigarOperator.SOFT_CLIP));
+			} else if (ce.getOperator() == CigarOperator.DELETION) {
+				list.remove(i);
+			} else {
+				break;
+			}
+		}
+		for (int i = 0; i < list.size(); i++) {
+			CigarElement ce = list.get(i);
+			if (ce.getOperator() == CigarOperator.SOFT_CLIP || ce.getOperator() == CigarOperator.HARD_CLIP) {
+			} else if (ce.getOperator() == CigarOperator.INSERTION) {
+				list.set(i, new CigarElement(ce.getLength(), CigarOperator.SOFT_CLIP));
+			} else if (ce.getOperator() == CigarOperator.DELETION) {
+				list.remove(i);
+				i--;
+			} else {
+				break;
+			}
+		}
+	}
+	private static void removeZeroWidthElements(List<CigarElement> list) {
 		for (int i = list.size() - 1; i >= 0; i--) {
 			if (list.get(i).getLength() == 0) {
 				list.remove(i);
 			}
 		}
+	}
+	private static void mergeAdjacent(List<CigarElement> list) {
 		for (int i = list.size() - 1; i > 0; i--) {
 			if (list.get(i).getOperator() == list.get(i - 1).getOperator()) {
 				CigarElement replacement = new CigarElement(list.get(i).getLength() + list.get(i - 1).getLength(), list.get(i).getOperator());
@@ -256,7 +303,6 @@ public class CigarUtil {
 				list.remove(i);
 			}
 		}
-		return list;
 	}
 	public static class CigarOperatorIterator implements Iterator<CigarOperator> {
 		private Iterator<CigarElement> it;

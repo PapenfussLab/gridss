@@ -108,7 +108,7 @@ public class SAMRecordAssemblyEvidenceIteratorTest extends TestHelper {
 	}
 	@Test
 	public void should_include_both_side_of_spanning_assembly() {
-		in.add(SmallIndelSAMRecordAssemblyEvidenceTest.create(1, "1M1D1M", "NN"));
+		in.add(SpanningSAMRecordAssemblyEvidenceTest.create(1, "1M1D1M", "NN"));
 		go();
 		assertEquals(2, out.size());
 	}
