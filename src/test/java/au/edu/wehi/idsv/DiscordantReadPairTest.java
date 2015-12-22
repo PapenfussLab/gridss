@@ -13,9 +13,9 @@ public class DiscordantReadPairTest extends TestHelper {
 	@Test
 	public void getRemoteMapq_should_be_anchored_mapq() {
 		SAMRecord[] pair = DP(1, 1, "100M", true, 2, 5, "100M", true);
-		pair[0].setMappingQuality(5);
-		pair[1].setMappingQuality(10);
-		assertEquals(10, newPair(pair, 300).getRemoteMapq());
+		pair[0].setMappingQuality(15);
+		pair[1].setMappingQuality(20);
+		assertEquals(20, newPair(pair, 300).getRemoteMapq());
 	}
 	@Test
 	public void getRemoteBaseLength_should_be_read_length() {

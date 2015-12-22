@@ -70,7 +70,7 @@ public class SAMRecordAssemblyEvidenceIterator implements
 			indels = evidence.getSpannedIndels();
 			buffer.addAll(indels);
 		}
-		if (!evidence.isReferenceAssembly() && (evidence.getBreakendSummary() != null || (includeSpannedIndels && !indels.isEmpty()))) {
+		if (!evidence.isReferenceAssembly() && (evidence.getBreakendSummary() != null || (includeIndelParents && !indels.isEmpty()))) {
 			buffer.add(evidence);
 		}
 	}

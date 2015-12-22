@@ -13,6 +13,7 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
 
 import com.google.common.collect.ImmutableList;
@@ -497,7 +498,7 @@ public class AssemblyFactoryTest extends TestHelper {
 					0, 10, 3,
 					B("NNAAATTTT"), B("NNAAATTTT")).annotateAssembly()
 			}) {
-			SAMRecordAssemblyEvidence r = AssemblyFactory.hydrate(e.getEvidenceSource(), e.getBackingRecord());
+			SAMRecordAssemblyEvidence r = AssemblyFactory.hydrate(e.getEvidenceSource(), SAMRecordUtil.clone(e.getBackingRecord()));
 			SAMRecordAssemblyEvidenceTest.assertEvidenceEquals(e, r);
 		}
 	}

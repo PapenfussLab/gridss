@@ -3,6 +3,10 @@ package au.edu.wehi.idsv;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import java.util.Collection;
+import java.util.List;
+
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMUtils;
 
@@ -56,13 +60,6 @@ public class SpanningSAMRecordAssemblyEvidenceTest extends TestHelper {
 		check_matches(2, "2M3I4M", "AATTTNNNN", 2, "2M7S", "AATTTNNNN", 4, "3S4M", "TTTNNNN");
 	}
 	@Test
-	public void should_split_read_on_largest_indel() {
-		// 1234567----8901234567890
-		//  MMdddMiiiiMMMMM
-		
-		check_matches(2, "2M3D1M4I5M", "AAATTTTNNNNN", 2, "2M3D1M9S", "AAATTTTNNNNN", 8, "4S5M", "TTTTNNNNN");
-	}
-	@Test
 	public void split_read_mapq_should_be_source_mapq() {
 		SpanningSAMRecordAssemblyEvidence e = create(0, "1M1D1M", "NN");
 		assertEquals(e.getBackingRecord().getMappingQuality(), e.getSAMRecord().getMappingQuality());
@@ -106,17 +103,20 @@ public class SpanningSAMRecordAssemblyEvidenceTest extends TestHelper {
 	public void getEvidenceID_should_suffix_with_local_breakend_direction_and_indel_offset() {
 		SpanningSAMRecordAssemblyEvidence e = create(0, "1M1D1M", "NN");
 		String evidenceID = e.getParentAssembly().getEvidenceID();
-		assertEquals(evidenceID + "_f1", e.getEvidenceID());
-		assertEquals(evidenceID + "_b1", e.asRemote().getEvidenceID());
+		assertEquals(evidenceID + "_f0", e.getEvidenceID());
+		assertEquals(evidenceID + "_b0", e.asRemote().getEvidenceID());
 	}
 	@Test
-	public void isSpanningAssembly() {
-		SpanningSAMRecordAssemblyEvidence e = create(0, "1M1D1M", "NN");
-		assertTrue(e.isSpanningAssembly());
-		assertTrue(e.asRemote().isSpanningAssembly());
-		assertTrue(AssemblyFactory.hydrate(AES(), e.getBackingRecord()).isSpanningAssembly());
-		assertTrue(AssemblyFactory.hydrate(AES(), e.getSAMRecord()).isSpanningAssembly());
-		assertTrue(AssemblyFactory.incorporateRealignment(getContext(), AssemblyFactory.hydrate(AES(), e.getSAMRecord()), ImmutableList.of(e.getRemoteSAMRecord())).isSpanningAssembly());
+	public void qual_should_be_split_over_both_directions() {
+		SoftClipEvidence sce = SCE(FWD, Read(0, 1, "1M5S"));
+		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), ImmutableList.of(sce.getEvidenceID()),
+				0, 1, 1,
+				0, 3, 1,
+				B("AAA"), B("AAA"));
+		ass.hydrateEvidenceSet(sce);
+		ass.annotateAssembly();
+		assertEquals(sce.getBreakendQual() / 2, ass.getSpannedIndels().get(0).getBreakendQual(), 0.0001);
+		assertEquals(sce.getBreakendQual() / 2, ass.getSpannedIndels().get(0).getBreakpointQual(), 0.0001);
 	}
 	@Test
 	public void read_pair_conversion_soft_clip_in_correct_direction() {
@@ -131,7 +131,9 @@ public class SpanningSAMRecordAssemblyEvidenceTest extends TestHelper {
 		r.setAttribute("bc", 147);
 		r.setAttribute("es", "RbST-E00106:108:H03M0ALXX:1:1118:24253:3735/2 fST-E00106:108:H03M0ALXX:1:1205:2583:30439/1 fST-E00106:108:H03M0ALXX:1:2207:15443:7989/2");
 		r.setMappingQuality(SAMRecord.UNKNOWN_MAPPING_QUALITY);
-		SpanningSAMRecordAssemblyEvidence e = (SpanningSAMRecordAssemblyEvidence)AssemblyFactory.hydrate(AES(), r);
+		List<SpanningSAMRecordAssemblyEvidence> indels = AssemblyFactory.hydrate(AES(), r).getSpannedIndels();
+		assertEquals(1, indels.size());
+		SpanningSAMRecordAssemblyEvidence e = indels.get(0);
 		assertEquals("136M224S", e.getSAMRecord().getCigarString());
 		assertEquals(10603, e.getSAMRecord().getAlignmentStart());
 		assertEquals("88S136M", e.getRemoteSAMRecord().getCigarString());

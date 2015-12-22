@@ -216,9 +216,9 @@ public class NonReferenceReadPairTest extends TestHelper {
 	@Test
 	public void getLocalMapq_should_be_anchored_mapq() {
 		SAMRecord[] pair = DP(1, 1, "100M", true, 2, 5, "100M", true);
-		pair[0].setMappingQuality(5);
-		pair[1].setMappingQuality(10);
-		assertEquals(5, newPair(pair, 300).getLocalMapq());
+		pair[0].setMappingQuality(15);
+		pair[1].setMappingQuality(20);
+		assertEquals(15, newPair(pair, 300).getLocalMapq());
 	}
 	@Test
 	public void getLocalBaseLength_should_be_read_length() {

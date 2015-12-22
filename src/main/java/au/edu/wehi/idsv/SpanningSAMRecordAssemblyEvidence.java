@@ -28,6 +28,8 @@ public class SpanningSAMRecordAssemblyEvidence extends RealignedSAMRecordAssembl
 		super(parent.getEvidenceSource(), anchor, ImmutableList.of(realign));
 		this.parent = parent;
 		this.evidenceID = String.format("%s_%s%d", parent.getEvidenceID(), getBreakendSummary().direction.toChar(), indelOffset);
+		// sanity check mapping quality
+		assert(anchor.getMappingQuality() >= parent.getEvidenceSource().getContext().getConfig().minMapq);
 	}
 	public SAMRecordAssemblyEvidence getParentAssembly() {
 		return parent;
@@ -41,10 +43,6 @@ public class SpanningSAMRecordAssemblyEvidence extends RealignedSAMRecordAssembl
 		return evidenceID;
 	}
 	@Override
-	public boolean isSpanningAssembly() {
-		return true;
-	}
-	@Override
 	public SAMRecord getBackingRecord() {
 		return parent.getSAMRecord();
 	}
@@ -55,5 +53,13 @@ public class SpanningSAMRecordAssemblyEvidence extends RealignedSAMRecordAssembl
 	@Override
 	public List<SpanningSAMRecordAssemblyEvidence> getSpannedIndels() {
 		throw new UnsupportedOperationException();
+	}
+	@Override
+	public float getBreakendQual() {
+		return super.getBreakendQual() / 2;
+	}
+	@Override
+	public float getBreakpointQual() {
+		return super.getBreakpointQual() / 2;
 	}
 }

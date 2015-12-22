@@ -200,7 +200,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				this,
 				new AutoClosingIterator<SAMRecord>(rawReaderIt, realignedIt),
 				realignedIt,
-				true);
+				true, true);
 		toClose.add(evidenceIt);
 		Iterator<SAMRecordAssemblyEvidence> filteredIt = includeFiltered ? evidenceIt : new SAMRecordAssemblyEvidenceFilteringIterator(getContext(), evidenceIt);
 		// Change sort order to breakend position order

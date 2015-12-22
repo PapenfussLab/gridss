@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import htsjdk.samtools.util.Log;
-
 import java.io.File;
 import java.util.Iterator;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -13,7 +11,7 @@ import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.util.DuplicatingIterable;
-import au.edu.wehi.idsv.vcf.VcfFilter;
+import htsjdk.samtools.util.Log;
 
 /**
  * Performs independent positional assembly for forward
@@ -103,10 +101,6 @@ public class DirectedPositionalAssembler implements Iterator<SAMRecordAssemblyEv
 						forwardExport = null;
 					} else if (backwardExport != null && direction == BreakendDirection.Backward) {
 						backwardExport = null;
-					}
-					if (!assembly.isSpanningAssembly() && assembly.getBreakendSummary() != null && assembly.getBreakendSummary().direction != direction) {
-						// Need to filter now since we don't break down contributing evidence by direction (just category & type)
-						assembly.filterAssembly(VcfFilter.ASSEMBLY_INCORRECT_DIRECTION);
 					}
 					buffer.put(assembly);
 				}

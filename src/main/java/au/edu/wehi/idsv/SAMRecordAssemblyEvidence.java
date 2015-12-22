@@ -83,8 +83,6 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 			indel.leftAnchored.setAttribute(SamTags.ASSEMBLY_DIRECTION, BreakendDirection.Forward.toChar());
 			indel.rightAnchored.setAttribute(SamTags.ASSEMBLY_DIRECTION, BreakendDirection.Backward.toChar());
 			// hack to force remote portion of assembly to not be mapq filtered
-			indel.leftRealigned.setMappingQuality(SAMRecord.UNKNOWN_MAPPING_QUALITY);
-			indel.rightRealigned.setMappingQuality(SAMRecord.UNKNOWN_MAPPING_QUALITY);
 			SpanningSAMRecordAssemblyEvidence left = new SpanningSAMRecordAssemblyEvidence(this, indel, i);
 			list.add(left);
 			list.add(left.asRemote());
@@ -659,13 +657,5 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 */
 	public boolean isReferenceAssembly() {
 		return getBreakendLength() == 0 && CigarUtil.countIndels(getSAMRecord().getCigar()) == 0;
-	}
-	/**
-	 * Assembly spans entire breakpoint
-	 * @return
-	 */
-	public boolean isSpanningAssembly() {
-		Character attr = (Character)record.getAttribute(SamTags.SPANNING_ASSEMBLY);
-		return attr != null && (char)attr == 'y';
 	}
 }

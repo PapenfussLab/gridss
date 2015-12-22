@@ -10,6 +10,7 @@ import java.util.stream.Collectors;
 
 import org.junit.Test;
 
+import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.BreakpointSummary;
@@ -86,10 +87,10 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		SoftClipEvidence bwd = SCE(FWD, withSequence("ACGTGGCTCGACC", Read(0, 1, "6M7S")));
 		List<SAMRecordAssemblyEvidence> output = go(pc, true, fwd, bwd);
 		assertEquals(1, output.size());
-		assertTrue(output.get(0) instanceof SpanningSAMRecordAssemblyEvidence);
-		assertEquals("ACGTGGCTCGACC", S(output.get(0).getAssemblySequence()));
-		assertEquals(new BreakpointSummary(0, FWD, 6, 6, 0, BWD, 8, 8), output.get(0).getBreakendSummary());
-		assertEquals("C", ((SpanningSAMRecordAssemblyEvidence)output.get(0)).getUntemplatedSequence());
+		AssemblyEvidence e = output.get(0).getSpannedIndels().get(0);
+		assertEquals("ACGTGGCTCGACC", S(e.getAssemblySequence()));
+		assertEquals(new BreakpointSummary(0, FWD, 6, 6, 0, BWD, 8, 8), e.getBreakendSummary());
+		assertEquals("C", ((SpanningSAMRecordAssemblyEvidence)e).getUntemplatedSequence());
 	}
 	@Test
 	public void should_call_simple_fwd_RP() {
