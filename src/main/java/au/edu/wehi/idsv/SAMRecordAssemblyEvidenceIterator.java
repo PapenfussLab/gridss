@@ -25,11 +25,11 @@ public class SAMRecordAssemblyEvidenceIterator implements
 	private final List<SequentialRealignedBreakpointFactory> factories;
 	private final Queue<SAMRecordAssemblyEvidence> buffer = new ArrayDeque<SAMRecordAssemblyEvidence>();
 	private final boolean includeSpannedIndels;
-
+	private final boolean includeIndelParents;
 	public SAMRecordAssemblyEvidenceIterator(
 			AssemblyEvidenceSource source, Iterator<SAMRecord> it,
 			List<? extends Iterator<SAMRecord>> realignedIt,
-			boolean includeSpannedIndels) {
+			boolean includeSpannedIndels, boolean includeIndelParents) {
 		this.source = source;
 		this.it = it;
 		this.rit = realignedIt;
@@ -38,6 +38,7 @@ public class SAMRecordAssemblyEvidenceIterator implements
 				.map(x -> new SequentialRealignedBreakpointFactory(Iterators
 						.peekingIterator(x))).collect(Collectors.toList());
 		this.includeSpannedIndels = includeSpannedIndels;
+		this.includeIndelParents = includeIndelParents;
 	}
 
 	private void ensureBuffer() {
@@ -49,23 +50,27 @@ public class SAMRecordAssemblyEvidenceIterator implements
 	private void process(SAMRecord record) {
 		SAMRecordAssemblyEvidence evidence = AssemblyFactory.hydrate(source, record);
 		assert(evidence != null);
-		RealignmentConfiguration rp = source.getContext().getRealignmentParameters();
-		List<SAMRecord> realignments = new ArrayList<SAMRecord>(source.getRealignmentIterationCount());
-		for (SequentialRealignedBreakpointFactory factory : factories) {
-			// only primary realignment is required
-			boolean expectAlignment = rp.shouldRealignBreakend(evidence) && factory == factories.get(0);
-			Set<SAMRecord> realigned = factory.findAllAssociatedSAMRecords(evidence, expectAlignment);
-			if (realigned != null) {
-				realignments.addAll(realigned);
+		if (evidence.getBreakendSummary() != null) {
+			RealignmentConfiguration rp = source.getContext().getRealignmentParameters();
+			List<SAMRecord> realignments = new ArrayList<SAMRecord>(source.getRealignmentIterationCount());
+			for (SequentialRealignedBreakpointFactory factory : factories) {
+				// only primary realignment is required
+				boolean expectAlignment = rp.shouldRealignBreakend(evidence) && factory == factories.get(0);
+				Set<SAMRecord> realigned = factory.findAllAssociatedSAMRecords(evidence, expectAlignment);
+				if (realigned != null) {
+					realignments.addAll(realigned);
+				}
+			}
+			if (realignments.size() > 0) {
+				evidence = AssemblyFactory.incorporateRealignment(source.getContext(), evidence, realignments);
 			}
 		}
-		if (realignments.size() > 0) {
-			evidence = AssemblyFactory.incorporateRealignment(source.getContext(), evidence, realignments);
-		}
+		List<SpanningSAMRecordAssemblyEvidence> indels = null;
 		if (includeSpannedIndels) {
-			buffer.addAll(evidence.getSpannedIndels());
+			indels = evidence.getSpannedIndels();
+			buffer.addAll(indels);
 		}
-		if (!evidence.isReferenceAssembly() && evidence.getBreakendSummary() != null) {
+		if (!evidence.isReferenceAssembly() && (evidence.getBreakendSummary() != null || (includeSpannedIndels && !indels.isEmpty()))) {
 			buffer.add(evidence);
 		}
 	}

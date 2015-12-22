@@ -254,7 +254,7 @@ public class NonReferenceReadPairTest extends TestHelper {
 	}
 	private void meetsEvidenceCriteria(boolean expected, SAMRecord[] pair, int min, int max, boolean testSingle) {
 		MockSAMEvidenceSource ses = SES(min, max);
-		ses.getContext().getConfig().minReadMapq = 0;
+		ses.getContext().getConfig().minMapq = 0;
 		NonReferenceReadPair nrrp = NonReferenceReadPair.create(pair[0], pair[1], ses);
 		if (expected) {
 			assertNotNull(nrrp);
@@ -352,7 +352,7 @@ public class NonReferenceReadPairTest extends TestHelper {
 	@Test
 	public void meetsEvidenceCritera_should_filter_reads_pairs_containing_adapter_sequence() {
 		MockSAMEvidenceSource ses = SES(500, 500);
-		ses.getContext().getConfig().minReadMapq = 0;
+		ses.getContext().getConfig().minMapq = 0;
 		SAMRecord[] rp = RP(0, 100, 300, 101);
 		rp[0].setReadBases(B("CTGGGGGGACCTGAACAACTCCAAGGGCCTTGGCTGGCGAGAAAATCCTGCCTCAAAAGGGCGCGTGCTCGGTGGATCCACGGGCTACCGTTCCCTCTTAA"));
 		rp[1].setReadBases(B("CTGGGGGGACCTGAACAACTCCAAGGGCCTTGGCTGGCGAGAAAATCCTGCCTCAAAAGGGCGCGTGCTCGGTGGATCCACGGGCTACCGTTCCCTCTTAA"));
@@ -365,7 +365,7 @@ public class NonReferenceReadPairTest extends TestHelper {
 	@Test
 	public void meetsEvidenceCritera_should_filter_low_complexity_reads() {
 		MockSAMEvidenceSource ses = SES(500, 500);
-		ses.getContext().getConfig().minReadMapq = 0;
+		ses.getContext().getConfig().minMapq = 0;
 		ses.getContext().getConfig().minAnchorShannonEntropy = 0.5;
 		SAMRecord[] rp = RP(0, 100, 300, 10);
 		rp[0].setReadBases(B("AAAAAAAAGT"));

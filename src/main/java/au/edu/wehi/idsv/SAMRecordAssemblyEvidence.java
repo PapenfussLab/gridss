@@ -4,12 +4,8 @@ import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.SAMTag;
-import htsjdk.samtools.TextCigarCodec;
 import htsjdk.samtools.util.Log;
 
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -19,8 +15,7 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
-import au.edu.wehi.idsv.alignment.AlignerFactory;
-import au.edu.wehi.idsv.alignment.Alignment;
+import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
@@ -86,13 +81,13 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		int i = 0;
 		for (SplitIndel indel : indels) {
 			indel.leftAnchored.setAttribute(SamTags.ASSEMBLY_DIRECTION, BreakendDirection.Forward.toChar());
-			indel.leftRealigned.setMappingQuality(SAMRecord.UNKNOWN_MAPPING_QUALITY); // hack to force remote portion of assembly to not be mapq filtered
-			list.add(new SpanningSAMRecordAssemblyEvidence(this, indel.leftAnchored, indel.leftRealigned, i));
-			
 			indel.rightAnchored.setAttribute(SamTags.ASSEMBLY_DIRECTION, BreakendDirection.Backward.toChar());
-			indel.rightRealigned.setMappingQuality(SAMRecord.UNKNOWN_MAPPING_QUALITY); // hack to force remote portion of assembly to not be mapq filtered
-			list.add(new SpanningSAMRecordAssemblyEvidence(this, indel.rightAnchored, indel.rightRealigned, i));
-			i++;
+			// hack to force remote portion of assembly to not be mapq filtered
+			indel.leftRealigned.setMappingQuality(SAMRecord.UNKNOWN_MAPPING_QUALITY);
+			indel.rightRealigned.setMappingQuality(SAMRecord.UNKNOWN_MAPPING_QUALITY);
+			SpanningSAMRecordAssemblyEvidence left = new SpanningSAMRecordAssemblyEvidence(this, indel, i);
+			list.add(left);
+			list.add(left.asRemote());
 		}
 		return list;
 	}
@@ -296,6 +291,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	private static BreakendSummary calculateBreakend(SAMRecord record) {
 		BreakendDirection direction = getBreakendDirection(record);
 		if (direction == null) return null;
+		if (SAMRecordUtil.getSoftClipLength(record, direction) == 0) return null;
 		int beStart;
 		int beEnd;
 		if (!calculateIsBreakendExact(record.getCigar())) {
@@ -626,105 +622,36 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 * prevent this.
 	 * 
 	 * @param realignmentWindowSize number of additional reference bases to include around alignment
-	 * @param includeBreakendBases include room for alignment of the breakend bases when calculating the window to align to
 	 * @param portionOfAnchorRetained minimum portion of anchor bases that remain anchored to the reference after realignment
 	 * @return includeBreakendBases include non-reference breakend bases when calculating alignment window size
 	 */
-	public SAMRecordAssemblyEvidence realign(int realignmentWindowSize, boolean includeBreakendBases, float portionOfAnchorRetained) {
-		if (!this.isExact) throw new RuntimeException("Sanity check failure: realignment of unanchored assemblies not yet implemented.");
-		BreakendSummary bs = getBreakendSummary();
-		if (bs == null) {
-			// misassembly with no breakend - nothing to do
+	public SAMRecordAssemblyEvidence realign(int realignmentWindowSize, float minPortionOfAnchorRetained) {
+		if (!isBreakendExact()) {
 			return this;
 		}
-		if (bs instanceof BreakpointSummary && !includeBreakendBases) {
-			// don't do single-sided realignment when we have two anchors
+		SAMRecord read = getBackingRecord();
+		ReferenceLookup reference = getEvidenceSource().getContext().getReference();
+		SAMRecord realigned = SAMRecordUtil.realign(reference, read, realignmentWindowSize, true);
+		if (!isValidRealignment(read.getCigar(), realigned.getCigar(), minPortionOfAnchorRetained)) {
+			// Losing too many anchored bases can occur due to alignment to other side of small events
+			// (since the breakend is usually longer than the anchor)
+			// Try to just refine the breakend position by reducing the window size
+        	realigned = SAMRecordUtil.realign(reference, read, realignmentWindowSize, false);
+        	if (!isValidRealignment(read.getCigar(), realigned.getCigar(), minPortionOfAnchorRetained)) {
+        		// can't find a valid realignment
+        		return this;
+        	}
+        }
+		if (realigned == getBackingRecord()) {
+			// alread have the best alignment
 			return this;
 		}
-		int refIndex = getBreakendSummary().referenceIndex;
-		SAMSequenceRecord refSeq = source.getContext().getDictionary().getSequence(refIndex);
-		SAMRecord r = getBackingRecord();
-		int startBreakendLengthToInclude = 0;
-		int endBreakendLengthToInclude = 0;
-		if (includeBreakendBases) {
-			if (getBreakendSummary().direction == BreakendDirection.Backward) {
-				startBreakendLengthToInclude = getBreakendLength();
-			} else {
-				endBreakendLengthToInclude = getBreakendLength();
-			}
-		}
-		int start = Math.max(1, r.getAlignmentStart() - realignmentWindowSize - startBreakendLengthToInclude);
-		int end = Math.min(refSeq.getSequenceLength(), r.getAlignmentEnd() + realignmentWindowSize + endBreakendLengthToInclude);
-		byte[] ass = r.getReadBases();
-		byte[] ref = source.getContext().getReference().getSubsequenceAt(refSeq.getSequenceName(), start, end).getBases();
-		
-		if (ass == null || ref == null || ass.length == 0 || ref.length == 0) {
-			return this;
-		}
-		// defensive checks so we don't crash the JVM if an unexpected character is encountered
-		for (int i = 0; i < ass.length; i++) {
-			if (!htsjdk.samtools.util.SequenceUtil.isValidBase(ass[i])) {
-				ass[i] = 'N';
-			}
-		}
-		for (int i = 0; i < ref.length; i++) {
-			if (!htsjdk.samtools.util.SequenceUtil.isValidBase(ref[i])) {
-				ref[i] = 'N';
-			}
-		}
-		Alignment alignment =  null;
-		try {
-			alignment = AlignerFactory.create().align_smith_waterman(ass, ref);        
-		} catch (Exception e) {
-			log.error(String.format("Error performing realignment of %s. Unable to align '%s' to '%s' at %s",
-					getEvidenceID(),
-					new String(ass, StandardCharsets.US_ASCII),
-					new String(ref, StandardCharsets.US_ASCII),
-					getBreakendSummary().toString(getEvidenceSource().getContext())));
-		}
-		if (alignment == null) return this;
-		Cigar original = getSAMRecord().getCigar();
-		Cigar cigar = TextCigarCodec.decode(alignment.getCigar());
-        
-		if (CigarUtil.commonReferenceBases(cigar, original) < CigarUtil.countMappedBases(original.getCigarElements()) * portionOfAnchorRetained) {
-        	// ignore realignment if we have less than half of our nominal reference bases actually mapped to the reference
-        	return this;
-        }
-		// Indels in assembly alignment are now called regardless
-		// of the assembly soft clip status so neither of these
-		// checks are required.
-//        if (isSpanningAssembly() &&
-//        		SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), BreakendDirection.Forward) +  
-//    			SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), BreakendDirection.Backward) > 0) {
-//        	// Realignment of small indel assembly transformed breakpoint assembly to breakend
-//        	// so we're going to ignore it
-//        	// (spanning realignment is currently used to remove reference bubble assemblies with alignment such as 10M5I5D10M)
-//        	return this;
-//        }
-//        if (SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), getBreakendSummary().direction) == 0 && 
-//        		SAMRecordUtil.getSoftClipLength(cigar.getCigarElements(), getBreakendSummary().direction.reverse()) > 0) {
-//        	// ignore realignment if it flips the direction of the breakend
-//        	log.debug(String.format("Realignment of assembly %s at %s converts cigar from %s to %s starting at %d. Is this a FP reference event in close proximity to a real SV in the opposite direction.",
-//				getEvidenceID(),
-//				getBreakendSummary().toString(source.getContext()),
-//				r.getCigarString(),
-//				cigar,
-//				start + alignment.getStartPosition()
-//				));
-//        	return this;
-//        }
-        SAMRecord newAssembly = SAMRecordUtil.clone(getBackingRecord());
-		newAssembly.setReadName(newAssembly.getReadName() + "_r");
-        newAssembly.setAlignmentStart(start + alignment.getStartPosition());
-        if (!cigar.equals(getBackingRecord().getCigar())) {
-        	newAssembly.setCigar(cigar);
-        	newAssembly.setAttribute(SAMTag.OC.name(), r.getCigarString());
-        }
-        if (newAssembly.getAlignmentStart() != r.getAlignmentStart()) {
-        	newAssembly.setAttribute(SAMTag.OP.name(), r.getAlignmentStart());
-        }
-        SAMRecordAssemblyEvidence realigned = AssemblyFactory.hydrate(getEvidenceSource(), newAssembly);
-        return realigned;
+		realigned.setReadName(getBackingRecord().getReadName() + "_r");
+        SAMRecordAssemblyEvidence realignedAssembly = AssemblyFactory.hydrate(getEvidenceSource(), realigned);
+        return realignedAssembly;
+	}
+	private static boolean isValidRealignment(Cigar original, Cigar realigned, float minPortionOfAnchorRetained) {
+		return CigarUtil.commonReferenceBases(realigned, original) >= CigarUtil.countMappedBases(original.getCigarElements()) * minPortionOfAnchorRetained;
 	}
 	/**
 	 * Determines whether the assembly is of the reference allele

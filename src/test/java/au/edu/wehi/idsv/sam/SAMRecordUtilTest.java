@@ -254,5 +254,18 @@ public class SAMRecordUtilTest extends TestHelper {
 		
 		assertEquals(9, p.getRight().getAlignmentStart());
 		assertEquals("4S4M", p.getRight().getCigarString());
+		
+		p = SAMRecordUtil.splitAfter(Read(0, 1, "4M4I4M"), 6);
+		assertEquals(1, p.getLeft().getAlignmentStart());
+		assertEquals(5, p.getRight().getAlignmentStart());
+	}
+	@Test
+	public void realign_should_use_window_around_read_alignment() {
+		SAMRecord read = Read(2, 101, "100M");
+		read.setReadBases(B(S(RANDOM).substring(100, 199) + "N"));
+		SAMRecord realigned = SAMRecordUtil.realign(SMALL_FA, read, 0, true);
+		assertTrue(realigned != read);
+		assertEquals("99M1S", realigned.getCigarString());
+		assertEquals(101, realigned.getAlignmentStart());
 	}
 }

@@ -43,7 +43,7 @@ public class SoftClipEvidence implements DirectedEvidence {
 		if (record.getReadUnmappedFlag()) throw new IllegalArgumentException(String.format("record %s is unmapped", record.getReadName()));
 		if (record.getReadBases() == null || record.getReadBases() == SAMRecord.NULL_SEQUENCE ) throw new IllegalArgumentException(String.format("record %s missing sequence information", record.getReadName()));
 		SoftClipEvidence result = null;
-		if (realigned != null && !realigned.getReadUnmappedFlag() && source.getContext().getRealignmentParameters().realignmentPositionUnique(realigned)) {
+		if (realigned != null && !realigned.getReadUnmappedFlag() && realigned.getMappingQuality() >= source.getContext().getConfig().minMapq) {
 			result = new RealignedSoftClipEvidence(source, direction, record, realigned);
 		} else {
 			// Realignment was not useful
@@ -193,7 +193,7 @@ public class SoftClipEvidence implements DirectedEvidence {
 	 */
 	public boolean meetsEvidenceCritera() {
 		GridssConfiguration config = source.getContext().getConfig();
-		return getMappingQuality() >= config.minReadMapq
+		return getMappingQuality() >= config.minMapq
 				&& getSoftClipLength() >= config.getSoftClip().minLength
 				&& getAlignedIdentity() >= config.getSoftClip().minAnchorIdentity
 				&& getAverageClipQuality() >= config.getSoftClip().minAverageQual

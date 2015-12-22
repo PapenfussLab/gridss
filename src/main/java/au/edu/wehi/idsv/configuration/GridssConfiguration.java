@@ -26,9 +26,9 @@ public class GridssConfiguration {
 	 */
 	public AdapterHelper adapters;
 	/**
-	 * Minimum MAPQ of read to considered evidence
+	 * Minimum MAPQ to considered uniquely mapped
 	 */
-	public int minReadMapq;
+	public int minMapq;
 	/**
 	 * Minimum entropy of anchored sequence (in bits) (Shannon entropy)
 	 */
@@ -82,7 +82,7 @@ public class GridssConfiguration {
 		softclip = new SoftClipConfiguration(config);
 		variantCalling = new VariantCallingConfiguration(config);
 		adapters = new AdapterHelper(config.getStringArray("adapter"));
-		minReadMapq = config.getInt("minReadMapq");
+		minMapq = config.getInt("minMapq");
 		minAnchorShannonEntropy = config.getFloat("minAnchorShannonEntropy");
 		maxCoverage = config.getInt("maxCoverage");
 		dovetailMargin = config.getInt("dovetailMargin");

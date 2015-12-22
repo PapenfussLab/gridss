@@ -197,7 +197,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		CloseableIterator<SAMRecord> rawReaderIt = getContext().getSamReaderIterator(breakend, SortOrder.coordinate);
 		toClose.add(rawReaderIt);
 		CloseableIterator<SAMRecordAssemblyEvidence> evidenceIt = new SAMRecordAssemblyEvidenceIterator(
-				getContext(), this,
+				this,
 				new AutoClosingIterator<SAMRecord>(rawReaderIt, realignedIt),
 				realignedIt,
 				true);
@@ -430,16 +430,9 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 						be.length));
 				return null;
 			}
-    		if (ap.anchorRealignment.perform && ass.isBreakendExact()) {
+    		if (ap.anchorRealignment.perform) {
     			int realignmentWindowSize = (int)(ap.anchorRealignment.realignmentWindowReadLengthMultiples * getMaxReadLength());
-    			SAMRecordAssemblyEvidence fullRealignment = ass.realign(realignmentWindowSize, true, ap.anchorRealignment.realignmentMinimumAnchorRetainment);
-    			// use full assembly realignment to find small indels and reference assemblies
-    			if (fullRealignment != ass) {
-    				ass = fullRealignment;
-    			} else {
-    				// use targeted realignment to refine breakend location
-    				ass = ass.realign(realignmentWindowSize, false, ap.anchorRealignment.realignmentMinimumAnchorRetainment);
-    			}
+    			ass = ass.realign(realignmentWindowSize, ap.anchorRealignment.realignmentMinimumAnchorRetainment);
     		}
 			if (ass == null) return null;
 			if (ass.isReferenceAssembly()) return null;

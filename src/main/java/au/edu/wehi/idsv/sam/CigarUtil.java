@@ -377,7 +377,7 @@ public class CigarUtil {
 	 * @return offset relative to first alignment
 	 */
 	public static int offsetOf(Cigar cigar, int readBaseOffset) {
-		List<CigarElement> cl = Lists.newArrayList(cigar.getCigarElements());
+		List<CigarElement> cl = decodeNegativeDeletion(cigar.getCigarElements());
 		int basesLeft = readBaseOffset;
 		int currentAlignmentOffset = 0;
 		for (int i = 0; i < cl.size(); i++) {

@@ -198,7 +198,7 @@ public class SoftClipEvidenceTest extends TestHelper {
 		MockSAMEvidenceSource ses = SES();
 		ses.getContext().getConfig().getSoftClip().minAnchorIdentity = 0;
 		ses.getContext().getConfig().getSoftClip().minLength = 1;
-		ses.getContext().getConfig().minReadMapq = 0;
+		ses.getContext().getConfig().minMapq = 0;
 		ses.getContext().getConfig().minAnchorShannonEntropy = 0;
 		ses.getContext().getConfig().adapters = new AdapterHelper(new String[0]);
 		return ses;

@@ -17,7 +17,6 @@ public class RealignmentConfiguration {
 		config = config.subset(CONFIGURATION_PREFIX);
 		minLength = config.getInt("minLength");
 		minAverageQual = config.getFloat("minAverageQual");
-		mapqUniqueThreshold = config.getInt("mapqUniqueThreshold");
 		assemblyIterations = config.getInt("assemblyIterations");
 		aligner = config.getString("aligner");
 		commandline = ImmutableList.copyOf(config.subset("commandline").getStringArray(aligner));
@@ -30,10 +29,6 @@ public class RealignmentConfiguration {
 	 * Minimum average breakend quality score to be considered for realignment 
 	 */
 	public float minAverageQual;
-	/**
-	 * Minimum MAPQ of realigned segment to be considered uniquely aligned  
-	 */
-	public int mapqUniqueThreshold;
 	/**
 	 * Number of realignment iterations performed
 	 */
@@ -54,13 +49,5 @@ public class RealignmentConfiguration {
 		if (evidence.getBreakendSummary() instanceof BreakpointSummary) return false;
 		return evidence.getBreakendSequence().length >= minLength;
 				//&& evidence.getAssemblyQuality() >= minAverageQual;
-	}
-	/**
-	 * Determines whether the given realignment is considered uniquely mappable
-	 * @param realignment realignment record
-	 * @return true if the mapping position is unique, false otherwise
-	 */
-	public boolean realignmentPositionUnique(SAMRecord realignment) {
-		return realignment.getMappingQuality() >= mapqUniqueThreshold;
 	}
 }

@@ -36,7 +36,6 @@ import au.edu.wehi.idsv.RemoteEvidence;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.SpanningSAMRecordAssemblyEvidence;
-import au.edu.wehi.idsv.SmSpanningSAMRecordAssemblyEvidenceTest
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 
 import com.google.common.base.Function;
@@ -190,8 +189,8 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	private void go(ProcessingContext pc, boolean writefiltered) {
 		pc.getAssemblyParameters().writeFiltered = writefiltered;
 		pc.getAssemblyParameters().minReads = 0;
+		pc.getConfig().minMapq = 0;
 		pc.getRealignmentParameters().minLength = 0;
-		pc.getRealignmentParameters().mapqUniqueThreshold = 0;
 		pc.getRealignmentParameters().minAverageQual = 0;
 		File faes = new File(output + "-realign-" + pc.shouldProcessPerChromosome());
 		File frp = new File(output + "-readpair-" + pc.shouldProcessPerChromosome());
@@ -325,8 +324,8 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 		ProcessingContext pc = getCommandlineContext(false);
 		pc.getAssemblyParameters().writeFiltered = false;
 		pc.getAssemblyParameters().minReads = 1000;
+		pc.getConfig().minMapq = 0;
 		pc.getRealignmentParameters().minLength = 0;
-		pc.getRealignmentParameters().mapqUniqueThreshold = 0;
 		pc.getRealignmentParameters().minAverageQual = 0;
 		File faes = new File(output + "-realign-" + pc.shouldProcessPerChromosome());
 		File frp = new File(output + "-readpair-" + pc.shouldProcessPerChromosome());
@@ -346,7 +345,10 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	}
 	@Test
 	public void should_include_small_indel_remote_breakends() {
-		orderedAddNoRealign(SmalSpanningSAMRecordAssemblyEvidenceTestate(1, "10M10D10M", "NNNNNNNNNNATATATATAT"));
+		SAMRecordAssemblyEvidence e =  AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null, 0, 10, 5, B("AAAAACCCCC"), B("0000011111"));
+		SAMRecord r = e.getSAMRecord();
+		r.setCigarString("5M5D5M");
+		orderedAddNoRealign(new SAMRecordAssemblyEvidence(AES(), r, ImmutableList.of()));
 		go();
 	}
 }

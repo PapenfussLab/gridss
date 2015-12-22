@@ -156,7 +156,7 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 	public void realign_min_mapq_should_filter_sc() {
 		createInput(ValidSC());
 		ProcessingContext pc = getCommandlineContext();
-		pc.getConfig().minReadMapq = 6;
+		pc.getConfig().minMapq = 6;
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
 		ExtractEvidence e = new ExtractEvidence(pc, source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
 		
@@ -233,5 +233,12 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
 		ExtractEvidence e = new ExtractEvidence(pc, source); e.process(ProcessStep.ALL_STEPS); e.close();
 		assertEquals(0, getSC(source).size());
+	}
+	@Test
+	public void should_extract_indels() {
+		createInput(Read(1, 1, "50M50D50M"));
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, 0);
+		ExtractEvidence e = new ExtractEvidence(getCommandlineContext(true), source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
+		assertEquals(1, new PerChr().getSC(source, "polyACGT").size());
 	}
 }

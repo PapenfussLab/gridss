@@ -2,7 +2,6 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMUtils;
@@ -17,17 +16,18 @@ import com.google.common.collect.ImmutableList;
 public class SpanningSAMRecordAssemblyEvidenceTest extends TestHelper {
 	public static SpanningSAMRecordAssemblyEvidence create(int position, String cigar, String bases) {
 		SAMRecord r = Read(0, position, cigar);
+		assertEquals(bases.length(), r.getCigar().getReadLength());
 		r.setReadBases(B(bases));
 		r.setBaseQualityString(bases);
 		MockDirectedEvidence evidence = new MockDirectedEvidence(new BreakendSummary(0, FWD, 1, 2));
 		r.setAttribute(SamTags.EVIDENCEID, evidence.getEvidenceID());
-		SpanningSAMRecordAssemblyEvidence e = new SpanningSAMRecordAssemblyEvidence(AES(), r);
+		SAMRecordAssemblyEvidence e = new SAMRecordAssemblyEvidence(AES(), r, ImmutableList.of());
 		e.hydrateEvidenceSet(evidence);
 		e.annotateAssembly();
 		e.getBackingRecord().setMappingQuality(50);
 		e.getSAMRecord().setMappingQuality(50);
 		e.getRemoteSAMRecord().setMappingQuality(50);
-		return e;
+		return e.getSpannedIndels().get(0);
 	}
 	private void check_matches(int position, String cigar, String bases,
 			int anchorPos, String anchorCigar, String anchorSeq,
@@ -95,7 +95,7 @@ public class SpanningSAMRecordAssemblyEvidenceTest extends TestHelper {
 	@Test
 	public void should_not_have_assembly_direction() {
 		SpanningSAMRecordAssemblyEvidence e = create(0, "1M1D1M", "NN");
-		assertNull(SAMRecordAssemblyEvidence.getBreakendDirection(e.getBackingRecord()));
+		assertEquals(FWD, e.getBreakendSummary().direction);
 	}
 	@Test
 	public void remote_should_not_be_considered_remote_evidence_since_assembly_spans_entire_breakpoint() {
@@ -103,10 +103,11 @@ public class SpanningSAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertFalse(e.asRemote() instanceof RemoteEvidence);
 	}
 	@Test
-	public void getEvidenceID_should_prefix_with_local_breakend_direction() {
+	public void getEvidenceID_should_suffix_with_local_breakend_direction_and_indel_offset() {
 		SpanningSAMRecordAssemblyEvidence e = create(0, "1M1D1M", "NN");
-		assertEquals('f', e.getEvidenceID().charAt(0));
-		assertEquals('b', e.asRemote().getEvidenceID().charAt(0));
+		String evidenceID = e.getParentAssembly().getEvidenceID();
+		assertEquals(evidenceID + "_f1", e.getEvidenceID());
+		assertEquals(evidenceID + "_b1", e.asRemote().getEvidenceID());
 	}
 	@Test
 	public void isSpanningAssembly() {

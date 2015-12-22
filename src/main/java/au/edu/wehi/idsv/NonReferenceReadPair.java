@@ -73,7 +73,7 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		return read.getReadPairedFlag()
 				&& !read.getReadUnmappedFlag()
 				&& !read.getReadFailsVendorQualityCheckFlag()
-				&& read.getMappingQuality() >= source.getContext().getConfig().minReadMapq
+				&& read.getMappingQuality() >= source.getContext().getConfig().minMapq
 				&& !SAMRecordUtil.estimatedReadsOverlap(read, PairOrientation.FR, source.getMetrics().getIdsvMetrics().MAX_READ_LENGTH - source.getMetrics().getMaxSoftClipLength())
 				&& !source.getReadPairConcordanceCalculator().isConcordant(read);
 	}

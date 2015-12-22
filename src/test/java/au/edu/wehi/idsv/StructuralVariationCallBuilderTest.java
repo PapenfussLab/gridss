@@ -15,7 +15,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.collect.ImmutableList;
@@ -534,19 +533,6 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			.referenceSpanningPairs(new int[] { 10, 10 })
 			.make();
 		assertTrue(e.hasAttribute(VCFConstants.SOMATIC_KEY));
-	}
-	@Test
-	public void should_filter_small_indels() {
-		ProcessingContext pc = getContext();
-		pc.getVariantCallingParameters().minIndelSize = 16;
-		assertTrue(new StructuralVariationCallBuilder(pc,
-				(VariantContextDirectedEvidence)minimalBreakend()
-					.breakpoint(new BreakpointSummary(new BreakendSummary(0, FWD, 100, 200), new BreakendSummary(0, BWD, 116, 216)), "") // could be 15bp deletion
-					.make()).make().getFilters().contains(VcfFilter.SMALL_INDEL.filter()));
-		assertFalse(new StructuralVariationCallBuilder(pc,
-				(VariantContextDirectedEvidence)minimalBreakend()
-					.breakpoint(new BreakpointSummary(new BreakendSummary(0, FWD, 100, 200), new BreakendSummary(0, BWD, 217, 317)), "") // 16+bp deletion
-					.make()).make().getFilters().contains(VcfFilter.SMALL_INDEL.filter()));
 	}
 	@Test
 	public void only_read_pair_should_set_imprecise_header() {

@@ -20,6 +20,7 @@ import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
+import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.SpanningSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
@@ -211,12 +212,12 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		ProcessingContext pc = PC(8);
 		SAMEvidenceSource ses = SES(pc);
 		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(AES(pc));
-		List<AssemblyEvidence> results = Lists.newArrayList();
+		List<SAMRecordAssemblyEvidence> results = Lists.newArrayList();
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence(seq, Read(2, 1, "15M15S"))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, ses, withSequence(seq, Read(2, 25, "15S15M"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, results.size());
-		SpanningSAMRecordAssemblyEvidence e = (SpanningSAMRecordAssemblyEvidence)results.get(0);
+		SpanningSAMRecordAssemblyEvidence e = results.get(0).getSpannedIndels().get(0);
 		assertEquals(seq, S(e.getAssemblySequence()));
 		assertEquals("15M9D15M", e.getBackingRecord().getCigarString());
 		assertEquals(1, e.getBackingRecord().getAlignmentStart());
@@ -238,12 +239,12 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		// end anchor position = 25
 		String seq = contig.substring(0, 0+15) + contig.substring(24, 24+15);
 		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(AES(context));
-		List<AssemblyEvidence> results = Lists.newArrayList();
+		List<SAMRecordAssemblyEvidence> results = Lists.newArrayList();
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence(seq, Read(0, 1, "15M15S"))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, ses, withSequence(seq, Read(0, 25, "15S15M"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, results.size());
-		SpanningSAMRecordAssemblyEvidence e = (SpanningSAMRecordAssemblyEvidence)results.get(0);
+		SpanningSAMRecordAssemblyEvidence e = results.get(0).getSpannedIndels().get(0);
 		assertEquals(seq, S(e.getAssemblySequence()));
 		assertEquals("15M9D15M", e.getBackingRecord().getCigarString());
 		assertEquals(1, e.getBackingRecord().getAlignmentStart());
@@ -269,12 +270,12 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		// end anchor position = 25
 		String seq = contig.substring(0, 0+15) + contig.substring(24, 24+15);
 		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(AES(context));
-		List<AssemblyEvidence> results = Lists.newArrayList();
+		List<SAMRecordAssemblyEvidence> results = Lists.newArrayList();
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(FWD, ses, withSequence(seq, Read(0, 1, "17M13S"))))));
 		results.addAll(Lists.newArrayList(ass.addEvidence(SCE(BWD, ses, withSequence(seq, Read(0, 23, "13S17M"))))));
 		results.addAll(Lists.newArrayList(ass.endOfEvidence()));
 		assertEquals(1, results.size());
-		SpanningSAMRecordAssemblyEvidence e = (SpanningSAMRecordAssemblyEvidence)results.get(0);
+		SpanningSAMRecordAssemblyEvidence e = results.get(0).getSpannedIndels().get(0);
 		assertEquals(seq, S(e.getAssemblySequence()));
 		assertEquals("15M9D15M", e.getBackingRecord().getCigarString());
 		assertEquals(1, e.getBackingRecord().getAlignmentStart());

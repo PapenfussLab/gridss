@@ -54,4 +54,20 @@ public class SoftClipEvidenceIteratorTest extends TestHelper {
 		go();
 		assertEquals(0, out.size());
 	}
+	@Test
+	public void should_treat_indels_as_soft_clips() {
+		SAMRecord r = Read(1, 1, "2M1D2M");
+		sv.add(r);
+		go();
+		assertEquals(2, out.size());
+		assertEquals(new BreakpointSummary(1, FWD, 2, 2, 1, BWD, 4, 4), out.get(0).getBreakendSummary());
+		assertEquals(new BreakpointSummary(1, BWD, 4, 4, 1, FWD, 2, 2), out.get(1).getBreakendSummary());
+	}
+	@Test
+	public void should_extract_all_indels() {
+		SAMRecord r = Read(1, 1, "2M1D2M1D1M");
+		sv.add(r);
+		go();
+		assertEquals(4, out.size());
+	}
 }

@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 
@@ -53,6 +54,10 @@ public class CigarUtilTest {
 		assertEquals(rightCigar, split.getRight().toString());
 	}
 	@Test
+	public void splitAfterReadPosition_should_split_deletion() {
+		assertSplitAfterReadPosition("1M1D1M", 0, "1M1S", "1S1M");
+	}
+	@Test
 	public void splitAfterReadPosition_should_split_cigar() {
 		assertSplitAfterReadPosition("4M", 0, "1M3S", "1S3M");
 		assertSplitAfterReadPosition("4M", 1, "2M2S", "2S2M");
@@ -64,6 +69,14 @@ public class CigarUtilTest {
 		assertSplitAfterReadPosition("2M2I2M", 1, "2M4S", "4S2M");
 		assertSplitAfterReadPosition("2M2I2M", 2, "2M4S", "4S2M");
 		assertSplitAfterReadPosition("2M2I2M", 3, "2M4S", "4S2M");
+	}
+	@Test
+	public void splitAfterReadPosition_should_decode_cigar() {
+		assertSplitAfterReadPosition("2M10P10N10P2M", 1, "2M2S", "2S2M");
+	}
+	@Test
+	public void offsetOf_should_decode_cigar() {
+		assertEquals(-1, CigarUtil.offsetOf(new Cigar(C("2M3P3N3P2M")), 2));
 	}
 	@Test
 	public void countMappedBases_should_count_MEX() {
@@ -127,6 +140,15 @@ public class CigarUtilTest {
 		assertEquals(61, CigarUtil.commonReferenceBases(c1, c2));
 		assertEquals(65, CigarUtil.countMappedBases(c1.getCigarElements()));
 		assertEquals(68, CigarUtil.countMappedBases(c2.getCigarElements()));
+	}
+	@Test
+	public void commonReferenceBases_should_match_unencoded_and_decoded_negative_deletions() {
+		Cigar c1 = new Cigar(ImmutableList.of(
+				new CigarElement(2, CigarOperator.M),
+				new CigarElement(-2, CigarOperator.D),
+				new CigarElement(2, CigarOperator.M)
+				));
+		assertEquals(4, CigarUtil.commonReferenceBases(c1, new Cigar(C("2M5P5N5P2M"))));
 	}
 	//@Test
 	public void test_realign_anchor_direction_changing_na12878() throws IOException {
