@@ -83,6 +83,7 @@ import au.edu.wehi.idsv.picard.BufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.SplitIndel;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
 
@@ -266,6 +267,14 @@ public class TestHelper {
 	public static SoftClipEvidence SCE(BreakendDirection direction,
 			SAMRecord... pair) {
 		return SCE(direction, SES(), pair);
+	}
+	public static SpannedIndelEvidence IE(SAMRecord r) {
+		return IE(SES(), r);
+	}
+
+	public static SpannedIndelEvidence IE(SAMEvidenceSource ses, SAMRecord r) {
+		SplitIndel si = SplitIndel.getIndelsAsSplitReads(r).get(0);
+		return new SpannedIndelEvidence(ses, FWD, si.leftAnchored, si.leftRealigned, 0);
 	}
 
 	public static SoftClipEvidence SCE(BreakendDirection direction,
@@ -853,7 +862,7 @@ public class TestHelper {
 			return completedSteps.contains(step);
 		}
 		@Override
-		protected IdsvSamFileMetrics getMetrics() {
+		public IdsvSamFileMetrics getMetrics() {
 			if (metrics != null) return metrics;
 			return super.getMetrics();
 		}
@@ -910,7 +919,7 @@ public class TestHelper {
 		@Override
 		public boolean isComplete(ProcessStep step) { return true; }
 		@Override
-		protected IdsvSamFileMetrics getMetrics() { return metrics; }
+		public IdsvSamFileMetrics getMetrics() { return metrics; }
 		@Override
 		public CloseableIterator<DirectedEvidence> iterator(
 				boolean includeReadPair, boolean includeSoftClip,

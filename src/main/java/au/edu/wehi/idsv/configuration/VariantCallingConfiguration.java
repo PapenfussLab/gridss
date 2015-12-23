@@ -10,6 +10,8 @@ import au.edu.wehi.idsv.IdsvVariantContextBuilder;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
+import au.edu.wehi.idsv.model.FastEmpiricalReferenceLikelihoodModel;
+import au.edu.wehi.idsv.model.VariantScoringModel;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
 import com.google.common.collect.Lists;
@@ -104,5 +106,8 @@ public class VariantCallingConfiguration {
 			filteredVariant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(processContext, filteredVariant).filter(VcfFilter.LOW_QUAL.filter()).make();
 		}
 		return filteredVariant;
+	}
+	public VariantScoringModel getModel() {
+		return new FastEmpiricalReferenceLikelihoodModel();
 	}
 }

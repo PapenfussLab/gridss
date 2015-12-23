@@ -10,7 +10,7 @@ import org.junit.Test;
 
 
 public class CigarSizeDistributionTest {
-	public List<CigarDetailMetrics> data_778() {
+	public static List<CigarDetailMetrics> data_778() {
 		List<CigarDetailMetrics> list = new ArrayList<CigarDetailMetrics>();
 		list.add(new CigarDetailMetrics() {{ LENGTH = 0; COUNT = 105662867; OPERATOR='S'; }});
 		list.add(new CigarDetailMetrics() {{ LENGTH = 1; COUNT = 1267368; OPERATOR='S';}});

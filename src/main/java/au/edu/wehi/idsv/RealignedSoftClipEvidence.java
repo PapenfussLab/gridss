@@ -96,7 +96,7 @@ public class RealignedSoftClipEvidence extends SoftClipEvidence implements Direc
 	}
 	@Override
 	public float getBreakpointQual() {
-		return cigarPhred(getEvidenceSource(), CigarOperator.SOFT_CLIP, getSoftClipLength(), getLocalMapq(), getRemoteMapq());
+		return (float)getEvidenceSource().getContext().getConfig().getVariantCalling().getModel().scoreSplitRead(getEvidenceSource().getMetrics(), getSoftClipLength(), getLocalMapq(), getRemoteMapq());
 	}
 	public RealignedRemoteSoftClipEvidence asRemote() {
 		return new RealignedRemoteSoftClipEvidence(this);

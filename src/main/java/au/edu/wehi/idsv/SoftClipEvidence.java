@@ -1,16 +1,14 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMTag;
-import htsjdk.samtools.util.SequenceUtil;
-
 import java.util.Arrays;
 
 import org.apache.commons.lang3.StringUtils;
 
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMTag;
+import htsjdk.samtools.util.SequenceUtil;
 
 public class SoftClipEvidence implements DirectedEvidence {
 	private final SAMEvidenceSource source;
@@ -237,16 +235,8 @@ public class SoftClipEvidence implements DirectedEvidence {
 	public boolean isBreakendExact() {
 		return true;
 	}
-	protected static float cigarPhred(SAMEvidenceSource source, CigarOperator op, int length, int localMapq, int remoteMapq) {
-		// TODO: look at MAPQ distribution vs SC length
-		// this approach may unfairly penalise long SCs due to aligned MAPQ strategy
-		double score = source.getMetrics().getCigarDistribution().getPhred(op, length);
-		score = Math.min(score, localMapq);
-		score = Math.min(score, remoteMapq);
-		return (float)score;
-	}
 	@Override
 	public float getBreakendQual() {
-		return cigarPhred(getEvidenceSource(), CigarOperator.SOFT_CLIP, getSoftClipLength(), getLocalMapq(), Integer.MAX_VALUE);
+		return (float)source.getContext().getConfig().getVariantCalling().getModel().scoreSoftClip(source.getMetrics(), getSoftClipLength(), getLocalMapq());
 	}
 }

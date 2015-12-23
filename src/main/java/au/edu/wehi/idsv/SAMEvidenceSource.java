@@ -153,7 +153,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		}
 		return done && IntermediateFileUtil.checkIntermediate(target, source, getContext().getConfig().ignoreFileTimestamps);
 	}
-	protected IdsvSamFileMetrics getMetrics() {
+	public IdsvSamFileMetrics getMetrics() {
 		if (metrics == null) {
 			if (!isComplete(ProcessStep.CALCULATE_METRICS)) {
 				completeSteps(EnumSet.of(ProcessStep.CALCULATE_METRICS));

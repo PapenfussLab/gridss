@@ -4,8 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.variant.vcf.VCFConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,11 +12,13 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+
+import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.variant.vcf.VCFConstants;
 
 public class StructuralVariationCallBuilderTest extends TestHelper {
 	public final static BreakpointSummary BP = new BreakpointSummary(0, BWD, 10, 10, 1, BWD, 100, 100);
@@ -651,6 +651,17 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		builder.addEvidence(SoftClipEvidence.create(SES(), FWD, withSequence("NNNN", Read(0, 12, "1M3S"))[0], withSequence("NNN", Read(0, 10, "3M"))[0]));
 		VariantContextDirectedEvidence de = builder.make();
 		assertEquals(new BreakpointSummary(0, FWD, 12, 12, 0, BWD, 10, 10), de.getBreakendSummary());
+	}
+	@Test(expected=IllegalArgumentException.class)
+	public void indels_should_have_zero_margin_applied() {
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(0, FWD, 11, 11, 0, BWD, 12, 12), "");
+			phredScore(10);
+		}}.make());
+		builder.addEvidence(IE(Read(0, 11, "1M2I1M")));
+		builder.addEvidence(IE(Read(0, 13, "1M2I1M")));
+		VariantContextDirectedBreakpoint de = (VariantContextDirectedBreakpoint) builder.make();
+		assertEquals(1, de.getBreakpointEvidenceCount());
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void should_exclude_unsupporting_realigned_soft_clip() {
