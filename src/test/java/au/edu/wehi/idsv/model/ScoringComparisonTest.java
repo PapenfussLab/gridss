@@ -39,7 +39,7 @@ public class ScoringComparisonTest extends TestHelper {
 		}
 	}
 	@Test
-	public void SoftClip_Fast_Empirical() {
+	public void Fast_Empirical() {
 		printSoftClipComparison(new FastEmpiricalReferenceLikelihoodModel(), new EmpiricalLlrModel());
 	}
 	@Test

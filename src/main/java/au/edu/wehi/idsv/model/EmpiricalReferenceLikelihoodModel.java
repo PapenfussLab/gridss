@@ -12,7 +12,7 @@ import htsjdk.samtools.CigarOperator;
  */
 public class EmpiricalReferenceLikelihoodModel implements VariantScoringModel {
 	public double referenceLikelihood(double prEgivenRM, double prM) {
-		double prEgivenRMbar = 1;
+		//double prEgivenRMbar = 1;
 		return prM * prEgivenRM; // + (1 - prM) * prEgivenRMbar;
 	}
 	public double score(double prEgivenRM, int mapq) {
