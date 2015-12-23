@@ -36,6 +36,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	private final AssemblyEvidenceSource source;
 	private final BreakendSummary breakend;
 	private final boolean isExact;
+	private List<SpanningSAMRecordAssemblyEvidence> indels = null;
 	private Collection<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
 	private HashSet<String> evidenceIDs = null;
 	public SAMRecordAssemblyEvidence(AssemblyEvidenceSource source, SAMRecordAssemblyEvidence assembly, List<SAMRecord> realigned) {
@@ -76,18 +77,20 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	 * @return
 	 */
 	public List<SpanningSAMRecordAssemblyEvidence> getSpannedIndels() {
-		List<SplitIndel> indels = SplitIndel.getIndelsAsSplitReads(getSAMRecord());
-		List<SpanningSAMRecordAssemblyEvidence> list = new ArrayList<SpanningSAMRecordAssemblyEvidence>(indels.size() * 2);
-		int i = 0;
-		for (SplitIndel indel : indels) {
-			indel.leftAnchored.setAttribute(SamTags.ASSEMBLY_DIRECTION, BreakendDirection.Forward.toChar());
-			indel.rightAnchored.setAttribute(SamTags.ASSEMBLY_DIRECTION, BreakendDirection.Backward.toChar());
-			// hack to force remote portion of assembly to not be mapq filtered
-			SpanningSAMRecordAssemblyEvidence left = new SpanningSAMRecordAssemblyEvidence(this, indel, i);
-			list.add(left);
-			list.add(left.asRemote());
+		if (indels == null) {
+			List<SplitIndel> splitindels = SplitIndel.getIndelsAsSplitReads(getSAMRecord());
+			indels = new ArrayList<SpanningSAMRecordAssemblyEvidence>(splitindels.size() * 2);
+			int i = 0;
+			for (SplitIndel indel : splitindels) {
+				indel.leftAnchored.setAttribute(SamTags.ASSEMBLY_DIRECTION, BreakendDirection.Forward.toChar());
+				indel.rightAnchored.setAttribute(SamTags.ASSEMBLY_DIRECTION, BreakendDirection.Backward.toChar());
+				// hack to force remote portion of assembly to not be mapq filtered
+				SpanningSAMRecordAssemblyEvidence left = new SpanningSAMRecordAssemblyEvidence(this, indel, i);
+				indels.add(left);
+				indels.add(left.asRemote());
+			}
 		}
-		return list;
+		return indels;
 	}
 	/**
 	 * Determines whether the given record is part of the given assembly
@@ -177,6 +180,12 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		// TODO: proper mapq model
 		getSAMRecord().setMappingQuality(maxLocalMapq);
 		getBackingRecord().setMappingQuality(maxLocalMapq);
+		if (evidenceIDs != null && evidence != null && evidenceIDs.size() != evidence.size()) {
+			log.warn(String.format("Found only %d of %d reads supporting assembly %s", evidence.size(), evidenceIDs.size(), getEvidenceID()));
+		}
+		if (maxLocalMapq < source.getContext().getConfig().minMapq) {
+			log.warn(String.format("Sanity check failure: %s has mapq below minimum", getEvidenceID()));
+		}
 		if (untrackEvidence) {
 			evidenceIDs = null;
 			evidence = null;
@@ -548,24 +557,24 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	}
 	@Override
 	public boolean isAssemblyFiltered() {
-		return StringUtils.isNotBlank((String)record.getAttribute(SamTags.ASSEMLBY_FILTERS));
+		return StringUtils.isNotBlank((String)record.getAttribute(SamTags.ASSEMBLY_FILTERS));
 	}
 	@Override
 	public void filterAssembly(VcfFilter reason) {
-		String tag = (String)record.getAttribute(SamTags.ASSEMLBY_FILTERS);
+		String tag = (String)record.getAttribute(SamTags.ASSEMBLY_FILTERS);
 		if (StringUtils.isBlank(tag)) {
 			tag = reason.filter();
 		} else if (!tag.contains(reason.filter())) {
 			tag = tag + "," + reason.filter();
 		}
-		getBackingRecord().setAttribute(SamTags.ASSEMLBY_FILTERS, tag);
-		getSAMRecord().setAttribute(SamTags.ASSEMLBY_FILTERS, tag);
-		getRemoteSAMRecord().setAttribute(SamTags.ASSEMLBY_FILTERS, tag);
+		getBackingRecord().setAttribute(SamTags.ASSEMBLY_FILTERS, tag);
+		getSAMRecord().setAttribute(SamTags.ASSEMBLY_FILTERS, tag);
+		getRemoteSAMRecord().setAttribute(SamTags.ASSEMBLY_FILTERS, tag);
 	}
 	@Override
 	public List<VcfFilter> getFilters() {
 		List<VcfFilter> list = Lists.newArrayList();
-		String filters = (String)record.getAttribute(SamTags.ASSEMLBY_FILTERS);
+		String filters = (String)record.getAttribute(SamTags.ASSEMBLY_FILTERS);
 		if (!StringUtils.isEmpty(filters)) {
 			for (String s : filters.split(",")) {
 				list.add(VcfFilter.get(s));
@@ -600,10 +609,8 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	@Override
 	public float getBreakendQual() {
 		if (getBreakendLength() == 0) return 0;
-		int evidenceCount = getAssemblySupportCountReadPair()
-				+ getAssemblySupportCountSoftClip();
-		double qual = getAssemblySupportReadPairQualityScore()
-				+ getAssemblySupportSoftClipQualityScore();
+		int evidenceCount = getAssemblySupportCountReadPair() + getAssemblySupportCountSoftClip();
+		double qual = getAssemblySupportReadPairQualityScore() + getAssemblySupportSoftClipQualityScore();
 		if (source.getContext().getAssemblyParameters().excludeNonSupportingEvidence) {
 			evidenceCount -= getAssemblyNonSupportingCount();
 			qual -= getAssemblyNonSupportingQualityScore();

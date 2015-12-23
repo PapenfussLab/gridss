@@ -14,7 +14,6 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.EnumSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
@@ -22,24 +21,21 @@ import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.EvidenceProcessorBase;
 import au.edu.wehi.idsv.FileSystemContext;
-import au.edu.wehi.idsv.OrthogonalEvidenceIterator;
 import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
-import au.edu.wehi.idsv.SAMRecordAssemblyEvidenceFilteringIterator;
+import au.edu.wehi.idsv.SequentialAssemblyAnnotator;
+import au.edu.wehi.idsv.SpanningSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
-import com.google.common.collect.UnmodifiableIterator;
 
 /**
  * Creates annotated read pairs for assembly and realignment
@@ -71,17 +67,12 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 			throw new UnsupportedOperationException("We're just using this as a helper class for getting an iterator of annotated assemblies");
 		}
 		public CloseableIterator<SAMRecordAssemblyEvidence> annotatedAssembliesIterator() {
-			CloseableIterator<DirectedEvidence> rawit = getAllEvidence(true, false, true, true, processContext.getAssemblyParameters().includeRemoteSplitReads, true);
-			AsyncBufferedIterator<DirectedEvidence> asyncIt = new AsyncBufferedIterator<DirectedEvidence>(rawit, "AssemblyEvidenceRehydration", source.getContext().getConfig().async_bufferCount, source.getContext().getConfig().async_bufferSize);
-			OrthogonalEvidenceIterator annotatedIt = new OrthogonalEvidenceIterator(processContext.getLinear(), asyncIt, source.getAssemblyWindowSize(), true);
-			UnmodifiableIterator<SAMRecordAssemblyEvidence> filteredIt = Iterators.filter(annotatedIt, SAMRecordAssemblyEvidence.class);
-			Iterator<SAMRecordAssemblyEvidence> it = Iterators.transform(filteredIt, new Function<SAMRecordAssemblyEvidence, SAMRecordAssemblyEvidence> () {
-				@Override
-				public SAMRecordAssemblyEvidence apply(SAMRecordAssemblyEvidence input) {
-					return input.annotateAssembly();
-				}
-			});
-			return new AutoClosingIterator<SAMRecordAssemblyEvidence>(it, Lists.<Closeable>newArrayList(asyncIt, rawit));
+			CloseableIterator<SAMRecordAssemblyEvidence> assit = source.iterator(false, processContext.getAssemblyParameters().writeFiltered);
+			CloseableIterator<DirectedEvidence> eit = getAllEvidence(false, false, true, true, processContext.getAssemblyParameters().includeRemoteSplitReads, true);
+			AsyncBufferedIterator<SAMRecordAssemblyEvidence> asyncassIt = new AsyncBufferedIterator<SAMRecordAssemblyEvidence>(assit, "Hydration-Assembly", source.getContext().getConfig().async_bufferCount, source.getContext().getConfig().async_bufferSize);
+			AsyncBufferedIterator<DirectedEvidence> asynceIt = new AsyncBufferedIterator<DirectedEvidence>(eit, "Hydration-Evidence", source.getContext().getConfig().async_bufferCount, source.getContext().getConfig().async_bufferSize);			
+			SequentialAssemblyAnnotator annotatedIt = new SequentialAssemblyAnnotator(processContext.getLinear(), asyncassIt, asynceIt, source.getAssemblyWindowSize() + source.getMaxConcordantFragmentSize());
+			return new AutoClosingIterator<SAMRecordAssemblyEvidence>(annotatedIt, Lists.<Closeable>newArrayList(asyncassIt, asynceIt, assit, eit));
 		}
 	}
 	@Override
@@ -208,15 +199,42 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 		sortedWriters.clear();
 		mateWriters.clear();
 	}
+	/**
+	 * Since multiple indels are generated from the same underlying assembly, 
+	 * we need to and extract deduplicate the parent reference
+	 */
+	private SAMRecordAssemblyEvidence getUnderlyingAssembly(SAMRecordAssemblyEvidence e) {
+		if (e instanceof SpanningSAMRecordAssemblyEvidence) {
+			SpanningSAMRecordAssemblyEvidence indel = (SpanningSAMRecordAssemblyEvidence) e;
+			SAMRecordAssemblyEvidence parent = indel.getParentAssembly();
+			if (parent.getBreakendSummary() != null) {
+				// Parent is valid in it's own right so no need to extract from indel
+				return null;
+			}
+			// Wait until the final indel before returning the assembly as we should have loaded
+			// the supporting evidence by then
+			if (indel == parent.getSpannedIndels().get(parent.getSpannedIndels().size() - 1)) {
+				return parent;
+			}
+			return null;
+		}
+		return e;
+	}
 	private void writeUnsortedOutput() {
 		CloseableIterator<SAMRecordAssemblyEvidence> cit = aa.annotatedAssembliesIterator();
 		try {
-			Iterator<SAMRecordAssemblyEvidence> it = new SAMRecordAssemblyEvidenceFilteringIterator(processContext, cit);
-			while (it.hasNext()) {
-				SAMRecordAssemblyEvidence e = it.next();
-				writeUnsortedOutput(e.getSAMRecord(), e.getRemoteSAMRecord());
-				for (SAMRecordAssemblyEvidence en : e.getSubsequentRealignments()) {
-					writeUnsortedOutput(en.getSAMRecord(), en.getRemoteSAMRecord());
+			while (cit.hasNext()) {
+				SAMRecordAssemblyEvidence e = cit.next();
+				e = getUnderlyingAssembly(e);
+				if (e != null) {
+					e.annotateAssembly();
+					processContext.getAssemblyParameters().applyAnnotationFilters(e);
+					if (!e.isAssemblyFiltered() || processContext.getAssemblyParameters().writeFiltered) {
+						writeUnsortedOutput(e.getSAMRecord(), e.getRemoteSAMRecord());
+						for (SAMRecordAssemblyEvidence en : e.getSubsequentRealignments()) {
+							writeUnsortedOutput(en.getSAMRecord(), en.getRemoteSAMRecord());
+						}
+					}
 				}
 			}
 		} finally {
@@ -225,9 +243,11 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 	}
 	private void writeUnsortedOutput(SAMRecord assembly, SAMRecord realign) {
 		sortedWriters.get(assembly.getReferenceIndex() % sortedWriters.size()).addAlignment(assembly);
-		sortedWriters.get(realign.getReferenceIndex() % sortedWriters.size()).addAlignment(realign);
-		mateWriters.get(assembly.getMateReferenceIndex() % mateWriters.size()).addAlignment(assembly);
-		mateWriters.get(realign.getMateReferenceIndex() % mateWriters.size()).addAlignment(realign);
+		if (!realign.getReadUnmappedFlag()) {
+			sortedWriters.get(realign.getReferenceIndex() % sortedWriters.size()).addAlignment(realign);
+			mateWriters.get(assembly.getMateReferenceIndex() % mateWriters.size()).addAlignment(assembly);
+			mateWriters.get(realign.getMateReferenceIndex() % mateWriters.size()).addAlignment(realign);
+		}
 	}
 	private File getUnsortedWorkingFileFor(File file) {
 		File unsorted = FileSystemContext.getWorkingFileFor(file, UNSORTED_FILE_PREFIX);

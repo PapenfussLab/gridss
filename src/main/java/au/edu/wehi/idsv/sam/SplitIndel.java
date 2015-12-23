@@ -42,9 +42,15 @@ public class SplitIndel {
 	public static List<SplitIndel> getIndelsAsSplitReads(SAMRecord read) {
 		List<SplitIndel> list = new ArrayList<SplitIndel>(CigarUtil.countIndels(read.getCigar()));
 		int offset = 0;
+		boolean inIndel = false;
 		for (CigarElement ce : CigarUtil.decodeNegativeDeletion(read.getCigar().getCigarElements())) {
 			if (ce.getOperator() == CigarOperator.DELETION || ce.getOperator() == CigarOperator.INSERTION) {
-				list.add(new SplitIndel(read, offset - 1));
+				if (!inIndel) {
+					list.add(new SplitIndel(read, offset - 1));
+				}
+				inIndel = true;
+			} else {
+				inIndel = false;
 			}
 			if (ce.getOperator().consumesReadBases()) {
 				offset += ce.getLength();

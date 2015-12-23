@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableList;
  */
 public class SpanningSAMRecordAssemblyEvidence extends RealignedSAMRecordAssemblyEvidence {
 	private final SAMRecordAssemblyEvidence parent;
+	private final int indelOffset;
 	private final String evidenceID;
 	private SpanningSAMRecordAssemblyEvidence remote;
 	/**
@@ -28,8 +29,12 @@ public class SpanningSAMRecordAssemblyEvidence extends RealignedSAMRecordAssembl
 		super(parent.getEvidenceSource(), anchor, ImmutableList.of(realign));
 		this.parent = parent;
 		this.evidenceID = String.format("%s_%s%d", parent.getEvidenceID(), getBreakendSummary().direction.toChar(), indelOffset);
+		this.indelOffset = indelOffset;
 		// sanity check mapping quality
 		assert(anchor.getMappingQuality() >= parent.getEvidenceSource().getContext().getConfig().minMapq);
+	}
+	public int getIndelOffset() {
+		return indelOffset;
 	}
 	public SAMRecordAssemblyEvidence getParentAssembly() {
 		return parent;
@@ -60,6 +65,6 @@ public class SpanningSAMRecordAssemblyEvidence extends RealignedSAMRecordAssembl
 	}
 	@Override
 	public float getBreakpointQual() {
-		return super.getBreakpointQual() / 2;
+		return getBreakpointQual(getAssemblySupportCountReadPair() + getAssemblySupportCountSoftClip(), getRemoteMapq(), super.getBreakendQual()) / 2;
 	}
 }

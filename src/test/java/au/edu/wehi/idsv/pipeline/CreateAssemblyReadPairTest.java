@@ -35,7 +35,7 @@ import au.edu.wehi.idsv.RealignedSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.RemoteEvidence;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
-import au.edu.wehi.idsv.SpanningSAMRecordAssemblyEvidence;
+import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 
 import com.google.common.base.Function;
@@ -57,11 +57,15 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	List<SAMRecordAssemblyEvidence> evidence;
 	List<SAMRecord> realign;
 	int realignCount;
-	int spanningCount;
+	int indelAdjustment;
 	private void orderedAddNoRealign(SAMRecordAssemblyEvidence e) {
-		SAMRecord r = new SAMRecord(getContext().getBasicSamHeader());
-		r.setReadUnmappedFlag(true);
-		orderedAdd(e, r);
+		if (e.getBreakendSummary() != null) {
+			SAMRecord r = new SAMRecord(getContext().getBasicSamHeader());
+			r.setReadUnmappedFlag(true);
+			orderedAdd(e, r);
+		} else {
+			orderedAdd(e, null);
+		}
 	}
 	private void orderedAdd(SAMRecordAssemblyEvidence e, int referenceIndex, int position, boolean negativeStrand) {
 		SAMRecord r = new SAMRecord(getContext().getBasicSamHeader());
@@ -122,7 +126,7 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 					assemblies.add(Lists.newArrayList(Iterables.filter(assemblyResult, new Predicate<SAMRecordAssemblyEvidence>() {
 						@Override
 						public boolean apply(SAMRecordAssemblyEvidence input) {
-							return input.getBreakendSummary().referenceIndex == chr.getSequenceIndex();
+							return input.getSAMRecord().getReferenceIndex() == chr.getSequenceIndex();
 						}
 					})));
 				}
@@ -163,12 +167,11 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 			}
 			writer.close();
 		}
-		spanningCount = 0;
+		indelAdjustment = 0;
 		for (SAMRecordAssemblyEvidence e : evidence) {
-			if (e instanceof SpanningSAMRecordAssemblyEvidence) {
-				// considered realigned already
-				realignCount++;
-				spanningCount++;
+			indelAdjustment += e.getSpannedIndels().size();
+			if (e.getBreakendSummary() == null) {
+				indelAdjustment--;
 			}
 		}
 	}
@@ -207,9 +210,10 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 		new FixedAssemblyEvidenceSource(pc, evidence, file).ensureAssembled();
 	}
 	private void assertMatch(AssemblyEvidenceSource rp, AssemblyEvidenceSource aes) {
-		assertEquals(evidence.size() + spanningCount, Iterators.size(aes.iterator(false, true)));
-		assertEquals(evidence.size() + spanningCount, Iterators.size(rp.iterator(false, true)));
-		assertEquals(evidence.size() + realignCount + 2 * spanningCount, Iterators.size(rp.iterator(true, true)));
+		assertEquals(evidence.size() + indelAdjustment, Iterators.size(aes.iterator(false, true)));
+		assertEquals(evidence.size() + indelAdjustment, Iterators.size(rp.iterator(false, true)));
+		List<SAMRecordAssemblyEvidence> rptt = Lists.newArrayList(rp.iterator(true, true));
+		assertEquals(evidence.size() + realignCount + indelAdjustment, rptt.size());
 		assertContains(Lists.newArrayList(rp.iterator(false, true)), Lists.newArrayList(aes.iterator(false, true)));
 		assertSorted(Lists.newArrayList(rp.iterator(false, true)));
 		assertSorted(Lists.newArrayList(aes.iterator(false, true)));
@@ -345,10 +349,24 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	}
 	@Test
 	public void should_include_small_indel_remote_breakends() {
-		SAMRecordAssemblyEvidence e =  AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null, 0, 10, 5, B("AAAAACCCCC"), B("0000011111"));
+		SoftClipEvidence sce = SCE(FWD, Read(0, 10, "1M1S"));
+		SAMRecordAssemblyEvidence e =  AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, ImmutableList.of(sce.getEvidenceID()), 0, 10, 5, B("AAAAACCCCC"), B("0000011111"));
 		SAMRecord r = e.getSAMRecord();
 		r.setCigarString("5M5D5M");
-		orderedAddNoRealign(new SAMRecordAssemblyEvidence(AES(), r, ImmutableList.of()));
+		SAMRecordAssemblyEvidence hydrated = new SAMRecordAssemblyEvidence(AES(), r, ImmutableList.of());
+		hydrated.hydrateEvidenceSet(sce);
+		orderedAddNoRealign(hydrated);
+		go();
+	}
+	@Test
+	public void should_include_indel_and_breakpoint() {
+		SoftClipEvidence sce = SCE(FWD, Read(0, 10, "1M1S"));
+		SAMRecordAssemblyEvidence e =  AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, ImmutableList.of(sce.getEvidenceID()), 0, 10, 5, B("AAAAACCCCC"), B("0000011111"));
+		SAMRecord r = e.getSAMRecord();
+		r.setCigarString("5M5D1M4S");
+		SAMRecordAssemblyEvidence hydrated = new SAMRecordAssemblyEvidence(AES(), r, ImmutableList.of());
+		hydrated.hydrateEvidenceSet(sce);
+		orderedAdd(hydrated, 1, 100, false);
 		go();
 	}
 }

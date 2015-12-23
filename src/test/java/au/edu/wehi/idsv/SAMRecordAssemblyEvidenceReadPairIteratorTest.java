@@ -41,7 +41,7 @@ public class SAMRecordAssemblyEvidenceReadPairIteratorTest extends TestHelper {
 					public SAMRecord apply(SAMRecordAssemblyEvidence input) {
 						return input.getRemoteSAMRecord();
 					} })
-			, true));
+			, true, true));
 	}
 	@Test
 	public void should_construct_assembly() {
@@ -56,7 +56,7 @@ public class SAMRecordAssemblyEvidenceReadPairIteratorTest extends TestHelper {
 		assertEquals(1, out.size());
 	}
 	@Test
-	public void shoould_load_remote_evidence() {
+	public void should_load_remote_evidence() {
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, BWD, 1, 10), null, B("AA"), B("AA"), new int[] {2, 0});
 		RealignedSAMRecordAssemblyEvidence re = (RealignedSAMRecordAssemblyEvidence)AssemblyFactory.incorporateRealignment(getContext(), e, ImmutableList.of(
 				withReadName("0#1#0#ReadName", Read(1, 100, "2M"))[0]));
@@ -68,10 +68,26 @@ public class SAMRecordAssemblyEvidenceReadPairIteratorTest extends TestHelper {
 		inlist.add(re.getRemoteSAMRecord());
 		ArrayList<SAMRecord> matelist = new ArrayList<SAMRecord>(inlist);
 		Collections.reverse(matelist);
-		SAMRecordAssemblyEvidenceReadPairIterator it = new SAMRecordAssemblyEvidenceReadPairIterator(getContext(), AES(), inlist.iterator(), matelist.iterator(), true);
+		SAMRecordAssemblyEvidenceReadPairIterator it = new SAMRecordAssemblyEvidenceReadPairIterator(getContext(), AES(), inlist.iterator(), matelist.iterator(), true, true);
 		out = Lists.newArrayList(it);
 		
 		assertEquals(new BreakpointSummary(0, BWD, 1, 10, 1, FWD, 101, 110), out.get(0).getBreakendSummary());
 		assertEquals(new BreakpointSummary(1, FWD, 101, 110, 0, BWD, 1, 10), out.get(1).getBreakendSummary());
+	}
+	@Test
+	public void should_not_duplicate_spanning_indel_calls_when_including_remote() {
+		List<DirectedEvidence> evidence = Lists.newArrayList();
+		evidence.add(SCE(FWD, Read(0, 5, "5M5S")));
+		evidence.add(SCE(FWD, Read(0, 5, "5M6S")));
+		evidence.add(SCE(FWD, Read(0, 5, "5M7S")));
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Lists.transform(evidence, EID),
+				0, 10, 5, B("AAAAAAAAAA"), B("AAAAAAAAAA"));
+		e.hydrateEvidenceSet(evidence);
+		e.annotateAssembly();
+		SAMRecord r = e.getBackingRecord();
+		r.setCigarString("5M2D3M2S");
+		in.add(new SAMRecordAssemblyEvidence(AES(), r, null));
+		go(true);
+		assertEquals(3, out.size());
 	}
 }

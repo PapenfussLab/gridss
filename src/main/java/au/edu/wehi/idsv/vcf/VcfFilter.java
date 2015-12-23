@@ -14,7 +14,7 @@ public enum VcfFilter {
 	//SMALL_INDEL ("SMALL_INDEL", "Variant is a small indel that is possibly an alignment artefact."),
 	LOW_BREAKPOINT_SUPPORT ("LOW_BREAKPOINT_SUPPORT", "Does not reach the required threshold quality for calling."),
 	SINGLE_SUPPORT ("SINGLE_SUPPORT", "Supported by a single read or read pair only."),
-	ASSEMBLY_REMOTE ("ASSEMBLY_REMOTE", "All support for the given breakpoint comes from elsewhere."),
+	//ASSEMBLY_REMOTE ("ASSEMBLY_REMOTE", "All support for the given breakpoint comes from elsewhere."),
 	NO_ASSEMBLY ("NO_ASSEMBLY", "No assembly supporting this variant could be found."),
 	SINGLE_ASSEMBLY ("SINGLE_ASSEMBLY", "Only one side of the breakpoint could be assembled."),
 	ASSEMBLY_ONLY ("ASSEMBLY_ONLY", "Variant is supported only by assembly evidence."),

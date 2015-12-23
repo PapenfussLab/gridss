@@ -2,13 +2,10 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.util.Collection;
-import java.util.List;
-
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMUtils;
+
+import java.util.List;
 
 import org.junit.Test;
 
@@ -132,7 +129,7 @@ public class SpanningSAMRecordAssemblyEvidenceTest extends TestHelper {
 		r.setAttribute("es", "RbST-E00106:108:H03M0ALXX:1:1118:24253:3735/2 fST-E00106:108:H03M0ALXX:1:1205:2583:30439/1 fST-E00106:108:H03M0ALXX:1:2207:15443:7989/2");
 		r.setMappingQuality(SAMRecord.UNKNOWN_MAPPING_QUALITY);
 		List<SpanningSAMRecordAssemblyEvidence> indels = AssemblyFactory.hydrate(AES(), r).getSpannedIndels();
-		assertEquals(1, indels.size());
+		assertEquals(2, indels.size());
 		SpanningSAMRecordAssemblyEvidence e = indels.get(0);
 		assertEquals("136M224S", e.getSAMRecord().getCigarString());
 		assertEquals(10603, e.getSAMRecord().getAlignmentStart());

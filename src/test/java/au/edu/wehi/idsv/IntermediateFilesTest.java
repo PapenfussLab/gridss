@@ -80,7 +80,7 @@ public class IntermediateFilesTest extends TestHelper {
 	}
 	public SAMRecord validSC(String seq, int referenceIndex, int position, String cigar) {
 		SAMRecord r = withSequence(seq, Read(referenceIndex, position, cigar))[0];
-		r.setMappingQuality(5);
+		r.setMappingQuality(15);
 		return r;
 	}
 	public SAMRecord ValidSC() {
@@ -91,7 +91,7 @@ public class IntermediateFilesTest extends TestHelper {
 			qual[i] = 5;
 		}
 		r.setBaseQualities(qual);
-		r.setMappingQuality(5);
+		r.setMappingQuality(15);
 		return r;
 	}
 	public void createInput(SAMRecord[] first, SAMRecord[]... data) {

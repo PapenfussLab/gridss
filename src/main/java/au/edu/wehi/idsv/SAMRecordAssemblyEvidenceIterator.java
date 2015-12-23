@@ -66,8 +66,10 @@ public class SAMRecordAssemblyEvidenceIterator implements
 			}
 		}
 		List<SpanningSAMRecordAssemblyEvidence> indels = null;
-		if (includeSpannedIndels) {
+		if (includeSpannedIndels || includeIndelParents) {
 			indels = evidence.getSpannedIndels();
+		}
+		if (includeSpannedIndels) {
 			buffer.addAll(indels);
 		}
 		if (!evidence.isReferenceAssembly() && (evidence.getBreakendSummary() != null || (includeIndelParents && !indels.isEmpty()))) {

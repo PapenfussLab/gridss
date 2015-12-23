@@ -137,8 +137,6 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 				          //AGATCGGAAGAG
 				);
 		ProcessingContext pc = getCommandlineContext();
-		pc.getAssemblyParameters().subgraph.maxSubgraphFragmentWidth = -1;
-		pc.getAssemblyParameters().anchorRealignment.perform = false;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
 		ses.completeSteps(ProcessStep.ALL_STEPS);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));

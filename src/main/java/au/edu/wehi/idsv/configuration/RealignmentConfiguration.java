@@ -47,6 +47,7 @@ public class RealignmentConfiguration {
 	}
 	public boolean shouldRealignBreakend(AssemblyEvidence evidence) {
 		if (evidence.getBreakendSummary() instanceof BreakpointSummary) return false;
+		if (evidence.getBreakendSummary() == null) return false;
 		return evidence.getBreakendSequence().length >= minLength;
 				//&& evidence.getAssemblyQuality() >= minAverageQual;
 	}

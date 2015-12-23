@@ -28,4 +28,14 @@ public class SplitIndelTest extends TestHelper {
 		assertEquals(99, list.get(0).rightAnchored.getAlignmentStart());
 		assertEquals(99, list.get(0).leftRealigned.getAlignmentStart());
 	}
+	@Test
+	public void should_decode_negative_deletion() {
+		List<SplitIndel> list = SplitIndel.getIndelsAsSplitReads(Read(0, 1000, "136M8952P8952N8952P136M"));
+		assertEquals(1, list.size());
+	}
+	@Test
+	public void should_merge_adjacent_indels() {
+		List<SplitIndel> list = SplitIndel.getIndelsAsSplitReads(Read(0, 1000, "136M88I8952P8952N8952P10I136M"));
+		assertEquals(1, list.size());
+	}
 }

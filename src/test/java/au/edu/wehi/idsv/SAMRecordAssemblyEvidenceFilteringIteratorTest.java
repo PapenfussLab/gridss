@@ -40,7 +40,7 @@ public class SAMRecordAssemblyEvidenceFilteringIteratorTest extends TestHelper {
 					public SAMRecord apply(SAMRecordAssemblyEvidence input) {
 						return input.getRemoteSAMRecord();
 					} })
-			, true)));
+			, true, true)));
 	}
 	@Test
 	public void should_filter_reference_breakend() {
