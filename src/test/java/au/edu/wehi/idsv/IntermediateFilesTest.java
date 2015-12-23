@@ -60,12 +60,23 @@ public class IntermediateFilesTest extends TestHelper {
 	public ProcessingContext getCommandlineContext(boolean perChr) {
 		List<Header> headers = Lists.newArrayList();
 		headers.add(new StringHeader("TestHeader"));
-		ProcessingContext pc = new ProcessingContext(
+		ProcessingContext pc;
+		if (reference.equals(SMALL_FA_FILE)) {
+			pc = new ProcessingContext(
 				new FileSystemContext(testFolder.getRoot(), 500000),
 				headers,
 				getConfig(testFolder.getRoot()),
+				SMALL_FA,
 				reference,
 				perChr);
+		} else {
+			pc = new ProcessingContext(
+					new FileSystemContext(testFolder.getRoot(), 500000),
+					headers,
+					getConfig(testFolder.getRoot()),
+					reference,
+					perChr);
+		}
 		pc.registerCategory(0, "Normal");
 		pc.registerCategory(1, "Tumour");
 		return pc;

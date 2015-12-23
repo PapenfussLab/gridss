@@ -143,7 +143,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		int[] rCount = new int[n];
 		int[] nsrpCount = new int[n];
 		int[] nsscCount = new int[n];
-		int maxLocalMapq = 0;
+		int maxLocalMapq = -1;
 		for (DirectedEvidence e : getEvidence()) {
 			maxLocalMapq = Math.max(maxLocalMapq, e.getLocalMapq());
 			int offset = ((SAMEvidenceSource)e.getEvidenceSource()).getSourceCategory();
@@ -178,17 +178,17 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		annotateSAMRecord(getBackingRecord(), rpQual, scQual, rQual, nsrpQual, nsscQual, rpCount, rpMaxLen, scCount, scLenMax, scLenTotal, rCount, nsrpCount, nsscCount, untrackEvidence);
 		annotateSAMRecord(getRemoteSAMRecord(), rpQual, scQual, rQual, nsrpQual, nsscQual, rpCount, rpMaxLen, scCount, scLenMax, scLenTotal, rCount, nsrpCount, nsscCount, untrackEvidence);
 		// TODO: proper mapq model
-		getSAMRecord().setMappingQuality(maxLocalMapq);
-		getBackingRecord().setMappingQuality(maxLocalMapq);
+		getSAMRecord().setMappingQuality(maxLocalMapq >= 0 ? maxLocalMapq : SAMRecord.UNKNOWN_MAPPING_QUALITY);
+		getBackingRecord().setMappingQuality(maxLocalMapq >= 0 ? maxLocalMapq : SAMRecord.UNKNOWN_MAPPING_QUALITY);
 		if (evidenceIDs != null && evidence != null && evidenceIDs.size() != evidence.size()) {
 			log.warn(String.format("Found only %d of %d reads supporting assembly %s", evidence.size(), evidenceIDs.size(), getEvidenceID()));
-		}
-		if (maxLocalMapq < source.getContext().getConfig().minMapq) {
-			log.warn(String.format("Sanity check failure: %s has mapq below minimum", getEvidenceID()));
 		}
 		if (untrackEvidence) {
 			evidenceIDs = null;
 			evidence = null;
+		}
+		if (getLocalMapq() < source.getContext().getConfig().minMapq) {
+			log.warn(String.format("Sanity check failure: %s has mapq below minimum", getEvidenceID()));
 		}
 		return this;
 	}

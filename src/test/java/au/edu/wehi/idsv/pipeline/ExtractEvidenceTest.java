@@ -156,7 +156,7 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 	public void realign_min_mapq_should_filter_sc() {
 		createInput(ValidSC());
 		ProcessingContext pc = getCommandlineContext();
-		pc.getConfig().minMapq = 6;
+		pc.getConfig().minMapq = 16;
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
 		ExtractEvidence e = new ExtractEvidence(pc, source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
 		
