@@ -17,13 +17,13 @@ public class IdsvSamFileMetricsTest extends TestHelper {
 	public void wrapper_inner_metrics() {
 		IdsvMetrics im = new IdsvMetrics();
 		InsertSizeMetrics ism = new InsertSizeMetrics();
-		List<SoftClipDetailMetrics> sc = new ArrayList<SoftClipDetailMetrics>();
+		List<CigarDetailMetrics> sc = new ArrayList<CigarDetailMetrics>();
 		InsertSizeDistribution isd = new InsertSizeDistribution(new int[] { 1}, new double[] { 1}, 1);
 		IdsvSamFileMetrics metrics = new IdsvSamFileMetrics(ism, im, isd, sc);
 		assertEquals(im, metrics.getIdsvMetrics());
 		assertEquals(isd, metrics.getInsertSizeDistribution());
 		assertEquals(ism, metrics.getInsertSizeMetrics());
-		assertEquals(sc, metrics.getSoftClipDetailMetrics());
+		assertEquals(sc, metrics.getCigarDetailMetrics());
 	}
 	@Test
 	public void getInsertSizeMetrics_should_use_most_plentiful_orientation() {

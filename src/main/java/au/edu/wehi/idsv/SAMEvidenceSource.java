@@ -118,7 +118,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			case CALCULATE_METRICS:
 				source.add(input); target.add(fsc.getInsertSizeMetrics(input));
 				source.add(input); target.add(fsc.getIdsvMetrics(input));
-				source.add(input); target.add(fsc.getSoftClipMetrics(input));
+				source.add(input); target.add(fsc.getCigarMetrics(input));
 				source.add(input); target.add(fsc.getCoverageBlacklistBed(input));
 				break;
 			case EXTRACT_SOFT_CLIPS:

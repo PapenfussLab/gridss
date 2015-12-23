@@ -39,6 +39,7 @@ public class RealignedSoftClipEvidenceIterator extends AbstractIterator<SoftClip
 	protected SoftClipEvidence computeNext() {
 		if (!breakendEvidence.hasNext()) return endOfData();
 		SoftClipEvidence evidence = breakendEvidence.next();
+		if (evidence instanceof SpannedIndelEvidence) return evidence;
 		RealignmentConfiguration rp = evidence.getEvidenceSource().getContext().getRealignmentParameters();
 		SAMRecord realigned = factory.findFirstAssociatedSAMRecord(evidence, rp.shouldRealignBreakend(evidence));
 		if (realigned != null) {

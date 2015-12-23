@@ -77,8 +77,8 @@ import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetricsCollector;
 import au.edu.wehi.idsv.metrics.InsertSizeDistribution;
-import au.edu.wehi.idsv.metrics.SoftClipDetailMetrics;
-import au.edu.wehi.idsv.metrics.SoftClipSizeDistribution;
+import au.edu.wehi.idsv.metrics.CigarDetailMetrics;
+import au.edu.wehi.idsv.metrics.CigarSizeDistribution;
 import au.edu.wehi.idsv.picard.BufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
@@ -286,12 +286,12 @@ public class TestHelper {
 				0, 1,
 				1, B("ATT"), new byte[] { 7, 7, 7 }).annotateAssembly();
 	}
-	public static class MockSoftClipSizeDistribution extends SoftClipSizeDistribution {
-		public MockSoftClipSizeDistribution() {
-			super(new ArrayList<SoftClipDetailMetrics>());
+	public static class MockCigarSizeDistribution extends CigarSizeDistribution {
+		public MockCigarSizeDistribution() {
+			super(new ArrayList<CigarDetailMetrics>());
 		}
 		@Override
-		public double getPhred(int softClipLength) {
+		public double getPhred(CigarOperator op, int softClipLength) {
 			return softClipLength;
 		}
 	}
@@ -317,11 +317,12 @@ public class TestHelper {
 			}}, new InsertSizeDistribution(
 					new int[] { 1, 50, 100, 200, 300, 400, },
 					new double[] { 1, 50, 500, 50, 20, 10, },
-					1+50+500+50+20+10), new ArrayList<SoftClipDetailMetrics>());
+					1+50+500+50+20+10),
+			new ArrayList<CigarDetailMetrics>());
 		}
 		@Override
-		public SoftClipSizeDistribution getSoftClipDistribution() {
-			return new MockSoftClipSizeDistribution();
+		public CigarSizeDistribution getCigarDistribution() {
+			return new MockCigarSizeDistribution();
 		}
 	}
 
@@ -997,7 +998,7 @@ public class TestHelper {
 		}
 		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
 		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
-		MetricsFile<SoftClipDetailMetrics, Integer> sc = new MetricsFile<SoftClipDetailMetrics, Integer>();
+		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
 		c.finish(is, idsv, sc);
 		IdsvMetrics metrics = idsv.getMetrics().get(0);
 		return metrics;

@@ -60,7 +60,7 @@ public class FileSystemContext {
 	private static final String FORMAT_MATE_SAM_UNSORTED_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.rpmate.unsorted" + SAM_SUFFIX;
 	private static final String FORMAT_INSERT_SIZE_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.insertsize.txt";
 	private static final String FORMAT_IDSV_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.idsv.txt";
-	private static final String FORMAT_SOFTLCIP_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.softclip.txt";
+	private static final String FORMAT_CIGAR_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.cigar.txt";
 	private static final String FORMAT_COVERAGE_BLACKLIST_BED = "%s" + COMMON_INITIAL_SUFFIX + ".coverage.blacklist.bed";
 	private static final String FORMAT_REALIGN_FASTQ = "%s" + COMMON_INITIAL_SUFFIX + ".realign.%d.fq";
 	private static final String FORMAT_REALIGN_FASTQ_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign.%d.fq";
@@ -184,8 +184,8 @@ public class FileSystemContext {
 	public File getIdsvMetrics(File input) {
 		return new File(String.format(FORMAT_IDSV_METRICS, getStem(input)));
 	}
-	public File getSoftClipMetrics(File input) {
-		return new File(String.format(FORMAT_SOFTLCIP_METRICS, getStem(input)));
+	public File getCigarMetrics(File input) {
+		return new File(String.format(FORMAT_CIGAR_METRICS, getStem(input)));
 	}
 	public File getRealignmentBam(File input, int iteration) {
 		return new File(String.format(FORMAT_REALIGN_SAM, getStem(input), iteration));

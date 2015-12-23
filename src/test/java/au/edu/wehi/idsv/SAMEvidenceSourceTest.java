@@ -378,7 +378,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		createInput(in.toArray(new SAMRecord[0]));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0, 0, 15);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		List<DirectedEvidence> results = Lists.newArrayList(source.iterator(false, true, false));
+		List<DirectedEvidence> results = Lists.newArrayList(Iterators.filter(source.iterator(false, true, false), e -> !(e instanceof SpannedIndelEvidence)));
 		for (int i = 1; i < results.size(); i++) {
 			assertTrue(results.get(i-1).getBreakendSummary().start <= results.get(i).getBreakendSummary().start);
 		}

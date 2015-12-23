@@ -29,6 +29,7 @@ import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SequentialCoverageThreshold;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetricsCollector;
+import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
@@ -294,7 +295,7 @@ public class ExtractEvidence implements Closeable {
 								endEvidence = null;
 							}
 						}
-						if (startEvidence != null || endEvidence != null) {
+						if (startEvidence != null || endEvidence != null || CigarUtil.countIndels(record.getCigar()) > 0) {
 							scwriters.get(offset % scwriters.size()).addAlignment(record);
 						}
 					}

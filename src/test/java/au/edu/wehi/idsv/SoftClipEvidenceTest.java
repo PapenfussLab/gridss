@@ -9,7 +9,6 @@ import htsjdk.samtools.util.SequenceUtil;
 import java.io.File;
 
 import org.apache.commons.configuration.ConfigurationException;
-import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -302,7 +301,7 @@ public class SoftClipEvidenceTest extends TestHelper {
 		ses.metrics = new IdsvSamFileMetrics(
 				new File("src/test/resources/testmetrics.metrics.idsv.txt"),
 				new File("src/test/resources/testmetrics.metrics.insertsize.txt"),
-				new File("src/test/resources/testmetrics.metrics.softclip.txt"));
+				new File("src/test/resources/testmetrics.metrics.cigar.txt"));
 		SAMRecord[] rp = RP(0, 100, 100, 20);
 		rp[0].setCigarString("10M10S");
 		rp[1].setCigarString("10S10M");
@@ -369,9 +368,5 @@ public class SoftClipEvidenceTest extends TestHelper {
 		assertFalse(new SoftClipEvidence(ses, FWD, withQual(new byte[] { 6, 4, }, withSequence("AT", Read(0, 1, "1M1S")))[0]).meetsEvidenceCritera());
 		assertTrue(new SoftClipEvidence(ses, FWD, withQual(new byte[] { 1, 4, 6, }, withSequence("ATT", Read(0, 1, "1M2S")))[0]).meetsEvidenceCritera());
 		assertFalse(new SoftClipEvidence(ses, FWD, withQual(new byte[] { 1, 4, 5, }, withSequence("ATT", Read(0, 1, "1M2S")))[0]).meetsEvidenceCritera());
-	}
-	@Test
-	public void indels_should_use_library_indel_distribution() {
-		Assert.fail("NYI");
 	}
 }

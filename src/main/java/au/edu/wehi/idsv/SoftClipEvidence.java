@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.util.SequenceUtil;
@@ -41,7 +42,7 @@ public class SoftClipEvidence implements DirectedEvidence {
 		if (record == null) throw new IllegalArgumentException("record is null");
 		if (direction == null) throw new IllegalArgumentException("direction is null");
 		if (record.getReadUnmappedFlag()) throw new IllegalArgumentException(String.format("record %s is unmapped", record.getReadName()));
-		if (record.getReadBases() == null || record.getReadBases() == SAMRecord.NULL_SEQUENCE ) throw new IllegalArgumentException(String.format("record %s missing sequence information", record.getReadName()));
+		if (record.getReadBases() == null || record.getReadBases() == SAMRecord.NULL_SEQUENCE) throw new IllegalArgumentException(String.format("record %s missing sequence information", record.getReadName()));
 		SoftClipEvidence result = null;
 		if (realigned != null && !realigned.getReadUnmappedFlag() && realigned.getMappingQuality() >= source.getContext().getConfig().minMapq) {
 			result = new RealignedSoftClipEvidence(source, direction, record, realigned);
@@ -70,11 +71,15 @@ public class SoftClipEvidence implements DirectedEvidence {
 	 * @return evidenceID
 	 */
 	public static String getEvidenceID(BreakendDirection direction, SAMRecord record) {
-		return buildSoftClipEvidenceID(direction, record).toString();
+		return buildSoftClipEvidenceID(direction, record, null).toString();
 	}
-	protected static StringBuilder buildSoftClipEvidenceID(BreakendDirection direction, SAMRecord record) {
-		StringBuilder sb = new StringBuilder();
+	private static StringBuilder buildSoftClipEvidenceID(BreakendDirection direction, SAMRecord record, Integer indelOffset) {
+		StringBuilder sb = new StringBuilder();		
 		sb.append(direction.toChar());
+		if (indelOffset != null) {
+			sb.append(indelOffset.toString());
+			sb.append('_');
+		}
 		sb.append(record.getReadName());
 		if (record.getReadPairedFlag()) {
 			if (record.getFirstOfPairFlag()) {
@@ -85,8 +90,11 @@ public class SoftClipEvidence implements DirectedEvidence {
 		}
 		return sb;
 	}
-	protected StringBuilder buildEvidenceID() {
-		return buildSoftClipEvidenceID(location.direction, record);
+	protected Integer indelOffset() {
+		return null;
+	}
+	private StringBuilder buildEvidenceID() {
+		return buildSoftClipEvidenceID(location.direction, record, indelOffset());
 	}
 	@Override
 	public String getEvidenceID() {
@@ -229,16 +237,16 @@ public class SoftClipEvidence implements DirectedEvidence {
 	public boolean isBreakendExact() {
 		return true;
 	}
-	protected static float scPhred(SAMEvidenceSource source, int clipLength, int localMapq, int remoteMapq) {
+	protected static float cigarPhred(SAMEvidenceSource source, CigarOperator op, int length, int localMapq, int remoteMapq) {
 		// TODO: look at MAPQ distribution vs SC length
 		// this approach may unfairly penalise long SCs due to aligned MAPQ strategy
-		double score = source.getMetrics().getSoftClipDistribution().getPhred(clipLength);
+		double score = source.getMetrics().getCigarDistribution().getPhred(op, length);
 		score = Math.min(score, localMapq);
 		score = Math.min(score, remoteMapq);
 		return (float)score;
 	}
 	@Override
 	public float getBreakendQual() {
-		return scPhred(getEvidenceSource(), getSoftClipLength(), getLocalMapq(), Integer.MAX_VALUE);
+		return cigarPhred(getEvidenceSource(), CigarOperator.SOFT_CLIP, getSoftClipLength(), getLocalMapq(), Integer.MAX_VALUE);
 	}
 }
