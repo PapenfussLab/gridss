@@ -3,6 +3,9 @@ package au.edu.wehi.idsv;
 import static org.junit.Assert.assertEquals;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.fastq.FastqRecord;
+import htsjdk.samtools.metrics.Header;
+import htsjdk.samtools.metrics.StringHeader;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,6 +13,10 @@ import java.util.EnumSet;
 import java.util.List;
 
 import org.junit.Test;
+
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
+import au.edu.wehi.idsv.picard.ReferenceLookup;
+import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -159,5 +166,31 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
 		aes.ensureAssembled();
 		assertEquals(0, getAssemblyRaw(aes).size());
+	}
+	@Test
+	public void should_generate_indel_assemblies() throws IOException {
+		createInput(new File("src/test/resources/inss.bam"));
+		List<Header> headers = Lists.newArrayList();
+		headers.add(new StringHeader("TestHeader"));
+		File ref = new File("C:/dev/hg19.fa");
+		IndexedFastaSequenceFile indexed = new IndexedFastaSequenceFile(ref);
+		ReferenceLookup lookup = new SynchronousReferenceLookupAdapter(indexed);
+		ProcessingContext pc = new ProcessingContext(
+				new FileSystemContext(testFolder.getRoot(), 500000),
+				headers,
+				new GridssConfiguration(getDefaultConfig(), testFolder.getRoot()),
+				lookup,
+				ref,
+				false);
+		pc.getAssemblyParameters().anchorRealignment.perform = true;
+		pc.registerCategory(0, "Normal");
+		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
+		ses.completeSteps(ProcessStep.ALL_STEPS);		
+		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), new File(super.testFolder.getRoot(), "out.vcf"));
+		aes.ensureAssembled();
+		assertEquals(2, getAssemblyRaw(aes).size());
+		List<FastqRecord> out = getFastqRecords(aes);
+		assertEquals(0, out.size());
+		
 	}
 }

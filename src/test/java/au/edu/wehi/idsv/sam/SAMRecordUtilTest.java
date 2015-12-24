@@ -225,6 +225,15 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertEquals(2, SAMRecordUtil.entropy(withSequence("ACGT", Read(0, 1, "3S1M"))[0]), 0);
 	}
 	@Test
+	public void getAlignedPercentIdentity_should_match_only_mapped_bases() {
+		assertEquals(1, SAMRecordUtil.getAlignedIdentity(withNM(withSequence("NAAAAA", Read(0, 1, "1S5M")))[0]), 0);
+		assertEquals(1, SAMRecordUtil.getAlignedIdentity(withNM(withSequence("NTAAAT", Read(0, 1, "2S3M1S")))[0]), 0);
+		assertEquals(1, SAMRecordUtil.getAlignedIdentity(withNM(withSequence("NATTTA", Read(0, 1, "1S1M3I1M")))[0]), 0);
+		assertEquals(1, SAMRecordUtil.getAlignedIdentity(withNM(withSequence("NAGTAC", Read(1, 1, "1S1M1D4M")))[0]), 0);
+		assertEquals(0.5, SAMRecordUtil.getAlignedIdentity(withNM(withSequence("NAATT", Read(0, 1, "1S4M")))[0]), 0);
+		assertEquals(0, SAMRecordUtil.getAlignedIdentity(withNM(withSequence("ACCCCA", Read(0, 1, "1S4M1S")))[0]), 0);
+	}
+	@Test
 	public void splitAfter_should_make_two_full_length_reads() {
 		Pair<SAMRecord, SAMRecord> p = SAMRecordUtil.splitAfter(Read(0, 1, "10M"), 1);
 		assertEquals(1, p.getLeft().getAlignmentStart());

@@ -25,7 +25,7 @@ import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
-import au.edu.wehi.idsv.SequentialAssemblyAnnotator;
+import au.edu.wehi.idsv.SequentialAssemblyHydrator;
 import au.edu.wehi.idsv.SpanningSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
@@ -71,7 +71,7 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 			CloseableIterator<DirectedEvidence> eit = getAllEvidence(false, false, true, true, processContext.getAssemblyParameters().includeRemoteSplitReads, true);
 			AsyncBufferedIterator<SAMRecordAssemblyEvidence> asyncassIt = new AsyncBufferedIterator<SAMRecordAssemblyEvidence>(assit, "Hydration-Assembly", source.getContext().getConfig().async_bufferCount, source.getContext().getConfig().async_bufferSize);
 			AsyncBufferedIterator<DirectedEvidence> asynceIt = new AsyncBufferedIterator<DirectedEvidence>(eit, "Hydration-Evidence", source.getContext().getConfig().async_bufferCount, source.getContext().getConfig().async_bufferSize);			
-			SequentialAssemblyAnnotator annotatedIt = new SequentialAssemblyAnnotator(processContext.getLinear(), asyncassIt, asynceIt, source.getAssemblyWindowSize() + source.getMaxConcordantFragmentSize());
+			SequentialAssemblyHydrator annotatedIt = new SequentialAssemblyHydrator(processContext.getLinear(), asyncassIt, asynceIt, source.getAssemblyWindowSize() + source.getMaxConcordantFragmentSize());
 			return new AutoClosingIterator<SAMRecordAssemblyEvidence>(annotatedIt, Lists.<Closeable>newArrayList(asyncassIt, asynceIt, assit, eit));
 		}
 	}

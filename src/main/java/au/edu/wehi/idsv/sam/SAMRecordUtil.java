@@ -21,6 +21,7 @@ import htsjdk.samtools.util.SequenceUtil;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
 import au.edu.wehi.idsv.BreakendDirection;
@@ -584,5 +585,23 @@ public class SAMRecordUtil {
         	copy.setAttribute(SAMTag.OP.name(), read.getAlignmentStart());
         }
         return copy;
+	}
+	/**
+	 * 0-1 scaled percentage identity of mapped read bases.
+	 * @return portion of reference-aligned bases that match reference 
+	 */
+	public static float getAlignedIdentity(SAMRecord record) {
+        Integer nm = record.getIntegerAttribute(SAMTag.NM.name());
+		if (nm != null) {
+			int refBasesToConsider = record.getReadLength() - SAMRecordUtil.getStartSoftClipLength(record) - SAMRecordUtil.getEndSoftClipLength(record); 
+			int refBaseMatches = refBasesToConsider - nm + SequenceUtil.countInsertedBases(record) + SequenceUtil.countDeletedBases(record); 
+			return refBaseMatches / (float)refBasesToConsider;
+		}
+		String md = record.getStringAttribute(SAMTag.MD.name());
+		if (StringUtils.isNotEmpty(md)) {
+			// Socrates handles this: should we? Which aligners write MD but not NM?
+			throw new RuntimeException("Not Yet Implemented: calculation from reads with MD tag but not NM tag");
+		}
+		throw new IllegalStateException(String.format("Read %s missing NM tag", record.getReadName()));
 	}
 }

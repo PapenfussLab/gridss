@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv.configuration;
 
-import htsjdk.samtools.SAMRecord;
-
 import org.apache.commons.configuration.Configuration;
 
 import au.edu.wehi.idsv.AssemblyEvidence;

@@ -42,8 +42,9 @@ public class SoftClipEvidenceIterator implements CloseableIterator<SoftClipEvide
 				} 
 				int i = 0;
 				for (SplitIndel si : SplitIndel.getIndelsAsSplitReads(record)) {
-					buffer.add(new SpannedIndelEvidence(source, BreakendDirection.Forward, si.leftAnchored, si.leftRealigned, i));
-					buffer.add(new SpannedIndelEvidence(source, BreakendDirection.Backward, si.rightAnchored, si.rightRealigned, i));
+					SpannedIndelEvidence sie = SpannedIndelEvidence.create(source, record, si, i);
+					buffer.add(sie);
+					buffer.add(sie.asRemote());
 					i++;
 				}
 			}

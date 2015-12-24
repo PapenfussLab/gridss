@@ -2,12 +2,24 @@ package au.edu.wehi.idsv;
 
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
+import au.edu.wehi.idsv.sam.SplitIndel;
 
 public class SpannedIndelEvidence extends RealignedSoftClipEvidence {
 	private final int indelOffset;
-	public SpannedIndelEvidence(SAMEvidenceSource source, BreakendDirection direction, SAMRecord record, SAMRecord realigned, int indelOffset) {
+	private SpannedIndelEvidence remote;
+	public static SpannedIndelEvidence create(SAMEvidenceSource source, SAMRecord record, SplitIndel si, int indelOffset) {
+		si = si.onPositive();
+		SpannedIndelEvidence left = new SpannedIndelEvidence(source, BreakendDirection.Forward, si.leftAnchored, si.leftRealigned, indelOffset);
+		SpannedIndelEvidence right = new SpannedIndelEvidence(source, BreakendDirection.Backward, si.rightAnchored, si.rightRealigned, indelOffset);
+		left.remote = right;
+		right.remote = left;
+		return left;
+	}
+	private SpannedIndelEvidence(SAMEvidenceSource source, BreakendDirection direction, SAMRecord record, SAMRecord realigned, int indelOffset) {
 		super(source, direction, record, realigned);
 		this.indelOffset = indelOffset;
+		assert(getBreakendSummary().direction == direction);
+		assert(getBreakendSummary().direction2 == direction.reverse());
 	}
 	@Override
 	protected Integer indelOffset() {
@@ -27,5 +39,9 @@ public class SpannedIndelEvidence extends RealignedSoftClipEvidence {
 	@Override
 	public float getBreakpointQual() {
 		return getBreakendQual();
+	}
+	@Override
+	public SpannedIndelEvidence asRemote() {
+		return remote;
 	}
 }

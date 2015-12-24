@@ -4,7 +4,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.metrics.Header;
+import htsjdk.samtools.metrics.StringHeader;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,6 +18,8 @@ import java.util.List;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.bed.IntervalBed;
+import au.edu.wehi.idsv.picard.ReferenceLookup;
+import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
 import au.edu.wehi.idsv.util.AsyncBufferedIteratorTest;
 
 import com.google.common.collect.Iterators;
@@ -431,5 +437,27 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		source.completeSteps(ProcessStep.ALL_STEPS);
 		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(true, true, false));
 		assertEquals(2, list.size()); // SC & OEA not on (2)
+	}
+	@Test
+	public void should_extract_indel_support() throws IOException {
+		createInput(new File("src/test/resources/inss.bam"));
+		List<Header> headers = Lists.newArrayList();
+		headers.add(new StringHeader("TestHeader"));
+		File ref = new File("C:/dev/hg19.fa");
+		IndexedFastaSequenceFile indexed = new IndexedFastaSequenceFile(ref);
+		ReferenceLookup lookup = new SynchronousReferenceLookupAdapter(indexed);
+		ProcessingContext pc = new ProcessingContext(
+				new FileSystemContext(testFolder.getRoot(), 500000),
+				headers,
+				getConfig(testFolder.getRoot()),
+				lookup,
+				ref,
+				false);
+		pc.registerCategory(0, "Normal");
+		
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
+		source.completeSteps(ProcessStep.ALL_STEPS);
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(true, true, false));
+		assertEquals(9*2, list.size());
 	}
 }

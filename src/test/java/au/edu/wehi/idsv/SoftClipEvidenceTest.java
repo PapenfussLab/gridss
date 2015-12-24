@@ -137,15 +137,6 @@ public class SoftClipEvidenceTest extends TestHelper {
 		r.setBaseQualities(SAMRecord.NULL_QUALS);
 		assertEquals(0, SoftClipEvidence.create(SES(), BreakendDirection.Forward, r).getAverageClipQuality(), 0);
 	}
-	@Test
-	public void getAlignedPercentIdentity_should_match_only_mapped_bases() {
-		assertEquals(1, SoftClipEvidence.create(SES(), BreakendDirection.Backward, withNM(withSequence("NAAAAA", Read(0, 1, "1S5M")))[0]).getAlignedIdentity(), 0);
-		assertEquals(1, SoftClipEvidence.create(SES(), BreakendDirection.Backward, withNM(withSequence("NTAAAT", Read(0, 1, "2S3M1S")))[0]).getAlignedIdentity(), 0);
-		assertEquals(1, SoftClipEvidence.create(SES(), BreakendDirection.Backward, withNM(withSequence("NATTTA", Read(0, 1, "1S1M3I1M")))[0]).getAlignedIdentity(), 0);
-		assertEquals(1, SoftClipEvidence.create(SES(), BreakendDirection.Backward, withNM(withSequence("NAGTAC", Read(1, 1, "1S1M1D4M")))[0]).getAlignedIdentity(), 0);
-		assertEquals(0.5, SoftClipEvidence.create(SES(), BreakendDirection.Backward, withNM(withSequence("NAATT", Read(0, 1, "1S4M")))[0]).getAlignedIdentity(), 0);
-		assertEquals(0, SoftClipEvidence.create(SES(), BreakendDirection.Backward, withNM(withSequence("ACCCCA", Read(0, 1, "1S4M1S")))[0]).getAlignedIdentity(), 0);
-	}
 	@Test(expected=IllegalArgumentException.class)
 	public void constructor_should_require_soft_clip() {
 		SoftClipEvidence.create(SES(), BreakendDirection.Forward, new SAMRecord(getHeader()));

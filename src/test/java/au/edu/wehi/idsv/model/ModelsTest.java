@@ -1,10 +1,19 @@
-package au.edu.wehi.idsv;
+package au.edu.wehi.idsv.model;
 
 import static org.junit.Assert.assertEquals;
 
 import java.util.ArrayList;
 
 import org.junit.Test;
+
+import au.edu.wehi.idsv.BreakendSummary;
+import au.edu.wehi.idsv.BreakpointSummary;
+import au.edu.wehi.idsv.DirectedEvidence;
+import au.edu.wehi.idsv.MockDirectedBreakpoint;
+import au.edu.wehi.idsv.MockDirectedEvidence;
+import au.edu.wehi.idsv.TestHelper;
+
+import au.edu.wehi.idsv.model.Models;
 
 import com.google.common.collect.Lists;
 

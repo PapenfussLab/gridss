@@ -82,9 +82,9 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 			indels = new ArrayList<SpanningSAMRecordAssemblyEvidence>(splitindels.size() * 2);
 			int i = 0;
 			for (SplitIndel indel : splitindels) {
+				indel = indel.onPositive();
 				indel.leftAnchored.setAttribute(SamTags.ASSEMBLY_DIRECTION, BreakendDirection.Forward.toChar());
 				indel.rightAnchored.setAttribute(SamTags.ASSEMBLY_DIRECTION, BreakendDirection.Backward.toChar());
-				// hack to force remote portion of assembly to not be mapq filtered
 				SpanningSAMRecordAssemblyEvidence left = new SpanningSAMRecordAssemblyEvidence(this, indel, i);
 				indels.add(left);
 				indels.add(left.asRemote());
@@ -287,7 +287,11 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		}
 		return result;
 	}
-	private BreakendDirection getBreakendDirection() {
+	/**
+	 * Initial direction of assembly breakend.
+	 * @return
+	 */
+	public BreakendDirection getBreakendDirection() {
 		return getBreakendDirection(record);
 	}
 	private static BreakendDirection getBreakendDirection(SAMRecord record) {

@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import htsjdk.samtools.util.Log;
+
 import java.io.File;
 import java.util.Iterator;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -11,7 +13,6 @@ import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.util.DuplicatingIterable;
-import htsjdk.samtools.util.Log;
 
 /**
  * Performs independent positional assembly for forward

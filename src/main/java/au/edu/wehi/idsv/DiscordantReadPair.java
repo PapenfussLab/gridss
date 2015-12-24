@@ -1,8 +1,8 @@
 package au.edu.wehi.idsv;
 
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 public class DiscordantReadPair extends NonReferenceReadPair implements DirectedBreakpoint {
 	protected DiscordantReadPair(SAMRecord local, SAMRecord remote, SAMEvidenceSource source) {

@@ -1,14 +1,12 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMRecord;
+
 import java.util.Arrays;
 
-import org.apache.commons.lang3.StringUtils;
-
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
+import au.edu.wehi.idsv.model.Models;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMTag;
-import htsjdk.samtools.util.SequenceUtil;
 
 public class SoftClipEvidence implements DirectedEvidence {
 	private final SAMEvidenceSource source;
@@ -134,28 +132,6 @@ public class SoftClipEvidence implements DirectedEvidence {
 	public int getSoftClipLength() {
 		return getSoftClipLength(location.direction, record); 
 	}
-	/**
-	 * 0-1 scaled percentage identity of mapped read bases.
-	 * @return portion of reference-aligned bases that match reference 
-	 */
-	public float getAlignedIdentity() {
-		// final byte[] referenceBases = refSeq.get(sequenceDictionary.getSequenceIndex(rec.getReferenceName())).getBases();
-        // rec.setAttribute(SAMTag.NM.name(), SequenceUtil.calculateSamNmTag(rec, referenceBases, 0, bisulfiteSequence));
-        //if (rec.getBaseQualities() != SAMRecord.NULL_QUALS) {
-        // rec.setAttribute(SAMTag.UQ.name(), SequenceUtil.sumQualitiesOfMismatches(rec, referenceBases, 0, bisulfiteSequence));
-        Integer nm = record.getIntegerAttribute(SAMTag.NM.name());
-		if (nm != null) {
-			int refBasesToConsider = record.getReadLength() - SAMRecordUtil.getStartSoftClipLength(record) - SAMRecordUtil.getEndSoftClipLength(record); 
-			int refBaseMatches = refBasesToConsider - nm + SequenceUtil.countInsertedBases(record) + SequenceUtil.countDeletedBases(record); 
-			return refBaseMatches / (float)refBasesToConsider;
-		}
-		String md = record.getStringAttribute(SAMTag.MD.name());
-		if (StringUtils.isNotEmpty(md)) {
-			// Socrates handles this: should we? Which aligners write MD but not NM?
-			throw new RuntimeException("Sanity Check Failure: Not Yet Implemented: calculation from reads with MD tag but not NM tag as per Socrates implementation");
-		}
-		throw new IllegalStateException(String.format("Read %s missing NM tag", record.getReadName()));
-	}
 	public float getAverageClipQuality() {
 		float total = 0;
 		byte[] qual = getBreakendQuality();
@@ -199,11 +175,9 @@ public class SoftClipEvidence implements DirectedEvidence {
 	 */
 	public boolean meetsEvidenceCritera() {
 		GridssConfiguration config = source.getContext().getConfig();
-		return getMappingQuality() >= config.minMapq
+		return Models.meetsReadAlignmentCriteria(config, record)
 				&& getSoftClipLength() >= config.getSoftClip().minLength
-				&& getAlignedIdentity() >= config.getSoftClip().minAnchorIdentity
 				&& getAverageClipQuality() >= config.getSoftClip().minAverageQual
-				&& SAMRecordUtil.alignedEntropy(getSAMRecord()) >= config.minAnchorShannonEntropy
 				&& !isDovetailing()
 				&& !config.adapters.isAdapterSoftClip(this);
 	}

@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
@@ -98,7 +97,7 @@ public class RealignedSoftClipEvidence extends SoftClipEvidence implements Direc
 	public float getBreakpointQual() {
 		return (float)getEvidenceSource().getContext().getConfig().getVariantCalling().getModel().scoreSplitRead(getEvidenceSource().getMetrics(), getSoftClipLength(), getLocalMapq(), getRemoteMapq());
 	}
-	public RealignedRemoteSoftClipEvidence asRemote() {
+	public RealignedSoftClipEvidence asRemote() {
 		return new RealignedRemoteSoftClipEvidence(this);
 	}
 }

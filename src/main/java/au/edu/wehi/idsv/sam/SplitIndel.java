@@ -1,13 +1,13 @@
 package au.edu.wehi.idsv.sam;
 
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.SAMRecord;
+
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
-
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMRecord;
 
 /**
  * Converts read alignment indels into split reads
@@ -29,6 +29,18 @@ public class SplitIndel {
 		this.rightAnchored = right.getRight();
 		SAMRecordUtil.trim(this.rightRealigned, 0, this.rightAnchored.getReadLength() - SAMRecordUtil.getStartSoftClipLength(this.rightAnchored));
 		sanityCheck();
+	}
+	/**
+	 * Force all records onto to positive strand.
+	 * This is useful to prevent incorrect inferred breakpoint orientations downstream
+	 * @return
+	 */
+	public SplitIndel onPositive() { 
+		leftAnchored.setReadNegativeStrandFlag(false);
+		leftRealigned.setReadNegativeStrandFlag(false);
+		rightAnchored.setReadNegativeStrandFlag(false);
+		rightRealigned.setReadNegativeStrandFlag(false);
+		return this;
 	}
 	private void sanityCheck() {
 		assert(leftAnchored.getAlignmentStart() == rightRealigned.getAlignmentStart());

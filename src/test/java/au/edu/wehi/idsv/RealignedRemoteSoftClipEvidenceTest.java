@@ -9,7 +9,7 @@ import org.junit.Test;
 public class RealignedRemoteSoftClipEvidenceTest extends RemoteEvidenceTest {
 	@Override
 	public RealignedRemoteSoftClipEvidence makeRemote(BreakendSummary bs, String allBases, String realignCigar, boolean realignNegativeStrand) {
-		return makeLocal(bs, allBases, realignCigar, realignNegativeStrand).asRemote();
+		return (RealignedRemoteSoftClipEvidence) makeLocal(bs, allBases, realignCigar, realignNegativeStrand).asRemote();
 	}
 	@Override
 	public RealignedSoftClipEvidence makeLocal(BreakendSummary bs, String allBases, String realignCigar, boolean realignNegativeStrand) {

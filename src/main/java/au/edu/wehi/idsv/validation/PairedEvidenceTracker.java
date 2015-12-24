@@ -7,6 +7,7 @@ import htsjdk.samtools.util.Log;
 import java.util.HashMap;
 import java.util.Iterator;
 
+import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.DirectedBreakpoint;
 import au.edu.wehi.idsv.DirectedEvidence;
@@ -16,6 +17,7 @@ import au.edu.wehi.idsv.RealignedRemoteSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.RealignedRemoteSoftClipEvidence;
 import au.edu.wehi.idsv.RealignedSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.RealignedSoftClipEvidence;
+import au.edu.wehi.idsv.SpannedIndelEvidence;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
@@ -108,7 +110,9 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 	}
 
 	private static String getPartnerEvidenceID(DirectedBreakpoint evidence, String evidenceId) {
-		if (evidence instanceof RealignedRemoteSoftClipEvidence || evidence instanceof RealignedRemoteSAMRecordAssemblyEvidence) {
+		if (evidence instanceof SpannedIndelEvidence) {
+			return BreakendDirection.fromChar(evidenceId.charAt(0)).reverse().toChar() + evidenceId.substring(1);
+		} else if (evidence instanceof RealignedRemoteSoftClipEvidence || evidence instanceof RealignedRemoteSAMRecordAssemblyEvidence) {
 			// remove R prefix
 			if (evidenceId.charAt(0) != 'R') throw new RuntimeException("Sanity check failure: unexpected remote evidence ID " + evidenceId);
 			return evidenceId.substring(1);

@@ -1,9 +1,9 @@
 package au.edu.wehi.idsv.model;
 
+import htsjdk.samtools.CigarOperator;
 import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.metrics.InsertSizeDistribution;
-import htsjdk.samtools.CigarOperator;
 
 /**
  * Variant scoring model that scores variants according to the library empirical

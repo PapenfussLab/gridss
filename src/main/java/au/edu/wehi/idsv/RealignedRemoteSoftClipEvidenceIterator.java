@@ -12,7 +12,6 @@ import java.util.Queue;
 
 import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 
-import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
@@ -22,7 +21,7 @@ import com.google.common.collect.Lists;
  * @author Daniel Cameron
  *
  */
-public class RealignedRemoteSoftClipEvidenceIterator extends AbstractIterator<RealignedRemoteSoftClipEvidence> implements CloseableIterator<RealignedRemoteSoftClipEvidence>, TrackedBuffer {
+public class RealignedRemoteSoftClipEvidenceIterator implements CloseableIterator<RealignedRemoteSoftClipEvidence>, TrackedBuffer {
 	private final SAMEvidenceSource source;
 	private final Iterator<SAMRecord> realigned;
 	private final SequentialSoftClipRealignedRemoteBreakpointFactory ffactory;
@@ -40,8 +39,7 @@ public class RealignedRemoteSoftClipEvidenceIterator extends AbstractIterator<Re
 		this.ffactory = new SequentialSoftClipRealignedRemoteBreakpointFactory(Iterators.peekingIterator(forwardSoftClipsOrderByRealignedCoordinate), BreakendDirection.Forward);
 		this.bfactory = new SequentialSoftClipRealignedRemoteBreakpointFactory(Iterators.peekingIterator(backwardSoftClipsOrderByRealignedCoordinate), BreakendDirection.Backward);
 	}
-	@Override
-	protected RealignedRemoteSoftClipEvidence computeNext() {
+	protected void ensureBuffer() {
 		while (realigned.hasNext() && buffer.isEmpty()) {
 			SAMRecord realign = realigned.next();
 			String evidenceId = BreakpointFastqEncoding.getEncodedID(realign.getReadName());
@@ -59,8 +57,6 @@ public class RealignedRemoteSoftClipEvidenceIterator extends AbstractIterator<Re
 				throw new RuntimeException(String.format("Malformed realigned soft clip read name %s", evidenceId));
 			}
 		}
-		if (buffer.isEmpty()) return endOfData();
-		return buffer.poll();
 	}
 	private RealignedRemoteSoftClipEvidence createRemote(BreakendDirection direction, SAMRecord sc, SAMRecord realign) {
 		if (sc == null || realign == null) return null;
@@ -68,7 +64,9 @@ public class RealignedRemoteSoftClipEvidenceIterator extends AbstractIterator<Re
 		if (breakendEvidence.meetsEvidenceCritera()) {
 			SoftClipEvidence breakpointEvidence = SoftClipEvidence.create(breakendEvidence, realign);
 			if (breakpointEvidence instanceof RealignedSoftClipEvidence) {
-				return ((RealignedSoftClipEvidence)breakpointEvidence).asRemote();
+				// indels don't require realignment so they shouldn't have been added to the realignment to start with
+				assert(!(breakpointEvidence instanceof SpannedIndelEvidence));
+				return (RealignedRemoteSoftClipEvidence) ((RealignedSoftClipEvidence)breakpointEvidence).asRemote();
 			}
 		}
 		return null;
@@ -88,5 +86,14 @@ public class RealignedRemoteSoftClipEvidenceIterator extends AbstractIterator<Re
 		list.addAll(ffactory.currentTrackedBufferSizes());
 		list.addAll(bfactory.currentTrackedBufferSizes());
 		return list;
+	}
+	@Override
+	public boolean hasNext() {
+		ensureBuffer();
+		return !buffer.isEmpty();
+	}
+	@Override
+	public RealignedRemoteSoftClipEvidence next() {
+		return buffer.poll();
 	}
 }

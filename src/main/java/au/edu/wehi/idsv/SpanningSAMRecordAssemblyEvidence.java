@@ -1,8 +1,9 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMRecord;
+
 import java.util.List;
 
-import htsjdk.samtools.SAMRecord;
 import au.edu.wehi.idsv.sam.SplitIndel;
 
 import com.google.common.collect.ImmutableList;
@@ -58,6 +59,14 @@ public class SpanningSAMRecordAssemblyEvidence extends RealignedSAMRecordAssembl
 	@Override
 	public List<SpanningSAMRecordAssemblyEvidence> getSpannedIndels() {
 		throw new UnsupportedOperationException();
+	}
+	@Override
+	public SAMRecordAssemblyEvidence hydrateEvidenceSet(java.util.Collection<? extends DirectedEvidence> evidence) {
+		return parent.hydrateEvidenceSet(evidence);
+	};
+	@Override
+	public SAMRecordAssemblyEvidence hydrateEvidenceSet(DirectedEvidence e) {
+		return parent.hydrateEvidenceSet(e);
 	}
 	@Override
 	public float getBreakendQual() {

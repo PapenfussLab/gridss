@@ -73,12 +73,12 @@ import au.edu.wehi.idsv.debruijn.positional.SupportNodeIterator;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
 import au.edu.wehi.idsv.graph.PathNode;
 import au.edu.wehi.idsv.graph.PathNodeFactory;
+import au.edu.wehi.idsv.metrics.CigarDetailMetrics;
+import au.edu.wehi.idsv.metrics.CigarSizeDistribution;
 import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetricsCollector;
 import au.edu.wehi.idsv.metrics.InsertSizeDistribution;
-import au.edu.wehi.idsv.metrics.CigarDetailMetrics;
-import au.edu.wehi.idsv.metrics.CigarSizeDistribution;
 import au.edu.wehi.idsv.picard.BufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
@@ -273,8 +273,12 @@ public class TestHelper {
 	}
 
 	public static SpannedIndelEvidence IE(SAMEvidenceSource ses, SAMRecord r) {
-		SplitIndel si = SplitIndel.getIndelsAsSplitReads(r).get(0);
-		return new SpannedIndelEvidence(ses, FWD, si.leftAnchored, si.leftRealigned, 0);
+		return IE(ses, r, 0);
+	}
+	
+	public static SpannedIndelEvidence IE(SAMEvidenceSource ses, SAMRecord r, int indelIndex) {
+		SplitIndel si = SplitIndel.getIndelsAsSplitReads(r).get(indelIndex);
+		return SpannedIndelEvidence.create(ses, r, si, indelIndex);
 	}
 
 	public static SoftClipEvidence SCE(BreakendDirection direction,

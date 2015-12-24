@@ -14,8 +14,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import com.google.common.collect.Iterables;
-
 import picard.analysis.CollectInsertSizeMetrics;
 import picard.analysis.InsertSizeMetrics;
 import picard.analysis.MetricAccumulationLevel;
@@ -23,6 +21,8 @@ import picard.analysis.directed.InsertSizeMetricsCollector;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+
+import com.google.common.collect.Iterables;
 
 /**
  * Collects metrics required by gridss

@@ -1,11 +1,20 @@
-package au.edu.wehi.idsv;
+package au.edu.wehi.idsv.model;
+
+import htsjdk.samtools.SAMRecord;
 
 import java.util.ArrayList;
 import java.util.List;
 
+import au.edu.wehi.idsv.BreakendDirection;
+import au.edu.wehi.idsv.BreakendSummary;
+import au.edu.wehi.idsv.BreakpointSummary;
+import au.edu.wehi.idsv.DirectedEvidence;
+import au.edu.wehi.idsv.LinearGenomicCoordinate;
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.graph.MaximumCliqueIntervalGraph;
 import au.edu.wehi.idsv.graph.MaximumCliqueIntervalGraph.Node;
 import au.edu.wehi.idsv.graph.ScalingHelper;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
@@ -18,6 +27,18 @@ import com.google.common.collect.Lists;
  */
 public class Models {
 	//private static final Log log = Log.getInstance(Models.class);
+	/**
+	 * Determines whether the read meets the minimum criteria
+	 * for the read alignment to be considered evidence
+	 * @param record
+	 * @return
+	 */
+	public static boolean meetsReadAlignmentCriteria(GridssConfiguration config, SAMRecord read) {
+		return !read.getReadUnmappedFlag() &&
+				read.getMappingQuality() >= config.minMapq &&
+				SAMRecordUtil.alignedEntropy(read) >= config.minAnchorShannonEntropy &&
+				SAMRecordUtil.getAlignedIdentity(read) >= config.getSoftClip().minAnchorIdentity;
+	}
 	/**
 	 * Calculates the most likely breakend interval for the given evidence 
 	 * @param evidence

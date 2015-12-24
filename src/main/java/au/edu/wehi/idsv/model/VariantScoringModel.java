@@ -1,7 +1,7 @@
 package au.edu.wehi.idsv.model;
 
-import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import htsjdk.samtools.CigarOperator;
+import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 
 public interface VariantScoringModel {
 	double scoreSplitRead(IdsvSamFileMetrics metrics, int softclipLength, int mapq1, int mapq2);

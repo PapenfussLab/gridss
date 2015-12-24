@@ -4,6 +4,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.variant.vcf.VCFConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,13 +14,11 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.variant.vcf.VCFConstants;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 public class StructuralVariationCallBuilderTest extends TestHelper {
 	public final static BreakpointSummary BP = new BreakpointSummary(0, BWD, 10, 10, 1, BWD, 100, 100);
@@ -757,5 +757,22 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		builder.addEvidence(ass);
 		VariantContextDirectedEvidence vc = builder.make();
 		assertEquals("9M1X", vc.getAttribute(VcfAttributes.ANCHOR_CIGAR.attribute()));
+	}
+	@Test
+	public void spanning_assemblies_should_use_original_parent_assembly_direction_to_determine_local_remote_status() {
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(2, FWD, 100, 100, 2, BWD, 101, 101), "");
+			phredScore(10);
+		}}.make());
+		String seq = S(RANDOM).substring(100-10, 100) + "N" + S(RANDOM).substring(100, 100+10);
+		ProcessingContext pc = getContext();
+		builder.addEvidence(AssemblyFactory.createAnchoredBreakend(pc, AES(pc), BWD, null, 2, 101, 10, B(seq), B(seq)).realign(5, 0).annotateAssembly().getSpannedIndels().get(0));
+		builder.addEvidence(AssemblyFactory.createAnchoredBreakend(pc, AES(pc), FWD, null, 2, 100, 10, B(seq), B(seq)).realign(5, 0).annotateAssembly().getSpannedIndels().get(0));
+		builder.addEvidence(AssemblyFactory.createAnchoredBreakend(pc, AES(pc), FWD, null, 2, 100, 10, B(seq), B(seq)).realign(5, 0).annotateAssembly().getSpannedIndels().get(0));
+		builder.addEvidence(AssemblyFactory.createAnchoredBreakpoint(pc, AES(pc), null, 2, 100, 10, 2, 101, 10, B(seq), B(seq)).annotateAssembly().getSpannedIndels().get(0));
+		
+		VariantContextDirectedBreakpoint vc = (VariantContextDirectedBreakpoint) builder.make();
+		assertEquals(3, vc.getBreakpointEvidenceCountLocalAssembly());
+		assertEquals(2, vc.getBreakpointEvidenceCountRemoteAssembly());
 	}
 }

@@ -21,6 +21,7 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.RealignedRemoteSoftClipEvidence;
 import au.edu.wehi.idsv.RealignedSoftClipEvidence;
 import au.edu.wehi.idsv.SAMEvidenceSource;
+import au.edu.wehi.idsv.SpannedIndelEvidence;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMFileUtil.SortCallable;
 
@@ -131,6 +132,7 @@ public class SortRealignedSoftClips extends DataTransformStep {
 		while (it.hasNext()) {
 			DirectedEvidence de = it.next();
 			if (de instanceof RealignedRemoteSoftClipEvidence) continue;
+			if (de instanceof SpannedIndelEvidence) continue;
 			RealignedSoftClipEvidence evidence = (RealignedSoftClipEvidence)de;
 			scwriters.get(evidence.getBreakendSummary().referenceIndex2 % scwriters.size()).addAlignment(evidence.getSAMRecord());
 			realignmentWriters.get(evidence.getBreakendSummary().referenceIndex2 % realignmentWriters.size()).addAlignment(evidence.getRealignedSAMRecord());
