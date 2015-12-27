@@ -10,11 +10,6 @@ import au.edu.wehi.idsv.IdsvVariantContextBuilder;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
-import au.edu.wehi.idsv.model.EmpiricalLlrModel;
-import au.edu.wehi.idsv.model.EmpiricalReferenceLikelihoodModel;
-import au.edu.wehi.idsv.model.FastEmpiricalReferenceLikelihoodModel;
-import au.edu.wehi.idsv.model.MapqModel;
-import au.edu.wehi.idsv.model.VariantScoringModel;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 
 import com.google.common.collect.Lists;
@@ -38,22 +33,6 @@ public class VariantCallingConfiguration {
 			default:
 				throw new IllegalArgumentException(String.format("Unrecognised output format \"%s\"", config.getString("format")));
 		}
-		switch (config.getString("model")) {
-			case "EmpiricalLlr":
-				model = new EmpiricalLlrModel();
-				break;
-			case "EmpiricalReferenceLikelihood":
-				model = new EmpiricalReferenceLikelihoodModel();
-				break;
-			case "FastEmpiricalReferenceLikelihood":
-				model = new FastEmpiricalReferenceLikelihoodModel();
-				break;
-			case "Mapq":
-				model = new MapqModel();
-				break;
-			default:
-				throw new IllegalArgumentException(String.format("Unrecognised variant scoring model \"%s\"", config.getString("model")));
-		}
 	}
 	/**
 	 * Minimum score for variant to be called
@@ -71,7 +50,6 @@ public class VariantCallingConfiguration {
 	public boolean writeFiltered;
 	public boolean placeholderBreakend;
 	public double lowQuality;
-	private VariantScoringModel model;
 	public BreakendSummary withMargin(BreakendSummary bp) {
 		if (bp == null) return null;
 		return bp.expandBounds(breakendMargin);
@@ -126,8 +104,5 @@ public class VariantCallingConfiguration {
 			filteredVariant = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(processContext, filteredVariant).filter(VcfFilter.LOW_QUAL.filter()).make();
 		}
 		return filteredVariant;
-	}
-	public VariantScoringModel getModel() {
-		return model;
 	}
 }

@@ -13,8 +13,6 @@ import au.edu.wehi.idsv.MockDirectedBreakpoint;
 import au.edu.wehi.idsv.MockDirectedEvidence;
 import au.edu.wehi.idsv.TestHelper;
 
-import au.edu.wehi.idsv.model.Models;
-
 import com.google.common.collect.Lists;
 
 public class ModelsTest extends TestHelper {

@@ -46,7 +46,7 @@ public class DiscordantReadPair extends NonReferenceReadPair implements Directed
 	}
 	@Override
 	public float getBreakendQual() {
-		return (float)getEvidenceSource().getContext().getConfig().getVariantCalling().getModel().scoreReadPair(
+		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreReadPair(
 				getEvidenceSource().getMetrics(),
 				SAMRecordUtil.calculateFragmentSize(getLocalledMappedRead(), getNonReferenceRead(), PairOrientation.FR),
 				getLocalMapq(),
@@ -54,7 +54,7 @@ public class DiscordantReadPair extends NonReferenceReadPair implements Directed
 	}
 	@Override
 	public float getBreakpointQual() {
-		return (float)getEvidenceSource().getContext().getConfig().getVariantCalling().getModel().scoreReadPair(
+		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreReadPair(
 				getEvidenceSource().getMetrics(),
 				SAMRecordUtil.calculateFragmentSize(getLocalledMappedRead(), getNonReferenceRead(), PairOrientation.FR),
 				getLocalMapq(),

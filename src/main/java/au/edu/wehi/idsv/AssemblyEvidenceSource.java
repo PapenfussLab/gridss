@@ -14,6 +14,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
@@ -158,6 +159,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		CloseableIterator<SAMRecordAssemblyEvidence> evidenceIt = new SAMRecordAssemblyEvidenceReadPairIterator(getContext(), this, it, mateIt, includeRemote, true);
 		getContext().registerBuffer("assembly.rp." + chr, (SAMRecordAssemblyEvidenceReadPairIterator)evidenceIt);
 		Iterator<SAMRecordAssemblyEvidence> filteredIt = includeFiltered ? evidenceIt : new SAMRecordAssemblyEvidenceFilteringIterator(getContext(), evidenceIt);
+		filteredIt = new DirectedEvidenceScoreFilteringIterator<SAMRecordAssemblyEvidence>(filteredIt, getContext().getConfig().getScoring().variantFilterScore, getContext().getConfig().getScoring().variantFilterScore);
 		DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence> dit = new DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence>(
 				getContext(),
 				getAssemblyWindowSize(),
@@ -203,6 +205,10 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				true, false);
 		toClose.add(evidenceIt);
 		Iterator<SAMRecordAssemblyEvidence> filteredIt = includeFiltered ? evidenceIt : new SAMRecordAssemblyEvidenceFilteringIterator(getContext(), evidenceIt);
+		// Can't apply score filter at this point since assemblies
+		// have not yet been annotated so we don't actually know
+		// the assembly score
+		//filteredIt = new DirectedEvidenceScoreFilteringIterator<SAMRecordAssemblyEvidence>(filteredIt, getContext().getConfig().minEvidenceScore, getContext().getConfig().minEvidenceScore);
 		// Change sort order to breakend position order
 		DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence> dit = new DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence>(
 				getContext(),
@@ -486,6 +492,9 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				//return new PositionalAssembler(getContext(), this, it);
 			case Subgraph:
 				return new ReadEvidenceAssemblyIterator(new DeBruijnSubgraphAssembler(this), it);
+			case None:
+				CloserUtil.close(it);
+				return Collections.emptyIterator();
 		}
 		throw new IllegalArgumentException("Assembly algorithm has not been set");
     }

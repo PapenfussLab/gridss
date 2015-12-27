@@ -34,7 +34,7 @@ public class SpannedIndelEvidence extends RealignedSoftClipEvidence {
 			op = CigarOperator.DELETION;
 			size = deletionSize;
 		}
-		return (float)getEvidenceSource().getContext().getConfig().getVariantCalling().getModel().scoreIndel(getEvidenceSource().getMetrics(), op, size, getLocalMapq()) / 2;
+		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreIndel(getEvidenceSource().getMetrics(), op, size, getLocalMapq()) / 2;
 	}
 	@Override
 	public float getBreakpointQual() {

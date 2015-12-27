@@ -295,6 +295,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			itList.add((CloseableIterator<DirectedEvidence>)(Object)sortedRemoteScIt);
 		}
 		CloseableIterator<DirectedEvidence> mergedIt = new AutoClosingMergedIterator<DirectedEvidence>(itList, DirectedEvidenceOrder.ByNatural);
+		mergedIt = new DirectedEvidenceScoreFilteringIterator<DirectedEvidence>(mergedIt, getContext().getConfig().getScoring().variantFilterScore, getContext().getConfig().getScoring().variantFilterScore);
 		if (Defaults.SANITY_CHECK_ITERATORS) {
 			mergedIt = new AutoClosingIterator<DirectedEvidence>(new OrderAssertingIterator<DirectedEvidence>(mergedIt, DirectedEvidenceOrder.ByNatural), ImmutableList.<Closeable>of(mergedIt));
 		}

@@ -211,6 +211,6 @@ public class SoftClipEvidence implements DirectedEvidence {
 	}
 	@Override
 	public float getBreakendQual() {
-		return (float)source.getContext().getConfig().getVariantCalling().getModel().scoreSoftClip(source.getMetrics(), getSoftClipLength(), getLocalMapq());
+		return (float)source.getContext().getConfig().getScoring().getModel().scoreSoftClip(source.getMetrics(), getSoftClipLength(), getLocalMapq());
 	}
 }

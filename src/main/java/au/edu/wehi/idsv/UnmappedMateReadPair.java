@@ -12,6 +12,6 @@ public class UnmappedMateReadPair extends NonReferenceReadPair {
 	}
 	@Override
 	public float getBreakendQual() {
-		return (float)getEvidenceSource().getContext().getConfig().getVariantCalling().getModel().scoreUnmappedMate(getEvidenceSource().getMetrics(), getLocalMapq());
+		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreUnmappedMate(getEvidenceSource().getMetrics(), getLocalMapq());
 	}
 }

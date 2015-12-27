@@ -464,9 +464,17 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		assertAnnotated();
 		return AttributeConverter.asIntListOffset(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_COUNT), category, 0);
 	}
+	public int getAssemblyNonSupportingReadPairCount() {
+		assertAnnotated();
+		return AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_COUNT)).stream().mapToInt(x -> x).sum();
+	}
 	public int getAssemblyNonSupportingSoftClipCount(int category) {
 		assertAnnotated();
 		return AttributeConverter.asIntListOffset(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_COUNT), category, 0);
+	}
+	public int getAssemblyNonSupportingSoftClipCount() {
+		assertAnnotated();
+		return AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_COUNT)).stream().mapToInt(x -> x).sum();
 	}
 	@Override
 	public int getAssemblySoftClipLengthTotal(int category) {
@@ -494,9 +502,17 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		assertAnnotated();
 		return (float)AttributeConverter.asDoubleListOffset(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_QUAL), category, 0);
 	}
+	public float getAssemblyNonSupportingReadPairQualityScore() {
+		assertAnnotated();
+		return (float)AttributeConverter.asDoubleList(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_QUAL)).stream().mapToDouble(x -> x).sum();
+	}
 	public float getAssemblyNonSupportingSoftClipQualityScore(int category) {
 		assertAnnotated();
 		return (float)AttributeConverter.asDoubleListOffset(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_QUAL), category, 0);
+	}
+	public float getAssemblyNonSupportingSoftClipQualityScore() {
+		assertAnnotated();
+		return (float)AttributeConverter.asDoubleList(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_QUAL)).stream().mapToDouble(x -> x).sum();
 	}
 	@Override
 	public int getAssemblySupportCountReadPair() {
@@ -613,15 +629,20 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 	@Override
 	public float getBreakendQual() {
 		if (getBreakendLength() == 0) return 0;
-		int evidenceCount = getAssemblySupportCountReadPair() + getAssemblySupportCountSoftClip();
-		double qual = getAssemblySupportReadPairQualityScore() + getAssemblySupportSoftClipQualityScore();
+		int rp = getAssemblySupportCountReadPair();
+		double rpq = getAssemblySupportReadPairQualityScore();
+		int sc = getAssemblySupportCountSoftClip();
+		double scq =  getAssemblySupportSoftClipQualityScore();
 		if (source.getContext().getAssemblyParameters().excludeNonSupportingEvidence) {
-			evidenceCount -= getAssemblyNonSupportingCount();
-			qual -= getAssemblyNonSupportingQualityScore();
+			rp -= getAssemblyNonSupportingReadPairCount();
+			rpq -= getAssemblyNonSupportingReadPairQualityScore();
+			sc -= getAssemblyNonSupportingSoftClipCount();
+			scq -= getAssemblyNonSupportingSoftClipQualityScore();
 		}
-		// currently redundant as evidence is capped by local mapq so cap is always larger than the actual score.
-		qual = Math.min(getLocalMapq() * evidenceCount, qual);
-		return (float)qual;
+		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreBreakendAssembly(
+				rp, rpq,
+				sc, scq,
+				getLocalMapq());
 	}
 	/**
 	 * Performs local Smith-Watermann alignment of assembled contig to remove artifacts caused by misalignment of soft clipped reads.

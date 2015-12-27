@@ -74,6 +74,6 @@ public class SpanningSAMRecordAssemblyEvidence extends RealignedSAMRecordAssembl
 	}
 	@Override
 	public float getBreakpointQual() {
-		return getBreakpointQual(getAssemblySupportCountReadPair() + getAssemblySupportCountSoftClip(), getRemoteMapq(), super.getBreakendQual()) / 2;
+		return super.getBreakpointQual() / 2;
 	}
 }

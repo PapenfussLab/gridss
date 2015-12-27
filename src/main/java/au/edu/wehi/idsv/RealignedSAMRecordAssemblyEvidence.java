@@ -64,12 +64,21 @@ public class RealignedSAMRecordAssemblyEvidence extends SAMRecordAssemblyEvidenc
 		return SAMRecordUtil.getTotalReferenceBaseQual(getRemoteSAMRecord());
 	}
 	public float getBreakpointQual() {
-		return getBreakpointQual(getAssemblySupportCountReadPair() + getAssemblySupportCountSoftClip(), getRemoteMapq(), getBreakendQual());
-	}
-	protected static float getBreakpointQual(int evidenceCount, int remoteMapq, double breakendQual) {
-		// cap quality by mapq score of assembly alignment per evidence
-		double qual = Math.min(remoteMapq * evidenceCount, breakendQual);
-		return (float)qual;
+		int rp = getAssemblySupportCountReadPair();
+		double rpq = getAssemblySupportReadPairQualityScore();
+		int sc = getAssemblySupportCountSoftClip();
+		double scq =  getAssemblySupportSoftClipQualityScore();
+		if (getEvidenceSource().getContext().getAssemblyParameters().excludeNonSupportingEvidence) {
+			rp -= getAssemblyNonSupportingReadPairCount();
+			rpq -= getAssemblyNonSupportingReadPairQualityScore();
+			sc -= getAssemblyNonSupportingSoftClipCount();
+			scq -= getAssemblyNonSupportingSoftClipQualityScore();
+		}
+		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreAssembly(
+				rp, rpq,
+				sc, scq,
+				getLocalMapq(),
+				getRemoteMapq());
 	}
 	/**
 	 * Swaps the view of the evidence to the remote breakend 
