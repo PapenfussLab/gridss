@@ -52,10 +52,9 @@ public class EmpiricalLlrModel implements VariantScoringModel {
 		IdsvMetrics im = metrics.getIdsvMetrics();
 		if (fragmentSize > 0) {
 			if (fragmentSize >= isd.getSupportLowerBound() && fragmentSize <= isd.getSupportUpperBound()) {
-				double pr = isd.cumulativeProbability(fragmentSize);
-				if (pr > 0.5) {
-					pr = 1.0 - pr;
-				}
+				double prUpper = 1.0 - isd.cumulativeProbability(fragmentSize - 1);
+				double prLower = isd.cumulativeProbability(fragmentSize);
+				double pr = Math.min(prUpper, prLower);
 				pairsFromFragmentDistribution = pr * isd.getTotalMappedPairs();
 			}
 		}

@@ -329,8 +329,7 @@ public class TestHelper {
 				MAPPED_READS = READS - READ_PAIRS_ONE_MAPPED - 2*READ_PAIRS_ZERO_MAPPED;
 			}}, new InsertSizeDistribution(
 					new int[] { 1, 50, 100, 200, 300, 400, },
-					new double[] { 1, 50, 500, 50, 20, 10, },
-					1+50+500+50+20+10),
+					new double[] { 1, 50, 500, 50, 20, 10, }),
 			new ArrayList<CigarDetailMetrics>());
 		}
 		@Override
