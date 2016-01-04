@@ -12,6 +12,7 @@ import java.util.stream.Collectors;
 
 import picard.analysis.InsertSizeMetrics;
 import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.util.MathUtil;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
@@ -99,6 +100,29 @@ public class IdsvSamFileMetrics {
 		}
 		return maxSoftClipLength;
 	}
+	/**
+	 * Returns the phred-scaled likelihood of a fragment size at least as extreme as the given size.
+	 * @param fragmentSize fragment size
+	 * @return phred-scaled likelihood of a fragment as or more extreme
+	 */
+	public double getReadPairPhred(int fragmentSize) {
+		return MathUtil.prToPhred(readPairFoldedCumulativeDistribution(fragmentSize));
+	}
+	public double readPairFoldedCumulativeDistribution(int fragmentSize) {
+		double pairsFromFragmentDistribution = 0;
+		if (fragmentSize > 0) {
+			if (fragmentSize >= insertDistribution.getSupportLowerBound() && fragmentSize <= insertDistribution.getSupportUpperBound()) {
+				double prUpper = 1.0 - insertDistribution.cumulativeProbability(fragmentSize - 1);
+				double prLower = insertDistribution.cumulativeProbability(fragmentSize);
+				double pr = Math.min(prUpper, prLower);
+				pairsFromFragmentDistribution = pr * insertDistribution.getTotalMappedPairs();
+			}
+		}
+		double totalPairs = idsvMetrics.READ_PAIRS_BOTH_MAPPED;
+		double dpPairs = totalPairs - insertDistribution.getTotalMappedPairs() + pairsFromFragmentDistribution;
+		return dpPairs / totalPairs;
+	}
+	
 	/**
 	 * Sort order of soft clips by soft clip length
 	 */

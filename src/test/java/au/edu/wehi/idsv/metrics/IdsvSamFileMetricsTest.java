@@ -18,7 +18,7 @@ public class IdsvSamFileMetricsTest extends TestHelper {
 		IdsvMetrics im = new IdsvMetrics();
 		InsertSizeMetrics ism = new InsertSizeMetrics();
 		List<CigarDetailMetrics> sc = new ArrayList<CigarDetailMetrics>();
-		InsertSizeDistribution isd = new InsertSizeDistribution(new int[] { 1}, new double[] { 1}, 1);
+		InsertSizeDistribution isd = new InsertSizeDistribution(new int[] { 1}, new double[] { 1});
 		IdsvSamFileMetrics metrics = new IdsvSamFileMetrics(ism, im, isd, sc);
 		assertEquals(im, metrics.getIdsvMetrics());
 		assertEquals(isd, metrics.getInsertSizeDistribution());

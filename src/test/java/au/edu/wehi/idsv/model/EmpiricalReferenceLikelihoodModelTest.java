@@ -6,12 +6,12 @@ import java.util.ArrayList;
 
 import org.junit.Test;
 
+import picard.analysis.InsertSizeMetrics;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.metrics.CigarDetailMetrics;
 import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.metrics.InsertSizeDistribution;
-import picard.analysis.InsertSizeMetrics;
 
 public class EmpiricalReferenceLikelihoodModelTest extends TestHelper {
 	private static final EmpiricalReferenceLikelihoodModel model = new EmpiricalReferenceLikelihoodModel();

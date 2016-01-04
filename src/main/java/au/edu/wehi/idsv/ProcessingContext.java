@@ -87,7 +87,17 @@ public class ProcessingContext implements Closeable {
 			GridssConfiguration config,
 			File ref, boolean perChr) {
 		this(fileSystemContext, metricsHeaders, config, LoadReference(ref), ref, perChr);
-		BackgroundCacheReference(ref);
+		if (Defaults.ASYNC_CACHE_REFERENCE) {
+			BackgroundCacheReference(ref);
+		} else {
+			try {
+				log.debug("Loading reference genome.");
+				this.reference = new TwoBitBufferedReferenceSequenceFile(new IndexedFastaSequenceFile(ref));
+				log.debug("Reference genome loaded.");
+			} catch (FileNotFoundException e) {
+				throw new RuntimeException(e);
+			}
+		}
 	}
 	private void BackgroundCacheReference(final File ref) {
 		Thread thread = new Thread(() -> {

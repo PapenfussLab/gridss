@@ -3,6 +3,7 @@ package au.edu.wehi.idsv.model;
 import htsjdk.samtools.CigarOperator;
 import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
+import au.edu.wehi.idsv.util.MathUtil;
 
 /**
  * High-speed variant scoring model. This model assumes that one of the terms will dominate
@@ -36,7 +37,7 @@ public class FastEmpiricalReferenceLikelihoodModel implements VariantScoringMode
 
 	@Override
 	public double scoreReadPair(IdsvSamFileMetrics metrics, int fragmentSize, int mapq1, int mapq2) {
-		double score = MathUtil.prToPhred(EmpiricalLlrModel.readPairFoldedCumulativeDistribution(metrics, fragmentSize));
+		double score = MathUtil.prToPhred(metrics.getReadPairPhred(fragmentSize));
 		score = Math.min(score, mapq1);
 		score = Math.min(score, mapq2);
 		return score;
