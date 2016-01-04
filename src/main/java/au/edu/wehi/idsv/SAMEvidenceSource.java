@@ -184,7 +184,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			// can only check pairing if we are iterating over the entire record set
 			if (Defaults.SANITY_CHECK_ITERATORS) {
 				if (includeSoftClip == includeSoftClipRemote) {
-					it = new AutoClosingIterator<DirectedEvidence>(new PairedEvidenceTracker<DirectedEvidence>(it), ImmutableList.<Closeable>of(it));
+					it = new AutoClosingIterator<DirectedEvidence>(new PairedEvidenceTracker<DirectedEvidence>("SoftClip(" + getSourceFile().getName() + ")", it), ImmutableList.<Closeable>of(it));
 				}
 			}
 			return it; 

@@ -73,7 +73,7 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 					dump.writeEvidence(e, call);
 				}
 			}
-			return builder.make();
+			return call;
 		}
 		public String toString() {
 			return String.format("%s %f %s", location, score, id);

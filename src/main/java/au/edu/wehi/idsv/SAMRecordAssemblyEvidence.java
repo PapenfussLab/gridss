@@ -85,7 +85,7 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 				indel = indel.onPositive();
 				indel.leftAnchored.setAttribute(SamTags.ASSEMBLY_DIRECTION, BreakendDirection.Forward.toChar());
 				indel.rightAnchored.setAttribute(SamTags.ASSEMBLY_DIRECTION, BreakendDirection.Backward.toChar());
-				SpanningSAMRecordAssemblyEvidence left = new SpanningSAMRecordAssemblyEvidence(this, indel, i);
+				SpanningSAMRecordAssemblyEvidence left = new SpanningSAMRecordAssemblyEvidence(this, indel, i++);
 				indels.add(left);
 				indels.add(left.asRemote());
 			}

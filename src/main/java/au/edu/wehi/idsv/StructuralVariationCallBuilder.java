@@ -350,8 +350,18 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			return ComparisonChain.start()
 					.compareTrueFirst(left.isBreakendExact(), right.isBreakendExact())
 					.compareTrueFirst(left instanceof AssemblyEvidence, right instanceof AssemblyEvidence)
-					.compare(right.getBreakpointQual(), left.getBreakpointQual())
+					.compare(right.getBreakpointQual(), left.getBreakpointQual()) // desc
+					// Take the one that aligned the most bases (more likely to remove REF FP calls)
+					.compare(left.getUntemplatedSequence().length(), right.getUntemplatedSequence().length())
+					// Ensure both sides of the breakpoint choose the same evidence in case of a tie 
+					.compare(asLocal(left).getEvidenceID(), asLocal(right).getEvidenceID())
 					.result();
 		}
 	}.nullsLast();
+	private static DirectedBreakpoint asLocal(DirectedBreakpoint bp) {
+		if (bp instanceof RemoteEvidence) {
+			return ((RemoteEvidence) bp).asLocal();
+		}
+		return bp;
+	}
 }

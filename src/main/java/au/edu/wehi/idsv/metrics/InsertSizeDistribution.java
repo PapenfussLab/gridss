@@ -11,7 +11,6 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.Arrays;
 import java.util.Map.Entry;
-import java.util.stream.DoubleStream;
 
 import picard.analysis.InsertSizeMetrics;
 import au.edu.wehi.idsv.util.CachedEnumeratedIntegerDistribution;

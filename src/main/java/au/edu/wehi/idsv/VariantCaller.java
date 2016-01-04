@@ -86,7 +86,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 	}
 	private CloseableIterator<DirectedEvidence> adjustEvidenceStream(CloseableIterator<DirectedEvidence> evidenceIt) {
 		if (Defaults.SANITY_CHECK_ITERATORS) {
-			evidenceIt = new PairedEvidenceTracker<DirectedEvidence>(evidenceIt);
+			evidenceIt = new PairedEvidenceTracker<DirectedEvidence>("VariantCaller", evidenceIt);
 			evidenceIt = new OrderAssertingIterator<DirectedEvidence>(evidenceIt, DirectedEvidenceOrder.ByNatural);
 		}
 		// back to treating assemblies as independent evidence which do not affect SC or RP support counts

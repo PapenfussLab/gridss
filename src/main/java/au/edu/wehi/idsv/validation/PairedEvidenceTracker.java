@@ -7,7 +7,6 @@ import htsjdk.samtools.util.Log;
 import java.util.HashMap;
 import java.util.Iterator;
 
-import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.DirectedBreakpoint;
 import au.edu.wehi.idsv.DirectedEvidence;
@@ -18,6 +17,7 @@ import au.edu.wehi.idsv.RealignedRemoteSoftClipEvidence;
 import au.edu.wehi.idsv.RealignedSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.RealignedSoftClipEvidence;
 import au.edu.wehi.idsv.SpannedIndelEvidence;
+import au.edu.wehi.idsv.SpanningSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
@@ -39,12 +39,14 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 	 * Maximum number of unpair records log in full. 
 	 */
 	private static final int MAX_TO_PRINT = 32;
+	private final String name;
 	private final Iterator<T> it;
 	private boolean closed = false;
 	private HashMap<String, BreakpointSummary> unpaired = new HashMap<String, BreakpointSummary>();
 
-	public PairedEvidenceTracker(Iterator<T> it) {
+	public PairedEvidenceTracker(String iteratorName, Iterator<T> it) {
 		this.it = it;
+		this.name = iteratorName;
 	}
 
 	@Override
@@ -72,7 +74,7 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 			String evidenceId = evidence.getEvidenceID();
 			String partnerId = getPartnerEvidenceID((DirectedBreakpoint)evidence, evidenceId);
 			if (unpaired.containsKey(evidenceId)) {
-				String msg = String.format("Encountered %s multiple times.", evidenceId);
+				String msg = String.format("%s: encountered %s multiple times.", name, evidenceId);
 				log.error(msg);
 				return false;
 			}
@@ -80,7 +82,7 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 				BreakpointSummary remoteBp = unpaired.remove(partnerId);
 				// Breakpoints must be the same
 				if (!remoteBp.remoteBreakpoint().equals(((DirectedBreakpoint)evidence).getBreakendSummary())) {
-					String msg = String.format("Breakpoints %s and %s differ for evidence pair %s %s", evidence.getBreakendSummary(), remoteBp, evidence.getEvidenceID(), partnerId); 
+					String msg = String.format("%s: breakpoints %s and %s differ for evidence pair %s %s", name, evidence.getBreakendSummary(), remoteBp, evidence.getEvidenceID(), partnerId); 
 					log.error(msg);
 					return false;
 				}
@@ -93,7 +95,7 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 
 	private boolean allMatched() {
 		if (!unpaired.isEmpty()) {
-			String msg = String.format("Missing %d evidence pairings: ", unpaired.size()); 
+			String msg = String.format("%s: missing %d evidence pairings: ", name, unpaired.size()); 
 			StringBuilder sb = new StringBuilder();
 			sb.append(msg);
 			int i = MAX_TO_PRINT;
@@ -110,8 +112,11 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 	}
 
 	private static String getPartnerEvidenceID(DirectedBreakpoint evidence, String evidenceId) {
-		if (evidence instanceof SpannedIndelEvidence) {
-			return BreakendDirection.fromChar(evidenceId.charAt(0)).reverse().toChar() + evidenceId.substring(1);
+		if (evidence instanceof SpanningSAMRecordAssemblyEvidence) {
+			return ((SpanningSAMRecordAssemblyEvidence)evidence).asRemote().getEvidenceID();
+		} else if (evidence instanceof SpannedIndelEvidence) {
+			// change direction
+			return (evidenceId.charAt(0) == 'b' ? "f" : "b") + evidenceId.substring(1);
 		} else if (evidence instanceof RealignedRemoteSoftClipEvidence || evidence instanceof RealignedRemoteSAMRecordAssemblyEvidence) {
 			// remove R prefix
 			if (evidenceId.charAt(0) != 'R') throw new RuntimeException("Sanity check failure: unexpected remote evidence ID " + evidenceId);

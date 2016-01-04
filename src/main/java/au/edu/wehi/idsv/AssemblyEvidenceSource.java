@@ -101,7 +101,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			it = singleFileIterator(includeRemote, includeFiltered);
 		}
 		if (Defaults.SANITY_CHECK_ITERATORS && includeRemote) {
-			it = new PairedEvidenceTracker<SAMRecordAssemblyEvidence>(it);
+			it = new PairedEvidenceTracker<SAMRecordAssemblyEvidence>("Assembly", it);
 		}
 		return it;
 	}
