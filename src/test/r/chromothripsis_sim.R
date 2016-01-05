@@ -41,13 +41,17 @@ vcfs <- LoadVcfs(metadata)
 setwd(pwd)
 
 vcfs <- lapply(vcfs, function(vcf) {
+  if (str_detect(attr(vcf, "sourceMetadata")$CX_REFERENCE_VCF_VARIANTS, "BP")) {
+    # filtering small events calls to remove spurious indels caused by sequence homology around breakpoints
+    callSize <- eventSize(vcf)
+    callSize[is.na(callSize)] <- 1000000000
+    vcf <- vcf[callSize > 50,]
+  }
   caller <- str_extract(attr(vcf, "sourceMetadata")$CX_CALLER, "^[^/]+")
-  withqual(vcf, caller)
+  vcf <- withqual(vcf, caller)
+  return(vcf)
 })
 vcfs_passfilters <- lapply(vcfs, function(vcf) vcf[rowRanges(vcf)$FILTER %in% c(".", "PASS")])
-
-#TODO: apply filters
-
 
 #Rprof("C:/dev/Rprof.out")
 truthlist_all <- CalculateTruthSummary(vcfs, maxerrorbp=100, ignore.strand=TRUE) # breakdancer does not specify strand

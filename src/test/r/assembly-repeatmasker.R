@@ -1,9 +1,7 @@
 ##################
-# Processing steps (approximate runtime: 186h wall , 243h CPU)
+# Processing steps
 ##################
-# - Follow na12878.R processing steps
-# - Create symbolic links from ~/i/data.na12878/00000000000000000000000000000000.* to ~/i/data.assembly/00000000000000000000000000000000.*
-# - ./call_gridss.sh assembly
+# - Follow assembly-method.R processing steps
 # - Run this script
 
 library(data.table)
