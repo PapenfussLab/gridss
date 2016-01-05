@@ -1,10 +1,14 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
+
+import java.util.List;
+
 import htsjdk.samtools.SAMRecord;
 
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 
 
@@ -47,5 +51,14 @@ public class SpannedIndelEvidenceTest extends TestHelper {
 		assertEquals(new BreakpointSummary(2, BWD, 3, 3, 2, FWD, 2, 2), e.asRemote().getBreakendSummary());
 		assertEquals("TT", e.getUntemplatedSequence());
 		assertEquals("TT", e.asRemote().getUntemplatedSequence());
+	}
+	@Test
+	public void indels_should_have_unique_evidenceID() {
+		SAMRecord r = Read(2, 1, "2M2I1M2D2M");
+		r.setReadBases(B("NNNNNNN"));
+		r.setMappingQuality(40);
+		List<SpannedIndelEvidence> e = IEList(SES(), r);
+		assertEquals(2, e.size());
+		assertEquals(4, e.stream().flatMap(ie -> ImmutableList.of(ie, ie.asRemote()).stream()).map(ie -> ie.getEvidenceID()).distinct().count());
 	}
 }

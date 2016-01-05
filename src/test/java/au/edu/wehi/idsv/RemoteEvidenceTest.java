@@ -11,7 +11,7 @@ import org.junit.Test;
 
 public abstract class RemoteEvidenceTest extends TestHelper  {
 	protected int anchorLength(final String allBases, final String realignCigar) {
-		return allBases.length() - (new SAMRecord(null) {{ setCigarString(realignCigar); }}).getCigar().getReadLength();
+		return allBases.length() - (new SAMRecord(getContext().getBasicSamHeader()) {{ setCigarString(realignCigar); }}).getCigar().getReadLength();
 	}
 	protected int realignReferenceIndex;
 	protected int realignAlignmentStart;

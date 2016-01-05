@@ -37,7 +37,7 @@ public class FastEmpiricalReferenceLikelihoodModel implements VariantScoringMode
 
 	@Override
 	public double scoreReadPair(IdsvSamFileMetrics metrics, int fragmentSize, int mapq1, int mapq2) {
-		double score = MathUtil.prToPhred(metrics.getReadPairPhred(fragmentSize));
+		double score = metrics.getReadPairPhred(fragmentSize);
 		score = Math.min(score, mapq1);
 		score = Math.min(score, mapq2);
 		return score;

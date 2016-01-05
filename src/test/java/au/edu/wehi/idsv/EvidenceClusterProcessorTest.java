@@ -23,17 +23,13 @@ public class EvidenceClusterProcessorTest extends TestHelper {
 		assertEquals(new BreakpointSummary(0, FWD, POLY_A.length, POLY_A.length, 0, BWD, 1, 1), result.get(1).getBreakendSummary());
 	}
 	@Test
-	public void evidence_should_expand_by_margin_then_shrink() {
+	public void evidence_should_not_expand() {
 		List<DirectedEvidence> list = new ArrayList<DirectedEvidence>();
 		list.add(SCE(FWD, withSequence("TTTT", Read(0, 10, "1M3S"))[0], withSequence("TTTT", Read(1, 10, "4M"))[0]));
-		list.add(SCE(FWD, withSequence("TTTT", Read(0, 13, "1M3S"))[0], withSequence("TTTT", Read(1, 13, "4M"))[0]));
+		list.add(SCE(FWD, withSequence("TTTT", Read(0, 11, "1M3S"))[0], withSequence("TTTT", Read(1, 11, "4M"))[0]));
 		EvidenceClusterProcessor ecp = new EvidenceClusterProcessor(getContext(), list.iterator());
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp);
-		BreakpointSummary bp = ((VariantContextDirectedBreakpoint)result.get(0)).getBreakendSummary();
-		// expand by 3bp, overlap is 10-13
-		// then shrink back down to call the middle of the interval
-		assertEquals(11, bp.start);
-		assertEquals(11, bp.end);
+		assertEquals(4, result.size());
 	}
 	@Test
 	public void should_call_maximal_clique() {

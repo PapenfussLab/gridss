@@ -41,6 +41,7 @@ import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -279,6 +280,11 @@ public class TestHelper {
 	public static SpannedIndelEvidence IE(SAMEvidenceSource ses, SAMRecord r, int indelIndex) {
 		SplitIndel si = SplitIndel.getIndelsAsSplitReads(r).get(indelIndex);
 		return SpannedIndelEvidence.create(ses, r, si, indelIndex);
+	}
+	
+	public static List<SpannedIndelEvidence> IEList(final SAMEvidenceSource ses, final SAMRecord r) {
+		List<SplitIndel> si = SplitIndel.getIndelsAsSplitReads(r);
+		return IntStream.range(0, si.size()).mapToObj(i -> SpannedIndelEvidence.create(ses, r, si.get(i), i)).collect(Collectors.toList());
 	}
 
 	public static SoftClipEvidence SCE(BreakendDirection direction,

@@ -46,7 +46,7 @@ public class FastqBreakpointWriterTest extends TestHelper {
 		FastqBreakpointWriter fw = new FastqBreakpointWriter(w);
 		SoftClipEvidence e = new SoftClipEvidence(SES(), BreakendDirection.Forward, Read(0, 1, "10M10S"));
 		fw.write(e);
-		SAMRecord realigned = new SAMRecord(null);
+		SAMRecord realigned = new SAMRecord(getContext().getBasicSamHeader());
 		realigned.setReadName(w.list.get(0).getReadHeader());
 		realigned.setReadBases(B("AAACCCGGGT"));
 		realigned.setCigarString("1S5M4S");
@@ -65,7 +65,7 @@ public class FastqBreakpointWriterTest extends TestHelper {
 		FastqBreakpointWriter fw = new FastqBreakpointWriter(w);
 		SoftClipEvidence e = new SoftClipEvidence(SES(), BreakendDirection.Forward, Read(0, 1, "10M10S"));
 		fw.write(e);
-		SAMRecord realigned = new SAMRecord(null);
+		SAMRecord realigned = new SAMRecord(getContext().getBasicSamHeader());
 		realigned.setReadName(w.list.get(0).getReadHeader());
 		realigned.setReadBases(B("AAACCCGGGT"));
 		realigned.setCigarString("1S5M4S");
@@ -80,7 +80,7 @@ public class FastqBreakpointWriterTest extends TestHelper {
 		FastqBreakpointWriter fw = new FastqBreakpointWriter(w);
 		SoftClipEvidence e = new SoftClipEvidence(SES(), BreakendDirection.Forward, Read(0, 1, "10M10S"));
 		fw.write(e);
-		SAMRecord realigned = new SAMRecord(null);
+		SAMRecord realigned = new SAMRecord(getContext().getBasicSamHeader());
 		realigned.setReadName(w.list.get(0).getReadHeader());
 		realigned.setReadBases(B("AAACCCGGGT"));
 		realigned.setCigarString("1S5M4S");

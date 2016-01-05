@@ -28,7 +28,7 @@ public class SoftClipEvidenceTest extends TestHelper {
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void constructor_should_require_cigar() {
-		SoftClipEvidence.create(SES(), BreakendDirection.Backward, new SAMRecord(null));
+		SoftClipEvidence.create(SES(), BreakendDirection.Backward, new SAMRecord(getContext().getBasicSamHeader()));
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void constructor_should_require_read_bases() {

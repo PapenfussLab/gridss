@@ -47,15 +47,35 @@ public class VariantCallingConfiguration {
 	 * This margin is used to mitigate soft clip alignment errors and microhomologies around breakend coordinates
 	 */
 	public int breakendMargin;
+	/**
+	 * Breakpoint event size (in multiples of breakendMargin) at which the full margin is applied
+	 */
+	private int fullMarginMultiple = 2;
 	public boolean writeFiltered;
 	public boolean placeholderBreakend;
 	public double lowQuality;
 	public BreakendSummary withMargin(BreakendSummary bp) {
 		if (bp == null) return null;
-		return bp.expandBounds(breakendMargin);
+		return bp.expandBounds(marginFor(bp));
 	}
-	public BreakendSummary withoutMargin(BreakendSummary bp) {
-		return bp.compressBounds(breakendMargin);
+	private int marginFor(BreakendSummary be) {
+		if (be instanceof BreakpointSummary) {
+			BreakpointSummary bp = (BreakpointSummary) be;
+			if (bp.referenceIndex == bp.referenceIndex2) {
+				int minsize = getMinSize(bp);
+				if (minsize < breakendMargin * fullMarginMultiple) {
+					return minsize / fullMarginMultiple;
+				}
+			}
+		}
+		return breakendMargin;
+	}
+	public int getMinSize(BreakpointSummary bp) {
+		int minsize  = Math.min(Math.abs(bp.start - bp.end2), Math.abs(bp.start2 - bp.end));
+		if (bp.localBreakend().overlaps(bp.remoteBreakend())) {
+			minsize = 0;
+		}
+		return minsize;
 	}
 	public List<VcfFilter> calculateBreakendFilters(VariantContextDirectedEvidence call) {
 		List<VcfFilter> filters = Lists.newArrayList();

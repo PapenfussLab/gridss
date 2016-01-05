@@ -41,7 +41,7 @@ public class SAMRecordUtilTest extends TestHelper {
 	}
 	@Test
 	public void ensureNmTag_should_not_require_reference_if_tag_set() {
-		SAMRecord r = new SAMRecord(null);
+		SAMRecord r = new SAMRecord(getContext().getBasicSamHeader());
 		r.setAttribute("NM", 1);
 		SAMRecordUtil.ensureNmTag((ReferenceSequenceFileWalker)null, r);
 	}

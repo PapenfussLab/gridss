@@ -137,8 +137,7 @@ public class SpanningSAMRecordAssemblyEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void indels_should_have_different_names() {
-		// TODO: dedupe variant support so only a single event per assembly supports a putative variant
-		SpanningSAMRecordAssemblyEvidence e = create(0, "1M1D1M1I1M", "NN");
+		SpanningSAMRecordAssemblyEvidence e = create(0, "1M1D1M1I1M", "NNNN");
 		assertEquals(4, e.getParentAssembly().getSpannedIndels().size());
 		assertEquals(4, e.getParentAssembly().getSpannedIndels().stream().map(x -> x.getEvidenceID()).distinct().count());
 	}

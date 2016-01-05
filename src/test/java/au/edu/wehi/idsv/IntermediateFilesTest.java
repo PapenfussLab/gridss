@@ -159,7 +159,7 @@ public class IntermediateFilesTest extends TestHelper {
 	}
 	public void writeUnmappedRealignments(ProcessingContext pc, AssemblyEvidenceSource source, int index) {
 		writeRealignment(pc, source, 0, Lists.newArrayList(source.iterator(false, true)).stream().map(e -> {
-			SAMRecord r = new SAMRecord(null);
+			SAMRecord r = new SAMRecord(pc.getBasicSamHeader());
 			r.setReadName(BreakpointFastqEncoding.getRealignmentFastq(e).getReadHeader());
 			return r;
 			}).collect(Collectors.toList()).toArray(new SAMRecord[0]));
@@ -167,7 +167,7 @@ public class IntermediateFilesTest extends TestHelper {
 	public void writeUnmappedRealignments(ProcessingContext pc, SAMEvidenceSource source, int index) {
 		writeRealignment(pc, source, 0, Lists.newArrayList(source.iterator(false, true, false)).stream().map(e -> {
 			SoftClipEvidence sc = (SoftClipEvidence)e;
-			SAMRecord r = new SAMRecord(null);
+			SAMRecord r = new SAMRecord(pc.getBasicSamHeader());
 			r.setReadName(BreakpointFastqEncoding.getRealignmentFastq(sc).getReadHeader());
 			return r;
 			}).collect(Collectors.toList()).toArray(new SAMRecord[0]));

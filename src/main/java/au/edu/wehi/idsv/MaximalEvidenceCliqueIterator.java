@@ -30,12 +30,11 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		this.context = processContext;
 		this.calc = new RectangleGraphMaximalCliqueIterator(
 						// collapse evidence at the same location to a single node
-						new RectangleGraphNodeMergingIterator(RectangleGraphNode.ByStartXY,
-							// reordering window size of 1 as all variants get expanded by same margin so are
-							// still ordered by local start coordinate
+						new RectangleGraphNodeMergingIterator(RectangleGraphNode.ByStartXYEndXY,
+							// make sure nodes to be merged are adjacent in the stream
 							new GraphNodeWindowedSortingIterator(context, 1, 
-							// convert evidence breakpoints to GraphNodes
-							new EvidenceToGraphNodeIterator(evidenceIt))));
+								// convert evidence breakpoints to GraphNodes
+								new EvidenceToGraphNodeIterator(evidenceIt))));
 		this.targetLowDir = lowDir;
 		this.targetHighDir = highDir;
 		this.idGenerator = idGenerator;
@@ -46,7 +45,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 				public Long apply(RectangleGraphNode arg) {
 					return arg.startX;
 				}
-			}, windowSize, RectangleGraphNode.ByStartXY);
+			}, windowSize, RectangleGraphNode.ByStartXYEndXY);
 		}
 	}
 	private class EvidenceToGraphNodeIterator extends AbstractIterator<RectangleGraphNode> {
@@ -67,8 +66,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		}
 	}
 	private RectangleGraphNode toGraphNode(DirectedEvidence e) {
-		BreakendSummary loc = e.getBreakendSummary();
-		loc = context.getVariantCallingParameters().withMargin(loc);
+		BreakendSummary loc = e.getBreakendSummary();		
 		if (!(loc instanceof BreakpointSummary)) return null;		
 		BreakpointSummary bp = (BreakpointSummary)loc;
 		long startX = context.getLinear().getLinearCoordinate(bp.referenceIndex, bp.start);
@@ -123,7 +121,6 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 				targetHighDir,
 				context.getLinear().getReferencePosition(node.startY),
 				context.getLinear().getReferencePosition(node.endY));
-		breakpoint = (BreakpointSummary)context.getVariantCallingParameters().withoutMargin(breakpoint);
 		// sanity check that the resultant breakpoint makes sense
 		assert(breakpoint.start >= 1);
 		assert(breakpoint.start2 >= 1);

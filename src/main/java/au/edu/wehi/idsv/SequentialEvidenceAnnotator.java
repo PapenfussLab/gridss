@@ -173,7 +173,7 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 			if (best != null) {
 				ActiveVariant mate = bufferedVariantId.get(best.mateid);
 				if (mate != null && mate.location.overlaps(bs) && allocateToHighBreakend(evidence)) {
-					// special case: evidence overlaps 
+					// special case: matches both sides of the breakpoint 
 					mate.attributeEvidence(evidence);
 				} else {
 					best.attributeEvidence(evidence);

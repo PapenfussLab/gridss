@@ -17,25 +17,25 @@ public class SAMRecordSummaryTest extends TestHelper {
 	}
 	@Test
 	public void isAlignmentSoftClipped_should_handle_hard_clips() {
-		SAMRecord r = new SAMRecord(null);
+		SAMRecord r = new SAMRecord(getContext().getBasicSamHeader());
 		r.setCigarString("1H1S1M");
 		assertTrue(SAMRecordUtil.isAlignmentSoftClipped(r));
 	}
 	@Test
 	public void isAlignmentSoftClipped_should_handle_empty_cigar() {
-		SAMRecord r = new SAMRecord(null);
+		SAMRecord r = new SAMRecord(getContext().getBasicSamHeader());
 		r.setCigarString("");
 		assertFalse(SAMRecordUtil.isAlignmentSoftClipped(r));
 	}
 	@Test
 	public void isAlignmentSoftClipped_should_handle_null_cigar() {
-		SAMRecord r = new SAMRecord(null);
+		SAMRecord r = new SAMRecord(getContext().getBasicSamHeader());
 		r.setCigar(null);
 		assertFalse(SAMRecordUtil.isAlignmentSoftClipped(r));
 	}
 	@Test
 	public void isAlignmentSoftClipped_should_handle_unmapped_reads() {
-		SAMRecord r = new SAMRecord(null);
+		SAMRecord r = new SAMRecord(getContext().getBasicSamHeader());
 		r.setCigar(null);
 		assertFalse(SAMRecordUtil.isAlignmentSoftClipped(r));
 	}
