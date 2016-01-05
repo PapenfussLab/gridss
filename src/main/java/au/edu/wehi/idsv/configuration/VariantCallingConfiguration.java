@@ -20,7 +20,6 @@ public class VariantCallingConfiguration {
 		config = config.subset(CONFIGURATION_PREFIX);
 		minScore = config.getDouble("minScore");
 		callOnlyAssemblies = config.getBoolean("callOnlyAssemblies");
-		minIndelSize = config.getInt("minIndelSize");
 		breakendMargin = config.getInt("breakendMargin");
 		writeFiltered = config.getBoolean("writeFiltered");
 		lowQuality = config.getDouble("lowQuality");
@@ -32,7 +31,7 @@ public class VariantCallingConfiguration {
 				placeholderBreakend = true;
 				break;
 			default:
-				throw new IllegalArgumentException(String.format("Unrecognised output format \"%d\"", config.getString("format")));
+				throw new IllegalArgumentException(String.format("Unrecognised output format \"%s\"", config.getString("format")));
 		}
 	}
 	/**
@@ -43,10 +42,6 @@ public class VariantCallingConfiguration {
 	 * Call breakends only on assembled contigs
 	 */
 	public boolean callOnlyAssemblies;
-	/**
-	 * Minimum indel size
-	 */
-	public int minIndelSize;
 	/**
 	 * Number bases in which nearby evidence will be considered to support the same variant.
 	 * This margin is used to mitigate soft clip alignment errors and microhomologies around breakend coordinates
@@ -69,13 +64,14 @@ public class VariantCallingConfiguration {
 	public List<VcfFilter> calculateBreakpointFilters(VariantContextDirectedBreakpoint call) {
 		List<VcfFilter> filters = Lists.newArrayList();
 		BreakpointSummary bp = call.getBreakendSummary();
-		if (minIndelSize > 0 && bp.couldBeDeletionOfSize(1, minIndelSize - 1)) {
+		
+		//if (minIndelSize > 0 && bp.couldBeDeletionOfSize(1, minIndelSize - 1)) {
 			// likely to be an artifact
 			// due to noise/poor alignment (eg bowtie2 2.1.0 would misalign reference reads)
 			// and a nearby (real) indel
 			// causing real indel mates to be assembled with noise read
-			filters.add(VcfFilter.SMALL_INDEL);
-		}
+			//filters.add(VcfFilter.SMALL_INDEL);
+		//}
 		if (bp.couldBeReferenceAllele() && call.getUntemplatedSequence().length() == 0) {
 			filters.add(VcfFilter.REFERENCE_ALLELE);
 		}

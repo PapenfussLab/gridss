@@ -16,7 +16,7 @@ public class SamTags {
 	/**
 	 * Filters applied to assembly
 	 */
-	public static final String ASSEMLBY_FILTERS = "af";
+	public static final String ASSEMBLY_FILTERS = "af";
 	/**
 	 * EvidenceID of assembly components
 	 */
@@ -39,7 +39,7 @@ public class SamTags {
 	public static final String ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX = "ds";
 	public static final String ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL = "ms";
 	public static final List<String> ASSEMBLY_ANNOTATIONS = ImmutableList.of(
-			ASSEMLBY_FILTERS,
+			ASSEMBLY_FILTERS,
 			EVIDENCEID,
 			ASSEMBLY_DIRECTION,
 			SPANNING_ASSEMBLY,

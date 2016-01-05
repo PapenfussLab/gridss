@@ -7,6 +7,7 @@ import htsjdk.samtools.util.Log;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -22,7 +23,7 @@ import com.google.common.collect.PeekingIterator;
  * @author Daniel Cameron
  *
  */
-public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
+public class AsyncBufferedIterator<T> implements CloseableIterator<T>, PeekingIterator<T> {
 	private static AtomicInteger threadsCreated = new AtomicInteger(0);
 	private static final Log log = Log.getInstance(AsyncBufferedIterator.class);
     private final Thread reader;
@@ -92,7 +93,13 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T> {
 	@Override
 	public T next() {
 		if (hasNext()) return (T)currentBuffer.next();
-		throw new IllegalStateException("No more records");
+		throw new NoSuchElementException("next");
+	}
+	@SuppressWarnings("unchecked")
+	@Override
+	public T peek() {
+		if (!hasNext()) throw new NoSuchElementException("peek");
+		return (T)currentBuffer.peek();
 	}
 	private final void throwOnCallingThread() {
         final Throwable t = this.ex.get();

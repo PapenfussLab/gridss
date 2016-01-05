@@ -33,14 +33,16 @@ public class SAMRecordAssemblyEvidenceFilteringIteratorTest extends TestHelper {
 			Iterators.transform(in.iterator(), new Function<SAMRecordAssemblyEvidence, SAMRecord>() {
 				@Override
 				public SAMRecord apply(SAMRecordAssemblyEvidence input) {
+					getContext().getAssemblyParameters().applyAnnotationFilters(input);
 					return input.getSAMRecord();
 				} }),
 				Iterators.transform(in.iterator(), new Function<SAMRecordAssemblyEvidence, SAMRecord>() {
 					@Override
 					public SAMRecord apply(SAMRecordAssemblyEvidence input) {
+						getContext().getAssemblyParameters().applyAnnotationFilters(input);
 						return input.getRemoteSAMRecord();
 					} })
-			, true)));
+			, true, true)));
 	}
 	@Test
 	public void should_filter_reference_breakend() {
@@ -73,7 +75,9 @@ public class SAMRecordAssemblyEvidenceFilteringIteratorTest extends TestHelper {
 	}
 	@Test
 	public void should_ignore_filtered_assembly_breakend() {
-		assertFalse(new SAMRecordAssemblyEvidenceFilteringIterator(getContext(), Iterators.singletonIterator(new SAMRecordAssemblyEvidenceIteratorTest().BE(1))).hasNext());
+		SAMRecordAssemblyEvidence e = new SAMRecordAssemblyEvidenceIteratorTest().BE(1);
+		getContext().getAssemblyParameters().applyAnnotationFilters(e);
+		assertFalse(new SAMRecordAssemblyEvidenceFilteringIterator(getContext(), Iterators.singletonIterator(e)).hasNext());
 	}
 	@Test
 	public void should_filter_reference_allele() {

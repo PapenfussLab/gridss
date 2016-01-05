@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -53,5 +54,28 @@ public class SoftClipEvidenceIteratorTest extends TestHelper {
 		sv.add(r);
 		go();
 		assertEquals(0, out.size());
+	}
+	@Test
+	public void should_treat_indels_as_realigned_soft_clips() {
+		SAMRecord r = Read(1, 1, "2M1D2M");
+		sv.add(r);
+		go();
+		assertEquals(2, out.size());
+		assertEquals(new BreakpointSummary(1, FWD, 2, 2, 1, BWD, 4, 4), out.get(0).getBreakendSummary());
+		assertEquals(new BreakpointSummary(1, BWD, 4, 4, 1, FWD, 2, 2), out.get(1).getBreakendSummary());
+	}
+	@Test
+	public void should_extract_all_indels() {
+		SAMRecord r = Read(1, 1, "2M1D2M1D1M");
+		sv.add(r);
+		go();
+		assertEquals(4, out.size());
+	}
+	@Test
+	public void should_have_unique_names() {
+		SAMRecord r = Read(1, 1, "5S5M5I5M5D5M5S");
+		sv.add(r);
+		go();
+		assertEquals(out.size(), out.stream().map(sce -> sce.getEvidenceID()).collect(Collectors.toSet()).size());
 	}
 }

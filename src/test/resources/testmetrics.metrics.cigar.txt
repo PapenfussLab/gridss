@@ -1,0 +1,15 @@
+## htsjdk.samtools.metrics.StringHeader
+# TestHeader
+
+## METRICS CLASS	au.edu.wehi.idsv.metrics.CigarDetailMetrics
+LENGTH	COUNT	OPERATOR
+0	4	S
+1	0	S
+2	0	S
+3	0	S
+4	0	S
+5	0	S
+6	0	S
+7	0	S
+8	0	S
+9	0	S

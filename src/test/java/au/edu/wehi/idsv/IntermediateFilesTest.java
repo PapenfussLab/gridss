@@ -60,12 +60,23 @@ public class IntermediateFilesTest extends TestHelper {
 	public ProcessingContext getCommandlineContext(boolean perChr) {
 		List<Header> headers = Lists.newArrayList();
 		headers.add(new StringHeader("TestHeader"));
-		ProcessingContext pc = new ProcessingContext(
+		ProcessingContext pc;
+		if (reference.equals(SMALL_FA_FILE)) {
+			pc = new ProcessingContext(
 				new FileSystemContext(testFolder.getRoot(), 500000),
 				headers,
 				getConfig(testFolder.getRoot()),
+				SMALL_FA,
 				reference,
 				perChr);
+		} else {
+			pc = new ProcessingContext(
+					new FileSystemContext(testFolder.getRoot(), 500000),
+					headers,
+					getConfig(testFolder.getRoot()),
+					reference,
+					perChr);
+		}
 		pc.registerCategory(0, "Normal");
 		pc.registerCategory(1, "Tumour");
 		return pc;
@@ -80,7 +91,7 @@ public class IntermediateFilesTest extends TestHelper {
 	}
 	public SAMRecord validSC(String seq, int referenceIndex, int position, String cigar) {
 		SAMRecord r = withSequence(seq, Read(referenceIndex, position, cigar))[0];
-		r.setMappingQuality(5);
+		r.setMappingQuality(15);
 		return r;
 	}
 	public SAMRecord ValidSC() {
@@ -91,7 +102,7 @@ public class IntermediateFilesTest extends TestHelper {
 			qual[i] = 5;
 		}
 		r.setBaseQualities(qual);
-		r.setMappingQuality(5);
+		r.setMappingQuality(15);
 		return r;
 	}
 	public void createInput(SAMRecord[] first, SAMRecord[]... data) {

@@ -109,5 +109,11 @@ public class SortRealignedSoftClipsTest extends IntermediateFilesTest {
 		assertEquals("1#2#0#fr2", new PerChr().getRRR(source).get(1).getReadName());
 		assertEquals("0#1#0#fr1", new PerChr().getRRR(source).get(2).getReadName());
 	}
+	@Test
+	public void should_not_include_spanned_indels() {
+		createInput(withReadName("r1", Read(0, 1, "5M5D5M")));
+		go(true);
+		assertEquals(0, new PerChr().getRSC(source).size());
+	}
 }
 

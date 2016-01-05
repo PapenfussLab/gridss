@@ -43,7 +43,7 @@ public class CompoundBreakendAlignmentTest extends TestHelper {
 				withMapq(5, Read(0, 3, "3M"))[0]));
 		assertTrue(cba.getSimpleBreakendRealignment().getReadUnmappedFlag());
 		
-		pc.getRealignmentParameters().mapqUniqueThreshold = 5;
+		pc.getConfig().minMapq = 5;
 		
 		cba = new CompoundBreakendAlignment(pc, null, new BreakendSummary(0, FWD, 2, 2), B("AT"), B("12"), B("CGT"), B("123"), ImmutableList.of(
 				withMapq(5, Read(0, 3, "3M"))[0]));

@@ -40,4 +40,5 @@ public interface AssemblyEvidence extends DirectedEvidence {
 	 * @return
 	 */
 	Collection<String> getEvidenceIDs();
+	List<? extends AssemblyEvidence> getSpannedIndels();
 }

@@ -31,15 +31,19 @@ public class SAMRecordAssemblyEvidenceIteratorTest extends TestHelper {
 		pc.getAssemblyParameters().minReads = 0;
 		return pc;
 	}
-	public void go() { go(getContext()); }
-	public void go(ProcessingContext pc) {
-		out = Lists.newArrayList(new SAMRecordAssemblyEvidenceIterator(pc, AES(),
+	public void go() { go(getContext(), true, false); }
+	public void go(ProcessingContext pc, boolean includeSpannedIndels, boolean includeIndelParents) {
+		out = Lists.newArrayList(new SAMRecordAssemblyEvidenceIterator(AES(pc),
 				Iterators.transform(in.iterator(), new Function<SAMRecordAssemblyEvidence, SAMRecord>() {
 					@Override
 					public SAMRecord apply(SAMRecordAssemblyEvidence input) {
-						return input.getBackingRecord();
+						if (input instanceof SpanningSAMRecordAssemblyEvidence) {
+							return ((SpanningSAMRecordAssemblyEvidence) input).getParentAssembly().getBackingRecord();
+						} else {
+							return input.getBackingRecord();
+						}
 					} })
-				, ImmutableList.of(realigned.iterator()), true));
+				, ImmutableList.of(realigned.iterator()), includeSpannedIndels, includeIndelParents));
 		// check output is in order
 		//for (int i = 0; i < out.size() - 1; i++) {
 		//	BreakendSummary l0 = out.get(i).getBreakendSummary();
@@ -108,8 +112,34 @@ public class SAMRecordAssemblyEvidenceIteratorTest extends TestHelper {
 	}
 	@Test
 	public void should_include_both_side_of_spanning_assembly() {
-		in.add(SmallIndelSAMRecordAssemblyEvidenceTest.create(1, "1M1D1M", "NN"));
+		in.add(SpanningSAMRecordAssemblyEvidenceTest.create(1, "1M1D1M", "NN"));
 		go();
 		assertEquals(2, out.size());
+	}
+	@Test
+	public void should_include_all_breakend_indels() {
+		in.add(SpanningSAMRecordAssemblyEvidenceTest.create(1, "1M1D1M1I1M", "NNNN"));
+		go();
+		assertEquals(4, out.size());
+	}
+	@Test
+	public void should_include_indel_parents() {
+		in.add(SpanningSAMRecordAssemblyEvidenceTest.create(1, "1M1D1M1I1M", "NNNN"));
+		go(getContext(), false, true);
+		assertEquals(1, out.size());
+	}
+	@Test
+	public void should_include_indels_and_parents() {
+		in.add(SpanningSAMRecordAssemblyEvidenceTest.create(1, "1M1D1M1I1M", "NNNN"));
+		go(getContext(), true, true);
+		assertEquals(5, out.size());
+	}
+	@Test
+	public void should_anchor_at_mapped_bases() {
+		SAMRecordAssemblyEvidence ass = new SAMRecordAssemblyEvidence(AES(), Read(0, 1, "1M5I1M"), ImmutableList.of());
+		assertEquals(6, ass.getSpannedIndels().get(0).getBreakendSequence().length);
+		assertEquals(6, ass.getSpannedIndels().get(1).getBreakendSequence().length);
+		assertEquals(6, ass.getSpannedIndels().get(0).getRemoteSAMRecord().getReadLength());
+		assertEquals(6, ass.getSpannedIndels().get(1).getRemoteSAMRecord().getReadLength());
 	}
 }

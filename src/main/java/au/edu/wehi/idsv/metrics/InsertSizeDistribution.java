@@ -9,6 +9,7 @@ import htsjdk.samtools.util.Log;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.util.Arrays;
 import java.util.Map.Entry;
 
 import picard.analysis.InsertSizeMetrics;
@@ -20,8 +21,8 @@ public class InsertSizeDistribution extends CachedEnumeratedIntegerDistribution 
 	 * 
 	 */
 	private static final long serialVersionUID = -2332020573213102253L;
-	private final int total;
-	public int getTotalMappedPairs() {
+	private final long total;
+	public long getTotalMappedPairs() {
 		return total;
 	}
 	public static InsertSizeDistribution create(File insertSizeMetricsFile) {
@@ -53,9 +54,12 @@ public class InsertSizeDistribution extends CachedEnumeratedIntegerDistribution 
 			count[i] = entry.getValue().getValue();// / total;
 			i++;
 		}
-		return new InsertSizeDistribution(insertSize, count, (int)total);
+		return new InsertSizeDistribution(insertSize, count, (long)total);
 	}
-	public InsertSizeDistribution(int[] singletons, double[] readCounts, int readTotal) {
+	public InsertSizeDistribution(int[] singletons, double[] readCounts) {
+		this(singletons, readCounts, (long)Arrays.stream(readCounts).sum());
+	}
+	private InsertSizeDistribution(int[] singletons, double[] readCounts, long readTotal) {
 		super(singletons, readCounts);
 		this.total = readTotal;
 	}

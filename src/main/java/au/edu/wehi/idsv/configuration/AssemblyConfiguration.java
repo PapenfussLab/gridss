@@ -80,7 +80,14 @@ public class AssemblyConfiguration {
 	 * Retains evidenceID tracking information after evidence rehydration
 	 */
 	public boolean trackEvidenceID;
-	public boolean applyFilters(SAMRecordAssemblyEvidence evidence) {
+	/**
+	 * Applies filters that require assembly annotation to be present to be calculated
+	 *  
+	 * WARNING: applying these filters must apply to not only the breakpoint, but also to any spanned indels
+	 * @param evidence
+	 * @return
+	 */
+	public boolean applyAnnotationFilters(SAMRecordAssemblyEvidence evidence) {
 		SAMRecordAssemblyEvidence localEvidence = evidence;
 		if (evidence instanceof RemoteEvidence) {
 			// ensures assembly & matching remote always get filtered in/out together
@@ -91,16 +98,17 @@ public class AssemblyConfiguration {
 			evidence.filterAssembly(VcfFilter.ASSEMBLY_TOO_SHORT); // assembly length = 1 read
 			filtered = true;
 		}
-		if (localEvidence.getAssemblySupportCountReadPair() == 0 &&
-				localEvidence.getAssemblySupportCountSoftClipRemote() == localEvidence.getAssemblySupportCountSoftClip()) { 
-			// assembly is entirely made of remote support with no reads mapping to our location at all
-			evidence.filterAssembly(VcfFilter.ASSEMBLY_REMOTE);
-			filtered = true;
-		}
+		//if (localEvidence.getAssemblySupportCountReadPair() == 0 && localEvidence.getAssemblySupportCountSoftClipRemote() == localEvidence.getAssemblySupportCountSoftClip()) { 
+		//	// assembly is entirely made of remote support with no reads mapping to our location at all
+		//	evidence.filterAssembly(VcfFilter.ASSEMBLY_REMOTE);
+		//	filtered = true;
+		//}
 		return filtered;
 	}
 	/**
 	 * Applies filters that do not required the assembly to be annotated or realigned
+	 * 
+	 * WARNING: applying these filters must apply to not only the breakpoint, but also to any spanned indels 
 	 * @param evidence
 	 * @return
 	 */
@@ -111,9 +119,7 @@ public class AssemblyConfiguration {
 			localEvidence = ((RealignedRemoteSAMRecordAssemblyEvidence)evidence).asLocal();
 		}
 		boolean filtered = false;
-		if (localEvidence.isReferenceAssembly() ||
-				localEvidence.getBreakendSummary() == null ||
-				localEvidence.getBreakendSequence().length == 0) {
+		if (localEvidence.isReferenceAssembly()) {
 			evidence.filterAssembly(VcfFilter.REFERENCE_ALLELE);
 			filtered = true;
 		}

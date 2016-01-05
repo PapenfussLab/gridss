@@ -3,14 +3,19 @@ package au.edu.wehi.idsv.metrics;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.metrics.MetricsFile;
+
+import java.util.List;
 
 import org.junit.Test;
 
 import picard.analysis.InsertSizeMetrics;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+
+import com.google.api.client.util.Lists;
 
 
 public class IdsvSamFileMetricsCollectorTest extends TestHelper {
@@ -24,7 +29,7 @@ public class IdsvSamFileMetricsCollectorTest extends TestHelper {
 		c.acceptRecord(Read(0, 1, "100M"), null);
 		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
 		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
-		MetricsFile<SoftClipDetailMetrics, Integer> sc = new MetricsFile<SoftClipDetailMetrics, Integer>();
+		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
 		c.finish(is, idsv, sc);
 		assertEquals(100, (int)((IdsvMetrics)idsv.getMetrics().get(0)).MAX_READ_LENGTH);
 	}
@@ -47,7 +52,7 @@ public class IdsvSamFileMetricsCollectorTest extends TestHelper {
 		c.acceptRecord(unmapped[1], null);
 		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
 		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
-		MetricsFile<SoftClipDetailMetrics, Integer> sc = new MetricsFile<SoftClipDetailMetrics, Integer>();
+		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
 		c.finish(is, idsv, sc);
 		assertEquals(10, idsv.getMetrics().get(0).READS);
 		assertEquals(6, idsv.getMetrics().get(0).MAPPED_READS);
@@ -71,7 +76,7 @@ public class IdsvSamFileMetricsCollectorTest extends TestHelper {
 		c.acceptRecord(unmapped[1], null);
 		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
 		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
-		MetricsFile<SoftClipDetailMetrics, Integer> sc = new MetricsFile<SoftClipDetailMetrics, Integer>();
+		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
 		c.finish(is, idsv, sc);
 		assertEquals(4, idsv.getMetrics().get(0).READ_PAIRS);
 		assertEquals(2, idsv.getMetrics().get(0).READ_PAIRS_BOTH_MAPPED);
@@ -87,11 +92,13 @@ public class IdsvSamFileMetricsCollectorTest extends TestHelper {
 		c.acceptRecord(Read(0, 1, "95M5S"), null);
 		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
 		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
-		MetricsFile<SoftClipDetailMetrics, Integer> sc = new MetricsFile<SoftClipDetailMetrics, Integer>();
+		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
 		c.finish(is, idsv, sc);
-		assertEquals(100, sc.getMetrics().size());
-		for (int i = 0; i < sc.getMetrics().size(); i++) {
-			assertEquals(i, sc.getMetrics().get(i).LENGTH);
+		List<CigarDetailMetrics> msc = Lists.newArrayList(sc.getMetrics());
+		msc.removeIf(cdm -> cdm.OPERATOR != CigarOperator.enumToCharacter(CigarOperator.SOFT_CLIP));
+		assertEquals(6, msc.size());
+		for (int i = 0; i < msc.size(); i++) {
+			assertEquals(i, msc.get(i).LENGTH);
 		}
 	}
 	@Test
@@ -103,15 +110,48 @@ public class IdsvSamFileMetricsCollectorTest extends TestHelper {
 		c.acceptRecord(Read(0, 1, "95M5S"), null); // 0, 5
 		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
 		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
-		MetricsFile<SoftClipDetailMetrics, Integer> sc = new MetricsFile<SoftClipDetailMetrics, Integer>();
+		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
 		c.finish(is, idsv, sc);
-		assertEquals(4, ((SoftClipDetailMetrics)sc.getMetrics().get(0)).READCOUNT);
-		assertEquals(3, ((SoftClipDetailMetrics)sc.getMetrics().get(1)).READCOUNT);
-		assertEquals(0, ((SoftClipDetailMetrics)sc.getMetrics().get(2)).READCOUNT);
-		assertEquals(0, ((SoftClipDetailMetrics)sc.getMetrics().get(3)).READCOUNT);
-		assertEquals(0, ((SoftClipDetailMetrics)sc.getMetrics().get(4)).READCOUNT);
-		assertEquals(1, ((SoftClipDetailMetrics)sc.getMetrics().get(5)).READCOUNT);
-		assertEquals(0, ((SoftClipDetailMetrics)sc.getMetrics().get(6)).READCOUNT);
+		List<CigarDetailMetrics> msc = Lists.newArrayList(sc.getMetrics());
+		msc.removeIf(cdm -> cdm.OPERATOR != CigarOperator.enumToCharacter(CigarOperator.SOFT_CLIP) || cdm.LENGTH < 1);
+		assertEquals(3, msc.get(0).COUNT);
+		assertEquals(0, msc.get(1).COUNT);
+		assertEquals(0, msc.get(2).COUNT);
+		assertEquals(0, msc.get(3).COUNT);
+		assertEquals(1, msc.get(4).COUNT);
+	}
+	@Test
+	public void should_add_implicit_zero_length_clips() {
+		IdsvSamFileMetricsCollector c = new IdsvSamFileMetricsCollector(null);
+		c.acceptRecord(Read(0, 1, "100M"), null); // 0, 0
+		c.acceptRecord(Read(0, 1, "99M1S"), null); // 0, 1
+		c.acceptRecord(Read(0, 1, "1S98M1S"), null);  // 1, 1
+		c.acceptRecord(Read(0, 1, "95M5S"), null); // 0, 5
+		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
+		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
+		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
+		c.finish(is, idsv, sc);
+		List<CigarDetailMetrics> msc = Lists.newArrayList(sc.getMetrics());
+		msc.removeIf(cdm -> cdm.OPERATOR != CigarOperator.enumToCharacter(CigarOperator.SOFT_CLIP));
+		assertEquals(4, msc.get(0).COUNT);
+		msc = Lists.newArrayList(sc.getMetrics());
+		msc.removeIf(cdm -> cdm.OPERATOR != CigarOperator.enumToCharacter(CigarOperator.HARD_CLIP));
+		assertEquals(8, msc.get(0).COUNT);
+	}
+	@Test
+	public void should_write_implicit_zero_cigar_for_missing_operators() {
+		IdsvSamFileMetricsCollector c = new IdsvSamFileMetricsCollector(null);
+		c.acceptRecord(Read(0, 1, "100M"), null); // 0, 0
+		c.acceptRecord(Read(0, 1, "99M1S"), null); // 0, 1
+		c.acceptRecord(Read(0, 1, "1S98M1S"), null);  // 1, 1
+		c.acceptRecord(Read(0, 1, "95M5S"), null); // 0, 5
+		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
+		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
+		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
+		c.finish(is, idsv, sc);
+		List<CigarDetailMetrics> msc = Lists.newArrayList(sc.getMetrics());
+		msc.removeIf(cdm -> cdm.OPERATOR != CigarOperator.enumToCharacter(CigarOperator.X));
+		assertEquals(4, msc.get(0).COUNT);
 	}
 	@Test
 	public void should_calc_max_read_mapped_length() {
@@ -119,7 +159,7 @@ public class IdsvSamFileMetricsCollectorTest extends TestHelper {
 		c.acceptRecord(Read(0, 1, "5M90D5M100S"), null);
 		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
 		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
-		MetricsFile<SoftClipDetailMetrics, Integer> sc = new MetricsFile<SoftClipDetailMetrics, Integer>();
+		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
 		c.finish(is, idsv, sc);
 		assertEquals(100, (int)((IdsvMetrics)idsv.getMetrics().get(0)).MAX_READ_MAPPED_LENGTH);
 	}
@@ -138,7 +178,7 @@ public class IdsvSamFileMetricsCollectorTest extends TestHelper {
 		c.acceptRecord(Read(0, 1, "100M"), null);
 		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
 		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
-		MetricsFile<SoftClipDetailMetrics, Integer> sc = new MetricsFile<SoftClipDetailMetrics, Integer>();
+		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
 		c.finish(is, idsv, sc);
 		assertEquals(11, (int)((IdsvMetrics)idsv.getMetrics().get(0)).MAX_PROPER_PAIR_FRAGMENT_LENGTH);
 		
@@ -153,7 +193,7 @@ public class IdsvSamFileMetricsCollectorTest extends TestHelper {
 		IdsvSamFileMetricsCollector c = new IdsvSamFileMetricsCollector(null);
 		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
 		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
-		MetricsFile<SoftClipDetailMetrics, Integer> sc = new MetricsFile<SoftClipDetailMetrics, Integer>();
+		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
 		c.finish(is, idsv, sc);
 		assertEquals(1, idsv.getMetrics().size());
 		assertTrue(idsv.getMetrics().get(0) instanceof IdsvMetrics);
@@ -164,7 +204,7 @@ public class IdsvSamFileMetricsCollectorTest extends TestHelper {
 		c.acceptRecord(Read(0, 1, "100M"), null);
 		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
 		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
-		MetricsFile<SoftClipDetailMetrics, Integer> sc = new MetricsFile<SoftClipDetailMetrics, Integer>();
+		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
 		c.finish(is, idsv, sc);
 		assertNull(idsv.getMetrics().get(0).MAX_PROPER_PAIR_FRAGMENT_LENGTH);
 		assertNull(idsv.getMetrics().get(0).MIN_PROPER_PAIR_FRAGMENT_LENGTH);

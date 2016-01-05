@@ -14,6 +14,7 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
@@ -155,9 +156,10 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			String chr) {
 		CloseableIterator<SAMRecord> it = getContext().getSamReaderIterator(assembly);
 		CloseableIterator<SAMRecord> mateIt = getContext().getSamReaderIterator(mate);
-		CloseableIterator<SAMRecordAssemblyEvidence> evidenceIt = new SAMRecordAssemblyEvidenceReadPairIterator(getContext(), this, it, mateIt, includeRemote);
+		CloseableIterator<SAMRecordAssemblyEvidence> evidenceIt = new SAMRecordAssemblyEvidenceReadPairIterator(getContext(), this, it, mateIt, includeRemote, true);
 		getContext().registerBuffer("assembly.rp." + chr, (SAMRecordAssemblyEvidenceReadPairIterator)evidenceIt);
 		Iterator<SAMRecordAssemblyEvidence> filteredIt = includeFiltered ? evidenceIt : new SAMRecordAssemblyEvidenceFilteringIterator(getContext(), evidenceIt);
+		filteredIt = new DirectedEvidenceScoreFilteringIterator<SAMRecordAssemblyEvidence>(filteredIt, getContext().getConfig().getScoring().variantFilterScore, getContext().getConfig().getScoring().variantFilterScore);
 		DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence> dit = new DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence>(
 				getContext(),
 				getAssemblyWindowSize(),
@@ -197,12 +199,16 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		CloseableIterator<SAMRecord> rawReaderIt = getContext().getSamReaderIterator(breakend, SortOrder.coordinate);
 		toClose.add(rawReaderIt);
 		CloseableIterator<SAMRecordAssemblyEvidence> evidenceIt = new SAMRecordAssemblyEvidenceIterator(
-				getContext(), this,
+				this,
 				new AutoClosingIterator<SAMRecord>(rawReaderIt, realignedIt),
 				realignedIt,
-				true);
+				true, false);
 		toClose.add(evidenceIt);
 		Iterator<SAMRecordAssemblyEvidence> filteredIt = includeFiltered ? evidenceIt : new SAMRecordAssemblyEvidenceFilteringIterator(getContext(), evidenceIt);
+		// Can't apply score filter at this point since assemblies
+		// have not yet been annotated so we don't actually know
+		// the assembly score
+		//filteredIt = new DirectedEvidenceScoreFilteringIterator<SAMRecordAssemblyEvidence>(filteredIt, getContext().getConfig().minEvidenceScore, getContext().getConfig().minEvidenceScore);
 		// Change sort order to breakend position order
 		DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence> dit = new DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence>(
 				getContext(),
@@ -370,10 +376,8 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			this.breakendOutput = breakendOutput;
 			this.realignmentFastq = realignmentFastq;
 		}
-		private int generateAssembles(File unsorted) {
+		private void generateAssembles(File unsorted) {
 			SAMFileWriter writer = null;
-			// Maximum value that the assembly SAM position differs from the assembly location
-			int maxBreakendOffset = 0;
 			try {
 				long nextProgress = System.currentTimeMillis();
 				SAMFileHeader samHeader = new SAMFileHeader();
@@ -387,20 +391,16 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 					ass = fixAssembly(ass);
 					if (ass != null) {
 						SAMRecord record = ass.getBackingRecord();
-						maxBreakendOffset = Math.max(maxBreakendOffset, Math.abs(record.getAlignmentStart() - ass.getBreakendSummary().start));
-						if (ass.getBreakendSummary() instanceof BreakpointSummary) {
-							maxBreakendOffset = Math.max(maxBreakendOffset, Math.abs(record.getAlignmentStart() - ((BreakpointSummary)ass.getBreakendSummary()).start2)); 
-						}
 						writer.addAlignment(record);
 						if (System.currentTimeMillis() > nextProgress) {
 							nextProgress = System.currentTimeMillis() + 1000 * PROGRESS_UPDATE_INTERVAL_SECONDS;
-							String seqname = getContext().getDictionary().getSequence(ass.getBreakendSummary().referenceIndex).getSequenceName();
-							log.info(String.format("Assembly progress at %s:%d", seqname, ass.getBreakendSummary().start));
+							String seqname = getContext().getDictionary().getSequence(record.getReferenceIndex()).getSequenceName();
+							log.info(String.format("Assembly progress at %s:%d", seqname, record.getAlignmentStart()));
 						}
 					}
 				}
 				if (ass != null) {
-					log.info(String.format("Assembly complete for %s", getContext().getDictionary().getSequence(ass.getBreakendSummary().referenceIndex).getSequenceName()));
+					log.info(String.format("Assembly complete for %s", getContext().getDictionary().getSequence(ass.getBackingRecord().getReferenceIndex()).getSequenceName()));
 				}
 				try {
 					writer.close();
@@ -416,7 +416,6 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			} finally {
 				CloserUtil.close(writer);
 			}
-			return maxBreakendOffset;
 		}
 		private SAMRecordAssemblyEvidence fixAssembly(SAMRecordAssemblyEvidence ass) {
 			if (ass == null) return null;
@@ -430,25 +429,19 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 						be.length));
 				return null;
 			}
-    		if (ap.anchorRealignment.perform && ass.isBreakendExact()) {
+    		if (ap.anchorRealignment.perform) {
     			int realignmentWindowSize = (int)(ap.anchorRealignment.realignmentWindowReadLengthMultiples * getMaxReadLength());
-    			SAMRecordAssemblyEvidence fullRealignment = ass.realign(realignmentWindowSize, true, ap.anchorRealignment.realignmentMinimumAnchorRetainment);
-    			// use full assembly realignment to find small indels and reference assemblies
-    			if (fullRealignment != null && (fullRealignment.isReferenceAssembly() || fullRealignment.isSpanningAssembly())) {
-    				ass = fullRealignment;
-    			} else {
-    				// use targeted realignment to find the correct breakend location
-    				ass = ass.realign(realignmentWindowSize, false, ap.anchorRealignment.realignmentMinimumAnchorRetainment);
-    			}
+    			ass = ass.realign(realignmentWindowSize, ap.anchorRealignment.realignmentMinimumAnchorRetainment);
     		}
-			if (ass == null || ass.getBreakendSummary() == null) return null;
+			if (ass == null) return null;
+			if (ass.isReferenceAssembly()) return null;
 			getContext().getAssemblyParameters().applyBasicFilters(ass);
 			if (getContext().getAssemblyParameters().writeFiltered) return ass;
 			if (ass.isReferenceAssembly()) return null;
 			if (ass.isAssemblyFiltered()) return null;
 			return ass;
 		}
-		private void assembliesToSortedBamAndFastq(int maxBreakendOffset, File unsorted) throws IOException {
+		private void assembliesToSortedBamAndFastq(File unsorted) throws IOException {
 			File tmp = FileSystemContext.getWorkingFileFor(breakendOutput);
 			File fq = FileSystemContext.getWorkingFileFor(realignmentFastq);
 			fq.delete();
@@ -456,10 +449,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			CloseableIterator<SAMRecord> readerIt = null;
 			try {
 				// sort the assemblies
-				new SortCallable(getContext(), unsorted, breakendOutput, SortOrder.coordinate, header -> {
-					header.addComment(String.format("gridss.maxBreakendOffset=%d", maxBreakendOffset));
-					return header;
-				}).call();
+				new SortCallable(getContext(), unsorted, breakendOutput, SortOrder.coordinate, header -> header).call();
 				log.info("Writing assembly fastq " + fq);
 				// then write the fastq
 				fastqWriter = new FastqBreakpointWriter(getContext().getFastqWriterFactory().newWriter(fq));
@@ -486,8 +476,8 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			try {
 				File unsorted = FileSystemContext.getWorkingFileFor(breakendOutput, "unsorted."); 
 				unsorted.delete();
-				int maxBreakendOffset = generateAssembles(unsorted);
-				assembliesToSortedBamAndFastq(maxBreakendOffset, unsorted);
+				generateAssembles(unsorted);
+				assembliesToSortedBamAndFastq(unsorted);
 			} catch (Throwable e) {
 				log.error(e, "Error assembling breakend ", breakendOutput);
 				e.printStackTrace();
@@ -502,6 +492,9 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 				//return new PositionalAssembler(getContext(), this, it);
 			case Subgraph:
 				return new ReadEvidenceAssemblyIterator(new DeBruijnSubgraphAssembler(this), it);
+			case None:
+				CloserUtil.close(it);
+				return Collections.emptyIterator();
 		}
 		throw new IllegalArgumentException("Assembly algorithm has not been set");
     }

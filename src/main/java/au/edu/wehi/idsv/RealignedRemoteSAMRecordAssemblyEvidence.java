@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv;
 
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
 
 import java.nio.charset.StandardCharsets;
@@ -18,6 +19,10 @@ public class RealignedRemoteSAMRecordAssemblyEvidence extends RealignedSAMRecord
 	}
 	public RealignedSAMRecordAssemblyEvidence asLocal() {
 		return local;
+	}
+	@Override
+	public SAMRecord getBackingRecord() {
+		throw new UnsupportedOperationException();
 	}
 	@Override
 	public BreakpointSummary getBreakendSummary() {

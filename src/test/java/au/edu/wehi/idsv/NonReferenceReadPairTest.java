@@ -216,9 +216,9 @@ public class NonReferenceReadPairTest extends TestHelper {
 	@Test
 	public void getLocalMapq_should_be_anchored_mapq() {
 		SAMRecord[] pair = DP(1, 1, "100M", true, 2, 5, "100M", true);
-		pair[0].setMappingQuality(5);
-		pair[1].setMappingQuality(10);
-		assertEquals(5, newPair(pair, 300).getLocalMapq());
+		pair[0].setMappingQuality(15);
+		pair[1].setMappingQuality(20);
+		assertEquals(15, newPair(pair, 300).getLocalMapq());
 	}
 	@Test
 	public void getLocalBaseLength_should_be_read_length() {
@@ -254,7 +254,7 @@ public class NonReferenceReadPairTest extends TestHelper {
 	}
 	private void meetsEvidenceCriteria(boolean expected, SAMRecord[] pair, int min, int max, boolean testSingle) {
 		MockSAMEvidenceSource ses = SES(min, max);
-		ses.getContext().getConfig().minReadMapq = 0;
+		ses.getContext().getConfig().minMapq = 0;
 		NonReferenceReadPair nrrp = NonReferenceReadPair.create(pair[0], pair[1], ses);
 		if (expected) {
 			assertNotNull(nrrp);
@@ -352,7 +352,7 @@ public class NonReferenceReadPairTest extends TestHelper {
 	@Test
 	public void meetsEvidenceCritera_should_filter_reads_pairs_containing_adapter_sequence() {
 		MockSAMEvidenceSource ses = SES(500, 500);
-		ses.getContext().getConfig().minReadMapq = 0;
+		ses.getContext().getConfig().minMapq = 0;
 		SAMRecord[] rp = RP(0, 100, 300, 101);
 		rp[0].setReadBases(B("CTGGGGGGACCTGAACAACTCCAAGGGCCTTGGCTGGCGAGAAAATCCTGCCTCAAAAGGGCGCGTGCTCGGTGGATCCACGGGCTACCGTTCCCTCTTAA"));
 		rp[1].setReadBases(B("CTGGGGGGACCTGAACAACTCCAAGGGCCTTGGCTGGCGAGAAAATCCTGCCTCAAAAGGGCGCGTGCTCGGTGGATCCACGGGCTACCGTTCCCTCTTAA"));
@@ -365,7 +365,7 @@ public class NonReferenceReadPairTest extends TestHelper {
 	@Test
 	public void meetsEvidenceCritera_should_filter_low_complexity_reads() {
 		MockSAMEvidenceSource ses = SES(500, 500);
-		ses.getContext().getConfig().minReadMapq = 0;
+		ses.getContext().getConfig().minMapq = 0;
 		ses.getContext().getConfig().minAnchorShannonEntropy = 0.5;
 		SAMRecord[] rp = RP(0, 100, 300, 10);
 		rp[0].setReadBases(B("AAAAAAAAGT"));

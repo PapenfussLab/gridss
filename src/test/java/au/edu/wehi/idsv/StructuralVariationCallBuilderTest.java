@@ -15,7 +15,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.collect.ImmutableList;
@@ -536,19 +535,6 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		assertTrue(e.hasAttribute(VCFConstants.SOMATIC_KEY));
 	}
 	@Test
-	public void should_filter_small_indels() {
-		ProcessingContext pc = getContext();
-		pc.getVariantCallingParameters().minIndelSize = 16;
-		assertTrue(new StructuralVariationCallBuilder(pc,
-				(VariantContextDirectedEvidence)minimalBreakend()
-					.breakpoint(new BreakpointSummary(new BreakendSummary(0, FWD, 100, 200), new BreakendSummary(0, BWD, 116, 216)), "") // could be 15bp deletion
-					.make()).make().getFilters().contains(VcfFilter.SMALL_INDEL.filter()));
-		assertFalse(new StructuralVariationCallBuilder(pc,
-				(VariantContextDirectedEvidence)minimalBreakend()
-					.breakpoint(new BreakpointSummary(new BreakendSummary(0, FWD, 100, 200), new BreakendSummary(0, BWD, 217, 317)), "") // 16+bp deletion
-					.make()).make().getFilters().contains(VcfFilter.SMALL_INDEL.filter()));
-	}
-	@Test
 	public void only_read_pair_should_set_imprecise_header() {
 		assertTrue(CallSV(NRRP(OEA(0, 1, "1M", true))).hasAttribute(VcfSvConstants.IMPRECISE_KEY));
 		// Should still be inexact event if our CI is 1bp because we don't know if there
@@ -667,6 +653,17 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		assertEquals(new BreakpointSummary(0, FWD, 12, 12, 0, BWD, 10, 10), de.getBreakendSummary());
 	}
 	@Test(expected=IllegalArgumentException.class)
+	public void indels_should_have_zero_margin_applied() {
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(0, FWD, 11, 11, 0, BWD, 12, 12), "");
+			phredScore(10);
+		}}.make());
+		builder.addEvidence(IE(Read(0, 11, "1M2I1M")));
+		builder.addEvidence(IE(Read(0, 13, "1M2I1M")));
+		VariantContextDirectedBreakpoint de = (VariantContextDirectedBreakpoint) builder.make();
+		assertEquals(1, de.getBreakpointEvidenceCount());
+	}
+	@Test(expected=IllegalArgumentException.class)
 	public void should_exclude_unsupporting_realigned_soft_clip() {
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(0, FWD, 11, 12, 0, BWD, 10, 10), "");
@@ -760,5 +757,22 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		builder.addEvidence(ass);
 		VariantContextDirectedEvidence vc = builder.make();
 		assertEquals("9M1X", vc.getAttribute(VcfAttributes.ANCHOR_CIGAR.attribute()));
+	}
+	@Test
+	public void spanning_assemblies_should_use_original_parent_assembly_direction_to_determine_local_remote_status() {
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(2, FWD, 100, 100, 2, BWD, 101, 101), "");
+			phredScore(10);
+		}}.make());
+		String seq = S(RANDOM).substring(100-10, 100) + "N" + S(RANDOM).substring(100, 100+10);
+		ProcessingContext pc = getContext();
+		builder.addEvidence(AssemblyFactory.createAnchoredBreakend(pc, AES(pc), BWD, null, 2, 101, 10, B(seq), B(seq)).realign(5, 0).annotateAssembly().getSpannedIndels().get(0));
+		builder.addEvidence(AssemblyFactory.createAnchoredBreakend(pc, AES(pc), FWD, null, 2, 100, 10, B(seq), B(seq)).realign(5, 0).annotateAssembly().getSpannedIndels().get(0));
+		builder.addEvidence(AssemblyFactory.createAnchoredBreakend(pc, AES(pc), FWD, null, 2, 100, 10, B(seq), B(seq)).realign(5, 0).annotateAssembly().getSpannedIndels().get(0));
+		builder.addEvidence(AssemblyFactory.createAnchoredBreakpoint(pc, AES(pc), null, 2, 100, 10, 2, 101, 10, B(seq), B(seq)).annotateAssembly().getSpannedIndels().get(0));
+		
+		VariantContextDirectedBreakpoint vc = (VariantContextDirectedBreakpoint) builder.make();
+		assertEquals(3, vc.getBreakpointEvidenceCountLocalAssembly());
+		assertEquals(2, vc.getBreakpointEvidenceCountRemoteAssembly());
 	}
 }

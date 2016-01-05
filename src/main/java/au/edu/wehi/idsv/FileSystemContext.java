@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -50,39 +49,38 @@ public class FileSystemContext {
 	private static final String VCF_SUFFIX = ".vcf";
 	private static final String COMMON_INITIAL_SUFFIX = ".idsv";
 	private static final String INTERMEDIATE_DIR_SUFFIX = COMMON_INITIAL_SUFFIX + ".working";
-	private static final String FORMAT_SC_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".sc" + SAM_SUFFIX;
-	private static final String FORMAT_SC_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.sc" + SAM_SUFFIX;
-	private static final String FORMAT_RP_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".rp" + SAM_SUFFIX;
-	private static final String FORMAT_RP_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.rp" + SAM_SUFFIX;
-	private static final String FORMAT_MATE_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".rpmate" + SAM_SUFFIX;
-	private static final String FORMAT_MATE_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.rpmate" + SAM_SUFFIX;
-	private static final String FORMAT_MATE_SAM_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".rpmate.unsorted" + SAM_SUFFIX;
-	private static final String FORMAT_MATE_SAM_UNSORTED_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.rpmate.unsorted" + SAM_SUFFIX;
-	private static final String FORMAT_INSERT_SIZE_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.insertsize.txt";
-	private static final String FORMAT_IDSV_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.idsv.txt";
-	private static final String FORMAT_SOFTLCIP_METRICS = "%s" + COMMON_INITIAL_SUFFIX + ".metrics.softclip.txt";
-	private static final String FORMAT_COVERAGE_BLACKLIST_BED = "%s" + COMMON_INITIAL_SUFFIX + ".coverage.blacklist.bed";
-	private static final String FORMAT_REALIGN_FASTQ = "%s" + COMMON_INITIAL_SUFFIX + ".realign.%d.fq";
-	private static final String FORMAT_REALIGN_FASTQ_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign.%d.fq";
-	private static final String FORMAT_REALIGN_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".realign.%d" + SAM_SUFFIX;
-	private static final String FORMAT_REALIGN_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realign.%d" + SAM_SUFFIX;
-	private static final String FORMAT_ASSEMBLY_RAW = "%s" + COMMON_INITIAL_SUFFIX + ".breakend" + SAM_SUFFIX;
-	private static final String FORMAT_ASSEMBLY_RAW_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.breakend" + SAM_SUFFIX;
-	private static final String FORMAT_BREAKPOINT_VCF_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s-%s.breakpoint" + VCF_SUFFIX;
-	private static final String FORMAT_BREAKPOINT_VCF = "%s" + COMMON_INITIAL_SUFFIX + ".breakpoint" + VCF_SUFFIX;
-	private static final String FORMAT_FLAG_FILE = "%s" + COMMON_INITIAL_SUFFIX + ".%s";
-	private static final String FORMAT_SC_REMOTE_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".scremote" + SAM_SUFFIX;
-	private static final String FORMAT_SC_REMOTE_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.scremote" + SAM_SUFFIX;
-	private static final String FORMAT_SC_REMOTE_SAM_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".scremote.unsorted" + SAM_SUFFIX;
-	private static final String FORMAT_SC_REMOTE_SAM_UNSORTED_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.scremote.unsorted" + SAM_SUFFIX;;
-	private static final String FORMAT_REALIGN_REMOTE_SAM_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".realignremote.unsorted" + SAM_SUFFIX;
-	private static final String FORMAT_REALIGN_REMOTE_SAM_PER_CHR_UNSORTED = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realignremote.unsorted" + SAM_SUFFIX;
-	private static final String FORMAT_REALIGN_REMOTE_SAM = "%s" + COMMON_INITIAL_SUFFIX + ".realignremote" + SAM_SUFFIX;
-	private static final String FORMAT_REALIGN_REMOTE_SAM_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.realignremote" + SAM_SUFFIX;
-	private static final String FORMAT_ASSEMBLY = "%s" + COMMON_INITIAL_SUFFIX + ".assembly" + SAM_SUFFIX;
-	private static final String FORMAT_ASSEMBLY_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.assembly" + SAM_SUFFIX;
-	private static final String FORMAT_ASSEMBLY_MATE = "%s" + COMMON_INITIAL_SUFFIX + ".assemblymate" + SAM_SUFFIX;
-	private static final String FORMAT_ASSEMBLY_MATE_PER_CHR = "%s" + COMMON_INITIAL_SUFFIX + ".%s.assemblymate" + SAM_SUFFIX;
+	private static final String FORMAT_SC_SAM = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".sc" + SAM_SUFFIX;
+	private static final String FORMAT_SC_SAM_PER_CHR = "%1$s/%3$s/%2$s" + COMMON_INITIAL_SUFFIX + ".%3$s.sc" + SAM_SUFFIX;
+	private static final String FORMAT_RP_SAM = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".rp" + SAM_SUFFIX;
+	private static final String FORMAT_RP_SAM_PER_CHR = "%1$s/%3$s/%2$s" + COMMON_INITIAL_SUFFIX + ".%3$s.rp" + SAM_SUFFIX;
+	private static final String FORMAT_MATE_SAM = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".rpmate" + SAM_SUFFIX;
+	private static final String FORMAT_MATE_SAM_PER_CHR = "%1$s/%3$s/%2$s" + COMMON_INITIAL_SUFFIX + ".%3$s.rpmate" + SAM_SUFFIX;
+	private static final String FORMAT_MATE_SAM_UNSORTED = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".rpmate.unsorted" + SAM_SUFFIX;
+	private static final String FORMAT_MATE_SAM_UNSORTED_PER_CHR = "%1$s/%3$s/%2$s" + COMMON_INITIAL_SUFFIX + ".%3$s.rpmate.unsorted" + SAM_SUFFIX;
+	private static final String FORMAT_INSERT_SIZE_METRICS = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".metrics.insertsize.txt";
+	private static final String FORMAT_IDSV_METRICS = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".metrics.idsv.txt";
+	private static final String FORMAT_CIGAR_METRICS = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".metrics.cigar.txt";
+	private static final String FORMAT_COVERAGE_BLACKLIST_BED = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".coverage.blacklist.bed";
+	private static final String FORMAT_REALIGN_FASTQ = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".realign.%3$d.fq";
+	private static final String FORMAT_REALIGN_FASTQ_CHR = "%1$s/%3$s/%2$s" + COMMON_INITIAL_SUFFIX + ".%3$s.realign.%4$d.fq";
+	private static final String FORMAT_REALIGN_SAM = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".realign.%3$d" + SAM_SUFFIX;
+	private static final String FORMAT_REALIGN_SAM_PER_CHR = "%1$s/%3$s/%2$s" + COMMON_INITIAL_SUFFIX + ".%3$s.realign.%4$d" + SAM_SUFFIX;
+	private static final String FORMAT_ASSEMBLY_RAW = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".breakend" + SAM_SUFFIX;
+	private static final String FORMAT_ASSEMBLY_RAW_PER_CHR = "%1$s/%3$s/%2$s" + COMMON_INITIAL_SUFFIX + ".%3$s.breakend" + SAM_SUFFIX;
+	private static final String FORMAT_BREAKPOINT_VCF = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".breakpoint" + VCF_SUFFIX;
+	private static final String FORMAT_FLAG_FILE = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".%s";
+	private static final String FORMAT_SC_REMOTE_SAM = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".scremote" + SAM_SUFFIX;
+	private static final String FORMAT_SC_REMOTE_SAM_PER_CHR = "%1$s/%3$s/%2$s" + COMMON_INITIAL_SUFFIX + ".%3$s.scremote" + SAM_SUFFIX;
+	private static final String FORMAT_SC_REMOTE_SAM_UNSORTED = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".scremote.unsorted" + SAM_SUFFIX;
+	private static final String FORMAT_SC_REMOTE_SAM_UNSORTED_PER_CHR = "%1$s/%3$s/%2$s" + COMMON_INITIAL_SUFFIX + ".%3$s.scremote.unsorted" + SAM_SUFFIX;;
+	private static final String FORMAT_REALIGN_REMOTE_SAM_UNSORTED = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".realignremote.unsorted" + SAM_SUFFIX;
+	private static final String FORMAT_REALIGN_REMOTE_SAM_PER_CHR_UNSORTED = "%1$s/%3$s/%2$s" + COMMON_INITIAL_SUFFIX + ".%3$s.realignremote.unsorted" + SAM_SUFFIX;
+	private static final String FORMAT_REALIGN_REMOTE_SAM = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".realignremote" + SAM_SUFFIX;
+	private static final String FORMAT_REALIGN_REMOTE_SAM_PER_CHR = "%1$s/%3$s/%2$s" + COMMON_INITIAL_SUFFIX + ".%3$s.realignremote" + SAM_SUFFIX;
+	private static final String FORMAT_ASSEMBLY = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".assembly" + SAM_SUFFIX;
+	private static final String FORMAT_ASSEMBLY_PER_CHR = "%1$s/%3$s/%2$s" + COMMON_INITIAL_SUFFIX + ".%3$s.assembly" + SAM_SUFFIX;
+	private static final String FORMAT_ASSEMBLY_MATE = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".assemblymate" + SAM_SUFFIX;
+	private static final String FORMAT_ASSEMBLY_MATE_PER_CHR = "%1$s/%3$s/%2$s" + COMMON_INITIAL_SUFFIX + ".%3$s.assemblymate" + SAM_SUFFIX;
 	
 	/**
 	 * Gets the idsv intermediate working directory for the given input
@@ -119,115 +117,106 @@ public class FileSystemContext {
 		File result = new File(source); 
 		return result;
 	}
-	/**
-	 * Gets the working directory stem for the given input
-	 * @param file input bam or idsv intermediate file
-	 * @return working location filename prefix for the input file 
-	 * @throws IOException
-	 */
-	private String getStem(File file) {
-		File stem = new File(getIntermediateDirectory(file), getSource(file).getName());
-		return stem.getAbsolutePath();
-
+	private synchronized File getFile(String path) {
+		File file = new File(path);
+		file.getParentFile().mkdirs();
+		return file;
 	}
 	public File getReadPairBam(File input) {
-		return new File(String.format(FORMAT_RP_SAM, getStem(input)));
+		return getFile(String.format(FORMAT_RP_SAM, getIntermediateDirectory(input), getSource(input).getName()));
 	}
 	public File getReadPairBamForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_RP_SAM_PER_CHR, getStem(input), chromosome));
+		return getFile(String.format(FORMAT_RP_SAM_PER_CHR, getIntermediateDirectory(input), getSource(input).getName(), chromosome));
 	}
 	public File getSoftClipBam(File input) {
-		return new File(String.format(FORMAT_SC_SAM, getStem(input)));
+		return getFile(String.format(FORMAT_SC_SAM, getIntermediateDirectory(input), getSource(input).getName()));
 	}
 	public File getSoftClipBamForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_SC_SAM_PER_CHR, getStem(input), chromosome));
+		return getFile(String.format(FORMAT_SC_SAM_PER_CHR, getIntermediateDirectory(input), getSource(input).getName(), chromosome));
 	}
 	public File getMateBam(File input) {
-		return new File(String.format(FORMAT_MATE_SAM, getStem(input)));
+		return getFile(String.format(FORMAT_MATE_SAM, getIntermediateDirectory(input), getSource(input).getName()));
 	}
 	public File getMateBamForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_MATE_SAM_PER_CHR, getStem(input), chromosome));
+		return getFile(String.format(FORMAT_MATE_SAM_PER_CHR, getIntermediateDirectory(input), getSource(input).getName(), chromosome));
 	}
 	public File getMateBamUnsorted(File input) {
-		return new File(String.format(FORMAT_MATE_SAM_UNSORTED, getStem(input)));
+		return getFile(String.format(FORMAT_MATE_SAM_UNSORTED, getIntermediateDirectory(input), getSource(input).getName()));
 	}
 	public File getMateBamUnsortedForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_MATE_SAM_UNSORTED_PER_CHR, getStem(input), chromosome));
+		return getFile(String.format(FORMAT_MATE_SAM_UNSORTED_PER_CHR, getIntermediateDirectory(input), getSource(input).getName(), chromosome));
 	}
 	public File getAssemblyRawBam(File input) {
-		return new File(String.format(FORMAT_ASSEMBLY_RAW, getStem(input)));
+		return getFile(String.format(FORMAT_ASSEMBLY_RAW, getIntermediateDirectory(input), getSource(input).getName()));
 	}
 	public File getAssemblyRawBamForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_ASSEMBLY_RAW_PER_CHR, getStem(input), chromosome));
+		return getFile(String.format(FORMAT_ASSEMBLY_RAW_PER_CHR, getIntermediateDirectory(input), getSource(input).getName(), chromosome));
 	}
 	public File getAssembly(File input) {
-		return new File(String.format(FORMAT_ASSEMBLY, getStem(input)));
+		return getFile(String.format(FORMAT_ASSEMBLY, getIntermediateDirectory(input), getSource(input).getName()));
 	}
 	public File getAssemblyForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_ASSEMBLY_PER_CHR, getStem(input), chromosome));
+		return getFile(String.format(FORMAT_ASSEMBLY_PER_CHR, getIntermediateDirectory(input), getSource(input).getName(), chromosome));
 	}
 	public File getAssemblyMate(File input) {
-		return new File(String.format(FORMAT_ASSEMBLY_MATE, getStem(input)));
+		return getFile(String.format(FORMAT_ASSEMBLY_MATE, getIntermediateDirectory(input), getSource(input).getName()));
 	}
 	public File getAssemblyMateForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_ASSEMBLY_MATE_PER_CHR, getStem(input), chromosome));
+		return getFile(String.format(FORMAT_ASSEMBLY_MATE_PER_CHR, getIntermediateDirectory(input), getSource(input).getName(), chromosome));
 	}
 	public File getBreakpointVcf(File input) {
-		return new File(String.format(FORMAT_BREAKPOINT_VCF, getStem(input)));
-	}
-	public File getBreakpointVcf(File input, String chromosome1, String chromosome2) {
-		return new File(String.format(FORMAT_BREAKPOINT_VCF_PER_CHR, getStem(input), chromosome1, chromosome2));
+		return getFile(String.format(FORMAT_BREAKPOINT_VCF, getIntermediateDirectory(input), getSource(input).getName()));
 	}
 	public File getInsertSizeMetrics(File input) {
-		return new File(String.format(FORMAT_INSERT_SIZE_METRICS, getStem(input)));
+		return getFile(String.format(FORMAT_INSERT_SIZE_METRICS, getIntermediateDirectory(input), getSource(input).getName()));
 	}
 	public File getIdsvMetrics(File input) {
-		return new File(String.format(FORMAT_IDSV_METRICS, getStem(input)));
+		return getFile(String.format(FORMAT_IDSV_METRICS, getIntermediateDirectory(input), getSource(input).getName()));
 	}
-	public File getSoftClipMetrics(File input) {
-		return new File(String.format(FORMAT_SOFTLCIP_METRICS, getStem(input)));
+	public File getCigarMetrics(File input) {
+		return getFile(String.format(FORMAT_CIGAR_METRICS, getIntermediateDirectory(input), getSource(input).getName()));
 	}
 	public File getRealignmentBam(File input, int iteration) {
-		return new File(String.format(FORMAT_REALIGN_SAM, getStem(input), iteration));
+		return getFile(String.format(FORMAT_REALIGN_SAM, getIntermediateDirectory(input), getSource(input).getName(), iteration));
 	}
 	public File getRealignmentBamForChr(File input, String chromosome, int iteration) {
-		return new File(String.format(FORMAT_REALIGN_SAM_PER_CHR, getStem(input), chromosome, iteration));
+		return getFile(String.format(FORMAT_REALIGN_SAM_PER_CHR, getIntermediateDirectory(input), getSource(input).getName(), chromosome, iteration));
 	}
 	public File getRealignmentFastq(File input, int iteration) {
-		return new File(String.format(FORMAT_REALIGN_FASTQ, getStem(input), iteration));
+		return getFile(String.format(FORMAT_REALIGN_FASTQ, getIntermediateDirectory(input), getSource(input).getName(), iteration));
 	}
 	public File getRealignmentFastqForChr(File input, String chromosome, int iteration) {
-		return new File(String.format(FORMAT_REALIGN_FASTQ_CHR, getStem(input), chromosome, iteration));
+		return getFile(String.format(FORMAT_REALIGN_FASTQ_CHR, getIntermediateDirectory(input), getSource(input).getName(), chromosome, iteration));
 	}
 	public File getFlagFile(File input, String flagname) {
-		return new File(String.format(FORMAT_FLAG_FILE, getStem(input), flagname));
+		return getFile(String.format(FORMAT_FLAG_FILE, getIntermediateDirectory(input), getSource(input).getName(), flagname));
 	}
 	// Remote sorted
 	public File getSoftClipRemoteBam(File input) {
-		return new File(String.format(FORMAT_SC_REMOTE_SAM, getStem(input)));
+		return getFile(String.format(FORMAT_SC_REMOTE_SAM, getIntermediateDirectory(input), getSource(input).getName()));
 	}
 	public File getSoftClipRemoteBamForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_SC_REMOTE_SAM_PER_CHR, getStem(input), chromosome));
+		return getFile(String.format(FORMAT_SC_REMOTE_SAM_PER_CHR, getIntermediateDirectory(input), getSource(input).getName(), chromosome));
 	}
 	public File getSoftClipRemoteUnsortedBam(File input) {
-		return new File(String.format(FORMAT_SC_REMOTE_SAM_UNSORTED, getStem(input)));
+		return getFile(String.format(FORMAT_SC_REMOTE_SAM_UNSORTED, getIntermediateDirectory(input), getSource(input).getName()));
 	}
 	public File getSoftClipRemoteUnsortedBamForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_SC_REMOTE_SAM_UNSORTED_PER_CHR, getStem(input), chromosome));
+		return getFile(String.format(FORMAT_SC_REMOTE_SAM_UNSORTED_PER_CHR, getIntermediateDirectory(input), getSource(input).getName(), chromosome));
 	}
 	public File getRealignmentRemoteUnsortedBam(File input) {
-		return new File(String.format(FORMAT_REALIGN_REMOTE_SAM_UNSORTED, getStem(input)));
+		return getFile(String.format(FORMAT_REALIGN_REMOTE_SAM_UNSORTED, getIntermediateDirectory(input), getSource(input).getName()));
 	}
 	public File getRealignmentRemoteUnsortedBamForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_REALIGN_REMOTE_SAM_PER_CHR_UNSORTED, getStem(input), chromosome));
+		return getFile(String.format(FORMAT_REALIGN_REMOTE_SAM_PER_CHR_UNSORTED, getIntermediateDirectory(input), getSource(input).getName(), chromosome));
 	}
 	public File getRealignmentRemoteBam(File input) {
-		return new File(String.format(FORMAT_REALIGN_REMOTE_SAM, getStem(input)));
+		return getFile(String.format(FORMAT_REALIGN_REMOTE_SAM, getIntermediateDirectory(input), getSource(input).getName()));
 	}
 	public File getRealignmentRemoteBamForChr(File input, String chromosome) {
-		return new File(String.format(FORMAT_REALIGN_REMOTE_SAM_PER_CHR, getStem(input), chromosome));
+		return getFile(String.format(FORMAT_REALIGN_REMOTE_SAM_PER_CHR, getIntermediateDirectory(input), getSource(input).getName(), chromosome));
 	}
 	public File getCoverageBlacklistBed(File input) {
-		return new File(String.format(FORMAT_COVERAGE_BLACKLIST_BED, getStem(input)));
+		return getFile(String.format(FORMAT_COVERAGE_BLACKLIST_BED, getIntermediateDirectory(input), getSource(input).getName()));
 	}
 }

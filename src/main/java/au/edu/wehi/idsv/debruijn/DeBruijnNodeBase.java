@@ -10,7 +10,7 @@ import java.util.List;
 
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.LinearGenomicCoordinate;
-import au.edu.wehi.idsv.Models;
+import au.edu.wehi.idsv.model.Models;
 import au.edu.wehi.idsv.util.ArrayHelper;
 
 import com.google.common.collect.Lists;

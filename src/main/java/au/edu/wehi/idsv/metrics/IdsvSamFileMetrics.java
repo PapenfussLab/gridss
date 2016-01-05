@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv.metrics;
 
+import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.util.Log;
 
@@ -7,9 +8,11 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import picard.analysis.InsertSizeMetrics;
 import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.util.MathUtil;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
@@ -19,19 +22,19 @@ import com.google.common.primitives.Longs;
 public class IdsvSamFileMetrics {
 	private static final Log log = Log.getInstance(IdsvSamFileMetrics.class);
 	public IdsvSamFileMetrics(ProcessingContext pc, File source) {
-		this(pc.getFileSystemContext().getInsertSizeMetrics(source), pc.getFileSystemContext().getIdsvMetrics(source), pc.getFileSystemContext().getSoftClipMetrics(source));
+		this(pc.getFileSystemContext().getInsertSizeMetrics(source), pc.getFileSystemContext().getIdsvMetrics(source), pc.getFileSystemContext().getCigarMetrics(source));
 	}
-	public IdsvSamFileMetrics(File insertSizeMetricsFile, File idsvMetricsFile, File softClipMetricsFile) {
-		this(getInsertSizeMetrics(insertSizeMetricsFile), getIdsvMetrics(idsvMetricsFile), getInsertSizeDistribution(insertSizeMetricsFile), getSoftClipMetrics(softClipMetricsFile));
+	public IdsvSamFileMetrics(File insertSizeMetricsFile, File idsvMetricsFile, File cigarMetricsFile) {
+		this(getInsertSizeMetrics(insertSizeMetricsFile), getIdsvMetrics(idsvMetricsFile), getInsertSizeDistribution(insertSizeMetricsFile), getCigarMetrics(cigarMetricsFile));
 	}
 	private InsertSizeMetrics insertSize = null;
 	private IdsvMetrics idsvMetrics = null;
 	private InsertSizeDistribution insertDistribution = null;
-	private List<SoftClipDetailMetrics> softClipDetailMetrics = null;
-	private SoftClipSizeDistribution softClipDistribution;
+	private List<CigarDetailMetrics> cigarDetailMetrics = null;
+	private CigarSizeDistribution cigarDistribution;
 	public IdsvMetrics getIdsvMetrics() { return idsvMetrics; }
 	public InsertSizeMetrics getInsertSizeMetrics() { return insertSize; }
-	public List<SoftClipDetailMetrics> getSoftClipDetailMetrics() { return softClipDetailMetrics; }
+	public List<CigarDetailMetrics> getCigarDetailMetrics() { return cigarDetailMetrics; }
 	
 	private static InsertSizeDistribution getInsertSizeDistribution(File insertSizeMetricsFile) {
 		return InsertSizeDistribution.create(insertSizeMetricsFile);
@@ -59,47 +62,73 @@ public class IdsvSamFileMetrics {
 		}
 		return insertSize;
 	}
-	public IdsvSamFileMetrics(InsertSizeMetrics insertSize, IdsvMetrics idsvMetrics, InsertSizeDistribution insertDistribution, List<SoftClipDetailMetrics> softClipDetailMetrics) {
+	public IdsvSamFileMetrics(InsertSizeMetrics insertSize, IdsvMetrics idsvMetrics, InsertSizeDistribution insertDistribution, List<CigarDetailMetrics> cigarDetailMetrics) {
 		this.insertSize = insertSize;
 		this.idsvMetrics = idsvMetrics;
 		this.insertDistribution = insertDistribution;
-		this.softClipDetailMetrics = softClipDetailMetrics;
-		this.softClipDistribution = new SoftClipSizeDistribution(softClipDetailMetrics);
+		this.cigarDetailMetrics = cigarDetailMetrics;
+		this.cigarDistribution = new CigarSizeDistribution(cigarDetailMetrics);
 	}
-	private static List<SoftClipDetailMetrics> getSoftClipMetrics(File softClipMetricsFile) {
-		List<SoftClipDetailMetrics> sc = new ArrayList<SoftClipDetailMetrics>();
-		for (SoftClipDetailMetrics metric : Iterables.filter(MetricsFile.readBeans(softClipMetricsFile), SoftClipDetailMetrics.class)) {
-			sc.add(metric);
+	private static List<CigarDetailMetrics> getCigarMetrics(File cigarMetricsFile) {
+		List<CigarDetailMetrics> list = new ArrayList<CigarDetailMetrics>();
+		for (CigarDetailMetrics metric : Iterables.filter(MetricsFile.readBeans(cigarMetricsFile), CigarDetailMetrics.class)) {
+			list.add(metric);
 		}
-		Collections.sort(sc, SoftClipDetailMetricsByLength);
-		for (int i = 0; i < sc.size(); i++) {
-			if (sc.get(i).LENGTH != i) {
-				String msg = String.format("%s missing soft clip metric: expected metric for length %d, found %d", softClipMetricsFile, i, sc.get(0).LENGTH);
-				log.error(msg);
-				throw new RuntimeException(msg);
+		Collections.sort(list, CigarDetailMetricsByLength);
+		for (CigarOperator op : CigarOperator.values()) {
+			List<CigarDetailMetrics> opList = list.stream().filter(cdm -> cdm.OPERATOR == CigarOperator.enumToCharacter(op)).collect(Collectors.toList());
+			for (int i = 0; i < opList.size(); i++) {
+				if (opList.get(i).LENGTH != i) {
+					String msg = String.format("%s missing cigar metric: expected metric for length %d, found %d", cigarMetricsFile, i, opList.get(0).LENGTH);
+					log.error(msg);
+					throw new RuntimeException(msg);
+				}
 			}
 		}
-		return sc;
+		return list;
 	}
 	public InsertSizeDistribution getInsertSizeDistribution() {
 		return insertDistribution;
 	}
-	public SoftClipSizeDistribution getSoftClipDistribution() {
-		return softClipDistribution;
+	public CigarSizeDistribution getCigarDistribution() {
+		return cigarDistribution;
 	}
 	private int maxSoftClipLength = -1;
 	public int getMaxSoftClipLength() {
 		if (maxSoftClipLength < 0) {
-			maxSoftClipLength = getSoftClipDetailMetrics().stream().mapToInt(m -> m.LENGTH).max().orElse(0);
+			maxSoftClipLength = getCigarDetailMetrics().stream().filter(m -> m.OPERATOR == CigarOperator.enumToCharacter(CigarOperator.SOFT_CLIP)).mapToInt(m -> m.LENGTH).max().orElse(0);
 		}
 		return maxSoftClipLength;
 	}
 	/**
+	 * Returns the phred-scaled likelihood of a fragment size at least as extreme as the given size.
+	 * @param fragmentSize fragment size
+	 * @return phred-scaled likelihood of a fragment as or more extreme
+	 */
+	public double getReadPairPhred(int fragmentSize) {
+		return MathUtil.prToPhred(readPairFoldedCumulativeDistribution(fragmentSize));
+	}
+	public double readPairFoldedCumulativeDistribution(int fragmentSize) {
+		double pairsFromFragmentDistribution = 0;
+		if (fragmentSize > 0) {
+			if (fragmentSize >= insertDistribution.getSupportLowerBound() && fragmentSize <= insertDistribution.getSupportUpperBound()) {
+				double prUpper = 1.0 - insertDistribution.cumulativeProbability(fragmentSize - 1);
+				double prLower = insertDistribution.cumulativeProbability(fragmentSize);
+				double pr = Math.min(prUpper, prLower);
+				pairsFromFragmentDistribution = pr * insertDistribution.getTotalMappedPairs();
+			}
+		}
+		double totalPairs = idsvMetrics.READ_PAIRS_BOTH_MAPPED;
+		double dpPairs = totalPairs - insertDistribution.getTotalMappedPairs() + pairsFromFragmentDistribution;
+		return dpPairs / totalPairs;
+	}
+	
+	/**
 	 * Sort order of soft clips by soft clip length
 	 */
-	private static Ordering<SoftClipDetailMetrics> SoftClipDetailMetricsByLength = new Ordering<SoftClipDetailMetrics>() {
+	private static Ordering<CigarDetailMetrics> CigarDetailMetricsByLength = new Ordering<CigarDetailMetrics>() {
 		@Override
-		public int compare(SoftClipDetailMetrics left, SoftClipDetailMetrics right) {
+		public int compare(CigarDetailMetrics left, CigarDetailMetrics right) {
 			return Longs.compare(left.LENGTH, right.LENGTH);
 		}
 	};

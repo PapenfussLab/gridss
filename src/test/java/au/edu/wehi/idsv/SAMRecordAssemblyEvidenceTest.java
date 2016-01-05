@@ -161,7 +161,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 			assertTrue(thrown);
 		}
 	}
-	public static void assertEvidenceEquals(AssemblyEvidence e, AssemblyEvidence r) {
+	public static void assertEvidenceEquals(SAMRecordAssemblyEvidence e, SAMRecordAssemblyEvidence r) {
 		assertEquals(e.getAssemblyAnchorLength(), r.getAssemblyAnchorLength());
 		//assertArrayEquals(e.getAssemblyAnchorQuals() , r.getAssemblyAnchorQuals());
 		assertEquals(S(e.getAssemblyAnchorSequence()) , S(r.getAssemblyAnchorSequence()));
@@ -184,7 +184,9 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertArrayEquals(e.getBreakendQuality() , r.getBreakendQuality());
 		assertEquals(S(e.getBreakendSequence()) , S(r.getBreakendSequence()));
 		assertEquals(e.getBreakendSummary(), r.getBreakendSummary());
-		assertEquals(e.getBreakendSummary().getClass(), r.getBreakendSummary().getClass());
+		if (e.getBreakendSummary() != null) {
+			assertEquals(e.getBreakendSummary().getClass(), r.getBreakendSummary().getClass());
+		}
 		assertEquals(e.getEvidenceID() , r.getEvidenceID());
 		assertEquals(e.getEvidenceSource() , r.getEvidenceSource());
 		assertEquals(e.getFilters() , r.getFilters());
@@ -203,6 +205,12 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 			assertEquals(de.getRemoteMaxBaseQual(), dr.getRemoteMaxBaseQual());
 			assertEquals(de.getRemoteTotalBaseQual(), dr.getRemoteTotalBaseQual());
 			assertEquals(de.getUntemplatedSequence(), dr.getUntemplatedSequence());
+		}
+		if (!(e instanceof SpanningSAMRecordAssemblyEvidence)) {
+			assertEquals(e.getSpannedIndels().size(), r.getSpannedIndels().size());
+			for (int i = 0; i < e.getSpannedIndels().size(); i++) {
+				assertEvidenceEquals(e.getSpannedIndels().get(i), r.getSpannedIndels().get(i));
+			}
 		}
 	}
 	private SAMRecordAssemblyEvidence big() {
@@ -269,7 +277,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	@Test
 	public void realign_should_shift_breakend_to_match_reference() {
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null,
-				0, 5, 5, B("AAAATTTT"), new byte[] {1,2,3,4,1,2,3,4}).realign(50, true, 0.5f);
+				0, 5, 5, B("AAAATTTT"), new byte[] {1,2,3,4,1,2,3,4}).realign(50, 0.5f);
 		assertEquals("TTTT", S(e.getBreakendSequence()));
 		assertEquals(new BreakendSummary(0, FWD, 4, 4), e.getBreakendSummary());
 		assertEquals("4M4S", e.getSAMRecord().getCigarString());
@@ -280,7 +288,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		for (int startpos = 300 - margin; startpos <= 300 + margin; startpos++) {
 			String seq = S("N", 50) + S(Arrays.copyOfRange(RANDOM, 299, 399)); // genomic positions 300-400
 			SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, null,
-					2, startpos, 100, B(seq), B(40, seq.length())).realign(50, true, 0.5f);
+					2, startpos, 100, B(seq), B(40, seq.length())).realign(50, 0.5f);
 			assertEquals(300, e.getBreakendSummary().start);
 			assertEquals(50, e.getBreakendSequence().length);
 		}
@@ -288,7 +296,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		for (int startpos = 300 - margin; startpos <= 300 + margin; startpos++) {
 			String seq = S(Arrays.copyOfRange(RANDOM, 299, 399)) + S("N", 50);
 			SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null,
-					2, startpos + 100, 100, B(seq), B(40, seq.length())).realign(50, true, 0.5f);
+					2, startpos + 100, 100, B(seq), B(40, seq.length())).realign(50, 0.5f);
 			assertEquals(399, e.getBreakendSummary().start);
 			assertEquals(50, e.getBreakendSequence().length);
 		}
@@ -298,26 +306,26 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		int indelSize = 20;
 		String seq = "N" + S(Arrays.copyOfRange(RANDOM, 299-indelSize-100, 299-indelSize)) + S(Arrays.copyOfRange(RANDOM, 299, 399)); // genomic positions 300-400
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, null,
-				2, 300, 100, B(seq), B(40, seq.length())).realign(50, true, 0.5f);
+				2, 300, 100, B(seq), B(40, seq.length())).realign(50, 0.5f);
 		assertEquals("1S100M20D100M", e.getSAMRecord().getCigarString());
 		
 		seq = S(Arrays.copyOfRange(RANDOM, 299, 399)) + S(Arrays.copyOfRange(RANDOM, 399+indelSize, 399+indelSize+100)) + "N";
 		e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null,
-				2, 399, 100, B(seq), B(40, seq.length())).realign(50, true, 0.5f);
+				2, 399, 100, B(seq), B(40, seq.length())).realign(50, 0.5f);
 		assertEquals("100M20D100M1S", e.getSAMRecord().getCigarString());
 	}
 	@Test
 	public void realign_should_allow_small_anchor_deletion() {
 		String seq = S(B('N', 100)) + S(Arrays.copyOfRange(RANDOM, 0, 100)) + S(Arrays.copyOfRange(RANDOM, 110, 210));
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, null,
-				2, 1, 210, B(seq), B(40, seq.length())).realign(50, true, 0.5f);
+				2, 1, 210, B(seq), B(40, seq.length())).realign(50, 0.5f);
 		assertEquals("100S100M10D100M", e.getSAMRecord().getCigarString());
 	}
 	@Test
 	public void realign_should_allow_small_anchor_insertion() {
 		String seq = S(B('N', 100)) + S(Arrays.copyOfRange(RANDOM, 0, 100)) + "NNNNNNNNNN" + S(Arrays.copyOfRange(RANDOM, 100, 200));
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, null,
-				2, 1, 200, B(seq), B(40, seq.length())).realign(50, true, 0.5f);
+				2, 1, 200, B(seq), B(40, seq.length())).realign(50, 0.5f);
 		assertEquals("100S100M10I100M", e.getSAMRecord().getCigarString());
 	}
 	@Test
@@ -326,7 +334,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null,
 				2, 1, 10, B(seq), B(40, seq.length()));
 		assertEquals("10M40S", e.getSAMRecord().getCigarString());
-		assertEquals("10M40S", e.realign(50, true, 0.5f).getSAMRecord().getCigarString());
+		assertEquals("10M40S", e.realign(50, 0.5f).getSAMRecord().getCigarString());
 	}
 	@Test
 	public void realign_should_not_flip_tandem_duplication() {
@@ -337,21 +345,21 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 				2, 100, 50, B(seq), B(40, seq.length()));
 		
 		// breakend alignment is actually better
-		SAMRecordAssemblyEvidence e1 = e.realign(200, true, 0);
+		SAMRecordAssemblyEvidence e1 = e.realign(200, 0);
 		assertEquals("48S102M50S", e1.getSAMRecord().getCigarString()); // 50S100M50S + homology
 		
 		// but if we constrain to require anchor bases, we shouldn't realign
-		SAMRecordAssemblyEvidence e2 = e.realign(200, true, 0.5f);
+		SAMRecordAssemblyEvidence e2 = e.realign(200, 0.5f);
 		assertEquals("150S50M", e2.getSAMRecord().getCigarString());
 	}
 	@Test
 	public void realign_should_turn_reference_bubble_into_reference_assembly() {
-		SAMRecordAssemblyEvidence ass = (SmallIndelSAMRecordAssemblyEvidence)AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), null,
+		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), null,
 				0, 10, 1,
 				0, 17, 1,
 				B("AAAAAAAA"),
 				B("AAAAAAAA"));
-		ass = ass.realign(50, true, 0.5f);
+		ass = ass.realign(50, 0.5f);
 		assertTrue(ass.isReferenceAssembly());
 	}
 	@Rule
@@ -365,7 +373,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 				new ArrayList<Header>(), new GridssConfiguration(),
 				ref, false);
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(context, AES(context), BWD, null,
-				0, 170849702-170849600+1, 97, B(assembly), B(40, assembly.length())).realign(50, true, 0.5f);
+				0, 170849702-170849600+1, 97, B(assembly), B(40, assembly.length())).realign(50, 0.5f);
 		// anchor location is 11bp off
 		assertEquals("212S88M", e.getSAMRecord().getCigarString());
 		assertEquals(170849713-170849600+1, e.getBreakendSummary().start);
@@ -374,10 +382,15 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	public void small_indel_should_be_called_if_realignment_spans_event() {
 		String assembly = "AAAAAAAAAATTAAAAAAAAAA";
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null,
-				0, 1, 10, B(assembly), B(40, assembly.length())).realign(50, true, 0.5f);
-		assertEquals("10M2I10M", ((SmallIndelSAMRecordAssemblyEvidence)e).getBackingRecord().getCigarString());
-		assertEquals(new BreakpointSummary(0, FWD, 10, 10, 0, BWD, 11, 11), e.getBreakendSummary());
-		assertTrue(e instanceof DirectedBreakpoint);
+				0, 1, 10, B(assembly), B(40, assembly.length())).realign(50, 0.5f);
+		assertEquals("10M2I10M", e.getBackingRecord().getCigarString());
+	}
+	@Test
+	public void removal_of_soft_clip_via_realignment_should_remove_breakend() {
+		String assembly = "AAAAAAAAAATTAAAAAAAAAA";
+		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null,
+				0, 1, 10, B(assembly), B(40, assembly.length())).realign(50, 0.5f);
+		assertNull(e.getBreakendSummary());
 	}
 	/**
 	 * Needed for realignment that turn out to match reference
@@ -405,7 +418,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		String assembly = "AAAAAAAAAAA";
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null,
 				0, 1, 1, B(assembly), B(40, assembly.length()));
-		e = e.realign(50, true, 0.5f);
+		e = e.realign(50, 0.5f);
 		assertEquals(assembly.length(), e.getAssemblyAnchorLength());
 		assertEquals(0, e.getBreakendSequence().length);
 	}
@@ -418,12 +431,12 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		String assembly = S(Arrays.copyOfRange(RANDOM, 10-1, 20-1));
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null,
 				2, 1, 1, B(assembly), B(40, assembly.length()));
-		e = e.realign(50, true, 0.5f);
+		e = e.realign(50, 0.5f);
 		assertNull(null, e.getBreakendSummary());
 		
 		e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, null,
 				2, 1, 1, B(assembly), B(40, assembly.length()));
-		e = e.realign(50, true, 0.5f);
+		e = e.realign(50, 0.5f);
 		assertNull(null, e.getBreakendSummary());
 	}
 	@Test

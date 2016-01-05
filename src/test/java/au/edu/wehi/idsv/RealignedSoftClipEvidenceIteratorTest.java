@@ -53,4 +53,13 @@ public class RealignedSoftClipEvidenceIteratorTest extends TestHelper {
 		assertTrue(out.get(0) instanceof RealignedSoftClipEvidence); // backward
 		assertTrue(out.get(1) instanceof RealignedSoftClipEvidence); // forward
 	}
+	@Test
+	public void should_generate_indels() {
+		SAMRecord r = withReadName("ReadName", Read(0, 1, "10M5D10M"))[0];
+		sv.add(r);
+		go();
+		assertEquals(2, out.size());
+		assertTrue(out.get(0) instanceof SpannedIndelEvidence);
+		assertTrue(out.get(1) instanceof SpannedIndelEvidence);
+	}
 }

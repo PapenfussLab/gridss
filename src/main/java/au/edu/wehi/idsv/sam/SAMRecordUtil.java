@@ -8,17 +8,26 @@ import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
+import htsjdk.samtools.TextCigarCodec;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
+import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+
 import au.edu.wehi.idsv.BreakendDirection;
+import au.edu.wehi.idsv.alignment.AlignerFactory;
+import au.edu.wehi.idsv.alignment.Alignment;
+import au.edu.wehi.idsv.picard.ReferenceLookup;
 
 import com.google.common.collect.Lists;
 
@@ -27,6 +36,7 @@ import com.google.common.collect.Lists;
  *
  */
 public class SAMRecordUtil {
+	private static final Log log = Log.getInstance(SAMRecordUtil.class);
 	public static final String FIRST_OF_PAIR_NAME_SUFFIX = "\\1";
 	public static final String SECOND_OF_PAIR_NAME_SUFFIX = "\\2";
 	/**
@@ -481,5 +491,117 @@ public class SAMRecordUtil {
 	public static double entropy(SAMRecord read) {
 		double bits = au.edu.wehi.idsv.util.SequenceUtil.shannonEntropy(read.getReadBases(), 0, read.getReadLength());
 		return bits;
+	}
+	/**
+	 * Splits the read alignment at the given read base position 
+	 * @param read read to split
+	 * @param readBaseOffset 0-based offset of base to split immediately after
+	 * @return left and right split reads 
+	 */
+	public static Pair<SAMRecord, SAMRecord> splitAfter(SAMRecord read, int readBaseOffset) {
+		Pair<Cigar, Cigar> cigars = CigarUtil.splitAfterReadPosition(read.getCigar().getCigarElements(), readBaseOffset);
+		SAMRecord left = SAMRecordUtil.clone(read);
+		left.setCigar(cigars.getLeft());
+		SAMRecord right = SAMRecordUtil.clone(read);
+		right.setCigar(cigars.getRight());
+		right.setAlignmentStart(read.getAlignmentStart() + CigarUtil.offsetOf(read.getCigar(), CigarUtil.getStartClipLength(cigars.getRight().getCigarElements())));
+		return Pair.of(left, right);
+	}
+	/**
+	 * Performs local realignment of the given SAMRecord in a window around the alignment location
+	 * @param reference reference genome
+	 * @param read read
+	 * @param windowSize number of bases to extend window around alignment
+	 * @param extendWindowForClippedBases extend window for soft clipped bases
+	 * @return copy of realigned read if alignment changed, read if realignment did not change the alignment
+	 */
+	public static SAMRecord realign(ReferenceLookup reference, SAMRecord read, int windowSize, boolean extendWindowForClippedBases) {
+		if (read.getReadUnmappedFlag()) return read;
+		SAMSequenceRecord refSeq = reference.getSequenceDictionary().getSequence(read.getReferenceIndex());
+		// find reference bounds of read. Negative deletions mean we can't just use
+		// getAlignmentStart() and getAlignmentEnd()
+		int pos = read.getAlignmentStart();
+		int start = pos;
+		int end = pos;
+		for (CigarElement ce : CigarUtil.decodeNegativeDeletion(read.getCigar().getCigarElements())) {
+			if (ce.getOperator().consumesReferenceBases()) {
+				pos += ce.getLength();
+			}
+			start = Math.min(start, pos);
+			end = Math.max(end, pos - 1);
+		}
+		// extend bounds
+		start -= windowSize;
+		end += windowSize;
+		if (extendWindowForClippedBases) {
+			start -= getStartSoftClipLength(read);
+			end += getEndSoftClipLength(read);
+		}
+		// don't overrun contig bounds
+		start = Math.max(1, start);
+		end = Math.min(refSeq.getSequenceLength(), end);
+		
+		byte[] ass = read.getReadBases();
+		byte[] ref = reference.getSubsequenceAt(refSeq.getSequenceName(), start, end).getBases();
+		if (ass == null || ref == null || ass.length == 0 || ref.length == 0) {
+			return read;
+		}
+		// defensive checks so we don't crash the JVM if an unexpected character is encountered
+		for (int i = 0; i < ass.length; i++) {
+			if (!htsjdk.samtools.util.SequenceUtil.isValidBase(ass[i])) {
+				ass[i] = 'N';
+			}
+		}
+		for (int i = 0; i < ref.length; i++) {
+			if (!htsjdk.samtools.util.SequenceUtil.isValidBase(ref[i])) {
+				ref[i] = 'N';
+			}
+		}
+		Alignment alignment =  null;
+		try {
+			alignment = AlignerFactory.create().align_smith_waterman(ass, ref);        
+		} catch (Exception e) {
+			// swallow and log alignment error
+			log.error(e, String.format("Error aligning %s to %s:%d-%d",
+					read.getReadName(),
+					refSeq.getSequenceName(), start, end));
+		}
+		if (alignment == null) {
+			return read;
+		}
+		Cigar cigar = TextCigarCodec.decode(alignment.getCigar());
+		
+		int alignmentStart = start + alignment.getStartPosition();
+		if (alignmentStart == read.getAlignmentStart() && cigar.equals(read.getCigar())) {
+			return read;
+		}
+		SAMRecord copy = SAMRecordUtil.clone(read);
+        if (!cigar.equals(read.getCigar())) {
+        	copy.setCigar(cigar);
+        	copy.setAttribute(SAMTag.OC.name(), read.getCigarString());
+        }
+        if (alignmentStart != read.getAlignmentStart()) {
+        	copy.setAlignmentStart(alignmentStart);
+        	copy.setAttribute(SAMTag.OP.name(), read.getAlignmentStart());
+        }
+        return copy;
+	}
+	/**
+	 * 0-1 scaled percentage identity of mapped read bases.
+	 * @return portion of reference-aligned bases that match reference 
+	 */
+	public static float getAlignedIdentity(SAMRecord record) {
+        Integer nm = record.getIntegerAttribute(SAMTag.NM.name());
+		if (nm != null) {
+			int refBasesToConsider = record.getReadLength() - SAMRecordUtil.getStartSoftClipLength(record) - SAMRecordUtil.getEndSoftClipLength(record); 
+			int refBaseMatches = refBasesToConsider - nm + SequenceUtil.countInsertedBases(record) + SequenceUtil.countDeletedBases(record); 
+			return refBaseMatches / (float)refBasesToConsider;
+		}
+		String md = record.getStringAttribute(SAMTag.MD.name());
+		if (StringUtils.isNotEmpty(md)) {
+			// Socrates handles this: should we? Which aligners write MD but not NM?
+			throw new RuntimeException("Not Yet Implemented: calculation from reads with MD tag but not NM tag");
+		}
+		throw new IllegalStateException(String.format("Read %s missing NM tag", record.getReadName()));
 	}
 }

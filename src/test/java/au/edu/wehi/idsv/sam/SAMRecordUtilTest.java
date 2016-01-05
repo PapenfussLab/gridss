@@ -9,6 +9,7 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
@@ -222,5 +223,58 @@ public class SAMRecordUtilTest extends TestHelper {
 	@Test
 	public void entropy_should_ignore_cigar_and_alignment() {
 		assertEquals(2, SAMRecordUtil.entropy(withSequence("ACGT", Read(0, 1, "3S1M"))[0]), 0);
+	}
+	@Test
+	public void getAlignedPercentIdentity_should_match_only_mapped_bases() {
+		assertEquals(1, SAMRecordUtil.getAlignedIdentity(withNM(withSequence("NAAAAA", Read(0, 1, "1S5M")))[0]), 0);
+		assertEquals(1, SAMRecordUtil.getAlignedIdentity(withNM(withSequence("NTAAAT", Read(0, 1, "2S3M1S")))[0]), 0);
+		assertEquals(1, SAMRecordUtil.getAlignedIdentity(withNM(withSequence("NATTTA", Read(0, 1, "1S1M3I1M")))[0]), 0);
+		assertEquals(1, SAMRecordUtil.getAlignedIdentity(withNM(withSequence("NAGTAC", Read(1, 1, "1S1M1D4M")))[0]), 0);
+		assertEquals(0.5, SAMRecordUtil.getAlignedIdentity(withNM(withSequence("NAATT", Read(0, 1, "1S4M")))[0]), 0);
+		assertEquals(0, SAMRecordUtil.getAlignedIdentity(withNM(withSequence("ACCCCA", Read(0, 1, "1S4M1S")))[0]), 0);
+	}
+	@Test
+	public void splitAfter_should_make_two_full_length_reads() {
+		Pair<SAMRecord, SAMRecord> p = SAMRecordUtil.splitAfter(Read(0, 1, "10M"), 1);
+		assertEquals(1, p.getLeft().getAlignmentStart());
+		assertEquals("2M8S", p.getLeft().getCigarString());
+		assertEquals(10, p.getLeft().getReadLength());
+		
+		assertEquals(3, p.getRight().getAlignmentStart());
+		assertEquals("2S8M", p.getRight().getCigarString());
+		assertEquals(10, p.getRight().getReadLength());
+	}
+	@Test
+	public void splitAfter_should_clean_break() {
+		Pair<SAMRecord, SAMRecord> p = SAMRecordUtil.splitAfter(Read(0, 1, "4M4I4M"), 6);
+		assertEquals(1, p.getLeft().getAlignmentStart());
+		assertEquals("4M8S", p.getLeft().getCigarString());
+		assertEquals(12, p.getLeft().getReadLength());
+		
+		assertEquals(5, p.getRight().getAlignmentStart());
+		assertEquals("8S4M", p.getRight().getCigarString());
+		assertEquals(12, p.getRight().getReadLength());
+	}
+	@Test
+	public void splitAfter_should_not_alter_base_alignments() {
+		Pair<SAMRecord, SAMRecord> p = SAMRecordUtil.splitAfter(Read(0, 1, "4M4D4M"), 3);
+		assertEquals(1, p.getLeft().getAlignmentStart());
+		assertEquals("4M4S", p.getLeft().getCigarString());
+		
+		assertEquals(9, p.getRight().getAlignmentStart());
+		assertEquals("4S4M", p.getRight().getCigarString());
+		
+		p = SAMRecordUtil.splitAfter(Read(0, 1, "4M4I4M"), 6);
+		assertEquals(1, p.getLeft().getAlignmentStart());
+		assertEquals(5, p.getRight().getAlignmentStart());
+	}
+	@Test
+	public void realign_should_use_window_around_read_alignment() {
+		SAMRecord read = Read(2, 101, "100M");
+		read.setReadBases(B(S(RANDOM).substring(100, 199) + "N"));
+		SAMRecord realigned = SAMRecordUtil.realign(SMALL_FA, read, 0, true);
+		assertTrue(realigned != read);
+		assertEquals("99M1S", realigned.getCigarString());
+		assertEquals(101, realigned.getAlignmentStart());
 	}
 }

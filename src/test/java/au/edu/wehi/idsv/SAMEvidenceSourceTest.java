@@ -4,7 +4,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.metrics.Header;
+import htsjdk.samtools.metrics.StringHeader;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,6 +18,8 @@ import java.util.List;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.bed.IntervalBed;
+import au.edu.wehi.idsv.picard.ReferenceLookup;
+import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
 import au.edu.wehi.idsv.util.AsyncBufferedIteratorTest;
 
 import com.google.common.collect.Iterators;
@@ -160,7 +166,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	@Test
 	public void iterator_should_match_soft_clip_realignment_with_soft_clip() {
 		ProcessingContext pc = getCommandlineContext();
-		pc.getConfig().minReadMapq = 10;
+		pc.getConfig().minMapq = 10;
 		createInput(
 				withReadName("r1", Read(0, 1, "15M15S")),
 				withReadName("r2", Read(1, 2, "15M15S")),
@@ -181,7 +187,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	@Test
 	public void iterator_should_return_realigned_soft_clips_soft_clip() {
 		ProcessingContext pc = getCommandlineContext();
-		pc.getConfig().minReadMapq = 10;
+		pc.getConfig().minMapq = 10;
 		pc.getRealignmentParameters().minLength = 15;
 		createInput(
 				withReadName("r1", Read(0, 1, "15M15S")),
@@ -233,7 +239,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	@Test
 	public void iterator_should_include_remote_soft_clips() {
 		ProcessingContext pc = getCommandlineContext();
-		pc.getConfig().minReadMapq = 10;
+		pc.getConfig().minMapq = 10;
 		pc.getRealignmentParameters().minLength = 15;
 		createInput(
 				withReadName("r1", Read(0, 1, "15S15M15S")),
@@ -259,7 +265,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	@Test
 	public void remote_soft_clips_should_match_location() {
 		ProcessingContext pc = getCommandlineContext();
-		pc.getConfig().minReadMapq = 10;
+		pc.getConfig().minMapq = 10;
 		pc.getRealignmentParameters().minLength = 15;
 		createInput(
 				withReadName("r2", Read(1, 2, "15M15S")));
@@ -275,7 +281,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	@Test(expected=RuntimeException.class)
 	public void should_require_reads_for_each_fastq_record() {
 		ProcessingContext pc = getCommandlineContext();
-		pc.getConfig().minReadMapq = 10;
+		pc.getConfig().minMapq = 10;
 		pc.getRealignmentParameters().minLength = 15;
 		createInput(
 				withReadName("r1", Read(0, 1, "15S15M15S")),
@@ -378,7 +384,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		createInput(in.toArray(new SAMRecord[0]));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0, 0, 15);
 		source.completeSteps(ProcessStep.ALL_STEPS);
-		List<DirectedEvidence> results = Lists.newArrayList(source.iterator(false, true, false));
+		List<DirectedEvidence> results = Lists.newArrayList(Iterators.filter(source.iterator(false, true, false), e -> !(e instanceof SpannedIndelEvidence)));
 		for (int i = 1; i < results.size(); i++) {
 			assertTrue(results.get(i-1).getBreakendSummary().start <= results.get(i).getBreakendSummary().start);
 		}
@@ -387,12 +393,11 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	@Test
 	public void soft_clip_sort_window_should_allow_for_microhomology_causing_bounds_change() {
 		ProcessingContext pc = getCommandlineContext();
-		pc.getConfig().minReadMapq = 0;
+		pc.getConfig().minMapq = 0;
 		pc.getSoftClipParameters().minLength = 1;
 		pc.getSoftClipParameters().minAnchorIdentity = 0;
 		pc.getConfig().adapters = new AdapterHelper(new String[0]);
 		pc.getRealignmentParameters().minLength = 1;
-		pc.getRealignmentParameters().mapqUniqueThreshold = 0;
 		pc.getRealignmentParameters().minAverageQual = 0;
 		List<SAMRecord> in = Lists.newArrayList();
 		List<SAMRecord> realn = Lists.newArrayList();
@@ -432,5 +437,27 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		source.completeSteps(ProcessStep.ALL_STEPS);
 		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(true, true, false));
 		assertEquals(2, list.size()); // SC & OEA not on (2)
+	}
+	@Test
+	public void should_extract_indel_support() throws IOException {
+		createInput(new File("src/test/resources/inss.bam"));
+		List<Header> headers = Lists.newArrayList();
+		headers.add(new StringHeader("TestHeader"));
+		File ref = new File("C:/dev/hg19.fa");
+		IndexedFastaSequenceFile indexed = new IndexedFastaSequenceFile(ref);
+		ReferenceLookup lookup = new SynchronousReferenceLookupAdapter(indexed);
+		ProcessingContext pc = new ProcessingContext(
+				new FileSystemContext(testFolder.getRoot(), 500000),
+				headers,
+				getConfig(testFolder.getRoot()),
+				lookup,
+				ref,
+				false);
+		pc.registerCategory(0, "Normal");
+		
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
+		source.completeSteps(ProcessStep.ALL_STEPS);
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(true, true, false));
+		assertEquals(9*2, list.size());
 	}
 }

@@ -9,6 +9,7 @@ import java.util.Iterator;
 import java.util.Queue;
 
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.SplitIndel;
 
 /**
  * Iterators over soft clip evidence in the same order as the input iterator 
@@ -38,10 +39,16 @@ public class SoftClipEvidenceIterator implements CloseableIterator<SoftClipEvide
 					if (sce.meetsEvidenceCritera()) {
 						buffer.add(sce);
 					}
+				} 
+				int i = 0;
+				for (SplitIndel si : SplitIndel.getIndelsAsSplitReads(record)) {
+					SpannedIndelEvidence sie = SpannedIndelEvidence.create(source, record, si, i);
+					buffer.add(sie);
+					buffer.add(sie.asRemote());
+					i++;
 				}
 			}
 		}
-		assert(buffer.size() <= 2);
 	}
 	@Override
 	public boolean hasNext() {

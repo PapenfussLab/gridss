@@ -35,8 +35,7 @@ import au.edu.wehi.idsv.RealignedSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.RemoteEvidence;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
-import au.edu.wehi.idsv.SmallIndelSAMRecordAssemblyEvidence;
-import au.edu.wehi.idsv.SmallIndelSAMRecordAssemblyEvidenceTest;
+import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 
 import com.google.common.base.Function;
@@ -58,11 +57,15 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	List<SAMRecordAssemblyEvidence> evidence;
 	List<SAMRecord> realign;
 	int realignCount;
-	int spanningCount;
+	int indelAdjustment;
 	private void orderedAddNoRealign(SAMRecordAssemblyEvidence e) {
-		SAMRecord r = new SAMRecord(getContext().getBasicSamHeader());
-		r.setReadUnmappedFlag(true);
-		orderedAdd(e, r);
+		if (e.getBreakendSummary() != null) {
+			SAMRecord r = new SAMRecord(getContext().getBasicSamHeader());
+			r.setReadUnmappedFlag(true);
+			orderedAdd(e, r);
+		} else {
+			orderedAdd(e, null);
+		}
 	}
 	private void orderedAdd(SAMRecordAssemblyEvidence e, int referenceIndex, int position, boolean negativeStrand) {
 		SAMRecord r = new SAMRecord(getContext().getBasicSamHeader());
@@ -123,7 +126,7 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 					assemblies.add(Lists.newArrayList(Iterables.filter(assemblyResult, new Predicate<SAMRecordAssemblyEvidence>() {
 						@Override
 						public boolean apply(SAMRecordAssemblyEvidence input) {
-							return input.getBreakendSummary().referenceIndex == chr.getSequenceIndex();
+							return input.getSAMRecord().getReferenceIndex() == chr.getSequenceIndex();
 						}
 					})));
 				}
@@ -164,12 +167,11 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 			}
 			writer.close();
 		}
-		spanningCount = 0;
+		indelAdjustment = 0;
 		for (SAMRecordAssemblyEvidence e : evidence) {
-			if (e instanceof SmallIndelSAMRecordAssemblyEvidence) {
-				// considered realigned already
-				realignCount++;
-				spanningCount++;
+			indelAdjustment += e.getSpannedIndels().size();
+			if (e.getBreakendSummary() == null) {
+				indelAdjustment--;
 			}
 		}
 	}
@@ -190,8 +192,8 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	private void go(ProcessingContext pc, boolean writefiltered) {
 		pc.getAssemblyParameters().writeFiltered = writefiltered;
 		pc.getAssemblyParameters().minReads = 0;
+		pc.getConfig().minMapq = 0;
 		pc.getRealignmentParameters().minLength = 0;
-		pc.getRealignmentParameters().mapqUniqueThreshold = 0;
 		pc.getRealignmentParameters().minAverageQual = 0;
 		File faes = new File(output + "-realign-" + pc.shouldProcessPerChromosome());
 		File frp = new File(output + "-readpair-" + pc.shouldProcessPerChromosome());
@@ -208,9 +210,10 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 		new FixedAssemblyEvidenceSource(pc, evidence, file).ensureAssembled();
 	}
 	private void assertMatch(AssemblyEvidenceSource rp, AssemblyEvidenceSource aes) {
-		assertEquals(evidence.size() + spanningCount, Iterators.size(aes.iterator(false, true)));
-		assertEquals(evidence.size() + spanningCount, Iterators.size(rp.iterator(false, true)));
-		assertEquals(evidence.size() + realignCount + 2 * spanningCount, Iterators.size(rp.iterator(true, true)));
+		assertEquals(evidence.size() + indelAdjustment, Iterators.size(aes.iterator(false, true)));
+		assertEquals(evidence.size() + indelAdjustment, Iterators.size(rp.iterator(false, true)));
+		List<SAMRecordAssemblyEvidence> rptt = Lists.newArrayList(rp.iterator(true, true));
+		assertEquals(evidence.size() + realignCount + indelAdjustment, rptt.size());
 		assertContains(Lists.newArrayList(rp.iterator(false, true)), Lists.newArrayList(aes.iterator(false, true)));
 		assertSorted(Lists.newArrayList(rp.iterator(false, true)));
 		assertSorted(Lists.newArrayList(aes.iterator(false, true)));
@@ -325,8 +328,8 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 		ProcessingContext pc = getCommandlineContext(false);
 		pc.getAssemblyParameters().writeFiltered = false;
 		pc.getAssemblyParameters().minReads = 1000;
+		pc.getConfig().minMapq = 0;
 		pc.getRealignmentParameters().minLength = 0;
-		pc.getRealignmentParameters().mapqUniqueThreshold = 0;
 		pc.getRealignmentParameters().minAverageQual = 0;
 		File faes = new File(output + "-realign-" + pc.shouldProcessPerChromosome());
 		File frp = new File(output + "-readpair-" + pc.shouldProcessPerChromosome());
@@ -346,7 +349,24 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 	}
 	@Test
 	public void should_include_small_indel_remote_breakends() {
-		orderedAddNoRealign(SmallIndelSAMRecordAssemblyEvidenceTest.create(1, "10M10D10M", "NNNNNNNNNNATATATATAT"));
+		SoftClipEvidence sce = SCE(FWD, Read(0, 10, "1M1S"));
+		SAMRecordAssemblyEvidence e =  AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, ImmutableList.of(sce.getEvidenceID()), 0, 10, 5, B("AAAAACCCCC"), B("0000011111"));
+		SAMRecord r = e.getSAMRecord();
+		r.setCigarString("5M5D5M");
+		SAMRecordAssemblyEvidence hydrated = new SAMRecordAssemblyEvidence(AES(), r, ImmutableList.of());
+		hydrated.hydrateEvidenceSet(sce);
+		orderedAddNoRealign(hydrated);
+		go();
+	}
+	@Test
+	public void should_include_indel_and_breakpoint() {
+		SoftClipEvidence sce = SCE(FWD, Read(0, 10, "1M1S"));
+		SAMRecordAssemblyEvidence e =  AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, ImmutableList.of(sce.getEvidenceID()), 0, 10, 5, B("AAAAACCCCC"), B("0000011111"));
+		SAMRecord r = e.getSAMRecord();
+		r.setCigarString("5M5D1M4S");
+		SAMRecordAssemblyEvidence hydrated = new SAMRecordAssemblyEvidence(AES(), r, ImmutableList.of());
+		hydrated.hydrateEvidenceSet(sce);
+		orderedAdd(hydrated, 1, 100, false);
 		go();
 	}
 }

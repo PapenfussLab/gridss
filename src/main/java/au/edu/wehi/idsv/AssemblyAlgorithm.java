@@ -6,6 +6,7 @@ package au.edu.wehi.idsv;
  *
  */
 public enum AssemblyAlgorithm {
+	None,
 	Subgraph,
 	Positional,
 }

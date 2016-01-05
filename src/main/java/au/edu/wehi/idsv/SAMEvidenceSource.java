@@ -118,7 +118,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			case CALCULATE_METRICS:
 				source.add(input); target.add(fsc.getInsertSizeMetrics(input));
 				source.add(input); target.add(fsc.getIdsvMetrics(input));
-				source.add(input); target.add(fsc.getSoftClipMetrics(input));
+				source.add(input); target.add(fsc.getCigarMetrics(input));
 				source.add(input); target.add(fsc.getCoverageBlacklistBed(input));
 				break;
 			case EXTRACT_SOFT_CLIPS:
@@ -153,7 +153,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		}
 		return done && IntermediateFileUtil.checkIntermediate(target, source, getContext().getConfig().ignoreFileTimestamps);
 	}
-	protected IdsvSamFileMetrics getMetrics() {
+	public IdsvSamFileMetrics getMetrics() {
 		if (metrics == null) {
 			if (!isComplete(ProcessStep.CALCULATE_METRICS)) {
 				completeSteps(EnumSet.of(ProcessStep.CALCULATE_METRICS));
@@ -295,6 +295,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			itList.add((CloseableIterator<DirectedEvidence>)(Object)sortedRemoteScIt);
 		}
 		CloseableIterator<DirectedEvidence> mergedIt = new AutoClosingMergedIterator<DirectedEvidence>(itList, DirectedEvidenceOrder.ByNatural);
+		mergedIt = new DirectedEvidenceScoreFilteringIterator<DirectedEvidence>(mergedIt, getContext().getConfig().getScoring().variantFilterScore, getContext().getConfig().getScoring().variantFilterScore);
 		if (Defaults.SANITY_CHECK_ITERATORS) {
 			mergedIt = new AutoClosingIterator<DirectedEvidence>(new OrderAssertingIterator<DirectedEvidence>(mergedIt, DirectedEvidenceOrder.ByNatural), ImmutableList.<Closeable>of(mergedIt));
 		}

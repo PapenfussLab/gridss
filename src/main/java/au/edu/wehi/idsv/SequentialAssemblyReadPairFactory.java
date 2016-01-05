@@ -26,8 +26,8 @@ public class SequentialAssemblyReadPairFactory extends SequentialSAMRecordFactor
 		SAMRecord mate = findFirstAssociatedSAMRecord(record);
 		SAMRecord assembly;
 		SAMRecord realign;
-		boolean recordIsAssembly = record.getFirstOfPairFlag(); 
-		if (recordIsAssembly) {
+		boolean isLocalAssembly = record.getFirstOfPairFlag(); 
+		if (isLocalAssembly) {
 			assembly = record;
 			realign = mate;
 		} else {
@@ -35,14 +35,11 @@ public class SequentialAssemblyReadPairFactory extends SequentialSAMRecordFactor
 			realign = record;
 		}
 		SAMRecordAssemblyEvidence evidence = AssemblyFactory.hydrate(source, assembly);
-		evidence = AssemblyFactory.incorporateRealignment(processContext, evidence, ImmutableList.of(realign));
-		if (!recordIsAssembly) {
-			if (evidence instanceof RealignedSAMRecordAssemblyEvidence) {
-				evidence = ((RealignedSAMRecordAssemblyEvidence)evidence).asRemote();
-			} else {
-				// realignment not good enough to qualify as breakend
-				evidence = null;
-			}
+		if (realign != null) {
+			evidence = AssemblyFactory.incorporateRealignment(processContext, evidence, ImmutableList.of(realign));
+		}
+		if (!isLocalAssembly && evidence instanceof RealignedSAMRecordAssemblyEvidence) {
+			evidence = ((RealignedSAMRecordAssemblyEvidence)evidence).asRemote();
 		}
 		return evidence;
 	}

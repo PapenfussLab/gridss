@@ -6,11 +6,17 @@ import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.TextCigarCodec;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 
@@ -42,32 +48,35 @@ public class CigarUtilTest {
 	public void referenceLength_should_match_reference_length() {
 		assertEquals(5, CigarUtil.referenceLength(C("1M5I2D2X")));
 	}
-	@Test
-	public void splitAtLargestIndel_should_split_at_indel() {
-		List<List<CigarElement>> split = CigarUtil.splitAtLargestIndel(C("1M2I1M"));
-		assertEquals("1M", new Cigar(split.get(0)).toString());
-		assertEquals("2I", new Cigar(split.get(1)).toString());
-		assertEquals("1M", new Cigar(split.get(2)).toString());
+	private void assertSplitAfterReadPosition(String cigar, int position, String leftCigar, String rightCigar) {
+		Pair<Cigar, Cigar> split = CigarUtil.splitAfterReadPosition(C(cigar), position);
+		assertEquals(leftCigar, split.getLeft().toString());
+		assertEquals(rightCigar, split.getRight().toString());
 	}
 	@Test
-	public void splitAtLargestIndel_should_include_successive_indel_ops_in_split() {
-		List<List<CigarElement>> split = CigarUtil.splitAtLargestIndel(C("1M2I2D1M"));
-		assertEquals("1M", new Cigar(split.get(0)).toString());
-		assertEquals("2I2D", new Cigar(split.get(1)).toString());
-		assertEquals("1M", new Cigar(split.get(2)).toString());
+	public void splitAfterReadPosition_should_split_deletion() {
+		assertSplitAfterReadPosition("1M1D1M", 0, "1M1S", "1S1M");
 	}
 	@Test
-	public void splitAtLargestIndel_should_sort_on_largest_abs_event_size() {
-		List<List<CigarElement>> split = CigarUtil.splitAtLargestIndel(C("1M5P5N5P2M3I"));
-		assertEquals("1M", new Cigar(split.get(0)).toString());
-		assertEquals("-5D", new Cigar(split.get(1)).toString());
-		assertEquals("2M3I", new Cigar(split.get(2)).toString());
+	public void splitAfterReadPosition_should_split_cigar() {
+		assertSplitAfterReadPosition("4M", 0, "1M3S", "1S3M");
+		assertSplitAfterReadPosition("4M", 1, "2M2S", "2S2M");
+		assertSplitAfterReadPosition("4M", 2, "3M1S", "3S1M");
 	}
 	@Test
-	public void splitAtLargestIndel_should_create_placeholder_0M_if_no_indel() {
-		List<List<CigarElement>> split = CigarUtil.splitAtLargestIndel(C("10M"));
-		assertEquals("10M", new Cigar(split.get(0)).toString());
-		assertEquals("0M", new Cigar(split.get(2)).toString());
+	public void splitAfterReadPosition_should_clean_cigar() {
+		assertSplitAfterReadPosition("2M2D2M", 1, "2M2S", "2S2M");
+		assertSplitAfterReadPosition("2M2I2M", 1, "2M4S", "4S2M");
+		assertSplitAfterReadPosition("2M2I2M", 2, "2M4S", "4S2M");
+		assertSplitAfterReadPosition("2M2I2M", 3, "2M4S", "4S2M");
+	}
+	@Test
+	public void splitAfterReadPosition_should_decode_cigar() {
+		assertSplitAfterReadPosition("2M10P10N10P2M", 1, "2M2S", "2S2M");
+	}
+	@Test
+	public void offsetOf_should_decode_cigar() {
+		assertEquals(-1, CigarUtil.offsetOf(new Cigar(C("2M3P3N3P2M")), 2));
 	}
 	@Test
 	public void countMappedBases_should_count_MEX() {
@@ -99,6 +108,10 @@ public class CigarUtilTest {
 		assertEquals("4M", new Cigar(CigarUtil.clean(C("1M0I0D1M0M2M0S"))).toString());
 	}
 	@Test
+	public void clean_should_fix_open_indels() {
+		assertEquals("2S1M", new Cigar(CigarUtil.clean(C("1S1D1I1M"))).toString());
+	}
+	@Test
 	public void offsetOf_should_use_first_alignment_at_or_after_offset_position() {
 		assertEquals(0, CigarUtil.offsetOf(new Cigar(C("3S3M")), 0));
 		assertEquals(0, CigarUtil.offsetOf(new Cigar(C("3S3M")), 1));
@@ -119,5 +132,34 @@ public class CigarUtilTest {
 		assertEquals("1S2M", CigarUtil.trimReadBases(new Cigar(C("3S3M")), 2, 1).toString());
 		assertEquals("3M", CigarUtil.trimReadBases(new Cigar(C("4S1M2D3M")), 5, 0).toString());
 		assertEquals("2S1M", CigarUtil.trimReadBases(new Cigar(C("4S1M2D3M")), 2, 3).toString());
+	}
+	@Test
+	public void commonReferenceBases_should_count_common() {
+		Cigar c1 = new Cigar(C("7S65M"));
+		Cigar c2 = new Cigar(C("68M4S"));
+		assertEquals(61, CigarUtil.commonReferenceBases(c1, c2));
+		assertEquals(65, CigarUtil.countMappedBases(c1.getCigarElements()));
+		assertEquals(68, CigarUtil.countMappedBases(c2.getCigarElements()));
+	}
+	@Test
+	public void commonReferenceBases_should_match_unencoded_and_decoded_negative_deletions() {
+		Cigar c1 = new Cigar(ImmutableList.of(
+				new CigarElement(2, CigarOperator.M),
+				new CigarElement(-2, CigarOperator.D),
+				new CigarElement(2, CigarOperator.M)
+				));
+		assertEquals(4, CigarUtil.commonReferenceBases(c1, new Cigar(C("2M5P5N5P2M"))));
+	}
+	//@Test
+	public void test_realign_anchor_direction_changing_na12878() throws IOException {
+		Files.write(new File("C:/temp/asm.csv").toPath(), Files.lines(new File("C:/dev/idsv/src/test/resources/asm.csv").toPath())
+			.map(line -> {
+			String[] split = line.split(",");
+			Cigar before = new Cigar(C(split[0]));
+			int bases = CigarUtil.commonReferenceBases(before, new Cigar(C(split[1])));
+			return line + "," + Float.toString(bases / (float)CigarUtil.countMappedBases(before.getCigarElements()));
+		}).collect(Collectors.toList()));
+		//dt <- read.csv("c:/temp/asm.csv", header=FALSE)
+		//ggplot(dt) + aes(x=dt$V3) + geom_histogram()
 	}
 }

@@ -26,9 +26,9 @@ public class GridssConfiguration {
 	 */
 	public AdapterHelper adapters;
 	/**
-	 * Minimum MAPQ of read to considered evidence
+	 * Minimum MAPQ to considered uniquely mapped
 	 */
-	public int minReadMapq;
+	public int minMapq;
 	/**
 	 * Minimum entropy of anchored sequence (in bits) (Shannon entropy)
 	 */
@@ -64,11 +64,15 @@ public class GridssConfiguration {
 	public VariantCallingConfiguration getVariantCalling() {
 		return variantCalling;
 	}
+	public ScoringConfiguration getScoring() {
+		return scoring;
+	}
 	private final AssemblyConfiguration assembly;
 	private final RealignmentConfiguration realignment;
 	private final SoftClipConfiguration softclip;
 	private final VisualisationConfiguration visualisation;
 	private final VariantCallingConfiguration variantCalling;
+	private final ScoringConfiguration scoring;
 	public GridssConfiguration() throws ConfigurationException {
 		this((File)null, new File("."));
 	}
@@ -81,8 +85,9 @@ public class GridssConfiguration {
 		realignment = new RealignmentConfiguration(config);
 		softclip = new SoftClipConfiguration(config);
 		variantCalling = new VariantCallingConfiguration(config);
+		scoring =  new ScoringConfiguration(config);
 		adapters = new AdapterHelper(config.getStringArray("adapter"));
-		minReadMapq = config.getInt("minReadMapq");
+		minMapq = config.getInt("minMapq");
 		minAnchorShannonEntropy = config.getFloat("minAnchorShannonEntropy");
 		maxCoverage = config.getInt("maxCoverage");
 		dovetailMargin = config.getInt("dovetailMargin");

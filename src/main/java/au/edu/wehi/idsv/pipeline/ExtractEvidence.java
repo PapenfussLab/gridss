@@ -29,6 +29,8 @@ import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SequentialCoverageThreshold;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetricsCollector;
+import au.edu.wehi.idsv.model.Models;
+import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
@@ -271,7 +273,7 @@ public class ExtractEvidence implements Closeable {
 				SAMRecordUtil.ensureNmTag(referenceWalker, record);
 				int offset = record.getReadUnmappedFlag() ? dictionary.size() : record.getReferenceIndex();
 				if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) {
-					if (!record.getReadUnmappedFlag()) {
+					if (Models.meetsReadAlignmentCriteria(processContext.getConfig(), record)) {
 						SoftClipEvidence startEvidence = null;
 						SoftClipEvidence endEvidence = null;
 						if (SAMRecordUtil.getStartSoftClipLength(record) > 0) {
@@ -294,7 +296,7 @@ public class ExtractEvidence implements Closeable {
 								endEvidence = null;
 							}
 						}
-						if (startEvidence != null || endEvidence != null) {
+						if (startEvidence != null || endEvidence != null || CigarUtil.countIndels(record.getCigar()) > 0) {
 							scwriters.get(offset % scwriters.size()).addAlignment(record);
 						}
 					}
