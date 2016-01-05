@@ -1,0 +1,4 @@
+GRIDSS_METHODS="None Positional"
+GRIDSS_MODEL="EmpiricalLlr EmpiricalReferenceLikelihood FastEmpiricalReferenceLikelihood Mapq ReadCount"
+GRIDSS_EXCLUSION="None SC RP"
+GRIDSS_PER_CHR=true

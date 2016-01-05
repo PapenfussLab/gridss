@@ -7,6 +7,7 @@ import sys
 import os
 
 print """##fileformat=VCFv4.1
+##FILTER=<ID=UNPAIRED,Description="One one breakend has soft clip support">
 ##INFO=<ID=SVTYPE,Number=1,Type=String,Description="Type of structural variant">
 ##INFO=<ID=MATEID,Number=.,Type=String,Description="ID of mate breakends">
 ##INFO=<ID=ANCHCONS,Number=1,Type=String,Description="Anchor consensus sequence">
@@ -66,13 +67,7 @@ comp_lookup = {'A': 'T', 'C': 'G', 'G': 'C', 'T': 'A', 'N': 'N',
 def revComp(s):
 	return "".join([comp_lookup[base] for base in list(s)])
 
-
-i = 0
-for line in sys.stdin:
-	i += 1
-	if line[0] == '#':
-		# skip header line
-		continue
+def processPairedLine(i, line):
 	input = line.split('	')
 	C1_realign = input[0]
 	C1_realign_dir = input[1]
@@ -115,25 +110,25 @@ for line in sys.stdin:
 	min_long_support = min(C1_long_support, C2_long_support)
 	
 	# quality score proxy
-	score = C1_long_support_bases + C2_long_support_bases + C1_short_support_bases + C2_short_support_bases
+	score = C1_long_support + C1_short_support + C2_long_support + C2_short_support
 	
 	# sanity check
 	if C1_realign_chr != C2_anchor_chr:
 		print >> sys.stderr, "Sanity check failure on line {0}: C1_realign_chr of {1} does not match C2_anchor_chr of {2}".format(
 			i, C1_realign_chr, C2_anchor_chr)
-		continue
+		return
 	if C2_realign_chr != C1_anchor_chr:
 		print >> sys.stderr, "Sanity check failure on line {0}: C2_realign_chr of {1} does not match C1_anchor_chr of {2}".format(
 			i, C2_realign_chr, C1_anchor_chr)
-		continue
+		return
 	if C1_realign_dir != C2_anchor_dir:
 		print >> sys.stderr, "Sanity check failure on line {0}: C1_realign_dir of {1} does not match C2_anchor_dir of {2}".format(
 			i, C1_realign_dir, C2_anchor_dir)
-		continue
+		return
 	if C2_realign_dir != C1_anchor_dir:
 		print >> sys.stderr, "Sanity check failure on line {0}: C2_realign_dir of {1} does not match C1_anchor_dir of {2}".format(
 			i, C2_realign_dir, C1_anchor_dir)
-		continue
+		return
 	
 	# calculate mapping offsets to determine microhomology or untemplated sequence
 	C1_microhomology_len = C2_realign_pos - C1_anchor_pos
@@ -179,7 +174,7 @@ for line in sys.stdin:
 	
 	# TODO offset call position to first anchored base
 	# TODO work out what +- means for Socrates - opposite of what I expected!
-	print "{1}	{2}	line{0}o	N	{3}	{4}	PASS	{5}SVTYPE=BND;MATEID=line{0}h;ANCHCONS={6};REALNCONS={7};NLSC={8};NSSC={9};BLSC={10};BSSC={11};LSSC={12};COMMENT={13}".format(
+	print "{1}	{2}	paired{0}o	N	{3}	{4}	PASS	{5}SVTYPE=BND;MATEID=paired{0}h;ANCHCONS={6};REALNCONS={7};NLSC={8};NSSC={9};BLSC={10};BSSC={11};LSSC={12};COMMENT={13}".format(
 		i, C1_realign_chr, C1_realign_pos, C1_breakpoint,
 		score,
 		C1_cipos,
@@ -187,7 +182,7 @@ for line in sys.stdin:
 		C1_long_support, C1_long_support_bases, C1_short_support, C1_short_support_bases, C1_short_support_max_len,
 		comment.strip()
 		)
-	print "{1}	{2}	line{0}h	N	{3}	{4}	PASS	{5}SVTYPE=BND;MATEID=line{0}o;ANCHCONS={6};REALNCONS={7};NLSC={8};NSSC={9};BLSC={10};BSSC={11};LSSC={12};COMMENT={13}".format(
+	print "{1}	{2}	paired{0}h	N	{3}	{4}	PASS	{5}SVTYPE=BND;MATEID=paired{0}o;ANCHCONS={6};REALNCONS={7};NLSC={8};NSSC={9};BLSC={10};BSSC={11};LSSC={12};COMMENT={13}".format(
 		i, C1_anchor_chr, C1_anchor_pos, C2_breakpoint,
 		score,
 		C2_cipos,
@@ -196,3 +191,58 @@ for line in sys.stdin:
 		comment.strip()
 		)
 
+def processUnpairedLine(i, line):
+	input = line.split('	')
+	C1_realign = input[0]
+	C1_realign_dir = input[1]
+	C1_anchor = input[3]
+	C1_anchor_dir = input[4]
+	C1_long_support = int(input[6])
+	C1_long_support_bases = int(input[7])
+	C1_short_support = int(input[8])
+	C1_short_support_bases = int(input[9])
+	C1_short_support_max_len = int(input[10])
+	C1_avg_realign_mapq = float(input[11])
+	
+	# calculate
+	C1_realign_chr = C1_realign.split(":")[0]
+	C1_realign_pos = int(C1_realign.split(":")[1])
+	C1_anchor_chr = C1_anchor.split(":")[0]
+	C1_anchor_pos = int(C1_anchor.split(":")[1])
+	
+	# quality score proxy
+	score = C1_long_support + C1_short_support
+	
+
+	# adjust positions to first anchored based, instead of first breakend base
+	C1_realign_pos = toVcfPos(C1_realign_pos, C1_realign_dir)
+	C1_anchor_pos = toVcfPos(C1_anchor_pos, C1_anchor_dir)
+	
+	C1_breakpoint = toVcfBreakend(C1_realign_chr, C1_realign_pos, C1_realign_dir, C1_anchor_chr, C1_anchor_pos, C1_anchor_dir, "")
+	C2_breakpoint = toVcfBreakend(C1_anchor_chr, C1_anchor_pos, C1_anchor_dir, C1_realign_chr, C1_realign_pos, C1_realign_dir, "")
+	
+	print "{1}	{2}	unpaired{0}o	N	{3}	{4}	UNPAIRED	SVTYPE=BND;MATEID=unpaired{0}h".format(
+		i, C1_realign_chr, C1_realign_pos, C1_breakpoint,
+		score,
+		)
+	print "{1}	{2}	unpaired{0}h	N	{3}	{4}	UNPAIRED	SVTYPE=BND;MATEID=unpaired{0}o;NLSC={5};NSSC={6};BLSC={7};BSSC={8};LSSC={9}".format(
+		i, C1_anchor_chr, C1_anchor_pos, C2_breakpoint,
+		score,
+		C1_long_support, C1_long_support_bases, C1_short_support, C1_short_support_bases, C1_short_support_max_len
+		)
+
+
+i = 0
+for line in open( sys.argv[1] ):
+	i += 1
+	if line[0] == '#':
+		# skip header line
+		continue
+	processPairedLine(i, line)
+
+for line in open( sys.argv[2] ):
+	i += 1
+	if line[0] == '#':
+		# skip header line
+		continue
+	processUnpairedLine(i, line)
