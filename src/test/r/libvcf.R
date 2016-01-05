@@ -159,8 +159,8 @@ vcftobpgr <- function(vcf) {
     grcall$cistartoffset <- offsets[,1]
     grcall$ciwidth <- offsets[,2] - offsets[,1]
   }
-  grcall$ciendstartoffset <- rep(0, length(grcall))
-  grcall$ciendwidth <- rep(0, length(grcall))
+  grcall$ciendstartoffset <- grcall$cistartoffset
+  grcall$ciendwidth <- grcall$ciwidth
   grcall$isend <- rep(FALSE, length(grcall))
   if ("CIEND" %in% names(info(vcf))) {
     offsets <- matrix(unlist(info(vcf)$CIEND), ncol = 2, byrow = TRUE)
@@ -193,7 +193,7 @@ vcftobpgr <- function(vcf) {
       grcall[rows & is.na(grcall$mateIndex),]$mateIndex <- seq_along(grcall)[rows & is.na(grcall$mateIndex)]
     }
     mateBnd <- grcall[grcall[rows,]$mateIndex,]
-    grcall[rows,]$size <- ifelse(seqnames(mateBnd)==seqnames(grcall[rows,]), abs(start(grcall[rows,]) - start(mateBnd)) + grcall[rows,]$untemplated, NA_integer_)
+    grcall[rows,]$size <- ifelse(seqnames(mateBnd)==seqnames(grcall[rows,]), abs(start(grcall[rows,]) - start(mateBnd)) - 1 + grcall[rows,]$untemplated, NA_integer_)
   }
   # non-standard event type used by DELLY
   rows <- grcall$SVTYPE=="TRA"
@@ -218,7 +218,7 @@ vcftobpgr <- function(vcf) {
     eventgr <- grcall[rows]
     strand(eventgr) <- "-"
     eventgr$isend <- TRUE
-    ranges(eventgr) <- IRanges(start=start(eventgr) + abs(grcall$size[rows]), width=1)
+    ranges(eventgr) <- IRanges(start=start(eventgr) + abs(grcall$size[rows]) + 1, width=1)
     eventgr$mateIndex <- seq_len(length(grcall))[rows]
     grcall <- c(grcall, eventgr)
   }
@@ -303,7 +303,7 @@ distanceToClosest <- function(query, subject) {
   result[queryHits(distanceHits)] <- as.data.frame(distanceHits)$distance
   return(result)
 }
-CalculateTruth <- function(callvcf, truthvcf, blacklist=NULL, maxerrorbp, ignoreFilters, maxerrorpercent=0.25, ...) {
+CalculateTruth <- function(callvcf, truthvcf, blacklist=NULL, maxerrorbp, ignoreFilters, maxerrorpercent=0.25, errorpercentbpoffset=2*(1/maxerrorpercent), ...) {
   if (any(!is.na(rowRanges(callvcf)$QUAL) & rowRanges(callvcf)$QUAL < 0)) {
     stop("Precondition failure: variant exists with negative quality score")
   }
@@ -325,7 +325,7 @@ CalculateTruth <- function(callvcf, truthvcf, blacklist=NULL, maxerrorbp, ignore
   hits$calledsize <- abs(grcall$size[hits$queryHits])
   hits$expectedsize <- abs(grtruth$size[hits$subjectHits])
   hits$errorsize <- abs(abs(hits$calledsize - hits$expectedsize) - grcall$ciwidth[hits$queryHits])
-  hits$percentsize <- hits$calledsize / hits$expectedsize
+  hits$percentsize <- (hits$calledsize + errorpercentbpoffset) / (hits$expectedsize + errorpercentbpoffset)
   # TODO: add untemplated into sizerror calculation for insertions
   hits <- hits[is.na(hits$poserror) | hits$poserror <= maxerrorbp, ] # position must be within margin
   if (!is.null(maxerrorpercent)) {
@@ -694,6 +694,11 @@ isDeletionLike <- function(vcf, minsize=0) {
       ((type == "DEL" & len >= minsize) | (type == "BND" & abs(start(gri) - start(gr[gri$mateIndex])) > minsize & (
         (strand(gri) == "+" & strand(gr[gri$mateIndex]) == "-" & start(gri) < start(gr[gri$mateIndex])) |
         (strand(gri) == "-" & strand(gr[gri$mateIndex]) == "+" & start(gri) > start(gr[gri$mateIndex]))))))
+}
+eventSize <- function(vcf) {
+  gr <- vcftobpgr(vcf)
+  gri <- gr[!duplicated(gr$vcfIndex),]
+  return(ifelse(seqnames(gri) == seqnames(gr[gri$mateIndex]), abs(start(gri) - start(gr[gri$mateIndex])), NA_integer_))
 }
 withChr <- function(gr) {
   seqlevels(gr) <- ifelse(str_detect(seqlevels(gr), "chr"), seqlevels(gr), paste0("chr", seqlevels(gr)))

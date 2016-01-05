@@ -180,6 +180,7 @@ for FQ1 in $(ls -1 $DATA_DIR/*.1.fastq.gz $DATA_DIR/*.1.fq 2>/dev/null) ; do
 		fi
 	else
 		align_bwa $FQ1 $FQ2
+		align_bowtie2 $FQ1 $FQ2
 		if [[ $FULL_MATRIX -eq 1 ]] ; then
 			align_bwa $FQ1 $FQ2 "-M -Y"
 			align_novoalign $FQ1 $FQ2

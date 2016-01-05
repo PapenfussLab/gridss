@@ -29,6 +29,9 @@ FRAGMENT_SIZE="500 400 300 250 200 150"
 FULL_MATRIX=0
 GRIDSS_METHODS=Positional
 GRIDSS_KMER=25
+GRIDSS_MODEL=FastEmpiricalReferenceLikelihood
+GRIDS_PER_CHR=false
+GRIDSS_EXCLUSION=None 
 
 MIN_EXCLUDED_CALL_DEPTH=130 #temp hack so we're not waiting 3 weeks for full 100x runs of everything
 # override default settings

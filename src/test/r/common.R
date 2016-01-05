@@ -35,19 +35,24 @@
 # - create symbolic link from src/test/sim to ~/i
 # - Download art 1.51 to ~/i/tools/art
 library(ggplot2)
+library(rtracklayer)
 
 theme_set(theme_bw())
 
 rootdir <- ifelse(as.character(Sys.info())[1] == "Windows", "W:/", "~/")
+
+setwd(paste0(rootdir, "dev/gridss/src/test/r"))
+source("libvcf.R")
 
 scale_y_power4 <- scale_y_continuous(limits=c(0,1), breaks=seq(0, 1, 0.1)^4, labels=c("0", "", "", "", "", "0.5", "0.6", "0.7", "0.8", "0.9", "1.0"))
 scale_y_power5 <- scale_y_continuous(limits=c(0,1), breaks=seq(0, 1, 0.1)^5, labels=c("0", "", "", "", "", "0.5", "", "0.7", "0.8", "0.9", "1.0"))
 
 # filters the data frame to the subset of calls to be used in the body of the gridss paper
 filter_main_callers <- function(df, col="CX_CALLER") {
-  df <- df[!(str_detect(df[[col]], "gridss[/].*[/]")),]
+  #df <- df[!(str_detect(df[[col]], "gridss[/].*[/]")),]
   df[[col]] <- factor(str_extract(df[[col]], "^[^/]+"))
-  df <- df[df[[col]] %in% c("gridss", "breakdancer", "delly", "lumpy", "pindel", "socrates"),]
+  df <- df[(df$CX_ALIGNER == "bwamem"  & df[[col]] %in% c("gridss", "breakdancer", "delly", "lumpy", "pindel")) | 
+          (df$CX_ALIGNER == "bowtie2"  & df[[col]] %in% c("socrates")) ,]
   df[[col]] <- relevel(df[[col]], "gridss")
   return(df)
 }

@@ -5,6 +5,7 @@
 unset PERL5LIB # temp hack until environment gets fixed
 . common.sh
 CALLER=crest/0.0.1
+export PATH=/usr/local/bioinfsoftware/blat/blat_34x12/bin:$PATH 
 BLAT_PORT=24513
 BLAT_POLL_INTERVAL=10
 for BAM in $DATA_DIR/*.sc.bam ; do
