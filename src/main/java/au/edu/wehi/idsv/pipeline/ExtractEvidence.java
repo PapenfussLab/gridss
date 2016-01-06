@@ -32,6 +32,7 @@ import au.edu.wehi.idsv.metrics.IdsvSamFileMetricsCollector;
 import au.edu.wehi.idsv.model.Models;
 import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
+import au.edu.wehi.idsv.sam.SAMRecordCigarCleaningIterator;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
@@ -245,7 +246,11 @@ public class ExtractEvidence implements Closeable {
 		final ProgressLogger progress = new ProgressLogger(log);
 		CloseableIterator<SAMRecord> iter = null;
 		try {
-			iter = new AsyncBufferedIterator<SAMRecord>(processContext.getSamReaderIterator(reader), source.getSourceFile().getName() + "-Metrics", processContext.getConfig().async_bufferCount, processContext.getConfig().async_bufferSize); 
+			iter = new AsyncBufferedIterator<SAMRecord>(
+					new SAMRecordCigarCleaningIterator(processContext.getSamReaderIterator(reader)),
+					source.getSourceFile().getName() + "-Metrics",
+					processContext.getConfig().async_bufferCount,
+					processContext.getConfig().async_bufferSize); 
 			while (iter.hasNext() && recordsProcessed++ < maxRecords) {
 				SAMRecord record = iter.next();
 				collector.acceptRecord(record, null);
@@ -267,7 +272,11 @@ public class ExtractEvidence implements Closeable {
 		final ProgressLogger progress = new ProgressLogger(log);
 		CloseableIterator<SAMRecord> iter = null;
 		try {
-			iter = new AsyncBufferedIterator<SAMRecord>(processContext.getSamReaderIterator(reader), source.getSourceFile().getName() + "-Extract", processContext.getConfig().async_bufferCount, processContext.getConfig().async_bufferSize);
+			iter = new AsyncBufferedIterator<SAMRecord>(
+					new SAMRecordCigarCleaningIterator(processContext.getSamReaderIterator(reader)),
+					source.getSourceFile().getName() + "-Extract",
+					processContext.getConfig().async_bufferCount,
+					processContext.getConfig().async_bufferSize);
 			while (iter.hasNext()) {
 				SAMRecord record = iter.next();
 				SAMRecordUtil.ensureNmTag(referenceWalker, record);

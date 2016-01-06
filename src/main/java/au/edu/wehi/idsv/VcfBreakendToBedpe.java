@@ -30,13 +30,13 @@ public class VcfBreakendToBedpe extends picard.cmdline.CommandLineProgram {
 	private Log log = Log.getInstance(VcfBreakendToBedpe.class);
 	@Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="VCF containing structural variation breakend calls")
     public File INPUT;
-	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="BEDPE output file")
+	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="BEDPE output file containing unfiltered calls")
     public File OUTPUT;
 	@Option(shortName="OF", doc="BEDPE output file of filtered calls")
     public File OUTPUT_FILTERED;
 	@Option(shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME, doc="Reference used for alignment")
     public File REFERENCE;
-	@Option(doc="Inlcude header line with column names.")
+	@Option(doc="Include header line with column names.")
 	public boolean INCLUDE_HEADER = false;
 	@Option(shortName="LOW", doc="Write record at breakend with lower genomic coordinate")
 	public boolean INCLUDE_LOW_BREAKEND = true;
