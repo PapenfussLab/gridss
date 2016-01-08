@@ -162,7 +162,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		filteredIt = new DirectedEvidenceScoreFilteringIterator<SAMRecordAssemblyEvidence>(filteredIt, getContext().getConfig().getScoring().variantFilterScore, getContext().getConfig().getScoring().variantFilterScore);
 		DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence> dit = new DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence>(
 				getContext(),
-				getAssemblyWindowSize(),
+				2 * getAssemblyWindowSize(),
 				filteredIt);
 		getContext().registerBuffer("assembly.rp." + chr, dit);
 		CloseableIterator<SAMRecordAssemblyEvidence> sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(dit, ImmutableList.<Closeable>of(it, mateIt, evidenceIt));
