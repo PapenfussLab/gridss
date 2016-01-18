@@ -71,6 +71,8 @@ Input files containing read groups from multiple different libraries should be s
 Numeric category (starting at zero) to allocate the corresponding input file to. Per-category variant support is output so
 a category should be specified for each input file when performing analysis on multiple samples at once. (eg `INPUT=normal75bp.bam INPUT_CATEGORY=0 INPUT=normal100bp.bam INPUT_CATEGORY=0 INPUT=tumour100bp.bam INPUT_CATEGORY=1` ).
 
+For those familar with [CORTEX](http://cortexassembler.sourceforge.net/), a GRIDSS input category corresponds to a CORTEX graph colour.
+
 ### READ_PAIR_CONCORDANT_PERCENT
 
 Portion (0.0-1.0) of read pairs to be considered concordant. Concordant read pairs are considered to provide no support for structural variation.
