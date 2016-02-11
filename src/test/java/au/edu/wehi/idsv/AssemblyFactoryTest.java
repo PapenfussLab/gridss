@@ -360,7 +360,7 @@ public class AssemblyFactoryTest extends TestHelper {
 	}
 	@Test
 	public void breakpoint_should_retain_base_quals() {
-		ProcessingContext pc = getContext();
+		GenomicProcessingContext pc = getContext();
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(pc, AES(), BWD, null, 0, 10, 5, B("GGTAAAAC"), new byte[] { 7,6,5,4,3,2,1,0});
 		assertArrayEquals(new byte[] { 7,6,5 }, e.getBreakendQuality());
 		SAMRecord ra = Read(1, 102, "1S1M1S");
@@ -404,7 +404,7 @@ public class AssemblyFactoryTest extends TestHelper {
 	}
 	@Test
 	public void id_be_assembly_unique() {
-		ProcessingContext context = getContext();
+		GenomicProcessingContext context = getContext();
 		AssemblyEvidenceSource aes = AES();
 		AssemblyEvidence e1a = AssemblyFactory.createAnchoredBreakend(context, aes, FWD, null, 0, 1, 1, B("AAAAA"), B("AAAAA"));
 		AssemblyEvidence e1b = AssemblyFactory.createAnchoredBreakend(context, aes, FWD, null, 0, 1, 1, B("AAAAA"), B("AAAAA"));

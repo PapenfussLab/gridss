@@ -2,14 +2,11 @@ package au.edu.wehi.idsv.sim;
 
 import java.io.File;
 
-import org.apache.commons.configuration.ConfigurationException;
-
 import picard.cmdline.CommandLineProgram;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import au.edu.wehi.idsv.FileSystemContext;
-import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.configuration.GridssConfiguration;
+import au.edu.wehi.idsv.GenomicProcessingContext;
 
 public abstract class SimulationGenerator extends CommandLineProgram {
     @Option(doc="Reference used for alignment", shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME)
@@ -26,18 +23,8 @@ public abstract class SimulationGenerator extends CommandLineProgram {
     public String CHR;
     @Option(doc="Include reference chromosome in output as separate contig", optional=true)
     public boolean INCLUDE_REFERENCE = false;
-    protected ProcessingContext getProcessingContext() {
-    	ProcessingContext pc;
-		try {
-			pc = new ProcessingContext(
-					new FileSystemContext(TMP_DIR.get(0), new File("."), MAX_RECORDS_IN_RAM),
-					null, new GridssConfiguration(),
-					REFERENCE,
-					false);
-		} catch (ConfigurationException e) {
-			e.printStackTrace();
-			throw new RuntimeException(e);
-		}
+    protected GenomicProcessingContext getProcessingContext() {
+    	GenomicProcessingContext pc = new GenomicProcessingContext(new FileSystemContext(TMP_DIR.get(0), new File("."), MAX_RECORDS_IN_RAM), REFERENCE, false, null);
     	return pc;
     }
 }

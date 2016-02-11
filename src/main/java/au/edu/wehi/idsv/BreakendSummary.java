@@ -121,13 +121,13 @@ public class BreakendSummary {
 		int callPos = IntMath.divide(start + end, 2, RoundingMode.FLOOR);
 		return new BreakendSummary(referenceIndex, direction, callPos, callPos);
 	}
-	protected static String toString(int referenceIndex, int start, int end, ProcessingContext processContext) {
+	protected static String toString(int referenceIndex, int start, int end, GenomicProcessingContext processContext) {
 		if (processContext != null && referenceIndex >= 0 && referenceIndex < processContext.getDictionary().size()) {
 			return String.format("%s:%d-%d", processContext.getDictionary().getSequence(referenceIndex).getSequenceName(), start, end);
 		}
 		return String.format("(%d):%d-%d", referenceIndex, start, end);
 	}
-	protected static String toString(BreakendDirection direction, int referenceIndex, int start, int end, ProcessingContext processContext) {
+	protected static String toString(BreakendDirection direction, int referenceIndex, int start, int end, GenomicProcessingContext processContext) {
 		if (direction == BreakendDirection.Forward) return toString(referenceIndex, start, end, processContext) + ">";
 		return "<" + toString(referenceIndex, start, end, processContext);
 	}
@@ -162,7 +162,7 @@ public class BreakendSummary {
 	public String toString() {
 		return toString(direction, referenceIndex, start, end, null);
 	}
-	public String toString(ProcessingContext processContext) {
+	public String toString(GenomicProcessingContext processContext) {
 		return toString(direction, referenceIndex, start, end, processContext);
 	}
 	@Override

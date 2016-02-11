@@ -9,13 +9,10 @@ import htsjdk.variant.vcf.VCFFileReader;
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.commons.configuration.ConfigurationException;
-
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import au.edu.wehi.idsv.bed.BedpeWriter;
-import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.util.FileHelper;
 
 import com.google.common.collect.Lists;
@@ -48,15 +45,15 @@ public class VcfBreakendToBedpe extends picard.cmdline.CommandLineProgram {
 			TMP_DIR = Lists.newArrayList(new File("."));
 		}
 		try {
-			ProcessingContext pc = new ProcessingContext(new FileSystemContext(TMP_DIR.get(0), MAX_RECORDS_IN_RAM), null, new GridssConfiguration(), REFERENCE, false);
+			GenomicProcessingContext pc = new GenomicProcessingContext(new FileSystemContext(TMP_DIR.get(0), MAX_RECORDS_IN_RAM), REFERENCE, false, null);
 			writeBreakpointBedpe(pc, INPUT, OUTPUT, OUTPUT_FILTERED, INCLUDE_HEADER, INCLUDE_LOW_BREAKEND, INCLUDE_HIGH_BREAKEND);
-		} catch (IOException | ConfigurationException e) {
+		} catch (IOException e) {
 			log.error(e);
 			return -1;
 		}
 		return 0;
 	}
-	public static void writeBreakpointBedpe(ProcessingContext pc, File vcf, File bedpe, File bedpeFiltered, boolean includeHeader, boolean writeLow, boolean writeHigh) throws IOException {
+	public static void writeBreakpointBedpe(GenomicProcessingContext pc, File vcf, File bedpe, File bedpeFiltered, boolean includeHeader, boolean writeLow, boolean writeHigh) throws IOException {
 		if (!writeLow && !writeHigh) {
 			throw new IllegalArgumentException("No breakends to be written. At least one of {LOW, HIGH} breakends should be specified");
 		}

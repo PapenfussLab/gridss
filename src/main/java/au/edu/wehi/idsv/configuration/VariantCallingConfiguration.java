@@ -23,16 +23,16 @@ public class VariantCallingConfiguration {
 		breakendMargin = config.getInt("breakendMargin");
 		writeFiltered = config.getBoolean("writeFiltered");
 		lowQuality = config.getDouble("lowQuality");
-		switch (config.getString("format")) {
-			case "vcf4.2":
-				placeholderBreakend = false;
-				break;
-			case "vcf4.1":
-				placeholderBreakend = true;
-				break;
-			default:
-				throw new IllegalArgumentException(String.format("Unrecognised output format \"%s\"", config.getString("format")));
-		}
+//		switch (config.getString("format")) {
+//			case "vcf4.2":
+//				placeholderBreakend = false;
+//				break;
+//			case "vcf4.1":
+//				placeholderBreakend = true;
+//				break;
+//			default:
+//				throw new IllegalArgumentException(String.format("Unrecognised output format \"%s\"", config.getString("format")));
+//		}
 	}
 	/**
 	 * Minimum score for variant to be called
@@ -52,7 +52,7 @@ public class VariantCallingConfiguration {
 	 */
 	private int fullMarginMultiple = 2;
 	public boolean writeFiltered;
-	public boolean placeholderBreakend;
+	//public boolean placeholderBreakend;
 	public double lowQuality;
 	public BreakendSummary withMargin(BreakendSummary bp) {
 		if (bp == null) return null;

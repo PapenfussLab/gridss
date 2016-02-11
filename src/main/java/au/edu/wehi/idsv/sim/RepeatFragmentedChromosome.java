@@ -8,7 +8,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.GenomicProcessingContext;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
@@ -20,7 +20,7 @@ public class RepeatFragmentedChromosome extends FragmentedChromosome {
 	private static final Log log = Log.getInstance(RepeatFragmentedChromosome.class);
 	private File repeatMaskerOutput;
 	private String repeatClassFamily;
-	public RepeatFragmentedChromosome(ProcessingContext context, String chr, int breakMargin, int fragmentLength, File repeatMaskerOutput, String repeatClassFamily, int seed) {
+	public RepeatFragmentedChromosome(GenomicProcessingContext context, String chr, int breakMargin, int fragmentLength, File repeatMaskerOutput, String repeatClassFamily, int seed) {
 		super(context, chr, breakMargin, fragmentLength, seed);
 		this.repeatMaskerOutput = repeatMaskerOutput;
 		this.repeatClassFamily = repeatClassFamily;

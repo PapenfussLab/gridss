@@ -82,7 +82,7 @@ public class BreakpointSummary extends BreakendSummary {
 		return String.format("%s %s", toString(direction, referenceIndex, start, end, null), toString(direction2, referenceIndex2, start2, end2, null));
 	}
 	@Override
-	public String toString(ProcessingContext processContext) {
+	public String toString(GenomicProcessingContext processContext) {
 		return String.format("%s %s", toString(direction, referenceIndex, start, end, processContext), toString(direction2, referenceIndex2, start2, end2, processContext));
 	}
 	/**

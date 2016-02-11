@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.GenomicProcessingContext;
 
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
@@ -27,7 +27,7 @@ public class FragmentedChromosome extends SimulatedChromosome {
 	 * @param reference reference genome
 	 * @param breakMargin number of unambiguous bases around the breakpoint
 	 */
-	public FragmentedChromosome(ProcessingContext context, String chr, int breakMargin, int fragmentLength, int seed) {
+	public FragmentedChromosome(GenomicProcessingContext context, String chr, int breakMargin, int fragmentLength, int seed) {
 		super(context, chr, breakMargin, seed);
 		this.fragmentLength = fragmentLength;
 	}

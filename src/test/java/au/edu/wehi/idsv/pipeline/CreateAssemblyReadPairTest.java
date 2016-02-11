@@ -26,6 +26,7 @@ import au.edu.wehi.idsv.AssemblyFactory;
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.BreakpointFastqEncoding;
 import au.edu.wehi.idsv.DirectedEvidence;
+import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.MockReadEvidenceAssembler;
 import au.edu.wehi.idsv.ProcessStep;
@@ -142,7 +143,7 @@ public class CreateAssemblyReadPairTest extends IntermediateFilesTest {
 			return new ReadEvidenceAssemblyIterator(new MockReadEvidenceAssembler(assemblies.get(calls++)), it);
 		}
 	}
-	private void writeRealign(ProcessingContext pc, File base) {
+	private void writeRealign(GenomicProcessingContext pc, File base) {
 		realignCount = 0;
 		if (pc.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord chr : SMALL_FA.getSequenceDictionary().getSequences()) {

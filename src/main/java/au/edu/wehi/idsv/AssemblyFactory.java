@@ -41,7 +41,7 @@ public final class AssemblyFactory {
 	 * @return assembly evidence for the given assembly
 	 */
 	public static SAMRecordAssemblyEvidence createAnchoredBreakend(
-			ProcessingContext processContext,
+			GenomicProcessingContext processContext,
 			AssemblyEvidenceSource source, BreakendDirection direction,
 			Collection<String> evidence,
 			int anchorReferenceIndex, int anchorBreakendPosition, int anchoredBaseCount,
@@ -55,7 +55,7 @@ public final class AssemblyFactory {
 		return assembly;
 	}
 	public static SAMRecordAssemblyEvidence createAnchoredBreakpoint(
-			ProcessingContext processContext, AssemblyEvidenceSource source,
+			GenomicProcessingContext processContext, AssemblyEvidenceSource source,
 			Collection<String> evidence,
 			int startAnchorReferenceIndex, int startAnchorPosition, int startAnchorBaseCount,
 			int endAnchorReferenceIndex, int endAnchorPosition, int endAnchorBaseCount,
@@ -85,7 +85,7 @@ public final class AssemblyFactory {
 	 * @return assembly evidence for the given assembly
 	 */
 	public static SAMRecordAssemblyEvidence createUnanchoredBreakend(
-			ProcessingContext processContext,
+			GenomicProcessingContext processContext,
 			AssemblyEvidenceSource source,
 			BreakendSummary breakend,
 			Collection<String> evidence,

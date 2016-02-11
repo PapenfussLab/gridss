@@ -24,10 +24,8 @@ public class Manual extends TestHelper {
 	//@Test
 	public void debug778sorting() throws ConfigurationException {
 		ProcessingContext pc = new ProcessingContext(
-			new FileSystemContext(new File("W:\\778\\idsv"), new File("W:\\778\\idsv"), 500000),
-			new ArrayList<Header>(),
-			new GridssConfiguration(),
-			new File("C:\\dev\\hg19_karyotypic.fa"), true);
+			new FileSystemContext(new File("W:\\778\\idsv"), new File("W:\\778\\idsv"), 500000), new File("C:\\dev\\hg19_karyotypic.fa"), true, null,
+			new ArrayList<Header>(), new GridssConfiguration());
 		List<SAMEvidenceSource> samEvidence = new ArrayList<SAMEvidenceSource>();
 		for (String s : new String[] {
 				"W:\\778\\DNA_778_HiSeq_35nt_PE1_bt2_s_rg_cleaned.bam",

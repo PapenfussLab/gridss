@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.sim.SequentialVariantPlacer.ContigExhaustedException;
 import au.edu.wehi.idsv.vcf.SvType;
 import au.edu.wehi.idsv.vcf.VcfFilter;
@@ -40,7 +40,7 @@ public class SimpleVariantChromosome extends SimulatedChromosome {
 	 * @param reference reference genome
 	 * @param margin number of unambiguous bases around the breakpoint
 	 */
-	public SimpleVariantChromosome(ProcessingContext context, String chr, int margin, int seed) {
+	public SimpleVariantChromosome(GenomicProcessingContext context, String chr, int margin, int seed) {
 		super(context, chr, margin, seed);
 		this.baseGen = new RandomBaseGenerator(seed);
 	}

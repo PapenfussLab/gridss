@@ -95,7 +95,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 public class TestHelper {
-	public static final long LCCB = ProcessingContext.LINEAR_COORDINATE_CHROMOSOME_BUFFER;
+	public static final long LCCB = GenomicProcessingContext.LINEAR_COORDINATE_CHROMOSOME_BUFFER;
 	public static final BreakendDirection FWD = BreakendDirection.Forward;
 	public static final BreakendDirection BWD = BreakendDirection.Backward;
 
@@ -375,9 +375,8 @@ public class TestHelper {
 		return getConfig(new File(System.getProperty("java.io.tmpdir")));
 	}
 	public static ProcessingContext getContext(ReferenceLookup ref) {
-		ProcessingContext pc = new ProcessingContext(getFSContext(),
-				new ArrayList<Header>(), getConfig(),
-				ref, null, false);
+		ProcessingContext pc = new ProcessingContext(getFSContext(), null, false, ref,
+				new ArrayList<Header>(), getConfig());
 		pc.registerCategory(0, "Normal");
 		pc.registerCategory(1, "Tumour");
 		pc.getAssemblyParameters().trackEvidenceID = true;

@@ -22,7 +22,7 @@ import com.google.common.base.Function;
  */
 public class DirectEvidenceWindowedSortingIterator<T extends DirectedEvidence> extends WindowedSortingIterator<T> {
 	@SuppressWarnings("unchecked")
-	public DirectEvidenceWindowedSortingIterator(final ProcessingContext processContext, final int windowSize, final Iterator<T> it) {
+	public DirectEvidenceWindowedSortingIterator(final GenomicProcessingContext processContext, final int windowSize, final Iterator<T> it) {
 		super(it, new Function<T, Long>() {
 			public Long apply(T arg) {
 				return processContext.getLinear().getStartLinearCoordinate(arg.getBreakendSummary());

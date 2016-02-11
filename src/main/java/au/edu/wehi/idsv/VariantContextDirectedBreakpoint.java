@@ -19,7 +19,7 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	public VariantContextDirectedBreakpoint(ProcessingContext processContext, EvidenceSource source, VariantContext context) {
+	public VariantContextDirectedBreakpoint(GenomicProcessingContext processContext, EvidenceSource source, VariantContext context) {
 		super(processContext, source, context);
 		assert(super.getBreakendSummary() instanceof BreakpointSummary);
 	}
@@ -86,7 +86,7 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 			        .result();
 		  }
 	};
-	public static Ordering<VariantContext> ByRemoteBreakendLocationStartRaw(final ProcessingContext processContext) {
+	public static Ordering<VariantContext> ByRemoteBreakendLocationStartRaw(final GenomicProcessingContext processContext) {
 		return new Ordering<VariantContext>() {
 			public int compare(VariantContext o1, VariantContext o2) {
 				// TODO: is this performance acceptable? This is quite an expensive compare operation

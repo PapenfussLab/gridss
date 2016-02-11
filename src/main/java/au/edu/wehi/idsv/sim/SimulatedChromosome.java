@@ -13,9 +13,10 @@ import java.util.List;
 import java.util.Random;
 
 import au.edu.wehi.idsv.BreakpointSummary;
+import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.IdsvVariantContext;
 import au.edu.wehi.idsv.IdsvVariantContextBuilder;
-import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.collect.Lists;
@@ -29,8 +30,9 @@ public class SimulatedChromosome {
 	protected final byte[] seq;
 	protected final int referenceIndex;
 	protected final int margin;
-	protected final ProcessingContext context;
+	protected final ReferenceLookup ref;
 	protected final String chr;
+	protected final GenomicProcessingContext context;
 	protected Fragment createFragment(int genomicStart, int length, boolean reversed) {
 		return new Fragment(referenceIndex, genomicStart, Arrays.copyOfRange(seq, genomicStart - 1,  genomicStart - 1 + length), reversed);
 	}
@@ -38,11 +40,12 @@ public class SimulatedChromosome {
 	 * @param reference reference genome
 	 * @param breakCleanMargin number of unambiguous bases around the breakpoint
 	 */
-	public SimulatedChromosome(ProcessingContext context, String chr, int margin, int seed) {
+	public SimulatedChromosome(GenomicProcessingContext context, String chr, int margin, int seed) {
 		this.context = context;
-		this.referenceIndex = context.getReference().getSequenceDictionary().getSequence(chr).getSequenceIndex();
-		this.chr = context.getReference().getSequenceDictionary().getSequence(chr).getSequenceName();
-		this.seq = context.getReference().getSequence(chr).getBases();
+		this.ref = context.getReference();
+		this.referenceIndex = ref.getSequenceDictionary().getSequence(chr).getSequenceIndex();
+		this.chr = ref.getSequenceDictionary().getSequence(chr).getSequenceName();
+		this.seq = ref.getSequence(chr).getBases();
 		this.margin = margin;
 		this.rng = new Random(seed);
 	}

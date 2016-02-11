@@ -22,13 +22,13 @@ import com.google.common.collect.Sets;
  */
 public class IdsvVariantContextBuilder extends VariantContextBuilder {
 	public static final String SOURCE_NAME = "idsv";
-	protected final ProcessingContext processContext;
+	protected final GenomicProcessingContext processContext;
 	private final Set<EvidenceSource> sourceSet = Sets.newHashSet();
-	public IdsvVariantContextBuilder(ProcessingContext processContext) {
+	public IdsvVariantContextBuilder(GenomicProcessingContext processContext) {
 		super();
 		this.processContext = processContext;
 	}
-	public IdsvVariantContextBuilder(ProcessingContext processContext, VariantContext parent) {
+	public IdsvVariantContextBuilder(GenomicProcessingContext processContext, VariantContext parent) {
 		super(parent);
 		this.processContext = processContext;
 		if (parent instanceof IdsvVariantContext) {
@@ -40,7 +40,7 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 		return this;
 	}
 	private String getBreakendString() {
-		return processContext.getConfig().getVariantCalling().placeholderBreakend ? VcfConstants.VCF41BREAKEND_REPLACEMENT : VcfConstants.VCF42BREAKEND;
+		return VcfConstants.VCF42BREAKEND; // processContext.getConfig().getVariantCalling().placeholderBreakend ? VcfConstants.VCF41BREAKEND_REPLACEMENT : VcfConstants.VCF42BREAKEND;
 	}
 	public IdsvVariantContextBuilder referenceReads(int[] count) {
 		attribute(VcfAttributes.REFERENCE_READ_COUNT.attribute(), count);

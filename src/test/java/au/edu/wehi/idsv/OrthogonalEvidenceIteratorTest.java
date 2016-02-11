@@ -102,7 +102,7 @@ public class OrthogonalEvidenceIteratorTest extends TestHelper {
 	}
 	@Test
 	public void should_output_sorted() {
-		ProcessingContext pc = getContext();
+		GenomicProcessingContext pc = getContext();
 		SAMEvidenceSource ses = SES();
 		AssemblyEvidenceSource aes = AES();
 		List<DirectedEvidence> list = new ArrayList<DirectedEvidence>();
