@@ -243,7 +243,7 @@ public class ExtractEvidence implements Closeable {
 	}
 	private long processMetrics(IdsvSamFileMetricsCollector collector, long maxRecords, SequentialCoverageThreshold blacklist) {
 		long recordsProcessed = 0;
-		final ProgressLogger progress = new ProgressLogger(log);
+		final ProgressLogger progress = new ProgressLogger(log, 10000000);
 		CloseableIterator<SAMRecord> iter = null;
 		try {
 			iter = new AsyncBufferedIterator<SAMRecord>(
@@ -269,7 +269,7 @@ public class ExtractEvidence implements Closeable {
 		assert((matewriters.size() == 0 && !steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) || matewriters.size() == dictionary.getSequences().size() || matewriters.size() == 1);
 		
 		// Traverse the source.getSourceFile() file
-		final ProgressLogger progress = new ProgressLogger(log);
+		final ProgressLogger progress = new ProgressLogger(log, 10000000);
 		CloseableIterator<SAMRecord> iter = null;
 		try {
 			iter = new AsyncBufferedIterator<SAMRecord>(
