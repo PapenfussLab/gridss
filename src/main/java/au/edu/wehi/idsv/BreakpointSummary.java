@@ -61,6 +61,10 @@ public class BreakpointSummary extends BreakendSummary {
 		if (start != start2) return start > start2;
 		return end > end2;
 	}
+	public BreakendSummary highBreakend() {
+		if (isHighBreakend()) return localBreakend();
+		return remoteBreakend();
+	}
 	/**
 	 * Determines whether this breakend is the lower of the two breakends
 	 * @return true if this breakend starts before the remote breakend
@@ -69,6 +73,10 @@ public class BreakpointSummary extends BreakendSummary {
 		if (referenceIndex != referenceIndex2) return referenceIndex < referenceIndex2;
 		if (start != start2) return start < start2;
 		return end < end2;
+	}
+	public BreakendSummary lowBreakend() {
+		if (isLowBreakend()) return localBreakend();
+		return remoteBreakend();
 	}
 	/**
 	 * Returns the other end of this breakpoint

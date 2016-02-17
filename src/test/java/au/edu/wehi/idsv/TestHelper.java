@@ -168,8 +168,12 @@ public class TestHelper {
 	}
 
 	public VariantContextDirectedBreakpoint BP(String id, BreakpointSummary bp) {
+		return BP(id, bp, "");
+	}
+	
+	public VariantContextDirectedBreakpoint BP(String id, BreakpointSummary bp, String untemplatedSequence) {
 		IdsvVariantContextBuilder builder = minimalBreakend()
-				.breakpoint(bp, "");
+				.breakpoint(bp, untemplatedSequence);
 		builder.id(id);
 		return (VariantContextDirectedBreakpoint)builder.make();
 	}

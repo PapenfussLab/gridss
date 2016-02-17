@@ -15,13 +15,31 @@ import com.google.common.collect.Ordering;
 import com.google.common.primitives.Bytes;
 
 public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvidence implements DirectedBreakpoint {
-	/**
-	 * 
-	 */
+	/** */
 	private static final long serialVersionUID = 1L;
 	public VariantContextDirectedBreakpoint(GenomicProcessingContext processContext, EvidenceSource source, VariantContext context) {
 		super(processContext, source, context);
 		assert(super.getBreakendSummary() instanceof BreakpointSummary);
+	}
+	/**
+	 * Size of event assuming the simplest explanation.
+	 * @return size of breakpoint event
+	 */
+	public Integer getEventSize() {
+		BreakendSummary low = getBreakendSummary().lowBreakend();
+		BreakendSummary high = getBreakendSummary().highBreakend();
+		if (low.referenceIndex != high.referenceIndex) return null;
+		int sizeAdjustment = -1; // assume indel
+		if (low.direction == high.direction) {
+			// inversion
+			sizeAdjustment = 0;
+		} else if (low.direction == BreakendDirection.Backward && high.direction == BreakendDirection.Forward) {
+			// tandem dup
+			sizeAdjustment = 1;
+		}
+		return (high.start + high.end - low.start - low.end) / 2
+				+ getUntemplatedSequence().length()
+				+ sizeAdjustment; 
 	}
 	@Override
 	public BreakpointSummary getBreakendSummary() {

@@ -19,6 +19,7 @@ public class VariantCallingConfiguration {
 	public VariantCallingConfiguration(Configuration config) {
 		config = config.subset(CONFIGURATION_PREFIX);
 		minScore = config.getDouble("minScore");
+		minSize = config.getInt("minSize");
 		callOnlyAssemblies = config.getBoolean("callOnlyAssemblies");
 		breakendMargin = config.getInt("breakendMargin");
 		writeFiltered = config.getBoolean("writeFiltered");
@@ -38,6 +39,10 @@ public class VariantCallingConfiguration {
 	 * Minimum score for variant to be called
 	 */
 	public double minScore;
+	/**
+	 * Minimum size of event for variant to be called
+	 */
+	public int minSize;
 	/**
 	 * Call breakends only on assembled contigs
 	 */
@@ -85,13 +90,11 @@ public class VariantCallingConfiguration {
 		List<VcfFilter> filters = Lists.newArrayList();
 		BreakpointSummary bp = call.getBreakendSummary();
 		
-		//if (minIndelSize > 0 && bp.couldBeDeletionOfSize(1, minIndelSize - 1)) {
-			// likely to be an artifact
-			// due to noise/poor alignment (eg bowtie2 2.1.0 would misalign reference reads)
-			// and a nearby (real) indel
-			// causing real indel mates to be assembled with noise read
-			//filters.add(VcfFilter.SMALL_INDEL);
-		//}
+		if (call.getEventSize() != null && call.getEventSize() < minSize) {
+			// over 90% of events are small. Since most SV analysis excludes such events
+			// we allow the default output 
+			filters.add(VcfFilter.SMALL_EVENT);
+		}
 		if (bp.couldBeReferenceAllele() && call.getUntemplatedSequence().length() == 0) {
 			filters.add(VcfFilter.REFERENCE_ALLELE);
 		}

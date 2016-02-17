@@ -1,7 +1,8 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
 import htsjdk.variant.variantcontext.VariantContext;
+
+import static org.junit.Assert.*;
 
 import java.util.Collections;
 import java.util.List;
@@ -49,5 +50,35 @@ public class VariantContextDirectedBreakpointTest extends TestHelper {
 		assertEquals("5", result.get(2).getID());
 		assertEquals("2", result.get(3).getID());
 		assertEquals("1", result.get(4).getID());
+	}
+	@Test
+	public void getEventSize_interchromosomal() {
+		assertNull(BP("xchr", new BreakpointSummary(0, FWD, 1, 1, 1, BWD, 2, 2), "ACGT").getEventSize());
+	}
+	@Test
+	public void getEventSize_should_use_average_event_size() {
+		assertEquals(4, (int)BP("del", new BreakpointSummary(0, FWD, 1, 3, 0, BWD, 6, 8)).getEventSize());
+	}
+	@Test
+	public void getEventSize_INS() {
+		assertEquals(4, (int)BP("ins", new BreakpointSummary(0, FWD, 1, 1, 0, BWD, 2, 2), "ACGT").getEventSize());
+	}
+	@Test
+	public void getEventSize_DEL() {
+		assertEquals(4, (int)BP("del", new BreakpointSummary(0, FWD, 1, 1, 0, BWD, 6, 6)).getEventSize());
+	}
+	@Test
+	public void getEventSize_INSDEL() {
+		// del 4 + ins 2 = 6
+		assertEquals(6, (int)BP("insdel", new BreakpointSummary(0, FWD, 1, 1, 0, BWD, 6, 6), "AC").getEventSize());
+	}
+	@Test
+	public void getEventSize_DUP() {
+		assertEquals(4, (int)BP("dup", new BreakpointSummary(0, FWD, 10, 10, 0, BWD, 7, 7)).getEventSize());
+	}
+	@Test
+	public void getEventSize_INV() {
+		assertEquals(4, (int)BP("inv", new BreakpointSummary(0, FWD, 6, 6, 0, FWD, 10, 10)).getEventSize());
+		assertEquals(4, (int)BP("inv", new BreakpointSummary(0, BWD, 11, 11, 0, BWD, 7, 7)).getEventSize());
 	}
 }
