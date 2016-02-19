@@ -71,6 +71,8 @@ Input files containing read groups from multiple different libraries should be s
 Numeric category (starting at zero) to allocate the corresponding input file to. Per-category variant support is output so
 a category should be specified for each input file when performing analysis on multiple samples at once. (eg `INPUT=normal75bp.bam INPUT_CATEGORY=0 INPUT=normal100bp.bam INPUT_CATEGORY=0 INPUT=tumour100bp.bam INPUT_CATEGORY=1` ).
 
+For those familar with [CORTEX](http://cortexassembler.sourceforge.net/), a GRIDSS input category corresponds to a CORTEX graph colour.
+
 ### READ_PAIR_CONCORDANT_PERCENT
 
 Portion (0.0-1.0) of read pairs to be considered concordant. Concordant read pairs are considered to provide no support for structural variation.
@@ -163,22 +165,22 @@ unsorted.* | Temporary intermediate file
 *input*.idsv.working/*input*.idsv.metrics.idsv.txt | High-level read/read pair metrics
 *input*.idsv.working/*input*.idsv.metrics.softclip.txt | Soft clip length distribution
 *input*.idsv.working/*input*.idsv.coverage.blacklist.bed | Intervals of extreme coverage excluded from variant calling
-*input*.idsv.working/*input*.idsv.*chr*.sc.bam | soft clipped reads (coordinate sort order)
-*input*.idsv.working/*input*.idsv.*chr*.realign.0.fq | soft clipped bases requiring realignment. The source soft clip is encoded in the read bam
-*input*.idsv.working/*input*.idsv.*chr*.realign.0.bam | soft clipped bases aligned by external aligner. **Record order must match the fastq record order**
-*input*.idsv.working/*input*.idsv.*chr*.scremote.bam | soft clipped reads (realignment position sort order)
-*input*.idsv.working/*input*.idsv.*chr*.realignremote.bam | soft clipped reads (realignment position sort order)
-*input*.idsv.working/*input*.idsv.*chr*.rp.bam | discordant read pairs
-*input*.idsv.working/*input*.idsv.*chr*.rpmate.bam | discordant read pairs, sorted by alignment position of the other read in the pair
+*input*.idsv.working/*chr*/*input*.idsv.*chr*.sc.bam | soft clipped reads (coordinate sort order)
+*input*.idsv.working/*chr*/*input*.idsv.*chr*.realign.0.fq | soft clipped bases requiring realignment. The source soft clip is encoded in the read bam
+*input*.idsv.working/*chr*/*input*.idsv.*chr*.realign.0.bam | soft clipped bases aligned by external aligner. **Record order must match the fastq record order**
+*input*.idsv.working/*chr*/*input*.idsv.*chr*.scremote.bam | soft clipped reads (realignment position sort order)
+*input*.idsv.working/*chr*/*input*.idsv.*chr*.realignremote.bam | soft clipped reads (realignment position sort order)
+*input*.idsv.working/*chr*/*input*.idsv.*chr*.rp.bam | discordant read pairs
+*input*.idsv.working/*chr*/*input*.idsv.*chr*.rpmate.bam | discordant read pairs, sorted by alignment position of the other read in the pair
 *output*.idsv.working | Working directory for assembly and variant calling
 *output*.idsv.working/*output*.idsv.breakpoint.vcf | Raw maximal clique variant calls not requiring unique evidence assignment
 *output*.idsv.working/*output*.idsv.assembly.bam | Assembly contigs represented as paired reads. The first read in the read pair is the assembly, with the second corresponding to the realignment of the breakend bases. Note that the assembly is always on the positive strand so an assembly of a simple indel result in a read pair with FF read alignment orientation. Assemblies with read names of the form asm*n*_*i* are compound realignment records, with the actual assembly in the asm*n* record.
-*output*.idsv.working/*output*.idsv.*chr*.assembly.bam | *chr* subset of above
-*output*.idsv.working/*output*.idsv.*chr*.assemblymate.bam | above sorted by mate position
-*output*.idsv.working/*output*.idsv.*chr*.realign.*n*.fq | breakend realignment iteration *n*. Breakends that span events (such as small translocations or chromothripsis), are realigned multiple times to identify all fusions spanned by the assembly
-*output*.idsv.working/*output*.idsv.*chr*.realign.*n*.bam | External realigner alignments of above. **Record order must match the fastq record order**
-*output*.idsv.working/*output*.idsv.*chr*.breakend.bam | Raw assembly contigs before realignment
-*output*.idsv.working/*output*.idsv.*chr*.breakend.throttled.bam | Regions of high coverage where only a portion of supporting reads are considered for assembly
+*output*.idsv.working/*chr*/*output*.idsv.*chr*.assembly.bam | *chr* subset of above
+*output*.idsv.working/*chr*/*output*.idsv.*chr*.assemblymate.bam | above sorted by mate position
+*output*.idsv.working/*chr*/*output*.idsv.*chr*.realign.*n*.fq | breakend realignment iteration *n*. Breakends that span events (such as small translocations or chromothripsis), are realigned multiple times to identify all fusions spanned by the assembly
+*output*.idsv.working/*chr*/*output*.idsv.*chr*.realign.*n*.bam | External realigner alignments of above. **Record order must match the fastq record order**
+*output*.idsv.working/*chr*/*output*.idsv.*chr*.breakend.bam | Raw assembly contigs before realignment
+*output*.idsv.working/*chr*/*output*.idsv.*chr*.breakend.throttled.bam | Regions of high coverage where only a portion of supporting reads are considered for assembly
 
 ## Building from source
 
