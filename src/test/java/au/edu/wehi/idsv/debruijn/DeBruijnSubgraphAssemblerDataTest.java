@@ -30,21 +30,16 @@ public class DeBruijnSubgraphAssemblerDataTest extends IntermediateFilesTest {
 	public void should_assemble_MT_efficiently() throws ConfigurationException {
 		File hg19decoy = new File("C:\\dev\\hs37d5.fa");
 		ProcessingContext pc = new ProcessingContext(
-				new FileSystemContext(testFolder.getRoot(), 500000),
-				new ArrayList<Header>(),
-				new GridssConfiguration((File)null, testFolder.getRoot()),
-				hg19decoy,
-				true);
+				new FileSystemContext(testFolder.getRoot(), 500000), hg19decoy, true, null,
+				new ArrayList<Header>(), new GridssConfiguration((File)null, testFolder.getRoot()));
 		pc.getConfig().getVisualisation().assemblyProgress = true;
 		
 		DeBruijnSubgraphAssembler ass = new DeBruijnSubgraphAssembler(AES(pc));
 		
 		SAMEvidenceSource ses = new SAMEvidenceSource(new ProcessingContext(
-				new FileSystemContext(new File("W:\\na12878"), 500000),
-				new ArrayList<Header>(),
-				new GridssConfiguration(),
-				hg19decoy,
-				true), new File("W:\\na12878\\NA12878D_HiSeqX_R1.bam"), 0);
+				new FileSystemContext(new File("W:\\na12878"), 500000), hg19decoy, true, null,
+				new ArrayList<Header>(), new GridssConfiguration()),
+			new File("W:\\na12878\\NA12878D_HiSeqX_R1.bam"), 0);
 		ses.completeSteps(ProcessStep.ALL_STEPS); 
 		CloseableIterator<DirectedEvidence> it = ses.iterator(true,  true, true, "MT");
 		

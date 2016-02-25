@@ -176,12 +176,9 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		IndexedFastaSequenceFile indexed = new IndexedFastaSequenceFile(ref);
 		ReferenceLookup lookup = new SynchronousReferenceLookupAdapter(indexed);
 		ProcessingContext pc = new ProcessingContext(
-				new FileSystemContext(testFolder.getRoot(), 500000),
+				new FileSystemContext(testFolder.getRoot(), 500000), ref, false, lookup,
 				headers,
-				new GridssConfiguration(getDefaultConfig(), testFolder.getRoot()),
-				lookup,
-				ref,
-				false);
+				new GridssConfiguration(getDefaultConfig(), testFolder.getRoot()));
 		pc.getAssemblyParameters().anchorRealignment.perform = true;
 		pc.registerCategory(0, "Normal");
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);

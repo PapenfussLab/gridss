@@ -31,7 +31,7 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 	private static final long serialVersionUID = 1L;
 	private final VcfBreakendSummary breakend;
 	//private static Log LOG = Log.getInstance(VariantContextDirectedBreakpoint.class);
-	public VariantContextDirectedEvidence(ProcessingContext processContext, EvidenceSource source, VariantContext context) {
+	public VariantContextDirectedEvidence(GenomicProcessingContext processContext, EvidenceSource source, VariantContext context) {
 		super(processContext, source, context);
 		this.breakend = new VcfBreakendSummary(processContext, context);
 	}

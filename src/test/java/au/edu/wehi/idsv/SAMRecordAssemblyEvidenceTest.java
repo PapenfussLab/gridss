@@ -369,9 +369,8 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		String assembly = "ATCCATCCCTATGACCCAAACATCTCCCACCAGGCCTCATGTTCAATATTAAAGATCACATTTCAACTTGAGATTTGGAGGGGACAAACATACAAATCATATCATTATCTCTCTCCCCACTTCTCTCTTTATCAATCCCTCCCTCTTTGTCAATCTTAGCCTTGGCCTTCAGATTTTACCACTTGATTTTTCACATTTTCTGTATTCTTAAT"
 				+ "GATTATTATATTTTCATGTTCTTGCTAATCTATATCATGGTTAGAAATCAAAGCATGCCGAAATTTCTCTCTTACTTTTTTTGCTGTT";
 		File ref = new File("src/test/resources/chr1_170849600_170849850.fa");
-		ProcessingContext context = new ProcessingContext(getFSContext(),
-				new ArrayList<Header>(), new GridssConfiguration(),
-				ref, false);
+		ProcessingContext context = new ProcessingContext(getFSContext(), ref, false, null,
+				new ArrayList<Header>(), new GridssConfiguration());
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(context, AES(context), BWD, null,
 				0, 170849702-170849600+1, 97, B(assembly), B(40, assembly.length())).realign(50, 0.5f);
 		// anchor location is 11bp off
@@ -568,7 +567,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void getAllRealignments_should_return_all_breakpoints_bwd4() {
-		ProcessingContext pc = getContext();
+		GenomicProcessingContext pc = getContext();
 		AssemblyEvidenceSource aes = AES();
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 70, 10, B("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN"), B("00000000000000000000000000000000000000000000000000"));
 		//          1         2         3         4         5         6         7         8         9         0

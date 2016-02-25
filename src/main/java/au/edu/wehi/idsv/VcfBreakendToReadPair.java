@@ -13,13 +13,10 @@ import htsjdk.variant.vcf.VCFFileReader;
 import java.io.File;
 import java.io.IOException;
 
-import org.apache.commons.configuration.ConfigurationException;
-
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import picard.sam.FixMateInformation;
-import au.edu.wehi.idsv.configuration.GridssConfiguration;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -47,15 +44,15 @@ public class VcfBreakendToReadPair extends picard.cmdline.CommandLineProgram {
 			TMP_DIR = Lists.newArrayList(new File("."));
 		}
 		try {
-			ProcessingContext pc = new ProcessingContext(new FileSystemContext(TMP_DIR.get(0), MAX_RECORDS_IN_RAM), null, new GridssConfiguration(), REFERENCE, false);
+			GenomicProcessingContext pc = new GenomicProcessingContext(new FileSystemContext(TMP_DIR.get(0), MAX_RECORDS_IN_RAM), REFERENCE, false, null);
 			writeVisualisationBam(pc, INPUT, OUTPUT, OUTPUT_FILTERED);
-		} catch (IOException | ConfigurationException e) {
+		} catch (IOException e) {
 			log.error(e);
 			return -1;
 		}
 		return 0;
 	}
-	public void writeVisualisationBam(ProcessingContext pc, File vcf, File bam, File bamFiltered) throws IOException {
+	public void writeVisualisationBam(GenomicProcessingContext pc, File vcf, File bam, File bamFiltered) throws IOException {
 		File working = FileSystemContext.getWorkingFileFor(bam);
 		File workingFiltered = FileSystemContext.getWorkingFileFor(bamFiltered);
 		VCFFileReader vcfReader = new VCFFileReader(vcf, false);

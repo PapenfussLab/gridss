@@ -375,7 +375,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 	public int getExpectedFragmentSize() {
 		return Math.min((int)getMetrics().getInsertSizeMetrics().MEDIAN_INSERT_SIZE, getMaxConcordantFragmentSize());
 	}
-	public ProcessingContext getProcessContext() {
+	public GenomicProcessingContext getProcessContext() {
 		return getContext();
 	}
 	public IntervalBed getBlacklistedRegions() {

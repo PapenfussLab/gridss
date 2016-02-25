@@ -447,12 +447,8 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		IndexedFastaSequenceFile indexed = new IndexedFastaSequenceFile(ref);
 		ReferenceLookup lookup = new SynchronousReferenceLookupAdapter(indexed);
 		ProcessingContext pc = new ProcessingContext(
-				new FileSystemContext(testFolder.getRoot(), 500000),
-				headers,
-				getConfig(testFolder.getRoot()),
-				lookup,
-				ref,
-				false);
+				new FileSystemContext(testFolder.getRoot(), 500000), ref, false, lookup,
+				headers, getConfig(testFolder.getRoot()));
 		pc.registerCategory(0, "Normal");
 		
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);

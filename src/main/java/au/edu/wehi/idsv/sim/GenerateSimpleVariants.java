@@ -6,7 +6,7 @@ import java.util.List;
 
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
-import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.vcf.SvType;
 
 import com.google.common.collect.Lists;
@@ -28,7 +28,7 @@ public class GenerateSimpleVariants extends SimulationGenerator {
 	protected int doWork() {
     	try {
         	IOUtil.assertFileIsReadable(REFERENCE);
-        	ProcessingContext pc = getProcessingContext();
+        	GenomicProcessingContext pc = getProcessingContext();
         	SimpleVariantChromosome gen = new SimpleVariantChromosome(pc, CHR, PADDING, RANDOM_SEED);
         	gen.assemble(FASTA, VCF, INCLUDE_REFERENCE, TYPE, SIZE, COPIES == null ? Integer.MAX_VALUE : COPIES);
         } catch (Exception e) {

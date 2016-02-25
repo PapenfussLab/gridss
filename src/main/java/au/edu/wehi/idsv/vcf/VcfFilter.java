@@ -9,16 +9,16 @@ import htsjdk.variant.vcf.VCFFilterHeaderLine;
  */
 public enum VcfFilter {
 	ASSEMBLY_TOO_SHORT ("ASSEMBLY_TOO_SHORT", "This assembly is shorter than a read length"),
-	ASSEMBLY_TOO_FEW_READ ("ASSEMBLY_TOO_FEW_READ", "Not enough reads contribute to this assembly."),
+	ASSEMBLY_TOO_FEW_READ ("ASSEMBLY_TOO_FEW_READ", "Not enough reads contribute to this assembly as specified by 'assembly.minReads'"),
 	REFERENCE_ALLELE ("REF", "Breakpoint corresponds to reference allele"),
-	//SMALL_INDEL ("SMALL_INDEL", "Variant is a small indel that is possibly an alignment artefact."),
-	LOW_BREAKPOINT_SUPPORT ("LOW_BREAKPOINT_SUPPORT", "Does not reach the required threshold quality for calling."),
+	SMALL_EVENT ("SMALL_EVENT", "Event size is smaller than the minimum reportable size specified by 'variantcalling.minSize'"),
+	LOW_BREAKPOINT_SUPPORT ("LOW_BREAKPOINT_SUPPORT", "Does not reach the required threshold quality for calling as specified by 'variantcalling.minScore'"),
 	SINGLE_SUPPORT ("SINGLE_SUPPORT", "Supported by a single read or read pair only."),
 	//ASSEMBLY_REMOTE ("ASSEMBLY_REMOTE", "All support for the given breakpoint comes from elsewhere."),
 	NO_ASSEMBLY ("NO_ASSEMBLY", "No assembly supporting this variant could be found."),
 	SINGLE_ASSEMBLY ("SINGLE_ASSEMBLY", "Only one side of the breakpoint could be assembled."),
 	ASSEMBLY_ONLY ("ASSEMBLY_ONLY", "Variant is supported only by assembly evidence."),
-	LOW_QUAL ("LOW_QUAL", "Low quality call.");
+	LOW_QUAL ("LOW_QUAL", "Low quality call as specified by 'variantcalling.lowQuality'");
 
     private final VCFFilterHeaderLine filterheader;
 	VcfFilter(String name, String description) {

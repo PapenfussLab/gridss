@@ -192,39 +192,39 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		builder.source(source);
 		assertEquals(source, builder.make().getEvidenceSource());
 	}
-	@Test
-	public void should_write_breakpoint_in_vcf41_mode() {
-		ProcessingContext context = getContext();
-		context.getConfig().getVariantCalling().placeholderBreakend = true;
-		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
-		builder.breakend(new BreakendSummary(0,  FWD,  1,  1), "ACGT");
-		VariantContextDirectedEvidence vc = (VariantContextDirectedEvidence)builder.make();
-		assertEquals(-1, vc.getAlternateAlleles().get(0).getDisplayString().indexOf("."));
-	}
-	@Test
-	public void vcf41_breakend_should_round_trip() {
-		ProcessingContext context = getContext();
-		context.getConfig().getVariantCalling().placeholderBreakend = true;
-		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
-		builder.breakend(new BreakendSummary(0,  FWD,  1,  2), "ACGT");
-		VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(context, builder.make()).make();
-		assertEquals(0, v.getBreakendSummary().referenceIndex);
-		assertEquals(FWD, v.getBreakendSummary().direction);
-		assertEquals(1, v.getBreakendSummary().start);
-		assertEquals(2, v.getBreakendSummary().end);
-		assertEquals(1, v.getStart());
-		assertEquals(1, v.getEnd()); // breakend is called at the first position of the interval
-		
-		builder = new IdsvVariantContextBuilder(context);
-		builder.breakend(new BreakendSummary(0,  BWD,  1,  2), "ACGT");
-		v = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(context, builder.make()).make();
-		assertEquals(0, v.getBreakendSummary().referenceIndex);
-		assertEquals(BWD, v.getBreakendSummary().direction);
-		assertEquals(1, v.getBreakendSummary().start);
-		assertEquals(2, v.getBreakendSummary().end);
-		assertEquals(1, v.getStart());
-		assertEquals(1, v.getEnd());
-	}
+//	@Test
+//	public void should_write_breakpoint_in_vcf41_mode() {
+//		ProcessingContext context = getContext();
+//		context.getConfig().getVariantCalling().placeholderBreakend = true;
+//		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
+//		builder.breakend(new BreakendSummary(0,  FWD,  1,  1), "ACGT");
+//		VariantContextDirectedEvidence vc = (VariantContextDirectedEvidence)builder.make();
+//		assertEquals(-1, vc.getAlternateAlleles().get(0).getDisplayString().indexOf("."));
+//	}
+//	@Test
+//	public void vcf41_breakend_should_round_trip() {
+//		ProcessingContext context = getContext();
+//		context.getConfig().getVariantCalling().placeholderBreakend = true;
+//		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context);
+//		builder.breakend(new BreakendSummary(0,  FWD,  1,  2), "ACGT");
+//		VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(context, builder.make()).make();
+//		assertEquals(0, v.getBreakendSummary().referenceIndex);
+//		assertEquals(FWD, v.getBreakendSummary().direction);
+//		assertEquals(1, v.getBreakendSummary().start);
+//		assertEquals(2, v.getBreakendSummary().end);
+//		assertEquals(1, v.getStart());
+//		assertEquals(1, v.getEnd()); // breakend is called at the first position of the interval
+//		
+//		builder = new IdsvVariantContextBuilder(context);
+//		builder.breakend(new BreakendSummary(0,  BWD,  1,  2), "ACGT");
+//		v = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(context, builder.make()).make();
+//		assertEquals(0, v.getBreakendSummary().referenceIndex);
+//		assertEquals(BWD, v.getBreakendSummary().direction);
+//		assertEquals(1, v.getBreakendSummary().start);
+//		assertEquals(2, v.getBreakendSummary().end);
+//		assertEquals(1, v.getStart());
+//		assertEquals(1, v.getEnd());
+//	}
 	@Test(expected=IllegalStateException.class)
 	public void should_require_stop_set() {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());

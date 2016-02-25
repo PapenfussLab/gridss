@@ -8,7 +8,6 @@ import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfConstants;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 /**
@@ -20,7 +19,7 @@ public class VcfBreakendSummary {
 	public final BreakendSummary location;
 	public final String breakpointSequence;
 	public final String anchorSequence;
-	public VcfBreakendSummary(ProcessingContext processContext, VariantContext variant) {
+	public VcfBreakendSummary(GenomicProcessingContext processContext, VariantContext variant) {
 		List<Allele> altList = variant.getAlternateAlleles();
 		if (altList.size() != 1) {
 			location = null;
@@ -29,7 +28,7 @@ public class VcfBreakendSummary {
 			return;
 		}
 		String alt = variant.getAlternateAllele(0).getDisplayString();
-		alt = alt.replace(VcfConstants.VCF41BREAKEND_REPLACEMENT, VcfConstants.VCF42BREAKEND);
+		//alt = alt.replace(VcfConstants.VCF41BREAKEND_REPLACEMENT, VcfConstants.VCF42BREAKEND);
 		if (variant.getReference().length() >= alt.length()) {
 			// Technically this is valid (eg: {"AAA", "A."} = breakend with deletion), we just can't handle these yet
 			location = null;

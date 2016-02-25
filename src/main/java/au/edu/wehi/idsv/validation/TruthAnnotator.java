@@ -14,6 +14,7 @@ import au.edu.wehi.idsv.BreakendAnnotator;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.BreakpointSummary;
+import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.IdsvVariantContext;
 import au.edu.wehi.idsv.IdsvVariantContextBuilder;
 import au.edu.wehi.idsv.ProcessingContext;
@@ -38,7 +39,7 @@ public class TruthAnnotator extends AbstractIterator<VariantContextDirectedEvide
 		this.truth = loadTruthVcf(processContext, truthVcf);
 		this.it = it;
 	}
-	private static List<IdsvVariantContext> loadTruthVcf(ProcessingContext processContext, File truthVcf) {
+	private static List<IdsvVariantContext> loadTruthVcf(GenomicProcessingContext processContext, File truthVcf) {
 		List<IdsvVariantContext> truth = Lists.newArrayList();
 		VCFFileReader vcfReader = null;
 		CloseableIterator<VariantContext> it = null;

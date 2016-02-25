@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import picard.analysis.InsertSizeMetrics;
-import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.util.MathUtil;
 
 import com.google.common.collect.Iterables;
@@ -21,7 +21,7 @@ import com.google.common.primitives.Longs;
 
 public class IdsvSamFileMetrics {
 	private static final Log log = Log.getInstance(IdsvSamFileMetrics.class);
-	public IdsvSamFileMetrics(ProcessingContext pc, File source) {
+	public IdsvSamFileMetrics(GenomicProcessingContext pc, File source) {
 		this(pc.getFileSystemContext().getInsertSizeMetrics(source), pc.getFileSystemContext().getIdsvMetrics(source), pc.getFileSystemContext().getCigarMetrics(source));
 	}
 	public IdsvSamFileMetrics(File insertSizeMetricsFile, File idsvMetricsFile, File cigarMetricsFile) {

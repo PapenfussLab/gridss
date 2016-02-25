@@ -18,9 +18,9 @@ public class IdsvVariantContext extends VariantContext {
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	protected final ProcessingContext processContext;
+	protected final GenomicProcessingContext processContext;
 	protected final EvidenceSource source;
-	public IdsvVariantContext(ProcessingContext processContext, EvidenceSource source, VariantContext context) {
+	public IdsvVariantContext(GenomicProcessingContext processContext, EvidenceSource source, VariantContext context) {
 		super(context);
 		this.processContext = processContext;
 		this.source = source;
@@ -38,7 +38,7 @@ public class IdsvVariantContext extends VariantContext {
 	/**
      * @return reference index for the given sequence name, or -1 if the variant is not on a reference contig
      */
-	public static int getReferenceIndex(ProcessingContext processContext, VariantContext variant) {
+	public static int getReferenceIndex(GenomicProcessingContext processContext, VariantContext variant) {
 		return processContext.getDictionary().getSequenceIndex(variant.getContig());
 	}
 	/**
@@ -53,7 +53,7 @@ public class IdsvVariantContext extends VariantContext {
 	 * @param context variant context
 	 * @return variant context sub-type
 	 */
-	public static IdsvVariantContext create(ProcessingContext processContext, EvidenceSource source, VariantContext variant) {
+	public static IdsvVariantContext create(GenomicProcessingContext processContext, EvidenceSource source, VariantContext variant) {
 		VcfBreakendSummary vbs = new VcfBreakendSummary(processContext, variant);
 		if (vbs.location instanceof BreakpointSummary) return new VariantContextDirectedBreakpoint(processContext, source, variant);
 		if (vbs.location instanceof BreakendSummary) return new VariantContextDirectedEvidence(processContext, source, variant);

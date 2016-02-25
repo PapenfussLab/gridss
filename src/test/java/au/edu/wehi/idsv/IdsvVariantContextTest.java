@@ -34,7 +34,7 @@ public class IdsvVariantContextTest extends TestHelper {
 		public TestIdsvVariantContext(VariantContext context) {
 			super(getContext(), AES(), context);
 		}
-		public TestIdsvVariantContext(ProcessingContext processContext, VariantContext context) {
+		public TestIdsvVariantContext(GenomicProcessingContext processContext, VariantContext context) {
 			super(processContext, AES(), context);
 		}
 		public List<Integer> getAttributeAsIntList(String attrName) {

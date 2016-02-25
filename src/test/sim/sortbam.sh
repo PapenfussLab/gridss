@@ -1,10 +1,9 @@
 #!/bin/bash
 #
-# Generates perfect read data sets
+# Sorts bam files
 #
 . common.sh
 
-# Generate simulated reads for each reference VCF
 for BAM in $DATA_DIR/*.su.bam ; do
 	cx_load $BAM
 	# So we don't overwrite the output from the alignment itself

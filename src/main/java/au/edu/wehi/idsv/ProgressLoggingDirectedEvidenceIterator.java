@@ -9,8 +9,8 @@ import java.util.Iterator;
 public class ProgressLoggingDirectedEvidenceIterator<T extends DirectedEvidence> implements CloseableIterator<T> {
 	private final ProgressLoggerInterface logger;
 	private final Iterator<T> iterator;
-	private final ProcessingContext processContext;
-	public ProgressLoggingDirectedEvidenceIterator(ProcessingContext processContext, Iterator<T> iterator, ProgressLoggerInterface logger) {
+	private final GenomicProcessingContext processContext;
+	public ProgressLoggingDirectedEvidenceIterator(GenomicProcessingContext processContext, Iterator<T> iterator, ProgressLoggerInterface logger) {
 		this.iterator = iterator;
 		this.logger = logger;
 		this.processContext = processContext;

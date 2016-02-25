@@ -63,19 +63,12 @@ public class IntermediateFilesTest extends TestHelper {
 		ProcessingContext pc;
 		if (reference.equals(SMALL_FA_FILE)) {
 			pc = new ProcessingContext(
-				new FileSystemContext(testFolder.getRoot(), 500000),
-				headers,
-				getConfig(testFolder.getRoot()),
-				SMALL_FA,
-				reference,
-				perChr);
+				new FileSystemContext(testFolder.getRoot(), 500000), reference, perChr, SMALL_FA,
+				headers, getConfig(testFolder.getRoot()));
 		} else {
 			pc = new ProcessingContext(
-					new FileSystemContext(testFolder.getRoot(), 500000),
-					headers,
-					getConfig(testFolder.getRoot()),
-					reference,
-					perChr);
+					new FileSystemContext(testFolder.getRoot(), 500000), reference, perChr, null, 
+					headers, getConfig(testFolder.getRoot()));
 		}
 		pc.registerCategory(0, "Normal");
 		pc.registerCategory(1, "Tumour");
@@ -147,24 +140,24 @@ public class IntermediateFilesTest extends TestHelper {
 		}
 		writer.close();
 	}
-	public void createVCF(ProcessingContext context, File file, VariantContext... data) {
+	public void createVCF(GenomicProcessingContext context, File file, VariantContext... data) {
 		VariantContextWriter writer = context.getVariantContextWriter(file, true);
 		for (VariantContext vc : data) {
 			writer.add(vc);
 		}
 		writer.close();
 	}
-	public void writeRealignment(ProcessingContext pc, EvidenceSource source, int index, SAMRecord... records) {
+	public void writeRealignment(GenomicProcessingContext pc, EvidenceSource source, int index, SAMRecord... records) {
 		createBAM(pc.getFileSystemContext().getRealignmentBam(source.getFileIntermediateDirectoryBasedOn(), index), SortOrder.coordinate, records);
 	}
-	public void writeUnmappedRealignments(ProcessingContext pc, AssemblyEvidenceSource source, int index) {
+	public void writeUnmappedRealignments(GenomicProcessingContext pc, AssemblyEvidenceSource source, int index) {
 		writeRealignment(pc, source, 0, Lists.newArrayList(source.iterator(false, true)).stream().map(e -> {
 			SAMRecord r = new SAMRecord(pc.getBasicSamHeader());
 			r.setReadName(BreakpointFastqEncoding.getRealignmentFastq(e).getReadHeader());
 			return r;
 			}).collect(Collectors.toList()).toArray(new SAMRecord[0]));
 	}
-	public void writeUnmappedRealignments(ProcessingContext pc, SAMEvidenceSource source, int index) {
+	public void writeUnmappedRealignments(GenomicProcessingContext pc, SAMEvidenceSource source, int index) {
 		writeRealignment(pc, source, 0, Lists.newArrayList(source.iterator(false, true, false)).stream().map(e -> {
 			SoftClipEvidence sc = (SoftClipEvidence)e;
 			SAMRecord r = new SAMRecord(pc.getBasicSamHeader());

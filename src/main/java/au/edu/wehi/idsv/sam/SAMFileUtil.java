@@ -133,7 +133,7 @@ public class SAMFileUtil {
 				reader = null;
 				collection.doneAdding();
 				writer = processContext.getSamFileWriterFactory(sortOrder == SortOrder.coordinate).makeSAMOrBAMWriter(header, true, tmpFile);
-				writer.setProgressLogger(new ProgressLogger(log));
+				writer.setProgressLogger(new ProgressLogger(log, 10000000));
 		    	wit = collection.iterator();
 		    	if (Defaults.SANITY_CHECK_ITERATORS) {
 					wit = new AutoClosingIterator<SAMRecord>(new OrderAssertingIterator<SAMRecord>(wit, sortComparator), ImmutableList.<Closeable>of(wit));

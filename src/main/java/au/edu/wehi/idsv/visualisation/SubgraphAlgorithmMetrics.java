@@ -4,7 +4,7 @@ import java.util.List;
 
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
-import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.graph.PathNode;
 
@@ -41,16 +41,16 @@ public class SubgraphAlgorithmMetrics<T, PN extends PathNode<T>> implements Subg
 	private long timeGeneratePathGraphComplete;
 	private int pathGraphInitialSize;
 	private int pathGraphInitialEdges;
-	private ProcessingContext processContext;
+	private GenomicProcessingContext processContext;
 	private BreakendDirection direction;
 	private int referenceIndex;
 	private long timeToAssemblyEvidenceComplete;
 	private int collapseNodeCountReducedBy;
 	private int pathGraphKmers;
-	public SubgraphAlgorithmMetrics(ProcessingContext processContext, int referenceIndex) {
+	public SubgraphAlgorithmMetrics(GenomicProcessingContext processContext, int referenceIndex) {
 		this(processContext, referenceIndex, System.nanoTime());
 	}
-	public SubgraphAlgorithmMetrics(ProcessingContext processContext, int referenceIndex, long constructionStartTime) {
+	public SubgraphAlgorithmMetrics(GenomicProcessingContext processContext, int referenceIndex, long constructionStartTime) {
 		this.processContext = processContext;
 		this.referenceIndex = referenceIndex;
 		this.timeKmerConstructionStart = constructionStartTime;

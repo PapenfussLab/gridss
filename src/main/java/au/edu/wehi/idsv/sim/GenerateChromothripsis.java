@@ -6,7 +6,7 @@ import java.io.File;
 
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
-import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.GenomicProcessingContext;
 
 /**
  * Simulates chromothripsis through random translocation
@@ -29,7 +29,7 @@ public class GenerateChromothripsis extends SimulationGenerator {
     protected int doWork() {
         try {
         	IOUtil.assertFileIsReadable(REFERENCE);
-        	ProcessingContext pc = getProcessingContext();
+        	GenomicProcessingContext pc = getProcessingContext();
         	FragmentedChromosome fc;
         	if (REPEATMASKER_OUTPUT == null) {
         		fc = new FragmentedChromosome(pc, CHR, PADDING, FRAGMENT_SIZE, RANDOM_SEED);

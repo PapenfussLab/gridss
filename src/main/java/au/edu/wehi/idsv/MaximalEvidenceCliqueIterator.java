@@ -40,7 +40,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		this.idGenerator = idGenerator;
 	}
 	private class GraphNodeWindowedSortingIterator extends WindowedSortingIterator<RectangleGraphNode> {
-		public GraphNodeWindowedSortingIterator(final ProcessingContext processContext, final int windowSize, final Iterator<RectangleGraphNode> it) {
+		public GraphNodeWindowedSortingIterator(final GenomicProcessingContext processContext, final int windowSize, final Iterator<RectangleGraphNode> it) {
 			super(it, new Function<RectangleGraphNode, Long>() {
 				public Long apply(RectangleGraphNode arg) {
 					return arg.startX;
