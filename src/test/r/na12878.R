@@ -21,25 +21,27 @@
 
 #source("http://bioconductor.org/biocLite.R")
 #biocLite("rtracklayer")
+source("common.R")
 source("libna12878.R")
 
 vcfs <- NULL
 pwd <- getwd()
 setwd(paste0(rootdir, "i/data.na12878"))
 metadata <- LoadMetadata()
+metadata <- main_callers_subset(metadata)
 vcfs <- LoadVcfs(metadata, existingVcfs=vcfs)
 setwd(pwd)
 
-truth <- "lumpyPacBioMoleculo"
-vcfs <- lapply(vcfs, function(vcf) {
-  attr(vcf, "sourceMetadata")$CX_REFERENCE_VCF <- "00000000000000000000000000000001.reference.vcf"
-  return(vcf)
-})
-truth <- "merged"
-vcfs <- lapply(vcfs, function(vcf) {
-  attr(vcf, "sourceMetadata")$CX_REFERENCE_VCF <- "00000000000000000000000000000000.reference.vcf"
-  return(vcf)
-})
+# truth <- "lumpyPacBioMoleculo"
+# vcfs <- lapply(vcfs, function(vcf) {
+#   attr(vcf, "sourceMetadata")$CX_REFERENCE_VCF <- "00000000000000000000000000000001.reference.vcf"
+#   return(vcf)
+# })
+# truth <- "merged"
+# vcfs <- lapply(vcfs, function(vcf) {
+#   attr(vcf, "sourceMetadata")$CX_REFERENCE_VCF <- "00000000000000000000000000000000.reference.vcf"
+#   return(vcf)
+# })
 truth <- "Mills"
 vcfs <- lapply(vcfs, function(vcf) {
   attr(vcf, "sourceMetadata")$CX_REFERENCE_VCF <- "00000000000000000000000000000002.reference.vcf"
@@ -47,33 +49,37 @@ vcfs <- lapply(vcfs, function(vcf) {
 })
 vcfs <- lapply(vcfs, function(vcf) {
   #vcf <- vcf[!isInterChromosmal(vcf),]
+  write(paste0("Processing ", attr(vcf, "sourceMetadata")$Id), stderr())
   vcf <- vcf[isDeletionLike(vcf, minsize), ]
   caller <- str_extract(attr(vcf, "sourceMetadata")$CX_CALLER, "^[^/]+")
   if (!is.na(caller) && !is.null(caller) && caller %in% c("breakdancer")) {
     # strip all BND events since they are non-deletion events such as translocations
     vcf <- vcf[info(vcf)$SVTYPE == "DEL",]
   }
-  vcf <- withqual(vcf, caller)
+  if (!is.na(caller) && !is.null(caller)) {
+    vcf <- withqual(vcf, caller)
+  }
   return(vcf)
 })
 
 truthlist_filtered <- CalculateTruthSummary(vcfs, blacklist=blacklist, maxerrorbp=maxPositionDifference_LengthOrEndpoint, maxerrorpercent=maxLengthRelativeDifference, ignoreFilters=FALSE, ignore.strand=TRUE) # breakdancer does not specify strand
 truthlist_all <- CalculateTruthSummary(vcfs, blacklist=blacklist, maxerrorbp=maxPositionDifference_LengthOrEndpoint, maxerrorpercent=maxLengthRelativeDifference, ignoreFilters=TRUE, ignore.strand=TRUE) # breakdancer does not specify strand
 
-truthlist_filtered$calls <- filter_main_callers(truthlist_filtered$calls)
-truthlist_filtered$truth <- filter_main_callers(truthlist_filtered$truth)
-truthlist_all$calls <- filter_main_callers(truthlist_all$calls)
-truthlist_all$truth <- filter_main_callers(truthlist_all$truth)
+truthlist_filtered$calls <- truthlist_filtered$calls
+truthlist_filtered$truth <- truthlist_filtered$truth
+truthlist_all$calls <- truthlist_all$calls
+truthlist_all$truth <- truthlist_all$truth
 
 dtroc_filtered <- TruthSummaryToROC(truthlist_filtered, bylist=c("CX_CALLER"))
-dtroc_filtered$Filter <- "Default"
+dtroc_filtered$Filter <- prettyFilter(text_default_calls)
 dtroc_all <- TruthSummaryToROC(truthlist_all, bylist=c("CX_CALLER"))
-dtroc_all$Filter <- "Including Filtered"
+dtroc_all$Filter <-prettyFilter(text_all_calls)
 dtroc <- rbind(dtroc_all, dtroc_filtered)
 
 ggplot(dtroc) + 
   aes(y=tp/2, x=fp/2, color=CX_CALLER, linetype=Filter) +
   geom_line() + 
+  geom_line(data=dtroc[dtroc$CX_CALLER=="gridss",], size=1.2) +
 #  scale_color_brewer(palette="Set2") + 
   coord_cartesian(xlim=c(0, 1000), ylim=c(0, 3000)) + 
   labs(y="tp", x="fp", title=paste("ROC curve NA12878 deletions", truth))
@@ -81,8 +87,9 @@ saveplot(paste0("na12878_tp_fp_", truth, "_error_", maxLengthRelativeDifference,
 ggplot(dtroc) + 
   aes(y=prec, x=tp/2, color=CX_CALLER, linetype=Filter) +
 #  scale_color_brewer(palette="Set2") + 
-  coord_cartesian(xlim=c(0, 4500)) +
+  coord_cartesian(xlim=c(0, 4000)) +
   geom_line() + 
+  geom_line(data=dtroc[dtroc$CX_CALLER=="gridss",], size=1.2) +
   labs(y="Precision", x="True positives", title=paste("Precision-Recall curve NA12878 deletions", truth))
 saveplot(paste0("na12878_prec_", truth, "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ""), width=7, height=5)
 
@@ -90,47 +97,43 @@ dtroc[dtroc$prec > 0.75,][!duplicated(paste(dtroc[dtroc$prec > 0.75,]$CX_CALLER,
 
 ###########
 # Moleculo/PacBio truth set
-delroc <- bedToROC(longReadBed(vcfs))
-delroc <- filter_main_callers(delroc, "caller")
-ggplot(delroc) + aes(x=fp, y=tp, color=caller, linetype=Filter) + geom_line() +
+lrbedraw <- longReadBed(vcfs)
+lrbed <- lrbedraw
+lrbed <- lrbed[order(-lrbed$tp, -lrbed$QUAL),] # remove the FP / lower scoring duplicate
+lrbed <- lrbed[!isDuplicateCall(lrbed, maxgap=50),]
+delroc <- bedToROC(lrbed)
+delroc$caller <- as.factor.gridss.first(delroc$caller)
+ggplot(delroc) +
+  aes(x=fp, y=tp, color=caller, linetype=Filter) +
+  geom_line() +
+  geom_line(delroc[delroc$caller=="gridss",], size=1.2) +
   coord_cartesian(xlim=c(0, 1000), ylim=c(0, 3000)) + 
   labs(x="False Positives", y="True Positives", title="NA12878 deletions PacBio/Moleculo validated")
 #  scale_color_brewer(palette="Set2") +
 saveplot(paste0("na12878_tp_fp_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ""), width=7, height=5)
-ggplot(delroc) + aes(x=tp, y=precision, color=caller, linetype=Filter) + geom_line() +
-  coord_cartesian(xlim=c(0, 4500)) + 
+ggplot(delroc) +
+  aes(x=tp, y=precision, color=caller, linetype=Filter) +
+  geom_line() +
+  geom_line(delroc[delroc$caller=="gridss",], size=1.2) +
+  coord_cartesian(xlim=c(0, 4000)) + 
   labs(x="True Positives", y="Precision", title="NA12878 deletions PacBio/Moleculo validated")
 #  scale_color_brewer(palette="Set2") +  
 saveplot(paste0("na12878_prec_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ""), width=7, height=5)
 
 ###########
-# Gridss breakdown by support type
-bddelroc <- bedToROC(longReadBed(gridssbreakdownvcfs))
-bddelroc$Scoring <- ifelse(str_detect(bddelroc$caller, "[$]"), "Read Count", "Bayesian")
-bddelroc$caller <- str_extract(bddelroc$caller, "[^$]*")
-bddelroc <- bddelroc[bddelroc$QUAL > 0,] # filter out calls that wouldn't have been called according to that particular scoring scheme
-ggplot(bddelroc) + aes(x=fp, y=tp, color=caller, linetype=Scoring) + geom_line() +
-  coord_cartesian(xlim=c(0, 1000), ylim=c(0, 3000)) + 
-  scale_color_brewer(palette="Set2") +
-  labs(x="False Positives", y="True Positives", title="gridss support breakdown")
-saveplot(paste0("na12878_gridss_tp_fp_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ""), width=7, height=5)
-
-ggplot(bddelroc) + aes(x=tp, y=precision, color=caller, linetype=Scoring) + geom_line() + 
-  scale_color_brewer(palette="Set2") +
-  labs(x="True Positives", y="Precision", title="gridss support breakdown")
-saveplot(paste0("na12878_gridss_prec_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ""), width=7, height=5)
-
-
-###########
 # precision thresholds
 delroc[delroc$precision > 0.95,][!duplicated(paste(delroc[delroc$precision > 0.95,]$caller, delroc[delroc$precision > 0.95,]$Filter), fromLast=TRUE),]
-ggplot(as.data.frame(delbed[delbed$caller=="gridss" & !delbed$filtered,])) + aes(x=QUAL, fill=ifelse(tp, "_tp", "fp")) + geom_histogram(binwidth=100) + scale_x_continuous(limits=c(0, 3000))
+ggplot(as.data.frame(lrbed[lrbed$caller=="gridss"])) +
+  aes(x=QUAL, fill=ifelse(tp, "_tp", "fp")) +
+  facet_wrap(~ filtered) +
+  geom_histogram(binwidth=100) +
+  coord_cartesian(xlim=c(0, 3000), ylim=c(0, 200))
 saveplot("na12878_gridss_hq_treshold")
 
 # gridss FPR by QUAL
 gridssvcf_binned <- lapply(vcfs, function(vcf) {
   if (is.na(attr(vcf, "sourceMetadata")$CX_CALLER)) return(NULL)
-  if (attr(vcf, "sourceMetadata")$CX_CALLER == "gridss/0.10.0-SNAPSHOT") {
+  if (str_detect(attr(vcf, "sourceMetadata")$CX_CALLER, "gridss")) {
     rowRanges(vcf)$QUAL <- floor(rowRanges(vcf)$QUAL / 100) * 100
     return (vcf)
   }
@@ -138,9 +141,9 @@ gridssvcf_binned <- lapply(vcfs, function(vcf) {
 })
 gridssvcf_binned <- gridssvcf_binned[!sapply(gridssvcf_binned, is.null)]
 expect_that(length(gridssvcf_binned), equals(1))
-bindelroc <- longReadBed(gridssvcf_binned)
-bindelroc <- bedToROC(bindelroc)
-bindelroc <- bindelroc[bindelroc$Filter == "Default",]
+bindelbed <- longReadBed(gridssvcf_binned)
+bindelroc <- bedToROC(bindelbed)
+bindelroc <- bindelroc[bindelroc$Filter == text_default_calls,]
 bindelroclookup <- bindelroc
 bindelroclookup[nrow(bindelroclookup)]$QUAL <- 1000000
 bindelroclookup <- bindelroclookup[order(-bindelroclookup$QUAL),]

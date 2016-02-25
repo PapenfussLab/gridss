@@ -10,40 +10,7 @@ library(VariantAnnotation)
 library(GenomicFeatures)
 library(testthat)
 
-GetMetadataId <- function(filenames) {
-  return (regmatches(as.character(filenames), regexpr("[0-9a-f]{32}", as.character(filenames))))
-}
-GetGenome <- function(file) {
-  return (sub(".fa", "", basename(as.character(metadata[GetMetadataId(file),]$CX_REFERENCE))))
-}
-# Load metadata into a dataframe
-LoadMetadata <- function(directory=".") {
-  write("Loading metadata", stderr())
-  fileList <- list.files(directory, pattern="*.metadata$")
-  zeroSizeFiles = file.info(fileList)$size == 0
-  if (any(zeroSizeFiles)) {
-    warning(paste("Skipping files", fileList[zeroSizeFiles], "as they have 0 size."))
-    fileList <- fileList[!zeroSizeFiles]
-  }
-  #metadata <- foreach (filename=fileList, .export=c("GetMetadataId"), .combine=rbind) %dopar% {
-  metadata <- lapply(fileList, function(filename) {
-      md <- read.csv(filename, header=FALSE, sep="=", quote = "\"'", col.names=c("CX", "V"))
-      md$File <- filename
-      md$Id <- GetMetadataId(filename)
-      md
-  })
-  metadata <- do.call(rbind, metadata)
-  metadata <- data.frame(lapply(metadata, as.character), stringsAsFactors=FALSE)
-  metadata <- cast(metadata, File + Id ~ CX, value="V")  # pivot on context name
-  rownames(metadata) <- metadata$Id
-  # transform known numeric data to expected type
-  metadata$CX_READ_FRAGMENT_LENGTH <- as.numeric(as.character(metadata$CX_READ_FRAGMENT_LENGTH))
-  metadata$CX_READ_LENGTH <- as.numeric(as.character(metadata$CX_READ_LENGTH))
-  metadata$CX_READ_DEPTH <- as.numeric(as.character(metadata$CX_READ_DEPTH))
-  metadata$CX_ALIGNER_SOFTCLIP <- as.numeric(as.character(metadata$CX_ALIGNER_SOFTCLIP))
-  write(paste(nrow(metadata), "metadata files loaded"), stderr())
-  return(metadata)
-}
+
 issymbolic <- function(vcf) {
   if (nrow(vcf) == 0) return(logical(0))
   v <- as.character(unstrsplit(alt(vcf)))
@@ -131,6 +98,18 @@ isUnpairedBreakend <- function(vcf) {
   }
   return(isbnd & isunpaired)
 }
+isSV <- function(vcf) {
+  lentype <- svlentype(vcf)
+  # cortex calls SV SNPs
+  snpType <- is.na(lentype$type) | lentype$type %in% c("SNP", "SNP_FROM_COMPLEX")
+  validLen <- is.na(lentype$len) | lentype$len != 0
+  result <- !snpType & validLen
+  if (any(is.na(result))) {
+    browser()
+    stop()
+  }
+  return(result)
+}
 # converts a VCF to a GRanges containing the paired variant breakends with the following fields:
 # vcfIndex: index of variant in VCF
 # mateIndex: index of matching breakend in the GRanges object
@@ -212,7 +191,8 @@ vcftobpgr <- function(vcf) {
     mcols(bareeventgr) <- mcols(eventgr)
     grcall <- c(grcall, bareeventgr)
   }
-  rows <- grcall$SVTYPE=="DEL"
+  rows <- grcall$SVTYPE=="DEL" |
+    (grcall$SVTYPE %in% c("INDEL_FROM_COMPLEX", "INV_INDEL") & grcall$size < 0) # cortex
   if (any(rows)) {
     grcall[rows]$mateIndex <- length(grcall) + seq_len(sum(rows))
     eventgr <- grcall[rows]
@@ -222,7 +202,8 @@ vcftobpgr <- function(vcf) {
     eventgr$mateIndex <- seq_len(length(grcall))[rows]
     grcall <- c(grcall, eventgr)
   }
-  rows <- grcall$SVTYPE=="INS"
+  rows <- grcall$SVTYPE=="INS" |
+    (grcall$SVTYPE %in% c("INDEL_FROM_COMPLEX", "INV_INDEL") & grcall$size > 0)  # cortex
   if (any(rows)) {
     grcall[rows]$mateIndex <- length(grcall) + seq_len(sum(rows))
     eventgr <- grcall[rows]
@@ -416,38 +397,6 @@ CalculateTruth <- function(callvcf, truthvcf, blacklist=NULL, maxerrorbp, ignore
   })
   return(result)
 }
-CalculateTruthSummary <- function(vcfs, blacklist=NULL, maxerrorbp, ignoreFilters=TRUE, ...) {
-  truthSet <- lapply(vcfs, function(vcf) {
-    md <- attr(vcf, "sourceMetadata")
-    if (is.null(md)) {
-      warning("VCF missing metadata - ignoring")
-      return(NULL)
-    }
-    if (is.null(md$CX_CALLER) || is.na(md$CX_CALLER)) {
-      return(NULL)
-    }
-    if (is.null(md$CX_REFERENCE_VCF) || is.na(md$CX_REFERENCE_VCF)) {
-      warning(paste0(md$Id, " missing reference vcf"))
-      return(NULL)
-    }
-    truthvcf <- vcfs[[GetMetadataId(md$CX_REFERENCE_VCF)]]
-    if (is.null(truthvcf)) {
-      warning(paste0("Missing truth for", md$Id))
-      return(NULL)
-    }
-    write(paste0("Loading truth for ", md$Id), stderr())
-    callTruthPair <- CalculateTruth(vcf, truthvcf, blacklist, maxerrorbp, ignoreFilters, ...)
-    if (nrow(callTruthPair$calls) > 0) {
-      callTruthPair$calls <- cbind(callTruthPair$calls, md, row.names=NULL)
-    }
-    callTruthPair$truth <- cbind(callTruthPair$truth, md, row.names=NULL)
-    return(callTruthPair)
-  })
-  truthSet[sapply(truthSet, is.null)] <- NULL # Remove NULLs
-  calls = rbindlist(lapply(truthSet, function(x) x$calls), use.names=TRUE, fill=TRUE)
-  truth = rbindlist(lapply(truthSet, function(x) x$truth), use.names=TRUE, fill=TRUE)
-  return(list(calls=calls, truth=truth))
-}
 # Calculate ROC curve. Units of matching are breakend counts so should be halved to get breakpoint counts
 TruthSummaryToROC <- function(ts, bylist=c("CX_ALIGNER", "CX_ALIGNER_SOFTCLIP", "CX_CALLER", "CX_READ_DEPTH", "CX_READ_FRAGMENT_LENGTH", "CX_READ_LENGTH", "CX_REFERENCE_VCF_VARIANTS", "SVTYPE"), ignore.zero.calls=TRUE) {
   truthset <- ts$truth[, c(bylist, "QUAL", "expectedbehits", "tp", "fn"), with=FALSE]
@@ -505,40 +454,7 @@ FilterOutSNV <- function(vcf, caller) {
   #}
   return(vcf)
 }
-# Load VCFs into a list
-LoadVcfs <- function(metadata, directory=".", pattern="*.vcf$", existingVcfs=NULL) {
-  write("Loading VCFs", stderr())
-  fileList <- list.files(directory, pattern=pattern)
-  zeroSizeFiles = file.info(fileList)$size == 0
-  if (any(zeroSizeFiles)) {
-    write(paste("Skipping file", fileList[zeroSizeFiles], "due to 0 size.\n"))
-    warning(paste("Skipping files", paste(fileList[zeroSizeFiles]), "due to 0 size.\n"))
-    fileList <- fileList[!zeroSizeFiles]
-  }
-  # exclude already loaded VCFs
-  fileList <- fileList[!(GetMetadataId(fileList) %in% names(existingVcfs))]
-  # only load VCFS that have metadata
-  fileList <- fileList[GetMetadataId(fileList) %in% metadata$Id]
-  #vcfs <- foreach (filename=fileList, .packages="VariantAnnotation") %dopar% { # Parallel load of VCFs
-  vcfs <- lapply(fileList, function(filename) {
-    write(paste0("Loading ", filename), stderr())
-    vcf <- readVcf(filename, "unknown")
-    attr(vcf, "filename") <- filename
-    vcf
-  })
-  vcfs <- lapply(vcfs, function(vcf) {
-    filename <- attr(vcf, "filename")
-    id <- GetMetadataId(filename)
-    md <- metadata[id, ]
-    attr(vcf, "id") <- id
-    attr(vcf, "sourceMetadata") <- md
-    vcf
-  })
-  names(vcfs) <- GetMetadataId(fileList)
-  vcfs[sapply(vcfs, is.null)] <- NULL # Remove NULL VCFs list
-  write(paste("Loaded", length(vcfs), "VCFs"), stderr())
-  return(c(existingVcfs, vcfs))
-}
+
 # ensures all records have a matching mate
 ensure_bp_mate <- function(gr) {
   if (is.null(names(gr))) {
@@ -669,6 +585,10 @@ withqual <- function(vcf, caller) {
       rowRanges(vcf)$QUAL <- geno(vcf)$AD[,1,2]
     } else if (caller %in% c("lumpy")) {
       rowRanges(vcf)$QUAL <- unlist(info(vcf)$SU)
+    } else if (caller %in% c("cortex")) {
+      # TODO: does cortex ever call multiple alleles for a single site for a single sample?
+      # eg het B/C when neither B nor B match REF allele A
+      rowRanges(vcf)$QUAL <- geno(vcf)$COV[,1,2]
     }
   }
   if (any(is.na(rowRanges(vcf)$QUAL))) {
@@ -681,6 +601,12 @@ isInterChromosmal <- function(vcf) {
   gri <- gr[!duplicated(gr$vcfIndex),]
   gr <- gr[seqnames(gr) == seqnames(gr[gr$mateIndex,]),]
   return(seqnames(gri) != seqnames(gr[gri$mateIndex]))
+}
+cleanCortex <- function(vcf) {
+  vcf <- vcf[isSV(vcf),]
+  info(vcf)$SVTYPE[info(vcf)$SVTYPE %in% c("INDEL_FROM_COMPLEX", "INV_INDEL") & info(vcf)$SVLEN > 0 ] <- "INS"
+  info(vcf)$SVTYPE[info(vcf)$SVTYPE %in% c("INDEL_FROM_COMPLEX", "INV_INDEL") & info(vcf)$SVLEN < 0 ] <- "DEL"
+  return(vcf)
 }
 # Event looks like a deletion.
 # this does not yet handle multi-breakpoint events reported in BND format (eg gridss translocations)
@@ -700,6 +626,7 @@ eventSize <- function(vcf) {
   gri <- gr[!duplicated(gr$vcfIndex),]
   return(ifelse(seqnames(gri) == seqnames(gr[gri$mateIndex]), abs(start(gri) - start(gr[gri$mateIndex])), NA_integer_))
 }
+# add chr prefix to genomic ranges
 withChr <- function(gr) {
   seqlevels(gr) <- ifelse(str_detect(seqlevels(gr), "chr"), seqlevels(gr), paste0("chr", seqlevels(gr)))
   return(gr)
@@ -712,3 +639,4 @@ endpointOverlapsBed <- function(vcf, bed, ...) {
   result[gr[gr$overlaps]$vcfIndex] <- TRUE
   return(result)
 }
+

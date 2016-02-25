@@ -7,8 +7,8 @@ library(parallel)
 library(foreach)
 library(doParallel)
 library(testthat)
+library(sp) #install.packages("sp")
 source("common.R")
-
 
 #####################################
 # NA12878 matching criteria
@@ -76,11 +76,17 @@ longReadBed <- function(vcflist) {
   # extract deletion calls from VCFs
   dfdelcalls <- rbindlist(lapply(vcflist, function(vcf) {
     caller <- attr(vcf, "sourceMetadata")$CX_CALLER
-    method <- as.character(attr(vcf, "sourceMetadata")$CX_ASSEMBLY_METHOD)
-    kmer <- as.character(attr(vcf, "sourceMetadata")$CX_K)
-    model <- as.character(attr(vcf, "sourceMetadata")$CX_MODEL)
-    exclusion <- as.character(attr(vcf, "sourceMetadata")$CX_EXCLUSION)
-    if (is.na(caller) || is.null(caller)) return(NULL)
+    if (is.null(caller) || is.na(caller)) {
+      return(NULL)
+    }
+    tochar <- function(x) {
+      if (is.null(x) || is.na(x)) return("")
+      return(as.character(x))
+    }
+    method <- tochar(attr(vcf, "sourceMetadata")$CX_ASSEMBLY_METHOD)
+    kmer <- tochar(attr(vcf, "sourceMetadata")$CX_K)
+    model <- tochar(attr(vcf, "sourceMetadata")$CX_MODEL)
+    exclusion <- tochar(attr(vcf, "sourceMetadata")$CX_EXCLUSION)
     gr <- vcftobpgr(vcf)
     gro <- gr[seq_along(gr) < gr$mateIndex,]
     grh <- gr[gro$mateIndex,]
@@ -99,6 +105,10 @@ longReadBed <- function(vcflist) {
       model=as.character(rep(ifelse(is.null(model), "", model), length(gro))),
       exclusion=as.character(rep(ifelse(is.null(exclusion), "", exclusion), length(gro))),
       row.names=NULL)
+    if (any(is.na(df))) {
+      browser()
+      stop("Unexpected NA")
+    }
     return(df)
   }))
   #write.table(dfdelcalls, paste0(rootdir, "i/data.na12878/tovalidate.bedpe"), sep='\t', quote=FALSE, row.names=FALSE)
@@ -132,6 +142,23 @@ longReadBed <- function(vcflist) {
   delbed <- delbed[order(-delbed$QUAL),]
   return(delbed)
 }
+isDuplicateCall <- function(gr, ...) {
+  hits <- findOverlaps_type_equal_df(gr, gr, ...)
+  hits <- hits[hits$queryHits != hits$subjectHits,]
+  grq <- gr[hits$queryHits]
+  grs <- gr[hits$subjectHits]
+  hits <- hits[pmax(start(grq), start(grs)) <= pmin(end(grq), end(grs)) & # check they actually do overlap and aren't just adjacent calls
+                # same data slice
+                grq$caller == grs$caller &
+                 grq$filtered == grs$filtered &
+                 grq$assembly == grs$assembly &
+                 grq$kmer == grs$kmer &
+                 grq$model == grs$model &
+                 grq$exclusion == grs$exclusion,]
+  dup <- rep(FALSE, length(gr))
+  dup[ifelse(hits$queryHits > hits$subjectHits, hits$queryHits, hits$subjectHits)] <- TRUE
+  return(dup)
+}
 bedToROC <- function(delbed) {
   longReadBed_delroc <- data.table(as.data.frame(mcols(delbed)))
   longReadBed_delroc <- longReadBed_delroc[!longReadBed_delroc$blacklisted,]
@@ -142,7 +169,22 @@ bedToROC <- function(delbed) {
   longReadBed_delroc_bylist = c("caller", "filtered", "assembly", "kmer", "model", "exclusion")
   longReadBed_delroc[,`:=`(tp=cumsum(tp), fp=cumsum(fp), QUAL=cummin(QUAL)), longReadBed_delroc_bylist]
   longReadBed_delroc <- longReadBed_delroc[!duplicated(longReadBed_delroc[, c(longReadBed_delroc_bylist, "QUAL"), with=FALSE], fromLast=TRUE),] # take only one data point per QUAL
-  longReadBed_delroc$Filter <- ifelse(longReadBed_delroc$filtered, "Including Filtered", "Default")
+  longReadBed_delroc$Filter <- prettyFilter(ifelse(longReadBed_delroc$filtered, text_all_calls, text_default_calls))
   longReadBed_delroc$precision <- longReadBed_delroc$tp/(longReadBed_delroc$tp+longReadBed_delroc$fp)
   return (longReadBed_delroc)
 }
+# Caculate area under ROC curve
+rocauc <- function(dt, maxfp) {
+  dt <- dt[dt$fp <= maxfp,]
+  dt <- dt[order(dt$fp, dt$tp),]
+  dt <- dt[!duplicated(dt$fp, fromLast=TRUE),]
+  coords <- matrix(
+    c(0, dt$tp, max(dt$tp), 0, 0,
+      0, dt$fp, maxfp, maxfp, 0), ncol=2)
+  poly <- Polygon(coords, hole=FALSE)
+  area <- poly@area
+  return(area)
+}
+
+
+

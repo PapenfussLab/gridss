@@ -50,3 +50,13 @@ table(sdf$FILTER==".")
 #ggplot(sdf[sdf$RP+sdf$SR+sdf$RSR>0,]) + aes(x=(BUM0+BSC0) / (RP+SR+RSR)) + geom_density() + scale_x_log10() + scale_y_log10()
 #ggplot(sdf[sdf$RP+sdf$SR+sdf$RSR>0,]) + aes(x=(BUM+BSC) / (RP+SR+RSR)) + geom_histogram(binwidth=1) + scale_x_continuous(lim=c(0,20))
 #max((hqdf$BUMQ0 + hqdf$BSCQ0) / hqdf$QUAL)
+
+
+# variant counts
+table(df$RP + df$SR + df$RSR >= 3)
+table(df$Q0 == 0) / 2
+table(df$Q0 == 0 & df$FILTER==".") / 2
+
+
+
+
