@@ -131,7 +131,7 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 			}
 			return partner;
 		} else if (evidence instanceof VariantContextDirectedBreakpoint) {
-			String partner = swapSuffix(evidenceId, MaximalEvidenceCliqueIterator.MATE_BREAKEND_ID_SUFFIX_LOW, MaximalEvidenceCliqueIterator.MATE_BREAKEND_ID_SUFFIX_HIGH);
+			String partner = swapSuffix(evidenceId, MaximalEvidenceCliqueIterator.BREAKEND_ID_SUFFIX_LOW, MaximalEvidenceCliqueIterator.BREAKEND_ID_SUFFIX_HIGH);
 			if (partner == null) {
 				throw new RuntimeException("Sanity check failure: unexpected VCF breakend evidence ID " + evidenceId);
 			}

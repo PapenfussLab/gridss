@@ -217,7 +217,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 			.breakpoint(new BreakpointSummary(0, FWD, 1, 10, 0, FWD, 1, 10), "")
 			.attribute("EVENT", "SELFINTERSECTING")
 			.id("low")
-			.attribute("MATEID", "high");
+			.attribute("PARID", "high");
 		calls.add((VariantContextDirectedBreakpoint)builder.make());
 		builder = new IdsvVariantContextBuilder(pc);
 		builder
@@ -225,7 +225,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 			.breakpoint(new BreakpointSummary(0, FWD, 2, 10, 0, FWD, 2, 10), "")
 			.attribute("EVENT", "SELFINTERSECTING")
 			.id("high")
-			.attribute("MATEID", "low");
+			.attribute("PARID", "low");
 		calls.add((VariantContextDirectedBreakpoint)builder.make());
 		
 		SAMRecord[] dp = DP(0, 5, "1M", true, 0, 4, "1M", true);
@@ -250,7 +250,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 			.breakpoint(bs, "")
 			.attribute("EVENT", eventid)
 			.id("low" + eventid)
-			.attribute("MATEID", "high" + eventid);
+			.attribute("PARID", "high" + eventid);
 		list.add((VariantContextDirectedBreakpoint)builder.make());
 		builder = new IdsvVariantContextBuilder(pc);
 		builder
@@ -258,7 +258,7 @@ public class SequentialEvidenceAnnotatorTest extends TestHelper {
 			.breakpoint(bs.remoteBreakpoint(), "")
 			.attribute("EVENT", eventid)
 			.id("high" + eventid)
-			.attribute("MATEID", "low" + eventid);
+			.attribute("PARID", "low" + eventid);
 		list.add((VariantContextDirectedBreakpoint)builder.make());
 		return list;
 	}

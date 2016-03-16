@@ -28,7 +28,7 @@ public class BreakendToSimpleCall extends CommandLineProgram {
     public File OUTPUT;
 	@Option(shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME, doc="Reference used for alignment")
     public File REFERENCE;
-	@Option(shortName="C", doc = "gridss configuration file containing overrides", optional=true)
+	@Option(shortName="C", doc = "gridss configuration file use for variant calling", optional=true)
     public File CONFIGURATION_FILE = null;
 	public static void main(String[] argv) {
         System.exit(new BreakendToSimpleCall().instanceMain(argv));

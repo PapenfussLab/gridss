@@ -45,6 +45,8 @@ public class BreakendToSimpleCallImpl {
 		public int compare(Object left, Object right) {
 			BreakendSummary bsl;
 			BreakendSummary bsr;
+			String idr;
+			String idl;
 			if (left instanceof VariantContextDirectedBreakpoint) {
 				bsl = ((VariantContextDirectedBreakpoint)left).getBreakendSummary();
 			} else {
@@ -55,10 +57,20 @@ public class BreakendToSimpleCallImpl {
 			} else {
 				bsr = (BreakendSummary)right;
 			}
+			if (left instanceof VariantContext) {
+				idl = ((VariantContext)left).getID();
+			} else {
+				idl = left.toString();
+			}
+			if (right instanceof VariantContext) {
+				idr = ((VariantContext)right).getID();
+			} else {
+				idr = right.toString();
+			}
 			return ComparisonChain.start()
 			        .compare(bsl.referenceIndex, bsr.referenceIndex)
 			        .compare(bsl.start, bsr.start)
-			        .compare(left.toString(), right.toString())
+			        .compare(idl, idr)
 			        .result();
 		}
 	};
@@ -117,7 +129,7 @@ public class BreakendToSimpleCallImpl {
 	private void process(VariantContextDirectedBreakpoint bp) {
 		assert(bp.getID().endsWith("o"));
 		remove(bp);
-		VariantContextDirectedBreakpoint mate = id.get(bp.getAttribute(VcfSvConstants.MATE_BREAKEND_ID_KEY));
+		VariantContextDirectedBreakpoint mate = id.get(bp.getAttribute(VcfSvConstants.PARTNER_BREAKEND_ID_KEY));
 		if (mate == null) {
 			log.warn(String.format("Breakpoint %s is missing mate", bp.getID()));
 		}
@@ -205,7 +217,7 @@ public class BreakendToSimpleCallImpl {
 	private void remove(VariantContextDirectedBreakpoint bp) {
 		lookup.remove(bp);
 		byQual.remove(bp);
-		VariantContextDirectedBreakpoint mate = id.get(bp.getAttribute(VcfSvConstants.MATE_BREAKEND_ID_KEY));
+		VariantContextDirectedBreakpoint mate = id.get(bp.getAttribute(VcfSvConstants.PARTNER_BREAKEND_ID_KEY));
 		if (mate != null) {
 			lookup.remove(mate);
 			byQual.remove(mate);
