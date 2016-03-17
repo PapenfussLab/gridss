@@ -206,6 +206,10 @@ genome has many contigs, or if you have specified a large number of input files.
 * Reduce number of worker threads. A large number of input files being processed in parallel results in a large number of files open at the same time.
 * Increase your OS limit on open file handles (eg `ulimit -n _<larger number>_`)
 
+### Exception in thread "main" java.lang.UnsupportedClassVersionError: au/edu/wehi/idsv/Idsv : Unsupported major.minor version 52.0
+
+You are attempting to run GRIDSS with an old Java version. GRIDSS requires Java 8 or later.
+
 # Visualisation of results
 
 ## VcfBreakendToReadPair
