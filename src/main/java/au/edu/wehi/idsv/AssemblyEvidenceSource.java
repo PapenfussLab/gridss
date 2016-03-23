@@ -292,7 +292,10 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 									toMerge.add(it);
 								}
 								merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);
-								new ContigAssembler(merged, getContext().getFileSystemContext().getAssemblyRawBamForChr(input, seq), getContext().getFileSystemContext().getRealignmentFastqForChr(input, seq, 0)).run();
+								ContigAssembler ca = new ContigAssembler(merged,
+										getContext().getFileSystemContext().getAssemblyRawBamForChr(input, seq),
+										getContext().getFileSystemContext().getRealignmentFastqForChr(input, seq, 0));
+								ca.run();
 								merged.close();
 							} catch (Exception e) {
 								log.error(e, "Error performing ", seq, " breakend assembly");

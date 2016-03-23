@@ -59,6 +59,10 @@ public class VariantCallingConfiguration {
 	public boolean writeFiltered;
 	//public boolean placeholderBreakend;
 	public double lowQuality;
+	/**
+	 * Maximum length of breakend homology to calculate
+	 */
+	public int maxBreakendHomologyLength;
 	public BreakendSummary withMargin(BreakendSummary bp) {
 		if (bp == null) return null;
 		return bp.expandBounds(marginFor(bp));

@@ -171,4 +171,23 @@ public class KmerEvidenceTest extends TestHelper {
 	public void should_handle_cigar_indels() {
 		// TODO: make sure both sides are at the correct position for cigars such as 5S1M1D1M5S
 	}
+	@Test
+	public void createAnchor_should_anchor_at_alignment_closest_to_breakend() {
+		assertEquals(100, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "1M2I3M", false))).startPosition());
+		assertEquals(99, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "1S1M2I3M", false))).startPosition());
+		assertEquals(98, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "2S1M2I3M", false))).startPosition());
+		assertEquals(98, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "1M2I3M", true))).startPosition());
+		assertEquals(98, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "1M2I3M1S", true))).startPosition());
+		assertEquals(98, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "1M2I3M2S", true))).startPosition());
+		assertEquals(97, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "1S1M2I3M", true))).startPosition());
+		assertEquals(97, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "1S1M2I3M2S", true))).startPosition());
+		assertEquals(96, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "2S1M2I3M10S", true))).startPosition());
+	}
+	@Test
+	public void createAnchor_should_support_anchor() {
+		KmerEvidence a = KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "1M2I3M", false)));
+		for (int i = 0; i < a.length(); i++) {
+			assertTrue(a.node(i).isReference());
+		}
+	}
 }

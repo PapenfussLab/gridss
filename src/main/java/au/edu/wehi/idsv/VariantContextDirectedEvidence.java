@@ -4,6 +4,7 @@ import htsjdk.samtools.Cigar;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.TextCigarCodec;
+import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.variant.variantcontext.VariantContext;
 
 import java.nio.charset.StandardCharsets;
@@ -164,4 +165,12 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 	public int getReferenceReadCount(int category) { return getAttributeIntOffset(VcfAttributes.REFERENCE_READ_COUNT, category); }	
 	public int getReferenceReadPairCount() { return getAttributeIntSum(VcfAttributes.REFERENCE_READPAIR_COUNT); }
 	public int getReferenceReadPairCount(int category) { return getAttributeIntOffset(VcfAttributes.REFERENCE_READPAIR_COUNT, category); }
+	/**
+	 * Assembled breakend sequence. 
+	 * @return Breakend assembly sequence, null if no assembly was found
+	 */
+	public FastqRecord getBreakendAssemblyFastq() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

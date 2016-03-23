@@ -18,6 +18,7 @@ import java.util.List;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -591,27 +592,6 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 				B("AAAAAAAA"));
 		ass = ass.realign(50, 0.5f);
 		assertTrue(ass.isReferenceAssembly());
-	}
-	@Test
-	public void realign() {
-		// hom CATTAATCGCAAGAGCGGGTTGTATTCGcCGCCAAGTCAGCTGAAGCACCATTACCCGAtCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGA----GTTTACAGCCTGTCTTATATCCTGAATAACGCACCGCCTATTCG
-		//                                 |                              |                                       ||||
-		// ran CATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGATTTTGTTTACAGCCTGTCTTATATCCTGAATAACGCACCGCCTATTCG
-		//                                                                 ^----- homlen=39----------------------^
-		//                                                                 |------ window of best call ----------|
-		String seq = "CATTAATCGCAAGAGCGGGTTGTATTCGcCGCCAAGTCAGCTGAAGCACCATTACCCGAtCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGATTTTGTTTACAGCCTGTCTTATATCCTGAATAACGCACCGCCTATTCG";
-		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD,
-				null,
-				6, 1, 70,
-				B(seq),
-				B(40,seq.length()));
-		ass = AssemblyFactory.incorporateRealignment(getContext(), ass, ImmutableList.of(
-				withReadName("7#1#70#readname", withSequence(B(seq.substring(60)), 
-						withQual(B(40,seq.length() - 60), 
-								Read(2, 61, "77M"))))[0]));
-		// exact homology length = 39
-		// inexact homology length = seq.length()
-		Assert.fail();
 	}
 }
 

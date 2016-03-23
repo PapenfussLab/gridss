@@ -22,6 +22,7 @@ public class AssemblyConfiguration {
 		minReads = config.getInt("minReads");
 		includeSoftClips = config.getBoolean("includeSoftClips");
 		includeAnomalousPairs = config.getBoolean("includeAnomalousPairs");
+		includePairAnchors = config.getBoolean("includePairAnchors");
 		includeRemoteSplitReads = config.getBoolean("includeRemoteSplitReads");
 		writeFiltered = config.getBoolean("writeFiltered");
 		excludeNonSupportingEvidence = config.getBoolean("excludeNonSupportingEvidence");
@@ -54,6 +55,11 @@ public class AssemblyConfiguration {
 	 * Include the mate of reads that map to this location and whose mate is not mapped to the expected location
 	 */
 	public boolean includeAnomalousPairs;
+	/**
+	 * Include reads fully supporting the reference whose mate is not mapped to the expected location.
+	 * These are useful as they can extend the length of the assembly anchor 
+	 */
+	public boolean includePairAnchors;
 	/**
 	 * Include reads with a soft clip that maps to this location
 	 */

@@ -13,14 +13,16 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Test;
 
+import com.google.common.collect.Lists;
+
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.DiscordantReadPair;
+import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.util.IntervalUtil;
-
-import com.google.common.collect.Lists;
+import htsjdk.samtools.SAMRecord;
 
 
 public class PathNodeIteratorTest extends TestHelper {
@@ -257,5 +259,14 @@ public class PathNodeIteratorTest extends TestHelper {
 		// SC: ref repeat; nonref repeat
 		// RP: single width starting kmer <-> repeat cycle <-> single width ending kmer 
 		assertEquals(5, result.size());
+	}
+	@Test
+	public void should_assembly_UM_into_anchor() {
+		SAMRecord[] rp = OEA(0, 100, "10M", true);
+		rp[0].setReadBases(B(S(RANDOM).substring(0, 10)));
+		rp[1].setReadBases(B(S(RANDOM).substring(5, 15)));
+		NonReferenceReadPair nrrp = NRRP(SES(1, 100), rp);
+		List<KmerPathNode> result = asCheckedKPN(4, 100, true, nrrp);
+		assertCompleteGraph(result, 4);
 	}
 }

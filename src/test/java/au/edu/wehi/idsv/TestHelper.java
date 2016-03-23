@@ -941,8 +941,7 @@ public class TestHelper {
 		}
 		@Override
 		public CloseableIterator<DirectedEvidence> iterator(
-				boolean includeReadPair, boolean includeSoftClip,
-				boolean includeSoftClipRemote, final String chr) {
+				boolean includeReadPair, boolean includeSoftClip, boolean includeSoftClipRemote, final String chr) {
 			return new AutoClosingIterator<DirectedEvidence>(
 					Iterables.filter(evidence, new Predicate<DirectedEvidence>() {
 						@Override
@@ -1128,16 +1127,19 @@ public class TestHelper {
 		Arrays.sort(input, DirectedEvidence.ByStartEnd);
 		//int maxReadLength = maxReadLength(input);
 		int maxFrag = Arrays.stream(input).mapToInt(e -> e.getEvidenceSource().getMaxConcordantFragmentSize()).sum();
-		SupportNodeIterator supportIt = new SupportNodeIterator(k, Arrays.stream(input).iterator(), maxFrag, null);
+		SupportNodeIterator supportIt = new SupportNodeIterator(k, Arrays.stream(input).iterator(), maxFrag, null, false);
 		AggregateNodeIterator agIt = new AggregateNodeIterator(supportIt);
 		Iterator<KmerPathNode> pnIt = new PathNodeIterator(agIt, maxPathLength, k);
 		return pnIt;
 	}
 	public static List<KmerPathNode> asCheckedKPN(int k, int maxPathLength, DirectedEvidence... input) {
+		return asCheckedKPN(k, maxPathLength, false, input);
+	}
+	public static List<KmerPathNode> asCheckedKPN(int k, int maxPathLength, boolean includePairAnchors, DirectedEvidence... input) {
 		Arrays.sort(input, DirectedEvidence.ByStartEnd);
 		//int maxReadLength = maxReadLength(input);
 		int maxFrag = Arrays.stream(input).mapToInt(e -> e.getEvidenceSource().getMaxConcordantFragmentSize()).sum();
-		List<KmerSupportNode> support = Lists.newArrayList(new SupportNodeIterator(k, Arrays.stream(input).iterator(), maxFrag, null));
+		List<KmerSupportNode> support = Lists.newArrayList(new SupportNodeIterator(k, Arrays.stream(input).iterator(), maxFrag, null, includePairAnchors));
 		int supportWeight = support.stream().mapToInt(n -> n.weight() * n.width()).sum();
 		List<KmerNode> aggregate = Lists.newArrayList(new AggregateNodeIterator(support.iterator()));
 		int aggregateWeight = aggregate.stream().mapToInt(n -> n.weight() * n.width()).sum();
