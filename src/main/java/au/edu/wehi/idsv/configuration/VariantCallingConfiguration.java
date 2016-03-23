@@ -24,6 +24,7 @@ public class VariantCallingConfiguration {
 		breakendMargin = config.getInt("breakendMargin");
 		writeFiltered = config.getBoolean("writeFiltered");
 		lowQuality = config.getDouble("lowQuality");
+		maxBreakendHomologyLength = config.getInt("maxBreakendHomologyLength");
 //		switch (config.getString("format")) {
 //			case "vcf4.2":
 //				placeholderBreakend = false;
