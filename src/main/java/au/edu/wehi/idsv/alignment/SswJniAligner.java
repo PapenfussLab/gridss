@@ -1,6 +1,9 @@
 package au.edu.wehi.idsv.alignment;
 
 import htsjdk.samtools.util.SequenceUtil;
+
+import java.util.Arrays;
+
 import au.edu.wehi.idsv.Defaults;
 
 public class SswJniAligner implements Aligner {
@@ -38,6 +41,8 @@ public class SswJniAligner implements Aligner {
 		}
 	}
 	public Alignment do_align_smith_waterman(byte[] seq, byte[] ref) {
+		seq = clean(seq);
+		ref = clean(ref);
 		ssw.Alignment result = ssw.Aligner.align(seq, ref, matrix, gapOpen, gapExtend, true);
 		String cigar = result.cigar;
 		if (result.read_begin1 != 0) {
@@ -51,5 +56,20 @@ public class SswJniAligner implements Aligner {
 	}
 	private synchronized Alignment sync_do_align_smith_waterman(byte[] seq, byte[] ref) {
 		return do_align_smith_waterman(seq, ref);
+	}
+	/**
+	 * Converts all non-reference bases to Ns
+	 * so we don't crash the JVM if an unexpected character is encountered
+	 * @param seq sequence
+	 * @return equivalent sequence containing only ACGTN
+	 */
+	private static byte[] clean(final byte[] seq) {
+		byte[] s = htsjdk.samtools.util.SequenceUtil.upperCase(Arrays.copyOf(seq,  seq.length));
+		for (int i = 0; i < seq.length; i++) {
+			if (!htsjdk.samtools.util.SequenceUtil.isValidBase(s[i])) {
+				s[i] = 'N';
+			}
+		}
+		return s;
 	}
 }

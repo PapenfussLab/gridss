@@ -168,6 +168,14 @@ public class BreakpointSummary extends BreakendSummary {
 		}
 		return new BreakpointSummary(referenceIndex, direction, callPos, callPos, referenceIndex2, direction2, remoteCallPos, remoteCallPos);
 	}
+	/**
+	 * Determines the size of the simplest event (deletion, inversion, tandem duplication)
+	 * this breakpoint contributes to.
+	 * @return event size
+	 */
+	public int getEventSize() {
+		
+	}
 	@Override
 	public int hashCode() {
 		final int prime = 31;
