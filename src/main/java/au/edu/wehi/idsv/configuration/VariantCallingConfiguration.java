@@ -25,6 +25,7 @@ public class VariantCallingConfiguration {
 		writeFiltered = config.getBoolean("writeFiltered");
 		lowQuality = config.getDouble("lowQuality");
 		maxBreakendHomologyLength = config.getInt("maxBreakendHomologyLength");
+		breakendHomologyAlignmentMargin = config.getInt("breakendHomologyAlignmentMargin");
 //		switch (config.getString("format")) {
 //			case "vcf4.2":
 //				placeholderBreakend = false;
@@ -64,6 +65,10 @@ public class VariantCallingConfiguration {
 	 * Maximum length of breakend homology to calculate
 	 */
 	public int maxBreakendHomologyLength;
+	/**
+	 * Number of reference bases to include in alignment
+	 */
+	public int breakendHomologyAlignmentMargin;
 	public BreakendSummary withMargin(BreakendSummary bp) {
 		if (bp == null) return null;
 		return bp.expandBounds(marginFor(bp));

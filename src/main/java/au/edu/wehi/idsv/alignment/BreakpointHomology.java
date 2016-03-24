@@ -1,9 +1,5 @@
 package au.edu.wehi.idsv.alignment;
 
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.TextCigarCodec;
-import htsjdk.samtools.util.SequenceUtil;
-
 import java.nio.charset.StandardCharsets;
 
 import au.edu.wehi.idsv.BreakendDirection;
@@ -11,6 +7,9 @@ import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.TextCigarCodec;
+import htsjdk.samtools.util.SequenceUtil;
 
 /**
  * Determines the length of any inexact breakpoint homology
@@ -18,15 +17,15 @@ import au.edu.wehi.idsv.sam.SAMRecordUtil;
  *
  */
 public class BreakpointHomology {
-	private final int lowerBound;
-	private final int upperBound;
-	public BreakpointHomology(int lower, int upper) {
-		this.lowerBound = lower;
-		this.upperBound = upper;
+	private final int localHomologyLength;
+	private final int remoteHomologyLength;
+	public BreakpointHomology(int local, int remote) {
+		this.localHomologyLength = local;
+		this.remoteHomologyLength = remote;
 	}
 	@Override
 	public String toString() {
-		return String.format("[%d, %d]", lowerBound, upperBound);
+		return String.format("[%d, %d]", localHomologyLength, remoteHomologyLength);
 	}
 	/**
 	 * Calculates the sequence homology length at the given breakpoint position 
@@ -39,8 +38,12 @@ public class BreakpointHomology {
 	public static BreakpointHomology calculate(ReferenceLookup lookup, BreakpointSummary bs, String insertedSequence, int maxBreakendLength, int margin) {
 		if (bs.start - bs.end != 0 || bs.start2 - bs.end2 != 0) throw new IllegalArgumentException("Breakpoint position must be exact");
 		if (insertedSequence == null) insertedSequence = "";
-		int windowSize = maxBreakendLength + insertedSequence.length() + margin;
-		windowSize = Math.min(windowSize, Math.abs(bs.start2 - bs.start));
+		int seqLength = maxBreakendLength;
+		int refLength = maxBreakendLength + insertedSequence.length() + margin;
+		if (bs.getEventSize() != null) {
+			seqLength = Math.min(seqLength, bs.getEventSize());
+			refLength = Math.min(refLength, bs.getEventSize());
+		}
 		// local           remote
 		// ACGTACGT        CCTTAAGG
 		//    >                <
@@ -48,18 +51,20 @@ public class BreakpointHomology {
 		// localSeq           remoteSeq
 		//      >>>>       >>>>
 		//      localRef   remoteRef
-		String localSeq = getAnchorSeq(lookup, bs, windowSize);
-		String localRef = getAnchorSeq(lookup, advance(bs, windowSize), windowSize);
-		String remoteSeq = SequenceUtil.reverseComplement(getAnchorSeq(lookup, bs.remoteBreakend(), windowSize));
-		String remoteRef = SequenceUtil.reverseComplement(getAnchorSeq(lookup, advance(bs.remoteBreakend(), windowSize), windowSize));
-		byte[] breakend = (localSeq + remoteSeq).getBytes(StandardCharsets.US_ASCII);
+		String localSeq = getAnchorSeq(lookup, bs, refLength);
+		String localBsSeq = getAnchorSeq(lookup, bs, seqLength);
+		String localRef = getAnchorSeq(lookup, advance(bs, refLength), refLength);
+		String remoteSeq = SequenceUtil.reverseComplement(getAnchorSeq(lookup, bs.remoteBreakend(), refLength));
+		String remoteBsSeq = SequenceUtil.reverseComplement(getAnchorSeq(lookup, bs.remoteBreakend(), seqLength));
+		String remoteRef = SequenceUtil.reverseComplement(getAnchorSeq(lookup, advance(bs.remoteBreakend(), refLength), refLength));
+		byte[] breakend = (localBsSeq + insertedSequence + remoteBsSeq).getBytes(StandardCharsets.US_ASCII);
 		byte[] local = (localSeq + localRef).getBytes(StandardCharsets.US_ASCII);
 		byte[] remote = (remoteRef + remoteSeq).getBytes(StandardCharsets.US_ASCII);
 		Aligner aligner = AlignerFactory.create();
 		Alignment localAlignment = aligner.align_smith_waterman(breakend, local);
 		Alignment remoteAlignment = aligner.align_smith_waterman(breakend, remote);
-		int localHomologyBaseCount = remoteRef.length() - SAMRecordUtil.getStartSoftClipLength(TextCigarCodec.decode(remoteAlignment.getCigar()).getCigarElements());
-		int remoteHomologyBaseCount = localRef.length() - SAMRecordUtil.getEndSoftClipLength(TextCigarCodec.decode(localAlignment.getCigar()).getCigarElements());
+		int localHomologyBaseCount = localBsSeq.length() - SAMRecordUtil.getStartSoftClipLength(TextCigarCodec.decode(remoteAlignment.getCigar()).getCigarElements());
+		int remoteHomologyBaseCount = remoteBsSeq.length() - SAMRecordUtil.getEndSoftClipLength(TextCigarCodec.decode(localAlignment.getCigar()).getCigarElements());
 		return new BreakpointHomology(localHomologyBaseCount, remoteHomologyBaseCount);
 	}
 	/**
@@ -92,10 +97,10 @@ public class BreakpointHomology {
 		String seq = new String(bseq);
 		return seq;
 	}
-	public int getLowerBound() {
-		return lowerBound;
+	public int getLocalHomologyLength() {
+		return localHomologyLength;
 	}
-	public int getUpperBound() {
-		return upperBound;
+	public int getRemoteHomologyLength() {
+		return remoteHomologyLength;
 	}
 }

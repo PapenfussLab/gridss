@@ -126,8 +126,8 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 		BreakendSummary be = getBreakendSummary();
 		SAMRecord r = new SAMRecord(header);
 		Cigar cigar = new Cigar(be.getCigarRepresentation());
-		if (hasAttribute(VcfAttributes.ANCHOR_CIGAR.attribute())) {
-			cigar = TextCigarCodec.decode(getAttributeAsString(VcfAttributes.ANCHOR_CIGAR.attribute(), null));
+		if (hasAttribute(VcfAttributes.SUPPORT_CIGAR.attribute())) {
+			cigar = TextCigarCodec.decode(getAttributeAsString(VcfAttributes.SUPPORT_CIGAR.attribute(), null));
 		}
 		r.setCigar(cigar);
 		r.setReadName(getAttributeAsString(VcfSvConstants.BREAKEND_EVENT_ID_KEY, getID()));

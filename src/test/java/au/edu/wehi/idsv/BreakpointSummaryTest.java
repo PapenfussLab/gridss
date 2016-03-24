@@ -154,9 +154,23 @@ public class BreakpointSummaryTest extends TestHelper {
 	}
 	@Test
 	public void getEventSize_deletion() {
-		assertEquals(0, new BreakpointSummary(0, FWD, 1, 1, 0, BWD, 2, 2).getEventSize());
-		assertEquals(0, new BreakpointSummary(0, BWD, 2, 2, 0, FWD, 1, 1).getEventSize());
-		assertEquals(1, new BreakpointSummary(0, FWD, 1, 1, 0, BWD, 3, 3).getEventSize());
-		assertEquals(1, new BreakpointSummary(0, BWD, 3, 3, 0, FWD, 1, 1).getEventSize());
+		assertEquals(0, (int)new BreakpointSummary(0, FWD, 1, 1, 0, BWD, 2, 2).getEventSize());
+		assertEquals(0, (int)new BreakpointSummary(0, BWD, 2, 2, 0, FWD, 1, 1).getEventSize());
+		assertEquals(1, (int)new BreakpointSummary(0, FWD, 1, 1, 0, BWD, 3, 3).getEventSize());
+		assertEquals(1, (int)new BreakpointSummary(0, BWD, 3, 3, 0, FWD, 1, 1).getEventSize());
+	}
+	@Test
+	public void getEventSize_duplication() {
+		assertEquals(1, (int)new BreakpointSummary(0, FWD, 2, 2, 0, BWD, 2, 2).getEventSize());
+		assertEquals(2, (int)new BreakpointSummary(0, FWD, 3, 3, 0, BWD, 2, 2).getEventSize());
+		assertEquals(1, (int)new BreakpointSummary(0, BWD, 2, 2, 0, FWD, 2, 2).getEventSize());
+		assertEquals(2, (int)new BreakpointSummary(0, BWD, 2, 2, 0, FWD, 3, 3).getEventSize());
+	}
+	@Test
+	public void getEventSize_inversion() {
+		assertEquals(2, (int)new BreakpointSummary(0, FWD, 2, 2, 0, FWD, 4, 4).getEventSize());
+		assertEquals(2, (int)new BreakpointSummary(0, BWD, 3, 3, 0, BWD, 5, 5).getEventSize());
+		assertEquals(2, (int)new BreakpointSummary(0, FWD, 4, 4, 0, FWD, 2, 2).getEventSize());
+		assertEquals(2, (int)new BreakpointSummary(0, BWD, 3, 3, 0, BWD, 5, 5).getEventSize());
 	}
 }

@@ -171,10 +171,18 @@ public class BreakpointSummary extends BreakendSummary {
 	/**
 	 * Determines the size of the simplest event (deletion, inversion, tandem duplication)
 	 * this breakpoint contributes to.
-	 * @return event size
+	 * @return event size, null for interchromosomal breakpoints
 	 */
-	public int getEventSize() {
-		
+	public Integer getEventSize() {
+		if (referenceIndex != referenceIndex2) return null;
+		if (direction == direction2) {
+			return Math.abs(start2 - start);
+		} else if ((start < start2 && direction == BreakendDirection.Forward) || 
+				(start2 < start && direction == BreakendDirection.Backward)) {
+			return Math.abs(start2 - start) - 1;
+		} else {
+			return Math.abs(start2 - start) + 1;
+		}
 	}
 	@Override
 	public int hashCode() {

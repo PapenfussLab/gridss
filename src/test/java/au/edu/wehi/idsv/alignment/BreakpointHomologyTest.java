@@ -40,50 +40,56 @@ public class BreakpointHomologyTest extends TestHelper {
 								//     >
 								//      <
 		BreakpointHomology bh = BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 6, 6, 1, BWD, 7, 7), "", 100, 0);
-		assertEquals(6, bh.getUpperBound() + bh.getLowerBound());
-		assertEquals(3, bh.getLowerBound());
-		assertEquals(3, bh.getUpperBound());
+		assertEquals(6, bh.getRemoteHomologyLength() + bh.getLocalHomologyLength());
+		assertEquals(3, bh.getLocalHomologyLength());
+		assertEquals(3, bh.getRemoteHomologyLength());
 	}
 	@Test
 	public void no_homology() {
 		InMemoryReferenceSequenceFile ref = new InMemoryReferenceSequenceFile(
 				new String[] { "0", "1", },
 				new byte[][] { B("CCCCCCCCCCCC"),
-							   B("TTTTTTTTTTTT"), });
+							   B("TTTTTTTTTTTTTTTTTTTTTTTT"), });
 								//     >
 								//      <
-		BreakpointHomology bh = BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 6, 6, 1, BWD, 7, 7), "", 100, 0);
-		assertEquals(0, bh.getLowerBound());
-		assertEquals(0, bh.getUpperBound());
+		BreakpointHomology bh = BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 6, 6, 1, BWD, 7, 7), "", 100, 10);
+		assertEquals(0, bh.getLocalHomologyLength());
+		assertEquals(0, bh.getRemoteHomologyLength());
 	}
 	@Test
 	public void should_report_homology_up_to_max_distance_away() {
 		InMemoryReferenceSequenceFile ref = new InMemoryReferenceSequenceFile(
 				new String[] { "0", "1", },
-				new byte[][] { B("CCCAATGGGCCC"),
-							   B("TTTAATGGGAAA"), });
+				new byte[][] { B("CCCAATGGGCCCTTTTTTTTTTTTTTTTTTT"),
+							   B("TTTAATGGGAAAGGGGGGGGGGGGGGGGGGG"), });
 								//     >
 								//      <
-		BreakpointHomology bh = BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 6, 6, 1, BWD, 7, 7), "", 1, 0);
-		assertEquals(1, bh.getLowerBound());
-		assertEquals(1, bh.getUpperBound());
+		BreakpointHomology bh = BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 6, 6, 1, BWD, 7, 7), "", 1, 5);
+		assertEquals(1, bh.getLocalHomologyLength());
+		assertEquals(1, bh.getRemoteHomologyLength());
 	}
 	@Test
 	public void should_reduce_window_size_for_small_events() {
 		BreakpointHomology bh = BreakpointHomology.calculate(SMALL_FA, new BreakpointSummary(0, FWD, 100, 100, 0, BWD, 103, 103), "", 100, 0);
-		assertEquals(2, bh.getLowerBound());
-		assertEquals(2, bh.getUpperBound());
+		assertEquals(2, bh.getLocalHomologyLength());
+		assertEquals(2, bh.getRemoteHomologyLength());
 	}
 	@Test
 	public void should_incorporate_inserted_sequence() {
 		InMemoryReferenceSequenceFile ref = new InMemoryReferenceSequenceFile(
 				new String[] { "0", "1", },
-				new byte[][] { B("CCCAATGGGCCC"),
-							   B("TTTAATGGGAAA"), });
-								//     >G
-								//       <
-		BreakpointHomology bh = BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 6, 6, 1, BWD, 8, 8), "G", 10, 0);
-		assertEquals(3, bh.getLowerBound());
-		assertEquals(3, bh.getUpperBound());
+				new byte[][] { B("CCCAAAATTTGGGAAAAAATTTTTTTTTTTTTTTTTTT"),
+							   B("TTTAAAATTTGGGAAAAAAGGGGGGGGGGGGGGGGGGG"), });
+		// CCCAAAATTT GGGAAAAAATTTTTTTTTTT TTTTTTTT"),
+		// TTTAAAATTT GGGAAAAAAGGGGGGGGGGG GGGGGGGG"
+		// MMMMMMMMMMMMMMMMMMMSSSSSSSSSSSS fwd
+		// SSSMMMMMMMMMMMMMMMMMMMMMMMMMMMM bwd
+		// 1234567890 1234567890
+		//          >G
+		//            <
+		// 
+		BreakpointHomology bh = BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 10, 10, 1, BWD, 11, 11), "c", 20, 10);
+		assertEquals(7, bh.getLocalHomologyLength());
+		assertEquals(9, bh.getRemoteHomologyLength());
 	}
 }
