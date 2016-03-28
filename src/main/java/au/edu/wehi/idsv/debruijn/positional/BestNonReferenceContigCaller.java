@@ -6,9 +6,7 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Ordering;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
@@ -33,7 +31,7 @@ public class BestNonReferenceContigCaller {
 	 * reference are given a score adjustment larger than
 	 * the largest expected score.
 	 */
-	private static final int ANCHORED_SCORE = Integer.MAX_VALUE >> 2; 
+	static final int ANCHORED_SCORE = Integer.MAX_VALUE >> 2; 
 	private final PeekingIterator<KmerPathNode> underlying;
 	private final MemoizedTraverse frontier = new MemoizedTraverse();
 	/**
@@ -169,35 +167,6 @@ public class BestNonReferenceContigCaller {
 	private void callContig(Contig contig) {
 		firstContigPosition = Math.min(contig.node.node.firstStart() - (contig.node.pathLength - 1), firstContigPosition);
 		called.add(contig);
-	}
-	public static class Contig {
-		public Contig(TraversalNode node, boolean hasReferenceSuccessor) {
-			this.node = node;
-			this.score = node.score + (hasReferenceSuccessor ? ANCHORED_SCORE : 0);			
-		}
-		/**
-		 * terminal contig node
-		 */
-		public final TraversalNode node;
-		/**
-		 * Final score for contig (including any anchor scoring bonus)
-		 */
-		public final int score;
-		public ArrayDeque<KmerPathSubnode> toSubnodePath() {
-			return node.toSubnodeNextPath();
-		}
-		@Override
-		public String toString() {
-			return String.format("Path Score %d, %s", score, node);
-		}
-		public static final Ordering<Contig> ByScoreDescPosition = new Ordering<Contig>() {
-			@Override
-			public int compare(Contig left, Contig right) {
-				return ComparisonChain.start()
-						.compare(right.score, left.score)
-						.compare(left.node.node.lastStart(), right.node.node.lastStart())
-						.result();
-			}};
 	}
 	/**
 	 * Determines whether the contig could overlap evidence with another contig

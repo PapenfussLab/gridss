@@ -14,9 +14,11 @@ import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.positional.AggregateNodeIterator;
 import au.edu.wehi.idsv.debruijn.positional.BestNonReferenceContigCaller;
 import au.edu.wehi.idsv.debruijn.positional.CollapseIterator;
+import au.edu.wehi.idsv.debruijn.positional.Contig;
 import au.edu.wehi.idsv.debruijn.positional.EvidenceTracker;
 import au.edu.wehi.idsv.debruijn.positional.KmerPathSubnode;
 import au.edu.wehi.idsv.debruijn.positional.NonReferenceContigAssembler;
+import au.edu.wehi.idsv.debruijn.positional.NonReferencePathCache;
 import au.edu.wehi.idsv.debruijn.positional.PathNodeIterator;
 import au.edu.wehi.idsv.debruijn.positional.PathSimplificationIterator;
 import au.edu.wehi.idsv.debruijn.positional.SupportNodeIterator;
@@ -189,5 +191,8 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 		aggregate = null;
 		tracker = null;
 		assembler = null;
+	}
+	public void trackAssembly(NonReferencePathCache caller, Contig contig) {
+		todo
 	}
 }
