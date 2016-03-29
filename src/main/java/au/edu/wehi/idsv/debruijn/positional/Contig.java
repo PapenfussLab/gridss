@@ -10,6 +10,10 @@ public class Contig {
 		this.node = node;
 		this.score = node.score + (hasReferenceSuccessor ? BestNonReferenceContigCaller.ANCHORED_SCORE : 0);			
 	}
+	public Contig(TraversalNode node) {
+		this.node = node;
+		this.score = node.score;			
+	}
 	/**
 	 * terminal contig node
 	 */

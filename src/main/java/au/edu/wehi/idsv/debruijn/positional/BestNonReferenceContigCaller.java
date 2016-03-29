@@ -174,7 +174,7 @@ public class BestNonReferenceContigCaller {
 	 * at least maxEvidenceWidth away from:
 	 * a) all partially generated contig
 	 * b) all unprocessed contig start locations
-	 * c) any additional nodes not ryet read from the underlying stream
+	 * c) any additional nodes not yet read from the underlying stream
 	 *  
 	 * @param contig
 	 * @return true if the contig will not share evidence with future contigs, false otherwise

@@ -151,6 +151,45 @@ public class BestNonReferenceContigCallerTest extends TestHelper {
 		assertEquals(list.size(), caller.tracking_memoizedNodeCount());
 		assertEquals(0, caller.tracking_frontierSize());
 	}
+	@Test
+	public void should_traverse_subnodes_through_node_at_multiple_positions() {
+		int k = 4;
+		List<KmerPathNode> input = new ArrayList<KmerPathNode>();
+		input.add(KPN(k, "ATAT", 1, 11, false));
+		input.add(KPN(k, "TATA", 2, 10, false));
+		// best contig:
+		// 1 3 5 7 9  11
+		//  2 4 6 8 10
+		// second best:
+		// 2 4 6 8 10
+		//  3 5 7 9  
+		BestNonReferenceContigCaller caller = new BestNonReferenceContigCaller(input.iterator(), 3);
+		ArrayDeque<KmerPathSubnode> best = caller.bestContig();
+		assertEquals(11, best.size());
+	}
+	@Test
+	public void should_self_traverse_node() {
+		int k = 4;
+		List<KmerPathNode> input = new ArrayList<KmerPathNode>();
+		input.add(KPN(k, "AAAA", 1, 11, false));
+		// best contig:
+		// 1 3 5 7 9  11
+		//  2 4 6 8 10
+		BestNonReferenceContigCaller caller = new BestNonReferenceContigCaller(input.iterator(), 3);
+		ArrayDeque<KmerPathSubnode> best = caller.bestContig();
+		assertEquals(11, best.size());
+	}
+	@Test
+	public void subnode_loops_should_not_cause_stack_overflow() {
+		int k = 3;
+		List<KmerPathNode> input = new ArrayList<KmerPathNode>();
+		input.add(KPN(k, "ACT", 1, 100000, false));
+		input.add(KPN(k, "CTA", 1, 100000, false));
+		input.add(KPN(k, "TAC", 1, 100000, false));
+		BestNonReferenceContigCaller caller = new BestNonReferenceContigCaller(input.iterator(), 1000000);
+		ArrayDeque<KmerPathSubnode> best = caller.bestContig();
+		assertEquals(100000, best.size());
+	}
 }
 
 

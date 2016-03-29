@@ -59,7 +59,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	private SortedSet<KmerPathNode> graphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByFirstStartKmer);
 	private final EvidenceTracker evidenceTracker;
 	private final AssemblyEvidenceSource aes;
-	private final NonReferencePathCache caller = new NonReferencePathCache();
+	private final PathCache caller = new PathCache();
 	/**
 	 * Worst case scenario is a RP providing single kmer support for contig
 	 * read length - (k-1) + max-min fragment size
@@ -155,25 +155,23 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	 * @return best contig containing the given supporting evidence 
 	 */
 	private Contig findBestCachedContig() {
-		Contig bestCachedContig = caller.bestContig();
-		while (couldShareEvidenceWith(bestCachedContig, nextPosition())) {
-			KmerPathNode nextNode = wrapper.next();
-			caller.invalidate(nextNode);
-			bestCachedContig = caller.bestContig();
+		Contig bestCachedContig = caller.bestContig(nextPosition(), maxEvidenceDistance);
+		while (wrapper.hasNext() && bestCachedContig == null) {
+			// by loading all nodes within maxEvidenceDistance, we guarantee
+			// that all final nodes of incomplete memoized paths
+			// can be fully memoized.
+			KmerPathNode n = wrapper.next();
+			int loadBefore = n.firstStart() + 2 * maxEvidenceDistance;
+			while (wrapper.hasNext() && n.firstStart() <= loadBefore) {
+				// The next node gets added to the memoization cache
+				// by the iterator intercept wrapper calling addToGraph()
+				// so we don't have to do anything except advance the
+				// iterator here.
+				n = wrapper.next();
+			}
+			bestCachedContig = caller.bestContig(nextPosition(), maxEvidenceDistance);
 		}
 		return bestCachedContig;
-	}
-	/**
-	 * Determines whether the contig could overlap evidence with another contig
-	 * that we have not yet encounted.
-	 *  
-	 * @param contig
-	 * @return true if the contig will not share evidence with future contigs, false otherwise
-	 */
-	private boolean couldShareEvidenceWith(Contig contig, int position) {
-		if (contig == null) return false;
-		int contigLastEnd = contig.node.node.lastEnd();
-		return contigLastEnd < position - maxEvidenceDistance;
 	}
 	private SAMRecordAssemblyEvidence callContig(ArrayDeque<KmerPathSubnode> contig) {
 		if (containsKmerRepeat(contig)) {
@@ -383,12 +381,12 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	private void removeWeight(KmerPathNode node, List<List<KmerNode>> toRemove, Set<KmerPathNode> simplifyCandidates) {
 		if (node == null) return;
 		assert(node.length() >= toRemove.size());
-		// remove from graph
-		removeFromGraph(node);
 		simplifyCandidates.addAll(node.next());
 		simplifyCandidates.addAll(node.prev());
 		simplifyCandidates.remove(node);
 		Collection<KmerPathNode> replacementNodes = KmerPathNode.removeWeight(node, toRemove);
+		// remove from graph
+		removeFromGraph(node);
 		for (KmerPathNode split : replacementNodes) {
 			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 				assert(evidenceTracker.matchesExpected(new KmerPathSubnode(split)));
@@ -406,8 +404,10 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		for (int i = 0; i < node.collapsedKmers().size(); i++) {
 			addToGraph(new KmerPathNodeKmerNode(i, node));
 		}
+		caller.add(node);
 	}
 	private void removeFromGraph(KmerPathNode node) {
+		caller.remove(node);
 		boolean removed = graphByPosition.remove(node);
 		assert(removed);
 		for (int i = 0; i < node.length(); i++) {
