@@ -134,7 +134,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	private ArrayDeque<KmerPathSubnode> findBestContig() {
 		Contig contig = findBestCachedContig();
 		if (Defaults.SANITY_CHECK_CONTIG_GENERATION) {
-			BestNonReferenceContigCaller bestCaller = new BestNonReferenceContigCaller(Iterators.concat(graphByPosition.iterator(), wrapper), maxEvidenceDistance);
+			ContigCaller bestCaller = new BestNonReferenceContigCaller(Iterators.concat(graphByPosition.iterator(), wrapper), maxEvidenceDistance);
 			ArrayDeque<KmerPathSubnode> bestContig = bestCaller.bestContig();
 			assert(bestContig.toString().equals(contig.toSubnodePath().toString()));
 		}

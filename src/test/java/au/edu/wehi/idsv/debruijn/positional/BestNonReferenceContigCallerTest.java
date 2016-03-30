@@ -163,7 +163,7 @@ public class BestNonReferenceContigCallerTest extends TestHelper {
 		// second best:
 		// 2 4 6 8 10
 		//  3 5 7 9  
-		BestNonReferenceContigCaller caller = new BestNonReferenceContigCaller(input.iterator(), 3);
+		ContigCaller caller = new BestNonReferenceContigCaller(input.iterator(), 3);
 		ArrayDeque<KmerPathSubnode> best = caller.bestContig();
 		assertEquals(11, best.size());
 	}
@@ -175,7 +175,7 @@ public class BestNonReferenceContigCallerTest extends TestHelper {
 		// best contig:
 		// 1 3 5 7 9  11
 		//  2 4 6 8 10
-		BestNonReferenceContigCaller caller = new BestNonReferenceContigCaller(input.iterator(), 3);
+		ContigCaller caller = new BestNonReferenceContigCaller(input.iterator(), 3);
 		ArrayDeque<KmerPathSubnode> best = caller.bestContig();
 		assertEquals(11, best.size());
 	}
@@ -186,7 +186,7 @@ public class BestNonReferenceContigCallerTest extends TestHelper {
 		input.add(KPN(k, "ACT", 1, 100000, false));
 		input.add(KPN(k, "CTA", 1, 100000, false));
 		input.add(KPN(k, "TAC", 1, 100000, false));
-		BestNonReferenceContigCaller caller = new BestNonReferenceContigCaller(input.iterator(), 1000000);
+		ContigCaller caller = new BestNonReferenceContigCaller(input.iterator(), 1000000);
 		ArrayDeque<KmerPathSubnode> best = caller.bestContig();
 		assertEquals(100000, best.size());
 	}

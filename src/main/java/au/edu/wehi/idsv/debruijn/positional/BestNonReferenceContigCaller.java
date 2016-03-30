@@ -19,20 +19,7 @@ import com.google.common.collect.TreeRangeSet;
  * @author Daniel Cameron
  *
  */
-public class BestNonReferenceContigCaller {
-	/**
-	 * Since reference kmers are not scored, calculating 
-	 * highest weighted results in a preference for paths
-	 * ending at a RP with sequencing errors over a path
-	 * anchored to the reference. 
-	 * 
-	 * To ensure that the anchored paths is score higher
-	 * than the unanchored paths, paths anchored to the
-	 * reference are given a score adjustment larger than
-	 * the largest expected score.
-	 */
-	static final int ANCHORED_SCORE = Integer.MAX_VALUE >> 2; 
-	private final PeekingIterator<KmerPathNode> underlying;
+public class BestNonReferenceContigCaller extends ContigCaller {
 	private final MemoizedTraverse frontier = new MemoizedTraverse();
 	/**
 	 * Potential starting nodes.
@@ -45,22 +32,16 @@ public class BestNonReferenceContigCaller {
 	 * involving the evidence used to construct the contig have also been assembled.
 	 */
 	private final PriorityQueue<Contig> called = new PriorityQueue<Contig>(Contig.ByScoreDescPosition);
-	private final int maxEvidenceWidth;
-	private int inputPosition;
 	private long consumed = 0;
 	private int firstContigPosition = Integer.MAX_VALUE;
+	private int inputPosition;
 	public BestNonReferenceContigCaller(
 			Iterator<KmerPathNode> it,
 			int maxEvidenceWidth) {
-		this.underlying = Iterators.peekingIterator(it);
-		this.maxEvidenceWidth = maxEvidenceWidth;
+		super(it, maxEvidenceWidth);
 	}
 	private void advance() {
-		if (!underlying.hasNext()) {
-			inputPosition = Integer.MAX_VALUE;
-		} else {
-			inputPosition = underlying.peek().firstStart();
-		}
+		inputPosition = nextPosition();
 		advanceUnderlying();
 		advanceUnprocessed();
 		advanceFrontier();
@@ -188,6 +169,7 @@ public class BestNonReferenceContigCaller {
 		int firstStart = Math.min(frontierFirstStart, Math.min(unprocessedFirstStart, inputPosition));
 		return contigLastEnd < firstStart - maxEvidenceWidth; // evidence could overlap just contig last end
 	}
+	@Override
 	public ArrayDeque<KmerPathSubnode> bestContig() {
 		// FIXME: add hard safety bounds to the width of the loaded graph
 		// since the size is technically unbounded

@@ -8,7 +8,7 @@ import com.google.common.collect.Ordering;
 public class Contig {
 	public Contig(TraversalNode node, boolean hasReferenceSuccessor) {
 		this.node = node;
-		this.score = node.score + (hasReferenceSuccessor ? BestNonReferenceContigCaller.ANCHORED_SCORE : 0);			
+		this.score = node.score + (hasReferenceSuccessor ? ContigCaller.ANCHORED_SCORE : 0);			
 	}
 	public Contig(TraversalNode node) {
 		this.node = node;
