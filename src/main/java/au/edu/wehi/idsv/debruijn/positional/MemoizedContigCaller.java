@@ -1,10 +1,18 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
+
 import java.util.ArrayDeque;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.SortedSet;
 import java.util.TreeSet;
+
+import com.google.common.collect.RangeSet;
 
 
 /**
@@ -43,12 +51,23 @@ public class MemoizedContigCaller extends ContigCaller {
 	 * Memoized path scores in order of descending score
 	 */
 	private final SortedSet<TraversalNode> byScore = new TreeSet<>(TraversalNode.ByScoreDescPosition);
+	private final MemoizedTraverse frontier = new MemoizedTraverse();
+	private final Map<KmerPathNode, RangeSet<Integer>> recalculateQueue = new HashMap<>();
+	private Collection<TraversalNode> getBestPathsAtNode(KmerPathNode node) { return null; }
+	private void queueRecalculate(KmerPathNode node, int firstStart, int firstEnd) { }
 	/**
-	 * Paths that require further calculation. Initially
-	 * 
-	 * 
+	 * Removes the given traversal node from the memoization
+	 * @param tn path to remove
+	 * @return true if the node was a highest scoring node, false otherwise
 	 */
-	private final PriorityQueue<KmerPathSubnode> frontier = new PriorityQueue<>(KmerNodeUtil.ByWeightDesc);
+	private boolean remove(TraversalNode tn) {
+		byScore.remove(tn);
+		memoized
+	}
+	private void removePathsAtNode(KmerPathNode node) {
+		// remove all paths involving the given node from the graph  
+	}
+	
 	public MemoizedContigCaller(
 			Iterator<KmerPathNode> it,
 			int maxEvidenceWidth) {
@@ -57,21 +76,62 @@ public class MemoizedContigCaller extends ContigCaller {
 	/**
 	 * Adds a new node to the graph.
 	 * 
-	 * The addition of a new node partially
-	 * invalidates the memoization.
+	 * New paths 
 	 * 
-	 * - 
-	 * - the best paths from the added node must
-	 * be traversed across all descendant nodes 
-	 *
-	 * 
-	 * If the added node is terminal
+	 * Parent nodes predecessors need to be added to frontier
+	 * so paths to the added node can be calculated
 	 * 
 	 * 
-	 * @param node
+	 * @param node node to removed
 	 */
 	private void add(KmerPathNode node) {
-		
+		queueRecalculate(node, node.firstStart(), node.firstEnd());
+	}
+	/**
+	 * Removes a node from the graph.
+	 *  
+	 *  
+	 * Memoized paths involving the removed node must be removed,
+	 * possibly resulting in a new starting path node.
+	 * When a memoized path is removed, the best path over the
+	 * interval in which that path was the best must be recalculated.
+	 * This can be done by adding all alternate paths overlapping
+	 * the removed path to the frontier. 
+	 * 
+	 * @param node node to removed
+	 */
+	private void remove(KmerPathNode node) {
+		for (TraversalNode tn : getBestPathsAtNode(node)) {
+			remove(tn);
+		}
+		// remove descendant node containing this as ancestor
+		for (KmerPathNode next : node.next()) {
+			unmemoize(next, node);
+		}
+		// Delete node from all data structures including:
+	}
+	/**
+	 * Unmemoizes all paths through the given node from the given parent
+	 * @param node
+	 * @param parent
+	 */
+	private void unmemoize(KmerPathNode node, KmerPathNode parent) {
+		for (TraversalNode tn : getBestPathsAtNode(node)) {
+			if (tn.parent.node.node() == parent) {
+				boolean wasBest = remove(tn);
+				if (wasBest) {
+					queueRecalculate(node, tn.node.firstStart(), tn.node.firstEnd());
+					unmemoize(node, node);
+				}
+			}
+		}
+	}
+	/**
+	 * Attempts to advance the frontier.
+	 * 
+	 */
+	private void advance() {
+		PriorityQueue<TraversalNode> frontier = new PriorityQueue<>(KmerNodeUtil.ByWeightDesc);
 	}
 	@Override
 	public ArrayDeque<KmerPathSubnode> bestContig() {
