@@ -6,7 +6,6 @@ import au.edu.wehi.idsv.util.IntervalUtil;
 
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
-import com.google.common.primitives.Ints;
 
 public class TraversalNode {
 	public final KmerPathSubnode node;
@@ -16,31 +15,23 @@ public class TraversalNode {
 	 */
 	public final int pathLength;
 	public final TraversalNode parent;
-	/**
-	 * Starting traversal node. Note that the root positional interval
-	 * can be wider than that of the head.
-	 */
-	public final KmerPathSubnode root;
 	public TraversalNode(KmerPathSubnode node, int baseScore) {
 		this.node = node;
 		this.score = baseScore + node.weight();
 		this.parent = null;
 		this.pathLength = node.length();
-		this.root = node;
 	}
 	public TraversalNode(TraversalNode prev, KmerPathSubnode node) {
 		this.node = node;
 		this.score = prev.score + node.weight();
 		this.parent = prev;
 		this.pathLength = prev.pathLength + node.length();
-		this.root = prev.root;
 	}
 	public TraversalNode(TraversalNode prev, KmerPathSubnode node, int terminalScore) {
 		this.node = node;
 		this.score = prev.score + node.weight() + terminalScore;
 		this.parent = prev;
 		this.pathLength = prev.pathLength + node.length();
-		this.root = prev.root;
 	}
 	@Override
 	public String toString() {
@@ -65,7 +56,6 @@ public class TraversalNode {
 		this.parent = node.parent;
 		this.score = node.score;
 		this.pathLength = node.pathLength;
-		this.root = node.root;
 	}
 	/**
 	 * Determines whether this path already traverses through the given node
@@ -114,18 +104,8 @@ public class TraversalNode {
 		}
 		return contigPath;
 	}
-	public static Ordering<TraversalNode> ByFirstStart = new Ordering<TraversalNode>() {
-		@Override
-		public int compare(TraversalNode left, TraversalNode right) {
-			return Ints.compare(left.node.firstStart(), right.node.firstStart());
-		}
-	};
-	public static Ordering<TraversalNode> ByLastEnd = new Ordering<TraversalNode>() {
-		@Override
-		public int compare(TraversalNode left, TraversalNode right) {
-			return Ints.compare(left.node.lastEnd(), right.node.lastEnd());
-		}
-	};
+	public static Ordering<TraversalNode> ByFirstStart = KmerNodeUtil.ByFirstStart.onResultOf((TraversalNode tn) -> tn.node);
+	public static Ordering<TraversalNode> ByLastEndKmer = KmerNodeUtil.ByLastEndKmer.onResultOf((TraversalNode tn) -> tn.node);
 	public static Ordering<TraversalNode> ByScoreDescPosition = new Ordering<TraversalNode>() {
 		@Override
 		public int compare(TraversalNode left, TraversalNode right) {

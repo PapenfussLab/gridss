@@ -7,6 +7,8 @@ import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.PriorityQueue;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import au.edu.wehi.idsv.util.IntervalUtil;
 
@@ -23,7 +25,17 @@ public class MemoizedTraverse {
 	 * of each node. 
 	 */
 	private final IdentityHashMap<KmerPathNode, Int2ObjectRBTreeMap<MemoizedTraversalNode>> memoized = new IdentityHashMap<KmerPathNode, Int2ObjectRBTreeMap<MemoizedTraversalNode>>();
-	private final PriorityQueue<MemoizedTraversalNode> frontier = new PriorityQueue<MemoizedTraversalNode>(MemoizedTraversalNode.ByLastEnd);
+	private final SortedSet<MemoizedTraversalNode> frontier = new TreeSet<MemoizedTraversalNode>(MemoizedTraversalNode.ByLastEndKmer);
+	/**
+	 * Removes the given node from the graph
+	 * @param node
+	 */
+	public void remove(KmerPathNode node) {
+		Int2ObjectRBTreeMap<MemoizedTraversalNode> nodes = memoized.remove(node);
+		if (nodes != null) {
+			frontier.removeAll(nodes.values());
+		}
+	}
 	/**
 	 * Memoize the given score for the given position
 	 * @param score initial score
