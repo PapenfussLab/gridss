@@ -1,16 +1,17 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
-
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.PriorityQueue;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
 import au.edu.wehi.idsv.util.IntervalUtil;
+import it.unimi.dsi.fastutil.ints.AbstractInt2ObjectSortedMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
 
 /**
  * Helper class to track memoization of nodes during positional graph traversal
@@ -24,42 +25,130 @@ public class MemoizedTraverse {
 	 * (BFS in position space) of the graph, caching the best predecessor
 	 * of each node. 
 	 */
-	private final IdentityHashMap<KmerPathNode, Int2ObjectRBTreeMap<MemoizedTraversalNode>> memoized = new IdentityHashMap<KmerPathNode, Int2ObjectRBTreeMap<MemoizedTraversalNode>>();
-	private final SortedSet<MemoizedTraversalNode> frontier = new TreeSet<MemoizedTraversalNode>(MemoizedTraversalNode.ByLastEndKmer);
+	private final IdentityHashMap<KmerPathNode, AbstractInt2ObjectSortedMap<TraversalNode>> memoized = new IdentityHashMap<>();
+	private final SortedSet<TraversalNode> frontier = new TreeSet<>(TraversalNode.ByLastEndKmer);
 	/**
 	 * Removes the given node from the graph
 	 * @param node
+	 * @return all paths unmemoized as a result of removing this node
 	 */
 	public void remove(KmerPathNode node) {
-		Int2ObjectRBTreeMap<MemoizedTraversalNode> nodes = memoized.remove(node);
-		if (nodes != null) {
-			frontier.removeAll(nodes.values());
+		AbstractInt2ObjectSortedMap<TraversalNode> cache = memoized.get(node);
+		if (cache == null) return;
+		if (cache != null) {
+			for (TraversalNode tn : cache.values()) {
+				onMemoizeRemove(tn);
+				if (frontier.remove(tn)) {
+					onFrontierRemove(tn);
+				}
+			}
 		}
+		for (KmerPathNode next : node.next()) {
+			// need to remove based on parent KmerPathNode, not parent
+			// TraversalNode due to reference start/end edge case:
+			// reference nodes can start a new path from a TraversalNode
+			// which is not memoized (since a reference node can both
+			// start and end separate, unconnected paths).
+			unmemoize(node, next);
+		}
+	}
+	/**
+	 * Unmemoizes all paths involving the given node
+	 * @param node  node to removed memoized paths from
+	 */
+	private void unmemoize(TraversalNode node) { 
+		AbstractInt2ObjectSortedMap<TraversalNode> cache = memoized.get(node);
+		if (cache == null) return;
+		TraversalNode removedNode = cache.remove(node);
+		assert(removedNode == node);
+		onMemoizeRemove(node);
+		if (frontier.remove(node)) {
+			onFrontierRemove(node);
+		}
+		for (KmerPathNode next : node.node.node().next()) {
+			unmemoize(node, next);
+		}
+	}
+	/**
+	 * Unmemoizes all paths at the given node with the given parent
+	 * @param parent parent of paths to remove
+	 * @param node node to removed memoized paths from
+	 * @param removedList nodes removed from memoization
+	 */
+	private void unmemoize(TraversalNode parent, KmerPathNode node) {
+		// TODO Stack<> based version of this function so we don't overflow our actual stack
+		AbstractInt2ObjectSortedMap<TraversalNode> cache = memoized.get(node);
+		if (cache == null) return;
+		boolean found = true;
+		// can't use a simple for loop since we may come back to ourself which will invalidate the iterator
+		while (found) {
+			found = false;
+			// skip cached values that end before we start
+			for (TraversalNode child : cache.tailMap(parent.node.firstStart()).values()) {
+				if (child.parent == parent) {
+					unmemoize(child);
+					found = true;
+					break;
+				}
+			}
+		}
+	}
+	/**
+	 * Unmemoizes all paths at the given node with the given parent
+	 * @param parent parent of paths to remove
+	 * @param node node to removed memoized paths from
+	 * @param removedList nodes removed from memoization
+	 */
+	private void unmemoize(KmerPathNode parent, KmerPathNode node) {
+		AbstractInt2ObjectSortedMap<TraversalNode> cache = memoized.get(node);
+		if (cache == null) return;
+		boolean found = true;
+		while (found) {
+			found = false;
+			for (TraversalNode child : cache.tailMap(parent.firstStart()).values()) {
+				if (child.parent.node.node() == parent) { // only line not identical to function above
+					unmemoize(child);
+					found = true;
+					break;
+				}
+			}
+		}
+	}
+	/**
+	 * Memoized paths for the given node
+	 * @param node node
+	 * @return Memoized best paths
+	 */
+	public Collection<TraversalNode> memoized(KmerPathNode node) {
+		AbstractInt2ObjectSortedMap<TraversalNode> cache = memoized.get(node);
+		if (cache == null) return Collections.emptyList();
+		return cache.values();
 	}
 	/**
 	 * Memoize the given score for the given position
 	 * @param score initial score
 	 * @param start starting node
+	 * @return previously memoized values invalidated by this memoization  
 	 */
-	public void memoize(MemoizedTraversalNode node) {
+	public void memoize(TraversalNode node) {
 		KmerPathSubnode sn = node.node;
 		KmerPathNode pn = sn.node();
-		Int2ObjectRBTreeMap<MemoizedTraversalNode> cache = memoized.get(pn);
+		AbstractInt2ObjectSortedMap<TraversalNode> cache = memoized.get(pn);
 		if (cache == null) {
-			cache = new Int2ObjectRBTreeMap<MemoizedTraversalNode>();
+			cache = new Int2ObjectRBTreeMap<TraversalNode>();
 			memoized.put(pn, cache);
 		}
 		memoize_treemap(node, cache);
 	}
-	private void memoize_treemap(MemoizedTraversalNode node, Int2ObjectRBTreeMap<MemoizedTraversalNode> cache) {
+	private void memoize_treemap(TraversalNode node, AbstractInt2ObjectSortedMap<TraversalNode> cache) {
 		KmerPathSubnode sn = node.node;
 		// skip cached values that end before we start
-		Iterator<MemoizedTraversalNode> it = cache.tailMap(sn.firstStart()).values().iterator();
-		List<MemoizedTraversalNode> addlist = null;
+		Iterator<TraversalNode> it = cache.tailMap(sn.firstStart()).values().iterator();
+		List<TraversalNode> addlist = null;
 		while (it.hasNext()) {
-			MemoizedTraversalNode existing = it.next();
+			TraversalNode existing = it.next();
 			KmerPathSubnode existingsn = existing.node;
-			assert (existingsn.firstEnd() >= sn.firstStart()); // should have skipped in the initial lookup
+			assert(existingsn.firstEnd() >= sn.firstStart()); // should have been skipped in the initial lookup
 			if (existingsn.firstStart() > sn.firstEnd()) break;
 			
 			// ok, so now we know the nodes overlap
@@ -67,30 +156,42 @@ public class MemoizedTraverse {
 			if (node.score > existing.score) {
 				// remove existing node in overlapping interval
 				it.remove();
-				boolean inFrontier = existing.isValid();
-				existing.invalidate();
+				boolean inFrontier = frontier.remove(existing);
+				onMemoizeRemove(existing);
+				if (inFrontier) {
+					onFrontierRemove(existing);
+				}
+				
 				if (existingsn.firstStart() < node.node.firstStart()) {
 					// still valid in earlier interval
-					MemoizedTraversalNode existingBefore = new MemoizedTraversalNode(existing, existingsn.firstStart(), node.node.firstStart() - 1);
-					if (addlist == null) addlist = new ArrayList<MemoizedTraversalNode>(4);
+					TraversalNode existingBefore = new TraversalNode(existing, existingsn.firstStart(), node.node.firstStart() - 1);
+					if (addlist == null) addlist = new ArrayList<TraversalNode>(4);
 					addlist.add(existingBefore);
-					if (inFrontier) frontier.add(existingBefore);
+					if (inFrontier) {
+						frontier.add(existingBefore);
+						onFrontierAdd(existingBefore);
+					}
 				}
 				if (existingsn.firstEnd() > node.node.firstEnd()) {
-					// still valid in earlier interval
-					MemoizedTraversalNode existingAfter = new MemoizedTraversalNode(existing, node.node.firstEnd() + 1, existingsn.firstEnd());
-					if (addlist == null) addlist = new ArrayList<MemoizedTraversalNode>(4);
+					// still valid in later interval
+					TraversalNode existingAfter = new TraversalNode(existing, node.node.firstEnd() + 1, existingsn.firstEnd());
+					if (addlist == null) addlist = new ArrayList<TraversalNode>(4);
 					addlist.add(existingAfter);
-					if (inFrontier) frontier.add(existingAfter);
+					if (inFrontier) {
+						frontier.add(existingAfter);
+						onFrontierAdd(existingAfter);
+					}
 				}
 			} else { // we're not better than existing node
 				int newStartPosition = existingsn.firstEnd() + 1;
 				if (node.node.firstStart() < existingsn.firstStart()) {
-					// start before this node -> we have
-					MemoizedTraversalNode newBefore = new MemoizedTraversalNode(node, node.node.firstStart(), existingsn.firstStart() - 1);
-					if (addlist == null) addlist = new ArrayList<MemoizedTraversalNode>(4);
+					// start before this node -> we are the best
+					// path for the interval before the given position
+					TraversalNode newBefore = new TraversalNode(node, node.node.firstStart(), existingsn.firstStart() - 1);
+					if (addlist == null) addlist = new ArrayList<TraversalNode>(4);
 					addlist.add(newBefore);
 					frontier.add(newBefore);
+					onFrontierAdd(newBefore);
 				}
 				if (newStartPosition > node.node.firstEnd()) {
 					// existing node is better than us for all remaining starting position
@@ -98,45 +199,76 @@ public class MemoizedTraverse {
 					node = null;
 					break;
 				} else {
-					node = new MemoizedTraversalNode(node, newStartPosition, node.node.firstEnd());
+					node = new TraversalNode(node, newStartPosition, node.node.firstEnd());
 					sn = node.node;
 				}
 			}
-			
 		}
 		if (node != null) {
 			add(cache, node);
 		}
 		if (addlist != null) {
-			for (MemoizedTraversalNode n : addlist) {
+			for (TraversalNode n : addlist) {
 				add(cache, n);
 			}
 		}
 	}
-	private void add(Int2ObjectRBTreeMap<MemoizedTraversalNode> cache, MemoizedTraversalNode node) {
+	private void add(AbstractInt2ObjectSortedMap<TraversalNode> cache, TraversalNode node) {
 		cache.put(node.node.firstEnd(), node);
 		frontier.add(node);
+		onMemoizeAdd(node);
+	}
+	/**
+	 * Called when a TraversalNode is removed from memoization,
+	 * including when an alternate higher scoring path is found
+	 * over part of the interval
+	 * @param tn
+	 */
+	protected void onMemoizeRemove(TraversalNode tn) {
+	}
+	/**
+	 * Called when a TraversalNode is added as an optimal path
+	 * @param tn
+	 */
+	protected void onMemoizeAdd(TraversalNode tn) {
+	}
+	protected void onFrontierAdd(TraversalNode tn) {
+	}
+	protected void onFrontierRemove(TraversalNode tn) {
 	}
 	/**
 	 * Removes returns the next node for visitation
 	 * @return
 	 */
-	public MemoizedTraversalNode pollFrontier() {
-		ensureValidFrontierHead();
-		return frontier.poll();	
+	public TraversalNode pollFrontier() {
+		TraversalNode head = frontier.first();
+		frontier.remove(head);
+		onFrontierRemove(head);
+		return head;
 	}
 	/**
 	 * Removes returns the next node for visitation
 	 * @return
 	 */
-	public MemoizedTraversalNode peekFrontier() {
-		ensureValidFrontierHead();
-		return frontier.peek();	
+	public TraversalNode peekFrontier() {
+		return frontier.first();	
 	}
-	private void ensureValidFrontierHead() {
-		while (!frontier.isEmpty() && !frontier.peek().isValid()) {
-			frontier.poll();
-		}
+	/**
+	 * Chcks if the frontier is empty
+	 * @return
+	 */
+	public boolean isEmptyFrontier() {
+		return frontier.isEmpty();
+	}
+	/**
+	 * Adds the given node back into the frontier for revisitation
+	 * @param node node to recalculate
+	 */
+	public void addFrontier(TraversalNode node) {
+		assert(memoized.containsKey(node.node.node()));
+		assert(memoized.get(node.node.node()).containsValue(node));
+		frontier.add(node);
+		onFrontierAdd(node);
 	}
 	@Override
 	public String toString() {

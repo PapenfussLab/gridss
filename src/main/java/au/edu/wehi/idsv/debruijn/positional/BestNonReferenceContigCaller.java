@@ -113,10 +113,10 @@ public class BestNonReferenceContigCaller extends ContigCaller {
 			}
 			if (referenceCount > 0) {
 				// start of anchored path
-				frontier.memoize(new MemoizedTraversalNode(new KmerPathSubnode(node, start, end), ANCHORED_SCORE));
+				frontier.memoize(new TraversalNode(new KmerPathSubnode(node, start, end), ANCHORED_SCORE));
 			} else if (referenceCount == 0 && nonReferenceCount == 0) {
 				// start of unanchored path
-				frontier.memoize(new MemoizedTraversalNode(new KmerPathSubnode(node, start, end), 0));
+				frontier.memoize(new TraversalNode(new KmerPathSubnode(node, start, end), 0));
 			}
 			start = end + 1;
 		}
@@ -126,7 +126,7 @@ public class BestNonReferenceContigCaller extends ContigCaller {
 		RangeSet<Integer> terminalAnchor = null;
 		for (KmerPathSubnode sn : ms.node.next()) {
 			if (!sn.node().isReference()) {
-				frontier.memoize(new MemoizedTraversalNode(ms, sn));
+				frontier.memoize(new TraversalNode(ms, sn));
 			} else {
 				if (terminalAnchor == null) {
 					terminalAnchor = TreeRangeSet.create();
@@ -210,5 +210,4 @@ public class BestNonReferenceContigCaller extends ContigCaller {
 	public int tracking_unprocessedStartNodeCount() {
 		return unprocessedStartNodes.size();
 	}
-	
 }

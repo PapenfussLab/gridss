@@ -2,10 +2,10 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import java.util.ArrayDeque;
 
-import au.edu.wehi.idsv.util.IntervalUtil;
-
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
+
+import au.edu.wehi.idsv.util.IntervalUtil;
 
 public class TraversalNode {
 	public final KmerPathSubnode node;
@@ -27,11 +27,18 @@ public class TraversalNode {
 		this.parent = prev;
 		this.pathLength = prev.pathLength + node.length();
 	}
-	public TraversalNode(TraversalNode prev, KmerPathSubnode node, int terminalScore) {
+	public TraversalNode(TraversalNode prev, KmerPathSubnode node, int additionalScore) {
 		this.node = node;
-		this.score = prev.score + node.weight() + terminalScore;
+		this.score = prev.score + node.weight() + additionalScore;
 		this.parent = prev;
 		this.pathLength = prev.pathLength + node.length();
+	}
+	/**
+	 * First starting position of the first kmer in the path
+	 * @return first position
+	 */
+	public int pathFirstStart() {
+		return node.firstStart() - pathLength; 
 	}
 	@Override
 	public String toString() {
@@ -106,12 +113,21 @@ public class TraversalNode {
 	}
 	public static Ordering<TraversalNode> ByFirstStart = KmerNodeUtil.ByFirstStart.onResultOf((TraversalNode tn) -> tn.node);
 	public static Ordering<TraversalNode> ByLastEndKmer = KmerNodeUtil.ByLastEndKmer.onResultOf((TraversalNode tn) -> tn.node);
-	public static Ordering<TraversalNode> ByScoreDescPosition = new Ordering<TraversalNode>() {
+	public static Ordering<TraversalNode> ByPathFirstStartArbitrary = new Ordering<TraversalNode>() {
+		@Override
+		public int compare(TraversalNode left, TraversalNode right) {
+			return ComparisonChain.start()
+					.compare(left.pathFirstStart(), right.pathFirstStart())
+					.compare(left, right, Ordering.arbitrary())
+					.result();
+		}
+	};
+	public static Ordering<TraversalNode> ByScoreDescPathFirstStartArbitrary = new Ordering<TraversalNode>() {
 		@Override
 		public int compare(TraversalNode left, TraversalNode right) {
 			return ComparisonChain.start()
 					.compare(right.score, left.score)
-					.compare(left.node.lastStart(), right.node.lastStart())
+					.compare(left, right, ByPathFirstStartArbitrary)
 					.result();
 		}
 	};

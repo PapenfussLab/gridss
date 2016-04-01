@@ -1,18 +1,11 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
-
 import java.util.ArrayDeque;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.IdentityHashMap;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.PriorityQueue;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import com.google.common.collect.RangeSet;
+import au.edu.wehi.idsv.util.IntervalUtil;
 
 
 /**
@@ -48,26 +41,37 @@ import com.google.common.collect.RangeSet;
  */
 public class MemoizedContigCaller extends ContigCaller {
 	/**
-	 * Memoized path scores in order of descending score
+	 * Path scores in order of descending score
 	 */
-	private final SortedSet<TraversalNode> byScore = new TreeSet<>(TraversalNode.ByScoreDescPosition);
-	private final MemoizedTraverse frontier = new MemoizedTraverse();
-	private final Map<KmerPathNode, RangeSet<Integer>> recalculateQueue = new HashMap<>();
-	private Collection<TraversalNode> getBestPathsAtNode(KmerPathNode node) { return null; }
-	private void queueRecalculate(KmerPathNode node, int firstStart, int firstEnd) { }
-	/**
-	 * Removes the given traversal node from the memoization
-	 * @param tn path to remove
-	 * @return true if the node was a highest scoring node, false otherwise
-	 */
-	private boolean remove(TraversalNode tn) {
-		byScore.remove(tn);
-		memoized
+	private final SortedSet<TraversalNode> contigByScore = new TreeSet<>(TraversalNode.ByScoreDescPathFirstStartArbitrary);
+	private final SortedSet<TraversalNode> frontierByPathStart = new TreeSet<>(TraversalNode.ByPathFirstStartArbitrary);
+	private final MemoizedContigTraverse frontier = new MemoizedContigTraverse();
+	private int maxVisitedEndPosition = Integer.MIN_VALUE;
+	private class MemoizedContigTraverse extends MemoizedTraverse {
+		@Override
+		protected void onMemoizeAdd(TraversalNode tn) {
+			assert(tn.score != ANCHORED_SCORE * 2); // shouldn't ever have reference-reference paths
+			if (tn.score == ANCHORED_SCORE) {
+				// don't track reference-only paths
+				assert(tn.node.isReference());
+				assert(tn.parent == null);
+				return;
+			}
+			contigByScore.add(tn);
+		}
+		@Override
+		protected void onMemoizeRemove(TraversalNode tn) {
+			contigByScore.remove(tn);
+		}
+		@Override
+		protected void onFrontierAdd(TraversalNode tn) {
+			frontierByPathStart.add(tn);
+		}
+		@Override
+		protected void onFrontierRemove(TraversalNode tn) {
+			frontierByPathStart.remove(tn);
+		}
 	}
-	private void removePathsAtNode(KmerPathNode node) {
-		// remove all paths involving the given node from the graph  
-	}
-	
 	public MemoizedContigCaller(
 			Iterator<KmerPathNode> it,
 			int maxEvidenceWidth) {
@@ -76,16 +80,62 @@ public class MemoizedContigCaller extends ContigCaller {
 	/**
 	 * Adds a new node to the graph.
 	 * 
-	 * New paths 
-	 * 
 	 * Parent nodes predecessors need to be added to frontier
 	 * so paths to the added node can be calculated
 	 * 
-	 * 
 	 * @param node node to removed
 	 */
-	private void add(KmerPathNode node) {
-		queueRecalculate(node, node.firstStart(), node.firstEnd());
+	public void add(KmerPathNode node) {
+		assert(frontier.memoized(node).isEmpty());
+		TraversalNode tn = new TraversalNode(new KmerPathSubnode(node), node.isReference() ? ANCHORED_SCORE : 0);
+		frontier.addFrontier(tn);
+		if (node.firstStart() > maxVisitedEndPosition + 1) {
+			// only need to recalculate predecessors if we could have previously visited them
+		} else {
+			// flag predecessors for recalculation so this node will be visited
+			for (KmerPathNode prev : node.prev()) {
+				for (TraversalNode prevtn : frontier.memoized(prev)) {
+					if (IntervalUtil.overlapsClosed(prevtn.node.lastStart() + 1, prevtn.node.lastEnd() + 1, node.firstStart(), node.firstEnd())) {
+						frontier.addFrontier(prevtn);
+					}
+				}
+			}
+		}
+	}
+	/**
+	 * Advance the frontier as far as possible
+	 */
+	private void advanceFrontier() {
+		// Can only advance frontier if all possible successors are guaranteed to be loaded
+		while (!frontier.isEmptyFrontier() && frontier.peekFrontier().node.lastEnd() < nextPosition() - 1) {
+			visit(frontier.pollFrontier());
+		}
+	}
+	/**
+	 * Visits the given frontier node
+	 * @param node node to visit
+	 */
+	private void visit(TraversalNode node) {
+		assert(node.node.lastEnd() + 1 < nextPosition()); // successors must be fully defined
+		if (node.node.isReference()) {
+			// Reset reference traversal to a starting path
+			node = new TraversalNode(new KmerPathSubnode(node.node.node()), ANCHORED_SCORE);
+		}
+		for (KmerPathSubnode sn : node.node.next()) {
+			if (sn.node().isReference() && node.node.isReference()) {
+				// drop reference - reference transitions as we're only
+				// traversing non-reference nodes
+			} else {
+				TraversalNode tn = new TraversalNode(node, sn, sn.isReference() ? ANCHORED_SCORE : 0);
+				frontier.memoize(tn);
+			}
+		}
+		maxVisitedEndPosition = Math.max(maxVisitedEndPosition, node.node.lastEnd());
+		// We don't need to explicitly track terminal paths.
+		// Since node weights are strictly positive, any successor nodes
+		// will result in a path with higher score than the interval
+		// that terminates here thus a TraversalNode with any successors
+		// will never be the highest scoring path
 	}
 	/**
 	 * Removes a node from the graph.
@@ -100,41 +150,68 @@ public class MemoizedContigCaller extends ContigCaller {
 	 * 
 	 * @param node node to removed
 	 */
-	private void remove(KmerPathNode node) {
-		for (TraversalNode tn : getBestPathsAtNode(node)) {
-			remove(tn);
-		}
-		// remove descendant node containing this as ancestor
-		for (KmerPathNode next : node.next()) {
-			unmemoize(next, node);
-		}
-		// Delete node from all data structures including:
+	public void remove(KmerPathNode node) {
+		frontier.remove(node);
 	}
 	/**
-	 * Unmemoizes all paths through the given node from the given parent
-	 * @param node
-	 * @param parent
-	 */
-	private void unmemoize(KmerPathNode node, KmerPathNode parent) {
-		for (TraversalNode tn : getBestPathsAtNode(node)) {
-			if (tn.parent.node.node() == parent) {
-				boolean wasBest = remove(tn);
-				if (wasBest) {
-					queueRecalculate(node, tn.node.firstStart(), tn.node.firstEnd());
-					unmemoize(node, node);
-				}
-			}
-		}
-	}
-	/**
-	 * Attempts to advance the frontier.
+	 * Determines whether the current best contig is
+	 * the globally best contig containing the evidence.
 	 * 
+	 *  ---- best contig
+	 *      ****** overlapping read (maxEvidenceWidth)
+	 *            -------------------- non-terminal path
+	 *                                | nextPosition()
+	 *            ^- earliest non-terminal path
+	 *
+	 * Can only call best contig when at least maxEvidenceWidth
+	 * bases exist between the end of the contig and the start of 
+	 * the closest incomplete contig.
 	 */
-	private void advance() {
-		PriorityQueue<TraversalNode> frontier = new PriorityQueue<>(KmerNodeUtil.ByWeightDesc);
+	private boolean canCallBestContig() {
+		if (contigByScore.isEmpty()) return false;
+		int unprocessedPosition = nextPosition();
+		if (!frontierByPathStart.isEmpty()) {
+			unprocessedPosition = Math.min(unprocessedPosition, frontierByPathStart.first().pathFirstStart());
+		}
+		return contigByScore.first().node.lastEnd() < unprocessedPosition - maxEvidenceWidth - 1;
 	}
 	@Override
 	public ArrayDeque<KmerPathSubnode> bestContig() {
-		return null;
+		advanceFrontier();
+		while (underlying.hasNext() && !canCallBestContig()) {
+			// by loading all nodes within maxEvidenceDistance, we guarantee
+			// that all final nodes of incomplete memoized paths
+			// can be fully memoized.
+			int loadBefore = nextPosition() + 2 * maxEvidenceWidth;
+			while (underlying.hasNext() && nextPosition() <= loadBefore) {
+				underlying.next();
+				// Not the best design in hindsight but we want
+				// compatibility with BestNonReferenceContig:
+				// No need to call add(): that is done by
+				// the intercepter iterator that 
+				// NonReferenceContigAssembler wraps around
+				// our underlying iterator
+				// add(n);
+			}
+			advanceFrontier();
+		}
+		if (contigByScore.isEmpty()) return null;
+		TraversalNode tn = contigByScore.first();
+		ArrayDeque<KmerPathSubnode> contig = tn.toSubnodeNextPath();
+		if (contig.peekFirst().isReference()) {
+			contig.pollFirst();
+		}
+		if (contig.peekLast().isReference()) {
+			contig.pollLast();
+		}
+		assert(!contig.isEmpty());
+		assert(contig.stream().allMatch(sn -> !sn.isReference()));
+		return contig;
+	}
+	public int tracking_memoizedNodeCount() {
+		return frontier.tracking_memoizedNodeCount();
+	}
+	public int tracking_frontierSize() {
+		return frontier.tracking_frontierSize();
 	}
 }

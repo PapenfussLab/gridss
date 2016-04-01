@@ -59,7 +59,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	private SortedSet<KmerPathNode> graphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByFirstStartKmer);
 	private final EvidenceTracker evidenceTracker;
 	private final AssemblyEvidenceSource aes;
-	private final PathCache caller = new PathCache();
+	private final MemoizedContigCaller contigCaller;
 	/**
 	 * Worst case scenario is a RP providing single kmer support for contig
 	 * read length - (k-1) + max-min fragment size
@@ -110,6 +110,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		this.referenceIndex = referenceIndex;
 		this.aes = source;
 		this.evidenceTracker = tracker;
+		this.contigCaller = new MemoizedContigCaller(this.wrapper, maxEvidenceDistance);
 	}
 	@Override
 	protected SAMRecordAssemblyEvidence computeNext() {
@@ -132,46 +133,16 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		return calledContig;
 	}
 	private ArrayDeque<KmerPathSubnode> findBestContig() {
-		Contig contig = findBestCachedContig();
+		ArrayDeque<KmerPathSubnode> contig = contigCaller.bestContig();
 		if (Defaults.SANITY_CHECK_CONTIG_GENERATION) {
 			ContigCaller bestCaller = new BestNonReferenceContigCaller(Iterators.concat(graphByPosition.iterator(), wrapper), maxEvidenceDistance);
 			ArrayDeque<KmerPathSubnode> bestContig = bestCaller.bestContig();
-			assert(bestContig.toString().equals(contig.toSubnodePath().toString()));
+			assert(bestContig.toString().equals(contig.toString()));
 		}
 		if (exportTracker != null) {
-			exportTracker.trackAssembly(caller, contig);
+			exportTracker.trackAssembly(contigCaller, contig);
 		}
-		return contig.toSubnodePath();
-	}
-	private int nextPosition() {
-		if (!wrapper.hasNext()) return Integer.MAX_VALUE;
-		return wrapper.peek().firstStart();
-	}
-	/**
-	 * Finds the best available contig
-	 * The underlying graph is loaded until such point that a
-	 * contig that is the guaranteed maximal contig supported
-	 * by the underlying evidence.
-	 * @return best contig containing the given supporting evidence 
-	 */
-	private Contig findBestCachedContig() {
-		Contig bestCachedContig = caller.bestContig(nextPosition(), maxEvidenceDistance);
-		while (wrapper.hasNext() && bestCachedContig == null) {
-			// by loading all nodes within maxEvidenceDistance, we guarantee
-			// that all final nodes of incomplete memoized paths
-			// can be fully memoized.
-			KmerPathNode n = wrapper.next();
-			int loadBefore = n.firstStart() + 2 * maxEvidenceDistance;
-			while (wrapper.hasNext() && n.firstStart() <= loadBefore) {
-				// The next node gets added to the memoization cache
-				// by the iterator intercept wrapper calling addToGraph()
-				// so we don't have to do anything except advance the
-				// iterator here.
-				n = wrapper.next();
-			}
-			bestCachedContig = caller.bestContig(nextPosition(), maxEvidenceDistance);
-		}
-		return bestCachedContig;
+		return contig;
 	}
 	private SAMRecordAssemblyEvidence callContig(ArrayDeque<KmerPathSubnode> contig) {
 		if (containsKmerRepeat(contig)) {
@@ -396,6 +367,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		simplifyCandidates.addAll(replacementNodes);
 	}
 	private void addToGraph(KmerPathNode node) {
+		contigCaller.add(node);
 		boolean added = graphByPosition.add(node);
 		assert(added);
 		for (int i = 0; i < node.length(); i++) {
@@ -404,10 +376,9 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		for (int i = 0; i < node.collapsedKmers().size(); i++) {
 			addToGraph(new KmerPathNodeKmerNode(i, node));
 		}
-		caller.add(node);
 	}
 	private void removeFromGraph(KmerPathNode node) {
-		caller.remove(node);
+		contigCaller.remove(node);
 		boolean removed = graphByPosition.remove(node);
 		assert(removed);
 		for (int i = 0; i < node.length(); i++) {
