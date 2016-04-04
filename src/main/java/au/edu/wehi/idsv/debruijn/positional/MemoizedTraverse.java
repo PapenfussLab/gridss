@@ -251,6 +251,7 @@ public class MemoizedTraverse {
 	 * @return
 	 */
 	public TraversalNode peekFrontier() {
+		if (frontier.isEmpty()) return null;
 		return frontier.first();	
 	}
 	/**

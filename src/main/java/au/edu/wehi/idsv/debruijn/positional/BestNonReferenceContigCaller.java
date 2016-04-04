@@ -163,7 +163,7 @@ public class BestNonReferenceContigCaller extends ContigCaller {
 	private boolean contigDoesNotShareEvidenceWithUnprocessed(Contig contig) {
 		assert(contig != null);
 		int contigLastEnd = contig.node.node.lastEnd();
-		int frontierFirstStart = frontier.peekFrontier() == null ? Integer.MAX_VALUE : frontier.peekFrontier().node.firstStart();
+		int frontierFirstStart = frontier.isEmptyFrontier() ? Integer.MAX_VALUE : frontier.peekFrontier().node.firstStart();
 		int unprocessedFirstNodeLastEnd = unprocessedStartNodes.isEmpty() ? Integer.MAX_VALUE : unprocessedStartNodes.peek().lastEnd();
 		int unprocessedFirstStart = unprocessedFirstNodeLastEnd - maxEvidenceWidth; // node could contain entire evidence
 		int firstStart = Math.min(frontierFirstStart, Math.min(unprocessedFirstStart, inputPosition));

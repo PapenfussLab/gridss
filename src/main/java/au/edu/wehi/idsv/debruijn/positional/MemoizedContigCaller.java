@@ -85,6 +85,7 @@ public class MemoizedContigCaller extends ContigCaller {
 	 * 
 	 * @param node node to removed
 	 */
+	@Override
 	public void add(KmerPathNode node) {
 		assert(frontier.memoized(node).isEmpty());
 		TraversalNode tn = new TraversalNode(new KmerPathSubnode(node), node.isReference() ? ANCHORED_SCORE : 0);
@@ -150,6 +151,7 @@ public class MemoizedContigCaller extends ContigCaller {
 	 * 
 	 * @param node node to removed
 	 */
+	@Override
 	public void remove(KmerPathNode node) {
 		frontier.remove(node);
 	}

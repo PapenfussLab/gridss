@@ -59,7 +59,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	private SortedSet<KmerPathNode> graphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByFirstStartKmer);
 	private final EvidenceTracker evidenceTracker;
 	private final AssemblyEvidenceSource aes;
-	private final MemoizedContigCaller contigCaller;
+	private final ContigCaller contigCaller;
 	/**
 	 * Worst case scenario is a RP providing single kmer support for contig
 	 * read length - (k-1) + max-min fragment size
@@ -110,7 +110,8 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		this.referenceIndex = referenceIndex;
 		this.aes = source;
 		this.evidenceTracker = tracker;
-		this.contigCaller = new MemoizedContigCaller(this.wrapper, maxEvidenceDistance);
+		//this.contigCaller = new MemoizedContigCaller(this.wrapper, maxEvidenceDistance);
+		this.contigCaller = new SingleContigCaller(graphByPosition, wrapper, maxEvidenceDistance);
 	}
 	@Override
 	protected SAMRecordAssemblyEvidence computeNext() {
@@ -139,8 +140,8 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			ArrayDeque<KmerPathSubnode> bestContig = bestCaller.bestContig();
 			assert(bestContig.toString().equals(contig.toString()));
 		}
-		if (exportTracker != null) {
-			exportTracker.trackAssembly(contigCaller, contig);
+		if (exportTracker != null && contigCaller instanceof MemoizedContigCaller) {
+			exportTracker.trackAssembly((MemoizedContigCaller)contigCaller, contig);
 		}
 		return contig;
 	}

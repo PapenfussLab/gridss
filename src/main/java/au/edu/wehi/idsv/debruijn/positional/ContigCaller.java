@@ -22,6 +22,16 @@ public abstract class ContigCaller {
 	protected static final int ANCHORED_SCORE = Integer.MAX_VALUE >> 2;
 
 	public abstract ArrayDeque<KmerPathSubnode> bestContig();
+	/**
+	 * Called when a node is added to the loaded graph
+	 * @param node
+	 */
+	public void add(KmerPathNode node) { }
+	/**
+	 * Called when a node is removed from the loaded graph
+	 * @param node
+	 */
+	public void remove(KmerPathNode node) { }
 
 	protected final PeekingIterator<KmerPathNode> underlying;
 	protected final int maxEvidenceWidth;
