@@ -38,7 +38,6 @@ import au.edu.wehi.idsv.visualisation.PositionalExporter;
 
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.PeekingIterator;
 
 
 /**
@@ -353,12 +352,12 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	private void removeWeight(KmerPathNode node, List<List<KmerNode>> toRemove, Set<KmerPathNode> simplifyCandidates) {
 		if (node == null) return;
 		assert(node.length() >= toRemove.size());
+		// remove from graph
+		removeFromGraph(node);
 		simplifyCandidates.addAll(node.next());
 		simplifyCandidates.addAll(node.prev());
 		simplifyCandidates.remove(node);
 		Collection<KmerPathNode> replacementNodes = KmerPathNode.removeWeight(node, toRemove);
-		// remove from graph
-		removeFromGraph(node);
 		for (KmerPathNode split : replacementNodes) {
 			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 				assert(evidenceTracker.matchesExpected(new KmerPathSubnode(split)));
@@ -470,12 +469,12 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	 * @author Daniel Cameron
 	 *
 	 */
-	private class KmerPathNodeIteratorInterceptor implements PeekingIterator<KmerPathNode> {
-		private final PeekingIterator<KmerPathNode> underlying;
+	private class KmerPathNodeIteratorInterceptor implements Iterator<KmerPathNode> {
+		private final Iterator<KmerPathNode> underlying;
 		private int position;
 		public int lastPosition() { return position; }
 		public KmerPathNodeIteratorInterceptor(Iterator<KmerPathNode> it) {
-			this.underlying = Iterators.peekingIterator(it);
+			this.underlying = it;
 		}
 		@Override
 		public boolean hasNext() {
@@ -495,14 +494,6 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			addToGraph(node);
 			position = node.firstStart();
 			return node;
-		}
-		@Override
-		public KmerPathNode peek() {
-			return underlying.peek();
-		}
-		@Override
-		public void remove() {
-			underlying.remove();
 		}
 	}
 	public boolean sanityCheck() {

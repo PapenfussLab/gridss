@@ -40,6 +40,19 @@ public class TraversalNode {
 	public int pathFirstStart() {
 		return node.firstStart() - pathLength; 
 	}
+	/**
+	 * Number of nodes in this path
+	 * @return
+	 */
+	public int nodeCount() {
+		int count = 0;
+		TraversalNode n = this;
+		while (n != null) {
+			n = n.parent;
+			count++;
+		}
+		return count;
+	}
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder(String.format("score=%d pathlength=%d\n", score, pathLength));

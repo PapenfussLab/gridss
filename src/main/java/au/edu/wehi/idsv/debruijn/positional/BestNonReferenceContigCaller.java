@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.List;
@@ -186,6 +188,11 @@ public class BestNonReferenceContigCaller extends ContigCaller {
 			assert(!underlying.hasNext());
 			return null;
 		}
+		//try {
+		//	frontier.export(new File("C:/temp/dump.csv"));
+		//} catch (IOException e) {
+		//	e.printStackTrace();
+		//}
 		return best.toSubnodePath();
 	}
 	public List<ArrayDeque<KmerPathSubnode>> contigsFound() {

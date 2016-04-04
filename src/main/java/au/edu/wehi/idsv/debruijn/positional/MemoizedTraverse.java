@@ -1,5 +1,10 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import it.unimi.dsi.fastutil.ints.AbstractInt2ObjectSortedMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
+
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -8,10 +13,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Stream;
 
 import au.edu.wehi.idsv.util.IntervalUtil;
-import it.unimi.dsi.fastutil.ints.AbstractInt2ObjectSortedMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
+
+import com.google.common.io.Files;
 
 /**
  * Helper class to track memoization of nodes during positional graph traversal
@@ -280,5 +286,28 @@ public class MemoizedTraverse {
 	}
 	public int tracking_frontierSize() {
 		return frontier.size();
+	}
+	/**
+	 * Exports the lookup table
+	 * @param file
+	 * @throws IOException 
+	 */
+	public void export(File file) throws IOException {
+		StringBuilder sb = new StringBuilder("score,kmerlength,nodelength,start,end,nodehash,parenthash,nodestart,nodeend,memoized,frontier\n");
+		Stream.concat(frontier.stream(), memoized.values().stream().flatMap(m -> m.values().stream())).distinct().forEach(tn -> {
+			sb.append(String.format("%d,%d,%d,%d,%d,%x,%x,%d,%d,%b,%b\n",
+				tn.score,
+				tn.pathLength,
+				tn.nodeCount(),
+				tn.node.firstStart(),
+				tn.node.firstEnd(),
+				System.identityHashCode(tn.node.node()),
+				tn.parent == null ? 0 : System.identityHashCode(tn.parent.node.node()),
+				tn.node.node().firstStart(),
+				tn.node.node().firstEnd(),
+				memoized.containsKey(tn.node.node()) && memoized.get(tn.node.node()).containsValue(tn),
+				frontier.contains(tn)));
+		});
+		Files.write(sb.toString().getBytes(), file);
 	}
 }
