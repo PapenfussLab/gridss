@@ -58,7 +58,7 @@ public class MemoizedContigCallerTest extends ContigCallerTest {
 		KmerPathNode.addEdge(input.get(0), input.get(1));
 		MemoizedContigCaller caller = new MemoizedContigCaller(input.iterator(), 10);
 		assertEquals(2, caller.bestContig().size());
-		KmerPathNode added = KPN(k, "AAAA", 0, 0, true);
+		KmerPathNode added = KPN(k, "AAAA", 0, 0, false);
 		KmerPathNode.addEdge(added, input.get(0));
 		caller.add(added);
 		assertEquals(3, caller.bestContig().size());
@@ -72,7 +72,7 @@ public class MemoizedContigCallerTest extends ContigCallerTest {
 		KmerPathNode.addEdge(input.get(0), input.get(1));
 		MemoizedContigCaller caller = new MemoizedContigCaller(input.iterator(), 10);
 		assertEquals(2, caller.bestContig().size());
-		KmerPathNode added = KPN(k, "AAAA", 3, 3, true);
+		KmerPathNode added = KPN(k, "AAAA", 3, 3, false);
 		KmerPathNode.addEdge(input.get(1), added);
 		caller.add(added);
 		assertEquals(3, caller.bestContig().size());

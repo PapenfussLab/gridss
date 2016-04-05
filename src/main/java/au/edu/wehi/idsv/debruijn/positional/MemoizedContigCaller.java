@@ -52,11 +52,13 @@ public class MemoizedContigCaller extends ContigCaller {
 	private class MemoizedContigTraverse extends MemoizedTraverse {
 		@Override
 		protected void onMemoizeAdd(TraversalNode tn) {
-			assert(tn.score != ANCHORED_SCORE * 2); // shouldn't ever have reference-reference paths
-			if (tn.score == ANCHORED_SCORE) {
+			if (tn.node.isReference() && tn.parent == null) {
 				// don't track reference-only paths
-				assert(tn.node.isReference());
-				assert(tn.parent == null);
+				return;
+			}
+			if (tn.score >= 2 * ANCHORED_SCORE && tn.node.isReference() &&
+					tn.parent != null && tn.parent.node.isReference()) {
+				// don't track reference-reference paths
 				return;
 			}
 			contigByScore.add(tn);
