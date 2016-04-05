@@ -13,6 +13,7 @@ public class VisualisationConfiguration {
 		assembly = config.getBoolean("assembly");
 		fullSizeAssembly = config.getBoolean("assemblyFullSize");
 		assemblyProgress = config.getBoolean("assemblyProgress");
+		assemblyContigMemoization = config.getBoolean("assemblyContigMemoization");
 		evidenceAllocation = config.getBoolean("evidenceAllocation");
 		buffers = config.getBoolean("buffers");
 		bufferTrackingItervalInSeconds = config.getInt("bufferTrackingItervalInSeconds");
@@ -31,6 +32,10 @@ public class VisualisationConfiguration {
 	 * Output information on assembly progress and buffer sizes 
 	 */
 	public boolean assemblyProgress;
+	/**
+	 * Output contig memoization lookup after each generated contig
+	 */
+	public boolean assemblyContigMemoization;
 	public boolean evidenceAllocation;
 	public boolean buffers;
 	public int bufferTrackingItervalInSeconds;

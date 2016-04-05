@@ -188,11 +188,6 @@ public class BestNonReferenceContigCaller extends ContigCaller {
 			assert(!underlying.hasNext());
 			return null;
 		}
-		//try {
-		//	frontier.export(new File("C:/temp/dump.csv"));
-		//} catch (IOException e) {
-		//	e.printStackTrace();
-		//}
 		return best.toSubnodePath();
 	}
 	public List<ArrayDeque<KmerPathSubnode>> contigsFound() {
@@ -216,5 +211,9 @@ public class BestNonReferenceContigCaller extends ContigCaller {
 	}
 	public int tracking_unprocessedStartNodeCount() {
 		return unprocessedStartNodes.size();
+	}
+	@Override
+	public void exportState(File file) throws IOException {
+		frontier.export(file);
 	}
 }

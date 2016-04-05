@@ -705,6 +705,22 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 			return false;
 		return true;
 	}
+	/**
+	 * Removes the given node from the graph.
+	 */
+	public void remove() {
+		for (KmerPathNode n : next()) {
+			boolean removed = CollectionUtil.removeByReference(n.prevList, this);
+			assert(removed);
+		}
+		nextList = null;
+		for (KmerPathNode n : prevList) {
+			boolean removed = CollectionUtil.removeByReference(n.nextList, this);
+			assert(removed);
+		}
+		prevList = null;
+		invalidate();
+	}
 	private KmerPathNode removeKmer(int offset) {
 		assert(offset >= 0);
 		assert(offset < length());

@@ -2,6 +2,7 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -15,13 +16,13 @@ import java.util.stream.Stream;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 
-import com.google.common.collect.Lists;
-
 import au.edu.wehi.idsv.DiscordantReadPair;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.util.IntervalUtil;
+
+import com.google.common.collect.Lists;
 
 public abstract class ContigCallerTest extends TestHelper {
 	public abstract ContigCaller getCaller(Iterable<KmerPathNode> input, int maxEvidenceWidth);
@@ -113,17 +114,18 @@ public abstract class ContigCallerTest extends TestHelper {
 	}
 	@Test
 	public void subnode_loops_should_not_cause_stack_overflow() {
+		int length = 1000;
 		int k = 3;
 		List<KmerPathNode> input = new ArrayList<KmerPathNode>();
-		input.add(KPN(k, "ACT", 1, 100000, false));
-		input.add(KPN(k, "CTA", 1, 100000, false));
-		input.add(KPN(k, "TAC", 1, 100000, false));
+		input.add(KPN(k, "ACT", 1, length, false));
+		input.add(KPN(k, "CTA", 1, length, false));
+		input.add(KPN(k, "TAC", 1, length, false));
 		KmerPathNode.addEdge(input.get(0), input.get(1));
 		KmerPathNode.addEdge(input.get(1), input.get(2));
 		KmerPathNode.addEdge(input.get(2), input.get(0));
-		ContigCaller caller = getCaller(input, 100000);
+		ContigCaller caller = getCaller(input, length);
 		ArrayDeque<KmerPathSubnode> best = caller.bestContig();
-		assertEquals(100000, best.size());
+		assertEquals(length, best.size());
 	}
 	@Test
 	public void should_start_path_with_no_predecessor() {
@@ -194,8 +196,8 @@ public abstract class ContigCallerTest extends TestHelper {
 	@Test
 	public void should_not_call_suboptimal_contig_with_successor_within_evidence_distance() {
 		List<KmerPathNode> list = new ArrayList<KmerPathNode>();
-		list.add(KPN(4, "TTTT", 1, 1, false, 10));
-		for (int i = 10; i < 30; i++) {
+		list.add(KPN(4, "TTTT", 1, 1, false, 100));
+		for (int i = 10; i < 110; i++) {
 			list.add(KPN(4, "AAAA", i, i, false, 1));
 		}
 		for (int i = 2; i < list.size(); i++) {
@@ -206,7 +208,7 @@ public abstract class ContigCallerTest extends TestHelper {
 		// X        XXXXXXXXXXXXXXXXXXXX
 		//
 		ArrayDeque<KmerPathSubnode> result = getCaller(list, 10).bestContig();
-		assertEquals(7, result.size());
+		assertEquals(100, result.size());
 	}
 	@Test
 	public void should_call_first_optimal_contig() {
@@ -222,7 +224,31 @@ public abstract class ContigCallerTest extends TestHelper {
 		// 123456789012345678901234567890
 		// X        XXXXXXXXXXXXXXXXXXXX
 		//
-		ArrayDeque<KmerPathSubnode> result = getCaller(list, 9).bestContig();
+		ArrayDeque<KmerPathSubnode> result = getCaller(list, 2).bestContig();
 		assertEquals(1, result.size());
+	}
+	@Test
+	public void should_not_call_reference_paths() {
+		int k = 4;
+		List<KmerPathNode> input = new ArrayList<KmerPathNode>();
+		input.add(KPN(k, "AAAA", 1, 1, true));
+		input.add(KPN(k, "AAAA", 2, 2, true));
+		ArrayDeque<KmerPathSubnode> result = getCaller(input, 10).bestContig();
+		assertNull(result);
+	}
+	@Test
+	public void reference_nodes_should_be_terminal() {
+		int k = 4;
+		List<KmerPathNode> list = new ArrayList<KmerPathNode>();
+		for (int i = 1; i < 16; i++) {
+			list.add(KPN(k, "AAAA", i, i, i % 2 == 0));
+		}
+		for (int i = 1; i < list.size(); i++) {
+			KmerPathNode.addEdge(list.get(i - 1), list.get(i));
+		}
+		ArrayDeque<KmerPathSubnode> result = getCaller(list, 10).bestContig();
+		assertEquals(1, result.size());
+		assertTrue(result.getFirst().prev().get(0).isReference());
+		assertTrue(result.getLast().next().get(0).isReference());
 	}
 }

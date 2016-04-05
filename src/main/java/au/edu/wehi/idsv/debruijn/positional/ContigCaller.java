@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Iterator;
 
@@ -22,6 +24,12 @@ public abstract class ContigCaller {
 	protected static final int ANCHORED_SCORE = Integer.MAX_VALUE >> 2;
 
 	public abstract ArrayDeque<KmerPathSubnode> bestContig();
+	/**
+	 * Exports the internal state for debugging purposes
+	 * @param file
+	 * @throws IOException 
+	 */
+	public abstract void exportState(File file) throws IOException;
 	/**
 	 * Called when a node is added to the loaded graph
 	 * @param node

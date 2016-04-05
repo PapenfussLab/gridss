@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Iterator;
 import java.util.SortedSet;
@@ -89,9 +91,10 @@ public class MemoizedContigCaller extends ContigCaller {
 	public void add(KmerPathNode node) {
 		assert(frontier.memoized(node).isEmpty());
 		TraversalNode tn = new TraversalNode(new KmerPathSubnode(node), node.isReference() ? ANCHORED_SCORE : 0);
-		frontier.addFrontier(tn);
+		frontier.memoize(tn);
 		if (node.firstStart() > maxVisitedEndPosition + 1) {
-			// only need to recalculate predecessors if we could have previously visited them
+			// don't need to flag parents for revisitation
+			// since we have never visited any of them
 		} else {
 			// flag predecessors for recalculation so this node will be visited
 			for (KmerPathNode prev : node.prev()) {
@@ -140,20 +143,17 @@ public class MemoizedContigCaller extends ContigCaller {
 	}
 	/**
 	 * Removes a node from the graph.
-	 *  
-	 *  
-	 * Memoized paths involving the removed node must be removed,
-	 * possibly resulting in a new starting path node.
-	 * When a memoized path is removed, the best path over the
-	 * interval in which that path was the best must be recalculated.
-	 * This can be done by adding all alternate paths overlapping
-	 * the removed path to the frontier. 
 	 * 
 	 * @param node node to removed
 	 */
 	@Override
 	public void remove(KmerPathNode node) {
 		frontier.remove(node);
+		// flag the successors as potential starting nodes
+		for (KmerPathNode child : node.next()) {
+			TraversalNode tn = new TraversalNode(new KmerPathSubnode(child), child.isReference() ? ANCHORED_SCORE : 0);
+			frontier.memoize(tn);
+		}
 	}
 	/**
 	 * Determines whether the current best contig is
@@ -173,9 +173,11 @@ public class MemoizedContigCaller extends ContigCaller {
 		if (contigByScore.isEmpty()) return false;
 		int unprocessedPosition = nextPosition();
 		if (!frontierByPathStart.isEmpty()) {
-			unprocessedPosition = Math.min(unprocessedPosition, frontierByPathStart.first().pathFirstStart());
+			int frontierPathFirstStart = frontierByPathStart.first().pathFirstStart();
+			unprocessedPosition = Math.min(unprocessedPosition, frontierPathFirstStart);
 		}
-		return contigByScore.first().node.lastEnd() < unprocessedPosition - maxEvidenceWidth - 1;
+		int bestContigLastEnd = contigByScore.first().node.lastEnd(); 
+		return bestContigLastEnd < unprocessedPosition - maxEvidenceWidth - 1;
 	}
 	@Override
 	public ArrayDeque<KmerPathSubnode> bestContig() {
@@ -186,14 +188,8 @@ public class MemoizedContigCaller extends ContigCaller {
 			// can be fully memoized.
 			int loadBefore = nextPosition() + 2 * maxEvidenceWidth;
 			while (underlying.hasNext() && nextPosition() <= loadBefore) {
-				underlying.next();
-				// Not the best design in hindsight but we want
-				// compatibility with BestNonReferenceContig:
-				// No need to call add(): that is done by
-				// the intercepter iterator that 
-				// NonReferenceContigAssembler wraps around
-				// our underlying iterator
-				// add(n);
+				KmerPathNode n = underlying.next();
+				add(n);
 			}
 			advanceFrontier();
 		}
@@ -215,5 +211,9 @@ public class MemoizedContigCaller extends ContigCaller {
 	}
 	public int tracking_frontierSize() {
 		return frontier.tracking_frontierSize();
+	}
+	@Override
+	public void exportState(File file) throws IOException {
+		frontier.export(file);
 	}
 }

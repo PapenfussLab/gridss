@@ -8,6 +8,7 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -20,6 +21,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
@@ -37,7 +39,6 @@ import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
 import au.edu.wehi.idsv.visualisation.PositionalExporter;
 
 import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.Iterators;
 
 
 /**
@@ -48,6 +49,10 @@ import com.google.common.collect.Iterators;
  */
 public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssemblyEvidence> {
 	private static final Log log = Log.getInstance(NonReferenceContigAssembler.class);
+	/**
+	 * Debugging tracker to ensure memoization export files have unique names
+	 */
+	private static final AtomicInteger pathExportCount = new AtomicInteger();
 	/**
 	 * Positional size of the loaded subgraph before orphan calling is performed.
 	 * This is relatively high as orphaned subgraphs are relatively uncommon
@@ -109,8 +114,8 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		this.referenceIndex = referenceIndex;
 		this.aes = source;
 		this.evidenceTracker = tracker;
-		//this.contigCaller = new MemoizedContigCaller(this.wrapper, maxEvidenceDistance);
-		this.contigCaller = new SingleContigCaller(graphByPosition, wrapper, maxEvidenceDistance);
+		this.contigCaller = new MemoizedContigCaller(this.wrapper, maxEvidenceDistance);
+		//this.contigCaller = new SingleContigCaller(graphByPosition, wrapper, maxEvidenceDistance);
 	}
 	@Override
 	protected SAMRecordAssemblyEvidence computeNext() {
@@ -134,13 +139,16 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	}
 	private ArrayDeque<KmerPathSubnode> findBestContig() {
 		ArrayDeque<KmerPathSubnode> contig = contigCaller.bestContig();
-		if (Defaults.SANITY_CHECK_CONTIG_GENERATION) {
-			ContigCaller bestCaller = new BestNonReferenceContigCaller(Iterators.concat(graphByPosition.iterator(), wrapper), maxEvidenceDistance);
-			ArrayDeque<KmerPathSubnode> bestContig = bestCaller.bestContig();
-			assert(bestContig.toString().equals(contig.toString()));
-		}
 		if (exportTracker != null && contigCaller instanceof MemoizedContigCaller) {
 			exportTracker.trackAssembly((MemoizedContigCaller)contigCaller, contig);
+		}
+		if (aes.getContext().getConfig().getVisualisation().assemblyContigMemoization) {
+			File file = new File(aes.getContext().getConfig().getVisualisation().directory, "assembly.path.memoization." + Integer.toString(pathExportCount.incrementAndGet()) + ".csv");
+			try {
+				contigCaller.exportState(file);
+			} catch (IOException e) {
+				log.debug(e, "Unable to export assembly path memoization to " + file.toString());
+			}
 		}
 		return contig;
 	}
@@ -310,7 +318,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			removeFromGraph(node);
 			removeFromGraph(prev);
 			node.prepend(prev);
-			addToGraph(node);
+			addToGraph(node, false);
 		}
 		KmerPathNode next = node.nextToMergeWith();
 		if (next != null && next.lastEnd() < wrapper.lastPosition()) {
@@ -318,7 +326,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			removeFromGraph(node);
 			removeFromGraph(next);
 			next.prepend(node);
-			addToGraph(next);
+			addToGraph(next, false);
 		}
 	}
 	private void updateRemovalList(Map<KmerPathNode, List<List<KmerNode>>> toRemove, KmerSupportNode support) {
@@ -362,12 +370,14 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 				assert(evidenceTracker.matchesExpected(new KmerPathSubnode(split)));
 			}
-			addToGraph(split);
+			addToGraph(split, false);
 		}
 		simplifyCandidates.addAll(replacementNodes);
 	}
-	private void addToGraph(KmerPathNode node) {
-		contigCaller.add(node);
+	private void addToGraph(KmerPathNode node, boolean inIterator) {
+		if (!inIterator) {
+			contigCaller.add(node);
+		}
 		boolean added = graphByPosition.add(node);
 		assert(added);
 		for (int i = 0; i < node.length(); i++) {
@@ -491,7 +501,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 				assert(evidenceTracker.matchesExpected(new KmerPathSubnode(node)));
 			}
-			addToGraph(node);
+			addToGraph(node, true);
 			position = node.firstStart();
 			return node;
 		}

@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Iterator;
@@ -16,7 +18,7 @@ import com.google.common.collect.Iterators;
  */
 public class SingleContigCaller extends ContigCaller {
 	private final Collection<KmerPathNode> loaded;
-	private BestNonReferenceContigCaller caller;
+	private BestNonReferenceContigCaller caller = null;
 	public SingleContigCaller(
 			Collection<KmerPathNode> loaded,
 			Iterator<KmerPathNode> it,
@@ -46,5 +48,11 @@ public class SingleContigCaller extends ContigCaller {
 	}
 	public int tracking_unprocessedStartNodeCount() {
 		return caller.tracking_unprocessedStartNodeCount();
+	}
+	@Override
+	public void exportState(File file) throws IOException {
+		if (caller != null) {
+			caller.exportState(file);
+		}
 	}
 }
