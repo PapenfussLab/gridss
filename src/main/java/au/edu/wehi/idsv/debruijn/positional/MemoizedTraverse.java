@@ -48,6 +48,7 @@ public class MemoizedTraverse {
 	 * @param node node to remove
 	 */
 	public void remove(KmerPathNode node) {
+		assert(node.isValid());
 		AbstractInt2ObjectSortedMap<TraversalNode> cache = memoized.get(node);
 		if (cache == null) return;
 		// explicit stack to prevent actual stack overflow
@@ -144,10 +145,10 @@ public class MemoizedTraverse {
 			cache = new Int2ObjectRBTreeMap<TraversalNode>();
 			memoized.put(pn, cache);
 		}
-		memoize_treemap(node, cache);
+		memoize_fastutil_sortedmap(node, cache);
 		sanityCheck();
 	}
-	private void memoize_treemap(TraversalNode node, AbstractInt2ObjectSortedMap<TraversalNode> cache) {
+	private void memoize_fastutil_sortedmap(TraversalNode node, AbstractInt2ObjectSortedMap<TraversalNode> cache) {
 		KmerPathSubnode sn = node.node;
 		// skip cached values that end before we start
 		Iterator<TraversalNode> it = cache.tailMap(sn.firstStart()).values().iterator();
@@ -156,15 +157,18 @@ public class MemoizedTraverse {
 			TraversalNode existing = it.next();
 			KmerPathSubnode existingsn = existing.node;
 			assert(existingsn.firstEnd() >= sn.firstStart()); // should have been skipped in the initial lookup
-			if (existingsn.firstStart() > sn.firstEnd()) break;
-			
+			if (existingsn.firstStart() > sn.firstEnd()) {
+				// We've already traversed all overlapping values
+				// so there's no point iterating any further
+				break;
+			}
 			// ok, so now we know the nodes overlap
 			assert(existingsn.firstKmer() == sn.firstKmer() && IntervalUtil.overlapsClosed(existingsn.firstStart(), existingsn.firstEnd(), sn.firstStart(), sn.firstEnd()));
 			if (node.score > existing.score) {
 				// remove existing node in overlapping interval
 				it.remove();
-				boolean inFrontier = frontier.remove(existing);
 				onMemoizeRemove(existing);
+				boolean inFrontier = frontier.remove(existing);
 				if (inFrontier) {
 					onFrontierRemove(existing);
 				}
@@ -222,8 +226,9 @@ public class MemoizedTraverse {
 	}
 	private void add(AbstractInt2ObjectSortedMap<TraversalNode> cache, TraversalNode node) {
 		cache.put(node.node.firstEnd(), node);
-		frontier.add(node);
 		onMemoizeAdd(node);
+		frontier.add(node);
+		onFrontierAdd(node);
 	}
 	/**
 	 * Called when a TraversalNode is removed from memoization,
@@ -263,10 +268,22 @@ public class MemoizedTraverse {
 	}
 	/**
 	 * Chcks if the frontier is empty
-	 * @return
+	 * @return true if the frontier is empty, false otherwise
 	 */
 	public boolean isEmptyFrontier() {
 		return frontier.isEmpty();
+	}
+	/**
+	 * Checks whether the given node has been memoized. A node in
+	 * which all best TraversalNodes have been invalidated and require
+	 * recalculation is still considered memoized.
+	 * 
+	 * @param node node to check
+	 * @return true if at least one TraversalNode has been memoized for the given
+	 * node, and the node has not been removed.
+	 */
+	public boolean isMemoized(KmerPathNode node) {
+		return memoized.containsKey(node);
 	}
 	/**
 	 * Adds the given node into the frontier for revisitation
@@ -314,12 +331,12 @@ public class MemoizedTraverse {
 	public boolean sanityCheck() {
 		for (Entry<KmerPathNode, AbstractInt2ObjectSortedMap<TraversalNode>> entry : memoized.entrySet()) {
 			KmerPathNode node = entry.getKey();
+			assert(node.isValid());
 			for (int position : entry.getValue().keySet()) {
 				assert(position >= node.firstStart());
 				assert(position <= node.firstEnd());
 				TraversalNode tn = entry.getValue().get(position);
 				assert(tn.node.node() == node);
-				assert(tn.node.node().isValid());
 				assert(tn.node.firstEnd() == position);
 			}
 		}

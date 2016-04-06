@@ -53,4 +53,7 @@ public abstract class ContigCaller {
 		this.underlying = Iterators.peekingIterator(it);
 		this.maxEvidenceWidth = maxEvidenceWidth;
 	}
+	public abstract boolean sanityCheck();
+	public abstract int tracking_memoizedNodeCount();
+	public abstract int tracking_frontierSize();
 }

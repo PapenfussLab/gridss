@@ -1,5 +1,8 @@
 package au.edu.wehi.idsv.visualisation;
 
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.Log;
+
 import java.io.BufferedWriter;
 import java.io.Closeable;
 import java.io.File;
@@ -17,8 +20,6 @@ import au.edu.wehi.idsv.debruijn.positional.NonReferenceContigAssembler;
 import au.edu.wehi.idsv.debruijn.positional.PathNodeIterator;
 import au.edu.wehi.idsv.debruijn.positional.PathSimplificationIterator;
 import au.edu.wehi.idsv.debruijn.positional.SupportNodeIterator;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.Log;
 
 /**
  * Tracks information associated with positional de Bruijn graph calling

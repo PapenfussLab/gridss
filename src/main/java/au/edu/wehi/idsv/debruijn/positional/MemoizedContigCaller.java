@@ -43,6 +43,12 @@ import au.edu.wehi.idsv.util.IntervalUtil;
  */
 public class MemoizedContigCaller extends ContigCaller {
 	/**
+	 * Chunk size (in multiples of maxEvidenceWidth) to load at any one time.
+	 * Larger chunks increase memory consumption by reduce the number of
+	 * memoization recalculations required.
+	 */
+	private static final int EVIDENCE_WIDTH_LOADING_MULTIPLE = 2;
+	/**
 	 * Path scores in order of descending score
 	 */
 	private final SortedSet<TraversalNode> contigByScore = new TreeSet<>(TraversalNode.ByScoreDescPathFirstStartArbitrary);
@@ -128,6 +134,7 @@ public class MemoizedContigCaller extends ContigCaller {
 			node = new TraversalNode(new KmerPathSubnode(node.node.node()), ANCHORED_SCORE);
 		}
 		for (KmerPathSubnode sn : node.node.next()) {
+			assert(frontier.isMemoized(sn.node()));
 			if (sn.node().isReference() && node.node.isReference()) {
 				// drop reference - reference transitions as we're only
 				// traversing non-reference nodes
@@ -153,8 +160,11 @@ public class MemoizedContigCaller extends ContigCaller {
 		frontier.remove(node);
 		// flag the successors as potential starting nodes
 		for (KmerPathNode child : node.next()) {
-			TraversalNode tn = new TraversalNode(new KmerPathSubnode(child), child.isReference() ? ANCHORED_SCORE : 0);
-			frontier.memoize(tn);
+			// only set up starting paths for nodes that should be memoized
+			if (frontier.isMemoized(child)) {
+				TraversalNode tn = new TraversalNode(new KmerPathSubnode(child), child.isReference() ? ANCHORED_SCORE : 0);
+				frontier.memoize(tn);
+			}
 		}
 	}
 	/**
@@ -188,7 +198,7 @@ public class MemoizedContigCaller extends ContigCaller {
 			// by loading all nodes within maxEvidenceDistance, we guarantee
 			// that all final nodes of incomplete memoized paths
 			// can be fully memoized.
-			int loadBefore = nextPosition() + 2 * maxEvidenceWidth;
+			int loadBefore = nextPosition() + EVIDENCE_WIDTH_LOADING_MULTIPLE * maxEvidenceWidth;
 			while (underlying.hasNext() && nextPosition() <= loadBefore) {
 				KmerPathNode n = underlying.next();
 				add(n);
@@ -208,14 +218,26 @@ public class MemoizedContigCaller extends ContigCaller {
 		assert(contig.stream().allMatch(sn -> !sn.isReference()));
 		return contig;
 	}
+	@Override
 	public int tracking_memoizedNodeCount() {
 		return frontier.tracking_memoizedNodeCount();
 	}
+	@Override
 	public int tracking_frontierSize() {
 		return frontier.tracking_frontierSize();
 	}
 	@Override
 	public void exportState(File file) throws IOException {
 		frontier.export(file);
+	}
+	@Override
+	public boolean sanityCheck() {
+		for (TraversalNode tn : contigByScore) {
+			assert(frontier.memoized(tn.node.node()).contains(tn));
+		}
+		for (TraversalNode tn : frontierByPathStart) {
+			assert(frontier.memoized(tn.node.node()).contains(tn));
+		}
+		return frontier.sanityCheck();
 	}
 }

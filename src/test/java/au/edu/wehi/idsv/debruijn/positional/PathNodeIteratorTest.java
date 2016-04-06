@@ -3,6 +3,7 @@ package au.edu.wehi.idsv.debruijn.positional;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import htsjdk.samtools.SAMRecord;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -13,8 +14,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.lang3.ArrayUtils;
 import org.junit.Test;
 
-import com.google.common.collect.Lists;
-
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.DiscordantReadPair;
 import au.edu.wehi.idsv.NonReferenceReadPair;
@@ -22,7 +21,8 @@ import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.util.IntervalUtil;
-import htsjdk.samtools.SAMRecord;
+
+import com.google.common.collect.Lists;
 
 
 public class PathNodeIteratorTest extends TestHelper {

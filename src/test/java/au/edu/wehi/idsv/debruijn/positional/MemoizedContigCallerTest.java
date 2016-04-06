@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 import java.util.ArrayDeque;
 import java.util.ArrayList;
@@ -47,7 +48,34 @@ public class MemoizedContigCallerTest extends ContigCallerTest {
 		ref.remove();
 		ArrayDeque<KmerPathSubnode> post = caller.bestContig();
 		assertEquals(7, post.size());
-
+	}
+	@Test
+	public void remove_should_not_recalculate_self_descendant() {
+		List<KmerPathNode> input = new ArrayList<KmerPathNode>();
+		input.add(KPN(4, "AAAA", 1, 10, false));
+		KmerPathNode.addEdge(input.get(0), input.get(0));
+		MemoizedContigCaller caller = new MemoizedContigCaller(input.iterator(), 10);
+		caller.bestContig();
+		caller.sanityCheck();
+		caller.remove(input.get(0));
+		caller.sanityCheck();
+		assertNull(caller.bestContig());
+	}
+	@Test
+	public void remove_should_not_add_removed_descendants() {
+		List<KmerPathNode> input = new ArrayList<KmerPathNode>();
+		input.add(KPN(4, "AAAA", 1, 1, false));
+		input.add(KPN(4, "AAAA", 2, 2, false));
+		input.add(KPN(4, "AAAA", 3, 3, false));
+		KmerPathNode.addEdge(input.get(0), input.get(1));
+		KmerPathNode.addEdge(input.get(1), input.get(2));
+		MemoizedContigCaller caller = new MemoizedContigCaller(input.iterator(), 10);
+		caller.bestContig();
+		caller.remove(input.get(1));
+		caller.remove(input.get(0));
+		caller.remove(input.get(2));
+		caller.sanityCheck();
+		assertNull(caller.bestContig());
 	}
 	@Test
 	public void add_should_recalculate_self() {

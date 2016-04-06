@@ -1,5 +1,9 @@
 package au.edu.wehi.idsv.alignment;
 
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.TextCigarCodec;
+import htsjdk.samtools.util.SequenceUtil;
+
 import java.nio.charset.StandardCharsets;
 
 import au.edu.wehi.idsv.BreakendDirection;
@@ -7,9 +11,6 @@ import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.TextCigarCodec;
-import htsjdk.samtools.util.SequenceUtil;
 
 /**
  * Determines the length of any inexact breakpoint homology

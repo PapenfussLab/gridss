@@ -49,11 +49,12 @@ public abstract class ContigCallerTest extends TestHelper {
 			}
 		}
 		list.sort(KmerNodeUtil.ByFirstStart);
-		BestNonReferenceContigCaller caller = new BestNonReferenceContigCaller(list.iterator(), 3);
+		ContigCaller caller = getCaller(list, 10);
 		// highest scoring path goes through the most nodes:
 		// [1-1][1-*] -> [2-2][2-*] -> [3-3][3-*] -> [4-4][4-*] -> [5-5][4-*] 
 		ArrayDeque<KmerPathSubnode> contig = caller.bestContig();
 		assertEquals(list.size(), caller.tracking_memoizedNodeCount());
+		assertEquals(0, caller.tracking_frontierSize());
 		assertEquals(5, contig.size());
 	}
 	@Test
@@ -76,7 +77,7 @@ public abstract class ContigCallerTest extends TestHelper {
 			}
 		}
 		list.sort(KmerNodeUtil.ByFirstStart);
-		BestNonReferenceContigCaller caller = new BestNonReferenceContigCaller(list.iterator(), 3);
+		ContigCaller caller = getCaller(list, 3);
 		caller.bestContig();
 		assertEquals(list.size(), caller.tracking_memoizedNodeCount());
 		assertEquals(0, caller.tracking_frontierSize());
@@ -95,7 +96,7 @@ public abstract class ContigCallerTest extends TestHelper {
 		// second best:
 		// 2 4 6 8 10
 		//  3 5 7 9  
-		ContigCaller caller = new BestNonReferenceContigCaller(input.iterator(), 3);
+		ContigCaller caller = getCaller(input, 3);
 		ArrayDeque<KmerPathSubnode> best = caller.bestContig();
 		assertEquals(11, best.size());
 	}
@@ -108,7 +109,7 @@ public abstract class ContigCallerTest extends TestHelper {
 		// best contig:
 		// 1 3 5 7 9  11
 		//  2 4 6 8 10
-		ContigCaller caller = new BestNonReferenceContigCaller(input.iterator(), 3);
+		ContigCaller caller = getCaller(input, 3);
 		ArrayDeque<KmerPathSubnode> best = caller.bestContig();
 		assertEquals(11, best.size());
 	}
@@ -196,7 +197,7 @@ public abstract class ContigCallerTest extends TestHelper {
 	@Test
 	public void should_not_call_suboptimal_contig_with_successor_within_evidence_distance() {
 		List<KmerPathNode> list = new ArrayList<KmerPathNode>();
-		list.add(KPN(4, "TTTT", 1, 1, false, 100));
+		list.add(KPN(4, "TTTT", 1, 1, false, 70));
 		for (int i = 10; i < 110; i++) {
 			list.add(KPN(4, "AAAA", i, i, false, 1));
 		}
@@ -209,6 +210,17 @@ public abstract class ContigCallerTest extends TestHelper {
 		//
 		ArrayDeque<KmerPathSubnode> result = getCaller(list, 10).bestContig();
 		assertEquals(100, result.size());
+	}
+	@Test
+	public void should_favor_early_calls() {
+		List<KmerPathNode> list = new ArrayList<KmerPathNode>();
+		list.add(KPN(4, "TTTT", 2, 2, false, 100));
+		list.add(KPN(4, "TTTT", 3, 3, false, 100));
+		ContigCaller caller = getCaller(list, 2);
+		caller.bestContig();
+		caller.add(KPN(4, "TTTT", 4, 4, false, 100));
+		caller.add(KPN(4, "TTTT", 1, 1, false, 100));
+		assertEquals(1, caller.bestContig().getFirst().firstStart());
 	}
 	@Test
 	public void should_call_first_optimal_contig() {

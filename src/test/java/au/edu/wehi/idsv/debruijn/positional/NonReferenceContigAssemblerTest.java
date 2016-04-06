@@ -2,6 +2,7 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import htsjdk.samtools.SAMRecord;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -23,7 +24,6 @@ import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.SpanningSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.TestHelper;
-import htsjdk.samtools.SAMRecord;
 
 import com.google.common.collect.Lists;
 

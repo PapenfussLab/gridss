@@ -246,6 +246,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 				log.debug(ex, "Error exporting assembly ", assembledContig != null ? assembledContig.getEvidenceID() : "(null)");
 			}
 		}
+		contigCaller.sanityCheck(); // TEMP HACK
 		// remove all evidence contributing to this assembly from the graph
 		if (evidence.size() > 0) {
 			removeFromGraph(evidence);
@@ -255,6 +256,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 				removeFromGraph(n.node());
 			}
 		}
+		contigCaller.sanityCheck(); // TEMP HACK
 		return assembledContig;
 	}
 	private boolean containsKmerRepeat(Collection<KmerPathSubnode> contig) {
@@ -312,6 +314,11 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	}
 	private void simplify(KmerPathNode node, Set<KmerPathNode> simplifyCandidates) {
 		simplifyCandidates.remove(node);
+		if (node.lastEnd() >= wrapper.lastPosition()) {
+			// don't simplify graph if we haven't actually loaded all the relevant nodes
+			return;
+		}
+		contigCaller.sanityCheck(); // TEMP HACK
 		KmerPathNode prev = node.prevToMergeWith();
 		if (prev != null && prev.lastEnd() < wrapper.lastPosition()) {
 			simplifyCandidates.remove(prev);
@@ -328,6 +335,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			next.prepend(node);
 			addToGraph(next, false);
 		}
+		contigCaller.sanityCheck(); // TEMP HACK
 	}
 	private void updateRemovalList(Map<KmerPathNode, List<List<KmerNode>>> toRemove, KmerSupportNode support) {
 		Collection<KmerPathNodeKmerNode> kpnknList = graphByKmerNode.get(support.lastKmer());
@@ -358,6 +366,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		evidenceList.add(support);
 	}
 	private void removeWeight(KmerPathNode node, List<List<KmerNode>> toRemove, Set<KmerPathNode> simplifyCandidates) {
+		contigCaller.sanityCheck(); // TEMP HACK
 		if (node == null) return;
 		assert(node.length() >= toRemove.size());
 		// remove from graph
@@ -373,11 +382,9 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			addToGraph(split, false);
 		}
 		simplifyCandidates.addAll(replacementNodes);
+		contigCaller.sanityCheck(); // TEMP HACK
 	}
 	private void addToGraph(KmerPathNode node, boolean inIterator) {
-		if (!inIterator) {
-			contigCaller.add(node);
-		}
 		boolean added = graphByPosition.add(node);
 		assert(added);
 		for (int i = 0; i < node.length(); i++) {
@@ -386,8 +393,12 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		for (int i = 0; i < node.collapsedKmers().size(); i++) {
 			addToGraph(new KmerPathNodeKmerNode(i, node));
 		}
+		if (!inIterator) {
+			contigCaller.add(node);
+		}
 	}
 	private void removeFromGraph(KmerPathNode node) {
+		contigCaller.sanityCheck(); // TEMP HACK
 		contigCaller.remove(node);
 		boolean removed = graphByPosition.remove(node);
 		assert(removed);
@@ -397,6 +408,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		for (int i = 0; i < node.collapsedKmers().size(); i++) {
 			removeFromGraph(new KmerPathNodeKmerNode(i, node));
 		}
+		contigCaller.sanityCheck(); // TEMP HACK
 	}
 	private void addToGraph(KmerPathNodeKmerNode node) {
 		Collection<KmerPathNodeKmerNode> list = graphByKmerNode.get(node.firstKmer());
