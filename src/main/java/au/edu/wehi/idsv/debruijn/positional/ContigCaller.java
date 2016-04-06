@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Iterator;
+import java.util.Set;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
@@ -40,6 +41,7 @@ public abstract class ContigCaller {
 	 * @param node
 	 */
 	public void remove(KmerPathNode node) { }
+	public void remove(Set<KmerPathNode> keySet) { }
 
 	protected final PeekingIterator<KmerPathNode> underlying;
 	protected final int maxEvidenceWidth;

@@ -10,6 +10,7 @@ import java.util.List;
 import org.junit.Test;
 
 import com.google.api.client.util.Lists;
+import com.google.common.collect.Sets;
 
 
 public class MemoizedContigCallerTest extends ContigCallerTest {
@@ -74,6 +75,62 @@ public class MemoizedContigCallerTest extends ContigCallerTest {
 		caller.remove(input.get(1));
 		caller.remove(input.get(0));
 		caller.remove(input.get(2));
+		caller.sanityCheck();
+		assertNull(caller.bestContig());
+	}
+	@Test
+	public void setremove_should_recalculate_descendants() {
+		int k = 4;
+		List<KmerPathNode> input = new ArrayList<KmerPathNode>();
+		input.add(KPN(k, "AAAA", 1, 1, false));
+		input.add(KPN(k, "AAAA", 2, 2, false));
+		input.add(KPN(k, "AAAA", 3, 3, false));
+		input.add(KPN(k, "TTTT", 3, 3, true));
+		input.add(KPN(k, "AAAA", 4, 4, false));
+		input.add(KPN(k, "AAAA", 5, 5, false));
+		input.add(KPN(k, "AAAA", 6, 6, false));
+		input.add(KPN(k, "AAAA", 7, 7, false));
+		KmerPathNode.addEdge(input.get(0), input.get(1));
+		KmerPathNode.addEdge(input.get(1), input.get(2));
+		KmerPathNode.addEdge(input.get(1), input.get(3));
+		KmerPathNode.addEdge(input.get(2), input.get(4));
+		KmerPathNode.addEdge(input.get(3), input.get(4));
+		KmerPathNode.addEdge(input.get(4), input.get(5));
+		KmerPathNode.addEdge(input.get(5), input.get(6));
+		KmerPathNode.addEdge(input.get(6), input.get(7));
+		MemoizedContigCaller caller = new MemoizedContigCaller(input.iterator(), 10);
+		ArrayDeque<KmerPathSubnode> pre = caller.bestContig();
+		// length 3 with ref anchor
+		assertEquals(4, pre.size());
+		KmerPathNode ref = input.get(3);
+		caller.remove(Sets.newHashSet(ref));
+		ref.remove();
+		ArrayDeque<KmerPathSubnode> post = caller.bestContig();
+		assertEquals(7, post.size());
+	}
+	@Test
+	public void setremove_should_not_recalculate_self_descendant() {
+		List<KmerPathNode> input = new ArrayList<KmerPathNode>();
+		input.add(KPN(4, "AAAA", 1, 10, false));
+		KmerPathNode.addEdge(input.get(0), input.get(0));
+		MemoizedContigCaller caller = new MemoizedContigCaller(input.iterator(), 10);
+		caller.bestContig();
+		caller.sanityCheck();
+		caller.remove(Sets.newHashSet(input.get(0)));
+		caller.sanityCheck();
+		assertNull(caller.bestContig());
+	}
+	@Test
+	public void setremove_should_not_add_removed_descendants() {
+		List<KmerPathNode> input = new ArrayList<KmerPathNode>();
+		input.add(KPN(4, "AAAA", 1, 1, false));
+		input.add(KPN(4, "AAAA", 2, 2, false));
+		input.add(KPN(4, "AAAA", 3, 3, false));
+		KmerPathNode.addEdge(input.get(0), input.get(1));
+		KmerPathNode.addEdge(input.get(1), input.get(2));
+		MemoizedContigCaller caller = new MemoizedContigCaller(input.iterator(), 10);
+		caller.bestContig();
+		caller.remove(Sets.newHashSet(input));
 		caller.sanityCheck();
 		assertNull(caller.bestContig());
 	}

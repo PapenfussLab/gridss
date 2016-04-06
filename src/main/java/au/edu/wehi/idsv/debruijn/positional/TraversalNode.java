@@ -126,21 +126,25 @@ public class TraversalNode {
 	}
 	public static Ordering<TraversalNode> ByFirstStart = KmerNodeUtil.ByFirstStart.onResultOf((TraversalNode tn) -> tn.node);
 	public static Ordering<TraversalNode> ByLastEndKmer = KmerNodeUtil.ByLastEndKmer.onResultOf((TraversalNode tn) -> tn.node);
-	public static Ordering<TraversalNode> ByPathFirstStartArbitrary = new Ordering<TraversalNode>() {
+	public static Ordering<TraversalNode> ByPathFirstStartEndSubnode = new Ordering<TraversalNode>() {
 		@Override
 		public int compare(TraversalNode left, TraversalNode right) {
 			return ComparisonChain.start()
 					.compare(left.pathFirstStart(), right.pathFirstStart())
-					.compare(left, right, Ordering.arbitrary())
+					// JVisualVM indicates ArbitraryOrdering.identityHashCode() is a bottleneck
+					.compare(left.score, right.score)
+					.compare(left.node.firstStart(), right.node.firstStart())
+					.compare(left.node.firstEnd(), right.node.firstEnd())
+					.compare(left.node.firstKmer(), right.node.firstKmer())
 					.result();
 		}
 	};
-	public static Ordering<TraversalNode> ByScoreDescPathFirstStartArbitrary = new Ordering<TraversalNode>() {
+	public static Ordering<TraversalNode> ByScoreDescPathFirstEndSubnode = new Ordering<TraversalNode>() {
 		@Override
 		public int compare(TraversalNode left, TraversalNode right) {
 			return ComparisonChain.start()
 					.compare(right.score, left.score)
-					.compare(left, right, ByPathFirstStartArbitrary)
+					.compare(left, right, ByPathFirstStartEndSubnode)
 					.result();
 		}
 	};

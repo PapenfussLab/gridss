@@ -232,21 +232,22 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 						bases, quals);
 			}
 		}
-		if (aes.getContext().getConfig().getVisualisation().assembly) {
-			try {
-				PositionalExporter.exportDot(new File(aes.getContext().getConfig().getVisualisation().directory, "assembly." + assembledContig.getEvidenceID() + ".dot"), k, graphByPosition, fullContig);
-			} catch (Exception ex) {
-				log.debug(ex, "Error exporting assembly ", assembledContig != null ? assembledContig.getEvidenceID() : "(null)");
+		if (assembledContig != null) {
+			if (aes.getContext().getConfig().getVisualisation().assembly) {
+				try {
+					PositionalExporter.exportDot(new File(aes.getContext().getConfig().getVisualisation().directory, "assembly." + assembledContig.getEvidenceID() + ".dot"), k, graphByPosition, fullContig);
+				} catch (Exception ex) {
+					log.debug(ex, "Error exporting assembly ", assembledContig != null ? assembledContig.getEvidenceID() : "(null)");
+				}
+			}
+			if (aes.getContext().getConfig().getVisualisation().fullSizeAssembly) {
+				try {
+					PositionalExporter.exportNodeDot(new File(aes.getContext().getConfig().getVisualisation().directory, "assembly.fullsize." + assembledContig.getEvidenceID() + ".dot"), k, graphByPosition, fullContig);
+				} catch (Exception ex) {
+					log.debug(ex, "Error exporting assembly ", assembledContig != null ? assembledContig.getEvidenceID() : "(null)");
+				}
 			}
 		}
-		if (aes.getContext().getConfig().getVisualisation().fullSizeAssembly) {
-			try {
-				PositionalExporter.exportNodeDot(new File(aes.getContext().getConfig().getVisualisation().directory, "assembly.fullsize." + assembledContig.getEvidenceID() + ".dot"), k, graphByPosition, fullContig);
-			} catch (Exception ex) {
-				log.debug(ex, "Error exporting assembly ", assembledContig != null ? assembledContig.getEvidenceID() : "(null)");
-			}
-		}
-		contigCaller.sanityCheck(); // TEMP HACK
 		// remove all evidence contributing to this assembly from the graph
 		if (evidence.size() > 0) {
 			removeFromGraph(evidence);
@@ -256,7 +257,6 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 				removeFromGraph(n.node());
 			}
 		}
-		contigCaller.sanityCheck(); // TEMP HACK
 		return assembledContig;
 	}
 	private boolean containsKmerRepeat(Collection<KmerPathSubnode> contig) {
@@ -294,11 +294,13 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 				}
 			}
 		}
+		contigCaller.remove(toRemove.keySet());
 		Set<KmerPathNode> simplifyCandidates = new ObjectOpenCustomHashSet<KmerPathNode>(new KmerPathNode.HashByFirstKmerStartPositionKmer<KmerPathNode>());
 		for (Entry<KmerPathNode, List<List<KmerNode>>> entry : toRemove.entrySet()) {
 			removeWeight(entry.getKey(), entry.getValue(), simplifyCandidates);
 		}
-		simplify(simplifyCandidates);
+		// don't simplify as that further invalidates our memoization
+		//simplify(simplifyCandidates);
 		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			assert(sanityCheck());
 		}
@@ -318,7 +320,6 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			// don't simplify graph if we haven't actually loaded all the relevant nodes
 			return;
 		}
-		contigCaller.sanityCheck(); // TEMP HACK
 		KmerPathNode prev = node.prevToMergeWith();
 		if (prev != null && prev.lastEnd() < wrapper.lastPosition()) {
 			simplifyCandidates.remove(prev);
@@ -335,7 +336,6 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			next.prepend(node);
 			addToGraph(next, false);
 		}
-		contigCaller.sanityCheck(); // TEMP HACK
 	}
 	private void updateRemovalList(Map<KmerPathNode, List<List<KmerNode>>> toRemove, KmerSupportNode support) {
 		Collection<KmerPathNodeKmerNode> kpnknList = graphByKmerNode.get(support.lastKmer());
@@ -366,7 +366,6 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		evidenceList.add(support);
 	}
 	private void removeWeight(KmerPathNode node, List<List<KmerNode>> toRemove, Set<KmerPathNode> simplifyCandidates) {
-		contigCaller.sanityCheck(); // TEMP HACK
 		if (node == null) return;
 		assert(node.length() >= toRemove.size());
 		// remove from graph
@@ -382,7 +381,6 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			addToGraph(split, false);
 		}
 		simplifyCandidates.addAll(replacementNodes);
-		contigCaller.sanityCheck(); // TEMP HACK
 	}
 	private void addToGraph(KmerPathNode node, boolean inIterator) {
 		boolean added = graphByPosition.add(node);
@@ -398,7 +396,6 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		}
 	}
 	private void removeFromGraph(KmerPathNode node) {
-		contigCaller.sanityCheck(); // TEMP HACK
 		contigCaller.remove(node);
 		boolean removed = graphByPosition.remove(node);
 		assert(removed);
@@ -408,7 +405,6 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		for (int i = 0; i < node.collapsedKmers().size(); i++) {
 			removeFromGraph(new KmerPathNodeKmerNode(i, node));
 		}
-		contigCaller.sanityCheck(); // TEMP HACK
 	}
 	private void addToGraph(KmerPathNodeKmerNode node) {
 		Collection<KmerPathNodeKmerNode> list = graphByKmerNode.get(node.firstKmer());

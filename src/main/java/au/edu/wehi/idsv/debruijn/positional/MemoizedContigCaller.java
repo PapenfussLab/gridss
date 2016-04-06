@@ -1,9 +1,13 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import htsjdk.samtools.util.Log;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -42,6 +46,7 @@ import au.edu.wehi.idsv.util.IntervalUtil;
  *
  */
 public class MemoizedContigCaller extends ContigCaller {
+	private static final Log log = Log.getInstance(MemoizedContigCaller.class);
 	/**
 	 * Chunk size (in multiples of maxEvidenceWidth) to load at any one time.
 	 * Larger chunks increase memory consumption by reduce the number of
@@ -51,8 +56,8 @@ public class MemoizedContigCaller extends ContigCaller {
 	/**
 	 * Path scores in order of descending score
 	 */
-	private final SortedSet<TraversalNode> contigByScore = new TreeSet<>(TraversalNode.ByScoreDescPathFirstStartArbitrary);
-	private final SortedSet<TraversalNode> frontierByPathStart = new TreeSet<>(TraversalNode.ByPathFirstStartArbitrary);
+	private final SortedSet<TraversalNode> contigByScore = new TreeSet<>(TraversalNode.ByScoreDescPathFirstEndSubnode);
+	private final SortedSet<TraversalNode> frontierByPathStart = new TreeSet<>(TraversalNode.ByPathFirstStartEndSubnode);
 	private final MemoizedContigTraverse frontier = new MemoizedContigTraverse();
 	private int maxVisitedEndPosition = Integer.MIN_VALUE;
 	private class MemoizedContigTraverse extends MemoizedTraverse {
@@ -74,12 +79,20 @@ public class MemoizedContigCaller extends ContigCaller {
 			contigByScore.remove(tn);
 		}
 		@Override
+		protected void onMemoizeRemove(Collection<TraversalNode> tn) {
+			contigByScore.removeAll(tn);
+		}
+		@Override
 		protected void onFrontierAdd(TraversalNode tn) {
 			frontierByPathStart.add(tn);
 		}
 		@Override
 		protected void onFrontierRemove(TraversalNode tn) {
 			frontierByPathStart.remove(tn);
+		}
+		@Override
+		protected void onFrontierRemove(Collection<TraversalNode> tn) {
+			frontierByPathStart.removeAll(tn);
 		}
 	}
 	public MemoizedContigCaller(
@@ -134,10 +147,15 @@ public class MemoizedContigCaller extends ContigCaller {
 			node = new TraversalNode(new KmerPathSubnode(node.node.node()), ANCHORED_SCORE);
 		}
 		for (KmerPathSubnode sn : node.node.next()) {
-			assert(frontier.isMemoized(sn.node()));
+			if (!frontier.isMemoized(sn.node())) {
+				// TODO: what edge case am I missing here?
+				log.debug("Subnode %s reachable from %d not memoized. [%s, maxVisitedEndPosition=%d, nextPosition=%d]", sn, node, frontier, maxVisitedEndPosition, nextPosition());
+				continue;
+				
+			}
 			if (sn.node().isReference() && node.node.isReference()) {
-				// drop reference - reference transitions as we're only
-				// traversing non-reference nodes
+				// drop reference-reference transitions as we're only
+				// traversing non-reference paths
 			} else {
 				TraversalNode tn = new TraversalNode(node, sn, sn.isReference() ? ANCHORED_SCORE : 0);
 				frontier.memoize(tn);
@@ -162,6 +180,25 @@ public class MemoizedContigCaller extends ContigCaller {
 		for (KmerPathNode child : node.next()) {
 			// only set up starting paths for nodes that should be memoized
 			if (frontier.isMemoized(child)) {
+				TraversalNode tn = new TraversalNode(new KmerPathSubnode(child), child.isReference() ? ANCHORED_SCORE : 0);
+				frontier.memoize(tn);
+			}
+		}
+	}
+	/**
+	 * Removes a node from the graph.
+	 * 
+	 * @param node node to removed
+	 */
+	@Override
+	public void remove(Set<KmerPathNode> nodes) {
+		frontier.remove(nodes);
+		for (KmerPathNode node : nodes) {
+			// flag the successors as potential starting nodes
+			for (KmerPathNode child : node.next()) {
+				// only set up starting paths for nodes that should be memoized
+				if (nodes.contains(node)) continue;
+				if (!frontier.isMemoized(child)) continue;
 				TraversalNode tn = new TraversalNode(new KmerPathSubnode(child), child.isReference() ? ANCHORED_SCORE : 0);
 				frontier.memoize(tn);
 			}
