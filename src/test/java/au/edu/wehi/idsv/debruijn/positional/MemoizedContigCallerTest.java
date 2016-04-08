@@ -185,8 +185,8 @@ public class MemoizedContigCallerTest extends ContigCallerTest {
 	public void not_invariant_frontier_parent_object_is_memoized() {
 		MemoizedContigCaller caller = new MemoizedContigCaller(Iterators.peekingIterator(new ArrayList<KmerPathNode>().iterator()), 10);
 		KmerPathNode n1 = KPN(1, "A", 1, 2, false);
-		KmerPathNode n2 = KPN(1, "A", 2, 3, false);
-		KmerPathNode n3 = KPN(1, "A", 3, 3, false);
+		KmerPathNode n2 = KPN(1, "C", 2, 3, false);
+		KmerPathNode n3 = KPN(1, "G", 3, 3, false);
 		KmerPathNode.addEdge(n1, n2);
 		KmerPathNode.addEdge(n2, n3);
 		caller.add(n1);
@@ -194,7 +194,7 @@ public class MemoizedContigCallerTest extends ContigCallerTest {
 		caller.add(n3);
 		assertEquals(3, caller.bestContig().size());
 		// now we break the n2 best path into new best paths
-		KmerPathNode n4 = KPN(1, "A", 2, 2, false, 10);
+		KmerPathNode n4 = KPN(1, "T", 2, 2, false, 10);
 		KmerPathNode.addEdge(n4, n2);
 		caller.add(n4);
 		assertEquals(n4, caller.bestContig().getFirst().node());
@@ -206,8 +206,8 @@ public class MemoizedContigCallerTest extends ContigCallerTest {
 	public void remove_should_remove_all_descendents() {
 		MemoizedContigCaller caller = new MemoizedContigCaller(Iterators.peekingIterator(new ArrayList<KmerPathNode>().iterator()), 10);
 		KmerPathNode n1 = KPN(1, "A", 1, 2, false);
-		KmerPathNode n2 = KPN(1, "A", 2, 3, false);
-		KmerPathNode n3 = KPN(1, "A", 3, 3, false);
+		KmerPathNode n2 = KPN(1, "C", 2, 3, false);
+		KmerPathNode n3 = KPN(1, "G", 3, 3, false);
 		KmerPathNode.addEdge(n1, n2);
 		KmerPathNode.addEdge(n2, n3);
 		caller.add(n1);
@@ -215,7 +215,7 @@ public class MemoizedContigCallerTest extends ContigCallerTest {
 		caller.add(n3);
 		assertEquals(3, caller.bestContig().size());
 		// now we break the n2 best path into new best paths
-		KmerPathNode n4 = KPN(1, "A", 2, 2, false, 10);
+		KmerPathNode n4 = KPN(1, "T", 2, 2, false, 10);
 		KmerPathNode.addEdge(n4, n2);
 		caller.add(n4);
 		assertEquals(n4, caller.bestContig().getFirst().node());

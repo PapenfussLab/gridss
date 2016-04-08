@@ -1,16 +1,10 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import htsjdk.samtools.util.Log;
-import it.unimi.dsi.fastutil.ints.AbstractInt2ObjectSortedMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
-import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -21,12 +15,16 @@ import java.util.Stack;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.io.Files;
+
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker.MemoizationStats;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.io.Files;
+import htsjdk.samtools.util.Log;
+import it.unimi.dsi.fastutil.ints.AbstractInt2ObjectSortedMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
+import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 
 /**
  * Helper class to track memoization of nodes during positional graph traversal
@@ -43,14 +41,15 @@ public class MemoizedTraverse {
 	 */
 	private final IdentityHashMap<KmerPathNode, AbstractInt2ObjectSortedMap<TraversalNode>> memoized = new IdentityHashMap<>();
 	private final SortedSet<TraversalNode> frontier = new TreeSet<>(TraversalNode.ByLastEndKmer);
-	private final MemoizationStats lastRemoval = new MemoizationStats();
+	private final MemoizationStats stats = new MemoizationStats();
 	/**
 	 * Removes all nodes from the graph
 	 * @param node
 	 */
 	public void remove(Set<KmerPathNode> nodes) {
+		// bulk remove nodes in removal set
 		int initialSize = memoized.size();
-		Set<TraversalNode> tns = new HashSet<>();
+		Collection<TraversalNode> tns = new ArrayList<>(2 * nodes.size());
 		Set<KmerPathNode> children = new ObjectOpenCustomHashSet<KmerPathNode>(new KmerNodeUtil.HashByLastEndKmer<KmerPathNode>());
 		for (KmerPathNode node : nodes) {
 			if (node == null) {
@@ -65,62 +64,61 @@ public class MemoizedTraverse {
 				children.addAll(node.next());
 			}
 		}
+		children.removeAll(nodes);
 		onMemoizeRemove(tns);
-		Set<TraversalNode> descendentPaths = new HashSet<>();
-		// need to remove descendant paths from memoization
-		for (Set<KmerPathNode> toCheck = children; !toCheck.isEmpty(); toCheck = unmemoizeChildren(tns, nodes, toCheck, descendentPaths)) {
-			// keep clearing child paths
-		}
 		frontier.removeAll(tns);
 		onFrontierRemove(tns);
-		int frontierResetCount = addAlternatePathsToFrontier(descendentPaths);
-		lastRemoval.nodes = initialSize;
-		lastRemoval.removed = nodes.size();
-		lastRemoval.pathsRemoved = tns.size();
-		lastRemoval.descendentPathsRemoved = descendentPaths.size();
-		lastRemoval.pathsReset = frontierResetCount;
+		
+		// bulk remove child paths
+		Collection<TraversalNode> childPaths = removeChildPaths(children, nodes);
+		int descendentCount = childPaths.size();
+		onMemoizeRemove(childPaths);
+		frontier.removeAll(childPaths);
+		onFrontierRemove(childPaths);
+		
+		// Individually remove any descendent of the children
+		// (bulk KmerPathNode-based removal code requires better data structure)
+		int frontierResetCount = 0;
+		Stack<TraversalNode> callStack = new Stack<>();
+		for (TraversalNode childtn : childPaths) {
+			frontierResetCount += unmemoize(childtn, callStack, true);
+		}
+		while (!callStack.isEmpty()) {
+			frontierResetCount += unmemoize(callStack.pop(), callStack, false);
+			descendentCount++;
+		}
+		
+		stats.nodes = initialSize;
+		stats.removed = nodes.size();
+		stats.pathsRemoved = tns.size();
+		stats.descendentPathsRemoved = descendentCount;
+		stats.pathsReset = frontierResetCount;
 		if (Defaults.SANITY_CHECK_MEMOIZATION) {
 			assert(sanityCheckAreRemoved(nodes));
 			assert(sanityCheck());
 		}
 	}
-	private int addAlternatePathsToFrontier(Set<TraversalNode> tns) {
-		int count = 0;
-		for (TraversalNode tn : tns) {
-			count += addAlternatePathsToFrontier(tn);
-		}
-		return count;
-	}
 	/**
-	 * Removes paths involving any of the nodes or paths from the graph
-	 * @param tns paths to unmemoize traversal of
-	 * @param removedNodes nodes to unmemoize traversal for
-	 * @param toCheck nodes to check immediate parents for overlap
-	 * @param descendentPaths collection to which to add removed paths to 
-	 * @return nodes that require rechecking 
+	 * Finds all child paths coming from any of the given parents
+	 * @param toCheck nodes to check for children 
+	 * @param parents parents to identify
+	 * @param matches output collection of identified paths
 	 */
-	private Set<KmerPathNode> unmemoizeChildren(Set<TraversalNode> tns, Set<KmerPathNode> removedNodes, Set<KmerPathNode> toCheck, Set<TraversalNode> descendentPaths) {
-		Set<KmerPathNode> toCheckNext = new ObjectOpenCustomHashSet<KmerPathNode>(new KmerNodeUtil.HashByLastEndKmer<KmerPathNode>());
+	private Collection<TraversalNode> removeChildPaths(Iterable<KmerPathNode> toCheck, Set<KmerPathNode> parents) {
+		Collection<TraversalNode> matches = new ArrayList<>();
 		for (KmerPathNode node : toCheck) {
-			if (removedNodes.contains(node)) continue;
 			AbstractInt2ObjectSortedMap<TraversalNode> cache = memoized.get(node);
 			if (cache == null || cache.isEmpty()) continue;
 			Iterator<TraversalNode> it = cache.values().iterator();
 			while (it.hasNext()) {
 				TraversalNode tn = it.next();
-				if (tn.parent != null) {
-					if (tns.contains(tn.parent) || removedNodes.contains(tn.parent.node.node())) {
-						descendentPaths.add(tn);
-						tns.add(tn);
-						it.remove();
-						onMemoizeRemove(tn);
-						toCheckNext.addAll(tn.node.node().next());
-					}
+				if (tn.parent != null && parents.contains(tn.parent.node.node())) {
+					it.remove();
+					matches.add(tn);
 				}
 			}
 		}
-		toCheckNext.removeAll(removedNodes);
-		return toCheckNext;
+		return matches;
 	}
 	/**
 	 * Removes the given node from the graph
@@ -138,11 +136,10 @@ public class MemoizedTraverse {
 		assert(node.isValid());
 		AbstractInt2ObjectSortedMap<TraversalNode> cache = memoized.get(node);
 		if (cache == null) return;
-		// explicit stack to prevent actual stack overflow
 		Stack<TraversalNode> callStack = new Stack<TraversalNode>();
 		callStack.addAll(cache.values());
 		while (!callStack.isEmpty()) {
-			unmemoize(callStack.pop(), callStack);
+			unmemoize(callStack.pop(), callStack, false);
 		}
 		assert(cache.size() == 0);
 		memoized.remove(node);
@@ -156,17 +153,22 @@ public class MemoizedTraverse {
 	 * @param tn path to remove
 	 * @param callStack explicit call stack to prevent stack overflow and
 	 * iterator invalidation issues caused by earlier recursive implementation
+	 * @param flag indicating whether the node has already been removed from
+	 * the memoization and frontier data structures
+	 * @return frontier reset count
 	 */
-	private void unmemoize(TraversalNode tn, Stack<TraversalNode> callStack) {
-		if (memoized.get(tn.node.node()).remove(tn.node.firstEnd()) == null) {
-			// already processed this TraversalNode
-			return;
+	private int unmemoize(TraversalNode tn, Stack<TraversalNode> callStack, boolean alreadyRemoved) {
+		if (!alreadyRemoved) {
+			if (memoized.get(tn.node.node()).remove(tn.node.firstEnd()) == null) {
+				// already processed this TraversalNode
+				return 0;
+			}
+			onMemoizeRemove(tn);
+			if (frontier.remove(tn)) {
+				onFrontierRemove(tn);
+			}
 		}
-		onMemoizeRemove(tn);
-		if (frontier.remove(tn)) {
-			onFrontierRemove(tn);
-		}
-		addAlternatePathsToFrontier(tn);
+		int frontierResetCount = addAlternatePathsToFrontier(tn);
 		// check if this path continues on to any children
 		for (KmerPathNode child : tn.node.node().next()) {
 			for (TraversalNode childtn : memoized(child)) {
@@ -186,6 +188,7 @@ public class MemoizedTraverse {
 				}
 			}
 		}
+		return frontierResetCount;
 	}
 	/**
 	 * Adds alternate paths to the given memoized path to
@@ -392,6 +395,23 @@ public class MemoizedTraverse {
 		return memoized.containsKey(node);
 	}
 	/**
+	 * Returns the memoized predecessor of the given path
+	 * @return predecessor node, null if no single predecessor is defined for the entire interval 
+	 */
+	public KmerPathNode getParent(KmerPathNode node, int start, int end) {
+		AbstractInt2ObjectSortedMap<TraversalNode> cache = memoized.get(node);
+		Iterator<TraversalNode> it = cache.tailMap(start).values().iterator();
+		if (it.hasNext()) {
+			TraversalNode existing = it.next();
+			if (existing.node.firstStart() <= start && existing.node.firstEnd() >= end) {
+				if (existing.parent != null) {
+					return existing.parent.node.node();
+				}
+			}
+		}
+		return null;
+	}
+	/**
 	 * Adds the given node into the frontier for revisitation
 	 * @param node node to recalculate
 	 */
@@ -412,7 +432,7 @@ public class MemoizedTraverse {
 		return frontier.size();
 	}
 	public MemoizationStats tracking_lastRemoval() {
-		return lastRemoval; 
+		return stats; 
 	}
 	/**
 	 * Exports the lookup table

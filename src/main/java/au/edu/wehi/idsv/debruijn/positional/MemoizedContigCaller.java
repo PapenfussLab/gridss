@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import htsjdk.samtools.util.Log;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayDeque;
@@ -13,14 +11,14 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.PeekingIterator;
+
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.SanityCheckFailureException;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker.MemoizationStats;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.PeekingIterator;
+import htsjdk.samtools.util.Log;
 
 
 /**
@@ -358,7 +356,7 @@ public class MemoizedContigCaller extends ContigCaller {
 				assert(frontier.isMemoized(parent.node.node()));
 				if (!parent.node.node().isReference()) {
 					// frontier goes to the expected parent node
-					assert(frontier.memoized(parent.node.node()).contains(parent));
+					assert(frontier.getParent(tn.node.node(), tn.node.firstStart(), tn.node.firstEnd()) == parent.node.node());
 				}
 			}
 		}
