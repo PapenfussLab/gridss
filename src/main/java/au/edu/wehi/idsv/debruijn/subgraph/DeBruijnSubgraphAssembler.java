@@ -70,14 +70,14 @@ public class DeBruijnSubgraphAssembler implements ReadEvidenceAssembler {
 					String.format("debruijn.assembly.metrics.%s.bed", source.getContext().getDictionary().getSequence(currentReferenceIndex).getSequenceName())));
 		}
 		graph = new DeBruijnReadGraph(source, referenceIndex, currentTracker);
-		if (source.getContext().getConfig().getVisualisation().assembly) {
+		if (source.getContext().getConfig().getVisualisation().assemblyGraph) {
 			graph.setGraphExporter(new DeBruijnSubgraphGexfExporter(source.getContext().getAssemblyParameters().k));
 		
 		}
 	}
 	private Iterable<SAMRecordAssemblyEvidence> assembleAll() {
 		Iterable<SAMRecordAssemblyEvidence> assemblies = assembleBefore(Long.MAX_VALUE);
-		if (source.getContext().getConfig().getVisualisation().assembly) {
+		if (source.getContext().getConfig().getVisualisation().assemblyGraph) {
 			if (graph != null) {
 				graph.getGraphExporter().saveTo(new File(source.getContext().getConfig().getVisualisation().directory, String.format("debruijn.kmers.%s.gexf", source.getContext().getDictionary().getSequence(currentReferenceIndex).getSequenceName())));
 			}

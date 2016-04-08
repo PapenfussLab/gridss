@@ -652,8 +652,8 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		}
 		StringBuilder sb = new StringBuilder(String.format("[%d-%d]%s %dw ", firstStart(), firstEnd(), isReference() ? "R" : " ", weight()));
 		sb.append(KmerEncodingHelper.toApproximateString(firstKmer()));
-		sb.replace(sb.length() - 1, sb.length(), " ");
-		for (int i = 0; i < length(); i++) {
+		sb.append(' ');
+		for (int i = 1; i < length(); i++) {
 			sb.append((char)KmerEncodingHelper.lastBaseEncodedToPicardBase(kmer(i)));
 		}
 		sb.append(String.format(" (%d)", length()));

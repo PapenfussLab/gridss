@@ -42,7 +42,7 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 		pc.getAssemblyParameters().errorCorrection.collapseBubblesOnly = true;
 		pc.getAssemblyParameters().method = AssemblyAlgorithm.Positional;
 		pc.getAssemblyParameters().includeRemoteSplitReads = false;
-		pc.getConfig().getVisualisation().assembly = true;
+		pc.getConfig().getVisualisation().assemblyGraph = true;
 		pc.getConfig().getVisualisation().directory.mkdirs();
 		return pc;
 	}

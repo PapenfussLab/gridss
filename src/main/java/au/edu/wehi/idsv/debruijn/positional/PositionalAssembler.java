@@ -33,6 +33,7 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 	private final PeekingIterator<DirectedEvidence> it;
 	private final BreakendDirection direction;
 	private NonReferenceContigAssembler currentAssembler = null;
+	private String currentContig = "";
 	public PositionalAssembler(ProcessingContext context, AssemblyEvidenceSource source, Iterator<DirectedEvidence> backingIterator, BreakendDirection direction) {
 		this.context = context;
 		this.source = source;
@@ -47,13 +48,23 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 	}
 	@Override
 	public boolean hasNext() {
-		ensureAssembler();
-		return currentAssembler != null && currentAssembler.hasNext();
+		try {
+			ensureAssembler();
+			return currentAssembler != null && currentAssembler.hasNext();
+		} catch (AssertionError|Exception e) {
+			log.error(e, "Fatal error assembling ", currentContig);
+			throw e;
+		}
 	}
 	@Override
 	public SAMRecordAssemblyEvidence next() {
-		ensureAssembler();
-		return currentAssembler.next();
+		try {
+			ensureAssembler();
+			return currentAssembler.next();
+		} catch (AssertionError|Exception e) {
+			log.error(e, "Fatal error assembling ", currentContig);
+			throw e;
+		}
 	}
 	private void flushIfRequired() {
 		if (currentAssembler != null && !currentAssembler.hasNext()) {
@@ -85,6 +96,7 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 		int maxPathCollapseLength = ap.errorCorrection.maxPathCollapseLengthInBases(maxReadLength);
 		int anchorAssemblyLength = ap.anchorLength;
 		int referenceIndex = it.peek().getBreakendSummary().referenceIndex;
+		currentContig = context.getDictionary().getSequence(referenceIndex).getSequenceName();
 		ReferenceIndexIterator evidenceIt = new ReferenceIndexIterator(it, referenceIndex);
 		EvidenceTracker evidenceTracker = new EvidenceTracker();
 		SupportNodeIterator supportIt = new SupportNodeIterator(k, evidenceIt, source.getMaxConcordantFragmentSize(), evidenceTracker, ap.includePairAnchors);

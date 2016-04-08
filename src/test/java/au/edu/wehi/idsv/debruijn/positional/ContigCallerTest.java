@@ -263,4 +263,17 @@ public abstract class ContigCallerTest extends TestHelper {
 		assertTrue(result.getFirst().prev().get(0).isReference());
 		assertTrue(result.getLast().next().get(0).isReference());
 	}
+	@Test
+	public void should_not_include_anchor_weight() {
+		List<KmerPathNode> input = new ArrayList<KmerPathNode>();
+		input.add(KPN(4, "TTTT", 1, 1, false, 2));
+		input.add(KPN(4, "TTTT", 2, 2, true, 1));
+		input.add(KPN(4, "AAAA", 3, 3, false, 1));
+		input.add(KPN(4, "AAAA", 4, 4, true, 10));
+		KmerPathNode.addEdge(input.get(0), input.get(1));
+		KmerPathNode.addEdge(input.get(2), input.get(3));
+		ArrayDeque<KmerPathSubnode> result = getCaller(input, 10).bestContig();
+		// should take the path that has higher non-reference weight
+		assertEquals(1, result.getFirst().firstStart());
+	}
 }

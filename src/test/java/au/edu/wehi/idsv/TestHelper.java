@@ -373,6 +373,7 @@ public class TestHelper {
 		config.getVariantCalling().breakendMargin = 3;
 		config.getRealignment().aligner = null;
 		config.getRealignment().commandline = ImmutableList.of();
+		config.getVisualisation().buffers = false;
 		return config;
 	}
 	public static GridssConfiguration getConfig() {
@@ -1087,7 +1088,7 @@ public class TestHelper {
 		for (int i = 0; i < split.size(); i++) {
 			KmerNode ni = split.get(i);
 			for (int j = i + 1; j < split.size(); j++) {
-				KmerNode nj = split.get(j);				
+				KmerNode nj = split.get(j);
 				assertTrue(ni.lastKmer() != nj.lastKmer() || ni.lastStart() != nj.lastStart());
 			}
 		}

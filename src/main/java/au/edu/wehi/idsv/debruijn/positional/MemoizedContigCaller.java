@@ -6,12 +6,21 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.NavigableSet;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import au.edu.wehi.idsv.Defaults;
+import au.edu.wehi.idsv.SanityCheckFailureException;
 import au.edu.wehi.idsv.util.IntervalUtil;
+import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker.MemoizationStats;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.PeekingIterator;
 
 
 /**
@@ -47,6 +56,7 @@ import au.edu.wehi.idsv.util.IntervalUtil;
  */
 public class MemoizedContigCaller extends ContigCaller {
 	private static final Log log = Log.getInstance(MemoizedContigCaller.class);
+	static final boolean ASSERT_ALL_OPERATIONS = false;
 	/**
 	 * Chunk size (in multiples of maxEvidenceWidth) to load at any one time.
 	 * Larger chunks increase memory consumption by reduce the number of
@@ -96,7 +106,7 @@ public class MemoizedContigCaller extends ContigCaller {
 		}
 	}
 	public MemoizedContigCaller(
-			Iterator<KmerPathNode> it,
+			PeekingIterator<KmerPathNode> it,
 			int maxEvidenceWidth) {
 		super(it, maxEvidenceWidth);
 	}
@@ -110,8 +120,9 @@ public class MemoizedContigCaller extends ContigCaller {
 	 */
 	@Override
 	public void add(KmerPathNode node) {
+		assert(node.isValid());
 		assert(frontier.memoized(node).isEmpty());
-		TraversalNode tn = new TraversalNode(new KmerPathSubnode(node), node.isReference() ? ANCHORED_SCORE : 0);
+		TraversalNode tn = new TraversalNode(new KmerPathSubnode(node), node.isReference() ? ANCHORED_SCORE - node.weight() : 0);
 		frontier.memoize(tn);
 		if (node.firstStart() > maxVisitedEndPosition + 1) {
 			// don't need to flag parents for revisitation
@@ -126,38 +137,70 @@ public class MemoizedContigCaller extends ContigCaller {
 				}
 			}
 		}
+		if (Defaults.SANITY_CHECK_MEMOIZATION && ASSERT_ALL_OPERATIONS) {
+			sanityCheck();
+		}
 	}
 	/**
-	 * Advance the frontier as far as possible
+	 * Advance the frontier as far as possible. Each frontier advancement must advance
+	 * all paths such that no node is in the set of previously visited non-frontier nodes
+	 * remaining unvisited after this advancement. If not, the following edge case can
+	 * occur:
+	 *     
+	 *  Frontier: C(ABC), B(DB)
+	 *  A - B - C
+	 *     /
+	 *    D
+	 *  
+	 *  Remove A:
+	 *      B - C
+	 *     /
+	 *    D
+	 *    
+	 *   Frontier: C(ABC), B(DB)
+	 * Since B does not have any memoization of A, unmemoization stops at B even though
+	 * the memoized path to C involves A.
+	 * 
+	 * Ensuring that the B(DB) frontier is visited will ensure that the orphaned
+	 * C(ABC) paths will be removed before invalidation.
+	 * 
+	 * How can we get into this situation?
+	 * For a frontier sorted by lastEnd position, and advancement when the node lastEnd is < unprocessed,
+	 * we need node B to have a valid successor C and there to exist a node X such that ... ?
+	 * 
 	 */
 	private void advanceFrontier() {
 		// Can only advance frontier if all possible successors are guaranteed to be loaded
 		while (!frontier.isEmptyFrontier() && frontier.peekFrontier().node.lastEnd() < nextPosition() - 1) {
 			visit(frontier.pollFrontier());
 		}
+		if (Defaults.SANITY_CHECK_MEMOIZATION && ASSERT_ALL_OPERATIONS) {
+			sanityCheck();
+			sanityCheckFrontier();
+		}
 	}
 	/**
-	 * Visits the given frontier node
+	 * Visits the given frontier node.
+	 * 
 	 * @param node node to visit
 	 */
 	private void visit(TraversalNode node) {
 		assert(node.node.lastEnd() + 1 < nextPosition()); // successors must be fully defined
 		if (node.node.isReference()) {
 			// Reset reference traversal to a starting path
-			node = new TraversalNode(new KmerPathSubnode(node.node.node()), ANCHORED_SCORE);
+			node = new TraversalNode(new KmerPathSubnode(node.node.node()), ANCHORED_SCORE - node.node.node().weight());
 		}
 		for (KmerPathSubnode sn : node.node.next()) {
 			if (!frontier.isMemoized(sn.node())) {
-				// TODO: what edge case am I missing here?
-				log.debug("Subnode %s reachable from %d not memoized. [%s, maxVisitedEndPosition=%d, nextPosition=%d]", sn, node, frontier, maxVisitedEndPosition, nextPosition());
-				continue;
-				
+				throw new SanityCheckFailureException(String.format("Subnode %s reachable from %s not memoized. [%s, maxVisitedEndPosition=%d, nextPosition=%d]",
+						sn, node, frontier, maxVisitedEndPosition, nextPosition()).replace('\n', ' '));
 			}
+			
 			if (sn.node().isReference() && node.node.isReference()) {
 				// drop reference-reference transitions as we're only
 				// traversing non-reference paths
 			} else {
-				TraversalNode tn = new TraversalNode(node, sn, sn.isReference() ? ANCHORED_SCORE : 0);
+				TraversalNode tn = new TraversalNode(node, sn, sn.isReference() ? ANCHORED_SCORE - sn.weight() : 0);
 				frontier.memoize(tn);
 			}
 		}
@@ -180,9 +223,13 @@ public class MemoizedContigCaller extends ContigCaller {
 		for (KmerPathNode child : node.next()) {
 			// only set up starting paths for nodes that should be memoized
 			if (frontier.isMemoized(child)) {
-				TraversalNode tn = new TraversalNode(new KmerPathSubnode(child), child.isReference() ? ANCHORED_SCORE : 0);
+				TraversalNode tn = new TraversalNode(new KmerPathSubnode(child), child.isReference() ? ANCHORED_SCORE - child.weight() : 0);
 				frontier.memoize(tn);
 			}
+		}
+		if (Defaults.SANITY_CHECK_MEMOIZATION) {
+			sanityCheckAreRemovedFromPaths(ImmutableSet.of(node));
+			sanityCheck();
 		}
 	}
 	/**
@@ -193,16 +240,28 @@ public class MemoizedContigCaller extends ContigCaller {
 	@Override
 	public void remove(Set<KmerPathNode> nodes) {
 		frontier.remove(nodes);
+		frontier.tracking_lastRemoval().pathsRestarted = restartChildren(nodes);
+		if (Defaults.SANITY_CHECK_MEMOIZATION) {
+			sanityCheckAreRemovedFromPaths(nodes);
+			sanityCheck();
+		}
+	}
+	private int restartChildren(Set<KmerPathNode> nodes) {
+		int count = 0;
 		for (KmerPathNode node : nodes) {
 			// flag the successors as potential starting nodes
 			for (KmerPathNode child : node.next()) {
 				// only set up starting paths for nodes that should be memoized
-				if (nodes.contains(node)) continue;
+				if (nodes.contains(child)) continue;
 				if (!frontier.isMemoized(child)) continue;
-				TraversalNode tn = new TraversalNode(new KmerPathSubnode(child), child.isReference() ? ANCHORED_SCORE : 0);
+				count++;
+				TraversalNode tn = new TraversalNode(new KmerPathSubnode(child), child.isReference() ? ANCHORED_SCORE - child.weight() : 0);
 				frontier.memoize(tn);
 			}
 		}
+		// technically this is a count of memoization calls made, not
+		// of the number of nodes that a restart occurred at
+		return count;
 	}
 	/**
 	 * Determines whether the current best contig is
@@ -253,6 +312,7 @@ public class MemoizedContigCaller extends ContigCaller {
 		}
 		assert(!contig.isEmpty());
 		assert(contig.stream().allMatch(sn -> !sn.isReference()));
+		assert(contig.stream().allMatch(sn -> sn.node().isValid()));
 		return contig;
 	}
 	@Override
@@ -264,17 +324,141 @@ public class MemoizedContigCaller extends ContigCaller {
 		return frontier.tracking_frontierSize();
 	}
 	@Override
+	public MemoizationStats tracking_lastRemoval() {
+		return frontier.tracking_lastRemoval();
+	}
+	@Override
 	public void exportState(File file) throws IOException {
 		frontier.export(file);
 	}
-	@Override
+	public boolean sanityCheck(Set<KmerPathNode> loadedGraph) {
+		for (KmerPathNode node : loadedGraph) {
+			if (!frontier.isMemoized(node)) {
+				try {
+					File f = File.createTempFile("gridss.sanityfailure.memoization.", ".csv");
+					//File f2 = File.createTempFile("gridss.sanityfailure.", ".csv");
+					log.error(String.format("Sanity check failure. Unmemoized node %s. Dumping memoization to %s", node, f));
+					exportState(f);
+				} catch (IOException e) {
+				}
+			}
+			assert(frontier.isMemoized(node));
+		}
+		return (sanityCheck());
+	}
 	public boolean sanityCheck() {
 		for (TraversalNode tn : contigByScore) {
 			assert(frontier.memoized(tn.node.node()).contains(tn));
+			if (tn.parent == null && tn.node.isReference()) {
+				assert(tn.score == ANCHORED_SCORE);
+			}
+			if (tn.parent != null) {
+				TraversalNode parent = tn.parent;
+				assert(parent.node.node().isValid());
+				assert(frontier.isMemoized(parent.node.node()));
+				if (!parent.node.node().isReference()) {
+					// frontier goes to the expected parent node
+					assert(frontier.memoized(parent.node.node()).contains(parent));
+				}
+			}
 		}
 		for (TraversalNode tn : frontierByPathStart) {
 			assert(frontier.memoized(tn.node.node()).contains(tn));
 		}
 		return frontier.sanityCheck();
+	}
+	/*
+	 * Checks that all possible frontier nodes have indeed been traversed 
+	 */
+	public boolean sanityCheckFrontier() {
+		for (TraversalNode tn : frontierByPathStart) {
+			assert(tn.node.lastEnd() + 1 >= nextPosition());
+		}
+		return true;
+	}
+	/**
+	 * Checks that nothing in the graph contains any of the given nodes
+	 * @param nodes
+	 */
+	private boolean sanityCheckAreRemovedFromPaths(Set<KmerPathNode> nodes) {
+		Set<TraversalNode> processed = new HashSet<>();
+		for (TraversalNode tn : contigByScore) {
+			sanityCheckAreRemovedFromPaths_node(nodes, processed, tn);
+		}
+		for (TraversalNode tn : frontierByPathStart) {
+			sanityCheckAreRemovedFromPaths_node(nodes, processed, tn);
+		}
+		return true;
+	}
+	private void sanityCheckAreRemovedFromPaths_node(Set<KmerPathNode> excluded, Set<TraversalNode> processed, TraversalNode node) {
+		if (processed.contains(node)) return;
+		processed.add(node);
+		if (excluded.contains(node.node.node())) {
+			try {
+				File f = File.createTempFile("gridss.sanityfailure.memoization.removal.", ".csv");
+				log.error(String.format("Sanity check failure. %s not removed. Dumping memoization to %s", node, f));
+				exportState(f);
+			} catch (IOException e) {
+			}
+		}
+		if (node.parent != null) {
+			sanityCheckAreRemovedFromPaths_node(excluded, processed, node);
+		}
+	}
+	/**
+	 * Checks that the two memoizations match. Nodes are considered
+	 * equal if they have the same score over the same interval. Since
+	 * node traversal order is nondeterministic, the two memoizations
+	 * could have different parent paths.
+	 * 
+	 * Note that TraversalNode counts for a KmerPathNode do not
+	 * necessarily match since {[1,2]w=3} and {[1,1]w=3, [2,2]w=3}
+	 * are equivalent.  
+	 * 
+	 * @param caller caller to compare to
+	 */
+	public void sanityCheckMatches(MemoizedContigCaller caller) {
+		NavigableSet<TraversalNode> set1 = new TreeSet<>(TraversalNode.ByKmerScoreStartEnd);
+		NavigableSet<TraversalNode> set2 = new TreeSet<>(TraversalNode.ByKmerScoreStartEnd);
+		set1.addAll(contigByScore);
+		set2.addAll(caller.contigByScore);
+		sanityCheckMatches(set1, set2);
+		set1 = new TreeSet<>(TraversalNode.ByKmerScoreStartEnd);
+		set2 = new TreeSet<>(TraversalNode.ByKmerScoreStartEnd);
+		set1.addAll(frontierByPathStart);
+		set2.addAll(caller.frontierByPathStart);
+		sanityCheckMatches(set1, set2);
+	}
+	public static void sanityCheckMatches(NavigableSet<TraversalNode> set1, NavigableSet<TraversalNode> set2) {
+		for (TraversalNode tn : set1) {
+			sanityCheckContains(tn, set2);
+		}
+		for (TraversalNode tn : set2) {
+			sanityCheckContains(tn, set1);
+		}
+	}
+	public static void sanityCheckContains(TraversalNode node, NavigableSet<TraversalNode> set) {
+		Iterator<TraversalNode> it = null;
+		TraversalNode start = set.floor(node);
+		if (start != null) {
+			it = set.tailSet(start).iterator();
+		} else {
+			it = set.iterator();
+		}
+		int overlap = 0;
+		while (it.hasNext()) {
+			TraversalNode tn = it.next();
+			if (tn.node.firstKmer() < node.node.firstKmer()) continue;
+			if (tn.node.firstKmer() > node.node.firstKmer()) break;
+			if (tn.node.firstEnd() < node.node.firstStart()) continue;
+			if (tn.node.firstStart() > node.node.firstEnd()) continue;
+			if (tn.node.weight() == node.node.weight()) {
+				overlap += IntervalUtil.overlapsWidthClosed(tn.node.firstStart(), tn.node.firstEnd(), node.node.firstStart(), node.node.firstEnd()); 
+			}
+		}
+		if (overlap != node.node.firstEnd() - node.node.firstStart() + 1) {
+			log.debug(String.format("No matching memoized path of weight %d for %s", node.node.weight(), node.node));
+		}
+		assert(overlap == node.node.firstEnd() - node.node.firstStart() + 1);
 	}
 }

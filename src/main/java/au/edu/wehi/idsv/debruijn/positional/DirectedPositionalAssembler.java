@@ -7,6 +7,8 @@ import java.util.Iterator;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
+import com.google.common.collect.PeekingIterator;
+
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.DirectedEvidence;
@@ -89,7 +91,12 @@ public class DirectedPositionalAssembler implements Iterator<SAMRecordAssemblyEv
 	private class AssemblyThread extends Thread {
 		private final PositionalAssembler assembler;
 		private final BreakendDirection direction;
-		public AssemblyThread(final Iterator<DirectedEvidence> it, final BreakendDirection direction) {
+		public AssemblyThread(final PeekingIterator<DirectedEvidence> it, final BreakendDirection direction) {
+			if (it.hasNext()) {
+				int referenceIndex = it.peek().getBreakendSummary().referenceIndex; 
+				String chr = context.getDictionary().getSequence(referenceIndex).getSequenceName();
+				setName("Assembly" + direction.toString() + chr);
+			}
 			this.direction = direction;
 			this.assembler = new PositionalAssembler(context, source, it, direction);
 		}

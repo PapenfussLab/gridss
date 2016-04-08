@@ -3,10 +3,10 @@ package au.edu.wehi.idsv.debruijn.positional;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayDeque;
-import java.util.Iterator;
 import java.util.Set;
 
-import com.google.common.collect.Iterators;
+import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker.MemoizationStats;
+
 import com.google.common.collect.PeekingIterator;
 
 public abstract class ContigCaller {
@@ -50,12 +50,13 @@ public abstract class ContigCaller {
 		return underlying.peek().firstStart();
 	}
 	public ContigCaller(
-			Iterator<KmerPathNode> it,
+			PeekingIterator<KmerPathNode> it,
 			int maxEvidenceWidth) {
-		this.underlying = Iterators.peekingIterator(it);
+		this.underlying = it;
 		this.maxEvidenceWidth = maxEvidenceWidth;
 	}
 	public abstract boolean sanityCheck();
 	public abstract int tracking_memoizedNodeCount();
 	public abstract int tracking_frontierSize();
+	public abstract MemoizationStats tracking_lastRemoval();
 }
