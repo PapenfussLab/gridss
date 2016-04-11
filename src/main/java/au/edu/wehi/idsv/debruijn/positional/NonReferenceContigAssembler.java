@@ -76,6 +76,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	private final EvidenceTracker evidenceTracker;
 	private final AssemblyEvidenceSource aes;
 	private MemoizedContigCaller contigCaller;
+	private int contigsCalled = 0;
 	/**
 	 * Worst case scenario is a RP providing single kmer support for contig
 	 * read length - (k-1) + max-min fragment size
@@ -164,7 +165,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			contig = contigCaller.bestContig();
 		}
 		if (Defaults.SANITY_CHECK_MEMOIZATION) {
-			verifyContig(contig);
+			verifyMemoization();
 		}
 		if (aes.getContext().getConfig().getVisualisation().assemblyContigMemoization) {
 			File file = new File(aes.getContext().getConfig().getVisualisation().directory, "assembly.path.memoization." + Integer.toString(pathExportCount.incrementAndGet()) + ".csv");
@@ -180,13 +181,13 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	 * Verifies that the memoization matches a freshly calculated memoization 
 	 * @param contig
 	 */
-	private boolean verifyContig(ArrayDeque<KmerPathSubnode> contig) {
+	private boolean verifyMemoization() {
 		int preGraphSize = graphByPosition.size();
 		MemoizedContigCaller mcc = new MemoizedContigCaller(wrapper, maxEvidenceDistance);
 		for (KmerPathNode n : graphByPosition) {
 			mcc.add(n);
 		}
-		mcc.bestContig();
+		mcc.bestContig(false);
 		contigCaller.sanityCheckMatches(mcc);
 		int postGraphSize = graphByPosition.size();
 		assert(preGraphSize == postGraphSize);
@@ -311,6 +312,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 				removeFromGraph(n.node(), true);
 			}
 		}
+		contigsCalled++;
 		return assembledContig;
 	}
 	private boolean containsKmerRepeat(Collection<KmerPathSubnode> contig) {
@@ -359,6 +361,12 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			assert(sanityCheck());
 			assert(sanityCheckDisjointNodeIntervals());
+		}
+		if (Defaults.SANITY_CHECK_MEMOIZATION) {
+			// Force memoization recalculation now
+			contigCaller.bestContig(false);
+			// so we can check that our removal was correct
+			verifyMemoization();
 		}
 	}
 	/**

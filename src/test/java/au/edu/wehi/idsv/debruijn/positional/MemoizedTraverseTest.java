@@ -120,4 +120,78 @@ public class MemoizedTraverseTest extends TestHelper {
 		assertEquals(1, mt.pollFrontier().node.firstStart());
 		assertTrue(mt.isEmptyFrontier());
 	}
+	@Test
+	public void unmemoize_should_not_remove_path_if_outdated_parent_overlaps_removal_interval() {
+		// 1234
+		// a
+		// \
+		//  bb
+		//   \ 
+		//    c
+		// 1234
+		KmerPathNode a = N(1, 1, 2);
+		KmerPathNode b = N(2, 3, 1);
+		KmerPathNode c = N(4, 4, 1);
+		KmerPathNode.addEdge(a, b);
+		KmerPathNode.addEdge(b, c);
+		MemoizedTraverse mt = new MemoizedTraverse();
+		TraversalNode b1 = new TraversalNode(new KmerPathSubnode(b, 2, 3), 0);
+		TraversalNode bc1 = new TraversalNode(b1, new KmerPathSubnode(c, 4, 4));
+		mt.memoize(b1);
+		mt.memoize(bc1);
+		TraversalNode a2 = new TraversalNode(new KmerPathSubnode(a, 1, 1), 0);
+		TraversalNode ab2 = new TraversalNode(a2, new KmerPathSubnode(b, 2, 2));
+		mt.memoize(a2);
+		mt.memoize(ab2);
+		while (!mt.isEmptyFrontier()) mt.pollFrontier();
+		
+		// ok, now we're set up:
+		// the memoized value at c points to an old b frontier that
+		// overlaps the a path
+		mt.remove(a);
+		
+		// we still shouldn't remove c because the actual path doesn't overlap
+		assertEquals(1, mt.memoized(c).size());
+	}
+	@Test
+	public void unmemoize_should_not_remove_path_if_outdated_descendant_overlaps_removal_interval() {
+		// 123456
+		// a
+		// \
+		//  bb
+		//  \\
+		//   cc
+		//    \ 
+		//     d
+		// 12345
+		KmerPathNode a = N(1, 2, 2);
+		KmerPathNode b = N(2, 3, 1);
+		KmerPathNode c = N(3, 4, 1);
+		KmerPathNode d = N(5, 5, 1);
+		KmerPathNode.addEdge(a, b);
+		KmerPathNode.addEdge(b, c);
+		KmerPathNode.addEdge(c, d);
+		MemoizedTraverse mt = new MemoizedTraverse();
+		TraversalNode b1 = new TraversalNode(new KmerPathSubnode(b, 2, 3), 0);
+		TraversalNode bc1 = new TraversalNode(b1, new KmerPathSubnode(c, 3, 4));
+		TraversalNode bcd1 = new TraversalNode(bc1, new KmerPathSubnode(d, 5, 5));
+		mt.memoize(b1);
+		mt.memoize(bc1);
+		mt.memoize(bcd1);
+		TraversalNode a2 = new TraversalNode(new KmerPathSubnode(a, 1, 1), 0);
+		TraversalNode ab2 = new TraversalNode(a2, new KmerPathSubnode(b, 2, 2));
+		TraversalNode abc2 = new TraversalNode(ab2, new KmerPathSubnode(c, 3, 3));
+		mt.memoize(a2);
+		mt.memoize(ab2);
+		mt.memoize(abc2);
+		while (!mt.isEmptyFrontier()) mt.pollFrontier();
+		
+		// ok, now we're set up:
+		// the memoized value at d points to an old c frontier that
+		// overlaps the a path
+		mt.remove(a);
+		
+		// we still shouldn't remove c because the actual path doesn't overlap
+		assertEquals(1, mt.memoized(d).size());
+	}
 }

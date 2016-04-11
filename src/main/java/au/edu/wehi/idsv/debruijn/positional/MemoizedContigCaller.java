@@ -1,5 +1,7 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import htsjdk.samtools.util.Log;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayDeque;
@@ -11,14 +13,13 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.PeekingIterator;
-
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.SanityCheckFailureException;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker.MemoizationStats;
-import htsjdk.samtools.util.Log;
+
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.PeekingIterator;
 
 
 /**
@@ -68,6 +69,7 @@ public class MemoizedContigCaller extends ContigCaller {
 	private final SortedSet<TraversalNode> frontierByPathStart = new TreeSet<>(TraversalNode.ByPathFirstStartEndSubnode);
 	private final MemoizedContigTraverse frontier = new MemoizedContigTraverse();
 	private int maxVisitedEndPosition = Integer.MIN_VALUE;
+	private int contigsCalled = 0;
 	private class MemoizedContigTraverse extends MemoizedTraverse {
 		@Override
 		protected void onMemoizeAdd(TraversalNode tn) {
@@ -287,8 +289,11 @@ public class MemoizedContigCaller extends ContigCaller {
 	}
 	@Override
 	public ArrayDeque<KmerPathSubnode> bestContig() {
+		return bestContig(true);
+	}
+	public ArrayDeque<KmerPathSubnode> bestContig(boolean advanceUnderlying) {
 		advanceFrontier();
-		while (underlying.hasNext() && !canCallBestContig()) {
+		while (advanceUnderlying && underlying.hasNext() && !canCallBestContig()) {
 			// by loading all nodes within maxEvidenceDistance, we guarantee
 			// that all final nodes of incomplete memoized paths
 			// can be fully memoized.
@@ -311,6 +316,7 @@ public class MemoizedContigCaller extends ContigCaller {
 		assert(!contig.isEmpty());
 		assert(contig.stream().allMatch(sn -> !sn.isReference()));
 		assert(contig.stream().allMatch(sn -> sn.node().isValid()));
+		contigsCalled++;
 		return contig;
 	}
 	@Override
