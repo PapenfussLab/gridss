@@ -16,8 +16,10 @@ import java.util.List;
 
 import picard.analysis.CollectInsertSizeMetrics;
 import picard.analysis.InsertSizeMetrics;
+import picard.analysis.MapqMetrics;
 import picard.analysis.MetricAccumulationLevel;
 import picard.analysis.directed.InsertSizeMetricsCollector;
+import picard.analysis.directed.MapqMetricsCollector;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
@@ -34,8 +36,10 @@ public class IdsvSamFileMetricsCollector {
 	private IdsvMetrics idsv = new IdsvMetrics();
 	private HashMap<CigarOperator, List<CigarDetailMetrics>> cigar;
 	private InsertSizeMetricsCollector is;
+	private MapqMetricsCollector mmc;
 	public IdsvSamFileMetricsCollector(SAMFileHeader header) {
 		this.is = createInsertSizeMetricsCollector(header);
+		this.mmc = createMapqMetricsCollector(header);
 		this.cigar = new HashMap<CigarOperator, List<CigarDetailMetrics>>();
 		for (CigarOperator op : CigarOperator.values()) {
 			cigar.put(op, new ArrayList<CigarDetailMetrics>());
@@ -45,8 +49,12 @@ public class IdsvSamFileMetricsCollector {
     	is.acceptRecord(record, refSeq);
     	idsvAcceptRecord(record, refSeq);
     	cigarAcceptRecord(record, refSeq);
+    	mapqAcceptRecord(record, refSeq);
     }
-    private void cigarAcceptRecord(SAMRecord record, ReferenceSequence refSeq) {
+    private void mapqAcceptRecord(SAMRecord record, ReferenceSequence refSeq) {
+		mmc.acceptRecord(record, refSeq);
+	}
+	private void cigarAcceptRecord(SAMRecord record, ReferenceSequence refSeq) {
     	if (record == null || record.getCigar() == null) return;
     	List<CigarElement> list = record.getCigar().getCigarElements();
     	if (list == null || list.size() == 0) return;
@@ -131,19 +139,26 @@ public class IdsvSamFileMetricsCollector {
 		MetricsFile<InsertSizeMetrics, Integer> isMetricsFile = processContext.<InsertSizeMetrics, Integer>createMetricsFile();
 		MetricsFile<IdsvMetrics, Integer> idsvMetricsFile = processContext.<IdsvMetrics, Integer>createMetricsFile();
 		MetricsFile<CigarDetailMetrics, Integer> scMetricsFile = processContext.<CigarDetailMetrics, Integer>createMetricsFile();
+		MetricsFile<MapqMetrics, Integer> mapqMetricsFile = processContext.<MapqMetrics, Integer>createMetricsFile();
 		
-		finish(isMetricsFile, idsvMetricsFile, scMetricsFile);
+		finish(isMetricsFile, idsvMetricsFile, mapqMetricsFile, scMetricsFile);
 		
 		isMetricsFile.write(processContext.getFileSystemContext().getInsertSizeMetrics(source));
 		idsvMetricsFile.write(processContext.getFileSystemContext().getIdsvMetrics(source));
 		scMetricsFile.write(processContext.getFileSystemContext().getCigarMetrics(source));
+		mapqMetricsFile.write(processContext.getFileSystemContext().getMapqMetrics(source));
 	}
-    public void finish(MetricsFile<InsertSizeMetrics, Integer> isMetricsFile, MetricsFile<IdsvMetrics, Integer> idsvMetricsFile, MetricsFile<CigarDetailMetrics, Integer> scMetricsFile) {
+    public void finish(MetricsFile<InsertSizeMetrics, Integer> isMetricsFile, MetricsFile<IdsvMetrics, Integer> idsvMetricsFile, MetricsFile<MapqMetrics, Integer> mapqMetricsFile, MetricsFile<CigarDetailMetrics, Integer> scMetricsFile) {
     	addInsertSizeMetrics(isMetricsFile);
 		addIdsvMetrics(idsvMetricsFile);
 		addCigarMetrics(scMetricsFile);
+		addMapqMetrics(mapqMetricsFile);
     }
-    private void addInsertSizeMetrics(MetricsFile<InsertSizeMetrics, Integer> metricsFile) {
+    private void addMapqMetrics(MetricsFile<MapqMetrics, Integer> mapqMetricsFile) {
+    	mmc.finish();
+    	mmc.addAllLevelsToFile(mapqMetricsFile);
+	}
+	private void addInsertSizeMetrics(MetricsFile<InsertSizeMetrics, Integer> metricsFile) {
     	is.finish();
     	is.addAllLevelsToFile(metricsFile);
 	}
@@ -166,5 +181,8 @@ public class IdsvSamFileMetricsCollector {
 				new CollectInsertSizeMetrics().MINIMUM_PCT,
 				new CollectInsertSizeMetrics().Histogram_WIDTH,
 				new CollectInsertSizeMetrics().DEVIATIONS);
+	}
+	private static MapqMetricsCollector createMapqMetricsCollector(SAMFileHeader header) {
+		return new MapqMetricsCollector(CollectionUtil.makeSet(MetricAccumulationLevel.ALL_READS), null);
 	}
 }

@@ -172,6 +172,16 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 		assertEquals(0, getFastqRecords(source).size());
 	}
 	@Test
+	public void realign_max_mapq_should_filter_sc() {
+		createInput(ValidSC());
+		ProcessingContext pc = getCommandlineContext();
+		pc.getConfig().maxMapq = 14;
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
+		ExtractEvidence e = new ExtractEvidence(pc, source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
+		
+		assertEquals(0, getFastqRecords(source).size());
+	}
+	@Test
 	public void realign_long_sc_length_should_filter_sc() {
 		createInput(ValidSC());
 		ProcessingContext pc = getCommandlineContext();

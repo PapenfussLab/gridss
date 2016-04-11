@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import picard.analysis.InsertSizeMetrics;
+import picard.analysis.MapqMetrics;
 import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.util.MathUtil;
 
@@ -22,17 +23,26 @@ import com.google.common.primitives.Longs;
 public class IdsvSamFileMetrics {
 	private static final Log log = Log.getInstance(IdsvSamFileMetrics.class);
 	public IdsvSamFileMetrics(GenomicProcessingContext pc, File source) {
-		this(pc.getFileSystemContext().getInsertSizeMetrics(source), pc.getFileSystemContext().getIdsvMetrics(source), pc.getFileSystemContext().getCigarMetrics(source));
+		this(pc.getFileSystemContext().getInsertSizeMetrics(source),
+				pc.getFileSystemContext().getIdsvMetrics(source),
+				pc.getFileSystemContext().getMapqMetrics(source),
+				pc.getFileSystemContext().getCigarMetrics(source));
 	}
-	public IdsvSamFileMetrics(File insertSizeMetricsFile, File idsvMetricsFile, File cigarMetricsFile) {
-		this(getInsertSizeMetrics(insertSizeMetricsFile), getIdsvMetrics(idsvMetricsFile), getInsertSizeDistribution(insertSizeMetricsFile), getCigarMetrics(cigarMetricsFile));
+	public IdsvSamFileMetrics(File insertSizeMetricsFile, File idsvMetricsFile, File mapqMetricsFile, File cigarMetricsFile) {
+		this(getInsertSizeMetrics(insertSizeMetricsFile),
+				getIdsvMetrics(idsvMetricsFile),
+				getMapqMetrics(mapqMetricsFile),
+				getInsertSizeDistribution(insertSizeMetricsFile),
+				getCigarMetrics(cigarMetricsFile));
 	}
 	private InsertSizeMetrics insertSize = null;
+	private MapqMetrics mapqMetrics = null;
 	private IdsvMetrics idsvMetrics = null;
 	private InsertSizeDistribution insertDistribution = null;
 	private List<CigarDetailMetrics> cigarDetailMetrics = null;
 	private CigarSizeDistribution cigarDistribution;
 	public IdsvMetrics getIdsvMetrics() { return idsvMetrics; }
+	public MapqMetrics getMapqMetrics() { return mapqMetrics; }
 	public InsertSizeMetrics getInsertSizeMetrics() { return insertSize; }
 	public List<CigarDetailMetrics> getCigarDetailMetrics() { return cigarDetailMetrics; }
 	
@@ -48,23 +58,39 @@ public class IdsvSamFileMetrics {
 		return metric;
 	}
 	public static InsertSizeMetrics getInsertSizeMetrics(File insertSizeMetricsFile) {
-		InsertSizeMetrics insertSize = null;
+		InsertSizeMetrics bestMetrics = null;
 		for (InsertSizeMetrics metric : Iterables.filter(MetricsFile.readBeans(insertSizeMetricsFile), InsertSizeMetrics.class)) {
 			if (metric.SAMPLE == null && metric.LIBRARY == null && metric.READ_GROUP == null) {
-				if (insertSize == null || insertSize.READ_PAIRS < metric.READ_PAIRS) {
-					insertSize = metric;
+				if (bestMetrics == null || bestMetrics.READ_PAIRS < metric.READ_PAIRS) {
+					bestMetrics = metric;
 				}
 			}
 		}
-		if (insertSize == null) {
-			insertSize = new InsertSizeMetrics();
+		if (bestMetrics == null) {
+			bestMetrics = new InsertSizeMetrics();
 			log.error(String.format("No pair-end insert size metrics found in %s.", insertSizeMetricsFile));
 		}
-		return insertSize;
+		return bestMetrics;
 	}
-	public IdsvSamFileMetrics(InsertSizeMetrics insertSize, IdsvMetrics idsvMetrics, InsertSizeDistribution insertDistribution, List<CigarDetailMetrics> cigarDetailMetrics) {
+	public static MapqMetrics getMapqMetrics(File mapqMetricsFile) {
+		MapqMetrics bestMetrics = null;
+		for (MapqMetrics metric : Iterables.filter(MetricsFile.readBeans(mapqMetricsFile), MapqMetrics.class)) {
+			if (metric.SAMPLE == null && metric.LIBRARY == null && metric.READ_GROUP == null) {
+				if (bestMetrics == null || bestMetrics.MAPPED_READS < metric.MAPPED_READS) {
+					bestMetrics = metric;
+				}
+			}
+		}
+		if (bestMetrics == null) {
+			bestMetrics = new MapqMetrics();
+			log.error(String.format("No pair-end insert size metrics found in %s.", mapqMetricsFile));
+		}
+		return bestMetrics;
+	}
+	public IdsvSamFileMetrics(InsertSizeMetrics insertSize, IdsvMetrics idsvMetrics, MapqMetrics mapqMetrics, InsertSizeDistribution insertDistribution, List<CigarDetailMetrics> cigarDetailMetrics) {
 		this.insertSize = insertSize;
 		this.idsvMetrics = idsvMetrics;
+		this.mapqMetrics = mapqMetrics;
 		this.insertDistribution = insertDistribution;
 		this.cigarDetailMetrics = cigarDetailMetrics;
 		this.cigarDistribution = new CigarSizeDistribution(cigarDetailMetrics);

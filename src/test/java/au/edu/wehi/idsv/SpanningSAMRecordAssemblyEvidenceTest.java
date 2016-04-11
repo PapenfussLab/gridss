@@ -127,7 +127,7 @@ public class SpanningSAMRecordAssemblyEvidenceTest extends TestHelper {
 		r.setBaseQualities(B("_______________________________________________________________________________________________________________________________________@<<<<<<<<<>ACEGIKMOQSUWY[]_______________________________________________________________________________________________________________________________________________________________________________________________________"));
 		r.setAttribute("bc", 147);
 		r.setAttribute("es", "RbST-E00106:108:H03M0ALXX:1:1118:24253:3735/2 fST-E00106:108:H03M0ALXX:1:1205:2583:30439/1 fST-E00106:108:H03M0ALXX:1:2207:15443:7989/2");
-		r.setMappingQuality(SAMRecord.UNKNOWN_MAPPING_QUALITY);
+		r.setMappingQuality(50);
 		List<SpanningSAMRecordAssemblyEvidence> indels = AssemblyFactory.hydrate(AES(), r).getSpannedIndels();
 		assertEquals(2, indels.size());
 		SpanningSAMRecordAssemblyEvidence e = indels.get(0);

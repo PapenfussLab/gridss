@@ -220,6 +220,7 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 		int fragSpan = 1;
 		ProcessingContext pc = getCommandlineContext(false);
 		pc.getConfig().minMapq = 0;
+		pc.getConfig().maxMapq = 254;
 		pc.getConfig().getAssembly().k = k;
 		pc.getConfig().getAssembly().writeFiltered = true;
 		pc.getConfig().getAssembly().errorCorrection.maxBaseMismatchForCollapse = 0;

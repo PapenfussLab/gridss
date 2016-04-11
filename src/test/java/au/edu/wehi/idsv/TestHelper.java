@@ -50,6 +50,7 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.lang3.StringUtils;
 
 import picard.analysis.InsertSizeMetrics;
+import picard.analysis.MapqMetrics;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraph;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
@@ -337,6 +338,11 @@ public class TestHelper {
 				READ_PAIRS_BOTH_MAPPED = READ_PAIRS - READ_PAIRS_ONE_MAPPED - READ_PAIRS_ZERO_MAPPED;
 				READS = 2 * READ_PAIRS;
 				MAPPED_READS = READS - READ_PAIRS_ONE_MAPPED - 2*READ_PAIRS_ZERO_MAPPED;
+			}}, new MapqMetrics() {{
+				ZERO_MAPQ = 10;
+				MAPPED_READS = 1500;
+				MIN_MAPQ = 0;
+				MAX_MAPQ = 50;
 			}}, new InsertSizeDistribution(
 					new int[] { 1, 50, 100, 200, 300, 400, },
 					new double[] { 1, 50, 500, 50, 20, 10, }),
@@ -365,6 +371,7 @@ public class TestHelper {
 	public static GridssConfiguration getConfig(File workingDirectory) {
 		GridssConfiguration config;
 		config = new GridssConfiguration(getDefaultConfig(), workingDirectory);
+		config.maxMapq = 256;
 		config.getSoftClip().minAverageQual = 0;
 		config.minAnchorShannonEntropy = 0;
 		config.getAssembly().minReads = 2;
@@ -1021,7 +1028,8 @@ public class TestHelper {
 		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
 		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
 		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
-		c.finish(is, idsv, sc);
+		MetricsFile<MapqMetrics, Integer> mqm = new MetricsFile<MapqMetrics, Integer>();
+		c.finish(is, idsv, mqm, sc);
 		IdsvMetrics metrics = idsv.getMetrics().get(0);
 		return metrics;
 	}
