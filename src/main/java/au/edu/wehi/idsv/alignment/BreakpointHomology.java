@@ -62,10 +62,18 @@ public class BreakpointHomology {
 		byte[] local = (localSeq + localRef).getBytes(StandardCharsets.US_ASCII);
 		byte[] remote = (remoteRef + remoteSeq).getBytes(StandardCharsets.US_ASCII);
 		Aligner aligner = AlignerFactory.create();
-		Alignment localAlignment = aligner.align_smith_waterman(breakend, local);
-		Alignment remoteAlignment = aligner.align_smith_waterman(breakend, remote);
-		int localHomologyBaseCount = localBsSeq.length() - SAMRecordUtil.getStartSoftClipLength(TextCigarCodec.decode(remoteAlignment.getCigar()).getCigarElements());
-		int remoteHomologyBaseCount = remoteBsSeq.length() - SAMRecordUtil.getEndSoftClipLength(TextCigarCodec.decode(localAlignment.getCigar()).getCigarElements());
+		int localHomologyBaseCount = 0;
+		int remoteHomologyBaseCount = 0;
+		if (breakend != null && breakend.length > 0) {
+			if (local != null && local.length > 0) {
+				Alignment localAlignment = aligner.align_smith_waterman(breakend, local);
+				remoteHomologyBaseCount = remoteBsSeq.length() - SAMRecordUtil.getEndSoftClipLength(TextCigarCodec.decode(localAlignment.getCigar()).getCigarElements());
+			}
+			if (remote != null && remote.length > 0) {
+				Alignment remoteAlignment = aligner.align_smith_waterman(breakend, remote);
+				localHomologyBaseCount = localBsSeq.length() - SAMRecordUtil.getStartSoftClipLength(TextCigarCodec.decode(remoteAlignment.getCigar()).getCigarElements());
+			}
+		}
 		return new BreakpointHomology(localHomologyBaseCount, remoteHomologyBaseCount);
 	}
 	/**

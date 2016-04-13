@@ -43,6 +43,12 @@ public class SswJniAligner implements Aligner {
 	public Alignment do_align_smith_waterman(byte[] seq, byte[] ref) {
 		seq = clean(seq);
 		ref = clean(ref);
+		if (seq == null || seq.length == 0) {
+			throw new IllegalArgumentException("seq must be non-zero size");
+		}
+		if (ref == null || ref.length == 0) {
+			throw new IllegalArgumentException("ref must be non-zero size");
+		}
 		ssw.Alignment result = ssw.Aligner.align(seq, ref, matrix, gapOpen, gapExtend, true);
 		String cigar = result.cigar;
 		if (result.read_begin1 != 0) {
