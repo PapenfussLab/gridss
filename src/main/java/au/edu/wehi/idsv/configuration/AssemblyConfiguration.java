@@ -81,7 +81,7 @@ public class AssemblyConfiguration {
 	 * 
 	 * Expected max size is 1.0 for single-sided assembly and 2.0 for assembly from both directions 
 	 */
-	public float maxExpectedBreakendLengthMultiple = 2.5f;
+	public float maxExpectedBreakendLengthMultiple = 3.0f;
 	/**
 	 * Retains evidenceID tracking information after evidence rehydration
 	 */

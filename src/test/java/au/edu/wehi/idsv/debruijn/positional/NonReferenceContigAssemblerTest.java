@@ -213,10 +213,10 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		pc.getAssemblyParameters().k = 4;
 		pc.getAssemblyParameters().includePairAnchors = false;
 		List<SAMRecordAssemblyEvidence> output = go(pc, true,
-				NRRP(SES(1, 100), withSequence("CAAAAAAAAAAAGT", DP(1, 100, "14M", false, 1, 1, "14M", true))),
-				NRRP(SES(1, 100), withSequence("CAAAAANAAAAGTC", DP(1, 101, "14M", false, 1, 1, "14M", true))));
+				NRRP(SES(1, 100), withSequence("AATAAGAGT", DP(1, 100, "9M", false, 1, 1, "9M", true))),
+				NRRP(SES(1, 100), withSequence("AATGNGAGTC", DP(1, 101, "10M", false, 1, 1, "10M", true))));
 		assertEquals(1, output.size());
-		assertEquals("AAAAAAAAAAAGTC", S(output.get(0).getAssemblySequence()));
+		assertEquals("AATAAGAGTC", S(output.get(0).getAssemblySequence()));
 	}
 	@Test
 	public void should_handle_multiple_candidate_offsets_for_a_single_kmer_position() {
