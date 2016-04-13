@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -52,7 +53,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 			pnIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, pc.getAssemblyParameters().errorCorrection.maxBaseMismatchForCollapse, pc.getAssemblyParameters().errorCorrection.collapseBubblesOnly, 0);
 			pnIt = new PathSimplificationIterator(pnIt, maxPathLength, maxEvidenceWidth);
 		}
-		caller = new NonReferenceContigAssembler(pnIt, 0, maxEvidenceWidth + maxReadLength + 2, maxReadLength, k, aes, tracker);
+		caller = new NonReferenceContigAssembler(pnIt, 0, maxEvidenceWidth + maxReadLength + 2, maxReadLength, k, aes, tracker, "test");
 		return caller;
 	}
 	@Test
@@ -163,10 +164,10 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 	public void should_remove_fully_reference_evidence_before_end() {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
-		int n = 16;
+		int n = 64;
 		DirectedEvidence[] input = new DirectedEvidence[2 * n];
 		for (int i = 0; i < n; i++) {
-			input[2*i] = SCE(FWD, withSequence("ACGTGGTCGACC", Read(0, 1000*i, "6M6S")));
+			input[2*i] =      SCE(FWD, withSequence( "ACGTGGTCGACC", Read(0, 1000*i, "6M6S")));
 			input[2*i + 1 ] = SCE(FWD, withSequence("AACGTGG", Read(0, 1000*i-1, "6M1S")));
 		}
 		NonReferenceContigAssembler caller = create(pc, true, input);
@@ -281,5 +282,18 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		List<SAMRecordAssemblyEvidence> output = go(pc, false, nrrp);
 		assertEquals(S(RANDOM).substring(0, 12), S(output.get(0).getAssemblySequence()));
 		assertEquals(new BreakendSummary(0, FWD, 100 + 10 - 1, 100 + 10 - 1), output.get(0).getBreakendSummary());
+	}
+	@Test
+	public void should_strip_evidence_forming_contig_longer_than_maxExpectedBreakendLengthMultiple() {
+		ProcessingContext pc = getContext();
+		MockSAMEvidenceSource ses = SES(50, 100);
+		pc.getAssemblyParameters().k = 4;
+		List<DirectedEvidence> e = new ArrayList<>();
+		e.add(SCE(FWD, withSequence("ACGTAACCGGTT", Read(0, 1, "6M6S"))));
+		for (int i = 1; i < 1000; i++) {
+			e.add(NRRP(ses, OEA(0, i, "10M", true)));
+		}
+		List<SAMRecordAssemblyEvidence> output = go(pc, false, e.toArray(new DirectedEvidence[0]));
+		assertEquals(1, output.size());
 	}
 }

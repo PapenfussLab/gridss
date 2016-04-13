@@ -61,19 +61,23 @@ public class MemoizedContigCaller extends ContigCaller {
 	private final SortedSet<TraversalNode> contigByScore = new TreeSet<>(TraversalNode.ByScoreDescPathFirstEndSubnode);
 	private final SortedSet<TraversalNode> frontierByPathStart = new TreeSet<>(TraversalNode.ByPathFirstStartEndSubnode);
 	private final MemoizedContigTraverse frontier = new MemoizedContigTraverse();
+	/**
+	 * Scoring bonus for anchoring the start/end of a contig at a reference node. 
+	 */
+	private final int anchoredScore;
 	private int maxVisitedEndPosition = Integer.MIN_VALUE;
-	private int contigsCalled = 0;
 	private class MemoizedContigTraverse extends MemoizedTraverse {
 		@Override
 		protected void onMemoizeAdd(TraversalNode tn) {
-			if (tn.node.isReference() && tn.parent == null) {
-				// don't track reference-only paths
-				return;
-			}
-			if (tn.score >= 2 * ANCHORED_SCORE && tn.node.isReference() &&
-					tn.parent != null && tn.parent.node.isReference()) {
-				// don't track reference-reference paths
-				return;
+			if (tn.node.isReference()) {
+				if (tn.parent == null) {
+					// don't track reference-only paths
+					return;
+				}
+				// shouldn't be traversing reference-reference paths
+				// as they'll overwrite non-ref > ref paths terminating
+				// at the ending reference node
+				assert(!tn.parent.node.isReference());
 			}
 			contigByScore.add(tn);
 		}
@@ -98,8 +102,9 @@ public class MemoizedContigCaller extends ContigCaller {
 			frontierByPathStart.removeAll(tn);
 		}
 	}
-	public MemoizedContigCaller(int maxEvidenceWidth) {
+	public MemoizedContigCaller(int anchoredScore, int maxEvidenceWidth) {
 		super(maxEvidenceWidth);
+		this.anchoredScore = anchoredScore;
 	}
 	/**
 	 * Adds a new node to the graph.
@@ -113,7 +118,7 @@ public class MemoizedContigCaller extends ContigCaller {
 	public void add(KmerPathNode node) {
 		assert(node.isValid());
 		assert(frontier.memoized(node).isEmpty());
-		TraversalNode tn = new TraversalNode(new KmerPathSubnode(node), node.isReference() ? ANCHORED_SCORE - node.weight() : 0);
+		TraversalNode tn = new TraversalNode(new KmerPathSubnode(node), node.isReference() ? anchoredScore - node.weight() : 0);
 		frontier.memoize(tn);
 		if (node.firstStart() > maxVisitedEndPosition + 1) {
 			// don't need to flag parents for revisitation
@@ -180,7 +185,7 @@ public class MemoizedContigCaller extends ContigCaller {
 		assert(node.node.lastEnd() + 1 < unprocessedPosition); // successors must be fully defined
 		if (node.node.isReference()) {
 			// Reset reference traversal to a starting path
-			node = new TraversalNode(new KmerPathSubnode(node.node.node()), ANCHORED_SCORE - node.node.node().weight());
+			node = new TraversalNode(new KmerPathSubnode(node.node.node()), anchoredScore - node.node.node().weight());
 		}
 		for (KmerPathSubnode sn : node.node.next()) {
 			if (!frontier.isMemoized(sn.node())) {
@@ -192,7 +197,7 @@ public class MemoizedContigCaller extends ContigCaller {
 				// drop reference-reference transitions as we're only
 				// traversing non-reference paths
 			} else {
-				TraversalNode tn = new TraversalNode(node, sn, sn.isReference() ? ANCHORED_SCORE - sn.weight() : 0);
+				TraversalNode tn = new TraversalNode(node, sn, sn.isReference() ? anchoredScore - sn.weight() : 0);
 				frontier.memoize(tn);
 			}
 		}
@@ -215,7 +220,7 @@ public class MemoizedContigCaller extends ContigCaller {
 		for (KmerPathNode child : node.next()) {
 			// only set up starting paths for nodes that should be memoized
 			if (frontier.isMemoized(child)) {
-				TraversalNode tn = new TraversalNode(new KmerPathSubnode(child), child.isReference() ? ANCHORED_SCORE - child.weight() : 0);
+				TraversalNode tn = new TraversalNode(new KmerPathSubnode(child), child.isReference() ? anchoredScore - child.weight() : 0);
 				frontier.memoize(tn);
 			}
 		}
@@ -247,7 +252,7 @@ public class MemoizedContigCaller extends ContigCaller {
 				if (nodes.contains(child)) continue;
 				if (!frontier.isMemoized(child)) continue;
 				count++;
-				TraversalNode tn = new TraversalNode(new KmerPathSubnode(child), child.isReference() ? ANCHORED_SCORE - child.weight() : 0);
+				TraversalNode tn = new TraversalNode(new KmerPathSubnode(child), child.isReference() ? anchoredScore - child.weight() : 0);
 				frontier.memoize(tn);
 			}
 		}
@@ -279,14 +284,19 @@ public class MemoizedContigCaller extends ContigCaller {
 		int bestContigLastEnd = contigByScore.first().node.lastEnd(); 
 		return bestContigLastEnd < unprocessedPosition - maxEvidenceWidth - 1;
 	}
-	@Override
-	public ArrayDeque<KmerPathSubnode> bestContig(int unprocessedPosition) {
+	private TraversalNode bestTraversal(int unprocessedPosition) {
 		advanceFrontier(unprocessedPosition);
 		if (!canCallBestContig(unprocessedPosition)) {
 			return null;
 		}
 		if (contigByScore.isEmpty()) return null;
 		TraversalNode tn = contigByScore.first();
+		return tn;
+	}
+	@Override
+	public ArrayDeque<KmerPathSubnode> bestContig(int unprocessedPosition) {
+		TraversalNode tn = bestTraversal(unprocessedPosition);
+		if (tn == null) return null;
 		ArrayDeque<KmerPathSubnode> contig = tn.toSubnodeNextPath();
 		if (contig.peekFirst().isReference()) {
 			contig.pollFirst();
@@ -297,7 +307,6 @@ public class MemoizedContigCaller extends ContigCaller {
 		assert(!contig.isEmpty());
 		assert(contig.stream().allMatch(sn -> !sn.isReference()));
 		assert(contig.stream().allMatch(sn -> sn.node().isValid()));
-		contigsCalled++;
 		return contig;
 	}
 	@Override
@@ -335,7 +344,7 @@ public class MemoizedContigCaller extends ContigCaller {
 		for (TraversalNode tn : contigByScore) {
 			assert(frontier.memoized(tn.node.node()).contains(tn));
 			if (tn.parent == null && tn.node.isReference()) {
-				assert(tn.score == ANCHORED_SCORE);
+				assert(tn.score == anchoredScore);
 			}
 			if (tn.parent != null) {
 				TraversalNode parent = tn.parent;

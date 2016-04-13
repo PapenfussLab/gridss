@@ -16,7 +16,7 @@ import com.google.common.collect.Sets;
 public class MemoizedContigCallerTest extends ContigCallerTest {
 	@Override
 	public ContigCaller getCaller(Iterable<KmerPathNode> input, int maxEvidenceWidth) {
-		ContigCaller mcc = new MemoizedContigCaller(maxEvidenceWidth);
+		ContigCaller mcc = new MemoizedContigCaller(NonReferenceContigAssembler.ANCHORED_SCORE, maxEvidenceWidth);
 		for (KmerPathNode node : input) {
 			mcc.add(node);
 		}
@@ -183,7 +183,7 @@ public class MemoizedContigCallerTest extends ContigCallerTest {
 	 */
 	@Test
 	public void not_invariant_frontier_parent_object_is_memoized() {
-		MemoizedContigCaller caller = new MemoizedContigCaller(10);
+		MemoizedContigCaller caller = new MemoizedContigCaller(0, 10);
 		KmerPathNode n1 = KPN(1, "A", 1, 2, false);
 		KmerPathNode n2 = KPN(1, "C", 2, 3, false);
 		KmerPathNode n3 = KPN(1, "G", 3, 3, false);
@@ -204,7 +204,7 @@ public class MemoizedContigCallerTest extends ContigCallerTest {
 	}
 	@Test
 	public void remove_should_remove_all_descendents() {
-		MemoizedContigCaller caller = new MemoizedContigCaller(10);
+		MemoizedContigCaller caller = new MemoizedContigCaller(0, 10);
 		KmerPathNode n1 = KPN(1, "A", 1, 2, false);
 		KmerPathNode n2 = KPN(1, "C", 2, 3, false);
 		KmerPathNode n3 = KPN(1, "G", 3, 3, false);
@@ -227,7 +227,7 @@ public class MemoizedContigCallerTest extends ContigCallerTest {
 	}
 	@Test
 	public void add_should_add_to_both_frontiers() {
-		MemoizedContigCaller caller = new MemoizedContigCaller(10);
+		MemoizedContigCaller caller = new MemoizedContigCaller(0, 10);
 		KmerPathNode n1 = KPN(1, "A", 1, 2, false);
 		KmerPathNode n2 = KPN(1, "C", 2, 3, false);
 		KmerPathNode.addEdge(n1, n2);

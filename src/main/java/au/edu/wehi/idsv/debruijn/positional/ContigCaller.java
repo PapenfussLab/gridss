@@ -8,19 +8,6 @@ import java.util.Set;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker.MemoizationStats;
 
 public abstract class ContigCaller {
-	/**
-	 * Since reference kmers are not scored, calculating 
-	 * highest weighted results in a preference for paths
-	 * ending at a RP with sequencing errors over a path
-	 * anchored to the reference. 
-	 * 
-	 * To ensure that the anchored paths are scored higher
-	 * than the unanchored paths, paths anchored to the
-	 * reference are given a score adjustment larger than
-	 * the largest expected score.
-	 */
-	protected static final int ANCHORED_SCORE = Integer.MAX_VALUE >> 2;
-	
 	public abstract ArrayDeque<KmerPathSubnode> bestContig(int unprocessedPosition);
 	/**
 	 * Exports the internal state for debugging purposes

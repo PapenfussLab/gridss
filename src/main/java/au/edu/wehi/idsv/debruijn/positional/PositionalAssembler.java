@@ -129,7 +129,7 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 				pnIt = evidenceTracker.new PathNodeAssertionInterceptor(pnIt, "PathSimplificationIterator");
 			}
 		}
-		currentAssembler = new NonReferenceContigAssembler(pnIt, referenceIndex, maxEvidenceDistance, anchorAssemblyLength, k, source, evidenceTracker);
+		currentAssembler = new NonReferenceContigAssembler(pnIt, referenceIndex, maxEvidenceDistance, anchorAssemblyLength, k, source, evidenceTracker, currentContig);
 		VisualisationConfiguration vis = context.getConfig().getVisualisation();
 		if (vis.assemblyProgress) {
 			String filename = String.format("positional-%s-%s.csv", context.getDictionary().getSequence(referenceIndex).getSequenceName(), direction);

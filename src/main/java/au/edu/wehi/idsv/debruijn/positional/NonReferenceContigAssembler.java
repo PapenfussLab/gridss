@@ -30,7 +30,6 @@ import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
-import au.edu.wehi.idsv.SanityCheckFailureException;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.graph.ScalingHelper;
@@ -71,6 +70,18 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	 */
 	private static final float EVIDENCE_WIDTH_LOADING_MULTIPLE = 2;
 	/**
+	 * Since reference kmers are not scored, calculating 
+	 * highest weighted results in a preference for paths
+	 * ending at a RP with sequencing errors over a path
+	 * anchored to the reference. 
+	 * 
+	 * To ensure that the anchored paths are scored higher
+	 * than the unanchored paths, paths anchored to the
+	 * reference are given a score adjustment larger than
+	 * the largest expected score.
+	 */
+	static final int ANCHORED_SCORE = Integer.MAX_VALUE >> 2;
+	/**
 	 * TODO: check to see if this is worth doing
 	 * Simplication reduces the graph size, but may trigger
 	 * additional rememoization so might turn out to be a more
@@ -102,8 +113,10 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	private final int referenceIndex;
 	private final ContigStats stats = new ContigStats();
 	private final PeekingIterator<KmerPathNode> underlying;
+	private final String contigName;
 	private int lastUnderlyingStartPosition = Integer.MIN_VALUE;
-	private MemoizedContigCaller contigCaller;
+	private MemoizedContigCaller bestContigCaller;
+	private MemoizedContigCaller bestUnanchoredContigCaller;
 	private int contigsCalled = 0;
 	private long consumed = 0;
 	private PositionalDeBruijnGraphTracker exportTracker = null;
@@ -127,7 +140,8 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			int maxAnchorLength,
 			int k,
 			AssemblyEvidenceSource source,
-			EvidenceTracker tracker) {
+			EvidenceTracker tracker,
+			String contigName) {
 		this.underlying = Iterators.peekingIterator(it);
 		this.maxEvidenceDistance = maxEvidenceDistance;
 		this.maxAnchorLength = maxAnchorLength;
@@ -135,7 +149,16 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		this.referenceIndex = referenceIndex;
 		this.aes = source;
 		this.evidenceTracker = tracker;
-		this.contigCaller = new MemoizedContigCaller(maxEvidenceDistance);
+		this.contigName = contigName;
+		initialiseCallers();
+	}
+	private void initialiseCallers() {
+		this.bestContigCaller = new MemoizedContigCaller(ANCHORED_SCORE, maxEvidenceDistance);
+		this.bestUnanchoredContigCaller = new MemoizedContigCaller(1, maxEvidenceDistance); // +ve per-node weight required
+		for (KmerPathNode n : graphByPosition) {
+			bestContigCaller.add(n);
+			bestUnanchoredContigCaller.add(n);
+		}
 	}
 	@Override
 	protected SAMRecordAssemblyEvidence computeNext() {
@@ -145,11 +168,11 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			if (bestContig == null) {
 				// no more contigs :(
 				if (underlying.hasNext()) {
-					log.error("Sanity check failure: end of contigs called before all evidence loaded");
+					log.error("Sanity check failure: end of contigs called before all evidence loaded " + contigName);
 				}
 				removeOrphanedNonReferenceSubgraphs();
 				if (!graphByPosition.isEmpty()) {
-					log.error("Sanity check failure: non-empty graph with no contigs called");
+					log.error("Sanity check failure: non-empty graph with no contigs called " + contigName);
 				}
 				return endOfData();
 			}
@@ -158,35 +181,45 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		return calledContig;
 	}
 	private ArrayDeque<KmerPathSubnode> findBestContig() {
-		ArrayDeque<KmerPathSubnode> contig;
-		try {
-			contig = contigCaller.bestContig(nextPosition());
-			while (contig == null && underlying.hasNext()) {
-				advanceUnderlying();
-				contig = contigCaller.bestContig(nextPosition());
+		ArrayDeque<KmerPathSubnode> bestContig;
+		ArrayDeque<KmerPathSubnode> bestUnanchoredContig;
+		bestContig = bestContigCaller.bestContig(nextPosition());
+		bestUnanchoredContig = bestUnanchoredContigCaller.bestContig(nextPosition());
+		while (underlying.hasNext() && (bestUnanchoredContig == null || bestContig == null)) {
+			advanceUnderlying();
+			bestContig = bestContigCaller.bestContig(nextPosition());
+			bestUnanchoredContig = bestUnanchoredContigCaller.bestContig(nextPosition());
+		}
+		if (bestUnanchoredContig != null) {
+			// Early abort in regions prone to misassembly
+			if (bestUnanchoredContig.stream().mapToInt(sn -> sn.length()).sum() > aes.getContext().getAssemblyParameters().maxExpectedBreakendLengthMultiple * aes.getMaxConcordantFragmentSize()) {
+				log.info(String.format("Missassembled contig detected at positions %s:%d-%d. Ignoring reads supporting misassembly. ",
+						contigName,
+						bestUnanchoredContig.getFirst().firstStart(),
+						bestUnanchoredContig.getLast().lastEnd()));
+				Set<KmerEvidence> evidence = evidenceTracker.untrack(bestUnanchoredContig);
+				// this will be a large change to the memoization
+				// so it's usually faster to just recalculate from scratch
+				bestContigCaller = null;
+				bestUnanchoredContigCaller = null;
+				removeFromGraph(evidence);
+				initialiseCallers();
+				return findBestContig();
 			}
-		} catch (AssertionError|SanityCheckFailureException ex) {
-			// Defensive programming: if there are any remaining bugs
-			// in the memoization caching, at least we won't crash GRIDSS
-			log.debug(ex, "Reinitialising memoization");
-			contigCaller = new MemoizedContigCaller(maxEvidenceDistance);
-			for (KmerPathNode n : graphByPosition) {
-				contigCaller.add(n);
-			}
-			contig = contigCaller.bestContig(nextPosition());
 		}
 		if (Defaults.SANITY_CHECK_MEMOIZATION) {
+			assert(bestContigCaller.sanityCheckFrontier(nextPosition()));
 			verifyMemoization();
 		}
 		if (aes.getContext().getConfig().getVisualisation().assemblyContigMemoization) {
-			File file = new File(aes.getContext().getConfig().getVisualisation().directory, "assembly.path.memoization." + Integer.toString(pathExportCount.incrementAndGet()) + ".csv");
+			File file = new File(aes.getContext().getConfig().getVisualisation().directory, "assembly.path.memoization." + contigName + "." + Integer.toString(pathExportCount.incrementAndGet()) + ".csv");
 			try {
-				contigCaller.exportState(file);
+				bestContigCaller.exportState(file);
 			} catch (IOException e) {
-				log.debug(e, " Unable to export assembly path memoization to " + file.toString());
+				log.debug(e, " Unable to export assembly path memoization to ", file, " ", contigName);
 			}
 		}
-		return contig;
+		return bestContig;
 	}
 	private int nextPosition() {
 		if (!underlying.hasNext()) return Integer.MAX_VALUE;
@@ -223,12 +256,12 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	 */
 	private boolean verifyMemoization() {
 		int preGraphSize = graphByPosition.size();
-		MemoizedContigCaller mcc = new MemoizedContigCaller(maxEvidenceDistance);
+		MemoizedContigCaller mcc = new MemoizedContigCaller(ANCHORED_SCORE, maxEvidenceDistance);
 		for (KmerPathNode n : graphByPosition) {
 			mcc.add(n);
 		}
 		mcc.bestContig(nextPosition());
-		contigCaller.sanityCheckMatches(mcc);
+		bestContigCaller.sanityCheckMatches(mcc);
 		int postGraphSize = graphByPosition.size();
 		assert(preGraphSize == postGraphSize);
 		return true;
@@ -288,7 +321,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 					evidenceIds,
 					bases, quals, new int[] { 0, 0 });
 			if (evidence.stream().anyMatch(e -> e.isAnchored())) {
-				log.debug(String.format("Unanchored assembly %s at %d contains anchored evidence", assembledContig.getEvidenceID(), contig.getFirst().firstStart()));
+				log.debug(String.format("Unanchored assembly %s at %s:%d contains anchored evidence", assembledContig.getEvidenceID(), contigName, contig.getFirst().firstStart()));
 			}
 		} else if (startingAnchor.size() == 0) {
 			// end anchored
@@ -316,16 +349,16 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		if (assembledContig != null) {
 			if (aes.getContext().getConfig().getVisualisation().assemblyGraph) {
 				try {
-					PositionalExporter.exportDot(new File(aes.getContext().getConfig().getVisualisation().directory, "assembly." + assembledContig.getEvidenceID() + ".dot"), k, graphByPosition, fullContig);
+					PositionalExporter.exportDot(new File(aes.getContext().getConfig().getVisualisation().directory, "assembly." + contigName + "." + assembledContig.getEvidenceID() + ".dot"), k, graphByPosition, fullContig);
 				} catch (Exception ex) {
-					log.debug(ex, "Error exporting assembly ", assembledContig != null ? assembledContig.getEvidenceID() : "(null)");
+					log.debug(ex, "Error exporting assembly ", assembledContig != null ? assembledContig.getEvidenceID() : "(null)", " ", contigName);
 				}
 			}
 			if (aes.getContext().getConfig().getVisualisation().assemblyGraphFullSize) {
 				try {
-					PositionalExporter.exportNodeDot(new File(aes.getContext().getConfig().getVisualisation().directory, "assembly.fullsize." + assembledContig.getEvidenceID() + ".dot"), k, graphByPosition, fullContig);
+					PositionalExporter.exportNodeDot(new File(aes.getContext().getConfig().getVisualisation().directory, "assembly.fullsize." + contigName + "." + assembledContig.getEvidenceID() + ".dot"), k, graphByPosition, fullContig);
 				} catch (Exception ex) {
-					log.debug(ex, "Error exporting assembly ", assembledContig != null ? assembledContig.getEvidenceID() : "(null)");
+					log.debug(ex, "Error exporting assembly ", assembledContig != null ? assembledContig.getEvidenceID() : "(null)", " ", contigName);
 				}
 			}
 		}
@@ -335,16 +368,16 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		stats.startAnchorNodes = startingAnchor.size();
 		stats.endAnchorNodes = endingAnchor.size();
 		if (exportTracker != null) {
-			exportTracker.trackAssembly(contigCaller);
+			exportTracker.trackAssembly(bestContigCaller);
 		}
 		// remove all evidence contributing to this assembly from the graph
 		if (evidence.size() > 0) {
 			removeFromGraph(evidence);
 			if (Defaults.SANITY_CHECK_MEMOIZATION) {
-				contigCaller.sanityCheck(graphByPosition);
+				bestContigCaller.sanityCheck(graphByPosition);
 			}
 		} else {
-			log.error(String.format("Sanity check failure: found path with no support. Attempting to recover by direct node removal"));
+			log.error("Sanity check failure: found path with no support. Attempting to recover by direct node removal ", contigName);
 			for (KmerPathSubnode n : contig) {
 				removeFromGraph(n.node(), true);
 			}
@@ -380,14 +413,17 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 				KmerSupportNode support = e.node(i);
 				if (support != null) {
 					if (support.lastEnd() >= nextPosition()) {
-						log.error(String.format(" Sanity check failure: %s extending to %d removed when input at %d", e, support.lastEnd(), nextPosition()));
+						log.error(String.format("Sanity check failure: %s extending to %d removed when input at %s:%d", e, support.lastEnd(), contigName, nextPosition()));
 						// try to recover
 					}
 					updateRemovalList(toRemove, support);
 				}
 			}
 		}
-		contigCaller.remove(toRemove.keySet());
+		if (bestContigCaller != null) {
+			bestContigCaller.remove(toRemove.keySet());
+			bestUnanchoredContigCaller.remove(toRemove.keySet());
+		}
 		Set<KmerPathNode> simplifyCandidates = new ObjectOpenCustomHashSet<KmerPathNode>(new KmerPathNode.HashByFirstKmerStartPositionKmer<KmerPathNode>());
 		for (Entry<KmerPathNode, List<List<KmerNode>>> entry : toRemove.entrySet()) {
 			removeWeight(entry.getKey(), entry.getValue(), simplifyCandidates, false);
@@ -399,9 +435,9 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			assert(sanityCheck());
 			assert(sanityCheckDisjointNodeIntervals());
 		}
-		if (Defaults.SANITY_CHECK_MEMOIZATION) {
+		if (Defaults.SANITY_CHECK_MEMOIZATION && bestContigCaller != null) {
 			// Force memoization recalculation now
-			contigCaller.bestContig(nextPosition());
+			bestContigCaller.bestContig(nextPosition());
 			// so we can check that our removal was correct
 			verifyMemoization();
 		}
@@ -422,7 +458,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			return;
 		}
 		KmerPathNode prev = node.prevToMergeWith();
-		if (prev != null && prev.lastEnd() < lastUnderlyingStartPosition) {
+		if (prev != null && prev.lastEnd() < nextPosition() - 1) {
 			simplifyCandidates.remove(prev);
 			removeFromGraph(node, true);
 			removeFromGraph(prev, true);
@@ -430,7 +466,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			addToGraph(node);
 		}
 		KmerPathNode next = node.nextToMergeWith();
-		if (next != null && next.lastEnd() < lastUnderlyingStartPosition) {
+		if (next != null && next.lastEnd() < nextPosition() - 1) {
 			simplifyCandidates.remove(next);
 			removeFromGraph(node, true);
 			removeFromGraph(next, true);
@@ -492,11 +528,15 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		for (int i = 0; i < node.collapsedKmers().size(); i++) {
 			addToGraph(new KmerPathNodeKmerNode(i, node));
 		}
-		contigCaller.add(node);
+		if (bestContigCaller != null) {
+			bestContigCaller.add(node);
+			bestUnanchoredContigCaller.add(node);
+		}
 	}
 	private void removeFromGraph(KmerPathNode node, boolean includeMemoizationRemoval) {
-		if (includeMemoizationRemoval) {
-			contigCaller.remove(node);
+		if (includeMemoizationRemoval && bestContigCaller != null) {
+			bestContigCaller.remove(node);
+			bestUnanchoredContigCaller.remove(node);
 		}
 		boolean removed = graphByPosition.remove(node);
 		assert(removed);
@@ -577,7 +617,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			for (KmerPathNode n : nonRefOrphaned) {
 				if (!n.isValid()) continue;
 				if (graphByPosition.contains(n)) {
-					log.error(" Sanity check failure: %s not removed when clearing orphans (%d evidence found). Attempting to recover by direct node removal", n, evidence.size());
+					log.error("Sanity check failure: %s not removed when clearing orphans (%d evidence found). Attempting to recover by direct node removal ", n, evidence.size(), contigName);
 					removeFromGraph(n, true);
 				}
 			}
@@ -593,8 +633,8 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			assert(evidenceTracker.matchesExpected(new KmerPathSubnode(n)));
 		}
 		if (Defaults.SANITY_CHECK_MEMOIZATION && MemoizedContigCaller.ASSERT_ALL_OPERATIONS) {
-			assert(contigCaller.sanityCheck());
-			assert(contigCaller.sanityCheckFrontier(nextPosition()));
+			if (bestContigCaller != null) assert(bestContigCaller.sanityCheck());
+			if (bestUnanchoredContigCaller != null) assert(bestUnanchoredContigCaller.sanityCheck());
 		}
 		return true;
 	}

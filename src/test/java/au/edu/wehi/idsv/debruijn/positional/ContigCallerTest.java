@@ -299,4 +299,16 @@ public abstract class ContigCallerTest extends TestHelper {
 		// should take the path that has higher non-reference weight
 		assertEquals(1, result.getFirst().firstStart());
 	}
+	@Test
+	public void should_call_path_joining_reference_path() {
+		List<KmerPathNode> input = new ArrayList<KmerPathNode>();
+		input.add(KPN(4, "AAAA", 1, 1, false, 1));
+		input.add(KPN(4, "TAAA", 1, 1, true, 1));
+		input.add(KPN(4, "AAAA", 2, 2, true, 1));
+		KmerPathNode.addEdge(input.get(0), input.get(2));
+		KmerPathNode.addEdge(input.get(1), input.get(2));
+		ArrayDeque<KmerPathSubnode> result = getCaller(input, 10).bestContig(Integer.MAX_VALUE);
+		// should take the path that has higher non-reference weight
+		assertEquals(1, result.getFirst().firstStart());
+	}
 }
