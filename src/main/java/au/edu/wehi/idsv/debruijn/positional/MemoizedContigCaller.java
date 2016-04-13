@@ -59,6 +59,8 @@ public class MemoizedContigCaller extends ContigCaller {
 	 * Path scores in order of descending score
 	 */
 	private final SortedSet<TraversalNode> contigByScore = new TreeSet<>(TraversalNode.ByScoreDescPathFirstEndSubnode);
+	// We could convert this into an AbstractInt2IntSortedMap if we changed MemoizedContigTraverse
+	// to only call onFrontierRemove() on nodes that are actually in the frontier
 	private final SortedSet<TraversalNode> frontierByPathStart = new TreeSet<>(TraversalNode.ByPathFirstStartEndSubnode);
 	private final MemoizedContigTraverse frontier = new MemoizedContigTraverse();
 	/**

@@ -195,11 +195,15 @@ public class Idsv extends CommandLineProgram {
     }
     @Override
 	protected int doWork() {
-    	ensureArgs();
+    	if (INPUT == null || INPUT.size() == 0) {
+    		log.error("No INPUT files specified.");
+    		return -1;
+    	}
     	if (INPUT_CATEGORY != null && INPUT_CATEGORY.size() > 0 && INPUT_CATEGORY.size() != INPUT.size()) {
     		log.error("INPUT_CATEGORY must omitted or specified for every INPUT.");
     		return -1;
     	}
+    	ensureArgs();
     	ExecutorService threadpool = null;
     	try {
     		ensureIndexed(REFERENCE);
