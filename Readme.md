@@ -25,8 +25,7 @@ example/GRIDSS.sh contains an example pipeline of how GRIDSS is invoked.
 It is recommended to run GRIDSS with max heap memory of 8GB + 2GB per worker thread.
 For example, with 4 worker threads, it is recommended to run GRIDSS with is -Xmx16g.
 Note that if a BED blacklist file excluding problematic centromeric and telomeric
-sequences is not used, additional memory is recommended. The [ENCODE DAC blacklist](https://www.encodeproject.org/annotations/ENCSR636HFF/)
-is recommended when aligning against hg19.
+sequences is not used, additional memory is recommended.
 
 ## Parameters
 
@@ -72,6 +71,11 @@ Numeric category (starting at zero) to allocate the corresponding input file to.
 a category should be specified for each input file when performing analysis on multiple samples at once. (eg `INPUT=normal75bp.bam INPUT_CATEGORY=0 INPUT=normal100bp.bam INPUT_CATEGORY=0 INPUT=tumour100bp.bam INPUT_CATEGORY=1` ).
 
 For those familar with [CORTEX](http://cortexassembler.sourceforge.net/), a GRIDSS input category corresponds to a CORTEX graph colour.
+
+### BLACKLIST
+
+BED blacklist of regions to exclude from analysis. The [ENCODE DAC blacklist](https://www.encodeproject.org/annotations/ENCSR636HFF/)
+is recommended when aligning against hg19.
 
 ### READ_PAIR_CONCORDANT_PERCENT
 
