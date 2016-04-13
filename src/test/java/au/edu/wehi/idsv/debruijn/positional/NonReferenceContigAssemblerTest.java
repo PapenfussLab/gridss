@@ -150,7 +150,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 	public void should_remove_fully_reference_evidence() {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
-		SoftClipEvidence sce = SCE(FWD, withSequence("ACGTGGTCGACC", Read(0, 50, "6M6S")));
+		SoftClipEvidence sce =     SCE(FWD, withSequence("ACGTGGTCGACC", Read(0, 50, "6M6S")));
 		SoftClipEvidence fullref = SCE(FWD, withSequence("ACGTGG", Read(0, 50, "5M1S")));
 		List<SAMRecordAssemblyEvidence> output = go(pc, true, sce, fullref);
 		assertEquals(1, output.size());

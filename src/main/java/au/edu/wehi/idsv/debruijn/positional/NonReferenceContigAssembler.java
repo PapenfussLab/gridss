@@ -63,7 +63,13 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	 * This is high as orphaned subgraphs are relatively uncommon
 	 * This value is in multiples of maxEvidenceDistance
 	 */
-	private static final int ORPHAN_EVIDENCE_MULTIPLE = 128;
+	private static final float ORPHAN_EVIDENCE_MULTIPLE = 128;
+	/**
+	 * Chunk size (in multiples of maxEvidenceWidth) to load at any one time.
+	 * Larger chunks increase memory consumption by reduce the number of
+	 * memoization recalculations required.
+	 */
+	private static final float EVIDENCE_WIDTH_LOADING_MULTIPLE = 2;
 	/**
 	 * TODO: check to see if this is worth doing
 	 * Simplication reduces the graph size, but may trigger
@@ -75,8 +81,6 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	private SortedSet<KmerPathNode> graphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByFirstStartKmer);
 	private final EvidenceTracker evidenceTracker;
 	private final AssemblyEvidenceSource aes;
-	private MemoizedContigCaller contigCaller;
-	private int contigsCalled = 0;
 	/**
 	 * Worst case scenario is a RP providing single kmer support for contig
 	 * read length - (k-1) + max-min fragment size
@@ -97,7 +101,10 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	private final int k;
 	private final int referenceIndex;
 	private final ContigStats stats = new ContigStats();
-	private final KmerPathNodeIteratorInterceptor wrapper;
+	private final PeekingIterator<KmerPathNode> underlying;
+	private int lastUnderlyingStartPosition = Integer.MIN_VALUE;
+	private MemoizedContigCaller contigCaller;
+	private int contigsCalled = 0;
 	private long consumed = 0;
 	private PositionalDeBruijnGraphTracker exportTracker = null;
 	public int getReferenceIndex() { return referenceIndex; }
@@ -121,48 +128,52 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			int k,
 			AssemblyEvidenceSource source,
 			EvidenceTracker tracker) {
-		this.wrapper = new KmerPathNodeIteratorInterceptor(it);
+		this.underlying = Iterators.peekingIterator(it);
 		this.maxEvidenceDistance = maxEvidenceDistance;
 		this.maxAnchorLength = maxAnchorLength;
 		this.k = k;
 		this.referenceIndex = referenceIndex;
 		this.aes = source;
 		this.evidenceTracker = tracker;
-		this.contigCaller = new MemoizedContigCaller(this.wrapper, maxEvidenceDistance);
+		this.contigCaller = new MemoizedContigCaller(maxEvidenceDistance);
 	}
 	@Override
 	protected SAMRecordAssemblyEvidence computeNext() {
 		SAMRecordAssemblyEvidence calledContig;
 		do {
-			removeOrphanedNonReferenceSubgraphs();
 			ArrayDeque<KmerPathSubnode> bestContig = findBestContig();
 			if (bestContig == null) {
 				// no more contigs :(
-				if (wrapper.hasNext()) {
-					log.error(" Sanity check failure: end of contigs called before all evidence loaded");
+				if (underlying.hasNext()) {
+					log.error("Sanity check failure: end of contigs called before all evidence loaded");
 				}
+				removeOrphanedNonReferenceSubgraphs();
 				if (!graphByPosition.isEmpty()) {
-					log.error(" Sanity check failure: non-empty graph with no contigs called");
+					log.error("Sanity check failure: non-empty graph with no contigs called");
 				}
 				return endOfData();
 			}
 			calledContig = callContig(bestContig);
-		} while (calledContig == null); // if we filtered out our contig, go back 
+		} while (calledContig == null); // if we filtered out our contig, go back
 		return calledContig;
 	}
 	private ArrayDeque<KmerPathSubnode> findBestContig() {
 		ArrayDeque<KmerPathSubnode> contig;
 		try {
-			contig = contigCaller.bestContig();
+			contig = contigCaller.bestContig(nextPosition());
+			while (contig == null && underlying.hasNext()) {
+				advanceUnderlying();
+				contig = contigCaller.bestContig(nextPosition());
+			}
 		} catch (AssertionError|SanityCheckFailureException ex) {
 			// Defensive programming: if there are any remaining bugs
 			// in the memoization caching, at least we won't crash GRIDSS
 			log.debug(ex, "Reinitialising memoization");
-			contigCaller = new MemoizedContigCaller(wrapper, maxEvidenceDistance);
+			contigCaller = new MemoizedContigCaller(maxEvidenceDistance);
 			for (KmerPathNode n : graphByPosition) {
 				contigCaller.add(n);
 			}
-			contig = contigCaller.bestContig();
+			contig = contigCaller.bestContig(nextPosition());
 		}
 		if (Defaults.SANITY_CHECK_MEMOIZATION) {
 			verifyMemoization();
@@ -177,17 +188,46 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		}
 		return contig;
 	}
+	private int nextPosition() {
+		if (!underlying.hasNext()) return Integer.MAX_VALUE;
+		return underlying.peek().firstStart();
+	}
+	/**
+	 * Loads additional nodes into the graph
+	 * 
+	 * By loaded in batches, we reduce our memoization runtime
+	 */
+	private void advanceUnderlying() {
+		int loadUntil = nextPosition();
+		if (loadUntil < Integer.MAX_VALUE) {
+			loadUntil += (int)(EVIDENCE_WIDTH_LOADING_MULTIPLE * maxEvidenceDistance);
+		}
+		removeOrphanedNonReferenceSubgraphs();
+		advanceUnderlying(loadUntil);
+	}
+	private void advanceUnderlying(int loadUntil) {
+		while (underlying.hasNext() && nextPosition() <= loadUntil) {
+			KmerPathNode node = underlying.next();
+			assert(lastUnderlyingStartPosition <= node.firstStart());
+			lastUnderlyingStartPosition = node.firstStart();
+			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
+				assert(evidenceTracker.matchesExpected(new KmerPathSubnode(node)));
+			}
+			addToGraph(node);
+			consumed++;
+		}
+	}
 	/**
 	 * Verifies that the memoization matches a freshly calculated memoization 
 	 * @param contig
 	 */
 	private boolean verifyMemoization() {
 		int preGraphSize = graphByPosition.size();
-		MemoizedContigCaller mcc = new MemoizedContigCaller(wrapper, maxEvidenceDistance);
+		MemoizedContigCaller mcc = new MemoizedContigCaller(maxEvidenceDistance);
 		for (KmerPathNode n : graphByPosition) {
 			mcc.add(n);
 		}
-		mcc.bestContig(false);
+		mcc.bestContig(nextPosition());
 		contigCaller.sanityCheckMatches(mcc);
 		int postGraphSize = graphByPosition.size();
 		assert(preGraphSize == postGraphSize);
@@ -208,12 +248,9 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		startAnchorPath.greedyTraverse(true, false);
 		ArrayDeque<KmerPathSubnode> startingAnchor = startAnchorPath.headNode().asSubnodes();
 		startingAnchor.removeLast();
-		while (wrapper.hasNext() && contig.getLast().lastEnd() + targetAnchorLength + maxEvidenceDistance > wrapper.lastPosition()) {
-			// make sure we have enough of the graph loaded so that when
-			// we traverse forward, our anchor sequence will be fully defined
-			KmerPathNode node = wrapper.next();
-			contigCaller.add(node);
-		}
+		// make sure we have enough of the graph loaded so that when
+		// we traverse forward, our anchor sequence will be fully defined
+		advanceUnderlying(contig.getLast().lastEnd() + targetAnchorLength + maxEvidenceDistance);
 		KmerPathNodePath endAnchorPath = new KmerPathNodePath(contig.getLast(), true, targetAnchorLength + maxEvidenceDistance + contig.getLast().length());
 		endAnchorPath.greedyTraverse(true, false);
 		ArrayDeque<KmerPathSubnode> endingAnchor = endAnchorPath.headNode().asSubnodes();
@@ -342,8 +379,8 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			for (int i = 0; i < e.length(); i++) {
 				KmerSupportNode support = e.node(i);
 				if (support != null) {
-					if (support.lastEnd() > wrapper.lastPosition()) {
-						log.error(String.format(" Sanity check failure: %s extending to %d removed when input at %d", e, support.lastEnd(), wrapper.lastPosition()));
+					if (support.lastEnd() >= nextPosition()) {
+						log.error(String.format(" Sanity check failure: %s extending to %d removed when input at %d", e, support.lastEnd(), nextPosition()));
 						// try to recover
 					}
 					updateRemovalList(toRemove, support);
@@ -364,7 +401,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		}
 		if (Defaults.SANITY_CHECK_MEMOIZATION) {
 			// Force memoization recalculation now
-			contigCaller.bestContig(false);
+			contigCaller.bestContig(nextPosition());
 			// so we can check that our removal was correct
 			verifyMemoization();
 		}
@@ -380,25 +417,25 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	}
 	private void simplify(KmerPathNode node, Set<KmerPathNode> simplifyCandidates) {
 		simplifyCandidates.remove(node);
-		if (node.lastEnd() >= wrapper.lastPosition()) {
+		if (node.lastEnd() >= nextPosition() - 1) {
 			// don't simplify graph if we haven't actually loaded all the relevant nodes
 			return;
 		}
 		KmerPathNode prev = node.prevToMergeWith();
-		if (prev != null && prev.lastEnd() < wrapper.lastPosition()) {
+		if (prev != null && prev.lastEnd() < lastUnderlyingStartPosition) {
 			simplifyCandidates.remove(prev);
 			removeFromGraph(node, true);
 			removeFromGraph(prev, true);
 			node.prepend(prev);
-			addToGraph(node, true);
+			addToGraph(node);
 		}
 		KmerPathNode next = node.nextToMergeWith();
-		if (next != null && next.lastEnd() < wrapper.lastPosition()) {
+		if (next != null && next.lastEnd() < lastUnderlyingStartPosition) {
 			simplifyCandidates.remove(next);
 			removeFromGraph(node, true);
 			removeFromGraph(next, true);
 			next.prepend(node);
-			addToGraph(next, true);
+			addToGraph(next);
 		}
 	}
 	private void updateRemovalList(Map<KmerPathNode, List<List<KmerNode>>> toRemove, KmerSupportNode support) {
@@ -442,11 +479,11 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 				assert(evidenceTracker.matchesExpected(new KmerPathSubnode(split)));
 			}
-			addToGraph(split, true);
+			addToGraph(split);
 		}
 		simplifyCandidates.addAll(replacementNodes);
 	}
-	private void addToGraph(KmerPathNode node, boolean includeMemoizationAddition) {
+	private void addToGraph(KmerPathNode node) {
 		boolean added = graphByPosition.add(node);
 		assert(added);
 		for (int i = 0; i < node.length(); i++) {
@@ -455,9 +492,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		for (int i = 0; i < node.collapsedKmers().size(); i++) {
 			addToGraph(new KmerPathNodeKmerNode(i, node));
 		}
-		if (includeMemoizationAddition) {
-			contigCaller.add(node);
-		}
+		contigCaller.add(node);
 	}
 	private void removeFromGraph(KmerPathNode node, boolean includeMemoizationRemoval) {
 		if (includeMemoizationRemoval) {
@@ -504,7 +539,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	 */
 	private void removeOrphanedNonReferenceSubgraphs() {
 		if (graphByPosition.isEmpty()) return;
-		if (graphByPosition.first().firstStart() >= wrapper.lastPosition() - ORPHAN_EVIDENCE_MULTIPLE * maxEvidenceDistance) return;
+		if (graphByPosition.first().firstStart() >= nextPosition() - ORPHAN_EVIDENCE_MULTIPLE * maxEvidenceDistance) return;
 		int lastEnd = Integer.MIN_VALUE;
 		List<KmerPathNode> nonRefOrphaned = new ArrayList<KmerPathNode>();
 		List<KmerPathNode> nonRefActive = new ArrayList<KmerPathNode>();
@@ -526,7 +561,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 				nonRefOrphaned.addAll(nonRefActive);
 				nonRefActive.clear();
 			}
-			if (!n.isReference() || n.lastEnd() >= wrapper.lastPosition() - maxEvidenceDistance) {
+			if (!n.isReference() || n.lastEnd() >= nextPosition() - maxEvidenceDistance) {
 				// could connect to a reference node
 				nonRefActive.clear();
 				break;
@@ -548,48 +583,6 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			}
 		}
 	}
-	/**
-	 * Intercepts the underlying stream and adds nodes to the graph as they are encountered
-	 * @author Daniel Cameron
-	 *
-	 */
-	private class KmerPathNodeIteratorInterceptor implements PeekingIterator<KmerPathNode> {
-		private final PeekingIterator<KmerPathNode> underlying;
-		private int position = Integer.MIN_VALUE;
-		public int lastPosition() { return position; }
-		public KmerPathNodeIteratorInterceptor(Iterator<KmerPathNode> it) {
-			this.underlying = Iterators.peekingIterator(it);
-		}
-		@Override
-		public boolean hasNext() {
-			boolean hasNext = underlying.hasNext();
-			if (!hasNext) {
-				position = Integer.MAX_VALUE;
-			}
-			return hasNext;
-		}
-		@Override
-		public KmerPathNode next() {
-			KmerPathNode node = underlying.next();
-			assert(position <= node.firstStart()); // check that we are indeed order by the starting of the first kmer 
-			consumed++;
-			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
-				assert(evidenceTracker.matchesExpected(new KmerPathSubnode(node)));
-			}
-			addToGraph(node, false);
-			position = node.firstStart();
-			return node;
-		}
-		@Override
-		public KmerPathNode peek() {
-			return underlying.peek();
-		}
-		@Override
-		public void remove() {
-			underlying.remove();
-		}
-	}
-	@SuppressWarnings("unused")
 	public boolean sanityCheck() {
 		graphByKmerNode.entrySet().stream().flatMap(e -> e.getValue().stream()).forEach(kn -> { 
 			assert(kn.node().isValid());
@@ -601,7 +594,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		}
 		if (Defaults.SANITY_CHECK_MEMOIZATION && MemoizedContigCaller.ASSERT_ALL_OPERATIONS) {
 			assert(contigCaller.sanityCheck());
-			assert(contigCaller.sanityCheckFrontier());
+			assert(contigCaller.sanityCheckFrontier(nextPosition()));
 		}
 		return true;
 	}
@@ -629,7 +622,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		return consumed;
 	}
 	public int tracking_inputPosition() {
-		return wrapper.lastPosition();
+		return nextPosition();
 	}
 	public int tracking_firstPosition() {
 		if (graphByPosition.size() == 0) return Integer.MAX_VALUE;
@@ -643,5 +636,8 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	}
 	public ContigStats tracking_lastContig() {
 		return stats;
+	}
+	public int tracking_contigsCalled() {
+		return contigsCalled;
 	}
 }

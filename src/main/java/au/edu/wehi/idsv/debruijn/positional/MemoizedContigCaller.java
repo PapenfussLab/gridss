@@ -19,7 +19,6 @@ import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker.MemoizationStats;
 
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.PeekingIterator;
 
 
 /**
@@ -55,13 +54,7 @@ import com.google.common.collect.PeekingIterator;
  */
 public class MemoizedContigCaller extends ContigCaller {
 	private static final Log log = Log.getInstance(MemoizedContigCaller.class);
-	static final boolean ASSERT_ALL_OPERATIONS = false;
-	/**
-	 * Chunk size (in multiples of maxEvidenceWidth) to load at any one time.
-	 * Larger chunks increase memory consumption by reduce the number of
-	 * memoization recalculations required.
-	 */
-	private static final int EVIDENCE_WIDTH_LOADING_MULTIPLE = 2;
+	static final boolean ASSERT_ALL_OPERATIONS = true;
 	/**
 	 * Path scores in order of descending score
 	 */
@@ -105,10 +98,8 @@ public class MemoizedContigCaller extends ContigCaller {
 			frontierByPathStart.removeAll(tn);
 		}
 	}
-	public MemoizedContigCaller(
-			PeekingIterator<KmerPathNode> it,
-			int maxEvidenceWidth) {
-		super(it, maxEvidenceWidth);
+	public MemoizedContigCaller(int maxEvidenceWidth) {
+		super(maxEvidenceWidth);
 	}
 	/**
 	 * Adds a new node to the graph.
@@ -169,14 +160,15 @@ public class MemoizedContigCaller extends ContigCaller {
 	 * we need node B to have a valid successor C and there to exist a node X such that ... ?
 	 * 
 	 */
-	private void advanceFrontier() {
+	private void advanceFrontier(int unprocessedPosition) {
 		// Can only advance frontier if all possible successors are guaranteed to be loaded
-		while (!frontier.isEmptyFrontier() && frontier.peekFrontier().node.lastEnd() < nextPosition() - 1) {
-			visit(frontier.pollFrontier());
+		while (!frontier.isEmptyFrontier() && frontier.peekFrontier().node.lastEnd() < unprocessedPosition - 1) {
+			TraversalNode tn = frontier.pollFrontier();
+			visit(tn, unprocessedPosition);
 		}
 		if (Defaults.SANITY_CHECK_MEMOIZATION && ASSERT_ALL_OPERATIONS) {
 			sanityCheck();
-			sanityCheckFrontier();
+			sanityCheckFrontier(unprocessedPosition);
 		}
 	}
 	/**
@@ -184,8 +176,8 @@ public class MemoizedContigCaller extends ContigCaller {
 	 * 
 	 * @param node node to visit
 	 */
-	private void visit(TraversalNode node) {
-		assert(node.node.lastEnd() + 1 < nextPosition()); // successors must be fully defined
+	private void visit(TraversalNode node, int unprocessedPosition) {
+		assert(node.node.lastEnd() + 1 < unprocessedPosition); // successors must be fully defined
 		if (node.node.isReference()) {
 			// Reset reference traversal to a starting path
 			node = new TraversalNode(new KmerPathSubnode(node.node.node()), ANCHORED_SCORE - node.node.node().weight());
@@ -193,7 +185,7 @@ public class MemoizedContigCaller extends ContigCaller {
 		for (KmerPathSubnode sn : node.node.next()) {
 			if (!frontier.isMemoized(sn.node())) {
 				throw new SanityCheckFailureException(String.format("Subnode %s reachable from %s not memoized. [%s, maxVisitedEndPosition=%d, nextPosition=%d]",
-						sn, node, frontier, maxVisitedEndPosition, nextPosition()).replace('\n', ' '));
+						sn, node, frontier, maxVisitedEndPosition, unprocessedPosition).replace('\n', ' '));
 			}
 			
 			if (sn.node().isReference() && node.node.isReference()) {
@@ -276,10 +268,10 @@ public class MemoizedContigCaller extends ContigCaller {
 	 * Can only call best contig when at least maxEvidenceWidth
 	 * bases exist between the end of the contig and the start of 
 	 * the closest incomplete contig.
+	 * @param unprocessedPosition 
 	 */
-	private boolean canCallBestContig() {
+	private boolean canCallBestContig(int unprocessedPosition) {
 		if (contigByScore.isEmpty()) return false;
-		int unprocessedPosition = nextPosition();
 		if (!frontierByPathStart.isEmpty()) {
 			int frontierPathFirstStart = frontierByPathStart.first().pathFirstStart();
 			unprocessedPosition = Math.min(unprocessedPosition, frontierPathFirstStart);
@@ -288,21 +280,10 @@ public class MemoizedContigCaller extends ContigCaller {
 		return bestContigLastEnd < unprocessedPosition - maxEvidenceWidth - 1;
 	}
 	@Override
-	public ArrayDeque<KmerPathSubnode> bestContig() {
-		return bestContig(true);
-	}
-	public ArrayDeque<KmerPathSubnode> bestContig(boolean advanceUnderlying) {
-		advanceFrontier();
-		while (advanceUnderlying && underlying.hasNext() && !canCallBestContig()) {
-			// by loading all nodes within maxEvidenceDistance, we guarantee
-			// that all final nodes of incomplete memoized paths
-			// can be fully memoized.
-			int loadBefore = nextPosition() + EVIDENCE_WIDTH_LOADING_MULTIPLE * maxEvidenceWidth;
-			while (underlying.hasNext() && nextPosition() <= loadBefore) {
-				KmerPathNode n = underlying.next();
-				add(n);
-			}
-			advanceFrontier();
+	public ArrayDeque<KmerPathSubnode> bestContig(int unprocessedPosition) {
+		advanceFrontier(unprocessedPosition);
+		if (!canCallBestContig(unprocessedPosition)) {
+			return null;
 		}
 		if (contigByScore.isEmpty()) return null;
 		TraversalNode tn = contigByScore.first();
@@ -366,6 +347,7 @@ public class MemoizedContigCaller extends ContigCaller {
 				}
 			}
 		}
+		assert(frontier.tracking_frontierSize() == frontierByPathStart.size());
 		for (TraversalNode tn : frontierByPathStart) {
 			assert(frontier.memoized(tn.node.node()).contains(tn));
 		}
@@ -374,9 +356,9 @@ public class MemoizedContigCaller extends ContigCaller {
 	/*
 	 * Checks that all possible frontier nodes have indeed been traversed 
 	 */
-	public boolean sanityCheckFrontier() {
+	public boolean sanityCheckFrontier(int unprocessedPosition) {
 		for (TraversalNode tn : frontierByPathStart) {
-			assert(tn.node.lastEnd() + 1 >= nextPosition());
+			assert(tn.node.lastEnd() + 1 >= unprocessedPosition);
 		}
 		return true;
 	}

@@ -7,10 +7,7 @@ import java.util.Set;
 
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker.MemoizationStats;
 
-import com.google.common.collect.PeekingIterator;
-
 public abstract class ContigCaller {
-
 	/**
 	 * Since reference kmers are not scored, calculating 
 	 * highest weighted results in a preference for paths
@@ -23,8 +20,8 @@ public abstract class ContigCaller {
 	 * the largest expected score.
 	 */
 	protected static final int ANCHORED_SCORE = Integer.MAX_VALUE >> 2;
-
-	public abstract ArrayDeque<KmerPathSubnode> bestContig();
+	
+	public abstract ArrayDeque<KmerPathSubnode> bestContig(int unprocessedPosition);
 	/**
 	 * Exports the internal state for debugging purposes
 	 * @param file
@@ -43,16 +40,8 @@ public abstract class ContigCaller {
 	public void remove(KmerPathNode node) { }
 	public void remove(Set<KmerPathNode> keySet) { }
 
-	protected final PeekingIterator<KmerPathNode> underlying;
 	protected final int maxEvidenceWidth;
-	public int nextPosition() {
-		if (!underlying.hasNext()) return Integer.MAX_VALUE;
-		return underlying.peek().firstStart();
-	}
-	public ContigCaller(
-			PeekingIterator<KmerPathNode> it,
-			int maxEvidenceWidth) {
-		this.underlying = it;
+	public ContigCaller(int maxEvidenceWidth) {
 		this.maxEvidenceWidth = maxEvidenceWidth;
 	}
 	public abstract boolean sanityCheck();
