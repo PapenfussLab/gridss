@@ -55,7 +55,7 @@ public class Idsv extends CommandLineProgram {
 	private static final Log log = Log.getInstance(Idsv.class);
 	@Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Coordinate-sorted input BAM file.")
     public List<File> INPUT;
-	@Option(shortName="IC", doc="Input category. Variant calling evidence is reported for categories 0 (default) to the maximum category specified. "
+	@Option(shortName="IC", doc="Input category. Variant calling evidence is reported from category 1 (default) to the maximum category specified. "
 			+ "Specify categories when you require a breakdown of support (eg tumour/normal or multi-sample variant calling). ", optional=true)
     public List<Integer> INPUT_CATEGORY;	
     @Option(doc = "Per input maximum concordant fragment size.", optional=true)
@@ -110,7 +110,7 @@ public class Idsv extends CommandLineProgram {
     	for (int i = 0; i < INPUT.size(); i++) {
     		samEvidence.add(constructSamEvidenceSource(
     				getOffset(INPUT, i, null),
-    				getOffset(INPUT_CATEGORY, i, 0),
+    				getOffset(INPUT_CATEGORY, i, 0) - 1,
     				getOffset(INPUT_MIN_FRAGMENT_SIZE, i, 0),
     				getOffset(INPUT_MAX_FRAGMENT_SIZE, i, 0)));
     	}
@@ -203,6 +203,14 @@ public class Idsv extends CommandLineProgram {
     		log.error("INPUT_CATEGORY must omitted or specified for every INPUT.");
     		return -1;
     	}
+    	if (INPUT_CATEGORY != null && INPUT_CATEGORY.stream().anyMatch(x -> x == null)) {
+    		log.error("INPUT_CATEGORY must omitted or specified for every INPUT.");
+    		return -1;
+    	}
+    	if (INPUT_CATEGORY != null && INPUT_CATEGORY.stream().anyMatch(x -> x <= 0)) {
+    		log.error("INPUT_CATEGORY must be positive integers: negative or zero categories are not valid.");
+    		return -1;
+    	}
     	ensureArgs();
     	ExecutorService threadpool = null;
     	try {
@@ -211,9 +219,10 @@ public class Idsv extends CommandLineProgram {
     		ensureDictionariesMatch();
     		// Spam output with gridss parameters used
     		getContext();
-    		if (INPUT_CATEGORY != null && INPUT_CATEGORY.stream().mapToInt(x -> x).distinct().count() <
-    				 INPUT_CATEGORY.stream().mapToInt(x -> x).max().orElse(0) - 8) {
-        		log.warn("Missing more than 8 INPUT_CATEGORY indicies. Performance is likely to be degraded.");
+    		if (INPUT_CATEGORY != null && INPUT_CATEGORY.stream().mapToInt(x -> x - 1).distinct().count() <
+    				 INPUT_CATEGORY.stream().mapToInt(x -> x - 1).max().orElse(0) - 8) {
+        		log.warn("Missing a large number of INPUT_CATEGORY indicies. "
+        				+ "Performance is likely to be degraded since unused categories are still computed and stored.");
         	}
     		// Force loading of aligner up-front
     		log.info("Loading aligner");
