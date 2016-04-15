@@ -3,7 +3,7 @@
 A high-speed next-gen sequencing structural variation caller.
 GRIDSS calls variants based on alignment-guided positional de Bruijn graph breakpoint assembly, split read, and read pair evidence.
 
-*Important Note: GRIDSS performance is severely degraded in telemeric and centromeric sequences (10-1000x slower). Use a blacklist such as the [ENCODE DAC blacklist](https://www.encodeproject.org/annotations/ENCSR636HFF/) to filter these regions for good performance.*
+*Important Note: GRIDSS performance is severely degraded in telemeric and centromeric sequences (10-1000x slower). Use a blacklist such as the [ENCODE DAC blacklist](https://www.encodeproject.org/annotations/ENCSR636HFF/) to filter these regions.*
 
 # Pre-requisities
 
