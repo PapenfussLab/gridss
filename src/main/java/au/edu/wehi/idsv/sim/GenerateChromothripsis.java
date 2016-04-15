@@ -3,6 +3,7 @@ package au.edu.wehi.idsv.sim;
 import htsjdk.samtools.util.IOUtil;
 
 import java.io.File;
+import java.util.Locale;
 
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
@@ -28,6 +29,7 @@ public class GenerateChromothripsis extends SimulationGenerator {
     public String CLASS_FAMILY = "SINE/Alu";
     protected int doWork() {
         try {
+        	java.util.Locale.setDefault(Locale.ROOT);
         	IOUtil.assertFileIsReadable(REFERENCE);
         	GenomicProcessingContext pc = getProcessingContext();
         	FragmentedChromosome fc;

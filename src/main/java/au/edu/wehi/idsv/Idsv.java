@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -195,6 +196,8 @@ public class Idsv extends CommandLineProgram {
     }
     @Override
 	protected int doWork() {
+    	log.debug("Setting language-neutral locale");
+    	java.util.Locale.setDefault(Locale.ROOT);
     	if (INPUT == null || INPUT.size() == 0) {
     		log.error("No INPUT files specified.");
     		return -1;

@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import java.io.File;
+import java.util.Locale;
 
 import org.apache.commons.configuration.ConfigurationException;
 
@@ -35,6 +36,7 @@ public class BreakendToSimpleCall extends CommandLineProgram {
     }
 	@Override
 	protected int doWork() {
+    	java.util.Locale.setDefault(Locale.ROOT);
 		FileSystemContext fsc = new FileSystemContext(TMP_DIR.get(0), TMP_DIR.get(0), MAX_RECORDS_IN_RAM);
 		GridssConfiguration config;
 		try {
