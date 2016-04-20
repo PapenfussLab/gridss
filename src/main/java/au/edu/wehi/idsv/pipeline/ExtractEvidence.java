@@ -61,6 +61,7 @@ public class ExtractEvidence implements Closeable {
 	private final List<SAMFileWriter> rpwriters = Lists.newArrayList();
 	private final List<SAMFileWriter> matewriters = Lists.newArrayList();
 	private final List<FastqBreakpointWriter> realignmentWriters = Lists.newArrayList();
+	private boolean mapqWarned = false;
 	public void close() {
 		CloserUtil.close(reader);
 		reader = null;
@@ -256,6 +257,10 @@ public class ExtractEvidence implements Closeable {
 				collector.acceptRecord(record, null);
 				blacklist.acceptRecord(record);
 				progress.record(record);
+				if (mapqWarned && !record.getReadUnmappedFlag() && record.getMappingQuality() > source.getContext().getConfig().maxMapq) {
+					mapqWarned = true;
+					log.warn(String.format("Found unexpected mapping quality of %d in %s. Treating all mapping qualities above %d as zero", record.getMappingQuality(), source.getSourceFile(), source.getContext().getConfig().maxMapq));
+				}
 			}
 		} finally {
 			CloserUtil.close(iter);

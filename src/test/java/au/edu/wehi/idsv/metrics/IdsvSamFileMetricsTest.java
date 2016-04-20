@@ -10,6 +10,7 @@ import java.util.List;
 import org.junit.Test;
 
 import picard.analysis.InsertSizeMetrics;
+import picard.analysis.MapqMetrics;
 import au.edu.wehi.idsv.TestHelper;
 
 public class IdsvSamFileMetricsTest extends TestHelper {
@@ -17,13 +18,15 @@ public class IdsvSamFileMetricsTest extends TestHelper {
 	public void wrapper_inner_metrics() {
 		IdsvMetrics im = new IdsvMetrics();
 		InsertSizeMetrics ism = new InsertSizeMetrics();
+		MapqMetrics mqm = new MapqMetrics();
 		List<CigarDetailMetrics> sc = new ArrayList<CigarDetailMetrics>();
 		InsertSizeDistribution isd = new InsertSizeDistribution(new int[] { 1}, new double[] { 1});
-		IdsvSamFileMetrics metrics = new IdsvSamFileMetrics(ism, im, isd, sc);
+		IdsvSamFileMetrics metrics = new IdsvSamFileMetrics(ism, im, mqm, isd, sc);
 		assertEquals(im, metrics.getIdsvMetrics());
 		assertEquals(isd, metrics.getInsertSizeDistribution());
 		assertEquals(ism, metrics.getInsertSizeMetrics());
 		assertEquals(sc, metrics.getCigarDetailMetrics());
+		assertEquals(mqm, metrics.getMapqMetrics());
 	}
 	@Test
 	public void getInsertSizeMetrics_should_use_most_plentiful_orientation() {

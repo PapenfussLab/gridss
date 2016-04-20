@@ -309,6 +309,7 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		nextList = null;
 		prevList = null;
 		additionalKmers = null;
+		totalWeight = 0;
 	}
 	public boolean isValid() {
 		return kmers != null;
@@ -651,8 +652,8 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		}
 		StringBuilder sb = new StringBuilder(String.format("[%d-%d]%s %dw ", firstStart(), firstEnd(), isReference() ? "R" : " ", weight()));
 		sb.append(KmerEncodingHelper.toApproximateString(firstKmer()));
-		sb.replace(sb.length() - 1, sb.length(), " ");
-		for (int i = 0; i < length(); i++) {
+		sb.append(' ');
+		for (int i = 1; i < length(); i++) {
 			sb.append((char)KmerEncodingHelper.lastBaseEncodedToPicardBase(kmer(i)));
 		}
 		sb.append(String.format(" (%d)", length()));
@@ -663,11 +664,18 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + end;
-		result = prime * result + ((kmers == null) ? 0 : kmers.hashCode());
-		result = prime * result + (reference ? 1231 : 1237);
 		result = prime * result + start;
-		result = prime * result + ((weight == null) ? 0 : weight.hashCode());
+		result = prime * result + end;
+		result = prime * result + totalWeight;
+		if (kmers != null) {
+			result = prime * result + Long.hashCode(kmers.getLong(0));
+			result = prime * result + Long.hashCode(kmers.getLong(kmers.size() - 1));
+		}
+		// incorporating these adds hash cost whilst giving minimal improvement
+		// to hash collision rate
+		//result = prime * result + ((kmers == null) ? 0 : kmers.hashCode());
+		//result = prime * result + (reference ? 1231 : 1237);
+		//result = prime * result + ((weight == null) ? 0 : weight.hashCode());
 		return result;
 	}
 	@Override
@@ -696,6 +704,22 @@ public class KmerPathNode implements KmerNode, DeBruijnSequenceGraphNode {
 		} else if (!weight.equals(other.weight))
 			return false;
 		return true;
+	}
+	/**
+	 * Removes the given node from the graph.
+	 */
+	public void remove() {
+		for (KmerPathNode n : next()) {
+			boolean removed = CollectionUtil.removeByReference(n.prevList, this);
+			assert(removed);
+		}
+		nextList = null;
+		for (KmerPathNode n : prevList) {
+			boolean removed = CollectionUtil.removeByReference(n.nextList, this);
+			assert(removed);
+		}
+		prevList = null;
+		invalidate();
 	}
 	private KmerPathNode removeKmer(int offset) {
 		assert(offset >= 0);

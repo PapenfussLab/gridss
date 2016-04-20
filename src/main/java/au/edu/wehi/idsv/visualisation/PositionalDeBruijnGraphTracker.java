@@ -8,14 +8,12 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayDeque;
 
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.positional.AggregateNodeIterator;
-import au.edu.wehi.idsv.debruijn.positional.BestNonReferenceContigCaller;
 import au.edu.wehi.idsv.debruijn.positional.CollapseIterator;
 import au.edu.wehi.idsv.debruijn.positional.EvidenceTracker;
-import au.edu.wehi.idsv.debruijn.positional.KmerPathSubnode;
+import au.edu.wehi.idsv.debruijn.positional.MemoizedContigCaller;
 import au.edu.wehi.idsv.debruijn.positional.NonReferenceContigAssembler;
 import au.edu.wehi.idsv.debruijn.positional.PathNodeIterator;
 import au.edu.wehi.idsv.debruijn.positional.PathSimplificationIterator;
@@ -28,6 +26,35 @@ import au.edu.wehi.idsv.debruijn.positional.SupportNodeIterator;
  */
 public class PositionalDeBruijnGraphTracker implements Closeable {
 	private Log log = Log.getInstance(PositionalDeBruijnGraphTracker.class);
+	public static class ContigStats {
+		public int contigStartPosition;
+		public int contigNodes;
+		public int startAnchorNodes;
+		public int endAnchorNodes;
+		public int truncatedNodes;
+		public static String header() {
+			return "contigStartPosition,contigNodeSize,contigStartAnchorNodeSize,contigEndAnchorNodeSize,contigTruncatedNodeSize";
+		}
+		@Override
+		public String toString() {
+			return String.format("%d,%d,%d,%d,%d", contigStartPosition,contigNodes,startAnchorNodes,endAnchorNodes,truncatedNodes);
+		}
+	}
+	public static class MemoizationStats {
+		public int nodes;
+		public int removed;
+		public int pathsRemoved;
+		public int descendentPathsRemoved;
+		public int pathsReset;
+		public int pathsRestarted;
+		public static String header() {
+			return "memoizedSize,memoizedRemovalSize,memoizedPathsRemovalSize,descendentPathsRemovalSize,memoizedPathsReactivateSize,memoizedPathsRestartSize";
+		}
+		@Override
+		public String toString() {
+			return String.format("%d,%d,%d,%d,%d,%d", nodes, removed, pathsRemoved, descendentPathsRemoved, pathsReset, pathsRestarted);
+		}
+	}
 	private BufferedWriter writer;
 	private SupportNodeIterator support;
 	private AggregateNodeIterator aggregate;
@@ -56,8 +83,8 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 	}
 	public void writeHeader() throws IOException {
 		if (writer == null) return;
-		writer.write("supportPosition,aggregatePosition,pathNodePosition,collapsePosition,simplifyPosition,firstContigPosition,calledContigPosition,assemblerPosition,assemblerFirstPosition");
-		writer.write(",supportConsumed,aggregateConsumed,pathNodeConsumed,collapseConsumed,simplifyConsumed,contigConsumed,assemblerConsumed,trackerConsumed");
+		writer.write("supportPosition,aggregatePosition,pathNodePosition,collapsePosition,simplifyPosition,assemblerPosition,assemblerFirstPosition");
+		writer.write(",supportConsumed,aggregateConsumed,pathNodeConsumed,collapseConsumed,simplifyConsumed,assemblerConsumed,trackerConsumed");
 		writer.write(",trackerActive");
 		writer.write(",supportProcessedSize");
 		writer.write(",aggregateProcessedSize,aggregateQueueSize,aggregateActiveSize");
@@ -65,17 +92,20 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 		writer.write(",collapseProcessedSize,collapseUnprocessedSize,collapseTraversalCount,collapsedBranchCount,collapsedLeafCount");
 		writer.write(",simplifyProcessedSize,simplifyLookupSize,simplifyUnprocessedSize,simplifiedCount");
 		writer.write(",trackerLookupSize");
-		writer.write(",contigSize,contigFrontierSize,contigMemoizedSize,contigUnprocessedSize");
+		writer.write(",contigFrontierSize,contigMemoizedSize");
 		writer.write(",assemblyActiveSize");
+		writer.write(",");
+		writer.write(ContigStats.header());
+		writer.write(",");
+		writer.write(MemoizationStats.header());
 		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			writer.write(",aggregateKmerMaxActive,aggregateActiveNodes,pathNodeEdgeMaxActive,pathNodePathMaxActive,trackerMaxKmerSupport,assemblyMaxActive,trackerLookupSize");
 		}
 		writer.write('\n');
 	}
-	public void trackAssembly(BestNonReferenceContigCaller caller, ArrayDeque<KmerPathSubnode> bestContig) {
+	public void trackAssembly(MemoizedContigCaller caller) {
 		if (writer == null) return;
 		try {
-			ArrayDeque<KmerPathSubnode> called = bestContig;
 			writer.write(Integer.toString(support.tracking_inputPosition()));
 			writer.write(',');
 			writer.write(Integer.toString(aggregate.tracking_inputPosition()));
@@ -85,10 +115,6 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 			if (collapse != null) writer.write(Integer.toString(collapse.tracking_inputPosition()));
 			writer.write(',');
 			if (simplify != null) writer.write(Integer.toString(simplify.tracking_inputPosition()));
-			writer.write(',');
-			writer.write(Integer.toString(caller.tracking_contigFirstPosition()));
-			writer.write(',');
-			if (called != null) writer.write(Integer.toString(called.getFirst().firstStart()));
 			writer.write(',');
 			writer.write(Integer.toString(assembler.tracking_firstPosition()));
 			writer.write(',');
@@ -103,8 +129,6 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 			if (collapse != null) writer.write(Long.toString(collapse.tracking_underlyingConsumed()));
 			writer.write(',');
 			if (simplify != null) writer.write(Long.toString(simplify.tracking_underlyingConsumed()));
-			writer.write(',');
-			writer.write(Long.toString(caller.tracking_underlyingConsumed()));
 			writer.write(',');
 			writer.write(Long.toString(assembler.tracking_underlyingConsumed()));
 			writer.write(',');
@@ -148,16 +172,15 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 			writer.write(',');
 			writer.write(Integer.toString(tracker.tracking_kmerCount()));
 			writer.write(',');
-			writer.write(Integer.toString(caller.tracking_contigCount()));
-			writer.write(',');
 			writer.write(Integer.toString(caller.tracking_frontierSize()));
 			writer.write(',');
 			writer.write(Integer.toString(caller.tracking_memoizedNodeCount()));
 			writer.write(',');
-			writer.write(Integer.toString(caller.tracking_unprocessedStartNodeCount()));
-			writer.write(',');
 			writer.write(Integer.toString(assembler.tracking_activeNodes()));
-			
+			writer.write(',');
+			writer.write(assembler.tracking_lastContig().toString());
+			writer.write(',');
+			writer.write(caller.tracking_lastRemoval().toString());
 			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 				writer.write(',');
 				writer.write(Integer.toString(aggregate.tracking_aggregatorKmerMaxActiveNodeCount()));

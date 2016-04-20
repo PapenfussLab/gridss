@@ -3,31 +3,26 @@ package au.edu.wehi.idsv.debruijn.positional;
 import htsjdk.samtools.util.Log;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
-import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.NavigableMap;
 import java.util.Set;
 import java.util.SortedSet;
-import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.tuple.ImmutableTriple;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.AssemblyFactory;
@@ -41,14 +36,13 @@ import au.edu.wehi.idsv.graph.ScalingHelper;
 import au.edu.wehi.idsv.model.Models;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
+import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker.ContigStats;
 import au.edu.wehi.idsv.visualisation.PositionalExporter;
 
+import com.google.api.client.util.Lists;
 import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Multiset;
-import com.google.common.collect.SortedMultiset;
-import com.google.common.collect.TreeMultiset;
+import com.google.common.collect.PeekingIterator;
 
 
 /**
@@ -60,11 +54,45 @@ import com.google.common.collect.TreeMultiset;
 public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssemblyEvidence> {
 	private static final Log log = Log.getInstance(NonReferenceContigAssembler.class);
 	/**
+	 * Debugging tracker to ensure memoization export files have unique names
+	 */
+	private static final AtomicInteger pathExportCount = new AtomicInteger();
+	/**
 	 * Positional size of the loaded subgraph before orphan calling is performed.
-	 * This is relatively high as orphaned subgraphs are relatively uncommon
+	 * This is high as orphaned subgraphs are relatively uncommon
 	 * This value is in multiples of maxEvidenceDistance
 	 */
-	private static final int ORPHAN_EVIDENCE_MULTIPLE = 32;
+	private static final float ORPHAN_EVIDENCE_MULTIPLE = 128;
+	/**
+	 * Chunk size (in multiples of maxEvidenceWidth) to load at any one time.
+	 * Larger chunks increase memory consumption by reduce the number of
+	 * memoization recalculations required.
+	 */
+	private static final float EVIDENCE_WIDTH_LOADING_MULTIPLE = 1.5f;
+	/**
+	 * If the iterator has been advanced this many times without a best contig
+	 * identified, trigger the misassembly identification logic
+	 */
+	private static final int LONGEST_PATH_REMOVAL_ADVANCEMENT_TRIGGER_COUNT = 2;
+	/**
+	 * Since reference kmers are not scored, calculating 
+	 * highest weighted results in a preference for paths
+	 * ending at a RP with sequencing errors over a path
+	 * anchored to the reference. 
+	 * 
+	 * To ensure that the anchored paths are scored higher
+	 * than the unanchored paths, paths anchored to the
+	 * reference are given a score adjustment larger than
+	 * the largest expected score.
+	 */
+	static final int ANCHORED_SCORE = Integer.MAX_VALUE >> 2;
+	/**
+	 * TODO: check to see if this is worth doing
+	 * Simplication reduces the graph size, but may trigger
+	 * additional rememoization so might turn out to be a more
+	 * expensive approach overall
+	 */
+	private static final boolean SIMPLIFY_AFTER_REMOVAL = false; 
 	private Long2ObjectMap<Collection<KmerPathNodeKmerNode>> graphByKmerNode = new Long2ObjectOpenHashMap<Collection<KmerPathNodeKmerNode>>();
 	private SortedSet<KmerPathNode> graphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByFirstStartKmer);
 	private final EvidenceTracker evidenceTracker;
@@ -88,7 +116,13 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	private final int maxAnchorLength;
 	private final int k;
 	private final int referenceIndex;
-	private final KmerPathNodeIteratorInterceptor wrapper;
+	private final ContigStats stats = new ContigStats();
+	private final PeekingIterator<KmerPathNode> underlying;
+	private final String contigName;
+	private int lastUnderlyingStartPosition = Integer.MIN_VALUE;
+	private MemoizedContigCaller bestContigCaller;
+	private MemoizedContigCaller bestUnanchoredContigCaller = null;
+	private int contigsCalled = 0;
 	private long consumed = 0;
 	private PositionalDeBruijnGraphTracker exportTracker = null;
 	public int getReferenceIndex() { return referenceIndex; }
@@ -111,49 +145,161 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			int maxAnchorLength,
 			int k,
 			AssemblyEvidenceSource source,
-			EvidenceTracker tracker) {
-		this.wrapper = new KmerPathNodeIteratorInterceptor(it);
+			EvidenceTracker tracker,
+			String contigName) {
+		this.underlying = Iterators.peekingIterator(it);
 		this.maxEvidenceDistance = maxEvidenceDistance;
 		this.maxAnchorLength = maxAnchorLength;
 		this.k = k;
 		this.referenceIndex = referenceIndex;
 		this.aes = source;
 		this.evidenceTracker = tracker;
+		this.contigName = contigName;
+		initialiseBestCaller();
+	}
+	private void initialiseBestCaller() {
+		this.bestContigCaller = new MemoizedContigCaller(ANCHORED_SCORE, maxEvidenceDistance);
+		for (KmerPathNode n : graphByPosition) {
+			bestContigCaller.add(n);
+		}
+	}
+	private void initialiseUnanchoredCaller() {
+		 // +ve per-node weight required
+		this.bestUnanchoredContigCaller = new MemoizedContigCaller(1, maxEvidenceDistance);
+		for (KmerPathNode n : graphByPosition) {
+			bestUnanchoredContigCaller.add(n);
+		}
 	}
 	@Override
 	protected SAMRecordAssemblyEvidence computeNext() {
 		SAMRecordAssemblyEvidence calledContig;
 		do {
-			removeOrphanedNonReferenceSubgraphs();
 			ArrayDeque<KmerPathSubnode> bestContig = findBestContig();
 			if (bestContig == null) {
 				// no more contigs :(
-				if (wrapper.hasNext()) {
-					log.error("Sanity check failure: end of contigs called before all evidence loaded");
+				if (underlying.hasNext()) {
+					log.error("Sanity check failure: end of contigs called before all evidence loaded " + contigName);
 				}
+				removeOrphanedNonReferenceSubgraphs();
 				if (!graphByPosition.isEmpty()) {
-					log.error("Sanity check failure: non-empty graph with no contigs called");
+					log.error("Sanity check failure: non-empty graph with no contigs called " + contigName);
 				}
 				return endOfData();
 			}
 			calledContig = callContig(bestContig);
-		} while (calledContig == null); // if we filtered out our contig, go back 
+		} while (calledContig == null); // if we filtered out our contig, go back
 		return calledContig;
 	}
+	private static final ArrayDeque<KmerPathSubnode> EMPTY_CONTIG = new ArrayDeque<>();
+	private boolean isMisassembledContig(ArrayDeque<KmerPathSubnode> contig) {
+		if (contig == null) return false;
+		int contigLength = contig.stream().mapToInt(sn -> sn.length()).sum();
+		return contigLength > aes.getContext().getAssemblyParameters().maxExpectedBreakendLengthMultiple * aes.getMaxConcordantFragmentSize();
+	}
 	private ArrayDeque<KmerPathSubnode> findBestContig() {
-		BestNonReferenceContigCaller bestCaller = new BestNonReferenceContigCaller(Iterators.concat(graphByPosition.iterator(), wrapper), maxEvidenceDistance);
-		ArrayDeque<KmerPathSubnode> bestContig = bestCaller.bestContig();
-		if (exportTracker != null) {
-			exportTracker.trackAssembly(bestCaller, bestContig);
+		ArrayDeque<KmerPathSubnode> bestUnanchoredContig = bestUnanchoredContigCaller == null ? EMPTY_CONTIG : bestUnanchoredContigCaller.bestContig(nextPosition());
+		ArrayDeque<KmerPathSubnode> bestContig = bestContigCaller.bestContig(nextPosition());
+		int advanceCount = 0;
+		while (underlying.hasNext() && (bestUnanchoredContig == null || bestContig == null)) {
+			advanceUnderlying();
+			advanceCount++;
+			// Early abort in regions prone to misassembly
+			if (advanceCount >= LONGEST_PATH_REMOVAL_ADVANCEMENT_TRIGGER_COUNT) {
+				if (bestUnanchoredContigCaller == null) {
+					initialiseUnanchoredCaller();
+				}
+				bestUnanchoredContig = bestUnanchoredContigCaller.bestContig(nextPosition());
+				while (isMisassembledContig(bestUnanchoredContig)) {
+					log.info(String.format("Missassembled contig detected at positions %s:%d-%d. Not assembling reads supporting misassembly.",
+							contigName,
+							bestUnanchoredContig.getFirst().firstStart(),
+							bestUnanchoredContig.getLast().lastEnd()));
+					Set<KmerEvidence> evidence = evidenceTracker.untrack(bestUnanchoredContig);
+					// this will be a large change to the memoization
+					// so it's usually faster to just recalculate from scratch
+					bestContigCaller = null;
+					bestUnanchoredContigCaller = null;
+					removeFromGraph(evidence);
+					initialiseUnanchoredCaller();
+					bestUnanchoredContig = bestUnanchoredContigCaller.bestContig(nextPosition());
+				}
+				if (bestContigCaller == null) {
+					initialiseBestCaller();
+				}
+			}
+			bestContig = bestContigCaller.bestContig(nextPosition());
+		}
+		if (advanceCount == 0) {
+			// if we haven't advanced, we can turn large contig checking back off
+			bestUnanchoredContigCaller = null;
+		}
+		if (Defaults.SANITY_CHECK_MEMOIZATION) {
+			assert(bestContigCaller.sanityCheckFrontier(nextPosition()));
+			verifyMemoization();
+		}
+		if (aes.getContext().getConfig().getVisualisation().assemblyContigMemoization) {
+			File file = new File(aes.getContext().getConfig().getVisualisation().directory, "assembly.path.memoization." + contigName + "." + Integer.toString(pathExportCount.incrementAndGet()) + ".csv");
+			try {
+				bestContigCaller.exportState(file);
+			} catch (IOException e) {
+				log.debug(e, " Unable to export assembly path memoization to ", file, " ", contigName);
+			}
 		}
 		return bestContig;
 	}
-	private SAMRecordAssemblyEvidence callContig(ArrayDeque<KmerPathSubnode> contig) {
+	private int nextPosition() {
+		if (!underlying.hasNext()) return Integer.MAX_VALUE;
+		return underlying.peek().firstStart();
+	}
+	/**
+	 * Loads additional nodes into the graph
+	 * 
+	 * By loaded in batches, we reduce our memoization runtime
+	 */
+	private void advanceUnderlying() {
+		int loadUntil = nextPosition();
+		if (loadUntil < Integer.MAX_VALUE) {
+			loadUntil += (int)(EVIDENCE_WIDTH_LOADING_MULTIPLE * maxEvidenceDistance);
+		}
+		removeOrphanedNonReferenceSubgraphs();
+		advanceUnderlying(loadUntil);
+	}
+	private void advanceUnderlying(int loadUntil) {
+		while (underlying.hasNext() && nextPosition() <= loadUntil) {
+			KmerPathNode node = underlying.next();
+			assert(lastUnderlyingStartPosition <= node.firstStart());
+			lastUnderlyingStartPosition = node.firstStart();
+			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
+				assert(evidenceTracker.matchesExpected(new KmerPathSubnode(node)));
+			}
+			addToGraph(node);
+			consumed++;
+		}
+	}
+	/**
+	 * Verifies that the memoization matches a freshly calculated memoization 
+	 * @param contig
+	 */
+	private boolean verifyMemoization() {
+		int preGraphSize = graphByPosition.size();
+		MemoizedContigCaller mcc = new MemoizedContigCaller(ANCHORED_SCORE, maxEvidenceDistance);
+		for (KmerPathNode n : graphByPosition) {
+			mcc.add(n);
+		}
+		mcc.bestContig(nextPosition());
+		bestContigCaller.sanityCheckMatches(mcc);
+		int postGraphSize = graphByPosition.size();
+		assert(preGraphSize == postGraphSize);
+		return true;
+	}
+	private SAMRecordAssemblyEvidence callContig(ArrayDeque<KmerPathSubnode> rawcontig) {
+		ArrayDeque<KmerPathSubnode> contig = rawcontig;
 		if (containsKmerRepeat(contig)) {
 			// recalculate the called contig, this may break the contig at the repeated kmer
 			MisassemblyFixer fixed = new MisassemblyFixer(contig);
 			contig = new ArrayDeque<KmerPathSubnode>(fixed.correctMisassignedEvidence(evidenceTracker.support(contig)));
 		}
+		if (contig.isEmpty()) return null;
 		Set<KmerEvidence> evidence = evidenceTracker.untrack(contig);
 		
 		int targetAnchorLength = Math.max(contig.stream().mapToInt(sn -> sn.length()).sum(), maxAnchorLength);
@@ -161,11 +307,9 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		startAnchorPath.greedyTraverse(true, false);
 		ArrayDeque<KmerPathSubnode> startingAnchor = startAnchorPath.headNode().asSubnodes();
 		startingAnchor.removeLast();
-		while (wrapper.hasNext() && contig.getLast().lastEnd() + targetAnchorLength + maxEvidenceDistance > wrapper.lastPosition()) {
-			// make sure we have enough of the graph loaded so that when
-			// we traverse forward, our anchor sequence will be fully defined
-			wrapper.next();
-		}
+		// make sure we have enough of the graph loaded so that when
+		// we traverse forward, our anchor sequence will be fully defined
+		advanceUnderlying(contig.getLast().lastEnd() + targetAnchorLength + maxEvidenceDistance);
 		KmerPathNodePath endAnchorPath = new KmerPathNodePath(contig.getLast(), true, targetAnchorLength + maxEvidenceDistance + contig.getLast().length());
 		endAnchorPath.greedyTraverse(true, false);
 		ArrayDeque<KmerPathSubnode> endingAnchor = endAnchorPath.headNode().asSubnodes();
@@ -203,7 +347,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 					evidenceIds,
 					bases, quals, new int[] { 0, 0 });
 			if (evidence.stream().anyMatch(e -> e.isAnchored())) {
-				log.debug(String.format("Unanchored assembly %s contains anchored evidence", assembledContig.getEvidenceID()));
+				log.debug(String.format("Unanchored assembly %s at %s:%d contains anchored evidence", assembledContig.getEvidenceID(), contigName, contig.getFirst().firstStart()));
 			}
 		} else if (startingAnchor.size() == 0) {
 			// end anchored
@@ -228,201 +372,44 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 						bases, quals);
 			}
 		}
-		if (aes.getContext().getConfig().getVisualisation().assembly) {
-			try {
-				PositionalExporter.exportDot(new File(aes.getContext().getConfig().getVisualisation().directory, "assembly." + assembledContig.getEvidenceID() + ".dot"), k, graphByPosition, fullContig);
-			} catch (Exception ex) {
-				log.debug(ex, "Error exporting assembly ", assembledContig != null ? assembledContig.getEvidenceID() : "(null)");
+		if (assembledContig != null) {
+			if (aes.getContext().getConfig().getVisualisation().assemblyGraph) {
+				try {
+					PositionalExporter.exportDot(new File(aes.getContext().getConfig().getVisualisation().directory, "assembly." + contigName + "." + assembledContig.getEvidenceID() + ".dot"), k, graphByPosition, fullContig);
+				} catch (Exception ex) {
+					log.debug(ex, "Error exporting assembly ", assembledContig != null ? assembledContig.getEvidenceID() : "(null)", " ", contigName);
+				}
+			}
+			if (aes.getContext().getConfig().getVisualisation().assemblyGraphFullSize) {
+				try {
+					PositionalExporter.exportNodeDot(new File(aes.getContext().getConfig().getVisualisation().directory, "assembly.fullsize." + contigName + "." + assembledContig.getEvidenceID() + ".dot"), k, graphByPosition, fullContig);
+				} catch (Exception ex) {
+					log.debug(ex, "Error exporting assembly ", assembledContig != null ? assembledContig.getEvidenceID() : "(null)", " ", contigName);
+				}
 			}
 		}
-		if (aes.getContext().getConfig().getVisualisation().fullSizeAssembly) {
-			try {
-				PositionalExporter.exportNodeDot(new File(aes.getContext().getConfig().getVisualisation().directory, "assembly.fullsize." + assembledContig.getEvidenceID() + ".dot"), k, graphByPosition, fullContig);
-			} catch (Exception ex) {
-				log.debug(ex, "Error exporting assembly ", assembledContig != null ? assembledContig.getEvidenceID() : "(null)");
-			}
+		stats.contigNodes = contig.size();
+		stats.truncatedNodes = rawcontig.size() - contig.size();
+		stats.contigStartPosition = contig.getFirst().firstStart();
+		stats.startAnchorNodes = startingAnchor.size();
+		stats.endAnchorNodes = endingAnchor.size();
+		if (exportTracker != null) {
+			exportTracker.trackAssembly(bestContigCaller);
 		}
 		// remove all evidence contributing to this assembly from the graph
 		if (evidence.size() > 0) {
 			removeFromGraph(evidence);
+			if (Defaults.SANITY_CHECK_MEMOIZATION) {
+				bestContigCaller.sanityCheck(graphByPosition);
+			}
 		} else {
-			log.error(String.format("Sanity check failure: found path with no support. Attempting to recover by direct node removal"));
+			log.error("Sanity check failure: found path with no support. Attempting to recover by direct node removal ", contigName);
 			for (KmerPathSubnode n : contig) {
-				removeFromGraph(n.node());
+				removeFromGraph(n.node(), true);
 			}
 		}
+		contigsCalled++;
 		return assembledContig;
-	}
-	/**
-	 * Corrects misassembly due to incorporation of read pair evidence at multiple positions
-	 * @author Daniel Cameron
-	 *
-	 */
-	private static class MisassemblyFixer {
-		private final List<KmerPathSubnode> contig;
-		/**
-		 * path kmer offset -> { path node offset, pretransition kmers, posttransition kmers }
-		 */
-		private final NavigableMap<Integer, ImmutableTriple<Integer, LongList, LongList>> contigTransitionOffsetLookup;
-		/**
-		 * kmer -> { start, end, path kmer offset }
-		 * unordered for now: ideally this should be an IntIntervalTreeMultimap
-		 */
-		private final Long2ObjectMap<List<ImmutableTriple<Integer, Integer, Integer>>> contigOffsetLookup;
-		public MisassemblyFixer(Collection<KmerPathSubnode> contig) {
-			this.contig = Lists.newArrayList(contig);
-			this.contigTransitionOffsetLookup = createContigTransitionOffsetLookup(this.contig);
-			this.contigOffsetLookup = createContigOffsetLookup(this.contig);
-		}
-		private static NavigableMap<Integer, ImmutableTriple<Integer, LongList, LongList>> createContigTransitionOffsetLookup(List<KmerPathSubnode> contig) {
-			NavigableMap<Integer, ImmutableTriple<Integer, LongList, LongList>> lookup = new TreeMap<Integer, ImmutableTriple<Integer, LongList, LongList>>();
-			int snoffset = 0;
-			for (int i = 0; i < contig.size() - 1; i++) {
-				KmerPathSubnode sn = contig.get(i);
-				LongArrayList snendkmers = new LongArrayList();
-				snendkmers.add(sn.lastKmer());
-				for (int j = 0; j < sn.node().collapsedKmerOffsets().size(); j++) {
-					int offset = sn.node().collapsedKmerOffsets().getInt(j);
-					if (offset == sn.length() - 1) {
-						snendkmers.add(sn.node().collapsedKmers().getLong(j));
-					}
-				}
-				KmerPathSubnode snext = contig.get(i + 1);
-				LongArrayList snextstartkmers = new LongArrayList();
-				snextstartkmers.add(snext.firstKmer());
-				for (int j = 0; j < snext.node().collapsedKmerOffsets().size(); j++) {
-					int offset = snext.node().collapsedKmerOffsets().getInt(j);
-					if (offset == 0) {
-						snextstartkmers.add(snext.node().collapsedKmers().getLong(j));
-					}
-				}
-				lookup.put(snoffset + sn.length() - 1, new ImmutableTriple<Integer, LongList, LongList>(i, snendkmers, snextstartkmers));
-				snoffset += sn.length();
-			}
-			return lookup;
-		}
-		private static Long2ObjectMap<List<ImmutableTriple<Integer, Integer, Integer>>> createContigOffsetLookup(Collection<KmerPathSubnode> contig) {
-			Long2ObjectMap<List<ImmutableTriple<Integer, Integer, Integer>>> contigOffsetLookup = new Long2ObjectOpenHashMap<List<ImmutableTriple<Integer, Integer, Integer>>>();
-			int snoffset = 0;
-			for (KmerPathSubnode sn : contig) {
-				for (int i = 0; i < sn.length(); i++) {
-					contigOffsetLookupAdd(contigOffsetLookup, snoffset + i, sn.node().kmer(i), sn.firstStart() + i, sn.firstEnd() + i);
-				}
-				for (int j = 0; j < sn.node().collapsedKmerOffsets().size(); j++) {
-					int i = sn.node().collapsedKmerOffsets().getInt(j);
-					contigOffsetLookupAdd(contigOffsetLookup, snoffset + i, sn.node().collapsedKmers().getLong(j), sn.firstStart() + i, sn.firstEnd() + i);
-				}
-				snoffset += sn.length();
-			}
-			return contigOffsetLookup;
-		}
-		private static void contigOffsetLookupAdd(Long2ObjectMap<List<ImmutableTriple<Integer, Integer, Integer>>> contigOffsetLookup, int offset, long kmer, int start, int end) {
-			List<ImmutableTriple<Integer, Integer, Integer>> list = contigOffsetLookup.get(kmer);
-			if (list == null) {
-				list = new ArrayList<ImmutableTriple<Integer,Integer,Integer>>();
-				contigOffsetLookup.put(kmer, list);
-			}
-			list.add(new ImmutableTriple<Integer, Integer, Integer>(start, end, offset));
-		}
-		/**
-		 * Reassembles the given contig ensuring a valid traversal path
-		 * @param contig
-		 * @param evidence
-		 */
-		public List<KmerPathSubnode> correctMisassignedEvidence(Collection<KmerEvidence> evidence) {
-			// we're only concerned about misassembly of read pairs
-			// as a conservative approximation to full OLC reassembly
-			// we naively left/right align everything and truncate if we have
-			// zero support for a node transition.
-			List<KmerPathSubnode> left = asLeftAligned(evidence);
-			List<KmerPathSubnode> right = asRightAligned(evidence);
-			boolean leftAnchored = left.get(0).prev().stream().anyMatch(sn -> sn.node().isReference());
-			boolean rightAnchored = right.get(right.size() - 1).next().stream().anyMatch(sn -> sn.node().isReference());
-			if (leftAnchored && !rightAnchored) return left;
-			if (rightAnchored && !leftAnchored) return right;
-			int leftWeight = left.stream().mapToInt(sn -> sn.weight()).sum();
-			int rightWeight = right.stream().mapToInt(sn -> sn.weight()).sum();
-			if (leftWeight >= rightWeight) return left;
-			else return right;
-		}
-		private List<KmerPathSubnode> asLeftAligned(Collection<KmerEvidence> evidence) {
-			int[] transitionSupport = transitionSupport(evidence, true);
-			List<KmerPathSubnode> newContig = new ArrayList<KmerPathSubnode>(contig.size());
-			newContig.add(contig.get(0));
-			for (int i = 0; i < transitionSupport.length; i++) {
-				if (transitionSupport[i] > 0) {
-					newContig.add(contig.get(i + 1));
-				} else {
-					break;
-				}
-			}
-			return newContig;
-		}
-		private List<KmerPathSubnode> asRightAligned(Collection<KmerEvidence> evidence) {
-			int[] transitionSupport = transitionSupport(evidence, false);
-			LinkedList<KmerPathSubnode> newContig = new LinkedList<KmerPathSubnode>();
-			newContig.add(contig.get(contig.size() - 1));
-			for (int i = contig.size() - 2; i >= 0; i--) {
-				if (transitionSupport[i] > 0) {
-					newContig.addFirst(contig.get(i));
-				} else {
-					break;
-				}
-			}
-			return newContig;
-		}
-		private int[] transitionSupport(Collection<KmerEvidence> evidence, boolean leftAlign) {
-			int[] transitionSupport = new int[contig.size() - 1];
-			for (KmerEvidence e : evidence) {
-				int[] offsets = matchingOffsets(e);
-				int offset = leftAlign ? offsets[0] : offsets[1];
-				addSupport(transitionSupport, e, offset);
-			}
-			return transitionSupport;
-		}
-		private void addSupport(int[] transitionSupport, KmerEvidence evidence, int offset) {
-			for (Entry<Integer, ImmutableTriple<Integer, LongList, LongList>> entry : contigTransitionOffsetLookup.subMap(offset, offset + evidence.length() - 1).entrySet()) {
-				long readKmerPreTransition = evidence.kmer(entry.getKey() - offset);
-				long readKmerPostTransition = evidence.kmer(entry.getKey() - offset + 1);
-				ImmutableTriple<Integer, LongList, LongList> transition = entry.getValue();
-				if (transition.middle.contains(readKmerPreTransition) && transition.right.contains(readKmerPostTransition)) {
-					transitionSupport[transition.left]++;
-				}
-			}
-		}
-		/**
-		 * Returns the inferred contig offset of the starting read kmer for every kmer match  
-		 * @param e read
-		 * @return max and min best read starting kmer offset   
-		 */
-		private int[] matchingOffsets(KmerEvidence evidence) {
-			SortedMultiset<Integer> counts = TreeMultiset.create();
-			for (int i = 0; i < evidence.length(); i++) {
-				KmerSupportNode n = evidence.node(i);
-				if (n != null) {
-					offsetLookup(counts, i, n.firstKmer(), n.firstStart(), n.firstEnd());
-				}
-			}
-			int maxCount = counts.entrySet().stream()
-					.mapToInt(e -> e.getCount())
-					.max()
-					.getAsInt();
-			List<Integer> best = counts.entrySet().stream()
-					.filter(e -> e.getCount() == maxCount)
-					.map(e -> e.getElement())
-					.collect(Collectors.toList());
-			return new int[] { best.get(0), best.get(best.size() - 1) };
-		}
-		private void offsetLookup(Multiset<Integer> counts, int readOffset, long kmer, int positionStart, int positionEnd) {
-			List<ImmutableTriple<Integer, Integer, Integer>> validPositionRanges = contigOffsetLookup.get(kmer);
-			if (validPositionRanges != null) {
-				for (ImmutableTriple<Integer, Integer, Integer> entry : validPositionRanges)  {
-					if (IntervalUtil.overlapsClosed(entry.left, entry.middle, positionStart, positionEnd)) {
-						counts.add(entry.right - readOffset);	
-					}
-				}
-			}
-		} 
 	}
 	private boolean containsKmerRepeat(Collection<KmerPathSubnode> contig) {
 		LongSet existing = new LongOpenHashSet();
@@ -451,21 +438,36 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			for (int i = 0; i < e.length(); i++) {
 				KmerSupportNode support = e.node(i);
 				if (support != null) {
-					if (support.lastEnd() > wrapper.lastPosition()) {
-						log.error(String.format("Sanity check failure: %s extending to %d removed when input at %d", e, support.lastEnd(), wrapper.lastPosition()));
+					if (support.lastEnd() >= nextPosition()) {
+						log.error(String.format("Sanity check failure: %s extending to %d removed when input at %s:%d", e, support.lastEnd(), contigName, nextPosition()));
 						// try to recover
 					}
 					updateRemovalList(toRemove, support);
 				}
 			}
 		}
+		if (bestContigCaller != null) {
+			bestContigCaller.remove(toRemove.keySet());
+		}
+		if (bestUnanchoredContigCaller != null) {
+			bestUnanchoredContigCaller.remove(toRemove.keySet());
+		}
 		Set<KmerPathNode> simplifyCandidates = new ObjectOpenCustomHashSet<KmerPathNode>(new KmerPathNode.HashByFirstKmerStartPositionKmer<KmerPathNode>());
 		for (Entry<KmerPathNode, List<List<KmerNode>>> entry : toRemove.entrySet()) {
-			removeWeight(entry.getKey(), entry.getValue(), simplifyCandidates);
+			removeWeight(entry.getKey(), entry.getValue(), simplifyCandidates, false);
 		}
-		simplify(simplifyCandidates);
+		if (SIMPLIFY_AFTER_REMOVAL) {
+			simplify(simplifyCandidates);
+		}
 		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 			assert(sanityCheck());
+			assert(sanityCheckDisjointNodeIntervals());
+		}
+		if (Defaults.SANITY_CHECK_MEMOIZATION && bestContigCaller != null) {
+			// Force memoization recalculation now
+			bestContigCaller.bestContig(nextPosition());
+			// so we can check that our removal was correct
+			verifyMemoization();
 		}
 	}
 	/**
@@ -479,19 +481,23 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	}
 	private void simplify(KmerPathNode node, Set<KmerPathNode> simplifyCandidates) {
 		simplifyCandidates.remove(node);
+		if (node.lastEnd() >= nextPosition() - 1) {
+			// don't simplify graph if we haven't actually loaded all the relevant nodes
+			return;
+		}
 		KmerPathNode prev = node.prevToMergeWith();
-		if (prev != null && prev.lastEnd() < wrapper.lastPosition()) {
+		if (prev != null && prev.lastEnd() < nextPosition() - 1) {
 			simplifyCandidates.remove(prev);
-			removeFromGraph(node);
-			removeFromGraph(prev);
+			removeFromGraph(node, true);
+			removeFromGraph(prev, true);
 			node.prepend(prev);
 			addToGraph(node);
 		}
 		KmerPathNode next = node.nextToMergeWith();
-		if (next != null && next.lastEnd() < wrapper.lastPosition()) {
+		if (next != null && next.lastEnd() < nextPosition() - 1) {
 			simplifyCandidates.remove(next);
-			removeFromGraph(node);
-			removeFromGraph(next);
+			removeFromGraph(node, true);
+			removeFromGraph(next, true);
 			next.prepend(node);
 			addToGraph(next);
 		}
@@ -524,11 +530,11 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		}
 		evidenceList.add(support);
 	}
-	private void removeWeight(KmerPathNode node, List<List<KmerNode>> toRemove, Set<KmerPathNode> simplifyCandidates) {
+	private void removeWeight(KmerPathNode node, List<List<KmerNode>> toRemove, Set<KmerPathNode> simplifyCandidates, boolean includeMemoizationRemoval) {
 		if (node == null) return;
 		assert(node.length() >= toRemove.size());
 		// remove from graph
-		removeFromGraph(node);
+		removeFromGraph(node, includeMemoizationRemoval);
 		simplifyCandidates.addAll(node.next());
 		simplifyCandidates.addAll(node.prev());
 		simplifyCandidates.remove(node);
@@ -550,8 +556,22 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		for (int i = 0; i < node.collapsedKmers().size(); i++) {
 			addToGraph(new KmerPathNodeKmerNode(i, node));
 		}
+		if (bestContigCaller != null) {
+			bestContigCaller.add(node);
+		}
+		if (bestUnanchoredContigCaller != null) {
+			bestUnanchoredContigCaller.add(node);
+		}
 	}
-	private void removeFromGraph(KmerPathNode node) {
+	private void removeFromGraph(KmerPathNode node, boolean includeMemoizationRemoval) {
+		if (includeMemoizationRemoval) {
+			if (bestContigCaller != null) {
+				bestContigCaller.remove(node);
+			}
+			if (bestUnanchoredContigCaller != null) {
+				bestUnanchoredContigCaller.remove(node);
+			}
+		}
 		boolean removed = graphByPosition.remove(node);
 		assert(removed);
 		for (int i = 0; i < node.length(); i++) {
@@ -593,7 +613,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	 */
 	private void removeOrphanedNonReferenceSubgraphs() {
 		if (graphByPosition.isEmpty()) return;
-		if (graphByPosition.first().firstStart() >= wrapper.lastPosition() - ORPHAN_EVIDENCE_MULTIPLE * maxEvidenceDistance) return;
+		if (graphByPosition.first().firstStart() >= nextPosition() - ORPHAN_EVIDENCE_MULTIPLE * maxEvidenceDistance) return;
 		int lastEnd = Integer.MIN_VALUE;
 		List<KmerPathNode> nonRefOrphaned = new ArrayList<KmerPathNode>();
 		List<KmerPathNode> nonRefActive = new ArrayList<KmerPathNode>();
@@ -615,7 +635,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 				nonRefOrphaned.addAll(nonRefActive);
 				nonRefActive.clear();
 			}
-			if (!n.isReference() || n.lastEnd() >= wrapper.lastPosition() - maxEvidenceDistance) {
+			if (!n.isReference() || n.lastEnd() >= nextPosition() - maxEvidenceDistance) {
 				// could connect to a reference node
 				nonRefActive.clear();
 				break;
@@ -631,42 +651,10 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 			for (KmerPathNode n : nonRefOrphaned) {
 				if (!n.isValid()) continue;
 				if (graphByPosition.contains(n)) {
-					log.error("Sanity check failure: %s not removed when clearing orphans (%d evidence found). Attempting to recover by direct node removal", n, evidence.size());
-					removeFromGraph(n);
+					log.error("Sanity check failure: %s not removed when clearing orphans (%d evidence found). Attempting to recover by direct node removal ", n, evidence.size(), contigName);
+					removeFromGraph(n, true);
 				}
 			}
-		}
-	}
-	/**
-	 * Intercepts the underlying stream and adds nodes to the graph as they are encountered
-	 * @author Daniel Cameron
-	 *
-	 */
-	private class KmerPathNodeIteratorInterceptor implements Iterator<KmerPathNode> {
-		private final Iterator<KmerPathNode> underlying;
-		private int position;
-		public int lastPosition() { return position; }
-		public KmerPathNodeIteratorInterceptor(Iterator<KmerPathNode> it) {
-			this.underlying = it;
-		}
-		@Override
-		public boolean hasNext() {
-			boolean hasNext = underlying.hasNext();
-			if (!hasNext) {
-				position = Integer.MAX_VALUE;
-			}
-			return hasNext;
-		}
-		@Override
-		public KmerPathNode next() {
-			KmerPathNode node = underlying.next();
-			consumed++;
-			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
-				assert(evidenceTracker.matchesExpected(new KmerPathSubnode(node)));
-			}
-			addToGraph(node);
-			position = node.firstStart();
-			return node;
 		}
 	}
 	public boolean sanityCheck() {
@@ -677,6 +665,24 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		for (KmerPathNode n : graphByPosition) {
 			assert(n.isValid());
 			assert(evidenceTracker.matchesExpected(new KmerPathSubnode(n)));
+		}
+		if (Defaults.SANITY_CHECK_MEMOIZATION && MemoizedContigCaller.ASSERT_ALL_OPERATIONS) {
+			if (bestContigCaller != null) assert(bestContigCaller.sanityCheck());
+			if (bestUnanchoredContigCaller != null) assert(bestUnanchoredContigCaller.sanityCheck());
+		}
+		return true;
+	}
+	public boolean sanityCheckDisjointNodeIntervals() {
+		Map<Long, List<KmerPathNode>> byKmer = graphByPosition
+	            .stream()
+	            .collect(Collectors.groupingBy(KmerPathNode::firstKmer));
+		for (List<KmerPathNode> list : byKmer.values()) {
+			if (list.size() == 1) continue;
+			ArrayList<KmerPathNode> al = Lists.newArrayList(list);
+			al.sort(KmerNodeUtil.ByFirstStart);
+			for (int i = 1; i < al.size(); i++) {
+				assert(al.get(i - 1).firstEnd() < al.get(i).firstStart());
+			}
 		}
 		return true;
 	}
@@ -690,7 +696,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		return consumed;
 	}
 	public int tracking_inputPosition() {
-		return wrapper.lastPosition();
+		return nextPosition();
 	}
 	public int tracking_firstPosition() {
 		if (graphByPosition.size() == 0) return Integer.MAX_VALUE;
@@ -701,5 +707,11 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	}
 	public void setExportTracker(PositionalDeBruijnGraphTracker exportTracker) {
 		this.exportTracker = exportTracker;
+	}
+	public ContigStats tracking_lastContig() {
+		return stats;
+	}
+	public int tracking_contigsCalled() {
+		return contigsCalled;
 	}
 }

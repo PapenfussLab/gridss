@@ -558,13 +558,15 @@ public class SAMRecordUtil {
 			}
 		}
 		Alignment alignment =  null;
-		try {
-			alignment = AlignerFactory.create().align_smith_waterman(ass, ref);        
-		} catch (Exception e) {
-			// swallow and log alignment error
-			log.error(e, String.format("Error aligning %s to %s:%d-%d",
-					read.getReadName(),
-					refSeq.getSequenceName(), start, end));
+		if (ass != null && ass.length > 0 && ref != null && ref.length > 0) {
+			try {
+				alignment = AlignerFactory.create().align_smith_waterman(ass, ref);        
+			} catch (Exception e) {
+				// swallow and log alignment error
+				log.error(e, String.format("Error aligning %s to %s:%d-%d",
+						read.getReadName(),
+						refSeq.getSequenceName(), start, end));
+			}
 		}
 		if (alignment == null) {
 			return read;

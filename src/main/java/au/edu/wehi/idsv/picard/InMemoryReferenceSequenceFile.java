@@ -53,7 +53,7 @@ public class InMemoryReferenceSequenceFile implements ReferenceLookup {
 	@Override
 	public ReferenceSequence getSubsequenceAt(String contig, long start, long stop) {
 		int index = dictionary.getSequence(contig).getSequenceIndex();
-		return new ReferenceSequence(contig, index, Arrays.copyOfRange(sequences[index], (int)start, (int)stop));
+		return new ReferenceSequence(contig, index, Arrays.copyOfRange(sequences[index], (int)start - 1, (int)stop));
 	}
 	@Override
 	public void close() throws IOException {

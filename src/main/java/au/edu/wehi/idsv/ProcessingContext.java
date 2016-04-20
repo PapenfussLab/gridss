@@ -3,7 +3,6 @@ package au.edu.wehi.idsv;
 import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.metrics.MetricBase;
 import htsjdk.samtools.metrics.MetricsFile;
-import htsjdk.samtools.util.Log;
 
 import java.io.File;
 import java.util.List;

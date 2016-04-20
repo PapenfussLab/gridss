@@ -12,6 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import au.edu.wehi.idsv.alignment.BreakpointHomology;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
@@ -306,9 +307,13 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		attribute(VcfAttributes.BREAKEND_UNMAPPEDMATE_QUAL, tof(fBREAKEND_UNMAPPEDMATE_QUAL));
 		attribute(VcfAttributes.BREAKEND_SOFTCLIP_QUAL, tof(fBREAKEND_SOFTCLIP_QUAL));
 		
+		BreakendSummary bs = parent.getBreakendSummary();
+		String untemplated = parent.getBreakpointSequenceString();
 		String homo = "";
 		if (bestExactBreakpoint != null) {
-			breakpoint(bestExactBreakpoint.getBreakendSummary(), bestExactBreakpoint.getUntemplatedSequence());
+			bs = bestExactBreakpoint.getBreakendSummary();
+			untemplated = bestExactBreakpoint.getUntemplatedSequence();
+			breakpoint(bestExactBreakpoint.getBreakendSummary(), untemplated);
 			homo = bestExactBreakpoint.getHomologySequence();
 			rmAttribute(VcfSvConstants.IMPRECISE_KEY);
 		} else {
@@ -321,8 +326,22 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			rmAttribute(VcfSvConstants.HOMOLOGY_SEQUENCE_KEY);
 			rmAttribute(VcfSvConstants.HOMOLOGY_LENGTH_KEY);
 		}
-		attribute(VcfAttributes.ANCHOR_CIGAR, makeCigar(anchoredBases, bestExactBreakpoint != null ? bestExactBreakpoint.getBreakendSummary() : parent.getBreakendSummary()).toString());
-
+		if (bs instanceof BreakpointSummary) {
+			BreakpointHomology bh = BreakpointHomology.calculate(
+					processContext.getReference(),
+					(BreakpointSummary)bs.getCallPosition(),
+					untemplated,
+					processContext.getVariantCallingParameters().maxBreakendHomologyLength,
+					processContext.getVariantCallingParameters().breakendHomologyAlignmentMargin);
+			int[] bounds;
+			if (bs.direction == BreakendDirection.Forward) {
+				bounds = new int[] { -bh.getLocalHomologyLength(), bh.getRemoteHomologyLength() };
+			} else {
+				bounds = new int[] { -bh.getRemoteHomologyLength(), bh.getLocalHomologyLength() };
+			}
+			attribute(VcfAttributes.INEXACT_HOMPOS, bounds);
+		}
+		attribute(VcfAttributes.SUPPORT_CIGAR, makeCigar(anchoredBases, bestExactBreakpoint != null ? bestExactBreakpoint.getBreakendSummary() : parent.getBreakendSummary()).toString());
 		// id(parent.getID()); // can't change from parent ID as the id is already referenced in the MATEID of the other breakend  
 		VariantContextDirectedEvidence variant = (VariantContextDirectedEvidence)IdsvVariantContext.create(processContext, null, super.make());
 		variant = applyFilters(variant);

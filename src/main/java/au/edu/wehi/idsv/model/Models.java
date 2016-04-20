@@ -36,6 +36,7 @@ public class Models {
 	public static boolean meetsReadAlignmentCriteria(GridssConfiguration config, SAMRecord read) {
 		return !read.getReadUnmappedFlag() &&
 				read.getMappingQuality() >= config.minMapq &&
+				read.getMappingQuality() <= config.maxMapq &&
 				SAMRecordUtil.alignedEntropy(read) >= config.minAnchorShannonEntropy &&
 				SAMRecordUtil.getAlignedIdentity(read) >= config.getSoftClip().minAnchorIdentity;
 	}

@@ -22,6 +22,7 @@ public class AssemblyConfiguration {
 		minReads = config.getInt("minReads");
 		includeSoftClips = config.getBoolean("includeSoftClips");
 		includeAnomalousPairs = config.getBoolean("includeAnomalousPairs");
+		includePairAnchors = config.getBoolean("includePairAnchors");
 		includeRemoteSplitReads = config.getBoolean("includeRemoteSplitReads");
 		writeFiltered = config.getBoolean("writeFiltered");
 		excludeNonSupportingEvidence = config.getBoolean("excludeNonSupportingEvidence");
@@ -55,6 +56,11 @@ public class AssemblyConfiguration {
 	 */
 	public boolean includeAnomalousPairs;
 	/**
+	 * Include reads fully supporting the reference whose mate is not mapped to the expected location.
+	 * These are useful as they can extend the length of the assembly anchor 
+	 */
+	public boolean includePairAnchors;
+	/**
 	 * Include reads with a soft clip that maps to this location
 	 */
 	public boolean includeRemoteSplitReads;
@@ -75,7 +81,7 @@ public class AssemblyConfiguration {
 	 * 
 	 * Expected max size is 1.0 for single-sided assembly and 2.0 for assembly from both directions 
 	 */
-	public float maxExpectedBreakendLengthMultiple = 2.5f;
+	public float maxExpectedBreakendLengthMultiple = 3.0f;
 	/**
 	 * Retains evidenceID tracking information after evidence rehydration
 	 */

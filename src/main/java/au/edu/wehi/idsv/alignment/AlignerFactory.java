@@ -6,6 +6,9 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.UUID;
+
+import com.google.common.io.Files;
 
 import au.edu.wehi.idsv.Defaults;
 
@@ -25,9 +28,11 @@ public class AlignerFactory {
             }
             try {
             	if (!sswjniLoaded) {
+            		File tmp = new File(System.getProperty("java.io.tmpdir"), UUID.randomUUID().toString() + "-libsswjni.so");
                 	File destination = new File(System.getProperty("java.io.tmpdir"), "libsswjni.so");
                 	try {
-                		unpacksswjni(destination);
+                		unpacksswjni(tmp);
+                		Files.move(tmp, destination);
                 		System.load(destination.getAbsolutePath());
                 		sswjniLoaded = true;
                 	} catch (IOException e) {

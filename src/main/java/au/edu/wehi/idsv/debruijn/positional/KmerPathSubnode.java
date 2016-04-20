@@ -1,5 +1,6 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
+import htsjdk.samtools.util.Log;
 import it.unimi.dsi.fastutil.ints.IntHeapPriorityQueue;
 
 import java.util.ArrayList;
@@ -15,6 +16,7 @@ import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
 
 public class KmerPathSubnode implements DeBruijnSequenceGraphNode, KmerNode {
+	private static final Log log = Log.getInstance(KmerPathSubnode.class);
 	public static final IntPredicate NO_EDGES = n -> n == 0;
 	public static final IntPredicate SINGLE_EDGE = n -> n == 1;
 	public static final IntPredicate MULTIPLE_EDGES = n -> n > 1;
@@ -23,6 +25,7 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode, KmerNode {
 	private final int start;
 	private final int end;
 	public KmerPathSubnode(KmerPathNode n, int start, int end) {
+		assert(n != null);
 		assert(n.firstStart() <= start);
 		assert(n.firstEnd() >= end);
 		assert(end - start >= 0);
@@ -232,6 +235,16 @@ public class KmerPathSubnode implements DeBruijnSequenceGraphNode, KmerNode {
 			return false;
 		if (start != other.start)
 			return false;
+		return true;
+	}
+	public boolean sanityCheck() {
+		assert(n != null);
+		if (!n.isValid()) {
+			log.error(String.format("[%d,%d] subnode over invalid node", firstStart(), firstEnd()));
+		}
+		assert(n.isValid());
+		assert(start >= n.firstStart());
+		assert(end <= n.firstEnd());
 		return true;
 	}
 }

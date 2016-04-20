@@ -3,6 +3,7 @@ package au.edu.wehi.idsv.sim;
 import htsjdk.samtools.util.IOUtil;
 
 import java.util.List;
+import java.util.Locale;
 
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
@@ -27,6 +28,7 @@ public class GenerateSimpleVariants extends SimulationGenerator {
     @Override
 	protected int doWork() {
     	try {
+        	java.util.Locale.setDefault(Locale.ROOT);
         	IOUtil.assertFileIsReadable(REFERENCE);
         	GenomicProcessingContext pc = getProcessingContext();
         	SimpleVariantChromosome gen = new SimpleVariantChromosome(pc, CHR, PADDING, RANDOM_SEED);

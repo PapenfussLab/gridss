@@ -252,6 +252,12 @@ public class KmerEncodingHelperTest extends TestHelper {
 		assertEquals("A", KmerEncodingHelper.toApproximateString(P2E("A")));
 		assertEquals("C", KmerEncodingHelper.toApproximateString(P2E("C")));
 	}
+	@Test
+	public void toApproximateString_should_match_non_approximate_if_no_leading_T() {
+		for (long x : new long[] { 866641381669458L, 866641381669459L}) {
+			assertEquals(KmerEncodingHelper.toString(25, x), KmerEncodingHelper.toApproximateString(x));
+		}
+	}
 	public List<Long> asList(int k, String bases) {
 		List<Long> list = Lists.newArrayList();
 		for (ReadKmer rk : new ReadKmerIterable(k, B(bases), B(bases))) {

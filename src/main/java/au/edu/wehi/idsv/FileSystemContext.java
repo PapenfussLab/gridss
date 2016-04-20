@@ -59,6 +59,7 @@ public class FileSystemContext {
 	private static final String FORMAT_MATE_SAM_UNSORTED_PER_CHR = "%1$s/%3$s/%2$s" + COMMON_INITIAL_SUFFIX + ".%3$s.rpmate.unsorted" + SAM_SUFFIX;
 	private static final String FORMAT_INSERT_SIZE_METRICS = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".metrics.insertsize.txt";
 	private static final String FORMAT_IDSV_METRICS = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".metrics.idsv.txt";
+	private static final String FORMAT_MAPQ_METRICS = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".metrics.mapq.txt";
 	private static final String FORMAT_CIGAR_METRICS = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".metrics.cigar.txt";
 	private static final String FORMAT_COVERAGE_BLACKLIST_BED = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".coverage.blacklist.bed";
 	private static final String FORMAT_REALIGN_FASTQ = "%1$s/%2$s" + COMMON_INITIAL_SUFFIX + ".realign.%3$d.fq";
@@ -172,6 +173,9 @@ public class FileSystemContext {
 	}
 	public File getIdsvMetrics(File input) {
 		return getFile(String.format(FORMAT_IDSV_METRICS, getIntermediateDirectory(input), getSource(input).getName()));
+	}
+	public File getMapqMetrics(File input) {
+		return getFile(String.format(FORMAT_MAPQ_METRICS, getIntermediateDirectory(input), getSource(input).getName()));
 	}
 	public File getCigarMetrics(File input) {
 		return getFile(String.format(FORMAT_CIGAR_METRICS, getIntermediateDirectory(input), getSource(input).getName()));

@@ -23,6 +23,7 @@ import com.google.common.collect.PeekingIterator;
 public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 	private static final Log log = Log.getInstance(SupportNodeIterator.class);
 	private final PeekingIterator<DirectedEvidence> underlying;
+	private final boolean includePairAnchors;
 	private final int k;
 	/**
 	 * Position to emit kmers as no more can be added
@@ -55,9 +56,10 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 	 * as max frag size from the mapping position (which in this scenario is also the breakend
 	 * position).
 	 */
-	public SupportNodeIterator(int k, Iterator<DirectedEvidence> it, int maxFragmentSize, EvidenceTracker tracker) {
+	public SupportNodeIterator(int k, Iterator<DirectedEvidence> it, int maxFragmentSize, EvidenceTracker tracker, boolean includePairAnchors) {
 		this.underlying = Iterators.peekingIterator(it);
 		this.k = k;
+		this.includePairAnchors = includePairAnchors;
 		this.maxSupportStartPositionOffset = maxFragmentSize;
 		this.emitOffset = maxSupportStartPositionOffset + 1;
 		if (underlying.hasNext()) {
@@ -78,30 +80,26 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 		lastEvidence = de;
 		
 		KmerEvidence e;
+		KmerEvidence e2 = null;
 		if (de instanceof SoftClipEvidence) {
 			e = KmerEvidence.create(k, (SoftClipEvidence)de, true);
 		} else if (de instanceof NonReferenceReadPair) {
-			e = KmerEvidence.create(k, (NonReferenceReadPair)de);
+			NonReferenceReadPair nrrp = (NonReferenceReadPair)de;
+			e = KmerEvidence.create(k, nrrp);
+			if (includePairAnchors) {
+				e2 = KmerEvidence.createAnchor(k, nrrp);
+			}
 		} else {
 			throw new RuntimeException("Assembler able to process only soft clip and read pair evidence");
 		}
 		if (e == null) {
 			return;
 		}
-		List<KmerSupportNode> supportNodes = new ArrayList<KmerSupportNode>(e.length());
-		boolean hasNonReference = false;
-		for (int i = 0; i < e.length(); i++) {
-			KmerSupportNode support = e.node(i); 
-			if (support != null) {
-				// max sure that we are actually able to resort into kmer order
-				assert(support.firstStart() >= de.getBreakendSummary().start - maxSupportStartPositionOffset);
-				assert(support.weight() > 0);
-				supportNodes.add(support);
-				hasNonReference |= !support.isReference();
-			}
-		}
+		List<KmerSupportNode> supportNodes = new ArrayList<KmerSupportNode>(e.length() + (e2 == null ? 0 : e2.length()));
+		boolean hasNonReference = addSupport(supportNodes, de, e);
+		addSupport(supportNodes, de, e2);
 		if (hasNonReference) {
-			// only add evidence that proves support for an SV
+			// only add evidence that provides support for an SV
 			// If we have no non-reference kmers then we might
 			// never call a contig containing this evidence thus
 			// never remove it from the graph
@@ -114,6 +112,22 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 				}
 			}
 		}
+	}
+	private boolean addSupport(List<KmerSupportNode> supportNodes, DirectedEvidence de, KmerEvidence e) {
+		boolean hasNonReference = false;
+		if (e != null) {
+			for (int i = 0; i < e.length(); i++) {
+				KmerSupportNode support = e.node(i); 
+				if (support != null) {
+					// max sure that we are actually able to resort into kmer order
+					assert(support.firstStart() >= de.getBreakendSummary().start - maxSupportStartPositionOffset);
+					assert(support.weight() > 0);
+					supportNodes.add(support);
+					hasNonReference |= !support.isReference();
+				}
+			}
+		}
+		return hasNonReference;
 	}
 	@Override
 	public boolean hasNext() {

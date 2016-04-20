@@ -3,6 +3,7 @@ package au.edu.wehi.idsv.debruijn.positional;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import htsjdk.samtools.SAMRecord;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -15,6 +16,7 @@ import org.junit.Test;
 
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.DiscordantReadPair;
+import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
@@ -257,5 +259,14 @@ public class PathNodeIteratorTest extends TestHelper {
 		// SC: ref repeat; nonref repeat
 		// RP: single width starting kmer <-> repeat cycle <-> single width ending kmer 
 		assertEquals(5, result.size());
+	}
+	@Test
+	public void should_assembly_UM_into_anchor() {
+		SAMRecord[] rp = OEA(0, 100, "10M", true);
+		rp[0].setReadBases(B(S(RANDOM).substring(0, 10)));
+		rp[1].setReadBases(B(S(RANDOM).substring(5, 15)));
+		NonReferenceReadPair nrrp = NRRP(SES(1, 100), rp);
+		List<KmerPathNode> result = asCheckedKPN(4, 100, true, nrrp);
+		assertCompleteGraph(result, 4);
 	}
 }

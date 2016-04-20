@@ -292,6 +292,7 @@ public class SoftClipEvidenceTest extends TestHelper {
 		ses.metrics = new IdsvSamFileMetrics(
 				new File("src/test/resources/testmetrics.metrics.idsv.txt"),
 				new File("src/test/resources/testmetrics.metrics.insertsize.txt"),
+				new File("src/test/resources/testmetrics.metrics.mapq.txt"),
 				new File("src/test/resources/testmetrics.metrics.cigar.txt"));
 		SAMRecord[] rp = RP(0, 100, 100, 20);
 		rp[0].setCigarString("10M10S");

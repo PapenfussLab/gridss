@@ -38,7 +38,7 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 	private final EvidenceToCsv dump;
 	private class ActiveVariant {
 		public final String id;
-		public final String mateid;
+		public final String parid;
 		public final String eventid;
 		public final long startLocation;
 		//public final long endLocation;
@@ -48,7 +48,7 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 		private List<DirectedEvidence> evidenceDump;
 		public ActiveVariant(VariantContextDirectedEvidence call) {
 			this.id = call.hasID() ? call.getID() : null;
-			this.mateid = call.hasID() ? (String)call.getAttribute(VcfSvConstants.MATE_BREAKEND_ID_KEY, null) : null;
+			this.parid = call.hasID() ? (String)call.getAttribute(VcfSvConstants.PARTNER_BREAKEND_ID_KEY, null) : null;
 			this.eventid = (String)call.getAttribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, null);
 			this.builder = new StructuralVariationCallBuilder(context, call);
 			this.score = (float)call.getPhredScaledQual();
@@ -171,7 +171,7 @@ public class SequentialEvidenceAnnotator extends AbstractIterator<VariantContext
 				}
 			}
 			if (best != null) {
-				ActiveVariant mate = bufferedVariantId.get(best.mateid);
+				ActiveVariant mate = bufferedVariantId.get(best.parid);
 				if (mate != null && mate.location.overlaps(bs) && allocateToHighBreakend(evidence)) {
 					// special case: matches both sides of the breakpoint 
 					mate.attributeEvidence(evidence);

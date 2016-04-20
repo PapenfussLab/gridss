@@ -5,6 +5,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.variant.vcf.VCFConstants;
 
 import java.util.ArrayList;
@@ -565,11 +566,6 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	@Ignore() //  TODO: enchancement
-	public void should_use_CILEN_tag_for_total_untemplated_sequence() {
-		Assert.fail();
-	}
-	@Test
-	@Ignore() //  TODO: enchancement
 	public void should_use_INS_UNKNOWN_symbolic_allele_for_unknown_untemplated_sequence() {
 		// <INS:UNKNOWN> insertion of unknown sequence and length
 		// CIINSLEN confidence interval around insertion  
@@ -686,7 +682,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			phredScore(10);
 		}}.make());
 		VariantContextDirectedEvidence vc = builder.make();
-		assertEquals("1X", vc.getAttribute(VcfAttributes.ANCHOR_CIGAR.attribute()));
+		assertEquals("1X", vc.getAttribute(VcfAttributes.SUPPORT_CIGAR.attribute()));
 	}
 	@Test
 	public void anchor_cigar_should_use_2X_for_single_bp_imprecision() {
@@ -695,7 +691,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			phredScore(10);
 		}}.make());
 		VariantContextDirectedEvidence vc = builder.make();
-		assertEquals("2X", vc.getAttribute(VcfAttributes.ANCHOR_CIGAR.attribute()));
+		assertEquals("2X", vc.getAttribute(VcfAttributes.SUPPORT_CIGAR.attribute()));
 	}
 	@Test
 	public void anchor_cigar_should_use_xnx_for_large_imprecision() {
@@ -704,7 +700,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			phredScore(10);
 		}}.make());
 		VariantContextDirectedEvidence vc = builder.make();
-		assertEquals("1X4N1X", vc.getAttribute(VcfAttributes.ANCHOR_CIGAR.attribute()));
+		assertEquals("1X4N1X", vc.getAttribute(VcfAttributes.SUPPORT_CIGAR.attribute()));
 	}
 	@Test
 	public void anchor_cigar_should_include_anchoring_bases_fwd() {
@@ -719,7 +715,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		//     MMMMMMMMSSSSSSS
 		//  MM
 		//          XNNNNX
-		assertEquals("2M1D5M1X4N1X", vc.getAttribute(VcfAttributes.ANCHOR_CIGAR.attribute()));
+		assertEquals("2M1D5M1X4N1X", vc.getAttribute(VcfAttributes.SUPPORT_CIGAR.attribute()));
 	}
 	@Test
 	public void anchor_cigar_should_include_anchoring_bases_bwd() {
@@ -740,7 +736,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		//                  MM      M
 		//                   MM      
 		// =        XNNNNXDMMMMDDDDMMDM
-		assertEquals("1X4N1X1D4M4D2M1D1M", vc.getAttribute(VcfAttributes.ANCHOR_CIGAR.attribute()));
+		assertEquals("1X4N1X1D4M4D2M1D1M", vc.getAttribute(VcfAttributes.SUPPORT_CIGAR.attribute()));
 	}
 	@Test
 	public void anchor_cigar_should_use_local_coordinates() {
@@ -756,7 +752,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		ass = ((RealignedSAMRecordAssemblyEvidence)ass).asRemote();
 		builder.addEvidence(ass);
 		VariantContextDirectedEvidence vc = builder.make();
-		assertEquals("9M1X", vc.getAttribute(VcfAttributes.ANCHOR_CIGAR.attribute()));
+		assertEquals("9M1X", vc.getAttribute(VcfAttributes.SUPPORT_CIGAR.attribute()));
 	}
 	@Test
 	public void spanning_assemblies_should_use_original_parent_assembly_direction_to_determine_local_remote_status() {
@@ -774,5 +770,83 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		VariantContextDirectedBreakpoint vc = (VariantContextDirectedBreakpoint) builder.make();
 		assertEquals(3, vc.getBreakpointEvidenceCountLocalAssembly());
 		assertEquals(2, vc.getBreakpointEvidenceCountRemoteAssembly());
+	}
+	@Test
+	public void should_calculate_inexact_homology() {
+		ProcessingContext pc = getContext();
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(2, FWD, 78, 78, 6, BWD, 79, 79), "");
+			phredScore(50);
+		}}.make());
+		VariantContextDirectedEvidence e = builder.make();
+		assertEquals(-78, ((int[])e.getAttribute(VcfAttributes.INEXACT_HOMPOS.attribute()))[0]);
+		assertEquals(300, ((int[])e.getAttribute(VcfAttributes.INEXACT_HOMPOS.attribute()))[1]);
+	}
+	@Test
+	public void breakpoint_assembly_should_be_written() {
+		ProcessingContext pc = getContext();
+		String seq = "CATTAATCGCAAGAGCGGGTTGTATTCGcCGCCAAGTCAGCTGAAGCACCATTACCCGAtCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGATTTTGTTTACAGCCTGTCTTATATCCTGAATAACGCACCGCCTATTCG";
+		int anchor = 78;
+		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD,
+				null,
+				6, 1, anchor,
+				B(seq),
+				B(40,seq.length()));
+		ass = AssemblyFactory.incorporateRealignment(getContext(), ass, ImmutableList.of(
+				withReadName(String.format("6#1#%d#readname", anchor), withSequence(B(seq.substring(anchor)), 
+						withQual(B(40, seq.length() - anchor), 
+								Read(2, anchor + 1, String.format("%dM", seq.length() - anchor)))))[0]));
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(6, FWD, 78, 78, 2, BWD, 79, 79), "");
+			phredScore(50);
+		}}.make());
+		builder.addEvidence(ass);
+		VariantContextDirectedEvidence e = builder.make();
+		FastqRecord fr = e.getBreakendAssemblyFastq();
+		assertEquals(e.getEvidenceID() + "#" + Integer.toString(anchor), fr.getReadHeader());
+		assertEquals(seq, fr.getReadString());
+		assertEquals(fr.getReadHeader(), e.getAttribute(VcfSvConstants.BREAKPOINT_ID_KEY));
+	}
+	@Test
+	public void breakpoint_assembly_should_be_local() {
+		ProcessingContext pc = getContext();
+		String seq = "CATTAATCGCAAGAGCGGGTTGTATTCGcCGCCAAGTCAGCTGAAGCACCATTACCCGAtCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGATTTTGTTTACAGCCTGTCTTATATCCTGAATAACGCACCGCCTATTCG";
+		int anchor = 78;
+		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD,
+				null,
+				6, 1, anchor,
+				B(seq),
+				B(40,seq.length()));
+		ass = AssemblyFactory.incorporateRealignment(getContext(), ass, ImmutableList.of(
+				withReadName(String.format("6#1#%d#readname", anchor), withSequence(B(seq.substring(anchor)), 
+						withQual(B(40, seq.length() - anchor), 
+								Read(2, anchor + 1, String.format("%dM", seq.length() - anchor)))))[0]));
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(2, BWD, 79, 79, 6, FWD, 78, 78), "");
+			phredScore(50);
+		}}.make());
+		builder.addEvidence(((RealignedSAMRecordAssemblyEvidence)ass).asRemote());
+		VariantContextDirectedEvidence e = builder.make();
+		FastqRecord fr = e.getBreakendAssemblyFastq();
+		assertEquals(null, fr);
+		assertEquals(null, e.getAttribute(VcfSvConstants.BREAKPOINT_ID_KEY));
+	}
+	@Test
+	public void support_interval_should_be_written() {
+		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
+			breakpoint(new BreakpointSummary(0, FWD, 100, 100, 1, BWD, 200, 200), "");
+			phredScore(50);
+		}}.make());
+		builder.addEvidence(NRRP(DP(0, 96, "3M", true, 1, 200, "5M", false)));
+		VariantContextDirectedEvidence e = builder.make();
+		//          1        2
+		//          0        0
+		// 1234567890        0123456789
+		//      MMM  >      <MMMMM
+		//
+		assertEquals(-4, e.getAttributeIntOffset(VcfAttributes.SUPPORT_INTERVAL, 0));
+		assertEquals(-2, e.getAttributeIntOffset(VcfAttributes.SUPPORT_INTERVAL, 1));
+		assertEquals(0, e.getAttributeIntOffset(VcfAttributes.REMOTE_SUPPORT_INTERVAL, 0));
+		assertEquals(4, e.getAttributeIntOffset(VcfAttributes.REMOTE_SUPPORT_INTERVAL, 1));
 	}
 }

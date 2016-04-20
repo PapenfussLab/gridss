@@ -12,6 +12,7 @@ import java.util.List;
 import org.junit.Test;
 
 import picard.analysis.InsertSizeMetrics;
+import picard.analysis.MapqMetrics;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
@@ -30,7 +31,8 @@ public class IdsvSamFileMetricsCollectorTest extends TestHelper {
 		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
 		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
 		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
-		c.finish(is, idsv, sc);
+		MetricsFile<MapqMetrics, Integer> mq = new MetricsFile<MapqMetrics, Integer>();
+		c.finish(is, idsv, mq, sc);
 		assertEquals(100, (int)((IdsvMetrics)idsv.getMetrics().get(0)).MAX_READ_LENGTH);
 	}
 	@Test
@@ -53,7 +55,8 @@ public class IdsvSamFileMetricsCollectorTest extends TestHelper {
 		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
 		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
 		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
-		c.finish(is, idsv, sc);
+		MetricsFile<MapqMetrics, Integer> mq = new MetricsFile<MapqMetrics, Integer>();
+		c.finish(is, idsv, mq, sc);
 		assertEquals(10, idsv.getMetrics().get(0).READS);
 		assertEquals(6, idsv.getMetrics().get(0).MAPPED_READS);
 	}
@@ -77,7 +80,8 @@ public class IdsvSamFileMetricsCollectorTest extends TestHelper {
 		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
 		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
 		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
-		c.finish(is, idsv, sc);
+		MetricsFile<MapqMetrics, Integer> mq = new MetricsFile<MapqMetrics, Integer>();
+		c.finish(is, idsv, mq, sc);
 		assertEquals(4, idsv.getMetrics().get(0).READ_PAIRS);
 		assertEquals(2, idsv.getMetrics().get(0).READ_PAIRS_BOTH_MAPPED);
 		assertEquals(1, idsv.getMetrics().get(0).READ_PAIRS_ONE_MAPPED);
@@ -93,7 +97,8 @@ public class IdsvSamFileMetricsCollectorTest extends TestHelper {
 		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
 		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
 		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
-		c.finish(is, idsv, sc);
+		MetricsFile<MapqMetrics, Integer> mq = new MetricsFile<MapqMetrics, Integer>();
+		c.finish(is, idsv, mq, sc);
 		List<CigarDetailMetrics> msc = Lists.newArrayList(sc.getMetrics());
 		msc.removeIf(cdm -> cdm.OPERATOR != CigarOperator.enumToCharacter(CigarOperator.SOFT_CLIP));
 		assertEquals(6, msc.size());
@@ -111,7 +116,8 @@ public class IdsvSamFileMetricsCollectorTest extends TestHelper {
 		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
 		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
 		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
-		c.finish(is, idsv, sc);
+		MetricsFile<MapqMetrics, Integer> mq = new MetricsFile<MapqMetrics, Integer>();
+		c.finish(is, idsv, mq, sc);
 		List<CigarDetailMetrics> msc = Lists.newArrayList(sc.getMetrics());
 		msc.removeIf(cdm -> cdm.OPERATOR != CigarOperator.enumToCharacter(CigarOperator.SOFT_CLIP) || cdm.LENGTH < 1);
 		assertEquals(3, msc.get(0).COUNT);
@@ -130,7 +136,8 @@ public class IdsvSamFileMetricsCollectorTest extends TestHelper {
 		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
 		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
 		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
-		c.finish(is, idsv, sc);
+		MetricsFile<MapqMetrics, Integer> mq = new MetricsFile<MapqMetrics, Integer>();
+		c.finish(is, idsv, mq, sc);
 		List<CigarDetailMetrics> msc = Lists.newArrayList(sc.getMetrics());
 		msc.removeIf(cdm -> cdm.OPERATOR != CigarOperator.enumToCharacter(CigarOperator.SOFT_CLIP));
 		assertEquals(4, msc.get(0).COUNT);
@@ -148,7 +155,8 @@ public class IdsvSamFileMetricsCollectorTest extends TestHelper {
 		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
 		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
 		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
-		c.finish(is, idsv, sc);
+		MetricsFile<MapqMetrics, Integer> mq = new MetricsFile<MapqMetrics, Integer>();
+		c.finish(is, idsv, mq, sc);
 		List<CigarDetailMetrics> msc = Lists.newArrayList(sc.getMetrics());
 		msc.removeIf(cdm -> cdm.OPERATOR != CigarOperator.enumToCharacter(CigarOperator.X));
 		assertEquals(4, msc.get(0).COUNT);
@@ -160,7 +168,8 @@ public class IdsvSamFileMetricsCollectorTest extends TestHelper {
 		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
 		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
 		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
-		c.finish(is, idsv, sc);
+		MetricsFile<MapqMetrics, Integer> mq = new MetricsFile<MapqMetrics, Integer>();
+		c.finish(is, idsv, mq, sc);
 		assertEquals(100, (int)((IdsvMetrics)idsv.getMetrics().get(0)).MAX_READ_MAPPED_LENGTH);
 	}
 	@Test
@@ -179,13 +188,14 @@ public class IdsvSamFileMetricsCollectorTest extends TestHelper {
 		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
 		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
 		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
-		c.finish(is, idsv, sc);
+		MetricsFile<MapqMetrics, Integer> mq = new MetricsFile<MapqMetrics, Integer>();
+		c.finish(is, idsv, mq, sc);
 		assertEquals(11, (int)((IdsvMetrics)idsv.getMetrics().get(0)).MAX_PROPER_PAIR_FRAGMENT_LENGTH);
 		
 		c = new IdsvSamFileMetricsCollector(null);
 		r = RP(0, 1, 100, 5)[1]; // mate before
 		c.acceptRecord(r, null);
-		c.finish(is, idsv, sc);
+		c.finish(is, idsv, mq, sc);
 		assertEquals(11, (int)((IdsvMetrics)idsv.getMetrics().get(0)).MAX_PROPER_PAIR_FRAGMENT_LENGTH);
 	}
 	@Test
@@ -194,7 +204,8 @@ public class IdsvSamFileMetricsCollectorTest extends TestHelper {
 		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
 		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
 		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
-		c.finish(is, idsv, sc);
+		MetricsFile<MapqMetrics, Integer> mq = new MetricsFile<MapqMetrics, Integer>();
+		c.finish(is, idsv, mq, sc);
 		assertEquals(1, idsv.getMetrics().size());
 		assertTrue(idsv.getMetrics().get(0) instanceof IdsvMetrics);
 	}
@@ -205,8 +216,21 @@ public class IdsvSamFileMetricsCollectorTest extends TestHelper {
 		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
 		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
 		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
-		c.finish(is, idsv, sc);
+		MetricsFile<MapqMetrics, Integer> mq = new MetricsFile<MapqMetrics, Integer>();
+		c.finish(is, idsv, mq, sc);
 		assertNull(idsv.getMetrics().get(0).MAX_PROPER_PAIR_FRAGMENT_LENGTH);
 		assertNull(idsv.getMetrics().get(0).MIN_PROPER_PAIR_FRAGMENT_LENGTH);
+	}
+	@Test
+	public void mapq_should_be_calculated() {
+		IdsvSamFileMetricsCollector c = new IdsvSamFileMetricsCollector(null);
+		c.acceptRecord(withMapq(2, Read(0, 1, "100M"))[0], null);
+		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
+		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
+		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
+		MetricsFile<MapqMetrics, Integer> mq = new MetricsFile<MapqMetrics, Integer>();
+		c.finish(is, idsv, mq, sc);
+		assertEquals(2, mq.getMetrics().get(0).MIN_MAPQ);
+		assertEquals(2, mq.getMetrics().get(0).MAX_MAPQ);
 	}
 }

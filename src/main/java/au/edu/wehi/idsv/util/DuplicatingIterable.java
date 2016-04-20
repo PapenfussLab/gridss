@@ -5,11 +5,12 @@ import htsjdk.samtools.util.Log;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.PeekingIterator;
 
 /**
  * Duplicates the given iterator, feeding internal buffers from a background thread
@@ -56,7 +57,7 @@ public class DuplicatingIterable<T> implements Iterable<T> {
 	 * Creates a new iterator
 	 */
 	@Override
-	public synchronized Iterator<T> iterator() {
+	public synchronized PeekingIterator<T> iterator() {
 		if (iteratorsRequested >= iterators.size()) throw new IllegalStateException(String.format("Already created %d iterators", iterators.size()));
 		return iterators.get(iteratorsRequested++);
 	}
@@ -89,23 +90,50 @@ public class DuplicatingIterable<T> implements Iterable<T> {
 			}
 		}
 	}
-	private class DuplicatingIterableIterator extends AbstractIterator<T> {
-		private final BlockingQueue<Object> queue; 
+	private class DuplicatingIterableIterator implements PeekingIterator<T> {
+		private final BlockingQueue<Object> queue;
+		/**
+		 * Since BlockingQueue does not allow nulls, we can use it as a
+		 * sentinal as to whether we have cached the next result 
+		 */
+		private Object nextRecord = null;
 		public DuplicatingIterableIterator(BlockingQueue<Object> queue) {
 			this.queue = queue;
 		}
+		private void ensureNext() {
+			if (nextRecord == endofstream) return;
+			if (nextRecord == null) {
+				try {
+					nextRecord = queue.take();
+				} catch (InterruptedException e) {
+					log.debug("Interrupted waiting for next record");
+					throw new RuntimeException(e);
+				}
+			}
+		}
+		@Override
+		public boolean hasNext() {
+			ensureNext();
+			return nextRecord != endofstream;
+		}
 		@SuppressWarnings("unchecked")
 		@Override
-		protected T computeNext() {
-			Object o;
-			try {
-				o = queue.take();
-				if (o != endofstream) return (T)o;
-			} catch (InterruptedException e) {
-				log.debug("Interrupted waiting for next record");
-				throw new RuntimeException(e);
-			}
-			return endOfData();
+		public T peek() {
+			if (!hasNext()) throw new NoSuchElementException();
+			return (T)nextRecord;
+		}
+		@SuppressWarnings("unchecked")
+		@Override
+		public T next() {
+			if (!hasNext()) throw new NoSuchElementException();
+			ensureNext();
+			T result = (T)nextRecord;
+			nextRecord = null; // invalidate cached record
+			return result;
+		}
+		@Override
+		public void remove() {
+			throw new IllegalStateException();
 		}
 	}
 }

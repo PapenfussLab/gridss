@@ -4,6 +4,7 @@ import htsjdk.samtools.Cigar;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.TextCigarCodec;
+import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.variant.variantcontext.VariantContext;
 
 import java.nio.charset.StandardCharsets;
@@ -125,8 +126,8 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 		BreakendSummary be = getBreakendSummary();
 		SAMRecord r = new SAMRecord(header);
 		Cigar cigar = new Cigar(be.getCigarRepresentation());
-		if (hasAttribute(VcfAttributes.ANCHOR_CIGAR.attribute())) {
-			cigar = TextCigarCodec.decode(getAttributeAsString(VcfAttributes.ANCHOR_CIGAR.attribute(), null));
+		if (hasAttribute(VcfAttributes.SUPPORT_CIGAR.attribute())) {
+			cigar = TextCigarCodec.decode(getAttributeAsString(VcfAttributes.SUPPORT_CIGAR.attribute(), null));
 		}
 		r.setCigar(cigar);
 		r.setReadName(getAttributeAsString(VcfSvConstants.BREAKEND_EVENT_ID_KEY, getID()));
@@ -164,4 +165,12 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 	public int getReferenceReadCount(int category) { return getAttributeIntOffset(VcfAttributes.REFERENCE_READ_COUNT, category); }	
 	public int getReferenceReadPairCount() { return getAttributeIntSum(VcfAttributes.REFERENCE_READPAIR_COUNT); }
 	public int getReferenceReadPairCount(int category) { return getAttributeIntOffset(VcfAttributes.REFERENCE_READPAIR_COUNT, category); }
+	/**
+	 * Assembled breakend sequence. 
+	 * @return Breakend assembly sequence, null if no assembly was found
+	 */
+	public FastqRecord getBreakendAssemblyFastq() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }

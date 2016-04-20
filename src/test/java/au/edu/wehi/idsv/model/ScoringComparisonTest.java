@@ -13,7 +13,7 @@ public class ScoringComparisonTest extends TestHelper {
 	private static int[] mapq = new int[] { 0, 5, 10, 15, 20, 25, 30, 35, 40 };
 	private void printSoftClipComparison(VariantScoringModel model1, VariantScoringModel model2) {
 		List<CigarDetailMetrics> sc = CigarSizeDistributionTest.data_778();
-		IdsvSamFileMetrics metrics = new IdsvSamFileMetrics(null, null, null, sc);
+		IdsvSamFileMetrics metrics = new IdsvSamFileMetrics(null, null, null, null, sc);
 		System.out.println("Split Read:");
 		System.out.println("mapq1,mapq2,sclength,score1,score2");
 		for (int i = 0; i < mapq.length; i++) {
