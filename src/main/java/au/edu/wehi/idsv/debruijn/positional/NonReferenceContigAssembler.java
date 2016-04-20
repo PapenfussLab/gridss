@@ -64,12 +64,6 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	 */
 	private static final float ORPHAN_EVIDENCE_MULTIPLE = 128;
 	/**
-	 * Chunk size (in multiples of maxEvidenceWidth) to load at any one time.
-	 * Larger chunks increase memory consumption by reduce the number of
-	 * memoization recalculations required.
-	 */
-	private static final float EVIDENCE_WIDTH_LOADING_MULTIPLE = 1.5f;
-	/**
 	 * If the iterator has been advanced this many times without a best contig
 	 * identified, trigger the misassembly identification logic
 	 */
@@ -259,7 +253,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	private void advanceUnderlying() {
 		int loadUntil = nextPosition();
 		if (loadUntil < Integer.MAX_VALUE) {
-			loadUntil += (int)(EVIDENCE_WIDTH_LOADING_MULTIPLE * maxEvidenceDistance);
+			loadUntil += maxEvidenceDistance + 1;
 		}
 		removeOrphanedNonReferenceSubgraphs();
 		advanceUnderlying(loadUntil);
