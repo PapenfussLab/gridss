@@ -2,7 +2,7 @@
 #
 # Example gridss pipeline
 #
-INPUT=chr12.1527326.DEL1024.bam
+INPUT=ins.bam
 OUTPUT=${INPUT/.bam/.gridss.vcf}
 REFERENCE=~/reference_genomes/human/hg19.fa
 JAVA_ARGS="-ea -Xmx16g -cp ../target/gridss-*-jar-with-dependencies.jar"
@@ -24,13 +24,21 @@ if [[ ! -f "$REFERENCE.1.bt2" ]] ; then
 	exit 1
 fi
 
+JAVA_VERSION="$(java -version 2>&1 | head -1)"
+if [[ ! "$JAVA_VERSION" =~ "\"1.8" ]] ; then
+	echo "Detected $JAVA_VERSION. GRIDSS requires Java 1.8 or later."
+	exit 1
+fi
+
 java $JAVA_ARGS au.edu.wehi.idsv.Idsv \
 	TMP_DIR=. \
 	WORKING_DIR=. \
 	INPUT="$INPUT" \
 	OUTPUT="$OUTPUT" \
 	REFERENCE="$REFERENCE" \
-	VERBOSITY=INFO \
+	VERBOSITY=DEBUG \
+	PER_CHR=false \
+	C=gridss.config \
 	2>&1 | tee -a gridss.$$.log
 
 if [[ -f "$OUTPUT" ]] ; then
