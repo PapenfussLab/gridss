@@ -63,6 +63,7 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 	private PathSimplificationIterator simplify;
 	private EvidenceTracker tracker;
 	private NonReferenceContigAssembler assembler;
+	private long lastTime = System.nanoTime();
 	public PositionalDeBruijnGraphTracker(
 			File file,
 			SupportNodeIterator support,
@@ -83,7 +84,8 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 	}
 	public void writeHeader() throws IOException {
 		if (writer == null) return;
-		writer.write("supportPosition,aggregatePosition,pathNodePosition,collapsePosition,simplifyPosition,assemblerPosition,assemblerFirstPosition");
+		writer.write("nsElapsedTime");
+		writer.write(",supportPosition,aggregatePosition,pathNodePosition,collapsePosition,simplifyPosition,assemblerPosition,assemblerFirstPosition");
 		writer.write(",supportConsumed,aggregateConsumed,pathNodeConsumed,collapseConsumed,simplifyConsumed,assemblerConsumed,trackerConsumed");
 		writer.write(",trackerActive");
 		writer.write(",supportProcessedSize");
@@ -105,7 +107,11 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 	}
 	public void trackAssembly(MemoizedContigCaller caller) {
 		if (writer == null) return;
+		long currentTime = System.nanoTime();
+		long deltaTime = currentTime - lastTime;
 		try {
+			writer.write(Long.toString(deltaTime));
+			writer.write(',');
 			writer.write(Integer.toString(support.tracking_inputPosition()));
 			writer.write(',');
 			writer.write(Integer.toString(aggregate.tracking_inputPosition()));
@@ -201,6 +207,8 @@ public class PositionalDeBruijnGraphTracker implements Closeable {
 		} catch (IOException e) {
 			if (log != null) log.error(e);
 			log = null;
+		} finally {
+			lastTime = currentTime;
 		}
 	}
 	@Override
