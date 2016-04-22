@@ -27,6 +27,7 @@ public class AssemblyConfiguration {
 		writeFiltered = config.getBoolean("writeFiltered");
 		excludeNonSupportingEvidence = config.getBoolean("excludeNonSupportingEvidence");
 		anchorLength = config.getInt("anchorLength");
+		removeMisassembledPartialContigsDuringAssembly = config.getBoolean("removeMisassembledPartialContigsDuringAssembly");
 		maxExpectedBreakendLengthMultiple = config.getFloat("maxExpectedBreakendLengthMultiple");
 		trackEvidenceID = config.getBoolean("trackEvidenceID");
 	}
@@ -70,11 +71,16 @@ public class AssemblyConfiguration {
 	public boolean writeFiltered;
 	public boolean excludeNonSupportingEvidence;
 	/**
-	 * Default minimum length in bases of reference sequence anchor assembly
-	 * 
-	 * Note: a breakend assembly longer than this length will cause reference sequence assembly to be at least as long as the breakend 
+	 * Default minimum length in bases of reference sequence anchor assembly. A breakend assembly longer than this
+	 * length will cause reference sequence assembly to be at least as long as the breakend 
 	 */
 	public int anchorLength = 100;
+	/**
+	 * Determine whether to remove excessively long contigs in increments as each
+	 * increment exceeds maxExpectedBreakendLengthMultiple, or after assembly. Waiting
+	 * until after assembly is complete is computationally prohibitive
+	 */
+	public boolean removeMisassembledPartialContigsDuringAssembly = true;
 	/**
 	 * Maximum expected length of a breakend assembly.
 	 * Assemblies larger than this size are extremely likely to be missassemblies

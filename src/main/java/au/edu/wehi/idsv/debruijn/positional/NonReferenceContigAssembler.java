@@ -64,11 +64,6 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	 */
 	private static final float ORPHAN_EVIDENCE_MULTIPLE = 128;
 	/**
-	 * If the iterator has been advanced this many times without a best contig
-	 * identified, trigger the misassembly identification logic
-	 */
-	private static final int LONGEST_PATH_REMOVAL_ADVANCEMENT_TRIGGER_COUNT = 2;
-	/**
 	 * Since reference kmers are not scored, calculating 
 	 * highest weighted results in a preference for paths
 	 * ending at a RP with sequencing errors over a path
@@ -106,7 +101,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	 *                        |
 	 * Last position supported by this RP is here. 
 	 */
-	private final int maxEvidenceDistance;
+	private final int maxEvidenceSupportIntervalWidth;
 	private final int maxAnchorLength;
 	private final int k;
 	private final int referenceIndex;
@@ -115,7 +110,6 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	private final String contigName;
 	private int lastUnderlyingStartPosition = Integer.MIN_VALUE;
 	private MemoizedContigCaller bestContigCaller;
-	private MemoizedContigCaller bestUnanchoredContigCaller = null;
 	private int contigsCalled = 0;
 	private long consumed = 0;
 	private PositionalDeBruijnGraphTracker exportTracker = null;
@@ -135,14 +129,14 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	public NonReferenceContigAssembler(
 			Iterator<KmerPathNode> it,
 			int referenceIndex,
-			int maxEvidenceDistance,
+			int maxEvidenceSupportIntervalWidth,
 			int maxAnchorLength,
 			int k,
 			AssemblyEvidenceSource source,
 			EvidenceTracker tracker,
 			String contigName) {
 		this.underlying = Iterators.peekingIterator(it);
-		this.maxEvidenceDistance = maxEvidenceDistance;
+		this.maxEvidenceSupportIntervalWidth = maxEvidenceSupportIntervalWidth;
 		this.maxAnchorLength = maxAnchorLength;
 		this.k = k;
 		this.referenceIndex = referenceIndex;
@@ -152,16 +146,9 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		initialiseBestCaller();
 	}
 	private void initialiseBestCaller() {
-		this.bestContigCaller = new MemoizedContigCaller(ANCHORED_SCORE, maxEvidenceDistance);
+		this.bestContigCaller = new MemoizedContigCaller(ANCHORED_SCORE, maxEvidenceSupportIntervalWidth);
 		for (KmerPathNode n : graphByPosition) {
 			bestContigCaller.add(n);
-		}
-	}
-	private void initialiseUnanchoredCaller() {
-		 // +ve per-node weight required
-		this.bestUnanchoredContigCaller = new MemoizedContigCaller(1, maxEvidenceDistance);
-		for (KmerPathNode n : graphByPosition) {
-			bestUnanchoredContigCaller.add(n);
 		}
 	}
 	@Override
@@ -184,48 +171,14 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		} while (calledContig == null); // if we filtered out our contig, go back
 		return calledContig;
 	}
-	private static final ArrayDeque<KmerPathSubnode> EMPTY_CONTIG = new ArrayDeque<>();
-	private boolean isMisassembledContig(ArrayDeque<KmerPathSubnode> contig) {
-		if (contig == null) return false;
-		int contigLength = contig.stream().mapToInt(sn -> sn.length()).sum();
-		return contigLength > aes.getContext().getAssemblyParameters().maxExpectedBreakendLengthMultiple * aes.getMaxConcordantFragmentSize();
-	}
 	private ArrayDeque<KmerPathSubnode> findBestContig() {
-		ArrayDeque<KmerPathSubnode> bestUnanchoredContig = bestUnanchoredContigCaller == null ? EMPTY_CONTIG : bestUnanchoredContigCaller.bestContig(nextPosition());
 		ArrayDeque<KmerPathSubnode> bestContig = bestContigCaller.bestContig(nextPosition());
-		int advanceCount = 0;
-		while (underlying.hasNext() && (bestUnanchoredContig == null || bestContig == null)) {
+		while (underlying.hasNext() && bestContig == null) {
 			advanceUnderlying();
-			advanceCount++;
-			// Early abort in regions prone to misassembly
-			if (advanceCount >= LONGEST_PATH_REMOVAL_ADVANCEMENT_TRIGGER_COUNT) {
-				if (bestUnanchoredContigCaller == null) {
-					initialiseUnanchoredCaller();
-				}
-				bestUnanchoredContig = bestUnanchoredContigCaller.bestContig(nextPosition());
-				while (isMisassembledContig(bestUnanchoredContig)) {
-					log.info(String.format("Missassembled contig detected at positions %s:%d-%d. Not assembling reads supporting misassembly.",
-							contigName,
-							bestUnanchoredContig.getFirst().firstStart(),
-							bestUnanchoredContig.getLast().lastEnd()));
-					Set<KmerEvidence> evidence = evidenceTracker.untrack(bestUnanchoredContig);
-					// this will be a large change to the memoization
-					// so it's usually faster to just recalculate from scratch
-					bestContigCaller = null;
-					bestUnanchoredContigCaller = null;
-					removeFromGraph(evidence);
-					initialiseUnanchoredCaller();
-					bestUnanchoredContig = bestUnanchoredContigCaller.bestContig(nextPosition());
-				}
-				if (bestContigCaller == null) {
-					initialiseBestCaller();
-				}
+			if (aes.getContext().getAssemblyParameters().removeMisassembledPartialContigsDuringAssembly) {
+				removeMisassembledPartialContig();
 			}
-			bestContig = bestContigCaller.bestContig(nextPosition());
-		}
-		if (advanceCount == 0) {
-			// if we haven't advanced, we can turn large contig checking back off
-			bestUnanchoredContigCaller = null;
+			bestContig = bestContigCaller.bestContig(nextPosition()); 
 		}
 		if (Defaults.SANITY_CHECK_MEMOIZATION) {
 			assert(bestContigCaller.sanityCheckFrontier(nextPosition()));
@@ -241,6 +194,23 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		}
 		return bestContig;
 	}
+	/**
+	 * Removes partial contigs that are longer than the maximum theoretical breakend contig length
+	 */
+	private void removeMisassembledPartialContig() {
+		int loadedBefore = nextPosition();
+		int positionalWidth = maxEvidenceSupportIntervalWidth - aes.getMaxReadLength();
+		int misassemblyLength = (int)(aes.getContext().getAssemblyParameters().maxExpectedBreakendLengthMultiple * aes.getMaxConcordantFragmentSize() + positionalWidth);
+		ArrayDeque<KmerPathSubnode> misassembly = bestContigCaller.frontierPath(loadedBefore, loadedBefore - misassemblyLength);
+		if (misassembly == null) return;
+		Set<KmerEvidence> evidence = evidenceTracker.untrack(misassembly.stream()
+			// To be sure that all reads on the contig to remove have
+			// been fully loaded, we don't remove nodes that could contain
+			// a read that also contributed to an unprocessed node
+			.filter(sn -> sn.lastEnd() + maxEvidenceSupportIntervalWidth < loadedBefore)
+			.collect(Collectors.toList()));
+		removeFromGraph(evidence);
+	}
 	private int nextPosition() {
 		if (!underlying.hasNext()) return Integer.MAX_VALUE;
 		return underlying.peek().firstStart();
@@ -248,12 +218,12 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	/**
 	 * Loads additional nodes into the graph
 	 * 
-	 * By loaded in batches, we reduce our memoization runtime
+	 * By loaded in batches, we reduce our memoization frontier advancement overhead
 	 */
 	private void advanceUnderlying() {
 		int loadUntil = nextPosition();
 		if (loadUntil < Integer.MAX_VALUE) {
-			loadUntil += maxEvidenceDistance + 1;
+			loadUntil += maxEvidenceSupportIntervalWidth + 1;
 		}
 		removeOrphanedNonReferenceSubgraphs();
 		advanceUnderlying(loadUntil);
@@ -276,7 +246,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	 */
 	private boolean verifyMemoization() {
 		int preGraphSize = graphByPosition.size();
-		MemoizedContigCaller mcc = new MemoizedContigCaller(ANCHORED_SCORE, maxEvidenceDistance);
+		MemoizedContigCaller mcc = new MemoizedContigCaller(ANCHORED_SCORE, maxEvidenceSupportIntervalWidth);
 		for (KmerPathNode n : graphByPosition) {
 			mcc.add(n);
 		}
@@ -297,14 +267,14 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		Set<KmerEvidence> evidence = evidenceTracker.untrack(contig);
 		
 		int targetAnchorLength = Math.max(contig.stream().mapToInt(sn -> sn.length()).sum(), maxAnchorLength);
-		KmerPathNodePath startAnchorPath = new KmerPathNodePath(contig.getFirst(), false, targetAnchorLength + maxEvidenceDistance + contig.getFirst().length());
+		KmerPathNodePath startAnchorPath = new KmerPathNodePath(contig.getFirst(), false, targetAnchorLength + maxEvidenceSupportIntervalWidth + contig.getFirst().length());
 		startAnchorPath.greedyTraverse(true, false);
 		ArrayDeque<KmerPathSubnode> startingAnchor = startAnchorPath.headNode().asSubnodes();
 		startingAnchor.removeLast();
 		// make sure we have enough of the graph loaded so that when
 		// we traverse forward, our anchor sequence will be fully defined
-		advanceUnderlying(contig.getLast().lastEnd() + targetAnchorLength + maxEvidenceDistance);
-		KmerPathNodePath endAnchorPath = new KmerPathNodePath(contig.getLast(), true, targetAnchorLength + maxEvidenceDistance + contig.getLast().length());
+		advanceUnderlying(contig.getLast().lastEnd() + targetAnchorLength + maxEvidenceSupportIntervalWidth);
+		KmerPathNodePath endAnchorPath = new KmerPathNodePath(contig.getLast(), true, targetAnchorLength + maxEvidenceSupportIntervalWidth + contig.getLast().length());
 		endAnchorPath.greedyTraverse(true, false);
 		ArrayDeque<KmerPathSubnode> endingAnchor = endAnchorPath.headNode().asSubnodes();
 		endingAnchor.removeFirst();
@@ -443,9 +413,6 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		if (bestContigCaller != null) {
 			bestContigCaller.remove(toRemove.keySet());
 		}
-		if (bestUnanchoredContigCaller != null) {
-			bestUnanchoredContigCaller.remove(toRemove.keySet());
-		}
 		Set<KmerPathNode> simplifyCandidates = new ObjectOpenCustomHashSet<KmerPathNode>(new KmerPathNode.HashByFirstKmerStartPositionKmer<KmerPathNode>());
 		for (Entry<KmerPathNode, List<List<KmerNode>>> entry : toRemove.entrySet()) {
 			removeWeight(entry.getKey(), entry.getValue(), simplifyCandidates, false);
@@ -553,17 +520,11 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		if (bestContigCaller != null) {
 			bestContigCaller.add(node);
 		}
-		if (bestUnanchoredContigCaller != null) {
-			bestUnanchoredContigCaller.add(node);
-		}
 	}
 	private void removeFromGraph(KmerPathNode node, boolean includeMemoizationRemoval) {
 		if (includeMemoizationRemoval) {
 			if (bestContigCaller != null) {
 				bestContigCaller.remove(node);
-			}
-			if (bestUnanchoredContigCaller != null) {
-				bestUnanchoredContigCaller.remove(node);
 			}
 		}
 		boolean removed = graphByPosition.remove(node);
@@ -607,7 +568,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 	 */
 	private void removeOrphanedNonReferenceSubgraphs() {
 		if (graphByPosition.isEmpty()) return;
-		if (graphByPosition.first().firstStart() >= nextPosition() - ORPHAN_EVIDENCE_MULTIPLE * maxEvidenceDistance) return;
+		if (graphByPosition.first().firstStart() >= nextPosition() - ORPHAN_EVIDENCE_MULTIPLE * maxEvidenceSupportIntervalWidth) return;
 		int lastEnd = Integer.MIN_VALUE;
 		List<KmerPathNode> nonRefOrphaned = new ArrayList<KmerPathNode>();
 		List<KmerPathNode> nonRefActive = new ArrayList<KmerPathNode>();
@@ -629,7 +590,7 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 				nonRefOrphaned.addAll(nonRefActive);
 				nonRefActive.clear();
 			}
-			if (!n.isReference() || n.lastEnd() >= nextPosition() - maxEvidenceDistance) {
+			if (!n.isReference() || n.lastEnd() >= nextPosition() - maxEvidenceSupportIntervalWidth) {
 				// could connect to a reference node
 				nonRefActive.clear();
 				break;
@@ -662,7 +623,6 @@ public class NonReferenceContigAssembler extends AbstractIterator<SAMRecordAssem
 		}
 		if (Defaults.SANITY_CHECK_MEMOIZATION && MemoizedContigCaller.ASSERT_ALL_OPERATIONS) {
 			if (bestContigCaller != null) assert(bestContigCaller.sanityCheck());
-			if (bestUnanchoredContigCaller != null) assert(bestUnanchoredContigCaller.sanityCheck());
 		}
 		return true;
 	}

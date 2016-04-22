@@ -27,9 +27,9 @@ public abstract class ContigCaller {
 	public void remove(KmerPathNode node) { }
 	public void remove(Set<KmerPathNode> keySet) { }
 
-	protected final int maxEvidenceWidth;
-	public ContigCaller(int maxEvidenceWidth) {
-		this.maxEvidenceWidth = maxEvidenceWidth;
+	protected final int maxEvidenceSupportIntervalWidth;
+	public ContigCaller(int maxEvidenceSupportIntervalWidth) {
+		this.maxEvidenceSupportIntervalWidth = maxEvidenceSupportIntervalWidth;
 	}
 	public abstract boolean sanityCheck();
 	public abstract int tracking_memoizedNodeCount();

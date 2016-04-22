@@ -88,10 +88,10 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 	}
 	private NonReferenceContigAssembler createAssembler() {
 		AssemblyConfiguration ap = context.getAssemblyParameters();
-		int maxSupportNodeWidth = source.getMaxConcordantFragmentSize() - source.getMinConcordantFragmentSize() + 1; 		
-		int maxReadLength = source.getMaxMappedReadLength();
+		int maxKmerSupportIntervalWidth = source.getMaxConcordantFragmentSize() - source.getMinConcordantFragmentSize() + 1; 		
+		int maxReadLength = source.getMaxReadLength();
 		int k = ap.k;
-		int maxEvidenceDistance = maxSupportNodeWidth + maxReadLength + 2;
+		int maxEvidenceSupportIntervalWidth = maxKmerSupportIntervalWidth + maxReadLength - k + 2;
 		int maxPathLength = ap.positional.maxPathLengthInBases(maxReadLength);
 		int maxPathCollapseLength = ap.errorCorrection.maxPathCollapseLengthInBases(maxReadLength);
 		int anchorAssemblyLength = ap.anchorLength;
@@ -123,13 +123,13 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 				pnIt = evidenceTracker.new PathNodeAssertionInterceptor(pnIt, "PathCollapseIterator");
 			}
-			simplifyIt = new PathSimplificationIterator(pnIt, maxPathLength, maxSupportNodeWidth);
+			simplifyIt = new PathSimplificationIterator(pnIt, maxPathLength, maxKmerSupportIntervalWidth);
 			pnIt = simplifyIt;
 			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 				pnIt = evidenceTracker.new PathNodeAssertionInterceptor(pnIt, "PathSimplificationIterator");
 			}
 		}
-		currentAssembler = new NonReferenceContigAssembler(pnIt, referenceIndex, maxEvidenceDistance, anchorAssemblyLength, k, source, evidenceTracker, currentContig);
+		currentAssembler = new NonReferenceContigAssembler(pnIt, referenceIndex, maxEvidenceSupportIntervalWidth, anchorAssemblyLength, k, source, evidenceTracker, currentContig);
 		VisualisationConfiguration vis = context.getConfig().getVisualisation();
 		if (vis.assemblyProgress) {
 			String filename = String.format("positional-%s-%s.csv", context.getDictionary().getSequence(referenceIndex).getSequenceName(), direction);

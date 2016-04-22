@@ -2,7 +2,9 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import htsjdk.samtools.util.Log;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Collection;
@@ -104,8 +106,8 @@ public class MemoizedContigCaller extends ContigCaller {
 			frontierByPathStart.removeAll(tn);
 		}
 	}
-	public MemoizedContigCaller(int anchoredScore, int maxEvidenceWidth) {
-		super(maxEvidenceWidth);
+	public MemoizedContigCaller(int anchoredScore, int maxEvidenceSupportIntervalWidth) {
+		super(maxEvidenceSupportIntervalWidth);
 		this.anchoredScore = anchoredScore;
 	}
 	/**
@@ -284,7 +286,7 @@ public class MemoizedContigCaller extends ContigCaller {
 			unprocessedPosition = Math.min(unprocessedPosition, frontierPathFirstStart);
 		}
 		int bestContigLastEnd = contigByScore.first().node.lastEnd(); 
-		return bestContigLastEnd < unprocessedPosition - maxEvidenceWidth - 1;
+		return bestContigLastEnd < unprocessedPosition - maxEvidenceSupportIntervalWidth - 1;
 	}
 	private TraversalNode bestTraversal(int unprocessedPosition) {
 		advanceFrontier(unprocessedPosition);
@@ -295,9 +297,7 @@ public class MemoizedContigCaller extends ContigCaller {
 		TraversalNode tn = contigByScore.first();
 		return tn;
 	}
-	@Override
-	public ArrayDeque<KmerPathSubnode> bestContig(int unprocessedPosition) {
-		TraversalNode tn = bestTraversal(unprocessedPosition);
+	private ArrayDeque<KmerPathSubnode> asUnanchoredPath(TraversalNode tn) {
 		if (tn == null) return null;
 		ArrayDeque<KmerPathSubnode> contig = tn.toSubnodeNextPath();
 		if (contig.peekFirst().isReference()) {
@@ -310,6 +310,28 @@ public class MemoizedContigCaller extends ContigCaller {
 		assert(contig.stream().allMatch(sn -> !sn.isReference()));
 		assert(contig.stream().allMatch(sn -> sn.node().isValid()));
 		return contig;
+	}
+	@Override
+	public ArrayDeque<KmerPathSubnode> bestContig(int unprocessedPosition) {
+		TraversalNode tn = bestTraversal(unprocessedPosition);
+		if (tn == null) return null;
+		return asUnanchoredPath(tn);
+	}
+	/**
+	 * Returns the longest path still in the frontier 
+	 * @param unprocessedPosition
+	 * @param startingBefore position frontier path must start before
+	 * @return
+	 */
+	public ArrayDeque<KmerPathSubnode> frontierPath(int unprocessedPosition, int startingBefore) {
+		if (!frontierByPathStart.isEmpty() && frontierByPathStart.first().pathFirstStart() < startingBefore) {
+			// We could have an early frontier path because we just haven't performed the memoization yet
+			advanceFrontier(unprocessedPosition);
+			if (!frontierByPathStart.isEmpty() && frontierByPathStart.first().pathFirstStart() < startingBefore) {
+				return asUnanchoredPath(frontierByPathStart.first());
+			}
+		}
+		return null;
 	}
 	@Override
 	public int tracking_memoizedNodeCount() {
@@ -326,6 +348,14 @@ public class MemoizedContigCaller extends ContigCaller {
 	@Override
 	public void exportState(File file) throws IOException {
 		frontier.export(file);
+	}
+	public void exportScores(File file) throws IOException {
+		try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+			writer.write("start,score\n");
+			for (TraversalNode tn : contigByScore) {
+				writer.write(String.format("%d,%d\n", tn.score, tn.pathFirstStart()));
+			}
+		}
 	}
 	public boolean sanityCheck(Set<KmerPathNode> loadedGraph) {
 		for (KmerPathNode node : loadedGraph) {

@@ -284,16 +284,17 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		assertEquals(new BreakendSummary(0, FWD, 100 + 10 - 1, 100 + 10 - 1), output.get(0).getBreakendSummary());
 	}
 	@Test
-	public void should_strip_evidence_forming_contig_longer_than_maxExpectedBreakendLengthMultiple() {
+	public void should_truncate_contigs_longer_than_maxExpectedBreakendLengthMultiple() {
 		ProcessingContext pc = getContext();
 		MockSAMEvidenceSource ses = SES(50, 100);
 		pc.getAssemblyParameters().k = 4;
+		pc.getAssemblyParameters().maxExpectedBreakendLengthMultiple = 1.5f;
 		List<DirectedEvidence> e = new ArrayList<>();
-		e.add(SCE(FWD, withSequence("ACGTAACCGGTT", Read(0, 1, "6M6S"))));
 		for (int i = 1; i < 1000; i++) {
 			e.add(NRRP(ses, OEA(0, i, "10M", true)));
 		}
 		List<SAMRecordAssemblyEvidence> output = go(pc, false, e.toArray(new DirectedEvidence[0]));
 		assertEquals(1, output.size());
+		assertTrue(output.get(0).getBreakendSequence().length <= (1.5 * 100) + 50 + 100);
 	}
 }
