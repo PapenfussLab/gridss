@@ -12,13 +12,13 @@ If you have any trouble running GRIDSS, please raise an issue using the Issues t
 To run, GRIDSS the following must be installed:
 
 * Java 1.8 or later
-* NGS aligner. bowtie2 (default) and bwa are currently supported
+* NGS aligner. bwa (default) and bowtie2 are currently supported
 
 # Running
 
 Pre-compiled binaries are available at https://github.com/PapenfussLab/GRIDSS/releases.
 
-Gridss is built using htsjdk, so is invoked in the same manner as Picard tools utilities. Gridss invokes an external alignment tools at multiple point during processing. By default this is bowtie2, but can be configured to use bwa mem.
+GRIDSS is built using htsjdk, so is invoked in the same manner as Picard tools utilities. GRIDSS invokes an external alignment tools at multiple point during processing. By default this is bowtie2, but can be configured to use bwa mem.
 
 ## example/GRIDSS.sh
 
@@ -33,7 +33,7 @@ sequences is not used, additional memory is recommended.
 
 ## Parameters
 
-Gridss has a large number of parameters that can be be adjusted. The default parameter set has been tested with paired-end illumina data ranging from 2x36bp to 2x250bp and should give a reasonably good. Command line used parameter are listed below.
+GRIDSS has a large number of parameters that can be be adjusted. The default parameter set has been tested with paired-end illumina data ranging from 2x36bp to 2x250bp and should give a reasonably good. Command line used parameter are listed below.
 
 ### OUTPUT (Required)
 
@@ -41,7 +41,7 @@ Variant calling output file. Can be VCF or BCF.
 
 ### REFERENCE (Required)
 
-Reference genome fasta file. Gridss requires the reference genome supplied exactly matches
+Reference genome fasta file. GRIDSS requires the reference genome supplied exactly matches
 the reference genome all input files.
 The reference genome must be be fasta format and must have a tabix (.fai) index and an
 index for the NGS aligner (by default bowtie2). The NGS aligner index prefix must match
@@ -52,27 +52,27 @@ File | Description
 ------- | ---------
 reference.fa | reference genome
 reference.fa.fai | Tabix index
-reference.fa.1.bt2 | Bowtie2 index
-reference.fa.2.bt2 | Bowtie2 index
-reference.fa.3.bt2 | Bowtie2 index
-reference.fa.4.bt2 | Bowtie2 index
-reference.fa.rev.1.bt2 | Bowtie2 index
-reference.fa.rev.1.bt2 | Bowtie2 index
 
-These can be created using `samtools faidx reference.fa` and  `bowtie2-build reference.fa reference.fa`
+reference.fa.amb | bwa index
+reference.fa.ann | bwa index
+reference.fa.bwt | bwa index
+reference.fa.pac | bwa index
+reference.fa.sa | bwa index
+
+These can be created using `samtools faidx reference.fa` and `bwa index reference.fa reference.fa`
 
 A .dict sequence dictionary is also required but GRIDSS will automatically create one if not found. 
 
 ### INPUT (Required)
 
 Input libraries. Specify multiple times (ie `INPUT=file1.bam INPUT=file2.bam INPUT=file3.bam` ) to process multiple libraries together.
-Gridss considers all reads in each file to come from a single library.
+GRIDSS considers all reads in each file to come from a single library.
 Input files containing read groups from multiple different libraries should be split into an input file per-library.
 
 ### INPUT_CATEGORY
 
-Numeric category (starting at zero) to allocate the corresponding input file to. Per-category variant support is output so
-a category should be specified for each input file when performing analysis on multiple samples at once. (eg `INPUT=normal75bp.bam INPUT_CATEGORY=0 INPUT=normal100bp.bam INPUT_CATEGORY=0 INPUT=tumour100bp.bam INPUT_CATEGORY=1` ).
+Numeric category (starting at one) to allocate the corresponding input file to. Per-category variant support is output so
+a category should be specified for each input file when performing analysis on multiple samples at once. (eg `INPUT=normal75bp.bam INPUT_CATEGORY=1 INPUT=normal100bp.bam INPUT_CATEGORY=1 INPUT=tumour100bp.bam INPUT_CATEGORY=2` ).
 
 For those familar with [CORTEX](http://cortexassembler.sourceforge.net/), a GRIDSS input category corresponds to a CORTEX graph colour.
 
@@ -98,8 +98,8 @@ for all input files. Use null to indicate an override is not required for a part
 
 Flags whether processing should be performed in parallel for each chromosome, or serially for each file.
 Setting `PER_CHR=false` will reduce the number of intermediate files created, at the cost of reduced parallelism.
-This can be useful for small input files small, many reference contigs (such as occurs in heavily fragmented genome
-assemblies), or you have a limited number of file handles available.
+This can be useful for small input files , references with many reference contigs (such as occurs in heavily fragmented genome
+assemblies), or you have a limited number of threads or file handles available.
 
 ### WORKER_THREADS
 
@@ -119,13 +119,13 @@ This field is a standard Picard tools argument and carries the usual meaning. Te
 
 ## libsswjni.so
 
-Due to relatively poor performance of existing Java-based Smith-Waterman alignment packages, GRIDSS incorporates a JNI wrapper to the striped Smith-Waterman alignment library [SSW](https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library). Gridss will attempt to load a precompiled version. If the precompiled version is not compatible with your linux distribution, or you are running a different operating system, recompilation of the wrapper from source will be required. When recompiling, ensure the correct libsswjni.so is loaded using -Djava.library.path, or the LD_LIBRARY_PATH environment variable as per the JNI documentation.
+Due to relatively poor performance of existing Java-based Smith-Waterman alignment packages, GRIDSS incorporates a JNI wrapper to the striped Smith-Waterman alignment library [SSW](https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library). GRIDSS will attempt to load a precompiled version. If the precompiled version is not compatible with your linux distribution, or you are running a different operating system, recompilation of the wrapper from source will be required. When recompiling, ensure the correct libsswjni.so is loaded using -Djava.library.path, or the LD_LIBRARY_PATH environment variable as per the JNI documentation.
 
 If your CPU does not support SSE, GRIDSS will terminate with a fatal error when loading the library. Library loading can be disabled by added `-Dsswjni.disable=true` to the GRIDSS command line. If libsswjni.so cannot be loaded, GRIDSS will fall back to a (50x) slower java implementation. 
 
 ### CONFIGURATION_FILE
 
-Gridss uses a large number of configurable settings and thresholds which for easy of use are not included
+GRIDSS uses a large number of configurable settings and thresholds which for easy of use are not included
 as command line arguments. Any of these individual settings can be overriden by specifying a configuration
 file to use instead. Note that this configuration file uses a different format to the Picard tools-compatable
 configuration file that is used instead of the standard command-line arguments.
@@ -136,11 +136,11 @@ of each parameter can be found in the javadoc documentation of the au.edu.wehi.i
 
 # Output
 
-Gridss is fundamentally a structural variation breakpoint caller. Variants are output as VCF breakends. Each call is a breakpoint consisting of two breakends, one from location A to location B, and a reciprocal record from location B back to A. Note that although each record fully defines the call, the VCF format required both breakend to be written as separate record.
+GRIDSS is fundamentally a structural variation breakpoint caller. Variants are output as VCF breakends. Each call is a breakpoint consisting of two breakends, one from location A to location B, and a reciprocal record from location B back to A. Note that although each record fully defines the call, the VCF format required both breakend to be written as separate record.
 
 ## Quality score
 
-Gridss calculates quality scores according to the model outlined in [paper].
+GRIDSS calculates quality scores according to the model outlined in [paper].
 As GRIDSS does not yet perform multiple test correction or score recalibration, QUAL scores are vastly overestimated for all variants.
 As a rule of thumb, variants with QUAL >= 1000 and have assembles from both sides of the breakpoint (AS > 0 & RAS > 0) are considered of high quality,
 variant with QUAL >= 500 but can only be assembled from one breakend (AS > 0 | RAS > 0) are considered of intermediate quality,
@@ -148,11 +148,11 @@ and variants with low QUAL score or lack any supporting assemblies are considere
 
 ## Non-standard INFO fields
 
-Gridss writes a number of non-standard VCF fields. These fields are described in the VCF header.
+GRIDSS writes a number of non-standard VCF fields. These fields are described in the VCF header.
 
 ## BEDPE
 
-Gridss supports conversion of VCF to BEDPE format using the VcfBreakendToBedpe utility program included in the GRIDSS jar.
+GRIDSS supports conversion of VCF to BEDPE format using the VcfBreakendToBedpe utility program included in the GRIDSS jar.
 An working example of this conversion utility is provided in example/GRIDSS.sh
 
 Calling VcfBreakendToBedpe with `INCLUDE_HEADER=true` will include a header containing column names in the bedpe file.
@@ -161,7 +161,7 @@ For bedpe output, breakend information is not exported and per category totals (
 
 ## Intermediate Files
 
-Gridss writes a large number of intermediate files. If rerunning GRIDSS with different parameters on the same input, all intermediate files must be deleted. All intermediate files are written to the WORKING_DIR directory tree, with the exception of temporary sort buffers which are written to TMP_DIR and automatically deleted at the conclusion of the sort operation.
+GRIDSS writes a large number of intermediate files. If rerunning GRIDSS with different parameters on the same input, all intermediate files must be deleted. All intermediate files are written to the WORKING_DIR directory tree, with the exception of temporary sort buffers which are written to TMP_DIR and automatically deleted at the conclusion of the sort operation.
 
 File | Description
 ------- | ---------
@@ -207,7 +207,7 @@ Here is a list of key phrases of errors encountered by users and their solution
 
 ###  (Too many open files)
 
-Gridss has attempted to open too many files at once and the OS file handle limit has been reached.
+GRIDSS has attempted to open too many files at once and the OS file handle limit has been reached.
 On linux 'ulimit -n' displays your current limit. This error likely to be encountered on reference
 genome has many contigs, or if you have specified a large number of input files. Solutions are:
 * add `PER_CHR=false` to the command line. Files will be written per-input instead of per-input per-chromosome.
