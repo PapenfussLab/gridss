@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import org.junit.Test;
 
 import picard.analysis.InsertSizeMetrics;
+import picard.analysis.MapqMetrics;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.metrics.CigarDetailMetrics;
 import au.edu.wehi.idsv.metrics.IdsvMetrics;
@@ -35,6 +36,8 @@ public class EmpiricalReferenceLikelihoodModelTest extends TestHelper {
 					READ_PAIRS_BOTH_MAPPED = READ_PAIRS - READ_PAIRS_ONE_MAPPED - READ_PAIRS_ZERO_MAPPED;
 					READS = 2 * READ_PAIRS;
 					MAPPED_READS = READS - READ_PAIRS_ONE_MAPPED - 2*READ_PAIRS_ZERO_MAPPED;
+				}},
+				new MapqMetrics() {{
 				}},
 				new InsertSizeDistribution(
 					new int[] { 1, 2, 3,},

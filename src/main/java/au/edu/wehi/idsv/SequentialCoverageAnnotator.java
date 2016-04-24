@@ -2,6 +2,7 @@ package au.edu.wehi.idsv;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.stream.IntStream;
 
 
 /**
@@ -25,15 +26,18 @@ public class SequentialCoverageAnnotator implements Iterator<VariantContextDirec
 	public VariantContextDirectedEvidence annotate(VariantContextDirectedEvidence variant) {
 		BreakendSummary loc = variant.getBreakendSummary();
 		int referenceIndex = loc.referenceIndex;
-		// TODO: start or end based on call position
-		int positionImmediatelyBeforeBreakend = loc.start - (loc.direction == BreakendDirection.Forward ? 0 : 1);
+		int offset = loc.direction == BreakendDirection.Forward ? 0 : -1;
 		int[] reads = new int[reference.size()];
 		int[] spans = new int[reference.size()];
 		for (int i = 0; i < reference.size(); i++) {
 			ReferenceCoverageLookup r = reference.get(i);
 			if (r != null) {
-				reads[i] = r.readsSupportingNoBreakendAfter(referenceIndex, positionImmediatelyBeforeBreakend);
-				spans[i] = r.readPairsSupportingNoBreakendAfter(referenceIndex, positionImmediatelyBeforeBreakend);
+				reads[i] = IntStream.range(loc.start + offset, loc.end + 1 + offset)
+						.map(p -> r.readsSupportingNoBreakendAfter(referenceIndex, p))
+						.min().getAsInt();
+				spans[i] = IntStream.range(loc.start + offset, loc.end + 1 + offset)
+						.map(p -> r.readPairsSupportingNoBreakendAfter(referenceIndex, p))
+						.min().getAsInt();
 			}
 		}
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context, variant);

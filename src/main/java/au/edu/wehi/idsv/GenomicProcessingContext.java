@@ -143,7 +143,6 @@ public class GenomicProcessingContext implements Closeable {
 				log.debug("Reference genome cache loaded.");
 			} catch (Exception e) {
 				log.error(e, "Background caching of reference genome failed.");
-				System.exit(1);
 			}
 	    });
 		thread.setDaemon(true);
@@ -294,6 +293,7 @@ public class GenomicProcessingContext implements Closeable {
 
 	@Override
 	public void close() throws IOException {
+		log.debug("close() called");
 		if (reference != null) reference.close();
 	}
 

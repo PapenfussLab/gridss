@@ -26,8 +26,10 @@ import au.edu.wehi.idsv.sam.SAMRecordUtil;
  *
  */
 public class KmerEvidence extends PackedKmerList {
-	// TODO: optimisation: soft clip can store end and BreakendSummary implicitly
-	// TODO: optimisation: read pair can store anchor position & direction instead of breakend & anchor
+	// TODO: turn into subclasses
+	// - soft clip can store end and BreakendSummary implicitly
+	// - read pair can store anchor position & direction instead of breakend & anchor
+	// - read pair anchor can point to rp
 	private final String id;
 	private final BitSet anchor;
 	private final BitSet ambiguous;
@@ -99,6 +101,9 @@ public class KmerEvidence extends PackedKmerList {
 	public static KmerEvidence create(int k, NonReferenceReadPair pair) {
 		SAMRecord local = pair.getLocalledMappedRead();
 		SAMRecord remote = pair.getNonReferenceRead();
+		if (k > remote.getReadLength()) {
+			return null;
+		}
 		boolean reverseComp = !pair.onExpectedStrand();
 		int startPosition;
 		int endPosition;
@@ -121,10 +126,29 @@ public class KmerEvidence extends PackedKmerList {
 			startPosition = local.getUnclippedEnd() - maxFragSize + 1;
 			endPosition = local.getUnclippedEnd() - minFragSize + 1;
 		}
-		if (k > remote.getReadLength()) {
+		return new KmerEvidence(pair.getEvidenceID(), startPosition, endPosition, k, null, remote.getReadBases(), remote.getBaseQualities(), reverseComp, reverseComp, pair.getBreakendSummary(), pair.getBreakendQual());
+	}
+	/**
+	 * Creates anchoring evidence for the given read pair
+	 * @param k kmer size
+	 * @param pair read pair evidence
+	 * @return anchoring support
+	 */
+	public static KmerEvidence createAnchor(int k, NonReferenceReadPair pair) {
+		SAMRecord local = pair.getLocalledMappedRead();
+		int startPosition;
+		if (k > local.getReadLength()) {
 			return null;
 		}
-		return new KmerEvidence(pair.getEvidenceID(), startPosition, endPosition, k, null, remote.getReadBases(), remote.getBaseQualities(), reverseComp, reverseComp, pair.getBreakendSummary(), pair.getBreakendQual());
+		// only take the the first fully mapping portion of the alignment
+		if (pair.getBreakendSummary().direction == BreakendDirection.Forward) {
+			startPosition = local.getAlignmentEnd() + SAMRecordUtil.getEndSoftClipLength(local) - local.getReadLength() + 1;
+		} else {
+			startPosition = local.getAlignmentStart() - SAMRecordUtil.getStartSoftClipLength(local);
+		}
+		BitSet bs = new BitSet();
+		bs.set(0,  local.getReadLength() -k + 1);
+		return new KmerEvidence(pair.getEvidenceID(), startPosition, startPosition, k, bs, local.getReadBases(), local.getBaseQualities(), false, false, pair.getBreakendSummary(), pair.getBreakendQual());
 	}
 	public static KmerEvidence create(int k, SoftClipEvidence softClipEvidence, boolean trimOtherSoftClip) {
 		SAMRecord read = softClipEvidence.getSAMRecord();

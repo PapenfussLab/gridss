@@ -33,6 +33,7 @@ public class SpanningSAMRecordAssemblyEvidence extends RealignedSAMRecordAssembl
 		this.indelOffset = indelOffset;
 		// sanity check mapping quality
 		assert(anchor.getMappingQuality() >= parent.getEvidenceSource().getContext().getConfig().minMapq);
+		assert(anchor.getMappingQuality() <= parent.getEvidenceSource().getContext().getConfig().maxMapq);
 	}
 	public int getIndelOffset() {
 		return indelOffset;

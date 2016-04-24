@@ -39,7 +39,7 @@ ggplot(mdelroc) +
   labs(x="False Positives", y="True Positives", title="GRIDSS model comparison")
 saveplot(paste0("model_breakdown_tp_fp_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ""), width=7, height=5)
 
-# only one data point per tpotherwise illustrator crashs
+# only one data point per tp otherwise illustrator crashs
 ggplot(mdelroc) + #[, .SD[!duplicated(.SD$tp, fromLast=TRUE),], by=c("kmer", "assembly", "model", "exclusion", "Filter")]) +
   aes(x=tp, y=precision, color=model, linetype=Filter) + 
   facet_grid(exclusion ~ assembly) +
@@ -48,7 +48,7 @@ ggplot(mdelroc) + #[, .SD[!duplicated(.SD$tp, fromLast=TRUE),], by=c("kmer", "as
   labs(x="True Positives", y="Precision", title="GRIDSS model comparison")
 saveplot(paste0("model_breakdown_prec_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ""), width=7, height=5)
 
-mcmp <- mdelroc[mdelroc$Filter=="Including Filtered" & mdelroc$assembly=="Positional" & mdelroc$exclusion=="None",]
+mcmp <- mdelroc[mdelroc$Filter==text_all_calls & mdelroc$assembly=="Positional" & mdelroc$exclusion=="None",]
 
 ggplot(mcmp) +
   aes(x=fp, y=tp, color=model) +
@@ -58,7 +58,7 @@ ggplot(mcmp) +
   labs(x="False Positives", y="True Positives", title="GRIDSS model comparison")
 saveplot(paste0("model_tp_fp_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ""), width=7, height=5)
 
-# only one data point per tpotherwise illustrator crashs
+# only one data point per tp otherwise illustrator crashs
 ggplot(mcmp[, .SD[!duplicated(.SD$tp, fromLast=TRUE),], by=c("kmer", "assembly", "model", "exclusion")]) +
   aes(x=tp, y=precision, color=model) + 
   geom_line() + 
@@ -66,23 +66,29 @@ ggplot(mcmp[, .SD[!duplicated(.SD$tp, fromLast=TRUE),], by=c("kmer", "assembly",
   labs(x="True Positives", y="Precision", title="GRIDSS model comparison")
 saveplot(paste0("model_prec_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ""), width=7, height=5)
 
+maxfp <- 1000
+auc <- mcmp[, list(auc=rocauc(.SD, maxfp=maxfp)), by=c("kmer", "assembly", "model", "exclusion")]
+lowertriangle <- max(mcmp[mcmp$fp <= maxfp]$tp) * maxfp / 2
+auc$relativePerformance <- (auc$auc - lowertriangle) / max(auc$auc - lowertriangle)
+
 # breakdown
-breakdown <- mdelroc[mdelroc$Filter=="Including Filtered" & mdelroc$model=="FastEmpiricalReferenceLikelihood",]
+breakdown <- mdelroc[mdelroc$Filter==text_all_calls & mdelroc$model=="FastEmpiricalReferenceLikelihood",]
+breakdown$Evidence <- factor(ifelse(breakdown$exclusion=="None", "Both", ifelse(breakdown$exclusion=="RP", "Split Read", "Discordant Pairs")))
+breakdown$Assembly <- relevel(factor(breakdown$assembly), "Positional")
 
 ggplot(breakdown) +
-  aes(x=fp, y=tp) +
-  facet_grid(exclusion ~ assembly)
+  aes(x=fp, y=tp, color=Evidence, linetype=Assembly) +
   geom_line() +
   coord_cartesian(xlim=c(0, 1000), ylim=c(0, 3000)) + 
-  scale_color_brewer(palette="Set2") +
+  scale_color_brewer(palette="Dark2") +
   labs(x="False Positives", y="True Positives", title="GRIDSS support breakdown")
 saveplot(paste0("breakdown_tp_fp_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ""), width=7, height=5)
 
-# only one data point per tpotherwise illustrator crashs
+# only one data point per tp otherwise illustrator crashs
 ggplot(breakdown[, .SD[!duplicated(.SD$tp, fromLast=TRUE),], by=c("kmer", "assembly", "model", "exclusion")]) +
-  aes(x=tp, y=precision, color=model) + 
+  aes(x=tp, y=precision, color=Evidence, linetype=Assembly) + 
   geom_line() + 
-  scale_color_brewer(palette="Set2") +
+  scale_color_brewer(palette="Dark2") +
   labs(x="True Positives", y="Precision", title="GRIDSS support breakdown")
 saveplot(paste0("breakdown_prec_pacbiomoleculo", "_error_", maxLengthRelativeDifference, "_", maxPositionDifference_LengthOrEndpoint, ""), width=7, height=5)
 

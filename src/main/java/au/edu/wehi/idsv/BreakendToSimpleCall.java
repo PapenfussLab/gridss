@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import java.io.File;
+import java.util.Locale;
 
 import org.apache.commons.configuration.ConfigurationException;
 
@@ -28,13 +29,14 @@ public class BreakendToSimpleCall extends CommandLineProgram {
     public File OUTPUT;
 	@Option(shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME, doc="Reference used for alignment")
     public File REFERENCE;
-	@Option(shortName="C", doc = "gridss configuration file containing overrides", optional=true)
+	@Option(shortName="C", doc = "gridss configuration file use for variant calling", optional=true)
     public File CONFIGURATION_FILE = null;
 	public static void main(String[] argv) {
         System.exit(new BreakendToSimpleCall().instanceMain(argv));
     }
 	@Override
 	protected int doWork() {
+    	java.util.Locale.setDefault(Locale.ROOT);
 		FileSystemContext fsc = new FileSystemContext(TMP_DIR.get(0), TMP_DIR.get(0), MAX_RECORDS_IN_RAM);
 		GridssConfiguration config;
 		try {

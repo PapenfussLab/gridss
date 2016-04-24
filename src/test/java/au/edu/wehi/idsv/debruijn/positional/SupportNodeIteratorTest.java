@@ -13,6 +13,7 @@ import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.TestHelper;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 
@@ -37,8 +38,15 @@ public class SupportNodeIteratorTest extends TestHelper {
 	public void should_return_kmernodes_in_start_position_order() {
 		int k = 4;
 		List<DirectedEvidence> input = scrp(k, "ACGTTATACCG", 30, 60);
-		List<KmerSupportNode> output = Lists.newArrayList(new SupportNodeIterator(k, input.iterator(), 60, null));
+		List<KmerSupportNode> output = Lists.newArrayList(new SupportNodeIterator(k, input.iterator(), 60, null, false));
 		assertTrue(KmerNodeUtil.ByLastStart.isOrdered(output));
 		assertEquals(100 * ( 10-3 + 5-3 + 11-3 + 11-3 ), output.size());
+	}
+	@Test
+	public void includePairAnchors_should_determine_rp_anchor_inclusion() {
+		int k = 4;
+		List<DirectedEvidence> input = ImmutableList.of(NRRP(OEA(0, 1, "10M", true)));
+		assertEquals(1 * (10-3), Lists.newArrayList(new SupportNodeIterator(k, input.iterator(), 60, null, false)).size());
+		assertEquals(2 * (10-3), Lists.newArrayList(new SupportNodeIterator(k, input.iterator(), 60, null, true)).size());
 	}
 }

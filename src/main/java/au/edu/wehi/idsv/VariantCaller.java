@@ -154,7 +154,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 			SAMEvidenceSource samSource = (SAMEvidenceSource)source;
 			maxSize = Math.max(samSource.getMaxConcordantFragmentSize(), Math.max(samSource.getMaxReadLength(), samSource.getMaxReadMappedLength()));
 		}
-		maxSize = Math.max(maxSize, assemblyEvidence.getAssemblyWindowSize());
+		maxSize = Math.max(maxSize, assemblyEvidence.getAssemblyWindowSize()) + processContext.getVariantCallingParameters().maxBreakendHomologyLength;
 		return maxSize + 2 * (processContext.getVariantCallingParameters().breakendMargin + 1);
 	}
 	public void annotateBreakpoints() {

@@ -41,7 +41,7 @@ public class DeBruijnSubgraphAssemblerDataTest extends IntermediateFilesTest {
 				new ArrayList<Header>(), new GridssConfiguration()),
 			new File("W:\\na12878\\NA12878D_HiSeqX_R1.bam"), 0);
 		ses.completeSteps(ProcessStep.ALL_STEPS); 
-		CloseableIterator<DirectedEvidence> it = ses.iterator(true,  true, true, "MT");
+		CloseableIterator<DirectedEvidence> it = ses.iterator(true, true, true, "MT");
 		
 		while (it.hasNext()) {
 			ass.addEvidence(it.next());

@@ -8,6 +8,7 @@ import htsjdk.variant.vcf.VCFFileReader;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Locale;
 
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
@@ -41,6 +42,8 @@ public class VcfBreakendToBedpe extends picard.cmdline.CommandLineProgram {
 	public boolean INCLUDE_HIGH_BREAKEND = false;
 	@Override
 	protected int doWork() {
+		log.debug("Setting language-neutral locale");
+    	java.util.Locale.setDefault(Locale.ROOT);
 		if (TMP_DIR == null || TMP_DIR.size() == 0) {
 			TMP_DIR = Lists.newArrayList(new File("."));
 		}

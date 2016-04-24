@@ -22,7 +22,7 @@ import au.edu.wehi.idsv.visualisation.TrackedBuffer.NamedTrackedBuffer;
 public class BufferTracker {
 	private final List<WeakReference<TrackedBuffer>> bufferObjects = Collections.synchronizedList(new ArrayList<WeakReference<TrackedBuffer>>());
 	private final File output;
-	private final int writeIntervalInSeconds;
+	private final float writeIntervalInSeconds;
 	private volatile Worker worker = null;
 	/**
 	 * Tracking
@@ -30,14 +30,14 @@ public class BufferTracker {
 	 * @param output output file
 	 * @param writeIntervalInSeconds interval between 
 	 */
-	public BufferTracker(File output, int writeIntervalInSeconds) {
+	public BufferTracker(File output, float writeIntervalInSeconds) {
 		this.output = output;
 		this.writeIntervalInSeconds = writeIntervalInSeconds;
 	}
 	public void start() {
 		Worker worker = new Worker();
 		worker.setName("BufferTracker");
-		worker.setDaemon(false);
+		worker.setDaemon(true);
 		worker.start();
 	}
 	public void stop() {
@@ -89,7 +89,7 @@ public class BufferTracker {
 		public void run() {
 			while (true) {
 				try {
-					Thread.sleep(writeIntervalInSeconds * 1000);
+					Thread.sleep((long)(writeIntervalInSeconds * 1000));
 					append();
 				} catch (InterruptedException e) {
 				} finally {

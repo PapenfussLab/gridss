@@ -36,7 +36,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		ProcessingContext pc = getContext();
 		AssemblyConfiguration p = pc.getAssemblyParameters();
 		p.k = k;
-		pc.getConfig().getVisualisation().assembly = true;
+		pc.getConfig().getVisualisation().assemblyGraph = true;
 		pc.getConfig().getVisualisation().assemblyProgress = true;
 		pc.getConfig().getVisualisation().directory = new File(testFolder.getRoot(), "visualisation");
 		pc.getConfig().getVisualisation().directory.mkdir();

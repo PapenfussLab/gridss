@@ -15,7 +15,7 @@ public class TwoBitBufferedReferenceSequenceFileTest extends TestHelper {
 	public void getSequenceShouldMatchUnderlying() throws IOException {
 		TwoBitBufferedReferenceSequenceFile b = new TwoBitBufferedReferenceSequenceFile(SMALL_FA);
 		for (String contig : SMALL_FA.getSequenceDictionary().getSequences().stream().map(ssr -> ssr.getSequenceName()).collect(Collectors.toList())) {
-			assertEquals(S(b.getSequence(contig).getBases()), S(SMALL_FA.getSequence(contig).getBases()));
+			assertEquals(S(b.getSequence(contig).getBases()).toUpperCase(), S(SMALL_FA.getSequence(contig).getBases()).toUpperCase());
 		}
 	}
 	@Test
@@ -24,7 +24,7 @@ public class TwoBitBufferedReferenceSequenceFileTest extends TestHelper {
 		for (String contig : SMALL_FA.getSequenceDictionary().getSequences().stream().map(ssr -> ssr.getSequenceName()).collect(Collectors.toList())) {
 			for (int i = 1; i < 100; i++) {
 				for (int j = i; j < 100; j++) {
-					assertEquals(S(b.getSubsequenceAt(contig, i, j).getBases()), S(SMALL_FA.getSubsequenceAt(contig, i, j).getBases()));
+					assertEquals(S(b.getSubsequenceAt(contig, i, j).getBases()).toUpperCase(), S(SMALL_FA.getSubsequenceAt(contig, i, j).getBases()).toUpperCase());
 					assertEquals(b.getSubsequenceAt(contig, i, j).getName(), SMALL_FA.getSubsequenceAt(contig, i, j).getName());
 					assertEquals(b.getSubsequenceAt(contig, i, j).getContigIndex(), SMALL_FA.getSubsequenceAt(contig, i, j).getContigIndex());
 				}

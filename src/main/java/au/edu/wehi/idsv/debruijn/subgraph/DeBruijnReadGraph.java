@@ -147,7 +147,7 @@ public class DeBruijnReadGraph extends DeBruijnVariantGraph<DeBruijnSubgraphNode
 		graphExporter.saveTo(new File(directory, filename));
 	}
 	private boolean shouldVisualise(boolean timeout) {
-		return processContext.getConfig().getVisualisation().assembly || (timeout && processContext.getConfig().getVisualisation().timeouts);
+		return processContext.getConfig().getVisualisation().assemblyGraph || (timeout && processContext.getConfig().getVisualisation().timeouts);
 	}
 	/**
 	 * Assembles contigs which do not have any relevance at or after the given position 

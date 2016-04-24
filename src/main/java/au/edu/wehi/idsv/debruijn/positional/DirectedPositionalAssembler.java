@@ -14,6 +14,8 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.util.DuplicatingIterable;
 
+import com.google.common.collect.PeekingIterator;
+
 /**
  * Performs independent positional assembly for forward
  * and backward assembly.
@@ -89,7 +91,12 @@ public class DirectedPositionalAssembler implements Iterator<SAMRecordAssemblyEv
 	private class AssemblyThread extends Thread {
 		private final PositionalAssembler assembler;
 		private final BreakendDirection direction;
-		public AssemblyThread(final Iterator<DirectedEvidence> it, final BreakendDirection direction) {
+		public AssemblyThread(final PeekingIterator<DirectedEvidence> it, final BreakendDirection direction) {
+			if (it.hasNext()) {
+				int referenceIndex = it.peek().getBreakendSummary().referenceIndex; 
+				String chr = context.getDictionary().getSequence(referenceIndex).getSequenceName();
+				setName("Assembly" + direction.toString() + chr);
+			}
 			this.direction = direction;
 			this.assembler = new PositionalAssembler(context, source, it, direction);
 		}

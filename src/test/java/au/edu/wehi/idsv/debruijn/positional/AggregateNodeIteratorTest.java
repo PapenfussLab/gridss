@@ -156,7 +156,7 @@ public class AggregateNodeIteratorTest extends TestHelper {
 		input.add(NRRP(ses, withQual(new byte[] { 1,1,1,1,1}, withSequence("ACGTT", DP(0, 1, "5M", false, 1, 1, "5M", false)))));
 		input.add(NRRP(ses, withQual(new byte[] { 1,1,1,1,1}, withSequence("ACGTT", DP(0, 2, "5M", false, 1, 1, "5M", false)))));
 		Collections.sort(input, DirectedEvidence.ByStartEnd);
-		List<KmerSupportNode> snList = Lists.newArrayList(new SupportNodeIterator(k, input.iterator(), ses.getMaxConcordantFragmentSize(), null));
+		List<KmerSupportNode> snList = Lists.newArrayList(new SupportNodeIterator(k, input.iterator(), ses.getMaxConcordantFragmentSize(), null, false));
 		List<KmerNode> anList = Lists.newArrayList(new AggregateNodeIterator(snList.iterator()));
 		assertTrue(KmerNodeUtil.ByLastStart.isOrdered(anList));
 		assertEquals(4, snList.size());
@@ -164,7 +164,7 @@ public class AggregateNodeIteratorTest extends TestHelper {
 	}
 	@Test
 	public void total_weight_should_remain_constant() {
-		List<KmerSupportNode> snList = Lists.newArrayList(new SupportNodeIterator(4, SupportNodeIteratorTest.scrp(4, "ACGTTATACCG", 30, 60).iterator(), 60, null));
+		List<KmerSupportNode> snList = Lists.newArrayList(new SupportNodeIterator(4, SupportNodeIteratorTest.scrp(4, "ACGTTATACCG", 30, 60).iterator(), 60, null, false));
 		assertTrue(KmerNodeUtil.ByLastStart.isOrdered(snList));
 		List<KmerNode> anList = Lists.newArrayList(new AggregateNodeIterator(snList.iterator()));
 		assertEquals(totalWeight(snList), totalWeight(anList));
@@ -173,7 +173,7 @@ public class AggregateNodeIteratorTest extends TestHelper {
 	}
 	//@Test // expensive test to run
 	public void should_stream_input() {
-		AggregateNodeIterator agIt = new AggregateNodeIterator(new SupportNodeIterator(25, new RandomSoftClipIterator(), 100, null));
+		AggregateNodeIterator agIt = new AggregateNodeIterator(new SupportNodeIterator(25, new RandomSoftClipIterator(), 100, null, false));
 		while (agIt.hasNext()) {
 			agIt.next();
 		}

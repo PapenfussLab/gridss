@@ -34,7 +34,7 @@ public class SAMRecordCigarCleaningIterator implements CloseableIterator<SAMReco
 		if (cigar != null && cigar.getCigarElements().size() > 0) {
 			Cigar newCigar = new Cigar(CigarUtil.clean(cigar.getCigarElements(), true));
 			if (!cigar.equals(newCigar)) {
-				log.warn("Cigar %s of read %s is not valid.", cigar, next.getReadName());
+				log.warn(String.format("Cigar %s of read %s is not valid.", cigar, next.getReadName()));
 				next.setCigar(newCigar);
 			}
 		}

@@ -78,4 +78,23 @@ public class SequentialCoverageAnnotatorTest extends TestHelper {
 				.make());
 		assertFalse(result.isFiltered());
 	}
+	@Test
+	public void should_use_homology_interval_minimum_as_reference_coverage() {
+		//  1234567890 >
+		//  MMMMMMMMMMM
+		//  MMMMM
+		//    MMMMMMMMMM
+		//	  MMMMMMMMMMM
+		//	MM
+		VariantContextDirectedEvidence result = go(new ArrayList<>(ImmutableList.of(
+				Read(0, 1, "11M"),
+				Read(0, 1, "5M"),
+				Read(0, 3, "10M"),
+				Read(0, 3, "11M"),
+				Read(0, 1, "2M")
+			)), (VariantContextDirectedEvidence)minimalBreakend()
+				.breakpoint(new BreakpointSummary(0, FWD, 1, 10, 1, BWD, 100, 100), "")
+				.make());
+		assertEquals(2, result.getReferenceReadCount());
+	}
 }

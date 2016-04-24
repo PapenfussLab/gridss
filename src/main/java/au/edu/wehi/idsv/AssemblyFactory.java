@@ -135,7 +135,8 @@ public final class AssemblyFactory {
 		assert(baseCalls.length == baseQuals.length);
 		assert(breakend != null);
 		SAMRecord record = new SAMRecord(samFileHeader);
-		record.setMappingQuality(SAMRecord.UNKNOWN_MAPPING_QUALITY);
+		// default to the minimum mapping quality that is still valid
+		record.setMappingQuality(source.getContext().getConfig().minMapq);
 		record.setReferenceIndex(breakend.referenceIndex);
 		record.setReadName(source.getContext().getAssemblyIdGenerator().generate(breakend, baseCalls, startAnchoredBaseCount, endAnchoredBaseCount));
 		if (startAnchoredBaseCount == 0 && endAnchoredBaseCount == 0) {

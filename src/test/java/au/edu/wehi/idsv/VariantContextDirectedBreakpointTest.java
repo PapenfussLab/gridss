@@ -1,8 +1,8 @@
 package au.edu.wehi.idsv;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import htsjdk.variant.variantcontext.VariantContext;
-
-import static org.junit.Assert.*;
 
 import java.util.Collections;
 import java.util.List;

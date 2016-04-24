@@ -33,6 +33,7 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 	private final PeekingIterator<DirectedEvidence> it;
 	private final BreakendDirection direction;
 	private NonReferenceContigAssembler currentAssembler = null;
+	private String currentContig = "";
 	public PositionalAssembler(ProcessingContext context, AssemblyEvidenceSource source, Iterator<DirectedEvidence> backingIterator, BreakendDirection direction) {
 		this.context = context;
 		this.source = source;
@@ -47,13 +48,23 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 	}
 	@Override
 	public boolean hasNext() {
-		ensureAssembler();
-		return currentAssembler != null && currentAssembler.hasNext();
+		try {
+			ensureAssembler();
+			return currentAssembler != null && currentAssembler.hasNext();
+		} catch (AssertionError|Exception e) {
+			log.error(e, "Fatal error assembling ", currentContig);
+			throw e;
+		}
 	}
 	@Override
 	public SAMRecordAssemblyEvidence next() {
-		ensureAssembler();
-		return currentAssembler.next();
+		try {
+			ensureAssembler();
+			return currentAssembler.next();
+		} catch (AssertionError|Exception e) {
+			log.error(e, "Fatal error assembling ", currentContig);
+			throw e;
+		}
 	}
 	private void flushIfRequired() {
 		if (currentAssembler != null && !currentAssembler.hasNext()) {
@@ -77,17 +88,18 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 	}
 	private NonReferenceContigAssembler createAssembler() {
 		AssemblyConfiguration ap = context.getAssemblyParameters();
-		int maxSupportNodeWidth = source.getMaxConcordantFragmentSize() - source.getMinConcordantFragmentSize() + 1; 		
-		int maxReadLength = source.getMaxMappedReadLength();
+		int maxKmerSupportIntervalWidth = source.getMaxConcordantFragmentSize() - source.getMinConcordantFragmentSize() + 1; 		
+		int maxReadLength = source.getMaxReadLength();
 		int k = ap.k;
-		int maxEvidenceDistance = maxSupportNodeWidth + maxReadLength + 2;
+		int maxEvidenceSupportIntervalWidth = maxKmerSupportIntervalWidth + maxReadLength - k + 2;
 		int maxPathLength = ap.positional.maxPathLengthInBases(maxReadLength);
 		int maxPathCollapseLength = ap.errorCorrection.maxPathCollapseLengthInBases(maxReadLength);
 		int anchorAssemblyLength = ap.anchorLength;
 		int referenceIndex = it.peek().getBreakendSummary().referenceIndex;
+		currentContig = context.getDictionary().getSequence(referenceIndex).getSequenceName();
 		ReferenceIndexIterator evidenceIt = new ReferenceIndexIterator(it, referenceIndex);
 		EvidenceTracker evidenceTracker = new EvidenceTracker();
-		SupportNodeIterator supportIt = new SupportNodeIterator(k, evidenceIt, source.getMaxConcordantFragmentSize(), evidenceTracker);
+		SupportNodeIterator supportIt = new SupportNodeIterator(k, evidenceIt, source.getMaxConcordantFragmentSize(), evidenceTracker, ap.includePairAnchors);
 		AggregateNodeIterator agIt = new AggregateNodeIterator(supportIt);
 		Iterator<KmerNode> knIt = agIt;
 		if (Defaults.SANITY_CHECK_DE_BRUIJN) {
@@ -111,13 +123,13 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 				pnIt = evidenceTracker.new PathNodeAssertionInterceptor(pnIt, "PathCollapseIterator");
 			}
-			simplifyIt = new PathSimplificationIterator(pnIt, maxPathLength, maxSupportNodeWidth);
+			simplifyIt = new PathSimplificationIterator(pnIt, maxPathLength, maxKmerSupportIntervalWidth);
 			pnIt = simplifyIt;
 			if (Defaults.SANITY_CHECK_DE_BRUIJN) {
 				pnIt = evidenceTracker.new PathNodeAssertionInterceptor(pnIt, "PathSimplificationIterator");
 			}
 		}
-		currentAssembler = new NonReferenceContigAssembler(pnIt, referenceIndex, maxEvidenceDistance, anchorAssemblyLength, k, source, evidenceTracker);
+		currentAssembler = new NonReferenceContigAssembler(pnIt, referenceIndex, maxEvidenceSupportIntervalWidth, anchorAssemblyLength, k, source, evidenceTracker, currentContig);
 		VisualisationConfiguration vis = context.getConfig().getVisualisation();
 		if (vis.assemblyProgress) {
 			String filename = String.format("positional-%s-%s.csv", context.getDictionary().getSequence(referenceIndex).getSequenceName(), direction);

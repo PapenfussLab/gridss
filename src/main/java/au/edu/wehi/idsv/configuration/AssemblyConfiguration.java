@@ -22,10 +22,12 @@ public class AssemblyConfiguration {
 		minReads = config.getInt("minReads");
 		includeSoftClips = config.getBoolean("includeSoftClips");
 		includeAnomalousPairs = config.getBoolean("includeAnomalousPairs");
+		includePairAnchors = config.getBoolean("includePairAnchors");
 		includeRemoteSplitReads = config.getBoolean("includeRemoteSplitReads");
 		writeFiltered = config.getBoolean("writeFiltered");
 		excludeNonSupportingEvidence = config.getBoolean("excludeNonSupportingEvidence");
 		anchorLength = config.getInt("anchorLength");
+		removeMisassembledPartialContigsDuringAssembly = config.getBoolean("removeMisassembledPartialContigsDuringAssembly");
 		maxExpectedBreakendLengthMultiple = config.getFloat("maxExpectedBreakendLengthMultiple");
 		trackEvidenceID = config.getBoolean("trackEvidenceID");
 	}
@@ -55,6 +57,11 @@ public class AssemblyConfiguration {
 	 */
 	public boolean includeAnomalousPairs;
 	/**
+	 * Include reads fully supporting the reference whose mate is not mapped to the expected location.
+	 * These are useful as they can extend the length of the assembly anchor 
+	 */
+	public boolean includePairAnchors;
+	/**
 	 * Include reads with a soft clip that maps to this location
 	 */
 	public boolean includeRemoteSplitReads;
@@ -64,18 +71,23 @@ public class AssemblyConfiguration {
 	public boolean writeFiltered;
 	public boolean excludeNonSupportingEvidence;
 	/**
-	 * Default minimum length in bases of reference sequence anchor assembly
-	 * 
-	 * Note: a breakend assembly longer than this length will cause reference sequence assembly to be at least as long as the breakend 
+	 * Default minimum length in bases of reference sequence anchor assembly. A breakend assembly longer than this
+	 * length will cause reference sequence assembly to be at least as long as the breakend 
 	 */
 	public int anchorLength = 100;
+	/**
+	 * Determine whether to remove excessively long contigs in increments as each
+	 * increment exceeds maxExpectedBreakendLengthMultiple, or after assembly. Waiting
+	 * until after assembly is complete is computationally prohibitive
+	 */
+	public boolean removeMisassembledPartialContigsDuringAssembly = true;
 	/**
 	 * Maximum expected length of a breakend assembly.
 	 * Assemblies larger than this size are extremely likely to be missassemblies
 	 * 
 	 * Expected max size is 1.0 for single-sided assembly and 2.0 for assembly from both directions 
 	 */
-	public float maxExpectedBreakendLengthMultiple = 2.5f;
+	public float maxExpectedBreakendLengthMultiple = 3.0f;
 	/**
 	 * Retains evidenceID tracking information after evidence rehydration
 	 */

@@ -41,7 +41,7 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 		
 		pc.getAssemblyParameters().k = k;
 		pc.getConfig().getVisualisation().directory = new File(super.testFolder.getRoot().getAbsoluteFile(), "visualisation");
-		pc.getConfig().getVisualisation().assembly = true;
+		pc.getConfig().getVisualisation().assemblyGraph = true;
 		pc.getConfig().getVisualisation().assemblyProgress = true;
 		pc.getConfig().getVisualisation().directory.mkdir();
 				
@@ -220,6 +220,7 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 		int fragSpan = 1;
 		ProcessingContext pc = getCommandlineContext(false);
 		pc.getConfig().minMapq = 0;
+		pc.getConfig().maxMapq = 254;
 		pc.getConfig().getAssembly().k = k;
 		pc.getConfig().getAssembly().writeFiltered = true;
 		pc.getConfig().getAssembly().errorCorrection.maxBaseMismatchForCollapse = 0;
@@ -231,8 +232,8 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 		pc.getConfig().getSoftClip().minLength =  0;
 		pc.getConfig().getVariantCalling().writeFiltered = true;
 		pc.getConfig().getVisualisation().directory = new File(super.testFolder.getRoot().getAbsoluteFile(), "visualisation");
-		pc.getConfig().getVisualisation().assembly = true;
-		pc.getConfig().getVisualisation().fullSizeAssembly = true;
+		pc.getConfig().getVisualisation().assemblyGraph = true;
+		pc.getConfig().getVisualisation().assemblyGraphFullSize = true;
 		pc.getConfig().getVisualisation().assemblyProgress = true;
 		pc.getConfig().getVisualisation().directory.mkdir();
 				

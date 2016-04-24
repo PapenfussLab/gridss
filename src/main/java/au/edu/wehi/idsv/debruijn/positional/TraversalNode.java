@@ -2,10 +2,11 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import java.util.ArrayDeque;
 
+import au.edu.wehi.idsv.SanityCheckFailureException;
 import au.edu.wehi.idsv.util.IntervalUtil;
 
+import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
-import com.google.common.primitives.Ints;
 
 public class TraversalNode {
 	public final KmerPathSubnode node;
@@ -27,12 +28,44 @@ public class TraversalNode {
 		this.parent = prev;
 		this.pathLength = prev.pathLength + node.length();
 	}
+	public TraversalNode(TraversalNode prev, KmerPathSubnode node, int additionalScore) {
+		this.node = node;
+		this.score = prev.score + node.weight() + additionalScore;
+		this.parent = prev;
+		this.pathLength = prev.pathLength + node.length();
+	}
+	/**
+	 * First starting position of the first kmer in the path
+	 * @return first position
+	 */
+	public int pathFirstStart() {
+		return node.firstStart() - pathLength; 
+	}
+	/**
+	 * Number of nodes in this path
+	 * @return
+	 */
+	public int nodeCount() {
+		int count = 0;
+		TraversalNode n = this;
+		while (n != null) {
+			n = n.parent;
+			count++;
+		}
+		return count;
+	}
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder(String.format("score=%d pathlength=%d\n", score, pathLength));
-		for (TraversalNode n = this; n != null; n = n.parent) {
-			sb.append(n.node.toString());
-			//sb.append('\n');
+		sb.append(this.node.toString());
+		if (this.parent != null) {
+			sb.append(this.parent.node.toString());
+			if (this.parent.parent != null) {
+				TraversalNode n = this.parent.parent;
+				while (n.parent != null) n = n.parent;
+				sb.append("...\n");
+				sb.append(n.node.toString());
+			}
 		}
 		return sb.toString();
 	}
@@ -72,10 +105,12 @@ public class TraversalNode {
 	 * @return
 	 */
 	public ArrayDeque<KmerPathSubnode> toSubnodeNextPath() {
+		checkValid(this);
 		ArrayDeque<KmerPathSubnode> contigPath = new ArrayDeque<KmerPathSubnode>();
 		KmerPathSubnode last = node;
 		contigPath.addFirst(node);
 		for (TraversalNode n = parent; n != null; n = n.parent) {
+			checkValid(n);
 			KmerPathSubnode current = n.node.givenNext(last);
 			last = current;
 			contigPath.addFirst(current);
@@ -88,26 +123,76 @@ public class TraversalNode {
 	 * @return
 	 */
 	public ArrayDeque<KmerPathSubnode> toSubnodePrevPath() {
+		checkValid(this);
 		ArrayDeque<KmerPathSubnode> contigPath = new ArrayDeque<KmerPathSubnode>();
 		KmerPathSubnode last = node;
 		contigPath.addLast(node);
 		for (TraversalNode n = parent; n != null; n = n.parent) {
+			checkValid(n);
 			KmerPathSubnode current = n.node.givenPrev(last);
 			last = current;
 			contigPath.addLast(current);
 		}
 		return contigPath;
 	}
-	public static Ordering<TraversalNode> ByFirstStart = new Ordering<TraversalNode>() {
+	private void checkValid(TraversalNode tn) {
+		if (!tn.node.node().isValid()) {
+			throw new SanityCheckFailureException(String.format("Traversal of kmer length %d ending at [%d,%d] contains an invalid subnode over [%d-%d].",
+					pathLength,
+					node.lastStart(), node.lastEnd(),
+					tn.node.firstStart(), tn.node.firstEnd()
+					));
+		}
+	}
+	public boolean sanityCheck() {
+		assert(node != null);
+		assert(node.sanityCheck());
+		assert(score > 0);
+		assert(node.node().isValid());
+		if (parent != null) {
+			assert(parent.sanityCheck());
+			assert(score > parent.score);
+			assert(parent.node.lastStart() + 1 <= node.firstStart());
+			assert(parent.node.lastEnd() + 1 >= node.firstEnd());
+			assert(pathLength == parent.pathLength + node.length());
+		} else {
+			assert(pathLength == node.length());
+		}
+		return true;
+	}
+	public static Ordering<TraversalNode> ByFirstStart = KmerNodeUtil.ByFirstStart.onResultOf((TraversalNode tn) -> tn.node);
+	public static Ordering<TraversalNode> ByLastEndKmer = KmerNodeUtil.ByLastEndKmer.onResultOf((TraversalNode tn) -> tn.node);
+	public static Ordering<TraversalNode> ByPathFirstStartEndSubnode = new Ordering<TraversalNode>() {
 		@Override
 		public int compare(TraversalNode left, TraversalNode right) {
-			return Ints.compare(left.node.firstStart(), right.node.firstStart());
+			return ComparisonChain.start()
+					.compare(left.pathFirstStart(), right.pathFirstStart())
+					// JVisualVM indicates ArbitraryOrdering.identityHashCode() is a bottleneck
+					.compare(left.score, right.score)
+					.compare(left.node.firstStart(), right.node.firstStart())
+					.compare(left.node.firstEnd(), right.node.firstEnd())
+					.compare(left.node.firstKmer(), right.node.firstKmer())
+					.result();
 		}
 	};
-	public  static Ordering<TraversalNode> ByLastEnd = new Ordering<TraversalNode>() {
+	public static Ordering<TraversalNode> ByKmerScoreStartEnd = new Ordering<TraversalNode>() {
 		@Override
 		public int compare(TraversalNode left, TraversalNode right) {
-			return Ints.compare(left.node.lastEnd(), right.node.lastEnd());
+			return ComparisonChain.start()
+					.compare(left.node.firstKmer(), right.node.firstKmer())
+					.compare(left.score, right.score)
+					.compare(left.node.firstStart(), right.node.firstStart())
+					.compare(left.node.firstEnd(), right.node.firstEnd())
+					.result();
+		}
+	};
+	public static Ordering<TraversalNode> ByScoreDescPathFirstEndSubnode = new Ordering<TraversalNode>() {
+		@Override
+		public int compare(TraversalNode left, TraversalNode right) {
+			return ComparisonChain.start()
+					.compare(right.score, left.score)
+					.compare(left, right, ByPathFirstStartEndSubnode)
+					.result();
 		}
 	};
 }

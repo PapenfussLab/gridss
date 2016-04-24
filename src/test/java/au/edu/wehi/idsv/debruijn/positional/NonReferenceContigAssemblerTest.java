@@ -2,7 +2,9 @@ package au.edu.wehi.idsv.debruijn.positional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import htsjdk.samtools.SAMRecord;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -16,6 +18,7 @@ import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.DiscordantReadPair;
+import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
@@ -43,14 +46,14 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		int maxPathLength = pc.getAssemblyParameters().positional.maxPathLengthInBases(maxReadLength);
 		int maxPathCollapseLength = pc.getAssemblyParameters().errorCorrection.maxPathCollapseLengthInBases(maxReadLength);
 		tracker = new EvidenceTracker();
-		SupportNodeIterator supportIt = new SupportNodeIterator(k, Arrays.stream(input).iterator(), aes.getMaxConcordantFragmentSize(), tracker);
+		SupportNodeIterator supportIt = new SupportNodeIterator(k, Arrays.stream(input).iterator(), aes.getMaxConcordantFragmentSize(), tracker, pc.getAssemblyParameters().includePairAnchors);
 		AggregateNodeIterator agIt = new AggregateNodeIterator(supportIt);
 		Iterator<KmerPathNode> pnIt = new PathNodeIterator(agIt, maxPathLength, k);
 		if (collapse) {
 			pnIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, pc.getAssemblyParameters().errorCorrection.maxBaseMismatchForCollapse, pc.getAssemblyParameters().errorCorrection.collapseBubblesOnly, 0);
 			pnIt = new PathSimplificationIterator(pnIt, maxPathLength, maxEvidenceWidth);
 		}
-		caller = new NonReferenceContigAssembler(pnIt, 0, maxEvidenceWidth + maxReadLength + 2, maxReadLength, k, aes, tracker);
+		caller = new NonReferenceContigAssembler(pnIt, 0, maxEvidenceWidth + maxReadLength + 2, maxReadLength, k, aes, tracker, "test");
 		return caller;
 	}
 	@Test
@@ -148,7 +151,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 	public void should_remove_fully_reference_evidence() {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
-		SoftClipEvidence sce = SCE(FWD, withSequence("ACGTGGTCGACC", Read(0, 50, "6M6S")));
+		SoftClipEvidence sce =     SCE(FWD, withSequence("ACGTGGTCGACC", Read(0, 50, "6M6S")));
 		SoftClipEvidence fullref = SCE(FWD, withSequence("ACGTGG", Read(0, 50, "5M1S")));
 		List<SAMRecordAssemblyEvidence> output = go(pc, true, sce, fullref);
 		assertEquals(1, output.size());
@@ -161,10 +164,10 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 	public void should_remove_fully_reference_evidence_before_end() {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
-		int n = 16;
+		int n = 64;
 		DirectedEvidence[] input = new DirectedEvidence[2 * n];
 		for (int i = 0; i < n; i++) {
-			input[2*i] = SCE(FWD, withSequence("ACGTGGTCGACC", Read(0, 1000*i, "6M6S")));
+			input[2*i] =      SCE(FWD, withSequence( "ACGTGGTCGACC", Read(0, 1000*i, "6M6S")));
 			input[2*i + 1 ] = SCE(FWD, withSequence("AACGTGG", Read(0, 1000*i-1, "6M1S")));
 		}
 		NonReferenceContigAssembler caller = create(pc, true, input);
@@ -178,7 +181,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
 		SoftClipEvidence sce = SCE(FWD, withSequence("GTACAAAA", Read(0, 10, "4M4S")));
-		DiscordantReadPair dp = (DiscordantReadPair)NRRP(SES(1, 100), withSequence("CAAAAT", DP(0, 1, "6M", true, 1, 1, "6M", false)));
+		DiscordantReadPair dp = (DiscordantReadPair)NRRP(SES(11, 100), withSequence("CAAAAT", DP(0, 1, "6M", true, 1, 1, "6M", false)));
 		List<SAMRecordAssemblyEvidence> output = go(pc, true, sce, dp);
 		assertEquals(1, output.size());
 		assertEquals("GTACAAAA", S(output.get(0).getAssemblySequence()));
@@ -188,7 +191,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
 		SoftClipEvidence sce = SCE(BWD, withSequence("AAAAGTAC", Read(0, 100, "4S4M")));
-		DiscordantReadPair dp = (DiscordantReadPair)NRRP(SES(1, 100), withSequence("CAAAAG", DP(0, 110, "6M", false, 1, 1, "6M", true)));
+		DiscordantReadPair dp = (DiscordantReadPair)NRRP(SES(11, 100), withSequence("CAAAAG", DP(0, 110, "6M", false, 1, 1, "6M", true)));
 		List<SAMRecordAssemblyEvidence> output = go(pc, true, sce, dp);
 		assertEquals(1, output.size());
 		assertEquals("AAAAGTAC", S(output.get(0).getAssemblySequence()));
@@ -197,6 +200,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 	public void should_take_higher_weight_unanchored_assembly() {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
+		pc.getAssemblyParameters().includePairAnchors = false;
 		List<SAMRecordAssemblyEvidence> output = go(pc, true,
 				NRRP(SES(1, 100), withSequence("CAAAAAAAAAAAGT", DP(1, 100, "14M", false, 1, 1, "14M", true))),
 				NRRP(SES(1, 100), withSequence("CAAAAAAAAAAGTC", DP(1, 101, "14M", false, 1, 1, "14M", true))));
@@ -207,18 +211,20 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 	public void should_handle_ambigious_bases() {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
+		pc.getAssemblyParameters().includePairAnchors = false;
 		List<SAMRecordAssemblyEvidence> output = go(pc, true,
-				NRRP(SES(1, 100), withSequence("CAAAAAAAAAAAGT", DP(1, 100, "14M", false, 1, 1, "14M", true))),
-				NRRP(SES(1, 100), withSequence("CAAAAANAAAAGTC", DP(1, 101, "14M", false, 1, 1, "14M", true))));
+				NRRP(SES(1, 100), withSequence("AATAAGAGT", DP(1, 100, "9M", false, 1, 1, "9M", true))),
+				NRRP(SES(1, 100), withSequence("AATGNGAGTC", DP(1, 101, "10M", false, 1, 1, "10M", true))));
 		assertEquals(1, output.size());
-		assertEquals("AAAAAAAAAAAGTC", S(output.get(0).getAssemblySequence()));
+		assertEquals("AATAAGAGTC", S(output.get(0).getAssemblySequence()));
 	}
 	@Test
 	public void should_handle_multiple_candidate_offsets_for_a_single_kmer_position() {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
+		pc.getAssemblyParameters().includePairAnchors = false;
 		List<SAMRecordAssemblyEvidence> output = go(pc, true,
-				NRRP(SES(1, 100), withSequence("TAAAAA", DP(1, 100, "6M", false, 1, 1, "6M", true))));
+				NRRP(SES(1, 100), withSequence("TAAAAA", DP(1, 100, "6M", false, 0, 1, "6M", true))));
 		assertEquals(1, output.size());
 		assertEquals("TAAAAA", S(output.get(0).getAssemblySequence()));
 	}
@@ -263,5 +269,32 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 				SCE(FWD, withSequence("AAAAAAAAAT", Read(0, 14, "9M1S"))),
 				SCE(FWD, withSequence(       "AATTTTTTTTT", Read(0, 18, "2M9S"))));
 		assertEquals("AAAAAAAAAAATTTTTTTTT", S(output.get(0).getAssemblySequence()));
+	}
+	@Test
+	public void should_assembly_UM_into_anchor() {
+		ProcessingContext pc = getContext();
+		pc.getAssemblyParameters().k = 4;
+		SAMRecord[] rp = OEA(0, 100, "10M", true);
+		rp[0].setReadBases(B(S(RANDOM).substring(0, 10)));
+		rp[1].setReadBases(B(S(RANDOM).substring(2, 12)));
+		rp[1].setReadNegativeStrandFlag(true);
+		NonReferenceReadPair nrrp = NRRP(SES(1, 100), rp);
+		List<SAMRecordAssemblyEvidence> output = go(pc, false, nrrp);
+		assertEquals(S(RANDOM).substring(0, 12), S(output.get(0).getAssemblySequence()));
+		assertEquals(new BreakendSummary(0, FWD, 100 + 10 - 1, 100 + 10 - 1), output.get(0).getBreakendSummary());
+	}
+	@Test
+	public void should_truncate_contigs_longer_than_maxExpectedBreakendLengthMultiple() {
+		ProcessingContext pc = getContext();
+		MockSAMEvidenceSource ses = SES(50, 100);
+		pc.getAssemblyParameters().k = 4;
+		pc.getAssemblyParameters().maxExpectedBreakendLengthMultiple = 1.5f;
+		List<DirectedEvidence> e = new ArrayList<>();
+		for (int i = 1; i < 1000; i++) {
+			e.add(NRRP(ses, OEA(0, i, "10M", true)));
+		}
+		List<SAMRecordAssemblyEvidence> output = go(pc, false, e.toArray(new DirectedEvidence[0]));
+		assertEquals(1, output.size());
+		assertTrue(output.get(0).getBreakendSequence().length <= (1.5 * 100) + 50 + 100);
 	}
 }

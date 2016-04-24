@@ -22,7 +22,7 @@ socratesSupplementaryMaterialsLocation <- "C:/dev/neochromosome/"
 location <- list(
   sample778="W:/Papenfuss_lab/projects/liposarcoma/data/gridss/778/778.vcf",
   sampleT1000="W:/Papenfuss_lab/projects/liposarcoma/data/gridss/T1000/T1000.vcf",
-  sampleGOT3="W:/Papenfuss_lab/projects/liposarcoma/data/gridss/778/778.vcf")
+  sampleGOT3="W:/Papenfuss_lab/projects/liposarcoma/data/gridss/GOT3/bt2/GOT3-bt2.vcf")
 
 minqual <- 250
 matchmaxgaps <- c(200) #c(1, 10, 50, 100, 200))
@@ -41,7 +41,7 @@ for (sample in c("778", "T1000", "GOT3")) {
     gridss <- rbind(gridss, out$gridss)
   }
 }
-
+gridss$lessthan7rp <- gridss$RP < 7
 dtcalls <- rbind(data.frame(sample=bed$sample, assembly=ifelse(bed$spanning, "Spanning assembly", as.character(bed$assembly)), hit="Published"),
                  data.frame(sample=gridss[is.na(gridss$bedid),]$sample, assembly=gridss[is.na(gridss$bedid),]$assembly, hit="gridss additional"))
 # convert from breakend to breakpoint counts by trimming every second row
@@ -63,9 +63,14 @@ ggplot(dtsummarised) + aes(x=hit, y=count, fill=assembly, color=spanning) + geom
 # portion less than RP threshold = most
 table(gridss[is.na(gridss$bedid),]$RP >= 7, gridss[is.na(gridss$bedid),]$assembly)
 table(gridss[is.na(gridss$bedid),]$RP >= 7, gridss[is.na(gridss$bedid),]$sample) # breakdown by sample -> most less than threshold
+table(gridss[is.na(gridss$bedid),]$assembly, gridss[is.na(gridss$bedid),]$lessthan7rp) / 2
 table(gridss[is.na(gridss$bedid) & gridss$RP >= 7,]$assembly, gridss[is.na(gridss$bedid) & gridss$RP >= 7,]$sample)
 data.table(gridss[gridss$assembly=="Both" & !is.na(gridss$bedid),])[, list(count=.N, homology=sum(HOMLEN>0), untemplated=sum(nchar(INSSEQ)>0)), by=list(sample, matchmaxgap, assembly)]
 length(gridss[nchar(gridss$INSSEQ)>50,]$INSSEQ)
+
+table(gridss[is.na(gridss$bedid),]$RP >= 7 & gridss[is.na(gridss$bedid),]$asWithin1kbp == 1 & gridss[gridss[is.na(gridss$bedid),]$mate,]$asWithin1kbp == 1) / 2
+table(gridss[is.na(gridss$bedid),]$RP >= 7 & gridss[is.na(gridss$bedid),]$asWithin1kbp == 1 & gridss[gridss[is.na(gridss$bedid),]$mate,]$asWithin1kbp == 1, gridss[is.na(gridss$bedid),]$assembly) / 2
+
 
 #####################
 # assembly-only identification
@@ -140,4 +145,21 @@ ggplot() +
 
 bed$assembly <- factor(bed$assembly, c("Both", "Single", "No assembly", "None"))
 ggplot(as.data.frame(bed), aes(x=sample, color=!spanning, fill=assembly)) + geom_bar()
+
+
+
+# edge Analysis
+#dtg <- data.table(gridss[gridss$assembly == "Both",])
+#dtbed <- data.table(as.data.frame(bed[bed$assembly=="Both",]))
+#dte <- merge(dtg, dtbed, by.x=c("variantid", "sample"), by.y=c("gridssid", "sample"))
+# TODO: why are both the gridssid for the same size?
+vcf <- gridss.removeUnpartnerededBreakend(vcf)
+sdf <- gridss.vcftodf(vcf)
+sdf$chr <- seqnames(rowRanges(vcf))
+sdf$strand <- ifelse(str_detect(as.character(rowRanges(vcf)$ALT), "[[:alpha:]]+(\\[|]).*(\\[|])"), "+", "-")
+
+sdf[sdf$AS>0 & sdf$RAS>0,]
+
+ggplot(sdf[sdf$AS>0 & sdf$RAS>0,]) + aes(x=size, y=QUAL, color=strand) + geom_point() + scale_x_log10() + scale_y_log10()
+
 
