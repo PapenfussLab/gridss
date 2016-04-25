@@ -316,20 +316,10 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			breakpoint(bestExactBreakpoint.getBreakendSummary(), untemplated);
 			homo = bestExactBreakpoint.getHomologySequence();
 			rmAttribute(VcfSvConstants.IMPRECISE_KEY);
-		} else {
-			attribute(VcfSvConstants.IMPRECISE_KEY, true);
-		}
-		if (homo.length() > 0) {
-			attribute(VcfSvConstants.HOMOLOGY_SEQUENCE_KEY, homo);
-			attribute(VcfSvConstants.HOMOLOGY_LENGTH_KEY, homo.length());
-		} else {
-			rmAttribute(VcfSvConstants.HOMOLOGY_SEQUENCE_KEY);
-			rmAttribute(VcfSvConstants.HOMOLOGY_LENGTH_KEY);
-		}
-		if (bs instanceof BreakpointSummary) {
+			
 			BreakpointHomology bh = BreakpointHomology.calculate(
 					processContext.getReference(),
-					(BreakpointSummary)bs.getCallPosition(),
+					bestExactBreakpoint.getBreakendSummary().getCallPosition(),
 					untemplated,
 					processContext.getVariantCallingParameters().maxBreakendHomologyLength,
 					processContext.getVariantCallingParameters().breakendHomologyAlignmentMargin);
@@ -340,6 +330,15 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 				bounds = new int[] { -bh.getRemoteHomologyLength(), bh.getLocalHomologyLength() };
 			}
 			attribute(VcfAttributes.INEXACT_HOMPOS, bounds);
+		} else {
+			attribute(VcfSvConstants.IMPRECISE_KEY, true);
+		}
+		if (homo.length() > 0) {
+			attribute(VcfSvConstants.HOMOLOGY_SEQUENCE_KEY, homo);
+			attribute(VcfSvConstants.HOMOLOGY_LENGTH_KEY, homo.length());
+		} else {
+			rmAttribute(VcfSvConstants.HOMOLOGY_SEQUENCE_KEY);
+			rmAttribute(VcfSvConstants.HOMOLOGY_LENGTH_KEY);
 		}
 		attribute(VcfAttributes.SUPPORT_CIGAR, makeCigar(anchoredBases, bestExactBreakpoint != null ? bestExactBreakpoint.getBreakendSummary() : parent.getBreakendSummary()).toString());
 		// id(parent.getID()); // can't change from parent ID as the id is already referenced in the MATEID of the other breakend  

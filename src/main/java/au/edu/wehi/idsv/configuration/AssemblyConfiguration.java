@@ -62,6 +62,16 @@ public class AssemblyConfiguration {
 	 */
 	public boolean includePairAnchors;
 	/**
+	 * Base mismatches within this many bases from the end of an anchoring mate are
+	 * considered to be not reference supporting.
+	 * 
+	 * This stops breakpoint positions being shifted due to aligners preferring to fully
+	 * align reads with small mismatches at the end (that is, when the soft clip penatly
+	 * is more than the base mismatch penalty, the aligner will align SV bases when we
+	 * don't want it to).   
+	 */
+	public int pairAnchorMismatchIgnoreEndBases = 5;
+	/**
 	 * Include reads with a soft clip that maps to this location
 	 */
 	public boolean includeRemoteSplitReads;

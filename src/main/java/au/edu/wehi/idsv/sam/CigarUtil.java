@@ -396,4 +396,57 @@ public class CigarUtil {
 		}
 		throw new IllegalArgumentException(String.format("Offset of %d base not defined for %s", readBaseOffset, cigar));
 	}
+	/**
+	 * Converts a gapped alignment into an ungapped sub-alignment 
+	 * @param cigar cigar
+	 * @param startAnchor consider the first mapped bases as the start of the sub-alignment.
+	 * If false, the last mapped based is considered the final base of the sub-alignment
+	 * @return cigar containing single contiguous mapped sub-alignment 
+	 */
+	public static List<CigarElement> asUngapped(Cigar cigar, boolean startAnchor) {
+		List<CigarElement> list = new ArrayList<>(cigar.getCigarElements());
+		boolean convert = false;
+		if (startAnchor) {
+			for (int i = 0; i < list.size(); i++) {
+				CigarElement ci = list.get(i);
+				switch (ci.getOperator()) {
+					case H:
+					case S:
+					case M:
+					case X:
+					case EQ:
+						break;
+					case D:
+					case I:
+					case N:
+					case P:
+						convert = true;
+				}
+				if (convert) {
+					list.set(i, new CigarElement(ci.getOperator().consumesReadBases() ? ci.getLength() : 0, CigarOperator.SOFT_CLIP));
+				}
+			}
+		} else {
+			for (int i = list.size() - 1; i >= 0; i--) {
+				CigarElement ci = list.get(i);
+				switch (ci.getOperator()) {
+					case H:
+					case S:
+					case M:
+					case X:
+					case EQ:
+						break;
+					case D:
+					case I:
+					case N:
+					case P:
+						convert = true;
+				}
+				if (convert) {
+					list.set(i, new CigarElement(ci.getOperator().consumesReadBases() ? ci.getLength() : 0, CigarOperator.SOFT_CLIP));
+				}
+			}
+		}
+		return clean(list, false);
+	}
 }

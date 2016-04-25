@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import org.apache.commons.configuration.ConfigurationException;
 
@@ -67,9 +68,9 @@ public class Idsv extends CommandLineProgram {
     		+ "If this is unset, the SAM proper pair flag is used to determine whether a read is discordantly aligned. "
     		+ "Explicit fragment size specification overrides this setting.", optional=true)
     public Float READ_PAIR_CONCORDANT_PERCENT = 0.995f;
-    @Option(shortName="BL", doc = "BED blacklist of regions to ignore. Assembly of high-coverage centromeric repeat region is slow, "
-    		+ "and if such regions are to be filtered in downstream analysis, blacklisting those region will improve assembly runtime"
-    		+ "performance. For human WGS, the ENCODE DAC blacklist is recommended.", optional=true)
+    @Option(shortName="BL", doc = "BED blacklist of regions to ignore. Assembly of regions such as high-coverage centromeric repeats is slow, "
+    		+ "and if such regions are to be filtered in downstream analysis anyway, blacklisting those region will improve runtime "
+    		+ "performance. For human WGS, the ENCODE DAC blacklist is recommended. Specify \"none\" to use no blacklist.", optional=false)
     public File BLACKLIST = null;
 	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="VCF structural variation calls.")
     public File OUTPUT;
@@ -111,7 +112,7 @@ public class Idsv extends CommandLineProgram {
     	for (int i = 0; i < INPUT.size(); i++) {
     		samEvidence.add(constructSamEvidenceSource(
     				getOffset(INPUT, i, null),
-    				getOffset(INPUT_CATEGORY, i, 0) - 1,
+    				getOffset(INPUT_CATEGORY, i, 0),
     				getOffset(INPUT_MIN_FRAGMENT_SIZE, i, 0),
     				getOffset(INPUT_MAX_FRAGMENT_SIZE, i, 0)));
     	}
@@ -202,6 +203,9 @@ public class Idsv extends CommandLineProgram {
     		log.error("No INPUT files specified.");
     		return -1;
     	}
+    	if (BLACKLIST != null && BLACKLIST.getName().equals("none")) {
+    		BLACKLIST = null;
+    	}
     	if (INPUT_CATEGORY != null && INPUT_CATEGORY.size() > 0 && INPUT_CATEGORY.size() != INPUT.size()) {
     		log.error("INPUT_CATEGORY must omitted or specified for every INPUT.");
     		return -1;
@@ -214,6 +218,12 @@ public class Idsv extends CommandLineProgram {
     		log.error("INPUT_CATEGORY must be positive integers: negative or zero categories are not valid.");
     		return -1;
     	}
+    	// GRIDSS using zero based categories internally - transform arg
+    	if (INPUT_CATEGORY == null || INPUT_CATEGORY.size() == 0) {
+    		INPUT_CATEGORY = INPUT.stream().map(x -> 0).collect(Collectors.toList());
+		} else {
+			INPUT_CATEGORY = INPUT_CATEGORY.stream().map(x -> x != null ? x - 1 : 0).collect(Collectors.toList());
+		}
     	ensureArgs();
     	ExecutorService threadpool = null;
     	try {
@@ -222,10 +232,8 @@ public class Idsv extends CommandLineProgram {
     		ensureDictionariesMatch();
     		// Spam output with gridss parameters used
     		getContext();
-    		if (INPUT_CATEGORY != null && INPUT_CATEGORY.stream().mapToInt(x -> x - 1).distinct().count() <
-    				 INPUT_CATEGORY.stream().mapToInt(x -> x - 1).max().orElse(0) - 8) {
-        		log.warn("Missing a large number of INPUT_CATEGORY indicies. "
-        				+ "Performance is likely to be degraded since unused categories are still computed and stored.");
+    		if (INPUT_CATEGORY.stream().mapToInt(x -> x).distinct().count() < INPUT_CATEGORY.stream().mapToInt(x -> x).max().orElse(0) - 8) {
+        		log.warn("Missing a large number of INPUT_CATEGORY indicies. Performance is likely to be degraded since unused categories are still computed and stored.");
         	}
     		// Force loading of aligner up-front
     		log.info("Loading aligner");
@@ -318,7 +326,7 @@ public class Idsv extends CommandLineProgram {
 				throw new RuntimeException(e);
 			}
 			processContext = new ProcessingContext(fsc, REFERENCE, PER_CHR, null, getDefaultHeaders(), config);
-			processContext.registerCategories(INPUT_CATEGORY.stream().mapToInt(x -> (x == null ? 0 : x)).max().orElse(0));
+			INPUT_CATEGORY.stream().forEach(x -> processContext.registerCategory(x, ""));
 			processContext.setWorkerThreadCount(WORKER_THREADS);
 			if (BLACKLIST != null) {
 				try {

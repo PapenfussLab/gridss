@@ -173,21 +173,48 @@ public class KmerEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void createAnchor_should_anchor_at_alignment_closest_to_breakend() {
-		assertEquals(100, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "1M2I3M", false))).startPosition());
-		assertEquals(99, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "1S1M2I3M", false))).startPosition());
-		assertEquals(98, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "2S1M2I3M", false))).startPosition());
-		assertEquals(98, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "1M2I3M", true))).startPosition());
-		assertEquals(98, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "1M2I3M1S", true))).startPosition());
-		assertEquals(98, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "1M2I3M2S", true))).startPosition());
-		assertEquals(97, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "1S1M2I3M", true))).startPosition());
-		assertEquals(97, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "1S1M2I3M2S", true))).startPosition());
-		assertEquals(96, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "2S1M2I3M10S", true))).startPosition());
+		assertEquals(100, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "1M2I3M", false)), 0, null).startPosition());
+		assertEquals(99, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "1S1M2I3M", false)), 0, null).startPosition());
+		assertEquals(98, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "2S1M2I3M", false)), 0, null).startPosition());
+		assertEquals(98, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "1M2I3M", true)), 0, null).startPosition());
+		assertEquals(98, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "1M2I3M1S", true)), 0, null).startPosition());
+		assertEquals(98, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "1M2I3M2S", true)), 0, null).startPosition());
+		assertEquals(97, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "1S1M2I3M", true)), 0, null).startPosition());
+		assertEquals(97, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "1S1M2I3M2S", true)), 0, null).startPosition());
+		assertEquals(96, KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "2S1M2I3M10S", true)), 0, null).startPosition());
 	}
 	@Test
 	public void createAnchor_should_support_anchor() {
-		KmerEvidence a = KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "1M2I3M", false)));
+		KmerEvidence a = KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "10M2I30M", false)), 0, null);
 		for (int i = 0; i < a.length(); i++) {
-			assertTrue(a.node(i).isReference());
+			if (a.node(i) != null) {
+				assertTrue(a.node(i).isReference());
+			}
 		}
+	}
+	@Test
+	public void createAnchor_should_only_anchor_subalignment_closest_to_breakend() {
+		KmerEvidence a = KmerEvidence.createAnchor(1, NRRP(SES(), OEA(0, 100, "10M2I4M", true)), 0, null);
+		for (int i = 0; i < 12; i++) {
+			assertNull(a.node(i));
+		}
+		a = KmerEvidence.createAnchor(4, NRRP(SES(), OEA(0, 100, "10M2I4M", false)), 0, null);
+		for (int i = 10-3+1; i < a.length(); i++) {
+			assertNull(a.node(i));
+		}
+	}
+	private int nodesNotNull(KmerEvidence a) {
+		int n = 0;
+		for (int i = 0; i < a.length(); i++) {
+			if (a.node(i) != null) n++;
+		}
+		return n;
+	}
+	@Test
+	public void createAnchor_should_not_include_mismatches_near_end_of_read() {
+		assertEquals(10, nodesNotNull(KmerEvidence.createAnchor(1, NRRP(SES(), withSequence("TTAAAAAAAA", OEA(0, 100, "10M", true))), 0, SMALL_FA)));
+		assertEquals(9, nodesNotNull(KmerEvidence.createAnchor(1, NRRP(SES(), withSequence("TTAAAAAAAA", OEA(0, 100, "10M", true))), 1, SMALL_FA)));
+		assertEquals(8, nodesNotNull(KmerEvidence.createAnchor(1, NRRP(SES(), withSequence("TTAAAAAAAA", OEA(0, 100, "10M", true))), 2, SMALL_FA)));
+		assertEquals(8, nodesNotNull(KmerEvidence.createAnchor(1, NRRP(SES(), withSequence("TTAAAAAAAA", OEA(0, 100, "10M", true))), 3, SMALL_FA)));
 	}
 }

@@ -162,4 +162,13 @@ public class CigarUtilTest {
 		//dt <- read.csv("c:/temp/asm.csv", header=FALSE)
 		//ggplot(dt) + aes(x=dt$V3) + geom_histogram()
 	}
+	@Test
+	public void asUngapped_should_convert_operators() {
+		assertEquals("10M", new Cigar(CigarUtil.asUngapped(new Cigar(C("10M")), true)).toString());
+		assertEquals("10M5S", new Cigar(CigarUtil.asUngapped(new Cigar(C("10M5S")), true)).toString());
+		assertEquals("1H2S10M5S", new Cigar(CigarUtil.asUngapped(new Cigar(C("1H2S10M5S")), true)).toString());
+		assertEquals("10M15S", new Cigar(CigarUtil.asUngapped(new Cigar(C("10M1D10M5S")), true)).toString());
+		assertEquals("10M16S", new Cigar(CigarUtil.asUngapped(new Cigar(C("10M1I10M5S")), true)).toString());
+		assertEquals("11S10M5S", new Cigar(CigarUtil.asUngapped(new Cigar(C("10M1I10M5S")), false)).toString());
+	}
 }

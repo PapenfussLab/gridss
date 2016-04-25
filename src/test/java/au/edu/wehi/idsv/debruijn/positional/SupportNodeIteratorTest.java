@@ -49,4 +49,24 @@ public class SupportNodeIteratorTest extends TestHelper {
 		assertEquals(1 * (10-3), Lists.newArrayList(new SupportNodeIterator(k, input.iterator(), 60, null, false)).size());
 		assertEquals(2 * (10-3), Lists.newArrayList(new SupportNodeIterator(k, input.iterator(), 60, null, true)).size());
 	}
+	@Test
+	public void should_only_include_fully_mapped_anchor_kmers() {
+		int k = 4;
+		List<DirectedEvidence> input;
+		input = ImmutableList.of(NRRP(OEA(0, 1, "6M4S", true)));
+		assertEquals((10-3) + (6-3), Lists.newArrayList(new SupportNodeIterator(k, input.iterator(), 60, null, true)).size());
+		input = ImmutableList.of(NRRP(OEA(0, 1, "4M2I4M", true)));
+		assertEquals((10-3) + 2, Lists.newArrayList(new SupportNodeIterator(k, input.iterator(), 60, null, true)).size());
+		input = ImmutableList.of(NRRP(OEA(0, 1, "5M1D5M", true)));
+		assertEquals((10-3) + 4, Lists.newArrayList(new SupportNodeIterator(k, input.iterator(), 60, null, true)).size());
+	}
+	@Test
+	public void should_not_include_anchor_base_mismatches_with_5bp() {
+		int k = 4;
+		List<DirectedEvidence> input;
+		input = ImmutableList.of(NRRP(withSequence("AAAAAAAAAAT", OEA(0, 1, "10M", true))));
+		assertEquals((10-3) + (10-1-3), Lists.newArrayList(new SupportNodeIterator(k, input.iterator(), 60, null, true)).size());
+		input = ImmutableList.of(NRRP(withSequence("AAAAAAAAATT", OEA(0, 1, "10M", true))));
+		assertEquals((10-3) + (10-2-3), Lists.newArrayList(new SupportNodeIterator(k, input.iterator(), 60, null, true)).size());
+	}
 }

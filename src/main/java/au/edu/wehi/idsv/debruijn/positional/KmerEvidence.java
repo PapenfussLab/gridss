@@ -16,6 +16,8 @@ import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.PackedKmerList;
+import au.edu.wehi.idsv.picard.ReferenceLookup;
+import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 /**
@@ -134,21 +136,58 @@ public class KmerEvidence extends PackedKmerList {
 	 * @param pair read pair evidence
 	 * @return anchoring support
 	 */
-	public static KmerEvidence createAnchor(int k, NonReferenceReadPair pair) {
-		SAMRecord local = pair.getLocalledMappedRead();
-		int startPosition;
-		if (k > local.getReadLength()) {
+	public static KmerEvidence createAnchor(int k, NonReferenceReadPair pair, int disallowMismatch, ReferenceLookup reference) {
+		return createAnchor(pair.getEvidenceID(), k, pair.getLocalledMappedRead(), pair.getBreakendSummary().direction, disallowMismatch, reference);
+	}
+	/**
+	 * Creates anchoring evidence for the given read
+	 * @param k kmer size
+	 * @param read read
+	 * @param direction direction to consider matching from. If an indel is present in the read, only bases closes to the
+	 * inferred breakend in this direction will be considered anchoring
+	 * @param disallowMismatch disallow mismatching bases this number of bases from the end of the read
+	 * @param reference reference genome
+	 * @return
+	 */
+	public static KmerEvidence createAnchor(String evidenceID, int k, SAMRecord read, BreakendDirection direction, int disallowMismatch, ReferenceLookup reference) {
+		if (k > read.getReadLength()) {
 			return null;
 		}
-		// only take the the first fully mapping portion of the alignment
-		if (pair.getBreakendSummary().direction == BreakendDirection.Forward) {
-			startPosition = local.getAlignmentEnd() + SAMRecordUtil.getEndSoftClipLength(local) - local.getReadLength() + 1;
+		BitSet anchors = new BitSet();
+		anchors.set(0, read.getReadLength() - k + 1);
+		int firstBasePosition;
+		read.getCigar().getCigarElements();
+		if (direction == BreakendDirection.Forward) {
+			firstBasePosition = read.getUnclippedEnd() - read.getReadLength() + 1;
+			
 		} else {
-			startPosition = local.getAlignmentStart() - SAMRecordUtil.getStartSoftClipLength(local);
+			firstBasePosition = read.getUnclippedStart();
 		}
-		BitSet bs = new BitSet();
-		bs.set(0,  local.getReadLength() -k + 1);
-		return new KmerEvidence(pair.getEvidenceID(), startPosition, startPosition, k, bs, local.getReadBases(), local.getBaseQualities(), false, false, pair.getBreakendSummary(), pair.getBreakendQual());
+		List<CigarElement> cigar = CigarUtil.asUngapped(read.getCigar(), direction == BreakendDirection.Backward);
+		byte[] bases = Arrays.copyOf(read.getReadBases(), read.getReadLength());
+		// consider clipped bases as ambiguous
+		int readOffset = 0;
+		for (CigarElement ci : cigar) {
+			if (ci.getOperator() == CigarOperator.SOFT_CLIP) {
+				for (int i = 0; i < ci.getLength(); i++) {
+					bases[readOffset + i] = 'N';
+				}
+			}
+			if (ci.getOperator().consumesReadBases()) {
+				readOffset += ci.getLength();
+			}
+		}
+		// consider mismatches at end of read ambiguous
+		for (int i = 0; i < disallowMismatch && i < bases.length; i++) {
+			if (bases[i] != reference.getBase(read.getReferenceIndex(), firstBasePosition + i)) {
+				bases[i] = 'N';
+			}
+			int endOffset = bases.length - 1 - i;
+			if (bases[endOffset] != reference.getBase(read.getReferenceIndex(), firstBasePosition + endOffset)) {
+				bases[endOffset] = 'N';
+			}
+		}
+		return new KmerEvidence(evidenceID, firstBasePosition, firstBasePosition, k, anchors, bases, read.getBaseQualities(), false, false, null, 0);
 	}
 	public static KmerEvidence create(int k, SoftClipEvidence softClipEvidence, boolean trimOtherSoftClip) {
 		SAMRecord read = softClipEvidence.getSAMRecord();
