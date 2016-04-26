@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import org.junit.Test;
 
@@ -30,5 +29,15 @@ public class TraversalNodeTest extends TestHelper {
 		// n1 to cause self-intersection because adding it to tn3
 		// is not possible.
 		assertFalse(tn3.traversingWouldCauseSelfIntersection(n1)); // result undefined since traversal is invalid
+	}
+	@Test
+	public void pathFirstStart_should_use_first_node() {
+		KmerPathNode n1 = KPN(1, "AAAAA", 1, 10, false);
+		KmerPathNode n2 = KPN(1, "CC", 6, 8, false);
+		KmerPathNode.addEdge(n1, n2);
+		assertEquals(1, new TraversalNode(new KmerPathSubnode(n1), 0).pathFirstStart());
+		assertEquals(5, new TraversalNode(new KmerPathSubnode(n1, 5, 5), 0).pathFirstStart());
+		assertEquals(1, new TraversalNode(new TraversalNode(new KmerPathSubnode(n1), 0), new KmerPathSubnode(n2)).pathFirstStart());
+		assertEquals(2, new TraversalNode(new TraversalNode(new KmerPathSubnode(n1), 0), new KmerPathSubnode(n2, 7, 7)).pathFirstStart());
 	}
 }

@@ -99,7 +99,7 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 		currentContig = context.getDictionary().getSequence(referenceIndex).getSequenceName();
 		ReferenceIndexIterator evidenceIt = new ReferenceIndexIterator(it, referenceIndex);
 		EvidenceTracker evidenceTracker = new EvidenceTracker();
-		SupportNodeIterator supportIt = new SupportNodeIterator(k, evidenceIt, source.getMaxConcordantFragmentSize(), evidenceTracker, ap.includePairAnchors);
+		SupportNodeIterator supportIt = new SupportNodeIterator(k, evidenceIt, source.getMaxConcordantFragmentSize(), evidenceTracker, ap.includePairAnchors, ap.pairAnchorMismatchIgnoreEndBases);
 		AggregateNodeIterator agIt = new AggregateNodeIterator(supportIt);
 		Iterator<KmerNode> knIt = agIt;
 		if (Defaults.SANITY_CHECK_DE_BRUIJN) {

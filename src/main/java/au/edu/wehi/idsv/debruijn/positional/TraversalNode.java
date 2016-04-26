@@ -39,7 +39,7 @@ public class TraversalNode {
 	 * @return first position
 	 */
 	public int pathFirstStart() {
-		return node.firstStart() - pathLength; 
+		return node.firstStart() - pathLength + node.length();
 	}
 	/**
 	 * Number of nodes in this path

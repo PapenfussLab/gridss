@@ -38,6 +38,7 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 	private final int maxSupportStartPositionOffset;
 	private final PriorityQueue<KmerSupportNode> buffer = new PriorityQueue<KmerSupportNode>(1024, KmerNodeUtil.ByFirstStart);
 	private final EvidenceTracker tracker;
+	private final int disallowMismatch;
 	private int inputPosition = Integer.MIN_VALUE;
 	private int firstReferenceIndex;
 	private int lastPosition = Integer.MIN_VALUE;
@@ -56,10 +57,11 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 	 * as max frag size from the mapping position (which in this scenario is also the breakend
 	 * position).
 	 */
-	public SupportNodeIterator(int k, Iterator<DirectedEvidence> it, int maxFragmentSize, EvidenceTracker tracker, boolean includePairAnchors) {
+	public SupportNodeIterator(int k, Iterator<DirectedEvidence> it, int maxFragmentSize, EvidenceTracker tracker, boolean includePairAnchors, int disallowMismatch) {
 		this.underlying = Iterators.peekingIterator(it);
 		this.k = k;
 		this.includePairAnchors = includePairAnchors;
+		this.disallowMismatch = disallowMismatch;
 		this.maxSupportStartPositionOffset = maxFragmentSize;
 		this.emitOffset = maxSupportStartPositionOffset + 1;
 		if (underlying.hasNext()) {
@@ -87,7 +89,7 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 			NonReferenceReadPair nrrp = (NonReferenceReadPair)de;
 			e = KmerEvidence.create(k, nrrp);
 			if (includePairAnchors) {
-				e2 = KmerEvidence.createAnchor(k, nrrp);
+				e2 = KmerEvidence.createAnchor(k, nrrp, disallowMismatch, nrrp.getEvidenceSource().getContext().getReference());
 			}
 		} else {
 			throw new RuntimeException("Assembler able to process only soft clip and read pair evidence");

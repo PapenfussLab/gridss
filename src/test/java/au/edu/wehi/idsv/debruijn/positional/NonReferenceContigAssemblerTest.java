@@ -46,7 +46,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		int maxPathLength = pc.getAssemblyParameters().positional.maxPathLengthInBases(maxReadLength);
 		int maxPathCollapseLength = pc.getAssemblyParameters().errorCorrection.maxPathCollapseLengthInBases(maxReadLength);
 		tracker = new EvidenceTracker();
-		SupportNodeIterator supportIt = new SupportNodeIterator(k, Arrays.stream(input).iterator(), aes.getMaxConcordantFragmentSize(), tracker, pc.getAssemblyParameters().includePairAnchors);
+		SupportNodeIterator supportIt = new SupportNodeIterator(k, Arrays.stream(input).iterator(), aes.getMaxConcordantFragmentSize(), tracker, pc.getAssemblyParameters().includePairAnchors, pc.getAssemblyParameters().pairAnchorMismatchIgnoreEndBases);
 		AggregateNodeIterator agIt = new AggregateNodeIterator(supportIt);
 		Iterator<KmerPathNode> pnIt = new PathNodeIterator(agIt, maxPathLength, k);
 		if (collapse) {
@@ -274,6 +274,8 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 	public void should_assembly_UM_into_anchor() {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
+		pc.getAssemblyParameters().includePairAnchors = true;
+		pc.getAssemblyParameters().pairAnchorMismatchIgnoreEndBases = 0;
 		SAMRecord[] rp = OEA(0, 100, "10M", true);
 		rp[0].setReadBases(B(S(RANDOM).substring(0, 10)));
 		rp[1].setReadBases(B(S(RANDOM).substring(2, 12)));

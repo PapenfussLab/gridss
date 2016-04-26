@@ -23,6 +23,7 @@ public class AssemblyConfiguration {
 		includeSoftClips = config.getBoolean("includeSoftClips");
 		includeAnomalousPairs = config.getBoolean("includeAnomalousPairs");
 		includePairAnchors = config.getBoolean("includePairAnchors");
+		pairAnchorMismatchIgnoreEndBases = config.getInt("pairAnchorMismatchIgnoreEndBases");
 		includeRemoteSplitReads = config.getBoolean("includeRemoteSplitReads");
 		writeFiltered = config.getBoolean("writeFiltered");
 		excludeNonSupportingEvidence = config.getBoolean("excludeNonSupportingEvidence");
@@ -70,7 +71,7 @@ public class AssemblyConfiguration {
 	 * is more than the base mismatch penalty, the aligner will align SV bases when we
 	 * don't want it to).   
 	 */
-	public int pairAnchorMismatchIgnoreEndBases = 5;
+	public int pairAnchorMismatchIgnoreEndBases;
 	/**
 	 * Include reads with a soft clip that maps to this location
 	 */

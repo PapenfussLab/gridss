@@ -239,15 +239,15 @@ public class MemoizedContigCallerTest extends ContigCallerTest {
 	@Test
 	public void frontierPath_should_return_based_on_path_start_position() {
 		MemoizedContigCaller caller = new MemoizedContigCaller(0, 10);
-		KmerPathNode n1 = KPN(1, "A", 1, 100, false);
-		KmerPathNode n2 = KPN(1, "C", 50, 101, false);
-		KmerPathNode n3 = KPN(1, "G", 49, 101, false);
+		KmerPathNode n1 = KPN(1, "AAAAA", 1, 11, false);
+		KmerPathNode n2 = KPN(1, "CCCCC", 3, 16, false);
+		KmerPathNode n3 = KPN(1, "GGGGG", 6, 16, false);
 		KmerPathNode.addEdge(n1, n2);
 		caller.add(n1);
 		caller.add(n2);
 		caller.add(n3);
 		// should be n1-n2 path since that starts before n3
 		// even though n3 starts before n2
-		assertEquals(2, caller.frontierPath(102, 70).size());
+		assertEquals(2, caller.frontierPath(17, 14).size());
 	}
 }

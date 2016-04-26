@@ -68,12 +68,14 @@ public class PositionalAssemblerTest extends TestHelper {
 		//          MMMMMSSSSS
 		//       GCAACGTTGGTTAA
 		//       MMMMMMMMSSSSSS
+		//  TTTTTGCAACGTTGGTTAA
 		input.add(SCE(FWD, withSequence("ACGTTGGTTA", Read(0, 10, "5M5S"))[0]));
 		input.add(SCE(FWD, withSequence("TTTTTGCAACGTTGGTTAA", Read(0, 2, "13M6S"))[0]));
-		input.add(NRRP(withSequence("TTTTTGCAACGTTGGTTAA",DP(0, 2, "13M6S", true, 1, 1, "19M", false))));
+		input.add(NRRP(withSequence("TTTTTGCAACGTTGGTTAA", DP(0, 2, "13M6S", true, 1, 1, "19M", false))));
 		input.sort(DirectedEvidenceOrder.ByStartEnd);
 		ArrayList<SAMRecordAssemblyEvidence> r = Lists.newArrayList(new PositionalAssembler(pc, aes, input.iterator()));
-		assertEquals(1, r.size());
+		assertEquals(2, r.size());
+		// race condition w.r.t which assembly returns first
 		assertEquals(new BreakendSummary(0, FWD, 14, 14), r.get(0).getBreakendSummary());
 		// anchor length to match breakend length
 		assertEquals("AACGTT", S(r.get(0).getAssemblyAnchorSequence()));
