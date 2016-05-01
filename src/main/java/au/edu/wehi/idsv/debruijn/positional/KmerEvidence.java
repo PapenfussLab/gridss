@@ -159,7 +159,6 @@ public class KmerEvidence extends PackedKmerList {
 		read.getCigar().getCigarElements();
 		if (direction == BreakendDirection.Forward) {
 			firstBasePosition = read.getUnclippedEnd() - read.getReadLength() + 1;
-			
 		} else {
 			firstBasePosition = read.getUnclippedStart();
 		}
@@ -177,17 +176,24 @@ public class KmerEvidence extends PackedKmerList {
 				readOffset += ci.getLength();
 			}
 		}
-		// consider mismatches at end of read ambiguous
-		for (int i = 0; i < disallowMismatch && i < bases.length; i++) {
-			if (bases[i] != reference.getBase(read.getReferenceIndex(), firstBasePosition + i)) {
-				bases[i] = 'N';
-			}
-			int endOffset = bases.length - 1 - i;
-			if (bases[endOffset] != reference.getBase(read.getReferenceIndex(), firstBasePosition + endOffset)) {
-				bases[endOffset] = 'N';
+		if (reference != null) {
+			int contigLength = reference.getSequenceDictionary().getSequence(read.getReferenceIndex()).getSequenceLength();
+			// consider mismatches at end of read ambiguous
+			for (int i = 0; i < disallowMismatch && i < bases.length; i++) {
+				if (bases[i] != getBase(reference, read.getReferenceIndex(), contigLength, firstBasePosition + i)) {
+					bases[i] = 'N';
+				}
+				int endOffset = bases.length - 1 - i;
+				if (bases[endOffset] != getBase(reference, read.getReferenceIndex(), contigLength, firstBasePosition + endOffset)) {
+					bases[endOffset] = 'N';
+				}
 			}
 		}
 		return new KmerEvidence(evidenceID, firstBasePosition, firstBasePosition, k, anchors, bases, read.getBaseQualities(), false, false, null, 0);
+	}
+	private static byte getBase(ReferenceLookup reference, int referenceIndex, int contigLength, int position) {
+		if (position <= 0 || position > contigLength) return 'N';
+		return reference.getBase(referenceIndex, position);
 	}
 	public static KmerEvidence create(int k, SoftClipEvidence softClipEvidence, boolean trimOtherSoftClip) {
 		SAMRecord read = softClipEvidence.getSAMRecord();

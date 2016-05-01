@@ -88,7 +88,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
             mStream = stream;
         }
         mFile = null;
-        mAsync = allowBuffering && Defaults.USE_ASYNC_IO_FOR_SAMTOOLS ? new AysncUtil() : null;
+        mAsync = allowBuffering ? new AysncUtil() : null;
     }
 
     /**
@@ -114,7 +114,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
      * seek() is supposed by this ctor.
      */
     public BlockCompressedInputStream(final SeekableStream strm) {
-        this(strm, true, Defaults.USE_ASYNC_IO_FOR_SAMTOOLS);
+        this(strm, true, true);
     }
     
     /**

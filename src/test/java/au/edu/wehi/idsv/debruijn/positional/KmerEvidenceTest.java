@@ -217,4 +217,13 @@ public class KmerEvidenceTest extends TestHelper {
 		assertEquals(8, nodesNotNull(KmerEvidence.createAnchor(1, NRRP(SES(), withSequence("TTAAAAAAAA", OEA(0, 100, "10M", true))), 2, SMALL_FA)));
 		assertEquals(8, nodesNotNull(KmerEvidence.createAnchor(1, NRRP(SES(), withSequence("TTAAAAAAAA", OEA(0, 100, "10M", true))), 3, SMALL_FA)));
 	}
+	@Test
+	public void createAnchor_should_check_reference_overrun() {
+		assertEquals(5, nodesNotNull(KmerEvidence.createAnchor("id", 1, Read(0, 1, "2S5M2S"), BWD, 2, SMALL_FA)));
+		assertEquals(5, nodesNotNull(KmerEvidence.createAnchor("id", 1, Read(0, 1, "2S5M2S"), FWD, 2, SMALL_FA)));
+		// overruns on both end
+		assertEquals(2, nodesNotNull(KmerEvidence.createAnchor("id", 1, Read(0, -10, "10M"), FWD, 4, SMALL_FA)));
+		// end overrun
+		assertEquals(1, nodesNotNull(KmerEvidence.createAnchor("id", 1, Read(0, 10000, "10M"), FWD, 10, SMALL_FA)));
+	}
 }
