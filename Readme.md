@@ -5,8 +5,6 @@ GRIDSS calls variants based on alignment-guided positional de Bruijn graph break
 
 If you have any trouble running GRIDSS, please raise an issue using the Issues tab above. Based on feedback from users, a user guide will be produced outlining common workflows, pitfalls, and use cases.
 
-*Important Note: GRIDSS performance is severely degraded in telemeric and centromeric sequences (10-1000x slower). Use a blacklist such as the [ENCODE DAC blacklist](https://www.encodeproject.org/annotations/ENCSR636HFF/) to filter these regions.*
-
 # Pre-requisities
 
 To run, GRIDSS the following must be installed:
@@ -18,7 +16,7 @@ To run, GRIDSS the following must be installed:
 
 Pre-compiled binaries are available at https://github.com/PapenfussLab/GRIDSS/releases.
 
-GRIDSS is built using htsjdk, so is invoked in the same manner as Picard tools utilities. GRIDSS invokes an external alignment tools at multiple point during processing. By default this is bowtie2, but can be configured to use bwa mem.
+GRIDSS is built using htsjdk, so is invoked in the same manner as Picard tools utilities. GRIDSS invokes an external alignment tools at multiple point during processing. By default this is bwa mem , but can be configured to use bowtie2 or another aligner.
 
 ## example/GRIDSS.sh
 
@@ -52,7 +50,6 @@ File | Description
 ------- | ---------
 reference.fa | reference genome
 reference.fa.fai | Tabix index
-
 reference.fa.amb | bwa index
 reference.fa.ann | bwa index
 reference.fa.bwt | bwa index
@@ -80,6 +77,8 @@ For those familar with [CORTEX](http://cortexassembler.sourceforge.net/), a GRID
 
 BED blacklist of regions to exclude from analysis. The [ENCODE DAC blacklist](https://www.encodeproject.org/annotations/ENCSR636HFF/)
 is recommended when aligning against hg19.
+
+Unlike haplotype assemblers such as TIGRA and GATK, GRIDSS does not abort assembly when complex assembly graphs are encountered. Processing of these graphs slows down the assembly process considerably, so if regions such as telemeric and centromeric regions are to be excluded from downstream analysis anyway, assembly of these regions is not required. It is recommended that a blacklist such as the [ENCODE DAC blacklist](https://www.encodeproject.org/annotations/ENCSR636HFF/) be used to filter such regions. Inclusion of additional mappability-based blacklists is not required as GRIDSS already considers the read mapping quality.
 
 ### READ_PAIR_CONCORDANT_PERCENT
 
@@ -169,7 +168,7 @@ tmp.* | Temporary intermediate file
 unsorted.* | Temporary intermediate file
 *.bai | BAM index for coordinate sorted intermediate BAM file
 *input*.idsv.working | Working directory for files related to the given input file.
-*input*.idsv.working/*input*.idsv.metrics.insersize.txt | Picard tools CollectInsertSizeMetrics output 
+*input*.idsv.working/*input*.idsv.metrics.insertsize.txt | Picard tools CollectInsertSizeMetrics output 
 *input*.idsv.working/*input*.idsv.metrics.idsv.txt | High-level read/read pair metrics
 *input*.idsv.working/*input*.idsv.metrics.softclip.txt | Soft clip length distribution
 *input*.idsv.working/*input*.idsv.coverage.blacklist.bed | Intervals of extreme coverage excluded from variant calling
