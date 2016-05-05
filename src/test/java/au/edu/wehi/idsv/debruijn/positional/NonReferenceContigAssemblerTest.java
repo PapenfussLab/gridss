@@ -299,4 +299,23 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		assertEquals(1, output.size());
 		assertTrue(output.get(0).getBreakendSequence().length <= (1.5 * 100) + 50 + 100);
 	}
+	@Test
+	public void should_call_suboptimal_contigs_if_graph_size_limit_exceeded() {
+		ProcessingContext pc = getContext();
+		MockSAMEvidenceSource ses = SES(10, 10);
+		pc.getAssemblyParameters().k = 4;
+		pc.getAssemblyParameters().maxExpectedBreakendLengthMultiple = 1;
+		pc.getAssemblyParameters().positional.retainWidthMultiple = 1;
+		pc.getAssemblyParameters().positional.flushWidthMultiple = 2;
+		List<DirectedEvidence> e = new ArrayList<>();
+		for (int i = 0; i < 100; i++) {
+			for (int j = 0; j < i + 1; j++) {
+				e.add(SCE(FWD, ses, withReadName(String.format("%d-%d", i, j), withSequence("AACCGGTT", Read(0, i, "4M4S")))[0]));
+			}
+		}
+		List<SAMRecordAssemblyEvidence> output = go(pc, false, e.toArray(new DirectedEvidence[0]));
+		// unbounded execution would call high->low thus call the last contig first
+		// bounded execution will force the early calls to be made first
+		assertEquals(16, output.get(0).getBreakendSummary().start);
+	}
 }
