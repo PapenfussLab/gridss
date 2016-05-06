@@ -9,6 +9,16 @@ public class PositionalAssemblyConfiguration {
 		maxPathLengthMultiple = config.getFloat("maxPathLengthMultiple");
 		retainWidthMultiple = config.getFloat("retainWidthMultiple");
 		flushWidthMultiple = config.getFloat("flushWidthMultiple");
+		maximumNodeDensity = config.getFloat("maximumNodeDensity");
+		if (retainWidthMultiple < 1) {
+			throw new IllegalArgumentException("retainWidthMultiple must be at least 1");
+		}
+		if (flushWidthMultiple < 1) {
+			throw new IllegalArgumentException("flushWidthMultiple must be at least 1");
+		}
+		if (maximumNodeDensity <= 0) {
+			throw new IllegalArgumentException("maximumNodeDensity must be positive");
+		}
 	}
 	/**
 	 * Maximum length of a single path node. Leaves longer that this length will not be collapsed.
@@ -23,16 +33,18 @@ public class PositionalAssemblyConfiguration {
 	 * 
 	 * This should be greater than @see AssemblyConfiguration.maxExpectedBreakendLengthMultiple
 	 */
-	public float retainWidthMultiple = 4;
+	public float retainWidthMultiple;
 	/**
 	 * Maximum width (in multiples of maximum fragment size) over which to call all contigs.
 	 * When the distance from the first contig path start exceeds this flushWidthMultiple +
 	 * @see retainWidthMultiple, contigs starting earlier than retainWidthMultiple from the
 	 * frontier will be called
 	 */
-	public float flushWidthMultiple = 10;
+	public float flushWidthMultiple;
+	/**
+	 * Maximum post-compression node density. Assembly will not be performed on regions of the
+	 * genome with a density higher than maximumNodeDensity per base pair. 
+	 */
+	public float maximumNodeDensity;
 	public int maxPathLengthInBases(int readLength) { return (int)(maxPathLengthMultiple * readLength); }
-	public PositionalAssemblyConfiguration(float positionalMaxPathLength) {
-		this.maxPathLengthMultiple = positionalMaxPathLength;
-	}
 }

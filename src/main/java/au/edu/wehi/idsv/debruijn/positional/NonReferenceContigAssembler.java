@@ -76,7 +76,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 	 */
 	private static final boolean SIMPLIFY_AFTER_REMOVAL = false;
 	private Long2ObjectMap<Collection<KmerPathNodeKmerNode>> graphByKmerNode = new Long2ObjectOpenHashMap<Collection<KmerPathNodeKmerNode>>();
-	private SortedSet<KmerPathNode> graphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByFirstStartKmer);
+	private TreeSet<KmerPathNode> graphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByFirstStartKmer);
 	private SortedSet<KmerPathNode> nonReferenceGraphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByFirstStartKmer);
 	private final EvidenceTracker evidenceTracker;
 	private final AssemblyEvidenceSource aes;
@@ -104,6 +104,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 	private final String contigName;
 	private final Queue<SAMRecordAssemblyEvidence> called = new ArrayDeque<>();
 	private int lastUnderlyingStartPosition = Integer.MIN_VALUE;
+	private int lastNextPosition = Integer.MIN_VALUE;
 	private MemoizedContigCaller bestContigCaller;
 	private int contigsCalled = 0;
 	private long consumed = 0;
@@ -183,7 +184,10 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 			callContig(bestContig);
 			if (called.isEmpty() && bestContig == null) {
 				if (underlying.hasNext()) {
-					advanceUnderlying();
+					boolean shouldflush = advanceUnderlying();
+					if (shouldflush) {
+						flushLastAdvance();
+					}
 					if (aes.getContext().getAssemblyParameters().removeMisassembledPartialContigsDuringAssembly) {
 						removeMisassembledPartialContig();
 					}
@@ -248,14 +252,41 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 	 * 
 	 * By loaded in batches, we reduce our memoization frontier advancement overhead
 	 */
-	private void advanceUnderlying() {
+	private boolean advanceUnderlying() {
 		int loadUntil = nextPosition();
 		if (loadUntil < Integer.MAX_VALUE) {
 			loadUntil += maxEvidenceSupportIntervalWidth + 1;
 		}
-		advanceUnderlying(loadUntil);
+		return advanceUnderlying(loadUntil);
 	}
-	private void advanceUnderlying(int loadUntil) {
+	private void flushLastAdvance() {
+		boolean shouldFlush = true;
+		while (shouldFlush) {
+			if (graphByPosition.isEmpty()) break;
+			int flushOnOrAfter = lastNextPosition;
+			int flushBefore = nextPosition();
+			int advanceTo = graphByPosition.last().lastStart() + maxEvidenceSupportIntervalWidth;
+			shouldFlush = advanceUnderlying(advanceTo);
+			List<KmerPathSubnode> toRemove = new ArrayList<>();
+			Iterator<KmerPathNode> it = graphByPosition.descendingIterator(); 
+			while (it.hasNext()) {
+				KmerPathNode pn = it.next();
+				if (pn.firstStart() < flushOnOrAfter) break;
+				if (pn.firstStart() >= flushBefore) continue;
+				toRemove.add(new KmerPathSubnode(pn));
+			}
+			removeFromGraph(evidenceTracker.untrack(toRemove));
+		}
+	}
+	/**
+	 * Advances the graph to the given position
+	 * @param loadUntil
+	 * @return true if the nodes loaded exceed the maximum density and should be flushed
+	 */
+	private boolean advanceUnderlying(int loadUntil) {
+		if (loadUntil < nextPosition()) return false;
+		lastNextPosition = nextPosition();
+		int count = 0;
 		while (underlying.hasNext() && nextPosition() <= loadUntil) {
 			KmerPathNode node = underlying.next();
 			assert(lastUnderlyingStartPosition <= node.firstStart());
@@ -265,7 +296,18 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 			}
 			addToGraph(node);
 			consumed++;
+			if (!node.isReference()) {
+				count++;
+			}
 		}
+		int advanceWidth = nextPosition() - lastNextPosition;
+		float density = advanceWidth <= 0 ? 0 : count / (float)advanceWidth;
+		if (density > aes.getContext().getAssemblyParameters().positional.maximumNodeDensity) {
+			log.debug(String.format("Density of %.2f at %s:%d-%d exceeds maximum: not assembling.", density, contigName, lastNextPosition, nextPosition()));
+			return true;
+		}
+		log.debug(String.format("Density of %.3f at %s:%d-%d.", density, contigName, lastNextPosition, nextPosition()));
+		return false; 
 	}
 	/**
 	 * Verifies that the memoization matches a freshly calculated memoization 
@@ -292,7 +334,6 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 			contig = new ArrayDeque<KmerPathSubnode>(fixed.correctMisassignedEvidence(evidenceTracker.support(contig)));
 		}
 		if (contig.isEmpty()) return null;
-		Set<KmerEvidence> evidence = evidenceTracker.untrack(contig);
 		
 		int targetAnchorLength = Math.max(contig.stream().mapToInt(sn -> sn.length()).sum(), maxAnchorLength);
 		KmerPathNodePath startAnchorPath = new KmerPathNodePath(contig.getFirst(), false, targetAnchorLength + maxEvidenceSupportIntervalWidth + contig.getFirst().length());
@@ -301,7 +342,8 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 		startingAnchor.removeLast();
 		// make sure we have enough of the graph loaded so that when
 		// we traverse forward, our anchor sequence will be fully defined
-		advanceUnderlying(contig.getLast().lastEnd() + targetAnchorLength + maxEvidenceSupportIntervalWidth);
+		boolean shouldRemoveNewNodes = advanceUnderlying(contig.getLast().lastEnd() + targetAnchorLength + maxEvidenceSupportIntervalWidth); 
+		
 		KmerPathNodePath endAnchorPath = new KmerPathNodePath(contig.getLast(), true, targetAnchorLength + maxEvidenceSupportIntervalWidth + contig.getLast().length());
 		endAnchorPath.greedyTraverse(true, false);
 		ArrayDeque<KmerPathSubnode> endingAnchor = endAnchorPath.headNode().asSubnodes();
@@ -325,6 +367,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 		bases = Arrays.copyOfRange(bases, startBasesToTrim, bases.length - endingBasesToTrim);
 		quals = Arrays.copyOfRange(quals, startBasesToTrim, quals.length - endingBasesToTrim);
 		
+		Set<KmerEvidence> evidence = evidenceTracker.untrack(contig);
 		List<String> evidenceIds = evidence.stream().map(e -> e.evidenceId()).collect(Collectors.toList());
 		SAMRecordAssemblyEvidence assembledContig;
 		if (startingAnchor.size() == 0 && endingAnchor.size() == 0) {
@@ -407,6 +450,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 			for (KmerPathSubnode n : contig) {
 				removeFromGraph(n.node(), true);
 			}
+		}
+		if (shouldRemoveNewNodes) {
+			flushLastAdvance();
 		}
 		contigsCalled++;
 		if (assembledContig != null) {
