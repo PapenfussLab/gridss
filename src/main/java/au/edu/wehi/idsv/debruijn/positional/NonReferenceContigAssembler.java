@@ -306,7 +306,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 			log.debug(String.format("Density of %.2f at %s:%d-%d exceeds maximum: not assembling.", density, contigName, lastNextPosition, nextPosition()));
 			return true;
 		}
-		log.debug(String.format("Density of %.3f at %s:%d-%d.", density, contigName, lastNextPosition, nextPosition()));
+		//log.debug(String.format("Density of %.3f at %s:%d-%d.", density, contigName, lastNextPosition, nextPosition()));
 		return false; 
 	}
 	/**
@@ -374,15 +374,20 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 			assert(startBasesToTrim == 0);
 			assert(endingBasesToTrim == 0);
 			// unanchored
-			BreakendSummary be = Models.calculateBreakend(aes.getContext().getLinear(),
+			if (evidence.size() > 0) {
+				BreakendSummary be = Models.calculateBreakend(aes.getContext().getLinear(),
 					evidence.stream().map(e -> e.breakend()).collect(Collectors.toList()),
 					evidence.stream().map(e -> ScalingHelper.toScaledWeight(e.evidenceQuality())).collect(Collectors.toList()));
-			assembledContig = AssemblyFactory.createUnanchoredBreakend(aes.getContext(), aes,
-					be,
-					evidenceIds,
-					bases, quals, new int[] { 0, 0 });
-			if (evidence.stream().anyMatch(e -> e.isAnchored())) {
-				log.debug(String.format("Unanchored assembly %s at %s:%d contains anchored evidence", assembledContig.getEvidenceID(), contigName, contig.getFirst().firstStart()));
+				assembledContig = AssemblyFactory.createUnanchoredBreakend(aes.getContext(), aes,
+						be,
+						evidenceIds,
+						bases, quals, new int[] { 0, 0 });
+				if (evidence.stream().anyMatch(e -> e.isAnchored())) {
+					log.debug(String.format("Unanchored assembly %s at %s:%d contains anchored evidence", assembledContig.getEvidenceID(), contigName, contig.getFirst().firstStart()));
+				}
+			} else {
+				log.warn(String.format("Sanity check failure: assembled contig with no supporting evidence. Ignoring."));
+				assembledContig = null;
 			}
 		} else if (startingAnchor.size() == 0) {
 			// end anchored
