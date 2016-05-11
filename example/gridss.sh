@@ -43,7 +43,7 @@ java -ea -Xmx16g -cp $GRIDSS_JAR au.edu.wehi.idsv.Idsv \
 	INPUT="$INPUT" IC=1 \
 	OUTPUT="$OUTPUT" \
 	BLACKLIST="$BLACKLIST" \
-	2>&1 | tee -a gridss.$$.log
+	2>&1 | tee -a gridss.$HOSTNAME.$$.log
 
 
 if [[ -f "$OUTPUT" ]] ; then
