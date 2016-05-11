@@ -50,13 +50,14 @@ File | Description
 ------- | ---------
 reference.fa | reference genome
 reference.fa.fai | Tabix index
-reference.fa.amb | bwa index
-reference.fa.ann | bwa index
-reference.fa.bwt | bwa index
-reference.fa.pac | bwa index
-reference.fa.sa | bwa index
+reference.fa.1.bt2 | Bowtie2 index
+reference.fa.2.bt2 | Bowtie2 index
+reference.fa.3.bt2 | Bowtie2 index
+reference.fa.4.bt2 | Bowtie2 index
+reference.fa.rev.1.bt2 | Bowtie2 index
+reference.fa.rev.1.bt2 | Bowtie2 index
 
-These can be created using `samtools faidx reference.fa` and `bwa index reference.fa reference.fa`
+These can be created using `samtools faidx reference.fa` and `bowtie2-build reference.fa reference.fa`
 
 A .dict sequence dictionary is also required but GRIDSS will automatically create one if not found. 
 
