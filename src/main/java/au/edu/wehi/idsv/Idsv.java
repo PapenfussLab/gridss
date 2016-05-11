@@ -70,7 +70,7 @@ public class Idsv extends CommandLineProgram {
     public Float READ_PAIR_CONCORDANT_PERCENT = 0.995f;
     @Option(shortName="BL", doc = "BED blacklist of regions to ignore. Assembly of regions such as high-coverage centromeric repeats is slow, "
     		+ "and if such regions are to be filtered in downstream analysis anyway, blacklisting those region will improve runtime "
-    		+ "performance. For human WGS, the ENCODE DAC blacklist is recommended. Specify \"none\" to use no blacklist.", optional=false)
+    		+ "performance. For human WGS, the ENCODE DAC blacklist is recommended. Specify \"none\" to use no blacklist.", optional=true)
     public File BLACKLIST = null;
 	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="VCF structural variation calls.")
     public File OUTPUT;

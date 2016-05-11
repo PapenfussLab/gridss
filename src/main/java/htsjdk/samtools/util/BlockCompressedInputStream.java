@@ -43,8 +43,9 @@ import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 
 /*
@@ -61,7 +62,7 @@ import java.util.concurrent.Semaphore;
  */
 public class BlockCompressedInputStream extends InputStream implements LocationAware {
     private static final int READ_AHEAD_BUFFERS = (int)Math.ceil(Defaults.NON_ZERO_BUFFER_SIZE / BlockCompressedStreamConstants.MAX_COMPRESSED_BLOCK_SIZE);
-    private static final Executor threadpool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+    private static final ExecutorService threadpool = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
     private InputStream mStream = null;
     private SeekableStream mFile = null;
     private byte[] mFileBuffer = null;
@@ -88,7 +89,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
             mStream = stream;
         }
         mFile = null;
-        mAsync = allowBuffering && Defaults.USE_ASYNC_IO_FOR_SAMTOOLS ? new AysncUtil() : null;
+        mAsync = allowBuffering ? new AysncUtil() : null;
     }
 
     /**
@@ -114,7 +115,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
      * seek() is supposed by this ctor.
      */
     public BlockCompressedInputStream(final SeekableStream strm) {
-        this(strm, true, Defaults.USE_ASYNC_IO_FOR_SAMTOOLS);
+        this(strm, true, true);
     }
     
     /**
@@ -165,7 +166,10 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
     public void close()
         throws IOException {
         if (mAsync != null) {
+        	// Suppress interrupts while we close
+    		boolean isInterrupted = Thread.interrupted();
         	mAsync.flushReadAhead();
+        	if (isInterrupted) Thread.currentThread().interrupt();
         	mAsync = null;
         }
         if (mFile != null) {
@@ -633,6 +637,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
     	private final BlockingQueue<DecompressedBlock> mResult = new ArrayBlockingQueue<>(READ_AHEAD_BUFFERS);
     	private final BlockingQueue<byte[]> freeBuffers = new ArrayBlockingQueue<>(READ_AHEAD_BUFFERS);
     	private final Semaphore running = new Semaphore(1);
+    	private volatile Future<?> scheduledTask;
     	private volatile boolean mAbort = false;
     	/**
     	 * Foreground thread blocking operation that retrieves the next read-ahead buffer.
@@ -663,6 +668,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
     	public void flushReadAhead() {
     		mAbort = true;
     		try {
+    			// TODO: use scheduledTask.cancel(true) to terminate earlier
     			// block until the thread pool operation has completed
 				running.acquire();
 			} catch (InterruptedException e) {
@@ -713,7 +719,7 @@ public class BlockCompressedInputStream extends InputStream implements LocationA
 			}
 			// we are able to perform a read-ahead operation
 			// ownership of the running mutex is now with the threadpool task
-			threadpool.execute(this);
+			scheduledTask = threadpool.submit(this);
     	}
     	/**
          * Thread pool operation that fills the read-ahead queue

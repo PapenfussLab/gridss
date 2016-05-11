@@ -14,6 +14,7 @@ import java.util.NavigableSet;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.SanityCheckFailureException;
@@ -65,6 +66,9 @@ public class MemoizedContigCaller extends ContigCaller {
 	// to only call onFrontierRemove() on nodes that are actually in the frontier
 	private final SortedSet<TraversalNode> frontierByPathStart = new TreeSet<>(TraversalNode.ByPathFirstStartEndSubnode);
 	private final MemoizedContigTraverse frontier = new MemoizedContigTraverse();
+	
+	private int contigByScoreBeforePosition_startPosition = Integer.MIN_VALUE;
+	private SortedSet<TraversalNode> contigByScoreBeforePosition = new TreeSet<>(TraversalNode.ByScoreDescPathFirstEndSubnode);;
 	/**
 	 * Scoring bonus for anchoring the start/end of a contig at a reference node. 
 	 */
@@ -84,14 +88,25 @@ public class MemoizedContigCaller extends ContigCaller {
 				assert(!tn.parent.node.isReference());
 			}
 			contigByScore.add(tn);
+			if (tn.pathFirstStart() < contigByScoreBeforePosition_startPosition) {
+				contigByScoreBeforePosition.add(tn);
+			}
 		}
 		@Override
 		protected void onMemoizeRemove(TraversalNode tn) {
 			contigByScore.remove(tn);
+			if (tn.pathFirstStart() < contigByScoreBeforePosition_startPosition) {
+				contigByScoreBeforePosition.remove(tn);
+			}
 		}
 		@Override
-		protected void onMemoizeRemove(Collection<TraversalNode> tn) {
-			contigByScore.removeAll(tn);
+		protected void onMemoizeRemove(Collection<TraversalNode> tns) {
+			contigByScore.removeAll(tns);
+			for (TraversalNode tn : tns) {
+				if (tn.pathFirstStart() < contigByScoreBeforePosition_startPosition) {
+					contigByScoreBeforePosition.remove(tn);
+				}
+			}
 		}
 		@Override
 		protected void onFrontierAdd(TraversalNode tn) {
@@ -316,6 +331,36 @@ public class MemoizedContigCaller extends ContigCaller {
 		TraversalNode tn = bestTraversal(unprocessedPosition);
 		if (tn == null) return null;
 		return asUnanchoredPath(tn);
+	}
+	/**
+	 * Calls the best contig before the given position
+	 * @param unprocessedPosition
+	 * @param contigStartsBefore position contig must start before
+	 * @return
+	 */
+	public ArrayDeque<KmerPathSubnode> callBestContigBefore(int unprocessedPosition, int contigStartsBefore) {
+		advanceFrontier(unprocessedPosition);
+		ensureContigByScoreBeforePosition(contigStartsBefore);
+		if (contigByScoreBeforePosition.isEmpty()) return null;
+		return asUnanchoredPath(contigByScoreBeforePosition.first());
+	}
+	private void ensureContigByScoreBeforePosition(int contigStartsBefore) {
+		if (contigByScoreBeforePosition_startPosition != contigStartsBefore) {
+			contigByScoreBeforePosition = new TreeSet<>(TraversalNode.ByScoreDescPathFirstEndSubnode);
+			contigByScore.stream()
+				.filter(n -> n.pathFirstStart() < contigStartsBefore)
+				.collect(Collectors.toCollection(() -> contigByScoreBeforePosition));
+			contigByScoreBeforePosition_startPosition = contigStartsBefore;
+		}
+	}
+	/**
+	 * Returns the earliest path start still in the frontier
+	 * @return
+	 */
+	public int frontierStart(int unprocessedPosition) {
+		advanceFrontier(unprocessedPosition);
+		if (frontierByPathStart.isEmpty()) return unprocessedPosition;
+		return frontierByPathStart.first().pathFirstStart();
 	}
 	/**
 	 * Returns the longest path still in the frontier 

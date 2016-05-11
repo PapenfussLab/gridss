@@ -778,6 +778,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			breakpoint(new BreakpointSummary(2, FWD, 78, 78, 6, BWD, 79, 79), "");
 			phredScore(50);
 		}}.make());
+		builder.addEvidence(SCE(FWD, Read(2, 78, "1M1S"), Read(6, 79, "1S1M")));
 		VariantContextDirectedEvidence e = builder.make();
 		assertEquals(-78, ((int[])e.getAttribute(VcfAttributes.INEXACT_HOMPOS.attribute()))[0]);
 		assertEquals(300, ((int[])e.getAttribute(VcfAttributes.INEXACT_HOMPOS.attribute()))[1]);
