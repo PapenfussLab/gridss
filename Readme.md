@@ -10,7 +10,7 @@ If you have any trouble running GRIDSS, please raise an issue using the Issues t
 To run, GRIDSS the following must be installed:
 
 * Java 1.8 or later
-* NGS aligner. bowtie2 (default) bwa options are preconfigured
+* NGS aligner. bowtie2 (default) and bwa options are preconfigured
 
 # Running
 
