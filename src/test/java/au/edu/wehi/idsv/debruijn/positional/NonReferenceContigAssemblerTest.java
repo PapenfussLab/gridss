@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import htsjdk.samtools.SAMRecord;
 
 import java.util.ArrayList;
@@ -27,6 +26,7 @@ import au.edu.wehi.idsv.SpanningSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.TestHelper;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
 
 
 public class NonReferenceContigAssemblerTest extends TestHelper {
@@ -314,9 +314,11 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 			}
 		}
 		List<SAMRecordAssemblyEvidence> output = go(pc, false, e.toArray(new DirectedEvidence[0]));
+		assertEquals(100, output.size());
 		// unbounded execution would call high->low thus call the last contig first
 		// bounded execution will force the early calls to be made first
-		assertEquals(16, output.get(0).getBreakendSummary().start);
+		List<Integer> startPos = output.stream().map(x -> x.getBreakendSummary().start).collect(Collectors.toList());
+		assertFalse(Ordering.natural().reverse().isOrdered(startPos));
 	}
 	@Test
 	public void should_not_assembly_when_graph_density_exceeds_maximum() {

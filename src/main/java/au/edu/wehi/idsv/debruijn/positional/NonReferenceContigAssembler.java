@@ -21,6 +21,9 @@ import java.util.stream.Collectors;
 import com.google.api.client.util.Lists;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeRangeSet;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.AssemblyFactory;
@@ -28,6 +31,7 @@ import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
+import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.graph.ScalingHelper;
@@ -105,6 +109,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 	private final Queue<SAMRecordAssemblyEvidence> called = new ArrayDeque<>();
 	private int lastUnderlyingStartPosition = Integer.MIN_VALUE;
 	private int lastNextPosition = Integer.MIN_VALUE;
+	private RangeSet<Integer> toFlush = TreeRangeSet.create();
 	private MemoizedContigCaller bestContigCaller;
 	private int contigsCalled = 0;
 	private long consumed = 0;
@@ -162,17 +167,38 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 		while (called.isEmpty()) {
 			// Safety calling to ensure loaded graph size is bounded
 			if (!nonReferenceGraphByPosition.isEmpty()) {
+				AssemblyConfiguration ap = aes.getContext().getAssemblyParameters();
 				int fragmentSize = aes.getMaxConcordantFragmentSize();
-				int retainWidth = (int)(aes.getContext().getAssemblyParameters().positional.retainWidthMultiple * fragmentSize);
-				int flushWidth = (int)(aes.getContext().getAssemblyParameters().positional.flushWidthMultiple * fragmentSize);
-				int loadedStart = nonReferenceGraphByPosition.first().firstStart();
+				int retainWidth = (int)(ap.positional.retainWidthMultiple * fragmentSize);
+				int flushWidth = Math.max(1, (int)(ap.positional.flushWidthMultiple * fragmentSize));
 				int frontierStart = bestContigCaller.frontierStart(nextPosition());
-				if (loadedStart + retainWidth + flushWidth < frontierStart) {
+				// Need to make sure our contig that we're forcing a call on is comprised of evidence that has
+				// been fully loaded into the graph 
+				//                    ------------------------------------------- contig
+				//                    ^                                         ^                             
+				// |<---flushWidth--->|<---------------------------------retainWidth------------------------------------>|
+				// |                  |<---maxExpectedBreakendLengthMultiple--->|                                        |
+				// |                  |                                         |<--- maxEvidenceSupportIntervalWidth--->|   
+				// |             flushPosition                                                                       frontierStart
+				// loadedStart                                                                                        nextPosition
+				int flushPosition = Math.min(frontierStart - retainWidth,
+						nextPosition() - maxEvidenceSupportIntervalWidth - (int)(ap.maxExpectedBreakendLengthMultiple * aes.getMaxConcordantFragmentSize()))
+						- 1;
+				int loadedStart = nonReferenceGraphByPosition.first().firstStart();
+				if (loadedStart + flushWidth < flushPosition) {
 					ArrayDeque<KmerPathSubnode> forcedContig = null;
 					do {
-						// keep calling until we have no more contigs left
-						// even if we could be calling a suboptimal contig
-						forcedContig = bestContigCaller.callBestContigBefore(nextPosition(), frontierStart - flushWidth);
+						// keep calling until we have no more contigs left even if we could be calling a suboptimal contig
+						flushExcessivelyDenseIntervals();
+						forcedContig = bestContigCaller.callBestContigStartingBefore(nextPosition(), flushPosition);
+						if (forcedContig != null && forcedContig.getLast().lastEnd() + maxEvidenceSupportIntervalWidth >= nextPosition()) {
+							// Could happen if ap.removeMisassembledPartialContigsDuringAssembly is false as
+							// contig length would then be unbounded
+							log.warn(String.format("Sanity check failure. Attempting to flush contig %s:%d-%d (+%d) when graph only loaded to %s:%d. Ignoring flush request.",
+									contigName, forcedContig.getFirst().firstStart(), forcedContig.getLast().lastEnd(), maxEvidenceSupportIntervalWidth,
+									contigName, nextPosition()));
+							forcedContig = null;
+						}
 						callContig(forcedContig);
 					} while (forcedContig != null);
 					flushReferenceNodes();
@@ -180,14 +206,13 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 				}
 			}
 			// Call the next contig
+			flushExcessivelyDenseIntervals();
 			ArrayDeque<KmerPathSubnode> bestContig = bestContigCaller.bestContig(nextPosition());
 			callContig(bestContig);
 			if (called.isEmpty() && bestContig == null) {
 				if (underlying.hasNext()) {
-					boolean shouldflush = advanceUnderlying();
-					if (shouldflush) {
-						flushLastAdvance();
-					}
+					advanceUnderlying();
+					flushExcessivelyDenseIntervals();
 					if (aes.getContext().getAssemblyParameters().removeMisassembledPartialContigsDuringAssembly) {
 						removeMisassembledPartialContig();
 					}
@@ -252,21 +277,25 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 	 * 
 	 * By loaded in batches, we reduce our memoization frontier advancement overhead
 	 */
-	private boolean advanceUnderlying() {
+	private void advanceUnderlying() {
 		int loadUntil = nextPosition();
 		if (loadUntil < Integer.MAX_VALUE) {
 			loadUntil += maxEvidenceSupportIntervalWidth + 1;
 		}
-		return advanceUnderlying(loadUntil);
+		advanceUnderlying(loadUntil);
 	}
-	private void flushLastAdvance() {
-		boolean shouldFlush = true;
-		while (shouldFlush) {
+	/**
+	 * Ensures that portions of the graph exceeding the maximum density are flushed
+	 */
+	private void flushExcessivelyDenseIntervals() {
+		while (!toFlush.isEmpty()) {
 			if (graphByPosition.isEmpty()) break;
-			int flushOnOrAfter = lastNextPosition;
-			int flushBefore = nextPosition();
+			Range<Integer> range = toFlush.asRanges().iterator().next();
+			toFlush.remove(range);
+			int flushOnOrAfter = range.lowerEndpoint();
+			int flushBefore = range.upperEndpoint();
 			int advanceTo = graphByPosition.last().lastStart() + maxEvidenceSupportIntervalWidth;
-			shouldFlush = advanceUnderlying(advanceTo);
+			advanceUnderlying(advanceTo);
 			List<KmerPathSubnode> toRemove = new ArrayList<>();
 			Iterator<KmerPathNode> it = graphByPosition.descendingIterator(); 
 			while (it.hasNext()) {
@@ -275,7 +304,8 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 				if (pn.firstStart() >= flushBefore) continue;
 				toRemove.add(new KmerPathSubnode(pn));
 			}
-			removeFromGraph(evidenceTracker.untrack(toRemove));
+			Set<KmerEvidence> evidenceToRemove = evidenceTracker.untrack(toRemove);
+			removeFromGraph(evidenceToRemove);
 		}
 	}
 	/**
@@ -283,8 +313,8 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 	 * @param loadUntil
 	 * @return true if the nodes loaded exceed the maximum density and should be flushed
 	 */
-	private boolean advanceUnderlying(int loadUntil) {
-		if (loadUntil < nextPosition()) return false;
+	private void advanceUnderlying(int loadUntil) {
+		if (loadUntil < nextPosition()) return;
 		lastNextPosition = nextPosition();
 		int count = 0;
 		while (underlying.hasNext() && nextPosition() <= loadUntil) {
@@ -303,11 +333,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 		int advanceWidth = nextPosition() - lastNextPosition;
 		float density = advanceWidth <= 0 ? 0 : count / (float)advanceWidth;
 		if (density > aes.getContext().getAssemblyParameters().positional.maximumNodeDensity) {
-			log.debug(String.format("Density of %.2f at %s:%d-%d exceeds maximum: not assembling.", density, contigName, lastNextPosition, nextPosition()));
-			return true;
+			log.debug(String.format("Density of %.2f at %s:%d-%d exceeds maximum: excluding from assembling.", density, contigName, lastNextPosition, nextPosition()));
+			toFlush.add(Range.closedOpen(lastNextPosition, nextPosition()));
 		}
-		//log.debug(String.format("Density of %.3f at %s:%d-%d.", density, contigName, lastNextPosition, nextPosition()));
-		return false; 
 	}
 	/**
 	 * Verifies that the memoization matches a freshly calculated memoization 
@@ -342,7 +370,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 		startingAnchor.removeLast();
 		// make sure we have enough of the graph loaded so that when
 		// we traverse forward, our anchor sequence will be fully defined
-		boolean shouldRemoveNewNodes = advanceUnderlying(contig.getLast().lastEnd() + targetAnchorLength + maxEvidenceSupportIntervalWidth); 
+		advanceUnderlying(contig.getLast().lastEnd() + targetAnchorLength + maxEvidenceSupportIntervalWidth); 
 		
 		KmerPathNodePath endAnchorPath = new KmerPathNodePath(contig.getLast(), true, targetAnchorLength + maxEvidenceSupportIntervalWidth + contig.getLast().length());
 		endAnchorPath.greedyTraverse(true, false);
@@ -386,7 +414,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 					log.debug(String.format("Unanchored assembly %s at %s:%d contains anchored evidence", assembledContig.getEvidenceID(), contigName, contig.getFirst().firstStart()));
 				}
 			} else {
-				log.warn(String.format("Sanity check failure: assembled contig with no supporting evidence. Ignoring."));
+				// Can't call contig because we don't known the supporting breakend positions 
 				assembledContig = null;
 			}
 		} else if (startingAnchor.size() == 0) {
@@ -456,9 +484,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 				removeFromGraph(n.node(), true);
 			}
 		}
-		if (shouldRemoveNewNodes) {
-			flushLastAdvance();
-		}
+		flushExcessivelyDenseIntervals();
 		contigsCalled++;
 		if (assembledContig != null) {
 			called.add(assembledContig);
@@ -489,16 +515,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 		assert(!evidence.isEmpty());
 		Map<KmerPathNode, List<List<KmerNode>>> toRemove = new IdentityHashMap<KmerPathNode, List<List<KmerNode>>>();
 		for (KmerEvidence e : evidence) {
-			for (int i = 0; i < e.length(); i++) {
-				KmerSupportNode support = e.node(i);
-				if (support != null) {
-					if (support.lastEnd() >= nextPosition()) {
-						log.error(String.format("Sanity check failure: %s extending to %d removed when input at %s:%d", e, support.lastEnd(), contigName, nextPosition()));
-						// try to recover
-					}
-					updateRemovalList(toRemove, support);
-				}
-			}
+			updateRemovalList(toRemove, e);
 		}
 		if (bestContigCaller != null) {
 			bestContigCaller.remove(toRemove.keySet());
@@ -551,6 +568,19 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 			removeFromGraph(next, true);
 			next.prepend(node);
 			addToGraph(next);
+		}
+	}
+	private void updateRemovalList(Map<KmerPathNode, List<List<KmerNode>>> toRemove, KmerEvidence e) {
+		for (int i = e.length() - 1; i >= 0; i--) {
+			KmerSupportNode support = e.node(i);
+			if (support != null) {
+				if (support.lastEnd() >= nextPosition()) {
+					log.error(String.format("Sanity check failure: %s extending to %d removed when input at %s:%d", e, support.lastEnd(), contigName, nextPosition()));
+					// try to recover by advancing
+					advanceUnderlying(support.lastEnd());
+				}
+				updateRemovalList(toRemove, support);
+			}
 		}
 	}
 	private void updateRemovalList(Map<KmerPathNode, List<List<KmerNode>>> toRemove, KmerSupportNode support) {

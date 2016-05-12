@@ -338,7 +338,7 @@ public class MemoizedContigCaller extends ContigCaller {
 	 * @param contigStartsBefore position contig must start before
 	 * @return
 	 */
-	public ArrayDeque<KmerPathSubnode> callBestContigBefore(int unprocessedPosition, int contigStartsBefore) {
+	public ArrayDeque<KmerPathSubnode> callBestContigStartingBefore(int unprocessedPosition, int contigStartsBefore) {
 		advanceFrontier(unprocessedPosition);
 		ensureContigByScoreBeforePosition(contigStartsBefore);
 		if (contigByScoreBeforePosition.isEmpty()) return null;

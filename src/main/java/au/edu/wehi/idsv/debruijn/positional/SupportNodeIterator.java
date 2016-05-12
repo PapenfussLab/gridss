@@ -73,7 +73,7 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 		if (tracker != null && tracker.isTracked(de.getEvidenceID())) {
 			log.error(String.format("Attempting to add %s to assembly when already present. "
 					+ "Possible causes are: duplicate read name, alignment with bwa mem without -M flag. "
-					+ "Please ensure read names are unique across all inpuut files and there exists only one primary alignment record per read.",
+					+ "Please ensure read names are unique across all input files and there exists only one primary alignment record per read.",
 					de.getEvidenceID()));
 			return;
 		}
