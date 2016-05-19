@@ -1,20 +1,10 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMFileWriter;
-import htsjdk.samtools.SAMFileWriterFactory;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SamPairUtil.PairOrientation;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.reference.ReferenceSequenceFile;
-import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
-import htsjdk.samtools.util.IOUtil;
-import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.SequenceUtil;
-
+import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
@@ -28,21 +18,36 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.configuration.ConfigurationException;
 
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.io.Files;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
+import au.edu.wehi.idsv.alignment.AlignerFactory;
+import au.edu.wehi.idsv.bed.IntervalBed;
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
+import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileWriter;
+import htsjdk.samtools.SAMFileWriterFactory;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.IOUtil;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.SequenceUtil;
 import picard.analysis.InsertSizeMetrics;
 import picard.cmdline.CommandLineProgram;
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import picard.sam.CreateSequenceDictionary;
-import au.edu.wehi.idsv.alignment.AlignerFactory;
-import au.edu.wehi.idsv.bed.IntervalBed;
-import au.edu.wehi.idsv.configuration.GridssConfiguration;
-import au.edu.wehi.idsv.pipeline.SortRealignedSoftClips;
-
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 /**
  * Extracts structural variation evidence and assembles breakends
@@ -292,6 +297,7 @@ public class Idsv extends CommandLineProgram {
 			
 	    	if (!OUTPUT.exists()) {
 		    	callVariants(threadpool, samEvidence, assemblyEvidence);
+		    	writeAssemblyBreakends(assemblyEvidence);
 	    	} else {
 	    		log.info(OUTPUT.toString() + " exists not recreating.");
 	    	}
@@ -406,6 +412,29 @@ public class Idsv extends CommandLineProgram {
 		} finally {
 			if (caller != null) caller.close();
 		}
+	}
+	private void writeAssemblyBreakends(AssemblyEvidenceSource assemblyEvidence) throws IOException {
+		log.info("Writing breakend assembly support.");
+		File output = new File(OUTPUT.getAbsolutePath() + ".breakend.fa.tmp");
+		BufferedOutputStream writer = null;
+		try {
+			writer = new BufferedOutputStream(new FileOutputStream(output));
+			CloseableIterator<SAMRecordAssemblyEvidence> it = assemblyEvidence.iterator(false, false);
+			while (it.hasNext()) {
+				SAMRecordAssemblyEvidence ass = it.next();
+				writer.write('>');
+				writer.write(ass.getEvidenceID().getBytes(StandardCharsets.US_ASCII));
+				writer.write('\n');
+				writer.write(ass.getAssemblySequence());
+				writer.write('\n');
+			}
+			it.close();
+			writer.close();
+			Files.move(output, new File(OUTPUT.getAbsolutePath() + ".breakend.fa"));
+		} finally {
+			CloserUtil.close(writer);
+		}
+		log.info("Writing breakend assembly support complete.");
 	}
 //	private void hackSimpleCalls() throws IOException, ConfigurationException {
 //		if (OUTPUT.exists()) {

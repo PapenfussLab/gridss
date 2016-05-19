@@ -18,6 +18,7 @@ import au.edu.wehi.idsv.vcf.VcfFilter;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
@@ -51,6 +52,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private double fBREAKEND_ASSEMBLY_QUAL;
 	private double[] fBREAKEND_UNMAPPEDMATE_QUAL;
 	private double[] fBREAKEND_SOFTCLIP_QUAL;
+	private List<String> BREAKEND_ASSEMBLY_ID = Lists.newArrayList();
 
 	public StructuralVariationCallBuilder(ProcessingContext processContext, VariantContextDirectedEvidence parent) {
 		this(processContext, parent, true);
@@ -137,6 +139,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private void add(RealignedRemoteSAMRecordAssemblyEvidence evidence) {
 		fBREAKPOINT_ASSEMBLY_COUNT_REMOTE++;
 		fBREAKPOINT_ASSEMBLY_QUAL_REMOTE += evidence.getBreakpointQual();
+		BREAKEND_ASSEMBLY_ID.add(evidence.asLocal().getEvidenceID());
 		addAssemblyCategories(evidence);
 		if (evidence.isBreakendExact()) {
 			processAnchor(evidence.getRemoteSAMRecord());
@@ -152,12 +155,14 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			fBREAKPOINT_ASSEMBLY_COUNT++;
 			fBREAKPOINT_ASSEMBLY_QUAL += evidence.getBreakpointQual();
 		}
+		BREAKEND_ASSEMBLY_ID.add(evidence.getEvidenceID());
 		addAssemblyCategories(evidence);
 		processAnchor(evidence.getSAMRecord());
 	}
 	private void add(RealignedSAMRecordAssemblyEvidence evidence) {
 		fBREAKPOINT_ASSEMBLY_COUNT++;
 		fBREAKPOINT_ASSEMBLY_QUAL += evidence.getBreakpointQual();
+		BREAKEND_ASSEMBLY_ID.add(evidence.getEvidenceID());
 		addAssemblyCategories(evidence);
 		processAnchor(evidence.getSAMRecord());
 	}
@@ -306,6 +311,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		attribute(VcfAttributes.BREAKEND_ASSEMBLY_QUAL, (float)fBREAKEND_ASSEMBLY_QUAL);
 		attribute(VcfAttributes.BREAKEND_UNMAPPEDMATE_QUAL, tof(fBREAKEND_UNMAPPEDMATE_QUAL));
 		attribute(VcfAttributes.BREAKEND_SOFTCLIP_QUAL, tof(fBREAKEND_SOFTCLIP_QUAL));
+		attribute(VcfAttributes.BREAKEND_ASSEMBLY_ID, BREAKEND_ASSEMBLY_ID.toArray(new String[0]));
 		
 		BreakendSummary bs = parent.getBreakendSummary();
 		String untemplated = parent.getBreakpointSequenceString();

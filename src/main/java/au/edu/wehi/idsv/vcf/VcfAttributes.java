@@ -43,6 +43,7 @@ public enum VcfAttributes {
 	REMOTE_SUPPORT_INTERVAL ("RSI", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Support interval offsets of partner breakend."),
 	INEXACT_HOMPOS ("IHOMPOS", 2, VCFHeaderLineType.Integer, "Position of inexact homology"),
 	SUPPORT_CIGAR ("SC", 1, VCFHeaderLineType.String, "CIGAR for displaying anchoring alignment of any contributing evidence and microhomologies."),
+	BREAKEND_ASSEMBLY_ID ("BEID", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.String, "Breakend assemblies contributing support to the breakpoint."),
 	TEST ("TEST", 1, VCFHeaderLineType.String, "Placeholder field used for regression testing.");
 	private final VCFInfoHeaderLine header;
 	private final String tag;
