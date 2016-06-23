@@ -2,10 +2,11 @@
 #
 # Example gridss pipeline
 #
-INPUT=chr12.1527326.DEL1024.bam
+NORMAL=normal.bam
+TUMOUR=tumour.bam
 BLACKLIST=wgEncodeDacMapabilityConsensusExcludable.bed
 REFERENCE=~/reference_genomes/human/hg19.fa
-OUTPUT=${INPUT/.bam/.gridss.vcf}
+OUTPUT=somatic.gridss.vcf
 GRIDSS_JAR=~/target/gridss-0.11.5-jar-with-dependencies.jar
 
 if [[ ! -f "$INPUT" ]] ; then
@@ -40,16 +41,10 @@ java -ea -Xmx16g -cp $GRIDSS_JAR au.edu.wehi.idsv.Idsv \
 	TMP_DIR=. \
 	WORKING_DIR=. \
 	REFERENCE="$REFERENCE" \
-	INPUT="$INPUT" IC=1 \
+	INPUT="$NORMAL" IC=1 \
+	INPUT="$TUMOUR" IC=2 \
 	OUTPUT="$OUTPUT" \
 	BLACKLIST="$BLACKLIST" \
 	2>&1 | tee -a gridss.$HOSTNAME.$$.log
 
-
-if [[ -f "$OUTPUT" ]] ; then
-	java -ea -Xmx16g -cp $GRIDSS_JAR au.edu.wehi.idsv.VcfBreakendToBedpe \
-		INPUT="$OUTPUT" \
-		OUTPUT="${OUTPUT/.vcf/.bedpe}" \
-		OUTPUT_FILTERED="${OUTPUT/.vcf/.filtered.bedpe}" \
-		REFERENCE="$REFERENCE"
-fi
+Rscript somatic.R
