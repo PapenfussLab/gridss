@@ -12,19 +12,18 @@ if [[ ! -f "$INPUT" ]] ; then
 	echo "Missing $INPUT input file."
 	exit 1
 fi
-if ! which bwa >/dev/null 2>&1 ; then
-	echo "Missing bwa executable. Please add to PATH"
+if ! which bowtie2 >/dev/null 2>&1 ; then
+	echo "Missing bowtie2. Please add to PATH"
 	exit 1
 fi
 if [[ ! -f "$REFERENCE" ]] ; then
 	echo "Missing reference genome $REFERENCE. Update the REFERENCE variable in the shell script to your hg19 location"
 	exit 1
 fi
-if [[ ! -f "$REFERENCE.bwt" ]] ; then
-	echo "Missing bwa index for $REFERENCE. Could not find $REFERENCE.1.bt2. Create an index (bwa index $REFERENCE $REFERENCE) or symlink the index files to the expected file names."
+if [[ ! -f "$REFERENCE.1.bt2" ]] ; then
+	echo "Missing bowtie2 index for $REFERENCE. Could not find $REFERENCE.1.bt2. Create an index or symlink the 6 index files to the expected file names."
 	exit 1
 fi
-
 if [[ ! -f $GRIDSS_JAR ]] ; then
 	echo "Missing $GRIDSS_JAR. Update the GRIDSS_JAR variable in the shell script to your location"
 	exit 1
