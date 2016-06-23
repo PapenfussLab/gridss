@@ -305,7 +305,9 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 				toRemove.add(new KmerPathSubnode(pn));
 			}
 			Set<KmerEvidence> evidenceToRemove = evidenceTracker.untrack(toRemove);
-			removeFromGraph(evidenceToRemove);
+			if (!evidenceToRemove.isEmpty()) { // it could all overlap our previous flush range
+				removeFromGraph(evidenceToRemove);
+			}
 		}
 	}
 	/**
