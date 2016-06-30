@@ -218,6 +218,12 @@ genome has many contigs, or if you have specified a large number of input files.
 
 You are attempting to run GRIDSS with an old Java version. GRIDSS requires Java 8 or later.
 
+### Reference genome used by _input.bam_ does not match reference genome _reference.fa_. The reference supplied must match the reference used for every input.
+
+The reference genome used to align input.bam does not match the reference genome supplied to GRIDSS.
+If the differences are purely based on chromosome name and ordering, the Picard tools utility ReorderBam
+can be used to fix chromosome orderings.
+
 # Visualisation of results
 
 ## VcfBreakendToReadPair
