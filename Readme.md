@@ -66,6 +66,7 @@ A .dict sequence dictionary is also required but GRIDSS will automatically creat
 Input libraries. Specify multiple times (ie `INPUT=file1.bam INPUT=file2.bam INPUT=file3.bam` ) to process multiple libraries together.
 GRIDSS considers all reads in each file to come from a single library.
 Input files containing read groups from multiple different libraries should be split into an input file per-library.
+GRIDSS the reference genome used for all input files matches the reference genome supplied to GRIDSS.
 
 ### INPUT_CATEGORY
 
