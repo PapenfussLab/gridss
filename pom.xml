@@ -69,7 +69,7 @@
 				<version>2.19.1</version>
 				<configuration>
 					<excludedGroups>au.edu.wehi.idsv.Hg19Tests</excludedGroups>
-					<argLine>-Xmx256m</argLine>
+					<argLine>-Xmx2g</argLine>
 				</configuration>
 			</plugin>
 		</plugins>
