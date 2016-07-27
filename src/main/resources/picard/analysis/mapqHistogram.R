@@ -5,9 +5,9 @@
 
 # Parse the arguments
 args <- commandArgs(trailing=T)
-metricsFile  <- args[1]
-outputFile   <- args[2]
-bamName      <- args[3]
+metricsFile <- args[1]
+pdfFile     <- args[2]
+bamName     <- args[3]
 
 # Figure out where the metrics and the histogram are in the file and parse them out
 startFinder <- scan(metricsFile, what="character", sep="\n", quiet=TRUE, blank.lines.skip=FALSE)
