@@ -1,9 +1,11 @@
 package au.edu.wehi.idsv;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.Executor;
 
 import au.edu.wehi.idsv.util.ParallelTransformIterator;
+import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 
 /**
  * Annotates each variant call based on supporting evidence. Both the variant calls and
@@ -11,7 +13,7 @@ import au.edu.wehi.idsv.util.ParallelTransformIterator;
  * @author Daniel Cameron
  *
  */
-public class SequentialEvidenceAnnotator extends ParallelTransformIterator<StructuralVariationCallBuilder, VariantContextDirectedEvidence> {
+public class SequentialEvidenceAnnotator extends ParallelTransformIterator<StructuralVariationCallBuilder, VariantContextDirectedEvidence> implements TrackedBuffer {
 	/**
 	 * Creates an ordered evidence annotation
 	 * @param context processing context
@@ -32,5 +34,15 @@ public class SequentialEvidenceAnnotator extends ParallelTransformIterator<Struc
 			Executor threadpool) {
 		super(new SequentialEvidenceAllocator(context, calls, evidence, maxCallWindowSize, assignEvidenceToSingleBreakpoint),
 			call -> call.make(), lookahead, threadpool);
+	}
+
+	@Override
+	public void setTrackedBufferContext(String context) {
+		((TrackedBuffer)it).setTrackedBufferContext(context);
+	}
+
+	@Override
+	public List<NamedTrackedBuffer> currentTrackedBufferSizes() {
+		return ((TrackedBuffer)it).currentTrackedBufferSizes();
 	}
 }

@@ -39,10 +39,10 @@ import com.google.common.collect.Lists;
  */
 public class VariantCaller extends EvidenceProcessorBase {
 	private static final Log log = Log.getInstance(VariantCaller.class);
-	private final EvidenceToCsv evidenceDump;
-	public VariantCaller(ProcessingContext context, File output, List<SAMEvidenceSource> samEvidence, AssemblyEvidenceSource assemblyEvidence, EvidenceToCsv evidenceDump) {
+	//private final EvidenceToCsv evidenceDump;
+	public VariantCaller(ProcessingContext context, File output, List<SAMEvidenceSource> samEvidence, AssemblyEvidenceSource assemblyEvidence) {
 		super(context, output, samEvidence, assemblyEvidence);
-		this.evidenceDump = evidenceDump;
+		//this.evidenceDump = evidenceDump;
 	}
 	@Override
 	public void process(ExecutorService threadpool) {
@@ -190,7 +190,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 			}
 			evidenceIt = getAllEvidence(true, true, true, true, true);
 			evidenceIt = adjustEvidenceStream(evidenceIt);
-			breakendIt = new SequentialEvidenceAnnotator(processContext, breakendIt, evidenceIt, maxWindowSize, true, evidenceDump);
+			breakendIt = new SequentialEvidenceAnnotator(processContext, breakendIt, evidenceIt, maxWindowSize, true, Runtime.getRuntime().availableProcessors(), threadpool);
 			processContext.registerBuffer(output.getName(), ((TrackedBuffer)breakendIt));
 			// breakpoint position is recalculated, so we need to resort again
 			breakendIt = new DirectEvidenceWindowedSortingIterator<VariantContextDirectedEvidence>(processContext, maxWindowSize, breakendIt);

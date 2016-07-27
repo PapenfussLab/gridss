@@ -31,7 +31,7 @@ public class ParallelTransformIterator<T, U> implements Iterator<U> {
 		@SuppressWarnings("rawtypes")
 		public static Ordering<TransformResult> byOrdinal = Ordering.natural().onResultOf((TransformResult tr) -> tr.ordinal);
 	}
-	private final Iterator<T> it;
+	protected final Iterator<T> it;
 	private final Function<T, U> f;
 	private final int lookahead;
 	private final Executor threadpool;

@@ -395,17 +395,16 @@ public class Idsv extends CommandLineProgram {
 	private void callVariants(ExecutorService threadpool, List<SAMEvidenceSource> samEvidence, AssemblyEvidenceSource assemblyEvidence) throws IOException, ConfigurationException {
 		VariantCaller caller = null;
 		try {
-			EvidenceToCsv evidenceDump = null;
-			if (getContext().getConfig().getVisualisation().evidenceAllocation) {
-				evidenceDump = new EvidenceToCsv(new File(getContext().getConfig().getVisualisation().directory, "evidence.csv"));
-			}
+			//EvidenceToCsv evidenceDump = null;
+			//if (getContext().getConfig().getVisualisation().evidenceAllocation) {
+			//	evidenceDump = new EvidenceToCsv(new File(getContext().getConfig().getVisualisation().directory, "evidence.csv"));
+			//}
 			// Run variant caller single-threaded as we can do streaming calls
 			caller = new VariantCaller(
 				getContext(),
 				OUTPUT,
 				samEvidence,
-				assemblyEvidence,
-				evidenceDump);
+				assemblyEvidence);
 			caller.callBreakends(threadpool);
 			caller.annotateBreakpoints(threadpool);
 		} finally {
