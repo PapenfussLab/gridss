@@ -54,7 +54,11 @@ public class DuplicatingIterableTest {
 		Thread.sleep(10);
 		assertTrue(t.isAlive());
 		it1.next(); // consume record thus allowing the thread to read the third record
-		Thread.sleep(10);
+		for (int i = 0; i < 128; i++) {
+			if (t.isAlive()) {
+				Thread.sleep(1);
+			}
+		}
 		assertFalse(t.isAlive());
 	}
 	public class ConsumerThread<T> extends Thread {
