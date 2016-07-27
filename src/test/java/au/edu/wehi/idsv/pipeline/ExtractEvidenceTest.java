@@ -30,35 +30,39 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 	}
 	@Test
 	public void should_generate_rp_sc_mate_fq_per_chr() {
+		ProcessingContext context = getCommandlineContext(true);
 		createInput();
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, 0);
-		ExtractEvidence e = new ExtractEvidence(getCommandlineContext(true), source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
-		assertEquals(0, new PerChr().getRP(source).size());
-		assertEquals(0, new PerChr().getSC(source).size());
-		assertEquals(0, new PerChr().getMate(source).size());
-		assertEquals(0, new PerChr().getFastqRecords(source).size());
+		SAMEvidenceSource source = new SAMEvidenceSource(context, input, 0);
+		ExtractEvidence e = new ExtractEvidence(context, source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
+		assertEquals(0, new PerChr(context).getRP(source).size());
+		assertEquals(0, new PerChr(context).getSC(source).size());
+		assertEquals(0, new PerChr(context).getMate(source).size());
+		assertEquals(0, new PerChr(context).getFastqRecords(source).size());
 	}
 	@Test
 	public void sc_should_be_located_in_sc_bam_for_chr() {
+		ProcessingContext context = getCommandlineContext(true);
 		createInput(Read(1, 1, "50M50S"));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, 0);
-		ExtractEvidence e = new ExtractEvidence(getCommandlineContext(true), source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
-		assertEquals(1, new PerChr().getSC(source, "polyACGT").size());
+		SAMEvidenceSource source = new SAMEvidenceSource(context, input, 0);
+		ExtractEvidence e = new ExtractEvidence(context, source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
+		assertEquals(1, new PerChr(context).getSC(source, "polyACGT").size());
 	}
 	@Test
 	public void oea_should_be_located_in_rp_bam_for_chr() {
+		ProcessingContext context = getCommandlineContext(true);
 		createInput(OEA(1, 1, "100M", true));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, 0);
-		ExtractEvidence e = new ExtractEvidence(getCommandlineContext(true), source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
-		assertEquals(1, new PerChr().getRP(source, "polyACGT").size());
+		SAMEvidenceSource source = new SAMEvidenceSource(context, input, 0);
+		ExtractEvidence e = new ExtractEvidence(context, source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
+		assertEquals(1, new PerChr(context).getRP(source, "polyACGT").size());
 	}
 	@Test
 	public void dp_should_be_located_in_rp_bam_for_chr() {
+		ProcessingContext context = getCommandlineContext(true);
 		createInput(DP(1, 1, "100M", true, 2, 2, "100M", true));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, 0);
-		ExtractEvidence e = new ExtractEvidence(getCommandlineContext(true), source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
-		assertEquals(1, new PerChr().getRP(source, "polyACGT").size());
-		assertEquals(1, new PerChr().getRP(source, "random").size());
+		SAMEvidenceSource source = new SAMEvidenceSource(context, input, 0);
+		ExtractEvidence e = new ExtractEvidence(context, source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
+		assertEquals(1, new PerChr(context).getRP(source, "polyACGT").size());
+		assertEquals(1, new PerChr(context).getRP(source, "random").size());
 	}
 	@Test
 	public void concordant_read_should_not_be_located_in_rp_or_scbam() {
@@ -70,10 +74,11 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 	}
 	@Test
 	public void oea_mate_should_be_located_in_mate_bam_for_chr() {
+		ProcessingContext context = getCommandlineContext(true);
 		createInput(OEA(1, 1, "100M", true));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, 0);
-		ExtractEvidence e = new ExtractEvidence(getCommandlineContext(true), source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
-		List<SAMRecord> rs = new PerChr().getMate(source, "polyACGT");
+		SAMEvidenceSource source = new SAMEvidenceSource(context, input, 0);
+		ExtractEvidence e = new ExtractEvidence(context, source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
+		List<SAMRecord> rs = new PerChr(context).getMate(source, "polyACGT");
 		assertEquals(1, rs.size());
 		SAMRecord mate = rs.get(0);
 		assertTrue(mate.getReadUnmappedFlag());
@@ -82,12 +87,13 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 	}
 	@Test
 	public void dp_mate_should_be_located_in_mate_bam_for_chr() {
+		ProcessingContext context = getCommandlineContext(true);
 		createInput(DP(1, 1, "100M", true, 2, 2, "100M", true));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, 0);
-		ExtractEvidence e = new ExtractEvidence(getCommandlineContext(true), source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
-		assertEquals(1, new PerChr().getMate(source, "polyACGT").size());
-		assertEquals(1, new PerChr().getMate(source, "random").size());
-		SAMRecord mate = new PerChr().getRP(source, "polyACGT").get(0);
+		SAMEvidenceSource source = new SAMEvidenceSource(context, input, 0);
+		ExtractEvidence e = new ExtractEvidence(context, source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
+		assertEquals(1, new PerChr(context).getMate(source, "polyACGT").size());
+		assertEquals(1, new PerChr(context).getMate(source, "random").size());
+		SAMRecord mate = new PerChr(context).getRP(source, "polyACGT").get(0);
 		assertFalse(mate.getReadUnmappedFlag());
 		assertEquals(2, mate.getMateAlignmentStart());
 		assertEquals(2, mate.getMateAlignmentStart());
@@ -255,10 +261,11 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 	}
 	@Test
 	public void should_extract_indels() {
+		ProcessingContext context = getCommandlineContext(true);
 		createInput(Read(1, 1, "50M50D50M"));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, 0);
-		ExtractEvidence e = new ExtractEvidence(getCommandlineContext(true), source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
-		assertEquals(1, new PerChr().getSC(source, "polyACGT").size());
+		SAMEvidenceSource source = new SAMEvidenceSource(context, input, 0);
+		ExtractEvidence e = new ExtractEvidence(context, source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
+		assertEquals(1, new PerChr(context).getSC(source, "polyACGT").size());
 	}
 	@Test
 	public void should_not_extract_below_mapq_threshold() {
@@ -267,6 +274,6 @@ public class ExtractEvidenceTest extends IntermediateFilesTest {
 		pc.getConfig().minMapq = 11;
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
 		ExtractEvidence e = new ExtractEvidence(pc, source); e.process(EnumSet.allOf(ProcessStep.class)); e.close();
-		assertEquals(0, new PerChr().getSC(source, "polyACGT").size());
+		assertEquals(0, new PerChr(pc).getSC(source, "polyACGT").size());
 	}
 }

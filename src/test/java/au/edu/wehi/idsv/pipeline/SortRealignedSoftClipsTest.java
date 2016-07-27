@@ -25,6 +25,7 @@ public class SortRealignedSoftClipsTest extends IntermediateFilesTest {
 	SAMEvidenceSource source;
 	public void go(boolean perChr, SAMRecord... realign) {
 		processContext = getCommandlineContext(perChr);
+		processContext.getRealignmentParameters().minLength = 15;
 		source = new SAMEvidenceSource(processContext, input, 0);
 		source.completeSteps(ProcessStep.ALL_STEPS);
 		if (perChr) {
@@ -99,21 +100,21 @@ public class SortRealignedSoftClipsTest extends IntermediateFilesTest {
 				withReadName("1#2#0#fr2", Read(1, 10, "15M"))[0],
 				withReadName("2#3#0#fr3", Read(0, 10, "15M"))[0]
 		);
-		assertEquals(3, new PerChr().getRSC(source).size());
-		assertEquals("r3", new PerChr().getRSC(source).get(0).getReadName());
-		assertEquals("r2", new PerChr().getRSC(source).get(1).getReadName());
-		assertEquals("r1", new PerChr().getRSC(source).get(2).getReadName());
+		assertEquals(3, new PerChr(processContext).getRSC(source).size());
+		assertEquals("r3", new PerChr(processContext).getRSC(source).get(0).getReadName());
+		assertEquals("r2", new PerChr(processContext).getRSC(source).get(1).getReadName());
+		assertEquals("r1", new PerChr(processContext).getRSC(source).get(2).getReadName());
 		
-		assertEquals(3, new PerChr().getRRR(source).size());
-		assertEquals("2#3#0#fr3", new PerChr().getRRR(source).get(0).getReadName());
-		assertEquals("1#2#0#fr2", new PerChr().getRRR(source).get(1).getReadName());
-		assertEquals("0#1#0#fr1", new PerChr().getRRR(source).get(2).getReadName());
+		assertEquals(3, new PerChr(processContext).getRRR(source).size());
+		assertEquals("2#3#0#fr3", new PerChr(processContext).getRRR(source).get(0).getReadName());
+		assertEquals("1#2#0#fr2", new PerChr(processContext).getRRR(source).get(1).getReadName());
+		assertEquals("0#1#0#fr1", new PerChr(processContext).getRRR(source).get(2).getReadName());
 	}
 	@Test
 	public void should_not_include_spanned_indels() {
 		createInput(withReadName("r1", Read(0, 1, "5M5D5M")));
 		go(true);
-		assertEquals(0, new PerChr().getRSC(source).size());
+		assertEquals(0, new PerChr(processContext).getRSC(source).size());
 	}
 }
 
