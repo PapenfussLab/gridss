@@ -1,2 +1,6 @@
+addons:
+	apt:
+		packages:
+			- r-base
 language: java
 jdk: oraclejdk8
