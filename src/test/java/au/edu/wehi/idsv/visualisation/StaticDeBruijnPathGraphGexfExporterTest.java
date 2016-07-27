@@ -8,9 +8,11 @@ import java.io.IOException;
 
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import au.edu.wehi.idsv.AssemblyAlgorithm;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
+import au.edu.wehi.idsv.Hg19Tests;
 import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
@@ -21,9 +23,10 @@ import com.google.common.collect.ImmutableList;
 
 public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTest {
 	@Test
+	@Category(Hg19Tests.class)
 	public void positional_should_export_dot() throws IOException {
 		File output = new File(super.testFolder.getRoot(), "chr12-244000.vcf");
-		setReference(new File("C:/dev/chr12.fa"));
+		setReference(Hg19Tests.findHg19Reference("chr12.fa"));
 		createInput(new File("src/test/resources/chr12-244000.bam"));
 		ProcessingContext pc = getCommandlineContext(false);
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
