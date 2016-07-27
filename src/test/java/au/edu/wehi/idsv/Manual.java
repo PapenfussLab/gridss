@@ -7,6 +7,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 import org.apache.commons.configuration.ConfigurationException;
 
@@ -61,7 +62,7 @@ public class Manual extends TestHelper {
 			return super.getAllEvidence(true, true, true, true, true);
 		}
 		@Override
-		public void process() {
+		public void process(ExecutorService threadpool) {
 		}
 	}
 }

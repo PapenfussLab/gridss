@@ -45,9 +45,9 @@ public class VariantCaller extends EvidenceProcessorBase {
 		this.evidenceDump = evidenceDump;
 	}
 	@Override
-	public void process() {
-		callBreakends(null);
-		annotateBreakpoints();
+	public void process(ExecutorService threadpool) {
+		callBreakends(threadpool);
+		annotateBreakpoints(threadpool);
 	}
 	public void callBreakends(ExecutorService threadpool) {
 		log.info("Identifying Breakpoints");
@@ -157,7 +157,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 		maxSize = Math.max(maxSize, assemblyEvidence.getAssemblyWindowSize()) + processContext.getVariantCallingParameters().maxBreakendHomologyLength;
 		return maxSize + 2 * (processContext.getVariantCallingParameters().breakendMargin + 1);
 	}
-	public void annotateBreakpoints() {
+	public void annotateBreakpoints(ExecutorService threadpool) {
 		log.info("Annotating Calls");
 		List<List<SAMEvidenceSource>> byCategory = Lists.newArrayList();
 		while (byCategory.size() < processContext.getCategoryCount()) {

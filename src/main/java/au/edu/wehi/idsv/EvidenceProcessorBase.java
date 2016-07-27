@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.SortedSet;
+import java.util.concurrent.ExecutorService;
 
 import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 
@@ -103,5 +104,5 @@ public abstract class EvidenceProcessorBase {
 		}
 		toClose.clear();
 	}
-	public abstract void process();
+	public abstract void process(ExecutorService threadpool);
 }

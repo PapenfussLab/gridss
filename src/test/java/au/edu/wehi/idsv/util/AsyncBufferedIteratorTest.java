@@ -20,16 +20,16 @@ import com.google.common.primitives.Ints;
 
 public class AsyncBufferedIteratorTest {
 	public static class CIT extends AbstractIterator<Integer> implements CloseableIterator<Integer> {
-		private int count;
+		public int recordsleft = 0;
 		public volatile boolean isClosed = false;
-		public CIT(int count) { this.count = count; }
+		public CIT(int count) { this.recordsleft = count; }
 		@Override
 		public void close() {
 			isClosed = true;
 		}
 		@Override
 		protected Integer computeNext() {
-			if (count > 0) return count--;
+			if (recordsleft > 0) return recordsleft--;
 			return endOfData();
 		}
 	}

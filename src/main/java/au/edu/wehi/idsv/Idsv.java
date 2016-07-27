@@ -276,9 +276,6 @@ public class Idsv extends CommandLineProgram {
 	    	// without invoking external aligner (0 records to realign). 
 	    	assemblyEvidence.ensureAssembled(threadpool);
 	    	
-	    	shutdownPool(threadpool);
-			threadpool = null;
-			    	
 			// check that all steps have been completed
 	    	for (SAMEvidenceSource sref : samEvidence) {
 	    		if (!sref.isComplete(ProcessStep.CALCULATE_METRICS)
@@ -301,6 +298,8 @@ public class Idsv extends CommandLineProgram {
 	    	} else {
 	    		log.info(OUTPUT.toString() + " exists not recreating.");
 	    	}
+	    	shutdownPool(threadpool);
+			threadpool = null;
 	    	//hackSimpleCalls(processContext);
 	    	processContext.close();
     	} catch (IOException e) {
@@ -402,13 +401,13 @@ public class Idsv extends CommandLineProgram {
 			}
 			// Run variant caller single-threaded as we can do streaming calls
 			caller = new VariantCaller(
-					getContext(),
+				getContext(),
 				OUTPUT,
 				samEvidence,
 				assemblyEvidence,
 				evidenceDump);
 			caller.callBreakends(threadpool);
-			caller.annotateBreakpoints();
+			caller.annotateBreakpoints(threadpool);
 		} finally {
 			if (caller != null) caller.close();
 		}

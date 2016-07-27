@@ -63,7 +63,7 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 			super(context, null, samEvidence, assemblyEvidence);
 		}
 		@Override
-		public void process() {
+		public void process(ExecutorService threadpool) {
 			throw new UnsupportedOperationException("We're just using this as a helper class for getting an iterator of annotated assemblies");
 		}
 		public CloseableIterator<SAMRecordAssemblyEvidence> annotatedAssembliesIterator() {

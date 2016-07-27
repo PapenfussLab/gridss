@@ -8,7 +8,7 @@ import com.google.common.collect.PeekingIterator;
 
 /**
  * Filters an assembly evidence stream to a subset of the records
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class SAMRecordAssemblyEvidenceFilteringIterator extends AbstractIterator<SAMRecordAssemblyEvidence> {

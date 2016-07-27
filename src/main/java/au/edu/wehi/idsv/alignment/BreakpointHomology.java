@@ -14,7 +14,7 @@ import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
 /**
  * Determines the length of any inexact breakpoint homology
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class BreakpointHomology {

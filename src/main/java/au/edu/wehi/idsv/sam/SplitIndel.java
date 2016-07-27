@@ -11,7 +11,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 /**
  * Converts read alignment indels into split reads
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class SplitIndel {

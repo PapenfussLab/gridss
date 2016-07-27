@@ -11,6 +11,7 @@ import java.util.List;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.MoreExecutors;
 
 
 public class VariantCallerTest extends IntermediateFilesTest {
@@ -36,8 +37,8 @@ public class VariantCallerTest extends IntermediateFilesTest {
 		Collections.sort(ses.evidence, DirectedEvidenceOrder.ByNatural);
 		createInput(in);
 		VariantCaller vc = new VariantCaller(pc, output, ImmutableList.<SAMEvidenceSource>of(ses), aes, null);
-		vc.callBreakends(null);
-		vc.annotateBreakpoints();
+		vc.callBreakends(MoreExecutors.newDirectExecutorService());
+		vc.annotateBreakpoints(MoreExecutors.newDirectExecutorService());
 		List<IdsvVariantContext> annotated = getVcf(new File(testFolder.getRoot(), "out.vcf"), null);
 		List<IdsvVariantContext> calls = getVcf(new File(new File(testFolder.getRoot(), "out.vcf.idsv.working"), "out.vcf.idsv.breakpoint.vcf"), null);
 		// with no filtering, annotation should not change call set

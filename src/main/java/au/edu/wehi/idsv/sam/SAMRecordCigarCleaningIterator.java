@@ -10,7 +10,7 @@ import java.util.Iterator;
 
 /**
  * Cleans CIGARs so they comply with the SAM specifications
- * @author cameron.d
+ * @author Daniel Cameron
  *
  */
 public class SAMRecordCigarCleaningIterator implements CloseableIterator<SAMRecord> {
