@@ -13,6 +13,7 @@ import java.util.EnumSet;
 import java.util.List;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
@@ -168,11 +169,12 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		assertEquals(0, getAssemblyRaw(aes).size());
 	}
 	@Test
+	@Category(Hg19Tests.class)
 	public void should_generate_indel_assemblies() throws IOException {
 		createInput(new File("src/test/resources/inss.bam"));
 		List<Header> headers = Lists.newArrayList();
 		headers.add(new StringHeader("TestHeader"));
-		File ref = new File("C:/dev/hg19.fa");
+		File ref = Hg19Tests.findHg19Reference();
 		IndexedFastaSequenceFile indexed = new IndexedFastaSequenceFile(ref);
 		ReferenceLookup lookup = new SynchronousReferenceLookupAdapter(indexed);
 		ProcessingContext pc = new ProcessingContext(

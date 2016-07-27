@@ -9,9 +9,11 @@ import java.util.ArrayList;
 import org.apache.commons.configuration.ConfigurationException;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.FileSystemContext;
+import au.edu.wehi.idsv.Hg19Tests;
 import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
@@ -27,8 +29,9 @@ import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 public class DeBruijnSubgraphAssemblerDataTest extends IntermediateFilesTest {
 	@Test//(timeout=60000)
 	@Ignore() // TODO: fix testing architecture so performance test requiring external data are configurable
+	@Category(Hg19Tests.class)
 	public void should_assemble_MT_efficiently() throws ConfigurationException {
-		File hg19decoy = new File("C:\\dev\\hs37d5.fa");
+		File hg19decoy = Hg19Tests.findHg19Reference("hs37d5.fa");
 		ProcessingContext pc = new ProcessingContext(
 				new FileSystemContext(testFolder.getRoot(), 500000), hg19decoy, true, null,
 				new ArrayList<Header>(), new GridssConfiguration((File)null, testFolder.getRoot()));

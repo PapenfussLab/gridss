@@ -7,23 +7,16 @@ import java.io.File;
 import java.util.Random;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+
+import au.edu.wehi.idsv.Hg19Tests;
 
 public class SynchronousReferenceLookupAdapterTest {
 	private Exception e;
-	public static File findHg19Reference() {
-		for (String path : new String[] {
-				"C:/dev/hg19_karyotypic.fa",
-				"C:/dev/hg19.fa",
-				"~/projects/reference_genomes/human/hg19.fa",
-			}) {
-			File f = new File(path);
-			if (f.exists()) return f;
-		}
-		throw new RuntimeException("Cannot find hg19 reference genome to use for testing.");
-	}
 	@Test
+	@Category(Hg19Tests.class)
 	public void multi_threaded_read() throws Exception {
-		File ref = findHg19Reference();
+		File ref = Hg19Tests.findHg19Reference();
 		IndexedFastaSequenceFile indexed = new IndexedFastaSequenceFile(ref);
 		SynchronousReferenceLookupAdapter a = new SynchronousReferenceLookupAdapter(indexed);
 		e = null;
@@ -46,7 +39,7 @@ public class SynchronousReferenceLookupAdapterTest {
 		for (int t = 0; t < th.length; t++) {
 			th[t].join();
 		}
-		if (e != null) throw e;
 		a.close();
+		if (e != null) throw e;
 	}
 }

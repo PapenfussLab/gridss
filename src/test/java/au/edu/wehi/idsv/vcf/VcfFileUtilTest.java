@@ -1,13 +1,13 @@
 package au.edu.wehi.idsv.vcf;
 
-
+import au.edu.wehi.idsv.Hg19Tests;
 
 public class VcfFileUtilTest {
 	/*
 	public class TestCommandLineProgram extends CommandLineProgram {
 		public TestCommandLineProgram() {
 			TMP_DIR = ImmutableList.of(new File("C:/Temp"));
-			REFERENCE = new File("W:/refdata/genomes/dream/hg19_random.fa");
+			REFERENCE = Hg19Tests.findHg19Reference();
 			//MAX_RECORDS_IN_RAM = 10000;
 		}
 		@Override
@@ -17,6 +17,7 @@ public class VcfFileUtilTest {
 		}
 	}
 	@Test
+	@Category(Hg19Tests.class)
 	public void sort_should_not_leak_memory() throws IOException {
 		// Technically it's not a memory leak: it's an insanely massive index file due to
 		// out of order records on the same contig

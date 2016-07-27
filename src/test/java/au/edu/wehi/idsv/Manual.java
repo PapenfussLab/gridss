@@ -4,12 +4,14 @@ import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.util.CloseableIterator;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import org.apache.commons.configuration.ConfigurationException;
+import org.junit.experimental.categories.Category;
 
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 
@@ -23,9 +25,10 @@ public class Manual extends TestHelper {
 	 * Test our iterators are behaving correctly
 	 */
 	//@Test
+	@Category(Hg19Tests.class)
 	public void debug778sorting() throws ConfigurationException {
 		ProcessingContext pc = new ProcessingContext(
-			new FileSystemContext(new File("W:\\778\\idsv"), new File("W:\\778\\idsv"), 500000), new File("C:\\dev\\hg19_karyotypic.fa"), true, null,
+			new FileSystemContext(new File("W:\\778\\idsv"), new File("W:\\778\\idsv"), 500000), Hg19Tests.findHg19Reference(), true, null,
 			new ArrayList<Header>(), new GridssConfiguration());
 		List<SAMEvidenceSource> samEvidence = new ArrayList<SAMEvidenceSource>();
 		for (String s : new String[] {
