@@ -484,19 +484,19 @@ public class AssemblyFactoryTest extends TestHelper {
 	@Test
 	public void hydrate_should_allow_round_trip() {
 		for (SAMRecordAssemblyEvidence e : new SAMRecordAssemblyEvidence[] {
-				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 1, 12), null, B("GTAC"), new byte[] {1,2,3,4}, new int[] { 6, 7 }).annotateAssembly(),
-				AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 1, 11), null, B("GTAC"), new byte[] {1,2,3,4}, new int[] { 8, 9 }).annotateAssembly(),
-				AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null, 1, 2, 1, B("GTAC"), new byte[] {1,2,3,4}).annotateAssembly(),
-				AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, null, 1, 2, 1, B("GTAC"), new byte[] {1,2,3,4}).annotateAssembly(),
+				mockAnnotate(AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 1, 12), null, B("GTAC"), new byte[] {1,2,3,4}, new int[] { 6, 7 })),
+				mockAnnotate(AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 1, 11), null, B("GTAC"), new byte[] {1,2,3,4}, new int[] { 8, 9 })),
+						mockAnnotate(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null, 1, 2, 1, B("GTAC"), new byte[] {1,2,3,4})),
+								mockAnnotate(AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, null, 1, 2, 1, B("GTAC"), new byte[] {1,2,3,4})),
 				big(),
-				AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), null,
+				mockAnnotate(AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), null,
 					0, 10, 2,
 					0, 15, 3,
-					B("NNAAATTTT"), B("NNAAATTTT")).annotateAssembly(),
-				AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), null,
+					B("NNAAATTTT"), B("NNAAATTTT"))),
+				mockAnnotate(AssemblyFactory.createAnchoredBreakpoint(getContext(), AES(), null,
 					0, 100, 2,
 					0, 10, 3,
-					B("NNAAATTTT"), B("NNAAATTTT")).annotateAssembly()
+					B("NNAAATTTT"), B("NNAAATTTT")))
 			}) {
 			SAMRecordAssemblyEvidence r = AssemblyFactory.hydrate(e.getEvidenceSource(), SAMRecordUtil.clone(e.getBackingRecord()));
 			SAMRecordAssemblyEvidenceTest.assertEvidenceEquals(e, r);

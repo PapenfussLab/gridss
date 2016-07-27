@@ -79,8 +79,13 @@ public class AsyncBufferedIteratorTest {
 	@Test
 	public void should_finish_background_thread_when_end_of_stream_reached() throws InterruptedException {
 		CIT it = new CIT(1);
-		AsyncBufferedIterator<Integer> abi = new AsyncBufferedIterator<Integer>(it, 1, 1);
-		Thread.sleep(1);
+		AsyncBufferedIterator<Integer> abi = new AsyncBufferedIterator<Integer>(it, "should_finish_background_thread_when_end_of_stream_reached", 1, 1);
+		// A cleaner approach that relying on waiting on a race condition would be nice
+		for (int i = 0; i < 1024; i++) {
+			if (getThreadWithName(abi.getBackgroundThreadName()) != null) {
+				Thread.sleep(1);
+			}
+		}
 		assertNull(getThreadWithName(abi.getBackgroundThreadName()));
 		abi.close();
 	}

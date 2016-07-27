@@ -85,6 +85,7 @@ import au.edu.wehi.idsv.picard.BufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.sam.SplitIndel;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
@@ -1216,5 +1217,27 @@ public class TestHelper {
 			//SAMRecord r = Read(0, n++, fwd ? String.format("%dM%dS", readLength - sclen, sclen) : String.format("%dS%dM", sclen, readLength - sclen));
 			//return SCE(fwd ? FWD : BWD, r);
 		}
+	}
+	/**
+	 * Annotates the given assembly with a read
+	 * @param ass
+	 * @return annotated assembly
+	 */
+	public static SAMRecordAssemblyEvidence mockAnnotate(SAMRecordAssemblyEvidence ass) {
+		BreakendSummary be = ass.getBreakendSummary();
+		if (be == null) {
+			be = new BreakendSummary(ass.getBackingRecord().getReferenceIndex(),
+					BreakendDirection.Forward,
+					ass.getBackingRecord().getAlignmentStart(),
+					ass.getBackingRecord().getAlignmentEnd());
+		}
+		SoftClipEvidence sc = SCE(be.direction, Read(be.referenceIndex, be.start, be.direction == FWD ? "1M1S" : "1S1M"));
+		String encoded = ass.getBackingRecord().getStringAttribute(SamTags.EVIDENCEID);
+		if (encoded == null) {
+			encoded = "";
+		}
+		ass.getBackingRecord().setAttribute(SamTags.EVIDENCEID, encoded + SAMRecordAssemblyEvidence.COMPONENT_EVIDENCEID_SEPARATOR + sc.getEvidenceID());
+		ass.hydrateEvidenceSet(sc);
+		return ass.annotateAssembly();
 	}
 }

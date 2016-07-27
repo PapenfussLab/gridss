@@ -756,16 +756,22 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void spanning_assemblies_should_use_original_parent_assembly_direction_to_determine_local_remote_status() {
+		SpannedIndelEvidence r = IE(withMapq(40, Read(2, 90, "10M1I10M"))[0]);
+		ImmutableList<String> rid = ImmutableList.of(r.getEvidenceID());
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(2, FWD, 100, 100, 2, BWD, 101, 101), "");
 			phredScore(10);
 		}}.make());
 		String seq = S(RANDOM).substring(100-10, 100) + "N" + S(RANDOM).substring(100, 100+10);
 		ProcessingContext pc = getContext();
-		builder.addEvidence(AssemblyFactory.createAnchoredBreakend(pc, AES(pc), BWD, null, 2, 101, 10, B(seq), B(seq)).realign(5, 0).annotateAssembly().getSpannedIndels().get(0));
-		builder.addEvidence(AssemblyFactory.createAnchoredBreakend(pc, AES(pc), FWD, null, 2, 100, 10, B(seq), B(seq)).realign(5, 0).annotateAssembly().getSpannedIndels().get(0));
-		builder.addEvidence(AssemblyFactory.createAnchoredBreakend(pc, AES(pc), FWD, null, 2, 100, 10, B(seq), B(seq)).realign(5, 0).annotateAssembly().getSpannedIndels().get(0));
-		builder.addEvidence(AssemblyFactory.createAnchoredBreakpoint(pc, AES(pc), null, 2, 100, 10, 2, 101, 10, B(seq), B(seq)).annotateAssembly().getSpannedIndels().get(0));
+		builder.addEvidence(AssemblyFactory.createAnchoredBreakend(pc, AES(pc), BWD, rid, 2, 101, 10, B(seq), B(seq)).realign(5, 0)
+				.hydrateEvidenceSet(r).annotateAssembly().getSpannedIndels().get(0));
+		builder.addEvidence(AssemblyFactory.createAnchoredBreakend(pc, AES(pc), FWD, rid, 2, 100, 10, B(seq), B(seq)).realign(5, 0)
+				.hydrateEvidenceSet(r).annotateAssembly().getSpannedIndels().get(0));
+		builder.addEvidence(AssemblyFactory.createAnchoredBreakend(pc, AES(pc), FWD, rid, 2, 100, 10, B(seq), B(seq)).realign(5, 0)
+				.hydrateEvidenceSet(r).annotateAssembly().getSpannedIndels().get(0));
+		builder.addEvidence(AssemblyFactory.createAnchoredBreakpoint(pc, AES(pc), rid, 2, 100, 10, 2, 101, 10, B(seq), B(seq))
+				.hydrateEvidenceSet(r).annotateAssembly().getSpannedIndels().get(0));
 		
 		VariantContextDirectedBreakpoint vc = (VariantContextDirectedBreakpoint) builder.make();
 		assertEquals(3, vc.getBreakpointEvidenceCountLocalAssembly());
@@ -784,23 +790,25 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		assertEquals(300, ((int[])e.getAttribute(VcfAttributes.INEXACT_HOMPOS.attribute()))[1]);
 	}
 	@Test
+	@Ignore("Issue #17: Output breakpoint assembly sequences")
 	public void breakpoint_assembly_should_be_written() {
 		ProcessingContext pc = getContext();
 		String seq = "CATTAATCGCAAGAGCGGGTTGTATTCGcCGCCAAGTCAGCTGAAGCACCATTACCCGAtCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGATTTTGTTTACAGCCTGTCTTATATCCTGAATAACGCACCGCCTATTCG";
 		int anchor = 78;
 		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD,
 				null,
-				6, 1, anchor,
+				6, 78, anchor,
 				B(seq),
 				B(40,seq.length()));
 		ass = AssemblyFactory.incorporateRealignment(getContext(), ass, ImmutableList.of(
-				withReadName(String.format("6#1#%d#readname", anchor), withSequence(B(seq.substring(anchor)), 
+				withReadName(BreakpointFastqEncoding.getRealignmentFastq(ass).getReadHeader(), withSequence(B(seq.substring(anchor)), 
 						withQual(B(40, seq.length() - anchor), 
 								Read(2, anchor + 1, String.format("%dM", seq.length() - anchor)))))[0]));
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(6, FWD, 78, 78, 2, BWD, 79, 79), "");
 			phredScore(50);
 		}}.make());
+		ass.annotateAssembly();
 		builder.addEvidence(ass);
 		VariantContextDirectedEvidence e = builder.make();
 		FastqRecord fr = e.getBreakendAssemblyFastq();
@@ -815,17 +823,18 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		int anchor = 78;
 		SAMRecordAssemblyEvidence ass = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD,
 				null,
-				6, 1, anchor,
+				6, 78, anchor,
 				B(seq),
 				B(40,seq.length()));
 		ass = AssemblyFactory.incorporateRealignment(getContext(), ass, ImmutableList.of(
-				withReadName(String.format("6#1#%d#readname", anchor), withSequence(B(seq.substring(anchor)), 
+				withReadName(BreakpointFastqEncoding.getRealignmentFastq(ass).getReadHeader(), withSequence(B(seq.substring(anchor)), 
 						withQual(B(40, seq.length() - anchor), 
 								Read(2, anchor + 1, String.format("%dM", seq.length() - anchor)))))[0]));
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(2, BWD, 79, 79, 6, FWD, 78, 78), "");
 			phredScore(50);
 		}}.make());
+		ass.annotateAssembly();
 		builder.addEvidence(((RealignedSAMRecordAssemblyEvidence)ass).asRemote());
 		VariantContextDirectedEvidence e = builder.make();
 		FastqRecord fr = e.getBreakendAssemblyFastq();
@@ -833,6 +842,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		assertEquals(null, e.getAttribute(VcfSvConstants.BREAKPOINT_ID_KEY));
 	}
 	@Test
+	@Ignore("Issue #18: Output breakend support interval")
 	public void support_interval_should_be_written() {
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
 			breakpoint(new BreakpointSummary(0, FWD, 100, 100, 1, BWD, 200, 200), "");

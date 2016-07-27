@@ -30,6 +30,13 @@ public class BreakpointFastqEncoding {
 	private static int getStartPosition(VariantContextDirectedEvidence evidence) {
 		return evidence.getStart();
 	}
+	/**
+	 * Start position of evidence in the originating SAM/VCF file.
+	 * This position matching the sort position in the originating file.
+	 * 
+	 * @param evidence breakend-containing evidence
+	 * @return start position as per the originating file sort order
+	 */
 	public static int getStartPosition(DirectedEvidence evidence) {
 		// custom start positions are required so our order matches the sorted source SAM/BAM and VCF order 
 		if (evidence instanceof SoftClipEvidence) return getStartPosition((SoftClipEvidence)evidence);
@@ -46,12 +53,22 @@ public class BreakpointFastqEncoding {
 	public static int getEncodedStartPosition(String fastqid) {
 		return Integer.parseInt(fastqid.split("#")[1]);
 	}
+	/**
+	 * Zero-based offset of the first base in this FASTQ record compared to the full anchored sequence
+	 * @param fastqid encoded id
+	 * @return offset of first base
+	 */
 	public static int getEncodedBreakendOffset(String fastqid) {
 		if (StringUtil.isBlank(fastqid)) return 0;
 		String[] split =  fastqid.split("#");
 		if (split.length > 2) return Integer.parseInt(split[2]);
 		return 0;
 	}
+	/**
+	 * ID of the originating anchored evidence
+	 * @param fastqid encoded id
+	 * @return evidence ID
+	 */
 	public static String getEncodedID(String fastqid) {
 		String[] split = fastqid.split("#");
 		return fastqid.substring(split[0].length() + split[1].length() + split[2].length() + 3);
