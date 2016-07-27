@@ -1,3 +1,7 @@
+[![Build Status](https://travis-ci.org/PapenfussLab/gridss.svg?branch=master)](https://travis-ci.org/PapenfussLab/gridss)
+[![Coverage Status](https://coveralls.io/repos/github/PapenfussLab/gridss/badge.svg?branch=master)](https://coveralls.io/github/PapenfussLab/gridss?branch=master)
+[![Language](http://img.shields.io/badge/language-java-brightgreen.svg)](https://www.java.com/)
+
 # GRIDSS
 
 A high-speed next-gen sequencing structural variation caller.
