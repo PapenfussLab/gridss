@@ -69,9 +69,11 @@ public class SortRealignedSoftClipsTest extends IntermediateFilesTest {
 	@Test
 	public void should_write_sc_for_both_forward_and_reverse_realignment() {
 		SAMRecord[] realigned = new SAMRecord[] {
+			withReadName("0#1#0#br1", Unmapped(15))[0],
 			withReadName("0#1#0#fr1", Read(2, 10, "15M"))[0],
 			withReadName("1#2#0#fr2", Read(1, 10, "15M"))[0],
 			withReadName("1#2#0#br2", Read(1, 15, "15M"))[0],
+			withReadName("2#3#0#br3", Unmapped(15))[0],
 			withReadName("2#3#0#fr3", Read(0, 10, "15M"))[0],
 		};
 		SAMRecord[] softClip = new SAMRecord[] {
