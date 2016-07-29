@@ -9,6 +9,8 @@ GRIDSS calls variants based on alignment-guided positional de Bruijn graph break
 
 If you have any trouble running GRIDSS, please raise an issue using the Issues tab above. Based on feedback from users, a user guide will be produced outlining common workflows, pitfalls, and use cases.
 
+[Click here to download GRIDSS](https://github.com/PapenfussLab/gridss/releases)
+
 # Pre-requisities
 
 To run, GRIDSS the following must be installed:
