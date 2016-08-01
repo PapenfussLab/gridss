@@ -38,8 +38,9 @@ public class ExternalProcessFastqAligner implements FastqAligner {
 		List<String> commandline = template.stream()
 				.map(s -> String.format(s, fastq.getAbsolutePath(), reference.getAbsolutePath(), threads))
 				.collect(Collectors.toList());
+		String commandlinestr = commandline.stream().collect(Collectors.joining(" "));
 		log.info("Invoking external aligner");
-		log.info(commandline.stream().collect(Collectors.joining(" ")));
+		log.info(commandlinestr);
 		Process aligner = new ProcessBuilder(commandline)
 				.redirectError(Redirect.INHERIT)
 				.directory(output.getParentFile())
@@ -62,7 +63,7 @@ public class ExternalProcessFastqAligner implements FastqAligner {
 			log.error("External process still alive after alignment");
 		}
 		if (aligner.exitValue() != 0) {
-			String msg = String.format("Subprocess terminated with with exit status %1$d. Alignment failed for %2$s. Did you build an index with prefix %3$s?", aligner.exitValue(), fastq, reference);
+			String msg = String.format("Subprocess terminated with with exit status %1$d. Alignment failed for %2$s executing \"%s\". Can you run the alignment command from the command line? Is the aligner on PATH? Did you build an index with prefix %3$s?", aligner.exitValue(), fastq, commandlinestr, reference);
 			log.error(msg);
 			throw new RuntimeException(msg);
 		}
