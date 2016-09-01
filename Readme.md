@@ -5,9 +5,11 @@
 # GRIDSS
 
 A high-speed next-gen sequencing structural variation caller.
-GRIDSS calls variants based on alignment-guided positional de Bruijn graph breakpoint assembly, split read, and read pair evidence.
+GRIDSS calls variants based on alignment-guided positional de Bruijn graph break-end assembly, split read, and read pair evidence.
 
 If you have any trouble running GRIDSS, please raise an issue using the Issues tab above. Based on feedback from users, a user guide will be produced outlining common workflows, pitfalls, and use cases.
+
+[Click here to download GRIDSS](https://github.com/PapenfussLab/gridss/releases)
 
 # Pre-requisities
 
