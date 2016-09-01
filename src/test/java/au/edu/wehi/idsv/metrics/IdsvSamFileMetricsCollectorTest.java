@@ -233,4 +233,19 @@ public class IdsvSamFileMetricsCollectorTest extends TestHelper {
 		assertEquals(2, mq.getMetrics().get(0).MIN_MAPQ);
 		assertEquals(2, mq.getMetrics().get(0).MAX_MAPQ);
 	}
+	@Test
+	public void mapq_should_be_extrema() {
+		IdsvSamFileMetricsCollector c = new IdsvSamFileMetricsCollector(null);
+		c.acceptRecord(withMapq(1, Read(0, 1, "100M"))[0], null);
+		c.acceptRecord(withMapq(2, Read(0, 1, "101M"))[0], null);
+		c.acceptRecord(withMapq(2, Read(0, 1, "102M"))[0], null);
+		c.acceptRecord(withMapq(3, Read(0, 1, "103M"))[0], null);
+		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
+		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
+		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
+		MetricsFile<MapqMetrics, Integer> mq = new MetricsFile<MapqMetrics, Integer>();
+		c.finish(is, idsv, mq, sc);
+		assertEquals(1, mq.getMetrics().get(0).MIN_MAPQ);
+		assertEquals(3, mq.getMetrics().get(0).MAX_MAPQ);
+	}
 }

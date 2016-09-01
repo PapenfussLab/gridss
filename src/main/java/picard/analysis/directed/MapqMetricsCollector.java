@@ -105,20 +105,16 @@ public class MapqMetricsCollector extends MultiLevelCollector<MapqMetrics, Integ
             metrics.LIBRARY            = this.library;
             metrics.READ_GROUP         = this.readGroup;
             metrics.MAPPED_READS       = (long) histogram.getCount();
-            if (!histogram.isEmpty()) {
-            	metrics.MIN_MAPQ       = (int) histogram.getMin();
+            metrics.MIN_MAPQ           = SAMRecord.UNKNOWN_MAPPING_QUALITY;
+            metrics.MAX_MAPQ           = 0;
+            for (int key : histogram.keySet()) {
+            	if (key != SAMRecord.UNKNOWN_MAPPING_QUALITY) {
+            		if (histogram.get(key).getValue() > 0) {
+            			metrics.MIN_MAPQ = Math.min(metrics.MIN_MAPQ, key);
+            			metrics.MAX_MAPQ = Math.max(metrics.MAX_MAPQ, key);
+            		}
+            	}
             }
-            int mapq = 0;
-        	for (int i = SAMRecord.UNKNOWN_MAPPING_QUALITY; i >= 0; i++) {
-        		if (histogram.containsKey(i)) {
-        			if (histogram.get(i).getValue() > 0) {
-        				mapq = (int) histogram.get(i).getValue();
-        				break;
-        			}
-        		}
-        	}
-        	metrics.MAX_MAPQ       = (int)mapq;
-        	
             if (histogram.get(SAMRecord.NO_MAPPING_QUALITY) != null) {
             	metrics.ZERO_MAPQ      = (long) histogram.get(SAMRecord.NO_MAPPING_QUALITY).getValue();
             }
