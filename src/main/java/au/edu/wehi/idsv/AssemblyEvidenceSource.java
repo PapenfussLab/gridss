@@ -257,6 +257,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		}
 		return IntermediateFileUtil.checkIntermediate(target, source, getContext().getConfig().ignoreFileTimestamps);
 	}
+	private volatile Exception lastWorkerThreadException = null;
 	protected void process(ExecutorService threadpool) {
 		if (isProcessingComplete()) return;
 		log.info("START evidence assembly ", input);
@@ -269,6 +270,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		final SAMSequenceDictionary dict = getContext().getReference().getSequenceDictionary();
 		if (getContext().shouldProcessPerChromosome()) {
 			final List<Callable<Void>> workers = Lists.newArrayList();
+			lastWorkerThreadException = null;
 			for (int i = 0; i < dict.size(); i++) {
 				final String seq = dict.getSequence(i).getSequenceName();
 				
@@ -299,6 +301,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 								merged.close();
 							} catch (Exception e) {
 								log.error(e, "Error performing ", seq, " breakend assembly");
+								lastWorkerThreadException = e;
 								throw new RuntimeException(e);
 							} finally {
 								CloserUtil.close(merged);
@@ -335,6 +338,10 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 						throw new RuntimeException(e);
 					}
 				}
+			}
+			if (lastWorkerThreadException != null) {
+				throw new RuntimeException("Sanity check failure: thread pool task terminated with exception "
+						+ "but exception was not passed through to foreground thread.", lastWorkerThreadException);
 			}
 		} else {
 			List<CloseableIterator<DirectedEvidence>> toMerge = Lists.newArrayList();

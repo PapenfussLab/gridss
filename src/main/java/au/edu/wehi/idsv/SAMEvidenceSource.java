@@ -95,6 +95,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		catch (Exception e) {
 			log.info("FAILURE extract evidence for ", input);
 			log.error(e);
+			throw e;
 		} finally {
 			if (extract != null) extract.close();
 		}

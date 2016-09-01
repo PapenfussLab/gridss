@@ -243,7 +243,7 @@ public class Idsv extends CommandLineProgram {
     		// Force loading of aligner up-front
     		log.info("Loading aligner");
     		AlignerFactory.create();
-    		log.info("Testing for presence of external aligner");
+    		//TODO log.info("Testing for presence of external aligner");
     		
     		//hackSimpleCalls(processContext);
     		threadpool = Executors.newFixedThreadPool(getContext().getWorkerThreadCount(), new ThreadFactoryBuilder().setDaemon(false).setNameFormat("Worker-%d").build());
@@ -296,7 +296,7 @@ public class Idsv extends CommandLineProgram {
 		    	callVariants(threadpool, samEvidence, assemblyEvidence);
 		    	writeAssemblyBreakends(assemblyEvidence);
 	    	} else {
-	    		log.info(OUTPUT.toString() + " exists not recreating.");
+	    		log.info(OUTPUT.toString() + " exists - not recreating.");
 	    	}
 	    	shutdownPool(threadpool);
 			threadpool = null;
@@ -379,7 +379,10 @@ public class Idsv extends CommandLineProgram {
 							try {
 								input.completeSteps(EnumSet.of(ProcessStep.CALCULATE_METRICS, ProcessStep.EXTRACT_SOFT_CLIPS, ProcessStep.EXTRACT_READ_PAIRS));
 							} catch (Exception e) {
-								log.error(e, "Exception thrown by worker thread");
+								log.error(e, "Fatal exception thrown by worker thread.");
+								if (getContext().getConfig().terminateOnFirstError) {
+									System.exit(1);
+								}
 								throw e;
 							}
 							return null;

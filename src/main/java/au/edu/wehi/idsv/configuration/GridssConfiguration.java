@@ -51,6 +51,11 @@ public class GridssConfiguration {
 	 */
 	public int dovetailMargin;
 	/**
+	 * Terminate the JVM whenever the first thread-fatal error is encountered
+	 * instead of deferring until all threads have completed.
+	 */
+	public boolean terminateOnFirstError;
+	/**
 	 * Ignore file timestamps when comparing intermediate and results files.
 	 */
 	public boolean ignoreFileTimestamps;
@@ -99,6 +104,7 @@ public class GridssConfiguration {
 		minAnchorShannonEntropy = config.getFloat("minAnchorShannonEntropy");
 		maxCoverage = config.getInt("maxCoverage");
 		dovetailMargin = config.getInt("dovetailMargin");
+		terminateOnFirstError = config.getBoolean("terminateOnFirstError");
 		ignoreFileTimestamps = config.getBoolean("ignoreFileTimestamps");
 		async_bufferCount = config.getInt("async.bufferCount");
 		async_bufferSize = config.getInt("async.bufferSize");

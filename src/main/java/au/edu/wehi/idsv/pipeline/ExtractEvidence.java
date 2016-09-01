@@ -16,6 +16,7 @@ import htsjdk.samtools.util.ProgressLogger;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 
@@ -93,35 +94,49 @@ public class ExtractEvidence implements Closeable {
 	private void deleteOutput(EnumSet<ProcessStep> steps) {
 		close(); // close any file handles that are still around
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		//if (steps.contains(ProcessStep.CALCULATE_METRICS)) tryDelete(fsc.getInsertSizeMetrics(source.getSourceFile()));
-		//if (steps.contains(ProcessStep.CALCULATE_METRICS)) tryDelete(fsc.getIdsvMetrics(source.getSourceFile()));
-		if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) tryDelete(fsc.getReadPairBam(source.getSourceFile()));
-		if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) tryDelete(fsc.getMateBamUnsorted(source.getSourceFile()));
+		List<File> toDelete = new ArrayList<>();
+		if (steps.contains(ProcessStep.CALCULATE_METRICS)) {
+			toDelete.add(fsc.getInsertSizeMetrics(source.getSourceFile()));
+			toDelete.add(fsc.getIdsvMetrics(source.getSourceFile()));
+			toDelete.add(fsc.getCigarMetrics(source.getSourceFile()));
+			toDelete.add(fsc.getMapqMetrics(source.getSourceFile()));
+		}
+		if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) toDelete.add(fsc.getReadPairBam(source.getSourceFile()));
+		if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) toDelete.add(fsc.getMateBamUnsorted(source.getSourceFile()));
 		//if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) tryDelete(fsc.getMateBam(source.getSourceFile()));
-		if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) tryDelete(fsc.getSoftClipBam(source.getSourceFile()));
+		if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) toDelete.add(fsc.getSoftClipBam(source.getSourceFile()));
 		for (int i = 0; i < source.getRealignmentIterationCount(); i++) {
-			if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) tryDelete(fsc.getRealignmentFastq(source.getSourceFile(), i));
+			if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) toDelete.add(fsc.getRealignmentFastq(source.getSourceFile(), i));
 		}
 		for (SAMSequenceRecord seqr : processContext.getReference().getSequenceDictionary().getSequences()) {
 			String seq = seqr.getSequenceName();
-			if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) tryDelete(fsc.getReadPairBamForChr(source.getSourceFile(), seq));
-			if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) tryDelete(fsc.getMateBamUnsortedForChr(source.getSourceFile(), seq));
+			if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) toDelete.add(fsc.getReadPairBamForChr(source.getSourceFile(), seq));
+			if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) toDelete.add(fsc.getMateBamUnsortedForChr(source.getSourceFile(), seq));
 			//if (steps.contains(ProcessStep.EXTRACT_READ_PAIRS)) tryDelete(fsc.getMateBamForChr(source.getSourceFile(), seq));
-			if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) tryDelete(fsc.getSoftClipBamForChr(source.getSourceFile(), seq));
+			if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) toDelete.add(fsc.getSoftClipBamForChr(source.getSourceFile(), seq));
 			for (int i = 0; i < source.getRealignmentIterationCount(); i++) {
-				if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) tryDelete(fsc.getRealignmentFastqForChr(source.getSourceFile(), seq, i));
+				if (steps.contains(ProcessStep.EXTRACT_SOFT_CLIPS)) toDelete.add(fsc.getRealignmentFastqForChr(source.getSourceFile(), seq, i));
 			}
 		}
-	}
-	private void tryDelete(File f) {
-		try {
+		Exception ex = null;
+		for (File f : toDelete) {
 			if (f.exists()) {
-				if (!f.delete()) {
-					log.error("Unable to delete intermediate file ", f,  " during rollback.");
+				try {
+					if (!f.delete()) {
+						log.error("Unable to delete intermediate file ", f,  " during rollback.");
+					}
+				} catch (Exception e) {
+					log.error(e, "Unable to delete intermediate file ", f,  " during rollback.");
+					if (ex != null) ex = e;
 				}
 			}
-		} catch (Exception e) {
-			log.error(e, "Unable to delete intermediate file ", f,  " during rollback.");
+		}
+		if (ex != null) {
+			String msg = "Unable to recover from error when rolling back incomplete operation. "
+					+ "Invalid intermediate files may exist. "
+					+ "Please delete all files in " + fsc.getIntermediateDirectory(source.getSourceFile()).getAbsolutePath();
+			log.error(msg);
+			throw new RuntimeException(msg, ex);
 		}
 	}
 	public void process(EnumSet<ProcessStep> steps) {
