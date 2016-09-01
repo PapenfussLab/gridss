@@ -16,7 +16,7 @@ import picard.analysis.MapqMetrics;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 
-import com.google.api.client.util.Lists;
+import com.google.common.collect.Lists;
 
 
 public class IdsvSamFileMetricsCollectorTest extends TestHelper {

@@ -10,7 +10,7 @@ import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
 
-import com.google.api.client.util.Lists;
+import com.google.common.collect.Lists;
 
 
 public class MemoizedTraverseTest extends TestHelper {

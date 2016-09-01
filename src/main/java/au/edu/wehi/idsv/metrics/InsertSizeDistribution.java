@@ -11,6 +11,7 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.Arrays;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import picard.analysis.InsertSizeMetrics;
 import au.edu.wehi.idsv.util.CachedEnumeratedIntegerDistribution;
@@ -49,9 +50,10 @@ public class InsertSizeDistribution extends CachedEnumeratedIntegerDistribution 
 		double[] count = new double[insertSizeHistogram.size()];
 		double total = insertSizeHistogram.getSumOfValues();
 		int i = 0;
-		for (@SuppressWarnings("rawtypes") Entry<Integer, Bin> entry : insertSizeHistogram.entrySet()) {
-			insertSize[i] = entry.getKey();
-			count[i] = entry.getValue().getValue();// / total;
+		Set<Integer> keys = insertSizeHistogram.keySet();
+		for (Integer key : keys) {
+			insertSize[i] = key;
+			count[i] = insertSizeHistogram.get(key).getValue();
 			i++;
 		}
 		return new InsertSizeDistribution(insertSize, count, (long)total);

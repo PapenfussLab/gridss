@@ -11,7 +11,7 @@ import org.junit.Test;
 
 import au.edu.wehi.idsv.util.AsyncBufferedIteratorTest.CIT;
 
-import com.google.api.client.util.Lists;
+import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
 
 

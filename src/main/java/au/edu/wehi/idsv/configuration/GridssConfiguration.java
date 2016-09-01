@@ -12,7 +12,7 @@ import org.apache.commons.configuration.PropertiesConfiguration;
 
 import au.edu.wehi.idsv.AdapterHelper;
 
-import com.google.api.client.util.Lists;
+import com.google.common.collect.Lists;
 
 /**
  * Configuration settings container for gridss

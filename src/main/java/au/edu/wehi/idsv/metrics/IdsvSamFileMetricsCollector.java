@@ -179,8 +179,9 @@ public class IdsvSamFileMetricsCollector {
     			CollectionUtil.makeSet(MetricAccumulationLevel.ALL_READS), null, //, MetricAccumulationLevel.SAMPLE), rg,
 				// match CollectInsertSizeMetrics defaults
 				new CollectInsertSizeMetrics().MINIMUM_PCT,
-				new CollectInsertSizeMetrics().Histogram_WIDTH,
-				new CollectInsertSizeMetrics().DEVIATIONS);
+				new CollectInsertSizeMetrics().HISTOGRAM_WIDTH,
+				new CollectInsertSizeMetrics().DEVIATIONS,
+				true);
 	}
 	private static MapqMetricsCollector createMapqMetricsCollector(SAMFileHeader header) {
 		return new MapqMetricsCollector(CollectionUtil.makeSet(MetricAccumulationLevel.ALL_READS), null);

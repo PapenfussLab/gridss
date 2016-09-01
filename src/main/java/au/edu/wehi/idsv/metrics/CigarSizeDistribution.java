@@ -4,7 +4,7 @@ import htsjdk.samtools.CigarOperator;
 
 import java.util.List;
 
-import com.google.api.client.util.Lists;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Iterables;
 
 /**
