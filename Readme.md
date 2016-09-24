@@ -239,6 +239,10 @@ The sswjni library could not be loaded as the precompiled version is not compata
 
 This is likely to be caused by a crash during alignment in libsswjni. See the sswjni sections for details on how to disable libsswjni or recompile it for your system.
 
+### Illegal Instruction
+
+Your CPU does not support the SSE2 instruction set. See the sswjni sections for details on how to disable libsswjni.
+
 # Visualisation of results
 
 ## VcfBreakendToReadPair
