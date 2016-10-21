@@ -48,11 +48,12 @@ public class ParallelTransformIteratorTest {
 		CIT cit = new CIT(32);
 		ParallelTransformIterator<Integer, Integer> it = new ParallelTransformIterator<Integer, Integer>(cit, n -> {
 			try {
-				Thread.sleep(n);
+				Thread.sleep(4 * n);
 			} catch (InterruptedException e) {
 			}
 			return n;
 		}, 4, threadpool);
 		for (int i = 32; i > 0; i--) assertEquals(i, (int)it.next());
+		threadpool.shutdown();
 	}
 }
