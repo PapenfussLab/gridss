@@ -6,6 +6,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 
@@ -13,6 +14,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 
 public class SAMRecordUtilTest extends TestHelper {
@@ -33,11 +37,25 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertEquals(2, SAMRecordUtil.getStartSoftClipLength(Read(0, 1, "1H2S1M1S")));
 	}
 	@Test
+	public void getStartClipLength() {
+		assertEquals(0, SAMRecordUtil.getStartClipLength(Read(0, 1, "1M1S")));
+		assertEquals(1, SAMRecordUtil.getStartClipLength(Read(0, 1, "1S1M1S")));
+		assertEquals(2, SAMRecordUtil.getStartClipLength(Read(0, 1, "2S1M1S")));
+		assertEquals(3, SAMRecordUtil.getStartClipLength(Read(0, 1, "1H2S1M1S")));
+	}
+	@Test
 	public void getEndSoftClipLength() {
 		assertEquals(0, SAMRecordUtil.getEndSoftClipLength(Read(0, 1, "1S1M")));
 		assertEquals(1, SAMRecordUtil.getEndSoftClipLength(Read(0, 1, "1S1M1S")));
 		assertEquals(2, SAMRecordUtil.getEndSoftClipLength(Read(0, 1, "1S1M2S")));
 		assertEquals(2, SAMRecordUtil.getEndSoftClipLength(Read(0, 1, "2M2S1H")));
+	}
+	@Test
+	public void getEndClipLength() {
+		assertEquals(0, SAMRecordUtil.getEndClipLength(Read(0, 1, "1S1M")));
+		assertEquals(1, SAMRecordUtil.getEndClipLength(Read(0, 1, "1S1M1S")));
+		assertEquals(2, SAMRecordUtil.getEndClipLength(Read(0, 1, "1S1M2S")));
+		assertEquals(3, SAMRecordUtil.getEndClipLength(Read(0, 1, "2M2S1H")));
 	}
 	@Test
 	public void ensureNmTag_should_not_require_reference_if_tag_set() {
@@ -276,5 +294,225 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertTrue(realigned != read);
 		assertEquals("99M1S", realigned.getCigarString());
 		assertEquals(101, realigned.getAlignmentStart());
+	}
+	@Test
+	public void softenHardClips_should_extend_bases() {
+		SAMRecord read =  Read(0, 1, "5M5S");
+		read.setReadBases(B("AACCGACGTA"));
+		read.setBaseQualityString("1234567890");
+		SAMRecord read2 =  Read(0, 1, "4H1S5M");
+		read2.setReadBases(B("GACGTA"));
+		read2.setBaseQualityString("567890");
+		SAMRecordUtil.softenHardClips(ImmutableList.of(read, read2));
+		assertEquals("5M5S", read.getCigarString());
+		assertEquals("AACCGACGTA", read.getReadString());
+		assertEquals("1234567890", read.getBaseQualityString());
+		assertEquals("5S5M", read2.getCigarString());
+		assertEquals("AACCGACGTA", read2.getReadString());
+		assertEquals("1234567890", read2.getBaseQualityString());
+	}
+	@Test
+	public void softenHardClips_should_consider_strand() {
+		SAMRecord read =  Read(0, 1, "5M5S");
+		read.setReadBases(B("AACCGACGTA"));
+		read.setBaseQualityString("1234567890");
+		SAMRecord read3 =  Read(0, 1, "5H5M");
+		read3.setReadNegativeStrandFlag(true);
+		read3.setReadBases(B("ACGTA"));
+		read3.setBaseQualityString("67890");
+		SAMRecordUtil.softenHardClips(ImmutableList.of(read, read3));
+		assertEquals("TACGTCGGTT", read3.getReadString());
+		assertEquals("0987654321", read3.getBaseQualityString());
+	}
+	@Test
+	public void getSegmentIndex_should_use_zero_based_FI() {
+		SAMRecord read =  Read(0, 1, "5M");
+		read.setAttribute("FI", 5);
+		assertEquals(5, SAMRecordUtil.getSegmentIndex(read));
+	}
+	@Test
+	public void getSegmentIndex_should_use_first_of_pair_flag() {
+		SAMRecord read =  Read(0, 1, "5M");
+		read.setReadPairedFlag(true);
+		read.setFirstOfPairFlag(true);
+		assertEquals(0, SAMRecordUtil.getSegmentIndex(read));
+	}
+	@Test
+	public void getSegmentIndex_should_use_second_of_pair_flag() {
+		SAMRecord read =  Read(0, 1, "5M");
+		read.setReadPairedFlag(true);
+		read.setSecondOfPairFlag(true);
+		assertEquals(1, SAMRecordUtil.getSegmentIndex(read));
+	}
+	@Test
+	public void getSegmentIndex_shoulddefault_to_zero() {
+		SAMRecord read =  Read(0, 1, "5M");
+		assertEquals(0, SAMRecordUtil.getSegmentIndex(read));
+	}
+	@Test
+	public void getFirstAlignedBaseReadOffset_should_consider_strand() {
+		// forward
+		assertEquals(0, SAMRecordUtil.getFirstAlignedBaseReadOffset(Read(0, 1, "5M")));
+		assertEquals(0, SAMRecordUtil.getFirstAlignedBaseReadOffset(Read(0, 1, "5M10S")));
+		assertEquals(1, SAMRecordUtil.getFirstAlignedBaseReadOffset(Read(0, 1, "1H5M10S")));
+		assertEquals(3, SAMRecordUtil.getFirstAlignedBaseReadOffset(Read(0, 1, "1H2S5M10S")));
+		// reverse
+		assertEquals(0, SAMRecordUtil.getFirstAlignedBaseReadOffset(onNegative(Read(0, 1, "5M"))[0]));
+		assertEquals(1, SAMRecordUtil.getFirstAlignedBaseReadOffset(onNegative(Read(0, 1, "5M1S"))[0]));
+		assertEquals(3, SAMRecordUtil.getFirstAlignedBaseReadOffset(onNegative(Read(0, 1, "10S5M1S2H"))[0]));
+	}
+	@Test
+	public void getLastAlignedBaseReadOffset_should_consider_strand() {
+		// forward
+		assertEquals(4, SAMRecordUtil.getLastAlignedBaseReadOffset(Read(0, 1, "5M")));
+		assertEquals(4, SAMRecordUtil.getLastAlignedBaseReadOffset(Read(0, 1, "5M10S")));
+		assertEquals(1, SAMRecordUtil.getLastAlignedBaseReadOffset(Read(0, 1, "1H1M2S")));
+		// reverse
+		assertEquals(4, SAMRecordUtil.getLastAlignedBaseReadOffset(onNegative(Read(0, 1, "5M"))[0]));
+		assertEquals(5, SAMRecordUtil.getLastAlignedBaseReadOffset(onNegative(Read(0, 1, "5M1S"))[0]));
+		assertEquals(7, SAMRecordUtil.getLastAlignedBaseReadOffset(onNegative(Read(0, 1, "10S5M1S2H"))[0]));
+	}
+	@Test
+	public void calculateTemplateTags_should_write_FI_TC() {
+		SAMRecord read0 = Read(0, 1, "5M");
+		read0.setReadPairedFlag(true);
+		read0.setFirstOfPairFlag(true);
+		
+		SAMRecord read1 = Read(0, 1, "5M");
+		read1.setReadPairedFlag(true);
+		read1.setSecondOfPairFlag(true);
+		
+		SAMRecord read5 = Read(0, 1, "5M");
+		read5.setAttribute("FI", 5);
+		
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1, read5), ImmutableSet.of(SAMTag.FI, SAMTag.TC), false);
+		
+		assertEquals(0, (int)read0.getIntegerAttribute("FI"));
+		assertEquals(1, (int)read1.getIntegerAttribute("FI"));
+		assertEquals(5, (int)read5.getIntegerAttribute("FI"));
+		
+		assertEquals(6, (int)read0.getIntegerAttribute("TC"));
+		assertEquals(6, (int)read1.getIntegerAttribute("TC"));
+		assertEquals(6, (int)read5.getIntegerAttribute("TC"));
+	}
+	@Test
+	public void calculateTemplateTags_should_write_R2_Q2_using_next_segment_modulo_arithmetic() {
+		SAMRecord read0 = Read(0, 1, "3M");
+		read0.setReadPairedFlag(true);
+		read0.setFirstOfPairFlag(true);
+		read0.setReadBases(B("AAC"));
+		read0.setBaseQualityString("123");
+		
+		SAMRecord read1 = Read(0, 1, "3M");
+		read1.setReadPairedFlag(true);
+		read1.setSecondOfPairFlag(true);
+		read1.setReadNegativeStrandFlag(true);
+		read1.setReadBases(B("ACT"));
+		read1.setBaseQualityString("456");
+		
+		SAMRecord read5 = Read(0, 1, "3M");
+		read5.setAttribute("FI", 5);
+		read5.setReadBases(B("GGT"));
+		read5.setBaseQualityString("890");
+		
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1, read5), ImmutableSet.of(SAMTag.R2, SAMTag.Q2), false);
+		
+		assertEquals("AGT", read0.getStringAttribute("R2"));
+		assertEquals(null, read1.getStringAttribute("R2"));
+		assertEquals("AAC", read5.getStringAttribute("R2"));
+		
+		assertEquals("654", read0.getStringAttribute("Q2"));
+		assertEquals(null, read1.getStringAttribute("Q2"));
+		assertEquals("123", read5.getStringAttribute("Q2"));
+	}
+	@Test
+	public void calculateTemplateTags_should_write_R2_Q2_based_on_sequencing_order() {
+		SAMRecord read0 = Read(0, 1, "3M");
+		read0.setReadPairedFlag(true);
+		read0.setFirstOfPairFlag(true);
+		read0.setReadBases(B("AAC"));
+		read0.setBaseQualityString("123");
+		
+		SAMRecord read1 = Read(1, 1, "3M");
+		read1.setReadPairedFlag(true);
+		read1.setSecondOfPairFlag(true);
+		read1.setReadNegativeStrandFlag(true);
+		read1.setReadBases(B("ACT"));
+		read1.setBaseQualityString("456");
+		
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(SAMTag.R2, SAMTag.Q2), false);
+		
+		assertEquals("AGT", read0.getStringAttribute("R2"));
+		assertEquals("AAC", read1.getStringAttribute("R2"));
+		
+		assertEquals("654", read0.getStringAttribute("Q2"));
+		assertEquals("123", read1.getStringAttribute("Q2"));
+	}
+	@Test
+	public void calculateTemplateTags_SA_should_ignore_missing_NM() {
+		SAMRecord read0 = withMapq(10, withSequence("A", Read(0, 1, "1M5H")))[0];
+		SAMRecord read1 = withMapq(11, withSequence("C", Read(0, 2, "1H1M4H")))[0];
+		
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(SAMTag.SA), false);
+		
+		assertEquals("polyA,2,+,1H1M4H,11,,", read0.getStringAttribute("SA"));
+		assertEquals("polyA,1,+,1M5H,10,,", read1.getStringAttribute("SA"));
+	}
+	@Test
+	public void calculateTemplateTags_SA_should_not_be_written_for_nonchimeric_reads() {
+		SAMRecord read0 = Read(0, 1, "3M");
+		read0.setReadPairedFlag(true);
+		read0.setFirstOfPairFlag(true);
+		read0.setReadBases(B("AAC"));
+		read0.setBaseQualityString("123");
+		
+		SAMRecord read1 = Read(1, 1, "3M");
+		read1.setReadPairedFlag(true);
+		read1.setSecondOfPairFlag(true);
+		read1.setReadNegativeStrandFlag(true);
+		read1.setReadBases(B("ACT"));
+		read1.setBaseQualityString("456");
+		
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(SAMTag.SA), false);
+		
+		assertEquals(null, read0.getStringAttribute("SA"));
+		assertEquals(null, read1.getStringAttribute("SA"));
+	}
+	/**
+	 * Conventionally, at a supplementary line, the first element points to the primary line
+	 */
+	@Test
+	public void calculateTemplateTags_SA_should_write_supplementary_alignments_last_for_chimeric_alignments() {
+		SAMRecord read0 = withMapq(10, withSequence("A", Read(0, 1, "1M5H")))[0];
+		SAMRecord read1 = withMapq(11, withSequence("C", Read(0, 2, "1H1M4H")))[0];
+		// 1BP gap
+		SAMRecord read2 = withMapq(12, withSequence("G", Read(0, 4, "3H1M2H")))[0];
+		SAMRecord read3 = withMapq(13, withSequence("ACGTAA", Read(0, 5, "4S2M")))[0];
+		SAMRecord alt = withMapq(14, withSequence("ACGTAA", Read(0, 1, "6M")))[0];
+		
+		read0.setSupplementaryAlignmentFlag(true);
+		read1.setSupplementaryAlignmentFlag(true);
+		// read 2 is the 'primary' chimeric alignment record
+		read3.setSupplementaryAlignmentFlag(true);
+		
+		read0.setNotPrimaryAlignmentFlag(true);
+		read1.setNotPrimaryAlignmentFlag(true);
+		read2.setNotPrimaryAlignmentFlag(true);
+		read3.setNotPrimaryAlignmentFlag(true);
+		
+		read0.setAttribute("NM", 0);
+		read0.setAttribute("NM", 1);
+		read0.setAttribute("NM", 2);
+		read0.setAttribute("NM", 3);
+		
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1, read2, read3, alt), ImmutableSet.of(SAMTag.SA), false);
+		
+		assertEquals(null, alt.getStringAttribute("SA"));
+		// "0,4,+,3H1M2H,12,2,;0,1,+,1M5H,10,0,;0,2,+,1H1M4H,11,1,;0,5,+,4S2M,13,3,"
+		//   read2                  read0            read1          read3
+		assertEquals("polyA,4,+,3H1M2H,12,2,;polyA,2,+,1H1M4H,11,1,;polyA,5,+,4S2M,13,3,", read0.getStringAttribute("SA"));
+		assertEquals("polyA,4,+,3H1M2H,12,2,;polyA,1,+,1M5H,10,0,;polyA,5,+,4S2M,13,3,", read1.getStringAttribute("SA"));
+		assertEquals("polyA,1,+,1M5H,10,0,;polyA,2,+,1H1M4H,11,1,;polyA,5,+,4S2M,13,3,", read2.getStringAttribute("SA"));
+		assertEquals("polyA,4,+,3H1M2H,12,2,;polyA,1,+,1M5H,10,0,;polyA,2,+,1H1M4H,11,1,", read3.getStringAttribute("SA"));
 	}
 }

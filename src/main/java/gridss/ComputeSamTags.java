@@ -9,6 +9,7 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 
@@ -23,7 +24,9 @@ import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import au.edu.wehi.idsv.sam.NmTagIterator;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.TemplateTagsIterator;
+import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 
 import com.google.common.collect.Sets;
 
@@ -38,19 +41,6 @@ import com.google.common.collect.Sets;
 )
 public class ComputeSamTags extends CommandLineProgram {
 	private static final Log log = Log.getInstance(ComputeSamTags.class);
-	/**
-	 * Tags requiring reads from the same template to be processed together
-	 */
-	private static final Set<SAMTag> TEMPLATE_TAGS = Sets.newHashSet(
-			SAMTag.CC,
-			SAMTag.CP,
-			SAMTag.FI,
-			SAMTag.HI,
-			SAMTag.IH,
-			SAMTag.Q2,
-			SAMTag.R2,
-			SAMTag.SA,
-			SAMTag.TC);
 	@Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input BAM file grouped by read name.")
     public File INPUT;
 	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Annotated BAM file.")
@@ -59,16 +49,10 @@ public class ComputeSamTags extends CommandLineProgram {
     public File REFERENCE = null;
 	@Option(shortName="T", doc="Tags to populate")
 	public Set<SAMTag> TAGS = Sets.newHashSet(
-			SAMTag.CC,
-			SAMTag.CP,
-			SAMTag.FI,
-			SAMTag.HI,
-			SAMTag.IH,
 			SAMTag.NM,
 			SAMTag.Q2,
 			SAMTag.R2,
-			SAMTag.SA,
-			SAMTag.TC);
+			SAMTag.SA);
 	@Override
 	protected int doWork() {
 		log.debug("Setting language-neutral locale");
@@ -97,12 +81,19 @@ public class ComputeSamTags extends CommandLineProgram {
 			}
 		}
 	}
-	public static void compute(Iterator<SAMRecord> it, SAMFileWriter writer, ReferenceSequenceFile reference, Set<SAMTag> tags) throws IOException {
-		if (tags.contains(SAMTag.NM) || tags.contains(SAMTag.SA)) {
-			it = new NmTagIterator(it, reference);
-		}
-		if (!Sets.intersection(tags, TEMPLATE_TAGS).isEmpty()) {
-			it = new TemplateTagsIterator(it);
+	public static void compute(Iterator<SAMRecord> rawit, SAMFileWriter writer, ReferenceSequenceFile reference, Set<SAMTag> tags) throws IOException {
+		try (CloseableIterator<SAMRecord> aysncit = new AsyncBufferedIterator<SAMRecord>(rawit, "raw records", 2, 300)) {
+			Iterator<SAMRecord> it = aysncit;
+			if (tags.contains(SAMTag.NM) || tags.contains(SAMTag.SA)) {
+				it = new NmTagIterator(it, reference);
+			}
+			if (!Sets.intersection(tags, SAMRecordUtil.TEMPLATE_TAGS).isEmpty()) {
+				it = new TemplateTagsIterator(it);
+			}
+			it = new AsyncBufferedIterator<SAMRecord>(it, "annotation", 2, 300);
+			while (it.hasNext()) {
+				writer.addAlignment(it.next());
+			}
 		}
 	}
 	private boolean isReferenceRequired() {

@@ -2,6 +2,7 @@ package au.edu.wehi.idsv.sam;
 
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.TextCigarCodec;
 
 import java.util.ArrayList;
@@ -32,6 +33,14 @@ public class ChimericAlignment {
 		this.mapq = mapq;
 		this.nm = nm;
 	}
+	public ChimericAlignment(SAMRecord r) {
+		this.rname = r.getReferenceName();
+		this.pos = r.getAlignmentStart();
+		this.isNegativeStrand = r.getReadNegativeStrandFlag();
+		this.cigar = r.getCigar();
+		this.mapq = r.getMappingQuality();
+		this.nm = r.getIntegerAttribute(SAMTag.NM.name());
+	}
 	public ChimericAlignment(String str) {
 		str = str.replace(';', ' ').trim();
 		String[] splits = str.split(",");
@@ -56,5 +65,9 @@ public class ChimericAlignment {
 	}
 	public static List<ChimericAlignment> getChimericAlignments(SAMRecord r) {
 		return getChimericAlignments(r.getStringAttribute("SA"));
+	}
+	@Override
+	public String toString() {
+		return String.format("%s,%d,%s,%s,%d,%d", rname, pos, isNegativeStrand ? "-" : "+", cigar, mapq, nm);
 	}
 }

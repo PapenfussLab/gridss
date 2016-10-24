@@ -1,11 +1,14 @@
 package au.edu.wehi.idsv.sam;
 
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.SAMTag;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Queue;
+import java.util.Set;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
@@ -17,17 +20,28 @@ import com.google.common.collect.PeekingIterator;
  *
  */
 public class TemplateTagsIterator implements Iterator<SAMRecord> {
+	private final Set<SAMTag> tags;
 	private final PeekingIterator<SAMRecord> it;
-	private Queue<SAMRecord> queue = new ArrayDeque<>();
+	private final Queue<SAMRecord> queue = new ArrayDeque<>();
 	public TemplateTagsIterator(Iterator<SAMRecord> it) {
+		this(it, SAMRecordUtil.TEMPLATE_TAGS);
+	}
+	public TemplateTagsIterator(Iterator<SAMRecord> it, Set<SAMTag> tags) {
 		this.it = Iterators.peekingIterator(it);
+		this.tags = tags;
 	}
 	private void ensureQueue() {
-		List<SAMRecord>
+		List<SAMRecord> records = new ArrayList<>();
 		if (it.hasNext()) {
 			String readname = it.peek().getReadName();
-			while (readname != null && readname.equals(it.peek().getReadName())) {
-				
+			if (readname == null) {
+				queue.add(it.next());
+			} else {
+				while (readname != null && it.hasNext() && readname.equals(it.peek().getReadName())) {
+					records.add(it.next());
+				}
+				SAMRecordUtil.calculateTemplateTags(records, tags);
+				queue.addAll(records);
 			}
 		}
 	}

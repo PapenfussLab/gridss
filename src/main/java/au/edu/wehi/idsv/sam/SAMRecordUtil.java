@@ -10,6 +10,7 @@ import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SAMTag;
+import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.TextCigarCodec;
 import htsjdk.samtools.reference.ReferenceSequence;
@@ -17,10 +18,17 @@ import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.samtools.util.StringUtil;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -29,7 +37,9 @@ import au.edu.wehi.idsv.alignment.AlignerFactory;
 import au.edu.wehi.idsv.alignment.Alignment;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 /**
  * @author Daniel Cameron
@@ -69,6 +79,21 @@ public class SAMRecordUtil {
 			return 0;
 		return getStartSoftClipLength(cigar.getCigarElements());
 	}
+	
+	public static int getStartClipLength(SAMRecord r) {
+		Cigar cigar = r.getCigar();
+		if (cigar == null) return 0;
+		return getStartClipLength(cigar.getCigarElements());
+	}
+	
+	public static int getStartClipLength(List<CigarElement> elements) {
+		if (elements == null) return 0;
+		int clipLength = 0;
+		for (int i = 0; i < elements.size() && elements.get(i).getOperator().isClipping(); i++) {
+			clipLength += elements.get(i).getLength();
+		}
+		return clipLength;
+	}
 
 	public static int getStartSoftClipLength(List<CigarElement> elements) {
 		if (elements == null)
@@ -103,6 +128,21 @@ public class SAMRecordUtil {
 			i--;
 		}
 		return 0;
+	}
+	
+	public static int getEndClipLength(SAMRecord aln) {
+		Cigar cigar = aln.getCigar();
+		if (cigar == null) return 0;
+		return getEndClipLength(cigar.getCigarElements());
+	}
+	
+	public static int getEndClipLength(List<CigarElement> elements) {
+		if (elements == null) return 0;
+		int clipLength = 0;
+		for (int i = elements.size() - 1; i < elements.size() && elements.get(i).getOperator().isClipping(); i--) {
+			clipLength += elements.get(i).getLength();
+		}
+		return clipLength;
 	}
 	
 	public static int getSoftClipLength(List<CigarElement> elements, BreakendDirection direction) {
@@ -605,5 +645,270 @@ public class SAMRecordUtil {
 			throw new RuntimeException("Not Yet Implemented: calculation from reads with MD tag but not NM tag");
 		}
 		throw new IllegalStateException(String.format("Read %s missing NM tag", record.getReadName()));
+	}
+	/**
+	 * Computed tags requiring reads from the same template to be processed together
+	 */
+	public static final Set<SAMTag> TEMPLATE_TAGS = ImmutableSet.of(
+			SAMTag.CC,
+			SAMTag.CP,
+			SAMTag.FI,
+			SAMTag.HI,
+			SAMTag.IH,
+			SAMTag.Q2,
+			SAMTag.R2,
+			SAMTag.SA,
+			SAMTag.TC);
+	/**
+	 * Populates the missing template tags for the records originating from the same template 
+	 * @param records Records from the same template.
+	 * @param tags Tags to populate 
+	 * @param restoreHardClips convert hard clips into soft clips if the sequence is available
+	 * from a chimeric alignment of the same segmentt
+	 */
+	public static void calculateTemplateTags(List<SAMRecord> records, Set<SAMTag> tags, boolean restoreHardClips) {
+		List<List<SAMRecord>> segments = templateBySegment(records);
+		// FI
+		if (tags.contains(SAMTag.FI)) {
+			for (int i = 0; i < segments.size(); i++) {
+				for (SAMRecord r : segments.get(i)) {
+					r.setAttribute(SAMTag.FI.name(), i);
+				}
+			}
+		}
+		// TC
+		if (tags.contains(SAMTag.TC)) {
+			for (SAMRecord r : records) {
+				r.setAttribute(SAMTag.TC.name(), segments.size());
+			}
+		}
+		// R2
+		if (tags.contains(SAMTag.R2)) {
+			for (int i = 0; i < segments.size(); i++) {
+				byte[] br2 = getFullSequence(segments.get((i + 1) % segments.size()));
+				if (br2 != null) {
+					String r2 = StringUtil.bytesToString(br2);
+					for (SAMRecord r : segments.get(i)) {
+						r.setAttribute(SAMTag.R2.name(), r2);
+					}
+				}
+			}
+		}
+		// Q2
+		if (tags.contains(SAMTag.R2)) {
+			for (int i = 0; i < segments.size(); i++) {
+				byte[] bq2 = getFullBaseQualities(segments.get((i + 1) % segments.size()));
+				if (bq2 != null) {
+					String q2 = SAMUtils.phredToFastq(bq2);
+					for (SAMRecord r : segments.get(i)) {
+						r.setAttribute(SAMTag.Q2.name(), q2);
+					}
+				}
+			}
+		}
+		if (restoreHardClips) {
+			for (int i = 0; i < segments.size(); i++) {
+				softenHardClips(segments.get(i));
+			}
+		}
+		// SA
+		if (tags.contains(SAMTag.SA)) {
+			for (int i = 0; i < segments.size(); i++) {
+				calculateSATags(segments.get(i));
+			}
+		}
+		if (Sets.intersection(tags, ImmutableSet.of(
+				SAMTag.CC,
+				SAMTag.CP,
+				SAMTag.HI,
+				SAMTag.IH)).size() > 0) {
+			throw new RuntimeException("Unresolved ambiguities in the SAM specifications mean that the CC, CP, HI, and IH tags cannot unambiguously be assigned values based on read alignments only.");
+		}
+	}
+	private static void calculateSATags(List<SAMRecord> list) {
+		// TODO use CC, CP, HI, IH tags if they are present
+		// TODO break ties in an other other than just overwriting the previous alignment that
+		// finishes at a given position
+		SortedMap<Integer, SAMRecord> start = new TreeMap<Integer, SAMRecord>();
+		SortedMap<Integer, SAMRecord> end = new TreeMap<Integer, SAMRecord>();
+		for (SAMRecord r : list) {
+			start.put(getFirstAlignedBaseReadOffset(r), r);
+			end.put(getLastAlignedBaseReadOffset(r), r);
+		}
+		for (SAMRecord r : list) {
+			if (r.getAttribute(SAMTag.SA.name()) != null) continue;
+			ArrayDeque<SAMRecord> alignment = new ArrayDeque<SAMRecord>();
+			SAMRecord prev = r;
+			while (prev != null) {
+				SortedMap<Integer, SAMRecord> before = end.headMap(getFirstAlignedBaseReadOffset(prev));
+				if (before.isEmpty()) {
+					prev = null;
+				} else {
+					prev = before.get(before.lastKey());
+					alignment.addFirst(prev);
+				}
+			}
+			SAMRecord next = r;
+			while (next != null) {
+				SortedMap<Integer, SAMRecord> after = start.tailMap(getLastAlignedBaseReadOffset(next) + 1);
+				if (after.isEmpty()) {
+					next = null;
+				} else {
+					next = after.get(after.firstKey());
+					alignment.addLast(next);
+				}
+			}
+			if (alignment.size() == 0) {
+				r.setAttribute(SAMTag.SA.name(), null);
+			} else {
+				StringBuilder sb = new StringBuilder();
+				for (SAMRecord chim : alignment) {
+					sb.append(new ChimericAlignment(chim));
+					sb.append(";");
+				}
+				sb.deleteCharAt(sb.length() - 1);
+				r.setAttribute(SAMTag.SA.name(), sb.toString());
+			}
+			
+		}
+	}
+	/**
+	 * Converts any hard clips into soft clips using alternate alignments
+	 * @param records
+	 */
+	public static final void softenHardClips(List<SAMRecord> records) {
+		byte[] seq = getFullSequence(records);
+		byte[] qual = getFullBaseQualities(records);
+		if (seq == null) return;
+		for (SAMRecord r : records) {
+			Cigar c = r.getCigar();
+			if (r.getReadUnmappedFlag()) continue;
+			if (c == null) continue;
+			if (c.getCigarElements().size() <= 1) continue;
+			int hardClipLength = 0;
+			List<CigarElement> list = new ArrayList<CigarElement>(c.getCigarElements());
+			if (c.getFirstCigarElement().getOperator() == CigarOperator.HARD_CLIP) {
+				int length = c.getFirstCigarElement().getLength();
+				hardClipLength += length;
+				list.set(0, new CigarElement(length, CigarOperator.SOFT_CLIP));
+			}
+			if (c.getLastCigarElement().getOperator() == CigarOperator.HARD_CLIP) {
+				int length = c.getLastCigarElement().getLength();
+				hardClipLength += length;
+				list.set(list.size() - 1, new CigarElement(length, CigarOperator.SOFT_CLIP));
+			}
+			if (hardClipLength > 0 && r.getReadLength() + hardClipLength == seq.length) {
+				if (r.getReadNegativeStrandFlag()) {
+					SequenceUtil.reverseComplement(seq);
+					ArrayUtils.reverse(qual);
+				}
+				r.setReadBases(seq);
+				r.setBaseQualities(qual);
+				list = CigarUtil.clean(list, false);
+				r.setCigar(new Cigar(list));
+			}
+		}
+	}
+	/**
+	 * Gets the full read sequence
+	 * @param records
+	 * @return
+	 */
+	private static final byte[] getFullSequence(List<SAMRecord> records) {
+		if (records == null || records.size() == 0) return null;
+		SAMRecord best = records.get(0);
+		for (SAMRecord r : records) {
+			if (r.getReadBases().length > best.getReadBases().length) {
+				best = r;
+			}
+		}
+		byte[] readBases = Arrays.copyOf(best.getReadBases(), best.getReadBases().length);
+		if (readBases == null || readBases == SAMRecord.NULL_SEQUENCE) return null;
+		if (!best.getReadUnmappedFlag() && best.getReadNegativeStrandFlag()) {
+			SequenceUtil.reverseComplement(readBases);
+		}
+		return readBases;
+	}
+	/**
+	 * Gets the full base quality scores
+	 * @param records
+	 * @return
+	 */
+	private static final byte[] getFullBaseQualities(List<SAMRecord> records) {
+		if (records == null || records.size() == 0) return null;
+		SAMRecord best = records.get(0);
+		for (SAMRecord r : records) {
+			if (r.getBaseQualities().length > best.getBaseQualities().length) {
+				best = r;
+			}
+		}
+		byte[] baseQuals = Arrays.copyOf(best.getBaseQualities(), best.getBaseQualities().length);
+		if (baseQuals == null || baseQuals == SAMRecord.NULL_QUALS) return null;
+		if (!best.getReadUnmappedFlag() && best.getReadNegativeStrandFlag()) {
+			ArrayUtils.reverse(baseQuals);
+		}
+		return baseQuals;
+	}
+	private static final List<List<SAMRecord>> templateBySegment(List<SAMRecord> records) {
+		List<List<SAMRecord>> segments = new ArrayList<List<SAMRecord>>();
+		for (SAMRecord r : records) {
+			int index = getSegmentIndex(r);
+			while (index >= segments.size()) {
+				segments.add(new ArrayList<SAMRecord>());
+			}
+			segments.get(index).add(r);
+		}
+		return segments;
+	}
+	/**
+	 * The index of segment in the template
+	 * @param record SAMRecord
+	 * @return The index of segment in the template
+	 */
+	public static final int getSegmentIndex(SAMRecord record) {
+		Integer hiTag = record.getIntegerAttribute(SAMTag.FI.name());
+		if (hiTag != null) return hiTag;
+		if (record.getReadPairedFlag()) {
+			if (record.getFirstOfPairFlag()) return 0;
+			if (record.getSecondOfPairFlag()) return 1;
+		}
+		return 0; // default to the first segment as per sam specs
+	}
+	/**
+	 * Gets the read offset of the first aligned base.
+	 * @param r
+	 * @return zero based offset from start of read based on fastq sequencing base order
+	 */
+	public static final int getFirstAlignedBaseReadOffset(SAMRecord r) {
+		Cigar c = r.getCigar();
+		if (c == null || c.getCigarElements().size() == 0) return -1;
+		if (r.getReadNegativeStrandFlag()) {
+			return getEndClipLength(c.getCigarElements());
+		} else {
+			return getStartClipLength(c.getCigarElements());
+		}
+	}
+	/**
+	 * Gets the read offset of the final aligned base.
+	 * @param r
+	 * @return zero based offset of the final aligned read base based on fastq sequencing base order
+	 */
+	public static final int getLastAlignedBaseReadOffset(SAMRecord r) {
+		Cigar c = r.getCigar();
+		if (c == null || c.getCigarElements().size() == 0) return -1;
+		int length = c.getReadLength();
+		if (c.getFirstCigarElement().getOperator() == CigarOperator.HARD_CLIP) {
+			length += c.getFirstCigarElement().getLength();
+		}
+		if (c.getLastCigarElement().getOperator() == CigarOperator.HARD_CLIP) {
+			length += c.getLastCigarElement().getLength();
+		}
+		
+		if (r.getReadNegativeStrandFlag()) {
+			return length - getStartClipLength(c.getCigarElements()) - 1;
+		} else {
+			return length - getEndClipLength(c.getCigarElements()) - 1;
+			
+		}
 	}
 }
