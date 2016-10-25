@@ -1,5 +1,7 @@
 package gridss;
 
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
@@ -12,6 +14,7 @@ import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.ProgressLogger;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,13 +44,20 @@ import com.google.common.collect.Sets;
 )
 public class ComputeSamTags extends CommandLineProgram {
 	private static final Log log = Log.getInstance(ComputeSamTags.class);
+	private static final int ASYNC_BUFFERS = 2;
+	private static final int ASYNC_BUFFER_SIZE = 300;
 	@Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input BAM file grouped by read name.")
     public File INPUT;
 	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Annotated BAM file.")
     public File OUTPUT;
 	@Option(shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME, doc="Reference genome", optional=true)
     public File REFERENCE = null;
-	@Option(shortName="T", doc="Tags to populate")
+	@Option(shortName=StandardOptionDefinitions.ASSUME_SORTED_SHORT_NAME, doc="Assume that all records with the same read name are consecutive. "
+			+ "Incorrect tags will be written if this is not the case.", optional=true)
+    public boolean ASSUME_SORTED = false;
+	@Option(doc="Convert hard clips to soft clips if the entire read sequence for the read is available in another record.", optional=true)
+	public boolean SOFTEN_HARD_CLIPS = true;
+	@Option(shortName="T", doc="Tags to calculate")
 	public Set<SAMTag> TAGS = Sets.newHashSet(
 			SAMTag.NM,
 			SAMTag.Q2,
@@ -58,41 +68,52 @@ public class ComputeSamTags extends CommandLineProgram {
 		log.debug("Setting language-neutral locale");
     	java.util.Locale.setDefault(Locale.ROOT);
     	validateParameters();
-    	SamReaderFactory readerFactory = SamReaderFactory.make().enable(htsjdk.samtools.SamReaderFactory.Option.EAGERLY_DECODE);
+    	SamReaderFactory readerFactory = SamReaderFactory.make();
     	SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
     	try {
     		ReferenceSequenceFile reference = null;
     		if (isReferenceRequired()) {
     			reference = new IndexedFastaSequenceFile(REFERENCE);
     		}
-			compute(INPUT, OUTPUT, reference, readerFactory, writerFactory, TAGS);
+    		try (SamReader reader = readerFactory.open(INPUT)) {
+    			SAMFileHeader header = reader.getFileHeader();
+    			if (!ASSUME_SORTED) {
+    				if (header.getSortOrder() != SortOrder.queryname) {
+    					log.error("INPUT is not sorted by queryname. "
+    							+ "ComputeSamTags requires that reads with the same name be sorted together. "
+    							+ "If the input file satisfies this constraint (the output from many aligners do),"
+    							+ " this check can be disabled with the ASSUME_SORTED option.");
+    					return -1;
+    				}
+    			}
+    			try (SAMRecordIterator it = reader.iterator()) {
+    				try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, OUTPUT)) {
+    					compute(it, writer, reference, TAGS, SOFTEN_HARD_CLIPS);
+    				}
+    			}
+    		}
 		} catch (IOException e) {
 			log.error(e);
 			return -1;
 		}
     	return 0;
 	}
-	public static void compute(File input, File output, ReferenceSequenceFile reference, SamReaderFactory readerFactory, SAMFileWriterFactory writerFactory, Set<SAMTag> tags) throws IOException {
-		try (SamReader reader = readerFactory.open(input)) {
-			try (SAMRecordIterator it = reader.iterator()) {
-				try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(reader.getFileHeader(), true, output)) {
-					compute(it, writer, reference, tags);
-				}
-			}
-		}
-	}
-	public static void compute(Iterator<SAMRecord> rawit, SAMFileWriter writer, ReferenceSequenceFile reference, Set<SAMTag> tags) throws IOException {
-		try (CloseableIterator<SAMRecord> aysncit = new AsyncBufferedIterator<SAMRecord>(rawit, "raw records", 2, 300)) {
+	public static void compute(Iterator<SAMRecord> rawit, SAMFileWriter writer, ReferenceSequenceFile reference, Set<SAMTag> tags, boolean softenHardClips) throws IOException {
+		ProgressLogger progress = new ProgressLogger(log);
+		try (CloseableIterator<SAMRecord> aysncit = new AsyncBufferedIterator<SAMRecord>(rawit, "raw", ASYNC_BUFFERS, ASYNC_BUFFER_SIZE)) {
 			Iterator<SAMRecord> it = aysncit;
 			if (tags.contains(SAMTag.NM) || tags.contains(SAMTag.SA)) {
+				it = new AsyncBufferedIterator<SAMRecord>(it, "nm", ASYNC_BUFFERS, ASYNC_BUFFER_SIZE);
 				it = new NmTagIterator(it, reference);
 			}
-			if (!Sets.intersection(tags, SAMRecordUtil.TEMPLATE_TAGS).isEmpty()) {
-				it = new TemplateTagsIterator(it);
+			if (!Sets.intersection(tags, SAMRecordUtil.TEMPLATE_TAGS).isEmpty() || softenHardClips) {
+				it = new TemplateTagsIterator(it, softenHardClips, tags);
+				it = new AsyncBufferedIterator<SAMRecord>(it, "tags", ASYNC_BUFFERS, ASYNC_BUFFER_SIZE);
 			}
-			it = new AsyncBufferedIterator<SAMRecord>(it, "annotation", 2, 300);
 			while (it.hasNext()) {
-				writer.addAlignment(it.next());
+				SAMRecord r = it.next();
+				writer.addAlignment(r);
+				progress.record(r);
 			}
 		}
 	}

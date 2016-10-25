@@ -24,6 +24,11 @@ public class ChimericAlignmentTest {
 		assertTrue(list.get(0).isNegativeStrand);
 		assertEquals("8817S631M318S", list.get(0).cigar.toString());
 		assertEquals(30, list.get(0).mapq);
-		assertEquals(39, list.get(0).nm);
+		assertEquals(39, (int)list.get(0).nm);
+	}
+	@Test
+	public void should_allow_missing_nm() {
+		String sa = "chr18,107870,-,8817S631M318S,30,,";
+		assertEquals(null, new ChimericAlignment(sa).nm);
 	}
 }

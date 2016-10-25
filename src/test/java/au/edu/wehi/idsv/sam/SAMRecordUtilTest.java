@@ -453,10 +453,13 @@ public class SAMRecordUtilTest extends TestHelper {
 		SAMRecord read0 = withMapq(10, withSequence("A", Read(0, 1, "1M5H")))[0];
 		SAMRecord read1 = withMapq(11, withSequence("C", Read(0, 2, "1H1M4H")))[0];
 		
+		read0.setAttribute("NM", null);
+		read1.setAttribute("NM", null);
+		
 		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(SAMTag.SA), false);
 		
-		assertEquals("polyA,2,+,1H1M4H,11,,", read0.getStringAttribute("SA"));
-		assertEquals("polyA,1,+,1M5H,10,,", read1.getStringAttribute("SA"));
+		assertEquals("polyA,2,+,1H1M4H,11,", read0.getStringAttribute("SA"));
+		assertEquals("polyA,1,+,1M5H,10,", read1.getStringAttribute("SA"));
 	}
 	@Test
 	public void calculateTemplateTags_SA_should_not_be_written_for_nonchimeric_reads() {
@@ -492,7 +495,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		
 		read0.setSupplementaryAlignmentFlag(true);
 		read1.setSupplementaryAlignmentFlag(true);
-		// read 2 is the 'primary' chimeric alignment record
+		read2.setSupplementaryAlignmentFlag(false); // read 2 is the 'primary' chimeric alignment record
 		read3.setSupplementaryAlignmentFlag(true);
 		
 		read0.setNotPrimaryAlignmentFlag(true);
@@ -501,18 +504,18 @@ public class SAMRecordUtilTest extends TestHelper {
 		read3.setNotPrimaryAlignmentFlag(true);
 		
 		read0.setAttribute("NM", 0);
-		read0.setAttribute("NM", 1);
-		read0.setAttribute("NM", 2);
-		read0.setAttribute("NM", 3);
+		read1.setAttribute("NM", 1);
+		read2.setAttribute("NM", 2);
+		read3.setAttribute("NM", 3);
 		
 		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1, read2, read3, alt), ImmutableSet.of(SAMTag.SA), false);
 		
 		assertEquals(null, alt.getStringAttribute("SA"));
 		// "0,4,+,3H1M2H,12,2,;0,1,+,1M5H,10,0,;0,2,+,1H1M4H,11,1,;0,5,+,4S2M,13,3,"
 		//   read2                  read0            read1          read3
-		assertEquals("polyA,4,+,3H1M2H,12,2,;polyA,2,+,1H1M4H,11,1,;polyA,5,+,4S2M,13,3,", read0.getStringAttribute("SA"));
-		assertEquals("polyA,4,+,3H1M2H,12,2,;polyA,1,+,1M5H,10,0,;polyA,5,+,4S2M,13,3,", read1.getStringAttribute("SA"));
-		assertEquals("polyA,1,+,1M5H,10,0,;polyA,2,+,1H1M4H,11,1,;polyA,5,+,4S2M,13,3,", read2.getStringAttribute("SA"));
-		assertEquals("polyA,4,+,3H1M2H,12,2,;polyA,1,+,1M5H,10,0,;polyA,2,+,1H1M4H,11,1,", read3.getStringAttribute("SA"));
+		assertEquals("polyA,4,+,3H1M2H,12,2;polyA,2,+,1H1M4H,11,1;polyA,5,+,4S2M,13,3", read0.getStringAttribute("SA"));
+		assertEquals("polyA,4,+,3H1M2H,12,2;polyA,1,+,1M5H,10,0;polyA,5,+,4S2M,13,3", read1.getStringAttribute("SA"));
+		assertEquals("polyA,1,+,1M5H,10,0;polyA,2,+,1H1M4H,11,1;polyA,5,+,4S2M,13,3", read2.getStringAttribute("SA"));
+		assertEquals("polyA,4,+,3H1M2H,12,2;polyA,1,+,1M5H,10,0;polyA,2,+,1H1M4H,11,1", read3.getStringAttribute("SA"));
 	}
 }

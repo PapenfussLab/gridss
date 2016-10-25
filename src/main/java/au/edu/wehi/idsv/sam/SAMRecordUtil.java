@@ -23,6 +23,7 @@ import htsjdk.samtools.util.StringUtil;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
@@ -39,7 +40,9 @@ import au.edu.wehi.idsv.picard.ReferenceLookup;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
+import com.google.common.primitives.Booleans;
 
 /**
  * @author Daniel Cameron
@@ -761,8 +764,16 @@ public class SAMRecordUtil {
 			if (alignment.size() == 0) {
 				r.setAttribute(SAMTag.SA.name(), null);
 			} else {
+				List<SAMRecord> aln = new ArrayList<>(alignment);
+				Collections.sort(aln, new Ordering<SAMRecord>() {
+					@Override
+					public int compare(SAMRecord arg0, SAMRecord arg1) {
+						// http://samtools.github.io/hts-specs/SAMtags.pdf
+						// Conventionally, at a supplementary line, the first element points to the primary line.
+						return Booleans.compare(arg0.getSupplementaryAlignmentFlag(), arg1.getSupplementaryAlignmentFlag());
+					}});
 				StringBuilder sb = new StringBuilder();
-				for (SAMRecord chim : alignment) {
+				for (SAMRecord chim : aln) {
 					sb.append(new ChimericAlignment(chim));
 					sb.append(";");
 				}

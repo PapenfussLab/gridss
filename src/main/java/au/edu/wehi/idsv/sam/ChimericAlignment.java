@@ -24,7 +24,7 @@ public class ChimericAlignment {
 	public final boolean isNegativeStrand;
 	public final Cigar cigar;
 	public final int mapq;
-	public final int nm;
+	public final Integer nm;
 	public ChimericAlignment(String rname, int pos, boolean isNegativeStrand, Cigar cigar, int mapq, int nm) {
 		this.rname = rname;
 		this.pos = pos;
@@ -48,8 +48,16 @@ public class ChimericAlignment {
 		this.pos = Integer.parseInt(splits[1]);
 		this.isNegativeStrand = "-".equals(splits[2]);
 		this.cigar = TextCigarCodec.decode(splits[3]);
-		this.mapq =Integer.parseInt(splits[4]);
-		this.nm = Integer.parseInt(splits[5]);
+		this.mapq = Integer.parseInt(splits[4]);
+		Integer nmParsed = null;
+		try {
+			if (splits.length >= 6) {
+				nmParsed = Integer.parseInt(splits[5]);
+			}
+		} catch (NumberFormatException nfe) {
+			// swallow and fall back to null
+		}
+		this.nm = nmParsed;
 	}
 	public static List<ChimericAlignment> getChimericAlignments(String sa) {
 		List<ChimericAlignment> list = new ArrayList<ChimericAlignment>();
@@ -68,6 +76,6 @@ public class ChimericAlignment {
 	}
 	@Override
 	public String toString() {
-		return String.format("%s,%d,%s,%s,%d,%d", rname, pos, isNegativeStrand ? "-" : "+", cigar, mapq, nm);
+		return String.format("%s,%d,%s,%s,%d,%s", rname, pos, isNegativeStrand ? "-" : "+", cigar, mapq, nm == null ? "" : nm.toString());
 	}
 }

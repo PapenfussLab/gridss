@@ -22,15 +22,15 @@ import com.google.common.collect.PeekingIterator;
 public class TemplateTagsIterator implements Iterator<SAMRecord> {
 	private final Set<SAMTag> tags;
 	private final PeekingIterator<SAMRecord> it;
+	private final boolean softenHardClips;
 	private final Queue<SAMRecord> queue = new ArrayDeque<>();
-	public TemplateTagsIterator(Iterator<SAMRecord> it) {
-		this(it, SAMRecordUtil.TEMPLATE_TAGS);
-	}
-	public TemplateTagsIterator(Iterator<SAMRecord> it, Set<SAMTag> tags) {
+	public TemplateTagsIterator(Iterator<SAMRecord> it, boolean softenHardClips, Set<SAMTag> tags) {
 		this.it = Iterators.peekingIterator(it);
+		this.softenHardClips = softenHardClips;
 		this.tags = tags;
 	}
 	private void ensureQueue() {
+		if (!queue.isEmpty()) return;
 		List<SAMRecord> records = new ArrayList<>();
 		if (it.hasNext()) {
 			String readname = it.peek().getReadName();
@@ -40,7 +40,7 @@ public class TemplateTagsIterator implements Iterator<SAMRecord> {
 				while (readname != null && it.hasNext() && readname.equals(it.peek().getReadName())) {
 					records.add(it.next());
 				}
-				SAMRecordUtil.calculateTemplateTags(records, tags);
+				SAMRecordUtil.calculateTemplateTags(records, tags, softenHardClips);
 				queue.addAll(records);
 			}
 		}
