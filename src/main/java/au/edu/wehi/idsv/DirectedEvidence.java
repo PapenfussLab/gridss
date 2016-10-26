@@ -54,16 +54,6 @@ public interface DirectedEvidence {
 	 */
 	int getLocalBaseLength();
 	/**
-	 * Maximum base quality of reference mapped bases
-	 * @return
-	 */
-	int getLocalMaxBaseQual();
-	/**
-	 * Total base quality of reference mapped bases
-	 * @return
-	 */
-	int getLocalTotalBaseQual();
-	/**
 	 * Indicates whether the breakend sequence is exact
 	 * @return true if the breakend is known exactly, false otherwise
 	 */

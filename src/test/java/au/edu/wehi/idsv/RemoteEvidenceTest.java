@@ -79,14 +79,8 @@ public abstract class RemoteEvidenceTest extends TestHelper  {
 		DirectedBreakpoint l = L();
 		DirectedBreakpoint r = R();
 		assertEquals(l.getLocalMapq(), r.getRemoteMapq());
-		assertEquals(l.getLocalBaseLength(), r.getRemoteBaseLength());
-		assertEquals(l.getLocalMaxBaseQual(), r.getRemoteMaxBaseQual());
-		assertEquals(l.getLocalTotalBaseQual(), r.getRemoteTotalBaseQual());
 		
 		assertEquals(r.getLocalMapq(), l.getRemoteMapq());
-		assertEquals(r.getLocalBaseLength(), l.getRemoteBaseLength());
-		assertEquals(r.getLocalMaxBaseQual(), l.getRemoteMaxBaseQual());
-		assertEquals(r.getLocalTotalBaseQual(), l.getRemoteTotalBaseQual());
 	}
 	@Test
 	public void should_have_different_evidenceID() {

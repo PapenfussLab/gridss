@@ -17,26 +17,4 @@ public class DiscordantReadPairTest extends TestHelper {
 		pair[1].setMappingQuality(20);
 		assertEquals(20, newPair(pair, 300).getRemoteMapq());
 	}
-	@Test
-	public void getRemoteBaseLength_should_be_read_length() {
-		assertEquals(100, newPair(DP(1, 1, "50M", true, 2, 5, "100M", true), 300).getRemoteBaseLength());
-	}
-	@Test
-	public void getRemoteBaseCount_should_be_read_length() {
-		assertEquals(100, newPair(DP(1, 1, "100M", true, 2, 5, "100M", true), 300).getRemoteBaseCount());
-	}
-	@Test
-	public void getRemoteMaxBaseQual_local_mapped_quals() {
-		SAMRecord[] pair = DP(1, 1, "3M1S", true, 2, 5, "3M1S", true);
-		withQual(new byte[] { 1, 2, 3, 4}, pair[0]);
-		withQual(new byte[] { 4, 6, 5, 7}, pair[1]);
-		assertEquals(6, newPair(pair, 300).getRemoteMaxBaseQual());
-	}
-	@Test
-	public void getRemoteTotalBaseQual_local_mapped_quals() {
-		SAMRecord[] pair = DP(1, 1, "3M1S", true, 2, 5, "1S3M", true);
-		withQual(new byte[] { 1, 2, 3, 4}, pair[0]);
-		withQual(new byte[] { 4, 5, 6, 7}, pair[1]);
-		assertEquals(5+6+7, newPair(pair, 300).getRemoteTotalBaseQual());
-	}
 }

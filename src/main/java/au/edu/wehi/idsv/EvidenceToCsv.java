@@ -42,8 +42,6 @@ public class EvidenceToCsv {
 				"evidenceID",
 				"localMapq",
 				"localBaseLength",
-				"localMaxBaseQual",
-				"localTotalBaseQual",
 				"exact",
 				"class",
 				}) {
@@ -56,10 +54,6 @@ public class EvidenceToCsv {
 				"breakpointQual",
 				//"breakendSummary",
 				"remoteMapq",
-				"remoteBaseLength",
-				"remoteBaseCount",
-				"remoteMaxBaseQual",
-				"remoteTotalBaseQual",
 				"untemplatedSequence",
 				}) {
 			stream.print(s);
@@ -102,10 +96,6 @@ public class EvidenceToCsv {
 		stream.print(',');
 		stream.print(e.getLocalBaseLength());
 		stream.print(',');
-		stream.print(e.getLocalMaxBaseQual());
-		stream.print(',');
-		stream.print(e.getLocalTotalBaseQual());
-		stream.print(',');
 		stream.print(e.isBreakendExact());
 		stream.print(',');
 		stream.print(e.getClass().getSimpleName());
@@ -117,14 +107,6 @@ public class EvidenceToCsv {
 			stream.print(bp.getBreakpointQual());
 			stream.print(',');
 			stream.print(bp.getRemoteMapq());
-			stream.print(',');
-			stream.print(bp.getRemoteBaseLength());
-			stream.print(',');
-			stream.print(bp.getRemoteBaseCount());
-			stream.print(',');
-			stream.print(bp.getRemoteMaxBaseQual());
-			stream.print(',');
-			stream.print(bp.getRemoteTotalBaseQual());
 			stream.print(',');
 			stream.print(bp.getUntemplatedSequence());
 			stream.print(',');

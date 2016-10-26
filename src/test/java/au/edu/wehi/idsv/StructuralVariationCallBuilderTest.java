@@ -32,8 +32,6 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		boolean tumour;
 		@Override public int getLocalMapq() { return 1 + offset; }
 		@Override public int getLocalBaseLength() { return 2 + offset; }
-		@Override public int getLocalMaxBaseQual() { return 4 + offset; }
-		@Override public int getLocalTotalBaseQual() { return 5 + offset; }
 		@Override public float getBreakendQual() { return 16 + offset; }
 		@Override public String getEvidenceID() { return "sc" + Integer.toString(offset); }
 	}
@@ -45,13 +43,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		}
 		@Override public int getLocalMapq() { return 1 + offset; }
 		@Override public int getLocalBaseLength() { return 2 + offset; }
-		@Override public int getLocalMaxBaseQual() { return 4 + offset; }
-		@Override public int getLocalTotalBaseQual() { return 5 + offset; }
 		@Override public int getRemoteMapq() { return 6 + offset; }
-		@Override public int getRemoteBaseLength() { return 7 + offset; }
-		@Override public int getRemoteBaseCount() { return 8 + offset; }
-		@Override public int getRemoteMaxBaseQual() { return 9 + offset; }
-		@Override public int getRemoteTotalBaseQual() { return 10 + offset; }
 		@Override public float getBreakendQual() { return 111 + offset; }
 		@Override public float getBreakpointQual() { return 112 + offset; }
 		@Override public String getEvidenceID() { return "rsc" + Integer.toString(offset); }
@@ -64,13 +56,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		}
 		@Override public int getLocalMapq() { return 1 + offset; }
 		@Override public int getLocalBaseLength() { return 2 + offset; }
-		@Override public int getLocalMaxBaseQual() { return 4 + offset; }
-		@Override public int getLocalTotalBaseQual() { return 5 + offset; }
 		@Override public int getRemoteMapq() { return 6 + offset; }
-		@Override public int getRemoteBaseLength() { return 7 + offset; }
-		@Override public int getRemoteBaseCount() { return 8 + offset; }
-		@Override public int getRemoteMaxBaseQual() { return 9 + offset; }
-		@Override public int getRemoteTotalBaseQual() { return 10 + offset; }
 		@Override public float getBreakendQual() { return 111 + offset; }
 		@Override public float getBreakpointQual() { return 112 + offset; }
 		@Override public String getEvidenceID() { return "rsc" + Integer.toString(offset); }
@@ -83,13 +69,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		}
 		@Override public int getLocalMapq() { return 1 + offset; }
 		@Override public int getLocalBaseLength() { return 2 + offset; }
-		@Override public int getLocalMaxBaseQual() { return 4 + offset; }
-		@Override public int getLocalTotalBaseQual() { return 5 + offset; }
 		@Override public int getRemoteMapq() { return 6 + offset; }
-		@Override public int getRemoteBaseLength() { return 7 + offset; }
-		@Override public int getRemoteBaseCount() { return 8 + offset; }
-		@Override public int getRemoteMaxBaseQual() { return 9 + offset; }
-		@Override public int getRemoteTotalBaseQual() { return 10 + offset; }
 		@Override public float getBreakendQual() { return 211 + offset; }
 		@Override public float getBreakpointQual() { return 212 + offset; }
 		@Override public String getEvidenceID() { return "Rrsc" + Integer.toString(offset); }
@@ -100,14 +80,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				super(rrsc.this.getEvidenceSource(), FWD, rrsc.this.getSAMRecord(), rrsc.this.getRealignedSAMRecord());
 			}
 			@Override public int getLocalMapq() { return rrsc.this.getRemoteMapq(); }
-			@Override public int getLocalBaseLength() { return rrsc.this.getRemoteBaseLength(); }
-			@Override public int getLocalMaxBaseQual() { return rrsc.this.getRemoteMaxBaseQual(); }
-			@Override public int getLocalTotalBaseQual() { return rrsc.this.getRemoteTotalBaseQual(); }
 			@Override public int getRemoteMapq() { return rrsc.this.getLocalMapq(); }
-			@Override public int getRemoteBaseLength() { return rrsc.this.getLocalBaseLength(); }
-			@Override public int getRemoteBaseCount() { return rrsc.this.getLocalBaseLength(); }
-			@Override public int getRemoteMaxBaseQual() { return rrsc.this.getLocalMaxBaseQual(); }
-			@Override public int getRemoteTotalBaseQual() { return rrsc.this.getLocalTotalBaseQual(); }
 			@Override public float getBreakendQual() { return rrsc.this.getBreakendQual(); }
 			@Override public float getBreakpointQual() { return rrsc.this.getBreakpointQual(); }
 			@Override public String getEvidenceID() { return rrsc.this.getEvidenceID().substring(1); }
@@ -123,8 +96,6 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		}
 		@Override public int getLocalMapq() { return 1 + offset; }
 		@Override public int getLocalBaseLength() { return 2 + offset; }
-		@Override public int getLocalMaxBaseQual() { return 4 + offset; }
-		@Override public int getLocalTotalBaseQual() { return 5 + offset; }
 		@Override public float getBreakendQual() { return 6 + offset; }
 		@Override public String getEvidenceID() { return "um" + Integer.toString(offset); }
 	}
@@ -138,13 +109,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			}
 		@Override public int getLocalMapq() { return 1 + offset; }
 		@Override public int getLocalBaseLength() { return 2 + offset; }
-		@Override public int getLocalMaxBaseQual() { return 4 + offset; }
-		@Override public int getLocalTotalBaseQual() { return 5 + offset; }
 		@Override public int getRemoteMapq() { return 6 + offset; }
-		@Override public int getRemoteBaseLength() { return 7 + offset; }
-		@Override public int getRemoteBaseCount() { return 8 + offset; }
-		@Override public int getRemoteMaxBaseQual() { return 9 + offset; }
-		@Override public int getRemoteTotalBaseQual() { return 10 + offset; }
 		@Override public float getBreakendQual() { return 11 + offset; }
 		@Override public float getBreakpointQual() { return 12 + offset; }
 		@Override public String getEvidenceID() { return "dp" + Integer.toString(offset); }

@@ -53,22 +53,6 @@ public class RealignedSoftClipEvidence extends SoftClipEvidence implements Direc
 	public int getRemoteMapq() {
 		return realigned.getMappingQuality();
 	}
-	@Override
-	public int getRemoteBaseLength() {
-		return realigned.getReadLength();
-	}
-	@Override
-	public int getRemoteBaseCount() {
-		return getRemoteBaseLength();
-	}
-	@Override
-	public int getRemoteMaxBaseQual() {
-		return SAMRecordUtil.getMaxReferenceBaseQual(realigned);
-	}
-	@Override
-	public int getRemoteTotalBaseQual() {
-		return SAMRecordUtil.getTotalReferenceBaseQual(realigned);
-	}
 	/**
 	 * Comparator for sorting SAMRecords by coordinate of the matched realignment.
 	 *

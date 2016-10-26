@@ -18,25 +18,6 @@ public class DiscordantReadPair extends NonReferenceReadPair implements Directed
 		return getNonReferenceRead().getMappingQuality();
 	}
 	@Override
-	public int getRemoteBaseLength() {
-		return getNonReferenceRead().getReadLength();
-	}
-
-	@Override
-	public int getRemoteBaseCount() {
-		return getNonReferenceRead().getReadLength();
-	}
-
-	@Override
-	public int getRemoteMaxBaseQual() {
-		return SAMRecordUtil.getMaxReferenceBaseQual(getNonReferenceRead());
-	}
-
-	@Override
-	public int getRemoteTotalBaseQual() {
-		return SAMRecordUtil.getTotalReferenceBaseQual(getNonReferenceRead());
-	}
-	@Override
 	public String toString() {
 		return String.format("DP %s MQ=%d,%d RN=%s", getBreakendSummary(), getLocalMapq(), getRemoteMapq(), getEvidenceID());
 	}

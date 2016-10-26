@@ -402,20 +402,6 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		return getAnchorLength();
 	}
 	@Override
-	public int getLocalMaxBaseQual() {
-		if (getAnchorLength() == 0) return 0;
-		return UnsignedBytes.toInt(UnsignedBytes.max(getAssemblyAnchorQuals()));
-	}
-	@Override
-	public int getLocalTotalBaseQual() {
-		int sum = 0;
-		byte[] data = getAssemblyAnchorQuals();
-		for (int i = 0; i < data.length; i++) {
-			sum += UnsignedBytes.toInt(data[i]);
-		}
-		return sum;
-	}
-	@Override
 	public byte[] getAssemblySequence() {
 		if (isBreakendExact()) return record.getReadBases();
 		// Need to remove placeholder Ns from inexact breakend

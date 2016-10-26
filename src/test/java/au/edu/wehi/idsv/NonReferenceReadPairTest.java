@@ -225,20 +225,6 @@ public class NonReferenceReadPairTest extends TestHelper {
 		assertEquals(100, newPair(OEA(0, 1, "100M", true), 300).getLocalBaseLength());
 	}
 	@Test
-	public void getLocalMaxBaseQual_local_mapped_quals() {
-		SAMRecord[] pair = DP(1, 1, "3M1S", true, 2, 5, "1S3M", true);
-		withQual(new byte[] { 1, 2, 3, 4}, pair[0]);
-		withQual(new byte[] { 4, 5, 6, 7}, pair[1]);
-		assertEquals(3, newPair(pair, 300).getLocalMaxBaseQual());
-	}
-	@Test
-	public void getLocalTotalBaseQual_local_mapped_quals() {
-		SAMRecord[] pair = DP(1, 1, "3M1S", true, 2, 5, "1S3M", true);
-		withQual(new byte[] { 1, 2, 3, 4}, pair[0]);
-		withQual(new byte[] { 4, 5, 6, 7}, pair[1]);
-		assertEquals(1+2+3, newPair(pair, 300).getLocalTotalBaseQual());
-	}
-	@Test
 	public void getBreakendSequence_should_be_null() {
 		assertNull(newPair(OEA(0, 1, "100M", true), 300).getBreakendSequence());
 	}

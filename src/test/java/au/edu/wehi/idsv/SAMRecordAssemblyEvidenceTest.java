@@ -192,18 +192,12 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals(e.getFilters() , r.getFilters());
 		assertEquals(e.getLocalBaseLength() , r.getLocalBaseLength());
 		assertEquals(e.getLocalMapq() , r.getLocalMapq());
-		assertEquals(e.getLocalMaxBaseQual() , r.getLocalMaxBaseQual());
-		assertEquals(e.getLocalTotalBaseQual() , r.getLocalTotalBaseQual());
 		if (e instanceof DirectedBreakpoint) {
 			assertTrue(r instanceof DirectedBreakpoint);
 			DirectedBreakpoint de = (DirectedBreakpoint)e;
 			DirectedBreakpoint dr = (DirectedBreakpoint)r;
 			assertEquals(de.getBreakendSummary(), dr.getBreakendSummary());
 			assertEquals(de.getRemoteMapq(), dr.getRemoteMapq());
-			assertEquals(de.getRemoteBaseLength(), dr.getRemoteBaseLength());
-			assertEquals(de.getRemoteBaseCount(), dr.getRemoteBaseCount());
-			assertEquals(de.getRemoteMaxBaseQual(), dr.getRemoteMaxBaseQual());
-			assertEquals(de.getRemoteTotalBaseQual(), dr.getRemoteTotalBaseQual());
 			assertEquals(de.getUntemplatedSequence(), dr.getUntemplatedSequence());
 		}
 		if (!(e instanceof SpanningSAMRecordAssemblyEvidence)) {

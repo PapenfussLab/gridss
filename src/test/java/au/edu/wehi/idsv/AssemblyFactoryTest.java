@@ -46,8 +46,6 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals("CC", S(e.getAssemblyAnchorSequence()));
 		assertEquals("GTACCC", S(e.getAssemblySequence()));
 		assertEquals(2, e.getLocalBaseLength());
-		assertEquals(8, e.getLocalMaxBaseQual());
-		assertEquals(4+8, e.getLocalTotalBaseQual());
 	}
 	@Test
 	public void should_set_assembly_properties_fwd() {
@@ -59,8 +57,6 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals("GT", S(e.getAssemblyAnchorSequence()));
 		assertEquals("GTACCC", S(e.getAssemblySequence()));
 		assertEquals(2, e.getLocalBaseLength());
-		assertEquals(3, e.getLocalMaxBaseQual());
-		assertEquals(1+3, e.getLocalTotalBaseQual());
 	}
 	@Test
 	public void should_set_getAssemblySequence() {

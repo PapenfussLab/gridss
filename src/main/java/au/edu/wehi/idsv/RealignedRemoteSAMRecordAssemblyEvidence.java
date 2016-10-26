@@ -70,40 +70,12 @@ public class RealignedRemoteSAMRecordAssemblyEvidence extends RealignedSAMRecord
 		return "R" + super.toString();
 	}
 	@Override
-	public int getLocalBaseLength() {
-		return super.getRemoteBaseLength();
-	}
-	@Override
 	public int getLocalMapq() {
 		return super.getRemoteMapq();
 	}
 	@Override
-	public int getLocalMaxBaseQual() {
-		return super.getRemoteMaxBaseQual();
-	}
-	@Override
-	public int getLocalTotalBaseQual() {
-		return super.getRemoteTotalBaseQual();
-	}
-	@Override
-	public int getRemoteBaseCount() {
-		return super.getLocalBaseLength();
-	}
-	@Override
-	public int getRemoteBaseLength() {
-		return super.getLocalBaseLength();
-	}
-	@Override
 	public int getRemoteMapq() {
 		return super.getLocalMapq();
-	}
-	@Override
-	public int getRemoteMaxBaseQual() {
-		return super.getLocalMaxBaseQual();
-	}
-	@Override
-	public int getRemoteTotalBaseQual() {
-		return super.getLocalTotalBaseQual();
 	}
 	@Override
 	public float getBreakpointQual() {

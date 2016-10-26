@@ -177,14 +177,6 @@ public class SoftClipEvidenceTest extends TestHelper {
 	public void getLocalBaseLength_should_exclude_sc_bases() {
 		assertEquals(4, SCE(FWD, withMapq(5, Read(0, 1, "4M2S"))).getLocalBaseLength());
 	}
-	@Test
-	public void getLocalMaxBaseQual_should_be_reference_quals() {
-		assertEquals(4, SCE(FWD, withQual(new byte[] {1,2,3,4,5,6}, Read(0, 1, "4M2S"))).getLocalMaxBaseQual());
-	}
-	@Test
-	public void getLocalTotalBaseQual_should_be_reference_quals() {
-		assertEquals(1+2+3+4, SCE(FWD, withQual(new byte[] {1,2,3,4,5,6}, Read(0, 1, "4M2S"))).getLocalTotalBaseQual());
-	}
 	private MockSAMEvidenceSource permissiveSES() {
 		MockSAMEvidenceSource ses = SES();
 		ses.getContext().getConfig().getSoftClip().minAnchorIdentity = 0;

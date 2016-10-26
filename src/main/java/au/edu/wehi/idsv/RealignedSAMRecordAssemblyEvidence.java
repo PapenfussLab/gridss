@@ -47,22 +47,6 @@ public class RealignedSAMRecordAssemblyEvidence extends SAMRecordAssemblyEvidenc
 	public int getRemoteMapq() {
 		return getRemoteSAMRecord().getMappingQuality();
 	}
-	@Override
-	public int getRemoteBaseLength() {
-		return getRemoteSAMRecord().getReadLength();
-	}
-	@Override
-	public int getRemoteBaseCount() {
-		return getRemoteBaseLength();
-	}
-	@Override
-	public int getRemoteMaxBaseQual() {
-		return SAMRecordUtil.getMaxReferenceBaseQual(getRemoteSAMRecord());
-	}
-	@Override
-	public int getRemoteTotalBaseQual() {
-		return SAMRecordUtil.getTotalReferenceBaseQual(getRemoteSAMRecord());
-	}
 	public float getBreakpointQual() {
 		int rp = getAssemblySupportCountReadPair();
 		double rpq = getAssemblySupportReadPairQualityScore();
