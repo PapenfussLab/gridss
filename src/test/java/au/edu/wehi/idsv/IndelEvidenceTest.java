@@ -71,6 +71,7 @@ public class IndelEvidenceTest extends TestHelper {
 		SAMRecord r = Read(2, 1, "2M3D4M");
 		List<IndelEvidence> e = IndelEvidence.create(SES(), r);
 		assertEquals(new BreakpointSummary(2, FWD, 2, 2, 2, BWD, 6, 6), e.get(0).getBreakendSummary());
+		assertEquals(new BreakpointSummary(2, BWD, 6, 6, 2, FWD, 2, 2), e.get(1).getBreakendSummary());
 	}
 	
 	@Test

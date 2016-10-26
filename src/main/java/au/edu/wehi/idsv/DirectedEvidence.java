@@ -49,11 +49,6 @@ public interface DirectedEvidence {
 	 */
 	int getLocalMapq();
 	/**
-	 * Length of reference mapped sequence
-	 * @return
-	 */
-	int getLocalBaseLength();
-	/**
 	 * Indicates whether the breakend sequence is exact
 	 * @return true if the breakend is known exactly, false otherwise
 	 */

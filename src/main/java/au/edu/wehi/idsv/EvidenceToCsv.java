@@ -41,7 +41,6 @@ public class EvidenceToCsv {
 				//"breakendQuality",
 				"evidenceID",
 				"localMapq",
-				"localBaseLength",
 				"exact",
 				"class",
 				}) {
@@ -93,8 +92,6 @@ public class EvidenceToCsv {
 		stream.print(e.getEvidenceID());
 		stream.print(',');
 		stream.print(e.getLocalMapq());
-		stream.print(',');
-		stream.print(e.getLocalBaseLength());
 		stream.print(',');
 		stream.print(e.isBreakendExact());
 		stream.print(',');

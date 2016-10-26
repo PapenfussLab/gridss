@@ -154,10 +154,6 @@ public class SoftClipEvidence implements DirectedEvidence {
 		return record.getMappingQuality();
 	}
 	@Override
-	public int getLocalBaseLength() {
-		return record.getReadLength() - SAMRecordUtil.getStartSoftClipLength(record) - SAMRecordUtil.getEndSoftClipLength(record);
-	}
-	@Override
 	public String toString() {
 		return "SC" + getSoftClipLength() + " " + getBreakendSummary().toString() + " " + getEvidenceID();
 	}
