@@ -184,6 +184,11 @@ public class ExtractEvidence implements Closeable {
 	    	final SAMFileHeader header = reader.getFileHeader();
 	    	final SAMSequenceDictionary dictionary = header.getSequenceDictionary();
 	    	dictionary.assertSameDictionary(processContext.getReference().getSequenceDictionary());
+	    	if (reader.getFileHeader().getSortOrder() != SortOrder.coordinate) {
+	    		String msg = String.format("Input file is not %s coordinate sorted. Please ensure all input files are sorted by read alignment position.", source.getSourceFile());
+	    		log.error(msg);
+	    		throw new AssertionError(msg);
+			}
 	    	
 	    	// Need to pass the underlying file and reread it since ReferenceSequenceFileWalker forcably
 	    	// closes the passed in reference regardless of constructor and we still need it
