@@ -29,8 +29,6 @@ import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 
-import com.google.common.collect.ImmutableList;
-
 /**
  * Extracts all reads and read pairs supporting any putative structural variation
  * @author Daniel Cameron

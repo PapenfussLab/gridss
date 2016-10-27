@@ -20,6 +20,7 @@ import picard.cmdline.CommandLineProgram;
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
+import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.DirectedBreakpoint;
 import au.edu.wehi.idsv.IndelEvidence;
@@ -39,6 +40,8 @@ public class ReadsToBedpe extends CommandLineProgram {
     //public File REFERENCE = null;
     @Option(doc="Minimum event size", optional=true)
     public int MIN_SIZE = 50;
+    @Option(doc="Minimum mapq of read alignments", optional=true)
+    public int MIN_MAPQ = 0;
     @Option(doc="Write split reads", optional=true)
     public boolean SPLIT_READS = true;
     @Option(doc="Write indel reads", optional=true)
@@ -84,27 +87,32 @@ public class ReadsToBedpe extends CommandLineProgram {
 		writeBedPe(writer, dict, e, e.getLocalMapq(), "indel");
 	}
 	private void writeBedPe(Writer writer, SAMSequenceDictionary dict, DirectedBreakpoint e, int mapq, String source) throws IOException {
+		Integer size = e.getBreakendSummary().getEventSize();
+		if (!e.getBreakendSummary().isLowBreakend()) return;
+		if (size == null || Math.abs(size) < MIN_SIZE) return;
+		if (e.getLocalMapq() < MIN_MAPQ || e.getRemoteMapq() < MIN_MAPQ) return;
+		
 		BreakpointSummary bp = e.getBreakendSummary();
 		writer.write(dict.getSequence(bp.referenceIndex).getSequenceName());
-		writer.write(',');
+		writer.write('	');
 		writer.write(Integer.toString(bp.start));
-		writer.write(',');
+		writer.write('	');
 		writer.write(Integer.toString(bp.end));
-		writer.write(',');
+		writer.write('	');
 		writer.write(dict.getSequence(bp.referenceIndex2).getSequenceName());
-		writer.write(',');
+		writer.write('	');
 		writer.write(Integer.toString(bp.start2));
-		writer.write(',');
+		writer.write('	');
 		writer.write(Integer.toString(bp.end2));
-		writer.write(',');
+		writer.write('	');
 		writer.write(e.getEvidenceID());
-		writer.write(',');
-		writer.write(mapq);
-		writer.write(',');
-		writer.write(bp.direction.toChar());
-		writer.write(',');
-		writer.write(bp.direction2.toChar());
-		writer.write(',');
+		writer.write('	');
+		writer.write(Integer.toString(mapq));
+		writer.write('	');
+		writer.write(bp.direction == BreakendDirection.Forward ? '+' : '-');
+		writer.write('	');
+		writer.write(bp.direction2 == BreakendDirection.Forward ? '+' : '-');
+		writer.write('	');
 		writer.write(source);
 		writer.write('\n');
 	}

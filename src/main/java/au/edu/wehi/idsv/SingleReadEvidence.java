@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.util.IntervalUtil;
 import htsjdk.samtools.SAMRecord;
 
 public abstract class SingleReadEvidence implements DirectedEvidence {
@@ -27,15 +28,24 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 			int offsetLocalStart, int offsetLocalEnd,
 			int offsetUnmappedStart, int offsetUnmappedEnd,
 			int offsetRemoteStart, int offsetRemoteEnd) {
-		this.source = source;
-		this.record = record;
-		this.location = location;
-		this.offsetLocalStart = offsetLocalStart;
-		this.offsetLocalEnd = offsetLocalEnd;
-		this.offsetUnmappedStart = offsetUnmappedStart;
-		this.offsetUnmappedEnd = offsetUnmappedEnd;
-		this.offsetRemoteStart = offsetRemoteStart;
-		this.offsetRemoteEnd = offsetRemoteEnd;
+		// TODO: we could use this to infer the unmapped bounds
+		assert(offsetLocalEnd == offsetUnmappedStart || offsetLocalStart == offsetUnmappedEnd);
+		assert(offsetUnmappedEnd == offsetUnmappedStart || offsetRemoteEnd == offsetUnmappedStart);
+		int remoteBasesToTrim = offsetUnmappedStart - offsetUnmappedEnd;
+		if (IntervalUtil.overlapsClosed(offsetLocalStart, offsetLocalEnd - 1, offsetRemoteStart, offsetRemoteEnd - 1)) {
+			// Alignments overlap - turns out bwa writes such records
+			// To hand these, we'll just reduce the number of bases assigned as remote
+			// TODO: update location and consider homologous 
+			if (offsetLocalStart < offsetRemoteStart) {
+				// local - remote
+				offsetUnmappedEnd += remoteBasesToTrim;
+				offsetRemoteStart += remoteBasesToTrim;
+			} else {
+				// remote - local
+				offsetRemoteEnd -= remoteBasesToTrim;
+				offsetUnmappedStart -= remoteBasesToTrim;
+			}
+		}
 		// validate bounds are valid
 		if (offsetLocalStart < 0) throw new IllegalArgumentException();
 		if (offsetLocalEnd < 0) throw new IllegalArgumentException();
@@ -46,6 +56,16 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 		if (offsetLocalEnd > record.getReadLength()) throw new IllegalArgumentException();
 		if (offsetUnmappedEnd > record.getReadLength()) throw new IllegalArgumentException();
 		if (offsetRemoteEnd > record.getReadLength()) throw new IllegalArgumentException();
+		this.source = source;
+		this.record = record;
+		this.location = location;
+		this.offsetLocalStart = offsetLocalStart;
+		this.offsetLocalEnd = offsetLocalEnd;
+		this.offsetUnmappedStart = offsetUnmappedStart;
+		this.offsetUnmappedEnd = offsetUnmappedEnd;
+		this.offsetRemoteStart = offsetRemoteStart;
+		this.offsetRemoteEnd = offsetRemoteEnd;
+		
 	}
 	
 	public SAMRecord getSAMRecord() {

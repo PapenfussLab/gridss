@@ -73,7 +73,7 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 		List<CigarElement> cl = CigarUtil.decodeNegativeDeletion(record.getCigar().getCigarElements());
 		for (int indelStartOffset = 0; indelStartOffset < cl.size(); indelStartOffset++) { // ignore indels at start/end of read
 			int indelEndOffset = indelStartOffset; // exclusive end offset
-			while (cl.get(indelEndOffset).getOperator().isIndelOrSkippedRegion() && indelEndOffset < cl.size()) {
+			while (indelEndOffset < cl.size() && cl.get(indelEndOffset).getOperator().isIndelOrSkippedRegion()) {
 				indelEndOffset++;
 			}
 			if (indelStartOffset != indelEndOffset &&
