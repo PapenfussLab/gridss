@@ -198,8 +198,8 @@ public class GenomicProcessingContext implements Closeable {
 
 	public SAMFileWriterFactory getSamFileWriterFactory(boolean sorted) {
 		return new SAMFileWriterFactory()
-			.setTempDirectory(fsContext.getTemporaryDirectory())
-			.setCreateIndex(sorted);
+			.setTempDirectory(fsContext.getTemporaryDirectory());
+			//.setCreateIndex(sorted); // covered by -Dcreate_index=true
 	}
 
 	/**
