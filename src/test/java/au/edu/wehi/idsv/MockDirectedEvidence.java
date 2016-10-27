@@ -50,9 +50,4 @@ public class MockDirectedEvidence extends UnmappedMateReadPair {
 	public int getLocalMapq() {
 		return 1;
 	}
-
-	@Override
-	public int getLocalBaseLength() {
-		return 1;
-	}
 }

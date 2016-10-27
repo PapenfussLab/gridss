@@ -22,7 +22,7 @@
  * THE SOFTWARE.
  */
 
-package picard.analysis;
+package gridss.analysis;
 
 import picard.metrics.MultilevelMetrics;
 

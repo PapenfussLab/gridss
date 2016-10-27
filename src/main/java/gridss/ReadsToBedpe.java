@@ -1,19 +1,5 @@
 package gridss;
 
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
-import java.util.Locale;
-
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.BreakpointSummary;
-import au.edu.wehi.idsv.DirectedBreakpoint;
-import au.edu.wehi.idsv.IndelEvidence;
-import au.edu.wehi.idsv.SplitReadEvidence;
-import au.edu.wehi.idsv.util.AsyncBufferedIterator;
-import au.edu.wehi.idsv.util.MathUtil;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
@@ -22,10 +8,24 @@ import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
+
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.Locale;
+
 import picard.cmdline.CommandLineProgram;
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
+import au.edu.wehi.idsv.BreakpointSummary;
+import au.edu.wehi.idsv.DirectedBreakpoint;
+import au.edu.wehi.idsv.IndelEvidence;
+import au.edu.wehi.idsv.SplitReadEvidence;
+import au.edu.wehi.idsv.util.AsyncBufferedIterator;
+import au.edu.wehi.idsv.util.MathUtil;
 
 @CommandLineProgramProperties(
 		usage = "Converts split reads and indel-containing reads to BEDPE notation.", usageShort = "")
@@ -54,8 +54,10 @@ public class ReadsToBedpe extends CommandLineProgram {
     			SAMFileHeader header = reader.getFileHeader();
     			SAMSequenceDictionary dict = header.getSequenceDictionary();
     			try (CloseableIterator<SAMRecord> it = new AsyncBufferedIterator<SAMRecord>(reader.iterator(), 2, 300)) {
-    				try (BufferedWriter writer = new BufferedWriter(new FileWriter(OUTPUT))) { 
-    					process(writer, dict, it.next());
+    				try (BufferedWriter writer = new BufferedWriter(new FileWriter(OUTPUT))) {
+    					while (it.hasNext()) {
+    						process(writer, dict, it.next());
+    					}
     				}
     			}
     		}

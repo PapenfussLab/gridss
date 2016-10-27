@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -757,7 +758,16 @@ public class SAMRecordUtil {
 				sb.deleteCharAt(sb.length() - 1);
 				r.setAttribute(SAMTag.SA.name(), sb.toString());
 			}
-			
+		}
+		Set<ChimericAlignment> referencedReads = list.stream()
+				.flatMap(r -> ChimericAlignment.getChimericAlignments(r.getStringAttribute(SAMTag.SA.name())).stream())
+				.collect(Collectors.toSet());
+		// validate SA tags
+		for (SAMRecord r : list) {
+			referencedReads.remove(new ChimericAlignment(r));
+		}
+		if (!referencedReads.isEmpty()) {
+			log.warn(String.format("SA tag of read %s refers to missing alignments %s", list.get(0).getReadName(), referencedReads));
 		}
 	}
 	/**
@@ -794,6 +804,9 @@ public class SAMRecordUtil {
 				r.setBaseQualities(qual);
 				list = CigarUtil.clean(list, false);
 				r.setCigar(new Cigar(list));
+			}
+			if (r.getCigarString().contains("H")) {
+				log.warn(String.format("Unable to soften hard clip for %s", r.getReadName()));
 			}
 		}
 	}

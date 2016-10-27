@@ -1,13 +1,13 @@
 package au.edu.wehi.idsv.model;
 
 import static org.junit.Assert.assertEquals;
+import gridss.analysis.MapqMetrics;
 
 import java.util.ArrayList;
 
 import org.junit.Test;
 
 import picard.analysis.InsertSizeMetrics;
-import picard.analysis.MapqMetrics;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.metrics.CigarDetailMetrics;
 import au.edu.wehi.idsv.metrics.IdsvMetrics;

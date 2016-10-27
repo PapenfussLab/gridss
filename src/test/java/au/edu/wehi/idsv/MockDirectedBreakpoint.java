@@ -54,9 +54,4 @@ public class MockDirectedBreakpoint extends DiscordantReadPair {
 	public int getLocalMapq() {
 		return 1;
 	}
-
-	@Override
-	public int getLocalBaseLength() {
-		return 1;
-	}
 }

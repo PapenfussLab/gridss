@@ -1,12 +1,16 @@
-package picard.analysis;
+package gridss.analysis;
 
 import static org.junit.Assert.*;
+import gridss.analysis.CollectMapqMetrics;
 
 import java.io.File;
 import java.io.IOException;
 
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+
+import picard.analysis.SinglePassSamProgram;
 import au.edu.wehi.idsv.IntermediateFilesTest;
 
 
@@ -17,7 +21,7 @@ public class CollectMapqMetricsTest extends IntermediateFilesTest {
 		cmm.INPUT = new File("src/test/resources/203541.bam");
 		cmm.OUTPUT = new File(testFolder.getRoot(), "mapqmetrics.txt");
 		cmm.Histogram_FILE = new File(testFolder.getRoot(), "mapqhistogram.pdf");
-		cmm.doWork();
+		SinglePassSamProgram.makeItSo(cmm.INPUT, null, true, 0, ImmutableList.of(cmm));
 		assertTrue(cmm.OUTPUT.isFile());
 	}
 	@Test
@@ -27,7 +31,7 @@ public class CollectMapqMetricsTest extends IntermediateFilesTest {
 		cmm.INPUT = new File("src/test/resources/203541.bam");
 		cmm.OUTPUT = new File(testFolder.getRoot(), "mapqmetrics.txt");
 		cmm.Histogram_FILE = histogram;
-		cmm.doWork();
+		SinglePassSamProgram.makeItSo(cmm.INPUT, null, true, 0, ImmutableList.of(cmm));
 		assertTrue(histogram.isFile());
 	}
 }

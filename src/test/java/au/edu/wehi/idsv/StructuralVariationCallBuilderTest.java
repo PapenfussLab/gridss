@@ -31,7 +31,6 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		int offset;
 		boolean tumour;
 		@Override public int getLocalMapq() { return 1 + offset; }
-		@Override public int getLocalBaseLength() { return 2 + offset; }
 		@Override public float getBreakendQual() { return 16 + offset; }
 		@Override public String getEvidenceID() { return "sc" + Integer.toString(offset); }
 	}
@@ -42,7 +41,6 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			this.offset = offset;
 		}
 		@Override public int getLocalMapq() { return 1 + offset; }
-		@Override public int getLocalBaseLength() { return 2 + offset; }
 		@Override public int getRemoteMapq() { return 6 + offset; }
 		@Override public float getBreakendQual() { return 111 + offset; }
 		@Override public float getBreakpointQual() { return 112 + offset; }
@@ -55,7 +53,6 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			this.offset = offset;
 		}
 		@Override public int getLocalMapq() { return 1 + offset; }
-		@Override public int getLocalBaseLength() { return 2 + offset; }
 		@Override public int getRemoteMapq() { return 6 + offset; }
 		@Override public float getBreakendQual() { return 111 + offset; }
 		@Override public float getBreakpointQual() { return 112 + offset; }
@@ -68,7 +65,6 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			this.offset = offset;
 		}
 		@Override public int getLocalMapq() { return 1 + offset; }
-		@Override public int getLocalBaseLength() { return 2 + offset; }
 		@Override public int getRemoteMapq() { return 6 + offset; }
 		@Override public float getBreakendQual() { return 211 + offset; }
 		@Override public float getBreakpointQual() { return 212 + offset; }
@@ -95,7 +91,6 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			this.offset = offset;
 		}
 		@Override public int getLocalMapq() { return 1 + offset; }
-		@Override public int getLocalBaseLength() { return 2 + offset; }
 		@Override public float getBreakendQual() { return 6 + offset; }
 		@Override public String getEvidenceID() { return "um" + Integer.toString(offset); }
 	}
@@ -108,7 +103,6 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 				this.offset = offset;
 			}
 		@Override public int getLocalMapq() { return 1 + offset; }
-		@Override public int getLocalBaseLength() { return 2 + offset; }
 		@Override public int getRemoteMapq() { return 6 + offset; }
 		@Override public float getBreakendQual() { return 11 + offset; }
 		@Override public float getBreakpointQual() { return 12 + offset; }

@@ -1,5 +1,11 @@
 package au.edu.wehi.idsv;
 
+import gridss.ComputeSamTags;
+import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.Log;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -8,10 +14,6 @@ import org.apache.commons.lang.NotImplementedException;
 
 import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import gridss.ComputeSamTags;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceDictionary;
 
 /**
  * Chimeric alignment based support for a structural variant
@@ -19,6 +21,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
  *
  */
 public class SplitReadEvidence extends SingleReadEvidence implements DirectedBreakpoint {
+	private static final Log log = Log.getInstance(SplitReadEvidence.class);
 	private ChimericAlignment remoteAlignment;
 	private SplitReadEvidence(SAMEvidenceSource source, SAMRecord record, BreakendSummary location,
 			int offsetLocalStart, int offsetLocalEnd,
@@ -30,10 +33,14 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 	public static List<SplitReadEvidence> create(SAMEvidenceSource source, SAMRecord record) {
 		if (record.getReadUnmappedFlag() || record.getCigar() == null) return Collections.emptyList();
 		List<ChimericAlignment> aln = ChimericAlignment.getChimericAlignments(record);
-		if (aln.size() <= 1) return Collections.emptyList();
+		if (aln.isEmpty()) return Collections.emptyList();
 		if (record.getCigar().getFirstCigarElement().getOperator() == CigarOperator.HARD_CLIP
 				|| record.getCigar().getLastCigarElement().getOperator() == CigarOperator.HARD_CLIP) {
-			throw new IllegalArgumentException("Hard clipped split reads are not supported. Please run " + ComputeSamTags.class.getName() + " to soften hard clips.");
+			log.warn(String.format("Read %s is hard clipped. "
+					+ "Hard clipped split reads cannot be processed and will be ignored. "
+					+ "Please run %s to soften hard clips.",
+					record.getReadName(), ComputeSamTags.class.getName()));
+			return Collections.emptyList();
 		}
 		List<SplitReadEvidence> list = new ArrayList<>(2);
 		ChimericAlignment chim = new ChimericAlignment(record);
@@ -46,18 +53,18 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 		// pre is A
 		// post is C
 		// X,Y are unaligned bases
-		final int rl1 = record.getReadLength() - 1;
+		final int rl = record.getReadLength();
 		int startOffset = chim.getFirstAlignedBaseReadOffset();
-		int endOffset = chim.getLastAlignedBaseReadOffset();
+		int endOffset = chim.getLastAlignedBaseReadOffset() + 1;
 		if (pre != null) {
 			BreakpointSummary bs = new BreakpointSummary(chim.predecessorBreakend(dict), pre.successorBreakend(dict));
 			int preStartOffset = 0; // ignore the actual alignment and just go out to the end of the read so we can assemble across multiple breakpoints
-			int preEndOffset = pre.getLastAlignedBaseReadOffset();
+			int preEndOffset = pre.getLastAlignedBaseReadOffset() + 1;
 			if (record.getReadNegativeStrandFlag()) {
 				list.add(new SplitReadEvidence(source, record, bs,
-						rl1 - startOffset, rl1 - (INCLUDE_CLIPPED_ANCHORING_BASES ? record.getReadLength() : endOffset),
-						rl1 - preEndOffset, rl1 - startOffset,
-						rl1 - preStartOffset, rl1 - preEndOffset,
+						rl - (INCLUDE_CLIPPED_ANCHORING_BASES ? record.getReadLength() : endOffset), rl - startOffset,
+						rl - startOffset, rl - preEndOffset,
+						rl - preEndOffset, rl - preStartOffset,
 						pre));
 			} else {
 				list.add(new SplitReadEvidence(source, record, bs,
@@ -70,12 +77,12 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 		if (post != null) {
 			BreakpointSummary bs = new BreakpointSummary(chim.successorBreakend(dict), post.predecessorBreakend(dict));
 			int postStartOffset = post.getFirstAlignedBaseReadOffset();
-			int postEndOffset = rl1;
+			int postEndOffset = rl;
 			if (record.getReadNegativeStrandFlag()) {
 				list.add(new SplitReadEvidence(source, record, bs,
-						rl1 - (INCLUDE_CLIPPED_ANCHORING_BASES ? 0 : startOffset), rl1 - endOffset,
-						rl1 - endOffset, rl1 - postStartOffset,
-						rl1 - postStartOffset, rl1 - postEndOffset,
+						rl - endOffset, rl - (INCLUDE_CLIPPED_ANCHORING_BASES ? 0 : startOffset),
+						rl - postStartOffset, rl - endOffset, 
+						rl - postEndOffset, rl - postStartOffset, 
 						post));
 			} else {
 				list.add(new SplitReadEvidence(source, record, bs,

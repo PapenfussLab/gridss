@@ -36,6 +36,16 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 		this.offsetUnmappedEnd = offsetUnmappedEnd;
 		this.offsetRemoteStart = offsetRemoteStart;
 		this.offsetRemoteEnd = offsetRemoteEnd;
+		// validate bounds are valid
+		if (offsetLocalStart < 0) throw new IllegalArgumentException();
+		if (offsetLocalEnd < 0) throw new IllegalArgumentException();
+		if (offsetUnmappedStart < 0) throw new IllegalArgumentException();
+		if (offsetLocalEnd < offsetLocalStart) throw new IllegalArgumentException();
+		if (offsetUnmappedEnd < offsetUnmappedStart) throw new IllegalArgumentException();
+		if (offsetRemoteEnd < offsetRemoteStart) throw new IllegalArgumentException();
+		if (offsetLocalEnd > record.getReadLength()) throw new IllegalArgumentException();
+		if (offsetUnmappedEnd > record.getReadLength()) throw new IllegalArgumentException();
+		if (offsetRemoteEnd > record.getReadLength()) throw new IllegalArgumentException();
 	}
 	
 	public SAMRecord getSAMRecord() {

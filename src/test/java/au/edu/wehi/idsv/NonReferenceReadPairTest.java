@@ -221,10 +221,6 @@ public class NonReferenceReadPairTest extends TestHelper {
 		assertEquals(15, newPair(pair, 300).getLocalMapq());
 	}
 	@Test
-	public void getLocalBaseLength_should_be_read_length() {
-		assertEquals(100, newPair(OEA(0, 1, "100M", true), 300).getLocalBaseLength());
-	}
-	@Test
 	public void getBreakendSequence_should_be_null() {
 		assertNull(newPair(OEA(0, 1, "100M", true), 300).getBreakendSequence());
 	}

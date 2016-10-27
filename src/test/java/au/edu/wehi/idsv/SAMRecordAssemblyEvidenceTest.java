@@ -190,7 +190,6 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals(e.getEvidenceID() , r.getEvidenceID());
 		assertEquals(e.getEvidenceSource() , r.getEvidenceSource());
 		assertEquals(e.getFilters() , r.getFilters());
-		assertEquals(e.getLocalBaseLength() , r.getLocalBaseLength());
 		assertEquals(e.getLocalMapq() , r.getLocalMapq());
 		if (e instanceof DirectedBreakpoint) {
 			assertTrue(r instanceof DirectedBreakpoint);

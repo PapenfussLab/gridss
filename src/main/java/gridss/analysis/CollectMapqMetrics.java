@@ -22,8 +22,9 @@
  * THE SOFTWARE.
  */
 
-package picard.analysis;
+package gridss.analysis;
 
+import gridss.analysis.directed.MapqMetricsCollector;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.metrics.MetricsFile;
@@ -35,7 +36,8 @@ import java.io.File;
 import java.util.Set;
 
 import picard.PicardException;
-import picard.analysis.directed.MapqMetricsCollector;
+import picard.analysis.MetricAccumulationLevel;
+import picard.analysis.SinglePassSamProgram;
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
 import picard.cmdline.programgroups.Metrics;

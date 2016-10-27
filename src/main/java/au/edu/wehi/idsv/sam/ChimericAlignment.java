@@ -115,7 +115,7 @@ public class ChimericAlignment {
 		result = prime * result + ((cigar == null) ? 0 : cigar.hashCode());
 		result = prime * result + (isNegativeStrand ? 1231 : 1237);
 		result = prime * result + mapq;
-		result = prime * result + ((nm == null) ? 0 : nm.hashCode());
+		//result = prime * result + ((nm == null) ? 0 : nm.hashCode());
 		result = prime * result + pos;
 		result = prime * result + ((rname == null) ? 0 : rname.hashCode());
 		return result;
@@ -138,11 +138,11 @@ public class ChimericAlignment {
 			return false;
 		if (mapq != other.mapq)
 			return false;
-		if (nm == null) {
-			if (other.nm != null)
-				return false;
-		} else if (!nm.equals(other.nm))
-			return false;
+		//if (nm == null) {
+		//	if (other.nm != null)
+		//		return false;
+		//} else if (!nm.equals(other.nm))
+		//	return false;
 		if (pos != other.pos)
 			return false;
 		if (rname == null) {
