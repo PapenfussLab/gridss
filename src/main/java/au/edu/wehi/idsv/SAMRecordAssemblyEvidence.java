@@ -398,10 +398,6 @@ public class SAMRecordAssemblyEvidence implements AssemblyEvidence {
 		return record.getMappingQuality();
 	}
 	@Override
-	public int getLocalBaseLength() {
-		return getAnchorLength();
-	}
-	@Override
 	public byte[] getAssemblySequence() {
 		if (isBreakendExact()) return record.getReadBases();
 		// Need to remove placeholder Ns from inexact breakend

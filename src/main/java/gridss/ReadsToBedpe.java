@@ -1,25 +1,31 @@
 package gridss;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.Locale;
+
+import au.edu.wehi.idsv.BreakendDirection;
+import au.edu.wehi.idsv.BreakpointSummary;
+import au.edu.wehi.idsv.DirectedBreakpoint;
+import au.edu.wehi.idsv.IndelEvidence;
+import au.edu.wehi.idsv.SplitReadEvidence;
+import au.edu.wehi.idsv.util.AsyncBufferedIterator;
+import au.edu.wehi.idsv.util.MathUtil;
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Locale;
-
-import org.apache.commons.lang3.NotImplementedException;
-
 import picard.cmdline.CommandLineProgram;
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
-import au.edu.wehi.idsv.DirectedBreakpoint;
-import au.edu.wehi.idsv.IndelEvidence;
-import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 
 @CommandLineProgramProperties(
 		usage = "Converts split reads and indel-containing reads to BEDPE notation.", usageShort = "")
@@ -45,9 +51,12 @@ public class ReadsToBedpe extends CommandLineProgram {
     	SamReaderFactory readerFactory = SamReaderFactory.make();
     	try {
     		try (SamReader reader = readerFactory.open(INPUT)) {
-    			//SAMFileHeader header = reader.getFileHeader();
+    			SAMFileHeader header = reader.getFileHeader();
+    			SAMSequenceDictionary dict = header.getSequenceDictionary();
     			try (CloseableIterator<SAMRecord> it = new AsyncBufferedIterator<SAMRecord>(reader.iterator(), 2, 300)) {
-    				process(it.next());
+    				try (BufferedWriter writer = new BufferedWriter(new FileWriter(OUTPUT))) { 
+    					process(writer, dict, it.next());
+    				}
     			}
     		}
 		} catch (IOException e) {
@@ -56,15 +65,46 @@ public class ReadsToBedpe extends CommandLineProgram {
 		}
     	return 0;
 	}
-	private void process(SAMRecord record) {
+	private void process(Writer writer, SAMSequenceDictionary dict, SAMRecord record) throws IOException {
 		// Split read
+		for (SplitReadEvidence sre : SplitReadEvidence.create(null, record)) {
+			writeBedPe(writer, dict, sre);
+		}
 		// indel
 		for (IndelEvidence ie : IndelEvidence.create(null, record)) {
-			writeBedPe(ie, "indel");
+			writeBedPe(writer, dict, ie);
 		}
 	}
-	private void writeBedPe(DirectedBreakpoint bp, String source) {
-		throw new NotImplementedException();
+	private void writeBedPe(Writer writer, SAMSequenceDictionary dict, SplitReadEvidence e) throws IOException {
+		writeBedPe(writer, dict, e, (int)MathUtil.phredOr(e.getLocalMapq(), e.getRemoteMapq()), "splitread");
+	}
+	private void writeBedPe(Writer writer, SAMSequenceDictionary dict, IndelEvidence e) throws IOException {
+		writeBedPe(writer, dict, e, e.getLocalMapq(), "indel");
+	}
+	private void writeBedPe(Writer writer, SAMSequenceDictionary dict, DirectedBreakpoint e, int mapq, String source) throws IOException {
+		BreakpointSummary bp = e.getBreakendSummary();
+		writer.write(dict.getSequence(bp.referenceIndex).getSequenceName());
+		writer.write(',');
+		writer.write(Integer.toString(bp.start));
+		writer.write(',');
+		writer.write(Integer.toString(bp.end));
+		writer.write(',');
+		writer.write(dict.getSequence(bp.referenceIndex2).getSequenceName());
+		writer.write(',');
+		writer.write(Integer.toString(bp.start2));
+		writer.write(',');
+		writer.write(Integer.toString(bp.end2));
+		writer.write(',');
+		writer.write(e.getEvidenceID());
+		writer.write(',');
+		writer.write(mapq);
+		writer.write(',');
+		writer.write(bp.direction.toChar());
+		writer.write(',');
+		writer.write(bp.direction2.toChar());
+		writer.write(',');
+		writer.write(source);
+		writer.write('\n');
 	}
 	private void validateParameters() {
     	IOUtil.assertFileIsReadable(INPUT);

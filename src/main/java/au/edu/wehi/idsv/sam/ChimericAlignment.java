@@ -1,14 +1,21 @@
 package au.edu.wehi.idsv.sam;
 
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMTag;
-import htsjdk.samtools.TextCigarCodec;
-
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
+
+import com.google.common.collect.Ordering;
+import com.google.common.primitives.Ints;
+
+import au.edu.wehi.idsv.BreakendDirection;
+import au.edu.wehi.idsv.BreakendSummary;
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMTag;
+import htsjdk.samtools.TextCigarCodec;
 
 /**
  * SA Z Other canonical alignments in a chimeric alignment, formatted as a semicolon-delimited
@@ -60,13 +67,12 @@ public class ChimericAlignment {
 		this.nm = nmParsed;
 	}
 	public static List<ChimericAlignment> getChimericAlignments(String sa) {
+		if (StringUtils.isEmpty(sa)) return Collections.emptyList();
 		List<ChimericAlignment> list = new ArrayList<ChimericAlignment>();
-		if (sa != null) {
-			String[] splits = sa.split(";");
-			for (String s : splits) {
-				if (!StringUtils.isEmpty(sa)) {
-					list.add(new ChimericAlignment(s));
-				}
+		String[] splits = sa.split(";");
+		for (String s : splits) {
+			if (!StringUtils.isEmpty(sa)) {
+				list.add(new ChimericAlignment(s));
 			}
 		}
 		return list;
@@ -74,8 +80,82 @@ public class ChimericAlignment {
 	public static List<ChimericAlignment> getChimericAlignments(SAMRecord r) {
 		return getChimericAlignments(r.getStringAttribute("SA"));
 	}
+	private BreakendSummary startBreakend(SAMSequenceDictionary dict) {
+		return new BreakendSummary(dict.getSequenceIndex(rname), BreakendDirection.Backward, pos, pos);
+	}
+	private BreakendSummary endBreakend(SAMSequenceDictionary dict) {
+		int endpos = pos + cigar.getReferenceLength() - 1;
+		return new BreakendSummary(dict.getSequenceIndex(rname), BreakendDirection.Forward, endpos, endpos);
+	}
+	public BreakendSummary successorBreakend(SAMSequenceDictionary dict) {
+		return isNegativeStrand ? startBreakend(dict) : endBreakend(dict);
+	}
+	public BreakendSummary predecessorBreakend(SAMSequenceDictionary dict) {
+		return isNegativeStrand ? endBreakend(dict) : startBreakend(dict);
+	}
+	/**
+	 * Gets the read offset of the first aligned base.
+	 * @return zero based offset from start of read based on fastq sequencing base order
+	 */
+	public int getFirstAlignedBaseReadOffset() {
+		return isNegativeStrand ? CigarUtil.getEndClipLength(cigar.getCigarElements()) : CigarUtil.getStartClipLength(cigar.getCigarElements());
+	}
+	public int getLastAlignedBaseReadOffset() {
+		return cigar.getReadLength() - 1 - (isNegativeStrand ? CigarUtil.getStartClipLength(cigar.getCigarElements()) : CigarUtil.getEndClipLength(cigar.getCigarElements()));
+		
+	}
 	@Override
 	public String toString() {
 		return String.format("%s,%d,%s,%s,%d,%s", rname, pos, isNegativeStrand ? "-" : "+", cigar, mapq, nm == null ? "" : nm.toString());
 	}
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((cigar == null) ? 0 : cigar.hashCode());
+		result = prime * result + (isNegativeStrand ? 1231 : 1237);
+		result = prime * result + mapq;
+		result = prime * result + ((nm == null) ? 0 : nm.hashCode());
+		result = prime * result + pos;
+		result = prime * result + ((rname == null) ? 0 : rname.hashCode());
+		return result;
+	}
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		ChimericAlignment other = (ChimericAlignment) obj;
+		if (cigar == null) {
+			if (other.cigar != null)
+				return false;
+		} else if (!cigar.equals(other.cigar))
+			return false;
+		if (isNegativeStrand != other.isNegativeStrand)
+			return false;
+		if (mapq != other.mapq)
+			return false;
+		if (nm == null) {
+			if (other.nm != null)
+				return false;
+		} else if (!nm.equals(other.nm))
+			return false;
+		if (pos != other.pos)
+			return false;
+		if (rname == null) {
+			if (other.rname != null)
+				return false;
+		} else if (!rname.equals(other.rname))
+			return false;
+		return true;
+	}
+	public static final Ordering<ChimericAlignment> ByReadOffset = new Ordering<ChimericAlignment>() {
+		@Override
+		public int compare(ChimericAlignment left, ChimericAlignment right) {
+			return Ints.compare(left.getFirstAlignedBaseReadOffset(), right.getFirstAlignedBaseReadOffset());
+		}
+	};
 }

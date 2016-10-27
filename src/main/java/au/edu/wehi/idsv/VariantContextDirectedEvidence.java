@@ -98,10 +98,6 @@ public class VariantContextDirectedEvidence extends IdsvVariantContext implement
 		throw new IllegalArgumentException("NYI");
 	}
 	@Override
-	public int getLocalBaseLength() {
-		throw new IllegalArgumentException("NYI");
-	}
-	@Override
 	public boolean isBreakendExact() {
 		return !hasAttribute(VcfSvConstants.IMPRECISE_KEY);
 	}

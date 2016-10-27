@@ -7,6 +7,8 @@ import java.util.List;
 
 import org.junit.Test;
 
+import htsjdk.samtools.TextCigarCodec;
+
 
 public class ChimericAlignmentTest {
 	@Test
@@ -30,5 +32,10 @@ public class ChimericAlignmentTest {
 	public void should_allow_missing_nm() {
 		String sa = "chr18,107870,-,8817S631M318S,30,,";
 		assertEquals(null, new ChimericAlignment(sa).nm);
+	}
+	@Test
+	public void getFirstAlignedBaseReadOffset_should_consider_strand() {
+		assertEquals(1, new ChimericAlignment(null, 0, false, TextCigarCodec.decode("1S2M3S4H"), 0, 0).getFirstAlignedBaseReadOffset());
+		assertEquals(7, new ChimericAlignment(null, 0, true, TextCigarCodec.decode("1S2M3S4H"), 0, 0).getFirstAlignedBaseReadOffset());
 	}
 }

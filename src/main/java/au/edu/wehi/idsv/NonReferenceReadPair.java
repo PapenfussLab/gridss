@@ -218,10 +218,6 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		return local.getMappingQuality();
 	}
 	@Override
-	public int getLocalBaseLength() {
-		return local.getReadLength();
-	}
-	@Override
 	public byte[] getBreakendSequence() {
 		return null;
 	}

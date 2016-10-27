@@ -1,0 +1,125 @@
+package au.edu.wehi.idsv;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import htsjdk.samtools.SAMRecord;
+
+public abstract class SingleReadEvidence implements DirectedEvidence {
+	protected static final boolean INCLUDE_CLIPPED_ANCHORING_BASES = false;
+	protected final SAMEvidenceSource source;
+	private final SAMRecord record;
+	private final BreakendSummary location;
+	private final int offsetLocalStart;
+	private final int offsetLocalEnd;
+	private final int offsetUnmappedStart;
+	private final int offsetUnmappedEnd;
+	private final int offsetRemoteStart;
+	private final int offsetRemoteEnd;
+	private String evidenceid;
+	protected SingleReadEvidence(SAMEvidenceSource source, SAMRecord record, BreakendSummary location,
+			int offsetLocalStart, int offsetLocalEnd,
+			int offsetUnmappedStart, int offsetUnmappedEnd) {
+		this(source, record, location, offsetLocalStart, offsetLocalEnd, offsetUnmappedStart, offsetUnmappedEnd, offsetUnmappedEnd, offsetUnmappedEnd);
+	}
+	protected SingleReadEvidence(SAMEvidenceSource source, SAMRecord record, BreakendSummary location,
+			int offsetLocalStart, int offsetLocalEnd,
+			int offsetUnmappedStart, int offsetUnmappedEnd,
+			int offsetRemoteStart, int offsetRemoteEnd) {
+		this.source = source;
+		this.record = record;
+		this.location = location;
+		this.offsetLocalStart = offsetLocalStart;
+		this.offsetLocalEnd = offsetLocalEnd;
+		this.offsetUnmappedStart = offsetUnmappedStart;
+		this.offsetUnmappedEnd = offsetUnmappedEnd;
+		this.offsetRemoteStart = offsetRemoteStart;
+		this.offsetRemoteEnd = offsetRemoteEnd;
+	}
+	
+	public SAMRecord getSAMRecord() {
+		return record;
+	}
+
+	@Override
+	public BreakendSummary getBreakendSummary() {
+		return location;
+	}
+	
+	private byte[] getBreakend(byte[] b) {
+		assert(offsetUnmappedEnd == offsetRemoteStart || offsetUnmappedStart == offsetRemoteEnd);
+		return Arrays.copyOfRange(b, Math.min(offsetRemoteStart, offsetUnmappedStart), Math.max(offsetRemoteEnd, offsetUnmappedEnd));
+	}
+
+	@Override
+	public byte[] getBreakendSequence() {
+		return getBreakend(getSAMRecord().getReadBases());
+	}
+
+	@Override
+	public byte[] getBreakendQuality() {
+		return getBreakend(getSAMRecord().getBaseQualities());
+	}
+	
+	private byte[] getAnchor(byte[] b) {
+		return Arrays.copyOfRange(b, offsetLocalStart, offsetLocalEnd);
+	}
+
+	@Override
+	public byte[] getAnchorSequence() {
+		return getAnchor(getSAMRecord().getReadBases());
+	}
+
+	@Override
+	public byte[] getAnchorQuality() {
+		return getAnchor(getSAMRecord().getBaseQualities());
+	}
+
+	@Override
+	public SAMEvidenceSource getEvidenceSource() {
+		return source;
+	}
+
+	@Override
+	public int getLocalMapq() {
+		return record.getMappingQuality();
+	}
+
+	@Override
+	public boolean isBreakendExact() {
+		return true;
+	}
+
+	public String getUntemplatedSequence() {
+		return new String(Arrays.copyOfRange(getSAMRecord().getReadBases(), offsetUnmappedStart, offsetUnmappedEnd), StandardCharsets.US_ASCII);
+	}
+	
+	protected void buildEvidenceID(StringBuilder sb) {
+		sb.append(record.getReadName());
+		if (record.getReadPairedFlag() && record.getFirstOfPairFlag()) {
+			sb.append(SAMRecordUtil.FIRST_OF_PAIR_NAME_SUFFIX);
+		}
+		if (record.getReadPairedFlag() && record.getSecondOfPairFlag()) {
+			sb.append(SAMRecordUtil.SECOND_OF_PAIR_NAME_SUFFIX);
+		}
+	}
+	
+	@Override
+	public String getEvidenceID() {
+		if (evidenceid == null) {
+			StringBuilder sb = new StringBuilder();
+			buildEvidenceID(sb);
+			evidenceid = sb.toString();
+		}
+		return evidenceid;
+	}
+	
+	public String getHomologySequence() {
+		throw new RuntimeException("NYI");
+	}
+
+	public int getHomologyAnchoredBaseCount() {
+		throw new RuntimeException("NYI");
+	}
+}
