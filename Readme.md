@@ -126,9 +126,9 @@ This field is a standard Picard tools argument and carries the usual meaning. Te
 
 ## libsswjni.so
 
-Due to relatively poor performance of existing Java-based Smith-Waterman alignment packages, GRIDSS incorporates a JNI wrapper to the striped Smith-Waterman alignment library [SSW](https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library). GRIDSS will attempt to load a precompiled version. If the precompiled version is not compatible with your linux distribution, or you are running a different operating system, recompilation of the wrapper from source will be required. When recompiling, ensure the correct libsswjni.so is loaded using -Djava.library.path, or the LD_LIBRARY_PATH environment variable as per the JNI documentation.
+Due to relatively poor performance of existing Java-based Smith-Waterman alignment packages, GRIDSS incorporates a JNI wrapper to the striped Smith-Waterman alignment library [SSW](https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library). GRIDSS will attempt to load a precompiled version which is supplied as part of the GRIDSS package (a libsswjni.so file will be created in the TMP_DIR when GRIDSS is run). If the precompiled version is not compatible with your linux distribution, or you are running a different operating system, recompilation of the wrapper from source will be required. When recompiling, ensure the correct libsswjni.so is loaded using -Djava.library.path, or the LD_LIBRARY_PATH environment variable as per the JNI documentation.
 
-If your CPU does not support SSE, GRIDSS will terminate with a fatal error when loading the library. Library loading can be disabled by added `-Dsswjni.disable=true` to the GRIDSS command line. If libsswjni.so cannot be loaded, GRIDSS will fall back to a (50x) slower java implementation. 
+If your CPU does not support SSE, GRIDSS will terminate with a fatal error when loading the library. Library loading can be disabled by added `-Dsswjni.disable=true` to the GRIDSS command line. If libsswjni.so cannot be loaded, GRIDSS will fall back to a (50x) slower java implementation which will result in the final GRIDSS variant annotation step running very slowly.
 
 ### CONFIGURATION_FILE
 
@@ -230,6 +230,18 @@ You are attempting to run GRIDSS with an old Java version. GRIDSS requires Java 
 The reference genome used to align input.bam does not match the reference genome supplied to GRIDSS.
 If the differences are purely based on chromosome name and ordering, the Picard tools utility ReorderBam
 can be used to fix chromosome orderings.
+
+### Unable to use sswjni library - assembly will be very slow. Please ensure libsswjni for your OS and architecture can be found on java.library.path
+
+The sswjni library could not be loaded as the precompiled version is not compatable with your environment. See the sswjni sections for details on how to disable libsswjni or recompile it for your system.
+
+### "Segmentation Fault", fatal JVM error, or no error message.
+
+This is likely to be caused by a crash during alignment in libsswjni. See the sswjni sections for details on how to disable libsswjni or recompile it for your system.
+
+### Illegal Instruction
+
+Your CPU does not support the SSE2 instruction set. See the sswjni sections for details on how to disable libsswjni.
 
 # Visualisation of results
 
