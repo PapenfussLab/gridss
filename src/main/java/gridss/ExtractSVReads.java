@@ -2,6 +2,7 @@ package gridss;
 
 import gridss.filter.ClippedReadFilter;
 import gridss.filter.IndelReadFilter;
+import gridss.filter.OneEndAnchoredReadFilter;
 import gridss.filter.SplitReadFilter;
 import gridss.filter.UnionAggregateFilter;
 import htsjdk.samtools.SAMFileHeader;
@@ -52,7 +53,12 @@ public class ExtractSVReads extends CommandLineProgram {
     public boolean INDELS = true;
     @Option(doc="Include split reads in output", optional=true)
     public boolean SPLIT = true;
-    // TODO: extract read pairs
+    @Option(doc="Include read pairs in which only one of the read is aligned to the reference.", optional=true)
+    public boolean SINGLE_MAPPED_PAIRED = true;
+    // TODO: extract discordant read pairs
+    // Create discordant read pair recalculator command-line tool
+    // Use discordant read pair calculator
+    // enum { SAM tag, fixed size, distribution range }
     @Override
 	protected int doWork() {
 		log.debug("Setting language-neutral locale");
@@ -69,7 +75,8 @@ public class ExtractSVReads extends CommandLineProgram {
     							writer,
     							INDELS ? MIN_INDEL_SIZE : Integer.MAX_VALUE,
     							CLIPPED ? MIN_CLIP_LENGTH : Integer.MAX_VALUE,
-								SPLIT);
+								SPLIT,
+								SINGLE_MAPPED_PAIRED);
     				}
     			}
     		}
@@ -79,12 +86,21 @@ public class ExtractSVReads extends CommandLineProgram {
 		}
     	return 0;
 	}
-	public static void extract(final Iterator<SAMRecord> rawit, final SAMFileWriter writer, final int minIndelSize, final int minClipLength, final boolean includeSplitReads) throws IOException {
+    
+	public static void extract(
+			final Iterator<SAMRecord> rawit,
+			final SAMFileWriter writer,
+			final int minIndelSize,
+			final int minClipLength,
+			final boolean includeSplitReads,
+			final boolean includeOEA) throws IOException {
 		ProgressLogger progress = new ProgressLogger(log);
 		List<SamRecordFilter> filters = new ArrayList<>();
 		filters.add(new IndelReadFilter(minIndelSize));
 		filters.add(new ClippedReadFilter(minClipLength));
 		if (includeSplitReads) filters.add(new SplitReadFilter());
+		if (includeOEA) filters.add(new OneEndAnchoredReadFilter());
+		
 		UnionAggregateFilter filter = new UnionAggregateFilter(filters);
 		try (CloseableIterator<SAMRecord> it = new AsyncBufferedIterator<SAMRecord>(rawit, "raw", ASYNC_BUFFERS, ASYNC_BUFFER_SIZE)) {
 			while (it.hasNext()) {
