@@ -1,20 +1,17 @@
 package au.edu.wehi.idsv.metrics;
 
-import htsjdk.samtools.metrics.MetricsFile;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.Histogram;
-import htsjdk.samtools.util.Histogram.Bin;
-import htsjdk.samtools.util.Log;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.util.Arrays;
-import java.util.Map.Entry;
 import java.util.Set;
 
-import picard.analysis.InsertSizeMetrics;
 import au.edu.wehi.idsv.util.CachedEnumeratedIntegerDistribution;
+import htsjdk.samtools.metrics.MetricsFile;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.Histogram;
+import htsjdk.samtools.util.Log;
+import picard.analysis.InsertSizeMetrics;
 
 public class InsertSizeDistribution extends CachedEnumeratedIntegerDistribution {
 	private static final Log log = Log.getInstance(InsertSizeDistribution.class);
@@ -36,11 +33,12 @@ public class InsertSizeDistribution extends CachedEnumeratedIntegerDistribution 
 			file.read(reader);
 			result = InsertSizeDistribution.create(file.getHistogram());
 		} catch (FileNotFoundException e) {
+			log.error("Missing insert size distribution for ", insertSizeMetricsFile);
 		} finally {
 			CloserUtil.close(reader);
 		}
 		if (result == null) {
-			log.error("Unable to extract insert size distribution from ", insertSizeMetricsFile);
+			log.debug("Unable to extract insert size distribution from ", insertSizeMetricsFile);
 		}
 		return result;
 	}

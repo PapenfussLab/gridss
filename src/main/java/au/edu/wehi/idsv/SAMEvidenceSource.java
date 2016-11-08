@@ -333,25 +333,29 @@ public class SAMEvidenceSource extends EvidenceSource {
 					rpcc = new FixedSizeReadPairConcordanceCalculator((int)(Integer)rpcParams[0], (int)(Integer)rpcParams[1]);
 					break;
 				case PERCENTAGE:
-					rpcc = new PercentageReadPairConcordanceCalculator(getMetrics().getInsertSizeDistribution(), (double)(Double)rpcParams[0]);
+					if (getMetrics().getInsertSizeDistribution() != null) {
+						rpcc = new PercentageReadPairConcordanceCalculator(getMetrics().getInsertSizeDistribution(), (double)(Double)rpcParams[0]);
+					}
 					break;
 				default:
 				case SAM_FLAG:
-					rpcc = new SAMFlagReadPairConcordanceCalculator(getMetrics().getIdsvMetrics());
-					// Safety check for BWA which sets proper pair flag based only correct chromosome and orientation 
-					if (getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH != null &&
-							getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH >= 100000 &&  
-							getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH >= getMetrics().getInsertSizeMetrics().MAX_INSERT_SIZE / 2 &&
-							getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH >= 10 * getMaxReadLength()) {
-						String msg = String.format("Proper pair flag indicates fragment size of %d is expected!"
-								+ " Realign with an aligner that consider fragment size when setting the proper pair flag or "
-								+ " specify fixed or percentage bounds for read pair concordance for %s."
-								+ " Insert size distribution counts can be found in %s",
-								getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH,
-								input,
-								getContext().getFileSystemContext().getIdsvMetrics(input)); 
-						log.error(msg);
-						throw new IllegalArgumentException(msg);
+					if (getMetrics().getInsertSizeMetrics() != null) {
+						rpcc = new SAMFlagReadPairConcordanceCalculator(getMetrics().getIdsvMetrics());
+						// Safety check for BWA which sets proper pair flag based only correct chromosome and orientation 
+						if (getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH != null &&
+								getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH >= 100000 &&  
+								getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH >= getMetrics().getInsertSizeMetrics().MAX_INSERT_SIZE / 2 &&
+								getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH >= 10 * getMaxReadLength()) {
+							String msg = String.format("Proper pair flag indicates fragment size of %d is expected!"
+									+ " Realign with an aligner that consider fragment size when setting the proper pair flag or "
+									+ " specify fixed or percentage bounds for read pair concordance for %s."
+									+ " Insert size distribution counts can be found in %s",
+									getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH,
+									input,
+									getContext().getFileSystemContext().getIdsvMetrics(input)); 
+							log.error(msg);
+							throw new IllegalArgumentException(msg);
+						}
 					}
 					break;
 			}
@@ -360,12 +364,20 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	@Override
 	public int getMaxConcordantFragmentSize() {
-		return Math.max(getMaxReadMappedLength(), Math.max(getMaxReadLength(), getReadPairConcordanceCalculator().maxConcordantFragmentSize()));
+		int fs = getMaxReadLength();
+		fs = Math.max(getMaxReadMappedLength(), fs);
+		if (getReadPairConcordanceCalculator() != null) {
+			fs = Math.max(getReadPairConcordanceCalculator().maxConcordantFragmentSize(), fs);
+		}
+		return fs;
 	}
 	@Override
 	public int getMinConcordantFragmentSize() {
-		int min = Math.max(getMaxReadLength(), getReadPairConcordanceCalculator().minConcordantFragmentSize());
-		return min;
+		int fs  = getMaxReadLength();
+		if (getReadPairConcordanceCalculator() != null) {
+			fs = Math.max(getReadPairConcordanceCalculator().minConcordantFragmentSize(), fs);
+		}
+		return fs;
 	}
 	public int getMaxReadLength() {
 		return getMetrics().getIdsvMetrics().MAX_READ_LENGTH;
@@ -374,7 +386,10 @@ public class SAMEvidenceSource extends EvidenceSource {
 		return getMetrics().getIdsvMetrics().MAX_READ_MAPPED_LENGTH;
 	}
 	public int getExpectedFragmentSize() {
-		return Math.min((int)getMetrics().getInsertSizeMetrics().MEDIAN_INSERT_SIZE, getMaxConcordantFragmentSize());
+		if (getMetrics().getInsertSizeMetrics() != null) {
+			return Math.min((int)getMetrics().getInsertSizeMetrics().MEDIAN_INSERT_SIZE, getMaxConcordantFragmentSize());
+		}
+		return getMaxConcordantFragmentSize();
 	}
 	public GenomicProcessingContext getProcessContext() {
 		return getContext();

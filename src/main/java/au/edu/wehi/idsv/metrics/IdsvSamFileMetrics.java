@@ -67,8 +67,7 @@ public class IdsvSamFileMetrics {
 			}
 		}
 		if (bestMetrics == null) {
-			bestMetrics = new InsertSizeMetrics();
-			log.error(String.format("No pair-end insert size metrics found in %s.", insertSizeMetricsFile));
+			log.warn(String.format("No pair-end insert size metrics found in %s. Assuming this library contains single-end reads", insertSizeMetricsFile));
 		}
 		return bestMetrics;
 	}
@@ -83,7 +82,7 @@ public class IdsvSamFileMetrics {
 		}
 		if (bestMetrics == null) {
 			bestMetrics = new MapqMetrics();
-			log.error(String.format("No pair-end insert size metrics found in %s.", mapqMetricsFile));
+			log.error(String.format("No mapq metrics found in %s.", mapqMetricsFile));
 		}
 		return bestMetrics;
 	}

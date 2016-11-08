@@ -151,4 +151,29 @@ public class IdsvTest extends IntermediateFilesTest {
 		List<SAMRecord> breakendAssemblies = getRecords(new File(output.getAbsoluteFile() + ".idsv.working/" + output.getName() + ".idsv.breakend.bam"));
 		assertEquals(1, breakendAssemblies.size());
 	}
+	@Test
+	public void should_handle_unpaired_libraries() throws IOException {
+		List<DirectedEvidence> in = new ArrayList<DirectedEvidence>();
+		in.add(SCE(FWD, withSequence("AACCGGTTCTA", Read(0, 15, "5M6S"))));
+		
+		List<SAMRecord> insam = in.stream().flatMap(de -> {
+			if (de instanceof SoftClipEvidence) return ImmutableList.<SAMRecord>of(((SoftClipEvidence)de).getSAMRecord()).stream();
+			if (de instanceof NonReferenceReadPair) return ImmutableList.<SAMRecord>of(
+					((NonReferenceReadPair)de).getNonReferenceRead(),
+					((NonReferenceReadPair)de).getLocalledMappedRead()).stream();
+			throw new RuntimeException("NYI");
+		}).collect(Collectors.toList());
+		createInput(insam);
+		String[] args = new String[] {
+				"INPUT=" + input.toString(),
+				"REFERENCE=" + reference.toString(),
+				"OUTPUT=" + output.toString(),
+				"TMP_DIR=" + super.testFolder.getRoot().toString(),
+				"WORKING_DIR=" + super.testFolder.getRoot().toString(),
+				"PER_CHR=false"
+		};
+		Idsv pass1 = new Idsv();
+		pass1.instanceMain(args);
+		assertTrue(output.exists());
+	}
 }

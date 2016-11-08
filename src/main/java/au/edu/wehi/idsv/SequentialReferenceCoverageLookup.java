@@ -60,7 +60,7 @@ public class SequentialReferenceCoverageLookup implements Closeable, ReferenceCo
 		if (it instanceof Closeable) toClose.add((Closeable)it);
 		this.reads = Iterators.peekingIterator(new FilteringIterator(it, new AggregateFilter(ImmutableList.of(new AlignedFilter(true), new DuplicateReadFilter()))));
 		this.largestWindow = windowSize;
-		this.maxEvidenceWindow = Math.max(metrics.MAX_READ_LENGTH, Math.max(metrics.MAX_READ_MAPPED_LENGTH, pairing.maxConcordantFragmentSize()));
+		this.maxEvidenceWindow = Math.max(metrics.MAX_READ_LENGTH, Math.max(metrics.MAX_READ_MAPPED_LENGTH, pairing != null ? pairing.maxConcordantFragmentSize() : 0));
 	}
 	public void close() {
 		for (Closeable c : toClose) {
