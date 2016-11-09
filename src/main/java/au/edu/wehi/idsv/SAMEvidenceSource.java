@@ -1,13 +1,5 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.Log;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -15,6 +7,10 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
+
+import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
@@ -25,10 +21,13 @@ import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.validation.OrderAssertingIterator;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
-
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.Log;
 
 /**
  * Structural variation evidence based on read pairs from a single SAM/BAM.  
@@ -40,26 +39,31 @@ public class SAMEvidenceSource extends EvidenceSource {
 	private final File input;
 	private final int sourceCategory;
 	private final ReadPairConcordanceMethod rpcMethod;
-	private final Object[] rpcParams;
+	private final int rpcMinFragmentSize;
+	private final int rpcMaxFragmentSize;
+	private final double rpcConcordantPercentage;
 	private IdsvSamFileMetrics metrics;
 	private IntervalBed blacklist;
 	private SAMFileHeader header;
 	private ReadPairConcordanceCalculator rpcc;
 	public SAMEvidenceSource(ProcessingContext processContext, File file, int sourceCategory) {
-		this(processContext, file, sourceCategory, ReadPairConcordanceMethod.SAM_FLAG, null);
+		this(processContext, file, sourceCategory, ReadPairConcordanceMethod.SAM_FLAG, 0, 0, 0);
 	}
 	public SAMEvidenceSource(ProcessingContext processContext, File file, int sourceCategory, int minFragmentSize, int maxFragmentSize) {
-		this(processContext, file, sourceCategory, ReadPairConcordanceMethod.FIXED, new Object[] { minFragmentSize, maxFragmentSize });
+		this(processContext, file, sourceCategory, ReadPairConcordanceMethod.FIXED, minFragmentSize, maxFragmentSize, 0);
 	}
 	public SAMEvidenceSource(ProcessingContext processContext, File file, int sourceCategory, double concordantPercentage) {
-		this(processContext, file, sourceCategory, ReadPairConcordanceMethod.PERCENTAGE, new Object[] { (double)concordantPercentage });
+		this(processContext, file, sourceCategory, ReadPairConcordanceMethod.PERCENTAGE, 0, 0, concordantPercentage);
 	}
-	protected SAMEvidenceSource(ProcessingContext processContext, File file, int sourceCategory, ReadPairConcordanceMethod rpcMethod, Object[] rpcParams) {
+	protected SAMEvidenceSource(ProcessingContext processContext, File file, int sourceCategory,
+			ReadPairConcordanceMethod rpcMethod, int rpcMinFragmentSize, int rpcMaxFragmentSize, double rpcConcordantPercentage) {
 		super(processContext, file);
 		this.input = file;
 		this.sourceCategory = sourceCategory;
 		this.rpcMethod = rpcMethod;
-		this.rpcParams = rpcParams;
+		this.rpcMinFragmentSize = rpcMinFragmentSize;
+		this.rpcMaxFragmentSize = rpcMaxFragmentSize;
+		this.rpcConcordantPercentage = rpcConcordantPercentage;
 	}
 	@Override
 	public int getRealignmentIterationCount() {
@@ -328,37 +332,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	public ReadPairConcordanceCalculator getReadPairConcordanceCalculator() {
 		if (rpcc == null) {
-			switch (rpcMethod) {
-				case FIXED:
-					rpcc = new FixedSizeReadPairConcordanceCalculator((int)(Integer)rpcParams[0], (int)(Integer)rpcParams[1]);
-					break;
-				case PERCENTAGE:
-					if (getMetrics().getInsertSizeDistribution() != null) {
-						rpcc = new PercentageReadPairConcordanceCalculator(getMetrics().getInsertSizeDistribution(), (double)(Double)rpcParams[0]);
-					}
-					break;
-				default:
-				case SAM_FLAG:
-					if (getMetrics().getInsertSizeMetrics() != null) {
-						rpcc = new SAMFlagReadPairConcordanceCalculator(getMetrics().getIdsvMetrics());
-						// Safety check for BWA which sets proper pair flag based only correct chromosome and orientation 
-						if (getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH != null &&
-								getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH >= 100000 &&  
-								getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH >= getMetrics().getInsertSizeMetrics().MAX_INSERT_SIZE / 2 &&
-								getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH >= 10 * getMaxReadLength()) {
-							String msg = String.format("Proper pair flag indicates fragment size of %d is expected!"
-									+ " Realign with an aligner that consider fragment size when setting the proper pair flag or "
-									+ " specify fixed or percentage bounds for read pair concordance for %s."
-									+ " Insert size distribution counts can be found in %s",
-									getMetrics().getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH,
-									input,
-									getContext().getFileSystemContext().getIdsvMetrics(input)); 
-							log.error(msg);
-							throw new IllegalArgumentException(msg);
-						}
-					}
-					break;
-			}
+			rpcc = ReadPairConcordanceCalculator.create(rpcMethod, rpcMinFragmentSize, rpcMaxFragmentSize, rpcConcordantPercentage, getMetrics().getInsertSizeDistribution(), getMetrics().getIdsvMetrics());
 		}
 		return rpcc;
 	}
