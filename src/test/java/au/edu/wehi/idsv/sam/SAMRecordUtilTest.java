@@ -5,18 +5,19 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMTag;
-import htsjdk.samtools.SamPairUtil.PairOrientation;
-import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
-import au.edu.wehi.idsv.TestHelper;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+
+import au.edu.wehi.idsv.TestHelper;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMTag;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
+import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 
 
 public class SAMRecordUtilTest extends TestHelper {
@@ -507,5 +508,71 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertEquals("polyA,4,+,3H1M2H,12,2;polyA,1,+,1M5H,10,0;polyA,5,+,4S2M,13,3", read1.getStringAttribute("SA"));
 		assertEquals("polyA,1,+,1M5H,10,0;polyA,2,+,1H1M4H,11,1;polyA,5,+,4S2M,13,3", read2.getStringAttribute("SA"));
 		assertEquals("polyA,4,+,3H1M2H,12,2;polyA,1,+,1M5H,10,0;polyA,2,+,1H1M4H,11,1", read3.getStringAttribute("SA"));
+	}
+	@Test
+	public void calculateMultimappingTags_should_use_circular_pointers() {
+		SAMRecord read0 = withMapq(10, withSequence("A", Read(0, 1, "1M5H")))[0];
+		SAMRecord read1 = withMapq(11, withSequence("C", Read(1, 2, "1H1M4H")))[0];
+		SAMRecord read2 = withMapq(12, withSequence("G", Read(3, 4, "3H1M2H")))[0];
+		SAMRecord read3 = withMapq(13, withSequence("ACGTAA", Read(2, 5, "4S2M")))[0];
+		
+		read0.setSupplementaryAlignmentFlag(true);
+		read1.setSupplementaryAlignmentFlag(true);
+		read2.setSupplementaryAlignmentFlag(false); // read 2 is the 'primary' chimeric alignment record
+		read3.setSupplementaryAlignmentFlag(true);
+		
+		SAMRecordUtil.calculateMultimappingTags(ImmutableSet.of(SAMTag.IH, SAMTag.HI, SAMTag.CC, SAMTag.CP),
+				Lists.newArrayList(ImmutableList.of(read0, read1, read2, read3)));
+		
+		assertEquals(2, (int)read0.getIntegerAttribute("CP"));
+		assertEquals(5, (int)read1.getIntegerAttribute("CP"));
+		assertEquals(1, (int)read2.getIntegerAttribute("CP"));
+		assertEquals(4, (int)read3.getIntegerAttribute("CP"));
+				
+		assertEquals("polyACGT", read0.getStringAttribute("CC"));
+		assertEquals("random", read1.getStringAttribute("CC"));
+		assertEquals("polyA", read2.getStringAttribute("CC"));
+		assertEquals("Npower2", read3.getStringAttribute("CC"));
+		
+	}
+	@Test
+	public void calculateMultimappingTags_HI_should_number_reads_by_position() {
+		SAMRecord read0 = withMapq(10, withSequence("A", Read(0, 1, "1M5H")))[0];
+		SAMRecord read1 = withMapq(11, withSequence("C", Read(1, 2, "1H1M4H")))[0];
+		SAMRecord read2 = withMapq(12, withSequence("G", Read(3, 4, "3H1M2H")))[0];
+		SAMRecord read3 = withMapq(13, withSequence("ACGTAA", Read(2, 5, "4S2M")))[0];
+		
+		read0.setSupplementaryAlignmentFlag(true);
+		read1.setSupplementaryAlignmentFlag(true);
+		read2.setSupplementaryAlignmentFlag(false); // read 2 is the 'primary' chimeric alignment record
+		read3.setSupplementaryAlignmentFlag(true);
+		
+		SAMRecordUtil.calculateMultimappingTags(ImmutableSet.of(SAMTag.IH, SAMTag.HI, SAMTag.CC, SAMTag.CP),
+				Lists.newArrayList(ImmutableList.of(read0, read1, read2, read3)));
+		
+		assertEquals(0, (int)read0.getIntegerAttribute("HI"));
+		assertEquals(1, (int)read1.getIntegerAttribute("HI"));
+		assertEquals(3, (int)read2.getIntegerAttribute("HI"));
+		assertEquals(2, (int)read3.getIntegerAttribute("HI"));
+	}
+	@Test
+	public void calculateMultimappingTags_IH_count_reads_TODO_what_to_do_about_supplimentary_alignments() {
+		SAMRecord read0 = withMapq(10, withSequence("A", Read(0, 1, "1M5H")))[0];
+		SAMRecord read1 = withMapq(11, withSequence("C", Read(1, 2, "1H1M4H")))[0];
+		SAMRecord read2 = withMapq(12, withSequence("G", Read(3, 4, "3H1M2H")))[0];
+		SAMRecord read3 = withMapq(13, withSequence("ACGTAA", Read(2, 5, "4S2M")))[0];
+		
+		read0.setSupplementaryAlignmentFlag(true);
+		read1.setSupplementaryAlignmentFlag(false);
+		read2.setSupplementaryAlignmentFlag(false); // read 2 is the 'primary' chimeric alignment record
+		read3.setSupplementaryAlignmentFlag(true);
+		
+		SAMRecordUtil.calculateMultimappingTags(ImmutableSet.of(SAMTag.IH, SAMTag.HI, SAMTag.CC, SAMTag.CP),
+				Lists.newArrayList(ImmutableList.of(read0, read1, read2, read3)));
+		
+		assertEquals(4, (int)read0.getIntegerAttribute("IH"));
+		assertEquals(4, (int)read1.getIntegerAttribute("IH"));
+		assertEquals(4, (int)read2.getIntegerAttribute("IH"));
+		assertEquals(4, (int)read3.getIntegerAttribute("IH"));
 	}
 }

@@ -8,6 +8,7 @@ import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMException;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordCoordinateComparator;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SAMUtils;
@@ -703,9 +704,32 @@ public class SAMRecordUtil {
 				SAMTag.CP,
 				SAMTag.HI,
 				SAMTag.IH)).size() > 0) {
-			throw new RuntimeException("Unresolved ambiguities in the SAM specifications mean that the CC, CP, HI, and IH tags cannot unambiguously be assigned values based on read alignments only.");
+			for (int i = 0; i < segments.size(); i++) {
+				calculateMultimappingTags(tags, segments.get(i));
+			}
 		}
 	}
+	public static void calculateMultimappingTags(Set<SAMTag> tags, List<SAMRecord> list) {
+		// TODO: how does SA split read alignment interact with multimapping reads?
+		list.sort(new SAMRecordCoordinateComparator());
+		for (int i = 0; i < list.size(); i++) {
+			SAMRecord r = list.get(i);
+			if (tags.contains(SAMTag.IH)) {
+				// TODO: how does this differ from NH?
+				r.setAttribute(SAMTag.IH.name(), list.size());
+			}
+			if (tags.contains(SAMTag.HI)) {
+				r.setAttribute(SAMTag.HI.name(), i);
+			}
+			if (tags.contains(SAMTag.CC)) {
+				r.setAttribute(SAMTag.CC.name(), list.get((i + 1) % list.size()).getReferenceName());
+			}
+			if (tags.contains(SAMTag.CP)) {
+				r.setAttribute(SAMTag.CP.name(), list.get((i + 1) % list.size()).getAlignmentStart());
+			}
+		}
+	}
+
 	private static void calculateSATags(List<SAMRecord> list) {
 		// TODO use CC, CP, HI, IH tags if they are present
 		// TODO break ties in an other other than just overwriting the previous alignment that
