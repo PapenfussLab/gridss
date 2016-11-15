@@ -7,10 +7,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.ReadPairConcordanceCalculator;
 import au.edu.wehi.idsv.ReadPairConcordanceMethod;
+import au.edu.wehi.idsv.SplitReadRealigner;
+import au.edu.wehi.idsv.alignment.ExternalProcessFastqAligner;
+import au.edu.wehi.idsv.alignment.FastqAligner;
 import au.edu.wehi.idsv.metrics.InsertSizeDistribution;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import gridss.filter.ClippedReadFilter;
@@ -26,6 +30,7 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.filter.AlignedFilter;
 import htsjdk.samtools.filter.SamRecordFilter;
 import htsjdk.samtools.util.CloseableIterator;
@@ -42,6 +47,8 @@ import picard.cmdline.StandardOptionDefinitions;
         usageShort = "Converts soft clipped reads to split reads"
 )
 public class SoftClipsToSplitReads extends CommandLineProgram {
+	public static final List<String> BWA_COMMAND_LINE = ImmutableList.of("bwa", "mem", "-t", "%3$d", "-M", "%2$s", "%1$s");
+	public static final List<String> BOWTIE2_COMMAND_LINE = ImmutableList.of("bowtie2", "--threads", "%3$d", "--local", "--mm", "--reorder", "-x", "%2$s", "-U", "%1$s");
 	private static final Log log = Log.getInstance(SoftClipsToSplitReads.class);
 	private static final int ASYNC_BUFFERS = 2;
 	private static final int ASYNC_BUFFER_SIZE = 300;
@@ -49,8 +56,20 @@ public class SoftClipsToSplitReads extends CommandLineProgram {
     public File INPUT;
     @Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Output file", optional=false)
     public File OUTPUT;
+    @Option(shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME, doc="Reference genome", optional=false)
+    public File REFERENCE = null;
     @Option(doc="Minimum bases clipped. Generally, short read aligners are not able to align sequences shorter than 18-20 bases.", optional=true)
     public int MIN_CLIP_LENGTH = 15;
+    @Option(doc="Command line arguments to run external aligner. Aligner output should be written to stdout and the records MUST match the input fastq order."
+    		+ "Java argument formatting is used with %1$s being the fastq file to align, "
+    		+ "%2$s the reference genome, and %3$d the number of alignment threads to use.", optional=true)
+    public List<String> ALIGNER_COMMAND_LINE = Lists.newArrayList(BWA_COMMAND_LINE);
+    private FastqAligner createAligner() {
+    	SamReaderFactory readerFactory = SamReaderFactory.make();
+    	SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
+    	FastqAligner aligner = new ExternalProcessFastqAligner(readerFactory, writerFactory, ALIGNER_COMMAND_LINE);
+    	return aligner;
+    }
     @Override
 	protected int doWork() {
 		log.debug("Setting language-neutral locale");
@@ -65,7 +84,7 @@ public class SoftClipsToSplitReads extends CommandLineProgram {
     		// foreach SAMRecord r in current BAM
     			//foreach realignFastaRecords(r)
     				// write fastq
-    				// recordsWritten++ 
+    				// recordsWritten++
     		// align fastq
     	}
     	// merge back into a SA record

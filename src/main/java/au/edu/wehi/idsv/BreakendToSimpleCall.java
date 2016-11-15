@@ -18,8 +18,8 @@ import au.edu.wehi.idsv.configuration.GridssConfiguration;
  */
 @CommandLineProgramProperties(
         usage = "Converts breakend calls to simple variant calls for DEL INS INV DUP events."
-        		+ " This conversion strips all GRIDSS annotations and ignores all interchromosomal and complex events."
-        		+ " It is strongly recommended that the pipeline invoking GRIDSS be updated to handle variants in VCF breakend notation.",  
+        		+ " This conversion strips all annotations and ignores all interchromosomal and complex events."
+        		+ " It is strongly recommended to update your pipeline to handle variants in VCF breakend notation instead of using this utility.",  
         usageShort = "Converts breakend calls to simple variant calls."
 )
 public class BreakendToSimpleCall extends CommandLineProgram {

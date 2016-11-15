@@ -45,6 +45,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Booleans;
+import com.google.common.primitives.Ints;
 
 /**
  * @author Daniel Cameron
@@ -52,6 +53,7 @@ import com.google.common.primitives.Booleans;
  */
 public class SAMRecordUtil {
 	private static final Log log = Log.getInstance(SAMRecordUtil.class);
+	private static final String SUFFIX_SEPERATOR = "#";
 	public static final String FIRST_OF_PAIR_NAME_SUFFIX = "\\1";
 	public static final String SECOND_OF_PAIR_NAME_SUFFIX = "\\2";
 	/**
@@ -936,4 +938,36 @@ public class SAMRecordUtil {
 			
 		}
 	}
+	/**
+	 * Gets a string that is unique for the given alignment of the read.
+	 * Note: the identifier is only unique with respect to the alignment of the segment/read
+	 * not the entire template/read pair.
+	 * @param record record
+	 * @return alignment-unique identifier for the given SAMRecord
+	 */
+	public static String getAlignmentUniqueName(SAMRecord record) {
+		StringBuilder sb = new StringBuilder(record.getReadName());
+		sb.append(SAMRecordUtil.SUFFIX_SEPERATOR);
+		sb.append(SAMRecordUtil.getSegmentIndex(record));
+		if (!record.getReadUnmappedFlag()) {
+			sb.append(SAMRecordUtil.SUFFIX_SEPERATOR);
+			sb.append(record.getReferenceName());
+			sb.append(SAMRecordUtil.SUFFIX_SEPERATOR);
+			sb.append(record.getAlignmentStart());
+			sb.append(SAMRecordUtil.SUFFIX_SEPERATOR);
+			sb.append(record.getReadNegativeStrandFlag() ? '-' : '+');
+			sb.append(SAMRecordUtil.SUFFIX_SEPERATOR);
+			sb.append(record.getCigarString());
+		}
+		return sb.toString();
+	}
+	/**
+	 * Orders SAMRecord by the read offset of the first aligned base
+	 */
+	public static Ordering<SAMRecord> ByFirstAlignedBaseReadOffset = new Ordering<SAMRecord>() {
+		@Override
+		public int compare(SAMRecord left, SAMRecord right) {
+			return Ints.compare(getFirstAlignedBaseReadOffset(left), getFirstAlignedBaseReadOffset(right));
+		}
+	};
 }

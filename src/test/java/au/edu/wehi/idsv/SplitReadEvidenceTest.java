@@ -85,4 +85,20 @@ public class SplitReadEvidenceTest extends TestHelper {
 		assertEquals("ACCTA", S(list.get(1).getBreakendSequence()));
 		assertEquals("A", list.get(1).getUntemplatedSequence());
 	}
+	@Test
+	public void should_consider_overlapping_alignments_as_microhomology() {
+		SAMRecord r = Read(2, 1, "7M3S");
+		// MMMMMMMSSS
+		// SSMMMMMMMM
+		//   ^---^ homology
+		r.setReadBases(    B("ACCTAGAGGG"));
+		r.setBaseQualities(B("1234567890"));
+		r.setMappingQuality(40);
+		r.setAttribute("SA", "polyA,100,+,2S8M,0,0");
+		List<SplitReadEvidence> list = SplitReadEvidence.create(SES(), r);
+		assertEquals(new BreakpointSummary(2, FWD, 3, 7, 0, BWD, 100, 104), list.get(0).getBreakendSummary());
+		assertEquals("ACCTAGA", S(list.get(0).getAnchorSequence()));
+		assertEquals("GGG", S(list.get(0).getBreakendSequence()));
+		assertEquals("", list.get(0).getUntemplatedSequence());
+	}
 }

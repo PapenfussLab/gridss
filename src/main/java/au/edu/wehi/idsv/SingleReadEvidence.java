@@ -3,6 +3,7 @@ package au.edu.wehi.idsv;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
+import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import htsjdk.samtools.SAMRecord;
@@ -30,7 +31,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 			int offsetRemoteStart, int offsetRemoteEnd) {
 		// TODO: we could use this to infer the unmapped bounds
 		assert(offsetLocalEnd == offsetUnmappedStart || offsetLocalStart == offsetUnmappedEnd);
-		assert(offsetUnmappedEnd == offsetUnmappedStart || offsetRemoteEnd == offsetUnmappedStart);
+		assert(offsetUnmappedEnd == offsetRemoteStart || offsetRemoteEnd == offsetUnmappedStart);
 		int remoteBasesToTrim = offsetUnmappedStart - offsetUnmappedEnd;
 		if (IntervalUtil.overlapsClosed(offsetLocalStart, offsetLocalEnd - 1, offsetRemoteStart, offsetRemoteEnd - 1)) {
 			// Alignments overlap - turns out bwa writes such records
@@ -126,13 +127,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	}
 	
 	protected void buildEvidenceID(StringBuilder sb) {
-		sb.append(record.getReadName());
-		if (record.getReadPairedFlag() && record.getFirstOfPairFlag()) {
-			sb.append(SAMRecordUtil.FIRST_OF_PAIR_NAME_SUFFIX);
-		}
-		if (record.getReadPairedFlag() && record.getSecondOfPairFlag()) {
-			sb.append(SAMRecordUtil.SECOND_OF_PAIR_NAME_SUFFIX);
-		}
+		sb.append(SAMRecordUtil.getAlignmentUniqueName(getSAMRecord()));
 	}
 	
 	@Override
