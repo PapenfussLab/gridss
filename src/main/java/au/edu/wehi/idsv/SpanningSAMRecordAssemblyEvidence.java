@@ -1,12 +1,11 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMRecord;
-
 import java.util.List;
 
-import au.edu.wehi.idsv.sam.SplitIndel;
-
 import com.google.common.collect.ImmutableList;
+
+import au.edu.wehi.idsv.sam.SplitIndel;
+import htsjdk.samtools.SAMRecord;
 
 /**
  * Assembly spanning a small indel

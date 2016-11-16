@@ -1,12 +1,12 @@
 package au.edu.wehi.idsv.model;
 
-import htsjdk.samtools.CigarOperator;
+import com.google.common.primitives.Doubles;
+import com.google.common.primitives.Ints;
+
 import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.util.MathUtil;
-
-import com.google.common.primitives.Doubles;
-import com.google.common.primitives.Ints;
+import htsjdk.samtools.CigarOperator;
 
 /**
  * Variant scoring model that scores variants according to the library empirical

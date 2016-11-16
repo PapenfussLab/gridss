@@ -1,12 +1,12 @@
 package au.edu.wehi.idsv.debruijn;
 
-import it.unimi.dsi.fastutil.longs.LongArrayList;
-
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 
 import com.google.common.primitives.Bytes;
+
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 
 public class KmerEncodingHelper {

@@ -1,8 +1,5 @@
 package au.edu.wehi.idsv.debruijn.subgraph;
 
-import htsjdk.samtools.util.Log;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -11,17 +8,19 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
+import com.google.common.collect.Sets;
+import com.google.common.primitives.Ints;
+
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphUtil;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathGraph;
 import au.edu.wehi.idsv.debruijn.DeBruijnPathNode;
 import au.edu.wehi.idsv.graph.DirectedAcyclicGraph;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.Sets;
-import com.google.common.primitives.Ints;
+import htsjdk.samtools.util.Log;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 /**
  * Dynamic programming traversal of subgraph of path graph
  * 

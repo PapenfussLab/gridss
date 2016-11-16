@@ -1,12 +1,12 @@
 package au.edu.wehi.idsv.sam;
 
+import java.util.Iterator;
+
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
-
-import java.util.Iterator;
 
 /**
  * Cleans CIGARs so they comply with the SAM specifications

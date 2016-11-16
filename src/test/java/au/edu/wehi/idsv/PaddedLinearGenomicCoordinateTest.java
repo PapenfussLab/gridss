@@ -1,10 +1,11 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMSequenceRecord;
 
 import org.junit.Test;
+
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 
 
 public class PaddedLinearGenomicCoordinateTest {
@@ -48,7 +49,7 @@ public class PaddedLinearGenomicCoordinateTest {
 		dict.addSequence(new SAMSequenceRecord("contig1", 10));
 		dict.addSequence(new SAMSequenceRecord("contig2", 20));
 		LinearGenomicCoordinate c = new PaddedLinearGenomicCoordinate(dict);
-		assertEquals(2, c.getStartLinearCoordinate(new BreakendSummary(0, BreakendDirection.Forward, 2, 5)));
+		assertEquals(2, c.getStartLinearCoordinate(new BreakendSummary(0, BreakendDirection.Forward, 3, 2, 5)));
 	}
 	@Test
 	public void GetEndLinearCoordinate() {
@@ -56,7 +57,7 @@ public class PaddedLinearGenomicCoordinateTest {
 		dict.addSequence(new SAMSequenceRecord("contig1", 10));
 		dict.addSequence(new SAMSequenceRecord("contig2", 20));
 		LinearGenomicCoordinate c = new PaddedLinearGenomicCoordinate(dict);
-		assertEquals(5, c.getEndLinearCoordinate(new BreakendSummary(0, BreakendDirection.Forward, 2, 5)));
+		assertEquals(5, c.getEndLinearCoordinate(new BreakendSummary(0, BreakendDirection.Forward, 3, 2, 5)));
 	}
 	@SuppressWarnings("deprecation")
 	@Test(expected=IllegalArgumentException.class)

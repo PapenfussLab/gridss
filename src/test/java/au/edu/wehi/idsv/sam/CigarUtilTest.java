@@ -1,10 +1,6 @@
 package au.edu.wehi.idsv.sam;
 
 import static org.junit.Assert.assertEquals;
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.TextCigarCodec;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,6 +14,11 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.TextCigarCodec;
 
 
 public class CigarUtilTest {

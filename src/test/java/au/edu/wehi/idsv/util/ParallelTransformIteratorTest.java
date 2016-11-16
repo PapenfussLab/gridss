@@ -9,10 +9,10 @@ import java.util.function.Function;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.util.AsyncBufferedIteratorTest.CIT;
-
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
+
+import au.edu.wehi.idsv.util.AsyncBufferedIteratorTest.CIT;
 
 
 public class ParallelTransformIteratorTest {

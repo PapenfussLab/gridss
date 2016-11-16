@@ -2,11 +2,11 @@ package au.edu.wehi.idsv.configuration;
 
 import org.apache.commons.configuration.Configuration;
 
+import com.google.common.collect.ImmutableList;
+
 import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.SoftClipEvidence;
-
-import com.google.common.collect.ImmutableList;
 
 
 public class RealignmentConfiguration {

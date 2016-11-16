@@ -1,9 +1,5 @@
 package au.edu.wehi.idsv.alignment;
 
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.TextCigarCodec;
-import htsjdk.samtools.util.SequenceUtil;
-
 import java.nio.charset.StandardCharsets;
 
 import au.edu.wehi.idsv.BreakendDirection;
@@ -11,6 +7,9 @@ import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.TextCigarCodec;
+import htsjdk.samtools.util.SequenceUtil;
 
 /**
  * Determines the length of any inexact breakpoint homology
@@ -84,7 +83,7 @@ public class BreakpointHomology {
 		if (bs.direction == BreakendDirection.Backward) {
 			offset *= -1;
 		}
-		return new BreakendSummary(bs.referenceIndex, bs.direction, bs.start + offset, bs.end + offset);
+		return new BreakendSummary(bs.referenceIndex, bs.direction, bs.nominal + offset, bs.start + offset, bs.end + offset);
 	}
 	private static String getAnchorSeq(final ReferenceLookup lookup, final BreakendSummary bs, final int length) {
 		final SAMSequenceRecord refseq = lookup.getSequenceDictionary().getSequence(bs.referenceIndex);

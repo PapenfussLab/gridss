@@ -2,11 +2,10 @@ package au.edu.wehi.idsv;
 
 import java.math.RoundingMode;
 
-import au.edu.wehi.idsv.util.IntervalUtil;
-
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
-import com.google.common.math.IntMath;
+
+import au.edu.wehi.idsv.util.IntervalUtil;
 
 /**
  * Positional locations on source and target chromosomes
@@ -15,6 +14,10 @@ import com.google.common.math.IntMath;
  *
  */
 public class BreakpointSummary extends BreakendSummary {
+	/**
+	 * Nominal position of breakpoint is immediately after this 1-based genomic coordinate on the destination contig
+	 */
+	public final int nominal2;
 	/**
 	 * First possible position of breakpoint is immediately after this 1-based genomic coordinate on the destination contig
 	 */
@@ -31,26 +34,41 @@ public class BreakpointSummary extends BreakendSummary {
 	 * Breakpoint is in the given direction on the destination contig
 	 */
 	public final BreakendDirection direction2;
-	public BreakpointSummary(int referenceIndex1, BreakendDirection direction1, int start1, int end1,
-			int referenceIndex2, BreakendDirection direction2, int start2, int end2) {
-		super(referenceIndex1, direction1, start1, end1);
+	public BreakpointSummary(int referenceIndex1, BreakendDirection direction1, int nominal1,
+			int referenceIndex2, BreakendDirection direction2, int nominal2) {
+		this(referenceIndex1, direction1, nominal1, nominal1, nominal1,
+				referenceIndex2, direction2, nominal2, nominal2, nominal2);
+	}
+	public BreakpointSummary(int referenceIndex1, BreakendDirection direction1, int nominal1, int start1, int end1,
+			int referenceIndex2, BreakendDirection direction2, int nominal2, int start2, int end2) {
+		super(referenceIndex1, direction1, nominal1, start1, end1);
 		if (referenceIndex2 < 0) {
 			throw new IllegalArgumentException("Reference index must be valid");
 		}
+		this.nominal2 = nominal2;
 		this.start2 = start2;
 		this.end2 = end2;
 		this.referenceIndex2 = referenceIndex2;
 		this.direction2 = direction2;
+		if (referenceIndex2 < 0) {
+			throw new IllegalArgumentException("Reference index must be valid");
+		}
+		if (end2 < start2) {
+			throw new IllegalArgumentException("end must be at or after start");
+		}
+		if (nominal2 < start2 || nominal2 > end2) {
+			throw new IllegalArgumentException("nominal must be within [start, end] interval");
+		}
 	}
 	public BreakpointSummary(BreakendSummary local, BreakendSummary remote) {
-		this(local.referenceIndex, local.direction, local.start, local.end, 
-				remote.referenceIndex, remote.direction, remote.start, remote.end);
+		this(local.referenceIndex, local.direction, local.nominal, local.start, local.end, 
+				remote.referenceIndex, remote.direction, remote.nominal, remote.start, remote.end);
 	}
 	public BreakendSummary localBreakend() {
-		return new BreakendSummary(referenceIndex, direction, start, end);
+		return new BreakendSummary(referenceIndex, direction, nominal, start, end);
 	}
 	public BreakendSummary remoteBreakend() {
-		return new BreakendSummary(referenceIndex2, direction2, start2, end2);
+		return new BreakendSummary(referenceIndex2, direction2, nominal2, start2, end2);
 	}
 	/**
 	 * Determines whether this breakend is the higher of the two breakends
@@ -59,7 +77,8 @@ public class BreakpointSummary extends BreakendSummary {
 	public boolean isHighBreakend() {
 		if (referenceIndex != referenceIndex2) return referenceIndex > referenceIndex2;
 		if (start != start2) return start > start2;
-		return end > end2;
+		if (end != end2) return end > end2;
+		return nominal > nominal2;
 	}
 	public BreakendSummary highBreakend() {
 		if (isHighBreakend()) return localBreakend();
@@ -83,15 +102,15 @@ public class BreakpointSummary extends BreakendSummary {
 	 * @return breakpoint with ends swapped
 	 */
 	public BreakpointSummary remoteBreakpoint() {
-		return new BreakpointSummary(referenceIndex2, direction2, start2, end2, referenceIndex, direction, start, end);
+		return new BreakpointSummary(referenceIndex2, direction2, nominal2, start2, end2, referenceIndex, direction, nominal, start, end);
 	}
 	@Override
 	public String toString() {
-		return String.format("%s %s", toString(direction, referenceIndex, start, end, null), toString(direction2, referenceIndex2, start2, end2, null));
+		return String.format("%s %s", toString(direction, referenceIndex, nominal, start, end, null), toString(direction2, referenceIndex2, nominal2, start2, end2, null));
 	}
 	@Override
 	public String toString(GenomicProcessingContext processContext) {
-		return String.format("%s %s", toString(direction, referenceIndex, start, end, processContext), toString(direction2, referenceIndex2, start2, end2, processContext));
+		return String.format("%s %s", toString(direction, referenceIndex, nominal, start, end, processContext), toString(direction2, referenceIndex2, nominal2, start2, end2, processContext));
 	}
 	/**
 	 * Restricts overlap to require both local and remote breakends to overlap
@@ -155,19 +174,19 @@ public class BreakpointSummary extends BreakendSummary {
 	 * Gets the nominal position of the variant for variant calling purposes
 	 * @return position to call
 	 */
-	public BreakpointSummary getCallPosition() {
-		int callPos;
-		int remoteCallPos;
-		// round the called position of the lower breakend down
-		if (BreakendSummary.ByStartEnd.compare(localBreakend(), remoteBreakend()) > 0) {
-			callPos = IntMath.divide(start + end, 2, RoundingMode.CEILING);
-			remoteCallPos = IntMath.divide(start2 + end2, 2, RoundingMode.FLOOR);
-		} else {
-			callPos = IntMath.divide(start + end, 2, RoundingMode.FLOOR);
-			remoteCallPos = IntMath.divide(start2 +end2, 2, RoundingMode.CEILING);
-		}
-		return new BreakpointSummary(referenceIndex, direction, callPos, callPos, referenceIndex2, direction2, remoteCallPos, remoteCallPos);
-	}
+	//public BreakpointSummary getCallPosition() {
+	//	int callPos;
+	//	int remoteCallPos;
+	//	// round the called position of the lower breakend down
+	//	if (BreakendSummary.ByStartEnd.compare(localBreakend(), remoteBreakend()) > 0) {
+	//		callPos = IntMath.divide(start + end, 2, RoundingMode.CEILING);
+	//		remoteCallPos = IntMath.divide(start2 + end2, 2, RoundingMode.FLOOR);
+	//	} else {
+	//		callPos = IntMath.divide(start + end, 2, RoundingMode.FLOOR);
+	//		remoteCallPos = IntMath.divide(start2 +end2, 2, RoundingMode.CEILING);
+	//	}
+	//	return new BreakpointSummary(referenceIndex, direction, callPos, callPos, referenceIndex2, direction2, remoteCallPos, remoteCallPos);
+	//}
 	/**
 	 * Determines the size of the simplest event (deletion, inversion, tandem duplication)
 	 * this breakpoint contributes to.
@@ -223,6 +242,8 @@ public class BreakpointSummary extends BreakendSummary {
 			        .compare(o1.start2, o2.start2)
 			        .compare(o1.end, o2.end)
 			        .compare(o1.end2, o2.end2)
+			        .compare(o1.nominal, o2.nominal)
+			        .compare(o1.nominal2, o2.nominal2)
 			        .result();
 		  }
 	};

@@ -1,7 +1,7 @@
 package au.edu.wehi.idsv.model;
 
-import htsjdk.samtools.CigarOperator;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
+import htsjdk.samtools.CigarOperator;
 
 public class ExclusionModel implements VariantScoringModel {
 	private final VariantScoringModel model;

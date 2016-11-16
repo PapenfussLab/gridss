@@ -1,9 +1,9 @@
 package au.edu.wehi.idsv.model;
 
-import htsjdk.samtools.CigarOperator;
 import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.util.MathUtil;
+import htsjdk.samtools.CigarOperator;
 
 /**
  * Scoring model based on the likelihood of the evidence and

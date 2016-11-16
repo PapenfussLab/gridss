@@ -8,13 +8,13 @@ import java.io.IOException;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
-
-import com.google.common.collect.ImmutableList;
 
 
 public class PathTraversalTimeoutVisualisationTest extends IntermediateFilesTest {

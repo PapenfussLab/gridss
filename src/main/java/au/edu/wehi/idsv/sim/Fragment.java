@@ -1,11 +1,10 @@
 package au.edu.wehi.idsv.sim;
 
-import htsjdk.samtools.util.SequenceUtil;
-
 import java.nio.charset.StandardCharsets;
 
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
+import htsjdk.samtools.util.SequenceUtil;
 
 public class Fragment {
 	private int start;
@@ -37,9 +36,9 @@ public class Fragment {
 		return high ? getHighBreakend() : getLowBreakend();
 	}
 	public BreakendSummary getLowBreakend() {
-		return new BreakendSummary(referenceIndex, BreakendDirection.Backward, start, start);
+		return new BreakendSummary(referenceIndex, BreakendDirection.Backward, start);
 	}
 	public BreakendSummary getHighBreakend() {
-		return new BreakendSummary(referenceIndex, BreakendDirection.Forward, end, end);
+		return new BreakendSummary(referenceIndex, BreakendDirection.Forward, end);
 	}
 }

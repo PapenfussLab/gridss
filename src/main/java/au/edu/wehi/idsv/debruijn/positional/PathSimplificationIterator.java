@@ -1,15 +1,14 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
-
 import java.util.Iterator;
 import java.util.PriorityQueue;
 import java.util.TreeSet;
 
-import au.edu.wehi.idsv.Defaults;
-
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
+
+import au.edu.wehi.idsv.Defaults;
+import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 
 /**
  * Simplifies the graph until the number of nodes used to represent the graph cannot be further reduced

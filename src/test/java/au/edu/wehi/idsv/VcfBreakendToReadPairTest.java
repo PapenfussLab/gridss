@@ -3,9 +3,6 @@ package au.edu.wehi.idsv;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordCoordinateComparator;
-import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,10 +12,13 @@ import java.util.List;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Ordering;
+
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordCoordinateComparator;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 
 
 public class VcfBreakendToReadPairTest extends IntermediateFilesTest {
@@ -48,10 +48,10 @@ public class VcfBreakendToReadPairTest extends IntermediateFilesTest {
 	public void should_write_sorted_read_per_breakend() throws IOException {
 		ProcessingContext pc = getCommandlineContext();
 		List<IdsvVariantContext> in = new ArrayList<IdsvVariantContext>();
-		in.add(new IdsvVariantContextBuilder(pc, BP("ao", new BreakpointSummary(0, FWD, 1, 2, 3, BWD, 4, 5))).phredScore(6).make());
-		in.add(new IdsvVariantContextBuilder(pc, BP("ah", new BreakpointSummary(3, BWD, 4, 5, 0, FWD, 1, 2))).phredScore(6).make());
-		in.add(new IdsvVariantContextBuilder(pc, BP("bo", new BreakpointSummary(1, BWD, 10, 20, 2, FWD, 40, 50))).phredScore(100).make());
-		in.add(new IdsvVariantContextBuilder(pc, BP("bh", new BreakpointSummary(2, FWD, 40, 50, 1, BWD, 10, 20))).phredScore(100).make());
+		in.add(new IdsvVariantContextBuilder(pc, BP("ao", new BreakpointSummary(0, FWD, 1, 1, 2, 3, BWD, 4, 4, 5))).phredScore(6).make());
+		in.add(new IdsvVariantContextBuilder(pc, BP("ah", new BreakpointSummary(3, BWD, 4, 4, 5, 0, FWD, 1, 1, 2))).phredScore(6).make());
+		in.add(new IdsvVariantContextBuilder(pc, BP("bo", new BreakpointSummary(1, BWD, 10, 10, 20, 2, FWD, 40, 40, 50))).phredScore(100).make());
+		in.add(new IdsvVariantContextBuilder(pc, BP("bh", new BreakpointSummary(2, FWD, 40, 40, 50, 1, BWD, 10, 10, 20))).phredScore(100).make());
 		List<SAMRecord> list = go(pc, in).get(0);
 		
 		assertEquals(4, list.size());
@@ -71,11 +71,11 @@ public class VcfBreakendToReadPairTest extends IntermediateFilesTest {
 	public void should_match_breakends_using_event() throws IOException {
 		ProcessingContext pc = getCommandlineContext();
 		List<IdsvVariantContext> in = new ArrayList<IdsvVariantContext>();
-		in.add(new IdsvVariantContextBuilder(pc, BP("test1o", new BreakpointSummary(0, FWD, 1, 2, 3, BWD, 4, 5)))
+		in.add(new IdsvVariantContextBuilder(pc, BP("test1o", new BreakpointSummary(0, FWD, 2, 1, 2, 3, BWD, 4, 4, 5)))
 			.phredScore(6)
 			.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, "test1")
 			.make());
-		in.add(new IdsvVariantContextBuilder(pc, BP("test1h", new BreakpointSummary(3, BWD, 4, 5, 0, FWD, 1, 2)))
+		in.add(new IdsvVariantContextBuilder(pc, BP("test1h", new BreakpointSummary(3, BWD, 4, 4, 5, 0, FWD, 1, 1, 2)))
 			.phredScore(6)
 			.attribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, "test1")
 			.make());

@@ -10,11 +10,11 @@ import java.util.List;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.TestHelper;
-
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
+
+import au.edu.wehi.idsv.TestHelper;
 
 
 public class KmerPathNodePathTest extends TestHelper {

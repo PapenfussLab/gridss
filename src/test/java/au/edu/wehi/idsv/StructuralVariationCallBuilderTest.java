@@ -4,9 +4,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.fastq.FastqRecord;
-import htsjdk.variant.vcf.VCFConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,14 +12,17 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.fastq.FastqRecord;
+import htsjdk.variant.vcf.VCFConstants;
+
 public class StructuralVariationCallBuilderTest extends TestHelper {
-	public final static BreakpointSummary BP = new BreakpointSummary(0, BWD, 10, 10, 1, BWD, 100, 100);
+	public final static BreakpointSummary BP = new BreakpointSummary(0, BWD, 10, 1, BWD, 100);
 	public static class sc extends SoftClipEvidence {
 		protected sc(int offset, boolean tumour) {
 			super(SES(tumour), BWD, withSequence("NNNNNNNNNN", Read(0, 10, "5S5M"))[0]);
@@ -111,7 +111,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test(expected=IllegalArgumentException.class)
 	public void should_not_allow_unsupporting_evidence() {
 		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)minimalBreakend()
-				.breakend(new BreakendSummary(0, BWD, 1, 10), "").make());
+				.breakend(new BreakendSummary(0, BWD, 1, 1, 10), "").make());
 		cb.addEvidence(SCE(BWD, Read(1, 5, "1S2M")));
 	}
 	@Test
@@ -376,7 +376,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		MockSAMEvidenceSource tes = new MockSAMEvidenceSource(pc);
 		tes.category = 1;
 		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
-				.breakend(new BreakendSummary(0, BWD, 1, 10), "").make());
+				.breakend(new BreakendSummary(0, BWD, 1, 1, 10), "").make());
 		cb.addEvidence(SCE(BWD, nes, Read(0, 5, "1S2M")));
 		cb.addEvidence(SCE(BWD, tes, Read(0, 4, "3S4M")));
 		cb.addEvidence(SCE(BWD, tes, Read(0, 3, "5S6M")));
@@ -438,7 +438,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public void evidence_must_support_call() {
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(),
 				(VariantContextDirectedEvidence)minimalBreakend()
-					.breakend(new BreakendSummary(0, FWD, 1, 1), null)
+					.breakend(new BreakendSummary(0, FWD, 1), null)
 					.make());
 		builder.addEvidence(SCE(FWD, Read(0, 5, "1M5S")));
 		builder.make();
@@ -503,7 +503,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void unanchored_assembly_should_set_imprecise_header() {
-		SAMRecordAssemblyEvidence ass = AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 1, 2), null, B("A"), B("A"), new int[] {0, 0});
+		SAMRecordAssemblyEvidence ass = AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 1, 1, 2), null, B("A"), B("A"), new int[] {0, 0});
 		ass.annotateAssembly();
 		VariantContextDirectedEvidence dba = CallSV(ass);
 		assertTrue(dba.hasAttribute(VcfSvConstants.IMPRECISE_KEY));
@@ -511,7 +511,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test
 	public void should_set_HOMLEN_HOMSEQ_for_microhomology() {
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-			breakpoint(new BreakpointSummary(0, FWD, 10, 20, 0, BWD, 30, 40), "");
+			breakpoint(new BreakpointSummary(0, FWD, 10, 10, 20, 0, BWD, 40, 30, 40), "");
 			phredScore(20);
 		}}.make());
 		List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
@@ -547,7 +547,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test
 	public void should_adjust_call_bounds_based_on_best_assembly() {
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-			breakpoint(new BreakpointSummary(0, FWD, 12, 14, 1, BWD, 11, 11), "GTAC");
+			breakpoint(new BreakpointSummary(0, FWD, 14, 12, 14, 1, BWD, 11, 11, 11), "GTAC");
 			phredScore(20);
 		}}.make());
 		List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
@@ -566,12 +566,12 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			builder.addEvidence(e);
 		}
 		VariantContextDirectedEvidence call = builder.make();
-		assertEquals(new BreakpointSummary(0, FWD, 12, 12, 1, BWD, 11, 11), call.getBreakendSummary());
+		assertEquals(new BreakpointSummary(0, FWD, 12, 12, 12, 1, BWD, 11, 11, 11), call.getBreakendSummary());
 	}
 	@Test
 	public void should_adjust_call_bounds_based_on_best_soft_clip() {
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-			breakpoint(new BreakpointSummary(0, FWD, 12, 14, 1, BWD, 11, 11), "GTAC");
+			breakpoint(new BreakpointSummary(0, FWD, 14, 12, 14, 1, BWD, 11, 11, 11), "GTAC");
 			phredScore(20);
 		}}.make());
 		List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
@@ -581,12 +581,12 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			builder.addEvidence(e);
 		}
 		VariantContextDirectedEvidence call = builder.make();
-		assertEquals(new BreakpointSummary(0, FWD, 12, 12, 1, BWD, 11, 11), call.getBreakendSummary());
+		assertEquals(new BreakpointSummary(0, FWD, 12, 12, 12, 1, BWD, 11, 11, 11), call.getBreakendSummary());
 	}
 	@Test
 	public void should_set_CALLED_QUAL_to_parent_quality_score() {
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-			breakpoint(new BreakpointSummary(0, FWD, 12, 14, 1, BWD, 11, 11), "GTAC");
+			breakpoint(new BreakpointSummary(0, FWD, 14, 12, 14, 1, BWD, 11, 11, 11), "GTAC");
 			phredScore(31);
 		}}.make());
 		List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
@@ -600,17 +600,17 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test
 	public void should_set_exact_soft_clip_bounds() {
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-			breakpoint(new BreakpointSummary(0, FWD, 11, 12, 0, BWD, 10, 10), "");
+			breakpoint(new BreakpointSummary(0, FWD, 11, 11, 12, 0, BWD, 10, 10, 10), "");
 			phredScore(10);
 		}}.make());
 		builder.addEvidence(SoftClipEvidence.create(SES(), FWD, withSequence("NNNN", Read(0, 12, "1M3S"))[0], withSequence("NNN", Read(0, 10, "3M"))[0]));
 		VariantContextDirectedEvidence de = builder.make();
-		assertEquals(new BreakpointSummary(0, FWD, 12, 12, 0, BWD, 10, 10), de.getBreakendSummary());
+		assertEquals(new BreakpointSummary(0, FWD, 12, 12, 12, 0, BWD, 100, 10, 10), de.getBreakendSummary());
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void indels_should_have_zero_margin_applied() {
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-			breakpoint(new BreakpointSummary(0, FWD, 11, 11, 0, BWD, 12, 12), "");
+			breakpoint(new BreakpointSummary(0, FWD, 11, 11, 11, 0, BWD, 12, 12, 12), "");
 			phredScore(10);
 		}}.make());
 		builder.addEvidence(IE(Read(0, 11, "1M2I1M")));
@@ -621,7 +621,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test(expected=IllegalArgumentException.class)
 	public void should_exclude_unsupporting_realigned_soft_clip() {
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-			breakpoint(new BreakpointSummary(0, FWD, 11, 12, 0, BWD, 10, 10), "");
+			breakpoint(new BreakpointSummary(0, FWD, 11, 11, 12, 0, BWD, 10, 10, 10), "");
 			phredScore(10);
 		}}.make());
 		builder.addEvidence(SoftClipEvidence.create(SES(), FWD, withSequence("NNNN", Read(0, 12, "1M3S"))[0], withSequence("NNN", Read(1, 10, "3M"))[0]));
@@ -629,7 +629,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test(expected=IllegalArgumentException.class)
 	public void should_exclude_unsupporting_discordant_read_pair() {
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-			breakpoint(new BreakpointSummary(0, FWD, 11, 12, 0, BWD, 10, 10), "");
+			breakpoint(new BreakpointSummary(0, FWD, 11, 11, 12, 0, BWD, 10, 10, 10), "");
 			phredScore(10);
 		}}.make());
 		builder.addEvidence(NRRP(DP(0, 10, "1M", true, 0, 2, "1M", false)));
@@ -637,7 +637,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test
 	public void anchor_cigar_should_use_X_for_exact() {
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-			breakpoint(new BreakpointSummary(0, FWD, 11, 11, 0, BWD, 10, 10), "");
+			breakpoint(new BreakpointSummary(0, FWD, 11, 11, 11, 0, BWD, 10, 10, 10), "");
 			phredScore(10);
 		}}.make());
 		VariantContextDirectedEvidence vc = builder.make();
@@ -646,7 +646,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test
 	public void anchor_cigar_should_use_2X_for_single_bp_imprecision() {
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-			breakpoint(new BreakpointSummary(0, FWD, 11, 12, 0, BWD, 10, 10), "");
+			breakpoint(new BreakpointSummary(0, FWD, 11, 11, 12, 0, BWD, 10, 10, 10), "");
 			phredScore(10);
 		}}.make());
 		VariantContextDirectedEvidence vc = builder.make();
@@ -655,7 +655,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test
 	public void anchor_cigar_should_use_xnx_for_large_imprecision() {
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-			breakpoint(new BreakpointSummary(0, FWD, 10, 15, 0, BWD, 10, 10), "");
+			breakpoint(new BreakpointSummary(0, FWD, 10, 10, 15, 0, BWD, 10, 10, 10), "");
 			phredScore(10);
 		}}.make());
 		VariantContextDirectedEvidence vc = builder.make();
@@ -664,7 +664,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test
 	public void anchor_cigar_should_include_anchoring_bases_fwd() {
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-			breakpoint(new BreakpointSummary(0, FWD, 10, 15, 0, FWD, 100, 100), "");
+			breakpoint(new BreakpointSummary(0, FWD, 10, 10, 15, 0, FWD, 100, 100, 100), "");
 			phredScore(10);
 		}}.make());
 		builder.addEvidence(SCE(FWD, Read(0, 5, "8M7S")));
@@ -679,7 +679,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test
 	public void anchor_cigar_should_include_anchoring_bases_bwd() {
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-			breakpoint(new BreakpointSummary(0, BWD, 10, 15, 0, FWD, 100, 100), "");
+			breakpoint(new BreakpointSummary(0, BWD, 10, 10, 15, 0, FWD, 100, 100, 100), "");
 			phredScore(10);
 		}}.make());
 		builder.addEvidence(NRRP(DP(0, 17, "2M", false, 0, 100, "1M", true)));
@@ -700,7 +700,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test
 	public void anchor_cigar_should_use_local_coordinates() {
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-			breakpoint(new BreakpointSummary(0, FWD, 100, 100, 0, BWD, 10, 10), "");
+			breakpoint(new BreakpointSummary(0, FWD, 100, 0, BWD, 10), "");
 			phredScore(10);
 		}}.make());
 		builder.addEvidence(((RealignedSoftClipEvidence)SCE(FWD, SES(), Read(0, 91, "10M10S"), Read(0, 10, "10S10M"))));
@@ -718,7 +718,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		SpannedIndelEvidence r = IE(withMapq(40, Read(2, 90, "10M1I10M"))[0]);
 		ImmutableList<String> rid = ImmutableList.of(r.getEvidenceID());
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-			breakpoint(new BreakpointSummary(2, FWD, 100, 100, 2, BWD, 101, 101), "");
+			breakpoint(new BreakpointSummary(2, FWD, 100, 2, BWD, 101), "");
 			phredScore(10);
 		}}.make());
 		String seq = S(RANDOM).substring(100-10, 100) + "N" + S(RANDOM).substring(100, 100+10);
@@ -740,7 +740,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public void should_calculate_inexact_homology() {
 		ProcessingContext pc = getContext();
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-			breakpoint(new BreakpointSummary(2, FWD, 78, 78, 6, BWD, 79, 79), "");
+			breakpoint(new BreakpointSummary(2, FWD, 78, 6, BWD, 79), "");
 			phredScore(50);
 		}}.make());
 		builder.addEvidence(SCE(FWD, Read(2, 78, "1M1S"), Read(6, 79, "1S1M")));
@@ -764,7 +764,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 						withQual(B(40, seq.length() - anchor), 
 								Read(2, anchor + 1, String.format("%dM", seq.length() - anchor)))))[0]));
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-			breakpoint(new BreakpointSummary(6, FWD, 78, 78, 2, BWD, 79, 79), "");
+			breakpoint(new BreakpointSummary(6, FWD, 78, 2, BWD, 79), "");
 			phredScore(50);
 		}}.make());
 		ass.annotateAssembly();
@@ -790,7 +790,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 						withQual(B(40, seq.length() - anchor), 
 								Read(2, anchor + 1, String.format("%dM", seq.length() - anchor)))))[0]));
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-			breakpoint(new BreakpointSummary(2, BWD, 79, 79, 6, FWD, 78, 78), "");
+			breakpoint(new BreakpointSummary(2, BWD, 79, 6, FWD, 78), "");
 			phredScore(50);
 		}}.make());
 		ass.annotateAssembly();
@@ -804,7 +804,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Ignore("Issue #18: Output breakend support interval")
 	public void support_interval_should_be_written() {
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-			breakpoint(new BreakpointSummary(0, FWD, 100, 100, 1, BWD, 200, 200), "");
+			breakpoint(new BreakpointSummary(0, FWD, 100, 1, BWD, 200), "");
 			phredScore(50);
 		}}.make());
 		builder.addEvidence(NRRP(DP(0, 96, "3M", true, 1, 200, "5M", false)));

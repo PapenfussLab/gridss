@@ -1,13 +1,13 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMSequenceRecord;
-
 import java.util.List;
 import java.util.NavigableMap;
 
 import com.google.common.collect.Maps;
+
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 
 /**
  * Calculates the coordinate of a genomic position based on the concatenation

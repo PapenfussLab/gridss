@@ -1,11 +1,5 @@
 package au.edu.wehi.idsv;
 
-import gridss.ComputeSamTags;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.util.Log;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -14,6 +8,11 @@ import org.apache.commons.lang.NotImplementedException;
 
 import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import gridss.ComputeSamTags;
+import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.Log;
 
 /**
  * Chimeric alignment based support for a structural variant

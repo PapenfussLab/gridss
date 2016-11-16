@@ -1,5 +1,17 @@
 package gridss;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Iterator;
+import java.util.Locale;
+import java.util.Set;
+
+import com.google.common.collect.Sets;
+
+import au.edu.wehi.idsv.sam.NmTagIterator;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.sam.TemplateTagsIterator;
+import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
@@ -15,23 +27,10 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.Set;
-
 import picard.cmdline.CommandLineProgram;
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
-import au.edu.wehi.idsv.sam.NmTagIterator;
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import au.edu.wehi.idsv.sam.TemplateTagsIterator;
-import au.edu.wehi.idsv.util.AsyncBufferedIterator;
-
-import com.google.common.collect.Sets;
 
 @CommandLineProgramProperties(
         usage = "Populates computed SAM tags. "

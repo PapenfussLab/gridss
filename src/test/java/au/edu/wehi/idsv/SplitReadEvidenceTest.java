@@ -4,9 +4,9 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.List;
 
-import htsjdk.samtools.SAMRecord;
-
 import org.junit.Test;
+
+import htsjdk.samtools.SAMRecord;
 
 
 public class SplitReadEvidenceTest extends TestHelper {
@@ -19,7 +19,7 @@ public class SplitReadEvidenceTest extends TestHelper {
 		r.setMappingQuality(40);
 		r.setAttribute("SA", "polyA,100,+,2M8S,10,0");
 		SplitReadEvidence e = SplitReadEvidence.create(SES(), r).get(0);
-		assertEquals(new BreakpointSummary(2, BWD, 1, 1, 0, FWD, 101, 101), e.getBreakendSummary());
+		assertEquals(new BreakpointSummary(2, BWD, 1, 0, FWD, 101), e.getBreakendSummary());
 		assertEquals("ACC", S(e.getBreakendSequence()));
 		assertEquals("123", S(e.getBreakendQuality()));
 		assertEquals("TA", S(e.getAnchorSequence()));
@@ -39,11 +39,11 @@ public class SplitReadEvidenceTest extends TestHelper {
 		//                                C                  B                     D                  A
 		List<SplitReadEvidence> list = SplitReadEvidence.create(SES(), r);
 		assertEquals(2, list.size());
-		assertEquals(new BreakpointSummary(2, BWD, 1, 1, 0, FWD, 200, 200), list.get(0).getBreakendSummary());
+		assertEquals(new BreakpointSummary(2, BWD, 1, 0, FWD, 200), list.get(0).getBreakendSummary());
 		assertEquals("TA", S(list.get(0).getAnchorSequence()));
 		assertEquals("ACC", S(list.get(0).getBreakendSequence()));
 		assertEquals("C", list.get(0).getUntemplatedSequence());
-		assertEquals(new BreakpointSummary(2, FWD, 2, 2, 0, BWD, 300, 300), list.get(1).getBreakendSummary());
+		assertEquals(new BreakpointSummary(2, FWD, 2, 0, BWD, 300), list.get(1).getBreakendSummary());
 		assertEquals("TA", S(list.get(1).getAnchorSequence()));
 		assertEquals("GAGGG", S(list.get(1).getBreakendSequence()));
 		assertEquals("G", list.get(1).getUntemplatedSequence());
@@ -57,11 +57,11 @@ public class SplitReadEvidenceTest extends TestHelper {
 		r.setMappingQuality(40);
 		r.setAttribute("SA", "polyA,100,-,7S2M1S,0,0;polyA,200,-,2S2M6S,0,0");
 		List<SplitReadEvidence> list = SplitReadEvidence.create(SES(), r);
-		assertEquals(new BreakpointSummary(2, BWD, 1, 1, 0, BWD, 100, 100), list.get(0).getBreakendSummary());
+		assertEquals(new BreakpointSummary(2, BWD, 1, 0, BWD, 100), list.get(0).getBreakendSummary());
 		assertEquals("TA", S(list.get(0).getAnchorSequence()));
 		assertEquals("ACC", S(list.get(0).getBreakendSequence()));
 		assertEquals("", list.get(0).getUntemplatedSequence());
-		assertEquals(new BreakpointSummary(2, FWD, 2, 2, 0, FWD, 201, 201), list.get(1).getBreakendSummary());
+		assertEquals(new BreakpointSummary(2, FWD, 2, 0, FWD, 201), list.get(1).getBreakendSummary());
 		assertEquals("TA", S(list.get(1).getAnchorSequence()));
 		assertEquals("GAGGG", S(list.get(1).getBreakendSequence()));
 		assertEquals("G", list.get(1).getUntemplatedSequence());
@@ -76,11 +76,11 @@ public class SplitReadEvidenceTest extends TestHelper {
 		r.setReadNegativeStrandFlag(true);
 		r.setAttribute("SA", "polyA,100,+,1S2M7S,0,0;polyA,200,+,6S2M2S,0,0");
 		List<SplitReadEvidence> list = SplitReadEvidence.create(SES(), r);
-		assertEquals(new BreakpointSummary(2, FWD, 2, 2, 0, FWD, 101, 101), list.get(0).getBreakendSummary());
+		assertEquals(new BreakpointSummary(2, FWD, 2, 0, FWD, 101), list.get(0).getBreakendSummary());
 		assertEquals("GA", S(list.get(0).getAnchorSequence()));
 		assertEquals("GGG", S(list.get(0).getBreakendSequence()));
 		assertEquals("", list.get(0).getUntemplatedSequence());
-		assertEquals(new BreakpointSummary(2, BWD, 1, 1, 0, BWD, 200, 200), list.get(1).getBreakendSummary());
+		assertEquals(new BreakpointSummary(2, BWD, 1, 0, BWD, 200), list.get(1).getBreakendSummary());
 		assertEquals("GA", S(list.get(1).getAnchorSequence()));
 		assertEquals("ACCTA", S(list.get(1).getBreakendSequence()));
 		assertEquals("A", list.get(1).getUntemplatedSequence());
@@ -96,7 +96,7 @@ public class SplitReadEvidenceTest extends TestHelper {
 		r.setMappingQuality(40);
 		r.setAttribute("SA", "polyA,100,+,2S8M,0,0");
 		List<SplitReadEvidence> list = SplitReadEvidence.create(SES(), r);
-		assertEquals(new BreakpointSummary(2, FWD, 3, 7, 0, BWD, 100, 104), list.get(0).getBreakendSummary());
+		assertEquals(new BreakpointSummary(2, FWD, 7, 3, 7, 0, BWD, 104, 100, 104), list.get(0).getBreakendSummary());
 		assertEquals("ACCTAGA", S(list.get(0).getAnchorSequence()));
 		assertEquals("GGG", S(list.get(0).getBreakendSequence()));
 		assertEquals("", list.get(0).getUntemplatedSequence());

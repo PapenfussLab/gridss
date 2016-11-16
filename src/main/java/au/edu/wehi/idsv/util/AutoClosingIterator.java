@@ -1,14 +1,14 @@
 package au.edu.wehi.idsv.util;
 
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.Log;
-
 import java.io.Closeable;
 import java.util.Iterator;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
+
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.Log;
 
 /**
  * Iterator that automatically closes the underlying resources when the end of stream has been reached.

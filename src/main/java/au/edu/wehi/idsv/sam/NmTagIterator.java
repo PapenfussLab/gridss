@@ -1,12 +1,12 @@
 package au.edu.wehi.idsv.sam;
 
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.reference.ReferenceSequenceFile;
-
 import java.util.Iterator;
 
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
+
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
 
 /**
  * Ensures that every aligned record has an associated NM tag 

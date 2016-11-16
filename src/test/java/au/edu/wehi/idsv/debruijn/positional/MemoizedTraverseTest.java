@@ -8,9 +8,9 @@ import java.util.ArrayList;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.TestHelper;
-
 import com.google.common.collect.Lists;
+
+import au.edu.wehi.idsv.TestHelper;
 
 
 public class MemoizedTraverseTest extends TestHelper {

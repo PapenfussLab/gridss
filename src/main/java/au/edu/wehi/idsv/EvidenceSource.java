@@ -1,12 +1,5 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMFileWriter;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.Log;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -14,10 +7,16 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 
+import com.google.common.io.Files;
+
 import au.edu.wehi.idsv.alignment.ExternalProcessFastqAligner;
 import au.edu.wehi.idsv.alignment.FastqAligner;
-
-import com.google.common.io.Files;
+import htsjdk.samtools.SAMFileWriter;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.Log;
 
 public abstract class EvidenceSource {
 	private static final Log log = Log.getInstance(EvidenceSource.class);

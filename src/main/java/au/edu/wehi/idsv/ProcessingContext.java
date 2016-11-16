@@ -1,11 +1,9 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.metrics.Header;
-import htsjdk.samtools.metrics.MetricBase;
-import htsjdk.samtools.metrics.MetricsFile;
-
 import java.io.File;
 import java.util.List;
+
+import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
@@ -15,8 +13,9 @@ import au.edu.wehi.idsv.configuration.VariantCallingConfiguration;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.visualisation.BufferTracker;
 import au.edu.wehi.idsv.visualisation.TrackedBuffer;
-
-import com.google.common.collect.Lists;
+import htsjdk.samtools.metrics.Header;
+import htsjdk.samtools.metrics.MetricBase;
+import htsjdk.samtools.metrics.MetricsFile;
 
 /**
  * Processing context for the given record

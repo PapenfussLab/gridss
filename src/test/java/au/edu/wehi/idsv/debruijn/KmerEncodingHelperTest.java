@@ -4,16 +4,16 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.TestHelper;
-
 import com.google.common.collect.Lists;
+
+import au.edu.wehi.idsv.TestHelper;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 
 public class KmerEncodingHelperTest extends TestHelper {
 	public long P2E(String bases) {

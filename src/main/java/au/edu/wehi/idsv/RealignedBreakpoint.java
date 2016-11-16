@@ -1,14 +1,13 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.util.SequenceUtil;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.util.SequenceUtil;
 
 public class RealignedBreakpoint {
 	private final BreakpointSummary summary;
@@ -64,9 +63,11 @@ public class RealignedBreakpoint {
 		String insertedSequence = insSeq;
 		BreakpointSummary summary = new BreakpointSummary(
 				local.referenceIndex, local.direction,
+				local.nominal,
 				local.start,
 				local.end,
 				realigned.getReferenceIndex(), remoteDirection,
+				remotePosition,
 				remoteDirection == BreakendDirection.Forward ? remotePosition : remotePosition - ci,
 				remoteDirection == BreakendDirection.Backward ? remotePosition : remotePosition + ci);
 		
@@ -97,9 +98,11 @@ public class RealignedBreakpoint {
 			int remoteHomoBases = microhomologyRemoteSequenceLocalPosition.length();
 			summary = new BreakpointSummary(
 					summary.referenceIndex, summary.direction,
+					summary.nominal,
 					summary.direction == BreakendDirection.Forward ? summary.start - localHomoBases: summary.start - remoteHomoBases,
 					summary.direction == BreakendDirection.Forward ? summary.end + remoteHomoBases: summary.end + localHomoBases,
 					summary.referenceIndex2, summary.direction2,
+					summary.nominal2,
 					summary.direction2 == BreakendDirection.Forward ? summary.start2 - remoteHomoBases: summary.start2 - localHomoBases,
 					summary.direction2 == BreakendDirection.Forward ? summary.end2 + localHomoBases: summary.end2 + remoteHomoBases);
 		}
@@ -112,9 +115,11 @@ public class RealignedBreakpoint {
 		// make sure we don't overrun contig bounds
 		summary = new BreakpointSummary(
 				summary.referenceIndex, summary.direction,
+				summary.nominal,
 				ensureOnContig(dictionary, summary.referenceIndex, summary.start),
 				ensureOnContig(dictionary, summary.referenceIndex, summary.end),
 				summary.referenceIndex2, summary.direction2,
+				summary.nominal2,
 				ensureOnContig(dictionary, summary.referenceIndex2, summary.start2),
 				ensureOnContig(dictionary, summary.referenceIndex2, summary.end2));
 		return new RealignedBreakpoint(summary, insertedSequence, exact, microhomology, microhomologyLocalSequenceRemotePosition.length());

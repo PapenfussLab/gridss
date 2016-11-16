@@ -2,7 +2,6 @@ package au.edu.wehi.idsv.debruijn.subgraph;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,6 +14,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import com.google.common.collect.Lists;
+
 import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.DirectedEvidence;
@@ -25,8 +26,7 @@ import au.edu.wehi.idsv.SpanningSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
-
-import com.google.common.collect.Lists;
+import htsjdk.samtools.util.SequenceUtil;
 
 
 public class DeBruijnSubgraphAssemblerTest extends TestHelper {
@@ -222,7 +222,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		assertEquals("15M9D15M", e.getBackingRecord().getCigarString());
 		assertEquals(1, e.getBackingRecord().getAlignmentStart());
 		assertEquals(seq, S(e.getBackingRecord().getReadBases()));
-		assertEquals(new BreakpointSummary(2, FWD, 15, 15, 2, BWD, 25, 25), e.getBreakendSummary());
+		assertEquals(new BreakpointSummary(2, FWD, 15, 2, BWD, 25), e.getBreakendSummary());
 	}
 	@Test
 	public void should_assemble_deletion_microhomology() {
@@ -253,7 +253,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		assertEquals(25, e.getRemoteSAMRecord().getAlignmentStart());
 		assertEquals("CATTAATCGCAATAAAACGACGCCAAGTCA", S(e.getSAMRecord().getReadBases()));
 		assertEquals("AACGACGCCAAGTCA", S(e.getRemoteSAMRecord().getReadBases()));
-		assertEquals(new BreakpointSummary(0, FWD, 13, 17, 0, BWD, 23, 27), e.getBreakendSummary());
+		assertEquals(new BreakpointSummary(0, FWD, 15, 13, 17, 0, BWD, 25, 23, 27), e.getBreakendSummary());
 	}
 	@Test
 	public void breakpoint_microhomology_should_be_centre_aligned() {
@@ -284,7 +284,7 @@ public class DeBruijnSubgraphAssemblerTest extends TestHelper {
 		assertEquals(25, e.getRemoteSAMRecord().getAlignmentStart());
 		assertEquals("CATTAATCGCAATAAAACGACGCCAAGTCA", S(e.getSAMRecord().getReadBases()));
 		assertEquals("AACGACGCCAAGTCA", S(e.getRemoteSAMRecord().getReadBases()));
-		assertEquals(new BreakpointSummary(0, FWD, 13, 17, 0, BWD, 23, 27), e.getBreakendSummary());
+		assertEquals(new BreakpointSummary(0, FWD, 15, 13, 17, 0, BWD, 25, 23, 27), e.getBreakendSummary());
 	}
 	@Test
 	@Ignore() //  TODO: special case these?

@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
-import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 
 import java.io.File;
 import java.io.IOException;
@@ -14,15 +13,17 @@ import org.junit.Test;
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+
 
 public class VcfBreakendToBedpeTest extends IntermediateFilesTest {
 	private void create() {
 		ProcessingContext pc = getCommandlineContext();
 		VariantContextWriter vcw = pc.getVariantContextWriter(output, false);
-		vcw.add(new IdsvVariantContextBuilder(pc, BP("ao", new BreakpointSummary(0, FWD, 1, 2, 3, BWD, 4, 5))).phredScore(6).make());
-		vcw.add(new IdsvVariantContextBuilder(pc, BP("ah", new BreakpointSummary(3, BWD, 4, 5, 0, FWD, 1, 2))).phredScore(6).make());
-		vcw.add(new IdsvVariantContextBuilder(pc, BP("bo", new BreakpointSummary(1, BWD, 10, 20, 2, FWD, 40, 50))).phredScore(100).make());
-		vcw.add(new IdsvVariantContextBuilder(pc, BP("bh", new BreakpointSummary(2, FWD, 40, 50, 1, BWD, 10, 20))).phredScore(100).make());
+		vcw.add(new IdsvVariantContextBuilder(pc, BP("ao", new BreakpointSummary(0, FWD, 1, 1, 2, 3, BWD, 4, 4, 5))).phredScore(6).make());
+		vcw.add(new IdsvVariantContextBuilder(pc, BP("ah", new BreakpointSummary(3, BWD, 4, 4, 5, 0, FWD, 1, 1, 2))).phredScore(6).make());
+		vcw.add(new IdsvVariantContextBuilder(pc, BP("bo", new BreakpointSummary(1, BWD, 10, 10, 20, 2, FWD, 40, 40, 50))).phredScore(100).make());
+		vcw.add(new IdsvVariantContextBuilder(pc, BP("bh", new BreakpointSummary(2, FWD, 40, 40, 50, 1, BWD, 10, 10, 20))).phredScore(100).make());
 		vcw.close();
 	}
 	private List<List<String>> parse() throws IOException {

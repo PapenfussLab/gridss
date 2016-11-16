@@ -2,16 +2,17 @@ package au.edu.wehi.idsv;
 
 import java.util.Iterator;
 
+import com.google.common.base.Function;
+import com.google.common.collect.AbstractIterator;
+
 import au.edu.wehi.idsv.graph.RectangleGraphMaximalCliqueIterator;
 import au.edu.wehi.idsv.graph.RectangleGraphNode;
 import au.edu.wehi.idsv.graph.RectangleGraphNodeMergingIterator;
 import au.edu.wehi.idsv.graph.ScalingHelper;
+import au.edu.wehi.idsv.util.MathUtil;
 import au.edu.wehi.idsv.util.WindowedSortingIterator;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
-
-import com.google.common.base.Function;
-import com.google.common.collect.AbstractIterator;
 /**
  * Maximal clique summary evidence iterator 
  * @author Daniel Cameron
@@ -112,15 +113,21 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		return v;
 	}
 	private BreakpointSummary toBreakpointSummary(RectangleGraphNode node) {
+		int start = context.getLinear().getReferencePosition(node.startX);
+		int end = context.getLinear().getReferencePosition(node.endX);
+		int start2 = context.getLinear().getReferencePosition(node.startY);
+		int end2 = context.getLinear().getReferencePosition(node.endY);
 		BreakpointSummary breakpoint = new BreakpointSummary(
 				context.getLinear().getReferenceIndex(node.startX),
 				targetLowDir,
-				context.getLinear().getReferencePosition(node.startX),
-				context.getLinear().getReferencePosition(node.endX),
+				MathUtil.average(start, end),
+				start,
+				end,
 				context.getLinear().getReferenceIndex(node.startY),
 				targetHighDir,
-				context.getLinear().getReferencePosition(node.startY),
-				context.getLinear().getReferencePosition(node.endY));
+				MathUtil.average(start2, end2),
+				start2,
+				end2);
 		// sanity check that the resultant breakpoint makes sense
 		assert(breakpoint.start >= 1);
 		assert(breakpoint.start2 >= 1);

@@ -2,11 +2,6 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.metrics.Header;
-import htsjdk.samtools.metrics.StringHeader;
-import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,13 +13,18 @@ import java.util.List;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
+
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
 import au.edu.wehi.idsv.util.AsyncBufferedIteratorTest;
-
-import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.metrics.Header;
+import htsjdk.samtools.metrics.StringHeader;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 
 public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	@Test
@@ -372,8 +372,8 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0, 0, 43);
 		source.completeSteps(ProcessStep.ALL_STEPS);
 		List<DirectedEvidence> results = Lists.newArrayList(source.iterator(true, false, false));
-		assertEquals(new BreakendSummary(0, BWD, 17, 58), results.get(0).getBreakendSummary());
-		assertEquals(new BreakendSummary(0, FWD, 18, 42), results.get(1).getBreakendSummary());
+		assertEquals(new BreakendSummary(0, BWD, 37, 17, 58), results.get(0).getBreakendSummary());
+		assertEquals(new BreakendSummary(0, FWD, 30, 18, 42), results.get(1).getBreakendSummary());
 	}
 	@Test
 	public void iterator_should_sort_sc_with_indel() throws IOException {

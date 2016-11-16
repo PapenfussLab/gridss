@@ -1,9 +1,5 @@
 package au.edu.wehi.idsv.sim;
 
-import htsjdk.samtools.util.SequenceUtil;
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.writer.VariantContextWriter;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -12,18 +8,21 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Range;
+import com.google.common.collect.RangeSet;
+import com.google.common.collect.TreeRangeSet;
+import com.google.common.io.Files;
+
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.IdsvVariantContext;
 import au.edu.wehi.idsv.IdsvVariantContextBuilder;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Range;
-import com.google.common.collect.RangeSet;
-import com.google.common.collect.TreeRangeSet;
-import com.google.common.io.Files;
+import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 
 public class SimulatedChromosome {
 	protected final Random rng;

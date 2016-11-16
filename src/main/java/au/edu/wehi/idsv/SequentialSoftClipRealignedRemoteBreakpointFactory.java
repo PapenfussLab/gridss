@@ -1,9 +1,9 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMRecord;
-import au.edu.wehi.idsv.sam.SamTags;
-
 import com.google.common.collect.PeekingIterator;
+
+import au.edu.wehi.idsv.sam.SamTags;
+import htsjdk.samtools.SAMRecord;
 
 /**
  * Finds the corresponding soft clip SAMRecord for a realigned breakpoint

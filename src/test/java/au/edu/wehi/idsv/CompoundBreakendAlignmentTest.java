@@ -3,8 +3,6 @@ package au.edu.wehi.idsv;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.SequenceUtil;
 
 import java.util.List;
 
@@ -12,6 +10,9 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
+
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
 
 public class CompoundBreakendAlignmentTest extends TestHelper {
 	@Test
@@ -23,7 +24,7 @@ public class CompoundBreakendAlignmentTest extends TestHelper {
 		//          SSMMM
 		ProcessingContext pc = getContext();
 		CompoundBreakendAlignment cba = new CompoundBreakendAlignment(pc, null,
-				new BreakendSummary(0, FWD, 2, 2),
+				new BreakendSummary(0, FWD, 2),
 				B("AT"),
 				B("12"),
 				B("TCGTTTCATNAC"),
@@ -39,13 +40,13 @@ public class CompoundBreakendAlignmentTest extends TestHelper {
 	@Test
 	public void should_apply_realignment_mapq_filter() {
 		ProcessingContext pc = getContext();
-		CompoundBreakendAlignment cba = new CompoundBreakendAlignment(pc, null, new BreakendSummary(0, FWD, 2, 2), B("AT"), B("12"), B("CGT"), B("123"), ImmutableList.of(
+		CompoundBreakendAlignment cba = new CompoundBreakendAlignment(pc, null, new BreakendSummary(0, FWD, 2), B("AT"), B("12"), B("CGT"), B("123"), ImmutableList.of(
 				withMapq(5, Read(0, 3, "3M"))[0]));
 		assertTrue(cba.getSimpleBreakendRealignment().getReadUnmappedFlag());
 		
 		pc.getConfig().minMapq = 5;
 		
-		cba = new CompoundBreakendAlignment(pc, null, new BreakendSummary(0, FWD, 2, 2), B("AT"), B("12"), B("CGT"), B("123"), ImmutableList.of(
+		cba = new CompoundBreakendAlignment(pc, null, new BreakendSummary(0, FWD, 2), B("AT"), B("12"), B("CGT"), B("123"), ImmutableList.of(
 				withMapq(5, Read(0, 3, "3M"))[0]));
 		assertFalse(cba.getSimpleBreakendRealignment().getReadUnmappedFlag());
 	}
@@ -53,7 +54,7 @@ public class CompoundBreakendAlignmentTest extends TestHelper {
 	public void getSubsequentBreakpointAlignmentPairs_simple_FWD() {
 		ProcessingContext pc = getContext();
 		CompoundBreakendAlignment cba = new CompoundBreakendAlignment(pc, null,
-				new BreakendSummary(0, FWD, 2, 2),
+				new BreakendSummary(0, FWD, 2),
 				B("AT"),
 				B("12"),
 				B("TCGTTTCATNACT"),
@@ -82,7 +83,7 @@ public class CompoundBreakendAlignmentTest extends TestHelper {
 	public void getSubsequentBreakpointAlignmentPairs_single_bases_FWD() {
 		ProcessingContext pc = getContext();
 		CompoundBreakendAlignment cba = new CompoundBreakendAlignment(pc, null,
-				new BreakendSummary(0, FWD, 2, 2),
+				new BreakendSummary(0, FWD, 2),
 				B("NN"),
 				B("12"),
 				B("ACGT"),
@@ -117,7 +118,7 @@ public class CompoundBreakendAlignmentTest extends TestHelper {
 	public void getSubsequentBreakpointAlignmentPairs_single_bases_BWD() {
 		ProcessingContext pc = getContext();
 		CompoundBreakendAlignment cba = new CompoundBreakendAlignment(pc, null,
-				new BreakendSummary(0, BWD, 5, 5),
+				new BreakendSummary(0, BWD, 5),
 				B("NN"),
 				B("12"),
 				B("ACGT"),
@@ -153,7 +154,7 @@ public class CompoundBreakendAlignmentTest extends TestHelper {
 	public void getSubsequentBreakpointAlignmentPairs_overlapping_single_bases_FWD() {
 		ProcessingContext pc = getContext();
 		CompoundBreakendAlignment cba = new CompoundBreakendAlignment(pc, null,
-				new BreakendSummary(0, FWD, 2, 2),
+				new BreakendSummary(0, FWD, 2),
 				B("NN"),
 				B("12"),
 				B("ACGT"),
@@ -190,7 +191,7 @@ public class CompoundBreakendAlignmentTest extends TestHelper {
 		//          SSSSSSSSMMMMMMMMSSSSSSSSSSSSSSSSS
 		//                                        M       
 		CompoundBreakendAlignment cba = new CompoundBreakendAlignment(getContext(), null,
-				new BreakendSummary(0, FWD, 5, 5),
+				new BreakendSummary(0, FWD, 5),
 				B("CATTA"),
 				B("00000"),
 				B("ATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAA"),
@@ -241,7 +242,7 @@ public class CompoundBreakendAlignmentTest extends TestHelper {
 		// *****    SSSSMMMMMSSSSSS
 		//                SSSSSSSMMMMMMMMSSSSSSSSS (but reversed)
 		CompoundBreakendAlignment cba = new CompoundBreakendAlignment(getContext(), null,
-				new BreakendSummary(0, FWD, 5, 5),
+				new BreakendSummary(0, FWD, 5),
 				B("CATTA"),
 				B("00000"),
 				B("ATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAG"),
@@ -281,7 +282,7 @@ public class CompoundBreakendAlignmentTest extends TestHelper {
 		//                                                            SSSSSSSSSSMMMMMMMMMM offset = 20
 		//                                                  MMMMMMMMMM offset = 20
 		CompoundBreakendAlignment cba = new CompoundBreakendAlignment(getContext(), null,
-				new BreakendSummary(0, BWD, 70, 70),
+				new BreakendSummary(0, BWD, 70),
 				B("NNNNNNNNNN"),
 				B("0000000000"),
 				B("NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN"),
@@ -316,7 +317,7 @@ public class CompoundBreakendAlignmentTest extends TestHelper {
 	@Test
 	public void simple_fb() {
 		CompoundBreakendAlignment cba = new CompoundBreakendAlignment(getContext(), null,
-				new BreakendSummary(0, FWD, 1, 1),
+				new BreakendSummary(0, FWD, 1),
 				B("NACGT"),
 				B("12345"),
 				B("NNAACCGGTT"),
@@ -335,7 +336,7 @@ public class CompoundBreakendAlignmentTest extends TestHelper {
 	@Test
 	public void simple_ff() {
 		CompoundBreakendAlignment cba = new CompoundBreakendAlignment(getContext(), null,
-				new BreakendSummary(0, FWD, 1, 1),
+				new BreakendSummary(0, FWD, 1),
 				B("NACGT"),
 				B("12345"),
 				B("NNAATTCCGG"),
@@ -358,7 +359,7 @@ public class CompoundBreakendAlignmentTest extends TestHelper {
 		//   *****
 		//   M
 		CompoundBreakendAlignment cba = new CompoundBreakendAlignment(getContext(), null,
-				new BreakendSummary(0, BWD, 20, 20),
+				new BreakendSummary(0, BWD, 20),
 				B("NACGT"),
 				B("12345"),
 				B("NNAATTCCGG"),
@@ -377,7 +378,7 @@ public class CompoundBreakendAlignmentTest extends TestHelper {
 	@Test
 	public void simple_bb() {
 		CompoundBreakendAlignment cba = new CompoundBreakendAlignment(getContext(), null,
-				new BreakendSummary(0, BWD, 20, 20),
+				new BreakendSummary(0, BWD, 20),
 				B("NACGT"),
 				B("12345"),
 				B("NNAATTCCGG"),

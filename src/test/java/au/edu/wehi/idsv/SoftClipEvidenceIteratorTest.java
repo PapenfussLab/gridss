@@ -2,7 +2,6 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import htsjdk.samtools.SAMRecord;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -11,6 +10,8 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
+
+import htsjdk.samtools.SAMRecord;
 
 
 public class SoftClipEvidenceIteratorTest extends TestHelper {
@@ -61,8 +62,8 @@ public class SoftClipEvidenceIteratorTest extends TestHelper {
 		sv.add(r);
 		go();
 		assertEquals(2, out.size());
-		assertEquals(new BreakpointSummary(1, FWD, 2, 2, 1, BWD, 4, 4), out.get(0).getBreakendSummary());
-		assertEquals(new BreakpointSummary(1, BWD, 4, 4, 1, FWD, 2, 2), out.get(1).getBreakendSummary());
+		assertEquals(new BreakpointSummary(1, FWD, 2, 1, BWD, 4), out.get(0).getBreakendSummary());
+		assertEquals(new BreakpointSummary(1, BWD, 4, 1, FWD, 2), out.get(1).getBreakendSummary());
 	}
 	@Test
 	public void should_extract_all_indels() {

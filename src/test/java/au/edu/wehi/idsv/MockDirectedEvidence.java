@@ -4,13 +4,13 @@ public class MockDirectedEvidence extends UnmappedMateReadPair {
 	public BreakendSummary breakend;
 	public String id = toString();
 	public MockDirectedEvidence(int referenceIndex, BreakendDirection direction, int start) {
-		this(new BreakendSummary(referenceIndex, direction, start, start));
+		this(new BreakendSummary(referenceIndex, direction, start));
 	}
 	public MockDirectedEvidence(int referenceIndex, BreakendDirection direction, int start, int end) {
-		this(new BreakendSummary(referenceIndex, direction, start, end));
+		this(new BreakendSummary(referenceIndex, direction, (start + end) / 2, start, end));
 	}
 	public MockDirectedEvidence(int referenceIndex, int start, String id) {
-		this(new BreakendSummary(referenceIndex, BreakendDirection.Forward, start, start), id);
+		this(new BreakendSummary(referenceIndex, BreakendDirection.Forward, start), id);
 	}
 	public MockDirectedEvidence(BreakendSummary bs) {
 		this(bs, bs.toString().replace(' ', '_'));

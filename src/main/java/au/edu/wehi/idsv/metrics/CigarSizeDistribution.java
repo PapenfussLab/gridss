@@ -1,11 +1,11 @@
 package au.edu.wehi.idsv.metrics;
 
-import htsjdk.samtools.CigarOperator;
-
 import java.util.List;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+
+import htsjdk.samtools.CigarOperator;
 
 /**
  * Distribution of cigar operators

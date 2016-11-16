@@ -24,8 +24,8 @@ public class SoftClipReadEvidenceTest extends TestHelper {
 	private static final SoftClipReadEvidence bExample;
 	@Test
 	public void should_break_at_clip() {
-		assertEquals(new BreakendSummary(2, FWD, 4, 4), fExample.getBreakendSummary());
-		assertEquals(new BreakendSummary(2, BWD, 3, 3), bExample.getBreakendSummary());
+		assertEquals(new BreakendSummary(2, FWD, 4), fExample.getBreakendSummary());
+		assertEquals(new BreakendSummary(2, BWD, 3), bExample.getBreakendSummary());
 	}
 	@Test
 	public void indels_should_have_unique_evidenceID() {

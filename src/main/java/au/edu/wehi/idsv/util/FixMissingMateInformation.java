@@ -1,5 +1,14 @@
 package au.edu.wehi.idsv.util;
 
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+
+import com.google.common.collect.Iterators;
+import com.google.common.collect.PeekingIterator;
+
+import au.edu.wehi.idsv.ProgressLoggingSAMRecordIterator;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
@@ -8,19 +17,9 @@ import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
-import au.edu.wehi.idsv.ProgressLoggingSAMRecordIterator;
-
-import com.google.common.collect.Iterators;
-import com.google.common.collect.PeekingIterator;
 
 @CommandLineProgramProperties(
         usage = "Updates paired end reads without a mate to single-ended reads",  

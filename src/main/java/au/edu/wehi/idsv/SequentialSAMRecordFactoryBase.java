@@ -1,18 +1,17 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.Log;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-
-import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
+
+import au.edu.wehi.idsv.visualisation.TrackedBuffer;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.Log;
 
 /**
  * Common base class for supplying matching SAMRecords from SAMRecord sequence in

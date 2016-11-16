@@ -6,7 +6,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import htsjdk.samtools.util.CloseableIterator;
 
 import java.util.List;
 
@@ -16,6 +15,8 @@ import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
+
+import htsjdk.samtools.util.CloseableIterator;
 
 
 public class AsyncBufferedIteratorTest {

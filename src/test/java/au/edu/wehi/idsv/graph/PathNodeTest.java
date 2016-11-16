@@ -4,12 +4,12 @@ import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.TestHelper;
-import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+
+import au.edu.wehi.idsv.TestHelper;
+import au.edu.wehi.idsv.debruijn.DeBruijnNodeBase;
 
 
 public class PathNodeTest extends TestHelper {

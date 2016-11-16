@@ -24,4 +24,16 @@ public class MathUtil {
 		}
 		return resultPhred;
 	}
+	/**
+	 * Computes the average of the given integers without being vulnerable to integer overflow
+	 * @param values
+	 * @return
+	 */
+	public static int average(int... values) {
+		long sum = 0;
+		for (int v : values) {
+			sum += v;
+		}
+		return (int)(sum / values.length);
+	}
 }

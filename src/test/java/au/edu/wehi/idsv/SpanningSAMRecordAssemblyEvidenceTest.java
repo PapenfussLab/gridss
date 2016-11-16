@@ -2,16 +2,16 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMUtils;
 
 import java.util.List;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.sam.SamTags;
-
 import com.google.common.collect.ImmutableList;
+
+import au.edu.wehi.idsv.sam.SamTags;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMUtils;
 
 
 public class SpanningSAMRecordAssemblyEvidenceTest extends TestHelper {
@@ -20,7 +20,7 @@ public class SpanningSAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals(bases.length(), r.getCigar().getReadLength());
 		r.setReadBases(B(bases));
 		r.setBaseQualityString(bases);
-		MockDirectedEvidence evidence = new MockDirectedEvidence(new BreakendSummary(0, FWD, 1, 2));
+		MockDirectedEvidence evidence = new MockDirectedEvidence(new BreakendSummary(0, FWD, 1, 1, 2));
 		r.setAttribute(SamTags.EVIDENCEID, evidence.getEvidenceID());
 		SAMRecordAssemblyEvidence e = new SAMRecordAssemblyEvidence(AES(), r, ImmutableList.of());
 		e.hydrateEvidenceSet(evidence);
@@ -79,7 +79,7 @@ public class SpanningSAMRecordAssemblyEvidenceTest extends TestHelper {
 	@Test
 	public void should_treat_xPxNxP_as_placeholder_for_alignment_to_earlier_position_x_bp_before_expected_position() {
 		SpanningSAMRecordAssemblyEvidence e = create(10, "1M2P2N2P1M", "NN");
-		assertEquals(new BreakpointSummary(0, FWD, 10, 10, 0, BWD, 9, 9), e.getBreakendSummary());
+		assertEquals(new BreakpointSummary(0, FWD, 10, 0, BWD, 9), e.getBreakendSummary());
 	}
 	@Test
 	public void remote_breakend_SAMRecord_should_have_start_coordinate_of_high_breakend() {

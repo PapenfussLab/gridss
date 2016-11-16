@@ -1,12 +1,11 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMRecord;
-
 import java.util.Arrays;
 
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.model.Models;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import htsjdk.samtools.SAMRecord;
 
 public class SoftClipEvidence implements DirectedEvidence {
 	private final SAMEvidenceSource source;
@@ -57,7 +56,7 @@ public class SoftClipEvidence implements DirectedEvidence {
 		this.source = source;
 		this.record = record;
 		int pos = direction == BreakendDirection.Forward ? record.getAlignmentEnd() : record.getAlignmentStart();
-		this.location = new BreakendSummary(record.getReferenceIndex(), direction, pos, pos);
+		this.location = new BreakendSummary(record.getReferenceIndex(), direction, pos);
 	}
 	public static int getSoftClipLength(BreakendDirection direction, SAMRecord record) {
 		return direction == BreakendDirection.Forward ? SAMRecordUtil.getEndSoftClipLength(record) : SAMRecordUtil.getStartSoftClipLength(record); 

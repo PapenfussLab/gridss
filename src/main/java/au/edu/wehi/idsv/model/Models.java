@@ -1,9 +1,10 @@
 package au.edu.wehi.idsv.model;
 
-import htsjdk.samtools.SAMRecord;
-
 import java.util.ArrayList;
 import java.util.List;
+
+import com.google.common.base.Function;
+import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
@@ -15,9 +16,8 @@ import au.edu.wehi.idsv.graph.MaximumCliqueIntervalGraph;
 import au.edu.wehi.idsv.graph.MaximumCliqueIntervalGraph.Node;
 import au.edu.wehi.idsv.graph.ScalingHelper;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
-
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
+import au.edu.wehi.idsv.util.MathUtil;
+import htsjdk.samtools.SAMRecord;
 
 /**
  * variant/reference Log-likelihood statistical model
@@ -85,7 +85,9 @@ public class Models {
 			dir = BreakendDirection.Backward;
 		}
 		assert(lgc.getReferenceIndex(node.start) == lgc.getReferenceIndex(node.stop));
-		return new BreakendSummary(lgc.getReferenceIndex(node.start), dir, lgc.getReferencePosition(node.start), lgc.getReferencePosition(node.stop));
+		int start = lgc.getReferencePosition(node.start);
+		int end = lgc.getReferencePosition(node.stop);
+		return new BreakendSummary(lgc.getReferenceIndex(node.start), dir, MathUtil.average(start, end), start, end);
 	}
 	private static Node maximalInterval(LinearGenomicCoordinate lgc, BreakendDirection dir, List<BreakendSummary> breaks, List<Long> weights) {
 		MaximumCliqueIntervalGraph calc = new MaximumCliqueIntervalGraph();

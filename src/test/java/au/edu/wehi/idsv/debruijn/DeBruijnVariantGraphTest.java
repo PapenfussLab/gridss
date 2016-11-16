@@ -4,14 +4,14 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.SequenceUtil;
 
 import java.util.List;
 
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
@@ -25,8 +25,8 @@ import au.edu.wehi.idsv.SpanningSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
-
-import com.google.common.collect.Lists;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
 
 public class DeBruijnVariantGraphTest extends TestHelper {
 	private List<AssemblyEvidence> result;
@@ -347,7 +347,7 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		assertNull(result.get(0).getBreakendSummary());
 		SpanningSAMRecordAssemblyEvidence e = (SpanningSAMRecordAssemblyEvidence)result.get(0).getSpannedIndels().get(0);
 		assertEquals(S(RANDOM).substring(500, 650), e.getUntemplatedSequence());
-		assertEquals(new BreakpointSummary(0, FWD, 50, 50, 0, BWD, 100, 100), e.getBreakendSummary());
+		assertEquals(new BreakpointSummary(0, FWD, 50, 0, BWD, 100), e.getBreakendSummary());
 	}
 	@Test
 	public void should_assemble_spanning_breakend() {
@@ -363,7 +363,7 @@ public class DeBruijnVariantGraphTest extends TestHelper {
 		assertNull(result.get(0).getBreakendSummary());
 		SpanningSAMRecordAssemblyEvidence e = (SpanningSAMRecordAssemblyEvidence)result.get(0).getSpannedIndels().get(0);
 		assertEquals("", e.getUntemplatedSequence());
-		assertEquals(new BreakpointSummary(0, FWD, 50, 50, 0, BWD, 100, 100), e.getBreakendSummary());
+		assertEquals(new BreakpointSummary(0, FWD, 50, 0, BWD, 100), e.getBreakendSummary());
 		assertEquals("50M49D50M", e.getBackingRecord().getCigarString());
 	}
 	/**

@@ -3,8 +3,6 @@ package au.edu.wehi.idsv;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.File;
 
@@ -14,6 +12,8 @@ import org.junit.Test;
 
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
 
 public class SoftClipEvidenceTest extends TestHelper {
 	@Test(expected=IllegalArgumentException.class)

@@ -1,14 +1,13 @@
 package au.edu.wehi.idsv.validation;
 
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.vcf.VCFFileReader;
-
 import java.io.File;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+
+import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import au.edu.wehi.idsv.BreakendAnnotator;
 import au.edu.wehi.idsv.BreakendDirection;
@@ -20,10 +19,10 @@ import au.edu.wehi.idsv.IdsvVariantContextBuilder;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.VariantContextDirectedEvidence;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
-
-import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.vcf.VCFFileReader;
 
 /**
  * Annotates breakends based on a reference truth file
@@ -73,10 +72,10 @@ public class TruthAnnotator extends AbstractIterator<VariantContextDirectedEvide
 					untemplatedSequence = ((VariantContextDirectedEvidence)variant).getBreakendSequence().length;
 				}
 				// two breakpoints: forward & backward
-				BreakendSummary truthBreakendStart = new BreakendSummary(truthVariant.getReferenceIndex(), BreakendDirection.Forward, truthVariant.getStart(), truthVariant.getStart());
+				BreakendSummary truthBreakendStart = new BreakendSummary(truthVariant.getReferenceIndex(), BreakendDirection.Forward, truthVariant.getStart());
 				int endOffset = Math.max(0, -truthVariant.getAttributeAsInt(VcfSvConstants.SV_LENGTH_KEY, 0));
 				endOffset = truthVariant.getStart() + endOffset + 1;
-				BreakendSummary truthBreakendEnd = new BreakendSummary(truthVariant.getReferenceIndex(), BreakendDirection.Backward, endOffset, endOffset);
+				BreakendSummary truthBreakendEnd = new BreakendSummary(truthVariant.getReferenceIndex(), BreakendDirection.Backward, endOffset);
 				BreakpointSummary truthBreakpoint = new BreakpointSummary(truthBreakendStart, truthBreakendEnd);
 				
 				if (matches(truthBreakpoint, variantBreakpoint, svLen, untemplatedSequence)) {
@@ -107,7 +106,7 @@ public class TruthAnnotator extends AbstractIterator<VariantContextDirectedEvide
 	private static BreakendSummary addMargin(BreakendSummary loc, int svLen, int untemplatedSequence) {
 		int margin = Math.max(0, svLen - untemplatedSequence);
 		margin = Math.min(16, margin); // limit to 16bp
-		return new BreakendSummary(loc.referenceIndex, loc.direction,
+		return new BreakendSummary(loc.referenceIndex, loc.direction, loc.nominal,
 				loc.start - (loc.direction == BreakendDirection.Forward ? 0 : margin),
 				loc.end + (loc.direction == BreakendDirection.Backward ? 0 : margin));
 	}

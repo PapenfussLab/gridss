@@ -1,10 +1,9 @@
 package au.edu.wehi.idsv.alignment;
 
-import htsjdk.samtools.util.SequenceUtil;
-
 import java.util.Arrays;
 
 import au.edu.wehi.idsv.Defaults;
+import htsjdk.samtools.util.SequenceUtil;
 
 public class SswJniAligner implements Aligner {
 	private static final int MATRIX_SIZE = 128;

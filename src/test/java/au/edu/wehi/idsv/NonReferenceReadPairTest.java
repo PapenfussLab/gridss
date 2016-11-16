@@ -5,9 +5,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import htsjdk.samtools.SAMRecord;
 
 import org.junit.Test;
+
+import htsjdk.samtools.SAMRecord;
 
 public class NonReferenceReadPairTest extends TestHelper {
 	public NonReferenceReadPair newPair(SAMRecord[] pair, int expectedFragmentSize) {
@@ -141,21 +142,21 @@ public class NonReferenceReadPairTest extends TestHelper {
 	}
 	@Test
 	public void getBreakendSummary_DP_should_not_extend_outside_sequence_bounds() {
-		assertEquals(new BreakpointSummary(0, BWD, 1, 1, 0, FWD, POLY_A.length, POLY_A.length),
+		assertEquals(new BreakpointSummary(0, BWD, 1, 0, FWD, POLY_A.length),
 				newPair(DP(0, 1, "1M", false, 0, POLY_A.length, "1M", true), 300).getBreakendSummary());
 		
-		assertEquals(new BreakpointSummary(0, BWD, 1, 2, 0, FWD, POLY_A.length - 1, POLY_A.length),
+		assertEquals(new BreakpointSummary(0, BWD, 1, 1, 2, 0, FWD, POLY_A.length - 1, POLY_A.length - 1, POLY_A.length),
 				newPair(DP(0, 2, "1M", false, 0, POLY_A.length - 1, "1M", true), 300).getBreakendSummary());
 		
-		assertEquals(new BreakpointSummary(0, FWD, POLY_A.length - 1, POLY_A.length, 0, BWD, 1, 2),
+		assertEquals(new BreakpointSummary(0, FWD, POLY_A.length - 1, POLY_A.length - 1, POLY_A.length, 0, BWD, 1, 1, 2),
 				newPair(DP(0, POLY_A.length - 1, "1M", true, 0, 2, "1M", false), 300).getBreakendSummary());
 	}
 	@Test
 	public void getBreakendSummary_OEA_should_not_extend_outside_sequence_bounds() {
-		assertEquals(new BreakendSummary(0, BWD, 1, 1), newPair(OEA(0, 1, "1M", false), 300).getBreakendSummary());
-		assertEquals(new BreakendSummary(0, FWD, POLY_A.length, POLY_A.length), newPair(OEA(0, POLY_A.length, "1M", true), 300).getBreakendSummary());
-		assertEquals(new BreakendSummary(0, BWD, 1, 3), newPair(OEA(0, 3, "1M", false), 300).getBreakendSummary());
-		assertEquals(new BreakendSummary(0, FWD, POLY_A.length - 3, POLY_A.length), newPair(OEA(0, POLY_A.length - 3, "1M", true), 300).getBreakendSummary());
+		assertEquals(new BreakendSummary(0, BWD, 1), newPair(OEA(0, 1, "1M", false), 300).getBreakendSummary());
+		assertEquals(new BreakendSummary(0, FWD, POLY_A.length), newPair(OEA(0, POLY_A.length, "1M", true), 300).getBreakendSummary());
+		assertEquals(new BreakendSummary(0, BWD, 2, 1, 3), newPair(OEA(0, 3, "1M", false), 300).getBreakendSummary());
+		assertEquals(new BreakendSummary(0, FWD, POLY_A.length - 2, POLY_A.length - 3, POLY_A.length), newPair(OEA(0, POLY_A.length - 3, "1M", true), 300).getBreakendSummary());
 	}
 	public void getEvidenceID_should_match_read_name() {
 		SAMRecord[] pair = DP(0, 1, "100M", true, 0, 1, "100M", true);

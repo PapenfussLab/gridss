@@ -1,10 +1,5 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import htsjdk.samtools.util.Log;
-import it.unimi.dsi.fastutil.ints.AbstractInt2ObjectSortedMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
-import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -20,12 +15,16 @@ import java.util.Stack;
 import java.util.TreeSet;
 import java.util.stream.Stream;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.io.Files;
+
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker.MemoizationStats;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.io.Files;
+import htsjdk.samtools.util.Log;
+import it.unimi.dsi.fastutil.ints.AbstractInt2ObjectSortedMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectRBTreeMap;
+import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
 
 /**
  * Helper class to track memoization of nodes during positional graph traversal

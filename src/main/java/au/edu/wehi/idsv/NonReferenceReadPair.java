@@ -1,12 +1,12 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SamPairUtil.PairOrientation;
-
 import org.apache.commons.lang3.StringUtils;
 
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.util.MathUtil;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
 
 /**
  * A read pair that does not support the reference sequence. This can be an OEA, or DP read pair.
@@ -130,9 +130,9 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		int intervalWidth = maxfragmentSize - local.getReadLength() + intervalExtendedReadDueToLocalClipping - intervalReducedDueToRemoteMapping;
 		intervalWidth = Math.min(intervalWidth, pairSeparation(local, remote, PairOrientation.FR));
 		if (intervalWidth < 0) return null;
-		return new BreakendSummary(local.getReferenceIndex(), direction,
-				Math.max(1, Math.min(positionClosestToBreakpoint, positionClosestToBreakpoint + intervalWidth * intervalDirection)),
-				Math.min(dictionary.getSequence(local.getReferenceIndex()).getSequenceLength(), Math.max(positionClosestToBreakpoint, positionClosestToBreakpoint + intervalWidth * intervalDirection)));
+		int start = Math.max(1, Math.min(positionClosestToBreakpoint, positionClosestToBreakpoint + intervalWidth * intervalDirection));
+		int end = Math.min(dictionary.getSequence(local.getReferenceIndex()).getSequenceLength(), Math.max(positionClosestToBreakpoint, positionClosestToBreakpoint + intervalWidth * intervalDirection));
+		return new BreakendSummary(local.getReferenceIndex(), direction, MathUtil.average(start, end), start, end);
 	}
 	/**
 	 * Determines the separation between discordant reads

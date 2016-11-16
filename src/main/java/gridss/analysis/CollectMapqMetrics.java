@@ -24,6 +24,9 @@
 
 package gridss.analysis;
 
+import java.io.File;
+import java.util.Set;
+
 import gridss.analysis.directed.MapqMetricsCollector;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
@@ -31,10 +34,6 @@ import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.CollectionUtil;
 import htsjdk.samtools.util.IOUtil;
-
-import java.io.File;
-import java.util.Set;
-
 import picard.PicardException;
 import picard.analysis.MetricAccumulationLevel;
 import picard.analysis.SinglePassSamProgram;

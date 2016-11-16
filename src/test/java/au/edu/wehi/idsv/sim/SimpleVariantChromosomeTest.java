@@ -9,12 +9,12 @@ import java.util.List;
 
 import org.junit.Test;
 
+import com.google.common.collect.Lists;
+import com.google.common.io.Files;
+
 import au.edu.wehi.idsv.IdsvVariantContext;
 import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.vcf.SvType;
-
-import com.google.common.collect.Lists;
-import com.google.common.io.Files;
 
 
 public class SimpleVariantChromosomeTest extends IntermediateFilesTest {

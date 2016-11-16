@@ -18,7 +18,7 @@ public class BreakpointHomologyTest extends TestHelper {
 							   B("TTTAATGGGAAA"), });
 								//     >
 								//      <
-		BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 6, 7, 1, BWD, 7, 7), "", 100, 0);
+		BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 6, 6, 7, 1, BWD, 7, 7, 7), "", 100, 0);
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void should_require_exact_remote_breakpoint() {
@@ -28,7 +28,7 @@ public class BreakpointHomologyTest extends TestHelper {
 							   B("TTTAATGGGAAA"), });
 								//     >
 								//      <
-		BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 6, 6, 1, BWD, 7, 8), "", 100, 0);
+		BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 6, 6, 6, 1, BWD, 7, 7, 8), "", 100, 0);
 	}
 	@Test
 	public void should_report_homology_on_both_sides() {
@@ -39,7 +39,7 @@ public class BreakpointHomologyTest extends TestHelper {
 								//123456789012
 								//     >
 								//      <
-		BreakpointHomology bh = BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 6, 6, 1, BWD, 7, 7), "", 100, 0);
+		BreakpointHomology bh = BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 6, 1, BWD, 7), "", 100, 0);
 		assertEquals(6, bh.getRemoteHomologyLength() + bh.getLocalHomologyLength());
 		assertEquals(3, bh.getLocalHomologyLength());
 		assertEquals(3, bh.getRemoteHomologyLength());
@@ -52,7 +52,7 @@ public class BreakpointHomologyTest extends TestHelper {
 							   B("TTTTTTTTTTTTTTTTTTTTTTTT"), });
 								//     >
 								//      <
-		BreakpointHomology bh = BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 6, 6, 1, BWD, 7, 7), "", 100, 10);
+		BreakpointHomology bh = BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 6, 1, BWD, 7), "", 100, 10);
 		assertEquals(0, bh.getLocalHomologyLength());
 		assertEquals(0, bh.getRemoteHomologyLength());
 	}
@@ -64,13 +64,13 @@ public class BreakpointHomologyTest extends TestHelper {
 							   B("TTTAATGGGAAAGGGGGGGGGGGGGGGGGGG"), });
 								//     >
 								//      <
-		BreakpointHomology bh = BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 6, 6, 1, BWD, 7, 7), "", 1, 5);
+		BreakpointHomology bh = BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 6, 1, BWD, 7), "", 1, 5);
 		assertEquals(1, bh.getLocalHomologyLength());
 		assertEquals(1, bh.getRemoteHomologyLength());
 	}
 	@Test
 	public void should_reduce_window_size_for_small_events() {
-		BreakpointHomology bh = BreakpointHomology.calculate(SMALL_FA, new BreakpointSummary(0, FWD, 100, 100, 0, BWD, 103, 103), "", 100, 0);
+		BreakpointHomology bh = BreakpointHomology.calculate(SMALL_FA, new BreakpointSummary(0, FWD, 100, 0, BWD, 103), "", 100, 0);
 		assertEquals(2, bh.getLocalHomologyLength());
 		assertEquals(2, bh.getRemoteHomologyLength());
 	}
@@ -88,7 +88,7 @@ public class BreakpointHomologyTest extends TestHelper {
 		//          >G
 		//            <
 		// 
-		BreakpointHomology bh = BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 10, 10, 1, BWD, 11, 11), "c", 20, 10);
+		BreakpointHomology bh = BreakpointHomology.calculate(ref, new BreakpointSummary(0, FWD, 10, 1, BWD, 11), "c", 20, 10);
 		assertEquals(7, bh.getLocalHomologyLength());
 		assertEquals(9, bh.getRemoteHomologyLength());
 	}

@@ -1,18 +1,11 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.variant.variantcontext.VariantContext;
+import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Ordering;
 
-import java.util.List;
-
-import au.edu.wehi.idsv.util.CollectionUtil;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
-
-import com.google.common.base.Function;
-import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Ordering;
-import com.google.common.primitives.Bytes;
+import htsjdk.variant.variantcontext.VariantContext;
 
 public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvidence implements DirectedBreakpoint {
 	/** */
@@ -37,9 +30,7 @@ public class VariantContextDirectedBreakpoint extends VariantContextDirectedEvid
 			// tandem dup
 			sizeAdjustment = 1;
 		}
-		return (high.start + high.end - low.start - low.end) / 2
-				+ getUntemplatedSequence().length()
-				+ sizeAdjustment; 
+		return high.nominal - low.nominal + getUntemplatedSequence().length() + sizeAdjustment; 
 	}
 	@Override
 	public BreakpointSummary getBreakendSummary() {

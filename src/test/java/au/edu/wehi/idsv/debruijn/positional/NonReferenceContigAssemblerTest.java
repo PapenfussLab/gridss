@@ -1,7 +1,8 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import static org.junit.Assert.*;
-import htsjdk.samtools.SAMRecord;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -10,6 +11,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.junit.Test;
+
+import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
 
 import au.edu.wehi.idsv.AssemblyEvidence;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
@@ -24,9 +28,7 @@ import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.SpanningSAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.TestHelper;
-
-import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
+import htsjdk.samtools.SAMRecord;
 
 
 public class NonReferenceContigAssemblerTest extends TestHelper {
@@ -64,7 +66,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		List<SAMRecordAssemblyEvidence> output = go(pc, true, sce);
 		assertEquals(1, output.size());
 		assertEquals("ACGTGGTCGACC", S(output.get(0).getAssemblySequence()));
-		assertEquals(new BreakendSummary(0, FWD, 10, 10), output.get(0).getBreakendSummary());
+		assertEquals(new BreakendSummary(0, FWD, 10), output.get(0).getBreakendSummary());
 		assertEquals(6, output.get(0).getAssemblyAnchorLength());
 	}
 	@Test
@@ -75,7 +77,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		List<SAMRecordAssemblyEvidence> output = go(pc, true, sce);
 		assertEquals(1, output.size());
 		assertEquals("ACGTGGTCGACC", S(output.get(0).getAssemblySequence()));
-		assertEquals(new BreakendSummary(0, BWD, 10, 10), output.get(0).getBreakendSummary());
+		assertEquals(new BreakendSummary(0, BWD, 10), output.get(0).getBreakendSummary());
 		assertEquals(6, output.get(0).getAssemblyAnchorLength());
 	}
 	@Test
@@ -92,7 +94,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		assertEquals(1, output.size());
 		AssemblyEvidence e = output.get(0).getSpannedIndels().get(0);
 		assertEquals("ACGTGGCTCGACC", S(e.getAssemblySequence()));
-		assertEquals(new BreakpointSummary(0, FWD, 6, 6, 0, BWD, 8, 8), e.getBreakendSummary());
+		assertEquals(new BreakpointSummary(0, FWD, 6, 0, BWD, 8), e.getBreakendSummary());
 		assertEquals("C", ((SpanningSAMRecordAssemblyEvidence)e).getUntemplatedSequence());
 	}
 	@Test
@@ -283,7 +285,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		NonReferenceReadPair nrrp = NRRP(SES(1, 100), rp);
 		List<SAMRecordAssemblyEvidence> output = go(pc, false, nrrp);
 		assertEquals(S(RANDOM).substring(0, 12), S(output.get(0).getAssemblySequence()));
-		assertEquals(new BreakendSummary(0, FWD, 100 + 10 - 1, 100 + 10 - 1), output.get(0).getBreakendSummary());
+		assertEquals(new BreakendSummary(0, FWD, 100 + 10 - 1), output.get(0).getBreakendSummary());
 	}
 	@Test
 	public void should_truncate_contigs_longer_than_maxExpectedBreakendLengthMultiple() {

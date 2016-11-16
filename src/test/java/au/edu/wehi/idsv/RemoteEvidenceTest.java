@@ -2,11 +2,12 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.SequenceUtil;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
 
 
 public abstract class RemoteEvidenceTest extends TestHelper  {
@@ -41,34 +42,34 @@ public abstract class RemoteEvidenceTest extends TestHelper  {
 	}
 	public abstract RemoteEvidence makeRemote(BreakendSummary bs, final String allBases, final String realignCigar, final boolean realignNegativeStrand);
 	public abstract DirectedBreakpoint makeLocal(BreakendSummary bs, final String allBases, final String realignCigar, final boolean realignNegativeStrand);
-	private RemoteEvidence R() { return makeRemote(new BreakendSummary(0, FWD, 100, 100), "GGGGGGGGGG", "4M", true); } 
-	private DirectedBreakpoint L() { return makeLocal(new BreakendSummary(0, FWD, 100, 100), "GGGGGGGGGG", "4M", true); }
+	private RemoteEvidence R() { return makeRemote(new BreakendSummary(0, FWD, 100), "GGGGGGGGGG", "4M", true); } 
+	private DirectedBreakpoint L() { return makeLocal(new BreakendSummary(0, FWD, 100), "GGGGGGGGGG", "4M", true); }
 	@Test
 	public void makeRemote_sanityCheck() {
-		assertEquals(new BreakendSummary(0, FWD, 100, 100), R().getBreakendSummary().remoteBreakend());
+		assertEquals(new BreakendSummary(0, FWD, 100), R().getBreakendSummary().remoteBreakend());
 	}
 	@Test
 	public void makeLocal_sanityCheck() {
-		assertEquals(new BreakendSummary(0, FWD, 100, 100), L().getBreakendSummary().localBreakend());
+		assertEquals(new BreakendSummary(0, FWD, 100), L().getBreakendSummary().localBreakend());
 	}
 	@Test
 	public void getUntemplatedSequence_should_return_untemplated_sequence_of_remote_side_of_breakend() throws CloneNotSupportedException {
 		// which is just whatever the soft clip sequences of the aligned read is (as the mapper handles the reverse complimenting)
-		assertEquals("GTN", makeRemote(new BreakendSummary(0, FWD, 100, 100), "NGTNCA", "3S2M", false).getUntemplatedSequence());
-		assertEquals(SequenceUtil.reverseComplement("GTN"), makeRemote(new BreakendSummary(0, FWD, 100, 100), "NGTNCA", "2M3S", true).getUntemplatedSequence());
-		assertEquals("NCA", makeRemote(new BreakendSummary(0, BWD, 100, 100), "GTNCAN", "2M3S", false).getUntemplatedSequence());
-		assertEquals(SequenceUtil.reverseComplement("NCA"), makeRemote(new BreakendSummary(0, BWD, 100, 100), "GTNCAN", "3S2M", true).getUntemplatedSequence());
+		assertEquals("GTN", makeRemote(new BreakendSummary(0, FWD, 100), "NGTNCA", "3S2M", false).getUntemplatedSequence());
+		assertEquals(SequenceUtil.reverseComplement("GTN"), makeRemote(new BreakendSummary(0, FWD, 100), "NGTNCA", "2M3S", true).getUntemplatedSequence());
+		assertEquals("NCA", makeRemote(new BreakendSummary(0, BWD, 100), "GTNCAN", "2M3S", false).getUntemplatedSequence());
+		assertEquals(SequenceUtil.reverseComplement("NCA"), makeRemote(new BreakendSummary(0, BWD, 100), "GTNCAN", "3S2M", true).getUntemplatedSequence());
 	}
 	@Test
 	public void getBreakendSequence_should_return_sequence_from_remote_perspective() throws CloneNotSupportedException {
 		// TCGTNCA> <GTNCA
-		assertEquals("TCGTN", S(makeRemote(new BreakendSummary(0, FWD, 100, 100), "TCGTNCA", "3S2M", false).getBreakendSequence()));
+		assertEquals("TCGTN", S(makeRemote(new BreakendSummary(0, FWD, 100), "TCGTNCA", "3S2M", false).getBreakendSequence()));
 		// TCGTNCA>   RC>
-		assertEquals(SequenceUtil.reverseComplement("TCGTN"), S(makeRemote(new BreakendSummary(0, FWD, 100, 100), "TCGTNCA", "2M3S", true).getBreakendSequence()));
+		assertEquals(SequenceUtil.reverseComplement("TCGTN"), S(makeRemote(new BreakendSummary(0, FWD, 100), "TCGTNCA", "2M3S", true).getBreakendSequence()));
 		// TCGTNCA>  <TCGTNCA
-		assertEquals("GTNCA", S(makeRemote(new BreakendSummary(0, BWD, 100, 100), "TCGTNCA", "2M3S", false).getBreakendSequence()));
+		assertEquals("GTNCA", S(makeRemote(new BreakendSummary(0, BWD, 100), "TCGTNCA", "2M3S", false).getBreakendSequence()));
 		
-		assertEquals(SequenceUtil.reverseComplement("GTNCA"), S(makeRemote(new BreakendSummary(0, BWD, 100, 100), "TCGTNCA", "3S2M", true).getBreakendSequence()));
+		assertEquals(SequenceUtil.reverseComplement("GTNCA"), S(makeRemote(new BreakendSummary(0, BWD, 100), "TCGTNCA", "3S2M", true).getBreakendSequence()));
 	}
 	@Test
 	public void should_swap_breakpoint() {
@@ -109,31 +110,31 @@ public abstract class RemoteEvidenceTest extends TestHelper  {
 	@Test
 	public void homology_sequence_should_be_as_if_local() {
 		realignReferenceIndex = 0;
-		DirectedBreakpoint bp = makeRemote(new BreakendSummary(0, FWD, 100, 100), "AAAAAAAA", "1M", false);
+		DirectedBreakpoint bp = makeRemote(new BreakendSummary(0, FWD, 100), "AAAAAAAA", "1M", false);
 		assertEquals("AAAAAAAA", bp.getHomologySequence());
 		assertEquals(1, bp.getHomologyAnchoredBaseCount());
 		
 		realignReferenceIndex = 0;
-		bp = makeRemote(new BreakendSummary(0, BWD, 100, 100), "AAAAAAAA", "1M", false);
+		bp = makeRemote(new BreakendSummary(0, BWD, 100), "AAAAAAAA", "1M", false);
 		assertEquals("AAAAAAAA", bp.getHomologySequence());
 		assertEquals(1, bp.getHomologyAnchoredBaseCount());
 		
 		 // 3519-3523 = TTTTT
 		realignReferenceIndex = 2;
 		realignAlignmentStart = 3519;
-		bp = makeRemote(new BreakendSummary(0, FWD, 100, 100), "AAAAA", "1M", true);
+		bp = makeRemote(new BreakendSummary(0, FWD, 100), "AAAAA", "1M", true);
 		assertEquals("TTTTT", bp.getHomologySequence());
 		assertEquals(1, bp.getHomologyAnchoredBaseCount());
 		
 		realignReferenceIndex = 2;
 		realignAlignmentStart = 3523;
-		bp = makeRemote(new BreakendSummary(0, BWD, 100, 100), "AAAAA", "1M", true);
+		bp = makeRemote(new BreakendSummary(0, BWD, 100), "AAAAA", "1M", true);
 		assertEquals("TTTTT", bp.getHomologySequence());
 		assertEquals(1, bp.getHomologyAnchoredBaseCount());
 		
 		realignReferenceIndex = 1;
 		realignAlignmentStart = 3;
-		bp = makeRemote(new BreakendSummary(1, FWD, 1, 1), "AC", "1M", true);
+		bp = makeRemote(new BreakendSummary(1, FWD, 1), "AC", "1M", true);
 		assertEquals("GT", bp.getHomologySequence());
 		assertEquals(1, bp.getHomologyAnchoredBaseCount());
 	}

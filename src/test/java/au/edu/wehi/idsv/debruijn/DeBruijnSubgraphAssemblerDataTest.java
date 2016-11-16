@@ -1,8 +1,5 @@
 package au.edu.wehi.idsv.debruijn;
 
-import htsjdk.samtools.metrics.Header;
-import htsjdk.samtools.util.CloseableIterator;
-
 import java.io.File;
 import java.util.ArrayList;
 
@@ -20,6 +17,8 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
+import htsjdk.samtools.metrics.Header;
+import htsjdk.samtools.util.CloseableIterator;
 
 /**
  * Tests against external data sets.

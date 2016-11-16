@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv.alignment;
 
-import htsjdk.samtools.util.Log;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -11,6 +9,7 @@ import java.util.UUID;
 import com.google.common.io.Files;
 
 import au.edu.wehi.idsv.Defaults;
+import htsjdk.samtools.util.Log;
 
 public class AlignerFactory {
 	private static final Log log = Log.getInstance(AlignerFactory.class);

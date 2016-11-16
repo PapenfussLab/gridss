@@ -1,22 +1,21 @@
 package au.edu.wehi.idsv;
 
+import java.io.File;
+import java.io.IOException;
+import java.util.Locale;
+
+import com.google.common.collect.Lists;
+
+import au.edu.wehi.idsv.bed.BedpeWriter;
+import au.edu.wehi.idsv.util.FileHelper;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.vcf.VCFFileReader;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.Locale;
-
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
-import au.edu.wehi.idsv.bed.BedpeWriter;
-import au.edu.wehi.idsv.util.FileHelper;
-
-import com.google.common.collect.Lists;
 
 @CommandLineProgramProperties(
         usage = "Converts VCF breakend calls to BEDPE format. "

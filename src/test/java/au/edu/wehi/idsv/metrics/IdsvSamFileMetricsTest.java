@@ -1,8 +1,6 @@
 package au.edu.wehi.idsv.metrics;
 
 import static org.junit.Assert.assertEquals;
-import gridss.analysis.MapqMetrics;
-import htsjdk.samtools.SamPairUtil.PairOrientation;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -10,8 +8,10 @@ import java.util.List;
 
 import org.junit.Test;
 
-import picard.analysis.InsertSizeMetrics;
 import au.edu.wehi.idsv.TestHelper;
+import gridss.analysis.MapqMetrics;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
+import picard.analysis.InsertSizeMetrics;
 
 public class IdsvSamFileMetricsTest extends TestHelper {
 	@Test

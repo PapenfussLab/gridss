@@ -10,6 +10,8 @@ import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import com.google.common.collect.ImmutableList;
+
 import au.edu.wehi.idsv.AssemblyAlgorithm;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.Hg19Tests;
@@ -17,8 +19,6 @@ import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
-
-import com.google.common.collect.ImmutableList;
 
 
 public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTest {

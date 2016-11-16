@@ -1,12 +1,12 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.variant.variantcontext.VariantContext;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
-
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Doubles;
+
+import au.edu.wehi.idsv.vcf.VcfAttributes;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.variant.variantcontext.VariantContext;
 
 /**
  * Generates variant context records from the underlying @link {@link VariantContext}

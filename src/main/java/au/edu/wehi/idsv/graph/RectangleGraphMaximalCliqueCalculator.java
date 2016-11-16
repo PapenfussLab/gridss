@@ -4,9 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.PriorityQueue;
 
-import au.edu.wehi.idsv.Defaults;
-
 import com.google.common.collect.ImmutableList;
+
+import au.edu.wehi.idsv.Defaults;
 
 /**
  * Calculates all maximal cliques of a rectangle graph

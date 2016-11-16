@@ -1,11 +1,6 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.fastq.FastqRecord;
-import htsjdk.samtools.metrics.Header;
-import htsjdk.samtools.metrics.StringHeader;
-import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,12 +10,17 @@ import java.util.List;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.fastq.FastqRecord;
+import htsjdk.samtools.metrics.Header;
+import htsjdk.samtools.metrics.StringHeader;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 
 public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 	@Test
@@ -34,8 +34,8 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 	}
 	@Test
 	public void createUnanchoredBreakend_should_round_trip_unanchored_breakend_position() {
-		assertEquals(new BreakendSummary(0, FWD, 1, 3), AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 1, 3), null, B("GTAC"), new byte[] {1,2,3,4}, new int[] {0, 0}).getBreakendSummary());
-		assertEquals(new BreakendSummary(0, BWD, 10, 20), AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, BWD, 10, 20), null, B("GTAC"), new byte[] {1,2,3,4}, new int[] {0, 0}).getBreakendSummary());
+		assertEquals(new BreakendSummary(0, FWD, 1, 1, 3), AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 1, 1, 3), null, B("GTAC"), new byte[] {1,2,3,4}, new int[] {0, 0}).getBreakendSummary());
+		assertEquals(new BreakendSummary(0, BWD, 11, 10, 20), AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, BWD, 11, 10, 20), null, B("GTAC"), new byte[] {1,2,3,4}, new int[] {0, 0}).getBreakendSummary());
 	}
 	@Test
 	public void debruijn_should_generate_fastq() {

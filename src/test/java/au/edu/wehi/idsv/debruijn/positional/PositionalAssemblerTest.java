@@ -7,6 +7,8 @@ import java.util.List;
 
 import org.junit.Test;
 
+import com.google.common.collect.Lists;
+
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.DirectedEvidence;
@@ -14,8 +16,6 @@ import au.edu.wehi.idsv.DirectedEvidenceOrder;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.TestHelper;
-
-import com.google.common.collect.Lists;
 
 
 public class PositionalAssemblerTest extends TestHelper {
@@ -50,7 +50,7 @@ public class PositionalAssemblerTest extends TestHelper {
 		input.sort(DirectedEvidenceOrder.ByStartEnd);
 		ArrayList<SAMRecordAssemblyEvidence> r = Lists.newArrayList(new PositionalAssembler(pc, aes, input.iterator()));
 		assertEquals(1, r.size());
-		assertEquals(new BreakendSummary(0, FWD, 14, 14), r.get(0).getBreakendSummary());
+		assertEquals(new BreakendSummary(0, FWD, 14), r.get(0).getBreakendSummary());
 		// anchor length to match breakend length
 		assertEquals("AACGTT", S(r.get(0).getAssemblyAnchorSequence()));
 		assertEquals("GGTTAA", S(r.get(0).getBreakendSequence()));
@@ -76,7 +76,7 @@ public class PositionalAssemblerTest extends TestHelper {
 		ArrayList<SAMRecordAssemblyEvidence> r = Lists.newArrayList(new PositionalAssembler(pc, aes, input.iterator()));
 		assertEquals(2, r.size());
 		// race condition w.r.t which assembly returns first
-		assertEquals(new BreakendSummary(0, FWD, 14, 14), r.get(0).getBreakendSummary());
+		assertEquals(new BreakendSummary(0, FWD, 14), r.get(0).getBreakendSummary());
 		// anchor length to match breakend length
 		assertEquals("AACGTT", S(r.get(0).getAssemblyAnchorSequence()));
 		assertEquals("GGTTAA", S(r.get(0).getBreakendSequence()));

@@ -1,10 +1,6 @@
 package au.edu.wehi.idsv.visualisation;
 
 import static org.junit.Assert.assertEquals;
-import htsjdk.samtools.SAMFileHeader.SortOrder;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.fastq.FastqRecord;
-import htsjdk.samtools.util.SequenceUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,6 +12,10 @@ import java.util.Random;
 import org.apache.commons.io.FileUtils;
 import org.junit.Test;
 
+import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Ordering;
+
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.BreakpointFastqEncoding;
 import au.edu.wehi.idsv.BreakpointSummary;
@@ -25,15 +25,15 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
-
-import com.google.common.collect.ComparisonChain;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Ordering;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.fastq.FastqRecord;
+import htsjdk.samtools.util.SequenceUtil;
 
 public class AssemblyPaperFigure extends IntermediateFilesTest {
 	//@Test
 	public void generateFigureData() throws IOException {
-		BreakpointSummary bs = new BreakpointSummary(2, FWD, 100, 100, 2, BWD, 5000, 5000);
+		BreakpointSummary bs = new BreakpointSummary(2, FWD, 100, 2, BWD, 5000);
 		int k = 13;
 		int readLength = 25;
 		int fragSize = 75;
@@ -213,7 +213,7 @@ public class AssemblyPaperFigure extends IntermediateFilesTest {
 	}
 	@Test
 	public void small4merExample() throws IOException {
-		BreakpointSummary bs = new BreakpointSummary(2, FWD, 96, 96, 2, BWD, 125, 125);
+		BreakpointSummary bs = new BreakpointSummary(2, FWD, 96, 2, BWD, 125);
 		int k = 4;
 		int readLength = 10;
 		int fragSize = 25;

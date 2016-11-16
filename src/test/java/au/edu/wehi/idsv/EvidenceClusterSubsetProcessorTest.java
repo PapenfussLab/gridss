@@ -27,18 +27,18 @@ public class EvidenceClusterSubsetProcessorTest extends TestHelper {
 	}
 	@Test
 	public void should_filterOut_breakend_on_alt_chr() {
-		go(new BreakendSummary(0, FWD, 1, 1), false);
-		go(new BreakendSummary(1, FWD, 1, 1), false);
-		go(new BreakendSummary(2, FWD, 1, 1), true);
+		go(new BreakendSummary(0, FWD, 1), false);
+		go(new BreakendSummary(1, FWD, 1), false);
+		go(new BreakendSummary(2, FWD, 1), true);
 	}
 	@Test
 	public void should_filterOut_breakpoint_not_between_chr_pair() {
-		go(new BreakpointSummary(0,  FWD,  1,  1,  1,  FWD,  1,  1), false);
-		go(new BreakpointSummary(1,  FWD,  1,  1,  0,  FWD,  1,  1), false);
-		go(new BreakpointSummary(0,  FWD,  1,  1,  0,  FWD,  1,  1), true);
-		go(new BreakpointSummary(1,  FWD,  1,  1,  1,  FWD,  1,  1), true);
-		go(new BreakpointSummary(0,  FWD,  1,  1,  2,  FWD,  1,  1), true);
-		go(new BreakpointSummary(2,  FWD,  1,  1,  0,  FWD,  1,  1), true);
-		go(new BreakpointSummary(2,  FWD,  1,  1,  1,  FWD,  1,  1), true);
+		go(new BreakpointSummary(0,  FWD,  1,  1,  FWD,  1), false);
+		go(new BreakpointSummary(1,  FWD,  1,  0,  FWD,  1), false);
+		go(new BreakpointSummary(0,  FWD,  1,  0,  FWD,  1), true);
+		go(new BreakpointSummary(1,  FWD,  1,  1,  FWD,  1), true);
+		go(new BreakpointSummary(0,  FWD,  1,  2,  FWD,  1), true);
+		go(new BreakpointSummary(2,  FWD,  1,  0,  FWD,  1), true);
+		go(new BreakpointSummary(2,  FWD,  1,  1,  FWD,  1), true);
 	}
 }

@@ -1,12 +1,5 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.Log;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -16,11 +9,17 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import au.edu.wehi.idsv.sam.CigarUtil;
-import au.edu.wehi.idsv.sam.SamTags;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Bytes;
+
+import au.edu.wehi.idsv.sam.CigarUtil;
+import au.edu.wehi.idsv.sam.SamTags;
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.Log;
 
 public final class AssemblyFactory {
 	private static final Log log = Log.getInstance(AssemblyFactory.class);
@@ -46,7 +45,7 @@ public final class AssemblyFactory {
 			Collection<String> evidence,
 			int anchorReferenceIndex, int anchorBreakendPosition, int anchoredBaseCount,
 			byte[] baseCalls, byte[] baseQuals) {
-		BreakendSummary breakend = new BreakendSummary(anchorReferenceIndex, direction, anchorBreakendPosition, anchorBreakendPosition);
+		BreakendSummary breakend = new BreakendSummary(anchorReferenceIndex, direction, anchorBreakendPosition);
 		SAMRecord r = createAssemblySAMRecord(evidence, processContext.getBasicSamHeader(), source, breakend,
 				breakend.direction == BreakendDirection.Forward ? anchoredBaseCount : 0,
 				breakend.direction == BreakendDirection.Backward ? anchoredBaseCount : 0,
@@ -61,8 +60,8 @@ public final class AssemblyFactory {
 			int endAnchorReferenceIndex, int endAnchorPosition, int endAnchorBaseCount,
 			byte[] baseCalls, byte[] baseQuals) {
 		BreakpointSummary bp = new BreakpointSummary(
-				startAnchorReferenceIndex, BreakendDirection.Forward, startAnchorPosition, startAnchorPosition,
-				endAnchorReferenceIndex, BreakendDirection.Backward, endAnchorPosition, endAnchorPosition);
+				startAnchorReferenceIndex, BreakendDirection.Forward, startAnchorPosition,
+				endAnchorReferenceIndex, BreakendDirection.Backward, endAnchorPosition);
 		assert(startAnchorBaseCount > 0);
 		assert(endAnchorBaseCount > 0);
 		SAMRecord r = createAssemblySAMRecord(evidence, processContext.getBasicSamHeader(), source, bp,

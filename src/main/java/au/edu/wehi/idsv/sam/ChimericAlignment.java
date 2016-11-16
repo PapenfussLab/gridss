@@ -81,11 +81,11 @@ public class ChimericAlignment {
 		return getChimericAlignments(r.getStringAttribute("SA"));
 	}
 	private BreakendSummary startBreakend(SAMSequenceDictionary dict) {
-		return new BreakendSummary(dict.getSequenceIndex(rname), BreakendDirection.Backward, pos, pos);
+		return new BreakendSummary(dict.getSequenceIndex(rname), BreakendDirection.Backward, pos);
 	}
 	private BreakendSummary endBreakend(SAMSequenceDictionary dict) {
 		int endpos = pos + cigar.getReferenceLength() - 1;
-		return new BreakendSummary(dict.getSequenceIndex(rname), BreakendDirection.Forward, endpos, endpos);
+		return new BreakendSummary(dict.getSequenceIndex(rname), BreakendDirection.Forward, endpos);
 	}
 	public BreakendSummary successorBreakend(SAMSequenceDictionary dict) {
 		return isNegativeStrand ? startBreakend(dict) : endBreakend(dict);

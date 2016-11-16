@@ -1,7 +1,6 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
-import htsjdk.samtools.SAMRecord;
 
 import java.util.List;
 
@@ -9,6 +8,8 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
+
+import htsjdk.samtools.SAMRecord;
 
 
 public class SpannedIndelEvidenceTest extends TestHelper {	
@@ -28,8 +29,8 @@ public class SpannedIndelEvidenceTest extends TestHelper {
 		r.setMappingQuality(40);
 		r.setReadNegativeStrandFlag(true);
 		SpannedIndelEvidence e = IE(r);
-		assertEquals(new BreakpointSummary(2, FWD, 2, 2, 2, BWD, 5, 5), e.getBreakendSummary());
-		assertEquals(new BreakpointSummary(2, BWD, 5, 5, 2, FWD, 2, 2), e.asRemote().getBreakendSummary());
+		assertEquals(new BreakpointSummary(2, FWD, 2, 2, BWD, 5), e.getBreakendSummary());
+		assertEquals(new BreakpointSummary(2, BWD, 5, 2, FWD, 2), e.asRemote().getBreakendSummary());
 	}
 	@Test
 	public void should_span_deletion_event() {
@@ -37,8 +38,8 @@ public class SpannedIndelEvidenceTest extends TestHelper {
 		r.setReadBases(B("NNNN"));
 		r.setMappingQuality(40);
 		SpannedIndelEvidence e = IE(r);
-		assertEquals(new BreakpointSummary(2, FWD, 2, 2, 2, BWD, 5, 5), e.getBreakendSummary());
-		assertEquals(new BreakpointSummary(2, BWD, 5, 5, 2, FWD, 2, 2), e.asRemote().getBreakendSummary());
+		assertEquals(new BreakpointSummary(2, FWD, 2, 2, BWD, 5), e.getBreakendSummary());
+		assertEquals(new BreakpointSummary(2, BWD, 5, 2, FWD, 2), e.asRemote().getBreakendSummary());
 	}
 	@Test
 	public void should_span_insertion_event() {
@@ -46,8 +47,8 @@ public class SpannedIndelEvidenceTest extends TestHelper {
 		r.setReadBases(B("NNTTNN"));
 		r.setMappingQuality(40);
 		SpannedIndelEvidence e = IE(r);
-		assertEquals(new BreakpointSummary(2, FWD, 2, 2, 2, BWD, 3, 3), e.getBreakendSummary());
-		assertEquals(new BreakpointSummary(2, BWD, 3, 3, 2, FWD, 2, 2), e.asRemote().getBreakendSummary());
+		assertEquals(new BreakpointSummary(2, FWD, 2, 2, BWD, 3), e.getBreakendSummary());
+		assertEquals(new BreakpointSummary(2, BWD, 3, 2, FWD, 2), e.asRemote().getBreakendSummary());
 		assertEquals("TT", e.getUntemplatedSequence());
 		assertEquals("TT", e.asRemote().getUntemplatedSequence());
 	}

@@ -1,9 +1,5 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -12,10 +8,13 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.Iterators;
+
 import au.edu.wehi.idsv.configuration.RealignmentConfiguration;
 import au.edu.wehi.idsv.visualisation.TrackedBuffer;
-
-import com.google.common.collect.Iterators;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
 
 public class SAMRecordAssemblyEvidenceIterator implements
 		CloseableIterator<SAMRecordAssemblyEvidence>, TrackedBuffer {

@@ -1,11 +1,11 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
-
 import java.util.Iterator;
 
 import com.google.common.collect.AbstractIterator;
+
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
 
 /**
  * Only includes events higher than the given threshold score

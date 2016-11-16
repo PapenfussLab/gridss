@@ -24,16 +24,15 @@
 
 package gridss.analysis.directed;
 
+import java.util.List;
+import java.util.Set;
+
 import gridss.analysis.MapqMetrics;
 import htsjdk.samtools.SAMReadGroupRecord;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.util.Histogram;
-
-import java.util.List;
-import java.util.Set;
-
 import picard.analysis.MetricAccumulationLevel;
 import picard.metrics.MultiLevelCollector;
 import picard.metrics.PerUnitMetricCollector;

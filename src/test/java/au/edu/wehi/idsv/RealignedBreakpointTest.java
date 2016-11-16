@@ -1,12 +1,12 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.SequenceUtil;
 
 import org.junit.Test;
 
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
 
 
 public class RealignedBreakpointTest extends TestHelper {
@@ -17,13 +17,13 @@ public class RealignedBreakpointTest extends TestHelper {
 	}
 	@Test
 	public void should_set_realign_evidence() {
-		RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(0, FWD, 1, 1), B("N"), withMapq(10, Read(0, 1, "5M"))[0]);
+		RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(0, FWD, 1), B("N"), withMapq(10, Read(0, 1, "5M"))[0]);
 	}
 	public RealignedBreakpoint test_seq(String originalBreakpointSequence, String cigar, BreakendDirection direction, boolean alignNegativeStrand, String expectedUntemplatedSequence) {
 		SAMRecord r = Read(0, 1, cigar);
 		r.setReadBases(alignNegativeStrand ? B(SequenceUtil.reverseComplement(originalBreakpointSequence)): B(originalBreakpointSequence));
 		r.setReadNegativeStrandFlag(alignNegativeStrand);
-		RealignedBreakpoint rbp = RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(0, direction, 1, 1), B("N"), r);
+		RealignedBreakpoint rbp = RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(0, direction, 1), B("N"), r);
 		assertEquals(expectedUntemplatedSequence, rbp.getInsertedSequence());
 		return rbp;
 	}
@@ -41,7 +41,7 @@ public class RealignedBreakpointTest extends TestHelper {
 		// ACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTACGTA
 		//              |---->                ****<| 
 		SAMRecord realign = Read(1, 40, "2M");
-		RealignedBreakpoint rbp = RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(1, FWD, 19, 19), "NTACG", realign);
+		RealignedBreakpoint rbp = RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(1, FWD, 19), "NTACG", realign);
 		assertEquals("TACG", rbp.getHomologySequence());
 		assertEquals(4, rbp.getHomologyBaseCountIncludedLocally());
 		assertEquals(15, rbp.getBreakpointSummary().start);
@@ -59,7 +59,7 @@ public class RealignedBreakpointTest extends TestHelper {
 		SAMRecord realign = Read(2, 31, "5M");
 		realign.setReadNegativeStrandFlag(true);
 		realign.setReadBases(B("GCCAA"));		
-		RealignedBreakpoint rbp = RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(2, FWD, 19, 19), "GCGGG", realign);
+		RealignedBreakpoint rbp = RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(2, FWD, 19), "GCGGG", realign);
 		assertEquals("TTG", rbp.getHomologySequence());
 		assertEquals(0, rbp.getHomologyBaseCountIncludedLocally());
 		assertEquals(19, rbp.getBreakpointSummary().start);
@@ -78,7 +78,7 @@ public class RealignedBreakpointTest extends TestHelper {
 		SAMRecord realign = Read(2, 35, "5M");
 		realign.setReadBases(B("ACTGA"));
 		realign.setReadNegativeStrandFlag(true);
-		RealignedBreakpoint rbp = RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(2, BWD, 7, 7), "TCGCA", realign);
+		RealignedBreakpoint rbp = RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(2, BWD, 7), "TCGCA", realign);
 		assertEquals("T", rbp.getHomologySequence());
 		assertEquals(1, rbp.getHomologyBaseCountIncludedLocally());
 		assertEquals(7, rbp.getBreakpointSummary().start);
@@ -94,7 +94,7 @@ public class RealignedBreakpointTest extends TestHelper {
 		//          |>****              <----|                
 		SAMRecord realign = Read(1, 10, "2M");
 		realign.setReadBases(B("NN"));
-		RealignedBreakpoint rbp = RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(1, BWD, 30, 30), "TACGN", realign);
+		RealignedBreakpoint rbp = RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(1, BWD, 30), "TACGN", realign);
 		assertEquals("TACG", rbp.getHomologySequence());
 		assertEquals(4, rbp.getHomologyBaseCountIncludedLocally());
 		assertEquals(30, rbp.getBreakpointSummary().start);
@@ -116,7 +116,7 @@ public class RealignedBreakpointTest extends TestHelper {
 	}
 	@Test
 	public void microhomology_bases_should_ignore_case() {
-		RealignedBreakpoint rbp = RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(0, FWD, 10, 10), "aaaa", Read(0, 100, "5M"));
+		RealignedBreakpoint rbp = RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(0, FWD, 10), "aaaa", Read(0, 100, "5M"));
 		// microhomology in both directions
 		assertEquals(9, rbp.getHomologySequence().length());
 	}
@@ -125,37 +125,37 @@ public class RealignedBreakpointTest extends TestHelper {
 		SAMRecord realign = Read(0, 100, "5M");
 		realign.setReadBases(B("NNNN"));
 		realign.setReadNegativeStrandFlag(true);
-		RealignedBreakpoint rbp = RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(0, FWD, 10, 10), "TTTT", realign);
+		RealignedBreakpoint rbp = RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(0, FWD, 10), "TTTT", realign);
 		assertEquals("TTTT", rbp.getHomologySequence());
 		realign.setReadNegativeStrandFlag(false);
-		rbp = RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(0, FWD, 10, 10), "AAAA", realign);
+		rbp = RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(0, FWD, 10), "AAAA", realign);
 		assertEquals("AAAA", rbp.getHomologySequence());
 	}
 	@Test
 	public void should_calculate_imprecise_breakpoint() {
-		assertEquals(new BreakpointSummary(0, FWD, 100, 200, 1, BWD, 200, 300),
+		assertEquals(new BreakpointSummary(0, FWD, 150, 100, 200, 1, BWD, 250, 200, 300),
 				RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(),
-						new BreakendSummary(0, FWD, 100, 200), "",
+						new BreakendSummary(0, FWD, 150, 100, 200), "",
 						R(1, 300, "5M", "GTNCA", false)).getBreakpointSummary());
 		
-		assertEquals(new BreakpointSummary(0, FWD, 100, 200, 1, FWD, 304, 404),
+		assertEquals(new BreakpointSummary(0, FWD, 150, 100, 200, 1, FWD, 354, 304, 404),
 				RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(),
-						new BreakendSummary(0, FWD, 100, 200), "",
+						new BreakendSummary(0, FWD, 150, 100, 200), "",
 						R(1, 300, "5M", "GTNCA", true)).getBreakpointSummary());
 		
-		assertEquals(new BreakpointSummary(0, BWD, 100, 200, 1, FWD, 304, 404),
+		assertEquals(new BreakpointSummary(0, BWD, 150, 100, 200, 1, FWD, 354, 304, 404),
 				RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(),
-						new BreakendSummary(0, BWD, 100, 200), "",
+						new BreakendSummary(0, BWD, 150, 100, 200), "",
 						R(1, 300, "5M", "GTNCA", false)).getBreakpointSummary());
 		
-		assertEquals(new BreakpointSummary(0, BWD, 100, 200, 1, BWD, 200, 300),
+		assertEquals(new BreakpointSummary(0, BWD, 150, 100, 200, 1, BWD, 250, 200, 300),
 				RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(),
-						new BreakendSummary(0, BWD, 100, 200), "",
+						new BreakendSummary(0, BWD, 150, 100, 200), "",
 						R(1, 300, "5M", "GTNCA", true)).getBreakpointSummary());
 	}
 	@Test
 	public void should_not_calculate_microhomology_for_imprecise_breakpoint() {
-		assertEquals(0, RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(0, FWD, 100, 200), "", R(0, 100, "5M", "AAAAA", true)).getHomologySequence().length());
+		assertEquals(0, RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(0, FWD, 150, 100, 200), "", R(0, 100, "5M", "AAAAA", true)).getHomologySequence().length());
 	}
 	public static SAMRecord R(final int referenceIndex, final int alignmentStart, final String cigar, final String bases, final boolean negativeStrand) {
 		return new SAMRecord(getContext().getBasicSamHeader()) {{
@@ -168,16 +168,16 @@ public class RealignedBreakpointTest extends TestHelper {
 	}
 	@Test
 	public void should_include_untemplated_sequence_for_imprecise_breakpoint() {
-		assertEquals("GT", RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(0, FWD, 100, 200), "", R(1, 100, "2S3M", "GTNCA", false)).getInsertedSequence()); 
-		assertEquals("GT", RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(0, FWD, 100, 200), "", R(1, 100, "3M2S", SequenceUtil.reverseComplement("GTNCA"), true)).getInsertedSequence());
-		assertEquals("CA", RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(0, BWD, 100, 200), "", R(1, 100, "3M2S", "GTNCA", false)).getInsertedSequence()); 
-		assertEquals("CA", RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(0, BWD, 100, 200), "", R(1, 100, "2S3M", SequenceUtil.reverseComplement("GTNCA"), true)).getInsertedSequence());
+		assertEquals("GT", RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(0, FWD, 150, 100, 200), "", R(1, 100, "2S3M", "GTNCA", false)).getInsertedSequence()); 
+		assertEquals("GT", RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(0, FWD, 150, 100, 200), "", R(1, 100, "3M2S", SequenceUtil.reverseComplement("GTNCA"), true)).getInsertedSequence());
+		assertEquals("CA", RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(0, BWD, 150, 100, 200), "", R(1, 100, "3M2S", "GTNCA", false)).getInsertedSequence()); 
+		assertEquals("CA", RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(0, BWD, 150, 100, 200), "", R(1, 100, "2S3M", SequenceUtil.reverseComplement("GTNCA"), true)).getInsertedSequence());
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void breakpoint_interval_anchor_sequence_should_be_sane() {
 		// Can't have inexact breakpoint with anchored sequence
 		// (RealignedBreakpoint does the microhomology calculation)
-		RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(0, FWD, 100, 200), "T", Read(0, 40, "2M"));
+		RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(0, FWD, 150, 100, 200), "T", Read(0, 40, "2M"));
 	}
 	@Test
 	public void should_consider_microhomology_for_both_breakends() {
@@ -185,52 +185,52 @@ public class RealignedBreakpointTest extends TestHelper {
 		// ACGTACGTACGTACGTACGT
 		// NCG    TAN
 		//    ^^--
-		assertEquals(new BreakpointSummary(1, FWD, 1, 5, 1, BWD, 6, 10), RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(1, FWD, 3, 3), "NCG", R(1, 8, "3M", "TAN", false)).getBreakpointSummary());
+		assertEquals(new BreakpointSummary(1, FWD, 3, 1, 5, 1, BWD, 8, 6, 10), RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), new BreakendSummary(1, FWD, 3, 3, 3), "NCG", R(1, 8, "3M", "TAN", false)).getBreakpointSummary());
 	}
 	@Test
 	public void should_calc_microhomology() {
 		InMemoryReferenceSequenceFile ref = new InMemoryReferenceSequenceFile(new String[] { "0", "1" }, new byte[][] {
 				B("AAAAAAAA"), B("AAAAAAAA")});
 		//       >>>>            <<<<
-		RealignedBreakpoint bp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, FWD, 4, 4), "AAAA", R(1, 5, "4M", "AAAA", false));
+		RealignedBreakpoint bp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, FWD, 4), "AAAA", R(1, 5, "4M", "AAAA", false));
 		assertEquals("AAAAAAAA", bp.getHomologySequence());
 		assertEquals(4, bp.getHomologyBaseCountIncludedLocally());
-		assertEquals(new BreakpointSummary(0, FWD, 1, 8, 1, BWD, 1, 8), bp.getBreakpointSummary());
+		assertEquals(new BreakpointSummary(0, FWD, 4, 1, 8, 1, BWD, 4, 1, 8), bp.getBreakpointSummary());
 		
 		ref = new InMemoryReferenceSequenceFile(new String[] { "0", "1" }, new byte[][] {
 				B("AAAAAAAA"), B("AAAAAAAA")});
 		//       >>>            <<<<<
-		bp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, FWD, 3, 3), "AAA", R(1, 4, "5M", "AAAAA", false));
+		bp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, FWD, 3), "AAA", R(1, 4, "5M", "AAAAA", false));
 		assertEquals("AAAAAAAA", bp.getHomologySequence());
 		assertEquals(3, bp.getHomologyBaseCountIncludedLocally());
-		assertEquals(new BreakpointSummary(0, FWD, 1, 8, 1, BWD, 1, 8), bp.getBreakpointSummary());
+		assertEquals(new BreakpointSummary(0, FWD, 3, 1, 8, 1, BWD, 3, 1, 8), bp.getBreakpointSummary());
 		
 		ref = new InMemoryReferenceSequenceFile(new String[] { "0", "1" }, new byte[][] {
 				B("ATTAGGCG"), B("CGCCTAAT")});
 		//       >>>>        >>>>
-		bp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, FWD, 4, 4), "ATTA", R(1, 1, "4M", "CGCC", true));
-		assertEquals(new BreakpointSummary(0, FWD, 1, 8, 1, FWD, 1, 8), bp.getBreakpointSummary());
+		bp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, FWD, 4), "ATTA", R(1, 1, "4M", "CGCC", true));
+		assertEquals(new BreakpointSummary(0, FWD, 4, 1, 8, 1, FWD, 4, 1, 8), bp.getBreakpointSummary());
 		assertEquals("ATTAGGCG", bp.getHomologySequence());
 		assertEquals(4, bp.getHomologyBaseCountIncludedLocally());
 		
 		ref = new InMemoryReferenceSequenceFile(new String[] { "0", "1" }, new byte[][] {
 				B("NNNNAAAA"), B("NNAAAA")});
 		//       >>>>          <<<<
-		bp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, FWD, 4, 4), "NNNN", R(1, 3, "4M", "AAAA", false));
+		bp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, FWD, 4), "NNNN", R(1, 3, "4M", "AAAA", false));
 		assertEquals("AAAA", bp.getHomologySequence());
 		assertEquals(0, bp.getHomologyBaseCountIncludedLocally());
 		
 		ref = new InMemoryReferenceSequenceFile(new String[] { "0", "1" }, new byte[][] {
 				B("TAAANNNN"), B("NNTTTAN")});
 		//           <<<<      <<<<    
-		bp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, BWD, 5, 5), "NNNN", R(1, 3, "4M", "TTTA", true));
+		bp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, BWD, 5), "NNNN", R(1, 3, "4M", "TTTA", true));
 		assertEquals("TAAA", bp.getHomologySequence());
 		assertEquals(0, bp.getHomologyBaseCountIncludedLocally());
 		
 		ref = new InMemoryReferenceSequenceFile(new String[] { "0", "1" }, new byte[][] {
 				B("TAAANNNN"), B("NNTAAAN")});
 		//           <<<<      >>>>    
-		bp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, BWD, 5, 5), "NNNN", R(1, 3, "4M", "TAAA", false));
+		bp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, BWD, 5), "NNNN", R(1, 3, "4M", "TAAA", false));
 		assertEquals("TAAA", bp.getHomologySequence());
 		assertEquals(0, bp.getHomologyBaseCountIncludedLocally());
 	}
@@ -242,14 +242,14 @@ public class RealignedBreakpointTest extends TestHelper {
 		// ***************         ***************
 		String contig = "CATTAATCGCAAGAAAAGGTTGAAAACGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAA";
 		InMemoryReferenceSequenceFile ref = new InMemoryReferenceSequenceFile(new String[] { "Contig" }, new byte[][] { B(contig) });
-		RealignedBreakpoint bp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, FWD, 15, 15), "CATTAATCGCAATAA", R(0, 25, "25M", "AACGACGCCAAGTCA", false));
+		RealignedBreakpoint bp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, FWD, 15), "CATTAATCGCAATAA", R(0, 25, "25M", "AACGACGCCAAGTCA", false));
 		assertEquals("AAAA", bp.getHomologySequence());
 	}
 	@Test
 	public void inserted_sequence_should_be_local_breakend_strand() {
 		String contig = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
 		InMemoryReferenceSequenceFile ref = new InMemoryReferenceSequenceFile(new String[] { "Contig" }, new byte[][] { B(contig) });
-		RealignedBreakpoint rbp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, FWD, 15, 15), "N", onNegative(R(0, 1, "5M5S", "AAAAGGTTA", false))[0]);
+		RealignedBreakpoint rbp = RealignedBreakpoint.create(ref, ref.getSequenceDictionary(), new BreakendSummary(0, FWD, 15), "N", onNegative(R(0, 1, "5M5S", "AAAAGGTTA", false))[0]);
 		assertEquals("TAACC", rbp.getInsertedSequence());
 	}
 }

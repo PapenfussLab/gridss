@@ -3,7 +3,6 @@ package au.edu.wehi.idsv;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
-import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import htsjdk.samtools.SAMRecord;

@@ -3,6 +3,31 @@
  */
 package au.edu.wehi.idsv.sam;
 
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.Pair;
+
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Ordering;
+import com.google.common.collect.Sets;
+import com.google.common.primitives.Booleans;
+import com.google.common.primitives.Ints;
+
+import au.edu.wehi.idsv.BreakendDirection;
+import au.edu.wehi.idsv.alignment.AlignerFactory;
+import au.edu.wehi.idsv.alignment.Alignment;
+import au.edu.wehi.idsv.picard.ReferenceLookup;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
@@ -20,32 +45,6 @@ import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.StringUtil;
-
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
-
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.alignment.AlignerFactory;
-import au.edu.wehi.idsv.alignment.Alignment;
-import au.edu.wehi.idsv.picard.ReferenceLookup;
-
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Ordering;
-import com.google.common.collect.Sets;
-import com.google.common.primitives.Booleans;
-import com.google.common.primitives.Ints;
 
 /**
  * @author Daniel Cameron

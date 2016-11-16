@@ -1,13 +1,5 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
-import htsjdk.samtools.util.Log;
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.writer.VariantContextWriter;
-import htsjdk.variant.vcf.VCFConstants;
-import htsjdk.variant.vcf.VCFFileReader;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -18,14 +10,21 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.TreeSet;
 
-import au.edu.wehi.idsv.util.FileHelper;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
-
 import com.google.common.base.Function;
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
+
+import au.edu.wehi.idsv.util.FileHelper;
+import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.Log;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.vcf.VCFConstants;
+import htsjdk.variant.vcf.VCFFileReader;
 
 /**
  * Calls simple variants from breakends
@@ -112,7 +111,8 @@ public class BreakendToSimpleCallImpl {
 	}
 	private Collection<VariantContextDirectedBreakpoint> findOverlaps(BreakpointSummary be) {
 		ArrayList<VariantContextDirectedBreakpoint> overlapping = new ArrayList<VariantContextDirectedBreakpoint>();
-		for (Object obj : lookup.subSet(new BreakendSummary(be.referenceIndex, be.direction, be.start - maxWidth - margin - 1, Integer.MAX_VALUE), new BreakendSummary(be.referenceIndex, be.direction, be.start + 2 * maxWidth + margin + 1, Integer.MAX_VALUE))) {
+		for (Object obj : lookup.subSet(new BreakendSummary(be.referenceIndex, be.direction, be.start - maxWidth - margin - 1, be.start - maxWidth - margin - 1, Integer.MAX_VALUE),
+				new BreakendSummary(be.referenceIndex, be.direction, Integer.MAX_VALUE, be.start + 2 * maxWidth + margin + 1, Integer.MAX_VALUE))) {
 			VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)obj;
 			if (processContext.getVariantCallingParameters().withMargin(bp.getBreakendSummary())
 					.overlaps(processContext.getVariantCallingParameters().withMargin(be))) {
@@ -146,8 +146,8 @@ public class BreakendToSimpleCallImpl {
 		if (bs.start < bs.start2 && bs.direction == bs.direction2) {
 			VariantContextDirectedBreakpoint partner = null;
 			for (VariantContextDirectedBreakpoint pairing : findOverlaps(new BreakpointSummary(
-					bs.referenceIndex, bs.direction.reverse(), bs.start + 1, bs.end + 1, 
-					bs.referenceIndex2, bs.direction2.reverse(), bs.start2 + 1, bs.end2 + 1))) {
+					bs.referenceIndex, bs.direction.reverse(), bs.start + 1, bs.start + 1, bs.end + 1, 
+					bs.referenceIndex2, bs.direction2.reverse(), bs.start2 + 1, bs.start2 + 1, bs.end2 + 1))) {
 				if (pairing != bp && pairing != mate) {
 					partner = pairing;
 					break;

@@ -4,28 +4,28 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.SequenceUtil;
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 import java.util.Collection;
 
 import org.junit.Ignore;
 import org.junit.Test;
 
-import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
+
+import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 public class IdsvVariantContextBuilderTest extends TestHelper {
 	@Test
 	public void evidenceID_should_be_ID() {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext())
-			.breakend(new BreakendSummary(0, FWD, 1, 1), "");
+			.breakend(new BreakendSummary(0, FWD, 1), "");
 		builder.id("testID");
 		VariantContextDirectedEvidence bp = (VariantContextDirectedEvidence)builder.make();
 		
@@ -35,7 +35,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	@Test
 	public void should_lookup_reference_base() {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());
-		builder.breakend(new BreakendSummary(0, BreakendDirection.Forward, 1, 1), "");
+		builder.breakend(new BreakendSummary(0, BreakendDirection.Forward, 1), "");
 		VariantContextDirectedEvidence bp = (VariantContextDirectedEvidence)builder.make();
 		
 		assertEquals("A", bp.getReference().getDisplayString());
@@ -45,7 +45,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	public void should_round_trip_breakend_quals() {
 		byte[] quals = new byte[] { 1, 20, 43 };
 		VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)minimalBreakend()
-				.breakend(new BreakendSummary(0, FWD, 1, 1), B("AAA"), quals)
+				.breakend(new BreakendSummary(0, FWD, 1), B("AAA"), quals)
 				.make();
 		v = (VariantContextDirectedEvidence)IdsvVariantContext.create(getContext(), null, v);
 		assertArrayEquals(quals, v.getBreakendQuality());
@@ -109,7 +109,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		realigned.setReadNegativeStrandFlag(!realignPositive);
 		int fragSize = realigned.getCigar().getReferenceLength() - 1; // temp hack until better upstream calculation is performed
 		VariantContextDirectedEvidence dba = CallSV(AssemblyFactory.createUnanchoredBreakend(getContext(), AES(fragSize),
-				new BreakendSummary(0, direction, 1000, 1000), null, //NRRP(SES(fragSize), OEA(0, 1000, "1M", direction == FWD))
+				new BreakendSummary(0, direction, 1000), null, //NRRP(SES(fragSize), OEA(0, 1000, "1M", direction == FWD))
 				B(bpString), B(bpString), new int[] {0, 0}).annotateAssembly());
 				//AB().direction(direction).anchorLength(0).assemblyBases(B(bpString)).makeVariant();
 		
@@ -151,34 +151,35 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 	@Test
 	public void breakend_should_be_vcf_sv_breakend() {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext())
-			.breakend(new BreakendSummary(0, BreakendDirection.Forward, 1, 1), "");
+			.breakend(new BreakendSummary(0, BreakendDirection.Forward, 1), "");
 		
 		assertEquals("BND", builder.make().getAttributeAsString("SVTYPE", ""));
 	}
 	@Test
 	public void breakpoint_should_be_vcf_sv_breakend() {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext())
-			.breakpoint(new BreakpointSummary(0, BreakendDirection.Forward, 1, 1, 0, BreakendDirection.Forward, 1, 1), "");
+			.breakpoint(new BreakpointSummary(0, BreakendDirection.Forward, 1, 0, BreakendDirection.Forward, 1), "");
 		
 		assertEquals("BND", builder.make().getAttributeAsString("SVTYPE", ""));
 	}
 	@Test
 	public void should_round_trip_inexact_breakend() {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext());
-		builder.breakend(new BreakendSummary(1, FWD, 2, 4), "");
+		builder.breakend(new BreakendSummary(1, FWD, 3, 2, 7), "");
 		VariantContextDirectedEvidence v = (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext(), builder.make()).make();
 		assertEquals(1, v.getBreakendSummary().referenceIndex);
 		assertEquals(FWD, v.getBreakendSummary().direction);
 		assertEquals(2, v.getBreakendSummary().start);
-		assertEquals(4, v.getBreakendSummary().end);
+		assertEquals(7, v.getBreakendSummary().end);
+		assertEquals(3, v.getBreakendSummary().nominal);
 	}
 	@Test
 	public void should_round_trip_inexact_breakpoint() {
 		for (final BreakpointSummary bp : new BreakpointSummary[] {
-			new BreakpointSummary(0, FWD, 11, 12, 0, BWD, 5, 15),
-			new BreakpointSummary(0, FWD, 10, 10, 0, BWD, 10, 15),
-			new BreakpointSummary(0, FWD, 10, 12, 0, BWD, 10, 10),
-			new BreakpointSummary(0, FWD, 11, 12, 0, FWD, 10, 20),
+			new BreakpointSummary(0, FWD, 12, 11, 12, 0, BWD, 8, 5, 15),
+			new BreakpointSummary(0, FWD, 10, 10, 10, 0, BWD, 11, 10, 15),
+			new BreakpointSummary(0, FWD, 11, 10, 12, 0, BWD, 10, 10, 10),
+			new BreakpointSummary(0, FWD, 12, 11, 12, 0, FWD, 13, 10, 20),
 		}) {
 			assertEquals(bp, ((VariantContextDirectedEvidence)(new IdsvVariantContextBuilder(getContext()) {{
 				breakpoint(bp, "GTAC");
@@ -277,36 +278,26 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		assertEquals(2, ((Collection<Integer>)attr).size());
 	}
 	@Test
-	public void CIPOS_CIRPOS_should_call_centre_position() {
+	public void CIPOS_CIRPOS_should_call_nominal_position() {
 		VariantContext vc;
 		vc = new IdsvVariantContextBuilder(getContext())
-			.breakpoint(new BreakpointSummary(0, FWD, 100, 102, 2, BWD, 300, 302), "").make();
+			.breakpoint(new BreakpointSummary(0, FWD, 101, 100, 102, 2, BWD, 301, 300, 302), "").make();
 		assertEquals(Lists.newArrayList(-1,1), AttributeConverter.asIntList(vc.getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)));
 		assertEquals(Lists.newArrayList(-1,1), AttributeConverter.asIntList(vc.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
 		
 		vc = new IdsvVariantContextBuilder(getContext())
-			.breakpoint(new BreakpointSummary(0, FWD, 100, 200, 2, FWD, 300, 400), "").make();
+			.breakpoint(new BreakpointSummary(0, FWD, 150, 100, 200, 2, FWD, 350, 300, 400), "").make();
 		assertEquals(Lists.newArrayList(-50,50), AttributeConverter.asIntList(vc.getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)));
 		assertEquals(Lists.newArrayList(-50,50), AttributeConverter.asIntList(vc.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
 		
 		vc = new IdsvVariantContextBuilder(getContext())
-			.breakpoint(new BreakpointSummary(2, BWD, 300, 400, 0, FWD, 100, 200), "").make();
+			.breakpoint(new BreakpointSummary(2, BWD, 350, 300, 400, 0, FWD, 150, 100, 200), "").make();
 		assertEquals(Lists.newArrayList(-50,50), AttributeConverter.asIntList(vc.getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)));
 		assertEquals(Lists.newArrayList(-50,50), AttributeConverter.asIntList(vc.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
-	}
-	@Test
-	public void centre_position_should_round_down_lower_linear_coordinate() {
-		VariantContext vc;
-		vc = new IdsvVariantContextBuilder(getContext())
-			.breakpoint(new BreakpointSummary(0, FWD, 100, 101, 2, BWD, 300, 301), "").make();
-		assertEquals(Lists.newArrayList(0,1), AttributeConverter.asIntList(vc.getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)));
-		assertEquals(Lists.newArrayList(-1,0), AttributeConverter.asIntList(vc.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
-		assertEquals(100, vc.getStart());
 		
 		vc = new IdsvVariantContextBuilder(getContext())
-			.breakpoint(new BreakpointSummary(1, FWD, 100, 101, 0, BWD, 300, 301), "").make();
-		assertEquals(Lists.newArrayList(-1,0), AttributeConverter.asIntList(vc.getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)));
-		assertEquals(Lists.newArrayList(0, 1), AttributeConverter.asIntList(vc.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
-		assertEquals(101, vc.getStart());
+				.breakpoint(new BreakpointSummary(0, FWD, 101, 100, 105, 2, BWD, 300, 300, 305), "").make();
+			assertEquals(Lists.newArrayList(-1,4), AttributeConverter.asIntList(vc.getAttribute(VcfSvConstants.CONFIDENCE_INTERVAL_START_POSITION_KEY)));
+			assertEquals(Lists.newArrayList(0,5), AttributeConverter.asIntList(vc.getAttribute(VcfAttributes.CONFIDENCE_INTERVAL_REMOTE_BREAKEND_START_POSITION_KEY.attribute())));
 	}
 }

@@ -1,8 +1,5 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.Log;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -11,12 +8,14 @@ import java.util.List;
 import java.util.SortedSet;
 import java.util.concurrent.ExecutorService;
 
-import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
-
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
+
+import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.Log;
 
 public abstract class EvidenceProcessorBase {
 	private static final Log log = Log.getInstance(EvidenceProcessorBase.class);

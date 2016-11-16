@@ -5,11 +5,11 @@ import java.util.Locale;
 
 import org.apache.commons.configuration.ConfigurationException;
 
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import picard.cmdline.CommandLineProgram;
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
-import au.edu.wehi.idsv.configuration.GridssConfiguration;
 
 /**
  * Calls simple variants

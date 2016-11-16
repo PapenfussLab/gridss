@@ -1,19 +1,18 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.util.SequenceUtil;
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.VariantContextBuilder;
-
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Set;
+
+import com.google.common.collect.Sets;
 
 import au.edu.wehi.idsv.vcf.SvType;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfConstants;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
-
-import com.google.common.collect.Sets;
+import htsjdk.samtools.util.SequenceUtil;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 /**
  * Builder for generating VCF structural variation calls with appropriate attributes
@@ -97,10 +96,9 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 		
 		String chr = processContext.getDictionary().getSequence(loc.referenceIndex).getSequenceName();
 		String ref, alt;
-		// call the middle position of inexact intervals
-		BreakendSummary bpCall = loc.getCallPosition();
-		int callPos = bpCall.start;
-		int remoteCallPos = bpCall instanceof BreakpointSummary ? ((BreakpointSummary)bpCall).start2 : 0;
+		BreakendSummary bpCall = loc; // call the nominal position
+		int callPos = bpCall.nominal;
+		int remoteCallPos = bpCall instanceof BreakpointSummary ? ((BreakpointSummary)bpCall).nominal2 : 0;
 		byte refBase = processContext.getReference().getSubsequenceAt(chr, callPos, callPos).getBases()[0];
 		if (!SequenceUtil.isValidBase(refBase)) {
 			// Convert ambiguous bases to Ns as VCF does not support full IUPAC notation

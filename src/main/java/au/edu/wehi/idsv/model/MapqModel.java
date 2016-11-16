@@ -1,8 +1,8 @@
 package au.edu.wehi.idsv.model;
 
-import htsjdk.samtools.CigarOperator;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.util.MathUtil;
+import htsjdk.samtools.CigarOperator;
 
 /**
  * High-speed variant scoring model. This model assumes that one of the terms will dominate

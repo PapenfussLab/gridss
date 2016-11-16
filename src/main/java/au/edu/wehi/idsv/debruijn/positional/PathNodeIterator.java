@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -9,12 +7,13 @@ import java.util.List;
 import java.util.ListIterator;
 import java.util.PriorityQueue;
 
+import com.google.common.collect.Iterators;
+import com.google.common.collect.PeekingIterator;
+
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.util.IntervalUtil;
-
-import com.google.common.collect.Iterators;
-import com.google.common.collect.PeekingIterator;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 /**
  * Transforms a start position sorted sequence of non-overlapping KmerAggregateNode to a

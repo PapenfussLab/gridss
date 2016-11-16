@@ -3,10 +3,11 @@ package au.edu.wehi.idsv;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 import org.junit.Ignore;
 import org.junit.Test;
+
+import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 public class VariantContextDirectedEvidenceTest extends TestHelper {
 	@Test
@@ -260,7 +261,7 @@ public class VariantContextDirectedEvidenceTest extends TestHelper {
 		}
 		
 		VariantContextDirectedEvidence e = (VariantContextDirectedEvidence) minimalBreakend()
-			.breakend(new BreakendSummary(0, FWD, 1, 1), b, q).make();
+			.breakend(new BreakendSummary(0, FWD, 1), b, q).make();
 		e = (VariantContextDirectedEvidence)(IdsvVariantContext.create(getContext(), null, e));
 		assertArrayEquals(q, e.getBreakendQuality());
 	}

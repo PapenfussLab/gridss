@@ -1,11 +1,11 @@
 package au.edu.wehi.idsv;
 
+import java.util.Iterator;
+
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.ProgressLoggerInterface;
-
-import java.util.Iterator;
 
 public class ProgressLoggingSAMRecordIterator implements CloseableIterator<SAMRecord> {
 	private final ProgressLoggerInterface logger;

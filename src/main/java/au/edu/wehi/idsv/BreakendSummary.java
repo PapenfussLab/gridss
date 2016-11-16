@@ -1,18 +1,18 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMSequenceDictionary;
-
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
 
-import au.edu.wehi.idsv.util.IntervalUtil;
-
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 import com.google.common.math.IntMath;
+
+import au.edu.wehi.idsv.util.IntervalUtil;
+import au.edu.wehi.idsv.util.MathUtil;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.SAMSequenceDictionary;
 
 /**
  * Positional location of a breakpoint that is consistent with the given evidence
@@ -20,6 +20,10 @@ import com.google.common.math.IntMath;
  *
  */
 public class BreakendSummary {
+	/**
+	 * Nominal position adjacent to breakpoint in 1-based genomic coordinate
+	 */
+	public final int nominal;
 	/**
 	 * First possible mapped position adjacent to breakpoint in 1-based genomic coordinate
 	 */
@@ -36,16 +40,23 @@ public class BreakendSummary {
 	 * Breakpoint is in the given direction
 	 */
 	public final BreakendDirection direction;
-	public BreakendSummary(int referenceIndex, BreakendDirection direction, int start, int end) {
+	public BreakendSummary(int referenceIndex, BreakendDirection direction, int nominal) {
+		this(referenceIndex, direction, nominal, nominal, nominal);
+	}
+	public BreakendSummary(int referenceIndex, BreakendDirection direction, int nominal, int start, int end) {
 		if (referenceIndex < 0) {
 			throw new IllegalArgumentException("Reference index must be valid");
 		}
 		if (end < start) {
 			throw new IllegalArgumentException("end must be at or after start");
 		}
+		if (nominal < start || nominal > end) {
+			throw new IllegalArgumentException("nominal must be within [start, end] interval");
+		}
 		this.referenceIndex = referenceIndex;
 		this.direction = direction;
 		this.start = start;
+		this.nominal = nominal;
 		this.end = end;
 	}
 	/**
@@ -85,8 +96,19 @@ public class BreakendSummary {
 		int start = Math.max(b1.start, b2.start);
 		int end = Math.min(b1.end, b2.end);
 		if (start > end) return null;
-		BreakendSummary result = new BreakendSummary(b1.referenceIndex, b1.direction, start, end);
+		int nominal = boundedNominal(MathUtil.average(b1.nominal, b2.nominal), start, end); 
+		BreakendSummary result = new BreakendSummary(b1.referenceIndex, b1.direction, nominal, start, end);
 		return result;
+	}
+	/**
+	 * Returns the nominal position whilst ensuring it is within the given bounds
+	 * @param start
+	 * @param nominal
+	 * @param end
+	 * @return
+	 */
+	private static int boundedNominal(int nominal, int start, int end) {
+		return Math.min(Math.max(nominal, start), end);
 	}
 	/**
 	 * Extends the breakend location interval
@@ -95,7 +117,7 @@ public class BreakendSummary {
 	 * @return breakend with bounds expanded on both sides
 	 */
 	public BreakendSummary expandBounds(int expandBy) {
-		return new BreakendSummary(referenceIndex, direction, start - expandBy, end + expandBy);
+		return new BreakendSummary(referenceIndex, direction, nominal, start - expandBy, end + expandBy);
 	}
 	/**
 	 * Reduces size of the breakend location interval
@@ -109,27 +131,27 @@ public class BreakendSummary {
 	protected BreakendSummary compressBounds(int by, RoundingMode roundingMode) {
 		if (end - start + 1 <= 2 * by) {
 			int centre = IntMath.divide(end + start, 2, roundingMode);
-			return new BreakendSummary(referenceIndex, direction, centre, centre);
+			return new BreakendSummary(referenceIndex, direction, boundedNominal(nominal, centre, centre), centre, centre);
 		}
-		return new BreakendSummary(referenceIndex, direction, start + by, end - by);
+		return new BreakendSummary(referenceIndex, direction, boundedNominal(nominal, start + by, end - by), start + by, end - by);
 	}
 	/**
 	 * Gets the nominal position of the variant for variant calling purposes
 	 * @return position to call
 	 */
-	public BreakendSummary getCallPosition() {
-		int callPos = IntMath.divide(start + end, 2, RoundingMode.FLOOR);
-		return new BreakendSummary(referenceIndex, direction, callPos, callPos);
-	}
-	protected static String toString(int referenceIndex, int start, int end, GenomicProcessingContext processContext) {
+	//public BreakendSummary getCallPosition() {
+	//	int callPos = IntMath.divide(start + end, 2, RoundingMode.FLOOR);
+	//	return new BreakendSummary(referenceIndex, direction, nominal, nominal);
+	//}
+	protected static String toString(int referenceIndex, int nominal, int start, int end, GenomicProcessingContext processContext) {
 		if (processContext != null && referenceIndex >= 0 && referenceIndex < processContext.getDictionary().size()) {
-			return String.format("%s:%d-%d", processContext.getDictionary().getSequence(referenceIndex).getSequenceName(), start, end);
+			return String.format("%s:%d(%d-%d)", processContext.getDictionary().getSequence(referenceIndex).getSequenceName(), nominal, start, end);
 		}
 		return String.format("(%d):%d-%d", referenceIndex, start, end);
 	}
-	protected static String toString(BreakendDirection direction, int referenceIndex, int start, int end, GenomicProcessingContext processContext) {
-		if (direction == BreakendDirection.Forward) return toString(referenceIndex, start, end, processContext) + ">";
-		return "<" + toString(referenceIndex, start, end, processContext);
+	protected static String toString(BreakendDirection direction, int referenceIndex, int nominal, int start, int end, GenomicProcessingContext processContext) {
+		if (direction == BreakendDirection.Forward) return toString(referenceIndex, nominal, start, end, processContext) + ">";
+		return "<" + toString(referenceIndex, nominal, start, end, processContext);
 	}
 	/**
 	 * Determines whether this given breakend is valid for the given reference
@@ -160,10 +182,10 @@ public class BreakendSummary {
 	}
 	@Override
 	public String toString() {
-		return toString(direction, referenceIndex, start, end, null);
+		return toString(direction, referenceIndex, nominal, start, end, null);
 	}
 	public String toString(GenomicProcessingContext processContext) {
-		return toString(direction, referenceIndex, start, end, processContext);
+		return toString(direction, referenceIndex, nominal, start, end, processContext);
 	}
 	@Override
 	public int hashCode() {
@@ -171,6 +193,7 @@ public class BreakendSummary {
 		int result = 1;
 		result = prime * result
 				+ ((direction == null) ? 0 : direction.hashCode());
+		result = prime * result + nominal;
 		result = prime * result + end;
 		result = prime * result + referenceIndex;
 		result = prime * result + start;
@@ -187,6 +210,8 @@ public class BreakendSummary {
 		BreakendSummary other = (BreakendSummary) obj;
 		if (direction != other.direction)
 			return false;
+		if (nominal != other.nominal)
+			return false;
 		if (end != other.end)
 			return false;
 		if (referenceIndex != other.referenceIndex)
@@ -201,6 +226,7 @@ public class BreakendSummary {
 			        .compare(o1.referenceIndex, o2.referenceIndex)
 			        .compare(o1.start, o2.start)
 			        .compare(o1.end, o2.end)
+			        .compare(o1.nominal, o2.nominal)
 			        .result();
 		  }
 	};
@@ -210,6 +236,7 @@ public class BreakendSummary {
 			        .compare(o1.referenceIndex, o2.referenceIndex)
 			        .compare(o1.end, o2.end)
 			        .compare(o1.start, o2.start)
+			        .compare(o1.nominal, o2.nominal)
 			        .result();
 		  }
 	};

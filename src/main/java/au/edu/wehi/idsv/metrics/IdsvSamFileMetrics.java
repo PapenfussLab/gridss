@@ -1,24 +1,23 @@
 package au.edu.wehi.idsv.metrics;
 
-import gridss.analysis.MapqMetrics;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.metrics.MetricsFile;
-import htsjdk.samtools.util.Log;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import picard.analysis.InsertSizeMetrics;
-import au.edu.wehi.idsv.GenomicProcessingContext;
-import au.edu.wehi.idsv.util.MathUtil;
-
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Ordering;
 import com.google.common.primitives.Longs;
+
+import au.edu.wehi.idsv.GenomicProcessingContext;
+import au.edu.wehi.idsv.util.MathUtil;
+import gridss.analysis.MapqMetrics;
+import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.metrics.MetricsFile;
+import htsjdk.samtools.util.Log;
+import picard.analysis.InsertSizeMetrics;
 
 public class IdsvSamFileMetrics {
 	private static final Log log = Log.getInstance(IdsvSamFileMetrics.class);

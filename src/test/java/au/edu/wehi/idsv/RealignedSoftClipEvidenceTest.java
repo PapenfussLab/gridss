@@ -1,10 +1,11 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.SequenceUtil;
 
 import org.junit.Test;
+
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.SequenceUtil;
 
 
 public class RealignedSoftClipEvidenceTest extends TestHelper {
@@ -131,6 +132,6 @@ public class RealignedSoftClipEvidenceTest extends TestHelper {
 	@Test
 	public void should_calc_homology() {
 		RealignedSoftClipEvidence sce = ((RealignedSoftClipEvidence)SoftClipEvidence.create(SES(), BreakendDirection.Forward, Read(0, 2, "1M1S"), Read(0, 5, "1M")));
-		assertEquals(new BreakpointSummary(0, FWD, 1, 3, 0, BWD, 4, 6), sce.getBreakendSummary());
+		assertEquals(new BreakpointSummary(0, FWD, 2, 1, 3, 0, BWD, 5, 4, 6), sce.getBreakendSummary());
 	}
 }

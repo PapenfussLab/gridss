@@ -1,8 +1,5 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import it.unimi.dsi.fastutil.ints.IntRBTreeSet;
-import it.unimi.dsi.fastutil.ints.IntSortedSet;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -10,12 +7,14 @@ import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeSet;
 
-import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNodeUtil;
-
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.Sets;
+
+import au.edu.wehi.idsv.debruijn.DeBruijnSequenceGraphNodeUtil;
+import it.unimi.dsi.fastutil.ints.IntRBTreeSet;
+import it.unimi.dsi.fastutil.ints.IntSortedSet;
 
 /**
  * Base class for path collapse logic

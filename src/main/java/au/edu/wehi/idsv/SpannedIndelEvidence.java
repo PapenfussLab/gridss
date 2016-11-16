@@ -1,8 +1,8 @@
 package au.edu.wehi.idsv;
 
+import au.edu.wehi.idsv.sam.SplitIndel;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
-import au.edu.wehi.idsv.sam.SplitIndel;
 
 public class SpannedIndelEvidence extends RealignedSoftClipEvidence {
 	private final int indelOffset;

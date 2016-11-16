@@ -7,6 +7,8 @@ import java.util.ArrayList;
 
 import org.junit.Test;
 
+import com.google.common.collect.Lists;
+
 import au.edu.wehi.idsv.AssemblyFactory;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
@@ -16,8 +18,6 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.vcf.VcfFilter;
-
-import com.google.common.collect.Lists;
 
 
 public class AssemblyConfigurationTest extends TestHelper {
@@ -33,7 +33,7 @@ public class AssemblyConfigurationTest extends TestHelper {
 	}
 	@Test
 	public void should_filter_single_read_assemblies() {
-		MockDirectedEvidence ev = new MockDirectedEvidence(new BreakendSummary(0, FWD, 1, 2));
+		MockDirectedEvidence ev = new MockDirectedEvidence(new BreakendSummary(0, FWD, 1, 1, 2));
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, Lists.newArrayList(ev.getEvidenceID()), 0, 1, 1, B("AA"), B("AA"))
 				.hydrateEvidenceSet(ev)
 				.annotateAssembly();
@@ -45,7 +45,7 @@ public class AssemblyConfigurationTest extends TestHelper {
 	public void should_filter_mate_anchored_assembly_shorter_than_read_length() {
 		ArrayList<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(NRRP(OEA(0, 1, "4M", true)));
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createUnanchoredBreakend(
-				getContext(), AES(), new BreakendSummary(0, FWD, 5, 300), Lists.transform(support, EID),
+				getContext(), AES(), new BreakendSummary(0, FWD, 5, 5, 300), Lists.transform(support, EID),
 				B("AAA"), B("AAA"), new int[] { 2, 0 });
 		e.hydrateEvidenceSet(support);
 		e.annotateAssembly();
@@ -72,7 +72,7 @@ public class AssemblyConfigurationTest extends TestHelper {
 				NRRP(OEA(0, 1, "3M", false)),
 				NRRP(OEA(0, 1, "4M", false)));
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createUnanchoredBreakend(
-				getContext(), AES(), new BreakendSummary(0, FWD, 5, 300), Lists.transform(support, EID),
+				getContext(), AES(), new BreakendSummary(0, FWD, 5, 5, 300), Lists.transform(support, EID),
 				B("AAAAAA"), B("AAAAAA"), new int[] { 2, 0 });
 		e.hydrateEvidenceSet(support);
 		e.annotateAssembly();
@@ -97,7 +97,7 @@ public class AssemblyConfigurationTest extends TestHelper {
 	public void should_not_apply_breakend_filter_to_unanchored_assembly() {
 		ArrayList<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(NRRP(SES(100, 100), DP(0, 1, "1M", true, 0, 5, "1M", false)));
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createUnanchoredBreakend(
-				getContext(), AES(), new BreakendSummary(0, FWD, 1, 300), Lists.transform(support, EID),
+				getContext(), AES(), new BreakendSummary(0, FWD, 1, 1, 300), Lists.transform(support, EID),
 				B("AA"), B("AA"), new int[] { 2, 0});
 		e.hydrateEvidenceSet(support);
 		e.annotateAssembly();

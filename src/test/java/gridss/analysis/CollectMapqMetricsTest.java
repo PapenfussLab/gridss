@@ -1,7 +1,6 @@
 package gridss.analysis;
 
-import static org.junit.Assert.*;
-import gridss.analysis.CollectMapqMetrics;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,8 +9,8 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
-import picard.analysis.SinglePassSamProgram;
 import au.edu.wehi.idsv.IntermediateFilesTest;
+import picard.analysis.SinglePassSamProgram;
 
 
 public class CollectMapqMetricsTest extends IntermediateFilesTest {

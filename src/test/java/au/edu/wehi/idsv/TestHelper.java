@@ -2,30 +2,6 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import gridss.analysis.MapqMetrics;
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.DefaultSAMRecordFactory;
-import htsjdk.samtools.SAMFileHeader;
-import htsjdk.samtools.SAMFileWriter;
-import htsjdk.samtools.SAMLineParser;
-import htsjdk.samtools.SAMReadGroupRecord;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMRecordCoordinateComparator;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMTag;
-import htsjdk.samtools.SamPairUtil;
-import htsjdk.samtools.ValidationStringency;
-import htsjdk.samtools.metrics.Header;
-import htsjdk.samtools.metrics.MetricsFile;
-import htsjdk.samtools.reference.ReferenceSequenceFile;
-import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.ProgressLoggerInterface;
-import htsjdk.variant.variantcontext.VariantContext;
-import htsjdk.variant.variantcontext.writer.VariantContextWriter;
-import htsjdk.variant.vcf.VCFHeader;
 
 import java.io.File;
 import java.nio.charset.StandardCharsets;
@@ -50,7 +26,12 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.lang3.StringUtils;
 
-import picard.analysis.InsertSizeMetrics;
+import com.google.common.base.Function;
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraph;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
@@ -89,12 +70,31 @@ import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.sam.SplitIndel;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
-
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
+import gridss.analysis.MapqMetrics;
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.DefaultSAMRecordFactory;
+import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileWriter;
+import htsjdk.samtools.SAMLineParser;
+import htsjdk.samtools.SAMReadGroupRecord;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordCoordinateComparator;
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMTag;
+import htsjdk.samtools.SamPairUtil;
+import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.metrics.Header;
+import htsjdk.samtools.metrics.MetricsFile;
+import htsjdk.samtools.reference.ReferenceSequenceFile;
+import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
+import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.ProgressLoggerInterface;
+import htsjdk.variant.variantcontext.VariantContext;
+import htsjdk.variant.variantcontext.writer.VariantContextWriter;
+import htsjdk.variant.vcf.VCFHeader;
+import picard.analysis.InsertSizeMetrics;
 
 public class TestHelper {
 	public static final long LCCB = GenomicProcessingContext.LINEAR_COORDINATE_CHROMOSOME_BUFFER;
@@ -1228,6 +1228,7 @@ public class TestHelper {
 		if (be == null) {
 			be = new BreakendSummary(ass.getBackingRecord().getReferenceIndex(),
 					BreakendDirection.Forward,
+					ass.getBackingRecord().getAlignmentEnd() + ass.getBackingRecord().getAlignmentStart() / 2,
 					ass.getBackingRecord().getAlignmentStart(),
 					ass.getBackingRecord().getAlignmentEnd());
 		}

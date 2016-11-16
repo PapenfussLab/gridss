@@ -1,7 +1,5 @@
 package au.edu.wehi.idsv.vcf;
 
-import au.edu.wehi.idsv.Hg19Tests;
-
 public class VcfFileUtilTest {
 	/*
 	public class TestCommandLineProgram extends CommandLineProgram {

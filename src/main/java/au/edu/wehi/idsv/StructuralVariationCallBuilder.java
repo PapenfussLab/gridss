@@ -1,21 +1,9 @@
 package au.edu.wehi.idsv;
 
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
-import htsjdk.samtools.CigarOperator;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.Log;
-import htsjdk.variant.variantcontext.VariantContextBuilder;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-
-import au.edu.wehi.idsv.alignment.BreakpointHomology;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
-import au.edu.wehi.idsv.vcf.VcfFilter;
-import au.edu.wehi.idsv.vcf.VcfSvConstants;
 
 import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Lists;
@@ -23,6 +11,17 @@ import com.google.common.collect.Ordering;
 import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
+
+import au.edu.wehi.idsv.alignment.BreakpointHomology;
+import au.edu.wehi.idsv.vcf.VcfAttributes;
+import au.edu.wehi.idsv.vcf.VcfFilter;
+import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import htsjdk.samtools.Cigar;
+import htsjdk.samtools.CigarElement;
+import htsjdk.samtools.CigarOperator;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.Log;
+import htsjdk.variant.variantcontext.VariantContextBuilder;
 
 public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private static final Log log = Log.getInstance(StructuralVariationCallBuilder.class);
@@ -325,7 +324,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			
 			BreakpointHomology bh = BreakpointHomology.calculate(
 					processContext.getReference(),
-					bestExactBreakpoint.getBreakendSummary().getCallPosition(),
+					bestExactBreakpoint.getBreakendSummary(),
 					untemplated,
 					processContext.getVariantCallingParameters().maxBreakendHomologyLength,
 					processContext.getVariantCallingParameters().breakendHomologyAlignmentMargin);

@@ -46,8 +46,8 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 		int postRefLength = CigarUtil.referenceLength(post);
 		// TODO: adjust bounds based on sequence homology
 		BreakpointSummary location = new BreakpointSummary(
-				record.getReferenceIndex(), BreakendDirection.Forward, record.getAlignmentStart() + preRefLength - 1, record.getAlignmentStart() + preRefLength - 1,
-				record.getReferenceIndex(), BreakendDirection.Backward, record.getAlignmentEnd() - postRefLength + 1, record.getAlignmentEnd() - postRefLength + 1);
+				record.getReferenceIndex(), BreakendDirection.Forward, record.getAlignmentStart() + preRefLength - 1,
+				record.getReferenceIndex(), BreakendDirection.Backward, record.getAlignmentEnd() - postRefLength + 1);
 		int preStartOffset = 0;
 		int preEndOffset = preReadLength;
 		int unmappedStartOffset = preEndOffset;

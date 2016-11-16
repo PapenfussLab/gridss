@@ -1,16 +1,5 @@
 package au.edu.wehi.idsv.util;
 
-import htsjdk.samtools.SAMFileWriter;
-import htsjdk.samtools.SAMFileWriterFactory;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SamReader;
-import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.ValidationStringency;
-import htsjdk.samtools.util.Log;
-import htsjdk.samtools.util.ProgressLogger;
-import it.unimi.dsi.fastutil.longs.LongOpenHashBigSet;
-import it.unimi.dsi.fastutil.longs.LongSet;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.DataInputStream;
@@ -24,15 +13,25 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
-import picard.cmdline.CommandLineProgramProperties;
-import picard.cmdline.Option;
-import picard.cmdline.StandardOptionDefinitions;
-import au.edu.wehi.idsv.ProgressLoggingSAMRecordIterator;
-
 import com.google.common.collect.Lists;
 import com.google.common.hash.HashCode;
 import com.google.common.hash.HashFunction;
 import com.google.common.hash.Hashing;
+
+import au.edu.wehi.idsv.ProgressLoggingSAMRecordIterator;
+import htsjdk.samtools.SAMFileWriter;
+import htsjdk.samtools.SAMFileWriterFactory;
+import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
+import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.ProgressLogger;
+import it.unimi.dsi.fastutil.longs.LongOpenHashBigSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
+import picard.cmdline.CommandLineProgramProperties;
+import picard.cmdline.Option;
+import picard.cmdline.StandardOptionDefinitions;
 
 @CommandLineProgramProperties(
         usage = "Subsets the given BAM file, returning only reads that are not found in the given data set.",  

@@ -17,13 +17,13 @@ public class SoftClipReadEvidence extends SingleReadEvidence {
 		if (direction == BreakendDirection.Backward) {
 			int clipLength = SAMRecordUtil.getStartSoftClipLength(record);
 			return new SoftClipReadEvidence(source, record,
-					new BreakendSummary(record.getReferenceIndex(), direction, record.getAlignmentStart(), record.getAlignmentStart()),
+					new BreakendSummary(record.getReferenceIndex(), direction, record.getAlignmentStart()),
 					clipLength, record.getReadLength() - (INCLUDE_CLIPPED_ANCHORING_BASES ? 0 : SAMRecordUtil.getEndSoftClipLength(record)),
 					0, clipLength);
 		} else {
 			int clipLength = SAMRecordUtil.getEndSoftClipLength(record);
 			return new SoftClipReadEvidence(source, record,
-					new BreakendSummary(record.getReferenceIndex(), direction, record.getAlignmentEnd(), record.getAlignmentEnd()),
+					new BreakendSummary(record.getReferenceIndex(), direction, record.getAlignmentEnd()),
 					INCLUDE_CLIPPED_ANCHORING_BASES ? 0 : SAMRecordUtil.getStartSoftClipLength(record), record.getReadLength() - clipLength,
 					record.getReadLength() - clipLength, record.getReadLength());
 		}
