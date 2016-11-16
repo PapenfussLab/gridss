@@ -19,6 +19,13 @@ public class IndelEvidenceTest extends TestHelper {
 		assertEquals(e.get(0).asRemote(), e.get(1));
 	}
 	@Test
+	public void create_should_generate_all_indels() {
+		SAMRecord r = Read(2, 1, "5M1D5M2I2D5M3I5M");
+		r.setMappingQuality(40);
+		List<IndelEvidence> e = IndelEvidence.create(SES(), r);
+		assertEquals(6, e.size());
+	}
+	@Test
 	public void qual_should_use_library_indel_distribution_and_split_score_to_both_sides() {
 		SAMRecord r = Read(2, 1, "5M5D5M");
 		r.setMappingQuality(40);

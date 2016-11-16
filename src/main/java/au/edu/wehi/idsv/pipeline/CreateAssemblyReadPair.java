@@ -147,21 +147,21 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 		List<SAMFileUtil.SortCallable> tasks = Lists.newArrayList();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				tasks.add(new SAMFileUtil.SortCallable(processContext,
+				tasks.add(new SAMFileUtil.SortCallable(processContext.getFileSystemContext(),
 						FileSystemContext.getWorkingFileFor((fsc.getAssemblyForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName())), UNSORTED_FILE_PREFIX),
 						fsc.getAssemblyForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName()),
 						SortOrder.coordinate, null));
-				tasks.add(new SAMFileUtil.SortCallable(processContext,
+				tasks.add(new SAMFileUtil.SortCallable(processContext.getFileSystemContext(),
 						FileSystemContext.getWorkingFileFor((fsc.getAssemblyMateForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName())), UNSORTED_FILE_PREFIX),
 						fsc.getAssemblyMateForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName()),
 						new SAMRecordMateCoordinateComparator(), null));
 			}
 		} else {
-			tasks.add(new SAMFileUtil.SortCallable(processContext,
+			tasks.add(new SAMFileUtil.SortCallable(processContext.getFileSystemContext(),
 					FileSystemContext.getWorkingFileFor((fsc.getAssembly(source.getFileIntermediateDirectoryBasedOn())), UNSORTED_FILE_PREFIX),
 					fsc.getAssembly(source.getFileIntermediateDirectoryBasedOn()),
 					SortOrder.coordinate, null));
-			tasks.add(new SAMFileUtil.SortCallable(processContext,
+			tasks.add(new SAMFileUtil.SortCallable(processContext.getFileSystemContext(),
 					FileSystemContext.getWorkingFileFor((fsc.getAssemblyMate(source.getFileIntermediateDirectoryBasedOn())), UNSORTED_FILE_PREFIX),
 					fsc.getAssemblyMate(source.getFileIntermediateDirectoryBasedOn()),
 					new SAMRecordMateCoordinateComparator(), null));

@@ -1,5 +1,21 @@
 package au.edu.wehi.idsv;
 
+import java.io.Closeable;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+
+import au.edu.wehi.idsv.bed.IntervalBed;
+import au.edu.wehi.idsv.picard.ReferenceLookup;
+import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
+import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
+import au.edu.wehi.idsv.util.AutoClosingIterator;
+import au.edu.wehi.idsv.vcf.VcfConstants;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriterFactory;
@@ -13,7 +29,7 @@ import htsjdk.samtools.fastq.FastqWriterFactory;
 import htsjdk.samtools.filter.AggregateFilter;
 import htsjdk.samtools.filter.DuplicateReadFilter;
 import htsjdk.samtools.filter.FailsVendorReadQualityFilter;
-import htsjdk.samtools.filter.FilteringIterator;
+import htsjdk.samtools.filter.FilteringSamIterator;
 import htsjdk.samtools.filter.SamRecordFilter;
 import htsjdk.samtools.filter.SecondaryOrSupplementaryFilter;
 import htsjdk.samtools.reference.FastaSequenceFile;
@@ -25,23 +41,6 @@ import htsjdk.variant.variantcontext.writer.Options;
 import htsjdk.variant.variantcontext.writer.VariantContextWriter;
 import htsjdk.variant.variantcontext.writer.VariantContextWriterBuilder;
 import htsjdk.variant.vcf.VCFHeader;
-
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.nio.file.Path;
-import java.util.List;
-
-import au.edu.wehi.idsv.bed.IntervalBed;
-import au.edu.wehi.idsv.picard.ReferenceLookup;
-import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
-import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
-import au.edu.wehi.idsv.util.AutoClosingIterator;
-import au.edu.wehi.idsv.vcf.VcfConstants;
-
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 
 public class GenomicProcessingContext implements Closeable {
 	private static final Log log = Log.getInstance(GenomicProcessingContext.class);
@@ -225,7 +224,7 @@ public class GenomicProcessingContext implements Closeable {
 		if (filterDuplicates) {
 			filters.add(new DuplicateReadFilter());
 		}
-		return new AutoClosingIterator<SAMRecord>(new FilteringIterator(iterator, new AggregateFilter(filters)), ImmutableList.<Closeable>of(iterator));
+		return new AutoClosingIterator<SAMRecord>(new FilteringSamIterator(iterator, new AggregateFilter(filters)), ImmutableList.<Closeable>of(iterator));
 	}
 
 	public FastqWriterFactory getFastqWriterFactory() {

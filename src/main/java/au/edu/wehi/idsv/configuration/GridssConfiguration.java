@@ -55,10 +55,6 @@ public class GridssConfiguration {
 	 * instead of deferring until all threads have completed.
 	 */
 	public boolean terminateOnFirstError;
-	/**
-	 * Ignore file timestamps when comparing intermediate and results files.
-	 */
-	public boolean ignoreFileTimestamps;
 	public int async_bufferCount;
 	public int async_bufferSize;
 	public AssemblyConfiguration getAssembly() {
@@ -105,7 +101,6 @@ public class GridssConfiguration {
 		maxCoverage = config.getInt("maxCoverage");
 		dovetailMargin = config.getInt("dovetailMargin");
 		terminateOnFirstError = config.getBoolean("terminateOnFirstError");
-		ignoreFileTimestamps = config.getBoolean("ignoreFileTimestamps");
 		async_bufferCount = config.getInt("async.bufferCount");
 		async_bufferSize = config.getInt("async.bufferSize");
 	}

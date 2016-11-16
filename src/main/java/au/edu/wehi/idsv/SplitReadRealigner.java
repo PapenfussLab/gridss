@@ -6,18 +6,18 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.commons.lang.NotImplementedException;
-
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.io.Files;
 
 import au.edu.wehi.idsv.alignment.FastqAligner;
-import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
 import au.edu.wehi.idsv.sam.NmTagIterator;
+import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
@@ -25,14 +25,10 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.fastq.FastqWriter;
 import htsjdk.samtools.fastq.FastqWriterFactory;
-import htsjdk.samtools.reference.IndexedFastaSequenceFile;
-import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.CloserUtil;
 
 public class SplitReadRealigner {
-	private static final int ASYNC_BUFFERS = 2;
-	private static final int ASYNC_BUFFER_SIZE = 300;
-	private FileSystemContext fsc;
+	private GenomicProcessingContext pc;
 	private int minSoftClipLength = 15;
 	private SamReaderFactory readerFactory = SamReaderFactory.make();
 	private SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
@@ -41,51 +37,49 @@ public class SplitReadRealigner {
 	private int workerThreads = Runtime.getRuntime().availableProcessors();
 	private FastqAligner aligner;
 	
-	public SplitReadRealigner(FileSystemContext fsc, FastqAligner aligner) {
-		this.fsc = fsc;
+	public SplitReadRealigner(GenomicProcessingContext pc, FastqAligner aligner) {
+		this.pc = pc;
 		this.aligner = aligner;
 	}
-	public void createSupplementaryAlignments(File input, File referenceFile, File output) throws IOException {
-		createSupplementaryAlignments(input, referenceFile, new SynchronousReferenceLookupAdapter(new IndexedFastaSequenceFile(referenceFile)), output);
-	}
-	public void createSupplementaryAlignments(File input, File referenceFile, SynchronousReferenceLookupAdapter reference, File output) throws IOException {
+	public void createSupplementaryAlignments(File input, File output) throws IOException {
 		int iteration = 0;
-		File fq = fsc.getRealignmentFastq(input, iteration);
+		File fq = pc.getFileSystemContext().getRealignmentFastq(input, iteration);
 		File tmpfq = FileSystemContext.getWorkingFileFor(fq);
 		int recordsWritten = createSupplementaryAlignmentFastq(input, tmpfq, false);
 		Files.move(tmpfq, fq);
 		List<File> aligned = new ArrayList<>();
 		while (recordsWritten > 0) {
 			// Align
-			File out = fsc.getRealignmentBam(input, iteration);
+			File out = pc.getFileSystemContext().getRealignmentBam(input, iteration);
 			File tmpout = FileSystemContext.getWorkingFileFor(out);
-			aligner.align(fq, tmpout, referenceFile, workerThreads);
+			aligner.align(fq, tmpout, pc.getReferenceFile(), workerThreads);
 			Files.move(tmpout, out);
 			aligned.add(out);
 			// start next iteration
 			iteration++;
-			fq = fsc.getRealignmentFastq(input, iteration);
+			fq = pc.getFileSystemContext().getRealignmentFastq(out, iteration);
 			tmpfq = FileSystemContext.getWorkingFileFor(fq);
 			recordsWritten = createSupplementaryAlignmentFastq(out, tmpfq, true);
 			Files.move(tmpfq, fq);
 		}
-		mergeSupplementaryAlignment(input, aligned, output, reference);
+		mergeSupplementaryAlignment(input, aligned, output);
 	}
-	private void mergeSupplementaryAlignment(File input, List<File> aligned, File output, ReferenceSequenceFile reference) throws IOException {
+	private void mergeSupplementaryAlignment(File input, List<File> aligned, File output) throws IOException {
 		File suppMerged = FileSystemContext.getWorkingFileFor(output, "tmp.sa.");
 		File tmpoutput = FileSystemContext.getWorkingFileFor(output);
 		List<SamReader> suppReaders = new ArrayList<>();
 		List<PeekingIterator<SAMRecord>> suppIt = new ArrayList<>();
+		SAMFileHeader header;
 		try (SamReader reader = readerFactory.open(input)) {
-			SAMFileHeader header = reader.getFileHeader();
+			header = reader.getFileHeader();
 			for (File sf : aligned) {
 				SamReader suppReader = readerFactory.open(sf);
 				suppReaders.add(suppReader);
-				suppIt.add(new AsyncBufferedIterator<>(new NmTagIterator(suppReader.iterator(), reference), ASYNC_BUFFERS, ASYNC_BUFFER_SIZE));
+				suppIt.add(new AsyncBufferedIterator<>(new NmTagIterator(suppReader.iterator(), pc.getReference()), sf.getName()));
 			}
 			try (SAMFileWriter inputWriter = writerFactory.makeSAMOrBAMWriter(header, true, tmpoutput)) {
 				try (SAMFileWriter suppWriter = writerFactory.makeSAMOrBAMWriter(header, false, suppMerged)) {
-					try (AsyncBufferedIterator<SAMRecord> bufferedIt = new AsyncBufferedIterator<>(reader.iterator(), ASYNC_BUFFERS, ASYNC_BUFFER_SIZE)) {
+					try (AsyncBufferedIterator<SAMRecord> bufferedIt = new AsyncBufferedIterator<>(new NmTagIterator(reader.iterator(), pc.getReference()), input.getName())) {
 						mergeSupplementaryAlignment(bufferedIt, suppIt, inputWriter, suppWriter);
 					}
 				}
@@ -98,9 +92,12 @@ public class SplitReadRealigner {
 				sr.close();
 			}
 		}
-		throw new NotImplementedException();
-		// sort suppMerged (by input header order)
-		// merge suppMerged tmpoutput > output
+		if (header.getSortOrder() != null && header.getSortOrder() != SortOrder.unsorted) {
+			File suppMergedsorted = FileSystemContext.getWorkingFileFor(output, "tmp.sorted.sa.");
+			SAMFileUtil.sort(pc.getFileSystemContext(), suppMerged, suppMergedsorted, header.getSortOrder());
+			Files.move(suppMergedsorted, suppMerged);
+		}
+		SAMFileUtil.merge(ImmutableList.of(tmpoutput, suppMerged), output);
 	}
 	private void mergeSupplementaryAlignment(Iterator<SAMRecord> it, List<PeekingIterator<SAMRecord>> alignments, SAMFileWriter out, SAMFileWriter saout) {
 		List<SAMRecord> salist = Lists.newArrayList();
@@ -127,7 +124,7 @@ public class SplitReadRealigner {
 	private int createSupplementaryAlignmentFastq(File input, File fq, boolean isRecursive) throws IOException {
 		int recordsWritten = 0;
 		try (SamReader reader = readerFactory.open(input)) {
-			try (AsyncBufferedIterator<SAMRecord> bufferedIt = new AsyncBufferedIterator<>(reader.iterator(), ASYNC_BUFFERS, ASYNC_BUFFER_SIZE)) {
+			try (AsyncBufferedIterator<SAMRecord> bufferedIt = new AsyncBufferedIterator<>(reader.iterator(), input.getName())) {
 				try (FastqWriter writer = fastqWriterFactory.newWriter(fq)) {
 					SplitReadFastqExtractionIterator fastqit = new SplitReadFastqExtractionIterator(bufferedIt, isRecursive, minSoftClipLength, processSecondaryAlignments);
 					while (fastqit.hasNext()) {

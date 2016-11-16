@@ -51,7 +51,7 @@ public class SortRealignedSoftClips extends DataTransformStep {
 			sourceFile.add(null); targetFile.add(fsc.getSoftClipRemoteBam(source.getSourceFile()));
 			sourceFile.add(null); targetFile.add(fsc.getRealignmentRemoteBam(source.getSourceFile()));
 		}
-		return IntermediateFileUtil.checkIntermediate(targetFile, sourceFile, processContext.getConfig().ignoreFileTimestamps);
+		return IntermediateFileUtil.checkIntermediate(targetFile, sourceFile);
 	}
 	@Override
 	public synchronized void process(EnumSet<ProcessStep> steps) {
@@ -87,24 +87,24 @@ public class SortRealignedSoftClips extends DataTransformStep {
 		List<SortCallable> actions = Lists.newArrayList();
 		if (processContext.shouldProcessPerChromosome()) {
 			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				actions.add(new SAMFileUtil.SortCallable(processContext,
+				actions.add(new SAMFileUtil.SortCallable(processContext.getFileSystemContext(),
 						fsc.getSoftClipRemoteUnsortedBamForChr(source.getSourceFile(), seq.getSequenceName()),
 						fsc.getSoftClipRemoteBamForChr(source.getSourceFile(), seq.getSequenceName()),
 						new RealignedSoftClipEvidence.RealignmentCoordinateComparator(),
 						header -> header));
-				actions.add(new SAMFileUtil.SortCallable(processContext,
+				actions.add(new SAMFileUtil.SortCallable(processContext.getFileSystemContext(),
 						fsc.getRealignmentRemoteUnsortedBamForChr(source.getSourceFile(), seq.getSequenceName()),
 						fsc.getRealignmentRemoteBamForChr(source.getSourceFile(), seq.getSequenceName()),
 						SortOrder.coordinate,
 						header -> header));
 			}
 		} else {
-			actions.add(new SAMFileUtil.SortCallable(processContext,
+			actions.add(new SAMFileUtil.SortCallable(processContext.getFileSystemContext(),
 					fsc.getSoftClipRemoteUnsortedBam(source.getSourceFile()),
 					fsc.getSoftClipRemoteBam(source.getSourceFile()),
 					new RealignedSoftClipEvidence.RealignmentCoordinateComparator(),
 					header -> header));
-			actions.add(new SAMFileUtil.SortCallable(processContext,
+			actions.add(new SAMFileUtil.SortCallable(processContext.getFileSystemContext(),
 					fsc.getRealignmentRemoteUnsortedBam(source.getSourceFile()),
 					fsc.getRealignmentRemoteBam(source.getSourceFile()),
 					SortOrder.coordinate,

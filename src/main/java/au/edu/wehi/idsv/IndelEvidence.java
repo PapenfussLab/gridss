@@ -71,19 +71,24 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 		if (record.getReadUnmappedFlag() || record.getCigar() == null) return Collections.emptyList();
 		List<IndelEvidence> list = new ArrayList<IndelEvidence>(4);
 		List<CigarElement> cl = CigarUtil.decodeNegativeDeletion(record.getCigar().getCigarElements());
-		for (int indelStartOffset = 0; indelStartOffset < cl.size(); indelStartOffset++) { // ignore indels at start/end of read
-			int indelEndOffset = indelStartOffset; // exclusive end offset
-			while (indelEndOffset < cl.size() && cl.get(indelEndOffset).getOperator().isIndelOrSkippedRegion()) {
-				indelEndOffset++;
-			}
-			if (indelStartOffset != indelEndOffset &&
-					// Exclude indels at start/end of the read
-					indelStartOffset > 0 &&
-					indelEndOffset < cl.size()) {
-				IndelEvidence left = create(source, record, indelStartOffset);
-				IndelEvidence right = left.asRemote();
-				list.add(left);
-				list.add(right);
+		// find all indels (excluding those at start/end)
+		int indelStartOffset = 1;
+		while (indelStartOffset < cl.size()) {
+			if (cl.get(indelStartOffset).getOperator().isIndelOrSkippedRegion() &&
+					!cl.get(indelStartOffset - 1).getOperator().isIndelOrSkippedRegion()) {
+				int indelEndOffset = indelStartOffset;
+				while (indelEndOffset < cl.size() && cl.get(indelEndOffset).getOperator().isIndelOrSkippedRegion()) {
+					indelEndOffset++;
+				}
+				if (indelEndOffset < cl.size()) { 
+					IndelEvidence left = create(source, record, indelStartOffset);
+					IndelEvidence right = left.asRemote();
+					list.add(left);
+					list.add(right);
+				}
+				indelStartOffset = indelEndOffset;
+			} else {
+				indelStartOffset++;
 			}
 		}
 		return list;

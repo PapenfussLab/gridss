@@ -27,12 +27,12 @@ public abstract class IntermediateFileUtil {
 	 * @param source source file intermediate has been generated from
 	 * @return true if intermediate file appears to be valid
 	 */
-	public static boolean checkIntermediate(File file, File source, boolean ignoreTimestamps) {
+	public static boolean checkIntermediate(File file, File source) {
 		if (!file.exists()) {
 			//log.debug("Missing intermediate ", file);
 			return false;
 		}
-		if (!ignoreTimestamps && source != null && source.exists() && file.lastModified() < source.lastModified() - TIMESTAMP_MS_ALLOWABLE_ERROR) {
+		if (!gridss.Defaults.IGNORE_FILE_TIMESTAMPS && source != null && source.exists() && file.lastModified() < source.lastModified() - TIMESTAMP_MS_ALLOWABLE_ERROR) {
 			log.info(source, " has a more recent timestamp (",
 					logDateFormat.format(new Date(source.lastModified())),") than ",
 					file, " (",
@@ -47,27 +47,27 @@ public abstract class IntermediateFileUtil {
 	 * @param file file to check
 	 * @return true if intermediate file appears to be valid
 	 */
-	public static boolean checkIntermediate(File file, boolean ignoreTimestamps) {
-		return checkIntermediate(file, null, ignoreTimestamps);
+	public static boolean checkIntermediate(File file) {
+		return checkIntermediate(file, null);
 	}
-	public static boolean checkIntermediate(List<File> fileList, List<File> sourceList, boolean ignoreTimestamps) {
+	public static boolean checkIntermediate(List<File> fileList, List<File> sourceList) {
 		assert(fileList.size() == sourceList.size());
 		Map<String, File[]> dirList = new HashMap<String, File[]>();
 		for (int i = 0; i < fileList.size(); i++) {
 			File file = fileList.get(i);
 			File source = sourceList.get(i);
-			if (!checkIntermediateCached(dirList, file, source, ignoreTimestamps)) {
+			if (!checkIntermediateCached(dirList, file, source)) {
 				return false;
 			}
 		}
 		return true;
 	}
-	private static boolean checkIntermediateCached(Map<String, File[]> dirList, File file, File source, boolean ignoreTimestamps) {
+	private static boolean checkIntermediateCached(Map<String, File[]> dirList, File file, File source) {
 		file = cacheLookup(dirList, file); 
 		if (file == null) return false;
 		if (source != null) {
 			source = cacheLookup(dirList, source);
-			if (!ignoreTimestamps && source != null && source.exists() && file.lastModified() < source.lastModified()) {
+			if (!gridss.Defaults.IGNORE_FILE_TIMESTAMPS && source != null && source.exists() && file.lastModified() < source.lastModified()) {
 				log.info(source, " has a more recent timestamp than ", file, ". Considering ", file, " out of date.");
 				return false;
 			}

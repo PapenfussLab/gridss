@@ -107,7 +107,7 @@ public abstract class EvidenceSource {
 				}
 			}
 		}
-		return IntermediateFileUtil.checkIntermediate(bamList, fastqList, getContext().getConfig().ignoreFileTimestamps);
+		return IntermediateFileUtil.checkIntermediate(bamList, fastqList);
 	}
 	/**
 	 * Generates a compound breakpoint fastq from the previous partial alignments 
@@ -116,7 +116,7 @@ public abstract class EvidenceSource {
 	 */
 	private void generateFastqFromBam(File bam, File fastq) {
 		if (!bam.exists()) return;
-		if (!IntermediateFileUtil.checkIntermediate(fastq, bam, getContext().getConfig().ignoreFileTimestamps)) {
+		if (!IntermediateFileUtil.checkIntermediate(fastq)) {
 			// need to create the fastq
 			try (SamReader reader = processContext.getSamReader(bam)) {
 				try (CloseableIterator<SAMRecord> it = processContext.getSamReaderIterator(reader)) {
@@ -137,7 +137,7 @@ public abstract class EvidenceSource {
 		}
 	}
 	private void align(File fastq, File bam) {
-		if (IntermediateFileUtil.checkIntermediate(bam, fastq, getContext().getConfig().ignoreFileTimestamps)) {
+		if (IntermediateFileUtil.checkIntermediate(bam)) {
 			// bam exists - no need to realign
 			return;
 		}

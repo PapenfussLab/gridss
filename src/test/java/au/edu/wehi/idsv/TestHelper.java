@@ -388,7 +388,7 @@ public class TestHelper {
 		return getConfig(new File(System.getProperty("java.io.tmpdir")));
 	}
 	public static ProcessingContext getContext(ReferenceLookup ref) {
-		ProcessingContext pc = new ProcessingContext(getFSContext(), null, false, ref,
+		ProcessingContext pc = new ProcessingContext(getFSContext(), SMALL_FA_FILE, false, ref,
 				new ArrayList<Header>(), getConfig());
 		pc.registerCategory(0, "Normal");
 		pc.registerCategory(1, "Tumour");

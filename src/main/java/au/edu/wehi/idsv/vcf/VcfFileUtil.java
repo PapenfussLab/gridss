@@ -78,7 +78,7 @@ public class VcfFileUtil {
 		}
 		@Override
 		public Void call() throws IOException {
-			if (IntermediateFileUtil.checkIntermediate(output, input, processContext.getConfig().ignoreFileTimestamps)) {
+			if (IntermediateFileUtil.checkIntermediate(output)) {
 				log.info("Not sorting as output already exists: " + output);
 				return null;
 			}

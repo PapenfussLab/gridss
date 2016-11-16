@@ -241,7 +241,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			source.add(null); target.add(fsc.getAssemblyRawBam(input));
 			source.add(null); target.add(fsc.getRealignmentFastq(input, 0));
 		}
-		return IntermediateFileUtil.checkIntermediate(target, source, getContext().getConfig().ignoreFileTimestamps);
+		return IntermediateFileUtil.checkIntermediate(target, source);
 	}
 	private boolean isReadPairingComplete() {
 		List<File> target = new ArrayList<File>();
@@ -255,7 +255,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			source.add(null); target.add(fsc.getAssembly(input));
 			source.add(null); target.add(fsc.getAssemblyMate(input));
 		}
-		return IntermediateFileUtil.checkIntermediate(target, source, getContext().getConfig().ignoreFileTimestamps);
+		return IntermediateFileUtil.checkIntermediate(target, source);
 	}
 	private volatile Exception lastWorkerThreadException = null;
 	protected void process(ExecutorService threadpool) {
@@ -274,8 +274,8 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			for (int i = 0; i < dict.size(); i++) {
 				final String seq = dict.getSequence(i).getSequenceName();
 				
-				if (IntermediateFileUtil.checkIntermediate(fsc.getAssemblyRawBamForChr(input, seq), getContext().getConfig().ignoreFileTimestamps)
-					&& IntermediateFileUtil.checkIntermediate(fsc.getRealignmentFastqForChr(input, seq, 0), getContext().getConfig().ignoreFileTimestamps)) {
+				if (IntermediateFileUtil.checkIntermediate(fsc.getAssemblyRawBamForChr(input, seq))
+					&& IntermediateFileUtil.checkIntermediate(fsc.getRealignmentFastqForChr(input, seq, 0))) {
 					log.debug("Skipping assembly for ", seq, " as output already exists.");
 				} else {
 					workers.add(new Callable<Void>() {
@@ -459,7 +459,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 			CloseableIterator<SAMRecord> readerIt = null;
 			try {
 				// sort the assemblies
-				new SortCallable(getContext(), unsorted, breakendOutput, SortOrder.coordinate, header -> header).call();
+				new SortCallable(getContext().getFileSystemContext(), unsorted, breakendOutput, SortOrder.coordinate, header -> header).call();
 				log.info("Writing assembly fastq " + fq);
 				// then write the fastq
 				fastqWriter = new FastqBreakpointWriter(getContext().getFastqWriterFactory().newWriter(fq));

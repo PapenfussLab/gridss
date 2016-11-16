@@ -88,26 +88,25 @@ public class SoftClipReadEvidenceTest extends TestHelper {
 		SoftClipReadEvidence.create(SES(), BreakendDirection.Backward, withSequence((byte[])null, Read(0, 1, "1S1M"))[0]);
 	}
 	@Test
-	public void getEvidenceID_paired_should_encode_read_direction_and_pair_info() {
+	public void getEvidenceID_paired_should_encode_pair_info() {
 		SAMRecord r = RP(1, 1, 100)[0];
 		r.setReadName("ReadName");
-		r.setCigarString("1S2M3S");
+		r.setCigarString("10M10S");
 		r.setReadPairedFlag(true);
 		r.setFirstOfPairFlag(true);
-		assertEquals("ReadName\\1f", SoftClipReadEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID());
-		assertEquals("ReadName\\1b", SoftClipReadEvidence.create(SES(), BreakendDirection.Backward, r).getEvidenceID());
+		String r1 = SoftClipReadEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID();
 		r.setFirstOfPairFlag(false);
 		r.setSecondOfPairFlag(true);
-		assertEquals("ReadName\\2f", SoftClipReadEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID());
-		assertEquals("ReadName\\2b", SoftClipReadEvidence.create(SES(), BreakendDirection.Backward, r).getEvidenceID());
+		String r2 = SoftClipReadEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID();
+		assertNotEquals(r1, r2);
 	}
 	@Test
 	public void getEvidenceID_unpaired_should_encode_read_direction() {
 		SAMRecord r = Read(1, 1, 100);
 		r.setReadName("ReadName");
-		r.setCigarString("1S2M3S");
+		r.setCigarString("5S5M5S");
 		r.setReadName("ReadName");
-		assertEquals("ReadNamef", SoftClipReadEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID());
-		assertEquals("ReadNameb", SoftClipReadEvidence.create(SES(), BreakendDirection.Backward, r).getEvidenceID());
+		assertNotEquals(SoftClipReadEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID(),
+				SoftClipReadEvidence.create(SES(), BreakendDirection.Backward, r).getEvidenceID());
 	}
 }

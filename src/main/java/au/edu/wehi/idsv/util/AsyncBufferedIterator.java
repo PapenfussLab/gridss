@@ -44,9 +44,9 @@ public class AsyncBufferedIterator<T> implements CloseableIterator<T>, PeekingIt
 	public AsyncBufferedIterator(Iterator<T> iterator, int bufferCount, int batchSize) {
 		this(iterator, null, bufferCount, batchSize);
 	}
-	//public AsyncBufferedIterator(Iterator<T> iterator, String description) {
-	//	this(iterator, Defaults.ASYNC_READAHEAD_BUFFERS, Defaults.ASYNC_READAHEAD_BUFFER_SIZE, description);
-	//}
+	public AsyncBufferedIterator(Iterator<T> iterator, String description) {
+		this(iterator, description, gridss.Defaults.ASYNC_BUFFERS, gridss.Defaults.ASYNC_BUFFER_SIZE);
+	}
 	public AsyncBufferedIterator(Iterator<T> iterator, String description, int bufferCount, int batchSize) {
 		if (iterator == null) throw new IllegalArgumentException();
 		if (bufferCount <= 0 || batchSize <= 0) throw new IllegalArgumentException("Buffer size must be at least 1.");

@@ -233,7 +233,7 @@ public class ExtractEvidence implements Closeable {
 		}
 	}
 	private void sortMates(File input, File output, boolean deleteInputAfterProcessing) {
-		SAMFileUtil.sort(processContext, input, output, new SAMRecordMateCoordinateComparator());
+		SAMFileUtil.sort(processContext.getFileSystemContext(), input, output, new SAMRecordMateCoordinateComparator());
 		if (deleteInputAfterProcessing) {
 			input.delete();
 		}
