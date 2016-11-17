@@ -56,7 +56,8 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 		int startOffset = chim.getFirstAlignedBaseReadOffset();
 		int endOffset = chim.getLastAlignedBaseReadOffset() + 1;
 		if (pre != null) {
-			BreakpointSummary bs = new BreakpointSummary(chim.predecessorBreakend(dict), pre.successorBreakend(dict));
+			int overlap = pre.getLastAlignedBaseReadOffset() + 1 - startOffset;
+			BreakpointSummary bs = new BreakpointSummary(withOverlap(chim.predecessorBreakend(dict), overlap), withOverlap(pre.successorBreakend(dict), overlap));
 			int preStartOffset = 0; // ignore the actual alignment and just go out to the end of the read so we can assemble across multiple breakpoints
 			int preEndOffset = pre.getLastAlignedBaseReadOffset() + 1;
 			if (record.getReadNegativeStrandFlag()) {
@@ -74,7 +75,8 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 			}
 		}
 		if (post != null) {
-			BreakpointSummary bs = new BreakpointSummary(chim.successorBreakend(dict), post.predecessorBreakend(dict));
+			int overlap = endOffset - post.getFirstAlignedBaseReadOffset() - 1;
+			BreakpointSummary bs = new BreakpointSummary(withOverlap(chim.successorBreakend(dict), overlap), withOverlap(post.predecessorBreakend(dict), overlap));
 			int postStartOffset = post.getFirstAlignedBaseReadOffset();
 			int postEndOffset = rl;
 			if (record.getReadNegativeStrandFlag()) {
@@ -93,7 +95,18 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 		}
 		return list;
 	}
-	
+	/**
+	 * Adjusts the breakend bounds assuming an overalignment due to microhomology 
+	 * @param bs nominal breakend position
+	 * @param overlap number of bases overlapping with the adjacent chimeric alignment
+	 * @return Breakend position factoring in microhomology
+	 */
+	private static BreakendSummary withOverlap(BreakendSummary bs, int overlap) {
+		if (overlap <= 0) return bs;
+		return new BreakendSummary(bs.referenceIndex, bs.direction, bs.nominal,
+				bs.start - (bs.direction == BreakendDirection.Forward ? overlap : 0),
+				bs.end + (bs.direction == BreakendDirection.Backward ? overlap : 0));
+	}
 	@Override
 	public BreakpointSummary getBreakendSummary() {
 		return (BreakpointSummary)super.getBreakendSummary();

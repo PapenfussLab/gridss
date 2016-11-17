@@ -192,4 +192,8 @@ public class BreakpointSummaryTest extends TestHelper {
 	public void constructor_should_ensure_nominal_position_is_valid() {
 		new BreakpointSummary(0, FWD, 1, 1, 1, 0, FWD, 3, 1, 2);
 	}
+	@Test
+	public void getNominalPosition_should_report_nominal_position_only() {
+		assertEquals(new BreakpointSummary(0, FWD, 2, 0, FWD, 5), new BreakpointSummary(0, FWD, 2, 1, 3, 0, FWD, 5, 4, 60).getNominalPosition());
+	}
 }

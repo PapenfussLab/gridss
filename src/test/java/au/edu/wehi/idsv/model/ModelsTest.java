@@ -90,6 +90,6 @@ public class ModelsTest extends TestHelper {
 			new MockDirectedEvidence(new BreakendSummary(0, FWD, 10, 10, 16)),
 			new MockDirectedEvidence(new BreakendSummary(0, BWD, 12, 12, 18))
 				));
-		assertEquals(new BreakendSummary(0, FWD, 13, 10, 15), bs);
+		assertEquals(new BreakendSummary(0, FWD, 12, 10, 15), bs);
 	}
 }

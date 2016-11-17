@@ -46,7 +46,7 @@ public class VariantCallingConfigurationTest extends TestHelper {
 		int[] size = new int[] { 20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,0 };
 		int[] expectedMargin = new int[] { 10,9,9,8,8,7,7,6,6,5,5,4,4,3,3,2,2,1,1,0,0, };
 		for (int i = 0; i < size.length; i++) {
-			assertEquals(new BreakpointSummary(0, FWD, 100, 100-expectedMargin[i], 100+expectedMargin[i], 0, FWD, 100, 100-expectedMargin[i] + size[i], 100+expectedMargin[i] + size[i]),
+			assertEquals(new BreakpointSummary(0, FWD, 100, 100-expectedMargin[i], 100+expectedMargin[i], 0, FWD, 100 + size[i], 100-expectedMargin[i] + size[i], 100+expectedMargin[i] + size[i]),
 					config.withMargin(new BreakpointSummary(0, FWD, 100, 100, 100, 0, FWD, 100 + size[i], 100 + size[i], 100 + size[i])));
 		}
 	}

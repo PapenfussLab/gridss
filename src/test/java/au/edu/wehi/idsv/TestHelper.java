@@ -69,6 +69,7 @@ import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.SamTags;
 import au.edu.wehi.idsv.sam.SplitIndel;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
+import au.edu.wehi.idsv.util.MathUtil;
 import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
 import gridss.analysis.MapqMetrics;
 import htsjdk.samtools.Cigar;
@@ -1228,7 +1229,7 @@ public class TestHelper {
 		if (be == null) {
 			be = new BreakendSummary(ass.getBackingRecord().getReferenceIndex(),
 					BreakendDirection.Forward,
-					ass.getBackingRecord().getAlignmentEnd() + ass.getBackingRecord().getAlignmentStart() / 2,
+					MathUtil.average(ass.getBackingRecord().getAlignmentStart(), ass.getBackingRecord().getAlignmentEnd()),
 					ass.getBackingRecord().getAlignmentStart(),
 					ass.getBackingRecord().getAlignmentEnd());
 		}

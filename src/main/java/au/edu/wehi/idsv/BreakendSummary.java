@@ -139,15 +139,28 @@ public class BreakendSummary {
 	 * Gets the nominal position of the variant for variant calling purposes
 	 * @return position to call
 	 */
-	//public BreakendSummary getCallPosition() {
-	//	int callPos = IntMath.divide(start + end, 2, RoundingMode.FLOOR);
-	//	return new BreakendSummary(referenceIndex, direction, nominal, nominal);
-	//}
+	public BreakendSummary getNominalPosition() {
+		return new BreakendSummary(referenceIndex, direction, nominal, nominal, nominal);
+	}
 	protected static String toString(int referenceIndex, int nominal, int start, int end, GenomicProcessingContext processContext) {
+		StringBuilder sb = new StringBuilder();
 		if (processContext != null && referenceIndex >= 0 && referenceIndex < processContext.getDictionary().size()) {
-			return String.format("%s:%d(%d-%d)", processContext.getDictionary().getSequence(referenceIndex).getSequenceName(), nominal, start, end);
+			sb.append(processContext.getDictionary().getSequence(referenceIndex).getSequenceName());
+		} else {
+			sb.append('(');
+			sb.append(referenceIndex);
+			sb.append(')');
 		}
-		return String.format("(%d):%d-%d", referenceIndex, start, end);
+		sb.append(':');
+		sb.append(nominal);
+		if (start != nominal || end != nominal) {
+			sb.append('(');
+			sb.append(start);
+			sb.append('-');
+			sb.append(end);
+			sb.append(')');
+		}
+		return sb.toString();
 	}
 	protected static String toString(BreakendDirection direction, int referenceIndex, int nominal, int start, int end, GenomicProcessingContext processContext) {
 		if (direction == BreakendDirection.Forward) return toString(referenceIndex, nominal, start, end, processContext) + ">";

@@ -174,19 +174,12 @@ public class BreakpointSummary extends BreakendSummary {
 	 * Gets the nominal position of the variant for variant calling purposes
 	 * @return position to call
 	 */
-	//public BreakpointSummary getCallPosition() {
-	//	int callPos;
-	//	int remoteCallPos;
-	//	// round the called position of the lower breakend down
-	//	if (BreakendSummary.ByStartEnd.compare(localBreakend(), remoteBreakend()) > 0) {
-	//		callPos = IntMath.divide(start + end, 2, RoundingMode.CEILING);
-	//		remoteCallPos = IntMath.divide(start2 + end2, 2, RoundingMode.FLOOR);
-	//	} else {
-	//		callPos = IntMath.divide(start + end, 2, RoundingMode.FLOOR);
-	//		remoteCallPos = IntMath.divide(start2 +end2, 2, RoundingMode.CEILING);
-	//	}
-	//	return new BreakpointSummary(referenceIndex, direction, callPos, callPos, referenceIndex2, direction2, remoteCallPos, remoteCallPos);
-	//}
+	@Override
+	public BreakpointSummary getNominalPosition() {
+		return new BreakpointSummary(
+				referenceIndex, direction, nominal, nominal, nominal,
+				referenceIndex2, direction2, nominal2, nominal2, nominal2);
+	}
 	/**
 	 * Determines the size of the simplest event (deletion, inversion, tandem duplication)
 	 * this breakpoint contributes to.

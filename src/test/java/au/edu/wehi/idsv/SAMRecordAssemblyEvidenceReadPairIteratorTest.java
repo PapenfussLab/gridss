@@ -61,8 +61,8 @@ public class SAMRecordAssemblyEvidenceReadPairIteratorTest extends TestHelper {
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, BWD, 5, 1, 10), null, B("AA"), B("AA"), new int[] {2, 0});
 		RealignedSAMRecordAssemblyEvidence re = (RealignedSAMRecordAssemblyEvidence)AssemblyFactory.incorporateRealignment(getContext(), e, ImmutableList.of(
 				withReadName("0#1#0#ReadName", Read(1, 100, "2M"))[0]));
-		assertEquals(new BreakpointSummary(0, BWD, 5, 1, 10, 1, FWD, 105, 101, 110), re.getBreakendSummary());
-		assertEquals(new BreakpointSummary(1, FWD, 105, 101, 110, 0, BWD, 5, 1, 10), re.asRemote().getBreakendSummary());
+		assertEquals(new BreakpointSummary(0, BWD, 5, 1, 10, 1, FWD, 101, 101, 110), re.getBreakendSummary());
+		assertEquals(new BreakpointSummary(1, FWD, 101, 101, 110, 0, BWD, 5, 1, 10), re.asRemote().getBreakendSummary());
 		
 		ArrayList<SAMRecord> inlist = new ArrayList<SAMRecord>();
 		inlist.add(re.getSAMRecord());
@@ -72,8 +72,8 @@ public class SAMRecordAssemblyEvidenceReadPairIteratorTest extends TestHelper {
 		SAMRecordAssemblyEvidenceReadPairIterator it = new SAMRecordAssemblyEvidenceReadPairIterator(getContext(), AES(), inlist.iterator(), matelist.iterator(), true, true);
 		out = Lists.newArrayList(it);
 		
-		assertEquals(new BreakpointSummary(0, BWD, 5, 1, 10, 1, FWD, 105, 101, 110), out.get(0).getBreakendSummary());
-		assertEquals(new BreakpointSummary(1, FWD, 105, 101, 110, 0, BWD, 5, 1, 10), out.get(1).getBreakendSummary());
+		assertEquals(new BreakpointSummary(0, BWD, 5, 1, 10, 1, FWD, 101, 101, 110), out.get(0).getBreakendSummary());
+		assertEquals(new BreakpointSummary(1, FWD, 101, 101, 110, 0, BWD, 5, 1, 10), out.get(1).getBreakendSummary());
 	}
 	@Test
 	public void should_not_duplicate_spanning_indel_calls_when_including_remote() {

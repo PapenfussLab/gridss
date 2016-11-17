@@ -115,11 +115,11 @@ public class RealignedBreakpoint {
 		// make sure we don't overrun contig bounds
 		summary = new BreakpointSummary(
 				summary.referenceIndex, summary.direction,
-				summary.nominal,
+				ensureOnContig(dictionary, summary.referenceIndex, summary.nominal),
 				ensureOnContig(dictionary, summary.referenceIndex, summary.start),
 				ensureOnContig(dictionary, summary.referenceIndex, summary.end),
 				summary.referenceIndex2, summary.direction2,
-				summary.nominal2,
+				ensureOnContig(dictionary, summary.referenceIndex2, summary.nominal2),
 				ensureOnContig(dictionary, summary.referenceIndex2, summary.start2),
 				ensureOnContig(dictionary, summary.referenceIndex2, summary.end2));
 		return new RealignedBreakpoint(summary, insertedSequence, exact, microhomology, microhomologyLocalSequenceRemotePosition.length());

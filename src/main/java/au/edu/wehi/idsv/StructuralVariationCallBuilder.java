@@ -324,7 +324,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			
 			BreakpointHomology bh = BreakpointHomology.calculate(
 					processContext.getReference(),
-					bestExactBreakpoint.getBreakendSummary(),
+					bestExactBreakpoint.getBreakendSummary().getNominalPosition(),
 					untemplated,
 					processContext.getVariantCallingParameters().maxBreakendHomologyLength,
 					processContext.getVariantCallingParameters().breakendHomologyAlignmentMargin);

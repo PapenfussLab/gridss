@@ -33,9 +33,9 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		getFastqRecords(aes);
 	}
 	@Test
-	public void createUnanchoredBreakend_should_round_trip_unanchored_breakend_position() {
-		assertEquals(new BreakendSummary(0, FWD, 1, 1, 3), AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 1, 1, 3), null, B("GTAC"), new byte[] {1,2,3,4}, new int[] {0, 0}).getBreakendSummary());
-		assertEquals(new BreakendSummary(0, BWD, 11, 10, 20), AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, BWD, 11, 10, 20), null, B("GTAC"), new byte[] {1,2,3,4}, new int[] {0, 0}).getBreakendSummary());
+	public void createUnanchoredBreakend_should_round_trip_unanchored_breakend_start_end_but_not_nominal_position() {
+		assertEquals(new BreakendSummary(0, FWD, 2, 1, 3), AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, FWD, 1, 1, 3), null, B("GTAC"), new byte[] {1,2,3,4}, new int[] {0, 0}).getBreakendSummary());
+		assertEquals(new BreakendSummary(0, BWD, 15, 10, 20), AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, BWD, 11, 10, 20), null, B("GTAC"), new byte[] {1,2,3,4}, new int[] {0, 0}).getBreakendSummary());
 	}
 	@Test
 	public void debruijn_should_generate_fastq() {

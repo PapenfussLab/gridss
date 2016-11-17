@@ -605,7 +605,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		}}.make());
 		builder.addEvidence(SoftClipEvidence.create(SES(), FWD, withSequence("NNNN", Read(0, 12, "1M3S"))[0], withSequence("NNN", Read(0, 10, "3M"))[0]));
 		VariantContextDirectedEvidence de = builder.make();
-		assertEquals(new BreakpointSummary(0, FWD, 12, 12, 12, 0, BWD, 100, 10, 10), de.getBreakendSummary());
+		assertEquals(new BreakpointSummary(0, FWD, 12, 12, 12, 0, BWD, 10, 10, 10), de.getBreakendSummary());
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void indels_should_have_zero_margin_applied() {

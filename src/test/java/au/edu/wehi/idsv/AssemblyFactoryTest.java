@@ -67,7 +67,7 @@ public class AssemblyFactoryTest extends TestHelper {
 	public void should_set_breakend_unanchored() {
 		for (BreakendSummary bs : ImmutableList.of(
 				new BreakendSummary(0, FWD, 1, 1, 2),
-				new BreakendSummary(0, BWD, 2, 1, 2)
+				new BreakendSummary(0, BWD, 1, 1, 2)
 				)) {
 			AssemblyEvidence e = AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), bs, null, B("AAAAA"), B("AAAAA"), new int[] { 2, 0} );
 			assertEquals(bs, e.getBreakendSummary());
@@ -508,12 +508,12 @@ public class AssemblyFactoryTest extends TestHelper {
 		SAMRecordAssemblyEvidence e = AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, BWD, 1, 1, 10), null, B("AA"), B("AA"), new int[] {2, 0});
 		RealignedSAMRecordAssemblyEvidence re = (RealignedSAMRecordAssemblyEvidence)AssemblyFactory.incorporateRealignment(getContext(), e, ImmutableList.of(
 				withReadName("0#1#0#ReadName", Read(1, 100, "2M"))[0]));
-		assertEquals(new BreakpointSummary(0, BWD, 5, 1, 10, 1, FWD, 105, 101, 110), re.getBreakendSummary());
-		assertEquals(new BreakpointSummary(1, FWD, 105, 101, 110, 0, BWD, 5, 1, 10), re.asRemote().getBreakendSummary());
+		assertEquals(new BreakpointSummary(0, BWD, 5, 1, 10, 1, FWD, 101, 101, 110), re.getBreakendSummary());
+		assertEquals(new BreakpointSummary(1, FWD, 101, 101, 110, 0, BWD, 5, 1, 10), re.asRemote().getBreakendSummary());
 		
 		RealignedSAMRecordAssemblyEvidence roundtrip = (RealignedSAMRecordAssemblyEvidence)AssemblyFactory.incorporateRealignment(getContext(), AssemblyFactory.hydrate(AES(), re.getSAMRecord()), ImmutableList.of(re.getRemoteSAMRecord()));
-		assertEquals(new BreakpointSummary(0, BWD, 5, 1, 10, 1, FWD, 105, 101, 110), roundtrip.getBreakendSummary());
-		assertEquals(new BreakpointSummary(1, FWD, 105, 101, 110, 0, BWD, 5, 1, 10), roundtrip.asRemote().getBreakendSummary());
+		assertEquals(new BreakpointSummary(0, BWD, 5, 1, 10, 1, FWD, 101, 101, 110), roundtrip.getBreakendSummary());
+		assertEquals(new BreakpointSummary(1, FWD, 101, 101, 110, 0, BWD, 5, 1, 10), roundtrip.asRemote().getBreakendSummary());
 	}
 	@Test
 	public void realignment_to_negative_strand_should_change_anchor_position() {
