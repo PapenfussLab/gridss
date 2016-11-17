@@ -54,6 +54,7 @@ public class IntermediateFilesTest extends TestHelper {
 		input.delete();
 		output = testFolder.newFile("out.vcf");
 		output.delete();
+		testFolder.getRoot().deleteOnExit();
 	}
 	public void setReference(File ref) {
 		reference = ref;

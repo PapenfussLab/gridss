@@ -1,7 +1,7 @@
 package au.edu.wehi.idsv;
 
-import au.edu.wehi.idsv.metrics.IdsvMetrics;
-import au.edu.wehi.idsv.metrics.InsertSizeDistribution;
+import gridss.analysis.IdsvMetrics;
+import gridss.analysis.InsertSizeDistribution;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
 

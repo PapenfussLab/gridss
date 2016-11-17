@@ -27,7 +27,6 @@ package gridss.analysis;
 import java.io.File;
 import java.util.Set;
 
-import gridss.analysis.directed.MapqMetricsCollector;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.metrics.MetricsFile;
@@ -56,8 +55,7 @@ import picard.util.RExecutor;
         programGroup = Metrics.class
 )
 public class CollectMapqMetrics extends SinglePassSamProgram {
-    //private static final Log log = Log.getInstance(CollectMapqMetrics.class);
-    private static final String Histogram_R_SCRIPT = "picard/analysis/mapqHistogram.R";
+    private static final String Histogram_R_SCRIPT = "gridss/analysis/mapqHistogram.R";
 
     @Option(shortName="H", doc="File to write insert size Histogram chart to.")
     public File Histogram_FILE;

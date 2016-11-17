@@ -12,6 +12,8 @@ import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import gridss.analysis.CigarDetailMetrics;
+import gridss.analysis.IdsvMetrics;
 import gridss.analysis.MapqMetrics;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;

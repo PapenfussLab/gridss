@@ -3,9 +3,9 @@ package au.edu.wehi.idsv.model;
 import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Ints;
 
-import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.util.MathUtil;
+import gridss.analysis.IdsvMetrics;
 import htsjdk.samtools.CigarOperator;
 
 /**

@@ -22,12 +22,11 @@
  * THE SOFTWARE.
  */
 
-package gridss.analysis.directed;
+package gridss.analysis;
 
 import java.util.List;
 import java.util.Set;
 
-import gridss.analysis.MapqMetrics;
 import htsjdk.samtools.SAMReadGroupRecord;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.metrics.MetricsFile;

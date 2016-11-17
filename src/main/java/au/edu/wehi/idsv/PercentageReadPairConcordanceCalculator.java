@@ -1,6 +1,6 @@
 package au.edu.wehi.idsv;
 
-import au.edu.wehi.idsv.metrics.InsertSizeDistribution;
+import gridss.analysis.InsertSizeDistribution;
 
 public class PercentageReadPairConcordanceCalculator extends FixedSizeReadPairConcordanceCalculator {
 	public PercentageReadPairConcordanceCalculator(InsertSizeDistribution isd, double concordantPercent) {

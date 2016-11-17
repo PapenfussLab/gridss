@@ -1,4 +1,4 @@
-package au.edu.wehi.idsv.metrics;
+package gridss.analysis;
 
 import java.util.List;
 
@@ -44,9 +44,9 @@ public class CigarSizeDistribution {
 		return phred;
 	}
 	/**
-	 * Returns the phred scaled probability of a soft clip of at least this length
-	 * @param softClipLength
-	 * @return soft clip phred score
+	 * Returns the phred scaled probability of a cigar operator of at least this length
+	 * @param length
+	 * @return phred score
 	 */
 	public double getPhred(CigarOperator operator, int length) {
 		if (length < 0) return 0;

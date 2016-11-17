@@ -7,10 +7,10 @@ import java.util.ArrayList;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
-import au.edu.wehi.idsv.metrics.CigarDetailMetrics;
-import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
-import au.edu.wehi.idsv.metrics.InsertSizeDistribution;
+import gridss.analysis.CigarDetailMetrics;
+import gridss.analysis.IdsvMetrics;
+import gridss.analysis.InsertSizeDistribution;
 import gridss.analysis.MapqMetrics;
 import picard.analysis.InsertSizeMetrics;
 

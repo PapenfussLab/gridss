@@ -9,8 +9,8 @@ import java.util.Locale;
 
 import au.edu.wehi.idsv.ReadPairConcordanceCalculator;
 import au.edu.wehi.idsv.ReadPairConcordanceMethod;
-import au.edu.wehi.idsv.metrics.InsertSizeDistribution;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
+import gridss.analysis.InsertSizeDistribution;
 import gridss.filter.ClippedReadFilter;
 import gridss.filter.IndelReadFilter;
 import gridss.filter.OneEndAnchoredReadFilter;

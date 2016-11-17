@@ -13,6 +13,10 @@ import com.google.common.primitives.Longs;
 
 import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.util.MathUtil;
+import gridss.analysis.CigarDetailMetrics;
+import gridss.analysis.CigarSizeDistribution;
+import gridss.analysis.IdsvMetrics;
+import gridss.analysis.InsertSizeDistribution;
 import gridss.analysis.MapqMetrics;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.metrics.MetricsFile;

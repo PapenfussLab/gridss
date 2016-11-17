@@ -11,9 +11,9 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.PeekingIterator;
 import com.google.common.collect.Queues;
 
-import au.edu.wehi.idsv.metrics.IdsvMetrics;
 import au.edu.wehi.idsv.util.SlidingWindowList;
 import au.edu.wehi.idsv.visualisation.TrackedBuffer;
+import gridss.analysis.IdsvMetrics;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.filter.AggregateFilter;
 import htsjdk.samtools.filter.AlignedFilter;

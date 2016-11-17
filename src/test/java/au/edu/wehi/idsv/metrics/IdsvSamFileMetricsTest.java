@@ -9,6 +9,9 @@ import java.util.List;
 import org.junit.Test;
 
 import au.edu.wehi.idsv.TestHelper;
+import gridss.analysis.CigarDetailMetrics;
+import gridss.analysis.IdsvMetrics;
+import gridss.analysis.InsertSizeDistribution;
 import gridss.analysis.MapqMetrics;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
 import picard.analysis.InsertSizeMetrics;

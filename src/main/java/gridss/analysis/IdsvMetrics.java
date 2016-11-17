@@ -1,4 +1,4 @@
-package au.edu.wehi.idsv.metrics;
+package gridss.analysis;
 
 import htsjdk.samtools.metrics.MetricBase;
 
