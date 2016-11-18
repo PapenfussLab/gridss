@@ -34,7 +34,7 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
 			public SinglePassSamProgram makeInstance(String outbase, String outext, File input, File reference,
 					Set<MetricAccumulationLevel> metricAccumulationLevel, File dbSnp, File intervals) {
 				final CollectCigarMetrics program = new CollectCigarMetrics();
-                program.OUTPUT = new File(outbase + ".cigar_metrics");
+                program.OUTPUT = new File(outbase + gridss.analysis.CollectCigarMetrics.METRICS_SUFFIX + outext);
 
                 // Generally programs should not be accessing these directly but it might make things smoother
                 // to just set them anyway. These are set here to make sure that in case of a the derived class
@@ -60,8 +60,8 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
 			public SinglePassSamProgram makeInstance(String outbase, String outext, File input, File reference,
 					Set<MetricAccumulationLevel> metricAccumulationLevel, File dbSnp, File intervals) {
 				final CollectMapqMetrics program = new CollectMapqMetrics();
-                program.OUTPUT = new File(outbase + ".mapq_metrics");
-                program.Histogram_FILE = new File(outbase + ".mapq_histogram.pdf");
+                program.OUTPUT = new File(outbase + gridss.analysis.CollectMapqMetrics.METRICS_SUFFIX + outext);
+                program.Histogram_FILE = new File(outbase + gridss.analysis.CollectMapqMetrics.HISTOGRAM_SUFFIX);
 
                 // Generally programs should not be accessing these directly but it might make things smoother
                 // to just set them anyway. These are set here to make sure that in case of a the derived class
@@ -87,7 +87,7 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
 			public SinglePassSamProgram makeInstance(String outbase, String outext, File input, File reference,
 					Set<MetricAccumulationLevel> metricAccumulationLevel, File dbSnp, File intervals) {
 				final CollectIdsvMetrics program = new CollectIdsvMetrics();
-                program.OUTPUT = new File(outbase + ".idsv_metrics");
+                program.OUTPUT = new File(outbase + gridss.analysis.CollectIdsvMetrics.METRICS_SUFFIX + outext);
 
                 // Generally programs should not be accessing these directly but it might make things smoother
                 // to just set them anyway. These are set here to make sure that in case of a the derived class
@@ -124,7 +124,7 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
     @Override
     protected String[] customCommandLineValidation() {
         if (PROGRAM.isEmpty() && GRIDSS_PROGRAM.isEmpty()) {
-            return new String[]{"No programs specified with PROGRAM or GRIDS_PROGRAM"};
+            return new String[]{"No programs specified with PROGRAM or GRIDSS_PROGRAM"};
         }
         return super.customCommandLineValidation();
     }

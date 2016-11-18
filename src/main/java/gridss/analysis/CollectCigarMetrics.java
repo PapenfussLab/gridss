@@ -51,6 +51,7 @@ import picard.cmdline.programgroups.Metrics;
         programGroup = Metrics.class
 )
 public class CollectCigarMetrics extends SinglePassSamProgram {
+	public static final String METRICS_SUFFIX = ".cigar_metrics";
 	
 	@Option(shortName="Z", doc="If set to true include a zero length operator for each operator not included in the alignment CIGAR.")
     public boolean INCLUDE_OMITTED_OPERATORS = true;

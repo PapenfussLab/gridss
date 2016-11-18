@@ -55,6 +55,8 @@ import picard.util.RExecutor;
         programGroup = Metrics.class
 )
 public class CollectMapqMetrics extends SinglePassSamProgram {
+	public static final String METRICS_SUFFIX = ".mapq_metrics";
+	public static final String HISTOGRAM_SUFFIX = ".mapq_histogram.pdf";
     private static final String Histogram_R_SCRIPT = "gridss/analysis/mapqHistogram.R";
 
     @Option(shortName="H", doc="File to write insert size Histogram chart to.")

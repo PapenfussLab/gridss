@@ -102,7 +102,10 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 				bestExactBreakpoint = (DirectedBreakpoint)evidence;
 			}
 		}
-		int category = evidence.getEvidenceSource() instanceof SAMEvidenceSource ? ((SAMEvidenceSource)evidence.getEvidenceSource()).getSourceCategory() : -1;
+		int category = -1;
+		if (evidence.getEvidenceSource() instanceof SAMEvidenceSource) {
+			category = ((SAMEvidenceSource)evidence.getEvidenceSource()).getSourceCategory();
+		}
 		if (evidence instanceof RealignedRemoteSAMRecordAssemblyEvidence) {
 			add((RealignedRemoteSAMRecordAssemblyEvidence)evidence);
 		} else if (evidence instanceof SpanningSAMRecordAssemblyEvidence) {

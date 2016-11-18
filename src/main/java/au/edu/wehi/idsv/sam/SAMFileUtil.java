@@ -118,7 +118,7 @@ public class SAMFileUtil {
 				log.info("Not sorting as output already exists: " + output);
 				return null;
 			}
-			File tmpFile = FileSystemContext.getWorkingFileFor(output, "sorting.");
+			File tmpFile = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.sorting.SAMFileUtil.");
 			log.info("Sorting " + unsorted);
 			SamReader reader = null;
 			CloseableIterator<SAMRecord> rit = null;
@@ -189,7 +189,7 @@ public class SAMFileUtil {
 	 */
 	public static void merge(Collection<File> input, File output, SamReaderFactory readerFactory, SAMFileWriterFactory writerFactory) throws IOException {
 		if (input == null || input.size() == 0) return;
-		File tmpFile = FileSystemContext.getWorkingFileFor(output, "merging.");
+		File tmpFile = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.merging.SAMFileUtil.");
 		Map<SamReader, AsyncBufferedIterator<SAMRecord>> map = new HashMap<>(input.size());
 		SAMFileHeader header = null;
 		try {

@@ -286,10 +286,6 @@ public class GenomicProcessingContext implements Closeable {
 		return linear;
 	}
 
-	public boolean shouldProcessPerChromosome() {
-		return perChr;
-	}
-
 	@Override
 	public void close() throws IOException {
 		log.debug("close() called");

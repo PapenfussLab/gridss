@@ -25,15 +25,11 @@ import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
-import au.edu.wehi.idsv.util.FileHelper;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceRecord;
-import htsjdk.samtools.SamReader;
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 
 /**
@@ -43,7 +39,7 @@ import htsjdk.samtools.util.Log;
  */
 public class CreateAssemblyReadPair extends DataTransformStep {
 	private static final Log log = Log.getInstance(CreateAssemblyReadPair.class);
-	private static final String UNSORTED_FILE_PREFIX = "unsorted.";
+	private static final String UNSORTED_FILE_PREFIX = "gridss.tmp.unsorted.";
 	private final AssemblyEvidenceSource source;
 	private final List<SAMFileWriter> sortedWriters = Lists.newArrayList();
 	private final List<SAMFileWriter> mateWriters = Lists.newArrayList();
@@ -68,8 +64,8 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 		public CloseableIterator<SAMRecordAssemblyEvidence> annotatedAssembliesIterator() {
 			CloseableIterator<SAMRecordAssemblyEvidence> assit = source.iterator(false, processContext.getAssemblyParameters().writeFiltered);
 			CloseableIterator<DirectedEvidence> eit = getAllEvidence(false, false, true, true, processContext.getAssemblyParameters().includeRemoteSplitReads, true);
-			AsyncBufferedIterator<SAMRecordAssemblyEvidence> asyncassIt = new AsyncBufferedIterator<SAMRecordAssemblyEvidence>(assit, "Hydration-Assembly", gridss.Defaults.ASYNC_BUFFERS, gridss.Defaults.ASYNC_BUFFER_SIZE);
-			AsyncBufferedIterator<DirectedEvidence> asynceIt = new AsyncBufferedIterator<DirectedEvidence>(eit, "Hydration-Evidence", gridss.Defaults.ASYNC_BUFFERS, gridss.Defaults.ASYNC_BUFFER_SIZE);			
+			AsyncBufferedIterator<SAMRecordAssemblyEvidence> asyncassIt = new AsyncBufferedIterator<SAMRecordAssemblyEvidence>(assit, "Hydration-Assembly");
+			AsyncBufferedIterator<DirectedEvidence> asynceIt = new AsyncBufferedIterator<DirectedEvidence>(eit, "Hydration-Evidence");			
 			SequentialAssemblyHydrator annotatedIt = new SequentialAssemblyHydrator(processContext.getLinear(), asyncassIt, asynceIt, source.getAssemblyWindowSize() + source.getMaxConcordantFragmentSize());
 			return new AutoClosingIterator<SAMRecordAssemblyEvidence>(annotatedIt, Lists.<Closeable>newArrayList(asyncassIt, asynceIt, assit, eit));
 		}
@@ -95,10 +91,6 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 			closeUnsortedWriters();
 			sort(threadpool);
 			removeUnsortedIntermediateFiles();
-			if (processContext.shouldProcessPerChromosome()) {
-				// write out combined file for debugging purposes
-				assemblyPerChrToAssembly();
-			}
 			deleteTemp();
 			log.info("SUCCESS: assembly remote breakend sorting ");
 		} catch (Exception e) {
@@ -110,61 +102,17 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 			throw new RuntimeException(msg, e);
 		}
 	}
-	private void assemblyPerChrToAssembly() {
-		FileSystemContext fsc = processContext.getFileSystemContext();
-		File singleFile = fsc.getAssembly(source.getFileIntermediateDirectoryBasedOn());
-		SAMFileHeader header = processContext.getBasicSamHeader();
-		header.setSortOrder(SortOrder.coordinate);
-		SAMFileWriter writer = null;
-		log.debug("Writing assemblies to single file " + singleFile);
-		try {
-			writer = processContext.getSamFileWriterFactory(true).makeSAMOrBAMWriter(header, true, FileSystemContext.getWorkingFileFor(singleFile));
-			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				File perChr = fsc.getAssemblyForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName());
-				SamReader reader = null;
-				try {
-					reader = processContext.getSamReader(perChr);
-					for (SAMRecord r : reader) {
-						writer.addAlignment(r);
-					}
-				} finally {
-					CloserUtil.close(reader);
-					reader = null;
-				}
-			}
-			writer.close();
-			writer = null;
-			FileHelper.move(FileSystemContext.getWorkingFileFor(singleFile), singleFile, true);
-		} catch (IOException e) {
-			log.debug("Error writing " + singleFile, e);
-		} finally {
-			CloserUtil.close(writer);
-		}
-	}
 	private void sort(ExecutorService threadpool) throws IOException {
 		FileSystemContext fsc = processContext.getFileSystemContext();
 		List<SAMFileUtil.SortCallable> tasks = Lists.newArrayList();
-		if (processContext.shouldProcessPerChromosome()) {
-			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				tasks.add(new SAMFileUtil.SortCallable(processContext.getFileSystemContext(),
-						FileSystemContext.getWorkingFileFor((fsc.getAssemblyForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName())), UNSORTED_FILE_PREFIX),
-						fsc.getAssemblyForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName()),
-						SortOrder.coordinate, null));
-				tasks.add(new SAMFileUtil.SortCallable(processContext.getFileSystemContext(),
-						FileSystemContext.getWorkingFileFor((fsc.getAssemblyMateForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName())), UNSORTED_FILE_PREFIX),
-						fsc.getAssemblyMateForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName()),
-						new SAMRecordMateCoordinateComparator(), null));
-			}
-		} else {
-			tasks.add(new SAMFileUtil.SortCallable(processContext.getFileSystemContext(),
-					FileSystemContext.getWorkingFileFor((fsc.getAssembly(source.getFileIntermediateDirectoryBasedOn())), UNSORTED_FILE_PREFIX),
-					fsc.getAssembly(source.getFileIntermediateDirectoryBasedOn()),
-					SortOrder.coordinate, null));
-			tasks.add(new SAMFileUtil.SortCallable(processContext.getFileSystemContext(),
-					FileSystemContext.getWorkingFileFor((fsc.getAssemblyMate(source.getFileIntermediateDirectoryBasedOn())), UNSORTED_FILE_PREFIX),
-					fsc.getAssemblyMate(source.getFileIntermediateDirectoryBasedOn()),
-					new SAMRecordMateCoordinateComparator(), null));
-		}
+		tasks.add(new SAMFileUtil.SortCallable(processContext.getFileSystemContext(),
+				FileSystemContext.getWorkingFileFor((fsc.getAssembly(source.getFileIntermediateDirectoryBasedOn())), UNSORTED_FILE_PREFIX),
+				fsc.getAssembly(source.getFileIntermediateDirectoryBasedOn()),
+				SortOrder.coordinate, null));
+		tasks.add(new SAMFileUtil.SortCallable(processContext.getFileSystemContext(),
+				FileSystemContext.getWorkingFileFor((fsc.getAssemblyMate(source.getFileIntermediateDirectoryBasedOn())), UNSORTED_FILE_PREFIX),
+				fsc.getAssemblyMate(source.getFileIntermediateDirectoryBasedOn()),
+				new SAMRecordMateCoordinateComparator(), null));
 		//if (threadpool != null) {
 		//	try {
 		//		log.debug("Issuing parallel sort tasks");
@@ -260,19 +208,10 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 	}
 	private void createUnsortedOutputWriters() {
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		if (processContext.shouldProcessPerChromosome()) {
-			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				sortedWriters.add(processContext.getSamFileWriterFactory(true).makeSAMOrBAMWriter(header, true,
-						getUnsortedWorkingFileFor((fsc.getAssemblyForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName())))));
-				mateWriters.add(processContext.getSamFileWriterFactory(false).makeSAMOrBAMWriter(header, true,
-						getUnsortedWorkingFileFor((fsc.getAssemblyMateForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName())))));
-			}
-		} else {
-			sortedWriters.add(processContext.getSamFileWriterFactory(true).makeSAMOrBAMWriter(header, true,
-					getUnsortedWorkingFileFor((fsc.getAssembly(source.getFileIntermediateDirectoryBasedOn())))));
-			mateWriters.add(processContext.getSamFileWriterFactory(false).makeSAMOrBAMWriter(header, true,
-					getUnsortedWorkingFileFor((fsc.getAssemblyMate(source.getFileIntermediateDirectoryBasedOn())))));
-		}
+		sortedWriters.add(processContext.getSamFileWriterFactory(true).makeSAMOrBAMWriter(header, true,
+				getUnsortedWorkingFileFor((fsc.getAssembly(source.getFileIntermediateDirectoryBasedOn())))));
+		mateWriters.add(processContext.getSamFileWriterFactory(false).makeSAMOrBAMWriter(header, true,
+				getUnsortedWorkingFileFor((fsc.getAssemblyMate(source.getFileIntermediateDirectoryBasedOn())))));
 	}
 	@Override
 	protected Log getLog() {
@@ -290,34 +229,18 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 	public List<File> getOutput() {
 		List<File> outputs = Lists.newArrayList();
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		if (processContext.shouldProcessPerChromosome()) {
-			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				outputs.add(fsc.getAssemblyForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName()));
-				outputs.add(fsc.getAssemblyMateForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName()));
-			}
-		} else {
-			outputs.add(fsc.getAssembly(source.getFileIntermediateDirectoryBasedOn()));
-			outputs.add(fsc.getAssemblyMate(source.getFileIntermediateDirectoryBasedOn()));
-		}
+		outputs.add(fsc.getAssembly(source.getFileIntermediateDirectoryBasedOn()));
+		outputs.add(fsc.getAssemblyMate(source.getFileIntermediateDirectoryBasedOn()));
 		return outputs;
 	}
 	@Override
 	public List<File> getTemporary() {
 		List<File> files = Lists.newArrayList();
 		FileSystemContext fsc = processContext.getFileSystemContext();
-		if (processContext.shouldProcessPerChromosome()) {
-			for (SAMSequenceRecord seq : processContext.getReference().getSequenceDictionary().getSequences()) {
-				files.add(FileSystemContext.getWorkingFileFor((fsc.getAssemblyForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName())), UNSORTED_FILE_PREFIX));
-				files.add(FileSystemContext.getWorkingFileFor((fsc.getAssemblyMateForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName())), UNSORTED_FILE_PREFIX));
-				files.add(FileSystemContext.getWorkingFileFor((fsc.getAssemblyForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName()))));
-				files.add(FileSystemContext.getWorkingFileFor((fsc.getAssemblyMateForChr(source.getFileIntermediateDirectoryBasedOn(), seq.getSequenceName()))));
-			}
-		} else {
-			files.add(FileSystemContext.getWorkingFileFor((fsc.getAssembly(source.getFileIntermediateDirectoryBasedOn())), UNSORTED_FILE_PREFIX));
-			files.add(FileSystemContext.getWorkingFileFor((fsc.getAssemblyMate(source.getFileIntermediateDirectoryBasedOn())), UNSORTED_FILE_PREFIX));
-			files.add(FileSystemContext.getWorkingFileFor((fsc.getAssembly(source.getFileIntermediateDirectoryBasedOn()))));
-			files.add(FileSystemContext.getWorkingFileFor((fsc.getAssemblyMate(source.getFileIntermediateDirectoryBasedOn()))));
-		}
+		files.add(FileSystemContext.getWorkingFileFor((fsc.getAssembly(source.getFileIntermediateDirectoryBasedOn())), UNSORTED_FILE_PREFIX));
+		files.add(FileSystemContext.getWorkingFileFor((fsc.getAssemblyMate(source.getFileIntermediateDirectoryBasedOn())), UNSORTED_FILE_PREFIX));
+		files.add(FileSystemContext.getWorkingFileFor((fsc.getAssembly(source.getFileIntermediateDirectoryBasedOn()))));
+		files.add(FileSystemContext.getWorkingFileFor((fsc.getAssemblyMate(source.getFileIntermediateDirectoryBasedOn()))));
 		return files;
 	}
 }

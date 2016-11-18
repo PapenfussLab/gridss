@@ -26,10 +26,6 @@ public class EvidenceSourceTest extends IntermediateFilesTest {
 		public int getMinConcordantFragmentSize() {
 			return 0;
 		}
-		@Override
-		public int getRealignmentIterationCount() {
-			return 1;
-		}
 	}
 	@Test
 	public void getFileIntermediateDirectoryBasedOn_should_be_input_file() {

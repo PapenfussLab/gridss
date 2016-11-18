@@ -159,4 +159,12 @@ public class BreakendSummaryTest extends TestHelper {
 	public void getNominalPosition_should_report_nominal_position_only() {
 		assertEquals(new BreakendSummary(0, FWD, 15), new BreakendSummary(0, FWD, 15, 1, 100).getNominalPosition());
 	}
+	@Test
+	public void asValidFor_should_adjust_bounds() {
+		SAMSequenceDictionary dict = new SAMSequenceDictionary();
+		dict.addSequence(new SAMSequenceRecord("test", 10));
+		assertEquals(new BreakendSummary(0, FWD, 4, 1, 10), new BreakendSummary(0, FWD, 4, -10, 20).asValidFor(dict));
+		assertEquals(new BreakendSummary(0, FWD, 10, 10, 10), new BreakendSummary(0, FWD, 16, 15, 20).asValidFor(dict));
+		assertEquals(new BreakendSummary(0, FWD, 1, 1, 1), new BreakendSummary(0, FWD, -10, -10, -10).asValidFor(dict));
+	}
 }

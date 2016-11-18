@@ -114,8 +114,7 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 	@Override
 	protected void buildEvidenceID(StringBuilder sb) {
 		super.buildEvidenceID(sb);
-		sb.append("_");
-		sb.append(getBreakendSummary().direction.toChar());
+		sb.append(getBreakendSummary().direction == BreakendDirection.Forward ? "(F)" : "(B)");
 	}
 
 	@Override

@@ -7,6 +7,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
+import com.google.common.io.Files;
+
+import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.ReadPairConcordanceCalculator;
 import au.edu.wehi.idsv.ReadPairConcordanceMethod;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
@@ -41,8 +44,6 @@ import picard.cmdline.StandardOptionDefinitions;
 )
 public class ExtractSVReads extends CommandLineProgram {
 	private static final Log log = Log.getInstance(ExtractSVReads.class);
-	private static final int ASYNC_BUFFERS = 2;
-	private static final int ASYNC_BUFFER_SIZE = 300;
     @Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input file", optional=false)
     public File INPUT;
     @Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Output file containing subset of input", optional=false)
@@ -99,7 +100,8 @@ public class ExtractSVReads extends CommandLineProgram {
     		try (SamReader reader = readerFactory.open(INPUT)) {
     			SAMFileHeader header = reader.getFileHeader();
     			try (SAMRecordIterator it = reader.iterator()) {
-    				try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, OUTPUT)) {
+    				File tmpoutput = FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.tmp.ExtractSVReads.");
+    				try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpoutput)) {
     					extract(it, 
     							writer,
     							INDELS ? MIN_INDEL_SIZE : Integer.MAX_VALUE,
@@ -109,6 +111,7 @@ public class ExtractSVReads extends CommandLineProgram {
 								DISCORDANT_READ_PAIRS, rpcc,
 								UNMAPPED_READS);
     				}
+    				Files.move(tmpoutput, OUTPUT);
     			}
     		}
 		} catch (IOException e) {
@@ -138,7 +141,7 @@ public class ExtractSVReads extends CommandLineProgram {
 		if (includeUnmapped) filters.add(new AlignedFilter(false));
 		
 		UnionAggregateFilter filter = new UnionAggregateFilter(filters);
-		try (CloseableIterator<SAMRecord> it = new AsyncBufferedIterator<SAMRecord>(rawit, "raw", ASYNC_BUFFERS, ASYNC_BUFFER_SIZE)) {
+		try (CloseableIterator<SAMRecord> it = new AsyncBufferedIterator<SAMRecord>(rawit, "raw")) {
 			while (it.hasNext()) {
 				SAMRecord r = it.next();
 				progress.record(r);

@@ -283,7 +283,7 @@ public class Idsv extends CommandLineProgram {
 	    			|| !sref.isComplete(ProcessStep.EXTRACT_READ_PAIRS)
 	    			|| !sref.isComplete(ProcessStep.REALIGN_SOFT_CLIPS)
 	    			|| !sref.isComplete(ProcessStep.SORT_REALIGNED_SOFT_CLIPS)) {
-	    			log.error("Unable to call variants: processing and realignment for ", sref.getSourceFile(), " is not complete.");
+	    			log.error("Unable to call variants: processing and realignment for ", sref.getFile(), " is not complete.");
 	    			return -1;
 	    		}
 	    	}

@@ -44,6 +44,7 @@ import picard.cmdline.programgroups.Metrics;
         programGroup = Metrics.class
 )
 public class CollectIdsvMetrics extends SinglePassSamProgram {
+	public static final String METRICS_SUFFIX = ".idsv_metrics";
 	
     private IdsvMetrics idsv;    
 

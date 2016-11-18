@@ -15,13 +15,17 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import org.apache.commons.lang.NotImplementedException;
+
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.debruijn.positional.DirectedPositionalAssembler;
+import au.edu.wehi.idsv.debruijn.positional.PositionalAssembler;
 import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
 import au.edu.wehi.idsv.pipeline.CreateAssemblyReadPair;
 import au.edu.wehi.idsv.sam.SAMFileUtil.SortCallable;
@@ -30,9 +34,12 @@ import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.validation.OrderAssertingIterator;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
+import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
+import htsjdk.samtools.SAMFileWriterFactory;
+import htsjdk.samtools.SAMProgramRecord;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMSequenceRecord;
@@ -41,7 +48,7 @@ import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 
 
-public class AssemblyEvidenceSource extends EvidenceSource {
+public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	private static final Log log = Log.getInstance(AssemblyEvidenceSource.class);
 	private static final int PROGRESS_UPDATE_INTERVAL_SECONDS = 60;
 	private final List<SAMEvidenceSource> source;
@@ -49,15 +56,13 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 	private final int minSourceFragSize;
 	private final int maxReadLength;
 	private final int maxMappedReadLength;
-	private final FileSystemContext fsc;
 	/**
 	 * Generates assembly evidence based on the given evidence
 	 * @param evidence evidence for creating assembly
 	 * @param intermediateFileLocation location to store intermediate files
 	 */
-	public AssemblyEvidenceSource(ProcessingContext processContext, List<SAMEvidenceSource> evidence, File intermediateFileLocation) {
-		super(processContext, intermediateFileLocation);
-		this.fsc = getContext().getFileSystemContext();
+	public AssemblyEvidenceSource(ProcessingContext processContext, List<SAMEvidenceSource> evidence, File assemblyFile) {
+		super(processContext, assemblyFile, -1);
 		this.source = evidence;
 		this.maxSourceFragSize = evidence.stream().mapToInt(s -> s.getMaxConcordantFragmentSize()).max().orElse(0);
 		this.minSourceFragSize = evidence.stream().mapToInt(s -> s.getMinConcordantFragmentSize()).min().orElse(0);
@@ -65,111 +70,57 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		this.maxMappedReadLength = evidence.stream().mapToInt(s -> Math.max(s.getMaxReadLength(), s.getMaxReadMappedLength())).max().orElse(0);
 		assert(maxSourceFragSize >= minSourceFragSize);
 	}
-	@Override
-	public int getRealignmentIterationCount() {
-		return getContext().getRealignmentParameters().assemblyIterations;
+	
+	public void assemble() {
+		SAMFileHeader header = getContext().getBasicSamHeader();
+		// TODO: add assembly @PG header
+		try (SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(header, false, getFile())) {
+			Iterator<SAMRecordAssemblyEvidence> it = getAllAssemblies();
+			while (it.hasNext()) {
+	    		SAMRecordAssemblyEvidence asm = it.next();
+	    		writer.addAlignment(asm.getSAMRecord());
+	    	}
+	    }
+		// sort
 	}
-	public void ensureAssembled() {
-		ensureAssembled(null);
+	private Iterator<SAMRecordAssemblyEvidence> getAllAssemblies() {
+		// TODO multi-threaded version
+		// Chunk into tasks
+		// Schedule tasks on thread pool
+		// Have tasks
+		// Need 
+		// Thread pool 
+		return getAllAssemblies_single_threaded();
 	}
-	/**
-	 * Assembles evidence
-	 * @param threadpool thread pool containing desired number of active threads
-	 */
-	public void ensureAssembled(ExecutorService threadpool) {
-		if (!isProcessingComplete()) {
-			process(threadpool);
+	private Iterator<SAMRecordAssemblyEvidence> getAllAssemblies_single_threaded() {
+		List<Iterator<SAMRecordAssemblyEvidence>> list = new ArrayList<>();
+		for (BreakendDirection direction : BreakendDirection.values()) {
+	    	Iterator<DirectedEvidence> it = getEvidenceIterator();
+	    	PositionalAssembler assemblyIt = new PositionalAssembler(getContext(), this, it, direction);
+	    	list.add(assemblyIt);
 		}
-		if (isRealignmentComplete(true)) {
-			CreateAssemblyReadPair step = new CreateAssemblyReadPair(getContext(), this, source);
-			step.process(EnumSet.of(ProcessStep.SORT_REALIGNED_ASSEMBLIES), threadpool);
-			step.close();
-		}
+		return Iterators.concat(list.iterator());
 	}
-	public CloseableIterator<SAMRecordAssemblyEvidence> iterator(final boolean includeRemote, final boolean includeFiltered) {
-		CloseableIterator<SAMRecordAssemblyEvidence> it;
-		if (getContext().shouldProcessPerChromosome()) {
-			// Lazily iterator over each input
-			it = new PerChromosomeAggregateIterator<SAMRecordAssemblyEvidence>(getContext().getReference().getSequenceDictionary(), new Function<String, Iterator<SAMRecordAssemblyEvidence>>() {
-				@Override
-				public Iterator<SAMRecordAssemblyEvidence> apply(String chr) {
-					return perChrIterator(includeRemote, includeFiltered, chr);
-				}
-			});
-		} else {
-			it = singleFileIterator(includeRemote, includeFiltered);
+	public Iterator<DirectedEvidence> getEvidenceIterator() {
+		List<CloseableIterator<DirectedEvidence>> toMerge = Lists.newArrayList();
+		for (SAMEvidenceSource bam : source) {
+			CloseableIterator<DirectedEvidence> it = bam.iterator();
+			toMerge.add(it);
 		}
-		if (Defaults.SANITY_CHECK_ITERATORS && includeRemote) {
-			it = new PairedEvidenceTracker<SAMRecordAssemblyEvidence>("Assembly", it);
-		}
-		return it;
+		CloseableIterator<DirectedEvidence> merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);
+		return merged;
 	}
-	public CloseableIterator<SAMRecordAssemblyEvidence> iterator(boolean includeRemote, boolean includeFiltered, String chr) {
-		if (getContext().shouldProcessPerChromosome()) {
-			return perChrIterator(includeRemote, includeFiltered, chr);
-		} else {
-			return new ChromosomeFilteringIterator<SAMRecordAssemblyEvidence>(singleFileIterator(includeRemote, includeFiltered), getContext().getDictionary().getSequence(chr).getSequenceIndex(), true);
+	public Iterator<DirectedEvidence> getEvidenceIterator(final QueryInterval intervals) {
+		List<CloseableIterator<DirectedEvidence>> toMerge = Lists.newArrayList();
+		for (SAMEvidenceSource bam : source) {
+			CloseableIterator<DirectedEvidence> it = bam.iterator(intervals);
+			toMerge.add(it);
 		}
+		CloseableIterator<DirectedEvidence> merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);
+		return merged;
 	}
-	protected CloseableIterator<SAMRecordAssemblyEvidence> perChrIterator(boolean includeRemote, boolean includeFiltered, String chr) {
-		FileSystemContext fsc = getContext().getFileSystemContext();
-		if (!isReadPairingComplete()) {
-			return samAssemblyRealignIterator(
-				includeRemote,
-				includeFiltered,
-				fsc.getAssemblyRawBamForChr(input, chr),
-				IntStream.range(0, getRealignmentIterationCount()).mapToObj(i -> fsc.getRealignmentBamForChr(input, chr, i)).collect(Collectors.toList()),
-				chr);
-		} else {
-			return samReadPairIterator(
-					includeRemote,
-					includeFiltered,
-					fsc.getAssemblyForChr(input, chr),
-					fsc.getAssemblyMateForChr(input, chr),
-					chr);
-		}
-	}
-	protected CloseableIterator<SAMRecordAssemblyEvidence> singleFileIterator(boolean includeRemote, boolean includeFiltered) {
-		FileSystemContext fsc = getContext().getFileSystemContext();
-		if (!isReadPairingComplete()) {
-			return samAssemblyRealignIterator(
-					includeRemote,
-					includeFiltered,
-					fsc.getAssemblyRawBam(input),
-					IntStream.range(0, getRealignmentIterationCount()).mapToObj(i -> fsc.getRealignmentBam(input, i)).collect(Collectors.toList()),
-					"");
-		} else {
-			return samReadPairIterator(
-					includeRemote,
-					includeFiltered,
-					fsc.getAssembly(input),
-					fsc.getAssemblyMate(input),
-					"");
-		}
-	}
-	private CloseableIterator<SAMRecordAssemblyEvidence> samReadPairIterator(
-			boolean includeRemote,
-			boolean includeFiltered,
-			File assembly,
-			File mate,
-			String chr) {
-		CloseableIterator<SAMRecord> it = getContext().getSamReaderIterator(assembly);
-		CloseableIterator<SAMRecord> mateIt = getContext().getSamReaderIterator(mate);
-		CloseableIterator<SAMRecordAssemblyEvidence> evidenceIt = new SAMRecordAssemblyEvidenceReadPairIterator(getContext(), this, it, mateIt, includeRemote, true);
-		getContext().registerBuffer("assembly.rp." + chr, (SAMRecordAssemblyEvidenceReadPairIterator)evidenceIt);
-		Iterator<SAMRecordAssemblyEvidence> filteredIt = includeFiltered ? evidenceIt : new SAMRecordAssemblyEvidenceFilteringIterator(getContext(), evidenceIt);
-		filteredIt = new DirectedEvidenceScoreFilteringIterator<SAMRecordAssemblyEvidence>(filteredIt, getContext().getConfig().getScoring().variantFilterScore, getContext().getConfig().getScoring().variantFilterScore);
-		DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence> dit = new DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence>(
-				getContext(),
-				2 * getAssemblyWindowSize(),
-				filteredIt);
-		getContext().registerBuffer("assembly.rp." + chr, dit);
-		CloseableIterator<SAMRecordAssemblyEvidence> sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(dit, ImmutableList.<Closeable>of(it, mateIt, evidenceIt));
-		if (Defaults.SANITY_CHECK_ITERATORS) {
-			sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(new OrderAssertingIterator<SAMRecordAssemblyEvidence>(sortedIt, DirectedEvidenceOrder.ByNatural), ImmutableList.<Closeable>of(sortedIt));
-		}
-		return sortedIt;
-	}
+	
+	
 	private CloseableIterator<SAMRecordAssemblyEvidence> samAssemblyRealignIterator(
 			boolean includeRemote,
 			boolean includeFiltered,
@@ -228,34 +179,6 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		}
 		return sortedIt;
 	}
-	private boolean isProcessingComplete() {
-		List<File> target = new ArrayList<File>();
-		List<File> source = new ArrayList<File>();
-		if (getContext().shouldProcessPerChromosome()) {
-			for (SAMSequenceRecord seq : getContext().getReference().getSequenceDictionary().getSequences()) {
-				source.add(null); target.add(fsc.getAssemblyRawBamForChr(input, seq.getSequenceName()));
-				source.add(null); target.add(fsc.getRealignmentFastqForChr(input, seq.getSequenceName(), 0));
-			}
-		} else {
-			source.add(null); target.add(fsc.getAssemblyRawBam(input));
-			source.add(null); target.add(fsc.getRealignmentFastq(input, 0));
-		}
-		return IntermediateFileUtil.checkIntermediate(target, source);
-	}
-	private boolean isReadPairingComplete() {
-		List<File> target = new ArrayList<File>();
-		List<File> source = new ArrayList<File>();
-		if (getContext().shouldProcessPerChromosome()) {
-			for (SAMSequenceRecord seq : getContext().getReference().getSequenceDictionary().getSequences()) {
-				source.add(null); target.add(fsc.getAssemblyForChr(input, seq.getSequenceName()));
-				source.add(null); target.add(fsc.getAssemblyMateForChr(input, seq.getSequenceName()));
-			}
-		} else {
-			source.add(null); target.add(fsc.getAssembly(input));
-			source.add(null); target.add(fsc.getAssemblyMate(input));
-		}
-		return IntermediateFileUtil.checkIntermediate(target, source);
-	}
 	private volatile Exception lastWorkerThreadException = null;
 	protected void process(ExecutorService threadpool) {
 		if (isProcessingComplete()) return;
@@ -263,7 +186,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		for (SAMEvidenceSource s : source) {
 			if (!s.isComplete(ProcessStep.EXTRACT_READ_PAIRS) ||
 				!s.isComplete(ProcessStep.EXTRACT_SOFT_CLIPS)) {
-				throw new IllegalStateException(String.format("Unable to perform assembly: evidence extraction not complete for %s", s.getSourceFile()));
+				throw new IllegalStateException(String.format("Unable to perform assembly: evidence extraction not complete for %s", s.getFile()));
 			}
 		}
 		final SAMSequenceDictionary dict = getContext().getReference().getSequenceDictionary();
@@ -483,7 +406,7 @@ public class AssemblyEvidenceSource extends EvidenceSource {
 		@Override
 		public void run() {
 			try {
-				File unsorted = FileSystemContext.getWorkingFileFor(breakendOutput, "unsorted."); 
+				File unsorted = FileSystemContext.getWorkingFileFor(breakendOutput, "gridss.tmp.AssemblyEvidenceSource.unsorted."); 
 				unsorted.delete();
 				generateAssembles(unsorted);
 				assembliesToSortedBamAndFastq(unsorted);

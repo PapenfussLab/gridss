@@ -36,37 +36,56 @@ public class SplitReadRealigner {
 	private boolean processSecondaryAlignments = false;
 	private int workerThreads = Runtime.getRuntime().availableProcessors();
 	private FastqAligner aligner;
+	private List<File> tmpFiles = new ArrayList<>();
 	
 	public SplitReadRealigner(GenomicProcessingContext pc, FastqAligner aligner) {
 		this.pc = pc;
 		this.aligner = aligner;
 	}
 	public void createSupplementaryAlignments(File input, File output) throws IOException {
-		int iteration = 0;
-		File fq = pc.getFileSystemContext().getRealignmentFastq(input, iteration);
-		File tmpfq = FileSystemContext.getWorkingFileFor(fq);
-		int recordsWritten = createSupplementaryAlignmentFastq(input, tmpfq, false);
-		Files.move(tmpfq, fq);
-		List<File> aligned = new ArrayList<>();
-		while (recordsWritten > 0) {
-			// Align
-			File out = pc.getFileSystemContext().getRealignmentBam(input, iteration);
-			File tmpout = FileSystemContext.getWorkingFileFor(out);
-			aligner.align(fq, tmpout, pc.getReferenceFile(), workerThreads);
-			Files.move(tmpout, out);
-			aligned.add(out);
-			// start next iteration
-			iteration++;
-			fq = pc.getFileSystemContext().getRealignmentFastq(out, iteration);
-			tmpfq = FileSystemContext.getWorkingFileFor(fq);
-			recordsWritten = createSupplementaryAlignmentFastq(out, tmpfq, true);
+		try {
+			int iteration = 0;
+			File fq = pc.getFileSystemContext().getRealignmentFastq(input, iteration);
+			File tmpfq = FileSystemContext.getWorkingFileFor(fq, "gridss.tmp.SplitReadRealigner.");
+			int recordsWritten = createSupplementaryAlignmentFastq(input, tmpfq, false);
 			Files.move(tmpfq, fq);
+			tmpFiles.add(fq);
+			tmpFiles.add(tmpfq);
+			List<File> aligned = new ArrayList<>();
+			while (recordsWritten > 0) {
+				// Align
+				File out = pc.getFileSystemContext().getRealignmentBam(input, iteration);
+				File tmpout = FileSystemContext.getWorkingFileFor(out);
+				tmpFiles.add(out);
+				tmpFiles.add(tmpout);
+				aligner.align(fq, tmpout, pc.getReferenceFile(), workerThreads);
+				Files.move(tmpout, out);
+				aligned.add(out);
+				// start next iteration
+				iteration++;
+				fq = pc.getFileSystemContext().getRealignmentFastq(out, iteration);
+				tmpfq = FileSystemContext.getWorkingFileFor(fq);
+				tmpFiles.add(fq);
+				tmpFiles.add(tmpfq);
+				recordsWritten = createSupplementaryAlignmentFastq(out, tmpfq, true);
+				Files.move(tmpfq, fq);
+			}
+			mergeSupplementaryAlignment(input, aligned, output);
+		} finally {
+			if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
+				for (File f : tmpFiles) {
+					if (f.exists()) {
+						f.delete();
+					}
+				}
+			}
 		}
-		mergeSupplementaryAlignment(input, aligned, output);
 	}
 	private void mergeSupplementaryAlignment(File input, List<File> aligned, File output) throws IOException {
-		File suppMerged = FileSystemContext.getWorkingFileFor(output, "tmp.sa.");
+		File suppMerged = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.SplitReadAligner.sa.");
 		File tmpoutput = FileSystemContext.getWorkingFileFor(output);
+		tmpFiles.add(suppMerged);
+		tmpFiles.add(tmpoutput);
 		List<SamReader> suppReaders = new ArrayList<>();
 		List<PeekingIterator<SAMRecord>> suppIt = new ArrayList<>();
 		SAMFileHeader header;
@@ -93,7 +112,8 @@ public class SplitReadRealigner {
 			}
 		}
 		if (header.getSortOrder() != null && header.getSortOrder() != SortOrder.unsorted) {
-			File suppMergedsorted = FileSystemContext.getWorkingFileFor(output, "tmp.sorted.sa.");
+			File suppMergedsorted = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.SplitReadAligner.sorted.sa.");
+			tmpFiles.add(suppMergedsorted);
 			SAMFileUtil.sort(pc.getFileSystemContext(), suppMerged, suppMergedsorted, header.getSortOrder());
 			Files.move(suppMergedsorted, suppMerged);
 		}

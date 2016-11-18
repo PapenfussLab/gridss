@@ -7,7 +7,9 @@ import java.util.Locale;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
+import com.google.common.io.Files;
 
+import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.sam.NmTagIterator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.TemplateTagsIterator;
@@ -43,8 +45,6 @@ import picard.cmdline.StandardOptionDefinitions;
 )
 public class ComputeSamTags extends CommandLineProgram {
 	private static final Log log = Log.getInstance(ComputeSamTags.class);
-	private static final int ASYNC_BUFFERS = 2;
-	private static final int ASYNC_BUFFER_SIZE = 300;
 	@Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input BAM file grouped by read name.")
     public File INPUT;
 	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Annotated BAM file.")
@@ -86,9 +86,11 @@ public class ComputeSamTags extends CommandLineProgram {
     				}
     			}
     			try (SAMRecordIterator it = reader.iterator()) {
-    				try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, OUTPUT)) {
+    				File tmpoutput = FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.tmp.ComputeSamTags.");
+    				try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpoutput)) {
     					compute(it, writer, reference, TAGS, SOFTEN_HARD_CLIPS);
     				}
+    				Files.move(tmpoutput, OUTPUT);
     			}
     		}
 		} catch (IOException e) {
@@ -99,15 +101,15 @@ public class ComputeSamTags extends CommandLineProgram {
 	}
 	public static void compute(Iterator<SAMRecord> rawit, SAMFileWriter writer, ReferenceSequenceFile reference, Set<SAMTag> tags, boolean softenHardClips) throws IOException {
 		ProgressLogger progress = new ProgressLogger(log);
-		try (CloseableIterator<SAMRecord> aysncit = new AsyncBufferedIterator<SAMRecord>(rawit, "raw", ASYNC_BUFFERS, ASYNC_BUFFER_SIZE)) {
+		try (CloseableIterator<SAMRecord> aysncit = new AsyncBufferedIterator<SAMRecord>(rawit, "raw")) {
 			Iterator<SAMRecord> it = aysncit;
 			if (tags.contains(SAMTag.NM) || tags.contains(SAMTag.SA)) {
-				it = new AsyncBufferedIterator<SAMRecord>(it, "nm", ASYNC_BUFFERS, ASYNC_BUFFER_SIZE);
+				it = new AsyncBufferedIterator<SAMRecord>(it, "nm");
 				it = new NmTagIterator(it, reference);
 			}
 			if (!Sets.intersection(tags, SAMRecordUtil.TEMPLATE_TAGS).isEmpty() || softenHardClips) {
 				it = new TemplateTagsIterator(it, softenHardClips, tags);
-				it = new AsyncBufferedIterator<SAMRecord>(it, "tags", ASYNC_BUFFERS, ASYNC_BUFFER_SIZE);
+				it = new AsyncBufferedIterator<SAMRecord>(it, "tags");
 			}
 			while (it.hasNext()) {
 				SAMRecord r = it.next();

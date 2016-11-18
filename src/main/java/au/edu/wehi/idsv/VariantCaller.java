@@ -57,7 +57,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 			} else {
 				CloseableIterator<DirectedEvidence> evidenceIt = null;
 				File unsorted = FileSystemContext.getWorkingFileFor(outfile);
-				File sorted = FileSystemContext.getWorkingFileFor(outfile, "sorted.");
+				File sorted = FileSystemContext.getWorkingFileFor(outfile, "gridss.tmp.sorted.VariantCaller.");
 				unsorted.delete();
 				sorted.delete();
 				try {
@@ -236,11 +236,11 @@ public class VariantCaller extends EvidenceProcessorBase {
 		List<ReferenceCoverageLookup> lookup = Lists.newArrayList();
 		for (SAMEvidenceSource s : input) {
 			// one read-ahead thread per input file
-			CloseableIterator<SAMRecord> it = new AsyncBufferedIterator<SAMRecord>(processContext.getSamReaderIterator(s.getSourceFile(), SortOrder.coordinate), s.getSourceFile().getName() + "-Coverage", gridss.Defaults.ASYNC_BUFFERS, gridss.Defaults.ASYNC_BUFFER_SIZE);
+			CloseableIterator<SAMRecord> it = new AsyncBufferedIterator<SAMRecord>(processContext.getSamReaderIterator(s.getFile(), SortOrder.coordinate), s.getFile().getName() + "-Coverage");
 			it = new ProgressLoggingSAMRecordIterator(it, new ProgressLogger(log));
 			toClose.add(it);
 			SequentialReferenceCoverageLookup sourceLookup = new SequentialReferenceCoverageLookup(it, s.getMetrics().getIdsvMetrics(), s.getReadPairConcordanceCalculator(), windowSize);
-			processContext.registerBuffer(s.getSourceFile().getName(), sourceLookup);
+			processContext.registerBuffer(s.getFile().getName(), sourceLookup);
 			lookup.add(sourceLookup);
 		}
 		return new AggregateReferenceCoverageLookup(lookup);

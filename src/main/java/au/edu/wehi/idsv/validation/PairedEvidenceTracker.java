@@ -8,16 +8,6 @@ import com.google.common.collect.AbstractIterator;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.DirectedBreakpoint;
 import au.edu.wehi.idsv.DirectedEvidence;
-import au.edu.wehi.idsv.DiscordantReadPair;
-import au.edu.wehi.idsv.MaximalEvidenceCliqueIterator;
-import au.edu.wehi.idsv.RealignedRemoteSAMRecordAssemblyEvidence;
-import au.edu.wehi.idsv.RealignedRemoteSoftClipEvidence;
-import au.edu.wehi.idsv.RealignedSAMRecordAssemblyEvidence;
-import au.edu.wehi.idsv.RealignedSoftClipEvidence;
-import au.edu.wehi.idsv.SpannedIndelEvidence;
-import au.edu.wehi.idsv.SpanningSAMRecordAssemblyEvidence;
-import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
@@ -71,7 +61,7 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 	private boolean isValidNext(T evidence) {
 		if (evidence instanceof DirectedBreakpoint) {
 			String evidenceId = evidence.getEvidenceID();
-			String partnerId = getPartnerEvidenceID((DirectedBreakpoint)evidence, evidenceId);
+			String partnerId = ((DirectedBreakpoint) evidence).getRemoteEvidenceID();
 			if (unpaired.containsKey(evidenceId)) {
 				String msg = String.format("%s: encountered %s multiple times.", name, evidenceId);
 				log.error(msg);
@@ -108,42 +98,5 @@ public class PairedEvidenceTracker<T extends DirectedEvidence> extends AbstractI
 			log.error(sb.toString());
 		}
 		return unpaired.isEmpty();
-	}
-
-	private static String getPartnerEvidenceID(DirectedBreakpoint evidence, String evidenceId) {
-		if (evidence instanceof SpanningSAMRecordAssemblyEvidence) {
-			return ((SpanningSAMRecordAssemblyEvidence)evidence).asRemote().getEvidenceID();
-		} else if (evidence instanceof SpannedIndelEvidence) {
-			// change direction
-			return (evidenceId.charAt(0) == 'b' ? "f" : "b") + evidenceId.substring(1);
-		} else if (evidence instanceof RealignedRemoteSoftClipEvidence || evidence instanceof RealignedRemoteSAMRecordAssemblyEvidence) {
-			// remove R prefix
-			if (evidenceId.charAt(0) != 'R') throw new RuntimeException("Sanity check failure: unexpected remote evidence ID " + evidenceId);
-			return evidenceId.substring(1);
-		} else if (evidence instanceof RealignedSoftClipEvidence || evidence instanceof RealignedSAMRecordAssemblyEvidence) {
-			// add R prefix
-			return "R" + evidenceId;
-		} else if (evidence instanceof DiscordantReadPair) {
-			String partner = swapSuffix(evidenceId, SAMRecordUtil.FIRST_OF_PAIR_NAME_SUFFIX, SAMRecordUtil.SECOND_OF_PAIR_NAME_SUFFIX);
-			if (partner == null) {
-				throw new RuntimeException("Sanity check failure: unexpected read pair evidence ID " + evidenceId);
-			}
-			return partner;
-		} else if (evidence instanceof VariantContextDirectedBreakpoint) {
-			String partner = swapSuffix(evidenceId, MaximalEvidenceCliqueIterator.BREAKEND_ID_SUFFIX_LOW, MaximalEvidenceCliqueIterator.BREAKEND_ID_SUFFIX_HIGH);
-			if (partner == null) {
-				throw new RuntimeException("Sanity check failure: unexpected VCF breakend evidence ID " + evidenceId);
-			}
-			return partner;
-		}
-		throw new RuntimeException("Sanity check failure: unhandled directed breakpoint type " + evidence.getClass().getName());
-	}
-	private static String swapSuffix(String evidenceId, String suffixA, String suffixB) {
-		if (evidenceId.endsWith(suffixA)) {
-			return evidenceId.substring(0, evidenceId.length() - suffixA.length()) + suffixB;
-		} else if (evidenceId.endsWith(suffixB)) {
-			return evidenceId.substring(0, evidenceId.length() - suffixB.length()) + suffixA;
-		}
-		return null;
 	}
 }

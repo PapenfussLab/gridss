@@ -117,7 +117,26 @@ public class BreakendSummary {
 	 * @return breakend with bounds expanded on both sides
 	 */
 	public BreakendSummary expandBounds(int expandBy) {
-		return new BreakendSummary(referenceIndex, direction, nominal, start - expandBy, end + expandBy);
+		return adjustBounds(-expandBy, expandBy);
+	}
+	/**
+	 * Extends the breakend location interval
+	 * @param expandBy number of bases to extend bounds by
+	 * @param dictionary sequence dictionary
+	 * @return breakend with bounds expanded on both sides
+	 */
+	public BreakendSummary adjustBounds(int startAdjustment, int endAdjustment) {
+		return adjustBounds(startAdjustment, endAdjustment, RoundingMode.DOWN);
+	}
+	protected BreakendSummary adjustBounds(int startAdjustment, int endAdjustment, RoundingMode roundingMode) {
+		int newStart = start + startAdjustment;
+		int newEnd = end + endAdjustment;
+		if (newStart > newEnd) {
+			newStart = IntMath.divide(newStart + newEnd, 2, roundingMode);
+			newEnd = newStart;
+		}
+		int newNominal = boundedNominal(nominal, newStart, newEnd);
+		return new BreakendSummary(referenceIndex, direction, newNominal, newStart, newEnd);
 	}
 	/**
 	 * Reduces size of the breakend location interval
@@ -126,14 +145,10 @@ public class BreakendSummary {
 	 * @return breakend with bounds reduced
 	 */
 	public BreakendSummary compressBounds(int by) {
-		return compressBounds(by, RoundingMode.DOWN);
+		return adjustBounds(by, -by);
 	}
 	protected BreakendSummary compressBounds(int by, RoundingMode roundingMode) {
-		if (end - start + 1 <= 2 * by) {
-			int centre = IntMath.divide(end + start, 2, roundingMode);
-			return new BreakendSummary(referenceIndex, direction, boundedNominal(nominal, centre, centre), centre, centre);
-		}
-		return new BreakendSummary(referenceIndex, direction, boundedNominal(nominal, start + by, end - by), start + by, end - by);
+		return adjustBounds(by, -by, roundingMode);
 	}
 	/**
 	 * Gets the nominal position of the variant for variant calling purposes
@@ -175,6 +190,21 @@ public class BreakendSummary {
 		return referenceIndex >= 0 && referenceIndex < dictionary.size()
 				&& start <= end
 				&& start > 0 && end <= dictionary.getSequence(referenceIndex).getSequenceLength();
+	}
+	/**
+	 * Adjusts the breakend positions such that the call variant positions are valid position
+	 * for the contig in question.
+	 * @param dictionary
+	 * @return adjusted positions
+	 */
+	public BreakendSummary asValidFor(SAMSequenceDictionary dictionary) {
+		if (isValid(dictionary)) return this;
+		int newStart = within(start, 1, dictionary.getSequence(referenceIndex).getSequenceLength());
+		int newEnd = within(end, 1, dictionary.getSequence(referenceIndex).getSequenceLength());
+		return new BreakendSummary(referenceIndex, direction, boundedNominal(nominal, newStart, newEnd), newStart, newEnd);
+	}
+	private static int within(int x, int min, int max) {
+		return Math.min(Math.max(x, min), max);
 	}
 	/**
 	 * Gets a minimal CIGAR representing this breakend.

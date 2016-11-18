@@ -34,4 +34,8 @@ public interface DirectedBreakpoint extends DirectedEvidence {
 	 * @return evidence from the remote breakend perspective
 	 */
 	DirectedBreakpoint asRemote();
+	/**
+	 * @return Unique breakpoint identifier string of other side of breakpoint
+	 */
+	String getRemoteEvidenceID();
 }

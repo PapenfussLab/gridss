@@ -17,11 +17,11 @@ public class SoftClipReadEvidenceTest extends TestHelper {
 		r.setReadBases(B("ATGTGGC"));
 		r.setBaseQualities(B("1234567"));
 		r.setMappingQuality(40);
-		fExample = SoftClipReadEvidence.create(SES(), FWD, r);
-		bExample = SoftClipReadEvidence.create(SES(), BWD, r);
+		fExample = SoftClipEvidence.create(SES(), FWD, r);
+		bExample = SoftClipEvidence.create(SES(), BWD, r);
 	}
-	private static final SoftClipReadEvidence fExample;
-	private static final SoftClipReadEvidence bExample;
+	private static final SoftClipEvidence fExample;
+	private static final SoftClipEvidence bExample;
 	@Test
 	public void should_break_at_clip() {
 		assertEquals(new BreakendSummary(2, FWD, 4), fExample.getBreakendSummary());
@@ -73,19 +73,19 @@ public class SoftClipReadEvidenceTest extends TestHelper {
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void constructor_should_require_soft_clip_f() {
-		SoftClipReadEvidence.create(SES(), FWD, Read(0, 10, "5S10M"));
+		SoftClipEvidence.create(SES(), FWD, Read(0, 10, "5S10M"));
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void constructor_should_require_soft_clip_b() {
-		SoftClipReadEvidence.create(SES(), BWD, Read(0, 10, "10M5S"));
+		SoftClipEvidence.create(SES(), BWD, Read(0, 10, "10M5S"));
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void constructor_should_require_cigar() {
-		SoftClipReadEvidence.create(SES(), BreakendDirection.Backward, new SAMRecord(getContext().getBasicSamHeader()));
+		SoftClipEvidence.create(SES(), BreakendDirection.Backward, new SAMRecord(getContext().getBasicSamHeader()));
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void constructor_should_require_read_bases() {
-		SoftClipReadEvidence.create(SES(), BreakendDirection.Backward, withSequence((byte[])null, Read(0, 1, "1S1M"))[0]);
+		SoftClipEvidence.create(SES(), BreakendDirection.Backward, withSequence((byte[])null, Read(0, 1, "1S1M"))[0]);
 	}
 	@Test
 	public void getEvidenceID_paired_should_encode_pair_info() {
@@ -94,10 +94,10 @@ public class SoftClipReadEvidenceTest extends TestHelper {
 		r.setCigarString("10M10S");
 		r.setReadPairedFlag(true);
 		r.setFirstOfPairFlag(true);
-		String r1 = SoftClipReadEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID();
+		String r1 = SoftClipEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID();
 		r.setFirstOfPairFlag(false);
 		r.setSecondOfPairFlag(true);
-		String r2 = SoftClipReadEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID();
+		String r2 = SoftClipEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID();
 		assertNotEquals(r1, r2);
 	}
 	@Test
@@ -106,7 +106,7 @@ public class SoftClipReadEvidenceTest extends TestHelper {
 		r.setReadName("ReadName");
 		r.setCigarString("5S5M5S");
 		r.setReadName("ReadName");
-		assertNotEquals(SoftClipReadEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID(),
-				SoftClipReadEvidence.create(SES(), BreakendDirection.Backward, r).getEvidenceID());
+		assertNotEquals(SoftClipEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID(),
+				SoftClipEvidence.create(SES(), BreakendDirection.Backward, r).getEvidenceID());
 	}
 }

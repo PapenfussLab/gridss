@@ -1,12 +1,20 @@
 package au.edu.wehi.idsv;
 
+import java.nio.charset.StandardCharsets;
+
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.MathUtil;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMTag;
+import htsjdk.samtools.SAMUtils;
+import htsjdk.samtools.SamPairUtil;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
+import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.SequenceUtil;
 
 /**
  * A read pair that does not support the reference sequence. This can be an OEA, or DP read pair.
@@ -14,7 +22,7 @@ import htsjdk.samtools.SamPairUtil.PairOrientation;
  *
  */
 public abstract class NonReferenceReadPair implements DirectedEvidence {
-	//private static final Log log = Log.getInstance(NonReferenceReadPair.class);
+	private static final Log log = Log.getInstance(NonReferenceReadPair.class);
 	private final SAMRecord local;
 	private final SAMRecord remote;
 	private final BreakendSummary location;
@@ -68,6 +76,52 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 			rp = null;
 		}
 		return rp;
+	}
+	private static void assertAttribute(SAMRecord record, SAMTag tag) {
+		Object attr = record.getAttribute(tag.name());
+		if (attr == null) {
+			String msg = String.format("Read %s at %s:%d is missing the %s attribute containing mate information required by GRIDSS. Please run ComputeSamTags to populate this tag",
+					record.getReadName(), record.getReferenceName(), record.getAlignmentStart(), tag.name());
+			log.error(msg);
+			throw new IllegalArgumentException(msg);
+		}
+	}
+	public static NonReferenceReadPair create(SAMEvidenceSource source, SAMRecord record) {
+		if (!record.getReadPairedFlag()) return null;
+		assertAttribute(record, SAMTag.R2);
+		assertAttribute(record, SAMTag.Q2);
+		SAMRecord remote = new SAMRecord(record.getHeader());
+		remote.setReadUnmappedFlag(record.getMateUnmappedFlag());
+		byte[] r2 = record.getStringAttribute(SAMTag.R2.name()).getBytes(StandardCharsets.US_ASCII);
+		byte[] q2 = record.getStringAttribute(SAMTag.Q2.name()).getBytes(StandardCharsets.US_ASCII); 
+		SAMUtils.fastqToPhred(q2);
+		if (!remote.getReadUnmappedFlag()) {
+			assertAttribute(record, SAMTag.MC);
+			assertAttribute(record, SAMTag.MQ);
+			remote.setReferenceIndex(record.getMateReferenceIndex());
+			remote.setAlignmentStart(record.getMateAlignmentStart());
+			remote.setCigarString(record.getStringAttribute(SAMTag.MC.name()));
+			remote.setMappingQuality(record.getIntegerAttribute(SAMTag.MQ.name()));
+			if (record.getMateNegativeStrandFlag()) {
+				remote.setReadNegativeStrandFlag(true);
+				SequenceUtil.reverseComplement(r2);
+				ArrayUtils.reverse(q2);
+			}
+		}
+		remote.setReadName(record.getReadName());
+		remote.setReadPairedFlag(true);
+		remote.setProperPairFlag(record.getProperPairFlag());
+		remote.setNotPrimaryAlignmentFlag(record.getNotPrimaryAlignmentFlag());
+		remote.setReadBases(r2);
+		remote.setBaseQualities(q2);
+		if (record.getFirstOfPairFlag()) {
+			remote.setSecondOfPairFlag(true);
+			SamPairUtil.setMateInfo(record, remote, true);
+		} else {
+			remote.setFirstOfPairFlag(true);
+			SamPairUtil.setMateInfo(remote, record, true);
+		}
+		return create(record, remote, source);
 	}
 	public static boolean meetsAnchorCriteria(SAMEvidenceSource source, SAMRecord read) {
 		return read.getReadPairedFlag()
@@ -130,9 +184,9 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		int intervalWidth = maxfragmentSize - local.getReadLength() + intervalExtendedReadDueToLocalClipping - intervalReducedDueToRemoteMapping;
 		intervalWidth = Math.min(intervalWidth, pairSeparation(local, remote, PairOrientation.FR));
 		if (intervalWidth < 0) return null;
-		int start = Math.max(1, Math.min(positionClosestToBreakpoint, positionClosestToBreakpoint + intervalWidth * intervalDirection));
-		int end = Math.min(dictionary.getSequence(local.getReferenceIndex()).getSequenceLength(), Math.max(positionClosestToBreakpoint, positionClosestToBreakpoint + intervalWidth * intervalDirection));
-		return new BreakendSummary(local.getReferenceIndex(), direction, MathUtil.average(start, end), start, end);
+		int start = Math.min(positionClosestToBreakpoint, positionClosestToBreakpoint + intervalWidth * intervalDirection);
+		int end = Math.max(positionClosestToBreakpoint, positionClosestToBreakpoint + intervalWidth * intervalDirection);
+		return new BreakendSummary(local.getReferenceIndex(), direction, MathUtil.average(start, end), start, end).asValidFor(dictionary);
 	}
 	/**
 	 * Determines the separation between discordant reads
@@ -196,7 +250,7 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		return remote.getReferenceIndex();
 	}
 	public static String getEvidenceID(SAMRecord record) {
-		return record.getReadName() + (record.getFirstOfPairFlag() ? SAMRecordUtil.FIRST_OF_PAIR_NAME_SUFFIX : SAMRecordUtil.SECOND_OF_PAIR_NAME_SUFFIX);
+		return SAMRecordUtil.getAlignmentUniqueName(record);
 	}	
 	@Override
 	public String getEvidenceID() {
