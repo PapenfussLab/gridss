@@ -1,0 +1,16 @@
+Filters:
+- dovetailing (SC & RP)
+- coverage blacklist
+- entropy
+- mapq
+- vendor QC
+- adapter (trim adapter?)
+- SC length
+- indel length
+
+
+- Incorporate FixMateInformation into ComputeSamTags
+
+
+TODO:
+Add SAMProgramRecord headers to all programs
