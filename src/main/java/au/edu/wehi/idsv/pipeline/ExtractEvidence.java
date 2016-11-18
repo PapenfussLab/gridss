@@ -269,8 +269,8 @@ public class ExtractEvidence implements Closeable {
 			iter = new AsyncBufferedIterator<SAMRecord>(
 					new SAMRecordCigarCleaningIterator(processContext.getSamReaderIterator(reader)),
 					source.getSourceFile().getName() + "-Metrics",
-					processContext.getConfig().async_bufferCount,
-					processContext.getConfig().async_bufferSize); 
+					gridss.Defaults.ASYNC_BUFFERS,
+					gridss.Defaults.ASYNC_BUFFER_SIZE); 
 			while (iter.hasNext() && recordsProcessed++ < maxRecords) {
 				SAMRecord record = iter.next();
 				collector.acceptRecord(record, null);
@@ -299,8 +299,7 @@ public class ExtractEvidence implements Closeable {
 			iter = new AsyncBufferedIterator<SAMRecord>(
 					new SAMRecordCigarCleaningIterator(processContext.getSamReaderIterator(reader)),
 					source.getSourceFile().getName() + "-Extract",
-					processContext.getConfig().async_bufferCount,
-					processContext.getConfig().async_bufferSize);
+					gridss.Defaults.ASYNC_BUFFERS, gridss.Defaults.ASYNC_BUFFER_SIZE);
 			while (iter.hasNext()) {
 				SAMRecord record = iter.next();
 				SAMRecordUtil.ensureNmTag(referenceWalker, record);

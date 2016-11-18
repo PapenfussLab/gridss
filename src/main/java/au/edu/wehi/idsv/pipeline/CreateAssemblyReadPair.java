@@ -68,8 +68,8 @@ public class CreateAssemblyReadPair extends DataTransformStep {
 		public CloseableIterator<SAMRecordAssemblyEvidence> annotatedAssembliesIterator() {
 			CloseableIterator<SAMRecordAssemblyEvidence> assit = source.iterator(false, processContext.getAssemblyParameters().writeFiltered);
 			CloseableIterator<DirectedEvidence> eit = getAllEvidence(false, false, true, true, processContext.getAssemblyParameters().includeRemoteSplitReads, true);
-			AsyncBufferedIterator<SAMRecordAssemblyEvidence> asyncassIt = new AsyncBufferedIterator<SAMRecordAssemblyEvidence>(assit, "Hydration-Assembly", source.getContext().getConfig().async_bufferCount, source.getContext().getConfig().async_bufferSize);
-			AsyncBufferedIterator<DirectedEvidence> asynceIt = new AsyncBufferedIterator<DirectedEvidence>(eit, "Hydration-Evidence", source.getContext().getConfig().async_bufferCount, source.getContext().getConfig().async_bufferSize);			
+			AsyncBufferedIterator<SAMRecordAssemblyEvidence> asyncassIt = new AsyncBufferedIterator<SAMRecordAssemblyEvidence>(assit, "Hydration-Assembly", gridss.Defaults.ASYNC_BUFFERS, gridss.Defaults.ASYNC_BUFFER_SIZE);
+			AsyncBufferedIterator<DirectedEvidence> asynceIt = new AsyncBufferedIterator<DirectedEvidence>(eit, "Hydration-Evidence", gridss.Defaults.ASYNC_BUFFERS, gridss.Defaults.ASYNC_BUFFER_SIZE);			
 			SequentialAssemblyHydrator annotatedIt = new SequentialAssemblyHydrator(processContext.getLinear(), asyncassIt, asynceIt, source.getAssemblyWindowSize() + source.getMaxConcordantFragmentSize());
 			return new AutoClosingIterator<SAMRecordAssemblyEvidence>(annotatedIt, Lists.<Closeable>newArrayList(asyncassIt, asynceIt, assit, eit));
 		}

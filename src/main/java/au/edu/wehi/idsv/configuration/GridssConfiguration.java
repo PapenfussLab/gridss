@@ -54,8 +54,6 @@ public class GridssConfiguration {
 	 * instead of deferring until all threads have completed.
 	 */
 	public boolean terminateOnFirstError;
-	public int async_bufferCount;
-	public int async_bufferSize;
 	public AssemblyConfiguration getAssembly() {
 		return assembly;
 	}
@@ -100,8 +98,6 @@ public class GridssConfiguration {
 		maxCoverage = config.getInt("maxCoverage");
 		dovetailMargin = config.getInt("dovetailMargin");
 		terminateOnFirstError = config.getBoolean("terminateOnFirstError");
-		async_bufferCount = config.getInt("async.bufferCount");
-		async_bufferSize = config.getInt("async.bufferSize");
 	}
 	public static Configuration LoadConfiguration(File configuration) throws ConfigurationException {
 		CompositeConfiguration config = new CompositeConfiguration();

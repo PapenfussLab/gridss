@@ -304,7 +304,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		if (Defaults.SANITY_CHECK_ITERATORS) {
 			mergedIt = new AutoClosingIterator<DirectedEvidence>(new OrderAssertingIterator<DirectedEvidence>(mergedIt, DirectedEvidenceOrder.ByNatural), ImmutableList.<Closeable>of(mergedIt));
 		}
-		return new AsyncBufferedIterator<DirectedEvidence>(mergedIt, input.getName() + "-" + chr, getContext().getConfig().async_bufferCount, getContext().getConfig().async_bufferSize);
+		return new AsyncBufferedIterator<DirectedEvidence>(mergedIt, input.getName() + "-" + chr, gridss.Defaults.ASYNC_BUFFERS, gridss.Defaults.ASYNC_BUFFER_SIZE);
 	}
 	private <T extends DirectedEvidence> IntervalBedFilteringIterator<T> applyBlacklistFilter(Iterator<T> it) {
 		return new IntervalBedFilteringIterator<T>(getBlacklistedRegions(), it, getBlacklistFilterMargin());
