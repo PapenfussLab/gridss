@@ -121,7 +121,6 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 		sb.append(",");
 		sb.append(new Cigar(indel));
 		sb.append(")");
-
 	}
 
 	@Override
@@ -133,6 +132,10 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 	public IndelEvidence asRemote() {
 		assert(remote != null);
 		return remote;
+	}
+	@Override
+	public String getRemoteEvidenceID() {
+		return remote.getEvidenceID();
 	}
 
 }

@@ -28,19 +28,62 @@ import htsjdk.samtools.fastq.FastqWriterFactory;
 import htsjdk.samtools.util.CloserUtil;
 
 public class SplitReadRealigner {
-	private GenomicProcessingContext pc;
+	private final GenomicProcessingContext pc;
 	private int minSoftClipLength = 15;
+	private float minSoftClipQuality = 5;
+	private int workerThreads = Runtime.getRuntime().availableProcessors();
 	private SamReaderFactory readerFactory = SamReaderFactory.make();
 	private SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
 	private FastqWriterFactory fastqWriterFactory = new FastqWriterFactory();
 	private boolean processSecondaryAlignments = false;
-	private int workerThreads = Runtime.getRuntime().availableProcessors();
 	private FastqAligner aligner;
 	private List<File> tmpFiles = new ArrayList<>();
 	
 	public SplitReadRealigner(GenomicProcessingContext pc, FastqAligner aligner) {
 		this.pc = pc;
 		this.aligner = aligner;
+	}
+	public int getMinSoftClipLength() {
+		return minSoftClipLength;
+	}
+	public void setMinSoftClipLength(int minSoftClipLength) {
+		this.minSoftClipLength = minSoftClipLength;
+	}
+	public float getMinSoftClipQuality() {
+		return minSoftClipQuality;
+	}
+	public void setMinSoftClipQuality(float minSoftClipQuality) {
+		this.minSoftClipQuality = minSoftClipQuality;
+	}
+	public int getWorkerThreads() {
+		return workerThreads;
+	}
+	public void setWorkerThreads(int workerThreads) {
+		this.workerThreads = workerThreads;
+	}
+	public SamReaderFactory getReaderFactory() {
+		return readerFactory;
+	}
+	public void setReaderFactory(SamReaderFactory readerFactory) {
+		this.readerFactory = readerFactory;
+	}
+	public SAMFileWriterFactory getWriterFactory() {
+		return writerFactory;
+	}
+	public void setWriterFactory(SAMFileWriterFactory writerFactory) {
+		this.writerFactory = writerFactory;
+	}
+	public FastqWriterFactory getFastqWriterFactory() {
+		return fastqWriterFactory;
+	}
+	public void setFastqWriterFactory(FastqWriterFactory fastqWriterFactory) {
+		this.fastqWriterFactory = fastqWriterFactory;
+	}
+	public boolean isProcessSecondaryAlignments() {
+		return processSecondaryAlignments;
+	}
+	public void setProcessSecondaryAlignments(boolean processSecondaryAlignments) {
+		this.processSecondaryAlignments = processSecondaryAlignments;
 	}
 	public void createSupplementaryAlignments(File input, File output) throws IOException {
 		try {
@@ -146,7 +189,7 @@ public class SplitReadRealigner {
 		try (SamReader reader = readerFactory.open(input)) {
 			try (AsyncBufferedIterator<SAMRecord> bufferedIt = new AsyncBufferedIterator<>(reader.iterator(), input.getName())) {
 				try (FastqWriter writer = fastqWriterFactory.newWriter(fq)) {
-					SplitReadFastqExtractionIterator fastqit = new SplitReadFastqExtractionIterator(bufferedIt, isRecursive, minSoftClipLength, processSecondaryAlignments);
+					SplitReadFastqExtractionIterator fastqit = new SplitReadFastqExtractionIterator(bufferedIt, isRecursive, minSoftClipLength, minSoftClipQuality, processSecondaryAlignments);
 					while (fastqit.hasNext()) {
 						writer.write(fastqit.next());
 						recordsWritten++;

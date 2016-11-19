@@ -12,33 +12,40 @@ import htsjdk.samtools.SAMRecord;
 public class SplitReadFastqExtractionIteratorTest extends TestHelper {
 	@Test
 	public void should_extract_above_min_soft_clip_length() {
-		assertEquals(0, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(Read(0, 1, "1S10M")).iterator(), false, 2, true)));
-		assertEquals(1, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(Read(0, 1, "2S10M")).iterator(), false, 2, true)));
+		assertEquals(0, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(Read(0, 1, "1S10M")).iterator(), false, 2, 0, true)));
+		assertEquals(1, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(Read(0, 1, "2S10M")).iterator(), false, 2, 0, true)));
 	}
 	@Test
 	public void should_filter_secondary() {
 		SAMRecord r = Read(0, 1, "10S10M");
 		r.setNotPrimaryAlignmentFlag(true);
-		assertEquals(0, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(r).iterator(), false, 1, false)));
-		assertEquals(1, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(r).iterator(), false, 1, true)));
+		assertEquals(0, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(r).iterator(), false, 1, 0, false)));
+		assertEquals(1, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(r).iterator(), false, 1, 0, true)));
 	}
 	@Test
 	public void should_filter_supplemenary() {
 		SAMRecord r = Read(0, 1, "10S10M");
 		r.setSupplementaryAlignmentFlag(true);
-		assertEquals(0, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(r).iterator(), false, 1, true)));
+		assertEquals(0, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(r).iterator(), false, 1, 0, true)));
 	}
 	@Test
 	public void should_filter_unmapped() {
 		SAMRecord r = Read(0, 1, "10S10M");
 		r.setReadUnmappedFlag(true);
-		assertEquals(0, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(r).iterator(), false, 1, true)));
+		assertEquals(0, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(r).iterator(), false, 1, 0, true)));
 	}
 	@Test
 	public void should_filter_existing_split_reads_with_SA_tag() {
 		SAMRecord r = Read(0, 1, "10S10M");
 		r.setAttribute("SA", "polyA,100,+,10M10S,0,0");
-		r.setReadUnmappedFlag(true);
-		assertEquals(0, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(r).iterator(), false, 1, true)));
+		assertEquals(0, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(r).iterator(), false, 1, 0, true)));
+	}
+	@Test
+	public void should_filter_under_average_mapq() {
+		SAMRecord r = Read(0, 1, "2S1M");
+		r.setBaseQualities(new byte[] { 0, 10, 40 } );
+		assertEquals(0, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(r).iterator(), false, 1, 4, true)));
+		assertEquals(1, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(r).iterator(), false, 1, 5, true)));
+		assertEquals(1, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(r).iterator(), false, 1, 6, true)));
 	}
 }

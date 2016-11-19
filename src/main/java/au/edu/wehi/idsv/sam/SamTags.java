@@ -31,11 +31,10 @@ public class SamTags {
 	public static final String ASSEMBLY_NONSUPPORTING_SOFTCLIP_COUNT = "tc";
 	public static final String ASSEMBLY_READPAIR_QUAL = "dq";
 	public static final String ASSEMBLY_SOFTCLIP_QUAL = "sq";
-	public static final String ASSEMBLY_SOFTCLIP_REMOTE_QUAL = "rq";
 	public static final String ASSEMBLY_NONSUPPORTING_READPAIR_QUAL = "eq";
 	public static final String ASSEMBLY_NONSUPPORTING_SOFTCLIP_QUAL = "tq";
-	// other fields no longer in active use
 	public static final String ASSEMBLY_READPAIR_LENGTH_MAX = "dl";
+	// other fields no longer in active use
 	public static final String ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX = "ds";
 	public static final String ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL = "ms";
 	public static final List<String> ASSEMBLY_ANNOTATIONS = ImmutableList.of(
@@ -50,7 +49,6 @@ public class SamTags {
 			ASSEMBLY_NONSUPPORTING_SOFTCLIP_COUNT,
 			ASSEMBLY_READPAIR_QUAL,
 			ASSEMBLY_SOFTCLIP_QUAL,
-			ASSEMBLY_SOFTCLIP_REMOTE_QUAL,
 			ASSEMBLY_NONSUPPORTING_READPAIR_QUAL,
 			ASSEMBLY_NONSUPPORTING_SOFTCLIP_QUAL,
 			ASSEMBLY_READPAIR_LENGTH_MAX,

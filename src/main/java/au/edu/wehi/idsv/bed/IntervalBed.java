@@ -26,6 +26,9 @@ public class IntervalBed {
 	private final SAMSequenceDictionary dictionary;
 	private final LinearGenomicCoordinate linear;
 	private final RangeSet<Long> intervals;
+	public int size() {
+		return intervals.asRanges().size();
+	}
 	public IntervalBed(SAMSequenceDictionary dictionary, LinearGenomicCoordinate linear, File bed) throws IOException {
 		this(dictionary, linear, toRangeSet(dictionary, linear, bed));
 	}

@@ -7,6 +7,7 @@ import java.util.Queue;
 
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTag;
+import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.fastq.FastqRecord;
 
 /**
@@ -19,15 +20,18 @@ public class SplitReadFastqExtractionIterator implements Iterator<FastqRecord> {
 	private final boolean isSplit;
 	private final boolean processSecondaryAlignments;
 	private final int minSoftClipLength;
+	private final float minClipQuality;
 	
 	public SplitReadFastqExtractionIterator(
 			Iterator<SAMRecord> it,
 			boolean isSplit,
 			int minSoftClipLength,
+			float minClipQuality,
 			boolean processSecondaryAlignments) {
 		this.it = it;
 		this.isSplit = isSplit;
 		this.minSoftClipLength = minSoftClipLength;
+		this.minClipQuality = minClipQuality;
 		this.processSecondaryAlignments = processSecondaryAlignments;
 	}
 
@@ -42,11 +46,18 @@ public class SplitReadFastqExtractionIterator implements Iterator<FastqRecord> {
 			if (r.getSupplementaryAlignmentFlag()) continue;
 			if (!processSecondaryAlignments && r.getNotPrimaryAlignmentFlag()) continue;
 			for (FastqRecord fqr : SplitReadIdentificationHelper.getSplitReadRealignments(r, isSplit)) {
-				if (fqr.length() >= minSoftClipLength) {
-					buffer.add(fqr);
-				}
+				if (fqr.length() < minSoftClipLength) continue;
+				if (averageBaseQuality(fqr) < minClipQuality) continue;
+				buffer.add(fqr);
 			}
 		}
+	}
+	private static double averageBaseQuality(FastqRecord fqr) {
+		long sum = 0;
+		for (byte v : SAMUtils.fastqToPhred(fqr.getBaseQualityString())) {
+			sum += v;
+		}
+		return (double)sum / fqr.getBaseQualityString().length();
 	}
 
 	@Override

@@ -7,7 +7,6 @@ import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
-import au.edu.wehi.idsv.configuration.RealignmentConfiguration;
 import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
 import au.edu.wehi.idsv.configuration.VariantCallingConfiguration;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
@@ -61,9 +60,6 @@ public class ProcessingContext extends GenomicProcessingContext {
 	}
 	public SoftClipConfiguration getSoftClipParameters() {
 		return getConfig().getSoftClip();
-	}
-	public RealignmentConfiguration getRealignmentParameters() {
-		return getConfig().getRealignment();
 	}
 	public VariantCallingConfiguration getVariantCallingParameters() {
 		return getConfig().getVariantCalling();

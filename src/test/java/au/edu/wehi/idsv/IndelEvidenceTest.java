@@ -64,13 +64,22 @@ public class IndelEvidenceTest extends TestHelper {
 		assertEquals("TT", e.asRemote().getUntemplatedSequence());
 	}
 	@Test
-	public void indels_should_have_unique_evidenceID() {
+	public void multiple_indels_should_have_unique_evidenceID() {
 		SAMRecord r = Read(2, 1, "2M2I1M2D2M");
 		r.setReadBases(B("NNNNNNN"));
 		r.setMappingQuality(40);
 		List<IndelEvidence> e = IndelEvidence.create(SES(), r);
 		assertEquals(4, e.size());
 		assertEquals(4, e.stream().map(ie -> ie.getEvidenceID()).distinct().count());
+	}
+	@Test
+	public void indel_breakends_should_have_unique_evidenceID() {
+		SAMRecord r = Read(2, 1, "1M1D1M");
+		r.setReadBases(B("NN"));
+		r.setMappingQuality(40);
+		List<IndelEvidence> e = IndelEvidence.create(SES(), r);
+		assertEquals(2, e.size());
+		assertEquals(2, e.stream().map(ie -> ie.getEvidenceID()).distinct().count());
 	}
 	@Test
 	public void getBreakendSummary_should_return_location() {

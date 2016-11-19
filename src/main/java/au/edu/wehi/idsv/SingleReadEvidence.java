@@ -1,7 +1,10 @@
 package au.edu.wehi.idsv;
 
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.IntervalUtil;
@@ -19,6 +22,33 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	private final int offsetRemoteStart;
 	private final int offsetRemoteEnd;
 	private String evidenceid;
+	public static List<SingleReadEvidence> createEvidence(SAMEvidenceSource source, SAMRecord record) {
+		if (record.getReadUnmappedFlag()) return Collections.emptyList();
+		List<SingleReadEvidence> list = new ArrayList<>(4);
+		List<SplitReadEvidence> srlist = SplitReadEvidence.create(source, record);
+		list.addAll(srlist);
+		// only add soft clip if there isn't a split read
+		boolean hasForwardSR = false;
+		boolean hasBackwardSR = false;
+		for (SplitReadEvidence sre : srlist) {
+			switch (sre.getBreakendSummary().direction) {
+			case Forward:
+				hasForwardSR = true;
+				break;
+			case Backward:
+				hasBackwardSR = true;
+				break;
+			}
+		}
+		if (!hasForwardSR && SAMRecordUtil.getEndSoftClipLength(record) > 0) {
+			list.add(SoftClipEvidence.create(source, BreakendDirection.Forward, record));
+		}
+		if (!hasBackwardSR && SAMRecordUtil.getStartSoftClipLength(record) > 0) {
+			list.add(SoftClipEvidence.create(source, BreakendDirection.Backward, record));
+		}
+		list.addAll(IndelEvidence.create(source, record));
+		return list;
+	}
 	protected SingleReadEvidence(SAMEvidenceSource source, SAMRecord record, BreakendSummary location,
 			int offsetLocalStart, int offsetLocalEnd,
 			int offsetUnmappedStart, int offsetUnmappedEnd) {

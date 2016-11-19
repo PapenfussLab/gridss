@@ -1,61 +1,36 @@
 package au.edu.wehi.idsv;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
-import org.apache.commons.lang.NotImplementedException;
-
-import com.google.common.base.Function;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
-import com.google.common.collect.Lists;
+import com.google.common.io.Files;
 
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
-import au.edu.wehi.idsv.debruijn.positional.DirectedPositionalAssembler;
 import au.edu.wehi.idsv.debruijn.positional.PositionalAssembler;
-import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphAssembler;
-import au.edu.wehi.idsv.pipeline.CreateAssemblyReadPair;
-import au.edu.wehi.idsv.sam.SAMFileUtil.SortCallable;
-import au.edu.wehi.idsv.util.AutoClosingIterator;
-import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
-import au.edu.wehi.idsv.util.FileHelper;
-import au.edu.wehi.idsv.validation.OrderAssertingIterator;
-import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
-import htsjdk.samtools.QueryInterval;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMFileWriterFactory;
-import htsjdk.samtools.SAMProgramRecord;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
+import htsjdk.samtools.util.ProgressLogger;
 
 
 public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	private static final Log log = Log.getInstance(AssemblyEvidenceSource.class);
-	private static final int PROGRESS_UPDATE_INTERVAL_SECONDS = 60;
 	private final List<SAMEvidenceSource> source;
 	private final int maxSourceFragSize;
 	private final int minSourceFragSize;
 	private final int maxReadLength;
 	private final int maxMappedReadLength;
+	private final IntervalBed throttled;
 	/**
 	 * Generates assembly evidence based on the given evidence
 	 * @param evidence evidence for creating assembly
@@ -69,380 +44,116 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		this.maxReadLength = evidence.stream().mapToInt(s -> s.getMaxReadLength()).max().orElse(0);
 		this.maxMappedReadLength = evidence.stream().mapToInt(s -> Math.max(s.getMaxReadLength(), s.getMaxReadMappedLength())).max().orElse(0);
 		assert(maxSourceFragSize >= minSourceFragSize);
+		this.throttled = new IntervalBed(getContext().getDictionary(), getContext().getLinear());
 	}
-	
-	public void assemble() {
+	/**
+	 * Perform breakend assembly 
+	 * @throws IOException 
+	 */
+	public void assembleBreakends() throws IOException {
 		SAMFileHeader header = getContext().getBasicSamHeader();
+		header.setSortOrder(SortOrder.unsorted);
 		// TODO: add assembly @PG header
-		try (SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(header, false, getFile())) {
-			Iterator<SAMRecordAssemblyEvidence> it = getAllAssemblies();
+		File tmpout = FileSystemContext.getWorkingFileFor(getFile());
+		try (SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(header, false, tmpout)) {
+			Iterator<SAMRecord> it = getAllAssemblies();
 			while (it.hasNext()) {
-	    		SAMRecordAssemblyEvidence asm = it.next();
-	    		writer.addAlignment(asm.getSAMRecord());
+				SAMRecord asm = it.next();
+				if (!getContext().getAssemblyParameters().writeFiltered) {
+					if (shouldFilter(asm)) {
+						continue;
+					}
+				}
+	    		writer.addAlignment(asm);
 	    	}
 	    }
-		// sort
+		Files.move(tmpout, getFile());
+		File throttledFilename = new File(getFile().getAbsolutePath() + ".throttled.bed");
+		try {
+			if (throttled.size() > 0) {
+				throttled.write(throttledFilename, "Regions of high coverage where only a portion of supporting reads considered for assembly");
+			}
+		} catch (IOException e) {
+			log.warn(e, "Unable to write " + throttledFilename.getAbsolutePath());
+		}
 	}
-	private Iterator<SAMRecordAssemblyEvidence> getAllAssemblies() {
+	private boolean shouldFilter(SAMRecord asm) {
+		AssemblyConfiguration ap = getContext().getAssemblyParameters();
+		AssemblyAttributes attr = new AssemblyAttributes(asm);
+		// reference assembly
+		List<SingleReadEvidence> breakends = SingleReadEvidence.createEvidence(this, asm);
+		if (breakends.size() == 0) {
+			return true;
+		}
+		// too long
+		int breakendLength = SAMRecordUtil.getSoftClipLength(asm, attr.getAssemblyDirection());
+		if (breakendLength > ap.maxExpectedBreakendLengthMultiple * getMaxConcordantFragmentSize()) {
+			log.debug(String.format("Filtering %s at %s:%d due to misassembly (breakend %dbp)",
+					asm.getReadName(),
+					asm.getReferenceName(), asm.getAlignmentStart(),
+					breakendLength));
+			return true;
+		}		
+		// too few reads
+		if (attr.getAssemblySupportCount() < ap.minReads) {
+			return true;
+		}
+		// unanchored assembly that not actually any longer than any of the reads that were assembled together
+		if (attr.getAssemblySupportCountSoftClip() == 0 && breakendLength <= attr.getAssemblyReadPairLengthMax()) {
+			// assembly length = 1 read
+			// at best, we've just error corrected a single reads with other reads.
+			// at worst, we've created a misassembly.
+			return true;
+		}
+		return false;
+	}
+	private Iterator<SAMRecord> getAllAssemblies() {
 		// TODO multi-threaded version
 		// Chunk into tasks
 		// Schedule tasks on thread pool
-		// Have tasks
-		// Need 
-		// Thread pool 
+		// Get records from blocking output queue
+			// stop when no outstanding assembly tasks
 		return getAllAssemblies_single_threaded();
 	}
-	private Iterator<SAMRecordAssemblyEvidence> getAllAssemblies_single_threaded() {
-		List<Iterator<SAMRecordAssemblyEvidence>> list = new ArrayList<>();
+	private Iterator<SAMRecord> getAllAssemblies_single_threaded() {
+		ProgressLogger progressLog = new ProgressLogger(log);
+		List<Iterator<SAMRecord>> list = new ArrayList<>();
 		for (BreakendDirection direction : BreakendDirection.values()) {
-	    	Iterator<DirectedEvidence> it = getEvidenceIterator();
-	    	PositionalAssembler assemblyIt = new PositionalAssembler(getContext(), this, it, direction);
-	    	list.add(assemblyIt);
+			// TODO: close this iterator!
+			CloseableIterator<DirectedEvidence> it = mergedIterator(source);
+			Iterator<DirectedEvidence> throttledIt = throttled(it);
+			ProgressLoggingDirectedEvidenceIterator<DirectedEvidence> loggedIt = new ProgressLoggingDirectedEvidenceIterator<>(getContext(), throttledIt, progressLog);
+			Iterator<SAMRecord> evidenceIt = new PositionalAssembler(getContext(), this, loggedIt, direction);
+	    	list.add(evidenceIt);
 		}
 		return Iterators.concat(list.iterator());
 	}
-	public Iterator<DirectedEvidence> getEvidenceIterator() {
-		List<CloseableIterator<DirectedEvidence>> toMerge = Lists.newArrayList();
-		for (SAMEvidenceSource bam : source) {
-			CloseableIterator<DirectedEvidence> it = bam.iterator();
-			toMerge.add(it);
-		}
-		CloseableIterator<DirectedEvidence> merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);
-		return merged;
+	private Iterator<DirectedEvidence> throttled(Iterator<DirectedEvidence> it) {
+		AssemblyConfiguration ap = getContext().getAssemblyParameters();
+		DirectedEvidenceDensityThrottlingIterator dit = new DirectedEvidenceDensityThrottlingIterator(
+				throttled,
+				getContext().getDictionary(),
+				getContext().getLinear(),
+				it,
+				Math.max(ap.downsampling.minimumDensityWindowSize, getMaxConcordantFragmentSize()),
+				ap.downsampling.acceptDensityPortion * ap.downsampling.targetEvidenceDensity,
+				ap.downsampling.targetEvidenceDensity);
+		getContext().registerBuffer(AssemblyEvidenceSource.class.getName() + ".throttle", dit);
+		return dit;
 	}
-	public Iterator<DirectedEvidence> getEvidenceIterator(final QueryInterval intervals) {
-		List<CloseableIterator<DirectedEvidence>> toMerge = Lists.newArrayList();
-		for (SAMEvidenceSource bam : source) {
-			CloseableIterator<DirectedEvidence> it = bam.iterator(intervals);
-			toMerge.add(it);
-		}
-		CloseableIterator<DirectedEvidence> merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);
-		return merged;
-	}
-	
-	
-	private CloseableIterator<SAMRecordAssemblyEvidence> samAssemblyRealignIterator(
-			boolean includeRemote,
-			boolean includeFiltered,
-			File breakend,
-			List<File> realignment,
-			String chr) {
-		if (!isProcessingComplete()) {
-			log.error("Assemblies not yet generated.");
-			throw new IllegalStateException("Assemblies not yet generated");
-		}
-		if (includeRemote) {
-			log.error("Realignment sorting not complete.");
-			throw new IllegalStateException("Remote assembly iteration requires realignment complete");
-		}
-		List<Closeable> toClose = Lists.newArrayList();
-		List<CloseableIterator<SAMRecord>> realignedIt = new ArrayList<CloseableIterator<SAMRecord>>();
-		if (isRealignmentComplete(false)) {
-			for (File realignmenti : realignment) {
-				CloseableIterator<SAMRecord> realignmentiit = getContext().getSamReaderIterator(realignmenti); 
-				realignedIt.add(realignmentiit);
-				toClose.add(realignmentiit);
-			}
-		} else {
-			log.debug(String.format("Assembly realignment for %s not completed", breakend));
-		}
-		CloseableIterator<SAMRecord> rawReaderIt = getContext().getSamReaderIterator(breakend, SortOrder.coordinate);
-		toClose.add(rawReaderIt);
-		CloseableIterator<SAMRecordAssemblyEvidence> evidenceIt = new SAMRecordAssemblyEvidenceIterator(
-				this,
-				new AutoClosingIterator<SAMRecord>(rawReaderIt, realignedIt),
-				realignedIt,
-				true, false);
-		toClose.add(evidenceIt);
-		Iterator<SAMRecordAssemblyEvidence> filteredIt = includeFiltered ? evidenceIt : new SAMRecordAssemblyEvidenceFilteringIterator(getContext(), evidenceIt);
-		// Can't apply score filter at this point since assemblies
-		// have not yet been annotated so we don't actually know
-		// the assembly score
-		//filteredIt = new DirectedEvidenceScoreFilteringIterator<SAMRecordAssemblyEvidence>(filteredIt, getContext().getConfig().minEvidenceScore, getContext().getConfig().minEvidenceScore);
-		// Change sort order to breakend position order
-		DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence> dit = new DirectEvidenceWindowedSortingIterator<SAMRecordAssemblyEvidence>(
-				getContext(),
-				// double window size due to spanning assembly edge case: 
-				//   |--- window ---|
-				// <-A              A->
-				//                  B->              <-B
-				//                  ^
-				// SAMRecord anchored at breakend
-				// since our SAMRecordAssemblyEvidenceIterator returns 4 records (both breakends, both assemblies)
-				// the breakend position can be +- window size size away from the start position of the underlying SAMRecord
-				2 * getAssemblyWindowSize(),
-				filteredIt);
-		getContext().registerBuffer("assembly.sam." + chr, dit);
-		CloseableIterator<SAMRecordAssemblyEvidence> sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(dit, toClose);
-		if (Defaults.SANITY_CHECK_ITERATORS) {
-			sortedIt = new AutoClosingIterator<SAMRecordAssemblyEvidence>(new OrderAssertingIterator<SAMRecordAssemblyEvidence>(sortedIt, DirectedEvidenceOrder.ByNatural), ImmutableList.<Closeable>of(sortedIt));
-		}
-		return sortedIt;
-	}
-	private volatile Exception lastWorkerThreadException = null;
-	protected void process(ExecutorService threadpool) {
-		if (isProcessingComplete()) return;
-		log.info("START evidence assembly ", input);
-		for (SAMEvidenceSource s : source) {
-			if (!s.isComplete(ProcessStep.EXTRACT_READ_PAIRS) ||
-				!s.isComplete(ProcessStep.EXTRACT_SOFT_CLIPS)) {
-				throw new IllegalStateException(String.format("Unable to perform assembly: evidence extraction not complete for %s", s.getFile()));
-			}
-		}
-		final SAMSequenceDictionary dict = getContext().getReference().getSequenceDictionary();
-		if (getContext().shouldProcessPerChromosome()) {
-			final List<Callable<Void>> workers = Lists.newArrayList();
-			lastWorkerThreadException = null;
-			for (int i = 0; i < dict.size(); i++) {
-				final String seq = dict.getSequence(i).getSequenceName();
-				
-				if (IntermediateFileUtil.checkIntermediate(fsc.getAssemblyRawBamForChr(input, seq))
-					&& IntermediateFileUtil.checkIntermediate(fsc.getRealignmentFastqForChr(input, seq, 0))) {
-					log.debug("Skipping assembly for ", seq, " as output already exists.");
-				} else {
-					workers.add(new Callable<Void>() {
-						@Override
-						public Void call() {
-							log.info("Starting ", seq, " breakend assembly");
-							CloseableIterator<DirectedEvidence> merged = null;
-							List<CloseableIterator<DirectedEvidence>> toMerge = Lists.newArrayList();
-							try {
-								for (SAMEvidenceSource bam : source) {
-									CloseableIterator<DirectedEvidence> it = bam.iterator(
-											getContext().getAssemblyParameters().includeAnomalousPairs,
-											getContext().getAssemblyParameters().includeSoftClips,
-											getContext().getAssemblyParameters().includeRemoteSplitReads,
-											seq);
-									toMerge.add(it);
-								}
-								merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);
-								ContigAssembler ca = new ContigAssembler(merged,
-										getContext().getFileSystemContext().getAssemblyRawBamForChr(input, seq),
-										getContext().getFileSystemContext().getRealignmentFastqForChr(input, seq, 0));
-								ca.run();
-								merged.close();
-							} catch (Exception e) {
-								log.error(e, "Error performing ", seq, " breakend assembly");
-								lastWorkerThreadException = e;
-								throw new RuntimeException(e);
-							} finally {
-								CloserUtil.close(merged);
-								CloserUtil.close(toMerge);
-							}
-							log.info("Completed ", seq, " breakend assembly");
-							return null;
-						}
-					});
-				}
-			}
-			if (threadpool != null) {
-				log.info("Performing multithreaded assembly");
-				try {
-					for (Future<Void> future : threadpool.invokeAll(workers)) {
-						// Throws any exceptions back up the call stack
-						try {
-							future.get();
-						} catch (ExecutionException e) {
-							throw new RuntimeException(e);
-						}
-					}
-				} catch (InterruptedException e) {
-					String msg = "Interrupted while assembly in progress";
-					log.error(e, msg);
-					throw new RuntimeException(msg, e);
-				}
-			} else {
-				log.info("Performing singlethreaded assembly");
-				for (Callable<Void> c : workers) {
-					try {
-						c.call();
-					} catch (Exception e) {
-						throw new RuntimeException(e);
-					}
-				}
-			}
-			if (lastWorkerThreadException != null) {
-				throw new RuntimeException("Sanity check failure: thread pool task terminated with exception "
-						+ "but exception was not passed through to foreground thread.", lastWorkerThreadException);
-			}
-		} else {
-			List<CloseableIterator<DirectedEvidence>> toMerge = Lists.newArrayList();
-			CloseableIterator<DirectedEvidence> merged = null;
-			try {
-				for (SAMEvidenceSource bam : source) {
-					CloseableIterator<DirectedEvidence> it = bam.iterator(
-							getContext().getAssemblyParameters().includeAnomalousPairs,
-							getContext().getAssemblyParameters().includeSoftClips,
-							getContext().getAssemblyParameters().includeRemoteSplitReads);
-					toMerge.add(it);
-				}
-				merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);
-				new ContigAssembler(merged, getContext().getFileSystemContext().getAssemblyRawBam(input), getContext().getFileSystemContext().getRealignmentFastq(input, 0)).run();
-				merged.close();
-			} finally {
-				CloserUtil.close(merged);
-				CloserUtil.close(toMerge);
-			}
-		}
-		log.info("SUCCESS evidence assembly ", input);
-	}
-	private class ContigAssembler implements Runnable {
-		private Iterator<DirectedEvidence> it;
-		private File breakendOutput;
-		private File realignmentFastq;
-		private FastqBreakpointWriter fastqWriter = null;
-		private IntervalBed throttled;
-		public ContigAssembler(Iterator<DirectedEvidence> it, File breakendOutput, File realignmentFastq) {
-			AssemblyConfiguration ap = getContext().getAssemblyParameters();
-			this.throttled = new IntervalBed(getContext().getDictionary(), getContext().getLinear());
-			DirectedEvidenceDensityThrottlingIterator dit = new DirectedEvidenceDensityThrottlingIterator(
-					throttled,
-					getContext().getDictionary(),
-					getContext().getLinear(),
-					it,
-					Math.max(ap.downsampling.minimumDensityWindowSize, getMaxConcordantFragmentSize()),
-					ap.downsampling.acceptDensityPortion * ap.downsampling.targetEvidenceDensity,
-					ap.downsampling.targetEvidenceDensity);
-			getContext().registerBuffer(breakendOutput.getName(), dit);
-			this.it = dit;
-			this.breakendOutput = breakendOutput;
-			this.realignmentFastq = realignmentFastq;
-		}
-		private void generateAssembles(File unsorted) {
-			SAMFileWriter writer = null;
-			try {
-				long nextProgress = System.currentTimeMillis();
-				SAMFileHeader samHeader = new SAMFileHeader();
-				samHeader.setSequenceDictionary(getContext().getReference().getSequenceDictionary());
-				samHeader.setSortOrder(SortOrder.unsorted);
-				writer = getContext().getSamFileWriterFactory(false).makeSAMOrBAMWriter(samHeader, true, unsorted);
-				Iterator<SAMRecordAssemblyEvidence> assemblyIt = getAssembler(it);
-				SAMRecordAssemblyEvidence ass = null;
-				while (assemblyIt.hasNext()) {
-					ass = assemblyIt.next();
-					ass = fixAssembly(ass);
-					if (ass != null) {
-						SAMRecord record = ass.getBackingRecord();
-						writer.addAlignment(record);
-						if (System.currentTimeMillis() > nextProgress) {
-							nextProgress = System.currentTimeMillis() + 1000 * PROGRESS_UPDATE_INTERVAL_SECONDS;
-							String seqname = getContext().getDictionary().getSequence(record.getReferenceIndex()).getSequenceName();
-							log.info(String.format("Assembly progress at %s:%d", seqname, record.getAlignmentStart()));
-						}
-					}
-				}
-				if (ass != null) {
-					log.info(String.format("Assembly complete for %s", getContext().getDictionary().getSequence(ass.getBackingRecord().getReferenceIndex()).getSequenceName()));
-				}
-				try {
-					writer.close();
-				} finally {
-					writer = null;
-				}
-				String throttleFilename = breakendOutput.getAbsolutePath() + ".throttled.bed";
-				try {
-					throttled.write(new File(throttleFilename), "Regions of high coverage where only a portion of supporting reads considered for assembly");
-				} catch (IOException e) {
-					log.warn(e, "Unable to write " + throttleFilename);
-				}
-			} finally {
-				CloserUtil.close(writer);
-			}
-		}
-		private SAMRecordAssemblyEvidence fixAssembly(SAMRecordAssemblyEvidence ass) {
-			if (ass == null) return null;
-			AssemblyConfiguration ap = getContext().getAssemblyParameters();
-			// realign
-			byte[] be = ass.getBreakendSequence();
-			if (be != null && be.length > ap.maxExpectedBreakendLengthMultiple * getMaxConcordantFragmentSize()) {
-				log.debug(String.format("Filtering %s at %s due to misassembly (breakend %dbp)",
-						ass.getEvidenceID(),
-						ass.getBreakendSummary(),
-						be.length));
-				return null;
-			}
-    		if (ap.anchorRealignment.perform) {
-    			int realignmentWindowSize = (int)(ap.anchorRealignment.realignmentWindowReadLengthMultiples * getMaxReadLength());
-    			ass = ass.realign(realignmentWindowSize, ap.anchorRealignment.realignmentMinimumAnchorRetainment);
-    		}
-			if (ass == null) return null;
-			if (ass.isReferenceAssembly()) return null;
-			getContext().getAssemblyParameters().applyBasicFilters(ass);
-			if (getContext().getAssemblyParameters().writeFiltered) return ass;
-			if (ass.isReferenceAssembly()) return null;
-			if (ass.isAssemblyFiltered()) return null;
-			return ass;
-		}
-		private void assembliesToSortedBamAndFastq(File unsorted) throws IOException {
-			File tmp = FileSystemContext.getWorkingFileFor(breakendOutput);
-			File fq = FileSystemContext.getWorkingFileFor(realignmentFastq);
-			fq.delete();
-			tmp.delete();
-			CloseableIterator<SAMRecord> readerIt = null;
-			try {
-				// sort the assemblies
-				new SortCallable(getContext().getFileSystemContext(), unsorted, breakendOutput, SortOrder.coordinate, header -> header).call();
-				log.info("Writing assembly fastq " + fq);
-				// then write the fastq
-				fastqWriter = new FastqBreakpointWriter(getContext().getFastqWriterFactory().newWriter(fq));
-				readerIt = getContext().getSamReaderIterator(breakendOutput, SortOrder.coordinate);
-				while (readerIt.hasNext()) {
-					SAMRecord record = readerIt.next();
-					SAMRecordAssemblyEvidence assembly = AssemblyFactory.hydrate(AssemblyEvidenceSource.this, record);
-					if (getContext().getRealignmentParameters().shouldRealignBreakend(assembly)) {
-						fastqWriter.write(assembly);
-					}
-				}
-				readerIt.close();
-				readerIt = null;
-				fastqWriter.close();
-				fastqWriter = null;
-				FileHelper.move(fq, realignmentFastq, true);
-			} finally {
-				CloserUtil.close(readerIt);
-				CloserUtil.close(fastqWriter);
-			}
-		}
-		@Override
-		public void run() {
-			try {
-				File unsorted = FileSystemContext.getWorkingFileFor(breakendOutput, "gridss.tmp.AssemblyEvidenceSource.unsorted."); 
-				unsorted.delete();
-				generateAssembles(unsorted);
-				assembliesToSortedBamAndFastq(unsorted);
-			} catch (Throwable e) {
-				log.error(e, "Error assembling breakend ", breakendOutput);
-				e.printStackTrace();
-				throw new RuntimeException("Error assembling breakend", e);
-			}
-		}
-	}
-	protected Iterator<SAMRecordAssemblyEvidence> getAssembler(Iterator<DirectedEvidence> it) {
-		switch (getContext().getAssemblyParameters().method) {
-			case Positional:
-				return new DirectedPositionalAssembler(getContext(), this, it);
-				//return new PositionalAssembler(getContext(), this, it);
-			case Subgraph:
-				return new ReadEvidenceAssemblyIterator(new DeBruijnSubgraphAssembler(this), it);
-			case None:
-				CloserUtil.close(it);
-				return Collections.emptyIterator();
-		}
-		throw new IllegalArgumentException("Assembly algorithm has not been set");
-    }
-	public int getAssemblyEvidenceWindowSize() {
-		return (int)(getContext().getAssemblyParameters().subgraph.assemblyMargin * getMaxConcordantFragmentSize());
-	}
-	public int getAssemblyMaximumEvidenceDelay() {
-		return Math.max(getContext().getAssemblyParameters().subgraph.minSubgraphWidthForTimeout,
-				(int)(getContext().getAssemblyParameters().subgraph.maxSubgraphFragmentWidth * getMaxConcordantFragmentSize()));
-	}
-	public int getAssemblyWindowSize() {
+	//public int getAssemblyEvidenceWindowSize() {
+	//	return (int)(getContext().getAssemblyParameters().subgraph.assemblyMargin * getMaxConcordantFragmentSize());
+	//}
+	//public int getAssemblyMaximumEvidenceDelay() {
+	//	return Math.max(getContext().getAssemblyParameters().subgraph.minSubgraphWidthForTimeout,
+	//			(int)(getContext().getAssemblyParameters().subgraph.maxSubgraphFragmentWidth * getMaxConcordantFragmentSize()));
+	//}
+	//public int getAssemblyWindowSize() {
 		// Positional assembly should have a smaller window size
 		// but the width of the assembly itself is unbounded
 		// in the degenerate misassembly case
-		return getAssemblyMaximumEvidenceDelay() + 3 * getAssemblyEvidenceWindowSize() + 2;
-	}
+	//	return getAssemblyMaximumEvidenceDelay() + 3 * getAssemblyEvidenceWindowSize() + 2;
+	//}
 	@Override
 	public int getMaxConcordantFragmentSize() {
 		return maxSourceFragSize;

@@ -9,10 +9,12 @@ import org.apache.commons.lang.NotImplementedException;
 
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
+import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
 import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMRecord;
@@ -186,5 +188,23 @@ public class SAMEvidenceSource extends EvidenceSource {
 			blacklist = IntervalBed.merge(getContext().getDictionary(), getContext().getLinear(), ImmutableList.of(blacklist, getContext().getBlacklistedRegions()));
 		}
 		return blacklist;
+	}
+	public static CloseableIterator<DirectedEvidence> mergedIterator(final List<SAMEvidenceSource> source) {
+		List<CloseableIterator<DirectedEvidence>> toMerge = Lists.newArrayList();
+		for (SAMEvidenceSource bam : source) {
+			CloseableIterator<DirectedEvidence> it = bam.iterator();
+			toMerge.add(it);
+		}
+		CloseableIterator<DirectedEvidence> merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);
+		return merged;
+	}
+	public static CloseableIterator<DirectedEvidence> mergedIterator(final List<SAMEvidenceSource> source, final QueryInterval intervals) {
+		List<CloseableIterator<DirectedEvidence>> toMerge = Lists.newArrayList();
+		for (SAMEvidenceSource bam : source) {
+			CloseableIterator<DirectedEvidence> it = bam.iterator(intervals);
+			toMerge.add(it);
+		}
+		CloseableIterator<DirectedEvidence> merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);
+		return merged;
 	}
 }

@@ -8,6 +8,7 @@ import java.util.LinkedList;
 import java.util.ListIterator;
 import java.util.Set;
 
+import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -24,7 +25,7 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 public class EvidenceTracker {
 	//public static EvidenceTracker TEMP_HACK_CURRENT_TRACKER = null;
 	private final Long2ObjectOpenHashMap<LinkedList<KmerSupportNode>> lookup = new Long2ObjectOpenHashMap<LinkedList<KmerSupportNode>>();
-	private final ObjectOpenHashSet<String> id = new ObjectOpenHashSet<String>();
+	private final ObjectOpenHashSet<DirectedEvidence> id = new ObjectOpenHashSet<DirectedEvidence>();
 	private long evidenceTotal = 0;
 	/**
 	 * Tracks evidence emitted from the given iterator
@@ -44,7 +45,7 @@ public class EvidenceTracker {
 			lookup.put(kmer, list);
 		}
 		list.add(support);
-		if (id.add(support.evidence().evidenceId())) {
+		if (id.add(support.evidence().evidence())) {
 			evidenceTotal++;
 		}
 		return support;
@@ -58,7 +59,7 @@ public class EvidenceTracker {
 			long kmer = evidence.kmer(i);
 			remove(kmer, evidence);
 		}
-		id.remove(evidence.evidenceId());
+		id.remove(evidence.evidence());
 	}
 	/**
 	 * Stops tracking all nodes associated with the given evidence 

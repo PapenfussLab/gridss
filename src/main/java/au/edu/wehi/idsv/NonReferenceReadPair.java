@@ -251,7 +251,10 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 	}
 	public static String getEvidenceID(SAMRecord record) {
 		return SAMRecordUtil.getAlignmentUniqueName(record);
-	}	
+	}
+	public String getRemoteEvidenceID() {
+		return SAMRecordUtil.getAlignmentUniqueName(remote);
+	}
 	@Override
 	public String getEvidenceID() {
 		if (evidenceID == null) {

@@ -17,6 +17,7 @@ import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.configuration.VisualisationConfiguration;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
 
 /**
@@ -25,7 +26,7 @@ import htsjdk.samtools.util.Log;
  * @author Daniel Cameron
  *
  */
-public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> {
+public class PositionalAssembler implements Iterator<SAMRecord> {
 	private static final Log log = Log.getInstance(PositionalAssembler.class);
 	private final ProcessingContext context;
 	private final AssemblyEvidenceSource source;
@@ -56,7 +57,7 @@ public class PositionalAssembler implements Iterator<SAMRecordAssemblyEvidence> 
 		}
 	}
 	@Override
-	public SAMRecordAssemblyEvidence next() {
+	public SAMRecord next() {
 		try {
 			ensureAssembler();
 			return currentAssembler.next();

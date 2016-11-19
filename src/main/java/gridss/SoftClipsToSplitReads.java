@@ -23,7 +23,8 @@ import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 
 @CommandLineProgramProperties(
-        usage = "Uses an external aligner to identify split reads by iterative alignment of soft clipped bases.",
+        usage = "Uses an external aligner to identify split reads by iterative alignment of soft clipped bases. "
+        		+ "Existing split read alignments are left untouched.",
         usageShort = "Converts soft clipped reads to split reads"
 )
 public class SoftClipsToSplitReads extends CommandLineProgram {
@@ -36,8 +37,12 @@ public class SoftClipsToSplitReads extends CommandLineProgram {
     public File OUTPUT;
     @Option(shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME, doc="Reference genome", optional=false)
     public File REFERENCE;
-    @Option(doc="Minimum bases clipped. Generally, short read aligners are not able to align sequences shorter than 18-20 bases.", optional=true)
+    @Option(doc="Minimum bases clipped. Generally, short read aligners are not able to uniquely align sequences shorter than 18-20 bases.", optional=true)
     public int MIN_CLIP_LENGTH = 15;
+    @Option(doc="Minimum average base quality score of clipped bases. Low quality clipped bases are indicative of sequencing errors.", optional=true)
+    public float MIN_CLIP_QUAL = 5;
+    @Option(doc="Indicates whether to perform split read identification on secondary read alignments.", optional=true)
+    public boolean PROCESS_SECONDARY_ALIGNMENTS = false;
     @Option(doc="Command line arguments to run external aligner. Aligner output should be written to stdout and the records MUST match the input fastq order."
     		+ "Java argument formatting is used with %1$s being the fastq file to align, "
     		+ "%2$s the reference genome, and %3$d the number of alignment threads to use.", optional=true)
@@ -57,6 +62,9 @@ public class SoftClipsToSplitReads extends CommandLineProgram {
     	FastqAligner aligner = createAligner();
     	GenomicProcessingContext pc = new GenomicProcessingContext(new FileSystemContext(TMP_DIR.get(0), new File("."), MAX_RECORDS_IN_RAM), REFERENCE, false, null);
     	SplitReadRealigner realigner = new SplitReadRealigner(pc, aligner);
+    	realigner.setMinSoftClipLength(MIN_CLIP_LENGTH);
+    	realigner.setMinSoftClipQuality(MIN_CLIP_QUAL);
+    	realigner.setProcessSecondaryAlignments(PROCESS_SECONDARY_ALIGNMENTS);
     	try {
     		realigner.createSupplementaryAlignments(INPUT, OUTPUT);
 		} catch (IOException e) {

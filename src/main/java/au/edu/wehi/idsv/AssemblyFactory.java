@@ -2,12 +2,8 @@ package au.edu.wehi.idsv;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Bytes;
@@ -19,10 +15,8 @@ import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.Log;
 
 public final class AssemblyFactory {
-	private static final Log log = Log.getInstance(AssemblyFactory.class);
 	private AssemblyFactory() { } 
 	/**
 	 * Creates an assembly 
@@ -39,23 +33,22 @@ public final class AssemblyFactory {
 	 * @param tumourBaseCount number of assembly bases contributed by tumour evidence sources
 	 * @return assembly evidence for the given assembly
 	 */
-	public static SAMRecordAssemblyEvidence createAnchoredBreakend(
-			GenomicProcessingContext processContext,
+	public static SAMRecord createAnchoredBreakend(
+			ProcessingContext processContext,
 			AssemblyEvidenceSource source, BreakendDirection direction,
-			Collection<String> evidence,
+			Collection<DirectedEvidence> evidence,
 			int anchorReferenceIndex, int anchorBreakendPosition, int anchoredBaseCount,
 			byte[] baseCalls, byte[] baseQuals) {
 		BreakendSummary breakend = new BreakendSummary(anchorReferenceIndex, direction, anchorBreakendPosition);
-		SAMRecord r = createAssemblySAMRecord(evidence, processContext.getBasicSamHeader(), source, breakend,
+		SAMRecord r = createAssemblySAMRecord(processContext, evidence, processContext.getBasicSamHeader(), source, breakend,
 				breakend.direction == BreakendDirection.Forward ? anchoredBaseCount : 0,
 				breakend.direction == BreakendDirection.Backward ? anchoredBaseCount : 0,
 				baseCalls, baseQuals);
-		SAMRecordAssemblyEvidence assembly = hydrate(source, r);
-		return assembly;
+		return r;
 	}
-	public static SAMRecordAssemblyEvidence createAnchoredBreakpoint(
-			GenomicProcessingContext processContext, AssemblyEvidenceSource source,
-			Collection<String> evidence,
+	public static SAMRecord createAnchoredBreakpoint(
+			ProcessingContext processContext, AssemblyEvidenceSource source,
+			Collection<DirectedEvidence> evidence,
 			int startAnchorReferenceIndex, int startAnchorPosition, int startAnchorBaseCount,
 			int endAnchorReferenceIndex, int endAnchorPosition, int endAnchorBaseCount,
 			byte[] baseCalls, byte[] baseQuals) {
@@ -64,12 +57,11 @@ public final class AssemblyFactory {
 				endAnchorReferenceIndex, BreakendDirection.Backward, endAnchorPosition);
 		assert(startAnchorBaseCount > 0);
 		assert(endAnchorBaseCount > 0);
-		SAMRecord r = createAssemblySAMRecord(evidence, processContext.getBasicSamHeader(), source, bp,
+		SAMRecord r = createAssemblySAMRecord(processContext, evidence, processContext.getBasicSamHeader(), source, bp,
 				startAnchorBaseCount,
 				endAnchorBaseCount,
 				baseCalls, baseQuals);
-		SAMRecordAssemblyEvidence assembly = hydrate(source, r);
-		return assembly;
+		return r;
 	}
 	/**
 	 * Creates an assembly whose breakpoint cannot be exactly anchored to the reference  
@@ -83,46 +75,23 @@ public final class AssemblyFactory {
 	 * @param tumourBaseCount number of assembly bases contributed by tumour evidence sources
 	 * @return assembly evidence for the given assembly
 	 */
-	public static SAMRecordAssemblyEvidence createUnanchoredBreakend(
-			GenomicProcessingContext processContext,
+	public static SAMRecord createUnanchoredBreakend(
+			ProcessingContext processContext,
 			AssemblyEvidenceSource source,
 			BreakendSummary breakend,
-			Collection<String> evidence,
+			Collection<DirectedEvidence> evidence,
 			byte[] baseCalls, byte[] baseQuals,
 			int[] baseCounts) {
-		SAMRecord r = createAssemblySAMRecord(evidence, processContext.getBasicSamHeader(), source, breakend,
+		SAMRecord r = createAssemblySAMRecord(processContext, evidence, processContext.getBasicSamHeader(), source, breakend,
 				0, 0,
 				baseCalls, baseQuals);
-		SAMRecordAssemblyEvidence assembly = hydrate(source, r);
-		return assembly;
-	}
-	/**
-	 * Updates the given assembly to incorporate the given realignment of the assembly breakend
-	 * @param processContext
-	 * @return
-	 */
-	public static SAMRecordAssemblyEvidence incorporateRealignment(ProcessingContext processContext, SAMRecordAssemblyEvidence assembly, List<SAMRecord> realignments) {
-		if (realignments == null || realignments.size() == 0) return assembly;
-		CompoundBreakendAlignment alignment = new CompoundBreakendAlignment(processContext, assembly.getSAMRecord(), realignments);
-		if (!alignment.getSimpleBreakendRealignment().getReadUnmappedFlag()) {
-			return new RealignedSAMRecordAssemblyEvidence(assembly.getEvidenceSource(), assembly, realignments);
-		} else {
-			return new SAMRecordAssemblyEvidence(assembly.getEvidenceSource(), assembly, realignments);
-		}
-	}
-	/**
-	 * Rehydrates an assembly that has been persisted as a SAMRecord
-	 * @param processContext
-	 * @param record assembly SAMRecord
-	 * @return Assembly evidence
-	 */
-	public static SAMRecordAssemblyEvidence hydrate(AssemblyEvidenceSource source, SAMRecord record) {
-		return new SAMRecordAssemblyEvidence(source, record, null);
+		return r;
 	}
 	private static final byte[][] PAD_BASES = new byte[][] { new byte[] {}, new byte[] { 'N' }, new byte[] { 'N', 'N' } };
 	private static final byte[][] PAD_QUALS = new byte[][] { new byte[] {}, new byte[] { 0 }, new byte[] { 0, 0 } };
 	private static SAMRecord createAssemblySAMRecord(
-			Collection<String> evidence,
+			ProcessingContext processContext,
+			Collection<DirectedEvidence> evidence,
 			SAMFileHeader samFileHeader, AssemblyEvidenceSource source,
 			BreakendSummary breakend,
 			int startAnchoredBaseCount,
@@ -192,6 +161,9 @@ public final class AssemblyFactory {
 						// negative relative alignment position not representable in SAM
 						// as all CIGAR element lengths must be positive in size.
 						c = CigarUtil.encodeNegativeDeletion(c);
+						throw new IllegalArgumentException("Negative deletions not supported by SAM specs. "
+								+ "Use breakend assembly and hope the the realignment goes to the expected location. "
+								+ "Sanity check failure: this should not be possible for positional assembly. ");
 					}
 				}
 				c.add(new CigarElement(endAnchoredBaseCount, CigarOperator.MATCH_OR_MISMATCH));
@@ -215,29 +187,8 @@ public final class AssemblyFactory {
 		if (!(breakend instanceof BreakpointSummary)) {
 			record.setAttribute(SamTags.ASSEMBLY_DIRECTION, breakend.direction.toChar());
 		}
-		ensureUniqueEvidenceID(evidence);
-		String evidenceString = "";
-		if (evidence != null) {
-			List<String> list = new ArrayList<String>(evidence);
-			Collections.sort(list);
-			evidenceString = list.stream().collect(Collectors.joining(SAMRecordAssemblyEvidence.COMPONENT_EVIDENCEID_SEPARATOR));
-		}
-		record.setAttribute(SamTags.EVIDENCEID, evidenceString);
+		AssemblyAttributes.annotateAssembly(processContext, breakend, record, evidence);
 		return record;
-	}
-	private static boolean ensureUniqueEvidenceID(Collection<String> evidence) {
-		boolean isUnique = true;
-		if (evidence != null) {
-			Set<String> map = new HashSet<String>();
-			for (String id : evidence) {
-				if (map.contains(id)) {
-					log.error("Found evidenceID " + id + " multiple times in assembly");
-					isUnique = false;
-				}
-				map.add(id);
-			}
-		}
-		return isUnique;
 	}
 }
 

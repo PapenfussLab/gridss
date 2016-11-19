@@ -57,9 +57,6 @@ public class GridssConfiguration {
 	public AssemblyConfiguration getAssembly() {
 		return assembly;
 	}
-	public RealignmentConfiguration getRealignment() {
-		return realignment;
-	}
 	public SoftClipConfiguration getSoftClip() {
 		return softclip;
 	}
@@ -73,7 +70,6 @@ public class GridssConfiguration {
 		return scoring;
 	}
 	private final AssemblyConfiguration assembly;
-	private final RealignmentConfiguration realignment;
 	private final SoftClipConfiguration softclip;
 	private final VisualisationConfiguration visualisation;
 	private final VariantCallingConfiguration variantCalling;
@@ -87,7 +83,6 @@ public class GridssConfiguration {
 	public GridssConfiguration(Configuration config, File workingDirectory) {
 		assembly = new AssemblyConfiguration(config);
 		visualisation = new VisualisationConfiguration(config, workingDirectory);
-		realignment = new RealignmentConfiguration(config);
 		softclip = new SoftClipConfiguration(config);
 		variantCalling = new VariantCallingConfiguration(config);
 		scoring =  new ScoringConfiguration(config);

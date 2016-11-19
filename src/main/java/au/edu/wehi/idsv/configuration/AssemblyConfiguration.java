@@ -3,25 +3,17 @@ package au.edu.wehi.idsv.configuration;
 import org.apache.commons.configuration.Configuration;
 
 import au.edu.wehi.idsv.AssemblyAlgorithm;
-import au.edu.wehi.idsv.RealignedRemoteSAMRecordAssemblyEvidence;
-import au.edu.wehi.idsv.RemoteEvidence;
-import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
-import au.edu.wehi.idsv.vcf.VcfFilter;
 
 public class AssemblyConfiguration {
 	public static final String CONFIGURATION_PREFIX = "assembly";
 	public AssemblyConfiguration(Configuration config) {
 		config = config.subset(CONFIGURATION_PREFIX);
-		anchorRealignment = new AnchorRealignmentConfiguration(config);
-		subgraph = new SubgraphAssemblyConfiguration(config);
 		errorCorrection = new ErrorCorrectionConfiguration(config);
 		downsampling = new DownsamplingConfiguration(config);
 		positional = new PositionalAssemblyConfiguration(config);
 		method = AssemblyAlgorithm.valueOf(config.getString("method"));
 		k = config.getInt("k");
 		minReads = config.getInt("minReads");
-		includeSoftClips = config.getBoolean("includeSoftClips");
-		includeAnomalousPairs = config.getBoolean("includeAnomalousPairs");
 		includePairAnchors = config.getBoolean("includePairAnchors");
 		pairAnchorMismatchIgnoreEndBases = config.getInt("pairAnchorMismatchIgnoreEndBases");
 		includeRemoteSplitReads = config.getBoolean("includeRemoteSplitReads");
@@ -32,8 +24,6 @@ public class AssemblyConfiguration {
 		maxExpectedBreakendLengthMultiple = config.getFloat("maxExpectedBreakendLengthMultiple");
 		trackEvidenceID = config.getBoolean("trackEvidenceID");
 	}
-	public AnchorRealignmentConfiguration anchorRealignment;
-	public SubgraphAssemblyConfiguration subgraph;
 	public ErrorCorrectionConfiguration errorCorrection;
 	public DownsamplingConfiguration downsampling;
 	public PositionalAssemblyConfiguration positional;
@@ -49,14 +39,6 @@ public class AssemblyConfiguration {
 	 * Minimum number of reads contributing the the assembly
 	 */
 	public int minReads;
-	/**
-	 * Include soft clipped reads in assembly
-	 */
-	public boolean includeSoftClips;
-	/**
-	 * Include the mate of reads that map to this location and whose mate is not mapped to the expected location
-	 */
-	public boolean includeAnomalousPairs;
 	/**
 	 * Include reads fully supporting the reference whose mate is not mapped to the expected location.
 	 * These are useful as they can extend the length of the assembly anchor 
@@ -103,53 +85,4 @@ public class AssemblyConfiguration {
 	 * Retains evidenceID tracking information after evidence rehydration
 	 */
 	public boolean trackEvidenceID;
-	/**
-	 * Applies filters that require assembly annotation to be present to be calculated
-	 *  
-	 * WARNING: applying these filters must apply to not only the breakpoint, but also to any spanned indels
-	 * @param evidence
-	 * @return
-	 */
-	public boolean applyAnnotationFilters(SAMRecordAssemblyEvidence evidence) {
-		SAMRecordAssemblyEvidence localEvidence = evidence;
-		if (evidence instanceof RemoteEvidence) {
-			// ensures assembly & matching remote always get filtered in/out together
-			localEvidence = ((RealignedRemoteSAMRecordAssemblyEvidence)evidence).asLocal();
-		}
-		boolean filtered = applyBasicFilters(evidence);
-		if (localEvidence.getAssemblyAnchorLength() == 0 && localEvidence.getBreakendSequence().length <= localEvidence.getAssemblyReadPairLengthMax()) {
-			evidence.filterAssembly(VcfFilter.ASSEMBLY_TOO_SHORT); // assembly length = 1 read
-			filtered = true;
-		}
-		//if (localEvidence.getAssemblySupportCountReadPair() == 0 && localEvidence.getAssemblySupportCountSoftClipRemote() == localEvidence.getAssemblySupportCountSoftClip()) { 
-		//	// assembly is entirely made of remote support with no reads mapping to our location at all
-		//	evidence.filterAssembly(VcfFilter.ASSEMBLY_REMOTE);
-		//	filtered = true;
-		//}
-		return filtered;
-	}
-	/**
-	 * Applies filters that do not required the assembly to be annotated or realigned
-	 * 
-	 * WARNING: applying these filters must apply to not only the breakpoint, but also to any spanned indels 
-	 * @param evidence
-	 * @return
-	 */
-	public boolean applyBasicFilters(SAMRecordAssemblyEvidence evidence) {
-		SAMRecordAssemblyEvidence localEvidence = evidence;
-		if (evidence instanceof RemoteEvidence) {
-			// ensures assembly & matching remote always get filtered in/out together
-			localEvidence = ((RealignedRemoteSAMRecordAssemblyEvidence)evidence).asLocal();
-		}
-		boolean filtered = false;
-		if (localEvidence.isReferenceAssembly()) {
-			evidence.filterAssembly(VcfFilter.REFERENCE_ALLELE);
-			filtered = true;
-		}
-		if (localEvidence.getAssemblySupportCount() < minReads) {
-			evidence.filterAssembly(VcfFilter.ASSEMBLY_TOO_FEW_READ);
-			filtered = true;
-		}
-		return filtered;
-	}
 }

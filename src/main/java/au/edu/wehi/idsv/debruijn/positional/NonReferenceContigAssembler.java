@@ -30,6 +30,7 @@ import au.edu.wehi.idsv.AssemblyFactory;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.Defaults;
+import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.debruijn.DeBruijnGraphBase;
@@ -40,6 +41,7 @@ import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker;
 import au.edu.wehi.idsv.visualisation.PositionalDeBruijnGraphTracker.ContigStats;
 import au.edu.wehi.idsv.visualisation.PositionalExporter;
+import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.Log;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
@@ -54,7 +56,7 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenCustomHashSet;
  * @author Daniel Cameron
  *
  */
-public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEvidence> {
+public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	private static final Log log = Log.getInstance(NonReferenceContigAssembler.class);
 	/**
 	 * Debugging tracker to ensure memoization export files have unique names
@@ -106,7 +108,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 	private final ContigStats stats = new ContigStats();
 	private final PeekingIterator<KmerPathNode> underlying;
 	private final String contigName;
-	private final Queue<SAMRecordAssemblyEvidence> called = new ArrayDeque<>();
+	private final Queue<SAMRecord> called = new ArrayDeque<>();
 	private int lastUnderlyingStartPosition = Integer.MIN_VALUE;
 	private int lastNextPosition = Integer.MIN_VALUE;
 	private RangeSet<Integer> toFlush = TreeRangeSet.create();
@@ -158,7 +160,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 		return !called.isEmpty();
 	}
 	@Override
-	public SAMRecordAssemblyEvidence next() {
+	public SAMRecord next() {
 		ensureCalledContig();
 		return called.remove();
 	}
@@ -355,7 +357,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 		assert(preGraphSize == postGraphSize);
 		return true;
 	}
-	private SAMRecordAssemblyEvidence callContig(ArrayDeque<KmerPathSubnode> rawcontig) {
+	private SAMRecord callContig(ArrayDeque<KmerPathSubnode> rawcontig) {
 		if (rawcontig == null) return null;
 		ArrayDeque<KmerPathSubnode> contig = rawcontig;
 		if (containsKmerRepeat(contig)) {
@@ -398,8 +400,8 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 		quals = Arrays.copyOfRange(quals, startBasesToTrim, quals.length - endingBasesToTrim);
 		
 		Set<KmerEvidence> evidence = evidenceTracker.untrack(contig);
-		List<String> evidenceIds = evidence.stream().map(e -> e.evidenceId()).collect(Collectors.toList());
-		SAMRecordAssemblyEvidence assembledContig;
+		List<DirectedEvidence> evidenceIds = evidence.stream().map(e -> e.evidence()).collect(Collectors.toList());
+		SAMRecord assembledContig;
 		if (startingAnchor.size() == 0 && endingAnchor.size() == 0) {
 			assert(startBasesToTrim == 0);
 			assert(endingBasesToTrim == 0);
@@ -413,7 +415,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 						evidenceIds,
 						bases, quals, new int[] { 0, 0 });
 				if (evidence.stream().anyMatch(e -> e.isAnchored())) {
-					log.debug(String.format("Unanchored assembly %s at %s:%d contains anchored evidence", assembledContig.getEvidenceID(), contigName, contig.getFirst().firstStart()));
+					log.debug(String.format("Unanchored assembly %s at %s:%d contains anchored evidence", assembledContig.getReadName(), contigName, contig.getFirst().firstStart()));
 				}
 			} else {
 				// Can't call contig because we don't known the supporting breakend positions 
@@ -445,16 +447,16 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecordAssemblyEv
 		if (assembledContig != null) {
 			if (aes.getContext().getConfig().getVisualisation().assemblyGraph) {
 				try {
-					PositionalExporter.exportDot(new File(aes.getContext().getConfig().getVisualisation().directory, "assembly." + contigName + "." + assembledContig.getEvidenceID() + ".dot"), k, graphByPosition, fullContig);
+					PositionalExporter.exportDot(new File(aes.getContext().getConfig().getVisualisation().directory, "assembly." + contigName + "." + assembledContig.getReadName() + ".dot"), k, graphByPosition, fullContig);
 				} catch (Exception ex) {
-					log.debug(ex, "Error exporting assembly ", assembledContig != null ? assembledContig.getEvidenceID() : "(null)", " ", contigName);
+					log.debug(ex, "Error exporting assembly ", assembledContig != null ? assembledContig.getReadName() : "(null)", " ", contigName);
 				}
 			}
 			if (aes.getContext().getConfig().getVisualisation().assemblyGraphFullSize) {
 				try {
-					PositionalExporter.exportNodeDot(new File(aes.getContext().getConfig().getVisualisation().directory, "assembly.fullsize." + contigName + "." + assembledContig.getEvidenceID() + ".dot"), k, graphByPosition, fullContig);
+					PositionalExporter.exportNodeDot(new File(aes.getContext().getConfig().getVisualisation().directory, "assembly.fullsize." + contigName + "." + assembledContig.getReadName() + ".dot"), k, graphByPosition, fullContig);
 				} catch (Exception ex) {
-					log.debug(ex, "Error exporting assembly ", assembledContig != null ? assembledContig.getEvidenceID() : "(null)", " ", contigName);
+					log.debug(ex, "Error exporting assembly ", assembledContig != null ? assembledContig.getReadName() : "(null)", " ", contigName);
 				}
 			}
 			if (aes.getContext().getConfig().getVisualisation().assemblyContigMemoization) {
