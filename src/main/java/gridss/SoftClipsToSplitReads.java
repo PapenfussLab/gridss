@@ -60,7 +60,7 @@ public class SoftClipsToSplitReads extends CommandLineProgram {
     	validateParameters();
     	
     	FastqAligner aligner = createAligner();
-    	GenomicProcessingContext pc = new GenomicProcessingContext(new FileSystemContext(TMP_DIR.get(0), new File("."), MAX_RECORDS_IN_RAM), REFERENCE, false, null);
+    	GenomicProcessingContext pc = new GenomicProcessingContext(new FileSystemContext(TMP_DIR.get(0), new File("."), MAX_RECORDS_IN_RAM), REFERENCE, null);
     	SplitReadRealigner realigner = new SplitReadRealigner(pc, aligner);
     	realigner.setMinSoftClipLength(MIN_CLIP_LENGTH);
     	realigner.setMinSoftClipQuality(MIN_CLIP_QUAL);

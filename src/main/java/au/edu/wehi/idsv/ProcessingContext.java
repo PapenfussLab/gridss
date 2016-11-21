@@ -33,7 +33,7 @@ public class ProcessingContext extends GenomicProcessingContext {
 	public ProcessingContext(
 			FileSystemContext fileSystemContext,  File ref, boolean perChr, ReferenceLookup reference,
 			List<Header> metricsHeaders, GridssConfiguration config) {
-		super(fileSystemContext, ref, perChr, reference);
+		super(fileSystemContext, ref, reference);
 		this.metricsHeaders = metricsHeaders;
 		this.config = config;
 		if (config.getVisualisation().buffers) {

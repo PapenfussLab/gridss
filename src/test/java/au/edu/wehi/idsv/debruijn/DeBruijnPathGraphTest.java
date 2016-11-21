@@ -16,8 +16,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableSortedSet;
 
 import au.edu.wehi.idsv.TestHelper;
-import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
-import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnSubgraphNode;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
 import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
 import au.edu.wehi.idsv.visualisation.StaticDeBruijnPathGraphGexfExporter;
@@ -386,56 +384,5 @@ public class DeBruijnPathGraphTest extends TestHelper {
 		assertTrue(pg.mergePaths(
 				ImmutableList.of(pg.get("AAAA"), pg.get("TTTT"), pg.get("CCCC"), pg.get("GTAC")),
 				ImmutableList.of(pg.get("AAAA"), pg.get("GGGG"), pg.get("GTAC"))));
-	}
-	@Test
-	public void splitOutReferencePaths_should_break_paths_at_reference_non_reference_transition() {
-		DeBruijnReadGraph g = RG(4);
-		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
-		g.addEvidence(NRRP(withSequence("GGTTAACC", DP(0, 1, "8M", true, 1, 10, "8M", false))));
-		g.addEvidence(SCE(FWD, withSequence("TTGGT", Read(0, 10, "4M1S"))));
-		//     TTAACCGGCCAATT
-		//   GGTTAACC
-		// TTGGT
-		// ^   ^^^^ <- starts of reference kmers
-		DeBruijnPathGraph<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pg = new DeBruijnPathGraph<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>(
-				g,
-				ImmutableList.of(g.getKmer(KmerEncodingHelper.picardBaseToEncoded(4, B("TTAA")))),
-				new DeBruijnPathNodeFactory<DeBruijnSubgraphNode>(g),
-				new NontrackingSubgraphTracker<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>());
-		assertEquals("precondition", 1, pg.getPathCount());
-		pg.splitOutReferencePaths();
-		assertEquals(4, pg.getPathCount());
-	}
-	@Test
-	public void splitOutReferencePaths_should_consider_kmer_as_reference_if_any_collapsed_kmer_is_reference() throws AlgorithmRuntimeSafetyLimitExceededException {
-		DeBruijnReadGraph g = RG(4);
-		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
-		g.addEvidence(SCE(FWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7M7S"))));
-		g.addEvidence(SCE(BWD, withSequence(         "CAATG", Read(0, 10, "1S4M"))));
-		DeBruijnPathGraph<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pg = new DeBruijnPathGraph<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>(
-				g,
-				ImmutableList.of(g.getKmer(KmerEncodingHelper.picardBaseToEncoded(4, B("TTAA")))),
-				new DeBruijnPathNodeFactory<DeBruijnSubgraphNode>(g),
-				new NontrackingSubgraphTracker<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>());
-		pg.collapseSimilarPaths(1, false, Integer.MAX_VALUE);
-		assertEquals(1, pg.getPathCount());
-		pg.splitOutReferencePaths();
-		assertEquals(3, pg.getPathCount());
-	}
-	@Test
-	public void isReference_should_consider_alternate_paths() throws AlgorithmRuntimeSafetyLimitExceededException {
-		DeBruijnReadGraph g = RG(4);
-		g.addEvidence(SCE(BWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7S7M"))));
-		g.addEvidence(SCE(BWD, withSequence("TTAACCGGCCAATT", Read(0, 10, "7S7M"))));
-		g.addEvidence(SCE(BWD, withSequence(         "TTAAC", Read(0, 10, "1S4M"))));
-		DeBruijnPathGraph<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>> pg = new DeBruijnPathGraph<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>(
-				g,
-				ImmutableList.of(g.getKmer(KmerEncodingHelper.picardBaseToEncoded(4, B("TTAA")))),
-				new DeBruijnPathNodeFactory<DeBruijnSubgraphNode>(g),
-				new NontrackingSubgraphTracker<DeBruijnSubgraphNode, DeBruijnPathNode<DeBruijnSubgraphNode>>());
-		pg.collapseSimilarPaths(1, false, Integer.MAX_VALUE);
-		assertEquals(1, pg.getPathCount());
-		pg.splitOutReferencePaths();
-		assertEquals(4, pg.getPathCount());
 	}
 }

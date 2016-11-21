@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
@@ -36,14 +37,19 @@ import htsjdk.variant.vcf.VCFFileReader;
  * @author Daniel Cameron
  *
  */
-public class VariantCaller extends EvidenceProcessorBase {
+public class VariantCaller {
 	private static final Log log = Log.getInstance(VariantCaller.class);
+	private final ProcessingContext processContext;
+	private final File output;
+	private final List<SAMEvidenceSource> samEvidence;
+	private final AssemblyEvidenceSource assemblyEvidence;
 	//private final EvidenceToCsv evidenceDump;
 	public VariantCaller(ProcessingContext context, File output, List<SAMEvidenceSource> samEvidence, AssemblyEvidenceSource assemblyEvidence) {
-		super(context, output, samEvidence, assemblyEvidence);
-		//this.evidenceDump = evidenceDump;
+		this.processContext = context;
+		this.output = output;
+		this.samEvidence = samEvidence;
+		this.assemblyEvidence = assemblyEvidence;
 	}
-	@Override
 	public void process(ExecutorService threadpool) {
 		callBreakends(threadpool);
 		annotateBreakpoints(threadpool);
@@ -62,7 +68,11 @@ public class VariantCaller extends EvidenceProcessorBase {
 				sorted.delete();
 				try {
 					boolean assemblyOnly = processContext.getVariantCallingParameters().callOnlyAssemblies;
-					evidenceIt = getAllEvidence(true, true, !assemblyOnly, !assemblyOnly, !assemblyOnly);
+					if (assemblyOnly) {
+						evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.of(assemblyEvidence));
+					} else {
+						evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.<SAMEvidenceSource>builder().addAll(samEvidence).add(assemblyEvidence).build());
+					}
 					evidenceIt = adjustEvidenceStream(evidenceIt);
 					EvidenceClusterProcessor processor = new EvidenceClusterProcessor(processContext, evidenceIt);
 					writeMaximalCliquesToVcf(
@@ -101,7 +111,6 @@ public class VariantCaller extends EvidenceProcessorBase {
 		//return new AsyncBufferedIterator<IdsvVariantContext>(it, "CalledBreakPoints");
 	}
 	public void close() {
-		super.close();
 		for (Closeable c : toClose) {
 			if (c != null) {
 				try {
@@ -147,13 +156,12 @@ public class VariantCaller extends EvidenceProcessorBase {
 		}
 	}
 	private int getMaxWindowSize() {
-		// TODO: technically we also need to know max assembly length as the entire assembly could be a microhomology.
 		int maxSize = 0;
 		for (EvidenceSource source : samEvidence) {
 			SAMEvidenceSource samSource = (SAMEvidenceSource)source;
 			maxSize = Math.max(samSource.getMaxConcordantFragmentSize(), Math.max(samSource.getMaxReadLength(), samSource.getMaxReadMappedLength()));
 		}
-		maxSize = Math.max(maxSize, assemblyEvidence.getAssemblyWindowSize()) + processContext.getVariantCallingParameters().maxBreakendHomologyLength;
+		maxSize = Math.max(maxSize, assemblyEvidence.getMaxAssemblyLength()) + processContext.getVariantCallingParameters().maxBreakendHomologyLength;
 		return maxSize + 2 * (processContext.getVariantCallingParameters().breakendMargin + 1);
 	}
 	public void annotateBreakpoints(ExecutorService threadpool) {
@@ -187,7 +195,7 @@ public class VariantCaller extends EvidenceProcessorBase {
 			if (Defaults.SANITY_CHECK_ITERATORS) {
 				breakendIt = new OrderAssertingIterator<VariantContextDirectedEvidence>(breakendIt, DirectedEvidenceOrder.ByNatural);
 			}
-			evidenceIt = getAllEvidence(true, true, true, true, true);
+			evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.<SAMEvidenceSource>builder().addAll(samEvidence).add(assemblyEvidence).build());
 			evidenceIt = adjustEvidenceStream(evidenceIt);
 			breakendIt = new SequentialEvidenceAnnotator(processContext, breakendIt, evidenceIt, maxWindowSize, true, Runtime.getRuntime().availableProcessors(), threadpool);
 			processContext.registerBuffer(output.getName(), ((TrackedBuffer)breakendIt));

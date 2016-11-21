@@ -22,6 +22,7 @@ public class CollectGridssMetricsTest extends IntermediateFilesTest {
 		assertTrue(new File(prefix + ".insert_size_metrics").exists());
 		assertTrue(new File(prefix + ".mapq_metrics").exists());
 		assertTrue(new File(prefix + ".idsv_metrics").exists());
+		assertTrue(new File(prefix + ".tag_metrics").exists());
 		
 		assertTrue(new File(prefix + ".mapq_histogram.pdf").exists());
 	}

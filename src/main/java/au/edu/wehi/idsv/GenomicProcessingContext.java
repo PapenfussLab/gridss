@@ -55,7 +55,6 @@ public class GenomicProcessingContext implements Closeable {
 	private final SAMSequenceDictionary dictionary;
 	private final LinearGenomicCoordinate linear;
 	private final FileSystemContext fsContext;
-	private final boolean perChr;
 	private final SAMFileHeader basicHeader;
 	private IntervalBed blacklist;
 	private boolean filterDuplicates = true;
@@ -65,12 +64,10 @@ public class GenomicProcessingContext implements Closeable {
 	 * Create a new genomic processing context
 	 * @param fileSystemContext file system context
 	 * @param referenceFile reference genome
-	 * @param perChr indicates whether processing should proceed in parallel for each chromosome
 	 * @param reference Existing loaded reference lookup. If null is passed, the reference will be loaded into memory.
 	 */
-	public GenomicProcessingContext(FileSystemContext fileSystemContext, File referenceFile, boolean perChr, ReferenceLookup reference) {
+	public GenomicProcessingContext(FileSystemContext fileSystemContext, File referenceFile, ReferenceLookup reference) {
 		this.fsContext = fileSystemContext;
-		this.perChr = perChr;
 		this.referenceFile = referenceFile;
 		if (reference == null) {
 			this.reference = LoadSynchronizedReference(referenceFile);

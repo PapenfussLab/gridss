@@ -16,12 +16,14 @@ import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
+import gridss.analysis.CollectGridssMetrics;
 import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.filter.SamRecordFilter;
 import htsjdk.samtools.util.CloseableIterator;
+import htsjdk.samtools.util.Log;
 
 /**
  * Structural variation evidence based on read pairs from a single SAM/BAM.  
@@ -29,6 +31,7 @@ import htsjdk.samtools.util.CloseableIterator;
  *
  */
 public class SAMEvidenceSource extends EvidenceSource {
+	private static final Log log = Log.getInstance(SAMEvidenceSource.class);
 	private final SamReaderFactory factory = SamReaderFactory.makeDefault();
 	private final File input;
 	private final int sourceCategory;
@@ -67,7 +70,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			File cigarFile = getContext().getFileSystemContext().getCigarMetrics(input);
 			File isFile = getContext().getFileSystemContext().getInsertSizeMetrics(input);
 			File mapqFile = getContext().getFileSystemContext().getMapqMetrics(input);
-			if (idsvFile.exists() && cigarFile.exists() &&  isFile.exists() && mapqFile.exists()) {
+			if (idsvFile.exists() && cigarFile.exists() && isFile.exists() && mapqFile.exists()) {
 				metrics = new IdsvSamFileMetrics(getContext(), getFile());
 			}
 		}
@@ -80,7 +83,20 @@ public class SAMEvidenceSource extends EvidenceSource {
 	public int getSourceCategory() {
 		return sourceCategory;
 	}
+	public void ensureMetrics() {
+		if (getMetrics() != null) return;
+		log.info("Calculating metrics for " + getFile().getAbsolutePath());
+		CollectGridssMetrics cgm = new gridss.analysis.CollectGridssMetrics();
+		cgm.INPUT = getFile();
+		cgm.OUTPUT = getContext().getFileSystemContext().getMetricsPrefix(getFile()).getAbsolutePath();
+		cgm.REFERENCE_SEQUENCE = getContext().getReferenceFile();
+		cgm.TMP_DIR = ImmutableList.of(getContext().getFileSystemContext().getTemporaryDirectory());
+		cgm.MAX_RECORDS_IN_RAM = getContext().getFileSystemContext().getMaxBufferedRecordsPerFile();
+		cgm.FILE_EXTENSION = null;
+		cgm.doWork();
+	}
 	public CloseableIterator<DirectedEvidence> iterator(final QueryInterval intervals) {
+		ensureMetrics();
 		SamReader reader = factory.open(input);
 		CloseableIterator<SAMRecord> it = reader.queryOverlapping(new QueryInterval[] {intervals});
 		Iterator<DirectedEvidence> eit = asEvidence(reader, it);
@@ -89,6 +105,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		throw new NotImplementedException();
 	}
 	public CloseableIterator<DirectedEvidence> iterator() {
+		ensureMetrics();
 		SamReader reader = factory.open(input);
 		CloseableIterator<SAMRecord> it = reader.iterator();
 		return asEvidence(reader, it);

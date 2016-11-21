@@ -216,6 +216,10 @@ public class SAMFileUtil {
 					}
 				}
 			}
+			for (Entry<SamReader, AsyncBufferedIterator<SAMRecord>> entry : map.entrySet()) {
+				CloserUtil.close(entry.getValue());
+				CloserUtil.close(entry.getKey());
+			}
 			Files.move(tmpFile, output);
 		} finally {
 			for (Entry<SamReader, AsyncBufferedIterator<SAMRecord>> entry : map.entrySet()) {

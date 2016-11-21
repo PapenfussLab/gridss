@@ -136,4 +136,17 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 	public DirectedBreakpoint asRemote() {
 		throw new NotImplementedException();
 	}
+	@Override
+	public String getRemoteEvidenceID() {
+		SAMRecord r = this.getSAMRecord();
+		return SAMRecordUtil.getAlignmentUniqueName(
+				r.getReadName(),
+				SAMRecordUtil.getSegmentIndex(r),
+				false,
+				remoteAlignment.rname,
+				remoteAlignment.pos,
+				remoteAlignment.isNegativeStrand,
+				remoteAlignment.cigar.toString()
+				);
+	}
 }

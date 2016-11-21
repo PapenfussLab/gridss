@@ -14,8 +14,9 @@ import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.DirectedEvidenceOrder;
 import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.SAMRecordAssemblyEvidence;
+import au.edu.wehi.idsv.SingleReadEvidence;
 import au.edu.wehi.idsv.TestHelper;
+import htsjdk.samtools.SAMRecord;
 
 
 public class PositionalAssemblerTest extends TestHelper {
@@ -30,7 +31,7 @@ public class PositionalAssemblerTest extends TestHelper {
 		input.add(SCE(BWD, Read(0, 100, "5S5M")));
 		input.add(SCE(FWD, Read(0, 100, "5M5S")));
 		input.sort(DirectedEvidenceOrder.ByStartEnd);
-		ArrayList<SAMRecordAssemblyEvidence> r = Lists.newArrayList(new PositionalAssembler(pc, aes, input.iterator()));
+		ArrayList<SAMRecord> r = Lists.newArrayList(new PositionalAssembler(pc, aes, input.iterator()));
 		assertEquals(4, r.size());
 	}
 	@Test
@@ -48,13 +49,13 @@ public class PositionalAssemblerTest extends TestHelper {
 		input.add(SCE(FWD, withSequence("ACGTTGGTTA", Read(0, 10, "5M5S"))[0]));
 		input.add(SCE(FWD, withSequence("TTTTTGCAACGTTGGTTAA", Read(0, 2, "13M6S"))[0]));
 		input.sort(DirectedEvidenceOrder.ByStartEnd);
-		ArrayList<SAMRecordAssemblyEvidence> r = Lists.newArrayList(new PositionalAssembler(pc, aes, input.iterator()));
+		List<SingleReadEvidence> r = asEvidence(aes, Lists.newArrayList(new PositionalAssembler(pc, aes, input.iterator())));
 		assertEquals(1, r.size());
 		assertEquals(new BreakendSummary(0, FWD, 14), r.get(0).getBreakendSummary());
 		// anchor length to match breakend length
-		assertEquals("AACGTT", S(r.get(0).getAssemblyAnchorSequence()));
+		assertEquals("AACGTT", S(r.get(0).getAnchorSequence()));
 		assertEquals("GGTTAA", S(r.get(0).getBreakendSequence()));
-		assertEquals("AACGTTGGTTAA", S(r.get(0).getAssemblySequence()));
+		assertEquals("AACGTTGGTTAA", S(r.get(0).getSAMRecord().getReadBases()));
 	}
 	@Test
 	public void rp_anchor_should_set_non_reference_bases_as_anchoring() {
@@ -73,13 +74,13 @@ public class PositionalAssemblerTest extends TestHelper {
 		input.add(SCE(FWD, withSequence("TTTTTGCAACGTTGGTTAA", Read(0, 2, "13M6S"))[0]));
 		input.add(NRRP(withSequence("TTTTTGCAACGTTGGTTAA", DP(0, 2, "13M6S", true, 1, 1, "19M", false))));
 		input.sort(DirectedEvidenceOrder.ByStartEnd);
-		ArrayList<SAMRecordAssemblyEvidence> r = Lists.newArrayList(new PositionalAssembler(pc, aes, input.iterator()));
+		List<SingleReadEvidence> r = asEvidence(aes, Lists.newArrayList(new PositionalAssembler(pc, aes, input.iterator())));
 		assertEquals(2, r.size());
 		// race condition w.r.t which assembly returns first
 		assertEquals(new BreakendSummary(0, FWD, 14), r.get(0).getBreakendSummary());
 		// anchor length to match breakend length
-		assertEquals("AACGTT", S(r.get(0).getAssemblyAnchorSequence()));
+		assertEquals("AACGTT", S(r.get(0).getAnchorSequence()));
 		assertEquals("GGTTAA", S(r.get(0).getBreakendSequence()));
-		assertEquals("AACGTTGGTTAA", S(r.get(0).getAssemblySequence()));
+		assertEquals("AACGTTGGTTAA", S(r.get(0).getSAMRecord().getReadBases()));
 	}
 }

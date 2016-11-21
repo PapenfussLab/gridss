@@ -22,7 +22,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Booleans;
-import com.google.common.primitives.Ints;
 
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.alignment.AlignerFactory;
@@ -486,6 +485,7 @@ public class SAMRecordUtil {
 					case M:
 					case EQ:
 					case X:
+					case P:
 					case H:
 						break;
 					default:
@@ -546,7 +546,7 @@ public class SAMRecordUtil {
 		int pos = read.getAlignmentStart();
 		int start = pos;
 		int end = pos;
-		for (CigarElement ce : CigarUtil.decodeNegativeDeletion(read.getCigar().getCigarElements())) {
+		for (CigarElement ce : read.getCigar().getCigarElements()) {
 			if (ce.getOperator().consumesReferenceBases()) {
 				pos += ce.getLength();
 			}
@@ -945,28 +945,30 @@ public class SAMRecordUtil {
 	 * @return alignment-unique identifier for the given SAMRecord
 	 */
 	public static String getAlignmentUniqueName(SAMRecord record) {
-		StringBuilder sb = new StringBuilder(record.getReadName());
+		return getAlignmentUniqueName(
+				record.getReadName(),
+				SAMRecordUtil.getSegmentIndex(record),
+				record.getReadUnmappedFlag(),
+				record.getReferenceName(),
+				record.getAlignmentStart(),
+				record.getReadNegativeStrandFlag(),
+				record.getCigarString());
+	}
+	public static String getAlignmentUniqueName(String readName, int segmentIndex, boolean unmapped, String referenceName, int alignmentStart, boolean negativeStrand, String cigar) {
+		StringBuilder sb = new StringBuilder(readName);
 		sb.append(SAMRecordUtil.SUFFIX_SEPERATOR);
-		sb.append(SAMRecordUtil.getSegmentIndex(record));
-		if (!record.getReadUnmappedFlag()) {
+		sb.append(segmentIndex);
+		if (!unmapped) {
 			sb.append(SAMRecordUtil.SUFFIX_SEPERATOR);
-			sb.append(record.getReferenceName());
+			sb.append(referenceName);
 			sb.append(SAMRecordUtil.SUFFIX_SEPERATOR);
-			sb.append(record.getAlignmentStart());
+			sb.append(alignmentStart);
 			sb.append(SAMRecordUtil.SUFFIX_SEPERATOR);
-			sb.append(record.getReadNegativeStrandFlag() ? '-' : '+');
+			sb.append(negativeStrand ? '-' : '+');
 			sb.append(SAMRecordUtil.SUFFIX_SEPERATOR);
-			sb.append(record.getCigarString());
+			sb.append(cigar);
 		}
+		;
 		return sb.toString();
 	}
-	/**
-	 * Orders SAMRecord by the read offset of the first aligned base
-	 */
-	public static Ordering<SAMRecord> ByFirstAlignedBaseReadOffset = new Ordering<SAMRecord>() {
-		@Override
-		public int compare(SAMRecord left, SAMRecord right) {
-			return Ints.compare(getFirstAlignedBaseReadOffset(left), getFirstAlignedBaseReadOffset(right));
-		}
-	};
 }

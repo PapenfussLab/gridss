@@ -16,45 +16,6 @@ public class CigarUtil {
 	private CigarUtil() {
 	}
 	/**
-	 * Converts a xPxNxP placeholder CIGAR to the negative deletion it is intended to correspond to 
-	 * @param list
-	 * @return
-	 */
-	public static List<CigarElement> decodeNegativeDeletion(List<CigarElement> list) {
-		list = Lists.newCopyOnWriteArrayList(list);
-		for (int i = 0; i < list.size() - 2; i++) {
-			if (list.get(i).getOperator() == CigarOperator.P &&
-					list.get(i + 1).getOperator() == CigarOperator.N &&
-					list.get(i + 2).getOperator() == CigarOperator.P &&
-					list.get(i).getLength() == list.get(i + 1).getLength() &&
-					list.get(i + 1).getLength() == list.get(i + 2).getLength()) {
-				list.add(i, new CigarElement(-list.get(i).getLength(), CigarOperator.DELETION));
-				list.remove(i + 1);
-				list.remove(i + 1);
-				list.remove(i + 1);
-			}
-		}
-		return list;
-	}
-	/**
-	 * Encodes a negative deletion through a xPxNxP placeholder CIGAR that conforms to the SAM specs 
-	 * @param list
-	 * @return valid cigar
-	 */
-	public static List<CigarElement> encodeNegativeDeletion(List<CigarElement> list) {
-		list = Lists.newCopyOnWriteArrayList(list);
-		for (int i = 0; i < list.size(); i++) {
-			CigarElement e = list.get(i);
-			if (e.getOperator() == CigarOperator.D && e.getLength() < 0) {
-				list.remove(i);
-				list.add(i, new CigarElement(-e.getLength(), CigarOperator.P));
-				list.add(i, new CigarElement(-e.getLength(), CigarOperator.N));
-				list.add(i, new CigarElement(-e.getLength(), CigarOperator.P));
-			}
-		}
-		return list;
-	}
-	/**
 	 * Returns the number of read bases 'consumed' by the given cigar 
 	 * @param list
 	 * @return base count
@@ -89,7 +50,7 @@ public class CigarUtil {
 	 */
 	public static int countIndels(Cigar c) {
 		int n = 0;
-		for (CigarElement e : decodeNegativeDeletion(c.getCigarElements())) {
+		for (CigarElement e : c.getCigarElements()) {
 			if (e.getOperator() == CigarOperator.DELETION || e.getOperator() == CigarOperator.INSERTION) {
 				n++;
 			}
@@ -108,7 +69,7 @@ public class CigarUtil {
 		List<CigarElement> current = new ArrayList<CigarElement>(list.size());
 		List<CigarElement> left = current;
 		int elementOffset = readBaseOffset;
-		for (CigarElement ce : decodeNegativeDeletion(list)) {
+		for (CigarElement ce : list) {
 			if (ce.getOperator().consumesReadBases() && elementOffset >= 0 && elementOffset < ce.getLength()) {
 				// split this element
 				current.add(new CigarElement(elementOffset + 1, ce.getOperator()));
@@ -377,7 +338,7 @@ public class CigarUtil {
 	 * @return offset relative to first alignment
 	 */
 	public static int offsetOf(Cigar cigar, int readBaseOffset) {
-		List<CigarElement> cl = decodeNegativeDeletion(cigar.getCigarElements());
+		List<CigarElement> cl = cigar.getCigarElements();
 		int basesLeft = readBaseOffset;
 		int currentAlignmentOffset = 0;
 		for (int i = 0; i < cl.size(); i++) {

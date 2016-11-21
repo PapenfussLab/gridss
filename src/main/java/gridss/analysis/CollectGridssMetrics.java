@@ -82,6 +82,32 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
 				return false;
 			}
         },
+    	CollectTagMetrics {
+			@Override
+			public SinglePassSamProgram makeInstance(String outbase, String outext, File input, File reference,
+					Set<MetricAccumulationLevel> metricAccumulationLevel, File dbSnp, File intervals) {
+				final CollectTagMetrics program = new CollectTagMetrics();
+                program.OUTPUT = new File(outbase + gridss.analysis.CollectTagMetrics.METRICS_SUFFIX + outext);
+
+                // Generally programs should not be accessing these directly but it might make things smoother
+                // to just set them anyway. These are set here to make sure that in case of a the derived class
+                // overrides
+                program.INPUT = input;
+                program.REFERENCE_SEQUENCE = reference;
+
+                return program;
+			}
+
+			@Override
+			public boolean needsReferenceSequence() {
+				return false;
+			}
+
+			@Override
+			public boolean supportsMetricAccumulationLevel() {
+				return false;
+			}
+        },
         CollectIdsvMetrics {
 			@Override
 			public SinglePassSamProgram makeInstance(String outbase, String outext, File input, File reference,

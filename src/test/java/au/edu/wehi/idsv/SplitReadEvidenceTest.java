@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 import java.util.List;
 
@@ -100,5 +101,68 @@ public class SplitReadEvidenceTest extends TestHelper {
 		assertEquals("ACCTAGA", S(list.get(0).getAnchorSequence()));
 		assertEquals("GGG", S(list.get(0).getBreakendSequence()));
 		assertEquals("", list.get(0).getUntemplatedSequence());
+	}
+	@Test
+	public void should_recognise_XNX_as_unanchored_breakend_interval() {
+		// 1
+		// 01234567
+		// NNNNATG
+		// |--|    <- sequence expected to be placed somewhere in the N interval
+		//
+		// 
+		//      10
+		// 567890123456
+		//     ATG  <- actually was placed
+		//     SMM
+		// |--|     <- so we expect the breakpoint somewhere here
+		SAMRecord r = withSequence("NNNNATG", Read(1, 10, "1X2N1X3S"))[0];
+		r.setAttribute("SA", "polyA,100,+,4S1S2M,0,0");
+		List<SplitReadEvidence> list = SplitReadEvidence.create(SES(), r);
+		assertEquals(0, list.size());
+		SplitReadEvidence e = list.get(0);
+		assertFalse(e.isBreakendExact());
+		assertEquals("ATG", S(e.getBreakendSequence()));
+		assertEquals("", S(e.getAnchorSequence()));
+		assertEquals(new BreakpointSummary(1, FWD, 11, 10, 13, 0, BWD, 96, 95, 98), e.getBreakendSummary());
+	}
+	@Test
+	public void should_recogise_XNX_on_both_sides() {
+		// supp alignment for should_recognise_XNX_as_unanchored_breakend_interval()
+		SAMRecord r = withSequence("NNNNATG", Read(0, 100, "4S1S2M"))[0];
+		r.setAttribute("SA", "polyA,10,+,1X2N1X3S,0,0");
+		List<SplitReadEvidence> list = SplitReadEvidence.create(SES(), r);
+		assertEquals(0, list.size());
+		SplitReadEvidence e = list.get(0);
+		assertFalse(e.isBreakendExact());
+		assertEquals("A", S(e.getBreakendSequence()));
+		assertEquals("TG", S(e.getAnchorSequence()));
+		assertEquals("A", e.getUntemplatedSequence());
+		assertEquals(new BreakpointSummary(0, BWD, 96, 95, 98, 1, FWD, 11, 10, 13), e.getBreakendSummary());
+	}
+	@Test
+	public void should_consider_strand_for_XNX() {
+		SAMRecord r = withSequence("NATG", Read(1, 10, "1X3S"))[0];
+		r.setAttribute("SA", "polyA,100,-,3M1S,0,0");
+		List<SplitReadEvidence> list = SplitReadEvidence.create(SES(), r);
+		assertEquals(0, list.size());
+		SplitReadEvidence e = list.get(0);
+		assertFalse(e.isBreakendExact());
+		assertEquals("ATG", S(e.getBreakendSequence()));
+		assertEquals("", S(e.getAnchorSequence()));
+		assertEquals(new BreakpointSummary(1, FWD, 10, 0, FWD, 101), e.getBreakendSummary());
+	}
+	@Test
+	public void should_return_untemplated_sequence() {
+		SAMRecord r = withSequence("ACTG", Read(0, 1, "1M3S"))[0];
+		r.setAttribute("SA", "polyA,100,+,2S2M,10,0");
+		SplitReadEvidence e = SplitReadEvidence.create(SES(), r).get(0);
+		assertEquals("C", e.getUntemplatedSequence());
+	}
+	@Test
+	public void should_return_untemplated_sequence_remote_bwd() {
+		SAMRecord r = withSequence("ACTG", Read(0, 1, "1M3S"))[0];
+		r.setAttribute("SA", "polyA,100,-,2M2S,10,0");
+		SplitReadEvidence e = SplitReadEvidence.create(SES(), r).get(0);
+		assertEquals("C", e.getUntemplatedSequence());
 	}
 }

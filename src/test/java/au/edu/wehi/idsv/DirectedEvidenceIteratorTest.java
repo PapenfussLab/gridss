@@ -54,4 +54,11 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 		assertEquals(4, list.size());
 		assertEquals(IndelEvidence.class, list.get(0).getClass());
 	}
+	@Test
+	public void should_ignore_unmapped_softclips() {
+		SAMRecord r = Read(0, 10, "10M5S");
+		r.setReadUnmappedFlag(true);
+		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), null));
+		assertEquals(0, list.size());
+	}
 }

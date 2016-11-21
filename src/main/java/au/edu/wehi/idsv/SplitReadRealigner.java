@@ -29,8 +29,8 @@ import htsjdk.samtools.util.CloserUtil;
 
 public class SplitReadRealigner {
 	private final GenomicProcessingContext pc;
-	private int minSoftClipLength = 15;
-	private float minSoftClipQuality = 5;
+	private int minSoftClipLength = 1;
+	private float minSoftClipQuality = 0;
 	private int workerThreads = Runtime.getRuntime().availableProcessors();
 	private SamReaderFactory readerFactory = SamReaderFactory.make();
 	private SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();

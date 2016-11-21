@@ -7,6 +7,7 @@ import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.LinearGenomicCoordinate;
 import au.edu.wehi.idsv.NonReferenceReadPair;
+import au.edu.wehi.idsv.SingleReadEvidence;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.CigarElement;
@@ -64,7 +65,7 @@ public class VariantEvidence {
 		this.kmers = new PackedKmerList(k, bases, quals, shouldReverseComplement, shouldReverseComplement);
 		this.ambiguous = markAmbiguous(k, bases);
 	}
-	public VariantEvidence(int k, SoftClipEvidence softClipEvidence, LinearGenomicCoordinate lgc) {
+	public VariantEvidence(int k, SingleReadEvidence softClipEvidence, LinearGenomicCoordinate lgc) {
 		SAMRecord read = softClipEvidence.getSAMRecord();
 		this.evidenceID = softClipEvidence.getEvidenceID();
 		boolean shouldReverseComplement = false;		

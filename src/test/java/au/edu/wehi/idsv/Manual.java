@@ -1,17 +1,16 @@
 package au.edu.wehi.idsv;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
 
 import org.apache.commons.configuration.ConfigurationException;
 import org.junit.experimental.categories.Category;
 
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import htsjdk.samtools.metrics.Header;
-import htsjdk.samtools.util.CloseableIterator;
 
 /**
  * Ad-hoc debugging tests
@@ -21,10 +20,11 @@ import htsjdk.samtools.util.CloseableIterator;
 public class Manual extends TestHelper {
 	/**
 	 * Test our iterators are behaving correctly
+	 * @throws IOException 
 	 */
 	//@Test
 	@Category(Hg19Tests.class)
-	public void debug778sorting() throws ConfigurationException {
+	public void debug778sorting() throws ConfigurationException, IOException {
 		ProcessingContext pc = new ProcessingContext(
 			new FileSystemContext(new File("W:\\778\\idsv"), new File("W:\\778\\idsv"), 500000), Hg19Tests.findHg19Reference(), true, null,
 			new ArrayList<Header>(), new GridssConfiguration());
@@ -45,25 +45,14 @@ public class Manual extends TestHelper {
 			samEvidence.add(ses);
 		}
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, samEvidence, new File("W:\778\\idsv\\778.vcf.idsv.working"));
+		aes.assembleBreakends();
 		//Iterator<SAMRecordAssemblyEvidence> it = aes.iterator(true, true);
 		//while (it.hasNext()) {
 		//	it.next();
 		//}
-		EP e = new EP(pc, new File("W:\778\\idsv\\778.vcf"), samEvidence, aes);
-		Iterator<DirectedEvidence> allIt = e.getAllEvidence();
+		Iterator<DirectedEvidence> allIt = SAMEvidenceSource.mergedIterator(samEvidence);
 		while (allIt.hasNext()) {
 			allIt.next();
-		}
-	}
-	private static class EP extends EvidenceProcessorBase {
-		public EP(ProcessingContext context, File output, List<SAMEvidenceSource> samEvidence, AssemblyEvidenceSource assemblyEvidence) {
-			super(context, output, samEvidence, assemblyEvidence);
-		}
-		public CloseableIterator<DirectedEvidence> getAllEvidence() {
-			return super.getAllEvidence(true, true, true, true, true);
-		}
-		@Override
-		public void process(ExecutorService threadpool) {
 		}
 	}
 }

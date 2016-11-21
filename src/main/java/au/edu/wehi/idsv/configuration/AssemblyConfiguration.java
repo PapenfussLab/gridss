@@ -16,7 +16,6 @@ public class AssemblyConfiguration {
 		minReads = config.getInt("minReads");
 		includePairAnchors = config.getBoolean("includePairAnchors");
 		pairAnchorMismatchIgnoreEndBases = config.getInt("pairAnchorMismatchIgnoreEndBases");
-		includeRemoteSplitReads = config.getBoolean("includeRemoteSplitReads");
 		writeFiltered = config.getBoolean("writeFiltered");
 		excludeNonSupportingEvidence = config.getBoolean("excludeNonSupportingEvidence");
 		anchorLength = config.getInt("anchorLength");
@@ -54,10 +53,6 @@ public class AssemblyConfiguration {
 	 * don't want it to).   
 	 */
 	public int pairAnchorMismatchIgnoreEndBases;
-	/**
-	 * Include reads with a soft clip that maps to this location
-	 */
-	public boolean includeRemoteSplitReads;
 	/**
 	 * Determines whether filtered assemblies are written to intermediate files
 	 */

@@ -16,7 +16,6 @@ import au.edu.wehi.idsv.AssemblyAlgorithm;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.Hg19Tests;
 import au.edu.wehi.idsv.IntermediateFilesTest;
-import au.edu.wehi.idsv.ProcessStep;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 
@@ -30,9 +29,8 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 		createInput(new File("src/test/resources/chr12-244000.bam"));
 		ProcessingContext pc = getCommandlineContext(false);
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
-		ses.completeSteps(ProcessStep.ALL_STEPS);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), output);
-		aes.ensureAssembled();
+		aes.assembleBreakends();
 		File dir = new File(super.testFolder.getRoot(), "visualisation");
 		File[] export = dir.listFiles((FileFilter)new WildcardFileFilter("*.dot"));
 		// TODO: change graph write timing
@@ -44,7 +42,6 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 		pc.getAssemblyParameters().errorCorrection.maxBaseMismatchForCollapse = 1;
 		pc.getAssemblyParameters().errorCorrection.collapseBubblesOnly = true;
 		pc.getAssemblyParameters().method = AssemblyAlgorithm.Positional;
-		pc.getAssemblyParameters().includeRemoteSplitReads = false;
 		pc.getConfig().getVisualisation().assemblyGraph = true;
 		pc.getConfig().getVisualisation().directory.mkdirs();
 		return pc;

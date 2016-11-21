@@ -8,15 +8,16 @@ import java.util.List;
 import com.google.common.collect.ImmutableList;
 import com.google.common.primitives.Bytes;
 
-import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SamTags;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.util.Log;
 
 public final class AssemblyFactory {
+	private static final Log log = Log.getInstance(AssemblyFactory.class);
 	private AssemblyFactory() { } 
 	/**
 	 * Creates an assembly 
@@ -158,12 +159,9 @@ public final class AssemblyFactory {
 				if (delSize != 0) {
 					c.add(new CigarElement(delSize, CigarOperator.DELETION));
 					if (delSize < 0) {
-						// negative relative alignment position not representable in SAM
-						// as all CIGAR element lengths must be positive in size.
-						c = CigarUtil.encodeNegativeDeletion(c);
-						throw new IllegalArgumentException("Negative deletions not supported by SAM specs. "
-								+ "Use breakend assembly and hope the the realignment goes to the expected location. "
+						log.warn("Negative deletions not supported by SAM specs. Breakpoint assembly has been converted to breakend. "
 								+ "Sanity check failure: this should not be possible for positional assembly. ");
+						return createAssemblySAMRecord(processContext, evidence, samFileHeader, source, bp.localBreakend(), startAnchoredBaseCount, 0, baseCalls, baseQuals);
 					}
 				}
 				c.add(new CigarElement(endAnchoredBaseCount, CigarOperator.MATCH_OR_MISMATCH));

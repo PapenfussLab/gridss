@@ -24,6 +24,9 @@ public class AssemblyAttributes {
 	public AssemblyAttributes(SAMRecord record) {
 		this.record = record;
 	}
+	public AssemblyAttributes(SingleReadEvidence record) {
+		this(record.getSAMRecord());
+	}
 	/**
 	 * Determines whether the given record is part of the given assembly
 	 *

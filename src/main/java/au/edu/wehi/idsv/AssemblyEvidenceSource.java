@@ -7,11 +7,11 @@ import java.util.Iterator;
 import java.util.List;
 
 import com.google.common.collect.Iterators;
-import com.google.common.io.Files;
 
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.debruijn.positional.PositionalAssembler;
+import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
@@ -22,7 +22,16 @@ import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
 
-
+/**
+ * Structural variant supporting contigs generated from assembly
+ * 
+ *  TODO: define separate functions for the attributes of the assemblies, and the source reads.
+ *  It is currently unclear whether getMaxReadLength() refers to the assembly or source
+ *  reads (it is the latter).
+ *  
+ * @author Daniel Cameron
+ *
+ */
 public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	private static final Log log = Log.getInstance(AssemblyEvidenceSource.class);
 	private final List<SAMEvidenceSource> source;
@@ -60,14 +69,17 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			while (it.hasNext()) {
 				SAMRecord asm = it.next();
 				if (!getContext().getAssemblyParameters().writeFiltered) {
-					if (shouldFilter(asm)) {
+					if (shouldFilterAssembly(asm)) {
 						continue;
 					}
 				}
 	    		writer.addAlignment(asm);
 	    	}
 	    }
-		Files.move(tmpout, getFile());
+		SAMFileUtil.sort(getContext().getFileSystemContext(), tmpout, getFile(), SortOrder.coordinate);
+		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
+			tmpout.delete();
+		}
 		File throttledFilename = new File(getFile().getAbsolutePath() + ".throttled.bed");
 		try {
 			if (throttled.size() > 0) {
@@ -77,7 +89,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			log.warn(e, "Unable to write " + throttledFilename.getAbsolutePath());
 		}
 	}
-	private boolean shouldFilter(SAMRecord asm) {
+	public boolean shouldFilterAssembly(SAMRecord asm) {
 		AssemblyConfiguration ap = getContext().getAssemblyParameters();
 		AssemblyAttributes attr = new AssemblyAttributes(asm);
 		// reference assembly
@@ -122,7 +134,8 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			// TODO: close this iterator!
 			CloseableIterator<DirectedEvidence> it = mergedIterator(source);
 			Iterator<DirectedEvidence> throttledIt = throttled(it);
-			ProgressLoggingDirectedEvidenceIterator<DirectedEvidence> loggedIt = new ProgressLoggingDirectedEvidenceIterator<>(getContext(), throttledIt, progressLog);
+			Iterator<DirectedEvidence> filteredIt = Iterators.filter(throttledIt, e -> !shouldFilterAssembly(((SingleReadEvidence)e).getSAMRecord()));
+			ProgressLoggingDirectedEvidenceIterator<DirectedEvidence> loggedIt = new ProgressLoggingDirectedEvidenceIterator<>(getContext(), filteredIt, progressLog);
 			Iterator<SAMRecord> evidenceIt = new PositionalAssembler(getContext(), this, loggedIt, direction);
 	    	list.add(evidenceIt);
 		}
@@ -141,19 +154,13 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		getContext().registerBuffer(AssemblyEvidenceSource.class.getName() + ".throttle", dit);
 		return dit;
 	}
-	//public int getAssemblyEvidenceWindowSize() {
-	//	return (int)(getContext().getAssemblyParameters().subgraph.assemblyMargin * getMaxConcordantFragmentSize());
-	//}
-	//public int getAssemblyMaximumEvidenceDelay() {
-	//	return Math.max(getContext().getAssemblyParameters().subgraph.minSubgraphWidthForTimeout,
-	//			(int)(getContext().getAssemblyParameters().subgraph.maxSubgraphFragmentWidth * getMaxConcordantFragmentSize()));
-	//}
-	//public int getAssemblyWindowSize() {
-		// Positional assembly should have a smaller window size
-		// but the width of the assembly itself is unbounded
-		// in the degenerate misassembly case
-	//	return getAssemblyMaximumEvidenceDelay() + 3 * getAssemblyEvidenceWindowSize() + 2;
-	//}
+	public int getMaxAssemblyLength() {
+		// We could extract by generating metrics for the assembly
+		float maxExpected = getContext().getAssemblyParameters().maxExpectedBreakendLengthMultiple * getMaxConcordantFragmentSize();
+		maxExpected = Math.max(maxExpected, getContext().getAssemblyParameters().anchorLength);
+		maxExpected *= 2; // anchor + breakend length
+		return (int)maxExpected;
+	}
 	@Override
 	public int getMaxConcordantFragmentSize() {
 		return maxSourceFragSize;

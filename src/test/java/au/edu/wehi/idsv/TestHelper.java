@@ -16,9 +16,7 @@ import java.util.Random;
 import java.util.SortedSet;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -27,7 +25,6 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.lang3.StringUtils;
 
 import com.google.common.base.Function;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -54,7 +51,6 @@ import au.edu.wehi.idsv.debruijn.positional.KmerSupportNode;
 import au.edu.wehi.idsv.debruijn.positional.PathNodeIterator;
 import au.edu.wehi.idsv.debruijn.positional.PathNodeIteratorTest;
 import au.edu.wehi.idsv.debruijn.positional.SupportNodeIterator;
-import au.edu.wehi.idsv.debruijn.subgraph.DeBruijnReadGraph;
 import au.edu.wehi.idsv.graph.PathNode;
 import au.edu.wehi.idsv.graph.PathNodeFactory;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
@@ -63,18 +59,13 @@ import au.edu.wehi.idsv.picard.BufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import au.edu.wehi.idsv.sam.SamTags;
-import au.edu.wehi.idsv.sam.SplitIndel;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
-import au.edu.wehi.idsv.util.MathUtil;
 import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
 import gridss.analysis.CigarDetailMetrics;
 import gridss.analysis.CigarSizeDistribution;
 import gridss.analysis.IdsvMetrics;
 import gridss.analysis.InsertSizeDistribution;
 import gridss.analysis.MapqMetrics;
-import htsjdk.samtools.Cigar;
-import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.DefaultSAMRecordFactory;
 import htsjdk.samtools.SAMFileHeader;
@@ -151,13 +142,6 @@ public class TestHelper {
 		List<T> list = Lists.newArrayList(data);
 		return list;
 	}
-
-	public static Function<DirectedEvidence, String> EID = new Function<DirectedEvidence, String>() {
-		@Override
-		public String apply(DirectedEvidence input) {
-			return input.getEvidenceID();
-		}
-	}; 
 	
 	public static IdsvVariantContextBuilder minimalVariant() {
 		return (IdsvVariantContextBuilder) new IdsvVariantContextBuilder(
@@ -249,19 +233,23 @@ public class TestHelper {
 		pair[1].setReadName(pair[0].getReadName());
 		return NonReferenceReadPair.create(pair[0], pair[1], source);
 	}
-	public SAMRecordAssemblyEvidence A(BreakpointSummary bs) {
+	public SplitReadEvidence A(BreakpointSummary bs) {
 		// TODO handle more cases
 		assert(bs.start == bs.end);
 		assert(bs.start2 == bs.end2);
 		assert(bs.direction2 == BWD);
-		SAMRecordAssemblyEvidence abe = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), bs.direction, null, bs.referenceIndex, bs.start, 1, B("TT"), B("TT"));
-		SAMRecord r = new SAMRecord(getContext().getBasicSamHeader());
-		r.setReferenceIndex(bs.referenceIndex2);
-		r.setAlignmentStart(bs.start2);
-		r.setReadUnmappedFlag(false);
-		r.setCigar(new Cigar(ImmutableList.of(new CigarElement(2, CigarOperator.MATCH_OR_MISMATCH))));
-		r.setMappingQuality(30);
-		return AssemblyFactory.incorporateRealignment(getContext(), abe, ImmutableList.of(r));
+		SAMRecord r = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), bs.direction, null, bs.referenceIndex, bs.start, 1, B("TT"), B("TT"));
+		SAMRecord ra = new SAMRecord(getContext().getBasicSamHeader());
+		ra.setReferenceIndex(bs.referenceIndex2);
+		ra.setAlignmentStart(bs.start2);
+		ra.setReadUnmappedFlag(false);
+		ra.setCigarString("1M");
+		ra.setMappingQuality(30);
+		if (bs.direction == bs.direction2) {
+			ra.setReadNegativeStrandFlag(true);
+		}
+		SplitReadIdentificationHelper.convertToSplitRead(r, ImmutableList.of(r));
+		return SplitReadEvidence.create(AES(), r).get(0);
 	}
 
 	public static DirectedEvidence E(int referenceIndex, int start,
@@ -277,41 +265,33 @@ public class TestHelper {
 			SAMRecord... pair) {
 		return SCE(direction, SES(), pair);
 	}
-	public static SpannedIndelEvidence IE(SAMRecord r) {
+	public static IndelEvidence IE(SAMRecord r) {
 		return IE(SES(), r);
 	}
 
-	public static SpannedIndelEvidence IE(SAMEvidenceSource ses, SAMRecord r) {
+	public static IndelEvidence IE(SAMEvidenceSource ses, SAMRecord r) {
 		return IE(ses, r, 0);
 	}
 	
-	public static SpannedIndelEvidence IE(SAMEvidenceSource ses, SAMRecord r, int indelIndex) {
-		SplitIndel si = SplitIndel.getIndelsAsSplitReads(r).get(indelIndex);
-		return SpannedIndelEvidence.create(ses, r, si, indelIndex);
-	}
-	
-	public static List<SpannedIndelEvidence> IEList(final SAMEvidenceSource ses, final SAMRecord r) {
-		List<SplitIndel> si = SplitIndel.getIndelsAsSplitReads(r);
-		return IntStream.range(0, si.size()).mapToObj(i -> SpannedIndelEvidence.create(ses, r, si.get(i), i)).collect(Collectors.toList());
+	public static IndelEvidence IE(SAMEvidenceSource ses, SAMRecord r, int indelIndex) {
+		return IndelEvidence.create(ses, r).get(indelIndex);
 	}
 
 	public static SoftClipEvidence SCE(BreakendDirection direction,
 			SAMEvidenceSource source, SAMRecord... pair) {
 		if (pair.length >= 2) {
-			return SoftClipEvidence.create(source, direction, pair[0],
-					pair[1]);
+			return SoftClipEvidence.create(source, direction, pair[0]);
 		} else {
-			return SoftClipEvidence.create(source, direction, pair[0],
-					null);
+			return SoftClipEvidence.create(source, direction, pair[0]);
 		}
 	}
 
-	public static SAMRecordAssemblyEvidence AE() {
-		return AssemblyFactory.createAnchoredBreakend(getContext(), AES(),
+	public static SoftClipEvidence AE() {
+		return SoftClipEvidence.create(AES(), FWD, AssemblyFactory.createAnchoredBreakend(getContext(), AES(),
 				FWD,
 				null,
 				0, 1,
-				1, B("ATT"), new byte[] { 7, 7, 7 }).annotateAssembly();
+				1, B("ATT"), new byte[] { 7, 7, 7 }));
 	}
 	public static class MockCigarSizeDistribution extends CigarSizeDistribution {
 		public MockCigarSizeDistribution() {
@@ -378,11 +358,7 @@ public class TestHelper {
 		config.getSoftClip().minAverageQual = 0;
 		config.minAnchorShannonEntropy = 0;
 		config.getAssembly().minReads = 2;
-		config.getAssembly().includeRemoteSplitReads = false;
-		config.getAssembly().anchorRealignment.perform = false;
 		config.getVariantCalling().breakendMargin = 3;
-		config.getRealignment().aligner = null;
-		config.getRealignment().commandline = ImmutableList.of();
 		config.getVisualisation().buffers = false;
 		return config;
 	}
@@ -534,6 +510,10 @@ public class TestHelper {
 		read2.setFirstOfPairFlag(false);
 		clean(read1, read2);
 		return new SAMRecord[] { read1, read2 };
+	}
+	public static SplitReadEvidence SR(SAMRecord read, SAMRecord realigned) {
+		SplitReadIdentificationHelper.convertToSplitRead(read, ImmutableList.of(realigned));
+		return SplitReadEvidence.create(SES(), read).get(0);
 	}
 	/**
 	 * Fills in missing information from the given read
@@ -853,12 +833,6 @@ public class TestHelper {
 		return new BasePathGraph(g);
 	}
 
-	public static DeBruijnReadGraph RG(int k) {
-		ProcessingContext pc = getContext();
-		pc.getAssemblyParameters().k = k;
-		return new DeBruijnReadGraph(AES(pc), 0, null);
-	}
-
 	public static class MockSAMEvidenceSource extends SAMEvidenceSource {
 		public IdsvSamFileMetrics metrics = new MockMetrics();
 		public int category = 0;
@@ -883,25 +857,9 @@ public class TestHelper {
 			return category;
 		}
 		@Override
-		public boolean isComplete(ProcessStep step) {
-			return completedSteps.contains(step);
-		}
-		@Override
 		public IdsvSamFileMetrics getMetrics() {
 			if (metrics != null) return metrics;
 			return super.getMetrics();
-		}
-		@Override
-		public void completeSteps(EnumSet<ProcessStep> steps) {
-			completedSteps.addAll(steps);
-		}
-		@Override
-		protected CloseableIterator<DirectedEvidence> perChrIterator( boolean includeReadPair, boolean includeSoftClip, boolean includeSoftClipRemote, String chr) {
-			return new AutoClosingIterator<DirectedEvidence>(Collections.<DirectedEvidence>emptyIterator());
-		}
-		@Override
-		protected CloseableIterator<DirectedEvidence> singleFileIterator(boolean includeReadPair, boolean includeSoftClip, boolean includeSoftClipRemote) {
-			return new AutoClosingIterator<DirectedEvidence>(Collections.<DirectedEvidence>emptyIterator());
 		}
 	}
 
@@ -932,72 +890,17 @@ public class TestHelper {
 			this.maxFragmentSize = maxFragmentSize;
 		}
 		@Override
-		public void completeSteps(EnumSet<ProcessStep> steps) { }
-		@Override
 		public int getMaxConcordantFragmentSize() { return maxFragmentSize; }
 		@Override
 		public int getMaxReadLength() { return maxReadLength; }
 		@Override
 		public int getMaxReadMappedLength() { return maxReadLength; }
 		@Override
-		public String getRealignmentScript() { return ""; }
-		@Override
-		public boolean isComplete(ProcessStep step) { return true; }
-		@Override
 		public IdsvSamFileMetrics getMetrics() { return metrics; }
 		@Override
-		public CloseableIterator<DirectedEvidence> iterator(
-				boolean includeReadPair, boolean includeSoftClip,
-				boolean includeSoftClipRemote) {
+		public CloseableIterator<DirectedEvidence> iterator() {
 			return new AutoClosingIterator<DirectedEvidence>(evidence.iterator());
 		}
-		@Override
-		public CloseableIterator<DirectedEvidence> iterator(
-				boolean includeReadPair, boolean includeSoftClip, boolean includeSoftClipRemote, final String chr) {
-			return new AutoClosingIterator<DirectedEvidence>(
-					Iterables.filter(evidence, new Predicate<DirectedEvidence>() {
-						@Override
-						public boolean apply(DirectedEvidence input) {
-							return getContext().getDictionary().getSequence(input.getBreakendSummary().referenceIndex).getSequenceName().equals(chr);
-						}
-					}).iterator());
-		}
-	}
-	public static class StubAssemblyEvidenceSource extends AssemblyEvidenceSource {
-		public int assemblyWindowSize = 10;
-		public int fragSize = 300;
-		private boolean realigned = true;
-		public List<SAMRecordAssemblyEvidence> assemblies = new ArrayList<SAMRecordAssemblyEvidence>();
-		public StubAssemblyEvidenceSource(ProcessingContext processContext) {
-			super(processContext, ImmutableList.<SAMEvidenceSource>of(), null);
-		}
-		@Override
-		public void ensureAssembled(ExecutorService threadpool) { }
-		@Override
-		public int getAssemblyWindowSize() { return assemblyWindowSize; }
-		@Override
-		public int getMaxConcordantFragmentSize() { return fragSize; }
-		@Override
-		public String getRealignmentScript() { return ""; }
-		@Override
-		public boolean isRealignmentComplete(boolean performRealignment) { return realigned; }
-		@Override
-		public CloseableIterator<SAMRecordAssemblyEvidence> iterator(
-				boolean includeRemote, boolean includeFiltered) {
-			return new AutoClosingIterator<SAMRecordAssemblyEvidence>(assemblies.iterator());
-		}
-		@Override
-		public CloseableIterator<SAMRecordAssemblyEvidence> iterator(boolean includeRemote, boolean includeFiltered, final String chr) {
-			return new AutoClosingIterator<SAMRecordAssemblyEvidence>(
-					Iterables.filter(assemblies, new Predicate<SAMRecordAssemblyEvidence>() {
-						@Override
-						public boolean apply(SAMRecordAssemblyEvidence input) {
-							return getContext().getDictionary().getSequence(input.getBreakendSummary().referenceIndex).getSequenceName().equals(chr);
-						}
-					}).iterator());
-		}
-		@Override
-		protected void process(ExecutorService threadpool) { }
 	}
 	public static AssemblyEvidenceSource AES() {
 		return new AssemblyEvidenceSource(getContext(),
@@ -1221,27 +1124,17 @@ public class TestHelper {
 			//return SCE(fwd ? FWD : BWD, r);
 		}
 	}
-	/**
-	 * Annotates the given assembly with a read
-	 * @param ass
-	 * @return annotated assembly
-	 */
-	public static SAMRecordAssemblyEvidence mockAnnotate(SAMRecordAssemblyEvidence ass) {
-		BreakendSummary be = ass.getBreakendSummary();
-		if (be == null) {
-			be = new BreakendSummary(ass.getBackingRecord().getReferenceIndex(),
-					BreakendDirection.Forward,
-					MathUtil.average(ass.getBackingRecord().getAlignmentStart(), ass.getBackingRecord().getAlignmentEnd()),
-					ass.getBackingRecord().getAlignmentStart(),
-					ass.getBackingRecord().getAlignmentEnd());
-		}
-		SoftClipEvidence sc = SCE(be.direction, Read(be.referenceIndex, be.start, be.direction == FWD ? "1M1S" : "1S1M"));
-		String encoded = ass.getBackingRecord().getStringAttribute(SamTags.EVIDENCEID);
-		if (encoded == null) {
-			encoded = "";
-		}
-		ass.getBackingRecord().setAttribute(SamTags.EVIDENCEID, encoded + SAMRecordAssemblyEvidence.COMPONENT_EVIDENCEID_SEPARATOR + sc.getEvidenceID());
-		ass.hydrateEvidenceSet(sc);
-		return ass.annotateAssembly();
+	public static List<SingleReadEvidence> asEvidence(AssemblyEvidenceSource aes, Iterable<SAMRecord> list) {
+		return StreamSupport.stream(list.spliterator(), false)
+				.flatMap(r -> SingleReadEvidence.createEvidence(aes, r).stream())
+				.collect(Collectors.toList());
+	}
+	public SingleReadEvidence asEvidence(AssemblyEvidenceSource aes, SAMRecord assembly) {
+		List<SingleReadEvidence> list = SingleReadEvidence.createEvidence(aes, assembly);
+		assertEquals(1, list.size());
+		return list.get(0);
+	}
+	public SingleReadEvidence asEvidence(SAMRecord assembly) {
+		return asEvidence(AES(), assembly);
 	}
 }

@@ -12,7 +12,7 @@ import htsjdk.samtools.util.SequenceUtil;
 public class RealignedBreakpointTest extends TestHelper {
 	@Test(expected=IllegalArgumentException.class)
 	public void should_throw_if_realigned_unmapped() {
-		AssemblyEvidence dba = AE();
+		DirectedEvidence dba = SoftClipEvidence.create(AES(), FWD, Read(0, 1, "1M2S"));
 		RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), dba.getBreakendSummary(), B("N"), Unmapped(2));
 	}
 	@Test
@@ -108,7 +108,7 @@ public class RealignedBreakpointTest extends TestHelper {
 		r.setReadBases(B("TTTTTAAAAAAAAAT"));
 		SAMRecord realign = Read(0, 100, "5M");
 		realign.setReadBases(B("AAAAT"));
-		SoftClipEvidence sce = new SoftClipEvidence(SES(), FWD, r);
+		SoftClipEvidence sce = SoftClipEvidence.create(SES(), FWD, r);
 		RealignedBreakpoint rbp = RealignedBreakpoint.create(getContext().getReference(), getContext().getDictionary(), sce.getBreakendSummary(), r.getReadBases(), realign);
 		// breakpoint could be anywhere in the poly A microhomology
 		assertEquals(rbp.getHomologySequence().length(), rbp.getBreakpointSummary().end - rbp.getBreakpointSummary().start);

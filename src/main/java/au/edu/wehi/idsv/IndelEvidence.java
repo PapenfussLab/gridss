@@ -26,7 +26,7 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 		this.indel = indel;
 	}
 	public static IndelEvidence create(SAMEvidenceSource source, SAMRecord record, int indelCigarElementOffset) {
-		List<CigarElement> cl = CigarUtil.decodeNegativeDeletion(record.getCigar().getCigarElements());
+		List<CigarElement> cl = record.getCigar().getCigarElements();
 		int indelEndOffset = indelCigarElementOffset; // exclusive end offset
 		while (cl.get(indelEndOffset).getOperator().isIndelOrSkippedRegion() && indelEndOffset < cl.size()) {
 			indelEndOffset++;
@@ -70,7 +70,7 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 	public static List<IndelEvidence> create(SAMEvidenceSource source, SAMRecord record) {
 		if (record.getReadUnmappedFlag() || record.getCigar() == null) return Collections.emptyList();
 		List<IndelEvidence> list = new ArrayList<IndelEvidence>(4);
-		List<CigarElement> cl = CigarUtil.decodeNegativeDeletion(record.getCigar().getCigarElements());
+		List<CigarElement> cl = record.getCigar().getCigarElements();
 		// find all indels (excluding those at start/end)
 		int indelStartOffset = 1;
 		while (indelStartOffset < cl.size()) {

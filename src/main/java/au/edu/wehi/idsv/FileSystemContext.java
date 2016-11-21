@@ -7,6 +7,7 @@ import java.util.Set;
 import gridss.analysis.CollectCigarMetrics;
 import gridss.analysis.CollectIdsvMetrics;
 import gridss.analysis.CollectMapqMetrics;
+import gridss.analysis.CollectTagMetrics;
 
 public class FileSystemContext {
 	private final File tempDir;
@@ -54,16 +55,17 @@ public class FileSystemContext {
 	private static final String COMMON_INITIAL_SUFFIX = ".gridss";
 	private static final String INTERMEDIATE_DIR_SUFFIX = COMMON_INITIAL_SUFFIX + ".working";
 	private static final String FORMAT_SV_SAM = "%1$s/%2$s.sv.bam";
-	private static final String FORMAT_INSERT_SIZE_METRICS = "%1$s/%2$s" + ".insert_size_metrics";
-	private static final String FORMAT_IDSV_METRICS = "%1$s/%2$s" + CollectIdsvMetrics.METRICS_SUFFIX;
-	private static final String FORMAT_MAPQ_METRICS = "%1$s/%2$s" + CollectMapqMetrics.METRICS_SUFFIX;
-	private static final String FORMAT_CIGAR_METRICS = "%1$s/%2$s" + CollectCigarMetrics.METRICS_SUFFIX;
+	private static final String FORMAT_METRICS_PREFIX = "%1$s/%2$s";
+	private static final String FORMAT_INSERT_SIZE_METRICS = FORMAT_METRICS_PREFIX + ".insert_size_metrics";
+	private static final String FORMAT_IDSV_METRICS = FORMAT_METRICS_PREFIX + CollectIdsvMetrics.METRICS_SUFFIX;
+	private static final String FORMAT_MAPQ_METRICS = FORMAT_METRICS_PREFIX + CollectMapqMetrics.METRICS_SUFFIX;
+	private static final String FORMAT_CIGAR_METRICS = FORMAT_METRICS_PREFIX + CollectCigarMetrics.METRICS_SUFFIX;
+	private static final String FORMAT_TAG_METRICS = FORMAT_METRICS_PREFIX + CollectTagMetrics.METRICS_SUFFIX;
 	private static final String FORMAT_COVERAGE_BLACKLIST_BED = "%1$s/%2$s.coverage.blacklist.bed";
 	private static final String FORMAT_REALIGN_FASTQ = "%1$s/%2$s.realign.%3$d.fq";
 	private static final String FORMAT_REALIGN_SAM = "%1$s/%2$s.realign.%3$d" + SAM_SUFFIX;
 	private static final String FORMAT_ASSEMBLY_RAW = "%1$s/%2$s.breakend" + SAM_SUFFIX;
 	private static final String FORMAT_BREAKPOINT_VCF = "%1$s/%2$s.breakpoint" + VCF_SUFFIX;
-	private static final String FORMAT_FLAG_FILE = "%1$s/%2$s.%s";
 	private static final String FORMAT_SC_REMOTE_SAM = "%1$s/%2$s.scremote" + SAM_SUFFIX;
 	private static final String FORMAT_SC_REMOTE_SAM_UNSORTED = "%1$s/%2$s.scremote.unsorted" + SAM_SUFFIX;
 	private static final String FORMAT_REALIGN_REMOTE_SAM_UNSORTED = "%1$s/%2$s.realignremote.unsorted" + SAM_SUFFIX;
@@ -126,6 +128,9 @@ public class FileSystemContext {
 	public File getBreakpointVcf(File input) {
 		return getFile(String.format(FORMAT_BREAKPOINT_VCF, getIntermediateDirectory(input), getSource(input).getName()));
 	}
+	public File getMetricsPrefix(File input) {
+		return getFile(String.format(FORMAT_METRICS_PREFIX, getIntermediateDirectory(input), getSource(input).getName()));
+	}
 	public File getInsertSizeMetrics(File input) {
 		return getFile(String.format(FORMAT_INSERT_SIZE_METRICS, getIntermediateDirectory(input), getSource(input).getName()));
 	}
@@ -137,6 +142,9 @@ public class FileSystemContext {
 	}
 	public File getCigarMetrics(File input) {
 		return getFile(String.format(FORMAT_CIGAR_METRICS, getIntermediateDirectory(input), getSource(input).getName()));
+	}
+	public File getTagMetrics(File input) {
+		return getFile(String.format(FORMAT_TAG_METRICS, getIntermediateDirectory(input), getSource(input).getName()));
 	}
 	public File getRealignmentBam(File input, int iteration) {
 		return getFile(String.format(FORMAT_REALIGN_SAM, getIntermediateDirectory(input), getSource(input).getName(), iteration));

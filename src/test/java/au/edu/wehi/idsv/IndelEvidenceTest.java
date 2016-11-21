@@ -27,6 +27,13 @@ public class IndelEvidenceTest extends TestHelper {
 		assertEquals(6, e.size());
 	}
 	@Test
+	public void should_merge_adjacent_indels() {
+		SAMRecord r = Read(2, 1, "5M100I100D100I100D100I100D5M");
+		r.setMappingQuality(40);
+		List<IndelEvidence> e = IndelEvidence.create(SES(), r);
+		assertEquals(2, e.size());
+	}
+	@Test
 	public void qual_should_use_library_indel_distribution_and_split_score_to_both_sides() {
 		SAMRecord r = Read(2, 1, "5M5D5M");
 		r.setMappingQuality(40);

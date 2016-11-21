@@ -4,6 +4,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,6 +31,7 @@ import htsjdk.samtools.util.SequenceUtil;
  */
 public class SplitReadIdentificationHelper {
 	private static final char SEPARATOR = '#';
+	private static Comparator<SAMRecord> ByFirstAlignedBaseReadOffset = Comparator.comparing(r -> getFirstAlignedBaseReadOffset(r));
 	/**
 	 * Extract the unaligned portions of the read requiring realignment to identify split reads
 	 * 
@@ -119,7 +121,7 @@ public class SplitReadIdentificationHelper {
 	 * @param alignments supplementary alignments
 	 */
 	private static void writeSA(SAMRecord record, List<SAMRecord> alignments) {
-		alignments.sort(SAMRecordUtil.ByFirstAlignedBaseReadOffset);
+		alignments.sort(ByFirstAlignedBaseReadOffset);
 		List<String> satags = alignments
 				.stream()
 				.map(r -> new ChimericAlignment(r).toString())

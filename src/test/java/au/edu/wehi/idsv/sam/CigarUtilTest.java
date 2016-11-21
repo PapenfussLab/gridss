@@ -26,22 +26,6 @@ public class CigarUtilTest {
 		return TextCigarCodec.decode(cigar).getCigarElements();
 	}
 	@Test
-	public void encodeNegativeDeletion_should_convert_negD_to_xPxNxP() {
-		assertEquals("1M5P5N5P2X1P1N1P", new Cigar(CigarUtil.encodeNegativeDeletion(Lists.newArrayList(
-				new CigarElement(1, CigarOperator.M),
-				new CigarElement(-5, CigarOperator.D),
-				new CigarElement(2, CigarOperator.X),
-				new CigarElement(-1, CigarOperator.D)))).toString());
-	}
-	@Test
-	public void decodeNegativeDeletion_should_convert_xPxNxP_to_negD() {
-		assertEquals("1M-5D2X-1D1M1P2N2P", new Cigar(CigarUtil.decodeNegativeDeletion(C("1M5P5N5P2X1P1N1P1M1P2N2P"))).toString());
-	}
-	@Test
-	public void decodeNegativeDeletion_should_not_convert_PNP_if_mismatched_lengths() {
-		assertEquals("1P2N2P", new Cigar(CigarUtil.decodeNegativeDeletion(C("1P2N2P"))).toString());
-	}
-	@Test
 	public void readLength_should_match_read_length() {
 		assertEquals(7, CigarUtil.readLength(C("1M2I5D2M2S1H")));
 	}

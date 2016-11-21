@@ -53,10 +53,10 @@ public class EvidenceTrackerTest extends TestHelper {
 		List<KmerSupportNode> list = new ArrayList<KmerSupportNode>();
 		list.add(e.node(0));
 		EvidenceTracker tracker = new EvidenceTracker();
-		assertFalse(tracker.isTracked(e.evidenceId()));
+		assertFalse(tracker.isTracked(e.evidence().getEvidenceID()));
 		tracker.track(list.get(0));
-		assertTrue(tracker.isTracked(e.evidenceId()));
+		assertTrue(tracker.isTracked(e.evidence().getEvidenceID()));
 		tracker.remove(e);
-		assertFalse(tracker.isTracked(e.evidenceId()));
+		assertFalse(tracker.isTracked(e.evidence().getEvidenceID()));
 	}
 }

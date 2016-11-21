@@ -13,10 +13,14 @@ Filters:
 
 
 TODO:
+get SAMEvidenceSource to iterate over subset/subset+SR if these exist
 Add SAMProgramRecord headers to all programs
 Readd Assembly visualisation hooks
 How to handle conscripted evidence? We don't know if it's conscripted until we realign the breakend assembly
 How well are assemblies displayed in IGV? 
+
+.lang -> .lang3
+Ordering -> Comparator
 
 Unanchored assemblies:
 	add custom Sam Tag to flag as inexact

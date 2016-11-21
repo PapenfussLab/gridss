@@ -49,7 +49,7 @@ public class KmerEvidenceTest extends TestHelper {
 			assertFalse(e.isAnchored(5));
 			assertFalse(e.isAnchored(6));
 			assertFalse(e.isAnchored(7));
-			assertEquals(sce.getEvidenceID(), e.evidenceId());
+			assertEquals(sce.getEvidenceID(), e.evidence().getEvidenceID());
 			for (int i = 0; i < e.length(); i++) {
 				assertEquals(1 + i, e.node(i).lastStart());
 				assertEquals(1 + i, e.node(i).lastEnd());
@@ -219,11 +219,11 @@ public class KmerEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void createAnchor_should_check_reference_overrun() {
-		assertEquals(5, nodesNotNull(KmerEvidence.createAnchor("id", 1, Read(0, 1, "2S5M2S"), BWD, 2, SMALL_FA)));
-		assertEquals(5, nodesNotNull(KmerEvidence.createAnchor("id", 1, Read(0, 1, "2S5M2S"), FWD, 2, SMALL_FA)));
+		assertEquals(5, nodesNotNull(KmerEvidence.createAnchor(null, 1, Read(0, 1, "2S5M2S"), BWD, 2, SMALL_FA)));
+		assertEquals(5, nodesNotNull(KmerEvidence.createAnchor(null, 1, Read(0, 1, "2S5M2S"), FWD, 2, SMALL_FA)));
 		// overruns on both end
-		assertEquals(2, nodesNotNull(KmerEvidence.createAnchor("id", 1, Read(0, -10, "10M"), FWD, 4, SMALL_FA)));
+		assertEquals(2, nodesNotNull(KmerEvidence.createAnchor(null, 1, Read(0, -10, "10M"), FWD, 4, SMALL_FA)));
 		// end overrun
-		assertEquals(1, nodesNotNull(KmerEvidence.createAnchor("id", 1, Read(0, 10000, "10M"), FWD, 10, SMALL_FA)));
+		assertEquals(1, nodesNotNull(KmerEvidence.createAnchor(null, 1, Read(0, 10000, "10M"), FWD, 10, SMALL_FA)));
 	}
 }

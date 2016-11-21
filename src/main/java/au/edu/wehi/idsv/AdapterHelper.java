@@ -63,7 +63,7 @@ public class AdapterHelper {
 		if (direction == BreakendDirection.Forward && record.getReadNegativeStrandFlag()) return false;
 		if (direction == BreakendDirection.Backward && !record.getReadNegativeStrandFlag()) return false;
 		for (String adapter : adapterSequences) {
-			if (scMatchesAdapterFR(record, direction, e.getSoftClipLength(), adapter)) {
+			if (scMatchesAdapterFR(record, direction, e.getBreakendSequence().length, adapter)) {
 				return true;
 			}
 		}

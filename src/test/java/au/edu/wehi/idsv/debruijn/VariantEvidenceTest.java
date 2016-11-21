@@ -6,7 +6,6 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import au.edu.wehi.idsv.RealignedSoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
 
 
@@ -130,7 +129,7 @@ public class VariantEvidenceTest extends TestHelper {
 				new VariantEvidence(4, NRRP(SES(5, 5), DP(0, 1, "2M", true, 0, 1000, "2M", false)), getContext().getLinear()),
 				new VariantEvidence(4, SCE(FWD, Read(0, 5, "5M5S")), getContext().getLinear()),
 				new VariantEvidence(4, SCE(FWD, Read(0, 5, "5M5S"), Read(0, 100, "5M")), getContext().getLinear()),
-				new VariantEvidence(4, ((RealignedSoftClipEvidence)SCE(BWD, Read(0, 100, "5S5M"), Read(0, 5, "5M"))).asRemote(), getContext().getLinear())
+				new VariantEvidence(4, SR(Read(0, 100, "5S5M"), Read(0, 5, "5M5S")), getContext().getLinear())
 				}) {
 			for (int i = 0; i < v.getKmers().length(); i++) {
 				assertTrue(v.getExpectedLinearPosition(i) < LCCB + 350);

@@ -24,7 +24,7 @@ public abstract class SimulationGenerator extends CommandLineProgram {
     @Option(doc="Include reference chromosome in output as separate contig", optional=true)
     public boolean INCLUDE_REFERENCE = false;
     protected GenomicProcessingContext getProcessingContext() {
-    	GenomicProcessingContext pc = new GenomicProcessingContext(new FileSystemContext(TMP_DIR.get(0), new File("."), MAX_RECORDS_IN_RAM), REFERENCE, false, null);
+    	GenomicProcessingContext pc = new GenomicProcessingContext(new FileSystemContext(TMP_DIR.get(0), new File("."), MAX_RECORDS_IN_RAM), REFERENCE, null);
     	return pc;
     }
 }

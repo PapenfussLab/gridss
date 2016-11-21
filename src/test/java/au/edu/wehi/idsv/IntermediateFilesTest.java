@@ -4,16 +4,14 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TemporaryFolder;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.io.Files;
 
@@ -24,7 +22,6 @@ import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordCoordinateComparator;
-import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.fastq.FastqReader;
@@ -47,6 +44,7 @@ public class IntermediateFilesTest extends TestHelper {
 	public File input;
 	public File output;
 	public File reference;
+	public ArrayList<SAMRecord> inputRecords;
 	@Before
 	public void setup() throws IOException {
 		reference = SMALL_FA_FILE;
@@ -55,6 +53,7 @@ public class IntermediateFilesTest extends TestHelper {
 		output = testFolder.newFile("out.vcf");
 		output.delete();
 		testFolder.getRoot().deleteOnExit();
+		inputRecords = null;
 	}
 	public void setReference(File ref) {
 		reference = ref;
@@ -115,6 +114,7 @@ public class IntermediateFilesTest extends TestHelper {
 	}
 	public void createInput(SAMRecord... data) {
 		createBAM(input, SortOrder.coordinate, data);
+		inputRecords = Lists.newArrayList(data);
 	}
 	public void createInput(List<SAMRecord> data) {
 		createInput(data.toArray(new SAMRecord[data.size()]));
@@ -148,24 +148,6 @@ public class IntermediateFilesTest extends TestHelper {
 			writer.add(vc);
 		}
 		writer.close();
-	}
-	public void writeRealignment(GenomicProcessingContext pc, EvidenceSource source, int index, SAMRecord... records) {
-		createBAM(pc.getFileSystemContext().getRealignmentBam(source.getFileIntermediateDirectoryBasedOn(), index), SortOrder.coordinate, records);
-	}
-	public void writeUnmappedRealignments(GenomicProcessingContext pc, AssemblyEvidenceSource source, int index) {
-		writeRealignment(pc, source, 0, Lists.newArrayList(source.iterator(false, true)).stream().map(e -> {
-			SAMRecord r = new SAMRecord(pc.getBasicSamHeader());
-			r.setReadName(BreakpointFastqEncoding.getRealignmentFastq(e).getReadHeader());
-			return r;
-			}).collect(Collectors.toList()).toArray(new SAMRecord[0]));
-	}
-	public void writeUnmappedRealignments(GenomicProcessingContext pc, SAMEvidenceSource source, int index) {
-		writeRealignment(pc, source, 0, Lists.newArrayList(source.iterator(false, true, false)).stream().map(e -> {
-			SoftClipEvidence sc = (SoftClipEvidence)e;
-			SAMRecord r = new SAMRecord(pc.getBasicSamHeader());
-			r.setReadName(BreakpointFastqEncoding.getRealignmentFastq(sc).getReadHeader());
-			return r;
-			}).collect(Collectors.toList()).toArray(new SAMRecord[0]));
 	}
 	public static List<SAMRecord> getRecords(File file) {
 		assertTrue(file.exists());
@@ -227,111 +209,7 @@ public class IntermediateFilesTest extends TestHelper {
 		reader.close();
 		return list;
 	}
-	public List<SAMRecord> getAssembly(final AssemblyEvidenceSource source) {
-		return getRecords(getCommandlineContext().getFileSystemContext().getAssembly(source.getFileIntermediateDirectoryBasedOn()));
-	}
-	public List<SAMRecord> getAssemblyRaw(final AssemblyEvidenceSource source) {
-		return getRecords(getCommandlineContext().getFileSystemContext().getAssemblyRawBam(source.getFileIntermediateDirectoryBasedOn()));
-	}
 	public List<FastqRecord> getFastqRecords(final EvidenceSource source) {
-		return getFastqRecords(getCommandlineContext().getFileSystemContext().getRealignmentFastq(source.getFileIntermediateDirectoryBasedOn(), 0));
-	}
-	public List<SAMRecord> getRP(final SAMEvidenceSource source) {
-		return getRecords(getCommandlineContext().getFileSystemContext().getReadPairBam(source.getFileIntermediateDirectoryBasedOn()));
-	}
-	public List<SAMRecord> getSC(final SAMEvidenceSource source) {
-		return getRecords(getCommandlineContext().getFileSystemContext().getSoftClipBam(source.getFileIntermediateDirectoryBasedOn()));
-	}
-	public List<SAMRecord> getRRR(final SAMEvidenceSource source) {
-		return getRecords(getCommandlineContext().getFileSystemContext().getRealignmentRemoteBam(source.getFileIntermediateDirectoryBasedOn()));
-	}
-	public List<SAMRecord> getRSC(final SAMEvidenceSource source) {
-		return getRecords(getCommandlineContext().getFileSystemContext().getSoftClipRemoteBam(source.getFileIntermediateDirectoryBasedOn()));
-	}
-	public List<IdsvVariantContext> getRA(final AssemblyEvidenceSource source) {
-		return getVcf(getCommandlineContext().getFileSystemContext().getAssembly(source.getFileIntermediateDirectoryBasedOn()), source);
-	}
-	public List<SAMRecord> getMate(final SAMEvidenceSource source) {
-		return getRecords(getCommandlineContext().getFileSystemContext().getMateBam(source.getFileIntermediateDirectoryBasedOn()));
-	}
-	public class PerChr {
-		private final ProcessingContext context;
-		public PerChr(ProcessingContext context) {
-			this.context = context;
-		}
-		public List<SAMRecord> getAssembly(final AssemblyEvidenceSource source, String chr) {
-			return getRecords(context.getFileSystemContext().getAssemblyForChr(source.getFileIntermediateDirectoryBasedOn(), chr));
-		}
-		public List<SAMRecord> getAssemblyRaw(final AssemblyEvidenceSource source, String chr) {
-			return getRecords(context.getFileSystemContext().getAssemblyRawBamForChr(source.getFileIntermediateDirectoryBasedOn(), chr));
-		}
-		public List<SAMRecord> getAssembly(final AssemblyEvidenceSource source) {
-			return Lists.newArrayList(Iterables.concat(Iterables.transform(context.getDictionary().getSequences(), new Function<SAMSequenceRecord, Iterable<SAMRecord>>() {
-				@Override
-				public List<SAMRecord> apply(SAMSequenceRecord arg0) {
-					return getRecords(context.getFileSystemContext().getAssemblyForChr(source.getFileIntermediateDirectoryBasedOn(), arg0.getSequenceName()));
-				}
-			})));
-		}
-		public List<FastqRecord> getFastqRecords(final EvidenceSource source) {
-			return Lists.newArrayList(Iterables.concat(Iterables.transform(context.getDictionary().getSequences(), new Function<SAMSequenceRecord, Iterable<FastqRecord>>() {
-				@Override
-				public Iterable<FastqRecord> apply(SAMSequenceRecord arg0) {
-					return IntermediateFilesTest.this.getFastqRecords(context.getFileSystemContext().getRealignmentFastqForChr(source.getFileIntermediateDirectoryBasedOn(), arg0.getSequenceName(), 0));
-				}
-			})));
-		}
-		public List<FastqRecord> getFastqRecords(final EvidenceSource source, final String chr) {
-			return IntermediateFilesTest.this.getFastqRecords(context.getFileSystemContext().getRealignmentFastqForChr(source.getFileIntermediateDirectoryBasedOn(), chr, 0));
-		}
-		public List<SAMRecord> getRP(final SAMEvidenceSource source, String chr) {
-			return getRecords(context.getFileSystemContext().getReadPairBamForChr(source.getFileIntermediateDirectoryBasedOn(), chr));
-		}
-		public List<SAMRecord> getRP(final SAMEvidenceSource source) {
-			return Lists.newArrayList(Iterables.concat(Iterables.transform(context.getDictionary().getSequences(), new Function<SAMSequenceRecord, Iterable<SAMRecord>>() {
-				@Override
-				public Iterable<SAMRecord> apply(SAMSequenceRecord arg0) {
-					return getRecords(context.getFileSystemContext().getReadPairBamForChr(source.getFileIntermediateDirectoryBasedOn(), arg0.getSequenceName()));
-				}
-			})));
-		}
-		public List<SAMRecord> getSC(final SAMEvidenceSource source, String chr) {
-			return getRecords(context.getFileSystemContext().getSoftClipBamForChr(source.getFileIntermediateDirectoryBasedOn(), chr));
-		}
-		public List<SAMRecord> getSC(final SAMEvidenceSource source) {
-			return Lists.newArrayList(Iterables.concat(Iterables.transform(context.getDictionary().getSequences(), new Function<SAMSequenceRecord, Iterable<SAMRecord>>() {
-				@Override
-				public Iterable<SAMRecord> apply(SAMSequenceRecord arg0) {
-					return getRecords(context.getFileSystemContext().getSoftClipBamForChr(source.getFileIntermediateDirectoryBasedOn(), arg0.getSequenceName()));
-				}
-			})));
-		}
-		public List<SAMRecord> getMate(final SAMEvidenceSource source, String chr) {
-			return getRecords(context.getFileSystemContext().getMateBamForChr(source.getFileIntermediateDirectoryBasedOn(), chr));
-		}
-		public List<SAMRecord> getMate(final SAMEvidenceSource source) {
-			return Lists.newArrayList(Iterables.concat(Iterables.transform(context.getDictionary().getSequences(), new Function<SAMSequenceRecord, Iterable<SAMRecord>>() {
-				@Override
-				public Iterable<SAMRecord> apply(SAMSequenceRecord arg0) {
-					return getRecords(context.getFileSystemContext().getMateBamForChr(source.getFileIntermediateDirectoryBasedOn(), arg0.getSequenceName()));
-				}
-			})));
-		}
-		public List<SAMRecord> getRSC(final SAMEvidenceSource source) {
-			return Lists.newArrayList(Iterables.concat(Iterables.transform(context.getDictionary().getSequences(), new Function<SAMSequenceRecord, Iterable<SAMRecord>>() {
-				@Override
-				public Iterable<SAMRecord> apply(SAMSequenceRecord arg0) {
-					return getRecords(context.getFileSystemContext().getSoftClipRemoteBamForChr(source.getFileIntermediateDirectoryBasedOn(), arg0.getSequenceName()));
-				}
-			})));
-		}
-		public List<SAMRecord> getRRR(final SAMEvidenceSource source) {
-			return Lists.newArrayList(Iterables.concat(Iterables.transform(context.getDictionary().getSequences(), new Function<SAMSequenceRecord, Iterable<SAMRecord>>() {
-				@Override
-				public Iterable<SAMRecord> apply(SAMSequenceRecord arg0) {
-					return getRecords(context.getFileSystemContext().getRealignmentRemoteBamForChr(source.getFileIntermediateDirectoryBasedOn(), arg0.getSequenceName()));
-				}
-			})));
-		}
+		return getFastqRecords(getCommandlineContext().getFileSystemContext().getRealignmentFastq(source.getFile(), 0));
 	}
 }

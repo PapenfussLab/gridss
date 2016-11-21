@@ -16,7 +16,6 @@ public class DeBruijnGraphBaseTest extends TestHelper {
 	public void should_write_gexf_() {
 		AssemblyEvidenceSource aes = AES();
 		aes.getContext().getConfig().getAssembly().errorCorrection.maxBaseMismatchForCollapse = 0;
-		aes.getContext().getConfig().getAssembly().subgraph.traversalMaximumBranchingFactor = 10;
 		aes.getContext().getConfig().getAssembly().k = 5;
 		DeBruijnReadGraph g = new DeBruijnReadGraph(aes, 0, null);
 		g.setGraphExporter(new DeBruijnSubgraphGexfExporter(5));

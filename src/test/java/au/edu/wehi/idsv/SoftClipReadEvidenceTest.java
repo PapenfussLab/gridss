@@ -1,8 +1,6 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import org.junit.Test;
 
@@ -108,5 +106,29 @@ public class SoftClipReadEvidenceTest extends TestHelper {
 		r.setReadName("ReadName");
 		assertNotEquals(SoftClipEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID(),
 				SoftClipEvidence.create(SES(), BreakendDirection.Backward, r).getEvidenceID());
+	}
+	@Test
+	public void should_recognise_1XS_as_unanchored_sequence() {
+		SoftClipEvidence e = SoftClipEvidence.create(SES(), FWD, withSequence("NCGT", Read(0, 100, "1X3S"))[0]);
+		assertFalse(e.isBreakendExact());
+		assertEquals("CGT", S(e.getBreakendSequence()));
+		assertEquals("", S(e.getAnchorSequence()));
+		assertEquals(new BreakendSummary(0, FWD, 100), e.getBreakendSummary());
+	}
+	@Test
+	public void should_recognise_2XS_as_unanchored_sequence() {
+		SoftClipEvidence e = SoftClipEvidence.create(SES(), FWD, withSequence("NNCGT", Read(0, 100, "2X3S"))[0]);
+		assertFalse(e.isBreakendExact());
+		assertEquals("CGT", S(e.getBreakendSequence()));
+		assertEquals("", S(e.getAnchorSequence()));
+		assertEquals(new BreakendSummary(0, FWD, 100, 100, 101), e.getBreakendSummary());
+	}
+	@Test
+	public void should_recognise_XNX_as_unanchored_breakend_interval() {
+		SoftClipEvidence e = SoftClipEvidence.create(SES(), FWD, withSequence("NNNCGT", Read(0, 100, "1X1N1X3S"))[0]);
+		assertFalse(e.isBreakendExact());
+		assertEquals("CGT", S(e.getBreakendSequence()));
+		assertEquals("", S(e.getAnchorSequence()));
+		assertEquals(new BreakendSummary(0, FWD, 101, 100, 102), e.getBreakendSummary());
 	}
 }
