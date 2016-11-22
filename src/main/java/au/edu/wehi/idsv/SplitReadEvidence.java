@@ -7,8 +7,8 @@ import java.util.List;
 import org.apache.commons.lang.NotImplementedException;
 
 import au.edu.wehi.idsv.sam.ChimericAlignment;
+import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import au.edu.wehi.idsv.util.MathUtil;
 import gridss.ComputeSamTags;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
@@ -26,8 +26,10 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 	private SplitReadEvidence(SAMEvidenceSource source, SAMRecord record, BreakendSummary location,
 			int offsetLocalStart, int offsetLocalEnd,
 			int offsetUnmappedStart, int offsetUnmappedEnd,
-			int offsetRemoteStart, int offsetRemoteEnd, ChimericAlignment remoteAlignment) {
-		super(source, record, location, offsetLocalStart, offsetLocalEnd, offsetUnmappedStart, offsetUnmappedEnd, offsetRemoteStart, offsetRemoteEnd);
+			int offsetRemoteStart, int offsetRemoteEnd,
+			ChimericAlignment remoteAlignment,
+			int localUnanchoredWidth, int remoteUnanchoredWidth) {
+		super(source, record, location, offsetLocalStart, offsetLocalEnd, offsetUnmappedStart, offsetUnmappedEnd, offsetRemoteStart, offsetRemoteEnd, localUnanchoredWidth, remoteUnanchoredWidth);
 		this.remoteAlignment = remoteAlignment;
 	}
 	public static List<SplitReadEvidence> create(SAMEvidenceSource source, SAMRecord record) {
@@ -59,7 +61,6 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 		if (pre != null) {
 			int overlap = pre.getLastAlignedBaseReadOffset() + 1 - startOffset;
 			BreakpointSummary bs = new BreakpointSummary(withOverlap(chim.predecessorBreakend(dict), overlap), withOverlap(pre.successorBreakend(dict), overlap));
-			bs = handleUnanchoredReads(bs, chim, pre);
 			int preStartOffset = 0; // ignore the actual alignment and just go out to the end of the read so we can assemble across multiple breakpoints
 			int preEndOffset = pre.getLastAlignedBaseReadOffset() + 1;
 			if (record.getReadNegativeStrandFlag()) {
@@ -67,19 +68,20 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 						rl - (INCLUDE_CLIPPED_ANCHORING_BASES ? record.getReadLength() : endOffset), rl - startOffset,
 						rl - startOffset, rl - preEndOffset,
 						rl - preEndOffset, rl - preStartOffset,
-						pre));
+						pre,
+						CigarUtil.widthOfImprecision(chim.cigar), CigarUtil.widthOfImprecision(pre.cigar)));
 			} else {
 				list.add(new SplitReadEvidence(source, record, bs,
 					startOffset, INCLUDE_CLIPPED_ANCHORING_BASES ? record.getReadLength() : endOffset,
 					preEndOffset, startOffset,
 					preStartOffset, preEndOffset,
-					pre));
+					pre,
+					CigarUtil.widthOfImprecision(chim.cigar), CigarUtil.widthOfImprecision(pre.cigar)));
 			}
 		}
 		if (post != null) {
 			int overlap = endOffset - post.getFirstAlignedBaseReadOffset() - 1;
 			BreakpointSummary bs = new BreakpointSummary(withOverlap(chim.successorBreakend(dict), overlap), withOverlap(post.predecessorBreakend(dict), overlap));
-			bs = handleUnanchoredReads(bs, chim, post);
 			int postStartOffset = post.getFirstAlignedBaseReadOffset();
 			int postEndOffset = rl;
 			if (record.getReadNegativeStrandFlag()) {
@@ -87,38 +89,18 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 						rl - endOffset, rl - (INCLUDE_CLIPPED_ANCHORING_BASES ? 0 : startOffset),
 						rl - postStartOffset, rl - endOffset, 
 						rl - postEndOffset, rl - postStartOffset, 
-						post));
+						post,
+						CigarUtil.widthOfImprecision(chim.cigar), CigarUtil.widthOfImprecision(post.cigar)));
 			} else {
 				list.add(new SplitReadEvidence(source, record, bs,
 					INCLUDE_CLIPPED_ANCHORING_BASES ? 0 : startOffset, endOffset,
 					endOffset, postStartOffset,
 					postStartOffset, postEndOffset,
-					post));
+					post,
+					CigarUtil.widthOfImprecision(chim.cigar), CigarUtil.widthOfImprecision(post.cigar)));
 			}
 		}
 		return list;
-	}
-	private static BreakpointSummary handleUnanchoredReads(BreakpointSummary bs, ChimericAlignment local, ChimericAlignment remote) {
-		int localAdjustment = UnanchoredReadUtil.widthOfImprecision(local.cigar);
-		int remoteAdjustment = UnanchoredReadUtil.widthOfImprecision(remote.cigar);
-		if (localAdjustment != 0 && remoteAdjustment != 0) {
-			return new BreakpointSummary(
-					unanchoredAdjust(bs, localAdjustment, remoteAdjustment),
-					unanchoredAdjust(bs.remoteBreakend(), remoteAdjustment, localAdjustment));
-		}
-		return bs;
-	}
-	private static BreakendSummary unanchoredAdjust(BreakendSummary bs, int receed, int progress) {
-		int newStart;
-		int newEnd;
-		if (bs.direction == BreakendDirection.Forward) {
-			newStart = bs.start - receed;
-			newEnd = bs.end + progress;
-		} else {
-			newStart = bs.start - progress;
-			newEnd = bs.end + receed;
-		}
-		return new BreakendSummary(bs.referenceIndex, bs.direction, MathUtil.average(newStart, newEnd), newStart, newEnd);
 	}
 	/**
 	 * Adjusts the breakend bounds assuming an overalignment due to microhomology 
@@ -152,10 +134,36 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 	}
 	@Override
 	public float getBreakpointQual() {
-		throw new NotImplementedException("Need new model for split reads that do not originate from soft clips that scores both sides of the split equally.");
-		//return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreSplitRead(getEvidenceSource().getMetrics(),
-		//		getBreakendSummary().direction == BreakendDirection.Forward ? SAMRecordUtil.getEndClipLength(getSAMRecord()) : SAMRecordUtil.getStartClipLength(getSAMRecord()),
-		//		getLocalMapq(), getRemoteMapq());
+		if (AssemblyAttributes.isAssembly(getSAMRecord())) {
+			return scoreAssembly();
+		}
+		int softClipLength = getBreakendSequence().length;
+		if (getSAMRecord().getSupplementaryAlignmentFlag()) {
+			// TODO: better model that can handle multiple realignments and realignment CIGARs
+			softClipLength = getAnchorSequence().length + getUntemplatedSequence().length();
+		}
+		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreSplitRead(getEvidenceSource().getMetrics(),
+				softClipLength,
+				getLocalMapq(), getRemoteMapq());
+	}
+	private float scoreAssembly() {
+		if (getBreakendSequence().length == 0) return 0;
+		AssemblyAttributes attr = new AssemblyAttributes(getSAMRecord());
+		int rp = attr.getAssemblySupportCountReadPair();
+		double rpq = attr.getAssemblySupportReadPairQualityScore();
+		int sc = attr.getAssemblySupportCountSoftClip();
+		double scq =  attr.getAssemblySupportSoftClipQualityScore();
+		if (source.getContext().getAssemblyParameters().excludeNonSupportingEvidence) {
+			rp -= attr.getAssemblyNonSupportingReadPairCount();
+			rpq -= attr.getAssemblyNonSupportingReadPairQualityScore();
+			sc -= attr.getAssemblyNonSupportingSoftClipCount();
+			scq -= attr.getAssemblyNonSupportingSoftClipQualityScore();
+		}
+		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreAssembly(
+				rp, rpq,
+				sc, scq,
+				getLocalMapq(),
+				getRemoteMapq());
 	}
 	@Override
 	public DirectedBreakpoint asRemote() {

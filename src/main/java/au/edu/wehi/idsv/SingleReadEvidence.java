@@ -6,8 +6,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.commons.lang3.ArrayUtils;
-
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import htsjdk.samtools.SAMRecord;
@@ -23,7 +21,9 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	private final int offsetUnmappedEnd;
 	private final int offsetRemoteStart;
 	private final int offsetRemoteEnd;
+	private final boolean isUnanchored;
 	private String evidenceid;
+	
 	public static List<SingleReadEvidence> createEvidence(SAMEvidenceSource source, SAMRecord record) {
 		if (record.getReadUnmappedFlag()) return Collections.emptyList();
 		List<SingleReadEvidence> list = new ArrayList<>(4);
@@ -53,13 +53,15 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	}
 	protected SingleReadEvidence(SAMEvidenceSource source, SAMRecord record, BreakendSummary location,
 			int offsetLocalStart, int offsetLocalEnd,
-			int offsetUnmappedStart, int offsetUnmappedEnd) {
-		this(source, record, location, offsetLocalStart, offsetLocalEnd, offsetUnmappedStart, offsetUnmappedEnd, offsetUnmappedEnd, offsetUnmappedEnd);
+			int offsetUnmappedStart, int offsetUnmappedEnd,
+			int localInexactMargin) {
+		this(source, record, location, offsetLocalStart, offsetLocalEnd, offsetUnmappedStart, offsetUnmappedEnd, offsetUnmappedEnd, offsetUnmappedEnd, localInexactMargin, 0);
 	}
 	protected SingleReadEvidence(SAMEvidenceSource source, SAMRecord record, BreakendSummary location,
 			int offsetLocalStart, int offsetLocalEnd,
 			int offsetUnmappedStart, int offsetUnmappedEnd,
-			int offsetRemoteStart, int offsetRemoteEnd) {
+			int offsetRemoteStart, int offsetRemoteEnd,
+			int localInexactMargin, int remoteInexactMargin) {
 		// TODO: we could use this to infer the unmapped bounds
 		assert(offsetLocalEnd == offsetUnmappedStart || offsetLocalStart == offsetUnmappedEnd);
 		assert(offsetUnmappedEnd == offsetRemoteStart || offsetRemoteEnd == offsetUnmappedStart);
@@ -77,6 +79,30 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 				offsetRemoteEnd -= remoteBasesToTrim;
 				offsetUnmappedStart -= remoteBasesToTrim;
 			}
+		}
+		if (localInexactMargin > 0 || remoteInexactMargin > 0) {
+			// strip out placeholder anchorings
+			// 1X*N1X format has at most 2 anchoring bases
+			if (localInexactMargin > 0) {
+				assert(offsetLocalEnd - offsetLocalStart == Math.min(2, localInexactMargin));
+				if (offsetUnmappedStart >= offsetLocalStart) {
+					offsetLocalStart = offsetLocalEnd;
+				} else {
+					offsetLocalEnd = offsetLocalStart;
+				}
+			}
+			if (remoteInexactMargin > 0) {
+				assert(offsetRemoteEnd - offsetRemoteStart == Math.min(2, remoteInexactMargin));
+				if (offsetUnmappedStart >= offsetRemoteStart) {
+					offsetRemoteStart = offsetRemoteEnd;
+				} else {
+					offsetRemoteEnd = offsetRemoteStart;
+				}
+			}
+			// adjust breakend bounds
+			location = location.adjustPosition(Math.max(0, localInexactMargin - 1), Math.max(0, remoteInexactMargin - 1));
+		} else {
+			// TODO calculate microhomology length
 		}
 		// validate bounds are valid
 		if (offsetLocalStart < 0) throw new IllegalArgumentException();
@@ -97,7 +123,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 		this.offsetUnmappedEnd = offsetUnmappedEnd;
 		this.offsetRemoteStart = offsetRemoteStart;
 		this.offsetRemoteEnd = offsetRemoteEnd;
-		
+		this.isUnanchored = localInexactMargin > 0 || remoteInexactMargin > 0;
 	}
 	
 	public SAMRecord getSAMRecord() {
@@ -125,7 +151,6 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	}
 	
 	private byte[] getAnchor(byte[] b) {
-		if (!isBreakendExact()) return ArrayUtils.EMPTY_BYTE_ARRAY;
 		return Arrays.copyOfRange(b, offsetLocalStart, offsetLocalEnd);
 	}
 
@@ -151,7 +176,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 
 	@Override
 	public boolean isBreakendExact() {
-		return UnanchoredReadUtil.widthOfImprecision(record.getCigar()) > 0;
+		return !isUnanchored;
 	}
 
 	public String getUntemplatedSequence() {

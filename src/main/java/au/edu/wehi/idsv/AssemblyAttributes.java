@@ -21,6 +21,12 @@ public class AssemblyAttributes {
 	public static boolean isAssembly(SAMRecord record) {
 		return record.getAttribute(SamTags.EVIDENCEID) != null;
 	}
+	public static boolean isAssembly(DirectedEvidence record) {
+		if (record instanceof SingleReadEvidence) {
+			return isAssembly(((SingleReadEvidence)record).getSAMRecord());
+		}
+		return false;
+	}
 	public AssemblyAttributes(SAMRecord record) {
 		this.record = record;
 	}
@@ -74,6 +80,7 @@ public class AssemblyAttributes {
 		int[] nsscCount = new int[n];
 		int maxLocalMapq = 0;
 		for (DirectedEvidence e : support) {
+			assert(e != null);
 			maxLocalMapq = Math.max(maxLocalMapq, e.getLocalMapq());
 			int offset = ((SAMEvidenceSource)e.getEvidenceSource()).getSourceCategory();
 			float qual = e.getBreakendQual();
@@ -146,9 +153,9 @@ public class AssemblyAttributes {
 	public int getAssemblySupportCountSoftClip(int category) {
 		return AttributeConverter.asIntListOffset(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT), category, 0);
 	}
-	public int getAssemblySupportCountSoftClipRemote(int category) {
-		return AttributeConverter.asIntListOffset(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_REMOTE_COUNT), category, 0);
-	}
+	//public int getAssemblySupportCountSoftClipRemote(int category) {
+	//	return AttributeConverter.asIntListOffset(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_REMOTE_COUNT), category, 0);
+	//}
 	public int getAssemblyNonSupportingReadPairCount(int category) {
 		return AttributeConverter.asIntListOffset(record.getAttribute(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_COUNT), category, 0);
 	}
@@ -194,9 +201,9 @@ public class AssemblyAttributes {
 	public int getAssemblySupportCountSoftClip() {
 		return AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT)).stream().mapToInt(x -> x).sum();
 	}
-	public int getAssemblySupportCountSoftClipRemote() {
-		return AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_REMOTE_COUNT)).stream().mapToInt(x -> x).sum();
-	}
+	//public int getAssemblySupportCountSoftClipRemote() {
+	//	return AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_REMOTE_COUNT)).stream().mapToInt(x -> x).sum();
+	//}
 	public int getAssemblySoftClipLengthTotal() {
 		return AttributeConverter.asIntList(record.getAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL)).stream().mapToInt(x -> x).sum();
 	}

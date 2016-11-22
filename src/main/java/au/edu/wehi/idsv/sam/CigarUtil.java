@@ -410,4 +410,38 @@ public class CigarUtil {
 		}
 		return clean(list, false);
 	}
+	/**
+	 * Assemblies not including anchoring bases cannot be exactly placed but
+	 * still have an expected alignment interval. To handle this, we encode the expected
+	 * alignment interval in placeholder anchoring bases. These bases are aligned with the
+	 * triplet (1X,*N,1X) such that the read alignment interval matches the expected
+	 * breakend position interval. Placeholder Ns are added to the assembly so the aligned
+	 * anchoring bases do no consume actual assembled sequence.
+	 * 
+	 * In the case of intervals of 1 or 2 bases, a single 1X or 2X CIGAR anchor is used.
+	 * 
+	 * @param cigar
+	 * @return width of the interval over which the breakend is expected, or 0 if
+	 * the CIGAR does not encode in imprecise breakend assembly.
+	 */
+	public static int widthOfImprecision(final Cigar cigar) {
+		if (cigar == null) return 0;
+		// should only have XNX
+		int width = 0;
+		for (CigarElement ce : cigar.getCigarElements()) {
+			switch (ce.getOperator()) {
+			case X:
+			case N:
+				width += ce.getLength();
+				break;
+			case S:
+			case H:
+				break;
+			default:
+				// not in the correct format for an unanchored read
+				return 0;
+			}
+		}
+		return width;
+	} 
 }

@@ -12,7 +12,6 @@ import org.junit.experimental.categories.Category;
 
 import com.google.common.collect.ImmutableList;
 
-import au.edu.wehi.idsv.AssemblyAlgorithm;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.Hg19Tests;
 import au.edu.wehi.idsv.IntermediateFilesTest;
@@ -41,7 +40,6 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 		ProcessingContext pc = super.getCommandlineContext();
 		pc.getAssemblyParameters().errorCorrection.maxBaseMismatchForCollapse = 1;
 		pc.getAssemblyParameters().errorCorrection.collapseBubblesOnly = true;
-		pc.getAssemblyParameters().method = AssemblyAlgorithm.Positional;
 		pc.getConfig().getVisualisation().assemblyGraph = true;
 		pc.getConfig().getVisualisation().directory.mkdirs();
 		return pc;

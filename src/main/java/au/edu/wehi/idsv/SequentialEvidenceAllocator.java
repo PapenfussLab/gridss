@@ -207,9 +207,13 @@ public class SequentialEvidenceAllocator implements Iterator<StructuralVariation
 			SAMRecord local = ((NonReferenceReadPair) evidence).getLocalledMappedRead();
 			commonIdentifier = local.getReadName();
 			flip = local.getSecondOfPairFlag();
-		} else if (evidence instanceof RemoteEvidence) {
-			commonIdentifier = ((RemoteEvidence)evidence).asLocal().getEvidenceID();
-			flip = true;
+		} else if (evidence instanceof SingleReadEvidence) {
+			SAMRecord local = ((SingleReadEvidence)evidence).getSAMRecord();
+			commonIdentifier = local.getReadName();
+			flip = local.getSupplementaryAlignmentFlag();
+			if (evidence instanceof IndelEvidence) {
+				flip ^= ((IndelEvidence)evidence).getBreakendSummary().isHighBreakend();
+			}
 		} else if (evidence instanceof VariantContextDirectedEvidence) {
 			commonIdentifier = ((VariantContextDirectedEvidence)evidence).getAttributeAsString(VcfSvConstants.BREAKEND_EVENT_ID_KEY, evidence.getEvidenceID());
 		} else {

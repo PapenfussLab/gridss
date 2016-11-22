@@ -128,6 +128,19 @@ public class BreakpointSummary extends BreakendSummary {
 				this.direction2 == loc.direction2 &&
 				IntervalUtil.overlapsClosed(this.start2, this.end2, loc.start2, loc.end2);
 	}
+	/**
+	 * Adjusts the position of the breakpoint anchor relative to the local breakend position.
+	 * Adjustments are made to both breakends to conserve the event size.
+	 * @param intoBreakendAnchor number of additional bases to allow to be allocated to the remote breakend 
+	 * @param awayFromBreakendAnchor number of additional bases to allow to be allocated to the local breakend
+	 * @return expanded breakpoint
+	 */
+	@Override
+	public BreakpointSummary adjustPosition(int intoBreakendAnchor, int awayFromBreakendAnchor) {
+		if (intoBreakendAnchor == 0 && awayFromBreakendAnchor == 0) return this;
+		return new BreakpointSummary(super.adjustPosition(intoBreakendAnchor, awayFromBreakendAnchor),
+				remoteBreakend().adjustPosition(awayFromBreakendAnchor, intoBreakendAnchor));
+	}
 	@Override
 	public BreakpointSummary expandBounds(int expandBy) {
 		return new BreakpointSummary(localBreakend().expandBounds(expandBy), remoteBreakend().expandBounds(expandBy));

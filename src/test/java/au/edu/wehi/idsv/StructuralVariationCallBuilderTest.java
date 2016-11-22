@@ -309,8 +309,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		
 		VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)cb.make();
 		
-		Assert.assertArrayEquals(new int[] { 3, 4, }, (int[])bp.getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_SPLITREAD_COUNT.attribute()));
-		Assert.assertArrayEquals(new int[] { 2, 1, }, (int[])bp.getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT.attribute()));
+		Assert.assertArrayEquals(new int[] { 3, 4, }, (int[])bp.getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT.attribute()));
+		Assert.assertArrayEquals(new int[] { 2, 1, }, (int[])bp.getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_READ_COUNT.attribute()));
 	}
 	@Test
 	@Ignore() //  TODO: enchancement

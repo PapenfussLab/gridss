@@ -260,7 +260,7 @@ public class SAMRecordUtil {
 	 *         read length
 	 */
 	public static boolean isDovetailing(SAMRecord record1, SAMRecord record2, PairOrientation expectedOrientation, int margin) {
-		if (record1.getReadUnmappedFlag() && record2.getReadUnmappedFlag()) return false;
+		if (record1.getReadUnmappedFlag() || record2.getReadUnmappedFlag()) return false;
 		return isDovetailing(
 				record1.getReferenceIndex(), record1.getAlignmentStart(), record1.getReadNegativeStrandFlag(), record1.getCigar(),
 				record2.getReferenceIndex(), record2.getAlignmentStart(), record2.getReadNegativeStrandFlag(), record2.getCigar(),

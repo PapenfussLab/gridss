@@ -170,4 +170,16 @@ public class IndelEvidenceTest extends TestHelper {
 		assertEquals("GTT", e.get(0).getUntemplatedSequence());
 		assertEquals("GTT", e.get(1).getUntemplatedSequence());
 	}
+	@Test
+	public void should_not_create_indel_for_XNX_placeholder() {
+		for (SAMRecord r : new SAMRecord[] {
+				Read(0, 1, "1X10S"),
+				Read(0, 1, "2X10S"),
+				Read(0, 1, "1X1N1X10S"),
+				Read(0, 1, "1X100N1X10S"),
+		}) {
+			List<IndelEvidence> list = IndelEvidence.create(SES(), r);
+			assertEquals(0, list.size());
+		}
+	}
 }

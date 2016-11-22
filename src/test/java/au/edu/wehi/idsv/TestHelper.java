@@ -866,8 +866,8 @@ public class TestHelper {
 		}
 		@Override
 		public IdsvSamFileMetrics getMetrics() {
-			if (metrics != null) return metrics;
-			return super.getMetrics();
+			assert(metrics != null);
+			return metrics;
 		}
 	}
 

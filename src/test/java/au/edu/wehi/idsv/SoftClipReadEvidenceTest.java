@@ -121,11 +121,11 @@ public class SoftClipReadEvidenceTest extends TestHelper {
 		assertFalse(e.isBreakendExact());
 		assertEquals("CGT", S(e.getBreakendSequence()));
 		assertEquals("", S(e.getAnchorSequence()));
-		assertEquals(new BreakendSummary(0, FWD, 100, 100, 101), e.getBreakendSummary());
+		assertEquals(new BreakendSummary(0, FWD, 101, 100, 101), e.getBreakendSummary());
 	}
 	@Test
 	public void should_recognise_XNX_as_unanchored_breakend_interval() {
-		SoftClipEvidence e = SoftClipEvidence.create(SES(), FWD, withSequence("NNNCGT", Read(0, 100, "1X1N1X3S"))[0]);
+		SoftClipEvidence e = SoftClipEvidence.create(SES(), FWD, withSequence("NNCGT", Read(0, 100, "1X1N1X3S"))[0]);
 		assertFalse(e.isBreakendExact());
 		assertEquals("CGT", S(e.getBreakendSequence()));
 		assertEquals("", S(e.getAnchorSequence()));
@@ -133,10 +133,10 @@ public class SoftClipReadEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void should_recognise_SXNX_as_unanchored_sequence() {
-		SoftClipEvidence e = SoftClipEvidence.create(SES(), BWD, withSequence("CGTNNN", Read(0, 100, "3S1X1N1X"))[0]);
+		SoftClipEvidence e = SoftClipEvidence.create(SES(), BWD, withSequence("CGTNN", Read(0, 100, "3S1X2N1X"))[0]);
 		assertFalse(e.isBreakendExact());
 		assertEquals("CGT", S(e.getBreakendSequence()));
 		assertEquals("", S(e.getAnchorSequence()));
-		assertEquals(new BreakendSummary(0, BWD, 99, 98, 100), e.getBreakendSummary());
+		assertEquals(new BreakendSummary(0, BWD, 101, 100, 103), e.getBreakendSummary());
 	}
 }

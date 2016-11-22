@@ -1,29 +1,21 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-import au.edu.wehi.idsv.configuration.GridssConfiguration;
-import au.edu.wehi.idsv.picard.ReferenceLookup;
-import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
-import au.edu.wehi.idsv.vcf.VcfFilter;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.fastq.FastqRecord;
-import htsjdk.samtools.metrics.Header;
-import htsjdk.samtools.metrics.StringHeader;
-import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 
 public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 	private File assemblyFile;
@@ -67,6 +59,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", Read(3, 1, "1M99S"))
 				);
 		ProcessingContext pc = getCommandlineContext();
+		pc.getConfig().getAssembly().minReads = 1;
 		//pc.getRealignmentParameters().requireRealignment = false;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);

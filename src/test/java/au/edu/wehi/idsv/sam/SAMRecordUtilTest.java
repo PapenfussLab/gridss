@@ -211,6 +211,18 @@ public class SAMRecordUtilTest extends TestHelper {
 		checkDovetail(false, 1, RP(0, 10, 12, 4));
 	}
 	@Test
+	public void isDovetailing_should_require_both_mapped() {
+		SAMRecord[] r = RP(0, 1, 1, 1);
+		r[0].setReadUnmappedFlag(true);
+		r[1].setMateUnmappedFlag(true);
+		checkDovetail(false, 4, r);
+		
+		r = RP(0, 1, 1, 1);
+		r[0].setMateUnmappedFlag(true);
+		r[1].setReadUnmappedFlag(true);
+		checkDovetail(false, 4, r);
+	}
+	@Test
 	public void trimSoftClips_should_remove_from_both_end() {
 		SAMRecord r = Read(0,  1, "3S1M1S");
 		r.setReadBases(B("ACGTN"));

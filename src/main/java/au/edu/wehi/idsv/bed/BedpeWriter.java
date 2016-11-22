@@ -47,12 +47,12 @@ public class BedpeWriter implements Closeable {
 				VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT.attribute() + "\t" +
 				VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE.attribute() + "\t" +
 				VcfAttributes.BREAKPOINT_SPLITREAD_COUNT.attribute() + "\t" +
-				VcfAttributes.BREAKPOINT_SPLITREAD_COUNT_REMOTE.attribute() + "\t" +
+				//VcfAttributes.BREAKPOINT_SPLITREAD_COUNT_REMOTE.attribute() + "\t" +
 				VcfAttributes.BREAKPOINT_READPAIR_COUNT.attribute() + "\t" +
 				VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL.attribute() + "\t" +
 				VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL_REMOTE.attribute() + "\t" +
 				VcfAttributes.BREAKPOINT_SPLITREAD_QUAL.attribute() + "\t" +
-				VcfAttributes.BREAKPOINT_SPLITREAD_QUAL_REMOTE.attribute() + "\t" +
+				//VcfAttributes.BREAKPOINT_SPLITREAD_QUAL_REMOTE.attribute() + "\t" +
 				VcfAttributes.BREAKPOINT_READPAIR_QUAL.attribute() + "\t" +
 				VcfAttributes.REFERENCE_READ_COUNT.attribute() + "\t" +
 				VcfAttributes.REFERENCE_READPAIR_COUNT.attribute() +
@@ -76,14 +76,14 @@ public class BedpeWriter implements Closeable {
 		sb.append('\t'); sb.append(variant.getHomologySequence());
 		sb.append('\t'); sb.append(Integer.toString(variant.getBreakpointEvidenceCountLocalAssembly()));
 		sb.append('\t'); sb.append(Integer.toString(variant.getBreakpointEvidenceCountRemoteAssembly()));
-		sb.append('\t'); sb.append(Integer.toString(variant.getBreakpointEvidenceCountLocalSoftClip()));
-		sb.append('\t'); sb.append(Integer.toString(variant.getBreakpointEvidenceCountRemoteSoftClip()));
+		sb.append('\t'); sb.append(Integer.toString(variant.getBreakpointEvidenceCountSoftClip()));
+		//sb.append('\t'); sb.append(Integer.toString(variant.getBreakpointEvidenceCountRemoteSoftClip()));
 		sb.append('\t'); sb.append(Integer.toString(variant.getBreakpointEvidenceCountReadPair()));
 
 		sb.append('\t'); sb.append(Double.toString(variant.getBreakpointEvidenceQualLocalAssembly()));
 		sb.append('\t'); sb.append(Double.toString(variant.getBreakpointEvidenceQualRemoteAssembly()));
-		sb.append('\t'); sb.append(Double.toString(variant.getBreakpointEvidenceQualLocalSoftClip()));
-		sb.append('\t'); sb.append(Double.toString(variant.getBreakpointEvidenceQualRemoteSoftClip()));
+		sb.append('\t'); sb.append(Double.toString(variant.getBreakpointEvidenceQualSoftClip()));
+		//sb.append('\t'); sb.append(Double.toString(variant.getBreakpointEvidenceQualRemoteSoftClip()));
 		sb.append('\t'); sb.append(Double.toString(variant.getBreakpointEvidenceQualReadPair()));
 		sb.append('\t'); sb.append(Integer.toString(variant.getReferenceReadCount()));
 		sb.append('\t'); sb.append(Integer.toString(variant.getReferenceReadPairCount()));

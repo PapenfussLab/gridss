@@ -125,10 +125,10 @@ public class BreakendSummary {
 	 * @param dictionary sequence dictionary
 	 * @return breakend with bounds expanded on both sides
 	 */
-	public BreakendSummary adjustBounds(int startAdjustment, int endAdjustment) {
+	private BreakendSummary adjustBounds(int startAdjustment, int endAdjustment) {
 		return adjustBounds(startAdjustment, endAdjustment, RoundingMode.DOWN);
 	}
-	protected BreakendSummary adjustBounds(int startAdjustment, int endAdjustment, RoundingMode roundingMode) {
+	private BreakendSummary adjustBounds(int startAdjustment, int endAdjustment, RoundingMode roundingMode) {
 		int newStart = start + startAdjustment;
 		int newEnd = end + endAdjustment;
 		if (newStart > newEnd) {
@@ -137,6 +137,24 @@ public class BreakendSummary {
 		}
 		int newNominal = boundedNominal(nominal, newStart, newEnd);
 		return new BreakendSummary(referenceIndex, direction, newNominal, newStart, newEnd);
+	}
+	/**
+	 * Adjusts the position of the breakend anchor
+	 * @param intoBreakendAnchor number of anchored bases to expand the breakend bounds into
+	 * @param awayFromBreakendAnchor number of additional anchored bases to consider
+	 * @return
+	 */
+	public BreakendSummary adjustPosition(int intoBreakendAnchor, int awayFromBreakendAnchor) {
+		if (intoBreakendAnchor == 0 && awayFromBreakendAnchor == 0) return this;
+		int anchorShift = (-intoBreakendAnchor + awayFromBreakendAnchor) / 2;
+		int startAdjust = -intoBreakendAnchor;
+		int endAdjust = awayFromBreakendAnchor;
+		if (direction == BreakendDirection.Backward) {
+			startAdjust = -awayFromBreakendAnchor;
+			endAdjust = intoBreakendAnchor;
+			anchorShift *= -1;
+		}
+		return new BreakendSummary(referenceIndex, direction, nominal + anchorShift, start + startAdjust, end + endAdjust);
 	}
 	/**
 	 * Reduces size of the breakend location interval

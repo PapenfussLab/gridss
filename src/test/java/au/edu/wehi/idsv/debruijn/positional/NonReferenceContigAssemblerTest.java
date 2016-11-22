@@ -103,7 +103,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		SoftClipEvidence bwd = SCE(FWD, withSequence("ACGTGGCTCGACC", Read(0, 1, "6M7S")));
 		List<SAMRecord> output = go(pc, true, fwd, bwd);
 		assertEquals(1, output.size());
-		assertEquals("6M1I1D", output.get(0).getCigarString());
+		assertEquals("6M1I1D6M", output.get(0).getCigarString());
 	}
 	@Test
 	public void should_call_simple_fwd_RP() {
@@ -119,7 +119,8 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 	public void should_call_simple_bwd_RP() {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
-		DiscordantReadPair e = (DiscordantReadPair)NRRP(SES(100, 200), withSequence("ACGTGGTCGACC", DP(0, 450, "12M", false, 1, 1, "12M", true)));
+		MockSAMEvidenceSource ses = SES(100, 200);
+		DiscordantReadPair e = (DiscordantReadPair)NRRP(ses, withSequence("ACGTGGTCGACC", DP(0, 450, "12M", false, 1, 1, "12M", true)));
 		List<SAMRecord> output = go(pc, true, e);
 		assertEquals(1, output.size());
 		assertEquals("12S1X98N1X", output.get(0).getCigarString());
@@ -143,7 +144,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		List<SAMRecord> output = go(pc, true, sce, e);
 		assertEquals(2, output.size());
 		assertEquals("ACGTGGTCGACC", S(output.get(0).getReadBases()));
-		assertEquals("GACCTCTACT", S(output.get(1).getReadBases()));
+		assertEquals("NN" + "GACCTCTACT", S(output.get(1).getReadBases()));
 	}
 	@Test
 	public void should_call_overlapping_sc_rp() {
@@ -213,7 +214,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 				NRRP(SES(1, 100), withSequence("CAAAAAAAAAAAGT", DP(1, 100, "14M", false, 1, 1, "14M", true))),
 				NRRP(SES(1, 100), withSequence("CAAAAAAAAAAGTC", DP(1, 101, "14M", false, 1, 1, "14M", true))));
 		assertEquals(1, output.size());
-		assertEquals("AAAAAAAAAAAGTC", S(output.get(0).getReadBases()));
+		assertEquals("AAAAAAAAAAAGTC" + "NN", S(output.get(0).getReadBases()));
 	}
 	@Test
 	public void should_handle_ambigious_bases() {
@@ -224,7 +225,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 				NRRP(SES(1, 100), withSequence("AATAAGAGT", DP(1, 100, "9M", false, 1, 1, "9M", true))),
 				NRRP(SES(1, 100), withSequence("AATGNGAGTC", DP(1, 101, "10M", false, 1, 1, "10M", true))));
 		assertEquals(1, output.size());
-		assertEquals("AATAAGAGTC", S(output.get(0).getReadBases()));
+		assertEquals("AATAAGAGTC" + "NN", S(output.get(0).getReadBases()));
 	}
 	@Test
 	public void should_handle_multiple_candidate_offsets_for_a_single_kmer_position() {
@@ -234,7 +235,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		List<SAMRecord> output = go(pc, true,
 				NRRP(SES(1, 100), withSequence("TAAAAA", DP(1, 100, "6M", false, 0, 1, "6M", true))));
 		assertEquals(1, output.size());
-		assertEquals("TAAAAA", S(output.get(0).getReadBases()));
+		assertEquals("TAAAAA" + "NN", S(output.get(0).getReadBases()));
 	}
 	@Test
 	public void fwd_anchor_length_calculation_should_not_include_any_nonreference_bases() {

@@ -24,7 +24,7 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 			int offsetRemoteStart, int offsetRemoteEnd,
 			List<CigarElement> indel,
 			int indelCigarElementOffset) {
-		super(source, record, location, offsetLocalStart, offsetLocalEnd, offsetUnmappedStart, offsetUnmappedEnd, offsetRemoteStart, offsetRemoteEnd);
+		super(source, record, location, offsetLocalStart, offsetLocalEnd, offsetUnmappedStart, offsetUnmappedEnd, offsetRemoteStart, offsetRemoteEnd, 0, 0);
 		this.indel = indel;
 		this.indelCigarElementOffset = indelCigarElementOffset;
 	}
@@ -72,6 +72,10 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 	}
 	public static List<IndelEvidence> create(SAMEvidenceSource source, SAMRecord record) {
 		if (record.getReadUnmappedFlag() || record.getCigar() == null) return Collections.emptyList();
+		if (CigarUtil.widthOfImprecision(record.getCigar()) > 0) {
+			// not a real indel: this is a placeholder CIGAR for an unanchored breakend assembly
+			return Collections.emptyList();
+		}
 		List<IndelEvidence> list = new ArrayList<IndelEvidence>(4);
 		List<CigarElement> cl = record.getCigar().getCigarElements();
 		// find all indels (excluding those at start/end)
@@ -103,6 +107,9 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 	
 	@Override
 	public float getBreakendQual() {
+		if (AssemblyAttributes.isAssembly(getSAMRecord())) {
+			return scoreAssembly() / 2;
+		}
 		CigarElement e = indel.get(0);
 		for (int i = 1; i < indel.size(); i++) {
 			if (e.getLength() < indel.get(i).getLength()) {
@@ -114,6 +121,25 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 	@Override
 	public float getBreakpointQual() {
 		return getBreakendQual();
+	}
+	private float scoreAssembly() {
+		if (getBreakendSequence().length == 0) return 0;
+		AssemblyAttributes attr = new AssemblyAttributes(getSAMRecord());
+		int rp = attr.getAssemblySupportCountReadPair();
+		double rpq = attr.getAssemblySupportReadPairQualityScore();
+		int sc = attr.getAssemblySupportCountSoftClip();
+		double scq =  attr.getAssemblySupportSoftClipQualityScore();
+		if (source.getContext().getAssemblyParameters().excludeNonSupportingEvidence) {
+			rp -= attr.getAssemblyNonSupportingReadPairCount();
+			rpq -= attr.getAssemblyNonSupportingReadPairQualityScore();
+			sc -= attr.getAssemblyNonSupportingSoftClipCount();
+			scq -= attr.getAssemblyNonSupportingSoftClipQualityScore();
+		}
+		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreAssembly(
+				rp, rpq,
+				sc, scq,
+				getLocalMapq(),
+				getRemoteMapq());
 	}
 	
 	@Override

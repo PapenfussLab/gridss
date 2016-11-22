@@ -2,8 +2,6 @@ package au.edu.wehi.idsv.configuration;
 
 import org.apache.commons.configuration.Configuration;
 
-import au.edu.wehi.idsv.AssemblyAlgorithm;
-
 public class AssemblyConfiguration {
 	public static final String CONFIGURATION_PREFIX = "assembly";
 	public AssemblyConfiguration(Configuration config) {
@@ -11,7 +9,6 @@ public class AssemblyConfiguration {
 		errorCorrection = new ErrorCorrectionConfiguration(config);
 		downsampling = new DownsamplingConfiguration(config);
 		positional = new PositionalAssemblyConfiguration(config);
-		method = AssemblyAlgorithm.valueOf(config.getString("method"));
 		k = config.getInt("k");
 		minReads = config.getInt("minReads");
 		includePairAnchors = config.getBoolean("includePairAnchors");
@@ -26,10 +23,6 @@ public class AssemblyConfiguration {
 	public ErrorCorrectionConfiguration errorCorrection;
 	public DownsamplingConfiguration downsampling;
 	public PositionalAssemblyConfiguration positional;
-	/**
-	 * Assembly algorithm to use
-	 */
-	public AssemblyAlgorithm method;
 	/**
 	 * De Bruijn graph kmer size
 	 */

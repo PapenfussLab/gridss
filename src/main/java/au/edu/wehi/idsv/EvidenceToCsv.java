@@ -68,13 +68,13 @@ public class EvidenceToCsv {
 //			}
 //		}
 	}
-	private void writeSingleEvidence(DirectedEvidence evidence, AssemblyEvidence containingAssembly, VariantContextDirectedEvidence call) {
+	private void writeSingleEvidence(DirectedEvidence evidence, DirectedEvidence containingAssembly, VariantContextDirectedEvidence call) {
 		writeCallContext(call, containingAssembly);
 		writeDirectedEvidence(evidence);
 		writeDirectedBreakpoint(evidence);
 		stream.println();
 	}
-	private void writeCallContext(VariantContextDirectedEvidence call, AssemblyEvidence containingAssembly) {
+	private void writeCallContext(VariantContextDirectedEvidence call, DirectedEvidence containingAssembly) {
 		if (call != null) stream.print(call.getID());
 		stream.print(',');
 		if (containingAssembly != null) stream.print(containingAssembly.getEvidenceID());

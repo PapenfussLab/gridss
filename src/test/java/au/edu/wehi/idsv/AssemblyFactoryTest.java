@@ -57,7 +57,7 @@ public class AssemblyFactoryTest extends TestHelper {
 	@Test
 	public void should_set_breakend_unanchored() {
 		for (BreakendSummary bs : ImmutableList.of(
-				new BreakendSummary(0, FWD, 1, 1, 2),
+				new BreakendSummary(0, FWD, 2, 1, 2),
 				new BreakendSummary(0, BWD, 1, 1, 2)
 				)) {
 			SingleReadEvidence e = asEvidence(AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), bs, null, B("AAAAA"), B("AAAAA"), new int[] { 2, 0} ));
@@ -109,17 +109,17 @@ public class AssemblyFactoryTest extends TestHelper {
 		assertEquals(4, new AssemblyAttributes(bigr()).getAssemblySoftClipLengthMax(0));
 		assertEquals(3, new AssemblyAttributes(bigr()).getAssemblySoftClipLengthMax(1));
 	}
-	@Test
-	public void should_set_assembly_attribute_ASSEMBLY_REMOTE_COUNT() {
-		ProcessingContext pc = getContext();
-		MockSAMEvidenceSource tes = new MockSAMEvidenceSource(pc);
-		tes.category = 1;
-		Set<DirectedEvidence> support = Sets.newHashSet();
-		support.add(SR(Read(1, 10, "4S1M"), Read(0, 10, "4M1S")));
-		SAMRecord ass = AssemblyFactory.createAnchoredBreakend(pc, AES(), BWD, support, 0, 10, 5, B("CGTAAAAT"), new byte[] { 0,1,2,3,4,5,6,7});
-		assertEquals(0, new AssemblyAttributes(ass).getAssemblySupportCountSoftClipRemote(0));
-		assertEquals(1, new AssemblyAttributes(ass).getAssemblySupportCountSoftClipRemote(1));
-	}
+//	@Test
+//	public void should_set_assembly_attribute_ASSEMBLY_REMOTE_COUNT() {
+//		ProcessingContext pc = getContext();
+//		MockSAMEvidenceSource tes = new MockSAMEvidenceSource(pc);
+//		tes.category = 1;
+//		Set<DirectedEvidence> support = Sets.newHashSet();
+//		support.add(SR(Read(1, 10, "4S1M"), Read(0, 10, "4M1S")));
+//		SAMRecord ass = AssemblyFactory.createAnchoredBreakend(pc, AES(), BWD, support, 0, 10, 5, B("CGTAAAAT"), new byte[] { 0,1,2,3,4,5,6,7});
+//		assertEquals(0, new AssemblyAttributes(ass).getAssemblySupportCountSoftClipRemote(0));
+//		assertEquals(1, new AssemblyAttributes(ass).getAssemblySupportCountSoftClipRemote(1));
+//	}
 	@Test
 	public void should_set_assembly_getLocalMapq() {
 		assertEquals(10, bigr().getLocalMapq());
@@ -131,8 +131,8 @@ public class AssemblyFactoryTest extends TestHelper {
 	@Test
 	public void should_set_evidence_source() {
 		AssemblyEvidenceSource es = AES();
-		SingleReadEvidence e = asEvidence(AssemblyFactory.createAnchoredBreakend(
-				getContext(), es, FWD, null,
+		SingleReadEvidence e = asEvidence(es, AssemblyFactory.createAnchoredBreakend(
+				es.getContext(), es, FWD, null,
 				0, 1, 2, B("GTACCC"), new byte[] { 1, 3, 3, 4, 4, 8}));
 		assertEquals(es, e.getEvidenceSource());
 	}
@@ -160,6 +160,7 @@ public class AssemblyFactoryTest extends TestHelper {
 		ra.setReadBases(B("CGTAAAAT"));
 		ra.setMappingQuality(17);
 		ra.setBaseQualities(new byte[] { 0,1,2,3,4,5,6,7 });
+		ra.setReadName(SplitReadIdentificationHelper.getSplitReadRealignments(r, false).get(0).getReadHeader());
 		SplitReadIdentificationHelper.convertToSplitRead(r, ImmutableList.of(ra));
 		return SplitReadEvidence.create(AES(), r).get(0);
 	}
@@ -284,7 +285,6 @@ public class AssemblyFactoryTest extends TestHelper {
 		realignments.stream().forEach(r -> r.setReadName(SplitReadIdentificationHelper.getSplitReadRealignments(assembly, false).get(0).getReadHeader()));
 		SplitReadIdentificationHelper.convertToSplitRead(out, realignments);
 		List<SingleReadEvidence> list = SingleReadEvidence.createEvidence(aes, out);
-		assertEquals(list.size(), 0);
 		return list.get(0);
 	}
 	@Test
@@ -340,15 +340,6 @@ public class AssemblyFactoryTest extends TestHelper {
 					}})).getBreakendSummary());
 	}
 	@Test
-	public void incorporateRealignment_should_not_convert_poorly_mapped_to_breakpoint() {
-		SAMRecord ra = Read(1, 100, "1S1M1S");
-		ra.setReadBases(B("CGT"));
-		ra.setMappingQuality(1);
-		ra.setBaseQualities(new byte[] { 0,1,2});
-		SingleReadEvidence be = incorporateRealignment(AES(), big(), ImmutableList.of(ra));
-		assertFalse(be instanceof DirectedBreakpoint);
-	}
-	@Test
 	public void getAnchorSequenceString_should_return_entire_assembly_anchor() {
 		assertEquals("AAAAT", S(big().getAnchorSequence()));
 	}
@@ -384,12 +375,6 @@ public class AssemblyFactoryTest extends TestHelper {
 		SoftClipEvidence asse = SoftClipEvidence.create(AES(), BWD, ass);
 		
 		assertEquals(support.stream()
-				.mapToDouble(e -> e.getBreakendQual())
-				.sum(),
-				asse.getBreakendQual(), 0.001);
-		assertEquals(support.stream()
-				.filter(e -> e instanceof DirectedBreakpoint)
-				.map(e -> (DirectedBreakpoint)e)
 				.mapToDouble(e -> e.getBreakendQual())
 				.sum(),
 				asse.getBreakendQual(), 0.001);
@@ -468,7 +453,7 @@ public class AssemblyFactoryTest extends TestHelper {
 				0, 1, 2, B("AAA"), B("AAA"));
 		List<SingleReadEvidence> e = SingleReadEvidence.createEvidence(AES(), r);
 		assertEquals(1, e.size());
-		assertTrue(e instanceof SoftClipEvidence);
+		assertTrue(e.get(0) instanceof SoftClipEvidence);
 	}
 	@Test
 	public void createAnchoredBreakpoint_should_not_crash_on_ref_allele_breakpoint() {
@@ -481,12 +466,11 @@ public class AssemblyFactoryTest extends TestHelper {
 		SingleReadEvidence e = asEvidence(AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, BWD, 1, 1, 10), null, B("AA"), B("AA"), new int[] {2, 0}));
 		SplitReadEvidence re = (SplitReadEvidence)incorporateRealignment(AES(), e.getSAMRecord(), ImmutableList.of(Read(1, 100, "2M")));
 		assertEquals(new BreakpointSummary(0, BWD, 5, 1, 10, 1, FWD, 101, 101, 110), re.getBreakendSummary());
-		assertEquals(new BreakpointSummary(1, FWD, 101, 101, 110, 0, BWD, 5, 1, 10), re.asRemote().getBreakendSummary());		
 	}
 	@Test
 	public void realignment_to_negative_strand_should_change_anchor_position() {
 		SingleReadEvidence e = asEvidence(AssemblyFactory.createUnanchoredBreakend(getContext(), AES(), new BreakendSummary(0, BWD, 1, 1, 10), null, B("AAAAAAAAAA"), B("0000000000"), new int[] {2, 0}));
-		SplitReadEvidence re = (SplitReadEvidence)incorporateRealignment(AES(), e.getSAMRecord(), ImmutableList.of(onNegative(Read(1, 100, "10M"))[0]));
+		SplitReadEvidence re = (SplitReadEvidence)incorporateRealignment(AES(), e.getSAMRecord(), ImmutableList.of(onNegative(Read(1, 200, "10M"))[0]));
 		assertEquals(new BreakpointSummary(0, BWD, 5, 1, 10, 1, BWD, 195, 191, 200), re.getBreakendSummary());
 	}
 }
