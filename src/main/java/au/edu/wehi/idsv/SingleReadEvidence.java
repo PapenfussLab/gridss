@@ -6,6 +6,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.IntervalUtil;
 import htsjdk.samtools.SAMRecord;
@@ -123,6 +125,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	}
 	
 	private byte[] getAnchor(byte[] b) {
+		if (!isBreakendExact()) return ArrayUtils.EMPTY_BYTE_ARRAY;
 		return Arrays.copyOfRange(b, offsetLocalStart, offsetLocalEnd);
 	}
 
@@ -148,7 +151,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 
 	@Override
 	public boolean isBreakendExact() {
-		return true;
+		return UnanchoredReadUtil.widthOfImprecision(record.getCigar()) > 0;
 	}
 
 	public String getUntemplatedSequence() {
@@ -175,5 +178,9 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 
 	public int getHomologyAnchoredBaseCount() {
 		throw new RuntimeException("NYI");
+	}
+	@Override
+	public String toString() {
+		return getEvidenceID();
 	}
 }

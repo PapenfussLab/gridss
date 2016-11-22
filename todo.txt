@@ -1,6 +1,6 @@
 Filters:
 - dovetailing (SC & RP)
-- coverage blacklist
+- coverage blacklist (SAMEvidenceSource.getBlacklistedRegions)
 - entropy
 - mapq (including split reads)
 - vendor QC
@@ -13,11 +13,12 @@ Filters:
 
 
 TODO:
-get SAMEvidenceSource to iterate over subset/subset+SR if these exist
+get SAMEvidenceSource to iterate over subset/subset+SR if these exist (tag metrics; flags metrics
 Add SAMProgramRecord headers to all programs
 Readd Assembly visualisation hooks
 How to handle conscripted evidence? We don't know if it's conscripted until we realign the breakend assembly
 How well are assemblies displayed in IGV? 
+Better dovetail handling
 
 .lang -> .lang3
 Ordering -> Comparator

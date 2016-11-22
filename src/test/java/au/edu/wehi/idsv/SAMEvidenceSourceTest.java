@@ -1,45 +1,44 @@
 package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 
 import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.alignment.StubFastqAligner;
 import au.edu.wehi.idsv.bed.IntervalBed;
-import au.edu.wehi.idsv.picard.ReferenceLookup;
-import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
 import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.metrics.Header;
-import htsjdk.samtools.metrics.StringHeader;
-import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 
 public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	@Test
-	public void per_chr_iterator_should_return_all_evidence() {
-		createInput(new SAMRecord[] {Read(1, 1, "50M50S") },
-				RP(0, 200, 100), // max frag size
-				DP(1, 1, "100M", true, 2, 5, "100M", true),
-			   DP(1, 2, "100M", true, 2, 4, "100M", true),
-			   DP(1, 3, "100M", true, 2, 6, "100M", true),
-			   OEA(1, 4, "100M", false));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(true), input, 0);
-		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
-		assertEquals(8, list.size()); // 1 SC + 3 * 2 DP + 1 OEA
+	public void ensure_metrics_should_write_metrics_files() {
+		ProcessingContext pc = getCommandlineContext();
+		createInput(RP(0, 100, 200, 100), RP(0, 400, 600, 100));
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
+		source.ensureMetrics();
+		assertTrue(pc.getFileSystemContext().getIdsvMetrics(source.getFile()).exists());
+		assertTrue(pc.getFileSystemContext().getInsertSizeMetrics(source.getFile()).exists());
+		assertTrue(pc.getFileSystemContext().getCigarMetrics(source.getFile()).exists());
+		assertTrue(pc.getFileSystemContext().getMapqMetrics(source.getFile()).exists());
+		assertNotNull(source.getMetrics());
+		assertNotNull(source.getMetrics().getCigarDetailMetrics());
+		assertNotNull(source.getMetrics().getCigarDistribution());
+		assertNotNull(source.getMetrics().getIdsvMetrics());
+		assertNotNull(source.getMetrics().getInsertSizeDistribution());
+		assertNotNull(source.getMetrics().getMapqMetrics());
 	}
 	@Test
 	public void should_stop_metric_calculation_after_max_records() {
-		ProcessingContext pc = getCommandlineContext(true);
+		ProcessingContext pc = getCommandlineContext();
 		pc.setCalculateMetricsRecordCount(2);
 		createInput(RP(0, 100, 200, 100), RP(0, 400, 600, 100));
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
@@ -64,19 +63,27 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		assertEquals(8, list.size()); // 1 SC + 3 * 2 DP + 1 OEA
 	}
 	@Test
-	public void iterator_filter_to_reads_overlapping_query_interval() {
-		createInput(new SAMRecord[] { 
-				Read(0, 1, "50M50S"),
-				Read(0, 75, "50M50S"),
-				Read(0, 100, "50M50S"),
-				Read(0, 200, "50M50S"),
-				Read(0, 300, "50M50S"),
-				Read(0, 400, "50M50S"),
-				Read(1, 1, "50M50S"),
-		});
+	public void iterator_filter_to_breakends_overlapping_query_interval() {
+		List<SAMRecord> in = new ArrayList<>();
+		for (int i = 1; i < 100; i++) {
+			in.add(Read(1, i, "5S5M"));
+			in.add(Read(1, i, "5M2I5M"));
+			in.add(Read(1, i, "5M5S"));
+			in.add(Read(1, i, "1X2N1X5S"));
+			in.add(Read(1, i, "5S1X2N1X"));
+			Collections.addAll(in, RP(0, i, i + 10, 5));
+			Collections.addAll(in, RP(1, i, i + 10, 5));
+			Collections.addAll(in, OEA(1, i, "5M", true));
+			Collections.addAll(in, OEA(1, i, "5M", false));
+			Collections.addAll(in, DP(1, i, "5M", true, 0, 1, "5M", false));
+			Collections.addAll(in, DP(1, i, "5M", false, 0, 1, "5M", false));
+		}
+		createInput(in);
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0);
-		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(new QueryInterval(0, 100, 200)));
-		assertEquals(3, list.size()); // 75, 100, 200
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(new QueryInterval(1, 20, 30)));
+		assertTrue(list.stream().allMatch(e ->
+			e.getBreakendSummary().overlaps(new BreakendSummary(1, FWD, 20, 20, 30)) ||
+			e.getBreakendSummary().overlaps(new BreakendSummary(1, BWD, 20, 20, 30))));
 	}
 	@Test
 	public void should_set_evidence_source_to_self() {
@@ -153,8 +160,10 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 			.createSupplementaryAlignments(input, input);
 		
 		List<DirectedEvidence> result = Lists.newArrayList(source.iterator());
-		assertEquals(5, result.size());
-		assertEquals(4, result.stream().filter(e -> e instanceof SplitReadEvidence).count());
+		assertEquals(6 + 5, result.size());
+		// 4 split reads = 8 breakends
+		assertEquals(5 * 2, result.stream().filter(e -> e instanceof SplitReadEvidence).count());
+		// and a soft clipped read
 		assertEquals(1, result.stream().filter(e -> e instanceof SoftClipEvidence).count());
 	}
 	@Test
@@ -237,17 +246,17 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	@Test
 	public void iterator_should_sort_sc_with_indel() throws IOException {
 		List<SAMRecord> in = new ArrayList<SAMRecord>();
+		in.add(Read(0, 2, "5S10M"));
 		for (int i = 1; i <= 100; i++) {
 			in.add(Read(0, 1, String.format("5M%dD5M5S", i)));
 		}
-		in.add(Read(0, 2, "5S10M"));
 		createInput(in.toArray(new SAMRecord[0]));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0, 0, 15);
 		List<DirectedEvidence> results = Lists.newArrayList(source.iterator());
 		for (int i = 1; i < results.size(); i++) {
 			assertTrue(results.get(i-1).getBreakendSummary().start <= results.get(i).getBreakendSummary().start);
 		}
-		assertEquals(in.size(), results.size());
+		assertEquals(3 * 100 + 1, results.size());
 	}
 	@Test
 	public void sort_window_should_allow_for_microhomology_causing_bounds_change() {
@@ -276,7 +285,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	}
 	@Test
 	public void should_filter_blacklisted_regions() {
-		ProcessingContext pc = getCommandlineContext(true);
+		ProcessingContext pc = getCommandlineContext();
 		IntervalBed blacklist = new IntervalBed(pc.getDictionary(), pc.getLinear());
 		blacklist.addInterval(2, 1, 1000);
 		pc.setBlacklistedRegions(blacklist);
@@ -290,23 +299,5 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
 		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
 		assertEquals(2, list.size()); // SC & OEA not on (2)
-	}
-	@Test
-	@Category(Hg19Tests.class)
-	public void should_extract_indel_support() throws IOException {
-		createInput(new File("src/test/resources/inss.bam"));
-		List<Header> headers = Lists.newArrayList();
-		headers.add(new StringHeader("TestHeader"));
-		File ref = Hg19Tests.findHg19Reference();
-		IndexedFastaSequenceFile indexed = new IndexedFastaSequenceFile(ref);
-		ReferenceLookup lookup = new SynchronousReferenceLookupAdapter(indexed);
-		ProcessingContext pc = new ProcessingContext(
-				new FileSystemContext(testFolder.getRoot(), 500000), ref, false, lookup,
-				headers, getConfig(testFolder.getRoot()));
-		pc.registerCategory(0, "Normal");
-		
-		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
-		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
-		assertEquals(9*2, list.size());
 	}
 }

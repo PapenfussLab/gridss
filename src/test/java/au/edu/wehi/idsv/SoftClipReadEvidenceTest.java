@@ -131,4 +131,12 @@ public class SoftClipReadEvidenceTest extends TestHelper {
 		assertEquals("", S(e.getAnchorSequence()));
 		assertEquals(new BreakendSummary(0, FWD, 101, 100, 102), e.getBreakendSummary());
 	}
+	@Test
+	public void should_recognise_SXNX_as_unanchored_sequence() {
+		SoftClipEvidence e = SoftClipEvidence.create(SES(), BWD, withSequence("CGTNNN", Read(0, 100, "3S1X1N1X"))[0]);
+		assertFalse(e.isBreakendExact());
+		assertEquals("CGT", S(e.getBreakendSequence()));
+		assertEquals("", S(e.getAnchorSequence()));
+		assertEquals(new BreakendSummary(0, BWD, 99, 98, 100), e.getBreakendSummary());
+	}
 }

@@ -90,7 +90,7 @@ public class IntervalBed {
 				int referenceIndex2 = linear.getReferenceIndex(upper);
 				assert(referenceIndex == referenceIndex2);
 				int bedStart = linear.getReferencePosition(lower) - 1;
-				int bedEnd = linear.getReferencePosition(upper) - 1 + 1; // closedOpen 1-based vs closedClosed 0-based = no change
+				int bedEnd = linear.getReferencePosition(upper) - 1;
 				writer.write(String.format("%s\t%d\t%d\n", dictionary.getSequence(referenceIndex).getSequenceName(), bedStart, bedEnd));
 			}
 		}

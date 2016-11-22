@@ -16,14 +16,17 @@ import htsjdk.samtools.SAMRecord;
  */
 public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpoint {
 	private final List<CigarElement> indel;
+	private int indelCigarElementOffset;
 	private IndelEvidence remote;
 	private IndelEvidence(SAMEvidenceSource source, SAMRecord record, BreakendSummary location,
 			int offsetLocalStart, int offsetLocalEnd,
 			int offsetUnmappedStart, int offsetUnmappedEnd,
 			int offsetRemoteStart, int offsetRemoteEnd,
-			List<CigarElement> indel) {
+			List<CigarElement> indel,
+			int indelCigarElementOffset) {
 		super(source, record, location, offsetLocalStart, offsetLocalEnd, offsetUnmappedStart, offsetUnmappedEnd, offsetRemoteStart, offsetRemoteEnd);
 		this.indel = indel;
+		this.indelCigarElementOffset = indelCigarElementOffset;
 	}
 	public static IndelEvidence create(SAMEvidenceSource source, SAMRecord record, int indelCigarElementOffset) {
 		List<CigarElement> cl = record.getCigar().getCigarElements();
@@ -60,9 +63,9 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 			postEndOffset -= CigarUtil.getEndClipLength(post);
 		}
 		IndelEvidence left = new IndelEvidence(source, record, location,
-				preStartOffset, preEndOffset, unmappedStartOffset, unmappedEndOffset, postStartOffset, postEndOffset, indel);
+				preStartOffset, preEndOffset, unmappedStartOffset, unmappedEndOffset, postStartOffset, postEndOffset, indel, indelCigarElementOffset);
 		IndelEvidence right = new IndelEvidence(source, record, location.remoteBreakpoint(),
-				postStartOffset, postEndOffset, unmappedStartOffset, unmappedEndOffset, preStartOffset, preEndOffset, indel);
+				postStartOffset, postEndOffset, unmappedStartOffset, unmappedEndOffset, preStartOffset, preEndOffset, indel, indelCigarElementOffset);
 		left.remote = right;
 		right.remote = left;
 		return left;
@@ -117,9 +120,11 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 	protected void buildEvidenceID(StringBuilder sb) {
 		super.buildEvidenceID(sb);
 		sb.append("(");
-		sb.append(getAnchorSequence().length);
+		sb.append(indelCigarElementOffset);
 		sb.append(",");
 		sb.append(new Cigar(indel));
+		sb.append(",");
+		sb.append(getBreakendSummary().direction.toChar());
 		sb.append(")");
 	}
 

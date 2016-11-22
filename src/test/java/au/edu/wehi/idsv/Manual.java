@@ -26,8 +26,8 @@ public class Manual extends TestHelper {
 	@Category(Hg19Tests.class)
 	public void debug778sorting() throws ConfigurationException, IOException {
 		ProcessingContext pc = new ProcessingContext(
-			new FileSystemContext(new File("W:\\778\\idsv"), new File("W:\\778\\idsv"), 500000), Hg19Tests.findHg19Reference(), true, null,
-			new ArrayList<Header>(), new GridssConfiguration());
+			new FileSystemContext(new File("W:\\778\\idsv"), new File("W:\\778\\idsv"), 500000), Hg19Tests.findHg19Reference(), null, new ArrayList<Header>(),
+			new GridssConfiguration());
 		List<SAMEvidenceSource> samEvidence = new ArrayList<SAMEvidenceSource>();
 		for (String s : new String[] {
 				"W:\\778\\DNA_778_HiSeq_35nt_PE1_bt2_s_rg_cleaned.bam",

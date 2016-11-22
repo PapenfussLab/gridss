@@ -5,23 +5,26 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.commons.lang.NotImplementedException;
-
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.bed.IntervalBed;
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
+import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
 import gridss.analysis.CollectGridssMetrics;
 import htsjdk.samtools.QueryInterval;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.filter.SamRecordFilter;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 
@@ -42,9 +45,6 @@ public class SAMEvidenceSource extends EvidenceSource {
 	private IdsvSamFileMetrics metrics;
 	private IntervalBed blacklist;
 	private ReadPairConcordanceCalculator rpcc;
-	private List<Function<SAMRecord, SAMRecord>> samTransforms;
-	private List<SamRecordFilter> samFilters;
-	private List<DirectedEvidence> evidenceFilters;
 	public SAMEvidenceSource(ProcessingContext processContext, File file, int sourceCategory) {
 		this(processContext, file, sourceCategory, ReadPairConcordanceMethod.SAM_FLAG, 0, 0, 0);
 	}
@@ -65,15 +65,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		this.rpcConcordantPercentage = rpcConcordantPercentage;
 	}
 	public IdsvSamFileMetrics getMetrics() {
-		if (metrics == null) {
-			File idsvFile = getContext().getFileSystemContext().getIdsvMetrics(input);
-			File cigarFile = getContext().getFileSystemContext().getCigarMetrics(input);
-			File isFile = getContext().getFileSystemContext().getInsertSizeMetrics(input);
-			File mapqFile = getContext().getFileSystemContext().getMapqMetrics(input);
-			if (idsvFile.exists() && cigarFile.exists() && isFile.exists() && mapqFile.exists()) {
-				metrics = new IdsvSamFileMetrics(getContext(), getFile());
-			}
-		}
+		ensureMetrics();
 		return metrics;
 	}
 	/**
@@ -84,52 +76,115 @@ public class SAMEvidenceSource extends EvidenceSource {
 		return sourceCategory;
 	}
 	public void ensureMetrics() {
-		if (getMetrics() != null) return;
-		log.info("Calculating metrics for " + getFile().getAbsolutePath());
-		CollectGridssMetrics cgm = new gridss.analysis.CollectGridssMetrics();
-		cgm.INPUT = getFile();
-		cgm.OUTPUT = getContext().getFileSystemContext().getMetricsPrefix(getFile()).getAbsolutePath();
-		cgm.REFERENCE_SEQUENCE = getContext().getReferenceFile();
-		cgm.TMP_DIR = ImmutableList.of(getContext().getFileSystemContext().getTemporaryDirectory());
-		cgm.MAX_RECORDS_IN_RAM = getContext().getFileSystemContext().getMaxBufferedRecordsPerFile();
-		cgm.FILE_EXTENSION = null;
-		cgm.doWork();
+		if (metrics == null) {
+			File idsvFile = getContext().getFileSystemContext().getIdsvMetrics(input);
+			File cigarFile = getContext().getFileSystemContext().getCigarMetrics(input);
+			File mapqFile = getContext().getFileSystemContext().getMapqMetrics(input);
+			if (!idsvFile.exists() || !cigarFile.exists() || !mapqFile.exists()) {
+				log.info("Calculating metrics for " + getFile().getAbsolutePath());
+				CollectGridssMetrics cgm = new gridss.analysis.CollectGridssMetrics();
+				List<String> args = Lists.newArrayList(
+						"INPUT=" + getFile().getAbsolutePath(),
+						"OUTPUT=" + getContext().getFileSystemContext().getMetricsPrefix(getFile()).getAbsolutePath(),
+						"REFERENCE_SEQUENCE=" + getContext().getReferenceFile(),
+						"TMP_DIR=" + ImmutableList.of(getContext().getFileSystemContext().getTemporaryDirectory()),
+						"MAX_RECORDS_IN_RAM=" + getContext().getFileSystemContext().getMaxBufferedRecordsPerFile(),
+						"FILE_EXTENSION=null");
+				if (getContext().getCalculateMetricsRecordCount() < Integer.MAX_VALUE) {
+					args.add("STOP_AFTER=" + getContext().getCalculateMetricsRecordCount());
+				}
+				cgm.instanceMain(args.toArray(new String[] {}));
+			}
+			metrics = new IdsvSamFileMetrics(getContext(), getFile());
+		}
+		
 	}
-	public CloseableIterator<DirectedEvidence> iterator(final QueryInterval intervals) {
-		ensureMetrics();
+	public CloseableIterator<DirectedEvidence> iterator(final QueryInterval interval) {
 		SamReader reader = factory.open(input);
-		CloseableIterator<SAMRecord> it = reader.queryOverlapping(new QueryInterval[] {intervals});
-		Iterator<DirectedEvidence> eit = asEvidence(reader, it);
-		// TODO: filter DirectedEvidence to within one off the query intervals
-		// - use linear genomic coordinates conversion
-		throw new NotImplementedException();
+		// expand query bounds as the alignment for a discordant read pair could fall before or after the breakend interval we are extracting
+		SAMRecordIterator it = reader.queryOverlapping(new QueryInterval[] {
+			new QueryInterval(interval.referenceIndex, interval.start - getMaxConcordantFragmentSize() - 1, interval.end + getMaxConcordantFragmentSize() + 1)});
+		Iterator<DirectedEvidence> eit = asEvidence(it);
+		final BreakendSummary bsf = new BreakendSummary(interval.referenceIndex, BreakendDirection.Forward, interval.start, interval.start, interval.end);
+		final BreakendSummary bsb = new BreakendSummary(interval.referenceIndex, BreakendDirection.Backward, interval.start, interval.start, interval.end);
+		eit = Iterators.filter(eit, e -> bsf.overlaps(e.getBreakendSummary()) || bsb.overlaps(e.getBreakendSummary()));
+		return new AutoClosingIterator<>(eit, ImmutableList.of(reader, it));
 	}
 	public CloseableIterator<DirectedEvidence> iterator() {
-		ensureMetrics();
 		SamReader reader = factory.open(input);
-		CloseableIterator<SAMRecord> it = reader.iterator();
-		return asEvidence(reader, it);
+		SAMRecordIterator it = reader.iterator();
+		it.assertSorted(SortOrder.coordinate);
+		Iterator<DirectedEvidence> eit = asEvidence(it);
+		return new AutoClosingIterator<>(eit, ImmutableList.of(reader, it));
 	}
-	private CloseableIterator<DirectedEvidence> asEvidence(SamReader reader, CloseableIterator<SAMRecord> rawit) {
-		Iterator<SAMRecord> it = new AutoClosingIterator<SAMRecord>(rawit, ImmutableList.of(reader));
-		
-		// TODO: apply SAMRecord transforms (eg mapq, entropy, adapter)
-		// TODO: apply SAMRecord filters (eg blacklist)
-		
+	private Iterator<DirectedEvidence> asEvidence(Iterator<SAMRecord> it) {
+		it = Iterators.transform(it, r -> transform(r));
+		it = Iterators.filter(it, r -> !shouldFilter(r));		
 		Iterator<DirectedEvidence> eit = new DirectedEvidenceIterator(it, this);
-		eit = applyBlacklistFilter(eit);
-		// TODO: apply evidence filters
-		// sc length
-		// indel length
-		// entropy
+		eit = Iterators.filter(eit, e -> !shouldFilter(e));
 		eit = new DirectEvidenceWindowedSortingIterator<DirectedEvidence>(getContext(), getSortWindowSize(), eit);
 		if (Defaults.SANITY_CHECK_ITERATORS) {
 			eit = new PairedEvidenceTracker<DirectedEvidence>(getFile().getName(), eit);
 		}
-		throw new NotImplementedException();
+		return eit;
 	}
-	private <T extends DirectedEvidence> IntervalBedFilteringIterator<T> applyBlacklistFilter(Iterator<T> it) {
-		return new IntervalBedFilteringIterator<T>(getBlacklistedRegions(), it, getBlacklistFilterMargin());
+	private static float average(byte[] values) {
+		float total = 0;
+		for (byte b : values) {
+			total += b;
+		}
+		return total / values.length;
+	}
+	public SAMRecord transform(SAMRecord r) {
+		SAMRecordUtil.lowMapqToUnmapped(r, getContext().getConfig().minMapq);
+		// TODO: decide whether to keep maxMapq around or just move to an error message
+		return r;
+	}
+	public boolean shouldFilter(SAMRecord r) {
+		if (SAMRecordUtil.isDovetailing(r, PairOrientation.FR, getContext().getConfig().dovetailMargin)) {
+			return true;
+		}
+		return false;
+	}
+	public boolean shouldFilter(DirectedEvidence e) {
+		GridssConfiguration config = getContext().getConfig();
+		if (overlapsBlacklist(e)) {
+			return true;
+		}
+		if (e instanceof SoftClipEvidence) {
+			SoftClipEvidence sce = (SoftClipEvidence) e;
+			SoftClipConfiguration scc = config.getSoftClip();
+			if (sce.getBreakendSequence().length < scc.minLength) return true;
+			if (average(sce.getBreakendQuality()) < scc.minAverageQual) return true;
+			if (config.adapters.isAdapterSoftClip(sce)) return true;
+			if (!AssemblyAttributes.isAssembly(sce.getSAMRecord())) {
+				if (SAMRecordUtil.getAlignedIdentity(sce.getSAMRecord()) < scc.minAnchorIdentity) return true;
+				if (SAMRecordUtil.alignedEntropy(sce.getSAMRecord()) < config.minAnchorShannonEntropy) return true;
+			}
+		}
+		if (e instanceof DirectedBreakpoint) {
+			BreakpointSummary bp = (BreakpointSummary)e.getBreakendSummary();
+			// Still do assembly - leave the filtering to the variant calling
+			//if (bp.getEventSize() != null && bp.getEventSize() < config.getVariantCalling().minSize) {
+			//	return true;
+			//}
+		}
+		return false;
+	}
+	public boolean overlapsBlacklist(DirectedEvidence e) {
+		IntervalBed filterOutRegions = getBlacklistedRegions();
+		int margin = getBlacklistFilterMargin();
+		BreakendSummary bs = e.getBreakendSummary();
+		if (filterOutRegions.overlaps(bs.referenceIndex, bs.start - margin, bs.end + margin)) {
+			return true;
+		}
+		if (bs instanceof BreakpointSummary) {
+			BreakpointSummary bp = (BreakpointSummary)bs;
+			if (filterOutRegions.overlaps(bp.referenceIndex2, bp.start2 - margin, bp.end2 + margin)) {
+				return true;
+			}
+		}
+		return false;
 	}
 	private int getBlacklistFilterMargin() {
 		return getMaxConcordantFragmentSize();
@@ -194,15 +249,20 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	public IntervalBed getBlacklistedRegions() {
 		if (blacklist == null) {
-			try {
-				blacklist = new IntervalBed(
-						getContext().getDictionary(),
-						getContext().getLinear(),
-						getContext().getFileSystemContext().getCoverageBlacklistBed(getFile()));
-			} catch (IOException e) {
-				throw new RuntimeException(e);
+			File file = getContext().getFileSystemContext().getCoverageBlacklistBed(getFile());
+			if (file.exists()) {
+				try {
+					blacklist = new IntervalBed(
+							getContext().getDictionary(),
+							getContext().getLinear(),
+							file);
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+				blacklist = IntervalBed.merge(getContext().getDictionary(), getContext().getLinear(), ImmutableList.of(blacklist, getContext().getBlacklistedRegions()));
+			} else {
+				blacklist = getContext().getBlacklistedRegions();
 			}
-			blacklist = IntervalBed.merge(getContext().getDictionary(), getContext().getLinear(), ImmutableList.of(blacklist, getContext().getBlacklistedRegions()));
 		}
 		return blacklist;
 	}

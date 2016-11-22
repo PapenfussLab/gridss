@@ -58,25 +58,22 @@ public class IntermediateFilesTest extends TestHelper {
 	public void setReference(File ref) {
 		reference = ref;
 	}
-	public ProcessingContext getCommandlineContext(boolean perChr) {
+	public ProcessingContext getCommandlineContext() {
 		List<Header> headers = Lists.newArrayList();
 		headers.add(new StringHeader("TestHeader"));
 		ProcessingContext pc;
 		if (reference.equals(SMALL_FA_FILE)) {
 			pc = new ProcessingContext(
-				new FileSystemContext(testFolder.getRoot(), 500000), reference, perChr, SMALL_FA,
-				headers, getConfig(testFolder.getRoot()));
+				new FileSystemContext(testFolder.getRoot(), 500000), reference, SMALL_FA, headers,
+				getConfig(testFolder.getRoot()));
 		} else {
 			pc = new ProcessingContext(
-					new FileSystemContext(testFolder.getRoot(), 500000), reference, perChr, null, 
-					headers, getConfig(testFolder.getRoot()));
+					new FileSystemContext(testFolder.getRoot(), 500000), reference, null, headers, 
+					getConfig(testFolder.getRoot()));
 		}
 		pc.registerCategory(0, "Normal");
 		pc.registerCategory(1, "Tumour");
 		return pc;
-	}
-	public ProcessingContext getCommandlineContext() {
-		return getCommandlineContext(false);
 	}
 	@After
 	public void cleanup() throws Exception {

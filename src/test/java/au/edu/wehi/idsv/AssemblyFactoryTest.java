@@ -281,6 +281,7 @@ public class AssemblyFactoryTest extends TestHelper {
 	}
 	private SingleReadEvidence incorporateRealignment(AssemblyEvidenceSource aes, SAMRecord assembly, List<SAMRecord> realignments) {
 		SAMRecord out = assembly.deepCopy();
+		realignments.stream().forEach(r -> r.setReadName(SplitReadIdentificationHelper.getSplitReadRealignments(assembly, false).get(0).getReadHeader()));
 		SplitReadIdentificationHelper.convertToSplitRead(out, realignments);
 		List<SingleReadEvidence> list = SingleReadEvidence.createEvidence(aes, out);
 		assertEquals(list.size(), 0);

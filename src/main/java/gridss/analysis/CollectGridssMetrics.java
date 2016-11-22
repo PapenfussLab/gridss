@@ -137,6 +137,9 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
     }
     @Option(doc = "Set of gridss metrics programs to apply during the pass through the SAM file.")
     public Set<GridssProgram> GRIDSS_PROGRAM = new LinkedHashSet<>(Arrays.asList(GridssProgram.values()));
+    
+    @Option(doc = "Generate graphs as well as raw metrics.", optional=true)
+    public boolean GENERATE_GRAPHS = false;
 
     public CollectGridssMetrics() {
     	// By default, only run those required by GRIDSS

@@ -55,7 +55,7 @@ public abstract class ReadPairConcordanceCalculator {
 						//idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH >= getMetrics().getInsertSizeMetrics().MAX_INSERT_SIZE / 2 &&
 						idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH >= 10 * idsv.MAX_READ_MAPPED_LENGTH) {
 					String msg = String.format("Proper pair flag indicates fragment size of %d is expected!"
-							+ " This is unexpectly high and indicates the aligner has sets the proper pair flag based only on chromosome and orientation."
+							+ " This is unusually high and indicates the aligner has sets the proper pair flag based only on chromosome and orientation."
 							+ " Realign with an aligner that consider fragment size when setting the proper pair flag or "
 							+ " specify fixed or percentage bounds for read pair concordance.",
 							idsv.MAX_PROPER_PAIR_FRAGMENT_LENGTH); 

@@ -98,9 +98,12 @@ public class ExtractSVReads extends CommandLineProgram {
     	SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
     	try {
     		try (SamReader reader = readerFactory.open(INPUT)) {
-    			SAMFileHeader header = reader.getFileHeader();
+    			final SAMFileHeader header = reader.getFileHeader();
+    			//final SAMSequenceDictionary dict = header.getSequenceDictionary();
+    			//final LinearGenomicCoordinate linear = new PaddedLinearGenomicCoordinate(dict, 0);
+    			//final SequentialCoverageThreshold coverageThresholdBlacklist = new SequentialCoverageThreshold(dict, linear, MAX_COVERAGE + 1);    			
     			try (SAMRecordIterator it = reader.iterator()) {
-    				File tmpoutput = FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.tmp.ExtractSVReads.");
+    				final File tmpoutput = FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.tmp.ExtractSVReads.");
     				try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpoutput)) {
     					extract(it, 
     							writer,
@@ -138,9 +141,9 @@ public class ExtractSVReads extends CommandLineProgram {
 		if (includeSplitReads) filters.add(new SplitReadFilter());
 		if (includeOEA) filters.add(new OneEndAnchoredReadFilter());
 		if (includeDP) filters.add(new ReadPairConcordanceFilter(rpcc, false, true));
-		if (includeUnmapped) filters.add(new AlignedFilter(false));
-		
+		if (includeUnmapped) filters.add(new AlignedFilter(false));		
 		UnionAggregateFilter filter = new UnionAggregateFilter(filters);
+
 		try (CloseableIterator<SAMRecord> it = new AsyncBufferedIterator<SAMRecord>(rawit, "raw")) {
 			while (it.hasNext()) {
 				SAMRecord r = it.next();

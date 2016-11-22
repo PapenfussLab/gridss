@@ -60,6 +60,7 @@ import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
+import au.edu.wehi.idsv.util.IntervalUtil;
 import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
 import gridss.analysis.CigarDetailMetrics;
 import gridss.analysis.CigarSizeDistribution;
@@ -68,6 +69,7 @@ import gridss.analysis.InsertSizeDistribution;
 import gridss.analysis.MapqMetrics;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.DefaultSAMRecordFactory;
+import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMLineParser;
@@ -354,7 +356,6 @@ public class TestHelper {
 	public static GridssConfiguration getConfig(File workingDirectory) {
 		GridssConfiguration config;
 		config = new GridssConfiguration(getDefaultConfig(), workingDirectory);
-		config.maxMapq = 256;
 		config.getSoftClip().minAverageQual = 0;
 		config.minAnchorShannonEntropy = 0;
 		config.getAssembly().minReads = 2;
@@ -366,8 +367,8 @@ public class TestHelper {
 		return getConfig(new File(System.getProperty("java.io.tmpdir")));
 	}
 	public static ProcessingContext getContext(ReferenceLookup ref) {
-		ProcessingContext pc = new ProcessingContext(getFSContext(), SMALL_FA_FILE, false, ref,
-				new ArrayList<Header>(), getConfig());
+		ProcessingContext pc = new ProcessingContext(getFSContext(), SMALL_FA_FILE, ref, new ArrayList<Header>(),
+				getConfig());
 		pc.registerCategory(0, "Normal");
 		pc.registerCategory(1, "Tumour");
 		pc.getAssemblyParameters().trackEvidenceID = true;
@@ -423,6 +424,13 @@ public class TestHelper {
 	static public SAMRecord[] withName(String readName, SAMRecord... data) {
 		for (SAMRecord r : data) {
 			r.setReadName(readName);
+		}
+		return data;
+	}
+	
+	static public SAMRecord[] withAttr(String attr, Object value, SAMRecord... data) {
+		for (SAMRecord r : data) {
+			r.setAttribute(attr, value);
 		}
 		return data;
 	}
@@ -900,6 +908,28 @@ public class TestHelper {
 		@Override
 		public CloseableIterator<DirectedEvidence> iterator() {
 			return new AutoClosingIterator<DirectedEvidence>(evidence.iterator());
+		}
+	}
+	public static class StubAssemblyEvidenceSource extends AssemblyEvidenceSource {
+		public int assemblyWindowSize = 10;
+		public int fragSize = 300;
+		public List<DirectedEvidence> assemblies = new ArrayList<DirectedEvidence>();
+		public StubAssemblyEvidenceSource(ProcessingContext processContext) {
+			super(processContext, ImmutableList.<SAMEvidenceSource>of(), null);
+		}
+		@Override
+		public void assembleBreakends() throws java.io.IOException {};
+		@Override
+		public int getMaxConcordantFragmentSize() { return fragSize; }
+		@Override
+		public CloseableIterator<DirectedEvidence> iterator() {
+			return new AutoClosingIterator<>(assemblies.iterator());
+		}
+		@Override
+		public CloseableIterator<DirectedEvidence> iterator(QueryInterval qi) {
+			return new AutoClosingIterator<>(assemblies.stream().filter(
+					e -> IntervalUtil.overlapsClosed(e.getBreakendSummary().start, e.getBreakendSummary().end, qi.start, qi.end)
+					&& qi.referenceIndex == e.getBreakendSummary().referenceIndex).iterator());
 		}
 	}
 	public static AssemblyEvidenceSource AES() {

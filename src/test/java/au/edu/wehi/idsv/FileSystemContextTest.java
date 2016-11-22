@@ -18,16 +18,16 @@ public class FileSystemContextTest {
 		return new FileSystemContext(testFolder.getRoot(), 1);
 	}
 	@Test
-	public void getInsertSizeMetrics_should_use_suffix() {
-		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.metrics.insertsize.txt").getAbsolutePath(), C().getInsertSizeMetrics(new File("test.bam")).getAbsolutePath());
+	public void getInsertSizeMetrics_should_use_empty_suffix() {
+		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.metrics.insertsize").getAbsolutePath(), C().getInsertSizeMetrics(new File("test.bam")).getAbsolutePath());
 	}
 	@Test
 	public void getIdsvMetrics_should_use_suffix() {
-		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.metrics.idsv.txt").getAbsolutePath(), C().getIdsvMetrics(new File("test.bam")).getAbsolutePath());
+		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.metrics.idsv").getAbsolutePath(), C().getIdsvMetrics(new File("test.bam")).getAbsolutePath());
 	}
 	@Test
 	public void get_should_treat_working_files_as_belonging_to_their_parent() {
-		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.metrics.idsv.txt").getAbsolutePath(), C().getIdsvMetrics(new File("test.bam.idsv.working/test.bam.idsv.sv.bam")).getAbsolutePath());
+		assertEquals(new File("test.bam.idsv.working/test.bam.idsv.metrics.idsv").getAbsolutePath(), C().getIdsvMetrics(new File("test.bam.idsv.working/test.bam.idsv.sv.bam")).getAbsolutePath());
 	}
 	private void testFileAssertMatch(String expected, File result) {
 		assertEquals(new File("test.bam.idsv.working/" + expected).getAbsolutePath(), result.getAbsolutePath());
@@ -35,8 +35,8 @@ public class FileSystemContextTest {
 	private static final File TEST_BAM = new File("test.bam");
 	@Test
 	public void should_match_constant() {
-		testFileAssertMatch("test.bam.idsv.metrics.idsv.txt", C().getIdsvMetrics(TEST_BAM));
-		testFileAssertMatch("test.bam.idsv.metrics.insertsize.txt", C().getInsertSizeMetrics(TEST_BAM));
+		testFileAssertMatch("test.bam.idsv.metrics.idsv", C().getIdsvMetrics(TEST_BAM));
+		testFileAssertMatch("test.bam.idsv.metrics.insertsize", C().getInsertSizeMetrics(TEST_BAM));
 		testFileAssertMatch("test.bam.idsv.realign.0.fq", C().getRealignmentFastq(TEST_BAM, 0));
 		testFileAssertMatch("test.bam.idsv.realign.0.bam", C().getRealignmentBam(TEST_BAM, 0));
 		testFileAssertMatch("test.bam.idsv.breakend.bam", C().getAssemblyRawBam(TEST_BAM));

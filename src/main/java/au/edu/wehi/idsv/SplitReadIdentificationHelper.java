@@ -31,7 +31,7 @@ import htsjdk.samtools.util.SequenceUtil;
  */
 public class SplitReadIdentificationHelper {
 	private static final char SEPARATOR = '#';
-	private static Comparator<SAMRecord> ByFirstAlignedBaseReadOffset = Comparator.comparing(r -> getFirstAlignedBaseReadOffset(r));
+	private static Comparator<SAMRecord> ByFirstAlignedBaseReadOffset = Comparator.comparing(r -> SAMRecordUtil.getFirstAlignedBaseReadOffset(r));
 	/**
 	 * Extract the unaligned portions of the read requiring realignment to identify split reads
 	 * 
@@ -49,8 +49,8 @@ public class SplitReadIdentificationHelper {
 		int offset;
 		String name;
 		if (recordIsPartialAlignment) {
-			offset = getFirstAlignedBaseReadOffset(r);
-			name = getAlignmentUniqueName(r);
+			offset = getRealignmentFirstAlignedBaseReadOffset(r);
+			name = getOriginatingAlignmentUniqueName(r);
 		} else {
 			offset = 0;
 			name = SAMRecordUtil.getAlignmentUniqueName(r);
@@ -159,7 +159,7 @@ public class SplitReadIdentificationHelper {
 		}
 		// convert to chimeric alignments
 		for (SAMRecord r : alignments) {
-			int offset = getFirstAlignedBaseReadOffset(r);
+			int offset = getRealignmentFirstAlignedBaseReadOffset(r);
 			int prepad = offset;
 			int postpad = record.getReadLength() - offset - r.getReadLength();
 			if (r.getReadNegativeStrandFlag()) {
@@ -207,12 +207,12 @@ public class SplitReadIdentificationHelper {
 			}
 		}
 	}
-	public static String getAlignmentUniqueName(SAMRecord splitread) {
+	public static String getOriginatingAlignmentUniqueName(SAMRecord splitread) {
 		String name = splitread.getReadName();
 		name = name.substring(0, name.lastIndexOf(SEPARATOR));
 		return name;
 	}
-	public static int getFirstAlignedBaseReadOffset(SAMRecord splitread) {
+	public static int getRealignmentFirstAlignedBaseReadOffset(SAMRecord splitread) {
 		String name = splitread.getReadName();
 		name = name.substring(name.lastIndexOf(SEPARATOR) + 1);
 		return Integer.parseInt(name);

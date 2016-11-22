@@ -91,26 +91,6 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		assertEquals(0, contigs.size());
 	}
 	@Test
-	@Category(Hg19Tests.class)
-	public void should_generate_indel_assemblies() throws IOException {
-		createInput(new File("src/test/resources/inss.bam"));
-		List<Header> headers = Lists.newArrayList();
-		headers.add(new StringHeader("TestHeader"));
-		File ref = Hg19Tests.findHg19Reference();
-		IndexedFastaSequenceFile indexed = new IndexedFastaSequenceFile(ref);
-		ReferenceLookup lookup = new SynchronousReferenceLookupAdapter(indexed);
-		ProcessingContext pc = new ProcessingContext(
-				new FileSystemContext(testFolder.getRoot(), 500000), ref, false, lookup,
-				headers,
-				new GridssConfiguration(getDefaultConfig(), testFolder.getRoot()));
-		pc.registerCategory(0, "Normal");
-		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
-		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
-		aes.assembleBreakends();
-		List<DirectedEvidence> contigs = Lists.newArrayList(aes.iterator());
-		assertEquals(2, contigs.size());
-	}
-	@Test
 	public void should_filter_fully_reference_assemblies() {
 		SAMRecord r = AssemblyFactory.createAnchoredBreakend(
 				getContext(), AES(), BWD, null,

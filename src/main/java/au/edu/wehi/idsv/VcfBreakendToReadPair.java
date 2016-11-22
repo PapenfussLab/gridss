@@ -64,8 +64,8 @@ public class VcfBreakendToReadPair extends picard.cmdline.CommandLineProgram {
 		try {
 			SAMFileWriterFactory factory = pc.getSamFileWriterFactory(true);
 			SAMFileHeader header = pc.getBasicSamHeader();
-			writer = factory.makeBAMWriter(header, false, working);
-			writerFiltered =  factory.makeBAMWriter(header, false, workingFiltered);
+			writer = factory.makeSAMOrBAMWriter(header, false, working);
+			writerFiltered =  factory.makeSAMOrBAMWriter(header, false, workingFiltered);
 			while (it.hasNext()) {
 				IdsvVariantContext variant = IdsvVariantContext.create(pc, null, it.next());
 				if (variant instanceof VariantContextDirectedBreakpoint) {

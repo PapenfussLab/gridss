@@ -28,19 +28,6 @@ import htsjdk.samtools.SAMRecord;
 public class Models {
 	//private static final Log log = Log.getInstance(Models.class);
 	/**
-	 * Determines whether the read meets the minimum criteria
-	 * for the read alignment to be considered evidence
-	 * @param record
-	 * @return
-	 */
-	public static boolean meetsReadAlignmentCriteria(GridssConfiguration config, SAMRecord read) {
-		return !read.getReadUnmappedFlag() &&
-				read.getMappingQuality() >= config.minMapq &&
-				read.getMappingQuality() <= config.maxMapq &&
-				SAMRecordUtil.alignedEntropy(read) >= config.minAnchorShannonEntropy &&
-				SAMRecordUtil.getAlignedIdentity(read) >= config.getSoftClip().minAnchorIdentity;
-	}
-	/**
 	 * Calculates the most likely breakend interval for the given evidence 
 	 * @param evidence
 	 * @return breakend interval with highest total evidence quality

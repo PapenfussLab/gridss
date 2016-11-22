@@ -27,7 +27,7 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 		File output = new File(super.testFolder.getRoot(), "chr12-244000.vcf");
 		setReference(Hg19Tests.findHg19Reference("chr12.fa"));
 		createInput(new File("src/test/resources/chr12-244000.bam"));
-		ProcessingContext pc = getCommandlineContext(false);
+		ProcessingContext pc = getCommandlineContext();
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), output);
 		aes.assembleBreakends();
@@ -37,8 +37,8 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 		assertTrue(export != null && export.length > 0);
 	}
 	@Override
-	public ProcessingContext getCommandlineContext(boolean perChr) {
-		ProcessingContext pc = super.getCommandlineContext(perChr);
+	public ProcessingContext getCommandlineContext() {
+		ProcessingContext pc = super.getCommandlineContext();
 		pc.getAssemblyParameters().errorCorrection.maxBaseMismatchForCollapse = 1;
 		pc.getAssemblyParameters().errorCorrection.collapseBubblesOnly = true;
 		pc.getAssemblyParameters().method = AssemblyAlgorithm.Positional;

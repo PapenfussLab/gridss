@@ -62,10 +62,12 @@ public class IdsvSamFileMetrics {
 	}
 	public static InsertSizeMetrics getInsertSizeMetrics(File insertSizeMetricsFile) {
 		InsertSizeMetrics bestMetrics = null;
-		for (InsertSizeMetrics metric : Iterables.filter(MetricsFile.readBeans(insertSizeMetricsFile), InsertSizeMetrics.class)) {
-			if (metric.SAMPLE == null && metric.LIBRARY == null && metric.READ_GROUP == null) {
-				if (bestMetrics == null || bestMetrics.READ_PAIRS < metric.READ_PAIRS) {
-					bestMetrics = metric;
+		if (insertSizeMetricsFile.exists()) {
+			for (InsertSizeMetrics metric : Iterables.filter(MetricsFile.readBeans(insertSizeMetricsFile), InsertSizeMetrics.class)) {
+				if (metric.SAMPLE == null && metric.LIBRARY == null && metric.READ_GROUP == null) {
+					if (bestMetrics == null || bestMetrics.READ_PAIRS < metric.READ_PAIRS) {
+						bestMetrics = metric;
+					}
 				}
 			}
 		}

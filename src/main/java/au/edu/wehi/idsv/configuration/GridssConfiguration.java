@@ -29,13 +29,6 @@ public class GridssConfiguration {
 	 */
 	public int minMapq;
 	/**
-	 * Maximum MAPQ to considered uniquely mapped.
-	 * Extremely high mapping quality scores are usually indicative of either
-	 * a) an aligner reporting unknown mapping quality (255) or,
-	 * b) an aligner not respecting the SAM MAPQ specifications 
-	 */
-	public int maxMapq;
-	/**
 	 * Minimum entropy of anchored sequence (in bits) (Shannon entropy)
 	 */
 	public double minAnchorShannonEntropy;
@@ -88,9 +81,8 @@ public class GridssConfiguration {
 		scoring =  new ScoringConfiguration(config);
 		adapters = new AdapterHelper(config.getStringArray("adapter"));
 		minMapq = config.getInt("minMapq");
-		maxMapq = config.getInt("maxMapq");
-		minAnchorShannonEntropy = config.getFloat("minAnchorShannonEntropy");
 		maxCoverage = config.getInt("maxCoverage");
+		minAnchorShannonEntropy = config.getFloat("minAnchorShannonEntropy");
 		dovetailMargin = config.getInt("dovetailMargin");
 		terminateOnFirstError = config.getBoolean("terminateOnFirstError");
 	}

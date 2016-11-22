@@ -105,8 +105,8 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		String encodedName = SplitReadIdentificationHelper.getSplitAlignmentFastqName("r", 3);
 		SAMRecord r2 = Read(0, 1, "3H2M2S");
 		r2.setReadName(encodedName);
-		assertEquals(3, SplitReadIdentificationHelper.getFirstAlignedBaseReadOffset(r2));
-		assertEquals("r", SplitReadIdentificationHelper.getAlignmentUniqueName(r2));
+		assertEquals(3, SplitReadIdentificationHelper.getRealignmentFirstAlignedBaseReadOffset(r2));
+		assertEquals("r", SplitReadIdentificationHelper.getOriginatingAlignmentUniqueName(r2));
 	}
 	@Test
 	public void convertToSplitRead_should_expand_clipping() {
@@ -273,5 +273,34 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		assertEquals("polyA,20,+,1M3S,19,10;polyA,10,+,1S1M2S,17,9", primary.getStringAttribute("SA"));
 		assertEquals("polyA,1,+,3S1M,15,8;polyA,20,+,1M3S,19,10", supp1.getStringAttribute("SA"));
 		assertEquals("polyA,1,+,3S1M,15,8;polyA,10,+,1S1M2S,17,9", supp2.getStringAttribute("SA"));
+	}
+	@Test
+	public void supplementary_alignments_should_have_primary_read_name() {
+		SAMRecord primary = Read(0, 1, "3S1M");
+		primary.setReadName("r");
+		primary.setReadBases(B("AAAA"));
+		primary.setBaseQualities(B("1234"));
+		primary.setMateReferenceIndex(2);
+		primary.setMateAlignmentStart(7);
+		primary.setMappingQuality(15);
+		primary.setAttribute("NM", 8);
+		
+		SAMRecord supp1 = Read(0, 10, "1M1S");
+		supp1.setReadName(SAMRecordUtil.getAlignmentUniqueName(primary) + "#1");
+		supp1.setReadBases(B("GT"));
+		supp1.setBaseQualities(B("23"));
+		supp1.setMappingQuality(17);
+		supp1.setAttribute("NM", 9);
+		
+		SAMRecord supp2 = Read(0, 20, "1M");
+		supp2.setReadName(SAMRecordUtil.getAlignmentUniqueName(primary) + "#0");
+		supp2.setReadBases(B("C"));
+		supp2.setBaseQualities(B("1"));
+		supp2.setMappingQuality(19);
+		supp2.setAttribute("NM", 10);
+		SplitReadIdentificationHelper.convertToSplitRead(primary, ImmutableList.of(supp1, supp2));
+		
+		assertEquals(primary.getReadName(), supp1.getReadName());
+		assertEquals(primary.getReadName(), supp2.getReadName());
 	}
 }

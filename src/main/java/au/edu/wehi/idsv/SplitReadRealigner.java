@@ -169,7 +169,7 @@ public class SplitReadRealigner {
 			SAMRecord r = it.next();
 			String name = SAMRecordUtil.getAlignmentUniqueName(r);
 			for (PeekingIterator<SAMRecord> sit : alignments) {
-				while (sit.hasNext() && SplitReadIdentificationHelper.getAlignmentUniqueName(sit.peek()).equals(name)) {
+				while (sit.hasNext() && SplitReadIdentificationHelper.getOriginatingAlignmentUniqueName(sit.peek()).equals(name)) {
 					salist.add(sit.next());
 				}
 			}

@@ -267,8 +267,8 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		String assembly = "ATCCATCCCTATGACCCAAACATCTCCCACCAGGCCTCATGTTCAATATTAAAGATCACATTTCAACTTGAGATTTGGAGGGGACAAACATACAAATCATATCATTATCTCTCTCCCCACTTCTCTCTTTATCAATCCCTCCCTCTTTGTCAATCTTAGCCTTGGCCTTCAGATTTTACCACTTGATTTTTCACATTTTCTGTATTCTTAAT"
 				+ "GATTATTATATTTTCATGTTCTTGCTAATCTATATCATGGTTAGAAATCAAAGCATGCCGAAATTTCTCTCTTACTTTTTTTGCTGTT";
 		File ref = new File("src/test/resources/chr1_170849600_170849850.fa");
-		ProcessingContext context = new ProcessingContext(getFSContext(), ref, false, null,
-				new ArrayList<Header>(), new GridssConfiguration());
+		ProcessingContext context = new ProcessingContext(getFSContext(), ref, null, new ArrayList<Header>(),
+				new GridssConfiguration());
 		SAMRecord e = AssemblyFactory.createAnchoredBreakend(context, AES(context), BWD, null,
 				0, 170849702-170849600+1, 97, B(assembly), B(40, assembly.length())).realign(50, 0.5f);
 		// anchor location is 11bp off

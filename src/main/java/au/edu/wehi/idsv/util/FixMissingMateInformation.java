@@ -36,7 +36,7 @@ public class FixMissingMateInformation extends picard.cmdline.CommandLineProgram
 		SamReaderFactory factory = SamReaderFactory.makeDefault().validationStringency(ValidationStringency.SILENT);
 		SamReader input = factory.open(INPUT);
 		Iterator<SAMRecord> it = new AsyncBufferedIterator<SAMRecord>(input.iterator(), 2, 128);
-		SAMFileWriter out = new SAMFileWriterFactory().makeBAMWriter(input.getFileHeader(), true, OUTPUT);
+		SAMFileWriter out = new SAMFileWriterFactory().makeSAMOrBAMWriter(input.getFileHeader(), true, OUTPUT);
 		it = new ProgressLoggingSAMRecordIterator(it, new ProgressLogger(log));
 		PeekingIterator<SAMRecord> pit = Iterators.peekingIterator(it);
 		while (pit.hasNext()) {

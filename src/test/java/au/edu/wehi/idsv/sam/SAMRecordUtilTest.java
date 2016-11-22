@@ -192,9 +192,23 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertFalse(SAMRecordUtil.estimatedReadsOverlap(RP(0, 100, 120, 20)[0], PairOrientation.FR, 18));
 		assertFalse(SAMRecordUtil.estimatedReadsOverlap(RP(0, 100, 120, 20)[1], PairOrientation.FR, 18));
 	}
+	private void checkDovetail(boolean expected, int margin, SAMRecord... reads) {
+		assert(reads.length == 2);
+		assertEquals(expected, SAMRecordUtil.isDovetailing(reads[0], reads[1], PairOrientation.FR, margin));
+		assertEquals(expected, SAMRecordUtil.isDovetailing(reads[0], PairOrientation.FR, margin));
+	}
 	@Test
 	public void isDovetailing_should_require_overlap() {
-		assertFalse(SAMRecordUtil.isDovetailing(RP(0, 1, 2, 1)[0], RP(0, 1, 2, 1)[1], PairOrientation.FR, 4));
+		checkDovetail(true, 4, RP(0, 1, 1, 1));
+		checkDovetail(false, 4, RP(0, 1, 2, 1)); // not overlapping but within margin
+	}
+	@Test
+	public void isDovetailing_should_allow_margin() {
+		checkDovetail(false, 1, RP(0, 10, 8, 4));
+		checkDovetail(true, 1, RP(0, 10, 9, 4));
+		checkDovetail(true, 1, RP(0, 10, 10, 4));
+		checkDovetail(true, 1, RP(0, 10, 11, 4));
+		checkDovetail(false, 1, RP(0, 10, 12, 4));
 	}
 	@Test
 	public void trimSoftClips_should_remove_from_both_end() {
@@ -591,5 +605,24 @@ public class SAMRecordUtilTest extends TestHelper {
 		r.setReadName("readName");
 		r.setReadUnmappedFlag(true);
 		assertEquals("readName#0", SAMRecordUtil.getAlignmentUniqueName(r));
+	}
+	@Test
+	public void lowMapqToUnmapped_should_convert_below_threshold() {
+		assertTrue(SAMRecordUtil.lowMapqToUnmapped(withMapq(0, Read(0, 3, "4S5M"))[0], 2).getReadUnmappedFlag());
+		assertTrue(SAMRecordUtil.lowMapqToUnmapped(withMapq(1, Read(0, 3, "4S5M"))[0], 2).getReadUnmappedFlag());
+		assertFalse(SAMRecordUtil.lowMapqToUnmapped(withMapq(2, Read(0, 3, "4S5M"))[0], 2).getReadUnmappedFlag());
+		assertFalse(SAMRecordUtil.lowMapqToUnmapped(withMapq(3, Read(0, 3, "4S5M"))[0], 2).getReadUnmappedFlag());
+		assertFalse(SAMRecordUtil.lowMapqToUnmapped(withMapq(255, Read(0, 3, "4S5M"))[0], 2).getReadUnmappedFlag());
+	}
+	@Test
+	public void lowMapqToUnmapped_should_adjust_chimeric_fragments() {
+		assertEquals("polyA,2,+,5M,2,0", SAMRecordUtil.lowMapqToUnmapped(withAttr("SA", "polyA,1,+,5M,1,0;polyA,2,+,5M,2,0", Read(0, 3, "4S5M"))[0], 2).getStringAttribute("SA"));
+	}
+	@Test
+	public void lowMapqToUnmapped_should_adjust_mate() {
+		assertTrue(SAMRecordUtil.lowMapqToUnmapped(withAttr("MQ", 0, RP(0, 1, 1))[0], 2).getMateUnmappedFlag());
+		assertTrue(SAMRecordUtil.lowMapqToUnmapped(withAttr("MQ", 1, RP(0, 1, 1))[0], 2).getMateUnmappedFlag());
+		assertFalse(SAMRecordUtil.lowMapqToUnmapped(withAttr("MQ", 2, RP(0, 1, 1))[0], 2).getMateUnmappedFlag());
+		assertFalse(SAMRecordUtil.lowMapqToUnmapped(withAttr("MQ", 3, RP(0, 1, 1))[0], 2).getMateUnmappedFlag());
 	}
 }

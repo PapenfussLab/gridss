@@ -31,8 +31,8 @@ public class ProcessingContext extends GenomicProcessingContext {
 	private BufferTracker bufferTracker = null;
 	
 	public ProcessingContext(
-			FileSystemContext fileSystemContext,  File ref, boolean perChr, ReferenceLookup reference,
-			List<Header> metricsHeaders, GridssConfiguration config) {
+			FileSystemContext fileSystemContext,  File ref, ReferenceLookup reference, List<Header> metricsHeaders,
+			GridssConfiguration config) {
 		super(fileSystemContext, ref, reference);
 		this.metricsHeaders = metricsHeaders;
 		this.config = config;

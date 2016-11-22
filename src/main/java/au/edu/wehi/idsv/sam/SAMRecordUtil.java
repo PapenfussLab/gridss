@@ -27,6 +27,7 @@ import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.alignment.AlignerFactory;
 import au.edu.wehi.idsv.alignment.Alignment;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
+import au.edu.wehi.idsv.util.IntervalUtil;
 import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
@@ -259,16 +260,48 @@ public class SAMRecordUtil {
 	 *         read length
 	 */
 	public static boolean isDovetailing(SAMRecord record1, SAMRecord record2, PairOrientation expectedOrientation, int margin) {
+		if (record1.getReadUnmappedFlag() && record2.getReadUnmappedFlag()) return false;
+		return isDovetailing(
+				record1.getReferenceIndex(), record1.getAlignmentStart(), record1.getReadNegativeStrandFlag(), record1.getCigar(),
+				record2.getReferenceIndex(), record2.getAlignmentStart(), record2.getReadNegativeStrandFlag(), record2.getCigar(),
+				expectedOrientation, margin);
+	}
+	public static boolean isDovetailing(SAMRecord record, PairOrientation expectedOrientation, int margin) {
+		if (record.getReadUnmappedFlag()) return false;
+		if (!record.getReadPairedFlag()) return false;
+		if (record.getMateUnmappedFlag()) return false;
+		Cigar cigar2 = null;
+		String mc = record.getStringAttribute(SAMTag.MC.name());
+		if (mc != null) {
+			cigar2 = TextCigarCodec.decode(mc);
+		}
+		return isDovetailing(
+				record.getReferenceIndex(), record.getAlignmentStart(), record.getReadNegativeStrandFlag(), record.getCigar(),
+				record.getMateReferenceIndex(), record.getMateAlignmentStart(), record.getMateNegativeStrandFlag(), cigar2,
+				expectedOrientation, margin);
+	}
+	private static boolean isDovetailing(
+			int reference1,
+			int start1,
+			boolean isNegativeStrand1,
+			Cigar cigar1,
+			int reference2,
+			int start2,
+			boolean isNegativeStrand2,
+			Cigar cigar2,
+			PairOrientation expectedOrientation, 
+			int margin) {
 		if (expectedOrientation != PairOrientation.FR) throw new RuntimeException("NYI");
-		return !record1.getReadUnmappedFlag()
-				&& !record2.getReadUnmappedFlag()
-				&& record1.getReferenceIndex() == record2.getReferenceIndex()
-				&& record1.getReadNegativeStrandFlag() != record2.getReadNegativeStrandFlag() // FR
-				&& overlap(record1, record2)
-				&& Math.abs(record1.getAlignmentStart()
-						- record2.getAlignmentStart()) <= margin
-				&& Math.abs(record1.getAlignmentEnd()
-						- record2.getAlignmentEnd()) <= margin;
+		if (reference1 != reference2) return false;
+		if (Math.abs(start1 - start2) > margin) return false;
+		if (isNegativeStrand1 == isNegativeStrand2) return false; // FR
+		if (cigar2 != null) {
+			int end1 = start1 + CigarUtil.referenceLength(cigar1.getCigarElements()) - 1;
+			int end2 = start2 + CigarUtil.referenceLength(cigar2.getCigarElements()) - 1;
+			if (Math.abs(end1 - end2) > margin) return false;
+			if (!IntervalUtil.overlapsClosed(start1, end1, start2, end2)) return false;
+		}
+		return true;
 	}
 	public static boolean overlap(SAMRecord r1, SAMRecord r2) {
 		boolean result = r1 != null
@@ -970,5 +1003,28 @@ public class SAMRecordUtil {
 		}
 		;
 		return sb.toString();
+	}
+	/**
+	 * Converts a record with mapq below the given mapq threshold to unmapped reads
+	 * @param record SAMRecord to convert
+	 * @param minMapq minimum MAPQ to avoid unmapping
+	 */
+	public static SAMRecord lowMapqToUnmapped(SAMRecord record, int minMapq) {
+		lowMapqToUnmapped_SA(record, minMapq);
+		if (record.getMappingQuality() < minMapq) {
+			record.setReadUnmappedFlag(true);
+		}
+		Integer mateMapq = record.getIntegerAttribute(SAMTag.MQ.name());
+		if (mateMapq != null && mateMapq < minMapq) {
+			record.setMateUnmappedFlag(true);
+		}
+		return record;
+	}
+	private static void lowMapqToUnmapped_SA(SAMRecord record, int minMapq) {
+		if (record.getAttribute(SAMTag.SA.name()) == null) return;
+		record.setAttribute(SAMTag.SA.name(), ChimericAlignment.getChimericAlignments(record).stream()
+				.filter(ca -> ca.mapq >= minMapq)
+				.map(ca -> ca.toString())
+				.collect(Collectors.joining(";")));
 	}
 }

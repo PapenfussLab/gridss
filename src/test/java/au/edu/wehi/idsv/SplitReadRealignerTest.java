@@ -99,6 +99,6 @@ public class SplitReadRealignerTest extends IntermediateFilesTest {
 		File fq1 = getContext().getFileSystemContext().getRealignmentFastq(input, 0);
 		List<FastqRecord> fq = getFastqRecords(fq1);
 		assertEquals(2, fq.size());
-		assertNotEquals(fq.get(0).getReadString(), fq.get(1).getReadString());
+		assertNotEquals(fq.get(0).getReadHeader(), fq.get(1).getReadHeader());
 	}
 }

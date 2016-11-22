@@ -330,7 +330,7 @@ public class Idsv extends CommandLineProgram {
 			} catch (ConfigurationException e) {
 				throw new RuntimeException(e);
 			}
-			processContext = new ProcessingContext(fsc, REFERENCE, PER_CHR, null, getDefaultHeaders(), config);
+			processContext = new ProcessingContext(fsc, REFERENCE, null, getDefaultHeaders(), config);
 			INPUT_CATEGORY.stream().forEach(x -> processContext.registerCategory(x, ""));
 			processContext.setWorkerThreadCount(WORKER_THREADS);
 			if (BLACKLIST != null) {

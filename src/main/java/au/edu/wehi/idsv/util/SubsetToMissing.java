@@ -66,7 +66,7 @@ public class SubsetToMissing extends picard.cmdline.CommandLineProgram {
 		
 		Iterator<SAMRecord> intputit = new AsyncBufferedIterator<SAMRecord>(input.iterator(), 2, 16384);
 		
-		SAMFileWriter out = new SAMFileWriterFactory().makeBAMWriter(input.getFileHeader(), true, OUTPUT);
+		SAMFileWriter out = new SAMFileWriterFactory().makeSAMOrBAMWriter(input.getFileHeader(), true, OUTPUT);
 		
 		LongSet hashtable;
 		if (PREALLOCATE != null) {

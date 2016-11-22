@@ -44,8 +44,8 @@ public class SplitReadFastqExtractionIteratorTest extends TestHelper {
 	public void should_filter_under_average_mapq() {
 		SAMRecord r = Read(0, 1, "2S1M");
 		r.setBaseQualities(new byte[] { 0, 10, 40 } );
-		assertEquals(0, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(r).iterator(), false, 1, 4, true)));
+		assertEquals(1, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(r).iterator(), false, 1, 4, true)));
 		assertEquals(1, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(r).iterator(), false, 1, 5, true)));
-		assertEquals(1, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(r).iterator(), false, 1, 6, true)));
+		assertEquals(0, Iterators.size(new SplitReadFastqExtractionIterator(ImmutableList.of(r).iterator(), false, 1, 6, true)));
 	}
 }

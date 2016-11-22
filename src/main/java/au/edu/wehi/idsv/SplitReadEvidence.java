@@ -8,6 +8,7 @@ import org.apache.commons.lang.NotImplementedException;
 
 import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.util.MathUtil;
 import gridss.ComputeSamTags;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
@@ -58,6 +59,7 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 		if (pre != null) {
 			int overlap = pre.getLastAlignedBaseReadOffset() + 1 - startOffset;
 			BreakpointSummary bs = new BreakpointSummary(withOverlap(chim.predecessorBreakend(dict), overlap), withOverlap(pre.successorBreakend(dict), overlap));
+			bs = handleUnanchoredReads(bs, chim, pre);
 			int preStartOffset = 0; // ignore the actual alignment and just go out to the end of the read so we can assemble across multiple breakpoints
 			int preEndOffset = pre.getLastAlignedBaseReadOffset() + 1;
 			if (record.getReadNegativeStrandFlag()) {
@@ -77,6 +79,7 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 		if (post != null) {
 			int overlap = endOffset - post.getFirstAlignedBaseReadOffset() - 1;
 			BreakpointSummary bs = new BreakpointSummary(withOverlap(chim.successorBreakend(dict), overlap), withOverlap(post.predecessorBreakend(dict), overlap));
+			bs = handleUnanchoredReads(bs, chim, post);
 			int postStartOffset = post.getFirstAlignedBaseReadOffset();
 			int postEndOffset = rl;
 			if (record.getReadNegativeStrandFlag()) {
@@ -94,6 +97,28 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 			}
 		}
 		return list;
+	}
+	private static BreakpointSummary handleUnanchoredReads(BreakpointSummary bs, ChimericAlignment local, ChimericAlignment remote) {
+		int localAdjustment = UnanchoredReadUtil.widthOfImprecision(local.cigar);
+		int remoteAdjustment = UnanchoredReadUtil.widthOfImprecision(remote.cigar);
+		if (localAdjustment != 0 && remoteAdjustment != 0) {
+			return new BreakpointSummary(
+					unanchoredAdjust(bs, localAdjustment, remoteAdjustment),
+					unanchoredAdjust(bs.remoteBreakend(), remoteAdjustment, localAdjustment));
+		}
+		return bs;
+	}
+	private static BreakendSummary unanchoredAdjust(BreakendSummary bs, int receed, int progress) {
+		int newStart;
+		int newEnd;
+		if (bs.direction == BreakendDirection.Forward) {
+			newStart = bs.start - receed;
+			newEnd = bs.end + progress;
+		} else {
+			newStart = bs.start - progress;
+			newEnd = bs.end + receed;
+		}
+		return new BreakendSummary(bs.referenceIndex, bs.direction, MathUtil.average(newStart, newEnd), newStart, newEnd);
 	}
 	/**
 	 * Adjusts the breakend bounds assuming an overalignment due to microhomology 
