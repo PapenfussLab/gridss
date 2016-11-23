@@ -16,7 +16,6 @@ import java.util.function.Function;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.PeekingIterator;
-import com.google.common.io.Files;
 
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.FileSystemContext;
@@ -125,7 +124,7 @@ public class SAMFileUtil {
 			SAMFileWriter writer = null;
 			CloseableIterator<SAMRecord> wit = null;
 			SortingCollection<SAMRecord> collection = null;
-			if (tmpFile.exists()) tmpFile.delete();
+			if (tmpFile.exists()) FileHelper.delete(tmpFile, true);
 			try {
 				reader = readerFactory.open(unsorted);
 				SAMFileHeader header = reader.getFileHeader().clone();
@@ -170,7 +169,7 @@ public class SAMFileUtil {
 				CloserUtil.close(rit);
 				CloserUtil.close(reader);
 				if (collection != null) collection.cleanup();
-				if (tmpFile.exists()) tmpFile.delete();
+				if (tmpFile.exists()) FileHelper.delete(tmpFile, true);
 			}
 			return null;
 		}
@@ -220,13 +219,15 @@ public class SAMFileUtil {
 				CloserUtil.close(entry.getValue());
 				CloserUtil.close(entry.getKey());
 			}
-			Files.move(tmpFile, output);
+			FileHelper.move(tmpFile, output, true);
 		} finally {
 			for (Entry<SamReader, AsyncBufferedIterator<SAMRecord>> entry : map.entrySet()) {
 				CloserUtil.close(entry.getValue());
 				CloserUtil.close(entry.getKey());
 			}
-			if (tmpFile.exists()) tmpFile.delete();
+			if (tmpFile.exists()) {
+				FileHelper.delete(tmpFile, true);
+			}
 		}
 	}
 	private static Queue<PeekingIterator<SAMRecord>> createMergeQueue(SortOrder sortOrder) {

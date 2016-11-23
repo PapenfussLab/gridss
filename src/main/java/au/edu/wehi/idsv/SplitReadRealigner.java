@@ -16,6 +16,7 @@ import au.edu.wehi.idsv.sam.NmTagIterator;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
+import au.edu.wehi.idsv.util.FileHelper;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
@@ -102,7 +103,7 @@ public class SplitReadRealigner {
 				tmpFiles.add(out);
 				tmpFiles.add(tmpout);
 				aligner.align(fq, tmpout, pc.getReferenceFile(), workerThreads);
-				Files.move(tmpout, out);
+				FileHelper.move(tmpout, out, true);
 				aligned.add(out);
 				// start next iteration
 				iteration++;
@@ -118,7 +119,7 @@ public class SplitReadRealigner {
 			if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
 				for (File f : tmpFiles) {
 					if (f.exists()) {
-						f.delete();
+						FileHelper.delete(f, true);
 					}
 				}
 			}
@@ -158,7 +159,7 @@ public class SplitReadRealigner {
 			File suppMergedsorted = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.SplitReadAligner.sorted.sa.");
 			tmpFiles.add(suppMergedsorted);
 			SAMFileUtil.sort(pc.getFileSystemContext(), suppMerged, suppMergedsorted, header.getSortOrder());
-			Files.move(suppMergedsorted, suppMerged);
+			FileHelper.move(suppMergedsorted, suppMerged, true);
 		}
 		SAMFileUtil.merge(ImmutableList.of(tmpoutput, suppMerged), output);
 	}

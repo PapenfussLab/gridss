@@ -7,12 +7,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
-import com.google.common.io.Files;
-
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.ReadPairConcordanceCalculator;
 import au.edu.wehi.idsv.ReadPairConcordanceMethod;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
+import au.edu.wehi.idsv.util.FileHelper;
 import gridss.analysis.InsertSizeDistribution;
 import gridss.filter.ClippedReadFilter;
 import gridss.filter.IndelReadFilter;
@@ -83,8 +82,11 @@ public class ExtractSVReads extends CommandLineProgram {
     	// Read metrics file
     	InsertSizeDistribution isd = null;
     	if (INSERT_SIZE_METRICS != null) {
-    		IOUtil.assertFileIsReadable(INSERT_SIZE_METRICS);
-    		isd = InsertSizeDistribution.create(INSERT_SIZE_METRICS); 
+    		if (!INSERT_SIZE_METRICS.exists()) {
+    			log.warn("Missing " + INSERT_SIZE_METRICS);
+    		} else {
+    			isd = InsertSizeDistribution.create(INSERT_SIZE_METRICS);
+    		}
     	}
     	ReadPairConcordanceCalculator rpcc = ReadPairConcordanceCalculator.create(
     			READ_PAIR_CONCORDANCE_METHOD,
@@ -114,7 +116,7 @@ public class ExtractSVReads extends CommandLineProgram {
 								DISCORDANT_READ_PAIRS, rpcc,
 								UNMAPPED_READS);
     				}
-    				Files.move(tmpoutput, OUTPUT);
+    				FileHelper.move(tmpoutput, OUTPUT, true);
     			}
     		}
 		} catch (IOException e) {
@@ -157,6 +159,13 @@ public class ExtractSVReads extends CommandLineProgram {
 	private void validateParameters() {
     	IOUtil.assertFileIsReadable(INPUT);
     	IOUtil.assertFileIsWritable(OUTPUT);
+	}
+	@Override
+	protected String[] customCommandLineValidation() {
+		if (READ_PAIR_CONCORDANCE_METHOD == ReadPairConcordanceMethod.PERCENTAGE && INSERT_SIZE_METRICS == null) {
+			return new String[] { "INSERT_SIZE_METRICS is required when using percentage based read pair concordance" };
+		}
+		return super.customCommandLineValidation();
 	}
 	public static void main(String[] argv) {
         System.exit(new ExtractSVReads().instanceMain(argv));

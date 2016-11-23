@@ -36,8 +36,6 @@ public class SoftClipsToSplitReads extends CommandLineProgram {
     public File INPUT;
     @Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Output file", optional=false)
     public File OUTPUT;
-    @Option(shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME, doc="Reference genome", optional=false)
-    public File REFERENCE;
     @Option(doc="Minimum bases clipped. Generally, short read aligners are not able to uniquely align sequences shorter than 18-20 bases.", optional=true)
     public int MIN_CLIP_LENGTH = 15;
     @Option(doc="Minimum average base quality score of clipped bases. Low quality clipped bases are indicative of sequencing errors.", optional=true)
@@ -62,7 +60,7 @@ public class SoftClipsToSplitReads extends CommandLineProgram {
     	validateParameters();
     	
     	FastqAligner aligner = createAligner();
-    	GenomicProcessingContext pc = new GenomicProcessingContext(new FileSystemContext(TMP_DIR.get(0), new File("."), MAX_RECORDS_IN_RAM), REFERENCE, null);
+    	GenomicProcessingContext pc = new GenomicProcessingContext(new FileSystemContext(TMP_DIR.get(0), new File("."), MAX_RECORDS_IN_RAM), REFERENCE_SEQUENCE, null);
     	SplitReadRealigner realigner = new SplitReadRealigner(pc, aligner);
     	realigner.setMinSoftClipLength(MIN_CLIP_LENGTH);
     	realigner.setMinSoftClipQuality(MIN_CLIP_QUAL);
@@ -79,6 +77,13 @@ public class SoftClipsToSplitReads extends CommandLineProgram {
 	private void validateParameters() {
     	IOUtil.assertFileIsReadable(INPUT);
     	IOUtil.assertFileIsWritable(OUTPUT);
+	}
+	@Override
+	protected String[] customCommandLineValidation() {
+		if (REFERENCE_SEQUENCE == null) {
+            return new String[]{"Must have a non-null REFERENCE_SEQUENCE"};
+        }
+		return super.customCommandLineValidation();
 	}
 	public static void main(String[] argv) {
         System.exit(new SoftClipsToSplitReads().instanceMain(argv));

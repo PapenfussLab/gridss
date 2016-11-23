@@ -9,13 +9,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.SortedSet;
 import java.util.Spliterator;
 import java.util.Spliterators;
+import java.util.concurrent.ExecutorService;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -863,7 +863,6 @@ public class TestHelper {
 	public static class MockSAMEvidenceSource extends SAMEvidenceSource {
 		public IdsvSamFileMetrics metrics = new MockMetrics();
 		public int category = 0;
-		public EnumSet<ProcessStep> completedSteps = EnumSet.of(ProcessStep.CALCULATE_METRICS); 
 		public MockSAMEvidenceSource(ProcessingContext processContext) {
 			super(processContext, new File("test.bam"), 0);
 		}
@@ -946,7 +945,7 @@ public class TestHelper {
 			super(processContext, ImmutableList.<SAMEvidenceSource>of(), null);
 		}
 		@Override
-		public void assembleBreakends() throws java.io.IOException {};
+		public void assembleBreakends(ExecutorService threadpool) throws java.io.IOException {};
 		@Override
 		public int getMaxConcordantFragmentSize() { return fragSize; }
 		@Override

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
 
 import com.google.common.collect.Iterators;
 
@@ -13,6 +14,7 @@ import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.debruijn.positional.PositionalAssembler;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.util.FileHelper;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
@@ -57,15 +59,16 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	}
 	/**
 	 * Perform breakend assembly 
+	 * @param threadpool 
 	 * @throws IOException 
 	 */
-	public void assembleBreakends() throws IOException {
+	public void assembleBreakends(ExecutorService threadpool) throws IOException {
 		SAMFileHeader header = getContext().getBasicSamHeader();
 		header.setSortOrder(SortOrder.unsorted);
 		// TODO: add assembly @PG header
 		File tmpout = FileSystemContext.getWorkingFileFor(getFile());
 		try (SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(header, false, tmpout)) {
-			Iterator<SAMRecord> it = getAllAssemblies();
+			Iterator<SAMRecord> it = getAllAssemblies(threadpool);
 			while (it.hasNext()) {
 				SAMRecord asm = it.next();
 				if (!getContext().getAssemblyParameters().writeFiltered) {
@@ -78,7 +81,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	    }
 		SAMFileUtil.sort(getContext().getFileSystemContext(), tmpout, getFile(), SortOrder.coordinate);
 		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
-			tmpout.delete();
+			FileHelper.delete(tmpout, true);
 		}
 		File throttledFilename = new File(getFile().getAbsolutePath() + ".throttled.bed");
 		try {
@@ -119,12 +122,15 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		}
 		return false;
 	}
-	private Iterator<SAMRecord> getAllAssemblies() {
+	private Iterator<SAMRecord> getAllAssemblies(ExecutorService threadpool) {
 		// TODO multi-threaded version
 		// Chunk into tasks
 		// Schedule tasks on thread pool
 		// Get records from blocking output queue
 			// stop when no outstanding assembly tasks
+		if (threadpool == null) {
+			return getAllAssemblies_single_threaded();
+		}
 		return getAllAssemblies_single_threaded();
 	}
 	private Iterator<SAMRecord> getAllAssemblies_single_threaded() {

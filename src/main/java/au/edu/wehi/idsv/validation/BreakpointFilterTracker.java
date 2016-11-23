@@ -90,8 +90,8 @@ public class BreakpointFilterTracker<T extends VariantContextDirectedEvidence> e
 				be2value += " AS:" + bp2.getBreakpointEvidenceCountLocalAssembly() + " RAS:" + bp2.getBreakpointEvidenceCountRemoteAssembly();
 			}
 			if (bp1.getBreakpointEvidenceCountSoftClip() != bp2.getBreakpointEvidenceCountSoftClip()) {
-				be1value += " SC:" + bp1.getBreakpointEvidenceCountLocalSoftClip() + " RSC:" + bp1.getBreakpointEvidenceCountRemoteSoftClip();
-				be2value += " SC:" + bp2.getBreakpointEvidenceCountLocalSoftClip() + " RSC:" + bp2.getBreakpointEvidenceCountRemoteSoftClip();
+				be1value += " SC:" + bp1.getBreakpointEvidenceCountSoftClip();
+				be2value += " SC:" + bp2.getBreakpointEvidenceCountSoftClip();
 			}
 			if (bp1.getBreakpointEvidenceCountReadPair() != bp2.getBreakpointEvidenceCountReadPair()) {
 				be1value += " RP:" + bp1.getBreakpointEvidenceCountReadPair();

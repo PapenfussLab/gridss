@@ -87,7 +87,9 @@ public class VcfFileUtil {
 			CloseableIterator<VariantContext> rit = null;
 			CloseableIterator<VariantContext> wit = null;
 			SortingCollection<VariantContext> collection = null;
-			if (FileSystemContext.getWorkingFileFor(output).exists()) FileSystemContext.getWorkingFileFor(output).delete();
+			if (FileSystemContext.getWorkingFileFor(output).exists()) {
+				FileHelper.delete(FileSystemContext.getWorkingFileFor(output), true);
+			}
 			try {
 				reader = new VCFFileReader(input, false);
 				VCFHeader header = reader.getFileHeader();
@@ -127,7 +129,9 @@ public class VcfFileUtil {
 				CloserUtil.close(rit);
 				CloserUtil.close(reader);
 				if (collection != null) collection.cleanup();
-				if (FileSystemContext.getWorkingFileFor(output).exists()) FileSystemContext.getWorkingFileFor(output).delete();
+				if (FileSystemContext.getWorkingFileFor(output).exists()) {
+					FileHelper.delete(FileSystemContext.getWorkingFileFor(output), true);
+				}
 			}
 			return null;
 		}

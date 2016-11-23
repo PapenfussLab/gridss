@@ -58,9 +58,10 @@ public class FixMissingMateInformation extends picard.cmdline.CommandLineProgram
 		}
 		if (!foundFirst || !foundSecond) {
 			for (SAMRecord r : readlist) {
+				r.setReadPairedFlag(false);
+				r.setProperPairFlag(false);
 				r.setFirstOfPairFlag(false);
 				r.setSecondOfPairFlag(false);
-				r.setReadPairedFlag(false);
 				r.setMateAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
 				r.setMateNegativeStrandFlag(false);
 				r.setMateReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);

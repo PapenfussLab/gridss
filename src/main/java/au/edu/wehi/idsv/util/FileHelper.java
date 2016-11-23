@@ -2,6 +2,9 @@ package au.edu.wehi.idsv.util;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import com.google.common.io.Files;
 
@@ -17,13 +20,19 @@ public abstract class FileHelper {
 			throw new IllegalArgumentException("Cannot move nonexist file" + from.getAbsolutePath());
 		}
 		if (to.exists()) {
-			to.delete();
+			FileHelper.delete(to, moveIndexes);
 		}
 		if (!from.renameTo(to)) {
 			throw new IOException("Could not rename " + from + " to " + to);
 		}
 		moveIndex(from, to, ".bai");
 		moveIndex(from, to, ".idx");
+	}
+	public static void delete(File file, boolean deleteIndexes) throws IOException {
+		file.delete();
+		for (File f : getIndexFilesFor(file)) {
+			f.delete();
+		}
 	}
 	private static void moveIndex(File from, File to, String indexSuffix) throws IOException {
 		trymovesingle(
@@ -40,5 +49,17 @@ public abstract class FileHelper {
 		if (from.exists()) {
 			Files.move(from, to);
 		}
+	}
+	public static List<File> getIndexFilesFor(File file) {
+		return Stream.concat(
+				getPossibleIndexFilesFor(file, ".bai"),
+				getPossibleIndexFilesFor(file, ".idx"))
+			.filter(f -> f.exists())
+			.collect(Collectors.toList());
+	}
+	private static Stream<File> getPossibleIndexFilesFor(File file, String indexSuffix) {
+		return Stream.of(
+				new File(file.getAbsolutePath() + indexSuffix),
+				new File(file.getParentFile(), Files.getNameWithoutExtension(file.getName()) + indexSuffix));
 	}
 }

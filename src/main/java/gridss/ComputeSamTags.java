@@ -7,13 +7,13 @@ import java.util.Locale;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
-import com.google.common.io.Files;
 
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.sam.NmTagIterator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.TemplateTagsIterator;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
+import au.edu.wehi.idsv.util.FileHelper;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
@@ -49,8 +49,6 @@ public class ComputeSamTags extends CommandLineProgram {
     public File INPUT;
 	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Annotated BAM file.")
     public File OUTPUT;
-	@Option(shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME, doc="Reference genome", optional=true)
-    public File REFERENCE = null;
 	@Option(shortName=StandardOptionDefinitions.ASSUME_SORTED_SHORT_NAME, doc="Assume that all records with the same read name are consecutive. "
 			+ "Incorrect tags will be written if this is not the case.", optional=true)
     public boolean ASSUME_SORTED = false;
@@ -72,7 +70,7 @@ public class ComputeSamTags extends CommandLineProgram {
     	try {
     		ReferenceSequenceFile reference = null;
     		if (isReferenceRequired()) {
-    			reference = new IndexedFastaSequenceFile(REFERENCE);
+    			reference = new IndexedFastaSequenceFile(REFERENCE_SEQUENCE);
     		}
     		try (SamReader reader = readerFactory.open(INPUT)) {
     			SAMFileHeader header = reader.getFileHeader();
@@ -90,7 +88,7 @@ public class ComputeSamTags extends CommandLineProgram {
     				try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpoutput)) {
     					compute(it, writer, reference, TAGS, SOFTEN_HARD_CLIPS);
     				}
-    				Files.move(tmpoutput, OUTPUT);
+    				FileHelper.move(tmpoutput, OUTPUT, true);
     			}
     		}
 		} catch (IOException e) {
@@ -124,7 +122,7 @@ public class ComputeSamTags extends CommandLineProgram {
 	}
 	private void validateParameters() {
 		if (isReferenceRequired()) {
-			IOUtil.assertFileIsReadable(REFERENCE);
+			IOUtil.assertFileIsReadable(REFERENCE_SEQUENCE);
 		}
     	IOUtil.assertFileIsReadable(INPUT);
     	IOUtil.assertFileIsWritable(OUTPUT);
@@ -147,6 +145,13 @@ public class ComputeSamTags extends CommandLineProgram {
 				throw new RuntimeException(msg);
     		}
     	}
+	}
+	@Override
+	protected String[] customCommandLineValidation() {
+		if (isReferenceRequired() && REFERENCE_SEQUENCE == null) {
+            return new String[]{"Must have a non-null REFERENCE_SEQUENCE"};
+        }
+		return super.customCommandLineValidation();
 	}
 	public static void main(String[] argv) {
         System.exit(new ComputeSamTags().instanceMain(argv));

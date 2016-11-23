@@ -45,7 +45,7 @@ public class Manual extends TestHelper {
 			samEvidence.add(ses);
 		}
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, samEvidence, new File("W:\778\\idsv\\778.vcf.idsv.working"));
-		aes.assembleBreakends();
+		aes.assembleBreakends(null);
 		//Iterator<SAMRecordAssemblyEvidence> it = aes.iterator(true, true);
 		//while (it.hasNext()) {
 		//	it.next();

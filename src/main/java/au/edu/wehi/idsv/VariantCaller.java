@@ -37,7 +37,7 @@ import htsjdk.variant.vcf.VCFFileReader;
  * @author Daniel Cameron
  *
  */
-public class VariantCaller {
+public class VariantCaller implements Closeable {
 	private static final Log log = Log.getInstance(VariantCaller.class);
 	private final ProcessingContext processContext;
 	private final File output;
@@ -64,8 +64,8 @@ public class VariantCaller {
 				CloseableIterator<DirectedEvidence> evidenceIt = null;
 				File unsorted = FileSystemContext.getWorkingFileFor(outfile);
 				File sorted = FileSystemContext.getWorkingFileFor(outfile, "gridss.tmp.sorted.VariantCaller.");
-				unsorted.delete();
-				sorted.delete();
+				FileHelper.delete(unsorted, true);
+				FileHelper.delete(sorted, true);
 				try {
 					boolean assemblyOnly = processContext.getVariantCallingParameters().callOnlyAssemblies;
 					if (assemblyOnly) {

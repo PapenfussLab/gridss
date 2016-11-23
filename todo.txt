@@ -1,3 +1,8 @@
+SAM Tags before split read id
+Add FixMateInformation into ComputeSamTags (including populating MC tag)
+	- try to search for correct mate based on mate mapping location
+		(then self alignment position since the unmapped is usually stored with it's mate) 
+
 Filters:
 - dovetailing (SC & RP)
 - coverage blacklist (SAMEvidenceSource.getBlacklistedRegions)

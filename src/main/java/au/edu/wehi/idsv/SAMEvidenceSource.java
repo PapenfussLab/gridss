@@ -13,10 +13,15 @@ import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
+import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
+import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
+import gridss.ComputeSamTags;
+import gridss.ExtractSVReads;
+import gridss.SoftClipsToSplitReads;
 import gridss.analysis.CollectGridssMetrics;
 import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
@@ -27,6 +32,7 @@ import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
+import picard.cmdline.CommandLineProgram;
 
 /**
  * Structural variation evidence based on read pairs from a single SAM/BAM.  
@@ -82,25 +88,86 @@ public class SAMEvidenceSource extends EvidenceSource {
 			File mapqFile = getContext().getFileSystemContext().getMapqMetrics(input);
 			if (!idsvFile.exists() || !cigarFile.exists() || !mapqFile.exists()) {
 				log.info("Calculating metrics for " + getFile().getAbsolutePath());
-				CollectGridssMetrics cgm = new gridss.analysis.CollectGridssMetrics();
 				List<String> args = Lists.newArrayList(
 						"INPUT=" + getFile().getAbsolutePath(),
 						"OUTPUT=" + getContext().getFileSystemContext().getMetricsPrefix(getFile()).getAbsolutePath(),
-						"REFERENCE_SEQUENCE=" + getContext().getReferenceFile(),
-						"TMP_DIR=" + ImmutableList.of(getContext().getFileSystemContext().getTemporaryDirectory()),
-						"MAX_RECORDS_IN_RAM=" + getContext().getFileSystemContext().getMaxBufferedRecordsPerFile(),
 						"FILE_EXTENSION=null");
 				if (getContext().getCalculateMetricsRecordCount() < Integer.MAX_VALUE) {
 					args.add("STOP_AFTER=" + getContext().getCalculateMetricsRecordCount());
 				}
-				cgm.instanceMain(args.toArray(new String[] {}));
+				execute(new CollectGridssMetrics(), args);
 			}
 			metrics = new IdsvSamFileMetrics(getContext(), getFile());
 		}
 		
 	}
+	private void execute(CommandLineProgram cmd, List<String> args) {
+		args.add("REFERENCE_SEQUENCE=" + getContext().getReferenceFile());
+		args.add("TMP_DIR=" + ImmutableList.of(getContext().getFileSystemContext().getTemporaryDirectory()));
+		args.add("MAX_RECORDS_IN_RAM=" + getContext().getFileSystemContext().getMaxBufferedRecordsPerFile());
+		int result = cmd.instanceMain(args.toArray(new String[] {}));
+		if (result != 0) {
+			String msg = "Unable to execute " + cmd.getClass().getName() + " for " + getFile();
+			log.error(msg);
+			if (getContext().getConfig().terminateOnFirstError) {
+				System.exit(result);
+			}
+			throw new RuntimeException(msg);
+		}
+	}
+	public void ensureExtracted() throws IOException {
+		File svFile = getContext().getFileSystemContext().getSVBam(getFile());
+		File extractedFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.extract.");
+		File splitreadFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.withsplitreads.");
+		File querynameFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.queryname.");
+		File taggedFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.tagged.");
+		ensureMetrics();
+		// Regenerate from from the intermediate file furtherest through the pipeline 
+		if (!svFile.exists()) {
+			if (!taggedFile.exists()) {
+				if (!querynameFile.exists()) {
+					if (!splitreadFile.exists()) {
+						if (!extractedFile.exists()) {
+							log.info("Extracting SV reads from " + getFile().getAbsolutePath());
+							List<String> args = Lists.newArrayList(
+									"INPUT=" + getFile().getAbsolutePath(),
+									"OUTPUT=" + extractedFile.getAbsolutePath(),
+									"MIN_CLIP_LENGTH=" + getContext().getConfig().getSoftClip().minLength,
+									"READ_PAIR_CONCORDANCE_METHOD=" + rpcMethod.name(),
+									"FIXED_READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE=" + rpcMinFragmentSize,
+									"FIXED_READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE=" + rpcMaxFragmentSize,
+									"READ_PAIR_CONCORDANT_PERCENT=" + rpcConcordantPercentage,
+									"INSERT_SIZE_METRICS=" + getContext().getFileSystemContext().getInsertSizeMetrics(input));
+							execute(new ExtractSVReads(), args);
+						}
+						log.info("Identifying split reads for " + getFile().getAbsolutePath());
+						List<String> args = Lists.newArrayList(
+								"INPUT=" + extractedFile.getAbsolutePath(),
+								"OUTPUT=" + splitreadFile.getAbsolutePath());
+								// realignment.* not soft-clip
+								//"MIN_CLIP_LENGTH=" + getContext().getConfig().
+								//"MIN_CLIP_QUAL=" + getContext().getConfig().getSoftClip().minAverageQual);
+						execute(new SoftClipsToSplitReads(), args);
+					}
+					SAMFileUtil.sort(getContext().getFileSystemContext(), splitreadFile, querynameFile, SortOrder.queryname);
+				}
+				log.info("Computing SAM tags for " + svFile);
+				List<String> args = Lists.newArrayList(
+						"INPUT=" + querynameFile.getAbsolutePath(),
+						"OUTPUT=" + taggedFile.getAbsolutePath());
+				execute(new ComputeSamTags(), args);
+			}
+			SAMFileUtil.sort(getContext().getFileSystemContext(), taggedFile, svFile, SortOrder.coordinate);
+		}
+		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
+			FileHelper.delete(extractedFile, true);
+			FileHelper.delete(splitreadFile, true);
+			FileHelper.delete(querynameFile, true);
+			FileHelper.delete(taggedFile, true);
+		}
+	}
 	public CloseableIterator<DirectedEvidence> iterator(final QueryInterval interval) {
-		SamReader reader = factory.open(input);
+		SamReader reader = getReader();
 		// expand query bounds as the alignment for a discordant read pair could fall before or after the breakend interval we are extracting
 		SAMRecordIterator it = reader.queryOverlapping(new QueryInterval[] {
 			new QueryInterval(interval.referenceIndex, interval.start - getMaxConcordantFragmentSize() - 1, interval.end + getMaxConcordantFragmentSize() + 1)});
@@ -111,11 +178,16 @@ public class SAMEvidenceSource extends EvidenceSource {
 		return new AutoClosingIterator<>(eit, ImmutableList.of(reader, it));
 	}
 	public CloseableIterator<DirectedEvidence> iterator() {
-		SamReader reader = factory.open(input);
+		SamReader reader = getReader();
 		SAMRecordIterator it = reader.iterator();
 		it.assertSorted(SortOrder.coordinate);
 		Iterator<DirectedEvidence> eit = asEvidence(it);
 		return new AutoClosingIterator<>(eit, ImmutableList.of(reader, it));
+	}
+	private SamReader getReader() {
+		File svFile = getContext().getFileSystemContext().getSVBam(input);
+		SamReader reader = factory.open(svFile.exists() ? svFile : input);
+		return reader;
 	}
 	private Iterator<DirectedEvidence> asEvidence(Iterator<SAMRecord> it) {
 		it = Iterators.transform(it, r -> transform(r));

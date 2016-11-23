@@ -7,6 +7,7 @@ import java.util.Locale;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import au.edu.wehi.idsv.util.FileHelper;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
@@ -87,8 +88,8 @@ public class VcfBreakendToReadPair extends picard.cmdline.CommandLineProgram {
 			CloserUtil.close(writerFiltered);
 			CloserUtil.close(it);
 			CloserUtil.close(vcfReader);
-			working.delete();
-			workingFiltered.delete();
+			FileHelper.delete(working, true);
+			FileHelper.delete(workingFiltered, true);
 		}
 	}
 	private class FixMate extends FixMateInformation {
