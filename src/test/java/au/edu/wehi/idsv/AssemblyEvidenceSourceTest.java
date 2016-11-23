@@ -15,7 +15,10 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SamReader;
+import htsjdk.samtools.SamReaderFactory;
 
 public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 	private File assemblyFile;
@@ -30,15 +33,26 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		SAMEvidenceSource ses = new SAMEvidenceSource(getCommandlineContext(), input, 0);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends();
-		getFastqRecords(aes);
+		assertTrue(assemblyFile.exists());
+	}
+	@Test
+	public void breakend_bam_should_be_coordinate_sorted() throws IOException {
+		createInput(RP(0, 1, 2, 1));
+		SAMEvidenceSource ses = new SAMEvidenceSource(getCommandlineContext(), input, 0);
+		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), assemblyFile);
+		aes.assembleBreakends();
+		try (SamReader r = SamReaderFactory.make().open(assemblyFile)) {
+			assertEquals(SortOrder.coordinate, r.getFileHeader().getSortOrder());
+		}
 	}
 	@Test
 	public void debruijn_should_generate_bam() throws IOException {
 		createInput(
-				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGA", Read(0, 1, "1M98S")),
-				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", Read(0, 1, "1M99S"))
+				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGA", Read(0, 1, "41M58S")),
+				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", Read(0, 1, "41M59S"))
 				);
 		ProcessingContext pc = getCommandlineContext();
+		pc.getConfig().getAssembly().minReads = 1;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends();
@@ -49,14 +63,14 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 	@Test
 	public void iterator_should_return_in_chr_order() throws IOException {
 		createInput(
-				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGA", Read(0, 1, "1M98S")),
-				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", Read(0, 1, "1M99S")),
-				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGA", Read(1, 1, "1M98S")),
-				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", Read(1, 1, "1M99S")),
-				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGA", Read(2, 1, "1M98S")),
-				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", Read(2, 1, "1M99S")),
-				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGA", Read(3, 1, "1M98S")),
-				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", Read(3, 1, "1M99S"))
+				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGA", Read(0, 1, "41M58S")),
+				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", Read(0, 1, "41M59S")),
+				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGA", Read(1, 1, "41M58S")),
+				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", Read(1, 1, "41M59S")),
+				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGA", Read(2, 1, "41M58S")),
+				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", Read(2, 1, "41M59S")),
+				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGA", Read(3, 1, "41M58S")),
+				withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", Read(3, 1, "41M59S"))
 				);
 		ProcessingContext pc = getCommandlineContext();
 		pc.getConfig().getAssembly().minReads = 1;
@@ -138,40 +152,44 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 	}
 	@Test
 	public void should_not_apply_breakend_filter_to_unanchored_assembly() {
+		AssemblyEvidenceSource aes = AES();
+		aes.getContext().getConfig().getAssembly().minReads = 0;
 		ArrayList<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(NRRP(SES(100, 100), DP(0, 1, "1M", true, 0, 5, "1M", false)));
 		SAMRecord e = AssemblyFactory.createUnanchoredBreakend(
-				getContext(), AES(), new BreakendSummary(0, FWD, 1, 1, 300), support,
+				getContext(), aes, new BreakendSummary(0, FWD, 1, 1, 300), support,
 				B("AA"), B("AA"), new int[] { 2, 0});
-		assertFalse(AES().shouldFilterAssembly(e));
+		
+		assertFalse(aes.shouldFilterAssembly(e));
 	}
 	@Test
 	public void should_filter_too_few_reads() {
 		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES(pc);
 		pc.getAssemblyParameters().minReads = 3;
-		SAMRecord e = AssemblyFactory.createAnchoredBreakend(pc, AES(), BWD, null, 0, 1, 5, B("AACGTG"), B("AACGTG"));
-		assertTrue(AES().shouldFilterAssembly(e));
+		SAMRecord e = AssemblyFactory.createAnchoredBreakend(pc, aes, BWD, null, 0, 1, 5, B("AACGTG"), B("AACGTG"));
+		assertTrue(aes.shouldFilterAssembly(e));
 		
 		ArrayList<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(
 				SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5 }, withSequence("AACGTG", Read(0, 1, "1M5S")))));
 		e = AssemblyFactory.createAnchoredBreakend(
-				getContext(), AES(), BWD, support,
+				getContext(), aes, BWD, support,
 				0, 1, 5, B("AACGTG"), B("AACGTG"));
-		assertTrue(AES().shouldFilterAssembly(e));
+		assertTrue(aes.shouldFilterAssembly(e));
 		
 		support = Lists.<DirectedEvidence>newArrayList(
 				SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5 }, withSequence("AACGTG", Read(0, 1, "1M5S")))),
 				NRRP(OEA(0, 1, "4M", false)));
 		e = AssemblyFactory.createAnchoredBreakend(
-				pc, AES(), BWD, support,
+				pc, aes, BWD, support,
 				0, 1, 5, B("AACGTG"), B("AACGTG"));
-		assertTrue(AES().shouldFilterAssembly(e));
+		assertTrue(aes.shouldFilterAssembly(e));
 		
 		support = Lists.<DirectedEvidence>newArrayList(
 				SCE(BreakendDirection.Forward, withQual(new byte[] { 5,5,5,5,5,5 }, withSequence("AACGTG", Read(0, 1, "1M5S")))),
 				NRRP(OEA(0, 1, "3M", false)),
 				NRRP(OEA(0, 1, "5M", false)));
 		e = AssemblyFactory.createAnchoredBreakend(
-				pc, AES(), BWD, support,
+				pc, aes, BWD, support,
 				0, 1, 5, B("AACGTG"), B("AACGTG"));
 		assertFalse(AES().shouldFilterAssembly(e));
 	}

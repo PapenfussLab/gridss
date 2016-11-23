@@ -80,6 +80,7 @@ import htsjdk.samtools.SAMSequenceDictionary;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SamPairUtil;
 import htsjdk.samtools.ValidationStringency;
+import htsjdk.samtools.fastq.FastqRecord;
 import htsjdk.samtools.metrics.Header;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
@@ -520,8 +521,26 @@ public class TestHelper {
 		return new SAMRecord[] { read1, read2 };
 	}
 	public static SplitReadEvidence SR(SAMRecord read, SAMRecord realigned) {
+		return SR(SES(), read, realigned);
+	}
+	public static SplitReadEvidence SR(SAMEvidenceSource source, SAMRecord read, SAMRecord realigned) {
+		List<FastqRecord> ralist = SplitReadIdentificationHelper.getSplitReadRealignments(read, false);
+		if (ralist.size() == 1) {
+			realigned.setReadName(ralist.get(0).getReadHeader());
+		}
 		SplitReadIdentificationHelper.convertToSplitRead(read, ImmutableList.of(realigned));
-		return SplitReadEvidence.create(SES(), read).get(0);
+		return SplitReadEvidence.create(source, read).get(0);
+	}
+	public static SplitReadEvidence SR(SAMEvidenceSource source, BreakendDirection dir, SAMRecord read, SAMRecord realigned) {
+		List<FastqRecord> ralist = SplitReadIdentificationHelper.getSplitReadRealignments(read, false);
+		if (ralist.size() == 1) {
+			realigned.setReadName(ralist.get(0).getReadHeader());
+		}
+		SplitReadIdentificationHelper.convertToSplitRead(read, ImmutableList.of(realigned));
+		return SplitReadEvidence.create(SES(), read).stream()
+				.filter(e -> e.getBreakendSummary().direction == dir)
+				.findFirst()
+				.get();
 	}
 	/**
 	 * Fills in missing information from the given read
@@ -888,6 +907,15 @@ public class TestHelper {
 	public static MockSAMEvidenceSource SES(int minFragmentSize, int maxFragmentSize) {
 		return new MockSAMEvidenceSource(getContext(), minFragmentSize, maxFragmentSize);
 	}
+	public MockSAMEvidenceSource permissiveSES() {
+		MockSAMEvidenceSource ses = SES();
+		ses.getContext().getConfig().getSoftClip().minAnchorIdentity = 0;
+		ses.getContext().getConfig().getSoftClip().minLength = 1;
+		ses.getContext().getConfig().minMapq = 0;
+		ses.getContext().getConfig().minAnchorShannonEntropy = 0;
+		ses.getContext().getConfig().adapters = new AdapterHelper(new String[0]);
+		return ses;
+	}
 	public static class StubSAMEvidenceSource extends SAMEvidenceSource {
 		private final int maxFragmentSize;
 		public int maxReadLength = 100;
@@ -946,6 +974,17 @@ public class TestHelper {
 		return new AssemblyEvidenceSource(getContext(),
 				ImmutableList.<SAMEvidenceSource>of(SES(maxFragmentSize)), new File(
 						"test.bam"));
+	}
+	public static AssemblyEvidenceSource AES(SAMEvidenceSource ses) {
+		return new AssemblyEvidenceSource(ses.getContext(),
+				ImmutableList.<SAMEvidenceSource>of(ses), new File(
+						"test.bam"));
+	}
+	public VariantContextDirectedEvidence CallSV(SAMRecord... evidence) {
+		return CallSV(Stream.of(evidence)
+			.flatMap(r -> SingleReadEvidence.createEvidence(AES(), r).stream())
+			.map(r -> (DirectedEvidence)r)
+			.toArray( DirectedEvidence[]::new));
 	}
 	public VariantContextDirectedEvidence CallSV(DirectedEvidence... evidence) {
 		IdsvVariantContextBuilder vcBuilder = new IdsvVariantContextBuilder(getContext());

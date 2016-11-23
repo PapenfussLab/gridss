@@ -41,7 +41,7 @@ public class VariantCallerTest extends IntermediateFilesTest {
 		vc.callBreakends(MoreExecutors.newDirectExecutorService());
 		vc.annotateBreakpoints(MoreExecutors.newDirectExecutorService());
 		List<IdsvVariantContext> annotated = getVcf(new File(testFolder.getRoot(), "out.vcf"), null);
-		List<IdsvVariantContext> calls = getVcf(new File(new File(testFolder.getRoot(), "out.vcf.idsv.working"), "out.vcf.idsv.breakpoint.vcf"), null);
+		List<IdsvVariantContext> calls = getVcf(new File(new File(testFolder.getRoot(), "out.vcf.gridss.working"), "out.vcf.breakpoint.vcf"), null);
 		// with no filtering, annotation should not change call set
 		assertEquals(calls.size(), annotated.size());
 		double expectedEvidence = 0;

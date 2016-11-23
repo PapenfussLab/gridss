@@ -223,6 +223,31 @@ public class SAMRecordUtilTest extends TestHelper {
 		checkDovetail(false, 4, r);
 	}
 	@Test
+	public void isDovetailing_should_consider_clipping_direction() {
+		//           >>>>>>>>>>SSSSSSSSSS   ----> read 1
+		// SSSSSSSSSS<<<<<<<<<<             <---- read 2
+		//
+		// classic dovetail with untrimmed adapters
+		SAMRecord[] rp = RP(0, 100, 100, 20);
+		rp[0].setCigarString("10M10S");
+		rp[1].setCigarString("10S10M");
+		clean(rp[0], rp[1]);
+		assertTrue(SAMRecordUtil.isDovetailing(rp[0], PairOrientation.FR, 0));
+		assertTrue(SAMRecordUtil.isDovetailing(rp[1], PairOrientation.FR, 0));
+				
+		
+		// >>>>>>>>>>SSSSSSSSSS   ----> read 1
+		// <<<<<<<<<<SSSSSSSSSS   <---- read 2
+		// looks like a dovetail, but is not
+		// since the read2 soft clip is on the wrong end of the read
+		rp = RP(0, 100, 100, 20);
+		rp[0].setCigarString("10S10M"); // <-- definitely keep this one
+		rp[1].setCigarString("10S10M"); // ideally keep this one too, but we need to know about the mate cigar for that
+		clean(rp[0], rp[1]);
+		assertFalse(SAMRecordUtil.isDovetailing(rp[0], PairOrientation.FR, 0));
+		assertFalse(SAMRecordUtil.isDovetailing(rp[1], PairOrientation.FR, 0));
+	}
+	@Test
 	public void trimSoftClips_should_remove_from_both_end() {
 		SAMRecord r = Read(0,  1, "3S1M1S");
 		r.setReadBases(B("ACGTN"));

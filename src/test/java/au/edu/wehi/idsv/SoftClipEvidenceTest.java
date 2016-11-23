@@ -1,30 +1,88 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
-import java.io.File;
+import java.util.stream.Stream;
 
 import org.apache.commons.configuration.ConfigurationException;
-import org.junit.Ignore;
 import org.junit.Test;
 
+import com.google.common.collect.ImmutableList;
+
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
-import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
 
 public class SoftClipEvidenceTest extends TestHelper {
-	@Test(expected=IllegalArgumentException.class)
-	public void constructor_should_require_soft_clip_b() {
-		SAMRecord r = Read(0, 10, "10M5S");
-		SoftClipEvidence.create(SES(), BreakendDirection.Backward, r);
+	static {
+		//  1234567890
+		//  ATGTGGC
+		//  SSMMSSSH
+		SAMRecord r = Read(2, 3, "2S2M3S5H");
+		r.setReadBases(B("ATGTGGC"));
+		r.setBaseQualities(B("1234567"));
+		r.setMappingQuality(40);
+		fExample = SoftClipEvidence.create(SES(), FWD, r);
+		bExample = SoftClipEvidence.create(SES(), BWD, r);
+	}
+	private static final SoftClipEvidence fExample;
+	private static final SoftClipEvidence bExample;
+	@Test
+	public void should_break_at_clip() {
+		assertEquals(new BreakendSummary(2, FWD, 4), fExample.getBreakendSummary());
+		assertEquals(new BreakendSummary(2, BWD, 3), bExample.getBreakendSummary());
+	}
+	@Test
+	public void indels_should_have_unique_evidenceID() {
+		assertNotEquals(fExample.getEvidenceID(), bExample.getEvidenceID());
+	}
+	@Test
+	public void getBreakendSequence_should_return_sc() {
+		assertEquals("GGC", S(fExample.getBreakendSequence()));
+		assertEquals("AT", S(bExample.getBreakendSequence()));
+	}
+	
+	@Test
+	public void getBreakendQuality_should_return_sc_qual() {
+		assertEquals("567", S(fExample.getBreakendQuality()));
+		assertEquals("12", S(bExample.getBreakendQuality()));
+	}
+	
+	@Test
+	public void getAnchorSequence_should_exclude_soft_clipped_bases_on_other_side() {
+		assertEquals("GT", S(fExample.getAnchorSequence()));
+		assertEquals("GT", S(bExample.getAnchorSequence()));
+	}
+	
+	@Test
+	public void getAnchorQuality_should_return_local() {
+		assertEquals("34", S(fExample.getAnchorQuality()));
+		assertEquals("34", S(bExample.getAnchorQuality()));
+	}
+	
+	@Test
+	public void getMapq_should_match_read_mapq() {
+		assertEquals(40, fExample.getLocalMapq());
+		assertEquals(40, bExample.getLocalMapq());
+	}
+	
+	@Test
+	public void isBreakendExact() {
+		assertTrue(fExample.isBreakendExact());
+		assertTrue(bExample.isBreakendExact());
+	}
+	@Test
+	public void getUntemplatedSequence_should_return_insert() {
+		assertEquals(S(fExample.getBreakendSequence()), fExample.getUntemplatedSequence());
+		assertEquals(S(bExample.getBreakendSequence()), bExample.getUntemplatedSequence());
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void constructor_should_require_soft_clip_f() {
-		SAMRecord r = Read(0, 10, "5S10M");
-		SoftClipEvidence.create(SES(), BreakendDirection.Forward, r);
+		SoftClipEvidence.create(SES(), FWD, Read(0, 10, "5S10M"));
+	}
+	@Test(expected=IllegalArgumentException.class)
+	public void constructor_should_require_soft_clip_b() {
+		SoftClipEvidence.create(SES(), BWD, Read(0, 10, "10M5S"));
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void constructor_should_require_cigar() {
@@ -33,6 +91,60 @@ public class SoftClipEvidenceTest extends TestHelper {
 	@Test(expected=IllegalArgumentException.class)
 	public void constructor_should_require_read_bases() {
 		SoftClipEvidence.create(SES(), BreakendDirection.Backward, withSequence((byte[])null, Read(0, 1, "1S1M"))[0]);
+	}
+	@Test
+	public void getEvidenceID_paired_should_encode_pair_info() {
+		SAMRecord r = RP(1, 1, 100)[0];
+		r.setReadName("ReadName");
+		r.setCigarString("10M10S");
+		r.setReadPairedFlag(true);
+		r.setFirstOfPairFlag(true);
+		String r1 = SoftClipEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID();
+		r.setFirstOfPairFlag(false);
+		r.setSecondOfPairFlag(true);
+		String r2 = SoftClipEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID();
+		assertNotEquals(r1, r2);
+	}
+	@Test
+	public void getEvidenceID_unpaired_should_encode_read_direction() {
+		SAMRecord r = Read(1, 1, 100);
+		r.setReadName("ReadName");
+		r.setCigarString("5S5M5S");
+		r.setReadName("ReadName");
+		assertNotEquals(SoftClipEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID(),
+				SoftClipEvidence.create(SES(), BreakendDirection.Backward, r).getEvidenceID());
+	}
+	@Test
+	public void should_recognise_1XS_as_unanchored_sequence() {
+		SoftClipEvidence e = SoftClipEvidence.create(SES(), FWD, withSequence("NCGT", Read(0, 100, "1X3S"))[0]);
+		assertFalse(e.isBreakendExact());
+		assertEquals("CGT", S(e.getBreakendSequence()));
+		assertEquals("", S(e.getAnchorSequence()));
+		assertEquals(new BreakendSummary(0, FWD, 100), e.getBreakendSummary());
+	}
+	@Test
+	public void should_recognise_2XS_as_unanchored_sequence() {
+		SoftClipEvidence e = SoftClipEvidence.create(SES(), FWD, withSequence("NNCGT", Read(0, 100, "2X3S"))[0]);
+		assertFalse(e.isBreakendExact());
+		assertEquals("CGT", S(e.getBreakendSequence()));
+		assertEquals("", S(e.getAnchorSequence()));
+		assertEquals(new BreakendSummary(0, FWD, 101, 100, 101), e.getBreakendSummary());
+	}
+	@Test
+	public void should_recognise_XNX_as_unanchored_breakend_interval() {
+		SoftClipEvidence e = SoftClipEvidence.create(SES(), FWD, withSequence("NNCGT", Read(0, 100, "1X1N1X3S"))[0]);
+		assertFalse(e.isBreakendExact());
+		assertEquals("CGT", S(e.getBreakendSequence()));
+		assertEquals("", S(e.getAnchorSequence()));
+		assertEquals(new BreakendSummary(0, FWD, 101, 100, 102), e.getBreakendSummary());
+	}
+	@Test
+	public void should_recognise_SXNX_as_unanchored_sequence() {
+		SoftClipEvidence e = SoftClipEvidence.create(SES(), BWD, withSequence("CGTNN", Read(0, 100, "3S1X2N1X"))[0]);
+		assertFalse(e.isBreakendExact());
+		assertEquals("CGT", S(e.getBreakendSequence()));
+		assertEquals("", S(e.getAnchorSequence()));
+		assertEquals(new BreakendSummary(0, BWD, 101, 100, 103), e.getBreakendSummary());
 	}
 	@Test
 	public void GetBreakendSummary_should_get_f_location() {
@@ -56,24 +168,9 @@ public class SoftClipEvidenceTest extends TestHelper {
 	public void GetBreakendSummary_should_get_location_with_unmapped_realigned() {
 		SAMRecord r = Read(0, 10, "10M5S");
 		SAMRecord realigned = Unmapped(15);
-		assertFalse(SoftClipEvidence.create(SES(), BreakendDirection.Forward, r, realigned).getBreakendSummary() instanceof BreakpointSummary);
-	}
-	@Test
-	public void realigned_constructors_should_be_equivalent() {
-		SAMRecord r = Read(0, 10, "10M5S");
-		SAMRecord realigned = Read(1, 15, "10M");
-		SoftClipEvidence c1 = SoftClipEvidence.create(SES(), BreakendDirection.Forward, r, realigned);
-		SoftClipEvidence c2 = SoftClipEvidence.create(SoftClipEvidence.create(SES(), BreakendDirection.Forward, r), realigned);
-		assertEquals(c1.getSAMRecord(), c2.getSAMRecord());
-		assertEquals(c1.getEvidenceID(), c2.getEvidenceID());
-		assertEquals(c1.getBreakendSummary().direction, c2.getBreakendSummary().direction);
-		assertEquals(c1.getBreakendSummary().start, c2.getBreakendSummary().start);
-		assertEquals(c1.getBreakendSummary().end, c2.getBreakendSummary().end);
-		assertEquals(c1.getBreakendSummary().referenceIndex, c2.getBreakendSummary().referenceIndex);
-		assertEquals(((BreakpointSummary)c1.getBreakendSummary()).direction2, ((BreakpointSummary)c2.getBreakendSummary()).direction2);
-		assertEquals(((BreakpointSummary)c1.getBreakendSummary()).start2, ((BreakpointSummary)c2.getBreakendSummary()).start2);
-		assertEquals(((BreakpointSummary)c1.getBreakendSummary()).end2, ((BreakpointSummary)c2.getBreakendSummary()).end2);
-		assertEquals(((BreakpointSummary)c1.getBreakendSummary()).referenceIndex2, ((BreakpointSummary)c2.getBreakendSummary()).referenceIndex2);
+		realigned.setReadName(SplitReadIdentificationHelper.getSplitReadRealignments(r, false).get(0).getReadString());
+		SplitReadIdentificationHelper.convertToSplitRead(r, ImmutableList.of(realigned));
+		assertNull(r.getAttribute("SA"));
 	}
 	@Test
 	public void getEvidenceID_paired_should_encode_read_direction_and_pair_info() {
@@ -81,61 +178,15 @@ public class SoftClipEvidenceTest extends TestHelper {
 		r.setReadName("ReadName");
 		r.setCigarString("1S2M3S");
 		r.setFirstOfPairFlag(true);
-		assertEquals("fReadName\\1", SoftClipEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID());
-		assertEquals("bReadName\\1", SoftClipEvidence.create(SES(), BreakendDirection.Backward, r).getEvidenceID());
-		r.setFirstOfPairFlag(false);
-		assertEquals("fReadName\\2", SoftClipEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID());
-		assertEquals("bReadName\\2", SoftClipEvidence.create(SES(), BreakendDirection.Backward, r).getEvidenceID());
-	}
-	@Test
-	public void getEvidenceID_unpaired_should_encode_read_direction() {
-		SAMRecord r = Read(1, 1, 100);
-		r.setReadName("ReadName");
-		r.setCigarString("1S2M3S");
-		r.setReadName("ReadName");
-		assertEquals("fReadName", SoftClipEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID());
-		assertEquals("bReadName", SoftClipEvidence.create(SES(), BreakendDirection.Backward, r).getEvidenceID());
-	}
-	@Test
-	public void realigned_consider_multimapping_realignment_unmapped() {
-		SAMRecord r = Read(0, 10, "10M5S");
-		SAMRecord realigned = Read(1, 15, "10M");
-		realigned.setMappingQuality(1);
-		SoftClipEvidence e = SoftClipEvidence.create(SES(), BreakendDirection.Forward, r, realigned);
-		assertFalse(e instanceof RealignedSoftClipEvidence);
-		assertFalse(e.getBreakendSummary() instanceof BreakpointSummary);
-	}
-	@Ignore
-	@Test
-	public void unrealigned_should_have_decent_quality_metric() {
-		assertTrue("TODO: get a decent quality metric", false);
-	}
-	@Ignore
-	@Test
-	public void realigned_should_have_decent_quality_metric() {
-		assertTrue("TODO: get a decent quality metric", false);
-	}
-	@Ignore
-	@Test
-	public void realigned_unmapped_should_have_decent_quality_metric() {
-		assertTrue("TODO: get a decent quality metric", false);
-	}
-	@Test
-	public void getAverageClipQuality_should_average_clip_quality_bases() {
-		SAMRecord r = Read(0, 1, "2M3S");
-		r.setBaseQualities(new byte[] { 40, 30, 20, 10, 0 });
-		SoftClipEvidence e = SoftClipEvidence.create(SES(), BreakendDirection.Forward, r);
-		assertEquals(10, e.getAverageClipQuality(), 0);
-	}
-	@Test
-	public void getAverageClipQuality_should_return_0_if_unknown() {
-		SAMRecord r = Read(0, 1, "2M3S");
-		r.setBaseQualities(null);
-		assertEquals(0, SoftClipEvidence.create(SES(), BreakendDirection.Forward, r).getAverageClipQuality(), 0);
-		
-		r = Read(0, 1, "2M3S");
-		r.setBaseQualities(SAMRecord.NULL_QUALS);
-		assertEquals(0, SoftClipEvidence.create(SES(), BreakendDirection.Forward, r).getAverageClipQuality(), 0);
+		SAMRecord r2 = r.deepCopy();
+		r2.setFirstOfPairFlag(false);
+		r2.setSecondOfPairFlag(true);
+		assertEquals(4, Stream.of(
+				SoftClipEvidence.create(SES(), BreakendDirection.Forward, r).getEvidenceID(),
+				SoftClipEvidence.create(SES(), BreakendDirection.Backward, r).getEvidenceID(),
+				SoftClipEvidence.create(SES(), BreakendDirection.Forward, r2).getEvidenceID(),
+				SoftClipEvidence.create(SES(), BreakendDirection.Backward, r2).getEvidenceID()
+				).distinct().count());
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void constructor_should_require_soft_clip() {
@@ -150,37 +201,19 @@ public class SoftClipEvidenceTest extends TestHelper {
 		SoftClipEvidence.create(SES(), BreakendDirection.Backward, Read(0, 1, "10M1S")); 
 	}
 	@Test
-	public void getSoftClipLength_should_return_clip_length() {
-		assertEquals(2, SoftClipEvidence.create(SES(), BreakendDirection.Backward, Read(0, 1, "2S5M1S")).getSoftClipLength());
-		assertEquals(2, SoftClipEvidence.create(SES(), BreakendDirection.Backward, Read(0, 1, "1H2S5M1S10H")).getSoftClipLength());
-	}
-	@Test
 	public void getUntemplatedSequenceLength_should_match_soft_clip_with_no_realign() {
 		SoftClipEvidence sc = SoftClipEvidence.create(SES(), BreakendDirection.Backward, Read(0, 1, "1S4M"));
-		assertEquals(sc.getSoftClipLength(), sc.getBreakendSequence().length);
+		assertEquals(1, sc.getBreakendSequence().length);
 		sc = SoftClipEvidence.create(SES(), BreakendDirection.Backward, Read(0, 1, "1S4M2S"));
-		assertEquals(sc.getSoftClipLength(), sc.getBreakendSequence().length);
+		assertEquals(1, sc.getBreakendSequence().length);
 		sc = SoftClipEvidence.create(SES(), BreakendDirection.Forward, Read(0, 1, "4M1S"));
-		assertEquals(sc.getSoftClipLength(), sc.getBreakendSequence().length);
+		assertEquals(1, sc.getBreakendSequence().length);
 		sc = SoftClipEvidence.create(SES(), BreakendDirection.Forward, Read(0, 1, "1S4M5S"));
-		assertEquals(sc.getSoftClipLength(), sc.getBreakendSequence().length);
-	}
-	@Test
-	public void getUntemplatedSequenceLength_should_match_soft_clip_with_realign_unmapped() {
-		assertEquals(1, SoftClipEvidence.create(SoftClipEvidence.create(SES(), BreakendDirection.Backward, Read(0, 1, "1S4M")), Unmapped(1)).getBreakendSequence().length);
+		assertEquals(5, sc.getBreakendSequence().length);
 	}
 	@Test
 	public void getLocalMapq_should_be_mapq() {
 		assertEquals(5, SCE(FWD, withMapq(5, Read(0, 1, "4M2S"))).getLocalMapq());
-	}
-	private MockSAMEvidenceSource permissiveSES() {
-		MockSAMEvidenceSource ses = SES();
-		ses.getContext().getConfig().getSoftClip().minAnchorIdentity = 0;
-		ses.getContext().getConfig().getSoftClip().minLength = 1;
-		ses.getContext().getConfig().minMapq = 0;
-		ses.getContext().getConfig().minAnchorShannonEntropy = 0;
-		ses.getContext().getConfig().adapters = new AdapterHelper(new String[0]);
-		return ses;
 	}
 	private void adapter(String seq, int scLen, boolean keep) {
 		SAMEvidenceSource ses = permissiveSES();
@@ -191,12 +224,12 @@ public class SoftClipEvidenceTest extends TestHelper {
 		SAMRecord r = Read(0, 1000, String.format("%dM%dS", seq.length() - scLen, scLen));
 		r.setReadBases(B(seq));
 		r.setReadNegativeStrandFlag(false);
-		assertEquals(keep, new SoftClipEvidence(ses, FWD, r).meetsEvidenceCritera());
+		assertEquals(keep, !ses.shouldFilter(SoftClipEvidence.create(ses, FWD, r)));
 		// reverse comp
 		r = Read(0, 1000, String.format("%dS%dM", scLen, seq.length() - scLen));
 		r.setReadBases(B(SequenceUtil.reverseComplement(seq)));
 		r.setReadNegativeStrandFlag(true);
-		assertEquals(keep, new SoftClipEvidence(ses, BWD, r).meetsEvidenceCritera());
+		assertEquals(keep, !ses.shouldFilter(SoftClipEvidence.create(ses, BWD, r)));
 	}
 	@Test
 	public void should_filter_adapter_sequence_IlluminaUniversalAdapter_AGATCGGAAGAG() {
@@ -248,105 +281,12 @@ public class SoftClipEvidenceTest extends TestHelper {
 		//                                                                                         ^
 	}
 	@Test
-	public void should_filter_dovetailing_reads() {
-		SAMEvidenceSource ses = permissiveSES();
-		SAMRecord[] rp = RP(0, 100, 100, 20);
-		rp[0].setCigarString("10M10S");
-		rp[1].setCigarString("10S10M");
-		assertFalse(new SoftClipEvidence(ses, FWD, rp[0]).meetsEvidenceCritera());
-		assertFalse(new SoftClipEvidence(ses, BWD, rp[1]).meetsEvidenceCritera());
-		
-		// looks like a dovetail, but is not
-		rp = RP(0, 100, 100, 20);
-		rp[0].setCigarString("10S10M"); // <-- definitely keep this one
-		rp[1].setCigarString("10S10M"); // ideally keep this one too, but we need to know about the mate cigar for that
-		assertTrue(new SoftClipEvidence(SES(), BWD, rp[0]).meetsEvidenceCritera());
-		//assertTrue(new SoftClipEvidence(getContext(), ses, BWD, rp[1]).meetsEvidenceCritera(scp));
-	}
-	@Test
-	public void should_allow_4_bp_dovetail_margin() {
-		SAMEvidenceSource ses = permissiveSES();
-		for (int i = 95 ; i <= 105; i++) { // -3bp -> +3bp, only +-3bp pass dovetail filter  
-			SAMRecord[] rp = RP(0, 100, i, 20);
-			rp[0].setCigarString("10M10S");
-			rp[1].setCigarString("10S10M");
-			assertEquals(i == 95 || i == 105, new SoftClipEvidence(ses, FWD, rp[0]).meetsEvidenceCritera());
-			assertEquals(i == 95 || i == 105, new SoftClipEvidence(ses, BWD, rp[1]).meetsEvidenceCritera());
-		}
-	}
-	@Test
-	public void should_filter_dovetailing_reads_with_metrics() {
-		MockSAMEvidenceSource ses = permissiveSES();
-		ses.metrics = new IdsvSamFileMetrics(
-				new File("src/test/resources/testmetrics.metrics.idsv.txt"),
-				new File("src/test/resources/testmetrics.metrics.insertsize.txt"),
-				new File("src/test/resources/testmetrics.metrics.mapq.txt"),
-				new File("src/test/resources/testmetrics.metrics.cigar.txt"));
-		SAMRecord[] rp = RP(0, 100, 100, 20);
-		rp[0].setCigarString("10M10S");
-		rp[1].setCigarString("10S10M");
-		assertFalse(new SoftClipEvidence(ses, FWD, rp[0]).meetsEvidenceCritera());
-		assertFalse(new SoftClipEvidence(ses, BWD, rp[1]).meetsEvidenceCritera());
-		
-		// looks like a dovetail, but is not
-		rp = RP(0, 100, 100, 20);
-		rp[0].setCigarString("10S10M"); // <-- definitely keep this one
-		rp[1].setCigarString("10S10M"); // ideally keep this one too, but we need to know about the mate cigar for that
-		assertTrue(new SoftClipEvidence(ses, BWD, rp[0]).meetsEvidenceCritera());
-		//assertTrue(new SoftClipEvidence(getContext(), ses, BWD, rp[1]).meetsEvidenceCritera(scp));
-	}
-	@Test
-	public void isNotExact() {
+	public void isExact() {
 		assertTrue(SCE(FWD, Read(0, 1, "1M1S")).isBreakendExact());
 	}
 	@Test
-	public void getAnchorSequence_should_return_all_bases_not_in_soft_clip() {
-		assertEquals("ACGT", S(SCE(FWD, withSequence("ACGTNN", Read(0, 1, "1S3M2S"))[0]).getAnchorSequence()));
-		assertEquals("CGTNN", S(SCE(BWD, withSequence("ACGTNN", Read(0, 1, "1S3M2S"))[0]).getAnchorSequence()));
-	}
-	@Test
-	public void should_filter_low_complexity_anchors() {
-		SAMEvidenceSource ses = permissiveSES();
-		ses.getContext().getConfig().minAnchorShannonEntropy = 0.5;
-		
-		assertFalse(new SoftClipEvidence(ses, FWD, withSequence("AT", Read(0, 1, "1M1S"))[0]).meetsEvidenceCritera());
-		assertFalse(new SoftClipEvidence(ses, FWD, withSequence("AAT", Read(0, 1, "2M1S"))[0]).meetsEvidenceCritera());
-		assertFalse(new SoftClipEvidence(ses, FWD, withSequence("AAAT", Read(0, 1, "3M1S"))[0]).meetsEvidenceCritera());
-		assertFalse(new SoftClipEvidence(ses, FWD, withSequence("AAAAT", Read(0, 1, "4M1S"))[0]).meetsEvidenceCritera());
-		assertFalse(new SoftClipEvidence(ses, FWD, withSequence("AAAAAT", Read(0, 1, "5M1S"))[0]).meetsEvidenceCritera());
-		assertFalse(new SoftClipEvidence(ses, FWD, withSequence("AAAAAAT", Read(0, 1, "6M1S"))[0]).meetsEvidenceCritera());
-		assertFalse(new SoftClipEvidence(ses, FWD, withSequence("AAAAAAAT", Read(0, 1, "7M1S"))[0]).meetsEvidenceCritera());
-		assertFalse(new SoftClipEvidence(ses, FWD, withSequence("AAAAAAAAT", Read(0, 1, "8M1S"))[0]).meetsEvidenceCritera());
-		assertFalse(new SoftClipEvidence(ses, FWD, withSequence("AAAAAAAAAT", Read(0, 1, "9M1S"))[0]).meetsEvidenceCritera());
-		assertFalse(new SoftClipEvidence(ses, FWD, withSequence("AAAAAAAAAAT", Read(0, 1, "10M1S"))[0]).meetsEvidenceCritera());
-		
-		assertFalse(new SoftClipEvidence(ses, FWD, withSequence("GT", Read(0, 1, "1M1S"))[0]).meetsEvidenceCritera());
-		assertTrue(new SoftClipEvidence(ses, FWD, withSequence("GAT", Read(0, 1, "2M1S"))[0]).meetsEvidenceCritera());
-		assertTrue(new SoftClipEvidence(ses, FWD, withSequence("GAAT", Read(0, 1, "3M1S"))[0]).meetsEvidenceCritera());
-		assertTrue(new SoftClipEvidence(ses, FWD, withSequence("GAAAT", Read(0, 1, "4M1S"))[0]).meetsEvidenceCritera());
-		assertTrue(new SoftClipEvidence(ses, FWD, withSequence("GAAAAT", Read(0, 1, "5M1S"))[0]).meetsEvidenceCritera());
-		assertTrue(new SoftClipEvidence(ses, FWD, withSequence("GAAAAAT", Read(0, 1, "6M1S"))[0]).meetsEvidenceCritera());
-		assertTrue(new SoftClipEvidence(ses, FWD, withSequence("GAAAAAAT", Read(0, 1, "7M1S"))[0]).meetsEvidenceCritera());
-		assertTrue(new SoftClipEvidence(ses, FWD, withSequence("GAAAAAAAT", Read(0, 1, "8M1S"))[0]).meetsEvidenceCritera());
-		assertTrue(new SoftClipEvidence(ses, FWD, withSequence("GAAAAAAAAT", Read(0, 1, "9M1S"))[0]).meetsEvidenceCritera());
-		assertFalse(new SoftClipEvidence(ses, FWD, withSequence("GAAAAAAAAAT", Read(0, 1, "10M1S"))[0]).meetsEvidenceCritera());
-		assertFalse(new SoftClipEvidence(ses, FWD, withSequence("GAAAAAAAAAAT", Read(0, 1, "11M1S"))[0]).meetsEvidenceCritera());
-		
-		assertTrue(new SoftClipEvidence(ses, FWD, withSequence("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGTCT", Read(0, 1, "40M1S"))[0]).meetsEvidenceCritera()); // 37	1	1	1	0.503183732
-		assertFalse(new SoftClipEvidence(ses, FWD, withSequence("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGTCT", Read(0, 1, "41M1S"))[0]).meetsEvidenceCritera()); // 38	1	1	1	0.493619187
-		
-		assertTrue(new SoftClipEvidence(ses, FWD, withSequence("TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGTCT", Read(0, 1, "1S40M1S"))[0]).meetsEvidenceCritera()); // 37	1	1	1	0.503183732
-		assertFalse(new SoftClipEvidence(ses, FWD, withSequence("TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGTCT", Read(0, 1, "1S41M1S"))[0]).meetsEvidenceCritera()); // 38	1	1	1	0.493619187
-	}
-	@Test
-	public void should_filter_low_base_quality() {
-		SAMEvidenceSource ses = permissiveSES();
-		ses.getContext().getConfig().getSoftClip().minAverageQual = 5;
-		
-		assertTrue(new SoftClipEvidence(ses, FWD, withQual(new byte[] { 6, 6, }, withSequence("AT", Read(0, 1, "1M1S")))[0]).meetsEvidenceCritera());
-		assertTrue(new SoftClipEvidence(ses, FWD, withQual(new byte[] { 6, 5, }, withSequence("AT", Read(0, 1, "1M1S")))[0]).meetsEvidenceCritera());
-		assertFalse(new SoftClipEvidence(ses, FWD, withQual(new byte[] { 6, 4, }, withSequence("AT", Read(0, 1, "1M1S")))[0]).meetsEvidenceCritera());
-		assertTrue(new SoftClipEvidence(ses, FWD, withQual(new byte[] { 1, 4, 6, }, withSequence("ATT", Read(0, 1, "1M2S")))[0]).meetsEvidenceCritera());
-		assertFalse(new SoftClipEvidence(ses, FWD, withQual(new byte[] { 1, 4, 5, }, withSequence("ATT", Read(0, 1, "1M2S")))[0]).meetsEvidenceCritera());
+	public void getAnchorSequence_should_not_return_clipped_bases_on_other_side_of_the_read() {
+		assertEquals("CGT", S(SCE(FWD, withSequence("ACGTNN", Read(0, 1, "1S3M2S"))[0]).getAnchorSequence()));
+		assertEquals("CGT", S(SCE(BWD, withSequence("ACGTNN", Read(0, 1, "1S3M2S"))[0]).getAnchorSequence()));
 	}
 }

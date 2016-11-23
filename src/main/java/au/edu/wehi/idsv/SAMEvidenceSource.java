@@ -163,7 +163,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 			}
 		}
 		if (e instanceof DirectedBreakpoint) {
-			BreakpointSummary bp = (BreakpointSummary)e.getBreakendSummary();
+			//BreakpointSummary bp = (BreakpointSummary)e.getBreakendSummary();
 			// Still do assembly - leave the filtering to the variant calling
 			//if (bp.getEventSize() != null && bp.getEventSize() < config.getVariantCalling().minSize) {
 			//	return true;

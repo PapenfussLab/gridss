@@ -1,14 +1,13 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.Lists;
@@ -299,5 +298,95 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
 		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
 		assertEquals(2, list.size()); // SC & OEA not on (2)
+	}
+	@Test
+	public void iterator_should_unmap_low_mapq() throws IOException {
+		ProcessingContext pc = getCommandlineContext();
+		pc.getConfig().minMapq = 10;
+		createInput(
+				SR(withMapq(10, Read(0, 1, "50M50S"))[0], withMapq(5, Read(1, 1, "50M50S"))[0]).getSAMRecord());
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
+		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
+		assertEquals(1, list.size());
+		assertTrue(list.get(0) instanceof SoftClipEvidence);
+	}
+	@Test
+	public void shouldFilter_low_clip_base_qual() {
+		SAMRecord r = Read(0, 1, "2M3S");
+		r.setBaseQualities(new byte[] { 40, 30, 20, 10, 0 });
+		MockSAMEvidenceSource ses = SES();
+		ses.getContext().getConfig().getSoftClip().minLength = 1;
+		SoftClipEvidence e = SoftClipEvidence.create(ses, BreakendDirection.Forward, r);
+		ses.getContext().getConfig().getSoftClip().minAverageQual = 9;
+		assertFalse(ses.shouldFilter(e));
+		ses.getContext().getConfig().getSoftClip().minAverageQual = 10;
+		assertFalse(ses.shouldFilter(e));
+		ses.getContext().getConfig().getSoftClip().minAverageQual = 11;
+		assertTrue(ses.shouldFilter(e));
+	}
+	@Test
+	@Ignore("base quals now required")
+	public void shouldFilter_low_clip_base_qual_should_consider_as_0_if_unknown() {
+		SAMRecord r = Read(0, 1, "2M3S");
+		r.setBaseQualities(SAMRecord.NULL_QUALS);
+		r.setBaseQualities(null);
+		MockSAMEvidenceSource ses = SES();
+		SoftClipEvidence e = SoftClipEvidence.create(ses, BreakendDirection.Forward, r);
+		ses.getContext().getConfig().getSoftClip().minLength = 1;
+		ses.getContext().getConfig().getSoftClip().minAverageQual = 0.01f;
+		assertTrue(ses.shouldFilter(e));
+		r = Read(0, 1, "2M3S");
+	}
+	@Test
+	public void should_filter_dovetailing_reads() {
+		SAMEvidenceSource ses = permissiveSES();
+		SAMRecord[] rp = RP(0, 100, 100, 20);
+		rp[0].setCigarString("10M10S");
+		rp[1].setCigarString("10S10M");
+		clean(rp[0], rp[1]);
+		assertTrue(ses.shouldFilter(rp[0]));
+		assertTrue(ses.shouldFilter(rp[1]));
+		
+		// looks like a dovetail, but is not
+		rp = RP(0, 100, 100, 20);
+		rp[0].setCigarString("10S10M"); // <-- definitely keep this one
+		rp[1].setCigarString("10S10M"); // ideally keep this one too, but we need to know about the mate cigar for that
+		clean(rp[0], rp[1]);
+		assertFalse(ses.shouldFilter(rp[0]));
+		assertFalse(ses.shouldFilter(rp[1]));
+	}
+	@Test
+	public void should_filter_low_complexity_anchors() {
+		SAMEvidenceSource ses = permissiveSES();
+		ses.getContext().getConfig().minAnchorShannonEntropy = 0.5;
+		
+		assertTrue(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("AT", Read(0, 1, "1M1S"))[0])));
+		assertTrue(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("AAT", Read(0, 1, "2M1S"))[0])));
+		assertTrue(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("AAAT", Read(0, 1, "3M1S"))[0])));
+		assertTrue(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("AAAAT", Read(0, 1, "4M1S"))[0])));
+		assertTrue(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("AAAAAT", Read(0, 1, "5M1S"))[0])));
+		assertTrue(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("AAAAAAT", Read(0, 1, "6M1S"))[0])));
+		assertTrue(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("AAAAAAAT", Read(0, 1, "7M1S"))[0])));
+		assertTrue(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("AAAAAAAAT", Read(0, 1, "8M1S"))[0])));
+		assertTrue(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("AAAAAAAAAT", Read(0, 1, "9M1S"))[0])));
+		assertTrue(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("AAAAAAAAAAT", Read(0, 1, "10M1S"))[0])));
+		
+		assertTrue(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("GT", Read(0, 1, "1M1S"))[0])));
+		assertFalse(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("GAT", Read(0, 1, "2M1S"))[0])));
+		assertFalse(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("GAAT", Read(0, 1, "3M1S"))[0])));
+		assertFalse(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("GAAAT", Read(0, 1, "4M1S"))[0])));
+		assertFalse(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("GAAAAT", Read(0, 1, "5M1S"))[0])));
+		assertFalse(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("GAAAAAT", Read(0, 1, "6M1S"))[0])));
+		assertFalse(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("GAAAAAAT", Read(0, 1, "7M1S"))[0])));
+		assertFalse(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("GAAAAAAAT", Read(0, 1, "8M1S"))[0])));
+		assertFalse(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("GAAAAAAAAT", Read(0, 1, "9M1S"))[0])));
+		assertTrue(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("GAAAAAAAAAT", Read(0, 1, "10M1S"))[0])));
+		assertTrue(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("GAAAAAAAAAAT", Read(0, 1, "11M1S"))[0])));
+		
+		assertFalse(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGTCT", Read(0, 1, "40M1S"))[0]))); // 37	1	1	1	0.503183732
+		assertTrue(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGTCT", Read(0, 1, "41M1S"))[0]))); // 38	1	1	1	0.493619187
+		
+		assertFalse(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGTCT", Read(0, 1, "1S40M1S"))[0]))); // 37	1	1	1	0.503183732
+		assertTrue(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGTCT", Read(0, 1, "1S41M1S"))[0]))); // 38	1	1	1	0.493619187
 	}
 }

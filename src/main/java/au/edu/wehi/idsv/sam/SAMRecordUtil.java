@@ -301,6 +301,17 @@ public class SAMRecordUtil {
 			if (Math.abs(end1 - end2) > margin) return false;
 			if (!IntervalUtil.overlapsClosed(start1, end1, start2, end2)) return false;
 		}
+		// expect dovetail to look like
+		//    >>>SSS
+		// SSS<<<
+		// not like:
+		// SSS>>>
+		//    <<<SSS
+		int unexpectedClipLength = isNegativeStrand1 ? getEndSoftClipLength(cigar1.getCigarElements()) : getStartSoftClipLength(cigar1.getCigarElements());
+		if (cigar2 != null) {
+			unexpectedClipLength += isNegativeStrand2 ? getEndSoftClipLength(cigar2.getCigarElements()) : getStartSoftClipLength(cigar2.getCigarElements());
+		}
+		if (unexpectedClipLength > margin) return false;
 		return true;
 	}
 	public static boolean overlap(SAMRecord r1, SAMRecord r2) {

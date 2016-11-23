@@ -219,11 +219,12 @@ public class KmerEvidenceTest extends TestHelper {
 	}
 	@Test
 	public void createAnchor_should_check_reference_overrun() {
-		assertEquals(5, nodesNotNull(KmerEvidence.createAnchor(null, 1, Read(0, 1, "2S5M2S"), BWD, 2, SMALL_FA)));
-		assertEquals(5, nodesNotNull(KmerEvidence.createAnchor(null, 1, Read(0, 1, "2S5M2S"), FWD, 2, SMALL_FA)));
+		SoftClipEvidence placholderEvidence = SCE(BWD, Read(0, 1, "2S5M2S"));
+		assertEquals(5, nodesNotNull(KmerEvidence.createAnchor(placholderEvidence, 1, Read(0, 1, "2S5M2S"), BWD, 2, SMALL_FA)));
+		assertEquals(5, nodesNotNull(KmerEvidence.createAnchor(placholderEvidence, 1, Read(0, 1, "2S5M2S"), FWD, 2, SMALL_FA)));
 		// overruns on both end
-		assertEquals(2, nodesNotNull(KmerEvidence.createAnchor(null, 1, Read(0, -10, "10M"), FWD, 4, SMALL_FA)));
+		assertEquals(2, nodesNotNull(KmerEvidence.createAnchor(placholderEvidence, 1, Read(0, -10, "10M"), FWD, 4, SMALL_FA)));
 		// end overrun
-		assertEquals(1, nodesNotNull(KmerEvidence.createAnchor(null, 1, Read(0, 10000, "10M"), FWD, 10, SMALL_FA)));
+		assertEquals(1, nodesNotNull(KmerEvidence.createAnchor(placholderEvidence, 1, Read(0, 10000, "10M"), FWD, 10, SMALL_FA)));
 	}
 }

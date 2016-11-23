@@ -56,15 +56,7 @@ public class CigarUtilTest {
 		assertSplitAfterReadPosition("2M2I2M", 3, "2M4S", "4S2M");
 	}
 	@Test
-	public void splitAfterReadPosition_should_decode_cigar() {
-		assertSplitAfterReadPosition("2M10P10N10P2M", 1, "2M2S", "2S2M");
-	}
-	@Test
-	public void offsetOf_should_decode_cigar() {
-		assertEquals(-1, CigarUtil.offsetOf(new Cigar(C("2M3P3N3P2M")), 2));
-	}
-	@Test
-	public void countMappedBases_should_count_MEX() {
+	public void countMappedBases_should_count_MEqX() {
 		assertEquals(4 + 128 + 256, CigarUtil.countMappedBases(C("1H2H4M8I16D32N64P128=256X")));
 	}
 	@Test

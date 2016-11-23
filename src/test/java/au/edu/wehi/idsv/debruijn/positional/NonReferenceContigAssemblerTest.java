@@ -109,11 +109,14 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 	public void should_call_simple_fwd_RP() {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
-		DiscordantReadPair e = (DiscordantReadPair)NRRP(SES(100, 200), withSequence("ACGTGGTCGACC", DP(0, 50, "12M", true, 1, 1, "12M", false)));
+		SAMEvidenceSource ses = SES(100, 200);
+		DiscordantReadPair e = (DiscordantReadPair)NRRP(ses, withSequence("ACGTGGTCGACC", DP(0, 50, "12M", true, 1, 1, "12M", false)));
 		List<SAMRecord> output = go(pc, true, e);
 		assertEquals(1, output.size());
-		assertEquals("1X98N1X12S", output.get(0).getCigarString());
-		assertEquals("NNACGTGGTCGACC", S(output.get(0).getReadBases()));
+		SoftClipEvidence ass = SoftClipEvidence.create(AES(ses), FWD, output.get(0));
+		assertEquals(e.getBreakendSummary().localBreakend(), ass.getBreakendSummary());
+		assertEquals("ACGTGGTCGACC", S(ass.getBreakendSequence()));
+		assertEquals("", S(ass.getAnchorSequence()));
 	}
 	@Test
 	public void should_call_simple_bwd_RP() {
@@ -123,8 +126,10 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 		DiscordantReadPair e = (DiscordantReadPair)NRRP(ses, withSequence("ACGTGGTCGACC", DP(0, 450, "12M", false, 1, 1, "12M", true)));
 		List<SAMRecord> output = go(pc, true, e);
 		assertEquals(1, output.size());
-		assertEquals("12S1X98N1X", output.get(0).getCigarString());
-		assertEquals("ACGTGGTCGACCNN", S(output.get(0).getReadBases()));
+		SoftClipEvidence ass = SoftClipEvidence.create(AES(ses), BWD, output.get(0));
+		assertEquals(e.getBreakendSummary().localBreakend(), ass.getBreakendSummary());
+		assertEquals("ACGTGGTCGACC", S(ass.getBreakendSequence()));
+		assertEquals("", S(ass.getAnchorSequence()));
 	}
 	@Test
 	public void should_handle_sc_repeated_kmers() {
