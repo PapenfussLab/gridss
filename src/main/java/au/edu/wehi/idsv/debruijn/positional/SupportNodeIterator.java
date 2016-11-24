@@ -10,7 +10,7 @@ import com.google.common.collect.PeekingIterator;
 
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.NonReferenceReadPair;
-import au.edu.wehi.idsv.SoftClipEvidence;
+import au.edu.wehi.idsv.SingleReadEvidence;
 import htsjdk.samtools.util.Log;
 
 /**
@@ -82,8 +82,8 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 		
 		KmerEvidence e;
 		KmerEvidence e2 = null;
-		if (de instanceof SoftClipEvidence) {
-			e = KmerEvidence.create(k, (SoftClipEvidence)de, true);
+		if (de instanceof SingleReadEvidence) {
+			e = KmerEvidence.create(k, (SingleReadEvidence)de);
 		} else if (de instanceof NonReferenceReadPair) {
 			NonReferenceReadPair nrrp = (NonReferenceReadPair)de;
 			e = KmerEvidence.create(k, nrrp);

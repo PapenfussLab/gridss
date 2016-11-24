@@ -32,7 +32,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		createInput(RP(0, 1, 2, 1));
 		SAMEvidenceSource ses = new SAMEvidenceSource(getCommandlineContext(), input, 0);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), assemblyFile);
-		aes.assembleBreakends();
+		aes.assembleBreakends(null);
 		assertTrue(assemblyFile.exists());
 	}
 	@Test
@@ -40,7 +40,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		createInput(RP(0, 1, 2, 1));
 		SAMEvidenceSource ses = new SAMEvidenceSource(getCommandlineContext(), input, 0);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(getCommandlineContext(), ImmutableList.of(ses), assemblyFile);
-		aes.assembleBreakends();
+		aes.assembleBreakends(null);
 		try (SamReader r = SamReaderFactory.make().open(assemblyFile)) {
 			assertEquals(SortOrder.coordinate, r.getFileHeader().getSortOrder());
 		}
@@ -55,7 +55,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		pc.getConfig().getAssembly().minReads = 1;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
-		aes.assembleBreakends();
+		aes.assembleBreakends(null);
 		
 		assertEquals(1, getRecords(assemblyFile).size());
 		assertEquals("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", S(getRecords(assemblyFile).get(0).getReadBases()));
@@ -77,7 +77,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		//pc.getRealignmentParameters().requireRealignment = false;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
-		aes.assembleBreakends();
+		aes.assembleBreakends(null);
 		List<DirectedEvidence> list = Lists.newArrayList(aes.iterator());
 		assertEquals(4,  list.size());
 		for (int i = 0; i <= 3; i++) {
@@ -93,7 +93,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		pc.getAssemblyParameters().writeFiltered = false;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
-		aes.assembleBreakends();
+		aes.assembleBreakends(null);
 		List<DirectedEvidence> contigs = Lists.newArrayList(aes.iterator());
 		assertEquals(0, contigs.size());
 	}
@@ -204,7 +204,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		assertTrue(AES().shouldFilterAssembly(e));
 	}
 	@Test
-	public void should_filter_reference_breakpoint() {
+	public void should_filter_breakend_matching_reference_due_to_homology() {
 		List<DirectedEvidence> evidence = Lists.newArrayList();
 		evidence.add(SCE(FWD, Read(0, 5, "5M5S")));
 		evidence.add(SCE(FWD, Read(0, 5, "5M6S")));

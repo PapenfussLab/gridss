@@ -25,8 +25,8 @@ public class EvidenceClusterProcessorTest extends TestHelper {
 	@Test
 	public void evidence_should_not_expand() {
 		List<DirectedEvidence> list = new ArrayList<DirectedEvidence>();
-		list.add(SCE(FWD, withSequence("TTTT", Read(0, 10, "1M3S"))[0], withSequence("TTTT", Read(1, 10, "4M"))[0]));
-		list.add(SCE(FWD, withSequence("TTTT", Read(0, 11, "1M3S"))[0], withSequence("TTTT", Read(1, 11, "4M"))[0]));
+		list.add(SR(withSequence("TTTT", Read(0, 10, "1M3S"))[0], withSequence("TTT", Read(1, 10, "3M"))[0]));
+		list.add(SR(withSequence("TTTT", Read(0, 11, "1M3S"))[0], withSequence("TTT", Read(1, 11, "3M"))[0]));
 		EvidenceClusterProcessor ecp = new EvidenceClusterProcessor(getContext(), list.iterator());
 		List<VariantContextDirectedEvidence> result = Lists.newArrayList(ecp);
 		assertEquals(4, result.size());

@@ -23,7 +23,7 @@ import htsjdk.samtools.util.Log;
 public class SplitReadEvidence extends SingleReadEvidence implements DirectedBreakpoint {
 	private static final Log log = Log.getInstance(SplitReadEvidence.class);
 	private ChimericAlignment remoteAlignment;
-	private SplitReadEvidence(SAMEvidenceSource source, SAMRecord record, BreakendSummary location,
+	protected SplitReadEvidence(SAMEvidenceSource source, SAMRecord record, BreakendSummary location,
 			int offsetLocalStart, int offsetLocalEnd,
 			int offsetUnmappedStart, int offsetUnmappedEnd,
 			int offsetRemoteStart, int offsetRemoteEnd,

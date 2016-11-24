@@ -7,7 +7,9 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -37,6 +39,7 @@ import htsjdk.samtools.SAMRecordCoordinateComparator;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SAMUtils;
+import htsjdk.samtools.SamPairUtil;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.TextCigarCodec;
 import htsjdk.samtools.reference.ReferenceSequence;
@@ -684,6 +687,8 @@ public class SAMRecordUtil {
 			SAMTag.IH,
 			SAMTag.Q2,
 			SAMTag.R2,
+			SAMTag.MC,
+			SAMTag.MQ,
 			SAMTag.SA,
 			SAMTag.TC);
 	/**
@@ -692,8 +697,9 @@ public class SAMRecordUtil {
 	 * @param tags Tags to populate 
 	 * @param restoreHardClips convert hard clips into soft clips if the sequence is available
 	 * from a chimeric alignment of the same segmentt
+	 * @param fixMates 
 	 */
-	public static void calculateTemplateTags(List<SAMRecord> records, Set<SAMTag> tags, boolean restoreHardClips) {
+	public static void calculateTemplateTags(List<SAMRecord> records, Set<SAMTag> tags, boolean restoreHardClips, boolean fixMates) {
 		List<List<SAMRecord>> segments = templateBySegment(records);
 		// FI
 		if (tags.contains(SAMTag.FI)) {
@@ -722,7 +728,7 @@ public class SAMRecordUtil {
 			}
 		}
 		// Q2
-		if (tags.contains(SAMTag.R2)) {
+		if (tags.contains(SAMTag.Q2)) {
 			for (int i = 0; i < segments.size(); i++) {
 				byte[] bq2 = getFullBaseQualities(segments.get((i + 1) % segments.size()));
 				if (bq2 != null) {
@@ -753,6 +759,156 @@ public class SAMRecordUtil {
 				calculateMultimappingTags(tags, segments.get(i));
 			}
 		}
+		if (fixMates || tags.contains(SAMTag.MC) || tags.contains(SAMTag.MQ)) {
+			if (records.size() >= 2) {
+				// hack to prevent SAMRecord getters from throwing an exception
+				records.stream().forEach(r -> r.setReadPairedFlag(true));
+				segments.get(0).stream().forEach(r -> r.setFirstOfPairFlag(true));
+				segments.get(1).stream().forEach(r -> r.setSecondOfPairFlag(true));
+				fixMates(segments, tags.contains(SAMTag.MC));
+			}
+		}
+	}
+	private static SAMRecord getPrimarySplitAlignmentFor(SAMRecord rec, List<SAMRecord> options) {
+		List<ChimericAlignment> splits = ChimericAlignment.getChimericAlignments(rec);
+		// supposed to be the first split alignment
+		final ChimericAlignment primary = splits.size() == 0 ? null : splits.get(0);
+		Optional<SAMRecord> best = options.stream()
+				.filter(r -> !r.getSupplementaryAlignmentFlag())
+				.filter(r -> new ChimericAlignment(rec).equals(primary))
+				.findFirst();
+		// try any split alignment
+		if (!best.isPresent()) {
+			best = options.stream()
+					.filter(r -> !r.getSupplementaryAlignmentFlag())
+					.filter(r -> splits.contains(new ChimericAlignment(rec)))
+					.findFirst();
+		}
+		// just grab the primary
+		if (!best.isPresent()) {
+			best = options.stream()
+					.filter(r -> !r.getSupplementaryAlignmentFlag())
+					.filter(r -> r.getNotPrimaryAlignmentFlag() == rec.getNotPrimaryAlignmentFlag())
+					.findFirst();
+		}
+		// grab anything that's not a supplementary
+		if (!best.isPresent()) {
+			best = options.stream()
+					.filter(r -> !r.getSupplementaryAlignmentFlag())
+					.findFirst();
+		}
+		// Just use ourself if there's nothing else out there but other supplementary alignments
+		return best.orElse(rec);
+	}
+	private static void fixMates(List<List<SAMRecord>> segments, boolean mateCigar) {
+		for (int i = 0; i < segments.size(); i++) {
+			List<SAMRecord> currentSegment = segments.get(i);
+			List<SAMRecord> nextSegment = segments.get((i + 1) % segments.size());
+			if (segments.size() == 1) {
+				// don't set ourselves as a mate
+				nextSegment = Collections.emptyList();
+			}
+			// resort so we match up the primary records last
+			currentSegment.sort(Comparator.comparing(SAMRecord::getNotPrimaryAlignmentFlag).reversed());
+			for (SAMRecord r : currentSegment) {
+				if (r.getSupplementaryAlignmentFlag()) {
+					SAMRecord primary = getPrimarySplitAlignmentFor(r, currentSegment);
+					SAMRecord mate = bestMateFor(primary, nextSegment);
+					if (mate != null) {
+						SamPairUtil.setMateInformationOnSupplementalAlignment(r, mate, mateCigar);
+					} else {
+						clearMateInformation(r, true);
+					}
+				} else {
+					SAMRecord mate = bestMateFor(r, nextSegment);
+					if (mate != null) {
+						SamPairUtil.setMateInfo(r, mate, mateCigar);
+					} else {
+						clearMateInformation(r, true);
+					}
+				}
+			}
+		}
+	}
+	/**
+	 * Ensures that the read is no longer considered paired
+	 * @param r read to clear mate information from
+	 * @param fullClear strips all mate information from the read 
+	 */
+	private static void clearMateInformation(SAMRecord r, boolean fullClear) {
+		r.setReadPairedFlag(false);
+		if (fullClear) {
+			r.setReadPairedFlag(true);
+			if (r.getFirstOfPairFlag()) {
+				r.setAttribute(SAMTag.FI.name(), 0);
+			} else if (r.getSecondOfPairFlag()) {
+				r.setAttribute(SAMTag.FI.name(), 1);
+			}
+			r.setReadPairedFlag(false);
+			r.setFirstOfPairFlag(false);
+			r.setSecondOfPairFlag(false);
+			r.setProperPairFlag(false);
+			r.setMateNegativeStrandFlag(false);
+			r.setMateReferenceIndex(SAMRecord.NO_ALIGNMENT_REFERENCE_INDEX);
+			r.setMateAlignmentStart(SAMRecord.NO_ALIGNMENT_START);
+			r.setAttribute(SAMTag.MC.name(), null);
+			r.setAttribute(SAMTag.MQ.name(), null);
+			r.setAttribute(SAMTag.R2.name(), null);
+			r.setAttribute(SAMTag.Q2.name(), null);
+		}
+	}
+
+	private static SAMRecord bestMateFor(SAMRecord r, List<SAMRecord> mates) {
+		// see if one of the mates already points to us
+		Optional<SAMRecord> best = mates.stream()
+				.filter(m -> r.getReadUnmappedFlag() == m.getMateUnmappedFlag())
+				.filter(m -> r.getReferenceIndex() == m.getMateReferenceIndex())
+				.filter(m -> r.getAlignmentStart() == m.getMateAlignmentStart())
+				.filter(m -> r.getReadNegativeStrandFlag() == m.getMateNegativeStrandFlag())
+				.findFirst();
+		// see if we already point to one of the mates
+		if (!best.isPresent()) {
+			best = mates.stream()
+					.filter(m -> m.getReadUnmappedFlag() == r.getMateUnmappedFlag())
+					.filter(m -> m.getReferenceIndex() == r.getMateReferenceIndex())
+					.filter(m -> m.getAlignmentStart() == r.getMateAlignmentStart())
+					.filter(m -> m.getReadNegativeStrandFlag() == r.getMateNegativeStrandFlag())
+					.findFirst();
+		}
+		// match primary with primary and secondary with secondary
+		if (!best.isPresent()) {
+			best = mates.stream()
+					.filter(m -> m.getSupplementaryAlignmentFlag() == r.getSupplementaryAlignmentFlag())
+					.filter(m -> m.getNotPrimaryAlignmentFlag() == r.getNotPrimaryAlignmentFlag())
+					// prefer mapped reads
+					.sorted(Comparator.comparing(SAMRecord::getReadUnmappedFlag))
+					.findFirst();
+		}
+		// just get anything that's not a supplementary alignment
+		if (!best.isPresent()) {
+			best = mates.stream()
+					.filter(m -> m.getSupplementaryAlignmentFlag() == r.getSupplementaryAlignmentFlag())
+					.findFirst();
+		}
+		// we give up - anything will do at this point
+		if (!best.isPresent()) {
+			best = mates.stream()
+					.findFirst();
+		}
+		return best.orElse(null);
+	}
+
+	private static final List<List<SAMRecord>> templateBySegment(List<SAMRecord> records) {
+		List<List<SAMRecord>> segments = new ArrayList<List<SAMRecord>>();
+		for (SAMRecord r : records) {
+			int index = SAMRecordUtil.getSegmentIndex(r);
+			while (index >= segments.size()) {
+				segments.add(new ArrayList<SAMRecord>());
+			}
+			segments.get(index).add(r);
+		}
+		
+		return segments;
 	}
 	public static void calculateMultimappingTags(Set<SAMTag> tags, List<SAMRecord> list) {
 		// TODO: how does SA split read alignment interact with multimapping reads?
@@ -918,17 +1074,6 @@ public class SAMRecordUtil {
 			ArrayUtils.reverse(baseQuals);
 		}
 		return baseQuals;
-	}
-	private static final List<List<SAMRecord>> templateBySegment(List<SAMRecord> records) {
-		List<List<SAMRecord>> segments = new ArrayList<List<SAMRecord>>();
-		for (SAMRecord r : records) {
-			int index = getSegmentIndex(r);
-			while (index >= segments.size()) {
-				segments.add(new ArrayList<SAMRecord>());
-			}
-			segments.get(index).add(r);
-		}
-		return segments;
 	}
 	/**
 	 * The index of segment in the template

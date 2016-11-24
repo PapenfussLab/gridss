@@ -427,7 +427,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		SAMRecord read5 = Read(0, 1, "5M");
 		read5.setAttribute("FI", 5);
 		
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1, read5), ImmutableSet.of(SAMTag.FI, SAMTag.TC), false);
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1, read5), ImmutableSet.of(SAMTag.FI, SAMTag.TC), false, false);
 		
 		assertEquals(0, (int)read0.getIntegerAttribute("FI"));
 		assertEquals(1, (int)read1.getIntegerAttribute("FI"));
@@ -457,7 +457,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		read5.setReadBases(B("GGT"));
 		read5.setBaseQualityString("890");
 		
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1, read5), ImmutableSet.of(SAMTag.R2, SAMTag.Q2), false);
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1, read5), ImmutableSet.of(SAMTag.R2, SAMTag.Q2), false, false);
 		
 		assertEquals("AGT", read0.getStringAttribute("R2"));
 		assertEquals(null, read1.getStringAttribute("R2"));
@@ -482,7 +482,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		read1.setReadBases(B("ACT"));
 		read1.setBaseQualityString("456");
 		
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(SAMTag.R2, SAMTag.Q2), false);
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(SAMTag.R2, SAMTag.Q2), false, false);
 		
 		assertEquals("AGT", read0.getStringAttribute("R2"));
 		assertEquals("AAC", read1.getStringAttribute("R2"));
@@ -498,7 +498,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		read0.setAttribute("NM", null);
 		read1.setAttribute("NM", null);
 		
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(SAMTag.SA), false);
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(SAMTag.SA), false, false);
 		
 		assertEquals("polyA,2,+,1H1M4H,11,", read0.getStringAttribute("SA"));
 		assertEquals("polyA,1,+,1M5H,10,", read1.getStringAttribute("SA"));
@@ -518,7 +518,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		read1.setReadBases(B("ACT"));
 		read1.setBaseQualityString("456");
 		
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(SAMTag.SA), false);
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1), ImmutableSet.of(SAMTag.SA), false, false);
 		
 		assertEquals(null, read0.getStringAttribute("SA"));
 		assertEquals(null, read1.getStringAttribute("SA"));
@@ -550,7 +550,7 @@ public class SAMRecordUtilTest extends TestHelper {
 		read2.setAttribute("NM", 2);
 		read3.setAttribute("NM", 3);
 		
-		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1, read2, read3, alt), ImmutableSet.of(SAMTag.SA), false);
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0, read1, read2, read3, alt), ImmutableSet.of(SAMTag.SA), false, false);
 		
 		assertEquals(null, alt.getStringAttribute("SA"));
 		// "0,4,+,3H1M2H,12,2,;0,1,+,1M5H,10,0,;0,2,+,1H1M4H,11,1,;0,5,+,4S2M,13,3,"
@@ -662,4 +662,37 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertFalse(SAMRecordUtil.lowMapqToUnmapped(withAttr("MQ", 2, RP(0, 1, 1))[0], 2).getMateUnmappedFlag());
 		assertFalse(SAMRecordUtil.lowMapqToUnmapped(withAttr("MQ", 3, RP(0, 1, 1))[0], 2).getMateUnmappedFlag());
 	}
+	@Test
+	public void should_fix_mate_information() {
+		SAMRecord r1 = Read(0, 1, "10M1I1M");
+		SAMRecord r2 = Read(2, 3, "10M5S");
+		r2.setAttribute("FI", 1);
+		r1.setReadName("r");
+		r2.setReadName("r");
+		r1.setMappingQuality(5);
+		r2.setMappingQuality(6);
+		r2.setReadNegativeStrandFlag(true);
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r1, r2), ImmutableSet.of(SAMTag.MC, SAMTag.MQ), false, true);
+		
+		assertEquals(2, (int)r1.getMateReferenceIndex());
+		assertEquals(3, r1.getMateAlignmentStart());
+		assertEquals(0, (int)r2.getMateReferenceIndex());
+		assertEquals(1, r2.getMateAlignmentStart());
+		assertTrue(r1.getMateNegativeStrandFlag());
+		assertFalse(r2.getMateNegativeStrandFlag());
+		assertFalse(r1.getMateUnmappedFlag());
+		assertFalse(r2.getMateUnmappedFlag());
+		assertEquals("10M5S", r1.getStringAttribute("MC"));
+		assertEquals("10M1I1M", r2.getStringAttribute("MC"));
+		assertEquals(6, (int)r1.getIntegerAttribute("MQ"));
+		assertEquals(5, (int)r2.getIntegerAttribute("MQ"));
+	}
+	@Test
+	public void fix_mate_information_should_leave_unpaired() {
+		SAMRecord r = Read(0, 15, "5M6S");
+		assertFalse(r.getReadPairedFlag());
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r), ImmutableSet.of(SAMTag.MC, SAMTag.MQ), false, true);
+		assertFalse(r.getReadPairedFlag());
+	}
+	
 }

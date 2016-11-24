@@ -7,13 +7,11 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.util.List;
-import java.util.Set;
 
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.SAMRecord;
@@ -276,16 +274,6 @@ public class AssemblyFactoryTest extends TestHelper {
 						setCigarString("2S2M");
 						setReadBases(B("GGGG"));
 					}})).getBreakendSummary());
-	}
-	private SingleReadEvidence incorporateRealignment(AssemblyEvidenceSource aes, SingleReadEvidence assembly, List<SAMRecord> realignments) {
-		return incorporateRealignment(aes, assembly.getSAMRecord(), realignments);
-	}
-	private SingleReadEvidence incorporateRealignment(AssemblyEvidenceSource aes, SAMRecord assembly, List<SAMRecord> realignments) {
-		SAMRecord out = assembly.deepCopy();
-		realignments.stream().forEach(r -> r.setReadName(SplitReadIdentificationHelper.getSplitReadRealignments(assembly, false).get(0).getReadHeader()));
-		SplitReadIdentificationHelper.convertToSplitRead(out, realignments);
-		List<SingleReadEvidence> list = SingleReadEvidence.createEvidence(aes, out);
-		return list.get(0);
 	}
 	@Test
 	public void incorporateRealignment_should_map_unanchored_breakend() {

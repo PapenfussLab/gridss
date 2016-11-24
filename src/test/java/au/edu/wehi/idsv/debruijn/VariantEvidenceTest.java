@@ -128,7 +128,7 @@ public class VariantEvidenceTest extends TestHelper {
 		for (VariantEvidence v : new VariantEvidence[] { 
 				new VariantEvidence(4, NRRP(SES(5, 5), DP(0, 1, "2M", true, 0, 1000, "2M", false)), getContext().getLinear()),
 				new VariantEvidence(4, SCE(FWD, Read(0, 5, "5M5S")), getContext().getLinear()),
-				new VariantEvidence(4, SCE(FWD, Read(0, 5, "5M5S"), Read(0, 100, "5M")), getContext().getLinear()),
+				new VariantEvidence(4, SR(Read(0, 5, "5M5S"), Read(0, 100, "5M")), getContext().getLinear()),
 				new VariantEvidence(4, SR(Read(0, 100, "5S5M"), Read(0, 5, "5M5S")), getContext().getLinear())
 				}) {
 			for (int i = 0; i < v.getKmers().length(); i++) {

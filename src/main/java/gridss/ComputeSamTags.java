@@ -54,12 +54,17 @@ public class ComputeSamTags extends CommandLineProgram {
     public boolean ASSUME_SORTED = false;
 	@Option(doc="Convert hard clips to soft clips if the entire read sequence for the read is available in another record.", optional=true)
 	public boolean SOFTEN_HARD_CLIPS = true;
+	@Option(doc="Fixes missing mate information. Unlike Picard tools FixMateInformation, reads for which no mate can be found"
+			+ " are converted to unpaired reads.", optional=true)
+	public boolean FIX_MATE_INFORMATION = true;
 	@Option(shortName="T", doc="Tags to calculate")
 	public Set<SAMTag> TAGS = Sets.newHashSet(
 			SAMTag.NM,
+			SAMTag.SA,
 			SAMTag.Q2,
 			SAMTag.R2,
-			SAMTag.SA);
+			SAMTag.MC,
+			SAMTag.MQ);
 	@Override
 	protected int doWork() {
 		log.debug("Setting language-neutral locale");
@@ -86,7 +91,7 @@ public class ComputeSamTags extends CommandLineProgram {
     			try (SAMRecordIterator it = reader.iterator()) {
     				File tmpoutput = FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.tmp.ComputeSamTags.");
     				try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpoutput)) {
-    					compute(it, writer, reference, TAGS, SOFTEN_HARD_CLIPS);
+    					compute(it, writer, reference, TAGS, SOFTEN_HARD_CLIPS, FIX_MATE_INFORMATION);
     				}
     				FileHelper.move(tmpoutput, OUTPUT, true);
     			}
@@ -97,7 +102,7 @@ public class ComputeSamTags extends CommandLineProgram {
 		}
     	return 0;
 	}
-	public static void compute(Iterator<SAMRecord> rawit, SAMFileWriter writer, ReferenceSequenceFile reference, Set<SAMTag> tags, boolean softenHardClips) throws IOException {
+	public static void compute(Iterator<SAMRecord> rawit, SAMFileWriter writer, ReferenceSequenceFile reference, Set<SAMTag> tags, boolean softenHardClips, boolean fixMates) throws IOException {
 		ProgressLogger progress = new ProgressLogger(log);
 		try (CloseableIterator<SAMRecord> aysncit = new AsyncBufferedIterator<SAMRecord>(rawit, "raw")) {
 			Iterator<SAMRecord> it = aysncit;
@@ -106,7 +111,7 @@ public class ComputeSamTags extends CommandLineProgram {
 				it = new NmTagIterator(it, reference);
 			}
 			if (!Sets.intersection(tags, SAMRecordUtil.TEMPLATE_TAGS).isEmpty() || softenHardClips) {
-				it = new TemplateTagsIterator(it, softenHardClips, tags);
+				it = new TemplateTagsIterator(it, softenHardClips, fixMates, tags);
 				it = new AsyncBufferedIterator<SAMRecord>(it, "tags");
 			}
 			while (it.hasNext()) {
@@ -136,6 +141,8 @@ public class ComputeSamTags extends CommandLineProgram {
     		case NM:
     		case Q2:
     		case R2:
+    		case MC:
+    		case MQ:
     		case SA:
     		case TC:
     			break;

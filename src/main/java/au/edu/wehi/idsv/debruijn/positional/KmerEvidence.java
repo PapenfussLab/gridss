@@ -1,21 +1,20 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.List;
+
+import org.apache.commons.lang3.ArrayUtils;
 
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.NonReferenceReadPair;
-import au.edu.wehi.idsv.SoftClipEvidence;
+import au.edu.wehi.idsv.SingleReadEvidence;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.PackedKmerList;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.CigarUtil;
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
@@ -33,11 +32,11 @@ public class KmerEvidence extends PackedKmerList {
 	// - read pair can store anchor position & direction instead of breakend & anchor
 	// - read pair anchor can point to rp
 	private final DirectedEvidence evidence;
-	private final BitSet anchor;
+	private final int firstAnchorKmer;
+	private final int lastAnchorKmer;
 	private final BitSet ambiguous;
 	private final int start;
 	private final int end;
-	private final BreakendSummary be;
 	private final float score;
 	public KmerSupportNode node(int offset) {
 		if (ambiguous != null && ambiguous.get(offset)) {
@@ -46,7 +45,6 @@ public class KmerEvidence extends PackedKmerList {
 		return new KmerSupportNode(this, offset);
 	}
 	public float evidenceQuality() { return score; }
-	public BreakendSummary breakend() { return be; }
 	public DirectedEvidence evidence() { return evidence; }
 	/**
 	 * Start position of first kmer
@@ -63,12 +61,10 @@ public class KmerEvidence extends PackedKmerList {
 		return end;
 	}
 	public boolean isAnchored(int offset) {
-		if (anchor == null) return false;
-		return anchor.get(offset);
+		return offset >= firstAnchorKmer && offset < lastAnchorKmer;
 	}
 	public boolean isAnchored() {
-		if (anchor == null) return false;
-		return !anchor.isEmpty();
+		return firstAnchorKmer < lastAnchorKmer;
 	}
 	private static BitSet ambiguousKmers(int k, byte[] bases) {
 		BitSet ambiguous = null;
@@ -87,8 +83,8 @@ public class KmerEvidence extends PackedKmerList {
 			DirectedEvidence evidence,
 			int start,
 			int end,
-			int k, BitSet anchorKmers, byte[] bases, byte[] qual, boolean reverse, boolean complement,
-			BreakendSummary be, float evidenceQual) {
+			int k, int firstAnchoredKmer, int lastAnchoredKmer, byte[] bases, byte[] qual, boolean reverse, boolean complement,
+			float evidenceQual) {
 		super(k, bases, qual, reverse, complement);
 		assert(evidence != null);
 		assert(qual.length == bases.length);
@@ -96,8 +92,8 @@ public class KmerEvidence extends PackedKmerList {
 		this.start = start;
 		this.end = end;
 		this.ambiguous = ambiguousKmers(k, bases);
-		this.anchor = anchorKmers;
-		this.be = be;
+		this.firstAnchorKmer = firstAnchoredKmer;
+		this.lastAnchorKmer = lastAnchoredKmer;
 		this.score = evidenceQual;
 	}
 	public static KmerEvidence create(int k, NonReferenceReadPair pair) {
@@ -128,7 +124,7 @@ public class KmerEvidence extends PackedKmerList {
 			startPosition = local.getUnclippedEnd() - maxFragSize + 1;
 			endPosition = local.getUnclippedEnd() - minFragSize + 1;
 		}
-		return new KmerEvidence(pair, startPosition, endPosition, k, null, remote.getReadBases(), remote.getBaseQualities(), reverseComp, reverseComp, pair.getBreakendSummary(), pair.getBreakendQual());
+		return new KmerEvidence(pair, startPosition, endPosition, k, -1, -1, remote.getReadBases(), remote.getBaseQualities(), reverseComp, reverseComp, pair.getBreakendQual());
 	}
 	/**
 	 * Creates anchoring evidence for the given read pair
@@ -189,66 +185,40 @@ public class KmerEvidence extends PackedKmerList {
 				}
 			}
 		}
-		return new KmerEvidence(evidence, firstBasePosition, firstBasePosition, k, anchors, bases, read.getBaseQualities(), false, false, null, 0);
+		return new KmerEvidence(evidence, firstBasePosition, firstBasePosition, k, 0, bases.length, bases, read.getBaseQualities(), false, false, 0);
 	}
 	private static byte getBase(ReferenceLookup reference, int referenceIndex, int contigLength, int position) {
 		if (position <= 0 || position > contigLength) return 'N';
 		return reference.getBase(referenceIndex, position);
 	}
-	public static KmerEvidence create(int k, SoftClipEvidence softClipEvidence, boolean trimOtherSoftClip) {
-		SAMRecord read = softClipEvidence.getSAMRecord();
-		List<CigarElement> elements = read.getCigar().getCigarElements();
-		int startClipLength = SAMRecordUtil.getStartSoftClipLength(elements);
-		int endClipLength = SAMRecordUtil.getEndSoftClipLength(elements);
+	public static KmerEvidence create(int k, SingleReadEvidence sre) {
+		byte[] aseq = sre.getAnchorSequence();
+		byte[] beseq = sre.getBreakendSequence();
+		byte[] aqual = sre.getAnchorQuality();
+		byte[] bequal = sre.getBreakendQuality();
 		
-		if (trimOtherSoftClip && endClipLength > 0 && startClipLength > 0) {
-			SAMRecord trimmed;
-			try {
-				trimmed = (SAMRecord)read.clone();
-			} catch (CloneNotSupportedException e) {
-				throw new RuntimeException(e);
-			}
-			List<CigarElement> ce = new ArrayList<CigarElement>(trimmed.getCigar().getCigarElements());
-			int trimStart;
-			int trimEnd;
-			if (softClipEvidence.getBreakendSummary().direction == BreakendDirection.Forward) {
-				trimEnd = 0;
-				trimStart = startClipLength;
-				while (ce.get(0).getOperator() == CigarOperator.SOFT_CLIP || ce.get(0).getOperator() == CigarOperator.HARD_CLIP) {
-					ce.remove(0);
-				}
-				startClipLength = 0;
-			} else {
-				trimEnd = endClipLength;
-				trimStart = 0;
-				while (ce.get(ce.size() - 1).getOperator() == CigarOperator.SOFT_CLIP || ce.get(ce.size() - 1).getOperator() == CigarOperator.HARD_CLIP) {
-					ce.remove(ce.size() - 1);
-				}
-				endClipLength = 0;
-			}
-			trimmed.setCigar(new Cigar(ce));
-			trimmed.setBaseQualities(Arrays.copyOfRange(trimmed.getBaseQualities(), trimStart, trimmed.getReadLength() - trimEnd));
-			trimmed.setReadBases(Arrays.copyOfRange(trimmed.getReadBases(), trimStart, trimmed.getReadLength() - trimEnd));
-			read = trimmed;
+		byte[] seq;
+		byte[] qual;
+		BreakendSummary bs = sre.getBreakendSummary();
+		int positionOffset;
+		int firstAnchoredBase;
+		int anchoredBases = aseq.length;
+		if (bs.direction == BreakendDirection.Forward) {
+			seq = ArrayUtils.addAll(aseq, beseq);
+			qual =  ArrayUtils.addAll(aqual, bequal);
+			positionOffset = -(aseq.length - 1);
+			firstAnchoredBase = 0;
+		} else {
+			seq = ArrayUtils.addAll(beseq, aseq);
+			qual =  ArrayUtils.addAll(bequal, aqual);
+			firstAnchoredBase = beseq.length;
+			positionOffset = -beseq.length;
 		}
-		if (k > read.getReadLength()) {
+		if (k > seq.length) {
 			return null;
 		}
-		// TODO: handle indels
-		BitSet anchor = new BitSet(read.getReadLength());
-		int startAnchorIndex = startClipLength;
-		int endAnchorIndex = read.getReadLength() - (k - 1) - endClipLength;
-		if (endAnchorIndex > startAnchorIndex) {
-			anchor.set(startClipLength, read.getReadLength() - (k - 1) - endClipLength, true);
-		}
-		int startPosition;
-		if (softClipEvidence.getBreakendSummary().direction == BreakendDirection.Forward) {
-			startPosition = read.getAlignmentEnd() + endClipLength - read.getReadLength() + 1;
-		} else {
-			startPosition = read.getAlignmentStart() - startClipLength;
-		}
-		return new KmerEvidence(softClipEvidence, startPosition, startPosition, k, anchor, read.getReadBases(), read.getBaseQualities(), false, false,
-				softClipEvidence.getBreakendSummary(), softClipEvidence.getBreakendQual());
+		return new KmerEvidence(sre, bs.start + positionOffset, bs.end + positionOffset, k, firstAnchoredBase, firstAnchoredBase + anchoredBases - (k - 1), seq, qual, false, false, sre.getBreakendQual());
+		
 	}
 	@Override
 	public String toString() {

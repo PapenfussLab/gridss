@@ -20,7 +20,7 @@ public class EvidenceTrackerTest extends TestHelper {
 	public void shouldTrackWhenIterated() {
 		int k = 4;
 		List<KmerSupportNode> list = new ArrayList<KmerSupportNode>();
-		list.add(KmerEvidence.create(k, SCE(FWD, Read(0, 1, "4M1S")), false).node(0));
+		list.add(KmerEvidence.create(k, SCE(FWD, Read(0, 1, "4M1S"))).node(0));
 		EvidenceTracker tracker = new EvidenceTracker();
 		Set<KmerEvidence> result = tracker.untrack(ImmutableList.of(new KmerPathSubnode(KPN(k, "AAAA", 1, 1, true))));
 		assertEquals(0, result.size());
@@ -32,7 +32,7 @@ public class EvidenceTrackerTest extends TestHelper {
 	@Test
 	public void shouldUntrackAllEvidenceNodes() {
 		int k = 4;
-		KmerEvidence e = KmerEvidence.create(k, SCE(FWD, Read(0, 1, "4M1S")), false);
+		KmerEvidence e = KmerEvidence.create(k, SCE(FWD, Read(0, 1, "4M1S")));
 		List<KmerSupportNode> list = new ArrayList<KmerSupportNode>();
 		list.add(e.node(0));
 		list.add(e.node(1));
@@ -49,7 +49,7 @@ public class EvidenceTrackerTest extends TestHelper {
 	@Test
 	public void shouldTrackEvidenceID() {
 		int k = 4;
-		KmerEvidence e = KmerEvidence.create(k, SCE(FWD, Read(0, 1, "4M1S")), false);
+		KmerEvidence e = KmerEvidence.create(k, SCE(FWD, Read(0, 1, "4M1S")));
 		List<KmerSupportNode> list = new ArrayList<KmerSupportNode>();
 		list.add(e.node(0));
 		EvidenceTracker tracker = new EvidenceTracker();

@@ -7,7 +7,6 @@ import java.io.FileFilter;
 import java.io.IOException;
 
 import org.apache.commons.io.filefilter.WildcardFileFilter;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
 
@@ -19,7 +18,6 @@ import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
-import au.edu.wehi.idsv.util.FixMissingMateInformation;
 import gridss.ComputeSamTags;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 
@@ -49,13 +47,12 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 		pc.getConfig().getVisualisation().directory.mkdirs();
 		return pc;
 	}
-	@Test
+	//@Test
 	//@Ignore("Once-off data import")
 	public void add_tags() throws IOException {
 		File in = new File("src/test/resources/chr12-244000.bam");
 		File insq = new File("src/test/resources/chr12-244000.sq.bam");
 		File outsq = new File("src/test/resources/chr12-244000.sq.tagged.bam");
-		File outfixmate = new File("src/test/resources/chr12-244000.sq.tagged.fixmate.bam");
 		File out = new File("src/test/resources/chr12-244000.tagged.bam");
 		SAMFileUtil.sort(getFSContext(), in, insq, SortOrder.queryname);
 		File ref = Hg19Tests.findHg19Reference("chr12.fa");
@@ -65,11 +62,6 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 				"OUTPUT=" + outsq.getAbsolutePath(),
 				"REFERENCE_SEQUENCE=" + ref.getAbsolutePath()
 		});
-		FixMissingMateInformation cmd2 = new FixMissingMateInformation();
-		cmd2.instanceMain(new String[] {
-				"INPUT=" + outsq.getAbsolutePath(),
-				"OUTPUT=" + outfixmate.getAbsolutePath()
-		});
-		SAMFileUtil.sort(getFSContext(), outfixmate, out, SortOrder.coordinate);
+		SAMFileUtil.sort(getFSContext(), outsq, out, SortOrder.coordinate);
 	}
 }

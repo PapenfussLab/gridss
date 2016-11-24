@@ -407,7 +407,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			// unanchored
 			if (evidence.size() > 0) {
 				BreakendSummary be = Models.calculateBreakend(aes.getContext().getLinear(),
-					evidence.stream().map(e -> e.breakend()).collect(Collectors.toList()),
+					evidence.stream().map(e -> e.evidence().getBreakendSummary()).collect(Collectors.toList()),
 					evidence.stream().map(e -> ScalingHelper.toScaledWeight(e.evidenceQuality())).collect(Collectors.toList()));
 				assembledContig = AssemblyFactory.createUnanchoredBreakend(aes.getContext(), aes,
 						be,
