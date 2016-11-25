@@ -17,6 +17,7 @@ public class SoftClipEvidence extends SingleReadEvidence {
 	public static SoftClipEvidence create(SAMEvidenceSource source, BreakendDirection direction, SAMRecord record) {
 		if (record.getReadBases() == null || record.getReadBases() == SAMRecord.NULL_SEQUENCE) throw new IllegalArgumentException("Missing read bases");
 		int unanchoredWidth = CigarUtil.widthOfImprecision(record.getCigar());
+		SoftClipEvidence sce;
 		if (direction == BreakendDirection.Backward) {
 			int clipLength = SAMRecordUtil.getStartSoftClipLength(record);
 			int offsetLocalStart = clipLength;
@@ -24,15 +25,16 @@ public class SoftClipEvidence extends SingleReadEvidence {
 			int offsetUnmappedStart = 0;
 			int offsetUnmappedEnd = clipLength;
 			BreakendSummary bs = new BreakendSummary(record.getReferenceIndex(), direction, record.getAlignmentStart());
-			return new SoftClipEvidence(source, record, bs, offsetLocalStart, offsetLocalEnd, offsetUnmappedStart, offsetUnmappedEnd, unanchoredWidth);
+			sce = new SoftClipEvidence(source, record, bs, offsetLocalStart, offsetLocalEnd, offsetUnmappedStart, offsetUnmappedEnd, unanchoredWidth);
 		} else {
 			int clipLength = SAMRecordUtil.getEndSoftClipLength(record);
-			return new SoftClipEvidence(source, record,
+			sce = new SoftClipEvidence(source, record,
 					new BreakendSummary(record.getReferenceIndex(), direction, record.getAlignmentEnd()),
 					INCLUDE_CLIPPED_ANCHORING_BASES ? 0 : SAMRecordUtil.getStartSoftClipLength(record), record.getReadLength() - clipLength,
 					record.getReadLength() - clipLength, record.getReadLength(),
 					unanchoredWidth);
 		}
+		return sce;
 	}
 	@Override
 	public float getBreakendQual() {

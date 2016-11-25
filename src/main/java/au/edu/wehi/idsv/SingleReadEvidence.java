@@ -6,21 +6,26 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.junit.runner.Request;
+
+import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.IntervalUtil;
+import gridss.analysis.CigarDetailMetrics;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMSequenceRecord;
+import htsjdk.samtools.util.SequenceUtil;
 
 public abstract class SingleReadEvidence implements DirectedEvidence {
 	protected static final boolean INCLUDE_CLIPPED_ANCHORING_BASES = false;
 	protected final SAMEvidenceSource source;
 	private final SAMRecord record;
 	private final BreakendSummary location;
-	private final int offsetLocalStart;
-	private final int offsetLocalEnd;
-	private final int offsetUnmappedStart;
-	private final int offsetUnmappedEnd;
-	private final int offsetRemoteStart;
-	private final int offsetRemoteEnd;
+	private final byte[] anchorBases;
+	private final byte[] anchorQuals;
+	private final String untemplated;
+	private final byte[] breakendBases;
+	private final byte[] breakendQuals;
 	private final boolean isUnanchored;
 	private String evidenceid;
 	
@@ -55,7 +60,12 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 			int offsetLocalStart, int offsetLocalEnd,
 			int offsetUnmappedStart, int offsetUnmappedEnd,
 			int localInexactMargin) {
-		this(source, record, location, offsetLocalStart, offsetLocalEnd, offsetUnmappedStart, offsetUnmappedEnd, offsetUnmappedEnd, offsetUnmappedEnd, localInexactMargin, 0);
+		this(source, record, location,
+				offsetLocalStart, offsetLocalEnd,
+				offsetUnmappedStart, offsetUnmappedEnd,
+				offsetLocalStart < offsetUnmappedStart ? offsetUnmappedEnd : offsetUnmappedStart,
+				offsetLocalStart < offsetUnmappedStart ? offsetUnmappedEnd : offsetUnmappedStart,
+				localInexactMargin, 0);
 	}
 	protected SingleReadEvidence(SAMEvidenceSource source, SAMRecord record, BreakendSummary location,
 			int offsetLocalStart, int offsetLocalEnd,
@@ -114,16 +124,72 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 		if (offsetLocalEnd > record.getReadLength()) throw new IllegalArgumentException();
 		if (offsetUnmappedEnd > record.getReadLength()) throw new IllegalArgumentException();
 		if (offsetRemoteEnd > record.getReadLength()) throw new IllegalArgumentException();
+		if (offsetUnmappedEnd != offsetRemoteStart && offsetUnmappedStart != offsetRemoteEnd) throw new IllegalArgumentException();
 		this.source = source;
 		this.record = record;
-		this.location = location;
-		this.offsetLocalStart = offsetLocalStart;
-		this.offsetLocalEnd = offsetLocalEnd;
-		this.offsetUnmappedStart = offsetUnmappedStart;
-		this.offsetUnmappedEnd = offsetUnmappedEnd;
-		this.offsetRemoteStart = offsetRemoteStart;
-		this.offsetRemoteEnd = offsetRemoteEnd;
+		this.untemplated = new String(Arrays.copyOfRange(record.getReadBases(), offsetUnmappedStart, offsetUnmappedEnd), StandardCharsets.US_ASCII);
+		this.anchorBases = Arrays.copyOfRange(record.getReadBases(), offsetLocalStart, offsetLocalEnd);
+		this.anchorQuals = Arrays.copyOfRange(record.getBaseQualities(), offsetLocalStart, offsetLocalEnd);
+		this.breakendBases = Arrays.copyOfRange(record.getReadBases(), Math.min(offsetRemoteStart, offsetUnmappedStart), Math.max(offsetRemoteEnd, offsetUnmappedEnd));
+		this.breakendQuals = Arrays.copyOfRange(record.getBaseQualities(), Math.min(offsetRemoteStart, offsetUnmappedStart), Math.max(offsetRemoteEnd, offsetUnmappedEnd));
 		this.isUnanchored = localInexactMargin > 0 || remoteInexactMargin > 0;
+		this.location = withExactHomology(location);
+	}
+	private BreakendSummary withExactHomology(BreakendSummary location) {
+		if (!isBreakendExact()) return location;
+		// if there is an overlapping split read alignment (such as produced by bwa)
+		// then we'll trust the overlap given by the aligner as our homology size
+		// even though this could be an inexact homolog
+		if (location.end - location.start != 0) return location;
+		// If there's inserted sequence that hasn't been aligned to either side then we don't have a homology.
+		// Edge case: technically this isn't correct. Sequences such as
+		// tandem repeats can have both inserted sequence and sequence homology.
+		if (untemplated.length() > 0) return location;
+		if (location instanceof BreakpointSummary) {
+			ReferenceLookup lookup = source.getContext().getReference();
+			BreakpointSummary bp = (BreakpointSummary) location;
+			int localBasesMatchingRemoteReference;
+			int remoteBasesMatchingLocalReference;
+			if (bp.direction == BreakendDirection.Forward) {
+				// anchor -> breakend
+				remoteBasesMatchingLocalReference = homologyLength(lookup, bp.referenceIndex, bp.nominal + 1, 1, breakendBases, 0, 1);
+				if (bp.direction2  == BreakendDirection.Backward) {
+					localBasesMatchingRemoteReference = homologyLength(lookup, bp.referenceIndex2, bp.nominal2 - 1, -1, anchorBases, anchorBases.length - 1, -1);
+				} else {
+					localBasesMatchingRemoteReference = homologyLength(lookup, bp.referenceIndex2, bp.nominal2 + 1,  1, anchorBases, anchorBases.length - 1, -1);
+				}
+			} else {
+				remoteBasesMatchingLocalReference = homologyLength(lookup, bp.referenceIndex, bp.nominal - 1, -1, breakendBases, breakendBases.length - 1, -1);
+				if (bp.direction2  == BreakendDirection.Forward) {
+					localBasesMatchingRemoteReference = homologyLength(lookup, bp.referenceIndex2, bp.nominal2 + 1,  1, anchorBases, 0, 1);
+				} else {
+					localBasesMatchingRemoteReference = homologyLength(lookup, bp.referenceIndex2, bp.nominal2 - 1, -1, anchorBases, 0, 1);
+				}
+			}
+			return bp.adjustPosition(localBasesMatchingRemoteReference, remoteBasesMatchingLocalReference);
+		} else {
+			// not considering unclipping bases since that only affects assembly
+			// and is already covered by SAMRecordUtil.unclipExactReferenceMatches()
+			return location;
+		}
+	}
+	private static int homologyLength(ReferenceLookup lookup, int referenceIndex, int referencePosition, int referenceStep, byte[] seq, int seqPosition, int seqStep) {
+		SAMSequenceRecord refSeq = lookup.getSequenceDictionary().getSequence(referenceIndex);
+		int homlen = 0;
+		boolean complement = referenceStep != seqStep;
+		while (seqPosition >= 0 && seqPosition < seq.length && referencePosition >= 1 & referencePosition <= refSeq.getSequenceLength()) {
+			byte base = seq[seqPosition];
+			if (complement) {
+				base = SequenceUtil.complement(base);
+			}
+			if (SequenceUtil.basesEqual(base, lookup.getBase(referenceIndex, referencePosition)) &&
+					!SequenceUtil.basesEqual(base, SequenceUtil.N)) {
+				referencePosition += referenceStep;
+				seqPosition += seqStep;
+				homlen++;
+			}
+		}
+		return homlen;
 	}
 	
 	public SAMRecord getSAMRecord() {
@@ -135,33 +201,25 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 		return location;
 	}
 	
-	private byte[] getBreakend(byte[] b) {
-		assert(offsetUnmappedEnd == offsetRemoteStart || offsetUnmappedStart == offsetRemoteEnd);
-		return Arrays.copyOfRange(b, Math.min(offsetRemoteStart, offsetUnmappedStart), Math.max(offsetRemoteEnd, offsetUnmappedEnd));
-	}
-
 	@Override
 	public byte[] getBreakendSequence() {
-		return getBreakend(getSAMRecord().getReadBases());
+		return breakendBases;
 	}
 
 	@Override
 	public byte[] getBreakendQuality() {
-		return getBreakend(getSAMRecord().getBaseQualities());
+		return breakendQuals;
 	}
 	
-	private byte[] getAnchor(byte[] b) {
-		return Arrays.copyOfRange(b, offsetLocalStart, offsetLocalEnd);
-	}
 
 	@Override
 	public byte[] getAnchorSequence() {
-		return getAnchor(getSAMRecord().getReadBases());
+		return anchorBases;
 	}
 
 	@Override
 	public byte[] getAnchorQuality() {
-		return getAnchor(getSAMRecord().getBaseQualities());
+		return anchorQuals;
 	}
 
 	@Override
@@ -180,7 +238,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	}
 
 	public String getUntemplatedSequence() {
-		return new String(Arrays.copyOfRange(getSAMRecord().getReadBases(), offsetUnmappedStart, offsetUnmappedEnd), StandardCharsets.US_ASCII);
+		return untemplated;
 	}
 	
 	protected void buildEvidenceID(StringBuilder sb) {
@@ -198,11 +256,30 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	}
 	
 	public String getHomologySequence() {
-		throw new RuntimeException("NYI");
+		if (!isBreakendExact()) return "";
+		int homlen = location.end - location.start;
+		int locallen = getHomologyAnchoredBaseCount();
+		int remotelen = homlen - locallen;
+		String strAnchor = new String(anchorBases, StandardCharsets.US_ASCII);
+		String strBreakend = new String(breakendBases, StandardCharsets.US_ASCII);
+		if (location.direction == BreakendDirection.Forward) {
+			// end of anchor + start of breakend
+			return strAnchor.substring(strAnchor.length() - locallen) + strBreakend.substring(0, remotelen);
+		} else {
+			// end of breakend + start of anchor
+			return strBreakend.substring(strBreakend.length() - remotelen) + strAnchor.substring(0, locallen);
+		}
 	}
 
 	public int getHomologyAnchoredBaseCount() {
-		throw new RuntimeException("NYI");
+		if (isBreakendExact()) {
+			if (location.direction == BreakendDirection.Forward) { 
+				return location.nominal - location.start;
+			} else  {
+				return location.end - location.nominal;
+			}
+		}
+		return 0;
 	}
 	@Override
 	public String toString() {

@@ -1183,4 +1183,73 @@ public class SAMRecordUtil {
 				.map(ca -> ca.toString())
 				.collect(Collectors.joining(";")));
 	}
+	/**
+	 * Converts soft clipped bases that match the reference genome to alignment matches.
+	 *  In general, such bases should be included in the alignment but, due to error correction
+	 *  of sequencing errors, this does not necessarily hold true for assembly contigs.
+	 * @param r record
+	 */
+	public static void unclipExactReferenceMatches(ReferenceLookup ref, SAMRecord read) {
+		if (read.getReadUnmappedFlag()) return;
+		byte[] seq = read.getReadBases();
+		int refIndex = read.getReferenceIndex();
+		SAMSequenceRecord refseq = ref.getSequenceDictionary().getSequence(refIndex);
+		int startunclip = 0;
+		int startclip = getStartSoftClipLength(read);
+		for (int i = startclip - 1; i >= 0; i--) {
+			int pos = read.getAlignmentStart() - startclip + i;
+			if (pos >= 1 && pos <= refseq.getSequenceLength()) {
+				byte refbase = ref.getBase(refIndex, pos);
+				byte readbase = seq[i];
+				if (SequenceUtil.basesEqual(refbase, readbase) && !SequenceUtil.basesEqual(SequenceUtil.N, readbase)) {
+					startunclip++;
+				} else {
+					break;
+				}
+			}
+		}
+		int endunclip = 0;
+		int endcliplength = getEndSoftClipLength(read);
+		for (int i = 0; i < endcliplength; i++) {
+			int pos = read.getAlignmentEnd() + i + 1;
+			if (pos >= 1 && pos <= refseq.getSequenceLength()) {
+				byte refbase = ref.getBase(refIndex, read.getAlignmentEnd() + i + 1);
+				byte readbase = seq[read.getReadLength() - endcliplength + i];
+				if (SequenceUtil.basesEqual(refbase, readbase)) {
+					endunclip++;
+				} else {
+					break;
+				}
+			}
+		}
+		read.setCigar(softClipToAligned(read.getCigar(), startunclip, endunclip));
+		read.setAlignmentStart(read.getAlignmentStart() - startunclip);
+	}
+
+	private static Cigar softClipToAligned(Cigar cigar, int startunclip, int endunclip) {
+		if (startunclip == 0 && endunclip == 0) return cigar;
+		List<CigarElement> list = cigar.getCigarElements();
+		list = CigarUtil.clean(list, true);
+		if (startunclip > 0) {
+			int i = 0;
+			while (i < list.size() && list.get(i).getOperator() != CigarOperator.SOFT_CLIP) i++;
+			if (i == list.size() || list.get(i).getLength() < startunclip) {
+				throw new IllegalArgumentException(String.format("Unable to unclip %d clipped bases from start of %s", startunclip, cigar));
+			}
+			list.set(i, new CigarElement(list.get(i).getLength() - startunclip, CigarOperator.SOFT_CLIP));
+			list.add(i + 1, new CigarElement(startunclip, CigarOperator.MATCH_OR_MISMATCH));
+			CigarUtil.clean(list, false);
+		}
+		if (endunclip > 0) {
+			int i = list.size() - 1;
+			while (i > 0 && list.get(i).getOperator() != CigarOperator.SOFT_CLIP) i--;
+			if (i < 0 || list.get(i).getLength() < endunclip) {
+				throw new IllegalArgumentException(String.format("Unable to unclip %d clipped bases from end of %s", endunclip, cigar));
+			}
+			list.set(i, new CigarElement(list.get(i).getLength() - endunclip, CigarOperator.SOFT_CLIP));
+			list.add(i - 1, new CigarElement(endunclip, CigarOperator.MATCH_OR_MISMATCH));
+			CigarUtil.clean(list, false);
+		}
+		return new Cigar(list);
+	}
 }

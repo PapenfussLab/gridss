@@ -243,21 +243,6 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals(0, SingleReadEvidence.createEvidence(SES(), e).size());
 	}
 	@Test
-	public void reference_allele_should_have_no_breakend_call_due_to_micro_homology_expansion() {
-		// 12345678901234567890
-		//          MMMMMMMMMM
-		//         >>>>>>>>>>>
-		//          <<<<<<<<<<<
-		String assembly = S(Arrays.copyOfRange(RANDOM, 10-1, 20-1));
-		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null,
-				2, 1, 1, B(assembly), B(40, assembly.length()));
-		assertEquals(0, SingleReadEvidence.createEvidence(SES(), e).size());
-		
-		e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, null,
-				2, 1, 1, B(assembly), B(40, assembly.length()));
-		assertEquals(0, SingleReadEvidence.createEvidence(SES(), e).size());
-	}
-	@Test
 	public void getBreakendQual_should_exclude_assembled_evidence_that_does_not_support_breakend() {
 		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(
 				NRRP(OEA(0, 1, "1M", true)),
@@ -425,7 +410,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		for (int startpos = 300 - margin; startpos <= 300 + margin; startpos++) {
 			String seq = S(Arrays.copyOfRange(RANDOM, 299, 399)) + S("N", 50);
 			SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), FWD, null,
-					2, startpos + 100, 100, B(seq), B(40, seq.length()));
+					2, startpos + 100 - 1, 100, B(seq), B(40, seq.length()));
 			e = SAMRecordUtil.realign(getContext().getReference(), e, 50, true);
 			assertEquals(399, asEvidence(e).getBreakendSummary().start);
 			assertEquals(50, asEvidence(e).getBreakendSequence().length);

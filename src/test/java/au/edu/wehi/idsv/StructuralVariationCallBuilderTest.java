@@ -418,8 +418,8 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		ra.setReadBases(B("GGT"));
 		ra.setMappingQuality(45);
 		ra.setBaseQualities(new byte[] { 0,1,2});
-		incorporateRealignment(AES(), e, ImmutableList.of(ra));
-		return (SplitReadEvidence)asEvidence(e);
+		SingleReadEvidence ev = incorporateRealignment(AES(), e, ImmutableList.of(ra));
+		return (SplitReadEvidence)ev;
 	}
 	@Test(expected=IllegalArgumentException.class)
 	public void evidence_must_support_call() {

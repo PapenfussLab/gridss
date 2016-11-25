@@ -16,8 +16,6 @@ import com.google.common.collect.Sets;
 
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
-import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.variant.variantcontext.VariantContext;
 import htsjdk.variant.variantcontext.VariantContextBuilder;
 
@@ -103,6 +101,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 				null, 0, 10, 1, B("TTT"), B("   "))).getAlternateAllele(0).getDisplayString(); 
 		assertEquals('A', alt.charAt(0));
 	}
+	/*// These are actually RealignedBreakpoint tests
 	public VariantContextDirectedEvidence test_mated_breakend(BreakendDirection direction, boolean realignPositive, String bpString, String realignedCigar, String expectedAllele) {
 		SAMRecord realigned = Read(1, 10, realignedCigar);
 		realigned.setReadBases(realignPositive ? B(bpString) : B(SequenceUtil.reverseComplement(bpString)));
@@ -148,6 +147,7 @@ public class IdsvVariantContextBuilderTest extends TestHelper {
 		//        .SMMMSS
 		test_mated_breakend(BreakendDirection.Backward, false, "ATTTGC", "1S3M2S", "[polyACGT:10[CA");
 	}
+	*/
 	@Test
 	public void breakend_should_be_vcf_sv_breakend() {
 		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(getContext())

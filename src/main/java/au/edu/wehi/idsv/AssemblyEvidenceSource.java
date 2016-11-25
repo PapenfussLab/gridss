@@ -71,6 +71,10 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			Iterator<SAMRecord> it = getAllAssemblies(threadpool);
 			while (it.hasNext()) {
 				SAMRecord asm = it.next();
+				// some assemblies actually match the reference and we can ignore these
+				// such assemblies are caused by sequencing errors or SNVs causing
+				// spurious soft clips
+				SAMRecordUtil.unclipExactReferenceMatches(getContext().getReference(), asm);
 				if (!getContext().getAssemblyParameters().writeFiltered) {
 					if (shouldFilterAssembly(asm)) {
 						continue;
@@ -91,6 +95,10 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		} catch (IOException e) {
 			log.warn(e, "Unable to write " + throttledFilename.getAbsolutePath());
 		}
+	}
+	@Override
+	public boolean shouldFilter(SAMRecord r) {
+		return shouldFilterAssembly(r) || super.shouldFilter(r);
 	}
 	public boolean shouldFilterAssembly(SAMRecord asm) {
 		AssemblyConfiguration ap = getContext().getAssemblyParameters();

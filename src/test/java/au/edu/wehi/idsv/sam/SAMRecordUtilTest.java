@@ -694,5 +694,40 @@ public class SAMRecordUtilTest extends TestHelper {
 		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(r), ImmutableSet.of(SAMTag.MC, SAMTag.MQ), false, true);
 		assertFalse(r.getReadPairedFlag());
 	}
-	
+	@Test
+	public void unclipExactReferenceMatches_should_adjust_matches() {
+		SAMRecord r = Read(0, 10, "5S5M5S");
+		SAMRecordUtil.unclipExactReferenceMatches(SMALL_FA, r);
+		assertEquals(5, r.getAlignmentStart());
+		assertEquals("15M", r.getCigarString());
+		// 12345678
+		// ACGTACGT
+		// gcgtacgg
+		// SSSMSSSS
+		// SMMMMMMS
+		r = withSequence("gcgtacgg", Read(1, 4, "3S1M4S"))[0];
+		SAMRecordUtil.unclipExactReferenceMatches(SMALL_FA, r);
+		assertEquals(2, r.getAlignmentStart());
+		assertEquals("1S6M1S", r.getCigarString());
+	}
+	@Test
+	public void unclipExactReferenceMatches_should_allow_hard_clipping() {
+		SAMRecord r = Read(0, 10, "10H5S5M5S15H");
+		SAMRecordUtil.unclipExactReferenceMatches(SMALL_FA, r);
+		assertEquals(5, r.getAlignmentStart());
+		assertEquals("10H15M15H", r.getCigarString());
+	}
+	@Test
+	public void unclipExactReferenceMatches_should_not_overrun_reference() {
+		SAMRecord r = withSequence("NN", Read(0, 1, "1S1M"))[0];
+		SAMRecordUtil.unclipExactReferenceMatches(SMALL_FA, r);
+		assertEquals(1, r.getAlignmentStart());
+	}
+	@Test
+	public void unclipExactReferenceMatches_should_not_unclip_Ns() {
+		SAMRecord r = withSequence("NNAN", Read(3, 4, "3S1M"))[0];
+		SAMRecordUtil.unclipExactReferenceMatches(SMALL_FA, r);
+		assertEquals(3, r.getAlignmentStart());
+		assertEquals("2S2M", r.getCigarString());
+	}
 }
