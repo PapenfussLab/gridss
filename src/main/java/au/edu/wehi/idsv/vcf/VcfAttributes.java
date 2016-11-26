@@ -15,7 +15,7 @@ public enum VcfAttributes {
 	BREAKPOINT_ASSEMBLY_COUNT("AS", 1, VCFHeaderLineType.Integer, "Count of assemblies supporting breakpoint"),
 	BREAKPOINT_READPAIR_COUNT("RP", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of read pairs supporting breakpoint per category"),
 	BREAKPOINT_SPLITREAD_COUNT("SR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of split reads supporting breakpoint per category"),
-	BREAKPOINT_INDEL_COUNT("ID", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of read indels supporting breakpoint per category"),
+	BREAKPOINT_INDEL_COUNT("IC", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of read indels supporting breakpoint per category"),
 	BREAKPOINT_ASSEMBLY_COUNT_REMOTE("RAS", 1, VCFHeaderLineType.Integer, "Count of assemblies supporting breakpoint from remote breakend"),
 	//BREAKPOINT_SPLITREAD_COUNT_REMOTE("RSR", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Integer, "Count of split reads supporting breakpoint from remote breakend per category"),
 	
@@ -27,7 +27,7 @@ public enum VcfAttributes {
 	BREAKPOINT_ASSEMBLY_QUAL("ASQ", 1, VCFHeaderLineType.Float, "Quality score of assemblies supporting breakpoint"),
 	BREAKPOINT_READPAIR_QUAL("RPQ", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Float, "Quality score of read pairs supporting breakpoint per category"),
 	BREAKPOINT_SPLITREAD_QUAL("SRQ", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Float, "Quality score of split reads supporting breakpoint per category"),
-	BREAKPOINT_INDEL_QUAL("SRQ", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Float, "Quality score of read indels supporting breakpoint per category"),
+	BREAKPOINT_INDEL_QUAL("IQ", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Float, "Quality score of read indels supporting breakpoint per category"),
 	BREAKPOINT_ASSEMBLY_QUAL_REMOTE("RASQ", 1, VCFHeaderLineType.Float, "Quality score of assemblies supporting breakpoint from remote breakend"),
 	//BREAKPOINT_SPLITREAD_QUAL_REMOTE("RSRQ", VCFHeaderLineCount.UNBOUNDED, VCFHeaderLineType.Float, "Quality score of split reads supporting breakpoint from remote breakend per category"),
 

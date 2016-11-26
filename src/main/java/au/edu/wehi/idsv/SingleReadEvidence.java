@@ -6,12 +6,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.runner.Request;
-
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.IntervalUtil;
-import gridss.analysis.CigarDetailMetrics;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.SequenceUtil;
@@ -166,7 +163,14 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 					localBasesMatchingRemoteReference = homologyLength(lookup, bp.referenceIndex2, bp.nominal2 - 1, -1, anchorBases, 0, 1);
 				}
 			}
-			return bp.adjustPosition(localBasesMatchingRemoteReference, remoteBasesMatchingLocalReference);
+			BreakpointSummary adjusted = bp.adjustPosition(localBasesMatchingRemoteReference, remoteBasesMatchingLocalReference);
+			// push the bounds back in if we overrun our contigs bounds to the homology 
+			if (adjusted.start <= 0 && localBasesMatchingRemoteReference > 0) localBasesMatchingRemoteReference--;
+			if (adjusted.start2 <= 0 && remoteBasesMatchingLocalReference > 0) remoteBasesMatchingLocalReference--;
+			if (adjusted.end > lookup.getSequenceDictionary().getSequence(adjusted.referenceIndex).getSequenceLength() && localBasesMatchingRemoteReference > 0) localBasesMatchingRemoteReference--;
+			if (adjusted.end2 > lookup.getSequenceDictionary().getSequence(adjusted.referenceIndex2).getSequenceLength() && remoteBasesMatchingLocalReference > 0) remoteBasesMatchingLocalReference--;
+			BreakpointSummary readjusted = bp.adjustPosition(localBasesMatchingRemoteReference, remoteBasesMatchingLocalReference);
+			return readjusted;
 		} else {
 			// not considering unclipping bases since that only affects assembly
 			// and is already covered by SAMRecordUtil.unclipExactReferenceMatches()
@@ -177,7 +181,9 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 		SAMSequenceRecord refSeq = lookup.getSequenceDictionary().getSequence(referenceIndex);
 		int homlen = 0;
 		boolean complement = referenceStep != seqStep;
-		while (seqPosition >= 0 && seqPosition < seq.length && referencePosition >= 1 & referencePosition <= refSeq.getSequenceLength()) {
+		while (seqPosition >= 0 && seqPosition < seq.length &&
+				// next step must still be on the contig
+				referencePosition >= 1 & referencePosition <= refSeq.getSequenceLength()) {
 			byte base = seq[seqPosition];
 			if (complement) {
 				base = SequenceUtil.complement(base);
@@ -187,6 +193,8 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 				referencePosition += referenceStep;
 				seqPosition += seqStep;
 				homlen++;
+			} else {
+				break;
 			}
 		}
 		return homlen;

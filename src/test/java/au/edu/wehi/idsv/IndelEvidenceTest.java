@@ -92,7 +92,7 @@ public class IndelEvidenceTest extends TestHelper {
 	public void getBreakendSummary_should_return_location() {
 		// 1234567890
 		// MMDDDMMMM
-		SAMRecord r = Read(2, 1, "2M3D4M");
+		SAMRecord r = withSequence("NNNNNN", Read(2, 1, "2M3D4M"))[0];
 		List<IndelEvidence> e = IndelEvidence.create(SES(), r);
 		assertEquals(new BreakpointSummary(2, FWD, 2, 2, BWD, 6), e.get(0).getBreakendSummary());
 		assertEquals(new BreakpointSummary(2, BWD, 6, 2, FWD, 2), e.get(1).getBreakendSummary());
@@ -181,5 +181,12 @@ public class IndelEvidenceTest extends TestHelper {
 			List<IndelEvidence> list = IndelEvidence.create(SES(), r);
 			assertEquals(0, list.size());
 		}
+	}
+	@Test
+	public void homology_should_not_overrun_contig_bounds() {
+		IndelEvidence ie = IE(SES(1), Read(0, 1, "10M10D10M"));
+		// don't let us shift the deletion off the end of the chr
+		// 10D20M is not a valid breakpoint
+		assertTrue(ie.getBreakendSummary().isValid(getSequenceDictionary()));
 	}
 }

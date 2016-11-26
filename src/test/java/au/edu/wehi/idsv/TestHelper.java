@@ -1187,12 +1187,12 @@ public class TestHelper {
 			//return SCE(fwd ? FWD : BWD, r);
 		}
 	}
-	public static List<SingleReadEvidence> asEvidence(AssemblyEvidenceSource aes, Iterable<SAMRecord> list) {
+	public static List<SingleReadEvidence> asEvidence(SAMEvidenceSource aes, Iterable<SAMRecord> list) {
 		return StreamSupport.stream(list.spliterator(), false)
 				.flatMap(r -> SingleReadEvidence.createEvidence(aes, r).stream())
 				.collect(Collectors.toList());
 	}
-	public static SingleReadEvidence asEvidence(AssemblyEvidenceSource aes, SAMRecord assembly) {
+	public static SingleReadEvidence asEvidence(SAMEvidenceSource aes, SAMRecord assembly) {
 		List<SingleReadEvidence> list = SingleReadEvidence.createEvidence(aes, assembly);
 		assertEquals(1, list.size());
 		return list.get(0);

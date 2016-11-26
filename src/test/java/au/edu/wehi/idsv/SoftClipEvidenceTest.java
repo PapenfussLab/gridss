@@ -120,6 +120,7 @@ public class SoftClipEvidenceTest extends TestHelper {
 		assertFalse(e.isBreakendExact());
 		assertEquals("CGT", S(e.getBreakendSequence()));
 		assertEquals("", S(e.getAnchorSequence()));
+		assertEquals("CGT", e.getUntemplatedSequence());
 		assertEquals(new BreakendSummary(0, FWD, 100), e.getBreakendSummary());
 	}
 	@Test

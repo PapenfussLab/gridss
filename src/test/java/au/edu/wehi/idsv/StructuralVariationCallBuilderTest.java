@@ -42,7 +42,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		protected rsc(int offset, boolean tumour) {
 			super(SES(tumour), withAttr("SA", "polyACGT,100,5M,-,0,0", withSequence("NNNNNNNNNN", Read(0, 10, "5S5M")))[0],
 					new BreakpointSummary(0, BWD, 10, 1, BWD, 100),
-					0, 5, 5, 5, 5, 10, new ChimericAlignment("polyACGT,100,5M,-,0,0"),0, 0);
+					0, 5, 5, 5, 5, 10, new ChimericAlignment("polyACGT,100,-,5M,0,0"),0, 0);
 			this.offset = offset;
 		}
 		@Override public int getLocalMapq() { return 1 + offset; }
@@ -62,7 +62,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		protected rsc_not_supporting_breakpoint(int offset, boolean tumour) {
 			super(SES(tumour), withAttr("SA", "random,100,5M,-,0,0", withSequence("NNNNNNNNNN", Read(0, 10, "5S5M")))[0],
 					new BreakpointSummary(0, BWD, 10, 2, BWD, 100),
-					0, 5, 5, 5, 5, 10, new ChimericAlignment("random,100,5M,-,0,0"),0, 0);
+					0, 5, 5, 5, 5, 10, new ChimericAlignment("random,100,-,5M,0,0"),0, 0);
 		}
 		@Override public int getLocalMapq() { return 1 + offset; }
 		@Override public int getRemoteMapq() { return 6 + offset; }
@@ -73,9 +73,9 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	public static class rrsc extends SplitReadEvidence {
 		int offset;
 		protected rrsc(int offset, boolean tumour) {
-			super(SES(tumour), asSupplementary(withAttr("SA", "polyACGT,100,5M,-,0,0", withSequence("NNNNNNNNNN", Read(0, 10, "5S5M"))))[0],
+			super(SES(tumour), asSupplementary(withAttr("SA", "polyACGT,100,-,5M,0,0", withSequence("NNNNNNNNNN", Read(0, 10, "5S5M"))))[0],
 					new BreakpointSummary(0, BWD, 10, 1, BWD, 100),
-					0, 5, 5, 5, 5, 10, new ChimericAlignment("polyACGT,100,5M,-,0,0"),0, 0);
+					0, 5, 5, 5, 5, 10, new ChimericAlignment("polyACGT,100,-,5M,0,0"),0, 0);
 			this.offset = offset;
 		}
 		@Override public int getLocalMapq() { return 1 + offset; }
@@ -201,9 +201,9 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		Assert.assertArrayEquals(new float[] { 2*16 + 2+3,  1*16 + 1, }, (float[])complex_bp().getAttribute(VcfAttributes.BREAKEND_SOFTCLIP_QUAL.attribute()), 0);
 	}
 	@Test
-	public void should_set_BREAKPOINT_SOFTCLIP() {
-		Assert.assertArrayEquals(new int[] { 3,  2, }, (int[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT.attribute()));
-		Assert.assertArrayEquals(new float[] { 3*112 + 3+4+5,  2*112 + 1+2, }, (float[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_SPLITREAD_QUAL.attribute()), 0);
+	public void should_set_BREAKPOINT_SPLITREAD() {
+		Assert.assertArrayEquals(new int[] { 4,  5, }, (int[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT.attribute()));
+		Assert.assertArrayEquals(new float[] { 3*112 + 3+4+5 + 212+4,  2*112 + 1+2 + 3*212+1+2+3, }, (float[])complex_bp().getAttribute(VcfAttributes.BREAKPOINT_SPLITREAD_QUAL.attribute()), 0);
 	}
 	@Test
 	public void should_set_BREAKEND_READPAIR() {
@@ -217,13 +217,13 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_set_BREAKEND_ASSEMBLY() {
-		Assert.assertEquals(2, (int)(Integer)complex_bp().getAttribute(VcfAttributes.BREAKEND_ASSEMBLY_COUNT.attribute()));
-		Assert.assertEquals(14, (float)(Float)complex_bp().getAttribute(VcfAttributes.BREAKEND_ASSEMBLY_QUAL.attribute()), 0);
+		Assert.assertEquals(1, (int)(Integer)complex_bp().getAttribute(VcfAttributes.BREAKEND_ASSEMBLY_COUNT.attribute()));
+		Assert.assertEquals(7, (float)(Float)complex_bp().getAttribute(VcfAttributes.BREAKEND_ASSEMBLY_QUAL.attribute()), 0);
 	}
 	@Test
 	public void should_set_BREAKPOINT_ASSEMBLY() {
-		Assert.assertEquals(1, (int)(Integer)complex_bp().getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT.attribute()));
-		Assert.assertEquals(6, (float)(Float)complex_bp().getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL.attribute()), 0);
+		Assert.assertEquals(2, (int)(Integer)complex_bp().getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT.attribute()));
+		Assert.assertEquals(7, (float)(Float)complex_bp().getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL.attribute()), 0);
 	}
 	@Test
 	public void should_set_BREAKPOINT_ASSEMBLY_REMOTE() {
@@ -232,7 +232,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	}
 	@Test
 	public void should_set_BREAKPOINT_INDEL() {
-		IndelEvidence ie = IE(SES(1), Read(0, 1, "10M10D10M"));
+		IndelEvidence ie = IE(SES(true), Read(0, 1, "10M10D10M"));
 		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(getContext(), BP("variant", new BreakpointSummary(0, FWD, 10, 0, BWD, 21)));
 		cb.addEvidence(ie);
 		VariantContextDirectedEvidence vc = cb.make();
@@ -283,15 +283,12 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		cb.addEvidence(new rrsc(7, false));
 		
 		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(
-				new rsc(2, true).asRemote(), // not supporting
 				new rsc(4, true)); 
 		SAMRecord ass = AssemblyFactory.createAnchoredBreakend(pc, aes, BP.direction, support, BP.referenceIndex, BP.end, 1, B("TT"), B("TT"));
 		cb.addEvidence(incorporateRealignment(AES(), ass, ImmutableList.of(withMapq(44, onNegative(Read(BP.referenceIndex2, BP.start2, "1M")))[0])));
 	
 		support = Lists.<DirectedEvidence>newArrayList(
-				new rsc(3, false).asRemote(),
-				new rsc(5, true).asRemote(),
-				new rsc(6, true).asRemote(),
+				new rsc(3, false),
 				new rsc(7, false),  // not supporting
 				new rsc(8, false));  // not supporting
 		ass = AssemblyFactory.createAnchoredBreakend(pc, aes, BP.direction, support, BP.referenceIndex2, BP.end2, 1, B("TT"), B("TT"));
@@ -301,8 +298,11 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		
 		VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)cb.make();
 		
-		Assert.assertArrayEquals(new int[] { 3, 4, }, (int[])bp.getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT.attribute()));
-		Assert.assertArrayEquals(new int[] { 2, 1, }, (int[])bp.getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_READ_COUNT.attribute()));
+		Assert.assertArrayEquals(new int[] { 3, 1, }, (int[])bp.getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT.attribute()));
+	}
+	@Test
+	public void should_set_VcfAttribute_BREAKPOINT_ASSEMBLY_CONSCRIPTED_READ_COUNT() {
+		Assert.fail("Can't calculate conscripted since we don't have that info anymore");
 	}
 	@Test
 	@Ignore() //  TODO: enchancement
@@ -499,8 +499,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			phredScore(20);
 		}}.make());
 		List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
-		SAMRecord r = Read(0, 11, "5M5S");
-		incorporateRealignment(AES(), r, ImmutableList.of(Read(0, 35, "5M")));
+		SAMRecord r = withAttr("SA", "polyA,40,+,5S5M,0,0", Read(0, 11, "5M5S"))[0];
 		evidence.add(asEvidence(r));
 		for (DirectedEvidence e : evidence) {
 			builder.addEvidence(e);
@@ -561,9 +560,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			phredScore(20);
 		}}.make());
 		List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
-		SAMRecord r = Read(0, 12, "1M3S");
-		incorporateRealignment(AES(), r, withSequence("NNN", withMapq(14, Read(1, 11, "3M")))[0]);
-		evidence.add(asEvidence(r));
+		evidence.add(SR(withSequence("NNNN", Read(0, 12, "1M3S"))[0], withSequence("NNN", withMapq(14, Read(1, 11, "3M")))[0]));
 		for (DirectedEvidence e : evidence) {
 			builder.addEvidence(e);
 		}
@@ -651,17 +648,19 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 	@Test
 	public void anchor_cigar_should_include_anchoring_bases_fwd() {
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-			breakpoint(new BreakpointSummary(0, FWD, 10, 10, 15, 0, FWD, 100, 100, 100), "");
+			breakpoint(new BreakpointSummary(0, FWD, 10, 10, 15, 1, FWD, 100, 100, 100), "");
 			phredScore(10);
 		}}.make());
-		builder.addEvidence(SCE(FWD, Read(0, 5, "8M7S")));
-		builder.addEvidence(NRRP(DP(0, 2, "2M", true, 0, 100, "1M", true)));
+		builder.addEvidence(SR(withSequence("NNNNNNNNNNNNNNN", Read(0, 5, "8M7S"))[0], onNegative(Read(1, 100-6, "7M"))[0]));
+		builder.addEvidence(NRRP(DP(0, 2, "2M", true, 1, 100, "1M", true)));
 		VariantContextDirectedEvidence vc = builder.make();
 		// 12345678901234567890
 		//     MMMMMMMMSSSSSSS
 		//  MM
-		//          XNNNNX
-		assertEquals("2M1D5M1X4N1X", vc.getAttribute(VcfAttributes.SUPPORT_CIGAR.attribute()));
+		//            |>>>
+		//  mmdmmmmmmmX
+		//assertEquals(new BreakpointSummary(0, FWD, 10, 10, 15, 1, FWD, 100, 100, 100), vc.getBreakendSummary());
+		assertEquals("2M1D7M1X", vc.getAttribute(VcfAttributes.SUPPORT_CIGAR.attribute()));
 	}
 	@Test
 	public void anchor_cigar_should_include_anchoring_bases_bwd() {
@@ -690,18 +689,12 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			breakpoint(new BreakpointSummary(0, FWD, 100, 0, BWD, 10), "");
 			phredScore(10);
 		}}.make());
-		builder.addEvidence(SR(Read(0, 91, "10M10S"), Read(0, 10, "10S10M")));
-		SAMRecord r = SR(Read(0, 10, "10S10M"), Read(0, 91, "10M10S")).getSAMRecord();
-		r.setSupplementaryAlignmentFlag(true);
-		builder.addEvidence(asEvidence(r));
-		SAMRecord ass = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), BWD, null, 0, 10, 10, B("NNNNNNNNNNNNNNNNNNNN"), B("00000000001111111111"));
-		SAMRecord remote = Read(0, 91, "10M");
-		incorporateRealignment(AES(), ass, ImmutableList.of(Read(0, 91, "10M")));
-		builder.addEvidence(asEvidence(remote));
+		builder.addEvidence(SR(withSequence("AAAAAAAAANNAAAAAAAAA", Read(0, 91, "10M10S"))[0], Read(0, 10, "10M")));
 		VariantContextDirectedEvidence vc = builder.make();
 		assertEquals("9M1X", vc.getAttribute(VcfAttributes.SUPPORT_CIGAR.attribute()));
 	}
 	@Test
+	@Ignore("The assembler doesn't know which orientation it was assembling.")
 	public void spanning_assemblies_should_use_original_parent_assembly_direction_to_determine_local_remote_status() {
 		IndelEvidence r = IE(withMapq(40, Read(2, 90, "10M1I10M"))[0]);
 		ImmutableList<DirectedEvidence> rid = ImmutableList.of(r);
@@ -711,14 +704,11 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		}}.make());
 		String seq = S(RANDOM).substring(100-10, 100) + "N" + S(RANDOM).substring(100, 100+10);
 		ProcessingContext pc = getContext();
-		builder.addEvidence(asEvidence(AssemblyFactory.createAnchoredBreakend(pc, AES(pc), BWD, rid, 2, 101, 10, B(seq), B(seq))));
-		builder.addEvidence(asEvidence(AssemblyFactory.createAnchoredBreakend(pc, AES(pc), FWD, rid, 2, 100, 10, B(seq), B(seq))));
-		builder.addEvidence(asEvidence(AssemblyFactory.createAnchoredBreakend(pc, AES(pc), FWD, rid, 2, 100, 10, B(seq), B(seq))));
 		builder.addEvidence(asEvidence(AssemblyFactory.createAnchoredBreakpoint(pc, AES(pc), rid, 2, 100, 10, 2, 101, 10, B(seq), B(seq))));
 		
 		VariantContextDirectedBreakpoint vc = (VariantContextDirectedBreakpoint) builder.make();
-		assertEquals(3, vc.getBreakpointEvidenceCountLocalAssembly());
-		assertEquals(2, vc.getBreakpointEvidenceCountRemoteAssembly());
+		assertEquals(0, vc.getBreakpointEvidenceCountLocalAssembly());
+		assertEquals(1, vc.getBreakpointEvidenceCountRemoteAssembly());
 	}
 	@Test
 	public void should_calculate_inexact_homology() {
@@ -727,7 +717,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 			breakpoint(new BreakpointSummary(2, FWD, 78, 6, BWD, 79), "");
 			phredScore(50);
 		}}.make());
-		builder.addEvidence(SCE(FWD, Read(2, 78, "1M1S"), Read(6, 79, "1S1M")));
+		builder.addEvidence(SR(Read(2, 78, "1M1S"), Read(6, 79, "1M")));
 		VariantContextDirectedEvidence e = builder.make();
 		assertEquals(-78, ((int[])e.getAttribute(VcfAttributes.INEXACT_HOMPOS.attribute()))[0]);
 		assertEquals(300, ((int[])e.getAttribute(VcfAttributes.INEXACT_HOMPOS.attribute()))[1]);

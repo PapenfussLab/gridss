@@ -22,7 +22,6 @@ public class SamTags {
 	 */
 	public static final String EVIDENCEID = "ez";
 	public static final String ASSEMBLY_DIRECTION = "ad";
-	public static final String SPANNING_ASSEMBLY = "sp";
 	// Per category aggregations
 	public static final String ASSEMBLY_READPAIR_COUNT = "dc";
 	public static final String ASSEMBLY_SOFTCLIP_COUNT = "sc";
@@ -41,7 +40,6 @@ public class SamTags {
 			ASSEMBLY_FILTERS,
 			EVIDENCEID,
 			ASSEMBLY_DIRECTION,
-			SPANNING_ASSEMBLY,
 			ASSEMBLY_READPAIR_COUNT,
 			ASSEMBLY_SOFTCLIP_COUNT,
 			//ASSEMBLY_SOFTCLIP_REMOTE_COUNT,

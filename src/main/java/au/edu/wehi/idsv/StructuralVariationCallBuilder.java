@@ -112,7 +112,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			category = ((SAMEvidenceSource)evidence.getEvidenceSource()).getSourceCategory();
 		}
 		DirectedBreakpoint bp = (evidence instanceof DirectedBreakpoint) ? (DirectedBreakpoint)evidence : null;
-		if (evidence instanceof NonReferenceReadPair) {
+		if (evidence instanceof NonReferenceReadPair && category >= 0) {
 			if (evidence instanceof DiscordantReadPair) {
 				fBREAKPOINT_READPAIR_COUNT[category]++;
 				fBREAKPOINT_READPAIR_QUAL[category] += bp.getBreakpointQual();
@@ -148,7 +148,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 					fBREAKEND_ASSEMBLY_COUNT++;
 					fBREAKEND_ASSEMBLY_QUAL += evidence.getBreakendQual();
 				}
-			} else {
+			} else if (category >= 0) {
 				if (evidence instanceof SoftClipEvidence) {
 					fBREAKEND_SOFTCLIP_COUNT[category]++;
 					fBREAKEND_SOFTCLIP_QUAL[category] += evidence.getBreakendQual();
@@ -266,8 +266,8 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT, fBREAKPOINT_ASSEMBLY_COUNT);
 		attribute(VcfAttributes.BREAKPOINT_READPAIR_COUNT, fBREAKPOINT_READPAIR_COUNT);
 		attribute(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT, fBREAKPOINT_SPLITREAD_COUNT);
-		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE, fBREAKPOINT_ASSEMBLY_COUNT_REMOTE);
 		attribute(VcfAttributes.BREAKPOINT_INDEL_COUNT, fBREAKPOINT_INDEL_COUNT);
+		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_COUNT_REMOTE, fBREAKPOINT_ASSEMBLY_COUNT_REMOTE);
 		//attribute(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT_REMOTE, fBREAKPOINT_SPLITREAD_COUNT_REMOTE);
 		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT, fBREAKPOINT_ASSEMBLY_READPAIR_COUNT);
 		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT, fBREAKPOINT_ASSEMBLY_SPLITREAD_COUNT);

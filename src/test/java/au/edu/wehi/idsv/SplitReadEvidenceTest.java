@@ -53,17 +53,17 @@ public class SplitReadEvidenceTest extends TestHelper {
 	public void should_handle_negative_strand_remote() {
 		SAMRecord r = Read(2, 1, "3S2M5S");
 		//                    -BBmm-CC--
-		r.setReadBases(    B("ACCTAGAGGG"));
+		r.setReadBases(    B("ACCNAGAGGG"));
 		r.setBaseQualities(B("1234567890"));
 		r.setMappingQuality(40);
 		r.setAttribute("SA", "polyA,100,-,7S2M1S,0,0;polyA,200,-,2S2M6S,0,0");
 		List<SplitReadEvidence> list = SplitReadEvidence.create(SES(), r);
 		assertEquals(new BreakpointSummary(2, BWD, 1, 0, BWD, 100), list.get(0).getBreakendSummary());
-		assertEquals("TA", S(list.get(0).getAnchorSequence()));
+		assertEquals("NA", S(list.get(0).getAnchorSequence()));
 		assertEquals("ACC", S(list.get(0).getBreakendSequence()));
 		assertEquals("", list.get(0).getUntemplatedSequence());
 		assertEquals(new BreakpointSummary(2, FWD, 2, 0, FWD, 201), list.get(1).getBreakendSummary());
-		assertEquals("TA", S(list.get(1).getAnchorSequence()));
+		assertEquals("NA", S(list.get(1).getAnchorSequence()));
 		assertEquals("GAGGG", S(list.get(1).getBreakendSequence()));
 		assertEquals("G", list.get(1).getUntemplatedSequence());
 	}
