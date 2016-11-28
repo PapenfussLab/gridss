@@ -18,10 +18,9 @@ public class SplitReadFastqExtractionIterator implements Iterator<FastqRecord> {
 	private final Queue<FastqRecord> buffer = new ArrayDeque<>();
 	private final Iterator<SAMRecord> it;
 	private final boolean isSplit;
-	private final boolean processSecondaryAlignments;
 	private final int minSoftClipLength;
 	private final float minClipQuality;
-	
+	private final boolean processSecondaryAlignments;
 	public SplitReadFastqExtractionIterator(
 			Iterator<SAMRecord> it,
 			boolean isSplit,
@@ -44,7 +43,9 @@ public class SplitReadFastqExtractionIterator implements Iterator<FastqRecord> {
 			// - update all SA record (requires queryname sorted input file)
 			if (r.getAttribute(SAMTag.SA.name()) != null) continue;
 			if (r.getSupplementaryAlignmentFlag()) continue;
-			if (!processSecondaryAlignments && r.getNotPrimaryAlignmentFlag()) continue;
+			if (r.getNotPrimaryAlignmentFlag() && !processSecondaryAlignments) {
+				continue;
+			}
 			for (FastqRecord fqr : SplitReadIdentificationHelper.getSplitReadRealignments(r, isSplit)) {
 				if (fqr.length() < minSoftClipLength) continue;
 				if (averageBaseQuality(fqr) < minClipQuality) continue;

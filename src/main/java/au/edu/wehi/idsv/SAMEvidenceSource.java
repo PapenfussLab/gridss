@@ -21,6 +21,7 @@ import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
 import gridss.ComputeSamTags;
 import gridss.ExtractSVReads;
+import gridss.ReferenceCommandLineProgram;
 import gridss.SoftClipsToSplitReads;
 import gridss.analysis.CollectGridssMetrics;
 import htsjdk.samtools.QueryInterval;
@@ -101,9 +102,12 @@ public class SAMEvidenceSource extends EvidenceSource {
 		}
 		
 	}
-	private void execute(CommandLineProgram cmd, List<String> args) {
+	protected void execute(CommandLineProgram cmd, List<String> args) {
+		if (cmd instanceof ReferenceCommandLineProgram) {
+			((ReferenceCommandLineProgram) cmd).setReference(getContext().getReference());
+		}
 		args.add("REFERENCE_SEQUENCE=" + getContext().getReferenceFile());
-		args.add("TMP_DIR=" + ImmutableList.of(getContext().getFileSystemContext().getTemporaryDirectory()));
+		args.add("TMP_DIR=" + getContext().getFileSystemContext().getTemporaryDirectory());
 		args.add("MAX_RECORDS_IN_RAM=" + getContext().getFileSystemContext().getMaxBufferedRecordsPerFile());
 		int result = cmd.instanceMain(args.toArray(new String[] {}));
 		if (result != 0) {

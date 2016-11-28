@@ -2,11 +2,16 @@ package au.edu.wehi.idsv;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 
 import java.util.List;
+import java.util.function.BiConsumer;
 
 import org.junit.Test;
 
+import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
+import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 
 
@@ -168,5 +173,58 @@ public class SplitReadEvidenceTest extends TestHelper {
 		r.setAttribute("SA", "polyA,100,-,2M2S,10,0");
 		SplitReadEvidence e = SplitReadEvidence.create(SES(), r).get(0);
 		assertEquals("C", e.getUntemplatedSequence());
+	}
+	@Test
+	public void should_return_remote_unanchored() {
+		SAMRecord r = withSequence("ACN", Read(0, 1, "1M1D1M1S"))[0];
+		r.setAttribute("SA", "polyA,10,+,2S1X,39,1");
+		SplitReadEvidence e = SplitReadEvidence.create(SES(), r).get(0);
+		assertNotNull(e);
+	}
+	@Test
+	public void unanchored_should_handle_no_untemplated() {
+		BiConsumer<String, String> go = (r1, r2) -> {
+			SplitReadEvidence e1 = SplitReadEvidence.create(SES(), withAttr("SA", r1, Read(r2))[0]).get(0);
+			SplitReadEvidence e2 = SplitReadEvidence.create(SES(), withAttr("SA", r2, Read(r1))[0]).get(0);
+			assertEquals("", e1.getUntemplatedSequence());
+			assertEquals("", e1.getUntemplatedSequence());
+			assertFalse(e1.isBreakendExact());
+			assertFalse(e2.isBreakendExact());
+			assertEquals(3, e1.getAnchorSequence().length + e2.getAnchorSequence().length);
+			assertEquals(3, e1.getBreakendSequence().length + e2.getBreakendSequence().length);
+			assertEquals("", e1.getHomologySequence());
+			assertEquals("", e2.getHomologySequence());
+			assertEquals(0, e1.getHomologyAnchoredBaseCount());
+			assertEquals(0, e2.getHomologyAnchoredBaseCount());
+		};
+		// fwd
+		go.accept("polyA,10,+,3S1X,0,0", "polyA,10,+,3M1S,0,0");
+		go.accept("polyA,10,+,3S1X,0,0", "polyA,10,-,1S3M,0,0");
+		go.accept("polyA,10,+,3S2X,0,0", "polyA,10,+,3M2S,0,0");
+		go.accept("polyA,10,+,3S2X,0,0", "polyA,10,-,2S3M,0,0");
+		go.accept("polyA,10,+,1X3S,0,0", "polyA,10,+,1S3M,0,0");
+		go.accept("polyA,10,+,1X3S,0,0", "polyA,10,-,3M1S,0,0");
+		go.accept("polyA,10,+,2X3S,0,0", "polyA,10,+,2S3M,0,0");
+		go.accept("polyA,10,+,2X3S,0,0", "polyA,10,-,3M2S,0,0");
+	}
+	@Test
+	public void should_remove_split_reads_that_fully_align_to_either_side() {
+		String refStr = "TAAATTGGAACACTATACCAAAACATTAACCAGCATAGCAGTATATAAGGTTAAACATTAAATAACCCCTGGCTTAACTAACTCTCCAATTGCACTTTCTATAAGTAATTGTTGTTTAGACTTTATTAATTCAGATGTTTCAGACATGTCTTATATACACAAGAGAATTTCATTTCTCTTT";
+		String readStr = "AAATTGGAACACTATACCAAAACATTAACCAGCATAGCAGTATATAAGGTTAAACATTAAATAACCCCTGGCTTAACTAACTCTCCAATTGCACTTTCTATAAGTAATTGTTGTTTAGACTTTATTAATTC";
+		//               1234567890123456
+		//               MMMMMSSSSSSSSSS
+		//                sssssMMMMMMMMMM
+		InMemoryReferenceSequenceFile ref = new InMemoryReferenceSequenceFile(new String[] { "Contig" }, new byte[][] { B(refStr) });
+		SAMRecord r = new SAMRecord(new SAMFileHeader());
+		r.getHeader().setSequenceDictionary(ref.getSequenceDictionary());
+		r.setReferenceIndex(0);
+		r.setCigarString("97M34S");
+		r.setAlignmentStart(1);
+		r.setReadNegativeStrandFlag(false);
+		r.setReadBases(B(readStr));
+		r.setBaseQualities(B(refStr));
+		SAMRecord r2 = SAMRecordUtil.realign(ref, r, 10, true);
+		assertEquals(2, r2.getAlignmentStart());
+		assertEquals("131M", r2.getCigarString());
 	}
 }

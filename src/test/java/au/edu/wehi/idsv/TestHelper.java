@@ -57,6 +57,7 @@ import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetricsCollector;
 import au.edu.wehi.idsv.picard.BufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
+import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.SAMRecordMateCoordinateComparator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
@@ -474,6 +475,20 @@ public class TestHelper {
 		record.setReadNegativeStrandFlag(false);
 		record.setCigarString(cigar);
 		record.setMappingQuality(10);
+		clean(record);
+		return record;
+	}
+	static public SAMRecord Read(String chimericAlignment) {
+		ChimericAlignment ca = new ChimericAlignment(chimericAlignment);
+		SAMRecord record = new SAMRecord(getHeader());
+		record.setReferenceIndex(record.getHeader().getSequenceIndex(ca.rname));
+		record.setAlignmentStart(ca.pos);
+		record.setReadUnmappedFlag(false);
+		record.setReadPairedFlag(false);
+		record.setReadNegativeStrandFlag(ca.isNegativeStrand);
+		record.setCigar(ca.cigar);
+		record.setMappingQuality(ca.mapq);
+		record.setReadName(chimericAlignment);
 		clean(record);
 		return record;
 	}

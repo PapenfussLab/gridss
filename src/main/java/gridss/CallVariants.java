@@ -143,8 +143,8 @@ public class CallVariants extends GridssCommandLineProgram {
     	AssemblyEvidenceSource assemblyEvidence = new AssemblyEvidenceSource(getContext(), samEvidence, assemblyFile);
     	if (!assemblyFile.exists()) {
     		assemblyEvidence.assembleBreakends(threadpool);
-    		// convert breakend assemblies into breakpoint via split read identification
     	}
+    	// convert breakend assemblies into breakpoint via split read identification
     	assemblyEvidence.ensureExtracted();
 
     	if (!OUTPUT.exists()) {

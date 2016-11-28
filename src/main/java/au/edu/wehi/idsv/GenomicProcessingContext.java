@@ -12,7 +12,6 @@ import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
-import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
 import au.edu.wehi.idsv.picard.TwoBitBufferedReferenceSequenceFile;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.vcf.VcfConstants;
@@ -22,6 +21,7 @@ import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.ValidationStringency;
@@ -73,10 +73,6 @@ public class GenomicProcessingContext implements Closeable {
 			this.reference = LoadSynchronizedReference(referenceFile);
 			if (Defaults.ASYNC_CACHE_REFERENCE) {
 				BackgroundCacheReference(referenceFile);
-			} else {
-				log.debug("Loading reference genome.");
-				this.reference = new TwoBitBufferedReferenceSequenceFile(this.reference);
-				log.debug("Reference genome loaded.");
 			}
 		} else {
 			this.reference = reference;
@@ -125,7 +121,7 @@ public class GenomicProcessingContext implements Closeable {
 				log.error("Caching reference fasta in memory would require more than 50% of the memory allocated to the JVM. Allocate more heap memory to the JVM..");
 				throw new RuntimeException("Not enough memory to cache reference fasta.");
 			}
-			return new SynchronousReferenceLookupAdapter(underlying);
+			return new TwoBitBufferedReferenceSequenceFile(underlying);
 		} catch (FileNotFoundException e) {
 			throw new RuntimeException("Unabled load fasta " + referenceFile, e);
 		}
@@ -134,9 +130,10 @@ public class GenomicProcessingContext implements Closeable {
 	protected void BackgroundCacheReference(final File ref) {
 		Thread thread = new Thread(() -> {
 			try {
-				log.debug("Loading reference genome cache on background thread.");
-				this.reference = new TwoBitBufferedReferenceSequenceFile(new IndexedFastaSequenceFile(ref));
-				log.debug("Reference genome cache loaded.");
+				for (SAMSequenceRecord contig : reference.getSequenceDictionary().getSequences()) {
+					// hit each contig once to ensure it's loaded into memory
+					reference.getBase(contig.getSequenceIndex(), 1);
+				}
 			} catch (Exception e) {
 				log.error(e, "Background caching of reference genome failed.");
 			}

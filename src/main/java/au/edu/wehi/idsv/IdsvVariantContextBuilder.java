@@ -23,13 +23,16 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 	public static final String SOURCE_NAME = "idsv";
 	protected final GenomicProcessingContext processContext;
 	private final Set<EvidenceSource> sourceSet = Sets.newHashSet();
+	private final String sourceID;
 	public IdsvVariantContextBuilder(GenomicProcessingContext processContext) {
 		super();
 		this.processContext = processContext;
+		this.sourceID = null;
 	}
 	public IdsvVariantContextBuilder(GenomicProcessingContext processContext, VariantContext parent) {
 		super(parent);
 		this.processContext = processContext;
+		this.sourceID = parent.getID();
 		if (parent instanceof IdsvVariantContext) {
 			sourceSet.add(((VariantContextDirectedEvidence)parent).getEvidenceSource());
 		}
@@ -234,6 +237,13 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
         }
         EvidenceSource firstSource = sourceSet.isEmpty() ? null : sourceSet.iterator().next();
         return IdsvVariantContext.create(processContext, firstSource, underlying);
+	}
+	/**
+	 * ID of the source variant
+	 * @return
+	 */
+	public String getSourceID() {
+		return sourceID;
 	}
 }
 

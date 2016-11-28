@@ -55,7 +55,7 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	private double[] fBREAKEND_UNMAPPEDMATE_QUAL;
 	private double[] fBREAKEND_SOFTCLIP_QUAL;
 	private List<String> BREAKEND_ASSEMBLY_ID = Lists.newArrayList();
-
+	
 	public StructuralVariationCallBuilder(ProcessingContext processContext, VariantContextDirectedEvidence parent) {
 		this(processContext, parent, true);
 	}

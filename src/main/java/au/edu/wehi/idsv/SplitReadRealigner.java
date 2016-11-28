@@ -171,7 +171,12 @@ public class SplitReadRealigner {
 			String name = SAMRecordUtil.getAlignmentUniqueName(r);
 			for (PeekingIterator<SAMRecord> sit : alignments) {
 				while (sit.hasNext() && SplitReadIdentificationHelper.getOriginatingAlignmentUniqueName(sit.peek()).equals(name)) {
-					salist.add(sit.next());
+					SAMRecord supp = sit.next();
+					if (supp.getSupplementaryAlignmentFlag() || supp.getNotPrimaryAlignmentFlag()) {
+						// only consider the single best mapping location reported by the aligner
+					} else {
+						salist.add(supp);
+					}
 				}
 			}
 			if (salist.size() > 0) {
@@ -190,7 +195,7 @@ public class SplitReadRealigner {
 		try (SamReader reader = readerFactory.open(input)) {
 			try (AsyncBufferedIterator<SAMRecord> bufferedIt = new AsyncBufferedIterator<>(reader.iterator(), input.getName())) {
 				try (FastqWriter writer = fastqWriterFactory.newWriter(fq)) {
-					SplitReadFastqExtractionIterator fastqit = new SplitReadFastqExtractionIterator(bufferedIt, isRecursive, minSoftClipLength, minSoftClipQuality, processSecondaryAlignments);
+					SplitReadFastqExtractionIterator fastqit = new SplitReadFastqExtractionIterator(bufferedIt, isRecursive, minSoftClipLength, minSoftClipQuality, !isRecursive && isProcessSecondaryAlignments());
 					while (fastqit.hasNext()) {
 						writer.write(fastqit.next());
 						recordsWritten++;

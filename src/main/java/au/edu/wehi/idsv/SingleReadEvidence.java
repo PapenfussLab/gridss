@@ -72,8 +72,8 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 		// TODO: we could use this to infer the unmapped bounds
 		assert(offsetLocalEnd == offsetUnmappedStart || offsetLocalStart == offsetUnmappedEnd);
 		assert(offsetUnmappedEnd == offsetRemoteStart || offsetRemoteEnd == offsetUnmappedStart);
-		int remoteBasesToTrim = offsetUnmappedStart - offsetUnmappedEnd;
 		if (IntervalUtil.overlapsClosed(offsetLocalStart, offsetLocalEnd - 1, offsetRemoteStart, offsetRemoteEnd - 1)) {
+			int remoteBasesToTrim = offsetUnmappedStart - offsetUnmappedEnd;
 			// Alignments overlap - turns out bwa writes such records
 			// To hand these, we'll just reduce the number of bases assigned as remote
 			// TODO: update location and consider homologous 
@@ -100,7 +100,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 			}
 			if (remoteInexactMargin > 0) {
 				assert(offsetRemoteEnd - offsetRemoteStart == Math.min(2, remoteInexactMargin));
-				if (offsetUnmappedStart >= offsetRemoteStart) {
+				if (offsetUnmappedEnd >= offsetRemoteEnd) {
 					offsetRemoteStart = offsetRemoteEnd;
 				} else {
 					offsetRemoteEnd = offsetRemoteStart;

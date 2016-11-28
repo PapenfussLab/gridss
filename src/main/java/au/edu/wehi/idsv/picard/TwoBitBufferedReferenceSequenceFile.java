@@ -8,7 +8,6 @@ import com.google.common.collect.ImmutableMap;
 import au.edu.wehi.idsv.debruijn.KmerEncodingHelper;
 import au.edu.wehi.idsv.debruijn.PackedSequence;
 import htsjdk.samtools.SAMSequenceDictionary;
-import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.Log;
@@ -29,14 +28,12 @@ public class TwoBitBufferedReferenceSequenceFile implements ReferenceSequenceFil
 	public TwoBitBufferedReferenceSequenceFile(ReferenceSequenceFile underlying) {
 		this.underlying = underlying;
 		this.referenceIndexLookup = new PackedReferenceSequence[underlying.getSequenceDictionary().getSequences().size()];
-		log.debug("Loading entire reference genome into memory");
-		for (SAMSequenceRecord contig : underlying.getSequenceDictionary().getSequences()) {
-			getSequence(contig.getSequenceName());
-		}
-		log.debug("Reference genome loaded");
 	}
 	public byte getBase(int referenceIndex, int position) {
 		PackedReferenceSequence seq = referenceIndexLookup[referenceIndex];
+		if (seq == null) {
+			seq = addToCache(underlying.getSequenceDictionary().getSequence(referenceIndex).getSequenceName());
+		}
 		if (seq.ambiguous.get(position - 1)) {
 			return 'N';
 		}
@@ -95,13 +92,14 @@ public class TwoBitBufferedReferenceSequenceFile implements ReferenceSequenceFil
 	 * Updates the cache to include the new contig
 	 * @param contig
 	 */
-	private PackedReferenceSequence addToCache(String contig) {
+	private synchronized PackedReferenceSequence addToCache(String contig) {
 		PackedReferenceSequence seq = cache.get(contig);
 		if (seq != null) {
 			// already populated by another thread while we were waiting to enter
 			// this synchronized block
 			return seq;
 		}
+		log.debug("Caching reference genome contig ", contig);
 		ReferenceSequence fullContigSequence = underlying.getSequence(contig);
 		seq = new PackedReferenceSequence(fullContigSequence);
 		cache = ImmutableMap.<String, PackedReferenceSequence>builder()

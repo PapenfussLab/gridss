@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
@@ -15,6 +16,7 @@ import au.edu.wehi.idsv.debruijn.positional.PositionalAssembler;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.FileHelper;
+import gridss.SoftClipsToSplitReads;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
@@ -73,10 +75,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 				Iterator<SAMRecord> it = getAllAssemblies(threadpool);
 				while (it.hasNext()) {
 					SAMRecord asm = it.next();
-					// some assemblies actually match the reference and we can ignore these
-					// such assemblies are caused by sequencing errors or SNVs causing
-					// spurious soft clips
-					SAMRecordUtil.unclipExactReferenceMatches(getContext().getReference(), asm);
+					asm = transform(asm);
 					if (shouldFilterAssembly(asm)) {
 						filteredWriter.addAlignment(asm);
 					} else {
@@ -93,7 +92,9 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			}
 		}
 		if (filteredout.exists()) {
-			SAMFileUtil.sort(getContext().getFileSystemContext(), filteredout, filteredout, SortOrder.coordinate);
+			File filteredsorted = FileSystemContext.getWorkingFileFor(getFile(), "filtered.sorted.");
+			SAMFileUtil.sort(getContext().getFileSystemContext(), filteredout, filteredsorted, SortOrder.coordinate);
+			FileHelper.move(filteredsorted, filteredout, true);
 		}
 		File throttledFilename = new File(getFile().getAbsolutePath() + ".throttled.bed");
 		try {
@@ -103,6 +104,25 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		} catch (IOException e) {
 			log.warn(e, "Unable to write " + throttledFilename.getAbsolutePath());
 		}
+	}
+	@Override
+	public void ensureExtracted() throws IOException {
+		ensureMetrics();
+		File svFile = getContext().getFileSystemContext().getSVBam(getFile());
+		File withsplitreadsFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.withsplitreads.");
+		ensureMetrics();
+		// Regenerate from from the intermediate file furtherest through the pipeline
+		// extract -> query sort -> tag -> split read -> back to coordinate sorted
+		// We want to tag before generating split reads so all splits are guaranteed to
+		// have the same tags
+		if (!svFile.exists()) {
+			log.info("Identifying split reads for " + getFile().getAbsolutePath());
+			List<String> args = Lists.newArrayList(
+					"INPUT=" + getFile().getAbsolutePath(),
+					"OUTPUT=" + svFile.getAbsolutePath());
+			execute(new SoftClipsToSplitReads(), args);
+		}
+		SAMFileUtil.sort(getContext().getFileSystemContext(), withsplitreadsFile, svFile, SortOrder.coordinate);
 	}
 	@Override
 	public boolean shouldFilter(SAMRecord r) {
@@ -137,6 +157,22 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			return true;
 		}
 		return false;
+	}
+	public SAMRecord transformAssembly(SAMRecord assembly) {
+		// some assemblies actually match the reference and we can ignore these
+		// such assemblies are caused by sequencing errors or SNVs causing
+		// spurious soft clips
+		SAMRecordUtil.unclipExactReferenceMatches(getContext().getReference(), assembly);
+		if (SAMRecordUtil.getAlignedIdentity(assembly) < getContext().getAssemblyParameters().minAnchorIdentity) {
+			SAMRecord realigned = SAMRecordUtil.realign(getContext().getReference(), assembly, getContext().getConfig().getAssembly().realignmentWindowSize, true);
+			// TODO: check if realignment is actually better
+			// (don't allow very short anchors)
+			// (don't allow flipping anchor to other side)
+			// ...
+			assembly = realigned;
+		}
+		SAMRecordUtil.unclipExactReferenceMatches(getContext().getReference(), assembly);
+		return assembly;
 	}
 	private Iterator<SAMRecord> getAllAssemblies(ExecutorService threadpool) {
 		// TODO multi-threaded version

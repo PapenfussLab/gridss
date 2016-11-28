@@ -2,11 +2,8 @@ package au.edu.wehi.idsv.sam;
 
 import java.util.Iterator;
 
-import com.google.common.collect.Iterators;
-import com.google.common.collect.PeekingIterator;
-
+import au.edu.wehi.idsv.picard.ReferenceLookup;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.reference.ReferenceSequenceFile;
 
 /**
  * Ensures that every aligned record has an associated NM tag 
@@ -15,10 +12,10 @@ import htsjdk.samtools.reference.ReferenceSequenceFile;
  *
  */
 public class NmTagIterator implements Iterator<SAMRecord> {
-	private final PeekingIterator<SAMRecord> it;
-	private final ReferenceSequenceFile reference;
-	public NmTagIterator(Iterator<SAMRecord> it, ReferenceSequenceFile reference) {
-		this.it = Iterators.peekingIterator(it);
+	private final Iterator<SAMRecord> it;
+	private final ReferenceLookup reference;
+	public NmTagIterator(Iterator<SAMRecord> it, ReferenceLookup reference) {
+		this.it = it;
 		this.reference = reference;
 	}
 	@Override

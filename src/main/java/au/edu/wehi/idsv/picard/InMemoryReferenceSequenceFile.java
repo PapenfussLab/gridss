@@ -56,7 +56,7 @@ public class InMemoryReferenceSequenceFile implements ReferenceLookup {
 		return new ReferenceSequence(contig, index, Arrays.copyOfRange(sequences[index], (int)start - 1, (int)stop));
 	}
 	@Override
-	public void close() throws IOException {
+	public void close() {
 	}
 	@Override
 	public byte getBase(int referenceIndex, int position) {

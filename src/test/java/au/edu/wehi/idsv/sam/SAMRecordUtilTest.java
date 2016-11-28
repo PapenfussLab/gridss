@@ -14,6 +14,8 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.TestHelper;
+import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
@@ -737,10 +739,18 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertEquals(1, r.getAlignmentStart());
 	}
 	@Test
-	public void unclipExactReferenceMatches_should_not_unclip_Ns() {
-		SAMRecord r = withSequence("NNAN", Read(3, 4, "3S1M"))[0];
-		SAMRecordUtil.unclipExactReferenceMatches(SMALL_FA, r);
-		assertEquals(3, r.getAlignmentStart());
-		assertEquals("2S2M", r.getCigarString());
+	public void unclipExactReferenceMatches_should_unclip_entire_read() {
+		String refStr = "TAAATTGGAACACTATACCAAAACATTAACCAGCATAGCAGTATATAAGGTTAAACATTAAATAACCCCTGGCTTAACTAACTCTCCAATTGCACTTTCTATAAGTAATTGTTGTTTAGACTTTATTAATTCAGATGTTTCAGACATGTCTTATATACACAAGAGAATTTCATTTCTCTTT";
+		String readStr = "AAATTGGAACACTATACCAAAACATTAACCAGCATAGCAGTATATAAGGTTAAACATTAAATAACCCCTGGCTTAACTAACTCTCCAATTGCACTTTCTATAAGTAATTGTTGTTTAGACTTTATTAATTC";
+		InMemoryReferenceSequenceFile ref = new InMemoryReferenceSequenceFile(new String[] { "Contig" }, new byte[][] { B(refStr) });
+		SAMRecord r = new SAMRecord(new SAMFileHeader());
+		r.getHeader().setSequenceDictionary(ref.getSequenceDictionary());
+		r.setReferenceIndex(0);
+		r.setCigarString("97M34S");
+		r.setAlignmentStart(2);
+		r.setReadNegativeStrandFlag(false);
+		r.setReadBases(B(readStr));
+		SAMRecordUtil.unclipExactReferenceMatches(ref, r);
+		assertEquals("131M", r.getCigarString());
 	}
 }

@@ -32,12 +32,11 @@ import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
-import picard.cmdline.CommandLineProgram;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import picard.sam.CreateSequenceDictionary;
 
-public abstract class GridssCommandLineProgram extends CommandLineProgram {
+public abstract class GridssCommandLineProgram extends ReferenceCommandLineProgram {
 	private static final Log log = Log.getInstance(GridssCommandLineProgram.class);
 	@Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Coordinate-sorted input BAM file.")
     public List<File> INPUT;
@@ -201,7 +200,7 @@ public abstract class GridssCommandLineProgram extends CommandLineProgram {
 			shutdownPool(threadpool);
 		}
     }
-    protected abstract int doWork(ExecutorService threadpool) throws IOException,  InterruptedException, ExecutionException;
+    protected abstract int doWork(ExecutorService threadpool) throws IOException, InterruptedException, ExecutionException;
 	private ProcessingContext processContext = null;
 	public ProcessingContext getContext() {
 		if (processContext == null) {

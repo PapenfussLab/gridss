@@ -10,6 +10,8 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 
 import au.edu.wehi.idsv.configuration.GridssConfiguration;
+import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.SequenceUtil;
 
@@ -289,5 +291,11 @@ public class SoftClipEvidenceTest extends TestHelper {
 	public void getAnchorSequence_should_not_return_clipped_bases_on_other_side_of_the_read() {
 		assertEquals("CGT", S(SCE(FWD, withSequence("ACGTNN", Read(0, 1, "1S3M2S"))[0]).getAnchorSequence()));
 		assertEquals("CGT", S(SCE(BWD, withSequence("ACGTNN", Read(0, 1, "1S3M2S"))[0]).getAnchorSequence()));
+	}
+	@Test
+	public void should_not_have_homology() {
+		SoftClipEvidence e = SoftClipEvidence.create(SES(), FWD, withSequence("AAAAAAAAAA", Read(0, 10, "5M5S"))[0]);
+		assertEquals("", e.getHomologySequence());
+		assertEquals(0, e.getHomologyAnchoredBaseCount());
 	}
 }

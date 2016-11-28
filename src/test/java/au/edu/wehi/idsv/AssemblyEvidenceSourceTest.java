@@ -6,6 +6,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,8 +16,10 @@ import org.junit.Test;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
+import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
+import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
@@ -227,5 +230,29 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		aes.assembleBreakends(null);
 		List<SAMRecord> assemblies = getRecords(assemblyFile);
 		assertEquals(0, assemblies.size());
+	}
+	@Test
+	public void should_realign_anchoring_bases_that_are_very_poor_matches_to_the_reference() {
+		String refStr = "TAAATTGGAACACTATACCAAAACATTAACCAGCATAGCAGTATATAAGGTTAAACATTAAATAACCCCTGGCTTAACTAACTCTCCAATTGCACTTTCTATAAGTAATTGTTGTTTAGACTTTATTAATTCAGATGTTTCAGACATGTCTTATATACACAAGAGAATTTCATTTCTCTTT";
+		String readStr = "AAATTGGAACACTATACCAAAACATTAACCAGCATAGCAGTATATAAGGTTAAACATTAAATAACCCCTGGCTTAACTAACTCTCCAATTGCACTTTCTATAAGTAATTGTTGTTTAGACTTTATTAATTC";
+		//               1234567890123456
+		//               MMMMMSSSSSSSSSS
+		//                sssssMMMMMMMMMM
+		InMemoryReferenceSequenceFile ref = new InMemoryReferenceSequenceFile(new String[] { "Contig" }, new byte[][] { B(refStr) });
+		SAMRecord r = new SAMRecord(new SAMFileHeader());
+		r.getHeader().setSequenceDictionary(ref.getSequenceDictionary());
+		r.setReferenceIndex(0);
+		r.setCigarString("97M34S");
+		r.setAlignmentStart(1);
+		r.setReadNegativeStrandFlag(false);
+		r.setReadBases(B(readStr));
+		r.setBaseQualities(B(refStr));
+		ProcessingContext pc = new ProcessingContext(new FileSystemContext(testFolder.getRoot(), 500000), reference, ref, Lists.newArrayList(), getConfig(testFolder.getRoot()));
+		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(SES(pc)), assemblyFile);
+		aes.shouldFilter(e)
+		
+		SAMRecord r2 = SAMRecordUtil.realign(ref, r, 10, true);
+		assertEquals(2, r2.getAlignmentStart());
+		assertEquals("131M", r2.getCigarString());
 	}
 }

@@ -18,7 +18,6 @@ import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
-import picard.cmdline.CommandLineProgram;
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
@@ -28,10 +27,10 @@ import picard.cmdline.StandardOptionDefinitions;
         		+ "Existing split read alignments are left untouched.",
         usageShort = "Converts soft clipped reads to split reads"
 )
-public class SoftClipsToSplitReads extends CommandLineProgram {
-	public static final List<String> BWA_COMMAND_LINE = ImmutableList.of("bwa", "mem", "-t", "%3$d", "-M", "%2$s", "%1$s");
-	public static final List<String> BOWTIE2_COMMAND_LINE = ImmutableList.of("bowtie2", "--threads", "%3$d", "--local", "--mm", "--reorder", "-x", "%2$s", "-U", "%1$s");
+public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
 	private static final Log log = Log.getInstance(SoftClipsToSplitReads.class);
+	public static final List<String> BWA_COMMAND_LINE = ImmutableList.of("bwa", "mem", "-t", "%3$d", "%2$s", "%1$s");
+	public static final List<String> BOWTIE2_COMMAND_LINE = ImmutableList.of("bowtie2", "--threads", "%3$d", "--local", "--mm", "--reorder", "-x", "%2$s", "-U", "%1$s");
     @Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input file", optional=false)
     public File INPUT;
     @Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Output file", optional=false)
@@ -60,7 +59,7 @@ public class SoftClipsToSplitReads extends CommandLineProgram {
     	validateParameters();
     	
     	FastqAligner aligner = createAligner();
-    	GenomicProcessingContext pc = new GenomicProcessingContext(new FileSystemContext(TMP_DIR.get(0), new File("."), MAX_RECORDS_IN_RAM), REFERENCE_SEQUENCE, null);
+    	GenomicProcessingContext pc = new GenomicProcessingContext(new FileSystemContext(TMP_DIR.get(0), new File("."), MAX_RECORDS_IN_RAM), REFERENCE_SEQUENCE, getReference());
     	SplitReadRealigner realigner = new SplitReadRealigner(pc, aligner);
     	realigner.setMinSoftClipLength(MIN_CLIP_LENGTH);
     	realigner.setMinSoftClipQuality(MIN_CLIP_QUAL);
@@ -80,9 +79,6 @@ public class SoftClipsToSplitReads extends CommandLineProgram {
 	}
 	@Override
 	protected String[] customCommandLineValidation() {
-		if (REFERENCE_SEQUENCE == null) {
-            return new String[]{"Must have a non-null REFERENCE_SEQUENCE"};
-        }
 		return super.customCommandLineValidation();
 	}
 	public static void main(String[] argv) {

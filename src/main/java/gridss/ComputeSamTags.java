@@ -9,6 +9,7 @@ import java.util.Set;
 import com.google.common.collect.Sets;
 
 import au.edu.wehi.idsv.FileSystemContext;
+import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.NmTagIterator;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.sam.TemplateTagsIterator;
@@ -23,13 +24,10 @@ import htsjdk.samtools.SAMRecordIterator;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
-import htsjdk.samtools.reference.IndexedFastaSequenceFile;
-import htsjdk.samtools.reference.ReferenceSequenceFile;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
-import picard.cmdline.CommandLineProgram;
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
@@ -43,7 +41,7 @@ import picard.cmdline.StandardOptionDefinitions;
         		+ " also fulfills this criteria.",
         usageShort = "Populates computed SAM tags."
 )
-public class ComputeSamTags extends CommandLineProgram {
+public class ComputeSamTags extends ReferenceCommandLineProgram {
 	private static final Log log = Log.getInstance(ComputeSamTags.class);
 	@Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input BAM file grouped by read name.")
     public File INPUT;
@@ -73,10 +71,6 @@ public class ComputeSamTags extends CommandLineProgram {
     	SamReaderFactory readerFactory = SamReaderFactory.make();
     	SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
     	try {
-    		ReferenceSequenceFile reference = null;
-    		if (isReferenceRequired()) {
-    			reference = new IndexedFastaSequenceFile(REFERENCE_SEQUENCE);
-    		}
     		try (SamReader reader = readerFactory.open(INPUT)) {
     			SAMFileHeader header = reader.getFileHeader();
     			if (!ASSUME_SORTED) {
@@ -91,7 +85,7 @@ public class ComputeSamTags extends CommandLineProgram {
     			try (SAMRecordIterator it = reader.iterator()) {
     				File tmpoutput = FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.tmp.ComputeSamTags.");
     				try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpoutput)) {
-    					compute(it, writer, reference, TAGS, SOFTEN_HARD_CLIPS, FIX_MATE_INFORMATION);
+    					compute(it, writer, getReference(), TAGS, SOFTEN_HARD_CLIPS, FIX_MATE_INFORMATION);
     				}
     				FileHelper.move(tmpoutput, OUTPUT, true);
     			}
@@ -102,7 +96,7 @@ public class ComputeSamTags extends CommandLineProgram {
 		}
     	return 0;
 	}
-	public static void compute(Iterator<SAMRecord> rawit, SAMFileWriter writer, ReferenceSequenceFile reference, Set<SAMTag> tags, boolean softenHardClips, boolean fixMates) throws IOException {
+	public static void compute(Iterator<SAMRecord> rawit, SAMFileWriter writer, ReferenceLookup reference, Set<SAMTag> tags, boolean softenHardClips, boolean fixMates) throws IOException {
 		ProgressLogger progress = new ProgressLogger(log);
 		try (CloseableIterator<SAMRecord> aysncit = new AsyncBufferedIterator<SAMRecord>(rawit, "raw")) {
 			Iterator<SAMRecord> it = aysncit;
