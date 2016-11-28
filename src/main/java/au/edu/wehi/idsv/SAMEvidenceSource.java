@@ -117,16 +117,19 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	public void ensureExtracted() throws IOException {
 		File svFile = getContext().getFileSystemContext().getSVBam(getFile());
-		File extractedFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.extract.");
-		File splitreadFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.withsplitreads.");
-		File querynameFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.queryname.");
-		File taggedFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.tagged.");
+		File extractedFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.extracted.");
+		File querysortedFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.querysorted.");
+		File taggedFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.querysorted.tagged.");
+		File withsplitreadsFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.querysorted.tagged.withsplitreads.");
 		ensureMetrics();
-		// Regenerate from from the intermediate file furtherest through the pipeline 
+		// Regenerate from from the intermediate file furtherest through the pipeline
+		// extract -> query sort -> tag -> split read -> back to coordinate sorted
+		// We want to tag before generating split reads so all splits are guaranteed to
+		// have the same tags
 		if (!svFile.exists()) {
-			if (!taggedFile.exists()) {
-				if (!querynameFile.exists()) {
-					if (!splitreadFile.exists()) {
+			if (!withsplitreadsFile.exists()) {
+				if (!taggedFile.exists()) {
+					if (!querysortedFile.exists()) {
 						if (!extractedFile.exists()) {
 							log.info("Extracting SV reads from " + getFile().getAbsolutePath());
 							List<String> args = Lists.newArrayList(
@@ -140,30 +143,30 @@ public class SAMEvidenceSource extends EvidenceSource {
 									"INSERT_SIZE_METRICS=" + getContext().getFileSystemContext().getInsertSizeMetrics(input));
 							execute(new ExtractSVReads(), args);
 						}
-						log.info("Identifying split reads for " + getFile().getAbsolutePath());
-						List<String> args = Lists.newArrayList(
-								"INPUT=" + extractedFile.getAbsolutePath(),
-								"OUTPUT=" + splitreadFile.getAbsolutePath());
-								// realignment.* not soft-clip
-								//"MIN_CLIP_LENGTH=" + getContext().getConfig().
-								//"MIN_CLIP_QUAL=" + getContext().getConfig().getSoftClip().minAverageQual);
-						execute(new SoftClipsToSplitReads(), args);
+						SAMFileUtil.sort(getContext().getFileSystemContext(), extractedFile, querysortedFile, SortOrder.queryname);
 					}
-					SAMFileUtil.sort(getContext().getFileSystemContext(), splitreadFile, querynameFile, SortOrder.queryname);
+					log.info("Computing SAM tags for " + svFile);
+					List<String> args = Lists.newArrayList(
+							"INPUT=" + querysortedFile.getAbsolutePath(),
+							"OUTPUT=" + taggedFile.getAbsolutePath());
+					execute(new ComputeSamTags(), args);
 				}
-				log.info("Computing SAM tags for " + svFile);
+				log.info("Identifying split reads for " + getFile().getAbsolutePath());
 				List<String> args = Lists.newArrayList(
-						"INPUT=" + querynameFile.getAbsolutePath(),
-						"OUTPUT=" + taggedFile.getAbsolutePath());
-				execute(new ComputeSamTags(), args);
+						"INPUT=" + taggedFile.getAbsolutePath(),
+						"OUTPUT=" + withsplitreadsFile.getAbsolutePath());
+						// realignment.* not soft-clip
+						//"MIN_CLIP_LENGTH=" + getContext().getConfig().
+						//"MIN_CLIP_QUAL=" + getContext().getConfig().getSoftClip().minAverageQual);
+				execute(new SoftClipsToSplitReads(), args);
 			}
 			SAMFileUtil.sort(getContext().getFileSystemContext(), taggedFile, svFile, SortOrder.coordinate);
 		}
 		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
 			FileHelper.delete(extractedFile, true);
-			FileHelper.delete(splitreadFile, true);
-			FileHelper.delete(querynameFile, true);
+			FileHelper.delete(querysortedFile, true);
 			FileHelper.delete(taggedFile, true);
+			FileHelper.delete(withsplitreadsFile, true);
 		}
 	}
 	public CloseableIterator<DirectedEvidence> iterator(final QueryInterval interval) {
