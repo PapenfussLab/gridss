@@ -7,7 +7,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.NotImplementedException;
 
 import au.edu.wehi.idsv.sam.SamTags;
 import htsjdk.samtools.SAMRecord;
