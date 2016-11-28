@@ -211,7 +211,12 @@ public class SAMEvidenceSource extends EvidenceSource {
 		return total / values.length;
 	}
 	public SAMRecord transform(SAMRecord r) {
-		SAMRecordUtil.lowMapqToUnmapped(r, getContext().getConfig().minMapq);
+		if (!r.getReadUnmappedFlag() && r.getMappingQuality() < getContext().getConfig().minMapq) {
+			// TODO: change back when https://github.com/samtools/htsjdk/issues/760 is resolved
+			SAMRecord modified = r.deepCopy();
+			SAMRecordUtil.lowMapqToUnmapped(modified, getContext().getConfig().minMapq);
+			return modified;
+		}
 		// TODO: decide whether to keep maxMapq around or just move to an error message
 		return r;
 	}
