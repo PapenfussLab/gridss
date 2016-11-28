@@ -719,11 +719,9 @@ public class SAMRecordUtil {
 		if (tags.contains(SAMTag.R2)) {
 			for (int i = 0; i < segments.size(); i++) {
 				byte[] br2 = getFullSequence(segments.get((i + 1) % segments.size()));
-				if (br2 != null) {
-					String r2 = StringUtil.bytesToString(br2);
-					for (SAMRecord r : segments.get(i)) {
-						r.setAttribute(SAMTag.R2.name(), r2);
-					}
+				String r2 = br2 != null && segments.size() > 1 ? StringUtil.bytesToString(br2) : null;
+				for (SAMRecord r : segments.get(i)) {
+					r.setAttribute(SAMTag.R2.name(), r2);
 				}
 			}
 		}
@@ -731,11 +729,9 @@ public class SAMRecordUtil {
 		if (tags.contains(SAMTag.Q2)) {
 			for (int i = 0; i < segments.size(); i++) {
 				byte[] bq2 = getFullBaseQualities(segments.get((i + 1) % segments.size()));
-				if (bq2 != null) {
-					String q2 = SAMUtils.phredToFastq(bq2);
-					for (SAMRecord r : segments.get(i)) {
-						r.setAttribute(SAMTag.Q2.name(), q2);
-					}
+				String q2 = bq2 != null && segments.size() > 1 ? SAMUtils.phredToFastq(bq2) : null;
+				for (SAMRecord r : segments.get(i)) {
+					r.setAttribute(SAMTag.Q2.name(), q2);
 				}
 			}
 		}
@@ -766,6 +762,10 @@ public class SAMRecordUtil {
 				segments.get(0).stream().forEach(r -> r.setFirstOfPairFlag(true));
 				segments.get(1).stream().forEach(r -> r.setSecondOfPairFlag(true));
 				fixMates(segments, tags.contains(SAMTag.MC));
+			} else {
+				for (SAMRecord r : records) {
+					clearMateInformation(r, true);
+				}
 			}
 		}
 	}

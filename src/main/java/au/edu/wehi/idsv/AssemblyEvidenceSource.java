@@ -67,25 +67,33 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		header.setSortOrder(SortOrder.unsorted);
 		// TODO: add assembly @PG header
 		File tmpout = FileSystemContext.getWorkingFileFor(getFile());
+		File filteredout = FileSystemContext.getWorkingFileFor(getFile(), "filtered.");
 		try (SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(header, false, tmpout)) {
-			Iterator<SAMRecord> it = getAllAssemblies(threadpool);
-			while (it.hasNext()) {
-				SAMRecord asm = it.next();
-				// some assemblies actually match the reference and we can ignore these
-				// such assemblies are caused by sequencing errors or SNVs causing
-				// spurious soft clips
-				SAMRecordUtil.unclipExactReferenceMatches(getContext().getReference(), asm);
-				if (!getContext().getAssemblyParameters().writeFiltered) {
+			try (SAMFileWriter filteredWriter = new SAMFileWriterFactory().makeSAMOrBAMWriter(header, false, filteredout)) {
+				Iterator<SAMRecord> it = getAllAssemblies(threadpool);
+				while (it.hasNext()) {
+					SAMRecord asm = it.next();
+					// some assemblies actually match the reference and we can ignore these
+					// such assemblies are caused by sequencing errors or SNVs causing
+					// spurious soft clips
+					SAMRecordUtil.unclipExactReferenceMatches(getContext().getReference(), asm);
 					if (shouldFilterAssembly(asm)) {
-						continue;
+						filteredWriter.addAlignment(asm);
+					} else {
+						writer.addAlignment(asm);
 					}
 				}
-	    		writer.addAlignment(asm);
-	    	}
+			}
 	    }
 		SAMFileUtil.sort(getContext().getFileSystemContext(), tmpout, getFile(), SortOrder.coordinate);
 		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
 			FileHelper.delete(tmpout, true);
+			if (!getContext().getAssemblyParameters().writeFiltered) {
+				FileHelper.delete(filteredout, true);
+			}
+		}
+		if (filteredout.exists()) {
+			SAMFileUtil.sort(getContext().getFileSystemContext(), filteredout, filteredout, SortOrder.coordinate);
 		}
 		File throttledFilename = new File(getFile().getAbsolutePath() + ".throttled.bed");
 		try {

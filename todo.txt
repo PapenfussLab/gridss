@@ -1,10 +1,4 @@
-SAM Tags before split read id
-Add FixMateInformation into ComputeSamTags (including populating MC tag)
-	- try to search for correct mate based on mate mapping location
-		(then self alignment position since the unmapped is usually stored with it's mate) 
-
 Filters:
-- dovetailing (SC & RP)
 - coverage blacklist (SAMEvidenceSource.getBlacklistedRegions)
 - entropy
 - mapq (including split reads)
@@ -13,23 +7,10 @@ Filters:
 - SC length
 - indel length
 
-
-- Incorporate FixMateInformation into ComputeSamTags
-
-
 TODO:
-get SAMEvidenceSource to iterate over subset/subset+SR if these exist (tag metrics; flags metrics
 Add SAMProgramRecord headers to all programs
-Readd Assembly visualisation hooks
+Re-add Assembly visualisation hooks
 How to handle conscripted evidence? We don't know if it's conscripted until we realign the breakend assembly
-How well are assemblies displayed in IGV? 
-Better dovetail handling
+How well are assemblies displayed in IGV?
 
-.lang -> .lang3
 Ordering -> Comparator
-
-Unanchored assemblies:
-	add custom Sam Tag to flag as inexact
-	Update SingleReadEvidence, IndelEvidence (ignore alignment), and SplitReadEvidence to handle breakend margin
-	How does IGV display CIGAR Ns at the end of a read? Do we need the Xs?
-	Idea: Cigar of 10N100S -> minimal extra logic + clearly soft clipped

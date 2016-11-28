@@ -468,6 +468,19 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertEquals("123", read5.getStringAttribute("Q2"));
 	}
 	@Test
+	public void calculateTemplateTags_R2_Q2_should_not_write_self() {
+		SAMRecord read0 = Read(0, 1, "3M");
+		read0.setReadPairedFlag(true);
+		read0.setFirstOfPairFlag(true);
+		read0.setReadBases(B("AAC"));
+		read0.setBaseQualityString("123");
+		
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read0), ImmutableSet.of(SAMTag.R2, SAMTag.Q2), false, false);
+		
+		assertNull(read0.getAttribute("R2"));
+		assertNull(read0.getAttribute("Q2"));
+	}
+	@Test
 	public void calculateTemplateTags_should_write_R2_Q2_based_on_sequencing_order() {
 		SAMRecord read0 = Read(0, 1, "3M");
 		read0.setReadPairedFlag(true);

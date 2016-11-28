@@ -167,7 +167,7 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 	}
 	@Override
 	public DirectedBreakpoint asRemote() {
-		throw new NotImplementedException();
+		throw new NotImplementedException("asRemote() should no longer be required");
 	}
 	@Override
 	public String getRemoteEvidenceID() {
