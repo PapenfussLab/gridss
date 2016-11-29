@@ -17,6 +17,7 @@ import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
+import gridss.SoftClipsToSplitReads;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
@@ -27,8 +28,10 @@ import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.fastq.FastqWriter;
 import htsjdk.samtools.fastq.FastqWriterFactory;
 import htsjdk.samtools.util.CloserUtil;
+import htsjdk.samtools.util.Log;
 
 public class SplitReadRealigner {
+	private static final Log log = Log.getInstance(SplitReadRealigner.class);
 	private final GenomicProcessingContext pc;
 	private int minSoftClipLength = 1;
 	private float minSoftClipQuality = 0;
@@ -126,6 +129,7 @@ public class SplitReadRealigner {
 		}
 	}
 	private void mergeSupplementaryAlignment(File input, List<File> aligned, File output) throws IOException {
+		log.info("Merging split read alignments for ", output);
 		File suppMerged = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.SplitReadAligner.sa.");
 		File tmpoutput = FileSystemContext.getWorkingFileFor(output);
 		tmpFiles.add(suppMerged);

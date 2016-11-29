@@ -212,42 +212,21 @@ public class SAMRecordUtil {
 		return seq;
 	}
 
-	public static void ensureNmTag(ReferenceSequenceFileWalker refFileWalker,
-			SAMRecord record) {
+	public static SAMRecord ensureNmTag(ReferenceSequenceFile ref, SAMRecord record) {
 		if (record == null)
-			return;
+			return record;
 		if (record.getReadBases() == null)
-			return;
+			return record;
 		if (record.getReadBases() == SAMRecord.NULL_SEQUENCE)
-			return;
+			return record;
 		if (record.getIntegerAttribute(SAMTag.NM.name()) != null)
-			return;
+			return record;
 		if (record.getReadUnmappedFlag())
-			return;
-		final ReferenceSequence refSequence = refFileWalker.get(record
-				.getReferenceIndex());
-		final int actualNucleotideDiffs = SequenceUtil.calculateSamNmTag(
-				record, refSequence.getBases(), 0, false);
+			return record;
+		byte[] refSeq = ref.getSubsequenceAt(record.getReferenceName(), record.getAlignmentStart(), record.getAlignmentEnd()).getBases();
+		final int actualNucleotideDiffs = SequenceUtil.calculateSamNmTag(record, refSeq, record.getAlignmentStart() - 1);
 		record.setAttribute(SAMTag.NM.name(), actualNucleotideDiffs);
-	}
-
-	public static void ensureNmTag(ReferenceSequenceFile ref, SAMRecord record) {
-		if (record == null)
-			return;
-		if (record.getReadBases() == null)
-			return;
-		if (record.getReadBases() == SAMRecord.NULL_SEQUENCE)
-			return;
-		if (record.getIntegerAttribute(SAMTag.NM.name()) != null)
-			return;
-		if (record.getReadUnmappedFlag())
-			return;
-		final ReferenceSequence refSequence = ref.getSequence(ref
-				.getSequenceDictionary()
-				.getSequence(record.getReferenceIndex()).getSequenceName());
-		final int actualNucleotideDiffs = SequenceUtil.calculateSamNmTag(
-				record, refSequence.getBases(), 0, false);
-		record.setAttribute(SAMTag.NM.name(), actualNucleotideDiffs);
+		return record;
 	}
 
 	/**

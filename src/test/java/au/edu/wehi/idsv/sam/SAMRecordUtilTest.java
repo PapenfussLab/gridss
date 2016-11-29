@@ -64,17 +64,18 @@ public class SAMRecordUtilTest extends TestHelper {
 	public void ensureNmTag_should_not_require_reference_if_tag_set() {
 		SAMRecord r = new SAMRecord(getContext().getBasicSamHeader());
 		r.setAttribute("NM", 1);
-		SAMRecordUtil.ensureNmTag((ReferenceSequenceFileWalker)null, r);
+		SAMRecordUtil.ensureNmTag(null, r);
 	}
 
 	@Test
 	public void ensureNmTag_should_set_NM() {
 		// AAAA
 		// ACGT
-		SAMRecord r = Read(1, 1, "4M");
-		r.clearAttributes();
-		SAMRecordUtil.ensureNmTag(new ReferenceSequenceFileWalker(SMALL_FA), r);
-		assertEquals(3, (int)r.getIntegerAttribute("NM"));
+		assertEquals(3, (int)SAMRecordUtil.ensureNmTag(SMALL_FA, withAttr("NM", null, Read(1, 1, "4M"))[0]).getIntegerAttribute("NM"));
+		assertEquals(0, (int)SAMRecordUtil.ensureNmTag(SMALL_FA, withSequence("ACGT", withAttr("NM", null, Read(1, 1, "4M")))[0]).getIntegerAttribute("NM"));
+		assertEquals(1, (int)SAMRecordUtil.ensureNmTag(SMALL_FA, withSequence("CCGT", withAttr("NM", null, Read(1, 1, "4M")))[0]).getIntegerAttribute("NM"));
+		assertEquals(1, (int)SAMRecordUtil.ensureNmTag(SMALL_FA, withSequence("GCGT", withAttr("NM", null, Read(1, 1, "4M")))[0]).getIntegerAttribute("NM"));
+		assertEquals(1, (int)SAMRecordUtil.ensureNmTag(SMALL_FA, withSequence("TCGT", withAttr("NM", null, Read(1, 1, "4M")))[0]).getIntegerAttribute("NM"));
 	}
 	@Test
 	public void getStartSoftClipBases() {
