@@ -119,14 +119,14 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		ProcessingContext pc = getCommandlineContext();
 		pc.getConfig().minMapq = 10;
 		createInput(
-				withReadName("r1", Read(0, 1, "15M15S")),
-				withReadName("r2", Read(1, 2, "15M15S")),
-				withReadName("r3", Read(2, 3, "15M15S")));
+				withReadName("r1", Read(1, 1, "15M15S")),
+				withReadName("r2", Read(2, 2, "15M15S")),
+				withReadName("r3", Read(3, 3, "15M15S")));
 		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
 		new SplitReadRealigner(pc, new StubFastqAligner(pc)
-				.align(inputRecords.get(0), 2, 10, false, "15M")
-				.align(inputRecords.get(1), 1, 10, false, "15M")
-				.align(inputRecords.get(2), 0, 10, false, "15M"))
+				.align(inputRecords.get(0), 3, 10, false, "15M")
+				.align(inputRecords.get(1), 2, 10, false, "15M")
+				.align(inputRecords.get(2), 1, 10, false, "15M"))
 			.createSupplementaryAlignments(input, input);
 		
 		List<DirectedEvidence> result = Lists.newArrayList(source.iterator());
@@ -146,16 +146,16 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	@Test
 	public void iterator_should_realign_both_forward_and_backward_soft_clips() throws IOException {
 		createInput(
-				withReadName("r1", Read(0, 1, "15S15M15S")),
-				withReadName("r2", Read(1, 2, "15S15M15S")),
-				withReadName("r3", Read(2, 3, "15S15M15S")));
+				withReadName("r1", Read(1, 1, "15S15M15S")),
+				withReadName("r2", Read(2, 2, "15S15M15S")),
+				withReadName("r3", Read(3, 3, "15S15M15S")));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0);
 		new SplitReadRealigner(getCommandlineContext(), new StubFastqAligner(getCommandlineContext())
-				.align(inputRecords.get(0), FWD, 2, 10, false, "15M")
-				.align(inputRecords.get(0), BWD, 1, 15, false, "15M")
-				.align(inputRecords.get(1), FWD, 1, 10, false, "15M")
-				.align(inputRecords.get(2), FWD, 0, 10, false, "15M")
-				.align(inputRecords.get(2), BWD, 0, 100, false, "15M"))
+				.align(inputRecords.get(0), FWD, 3, 10, false, "15M")
+				.align(inputRecords.get(0), BWD, 2, 15, false, "15M")
+				.align(inputRecords.get(1), FWD, 2, 10, false, "15M")
+				.align(inputRecords.get(2), FWD, 1, 10, false, "15M")
+				.align(inputRecords.get(2), BWD, 1, 100, false, "15M"))
 			.createSupplementaryAlignments(input, input);
 		
 		List<DirectedEvidence> result = Lists.newArrayList(source.iterator());
@@ -247,7 +247,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		List<SAMRecord> in = new ArrayList<SAMRecord>();
 		in.add(Read(0, 2, "5S10M"));
 		for (int i = 1; i <= 100; i++) {
-			in.add(Read(0, 1, String.format("5M%dD5M5S", i)));
+			in.add(Read(1, 1, String.format("5M%dD5M5S", i)));
 		}
 		createInput(in.toArray(new SAMRecord[0]));
 		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0, 0, 15);
@@ -388,5 +388,10 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		
 		assertFalse(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGTCT", Read(0, 1, "1S40M1S"))[0]))); // 37	1	1	1	0.503183732
 		assertTrue(ses.shouldFilter(SoftClipEvidence.create(ses, FWD, withSequence("TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGTCT", Read(0, 1, "1S41M1S"))[0]))); // 38	1	1	1	0.493619187
+	}
+	@Test
+	public void should_filter_reference_supporting_reads() {
+		assertTrue(SES().shouldFilter(SR(Read(0, 10, "5M5S"), Read(1, 10, "5M"))));
+		assertTrue(SES().shouldFilter(SR(Read(1, 10, "5M5S"), Read(0, 10, "5M"))));
 	}
 }

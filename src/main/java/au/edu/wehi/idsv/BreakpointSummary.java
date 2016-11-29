@@ -136,10 +136,10 @@ public class BreakpointSummary extends BreakendSummary {
 	 * @return expanded breakpoint
 	 */
 	@Override
-	public BreakpointSummary adjustPosition(int intoBreakendAnchor, int awayFromBreakendAnchor) {
+	public BreakpointSummary adjustPosition(int intoBreakendAnchor, int awayFromBreakendAnchor, boolean adjustNominal) {
 		if (intoBreakendAnchor == 0 && awayFromBreakendAnchor == 0) return this;
-		return new BreakpointSummary(super.adjustPosition(intoBreakendAnchor, awayFromBreakendAnchor),
-				remoteBreakend().adjustPosition(awayFromBreakendAnchor, intoBreakendAnchor));
+		return new BreakpointSummary(super.adjustPosition(intoBreakendAnchor, awayFromBreakendAnchor, adjustNominal),
+				remoteBreakend().adjustPosition(awayFromBreakendAnchor, intoBreakendAnchor, adjustNominal));
 	}
 	@Override
 	public BreakpointSummary expandBounds(int expandBy) {

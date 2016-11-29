@@ -13,6 +13,7 @@ import com.google.common.collect.Lists;
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.debruijn.positional.PositionalAssembler;
+import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.FileHelper;
@@ -87,9 +88,9 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		SAMFileUtil.sort(getContext().getFileSystemContext(), tmpout, getFile(), SortOrder.coordinate);
 		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
 			FileHelper.delete(tmpout, true);
-			if (!getContext().getAssemblyParameters().writeFiltered) {
-				FileHelper.delete(filteredout, true);
-			}
+		}
+		if (!getContext().getAssemblyParameters().writeFiltered) {
+			FileHelper.delete(filteredout, true);
 		}
 		if (filteredout.exists()) {
 			File filteredsorted = FileSystemContext.getWorkingFileFor(getFile(), "filtered.sorted.");
@@ -124,10 +125,6 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		}
 		SAMFileUtil.sort(getContext().getFileSystemContext(), withsplitreadsFile, svFile, SortOrder.coordinate);
 	}
-	@Override
-	public boolean shouldFilter(SAMRecord r) {
-		return shouldFilterAssembly(r) || super.shouldFilter(r);
-	}
 	public boolean shouldFilterAssembly(SAMRecord asm) {
 		AssemblyConfiguration ap = getContext().getAssemblyParameters();
 		AssemblyAttributes attr = new AssemblyAttributes(asm);
@@ -159,19 +156,28 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		return false;
 	}
 	public SAMRecord transformAssembly(SAMRecord assembly) {
-		// some assemblies actually match the reference and we can ignore these
-		// such assemblies are caused by sequencing errors or SNVs causing
-		// spurious soft clips
-		SAMRecordUtil.unclipExactReferenceMatches(getContext().getReference(), assembly);
-		if (SAMRecordUtil.getAlignedIdentity(assembly) < getContext().getAssemblyParameters().minAnchorIdentity) {
-			SAMRecord realigned = SAMRecordUtil.realign(getContext().getReference(), assembly, getContext().getConfig().getAssembly().realignmentWindowSize, true);
-			// TODO: check if realignment is actually better
-			// (don't allow very short anchors)
-			// (don't allow flipping anchor to other side)
-			// ...
-			assembly = realigned;
+		if (assembly.getReadUnmappedFlag()) return assembly;
+		if (CigarUtil.widthOfImprecision(assembly.getCigar()) == 0) {
+			// some assemblies actually match the reference and we can ignore these
+			// such assemblies are caused by sequencing errors or SNVs causing
+			// spurious soft clips
+			SAMRecordUtil.unclipExactReferenceMatches(getContext().getReference(), assembly);
+			/*
+			float anchorMatchRate = SAMRecordUtil.getAlignedIdentity(assembly);
+			if (anchorMatchRate < getContext().getAssemblyParameters().minAnchorIdentity) {
+				SAMRecord realigned = SAMRecordUtil.realign(getContext().getReference(), assembly, getContext().getConfig().getAssembly().realignmentWindowSize, true);
+				// TODO: check if realignment is actually better
+				// (don't allow very short anchors)
+				// (don't allow flipping anchor to other side)
+				// ...
+				float realignedAnchorMatchRate = SAMRecordUtil.getAlignedIdentity(realigned);
+				if (realignedAnchorMatchRate >= getContext().getAssemblyParameters().minAnchorIdentity &&
+						CigarUtil.commonReferenceBases(realigned.getCigar(), assembly.getCigar()) >= CigarUtil.countMappedBases(assembly.getCigar().getCigarElements()) * getContext().getConfig().getAssembly().minPortionOfAnchorRetained) {
+					assembly = realigned;
+				}
+			}
+			*/
 		}
-		SAMRecordUtil.unclipExactReferenceMatches(getContext().getReference(), assembly);
 		return assembly;
 	}
 	private Iterator<SAMRecord> getAllAssemblies(ExecutorService threadpool) {

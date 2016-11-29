@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.io.IOException;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -24,6 +25,7 @@ public class CollectMapqMetricsTest extends IntermediateFilesTest {
 		assertTrue(cmm.OUTPUT.isFile());
 	}
 	@Test
+	@Ignore("R dependency")
 	public void should_generate_histogram() throws IOException {
 		CollectMapqMetrics cmm = new CollectMapqMetrics();
 		File histogram = new File(testFolder.getRoot(), "mapqhistogram.pdf");

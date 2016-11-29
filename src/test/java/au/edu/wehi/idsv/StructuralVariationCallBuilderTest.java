@@ -301,6 +301,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		Assert.assertArrayEquals(new int[] { 3, 1, }, (int[])bp.getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT.attribute()));
 	}
 	@Test
+	@Ignore("Enhancement")
 	public void should_set_VcfAttribute_BREAKPOINT_ASSEMBLY_CONSCRIPTED_READ_COUNT() {
 		Assert.fail("Can't calculate conscripted since we don't have that info anymore");
 	}

@@ -1,18 +1,28 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
 
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
+import org.junit.rules.TemporaryFolder;
 
+import com.google.common.io.Files;
+
+import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
+import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.metrics.Header;
+import htsjdk.samtools.reference.IndexedFastaSequenceFile;
 
 
 public class SplitReadEvidenceTest extends TestHelper {
@@ -226,5 +236,28 @@ public class SplitReadEvidenceTest extends TestHelper {
 		SAMRecord r2 = SAMRecordUtil.realign(ref, r, 10, true);
 		assertEquals(2, r2.getAlignmentStart());
 		assertEquals("131M", r2.getCigarString());
+	}
+	@Test
+	@Category(Hg19Tests.class)
+	public void indel_mismapping_false_positive_assembly_should_not_throw_homology_error() throws IOException {
+		File ref = Hg19Tests.findHg19Reference();
+		IndexedFastaSequenceFile indexed = new IndexedFastaSequenceFile(ref);
+		TemporaryFolder folder = new TemporaryFolder();
+		folder.create();
+		ProcessingContext pc = new ProcessingContext(
+				new FileSystemContext(folder.getRoot(), folder.getRoot(), 500000), ref, new SynchronousReferenceLookupAdapter(indexed), new ArrayList<Header>(),
+				getConfig());
+		//File bam = new File(folder.getRoot(), "input.bam");
+		//Files.copy(new File("src/test/resources/indel_mismapping_false_positive_assembly.sv.bam"), bam);
+		SAMEvidenceSource ses = new MockSAMEvidenceSource(pc);
+		List<SAMRecord> records = IntermediateFilesTest.getRecords(new File("src/test/resources/indel_mismapping_false_positive_assembly.sv.bam"));
+		for (SAMRecord r : records) {
+			if ("asm5".equals(r.getReadName())) {
+				for (SplitReadEvidence e : SplitReadEvidence.create(ses, r)) {
+					assertTrue(e.isReference());
+				}
+			}
+		}
+		folder.delete();
 	}
 }

@@ -107,7 +107,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 				}
 			}
 			// adjust breakend bounds
-			location = location.adjustPosition(Math.max(0, localInexactMargin - 1), Math.max(0, remoteInexactMargin - 1));
+			location = location.adjustPosition(Math.max(0, localInexactMargin - 1), Math.max(0, remoteInexactMargin - 1), true);
 		} else {
 			// TODO calculate microhomology length
 		}
@@ -163,13 +163,13 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 					localBasesMatchingRemoteReference = homologyLength(lookup, bp.referenceIndex2, bp.nominal2 - 1, -1, anchorBases, 0, 1);
 				}
 			}
-			BreakpointSummary adjusted = bp.adjustPosition(localBasesMatchingRemoteReference, remoteBasesMatchingLocalReference);
+			BreakpointSummary adjusted = bp.adjustPosition(localBasesMatchingRemoteReference, remoteBasesMatchingLocalReference, false);
 			// push the bounds back in if we overrun our contigs bounds to the homology 
 			if (adjusted.start <= 0 && localBasesMatchingRemoteReference > 0) localBasesMatchingRemoteReference--;
 			if (adjusted.start2 <= 0 && remoteBasesMatchingLocalReference > 0) remoteBasesMatchingLocalReference--;
 			if (adjusted.end > lookup.getSequenceDictionary().getSequence(adjusted.referenceIndex).getSequenceLength() && localBasesMatchingRemoteReference > 0) localBasesMatchingRemoteReference--;
 			if (adjusted.end2 > lookup.getSequenceDictionary().getSequence(adjusted.referenceIndex2).getSequenceLength() && remoteBasesMatchingLocalReference > 0) remoteBasesMatchingLocalReference--;
-			BreakpointSummary readjusted = bp.adjustPosition(localBasesMatchingRemoteReference, remoteBasesMatchingLocalReference);
+			BreakpointSummary readjusted = bp.adjustPosition(localBasesMatchingRemoteReference, remoteBasesMatchingLocalReference, false);
 			return readjusted;
 		} else {
 			// not considering unclipping bases since that only affects assembly
@@ -289,6 +289,27 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 		}
 		return 0;
 	}
+	
+	/**
+	 * Evidence provides support for no structural variant call
+	 * @return true if this evidence is consistent with the reference allele
+	 */
+	public boolean isReference() {
+		if (!isBreakendExact()) return false;
+		if (untemplated.length() > 0) return false;
+		// if the homology extends the entire length of the read
+		// then we could have just placed the read at that position
+		// without any variant call
+		int anchorHomLen = location.nominal - location.start;
+		int remoteHomLen = location.end - location.nominal;
+		if (location.direction == BreakendDirection.Backward) {
+			int tmp = anchorHomLen;
+			anchorHomLen = remoteHomLen;
+			remoteHomLen = tmp;
+		}
+		return anchorHomLen == anchorBases.length || remoteHomLen == breakendBases.length; 
+	}
+	
 	@Override
 	public String toString() {
 		return getEvidenceID();

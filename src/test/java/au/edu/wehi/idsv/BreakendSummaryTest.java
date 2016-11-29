@@ -167,4 +167,18 @@ public class BreakendSummaryTest extends TestHelper {
 		assertEquals(new BreakendSummary(0, FWD, 10, 10, 10), new BreakendSummary(0, FWD, 16, 15, 20).asValidFor(dict));
 		assertEquals(new BreakendSummary(0, FWD, 1, 1, 1), new BreakendSummary(0, FWD, -10, -10, -10).asValidFor(dict));
 	}
+	@Test
+	public void adjustPosition_should_move_according_to_breakend_direction() {
+		assertEquals(new BreakendSummary(0, FWD, 2, 0, 5), new BreakendSummary(0, FWD, 2, 1, 3).adjustPosition(1, 2, false));
+		assertEquals(new BreakendSummary(0, BWD, 2, -1, 4), new BreakendSummary(0, BWD, 2, 1, 3).adjustPosition(1, 2, false));
+	}
+	@Test
+	public void adjustPosition_should_move_nominal_by_adjustment() {
+		assertEquals(new BreakendSummary(0, FWD, 2, -1, 5), new BreakendSummary(0, FWD, 2, 1, 3).adjustPosition(2, 2, true));
+		assertEquals(new BreakendSummary(0, BWD, 3, 1, 5), new BreakendSummary(0, BWD, 2, 1, 3).adjustPosition(2, 0, true));
+	}
+	@Test
+	public void adjustPosition_should_retain_nominal_position() {
+		assertEquals(new BreakendSummary(0, FWD, 10, 10, 20), new BreakendSummary(0, FWD, 10).adjustPosition(0, 10, false));
+	}
 }

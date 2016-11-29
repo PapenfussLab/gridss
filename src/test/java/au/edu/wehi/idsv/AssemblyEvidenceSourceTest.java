@@ -6,11 +6,11 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -18,8 +18,8 @@ import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
-import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileHeader;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SamReader;
 import htsjdk.samtools.SamReaderFactory;
@@ -232,7 +232,8 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		assertEquals(0, assemblies.size());
 	}
 	@Test
-	public void should_realign_anchoring_bases_that_are_very_poor_matches_to_the_reference() {
+	@Ignore("Enhancement") // TODO: should we even do this? How much of this is covered by SingleReadEvidence.isReference()?
+	public void should_realign_very_poor_matches_to_the_reference() {
 		String refStr = "TAAATTGGAACACTATACCAAAACATTAACCAGCATAGCAGTATATAAGGTTAAACATTAAATAACCCCTGGCTTAACTAACTCTCCAATTGCACTTTCTATAAGTAATTGTTGTTTAGACTTTATTAATTCAGATGTTTCAGACATGTCTTATATACACAAGAGAATTTCATTTCTCTTT";
 		String readStr = "AAATTGGAACACTATACCAAAACATTAACCAGCATAGCAGTATATAAGGTTAAACATTAAATAACCCCTGGCTTAACTAACTCTCCAATTGCACTTTCTATAAGTAATTGTTGTTTAGACTTTATTAATTC";
 		//               1234567890123456
@@ -249,10 +250,8 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		r.setBaseQualities(B(refStr));
 		ProcessingContext pc = new ProcessingContext(new FileSystemContext(testFolder.getRoot(), 500000), reference, ref, Lists.newArrayList(), getConfig(testFolder.getRoot()));
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(SES(pc)), assemblyFile);
-		aes.shouldFilter(e)
-		
-		SAMRecord r2 = SAMRecordUtil.realign(ref, r, 10, true);
-		assertEquals(2, r2.getAlignmentStart());
-		assertEquals("131M", r2.getCigarString());
+		SAMRecord ra = aes.transformAssembly(r);
+		assertEquals(2, ra.getAlignmentStart());
+		assertEquals("131M", ra.getCigarString());
 	}
 }

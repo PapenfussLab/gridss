@@ -17,6 +17,7 @@ import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
+import au.edu.wehi.idsv.util.BufferedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
 import gridss.ComputeSamTags;
@@ -197,6 +198,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		return reader;
 	}
 	private Iterator<DirectedEvidence> asEvidence(Iterator<SAMRecord> it) {
+		it = new BufferedIterator<>(it, 2); // TODO: remove when https://github.com/samtools/htsjdk/issues/760 is resolved 
 		it = Iterators.transform(it, r -> transform(r));
 		it = Iterators.filter(it, r -> !shouldFilter(r));		
 		Iterator<DirectedEvidence> eit = new DirectedEvidenceIterator(it, this);
@@ -215,12 +217,7 @@ public class SAMEvidenceSource extends EvidenceSource {
 		return total / values.length;
 	}
 	public SAMRecord transform(SAMRecord r) {
-		if (!r.getReadUnmappedFlag() && r.getMappingQuality() < getContext().getConfig().minMapq) {
-			// TODO: change back when https://github.com/samtools/htsjdk/issues/760 is resolved
-			SAMRecord modified = r.deepCopy();
-			SAMRecordUtil.lowMapqToUnmapped(modified, getContext().getConfig().minMapq);
-			return modified;
-		}
+		SAMRecordUtil.lowMapqToUnmapped(r, getContext().getConfig().minMapq);
 		// TODO: decide whether to keep maxMapq around or just move to an error message
 		return r;
 	}
@@ -234,6 +231,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 		GridssConfiguration config = getContext().getConfig();
 		if (overlapsBlacklist(e)) {
 			return true;
+		}
+		if (e instanceof SingleReadEvidence) {
+			if (((SingleReadEvidence) e).isReference()) return true;
 		}
 		if (e instanceof SoftClipEvidence) {
 			SoftClipEvidence sce = (SoftClipEvidence) e;

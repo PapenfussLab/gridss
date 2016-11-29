@@ -243,6 +243,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 		assertEquals(0, SingleReadEvidence.createEvidence(SES(), e).size());
 	}
 	@Test
+	@Ignore("Enhancement")
 	public void getBreakendQual_should_exclude_assembled_evidence_that_does_not_support_breakend() {
 		List<DirectedEvidence> support = Lists.<DirectedEvidence>newArrayList(
 				NRRP(OEA(0, 1, "1M", true)),

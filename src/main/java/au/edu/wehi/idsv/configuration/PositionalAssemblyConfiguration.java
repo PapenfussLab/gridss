@@ -31,7 +31,7 @@ public class PositionalAssemblyConfiguration {
 	 * Maximum width (in multiples of maximum fragment size) of the loaded subgraph before
 	 * the frontier start that are not called.
 	 * 
-	 * This should be greater than @see AssemblyConfiguration.maxExpectedBreakendLengthMultiple
+	 * This must be greater than @see AssemblyConfiguration.maxExpectedBreakendLengthMultiple
 	 */
 	public float retainWidthMultiple;
 	/**

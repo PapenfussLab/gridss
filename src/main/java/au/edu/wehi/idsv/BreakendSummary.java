@@ -144,7 +144,10 @@ public class BreakendSummary {
 	 * @param awayFromBreakendAnchor number of additional anchored bases to consider
 	 * @return
 	 */
-	public BreakendSummary adjustPosition(int intoBreakendAnchor, int awayFromBreakendAnchor) {
+	public BreakendSummary adjustPosition(int intoBreakendAnchor, int awayFromBreakendAnchor, boolean adjustNominal) {
+		if (adjustNominal && (intoBreakendAnchor < 0 || awayFromBreakendAnchor < 0)) {
+			throw new IllegalArgumentException("Cannot make adjustment that causes the nominal position to no longer be valid");
+		}
 		if (intoBreakendAnchor == 0 && awayFromBreakendAnchor == 0) return this;
 		int anchorShift = (-intoBreakendAnchor + awayFromBreakendAnchor) / 2;
 		int startAdjust = -intoBreakendAnchor;
@@ -153,6 +156,9 @@ public class BreakendSummary {
 			startAdjust = -awayFromBreakendAnchor;
 			endAdjust = intoBreakendAnchor;
 			anchorShift *= -1;
+		}
+		if (!adjustNominal) {
+			anchorShift = 0;
 		}
 		return new BreakendSummary(referenceIndex, direction, nominal + anchorShift, start + startAdjust, end + endAdjust);
 	}

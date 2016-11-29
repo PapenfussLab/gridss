@@ -5,6 +5,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.List;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import htsjdk.samtools.SAMRecord;
@@ -188,5 +189,12 @@ public class IndelEvidenceTest extends TestHelper {
 		// don't let us shift the deletion off the end of the chr
 		// 10D20M is not a valid breakpoint
 		assertTrue(ie.getBreakendSummary().isValid(getSequenceDictionary()));
+	}
+	@Test
+	@Ignore("Enhancement")
+	public void isReference_should_check_if_indel_is_actually_required() {
+		assertTrue(IE(SES(1), withSequence("AA", Read(0, 10, "1M1D1M"))[0]).isReference());
+		assertTrue(IE(SES(1), withSequence("AAA", Read(0, 10, "1M1I1M"))[0]).isReference());
+		assertTrue(IE(SES(1), withSequence("AAA", Read(0, 10, "1M1I1D1M"))[0]).isReference());
 	}
 }

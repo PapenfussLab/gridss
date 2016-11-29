@@ -196,4 +196,8 @@ public class BreakpointSummaryTest extends TestHelper {
 	public void getNominalPosition_should_report_nominal_position_only() {
 		assertEquals(new BreakpointSummary(0, FWD, 2, 0, FWD, 5), new BreakpointSummary(0, FWD, 2, 1, 3, 0, FWD, 5, 4, 60).getNominalPosition());
 	}
+	@Test
+	public void adjustPosition_should_adjust_according_to_local_breakend_direction() {
+		assertEquals(new BreakpointSummary(0, FWD, 10, 9, 12, 1, BWD, 20, 19, 22), new BreakpointSummary(0, FWD, 10, 1, BWD, 20).adjustPosition(1, 2, false));
+	}
 }
