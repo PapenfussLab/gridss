@@ -60,7 +60,7 @@ public class CollectMapqMetrics extends SinglePassSamProgram {
     private static final String Histogram_R_SCRIPT = "gridss/analysis/mapqHistogram.R";
 
     @Option(shortName="H", doc="File to write insert size Histogram chart to.")
-    public File Histogram_FILE;
+    public File Histogram_FILE = null;
 
     @Option(shortName="LEVEL", doc="The level(s) at which to accumulate metrics.  ")
     private Set<MetricAccumulationLevel> METRIC_ACCUMULATION_LEVEL = CollectionUtil.makeSet(MetricAccumulationLevel.ALL_READS);
@@ -88,7 +88,7 @@ public class CollectMapqMetrics extends SinglePassSamProgram {
 
     @Override protected void setup(final SAMFileHeader header, final File samFile) {
         IOUtil.assertFileIsWritable(OUTPUT);
-        if (Histogram_R_SCRIPT != null) {
+        if (Histogram_FILE != null) {
         	IOUtil.assertFileIsWritable(Histogram_FILE);
         }
 
@@ -108,7 +108,7 @@ public class CollectMapqMetrics extends SinglePassSamProgram {
 
         file.write(OUTPUT);
 
-        if (Histogram_R_SCRIPT != null) {
+        if (Histogram_FILE != null) {
         	final int rResult = RExecutor.executeFromClasspath(
                 Histogram_R_SCRIPT,
                 OUTPUT.getAbsolutePath(),

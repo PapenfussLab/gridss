@@ -16,6 +16,14 @@ import picard.analysis.SinglePassSamProgram;
 
 public class CollectMapqMetricsTest extends IntermediateFilesTest {
 	@Test
+	public void should_allow_no_histogram() throws IOException {
+		CollectMapqMetrics cmm = new CollectMapqMetrics();
+		cmm.INPUT = new File("src/test/resources/203541.bam");
+		cmm.OUTPUT = new File(testFolder.getRoot(), "mapqmetrics.txt");
+		SinglePassSamProgram.makeItSo(cmm.INPUT, null, true, 0, ImmutableList.of(cmm));
+		assertTrue(cmm.OUTPUT.isFile());
+	}
+	@Test
 	public void should_generate_metrics() throws IOException {
 		CollectMapqMetrics cmm = new CollectMapqMetrics();
 		cmm.INPUT = new File("src/test/resources/203541.bam");
