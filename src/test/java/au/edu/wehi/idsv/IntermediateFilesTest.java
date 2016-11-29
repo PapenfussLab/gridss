@@ -54,6 +54,7 @@ public class IntermediateFilesTest extends TestHelper {
 		output.delete();
 		testFolder.getRoot().deleteOnExit();
 		inputRecords = null;
+		SAMFileWriterFactory.setDefaultCreateIndexWhileWriting(true);
 	}
 	public void setReference(File ref) {
 		reference = ref;

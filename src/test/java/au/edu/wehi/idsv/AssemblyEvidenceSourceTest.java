@@ -8,6 +8,8 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.junit.Before;
 import org.junit.Ignore;
@@ -83,7 +85,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
 		List<DirectedEvidence> list = Lists.newArrayList(aes.iterator());
-		assertEquals(4,  list.size());
+		assertEquals(4, list.size());
 		for (int i = 0; i <= 3; i++) {
 			assertEquals(i, list.get(i).getBreakendSummary().referenceIndex);
 		}
@@ -253,5 +255,40 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		SAMRecord ra = aes.transformAssembly(r);
 		assertEquals(2, ra.getAlignmentStart());
 		assertEquals("131M", ra.getCigarString());
+	}
+	@Test
+	public void chunck_spanning_assemblies_should_not_be_repeated() throws IOException {
+		List<SAMRecord> in = new ArrayList<>();
+		for (int i = 50; i < 150; i++) {
+			in.add(withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGA", Read(0, i, "41M58S"))[0]);
+		}
+		createInput(in);
+		ProcessingContext pc = getCommandlineContext();
+		pc.getConfig().getAssembly().minReads = 1;
+		pc.getConfig().chunkSize = 100;
+		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
+		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
+		aes.assembleBreakends(null);
+		List<DirectedEvidence> list = Lists.newArrayList(aes.iterator());
+		assertEquals(100, list.size());
+	}
+	@Test
+	public void parallel_assembly_should_not_affect_assembly_results() throws IOException {
+		List<SAMRecord> in = new ArrayList<>();
+		for (int i = 50; i < 150; i++) {
+			in.add(withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGA", Read(0, i, "41M58S"))[0]);
+		}
+		createInput(in);
+		ProcessingContext pc = getCommandlineContext();
+		pc.getConfig().getAssembly().minReads = 1;
+		pc.getConfig().chunkSize = 100;
+		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
+		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
+		ExecutorService threadpool = Executors.newCachedThreadPool();
+		aes.assembleBreakends(threadpool);
+		threadpool.shutdown();
+		List<DirectedEvidence> list = Lists.newArrayList(aes.iterator());
+		assertEquals(100, list.size());
+		
 	}
 }

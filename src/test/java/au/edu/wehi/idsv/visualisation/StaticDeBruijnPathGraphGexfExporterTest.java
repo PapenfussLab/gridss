@@ -20,6 +20,7 @@ import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import gridss.ComputeSamTags;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
+import picard.sam.BuildBamIndex;
 
 
 public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTest {
@@ -29,6 +30,10 @@ public class StaticDeBruijnPathGraphGexfExporterTest extends IntermediateFilesTe
 		File output = new File(super.testFolder.getRoot(), "chr12-244000.vcf");
 		setReference(Hg19Tests.findHg19Reference("chr12.fa"));
 		createInput(new File("src/test/resources/chr12-244000.tagged.bam"));
+		BuildBamIndex bbi = new BuildBamIndex();
+		bbi.instanceMain(new String[] {
+				"I=" + input.getAbsolutePath()
+		});
 		ProcessingContext pc = getCommandlineContext();
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), output);

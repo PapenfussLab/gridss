@@ -47,6 +47,11 @@ public class GridssConfiguration {
 	 * instead of deferring until all threads have completed.
 	 */
 	public boolean terminateOnFirstError;
+	/**
+	 * Number of bases to allocate to each processing task when performing parallel operations
+	 * such as assembly.
+	 */
+	public int chunkSize;
 	public AssemblyConfiguration getAssembly() {
 		return assembly;
 	}
@@ -85,6 +90,7 @@ public class GridssConfiguration {
 		minAnchorShannonEntropy = config.getFloat("minAnchorShannonEntropy");
 		dovetailMargin = config.getInt("dovetailMargin");
 		terminateOnFirstError = config.getBoolean("terminateOnFirstError");
+		chunkSize = config.getInt("chunkSize");
 	}
 	public static Configuration LoadConfiguration(File configuration) throws ConfigurationException {
 		CompositeConfiguration config = new CompositeConfiguration();
