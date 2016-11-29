@@ -88,7 +88,9 @@ public class CollectMapqMetrics extends SinglePassSamProgram {
 
     @Override protected void setup(final SAMFileHeader header, final File samFile) {
         IOUtil.assertFileIsWritable(OUTPUT);
-        IOUtil.assertFileIsWritable(Histogram_FILE);
+        if (Histogram_R_SCRIPT != null) {
+        	IOUtil.assertFileIsWritable(Histogram_FILE);
+        }
 
         //Delegate actual collection to MapqMetricCollector
         multiCollector = new MapqMetricsCollector(METRIC_ACCUMULATION_LEVEL, header.getReadGroups());
@@ -106,14 +108,15 @@ public class CollectMapqMetrics extends SinglePassSamProgram {
 
         file.write(OUTPUT);
 
-        final int rResult = RExecutor.executeFromClasspath(
+        if (Histogram_R_SCRIPT != null) {
+        	final int rResult = RExecutor.executeFromClasspath(
                 Histogram_R_SCRIPT,
                 OUTPUT.getAbsolutePath(),
                 Histogram_FILE.getAbsolutePath(),
                 INPUT.getName());
-
-        if (rResult != 0) {
-            throw new PicardException("R script " + Histogram_R_SCRIPT + " failed with return code " + rResult);
-        }
+	        if (rResult != 0) {
+	            throw new PicardException("R script " + Histogram_R_SCRIPT + " failed with return code " + rResult);
+	        }
+        }        
     }
 }
