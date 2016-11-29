@@ -42,9 +42,7 @@ import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.SamPairUtil;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.TextCigarCodec;
-import htsjdk.samtools.reference.ReferenceSequence;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
-import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
 import htsjdk.samtools.util.StringUtil;
@@ -886,7 +884,6 @@ public class SAMRecordUtil {
 			}
 			segments.get(index).add(r);
 		}
-		
 		return segments;
 	}
 	public static void calculateMultimappingTags(Set<SAMTag> tags, List<SAMRecord> list) {

@@ -284,7 +284,7 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		pc.getConfig().chunkSize = 100;
 		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, 0);
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
-		ExecutorService threadpool = Executors.newCachedThreadPool();
+		ExecutorService threadpool = Executors.newFixedThreadPool(8);
 		aes.assembleBreakends(threadpool);
 		threadpool.shutdown();
 		List<DirectedEvidence> list = Lists.newArrayList(aes.iterator());

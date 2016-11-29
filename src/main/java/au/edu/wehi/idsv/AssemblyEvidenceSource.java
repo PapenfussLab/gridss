@@ -12,8 +12,6 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterators;
@@ -34,7 +32,6 @@ import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
-import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
@@ -253,7 +250,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		private volatile Exception backgroundThreadException = null;
 		public AssemblyIterator(ExecutorService threadpool) {
 			if (threadpool == null) throw new NullPointerException("threadpool cannot be null");
-			List<QueryInterval> chunks = getChucks();
+			List<QueryInterval> chunks = getContext().getReference().getIntervals(getContext().getConfig().chunkSize).collect(Collectors.toList());
 			this.outstandingTasks = new AtomicInteger(2 * chunks.size()); // a forward and backward for each chunk 
 			assembleTasks(threadpool, chunks);
 		}
@@ -282,50 +279,36 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 							outputQueue.put(Optional.of(ass));
 						}
 					}
+					outstandingTasks.decrementAndGet();
 					// Sentinal value to indicate we are done
 					outputQueue.put(Optional.empty());
-					outstandingTasks.decrementAndGet();
 				}
 				timer.stop();
 				log.info(String.format("Completed assembly on interval %s in %ds (%s)", chuckName, timer.elapsed(TimeUnit.SECONDS), timer.toString()));
 			} catch (Exception e) {
 				log.error(e, "Error assembling ", chuckName);
+				backgroundThreadException = e;
 				if (getContext().getConfig().terminateOnFirstError) {
 					System.exit(1);
 				}
-				backgroundThreadException = e;
-				try {
-					outputQueue.put(Optional.empty());
-				} catch (InterruptedException e1) {
-				}
-				throw new RuntimeException(e);
 			}
 		}
-		public List<QueryInterval> getChucks() {
-			int chunckSize = getContext().getConfig().chunkSize;
-			return getContext().getReference().getSequenceDictionary().getSequences().stream()
-					.flatMap(contig -> getChucks(chunckSize, contig))
-					.collect(Collectors.toList());
-		}
-		private Stream<QueryInterval> getChucks(int chuckSize, SAMSequenceRecord contig) {
-			int referenceIndex = contig.getSequenceIndex();
-			return IntStream.range(0, (int)Math.ceil((double)contig.getSequenceLength() / (double)chuckSize))
-				.map(i -> 1 + i * chuckSize) // switch to 1-based genomic coordinates
-				.mapToObj(start -> new QueryInterval(referenceIndex, start, start + chuckSize - 1));
-		}
 		private void ensureNextRecord() throws InterruptedException {
+			
 			if (nextRecord != null) return;
 			// If there's still a task running then we know at least one
 			// worker thread will write a null sentinal
 			while (outstandingTasks.get() > 0) {
-				Optional<SAMRecord> result = outputQueue.take();
-				if (result.isPresent()) {
+				Optional<SAMRecord> result = outputQueue.poll(1, TimeUnit.SECONDS);
+				if (backgroundThreadException != null) return;
+				if (result != null && result.isPresent()) {
 					nextRecord = result.get();
 					return;
 				}
 			}
 			// If the workers are all done, then we're never going to
 			// get any more records added to the queue
+			// (actually, technically we can, but they're sentinal records which we can ignore)
 			while (!outputQueue.isEmpty()) {
 				Optional<SAMRecord> result = outputQueue.poll();
 				if (result.isPresent()) {
@@ -339,7 +322,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			try {
 				ensureNextRecord();
 				if (backgroundThreadException != null) {
-					throw new RuntimeException("Assembly error", backgroundThreadException);
+					throw new RuntimeException(backgroundThreadException);
 				}
 			} catch (InterruptedException e) {
 				log.error(e, "Unexpectedly interrupted waiting for assembly contigs to be generated.");
