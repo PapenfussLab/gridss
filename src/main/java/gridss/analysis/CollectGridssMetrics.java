@@ -61,7 +61,8 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
 					Set<MetricAccumulationLevel> metricAccumulationLevel, File dbSnp, File intervals) {
 				final CollectMapqMetrics program = new CollectMapqMetrics();
                 program.OUTPUT = new File(outbase + gridss.analysis.CollectMapqMetrics.METRICS_SUFFIX + outext);
-                program.Histogram_FILE = new File(outbase + gridss.analysis.CollectMapqMetrics.HISTOGRAM_SUFFIX);
+                // TODO: why does this only work on my local desktop+servers and not the CI or cluster systems?
+                //program.Histogram_FILE = new File(outbase + gridss.analysis.CollectMapqMetrics.HISTOGRAM_SUFFIX);
 
                 // Generally programs should not be accessing these directly but it might make things smoother
                 // to just set them anyway. These are set here to make sure that in case of a the derived class
@@ -137,9 +138,6 @@ public class CollectGridssMetrics extends CollectMultipleMetrics {
     }
     @Option(doc = "Set of gridss metrics programs to apply during the pass through the SAM file.")
     public Set<GridssProgram> GRIDSS_PROGRAM = new LinkedHashSet<>(Arrays.asList(GridssProgram.values()));
-    
-    @Option(doc = "Generate graphs as well as raw metrics.", optional=true)
-    public boolean GENERATE_GRAPHS = false;
 
     public CollectGridssMetrics() {
     	// By default, only run those required by GRIDSS
