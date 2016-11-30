@@ -62,8 +62,7 @@ public class SoftClipEvidence extends SingleReadEvidence {
 				getLocalMapq());
 	}
 	@Override
-	protected void buildEvidenceID(StringBuilder sb) {
-		super.buildEvidenceID(sb);
-		sb.append(getBreakendSummary().direction == BreakendDirection.Forward ? "(f)" : "(b)");
+	protected String getUncachedEvidenceID() {
+		return EvidenceIDHelper.getEvidenceID(this);
 	}
 }

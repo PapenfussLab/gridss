@@ -249,16 +249,12 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 		return untemplated;
 	}
 	
-	protected void buildEvidenceID(StringBuilder sb) {
-		sb.append(SAMRecordUtil.getAlignmentUniqueName(getSAMRecord()));
-	}
+	protected abstract String getUncachedEvidenceID();
 	
 	@Override
 	public String getEvidenceID() {
 		if (evidenceid == null) {
-			StringBuilder sb = new StringBuilder();
-			buildEvidenceID(sb);
-			evidenceid = sb.toString();
+			evidenceid = getUncachedEvidenceID();
 		}
 		return evidenceid;
 	}

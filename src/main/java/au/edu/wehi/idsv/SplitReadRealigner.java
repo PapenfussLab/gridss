@@ -14,10 +14,8 @@ import com.google.common.io.Files;
 import au.edu.wehi.idsv.alignment.FastqAligner;
 import au.edu.wehi.idsv.sam.NmTagIterator;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
-import gridss.SoftClipsToSplitReads;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
@@ -172,7 +170,7 @@ public class SplitReadRealigner {
 		while (it.hasNext()) {
 			salist.clear();
 			SAMRecord r = it.next();
-			String name = SAMRecordUtil.getAlignmentUniqueName(r);
+			String name = EvidenceIDHelper.getAlignmentUniqueName(r);
 			for (PeekingIterator<SAMRecord> sit : alignments) {
 				while (sit.hasNext() && SplitReadIdentificationHelper.getOriginatingAlignmentUniqueName(sit.peek()).equals(name)) {
 					SAMRecord supp = sit.next();

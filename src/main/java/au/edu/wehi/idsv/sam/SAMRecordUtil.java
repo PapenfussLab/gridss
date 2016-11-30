@@ -53,7 +53,6 @@ import htsjdk.samtools.util.StringUtil;
  */
 public class SAMRecordUtil {
 	private static final Log log = Log.getInstance(SAMRecordUtil.class);
-	private static final String SUFFIX_SEPERATOR = "#";
 	public static final String FIRST_OF_PAIR_NAME_SUFFIX = "\\1";
 	public static final String SECOND_OF_PAIR_NAME_SUFFIX = "\\2";
 	/**
@@ -1101,40 +1100,6 @@ public class SAMRecordUtil {
 			return length - getEndClipLength(c.getCigarElements()) - 1;
 			
 		}
-	}
-	/**
-	 * Gets a string that is unique for the given alignment of the read.
-	 * Note: the identifier is only unique with respect to the alignment of the segment/read
-	 * not the entire template/read pair.
-	 * @param record record
-	 * @return alignment-unique identifier for the given SAMRecord
-	 */
-	public static String getAlignmentUniqueName(SAMRecord record) {
-		return getAlignmentUniqueName(
-				record.getReadName(),
-				SAMRecordUtil.getSegmentIndex(record),
-				record.getReadUnmappedFlag(),
-				record.getReferenceName(),
-				record.getAlignmentStart(),
-				record.getReadNegativeStrandFlag(),
-				record.getCigarString());
-	}
-	public static String getAlignmentUniqueName(String readName, int segmentIndex, boolean unmapped, String referenceName, int alignmentStart, boolean negativeStrand, String cigar) {
-		StringBuilder sb = new StringBuilder(readName);
-		sb.append(SAMRecordUtil.SUFFIX_SEPERATOR);
-		sb.append(segmentIndex);
-		if (!unmapped) {
-			sb.append(SAMRecordUtil.SUFFIX_SEPERATOR);
-			sb.append(referenceName);
-			sb.append(SAMRecordUtil.SUFFIX_SEPERATOR);
-			sb.append(alignmentStart);
-			sb.append(SAMRecordUtil.SUFFIX_SEPERATOR);
-			sb.append(negativeStrand ? '-' : '+');
-			sb.append(SAMRecordUtil.SUFFIX_SEPERATOR);
-			sb.append(cigar);
-		}
-		;
-		return sb.toString();
 	}
 	/**
 	 * Converts a record with mapq below the given mapq threshold to unmapped reads

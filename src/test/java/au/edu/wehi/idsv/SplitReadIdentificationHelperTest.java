@@ -10,7 +10,6 @@ import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
 
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMUtils;
 import htsjdk.samtools.fastq.FastqRecord;
@@ -60,8 +59,8 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		r.setReadName("r");
 		List<FastqRecord> result = SplitReadIdentificationHelper.getSplitReadRealignments(r, false);
 		assertEquals(2, result.size());
-		assertEquals(SAMRecordUtil.getAlignmentUniqueName(r) + "#0", result.get(0).getReadHeader());
-		assertEquals(SAMRecordUtil.getAlignmentUniqueName(r) + "#3", result.get(1).getReadHeader());
+		assertEquals(EvidenceIDHelper.getAlignmentUniqueName(r) + "#0", result.get(0).getReadHeader());
+		assertEquals(EvidenceIDHelper.getAlignmentUniqueName(r) + "#3", result.get(1).getReadHeader());
 	}
 	@Test
 	public void getSplitReadRealignments_should_consider_strand() {
@@ -76,11 +75,11 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		// GAACGT read
 		// 654321 base qualities
 		// 012345 offset
-		assertEquals(SAMRecordUtil.getAlignmentUniqueName(r) + "#4", result.get(0).getReadHeader());
+		assertEquals(EvidenceIDHelper.getAlignmentUniqueName(r) + "#4", result.get(0).getReadHeader());
 		assertEquals("GT", result.get(0).getReadString());
 		assertEquals(SAMUtils.phredToFastq(B("21")), result.get(0).getBaseQualityString());
 		
-		assertEquals(SAMRecordUtil.getAlignmentUniqueName(r) + "#0", result.get(1).getReadHeader());
+		assertEquals(EvidenceIDHelper.getAlignmentUniqueName(r) + "#0", result.get(1).getReadHeader());
 		assertEquals("GAA", result.get(1).getReadString());
 		assertEquals(SAMUtils.phredToFastq(B("654")), result.get(1).getBaseQualityString());
 	}
@@ -115,7 +114,7 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		primary.setReadBases(B("CGTA"));
 		primary.setBaseQualities(B("1234"));
 		SAMRecord supp1 = Read(1, 2, "1M1S");
-		supp1.setReadName(SAMRecordUtil.getAlignmentUniqueName(primary) + "#1");
+		supp1.setReadName(EvidenceIDHelper.getAlignmentUniqueName(primary) + "#1");
 		supp1.setReadBases(B("GT"));
 		supp1.setBaseQualities(B("23"));
 		SplitReadIdentificationHelper.convertToSplitRead(primary, ImmutableList.of(supp1));
@@ -141,7 +140,7 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		// 4321
 		// MSSS primary
 		SAMRecord supp1 = Read(1, 2, "1M");
-		supp1.setReadName(SAMRecordUtil.getAlignmentUniqueName(primary) + "#2");
+		supp1.setReadName(EvidenceIDHelper.getAlignmentUniqueName(primary) + "#2");
 		supp1.setReadBases(B("C"));
 		supp1.setBaseQualities(B("2"));
 		SplitReadIdentificationHelper.convertToSplitRead(primary, ImmutableList.of(supp1));
@@ -168,7 +167,7 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		//   ??
 		//   SM
 		SAMRecord supp1 = Read(1, 2, "1S1M");
-		supp1.setReadName(SAMRecordUtil.getAlignmentUniqueName(primary) + "#0");
+		supp1.setReadName(EvidenceIDHelper.getAlignmentUniqueName(primary) + "#0");
 		supp1.setReadBases(B("CG"));
 		supp1.setBaseQualities(B("21"));
 		supp1.setReadNegativeStrandFlag(true);
@@ -186,7 +185,7 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		primary.setBaseQualities(B("1234"));
 		primary.setAttribute("xx", "value");
 		SAMRecord supp1 = Read(1, 2, "1M1S");
-		supp1.setReadName(SAMRecordUtil.getAlignmentUniqueName(primary) + "#1");
+		supp1.setReadName(EvidenceIDHelper.getAlignmentUniqueName(primary) + "#1");
 		supp1.setReadBases(B("GT"));
 		supp1.setBaseQualities(B("23"));
 		SplitReadIdentificationHelper.convertToSplitRead(primary, ImmutableList.of(supp1));
@@ -205,7 +204,7 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		primary.setReadUnmappedFlag(false);
 		primary.setReadNegativeStrandFlag(true);
 		SAMRecord supp1 = Read(1, 2, "1M1S");
-		supp1.setReadName(SAMRecordUtil.getAlignmentUniqueName(primary) + "#1");
+		supp1.setReadName(EvidenceIDHelper.getAlignmentUniqueName(primary) + "#1");
 		supp1.setReadBases(B("GT"));
 		supp1.setBaseQualities(B("23"));
 		SplitReadIdentificationHelper.convertToSplitRead(primary, ImmutableList.of(supp1));
@@ -233,7 +232,7 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		primary.setMateReferenceIndex(2);
 		primary.setMateAlignmentStart(7);
 		SAMRecord supp1 = Read(1, 2, "1M1S");
-		supp1.setReadName(SAMRecordUtil.getAlignmentUniqueName(primary) + "#1");
+		supp1.setReadName(EvidenceIDHelper.getAlignmentUniqueName(primary) + "#1");
 		supp1.setReadBases(B("GT"));
 		supp1.setBaseQualities(B("23"));
 		supp1.setMappingQuality(17);
@@ -256,14 +255,14 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		primary.setAttribute("NM", 8);
 		
 		SAMRecord supp1 = Read(0, 10, "1M1S");
-		supp1.setReadName(SAMRecordUtil.getAlignmentUniqueName(primary) + "#1");
+		supp1.setReadName(EvidenceIDHelper.getAlignmentUniqueName(primary) + "#1");
 		supp1.setReadBases(B("GT"));
 		supp1.setBaseQualities(B("23"));
 		supp1.setMappingQuality(17);
 		supp1.setAttribute("NM", 9);
 		
 		SAMRecord supp2 = Read(0, 20, "1M");
-		supp2.setReadName(SAMRecordUtil.getAlignmentUniqueName(primary) + "#0");
+		supp2.setReadName(EvidenceIDHelper.getAlignmentUniqueName(primary) + "#0");
 		supp2.setReadBases(B("C"));
 		supp2.setBaseQualities(B("1"));
 		supp2.setMappingQuality(19);
@@ -286,14 +285,14 @@ public class SplitReadIdentificationHelperTest extends TestHelper {
 		primary.setAttribute("NM", 8);
 		
 		SAMRecord supp1 = Read(0, 10, "1M1S");
-		supp1.setReadName(SAMRecordUtil.getAlignmentUniqueName(primary) + "#1");
+		supp1.setReadName(EvidenceIDHelper.getAlignmentUniqueName(primary) + "#1");
 		supp1.setReadBases(B("GT"));
 		supp1.setBaseQualities(B("23"));
 		supp1.setMappingQuality(17);
 		supp1.setAttribute("NM", 9);
 		
 		SAMRecord supp2 = Read(0, 20, "1M");
-		supp2.setReadName(SAMRecordUtil.getAlignmentUniqueName(primary) + "#0");
+		supp2.setReadName(EvidenceIDHelper.getAlignmentUniqueName(primary) + "#0");
 		supp2.setReadBases(B("C"));
 		supp2.setBaseQualities(B("1"));
 		supp2.setMappingQuality(19);

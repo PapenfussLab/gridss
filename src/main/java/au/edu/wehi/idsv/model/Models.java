@@ -11,13 +11,10 @@ import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.BreakpointSummary;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.LinearGenomicCoordinate;
-import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.graph.MaximumCliqueIntervalGraph;
 import au.edu.wehi.idsv.graph.MaximumCliqueIntervalGraph.Node;
 import au.edu.wehi.idsv.graph.ScalingHelper;
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import au.edu.wehi.idsv.util.MathUtil;
-import htsjdk.samtools.SAMRecord;
 
 /**
  * variant/reference Log-likelihood statistical model

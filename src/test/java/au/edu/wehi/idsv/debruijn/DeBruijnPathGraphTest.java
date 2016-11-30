@@ -17,7 +17,6 @@ import com.google.common.collect.ImmutableSortedSet;
 
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.util.AlgorithmRuntimeSafetyLimitExceededException;
-import au.edu.wehi.idsv.visualisation.NontrackingSubgraphTracker;
 import au.edu.wehi.idsv.visualisation.StaticDeBruijnPathGraphGexfExporter;
 
 

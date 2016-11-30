@@ -19,7 +19,6 @@ import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
-import htsjdk.samtools.reference.ReferenceSequenceFileWalker;
 
 
 public class SAMRecordUtilTest extends TestHelper {
@@ -641,23 +640,6 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertEquals(4, (int)read1.getIntegerAttribute("IH"));
 		assertEquals(4, (int)read2.getIntegerAttribute("IH"));
 		assertEquals(4, (int)read3.getIntegerAttribute("IH"));
-	}
-	@Test
-	public void getAlignmentUniqueName_should_use_hash_separated_SA_tag_without_mapq_nm() {
-		SAMRecord r = Read(0, 3, "4S5M");
-		r.setReadName("readName");
-		r.setMappingQuality(6);
-		r.setReadNegativeStrandFlag(true);
-		r.setSecondOfPairFlag(true);
-		r.setReadPairedFlag(true);
-		assertEquals("readName#1#polyA#3#-#4S5M", SAMRecordUtil.getAlignmentUniqueName(r));
-	}
-	@Test
-	public void getAlignmentUniqueName_should_read_name_segment_index() {
-		SAMRecord r = Read(0, 3, "4S5M");
-		r.setReadName("readName");
-		r.setReadUnmappedFlag(true);
-		assertEquals("readName#0", SAMRecordUtil.getAlignmentUniqueName(r));
 	}
 	@Test
 	public void lowMapqToUnmapped_should_convert_below_threshold() {

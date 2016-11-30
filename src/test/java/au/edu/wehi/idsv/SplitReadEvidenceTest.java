@@ -1,9 +1,11 @@
 package au.edu.wehi.idsv;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -13,9 +15,6 @@ import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.TemporaryFolder;
 
-import com.google.common.io.Files;
-
-import au.edu.wehi.idsv.configuration.GridssConfiguration;
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
 import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;

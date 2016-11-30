@@ -8,7 +8,6 @@ import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.LinearGenomicCoordinate;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.SingleReadEvidence;
-import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;

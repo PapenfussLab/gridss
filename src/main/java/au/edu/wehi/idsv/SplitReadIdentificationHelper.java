@@ -53,7 +53,7 @@ public class SplitReadIdentificationHelper {
 			name = getOriginatingAlignmentUniqueName(r);
 		} else {
 			offset = 0;
-			name = SAMRecordUtil.getAlignmentUniqueName(r);
+			name = EvidenceIDHelper.getAlignmentUniqueName(r);
 		}
 		List<FastqRecord> list = new ArrayList<>(2);
 		if (startClipLength > 0) {

@@ -13,6 +13,7 @@ import gridss.ComputeSamTags;
 import htsjdk.samtools.CigarOperator;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.util.Log;
 
 /**
@@ -118,11 +119,6 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 	public BreakpointSummary getBreakendSummary() {
 		return (BreakpointSummary)super.getBreakendSummary();
 	}
-	@Override
-	protected void buildEvidenceID(StringBuilder sb) {
-		super.buildEvidenceID(sb);
-		sb.append(getBreakendSummary().direction == BreakendDirection.Forward ? "(F)" : "(B)");
-	}
 
 	@Override
 	public int getRemoteMapq() {
@@ -170,16 +166,19 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 		throw new NotImplementedException("asRemote() should no longer be required");
 	}
 	@Override
+	protected String getUncachedEvidenceID() {
+		return EvidenceIDHelper.getEvidenceID(this);
+	}
+	@Override
 	public String getRemoteEvidenceID() {
-		SAMRecord r = this.getSAMRecord();
-		return SAMRecordUtil.getAlignmentUniqueName(
-				r.getReadName(),
-				SAMRecordUtil.getSegmentIndex(r),
-				false,
-				remoteAlignment.rname,
-				remoteAlignment.pos,
-				remoteAlignment.isNegativeStrand,
-				remoteAlignment.cigar.toString()
-				);
+		SAMRecord remote = this.getSAMRecord().deepCopy();
+		remote.setReferenceName(remoteAlignment.rname);
+		remote.setAlignmentStart(remoteAlignment.pos);
+		remote.setReadUnmappedFlag(false);
+		remote.setReadNegativeStrandFlag(false);
+		remote.setCigar(remoteAlignment.cigar);
+		remote.setAttribute(SAMTag.SA.name(), new ChimericAlignment(this.getSAMRecord()));
+		SplitReadEvidence remoteEvidence = SplitReadEvidence.create(source, remote).get(0);
+		return EvidenceIDHelper.getEvidenceID(remoteEvidence);
 	}
 }

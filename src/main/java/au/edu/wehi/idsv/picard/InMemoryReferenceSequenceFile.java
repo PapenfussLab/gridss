@@ -1,6 +1,5 @@
 package au.edu.wehi.idsv.picard;
 
-import java.io.IOException;
 import java.util.Arrays;
 
 import htsjdk.samtools.SAMSequenceDictionary;

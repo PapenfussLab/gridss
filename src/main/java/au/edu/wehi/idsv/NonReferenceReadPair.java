@@ -248,16 +248,13 @@ public abstract class NonReferenceReadPair implements DirectedEvidence {
 		if (remote == null || remote.getReadUnmappedFlag()) return -1;
 		return remote.getReferenceIndex();
 	}
-	public static String getEvidenceID(SAMRecord record) {
-		return SAMRecordUtil.getAlignmentUniqueName(record);
-	}
 	public String getRemoteEvidenceID() {
-		return SAMRecordUtil.getAlignmentUniqueName(remote);
+		return EvidenceIDHelper.getAlignmentUniqueName(remote);
 	}
 	@Override
 	public String getEvidenceID() {
 		if (evidenceID == null) {
-			evidenceID = getEvidenceID(local);
+			evidenceID = EvidenceIDHelper.getEvidenceID(this);
 		}
 		return evidenceID;
 	}

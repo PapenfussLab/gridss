@@ -5,7 +5,6 @@ import java.util.Collections;
 import java.util.List;
 
 import au.edu.wehi.idsv.sam.CigarUtil;
-import htsjdk.samtools.Cigar;
 import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
 
@@ -141,18 +140,6 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 				getLocalMapq(),
 				getRemoteMapq());
 	}
-	
-	@Override
-	protected void buildEvidenceID(StringBuilder sb) {
-		super.buildEvidenceID(sb);
-		sb.append("(");
-		sb.append(indelCigarElementOffset);
-		sb.append(",");
-		sb.append(new Cigar(indel));
-		sb.append(",");
-		sb.append(getBreakendSummary().direction.toChar());
-		sb.append(")");
-	}
 
 	@Override
 	public int getRemoteMapq() {
@@ -167,6 +154,18 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 	@Override
 	public String getRemoteEvidenceID() {
 		return remote.getEvidenceID();
+	}
+	
+	@Override
+	protected String getUncachedEvidenceID() {
+		return EvidenceIDHelper.getEvidenceID(this);
+	}
+	/**
+	 * Identifies which indel in the read this evidence corresponds to.
+	 * @return zero-based offset in the read CIGAR operator list of this indel
+	 */
+	public int getIndelCigarOffset() {
+		return indelCigarElementOffset;
 	}
 
 }
