@@ -32,9 +32,11 @@ public class DirectedEvidenceIterator implements CloseableIterator<DirectedEvide
 	}
 	private void addToBuffer(SAMRecord record) {
 		buffer.addAll(SingleReadEvidence.createEvidence(source, record));
-		NonReferenceReadPair nrrp = NonReferenceReadPair.create(source, record);
-		if (nrrp != null) {
-			buffer.add(nrrp);
+		if (!record.getSupplementaryAlignmentFlag()) {
+			NonReferenceReadPair nrrp = NonReferenceReadPair.create(source, record);
+			if (nrrp != null) {
+				buffer.add(nrrp);
+			}
 		}
 	}
 

@@ -61,4 +61,11 @@ public class DirectedEvidenceIteratorTest extends TestHelper {
 		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), null));
 		assertEquals(0, list.size());
 	}
+	@Test
+	public void should_not_call_discordant_pair_for_supplementary_alignments() {
+		SAMRecord r = DP(0, 1, "10M", true, 1, 10, "10M", false)[0];
+		r.setSupplementaryAlignmentFlag(true);
+		ImmutableList<DirectedEvidence> list = ImmutableList.copyOf(new DirectedEvidenceIterator(ImmutableList.of(r).iterator(), permissiveSES()));
+		assertEquals(0, list.size());
+	}
 }

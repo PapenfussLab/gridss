@@ -891,7 +891,7 @@ public class SAMRecordUtil {
 		for (int i = 0; i < list.size(); i++) {
 			SAMRecord r = list.get(i);
 			if (tags.contains(SAMTag.IH)) {
-				// TODO: how does this differ from NH?
+				// TODO: how does this differ from NH? Does NH count unreported alignments? 
 				r.setAttribute(SAMTag.IH.name(), list.size());
 			}
 			if (tags.contains(SAMTag.HI)) {
