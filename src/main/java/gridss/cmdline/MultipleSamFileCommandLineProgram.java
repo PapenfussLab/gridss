@@ -1,4 +1,4 @@
-package gridss;
+package gridss.cmdline;
 
 import java.io.File;
 import java.io.IOException;
@@ -36,8 +36,8 @@ import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import picard.sam.CreateSequenceDictionary;
 
-public abstract class GridssCommandLineProgram extends ReferenceCommandLineProgram {
-	private static final Log log = Log.getInstance(GridssCommandLineProgram.class);
+public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommandLineProgram {
+	private static final Log log = Log.getInstance(MultipleSamFileCommandLineProgram.class);
 	@Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Coordinate-sorted input BAM file.")
     public List<File> INPUT;
 	@Option(shortName="IC", doc="Input category. Variant calling evidence is reported from category 1 (default) to the maximum category specified. "
@@ -66,6 +66,8 @@ public abstract class GridssCommandLineProgram extends ReferenceCommandLineProgr
 			+ " Note that I/O threads are not included in this worker thread count so CPU usage can be higher than the number of worker thread.",
     		shortName="THREADS")
     public int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
+	
+	private List<SAMEvidenceSource> samEvidence = null;
     private SAMEvidenceSource constructSamEvidenceSource(File file, int category, int minFragSize, int maxFragSize) {
     	if (maxFragSize > 0) {
     		return new SAMEvidenceSource(getContext(), file, category, minFragSize, maxFragSize);
@@ -81,21 +83,23 @@ public abstract class GridssCommandLineProgram extends ReferenceCommandLineProgr
     	if (obj == null) return defaultValue;
     	return obj;
     }
-    public List<SAMEvidenceSource> createSamEvidenceSources() {
-    	// GRIDSS uses zero based categories internally - transform arg
-    	if (INPUT_CATEGORY == null || INPUT_CATEGORY.size() == 0) {
-    		INPUT_CATEGORY = INPUT.stream().map(x -> 0).collect(Collectors.toList());
-		} else {
-			INPUT_CATEGORY = INPUT_CATEGORY.stream().map(x -> x != null ? x - 1 : 0).collect(Collectors.toList());
-		}
-    	
-    	List<SAMEvidenceSource> samEvidence = Lists.newArrayList();
-    	for (int i = 0; i < INPUT.size(); i++) {
-    		samEvidence.add(constructSamEvidenceSource(
-    				getOffset(INPUT, i, null),
-    				getOffset(INPUT_CATEGORY, i, 0),
-    				getOffset(INPUT_MIN_FRAGMENT_SIZE, i, 0),
-    				getOffset(INPUT_MAX_FRAGMENT_SIZE, i, 0)));
+    public List<SAMEvidenceSource> getSamEvidenceSources() {
+    	if (samEvidence == null) {
+	    	// GRIDSS uses zero based categories internally - transform arg
+	    	if (INPUT_CATEGORY == null || INPUT_CATEGORY.size() == 0) {
+	    		INPUT_CATEGORY = INPUT.stream().map(x -> 0).collect(Collectors.toList());
+			} else {
+				INPUT_CATEGORY = INPUT_CATEGORY.stream().map(x -> x != null ? x - 1 : 0).collect(Collectors.toList());
+			}
+	    	
+	    	samEvidence = Lists.newArrayList();
+	    	for (int i = 0; i < INPUT.size(); i++) {
+	    		samEvidence.add(constructSamEvidenceSource(
+	    				getOffset(INPUT, i, null),
+	    				getOffset(INPUT_CATEGORY, i, 0),
+	    				getOffset(INPUT_MIN_FRAGMENT_SIZE, i, 0),
+	    				getOffset(INPUT_MAX_FRAGMENT_SIZE, i, 0)));
+	    	}
     	}
     	return samEvidence;
     }

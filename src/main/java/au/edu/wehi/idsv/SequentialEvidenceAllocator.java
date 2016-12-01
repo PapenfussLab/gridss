@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import java.util.ArrayDeque;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -26,39 +27,37 @@ import htsjdk.samtools.SAMRecord;
  * @author Daniel Cameron
  *
  */
-public class SequentialEvidenceAllocator implements Iterator<StructuralVariationCallBuilder>, TrackedBuffer {
+public class SequentialEvidenceAllocator implements Iterator<SequentialEvidenceAllocator.VariantEvidenceSupport>, TrackedBuffer {
 	private final ProcessingContext context;
 	private final int maxCallRange;
 	private final boolean assignEvidenceToSingleBreakpoint;
 	private final PeekingIterator<? extends DirectedEvidence> evidenceIt;
 	private final Iterator<? extends VariantContextDirectedEvidence> callIt;
-	private final ArrayDeque<ActiveVariant> variantBuffer = new ArrayDeque<ActiveVariant>();
-	private final Map<String, ActiveVariant> bufferedVariantId = new HashMap<String, ActiveVariant>();
-	private class ActiveVariant {
-		public final String id;
-		public final String parid;
-		public final String eventid;
-		public final long startLocation;
+	private final ArrayDeque<VariantEvidenceSupport> variantBuffer = new ArrayDeque<VariantEvidenceSupport>();
+	private final Map<String, VariantEvidenceSupport> bufferedVariantId = new HashMap<String, VariantEvidenceSupport>();
+	public class VariantEvidenceSupport {
+		private final String id;
+		private final String parid;
+		private final String eventid;
+		private final long startLocation;
 		//public final long endLocation;
-		public final BreakendSummary location;
-		public final float score;
-		private final StructuralVariationCallBuilder builder;
-		public ActiveVariant(VariantContextDirectedEvidence call) {
+		private final BreakendSummary location;
+		private final float score;
+		public final List<DirectedEvidence> support = new ArrayList<>();
+		public final VariantContextDirectedEvidence variant;
+		private VariantEvidenceSupport(VariantContextDirectedEvidence call) {
+			this.variant = call;
 			this.id = call.hasID() ? call.getID() : null;
 			this.parid = call.hasID() ? (String)call.getAttribute(VcfSvConstants.PARTNER_BREAKEND_ID_KEY, null) : null;
 			this.eventid = (String)call.getAttribute(VcfSvConstants.BREAKEND_EVENT_ID_KEY, null);
-			this.builder = new StructuralVariationCallBuilder(context, call);
 			this.score = (float)call.getPhredScaledQual();
 			assert(this.score >= 0); // variant must have score set
 			this.location = call.getBreakendSummary();
 			this.startLocation = context.getLinear().getStartLinearCoordinate(this.location);
 			//this.endLocation = context.getLinear().getEndLinearCoordinate(this.location);
 		}
-		public void attributeEvidence(DirectedEvidence e) {
-			builder.addEvidence(e);
-		}
-		public StructuralVariationCallBuilder getBuilder() {
-			return builder;
+		private void attributeEvidence(DirectedEvidence e) {
+			support.add(e);
 		}
 		public String toString() {
 			return String.format("%s %f %s", location, score, id);
@@ -70,8 +69,8 @@ public class SequentialEvidenceAllocator implements Iterator<StructuralVariation
 	 * is required to ensure both sides of paired evidence is assigned to corresponding
 	 * breakends of the same event. 
 	 */
-	private static final Ordering<ActiveVariant> ByScoreAscPositionDesc = new Ordering<ActiveVariant>() {
-		public int compare(ActiveVariant o1, ActiveVariant o2) {
+	private static final Ordering<VariantEvidenceSupport> ByScoreAscPositionDesc = new Ordering<VariantEvidenceSupport>() {
+		public int compare(VariantEvidenceSupport o1, VariantEvidenceSupport o2) {
 			ComparisonChain chain = ComparisonChain.start()
 			        .compare(o1.score, o2.score);
 			if (o1.location instanceof BreakpointSummary && o2.location instanceof BreakpointSummary) {
@@ -106,7 +105,7 @@ public class SequentialEvidenceAllocator implements Iterator<StructuralVariation
 		this.assignEvidenceToSingleBreakpoint = assignEvidenceToSingleBreakpoint;
 	}
 	private void buffer(VariantContextDirectedEvidence variant) {
-		ActiveVariant av = new ActiveVariant(variant);
+		VariantEvidenceSupport av = new VariantEvidenceSupport(variant);
 		variantBuffer.add(av);
 		if (StringUtils.isNotBlank(av.id)) {
 			bufferedVariantId.put(av.id, av);
@@ -127,19 +126,19 @@ public class SequentialEvidenceAllocator implements Iterator<StructuralVariation
 		return hasNext;
 	}
 	@Override
-	public StructuralVariationCallBuilder next() {
+	public VariantEvidenceSupport next() {
 		if (!hasNext()) throw new NoSuchElementException();
 		if (variantBuffer.isEmpty()) {
 			buffer(callIt.next());
 		}
-		ActiveVariant variant = variantBuffer.peek();
+		VariantEvidenceSupport variant = variantBuffer.peek();
 		bufferVariantsBefore(variant.startLocation + 2 * (maxCallRange + 1));
 		processEvidenceBefore(variant.startLocation + maxCallRange + 1);
 		variant = variantBuffer.poll();
 		if (StringUtils.isNotBlank(variant.id)) {
 			bufferedVariantId.remove(variant.id);
 		}
-		return variant.getBuilder();
+		return variant;
 	}
 	private void processEvidenceBefore(long position) {
 		while (evidenceIt.hasNext() && context.getLinear().getStartLinearCoordinate(evidenceIt.peek().getBreakendSummary()) - context.getVariantCallingParameters().breakendMargin <= position) {
@@ -157,8 +156,8 @@ public class SequentialEvidenceAllocator implements Iterator<StructuralVariation
 		bs = context.getVariantCallingParameters().withMargin(bs);
 		long endLocation = context.getLinear().getEndLinearCoordinate(bs);
 		if (assignEvidenceToSingleBreakpoint) {
-			ActiveVariant best = null;
-			for (ActiveVariant v : variantBuffer) {
+			VariantEvidenceSupport best = null;
+			for (VariantEvidenceSupport v : variantBuffer) {
 				if (v.startLocation > endLocation) break;
 				if (v.location.overlaps(bs)) {
 					if (best == null || ByScoreAscPositionDesc.compare(v, best) > 0) { 
@@ -167,7 +166,7 @@ public class SequentialEvidenceAllocator implements Iterator<StructuralVariation
 				}
 			}
 			if (best != null) {
-				ActiveVariant mate = bufferedVariantId.get(best.parid);
+				VariantEvidenceSupport mate = bufferedVariantId.get(best.parid);
 				if (mate != null && mate.location.overlaps(bs) && allocateToHighBreakend(evidence)) {
 					// special case: matches both sides of the breakpoint 
 					mate.attributeEvidence(evidence);
@@ -177,7 +176,7 @@ public class SequentialEvidenceAllocator implements Iterator<StructuralVariation
 				//evidenceCalled = true;
 			}
 		} else {
-			for (ActiveVariant v : variantBuffer) {
+			for (VariantEvidenceSupport v : variantBuffer) {
 				if (v.startLocation > endLocation) break;
 				if (v.location.overlaps(bs)) {
 					v.attributeEvidence(evidence);

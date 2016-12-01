@@ -151,7 +151,7 @@ public class SAMFileUtil {
 				writer.setProgressLogger(new ProgressLogger(log, 10000000));
 		    	wit = collection.iterator();
 		    	if (Defaults.SANITY_CHECK_ITERATORS) {
-					wit = new AutoClosingIterator<SAMRecord>(new OrderAssertingIterator<SAMRecord>(wit, sortComparator), ImmutableList.<Closeable>of(wit));
+					wit = new AutoClosingIterator<SAMRecord>(new OrderAssertingIterator<SAMRecord>(wit, sortComparator), wit);
 				}
 				while (wit.hasNext()) {
 					writer.addAlignment(wit.next());

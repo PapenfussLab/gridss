@@ -14,6 +14,7 @@ import au.edu.wehi.idsv.SplitReadRealigner;
 import au.edu.wehi.idsv.alignment.ExternalProcessFastqAligner;
 import au.edu.wehi.idsv.alignment.FastqAligner;
 import au.edu.wehi.idsv.alignment.SynchronisedFastqAligner;
+import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SamReaderFactory;
 import htsjdk.samtools.util.IOUtil;

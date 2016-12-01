@@ -8,6 +8,7 @@ import java.util.concurrent.ExecutorService;
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
+import gridss.cmdline.MultipleSamFileCommandLineProgram;
 import htsjdk.samtools.util.IOUtil;
 import picard.cmdline.CommandLineProgramProperties;
 import picard.cmdline.Option;
@@ -18,7 +19,7 @@ import picard.cmdline.StandardOptionDefinitions;
         		+ "reads supporting putative structural variants.",
         usageShort = "Assembles breakend contigs."
 )
-public class AssembleBreakends extends GridssCommandLineProgram {
+public class AssembleBreakends extends MultipleSamFileCommandLineProgram {
     @Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Output file containing subset of input", optional=false)
     public File OUTPUT;
 	public static void main(String[] argv) {
@@ -28,7 +29,7 @@ public class AssembleBreakends extends GridssCommandLineProgram {
 	protected int doWork(ExecutorService threadpool) throws IOException {
 		IOUtil.assertFileIsWritable(OUTPUT);
 		ProcessingContext pc = getContext();
-		List<SAMEvidenceSource> sources = createSamEvidenceSources();
+		List<SAMEvidenceSource> sources = getSamEvidenceSources();
     	AssemblyEvidenceSource assembler = new AssemblyEvidenceSource(pc, sources, OUTPUT);
     	assembler.assembleBreakends(threadpool);
     	return 0;

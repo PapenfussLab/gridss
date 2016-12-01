@@ -133,7 +133,7 @@ public class VariantCaller implements Closeable {
 				return IdsvVariantContext.create(processContext, null, arg);
 			}
 		});
-		return new AutoClosingIterator<IdsvVariantContext>(idsvIt, toClose);
+		return new AutoClosingIterator<IdsvVariantContext>(idsvIt, vcfReader, it);
 	}
 	private static void writeMaximalCliquesToVcf(ProcessingContext processContext, Iterator<VariantContextDirectedEvidence> it, File vcf) {
 		final ProgressLogger writeProgress = new ProgressLogger(log);

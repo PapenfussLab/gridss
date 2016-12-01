@@ -1,4 +1,4 @@
-package gridss;
+package gridss.cmdline;
 
 import java.io.FileNotFoundException;
 

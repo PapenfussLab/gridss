@@ -40,7 +40,7 @@ public class AutoClosingMergedIterator<T> implements Closeable, CloseableIterato
 				AutoClosingIterator<T> it = new AutoClosingIterator<T>(input);
 				if (Defaults.SANITY_CHECK_ITERATORS) {
 					CountingIterator<T> cit = new CountingIterator<T>(it);
-					it = new AutoClosingIterator<T>(new OrderAssertingIterator<T>(cit, comparator), ImmutableList.<Closeable>of(it));
+					it = new AutoClosingIterator<T>(new OrderAssertingIterator<T>(cit, comparator), it);
 					counts.add(cit);
 				}
 				return it;

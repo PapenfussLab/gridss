@@ -21,6 +21,7 @@ import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SingleReadEvidence;
 import au.edu.wehi.idsv.VariantCaller;
+import gridss.cmdline.MultipleSamFileCommandLineProgram;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
@@ -40,7 +41,7 @@ import picard.cmdline.StandardOptionDefinitions;
         usage = "Calls structural variations from one or more SAM/BAM input files.",  
         usageShort = "Calls structural variations from NGS sequencing data"
 )
-public class CallVariants extends GridssCommandLineProgram {
+public class CallVariants extends MultipleSamFileCommandLineProgram {
 	private static final Log log = Log.getInstance(CallVariants.class);
 	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="VCF structural variation calls.")
     public File OUTPUT;
@@ -136,7 +137,7 @@ public class CallVariants extends GridssCommandLineProgram {
 	@Override
 	protected int doWork(ExecutorService threadpool) throws IOException, InterruptedException, ExecutionException {
 		IOUtil.assertFileIsWritable(OUTPUT);
-		List<SAMEvidenceSource> samEvidence = createSamEvidenceSources();
+		List<SAMEvidenceSource> samEvidence = getSamEvidenceSources();
     	extractEvidence(threadpool, samEvidence);
 
     	File assemblyFile = getContext().getFileSystemContext().getAssembly(OUTPUT);

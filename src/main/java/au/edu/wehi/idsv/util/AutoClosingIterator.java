@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv.util;
 
 import java.io.Closeable;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
@@ -22,12 +23,9 @@ public class AutoClosingIterator<T> implements Closeable, CloseableIterator<T> {
 	private Iterator<? extends T> underlying;
 	private List<? extends Closeable> alsoClose;
 	private boolean closed = false;
-	public AutoClosingIterator(Iterator<? extends T> it) {
-		this(it, ImmutableList.<Closeable>of());
-	}
-	public AutoClosingIterator(Iterator<? extends T> it, Iterable<? extends Closeable> alsoClose) {
+	public AutoClosingIterator(Iterator<? extends T> it, Closeable... alsoClose) {
 		this.underlying = it;
-		this.alsoClose = ImmutableList.copyOf(alsoClose);
+		this.alsoClose = alsoClose == null ? Collections.emptyList() : ImmutableList.copyOf(alsoClose);
 	}
 	@Override
 	public void close() {

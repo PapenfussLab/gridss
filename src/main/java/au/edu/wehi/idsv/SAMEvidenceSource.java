@@ -22,9 +22,9 @@ import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
 import gridss.ComputeSamTags;
 import gridss.ExtractSVReads;
-import gridss.ReferenceCommandLineProgram;
 import gridss.SoftClipsToSplitReads;
 import gridss.analysis.CollectGridssMetrics;
+import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
@@ -183,14 +183,14 @@ public class SAMEvidenceSource extends EvidenceSource {
 		final BreakendSummary bsf = new BreakendSummary(interval.referenceIndex, BreakendDirection.Forward, interval.start, interval.start, interval.end);
 		final BreakendSummary bsb = new BreakendSummary(interval.referenceIndex, BreakendDirection.Backward, interval.start, interval.start, interval.end);
 		eit = Iterators.filter(eit, e -> bsf.overlaps(e.getBreakendSummary()) || bsb.overlaps(e.getBreakendSummary()));
-		return new AutoClosingIterator<>(eit, ImmutableList.of(reader, it));
+		return new AutoClosingIterator<>(eit, reader, it);
 	}
 	public CloseableIterator<DirectedEvidence> iterator() {
 		SamReader reader = getReader();
 		SAMRecordIterator it = reader.iterator();
 		it.assertSorted(SortOrder.coordinate);
 		Iterator<DirectedEvidence> eit = asEvidence(it);
-		return new AutoClosingIterator<>(eit, ImmutableList.of(reader, it));
+		return new AutoClosingIterator<>(eit, reader, it);
 	}
 	private SamReader getReader() {
 		File svFile = getContext().getFileSystemContext().getSVBam(input);

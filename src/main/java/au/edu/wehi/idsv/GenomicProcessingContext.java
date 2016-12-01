@@ -185,7 +185,7 @@ public class GenomicProcessingContext implements Closeable {
 			rawIterator.assertSorted(expectedOrder);
 		}
 		// wrap so we're happy to close as many times as we want
-		CloseableIterator<SAMRecord> safeIterator = new AutoClosingIterator<SAMRecord>(rawIterator,  ImmutableList.<Closeable>of(reader));
+		CloseableIterator<SAMRecord> safeIterator = new AutoClosingIterator<SAMRecord>(rawIterator,  reader);
 		return applyCommonSAMRecordFilters(safeIterator);
 	}
 
@@ -218,7 +218,7 @@ public class GenomicProcessingContext implements Closeable {
 		if (filterDuplicates) {
 			filters.add(new DuplicateReadFilter());
 		}
-		return new AutoClosingIterator<SAMRecord>(new FilteringSamIterator(iterator, new AggregateFilter(filters)), ImmutableList.<Closeable>of(iterator));
+		return new AutoClosingIterator<SAMRecord>(new FilteringSamIterator(iterator, new AggregateFilter(filters)), iterator);
 	}
 
 	public FastqWriterFactory getFastqWriterFactory() {

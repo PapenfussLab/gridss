@@ -2,9 +2,13 @@ package au.edu.wehi.idsv;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Executor;
+import java.util.stream.Collectors;
 
+import au.edu.wehi.idsv.SequentialEvidenceAllocator.VariantEvidenceSupport;
 import au.edu.wehi.idsv.util.ParallelTransformIterator;
+import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 import htsjdk.samtools.util.Log;
 
@@ -14,7 +18,7 @@ import htsjdk.samtools.util.Log;
  * @author Daniel Cameron
  *
  */
-public class SequentialEvidenceAnnotator extends ParallelTransformIterator<StructuralVariationCallBuilder, VariantContextDirectedEvidence> implements TrackedBuffer {
+public class SequentialEvidenceAnnotator extends ParallelTransformIterator<VariantEvidenceSupport, VariantContextDirectedEvidence> implements TrackedBuffer {
 	private static final Log log = Log.getInstance(SequentialEvidenceAnnotator.class);
 	/**
 	 * Creates an ordered evidence annotation
@@ -35,14 +39,32 @@ public class SequentialEvidenceAnnotator extends ParallelTransformIterator<Struc
 			int lookahead,
 			Executor threadpool) {
 		super(new SequentialEvidenceAllocator(context, calls, evidence, maxCallWindowSize, assignEvidenceToSingleBreakpoint),
-			call -> make(call), lookahead, threadpool);
+			call -> make(context, call), lookahead, threadpool);
 	}
-	private static VariantContextDirectedEvidence make(StructuralVariationCallBuilder builder) {
+	private static VariantContextDirectedEvidence make(ProcessingContext context, VariantEvidenceSupport ves) {
 		try {
+			StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(context, ves.variant);
+			Object eid = ves.variant.getAttribute(VcfAttributes.EVIDENCE_ID.attribute());
+			if (eid == null) {
+				for (DirectedEvidence e : ves.support) {
+					builder.addEvidence(e);
+				}
+			} else {
+				// only add evidence that has been assigned
+				Set<String> allocatedEvidence = ves.variant.getAttributeAsList(VcfAttributes.EVIDENCE_ID.attribute())
+						.stream()
+						.map(s -> (String)s)
+						.collect(Collectors.toSet());
+				for (DirectedEvidence e : ves.support) {
+					if (allocatedEvidence.contains(e.getEvidenceID())) {
+						builder.addEvidence(e);
+					}
+				}
+			}
 			VariantContextDirectedEvidence evidence = builder.make();
 			return evidence;
 		} catch (Exception e) {
-			log.error("Error annotating ", builder.getSourceID());
+			log.error("Error annotating ", ves.variant.getID());
 			throw e;
 		}
 	}
