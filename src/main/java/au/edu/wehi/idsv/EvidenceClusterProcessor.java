@@ -37,12 +37,11 @@ public class EvidenceClusterProcessor extends AbstractIterator<VariantContextDir
 		this.underlying = new AutoClosingIterator<DirectedEvidence>(evidence);
 		// Start each on their own thread
 		DuplicatingIterable<DirectedEvidence> dib = new DuplicatingIterable<DirectedEvidence>(4, this.underlying, EVIDENCE_BUFFER_SIZE);
-		SequentialIdGenerator idgen = new SequentialIdGenerator("gridss");
 		this.threads = new MaximalCliqueIteratorRunnable[] {
-			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Forward, BreakendDirection.Forward, idgen),
-			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Forward, BreakendDirection.Backward, idgen),
-			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Backward, BreakendDirection.Forward, idgen),
-			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Backward, BreakendDirection.Backward, idgen)
+			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Forward, BreakendDirection.Forward, new SequentialIdGenerator("gridssff")),
+			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Forward, BreakendDirection.Backward, new SequentialIdGenerator("gridssfb")),
+			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Backward, BreakendDirection.Forward, new SequentialIdGenerator("gridssbf")),
+			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Backward, BreakendDirection.Backward, new SequentialIdGenerator("gridssbb"))
 		};
 		for (MaximalCliqueIteratorRunnable r : threads) {
 			r.setUncaughtExceptionHandler(handler);
