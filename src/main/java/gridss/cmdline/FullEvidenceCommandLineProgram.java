@@ -8,12 +8,12 @@ import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.DirectedEvidenceOrder;
-import au.edu.wehi.idsv.EvidenceSource;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.validation.OrderAssertingIterator;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
 import htsjdk.samtools.util.CloseableIterator;
+import picard.cmdline.CommandLineProgram;
 import picard.cmdline.Option;
 
 public abstract class FullEvidenceCommandLineProgram extends MultipleSamFileCommandLineProgram {
@@ -26,6 +26,9 @@ public abstract class FullEvidenceCommandLineProgram extends MultipleSamFileComm
 		}
 		return assemblyEvidenceSource;
 	}
+	public void setAssemblySource(AssemblyEvidenceSource source) {
+		assemblyEvidenceSource = source;
+    }
 	public CloseableIterator<DirectedEvidence> getEvidenceIterator() {
 		CloseableIterator<DirectedEvidence> evidenceIt;
 		boolean assemblyOnly = getContext().getVariantCallingParameters().callOnlyAssemblies;
@@ -41,25 +44,20 @@ public abstract class FullEvidenceCommandLineProgram extends MultipleSamFileComm
 		}
 		return evidenceIt;
 	}
-	/**
-	 * Maximum distance between the SAM alignment location of evidence, and the extrema of the
-	 * breakend position supported by that evidence. 
-	 * @return maximum order-of-order distance between evidence ordered by SAM alignment position and the breakend start position 
-	 */
-	public int maximumWindowSize() {
-		int maxSize = 0;
-		for (EvidenceSource source : getSamEvidenceSources()) {
-			SAMEvidenceSource samSource = (SAMEvidenceSource)source;
-			maxSize = Math.max(samSource.getMaxConcordantFragmentSize(), Math.max(samSource.getMaxReadLength(), samSource.getMaxReadMappedLength()));
-		}
-		maxSize = Math.max(maxSize, getAssemblySource().getMaxAssemblyLength()) + getContext().getVariantCallingParameters().maxBreakendHomologyLength;
-		return maxSize + 2 * (getContext().getVariantCallingParameters().breakendMargin + 1);
-	}
 	@Override
 	protected String[] customCommandLineValidation() {
 		if (ASSEMBLY == null || !ASSEMBLY.exists()) {
             return new String[]{"Missing ASSEMBLY file"};
         }
 		return super.customCommandLineValidation();
+	}
+	@Override
+	public void copyInputs(CommandLineProgram cmd) {
+		super.copyInputs(cmd);
+		if (cmd instanceof FullEvidenceCommandLineProgram) {
+			FullEvidenceCommandLineProgram prog = (FullEvidenceCommandLineProgram) cmd;
+			prog.ASSEMBLY = ASSEMBLY;
+			prog.assemblyEvidenceSource = assemblyEvidenceSource;
+		}
 	}
 }

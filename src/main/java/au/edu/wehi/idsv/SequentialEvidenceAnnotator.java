@@ -2,13 +2,10 @@ package au.edu.wehi.idsv;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Executor;
-import java.util.stream.Collectors;
 
 import au.edu.wehi.idsv.SequentialEvidenceAllocator.VariantEvidenceSupport;
 import au.edu.wehi.idsv.util.ParallelTransformIterator;
-import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.visualisation.TrackedBuffer;
 import htsjdk.samtools.util.Log;
 
@@ -44,22 +41,8 @@ public class SequentialEvidenceAnnotator extends ParallelTransformIterator<Varia
 	private static VariantContextDirectedEvidence make(ProcessingContext context, VariantEvidenceSupport ves) {
 		try {
 			StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(context, ves.variant);
-			Object eid = ves.variant.getAttribute(VcfAttributes.EVIDENCE_ID.attribute());
-			if (eid == null) {
-				for (DirectedEvidence e : ves.support) {
-					builder.addEvidence(e);
-				}
-			} else {
-				// only add evidence that has been assigned
-				Set<String> allocatedEvidence = ves.variant.getAttributeAsList(VcfAttributes.EVIDENCE_ID.attribute())
-						.stream()
-						.map(s -> (String)s)
-						.collect(Collectors.toSet());
-				for (DirectedEvidence e : ves.support) {
-					if (allocatedEvidence.contains(e.getEvidenceID())) {
-						builder.addEvidence(e);
-					}
-				}
+			for (DirectedEvidence e : ves.support) {
+				builder.addEvidence(e);
 			}
 			VariantContextDirectedEvidence evidence = builder.make();
 			return evidence;

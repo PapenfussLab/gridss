@@ -10,10 +10,13 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 
 import au.edu.wehi.idsv.DirectEvidenceWindowedSortingIterator;
+import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.IdsvVariantContext;
+import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.VariantContextWindowedSortingIterator;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
+import au.edu.wehi.idsv.util.FileHelper;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
@@ -37,13 +40,13 @@ public abstract class VcfTransformCommandLineProgram extends FullEvidenceCommand
     public File INPUT_VCF;
 	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="VCF structural variation calls.")
     public File OUTPUT_VCF;
-	public abstract CloseableIterator<VariantContextDirectedBreakpoint> iterator(CloseableIterator<VariantContextDirectedBreakpoint> calls);
+	public abstract CloseableIterator<VariantContextDirectedBreakpoint> iterator(CloseableIterator<VariantContextDirectedBreakpoint> calls, ExecutorService threadpool);
 	@Override
-	protected int doWork(ExecutorService threadpool) throws IOException, InterruptedException, ExecutionException {
+	public int doWork(ExecutorService threadpool) throws IOException, InterruptedException, ExecutionException {
 		IOUtil.assertFileIsReadable(ASSEMBLY);
 		IOUtil.assertFileIsReadable(INPUT_VCF);
 		IOUtil.assertFileIsWritable(OUTPUT_VCF);
-		try (CloseableIterator<VariantContextDirectedBreakpoint> it = iterator(getBreakpoints(INPUT_VCF))) {
+		try (CloseableIterator<VariantContextDirectedBreakpoint> it = iterator(getBreakpoints(INPUT_VCF), threadpool)) {
 			saveVcf(OUTPUT_VCF, getAllCalls(INPUT_VCF, it));
 		}
 		return 0;
@@ -54,7 +57,7 @@ public abstract class VcfTransformCommandLineProgram extends FullEvidenceCommand
 		Iterator<IdsvVariantContext> idsvIt = Iterators.transform(it, variant -> IdsvVariantContext.create(getContext(), null, variant));
 		Iterator<VariantContextDirectedBreakpoint> bpit = Iterators.filter(idsvIt, VariantContextDirectedBreakpoint.class);
 		// resort by evidence start
-		bpit = new DirectEvidenceWindowedSortingIterator<>(getContext(), maximumWindowSize(), bpit);
+		bpit = new DirectEvidenceWindowedSortingIterator<>(getContext(), SAMEvidenceSource.maximumWindowSize(getContext(), getSamEvidenceSources(), getAssemblySource()), bpit);
 		return new AutoClosingIterator<VariantContextDirectedBreakpoint>(bpit, it, vcfReader);
 	}
 	public Iterator<IdsvVariantContext> getAllCalls(File file, CloseableIterator<VariantContextDirectedBreakpoint> breakpointCalls) {
@@ -63,21 +66,20 @@ public abstract class VcfTransformCommandLineProgram extends FullEvidenceCommand
 		Iterator<IdsvVariantContext> idsvIt = Iterators.transform(it, variant -> IdsvVariantContext.create(getContext(), null, variant));
 		Iterator<IdsvVariantContext> nonbpIt = Iterators.filter(idsvIt, variant -> !(variant instanceof VariantContextDirectedBreakpoint));
 		// sort back to nominal VCF position
-		Iterator<VariantContextDirectedBreakpoint> bpit = new VariantContextWindowedSortingIterator<>(getContext(), maximumWindowSize(), breakpointCalls);
+		Iterator<VariantContextDirectedBreakpoint> bpit = new VariantContextWindowedSortingIterator<>(getContext(), SAMEvidenceSource.maximumWindowSize(getContext(), getSamEvidenceSources(), getAssemblySource()), breakpointCalls);
 		Iterator<IdsvVariantContext> mergedIt = Iterators.mergeSorted(ImmutableList.of(bpit, nonbpIt), IdsvVariantContext.ByLocationStart); 
 		return new AutoClosingIterator<>(mergedIt, vcfReader, it);
 	}
-	protected void saveVcf(File file, Iterator<IdsvVariantContext> calls) {
+	protected void saveVcf(File file, Iterator<IdsvVariantContext> calls) throws IOException {
+		File tmp = FileSystemContext.getWorkingFileFor(file);
 		final ProgressLogger writeProgress = new ProgressLogger(log);
-		try (VariantContextWriter vcfWriter = getContext().getVariantContextWriter(file, true)) {
-			IdsvVariantContext record = calls.next();
-			vcfWriter.add(record);
-			writeProgress.record(record.getContig(), record.getStart());
+		try (VariantContextWriter vcfWriter = getContext().getVariantContextWriter(tmp, true)) {
+			while (calls.hasNext()) {
+				IdsvVariantContext record = calls.next();
+				vcfWriter.add(record);
+				writeProgress.record(record.getContig(), record.getStart());
+			}
 		}
-	}
-	@Override
-	protected String[] customCommandLineValidation() {
-		// TODO Auto-generated method stub
-		return super.customCommandLineValidation();
+		FileHelper.move(tmp, file, true);
 	}
 }

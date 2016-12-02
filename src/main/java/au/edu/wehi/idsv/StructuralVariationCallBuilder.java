@@ -296,20 +296,6 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 			breakpoint(bestExactBreakpoint.getBreakendSummary(), untemplated);
 			homo = bestExactBreakpoint.getHomologySequence();
 			rmAttribute(VcfSvConstants.IMPRECISE_KEY);
-			
-			BreakpointHomology bh = BreakpointHomology.calculate(
-					processContext.getReference(),
-					bestExactBreakpoint.getBreakendSummary().getNominalPosition(),
-					untemplated,
-					processContext.getVariantCallingParameters().maxBreakendHomologyLength,
-					processContext.getVariantCallingParameters().breakendHomologyAlignmentMargin);
-			int[] bounds;
-			if (bs.direction == BreakendDirection.Forward) {
-				bounds = new int[] { -bh.getLocalHomologyLength(), bh.getRemoteHomologyLength() };
-			} else {
-				bounds = new int[] { -bh.getRemoteHomologyLength(), bh.getLocalHomologyLength() };
-			}
-			attribute(VcfAttributes.INEXACT_HOMPOS, bounds);
 		} else {
 			attribute(VcfSvConstants.IMPRECISE_KEY, true);
 		}

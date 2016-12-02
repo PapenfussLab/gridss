@@ -66,6 +66,7 @@ public class FileSystemContext {
 	private static final String FORMAT_REALIGN_SAM = "%1$s/%2$s.realign.%3$d" + SAM_SUFFIX;
 	private static final String FORMAT_ASSEMBLY_RAW = "%1$s/%2$s.breakend" + SAM_SUFFIX;
 	private static final String FORMAT_BREAKPOINT_VCF = "%1$s/%2$s.breakpoint" + VCF_SUFFIX;
+	private static final String FORMAT_BREAKPOINT_INTERMEDIATE_VCF = "%1$s/%2$s.breakpoint.%3$s." + VCF_SUFFIX;
 	private static final String FORMAT_SC_REMOTE_SAM = "%1$s/%2$s.scremote" + SAM_SUFFIX;
 	private static final String FORMAT_SC_REMOTE_SAM_UNSORTED = "%1$s/%2$s.scremote.unsorted" + SAM_SUFFIX;
 	private static final String FORMAT_REALIGN_REMOTE_SAM_UNSORTED = "%1$s/%2$s.realignremote.unsorted" + SAM_SUFFIX;
@@ -128,6 +129,10 @@ public class FileSystemContext {
 	public File getBreakpointVcf(File input) {
 		return getFile(String.format(FORMAT_BREAKPOINT_VCF, getIntermediateDirectory(input), getSource(input).getName()));
 	}
+	public File getBreakpointIntermediateVcf(File input, String intermediate) {
+		return getFile(String.format(FORMAT_BREAKPOINT_INTERMEDIATE_VCF, getIntermediateDirectory(input), getSource(input).getName(), intermediate));
+	}
+	
 	public File getMetricsPrefix(File input) {
 		return getFile(String.format(FORMAT_METRICS_PREFIX, getIntermediateDirectory(input), getSource(input).getName()));
 	}

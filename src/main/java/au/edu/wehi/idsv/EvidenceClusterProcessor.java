@@ -19,7 +19,6 @@ import htsjdk.samtools.util.Log;
  */
 public class EvidenceClusterProcessor extends AbstractIterator<VariantContextDirectedEvidence> implements CloseableIterator<VariantContextDirectedEvidence> {
 	private static final Log log = Log.getInstance(EvidenceClusterProcessor.class);
-	private static final int EVIDENCE_BUFFER_SIZE = 1024;
 	private static final AtomicInteger threadCount = new AtomicInteger(0);
 	private final BlockingQueue<VariantContextDirectedEvidence> callBuffer = new ArrayBlockingQueue<VariantContextDirectedEvidence>(64);
 	private MaximalCliqueIteratorRunnable[] threads;
@@ -36,7 +35,7 @@ public class EvidenceClusterProcessor extends AbstractIterator<VariantContextDir
 		if (evidence == null) throw new IllegalArgumentException();
 		this.underlying = new AutoClosingIterator<DirectedEvidence>(evidence);
 		// Start each on their own thread
-		DuplicatingIterable<DirectedEvidence> dib = new DuplicatingIterable<DirectedEvidence>(4, this.underlying, EVIDENCE_BUFFER_SIZE);
+		DuplicatingIterable<DirectedEvidence> dib = new DuplicatingIterable<DirectedEvidence>(4, this.underlying, gridss.Defaults.ASYNC_BUFFER_SIZE);
 		this.threads = new MaximalCliqueIteratorRunnable[] {
 			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Forward, BreakendDirection.Forward, new SequentialIdGenerator("gridssff")),
 			new MaximalCliqueIteratorRunnable(context, dib.iterator(), BreakendDirection.Forward, BreakendDirection.Backward, new SequentialIdGenerator("gridssfb")),

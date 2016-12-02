@@ -35,4 +35,20 @@ public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
         }
 		return super.customCommandLineValidation();
 	}
+	/**
+	 * Copies the command line inputs to the given program
+	 * @param cmd program to set command line for
+	 */
+	public void copyInputs(CommandLineProgram cmd) {
+		cmd.COMPRESSION_LEVEL = COMPRESSION_LEVEL;
+		cmd.CREATE_INDEX = CREATE_INDEX;
+		cmd.CREATE_MD5_FILE = CREATE_MD5_FILE;
+		cmd.GA4GH_CLIENT_SECRETS = GA4GH_CLIENT_SECRETS;
+		cmd.MAX_RECORDS_IN_RAM = MAX_RECORDS_IN_RAM;
+		cmd.QUIET = QUIET;
+		cmd.REFERENCE_SEQUENCE = REFERENCE_SEQUENCE;
+		cmd.TMP_DIR = TMP_DIR;
+		cmd.VALIDATION_STRINGENCY = VALIDATION_STRINGENCY;
+		cmd.VERBOSITY = VERBOSITY;
+	}
 }

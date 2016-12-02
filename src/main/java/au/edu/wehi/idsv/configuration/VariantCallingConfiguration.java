@@ -99,7 +99,6 @@ public class VariantCallingConfiguration {
 	public List<VcfFilter> calculateBreakpointFilters(VariantContextDirectedBreakpoint call) {
 		List<VcfFilter> filters = Lists.newArrayList();
 		BreakpointSummary bp = call.getBreakendSummary();
-		
 		if (call.getEventSize() != null && call.getEventSize() < minSize) {
 			// over 90% of events are small. Since most SV analysis excludes such events
 			// we allow the default output 

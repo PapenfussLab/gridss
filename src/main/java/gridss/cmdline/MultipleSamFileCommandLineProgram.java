@@ -32,6 +32,7 @@ import htsjdk.samtools.reference.ReferenceSequenceFileFactory;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SequenceUtil;
+import picard.cmdline.CommandLineProgram;
 import picard.cmdline.Option;
 import picard.cmdline.StandardOptionDefinitions;
 import picard.sam.CreateSequenceDictionary;
@@ -102,6 +103,9 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 	    	}
     	}
     	return samEvidence;
+    }
+    public void setSamEvidenceSources(List<SAMEvidenceSource> sources) {
+    	samEvidence = sources;
     }
     private void ensureArgs() {
 		IOUtil.assertFileIsReadable(REFERENCE_SEQUENCE);
@@ -204,7 +208,7 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 			shutdownPool(threadpool);
 		}
     }
-    protected abstract int doWork(ExecutorService threadpool) throws IOException, InterruptedException, ExecutionException;
+    public abstract int doWork(ExecutorService threadpool) throws IOException, InterruptedException, ExecutionException;
 	private ProcessingContext processContext = null;
 	public ProcessingContext getContext() {
 		if (processContext == null) {
@@ -267,5 +271,23 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     		return new String[] { "INPUT_CATEGORY must be positive integers: negative or zero categories are not valid." };
     	}
 		return super.customCommandLineValidation();
+	}
+	@Override
+	public void copyInputs(CommandLineProgram cmd) {
+		super.copyInputs(cmd);
+		if (cmd instanceof MultipleSamFileCommandLineProgram) {
+			MultipleSamFileCommandLineProgram prog = (MultipleSamFileCommandLineProgram) cmd;
+			prog.BLACKLIST = BLACKLIST;
+			prog.CONFIGURATION_FILE = CONFIGURATION_FILE;
+			prog.INPUT = INPUT;
+			prog.INPUT_CATEGORY = INPUT_CATEGORY;
+			prog.INPUT_MAX_FRAGMENT_SIZE = INPUT_MAX_FRAGMENT_SIZE;
+			prog.INPUT_MIN_FRAGMENT_SIZE = INPUT_MIN_FRAGMENT_SIZE;
+			prog.READ_PAIR_CONCORDANT_PERCENT = READ_PAIR_CONCORDANT_PERCENT;
+			prog.WORKER_THREADS = WORKER_THREADS;
+			prog.WORKING_DIR = WORKING_DIR;
+			prog.processContext = processContext;
+			prog.samEvidence = samEvidence;
+		}
 	}
 }

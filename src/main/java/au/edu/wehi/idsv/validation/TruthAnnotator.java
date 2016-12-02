@@ -9,7 +9,6 @@ import com.google.common.collect.AbstractIterator;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import au.edu.wehi.idsv.BreakendAnnotator;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.BreakpointSummary;
@@ -29,7 +28,7 @@ import htsjdk.variant.vcf.VCFFileReader;
  * @author Daniel Cameron
  *
  */
-public class TruthAnnotator extends AbstractIterator<VariantContextDirectedEvidence> implements BreakendAnnotator {
+public class TruthAnnotator extends AbstractIterator<VariantContextDirectedEvidence> {
 	private final ProcessingContext processContext;
 	private final List<IdsvVariantContext> truth;
 	private final Iterator<VariantContextDirectedEvidence> it;

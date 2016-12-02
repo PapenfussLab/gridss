@@ -368,4 +368,21 @@ public class SAMEvidenceSource extends EvidenceSource {
 		CloseableIterator<DirectedEvidence> merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);
 		return merged;
 	}
+	/**
+	 * Maximum distance between the SAM alignment location of evidence, and the extrema of the
+	 * breakend position supported by that evidence. 
+	 * @return maximum order-of-order distance between evidence ordered by SAM alignment position and the breakend start position 
+	 */
+	public static int maximumWindowSize(ProcessingContext context, List<SAMEvidenceSource> sources, AssemblyEvidenceSource assembly) {
+		int maxSize = 0;
+		for (EvidenceSource source : sources) {
+			SAMEvidenceSource samSource = (SAMEvidenceSource)source;
+			maxSize = Math.max(samSource.getMaxConcordantFragmentSize(), Math.max(samSource.getMaxReadLength(), samSource.getMaxReadMappedLength()));
+		}
+		if (assembly != null) {
+			maxSize = Math.max(maxSize, assembly.getMaxAssemblyLength()) + context.getVariantCallingParameters().maxBreakendHomologyLength;
+		}
+		return maxSize + 2 * (context.getVariantCallingParameters().breakendMargin + 1);
+	}
+
 }

@@ -32,20 +32,31 @@ public class EvidenceIDHelper {
 	 * @return read alignment unique identifier
 	 */
 	public static String extractSegmentUniqueName(String evidenceId) {
+		return stripSeperators(evidenceId, 5);
+	}
+	private static String stripSeperators(String evidenceId, int seperatorsToStrip) {
 		// strip off all 5 seperators
 		int end = evidenceId.length() - 1;
 		int seperatorCount = 0;
-		while (end >= 0 && seperatorCount < 5) {
+		while (end >= 0 && seperatorCount < seperatorsToStrip) {
 			if (evidenceId.charAt(end) == SEPERATOR) {
 				seperatorCount++;
 			}
 			end--;
 		}
 		end++;
-		if (seperatorCount != 5) {
+		if (seperatorCount != seperatorsToStrip) {
 			throw new IllegalArgumentException(evidenceId + " is not a valid evidenceID");
 		}
 		return evidenceId.substring(0, end);
+	}
+	/**
+	 * Extracts the read this evidence was sourced from
+	 * @param evidenceId evidenceID of evidence from read
+	 * @return read alignment unique identifier
+	 */
+	public static String extractReadName(String evidenceId) {
+		return stripSeperators(evidenceId, 6);
 	}
 	private static StringBuilder buildSegmentUniqueName(SAMRecord record) {
 		StringBuilder sb = new StringBuilder(record.getReadName());
@@ -76,7 +87,8 @@ public class EvidenceIDHelper {
 		StringBuilder sb = buildAlignmentUniqueName(e.getLocalledMappedRead());
 		sb.append(SEPERATOR);
 		sb.append("rp");
-		// not required if only considering 2 segment templates (ie read pairs)
+		// not technically required if only considering 2 segment templates (ie read pairs)
+		// but useful for consistency
 		if (e.getBreakendSummary() != null) {
 			sb.append(e.getBreakendSummary().direction.toChar());
 		}
@@ -92,15 +104,15 @@ public class EvidenceIDHelper {
 	public static String getEvidenceID(SplitReadEvidence e) {
 		StringBuilder sb = buildAlignmentUniqueName(e.getSAMRecord());
 		sb.append(SEPERATOR);
-		sb.append("sc");
+		sb.append("sr");
 		sb.append(e.getBreakendSummary().direction.toChar());
 		return sb.toString();
 	}
 	public static String getEvidenceID(IndelEvidence e) {
 		StringBuilder sb = buildAlignmentUniqueName(e.getSAMRecord());
 		sb.append(SEPERATOR);
-		sb.append('i');
 		sb.append(e.getIndelCigarOffset());
+		sb.append('i');
 		sb.append(e.getBreakendSummary().direction.toChar());
 		return sb.toString();
 	}

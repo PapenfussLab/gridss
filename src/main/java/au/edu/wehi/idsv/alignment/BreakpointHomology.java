@@ -5,8 +5,12 @@ import java.nio.charset.StandardCharsets;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.BreakpointSummary;
+import au.edu.wehi.idsv.IdsvVariantContextBuilder;
+import au.edu.wehi.idsv.ProcessingContext;
+import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.picard.ReferenceLookup;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.vcf.VcfAttributes;
 import htsjdk.samtools.SAMSequenceRecord;
 import htsjdk.samtools.TextCigarCodec;
 import htsjdk.samtools.util.SequenceUtil;
@@ -110,5 +114,23 @@ public class BreakpointHomology {
 	}
 	public int getRemoteHomologyLength() {
 		return remoteHomologyLength;
+	}
+	public static VariantContextDirectedBreakpoint annotate(ProcessingContext context, VariantContextDirectedBreakpoint bp) {
+		if (!bp.isBreakendExact()) return bp;
+		IdsvVariantContextBuilder builder = new IdsvVariantContextBuilder(context, bp);
+		BreakpointHomology bh = BreakpointHomology.calculate(
+				context.getReference(),
+				bp.getBreakendSummary().getNominalPosition(),
+				bp.getUntemplatedSequence(),
+				context.getVariantCallingParameters().maxBreakendHomologyLength,
+				context.getVariantCallingParameters().breakendHomologyAlignmentMargin);
+		int[] bounds;
+		if (bp.getBreakendSummary().direction == BreakendDirection.Forward) {
+			bounds = new int[] { -bh.getLocalHomologyLength(), bh.getRemoteHomologyLength() };
+		} else {
+			bounds = new int[] { -bh.getRemoteHomologyLength(), bh.getLocalHomologyLength() };
+		}
+		builder.attribute(VcfAttributes.INEXACT_HOMPOS, bounds);
+		return (VariantContextDirectedBreakpoint)builder.make();
 	}
 }

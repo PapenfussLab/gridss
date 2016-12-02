@@ -22,4 +22,6 @@ Remove trove dependency
 AnnotateEvidence
 AnnotateReferenceCoverage
 AnnotateInexactHomology
-Rebase htsjdk commit
+htsjdk test coverage
+
+Breakend margin should apply to find cliques

@@ -1,10 +1,7 @@
 package gridss;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -13,18 +10,14 @@ import java.util.concurrent.Future;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Lists;
-import com.google.common.io.Files;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
-import au.edu.wehi.idsv.BreakendDirection;
-import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.SAMEvidenceSource;
-import au.edu.wehi.idsv.SingleReadEvidence;
 import au.edu.wehi.idsv.VariantCaller;
+import au.edu.wehi.idsv.util.FileHelper;
+import gridss.cmdline.FullEvidenceCommandLineProgram;
 import gridss.cmdline.MultipleSamFileCommandLineProgram;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
-import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.IOUtil;
 import htsjdk.samtools.util.Log;
 import picard.analysis.InsertSizeMetrics;
@@ -41,7 +34,7 @@ import picard.cmdline.StandardOptionDefinitions;
         usage = "Calls structural variations from one or more SAM/BAM input files.",  
         usageShort = "Calls structural variations from NGS sequencing data"
 )
-public class CallVariants extends MultipleSamFileCommandLineProgram {
+public class CallVariants extends FullEvidenceCommandLineProgram {
 	private static final Log log = Log.getInstance(CallVariants.class);
 	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="VCF structural variation calls.")
     public File OUTPUT;
@@ -79,47 +72,26 @@ public class CallVariants extends MultipleSamFileCommandLineProgram {
 		}
 		log.info("Evidence extraction complete.");
 	}
-	private void callVariants(ExecutorService threadpool, List<SAMEvidenceSource> samEvidence, AssemblyEvidenceSource assemblyEvidence) throws IOException {
-		try (VariantCaller caller = new VariantCaller(getContext(), OUTPUT, samEvidence, assemblyEvidence)) {
-			//EvidenceToCsv evidenceDump = null;
-			//if (getContext().getConfig().getVisualisation().evidenceAllocation) {
-			//	evidenceDump = new EvidenceToCsv(new File(getContext().getConfig().getVisualisation().directory, "evidence.csv"));
-			//}
-			// Run variant caller single-threaded as we can do streaming calls
-			caller.callBreakends(threadpool);
-			caller.annotateBreakpoints(threadpool);
+	private void callVariants(ExecutorService threadpool) throws IOException, InterruptedException, ExecutionException {
+		File rawCalls = getContext().getFileSystemContext().getBreakpointVcf(OUTPUT);
+		if (!OUTPUT.exists()) {
+			if (!rawCalls.exists()) {
+				VariantCaller caller = new VariantCaller(getContext(), getSamEvidenceSources(), getAssemblySource());
+				caller.callBreakends(rawCalls, threadpool);
+			}
+			AnnotateVariants annVariants = new AnnotateVariants();
+			copyInputs(annVariants);
+			annVariants.INPUT_VCF = rawCalls;
+			annVariants.OUTPUT_VCF = OUTPUT;
+			execute(annVariants, threadpool);
+		}
+		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
+			FileHelper.delete(rawCalls, true);
 		}
 	}
-	private void writeAssemblyBreakends(AssemblyEvidenceSource assemblyEvidence) throws IOException {
-		log.info("Writing breakend assembly support.");
-		File breakendfa = new File(OUTPUT.getAbsolutePath() + ".breakend.fa.tmp");
-		BufferedOutputStream writer = null;
-		try {
-			writer = new BufferedOutputStream(new FileOutputStream(breakendfa));
-			CloseableIterator<DirectedEvidence> it = assemblyEvidence.iterator();
-			while (it.hasNext()) {
-				SingleReadEvidence ass = (SingleReadEvidence) it.next();
-				if (!ass.getSAMRecord().isSecondaryOrSupplementary()) {
-					writer.write('>');
-					writer.write(ass.getEvidenceID().getBytes(StandardCharsets.US_ASCII));
-					writer.write('\n');
-					if (ass.getBreakendSummary().direction == BreakendDirection.Forward) {
-						writer.write(ass.getAnchorSequence(), 0, ass.getAnchorSequence().length);
-						writer.write(ass.getBreakendSequence(), 0, ass.getBreakendSequence().length);
-					} else {
-						writer.write(ass.getBreakendSequence(), 0, ass.getBreakendSequence().length);
-						writer.write(ass.getAnchorSequence(), 0, ass.getAnchorSequence().length);
-					}
-					writer.write('\n');
-				}
-			}
-			it.close();
-			writer.close();
-			Files.move(breakendfa, new File(OUTPUT.getAbsolutePath() + ".breakend.fa"));
-		} finally {
-			CloserUtil.close(writer);
-		}
-		log.info("Writing breakend assembly support complete.");
+	private void execute(MultipleSamFileCommandLineProgram program, ExecutorService threadpool) throws IOException, InterruptedException, ExecutionException {
+		int result = program.doWork(threadpool);
+		if (result != 0) throw new RuntimeException("Error executing " + program.getClass().getName() + " return status: " + Integer.toString(result));
 	}
 	@Override
 	protected String[] customCommandLineValidation() {
@@ -135,25 +107,18 @@ public class CallVariants extends MultipleSamFileCommandLineProgram {
         System.exit(new CallVariants().instanceMain(argv));
     }
 	@Override
-	protected int doWork(ExecutorService threadpool) throws IOException, InterruptedException, ExecutionException {
+	public int doWork(ExecutorService threadpool) throws IOException, InterruptedException, ExecutionException {
 		IOUtil.assertFileIsWritable(OUTPUT);
-		List<SAMEvidenceSource> samEvidence = getSamEvidenceSources();
-    	extractEvidence(threadpool, samEvidence);
-
+    	extractEvidence(threadpool, getSamEvidenceSources());
     	File assemblyFile = getContext().getFileSystemContext().getAssembly(OUTPUT);
-    	AssemblyEvidenceSource assemblyEvidence = new AssemblyEvidenceSource(getContext(), samEvidence, assemblyFile);
+    	AssemblyEvidenceSource assemblyEvidence = new AssemblyEvidenceSource(getContext(), getSamEvidenceSources(), assemblyFile);
     	if (!assemblyFile.exists()) {
     		assemblyEvidence.assembleBreakends(threadpool);
     	}
     	// convert breakend assemblies into breakpoint via split read identification
     	assemblyEvidence.ensureExtracted();
-
-    	if (!OUTPUT.exists()) {
-	    	callVariants(threadpool, samEvidence, assemblyEvidence);
-	    	writeAssemblyBreakends(assemblyEvidence);
-    	} else {
-    		log.info(OUTPUT.toString() + " exists - not recreating.");
-    	}
+    	// call and annotate variants
+    	callVariants(threadpool);
 		return 0;
 	}
 }

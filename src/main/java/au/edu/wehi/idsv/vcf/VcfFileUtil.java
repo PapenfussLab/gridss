@@ -1,23 +1,16 @@
 package au.edu.wehi.idsv.vcf;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.Comparator;
 import java.util.concurrent.Callable;
 
-import com.google.common.collect.ImmutableList;
-
-import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.IdsvVariantContext;
 import au.edu.wehi.idsv.IntermediateFileUtil;
 import au.edu.wehi.idsv.ProcessingContext;
-import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.FileHelper;
-import au.edu.wehi.idsv.validation.OrderAssertingIterator;
 import htsjdk.samtools.util.CloseableIterator;
-import htsjdk.samtools.util.CloserUtil;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.SortingCollection;
 import htsjdk.variant.variantcontext.VariantContext;
@@ -82,55 +75,41 @@ public class VcfFileUtil {
 				return null;
 			}
 			log.info("Sorting " + input);
-			VCFFileReader reader = null;
-			VariantContextWriter writer = null;
-			CloseableIterator<VariantContext> rit = null;
-			CloseableIterator<VariantContext> wit = null;
 			SortingCollection<VariantContext> collection = null;
-			if (FileSystemContext.getWorkingFileFor(output).exists()) {
-				FileHelper.delete(FileSystemContext.getWorkingFileFor(output), true);
+			File tmpout = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.sorting.");
+			if (tmpout.exists()) {
+				FileHelper.delete(tmpout, true);
 			}
 			try {
-				reader = new VCFFileReader(input, false);
-				VCFHeader header = reader.getFileHeader();
-				rit = reader.iterator();
-				collection = SortingCollection.newInstance(
-						VariantContext.class,
-						new VCFRecordCodec(header),
-						sortComparator,
-						processContext.getFileSystemContext().getMaxBufferedRecordsPerFile(),
-						processContext.getFileSystemContext().getTemporaryDirectory());
-				while (rit.hasNext()) {
-					collection.add(rit.next());
+				try (VCFFileReader reader = new VCFFileReader(input, false)) {
+					VCFHeader header = reader.getFileHeader();
+					try (CloseableIterator<VariantContext> rit = reader.iterator()) {
+						collection = SortingCollection.newInstance(
+								VariantContext.class,
+								new VCFRecordCodec(header),
+								sortComparator,
+								processContext.getFileSystemContext().getMaxBufferedRecordsPerFile(),
+								processContext.getFileSystemContext().getTemporaryDirectory());
+						while (rit.hasNext()) {
+							collection.add(rit.next());
+						}
+					}
 				}
-				rit.close();
-				rit = null;
-				reader.close();
-				reader = null;
 				collection.doneAdding();
-				writer = processContext.getVariantContextWriter(FileSystemContext.getWorkingFileFor(output), indexed);
-		    	wit = collection.iterator();
-		    	if (Defaults.SANITY_CHECK_ITERATORS) {
-					wit = new AutoClosingIterator<VariantContext>(new OrderAssertingIterator<VariantContext>(wit, sortComparator), wit);
+				try (VariantContextWriter writer = processContext.getVariantContextWriter(tmpout, indexed)) {
+			    	try (CloseableIterator<VariantContext> wit = collection.iterator()) {
+						while (wit.hasNext()) {
+							writer.add(wit.next());
+						}
+			    	}
 				}
-				while (wit.hasNext()) {
-					writer.add(wit.next());
-				}
-				wit.close();
-				wit = null;
-				writer.close();
-				writer = null;
 				collection.cleanup();
 				collection = null;
-				FileHelper.move(FileSystemContext.getWorkingFileFor(output), output, true);
+				FileHelper.move(tmpout, output, true);
 			} finally {
-				CloserUtil.close(writer);
-				CloserUtil.close(wit);
-				CloserUtil.close(rit);
-				CloserUtil.close(reader);
 				if (collection != null) collection.cleanup();
-				if (FileSystemContext.getWorkingFileFor(output).exists()) {
-					FileHelper.delete(FileSystemContext.getWorkingFileFor(output), true);
+				if (tmpout.exists()) {
+					FileHelper.delete(tmpout, true);
 				}
 			}
 			return null;

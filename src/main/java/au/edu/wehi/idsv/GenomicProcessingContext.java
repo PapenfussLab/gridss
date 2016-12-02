@@ -201,7 +201,7 @@ public class GenomicProcessingContext implements Closeable {
 	 * @return iterator with filtered record excluded
 	 */
 	public CloseableIterator<SAMRecord> applyCommonSAMRecordFilters(CloseableIterator<SAMRecord> iterator) {
-		return applyCommonSAMRecordFilters(iterator, true);
+		return applyCommonSAMRecordFilters(iterator, false);
 	}
 
 	/**

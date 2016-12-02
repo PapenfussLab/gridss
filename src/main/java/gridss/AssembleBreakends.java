@@ -26,7 +26,7 @@ public class AssembleBreakends extends MultipleSamFileCommandLineProgram {
         System.exit(new AssembleBreakends().instanceMain(argv));
     }
 	@Override
-	protected int doWork(ExecutorService threadpool) throws IOException {
+	public int doWork(ExecutorService threadpool) throws IOException {
 		IOUtil.assertFileIsWritable(OUTPUT);
 		ProcessingContext pc = getContext();
 		List<SAMEvidenceSource> sources = getSamEvidenceSources();
