@@ -26,6 +26,7 @@ package gridss.analysis;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.List;
 
@@ -56,7 +57,7 @@ public class CollectCigarMetrics extends SinglePassSamProgram {
 	@Option(shortName="Z", doc="If set to true include a zero length operator for each operator not included in the alignment CIGAR.")
     public boolean INCLUDE_OMITTED_OPERATORS = true;
 	
-    private HashMap<CigarOperator, List<CigarDetailMetrics>> cigar;    
+    private EnumMap<CigarOperator, List<CigarDetailMetrics>> cigar;    
 
     /** Required main method. */
     public static void main(final String[] args) {
@@ -66,11 +67,11 @@ public class CollectCigarMetrics extends SinglePassSamProgram {
     @Override
     protected void setup(final SAMFileHeader header, final File samFile) {
         IOUtil.assertFileIsWritable(OUTPUT);
-
-        cigar = new HashMap<>();
+        HashMap<CigarOperator, List<CigarDetailMetrics>> hm = new HashMap<CigarOperator, List<CigarDetailMetrics>>();
         for (CigarOperator op : CigarOperator.values()) {
-			cigar.put(op, new ArrayList<CigarDetailMetrics>());
+			hm.put(op, new ArrayList<CigarDetailMetrics>());
 		}
+        cigar = new EnumMap<>(hm);
     }
 
     @Override
@@ -83,30 +84,32 @@ public class CollectCigarMetrics extends SinglePassSamProgram {
     	for (CigarElement ce : list) {
     		acceptCigarElement(ce);
     	}
-    	for (CigarOperator op : CigarOperator.values()) {
-    		switch (op) {
-    			case S:
-    				if (CigarUtil.getStartClipLength(list) == 0) {
-    					acceptCigarElement(new CigarElement(0, CigarOperator.S));
-    				}
-    				if (CigarUtil.getEndClipLength(list) == 0) {
-    					acceptCigarElement(new CigarElement(0, CigarOperator.S));
-    				}
-    				break;
-    			case H:
-    				if (list.get(0).getOperator() != CigarOperator.H) {
-    					acceptCigarElement(new CigarElement(0, CigarOperator.H));
-    				}
-    				if (list.get(list.size() - 1).getOperator() != CigarOperator.H) {
-    					acceptCigarElement(new CigarElement(0, CigarOperator.H));
-    				}
-    				break;
-    			default:
-    				if (!Iterables.any(list, ce -> ce.getOperator() == op)) {
-    					acceptCigarElement(new CigarElement(0, op));
-    				}
-    				break;
-    		}
+    	if (INCLUDE_OMITTED_OPERATORS) {
+	    	for (CigarOperator op : CigarOperator.values()) {
+	    		switch (op) {
+	    			case S:
+	    				if (CigarUtil.getStartClipLength(list) == 0) {
+	    					acceptCigarElement(new CigarElement(0, CigarOperator.S));
+	    				}
+	    				if (CigarUtil.getEndClipLength(list) == 0) {
+	    					acceptCigarElement(new CigarElement(0, CigarOperator.S));
+	    				}
+	    				break;
+	    			case H:
+	    				if (list.get(0).getOperator() != CigarOperator.H) {
+	    					acceptCigarElement(new CigarElement(0, CigarOperator.H));
+	    				}
+	    				if (list.get(list.size() - 1).getOperator() != CigarOperator.H) {
+	    					acceptCigarElement(new CigarElement(0, CigarOperator.H));
+	    				}
+	    				break;
+	    			default:
+	    				if (!Iterables.any(list, ce -> ce.getOperator() == op)) {
+	    					acceptCigarElement(new CigarElement(0, op));
+	    				}
+	    				break;
+	    		}
+	    	}
     	}
     }
     
