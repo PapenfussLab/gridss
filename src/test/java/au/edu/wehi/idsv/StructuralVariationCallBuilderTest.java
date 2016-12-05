@@ -712,18 +712,6 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		assertEquals(1, vc.getBreakpointEvidenceCountRemoteAssembly());
 	}
 	@Test
-	public void should_calculate_inexact_homology() {
-		ProcessingContext pc = getContext();
-		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)new IdsvVariantContextBuilder(getContext()) {{
-			breakpoint(new BreakpointSummary(2, FWD, 78, 6, BWD, 79), "");
-			phredScore(50);
-		}}.make());
-		builder.addEvidence(SR(Read(2, 78, "1M1S"), Read(6, 79, "1M")));
-		VariantContextDirectedEvidence e = builder.make();
-		assertEquals(-78, ((int[])e.getAttribute(VcfAttributes.INEXACT_HOMPOS.attribute()))[0]);
-		assertEquals(300, ((int[])e.getAttribute(VcfAttributes.INEXACT_HOMPOS.attribute()))[1]);
-	}
-	@Test
 	@Ignore("Issue #17: Output breakpoint assembly sequences")
 	public void breakpoint_assembly_should_be_written() {
 		ProcessingContext pc = getContext();

@@ -60,6 +60,7 @@ public class AnnotateVariants extends VcfTransformCommandLineProgram {
 		copyInputs(ae);
 		copyInputs(arc);
 		copyInputs(ihom);
+		ae.INPUT_VCF = INPUT_VCF; // needed for caching 
 		calls = ae.iterator(calls, threadpool);
 		calls = arc.iterator(calls, threadpool);
 		calls = ihom.iterator(calls, threadpool);

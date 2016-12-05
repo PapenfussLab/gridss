@@ -84,8 +84,10 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 			}
 		}
 		VariantContextDirectedBreakpoint bp = (VariantContextDirectedBreakpoint)builder.make();
-		if (bp.getBreakpointQual() < vc.minScore) return null;
-		if (bp.isFiltered()) return null;
+		if (!vc.writeFiltered) {
+			if (bp.getBreakpointQual() < vc.minScore) return null;
+			if (bp.isFiltered()) return null;
+		}
 		bp = (VariantContextDirectedBreakpoint)vc.applyConfidenceFilter(getContext(), bp);
 		return bp;
 	}

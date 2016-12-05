@@ -20,6 +20,7 @@ import au.edu.wehi.idsv.DirectedEvidence;
 import au.edu.wehi.idsv.IntermediateFilesTest;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.SoftClipEvidence;
+import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMRecord;
 
 public class CallVariantsTest extends IntermediateFilesTest {
@@ -49,9 +50,12 @@ public class CallVariantsTest extends IntermediateFilesTest {
 			writer.write("softclip.minAverageQual=0\n");
 			writer.write("realignment.aligner=\n");
 		}
+		File assembly = new File(testFolder.getRoot(), "assembly.bam");
+		createBAM(assembly, SortOrder.coordinate);
 		String[] args = new String[] {
 				"INPUT=" + input.toString(),
 				"INPUT_CATEGORY=5",
+				"ASSEMBLY=" + assembly.toString(),
 				"REFERENCE_SEQUENCE=" + reference.toString(),
 				"OUTPUT=" + output.toString(),
 				"TMP_DIR=" + super.testFolder.getRoot().toString(),
@@ -63,6 +67,7 @@ public class CallVariantsTest extends IntermediateFilesTest {
 		assertEquals(0, new CallVariants().instanceMain(args));
 		List<SAMRecord> breakendAssemblies = getRecords(new File(output.getAbsoluteFile() + ".gridss.working/" + output.getName() + ".assembly.bam"));
 		assertEquals(1, breakendAssemblies.size());
+		assembly.delete();
 	}
 	@Test
 	public void should_handle_unpaired_libraries() throws IOException {
@@ -77,8 +82,11 @@ public class CallVariantsTest extends IntermediateFilesTest {
 			throw new RuntimeException("NYI");
 		}).collect(Collectors.toList());
 		createInput(insam);
+		File assembly = new File(testFolder.getRoot(), "assembly.bam");
+		createBAM(assembly, SortOrder.coordinate);
 		String[] args = new String[] {
 				"INPUT=" + input.toString(),
+				"ASSEMBLY=" + assembly.toString(),
 				"REFERENCE_SEQUENCE=" + reference.toString(),
 				"OUTPUT=" + output.toString(),
 				"TMP_DIR=" + super.testFolder.getRoot().toString(),
@@ -86,5 +94,6 @@ public class CallVariantsTest extends IntermediateFilesTest {
 		};
 		assertEquals(0, new CallVariants().instanceMain(args));
 		assertTrue(output.exists());
+		assembly.delete();
 	}
 }
