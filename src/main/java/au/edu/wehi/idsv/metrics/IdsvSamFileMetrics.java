@@ -72,7 +72,7 @@ public class IdsvSamFileMetrics {
 			}
 		}
 		if (bestMetrics == null) {
-			log.warn(String.format("No pair-end insert size metrics found in %s. Assuming this library contains single-end reads", insertSizeMetricsFile));
+			log.info(String.format("No pair-end insert size metrics found in %s. Assuming this library contains single-end reads", insertSizeMetricsFile));
 		}
 		return bestMetrics;
 	}

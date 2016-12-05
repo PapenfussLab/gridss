@@ -17,8 +17,15 @@ import picard.cmdline.CommandLineProgram;
 import picard.cmdline.Option;
 
 public abstract class FullEvidenceCommandLineProgram extends MultipleSamFileCommandLineProgram {
-	@Option(doc="Breakend assemblies which have undergone split read identification")
+	@Option(doc="Breakend assemblies which have undergone split read identification", optional=false)
 	public File ASSEMBLY;
+	private final boolean requireAssembly;
+	public FullEvidenceCommandLineProgram() {
+		this(true);
+	}
+	public FullEvidenceCommandLineProgram(boolean requireAssembly) {
+		this.requireAssembly = requireAssembly;
+	}
 	private AssemblyEvidenceSource assemblyEvidenceSource;
 	public AssemblyEvidenceSource getAssemblySource() {
 		if (assemblyEvidenceSource == null) {
@@ -46,10 +53,15 @@ public abstract class FullEvidenceCommandLineProgram extends MultipleSamFileComm
 	}
 	@Override
 	protected String[] customCommandLineValidation() {
-		if (ASSEMBLY == null || !ASSEMBLY.exists()) {
-            return new String[]{"Missing ASSEMBLY file"};
-        }
+		String[] val = assemblyCustomCommandLineValidation();
+		if (val != null) return val;
 		return super.customCommandLineValidation();
+	}
+	public String[] assemblyCustomCommandLineValidation() {
+		if (requireAssembly && ASSEMBLY != null && !ASSEMBLY.exists()) {
+			return new String[] { "Missing ASSEMBLY file" };
+		}
+    	return null;
 	}
 	@Override
 	public void copyInputs(CommandLineProgram cmd) {

@@ -30,10 +30,15 @@ public abstract class ReferenceCommandLineProgram extends CommandLineProgram {
 	}
 	@Override
 	protected String[] customCommandLineValidation() {
+		String[] val = referenceCustomCommandLineValidation();
+		if (val != null) return val;
+		return super.customCommandLineValidation();
+	}
+	public String[] referenceCustomCommandLineValidation() {
 		if (REFERENCE_SEQUENCE == null) {
             return new String[]{"Must have a non-null REFERENCE_SEQUENCE"};
         }
-		return super.customCommandLineValidation();
+		return null;
 	}
 	/**
 	 * Copies the command line inputs to the given program

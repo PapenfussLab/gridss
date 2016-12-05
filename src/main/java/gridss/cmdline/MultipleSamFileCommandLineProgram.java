@@ -252,9 +252,11 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     }
 	@Override
 	protected String[] customCommandLineValidation() {
-		if (REFERENCE_SEQUENCE == null) {
-            return new String[]{"Must have a non-null REFERENCE_SEQUENCE"};
-        }
+		String[] val = multiSamFileInputCustomCommandLineValidation();
+		if (val != null) return val;
+		return super.customCommandLineValidation();
+	}
+	public String[] multiSamFileInputCustomCommandLineValidation() {
 		if (WORKER_THREADS < 1) {
 			return new String[] { "WORKER_THREADS must be at least one." };
 		}
@@ -270,7 +272,7 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     	if (INPUT_CATEGORY != null && INPUT_CATEGORY.stream().anyMatch(x -> x <= 0)) {
     		return new String[] { "INPUT_CATEGORY must be positive integers: negative or zero categories are not valid." };
     	}
-		return super.customCommandLineValidation();
+    	return null;
 	}
 	@Override
 	public void copyInputs(CommandLineProgram cmd) {

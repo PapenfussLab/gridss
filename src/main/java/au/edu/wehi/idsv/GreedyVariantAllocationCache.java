@@ -116,8 +116,8 @@ public class GreedyVariantAllocationCache {
 			// This is not the best breakpoint supported by this evidence
 			return false;
 		}
-		if (evidence instanceof DiscordantReadPair) {
-			DiscordantReadPair dp = (DiscordantReadPair)evidence;
+		if (evidence instanceof NonReferenceReadPair) {
+			NonReferenceReadPair dp = (NonReferenceReadPair)evidence;
 			String readpairid = dp.getLocalledMappedRead().getReadName();
 			String alignment = getReadPairAlignment(dp.getLocalledMappedRead());
 			return isBestAlignment(bestReadPairAlignment, readpairid, alignment);

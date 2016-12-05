@@ -187,4 +187,20 @@ public class GreedyVariantAllocationCacheTest extends TestHelper {
 		assertFalse(cache.isBestBreakpoint("variant1", evidence[1]));
 		assertTrue(cache.isBestBreakpoint("variant2", evidence[1]));
 	}
+	@Test
+	public void should_call_best_oea_alignment() {
+		NonReferenceReadPair[] evidence = new NonReferenceReadPair[] {
+				NRRP(withReadName("read", OEA(0, 1, "1M", true))),
+				NRRP(withReadName("read", OEA(0, 2, "1M", true))),
+		};
+		GreedyVariantAllocationCache cache = new GreedyVariantAllocationCache();
+		cache.addBreakpoint("variant1", 1, evidence[0]);
+		cache.addBreakpoint("variant2", 2, evidence[1]);
+		
+		assertFalse(cache.isBestBreakpoint("variant1", evidence[0]));
+		assertFalse(cache.isBestBreakpoint("variant2", evidence[0]));
+		
+		assertFalse(cache.isBestBreakpoint("variant1", evidence[1]));
+		assertTrue(cache.isBestBreakpoint("variant2", evidence[1]));
+	}
 }

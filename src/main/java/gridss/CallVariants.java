@@ -13,7 +13,6 @@ import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.SAMEvidenceSource;
-import au.edu.wehi.idsv.VariantCaller;
 import au.edu.wehi.idsv.util.FileHelper;
 import gridss.cmdline.FullEvidenceCommandLineProgram;
 import gridss.cmdline.MultipleSamFileCommandLineProgram;
@@ -38,6 +37,9 @@ public class CallVariants extends FullEvidenceCommandLineProgram {
 	private static final Log log = Log.getInstance(CallVariants.class);
 	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="VCF structural variation calls.")
     public File OUTPUT;
+	public CallVariants() {
+		super(false);
+	}
 	private void extractEvidence(ExecutorService threadpool, List<SAMEvidenceSource> samEvidence) throws InterruptedException, ExecutionException {
 		log.info("Extracting evidence.");
 		for (Future<Void> future : threadpool.invokeAll(Lists.transform(samEvidence, new Function<SAMEvidenceSource, Callable<Void>>() {
@@ -76,8 +78,10 @@ public class CallVariants extends FullEvidenceCommandLineProgram {
 		File rawCalls = getContext().getFileSystemContext().getBreakpointVcf(OUTPUT);
 		if (!OUTPUT.exists()) {
 			if (!rawCalls.exists()) {
-				VariantCaller caller = new VariantCaller(getContext(), getSamEvidenceSources(), getAssemblySource());
-				caller.callBreakends(rawCalls, threadpool);
+				IdentifyVariants iv = new IdentifyVariants();
+				copyInputs(iv);
+				iv.OUTPUT_VCF = rawCalls;
+				execute(iv, threadpool);
 			}
 			AnnotateVariants annVariants = new AnnotateVariants();
 			copyInputs(annVariants);
@@ -93,16 +97,6 @@ public class CallVariants extends FullEvidenceCommandLineProgram {
 		int result = program.doWork(threadpool);
 		if (result != 0) throw new RuntimeException("Error executing " + program.getClass().getName() + " return status: " + Integer.toString(result));
 	}
-	@Override
-	protected String[] customCommandLineValidation() {
-		if (REFERENCE_SEQUENCE == null) {
-            return new String[]{"Must have a non-null REFERENCE_SEQUENCE"};
-        }
-		if (WORKER_THREADS < 1) {
-			return new String[] { "WORKER_THREADS must be at least one." };
-		}
-		return super.customCommandLineValidation();
-	}
 	public static void main(String[] argv) {
         System.exit(new CallVariants().instanceMain(argv));
     }
@@ -110,9 +104,8 @@ public class CallVariants extends FullEvidenceCommandLineProgram {
 	public int doWork(ExecutorService threadpool) throws IOException, InterruptedException, ExecutionException {
 		IOUtil.assertFileIsWritable(OUTPUT);
     	extractEvidence(threadpool, getSamEvidenceSources());
-    	File assemblyFile = getContext().getFileSystemContext().getAssembly(OUTPUT);
-    	AssemblyEvidenceSource assemblyEvidence = new AssemblyEvidenceSource(getContext(), getSamEvidenceSources(), assemblyFile);
-    	if (!assemblyFile.exists()) {
+    	AssemblyEvidenceSource assemblyEvidence = new AssemblyEvidenceSource(getContext(), getSamEvidenceSources(), ASSEMBLY);
+    	if (!ASSEMBLY.exists()) {
     		assemblyEvidence.assembleBreakends(threadpool);
     	}
     	// convert breakend assemblies into breakpoint via split read identification

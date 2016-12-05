@@ -51,7 +51,6 @@ public class CallVariantsTest extends IntermediateFilesTest {
 			writer.write("realignment.aligner=\n");
 		}
 		File assembly = new File(testFolder.getRoot(), "assembly.bam");
-		createBAM(assembly, SortOrder.coordinate);
 		String[] args = new String[] {
 				"INPUT=" + input.toString(),
 				"INPUT_CATEGORY=5",
@@ -65,7 +64,7 @@ public class CallVariantsTest extends IntermediateFilesTest {
 				"INPUT_MAX_FRAGMENT_SIZE=100",
 		};
 		assertEquals(0, new CallVariants().instanceMain(args));
-		List<SAMRecord> breakendAssemblies = getRecords(new File(output.getAbsoluteFile() + ".gridss.working/" + output.getName() + ".assembly.bam"));
+		List<SAMRecord> breakendAssemblies = getRecords(assembly);
 		assertEquals(1, breakendAssemblies.size());
 		assembly.delete();
 	}
