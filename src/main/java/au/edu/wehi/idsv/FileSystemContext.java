@@ -64,15 +64,7 @@ public class FileSystemContext {
 	private static final String FORMAT_COVERAGE_BLACKLIST_BED = "%1$s/%2$s.coverage.blacklist.bed";
 	private static final String FORMAT_REALIGN_FASTQ = "%1$s/%2$s.realign.%3$d.fq";
 	private static final String FORMAT_REALIGN_SAM = "%1$s/%2$s.realign.%3$d" + SAM_SUFFIX;
-	private static final String FORMAT_ASSEMBLY_RAW = "%1$s/%2$s.breakend" + SAM_SUFFIX;
 	private static final String FORMAT_BREAKPOINT_VCF = "%1$s/%2$s.breakpoint" + VCF_SUFFIX;
-	private static final String FORMAT_BREAKPOINT_INTERMEDIATE_VCF = "%1$s/%2$s.breakpoint.%3$s." + VCF_SUFFIX;
-	private static final String FORMAT_SC_REMOTE_SAM = "%1$s/%2$s.scremote" + SAM_SUFFIX;
-	private static final String FORMAT_SC_REMOTE_SAM_UNSORTED = "%1$s/%2$s.scremote.unsorted" + SAM_SUFFIX;
-	private static final String FORMAT_REALIGN_REMOTE_SAM_UNSORTED = "%1$s/%2$s.realignremote.unsorted" + SAM_SUFFIX;
-	private static final String FORMAT_REALIGN_REMOTE_SAM = "%1$s/%2$s.realignremote" + SAM_SUFFIX;
-	private static final String FORMAT_ASSEMBLY = "%1$s/%2$s.assembly" + SAM_SUFFIX;
-	private static final String FORMAT_ASSEMBLY_MATE = "%1$s/%2$s.assemblymate" + SAM_SUFFIX;
 	
 	/**
 	 * Gets the idsv intermediate working directory for the given input
@@ -117,22 +109,9 @@ public class FileSystemContext {
 	public File getSVBam(File input) {
 		return getFile(String.format(FORMAT_SV_SAM, getIntermediateDirectory(input), getSource(input).getName()));
 	}
-	public File getAssemblyRawBam(File input) {
-		return getFile(String.format(FORMAT_ASSEMBLY_RAW, getIntermediateDirectory(input), getSource(input).getName()));
-	}
-	public File getAssembly(File input) {
-		return getFile(String.format(FORMAT_ASSEMBLY, getIntermediateDirectory(input), getSource(input).getName()));
-	}
-	public File getAssemblyMate(File input) {
-		return getFile(String.format(FORMAT_ASSEMBLY_MATE, getIntermediateDirectory(input), getSource(input).getName()));
-	}
 	public File getBreakpointVcf(File input) {
 		return getFile(String.format(FORMAT_BREAKPOINT_VCF, getIntermediateDirectory(input), getSource(input).getName()));
 	}
-	public File getBreakpointIntermediateVcf(File input, String intermediate) {
-		return getFile(String.format(FORMAT_BREAKPOINT_INTERMEDIATE_VCF, getIntermediateDirectory(input), getSource(input).getName(), intermediate));
-	}
-	
 	public File getMetricsPrefix(File input) {
 		return getFile(String.format(FORMAT_METRICS_PREFIX, getIntermediateDirectory(input), getSource(input).getName()));
 	}
@@ -156,19 +135,6 @@ public class FileSystemContext {
 	}
 	public File getRealignmentFastq(File input, int iteration) {
 		return getFile(String.format(FORMAT_REALIGN_FASTQ, getIntermediateDirectory(input), getSource(input).getName(), iteration));
-	}
-	// Remote sorted
-	public File getSoftClipRemoteBam(File input) {
-		return getFile(String.format(FORMAT_SC_REMOTE_SAM, getIntermediateDirectory(input), getSource(input).getName()));
-	}
-	public File getSoftClipRemoteUnsortedBam(File input) {
-		return getFile(String.format(FORMAT_SC_REMOTE_SAM_UNSORTED, getIntermediateDirectory(input), getSource(input).getName()));
-	}
-	public File getRealignmentRemoteUnsortedBam(File input) {
-		return getFile(String.format(FORMAT_REALIGN_REMOTE_SAM_UNSORTED, getIntermediateDirectory(input), getSource(input).getName()));
-	}
-	public File getRealignmentRemoteBam(File input) {
-		return getFile(String.format(FORMAT_REALIGN_REMOTE_SAM, getIntermediateDirectory(input), getSource(input).getName()));
 	}
 	public File getCoverageBlacklistBed(File input) {
 		return getFile(String.format(FORMAT_COVERAGE_BLACKLIST_BED, getIntermediateDirectory(input), getSource(input).getName()));

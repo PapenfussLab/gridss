@@ -88,6 +88,11 @@ public class CallVariants extends FullEvidenceCommandLineProgram {
 			annVariants.INPUT_VCF = rawCalls;
 			annVariants.OUTPUT_VCF = OUTPUT;
 			execute(annVariants, threadpool);
+		} else {
+			String msg = "Error writing variant calls to " + OUTPUT.getAbsolutePath() + ". File already exists. "
+					+ "Please delete OUTPUT file."; 
+			log.error(msg);
+			throw new IOException(msg);
 		}
 		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
 			FileHelper.delete(rawCalls, true);

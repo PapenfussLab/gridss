@@ -18,22 +18,18 @@ import picard.cmdline.StandardOptionDefinitions;
         usageShort = "Identifies putative structural variants."
 )
 public class IdentifyVariants extends FullEvidenceCommandLineProgram {
+	private static final Log log = Log.getInstance(IdentifyVariants.class);
 	@Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="VCF structural variation calls.")
     public File OUTPUT_VCF;
-	private void callVariants(ExecutorService threadpool) throws IOException, InterruptedException, ExecutionException {
-		File rawCalls = getContext().getFileSystemContext().getBreakpointVcf(OUTPUT_VCF);
-		if (!rawCalls.exists()) {
-			VariantCaller caller = new VariantCaller(getContext(), getSamEvidenceSources(), getAssemblySource());
-			caller.callBreakends(rawCalls, threadpool);
-		}
-	}
 	public static void main(String[] argv) {
         System.exit(new IdentifyVariants().instanceMain(argv));
     }
 	@Override
 	public int doWork(ExecutorService threadpool) throws IOException, InterruptedException, ExecutionException {
 		IOUtil.assertFileIsWritable(OUTPUT_VCF);
-    	callVariants(threadpool);
+		VariantCaller caller = new VariantCaller(getContext(), getSamEvidenceSources(), getAssemblySource());
+		caller.callBreakends(OUTPUT_VCF, threadpool);
+		log.info("Raw variant calls written to " + OUTPUT_VCF);
 		return 0;
 	}
 }

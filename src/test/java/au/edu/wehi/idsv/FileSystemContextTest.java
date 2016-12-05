@@ -39,23 +39,13 @@ public class FileSystemContextTest {
 		testFileAssertMatch("test.bam.insert_size_metrics", C().getInsertSizeMetrics(TEST_BAM));
 		testFileAssertMatch("test.bam.realign.0.fq", C().getRealignmentFastq(TEST_BAM, 0));
 		testFileAssertMatch("test.bam.realign.0.bam", C().getRealignmentBam(TEST_BAM, 0));
-		testFileAssertMatch("test.bam.breakend.bam", C().getAssemblyRawBam(TEST_BAM));
 		testFileAssertMatch("test.bam.breakpoint.vcf", C().getBreakpointVcf(TEST_BAM));
-	}
-	@Test
-	public void test_remote() {
-		testFileAssertMatch("test.bam.assembly.bam", C().getAssembly(TEST_BAM));
-		testFileAssertMatch("test.bam.assemblymate.bam", C().getAssemblyMate(TEST_BAM));
-		testFileAssertMatch("test.bam.scremote.bam", C().getSoftClipRemoteBam(TEST_BAM));
-		testFileAssertMatch("test.bam.scremote.unsorted.bam", C().getSoftClipRemoteUnsortedBam(TEST_BAM));
-		testFileAssertMatch("test.bam.realignremote.bam", C().getRealignmentRemoteBam(TEST_BAM));
-		testFileAssertMatch("test.bam.realignremote.unsorted.bam", C().getRealignmentRemoteUnsortedBam(TEST_BAM));
 	}
 	@Test
 	public void should_use_working_directory_if_set() throws IOException {
 		File working = testFolder.newFolder("workingdir");
 		File f = testFolder.newFile("test.bam");
 		FileSystemContext fsc = new FileSystemContext(testFolder.getRoot(), working, 1);
-		assertTrue(fsc.getAssembly(f).toString().contains("workingdir"));
+		assertTrue(fsc.getIdsvMetrics(f).toString().contains("workingdir"));
 	}
 }

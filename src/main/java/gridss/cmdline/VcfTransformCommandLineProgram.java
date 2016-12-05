@@ -46,9 +46,11 @@ public abstract class VcfTransformCommandLineProgram extends FullEvidenceCommand
 		IOUtil.assertFileIsReadable(ASSEMBLY);
 		IOUtil.assertFileIsReadable(INPUT_VCF);
 		IOUtil.assertFileIsWritable(OUTPUT_VCF);
+		log.info("Annotating variants in " + INPUT_VCF);
 		try (CloseableIterator<VariantContextDirectedBreakpoint> it = iterator(getBreakpoints(INPUT_VCF), threadpool)) {
 			saveVcf(OUTPUT_VCF, getAllCalls(INPUT_VCF, it));
 		}
+		log.info("Annotated variants written to " + OUTPUT_VCF);
 		return 0;
 	}
 	public CloseableIterator<VariantContextDirectedBreakpoint> getBreakpoints(File file) {
