@@ -483,6 +483,13 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertNull(read0.getAttribute("Q2"));
 	}
 	@Test
+	public void calculateTemplateTags_should_handle_unpaired_reads() {
+		SAMRecord read = Read(0, 1, "3M");
+		SAMRecord anotherRead = Read(0, 1, "3M");
+		
+		SAMRecordUtil.calculateTemplateTags(ImmutableList.of(read, anotherRead), SAMRecordUtil.TEMPLATE_TAGS, true, true);
+	}
+	@Test
 	public void calculateTemplateTags_should_write_R2_Q2_based_on_sequencing_order() {
 		SAMRecord read0 = Read(0, 1, "3M");
 		read0.setReadPairedFlag(true);

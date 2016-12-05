@@ -732,7 +732,7 @@ public class SAMRecordUtil {
 			}
 		}
 		if (fixMates || tags.contains(SAMTag.MC) || tags.contains(SAMTag.MQ)) {
-			if (records.size() >= 2) {
+			if (segments.size() >= 2) {
 				// hack to prevent SAMRecord getters from throwing an exception
 				records.stream().forEach(r -> r.setReadPairedFlag(true));
 				segments.get(0).stream().forEach(r -> r.setFirstOfPairFlag(true));
