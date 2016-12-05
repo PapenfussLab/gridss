@@ -141,4 +141,10 @@ public class SingleReadEvidenceTest extends TestHelper {
 		SplitReadEvidence e = (SplitReadEvidence)asEvidence(r);
 		assertEquals(8, e.getHomologySequence().length());
 	}
+	@Test(expected=IllegalStateException.class)
+	public void should_not_calculate_homology_if_reference_sequence_cannot_be_found() {
+		SplitReadEvidence sr = SR(Read(0, 1, "5M5S"), Read(1, 1, "5M"));
+		List<SingleReadEvidence> e = SingleReadEvidence.createEvidence(null, sr.getSAMRecord());
+		assertEquals(0, e.get(0).getHomologySequence().length());
+	}
 }

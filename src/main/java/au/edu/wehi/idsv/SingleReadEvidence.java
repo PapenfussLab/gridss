@@ -25,6 +25,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	private final byte[] breakendQuals;
 	private final boolean isUnanchored;
 	private String evidenceid;
+	private boolean unableToCalculateHomology = false;
 	
 	public static List<SingleReadEvidence> createEvidence(SAMEvidenceSource source, SAMRecord record) {
 		if (record.getReadUnmappedFlag()) return Collections.emptyList();
@@ -126,9 +127,14 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 		this.record = record;
 		this.untemplated = new String(Arrays.copyOfRange(record.getReadBases(), offsetUnmappedStart, offsetUnmappedEnd), StandardCharsets.US_ASCII);
 		this.anchorBases = Arrays.copyOfRange(record.getReadBases(), offsetLocalStart, offsetLocalEnd);
-		this.anchorQuals = Arrays.copyOfRange(record.getBaseQualities(), offsetLocalStart, offsetLocalEnd);
 		this.breakendBases = Arrays.copyOfRange(record.getReadBases(), Math.min(offsetRemoteStart, offsetUnmappedStart), Math.max(offsetRemoteEnd, offsetUnmappedEnd));
-		this.breakendQuals = Arrays.copyOfRange(record.getBaseQualities(), Math.min(offsetRemoteStart, offsetUnmappedStart), Math.max(offsetRemoteEnd, offsetUnmappedEnd));
+		if (record.getBaseQualities() != SAMRecord.NULL_QUALS && record.getBaseQualities() != null) {
+			this.anchorQuals = Arrays.copyOfRange(record.getBaseQualities(), offsetLocalStart, offsetLocalEnd);
+			this.breakendQuals = Arrays.copyOfRange(record.getBaseQualities(), Math.min(offsetRemoteStart, offsetUnmappedStart), Math.max(offsetRemoteEnd, offsetUnmappedEnd));
+		} else {
+			this.anchorQuals = null;
+			this.breakendQuals = null;
+		}
 		this.isUnanchored = localInexactMargin > 0 || remoteInexactMargin > 0;
 		this.location = withExactHomology(location);
 	}
@@ -143,34 +149,39 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 		// tandem repeats can have both inserted sequence and sequence homology.
 		if (untemplated.length() > 0) return location;
 		if (location instanceof BreakpointSummary) {
-			ReferenceLookup lookup = source.getContext().getReference();
-			BreakpointSummary bp = (BreakpointSummary) location;
-			int localBasesMatchingRemoteReference;
-			int remoteBasesMatchingLocalReference;
-			if (bp.direction == BreakendDirection.Forward) {
-				// anchor -> breakend
-				remoteBasesMatchingLocalReference = homologyLength(lookup, bp.referenceIndex, bp.nominal + 1, 1, breakendBases, 0, 1);
-				if (bp.direction2  == BreakendDirection.Backward) {
-					localBasesMatchingRemoteReference = homologyLength(lookup, bp.referenceIndex2, bp.nominal2 - 1, -1, anchorBases, anchorBases.length - 1, -1);
+			if (source != null && source.getContext() != null && source.getContext().getReference() !=  null) {
+				ReferenceLookup lookup = source.getContext().getReference();
+				BreakpointSummary bp = (BreakpointSummary) location;
+				int localBasesMatchingRemoteReference;
+				int remoteBasesMatchingLocalReference;
+				if (bp.direction == BreakendDirection.Forward) {
+					// anchor -> breakend
+					remoteBasesMatchingLocalReference = homologyLength(lookup, bp.referenceIndex, bp.nominal + 1, 1, breakendBases, 0, 1);
+					if (bp.direction2  == BreakendDirection.Backward) {
+						localBasesMatchingRemoteReference = homologyLength(lookup, bp.referenceIndex2, bp.nominal2 - 1, -1, anchorBases, anchorBases.length - 1, -1);
+					} else {
+						localBasesMatchingRemoteReference = homologyLength(lookup, bp.referenceIndex2, bp.nominal2 + 1,  1, anchorBases, anchorBases.length - 1, -1);
+					}
 				} else {
-					localBasesMatchingRemoteReference = homologyLength(lookup, bp.referenceIndex2, bp.nominal2 + 1,  1, anchorBases, anchorBases.length - 1, -1);
+					remoteBasesMatchingLocalReference = homologyLength(lookup, bp.referenceIndex, bp.nominal - 1, -1, breakendBases, breakendBases.length - 1, -1);
+					if (bp.direction2  == BreakendDirection.Forward) {
+						localBasesMatchingRemoteReference = homologyLength(lookup, bp.referenceIndex2, bp.nominal2 + 1,  1, anchorBases, 0, 1);
+					} else {
+						localBasesMatchingRemoteReference = homologyLength(lookup, bp.referenceIndex2, bp.nominal2 - 1, -1, anchorBases, 0, 1);
+					}
 				}
+				BreakpointSummary adjusted = bp.adjustPosition(localBasesMatchingRemoteReference, remoteBasesMatchingLocalReference, false);
+				// push the bounds back in if we overrun our contigs bounds to the homology 
+				if (adjusted.start <= 0 && localBasesMatchingRemoteReference > 0) localBasesMatchingRemoteReference--;
+				if (adjusted.start2 <= 0 && remoteBasesMatchingLocalReference > 0) remoteBasesMatchingLocalReference--;
+				if (adjusted.end > lookup.getSequenceDictionary().getSequence(adjusted.referenceIndex).getSequenceLength() && localBasesMatchingRemoteReference > 0) localBasesMatchingRemoteReference--;
+				if (adjusted.end2 > lookup.getSequenceDictionary().getSequence(adjusted.referenceIndex2).getSequenceLength() && remoteBasesMatchingLocalReference > 0) remoteBasesMatchingLocalReference--;
+				BreakpointSummary readjusted = bp.adjustPosition(localBasesMatchingRemoteReference, remoteBasesMatchingLocalReference, false);
+				return readjusted;
 			} else {
-				remoteBasesMatchingLocalReference = homologyLength(lookup, bp.referenceIndex, bp.nominal - 1, -1, breakendBases, breakendBases.length - 1, -1);
-				if (bp.direction2  == BreakendDirection.Forward) {
-					localBasesMatchingRemoteReference = homologyLength(lookup, bp.referenceIndex2, bp.nominal2 + 1,  1, anchorBases, 0, 1);
-				} else {
-					localBasesMatchingRemoteReference = homologyLength(lookup, bp.referenceIndex2, bp.nominal2 - 1, -1, anchorBases, 0, 1);
-				}
+				unableToCalculateHomology = true;
+				return location;
 			}
-			BreakpointSummary adjusted = bp.adjustPosition(localBasesMatchingRemoteReference, remoteBasesMatchingLocalReference, false);
-			// push the bounds back in if we overrun our contigs bounds to the homology 
-			if (adjusted.start <= 0 && localBasesMatchingRemoteReference > 0) localBasesMatchingRemoteReference--;
-			if (adjusted.start2 <= 0 && remoteBasesMatchingLocalReference > 0) remoteBasesMatchingLocalReference--;
-			if (adjusted.end > lookup.getSequenceDictionary().getSequence(adjusted.referenceIndex).getSequenceLength() && localBasesMatchingRemoteReference > 0) localBasesMatchingRemoteReference--;
-			if (adjusted.end2 > lookup.getSequenceDictionary().getSequence(adjusted.referenceIndex2).getSequenceLength() && remoteBasesMatchingLocalReference > 0) remoteBasesMatchingLocalReference--;
-			BreakpointSummary readjusted = bp.adjustPosition(localBasesMatchingRemoteReference, remoteBasesMatchingLocalReference, false);
-			return readjusted;
 		} else {
 			// not considering unclipping bases since that only affects assembly
 			// and is already covered by SAMRecordUtil.unclipExactReferenceMatches()
@@ -260,6 +271,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	}
 	
 	public String getHomologySequence() {
+		if (unableToCalculateHomology) throw new IllegalStateException("Unable to calculate homology as reference genome has not been supplied");
 		if (!isBreakendExact()) return "";
 		int homlen = location.end - location.start;
 		int locallen = getHomologyAnchoredBaseCount();
@@ -276,6 +288,7 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 	}
 
 	public int getHomologyAnchoredBaseCount() {
+		if (unableToCalculateHomology) throw new IllegalStateException("Unable to calculate homology as reference genome has not been supplied");
 		if (isBreakendExact()) {
 			if (location.direction == BreakendDirection.Forward) { 
 				return location.nominal - location.start;

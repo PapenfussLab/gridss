@@ -56,9 +56,14 @@ public class ReadsToBedpe extends CommandLineProgram {
     			SAMFileHeader header = reader.getFileHeader();
     			SAMSequenceDictionary dict = header.getSequenceDictionary();
     			try (CloseableIterator<SAMRecord> it = new AsyncBufferedIterator<SAMRecord>(reader.iterator(), 2, 300)) {
+    				int i= 0;
     				try (BufferedWriter writer = new BufferedWriter(new FileWriter(OUTPUT))) {
     					while (it.hasNext()) {
     						process(writer, dict, it.next());
+    						i++;
+    					}
+    					if (i % 1000 == 0) {
+    						writer.flush();
     					}
     				}
     			}
@@ -72,11 +77,15 @@ public class ReadsToBedpe extends CommandLineProgram {
 	private void process(Writer writer, SAMSequenceDictionary dict, SAMRecord record) throws IOException {
 		// Split read
 		for (SplitReadEvidence sre : SplitReadEvidence.create(null, record)) {
-			writeBedPe(writer, dict, sre);
+			if (sre.getBreakendSummary().isLowBreakend()) {
+				writeBedPe(writer, dict, sre);
+			}
 		}
 		// indel
 		for (IndelEvidence ie : IndelEvidence.create(null, record)) {
-			writeBedPe(writer, dict, ie);
+			if (ie.getBreakendSummary().direction == BreakendDirection.Forward) {
+				writeBedPe(writer, dict, ie);
+			}
 		}
 	}
 	private void writeBedPe(Writer writer, SAMSequenceDictionary dict, SplitReadEvidence e) throws IOException {
@@ -87,7 +96,6 @@ public class ReadsToBedpe extends CommandLineProgram {
 	}
 	private void writeBedPe(Writer writer, SAMSequenceDictionary dict, DirectedBreakpoint e, int mapq, String source) throws IOException {
 		Integer size = e.getBreakendSummary().getEventSize();
-		if (!e.getBreakendSummary().isLowBreakend()) return;
 		if (size == null || Math.abs(size) < MIN_SIZE) return;
 		if (e.getLocalMapq() < MIN_MAPQ || e.getRemoteMapq() < MIN_MAPQ) return;
 		
