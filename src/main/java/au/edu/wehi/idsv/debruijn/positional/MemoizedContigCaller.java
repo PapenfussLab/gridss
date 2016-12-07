@@ -199,12 +199,15 @@ public class MemoizedContigCaller extends ContigCaller {
 	 * 
 	 * @param node node to visit
 	 */
-	private void visit(TraversalNode node, int unprocessedPosition) {
-		assert(node.node.lastEnd() + 1 < unprocessedPosition); // successors must be fully defined
+	private void visit(TraversalNode toVisit, int unprocessedPosition) {
+		TraversalNode node = toVisit;
 		if (node.node.isReference()) {
 			// Reset reference traversal to a starting path
-			node = new TraversalNode(new KmerPathSubnode(node.node.node()), anchoredScore - node.node.node().weight());
+			node = new TraversalNode(node.node, anchoredScore - node.node.node().weight());
+			assert(node.node.lastStart() == toVisit.node.lastStart());
+			assert(node.node.lastEnd() == toVisit.node.lastEnd());
 		}
+		assert(node.node.lastEnd() + 1 < unprocessedPosition); // successors must be fully defined
 		for (KmerPathSubnode sn : node.node.next()) {
 			if (!frontier.isMemoized(sn.node())) {
 				throw new SanityCheckFailureException(String.format("Subnode %s reachable from %s not memoized. [%s, maxVisitedEndPosition=%d, nextPosition=%d]",

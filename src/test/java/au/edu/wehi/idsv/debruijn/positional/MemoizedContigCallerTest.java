@@ -250,4 +250,17 @@ public class MemoizedContigCallerTest extends ContigCallerTest {
 		// even though n3 starts before n2
 		assertEquals(2, caller.frontierPath(17, 14).size());
 	}
+	@Test
+	public void visit_should_reset_path_at_reference_nodes() {
+		MemoizedContigCaller caller = new MemoizedContigCaller(0, 10);
+		KmerPathNode n1 = KPN(1, "A", 1, 1, false);
+		KmerPathNode n2 = KPN(1, "C", 2, 10, true);
+		KmerPathNode n3 = KPN(1, "C", 3, 9, false);
+		KmerPathNode.addEdge(n1, n2);
+		KmerPathNode.addEdge(n2, n3);
+		caller.add(n1);
+		caller.add(n2);
+		caller.add(n3);
+		caller.frontierPath(6, 2);
+	}
 }
