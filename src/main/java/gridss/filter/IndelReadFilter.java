@@ -1,5 +1,8 @@
 package gridss.filter;
 
+import java.util.List;
+
+import htsjdk.samtools.CigarElement;
 import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.filter.SamRecordFilter;
 
@@ -24,8 +27,15 @@ public class IndelReadFilter implements SamRecordFilter {
 	public boolean filterOut(SAMRecord record) {
 		return record.getReadUnmappedFlag()
 				|| record.getCigar() == null
-				|| !record.getCigar().getCigarElements().stream().anyMatch(
-						ce -> ce.getOperator().isIndelOrSkippedRegion() && ce.getLength() >= minIndelLength);
+				|| !containsLargeIndel(record.getCigar().getCigarElements(), minIndelLength);
+	}
+	private static boolean containsLargeIndel(List<CigarElement> cigar, int minsize) {
+		for (CigarElement ce : cigar) {
+			if (ce.getLength() >= minsize && ce.getOperator().isIndelOrSkippedRegion()) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@Override

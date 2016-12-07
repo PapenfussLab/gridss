@@ -204,8 +204,8 @@ public class ExtractSVReads extends CommandLineProgram {
 		boolean[] consistent = new boolean[2];
 		for (SAMRecord r : records) {
 			int segmentIndex = SAMRecordUtil.getSegmentIndex(r);
-			if (consistent.length < segmentIndex) {
-				consistent = Arrays.copyOf(consistent, segmentIndex);
+			if (consistent.length <= segmentIndex) {
+				consistent = Arrays.copyOf(consistent, segmentIndex + 1);
 			}
 			if (consistent[segmentIndex]) continue; // no need to check this segment any further
 			if (isFullyMapped(r)) {

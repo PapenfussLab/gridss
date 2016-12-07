@@ -36,4 +36,9 @@ public class ExtractSVReadsTest extends IntermediateFilesTest {
 		list.addAll(Lists.newArrayList(DP(0, 10, "5S10M", false, 2, 2, "10X", false)));
 		assertArrayEquals(new boolean[] { true, true }, ExtractSVReads.hasReadAlignmentConsistentWithReference(list));
 	}
+	@Test
+	public void hasReadAlignmentConsistentWithReference_should_return_per_segment() {
+		List<SAMRecord> list = Lists.newArrayList(withAttr("FI", 2, Read(0, 1, "1M")));
+		assertArrayEquals(new boolean[] { false, false, true }, ExtractSVReads.hasReadAlignmentConsistentWithReference(list));
+	}
 }
