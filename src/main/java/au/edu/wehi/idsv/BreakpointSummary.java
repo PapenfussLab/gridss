@@ -212,8 +212,8 @@ public class BreakpointSummary extends BreakendSummary {
 	public boolean isValid(SAMSequenceDictionary dictionary) {
 		return super.isValid(dictionary) &&
 				referenceIndex2 >= 0 && referenceIndex2 < dictionary.size()
-				&& start2 <= end
-				&& start2 > 0 && end <= dictionary.getSequence(referenceIndex2).getSequenceLength();
+				&& start2 <= end2
+				&& start2 > 0 && end2 <= dictionary.getSequence(referenceIndex2).getSequenceLength();
 	}
 	/**
 	 * Determines the size of the simplest event (deletion, inversion, tandem duplication)

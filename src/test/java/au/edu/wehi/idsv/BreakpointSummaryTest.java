@@ -210,4 +210,12 @@ public class BreakpointSummaryTest extends TestHelper {
 		dict.addSequence(new SAMSequenceRecord("test2", 20));
 		assertEquals(new BreakpointSummary(0, BWD, 1, 1, 10, 1, FWD, 5, 1, 20), new BreakpointSummary(0, BWD, -10, -100, 100, 1, FWD, 5, -100, 100).asValidFor(dict));
 	}
+	@Test
+	public void isValid_should_check_both_breakends() {
+		SAMSequenceDictionary dict = new SAMSequenceDictionary();
+		dict.addSequence(new SAMSequenceRecord("test", 10));
+		dict.addSequence(new SAMSequenceRecord("test2", 20));
+		assertTrue(new BreakpointSummary(0, BWD, 10, 1, FWD, 1).isValid(dict));
+		assertTrue(new BreakpointSummary(0, BWD, 1, 1, FWD, 10).isValid(dict));
+	}
 }

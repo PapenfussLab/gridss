@@ -32,8 +32,8 @@ public class MaximalEvidenceCliqueIteratorTest extends TestHelper {
 		assertEquals(circularbp, calls.get(0).getBreakendSummary());
 		assertEquals(circularbp.remoteBreakpoint(), calls.get(1).getBreakendSummary());
 	}
-	@Test
-	public void should_clip_variant_calls_to_chromosomal_boundry() {
+	@Test(expected=IllegalArgumentException.class)
+	public void should_require_valid_evidence() {
 		BreakpointSummary outOfBounds = new BreakpointSummary(0, BWD, -10, 0, FWD, 12000);
 		List<VariantContextDirectedEvidence> calls = Lists.newArrayList(new MaximalEvidenceCliqueIterator(getContext(), ImmutableList.<DirectedEvidence>of(new MockDirectedBreakpoint(outOfBounds)).iterator(), BWD, FWD, new SequentialIdGenerator("test")));
 		assertEquals(2, calls.size());

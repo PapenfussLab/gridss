@@ -95,7 +95,9 @@ public class IdsvVariantContextBuilder extends VariantContextBuilder {
 		if (untemplatedBaseQual != null && untemplatedSequence.length() != untemplatedBaseQual.length) {
 			throw new IllegalArgumentException("untemplatedBaseQual length must match untemplatedSequence length");
 		}
-		if (!loc.isValid(processContext.getDictionary())) throw new IllegalArgumentException(String.format("%s is not valid", loc));
+		if (!loc.isValid(processContext.getDictionary())) {
+			throw new IllegalArgumentException(String.format("%s is not valid", loc));
+		}
 		
 		String chr = processContext.getDictionary().getSequence(loc.referenceIndex).getSequenceName();
 		String ref, alt;
