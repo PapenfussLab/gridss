@@ -147,4 +147,9 @@ public class SingleReadEvidenceTest extends TestHelper {
 		List<SingleReadEvidence> e = SingleReadEvidence.createEvidence(null, sr.getSAMRecord());
 		assertEquals(0, e.get(0).getHomologySequence().length());
 	}
+	@Test
+	public void should_clip_breakpoints_to_contig_bounds() {
+		SplitReadEvidence sr = (SplitReadEvidence)asEvidence(withAttr("SA", "polyACGT,1,+,1X1N1X10S,0,0", Read(0, 1, "2S10M"))[0]);
+		assertEquals(new BreakpointSummary(0, BWD, 1, 1, 1, 1, FWD, 2, 1, 3), sr.getBreakendSummary());
+	}
 }

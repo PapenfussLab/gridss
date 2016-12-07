@@ -136,7 +136,11 @@ public abstract class SingleReadEvidence implements DirectedEvidence {
 			this.breakendQuals = null;
 		}
 		this.isUnanchored = localInexactMargin > 0 || remoteInexactMargin > 0;
-		this.location = withExactHomology(location);
+		location = withExactHomology(location);
+		if (source != null && source.getContext() != null && source.getContext().getReference() != null && source.getContext().getReference().getSequenceDictionary() != null) {
+			location = location.asValidFor(source.getContext().getReference().getSequenceDictionary());
+		}
+		this.location = location;
 	}
 	private BreakendSummary withExactHomology(BreakendSummary location) {
 		if (!isBreakendExact()) return location;

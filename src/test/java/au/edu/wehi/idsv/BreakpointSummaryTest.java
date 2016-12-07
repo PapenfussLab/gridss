@@ -6,6 +6,9 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
+import htsjdk.samtools.SAMSequenceDictionary;
+import htsjdk.samtools.SAMSequenceRecord;
+
 
 public class BreakpointSummaryTest extends TestHelper {
 	@Test
@@ -199,5 +202,12 @@ public class BreakpointSummaryTest extends TestHelper {
 	@Test
 	public void adjustPosition_should_adjust_according_to_local_breakend_direction() {
 		assertEquals(new BreakpointSummary(0, FWD, 10, 9, 12, 1, BWD, 20, 19, 22), new BreakpointSummary(0, FWD, 10, 1, BWD, 20).adjustPosition(1, 2, false));
+	}
+	@Test
+	public void asValidFor_should_adjust_bounds() {
+		SAMSequenceDictionary dict = new SAMSequenceDictionary();
+		dict.addSequence(new SAMSequenceRecord("test", 10));
+		dict.addSequence(new SAMSequenceRecord("test2", 20));
+		assertEquals(new BreakpointSummary(0, BWD, 1, 1, 10, 1, FWD, 5, 1, 20), new BreakpointSummary(0, BWD, -10, -100, 100, 1, FWD, 5, -100, 100).asValidFor(dict));
 	}
 }

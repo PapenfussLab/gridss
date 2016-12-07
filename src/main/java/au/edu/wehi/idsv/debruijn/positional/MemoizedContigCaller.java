@@ -204,8 +204,6 @@ public class MemoizedContigCaller extends ContigCaller {
 		if (node.node.isReference()) {
 			// Reset reference traversal to a starting path
 			node = new TraversalNode(node.node, anchoredScore - node.node.node().weight());
-			assert(node.node.lastStart() == toVisit.node.lastStart());
-			assert(node.node.lastEnd() == toVisit.node.lastEnd());
 		}
 		assert(node.node.lastEnd() + 1 < unprocessedPosition); // successors must be fully defined
 		for (KmerPathSubnode sn : node.node.next()) {

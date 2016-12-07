@@ -6,6 +6,7 @@ import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 
 import au.edu.wehi.idsv.util.IntervalUtil;
+import htsjdk.samtools.SAMSequenceDictionary;
 
 /**
  * Positional locations on source and target chromosomes
@@ -192,6 +193,27 @@ public class BreakpointSummary extends BreakendSummary {
 		return new BreakpointSummary(
 				referenceIndex, direction, nominal, nominal, nominal,
 				referenceIndex2, direction2, nominal2, nominal2, nominal2);
+	}
+	/**
+	 * Adjusts the breakend positions such that the call variant positions are valid position
+	 * for the contigs in question.
+	 * @param dictionary
+	 * @return adjusted positions
+	 */
+	public BreakpointSummary asValidFor(SAMSequenceDictionary dictionary) {
+		if (isValid(dictionary)) return this;
+		return new BreakpointSummary(super.asValidFor(dictionary), remoteBreakend().asValidFor(dictionary));
+	}
+	/**
+	 * Determines whether this given breakpoint is valid for the given reference
+	 * @param dictionary
+	 * @return
+	 */
+	public boolean isValid(SAMSequenceDictionary dictionary) {
+		return super.isValid(dictionary) &&
+				referenceIndex2 >= 0 && referenceIndex2 < dictionary.size()
+				&& start2 <= end
+				&& start2 > 0 && end <= dictionary.getSequence(referenceIndex2).getSequenceLength();
 	}
 	/**
 	 * Determines the size of the simplest event (deletion, inversion, tandem duplication)

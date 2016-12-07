@@ -18,4 +18,10 @@ public class DiscordantReadPairTest extends TestHelper {
 		pair[1].setMappingQuality(20);
 		assertEquals(20, newPair(pair, 300).getRemoteMapq());
 	}
+	@Test
+	public void should_clip_breakpoint_to_contig_bounds() {
+		SAMRecord[] pair = DP(0, 1, "1M", false, 0, 10000, "1M", true);
+		DiscordantReadPair rp = newPair(pair, 300);
+		assertEquals(new BreakpointSummary(0, BWD, 1, 0, FWD, 10000), rp.getBreakendSummary());
+	}
 }
