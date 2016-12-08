@@ -3,9 +3,12 @@ package gridss;
 import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterators;
 
+import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.DirectedEvidence;
+import au.edu.wehi.idsv.DirectedEvidenceOrder;
 import au.edu.wehi.idsv.GreedyVariantAllocationCache;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.SequentialEvidenceAllocator;
@@ -15,6 +18,8 @@ import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
 import au.edu.wehi.idsv.configuration.VariantCallingConfiguration;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
+import au.edu.wehi.idsv.validation.OrderAssertingIterator;
+import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
 import gridss.cmdline.VcfTransformCommandLineProgram;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.IOUtil;
@@ -46,6 +51,21 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 		GREEDY,
 	}
 	private GreedyVariantAllocationCache cache;
+	public CloseableIterator<DirectedEvidence> getEvidenceIterator() {
+		CloseableIterator<DirectedEvidence> evidenceIt;
+		boolean assemblyOnly = getContext().getVariantCallingParameters().callOnlyAssemblies;
+		if (assemblyOnly) {
+			evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.of(getAssemblySource()), true);
+		} else {
+			evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.<SAMEvidenceSource>builder().addAll(getSamEvidenceSources()).add(getAssemblySource()).build(), true);
+		}
+		if (Defaults.SANITY_CHECK_ITERATORS) {
+			evidenceIt = new AutoClosingIterator<>(
+					new PairedEvidenceTracker<>("Evidence",
+							new OrderAssertingIterator<>(evidenceIt, DirectedEvidenceOrder.ByNatural)), evidenceIt);
+		}
+		return evidenceIt;
+	}
 	@Override
 	public CloseableIterator<VariantContextDirectedBreakpoint> iterator(CloseableIterator<VariantContextDirectedBreakpoint> calls, ExecutorService threadpool) {
 		populateCache();
@@ -64,14 +84,12 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 	}
 	public void populateCache(CloseableIterator<VariantContextDirectedBreakpoint> calls) {
 		log.info("Loading variant evidence support");
-		cache = new GreedyVariantAllocationCache();
+		cache = new GreedyVariantAllocationCache(true, true, ALLOCATE_TO_BEST);
 		try (CloseableIterator<DirectedEvidence> evidence = new AsyncBufferedIterator<>(getEvidenceIterator(), "mergedEvidence-cache")) {
 			Iterator<VariantEvidenceSupport> annotator = new SequentialEvidenceAllocator(getContext(), calls, evidence, SAMEvidenceSource.maximumWindowSize(getContext(), getSamEvidenceSources(), getAssemblySource()), ALLOCATE_TO_BEST);
 			while (annotator.hasNext()) {
 				VariantEvidenceSupport ves = annotator.next();
-				for (DirectedEvidence e : ves.support) {
-					cache.addBreakpoint((VariantContextDirectedBreakpoint)ves.variant, e);
-				}
+				cache.addBreakpoint((VariantContextDirectedBreakpoint)ves.variant, ves.support);
 			}
 		}
 	}

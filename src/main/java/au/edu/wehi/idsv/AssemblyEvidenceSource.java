@@ -234,7 +234,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		ProgressLogger progressLog = new ProgressLogger(log);
 		List<Iterator<SAMRecord>> list = new ArrayList<>();
 		for (BreakendDirection direction : BreakendDirection.values()) {
-			CloseableIterator<DirectedEvidence> it = mergedIterator(source);
+			CloseableIterator<DirectedEvidence> it = mergedIterator(source, false);
 			Iterator<DirectedEvidence> throttledIt = throttled(it);
 			ProgressLoggingDirectedEvidenceIterator<DirectedEvidence> loggedIt = new ProgressLoggingDirectedEvidenceIterator<>(getContext(), throttledIt, progressLog);
 			Iterator<SAMRecord> evidenceIt = new PositionalAssembler(getContext(), this, loggedIt, direction);

@@ -20,7 +20,7 @@ public class GreedyVariantAllocationCacheTest extends TestHelper {
 			SR(Read(0, 1, "10M5S"), Read(1, 100, "5M")),
 			IE(Read(0, 1, "1M1D1M"))
 		};
-		GreedyVariantAllocationCache cache = new GreedyVariantAllocationCache();
+		GreedyVariantAllocationCache cache = new GreedyVariantAllocationCache(true, true, true);
 		for (DirectedBreakpoint e : evidence) {
 			cache.addBreakpoint("variant1", 1, e);
 			cache.addBreakpoint("variant2", 2, e);
@@ -41,7 +41,7 @@ public class GreedyVariantAllocationCacheTest extends TestHelper {
 				(DiscordantReadPair)NRRP(withReadName("read", DP(3, 3, "1M", true, 4, 4, "1M", true))),
 				(DiscordantReadPair)NRRP(withReadName("read", DP(1, 1, "1M", true, 4, 4, "1M", true))),
 		};
-		GreedyVariantAllocationCache cache = new GreedyVariantAllocationCache();
+		GreedyVariantAllocationCache cache = new GreedyVariantAllocationCache(true, true, true);
 		cache.addBreakpoint("variant1", 2, evidence[0]);
 		cache.addBreakpoint("variant1", 1, evidence[1]);
 		cache.addBreakpoint("variant2", 1, evidence[2]);
@@ -71,7 +71,7 @@ public class GreedyVariantAllocationCacheTest extends TestHelper {
 				SR(withReadName("read", Read(0, 1, "10M10S"))[0], withReadName("read", Read(0, 20, "10M"))[0]),
 				SR(withReadName("read", Read(0, 1, "10S10M"))[0], withReadName("read", Read(0, 10, "10M"))[0]),
 		};
-		GreedyVariantAllocationCache cache = new GreedyVariantAllocationCache();
+		GreedyVariantAllocationCache cache = new GreedyVariantAllocationCache(true, true, true);
 		cache.addBreakpoint("variant1", 2, evidence[0]);
 		cache.addBreakpoint("variant2", 1, evidence[1]);
 		cache.addBreakpoint("variant3", 1, evidence[2]);
@@ -94,7 +94,7 @@ public class GreedyVariantAllocationCacheTest extends TestHelper {
 				IE(SES(), withReadName("read", Read(0, 1, "10M5D10M"))[0], 1),
 				IE(SES(), withReadName("read", Read(0, 1, "10M6D10M"))[0], 1),
 		};
-		GreedyVariantAllocationCache cache = new GreedyVariantAllocationCache();
+		GreedyVariantAllocationCache cache = new GreedyVariantAllocationCache(true, true, true);
 		cache.addBreakpoint("variant1", 2, evidence[0]);
 		cache.addBreakpoint("variant2", 1, evidence[1]);
 		
@@ -113,7 +113,7 @@ public class GreedyVariantAllocationCacheTest extends TestHelper {
 				IE(SES(), withReadName("read", Read(0, 1, "10M5D10M"))[0], 1),
 				IE(SES(), withReadName("read", Read(0, 1, "10M6D10M"))[0], 1),
 		};
-		GreedyVariantAllocationCache cache = new GreedyVariantAllocationCache();
+		GreedyVariantAllocationCache cache = new GreedyVariantAllocationCache(true, true, true);
 		cache.addBreakpoint("variant1", 2, evidence[0]);
 		cache.addBreakpoint("variant2", 1, evidence[1]);
 		cache.addBreakpoint("variant1", 2, evidence[0].asRemote());
@@ -131,7 +131,7 @@ public class GreedyVariantAllocationCacheTest extends TestHelper {
 				IE(SES(), withReadName("read", Read(0, 1, "10M5D10M5D10M"))[0], 1),
 				IE(SES(), withReadName("read", Read(0, 1, "10M5D10M5D10M"))[0], 2),
 		};
-		GreedyVariantAllocationCache cache = new GreedyVariantAllocationCache();
+		GreedyVariantAllocationCache cache = new GreedyVariantAllocationCache(true, true, true);
 		cache.addBreakpoint("variant1", 2, evidence[0]);
 		cache.addBreakpoint("variant2", 1, evidence[1]);
 		
@@ -158,7 +158,7 @@ public class GreedyVariantAllocationCacheTest extends TestHelper {
 		// and an alternative alignment
 		sr.add(SR(withReadName("read", Read(0, 1, "10M10S"))[0], withReadName("read", Read(0, 20, "10M"))[0]));
 				
-		GreedyVariantAllocationCache cache = new GreedyVariantAllocationCache();
+		GreedyVariantAllocationCache cache = new GreedyVariantAllocationCache(true, true, true);
 		cache.addBreakpoint("variant1", 1, sr.get(0));
 		cache.addBreakpoint("variant1", 1, sr.get(1));
 		cache.addBreakpoint("variant2", 2, sr.get(2));
@@ -177,7 +177,7 @@ public class GreedyVariantAllocationCacheTest extends TestHelper {
 				SCE(FWD, withReadName("read", Read(0, 1, "10M5S"))),
 				SCE(FWD, withReadName("read", Read(1, 1, "10M5S"))),
 		};
-		GreedyVariantAllocationCache cache = new GreedyVariantAllocationCache();
+		GreedyVariantAllocationCache cache = new GreedyVariantAllocationCache(true, true, true);
 		cache.addBreakpoint("variant1", 1, evidence[0]);
 		cache.addBreakpoint("variant2", 2, evidence[1]);
 		
@@ -193,7 +193,7 @@ public class GreedyVariantAllocationCacheTest extends TestHelper {
 				NRRP(withReadName("read", OEA(0, 1, "1M", true))),
 				NRRP(withReadName("read", OEA(0, 2, "1M", true))),
 		};
-		GreedyVariantAllocationCache cache = new GreedyVariantAllocationCache();
+		GreedyVariantAllocationCache cache = new GreedyVariantAllocationCache(true, true, true);
 		cache.addBreakpoint("variant1", 1, evidence[0]);
 		cache.addBreakpoint("variant2", 2, evidence[1]);
 		

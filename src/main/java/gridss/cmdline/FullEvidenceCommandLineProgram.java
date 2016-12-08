@@ -36,21 +36,6 @@ public abstract class FullEvidenceCommandLineProgram extends MultipleSamFileComm
 	public void setAssemblySource(AssemblyEvidenceSource source) {
 		assemblyEvidenceSource = source;
     }
-	public CloseableIterator<DirectedEvidence> getEvidenceIterator() {
-		CloseableIterator<DirectedEvidence> evidenceIt;
-		boolean assemblyOnly = getContext().getVariantCallingParameters().callOnlyAssemblies;
-		if (assemblyOnly) {
-			evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.of(getAssemblySource()));
-		} else {
-			evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.<SAMEvidenceSource>builder().addAll(getSamEvidenceSources()).add(getAssemblySource()).build());
-		}
-		if (Defaults.SANITY_CHECK_ITERATORS) {
-			evidenceIt = new AutoClosingIterator<>(
-					new PairedEvidenceTracker<>("Evidence",
-							new OrderAssertingIterator<>(evidenceIt, DirectedEvidenceOrder.ByNatural)), evidenceIt);
-		}
-		return evidenceIt;
-	}
 	@Override
 	protected String[] customCommandLineValidation() {
 		String[] val = assemblyCustomCommandLineValidation();

@@ -15,6 +15,7 @@ import au.edu.wehi.idsv.configuration.SoftClipConfiguration;
 import au.edu.wehi.idsv.metrics.IdsvSamFileMetrics;
 import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
+import au.edu.wehi.idsv.util.AsyncBufferedIterator;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.util.BufferedIterator;
@@ -352,10 +353,13 @@ public class SAMEvidenceSource extends EvidenceSource {
 		}
 		return blacklist;
 	}
-	public static CloseableIterator<DirectedEvidence> mergedIterator(final List<SAMEvidenceSource> source) {
+	public static CloseableIterator<DirectedEvidence> mergedIterator(List<SAMEvidenceSource> source, boolean parallel) {
 		List<CloseableIterator<DirectedEvidence>> toMerge = Lists.newArrayList();
 		for (SAMEvidenceSource bam : source) {
 			CloseableIterator<DirectedEvidence> it = bam.iterator();
+			if (parallel) {
+				it = new AsyncBufferedIterator<>(it, bam.getFile() == null ? "" : bam.getFile().getName());
+			}
 			toMerge.add(it);
 		}
 		CloseableIterator<DirectedEvidence> merged = new AutoClosingMergedIterator<DirectedEvidence>(toMerge, DirectedEvidenceOrder.ByNatural);

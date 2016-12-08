@@ -50,7 +50,7 @@ public class Manual extends TestHelper {
 		//while (it.hasNext()) {
 		//	it.next();
 		//}
-		Iterator<DirectedEvidence> allIt = SAMEvidenceSource.mergedIterator(samEvidence);
+		Iterator<DirectedEvidence> allIt = SAMEvidenceSource.mergedIterator(samEvidence, false);
 		while (allIt.hasNext()) {
 			allIt.next();
 		}
