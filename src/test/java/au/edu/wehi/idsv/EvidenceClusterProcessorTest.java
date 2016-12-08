@@ -85,7 +85,7 @@ public class EvidenceClusterProcessorTest extends TestHelper {
 				ses.evidence.add(NRRP(ses, DP(j, i, "1M", false, j, i, "1M", false)));
 			}
 		}
-		ExecutorService threadpool = Executors.newFixedThreadPool(8);
+		ExecutorService threadpool = Executors.newFixedThreadPool(2);
 		EvidenceClusterProcessor ecp = new EvidenceClusterProcessor(threadpool, new AggregateEvidenceSource(getContext(), ImmutableList.of(ses), null));
 		threadpool.shutdown();
 		// tasks should be blocking on the output queue because we haven't pulled anything from it yet

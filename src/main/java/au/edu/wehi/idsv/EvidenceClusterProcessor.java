@@ -54,7 +54,8 @@ public class EvidenceClusterProcessor implements Iterator<VariantContextDirected
 		list.add(() -> { runTask(it, BreakendDirection.Backward, BreakendDirection.Backward, new SequentialIdGenerator("gridssbb"));});
 	}
 	public void runTask(AggregateEvidenceSource source, BreakendDirection lowDir, BreakendDirection highDir, VariantIdGenerator generator, QueryInterval filter) {
-		log.debug("Start processing " + filter);
+		String msg = String.format("processing %s:%d-%d %s %s", processContext.getReference().getSequenceDictionary().getSequence(filter.referenceIndex).getSequenceName(), filter.start, filter.end, lowDir, highDir);
+		log.debug("Start ", msg);
 		try {
 			int expandBy = source.getMaxConcordantFragmentSize() + 1;
 			try (CloseableIterator<DirectedEvidence> it = source.iterator(new QueryInterval(filter.referenceIndex,  filter.start - expandBy, filter.end + expandBy))) {
@@ -67,7 +68,7 @@ public class EvidenceClusterProcessor implements Iterator<VariantContextDirected
 		} finally {
 			outstandingTasks.decrementAndGet();
 			callBuffer.add(Optional.empty());
-			log.debug("Completed processing " + filter);
+			log.debug("Completed ", msg);
 		}
 	}
 	public void runTask(Iterable<DirectedEvidence> it, BreakendDirection lowDir, BreakendDirection highDir, VariantIdGenerator generator) {
