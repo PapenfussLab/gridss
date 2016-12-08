@@ -11,7 +11,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterators;
@@ -250,7 +249,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		private volatile Exception backgroundThreadException = null;
 		public AssemblyIterator(ExecutorService threadpool) {
 			if (threadpool == null) throw new NullPointerException("threadpool cannot be null");
-			List<QueryInterval> chunks = getContext().getReference().getIntervals(getContext().getConfig().chunkSize).collect(Collectors.toList());
+			List<QueryInterval> chunks = getContext().getReference().getIntervals(getContext().getConfig().chunkSize);
 			this.outstandingTasks = new AtomicInteger(2 * chunks.size()); // a forward and backward for each chunk 
 			assembleTasks(threadpool, chunks);
 		}

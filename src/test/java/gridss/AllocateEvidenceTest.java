@@ -9,6 +9,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.junit.Test;
 
@@ -48,7 +50,7 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
 		VariantCaller caller = new VariantCaller(pc, ImmutableList.of(ses), aes);
-		caller.callBreakends(output, null);
+		caller.callBreakends(output, MoreExecutors.newDirectExecutorService());
 		AllocateEvidence cmd = new AllocateEvidence();
 		cmd.INPUT_VCF = output;
 		cmd.setContext(pc);
@@ -77,7 +79,7 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
 		VariantCaller caller = new VariantCaller(pc, ImmutableList.of(ses), aes);
-		caller.callBreakends(output, null);
+		caller.callBreakends(output, MoreExecutors.newDirectExecutorService());
 		AllocateEvidence cmd = new AllocateEvidence();
 		cmd.INPUT_VCF = output;
 		cmd.setContext(pc);
@@ -113,7 +115,9 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 		Collections.sort(ses.evidence, DirectedEvidenceOrder.ByNatural);
 		createInput(in);
 		VariantCaller vc = new VariantCaller(pc, ImmutableList.<SAMEvidenceSource>of(ses), aes);
-		vc.callBreakends(output, MoreExecutors.newDirectExecutorService());
+		ExecutorService threadpool = Executors.newSingleThreadExecutor();
+		vc.callBreakends(output, threadpool);
+		threadpool.shutdown();
 		
 		AllocateEvidence cmd = new AllocateEvidence();
 		cmd.INPUT_VCF = output;

@@ -13,12 +13,14 @@ import au.edu.wehi.idsv.util.MathUtil;
 import au.edu.wehi.idsv.util.WindowedSortingIterator;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfSvConstants;
+import htsjdk.samtools.util.Log;
 /**
  * Maximal clique summary evidence iterator 
  * @author Daniel Cameron
  *
  */
 public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantContextDirectedEvidence> {
+	private static final Log log = Log.getInstance(MaximalEvidenceCliqueIterator.class);
 	public static final String BREAKEND_ID_SUFFIX_HIGH = "h";
 	public static final String BREAKEND_ID_SUFFIX_LOW = "o";
 	private VariantContextDirectedEvidence lastHigh = null;
@@ -67,9 +69,14 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 		}
 	}
 	private RectangleGraphNode toGraphNode(DirectedEvidence e) {
-		BreakendSummary loc = e.getBreakendSummary();		
-		if (!(loc instanceof BreakpointSummary)) return null;		
+		BreakendSummary loc = e.getBreakendSummary();
+		if (!(loc instanceof BreakpointSummary)) return null;
 		BreakpointSummary bp = (BreakpointSummary)loc;
+		if (!bp.isValid(context.getDictionary())) {
+			String msg = String.format("Evidence %s has invalid breakpoint %s", e.getEvidenceID(), bp);
+			log.error(msg);
+			throw new IllegalArgumentException(msg);
+		}
 		long startX = context.getLinear().getLinearCoordinate(bp.referenceIndex, bp.start);
 		long endX = startX + bp.end - bp.start;
 		long startY = context.getLinear().getLinearCoordinate(bp.referenceIndex2, bp.start2);
@@ -129,10 +136,7 @@ public class MaximalEvidenceCliqueIterator extends AbstractIterator<VariantConte
 				start2,
 				end2);
 		// sanity check that the resultant breakpoint makes sense
-		assert(breakpoint.start >= 1);
-		assert(breakpoint.start2 >= 1);
-		assert(breakpoint.referenceIndex >= 0);
-		assert(breakpoint.referenceIndex2 >= 0);
+		assert(breakpoint.isValid(context.getDictionary()));
 		return breakpoint;
 	}
 	@Override

@@ -5,6 +5,8 @@ import static org.junit.Assert.assertEquals;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.junit.Test;
 
@@ -37,8 +39,9 @@ public class VariantCallerTest extends IntermediateFilesTest {
 		Collections.sort(ses.evidence, DirectedEvidenceOrder.ByNatural);
 		createInput(in);
 		VariantCaller vc = new VariantCaller(pc, ImmutableList.<SAMEvidenceSource>of(ses), aes);
-		vc.callBreakends(output, MoreExecutors.newDirectExecutorService());
-		//vc.annotateBreakpoints(MoreExecutors.newDirectExecutorService());
+		ExecutorService threadpool = Executors.newSingleThreadExecutor();
+		vc.callBreakends(output, threadpool);
+		threadpool.shutdown();
 		//List<IdsvVariantContext> annotated = getVcf(new File(testFolder.getRoot(), "out.vcf"), null);
 		List<IdsvVariantContext> calls = getVcf(output, null);
 		// with no filtering, annotation should not change call set

@@ -27,6 +27,7 @@ import org.apache.commons.lang3.StringUtils;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -945,6 +946,16 @@ public class TestHelper {
 		@Override
 		public CloseableIterator<DirectedEvidence> iterator() {
 			return new AutoClosingIterator<DirectedEvidence>(evidence.iterator());
+		}
+		@Override
+		public CloseableIterator<DirectedEvidence> iterator(QueryInterval qi) {
+			return new AutoClosingIterator<DirectedEvidence>(
+					Iterators.filter(evidence.iterator(), de -> 
+						de != null &&
+						de.getBreakendSummary() != null &&
+						de.getBreakendSummary().referenceIndex == qi.referenceIndex &&
+						IntervalUtil.overlapsClosed(de.getBreakendSummary().start, de.getBreakendSummary().end, qi.start, qi.end))
+					);
 		}
 	}
 	public static class StubAssemblyEvidenceSource extends AssemblyEvidenceSource {

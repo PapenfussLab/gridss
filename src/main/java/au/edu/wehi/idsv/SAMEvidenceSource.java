@@ -316,9 +316,11 @@ public class SAMEvidenceSource extends EvidenceSource {
 		}
 		return fs;
 	}
+	@Override
 	public int getMaxReadLength() {
 		return getMetrics().getIdsvMetrics().MAX_READ_LENGTH;
 	}
+	@Override
 	public int getMaxReadMappedLength() {
 		return getMetrics().getIdsvMetrics().MAX_READ_MAPPED_LENGTH;
 	}

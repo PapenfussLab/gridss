@@ -1,11 +1,10 @@
 package au.edu.wehi.idsv;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-
-import com.google.common.collect.ImmutableList;
 
 import au.edu.wehi.idsv.validation.OrderAssertingIterator;
 import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
@@ -38,14 +37,11 @@ public class VariantCaller {
 		File tmp = FileSystemContext.getWorkingFileFor(vcf);
 		CloseableIterator<DirectedEvidence> evidenceIt = null;
 		try {
-			boolean assemblyOnly = processContext.getVariantCallingParameters().callOnlyAssemblies;
-			if (assemblyOnly) {
-				evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.of(assemblyEvidence));
-			} else {
-				evidenceIt = SAMEvidenceSource.mergedIterator(ImmutableList.<SAMEvidenceSource>builder().addAll(samEvidence).add(assemblyEvidence).build());
-			}
+			AggregateEvidenceSource es = new AggregateEvidenceSource(
+					processContext,
+					processContext.getVariantCallingParameters().callOnlyAssemblies ? Collections.emptyList() : samEvidence, assemblyEvidence);
 			evidenceIt = adjustEvidenceStream(evidenceIt);
-			EvidenceClusterProcessor processor = new EvidenceClusterProcessor(processContext, evidenceIt);
+			EvidenceClusterProcessor processor = new EvidenceClusterProcessor(threadpool, es);
 			writeMaximalCliquesToVcf(
 					processContext,
 					processor,

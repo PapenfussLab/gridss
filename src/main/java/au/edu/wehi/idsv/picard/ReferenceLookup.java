@@ -1,7 +1,8 @@
 package au.edu.wehi.idsv.picard;
 
+import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import htsjdk.samtools.QueryInterval;
 import htsjdk.samtools.reference.ReferenceSequenceFile;
@@ -14,13 +15,15 @@ public interface ReferenceLookup extends ReferenceSequenceFile {
 	 * @param intervalSize size of interval. The final interval of each sequence may be shorter than the given size.
 	 * @return all intervals in the given
 	 */
-	default Stream<QueryInterval> getIntervals(final int intervalSize) {
+	default List<QueryInterval> getIntervals(final int intervalSize) {
 		return getSequenceDictionary().getSequences().stream()
 				.flatMap(contig -> {
 					int referenceIndex = contig.getSequenceIndex();
+					int contigLength = contig.getSequenceLength();
 					return IntStream.range(0, (int)Math.ceil((double)contig.getSequenceLength() / (double)intervalSize))
 							.map(i -> 1 + i * intervalSize) // switch to 1-based genomic coordinates
-							.mapToObj(start -> new QueryInterval(referenceIndex, start, start + intervalSize - 1));
-				});
+							.mapToObj(start -> new QueryInterval(referenceIndex, start, Math.min(start + intervalSize - 1, contigLength)));
+				})
+				.collect(Collectors.toList());
 	}
 }

@@ -178,7 +178,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 	public void should_remove_fully_reference_evidence_before_end() {
 		ProcessingContext pc = getContext();
 		pc.getAssemblyParameters().k = 4;
-		int n = 64;
+		int n = 8;
 		DirectedEvidence[] input = new DirectedEvidence[2 * n];
 		for (int i = 0; i < n; i++) {
 			input[2*i] =      SCE(FWD, withSequence( "ACGTGGTCGACC", Read(0, 1000*i, "6M6S")));

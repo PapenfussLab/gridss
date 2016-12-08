@@ -5,6 +5,8 @@ import java.io.File;
 public abstract class EvidenceSource {
 	public abstract int getMaxConcordantFragmentSize();
 	public abstract int getMinConcordantFragmentSize();
+	public abstract int getMaxReadLength();
+	public abstract int getMaxReadMappedLength();
 	protected final File file;
 	private final ProcessingContext processContext;
 	public ProcessingContext getContext() {
