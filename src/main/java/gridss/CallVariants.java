@@ -12,6 +12,7 @@ import com.google.common.base.Function;
 import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
+import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.util.FileHelper;
 import gridss.cmdline.FullEvidenceCommandLineProgram;
@@ -108,15 +109,27 @@ public class CallVariants extends FullEvidenceCommandLineProgram {
 	@Override
 	public int doWork(ExecutorService threadpool) throws IOException, InterruptedException, ExecutionException {
 		IOUtil.assertFileIsWritable(OUTPUT);
-    	extractEvidence(threadpool, getSamEvidenceSources());
-    	AssemblyEvidenceSource assemblyEvidence = new AssemblyEvidenceSource(getContext(), getSamEvidenceSources(), ASSEMBLY);
-    	if (!ASSEMBLY.exists()) {
-    		assemblyEvidence.assembleBreakends(threadpool);
-    	}
-    	// convert breakend assemblies into breakpoint via split read identification
-    	assemblyEvidence.ensureExtracted();
-    	// call and annotate variants
-    	callVariants(threadpool);
+		File lockFile = FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.lock.");
+		if (lockFile.mkdir()) {
+			log.debug("Created lock ", lockFile);
+			try {
+		    	extractEvidence(threadpool, getSamEvidenceSources());
+		    	AssemblyEvidenceSource assemblyEvidence = new AssemblyEvidenceSource(getContext(), getSamEvidenceSources(), ASSEMBLY);
+		    	if (!ASSEMBLY.exists()) {
+		    		assemblyEvidence.assembleBreakends(threadpool);
+		    	}
+		    	// convert breakend assemblies into breakpoint via split read identification
+		    	assemblyEvidence.ensureExtracted();
+		    	// call and annotate variants
+		    	callVariants(threadpool);
+			} finally {
+				log.debug("Deleting lock ", lockFile);
+				lockFile.delete();
+			}
+		} else {
+			log.error("Aborting since lock " + lockFile + " already exists. GRIDSS does not support multiple simulatenous instances running on the same data.");
+			return 3;
+		}
 		return 0;
 	}
 }

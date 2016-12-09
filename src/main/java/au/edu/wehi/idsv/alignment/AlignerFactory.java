@@ -57,7 +57,7 @@ public class AlignerFactory {
         	}
         }
         if (!sswjniLoaded) {
-        	log.error("Unable to use sswjni library - assembly will be very slow. Please ensure libsswjni for your OS and architecture can be found on java.library.path");
+        	log.error("Unable to use sswjni library - inexact homology annotation will be very slow. Please ensure libsswjni for your OS and architecture can be found on java.library.path");
         }
     }
     private static void unpacksswjni(File destination) throws IOException {
