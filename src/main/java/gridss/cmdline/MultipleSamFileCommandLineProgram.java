@@ -176,6 +176,9 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 	}
     @Override
 	protected int doWork() {
+    	log.debug("htsjdk buffer size = ", htsjdk.samtools.Defaults.BUFFER_SIZE);
+    	log.debug("htsjdk async sam read = ", htsjdk.samtools.Defaults.USE_ASYNC_IO_READ_FOR_SAMTOOLS);
+    	log.debug("htsjdk async sam write = ", htsjdk.samtools.Defaults.USE_ASYNC_IO_WRITE_FOR_SAMTOOLS);
     	log.debug("Setting language-neutral locale");
     	java.util.Locale.setDefault(Locale.ROOT);
 		// Spam output with gridss parameters used
