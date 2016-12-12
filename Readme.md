@@ -4,7 +4,8 @@
 
 # GRIDSS - a Genomic Rearrangement IDentification Software Suite
 
-GRIDSS is composed of a set of tools which combine to be used as a high-speed next-gen sequencing structural variation caller.
+
+GRIDSS is a modular breakend assembler and structural variation caller for Illumina sequencing data.
 GRIDSS calls variants based on alignment-guided positional de Bruijn graph break-end assembly, split read, and read pair evidence.
 
 If you have any trouble running GRIDSS, please raise an issue using the Issues tab above. Based on feedback from users, a user guide will be produced outlining common workflows, pitfalls, and use cases.
@@ -39,7 +40,7 @@ sequences is not used, additional memory is recommended.
 
 GRIDSS takes a modular approach each step of the GRIDSS pipeline can be run independently. The following data flow diagram gives an overview of the GRIDSS pipeline:
 
-[[https://docs.google.com/drawings/d/1aXFBH0E9zmW4qztHIEliZfsLCHJa6_-l624Frq1X-Ms/pub?w=973&h=760|alt=GRIDSS data flow diagram]]
+![GRIDSS data flow diagram](https://docs.google.com/drawings/d/1aXFBH0E9zmW4qztHIEliZfsLCHJa6_-l624Frq1X-Ms/pub?w=973&h=760)
 
 ### CallVariants
 
@@ -259,6 +260,30 @@ Calling VcfBreakendToBedpe with `INCLUDE_HEADER=true` will include a header cont
 These fields match the VCF INFO fields of the same name.
 For bedpe output, breakend information is not exported and per category totals (such as split read counts) are aggregated to a single value.
 
+## Visualisation of results
+
+When performing downstream analysis on variant calls, it can be immensely useful to be able to inspect
+the reads that the variant caller used make the variant calls. As part of the GRIDSS pipeline, the following
+intermediate files are generated:
+
+* *INPUT*.sv.bam
+* *ASSEMBLY*.sv.bam
+
+The input file contains all reads GRIDSS considered as providing putative support for
+any potential breakpoint, including breakpoints of such low quality that GRIDSS did not
+make any call. This file include all soft clipped, indel-containing, and split read, as
+well as all discordant read pairs and pairs with only one read mapped.
+
+Split reads can be identified by the presence of a 
+[SA SAM tag](http://samtools.github.io/hts-specs/SAMtags.pdf).
+
+GRIDSS treats breakend assemblies as synthetic soft clipped read alignments thus assemblies
+are displayed in the same manner as soft clipped/split reads.
+
+* No SA tags indicates a breakpoint could be be unambiguously identified from the breakend contig.
+* The source of the breakend contig can be identified by the read without the "Supplementary alignment" 0x800 SAM flag set
+* More than two alignments for a breakend contig indicates the breakend spans a complex event involving multiple breakpoints.
+
 ## Intermediate Files
 
 GRIDSS writes a large number of intermediate files. If rerunning GRIDSS with different parameters on the same input, all intermediate files must be deleted. All intermediate files are written to the WORKING_DIR directory tree, with the exception of temporary sort buffers which are written to TMP_DIR and automatically deleted at the conclusion of the sort operation.
@@ -319,27 +344,3 @@ This is likely to be caused by a crash during alignment in libsswjni. See the ss
 ### Illegal Instruction
 
 Your CPU does not support the SSE2 instruction set. See the sswjni sections for details on how to disable libsswjni.
-
-# Visualisation of results
-
-When performing downstream analysis on variant calls, it can be immensely useful to be able to inspect
-the reads that the variant caller used make the variant calls. As part of the GRIDSS pipeline, the following
-intermediate files are generated:
-
-* *INPUT*.sv.bam
-* *ASSEMBLY*.sv.bam
-
-The input file contains all reads GRIDSS considered as providing putative support for
-any potential breakpoint, including breakpoints of such low quality that GRIDSS did not
-make any call. This file include all soft clipped, indel-containing, and split read, as
-well as all discordant read pairs and pairs with only one read mapped.
-
-Split reads can be identified by the presence of a 
-[SA SAM tag](http://samtools.github.io/hts-specs/SAMtags.pdf).
-
-GRIDSS treats breakend assemblies as synthetic soft clipped read alignments thus assemblies
-are displayed in the same manner as soft clipped/split reads.
-
-* No SA tags indicates a breakpoint could be be unambiguously identified from the breakend contig.
-* The source of the breakend contig can be identified by the read without the "Supplementary alignment" 0x800 SAM flag set
-* More than two alignments for a breakend contig indicates the breakend spans a complex event involving multiple breakpoints.
