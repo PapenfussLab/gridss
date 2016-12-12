@@ -13,7 +13,7 @@ import au.edu.wehi.idsv.GenomicProcessingContext;
 import au.edu.wehi.idsv.SplitReadRealigner;
 import au.edu.wehi.idsv.alignment.ExternalProcessFastqAligner;
 import au.edu.wehi.idsv.alignment.FastqAligner;
-import au.edu.wehi.idsv.alignment.SynchronisedFastqAligner;
+import au.edu.wehi.idsv.alignment.SequentialExecutionFastqAligner;
 import gridss.cmdline.ReferenceCommandLineProgram;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SamReaderFactory;
@@ -50,7 +50,7 @@ public class SoftClipsToSplitReads extends ReferenceCommandLineProgram {
     	SamReaderFactory readerFactory = SamReaderFactory.make();
     	SAMFileWriterFactory writerFactory = new SAMFileWriterFactory();
     	FastqAligner aligner = new ExternalProcessFastqAligner(readerFactory, writerFactory, ALIGNER_COMMAND_LINE);
-    	aligner = new SynchronisedFastqAligner(aligner);
+    	aligner = new SequentialExecutionFastqAligner(aligner);
     	return aligner;
     }
     @Override

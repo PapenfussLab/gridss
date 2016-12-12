@@ -9,7 +9,7 @@ import htsjdk.samtools.util.CloseableIterator;
 public class AggregateEvidenceSource extends EvidenceSource implements Iterable<DirectedEvidence> {
 	private List<SAMEvidenceSource> all;
 	public AggregateEvidenceSource(ProcessingContext processContext, List<SAMEvidenceSource> reads, AssemblyEvidenceSource assemblies) {
-		super(processContext, null);
+		super(processContext, null, null);
 		this.all = new ArrayList<>(reads);
 		if (assemblies != null) {
 			this.all.add(assemblies);

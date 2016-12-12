@@ -37,7 +37,9 @@ sequences is not used, additional memory is recommended.
 
 ## GRIDSS tools
 
-GRIDSS takes a modular approach each step of the GRIDSS pipeline can be run independently. GRIDSS is composed of the following tools:
+GRIDSS takes a modular approach each step of the GRIDSS pipeline can be run independently. The following data flow diagram gives an overview of the GRIDSS pipeline:
+
+[[https://docs.google.com/drawings/d/1aXFBH0E9zmW4qztHIEliZfsLCHJa6_-l624Frq1X-Ms/pub?w=973&h=760|alt=GRIDSS data flow diagram]]
 
 ### CallVariants
 
@@ -154,9 +156,23 @@ A .dict sequence dictionary is also required but GRIDSS will automatically creat
 ### INPUT (Required)
 
 Input libraries. Specify multiple times (ie `INPUT=file1.bam INPUT=file2.bam INPUT=file3.bam` ) to process multiple libraries together.
+
+Input files must be coordinated sorted SAM/BAM/CRAM files.
+
 GRIDSS considers all reads in each file to come from a single library.
+
 Input files containing read groups from multiple different libraries should be split into an input file per-library.
-GRIDSS the reference genome used for all input files matches the reference genome supplied to GRIDSS.
+
+The reference genome used for all input files matches the reference genome supplied to GRIDSS.
+
+### INPUT_NAME_SORTED
+
+Input libraries sorted in lexographical read name order. This parameter is required if any of the input
+libraries contain multiple alignment records for a single read ("multi-mapping reads"). Failure to supply
+a name sorted input file for mutli-mapping reads will result in an increased false discovery rate.
+
+Note that this sort order matches the Picard tools SortSam queryname sort order (which unfortuntely is not the same
+as the samtools name sort ordeR).
 
 ### INPUT_CATEGORY
 
@@ -250,13 +266,14 @@ GRIDSS writes a large number of intermediate files. If rerunning GRIDSS with dif
 File | Description
 ------- | ---------
 gridss.* | Temporary intermediate file
+gridss.lock.breakend.vcf | Lock directory to ensure that only once instance of GRIDSS is running for any given output file.
 *.bai | BAM index for coordinate sorted intermediate BAM file
 WORKING_DIR/*file*.gridss.working | Working directory for intermediate files related to the given file.
 WORKING_DIR/*input*.gridss.working/*input**_metrics | Various summary metrics for the given input file.
 WORKING_DIR/*input*.gridss.working/*input*.realign.*N*.fq | Split read identification fastq file requiring alignment by NGS aligner
 WORKING_DIR/*input*.gridss.working/*input*.realign.*N*.bam | Result of NGS alignment.
-WORKING_DIR/*input*.gridss.working/*input*.realign.sv.bam | Subset of input reads considered by GRIDSS. This file is useful for visualisation of the supporting reads contributing to structural variant calls. Note that this file includes split read alignments identified from soft clipped reads in the input file.
-WORKING_DIR/*assembly*.gridss.working/*assembly*.realign.sv.bam | Assembly contigs represented as soft clipped or split reads. These are the assembly contigs GRIDSS uses for variant calling. Note that, as with split reads, GRIDSS uses the SA tag to encode split read alignments.
+WORKING_DIR/*input*.gridss.working/*input*.sv.bam | Subset of input reads considered by GRIDSS. This file is useful for visualisation of the supporting reads contributing to structural variant calls. Note that this file includes split read alignments identified from soft clipped reads in the input file.
+WORKING_DIR/*assembly*.gridss.working/*assembly*.sv.bam | Assembly contigs represented as soft clipped or split reads. These are the assembly contigs GRIDSS uses for variant calling. Note that, as with split reads, GRIDSS uses the SA tag to encode split read alignments.
 WORKING_DIR/*output*.gridss.working/*output*.breakpoint.vcf | Raw unannotated variant calls before unique allocation of multi-mapping reads.
 
 ## Building from source
@@ -305,45 +322,24 @@ Your CPU does not support the SSE2 instruction set. See the sswjni sections for 
 
 # Visualisation of results
 
-## VcfBreakendToReadPair
+When performing downstream analysis on variant calls, it can be immensely useful to be able to inspect
+the reads that the variant caller used make the variant calls. As part of the GRIDSS pipeline, the following
+intermediate files are generated:
 
-IGV support for VCF breakend notation is quite poor. As a workaround, GRIDSS includes
-VcfBreakendToReadPair - a utility for converting VCF breakends to repsentative read pairs.
-Each breakpoint is represented by a pair of reads, one for each breakend. The 
-breakend location is at the end of the read so when viewing in IGV, the read will
-point in the direction of the breakend location.
-Anchored bases from split reads, assembly, or read pairs are shown using CIGAR M
-operators with gaps in support encoded as D.
-Note that this currently does not include anchored read pairs supporting an assembly
-that supports the breakpoint, only direct read pair support.
+* *INPUT*.sv.bam
+* *ASSEMBLY*.sv.bam
 
-Breakend positions are marked with X CIGAR operators and imprecise breakend locations,
-due to either a microhomology or assembly of read pairs, using XNX CIGAR operators to
-show the range of possible breakend location. This gap does look unfortantely similar
-to a D gap in support. Ideally, the visualisation issues around fusion calls will be
-resolved by proper VCF breakend in IGV.
+The input file contains all reads GRIDSS considered as providing putative support for
+any potential breakpoint, including breakpoints of such low quality that GRIDSS did not
+make any call. This file include all soft clipped, indel-containing, and split read, as
+well as all discordant read pairs and pairs with only one read mapped.
 
-## *output*.idsv.working/*output*.idsv.assembly.bam
+Split reads can be identified by the presence of a 
+[SA SAM tag](http://samtools.github.io/hts-specs/SAMtags.pdf).
 
-The file contains all successfully realigned assemblies. Each assembly is encoded
-as a read pair, the first read on the pair containing the assembly at the assemblied
-location, the second containing the alignment of the unanchored breakpoint bases. All
-anchoring assemblies are mapped to the positive strand regardless of breakpoint
-orientation (this can usually be inferred by the soft clip location).
-Assemblies with untemplated sequence in the breakpoint are represented by
-soft clipped bases at the start of the second read.
+GRIDSS treats breakend assemblies as synthetic soft clipped read alignments thus assemblies
+are displayed in the same manner as soft clipped/split reads.
 
-For aassemblies spanning multiple fusions, an assembly read pair is written for each
-spanning fusion. The name of the assembly read pair is suffixed with a number at each
-remote location (eg asm1_r_0, asm_r_1, ...) to indicate that the assembly originates
-from a remote location.
-
-For example, an A-B-C fusion pair spanning by an assembly originating from A would have
-a read pair asm1_r, the first of the pair containing the full assembly with a soft clip
-starting at the end of a, the second of the pair would align to the start of B to the end
-of B, contain the unanchored bases of the assembly, and have additional soft clipped bases
-after the end of B indicating. A second read pair labelled asm1_r_0 represents the spanning
-of the second fusion and the first read could map to B with soft clips on both side, with
-the second in the pair mapping to C indicating the fusion event.
-
-
+* No SA tags indicates a breakpoint could be be unambiguously identified from the breakend contig.
+* The source of the breakend contig can be identified by the read without the "Supplementary alignment" 0x800 SAM flag set
+* More than two alignments for a breakend contig indicates the breakend spans a complex event involving multiple breakpoints.

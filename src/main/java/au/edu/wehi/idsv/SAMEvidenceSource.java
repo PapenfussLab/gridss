@@ -45,7 +45,6 @@ import picard.cmdline.CommandLineProgram;
 public class SAMEvidenceSource extends EvidenceSource {
 	private static final Log log = Log.getInstance(SAMEvidenceSource.class);
 	private final SamReaderFactory factory = SamReaderFactory.makeDefault();
-	private final File input;
 	private final int sourceCategory;
 	private final ReadPairConcordanceMethod rpcMethod;
 	private final int rpcMinFragmentSize;
@@ -54,19 +53,18 @@ public class SAMEvidenceSource extends EvidenceSource {
 	private IdsvSamFileMetrics metrics;
 	private IntervalBed blacklist;
 	private ReadPairConcordanceCalculator rpcc;
-	public SAMEvidenceSource(ProcessingContext processContext, File file, int sourceCategory) {
-		this(processContext, file, sourceCategory, ReadPairConcordanceMethod.SAM_FLAG, 0, 0, 0);
+	public SAMEvidenceSource(ProcessingContext processContext, File file, File nameSorted, int sourceCategory) {
+		this(processContext, file, nameSorted, sourceCategory, ReadPairConcordanceMethod.SAM_FLAG, 0, 0, 0);
 	}
-	public SAMEvidenceSource(ProcessingContext processContext, File file, int sourceCategory, int minFragmentSize, int maxFragmentSize) {
-		this(processContext, file, sourceCategory, ReadPairConcordanceMethod.FIXED, minFragmentSize, maxFragmentSize, 0);
+	public SAMEvidenceSource(ProcessingContext processContext, File file, File nameSorted, int sourceCategory, int minFragmentSize, int maxFragmentSize) {
+		this(processContext, file, nameSorted, sourceCategory, ReadPairConcordanceMethod.FIXED, minFragmentSize, maxFragmentSize, 0);
 	}
-	public SAMEvidenceSource(ProcessingContext processContext, File file, int sourceCategory, double concordantPercentage) {
-		this(processContext, file, sourceCategory, ReadPairConcordanceMethod.PERCENTAGE, 0, 0, concordantPercentage);
+	public SAMEvidenceSource(ProcessingContext processContext, File file, File nameSorted, int sourceCategory, double concordantPercentage) {
+		this(processContext, file, nameSorted, sourceCategory, ReadPairConcordanceMethod.PERCENTAGE, 0, 0, concordantPercentage);
 	}
-	protected SAMEvidenceSource(ProcessingContext processContext, File file, int sourceCategory,
-			ReadPairConcordanceMethod rpcMethod, int rpcMinFragmentSize, int rpcMaxFragmentSize, double rpcConcordantPercentage) {
-		super(processContext, file);
-		this.input = file;
+	protected SAMEvidenceSource(ProcessingContext processContext, File file, File nameSorted,
+			int sourceCategory, ReadPairConcordanceMethod rpcMethod, int rpcMinFragmentSize, int rpcMaxFragmentSize, double rpcConcordantPercentage) {
+		super(processContext, file, nameSorted);
 		this.sourceCategory = sourceCategory;
 		this.rpcMethod = rpcMethod;
 		this.rpcMinFragmentSize = rpcMinFragmentSize;
@@ -86,9 +84,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 	}
 	public void ensureMetrics() {
 		if (metrics == null) {
-			File idsvFile = getContext().getFileSystemContext().getIdsvMetrics(input);
-			File cigarFile = getContext().getFileSystemContext().getCigarMetrics(input);
-			File mapqFile = getContext().getFileSystemContext().getMapqMetrics(input);
+			File idsvFile = getContext().getFileSystemContext().getIdsvMetrics(getFile());
+			File cigarFile = getContext().getFileSystemContext().getCigarMetrics(getFile());
+			File mapqFile = getContext().getFileSystemContext().getMapqMetrics(getFile());
 			if (!idsvFile.exists() || !cigarFile.exists() || !mapqFile.exists()) {
 				log.info("Calculating metrics for " + getFile().getAbsolutePath());
 				List<String> args = Lists.newArrayList(
@@ -125,8 +123,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 		File svFile = getContext().getFileSystemContext().getSVBam(getFile());
 		File extractedFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.extracted.");
 		File querysortedFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.querysorted.");
-		File taggedFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.querysorted.tagged.");
-		File withsplitreadsFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.querysorted.tagged.withsplitreads.");
+		File taggedFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.tagged.");
+		File withsplitreadsFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.splitreads.");
 		ensureMetrics();
 		// Regenerate from from the intermediate file furtherest through the pipeline
 		// extract -> query sort -> tag -> split read -> back to coordinate sorted
@@ -138,15 +136,19 @@ public class SAMEvidenceSource extends EvidenceSource {
 					if (!querysortedFile.exists()) {
 						if (!extractedFile.exists()) {
 							log.info("Extracting SV reads from " + getFile().getAbsolutePath());
+							File in = getFile(SortOrder.queryname);
+							if (in == null || !in.exists()) {
+								in = getFile();
+							}
 							List<String> args = Lists.newArrayList(
-									"INPUT=" + getFile().getAbsolutePath(),
+									"INPUT=" + in.getAbsolutePath(),
 									"OUTPUT=" + extractedFile.getAbsolutePath(),
 									"MIN_CLIP_LENGTH=" + getContext().getConfig().getSoftClip().minLength,
 									"READ_PAIR_CONCORDANCE_METHOD=" + rpcMethod.name(),
 									"FIXED_READ_PAIR_CONCORDANCE_MIN_FRAGMENT_SIZE=" + rpcMinFragmentSize,
 									"FIXED_READ_PAIR_CONCORDANCE_MAX_FRAGMENT_SIZE=" + rpcMaxFragmentSize,
 									"READ_PAIR_CONCORDANT_PERCENT=" + rpcConcordantPercentage,
-									"INSERT_SIZE_METRICS=" + getContext().getFileSystemContext().getInsertSizeMetrics(input));
+									"INSERT_SIZE_METRICS=" + getContext().getFileSystemContext().getInsertSizeMetrics(getFile()));
 							execute(new ExtractSVReads(), args);
 						}
 						SAMFileUtil.sort(getContext().getFileSystemContext(), extractedFile, querysortedFile, SortOrder.queryname);
@@ -194,8 +196,8 @@ public class SAMEvidenceSource extends EvidenceSource {
 		return new AutoClosingIterator<>(eit, reader, it);
 	}
 	private SamReader getReader() {
-		File svFile = getContext().getFileSystemContext().getSVBam(input);
-		SamReader reader = factory.open(svFile.exists() ? svFile : input);
+		File svFile = getContext().getFileSystemContext().getSVBam(getFile());
+		SamReader reader = factory.open(svFile.exists() ? svFile : getFile());
 		return reader;
 	}
 	private Iterator<DirectedEvidence> asEvidence(Iterator<SAMRecord> it) {

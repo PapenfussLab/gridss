@@ -25,7 +25,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	public void ensure_metrics_should_write_metrics_files() {
 		ProcessingContext pc = getCommandlineContext();
 		createInput(RP(0, 100, 200, 100), RP(0, 400, 600, 100));
-		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, null, 0);
 		source.ensureMetrics();
 		assertTrue(pc.getFileSystemContext().getIdsvMetrics(source.getFile()).exists());
 		assertTrue(pc.getFileSystemContext().getInsertSizeMetrics(source.getFile()).exists());
@@ -43,13 +43,13 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		ProcessingContext pc = getCommandlineContext();
 		pc.setCalculateMetricsRecordCount(2);
 		createInput(RP(0, 100, 200, 100), RP(0, 400, 600, 100));
-		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, null, 0);
 		assertEquals(200-100+100, source.getMaxConcordantFragmentSize());
 		
 		pc.getFileSystemContext().getIdsvMetrics(input).delete();
 		pc.getFileSystemContext().getInsertSizeMetrics(input).delete();
 		pc.setCalculateMetricsRecordCount(1000);
-		source = new SAMEvidenceSource(pc, input, 0);
+		source = new SAMEvidenceSource(pc, input, null, 0);
 		assertEquals(600-400+100, source.getMaxConcordantFragmentSize());
 	}
 	@Test
@@ -60,7 +60,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 			   DP(1, 2, "100M", true, 2, 4, "100M", true),
 			   DP(1, 3, "100M", true, 2, 6, "100M", true),
 			   OEA(1, 4, "100M", false));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, null, 0);
 		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
 		assertEquals(8, list.size()); // 1 SC + 3 * 2 DP + 1 OEA
 	}
@@ -81,7 +81,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 			Collections.addAll(in, DP(1, i, "5M", false, 0, 1, "5M", false));
 		}
 		createInput(in);
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, null, 0);
 		List<DirectedEvidence> list = Lists.newArrayList(source.iterator(new QueryInterval(1, 20, 30)));
 		assertTrue(list.stream().allMatch(e ->
 			e.getBreakendSummary().overlaps(new BreakendSummary(1, FWD, 20, 20, 30)) ||
@@ -90,7 +90,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	@Test
 	public void should_set_evidence_source_to_self() {
 		createInput(Read(0, 1, "50M50S"));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, null, 0);
 		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
 		assertEquals(1, list.size());
 		assertEquals(source, list.get(0).getEvidenceSource());
@@ -98,7 +98,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	@Test
 	public void should_default_fragment_size_to_read_length_for_unpaired_reads() {
 		createInput(Read(0, 1, "50M50S"));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, null, 0);
 		assertEquals(100, source.getMaxConcordantFragmentSize());
 	}
 	@Test
@@ -111,7 +111,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 			   DP(1, 3, "100M", true, 2, 6, "100M", true),
 			   OEA(1, 4, "100M", false),
 			   OEA(1, 4, "100M", true));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, null, 0);
 		List<DirectedEvidence> result = Lists.newArrayList(source.iterator());
 		List<DirectedEvidence> sorted = Lists.newArrayList(result);
 		Collections.sort(sorted, DirectedEvidenceOrder.ByNatural);
@@ -125,7 +125,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				withReadName("r1", Read(1, 1, "15M15S")),
 				withReadName("r2", Read(2, 2, "15M15S")),
 				withReadName("r3", Read(3, 3, "15M15S")));
-		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, null, 0);
 		new SplitReadRealigner(pc, new StubFastqAligner(pc)
 				.align(inputRecords.get(0), 3, 10, false, "15M")
 				.align(inputRecords.get(1), 2, 10, false, "15M")
@@ -141,7 +141,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 	@Test
 	public void iterator_should_iterator_over_both_forward_and_backward_soft_clips() {
 		createInput(withReadName("r1", Read(0, 1, "15S15M15S")));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, null, 0);
 		
 		List<DirectedEvidence> result = Lists.newArrayList(source.iterator());
 		assertEquals(2, result.size());
@@ -152,7 +152,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				withReadName("r1", Read(1, 1, "15S15M15S")),
 				withReadName("r2", Read(2, 2, "15S15M15S")),
 				withReadName("r3", Read(3, 3, "15S15M15S")));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, null, 0);
 		new SplitReadRealigner(getCommandlineContext(), new StubFastqAligner(getCommandlineContext())
 				.align(inputRecords.get(0), FWD, 3, 10, false, "15M")
 				.align(inputRecords.get(0), BWD, 2, 15, false, "15M")
@@ -174,7 +174,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		pc.getConfig().minMapq = 10;
 		createInput(
 				withReadName("r2", Read(1, 2, "15M15S")));
-		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, null, 0);
 		new SplitReadRealigner(getCommandlineContext(), new StubFastqAligner(getCommandlineContext())
 				.align(inputRecords.get(0), FWD, 1, 10, false, "15M"))
 			.createSupplementaryAlignments(input, input); 
@@ -196,7 +196,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				RP(0, 100, 118, 5),
 				RP(0, 100, 119, 5) // 24
 				);
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0, 0.59);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, null, 0, 0.59);
 		
 		assertEquals(PercentageReadPairConcordanceCalculator.class, source.getReadPairConcordanceCalculator().getClass());
 		assertEquals(22, source.getMaxConcordantFragmentSize());
@@ -213,7 +213,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 				RP(0, 1, 14, 1), // 14 conc
 				RP(0, 1, 15, 1), // 15 conc
 				RP(0, 1, 16, 1)); // 16
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0, 13, 15);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, null, 0, 13, 15);
 		
 		assertEquals(FixedSizeReadPairConcordanceCalculator.class, source.getReadPairConcordanceCalculator().getClass());
 		assertEquals(15, source.getMaxConcordantFragmentSize());
@@ -240,7 +240,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		}
 		in.addAll(Lists.newArrayList(OEA(0, 58, "17S1M", false)));
 		createInput(in.toArray(new SAMRecord[0]));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0, 0, 43);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, null, 0, 0, 43);
 		List<DirectedEvidence> results = Lists.newArrayList(source.iterator());
 		assertEquals(new BreakendSummary(0, BWD, 37, 17, 58), results.get(0).getBreakendSummary());
 		assertEquals(new BreakendSummary(0, FWD, 30, 18, 42), results.get(1).getBreakendSummary());
@@ -253,7 +253,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 			in.add(Read(1, 1, String.format("5M%dD5M5S", i)));
 		}
 		createInput(in.toArray(new SAMRecord[0]));
-		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, 0, 0, 15);
+		SAMEvidenceSource source = new SAMEvidenceSource(getCommandlineContext(), input, null, 0, 0, 15);
 		List<DirectedEvidence> results = Lists.newArrayList(source.iterator());
 		for (int i = 1; i < results.size(); i++) {
 			assertTrue(results.get(i-1).getBreakendSummary().start <= results.get(i).getBreakendSummary().start);
@@ -280,7 +280,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 			realn.add(withReadName(String.format("0#%d#0#fd_%d", i, i), withSequence("NNNNNNNNNN", Read(1, 10, "10M")))[0]);
 		}
 		createInput(in);
-		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, null, 0);
 		List<DirectedEvidence> result = Lists.newArrayList(source.iterator());
 		assertEquals(in.size(), result.size());
 		// should be sorted correctly
@@ -298,7 +298,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 			   DP(1, 2, "100M", true, 2, 4, "100M", true),
 			   DP(1, 3, "100M", true, 2, 6, "100M", true),
 			   OEA(1, 4, "100M", false));
-		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, null, 0);
 		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
 		assertEquals(2, list.size()); // SC & OEA not on (2)
 	}
@@ -308,7 +308,7 @@ public class SAMEvidenceSourceTest extends IntermediateFilesTest {
 		pc.getConfig().minMapq = 10;
 		createInput(
 				SR(withMapq(10, Read(0, 1, "50M50S"))[0], withMapq(5, Read(1, 1, "50M50S"))[0]).getSAMRecord());
-		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, 0);
+		SAMEvidenceSource source = new SAMEvidenceSource(pc, input, null, 0);
 		List<DirectedEvidence> list = Lists.newArrayList(source.iterator());
 		assertEquals(1, list.size());
 		assertTrue(list.get(0) instanceof SoftClipEvidence);

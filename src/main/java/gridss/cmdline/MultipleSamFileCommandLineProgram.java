@@ -41,9 +41,11 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 	private static final Log log = Log.getInstance(MultipleSamFileCommandLineProgram.class);
 	@Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Coordinate-sorted input BAM file.")
     public List<File> INPUT;
+	@Option(shortName="IN", doc="Name-sorted input BAM file. This is required for if multiple alignment are reported for each read.", optional=true)
+    public List<File> INPUT_NAME_SORTED;
 	@Option(shortName="IC", doc="Input category. Variant calling evidence is reported from category 1 (default) to the maximum category specified. "
 			+ "Specify categories when you require a breakdown of support (eg tumour/normal or multi-sample variant calling). ", optional=true)
-    public List<Integer> INPUT_CATEGORY;	
+    public List<Integer> INPUT_CATEGORY;
     @Option(doc = "Per input maximum concordant fragment size.", optional=true)
     public List<Integer> INPUT_MAX_FRAGMENT_SIZE;
     @Option(doc = "Per input minimum concordant fragment size.", optional=true)
@@ -69,13 +71,13 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
     public int WORKER_THREADS = Runtime.getRuntime().availableProcessors();
 	
 	private List<SAMEvidenceSource> samEvidence = null;
-    private SAMEvidenceSource constructSamEvidenceSource(File file, int category, int minFragSize, int maxFragSize) {
+    private SAMEvidenceSource constructSamEvidenceSource(File file, File nameSortedFile, int category, int minFragSize, int maxFragSize) {
     	if (maxFragSize > 0) {
-    		return new SAMEvidenceSource(getContext(), file, category, minFragSize, maxFragSize);
+    		return new SAMEvidenceSource(getContext(), file, nameSortedFile, category, minFragSize, maxFragSize);
     	} else if (READ_PAIR_CONCORDANT_PERCENT != null) {
-    		return new SAMEvidenceSource(getContext(), file, category, READ_PAIR_CONCORDANT_PERCENT);
+    		return new SAMEvidenceSource(getContext(), file, nameSortedFile, category, READ_PAIR_CONCORDANT_PERCENT);
     	} else {
-    		return new SAMEvidenceSource(getContext(), file, category);
+    		return new SAMEvidenceSource(getContext(), file, nameSortedFile, category);
     	}
     }
     private <T> T getOffset(List<T> list, int offset, T defaultValue) {
@@ -92,11 +94,11 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 			} else {
 				INPUT_CATEGORY = INPUT_CATEGORY.stream().map(x -> x != null ? x - 1 : 0).collect(Collectors.toList());
 			}
-	    	
 	    	samEvidence = Lists.newArrayList();
 	    	for (int i = 0; i < INPUT.size(); i++) {
 	    		samEvidence.add(constructSamEvidenceSource(
 	    				getOffset(INPUT, i, null),
+	    				getOffset(INPUT_NAME_SORTED, i, null),
 	    				getOffset(INPUT_CATEGORY, i, 0),
 	    				getOffset(INPUT_MIN_FRAGMENT_SIZE, i, 0),
 	    				getOffset(INPUT_MAX_FRAGMENT_SIZE, i, 0)));
@@ -265,6 +267,9 @@ public abstract class MultipleSamFileCommandLineProgram extends ReferenceCommand
 		}
 		if (INPUT == null || INPUT.size() == 0) {
 			return new String[] { "No INPUT files specified." };
+    	}
+		if (INPUT_NAME_SORTED != null && INPUT_NAME_SORTED.size() > 0 && INPUT_NAME_SORTED.size() != INPUT.size()) {
+    		return new String[] { "INPUT_NAME_SORTED must omitted or specified for every INPUT." };
     	}
     	if (INPUT_CATEGORY != null && INPUT_CATEGORY.size() > 0 && INPUT_CATEGORY.size() != INPUT.size()) {
     		return new String[] { "INPUT_CATEGORY must omitted or specified for every INPUT." };

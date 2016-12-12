@@ -57,7 +57,9 @@ import picard.cmdline.StandardOptionDefinitions;
 )
 public class ExtractSVReads extends CommandLineProgram {
 	private static final Log log = Log.getInstance(ExtractSVReads.class);
-    @Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input file", optional=false)
+    @Option(shortName=StandardOptionDefinitions.INPUT_SHORT_NAME, doc="Input file. "
+    		+ "If multiple mapping locations are reported for each read, these reads must be grouped together "
+    		+ "(eg name sorted).", optional=false)
     public File INPUT;
     @Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Output file containing subset of input", optional=false)
     public File OUTPUT;

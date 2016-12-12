@@ -44,7 +44,7 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 				RP(0, 1, 10),
 				DP(0, 1, "5M5S", true, 1, 10, "5M", true),
 				DP(0, 2, "5M5S", true, 1, 10, "5M", true));
-		SAMEvidenceSource ses = new SAMEvidenceSource(getContext(), input, 0);
+		SAMEvidenceSource ses = new SAMEvidenceSource(getContext(), input, null, 0);
 		ses.ensureMetrics();
 		File assemblyFile = new File(testFolder.getRoot(), "assembly.bam");
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
@@ -73,7 +73,7 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 		createInput(
 				RP(0, 1, 10),
 				DP(0, 1, "5M5S", true, 1, 10, "5M", true));
-		SAMEvidenceSource ses = new SAMEvidenceSource(getContext(), input, 0);
+		SAMEvidenceSource ses = new SAMEvidenceSource(getContext(), input, null, 0);
 		ses.ensureMetrics();
 		File assemblyFile = new File(testFolder.getRoot(), "assembly.bam");
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);

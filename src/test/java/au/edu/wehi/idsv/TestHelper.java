@@ -875,10 +875,10 @@ public class TestHelper {
 		public IdsvSamFileMetrics metrics = new MockMetrics();
 		public int category = 0;
 		public MockSAMEvidenceSource(ProcessingContext processContext) {
-			super(processContext, new File("test.bam"), 0);
+			super(processContext, new File("test.bam"), null, 0);
 		}
 		protected MockSAMEvidenceSource(ProcessingContext processContext, int minFragmentSize, int maxFragmentSize) {
-			super(processContext, new File("test.bam"), 0, minFragmentSize, maxFragmentSize);
+			super(processContext, new File("test.bam"), null, 0, minFragmentSize, maxFragmentSize);
 			metrics.getIdsvMetrics().MAX_PROPER_PAIR_FRAGMENT_LENGTH = maxFragmentSize;
 			metrics.getIdsvMetrics().MIN_PROPER_PAIR_FRAGMENT_LENGTH = minFragmentSize;
 			metrics.getIdsvMetrics().MAX_READ_LENGTH = minFragmentSize == 0 ? maxFragmentSize : minFragmentSize;
@@ -932,7 +932,7 @@ public class TestHelper {
 		public IdsvSamFileMetrics metrics = new MockMetrics();
 		public List<DirectedEvidence> evidence = new ArrayList<DirectedEvidence>();
 		public StubSAMEvidenceSource(ProcessingContext processContext, File file, int category, int minFragmentSize, int maxFragmentSize) {
-			super(processContext, file, category, minFragmentSize, maxFragmentSize);
+			super(processContext, file, null, category, minFragmentSize, maxFragmentSize);
 			this.maxFragmentSize = maxFragmentSize;
 		}
 		@Override

@@ -50,6 +50,37 @@ public abstract class FileHelper {
 			Files.move(from, to);
 		}
 	}
+	/**
+	 * Moves the given file and any associated indexes 
+	 * @param from
+	 * @param to
+	 * @throws IOException 
+	 */
+	public static void copy(File from, File to, boolean moveIndexes) throws IOException {
+		if (!from.exists()) {
+			throw new IllegalArgumentException("Cannot copy nonexist file" + from.getAbsolutePath());
+		}
+		if (to.exists()) {
+			FileHelper.delete(to, moveIndexes);
+		}
+		Files.copy(from, to);
+		copyIndex(from, to, ".bai");
+		copyIndex(from, to, ".idx");
+	}
+	private static void copyIndex(File from, File to, String indexSuffix) throws IOException {
+		trycopysingle(
+				new File(from.getAbsolutePath() + indexSuffix),
+				new File(to.getAbsolutePath() + indexSuffix));
+		
+		trycopysingle(new File(from.getParentFile(), Files.getNameWithoutExtension(from.getName()) + indexSuffix),
+				new File(to.getParentFile(), Files.getNameWithoutExtension(to.getName()) + indexSuffix));
+	}
+	private static void trycopysingle(File from, File to) throws IOException {
+		if (to.exists()) {
+			to.delete();
+		}
+		Files.copy(from, to);
+	}
 	public static List<File> getIndexFilesFor(File file) {
 		return Stream.concat(
 				getPossibleIndexFilesFor(file, ".bai"),

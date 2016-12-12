@@ -1,12 +1,12 @@
 package au.edu.wehi.idsv.sam;
 
-import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.PriorityQueue;
@@ -14,14 +14,12 @@ import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.function.Function;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.PeekingIterator;
 
 import au.edu.wehi.idsv.Defaults;
 import au.edu.wehi.idsv.FileSystemContext;
 import au.edu.wehi.idsv.IntermediateFileUtil;
 import au.edu.wehi.idsv.util.AsyncBufferedIterator;
-import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.FileHelper;
 import au.edu.wehi.idsv.validation.OrderAssertingIterator;
 import htsjdk.samtools.BAMRecordCodec;
@@ -118,60 +116,68 @@ public class SAMFileUtil {
 				return null;
 			}
 			File tmpFile = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.sorting.SAMFileUtil.");
+			SortOrder existingSortOrder = getSortOrder(readerFactory, unsorted);  
+			switch (existingSortOrder) {
+				case coordinate:
+				case duplicate:
+					if (sortOrder.equals(existingSortOrder)) {
+						log.info(unsorted + " already sorted by " + sortOrder);
+						FileHelper.copy(unsorted, tmpFile, true);
+						FileHelper.move(tmpFile, output, true);
+					}
+					return null;
+				default:
+					break;
+			}
 			log.info("Sorting " + unsorted);
-			SamReader reader = null;
-			CloseableIterator<SAMRecord> rit = null;
-			SAMFileWriter writer = null;
-			CloseableIterator<SAMRecord> wit = null;
 			SortingCollection<SAMRecord> collection = null;
 			if (tmpFile.exists()) FileHelper.delete(tmpFile, true);
 			try {
-				reader = readerFactory.open(unsorted);
-				SAMFileHeader header = reader.getFileHeader().clone();
-				header.setSortOrder(sortOrder);
-				if (headerCallback != null) {
-					header = headerCallback.apply(header);
+				SAMFileHeader header = null;
+				try (SamReader reader = readerFactory.open(unsorted)) {
+					header = reader.getFileHeader().clone();
+					header.setSortOrder(sortOrder);
+					if (headerCallback != null) {
+						header = headerCallback.apply(header);
+					}
+					try (CloseableIterator<SAMRecord> rit = reader.iterator()) {
+						collection = SortingCollection.newInstance(
+								SAMRecord.class,
+								new BAMRecordCodec(header),
+								sortComparator,
+								fsc.getMaxBufferedRecordsPerFile(),
+								fsc.getTemporaryDirectory());
+						while (rit.hasNext()) {
+							collection.add(rit.next());
+						}
+					}
 				}
-				rit = reader.iterator();
-				collection = SortingCollection.newInstance(
-						SAMRecord.class,
-						new BAMRecordCodec(header),
-						sortComparator,
-						fsc.getMaxBufferedRecordsPerFile(),
-						fsc.getTemporaryDirectory());
-				while (rit.hasNext()) {
-					collection.add(rit.next());
-				}
-				rit.close();
-				rit = null;
-				reader.close();
-				reader = null;
 				collection.doneAdding();
-				writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpFile);
-				writer.setProgressLogger(new ProgressLogger(log, 10000000));
-		    	wit = collection.iterator();
-		    	if (Defaults.SANITY_CHECK_ITERATORS) {
-					wit = new AutoClosingIterator<SAMRecord>(new OrderAssertingIterator<SAMRecord>(wit, sortComparator), wit);
+				try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpFile)) {
+					writer.setProgressLogger(new ProgressLogger(log, 10000000));
+					try (CloseableIterator<SAMRecord> wit = collection.iterator()) {
+						Iterator<SAMRecord> it = wit;
+				    	if (Defaults.SANITY_CHECK_ITERATORS) {
+							it = new OrderAssertingIterator<SAMRecord>(wit, sortComparator);
+						}
+						while (it.hasNext()) {
+							writer.addAlignment(it.next());
+						}
+					}
 				}
-				while (wit.hasNext()) {
-					writer.addAlignment(wit.next());
-				}
-				wit.close();
-				wit = null;
-				writer.close();
-				writer = null;
 				collection.cleanup();
 				collection = null;
 				FileHelper.move(tmpFile, output, true);
 			} finally {
-				CloserUtil.close(writer);
-				CloserUtil.close(wit);
-				CloserUtil.close(rit);
-				CloserUtil.close(reader);
 				if (collection != null) collection.cleanup();
 				if (tmpFile.exists()) FileHelper.delete(tmpFile, true);
 			}
 			return null;
+		}
+	}
+	private static SortOrder getSortOrder(SamReaderFactory readerFactory, File file) throws IOException {
+		try (SamReader reader = readerFactory.open(file)) {
+			return reader.getFileHeader().getSortOrder();
 		}
 	}
 	public static void merge(Collection<File> input, File output) throws IOException {

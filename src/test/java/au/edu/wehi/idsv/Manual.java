@@ -37,7 +37,7 @@ public class Manual extends TestHelper {
 				"W:\\778\\DNA_778_PM_lane1_100nt_PE1_bt2_s_rg_cleaned.bam",
 				"W:\\778\\DNA_778_PM_lane2_100nt_PE1_bt2_s_rg_cleaned.bam",
 			}) {
-			SAMEvidenceSource ses = new SAMEvidenceSource(pc, new File(s), 0);
+			SAMEvidenceSource ses = new SAMEvidenceSource(pc, new File(s), null, 0);
 			//Iterator<DirectedEvidence> it = ses.iterator(true, true, true);
 			//while (it.hasNext()) {
 			//	it.next();

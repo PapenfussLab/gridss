@@ -59,7 +59,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	 * @param intermediateFileLocation location to store intermediate files
 	 */
 	public AssemblyEvidenceSource(ProcessingContext processContext, List<SAMEvidenceSource> evidence, File assemblyFile) {
-		super(processContext, assemblyFile, -1);
+		super(processContext, assemblyFile, null, -1);
 		this.source = evidence;
 		this.maxSourceFragSize = evidence.stream().mapToInt(s -> s.getMaxConcordantFragmentSize()).max().orElse(0);
 		this.minSourceFragSize = evidence.stream().mapToInt(s -> s.getMinConcordantFragmentSize()).min().orElse(0);
