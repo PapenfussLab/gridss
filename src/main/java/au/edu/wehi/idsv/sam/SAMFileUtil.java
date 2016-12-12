@@ -119,13 +119,14 @@ public class SAMFileUtil {
 			SortOrder existingSortOrder = getSortOrder(readerFactory, unsorted);  
 			switch (existingSortOrder) {
 				case coordinate:
-				case duplicate:
+				case queryname:
 					if (sortOrder.equals(existingSortOrder)) {
 						log.info(unsorted + " already sorted by " + sortOrder);
 						FileHelper.copy(unsorted, tmpFile, true);
 						FileHelper.move(tmpFile, output, true);
+						return null;
 					}
-					return null;
+					break;
 				default:
 					break;
 			}

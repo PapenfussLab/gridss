@@ -34,4 +34,24 @@ public class SAMFileUtilTest extends IntermediateFilesTest {
 		assertEquals(6, list.size());
 		assertTrue(Ordering.from(SortOrder.coordinate.getComparatorInstance()).isOrdered(list));
 	}
+	@Test
+	public void sort_should_match_output_order() throws IOException {
+		File output = testFolder.newFile("output.bam");
+		createBAM(input, SortOrder.unsorted,
+				Read(5, 1, "1M"),
+				Read(3, 3, "1M"),
+				Read(1, 5, "1M"));
+		SAMFileUtil.sort(getFSContext(), input, output, SortOrder.coordinate);
+		assertTrue(Ordering.from(SortOrder.coordinate.getComparatorInstance()).isOrdered(getRecords(output)));
+	}
+	@Test
+	public void sort_should_copy_file_for_matching_sort_order() throws IOException {
+		File output = testFolder.newFile("output.bam");
+		createBAM(input, SortOrder.queryname,
+				Read(5, 1, "1M"),
+				Read(3, 3, "1M"),
+				Read(1, 5, "1M"));
+		SAMFileUtil.sort(getFSContext(), input, output, SortOrder.coordinate);
+		assertTrue(Ordering.from(SortOrder.coordinate.getComparatorInstance()).isOrdered(getRecords(output)));
+	}
 }

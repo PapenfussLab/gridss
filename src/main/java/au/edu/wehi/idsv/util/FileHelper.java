@@ -79,7 +79,9 @@ public abstract class FileHelper {
 		if (to.exists()) {
 			to.delete();
 		}
-		Files.copy(from, to);
+		if (from.exists()) {
+			Files.copy(from, to);
+		}
 	}
 	public static List<File> getIndexFilesFor(File file) {
 		return Stream.concat(
