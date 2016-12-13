@@ -8,6 +8,8 @@
 GRIDSS is a modular breakend assembler and structural variation caller for Illumina sequencing data.
 GRIDSS calls variants based on alignment-guided positional de Bruijn graph break-end assembly, split read, and read pair evidence.
 
+GRIDSS makes extensive use of the [standard tags defined by SAM specifications](http://samtools.github.io/hts-specs/SAMtags.pdf). GRIDSS is modular and any step (such as split read identification) can be replaced by any other implementation that also outputs using the standard tags. It is hoped that GRIDSS can serve as an example modular structural variant pipeline designed for interoperability with other tools.
+
 If you have any trouble running GRIDSS, please raise an issue using the Issues tab above. Based on feedback from users, a user guide will be produced outlining common workflows, pitfalls, and use cases.
 
 [Click here to download GRIDSS](https://github.com/PapenfussLab/gridss/releases)
