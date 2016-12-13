@@ -212,6 +212,15 @@ If WORKING_DIR is set, all intermediate results are written to subdirectories of
 
 This field is a standard Picard tools argument and carries the usual meaning. Temporary files created during processes such as sort are written to this directory.
 
+### samjdk defines
+
+GRIDSS uses [htsjdk](https://github.com/samtools/htsjdk) as a SAM/BAM/CRAM/VCF parsing library. The following htsjdk command-line options are strongly recommended for improved performance:
+
+* -Dsamjdk.use_async_io_read_samtools=true
+* -Dsamjdk.use_async_io_write_samtools=true
+* -Dsamjdk.use_async_io_write_tribble=true
+* -Dsamjdk.compression_level=1
+
 ## libsswjni.so
 
 Due to relatively poor performance of existing Java-based Smith-Waterman alignment packages, GRIDSS incorporates a JNI wrapper to the striped Smith-Waterman alignment library [SSW](https://github.com/mengyao/Complete-Striped-Smith-Waterman-Library). GRIDSS will attempt to load a precompiled version which is supplied as part of the GRIDSS package (a libsswjni.so file will be created in the TMP_DIR when GRIDSS is run). If the precompiled version is not compatible with your linux distribution, or you are running a different operating system, recompilation of the wrapper from source will be required. When recompiling, ensure the correct libsswjni.so is loaded using -Djava.library.path, or the LD_LIBRARY_PATH environment variable as per the JNI documentation.
