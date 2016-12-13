@@ -135,8 +135,12 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 		}
 		int softClipLength = getBreakendSequence().length;
 		if (getSAMRecord().getSupplementaryAlignmentFlag()) {
-			// TODO: better model that can handle multiple realignments and realignment CIGARs
-			softClipLength = getAnchorSequence().length + getUntemplatedSequence().length();
+			ChimericAlignment caThis = new ChimericAlignment(getSAMRecord());
+			// The first record should be the primary
+			ChimericAlignment caPrimary = ChimericAlignment.getChimericAlignments(getSAMRecord()).get(0);
+			// before 
+			BreakendDirection primaryDirectionTowardThis = caThis.getFirstAlignedBaseReadOffset() < caPrimary.getFirstAlignedBaseReadOffset() ^ caPrimary.isNegativeStrand ? BreakendDirection.Backward : BreakendDirection.Forward;
+			softClipLength = SAMRecordUtil.getSoftClipLength(caPrimary.cigar.getCigarElements(), primaryDirectionTowardThis);
 		}
 		return (float)getEvidenceSource().getContext().getConfig().getScoring().getModel().scoreSplitRead(getEvidenceSource().getMetrics(),
 				softClipLength,

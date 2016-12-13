@@ -17,6 +17,7 @@ import org.junit.rules.TemporaryFolder;
 
 import au.edu.wehi.idsv.picard.InMemoryReferenceSequenceFile;
 import au.edu.wehi.idsv.picard.SynchronousReferenceLookupAdapter;
+import au.edu.wehi.idsv.sam.ChimericAlignment;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
@@ -258,5 +259,26 @@ public class SplitReadEvidenceTest extends TestHelper {
 			}
 		}
 		folder.delete();
+	}
+	@Test
+	public void score_should_be_symmetrical_even_if_anchors_overlap() {
+		SAMRecord primary = Read(0, 100, "6M4S");
+		primary.setReadBases(B("NNNNNNNNNN"));
+		primary.setBaseQualities(B("1234567890"));
+		primary.setMappingQuality(40);
+		
+		SAMRecord supp = Read(0, 200, "3S7M");
+		supp.setSupplementaryAlignmentFlag(true);
+		supp.setReadBases(B("NNNNNNNNNN"));
+		supp.setBaseQualities(B("1234567890"));
+		supp.setMappingQuality(20);
+		
+		primary.setAttribute("SA", new ChimericAlignment(supp).toString());
+		supp.setAttribute("SA", new ChimericAlignment(primary).toString());
+		
+		StubSAMEvidenceSource ses = new StubSAMEvidenceSource(getContext(), null, 0, 0, 100);
+		SplitReadEvidence ep = SplitReadEvidence.create(ses, primary).get(0);
+		SplitReadEvidence es = SplitReadEvidence.create(ses, supp).get(0);
+		assertEquals(ep.getBreakpointQual(), es.getBreakpointQual(), 0);
 	}
 }
