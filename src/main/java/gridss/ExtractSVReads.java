@@ -133,7 +133,8 @@ public class ExtractSVReads extends CommandLineProgram {
 								SPLIT,
 								SINGLE_MAPPED_PAIRED,
 								DISCORDANT_READ_PAIRS, rpcc,
-								UNMAPPED_READS);
+								UNMAPPED_READS,
+								INPUT.getName() + "-");
     					log.info(String.format("Extracted %d reads from %s", count, INPUT));
     				}
     				FileHelper.move(tmpoutput, OUTPUT, true);
@@ -155,7 +156,8 @@ public class ExtractSVReads extends CommandLineProgram {
 			final boolean includeOEA,
 			final boolean includeDP,
 			final ReadPairConcordanceCalculator rpcc,
-			final boolean includeUnmapped) throws IOException {
+			final boolean includeUnmapped,
+			final String threadPrefix) throws IOException {
 		long count = 0;
 		ProgressLogger progress = new ProgressLogger(log);
 		List<SamRecordFilter> readfilters = new ArrayList<>();
@@ -173,7 +175,7 @@ public class ExtractSVReads extends CommandLineProgram {
 			pairfilter = new FixedFilter(true);
 		}
 
-		try (CloseableIterator<SAMRecord> asyncit = new AsyncBufferedIterator<SAMRecord>(rawit, "raw")) {
+		try (CloseableIterator<SAMRecord> asyncit = new AsyncBufferedIterator<SAMRecord>(rawit, threadPrefix + "extract")) {
 			PeekingIterator<SAMRecord> pit = Iterators.peekingIterator(new ProgressLoggingSAMRecordIterator(asyncit, progress));
 			ArrayList<SAMRecord> records = new ArrayList<>();
 			while (pit.hasNext()) {

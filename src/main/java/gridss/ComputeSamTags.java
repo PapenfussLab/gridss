@@ -86,7 +86,7 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
     			try (SAMRecordIterator it = reader.iterator()) {
     				File tmpoutput = FileSystemContext.getWorkingFileFor(OUTPUT, "gridss.tmp.ComputeSamTags.");
     				try (SAMFileWriter writer = writerFactory.makeSAMOrBAMWriter(header, true, tmpoutput)) {
-    					compute(it, writer, getReference(), TAGS, SOFTEN_HARD_CLIPS, FIX_MATE_INFORMATION);
+    					compute(it, writer, getReference(), TAGS, SOFTEN_HARD_CLIPS, FIX_MATE_INFORMATION, INPUT.getName() + "-");
     				}
     				FileHelper.move(tmpoutput, OUTPUT, true);
     			}
@@ -97,17 +97,17 @@ public class ComputeSamTags extends ReferenceCommandLineProgram {
 		}
     	return 0;
 	}
-	public static void compute(Iterator<SAMRecord> rawit, SAMFileWriter writer, ReferenceLookup reference, Set<SAMTag> tags, boolean softenHardClips, boolean fixMates) throws IOException {
+	public static void compute(Iterator<SAMRecord> rawit, SAMFileWriter writer, ReferenceLookup reference, Set<SAMTag> tags, boolean softenHardClips, boolean fixMates, String threadprefix) throws IOException {
 		ProgressLogger progress = new ProgressLogger(log);
-		try (CloseableIterator<SAMRecord> aysncit = new AsyncBufferedIterator<SAMRecord>(rawit, "raw")) {
+		try (CloseableIterator<SAMRecord> aysncit = new AsyncBufferedIterator<SAMRecord>(rawit, threadprefix + "raw")) {
 			Iterator<SAMRecord> it = aysncit;
 			if (tags.contains(SAMTag.NM) || tags.contains(SAMTag.SA)) {
-				it = new AsyncBufferedIterator<SAMRecord>(it, "nm");
+				it = new AsyncBufferedIterator<SAMRecord>(it, threadprefix + "nm");
 				it = new NmTagIterator(it, reference);
 			}
 			if (!Sets.intersection(tags, SAMRecordUtil.TEMPLATE_TAGS).isEmpty() || softenHardClips) {
 				it = new TemplateTagsIterator(it, softenHardClips, fixMates, tags);
-				it = new AsyncBufferedIterator<SAMRecord>(it, "tags");
+				it = new AsyncBufferedIterator<SAMRecord>(it, threadprefix + "tags");
 			}
 			while (it.hasNext()) {
 				SAMRecord r = it.next();
