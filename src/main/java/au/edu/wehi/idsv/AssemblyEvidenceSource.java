@@ -5,12 +5,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.NoSuchElementException;
-import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.collect.Iterators;
@@ -34,6 +32,7 @@ import htsjdk.samtools.SAMRecord;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
+import picard.sam.GatherBamFiles;
 
 /**
  * Structural variant supporting contigs generated from assembly
@@ -76,37 +75,47 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	public void assembleBreakends(ExecutorService threadpool) throws IOException {
 		if (threadpool == null) {
 			threadpool = MoreExecutors.newDirectExecutorService();
-		}
-		SAMFileHeader header = getContext().getBasicSamHeader();
-		header.setSortOrder(SortOrder.unsorted);
-		// TODO: add assembly @PG header
-		File tmpout = FileSystemContext.getWorkingFileFor(getFile());
-		File filteredout = FileSystemContext.getWorkingFileFor(getFile(), "filtered.");
-		AssemblyIterator it = new AssemblyIterator(threadpool);
-		try (SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(header, false, tmpout)) {
-			try (SAMFileWriter filteredWriter = new SAMFileWriterFactory().makeSAMOrBAMWriter(header, false, filteredout)) {
-				while (it.hasNext()) {
-					SAMRecord asm = it.next();
-					asm = transformAssembly(asm);
-					if (shouldFilterAssembly(asm)) {
-						filteredWriter.addAlignment(asm);
-					} else {
-						writer.addAlignment(asm);
-					}
-				}
+		}		
+		List<QueryInterval> chunks = getContext().getReference().getIntervals(getContext().getConfig().chunkSize);
+		List<File> assembledChunk = new ArrayList<>();
+		List<Future<Void>> tasks = new ArrayList<>();
+		for (int i = 0; i < chunks.size(); i++) {
+			QueryInterval chunck = chunks.get(i);
+			File f = getContext().getFileSystemContext().getAssemblyChunkBam(getFile(), i);
+			assembledChunk.add(f);
+			if (!f.exists()) {
+				tasks.add(threadpool.submit(() -> { assembleChunk(f, chunck); return null; }));
 			}
-	    }
+			
+		}
+		for (Future<Void> f : tasks) {
+			try {
+				f.get();
+			} catch (ExecutionException | InterruptedException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		log.info("Breakend assembly complete. Merging assembly files");
+		// Merge chunk files
+		File tmpout = FileSystemContext.getWorkingFileFor(getFile());
+		GatherBamFiles gather = new picard.sam.GatherBamFiles();
+		List<String> args = new ArrayList<>();
+		for (File f : assembledChunk) {
+			args.add("INPUT=" + f.getAbsolutePath());
+		}
+		args.add("OUTPUT=" + tmpout.getAbsolutePath());
+		int returnCode = gather.instanceMain(args.toArray(new String[] {}));
+		if (returnCode != 0) {
+			String msg = String.format("Error executing GatherBamFiles. GatherBamFiles returned status code %d", returnCode);
+			log.error(msg);
+			throw new RuntimeException(msg);
+		}		
 		SAMFileUtil.sort(getContext().getFileSystemContext(), tmpout, getFile(), SortOrder.coordinate);
 		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
 			FileHelper.delete(tmpout, true);
-		}
-		if (!getContext().getAssemblyParameters().writeFiltered) {
-			FileHelper.delete(filteredout, true);
-		}
-		if (filteredout.exists()) {
-			File filteredsorted = FileSystemContext.getWorkingFileFor(getFile(), "filtered.sorted.");
-			SAMFileUtil.sort(getContext().getFileSystemContext(), filteredout, filteredsorted, SortOrder.coordinate);
-			FileHelper.move(filteredsorted, filteredout, true);
+			for (File f : assembledChunk) {
+				FileHelper.delete(f, true);
+			}
 		}
 		File throttledFilename = new File(getFile().getAbsolutePath() + ".throttled.bed");
 		try {
@@ -115,6 +124,64 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			}
 		} catch (IOException e) {
 			log.warn(e, "Unable to write " + throttledFilename.getAbsolutePath());
+		}
+	}
+	private void assembleChunk(File output, QueryInterval qi) throws IOException {
+		String chuckName = String.format("%s:%d-%d", getContext().getReference().getSequenceDictionary().getSequence(qi.referenceIndex).getSequenceName(), qi.start, qi.end);
+		log.info(String.format("Starting assembly on interval %s", chuckName));
+		Stopwatch timer = Stopwatch.createStarted();
+		SAMFileHeader header = getContext().getBasicSamHeader();
+		// TODO: add assembly @PG header
+		File filteredout = FileSystemContext.getWorkingFileFor(output, "filtered.");
+		File tmpout = FileSystemContext.getWorkingFileFor(output, "gridss.tmp.");
+		try (SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(header, false, tmpout)) {
+			if (getContext().getAssemblyParameters().writeFiltered) {
+				try (SAMFileWriter filteredWriter = new SAMFileWriterFactory().makeSAMOrBAMWriter(header, false, filteredout)) {
+					for (BreakendDirection direction : BreakendDirection.values()) {
+						assembleChunk(writer, filteredWriter, qi, direction);
+					}
+				}
+			} else {
+				for (BreakendDirection direction : BreakendDirection.values()) {
+					assembleChunk(writer, null, qi, direction);
+				}
+			}
+		} catch (Exception e) {
+			log.error(e, "Error assembling ", chuckName);
+			if (getContext().getConfig().terminateOnFirstError) {
+				System.exit(1);
+			}
+			throw e;
+		} finally {
+			timer.stop();
+			log.info(String.format("Completed assembly on interval %s in %ds (%s)", chuckName, timer.elapsed(TimeUnit.SECONDS), timer.toString()));
+		}
+		SAMFileUtil.sort(getContext().getFileSystemContext(), tmpout, output, SortOrder.coordinate);
+		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
+			tmpout.delete();
+		}
+	}
+	private void assembleChunk(SAMFileWriter writer, SAMFileWriter filteredWriter, QueryInterval qi, BreakendDirection direction) {
+		int expansion = (int)(2 * getMaxConcordantFragmentSize() * getContext().getConfig().getAssembly().maxExpectedBreakendLengthMultiple) + 1;
+		int end = getContext().getReference().getSequenceDictionary().getSequence(qi.referenceIndex).getSequenceLength();
+		QueryInterval expanded = new QueryInterval(qi.referenceIndex, Math.max(1, qi.start - expansion), Math.min(end, qi.end + expansion));				
+		try (CloseableIterator<DirectedEvidence> input = mergedIterator(source, expanded)) {
+			Iterator<DirectedEvidence> throttledIt = throttled(input);
+			Iterator<SAMRecord> evidenceIt = new PositionalAssembler(getContext(), AssemblyEvidenceSource.this, throttledIt, direction);
+			while (evidenceIt.hasNext()) {
+				SAMRecord asm = evidenceIt.next();
+				if (asm.getAlignmentStart() >= qi.start && asm.getAlignmentStart() <= qi.end) {
+					// only output assemblies that start within our chuck
+					asm = transformAssembly(asm);
+					if (shouldFilterAssembly(asm)) {
+						if (filteredWriter != null) {
+							filteredWriter.addAlignment(asm);
+						}
+					} else {
+						writer.addAlignment(asm);
+					}
+				}
+			}
 		}
 	}
 	@Override
@@ -241,101 +308,5 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 	    	list.add(evidenceIt);
 		}
 		return Iterators.concat(list.iterator());
-	}
-	private class AssemblyIterator implements Iterator<SAMRecord> {
-		private final LinkedBlockingQueue<Optional<SAMRecord>> outputQueue = new LinkedBlockingQueue<>();
-		private final AtomicInteger outstandingTasks;
-		private SAMRecord nextRecord = null;
-		private volatile Exception backgroundThreadException = null;
-		public AssemblyIterator(ExecutorService threadpool) {
-			if (threadpool == null) throw new NullPointerException("threadpool cannot be null");
-			List<QueryInterval> chunks = getContext().getReference().getIntervals(getContext().getConfig().chunkSize);
-			this.outstandingTasks = new AtomicInteger(2 * chunks.size()); // a forward and backward for each chunk 
-			assembleTasks(threadpool, chunks);
-		}
-		private void assembleTasks(ExecutorService threadpool, List<QueryInterval> chunks) {
-			for (QueryInterval currentChunck : chunks) {
-				final QueryInterval qi = currentChunck;
-				threadpool.submit(() -> { assembleChunk(qi, BreakendDirection.Forward); });
-				threadpool.submit(() -> { assembleChunk(qi, BreakendDirection.Backward); });
-			}
-		}
-		private void assembleChunk(QueryInterval qi, BreakendDirection direction) {
-			String chuckName = String.format("%s:%d-%d %s", getContext().getReference().getSequenceDictionary().getSequence(qi.referenceIndex).getSequenceName(), qi.start, qi.end, direction);
-			try {
-				log.info(String.format("Starting assembly on interval %s", chuckName));
-				Stopwatch timer = Stopwatch.createStarted();
-				int expansion = (int)(2 * getMaxConcordantFragmentSize() * getContext().getConfig().getAssembly().maxExpectedBreakendLengthMultiple) + 1;
-				int end = getContext().getReference().getSequenceDictionary().getSequence(qi.referenceIndex).getSequenceLength();
-				QueryInterval expanded = new QueryInterval(qi.referenceIndex, Math.max(1, qi.start - expansion), Math.min(end, qi.end + expansion));				
-				try (CloseableIterator<DirectedEvidence> input = mergedIterator(source, expanded)) {
-					Iterator<DirectedEvidence> throttledIt = throttled(input);
-					Iterator<SAMRecord> evidenceIt = new PositionalAssembler(getContext(), AssemblyEvidenceSource.this, throttledIt, direction);
-					while (evidenceIt.hasNext()) {
-						SAMRecord ass = evidenceIt.next();
-						if (ass.getAlignmentStart() >= qi.start && ass.getAlignmentStart() <= qi.end) {
-							// only output assemblies that start within our chuck
-							outputQueue.put(Optional.of(ass));
-						}
-					}
-					outstandingTasks.decrementAndGet();
-					// Sentinal value to indicate we are done
-					outputQueue.put(Optional.empty());
-				}
-				timer.stop();
-				log.info(String.format("Completed assembly on interval %s in %ds (%s)", chuckName, timer.elapsed(TimeUnit.SECONDS), timer.toString()));
-			} catch (Exception e) {
-				log.error(e, "Error assembling ", chuckName);
-				backgroundThreadException = e;
-				if (getContext().getConfig().terminateOnFirstError) {
-					System.exit(1);
-				}
-			}
-		}
-		private void ensureNextRecord() throws InterruptedException {
-			
-			if (nextRecord != null) return;
-			// If there's still a task running then we know at least one
-			// worker thread will write a null sentinal
-			while (outstandingTasks.get() > 0) {
-				Optional<SAMRecord> result = outputQueue.poll(1, TimeUnit.SECONDS);
-				if (backgroundThreadException != null) return;
-				if (result != null && result.isPresent()) {
-					nextRecord = result.get();
-					return;
-				}
-			}
-			// If the workers are all done, then we're never going to
-			// get any more records added to the queue
-			// (actually, technically we can, but they're sentinal records which we can ignore)
-			while (!outputQueue.isEmpty()) {
-				Optional<SAMRecord> result = outputQueue.poll();
-				if (result.isPresent()) {
-					nextRecord = result.get();
-					return;
-				}
-			}
-		}
-		@Override
-		public boolean hasNext() {
-			try {
-				ensureNextRecord();
-				if (backgroundThreadException != null) {
-					throw new RuntimeException(backgroundThreadException);
-				}
-			} catch (InterruptedException e) {
-				log.error(e, "Unexpectedly interrupted waiting for assembly contigs to be generated.");
-				throw new RuntimeException(e);
-			}
-			return nextRecord != null;
-		}
-		@Override
-		public SAMRecord next() {
-			if (!hasNext()) throw new NoSuchElementException();
-			SAMRecord result = nextRecord;
-			nextRecord = null;
-			return result;
-		}
-		
 	}
 }
