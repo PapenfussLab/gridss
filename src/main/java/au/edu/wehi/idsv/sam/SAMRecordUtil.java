@@ -17,13 +17,14 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Booleans;
+import com.google.common.primitives.Bytes;
 
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.alignment.AlignerFactory;
@@ -539,21 +540,6 @@ public class SAMRecordUtil {
 		return bits;
 	}
 	/**
-	 * Splits the read alignment at the given read base position 
-	 * @param read read to split
-	 * @param readBaseOffset 0-based offset of base to split immediately after
-	 * @return left and right split reads 
-	 */
-	public static Pair<SAMRecord, SAMRecord> splitAfter(SAMRecord read, int readBaseOffset) {
-		Pair<Cigar, Cigar> cigars = CigarUtil.splitAfterReadPosition(read.getCigar().getCigarElements(), readBaseOffset);
-		SAMRecord left = SAMRecordUtil.clone(read);
-		left.setCigar(cigars.getLeft());
-		SAMRecord right = SAMRecordUtil.clone(read);
-		right.setCigar(cigars.getRight());
-		right.setAlignmentStart(read.getAlignmentStart() + CigarUtil.offsetOf(read.getCigar(), CigarUtil.getStartClipLength(cigars.getRight().getCigarElements())));
-		return Pair.of(left, right);
-	}
-	/**
 	 * Performs local realignment of the given SAMRecord in a window around the alignment location
 	 * @param reference reference genome
 	 * @param read read
@@ -1009,6 +995,36 @@ public class SAMRecordUtil {
 				log.warn(String.format("Unable to soften hard clip for %s", r.getReadName()));
 			}
 		}
+	}
+	/**
+	 * Converts any hard clips into soft clipped N bases
+	 * @param record
+	 */
+	public static final SAMRecord hardClipToN(SAMRecord r) {
+		if (r.getReadUnmappedFlag() || r.getCigar() == null) return r;		
+		if (!Iterables.any(r.getCigar().getCigarElements(), ce -> ce.getOperator() == CigarOperator.HARD_CLIP)) return r;
+		r = r.deepCopy();
+		List<CigarElement> list = new ArrayList<>(r.getCigar().getCigarElements());
+		int startlength = r.getCigar().getFirstCigarElement().getOperator() == CigarOperator.HARD_CLIP ? r.getCigar().getFirstCigarElement().getLength() : 0;
+		int endlength = r.getCigar().getLastCigarElement().getOperator() == CigarOperator.HARD_CLIP ? r.getCigar().getLastCigarElement().getLength() : 0;
+		r.setCigar(new Cigar(list.stream()
+				.map(ce -> ce.getOperator() == CigarOperator.HARD_CLIP ? new CigarElement(ce.getLength(), CigarOperator.SOFT_CLIP) : ce)
+				.collect(Collectors.toList())));
+		if (r.getReadBases() != null && r.getReadBases() != SAMRecord.NULL_SEQUENCE) {
+			byte[] start = new byte[startlength];
+			byte[] end = new byte[endlength];
+			Arrays.fill(start, (byte)'N');
+			Arrays.fill(end, (byte)'N');
+			r.setReadBases(Bytes.concat(start, r.getReadBases(), end));
+		}
+		if (r.getBaseQualities() != null && r.getBaseQualities() !=  SAMRecord.NULL_QUALS) {
+			byte[] start = new byte[startlength];
+			byte[] end = new byte[endlength];
+			Arrays.fill(start, (byte)0);
+			Arrays.fill(end, (byte)0);
+			r.setBaseQualities(Bytes.concat(start, r.getBaseQualities(), end));
+		}
+		return r;
 	}
 	/**
 	 * Gets the full read sequence

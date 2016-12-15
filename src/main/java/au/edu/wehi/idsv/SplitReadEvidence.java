@@ -33,17 +33,18 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 		super(source, record, location, offsetLocalStart, offsetLocalEnd, offsetUnmappedStart, offsetUnmappedEnd, offsetRemoteStart, offsetRemoteEnd, localUnanchoredWidth, remoteUnanchoredWidth);
 		this.remoteAlignment = remoteAlignment;
 	}
+	private static int hardClipMessageCount = 5;
 	public static List<SplitReadEvidence> create(SAMEvidenceSource source, SAMRecord record) {
 		if (record.getReadUnmappedFlag() || record.getCigar() == null) return Collections.emptyList();
 		List<ChimericAlignment> aln = ChimericAlignment.getChimericAlignments(record);
 		if (aln.isEmpty()) return Collections.emptyList();
 		if (record.getCigar().getFirstCigarElement().getOperator() == CigarOperator.HARD_CLIP
 				|| record.getCigar().getLastCigarElement().getOperator() == CigarOperator.HARD_CLIP) {
-			log.warn(String.format("Read %s is hard clipped. "
-					+ "Hard clipped split reads cannot be processed and will be ignored. "
-					+ "Please run %s to soften hard clips.",
-					record.getReadName(), ComputeSamTags.class.getName()));
-			return Collections.emptyList();
+			if (hardClipMessageCount > 0) {
+				log.warn(String.format("Read %s is hard clipped. Please run %s to soften hard clips. This message will be displayed %d more times.",
+						record.getReadName(), ComputeSamTags.class.getName(), --hardClipMessageCount));
+			}
+			record = SAMRecordUtil.hardClipToN(record);
 		}
 		List<SplitReadEvidence> list = new ArrayList<>(2);
 		ChimericAlignment chim = new ChimericAlignment(record);

@@ -88,10 +88,10 @@ public class CollectCigarMetrics extends SinglePassSamProgram {
 	    	for (CigarOperator op : CigarOperator.values()) {
 	    		switch (op) {
 	    			case S:
-	    				if (CigarUtil.getStartClipLength(list) == 0) {
+	    				if (CigarUtil.getStartSoftClipLength(list) == 0) {
 	    					acceptCigarElement(new CigarElement(0, CigarOperator.S));
 	    				}
-	    				if (CigarUtil.getEndClipLength(list) == 0) {
+	    				if (CigarUtil.getEndSoftClipLength(list) == 0) {
 	    					acceptCigarElement(new CigarElement(0, CigarOperator.S));
 	    				}
 	    				break;

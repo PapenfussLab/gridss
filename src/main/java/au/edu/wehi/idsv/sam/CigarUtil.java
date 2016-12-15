@@ -179,6 +179,24 @@ public class CigarUtil {
 		}
 		return length;
 	}
+	public static int getEndSoftClipLength(List<CigarElement> elements) {
+		if (elements == null) return 0;
+		int length = 0;
+		int i = elements.size() - 1;
+		while (i >= 0) {
+			switch (elements.get(i).getOperator()) {
+			case S:
+				length += elements.get(i).getLength();	
+				break;
+			case H:
+				break;
+			default:
+				return length;
+			}
+			i--;
+		}
+		return length;
+	}
 	public static int getStartClipLength(List<CigarElement> elements) {
 		if (elements == null) return 0;
 		int length = 0;
@@ -193,6 +211,24 @@ public class CigarUtil {
 			default:
 				return length;
 			}
+		}
+		return length;
+	}
+	public static int getStartSoftClipLength(List<CigarElement> elements) {
+		if (elements == null) return 0;
+		int length = 0;
+		int i = 0;
+		while (i < elements.size()) {
+			switch (elements.get(i).getOperator()) {
+			case S:
+				length += elements.get(i).getLength();
+				break;
+			case H:
+				break;
+			default:
+				return length;
+			}
+			i++;
 		}
 		return length;
 	}

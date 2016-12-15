@@ -148,4 +148,11 @@ public class CigarUtilTest {
 		assertEquals("10M16S", new Cigar(CigarUtil.asUngapped(new Cigar(C("10M1I10M5S")), true)).toString());
 		assertEquals("11S10M5S", new Cigar(CigarUtil.asUngapped(new Cigar(C("10M1I10M5S")), false)).toString());
 	}
+	@Test
+	public void getClipLength_should_consider_end_and_clip_type() {
+		assertEquals(3, CigarUtil.getStartClipLength(C("1H2S3M4S5H")));
+		assertEquals(2, CigarUtil.getStartSoftClipLength(C("1H2S3M4S5H")));
+		assertEquals(9, CigarUtil.getEndClipLength(C("1H2S3M4S5H")));
+		assertEquals(4, CigarUtil.getEndSoftClipLength(C("1H2S3M4S5H")));
+	}
 }

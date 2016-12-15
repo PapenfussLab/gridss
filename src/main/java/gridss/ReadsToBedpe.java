@@ -35,8 +35,6 @@ public class ReadsToBedpe extends CommandLineProgram {
     public File INPUT;
     @Option(shortName=StandardOptionDefinitions.OUTPUT_SHORT_NAME, doc="Output BEDPE", optional=false)
     public File OUTPUT;
-    //@Option(shortName=StandardOptionDefinitions.REFERENCE_SHORT_NAME, doc="Reference genome", optional=true)
-    //public File REFERENCE = null;
     @Option(doc="Minimum event size", optional=true)
     public int MIN_SIZE = 50;
     @Option(doc="Minimum mapq of read alignments", optional=true)

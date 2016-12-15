@@ -58,8 +58,8 @@ public class IndelEvidence extends SingleReadEvidence implements DirectedBreakpo
 		int postEndOffset = unmappedEndOffset + postReadLength;
 		
 		if (!INCLUDE_CLIPPED_ANCHORING_BASES) {
-			preStartOffset += CigarUtil.getStartClipLength(pre);
-			postEndOffset -= CigarUtil.getEndClipLength(post);
+			preStartOffset += CigarUtil.getStartSoftClipLength(pre);
+			postEndOffset -= CigarUtil.getEndSoftClipLength(post);
 		}
 		IndelEvidence left = new IndelEvidence(source, record, location,
 				preStartOffset, preEndOffset, unmappedStartOffset, unmappedEndOffset, postStartOffset, postEndOffset, indel, indelCigarElementOffset);

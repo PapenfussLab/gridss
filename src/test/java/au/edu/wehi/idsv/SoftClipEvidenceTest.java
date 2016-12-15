@@ -300,4 +300,10 @@ public class SoftClipEvidenceTest extends TestHelper {
 		assertEquals("", e.getHomologySequence());
 		assertEquals(0, e.getHomologyAnchoredBaseCount());
 	}
+	@Test
+	public void should_handle_hard_clipping() {
+		SoftClipEvidence e = SoftClipEvidence.create(SES(), FWD, withSequence("ACGTTAACCA", Read(0, 10, "4H5M5S3H"))[0]);
+		assertEquals("ACGTT", S(e.getAnchorSequence()));
+		assertEquals("AACCA", S(e.getBreakendSequence()));
+	}
 }

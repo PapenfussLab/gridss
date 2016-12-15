@@ -65,6 +65,7 @@ public class FileSystemContext {
 	private static final String FORMAT_REALIGN_FASTQ = "%1$s/%2$s.realign.%3$d.fq";
 	private static final String FORMAT_REALIGN_SAM = "%1$s/%2$s.realign.%3$d" + SAM_SUFFIX;
 	private static final String FORMAT_BREAKPOINT_VCF = "%1$s/%2$s.breakpoint" + VCF_SUFFIX;
+	private static final String FORMAT_ASSEMBLY_CHUNK_SAM = "%1$s/%2$s.assembly.chunk%3$d" + SAM_SUFFIX;
 	
 	/**
 	 * Gets the idsv intermediate working directory for the given input
@@ -139,4 +140,8 @@ public class FileSystemContext {
 	public File getCoverageBlacklistBed(File input) {
 		return getFile(String.format(FORMAT_COVERAGE_BLACKLIST_BED, getIntermediateDirectory(input), getSource(input).getName()));
 	}
+	public File getAssemblyChunkBam(File input, int chunk) {
+		return getFile(String.format(FORMAT_ASSEMBLY_CHUNK_SAM, getIntermediateDirectory(input), getSource(input).getName(), chunk));
+	}
+	
 }

@@ -6,7 +6,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import org.apache.commons.lang3.tuple.Pair;
+import org.junit.Assert;
 import org.junit.Test;
 
 import com.google.common.collect.ImmutableList;
@@ -294,41 +294,6 @@ public class SAMRecordUtilTest extends TestHelper {
 		assertEquals(1, SAMRecordUtil.getAlignedIdentity(withNM(withSequence("NAGTAC", Read(1, 1, "1S1M1D4M")))[0]), 0);
 		assertEquals(0.5, SAMRecordUtil.getAlignedIdentity(withNM(withSequence("NAATT", Read(0, 1, "1S4M")))[0]), 0);
 		assertEquals(0, SAMRecordUtil.getAlignedIdentity(withNM(withSequence("ACCCCA", Read(0, 1, "1S4M1S")))[0]), 0);
-	}
-	@Test
-	public void splitAfter_should_make_two_full_length_reads() {
-		Pair<SAMRecord, SAMRecord> p = SAMRecordUtil.splitAfter(Read(0, 1, "10M"), 1);
-		assertEquals(1, p.getLeft().getAlignmentStart());
-		assertEquals("2M8S", p.getLeft().getCigarString());
-		assertEquals(10, p.getLeft().getReadLength());
-		
-		assertEquals(3, p.getRight().getAlignmentStart());
-		assertEquals("2S8M", p.getRight().getCigarString());
-		assertEquals(10, p.getRight().getReadLength());
-	}
-	@Test
-	public void splitAfter_should_clean_break() {
-		Pair<SAMRecord, SAMRecord> p = SAMRecordUtil.splitAfter(Read(0, 1, "4M4I4M"), 6);
-		assertEquals(1, p.getLeft().getAlignmentStart());
-		assertEquals("4M8S", p.getLeft().getCigarString());
-		assertEquals(12, p.getLeft().getReadLength());
-		
-		assertEquals(5, p.getRight().getAlignmentStart());
-		assertEquals("8S4M", p.getRight().getCigarString());
-		assertEquals(12, p.getRight().getReadLength());
-	}
-	@Test
-	public void splitAfter_should_not_alter_base_alignments() {
-		Pair<SAMRecord, SAMRecord> p = SAMRecordUtil.splitAfter(Read(0, 1, "4M4D4M"), 3);
-		assertEquals(1, p.getLeft().getAlignmentStart());
-		assertEquals("4M4S", p.getLeft().getCigarString());
-		
-		assertEquals(9, p.getRight().getAlignmentStart());
-		assertEquals("4S4M", p.getRight().getCigarString());
-		
-		p = SAMRecordUtil.splitAfter(Read(0, 1, "4M4I4M"), 6);
-		assertEquals(1, p.getLeft().getAlignmentStart());
-		assertEquals(5, p.getRight().getAlignmentStart());
 	}
 	@Test
 	public void realign_should_use_window_around_read_alignment() {
@@ -742,5 +707,26 @@ public class SAMRecordUtilTest extends TestHelper {
 		r.setReadBases(B(readStr));
 		SAMRecordUtil.unclipExactReferenceMatches(ref, r);
 		assertEquals("131M", r.getCigarString());
+	}
+	@Test
+	public void hardClipToN_should_pad_with_zero_qual_Ns() {
+		SAMRecord r = withQual(new byte[] {1, 2}, withSequence("GT", Read(0, 1, "1H2M3H")))[0];
+		SAMRecord result = SAMRecordUtil.hardClipToN(r);
+		assertEquals("1S2M3S", result.getCigarString());
+		assertEquals("NGTNNN", S(result.getReadBases()));
+		assertArrayEquals(new byte[] {0, 1, 2, 0,0,0}, result.getBaseQualities());
+	}
+	@Test
+	public void hardClipToN_should_not_change_original_record() {
+		SAMRecord r = withQual(new byte[] {1, 2}, withSequence("GT", Read(0, 1, "1H2M3H")))[0];
+		SAMRecord result = SAMRecordUtil.hardClipToN(r);
+		assertEquals("1H2M3H", r.getCigarString());
+		assertEquals("GT", S(r.getReadBases()));
+	}
+	@Test
+	public void hardClipToN_should_not_change_if_no_hard_clipping() {
+		SAMRecord r = withQual(new byte[] {1, 1, 2, 1, 1, 1}, withSequence("AGTAAA", Read(0, 1, "1S2M3S")))[0];
+		SAMRecord result = SAMRecordUtil.hardClipToN(r);
+		Assert.assertSame(result, r);
 	}
 }
