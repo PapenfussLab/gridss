@@ -47,23 +47,13 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 	}
 	@Override
 	public boolean hasNext() {
-		try {
-			ensureAssembler();
-			return currentAssembler != null && currentAssembler.hasNext();
-		} catch (AssertionError|Exception e) {
-			log.error(e, "Fatal error assembling ", currentContig);
-			throw e;
-		}
+		ensureAssembler(Defaults.ATTEMPT_ASSEMBLY_RECOVERY);
+		return currentAssembler != null && currentAssembler.hasNext();
 	}
 	@Override
 	public SAMRecord next() {
-		try {
-			ensureAssembler();
-			return currentAssembler.next();
-		} catch (AssertionError|Exception e) {
-			log.error(e, "Fatal error assembling ", currentContig);
-			throw e;
-		}
+		ensureAssembler(Defaults.ATTEMPT_ASSEMBLY_RECOVERY);
+		return currentAssembler.next();
 	}
 	private void flushIfRequired() {
 		if (currentAssembler != null && !currentAssembler.hasNext()) {
@@ -76,6 +66,26 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 			}
 			currentAssembler = null;
 		}
+	}
+	private void ensureAssembler(boolean attemptRecovery) {
+		try {
+			ensureAssembler();
+		} catch (AssertionError|Exception e) {
+			String msg = "Fatal error assembling " + currentContig + ". This should not happen. Please raise an issue at https://github.com/PapenfussLab/gridss/issues";
+			if (!attemptRecovery) {
+				log.error(e, msg);
+				throw e;
+			} else {
+				if (it.hasNext()) {
+					msg = String.format("%s. Attempting recovery by resuming assembly at %s:%d",
+							msg,
+							context.getReference().getSequenceDictionary().getSequence(it.peek().getBreakendSummary().referenceIndex).getSequenceName(),
+							it.peek().getBreakendSummary().start);
+				}
+				log.error(e, msg);
+			}
+		}
+		ensureAssembler(); // don't attempt to recover again if our recovery attempt just failed
 	}
 	private void ensureAssembler() {
 		flushIfRequired();

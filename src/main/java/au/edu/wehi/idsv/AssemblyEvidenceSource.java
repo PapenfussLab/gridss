@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -88,12 +87,19 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			}
 			
 		}
+		// Assemble as much as we can before dying
+		Exception firstException = null;
 		for (Future<Void> f : tasks) {
 			try {
 				f.get();
-			} catch (ExecutionException | InterruptedException e) {
-				throw new RuntimeException(e);
+			} catch (Exception e) {
+				if (firstException == null) {
+					firstException = e;
+				}
 			}
+		}
+		if (firstException != null) {
+			log.error(firstException, "Fatal error during assembly ");
 		}
 		log.info("Breakend assembly complete. Merging assembly files");
 		// Merge chunk files
@@ -190,10 +196,6 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		File svFile = getContext().getFileSystemContext().getSVBam(getFile());
 		File withsplitreadsFile = FileSystemContext.getWorkingFileFor(svFile, "gridss.tmp.withsplitreads.");
 		ensureMetrics();
-		// Regenerate from from the intermediate file furtherest through the pipeline
-		// extract -> query sort -> tag -> split read -> back to coordinate sorted
-		// We want to tag before generating split reads so all splits are guaranteed to
-		// have the same tags
 		if (!svFile.exists()) {
 			log.info("Identifying split reads for " + getFile().getAbsolutePath());
 			List<String> args = Lists.newArrayList(
