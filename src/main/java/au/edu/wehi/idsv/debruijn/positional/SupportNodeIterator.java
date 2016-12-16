@@ -80,7 +80,13 @@ public class SupportNodeIterator implements PeekingIterator<KmerSupportNode> {
 			return;
 		}
 		assert(de.getBreakendSummary().referenceIndex == firstReferenceIndex);
-		assert(lastEvidence == null || DirectedEvidence.ByStartEnd.compare(lastEvidence, de) <= 0);
+		if (lastEvidence != null && DirectedEvidence.ByStartEnd.compare(lastEvidence, de) > 0) {
+			String msg = String.format("SupportNodeIterator requires evidence to be sorted by starting position. Encountered %s at %s before %s at %s.",
+					lastEvidence.getEvidenceID(), lastEvidence.getBreakendSummary(),
+					de.getEvidenceID(), de.getBreakendSummary());
+			log.error(msg);
+			throw new RuntimeException(msg);
+		}
 		lastEvidence = de;
 		
 		KmerEvidence e;
