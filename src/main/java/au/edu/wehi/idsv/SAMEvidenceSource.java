@@ -20,7 +20,7 @@ import au.edu.wehi.idsv.util.AutoClosingIterator;
 import au.edu.wehi.idsv.util.AutoClosingMergedIterator;
 import au.edu.wehi.idsv.util.BufferedIterator;
 import au.edu.wehi.idsv.util.FileHelper;
-import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
+import au.edu.wehi.idsv.validation.OrderAssertingIterator;
 import gridss.ComputeSamTags;
 import gridss.ExtractSVReads;
 import gridss.SoftClipsToSplitReads;
@@ -208,7 +208,9 @@ public class SAMEvidenceSource extends EvidenceSource {
 		eit = Iterators.filter(eit, e -> !shouldFilter(e));
 		eit = new DirectEvidenceWindowedSortingIterator<DirectedEvidence>(getContext(), getSortWindowSize(), eit);
 		if (Defaults.SANITY_CHECK_ITERATORS) {
-			eit = new PairedEvidenceTracker<DirectedEvidence>(getFile().getName(), eit);
+			// Can't enforce pairing as there may actually be duplicates depending on how multi-mapping alignment was performed
+			//eit = new PairedEvidenceTracker<DirectedEvidence>(getFile().getName(), eit);
+			eit = new OrderAssertingIterator<DirectedEvidence>(eit, DirectedEvidenceOrder.ByNatural);
 		}
 		return eit;
 	}

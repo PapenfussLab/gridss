@@ -21,25 +21,30 @@ public abstract class DirectedEvidenceOrder {
 			int arg1_referenceIndex2 = 0, arg2_referenceIndex2 = 0;
 			int arg1_start2 = 0, arg2_start2 = 0;
 			int arg1_end2 = 0, arg2_end2 = 0;
+			int arg1_nominal2 = 0, arg2_nominal2 = 0;
 			if (loc1 instanceof BreakpointSummary) {
 				BreakpointSummary bp = (BreakpointSummary)loc1;
 				arg1_referenceIndex2 = bp.referenceIndex2;
 				arg1_start2 = bp.start2;
 				arg1_end2 = bp.end2;
+				arg1_nominal2 = bp.nominal2;
 			}
 			if (loc2 instanceof BreakpointSummary) {
 				BreakpointSummary bp = (BreakpointSummary)loc2;
 				arg2_referenceIndex2 = bp.referenceIndex2;
 				arg2_start2 = bp.start2;
 				arg2_end2 = bp.end2;
+				arg2_nominal2 = bp.nominal2;
 			}
 			return ComparisonChain.start()
 			        .compare(loc1.referenceIndex, loc2.referenceIndex)
 			        .compare(loc1.start, loc2.start)
 			        .compare(loc1.end, loc2.end)
+			        .compare(loc1.nominal, loc2.nominal)
 			        .compare(arg1_referenceIndex2, arg2_referenceIndex2)
 			        .compare(arg1_start2, arg2_start2)
 			        .compare(arg1_end2, arg2_end2)
+			        .compare(arg1_nominal2, arg2_nominal2)
 			        .result();
 		}
 	};

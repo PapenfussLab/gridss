@@ -84,8 +84,8 @@ public class PositionalAssembler implements Iterator<SAMRecord> {
 				}
 				log.error(e, msg);
 			}
+			ensureAssembler(); // don't attempt to recover again if our recovery attempt just failed
 		}
-		ensureAssembler(); // don't attempt to recover again if our recovery attempt just failed
 	}
 	private void ensureAssembler() {
 		flushIfRequired();

@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 
 import au.edu.wehi.idsv.validation.OrderAssertingIterator;
-import au.edu.wehi.idsv.validation.PairedEvidenceTracker;
 import au.edu.wehi.idsv.vcf.VcfFileUtil;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.CloserUtil;
@@ -54,7 +53,8 @@ public class VariantCaller {
 	}
 	private CloseableIterator<DirectedEvidence> adjustEvidenceStream(CloseableIterator<DirectedEvidence> evidenceIt) {
 		if (Defaults.SANITY_CHECK_ITERATORS) {
-			evidenceIt = new PairedEvidenceTracker<DirectedEvidence>("VariantCaller", evidenceIt);
+			// Can't enforce pairing as there may actually be duplicates depending on how multi-mapping alignment was performed
+			//evidenceIt = new PairedEvidenceTracker<DirectedEvidence>("VariantCaller", evidenceIt);
 			evidenceIt = new OrderAssertingIterator<DirectedEvidence>(evidenceIt, DirectedEvidenceOrder.ByNatural);
 		}
 		return evidenceIt;

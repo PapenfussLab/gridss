@@ -182,7 +182,7 @@ public class SplitReadEvidence extends SingleReadEvidence implements DirectedBre
 		remote.setReadUnmappedFlag(false);
 		remote.setReadNegativeStrandFlag(false);
 		remote.setCigar(remoteAlignment.cigar);
-		remote.setAttribute(SAMTag.SA.name(), new ChimericAlignment(this.getSAMRecord()));
+		remote.setAttribute(SAMTag.SA.name(), new ChimericAlignment(this.getSAMRecord()).toString());
 		SplitReadEvidence remoteEvidence = SplitReadEvidence.create(source, remote).get(0);
 		return EvidenceIDHelper.getEvidenceID(remoteEvidence);
 	}
