@@ -243,7 +243,7 @@ public class TestHelper {
 		assert(bs.start == bs.end);
 		assert(bs.start2 == bs.end2);
 		assert(bs.direction2 == BWD);
-		SAMRecord r = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), bs.direction, null, bs.referenceIndex, bs.start, 1, B("TT"), B("TT"));
+		SAMRecord r = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator(String.format("asm(%d)-%d%s", bs.referenceIndex, bs.start, bs.direction.toChar())), bs.direction, null, bs.referenceIndex, bs.start, 1, B("TT"), B("TT"));
 		SAMRecord ra = new SAMRecord(getContext().getBasicSamHeader());
 		ra.setReferenceIndex(bs.referenceIndex2);
 		ra.setAlignmentStart(bs.start2);
@@ -288,7 +288,7 @@ public class TestHelper {
 	}
 
 	public static SoftClipEvidence AE() {
-		return SoftClipEvidence.create(AES(), FWD, AssemblyFactory.createAnchoredBreakend(getContext(), AES(),
+		return SoftClipEvidence.create(AES(), FWD, AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), 
 				FWD,
 				null,
 				0, 1,

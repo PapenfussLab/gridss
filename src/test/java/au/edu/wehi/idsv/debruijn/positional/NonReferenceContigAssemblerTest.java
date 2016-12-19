@@ -23,6 +23,7 @@ import au.edu.wehi.idsv.DiscordantReadPair;
 import au.edu.wehi.idsv.NonReferenceReadPair;
 import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
+import au.edu.wehi.idsv.SequentialIdGenerator;
 import au.edu.wehi.idsv.SoftClipEvidence;
 import au.edu.wehi.idsv.TestHelper;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
@@ -53,7 +54,7 @@ public class NonReferenceContigAssemblerTest extends TestHelper {
 			pnIt = new PathCollapseIterator(pnIt, k, maxPathCollapseLength, pc.getAssemblyParameters().errorCorrection.maxBaseMismatchForCollapse, pc.getAssemblyParameters().errorCorrection.collapseBubblesOnly, 0);
 			pnIt = new PathSimplificationIterator(pnIt, maxPathLength, maxEvidenceWidth);
 		}
-		caller = new NonReferenceContigAssembler(pnIt, 0, maxEvidenceWidth + maxReadLength + 2, maxReadLength, k, aes, tracker, "test");
+		caller = new NonReferenceContigAssembler(pnIt, 0, maxEvidenceWidth + maxReadLength + 2, maxReadLength, k, aes, new SequentialIdGenerator("asm"), tracker, "test");
 		return caller;
 	}
 	@Test

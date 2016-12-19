@@ -26,7 +26,6 @@ public class ProcessingContext extends GenomicProcessingContext {
 	private final GridssConfiguration config;
 	private final List<Header> metricsHeaders;
 	private long calculateMetricsRecordCount = Long.MAX_VALUE; 
-	private AssemblyIdGenerator assemblyIdGenerator = new SequentialIdGenerator("asm");
 	private final List<String> categories = Lists.newArrayList((String)null);
 	private BufferTracker bufferTracker = null;
 	
@@ -69,12 +68,6 @@ public class ProcessingContext extends GenomicProcessingContext {
 	}
 	public void setCalculateMetricsRecordCount(long calculateMetricsRecordCount) {
 		this.calculateMetricsRecordCount = calculateMetricsRecordCount;
-	}
-	public AssemblyIdGenerator getAssemblyIdGenerator() {
-		return assemblyIdGenerator;
-	}
-	public void setAssemblyIdGenerator(AssemblyIdGenerator generator) {
-		this.assemblyIdGenerator = generator;
 	}
 	public void registerBuffer(String context, TrackedBuffer obj) {
 		if (bufferTracker != null) {

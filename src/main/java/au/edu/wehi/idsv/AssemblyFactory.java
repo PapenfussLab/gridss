@@ -35,20 +35,20 @@ public final class AssemblyFactory {
 	 * @return assembly evidence for the given assembly
 	 */
 	public static SAMRecord createAnchoredBreakend(
-			ProcessingContext processContext,
-			AssemblyEvidenceSource source, BreakendDirection direction,
+			ProcessingContext processContext, AssemblyEvidenceSource source, AssemblyIdGenerator assemblyIdGenerator,
+			BreakendDirection direction,
 			Collection<DirectedEvidence> evidence,
 			int anchorReferenceIndex, int anchorBreakendPosition, int anchoredBaseCount,
 			byte[] baseCalls, byte[] baseQuals) {
 		BreakendSummary breakend = new BreakendSummary(anchorReferenceIndex, direction, anchorBreakendPosition);
-		SAMRecord r = createAssemblySAMRecord(processContext, evidence, processContext.getBasicSamHeader(), source, breakend,
+		SAMRecord r = createAssemblySAMRecord(processContext, assemblyIdGenerator, evidence, processContext.getBasicSamHeader(), source, breakend,
 				breakend.direction == BreakendDirection.Forward ? anchoredBaseCount : 0,
 				breakend.direction == BreakendDirection.Backward ? anchoredBaseCount : 0,
 				baseCalls, baseQuals);
 		return r;
 	}
 	public static SAMRecord createAnchoredBreakpoint(
-			ProcessingContext processContext, AssemblyEvidenceSource source,
+			ProcessingContext processContext, AssemblyEvidenceSource source, AssemblyIdGenerator assemblyIdGenerator,
 			Collection<DirectedEvidence> evidence,
 			int startAnchorReferenceIndex, int startAnchorPosition, int startAnchorBaseCount,
 			int endAnchorReferenceIndex, int endAnchorPosition, int endAnchorBaseCount,
@@ -58,7 +58,7 @@ public final class AssemblyFactory {
 				endAnchorReferenceIndex, BreakendDirection.Backward, endAnchorPosition);
 		assert(startAnchorBaseCount > 0);
 		assert(endAnchorBaseCount > 0);
-		SAMRecord r = createAssemblySAMRecord(processContext, evidence, processContext.getBasicSamHeader(), source, bp,
+		SAMRecord r = createAssemblySAMRecord(processContext, assemblyIdGenerator, evidence, processContext.getBasicSamHeader(), source, bp,
 				startAnchorBaseCount,
 				endAnchorBaseCount,
 				baseCalls, baseQuals);
@@ -77,13 +77,12 @@ public final class AssemblyFactory {
 	 * @return assembly evidence for the given assembly
 	 */
 	public static SAMRecord createUnanchoredBreakend(
-			ProcessingContext processContext,
-			AssemblyEvidenceSource source,
+			ProcessingContext processContext, AssemblyEvidenceSource source, AssemblyIdGenerator assemblyIdGenerator,
 			BreakendSummary breakend,
 			Collection<DirectedEvidence> evidence,
 			byte[] baseCalls, byte[] baseQuals,
 			int[] baseCounts) {
-		SAMRecord r = createAssemblySAMRecord(processContext, evidence, processContext.getBasicSamHeader(), source, breakend,
+		SAMRecord r = createAssemblySAMRecord(processContext, assemblyIdGenerator, evidence, processContext.getBasicSamHeader(), source, breakend,
 				0, 0,
 				baseCalls, baseQuals);
 		return r;
@@ -92,6 +91,7 @@ public final class AssemblyFactory {
 	private static final byte[][] PAD_QUALS = new byte[][] { new byte[] {}, new byte[] { 0 }, new byte[] { 0, 0 } };
 	private static SAMRecord createAssemblySAMRecord(
 			ProcessingContext processContext,
+			AssemblyIdGenerator assemblyIdGenerator,
 			Collection<DirectedEvidence> evidence,
 			SAMFileHeader samFileHeader, AssemblyEvidenceSource source,
 			BreakendSummary breakend,
@@ -107,7 +107,7 @@ public final class AssemblyFactory {
 		// default to the minimum mapping quality that is still valid
 		record.setMappingQuality(source.getContext().getConfig().minMapq);
 		record.setReferenceIndex(breakend.referenceIndex);
-		record.setReadName(source.getContext().getAssemblyIdGenerator().generate(breakend, baseCalls, startAnchoredBaseCount, endAnchoredBaseCount));
+		record.setReadName(assemblyIdGenerator.generate(breakend, baseCalls, startAnchoredBaseCount, endAnchoredBaseCount));
 		if (startAnchoredBaseCount == 0 && endAnchoredBaseCount == 0) {
 			assert(!(breakend instanceof BreakpointSummary));
 			// SAM spec requires at least one mapped base
@@ -161,7 +161,7 @@ public final class AssemblyFactory {
 					if (delSize < 0) {
 						log.warn("Negative deletions not supported by SAM specs. Breakpoint assembly has been converted to breakend. "
 								+ "Sanity check failure: this should not be possible for positional assembly. ");
-						return createAssemblySAMRecord(processContext, evidence, samFileHeader, source, bp.localBreakend(), startAnchoredBaseCount, 0, baseCalls, baseQuals);
+						return createAssemblySAMRecord(processContext, assemblyIdGenerator, evidence, samFileHeader, source, bp.localBreakend(), startAnchoredBaseCount, 0, baseCalls, baseQuals);
 					}
 				}
 				c.add(new CigarElement(endAnchoredBaseCount, CigarOperator.MATCH_OR_MISMATCH));

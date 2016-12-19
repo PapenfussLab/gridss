@@ -81,9 +81,10 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 		for (int i = 0; i < chunks.size(); i++) {
 			QueryInterval chunck = chunks.get(i);
 			File f = getContext().getFileSystemContext().getAssemblyChunkBam(getFile(), i);
+			int chunkNumber = i;
 			assembledChunk.add(f);
 			if (!f.exists()) {
-				tasks.add(threadpool.submit(() -> { assembleChunk(f, chunck); return null; }));
+				tasks.add(threadpool.submit(() -> { assembleChunk(f, chunkNumber, chunck); return null; }));
 			}
 			
 		}
@@ -132,7 +133,8 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			log.warn(e, "Unable to write " + throttledFilename.getAbsolutePath());
 		}
 	}
-	private void assembleChunk(File output, QueryInterval qi) throws IOException {
+	private void assembleChunk(File output, int chunkNumber, QueryInterval qi) throws IOException {
+		AssemblyIdGenerator assemblyNameGenerator = new SequentialIdGenerator(String.format("asm%d-", chunkNumber));
 		String chuckName = String.format("%s:%d-%d", getContext().getReference().getSequenceDictionary().getSequence(qi.referenceIndex).getSequenceName(), qi.start, qi.end);
 		log.info(String.format("Starting assembly on interval %s", chuckName));
 		Stopwatch timer = Stopwatch.createStarted();
@@ -144,12 +146,12 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			if (getContext().getAssemblyParameters().writeFiltered) {
 				try (SAMFileWriter filteredWriter = new SAMFileWriterFactory().makeSAMOrBAMWriter(header, false, filteredout)) {
 					for (BreakendDirection direction : BreakendDirection.values()) {
-						assembleChunk(writer, filteredWriter, qi, direction);
+						assembleChunk(writer, filteredWriter, qi, direction, assemblyNameGenerator);
 					}
 				}
 			} else {
 				for (BreakendDirection direction : BreakendDirection.values()) {
-					assembleChunk(writer, null, qi, direction);
+					assembleChunk(writer, null, qi, direction, assemblyNameGenerator);
 				}
 			}
 		} catch (Exception e) {
@@ -167,13 +169,13 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			tmpout.delete();
 		}
 	}
-	private void assembleChunk(SAMFileWriter writer, SAMFileWriter filteredWriter, QueryInterval qi, BreakendDirection direction) {
+	private void assembleChunk(SAMFileWriter writer, SAMFileWriter filteredWriter, QueryInterval qi, BreakendDirection direction, AssemblyIdGenerator assemblyNameGenerator) {
 		int expansion = (int)(2 * getMaxConcordantFragmentSize() * getContext().getConfig().getAssembly().maxExpectedBreakendLengthMultiple) + 1;
 		int end = getContext().getReference().getSequenceDictionary().getSequence(qi.referenceIndex).getSequenceLength();
 		QueryInterval expanded = new QueryInterval(qi.referenceIndex, Math.max(1, qi.start - expansion), Math.min(end, qi.end + expansion));				
 		try (CloseableIterator<DirectedEvidence> input = mergedIterator(source, expanded)) {
 			Iterator<DirectedEvidence> throttledIt = throttled(input);
-			Iterator<SAMRecord> evidenceIt = new PositionalAssembler(getContext(), AssemblyEvidenceSource.this, throttledIt, direction);
+			Iterator<SAMRecord> evidenceIt = new PositionalAssembler(getContext(), AssemblyEvidenceSource.this, assemblyNameGenerator, throttledIt, direction);
 			while (evidenceIt.hasNext()) {
 				SAMRecord asm = evidenceIt.next();
 				if (asm.getAlignmentStart() >= qi.start && asm.getAlignmentStart() <= qi.end) {
@@ -306,7 +308,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			CloseableIterator<DirectedEvidence> it = mergedIterator(source, false);
 			Iterator<DirectedEvidence> throttledIt = throttled(it);
 			ProgressLoggingDirectedEvidenceIterator<DirectedEvidence> loggedIt = new ProgressLoggingDirectedEvidenceIterator<>(getContext(), throttledIt, progressLog);
-			Iterator<SAMRecord> evidenceIt = new PositionalAssembler(getContext(), this, loggedIt, direction);
+			Iterator<SAMRecord> evidenceIt = new PositionalAssembler(getContext(), this, new SequentialIdGenerator("asm"), loggedIt, direction);
 	    	list.add(evidenceIt);
 		}
 		return Iterators.concat(list.iterator());

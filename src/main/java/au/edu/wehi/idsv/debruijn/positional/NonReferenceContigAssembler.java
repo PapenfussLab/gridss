@@ -27,6 +27,7 @@ import com.google.common.collect.TreeRangeSet;
 
 import au.edu.wehi.idsv.AssemblyEvidenceSource;
 import au.edu.wehi.idsv.AssemblyFactory;
+import au.edu.wehi.idsv.AssemblyIdGenerator;
 import au.edu.wehi.idsv.BreakendDirection;
 import au.edu.wehi.idsv.BreakendSummary;
 import au.edu.wehi.idsv.Defaults;
@@ -85,6 +86,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	private SortedSet<KmerPathNode> nonReferenceGraphByPosition = new TreeSet<KmerPathNode>(KmerNodeUtil.ByFirstStartKmer);
 	private final EvidenceTracker evidenceTracker;
 	private final AssemblyEvidenceSource aes;
+	private final AssemblyIdGenerator assemblyNameGenerator;
 	/**
 	 * Worst case scenario is a RP providing single kmer support for contig
 	 * read length - (k-1) + max-min fragment size
@@ -126,6 +128,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 	 * @param maxAnchorLength maximum number of reference-supporting anchor bases to assemble
 	 * @param k
 	 * @param source assembly source
+	 * @param assemblyNameGenerator 
 	 * @param tracker evidence lookup
 	 */
 	public NonReferenceContigAssembler(
@@ -135,6 +138,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			int maxAnchorLength,
 			int k,
 			AssemblyEvidenceSource source,
+			AssemblyIdGenerator assemblyNameGenerator,
 			EvidenceTracker tracker,
 			String contigName) {
 		this.underlying = Iterators.peekingIterator(it);
@@ -143,6 +147,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 		this.k = k;
 		this.referenceIndex = referenceIndex;
 		this.aes = source;
+		this.assemblyNameGenerator = assemblyNameGenerator;
 		this.evidenceTracker = tracker;
 		this.contigName = contigName;
 		initialiseBestCaller();
@@ -409,7 +414,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 				BreakendSummary be = Models.calculateBreakend(aes.getContext().getLinear(),
 					evidence.stream().map(e -> e.evidence().getBreakendSummary()).collect(Collectors.toList()),
 					evidence.stream().map(e -> ScalingHelper.toScaledWeight(e.evidenceQuality())).collect(Collectors.toList()));
-				assembledContig = AssemblyFactory.createUnanchoredBreakend(aes.getContext(), aes,
+				assembledContig = AssemblyFactory.createUnanchoredBreakend(aes.getContext(), aes, assemblyNameGenerator,
 						be,
 						evidenceIds,
 						bases, quals, new int[] { 0, 0 });
@@ -422,13 +427,13 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 			}
 		} else if (startingAnchor.size() == 0) {
 			// end anchored
-			assembledContig = AssemblyFactory.createAnchoredBreakend(aes.getContext(), aes,
+			assembledContig = AssemblyFactory.createAnchoredBreakend(aes.getContext(), aes, assemblyNameGenerator,
 					BreakendDirection.Backward, evidenceIds,
 					referenceIndex, endAnchorPosition, endAnchorBaseCount - endingBasesToTrim,
 					bases, quals);
 		} else if (endingAnchor.size() == 0) {
 			// start anchored
-			assembledContig = AssemblyFactory.createAnchoredBreakend(aes.getContext(), aes,
+			assembledContig = AssemblyFactory.createAnchoredBreakend(aes.getContext(), aes, assemblyNameGenerator,
 					BreakendDirection.Forward, evidenceIds,
 					referenceIndex, startAnchorPosition, startAnchorBaseCount - startBasesToTrim,
 					bases, quals);
@@ -437,7 +442,7 @@ public class NonReferenceContigAssembler implements Iterator<SAMRecord> {
 				// no unanchored bases - not an SV assembly
 				assembledContig = null;
 			} else {
-				assembledContig = AssemblyFactory.createAnchoredBreakpoint(aes.getContext(), aes, evidenceIds,
+				assembledContig = AssemblyFactory.createAnchoredBreakpoint(aes.getContext(), aes, assemblyNameGenerator, evidenceIds,
 						referenceIndex, startAnchorPosition, startAnchorBaseCount - startBasesToTrim,
 						referenceIndex, endAnchorPosition, endAnchorBaseCount - endingBasesToTrim,
 						bases, quals);
