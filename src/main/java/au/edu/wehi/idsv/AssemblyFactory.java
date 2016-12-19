@@ -1,6 +1,7 @@
 package au.edu.wehi.idsv;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -186,7 +187,42 @@ public final class AssemblyFactory {
 			record.setAttribute(SamTags.ASSEMBLY_DIRECTION, breakend.direction.toChar());
 		}
 		AssemblyAttributes.annotateAssembly(processContext, breakend, record, evidence);
+		truncateAnchorToContigBounds(processContext, record);
 		return record;
+	}
+	private static void truncateAnchorToContigBounds(ProcessingContext processContext, SAMRecord r) {
+		int end = processContext.getDictionary().getSequences().get(r.getReferenceIndex()).getSequenceLength();
+		if (r.getAlignmentStart() < 1) {
+			int basesToTruncate = 1 - r.getAlignmentStart();
+			ArrayList<CigarElement> cigar = new ArrayList<>(r.getCigar().getCigarElements());
+			cigar.set(0, new CigarElement(cigar.get(0).getLength() - basesToTruncate, cigar.get(0).getOperator()));
+			r.setAlignmentStart(1);
+			r.setCigar(new Cigar(cigar));
+			byte[] b = r.getReadBases();
+			if (b != null && b != SAMRecord.NULL_SEQUENCE) {
+				r.setReadBases(Arrays.copyOfRange(b, basesToTruncate, b.length));
+			}
+			byte[] q = r.getBaseQualities();
+			if (q != null && q != SAMRecord.NULL_QUALS) {
+				r.setBaseQualities(Arrays.copyOfRange(q, basesToTruncate, q.length));
+			}
+		}
+		if (r.getAlignmentEnd() > end) {
+			int basesToTruncate = r.getAlignmentEnd() - end;
+			ArrayList<CigarElement> cigar = new ArrayList<>(r.getCigar().getCigarElements());
+			CigarElement ce = cigar.get(cigar.size() - 1);
+			ce = new CigarElement(ce.getLength() - basesToTruncate, ce.getOperator());
+			cigar.set(cigar.size() - 1, ce);
+			r.setCigar(new Cigar(cigar));
+			byte[] b = r.getReadBases();
+			if (b != null && b != SAMRecord.NULL_SEQUENCE) {
+				r.setReadBases(Arrays.copyOf(b, b.length - basesToTruncate));
+			}
+			byte[] q = r.getBaseQualities();
+			if (q != null && q != SAMRecord.NULL_QUALS) {
+				r.setBaseQualities(Arrays.copyOf(q, q.length - basesToTruncate));
+			}
+		}
 	}
 }
 

@@ -1,6 +1,6 @@
 package au.edu.wehi.idsv.debruijn.positional;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -83,5 +83,27 @@ public class PositionalAssemblerTest extends TestHelper {
 		assertEquals("AACGTT", S(r.get(0).getAnchorSequence()));
 		assertEquals("GGTTAA", S(r.get(0).getBreakendSequence()));
 		assertEquals("AACGTTGGTTAA", S(r.get(0).getSAMRecord().getReadBases()));
+	}
+	@Test
+	public void anchor_should_not_overrun_contig_start() {
+		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES(pc);
+		pc.getAssemblyParameters().k = 4;
+		List<DirectedEvidence> input = new ArrayList<DirectedEvidence>();
+		input.add(SCE(FWD, withSequence("CGTAACCGGTTC", Read(0, 1, "1M2I4M5S"))));
+		ArrayList<SAMRecord> r = Lists.newArrayList(new PositionalAssembler(pc, aes, new SequentialIdGenerator("asm"), input.iterator()));
+		assertEquals(1, r.size());
+		assertEquals(1, r.get(0).getAlignmentStart());
+	}
+	@Test
+	public void anchor_should_not_overrun_contig_end() {
+		ProcessingContext pc = getContext();
+		AssemblyEvidenceSource aes = AES(pc);
+		pc.getAssemblyParameters().k = 4;
+		List<DirectedEvidence> input = new ArrayList<DirectedEvidence>();
+		input.add(SCE(BWD, withSequence("CGTAACCGGTTC", Read(0, 9996, "5S4M2I1M"))));
+		ArrayList<SAMRecord> r = Lists.newArrayList(new PositionalAssembler(pc, aes, new SequentialIdGenerator("asm"), input.iterator()));
+		assertEquals(1, r.size());
+		assertEquals(10000, r.get(0).getAlignmentEnd());
 	}
 }
