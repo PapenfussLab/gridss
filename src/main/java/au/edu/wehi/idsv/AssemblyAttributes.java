@@ -57,27 +57,51 @@ public class AssemblyAttributes {
 		}
 		return evidenceIDs;
 	}
+	public static void annotateNonSupporting(ProcessingContext context, BreakpointSummary assemblyBreakpoint, SAMRecord record, Collection<DirectedEvidence> support) {
+		int n = context.getCategoryCount();
+		float[] nsrpQual = new float[n];
+		float[] nsscQual = new float[n];
+		int[] nsrpCount = new int[n];
+		int[] nsscCount = new int[n];
+		BreakpointSummary breakendWithMargin = (BreakpointSummary)context.getVariantCallingParameters().withMargin(assemblyBreakpoint);
+		for (DirectedEvidence e : support) {
+			int offset = ((SAMEvidenceSource)e.getEvidenceSource()).getSourceCategory();
+			float qual = e.getBreakendQual();
+			if (e instanceof NonReferenceReadPair) {
+				if (breakendWithMargin != null && !breakendWithMargin.overlaps(e.getBreakendSummary())) {
+					nsrpCount[offset]++;
+					nsrpQual[offset] += qual;
+				}
+			} else if (e instanceof SingleReadEvidence) {
+				if (breakendWithMargin != null && !breakendWithMargin.overlaps(e.getBreakendSummary())) {
+					nsscCount[offset]++;
+					nsscQual[offset] += qual;
+				}
+			} else {
+				throw new NotImplementedException("Sanity check failure: not a read or a read pair.");
+			}
+		}
+		record.setAttribute(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_COUNT, nsrpCount);
+		record.setAttribute(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_COUNT, nsscCount);
+		record.setAttribute(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_QUAL, nsrpQual);
+		record.setAttribute(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_QUAL, nsscQual);
+	}
 	/**
 	 * Annotates an assembly with summary information regarding the reads used to produce the assembly
 	 */
-	public static void annotateAssembly(ProcessingContext context, BreakendSummary breakend, SAMRecord record, Collection<DirectedEvidence> support) {
+	public static void annotateAssembly(ProcessingContext context, SAMRecord record, Collection<DirectedEvidence> support) {
 		if (support == null) {
 			log.error("No support for assembly " + record.getReadName());
 			support = Collections.emptyList();
 		}
 		int n = context.getCategoryCount();
-		BreakendSummary breakendWithMargin = context.getVariantCallingParameters().withMargin(breakend);
 		float[] rpQual = new float[n];
 		float[] scQual = new float[n];
-		float[] nsrpQual = new float[n];
-		float[] nsscQual = new float[n];
 		int[] rpCount = new int[n];
 		int[] rpMaxLen = new int[n];
 		int[] scCount = new int[n];
 		int[] scLenMax = new int[n];
 		int[] scLenTotal = new int[n];
-		int[] nsrpCount = new int[n];
-		int[] nsscCount = new int[n];
 		int maxLocalMapq = 0;
 		for (DirectedEvidence e : support) {
 			assert(e != null);
@@ -88,20 +112,12 @@ public class AssemblyAttributes {
 				rpCount[offset]++;
 				rpQual[offset] += qual;
 				rpMaxLen[offset] = Math.max(rpMaxLen[offset], ((NonReferenceReadPair)e).getNonReferenceRead().getReadLength());
-				if (breakendWithMargin != null && !breakendWithMargin.overlaps(e.getBreakendSummary())) {
-					nsrpCount[offset]++;
-					nsrpQual[offset] += qual;
-				}
 			} else if (e instanceof SingleReadEvidence) {
 				scCount[offset]++;
 				scQual[offset] += qual;
 				int clipLength = e.getBreakendSequence().length;
 				scLenMax[offset] = Math.max(scLenMax[offset], clipLength);
 				scLenTotal[offset] += clipLength;
-				if (breakendWithMargin != null && !breakendWithMargin.overlaps(e.getBreakendSummary())) {
-					nsscCount[offset]++;
-					nsscQual[offset] += qual;
-				}
 			} else {
 				throw new NotImplementedException("Sanity check failure: not a read or a read pair.");
 			}
@@ -115,14 +131,10 @@ public class AssemblyAttributes {
 		record.setAttribute(SamTags.ASSEMBLY_READPAIR_COUNT, rpCount);
 		record.setAttribute(SamTags.ASSEMBLY_READPAIR_LENGTH_MAX, rpMaxLen);
 		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_COUNT, scCount);
-		record.setAttribute(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_COUNT, nsrpCount);
-		record.setAttribute(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_COUNT, nsscCount);
 		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_MAX, scLenMax);
 		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_CLIPLENGTH_TOTAL, scLenTotal);
 		record.setAttribute(SamTags.ASSEMBLY_READPAIR_QUAL, rpQual);
 		record.setAttribute(SamTags.ASSEMBLY_SOFTCLIP_QUAL, scQual);
-		record.setAttribute(SamTags.ASSEMBLY_NONSUPPORTING_READPAIR_QUAL, nsrpQual);
-		record.setAttribute(SamTags.ASSEMBLY_NONSUPPORTING_SOFTCLIP_QUAL, nsscQual);
 		// TODO: proper mapq model
 		record.setMappingQuality(maxLocalMapq);
 		if (record.getMappingQuality() < context.getConfig().minMapq) {

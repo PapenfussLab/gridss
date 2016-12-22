@@ -13,6 +13,10 @@ public class IntervalUtil {
 		// https://fgiesen.wordpress.com/2011/10/16/checking-for-interval-overlap/
 		return start1 <= end2 && start2 <= end1;
 	}
+	public static boolean overlapsClosed(long start1, long end1, long start2, long end2) {
+		// https://fgiesen.wordpress.com/2011/10/16/checking-for-interval-overlap/
+		return start1 <= end2 && start2 <= end1;
+	}
 	/**
 	 * Width of overlap of closed intervals
 	 * @param start1

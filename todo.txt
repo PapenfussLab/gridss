@@ -1,3 +1,8 @@
+Only perform unique assignment for multimapping sources
+add test case to check that I correctly implemented unique assignment multi-mapping logic
+fix multimapping assemmblyu test cases
+
+
 Filters:
 - coverage blacklist (SAMEvidenceSource.getBlacklistedRegions)
 - entropy

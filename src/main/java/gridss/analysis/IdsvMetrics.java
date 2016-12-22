@@ -47,4 +47,8 @@ public class IdsvMetrics extends MetricBase {
 	 * Number of read pairs where no read is mapped
 	 */
 	public long READ_PAIRS_ZERO_MAPPED = 0;
+	/**
+	 * Number of secondary alignments that are not split read alignments.
+	 */
+	public long SECONDARY_NOT_SPLIT = 0;
 }

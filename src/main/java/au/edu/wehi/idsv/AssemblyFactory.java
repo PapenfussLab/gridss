@@ -186,7 +186,7 @@ public final class AssemblyFactory {
 		if (!(breakend instanceof BreakpointSummary)) {
 			record.setAttribute(SamTags.ASSEMBLY_DIRECTION, breakend.direction.toChar());
 		}
-		AssemblyAttributes.annotateAssembly(processContext, breakend, record, evidence);
+		AssemblyAttributes.annotateAssembly(processContext, record, evidence);
 		truncateAnchorToContigBounds(processContext, record);
 		return record;
 	}

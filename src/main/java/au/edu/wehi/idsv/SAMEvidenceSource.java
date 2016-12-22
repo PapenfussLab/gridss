@@ -44,7 +44,7 @@ import picard.cmdline.CommandLineProgram;
  */
 public class SAMEvidenceSource extends EvidenceSource {
 	private static final Log log = Log.getInstance(SAMEvidenceSource.class);
-	private final SamReaderFactory factory = SamReaderFactory.makeDefault();
+	protected final SamReaderFactory factory = SamReaderFactory.makeDefault();
 	private final int sourceCategory;
 	private final ReadPairConcordanceMethod rpcMethod;
 	private final int rpcMinFragmentSize;

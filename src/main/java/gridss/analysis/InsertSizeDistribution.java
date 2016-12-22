@@ -25,20 +25,21 @@ public class InsertSizeDistribution extends CachedEnumeratedIntegerDistribution 
 	}
 	public static InsertSizeDistribution create(File insertSizeMetricsFile) {
 		InsertSizeDistribution result = null;
-		if (!insertSizeMetricsFile.exists()) return null;
-		FileReader reader = null;
-		try {
-			reader = new FileReader(insertSizeMetricsFile);
-			MetricsFile<InsertSizeMetrics,Integer> file = new MetricsFile<InsertSizeMetrics, Integer>();
-			file.read(reader);
-			result = InsertSizeDistribution.create(file.getHistogram());
-		} catch (FileNotFoundException e) {
-			log.error("Missing insert size distribution for ", insertSizeMetricsFile);
-		} finally {
-			CloserUtil.close(reader);
-		}
-		if (result == null) {
-			log.debug("Unable to extract insert size distribution from ", insertSizeMetricsFile);
+		if (insertSizeMetricsFile != null && insertSizeMetricsFile.exists()) {
+			FileReader reader = null;
+			try {
+				reader = new FileReader(insertSizeMetricsFile);
+				MetricsFile<InsertSizeMetrics,Integer> file = new MetricsFile<InsertSizeMetrics, Integer>();
+				file.read(reader);
+				result = InsertSizeDistribution.create(file.getHistogram());
+			} catch (FileNotFoundException e) {
+				log.error("Missing insert size distribution for ", insertSizeMetricsFile);
+			} finally {
+				CloserUtil.close(reader);
+			}
+			if (result == null) {
+				log.debug("Unable to extract insert size distribution from ", insertSizeMetricsFile);
+			}
 		}
 		return result;
 	}

@@ -16,6 +16,7 @@ import java.util.SortedSet;
 import java.util.Spliterator;
 import java.util.Spliterators;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -375,13 +376,18 @@ public class TestHelper {
 	public static ProcessingContext getContext() {
 		return getContext(SMALL_FA);
 	}
+	static public SAMRecord[] applying(Consumer<SAMRecord> f, SAMRecord... data) {
+		for (SAMRecord r : data) {
+			f.accept(r);
+		}
+		return data;
+	}
 	static public SAMRecord[] withReadName(String name, SAMRecord... data) {
 		for (SAMRecord r : data) {
 			r.setReadName(name);
 		}
 		return data;
 	}
-
 	static public SAMRecord[] withSequence(String seq, SAMRecord... data) {
 		byte[] qual = B(seq);
 		for (int i = 0; i < qual.length; i++) {

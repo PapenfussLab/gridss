@@ -4,6 +4,7 @@ import java.util.Iterator;
 import java.util.concurrent.ExecutorService;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 
 import au.edu.wehi.idsv.Defaults;
@@ -34,7 +35,7 @@ import picard.cmdline.Option;
         		+ "For split reads, only a single set of partial read mappings can be supported, and only one breakpoint per split can be supported.\n"
         		+ "For indels, only a single read mapping can be supported, and only one breakpoint per indel can be supported.\n"
         		+ "Note: the EID attribute must be populated with the relevant GRIDSS EvidenceID's using AllocateEvidence",  
-        usageShort = "Unique allocates evidence supporting multiple mutually exclusive breakpoints."
+        usageShort = "Uniquely allocates evidence supporting multiple mutually exclusive breakpoints."
 )
 public class AllocateEvidence extends VcfTransformCommandLineProgram {
 	private static final Log log = Log.getInstance(AllocateEvidence.class);
@@ -44,7 +45,6 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 	 * This reduces the size of the lookup cache required
 	 */
 	private static final boolean ALLOCATE_TO_BEST = true;
-	
 	@Option(doc="Evidence allocation strategy used to uniquely assign evidence.")
 	public EvidenceAllocationStrategy ALLOCATION_STRATEGY = EvidenceAllocationStrategy.GREEDY;
 	public static enum EvidenceAllocationStrategy {
@@ -68,7 +68,11 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 	}
 	@Override
 	public CloseableIterator<VariantContextDirectedBreakpoint> iterator(CloseableIterator<VariantContextDirectedBreakpoint> calls, ExecutorService threadpool) {
-		populateCache();
+		boolean multimapping = Iterables.any(getSamEvidenceSources(), ses -> ses.getMetrics().getIdsvMetrics().SECONDARY_NOT_SPLIT > 0);
+		if (multimapping) {
+			log.info("Multimapping mode invoked due to existence of at least one BAM file with a non-split secondary alignment.");
+			populateCache();
+		}
 		log.info("Allocating evidence");
 		CloseableIterator<DirectedEvidence> evidence = new AsyncBufferedIterator<>(getEvidenceIterator(), "mergedEvidence-allocation");
 		Iterator<VariantEvidenceSupport> annotator = new SequentialEvidenceAllocator(getContext(), calls, evidence, SAMEvidenceSource.maximumWindowSize(getContext(), getSamEvidenceSources(), getAssemblySource()), ALLOCATE_TO_BEST);
@@ -97,7 +101,7 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 		VariantCallingConfiguration vc = getContext().getConfig().getVariantCalling();
 		StructuralVariationCallBuilder builder = new StructuralVariationCallBuilder(getContext(), ves.variant);
 		for (DirectedEvidence e : ves.support) {
-			if (cache.isBestBreakpoint((VariantContextDirectedBreakpoint)ves.variant, e)) {
+			if (cache == null || cache.isBestBreakpoint((VariantContextDirectedBreakpoint)ves.variant, e)) {
 				builder.addEvidence(e);
 			}
 		}

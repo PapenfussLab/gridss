@@ -11,7 +11,6 @@ import org.junit.Test;
 import com.google.common.collect.Lists;
 
 import au.edu.wehi.idsv.TestHelper;
-import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import gridss.analysis.CigarDetailMetrics;
 import gridss.analysis.IdsvMetrics;
 import gridss.analysis.MapqMetrics;
@@ -22,73 +21,6 @@ import picard.analysis.InsertSizeMetrics;
 
 
 public class IdsvSamFileMetricsCollectorTest extends TestHelper {
-	@Test
-	public void should_calc_max_read_length() {
-		IdsvSamFileMetricsCollector c = new IdsvSamFileMetricsCollector(null);
-		c.acceptRecord(RP(0, 1, 2, 1)[0], null);
-		c.acceptRecord(RP(0, 1, 2, 1)[1], null);
-		c.acceptRecord(RP(0, 1, 7, 5)[0], null);
-		c.acceptRecord(RP(0, 1, 7, 5)[1], null);
-		c.acceptRecord(Read(0, 1, "100M"), null);
-		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
-		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
-		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
-		MetricsFile<MapqMetrics, Integer> mq = new MetricsFile<MapqMetrics, Integer>();
-		c.finish(is, idsv, mq, sc);
-		assertEquals(100, (int)((IdsvMetrics)idsv.getMetrics().get(0)).MAX_READ_LENGTH);
-	}
-	@Test
-	public void should_calc_read_statistics() {
-		IdsvSamFileMetricsCollector c = new IdsvSamFileMetricsCollector(null);
-		c.acceptRecord(RP(0, 1, 2, 1)[1], null);
-		c.acceptRecord(RP(0, 1, 2, 1)[0], null);
-		c.acceptRecord(RP(0, 1, 7, 5)[0], null);
-		c.acceptRecord(RP(0, 1, 7, 5)[1], null);
-		c.acceptRecord(Read(0, 1, "100M"), null);
-		c.acceptRecord(OEA(0, 1, "1M", true)[0], null);
-		c.acceptRecord(OEA(0, 1, "1M", true)[1], null);
-		c.acceptRecord(Unmapped(100), null);
-		SAMRecord[] unmapped = RP(0, 1, 2, 1);
-		unmapped[0].setReadUnmappedFlag(true);
-		unmapped[1].setReadUnmappedFlag(true);
-		SAMRecordUtil.pairReads(unmapped[0], unmapped[1]);
-		c.acceptRecord(unmapped[0], null);
-		c.acceptRecord(unmapped[1], null);
-		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
-		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
-		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
-		MetricsFile<MapqMetrics, Integer> mq = new MetricsFile<MapqMetrics, Integer>();
-		c.finish(is, idsv, mq, sc);
-		assertEquals(10, idsv.getMetrics().get(0).READS);
-		assertEquals(6, idsv.getMetrics().get(0).MAPPED_READS);
-	}
-	@Test
-	public void should_calc_read_pairing_statistics() {
-		IdsvSamFileMetricsCollector c = new IdsvSamFileMetricsCollector(null);
-		c.acceptRecord(RP(0, 1, 2, 1)[1], null);
-		c.acceptRecord(RP(0, 1, 2, 1)[0], null);
-		c.acceptRecord(RP(0, 1, 7, 5)[0], null);
-		c.acceptRecord(RP(0, 1, 7, 5)[1], null);
-		c.acceptRecord(Read(0, 1, "100M"), null);
-		c.acceptRecord(OEA(0, 1, "1M", true)[0], null);
-		c.acceptRecord(OEA(0, 1, "1M", true)[1], null);
-		c.acceptRecord(Unmapped(100), null);
-		SAMRecord[] unmapped = RP(0, 1, 2, 1);
-		unmapped[0].setReadUnmappedFlag(true);
-		unmapped[1].setReadUnmappedFlag(true);
-		SAMRecordUtil.pairReads(unmapped[0], unmapped[1]);
-		c.acceptRecord(unmapped[0], null);
-		c.acceptRecord(unmapped[1], null);
-		MetricsFile<IdsvMetrics, Integer> idsv = new MetricsFile<IdsvMetrics, Integer>();
-		MetricsFile<InsertSizeMetrics, Integer> is = new MetricsFile<InsertSizeMetrics, Integer>();
-		MetricsFile<CigarDetailMetrics, Integer> sc = new MetricsFile<CigarDetailMetrics, Integer>();
-		MetricsFile<MapqMetrics, Integer> mq = new MetricsFile<MapqMetrics, Integer>();
-		c.finish(is, idsv, mq, sc);
-		assertEquals(4, idsv.getMetrics().get(0).READ_PAIRS);
-		assertEquals(2, idsv.getMetrics().get(0).READ_PAIRS_BOTH_MAPPED);
-		assertEquals(1, idsv.getMetrics().get(0).READ_PAIRS_ONE_MAPPED);
-		assertEquals(1, idsv.getMetrics().get(0).READ_PAIRS_ZERO_MAPPED);
-	}
 	@Test
 	public void should_create_soft_clip_metrics_up_to_read_length() {
 		IdsvSamFileMetricsCollector c = new IdsvSamFileMetricsCollector(null);

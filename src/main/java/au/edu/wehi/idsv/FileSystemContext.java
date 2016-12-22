@@ -143,5 +143,4 @@ public class FileSystemContext {
 	public File getAssemblyChunkBam(File input, int chunk) {
 		return getFile(String.format(FORMAT_ASSEMBLY_CHUNK_SAM, getIntermediateDirectory(input), getSource(input).getName(), chunk));
 	}
-	
 }

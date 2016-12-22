@@ -289,6 +289,20 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		threadpool.shutdown();
 		List<DirectedEvidence> list = Lists.newArrayList(aes.iterator());
 		assertEquals(100, list.size());
-		
+	}
+	@Test
+	public void should_deduplicate_assembly_with_multimapping_reads() throws IOException {
+		createInput(
+				withReadName("read1", withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGA", Read(0, 1, "41M58S"))),
+				withReadName("read2", withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", Read(0, 1, "41M59S"))),
+				applying(f -> f.setNotPrimaryAlignmentFlag(true), withReadName("read1", withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGA", Read(0, 1000, "41M58S")))),
+				applying(f -> f.setNotPrimaryAlignmentFlag(true), withReadName("read2", withSequence("AATTAATCGCAAGAGCGGGTTGTATTCGACGCCAAGTCAGCTGAAGCACCATTACCCGATCAAAACATATCAGAAATGATTGACGTATCACAAGCCGGAT", Read(0, 1000, "41M59S"))))
+				);
+		ProcessingContext pc = getCommandlineContext();
+		pc.getConfig().getAssembly().minReads = 1;
+		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, null, 0);
+		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
+		aes.assembleBreakends(null);
+		assertEquals(1, getRecords(assemblyFile).size());
 	}
 }

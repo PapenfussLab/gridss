@@ -29,6 +29,7 @@ import java.io.File;
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.SAMFileHeader;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMTag;
 import htsjdk.samtools.SamPairUtil.PairOrientation;
 import htsjdk.samtools.metrics.MetricsFile;
 import htsjdk.samtools.reference.ReferenceSequence;
@@ -64,6 +65,11 @@ public class CollectIdsvMetrics extends SinglePassSamProgram {
     	idsv.MAX_READ_LENGTH = Math.max(idsv.MAX_READ_LENGTH, record.getReadLength());
     	if (!record.getReadUnmappedFlag()) {
     		idsv.MAX_READ_MAPPED_LENGTH = Math.max(idsv.MAX_READ_MAPPED_LENGTH, record.getAlignmentEnd() - record.getAlignmentStart() + 1);
+    	}
+    	if (record.getNotPrimaryAlignmentFlag()) {
+    		if (record.getAttribute(SAMTag.SA.name()) == null) {
+    			idsv.SECONDARY_NOT_SPLIT++;
+    		}
     	}
     	if (record.getReadPairedFlag()) {
     		if (record.getProperPairFlag()) {

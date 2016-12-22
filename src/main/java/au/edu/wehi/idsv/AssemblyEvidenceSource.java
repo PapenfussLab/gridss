@@ -3,17 +3,21 @@ package au.edu.wehi.idsv;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
 
+import au.edu.wehi.idsv.SequentialEvidenceAssemblyAllocator.BreakendAssemblyEvidenceSupport;
 import au.edu.wehi.idsv.bed.IntervalBed;
 import au.edu.wehi.idsv.configuration.AssemblyConfiguration;
 import au.edu.wehi.idsv.debruijn.positional.PositionalAssembler;
@@ -28,6 +32,8 @@ import htsjdk.samtools.SAMFileHeader.SortOrder;
 import htsjdk.samtools.SAMFileWriter;
 import htsjdk.samtools.SAMFileWriterFactory;
 import htsjdk.samtools.SAMRecord;
+import htsjdk.samtools.SAMRecordIterator;
+import htsjdk.samtools.SamReader;
 import htsjdk.samtools.util.CloseableIterator;
 import htsjdk.samtools.util.Log;
 import htsjdk.samtools.util.ProgressLogger;
@@ -88,6 +94,77 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			}
 			
 		}
+		runTasks(tasks);
+		log.info("Breakend assembly complete.");
+		List<File> deduplicatedChunks = assembledChunk;
+		if (Iterables.any(source, ses -> ses.getMetrics().getIdsvMetrics().SECONDARY_NOT_SPLIT > 0)) {
+			log.info("Multimapping mode invoked due to existiance of at least one BAM file with a non-split secondary alignment.");
+			log.info("Uniquely assigning multi-mapping reads to alignment location supported by the best assembly.");
+			log.info("Loading assembly evidence allocations");
+			deduplicatedChunks = assembledChunk.stream()
+					.map(f -> FileSystemContext.getWorkingFileFor(f, "deduplicated."))
+					.collect(Collectors.toList());
+			GreedyAssemblyAllocationCache[] caches = new GreedyAssemblyAllocationCache[chunks.size()];
+			tasks = new ArrayList<>();
+			for (int i = 0; i < chunks.size(); i++) {
+				int index = i;
+				QueryInterval chunk = chunks.get(i);
+				File in = assembledChunk.get(i);
+				tasks.add(threadpool.submit(() -> { caches[index] = loadAssemblyEvidenceAllocation(in, chunk); return null; }));
+			}
+			runTasks(tasks);
+			GreedyAssemblyAllocationCache allocation = GreedyAssemblyAllocationCache.merge(Arrays.asList(caches));
+			
+			log.info("Allocating multi-mapping reads to assemblies");
+			tasks = new ArrayList<>();
+			for (int i = 0; i < chunks.size(); i++) {
+				QueryInterval chunk = chunks.get(i);
+				File in = assembledChunk.get(i);
+				File out = deduplicatedChunks.get(i);
+				if (!out.exists()) {
+					tasks.add(threadpool.submit(() -> { deduplicateChunk(in, out, chunk, allocation); return null; }));
+				}
+			}
+			runTasks(tasks);
+		}
+		log.info("Merging assembly files");
+		// Merge chunk files
+		File tmpout = FileSystemContext.getWorkingFileFor(getFile());
+		GatherBamFiles gather = new picard.sam.GatherBamFiles();
+		List<String> args = new ArrayList<>();
+		for (File f : deduplicatedChunks) {
+			args.add("INPUT=" + f.getAbsolutePath());
+		}
+		args.add("OUTPUT=" + tmpout.getAbsolutePath());
+		int returnCode = gather.instanceMain(args.toArray(new String[] {}));
+		if (returnCode != 0) {
+			String msg = String.format("Error executing GatherBamFiles. GatherBamFiles returned status code %d", returnCode);
+			log.error(msg);
+			throw new RuntimeException(msg);
+		}
+		// Sorting is not required since each chunk was already sorted, and each chunk
+		// contains sequential genomic coordinates. We also don't need to index as we only need assembly.sv.bam indexed
+		// SAMFileUtil.sort(getContext().getFileSystemContext(), tmpout, getFile(), SortOrder.coordinate);
+		FileHelper.move(tmpout, getFile(), true);
+		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
+			FileHelper.delete(tmpout, true);
+			for (File f : assembledChunk) {
+				FileHelper.delete(f, true);
+			}
+			for (File f : deduplicatedChunks) {
+				FileHelper.delete(f, true);
+			}
+		}
+		File throttledFilename = new File(getFile().getAbsolutePath() + ".throttled.bed");
+		try {
+			if (throttled.size() > 0) {
+				throttled.write(throttledFilename, "Regions of high coverage where only a portion of supporting reads considered for assembly");
+			}
+		} catch (IOException e) {
+			log.warn(e, "Unable to write " + throttledFilename.getAbsolutePath());
+		}
+	}
+	private void runTasks(List<Future<Void>> tasks) {
 		// Assemble as much as we can before dying
 		Exception firstException = null;
 		for (Future<Void> f : tasks) {
@@ -99,38 +176,10 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 				}
 			}
 		}
+		log.info("Breakend assembly complete.");
 		if (firstException != null) {
 			log.error(firstException, "Fatal error during assembly ");
-		}
-		log.info("Breakend assembly complete. Merging assembly files");
-		// Merge chunk files
-		File tmpout = FileSystemContext.getWorkingFileFor(getFile());
-		GatherBamFiles gather = new picard.sam.GatherBamFiles();
-		List<String> args = new ArrayList<>();
-		for (File f : assembledChunk) {
-			args.add("INPUT=" + f.getAbsolutePath());
-		}
-		args.add("OUTPUT=" + tmpout.getAbsolutePath());
-		int returnCode = gather.instanceMain(args.toArray(new String[] {}));
-		if (returnCode != 0) {
-			String msg = String.format("Error executing GatherBamFiles. GatherBamFiles returned status code %d", returnCode);
-			log.error(msg);
-			throw new RuntimeException(msg);
-		}		
-		SAMFileUtil.sort(getContext().getFileSystemContext(), tmpout, getFile(), SortOrder.coordinate);
-		if (gridss.Defaults.DELETE_TEMPORARY_FILES) {
-			FileHelper.delete(tmpout, true);
-			for (File f : assembledChunk) {
-				FileHelper.delete(f, true);
-			}
-		}
-		File throttledFilename = new File(getFile().getAbsolutePath() + ".throttled.bed");
-		try {
-			if (throttled.size() > 0) {
-				throttled.write(throttledFilename, "Regions of high coverage where only a portion of supporting reads considered for assembly");
-			}
-		} catch (IOException e) {
-			log.warn(e, "Unable to write " + throttledFilename.getAbsolutePath());
+			throw new RuntimeException(firstException);
 		}
 	}
 	private void assembleChunk(File output, int chunkNumber, QueryInterval qi) throws IOException {
@@ -169,10 +218,14 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			tmpout.delete();
 		}
 	}
-	private void assembleChunk(SAMFileWriter writer, SAMFileWriter filteredWriter, QueryInterval qi, BreakendDirection direction, AssemblyIdGenerator assemblyNameGenerator) {
+	private QueryInterval getExpanded(QueryInterval qi) {
 		int expansion = (int)(2 * getMaxConcordantFragmentSize() * getContext().getConfig().getAssembly().maxExpectedBreakendLengthMultiple) + 1;
 		int end = getContext().getReference().getSequenceDictionary().getSequence(qi.referenceIndex).getSequenceLength();
-		QueryInterval expanded = new QueryInterval(qi.referenceIndex, Math.max(1, qi.start - expansion), Math.min(end, qi.end + expansion));				
+		QueryInterval expanded = new QueryInterval(qi.referenceIndex, Math.max(1, qi.start - expansion), Math.min(end, qi.end + expansion));
+		return expanded;
+	}
+	private void assembleChunk(SAMFileWriter writer, SAMFileWriter filteredWriter, QueryInterval qi, BreakendDirection direction, AssemblyIdGenerator assemblyNameGenerator) {
+		QueryInterval expanded = getExpanded(qi);
 		try (CloseableIterator<DirectedEvidence> input = mergedIterator(source, expanded)) {
 			Iterator<DirectedEvidence> throttledIt = throttled(input);
 			Iterator<SAMRecord> evidenceIt = new PositionalAssembler(getContext(), AssemblyEvidenceSource.this, assemblyNameGenerator, throttledIt, direction);
@@ -191,6 +244,64 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 				}
 			}
 		}
+	}
+	private GreedyAssemblyAllocationCache loadAssemblyEvidenceAllocation(File in, QueryInterval qi) throws IOException {
+		GreedyAssemblyAllocationCache cache = new GreedyAssemblyAllocationCache();
+		QueryInterval expanded = getExpanded(qi);
+		try (CloseableIterator<DirectedEvidence> reads = mergedIterator(source, expanded)) {
+			try (SamReader reader = factory.open(in)) {
+				try (SAMRecordIterator assemblies = reader.iterator()) {
+					SequentialEvidenceAssemblyAllocator it = new SequentialEvidenceAssemblyAllocator(
+							getContext().getLinear(),
+							reads,
+							assemblies, 0);
+					while (it.hasNext()) {
+						BreakendAssemblyEvidenceSupport allocation = it.next();
+						float score = 0;
+						for (DirectedEvidence assemblyEvidence : SingleReadEvidence.createEvidence(this, allocation.assemblyRecord)) {
+							score = Math.max(score, assemblyEvidence.getBreakendQual());
+						}
+						for (DirectedEvidence support : allocation.support) {
+							cache.addBreakendAssemblyAllocation(score, support);
+						}
+					}
+				}
+			}
+		}
+		return cache;
+	}
+	private void deduplicateChunk(File in, File out, QueryInterval qi, GreedyAssemblyAllocationCache cache) throws IOException {
+		File tmpout = FileSystemContext.getWorkingFileFor(out);
+		QueryInterval expanded = getExpanded(qi);
+		try (CloseableIterator<DirectedEvidence> reads = mergedIterator(source, expanded)) {
+			try (SamReader reader = factory.open(in)) {
+				try (SAMRecordIterator assemblies = reader.iterator()) {
+					try (SAMFileWriter writer = new SAMFileWriterFactory().makeSAMOrBAMWriter(reader.getFileHeader(), true, tmpout)) {
+						SequentialEvidenceAssemblyAllocator it = new SequentialEvidenceAssemblyAllocator(
+								getContext().getLinear(),
+								reads,
+								assemblies, 0);
+						while (it.hasNext()) {
+							BreakendAssemblyEvidenceSupport allocation = it.next();
+							SAMRecord asm = allocation.assemblyRecord;
+							List<DirectedEvidence> newSupport = new ArrayList<>(allocation.support.size());
+							for (DirectedEvidence support : allocation.support) {
+								if (cache.isBestBreakendAssemblyAllocation(support)) {
+									newSupport.add(support);
+								}
+							}
+							AssemblyAttributes.annotateAssembly(getContext(), asm, newSupport);
+							if (shouldFilterAssembly(asm)) {
+								// TODO: append to filtered bam
+							} else {
+								writer.addAlignment(asm);
+							}
+						}
+					}
+				}
+			}
+		}
+		FileHelper.move(tmpout, out, true);
 	}
 	@Override
 	public void ensureExtracted() throws IOException {

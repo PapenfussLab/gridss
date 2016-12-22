@@ -62,7 +62,7 @@ public class IdsvSamFileMetrics {
 	}
 	public static InsertSizeMetrics getInsertSizeMetrics(File insertSizeMetricsFile) {
 		InsertSizeMetrics bestMetrics = null;
-		if (insertSizeMetricsFile.exists()) {
+		if (insertSizeMetricsFile != null && insertSizeMetricsFile.exists()) {
 			for (InsertSizeMetrics metric : Iterables.filter(MetricsFile.readBeans(insertSizeMetricsFile), InsertSizeMetrics.class)) {
 				if (metric.SAMPLE == null && metric.LIBRARY == null && metric.READ_GROUP == null) {
 					if (bestMetrics == null || bestMetrics.READ_PAIRS < metric.READ_PAIRS) {
@@ -77,6 +77,7 @@ public class IdsvSamFileMetrics {
 		return bestMetrics;
 	}
 	public static MapqMetrics getMapqMetrics(File mapqMetricsFile) {
+		if (mapqMetricsFile == null) return null;
 		MapqMetrics bestMetrics = null;
 		for (MapqMetrics metric : Iterables.filter(MetricsFile.readBeans(mapqMetricsFile), MapqMetrics.class)) {
 			if (metric.SAMPLE == null && metric.LIBRARY == null && metric.READ_GROUP == null) {
@@ -97,9 +98,10 @@ public class IdsvSamFileMetrics {
 		this.mapqMetrics = mapqMetrics;
 		this.insertDistribution = insertDistribution;
 		this.cigarDetailMetrics = cigarDetailMetrics;
-		this.cigarDistribution = new CigarSizeDistribution(cigarDetailMetrics);
+		this.cigarDistribution = cigarDetailMetrics == null ? null : new CigarSizeDistribution(cigarDetailMetrics);
 	}
 	private static List<CigarDetailMetrics> getCigarMetrics(File cigarMetricsFile) {
+		if (cigarMetricsFile == null) return null;
 		List<CigarDetailMetrics> list = new ArrayList<CigarDetailMetrics>();
 		for (CigarDetailMetrics metric : Iterables.filter(MetricsFile.readBeans(cigarMetricsFile), CigarDetailMetrics.class)) {
 			list.add(metric);
