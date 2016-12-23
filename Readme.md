@@ -351,3 +351,10 @@ This is likely to be caused by a crash during alignment in libsswjni. See the ss
 ### Illegal Instruction
 
 Your CPU does not support the SSE2 instruction set. See the sswjni sections for details on how to disable libsswjni.
+
+### Aborting since lock gridss.lock._OUTPUT_ already exists. GRIDSS does not support multiple simulatenous instances running on the same data.
+
+Multiple instances of GRIDSS were run on the same data. GRIDSS does not yet support MPI parallelisation across multiple machines. Use the WORKER_THREADS parameter to specify the desired level of multi-threading. If using a cluster/job queuing system, a single non-MPI job should be submitted and either WORKER_THREADS explicitly set to the number of cores associated with the job requests, or the job should request the entire node.
+
+If the lock directory exists and you know a GRIDSS process is not running (eg: the GRIDSS process was killed), then you can safely delete the lock directory.
+
