@@ -240,7 +240,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		Assert.assertArrayEquals(new float[] { 0,  ie.getBreakpointQual(), }, (float[])vc.getAttribute(VcfAttributes.BREAKPOINT_INDEL_QUAL.attribute()), 0);
 	}
 	@Test
-	public void should_set_VcfAttribute_BREAKPOINT_ASSEMBLY_READPAIR_COUNT_CONSCRIPTED() {
+	public void should_set_VcfAttribute_BREAKPOINT_ASSEMBLY_READPAIR_COUNT() {
 		ProcessingContext pc = getContext();
 		AssemblyEvidenceSource aes = AES(pc);
 		StructuralVariationCallBuilder cb = new StructuralVariationCallBuilder(pc, (VariantContextDirectedEvidence)minimalBreakend()
@@ -301,12 +301,7 @@ public class StructuralVariationCallBuilderTest extends TestHelper {
 		Assert.assertArrayEquals(new int[] { 3, 1, }, (int[])bp.getAttribute(VcfAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT.attribute()));
 	}
 	@Test
-	@Ignore("Enhancement")
-	public void should_set_VcfAttribute_BREAKPOINT_ASSEMBLY_CONSCRIPTED_READ_COUNT() {
-		Assert.fail("Can't calculate conscripted since we don't have that info anymore");
-	}
-	@Test
-	@Ignore() //  TODO: enchancement
+	@Ignore("Enchancement")
 	public void how_should_we_count_spanning_assemblies() {
 		fail();
 	}

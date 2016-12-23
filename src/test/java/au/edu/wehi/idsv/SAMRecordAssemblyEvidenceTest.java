@@ -219,7 +219,7 @@ public class SAMRecordAssemblyEvidenceTest extends TestHelper {
 	public void small_indel_should_be_called_if_realignment_spans_event() {
 		String assembly = "AAAAAAAAAATTAAAAAAAAAA";
 		SAMRecord e = AssemblyFactory.createAnchoredBreakend(getContext(), AES(), new SequentialIdGenerator("asm"), FWD, null,
-				0, 1, 10, B(assembly), B(40, assembly.length()));
+				0, 10, 10, B(assembly), B(40, assembly.length()));
 		e = SAMRecordUtil.realign(getContext().getReference(), e, 50, true);
 		assertEquals("10M2I10M", e.getCigarString());
 	}
