@@ -305,4 +305,25 @@ public class AssemblyEvidenceSourceTest extends IntermediateFilesTest {
 		aes.assembleBreakends(null);
 		assertEquals(1, getRecords(assemblyFile).size());
 	}
+	@Test
+	public void bounds_check_should_apply_to_final_assembly_SAMRecord() throws IOException {
+		// TODO: how do we check
+		List<SAMRecord> in = new ArrayList<>();
+		// unclipped reference matching bases moves these into the other chunk
+		in.add(withSequence("GGGTGAAATT", Read(0, 5000-6, "5M5S"))[0]);
+		in.add(withSequence("TTAAAGTGGG", Read(0, 5003, "5S5M"))[0]);
+		createInput(in);
+		ProcessingContext pc = getCommandlineContext();
+		pc.getConfig().chunkSize = 5000;
+		pc.getConfig().getAssembly().minReads = 1;
+		pc.getConfig().getAssembly().k = 4;
+		pc.getConfig().getSoftClip().minLength = 0;
+		pc.getConfig().getSoftClip().minAnchorIdentity = 0;
+		pc.getConfig().getSoftClip().minAverageQual = 0;
+		SAMEvidenceSource ses = new SAMEvidenceSource(pc, input, null, 0);
+		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
+		aes.assembleBreakends(null);
+		List<SAMRecord> list = getRecords(assemblyFile);
+		// TODO: check that the assemblies were correctly allocated to the correct chunk
+	}
 }

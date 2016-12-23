@@ -231,9 +231,9 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			Iterator<SAMRecord> evidenceIt = new PositionalAssembler(getContext(), AssemblyEvidenceSource.this, assemblyNameGenerator, throttledIt, direction);
 			while (evidenceIt.hasNext()) {
 				SAMRecord asm = evidenceIt.next();
+				asm = transformAssembly(asm); // transform before chunk bounds checking as the position may have moved
 				if (asm.getAlignmentStart() >= qi.start && asm.getAlignmentStart() <= qi.end) {
-					// only output assemblies that start within our chuck
-					asm = transformAssembly(asm);
+					// only output assemblies that start within our chunk
 					if (shouldFilterAssembly(asm)) {
 						if (filteredWriter != null) {
 							filteredWriter.addAlignment(asm);
