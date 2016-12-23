@@ -33,7 +33,7 @@ public class GreedyAssemblyAllocationCache extends GreedyAllocationCache {
 				Hash128bit key = e.getKey();
 				Node value = e.getValue();
 				Node existingValue = merged.bestReadAlignment.get(key);
-				if (existingValue != null && existingValue.score < value.score) {
+				if (existingValue == null || existingValue.score < value.score) {
 					merged.bestReadAlignment.put(key, value);
 				}
 			}
@@ -66,6 +66,6 @@ public class GreedyAssemblyAllocationCache extends GreedyAllocationCache {
 		Hash128bit alignmentkey = new Hash128bit(alignment);
 		
 		Node node = bestReadAlignment.get(readkey);
-		return node != null && node.alignment == alignmentkey;
+		return node != null && node.alignment.equals(alignmentkey);
 	}
 }

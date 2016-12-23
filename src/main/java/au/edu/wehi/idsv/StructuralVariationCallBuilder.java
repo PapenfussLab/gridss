@@ -12,7 +12,6 @@ import com.google.common.collect.Range;
 import com.google.common.collect.RangeSet;
 import com.google.common.collect.TreeRangeSet;
 
-import au.edu.wehi.idsv.alignment.BreakpointHomology;
 import au.edu.wehi.idsv.sam.CigarUtil;
 import au.edu.wehi.idsv.vcf.VcfAttributes;
 import au.edu.wehi.idsv.vcf.VcfFilter;
@@ -40,8 +39,8 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 	//private int[] fBREAKPOINT_SPLITREAD_COUNT_REMOTE;
 	private int[] fBREAKPOINT_ASSEMBLY_READPAIR_COUNT;
 	private int[] fBREAKPOINT_ASSEMBLY_SPLITREAD_COUNT;
-	private int[] fBREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT;
-	private int[] fBREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT;	
+	//private int[] fBREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT;
+	//private int[] fBREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT;	
 	private double fBREAKPOINT_ASSEMBLY_QUAL;
 	private double[] fBREAKPOINT_READPAIR_QUAL;
 	private double[] fBREAKPOINT_SPLITREAD_QUAL;
@@ -73,8 +72,8 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		//fBREAKPOINT_SPLITREAD_COUNT_REMOTE = new int[categories];
 		fBREAKPOINT_ASSEMBLY_READPAIR_COUNT = new int[categories];
 		fBREAKPOINT_ASSEMBLY_SPLITREAD_COUNT = new int[categories];
-		fBREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT = new int[categories];
-		fBREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT = new int[categories];
+		//fBREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT = new int[categories];
+		//fBREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT = new int[categories];
 		fBREAKPOINT_ASSEMBLY_QUAL = 0;
 		fBREAKPOINT_READPAIR_QUAL = new double[categories];
 		fBREAKPOINT_SPLITREAD_QUAL = new double[categories];
@@ -129,8 +128,8 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 					for (int i = 0; i < categories; i++) {
 						fBREAKPOINT_ASSEMBLY_READPAIR_COUNT[i] += attr.getAssemblySupportCountReadPair(i);
 						fBREAKPOINT_ASSEMBLY_SPLITREAD_COUNT[i] += attr.getAssemblySupportCountSoftClip(i);
-						fBREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT[i] += attr.getAssemblyNonSupportingReadPairCount(i);
-						fBREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT[i]  += attr.getAssemblyNonSupportingSoftClipCount(i);
+						//fBREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT[i] += attr.getAssemblyNonSupportingReadPairCount(i);
+						//fBREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT[i]  += attr.getAssemblyNonSupportingSoftClipCount(i);
 						// TODO quals, remotes, etc
 					}
 					if (sre.getSAMRecord().getSupplementaryAlignmentFlag()) {
@@ -271,8 +270,8 @@ public class StructuralVariationCallBuilder extends IdsvVariantContextBuilder {
 		//attribute(VcfAttributes.BREAKPOINT_SPLITREAD_COUNT_REMOTE, fBREAKPOINT_SPLITREAD_COUNT_REMOTE);
 		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_READPAIR_COUNT, fBREAKPOINT_ASSEMBLY_READPAIR_COUNT);
 		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_READ_COUNT, fBREAKPOINT_ASSEMBLY_SPLITREAD_COUNT);
-		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT, fBREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT);
-		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_READ_COUNT, fBREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT);
+		//attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT, fBREAKPOINT_ASSEMBLY_CONSCRIPTED_READPAIR_COUNT);
+		//attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_CONSCRIPTED_READ_COUNT, fBREAKPOINT_ASSEMBLY_CONSCRIPTED_SPLITREAD_COUNT);
 		attribute(VcfAttributes.BREAKPOINT_ASSEMBLY_QUAL, (float)fBREAKPOINT_ASSEMBLY_QUAL);
 		attribute(VcfAttributes.BREAKPOINT_READPAIR_QUAL, tof(fBREAKPOINT_READPAIR_QUAL));
 		attribute(VcfAttributes.BREAKPOINT_SPLITREAD_QUAL, tof(fBREAKPOINT_SPLITREAD_QUAL));

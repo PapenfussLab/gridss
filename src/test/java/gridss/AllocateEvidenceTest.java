@@ -30,8 +30,10 @@ import au.edu.wehi.idsv.ProcessingContext;
 import au.edu.wehi.idsv.SAMEvidenceSource;
 import au.edu.wehi.idsv.VariantCaller;
 import au.edu.wehi.idsv.VariantContextDirectedBreakpoint;
+import au.edu.wehi.idsv.sam.SAMFileUtil;
 import au.edu.wehi.idsv.util.AutoClosingIterator;
 import htsjdk.samtools.SAMFileHeader.SortOrder;
+import picard.sam.BuildBamIndex;
 import htsjdk.samtools.SAMRecord;
 
 public class AllocateEvidenceTest extends IntermediateFilesTest {
@@ -49,6 +51,7 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 		File assemblyFile = new File(testFolder.getRoot(), "assembly.bam");
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
+		aes.ensureExtracted();
 		VariantCaller caller = new VariantCaller(pc, ImmutableList.of(ses), aes);
 		caller.callBreakends(output, MoreExecutors.newDirectExecutorService());
 		AllocateEvidence cmd = new AllocateEvidence();
@@ -78,6 +81,7 @@ public class AllocateEvidenceTest extends IntermediateFilesTest {
 		File assemblyFile = new File(testFolder.getRoot(), "assembly.bam");
 		AssemblyEvidenceSource aes = new AssemblyEvidenceSource(pc, ImmutableList.of(ses), assemblyFile);
 		aes.assembleBreakends(null);
+		aes.ensureExtracted();
 		VariantCaller caller = new VariantCaller(pc, ImmutableList.of(ses), aes);
 		caller.callBreakends(output, MoreExecutors.newDirectExecutorService());
 		AllocateEvidence cmd = new AllocateEvidence();

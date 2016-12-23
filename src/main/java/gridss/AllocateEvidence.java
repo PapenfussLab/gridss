@@ -87,6 +87,7 @@ public class AllocateEvidence extends VcfTransformCommandLineProgram {
 		}
 	}
 	public void populateCache(CloseableIterator<VariantContextDirectedBreakpoint> calls) {
+		// TODO: only populate cache for multi-mapped sources
 		log.info("Loading variant evidence support");
 		cache = new GreedyVariantAllocationCache(true, true, ALLOCATE_TO_BEST);
 		try (CloseableIterator<DirectedEvidence> evidence = new AsyncBufferedIterator<>(getEvidenceIterator(), "mergedEvidence-cache")) {

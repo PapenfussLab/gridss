@@ -121,6 +121,9 @@ public class GreedyAllocationCache {
 				return false;
 			return true;
 		}
+		public boolean equals(Hash128bit obj) {
+			return obj != null && key1 == obj.key1 && key2 == obj.key2;
+		}
 		private static final HashFunction hf = Hashing.murmur3_128();
 		public Hash128bit(String key) {
 			HashCode hc = hf.newHasher().putString(key, StandardCharsets.UTF_8).hash();
