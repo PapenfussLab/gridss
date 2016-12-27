@@ -3,7 +3,6 @@ package au.edu.wehi.idsv;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -104,16 +103,14 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			deduplicatedChunks = assembledChunk.stream()
 					.map(f -> FileSystemContext.getWorkingFileFor(f, "deduplicated."))
 					.collect(Collectors.toList());
-			GreedyAssemblyAllocationCache[] caches = new GreedyAssemblyAllocationCache[chunks.size()];
+			GreedyAssemblyAllocationCache cache = new GreedyAssemblyAllocationCache(2 + getContext().getWorkerThreadCount());
 			tasks = new ArrayList<>();
 			for (int i = 0; i < chunks.size(); i++) {
-				int index = i;
 				QueryInterval chunk = chunks.get(i);
 				File in = assembledChunk.get(i);
-				tasks.add(threadpool.submit(() -> { caches[index] = loadAssemblyEvidenceAllocation(in, chunk); return null; }));
+				tasks.add(threadpool.submit(() -> { loadAssemblyEvidenceAllocation(cache, in, chunk); return null; }));
 			}
 			runTasks(tasks);
-			GreedyAssemblyAllocationCache allocation = GreedyAssemblyAllocationCache.merge(Arrays.asList(caches));
 			
 			log.info("Allocating multi-mapping reads to assemblies");
 			tasks = new ArrayList<>();
@@ -122,7 +119,7 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 				File in = assembledChunk.get(i);
 				File out = deduplicatedChunks.get(i);
 				if (!out.exists()) {
-					tasks.add(threadpool.submit(() -> { deduplicateChunk(in, out, chunk, allocation); return null; }));
+					tasks.add(threadpool.submit(() -> { deduplicateChunk(in, out, chunk, cache); return null; }));
 				}
 			}
 			runTasks(tasks);
@@ -245,8 +242,8 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 			}
 		}
 	}
-	private GreedyAssemblyAllocationCache loadAssemblyEvidenceAllocation(File in, QueryInterval qi) throws IOException {
-		GreedyAssemblyAllocationCache cache = new GreedyAssemblyAllocationCache();
+	private void loadAssemblyEvidenceAllocation(GreedyAssemblyAllocationCache cache, File in, QueryInterval qi) throws IOException {
+		log.debug("Caching assembly evidence allocation in interval " + qi.toString());
 		QueryInterval expanded = getExpanded(qi);
 		try (CloseableIterator<DirectedEvidence> reads = mergedIterator(source, expanded)) {
 			try (SamReader reader = factory.open(in)) {
@@ -268,9 +265,9 @@ public class AssemblyEvidenceSource extends SAMEvidenceSource {
 				}
 			}
 		}
-		return cache;
 	}
 	private void deduplicateChunk(File in, File out, QueryInterval qi, GreedyAssemblyAllocationCache cache) throws IOException {
+		log.debug("Uniquely assigning assembly evidence allocation in interval " + qi.toString());
 		File tmpout = FileSystemContext.getWorkingFileFor(out);
 		QueryInterval expanded = getExpanded(qi);
 		try (CloseableIterator<DirectedEvidence> reads = mergedIterator(source, expanded)) {

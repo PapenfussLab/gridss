@@ -5,8 +5,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 import com.google.common.collect.Lists;
@@ -85,15 +85,21 @@ public class GreedyAllocationCache {
 			return String.format("(%s,%f,%s)", event, score, alignment);
 		}
 	}
-	protected void put(HashMap<Hash128bit, Node> bestAlignment, Hash128bit readName, Hash128bit alignment, Hash128bit event, float score) {
+	protected void put(Map<Hash128bit, Node> bestAlignment, Hash128bit readName, Hash128bit alignment, Hash128bit event, float score) {
 		if (bestAlignment == null) return;
-		Node existing = bestAlignment.get(readName);
-		if (existing == null || existing.score < score) {
-			bestAlignment.put(readName, new Node(event, score, alignment));
+		Node notInLookup = new Node(event, score, alignment);
+		Node inLookup = bestAlignment.get(readName);
+		// this check is a loop as when there are multiple threads writing to the same key
+		// the score that we wrote could be worse since the get and put are two separate (atomic)
+		// operations.
+		while (notInLookup != null && (inLookup == null || inLookup.score < notInLookup.score)) {
+			Node toPut = notInLookup;
+			inLookup = toPut;
+			notInLookup = bestAlignment.put(readName, toPut);
 		}
 	}
 
-	protected boolean isBestAlignment(HashMap<Hash128bit, Node> bestAlignment, Hash128bit readName, Hash128bit alignment) {
+	protected boolean isBestAlignment(Map<Hash128bit, Node> bestAlignment, Hash128bit readName, Hash128bit alignment) {
 		if (bestAlignment == null) return true;
 		Node node = bestAlignment.get(readName);
 		return node != null && Objects.equals(alignment, node.alignment);

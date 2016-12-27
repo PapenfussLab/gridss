@@ -1,7 +1,9 @@
 package au.edu.wehi.idsv;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
 import au.edu.wehi.idsv.sam.SAMRecordUtil;
 import htsjdk.samtools.SAMRecord;
@@ -20,7 +22,21 @@ public class GreedyAssemblyAllocationCache extends GreedyAllocationCache {
 	 * since we don't want to allocate the mutually exclusive evidence that
 	 * results from two separate read alignments for the same read
 	 */
-	private final HashMap<Hash128bit, Node> bestReadAlignment = new HashMap<>();
+	private final Map<Hash128bit, Node> bestReadAlignment;
+	public GreedyAssemblyAllocationCache() {
+		this(1);
+	}
+	/**
+	 * Creates a new allocation caches
+	 * @param threads number of concurrent access threads. This implementation is thread safe for values greater than 1.
+	 */
+	public GreedyAssemblyAllocationCache(int threads) {
+		if (threads <= 1) {
+			bestReadAlignment = new HashMap<>();
+		} else {
+			bestReadAlignment = new ConcurrentHashMap<Hash128bit, Node>(1 << 20, 0.75f, threads);
+		}
+	}
 	/**
 	 * Merges the given caches together 
 	 * @param caches caches representing subsets of the assemblies
@@ -29,16 +45,19 @@ public class GreedyAssemblyAllocationCache extends GreedyAllocationCache {
 	public static GreedyAssemblyAllocationCache merge(Iterable<GreedyAssemblyAllocationCache> caches) {
 		GreedyAssemblyAllocationCache merged = new GreedyAssemblyAllocationCache();
 		for (GreedyAssemblyAllocationCache cache : caches) {
-			for (Entry<Hash128bit, Node> e : cache.bestReadAlignment.entrySet()) {
-				Hash128bit key = e.getKey();
-				Node value = e.getValue();
-				Node existingValue = merged.bestReadAlignment.get(key);
-				if (existingValue == null || existingValue.score < value.score) {
-					merged.bestReadAlignment.put(key, value);
-				}
-			}
+			merged.addAll(cache);
 		}
 		return merged;
+	}
+	public void addAll(GreedyAssemblyAllocationCache cache) {
+		for (Entry<Hash128bit, Node> e : cache.bestReadAlignment.entrySet()) {
+			Hash128bit key = e.getKey();
+			Node value = e.getValue();
+			Node existingValue = bestReadAlignment.get(key);
+			if (existingValue == null || existingValue.score < value.score) {
+				bestReadAlignment.put(key, value);
+			}
+		}
 	}
 	protected void addBreakendAssemblyAllocation(float assemblyScore, DirectedEvidence evidence) {
 		SAMRecord anchor;
